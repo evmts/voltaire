@@ -30,7 +30,7 @@ These utilities provide battle-tested solutions to these challenges.
 Automatically retry failed operations with exponential backoff and jitter.
 
 ```typescript
-import { retryWithBackoff } from 'tevm/utils';
+import { retryWithBackoff } from '@tevm/voltaire/utils';
 
 const blockNumber = await retryWithBackoff(
   () => provider.eth_blockNumber(),
@@ -50,7 +50,7 @@ const blockNumber = await retryWithBackoff(
 Throttle, debounce, and rate-limit function calls.
 
 ```typescript
-import { RateLimiter } from 'tevm/utils';
+import { RateLimiter } from '@tevm/voltaire/utils';
 
 const limiter = new RateLimiter({
   maxRequests: 10,
@@ -70,7 +70,7 @@ const balance = await limiter.execute(
 Poll operations until they succeed or timeout, with optional backoff.
 
 ```typescript
-import { pollForReceipt } from 'tevm/utils';
+import { pollForReceipt } from '@tevm/voltaire/utils';
 
 const receipt = await pollForReceipt(
   txHash,
@@ -86,7 +86,7 @@ const receipt = await pollForReceipt(
 Add timeouts to promises and async operations.
 
 ```typescript
-import { withTimeout } from 'tevm/utils';
+import { withTimeout } from '@tevm/voltaire/utils';
 
 const result = await withTimeout(
   provider.eth_call({ to, data }),
@@ -101,7 +101,7 @@ const result = await withTimeout(
 Automatically batch similar operations for efficiency.
 
 ```typescript
-import { BatchQueue } from 'tevm/utils';
+import { BatchQueue } from '@tevm/voltaire/utils';
 
 const queue = new BatchQueue({
   maxBatchSize: 50,
@@ -153,7 +153,7 @@ Minimal abstractions. Direct, efficient implementations.
 Combine retry and timeout for robust RPC calls:
 
 ```typescript
-import { retryWithBackoff, withTimeout } from 'tevm/utils';
+import { retryWithBackoff, withTimeout } from '@tevm/voltaire/utils';
 
 const resilientCall = async <T>(fn: () => Promise<T>): Promise<T> => {
   return retryWithBackoff(
@@ -178,7 +178,7 @@ const blockNumber = await resilientCall(
 Combine rate limiting and batching:
 
 ```typescript
-import { RateLimiter, BatchQueue } from 'tevm/utils';
+import { RateLimiter, BatchQueue } from '@tevm/voltaire/utils';
 
 const limiter = new RateLimiter({
   maxRequests: 10,
@@ -203,7 +203,7 @@ const queue = new BatchQueue({
 Combine polling, timeout, and retry:
 
 ```typescript
-import { poll, withTimeout, retryWithBackoff } from 'tevm/utils';
+import { poll, withTimeout, retryWithBackoff } from '@tevm/voltaire/utils';
 
 const waitForBlock = async (blockNumber: bigint): Promise<Block> => {
   return withTimeout(

@@ -40,7 +40,7 @@ Returns the bytecode length of the account at the given address. Returns 0 for:
 ### Basic Usage
 
 ```zig
-import { extcodesize } from 'tevm/evm/context';
+import { extcodesize } from '@tevm/voltaire/evm/context';
 
 const contractAddr = Address('0x...');
 const frame = createFrame({ stack: [BigInt(contractAddr)] });

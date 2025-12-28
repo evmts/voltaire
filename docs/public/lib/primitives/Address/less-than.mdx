@@ -18,7 +18,7 @@ WASM uses the same TypeScript implementation - comparison happens in JavaScript 
 **Example:**
 
 ```typescript
-import { Address } from 'tevm/wasm'
+import { Address } from '@tevm/voltaire/wasm'
 
 const addr1 = Address(1n)
 const addr2 = Address(2n)
@@ -47,7 +47,7 @@ console.log(addr1.lessThan(addr2)) // true
 
 **Example ordering:**
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const a1 = Address("0x0000000000000000000000000000000000000001")
 const a2 = Address("0x0000000000000000000000000000000000000002")
@@ -66,7 +66,7 @@ console.log(a3.lessThan(a1)) // false
 Sort addresses in ascending order:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addresses = [
   Address("0xffffffffffffffffffffffffffffffffffffffff"),
@@ -88,7 +88,7 @@ addresses.sort((a, b) => a.compare(b))
 Filter addresses within a range:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function getAddressesInRange(
   addresses: Address[],
@@ -119,7 +119,7 @@ const inRange = getAddressesInRange(
 Efficient lookup in sorted arrays:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function binarySearch(sorted: Address[], target: Address): number {
   let left = 0
@@ -156,7 +156,7 @@ console.log(index) // 2
 Maintain sorted set of addresses:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 class SortedAddressSet {
   private addresses: Address[] = []
@@ -214,8 +214,8 @@ class SortedAddressSet {
 Build ordered merkle trees:
 
 ```typescript
-import { Address } from 'tevm'
-import { keccak256 } from 'tevm/crypto'
+import { Address } from '@tevm/voltaire'
+import { keccak256 } from '@tevm/voltaire/crypto'
 
 function buildMerkleTree(addresses: Address[]): Uint8Array {
   // Sort addresses first for deterministic tree
@@ -255,7 +255,7 @@ function buildMerkleTree(addresses: Address[]): Uint8Array {
 **Optimization:** For repeated comparisons, `compare()` is more efficient than separate `lessThan` calls:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Less efficient (multiple comparisons)
 if (a.lessThan(b)) {
@@ -282,7 +282,7 @@ if (cmp < 0) {
 `lessThan` is a convenience method built on `compare()`:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const a = Address(10n)
 const b = Address(20n)

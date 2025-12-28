@@ -10,7 +10,7 @@ Paymaster is a branded [Address](/primitives/address) type representing an ERC-4
 ## Quick Start
 
 ```typescript
-import { Paymaster } from 'tevm/primitives/Paymaster';
+import { Paymaster } from '@tevm/voltaire/primitives/Paymaster';
 
 // Create paymaster address
 const paymaster = Paymaster.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
@@ -77,8 +77,8 @@ Paymasters enable:
 ## Usage with User Operations
 
 ```typescript
-import { UserOperation } from 'tevm/primitives/UserOperation';
-import { Paymaster } from 'tevm/primitives/Paymaster';
+import { UserOperation } from '@tevm/voltaire/primitives/UserOperation';
+import { Paymaster } from '@tevm/voltaire/primitives/Paymaster';
 
 const paymasterAddr = Paymaster.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
 

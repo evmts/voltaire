@@ -27,8 +27,8 @@ function hash(data: Uint8Array): Keccak256Hash
 <Tabs>
 <Tab title="Basic Usage">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
-import { Hex } from 'tevm/primitives/Hex';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 const data = Hex.toBytes('0x0102030405');
 const hash = Keccak256.hash(data);
@@ -40,8 +40,8 @@ console.log(Hex.fromBytes(hash)); // 0x...
 
 <Tab title="Transaction Data">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
-import { Rlp } from 'tevm/primitives/Rlp';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Rlp } from '@tevm/voltaire/primitives/Rlp';
 
 // Hash RLP-encoded transaction
 const transaction = Rlp.encode([
@@ -60,7 +60,7 @@ const txHash = Keccak256.hash(transaction);
 
 <Tab title="Multiple Chunks">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Hash concatenated chunks
 const chunks = [header, body, footer];
@@ -106,7 +106,7 @@ function hashString(str: string): Keccak256Hash
 <Tabs>
 <Tab title="Basic Usage">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const hash = Keccak256.hashString('hello');
 // Equivalent to: Keccak256.hash(new TextEncoder().encode('hello'))
@@ -117,7 +117,7 @@ console.log(hash.length); // 32
 
 <Tab title="Function Signatures">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Hash function signature (without taking selector)
 const signature = 'transfer(address,uint256)';
@@ -130,7 +130,7 @@ const selector = fullHash.slice(0, 4);
 
 <Tab title="Event Signatures">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Hash event signature for topic0
 const eventSig = 'Transfer(address,address,uint256)';
@@ -143,7 +143,7 @@ console.log(topic0); // Topic for filtering Transfer events
 
 <Tab title="Unicode Handling">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // UTF-8 encoding handles Unicode correctly
 const emoji = Keccak256.hashString('Hello 👋 World');
@@ -189,7 +189,7 @@ function hashHex(hex: string): Keccak256Hash
 <Tabs>
 <Tab title="Basic Usage">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // With 0x prefix
 const hash1 = Keccak256.hashHex('0x1234abcd');
@@ -204,7 +204,7 @@ console.log(hash1.length); // 32
 
 <Tab title="Hashing Addresses">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Hash address for various purposes
 const address = '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e';
@@ -216,7 +216,7 @@ const addressHash = Keccak256.hashHex(address);
 
 <Tab title="Hashing Calldata">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Hash transaction calldata
 const calldata = '0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e0000000000000000000000000000000000000000000000000de0b6b3a7640000';
@@ -228,7 +228,7 @@ const calldataHash = Keccak256.hashHex(calldata);
 
 <Tab title="Public Key Hashing">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Hash uncompressed public key (65 bytes, starts with 04)
 const publicKey = '0x04' +
@@ -269,8 +269,8 @@ function hashMultiple(chunks: readonly Uint8Array[]): Keccak256Hash
 <Tabs>
 <Tab title="Basic Usage">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
-import { Hex } from 'tevm/primitives/Hex';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 const chunk1 = Hex.toBytes('0x010203');
 const chunk2 = Hex.toBytes('0x040506');
@@ -283,7 +283,7 @@ const hash = Keccak256.hashMultiple([chunk1, chunk2, chunk3]);
 
 <Tab title="Efficient Concatenation">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // More efficient than manual concatenation
 const parts = [header, body, footer];
@@ -301,7 +301,7 @@ const hash = Keccak256.hashMultiple(parts);
 
 <Tab title="Streaming Data">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Hash data arriving in chunks
 const chunks: Uint8Array[] = [];
@@ -318,7 +318,7 @@ const hash = Keccak256.hashMultiple(chunks);
 
 <Tab title="Merkle Tree Nodes">
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Hash concatenated sibling hashes
 function merkleParent(left: Uint8Array, right: Uint8Array): Uint8Array {
@@ -357,8 +357,8 @@ type Keccak256Hash = Uint8Array & { readonly __tag: "Keccak256Hash" }
 
 **Usage:**
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
-import { Hex } from 'tevm/primitives/Hex';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 const hash: Keccak256Hash = Keccak256.hash(data);
 
@@ -379,8 +379,8 @@ const hashNum = BigInt('0x' + Hex.fromBytes(hash).slice(2));
 Verify implementation correctness:
 
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
-import { Hex } from 'tevm/primitives/Hex';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 // Empty string
 const empty = Keccak256.hashString("");

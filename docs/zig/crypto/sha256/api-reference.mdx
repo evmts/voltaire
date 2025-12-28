@@ -23,7 +23,7 @@ One-shot hashing function for complete data available in memory.
 
 **Example:**
 ```zig
-import { SHA256 } from 'tevm/crypto/sha256';
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
 
 const data = new Uint8Array([1, 2, 3, 4, 5]);
 const hash = SHA256.hash(data);
@@ -56,7 +56,7 @@ Convenience function that encodes string to UTF-8 bytes before hashing.
 
 **Example:**
 ```zig
-import { SHA256 } from 'tevm/crypto/sha256';
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
 
 const hash = SHA256.hashString('hello world');
 console.log(hash.length); // 32
@@ -90,7 +90,7 @@ Decodes hex string to bytes before hashing. Accepts both "0x"-prefixed and unpre
 
 **Example:**
 ```zig
-import { SHA256 } from 'tevm/crypto/sha256';
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
 
 // With 0x prefix
 const hash1 = SHA256.hashHex('0xdeadbeef');
@@ -128,7 +128,7 @@ Returns stateful hasher instance for processing data in chunks. Useful for:
 
 **Example:**
 ```zig
-import { SHA256 } from 'tevm/crypto/sha256';
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
 
 // Create hasher instance
 const hasher = SHA256.create();
@@ -230,7 +230,7 @@ Converts 32-byte hash to lowercase hex string with "0x" prefix.
 
 **Example:**
 ```zig
-import { SHA256 } from 'tevm/crypto/sha256';
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
 
 const hash = SHA256.hashString('hello');
 const hex = SHA256.toHex(hash);

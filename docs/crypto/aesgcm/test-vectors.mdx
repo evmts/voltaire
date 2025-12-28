@@ -14,7 +14,7 @@ Test vectors from NIST SP 800-38D validate AES-GCM implementation correctness. T
 Empty plaintext, no AAD:
 
 ```typescript
-import * as AesGcm from 'tevm/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
 
 // Test Case 1: Empty plaintext, zero key/nonce
 const key = await AesGcm.importKey(Bytes16().fill(0)); // All zeros
@@ -333,7 +333,7 @@ try {
 ## Running All Tests
 
 ```typescript
-import * as AesGcm from 'tevm/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
 
 async function runAllTests() {
   const tests = [

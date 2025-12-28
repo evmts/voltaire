@@ -22,7 +22,7 @@ By staying close to specs, we minimize the diff between the LLM's training data 
 **Example - Contract Calls:**
 
 ```typescript
-import * as Abi from 'tevm/Abi';
+import * as Abi from '@tevm/voltaire/Abi';
 
 // Other libraries (great API, but bespoke abstraction)
 const result = await contract.balanceOf(address, { blockTag: 'latest' });
@@ -75,9 +75,9 @@ Even humans struggle to understand hidden retry policies, polling behavior, and 
 Voltaire focuses on low-level primitives. Everything does one thing well:
 
 ```typescript
-import { Address } from 'tevm/primitives';
-import { keccak256 } from 'tevm/crypto';
-import { encodeFunctionData } from 'tevm/abi';
+import { Address } from '@tevm/voltaire/primitives';
+import { keccak256 } from '@tevm/voltaire/crypto';
+import { encodeFunctionData } from '@tevm/voltaire/abi';
 ```
 
 Each primitive is a building block. No magical encapsulation, no hidden behavior.
@@ -92,7 +92,7 @@ Think shadcn for Ethereum - the client is rendered in your codebase:
 
 ```typescript
 // In your codebase: src/client.ts
-import { createClient } from 'tevm/client';
+import { createClient } from '@tevm/voltaire/client';
 
 export const client = createClient({
   transport: http('https://eth.llamarpc.com'),

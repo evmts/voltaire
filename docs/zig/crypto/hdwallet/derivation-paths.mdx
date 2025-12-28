@@ -35,7 +35,7 @@ m / purpose' / coin_type' / account' / change / address_index
 ### Path Examples
 
 ```zig
-import * as HDWallet from 'tevm/crypto/hdwallet';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
 
 // Ethereum standard (BIP-44)
 const eth = "m/44'/60'/0'/0/0";
@@ -127,8 +127,8 @@ const addresses = [
 ### Ethereum Derivation
 
 ```zig
-import * as Bip39 from 'tevm/crypto/bip39';
-import * as HDWallet from 'tevm/crypto/hdwallet';
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
 
 const mnemonic = Bip39.generateMnemonic(256);
 const seed = await Bip39.mnemonicToSeed(mnemonic);
@@ -270,7 +270,7 @@ for (const [coin, path] of Object.entries(paths)) {
 ### Validate Path Format
 
 ```zig
-import * as HDWallet from 'tevm/crypto/hdwallet';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
 
 // Valid paths
 const valid = [

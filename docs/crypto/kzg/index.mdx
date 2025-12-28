@@ -71,7 +71,7 @@ e(C - [y]₁, [1]₂) = e(π, [τ]₂ - [z]₂)
 
 **Import**:
 ```typescript
-import { KZG } from 'tevm/crypto/KZG';
+import { KZG } from '@tevm/voltaire/crypto/KZG';
 ```
 
 ## Quick Start
@@ -80,7 +80,7 @@ import { KZG } from 'tevm/crypto/KZG';
 <Tab title="Standard API">
 
 ```typescript
-import { Kzg, Blob } from 'tevm';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 // Load trusted setup (once, required before operations)
 Kzg.loadTrustedSetup();
@@ -109,7 +109,7 @@ const batchValid = Kzg.verifyBatch(
 <Tab title="Factory API">
 
 ```typescript
-import { Kzg, Blob } from 'tevm';
+import { Kzg, Blob } from '@tevm/voltaire';
 import * as ckzg from 'c-kzg';
 
 // Load trusted setup (once)

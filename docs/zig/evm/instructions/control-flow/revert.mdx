@@ -65,8 +65,8 @@ REVERT terminates execution with error:
 ### Basic Revert
 
 ```zig
-import { createFrame } from 'tevm/evm/Frame';
-import { handler_0xfd_REVERT } from 'tevm/evm/control';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { handler_0xfd_REVERT } from '@tevm/voltaire/evm/control';
 
 // Revert with error message
 const frame = createFrame({

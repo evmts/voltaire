@@ -73,7 +73,7 @@ Password + Salt (from keystore)
 ## Basic Decryption
 
 ```zig
-import * as Keystore from 'tevm/crypto/Keystore';
+import * as Keystore from '@tevm/voltaire/crypto/Keystore';
 
 // Load keystore (from file, localStorage, etc.)
 const keystore = {
@@ -106,7 +106,7 @@ console.log(privateKey); // Uint8Array (32 bytes)
 Decryption can fail for several reasons. Always handle errors:
 
 ```zig
-import * as Keystore from 'tevm/crypto/Keystore';
+import * as Keystore from '@tevm/voltaire/crypto/Keystore';
 
 try {
   const privateKey = Keystore.decrypt(keystore, password);
@@ -218,7 +218,7 @@ while (attempts < MAX_ATTEMPTS) {
 
 ```zig
 import * as fs from 'fs';
-import * as Keystore from 'tevm/crypto/Keystore';
+import * as Keystore from '@tevm/voltaire/crypto/Keystore';
 
 function loadAndDecrypt(filepath, password) {
   // Read keystore file
@@ -313,7 +313,7 @@ async function decryptWithUI(keystore, password) {
 
 ```zig
 // worker.js
-import * as Keystore from 'tevm/crypto/Keystore';
+import * as Keystore from '@tevm/voltaire/crypto/Keystore';
 
 self.onmessage = (event) => {
   const { keystore, password } = event.data;

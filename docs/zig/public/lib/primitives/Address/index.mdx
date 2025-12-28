@@ -52,7 +52,7 @@ This makes debugging more readable than raw byte arrays while maintaining the pe
 <Tab title="Basic Usage">
 
 ```zig
-import { Address } from 'tevm/Address';
+import { Address } from '@tevm/voltaire/Address';
 
 // Create from hex string
 const addr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
@@ -74,8 +74,8 @@ console.log(Address.isValidChecksum('0x742d35Cc...'));
 <Tab title="From Public Key">
 
 ```zig
-import { Address } from 'tevm/Address';
-import { Secp256k1 } from 'tevm/Secp256k1';
+import { Address } from '@tevm/voltaire/Address';
+import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
 
 // Derive address from private key
 const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
@@ -93,9 +93,9 @@ console.log(Address.toChecksummed(addr));
 <Tab title="Contract Addresses">
 
 ```zig
-import { Address } from 'tevm/Address';
-import { Bytes32 } from 'tevm/Bytes32';
-import { Bytecode } from 'tevm/Bytecode';
+import { Address } from '@tevm/voltaire/Address';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
+import { Bytecode } from '@tevm/voltaire/Bytecode';
 
 // Predict CREATE address
 const deployer = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
@@ -200,7 +200,7 @@ Union type accepting any input that can be coerced to address. Accepted by `Addr
 <Tab title="Hex Variants">
 
 ```zig
-import type { Hex } from 'tevm'
+import type { Hex } from '@tevm/voltaire'
 
 export type Checksummed = Hex.Sized<20> & {
   readonly __variant: 'Address'
@@ -342,7 +342,7 @@ Import only what you need for optimal bundle size:
 
 ```zig
 // Import specific functions (tree-shakeable)
-import { fromHex, toChecksummed, equals } from 'tevm/Address';
+import { fromHex, toChecksummed, equals } from '@tevm/voltaire/Address';
 
 const addr = fromHex("0x742d35cc...");
 const checksummed = toChecksummed(addr);

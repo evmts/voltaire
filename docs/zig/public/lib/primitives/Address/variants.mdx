@@ -43,7 +43,7 @@ typeof checksummed // "string"
 
 **Type:**
 ```zig
-import type { Hex } from 'tevm'
+import type { Hex } from '@tevm/voltaire'
 
 type Checksummed = Hex.Sized<20> & {
   readonly __variant: 'Address'
@@ -105,7 +105,7 @@ const lowercase = Address.Lowercase(addr)
 
 **Type:**
 ```zig
-import type { Hex } from 'tevm'
+import type { Hex } from '@tevm/voltaire'
 
 type Lowercase = Hex.Sized<20> & {
   readonly __variant: 'Address'
@@ -137,7 +137,7 @@ const uppercase = Address.Uppercase(addr)
 
 **Type:**
 ```zig
-import type { Hex } from 'tevm'
+import type { Hex } from '@tevm/voltaire'
 
 type Uppercase = Hex.Sized<20> & {
   readonly __variant: 'Address'

@@ -44,8 +44,8 @@ Original address:
 ### Encoding for Contract Calls
 
 ```zig
-import { Address } from 'tevm'
-import * as Hex from 'tevm/Hex'
+import { Address } from '@tevm/voltaire'
+import * as Hex from '@tevm/voltaire/Hex'
 
 // Create contract call data
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
@@ -64,7 +64,7 @@ console.log(Hex.toString(calldata))
 ### Round-trip Encoding
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Original address
 const original = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
@@ -83,7 +83,7 @@ console.log(decoded.toHex())
 ### Multiple Addresses in Array
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Create array of addresses
 const addresses = [
@@ -107,7 +107,7 @@ console.log(abiData.length) // 96
 ### Contract Return Data Preparation
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Prepare return data for contract
 const owner = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
@@ -129,7 +129,7 @@ console.log(returnData.slice(0, 12).every(b => b === 0)) // First 12 bytes are z
 ## Performance
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
@@ -143,7 +143,7 @@ const encoded = addr.toAbiEncoded()
 ## Validation
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // No validation needed - address is already valid
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")

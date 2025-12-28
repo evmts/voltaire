@@ -18,7 +18,7 @@ KZG commitments represent a blob as a polynomial commitment on the BLS12-381 cur
 <Tab title="Standard API">
 
 ```zig
-import { Kzg, Blob } from 'tevm';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 // Load trusted setup (required once)
 Kzg.loadTrustedSetup();
@@ -36,7 +36,7 @@ const commitment = Kzg.Commitment(blob);
 <Tab title="Factory API">
 
 ```zig
-import { Kzg, Blob } from 'tevm';
+import { Kzg, Blob } from '@tevm/voltaire';
 import * as ckzg from 'c-kzg';
 
 // Load trusted setup

@@ -46,7 +46,7 @@ typeof checksummed // "string"
 
 **Type:**
 ```typescript
-import type { Hex } from 'tevm'
+import type { Hex } from '@tevm/voltaire'
 
 type Checksummed = Hex.Sized<20> & {
   readonly __variant: 'Address'
@@ -108,7 +108,7 @@ const lowercase = Address.Lowercase(addr)
 
 **Type:**
 ```typescript
-import type { Hex } from 'tevm'
+import type { Hex } from '@tevm/voltaire'
 
 type Lowercase = Hex.Sized<20> & {
   readonly __variant: 'Address'
@@ -140,7 +140,7 @@ const uppercase = Address.Uppercase(addr)
 
 **Type:**
 ```typescript
-import type { Hex } from 'tevm'
+import type { Hex } from '@tevm/voltaire'
 
 type Uppercase = Hex.Sized<20> & {
   readonly __variant: 'Address'

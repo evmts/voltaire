@@ -54,8 +54,8 @@ SMOD interprets 256-bit values as signed integers using two's complement:
 ### Basic Signed Modulo
 
 ```zig
-import { smod } from 'tevm/evm/arithmetic';
-import { createFrame } from 'tevm/evm/Frame';
+import { smod } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // 10 % 3 = 1
 const frame = createFrame({ stack: [10n, 3n] });

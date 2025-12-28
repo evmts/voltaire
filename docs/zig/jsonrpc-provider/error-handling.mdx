@@ -90,7 +90,7 @@ if (response.error?.code === INVALID_INPUT) {
 The `-32000` (`INVALID_INPUT`) error code is most commonly used for contract execution failures:
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 import { INVALID_INPUT } from '@tevm/voltaire/JsonRpcError';
 
 try {
@@ -112,7 +112,7 @@ try {
 ### Checking for Specific Errors
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 import {
   INVALID_INPUT,
   METHOD_NOT_FOUND,

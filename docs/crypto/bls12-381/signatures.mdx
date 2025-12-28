@@ -130,7 +130,7 @@ function negateG1Point(point: Uint8Array): Uint8Array {
 Converting messages to G1 points is critical for security:
 
 ```typescript
-import { sha256 } from 'tevm/crypto';
+import { sha256 } from '@tevm/voltaire/crypto';
 
 async function hashToG1(message: Uint8Array): Promise<Uint8Array> {
   // 1. Hash message with domain separation

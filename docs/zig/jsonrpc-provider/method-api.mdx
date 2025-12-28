@@ -16,8 +16,8 @@ This section is TypeScript-oriented. Zig does not include an EIP-1193 provider; 
 Request builders return `RequestArguments` objects compatible with EIP-1193 providers:
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -53,10 +53,10 @@ Rpc.Eth.MethodNameRequest(params) → RequestArguments
 All parameters use Tevm's branded primitive types for compile-time safety:
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
-import * as Hash from 'tevm/Hash';
-import * as Hex from 'tevm/Hex';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+import * as Hex from '@tevm/voltaire/Hex';
 
 // Construct branded types
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
@@ -81,8 +81,8 @@ try {
 TypeScript catches errors at compile time:
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 // ❌ Compile error: string not assignable to Address
 const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');
@@ -104,7 +104,7 @@ const hashReq = Rpc.Eth.GetBlockByHashRequest(hash, true);
 Requests throw errors on failure:
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 try {
   const result = await provider.request(Rpc.Eth.CallRequest(params));
@@ -122,7 +122,7 @@ try {
 Return types are automatically inferred:
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 // TypeScript knows blockNumber is string (Quantity)
 const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
@@ -141,8 +141,8 @@ const callResult = await provider.request(Rpc.Eth.CallRequest(params));
 Many requests accept `BlockTag` to specify block context:
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 type BlockTag =
   | 'latest'      // Most recent block
@@ -169,8 +169,8 @@ try {
 ### Read Operations
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x...');
 
@@ -197,9 +197,9 @@ try {
 ### Contract Calls
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
-import * as Hex from 'tevm/Hex';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hex from '@tevm/voltaire/Hex';
 
 try {
   // Execute read-only contract call
@@ -227,9 +227,9 @@ try {
 ### Transaction Operations
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Hash from 'tevm/Hash';
-import * as Hex from 'tevm/Hex';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Hash from '@tevm/voltaire/Hash';
+import * as Hex from '@tevm/voltaire/Hex';
 
 try {
   // Submit signed transaction
@@ -254,7 +254,7 @@ try {
 ### Block Operations
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 try {
   // Get block by number
@@ -279,9 +279,9 @@ try {
 ### Log Queries
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
-import * as Hash from 'tevm/Hash';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
 
 try {
   // Query logs
@@ -321,8 +321,8 @@ See [Error Handling](/jsonrpc-provider/error-handling) for detailed error patter
 4. **Batch independent requests** with Promise.all
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x...');
 

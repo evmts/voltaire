@@ -26,7 +26,7 @@ KZG (Kate-Zaverucha-Goldberg) commitments are cryptographic commitments to polyn
 ## Quick Start
 
 ```typescript
-import { Kzg, Blob } from 'tevm';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 // 1. Load trusted setup (required once)
 await Kzg.loadTrustedSetup(trustedSetupData);
@@ -80,7 +80,7 @@ await Kzg.freeTrustedSetup();
 #### Load Trusted Setup
 
 ```typescript
-import { loadTrustedSetup } from 'tevm/crypto/KZG';
+import { loadTrustedSetup } from '@tevm/voltaire/crypto/KZG';
 
 // Load from embedded trusted setup
 await loadTrustedSetup();
@@ -110,7 +110,7 @@ await loadTrustedSetup(trustedSetupData);
 #### Check Initialization
 
 ```typescript
-import { isInitialized } from 'tevm/crypto/KZG';
+import { isInitialized } from '@tevm/voltaire/crypto/KZG';
 
 if (!isInitialized()) {
   await loadTrustedSetup();
@@ -120,7 +120,7 @@ if (!isInitialized()) {
 #### Free Trusted Setup
 
 ```typescript
-import { freeTrustedSetup } from 'tevm/crypto/KZG';
+import { freeTrustedSetup } from '@tevm/voltaire/crypto/KZG';
 
 // Free memory when done
 await freeTrustedSetup();
@@ -131,7 +131,7 @@ await freeTrustedSetup();
 #### Create Empty Blob
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 const blob = Blob(131072); // Uint8Array(131072) - all zeros
 ```
@@ -145,7 +145,7 @@ const blob = Blob(131072); // Uint8Array(131072) - all zeros
 #### Generate Random Blob
 
 ```typescript
-import { Kzg } from 'tevm';
+import { Kzg } from '@tevm/voltaire';
 
 const blob = Kzg.generateRandomBlob(); // Random valid blob for testing
 ```
@@ -155,7 +155,7 @@ const blob = Kzg.generateRandomBlob(); // Random valid blob for testing
 #### Validate Blob
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 try {
   Blob.validate(blob);
@@ -175,7 +175,7 @@ try {
 #### Blob to KZG Commitment
 
 ```typescript
-import { Kzg } from 'tevm';
+import { Kzg } from '@tevm/voltaire';
 
 // Commit to blob (interprets blob as polynomial coefficients)
 const commitment = Kzg.Commitment(blob);
@@ -197,7 +197,7 @@ const commitment = Kzg.Commitment(blob);
 #### Compute KZG Proof
 
 ```typescript
-import { Kzg, Bytes32 } from 'tevm';
+import { Kzg, Bytes32 } from '@tevm/voltaire';
 
 // Prove p(z) = y
 const z = Bytes32(); // Evaluation point (field element)
@@ -219,7 +219,7 @@ const { proof, y } = Kzg.Proof(blob, z);
 #### Verify KZG Proof
 
 ```typescript
-import { Kzg } from 'tevm';
+import { Kzg } from '@tevm/voltaire';
 
 // Verify evaluation proof
 const isValid = Kzg.verify(
@@ -245,7 +245,7 @@ e(commitment - [y]_1, [1]_2) = e(proof, [τ]_2 - [z]_2)
 #### Verify Blob KZG Proof
 
 ```typescript
-import { Kzg } from 'tevm';
+import { Kzg } from '@tevm/voltaire';
 
 // Verify blob against commitment (EIP-4844 verification)
 const isValid = Kzg.verifyBlob(blob, commitment, proof);
@@ -261,7 +261,7 @@ const isValid = Kzg.verifyBlob(blob, commitment, proof);
 #### Batch Verify Blob KZG Proofs
 
 ```typescript
-import { Kzg } from 'tevm';
+import { Kzg } from '@tevm/voltaire';
 
 // Efficiently verify multiple blobs at once
 const blobs = [blob1, blob2, blob3];
@@ -306,7 +306,7 @@ interface BlobTransaction {
 ### Computing Versioned Hash
 
 ```typescript
-import { keccak256 } from 'tevm/crypto';
+import { keccak256 } from '@tevm/voltaire/crypto';
 
 function computeVersionedHash(commitment: Uint8Array): Uint8Array {
   // SHA256 hash of commitment with version prefix
@@ -563,7 +563,7 @@ import {
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
   FIELD_ELEMENTS_PER_BLOB
-} from 'tevm/crypto/KZG';
+} from '@tevm/voltaire/crypto/KZG';
 
 BYTES_PER_BLOB            // 131,072 (128 KB)
 BYTES_PER_COMMITMENT      // 48 (BLS12-381 G1 compressed)

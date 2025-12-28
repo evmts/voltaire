@@ -48,7 +48,7 @@ PrimitivesAddress addr;
 Type guards use TypeScript's `is` operator to narrow types:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 // Type predicate signature
 function is(value: unknown): value is AddressType {
@@ -83,7 +83,7 @@ Type guards enable safe handling of unknown values:
 ### Basic Narrowing
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 function handleUnknown(value: unknown) {
   if (Address.is(value)) {
@@ -100,8 +100,8 @@ function handleUnknown(value: unknown) {
 ### Union Type Narrowing
 
 ```zig
-import * as Address from 'tevm/Address'
-import * as Hash from 'tevm/Hash'
+import * as Address from '@tevm/voltaire/Address'
+import * as Hash from '@tevm/voltaire/Hash'
 
 type AddressOrHash = AddressType | Hash
 
@@ -119,7 +119,7 @@ function process(value: AddressOrHash) {
 ### Array Filtering
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 const mixed: unknown[] = [
   Address(69n),
@@ -145,7 +145,7 @@ Type guards enable validation at system boundaries:
 ### API Input Validation
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 function transferTokens(to: unknown, amount: bigint) {
   if (!Address.is(to)) {
@@ -164,7 +164,7 @@ function transferTokens(to: unknown, amount: bigint) {
 ### User Input Sanitization
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 function parseUserInput(input: string): AddressType {
   try {
@@ -184,7 +184,7 @@ function parseUserInput(input: string): AddressType {
 ### External Data Validation
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 interface Transaction {
   from: unknown
@@ -244,7 +244,7 @@ Address.is(new Array(20).fill(0))       // false (Array not Uint8Array)
 ### Function Overloading
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 function normalize(value: unknown): AddressType {
   if (Address.is(value)) {
@@ -267,7 +267,7 @@ function normalize(value: unknown): AddressType {
 ### Safe Deserialization
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 interface SerializedTransaction {
   from: Uint8Array
@@ -296,7 +296,7 @@ function deserialize(data: unknown): Transaction | null {
 ### Collection Validation
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 function validateWhitelist(addresses: unknown[]): AddressType[] {
   const valid: AddressType[] = []

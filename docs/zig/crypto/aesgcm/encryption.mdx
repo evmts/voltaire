@@ -12,7 +12,7 @@ AES-GCM encryption combines the AES block cipher in Counter mode (CTR) with Galo
 ### Basic Encryption
 
 ```zig
-import * as AesGcm from 'tevm/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
 
 // Generate key and nonce
 const key = await AesGcm.generateKey(256);
@@ -452,7 +452,7 @@ console.log(`Throughput: ${throughput.toFixed(2)} MB/s`);
 ### Wallet Encryption
 
 ```zig
-import * as AesGcm from 'tevm/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
 
 async function encryptWallet(privateKey, password) {
   // Derive key from password

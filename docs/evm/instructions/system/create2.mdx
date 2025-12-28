@@ -74,9 +74,9 @@ CREATE2 performs deterministic contract deployment:
 ### Basic CREATE2 Deployment
 
 ```typescript
-import { CREATE2 } from 'tevm/evm/system';
-import { keccak256 } from 'tevm/crypto';
-import { Address } from 'tevm/primitives';
+import { CREATE2 } from '@tevm/voltaire/evm/system';
+import { keccak256 } from '@tevm/voltaire/crypto';
+import { Address } from '@tevm/voltaire/primitives';
 
 // Init code: returns single byte 0x42
 const initCode = Bytecode([
@@ -122,8 +122,8 @@ console.log(frame.stack[0]);     // Deployed address (matches prediction!)
 ### Address Prediction
 
 ```typescript
-import { Address, Hash } from 'tevm/primitives';
-import { keccak256 } from 'tevm/crypto';
+import { Address, Hash } from '@tevm/voltaire/primitives';
+import { keccak256 } from '@tevm/voltaire/crypto';
 
 function predictCreate2Address(
   creator: Address,

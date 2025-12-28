@@ -1,0 +1,54 @@
+---
+title: Vitalik — First Transaction Hash
+description: Discover the transaction hash of Vitalik Buterin’s first mainnet transaction.
+---
+
+## Goal
+
+Given Vitalik’s address, find the first mainnet transaction hash.
+
+Return as:
+
+ANSWER: 0x...
+
+## Address
+
+- Vitalik: 0xab5801a7d398351b8be11c439e05c5b3259aec9b
+
+## Approach
+
+- Query earliest historical transactions via an indexer-like approach if available; otherwise, use RPC with range scans and `eth_getLogs` on Transfer-like events if relevant.
+- If an archive node is available, scanning from genesis with stepping is feasible.
+
+## Example (TypeScript)
+
+```ts
+import { createPublicClient, http } from 'viem'
+import { mainnet } from 'viem/chains'
+
+const client = createPublicClient({ chain: mainnet, transport: http(process.env.ETHEREUM_RPC_URL!) })
+const VITALIK = '0xab5801a7d398351b8be11c439e05c5b3259aec9b'
+
+// Pseudocode placeholder for paging through tx history if you maintain an index.
+// With plain RPC only, consider scanning blocks in chunks and filtering tx.from.
+async function findFirstTx(): Promise<`0x${string}`> {
+  let from = 0n
+  const step = 50_000n
+  while (true) {
+    const to = from + step
+    const block = await client.getBlock({ blockNumber: to }).catch(() => null)
+    if (!block) break
+    for (let i = from; i <= to; i++) {
+      const b = await client.getBlock({ blockNumber: i, includeTransactions: true })
+      const tx = b.transactions.find((t) => t.from?.toLowerCase() === VITALIK)
+      if (tx) return tx.hash
+    }
+    from = to + 1n
+  }
+  throw new Error('not found in searched range')
+}
+
+const hash = await findFirstTx()
+console.log(`ANSWER: ${hash}`)
+```
+

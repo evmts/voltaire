@@ -52,7 +52,7 @@ Derive the 64-byte uncompressed public key from a private key.
 
 **Example:**
 ```typescript
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 
 // Generate random private key
 const privateKey = Bytes32();
@@ -185,9 +185,9 @@ With `p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F` (f
 Ethereum addresses are derived from public keys:
 
 ```typescript
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
-import * as Address from 'tevm/primitives/Address';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+import * as Address from '@tevm/voltaire/primitives/Address';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // 1. Derive public key
 const privateKey = Bytes32();

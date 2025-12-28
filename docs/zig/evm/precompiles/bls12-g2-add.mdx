@@ -65,8 +65,8 @@ Total output length: 256 bytes
 ### TypeScript
 
 ```zig
-import { execute, PrecompileAddress } from 'tevm/precompiles';
-import { Hardfork } from 'tevm/primitives/Hardfork';
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 
 // Add two G2 points (each 256 bytes: 4x 64-byte Fp2 components)
 // Point at infinity for both (valid operation: O + O = O)

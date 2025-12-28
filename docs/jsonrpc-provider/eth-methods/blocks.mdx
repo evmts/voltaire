@@ -24,8 +24,8 @@ Get the most recent block number.
 **Returns:** `Quantity`
 
 ```typescript
-import { Provider } from 'tevm/provider';
-import * as Rpc from 'tevm/jsonrpc';
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
@@ -49,8 +49,8 @@ Get block by number with full transactions or hashes.
 **Returns:** `Block`
 
 ```typescript
-import { Provider } from 'tevm/provider';
-import * as Rpc from 'tevm/jsonrpc';
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 
@@ -77,9 +77,9 @@ Get block by hash with full transactions or hashes.
 **Returns:** `Block`
 
 ```typescript
-import { Provider } from 'tevm/provider';
-import * as Rpc from 'tevm/jsonrpc';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockHash = Keccak256.from('0x...');
@@ -104,8 +104,8 @@ Get all transaction receipts for a block.
 **Returns:** `TransactionReceipt[]`
 
 ```typescript
-import { Provider } from 'tevm/provider';
-import * as Rpc from 'tevm/jsonrpc';
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const receipts = await provider.request(Rpc.Eth.GetBlockReceiptsRequest('latest'));
@@ -131,9 +131,9 @@ Get transaction count in a block by hash.
 **Returns:** `Quantity`
 
 ```typescript
-import { Provider } from 'tevm/provider';
-import * as Rpc from 'tevm/jsonrpc';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockHash = Keccak256.from('0x...');
@@ -158,8 +158,8 @@ Get transaction count in a block by number.
 **Returns:** `Quantity`
 
 ```typescript
-import { Provider } from 'tevm/provider';
-import * as Rpc from 'tevm/jsonrpc';
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const count = await provider.request(Rpc.Eth.GetBlockTransactionCountByNumberRequest('latest'));
@@ -182,9 +182,9 @@ Get uncle count for a block by hash.
 **Returns:** `Quantity`
 
 ```typescript
-import { Provider } from 'tevm/provider';
-import * as Rpc from 'tevm/jsonrpc';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockHash = Keccak256.from('0x...');
@@ -213,8 +213,8 @@ Get uncle count for a block by number.
 **Returns:** `Quantity`
 
 ```typescript
-import { Provider } from 'tevm/provider';
-import * as Rpc from 'tevm/jsonrpc';
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const count = await provider.request(Rpc.Eth.GetUncleCountByBlockNumberRequest('latest'));
@@ -233,8 +233,8 @@ Uncle blocks were removed in Ethereum's transition to Proof of Stake (The Merge)
 ### Get Latest Block with Transactions
 
 ```typescript
-import { Provider } from 'tevm/provider';
-import * as Rpc from 'tevm/jsonrpc';
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 
@@ -256,9 +256,9 @@ console.log('Total gas used:', gasUsedTotal);
 ### Query Historical Block
 
 ```typescript
-import { Provider } from 'tevm/provider';
-import * as Rpc from 'tevm/jsonrpc';
-import * as Quantity from 'tevm/primitives/Quantity';
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Quantity from '@tevm/voltaire/primitives/Quantity';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 
@@ -277,8 +277,8 @@ console.log('Transactions:', txCount);
 ### Check Block Finality
 
 ```typescript
-import { Provider } from 'tevm/provider';
-import * as Rpc from 'tevm/jsonrpc';
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 

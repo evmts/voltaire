@@ -3,6 +3,10 @@ title: EIP-712 Typed Data Signing
 description: Ethereum structured data signing and verification
 ---
 
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/eip712.ts">
+  Run EIP-712 examples in the interactive playground
+</Card>
+
 ## Overview
 
 EIP-712 is a **typed structured data hashing and signing standard** that enables human-readable message signatures with domain separation to prevent replay attacks across applications.
@@ -18,8 +22,8 @@ Key concepts:
 ## Quick Start
 
 ```typescript
-import * as EIP712 from 'tevm/crypto/eip712';
-import { Address } from 'tevm/primitives/address';
+import * as EIP712 from '@tevm/voltaire/crypto/eip712';
+import { Address } from '@tevm/voltaire/primitives/address';
 
 // Define typed data structure
 const typedData = {
@@ -74,14 +78,14 @@ const isValid = EIP712.verifyTypedData(signature, typedData, address);
 
 ## API Styles
 
-Tevm provides two ways to use EIP-712:
+Voltaire provides two ways to use EIP-712:
 
 ### Standard API (Recommended)
 
 Crypto dependencies auto-injected - simplest for most use cases:
 
 ```typescript
-import * as EIP712 from 'tevm/crypto/eip712';
+import * as EIP712 from '@tevm/voltaire/crypto/eip712';
 
 const hash = EIP712.hashTypedData(typedData);
 const signature = EIP712.signTypedData(typedData, privateKey);
@@ -93,9 +97,9 @@ Tree-shakeable with explicit crypto dependencies. Useful for custom crypto imple
 
 ```typescript
 import { HashTypedData, HashDomain, HashStruct, EncodeData,
-         HashType, EncodeValue } from 'tevm/crypto/eip712';
-import { hash as keccak256 } from 'tevm/crypto/keccak256';
-import { sign as secp256k1Sign } from 'tevm/crypto/secp256k1';
+         HashType, EncodeValue } from '@tevm/voltaire/crypto/eip712';
+import { hash as keccak256 } from '@tevm/voltaire/crypto/keccak256';
+import { sign as secp256k1Sign } from '@tevm/voltaire/crypto/secp256k1';
 
 // Build from bottom up (handle circular dependencies)
 const hashType = HashType({ keccak256 });
@@ -338,21 +342,21 @@ const domain = {
 
 ## Implementations
 
-Tevm provides three implementation strategies for EIP-712:
+Voltaire provides three implementation strategies for EIP-712:
 
 ### Native Zig (49KB)
 High-performance implementation with minimal bundle impact:
 ```typescript
-import * as EIP712 from 'tevm/crypto/eip712';
+import * as EIP712 from '@tevm/voltaire/crypto/eip712';
 // Native Zig + secp256k1 + keccak256
 ```
 
 ### WASM Composition
 Tree-shakeable WASM modules for custom crypto pipelines:
 ```typescript
-import { HashTypedData } from 'tevm/crypto/eip712';
-import { hash as keccak256Wasm } from 'tevm/crypto/keccak256/wasm';
-import { sign as secp256k1Wasm } from 'tevm/crypto/secp256k1/wasm';
+import { HashTypedData } from '@tevm/voltaire/crypto/eip712';
+import { hash as keccak256Wasm } from '@tevm/voltaire/crypto/keccak256/wasm';
+import { sign as secp256k1Wasm } from '@tevm/voltaire/crypto/secp256k1/wasm';
 
 const hashTypedData = HashTypedData({
   keccak256: keccak256Wasm,
@@ -596,7 +600,7 @@ require(nonce == nonces[signer]++, "Invalid nonce");
 
 ## Common Vulnerabilities
 
-**Signature Malleability**: EIP-712 uses low-s canonicalization. Tevm enforces this automatically.
+**Signature Malleability**: EIP-712 uses low-s canonicalization. Voltaire enforces this automatically.
 
 **Replay Attacks**: Without domain separator + nonce, signatures replayed on forks/other contracts. Always include both.
 

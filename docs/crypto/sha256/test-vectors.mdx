@@ -34,7 +34,7 @@ new Uint8Array([
 
 **Verification:**
 ```typescript
-import { SHA256 } from 'tevm/crypto/sha256';
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
 
 const hash = SHA256.hashString('');
 const expected = new Uint8Array([
@@ -259,7 +259,7 @@ Bitcoin's genesis block header (double SHA-256):
 
 **Verification:**
 ```typescript
-import { Hex } from 'tevm/primitives/hex';
+import { Hex } from '@tevm/voltaire/primitives/hex';
 
 const headerHex = '0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c';
 const header = Hex.toBytes(headerHex);
@@ -421,14 +421,14 @@ console.log(oneShot.every((byte, i) => byte === streaming2[i])); // true
 Compare results with well-known implementations:
 
 ```typescript
-import { SHA256 } from 'tevm/crypto/sha256';
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
 import { sha256 } from '@noble/hashes/sha256';
 import crypto from 'crypto';
 
 const testData = new Uint8Array([1, 2, 3, 4, 5]);
 
-// Tevm
-const tevmHash = SHA256.hash(testData);
+// Voltaire
+const voltaireHash = SHA256.hash(testData);
 
 // @noble/hashes
 const nobleHash = sha256(testData);
@@ -436,8 +436,8 @@ const nobleHash = sha256(testData);
 // Node.js crypto
 const nodeHash = crypto.createHash('sha256').update(testData).digest();
 
-console.log(tevmHash.every((byte, i) => byte === nobleHash[i])); // true
-console.log(tevmHash.every((byte, i) => byte === nodeHash[i])); // true
+console.log(voltaireHash.every((byte, i) => byte === nobleHash[i])); // true
+console.log(voltaireHash.every((byte, i) => byte === nodeHash[i])); // true
 ```
 
 ---

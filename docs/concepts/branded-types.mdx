@@ -14,7 +14,7 @@ Voltaire provides three levels of types for each primitive:
 The base branded type - a validated, immutable value:
 
 ```typescript
-import type { AddressType } from 'tevm/Address';
+import type { AddressType } from '@tevm/voltaire/Address';
 
 type AddressType = Uint8Array & { readonly [brand]: "Address" };
 ```
@@ -33,8 +33,8 @@ type AddressType = Uint8Array & { readonly [brand]: "Address" };
 **Example:**
 
 ```typescript
-import { fromHex, toHex, equals } from 'tevm/Address';
-import type { AddressType } from 'tevm/Address';
+import { fromHex, toHex, equals } from '@tevm/voltaire/Address';
+import type { AddressType } from '@tevm/voltaire/Address';
 
 const addr: AddressType = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 const hex = toHex(addr);
@@ -46,7 +46,7 @@ const same = equals(addr, addr); // true
 Branded type with methods attached via prototype:
 
 ```typescript
-import { Address } from 'tevm';
+import { Address } from '@tevm/voltaire';
 
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 addr.toHex();        // Instance method
@@ -68,7 +68,7 @@ addr.equals(other);  // Instance method
 **Example:**
 
 ```typescript
-import { Address } from 'tevm';
+import { Address } from '@tevm/voltaire';
 
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
@@ -88,7 +88,7 @@ console.log(addr.length); // 20
 **Note:** Voltaire does not currently export `AddressLike` union types. The `Address()` constructor and `from()` functions accept multiple input types:
 
 ```typescript
-import { Address } from 'tevm';
+import { Address } from '@tevm/voltaire';
 
 // Accepts: string | Uint8Array | number | bigint
 Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");  // hex string
@@ -110,7 +110,7 @@ function process(input: string | Uint8Array | number | bigint) {
 ### Class API (OOP Style)
 
 ```typescript
-import { Address } from 'tevm';
+import { Address } from '@tevm/voltaire';
 
 // Constructor accepts multiple formats
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
@@ -139,7 +139,7 @@ Address.zero();
 ### Namespace API (Functional Style)
 
 ```typescript
-import * as Address from 'tevm/Address';
+import * as Address from '@tevm/voltaire/Address';
 
 // Construction
 const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
@@ -164,7 +164,7 @@ Address.equals(addr, other);   // boolean
 ### Tree-Shakeable Imports (Optimal Bundle Size)
 
 ```typescript
-import { fromHex, toHex, equals } from 'tevm/Address';
+import { fromHex, toHex, equals } from '@tevm/voltaire/Address';
 
 const addr = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 const hex = toHex(addr);
@@ -179,7 +179,7 @@ const same = equals(addr, addr);
 All branded types use a shared `brand` symbol:
 
 ```typescript
-import { brand } from 'tevm/brand';
+import { brand } from '@tevm/voltaire/brand';
 
 // This is what makes it "branded"
 type AddressType = Uint8Array & { readonly [brand]: "Address" };
@@ -210,7 +210,7 @@ type UppercaseHex = Hex & { readonly uppercase: true };
 **Example:**
 
 ```typescript
-import { Address } from 'tevm';
+import { Address } from '@tevm/voltaire';
 
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
@@ -230,7 +230,7 @@ requireChecksum(lowercase);    // ✗ Error: missing checksum flag
 All branded types are validated at construction:
 
 ```typescript
-import { Address } from 'tevm';
+import { Address } from '@tevm/voltaire';
 
 // Valid - creates AddressType
 Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
@@ -277,7 +277,7 @@ type Address = `0x${string}`;
 const addr: Address = "0x123"; // No validation
 
 // After - safe
-import { Address } from 'tevm';
+import { Address } from '@tevm/voltaire';
 const addr = Address("0x123"); // Throws error
 ```
 
@@ -290,7 +290,7 @@ const hash = keccak256(data);
 transfer(hash, 100n); // Compiles but wrong!
 
 // After - type safe
-import type { AddressType } from 'tevm/Address';
+import type { AddressType } from '@tevm/voltaire/Address';
 function transfer(to: AddressType, amount: bigint) { }
 const hash = keccak256(data);
 transfer(hash, 100n); // ✗ Type error
@@ -301,8 +301,8 @@ transfer(hash, 100n); // ✗ Type error
 ### Use Branded Types for Function Parameters
 
 ```typescript
-import type { AddressType } from 'tevm/Address';
-import type { HashType } from 'tevm/Hash';
+import type { AddressType } from '@tevm/voltaire/Address';
+import type { HashType } from '@tevm/voltaire/Hash';
 
 // ✓ Good - explicit types
 function verify(addr: AddressType, hash: HashType) {
@@ -318,7 +318,7 @@ function verify(addr: Uint8Array, hash: Uint8Array) {
 ### Use Class API for Application Code
 
 ```typescript
-import { Address, Hash } from 'tevm';
+import { Address, Hash } from '@tevm/voltaire';
 
 const addr = Address("0x...");
 const hash = Hash("0x...");
@@ -330,7 +330,7 @@ const result = addr.toChecksummed();
 ### Use Tree-Shakeable for Libraries
 
 ```typescript
-import { fromHex, toHex } from 'tevm/Address';
+import { fromHex, toHex } from '@tevm/voltaire/Address';
 
 // Minimal bundle impact
 export function formatAddress(input: string) {
@@ -342,8 +342,8 @@ export function formatAddress(input: string) {
 ### Validate at Boundaries
 
 ```typescript
-import { Address } from 'tevm';
-import type { AddressType } from 'tevm/Address';
+import { Address } from '@tevm/voltaire';
+import type { AddressType } from '@tevm/voltaire/Address';
 
 // Validate external input at boundary
 export function processRequest(req: { to: string, amount: string }) {

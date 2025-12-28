@@ -14,7 +14,7 @@ Tevm, Viem, and Ethers.js are all popular Ethereum libraries. This page compares
 <Tab title="Tevm">
 
 ```zig
-import { Address } from 'tevm';
+import { Address } from '@tevm/voltaire';
 
 // Create and checksum
 const address = Address.from('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
@@ -90,8 +90,8 @@ const areEqual = addr1 === addr2;
 <Tab title="Tevm">
 
 ```zig
-import * as Keccak256 from 'tevm/Keccak256';
-import { Hex } from 'tevm';
+import * as Keccak256 from '@tevm/voltaire/Keccak256';
+import { Hex } from '@tevm/voltaire';
 
 // Hash a string
 const stringHash = Keccak256.hash(
@@ -159,7 +159,7 @@ const ethMessageHash = ethers.hashMessage('hello world');
 <Tab title="Tevm">
 
 ```zig
-import * as Abi from 'tevm/Abi';
+import * as Abi from '@tevm/voltaire/Abi';
 
 // Define ABI
 const transferAbi = {
@@ -260,7 +260,7 @@ const decoded = iface.decodeFunctionResult(
 <Tab title="Tevm">
 
 ```zig
-import * as Abi from 'tevm/Abi';
+import * as Abi from '@tevm/voltaire/Abi';
 
 // Define event ABI
 const transferEvent = {
@@ -418,7 +418,7 @@ const hash: string = ethers.keccak256('0x...');
 
 ```zig
 // Import only what you need
-import { from, toHex } from 'tevm/AddressType';
+import { from, toHex } from '@tevm/voltaire/AddressType';
 ```
 
 **Viem** has tree-shakeable functions by default:
@@ -454,7 +454,7 @@ Sizes are approximate and depend on tree-shaking effectiveness. Tevm and Viem ar
 **Tevm** provides optional WASM acceleration for performance-critical operations:
 
 ```zig
-import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
+import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
 
 await Keccak256Wasm.init();
 const hash = Keccak256Wasm.hash(data); // 10-100x faster

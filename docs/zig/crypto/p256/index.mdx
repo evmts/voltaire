@@ -29,8 +29,8 @@ P256 (secp256r1) is a **NIST-standardized elliptic curve** for ECDSA signatures 
 ## Quick Start
 
 ```zig
-import * as P256 from 'tevm/crypto/P256';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import * as P256 from '@tevm/voltaire/crypto/P256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Sign a message hash
 const messageHash = Keccak256.hashString('Hello, P256!');
@@ -311,7 +311,7 @@ P-256 operations available in WASM builds:
 - **ReleaseFast**: Performance-optimized
 
 ```zig
-import { P256 } from 'tevm/crypto/P256';
+import { P256 } from '@tevm/voltaire/crypto/P256';
 // Automatically uses WASM in supported environments
 ```
 
@@ -320,7 +320,7 @@ import { P256 } from 'tevm/crypto/P256';
 P-256 is the default curve for WebAuthn (FIDO2) authentication:
 
 ```zig
-import * as P256 from 'tevm/crypto/P256';
+import * as P256 from '@tevm/voltaire/crypto/P256';
 
 // WebAuthn registration creates P-256 keypair
 // Authenticator returns public key in COSE format

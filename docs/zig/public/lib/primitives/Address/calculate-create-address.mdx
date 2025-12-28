@@ -7,7 +7,7 @@ description: Calculate CREATE contract address from deployer and nonce
 <Tabs>
 <Tab title="Wrapper API">
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Auto-injected keccak256 and RLP encoder
 const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
@@ -18,9 +18,9 @@ console.log(contract.toHex())
 
 <Tab title="Factory API">
 ```zig
-import { CalculateCreateAddress } from 'tevm/primitives/Address/AddressType'
-import { hash } from 'tevm/crypto/Keccak256'
-import { encode } from 'tevm/primitives/Rlp/BrandedRlp'
+import { CalculateCreateAddress } from '@tevm/voltaire/primitives/Address/AddressType'
+import { hash } from '@tevm/voltaire/crypto/Keccak256'
+import { encode } from '@tevm/voltaire/primitives/Rlp/BrandedRlp'
 
 // Inject dependencies (tree-shakeable)
 const calculateCreateAddress = CalculateCreateAddress({
@@ -62,7 +62,7 @@ contract_address = hash[12:32]
 ## Complete Example
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Deployer address
 const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
@@ -94,7 +94,7 @@ for (let i = 2; i < 10; i++) {
 Calculate address before deployment:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 async function deployContract(deployer: Address, bytecode: Uint8Array) {
   // Get current nonce
@@ -122,7 +122,7 @@ async function deployContract(deployer: Address, bytecode: Uint8Array) {
 Track contract addresses deployed by factory:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 class ContractFactory {
   constructor(private factoryAddress: Address) {}
@@ -141,7 +141,7 @@ class ContractFactory {
 Verify contract was deployed by expected address:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function verifyContractOrigin(
   contract: Address,
@@ -180,7 +180,7 @@ Use Factory API for tree-shakeable builds that inject these dependencies explici
 ## Error Handling
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 

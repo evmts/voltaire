@@ -5,7 +5,7 @@ description: Install and make your first JSON-RPC requests with type-safe provid
 
 # Getting Started
 
-Install Tevm and start making type-safe JSON-RPC requests to Ethereum nodes.
+Install Voltaire and start making type-safe JSON-RPC requests to Ethereum nodes.
 
 ## Installation
 
@@ -32,7 +32,7 @@ import { ethers } from 'ethers';
 const provider = new ethers.JsonRpcProvider('https://eth.llamarpc.com');
 ```
 
-All EIP-1193 providers work with Tevm's request builders.
+All EIP-1193 providers work with Voltaire's request builders.
 
 ## Your First Request
 
@@ -41,7 +41,7 @@ All EIP-1193 providers work with Tevm's request builders.
 Simplest request - no parameters:
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 try {
   const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
@@ -56,8 +56,8 @@ try {
 Request with branded Address parameter:
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -77,9 +77,9 @@ try {
 Execute read-only contract call:
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
-import * as Hex from 'tevm/Hex';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hex from '@tevm/voltaire/Hex';
 
 const contractAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'); // USDC
 const methodSignature = Hex('0x18160ddd'); // totalSupply()
@@ -103,8 +103,8 @@ try {
 Requests throw errors on failure:
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -164,8 +164,8 @@ provider.removeListener('accountsChanged', handler);
 Get balance, nonce, and code in parallel:
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -187,9 +187,9 @@ try {
 ### Estimate Gas for Transaction
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
-import * as Hex from 'tevm/Hex';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hex from '@tevm/voltaire/Hex';
 
 try {
   const gasEstimate = await provider.request(
@@ -217,8 +217,8 @@ try {
 Use block numbers to query historical data:
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x...');
 const blockNumber = '0xF4240'; // Block 1,000,000
@@ -260,8 +260,8 @@ try {
 Use branded primitive constructors:
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 // ❌ Error: string not assignable to Address
 const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');
@@ -275,7 +275,7 @@ const goodReq = Rpc.Eth.GetBalanceRequest(Address('0x...'), 'latest');
 Request builders return `{method, params}` objects, not results. Always use with `provider.request()`:
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 // ❌ Wrong: request builder doesn't execute anything
 const request = Rpc.Eth.BlockNumberRequest();

@@ -220,8 +220,8 @@ Measured on MacBook Pro M1, Node.js v20:
 ### Ethereum Transaction Signing (Secp256k1)
 
 ```zig
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
-import * as Transaction from 'tevm/primitives/Transaction';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+import * as Transaction from '@tevm/voltaire/primitives/Transaction';
 
 // Sign transaction with secp256k1 (required)
 const tx = {
@@ -243,8 +243,8 @@ const senderAddress = Address.fromPublicKey(publicKey);
 ### WebAuthn Authentication (P-256)
 
 ```zig
-import * as P256 from 'tevm/crypto/P256';
-import { Bytes32 } from 'tevm/primitives/Bytes32';
+import * as P256 from '@tevm/voltaire/crypto/P256';
+import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
 
 // User authenticates with Face ID/Touch ID
 const credential = await navigator.credentials.create({

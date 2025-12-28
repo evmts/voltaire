@@ -61,7 +61,7 @@ const hex_hash = crypto.keccak256.hash(&h);
 Uses @noble/hashes - zero WASM dependency, maximum compatibility.
 
 ```zig
-import { Keccak256HashTs } from 'tevm/crypto/keccak256.ts';
+import { Keccak256HashTs } from '@tevm/voltaire/crypto/keccak256.ts';
 
 const hash: Keccak256Hash = Keccak256HashTs.from(data);
 // Pure TypeScript
@@ -78,9 +78,9 @@ const hash: Keccak256Hash = Keccak256HashTs.from(data);
 The APIs are identical across implementations - you can swap them without changing your code:
 
 ```zig
-import { Keccak256Hash } from 'tevm/crypto/Keccak256';
-import { Keccak256HashTs } from 'tevm/crypto/keccak256.ts';
-import { Keccak256HashWasm } from 'tevm/crypto/keccak256.wasm';
+import { Keccak256Hash } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256HashTs } from '@tevm/voltaire/crypto/keccak256.ts';
+import { Keccak256HashWasm } from '@tevm/voltaire/crypto/keccak256.wasm';
 
 // All have identical API
 const hash1: Keccak256Hash = Keccak256Hash.from(data);      // Default (WASM)
@@ -97,8 +97,8 @@ View executable examples: [`hash-bytes.ts`](https://github.com/roninjin10/voltai
 <Tabs>
 <Tab title="Basic Hashing">
 ```zig
-import { Keccak256Hash } from 'tevm/crypto/keccak256';
-import { Hex } from 'tevm/primitives/Hex';
+import { Keccak256Hash } from '@tevm/voltaire/crypto/keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 // Hash bytes
 const data = Hex.toBytes('0x0102030405');
@@ -141,8 +141,8 @@ View examples: [`function-selector.ts`](https://github.com/roninjin10/voltaire/b
 
 <Tab title="Multiple Chunks">
 ```zig
-import { Keccak256Hash } from 'tevm/crypto/keccak256';
-import { Hex } from 'tevm/primitives/Hex';
+import { Keccak256Hash } from '@tevm/voltaire/crypto/keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 // Hash multiple data chunks (equivalent to concatenating them first)
 const chunk1 = Hex.toBytes('0x010203');
@@ -174,7 +174,7 @@ Hash arbitrary bytes with Keccak-256.
 
 **Example:**
 ```zig
-import { Hex } from 'tevm/primitives/Hex';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 const hash: Keccak256Hash = Keccak256Hash.from(Hex.toBytes('0x010203'));
 console.log(hash.length); // 32
@@ -244,7 +244,7 @@ Equivalent to hashing the concatenation of all chunks, but can be more efficient
 
 **Example:**
 ```zig
-import { Hex } from 'tevm/primitives/Hex';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 const hash: Keccak256Hash = Keccak256Hash.fromMultiple([
   Hex.toBytes('0x0102'),
@@ -320,7 +320,7 @@ Uses CREATE formula: `address = keccak256(rlp([sender, nonce]))[12:]`
 
 **Example:**
 ```zig
-import { Address } from 'tevm/primitives/Address';
+import { Address } from '@tevm/voltaire/primitives/Address';
 
 const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const nonce = 5n;
@@ -346,9 +346,9 @@ This allows deterministic contract addresses independent of nonce.
 
 **Example:**
 ```zig
-import { Address } from 'tevm/primitives/Address';
-import { Bytes32 } from 'tevm/primitives/Bytes32';
-import { Bytecode } from 'tevm/primitives/Bytecode';
+import { Address } from '@tevm/voltaire/primitives/Address';
+import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
+import { Bytecode } from '@tevm/voltaire/primitives/Bytecode';
 
 const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const salt = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001');
@@ -369,7 +369,7 @@ Keccak256Hash.STATE_SIZE   // 25 - State size (25 u64 words)
 All Keccak256 functions return `Keccak256Hash`, a branded `Uint8Array` type:
 
 ```zig
-import type { Keccak256Hash } from 'tevm/crypto/Keccak256';
+import type { Keccak256Hash } from '@tevm/voltaire/crypto/Keccak256';
 
 // Keccak256Hash is a Uint8Array with type branding for compile-time safety
 type Keccak256Hash = Uint8Array & { readonly __tag: "Keccak256Hash" };
@@ -433,7 +433,7 @@ Given an input and its hash, finding a different input with the same hash requir
 Compiled from Zig's stdlib Keccak-256 via unified loader (ReleaseSmall):
 
 ```zig
-import { Keccak256HashWasm } from 'tevm/crypto/keccak256.wasm';
+import { Keccak256HashWasm } from '@tevm/voltaire/crypto/keccak256.wasm';
 
 await Keccak256HashWasm.init(); // Load primitives.wasm
 const hash: Keccak256Hash = Keccak256HashWasm.from(data);

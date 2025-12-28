@@ -48,8 +48,8 @@ The result satisfies: `a = (a / b) * b + (a % b)` for all `b ≠ 0`.
 ### Basic Modulo
 
 ```zig
-import { mod } from 'tevm/evm/arithmetic';
-import { createFrame } from 'tevm/evm/Frame';
+import { mod } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // 10 % 3 = 1
 const frame = createFrame({ stack: [10n, 3n] });

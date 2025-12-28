@@ -25,7 +25,7 @@ X25519 is an **elliptic curve Diffie-Hellman (ECDH) key exchange** over Curve255
 ## Quick Start
 
 ```zig
-import * as X25519 from 'tevm/crypto/X25519';
+import * as X25519 from '@tevm/voltaire/crypto/X25519';
 
 // Generate two keypairs
 const aliceKeypair = X25519.generateKeypair();
@@ -74,7 +74,7 @@ Generate deterministic X25519 keypair from a 32-byte seed.
 - `X25519Error` - Keypair generation failed
 
 ```zig
-import * as Hex from 'tevm/primitives/Hex';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 const seed = Hex('0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef');
 const { secretKey, publicKey } = X25519.keypairFromSeed(seed);
@@ -287,7 +287,7 @@ assert(k.every((byte, i) => byte === expected[i]));
 ### Deterministic Keypair Generation
 
 ```zig
-import * as Hex from 'tevm/primitives/Hex';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Same seed always produces same keypair
 const seed = Hex('0x4200000000000000000000000000000000000000000000000000000000000000');
@@ -333,7 +333,7 @@ X25519 operations available in WASM builds:
 - **ReleaseFast**: Performance-optimized
 
 ```zig
-import { X25519 } from 'tevm/crypto/X25519';
+import { X25519 } from '@tevm/voltaire/crypto/X25519';
 // Automatically uses WASM in supported environments
 ```
 

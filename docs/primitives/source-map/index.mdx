@@ -28,7 +28,7 @@ export type SourceMap = {
 <Tab title="Parse">
 
 ```typescript
-import * as SourceMap from 'tevm/SourceMap';
+import * as SourceMap from '@tevm/voltaire/SourceMap';
 
 // Parse source map
 const map = SourceMap.from("0:50:0:-;51:100:0:-;151:25:0:o");
@@ -75,8 +75,8 @@ if (entry) {
 ### Debugging Contract Execution
 
 ```typescript
-import * as SourceMap from 'tevm/SourceMap';
-import * as Bytecode from 'tevm/Bytecode';
+import * as SourceMap from '@tevm/voltaire/SourceMap';
+import * as Bytecode from '@tevm/voltaire/Bytecode';
 
 // Get source map from compilation output
 const sourceMap = SourceMap.from(compiledOutput.sourceMap);
@@ -97,7 +97,7 @@ for (const [i, instr] of instructions.entries()) {
 ### Error Location Mapping
 
 ```typescript
-import * as SourceMap from 'tevm/SourceMap';
+import * as SourceMap from '@tevm/voltaire/SourceMap';
 
 // Map revert at PC to source location
 function getSourceLocation(pc: number, sourceMap: SourceMap.SourceMap) {
@@ -127,7 +127,7 @@ try {
 ### Coverage Analysis
 
 ```typescript
-import * as SourceMap from 'tevm/SourceMap';
+import * as SourceMap from '@tevm/voltaire/SourceMap';
 
 // Track executed PCs
 const executedPcs = new Set<number>();

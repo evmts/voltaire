@@ -3,6 +3,10 @@ title: HD Wallet (BIP-32/BIP-44)
 description: Hierarchical Deterministic wallet key derivation
 ---
 
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/hdwallet.ts">
+  Run HD Wallet examples in the interactive playground
+</Card>
+
 ## Overview
 
 HD Wallet (Hierarchical Deterministic Wallet, BIP32/BIP44) is a **key derivation system** that generates unlimited child keys from a single master seed using elliptic curve mathematics.
@@ -20,8 +24,8 @@ Key operations:
 ## Quick Start
 
 ```typescript
-import * as Bip39 from 'tevm/crypto/bip39';
-import * as HDWallet from 'tevm/crypto/hdwallet';
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
 
 // 1. Generate or restore mnemonic
 const mnemonic = Bip39.generateMnemonic(256);
@@ -443,10 +447,10 @@ console.log(HDWallet.getPrivateKey(addr0));   // null
 ### Generate New Wallet
 
 ```typescript
-import * as Bip39 from 'tevm/crypto/bip39';
-import * as HDWallet from 'tevm/crypto/hdwallet';
-import { Address } from 'tevm/primitives/address';
-import { secp256k1 } from 'tevm/crypto/secp256k1';
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
+import { Address } from '@tevm/voltaire/primitives/address';
+import { secp256k1 } from '@tevm/voltaire/crypto/secp256k1';
 
 // 1. Generate mnemonic (user backs this up!)
 const mnemonic = Bip39.generateMnemonic(256);

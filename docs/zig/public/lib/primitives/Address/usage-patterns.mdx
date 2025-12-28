@@ -13,7 +13,7 @@ Practical patterns for address validation, conversion, and contract address calc
 ### Input Validation
 
 ```zig
-import * as Address from 'tevm/Address';
+import * as Address from '@tevm/voltaire/Address';
 
 function validateUserInput(input: string): AddressType {
   // Check format
@@ -95,7 +95,7 @@ function predictMultipleDeployments(
 ### CREATE2 Deterministic Deployment
 
 ```zig
-import * as Hash from 'tevm/Hash';
+import * as Hash from '@tevm/voltaire/Hash';
 
 // Calculate CREATE2 address
 function calculateCreate2(
@@ -132,7 +132,7 @@ function findVanityCreate2(
 ### From Private Key
 
 ```zig
-import * as Secp256k1 from 'tevm/Secp256k1';
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
 
 // Derive address from private key
 function deriveAddress(privateKey: Uint8Array): AddressType {

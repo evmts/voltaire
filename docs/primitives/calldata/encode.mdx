@@ -41,7 +41,7 @@ CallData.encode(signature: string, params: unknown[]): CallDataType
 <Tab title="ERC20 Transfer">
 
 ```typescript
-import { Abi, Address, TokenBalance } from 'tevm';
+import { Abi, Address, TokenBalance } from '@tevm/voltaire';
 
 const abi = Abi([{
   name: "transfer",
@@ -120,7 +120,7 @@ const calldata = abi.batchTransfer.encode(recipients, amounts);
 <Tab title="Manual Encoding">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Without ABI instance (not recommended)
 const calldata = CallData.encode(
@@ -169,7 +169,7 @@ Signatures must use canonical form:
 Parameters automatically convert to ABI types:
 
 ```typescript
-import { Abi } from 'tevm';
+import { Abi } from '@tevm/voltaire';
 
 const abi = Abi([{
   name: "setValue",
@@ -198,7 +198,7 @@ const calldata = abi.setValue.encode(
 import {
   Transaction, Abi, Address, TokenBalance,
   Nonce, GasLimit, Wei, Gwei, ChainId
-} from 'tevm';
+} from '@tevm/voltaire';
 
 const abi = Abi([{
   name: "transfer",
@@ -233,7 +233,7 @@ const tx = Transaction({
 <Tab title="Estimate Gas">
 
 ```typescript
-import { estimateGas } from 'tevm';
+import { estimateGas } from '@tevm/voltaire';
 
 const calldata = abi.transfer.encode(recipient, amount);
 
@@ -254,7 +254,7 @@ console.log("Estimated gas:", gasEstimate);
 Validates parameters match signature:
 
 ```typescript
-import { Abi } from 'tevm';
+import { Abi } from '@tevm/voltaire';
 
 const abi = Abi([{
   name: "transfer",
@@ -305,7 +305,7 @@ console.timeEnd("encode");
 Encoding automatically computes function selector:
 
 ```typescript
-import { Keccak256 } from 'tevm';
+import { Keccak256 } from '@tevm/voltaire';
 
 // Manual selector computation
 const signature = "transfer(address,uint256)";

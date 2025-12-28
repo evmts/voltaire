@@ -16,7 +16,7 @@ Type-safe structure for connected peer information returned by `admin_peers` RPC
 <Tabs>
 <Tab title="Basic Usage">
 ```zig
-import * as PeerInfo from 'tevm/PeerInfo'
+import * as PeerInfo from '@tevm/voltaire/PeerInfo'
 
 // Parse peer info from RPC response
 const peerInfo = PeerInfo.from({
@@ -49,7 +49,7 @@ PeerInfo.isInbound(peerInfo)  // false
 </Tab>
 <Tab title="RPC Fetch">
 ```zig
-import * as PeerInfo from 'tevm/PeerInfo'
+import * as PeerInfo from '@tevm/voltaire/PeerInfo'
 
 async function getConnectedPeers(rpcUrl: string) {
   const response = await fetch(rpcUrl, {
@@ -72,7 +72,7 @@ console.log(`Connected to ${peers.length} peers`)
 </Tab>
 <Tab title="Peer Analysis">
 ```zig
-import * as PeerInfo from 'tevm/PeerInfo'
+import * as PeerInfo from '@tevm/voltaire/PeerInfo'
 
 function analyzePeers(peers: PeerInfo.PeerInfoType[]) {
   return {
@@ -137,7 +137,7 @@ type PeerInfoType = {
 ### Constructors
 
 ```zig
-import * as PeerInfo from 'tevm/PeerInfo'
+import * as PeerInfo from '@tevm/voltaire/PeerInfo'
 
 // From RPC response object
 const peerInfo = PeerInfo.from(rpcResponse)
@@ -146,7 +146,7 @@ const peerInfo = PeerInfo.from(rpcResponse)
 ### Methods
 
 ```zig
-import * as PeerInfo from 'tevm/PeerInfo'
+import * as PeerInfo from '@tevm/voltaire/PeerInfo'
 
 const peerInfo = PeerInfo.from(data)
 
@@ -209,7 +209,7 @@ eth?.head        // Peer's head block hash
 ### Peer Monitoring Dashboard
 
 ```zig
-import * as PeerInfo from 'tevm/PeerInfo'
+import * as PeerInfo from '@tevm/voltaire/PeerInfo'
 
 interface PeerStats {
   totalPeers: number
@@ -260,7 +260,7 @@ async function getPeerStats(rpcUrl: string): Promise<PeerStats> {
 ### Filter Peers by Capability
 
 ```zig
-import * as PeerInfo from 'tevm/PeerInfo'
+import * as PeerInfo from '@tevm/voltaire/PeerInfo'
 
 function getPeersWithCapability(
   peers: PeerInfo.PeerInfoType[],
@@ -279,7 +279,7 @@ const eth68Peers = getPeersWithCapability(peers, "eth/68")
 ### Identify Sync Partners
 
 ```zig
-import * as PeerInfo from 'tevm/PeerInfo'
+import * as PeerInfo from '@tevm/voltaire/PeerInfo'
 
 function findBestSyncPeers(
   peers: PeerInfo.PeerInfoType[],
@@ -303,7 +303,7 @@ function findBestSyncPeers(
 ### Connection Health Check
 
 ```zig
-import * as PeerInfo from 'tevm/PeerInfo'
+import * as PeerInfo from '@tevm/voltaire/PeerInfo'
 
 interface ConnectionHealth {
   healthy: boolean

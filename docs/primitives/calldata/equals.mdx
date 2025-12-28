@@ -39,7 +39,7 @@ calldata.equals(other: CallDataType): boolean
 <Tab title="Basic Usage">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata1 = CallData("0xa9059cbb...");
 const calldata2 = CallData("0xa9059cbb...");
@@ -53,7 +53,7 @@ console.log(CallData.equals(calldata1, calldata3)); // false
 <Tab title="Class API">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata1 = CallData("0xa9059cbb...");
 const calldata2 = CallData("0xa9059cbb...");
@@ -65,7 +65,7 @@ console.log(calldata1.equals(calldata2)); // true
 <Tab title="Deduplication">
 
 ```typescript
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 function deduplicate(calls: CallDataType[]): CallDataType[] {
   const unique: CallDataType[] = [];
@@ -88,7 +88,7 @@ function deduplicate(calls: CallDataType[]): CallDataType[] {
 <Tab title="Cache Key">
 
 ```typescript
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 class CallDataCache<T> {
   private cache: Array<{ key: CallDataType; value: T }> = [];
@@ -143,7 +143,7 @@ function equals(a: CallDataType, b: CallDataType): boolean {
 ### Transaction Matching
 
 ```typescript
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 function findTransaction(
   target: CallDataType,
@@ -158,7 +158,7 @@ function findTransaction(
 ### Replay Detection
 
 ```typescript
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 class ReplayDetector {
   private seen = new Set<string>();
@@ -184,7 +184,7 @@ class ReplayDetector {
 ### Cache Management
 
 ```typescript
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 interface CacheEntry {
   calldata: CallDataType;
@@ -222,7 +222,7 @@ class CallDataCache {
 ### Unit Testing
 
 ```typescript
-import { CallData, Abi } from 'tevm';
+import { CallData, Abi } from '@tevm/voltaire';
 import { describe, it, expect } from 'vitest';
 
 describe('CallData encoding', () => {
@@ -278,7 +278,7 @@ Comparison time independent of where bytes differ.
 <Tab title="equals() - Bytewise">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Direct byte comparison
 const same = CallData.equals(calldata1, calldata2);
@@ -298,7 +298,7 @@ const same = CallData.equals(calldata1, calldata2);
 <Tab title="Hex Comparison">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Convert to hex strings
 const hex1 = CallData.toHex(calldata1);
@@ -335,7 +335,7 @@ const same = calldata1 === calldata2; // Usually false
 <Tab title="Different Lengths">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const short = CallData("0xa9059cbb");
 const long = CallData("0xa9059cbb00000000");
@@ -349,7 +349,7 @@ Different lengths always return `false` (fast path).
 <Tab title="Empty vs Non-Empty">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Both have minimum 4 bytes (selector)
 const calldata1 = CallData("0xa9059cbb");
@@ -366,7 +366,7 @@ console.log(CallData.equals(calldata1, calldata2)); // false
 Requires CallData instances (not plain Uint8Array):
 
 ```typescript
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 const bytes1 = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
 const bytes2 = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);

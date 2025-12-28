@@ -50,8 +50,8 @@ The implementation uses fast exponentiation by squaring (square-and-multiply alg
 ### Basic Exponentiation
 
 ```zig
-import { exp } from 'tevm/evm/arithmetic';
-import { createFrame } from 'tevm/evm/Frame';
+import { exp } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // 2^3 = 8
 const frame = createFrame({ stack: [2n, 3n] });

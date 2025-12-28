@@ -75,7 +75,7 @@ for (int i = 0; i < 20; i++) {
 - No aliasing between address and returned bytes
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const bytes = addr.toBytes()
@@ -97,7 +97,7 @@ console.log(addr.toHex()) // Still "0x742d35cc..."
 Serialize addresses for binary protocols:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function serializeTransaction(from: Address, to: Address, value: bigint) {
   const buffer = new Uint8Array(20 + 20 + 8)
@@ -119,8 +119,8 @@ function serializeTransaction(from: Address, to: Address, value: bigint) {
 Include address in hash calculations:
 
 ```zig
-import { Address } from 'tevm'
-import { keccak256 } from 'tevm/crypto'
+import { Address } from '@tevm/voltaire'
+import { keccak256 } from '@tevm/voltaire/crypto'
 
 function hashAddressPair(addr1: Address, addr2: Address) {
   const bytes = new Uint8Array(40)
@@ -136,7 +136,7 @@ function hashAddressPair(addr1: Address, addr2: Address) {
 Store addresses as binary blobs:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 async function saveAddress(db: Database, addr: Address) {
   const bytes = addr.toBytes()
@@ -158,7 +158,7 @@ async function loadAddress(db: Database, id: number): Promise<Address> {
 Send addresses over WebSocket or other binary protocols:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function sendAddress(ws: WebSocket, addr: Address) {
   const bytes = addr.toBytes()
@@ -177,7 +177,7 @@ ws.onmessage = (event) => {
 Convert to bytes for ABI encoding:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function encodeAddress(addr: Address): Uint8Array {
   // ABI encodes addresses as 32 bytes (left-padded)
@@ -192,7 +192,7 @@ function encodeAddress(addr: Address): Uint8Array {
 Since `AddressType` is a Uint8Array, you can access bytes directly:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 
@@ -231,7 +231,7 @@ const doubled = Array(addr).map(b => b * 2)
 For performance-critical code, access bytes directly instead:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Less efficient (allocates new array)
 const bytes = addr.toBytes()
@@ -244,7 +244,7 @@ hash.update(addr) // addr is already Uint8Array
 ## Comparison with Other Conversions
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 

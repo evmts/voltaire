@@ -10,7 +10,7 @@ description: Calculate CREATE2 contract address from deployer, salt, and init co
 <Tabs>
 <Tab title="Auto-injected API">
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const salt = Bytes32() // 32-byte salt
@@ -23,9 +23,9 @@ console.log(contractAddr.toHex())
 
 <Tab title="Factory API">
 ```typescript
-import { CalculateCreate2Address } from 'tevm/Address'
-import { hash as keccak256 } from 'tevm/crypto/Keccak256'
-import * as Address from 'tevm/Address'
+import { CalculateCreate2Address } from '@tevm/voltaire/Address'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import * as Address from '@tevm/voltaire/Address'
 
 // Create function with injected dependencies
 const calculateCreate2Address = CalculateCreate2Address({ keccak256 })
@@ -75,15 +75,15 @@ salt[31] = 0x34
 
 **Hex salt:** Convert from hex string:
 ```typescript
-import * as Hex from 'tevm/Hex'
+import * as Hex from '@tevm/voltaire/Hex'
 const salt = Hex.toBytes("0x0000000000000000000000000000000000000000000000000000000000000001")
 ```
 
 ## Complete Example
 
 ```typescript
-import { Address } from 'tevm'
-import * as Hex from 'tevm/Hex'
+import { Address } from '@tevm/voltaire'
+import * as Hex from '@tevm/voltaire/Hex'
 
 // Deployer (could be factory contract)
 const factory = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
@@ -128,7 +128,7 @@ async function deployWithSalt(salt: bigint) {
 Deploy to same address across different chains:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const factory = Address("0x...")
 const salt = 42n
@@ -149,7 +149,7 @@ await deployOnChain('goerli', factory, salt, initCode)
 Interact with contract before deployment:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Predict address
 const contractAddress = factory.calculateCreate2Address(salt, initCode)
@@ -168,7 +168,7 @@ await factory.create2Deploy(salt, initCode)
 Generate addresses with specific patterns:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function findVanitySalt(
   factory: Address,
@@ -194,7 +194,7 @@ const vanityAddress = factory.calculateCreate2Address(salt, initCode)
 Deploy proxies to deterministic addresses:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 class ProxyFactory {
   constructor(
@@ -250,7 +250,7 @@ CREATE2 was introduced in [EIP-1014](https://eips.ethereum.org/EIPS/eip-1014) to
 ## Error Handling
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const initCode = Bytecode([0x60, 0x80])

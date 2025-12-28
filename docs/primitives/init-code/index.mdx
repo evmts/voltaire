@@ -8,7 +8,7 @@ description: Contract creation bytecode (constructor + runtime)
 [Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) representing contract creation bytecode deployed during contract creation transactions.
 
 ```typescript
-import type { brand } from 'tevm/brand';
+import type { brand } from '@tevm/voltaire/brand';
 
 export type InitCodeType = Uint8Array & {
   readonly [brand]: "InitCode";
@@ -26,7 +26,7 @@ Init code contains:
 <Tab title="Create">
 
 ```typescript
-import * as InitCode from 'tevm/InitCode';
+import * as InitCode from '@tevm/voltaire/InitCode';
 
 // From hex string
 const init = InitCode.from("0x608060405234801561001057600080fd5b50...");
@@ -72,7 +72,7 @@ console.log(`Creation gas: ${gas}`);
 ### Deploying Contract
 
 ```typescript
-import * as InitCode from 'tevm/InitCode';
+import * as InitCode from '@tevm/voltaire/InitCode';
 
 // Get init code from compilation output
 const init = InitCode.from(compiledOutput.bytecode);
@@ -91,8 +91,8 @@ const tx = await signer.sendTransaction({
 ### Analyzing Creation Bytecode
 
 ```typescript
-import * as InitCode from 'tevm/InitCode';
-import * as Bytecode from 'tevm/Bytecode';
+import * as InitCode from '@tevm/voltaire/InitCode';
+import * as Bytecode from '@tevm/voltaire/Bytecode';
 
 const init = InitCode.from(creationBytecode);
 
@@ -108,7 +108,7 @@ const runtime = InitCode.extractRuntime(init, constructorLength);
 ### Gas Estimation
 
 ```typescript
-import * as InitCode from 'tevm/InitCode';
+import * as InitCode from '@tevm/voltaire/InitCode';
 
 const init = InitCode.from("0x608060405234801561001057600080fd5b50...");
 

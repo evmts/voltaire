@@ -46,8 +46,8 @@ Verify an ECDSA signature against a message hash and public key.
 
 **Example:**
 ```typescript
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Sign message
 const privateKey = Bytes32();
@@ -199,7 +199,7 @@ Secp256k1 public keys can be represented in multiple formats:
 - Contains both x and y coordinates
 
 **Uncompressed without prefix (64 bytes):** `x || y`
-- Tevm's internal format (no prefix)
+- Voltaire's internal format (no prefix)
 - Used by our verification API
 
 **Compressed (33 bytes):** `0x02 || x` or `0x03 || x`

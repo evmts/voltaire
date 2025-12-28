@@ -43,7 +43,7 @@ export interface Provider {
 Create requests using request builders:
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 // Request builders return RequestArguments
 const request = Rpc.Eth.BlockNumberRequest();
@@ -176,7 +176,7 @@ interface RequestArguments {
 <Tab title="Request Builders">
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 // eth namespace (40 methods)
 Rpc.Eth.BlockNumberRequest();
@@ -239,7 +239,7 @@ interface ProviderRpcError extends Error {
 type BlockTag = 'latest' | 'earliest' | 'pending' | 'safe' | 'finalized' | Quantity;
 
 // Branded primitives
-import type { brand } from 'tevm/brand';
+import type { brand } from '@tevm/voltaire/brand';
 
 type Address = Uint8Array & { readonly [brand]: "Address" };
 type Hash = Uint8Array & { readonly [brand]: "Hash" };
@@ -272,8 +272,8 @@ interface LogFilter {
 ### Check Balance and Nonce
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -297,9 +297,9 @@ try {
 ### Query Contract State
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
-import * as Hex from 'tevm/Hex';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hex from '@tevm/voltaire/Hex';
 
 const contractAddress = Address('0x...');
 
@@ -328,8 +328,8 @@ try {
 ### Monitor Contract Events
 
 ```typescript
-import * as Address from 'tevm/Address';
-import * as Hash from 'tevm/Hash';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
 
 const contractAddress = Address('0x...');
 const transferSignature = Hash(
@@ -357,8 +357,8 @@ provider.on('chainChanged', (chainId) => {
 ### Wait for Transaction Confirmation
 
 ```typescript
-import * as Rpc from 'tevm/jsonrpc';
-import * as Hash from 'tevm/Hash';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Hash from '@tevm/voltaire/Hash';
 
 async function waitForConfirmation(
   txHash: Hash,
@@ -401,11 +401,11 @@ Import only what you need for optimal bundle size:
 
 ```typescript
 // Import Provider interface (no implementations)
-import type { Provider } from 'tevm/provider';
+import type { Provider } from '@tevm/voltaire/provider';
 
 // Import specific primitives used
-import * as Address from 'tevm/Address';
-import * as Hash from 'tevm/Hash';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
 
 // Only these primitives included in bundle
 // Unused primitives (Bytecode, Transaction, etc.) excluded

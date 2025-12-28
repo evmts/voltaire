@@ -38,7 +38,7 @@ CallData.is(value: unknown): value is CallDataType
 <Tab title="Basic Usage">
 
 ```zig
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 const value: unknown = someFunction();
 
@@ -53,7 +53,7 @@ if (CallData.is(value)) {
 <Tab title="Type Narrowing">
 
 ```zig
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 function process(input: string | CallDataType) {
   if (CallData.is(input)) {
@@ -71,7 +71,7 @@ function process(input: string | CallDataType) {
 <Tab title="Array Filtering">
 
 ```zig
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 const mixed: unknown[] = [
   CallData("0xa9059cbb"),
@@ -92,7 +92,7 @@ console.log("Found", calldata.length, "calldata instances");
 TypeScript narrows the type when `is()` returns true:
 
 ```zig
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 function handle(value: unknown) {
   // Before: value is unknown
@@ -112,7 +112,7 @@ function handle(value: unknown) {
 <Tab title="is() - Type Guard">
 
 ```zig
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 function process(value: unknown) {
   if (CallData.is(value)) {
@@ -130,7 +130,7 @@ function process(value: unknown) {
 <Tab title="isValid() - Validation">
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 function process(value: unknown) {
   if (CallData.isValid(value)) {
@@ -153,7 +153,7 @@ function process(value: unknown) {
 ### Function Overloads
 
 ```zig
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 function processData(data: string): CallDataType;
 function processData(data: CallDataType): CallDataType;
@@ -169,7 +169,7 @@ function processData(data: string | CallDataType): CallDataType {
 ### Union Type Handling
 
 ```zig
-import { CallData, type CallDataType, type Bytecode } from 'tevm';
+import { CallData, type CallDataType, type Bytecode } from '@tevm/voltaire';
 
 function analyze(data: CallDataType | Bytecode) {
   if (CallData.is(data)) {
@@ -186,7 +186,7 @@ function analyze(data: CallDataType | Bytecode) {
 ### Generic Functions
 
 ```zig
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 function logIfCallData<T>(value: T): T {
   if (CallData.is(value)) {
@@ -202,7 +202,7 @@ const result = logIfCallData(someValue); // Type preserved
 ### Type-Safe Caching
 
 ```zig
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 class Cache<T> {
   private data = new Map<string, T>();
@@ -273,7 +273,7 @@ console.timeEnd("is (not calldata)");
 ## Type Safety Example
 
 ```zig
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 // Function that requires CallData
 function process(data: CallDataType) {

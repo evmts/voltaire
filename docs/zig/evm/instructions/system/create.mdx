@@ -61,8 +61,8 @@ CREATE executes a multi-step deployment process:
 ### Basic Contract Creation
 
 ```zig
-import { CREATE } from 'tevm/evm/system';
-import { createFrame } from 'tevm/evm/Frame';
+import { CREATE } from '@tevm/voltaire/evm/system';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 const frame = createFrame({
   gasRemaining: 1000000n,
@@ -101,9 +101,9 @@ console.log(frame.return_data);      // empty on success
 ### Address Prediction
 
 ```zig
-import { Address } from 'tevm/primitives';
-import { keccak256 } from 'tevm/crypto';
-import { RLP } from 'tevm/primitives';
+import { Address } from '@tevm/voltaire/primitives';
+import { keccak256 } from '@tevm/voltaire/crypto';
+import { RLP } from '@tevm/voltaire/primitives';
 
 function predictAddress(creator: Address, nonce: bigint): Address {
   // CREATE address = keccak256(rlp([sender, nonce]))[12:]

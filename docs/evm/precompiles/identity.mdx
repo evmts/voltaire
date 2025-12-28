@@ -39,9 +39,9 @@ Identical to input - returns input bytes unchanged.
 ## Usage Example
 
 ```typescript
-import { execute, PrecompileAddress } from 'tevm/precompiles';
-import { Hardfork } from 'tevm/primitives/Hardfork';
-import * as Hex from 'tevm/primitives/Hex';
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Copy some data
 const input = Hex('0x0102030405');
@@ -117,7 +117,7 @@ Identity has higher base cost but same per-word cost. Use MCOPY (if available) f
 ## Test Vectors
 
 ```typescript
-import * as Hex from 'tevm/primitives/Hex';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Test 1: Empty input
 const input1 = new Uint8Array(0);

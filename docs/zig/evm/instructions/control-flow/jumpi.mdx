@@ -62,8 +62,8 @@ JUMPI conditionally alters program flow:
 ### Basic Conditional Jump
 
 ```zig
-import { createFrame } from 'tevm/evm/Frame';
-import { handler_0x57_JUMPI } from 'tevm/evm/control';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { handler_0x57_JUMPI } from '@tevm/voltaire/evm/control';
 
 // Bytecode with JUMPDEST at position 6
 const bytecode = new Uint8Array([

@@ -13,8 +13,8 @@ Run Ethereum bytecode directly in JavaScript. Simulate transactions, estimate ga
 ### Simulate Transactions
 
 ```zig
-import { Evm, ForkStateManager, Provider } from 'tevm';
-import { Address } from 'tevm/primitives';
+import { Evm, ForkStateManager, Provider } from '@tevm/voltaire';
+import { Address } from '@tevm/voltaire/primitives';
 
 // Create EVM with fork state manager
 const stateManager = ForkStateManager({
@@ -66,7 +66,7 @@ await wallet.sendTransaction(tx);
 ### Step Through Execution
 
 ```zig
-import { Evm, Provider } from 'tevm';
+import { Evm, Provider } from '@tevm/voltaire';
 
 const evm = Evm();
 const provider = Provider.fromEvm(evm);
@@ -118,7 +118,7 @@ Parse and analyze EVM bytecode without executing it. Essential for security anal
 ### Parse Instructions
 
 ```zig
-import { Bytecode } from 'tevm/primitives';
+import { Bytecode } from '@tevm/voltaire/primitives';
 
 const bytecode = Bytecode('0x608060405234801561001057600080fd5b50...');
 
@@ -231,8 +231,8 @@ console.log('Runtime code hash:', codeHash);
 Create local forks of any Ethereum network for testing and simulation:
 
 ```zig
-import { Evm, ForkStateManager, Provider } from 'tevm';
-import { Address } from 'tevm/primitives';
+import { Evm, ForkStateManager, Provider } from '@tevm/voltaire';
+import { Address } from '@tevm/voltaire/primitives';
 
 // Fork mainnet at specific block
 const stateManager = ForkStateManager({
@@ -268,7 +268,7 @@ await mainnetFork.setBalance(testAddress, parseEther('1000'));
 Everything runs in-memory. No external services, no API keys, no rate limits:
 
 ```zig
-import { Evm, Provider } from 'tevm';
+import { Evm, Provider } from '@tevm/voltaire';
 
 // All execution is local and instant
 const evm = Evm();

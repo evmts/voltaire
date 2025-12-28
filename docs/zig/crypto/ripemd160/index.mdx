@@ -331,7 +331,7 @@ export function hash(data: Uint8Array | string): Uint8Array {
 Available via `ripemd160.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
 
 ```zig
-import { Ripemd160Wasm } from 'tevm/crypto/ripemd160.wasm';
+import { Ripemd160Wasm } from '@tevm/voltaire/crypto/ripemd160.wasm';
 await Ripemd160Wasm.load();
 const hash = Ripemd160Wasm.hash(data);
 ```

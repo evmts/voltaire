@@ -13,7 +13,7 @@ description: Create address from raw byte array
 The input must be exactly 20 bytes. Any other length throws an error:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Valid: 20 bytes
 const addr = Address(new Uint8Array(20)) // ✓
@@ -78,7 +78,7 @@ const addr = Address(buffer.slice(offset, offset + 20))
 ### Converting from Hash
 
 ```zig
-import { keccak256 } from 'tevm/crypto'
+import { keccak256 } from '@tevm/voltaire/crypto'
 
 // Take last 20 bytes of keccak256 hash
 const hash = keccak256(data) // 32 bytes

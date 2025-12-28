@@ -16,7 +16,7 @@ Type-safe transaction nonces for Ethereum transaction ordering and replay protec
 <Tabs>
 <Tab title="Basic Usage">
 ```zig
-import * as Nonce from 'tevm/Nonce'
+import * as Nonce from '@tevm/voltaire/Nonce'
 
 // Create nonce from various types
 const nonce = Nonce.from(42)
@@ -34,7 +34,7 @@ Nonce.toNumber(nextNonce)  // 43
 </Tab>
 <Tab title="Transaction Building">
 ```zig
-import * as Nonce from 'tevm/Nonce'
+import * as Nonce from '@tevm/voltaire/Nonce'
 
 // Get nonce from RPC
 async function getAccountNonce(
@@ -67,7 +67,7 @@ const tx = {
 </Tab>
 <Tab title="Nonce Management">
 ```zig
-import * as Nonce from 'tevm/Nonce'
+import * as Nonce from '@tevm/voltaire/Nonce'
 
 class NonceManager {
   private currentNonce: Nonce.NonceType
@@ -121,7 +121,7 @@ Transaction with nonce 4 will be rejected (already used)
 ### Constructors
 
 ```zig
-import * as Nonce from 'tevm/Nonce'
+import * as Nonce from '@tevm/voltaire/Nonce'
 
 // Universal constructor
 const nonce = Nonce.from(42)
@@ -136,7 +136,7 @@ Nonce.from("0x2a")    // from hex string
 ### Conversions
 
 ```zig
-import * as Nonce from 'tevm/Nonce'
+import * as Nonce from '@tevm/voltaire/Nonce'
 
 const nonce = Nonce.from(42)
 
@@ -150,7 +150,7 @@ Nonce.toBigInt(nonce)  // 42n
 ### Operations
 
 ```zig
-import * as Nonce from 'tevm/Nonce'
+import * as Nonce from '@tevm/voltaire/Nonce'
 
 const nonce = Nonce.from(42)
 
@@ -164,7 +164,7 @@ Nonce.toNumber(next)  // 43
 ### Sequential Transaction Sending
 
 ```zig
-import * as Nonce from 'tevm/Nonce'
+import * as Nonce from '@tevm/voltaire/Nonce'
 
 async function sendMultipleTransactions(
   rpcUrl: string,
@@ -201,7 +201,7 @@ async function sendMultipleTransactions(
 ### Transaction Replacement (Speed Up / Cancel)
 
 ```zig
-import * as Nonce from 'tevm/Nonce'
+import * as Nonce from '@tevm/voltaire/Nonce'
 
 // To replace a pending transaction, use the same nonce
 // with higher gas price
@@ -238,7 +238,7 @@ async function cancelTransaction(
 ### Pending Transaction Detection
 
 ```zig
-import * as Nonce from 'tevm/Nonce'
+import * as Nonce from '@tevm/voltaire/Nonce'
 
 async function getPendingTransactionCount(
   rpcUrl: string,

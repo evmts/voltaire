@@ -55,8 +55,8 @@ SLT pops two values from the stack, interprets them as signed 256-bit two's comp
 ### Positive Values
 
 ```typescript
-import { slt } from 'tevm/evm/comparison';
-import { createFrame } from 'tevm/evm/Frame';
+import { slt } from '@tevm/voltaire/evm/comparison';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // 10 < 20 = 1 (both positive)
 const frame = createFrame({ stack: [10n, 20n] });

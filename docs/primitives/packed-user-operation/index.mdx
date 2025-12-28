@@ -10,9 +10,9 @@ PackedUserOperation represents an ERC-4337 v0.7+ user operation with optimized f
 ## Quick Start
 
 ```typescript
-import { PackedUserOperation } from 'tevm/primitives/PackedUserOperation';
-import { UserOperation } from 'tevm/primitives/UserOperation';
-import { ENTRYPOINT_V07 } from 'tevm/primitives/EntryPoint';
+import { PackedUserOperation } from '@tevm/voltaire/primitives/PackedUserOperation';
+import { UserOperation } from '@tevm/voltaire/primitives/UserOperation';
+import { ENTRYPOINT_V07 } from '@tevm/voltaire/primitives/EntryPoint';
 
 // Create from v0.6 UserOperation
 const userOp = UserOperation.from({
@@ -171,8 +171,8 @@ for (let i = 31; i >= 16; i--) {
 ### Round-trip Conversion
 
 ```typescript
-import { UserOperation } from 'tevm/primitives/UserOperation';
-import { PackedUserOperation } from 'tevm/primitives/PackedUserOperation';
+import { UserOperation } from '@tevm/voltaire/primitives/UserOperation';
+import { PackedUserOperation } from '@tevm/voltaire/primitives/PackedUserOperation';
 
 // Start with v0.6
 const userOp = UserOperation.from({
@@ -203,7 +203,7 @@ console.log(unpacked.maxFeePerGas === userOp.maxFeePerGas); // true
 ### Direct Creation
 
 ```typescript
-import { PackedUserOperation } from 'tevm/primitives/PackedUserOperation';
+import { PackedUserOperation } from '@tevm/voltaire/primitives/PackedUserOperation';
 
 // Manually create packed fields
 const accountGasLimits = new Uint8Array(32);

@@ -52,8 +52,8 @@ SGT pops two values from the stack, interprets them as signed 256-bit two's comp
 ### Positive Values
 
 ```zig
-import { sgt } from 'tevm/evm/comparison';
-import { createFrame } from 'tevm/evm/Frame';
+import { sgt } from '@tevm/voltaire/evm/comparison';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // 20 > 10 = 1 (both positive)
 const frame = createFrame({ stack: [20n, 10n] });

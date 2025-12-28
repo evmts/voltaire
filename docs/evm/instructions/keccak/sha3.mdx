@@ -65,7 +65,7 @@ Special case: If size=0, return cached hash of empty data (0xc5d2460186f7...) wi
 ### Computing a Function Selector
 
 ```typescript
-import { sha3 } from 'tevm/evm/instructions/keccak';
+import { sha3 } from '@tevm/voltaire/evm/instructions/keccak';
 
 // Hash "transfer(address,uint256)" to get selector
 const frame = createFrame();

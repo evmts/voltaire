@@ -49,7 +49,7 @@ zig build build-ts-wasm-fast
 Encoding function call with parameters:
 
 ```zig
-import { CallData, Abi, Address, TokenBalance } from 'tevm';
+import { CallData, Abi, Address, TokenBalance } from '@tevm/voltaire';
 
 const abi = Abi([{
   name: "transfer",
@@ -119,7 +119,7 @@ console.timeEnd("selector");
 Voltaire automatically uses WASM when available:
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Automatically uses WASM if loaded
 const calldata = CallData("0xa9059cbb...");
@@ -136,8 +136,8 @@ For advanced control, manually load WASM module:
 <Tab title="Node.js">
 
 ```zig
-import { loadWasm } from 'tevm/wasm-loader';
-import { CallData } from 'tevm';
+import { loadWasm } from '@tevm/voltaire/wasm-loader';
+import { CallData } from '@tevm/voltaire';
 
 // Load WASM module
 await loadWasm('primitives');
@@ -150,7 +150,7 @@ const calldata = CallData.encode("transfer(address,uint256)", [addr, amount]);
 <Tab title="Browser">
 
 ```zig
-import { loadWasm } from 'tevm/wasm-loader';
+import { loadWasm } from '@tevm/voltaire/wasm-loader';
 
 // Load from CDN or local path
 await loadWasm('primitives', {
@@ -165,8 +165,8 @@ await loadWasm('primitives', {
 
 ```zig
 // worker.ts
-import { loadWasm } from 'tevm/wasm-loader';
-import { CallData } from 'tevm';
+import { loadWasm } from '@tevm/voltaire/wasm-loader';
+import { CallData } from '@tevm/voltaire';
 
 // Load WASM in worker context
 await loadWasm('primitives-fast'); // Use fast build
@@ -187,7 +187,7 @@ self.onmessage = async (e) => {
 Verify if WASM is loaded:
 
 ```zig
-import { isWasmLoaded } from 'tevm/wasm-loader';
+import { isWasmLoaded } from '@tevm/voltaire/wasm-loader';
 
 if (isWasmLoaded('primitives')) {
   console.log('Using WASM acceleration');
@@ -205,7 +205,7 @@ WASM module manages its own memory efficiently:
 WASM uses linear memory for all operations:
 
 ```zig
-import { getWasmMemory } from 'tevm/wasm-loader';
+import { getWasmMemory } from '@tevm/voltaire/wasm-loader';
 
 // Access WASM memory (advanced use only)
 const memory = getWasmMemory('primitives');
@@ -248,7 +248,7 @@ pub fn encodeCallData(
 Set memory limits for safety:
 
 ```zig
-import { loadWasm } from 'tevm/wasm-loader';
+import { loadWasm } from '@tevm/voltaire/wasm-loader';
 
 await loadWasm('primitives', {
   memory: {
@@ -266,7 +266,7 @@ Use tree-shakeable imports to minimize bundle size:
 
 ```zig
 // Bundle includes only what you use
-import { from, getSelector, toHex } from 'tevm/CallData';
+import { from, getSelector, toHex } from '@tevm/voltaire/CallData';
 
 const calldata = from("0xa9059cbb...");
 const selector = getSelector(calldata);
@@ -281,7 +281,7 @@ Load WASM on demand to reduce initial bundle:
 
 ```zig
 // Minimal initial bundle
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Load WASM when needed
 async function processCallData(data: string) {
@@ -331,7 +331,7 @@ WASM module works across platforms:
 Automatic fallback to pure JS when WASM unavailable:
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Works everywhere - WASM when available, JS fallback otherwise
 const calldata = CallData.encode("transfer(address,uint256)", [addr, amount]);
@@ -362,7 +362,7 @@ bun run bench
 
 ```zig
 import { bench, run } from 'mitata';
-import { CallData, Abi } from 'tevm';
+import { CallData, Abi } from '@tevm/voltaire';
 
 const abi = Abi([{
   name: "transfer",
@@ -395,7 +395,7 @@ await run();
 ### Enable Debug Logging
 
 ```zig
-import { setWasmDebug } from 'tevm/wasm-loader';
+import { setWasmDebug } from '@tevm/voltaire/wasm-loader';
 
 setWasmDebug(true);
 
@@ -408,7 +408,7 @@ setWasmDebug(true);
 ### Inspect Module
 
 ```zig
-import { getWasmModule } from 'tevm/wasm-loader';
+import { getWasmModule } from '@tevm/voltaire/wasm-loader';
 
 const module = getWasmModule('primitives');
 console.log('Exports:', WebAssembly.Module.exports(module));

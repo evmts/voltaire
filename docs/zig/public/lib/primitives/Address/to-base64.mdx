@@ -34,7 +34,7 @@ description: Convert 20-byte address to base64-encoded string
 Base64 encoding produces more compact JSON vs hex:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 
@@ -54,7 +54,7 @@ const b64Json = { address: addr.toBase64() }
 Store addresses as base64 for compact binary storage:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Store multiple addresses
 const addresses = [
@@ -76,7 +76,7 @@ const restored = encoded.map(b64 => Address(b64))
 Use base64 for text-based binary protocols:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Prepare message with base64-encoded address
 const message = {
@@ -100,7 +100,7 @@ const toAddr = Address(decoded.to)
 Base64 is URL-safe when used with proper encoding:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const b64 = addr.toBase64()
@@ -125,7 +125,7 @@ const url = `https://api.example.com/address?id=${encodeURIComponent(b64)}`
 **Example cross-platform:**
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Works identically in Node.js and browser
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
@@ -150,7 +150,7 @@ For performance-critical code, prefer `toHex()` or `toBytes()`.
 ### Basic Round-trip
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const original = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const b64 = original.toBase64()
@@ -163,7 +163,7 @@ console.log(original.toHex() === decoded.toHex()) // true
 ### Multiple Conversions
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Start with number
 const addr1 = Address(0x742d35Cc)
@@ -179,7 +179,7 @@ console.log(addr1.toHex() === addr2.toHex()) // true
 ### Checksum Preservation
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Checksummed input
 const checksummed = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
@@ -218,7 +218,7 @@ console.log(restored.toChecksummed())
 Base64 encoding never fails for valid addresses:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Always succeeds for valid addresses
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")

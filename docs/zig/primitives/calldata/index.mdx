@@ -60,7 +60,7 @@ This makes debugging more readable than raw byte arrays while maintaining perfor
 <Tab title="Encode Function Call">
 
 ```zig
-import { CallData, Abi, Address, TokenBalance } from 'tevm';
+import { CallData, Abi, Address, TokenBalance } from '@tevm/voltaire';
 
 // Define ABI
 const abi = Abi([{
@@ -86,7 +86,7 @@ console.log(CallData.toHex(calldata));
 <Tab title="Decode CallData">
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData("0xa9059cbb...");
 
@@ -102,7 +102,7 @@ console.log(decoded.parameters); // [Address, Uint256]
 <Tab title="Extract Selector">
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData("0xa9059cbb...");
 

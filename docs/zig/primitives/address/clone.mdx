@@ -83,7 +83,7 @@ memcpy(addr2.bytes, addr1.bytes, 20);
 **Independent:** Modifications to clone don't affect original:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const original = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const clone = original.clone()
@@ -106,7 +106,7 @@ console.log(clone[19])    // 0xAA
 Protect against external mutation:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 class Account {
   private _address: Address
@@ -135,7 +135,7 @@ console.log(account.getAddress().equals(addr)) // false
 Create modified copies:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function incrementAddress(addr: Address): Address {
   const clone = addr.clone()
@@ -155,7 +155,7 @@ console.log(next.toU256())  // 101n
 Clone before modifying array elements:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addresses = [
   Address(1n),
@@ -178,7 +178,7 @@ function processAddresses(addrs: Address[]): Address[] {
 Save address state at point in time:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 class Wallet {
   private history: Address[] = []
@@ -223,7 +223,7 @@ class Wallet {
 Instead of cloning, use immutable patterns:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Instead of mutating
 function badUpdate(addr: Address) {
@@ -253,7 +253,7 @@ function goodUpdate(addr: Address): Address {
 - Use direct byte access
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Less efficient (clones every iteration)
 for (let i = 0; i < 1000000; i++) {
@@ -270,7 +270,7 @@ for (let i = 0; i < 1000000; i++) {
 ## Comparison with Other Operations
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const original = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 

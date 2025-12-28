@@ -59,8 +59,8 @@ SDIV interprets 256-bit values as signed integers using two's complement:
 ### Basic Signed Division
 
 ```typescript
-import { sdiv } from 'tevm/evm/arithmetic';
-import { createFrame } from 'tevm/evm/Frame';
+import { sdiv } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // 10 / 2 = 5
 const frame = createFrame({ stack: [10n, 2n] });

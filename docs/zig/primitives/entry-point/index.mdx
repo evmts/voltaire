@@ -12,7 +12,7 @@ EntryPoint is a branded [Address](/primitives/address) type representing the ERC
 The EntryPoint contract is the singleton that handles all user operations. It validates signatures, executes operations, and manages gas accounting and paymaster interactions. Voltaire provides constants for both v0.6 and v0.7 entry point addresses.
 
 ```zig
-import { EntryPoint, ENTRYPOINT_V06, ENTRYPOINT_V07 } from 'tevm/primitives/EntryPoint';
+import { EntryPoint, ENTRYPOINT_V06, ENTRYPOINT_V07 } from '@tevm/voltaire/primitives/EntryPoint';
 
 // Use v0.7 entry point
 const entryPoint = EntryPoint.from(ENTRYPOINT_V07);
@@ -54,7 +54,7 @@ function from(
 <Tab title="From hex string">
 
 ```zig
-import { EntryPoint } from 'tevm/primitives/EntryPoint';
+import { EntryPoint } from '@tevm/voltaire/primitives/EntryPoint';
 
 const entryPoint = EntryPoint.from("0x0000000071727De22E5E9d8BAf0edAc6f37da032");
 ```
@@ -63,7 +63,7 @@ const entryPoint = EntryPoint.from("0x0000000071727De22E5E9d8BAf0edAc6f37da032")
 <Tab title="From constant">
 
 ```zig
-import { EntryPoint, ENTRYPOINT_V07 } from 'tevm/primitives/EntryPoint';
+import { EntryPoint, ENTRYPOINT_V07 } from '@tevm/voltaire/primitives/EntryPoint';
 
 const entryPoint = EntryPoint.from(ENTRYPOINT_V07);
 ```
@@ -84,7 +84,7 @@ function toHex(
 ```
 
 ```zig
-import { EntryPoint, ENTRYPOINT_V07 } from 'tevm/primitives/EntryPoint';
+import { EntryPoint, ENTRYPOINT_V07 } from '@tevm/voltaire/primitives/EntryPoint';
 
 const hex = EntryPoint.toHex(ENTRYPOINT_V07);
 console.log(hex);
@@ -105,7 +105,7 @@ function equals(
 ```
 
 ```zig
-import { EntryPoint, ENTRYPOINT_V06, ENTRYPOINT_V07 } from 'tevm/primitives/EntryPoint';
+import { EntryPoint, ENTRYPOINT_V06, ENTRYPOINT_V07 } from '@tevm/voltaire/primitives/EntryPoint';
 
 console.log(EntryPoint.equals(ENTRYPOINT_V06, ENTRYPOINT_V07));
 // false
@@ -124,7 +124,7 @@ Entry point v0.6.0 address: `0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789`
 Original ERC-4337 entry point. Supports separate gas limit fields.
 
 ```zig
-import { ENTRYPOINT_V06 } from 'tevm/primitives/EntryPoint';
+import { ENTRYPOINT_V06 } from '@tevm/voltaire/primitives/EntryPoint';
 ```
 
 ### ENTRYPOINT_V07
@@ -134,7 +134,7 @@ Entry point v0.7.0 address: `0x0000000071727De22E5E9d8BAf0edAc6f37da032`
 Latest ERC-4337 entry point. Uses packed gas limits for reduced calldata size.
 
 ```zig
-import { ENTRYPOINT_V07 } from 'tevm/primitives/EntryPoint';
+import { ENTRYPOINT_V07 } from '@tevm/voltaire/primitives/EntryPoint';
 ```
 
 ## Entry Point Responsibilities
@@ -167,8 +167,8 @@ The EntryPoint contract handles:
 ### Submitting User Operations
 
 ```zig
-import { UserOperation } from 'tevm/primitives/UserOperation';
-import { EntryPoint, ENTRYPOINT_V07 } from 'tevm/primitives/EntryPoint';
+import { UserOperation } from '@tevm/voltaire/primitives/UserOperation';
+import { EntryPoint, ENTRYPOINT_V07 } from '@tevm/voltaire/primitives/EntryPoint';
 
 const userOp = UserOperation.from({
   sender: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -191,7 +191,7 @@ const userOpHash = UserOperation.hash(userOp, ENTRYPOINT_V07, 1);
 ### Multi-Chain Support
 
 ```zig
-import { EntryPoint, ENTRYPOINT_V07 } from 'tevm/primitives/EntryPoint';
+import { EntryPoint, ENTRYPOINT_V07 } from '@tevm/voltaire/primitives/EntryPoint';
 
 // Same entry point address across all chains
 const mainnetEntry = EntryPoint.from(ENTRYPOINT_V07);

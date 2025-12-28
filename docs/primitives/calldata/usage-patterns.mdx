@@ -13,7 +13,7 @@ Common patterns and best practices for working with CallData in production appli
 <Tab title="Property-Based API">
 
 ```typescript
-import { Abi, Address, TokenBalance } from 'tevm';
+import { Abi, Address, TokenBalance } from '@tevm/voltaire';
 
 const abi = Abi([{
   name: "transfer",
@@ -40,7 +40,7 @@ const calldata = abi.transfer.encode(
 <Tab title="Manual Encoding">
 
 ```typescript
-import { CallData, Keccak256, Address, Uint256 } from 'tevm';
+import { CallData, Keccak256, Address, Uint256 } from '@tevm/voltaire';
 
 // Compute selector
 const signature = "transfer(address,uint256)";
@@ -72,7 +72,7 @@ const calldata = CallData.concat([
 <Tab title="Arrays">
 
 ```typescript
-import { Abi, Address } from 'tevm';
+import { Abi, Address } from '@tevm/voltaire';
 
 const abi = Abi([{
   name: "batchTransfer",
@@ -138,7 +138,7 @@ const calldata = abi.swap.encode(params);
 <Tab title="Switch Pattern">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const ERC20_SELECTORS = {
   TRANSFER: "0xa9059cbb",
@@ -198,7 +198,7 @@ async function routeCall(calldata: CallData) {
 ### Decoding by Selector
 
 ```typescript
-import { CallData, Abi } from 'tevm';
+import { CallData, Abi } from '@tevm/voltaire';
 
 const ERC20_ABI = Abi([
   {
@@ -242,7 +242,7 @@ function decodeERC20Call(calldata: CallData) {
 ### Batch Encoding
 
 ```typescript
-import { CallData, Abi } from 'tevm';
+import { CallData, Abi } from '@tevm/voltaire';
 
 const multicallAbi = Abi([{
   name: "multicall",
@@ -340,7 +340,7 @@ function packAddressAndAmount(addr: Address, amount: bigint): Uint256 {
 ### Validation Before Encoding
 
 ```typescript
-import { CallData, Address, TokenBalance } from 'tevm';
+import { CallData, Address, TokenBalance } from '@tevm/voltaire';
 
 function encodeTransfer(
   to: string,
@@ -399,7 +399,7 @@ if (decoded) {
 import {
   Transaction, CallData, Address, Abi,
   TokenBalance, Nonce, GasLimit, Wei, Gwei, ChainId
-} from 'tevm';
+} from '@tevm/voltaire';
 
 async function createERC20Transfer(
   token: Address,
@@ -483,7 +483,7 @@ pub fn createERC20Transfer(
 ### Mock CallData
 
 ```typescript
-import { CallData, Address, TokenBalance } from 'tevm';
+import { CallData, Address, TokenBalance } from '@tevm/voltaire';
 import { describe, it, expect } from 'vitest';
 
 describe('CallData routing', () => {

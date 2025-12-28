@@ -20,7 +20,7 @@ All WASM methods are compiled from [address.zig](https://github.com/evmts/tevm/b
 <Tab title="Direct Import">
 ```zig
 // Import WASM implementation instead of JS version
-import { Address } from 'tevm/Address.wasm'
+import { Address } from '@tevm/voltaire/Address.wasm'
 
 // API is identical to JS version
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
@@ -31,8 +31,8 @@ addr.equals(other)    // Uses WASM acceleration
 
 <Tab title="Override Static Methods">
 ```zig
-import { Address } from 'tevm'
-import * as WasmAddress from 'tevm/Address.wasm'
+import { Address } from '@tevm/voltaire'
+import * as WasmAddress from '@tevm/voltaire/Address.wasm'
 
 // Override specific methods with WASM versions
 Address.fromHex = WasmAddress.fromHex

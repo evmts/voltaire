@@ -16,7 +16,7 @@ Type-safe signed 64-bit integers with two's complement encoding and EVM SDIV/SMO
 <Tabs>
 <Tab title="Basic Operations">
 ```zig
-import * as Int64 from 'tevm/Int64'
+import * as Int64 from '@tevm/voltaire/Int64'
 
 // Create signed integers (use bigint literals)
 const a = Int64.from(-42n)
@@ -38,7 +38,7 @@ try {
 </Tab>
 <Tab title="Two's Complement">
 ```zig
-import * as Int64 from 'tevm/Int64'
+import * as Int64 from '@tevm/voltaire/Int64'
 
 // Two's complement conversions
 const negOne = Int64.from(-1n)
@@ -58,7 +58,7 @@ const bytes = Int64.toBytes(Int64.from(-1n))
 </Tab>
 <Tab title="EVM Semantics">
 ```zig
-import * as Int64 from 'tevm/Int64'
+import * as Int64 from '@tevm/voltaire/Int64'
 
 // SDIV: truncate toward zero
 Int64.dividedBy(Int64.from(-10n), Int64.from(3n))   // -3n (not -4n)
@@ -79,7 +79,7 @@ try {
 </Tab>
 <Tab title="Comparison & Sign">
 ```zig
-import * as Int64 from 'tevm/Int64'
+import * as Int64 from '@tevm/voltaire/Int64'
 
 const a = Int64.from(-42n)
 const b = Int64.from(10n)
@@ -121,7 +121,7 @@ Bit 63 is the sign bit:
 ## Constants
 
 ```zig
-import * as Int64 from 'tevm/Int64'
+import * as Int64 from '@tevm/voltaire/Int64'
 
 Int64.MIN      // -9223372036854775808n (INT64_MIN)
 Int64.MAX      // 9223372036854775807n (INT64_MAX)
@@ -134,7 +134,7 @@ Int64.SIZE     // 8 (bytes)
 ## Constructors
 
 ```zig
-import * as Int64 from 'tevm/Int64'
+import * as Int64 from '@tevm/voltaire/Int64'
 
 // Universal constructor
 const a = Int64.from(-42n)
@@ -151,7 +151,7 @@ const g = Int64.fromBytes(new Uint8Array([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x
 ## Conversions
 
 ```zig
-import * as Int64 from 'tevm/Int64'
+import * as Int64 from '@tevm/voltaire/Int64'
 
 const value = Int64.from(-42n)
 
@@ -177,7 +177,7 @@ Int64.clone(value)     // Creates independent copy
 ## Arithmetic
 
 ```zig
-import * as Int64 from 'tevm/Int64'
+import * as Int64 from '@tevm/voltaire/Int64'
 
 const a = Int64.from(-100n)
 const b = Int64.from(30n)
@@ -201,7 +201,7 @@ Int64.maximum(a, b)    // 30n
 ## Bitwise Operations
 
 ```zig
-import * as Int64 from 'tevm/Int64'
+import * as Int64 from '@tevm/voltaire/Int64'
 
 const a = Int64.from(0b01010101n)
 const b = Int64.from(0b00110011n)
@@ -220,7 +220,7 @@ Int64.shiftRight(Int64.from(-8n), 1)  // -4n (arithmetic, preserves sign)
 ## Validation
 
 ```zig
-import * as Int64 from 'tevm/Int64'
+import * as Int64 from '@tevm/voltaire/Int64'
 
 // Check if valid Int64
 Int64.isValid(9223372036854775807n)   // true (MAX)

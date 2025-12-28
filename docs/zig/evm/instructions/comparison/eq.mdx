@@ -47,8 +47,8 @@ Comparison is bitwise - no interpretation as signed/unsigned is needed.
 ### Basic Equality
 
 ```zig
-import { eq } from 'tevm/evm/comparison';
-import { createFrame } from 'tevm/evm/Frame';
+import { eq } from '@tevm/voltaire/evm/comparison';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // 42 == 42 = 1 (true)
 const frame = createFrame({ stack: [42n, 42n] });

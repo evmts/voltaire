@@ -38,7 +38,7 @@ calldata.toBytes(): Uint8Array
 <Tab title="Basic Usage">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData("0xa9059cbb...");
 const bytes = CallData.toBytes(calldata);
@@ -51,7 +51,7 @@ console.log(bytes);
 <Tab title="Zero-Copy">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData.fromBytes(
   new Uint8Array([0xa9, 0x05, 0x9c, 0xbb])
@@ -67,7 +67,7 @@ console.log(bytes.buffer === calldata.buffer); // true
 <Tab title="Class API">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData("0xa9059cbb");
 const bytes = calldata.toBytes(); // Method on instance
@@ -83,7 +83,7 @@ console.log(bytes.length); // 4
 `toBytes` returns the same underlying buffer:
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const original = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
 const calldata = CallData.fromBytes(original);
@@ -106,7 +106,7 @@ console.log(calldata[0]); // 0xff
 ### Binary Protocols
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Send over WebSocket
 async function sendBinary(ws: WebSocket, calldata: CallDataType) {
@@ -124,7 +124,7 @@ ws.onmessage = (event) => {
 ### File Operations
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 import { writeFileSync } from 'fs';
 
 // Write calldata to file
@@ -143,7 +143,7 @@ function loadCallData(path: string): CallDataType {
 ### Performance-Critical Operations
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Extract selector without string conversion
 function fastGetSelector(calldata: CallDataType): Uint8Array {
@@ -169,7 +169,7 @@ function fastEquals(a: CallDataType, b: CallDataType): boolean {
 ### WASM Interop
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 import { wasmModule } from './crypto.wasm';
 
 // Pass bytes to WASM
@@ -220,7 +220,7 @@ While CallData is conceptually immutable, `toBytes` exposes mutable buffer:
 <Tab title="Defensive Copy">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Create immutable copy
 function toBytesCopy(calldata: CallDataType): Uint8Array {
@@ -258,7 +258,7 @@ For public APIs, consider returning copies to maintain immutability guarantees.
 Output is plain Uint8Array (no CallData brand):
 
 ```typescript
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 const calldata: CallDataType = CallData("0xa9059cbb");
 const bytes: Uint8Array = CallData.toBytes(calldata);

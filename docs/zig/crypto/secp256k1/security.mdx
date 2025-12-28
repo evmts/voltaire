@@ -89,8 +89,8 @@ const key = keccak256(stringToBytes(password)); // ❌ WEAK
 **Use BIP32/BIP39 for backups:**
 
 ```zig
-import * as Bip39 from 'tevm/crypto/Bip39';
-import * as HDWallet from 'tevm/crypto/HDWallet';
+import * as Bip39 from '@tevm/voltaire/crypto/Bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/HDWallet';
 
 // Generate mnemonic (12-24 words)
 const mnemonic = Bip39.generateMnemonic(256); // 24 words

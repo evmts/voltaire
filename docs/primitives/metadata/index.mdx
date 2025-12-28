@@ -24,7 +24,7 @@ export type Metadata = {
 <Tab title="Extract">
 
 ```typescript
-import * as Metadata from 'tevm/Metadata';
+import * as Metadata from '@tevm/voltaire/Metadata';
 
 // From contract bytecode
 const meta = Metadata.fromBytecode(contractCode);
@@ -67,8 +67,8 @@ console.log(meta.experimental); // true/false
 ### Extracting Compiler Information
 
 ```typescript
-import * as Metadata from 'tevm/Metadata';
-import * as ContractCode from 'tevm/ContractCode';
+import * as Metadata from '@tevm/voltaire/Metadata';
+import * as ContractCode from '@tevm/voltaire/ContractCode';
 
 // Get deployed contract code
 const code = ContractCode.from(await provider.getCode(address));
@@ -93,7 +93,7 @@ if (meta) {
 ### Contract Verification
 
 ```typescript
-import * as Metadata from 'tevm/Metadata';
+import * as Metadata from '@tevm/voltaire/Metadata';
 
 // Extract metadata from deployed contract
 const deployedMeta = Metadata.fromBytecode(deployedCode);
@@ -113,7 +113,7 @@ if (deployedMeta?.solc === expectedMeta?.solc) {
 ### Creating Custom Metadata
 
 ```typescript
-import * as Metadata from 'tevm/Metadata';
+import * as Metadata from '@tevm/voltaire/Metadata';
 
 // Create metadata
 const meta: Metadata.Metadata = {

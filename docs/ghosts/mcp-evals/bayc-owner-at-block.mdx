@@ -1,0 +1,49 @@
+---
+title: BAYC — Owner Of Token At Block
+description: Determine the owner of a BAYC token ID at a specific historical block.
+---
+
+## Goal
+
+Given token ID and block number, determine owner at that block.
+
+Return as:
+
+ANSWER: 0x...
+
+## Contract
+
+- BAYC: 0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D
+
+## Approach
+
+1. Call `ownerOf(tokenId)` via `eth_call` at the historical block.
+2. If the contract reverts historically for some IDs, reconstruct via Transfer logs up to that block.
+
+## Example (TypeScript)
+
+```ts
+import { createPublicClient, http, parseAbi } from 'viem'
+import { mainnet } from 'viem/chains'
+
+const client = createPublicClient({ chain: mainnet, transport: http(process.env.ETHEREUM_RPC_URL!) })
+const BAYC = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D' as const
+
+const abi = parseAbi([
+  'function ownerOf(uint256 tokenId) view returns (address)',
+])
+
+const tokenId = 1234n
+const blockNumber = 15_000_000n
+
+const owner: `0x${string}` = await client.readContract({
+  address: BAYC,
+  abi,
+  functionName: 'ownerOf',
+  args: [tokenId],
+  blockNumber,
+})
+
+console.log(`ANSWER: ${owner}`)
+```
+

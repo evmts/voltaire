@@ -112,7 +112,7 @@ def deduplicate_addresses_optimized(addresses: list[Address]) -> list[Address]:
 **First occurrence preserved:** When duplicates exist, the first instance in the input array is kept:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 const addr1a = Address("0x0000000000000000000000000000000000000001")
 const addr2 = Address("0x0000000000000000000000000000000000000002")
@@ -139,7 +139,7 @@ console.log(unique !== original) // true
 **Value-based equality:** Uses `Address.equals()` internally for byte-by-byte comparison:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 // Different case representations of same address
 const lowercase = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
@@ -157,7 +157,7 @@ const unique = Address.deduplicateAddresses([lowercase, checksummed, uppercase])
 Remove duplicates from collected addresses:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 interface Transaction {
   from: AddressType
@@ -185,7 +185,7 @@ const participants = getUniqueParticipants(txs)
 Clean up allowlists with duplicate entries:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 class Allowlist {
   private addresses: AddressType[]
@@ -226,7 +226,7 @@ console.log(allowlist.unique.length) // 2
 Clean datasets with duplicate addresses:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 interface UserAccount {
   id: string
@@ -275,8 +275,8 @@ const cleaned = cleanUserDatabase(accounts)
 Extract unique addresses from event logs:
 
 ```zig
-import * as Address from 'tevm/Address'
-import type { EventLog } from 'tevm'
+import * as Address from '@tevm/voltaire/Address'
+import type { EventLog } from '@tevm/voltaire'
 
 function getUniqueTokenHolders(logs: EventLog[]): AddressType[] {
   const holders: AddressType[] = []
@@ -312,7 +312,7 @@ console.log(`${uniqueHolders.length} unique token holders`)
 Prepare unique addresses for batch RPC calls:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 async function getBalances(
   addresses: AddressType[],
@@ -350,7 +350,7 @@ const balances = await getBalances(addresses, provider)
 **For small arrays** (< 100 addresses), this is efficient:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 const addresses = [ /* 50 addresses */ ]
 const unique = Address.deduplicateAddresses(addresses)
@@ -360,7 +360,7 @@ const unique = Address.deduplicateAddresses(addresses)
 **For large arrays** (> 1000 addresses), use Set-based approach:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 function deduplicateAddressesOptimized(
   addresses: AddressType[]
@@ -393,7 +393,7 @@ const unique = deduplicateAddressesOptimized(manyAddresses)
 Combine with `sortAddresses` for sorted unique lists:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 const addresses = [addr3, addr1, addr2, addr1, addr3]
 
@@ -413,7 +413,7 @@ const uniqueSorted = Address.deduplicateAddresses(sortedFirst)
 Alternative implementation using `filter`:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 function deduplicateWithFilter(
   addresses: AddressType[]
@@ -433,7 +433,7 @@ const unique = deduplicateWithFilter([addr1, addr2, addr1])
 Implement set union, intersection, difference:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 function union(
   a: AddressType[],
@@ -476,7 +476,7 @@ console.log(difference(setA, setB))   // [addr1]
 Track seen addresses with Map for O(n) complexity:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 function deduplicateWithMap(
   addresses: AddressType[]
@@ -499,7 +499,7 @@ function deduplicateWithMap(
 Most efficient for large datasets:
 
 ```zig
-import * as Address from 'tevm/Address'
+import * as Address from '@tevm/voltaire/Address'
 
 function deduplicateWithSet(
   addresses: AddressType[]

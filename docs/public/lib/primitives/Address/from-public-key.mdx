@@ -23,8 +23,8 @@ Create Address from secp256k1 public key coordinates using factory pattern. Enab
 **Example:**
 
 ```typescript
-import { FromPublicKey } from 'tevm/Address/AddressType'
-import { hash as keccak256 } from 'tevm/crypto/Keccak256'
+import { FromPublicKey } from '@tevm/voltaire/Address/AddressType'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
 
 // Create factory with injected crypto
 const fromPublicKey = FromPublicKey({ keccak256 })
@@ -57,7 +57,7 @@ Create Address from secp256k1 public key coordinates (auto-injected keccak256).
 **Example:**
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const x = 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n
 const y = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n
@@ -146,8 +146,8 @@ The x and y coordinates must be valid points on the secp256k1 curve.
 ## Complete Example
 
 ```typescript
-import { Address } from 'tevm'
-import * as Secp256k1 from 'tevm/crypto/Secp256k1'
+import { Address } from '@tevm/voltaire'
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1'
 
 // Start with private key
 const privateKey = Bytes32()
@@ -176,8 +176,8 @@ console.log(addr.toHex())
 After recovering a public key from an ECDSA signature:
 
 ```typescript
-import { Address } from 'tevm'
-import * as Secp256k1 from 'tevm/crypto/Secp256k1'
+import { Address } from '@tevm/voltaire'
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1'
 
 const signature = // ... ECDSA signature
 const message = // ... signed message

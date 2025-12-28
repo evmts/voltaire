@@ -25,7 +25,7 @@ The Contract ABI (Application Binary Interface) defines how to encode function c
 Integers are **left-padded** with zeros to 32 bytes:
 
 ```zig
-import { Uint256 } from 'tevm';
+import { Uint256 } from '@tevm/voltaire';
 
 // uint256(42)
 const value = Uint256.from(42n);
@@ -48,7 +48,7 @@ Smaller integer types follow the same padding:
 Addresses are 20 bytes, **left-padded** to 32 bytes:
 
 ```zig
-import { Address } from 'tevm';
+import { Address } from '@tevm/voltaire';
 
 const addr = Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
 console.log(addr.toBytes());
@@ -63,7 +63,7 @@ Booleans encoded as `uint256`:
 - `true` → `0x0000...0001`
 
 ```zig
-import { CallData, Abi } from 'tevm';
+import { CallData, Abi } from '@tevm/voltaire';
 
 const abi = Abi([{
   name: "setValue",
@@ -80,7 +80,7 @@ const calldata = abi.setValue.encode(true);
 Fixed bytes are **right-padded** with zeros:
 
 ```zig
-import { Bytes32 } from 'tevm';
+import { Bytes32 } from '@tevm/voltaire';
 
 // bytes4 selector
 const selector = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
@@ -392,7 +392,7 @@ Decoding reverses the encoding:
 <Tab title="TypeScript">
 
 ```zig
-import { CallData, Abi } from 'tevm';
+import { CallData, Abi } from '@tevm/voltaire';
 
 function decodeTransfer(calldata: CallData) {
   const abi = Abi([{
@@ -447,7 +447,7 @@ pub fn decodeTransfer(
 Always validate encoded calldata:
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 function validateCallData(calldata: CallData): boolean {
   // Must have at least selector

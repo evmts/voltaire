@@ -69,8 +69,8 @@ block_hashes[-(current_block - block_number)]
 ### Recent Block Hash
 
 ```typescript
-import { blockhash } from 'tevm/evm/block';
-import { createFrame } from 'tevm/evm/Frame';
+import { blockhash } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // Query hash of block 17,999,999 (current: 18,000,000)
 const frame = createFrame({

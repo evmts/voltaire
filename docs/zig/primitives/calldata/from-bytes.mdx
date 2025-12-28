@@ -38,7 +38,7 @@ CallData.fromBytes(bytes: Uint8Array): CallDataType
 <Tab title="Basic Usage">
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const bytes = new Uint8Array([
   0xa9, 0x05, 0x9c, 0xbb, // transfer(address,uint256) selector
@@ -54,7 +54,7 @@ console.log(CallData.getSelector(calldata));
 <Tab title="From Buffer">
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 import { readFileSync } from 'fs';
 
 // Read binary calldata from file
@@ -69,7 +69,7 @@ console.log("Size:", calldata.length, "bytes");
 <Tab title="Namespace API">
 
 ```zig
-import * as CallData from 'tevm/CallData';
+import * as CallData from '@tevm/voltaire/CallData';
 
 const bytes = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
 const calldata = CallData.fromBytes(bytes);
@@ -83,7 +83,7 @@ const calldata = CallData.fromBytes(bytes);
 `fromBytes` uses zero-copy when possible:
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const bytes = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
 const calldata = CallData.fromBytes(bytes);
@@ -99,7 +99,7 @@ This makes `fromBytes` the most efficient constructor for binary data.
 Validates byte array structure:
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Too short (must be at least 4 bytes for selector)
 try {
@@ -120,7 +120,7 @@ console.log(calldata.length); // 4
 ### Binary Protocol
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Receive binary data over network
 function handleBinaryMessage(data: ArrayBuffer) {
@@ -136,7 +136,7 @@ function handleBinaryMessage(data: ArrayBuffer) {
 ### Performance-Critical Path
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Avoid hex encoding/decoding overhead
 function fastEncode(selector: Uint8Array, params: Uint8Array): CallDataType {
@@ -151,7 +151,7 @@ function fastEncode(selector: Uint8Array, params: Uint8Array): CallDataType {
 ### Buffer Slicing
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Extract calldata from larger buffer
 function extractCallData(
@@ -167,7 +167,7 @@ function extractCallData(
 ### Web APIs
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // From Blob
 async function fromBlob(blob: Blob): Promise<CallDataType> {
@@ -189,7 +189,7 @@ async function fromResponse(response: Response): Promise<CallDataType> {
 Enforces CallData brand at compile time:
 
 ```zig
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 // Type error: Uint8Array not assignable
 const bytes = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
@@ -205,7 +205,7 @@ const calldata: CallDataType = CallData.fromBytes(bytes); // ✅
 <Tab title="fromHex vs fromBytes">
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const hex = "0xa9059cbb..."; // 136 characters
 const bytes = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb, ...]); // 68 bytes

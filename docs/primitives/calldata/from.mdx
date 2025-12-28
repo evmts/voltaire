@@ -41,7 +41,7 @@ CallData(value: string | Uint8Array | CallDataType): CallDataType
 <Tab title="From Hex String">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // With 0x prefix
 const calldata1 = CallData("0xa9059cbb000000000000000000000000...");
@@ -57,7 +57,7 @@ console.log(CallData.equals(calldata1, calldata2)); // true
 <Tab title="From Uint8Array">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const bytes = new Uint8Array([
   0xa9, 0x05, 0x9c, 0xbb, // transfer selector
@@ -74,7 +74,7 @@ console.log(CallData.toHex(calldata));
 <Tab title="Idempotent">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata1 = CallData("0xa9059cbb...");
 const calldata2 = CallData(calldata1); // Returns same instance
@@ -86,7 +86,7 @@ console.log(calldata1 === calldata2); // true
 <Tab title="Namespace API">
 
 ```typescript
-import * as CallData from 'tevm/CallData';
+import * as CallData from '@tevm/voltaire/CallData';
 
 const calldata = CallData.from("0xa9059cbb...");
 console.log(CallData.toHex(calldata));
@@ -100,7 +100,7 @@ console.log(CallData.toHex(calldata));
 Validates input format and structure:
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Must be valid hex
 try {
@@ -126,7 +126,7 @@ console.log(calldata.length); // 4 (selector only)
 ### Parsing Transaction Data
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 interface Transaction {
   to: string;
@@ -145,7 +145,7 @@ function parseTransaction(tx: Transaction) {
 ### Normalized Input
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 // Accept various formats, normalize to CallData
 function processCallData(
@@ -165,7 +165,7 @@ processCallData(existingCallData);
 TypeScript enforces CallData brand:
 
 ```typescript
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 // Type error: Uint8Array not assignable to CallDataType
 const bytes = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);

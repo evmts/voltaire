@@ -13,10 +13,10 @@ Real-world usage patterns for transaction signing, message authentication, and a
 ### Legacy Transactions (Pre-EIP-1559)
 
 ```zig
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
-import * as Transaction from 'tevm/primitives/Transaction';
-import * as Rlp from 'tevm/primitives/Rlp';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+import * as Transaction from '@tevm/voltaire/primitives/Transaction';
+import * as Rlp from '@tevm/voltaire/primitives/Rlp';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Create unsigned transaction
 const tx = {
@@ -129,8 +129,8 @@ function getTransactionSender(signedTx: SignedTransaction): string {
 ### Sign Message
 
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 
 function personalSign(message: string, privateKey: Uint8Array): {
   r: Uint8Array;
@@ -181,8 +181,8 @@ function personalVerify(
 ### Sign Typed Data
 
 ```zig
-import * as EIP712 from 'tevm/crypto/EIP712';
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
+import * as EIP712 from '@tevm/voltaire/crypto/EIP712';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 
 // Define domain
 const domain = {
@@ -252,9 +252,9 @@ function verifyTypedData(
 ### From Private Key
 
 ```zig
-import * as Address from 'tevm/primitives/Address';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
+import * as Address from '@tevm/voltaire/primitives/Address';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 
 function deriveAddress(privateKey: Uint8Array): string {
   // 1. Derive public key (64 bytes, no prefix)
@@ -280,8 +280,8 @@ console.log(address); // 0x...
 ### From Mnemonic (BIP39/BIP44)
 
 ```zig
-import * as Bip39 from 'tevm/crypto/Bip39';
-import * as HDWallet from 'tevm/crypto/HDWallet';
+import * as Bip39 from '@tevm/voltaire/crypto/Bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/HDWallet';
 
 // Generate or restore mnemonic
 const mnemonic = Bip39.generateMnemonic(256); // 24 words

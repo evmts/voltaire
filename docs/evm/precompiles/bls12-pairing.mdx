@@ -85,8 +85,8 @@ Total output length: 32 bytes (single word)
 ### TypeScript
 
 ```typescript
-import { execute, PrecompileAddress } from 'tevm/precompiles';
-import { Hardfork } from 'tevm/primitives/Hardfork';
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 
 // Verify BLS signature: e(pubkey, H(msg)) = e(G1, signature)
 // Rearranged: e(pubkey, H(msg)) * e(-G1, signature) = 1

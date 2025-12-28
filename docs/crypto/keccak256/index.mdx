@@ -3,6 +3,10 @@ title: Keccak256
 description: Ethereum's primary hashing algorithm for addresses, topics, and function selectors
 ---
 
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/keccak256.ts">
+  Run Keccak256 examples in the interactive playground
+</Card>
+
 # Keccak256
 
 Keccak256 is a **cryptographic one-way hash function** based on the sponge construction that produces a fixed 32-byte digest from arbitrary-length input.
@@ -11,7 +15,7 @@ Keccak256 is a **cryptographic one-way hash function** based on the sponge const
 
 **Mainnet-critical algorithm** - Used in Ethereum execution layer for transaction hashing, address derivation (last 20 bytes of hash), function selectors (first 4 bytes), event topics, and Merkle Patricia tree state roots.
 
-Tevm provides Keccak256 with **two implementation options**:
+Voltaire provides Keccak256 with **two implementation options**:
 - `Keccak256` - Default WASM implementation (auto-selected based on benchmarks)
 - `Keccak256Ts` - Pure TypeScript implementation (@noble/hashes)
 - `Keccak256Wasm` - Explicit WASM implementation
@@ -31,13 +35,13 @@ Ethereum uses the original Keccak-256 algorithm (pre-NIST), NOT the finalized SH
 
 ## Implementation Options
 
-Tevm provides two Keccak256 implementations:
+Voltaire provides two Keccak256 implementations:
 
 ### 1. Default (WASM)
 Compiled from Zig's stdlib Keccak256 - both faster and smaller than pure JavaScript alternatives.
 
 ```typescript
-import { Keccak256Hash } from 'tevm/crypto/Keccak256';
+import { Keccak256Hash } from '@tevm/voltaire/crypto/Keccak256';
 
 const hash: Keccak256Hash = Keccak256Hash.from(data);
 // WASM implementation
@@ -53,7 +57,7 @@ const hash: Keccak256Hash = Keccak256Hash.from(data);
 Uses @noble/hashes - zero WASM dependency, maximum compatibility.
 
 ```typescript
-import { Keccak256HashTs } from 'tevm/crypto/keccak256.ts';
+import { Keccak256HashTs } from '@tevm/voltaire/crypto/keccak256.ts';
 
 const hash: Keccak256Hash = Keccak256HashTs.from(data);
 // Pure TypeScript
@@ -70,9 +74,9 @@ const hash: Keccak256Hash = Keccak256HashTs.from(data);
 The APIs are identical across implementations - you can swap them without changing your code:
 
 ```typescript
-import { Keccak256Hash } from 'tevm/crypto/Keccak256';
-import { Keccak256HashTs } from 'tevm/crypto/keccak256.ts';
-import { Keccak256HashWasm } from 'tevm/crypto/keccak256.wasm';
+import { Keccak256Hash } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256HashTs } from '@tevm/voltaire/crypto/keccak256.ts';
+import { Keccak256HashWasm } from '@tevm/voltaire/crypto/keccak256.wasm';
 
 // All have identical API
 const hash1: Keccak256Hash = Keccak256Hash.from(data);      // Default (WASM)
@@ -83,14 +87,14 @@ const hash3: Keccak256Hash = Keccak256HashWasm.from(data);  // Explicit WASM
 ## Quick Start
 
 <Tip>
-View executable examples: [`hash-bytes.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/hash-bytes.ts) | [`hash-string.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/hash-string.ts) | [`hash-hex.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/hash-hex.ts)
+**[Try it in the Playground](https://playground.tevm.sh?example=crypto/keccak256.ts)** - Run these examples live in your browser
 </Tip>
 
 <Tabs>
 <Tab title="Basic Hashing">
 ```typescript
-import { Keccak256Hash } from 'tevm/crypto/keccak256';
-import { Hex } from 'tevm/primitives/Hex';
+import { Keccak256Hash } from '@tevm/voltaire/crypto/keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 // Hash bytes
 const data = Hex.toBytes('0x0102030405');
@@ -109,7 +113,7 @@ const hexHash: Keccak256Hash = Keccak256Hash.fromHex('0x1234abcd');
 
 <Tab title="Ethereum Functions">
 ```typescript
-import { Keccak256Hash } from 'tevm/crypto/keccak256';
+import { Keccak256Hash } from '@tevm/voltaire/crypto/keccak256';
 
 // Compute function selector
 const selector = Keccak256Hash.selector('transfer(address,uint256)');
@@ -120,7 +124,7 @@ const topic: Keccak256Hash = Keccak256Hash.fromTopic('Transfer(address,address,u
 // Uint8Array(32) [full 32-byte hash]
 
 // Calculate contract address (CREATE)
-import { Address } from 'tevm/primitives/Address';
+import { Address } from '@tevm/voltaire/primitives/Address';
 
 const deployerAddress = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const nonce = 5n;
@@ -128,8 +132,8 @@ const contractAddr = Keccak256Hash.contractAddress(deployerAddress, nonce);
 // Uint8Array(20) [contract address]
 
 // Calculate contract address (CREATE2)
-import { Bytes32 } from 'tevm/primitives/Bytes32';
-import { Bytecode } from 'tevm/primitives/Bytecode';
+import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
+import { Bytecode } from '@tevm/voltaire/primitives/Bytecode';
 
 const salt = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001');
 const initCode = Bytecode('0x60806040523480156100105760006000fd5b50610015565b60c3806100236000396000f3fe');
@@ -138,14 +142,14 @@ const create2Addr = Keccak256Hash.create2Address(deployerAddress, salt, initCode
 ```
 
 <Tip>
-View examples: [`function-selector.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/function-selector.ts) | [`event-topic.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/event-topic.ts) | [`contract-address-create.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/contract-address-create.ts) | [`contract-address-create2.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/contract-address-create2.ts)
+**[Try Ethereum functions in the Playground](https://playground.tevm.sh?example=crypto/keccak256.ts)**
 </Tip>
 </Tab>
 
 <Tab title="Multiple Chunks">
 ```typescript
-import { Keccak256Hash } from 'tevm/crypto/keccak256';
-import { Hex } from 'tevm/primitives/Hex';
+import { Keccak256Hash } from '@tevm/voltaire/crypto/keccak256';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 // Hash multiple data chunks (equivalent to concatenating them first)
 const chunk1 = Hex.toBytes('0x010203');
@@ -157,7 +161,7 @@ const hash: Keccak256Hash = Keccak256Hash.fromMultiple([chunk1, chunk2, chunk3])
 ```
 
 <Tip>
-View examples: [`hash-multiple.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/hash-multiple.ts) | [`merkle-tree.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/merkle-tree.ts) | [`chain-hashing.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/crypto/keccak256/chain-hashing.ts)
+**[Try multi-chunk hashing in the Playground](https://playground.tevm.sh?example=crypto/keccak256.ts)**
 </Tip>
 </Tab>
 </Tabs>
@@ -177,7 +181,7 @@ Hash arbitrary bytes with Keccak-256.
 
 **Example:**
 ```typescript
-import { Hex } from 'tevm/primitives/Hex';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 const hash: Keccak256Hash = Keccak256Hash.from(Hex.toBytes('0x010203'));
 console.log(hash.length); // 32
@@ -247,7 +251,7 @@ Equivalent to hashing the concatenation of all chunks, but can be more efficient
 
 **Example:**
 ```typescript
-import { Hex } from 'tevm/primitives/Hex';
+import { Hex } from '@tevm/voltaire/primitives/Hex';
 
 const hash: Keccak256Hash = Keccak256Hash.fromMultiple([
   Hex.toBytes('0x0102'),
@@ -323,7 +327,7 @@ Uses CREATE formula: `address = keccak256(rlp([sender, nonce]))[12:]`
 
 **Example:**
 ```typescript
-import { Address } from 'tevm/primitives/Address';
+import { Address } from '@tevm/voltaire/primitives/Address';
 
 const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const nonce = 5n;
@@ -349,9 +353,9 @@ This allows deterministic contract addresses independent of nonce.
 
 **Example:**
 ```typescript
-import { Address } from 'tevm/primitives/Address';
-import { Bytes32 } from 'tevm/primitives/Bytes32';
-import { Bytecode } from 'tevm/primitives/Bytecode';
+import { Address } from '@tevm/voltaire/primitives/Address';
+import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
+import { Bytecode } from '@tevm/voltaire/primitives/Bytecode';
 
 const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const salt = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001');
@@ -372,7 +376,7 @@ Keccak256Hash.STATE_SIZE   // 25 - State size (25 u64 words)
 All Keccak256 functions return `Keccak256Hash`, a branded `Uint8Array` type:
 
 ```typescript
-import type { Keccak256Hash } from 'tevm/crypto/Keccak256';
+import type { Keccak256Hash } from '@tevm/voltaire/crypto/Keccak256';
 
 // Keccak256Hash is a Uint8Array with type branding for compile-time safety
 type Keccak256Hash = Uint8Array & { readonly __tag: "Keccak256Hash" };
@@ -436,7 +440,7 @@ Given an input and its hash, finding a different input with the same hash requir
 Compiled from Zig's stdlib Keccak-256 via unified loader (ReleaseSmall):
 
 ```typescript
-import { Keccak256HashWasm } from 'tevm/crypto/keccak256.wasm';
+import { Keccak256HashWasm } from '@tevm/voltaire/crypto/keccak256.wasm';
 
 await Keccak256HashWasm.init(); // Load primitives.wasm
 const hash: Keccak256Hash = Keccak256HashWasm.from(data);
@@ -444,7 +448,7 @@ const hash: Keccak256Hash = Keccak256HashWasm.from(data);
 
 **Characteristics:**
 - Part of main `primitives.wasm` bundle
-- Includes all Tevm primitives and crypto
+- Includes all Voltaire primitives and crypto
 - Requires async `init()` before use
 - Both faster and smaller than pure JavaScript alternatives
 

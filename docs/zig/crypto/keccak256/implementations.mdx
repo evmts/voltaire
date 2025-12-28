@@ -26,7 +26,7 @@ Tevm provides two Keccak256 implementations optimized for different deployment s
 
 **Characteristics:**
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const hash = Keccak256.hash(data);
 // WASM implementation
@@ -45,7 +45,7 @@ const hash = Keccak256.hash(data);
 
 **Characteristics:**
 ```zig
-import { Keccak256Ts } from 'tevm/crypto/keccak256.ts';
+import { Keccak256Ts } from '@tevm/voltaire/crypto/keccak256.ts';
 
 // No initialization needed
 const hash = Keccak256Ts.hash(data);
@@ -75,7 +75,7 @@ const hash = Keccak256Ts.hash(data);
 Pure TypeScript implementation is ready immediately:
 
 ```zig
-import { Keccak256Ts } from 'tevm/crypto/keccak256.ts';
+import { Keccak256Ts } from '@tevm/voltaire/crypto/keccak256.ts';
 
 // Use immediately
 const hash = Keccak256Ts.hash(data);
@@ -85,7 +85,7 @@ const hash = Keccak256Ts.hash(data);
 WASM variant requires async initialization:
 
 ```zig
-import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
+import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
 
 // Initialize once at startup
 await Keccak256Wasm.init();
@@ -129,11 +129,11 @@ Need Keccak256?
 
 ```zig
 // Before
-import { Keccak256Ts } from 'tevm/crypto/keccak256.ts';
+import { Keccak256Ts } from '@tevm/voltaire/crypto/keccak256.ts';
 const hash = Keccak256Ts.hash(data);
 
 // After (minimal change)
-import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
+import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
 await Keccak256Wasm.init(); // Add at startup
 const hash = Keccak256Wasm.hash(data); // Same API
 ```

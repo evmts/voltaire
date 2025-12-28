@@ -48,7 +48,7 @@ let dynamic: [u8; 20] = core::array::from_fn(|i| i as u8);
 Create addresses with predictable byte patterns for testing:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Sequential bytes
 const sequential = Address.of(
@@ -76,7 +76,7 @@ const alternating = Address.of(
 Build addresses programmatically with explicit byte control:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Custom DSL for address generation
 function createTestAddress(prefix: number, id: number): Address {
@@ -101,7 +101,7 @@ const testAddr2 = createTestAddress(0x02, 200)
 Construct addresses from parsed binary protocols:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Parse from custom binary format
 function parseAddressFromProtocol(data: Uint8Array, offset: number): Address {
@@ -120,7 +120,7 @@ function parseAddressFromProtocol(data: Uint8Array, offset: number): Address {
 Test edge cases with specific byte combinations:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 describe('address edge cases', () => {
   it('handles first byte set', () => {
@@ -157,7 +157,7 @@ describe('address edge cases', () => {
 Values outside 0-255 range are truncated to lower 8 bits:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Values > 255 are truncated
 const addr = Address.of(
@@ -176,7 +176,7 @@ console.log(addr[19]) // 19 (275 & 0xff)
 Negative values are treated as unsigned:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Negative values wrap around
 const addr = Address.of(
@@ -194,7 +194,7 @@ console.log(addr[1]) // 254 (-2 as u8)
 Must provide exactly 20 byte values:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Too few - throws InvalidAddressLengthError
 try {
@@ -245,7 +245,7 @@ try {
 ## Comparison with Other Constructors
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // All produce the same address:
 const bytes = new Uint8Array([

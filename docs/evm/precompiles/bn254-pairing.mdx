@@ -65,8 +65,8 @@ Total output length: 32 bytes (single word)
 ## Usage Example
 
 ```typescript
-import { execute, PrecompileAddress } from 'tevm/precompiles';
-import { Hardfork } from 'tevm/primitives/Hardfork';
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 
 // Verify Groth16 zkSNARK proof
 // Need to check: e(A, B) * e(alpha, beta) * e(C, delta) * e(input, gamma) = 1

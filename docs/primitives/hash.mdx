@@ -25,12 +25,12 @@ The `Hash` primitive has been moved to `crypto/keccak256` as `Keccak256Hash`. Th
 
 ```typescript
 // Old
-import { Hash } from 'tevm'
-import * as Hash from 'tevm/primitives/Hash'
+import { Hash } from '@tevm/voltaire'
+import * as Hash from '@tevm/voltaire/primitives/Hash'
 
 // New
-import { Keccak256 } from 'tevm/crypto/Keccak256'
-import * as Keccak256 from 'tevm/crypto/Keccak256'
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import * as Keccak256 from '@tevm/voltaire/crypto/Keccak256'
 ```
 
 ### Hashing Methods
@@ -51,14 +51,14 @@ const hashFromString = Keccak256.hashString('hello')
 
 ```typescript
 // Old - HashType
-import type { HashType } from 'tevm'
+import type { HashType } from '@tevm/voltaire'
 
 function processHash(hash: HashType): void {
   // ...
 }
 
 // New - Keccak256Hash (extends Bytes32)
-import type { Keccak256Hash } from 'tevm/crypto/Keccak256'
+import type { Keccak256Hash } from '@tevm/voltaire/crypto/Keccak256'
 
 function processHash(hash: Keccak256Hash): void {
   // ...
@@ -74,7 +74,7 @@ const hash = Hash.fromHex('0x1234...')
 const hash = Hash.fromBytes(bytes)
 
 // New - Use Keccak256Hash namespace
-import * as Keccak256Hash from 'tevm/crypto/Keccak256/Keccak256Hash'
+import * as Keccak256Hash from '@tevm/voltaire/crypto/Keccak256/Keccak256Hash'
 
 const hash = Keccak256Hash.from('0x1234...')
 const hash = Keccak256Hash.fromHex('0x1234...')
@@ -85,7 +85,7 @@ const hash = Keccak256Hash.fromBytes(bytes)
 
 ```typescript
 // Old approach
-import * as Hash from 'tevm/primitives/Hash'
+import * as Hash from '@tevm/voltaire/primitives/Hash'
 
 const data = new Uint8Array([1, 2, 3, 4])
 const hash = Hash.keccak256(data)
@@ -93,8 +93,8 @@ const hex = Hash.toHex(hash)
 const isValid = Hash.isHash(hash)
 
 // New approach
-import * as Keccak256 from 'tevm/crypto/Keccak256'
-import * as Keccak256Hash from 'tevm/crypto/Keccak256/Keccak256Hash'
+import * as Keccak256 from '@tevm/voltaire/crypto/Keccak256'
+import * as Keccak256Hash from '@tevm/voltaire/crypto/Keccak256/Keccak256Hash'
 
 const data = new Uint8Array([1, 2, 3, 4])
 const hash = Keccak256.hash(data)

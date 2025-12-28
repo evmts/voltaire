@@ -24,7 +24,7 @@ For most public networks they happen to be the same value, but they serve differ
 <Tabs>
 <Tab title="Basic Usage">
 ```typescript
-import * as NetworkId from 'tevm/NetworkId'
+import * as NetworkId from '@tevm/voltaire/NetworkId'
 
 // Create network ID
 const mainnet = NetworkId.from(1)
@@ -41,7 +41,7 @@ NetworkId.equals(mainnet, sepolia)  // false
 </Tab>
 <Tab title="Network Constants">
 ```typescript
-import { MAINNET, SEPOLIA, HOLESKY, GOERLI } from 'tevm/NetworkId'
+import { MAINNET, SEPOLIA, HOLESKY, GOERLI } from '@tevm/voltaire/NetworkId'
 
 // Pre-defined network IDs
 MAINNET   // 1
@@ -52,7 +52,7 @@ GOERLI    // 5 (deprecated)
 </Tab>
 <Tab title="RPC Usage">
 ```typescript
-import * as NetworkId from 'tevm/NetworkId'
+import * as NetworkId from '@tevm/voltaire/NetworkId'
 
 // Get network ID from node
 async function getNetworkId(rpcUrl: string) {
@@ -90,19 +90,19 @@ console.log(NetworkId.toNumber(networkId))  // 1
 ### Constructors
 
 ```typescript
-import * as NetworkId from 'tevm/NetworkId'
+import * as NetworkId from '@tevm/voltaire/NetworkId'
 
 // From number
 const networkId = NetworkId.from(1)
 
 // From pre-defined constant
-import { MAINNET, SEPOLIA } from 'tevm/NetworkId'
+import { MAINNET, SEPOLIA } from '@tevm/voltaire/NetworkId'
 ```
 
 ### Methods
 
 ```typescript
-import * as NetworkId from 'tevm/NetworkId'
+import * as NetworkId from '@tevm/voltaire/NetworkId'
 
 const networkId = NetworkId.from(1)
 
@@ -127,8 +127,8 @@ Understanding the difference:
 For most public networks, NetworkId and ChainId have the same value:
 
 ```typescript
-import * as NetworkId from 'tevm/NetworkId'
-import * as Chain from 'tevm/Chain'
+import * as NetworkId from '@tevm/voltaire/NetworkId'
+import * as Chain from '@tevm/voltaire/Chain'
 
 // Mainnet: both are 1
 const networkId = NetworkId.from(1)
@@ -146,8 +146,8 @@ However, private networks or some L2s may use different values for each.
 ### Network Detection
 
 ```typescript
-import * as NetworkId from 'tevm/NetworkId'
-import { MAINNET, SEPOLIA, HOLESKY } from 'tevm/NetworkId'
+import * as NetworkId from '@tevm/voltaire/NetworkId'
+import { MAINNET, SEPOLIA, HOLESKY } from '@tevm/voltaire/NetworkId'
 
 function getNetworkName(networkId: number): string {
   const id = NetworkId.from(networkId)
@@ -163,8 +163,8 @@ function getNetworkName(networkId: number): string {
 ### Multi-Network Support
 
 ```typescript
-import * as NetworkId from 'tevm/NetworkId'
-import { MAINNET, SEPOLIA } from 'tevm/NetworkId'
+import * as NetworkId from '@tevm/voltaire/NetworkId'
+import { MAINNET, SEPOLIA } from '@tevm/voltaire/NetworkId'
 
 const RPC_URLS: Record<number, string> = {
   1: 'https://eth.llamarpc.com',
@@ -183,7 +183,7 @@ function getRpcUrl(networkId: number): string {
 ### Node Connection Validation
 
 ```typescript
-import * as NetworkId from 'tevm/NetworkId'
+import * as NetworkId from '@tevm/voltaire/NetworkId'
 
 async function validateNetwork(
   rpcUrl: string,

@@ -51,8 +51,8 @@ OR pops two values from the stack, performs bitwise OR on each corresponding bit
 ### Set Multiple Flags
 
 ```zig
-import { or } from 'tevm/evm/bitwise';
-import { createFrame } from 'tevm/evm/Frame';
+import { or } from '@tevm/voltaire/evm/bitwise';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // Enable flags at bits 0 and 2
 const existing = 0b0000n;

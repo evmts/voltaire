@@ -43,7 +43,7 @@ For full 256-bit integer support, use the TypeScript, Zig, or Rust bindings.
 The conversion interprets the address bytes as big-endian unsigned integer:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Address bytes (hex): 0x0000000000000000000000000000000000000045
 // As integer: 69n
@@ -61,7 +61,7 @@ console.log(addr.toU256())
 `toU256()` and `fromNumber()` are inverse operations:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const original = 0x742d35cc6634c0532925a3b844bc9e7595f251e3n
 const addr = Address(original)
@@ -81,7 +81,7 @@ console.log(addr.equals(addr2))
 ### Numeric Comparison
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr1 = Address("0x0000000000000000000000000000000000000001")
 const addr2 = Address("0x0000000000000000000000000000000000000002")
@@ -98,7 +98,7 @@ if (value1 < value2) {
 ### Sorting Addresses
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addresses = [
   Address("0x0000000000000000000000000000000000000003"),
@@ -125,7 +125,7 @@ console.log(sorted.map(a => a.toHex()))
 Some contracts treat addresses as uint160 or uint256 for numeric operations:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 const value = addr.toU256()
@@ -141,7 +141,7 @@ const calldata = encodeFunctionData({
 ### Range Checks
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x0000000000000000000000000000000000000045")
 const value = addr.toU256()
@@ -158,7 +158,7 @@ if (value >= MIN_ADDR && value <= MAX_ADDR) {
 ### Mathematical Operations
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x0000000000000000000000000000000000000100")
 const value = addr.toU256()
@@ -182,7 +182,7 @@ console.log(prevAddr.toHex())
 ### Bitwise Operations
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr1 = Address("0x00000000000000000000000000000000000000ff")
 const addr2 = Address("0x000000000000000000000000000000000000ff00")
@@ -227,7 +227,7 @@ function toU256(address: Uint8Array): bigint {
 Addresses are 20 bytes (160 bits), which fits within a 256-bit integer:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Maximum address value: 2^160 - 1
 const MAX_ADDRESS_VALUE = (1n << 160n) - 1n
@@ -247,7 +247,7 @@ console.log(small.toU256())
 TypeScript enforces proper typing:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 const value: bigint = addr.toU256()  // Type-safe
@@ -259,7 +259,7 @@ const value: bigint = addr.toU256()  // Type-safe
 ## Comparison with Other Conversions
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x0000000000000000000000000000000000000045")
 

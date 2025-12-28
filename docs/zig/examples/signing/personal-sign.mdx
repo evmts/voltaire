@@ -7,9 +7,9 @@ description: "Sign a message using Ethereum personal_sign (EIP-191) format"
 Sign a message using Ethereum personal_sign (EIP-191) format
 
 ```zig
-import { Secp256k1 } from 'tevm/Secp256k1';
-import { Keccak256 } from 'tevm/Keccak256';
-import { Hex } from 'tevm/Hex';
+import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Hex } from '@tevm/voltaire/Hex';
 
 // Create a private key (32 bytes)
 const privateKey = Hex.toBytes('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');

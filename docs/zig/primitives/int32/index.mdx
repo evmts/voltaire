@@ -16,7 +16,7 @@ Type-safe signed 32-bit integers with two's complement encoding and EVM SDIV/SMO
 <Tabs>
 <Tab title="Basic Operations">
 ```zig
-import * as Int32 from 'tevm/Int32'
+import * as Int32 from '@tevm/voltaire/Int32'
 
 // Create signed integers
 const a = Int32.from(-42)
@@ -38,7 +38,7 @@ try {
 </Tab>
 <Tab title="Two's Complement">
 ```zig
-import * as Int32 from 'tevm/Int32'
+import * as Int32 from '@tevm/voltaire/Int32'
 
 // Two's complement conversions
 const negOne = Int32.from(-1)
@@ -58,7 +58,7 @@ const bytes = Int32.toBytes(Int32.from(-1))
 </Tab>
 <Tab title="EVM Semantics">
 ```zig
-import * as Int32 from 'tevm/Int32'
+import * as Int32 from '@tevm/voltaire/Int32'
 
 // SDIV: truncate toward zero
 Int32.dividedBy(Int32.from(-10), Int32.from(3))   // -3 (not -4)
@@ -79,7 +79,7 @@ try {
 </Tab>
 <Tab title="Comparison & Sign">
 ```zig
-import * as Int32 from 'tevm/Int32'
+import * as Int32 from '@tevm/voltaire/Int32'
 
 const a = Int32.from(-42)
 const b = Int32.from(10)
@@ -121,7 +121,7 @@ Bit 31 is the sign bit:
 ## Constants
 
 ```zig
-import * as Int32 from 'tevm/Int32'
+import * as Int32 from '@tevm/voltaire/Int32'
 
 Int32.MIN      // -2147483648 (INT32_MIN)
 Int32.MAX      // 2147483647 (INT32_MAX)
@@ -134,7 +134,7 @@ Int32.SIZE     // 4 (bytes)
 ## Constructors
 
 ```zig
-import * as Int32 from 'tevm/Int32'
+import * as Int32 from '@tevm/voltaire/Int32'
 
 // Universal constructor
 const a = Int32.from(-42)
@@ -151,7 +151,7 @@ const g = Int32.fromBytes(new Uint8Array([0xff, 0xff, 0xff, 0xff]))  // -1
 ## Conversions
 
 ```zig
-import * as Int32 from 'tevm/Int32'
+import * as Int32 from '@tevm/voltaire/Int32'
 
 const value = Int32.from(-42)
 
@@ -177,7 +177,7 @@ Int32.clone(value)     // Creates independent copy
 ## Arithmetic
 
 ```zig
-import * as Int32 from 'tevm/Int32'
+import * as Int32 from '@tevm/voltaire/Int32'
 
 const a = Int32.from(-100)
 const b = Int32.from(30)
@@ -201,7 +201,7 @@ Int32.maximum(a, b)    // 30
 ## Bitwise Operations
 
 ```zig
-import * as Int32 from 'tevm/Int32'
+import * as Int32 from '@tevm/voltaire/Int32'
 
 const a = Int32.from(0b01010101)
 const b = Int32.from(0b00110011)
@@ -220,7 +220,7 @@ Int32.shiftRight(Int32.from(-8), 1)  // -4 (arithmetic, preserves sign)
 ## Validation
 
 ```zig
-import * as Int32 from 'tevm/Int32'
+import * as Int32 from '@tevm/voltaire/Int32'
 
 // Check if valid Int32
 Int32.isValid(2147483647)   // true (MAX)

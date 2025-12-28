@@ -62,8 +62,8 @@ const versions = {
 ### Generation
 
 ```typescript
-import * as Bip39 from 'tevm/crypto/bip39';
-import * as HDWallet from 'tevm/crypto/hdwallet';
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
 
 // From mnemonic
 const mnemonic = Bip39.generateMnemonic(256);
@@ -377,7 +377,7 @@ console.log(privateKey); // null
 ### Encrypted Storage
 
 ```typescript
-import * as AesGcm from 'tevm/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
 
 async function storeExtendedKey(xprv: string, password: string) {
   // Derive encryption key from password

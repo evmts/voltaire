@@ -7,8 +7,8 @@ description: "Your first Tevm example - hashing a simple string with Keccak256"
 Your first Tevm example - hashing a simple string with Keccak256
 
 ```zig
-import { Keccak256 } from 'tevm/Keccak256';
-import { Hex } from 'tevm/Hex';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Hex } from '@tevm/voltaire/Hex';
 
 // Hash a string using Keccak256
 const hash = Keccak256.hashString('Hello, Tevm!');

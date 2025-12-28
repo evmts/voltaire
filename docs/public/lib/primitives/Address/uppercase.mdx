@@ -14,7 +14,7 @@ Branded hex string type representing an address in all uppercase format. Provide
 ## Type Definition
 
 ```typescript
-import type { Hex } from 'tevm'
+import type { Hex } from '@tevm/voltaire'
 
 type Uppercase = Hex.Sized<20> & {
   readonly __variant: 'Address'
@@ -34,7 +34,7 @@ Use `Uppercase` addresses when:
 
 **Legacy system requirements** - Some older systems expect uppercase addresses:
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Legacy API requires uppercase
 async function registerWithOldSystem(address: Address) {
@@ -48,7 +48,7 @@ async function registerWithOldSystem(address: Address) {
 
 **Display consistency** - Standardize address display across your UI:
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function formatForDisplay(address: Address): string {
   return Address.Uppercase(address)
@@ -61,7 +61,7 @@ console.log(formatForDisplay(addr))
 
 **Performance-critical normalization** - Faster than checksummed format (no crypto):
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Fast - simple string transformation
 const upper = Address.Uppercase(address)
@@ -94,7 +94,7 @@ Create uppercase hex string from Address.
 **Uppercase** is purely cosmetic case transformation, **Checksummed** provides integrity verification:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
@@ -118,7 +118,7 @@ const checksum = Address.Checksummed(addr)
 **Lowercase** is the canonical Ethereum format, **Uppercase** is for specific use cases:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
 
@@ -142,7 +142,7 @@ const upper = Address.Uppercase(addr)
 Some older systems require uppercase addresses:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 class LegacyAPIClient {
   async register(address: Address) {
@@ -165,7 +165,7 @@ class LegacyAPIClient {
 Standardize address formatting across your application:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 class AddressFormatter {
   // Consistent uppercase display
@@ -189,7 +189,7 @@ console.log(AddressFormatter.format(addr))
 Consistent formatting for data exports:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function exportAddressesCSV(
   addresses: Address[],
@@ -215,7 +215,7 @@ function exportAddressesCSV(
 Normalize addresses for non-critical operations:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Note: For address comparison, use equals() instead
 function normalizeAddressSet(addresses: Address[]): Set<string> {
@@ -246,7 +246,7 @@ console.log(normalized.size) // 1 (same address)
 ### Basic Usage
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Mixed case input
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
@@ -266,7 +266,7 @@ console.log(upper2)
 Converting to uppercase multiple times produces the same result:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 const upper1 = Address.Uppercase(addr)
@@ -281,7 +281,7 @@ console.log(upper1 === upper2) // true
 ### All Formats Comparison
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
@@ -309,7 +309,7 @@ console.log(fromUpper.equals(fromChecksum)) // true
 ### Edge Cases
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Zero address
 const zero = Address.zero()

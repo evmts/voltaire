@@ -1,0 +1,51 @@
+---
+title: CryptoPunks — First Mint Block Hash
+description: Step-by-step approach for finding the block hash of the first CryptoPunks mint using Ethereum RPC.
+---
+
+## Goal
+
+Find the block hash where the first CryptoPunk NFT was minted. Output must be:
+
+ANSWER: 0x...
+
+## Hints
+
+- Contract address: 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB
+- The first mint occurs at contract deployment (look for the deployment transaction and its block).
+- Use RPC methods `eth_getCode`, `eth_getTransactionByHash`, and `eth_getBlockByNumber` or an indexer pattern with logs.
+
+## Approach
+
+1. Identify the deployment transaction:
+   - Scan logs or check the earliest block where `code` exists (`eth_getCode(address, block)` over a short range).
+   - Or search from known deployment block if available.
+2. Resolve the transaction’s `blockHash` via `eth_getTransactionByHash`.
+
+## Example (TypeScript + viem)
+
+```ts
+import { createPublicClient, http, parseAbiItem } from 'viem'
+import { mainnet } from 'viem/chains'
+
+const client = createPublicClient({ chain: mainnet, transport: http(process.env.ETHEREUM_RPC_URL!) })
+
+const CRYPTOPUNKS = '0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB' as const
+
+// Option A: Find earliest Transfer event (if indexed)
+const transferEvent = parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)')
+
+const earliest = await client.getLogs({
+  address: CRYPTOPUNKS,
+  event: transferEvent,
+  fromBlock: 0n,
+  toBlock: 7_000_000n,
+  limit: 1,
+})
+
+if (earliest.length > 0) {
+  const tx = await client.getTransaction({ hash: earliest[0].transactionHash! })
+  console.log(`ANSWER: ${tx.blockHash}`)
+}
+```
+

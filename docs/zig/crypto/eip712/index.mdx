@@ -18,8 +18,8 @@ Key concepts:
 ## Quick Start
 
 ```zig
-import * as EIP712 from 'tevm/crypto/eip712';
-import { Address } from 'tevm/primitives/address';
+import * as EIP712 from '@tevm/voltaire/crypto/eip712';
+import { Address } from '@tevm/voltaire/primitives/address';
 
 // Define typed data structure
 const typedData = {
@@ -81,7 +81,7 @@ Tevm provides two ways to use EIP-712:
 Crypto dependencies auto-injected - simplest for most use cases:
 
 ```zig
-import * as EIP712 from 'tevm/crypto/eip712';
+import * as EIP712 from '@tevm/voltaire/crypto/eip712';
 
 const hash = EIP712.hashTypedData(typedData);
 const signature = EIP712.signTypedData(typedData, privateKey);
@@ -93,9 +93,9 @@ Tree-shakeable with explicit crypto dependencies. Useful for custom crypto imple
 
 ```zig
 import { HashTypedData, HashDomain, HashStruct, EncodeData,
-         HashType, EncodeValue } from 'tevm/crypto/eip712';
-import { hash as keccak256 } from 'tevm/crypto/keccak256';
-import { sign as secp256k1Sign } from 'tevm/crypto/secp256k1';
+         HashType, EncodeValue } from '@tevm/voltaire/crypto/eip712';
+import { hash as keccak256 } from '@tevm/voltaire/crypto/keccak256';
+import { sign as secp256k1Sign } from '@tevm/voltaire/crypto/secp256k1';
 
 // Build from bottom up (handle circular dependencies)
 const hashType = HashType({ keccak256 });
@@ -343,16 +343,16 @@ Tevm provides three implementation strategies for EIP-712:
 ### Native Zig (49KB)
 High-performance implementation with minimal bundle impact:
 ```zig
-import * as EIP712 from 'tevm/crypto/eip712';
+import * as EIP712 from '@tevm/voltaire/crypto/eip712';
 // Native Zig + secp256k1 + keccak256
 ```
 
 ### WASM Composition
 Tree-shakeable WASM modules for custom crypto pipelines:
 ```zig
-import { HashTypedData } from 'tevm/crypto/eip712';
-import { hash as keccak256Wasm } from 'tevm/crypto/keccak256/wasm';
-import { sign as secp256k1Wasm } from 'tevm/crypto/secp256k1/wasm';
+import { HashTypedData } from '@tevm/voltaire/crypto/eip712';
+import { hash as keccak256Wasm } from '@tevm/voltaire/crypto/keccak256/wasm';
+import { sign as secp256k1Wasm } from '@tevm/voltaire/crypto/secp256k1/wasm';
 
 const hashTypedData = HashTypedData({
   keccak256: keccak256Wasm,

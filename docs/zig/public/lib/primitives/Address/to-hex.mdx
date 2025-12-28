@@ -58,7 +58,7 @@ printf("%.*s\n", 42, hex_buf);
 `toHex()` always returns lowercase, regardless of input format:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Mixed case input (EIP-55 checksummed)
 const checksummed = Address("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
@@ -78,7 +78,7 @@ For checksummed output, use `toChecksummed()` instead.
 ### Display and Logging
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address(privateKey)
 console.log(`Address: ${addr.toHex()}`)
@@ -87,7 +87,7 @@ console.log(`Address: ${addr.toHex()}`)
 ### Storage and Serialization
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 interface Account {
   address: string
@@ -106,7 +106,7 @@ const json = JSON.stringify(account)
 ### Comparison and Hashing
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Normalize for comparison
 const normalized1 = addr1.toHex()
@@ -124,7 +124,7 @@ balances.set(addr.toHex(), 1000n)
 ### Database Queries
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 async function getBalance(address: Address) {
   const hex = address.toHex()
@@ -143,7 +143,7 @@ async function getBalance(address: Address) {
 For repeated conversions, consider caching the result:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 class AddressWrapper {
   private _hexCache?: string
@@ -162,7 +162,7 @@ class AddressWrapper {
 ## Comparison with Other Formats
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 

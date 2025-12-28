@@ -3,6 +3,10 @@ title: Ed25519
 description: Edwards-curve Digital Signature Algorithm using Curve25519 - fast, deterministic signatures
 ---
 
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/ed25519.ts">
+  Run Ed25519 examples in the interactive playground
+</Card>
+
 <Warning>
 **This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
 </Warning>
@@ -24,8 +28,8 @@ Ed25519 is a modern elliptic curve signature scheme using the Edwards curve form
 ## Quick Start
 
 ```typescript
-import * as Ed25519 from 'tevm/crypto/Ed25519';
-import * as Hex from 'tevm/primitives/Hex';
+import * as Ed25519 from '@tevm/voltaire/crypto/Ed25519';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Generate keypair from seed
 const seed = Hex('0x9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60');
@@ -58,7 +62,7 @@ Generate deterministic Ed25519 keypair from a 32-byte seed.
 - `InvalidSeedError` - Seed wrong length
 
 ```typescript
-import * as Hex from 'tevm/primitives/Hex';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 const seed = Hex('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');
 const { secretKey, publicKey } = Ed25519.keypairFromSeed(seed);
@@ -265,7 +269,7 @@ assert(Ed25519.verify(signature, message, publicKey));
 ### Deterministic Signatures
 
 ```typescript
-import * as Hex from 'tevm/primitives/Hex';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 // Ed25519 is deterministic - same message + key = same signature
 const seed = Hex('0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890');
@@ -283,7 +287,7 @@ assert(sig1.every((byte, i) => byte === sig2[i]));
 ### Message Length Flexibility
 
 ```typescript
-import * as Hex from 'tevm/primitives/Hex';
+import * as Hex from '@tevm/voltaire/primitives/Hex';
 
 const seed = Hex('0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321');
 const { secretKey, publicKey } = Ed25519.keypairFromSeed(seed);
@@ -337,7 +341,7 @@ Ed25519 operations available in WASM builds:
 - **ReleaseFast**: Performance-optimized
 
 ```typescript
-import { Ed25519 } from 'tevm/crypto/Ed25519';
+import { Ed25519 } from '@tevm/voltaire/crypto/Ed25519';
 // Automatically uses WASM in supported environments
 ```
 

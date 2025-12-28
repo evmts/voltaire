@@ -18,7 +18,7 @@ Create zero address directly instead of checking.
 **Example:**
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const zero = Address.zero()
 console.log(zero.isZero())            // true
@@ -48,7 +48,7 @@ The zero address (`0x0000000000000000000000000000000000000000`) has special mean
 Validate address is initialized:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function validateRecipient(to: Address) {
   if (to.isZero()) {
@@ -68,7 +68,7 @@ if (!recipient.isZero()) {
 Check if address variable has been set:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 interface TokenBalance {
   owner: Address
@@ -85,7 +85,7 @@ function isInitialized(record: TokenBalance): boolean {
 Identify contract deployment transactions:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 interface Transaction {
   from: Address
@@ -106,7 +106,7 @@ const deployments = transactions.filter(isContractCreation)
 Detect token burn operations:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 interface Transfer {
   from: Address
@@ -130,7 +130,7 @@ function getTotalBurned(transfers: Transfer[]): bigint {
 Check if storage slot contains default value:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 interface StorageSlot {
   key: Uint8Array
@@ -150,7 +150,7 @@ const nonDefaultSlots = slots.filter(hasCustomValue)
 Filter out zero addresses from collections:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function removeZeroAddresses(addresses: Address[]): Address[] {
   return addresses.filter(addr => !addr.isZero())
@@ -187,7 +187,7 @@ export function isZero(address) {
 Validate before processing:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 async function sendTokens(to: Address, amount: bigint) {
   if (to.isZero()) {
@@ -206,7 +206,7 @@ async function sendTokens(to: Address, amount: bigint) {
 Branch on zero check:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function getAddressLabel(addr: Address): string {
   if (addr.isZero()) {
@@ -221,7 +221,7 @@ function getAddressLabel(addr: Address): string {
 Represent optional values:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 interface Config {
   // Zero address means no delegate set
@@ -244,7 +244,7 @@ function getDelegate(config: Config): Address | null {
 Zero check works regardless of how address was created:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const zero1 = Address("0x0000000000000000000000000000000000000000")
 const zero2 = Address(0n)
@@ -264,7 +264,7 @@ console.log(zero5.isZero()) // true
 Single non-zero byte is not zero:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x0000000000000000000000000000000000000001")
 console.log(addr.isZero()) // false

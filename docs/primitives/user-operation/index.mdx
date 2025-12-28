@@ -10,8 +10,8 @@ UserOperation represents an ERC-4337 v0.6 user operation. User operations enable
 ## Quick Start
 
 ```typescript
-import { UserOperation } from 'tevm/primitives/UserOperation';
-import { ENTRYPOINT_V06 } from 'tevm/primitives/EntryPoint';
+import { UserOperation } from '@tevm/voltaire/primitives/UserOperation';
+import { ENTRYPOINT_V06 } from '@tevm/voltaire/primitives/EntryPoint';
 
 // Create user operation
 const userOp = UserOperation.from({
@@ -159,8 +159,8 @@ function pack(userOp: UserOperationType): PackedUserOperationType
 ### Basic Operation
 
 ```typescript
-import { UserOperation } from 'tevm/primitives/UserOperation';
-import { ENTRYPOINT_V06 } from 'tevm/primitives/EntryPoint';
+import { UserOperation } from '@tevm/voltaire/primitives/UserOperation';
+import { ENTRYPOINT_V06 } from '@tevm/voltaire/primitives/EntryPoint';
 
 const userOp = UserOperation.from({
   sender: smartAccountAddress,
@@ -195,8 +195,8 @@ await bundler.request({
 ### With Paymaster
 
 ```typescript
-import { UserOperation } from 'tevm/primitives/UserOperation';
-import { Paymaster } from 'tevm/primitives/Paymaster';
+import { UserOperation } from '@tevm/voltaire/primitives/UserOperation';
+import { Paymaster } from '@tevm/voltaire/primitives/Paymaster';
 
 const paymaster = Paymaster.from(paymasterAddress);
 const paymasterAndData = new Uint8Array([
@@ -215,7 +215,7 @@ const userOp = UserOperation.from({
 ### Account Deployment
 
 ```typescript
-import { UserOperation } from 'tevm/primitives/UserOperation';
+import { UserOperation } from '@tevm/voltaire/primitives/UserOperation';
 
 // initCode = factoryAddress (20 bytes) + factoryCalldata
 const factoryCalldata = encodeFunctionData({

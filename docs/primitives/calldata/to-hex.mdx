@@ -38,7 +38,7 @@ calldata.toHex(): string
 <Tab title="Basic Usage">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData("0xa9059cbb...");
 const hex = CallData.toHex(calldata);
@@ -51,7 +51,7 @@ console.log(hex);
 <Tab title="Transaction Serialization">
 
 ```typescript
-import { CallData, Transaction } from 'tevm';
+import { CallData, Transaction } from '@tevm/voltaire';
 
 const calldata = abi.transfer.encode(recipient, amount);
 
@@ -73,7 +73,7 @@ const txData = {
 <Tab title="Class API">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData("0xa9059cbb...");
 const hex = calldata.toHex(); // Method on instance
@@ -89,7 +89,7 @@ console.log(hex);
 Output always includes `0x` prefix and lowercase hex:
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData.fromBytes(
   new Uint8Array([0xa9, 0x05, 0x9c, 0xbb])
@@ -104,7 +104,7 @@ console.log(CallData.toHex(calldata));
 ### JSON-RPC Transactions
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 async function sendTransaction(calldata: CallDataType) {
   const response = await fetch(rpcUrl, {
@@ -126,7 +126,7 @@ async function sendTransaction(calldata: CallDataType) {
 ### Logging and Debugging
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 function logCallData(calldata: CallDataType) {
   const hex = CallData.toHex(calldata);
@@ -141,7 +141,7 @@ function logCallData(calldata: CallDataType) {
 ### Block Explorers
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 function generateExplorerLink(
   tx: Transaction,
@@ -157,7 +157,7 @@ function generateExplorerLink(
 ### Storage and Caching
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 class CallDataCache {
   private cache = new Map<string, CallDataDecoded>();
@@ -218,7 +218,7 @@ function processCallDataSlow(calldata: CallDataType) {
 <Tab title="toHex">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData.fromBytes(
   new Uint8Array([0xa9, 0x05, 0x9c, 0xbb])
@@ -239,7 +239,7 @@ console.log(typeof hex); // "string"
 <Tab title="toBytes">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData("0xa9059cbb");
 const bytes = CallData.toBytes(calldata);
@@ -262,7 +262,7 @@ console.log(bytes instanceof Uint8Array); // true
 Output is plain string (no branding):
 
 ```typescript
-import { CallData, type CallDataType } from 'tevm';
+import { CallData, type CallDataType } from '@tevm/voltaire';
 
 const calldata: CallDataType = CallData("0xa9059cbb");
 const hex: string = CallData.toHex(calldata);

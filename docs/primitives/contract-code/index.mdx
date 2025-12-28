@@ -8,7 +8,7 @@ description: Deployed contract bytecode with metadata
 [Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) representing full deployed contract bytecode including Solidity compiler metadata.
 
 ```typescript
-import type { brand } from 'tevm/brand';
+import type { brand } from '@tevm/voltaire/brand';
 
 export type ContractCodeType = Uint8Array & {
   readonly [brand]: "ContractCode";
@@ -21,7 +21,7 @@ export type ContractCodeType = Uint8Array & {
 <Tab title="Create">
 
 ```typescript
-import * as ContractCode from 'tevm/ContractCode';
+import * as ContractCode from '@tevm/voltaire/ContractCode';
 
 // From hex string
 const code = ContractCode.from("0x6001600155a26469706673...");
@@ -70,7 +70,7 @@ const runtime = ContractCode.extractRuntime(code);
 ### Verifying Contract Code
 
 ```typescript
-import * as ContractCode from 'tevm/ContractCode';
+import * as ContractCode from '@tevm/voltaire/ContractCode';
 
 // Get deployed code from blockchain
 const deployed = ContractCode.from(await provider.getCode(address));
@@ -92,8 +92,8 @@ if (ContractCode.equals(runtime, expected)) {
 ### Analyzing Contract Structure
 
 ```typescript
-import * as ContractCode from 'tevm/ContractCode';
-import * as Metadata from 'tevm/Metadata';
+import * as ContractCode from '@tevm/voltaire/ContractCode';
+import * as Metadata from '@tevm/voltaire/Metadata';
 
 const code = ContractCode.from(deployedBytecode);
 

@@ -23,7 +23,7 @@ BLS12-381 is a Barreto-Lynn-Scott pairing-friendly curve designed for optimal se
 ## Quick Start
 
 ```zig
-import * as BLS12381 from 'tevm/crypto';
+import * as BLS12381 from '@tevm/voltaire/crypto';
 
 // G1 operations (signatures)
 const g1Point1 = new Uint8Array(128); // G1 point input
@@ -73,7 +73,7 @@ G1 points are in the base field Fp (381-bit prime).
 #### G1 Addition
 
 ```zig
-import { bls12_381 } from 'tevm/crypto';
+import { bls12_381 } from '@tevm/voltaire/crypto';
 
 // Add two G1 points
 const input = new Uint8Array(256); // p1 (128 bytes) || p2 (128 bytes)
@@ -234,7 +234,7 @@ async function verifyBLSSignature(
 #### Map Field Element to G1
 
 ```zig
-import { bls12_381 } from 'tevm/crypto';
+import { bls12_381 } from '@tevm/voltaire/crypto';
 
 // Hash to curve: map Fp element to G1 point
 const fpElement = Bytes64(); // Padded field element
@@ -374,7 +374,7 @@ pub const bls12_381 = struct {
 
 ```zig
 // WASM builds may not support BLS12-381
-import { bls12_381 } from 'tevm/crypto';
+import { bls12_381 } from '@tevm/voltaire/crypto';
 
 try {
   await bls12_381.g1Add(input, output);

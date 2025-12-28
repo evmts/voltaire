@@ -23,10 +23,10 @@ ChaCha20Poly1305 is an **authenticated encryption algorithm** combining ChaCha20
 
 ## Status Note
 
-**ChaCha20-Poly1305 is not yet implemented in Tevm.** This documentation describes the specification and planned implementation based on RFC 8439.
+**ChaCha20-Poly1305 is not yet implemented in Voltaire.** This documentation describes the specification and planned implementation based on RFC 8439.
 
 For production use, consider:
-- **AES-GCM** (currently implemented in Tevm)
+- **AES-GCM** (currently implemented in Voltaire)
 - **@noble/ciphers** - Pure TypeScript implementation
 - **libsodium.js** - WebAssembly wrapper for libsodium
 
@@ -110,7 +110,7 @@ ChaCha20-Poly1305:
 ## Planned API
 
 ```typescript
-import * as ChaCha20Poly1305 from 'tevm/crypto/chacha20poly1305';
+import * as ChaCha20Poly1305 from '@tevm/voltaire/crypto/chacha20poly1305';
 
 // Generate key (256-bit only)
 const key = ChaCha20Poly1305.generateKey();
@@ -354,7 +354,7 @@ Encrypt private keys with user password:
 
 ## Implementation Status
 
-**Current:** Not yet implemented in Tevm
+**Current:** Not yet implemented in Voltaire
 
 **Planned:**
 - Pure TypeScript implementation

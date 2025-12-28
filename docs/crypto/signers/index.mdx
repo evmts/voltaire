@@ -16,7 +16,7 @@ Private keys are encapsulated securely - never exposed after signer creation.
 ## Quick Start
 
 ```typescript
-import { PrivateKeySignerImpl } from 'tevm/crypto/signers';
+import { PrivateKeySignerImpl } from '@tevm/voltaire/crypto/signers';
 
 // Create signer from private key
 const signer = PrivateKeySignerImpl.fromPrivateKey({
@@ -69,7 +69,7 @@ WASM-based implementation using Zig cryptographic primitives.
 ### Construction
 
 ```typescript
-import { PrivateKeySignerImpl } from 'tevm/crypto/signers';
+import { PrivateKeySignerImpl } from '@tevm/voltaire/crypto/signers';
 
 // From hex string (with or without 0x prefix)
 const signer1 = PrivateKeySignerImpl.fromPrivateKey({
@@ -235,7 +235,7 @@ EIP-712 provides protection against signature replay across different dApps thro
 Extract address from any signer instance.
 
 ```typescript
-import { PrivateKeySignerImpl, getAddress } from 'tevm/crypto/signers';
+import { PrivateKeySignerImpl, getAddress } from '@tevm/voltaire/crypto/signers';
 
 const signer = PrivateKeySignerImpl.fromPrivateKey({ privateKey: '0x...' });
 const address = getAddress(signer);
@@ -249,7 +249,7 @@ Not yet implemented. Requires RLP deserialization and signature recovery binding
 </Warning>
 
 ```typescript
-import { recoverTransactionAddress } from 'tevm/crypto/signers';
+import { recoverTransactionAddress } from '@tevm/voltaire/crypto/signers';
 
 // Future API:
 // const signerAddress = await recoverTransactionAddress(signedTransaction);
@@ -287,7 +287,7 @@ The hybrid approach provides:
 ### Wallet Integration
 
 ```typescript
-import { PrivateKeySignerImpl } from 'tevm/crypto/signers';
+import { PrivateKeySignerImpl } from '@tevm/voltaire/crypto/signers';
 
 class Wallet {
   private signer: PrivateKeySignerImpl;
@@ -315,7 +315,7 @@ class Wallet {
 ### Multi-Signature Workflow
 
 ```typescript
-import { PrivateKeySignerImpl } from 'tevm/crypto/signers';
+import { PrivateKeySignerImpl } from '@tevm/voltaire/crypto/signers';
 
 async function collectSignatures(
   message: string,
@@ -338,8 +338,8 @@ const signatures = await collectSignatures('Approve proposal #1', signers);
 ### SIWE (Sign-In with Ethereum)
 
 ```typescript
-import { PrivateKeySignerImpl } from 'tevm/crypto/signers';
-import * as Siwe from 'tevm/primitives/Siwe';
+import { PrivateKeySignerImpl } from '@tevm/voltaire/crypto/signers';
+import * as Siwe from '@tevm/voltaire/primitives/Siwe';
 
 const signer = PrivateKeySignerImpl.fromPrivateKey({ privateKey: '0x...' });
 

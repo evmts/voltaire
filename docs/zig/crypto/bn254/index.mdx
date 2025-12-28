@@ -69,7 +69,7 @@ Complete implementation including:
 
 **Import**:
 ```zig
-import { bn254 } from 'tevm/crypto';
+import { bn254 } from '@tevm/voltaire/crypto';
 // Uses pure Zig via FFI (native) or WASM
 ```
 
@@ -85,7 +85,7 @@ Production-grade implementation via `arkworks-algebra`:
 
 **Import**:
 ```zig
-import { bn254Ark } from 'tevm/crypto';
+import { bn254Ark } from '@tevm/voltaire/crypto';
 // Direct access to arkworks implementation
 ```
 
@@ -109,7 +109,7 @@ Planned features:
 ## Quick Start
 
 ```zig
-import { bn254Ark } from 'tevm/crypto';
+import { bn254Ark } from '@tevm/voltaire/crypto';
 
 // G1 point addition (arkworks)
 const g1a = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000001' +

@@ -20,8 +20,8 @@ Key operations:
 ## Quick Start
 
 ```zig
-import * as Bip39 from 'tevm/crypto/bip39';
-import * as HDWallet from 'tevm/crypto/hdwallet';
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
 
 // 1. Generate or restore mnemonic
 const mnemonic = Bip39.generateMnemonic(256);
@@ -443,10 +443,10 @@ console.log(HDWallet.getPrivateKey(addr0));   // null
 ### Generate New Wallet
 
 ```zig
-import * as Bip39 from 'tevm/crypto/bip39';
-import * as HDWallet from 'tevm/crypto/hdwallet';
-import { Address } from 'tevm/primitives/address';
-import { secp256k1 } from 'tevm/crypto/secp256k1';
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
+import { Address } from '@tevm/voltaire/primitives/address';
+import { secp256k1 } from '@tevm/voltaire/crypto/secp256k1';
 
 // 1. Generate mnemonic (user backs this up!)
 const mnemonic = Bip39.generateMnemonic(256);

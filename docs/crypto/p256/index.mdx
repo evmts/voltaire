@@ -3,6 +3,10 @@ title: P256
 description: NIST P-256 (secp256r1) ECDSA signatures - WebAuthn, iOS Secure Enclave, and modern cryptography
 ---
 
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/p256.ts">
+  Run P256 examples in the interactive playground
+</Card>
+
 <Warning>
 **This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
 </Warning>
@@ -32,8 +36,8 @@ P256 (secp256r1) is a **NIST-standardized elliptic curve** for ECDSA signatures 
 ## Quick Start
 
 ```typescript
-import * as P256 from 'tevm/crypto/P256';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import * as P256 from '@tevm/voltaire/crypto/P256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Sign a message hash
 const messageHash = Keccak256.hashString('Hello, P256!');
@@ -314,7 +318,7 @@ P-256 operations available in WASM builds:
 - **ReleaseFast**: Performance-optimized
 
 ```typescript
-import { P256 } from 'tevm/crypto/P256';
+import { P256 } from '@tevm/voltaire/crypto/P256';
 // Automatically uses WASM in supported environments
 ```
 
@@ -323,7 +327,7 @@ import { P256 } from 'tevm/crypto/P256';
 P-256 is the default curve for WebAuthn (FIDO2) authentication:
 
 ```typescript
-import * as P256 from 'tevm/crypto/P256';
+import * as P256 from '@tevm/voltaire/crypto/P256';
 
 // WebAuthn registration creates P-256 keypair
 // Authenticator returns public key in COSE format

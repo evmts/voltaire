@@ -48,8 +48,8 @@ As u256: 0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb
 ### Basic Usage
 
 ```typescript
-import { coinbase } from 'tevm/evm/block';
-import { createFrame } from 'tevm/evm/Frame';
+import { coinbase } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 const minerAddress = new Uint8Array([
   0x74, 0x2d, 0x35, 0xcc, 0x66, 0x34, 0xc0, 0x53,
@@ -88,7 +88,7 @@ console.log(addressBytes); // Original 20-byte address
 ### Compare with Current Address
 
 ```typescript
-import { address } from 'tevm/evm/context';
+import { address } from '@tevm/voltaire/evm/context';
 
 // Get coinbase
 coinbase(frame);

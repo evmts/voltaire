@@ -3,6 +3,10 @@ title: RIPEMD160
 description: 160-bit hash function used in Bitcoin address derivation
 ---
 
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/ripemd160.ts">
+  Run RIPEMD160 examples in the interactive playground
+</Card>
+
 # RIPEMD160
 
 RIPEMD160 is a **cryptographic one-way hash function** producing a 20-byte digest, designed as an alternative to SHA-1.
@@ -331,7 +335,7 @@ export function hash(data: Uint8Array | string): Uint8Array {
 Available via `ripemd160.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
 
 ```typescript
-import { Ripemd160Wasm } from 'tevm/crypto/ripemd160.wasm';
+import { Ripemd160Wasm } from '@tevm/voltaire/crypto/ripemd160.wasm';
 await Ripemd160Wasm.load();
 const hash = Ripemd160Wasm.hash(data);
 ```

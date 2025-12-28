@@ -30,7 +30,7 @@ description: Validate address string format
 Validate user input before parsing:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function parseUserAddress(input: string): Address {
   if (!Address.isValid(input)) {
@@ -54,7 +54,7 @@ try {
 Validate addresses in forms:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function validateAddressField(value: string): string | null {
   if (!value) {
@@ -98,7 +98,7 @@ function AddressInput() {
 Validate addresses in API requests:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 app.post('/transfer', (req, res) => {
   const { to, amount } = req.body
@@ -119,7 +119,7 @@ app.post('/transfer', (req, res) => {
 Check before processing:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function processAddresses(addresses: string[]) {
   const valid = addresses.filter(Address.isValid)
@@ -134,7 +134,7 @@ function processAddresses(addresses: string[]) {
 ## Common Invalid Inputs
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Too short
 console.log(Address.isValid("0x742d35"))                    // false
@@ -159,7 +159,7 @@ console.log(Address.isValid("0x"))                          // false
 `isValid()` does NOT validate EIP-55 checksums:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Valid format, but wrong checksum
 const addr = "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"  // all lowercase
@@ -181,7 +181,7 @@ if (Address.isValid(addr) && Address.isValidChecksum(addr)) {
 **Use before parsing:** Validate first to avoid exceptions:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Efficient: validate before parsing
 if (Address.isValid(input)) {
@@ -203,7 +203,7 @@ try {
 Use as type guard in TypeScript:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function processInput(input: string | Address) {
   if (typeof input === 'string') {

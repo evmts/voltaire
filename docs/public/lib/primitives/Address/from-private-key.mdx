@@ -12,10 +12,10 @@ description: Derive address from secp256k1 private key
 For tree-shakeable, crypto-agnostic implementation, use the factory function:
 
 ```typescript
-import { FromPrivateKey } from 'tevm/Address/AddressType'
-import { hash as keccak256 } from 'tevm/crypto/Keccak256'
-import { derivePublicKey } from 'tevm/crypto/Secp256k1'
-import * as PrivateKey from 'tevm/primitives/PrivateKey'
+import { FromPrivateKey } from '@tevm/voltaire/Address/AddressType'
+import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { derivePublicKey } from '@tevm/voltaire/crypto/Secp256k1'
+import * as PrivateKey from '@tevm/voltaire/primitives/PrivateKey'
 
 // Create factory instance with both crypto dependencies
 const fromPrivateKey = FromPrivateKey({ keccak256, derivePublicKey })
@@ -36,7 +36,7 @@ This allows complete control over which crypto implementations to use (native, W
 The standard API automatically injects crypto dependencies:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const privateKey = Bytes32()
 // ... set private key bytes ...
@@ -125,7 +125,7 @@ Never hardcode or log private keys. Store securely and transmit only over encryp
 ## Complete Example
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 import { randomBytes } from 'crypto' // Node.js
 
 // Generate secure random private key
@@ -148,7 +148,7 @@ console.log('Private key:', Buffer(privateKey).toString('hex'))
 Generate new Ethereum accounts:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function generateAccount() {
   const privateKey = Bytes32()
@@ -170,8 +170,8 @@ const account = generateAccount()
 Import existing private keys:
 
 ```typescript
-import { Address } from 'tevm'
-import * as Hex from 'tevm/Hex'
+import { Address } from '@tevm/voltaire'
+import * as Hex from '@tevm/voltaire/Hex'
 
 function importPrivateKey(keyHex: string) {
   // Remove 0x prefix if present
@@ -193,7 +193,7 @@ function importPrivateKey(keyHex: string) {
 Derive addresses from HD wallet private keys:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Assume deriveChildKey generates child keys from master seed
 function deriveAddresses(masterSeed: Uint8Array, count: number) {
@@ -224,7 +224,7 @@ function deriveAddresses(masterSeed: Uint8Array, count: number) {
 ## Error Handling
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Wrong length
 try {

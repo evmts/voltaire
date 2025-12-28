@@ -52,8 +52,8 @@ The key advantage over `MUL` then `MOD` is that MULMOD avoids intermediate overf
 ### Basic Modular Multiplication
 
 ```zig
-import { mulmod } from 'tevm/evm/arithmetic';
-import { createFrame } from 'tevm/evm/Frame';
+import { mulmod } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // (5 * 10) % 3 = 50 % 3 = 2
 const frame = createFrame({ stack: [5n, 10n, 3n] });

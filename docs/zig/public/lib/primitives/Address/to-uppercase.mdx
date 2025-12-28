@@ -20,7 +20,7 @@ Convert address to uppercase hex string via WASM.
 **Example:**
 
 ```zig
-import { toUppercase } from 'tevm/wasm'
+import { toUppercase } from '@tevm/voltaire/wasm'
 
 const addr = new Uint8Array(20)
 addr[0] = 0x74
@@ -53,7 +53,7 @@ console.log(upper)
 `toUppercase()` always returns uppercase, regardless of input format:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Lowercase input
 const lower = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
@@ -71,7 +71,7 @@ console.log(checksummed.toUppercase())
 Converting to uppercase multiple times produces the same result:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 const upper1 = addr.toUppercase()
@@ -88,7 +88,7 @@ console.log(upper1 === upper2) // true
 Normalize display format across your application:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function formatAddressDisplay(address: Address): string {
   // Consistently use uppercase for all address displays
@@ -105,7 +105,7 @@ console.log(formatAddressDisplay(addr))
 Normalize before comparison (though `equals()` is preferred):
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr1 = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 const addr2 = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
@@ -126,7 +126,7 @@ if (addr1.equals(addr2)) {
 Some systems expect uppercase addresses:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 async function registerWithLegacyAPI(address: Address) {
   const upper = address.toUppercase()
@@ -144,7 +144,7 @@ async function registerWithLegacyAPI(address: Address) {
 Consistent formatting for exports:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function exportAddressesCSV(addresses: Address[]): string {
   const header = "Address,Balance\n"
@@ -167,7 +167,7 @@ function exportAddressesCSV(addresses: Address[]): string {
 For repeated conversions, consider caching:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 class CachedAddress {
   private _upperCache?: string
@@ -186,7 +186,7 @@ class CachedAddress {
 ## Comparison with Other Formats
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
 
@@ -221,7 +221,7 @@ Unlike `toChecksummed()`, uppercase format:
 **No checksum validation** - Purely cosmetic case transformation:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
@@ -237,7 +237,7 @@ console.log(addr.toChecksummed())
 **No cryptographic operations** - Faster than checksummed format:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // toUppercase() - simple string transformation
 const upper = addr.toUppercase() // Fast
@@ -249,7 +249,7 @@ const checksum = addr.toChecksummed() // Slower (crypto operation)
 **No integrity verification** - Cannot detect typos:
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Checksummed can detect corruption
 const checksummed = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
@@ -286,7 +286,7 @@ console.log(Address.isValid("0x742D35CC6634C0532925A3B844BC9E7595F251E4")) // tr
 ## Edge Cases
 
 ```zig
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Zero address
 const zero = Address.zero()

@@ -68,7 +68,7 @@ bool is_zero = primitives_address_is_zero(&zero);
 Use as a default or placeholder address:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 interface Config {
   owner: Address
@@ -86,7 +86,7 @@ const defaultConfig: Config = {
 The zero address is commonly used as a burn address (destroying tokens):
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const BURN_ADDRESS = Address.zero()
 
@@ -101,7 +101,7 @@ function burnTokens(amount: bigint) {
 Check if address is unset or invalid:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function validateRecipient(recipient: Address) {
   if (recipient.equals(Address.zero())) {
@@ -115,7 +115,7 @@ function validateRecipient(recipient: Address) {
 Zero address indicates contract creation in transaction `to` field:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 interface Transaction {
   from: Address
@@ -165,7 +165,7 @@ for (let i = 0; i < 1000; i++) {
 All of these produce the zero address:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const zero1 = Address.zero()
 const zero2 = Address(0n)
@@ -187,7 +187,7 @@ console.log(zero1.equals(zero5)) // true
 Use `isZero()` method to check if an address is zero:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x0000000000000000000000000000000000000000")
 

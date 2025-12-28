@@ -42,7 +42,7 @@ More efficient than EXTCODESIZE + EXTCODECOPY + KECCAK256 for code verification.
 ### Basic Usage
 
 ```zig
-import { extcodehash } from 'tevm/evm/context';
+import { extcodehash } from '@tevm/voltaire/evm/context';
 
 const contractAddr = Address('0x...');
 const frame = createFrame({ stack: [BigInt(contractAddr)] });

@@ -3,6 +3,10 @@ title: Secp256k1
 description: ECDSA signatures using the secp256k1 elliptic curve - Ethereum's core signing algorithm
 ---
 
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/secp256k1.ts">
+  Run Secp256k1 examples in the interactive playground
+</Card>
+
 ## Overview
 
 Secp256k1 is an **elliptic curve digital signature algorithm (ECDSA)** over the secp256k1 curve, providing asymmetric cryptography for transaction authentication.
@@ -25,8 +29,8 @@ Secp256k1 is an **elliptic curve digital signature algorithm (ECDSA)** over the 
 ## Quick Start
 
 ```typescript
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Sign a message hash
 const messageHash = Keccak256.hashString('Hello, Ethereum!');
@@ -43,20 +47,19 @@ const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
 
 ## Examples
 
-Interactive examples in the [Voltaire Playground](https://voltaire.tevm.sh/playground):
-- [Generate Keypair](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/generate-keypair.ts) - Generate random private key and derive public key
-- [Sign Message](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/sign-message.ts) - Sign Keccak256 hash with ECDSA
-- [Verify Signature](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/verify-signature.ts) - Verify signature with public key
-- [Recover Public Key](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/recover-public-key.ts) - Recover public key from signature (ecRecover)
-- [Compact Signature](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/compact-signature.ts) - 65-byte compact format (r+s+v)
-- [Signature Bytes](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/signature-bytes.ts) - Serialize/deserialize signatures
-- [ECDH](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/ecdh.ts) - Elliptic Curve Diffie-Hellman key exchange
-- [Validate Private Key](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/validate-private-key.ts) - Private key validation
-- [Validate Public Key](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/validate-public-key.ts) - Public key validation
-- [Validate Signature](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/validate-signature.ts) - Signature format validation
-- [Point Addition](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/point-addition.ts) - Elliptic curve point addition
-- [Scalar Multiply](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/scalar-multiply.ts) - Scalar multiplication on curve
-- [Sign Transaction](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/sign-transaction.ts) - Sign Ethereum transaction
+**[Try all examples in the Live Playground](https://playground.tevm.sh?example=crypto/secp256k1.ts)**
+
+The playground includes examples for:
+- Generate random private key and derive public key
+- Sign Keccak256 hash with ECDSA
+- Verify signature with public key
+- Recover public key from signature (Ethereum's ecRecover)
+- 65-byte compact signature format (r+s+v)
+- Serialize/deserialize signatures
+- Elliptic Curve Diffie-Hellman key exchange
+- Private/public key validation
+- Elliptic curve point operations
+- Sign Ethereum transactions
 
 ## API Reference
 
@@ -310,14 +313,14 @@ expect(() => Secp256k1.sign(messageHash, invalidKey)).toThrow(); // Throws
 
 ## Implementation Details
 
-Tevm provides **three secp256k1 implementations** for different use cases:
+Voltaire provides **three secp256k1 implementations** for different use cases:
 
 ### Reference Implementation (Default)
 
 **Library**: `@noble/curves/secp256k1` by Paul Miller
 
 ```typescript
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 
 const signature = Secp256k1.sign(messageHash, privateKey);
 const isValid = Secp256k1.verify(signature, messageHash, publicKey);
@@ -340,7 +343,7 @@ const isValid = Secp256k1.verify(signature, messageHash, publicKey);
 
 ```typescript
 // Native FFI automatically used when available
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 ```
 
 **Characteristics**:
@@ -355,7 +358,7 @@ import * as Secp256k1 from 'tevm/crypto/Secp256k1';
 **Zig stdlib via wasm-loader** (bundled in `wasm/primitives.wasm`)
 
 ```typescript
-import { Secp256k1Wasm } from 'tevm/crypto/secp256k1.wasm';
+import { Secp256k1Wasm } from '@tevm/voltaire/crypto/secp256k1.wasm';
 
 const signature = Secp256k1Wasm.sign(messageHash, privateKey);
 ```
@@ -364,7 +367,7 @@ const signature = Secp256k1Wasm.sign(messageHash, privateKey);
 - **ReleaseSmall**: 360KB (size-optimized for production bundles)
 - **ReleaseFast**: 4.3MB (performance-optimized for benchmarking)
 - **Use case**: Browser environments, sandboxed execution, consistent cross-platform behavior
-- **Import path**: `import { Secp256k1Wasm } from 'tevm/crypto/secp256k1.wasm'`
+- **Import path**: `import { Secp256k1Wasm } from '@tevm/voltaire/crypto/secp256k1.wasm'`
 
 **When to use**:
 - **Reference** (@noble/curves): Default for all TypeScript applications
@@ -378,9 +381,9 @@ const signature = Secp256k1Wasm.sign(messageHash, privateKey);
 Every Ethereum transaction is signed with secp256k1:
 
 ```typescript
-import * as Transaction from 'tevm/primitives/Transaction';
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import * as Transaction from '@tevm/voltaire/primitives/Transaction';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Create transaction
 const tx = {
@@ -407,9 +410,9 @@ const signedTx = { ...tx, ...signature };
 Ethereum addresses are derived from secp256k1 public keys:
 
 ```typescript
-import * as Address from 'tevm/primitives/Address';
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Derive public key from private key
 const publicKey = Secp256k1.derivePublicKey(privateKey);
@@ -426,7 +429,7 @@ const address = Address(hash.slice(12));
 The EVM's `ecRecover` precompile (address 0x01) uses secp256k1 signature recovery:
 
 ```typescript
-import * as Secp256k1 from 'tevm/crypto/Secp256k1';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
 
 // Recover signer's public key from transaction signature
 const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);

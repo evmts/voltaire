@@ -3,6 +3,10 @@ title: BIP-39 Mnemonic Phrases
 description: Mnemonic seed phrase generation and recovery
 ---
 
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/bip39.ts">
+  Run BIP-39 examples in the interactive playground
+</Card>
+
 ## Overview
 
 BIP39 is a **mnemonic seed phrase standard** (Bitcoin Improvement Proposal 39) that encodes cryptographic entropy as human-readable words for deterministic wallet key generation.
@@ -20,7 +24,7 @@ Key operations:
 ## Quick Start
 
 ```typescript
-import * as Bip39 from 'tevm/crypto/bip39';
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
 
 // Generate 12-word mnemonic (128-bit entropy)
 const mnemonic12 = Bip39.generateMnemonic(128);
@@ -360,8 +364,8 @@ Bip39.entropyToMnemonic(goodEntropy); // Valid 24-word mnemonic
 BIP-39 is typically used with BIP-32 (HD Wallets) for deterministic key generation:
 
 ```typescript
-import * as Bip39 from 'tevm/crypto/bip39';
-import * as HDWallet from 'tevm/crypto/hdwallet';
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
 
 // 1. Generate mnemonic
 const mnemonic = Bip39.generateMnemonic(256);

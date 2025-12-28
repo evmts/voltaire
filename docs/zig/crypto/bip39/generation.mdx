@@ -14,7 +14,7 @@ BIP-39 mnemonic generation converts cryptographic entropy into human-readable wo
 Generate cryptographically secure random bytes:
 
 ```zig
-import * as Bip39 from 'tevm/crypto/bip39';
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
 
 // 128 bits = 12 words
 const mnemonic12 = Bip39.generateMnemonic(128);

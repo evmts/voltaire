@@ -55,7 +55,7 @@ jsonrpc/
 Core types used throughout the JSON-RPC API:
 
 ```zig
-import type { brand } from 'tevm/brand';
+import type { brand } from '@tevm/voltaire/brand';
 
 // Address - 20-byte Ethereum address
 type Address = Uint8Array & { readonly [brand]: "Address" };
@@ -150,8 +150,8 @@ This enforces error checking before accessing results.
 ### Compile-Time Validation
 
 ```zig
-import * as Address from 'tevm/Address';
-import { Keccak256 } from 'tevm/Keccak256';
+import * as Address from '@tevm/voltaire/Address';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 // ✅ Correct: Address type
 await provider.eth_getBalance(Address('0x...'), 'latest');
@@ -205,7 +205,7 @@ Types are generated for both TypeScript and Zig:
 
 ```zig
 // TypeScript types
-import * as eth from 'tevm/jsonrpc/eth';
+import * as eth from '@tevm/voltaire/jsonrpc/eth';
 
 type BalanceParams = typeof eth.eth_getBalance.Params;
 type BalanceResult = typeof eth.eth_getBalance.Result;
@@ -252,8 +252,8 @@ Generated types match the version of ethereum/execution-apis used during generat
 While most types are generated, you can extend them for application-specific needs:
 
 ```zig
-import type { Provider } from 'tevm/provider';
-import * as Address from 'tevm/Address';
+import type { Provider } from '@tevm/voltaire/provider';
+import * as Address from '@tevm/voltaire/Address';
 
 // Custom wrapper type
 interface AccountInfo {

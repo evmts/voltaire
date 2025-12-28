@@ -181,8 +181,8 @@ Least used:
 ### TypeScript
 
 ```typescript
-import { execute, PrecompileAddress } from 'tevm/precompiles';
-import { Hardfork } from 'tevm/primitives/Hardfork';
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 
 // Execute any precompile
 const result = execute(
@@ -273,7 +273,7 @@ Dynamic gas prevents abuse:
 ## Hardfork Availability
 
 ```typescript
-import { Hardfork } from 'tevm/primitives/Hardfork';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 
 // Check precompile availability
 const precompiles = {

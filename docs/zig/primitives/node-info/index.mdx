@@ -16,7 +16,7 @@ Type-safe structure for Ethereum node information returned by `admin_nodeInfo` R
 <Tabs>
 <Tab title="Basic Usage">
 ```zig
-import * as NodeInfo from 'tevm/NodeInfo'
+import * as NodeInfo from '@tevm/voltaire/NodeInfo'
 
 // Parse node info from RPC response
 const nodeInfo = NodeInfo.from({
@@ -46,7 +46,7 @@ console.log(ethProtocol?.network)  // 1
 </Tab>
 <Tab title="RPC Fetch">
 ```zig
-import * as NodeInfo from 'tevm/NodeInfo'
+import * as NodeInfo from '@tevm/voltaire/NodeInfo'
 
 async function getNodeInfo(rpcUrl: string) {
   const response = await fetch(rpcUrl, {
@@ -110,7 +110,7 @@ type NodeInfoType = {
 ### Constructors
 
 ```zig
-import * as NodeInfo from 'tevm/NodeInfo'
+import * as NodeInfo from '@tevm/voltaire/NodeInfo'
 
 // From RPC response object
 const nodeInfo = NodeInfo.from(rpcResponse)
@@ -119,7 +119,7 @@ const nodeInfo = NodeInfo.from(rpcResponse)
 ### Methods
 
 ```zig
-import * as NodeInfo from 'tevm/NodeInfo'
+import * as NodeInfo from '@tevm/voltaire/NodeInfo'
 
 const nodeInfo = NodeInfo.from(data)
 
@@ -174,7 +174,7 @@ eth?.config      // Chain configuration
 ### Node Monitoring
 
 ```zig
-import * as NodeInfo from 'tevm/NodeInfo'
+import * as NodeInfo from '@tevm/voltaire/NodeInfo'
 
 async function monitorNode(rpcUrl: string) {
   const response = await fetch(rpcUrl, {
@@ -203,7 +203,7 @@ async function monitorNode(rpcUrl: string) {
 ### Client Version Check
 
 ```zig
-import * as NodeInfo from 'tevm/NodeInfo'
+import * as NodeInfo from '@tevm/voltaire/NodeInfo'
 
 function parseClientVersion(nodeInfo: NodeInfoType) {
   const name = nodeInfo.name
@@ -231,7 +231,7 @@ function meetsMinVersion(nodeInfo: NodeInfoType, minVersion: string): boolean {
 ### Multi-Protocol Support Check
 
 ```zig
-import * as NodeInfo from 'tevm/NodeInfo'
+import * as NodeInfo from '@tevm/voltaire/NodeInfo'
 
 function getSupportedProtocols(nodeInfo: NodeInfoType): string[] {
   return Object.keys(nodeInfo.protocols)

@@ -81,7 +81,7 @@ import {
   type CallParams,
   type CallResult,
   Opcode,
-} from 'tevm/evm';
+} from '@tevm/voltaire/evm';
 
 // Execution frame (stack, memory, gas, state)
 const frame: BrandedFrame = {
@@ -137,7 +137,7 @@ const callParams: CallParams = {
 #### TypeScript Implementation
 
 ```typescript
-import * as EVM from 'tevm/evm';
+import * as EVM from '@tevm/voltaire/evm';
 
 // Execute instruction
 const result = EVM.Instructions.Arithmetic.add(stack);

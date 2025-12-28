@@ -38,7 +38,7 @@ calldata.getSelector(): [4]u8
 <Tab title="Basic Usage">
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData("0xa9059cbb...");
 const selector = CallData.getSelector(calldata);
@@ -51,7 +51,7 @@ console.log(selector);
 <Tab title="Hex Format">
 
 ```zig
-import { CallData, Hex } from 'tevm';
+import { CallData, Hex } from '@tevm/voltaire';
 
 const calldata = CallData("0xa9059cbb...");
 const selector = CallData.getSelector(calldata);
@@ -65,7 +65,7 @@ console.log(hex); // "0xa9059cbb"
 <Tab title="Class API">
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData("0xa9059cbb...");
 const selector = calldata.getSelector(); // Method on instance
@@ -81,7 +81,7 @@ console.log(selector);
 Function selector is first 4 bytes of `keccak256(signature)`:
 
 ```zig
-import { Keccak256 } from 'tevm';
+import { Keccak256 } from '@tevm/voltaire';
 
 // Compute selector manually
 const signature = "transfer(address,uint256)";
@@ -144,7 +144,7 @@ const ERC721_SELECTORS = {
 ### Function Routing
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 function routeCall(calldata: CallDataType) {
   const selector = CallData.getSelector(calldata);
@@ -166,7 +166,7 @@ function routeCall(calldata: CallDataType) {
 ### Selector Matching
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 function isTransfer(calldata: CallDataType): boolean {
   const selector = CallData.getSelector(calldata);
@@ -182,7 +182,7 @@ const isTransfer = CallData.hasSelector(calldata, "0xa9059cbb");
 ### Transaction Filtering
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 interface Transaction {
   to: string;
@@ -207,7 +207,7 @@ function filterERC20Transfers(txs: Transaction[]): Transaction[] {
 ### Contract Interface Detection
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const ERC20_SELECTORS = new Set([
   "0xa9059cbb", // transfer
@@ -265,7 +265,7 @@ Real collisions are virtually impossible but:
 Direct byte access without allocation:
 
 ```zig
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData.fromBytes(
   new Uint8Array([0xa9, 0x05, 0x9c, 0xbb, ...])

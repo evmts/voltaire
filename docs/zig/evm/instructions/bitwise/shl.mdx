@@ -51,8 +51,8 @@ Result is value shifted left by shift positions, with zeros filling vacated bits
 ### Basic Left Shift
 
 ```zig
-import { shl } from 'tevm/evm/bitwise';
-import { createFrame } from 'tevm/evm/Frame';
+import { shl } from '@tevm/voltaire/evm/bitwise';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // Shift 0xFF left by 8 bits (multiply by 256)
 const frame = createFrame({ stack: [8n, 0xFFn] });

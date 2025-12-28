@@ -16,8 +16,8 @@ Common patterns and real-world examples for using SHA-256.
 Bitcoin P2PKH addresses use SHA-256 + RIPEMD-160:
 
 ```typescript
-import { SHA256 } from 'tevm/crypto/sha256';
-import { Ripemd160 } from 'tevm/crypto/ripemd160';
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+import { Ripemd160 } from '@tevm/voltaire/crypto/ripemd160';
 
 function publicKeyToAddress(publicKey: Uint8Array): Uint8Array {
   // Step 1: SHA-256 hash of public key

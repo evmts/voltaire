@@ -17,8 +17,8 @@ The Engine API is used for communication between execution layer (EL) and consen
 Access engine methods directly on the provider:
 
 ```zig
-import { Provider } from 'tevm/provider';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Provider } from '@tevm/voltaire/provider';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Validate payload (consensus layer → execution layer)
 const response = await provider.engine_newPayloadV3(payload);
@@ -157,7 +157,7 @@ interface ForkchoiceState {
 **Example:**
 
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 const forkchoiceState = {
   headBlockHash: Hash('0xabc...'),
@@ -262,7 +262,7 @@ const blobs = await provider.engine_getBlobsV1(blobVersionedHashes);
 **Example:**
 
 ```zig
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 // Get blobs for specific commitments
 const blobHashes = [

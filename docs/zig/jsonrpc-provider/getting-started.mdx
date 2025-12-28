@@ -77,8 +77,8 @@ Execute read-only contract call:
 Requests throw errors on failure:
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -138,8 +138,8 @@ provider.removeListener('accountsChanged', handler);
 Get balance, nonce, and code in parallel:
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -161,9 +161,9 @@ try {
 ### Estimate Gas for Transaction
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
-import * as Hex from 'tevm/Hex';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hex from '@tevm/voltaire/Hex';
 
 try {
   const gasEstimate = await provider.request(
@@ -191,8 +191,8 @@ try {
 Use block numbers to query historical data:
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 const address = Address('0x...');
 const blockNumber = '0xF4240'; // Block 1,000,000
@@ -234,8 +234,8 @@ try {
 Use branded primitive constructors:
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 // ❌ Error: string not assignable to Address
 const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');
@@ -249,7 +249,7 @@ const goodReq = Rpc.Eth.GetBalanceRequest(Address('0x...'), 'latest');
 Request builders return `{method, params}` objects, not results. Always use with `provider.request()`:
 
 ```zig
-import * as Rpc from 'tevm/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
 
 // ❌ Wrong: request builder doesn't execute anything
 const request = Rpc.Eth.BlockNumberRequest();

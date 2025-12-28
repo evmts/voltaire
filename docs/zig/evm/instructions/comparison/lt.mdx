@@ -47,8 +47,8 @@ All comparisons are unsigned. Values with bit 255 set are treated as large posit
 ### Basic Comparison
 
 ```zig
-import { lt } from 'tevm/evm/comparison';
-import { createFrame } from 'tevm/evm/Frame';
+import { lt } from '@tevm/voltaire/evm/comparison';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // 5 < 10 = 1 (true)
 const frame = createFrame({ stack: [5n, 10n] });

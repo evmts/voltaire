@@ -27,8 +27,8 @@ const balance = await provider.request({
 });
 
 // Voltaire - fully typed
-import * as Rpc from 'tevm/jsonrpc';
-import * as Address from 'tevm/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Address from '@tevm/voltaire/Address';
 
 const balance = await provider.request(
   Rpc.Eth.GetBalanceRequest(Address('0x...'), 'latest')

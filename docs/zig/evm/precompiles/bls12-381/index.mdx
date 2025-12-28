@@ -314,8 +314,8 @@ Map an Fp2 element to a G2 point (hash-to-curve).
 This example shows how multiple BLS12-381 precompiles work together for a complete signature verification:
 
 ```zig
-import { execute, PrecompileAddress, Hardfork } from 'tevm/precompiles';
-import { Keccak256 } from 'tevm/crypto/Keccak256';
+import { execute, PrecompileAddress, Hardfork } from '@tevm/voltaire/precompiles';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
 
 /**
  * Complete BLS signature verification workflow
@@ -501,7 +501,7 @@ console.log("Signature valid:", isValid);
 ### TypeScript
 
 ```zig
-import { execute, PrecompileAddress, Hardfork } from 'tevm/precompiles';
+import { execute, PrecompileAddress, Hardfork } from '@tevm/voltaire/precompiles';
 
 // G1 Addition
 const p1 = new Uint8Array(128); // First G1 point

@@ -16,7 +16,7 @@ Type-safe SPDX license identifiers for smart contract metadata.
 <Tabs>
 <Tab title="Basic Usage">
 ```typescript
-import * as License from 'tevm/License'
+import * as License from '@tevm/voltaire/License'
 
 // Create license identifier
 const mit = License.from("MIT")
@@ -34,7 +34,7 @@ License.isOSI("UNLICENSED") // false
 </Tab>
 <Tab title="Common Licenses">
 ```typescript
-import { COMMON_LICENSES, OSI_APPROVED_LICENSES } from 'tevm/License'
+import { COMMON_LICENSES, OSI_APPROVED_LICENSES } from '@tevm/voltaire/License'
 
 // Common SPDX identifiers
 COMMON_LICENSES
@@ -59,7 +59,7 @@ contract MyContract {
 ```
 
 ```typescript
-import * as License from 'tevm/License'
+import * as License from '@tevm/voltaire/License'
 
 // Parse license from Solidity source
 const source = `// SPDX-License-Identifier: MIT
@@ -95,7 +95,7 @@ if (match) {
 ### Constructors
 
 ```typescript
-import * as License from 'tevm/License'
+import * as License from '@tevm/voltaire/License'
 
 // Create from SPDX identifier
 const license = License.from("MIT")
@@ -104,7 +104,7 @@ const license = License.from("MIT")
 ### Methods
 
 ```typescript
-import * as License from 'tevm/License'
+import * as License from '@tevm/voltaire/License'
 
 const license = License.from("Apache-2.0")
 
@@ -120,7 +120,7 @@ License.isOSI("UNLICENSED") // false
 ### Constants
 
 ```typescript
-import { COMMON_LICENSES, OSI_APPROVED_LICENSES } from 'tevm/License'
+import { COMMON_LICENSES, OSI_APPROVED_LICENSES } from '@tevm/voltaire/License'
 
 // Common SPDX license identifiers
 COMMON_LICENSES: string[]
@@ -148,7 +148,7 @@ The identifier appears in compiled contract metadata and can be used to:
 ### Contract Metadata Analysis
 
 ```typescript
-import * as License from 'tevm/License'
+import * as License from '@tevm/voltaire/License'
 
 interface ContractMetadata {
   license: string
@@ -172,8 +172,8 @@ function analyzeContract(metadata: ContractMetadata) {
 ### License Filtering
 
 ```typescript
-import * as License from 'tevm/License'
-import { OSI_APPROVED_LICENSES } from 'tevm/License'
+import * as License from '@tevm/voltaire/License'
+import { OSI_APPROVED_LICENSES } from '@tevm/voltaire/License'
 
 interface Contract {
   address: string

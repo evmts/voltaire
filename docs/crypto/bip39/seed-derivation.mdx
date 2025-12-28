@@ -12,7 +12,7 @@ BIP-39 seed derivation converts human-readable mnemonics into 64-byte binary see
 ### Async Derivation
 
 ```typescript
-import * as Bip39 from 'tevm/crypto/bip39';
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
 
 const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 
@@ -451,8 +451,8 @@ console.log(seed1.some((byte, i) => byte !== seed2[i])); // true
 ### Full Workflow
 
 ```typescript
-import * as Bip39 from 'tevm/crypto/bip39';
-import * as HDWallet from 'tevm/crypto/hdwallet';
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
 
 // 1. Generate mnemonic
 const mnemonic = Bip39.generateMnemonic(256);

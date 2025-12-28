@@ -16,7 +16,7 @@ Type-safe Ethereum peer identifiers (enode URLs) for peer-to-peer networking.
 <Tabs>
 <Tab title="Basic Usage">
 ```typescript
-import * as PeerId from 'tevm/PeerId'
+import * as PeerId from '@tevm/voltaire/PeerId'
 
 const enode = "enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@10.3.58.6:30303"
 
@@ -33,7 +33,7 @@ PeerId.equals(peerId, other)  // true
 </Tab>
 <Tab title="Parse Enode">
 ```typescript
-import * as PeerId from 'tevm/PeerId'
+import * as PeerId from '@tevm/voltaire/PeerId'
 
 const enode = "enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@10.3.58.6:30303?discport=30301"
 
@@ -51,7 +51,7 @@ console.log(components)
 </Tab>
 <Tab title="Bootnode Connection">
 ```typescript
-import * as PeerId from 'tevm/PeerId'
+import * as PeerId from '@tevm/voltaire/PeerId'
 
 // Mainnet bootnodes
 const MAINNET_BOOTNODES = [
@@ -106,7 +106,7 @@ type EnodeComponents = {
 ### Constructors
 
 ```typescript
-import * as PeerId from 'tevm/PeerId'
+import * as PeerId from '@tevm/voltaire/PeerId'
 
 // From enode URL string
 const peerId = PeerId.from("enode://abc123...@192.168.1.1:30303")
@@ -115,7 +115,7 @@ const peerId = PeerId.from("enode://abc123...@192.168.1.1:30303")
 ### Methods
 
 ```typescript
-import * as PeerId from 'tevm/PeerId'
+import * as PeerId from '@tevm/voltaire/PeerId'
 
 const peerId = PeerId.from(enodeUrl)
 
@@ -134,7 +134,7 @@ PeerId.equals(peerId, otherPeerId)  // boolean
 ### Node Discovery
 
 ```typescript
-import * as PeerId from 'tevm/PeerId'
+import * as PeerId from '@tevm/voltaire/PeerId'
 
 // Parse discovered node info
 function parseDiscoveredNode(enodeUrl: string) {
@@ -152,7 +152,7 @@ function parseDiscoveredNode(enodeUrl: string) {
 ### Peer Management
 
 ```typescript
-import * as PeerId from 'tevm/PeerId'
+import * as PeerId from '@tevm/voltaire/PeerId'
 
 class PeerList {
   private peers: Map<string, PeerId.PeerIdType> = new Map()
@@ -186,7 +186,7 @@ class PeerList {
 ### Static Node Configuration
 
 ```typescript
-import * as PeerId from 'tevm/PeerId'
+import * as PeerId from '@tevm/voltaire/PeerId'
 
 // Geth static-nodes.json format
 const staticNodes = [
@@ -223,7 +223,7 @@ function validateStaticNodes(nodes: string[]): boolean {
 ### RPC Integration
 
 ```typescript
-import * as PeerId from 'tevm/PeerId'
+import * as PeerId from '@tevm/voltaire/PeerId'
 
 // Add peer via admin_addPeer
 async function addPeer(rpcUrl: string, enodeUrl: string): Promise<boolean> {

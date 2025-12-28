@@ -50,8 +50,8 @@ No exceptions are thrown for overflow. Information in the upper 256 bits is lost
 ### Basic Multiplication
 
 ```typescript
-import { mul } from 'tevm/evm/arithmetic';
-import { createFrame } from 'tevm/evm/Frame';
+import { mul } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // 5 * 10 = 50
 const frame = createFrame({ stack: [5n, 10n] });

@@ -42,6 +42,7 @@
             "pages": [
               "swift/index",
               "swift/getting-started",
+              "swift/getting-started-xcode",
               {
                 "group": "Primitives",
                 "pages": [
@@ -64,7 +65,1114 @@
               {
                 "group": "Support",
                 "pages": [
-                  "swift/support/errors"
+                  "swift/support/errors",
+                  "swift/support/troubleshooting"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Zig",
+            "icon": "bolt",
+            "pages": [
+              {
+                "group": "Why Voltaire?",
+                "icon": "lightbulb",
+                "pages": [
+                  "zig/introduction",
+                  "zig/getting-started/branded-types",
+                  "zig/getting-started/wasm",
+                  "zig/getting-started/llm-optimized",
+                  "zig/getting-started/multiplatform",
+                  "zig/getting-started/powerful-features"
+                ]
+              },
+              {
+                "group": "Getting Started",
+                "icon": "rocket",
+                "pages": [
+                  "zig/getting-started",
+                  "zig/comparisons",
+                  "zig/model-context-protocol"
+                ]
+              },
+              {
+                "group": "Core Concepts",
+                "icon": "book",
+                "pages": [
+                  "zig/concepts/branded-types"
+                ]
+              },
+              {
+                "group": "JSONRPCProvider",
+                "icon": "server",
+                "pages": [
+                  "zig/jsonrpc-provider/index",
+                  "zig/jsonrpc-provider/getting-started",
+                  {
+                    "group": "Core Concepts",
+                    "pages": [
+                      "zig/jsonrpc-provider/method-api",
+                      "zig/jsonrpc-provider/type-system",
+                      "zig/jsonrpc-provider/events"
+                    ]
+                  },
+                  {
+                    "group": "Method Reference",
+                    "pages": [
+                      {
+                        "group": "eth Methods",
+                        "pages": [
+                          "zig/jsonrpc-provider/eth-methods/index",
+                          "zig/jsonrpc-provider/eth-methods/blocks",
+                          "zig/jsonrpc-provider/eth-methods/transactions",
+                          "zig/jsonrpc-provider/eth-methods/state",
+                          "zig/jsonrpc-provider/eth-methods/calls",
+                          "zig/jsonrpc-provider/eth-methods/logs-filters",
+                          "zig/jsonrpc-provider/eth-methods/fees",
+                          "zig/jsonrpc-provider/eth-methods/network"
+                        ]
+                      },
+                      "zig/jsonrpc-provider/debug-methods",
+                      "zig/jsonrpc-provider/engine-methods"
+                    ]
+                  },
+                  {
+                    "group": "Advanced",
+                    "pages": [
+                      "zig/jsonrpc-provider/error-handling",
+                      "zig/jsonrpc-provider/performance"
+                    ]
+                  },
+                  {
+                    "group": "JSON-RPC Types",
+                    "pages": [
+                      {
+                        "group": "JsonRpcError",
+                        "icon": {
+                          "name": "triangle-exclamation",
+                          "style": "solid"
+                        },
+                        "pages": [
+                          "zig/jsonrpc/json-rpc-error/index"
+                        ]
+                      }
+                    ]
+                  },
+                  "zig/jsonrpc-provider/usage-patterns",
+                  "zig/jsonrpc-provider/comparison"
+                ]
+              },
+              {
+                "group": "Primitives",
+                "icon": "cubes",
+                "pages": [
+                  {
+                    "group": "ABI",
+                    "icon": {
+                      "name": "brackets-curly",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      {
+                        "group": "Signature Types",
+                        "pages": [
+                          "zig/primitives/selector/index",
+                          "zig/primitives/function-signature/index",
+                          "zig/primitives/event-signature/index",
+                          "zig/primitives/error-signature/index"
+                        ]
+                      },
+                      {
+                        "group": "Error Methods",
+                        "pages": [
+                          "zig/primitives/abi/error/erc6093",
+                          "zig/primitives/abi/error/erc7751"
+                        ]
+                      },
+                      {
+                        "group": "Interface Detection (ERC-165)",
+                        "pages": [
+                          "zig/primitives/abi/interface/erc165"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "AccountState",
+                    "icon": {
+                      "name": "user",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/account-state/index"
+                    ]
+                  },
+                  {
+                    "group": "Block",
+                    "icon": {
+                      "name": "cube",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/block/index",
+                      "zig/primitives/block-header/index",
+                      "zig/primitives/block-body/index"
+                    ]
+                  },
+                  {
+                    "group": "Bytes32",
+                    "icon": {
+                      "name": "cube",
+                      "style": "light"
+                    },
+                    "pages": [
+                      "zig/primitives/bytes32/index"
+                    ]
+                  },
+                  {
+                    "group": "CallData",
+                    "icon": {
+                      "name": "paper-plane",
+                      "style": "regular"
+                    },
+                    "pages": [
+                      "zig/primitives/calldata/index",
+                      "zig/primitives/calldata/fundamentals",
+                      "zig/primitives/calldata/branded-calldata",
+                      "zig/primitives/calldata/decoded",
+                      "zig/primitives/calldata/encoding",
+                      "zig/primitives/calldata/usage-patterns",
+                      "zig/primitives/calldata/wasm",
+                      {
+                        "group": "Constructor Methods",
+                        "pages": [
+                          "zig/primitives/calldata/from",
+                          "zig/primitives/calldata/from-hex",
+                          "zig/primitives/calldata/from-bytes",
+                          "zig/primitives/calldata/encode"
+                        ]
+                      },
+                      {
+                        "group": "Conversion Methods",
+                        "pages": [
+                          "zig/primitives/calldata/to-hex",
+                          "zig/primitives/calldata/to-bytes",
+                          "zig/primitives/calldata/decode"
+                        ]
+                      },
+                      {
+                        "group": "Selector Methods",
+                        "pages": [
+                          "zig/primitives/calldata/get-selector",
+                          "zig/primitives/calldata/has-selector"
+                        ]
+                      },
+                      {
+                        "group": "Validation & Comparison",
+                        "pages": [
+                          "zig/primitives/calldata/is-valid",
+                          "zig/primitives/calldata/is",
+                          "zig/primitives/calldata/equals"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "ChainId",
+                    "icon": {
+                      "name": "hashtag",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/chain-id/index"
+                    ]
+                  },
+                  {
+                    "group": "Filters",
+                    "icon": {
+                      "name": "filter",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/filter-id/index",
+                      "zig/primitives/topic-filter/index",
+                      "zig/primitives/log-filter/index",
+                      "zig/primitives/block-filter/index",
+                      "zig/primitives/pending-transaction-filter/index"
+                    ]
+                  },
+                  {
+                    "group": "ForkId",
+                    "icon": {
+                      "name": "code-fork",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/fork-id/index"
+                    ]
+                  },
+                  {
+                    "group": "Gas",
+                    "icon": {
+                      "name": "gas-pump",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/gas/index"
+                    ]
+                  },
+                  "zig/primitives/hash",
+                  {
+                    "group": "Proxy",
+                    "icon": {
+                      "name": "arrow-right-arrow-left",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/proxy/index",
+                      "zig/primitives/proxy/constants",
+                      "zig/primitives/proxy/generate-erc1167",
+                      "zig/primitives/proxy/parse-erc1167",
+                      "zig/primitives/proxy/generate-erc3448",
+                      "zig/primitives/proxy/parse-erc3448"
+                    ]
+                  },
+                  {
+                    "group": "StealthAddress",
+                    "icon": {
+                      "name": "eye-slash",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/stealthaddress/index"
+                    ]
+                  },
+                  {
+                    "group": "Storage",
+                    "icon": {
+                      "name": "database",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/storage/index",
+                      "zig/primitives/storage/calculate-erc7201",
+                      "zig/primitives/storage/calculate-erc8042",
+                      "zig/primitives/storage-value/index"
+                    ]
+                  },
+                  {
+                    "group": "TransactionUrl",
+                    "icon": {
+                      "name": "link",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/transactionurl/index",
+                      "zig/primitives/transactionurl/parse",
+                      "zig/primitives/transactionurl/format"
+                    ]
+                  },
+                  {
+                    "group": "Unsigned Integers",
+                    "icon": {
+                      "name": "hashtag",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/uint/index",
+                      "zig/primitives/uint32/index",
+                      "zig/primitives/uint64/index"
+                    ]
+                  },
+                  {
+                    "group": "Signed Integers",
+                    "icon": {
+                      "name": "hashtag",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/int32/index",
+                      "zig/primitives/int64/index"
+                    ]
+                  },
+                  {
+                    "group": "License",
+                    "icon": {
+                      "name": "file-contract",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/license/index"
+                    ]
+                  },
+                  {
+                    "group": "Nonce",
+                    "icon": {
+                      "name": "list-ol",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/nonce/index"
+                    ]
+                  },
+                  {
+                    "group": "Networking",
+                    "icon": {
+                      "name": "network-wired",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/network-id/index",
+                      "zig/primitives/node-info/index",
+                      "zig/primitives/peer-id/index",
+                      "zig/primitives/peer-info/index"
+                    ]
+                  },
+                  {
+                    "group": "Keys & Signing",
+                    "icon": {
+                      "name": "key",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/private-key/index",
+                      "zig/primitives/public-key/index"
+                    ]
+                  },
+                  {
+                    "group": "Proofs",
+                    "icon": {
+                      "name": "certificate",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/proof/index",
+                      "zig/primitives/state-proof/index",
+                      "zig/primitives/storage-proof/index",
+                      "zig/primitives/state-root/index"
+                    ]
+                  },
+                  {
+                    "group": "Network",
+                    "icon": {
+                      "name": "network-wired",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/protocol-version/index",
+                      "zig/primitives/relay-data/index"
+                    ]
+                  },
+                  {
+                    "group": "Legacy",
+                    "icon": {
+                      "name": "clock-rotate-left",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/primitives/uncle/index"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Cryptography",
+                "icon": "shield-halved",
+                "pages": [
+                  {
+                    "group": "Overview",
+                    "icon": {
+                      "name": "circle-info",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/crypto/comparison",
+                      "zig/crypto/symmetric-encryption-comparison",
+                      "zig/crypto/wallet-integration"
+                    ]
+                  },
+                  {
+                    "group": "Hashing & Addresses",
+                    "icon": {
+                      "name": "hashtag",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      {
+                        "group": "Keccak256 (Mainnet Primary)",
+                        "icon": {
+                          "name": "shield-halved",
+                          "style": "solid"
+                        },
+                        "pages": [
+                          "zig/crypto/keccak256/index",
+                          "zig/crypto/keccak256/hash",
+                          "zig/crypto/keccak256/implementations",
+                          "zig/crypto/keccak256/hash-methods",
+                          "zig/crypto/keccak256/ethereum-methods",
+                          "zig/crypto/keccak256/usage-patterns"
+                        ]
+                      },
+                      {
+                        "group": "SHA256 (Precompile)",
+                        "icon": {
+                          "name": "lock",
+                          "style": "regular"
+                        },
+                        "pages": [
+                          "zig/crypto/sha256/index",
+                          "zig/crypto/sha256/api-reference",
+                          "zig/crypto/sha256/comparison",
+                          "zig/crypto/sha256/security",
+                          "zig/crypto/sha256/performance",
+                          "zig/crypto/sha256/test-vectors",
+                          "zig/crypto/sha256/usage-patterns"
+                        ]
+                      },
+                      {
+                        "group": "RIPEMD160 (Bitcoin Compatibility)",
+                        "icon": {
+                          "name": "fingerprint",
+                          "style": "light"
+                        },
+                        "pages": [
+                          "zig/crypto/ripemd160/index"
+                        ]
+                      },
+                      {
+                        "group": "Blake2 (Modern Alternative)",
+                        "icon": {
+                          "name": "bolt",
+                          "style": "light"
+                        },
+                        "pages": [
+                          "zig/crypto/blake2/index"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Transaction Signing",
+                    "icon": {
+                      "name": "signature",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      {
+                        "group": "Secp256k1 (ECDSA Mainnet)",
+                        "icon": {
+                          "name": "key",
+                          "style": "solid"
+                        },
+                        "pages": [
+                          "zig/crypto/secp256k1/index",
+                          "zig/crypto/secp256k1/signing",
+                          "zig/crypto/secp256k1/verification",
+                          "zig/crypto/secp256k1/recovery",
+                          "zig/crypto/secp256k1/key-derivation",
+                          "zig/crypto/secp256k1/point-operations",
+                          "zig/crypto/secp256k1/security",
+                          "zig/crypto/secp256k1/performance",
+                          "zig/crypto/secp256k1/test-vectors",
+                          "zig/crypto/secp256k1/usage-patterns"
+                        ]
+                      },
+                      {
+                        "group": "EIP-712 (Typed Messages)",
+                        "icon": {
+                          "name": "file-signature",
+                          "style": "regular"
+                        },
+                        "pages": [
+                          "zig/crypto/eip712/index",
+                          "zig/primitives/domain/erc5267"
+                        ]
+                      },
+                      {
+                        "group": "Ed25519 (Alternative)",
+                        "icon": {
+                          "name": "pen-nib",
+                          "style": "regular"
+                        },
+                        "pages": [
+                          "zig/crypto/ed25519/index"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Blob Transactions & Scaling",
+                    "icon": {
+                      "name": "layer-group",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      {
+                        "group": "KZG (EIP-4844 Mainnet)",
+                        "icon": {
+                          "name": "file-zipper",
+                          "style": "solid"
+                        },
+                        "pages": [
+                          "zig/crypto/kzg",
+                          "zig/crypto/kzg/index",
+                          "zig/crypto/kzg/eip-4844",
+                          "zig/crypto/kzg/commitments",
+                          "zig/crypto/kzg/proofs",
+                          "zig/crypto/kzg/point-evaluation",
+                          "zig/crypto/kzg/trusted-setup",
+                          "zig/crypto/kzg/performance",
+                          "zig/crypto/kzg/test-vectors",
+                          "zig/crypto/kzg/usage-patterns"
+                        ]
+                      },
+                      {
+                        "group": "BN254 (L2 zkSNARKs)",
+                        "icon": {
+                          "name": "cube",
+                          "style": "light"
+                        },
+                        "pages": [
+                          "zig/crypto/bn254",
+                          "zig/crypto/bn254/index",
+                          "zig/crypto/bn254/g1-operations",
+                          "zig/crypto/bn254/g2-operations",
+                          "zig/crypto/bn254/pairing",
+                          "zig/crypto/bn254/precompiles",
+                          "zig/crypto/bn254/zk-usage",
+                          "zig/crypto/bn254/performance",
+                          "zig/crypto/bn254/test-vectors",
+                          "zig/crypto/bn254/usage-patterns"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Consensus & Beacon Chain",
+                    "icon": {
+                      "name": "tower-broadcast",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      {
+                        "group": "BLS12-381 (Consensus Only)",
+                        "icon": {
+                          "name": "cubes",
+                          "style": "light"
+                        },
+                        "pages": [
+                          "zig/crypto/bls12-381",
+                          "zig/crypto/bls12-381/index",
+                          "zig/crypto/bls12-381/signatures",
+                          "zig/crypto/bls12-381/aggregation",
+                          "zig/crypto/bls12-381/g1-operations",
+                          "zig/crypto/bls12-381/g2-operations",
+                          "zig/crypto/bls12-381/pairing",
+                          "zig/crypto/bls12-381/precompiles",
+                          "zig/crypto/bls12-381/security",
+                          "zig/crypto/bls12-381/performance",
+                          "zig/crypto/bls12-381/test-vectors",
+                          "zig/crypto/bls12-381/usage-patterns"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Wallet Operations",
+                    "icon": {
+                      "name": "wallet",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      {
+                        "group": "BIP39 (Mnemonic Seeds)",
+                        "icon": {
+                          "name": "book",
+                          "style": "regular"
+                        },
+                        "pages": [
+                          "zig/crypto/bip39/index",
+                          "zig/crypto/bip39/generation",
+                          "zig/crypto/bip39/validation",
+                          "zig/crypto/bip39/seed-derivation",
+                          "zig/crypto/bip39/wordlists",
+                          "zig/crypto/bip39/passphrase",
+                          "zig/crypto/bip39/security"
+                        ]
+                      },
+                      {
+                        "group": "HDWallet (Key Derivation)",
+                        "icon": {
+                          "name": "folder-tree",
+                          "style": "regular"
+                        },
+                        "pages": [
+                          "zig/crypto/hdwallet/index",
+                          "zig/crypto/hdwallet/extended-keys",
+                          "zig/crypto/hdwallet/child-derivation",
+                          "zig/crypto/hdwallet/derivation-paths"
+                        ]
+                      },
+                      {
+                        "group": "Keystore (Web3 Secret Storage)",
+                        "icon": {
+                          "name": "lock",
+                          "style": "solid"
+                        },
+                        "pages": [
+                          "zig/crypto/keystore/index",
+                          "zig/crypto/keystore/encryption",
+                          "zig/crypto/keystore/decryption",
+                          "zig/crypto/keystore/security"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Encryption & Key Exchange",
+                    "icon": {
+                      "name": "shield",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      {
+                        "group": "AES-GCM (Symmetric)",
+                        "icon": {
+                          "name": "shield",
+                          "style": "regular"
+                        },
+                        "pages": [
+                          "zig/crypto/aesgcm/index",
+                          "zig/crypto/aesgcm/encryption",
+                          "zig/crypto/aesgcm/decryption",
+                          "zig/crypto/aesgcm/security",
+                          "zig/crypto/aesgcm/test-vectors"
+                        ]
+                      },
+                      {
+                        "group": "ChaCha20Poly1305 (Symmetric)",
+                        "icon": {
+                          "name": "shield-alt",
+                          "style": "regular"
+                        },
+                        "pages": [
+                          "zig/crypto/chacha20poly1305/index"
+                        ]
+                      },
+                      {
+                        "group": "X25519 (Key Exchange)",
+                        "icon": {
+                          "name": "arrows-left-right",
+                          "style": "regular"
+                        },
+                        "pages": [
+                          "zig/crypto/x25519/index"
+                        ]
+                      },
+                      {
+                        "group": "P256 (Hardware Wallets)",
+                        "icon": {
+                          "name": "microchip",
+                          "style": "regular"
+                        },
+                        "pages": [
+                          "zig/crypto/p256/index"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Signers",
+                    "icon": {
+                      "name": "pen-to-square",
+                      "style": "solid"
+                    },
+                    "pages": [
+                      "zig/crypto/signers/index"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "EVM",
+                "icon": "microchip",
+                "pages": [
+                  "zig/evm/index",
+                  "zig/evm/types",
+                  {
+                    "group": "Instructions",
+                    "pages": [
+                      "zig/evm/instructions/index",
+                      {
+                        "group": "Arithmetic",
+                        "pages": [
+                          "zig/evm/instructions/arithmetic/index",
+                          "zig/evm/instructions/arithmetic/add",
+                          "zig/evm/instructions/arithmetic/mul",
+                          "zig/evm/instructions/arithmetic/sub",
+                          "zig/evm/instructions/arithmetic/div",
+                          "zig/evm/instructions/arithmetic/sdiv",
+                          "zig/evm/instructions/arithmetic/mod",
+                          "zig/evm/instructions/arithmetic/smod",
+                          "zig/evm/instructions/arithmetic/addmod",
+                          "zig/evm/instructions/arithmetic/mulmod",
+                          "zig/evm/instructions/arithmetic/exp",
+                          "zig/evm/instructions/arithmetic/signextend"
+                        ]
+                      },
+                      {
+                        "group": "Comparison",
+                        "pages": [
+                          "zig/evm/instructions/comparison/index",
+                          "zig/evm/instructions/comparison/lt",
+                          "zig/evm/instructions/comparison/gt",
+                          "zig/evm/instructions/comparison/slt",
+                          "zig/evm/instructions/comparison/sgt",
+                          "zig/evm/instructions/comparison/eq",
+                          "zig/evm/instructions/comparison/iszero"
+                        ]
+                      },
+                      {
+                        "group": "Bitwise",
+                        "pages": [
+                          "zig/evm/instructions/bitwise/index",
+                          "zig/evm/instructions/bitwise/and",
+                          "zig/evm/instructions/bitwise/or",
+                          "zig/evm/instructions/bitwise/xor",
+                          "zig/evm/instructions/bitwise/not",
+                          "zig/evm/instructions/bitwise/byte",
+                          "zig/evm/instructions/bitwise/shl",
+                          "zig/evm/instructions/bitwise/shr",
+                          "zig/evm/instructions/bitwise/sar"
+                        ]
+                      },
+                      {
+                        "group": "Keccak",
+                        "pages": [
+                          "zig/evm/instructions/keccak/index",
+                          "zig/evm/instructions/keccak/sha3"
+                        ]
+                      },
+                      {
+                        "group": "Context",
+                        "pages": [
+                          "zig/evm/instructions/context/index",
+                          "zig/evm/instructions/context/address",
+                          "zig/evm/instructions/context/balance",
+                          "zig/evm/instructions/context/origin",
+                          "zig/evm/instructions/context/caller",
+                          "zig/evm/instructions/context/callvalue",
+                          "zig/evm/instructions/context/calldataload",
+                          "zig/evm/instructions/context/calldatasize",
+                          "zig/evm/instructions/context/calldatacopy",
+                          "zig/evm/instructions/context/codesize",
+                          "zig/evm/instructions/context/codecopy",
+                          "zig/evm/instructions/context/gasprice",
+                          "zig/evm/instructions/context/extcodesize",
+                          "zig/evm/instructions/context/extcodecopy",
+                          "zig/evm/instructions/context/returndatasize",
+                          "zig/evm/instructions/context/returndatacopy",
+                          "zig/evm/instructions/context/extcodehash"
+                        ]
+                      },
+                      {
+                        "group": "Block",
+                        "pages": [
+                          "zig/evm/instructions/block/index",
+                          "zig/evm/instructions/block/blockhash",
+                          "zig/evm/instructions/block/coinbase",
+                          "zig/evm/instructions/block/timestamp",
+                          "zig/evm/instructions/block/number",
+                          "zig/evm/instructions/block/difficulty",
+                          "zig/evm/instructions/block/gaslimit",
+                          "zig/evm/instructions/block/chainid",
+                          "zig/evm/instructions/block/selfbalance",
+                          "zig/evm/instructions/block/basefee",
+                          "zig/evm/instructions/block/blobhash",
+                          "zig/evm/instructions/block/blobbasefee"
+                        ]
+                      },
+                      {
+                        "group": "Stack",
+                        "pages": [
+                          "zig/evm/instructions/stack/index",
+                          "zig/evm/instructions/stack/pop",
+                          "zig/evm/instructions/stack/push0",
+                          "zig/evm/instructions/stack/push1",
+                          "zig/evm/instructions/stack/push2",
+                          "zig/evm/instructions/stack/push3",
+                          "zig/evm/instructions/stack/push4",
+                          "zig/evm/instructions/stack/push5",
+                          "zig/evm/instructions/stack/push6",
+                          "zig/evm/instructions/stack/push7",
+                          "zig/evm/instructions/stack/push8",
+                          "zig/evm/instructions/stack/push9",
+                          "zig/evm/instructions/stack/push10",
+                          "zig/evm/instructions/stack/push11",
+                          "zig/evm/instructions/stack/push12",
+                          "zig/evm/instructions/stack/push13",
+                          "zig/evm/instructions/stack/push14",
+                          "zig/evm/instructions/stack/push15",
+                          "zig/evm/instructions/stack/push16",
+                          "zig/evm/instructions/stack/push17",
+                          "zig/evm/instructions/stack/push18",
+                          "zig/evm/instructions/stack/push19",
+                          "zig/evm/instructions/stack/push20",
+                          "zig/evm/instructions/stack/push21",
+                          "zig/evm/instructions/stack/push22",
+                          "zig/evm/instructions/stack/push23",
+                          "zig/evm/instructions/stack/push24",
+                          "zig/evm/instructions/stack/push25",
+                          "zig/evm/instructions/stack/push26",
+                          "zig/evm/instructions/stack/push27",
+                          "zig/evm/instructions/stack/push28",
+                          "zig/evm/instructions/stack/push29",
+                          "zig/evm/instructions/stack/push30",
+                          "zig/evm/instructions/stack/push31",
+                          "zig/evm/instructions/stack/push32",
+                          "zig/evm/instructions/stack/dup1",
+                          "zig/evm/instructions/stack/dup2",
+                          "zig/evm/instructions/stack/dup3",
+                          "zig/evm/instructions/stack/dup4",
+                          "zig/evm/instructions/stack/dup5",
+                          "zig/evm/instructions/stack/dup6",
+                          "zig/evm/instructions/stack/dup7",
+                          "zig/evm/instructions/stack/dup8",
+                          "zig/evm/instructions/stack/dup9",
+                          "zig/evm/instructions/stack/dup10",
+                          "zig/evm/instructions/stack/dup11",
+                          "zig/evm/instructions/stack/dup12",
+                          "zig/evm/instructions/stack/dup13",
+                          "zig/evm/instructions/stack/dup14",
+                          "zig/evm/instructions/stack/dup15",
+                          "zig/evm/instructions/stack/dup16",
+                          "zig/evm/instructions/stack/swap1",
+                          "zig/evm/instructions/stack/swap2",
+                          "zig/evm/instructions/stack/swap3",
+                          "zig/evm/instructions/stack/swap4",
+                          "zig/evm/instructions/stack/swap5",
+                          "zig/evm/instructions/stack/swap6",
+                          "zig/evm/instructions/stack/swap7",
+                          "zig/evm/instructions/stack/swap8",
+                          "zig/evm/instructions/stack/swap9",
+                          "zig/evm/instructions/stack/swap10",
+                          "zig/evm/instructions/stack/swap11",
+                          "zig/evm/instructions/stack/swap12",
+                          "zig/evm/instructions/stack/swap13",
+                          "zig/evm/instructions/stack/swap14",
+                          "zig/evm/instructions/stack/swap15",
+                          "zig/evm/instructions/stack/swap16"
+                        ]
+                      },
+                      {
+                        "group": "Memory",
+                        "pages": [
+                          "zig/evm/instructions/memory/index",
+                          "zig/evm/instructions/memory/mload",
+                          "zig/evm/instructions/memory/mstore",
+                          "zig/evm/instructions/memory/mstore8",
+                          "zig/evm/instructions/memory/mcopy"
+                        ]
+                      },
+                      {
+                        "group": "Storage",
+                        "pages": [
+                          "zig/evm/instructions/storage/index",
+                          "zig/evm/instructions/storage/sload",
+                          "zig/evm/instructions/storage/sstore",
+                          "zig/evm/instructions/storage/tload",
+                          "zig/evm/instructions/storage/tstore"
+                        ]
+                      },
+                      {
+                        "group": "Control Flow",
+                        "pages": [
+                          "zig/evm/instructions/control-flow/index",
+                          "zig/evm/instructions/control-flow/jump",
+                          "zig/evm/instructions/control-flow/jumpi",
+                          "zig/evm/instructions/control-flow/jumpdest",
+                          "zig/evm/instructions/control-flow/pc",
+                          "zig/evm/instructions/control-flow/stop",
+                          "zig/evm/instructions/control-flow/return",
+                          "zig/evm/instructions/control-flow/revert"
+                        ]
+                      },
+                      {
+                        "group": "Log",
+                        "pages": [
+                          "zig/evm/instructions/log/index",
+                          "zig/evm/instructions/log/log0",
+                          "zig/evm/instructions/log/log1",
+                          "zig/evm/instructions/log/log2",
+                          "zig/evm/instructions/log/log3",
+                          "zig/evm/instructions/log/log4"
+                        ]
+                      },
+                      {
+                        "group": "System",
+                        "pages": [
+                          "zig/evm/instructions/system/index",
+                          "zig/evm/instructions/system/create",
+                          "zig/evm/instructions/system/create2",
+                          "zig/evm/instructions/system/call",
+                          "zig/evm/instructions/system/callcode",
+                          "zig/evm/instructions/system/delegatecall",
+                          "zig/evm/instructions/system/staticcall",
+                          "zig/evm/instructions/system/selfdestruct"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Precompiles",
+                    "pages": [
+                      "zig/evm/precompiles/index",
+                      "zig/evm/precompiles/ecrecover",
+                      "zig/evm/precompiles/sha256",
+                      "zig/evm/precompiles/ripemd160",
+                      "zig/evm/precompiles/identity",
+                      "zig/evm/precompiles/modexp",
+                      "zig/evm/precompiles/bn254-add",
+                      "zig/evm/precompiles/bn254-mul",
+                      "zig/evm/precompiles/bn254-pairing",
+                      "zig/evm/precompiles/blake2f",
+                      "zig/evm/precompiles/point-evaluation",
+                      {
+                        "group": "BLS12-381",
+                        "pages": [
+                          "zig/evm/precompiles/bls12-381/index",
+                          "zig/evm/precompiles/bls12-g1-add",
+                          "zig/evm/precompiles/bls12-g1-mul",
+                          "zig/evm/precompiles/bls12-g1-msm",
+                          "zig/evm/precompiles/bls12-g2-add",
+                          "zig/evm/precompiles/bls12-g2-mul",
+                          "zig/evm/precompiles/bls12-g2-msm",
+                          "zig/evm/precompiles/bls12-pairing",
+                          "zig/evm/precompiles/bls12-map-fp-to-g1",
+                          "zig/evm/precompiles/bls12-map-fp2-to-g2"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Utils",
+                "icon": "wrench",
+                "pages": [
+                  "zig/utils/index",
+                  "zig/utils/retry",
+                  "zig/utils/rate-limit",
+                  "zig/utils/polling",
+                  "zig/utils/timeout",
+                  "zig/utils/batch"
+                ]
+              },
+              {
+                "group": "Guides",
+                "icon": "book-open",
+                "pages": [
+                  "zig/guides/index",
+                  "zig/primitives/calldata/fundamentals",
+                  "zig/primitives/receipt/index",
+                  "zig/primitives/transaction-hash/index",
+                  "zig/primitives/transaction-index/index",
+                  "zig/primitives/transaction-status/index",
+                  "zig/primitives/log-index/index",
+                  "zig/primitives/block-hash/index",
+                  "zig/primitives/block-number/index"
+                ]
+              },
+              {
+                "group": "Examples",
+                "icon": "code",
+                "pages": [
+                  {
+                    "group": "Getting Started",
+                    "pages": [
+                      "zig/examples/getting-started/hello-voltaire"
+                    ]
+                  },
+                  {
+                    "group": "Addresses",
+                    "pages": [
+                      "zig/examples/addresses/validate-address",
+                      "zig/examples/addresses/checksum-address",
+                      "zig/examples/addresses/address-from-private-key",
+                      "zig/examples/addresses/compare-addresses"
+                    ]
+                  },
+                  {
+                    "group": "Hex & Bytes",
+                    "pages": [
+                      "zig/examples/hex-and-bytes/hex-encode-decode",
+                      "zig/examples/hex-and-bytes/hex-concatenate"
+                    ]
+                  },
+                  {
+                    "group": "Hashing",
+                    "pages": [
+                      "zig/examples/hashing/keccak256-string",
+                      "zig/examples/hashing/sha256-hash"
+                    ]
+                  },
+                  {
+                    "group": "Signing",
+                    "pages": [
+                      "zig/examples/signing/personal-sign"
+                    ]
+                  },
+                  {
+                    "group": "RLP Encoding",
+                    "pages": [
+                      "zig/examples/rlp/rlp-encode-list"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Developer Documentation",
+                "icon": "code",
+                "pages": [
+                  "zig/dev/index",
+                  {
+                    "group": "Current State",
+                    "pages": [
+                      "zig/dev/codebase-map",
+                      "zig/dev/primitives-reference",
+                      "zig/dev/crypto-reference",
+                      "zig/dev/precompiles-reference",
+                      "zig/dev/exports",
+                      "zig/dev/dependencies"
+                    ]
+                  },
+                  {
+                    "group": "Patterns & Architecture",
+                    "pages": [
+                      "zig/dev/architecture",
+                      "zig/dev/typescript-patterns",
+                      "zig/dev/zig-patterns",
+                      "zig/dev/api-conventions"
+                    ]
+                  },
+                  {
+                    "group": "Development",
+                    "pages": [
+                      "zig/dev/build-system",
+                      "zig/dev/testing",
+                      "zig/dev/wasm",
+                      "zig/dev/multi-language",
+                      "zig/dev/security"
+                    ]
+                  },
+                  {
+                    "group": "Contributing",
+                    "pages": [
+                      "zig/dev/adding-primitives",
+                      "zig/dev/adding-crypto"
+                    ]
+                  }
                 ]
               }
             ]
@@ -147,12 +1255,6 @@
                   "style": "solid"
                 },
                 "pages": [
-                  "primitives/abi/index",
-                  "primitives/abi/fundamentals",
-                  "primitives/abi/types",
-                  "primitives/abi/encoding",
-                  "primitives/abi/selectors",
-                  "primitives/abi/usage-patterns",
                   {
                     "group": "Signature Types",
                     "pages": [
@@ -163,71 +1265,10 @@
                     ]
                   },
                   {
-                    "group": "Top-Level Methods",
-                    "pages": [
-                      "primitives/abi/format",
-                      "primitives/abi/format-with-args",
-                      "primitives/abi/get-item",
-                      "primitives/abi/encode",
-                      "primitives/abi/decode",
-                      "primitives/abi/decode-data",
-                      "primitives/abi/parse-logs"
-                    ]
-                  },
-                  {
-                    "group": "Function Methods",
-                    "pages": [
-                      "primitives/abi/function-get-selector",
-                      "primitives/abi/function-get-signature",
-                      "primitives/abi/function-encode-params",
-                      "primitives/abi/function-decode-params",
-                      "primitives/abi/function-encode-result",
-                      "primitives/abi/function-decode-result",
-                      "primitives/abi/function-get-selector-factory"
-                    ]
-                  },
-                  {
-                    "group": "Event Methods",
-                    "pages": [
-                      "primitives/abi/event-get-selector",
-                      "primitives/abi/event-get-signature",
-                      "primitives/abi/event-encode-topics",
-                      "primitives/abi/event-decode-log",
-                      "primitives/abi/event-get-selector-factory",
-                      "primitives/abi/event-encode-topics-factory"
-                    ]
-                  },
-                  {
                     "group": "Error Methods",
                     "pages": [
-                      "primitives/abi/error-get-selector",
-                      "primitives/abi/error-get-signature",
-                      "primitives/abi/error-encode-params",
-                      "primitives/abi/error-decode-params",
-                      "primitives/abi/error-get-selector-factory",
                       "primitives/abi/error/erc6093",
                       "primitives/abi/error/erc7751"
-                    ]
-                  },
-                  {
-                    "group": "Constructor Methods",
-                    "pages": [
-                      "primitives/abi/constructor-encode-params",
-                      "primitives/abi/constructor-decode-params"
-                    ]
-                  },
-                  {
-                    "group": "Item Utilities",
-                    "pages": [
-                      "primitives/abi/item-is-function",
-                      "primitives/abi/item-is-event",
-                      "primitives/abi/item-is-error",
-                      "primitives/abi/item-is-constructor",
-                      "primitives/abi/item-is-fallback",
-                      "primitives/abi/item-is-receive",
-                      "primitives/abi/item-format",
-                      "primitives/abi/item-format-with-args",
-                      "primitives/abi/item-get-item"
                     ]
                   },
                   {
@@ -249,93 +1290,6 @@
                 ]
               },
               {
-                "group": "AccessList",
-                "icon": {
-                  "name": "list-check",
-                  "style": "regular"
-                },
-                "pages": [
-                  "primitives/accesslist/index",
-                  "primitives/accesslist/branded-accesslist",
-                  "primitives/accesslist/constructors",
-                  "primitives/accesslist/conversions",
-                  "primitives/accesslist/manipulation",
-                  "primitives/accesslist/queries",
-                  "primitives/accesslist/validation",
-                  "primitives/accesslist/gas-optimization",
-                  "primitives/accesslist/usage-patterns",
-                  "primitives/accesslist/wasm"
-                ]
-              },
-              {
-                "group": "Address",
-                "icon": {
-                  "name": "location-dot",
-                  "style": "solid"
-                },
-                "pages": [
-                  "primitives/address/index",
-                  "primitives/address/branded-address",
-                  "primitives/address/uint8array-methods",
-                  "primitives/address/variants",
-                  "primitives/address/wasm"
-                ]
-              },
-              {
-                "group": "Authorization",
-                "icon": {
-                  "name": "key",
-                  "style": "light"
-                },
-                "pages": [
-                  "primitives/authorization/index",
-                  "primitives/authorization/branded-authorization",
-                  "primitives/authorization/eip7702",
-                  "primitives/authorization/constructors",
-                  "primitives/authorization/signing",
-                  "primitives/authorization/validation",
-                  "primitives/authorization/processing",
-                  "primitives/authorization/utilities",
-                  "primitives/authorization/gas-calculations",
-                  "primitives/authorization/workflows-and-diagrams",
-                  "primitives/authorization/real-world-examples",
-                  "primitives/authorization/usage-patterns",
-                  "primitives/authorization/wasm"
-                ]
-              },
-              {
-                "group": "Base64",
-                "icon": {
-                  "name": "binary",
-                  "style": "light"
-                },
-                "pages": [
-                  "primitives/base64/index",
-                  "primitives/base64/branded-base64",
-                  "primitives/base64/encoding",
-                  "primitives/base64/decoding",
-                  "primitives/base64/validation",
-                  "primitives/base64/utilities"
-                ]
-              },
-              {
-                "group": "BinaryTree",
-                "icon": {
-                  "name": "diagram-project",
-                  "style": "light"
-                },
-                "pages": [
-                  "primitives/binarytree/index",
-                  "primitives/binarytree/branded-binarytree",
-                  "primitives/binarytree/constructors",
-                  "primitives/binarytree/operations",
-                  "primitives/binarytree/hashing",
-                  "primitives/binarytree/key-utilities",
-                  "primitives/binarytree/usage-patterns",
-                  "primitives/binarytree/wasm"
-                ]
-              },
-              {
                 "group": "Block",
                 "icon": {
                   "name": "cube",
@@ -345,62 +1299,6 @@
                   "primitives/block/index",
                   "primitives/block-header/index",
                   "primitives/block-body/index"
-                ]
-              },
-              {
-                "group": "BloomFilter",
-                "icon": {
-                  "name": "filter",
-                  "style": "light"
-                },
-                "pages": [
-                  "primitives/bloomfilter/index",
-                  "primitives/bloomfilter/branded-bloomfilter",
-                  "primitives/bloomfilter/algorithm",
-                  "primitives/bloomfilter/constructors",
-                  "primitives/bloomfilter/conversions",
-                  "primitives/bloomfilter/operations",
-                  "primitives/bloomfilter/queries",
-                  "primitives/bloomfilter/log-filtering",
-                  "primitives/bloomfilter/usage-patterns"
-                ]
-              },
-              {
-                "group": "Bytecode",
-                "icon": {
-                  "name": "code",
-                  "style": "solid"
-                },
-                "pages": [
-                  "primitives/bytecode/index",
-                  "primitives/bytecode/scan",
-                  "primitives/bytecode/instruction-types",
-                  "primitives/bytecode/from",
-                  "primitives/bytecode/fromHex",
-                  "primitives/bytecode/fromUint8Array",
-                  "primitives/bytecode/toHex",
-                  "primitives/bytecode/toAbi",
-                  "primitives/bytecode/validate",
-                  "primitives/bytecode/equals",
-                  "primitives/bytecode/analyze",
-                  "primitives/bytecode/analyze-blocks",
-                  "primitives/bytecode/analyze-gas",
-                  "primitives/bytecode/analyze-stack",
-                  "primitives/bytecode/analyzeJumpDestinations",
-                  "primitives/bytecode/detect-fusions",
-                  "primitives/bytecode/extractRuntime",
-                  "primitives/bytecode/getBlock",
-                  "primitives/bytecode/getNextPc",
-                  "primitives/bytecode/formatInstruction",
-                  "primitives/bytecode/formatInstructions",
-                  "primitives/bytecode/pretty-print",
-                  "primitives/bytecode/hasMetadata",
-                  "primitives/bytecode/hash",
-                  "primitives/bytecode/isValidJumpDest",
-                  "primitives/bytecode/parseInstructions",
-                  "primitives/bytecode/size",
-                  "primitives/bytecode/stripMetadata",
-                  "primitives/bytecode/synthetic-opcodes"
                 ]
               },
               {
@@ -462,21 +1360,6 @@
                 ]
               },
               {
-                "group": "Chain",
-                "icon": {
-                  "name": "link",
-                  "style": "solid"
-                },
-                "pages": [
-                  "primitives/chain/index",
-                  "primitives/chain/branded-chain",
-                  "primitives/chain/constructors",
-                  "primitives/chain/chain-lookup",
-                  "primitives/chain/metadata",
-                  "primitives/chain/network-comparison"
-                ]
-              },
-              {
                 "group": "ChainId",
                 "icon": {
                   "name": "hashtag",
@@ -484,46 +1367,6 @@
                 },
                 "pages": [
                   "primitives/chain-id/index"
-                ]
-              },
-              {
-                "group": "Denomination",
-                "icon": {
-                  "name": "coins",
-                  "style": "solid"
-                },
-                "pages": [
-                  "primitives/denomination/index",
-                  "primitives/denomination/wei",
-                  "primitives/denomination/gwei",
-                  "primitives/denomination/ether",
-                  "primitives/denomination/branded-wei",
-                  "primitives/denomination/branded-gwei",
-                  "primitives/denomination/branded-ether",
-                  "primitives/denomination/conversions",
-                  "primitives/denomination/gas-calculator",
-                  "primitives/denomination/scale-visualization",
-                  "primitives/denomination/usage-patterns",
-                  "primitives/denomination/wasm"
-                ]
-              },
-              {
-                "group": "ENS",
-                "icon": {
-                  "name": "at",
-                  "style": "regular"
-                },
-                "pages": [
-                  "primitives/ens/index",
-                  "primitives/ens/branded-ens",
-                  "primitives/ens/encoding",
-                  "primitives/ens/normalization",
-                  "primitives/ens/validation",
-                  "primitives/ens/ensip-standards",
-                  "primitives/ens/errors",
-                  "primitives/ens/security",
-                  "primitives/ens/usage-patterns",
-                  "primitives/ens/wasm"
                 ]
               },
               {
@@ -538,25 +1381,6 @@
                   "primitives/log-filter/index",
                   "primitives/block-filter/index",
                   "primitives/pending-transaction-filter/index"
-                ]
-              },
-              {
-                "group": "FeeMarket",
-                "icon": {
-                  "name": "chart-line",
-                  "style": "light"
-                },
-                "pages": [
-                  "primitives/feemarket/index",
-                  "primitives/feemarket/branded-feemarket",
-                  "primitives/feemarket/eip1559",
-                  "primitives/feemarket/eip4844",
-                  "primitives/feemarket/types",
-                  "primitives/feemarket/calculations",
-                  "primitives/feemarket/constants",
-                  "primitives/feemarket/utilities",
-                  "primitives/feemarket/usage-patterns",
-                  "primitives/feemarket/wasm"
                 ]
               },
               {
@@ -579,149 +1403,7 @@
                   "primitives/gas/index"
                 ]
               },
-              {
-                "group": "GasConstants",
-                "icon": {
-                  "name": "gas-pump",
-                  "style": "light"
-                },
-                "pages": [
-                  "primitives/gasconstants/index",
-                  "primitives/gasconstants/branded-gasconstants",
-                  "primitives/gasconstants/constants",
-                  "primitives/gasconstants/calculation-functions",
-                  "primitives/gasconstants/convenience-functions",
-                  "primitives/gasconstants/hardfork-utilities",
-                  "primitives/gasconstants/precompiles",
-                  "primitives/gasconstants/usage-patterns",
-                  "primitives/gasconstants/wasm"
-                ]
-              },
-              {
-                "group": "Hardfork",
-                "icon": {
-                  "name": "code-branch",
-                  "style": "light"
-                },
-                "pages": [
-                  "primitives/hardfork/index",
-                  "primitives/hardfork/branded-hardfork",
-                  "primitives/hardfork/hardforks",
-                  {
-                    "group": "Comparison Methods",
-                    "pages": [
-                      "primitives/hardfork/compare",
-                      "primitives/hardfork/is-at-least",
-                      "primitives/hardfork/is-before",
-                      "primitives/hardfork/is-after",
-                      "primitives/hardfork/is-equal",
-                      "primitives/hardfork/gte",
-                      "primitives/hardfork/lte",
-                      "primitives/hardfork/gt"
-                    ]
-                  },
-                  {
-                    "group": "Feature Detection",
-                    "pages": [
-                      "primitives/hardfork/has-eip1559",
-                      "primitives/hardfork/has-eip3855",
-                      "primitives/hardfork/has-eip4844",
-                      "primitives/hardfork/has-eip1153",
-                      "primitives/hardfork/is-post-merge"
-                    ]
-                  },
-                  {
-                    "group": "Collection Operations",
-                    "pages": [
-                      "primitives/hardfork/all-names",
-                      "primitives/hardfork/all-ids",
-                      "primitives/hardfork/range",
-                      "primitives/hardfork/to-string"
-                    ]
-                  },
-                  "primitives/hardfork/usage-patterns",
-                  "primitives/hardfork/wasm"
-                ]
-              },
               "primitives/hash",
-              {
-                "group": "Opcode",
-                "icon": {
-                  "name": "microchip",
-                  "style": "light"
-                },
-                "pages": [
-                  "primitives/opcode/index",
-                  "primitives/opcode/branded-opcode",
-                  "primitives/opcode/constructors",
-                  "primitives/opcode/reference-guide",
-                  "primitives/opcode/utilities",
-                  "primitives/opcode/validation",
-                  "primitives/opcode/usage-patterns",
-                  "primitives/opcode/wasm"
-                ]
-              },
-              {
-                "group": "RLP",
-                "icon": {
-                  "name": "box-archive",
-                  "style": "light"
-                },
-                "pages": [
-                  "primitives/rlp/index",
-                  "primitives/rlp/Rlp",
-                  "primitives/rlp/branded-rlp",
-                  "primitives/rlp/algorithm",
-                  "primitives/rlp/encoding",
-                  "primitives/rlp/decoding",
-                  "primitives/rlp/serialization",
-                  "primitives/rlp/types",
-                  "primitives/rlp/utilities",
-                  "primitives/rlp/usage-patterns",
-                  "primitives/rlp/wasm"
-                ]
-              },
-              {
-                "group": "Signature",
-                "icon": {
-                  "name": "signature",
-                  "style": "solid"
-                },
-                "pages": [
-                  "primitives/signature/index",
-                  "primitives/signature/branded-signature",
-                  "primitives/signature/constructors",
-                  "primitives/signature/conversions",
-                  "primitives/signature/validation",
-                  "primitives/signature/formats",
-                  "primitives/signature/eip-2098",
-                  "primitives/signature/recovery",
-                  "primitives/signature/utilities",
-                  "primitives/signature/usage-patterns",
-                  "primitives/signature/wasm"
-                ]
-              },
-              {
-                "group": "SIWE",
-                "icon": {
-                  "name": "user-check",
-                  "style": "regular"
-                },
-                "pages": [
-                  "primitives/siwe/index",
-                  "primitives/siwe/branded-siwe",
-                  "primitives/siwe/message-format",
-                  "primitives/siwe/constructors",
-                  "primitives/siwe/parsing",
-                  "primitives/siwe/signing",
-                  "primitives/siwe/verification",
-                  "primitives/siwe/validation",
-                  "primitives/siwe/utilities",
-                  "primitives/siwe/interactive-guide",
-                  "primitives/siwe/usage-patterns",
-                  "primitives/siwe/wasm"
-                ]
-              },
               {
                 "group": "Proxy",
                 "icon": {
@@ -735,25 +1417,6 @@
                   "primitives/proxy/parse-erc1167",
                   "primitives/proxy/generate-erc3448",
                   "primitives/proxy/parse-erc3448"
-                ]
-              },
-              {
-                "group": "State",
-                "icon": {
-                  "name": "database",
-                  "style": "light"
-                },
-                "pages": [
-                  "primitives/state/index",
-                  "primitives/state/branded-state",
-                  "primitives/state/constructors",
-                  "primitives/state/conversions",
-                  "primitives/state/merkle-trees",
-                  "primitives/state/utilities",
-                  "primitives/state/validation",
-                  "primitives/state/storage-examples",
-                  "primitives/state/usage-patterns",
-                  "primitives/state/wasm"
                 ]
               },
               {
@@ -780,28 +1443,6 @@
                 ]
               },
               {
-                "group": "Transaction",
-                "icon": {
-                  "name": "paper-plane",
-                  "style": "solid"
-                },
-                "pages": [
-                  "primitives/transaction/index",
-                  "primitives/transaction/types",
-                  "primitives/transaction/legacy",
-                  "primitives/transaction/eip2930",
-                  "primitives/transaction/eip1559",
-                  "primitives/transaction/eip4844",
-                  "primitives/transaction/eip7702",
-                  "primitives/transaction/detection",
-                  "primitives/transaction/serialization",
-                  "primitives/transaction/hashing",
-                  "primitives/transaction/signing",
-                  "primitives/transaction/utilities",
-                  "primitives/transaction/usage-patterns"
-                ]
-              },
-              {
                 "group": "TransactionUrl",
                 "icon": {
                   "name": "link",
@@ -821,12 +1462,8 @@
                 },
                 "pages": [
                   "primitives/uint/index",
-                  "primitives/uint8/index",
-                  "primitives/uint16/index",
                   "primitives/uint32/index",
-                  "primitives/uint64/index",
-                  "primitives/uint128/index",
-                  "primitives/uint256/index"
+                  "primitives/uint64/index"
                 ]
               },
               {
@@ -836,26 +1473,8 @@
                   "style": "solid"
                 },
                 "pages": [
-                  "primitives/int8/index",
-                  "primitives/int16/index",
                   "primitives/int32/index",
-                  "primitives/int64/index",
-                  "primitives/int128/index",
-                  "primitives/int256/index"
-                ]
-              },
-              {
-                "group": "Bytes Types",
-                "icon": {
-                  "name": "hashtag",
-                  "style": "solid"
-                },
-                "pages": [
-                  "primitives/bytes/index",
-                  "primitives/bytes/bytes16",
-                  "primitives/bytes/bytes20",
-                  "primitives/bytes/bytes32",
-                  "primitives/bytes/bytes64"
+                  "primitives/int64/index"
                 ]
               },
               {
@@ -1536,37 +2155,14 @@
             "icon": "book-open",
             "pages": [
               "guides/index",
-              "primitives/address/fundamentals",
-              "primitives/accesslist/fundamentals",
-              "primitives/abi/fundamentals",
-              "primitives/authorization/fundamentals",
-              "primitives/base64/fundamentals",
-              "primitives/binarytree/fundamentals",
-              "primitives/blob/fundamentals",
-              "primitives/bloomfilter/fundamentals",
-              "primitives/bytecode/fundamentals",
               "primitives/calldata/fundamentals",
-              "primitives/chain/fundamentals",
-              "primitives/denomination/fundamentals",
-              "primitives/ens/fundamentals",
-              "primitives/eventlog/fundamentals",
-              "primitives/feemarket/fundamentals",
               "primitives/receipt/index",
               "primitives/transaction-hash/index",
               "primitives/transaction-index/index",
               "primitives/transaction-status/index",
               "primitives/log-index/index",
               "primitives/block-hash/index",
-              "primitives/block-number/index",
-              "primitives/gasconstants/fundamentals",
-              "primitives/hardfork/fundamentals",
-              "primitives/opcode/fundamentals",
-              "primitives/rlp/fundamentals",
-              "primitives/signature/fundamentals",
-              "primitives/siwe/fundamentals",
-              "primitives/state/fundamentals",
-              "primitives/transaction/fundamentals",
-              "primitives/uint256/fundamentals"
+              "primitives/block-number/index"
             ]
           },
           {

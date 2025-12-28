@@ -48,7 +48,7 @@ CallData.decode(
 <Tab title="ERC20 Transfer">
 
 ```typescript
-import { CallData, Abi } from 'tevm';
+import { CallData, Abi } from '@tevm/voltaire';
 
 const abi = Abi([{
   name: "transfer",
@@ -72,7 +72,7 @@ console.log(decoded.parameters[1]); // Uint256(...)
 <Tab title="Type-Safe Access">
 
 ```typescript
-import { CallData, Abi, type Address, type Uint256 } from 'tevm';
+import { CallData, Abi, type Address, type Uint256 } from '@tevm/voltaire';
 
 const decoded = CallData.decode(calldata, abi);
 
@@ -165,7 +165,7 @@ export type CallDataDecoded = {
 Validates calldata against ABI:
 
 ```typescript
-import { CallData, Abi } from 'tevm';
+import { CallData, Abi } from '@tevm/voltaire';
 
 const abi = Abi([{
   name: "transfer",
@@ -198,7 +198,7 @@ try {
 ### Transaction Analysis
 
 ```typescript
-import { CallData, Abi } from 'tevm';
+import { CallData, Abi } from '@tevm/voltaire';
 
 const ERC20_ABI = Abi([
   { name: "transfer", type: "function", inputs: [/*...*/] },
@@ -226,7 +226,7 @@ function analyzeTransaction(tx: Transaction) {
 ### Event Indexing
 
 ```typescript
-import { CallData, Abi } from 'tevm';
+import { CallData, Abi } from '@tevm/voltaire';
 
 interface IndexedCall {
   function: string;
@@ -259,7 +259,7 @@ async function indexCallData(
 ### Smart Contract Testing
 
 ```typescript
-import { CallData, Abi } from 'tevm';
+import { CallData, Abi } from '@tevm/voltaire';
 import { describe, it, expect } from 'vitest';
 
 describe('Contract decoding', () => {

@@ -58,8 +58,8 @@ The sign bit is at position `byte_index * 8 + 7` (the MSB of that byte):
 ### Extend 1-Byte Signed Value
 
 ```zig
-import { signextend } from 'tevm/evm/arithmetic';
-import { createFrame } from 'tevm/evm/Frame';
+import { signextend } from '@tevm/voltaire/evm/arithmetic';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
 
 // Extend positive int8 value 0x7F (127)
 const frame1 = createFrame({ stack: [0n, 0x7fn] });

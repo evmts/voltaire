@@ -56,8 +56,8 @@ When PC executes at position 0x02, it pushes `0x02` onto the stack.
 ### Basic PC Usage
 
 ```zig
-import { createFrame } from 'tevm/evm/Frame';
-import { handler_0x58_PC } from 'tevm/evm/control';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { handler_0x58_PC } from '@tevm/voltaire/evm/control';
 
 const bytecode = new Uint8Array([
   0x60, 0x05,  // PUSH1 5 (positions 0-1)

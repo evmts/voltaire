@@ -22,7 +22,7 @@ Primary benefit: When using tree-shakeable imports, only the functions you use a
 The core CallData type is a branded `Uint8Array`:
 
 ```typescript
-import type { brand } from 'tevm/brand';
+import type { brand } from '@tevm/voltaire/brand';
 
 export type CallDataType = Uint8Array & {
   readonly [brand]: "CallData";
@@ -92,7 +92,7 @@ import {
   fromHex,
   fromBytes,
   encode,
-} from 'tevm/CallData';
+} from '@tevm/voltaire/CallData';
 
 // Universal constructor
 const calldata1 = from("0xa9059cbb...");
@@ -115,7 +115,7 @@ import {
   toHex,
   toBytes,
   decode,
-} from 'tevm/CallData';
+} from '@tevm/voltaire/CallData';
 
 // To hex string
 const hex: HexType = toHex(calldata);
@@ -133,7 +133,7 @@ const decoded: CallDataDecoded = decode(calldata, abi);
 import {
   getSelector,
   hasSelector,
-} from 'tevm/CallData';
+} from '@tevm/voltaire/CallData';
 
 // Extract function selector
 const selector: [4]u8 = getSelector(calldata);
@@ -148,7 +148,7 @@ const isTransfer: boolean = hasSelector(calldata, "0xa9059cbb");
 import {
   isValid,
   is,
-} from 'tevm/CallData';
+} from '@tevm/voltaire/CallData';
 
 // Check if value can be converted
 const canConvert: boolean = isValid("0xa9059cbb...");
@@ -165,7 +165,7 @@ if (is(value)) {
 ```typescript
 import {
   equals,
-} from 'tevm/CallData';
+} from '@tevm/voltaire/CallData';
 
 // Check equality
 const same: boolean = equals(calldata1, calldata2);
@@ -179,7 +179,7 @@ Import only what you need:
 
 ```typescript
 // Only these functions included in bundle
-import { from, toHex, getSelector } from 'tevm/CallData';
+import { from, toHex, getSelector } from '@tevm/voltaire/CallData';
 
 const calldata = from("0xa9059cbb...");
 const hex = toHex(calldata);
@@ -193,7 +193,7 @@ const selector = getSelector(calldata);
 Data-first API for composition:
 
 ```typescript
-import * as CallData from 'tevm/CallData';
+import * as CallData from '@tevm/voltaire/CallData';
 
 const process = (hex: string) =>
   CallData.getSelector(
@@ -208,8 +208,8 @@ const selector = process("0xa9059cbb...");
 Mix with class API when convenient:
 
 ```typescript
-import { CallData } from 'tevm';
-import { getSelector } from 'tevm/CallData';
+import { CallData } from '@tevm/voltaire';
+import { getSelector } from '@tevm/voltaire/CallData';
 
 // Class API for construction
 const calldata = CallData("0xa9059cbb...");
@@ -226,7 +226,7 @@ CallData provides both functional and class-based APIs:
 <Tab title="Functional API">
 
 ```typescript
-import * as CallData from 'tevm/CallData';
+import * as CallData from '@tevm/voltaire/CallData';
 
 const calldata = CallData.from("0xa9059cbb...");
 const selector = CallData.getSelector(calldata);
@@ -242,7 +242,7 @@ const hex = CallData.toHex(calldata);
 <Tab title="Class API">
 
 ```typescript
-import { CallData } from 'tevm';
+import { CallData } from '@tevm/voltaire';
 
 const calldata = CallData("0xa9059cbb...");
 const selector = calldata.getSelector();
@@ -263,7 +263,7 @@ const hex = calldata.toHex();
 <Tab title="TypeScript">
 
 ```typescript
-import type { CallDataType } from 'tevm/CallData';
+import type { CallDataType } from '@tevm/voltaire/CallData';
 
 // Branded Uint8Array
 type CallDataType = Uint8Array & {

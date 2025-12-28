@@ -14,7 +14,7 @@ BIP-39 validation ensures mnemonic phrases are correctly formatted, use valid wo
 Returns true/false without throwing:
 
 ```typescript
-import * as Bip39 from 'tevm/crypto/bip39';
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
 
 const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 
@@ -111,7 +111,7 @@ Total:    [264 bits] → 24 words
 ### Checksum Calculation
 
 ```typescript
-import { sha256 } from 'tevm/crypto/sha256';
+import { sha256 } from '@tevm/voltaire/crypto/sha256';
 
 // Example: Calculate checksum for 128-bit entropy
 const entropy = Bytes16().fill(0);

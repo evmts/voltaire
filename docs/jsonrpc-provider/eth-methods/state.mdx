@@ -24,8 +24,8 @@ const balance = await provider.eth_getBalance(address, 'latest');
 
 **Usage:**
 ```typescript
-import { Provider } from 'tevm/provider';
-import * as Address from 'tevm/primitives/Address';
+import { Provider } from '@tevm/voltaire/provider';
+import * as Address from '@tevm/voltaire/primitives/Address';
 
 const provider = Provider({ url: 'https://eth.llamarpc.com' });
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
@@ -81,7 +81,7 @@ const value = await provider.eth_getStorageAt(
 
 **Usage:**
 ```typescript
-import * as Quantity from 'tevm/primitives/Quantity';
+import * as Quantity from '@tevm/voltaire/primitives/Quantity';
 
 // Read storage slot 0
 const value = await provider.eth_getStorageAt(
