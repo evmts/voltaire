@@ -1,17 +1,17 @@
 ---
-title: What is Tevm?
+title: What is Voltaire?
 description: Modern general-purpose Ethereum library for TypeScript
 ---
 
-Tevm is a modern general-purpose Ethereum library. Type-safe primitives, WASM-accelerated performance, and designed for AI-assisted development.
+Voltaire is a modern general-purpose Ethereum library. Type-safe primitives, WASM-accelerated performance, and designed for AI-assisted development.
 
 <Tip>
-Want to explore Tevm in your browser? Open the <a href="/playground">Playground</a>.
+Want to explore Voltaire in your browser? Open the <a href="/playground">Playground</a>.
 </Tip>
 
 ## Simple, Intuitive API
 
-Tevm's API mirrors Ethereum specifications with namespace-based methods:
+Voltaire's API mirrors Ethereum specifications with namespace-based methods:
 
 ```typescript
 import { Address, Wei, Gwei, Ether } from 'tevm';
@@ -82,4 +82,4 @@ const calldata = Abi.Function.encodeParams(transferAbi, [
 - **[LLM-Optimized](/getting-started/llm-optimized)** - API mirrors the Ethereum specification. Lots of time has been put into polishing the [MCP server](/mcp) and [llms.txt](/llms.txt) along with the docs themselves.
 - **[Multiplatform](/getting-started/multiplatform)** - Works everywhere: TypeScript in Node.js, browsers, serverless, and any language with C-FFI support. Consistent API across TypeScript, Zig, and C-FFI environments.
   <Tip>Native FFI is currently supported on <strong>Bun</strong>. In <strong>Node.js</strong>, use the regular TypeScript API or WASM.</Tip>
-- **[Powerful Features](/getting-started/powerful-features)** - Features common to all general-purpose Ethereum libraries, plus unique ones exclusive to Tevm such as EVM execution and bytecode analysis.
+- **[Powerful Features](/getting-started/powerful-features)** - Features common to all general-purpose Ethereum libraries, plus unique ones exclusive to Voltaire such as EVM execution and bytecode analysis.

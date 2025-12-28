@@ -5,7 +5,7 @@ description: Built from the ground up to be great for LLMs and humans alike
 
 ## Mirrors Official Specifications
 
-Tevm's API mirrors Ethereum specifications and standards. It contains minimal amounts of bespoke abstractions. Wherever possible, we try to use the most simple JavaScript data type, the most simple TypeScript data type. And we try to make both as close to official Ethereum documentation and specifications, including code generating from the specification itself wherever possible.
+Voltaire's API mirrors Ethereum specifications and standards. It contains minimal amounts of bespoke abstractions. Wherever possible, we try to use the most simple JavaScript data type, the most simple TypeScript data type. And we try to make both as close to official Ethereum documentation and specifications, including code generating from the specification itself wherever possible.
 
 **Why this matters for LLMs:**
 
@@ -17,7 +17,7 @@ LLMs are different. They don't have long-term learning - they only have pre-exis
 - LLMs will only be able to use APIs in the most common way showing up in their training data, and will struggle when going off the well-beaten path compared to when there's minimal abstractions or when all the context of the abstraction is present
 - Debugging requires understanding library-specific abstractions - this is friction for both LLMs and humans alike
 
-By staying close to specs, we minimize the diff between the LLM's training data and Tevm's API.
+By staying close to specs, we minimize the diff between the LLM's training data and Voltaire's API.
 
 **Example - Contract Calls:**
 
@@ -27,7 +27,7 @@ import * as Abi from 'tevm/Abi';
 // Other libraries (great API, but bespoke abstraction)
 const result = await contract.balanceOf(address, { blockTag: 'latest' });
 
-// Tevm (much closer to the JSON RPC spec in this example)
+// Voltaire (much closer to the JSON RPC spec in this example)
 const balanceOfFunction = {
   type: "function",
   name: "balanceOf",
@@ -72,7 +72,7 @@ Even humans struggle to understand hidden retry policies, polling behavior, and 
 
 ## Unix Philosophy
 
-Tevm focuses on low-level primitives. Everything does one thing well:
+Voltaire focuses on low-level primitives. Everything does one thing well:
 
 ```typescript
 import { Address } from 'tevm/primitives';
@@ -84,7 +84,7 @@ Each primitive is a building block. No magical encapsulation, no hidden behavior
 
 ## Higher-Level Abstractions
 
-Higher-level abstractions (like smart clients with retry policies) exist in Tevm, but differently.
+Higher-level abstractions (like smart clients with retry policies) exist in Voltaire, but differently.
 
 **Instead of one-size-fits-all, we provide building blocks to create your own client.**
 
@@ -112,7 +112,7 @@ When the client lives in your codebase:
 - You can add console.logs for debugging
 - Behavior is transparent, not hidden in `node_modules`
 
-Tevm primitives are so close to specs that source code isn't needed - JSDoc and patterns make them intuitive. But higher-level abstractions benefit enormously from being visible.
+Voltaire primitives are so close to specs that source code isn't needed - JSDoc and patterns make them intuitive. But higher-level abstractions benefit enormously from being visible.
 
 **2. Customize to Your Needs**
 
@@ -183,7 +183,7 @@ We maintain a rigorous test suite validating that AI assistants can **1-shot** a
 
 ## Example Projects
 
-<Accordion title="Built with Tevm MCP + Claude Code" defaultOpen={false}>
+<Accordion title="Built with Voltaire MCP + Claude Code" defaultOpen={false}>
 
 **Example Projects Built as 1-Shot with AI**:
 

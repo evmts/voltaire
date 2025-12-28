@@ -1,17 +1,17 @@
 ---
 title: Library Comparisons
-description: Side-by-side comparison of common tasks in Tevm, Viem, and Ethers.js
+description: Side-by-side comparison of common tasks in Voltaire, Viem, and Ethers.js
 icon: scale-balanced
 ---
 
-Tevm, Viem, and Ethers.js are all popular Ethereum libraries. This page compares how to perform common operations across all three libraries.
+Voltaire, Viem, and Ethers.js are all popular Ethereum libraries. This page compares how to perform common operations across all three libraries.
 
 ## Address Operations
 
 ### Creating and Checksumming Addresses
 
 <Tabs>
-<Tab title="Tevm">
+<Tab title="Voltaire">
 
 ```typescript
 import { Address } from 'tevm';
@@ -87,7 +87,7 @@ const areEqual = addr1 === addr2;
 ### Hashing Strings and Bytes
 
 <Tabs>
-<Tab title="Tevm">
+<Tab title="Voltaire">
 
 ```typescript
 import * as Keccak256 from 'tevm/Keccak256';
@@ -156,7 +156,7 @@ const ethMessageHash = ethers.hashMessage('hello world');
 ### Function Calls
 
 <Tabs>
-<Tab title="Tevm">
+<Tab title="Voltaire">
 
 ```typescript
 import * as Abi from 'tevm/Abi';
@@ -257,7 +257,7 @@ const decoded = iface.decodeFunctionResult(
 ### Event Logs
 
 <Tabs>
-<Tab title="Tevm">
+<Tab title="Voltaire">
 
 ```typescript
 import * as Abi from 'tevm/Abi';
@@ -373,7 +373,7 @@ const decoded = iface.parseLog({
 
 ## Quick Reference Table
 
-| Operation | Tevm | Viem | Ethers.js |
+| Operation | Voltaire | Viem | Ethers.js |
 |-----------|----------|------|-----------|
 | **Address checksumming** | `Address.toChecksummed()` | `getAddress()` | `ethers.getAddress()` |
 | **Address validation** | `Address.validate()` | `isAddress()` | `ethers.isAddress()` |
@@ -390,7 +390,7 @@ const decoded = iface.parseLog({
 
 ### Type System
 
-**Tevm** uses [branded types](/getting-started/branded-types) for compile-time type safety with zero runtime overhead:
+**Voltaire** uses [branded types](/getting-started/branded-types) for compile-time type safety with zero runtime overhead:
 
 ```typescript
 type AddressType = Uint8Array & { readonly __tag: "Address" };
@@ -414,7 +414,7 @@ const hash: string = ethers.keccak256('0x...');
 
 ### Tree-Shaking
 
-**Tevm** provides granular tree-shakeable imports:
+**Voltaire** provides granular tree-shakeable imports:
 
 ```typescript
 // Import only what you need
@@ -441,17 +441,17 @@ Approximate bundle sizes for common operations:
 
 | Library | Address + Keccak256 | With ABI encoding |
 |---------|---------------------|-------------------|
-| **Tevm** | ~8 KB | ~25 KB |
+| **Voltaire** | ~8 KB | ~25 KB |
 | **Viem** | ~12 KB | ~35 KB |
 | **Ethers.js** | ~95 KB | ~120 KB |
 
 <Note>
-Sizes are approximate and depend on tree-shaking effectiveness. Tevm and Viem are optimized for minimal bundle size.
+Sizes are approximate and depend on tree-shaking effectiveness. Voltaire and Viem are optimized for minimal bundle size.
 </Note>
 
 ### WASM Acceleration
 
-**Tevm** provides optional WASM acceleration for performance-critical operations:
+**Voltaire** provides optional WASM acceleration for performance-critical operations:
 
 ```typescript
 import { Keccak256Wasm } from 'tevm/crypto/keccak256.wasm';
@@ -467,4 +467,4 @@ const hash = Keccak256Wasm.hash(data); // 10-100x faster
 - [Address API](/primitives/address) - Complete Address documentation
 - [Keccak256 API](/crypto/keccak256) - Complete Keccak256 documentation
 - [ABI API](/primitives/abi) - Complete ABI encoding/decoding documentation
-- [Branded Types](/getting-started/branded-types) - Understanding Tevm's type system
+- [Branded Types](/getting-started/branded-types) - Understanding Voltaire's type system

@@ -1,4 +1,9 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import {
+	copyFileSync,
+	existsSync,
+	mkdirSync,
+	readFileSync,
+} from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Plugin, defineConfig } from "vite";
@@ -76,6 +81,25 @@ function modernMonacoPlugin(): Plugin {
 						res.setHeader("Content-Type", "application/typescript");
 						res.end(`export function keccak256(data: Uint8Array): Uint8Array;`);
 						return;
+					}
+				}
+
+				// Serve dist .d.ts chunk files for Monaco type resolution
+				// Monaco resolves imports like './index-CN1rqy49.js' from voltaire.d.ts
+				// We need to map these .js requests to the actual .d.ts files
+				if (req.url?.endsWith(".js") || req.url?.endsWith(".d.ts")) {
+					const fileName = req.url.replace(/^\//, "").replace(/\.js$/, ".d.ts");
+					const dtsPath = resolve(__dirname, "../dist", fileName);
+					if (existsSync(dtsPath)) {
+						try {
+							const content = readFileSync(dtsPath, "utf-8");
+							res.setHeader("Content-Type", "application/typescript");
+							res.setHeader("Access-Control-Allow-Origin", "*");
+							res.end(content);
+							return;
+						} catch {
+							// Fall through to next handler
+						}
 					}
 				}
 

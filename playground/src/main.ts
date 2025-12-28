@@ -94,11 +94,26 @@ const autoSave = new AutoSave(editor, {
 	storagePrefix: "voltaire-playground-",
 });
 
+// URL parameter handling for deep linking
+function getExampleFromUrl(): string | null {
+	const params = new URLSearchParams(window.location.search);
+	return params.get('example');
+}
+
+function updateUrlWithExample(path: string): void {
+	const url = new URL(window.location.href);
+	url.searchParams.set('example', path);
+	window.history.replaceState({}, '', url.toString());
+}
+
 // File selection handler
 function handleFileSelect(file: FileNode): void {
 	if (!file.content) return;
 
 	currentFile = file;
+
+	// Update URL for deep linking
+	updateUrlWithExample(file.path);
 
 	// Use EditorTabs if available, fallback to old behavior
 	if (editorTabs) {
@@ -346,6 +361,15 @@ async function init(): Promise<void> {
 	// Initialize file tree
 	const fileTreeEl = document.getElementById("file-tree");
 	new FileTree(fileTreeEl!, fileTree, handleFileSelect);
+
+	// Handle URL deep linking - select file from ?example= parameter
+	const examplePath = getExampleFromUrl();
+	if (examplePath) {
+		const file = findFileByPath(fileTree, examplePath);
+		if (file) {
+			handleFileSelect(file);
+		}
+	}
 
 	// Setup run button
 	const runButton = document.getElementById("run-button")!;

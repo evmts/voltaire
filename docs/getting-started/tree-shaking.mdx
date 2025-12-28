@@ -7,7 +7,7 @@ Import only what you need - unused code automatically excluded from bundles.
 
 ## Data-First Design
 
-Tevm takes a **data-first approach** to Ethereum primitives. Core types are validated [branded types](/getting-started/branded-types) that separate data from operations, enabling maximum tree-shakeability.
+Voltaire takes a **data-first approach** to Ethereum primitives. Core types are validated [branded types](/getting-started/branded-types) that separate data from operations, enabling maximum tree-shakeability.
 
 **Data comes first.** Ethereum primitives are represented using the most idiomatic data type for each language:
 
@@ -27,11 +27,11 @@ These [branded types](/getting-started/branded-types) provide TypeScript safety 
 
 ## API Architecture
 
-Tevm provides a tree-shakeable API architecture for TypeScript built on data-first principles.
+Voltaire provides a tree-shakeable API architecture for TypeScript built on data-first principles.
 
 ## How Classes Avoid Coupling
 
-Tevm's Class API uses `Object.setPrototypeOf()` to add methods without encapsulating data:
+Voltaire's Class API uses `Object.setPrototypeOf()` to add methods without encapsulating data:
 
 ```typescript
 // Factory function creates instance

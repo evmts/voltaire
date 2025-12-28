@@ -1681,7 +1681,7 @@
   "logo": {
     "light": "/logo-light.png",
     "dark": "/logo-dark.png",
-    "href": "https://tevm.sh"
+    "href": "https://voltaire.tevm.sh"
   },
   "api": {
     "openapi": []
@@ -1706,7 +1706,7 @@
     }
   },
   "search": {
-    "prompt": "Search Tevm docs..."
+    "prompt": "Search Voltaire docs..."
   },
   "footer": {
     "socials": {

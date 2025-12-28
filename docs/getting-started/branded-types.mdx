@@ -3,7 +3,7 @@ title: Safe Ethereum
 description: Modern type safety with branded types
 ---
 
-Tevm's API is built data first. Every concept in Ethereum is given a name and a TypeScript data structure. We utilize branded types to discriminate between types that otherwise might have the same structure, such as Gwei and Ether.
+Voltaire's API is built data first. Every concept in Ethereum is given a name and a TypeScript data structure. We utilize branded types to discriminate between types that otherwise might have the same structure, such as Gwei and Ether.
 
 ## The Problem
 
@@ -65,7 +65,7 @@ simulateTransfer(bytecode, address);
 // ✗ Error: Type 'Address' is not assignable to parameter of type 'Bytecode'
 ```
 
-For casing issues, Tevm uses `Uint8Array` as the underlying type, eliminating this entire class of bugs:
+For casing issues, Voltaire uses `Uint8Array` as the underlying type, eliminating this entire class of bugs:
 
 ```typescript
 const addr1 = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
@@ -76,18 +76,18 @@ addr1.equals(addr2); // true
 ```
 
 <Note>
-`Uint8Array` provides better performance (native byte operations without encoding/decoding) and follows Tevm's philosophy of using the simplest JavaScript data structure that correctly represents the type.
+`Uint8Array` provides better performance (native byte operations without encoding/decoding) and follows Voltaire's philosophy of using the simplest JavaScript data structure that correctly represents the type.
 </Note>
 
-Every Ethereum type is provided by Tevm. Tevm takes a data-first approach to Ethereum, thinking of Ethereum as just data that gets transformed in a stream of blocks. This allows you to focus on representing data types with strong validation, declarative transformations, and robust runtime safety.
+Every Ethereum type is provided by Voltaire. Voltaire takes a data-first approach to Ethereum, thinking of Ethereum as just data that gets transformed in a stream of blocks. This allows you to focus on representing data types with strong validation, declarative transformations, and robust runtime safety.
 
-When we think of Ethereum as just basic primitive Ethereum types, those who have Ethereum domain knowledge will find using Tevm to be intuitive and easy to get in the flow state.
+When we think of Ethereum as just basic primitive Ethereum types, those who have Ethereum domain knowledge will find using Voltaire to be intuitive and easy to get in the flow state.
 
 If something has type `AddressType`, you know it was validated at runtime to be a valid address.
 
 ## Enhanced Safety for LLM-Assisted Development
 
-Tevm's branded types provide critical guardrails when working with AI coding assistants like Claude Code, Cursor, or GitHub Copilot.
+Voltaire's branded types provide critical guardrails when working with AI coding assistants like Claude Code, Cursor, or GitHub Copilot.
 
 **The Problem with Structural Typing:**
 
@@ -110,7 +110,7 @@ function transfer(to: Address, contract: Address) {
 2. **Context confusion** - LLMs can't differentiate between identical structural types across large codebases
 3. **Silent failures** - Type system provides false confidence; bugs only surface at runtime
 
-**Tevm's Solution:**
+**Voltaire's Solution:**
 
 Branded types create **nominal typing** that LLMs can track and validate:
 
@@ -132,13 +132,13 @@ transfer(bytecode, someAddress);
 
 **Real-World Impact:**
 
-When an LLM generates code with Tevm:
+When an LLM generates code with Voltaire:
 - **Compile-time validation** catches semantic errors before execution
 - **Type names provide context** - `Keccak256` is more meaningful than `\`0x${string}\``
 - **Self-documenting code** - function signatures clearly communicate intent
 - **Fewer iterations** - LLM gets the types right on first attempt instead of requiring runtime debugging
 
-This makes LLM-assisted Ethereum development **significantly safer** than with traditional libraries. See [LLM-Optimized](/getting-started/llm-optimized) for how Tevm's API design further enhances AI-assisted development.
+This makes LLM-assisted Ethereum development **significantly safer** than with traditional libraries. See [LLM-Optimized](/getting-started/llm-optimized) for how Voltaire's API design further enhances AI-assisted development.
 
 ## Benefits
 
@@ -200,7 +200,7 @@ Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3E"); // Invalid EIP-55
 
 <CardGroup cols={2}>
   <Card title="Branded Types Reference" icon="book" href="/concepts/branded-types">
-    Complete guide to branded types in Tevm
+    Complete guide to branded types in Voltaire
   </Card>
   <Card title="Address Primitive" icon="cube" href="/primitives/address">
     Complete Address API reference

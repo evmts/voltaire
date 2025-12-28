@@ -1,13 +1,13 @@
 ---
 title: Branded Types Reference
-description: Complete guide to using branded types in Tevm
+description: Complete guide to using branded types in Voltaire
 ---
 
-Tevm uses branded types to provide compile-time type safety with zero runtime overhead. This guide explains how branded types work and how to use them effectively.
+Voltaire uses branded types to provide compile-time type safety with zero runtime overhead. This guide explains how branded types work and how to use them effectively.
 
 ## Type Hierarchy
 
-Tevm provides three levels of types for each primitive:
+Voltaire provides three levels of types for each primitive:
 
 ### 1. Branded Type (Strictest)
 
@@ -22,7 +22,7 @@ type AddressType = Uint8Array & { readonly [brand]: "Address" };
 **Use when:**
 - You have a validated address and want type safety
 - You need maximum strictness
-- You want to ensure the value came from Tevm's validators
+- You want to ensure the value came from Voltaire's validators
 
 **Properties:**
 - Runtime: Plain `Uint8Array` (20 bytes)
@@ -85,7 +85,7 @@ console.log(addr.length); // 20
 
 ### 3. Input Type (Loosest)
 
-**Note:** Tevm does not currently export `AddressLike` union types. The `Address()` constructor and `from()` functions accept multiple input types:
+**Note:** Voltaire does not currently export `AddressLike` union types. The `Address()` constructor and `from()` functions accept multiple input types:
 
 ```typescript
 import { Address } from 'tevm';

@@ -1,15 +1,15 @@
 ---
 title: Comparison
-description: Tevm request builders vs raw JSON-RPC and other libraries
+description: Voltaire request builders vs raw JSON-RPC and other libraries
 ---
 
 # Comparison
 
-How Tevm's request builders compare to other Ethereum libraries.
+How Voltaire's request builders compare to other Ethereum libraries.
 
 ## vs Raw EIP-1193
 
-| Feature | Raw EIP-1193 | Tevm Request Builders |
+| Feature | Raw EIP-1193 | Voltaire Request Builders |
 |---------|--------------|----------------------|
 | Method calls | `request({ method, params })` | Request builder + `request()` |
 | Parameters | Plain strings/objects | Branded primitive types |
@@ -26,7 +26,7 @@ const balance = await provider.request({
   params: ['0x...', 'latest']  // Typos not caught!
 });
 
-// Tevm - fully typed
+// Voltaire - fully typed
 import * as Rpc from 'tevm/jsonrpc';
 import * as Address from 'tevm/Address';
 
@@ -37,18 +37,18 @@ const balance = await provider.request(
 
 ## vs ethers.js
 
-| Feature | ethers.js | Tevm |
+| Feature | ethers.js | Voltaire |
 |---------|-----------|------|
 | Method style | Abstracted (`getBalance`) | Direct JSON-RPC (`eth_getBalance`) |
 | Types | Runtime classes | Branded primitives (zero overhead) |
 | Type safety | Good | Excellent (branded types) |
 | Tree-shaking | Limited | Full |
 
-Tevm provides lower-level JSON-RPC access with maximum type safety and tree-shaking.
+Voltaire provides lower-level JSON-RPC access with maximum type safety and tree-shaking.
 
 ## vs viem
 
-| Feature | viem | Tevm |
+| Feature | viem | Voltaire |
 |---------|------|------|
 | API style | Actions | Request builders |
 | Type system | Narrow types | Branded primitives |
@@ -56,9 +56,9 @@ Tevm provides lower-level JSON-RPC access with maximum type safety and tree-shak
 | WASM | ❌ No | ✅ Yes (optional) |
 | Multi-language | ❌ No | ✅ Yes (TS/Zig/Rust/C) |
 
-Both provide excellent type safety. Tevm adds multi-language support and optional WASM acceleration.
+Both provide excellent type safety. Voltaire adds multi-language support and optional WASM acceleration.
 
-## When to Use Tevm
+## When to Use Voltaire
 
 - **Type safety** - Branded primitives catch errors at compile time
 - **Tree-shaking** - Import only what you need
