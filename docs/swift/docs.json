@@ -19,7 +19,8 @@
             "icon": "rocket",
             "pages": [
               "index",
-              "getting-started"
+              "getting-started",
+              "getting-started-xcode"
             ]
           },
           {
@@ -39,9 +40,17 @@
               {
                 "group": "Crypto",
                 "pages": [
+                  "crypto/keccak256",
                   "primitives/private-key",
                   "primitives/public-key",
                   "primitives/signature"
+                ]
+              },
+              {
+                "group": "Support",
+                "pages": [
+                  "support/errors",
+                  "support/troubleshooting"
                 ]
               }
             ]
@@ -51,4 +60,3 @@
     ]
   }
 }
-

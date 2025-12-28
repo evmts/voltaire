@@ -1,0 +1,136 @@
+---
+title: Developer Documentation
+description: Complete guide for contributing to Voltaire - architecture, patterns, testing, and APIs
+---
+
+# Developer Documentation
+
+Everything you need to understand and contribute to Voltaire.
+
+## Quick Start
+
+```bash
+# Clone and install
+git clone https://github.com/evmts/tevm
+cd tevm
+bun install
+git submodule update --init
+
+# Build everything
+zig build
+
+# Run all tests
+zig build test && bun run test:run
+
+# Start docs dev server
+bun run docs:dev
+```
+
+## Documentation Structure
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/dev/architecture">
+    Module structure, import rules, colocated files
+  </Card>
+  <Card title="TypeScript Patterns" icon="js" href="/dev/typescript-patterns">
+    Branded types, namespace exports, dual APIs
+  </Card>
+  <Card title="Zig Patterns" icon="code" href="/dev/zig-patterns">
+    Style guide, memory management, inline tests
+  </Card>
+  <Card title="Build System" icon="hammer" href="/dev/build-system">
+    zig build commands, bun scripts, outputs
+  </Card>
+  <Card title="Testing" icon="flask-vial" href="/dev/testing">
+    Test organization, commands, TDD workflow
+  </Card>
+  <Card title="Adding Primitives" icon="cube" href="/dev/adding-primitives">
+    Step-by-step guide to add new primitive types
+  </Card>
+  <Card title="Adding Crypto" icon="shield-halved" href="/dev/adding-crypto">
+    How to add cryptographic functions
+  </Card>
+  <Card title="WASM" icon="microchip" href="/dev/wasm">
+    WASM compilation, modes, and integration
+  </Card>
+  <Card title="Multi-Language" icon="language" href="/dev/multi-language">
+    TypeScript, Zig, Rust, C integration
+  </Card>
+</CardGroup>
+
+## Key Principles
+
+### Every Line Correct
+No stubs, no commented tests, no placeholders. Code is complete or it doesn't exist.
+
+### WIP Status
+Library not yet released. No breaking changes concept - refactor freely.
+
+### TDD Workflow
+Run `zig build && zig build test` constantly. Know immediately when something breaks.
+
+### Data-First Design
+Primitives are branded `Uint8Array`s with namespace methods. Zero runtime overhead, full type safety.
+
+## Module Overview
+
+| Module | Purpose | Languages |
+|--------|---------|-----------|
+| `primitives/` | Ethereum types (Address, Hash, Uint, RLP, ABI, Transaction) | TS + Zig |
+| `crypto/` | Cryptography (Keccak, secp256k1, BLS12-381, BN254, KZG) | TS + Zig + Rust + C |
+| `evm/precompiles/` | EVM precompile implementations (21 total) | Zig |
+| `wasm-loader/` | WASM instantiation and memory management | TS |
+| `lib/` | C libraries (blst, c-kzg-4844, libwally-core) | C |
+
+## Import Rules
+
+<Tip>
+Always use module imports, never relative paths.
+</Tip>
+
+```zig
+// ✅ Correct
+const primitives = @import("primitives");
+const crypto = @import("crypto");
+const precompiles = @import("precompiles");
+
+// ❌ Wrong
+const address = @import("../primitives/address.zig");
+```
+
+## File Colocation
+
+Each primitive lives in a single folder with paired implementations:
+
+```
+src/primitives/Address/
+├── AddressType.ts     # Type definition
+├── Address.js         # Implementation (.js, not .ts!)
+├── Address.test.ts    # Tests (separate file)
+├── index.ts           # Dual exports
+├── address.zig        # Zig implementation
+├── address.bench.zig  # Benchmarks
+└── address.mdx        # Documentation
+```
+
+## Essential Commands
+
+```bash
+# Core workflow
+zig build                    # Full build
+zig build test               # All Zig tests
+bun run test:run             # All TS tests
+zig build check              # Quick validation
+
+# Development
+zig build -Dtest-filter=addr # Filter tests
+bun run test -- address      # Filter TS tests
+bun run docs:dev             # Docs at localhost:3000
+```
+
+## Getting Help
+
+- Check inline comments in source files
+- Read test files for usage examples
+- Reference the Yellow Paper and EIPs for spec details
+- Zig docs: https://ziglang.org/documentation/0.15.1/

@@ -1,0 +1,132 @@
+---
+title: What is Voltaire?
+description: Modern general-purpose Ethereum library for Zig
+---
+
+Voltaire is a modern general-purpose Ethereum library. Type-safe primitives, high performance, and designed for systems programming.
+
+## Simple, Intuitive API
+
+Voltaire's API mirrors Ethereum specifications. Each primitive is a simple type:
+
+```zig
+const primitives = @import("primitives");
+const crypto = @import("crypto");
+
+// Addresses
+const address = try primitives.Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const hex = address.toHex();           // "0x742d35cc..."
+const checksummed = address.toChecksummed(); // "0x742d35Cc..."
+
+// Hashes
+const hash = crypto.keccak256.hash("hello");
+const bytes32 = primitives.Bytes32.zero();
+
+// Numbers (use u256 for wei amounts)
+const value: u256 = 1_000_000_000_000_000_000; // 1 ETH in wei
+
+// Bytecode analysis
+const code = try primitives.Bytecode.fromHex("0x6080604052");
+const analysis = code.analyze();
+
+// RLP encoding
+const encoded = try primitives.rlp.encode(allocator, data);
+defer allocator.free(encoded);
+
+// Secp256k1 signing
+const signature = try crypto.secp256k1.sign(message_hash, private_key);
+const recovered = try crypto.secp256k1.recoverPublicKey(message_hash, signature);
+```
+
+## Why Zig for Ethereum?
+
+### Performance
+- No garbage collection overhead
+- Direct memory control
+- SIMD optimizations for crypto
+- Compiles to efficient native code or WASM
+
+### Safety
+- Compile-time checks prevent bugs
+- No hidden allocations
+- Explicit error handling
+- Memory safety without runtime cost
+
+### Interop
+- C ABI compatible
+- Easy WASM compilation
+- FFI with any language
+- Embeddable in other runtimes
+
+## Module Structure
+
+```zig
+// Primitives - Ethereum data types
+const primitives = @import("primitives");
+primitives.Address      // 20-byte addresses
+primitives.Bytes32      // 32-byte words
+primitives.rlp          // RLP encoding/decoding
+primitives.Bytecode     // EVM bytecode analysis
+
+// Crypto - Cryptographic operations
+const crypto = @import("crypto");
+crypto.keccak256        // Ethereum hashing
+crypto.secp256k1        // ECDSA signatures
+crypto.bls12_381        // BLS signatures
+crypto.bn254            // Pairing operations
+
+// Precompiles - EVM precompiled contracts
+const precompiles = @import("precompiles");
+precompiles.ecrecover   // Signature recovery
+precompiles.sha256      // SHA-256 hashing
+precompiles.modexp      // Modular exponentiation
+```
+
+## Quick Example
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const crypto = @import("crypto");
+
+pub fn main() !void {
+    // Parse an address
+    const addr = try primitives.Address.fromHex(
+        "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+    );
+
+    // Hash some data
+    const data = "hello world";
+    const hash = crypto.keccak256.hash(data);
+
+    // Print results
+    std.debug.print("Address: {s}\n", .{addr.toHex()});
+    std.debug.print("Hash: {s}\n", .{std.fmt.fmtSliceHexLower(&hash)});
+}
+```
+
+## Installation
+
+Add Voltaire to your `build.zig.zon`:
+
+```zig
+.dependencies = .{
+    .voltaire = .{
+        .url = "https://github.com/evmts/voltaire/archive/main.tar.gz",
+    },
+},
+```
+
+Then in `build.zig`:
+
+```zig
+const voltaire = b.dependency("voltaire", .{});
+exe.root_module.addImport("primitives", voltaire.module("primitives"));
+exe.root_module.addImport("crypto", voltaire.module("crypto"));
+```
+
+## Next Steps
+
+- [Primitives](/primitives) - Core Ethereum types
+- [Cryptography](/crypto) - Hashing and signatures
+- [Precompiles](/evm/precompiles) - EVM precompiled contracts

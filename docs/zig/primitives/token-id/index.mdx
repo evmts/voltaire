@@ -1,0 +1,301 @@
+---
+title: TokenId
+description: ERC-721 NFT token identifier primitive for Voltaire
+---
+
+# TokenId
+
+`TokenId` is a branded `bigint` type representing ERC-721 non-fungible token (NFT) identifiers.
+
+## Overview
+
+ERC-721 defines a standard for non-fungible tokens (NFTs) where each token is unique. Token IDs uniquely identify each NFT within a collection and are stored as uint256 values on-chain.
+
+### Key Features
+
+- **Type-safe**: Branded bigint prevents mixing with raw numbers
+- **Unique identifiers**: Each token ID represents a single NFT
+- **Range validation**: 0 to 2^256-1
+- **ERC-721 interface selectors**: Built-in function selectors
+
+## Installation
+
+```bash
+bun install voltaire
+```
+
+## Basic Usage
+
+```zig
+import * as TokenId from 'voltaire/primitives/TokenId';
+
+// Create token ID
+const tokenId = TokenId.from(42n);
+
+// Convert to hex
+console.log(TokenId.toHex(tokenId)); // "0x2a"
+
+// Check if valid (non-zero)
+console.log(TokenId.isValid(tokenId)); // true
+
+// Compare token IDs
+const a = TokenId.from(1n);
+const b = TokenId.from(2n);
+console.log(TokenId.compare(a, b)); // -1
+```
+
+## API Reference
+
+### Constructor
+
+#### `from(value: bigint | number | string): TokenId`
+
+Create TokenId from bigint, number, or hex/decimal string.
+
+```zig
+const tokenId1 = TokenId.from(42n);
+const tokenId2 = TokenId.from(100);
+const tokenId3 = TokenId.from("0x2a");
+const tokenId4 = TokenId.from("1000000");
+```
+
+**Throws:**
+- `InvalidTokenIdError` if value is negative, exceeds max, or invalid
+
+### Conversions
+
+#### `toNumber(tokenId: TokenId): number`
+
+Convert to number (unsafe for large values).
+
+```zig
+const tokenId = TokenId.from(42n);
+const num = TokenId.toNumber(tokenId); // 42
+```
+
+**Throws:**
+- `RangeError` if value exceeds `Number.MAX_SAFE_INTEGER`
+
+#### `toBigInt(tokenId: TokenId): bigint`
+
+Convert to bigint.
+
+```zig
+const tokenId = TokenId.from(42n);
+const bigint = TokenId.toBigInt(tokenId); // 42n
+```
+
+#### `toHex(tokenId: TokenId): string`
+
+Convert to hex string with 0x prefix.
+
+```zig
+const tokenId = TokenId.from(42n);
+const hex = TokenId.toHex(tokenId); // "0x2a"
+```
+
+### Validation
+
+#### `isValid(tokenId: TokenId): boolean`
+
+Check if token ID is valid (non-zero). Some implementations consider zero invalid.
+
+```zig
+const tokenId = TokenId.from(42n);
+TokenId.isValid(tokenId); // true
+
+const zero = TokenId.from(0n);
+TokenId.isValid(zero); // false
+```
+
+### Comparison
+
+#### `equals(a: TokenId, b: TokenId): boolean`
+
+Check if two token IDs are equal.
+
+```zig
+const a = TokenId.from(42n);
+const b = TokenId.from(42n);
+TokenId.equals(a, b); // true
+```
+
+#### `compare(a: TokenId, b: TokenId): number`
+
+Compare two token IDs. Returns -1 if a < b, 0 if equal, 1 if a > b.
+
+```zig
+const a = TokenId.from(42n);
+const b = TokenId.from(100n);
+TokenId.compare(a, b); // -1
+```
+
+## Constants
+
+### `constants.MAX`
+
+Maximum TokenId value (2^256 - 1).
+
+```zig
+TokenId.constants.MAX; // 115792089237316195423570985008687907853269984665640564039457584007913129639935n
+```
+
+### `constants.MIN`
+
+Minimum TokenId value (0).
+
+```zig
+TokenId.constants.MIN; // 0n
+```
+
+## ERC-721 Interface
+
+### `ERC721_SELECTORS`
+
+ERC-721 function selectors for ABI encoding.
+
+```zig
+TokenId.ERC721_SELECTORS.balanceOf;        // "0x70a08231"
+TokenId.ERC721_SELECTORS.ownerOf;          // "0x6352211e"
+TokenId.ERC721_SELECTORS.transferFrom;     // "0x23b872dd"
+TokenId.ERC721_SELECTORS.safeTransferFrom; // "0x42842e0e"
+TokenId.ERC721_SELECTORS.approve;          // "0x095ea7b3"
+TokenId.ERC721_SELECTORS.setApprovalForAll; // "0xa22cb465"
+TokenId.ERC721_SELECTORS.getApproved;      // "0x081812fc"
+TokenId.ERC721_SELECTORS.isApprovedForAll; // "0xe985e9c5"
+```
+
+## ERC-721 Standard
+
+ERC-721 defines a standard API for non-fungible tokens. Key functions:
+
+- `balanceOf(address)`: Returns NFT count owned by address
+- `ownerOf(uint256)`: Returns owner of specific token ID
+- `transferFrom(address, address, uint256)`: Transfers NFT
+- `safeTransferFrom(address, address, uint256)`: Safe transfer with callback
+- `approve(address, uint256)`: Approves address to transfer token
+- `setApprovalForAll(address, bool)`: Approves operator for all tokens
+- `getApproved(uint256)`: Returns approved address for token
+- `isApprovedForAll(address, address)`: Checks if operator is approved
+
+**Specification:** [EIP-721](https://eips.ethereum.org/EIPS/eip-721)
+
+## Token ID Patterns
+
+### Sequential IDs
+
+Most NFT collections use sequential IDs starting from 0 or 1:
+
+```zig
+const firstToken = TokenId.from(0n); // or 1n
+const secondToken = TokenId.from(1n); // or 2n
+```
+
+### Computed IDs
+
+Some collections compute IDs from attributes:
+
+```zig
+// Hash-based ID
+const computedId = keccak256(attributes);
+const tokenId = TokenId.from(BigInt(computedId));
+```
+
+### Large IDs
+
+Token IDs can be very large (up to 2^256-1):
+
+```zig
+const largeId = TokenId.from(2n ** 255n);
+console.log(TokenId.toHex(largeId));
+```
+
+## Examples
+
+### Query Owner
+
+```zig
+import * as TokenId from 'voltaire/primitives/TokenId';
+
+const tokenId = TokenId.from(42n);
+const data = encodeOwnerOf(tokenId);
+
+// Query chain for owner
+const owner = decodeOwnerOf(response);
+console.log(`Token #${TokenId.toNumber(tokenId)} owned by ${owner}`);
+```
+
+### Transfer NFT
+
+```zig
+import * as TokenId from 'voltaire/primitives/TokenId';
+import * as Address from 'voltaire/primitives/Address';
+
+const tokenId = TokenId.from(42n);
+const from = Address.from("0x...");
+const to = Address.from("0x...");
+
+const data = encodeTransferFrom(from, to, tokenId);
+```
+
+### Check Ownership
+
+```zig
+const tokenId = TokenId.from(42n);
+const owner = await getOwnerOf(tokenId);
+
+if (Address.equals(owner, userAddress)) {
+  console.log("User owns this NFT");
+}
+```
+
+### List Collection
+
+```zig
+// Get total supply
+const totalSupply = await getTotalSupply();
+
+// Iterate through token IDs
+const tokens = [];
+for (let i = 0n; i < totalSupply; i++) {
+  const tokenId = TokenId.from(i);
+  tokens.push(tokenId);
+}
+```
+
+## Error Handling
+
+```zig
+import { InvalidTokenIdError } from 'voltaire/primitives/TokenId';
+
+try {
+  const tokenId = TokenId.from(-1n);
+} catch (error) {
+  if (error instanceof InvalidTokenIdError) {
+    console.error("Invalid token ID:", error.message);
+  }
+}
+```
+
+## Type Safety
+
+TokenId is a branded type that prevents accidental mixing with raw bigints:
+
+```zig
+const tokenId: TokenId = 42n; // ❌ Type error
+const tokenId = TokenId.from(42n); // ✅ Correct
+
+function transfer(id: TokenId) {
+  // Type-safe: only TokenId accepted
+}
+
+transfer(42n); // ❌ Type error
+transfer(TokenId.from(42n)); // ✅ Correct
+```
+
+## See Also
+
+- [TokenBalance](/primitives/token-balance) - ERC-20 token balances
+- [MultiTokenId](/primitives/multi-token-id) - ERC-1155 multi-token IDs
+- [Uint256](/primitives/uint) - Generic unsigned 256-bit integers
+- [Address](/primitives/address) - Ethereum addresses

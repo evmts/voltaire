@@ -18,5 +18,7 @@ print(one.hex) // 0x + 64 hex chars
 let raw = [UInt8](repeating: 0xaa, count: 32)
 let v = try U256(bytes: raw)
 XCTAssertEqual(v.bytes, raw)
-```
 
+ // Zero constant
+ XCTAssertEqual(U256.zero.hex, "0x" + String(repeating: "00", count: 64))
+```

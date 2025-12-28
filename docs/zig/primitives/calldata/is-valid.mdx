@@ -1,0 +1,352 @@
+---
+title: isValid
+description: Validate if a value can be converted to CallData
+---
+
+Checks whether a value can be safely converted to CallData without throwing an error. Useful for input validation.
+
+## Signature
+
+<Tabs>
+<Tab title="Namespace">
+
+```zig
+function isValid(value: unknown): boolean
+```
+
+</Tab>
+<Tab title="Class">
+
+```zig
+CallData.isValid(value: unknown): boolean
+```
+
+</Tab>
+</Tabs>
+
+## Parameters
+
+- **value** - Value to validate (any type)
+
+## Returns
+
+`boolean` - `true` if value can be converted to CallData, `false` otherwise
+
+## Examples
+
+<Tabs>
+<Tab title="Basic Usage">
+
+```zig
+import { CallData } from 'tevm';
+
+// Valid hex strings
+console.log(CallData.isValid("0xa9059cbb")); // true
+console.log(CallData.isValid("a9059cbb")); // true
+
+// Valid byte arrays
+const bytes = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
+console.log(CallData.isValid(bytes)); // true
+
+// Invalid inputs
+console.log(CallData.isValid("0xGGGG")); // false (invalid hex)
+console.log(CallData.isValid("0x1234")); // false (too short)
+console.log(CallData.isValid(null)); // false
+console.log(CallData.isValid(undefined)); // false
+console.log(CallData.isValid(123)); // false
+```
+
+</Tab>
+<Tab title="Input Validation">
+
+```zig
+import { CallData } from 'tevm';
+
+function processTransaction(data: unknown) {
+  if (!CallData.isValid(data)) {
+    throw new Error("Invalid calldata format");
+  }
+
+  const calldata = CallData(data);
+  // Safe to use calldata
+}
+```
+
+</Tab>
+<Tab title="Type Guard Pattern">
+
+```zig
+import { CallData } from 'tevm';
+
+function handleInput(input: string | Uint8Array | null) {
+  if (CallData.isValid(input)) {
+    const calldata = CallData(input); // Safe
+    console.log("Selector:", CallData.getSelector(calldata));
+  } else {
+    console.error("Invalid calldata");
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+## Validation Rules
+
+Checks multiple criteria:
+
+<Tabs>
+<Tab title="Hex Strings">
+
+```zig
+import { CallData } from 'tevm';
+
+// Must be valid hex
+CallData.isValid("0xGGGG"); // false (invalid chars)
+CallData.isValid("0xa9059cbb"); // true
+
+// Must be byte-aligned (even length)
+CallData.isValid("0xa905"); // true (2 bytes)
+CallData.isValid("0xa90"); // false (odd length)
+
+// Must have at least 4 bytes (selector)
+CallData.isValid("0xa9"); // false (1 byte)
+CallData.isValid("0xa9059cbb"); // true (4 bytes)
+```
+
+</Tab>
+<Tab title="Byte Arrays">
+
+```zig
+import { CallData } from 'tevm';
+
+// Must be Uint8Array
+CallData.isValid(new Uint8Array([0xa9])); // false (too short)
+CallData.isValid(new Uint8Array([0xa9, 0x05, 0x9c, 0xbb])); // true
+CallData.isValid(new ArrayBuffer(4)); // false (wrong type)
+
+// Must have at least 4 bytes
+const tooShort = new Uint8Array([0xa9, 0x05]);
+CallData.isValid(tooShort); // false
+```
+
+</Tab>
+</Tabs>
+
+## Use Cases
+
+### API Input Validation
+
+```zig
+import { CallData } from 'tevm';
+
+interface SendTransactionParams {
+  to: string;
+  data: string;
+  value?: string;
+}
+
+function validateTransactionParams(
+  params: SendTransactionParams
+): string[] {
+  const errors: string[] = [];
+
+  if (!CallData.isValid(params.data)) {
+    errors.push("Invalid calldata format");
+  }
+
+  if (!Address.isValid(params.to)) {
+    errors.push("Invalid recipient address");
+  }
+
+  return errors;
+}
+```
+
+### Safe Constructor Pattern
+
+```zig
+import { CallData } from 'tevm';
+
+function safeCallData(value: unknown): CallDataType | null {
+  if (!CallData.isValid(value)) {
+    console.warn("Invalid calldata:", value);
+    return null;
+  }
+
+  return CallData(value);
+}
+
+// Usage
+const calldata = safeCallData(userInput);
+if (calldata) {
+  processCallData(calldata);
+}
+```
+
+### Form Validation
+
+```zig
+import { CallData } from 'tevm';
+
+function validateCalldataInput(input: string): {
+  valid: boolean;
+  error?: string;
+} {
+  if (!input) {
+    return { valid: false, error: "Calldata required" };
+  }
+
+  if (!CallData.isValid(input)) {
+    return { valid: false, error: "Invalid calldata format" };
+  }
+
+  const calldata = CallData(input);
+  if (calldata.length < 4) {
+    return { valid: false, error: "Must include function selector" };
+  }
+
+  return { valid: true };
+}
+```
+
+### Batch Validation
+
+```zig
+import { CallData } from 'tevm';
+
+interface TransactionInput {
+  id: string;
+  data: string;
+}
+
+function validateBatch(
+  txs: TransactionInput[]
+): { valid: TransactionInput[]; invalid: TransactionInput[] } {
+  const valid: TransactionInput[] = [];
+  const invalid: TransactionInput[] = [];
+
+  for (const tx of txs) {
+    if (CallData.isValid(tx.data)) {
+      valid.push(tx);
+    } else {
+      invalid.push(tx);
+    }
+  }
+
+  return { valid, invalid };
+}
+```
+
+## Performance
+
+Validation is fast (basic checks only):
+
+```zig
+// Benchmark: 1M iterations
+const validHex = "0xa9059cbb...";
+const invalidHex = "0xGGGG";
+
+console.time("isValid (valid)");
+for (let i = 0; i < 1_000_000; i++) {
+  CallData.isValid(validHex);
+}
+console.timeEnd("isValid (valid)");
+// ~40ms
+
+console.time("isValid (invalid)");
+for (let i = 0; i < 1_000_000; i++) {
+  CallData.isValid(invalidHex);
+}
+console.timeEnd("isValid (invalid)");
+// ~15ms (fails fast)
+```
+
+Validation fails early on invalid input.
+
+## Comparison with Constructor
+
+<Tabs>
+<Tab title="isValid (Safe)">
+
+```zig
+import { CallData } from 'tevm';
+
+// No exceptions
+if (CallData.isValid(input)) {
+  const calldata = CallData(input);
+  // Safe to use
+}
+```
+
+**Advantages:**
+- No try-catch needed
+- Clear validation logic
+- Better performance (checks once)
+
+</Tab>
+<Tab title="Try-Catch (Verbose)">
+
+```zig
+import { CallData } from 'tevm';
+
+// Exception-based
+try {
+  const calldata = CallData(input);
+  // Use calldata
+} catch (error) {
+  console.error("Invalid calldata");
+}
+```
+
+**Disadvantages:**
+- Verbose
+- Uses exceptions for flow control
+- Less clear intent
+
+</Tab>
+</Tabs>
+
+Use `isValid` for cleaner validation logic.
+
+## Type Narrowing
+
+TypeScript doesn't narrow types with `isValid`:
+
+```zig
+import { CallData, type CallDataType } from 'tevm';
+
+function process(input: unknown) {
+  if (CallData.isValid(input)) {
+    // input is still 'unknown' (not narrowed to string | Uint8Array)
+    const calldata = CallData(input); // Must still construct
+  }
+}
+```
+
+For type narrowing, use `is()` type guard instead.
+
+## Validation Errors
+
+Does not provide detailed error messages:
+
+```zig
+// isValid just returns false
+console.log(CallData.isValid("0xGGGG")); // false
+
+// Constructor throws with details
+try {
+  CallData("0xGGGG");
+} catch (error) {
+  console.error(error.message); // "Invalid hex character: G"
+}
+```
+
+For detailed errors, use constructor in try-catch.
+
+## Related
+
+- [is](/primitives/calldata/is) - Type guard with narrowing
+- [from](/primitives/calldata/from) - Universal constructor
+- [fromHex](/primitives/calldata/from-hex) - Parse hex string
+- [fromBytes](/primitives/calldata/from-bytes) - Create from bytes

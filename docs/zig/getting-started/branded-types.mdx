@@ -1,0 +1,208 @@
+---
+title: Safe Ethereum
+description: Modern type safety with branded types
+---
+
+Tevm's API is built data first. Every concept in Ethereum is given a name and a TypeScript data structure. We utilize branded types to discriminate between types that otherwise might have the same structure, such as Gwei and Ether.
+
+## The Problem
+
+### Example 1: Type Confusion
+
+TypeScript uses structural typing - types with same structure are interchangeable. This leads to dangerous type confusion:
+
+```zig
+type Address = `0x${string}`;
+type Bytecode = `0x${string}`;
+
+function simulateTransfer(to: Address, bytecode: Bytecode) {
+  // Simulate contract execution
+}
+
+const address: Address = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
+const bytecode: Bytecode = "0x60806040";
+
+// Easy to accidentally flip arguments - both are `0x${string}`!
+simulateTransfer(bytecode, address); // ✓ Compiles - breaks at runtime!
+```
+
+Both `Address` and `Bytecode` are just `0x${string}`, so TypeScript can't catch when you swap them.
+
+### Example 2: Casing Bugs
+
+String-based addresses suffer from casing inconsistencies:
+
+```zig
+const addr1 = "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"; // lowercase
+const addr2 = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"; // checksummed
+const addr3 = "0x742D35CC6634C0532925A3B844BC9E7595F51E3E"; // uppercase
+
+// All represent same address but !== in JavaScript
+addr1 === addr2; // false
+```
+
+This leads to bugs when comparing addresses, using them as map keys, or validating signatures.
+
+## The Solution
+
+[Branded types](https://prosopo.io/blog/typescript-branding/) and strong validators eliminate both problems.
+
+A branded type is a native JavaScript type, like `Uint8Array` or `string`, with a compile-time-only tag that prevents mixing incompatible types that would otherwise match:
+
+```zig
+import { Address, Bytecode } from 'tevm';
+
+function simulateTransfer(to: Address, bytecode: Bytecode) {
+  // Simulate contract execution
+}
+
+const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const bytecode = Bytecode("0x60806040");
+
+// Type system catches the error!
+simulateTransfer(bytecode, address);
+// ✗ Error: Type 'Bytecode' is not assignable to parameter of type 'Address'
+// ✗ Error: Type 'Address' is not assignable to parameter of type 'Bytecode'
+```
+
+For casing issues, Tevm uses `Uint8Array` as the underlying type, eliminating this entire class of bugs:
+
+```zig
+const addr1 = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
+const addr2 = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// Both are same Uint8Array internally
+addr1.equals(addr2); // true
+```
+
+<Note>
+`Uint8Array` provides better performance (native byte operations without encoding/decoding) and follows Tevm's philosophy of using the simplest JavaScript data structure that correctly represents the type.
+</Note>
+
+Every Ethereum type is provided by Tevm. Tevm takes a data-first approach to Ethereum, thinking of Ethereum as just data that gets transformed in a stream of blocks. This allows you to focus on representing data types with strong validation, declarative transformations, and robust runtime safety.
+
+When we think of Ethereum as just basic primitive Ethereum types, those who have Ethereum domain knowledge will find using Tevm to be intuitive and easy to get in the flow state.
+
+If something has type `AddressType`, you know it was validated at runtime to be a valid address.
+
+## Enhanced Safety for LLM-Assisted Development
+
+Tevm's branded types provide critical guardrails when working with AI coding assistants like Claude Code, Cursor, or GitHub Copilot.
+
+**The Problem with Structural Typing:**
+
+Traditional Ethereum libraries use structural typing (`type Address = \`0x${string}\``), which creates a dangerous situation for LLM-generated code:
+
+```zig
+// Traditional approach - structurally typed
+type Address = `0x${string}`;
+type Bytecode = `0x${string}`;
+type Hash = `0x${string}`;
+
+// LLM generates this code - compiles fine, breaks at runtime
+function transfer(to: Address, contract: Address) {
+  simulateCall(contract, to); // ❌ Arguments swapped - TypeScript can't catch it!
+}
+```
+
+**Why LLMs struggle with structural types:**
+1. **No runtime feedback** - Code compiles successfully even when semantically wrong
+2. **Context confusion** - LLMs can't differentiate between identical structural types across large codebases
+3. **Silent failures** - Type system provides false confidence; bugs only surface at runtime
+
+**Tevm's Solution:**
+
+Branded types create **nominal typing** that LLMs can track and validate:
+
+```zig
+import { Address, Bytecode, Keccak256 } from 'tevm';
+
+// LLM generates this code
+function transfer(to: Address, contract: Address) {
+  simulateCall(contract, to);
+  // ✓ TypeScript enforces semantic correctness
+}
+
+// LLM tries to pass wrong type
+const bytecode = Bytecode("0x6080");
+transfer(bytecode, someAddress);
+// ✗ Compile error: Type 'Bytecode' is not assignable to type 'Address'
+// ↳ LLM gets immediate feedback and self-corrects
+```
+
+**Real-World Impact:**
+
+When an LLM generates code with Tevm:
+- **Compile-time validation** catches semantic errors before execution
+- **Type names provide context** - `Keccak256` is more meaningful than `\`0x${string}\``
+- **Self-documenting code** - function signatures clearly communicate intent
+- **Fewer iterations** - LLM gets the types right on first attempt instead of requiring runtime debugging
+
+This makes LLM-assisted Ethereum development **significantly safer** than with traditional libraries. See [LLM-Optimized](/getting-started/llm-optimized) for how Tevm's API design further enhances AI-assisted development.
+
+## Benefits
+
+<CardGroup cols={2}>
+  <Card title="Type Safety" icon="lock">
+    Can't mix Address with Hash or Bytecode. Arguments can't be swapped.
+  </Card>
+  <Card title="Self-Documenting" icon="book">
+    Function signatures clearly show expected types instead of generic Uint8Array.
+  </Card>
+  <Card title="Zero Runtime Cost" icon="gauge">
+    Brand field only exists in TypeScript's type checker. Zero runtime overhead.
+  </Card>
+  <Card title="Validated" icon="shield-check">
+    Input validated at construction. No runtime validation libraries needed.
+  </Card>
+</CardGroup>
+
+
+## Validation at Construction
+
+Factory functions validate inputs at construction, eliminating the need for runtime validation libraries like Zod:
+
+```zig
+import { Address } from 'tevm';
+
+// Valid inputs - all validated at construction
+const addr1 = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addr2 = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
+```
+
+<Warning>
+**If you see a branded type, it's validated.**
+
+Any value with type `AddressType` has been validated to be a correct, valid address. No additional runtime checks needed.
+</Warning>
+
+All invalid inputs throw validation errors:
+
+```zig
+// Invalid hex characters
+Address("0xnot_valid_hex");
+// Error: Invalid hex character
+
+// Wrong length (too short)
+Address("0x123");
+// Error: Invalid address length
+
+// Wrong byte length
+Address(new Uint8Array(10));
+// Error: Address must be exactly 20 bytes
+
+// Invalid checksum
+Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3E"); // Invalid EIP-55
+// Error: Invalid checksum
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Branded Types Reference" icon="book" href="/concepts/branded-types">
+    Complete guide to branded types in Tevm
+  </Card>
+  <Card title="Address Primitive" icon="cube" href="/primitives/address">
+    Complete Address API reference
+  </Card>
+</CardGroup>

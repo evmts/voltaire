@@ -1,0 +1,274 @@
+---
+title: LogFilter
+description: Event log filter parameters for eth_getLogs and eth_newFilter
+---
+
+## Overview
+
+`LogFilter` specifies query parameters for filtering Ethereum event logs. Used with `eth_getLogs` (one-time query) and `eth_newFilter` (continuous polling). Supports filtering by block range, contract address, and event topics.
+
+## Type Definition (Zig)
+
+```zig
+// Build JSON filter objects with std.json Stringify
+// Fields: fromBlock/toBlock (hex or tags), address (string or array), topics (array), blockhash (optional)
+```
+
+## Creating LogFilter
+
+### from
+
+```zig
+// Examples as JSON payloads shown below for methods
+```
+
+**Parameters:**
+- `fromBlock`: Starting block (bigint or tag)
+- `toBlock`: Ending block (bigint or tag)
+- `address`: Contract address(es) to filter
+- `topics`: Topic filter for indexed parameters
+- `blockhash`: Specific block hash (alternative to range)
+
+**Returns:** `LogFilterType`
+
+**Throws:** `InvalidLogFilterError` if:
+- `blockhash` used with `fromBlock`/`toBlock`
+- Invalid block tags
+- Invalid addresses or topics
+
+## Operations
+
+### matches
+
+```zig
+// Use primitives.EventLog utilities to test topics locally if needed.
+```
+
+Tests if a log entry matches the filter criteria. Checks:
+- Address (if specified)
+- Block number range (if specified)
+- Block hash (if specified)
+- Topics (if specified)
+
+### isEmpty
+
+```zig
+const empty = LogFilter.isEmpty(filter);
+```
+
+Returns `true` if filter has no criteria (would match all logs).
+
+## Block Range Queries
+
+### Block Tags
+
+```zig
+// {"fromBlock":"latest","toBlock":"latest"}
+// {"fromBlock":"earliest","toBlock":"latest"}
+// {"fromBlock":"pending","toBlock":"pending"}
+```
+
+### Block Numbers
+
+```zig
+// {"fromBlock":"0x112a880","toBlock":"0x112ab58"}
+// {"fromBlock":"0x112a880","toBlock":"latest"}
+```
+
+### Block Hash (Alternative)
+
+Query logs from a specific block by hash (useful after reorgs):
+
+```zig
+// {"blockhash":"0xBLOCK_HASH","address":"0x..."}
+```
+
+**Important:** `blockhash` is mutually exclusive with `fromBlock`/`toBlock`.
+
+## Address Filtering
+
+### Single Address
+
+```zig
+// {"address":"0x..."}
+```
+
+### Multiple Addresses (OR logic)
+
+```zig
+// {"address":["0x...","0x...","0x..."]}
+```
+
+Matches logs from ANY of the specified addresses.
+
+## Topic Filtering
+
+See [TopicFilter](/primitives/topic-filter) for detailed topic matching rules.
+
+```zig
+// Topic0 (event signature):
+// {"topics":["0xddf252ad..."]}
+// With recipient topic at index 2:
+// {"topics":["0xddf252ad...",null,"0x0000...RECIPIENT"]}
+```
+
+## Usage with JSON-RPC
+
+### eth_getLogs (one-time query)
+
+```zig
+// {"method":"eth_getLogs","params":[{"fromBlock":"0x...","toBlock":"0x...","address":"0x...","topics":["0xTOPIC0"]}]}
+```
+
+### eth_newFilter (continuous polling)
+
+```zig
+// Install/poll/remove
+// {"method":"eth_newFilter","params":[{...filter...}]}
+// {"method":"eth_getFilterChanges","params":["0xFILTER_ID"]}
+// {"method":"eth_uninstallFilter","params":["0xFILTER_ID"]}
+```
+
+## Node Resource Limits
+
+Ethereum nodes limit query scope to prevent resource exhaustion:
+
+### Block Range Limits
+
+```zig
+// GOOD: 1,000 blocks
+const filter = LogFilter.from({
+  fromBlock: BlockNumber.from(18000000),
+  toBlock: BlockNumber.from(18001000)
+});
+
+// BAD: 1,000,000 blocks (likely rejected)
+const filter2 = LogFilter.from({
+  fromBlock: BlockNumber.from(17000000),
+  toBlock: BlockNumber.from(18000000)
+});
+```
+
+Common limits:
+- **Infura**: 10,000 blocks
+- **Alchemy**: 2,000 blocks
+- **Local node**: Configurable, often 5,000-10,000
+
+### Result Set Limits
+
+Nodes may limit:
+- Number of logs returned (e.g., 10,000 max)
+- Response size (e.g., 150MB max)
+- Query complexity (multiple OR conditions)
+
+**Best practices:**
+- Query smallest block ranges possible
+- Filter by contract address
+- Add topic filters to narrow results
+- Paginate by splitting block ranges
+- Handle errors and retry with smaller ranges
+
+## Example: Paginated Query
+
+```zig
+// Build batched eth_getLogs requests in Zig
+pub fn getLogsPaginated(allocator: std.mem.Allocator, base_filter: Filter, batch_size: u64) !void {
+  var from_block: u64 = base_filter.from_block.?;
+  const to_block: u64 = base_filter.to_block.?;
+  while (from_block <= to_block) {
+    const end_block = @min(from_block + batch_size - 1, to_block);
+    // build JSON body with from_block..end_block
+    // POST with std.http.Client and parse response
+    from_block = end_block + 1;
+  }
+}
+```
+
+## Example: Token Transfer Monitor
+
+```zig
+import * as LogFilter from './primitives/LogFilter/index.js';
+import * as TopicFilter from './primitives/TopicFilter/index.js';
+import { EventSignature } from './primitives/EventSignature/index.js';
+import { Address } from './primitives/Address/index.js';
+
+// ERC20 Transfer event
+const transferSig = EventSignature.fromSignature(
+  "Transfer(address,address,uint256)"
+);
+
+// Monitor transfers to specific wallet
+const wallet = Address.from("0x...");
+const walletHash = wallet.toBytes32();
+
+const topics = TopicFilter.from([
+  transferSig,
+  null,       // any sender
+  walletHash  // to our wallet
+]);
+
+const filter = LogFilter.from({
+  fromBlock: "latest",
+  topics
+});
+
+// Install filter
+const filterId = FilterId.from(
+  await rpc.eth_newFilter(filter)
+);
+
+// Poll every 15 seconds
+setInterval(async () => {
+  const logs = await rpc.eth_getFilterChanges(filterId);
+
+  for (const log of logs) {
+    const token = Address.fromBytes(log.address);
+    const amount = decodeTransferData(log.data);
+    console.log(`Received ${amount} of token ${token.toHex()}`);
+  }
+}, 15000);
+```
+
+## Chain Reorganizations
+
+When querying recent blocks, be aware of reorgs:
+
+```zig
+// Query finalized blocks only (12+ confirmations)
+const latestBlock = await rpc.eth_blockNumber();
+const safeBlock = latestBlock - 12n;
+
+const filter = LogFilter.from({
+  fromBlock: safeBlock,
+  toBlock: latestBlock
+});
+
+// Check removed flag in logs
+for (const log of logs) {
+  if (log.removed) {
+    console.log('Log was removed due to reorg');
+  }
+}
+```
+
+## Related Types
+
+- [TopicFilter](/primitives/topic-filter) - Event topic matching
+- [FilterId](/primitives/filter-id) - Filter identifier for polling
+- [EventLog](/primitives/event-log) - Log entry structure
+- [BlockNumber](/primitives/block-number) - Block number type
+- [Address](/primitives/address) - Contract address type
+
+## JSON-RPC Methods
+
+- `eth_getLogs` - Query logs (one-time)
+- `eth_newFilter` - Create filter for polling
+- `eth_getFilterChanges` - Poll for new logs
+- `eth_getFilterLogs` - Get all logs for filter
+- `eth_uninstallFilter` - Remove filter
+
+## See Also
+
+- [Ethereum JSON-RPC eth_getLogs](https://ethereum.github.io/execution-apis/api-documentation/)
+- [EIP-234: Add `blockHash` to JSON-RPC filter options](https://eips.ethereum.org/EIPS/eip-234)
+- [Solidity Events Documentation](https://docs.soliditylang.org/en/latest/contracts.html#events)

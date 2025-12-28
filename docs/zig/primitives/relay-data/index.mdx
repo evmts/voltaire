@@ -1,0 +1,126 @@
+---
+title: RelayData
+description: MEV relay connection information for Proposer-Builder Separation (PBS)
+---
+
+# RelayData
+
+MEV relay connection information for Proposer-Builder Separation (PBS).
+
+## Overview
+
+RelayData represents MEV relay connection information used in PBS. Relays act as trusted intermediaries between block builders and validators, ensuring builders cannot see validator signatures before block delivery.
+
+## Type Definition (Zig)
+
+```zig
+// Represent relay URL as string; use [48]u8 for BLS pubkeys; slot as u64, parentHash as Hash.
+```
+
+## Well-Known Relays
+
+```zig
+// Common relays:
+// - https://relay.flashbots.net
+// - https://bloxroute.max-profit.bloxroute.com
+// - https://bloxroute.regulated.bloxroute.com
+// - https://relay.edennetwork.io
+// - https://mainnet-relay.securerpc.com
+// - https://relay.ultrasound.money
+// - https://agnostic-relay.net
+```
+
+## Usage
+
+### Create RelayData
+
+```zig
+// Model as a Zig struct in your application; no built-in helpers are required here.
+```
+
+### Get API Endpoint
+
+```zig
+// Endpoint examples:
+// https://relay.flashbots.net/eth/v1/builder/header
+```
+
+## API Reference
+
+### Constructors
+
+| Function | Description |
+|----------|-------------|
+| `from(data)` | Create from RelayDataLike object |
+
+### Methods
+
+| Function | Description |
+|----------|-------------|
+| `getEndpoint(relay, method)` | Construct full API endpoint URL |
+
+### Constants
+
+| Constant | Description |
+|----------|-------------|
+| `MEV_RELAYS` | Well-known relay endpoints |
+
+## MEV-Boost API Endpoints
+
+Common relay API methods:
+
+| Endpoint | Description |
+|----------|-------------|
+| `/eth/v1/builder/header` | Request block header bid |
+| `/eth/v1/builder/blinded_blocks` | Submit blinded block |
+| `/eth/v1/builder/status` | Check relay status |
+| `/relay/v1/data/bidtraces` | Query bid traces |
+
+### Example: Request Block Header
+
+```zig
+// GET {relay}/eth/v1/builder/header/{slot}/{parent_hash}/{proposer_fee_recipient}
+// Use std.http.Client in Zig to request if implementing client-side.
+```
+
+## PBS Flow
+
+```
+Builder                    Relay                      Proposer
+   |                         |                            |
+   |--[submit block bid]---->|                            |
+   |                         |--[header+bid]------------->|
+   |                         |                            |
+   |                         |<--[signed header]----------|
+   |                         |                            |
+   |<--[request payload]-----|                            |
+   |--[block payload]------->|                            |
+   |                         |--[full block]------------->|
+```
+
+1. **Builder** submits block bid to relay
+2. **Relay** forwards best header to proposer
+3. **Proposer** signs header (commits to block)
+4. **Relay** releases block to builder
+5. **Builder** sends full payload
+6. **Relay** forwards to proposer for broadcast
+
+## Relay Selection
+
+Consider when selecting relays:
+
+- **Censorship**: Some relays filter transactions (OFAC compliance)
+- **Reputation**: Relay uptime and reliability
+- **Diversity**: Using multiple relays reduces centralization risk
+- **Geographic**: Latency affects bid competitiveness
+
+```zig
+// Use multiple relay endpoints for redundancy
+```
+
+## See Also
+
+- [Slot](/primitives/slot) - Consensus layer slot
+- [Hash](/primitives/hash) - Hash primitive
+- [Address](/primitives/address) - Ethereum address
+- [BLS12-381](/crypto/bls12-381) - BLS signatures

@@ -18,5 +18,8 @@ XCTAssertEqual(b.bytes.count, 32)
 
 let b2 = try Bytes32(bytes: b.bytes)
 XCTAssertEqual(b, b2)
-```
 
+ // Zero constant
+ let zero = Bytes32.zero
+ XCTAssertEqual(zero.hex, "0x" + String(repeating: "00", count: 64))
+```

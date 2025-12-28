@@ -1,0 +1,174 @@
+---
+title: StructLog
+description: Geth-style structured execution log with human-readable formatting
+---
+
+# StructLog
+
+Geth-style structured log entry representing a single opcode execution with human-readable hex string formatting.
+
+## Overview
+
+StructLog is the JSON-RPC format used by Geth's `debug_traceTransaction`. It uses hex strings for all values (stack, memory, storage) instead of typed values.
+
+## JSON Format (from RPC)
+
+```zig
+// Geth debug_traceTransaction returns StructLog entries with string fields
+// Example payload shown in the section below.
+```
+
+## Usage
+
+### Creating StructLogs
+
+```zig
+// See debug_traceTransaction example below for the JSON shape.
+// Convert fields to typed data in your application as needed.
+```
+
+### Converting to OpStep
+
+```zig
+// Convert StructLog JSON to typed values (example idea):
+// - Parse hex stack items to u256
+// - Decode memory chunks to []u8
+// - Map opcode string to primitives.Opcode
+```
+
+## RPC Response Format
+
+### Example from debug_traceTransaction
+
+```json
+{
+  "gas": 21000,
+  "failed": false,
+  "returnValue": "",
+  "structLogs": [
+    {
+      "pc": 0,
+      "op": "PUSH1",
+      "gas": 79000,
+      "gasCost": 3,
+      "depth": 1,
+      "stack": []
+    },
+    {
+      "pc": 2,
+      "op": "PUSH1",
+      "gas": 78997,
+      "gasCost": 3,
+      "depth": 1,
+      "stack": ["0x60"]
+    },
+    {
+      "pc": 4,
+      "op": "MSTORE",
+      "gas": 78994,
+      "gasCost": 12,
+      "depth": 1,
+      "stack": ["0x60", "0x40"],
+      "memory": [
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "0000000000000000000000000000000000000000000000000000000000000060"
+      ]
+    }
+  ]
+}
+```
+
+### Parsing RPC Response
+
+```zig
+// Build the JSON request payload in Zig and parse with std.json:
+// {"method":"debug_traceTransaction","params":["0xTX_HASH",{"tracer":"callTracer"}]}
+// Then map fields to typed values as needed.
+```
+
+## Memory Format
+
+Memory is returned as an array of 32-byte hex strings (64 hex characters each):
+
+```zig
+const log = StructLog.from({
+  pc: 100,
+  op: "MLOAD",
+  gas: 50000n,
+  gasCost: 3n,
+  depth: 0,
+  stack: ["0x40"],
+  memory: [
+    "0000000000000000000000000000000000000000000000000000000000000000", // 0x00-0x1f
+    "0000000000000000000000000000000000000000000000000000000000000080", // 0x20-0x3f
+    "0000000000000000000000000000000000000000000000000000000000000000", // 0x40-0x5f
+  ],
+});
+
+// Memory at offset 0x20 contains 0x80
+```
+
+## Storage Format
+
+Storage is a map of 32-byte hex keys to 32-byte hex values:
+
+```zig
+const log = StructLog.from({
+  pc: 200,
+  op: "SSTORE",
+  gas: 100000n,
+  gasCost: 20000n,
+  depth: 0,
+  stack: ["0x01", "0xff"],
+  storage: {
+    // Storage slot 1 = 0xff
+    "0x0000000000000000000000000000000000000000000000000000000000000001":
+    "0x00000000000000000000000000000000000000000000000000000000000000ff"
+  },
+});
+```
+
+## Common Patterns
+
+### Finding Reverts
+
+```zig
+// Scan StructLogs for a REVERT entry or error field.
+```
+
+### Analyzing Gas Usage
+
+```zig
+// Aggregate gasCost by opcode name from StructLogs.
+```
+
+### Extracting Storage Changes
+
+```zig
+// Extract storage changes by merging storage maps from each log entry.
+```
+
+### Stack Depth Analysis
+
+```zig
+// Compute max stack depth by scanning the stack arrays in each log.
+```
+
+## Comparison with OpStep
+
+| Feature | StructLog | OpStep |
+|---------|-----------|--------|
+| Format | JSON-RPC from Geth | Typed TypeScript |
+| Stack | `string[]` | `Uint256Type[]` |
+| Memory | `string[]` (32-byte chunks) | `Uint8Array` (raw bytes) |
+| Storage | `Record<string, string>` | `Record<string, Uint256Type>` |
+| Opcode | `string` (name) | `OpcodeType` (number) |
+| Usage | Parsing RPC responses | Internal processing |
+
+## See Also
+
+- [OpStep](/primitives/op-step) - Typed opcode step
+- [TraceResult](/primitives/trace-result) - Complete trace result
+- [TraceConfig](/primitives/trace-config) - Trace configuration
+- [Opcode](/primitives/opcode) - Opcode definitions

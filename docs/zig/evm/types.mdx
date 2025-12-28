@@ -1,0 +1,562 @@
+---
+title: "EVM Types"
+description: "Type-safe execution primitives for Ethereum Virtual Machine operations"
+icon: "cube"
+---
+
+Type-first EVM architecture. Zig exposes strongly-typed enums and helpers for bytecode analysis and execution context.
+
+<Warning>
+This page was TypeScript-oriented. Below are Zig-centric equivalents using `primitives.Opcode` and `primitives.Bytecode`.
+</Warning>
+
+## Core Types
+
+### Opcode
+
+Branded number type for EVM instructions (0x00-0xFF).
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Opcode = @import("primitives").Opcode; // enum(u8)
+
+pub fn main() !void {
+    // Typed opcodes
+    const add: Opcode = .ADD;      // 0x01
+    const push1: Opcode = .PUSH1;  // 0x60
+    const sload: Opcode = .SLOAD;  // 0x54
+
+    // Convert from byte to Opcode enum (validated at compile time when known)
+    const op_from_byte: Opcode = @enumFromInt(@as(u8, 0x01)); // .ADD
+    _ = op_from_byte;
+}
+```
+
+See [Opcode documentation](/primitives/opcode) for complete reference.
+
+### Instruction
+
+Opcode with program counter offset and optional immediate data.
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Bytecode = primitives.Bytecode;
+const Opcode = @import("primitives").Opcode;
+
+pub fn inspect(allocator: std.mem.Allocator, hex_code: []const u8) !void {
+    const bytes = try @import("primitives").Hex.fromHex(allocator, hex_code);
+    defer allocator.free(bytes);
+
+    var bc = try Bytecode.init(allocator, bytes);
+    defer bc.deinit();
+
+    var pc: u32 = 0;
+    while (pc < bc.len()) : (pc += 1) {
+        const maybe = bc.getOpcodeEnum(pc) orelse break;
+        switch (maybe) {
+            .PUSH1 => {
+                const imm = bc.readImmediate(pc, 1) orelse 0;
+                std.debug.print("PUSH1 {x}\n", .{imm});
+                pc += 1; // skip immediate byte
+            },
+            .ADD => std.debug.print("ADD\n", .{}),
+            else => {},
+        }
+    }
+}
+```
+
+Instructions are returned by bytecode analysis:
+
+```zig
+import { Bytecode } from "tevm";
+
+const code = Bytecode.from("0x6001600201");
+const analysis = code.analyze();
+
+// analysis.instructions: Instruction[]
+// [
+//   { offset: 0, opcode: 0x60, immediate: Uint8Array([0x01]) },  // PUSH1 1
+//   { offset: 2, opcode: 0x60, immediate: Uint8Array([0x02]) },  // PUSH1 2
+//   { offset: 4, opcode: 0x01 }                                  // ADD
+// ]
+```
+
+## Execution Types
+
+### Frame
+
+EVM execution frame with stack, memory, and execution state.
+
+```zig
+import type { BrandedFrame, Address } from "tevm";
+
+type BrandedFrame = {
+  readonly __tag: "Frame";
+
+  // Stack (max 1024 items, 256-bit words)
+  stack: bigint[];
+
+  // Memory (sparse map, byte-addressable)
+  memory: Map<number, number>;
+  memorySize: number; // Word-aligned size
+
+  // Execution state
+  pc: number;           // Program counter
+  gasRemaining: bigint;
+  bytecode: Uint8Array;
+
+  // Call context
+  caller: Address;
+  address: Address;
+  value: bigint;
+  calldata: Uint8Array;
+  output: Uint8Array;
+  returnData: Uint8Array;
+
+  // Flags
+  stopped: boolean;
+  reverted: boolean;
+  isStatic: boolean;
+
+  // Block context (for block opcodes)
+  blockNumber?: bigint;
+  blockTimestamp?: bigint;
+  blockGasLimit?: bigint;
+  chainId?: bigint;
+  blockBaseFee?: bigint;
+  blobBaseFee?: bigint;
+
+  // Logs (LOG0-LOG4 opcodes)
+  logs?: Array<{
+    address: Address;
+    topics: bigint[];
+    data: Uint8Array;
+  }>;
+};
+```
+
+Frame represents the complete execution state at any point in EVM execution.
+
+### Host
+
+Interface for external state access (accounts, storage, code).
+
+```zig
+import type { BrandedHost, Address } from "tevm";
+
+type BrandedHost = {
+  readonly __tag: "Host";
+
+  // Account balance
+  getBalance: (address: Address) => bigint;
+  setBalance: (address: Address, balance: bigint) => void;
+
+  // Contract code
+  getCode: (address: Address) => Uint8Array;
+  setCode: (address: Address, code: Uint8Array) => void;
+
+  // Persistent storage
+  getStorage: (address: Address, slot: bigint) => bigint;
+  setStorage: (address: Address, slot: bigint, value: bigint) => void;
+
+  // Account nonce
+  getNonce: (address: Address) => bigint;
+  setNonce: (address: Address, nonce: bigint) => void;
+
+  // Transient storage (EIP-1153, transaction-scoped)
+  getTransientStorage: (address: Address, slot: bigint) => bigint;
+  setTransientStorage: (address: Address, slot: bigint, value: bigint) => void;
+};
+```
+
+Host provides pluggable state backend - implement for custom chains or test environments.
+
+### InstructionHandler
+
+Function signature for opcode implementations.
+
+```zig
+import type { InstructionHandler, BrandedFrame, BrandedHost, EvmError } from "tevm/evm";
+
+type InstructionHandler = (
+  frame: BrandedFrame,
+  host: BrandedHost,
+) => EvmError | { type: "Success" };
+```
+
+Example handler implementation:
+
+```zig
+// ADD opcode (0x01): Pop two values, push sum
+const addHandler: InstructionHandler = (frame, host) => {
+  // Check stack depth
+  if (frame.stack.length < 2) {
+    return { type: "StackUnderflow" };
+  }
+
+  // Check gas
+  if (frame.gasRemaining < 3n) {
+    return { type: "OutOfGas" };
+  }
+
+  // Execute
+  const b = frame.stack.pop()!;
+  const a = frame.stack.pop()!;
+  const result = (a + b) % 2n**256n; // Mod 2^256 for overflow
+  frame.stack.push(result);
+  frame.gasRemaining -= 3n;
+  frame.pc += 1;
+
+  return { type: "Success" };
+};
+```
+
+All 166 EVM opcodes follow this pattern. See [Instructions](/evm/instructions).
+
+## Call Types
+
+### CallParams
+
+Parameters for cross-contract calls (CALL, STATICCALL, DELEGATECALL).
+
+```zig
+import type { CallParams, CallType, Address } from "tevm";
+
+type CallType = "CALL" | "STATICCALL" | "DELEGATECALL" | "CALLCODE";
+
+type CallParams = {
+  callType: CallType;
+  target: Address;
+  value: bigint;
+  gasLimit: bigint;
+  input: Uint8Array;
+  caller: Address;
+  isStatic: boolean;
+  depth: number;
+};
+```
+
+Example usage:
+
+```zig
+// STATICCALL to view function
+const params: CallParams = {
+  callType: "STATICCALL",
+  target: contractAddress,
+  value: 0n,
+  gasLimit: 100000n,
+  input: encodedCalldata,
+  caller: myAddress,
+  isStatic: true,
+  depth: 1,
+};
+```
+
+### CallResult
+
+Result of call operation.
+
+```zig
+import type { CallResult, Address } from "tevm";
+
+type CallResult = {
+  success: boolean;       // False if reverted
+  gasUsed: bigint;
+  output: Uint8Array;     // Return data or revert reason
+  logs: Array<{
+    address: Address;
+    topics: bigint[];
+    data: Uint8Array;
+  }>;
+  gasRefund: bigint;
+};
+```
+
+Example:
+
+```zig
+// Successful call
+const result: CallResult = {
+  success: true,
+  gasUsed: 21000n,
+  output: returnData,
+  logs: [],
+  gasRefund: 0n,
+};
+
+// Reverted call
+const revertResult: CallResult = {
+  success: false,
+  gasUsed: 50000n,
+  output: revertReason, // Revert message
+  logs: [],
+  gasRefund: 0n,
+};
+```
+
+## Creation Types
+
+### CreateParams
+
+Parameters for contract deployment (CREATE, CREATE2).
+
+```zig
+import type { CreateParams, Address } from "tevm";
+
+type CreateParams = {
+  caller: Address;
+  value: bigint;
+  initCode: Uint8Array;
+  gasLimit: bigint;
+  salt?: bigint;        // For CREATE2
+  depth: number;
+};
+```
+
+Example:
+
+```zig
+// CREATE2 deployment with deterministic address
+const params: CreateParams = {
+  caller: deployerAddress,
+  value: 0n,
+  initCode: contractBytecode,
+  gasLimit: 1000000n,
+  salt: 0x1234n,  // Determines address
+  depth: 1,
+};
+```
+
+### CreateResult
+
+Result of contract creation.
+
+```zig
+import type { CreateResult, Address } from "tevm";
+
+type CreateResult = {
+  success: boolean;
+  address: Address | null;  // Null if failed
+  gasUsed: bigint;
+  output: Uint8Array;       // Runtime code or revert reason
+  gasRefund: bigint;
+};
+```
+
+Example:
+
+```zig
+// Successful deployment
+const result: CreateResult = {
+  success: true,
+  address: newContractAddress,
+  gasUsed: 200000n,
+  output: runtimeCode,
+  gasRefund: 0n,
+};
+```
+
+## Error Types
+
+### EvmError
+
+Execution errors that halt the EVM.
+
+```zig
+type EvmError =
+  | { type: "StackOverflow" }
+  | { type: "StackUnderflow" }
+  | { type: "OutOfGas" }
+  | { type: "OutOfBounds" }
+  | { type: "InvalidJump" }
+  | { type: "InvalidOpcode" }
+  | { type: "RevertExecuted" }
+  | { type: "CallDepthExceeded" }
+  | { type: "WriteProtection" }
+  | { type: "InsufficientBalance" };
+```
+
+Error handling:
+
+```zig
+const result = instructionHandler(frame, host);
+
+if (result.type !== "Success") {
+  // Handle error
+  switch (result.type) {
+    case "StackUnderflow":
+      console.error("Stack underflow - not enough items");
+      break;
+    case "OutOfGas":
+      console.error("Insufficient gas");
+      break;
+    case "RevertExecuted":
+      console.error("Execution reverted");
+      break;
+    // ... handle other errors
+  }
+}
+```
+
+## Opcode Metadata
+
+### Info
+
+Opcode metadata (gas cost, stack effect).
+
+```zig
+import { Opcode } from "tevm";
+
+type Info = {
+  gasCost: number;      // Base gas cost (may be dynamic)
+  stackInputs: number;  // Items consumed from stack
+  stackOutputs: number; // Items pushed to stack
+  name: string;         // Opcode name
+};
+
+// Get opcode info
+const info = Opcode.info(Opcode.ADD);
+// {
+//   gasCost: 3,
+//   stackInputs: 2,
+//   stackOutputs: 1,
+//   name: "ADD"
+// }
+```
+
+## Type Safety Benefits
+
+### Prevents Type Confusion
+
+```zig
+import { Opcode, Address, Bytecode } from "tevm";
+
+// ❌ Cannot pass wrong type
+const opcode: Opcode = 0x01;              // Type error!
+const addr: Address = "0x123...";         // Type error!
+
+// ✅ Must use constructors
+const opcode = Opcode.ADD;                // Correct
+const addr = Address("0x123...");         // Correct
+```
+
+### Compile-Time Validation
+
+```zig
+// ❌ Type mismatch caught at compile time
+function executeOpcode(op: Opcode) { /*...*/ }
+executeOpcode(0x60);  // Type error!
+
+// ✅ Type-safe
+executeOpcode(Opcode.PUSH1);  // Correct
+```
+
+### IDE Autocomplete
+
+TypeScript provides full IntelliSense:
+
+```zig
+import { Opcode } from "tevm";
+
+const op = Opcode.
+//              ^ Shows all opcode names with documentation
+```
+
+### Zero Runtime Overhead
+
+Branded types are compile-time only:
+
+```zig
+// TypeScript
+const op: OpcodeType = Opcode.ADD;
+
+// Compiles to JavaScript
+const op = 0x01;  // No wrapper, just the number
+```
+
+## Architecture
+
+### Execution Flow
+
+```zig
+import type { BrandedFrame, BrandedHost, InstructionHandler } from "tevm/evm";
+
+// 1. Initialize frame
+const frame: BrandedFrame = {
+  stack: [],
+  memory: new Map(),
+  memorySize: 0,
+  pc: 0,
+  gasRemaining: 1000000n,
+  bytecode: code,
+  // ... other fields
+};
+
+// 2. Initialize host
+const host: BrandedHost = {
+  getBalance: (addr) => balances.get(addr) || 0n,
+  setBalance: (addr, bal) => balances.set(addr, bal),
+  // ... other methods
+};
+
+// 3. Execute instructions
+while (!frame.stopped && !frame.reverted) {
+  const opcode = frame.bytecode[frame.pc];
+  const handler = getHandler(opcode);
+  const result = handler(frame, host);
+
+  if (result.type !== "Success") {
+    // Handle error
+    break;
+  }
+}
+```
+
+### Pluggable Backend
+
+Host interface allows custom state implementations:
+
+```zig
+// In-memory state for testing
+class MemoryHost implements BrandedHost {
+  private balances = new Map<Address, bigint>();
+  private storage = new Map<string, bigint>();
+
+  getBalance(addr: Address) { return this.balances.get(addr) || 0n; }
+  setBalance(addr: Address, bal: bigint) { this.balances.set(addr, bal); }
+  // ... implement other methods
+}
+
+// Database-backed state for production
+class DatabaseHost implements BrandedHost {
+  async getBalance(addr: Address) { return await db.getBalance(addr); }
+  // ... implement with DB queries
+}
+```
+
+## Related Documentation
+
+<CardGroup cols={2}>
+  <Card title="Opcode" icon="hashtag" href="/primitives/opcode">
+    Opcode type and constants
+  </Card>
+  <Card title="Bytecode" icon="file-code" href="/primitives/bytecode">
+    Bytecode analysis and instruction parsing
+  </Card>
+  <Card title="Instructions" icon="list" href="/evm/instructions">
+    All 166 opcode handlers
+  </Card>
+  <Card title="Address" icon="map-pin" href="/primitives/address">
+    Address type for account references
+  </Card>
+</CardGroup>
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - EVM formal specification
+- [evm.codes](https://www.evm.codes/) - Interactive opcode reference
+- [guillotine-mini](https://github.com/evmts/guillotine-mini) - Reference architecture
+- [Branded Types](/concepts/branded-types) - Type pattern explanation

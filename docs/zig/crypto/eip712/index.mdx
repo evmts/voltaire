@@ -1,0 +1,619 @@
+---
+title: EIP-712 Typed Data Signing
+description: Ethereum structured data signing and verification
+---
+
+## Overview
+
+EIP-712 is a **typed structured data hashing and signing standard** that enables human-readable message signatures with domain separation to prevent replay attacks across applications.
+
+**Mainnet standard** - De facto standard for off-chain message signing in wallets (MetaMask "Sign Typed Data"). Enables permit functions (gasless approvals), signatures for DEX orders, DAO votes, and account abstraction.
+
+Key concepts:
+- **Domain separator**: Prevents cross-application replays via contract address + chain ID binding
+- **Struct hashing**: Recursive Keccak256 encoding of typed data structures
+- **Primary type**: Top-level struct being signed (e.g., "Mail", "Permit", "Order")
+- **Type hash**: Keccak256 of type signature string for schema verification
+
+## Quick Start
+
+```zig
+import * as EIP712 from 'tevm/crypto/eip712';
+import { Address } from 'tevm/primitives/address';
+
+// Define typed data structure
+const typedData = {
+  domain: {
+    name: 'MyDApp',
+    version: '1',
+    chainId: 1n,
+    verifyingContract: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+  },
+  types: {
+    Person: [
+      { name: 'name', type: 'string' },
+      { name: 'wallet', type: 'address' }
+    ],
+    Mail: [
+      { name: 'from', type: 'Person' },
+      { name: 'to', type: 'Person' },
+      { name: 'contents', type: 'string' }
+    ]
+  },
+  primaryType: 'Mail',
+  message: {
+    from: { name: 'Alice', wallet: Address('0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826') },
+    to: { name: 'Bob', wallet: Address('0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB') },
+    contents: 'Hello, Bob!'
+  }
+};
+
+// Hash typed data (ready for signing)
+const hash = EIP712.hashTypedData(typedData);
+
+// Sign with private key
+const privateKey = Bytes32(); // Your private key
+const signature = EIP712.signTypedData(typedData, privateKey);
+
+// Verify signature
+const address = EIP712.recoverAddress(signature, typedData);
+const isValid = EIP712.verifyTypedData(signature, typedData, address);
+```
+
+## Examples
+
+- [Basic Message](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/basic-message.ts#L1-L47) - Hash and encode simple typed data
+- [Sign & Verify](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/sign-verify.ts#L1-L59) - Complete signing and verification flow
+- [Nested Structs](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/nested-structs.ts#L1-L70) - Working with nested type hierarchies
+- [Encode Values](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/encode-values.ts#L1-L55) - Value encoding for different types
+- [Domain Separator](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/domain-separator.ts#L1-L65) - Replay attack prevention
+- [ERC-2612 Permit](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/erc2612-permit.ts#L1-L74) - Gasless token approvals
+- [DEX Order](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/dex-order.ts#L1-L83) - Off-chain order book signatures
+- [DAO Vote](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/dao-vote.ts#L1-L76) - Gasless governance voting
+- [Meta-Transaction](https://github.com/voltaire-network/voltaire/blob/main/playground/src/examples/crypto/eip712/meta-transaction.ts#L1-L82) - Relayer-based gasless transactions
+
+## API Styles
+
+Tevm provides two ways to use EIP-712:
+
+### Standard API (Recommended)
+
+Crypto dependencies auto-injected - simplest for most use cases:
+
+```zig
+import * as EIP712 from 'tevm/crypto/eip712';
+
+const hash = EIP712.hashTypedData(typedData);
+const signature = EIP712.signTypedData(typedData, privateKey);
+```
+
+### Factory API (Advanced)
+
+Tree-shakeable with explicit crypto dependencies. Useful for custom crypto implementations or minimal bundle size:
+
+```zig
+import { HashTypedData, HashDomain, HashStruct, EncodeData,
+         HashType, EncodeValue } from 'tevm/crypto/eip712';
+import { hash as keccak256 } from 'tevm/crypto/keccak256';
+import { sign as secp256k1Sign } from 'tevm/crypto/secp256k1';
+
+// Build from bottom up (handle circular dependencies)
+const hashType = HashType({ keccak256 });
+let hashStruct;
+const encodeValue = EncodeValue({
+  keccak256,
+  hashStruct: (...args) => hashStruct(...args)
+});
+const encodeData = EncodeData({ hashType, encodeValue });
+hashStruct = HashStruct({ keccak256, encodeData });
+
+const hashDomain = HashDomain({ hashStruct });
+const hashTypedData = HashTypedData({ keccak256, hashDomain, hashStruct });
+
+// Use factories
+const hash = hashTypedData(typedData);
+```
+
+**Factory dependencies:**
+- All hash/encode methods: `keccak256`
+- `signTypedData`: `hashTypedData` + `secp256k1.sign`
+- `recoverAddress`: `keccak256` + `secp256k1.recoverPublicKey` + `hashTypedData`
+- `verifyTypedData`: `recoverAddress`
+
+## API Reference
+
+### Core Functions
+
+#### `hashTypedData(typedData: TypedData): Uint8Array`
+
+Hashes typed data according to EIP-712 specification. Returns 32-byte hash ready for signing.
+
+```zig
+const hash = EIP712.hashTypedData({
+  domain: { name: 'MyApp', version: '1', chainId: 1n },
+  types: { Message: [{ name: 'content', type: 'string' }] },
+  primaryType: 'Message',
+  message: { content: 'Hello!' }
+});
+```
+
+#### `signTypedData(typedData: TypedData, privateKey: Uint8Array): Signature`
+
+Signs typed data with ECDSA (secp256k1). Returns signature object with `r`, `s`, `v` components.
+
+```zig
+const signature = EIP712.signTypedData(typedData, privateKey);
+// signature.r: Uint8Array(32)
+// signature.s: Uint8Array(32)
+// signature.v: 27 | 28
+```
+
+#### `verifyTypedData(signature: Signature, typedData: TypedData, address: Address): boolean`
+
+Verifies signature matches expected signer address.
+
+```zig
+const valid = EIP712.verifyTypedData(signature, typedData, expectedAddress);
+```
+
+#### `recoverAddress(signature: Signature, typedData: TypedData): Address`
+
+Recovers signer's Ethereum address from signature.
+
+```zig
+const signer = EIP712.recoverAddress(signature, typedData);
+```
+
+### Type Encoding
+
+#### `encodeType(primaryType: string, types: TypeDefinitions): string`
+
+Generates canonical type encoding string (includes nested types alphabetically).
+
+```zig
+const types = {
+  Person: [
+    { name: 'name', type: 'string' },
+    { name: 'wallet', type: 'address' }
+  ]
+};
+const encoded = EIP712.encodeType('Person', types);
+// "Person(string name,address wallet)"
+```
+
+#### `hashType(primaryType: string, types: TypeDefinitions): Uint8Array`
+
+Returns keccak256 hash of type encoding.
+
+```zig
+const typeHash = EIP712.hashType('Person', types);
+```
+
+#### `encodeValue(type: string, value: any, types: TypeDefinitions): Uint8Array`
+
+Encodes a single value according to its type (returns 32 bytes).
+
+```zig
+// Primitive types
+EIP712.encodeValue('uint256', 42n, types);
+EIP712.encodeValue('address', address, types);
+EIP712.encodeValue('bool', true, types);
+
+// Dynamic types (encoded as hash)
+EIP712.encodeValue('string', 'Hello', types);
+EIP712.encodeValue('bytes', new Uint8Array([1,2,3]), types);
+
+// Fixed bytes (left-aligned)
+EIP712.encodeValue('bytes4', new Uint8Array([0xab, 0xcd, 0xef, 0x12]), types);
+
+// Arrays (encoded as hash of concatenated elements)
+EIP712.encodeValue('uint256[]', [1n, 2n, 3n], types);
+
+// Custom structs (encoded as hash)
+EIP712.encodeValue('Person', { name: 'Alice', wallet: address }, types);
+```
+
+#### `encodeData(primaryType: string, message: Message, types: TypeDefinitions): Uint8Array`
+
+Encodes complete message data (typeHash + encoded field values).
+
+```zig
+const encoded = EIP712.encodeData('Person',
+  { name: 'Alice', wallet: address },
+  types
+);
+```
+
+#### `hashStruct(primaryType: string, message: Message, types: TypeDefinitions): Uint8Array`
+
+Hashes encoded struct data.
+
+```zig
+const structHash = EIP712.hashStruct('Person', message, types);
+```
+
+### Domain
+
+#### `EIP712.Domain.hash(domain: Domain): Uint8Array`
+
+Hashes domain separator (used internally by `hashTypedData`).
+
+```zig
+const domainHash = EIP712.Domain.hash({
+  name: 'MyApp',
+  version: '1',
+  chainId: 1n,
+  verifyingContract: address,
+  salt: saltBytes
+});
+```
+
+### Utilities
+
+#### `validate(typedData: TypedData): void`
+
+Validates typed data structure. Throws on invalid data.
+
+```zig
+EIP712.validate(typedData); // Throws if invalid
+```
+
+#### `format(typedData: TypedData): string`
+
+Formats typed data for human-readable display.
+
+```zig
+const display = EIP712.format(typedData);
+console.log(display);
+```
+
+## Type System
+
+EIP-712 supports all Solidity types:
+
+### Elementary Types
+- **Integers**: `uint8` through `uint256` (8-bit increments), `int8` through `int256`
+- **Address**: `address` (20 bytes)
+- **Boolean**: `bool`
+- **Fixed bytes**: `bytes1` through `bytes32`
+- **Dynamic bytes**: `bytes`
+- **String**: `string`
+
+### Reference Types
+- **Arrays**: `type[]` (dynamic), `type[N]` (fixed-size)
+- **Structs**: Custom named types
+
+### Encoding Rules
+1. **Atomic types** (uint, int, address, bool, fixed bytes): Encoded in 32 bytes
+2. **Dynamic types** (string, bytes, arrays): Hashed with keccak256
+3. **Structs**: Recursively encoded and hashed
+4. **Arrays**: Elements encoded, concatenated, then hashed
+
+```zig
+// Elementary types
+{ name: 'id', type: 'uint256' }       // 32 bytes, right-aligned
+{ name: 'addr', type: 'address' }     // 32 bytes, right-aligned (12-byte pad)
+{ name: 'flag', type: 'bool' }        // 32 bytes, 0 or 1
+{ name: 'data', type: 'bytes4' }      // 32 bytes, left-aligned
+
+// Dynamic types (become hashes)
+{ name: 'text', type: 'string' }      // keccak256(text)
+{ name: 'data', type: 'bytes' }       // keccak256(data)
+
+// Arrays (concatenate then hash)
+{ name: 'ids', type: 'uint256[]' }    // keccak256(encode(ids[0]) + encode(ids[1]) + ...)
+
+// Nested structs
+types: {
+  Person: [
+    { name: 'name', type: 'string' },
+    { name: 'wallet', type: 'address' }
+  ],
+  Mail: [
+    { name: 'from', type: 'Person' },  // hashStruct(Person, from)
+    { name: 'to', type: 'Person' }     // hashStruct(Person, to)
+  ]
+}
+```
+
+## Domain Separator
+
+The domain separator prevents signature replay across different contracts, chains, or application versions:
+
+```zig
+const domain = {
+  name: 'Ether Mail',           // DApp name
+  version: '1',                 // Version
+  chainId: 1n,                  // Ethereum Mainnet
+  verifyingContract: address,   // Contract address
+  salt: saltBytes               // Additional entropy (optional)
+};
+```
+
+**Why domain matters:**
+- Signatures are bound to specific contract/chain
+- Prevents cross-contract replay attacks
+- Enables safe signature portability
+- User sees what app/contract they're authorizing
+
+## Implementations
+
+Tevm provides three implementation strategies for EIP-712:
+
+### Native Zig (49KB)
+High-performance implementation with minimal bundle impact:
+```zig
+import * as EIP712 from 'tevm/crypto/eip712';
+// Native Zig + secp256k1 + keccak256
+```
+
+### WASM Composition
+Tree-shakeable WASM modules for custom crypto pipelines:
+```zig
+import { HashTypedData } from 'tevm/crypto/eip712';
+import { hash as keccak256Wasm } from 'tevm/crypto/keccak256/wasm';
+import { sign as secp256k1Wasm } from 'tevm/crypto/secp256k1/wasm';
+
+const hashTypedData = HashTypedData({
+  keccak256: keccak256Wasm,
+  // ... compose with WASM modules
+});
+```
+
+### TypeScript Reference
+Pure TypeScript via ethers/viem for verification:
+```zig
+import { verifyTypedData } from 'viem';
+// Reference implementation for testing
+```
+
+## Use Cases
+
+### Permit (ERC-2612): Gasless Token Approvals
+
+Enable token approvals without gas via off-chain signatures. Users sign permit message, relayer submits to contract:
+
+```zig
+const permit = {
+  domain: {
+    name: 'USD Coin',
+    version: '1',
+    chainId: 1n,
+    verifyingContract: usdcAddress
+  },
+  types: {
+    Permit: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+      { name: 'value', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'deadline', type: 'uint256' }
+    ]
+  },
+  primaryType: 'Permit',
+  message: {
+    owner: ownerAddress,
+    spender: spenderAddress,
+    value: 1000000n,        // 1 USDC
+    nonce: 0n,
+    deadline: 1700000000n
+  }
+};
+
+const signature = EIP712.signTypedData(permit, privateKey);
+// Submit signature to contract's permit() function
+```
+
+**Benefits**: No approval transaction required, instant UX, protocol pays gas.
+
+### DEX Orders: Off-Chain Order Books
+
+Sign order intent for decentralized exchanges. Orders stored off-chain, settled on-chain when matched:
+
+```zig
+const order = {
+  domain: { name: '0x Protocol', version: '4', chainId: 1n },
+  types: {
+    Order: [
+      { name: 'maker', type: 'address' },
+      { name: 'taker', type: 'address' },
+      { name: 'makerToken', type: 'address' },
+      { name: 'takerToken', type: 'address' },
+      { name: 'makerAmount', type: 'uint256' },
+      { name: 'takerAmount', type: 'uint256' },
+      { name: 'expiry', type: 'uint256' },
+      { name: 'salt', type: 'uint256' }
+    ]
+  },
+  primaryType: 'Order',
+  message: {
+    maker: makerAddress,
+    taker: '0x0000000000000000000000000000000000000000', // Anyone
+    makerToken: daiAddress,
+    takerToken: usdcAddress,
+    makerAmount: 1000n * 10n**18n,  // 1000 DAI
+    takerAmount: 1000n * 10n**6n,   // 1000 USDC
+    expiry: 1700000000n,
+    salt: 123456n
+  }
+};
+
+const signature = EIP712.signTypedData(order, privateKey);
+// Broadcast order + signature to relayer network
+```
+
+**Benefits**: Instant order placement, no gas until filled, cancel by not submitting.
+
+### DAO Votes: Off-Chain Governance
+
+Collect votes via signatures, submit batch on-chain for gas efficiency:
+
+```zig
+const vote = {
+  domain: { name: 'CompoundGovernor', version: '1', chainId: 1n },
+  types: {
+    Ballot: [
+      { name: 'proposalId', type: 'uint256' },
+      { name: 'support', type: 'uint8' },
+      { name: 'reason', type: 'string' }
+    ]
+  },
+  primaryType: 'Ballot',
+  message: {
+    proposalId: 42n,
+    support: 1,  // 0=against, 1=for, 2=abstain
+    reason: 'Supports protocol growth'
+  }
+};
+
+const signature = EIP712.signTypedData(vote, privateKey);
+// Aggregator batches votes, submits to governor contract
+```
+
+**Benefits**: Free voting, snapshot-style governance, batch submission reduces costs.
+
+### Account Abstraction: UserOperation Signatures
+
+Sign ERC-4337 UserOperations for smart contract wallets:
+
+```zig
+const userOp = {
+  domain: { name: 'EntryPoint', version: '0.6', chainId: 1n },
+  types: {
+    UserOperation: [
+      { name: 'sender', type: 'address' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'initCode', type: 'bytes' },
+      { name: 'callData', type: 'bytes' },
+      { name: 'callGasLimit', type: 'uint256' },
+      { name: 'verificationGasLimit', type: 'uint256' },
+      { name: 'preVerificationGas', type: 'uint256' },
+      { name: 'maxFeePerGas', type: 'uint256' },
+      { name: 'maxPriorityFeePerGas', type: 'uint256' },
+      { name: 'paymasterAndData', type: 'bytes' }
+    ]
+  },
+  primaryType: 'UserOperation',
+  message: {
+    sender: smartWalletAddress,
+    nonce: 0n,
+    initCode: '0x',
+    callData: encodedCallData,
+    callGasLimit: 100000n,
+    verificationGasLimit: 50000n,
+    preVerificationGas: 21000n,
+    maxFeePerGas: 2000000000n,
+    maxPriorityFeePerGas: 1000000000n,
+    paymasterAndData: '0x'
+  }
+};
+
+const signature = EIP712.signTypedData(userOp, privateKey);
+// Submit to bundler for inclusion
+```
+
+**Benefits**: Smart wallet control, sponsored transactions, batch operations.
+
+### MetaMask Integration
+
+EIP-712 is the standard for MetaMask's typed data signing (eth_signTypedData_v4):
+
+```zig
+// User sees structured data instead of hex blob
+const signature = await ethereum.request({
+  method: 'eth_signTypedData_v4',
+  params: [address, JSON.stringify(typedData)]
+});
+```
+
+**Benefits**: Human-readable prompts, structured display, prevents blind signing.
+
+## Security Benefits
+
+EIP-712 provides multiple security improvements over raw message signing:
+
+### Human-Readable Signing
+Users see structured data (amounts, addresses, purposes) instead of opaque hex strings. Prevents blind signing attacks where users unknowingly authorize malicious actions.
+
+### Domain Binding
+Domain separator cryptographically binds signatures to specific contract + chain:
+```zig
+domain: {
+  name: 'YourApp',
+  version: '1',
+  chainId: 1n,              // Mainnet only
+  verifyingContract: address // Specific contract
+}
+```
+Signature valid only for this exact contract on this exact chain.
+
+### Replay Protection
+Combining domain separator with nonces prevents signature reuse:
+```zig
+types: {
+  Message: [
+    { name: 'content', type: 'string' },
+    { name: 'nonce', type: 'uint256' },    // Increment per signature
+    { name: 'deadline', type: 'uint256' }  // Time-bound validity
+  ]
+}
+```
+Contract tracks nonces, rejects duplicate signatures.
+
+## Security Best Practices
+
+### 1. Always Validate Typed Data
+```zig
+EIP712.validate(typedData); // Throws on invalid structure
+```
+
+### 2. Verify Recovered Address
+```zig
+const recovered = EIP712.recoverAddress(signature, typedData);
+if (!Address.equals(recovered, expectedSigner)) {
+  throw new Error('Invalid signer');
+}
+```
+
+### 3. Use Deadlines
+```zig
+message: {
+  // ... other fields
+  deadline: BigInt(Date.now() + 3600000) // 1 hour expiry
+}
+
+// Contract: require(block.timestamp <= deadline, "Signature expired");
+```
+
+### 4. Include Nonces
+```zig
+// Frontend
+message: { nonce: await contract.nonces(address), /* ... */ }
+
+// Contract
+require(nonce == nonces[signer]++, "Invalid nonce");
+```
+
+## Common Vulnerabilities
+
+**Signature Malleability**: EIP-712 uses low-s canonicalization. Tevm enforces this automatically.
+
+**Replay Attacks**: Without domain separator + nonce, signatures replayed on forks/other contracts. Always include both.
+
+**Type Confusion**: Frontend types must exactly match contract ABI. Mismatch causes signature rejection.
+
+**Missing Validation**: Always call `validate()` before signing user-provided data to prevent malformed structures.
+
+## Implementation Notes
+
+- Uses native secp256k1 signatures (deterministic, RFC 6979)
+- Keccak256 for all hashing operations
+- Compatible with eth_signTypedData_v4 (MetaMask)
+- Follows EIP-712 specification exactly
+- Type encoding includes nested types alphabetically
+
+## References
+
+- [EIP-712 Specification](https://eips.ethereum.org/EIPS/eip-712)
+- [ERC-2612 (Permit)](https://eips.ethereum.org/EIPS/eip-2612)
+- [MetaMask Signing Guide](https://docs.metamask.io/wallet/how-to/sign-data/)

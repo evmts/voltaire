@@ -22,5 +22,67 @@ let addr2 = try Address(bytes: bytes)
 XCTAssertEqual(addr, addr2)
 
 XCTAssertTrue(Address.isValidChecksum(addr.checksumHex))
+
+// Zero constant
+let zero = Address.zero
+XCTAssertTrue(zero.isZero)
+XCTAssertEqual(zero.hex, "0x0000000000000000000000000000000000000000")
 ```
 
+## Validation & Formatting
+
+```swift
+// Validate address format (with or without 0x prefix)
+XCTAssertTrue(Address.isValid("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"))
+
+let addr = try Address(hex: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+addr.hex          // lowercase 0x-prefixed
+addr.checksumHex  // EIP-55 checksum
+addr.uppercaseHex // 0x + uppercase hex
+addr.shortHex     // e.g. 0xd8dA6B...045
+```
+
+## ABI Encoding
+
+```swift
+let addr = try Address(hex: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+
+// 32-byte left-padded ABI encoding
+let encoded = addr.abiEncoded
+XCTAssertEqual(encoded.count, 32)
+
+// Decode from ABI-encoded 32 bytes
+let decoded = try Address.fromAbiEncoded(encoded)
+XCTAssertEqual(decoded, addr)
+
+// U256 conversion (least-significant 20 bytes)
+let asU256 = addr.asU256
+let fromU256 = Address.from(u256: asU256)
+XCTAssertEqual(fromU256, addr)
+```
+
+## Comparisons & Sorting
+
+```swift
+let a = try Address(hex: "0x0000000000000000000000000000000000000001")
+let b = try Address(hex: "0x0000000000000000000000000000000000000002")
+XCTAssertTrue(a < b)
+
+let sorted = try [b, a].sorted()
+XCTAssertEqual(sorted.first, a)
+```
+
+## Contract Address (CREATE/CREATE2)
+
+```swift
+import Voltaire
+
+let sender = try Address(hex: "0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+
+// CREATE: address = keccak256(rlp([sender, nonce]))[12:]
+let create0 = try Address.calculateCreate(sender: sender, nonce: 0)
+
+// CREATE2: address = keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:]
+let salt = try Bytes32(hex: "0x" + String(repeating: "00", count: 32))
+let create2 = try Address.calculateCreate2(sender: sender, salt: salt, initCode: [])
+```

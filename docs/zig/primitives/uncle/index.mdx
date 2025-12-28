@@ -1,0 +1,147 @@
+---
+title: "Uncle"
+description: "Uncle (Ommer) block header representation for pre-merge Ethereum"
+---
+
+# Uncle
+
+A structured type representing an uncle (ommer) block header. Uncle blocks are valid blocks that were mined but not included in the main chain. They were relevant in Ethereum's proof-of-work era.
+
+<Note>
+Uncle blocks are a legacy concept from Ethereum's proof-of-work era. Since The Merge (September 2022), Ethereum uses proof-of-stake and no longer produces uncle blocks.
+</Note>
+
+## Overview
+
+`UncleType` represents a complete block header with all fields required by the Ethereum protocol:
+- Block identification (parent hash, number)
+- State roots (state, transactions, receipts)
+- Mining data (difficulty, nonce, mixHash)
+- Resource tracking (gas limit, gas used)
+- Metadata (timestamp, extra data, logs bloom)
+
+## Zig Type
+
+```zig
+const primitives = @import("primitives");
+const Uncle = primitives.Uncle.Uncle; // Zig struct with header fields
+```
+
+## Construction
+
+### from
+
+Create an uncle block from its component fields:
+
+```zig
+const primitives = @import("primitives");
+const Uncle = primitives.Uncle.Uncle;
+const Address = primitives.Address;
+const Hash = primitives.Hash;
+
+const empty_bloom: [256]u8 = [_]u8{0} ** 256;
+const zero8: [8]u8 = [_]u8{0} ** 8;
+
+const uncle = Uncle.fromFields(
+    try Hash.fromHex("0x" ++ "00" ** 32),
+    try Hash.fromHex("0x" ++ "00" ** 32),
+    try Address.fromHex("0x0000000000000000000000000000000000000000"),
+    try Hash.fromHex("0x" ++ "00" ** 32),
+    try Hash.fromHex("0x" ++ "00" ** 32),
+    try Hash.fromHex("0x" ++ "00" ** 32),
+    empty_bloom,
+    0, 0, 0, 0, 0,
+    &[_]u8{},
+    try Hash.fromHex("0x" ++ "00" ** 32),
+    zero8,
+);
+```
+
+## Field Reference
+
+### Block Identification
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `parentHash` | `BlockHashType` | Hash of the parent block |
+| `ommersHash` | `HashType` | Hash of the uncles list (keccak256 of RLP-encoded uncles) |
+| `number` | `BlockNumberType` | Block number |
+
+### State Roots
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `stateRoot` | `HashType` | Root hash of the state trie |
+| `transactionsRoot` | `HashType` | Root hash of the transactions trie |
+| `receiptsRoot` | `HashType` | Root hash of the receipts trie |
+
+### Mining Data
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `beneficiary` | `AddressType` | Address receiving block rewards (miner/coinbase) |
+| `difficulty` | `Uint256Type` | Block difficulty (0 post-merge) |
+| `mixHash` | `HashType` | PoW mix hash |
+| `nonce` | `Uint8Array` | 8-byte PoW nonce |
+
+### Resource Tracking
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `gasLimit` | `Uint256Type` | Maximum gas allowed in block |
+| `gasUsed` | `Uint256Type` | Total gas used by transactions |
+
+### Metadata
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | `Uint256Type` | Unix timestamp |
+| `extraData` | `Uint8Array` | Arbitrary miner data (max 32 bytes) |
+| `logsBloom` | `Uint8Array` | 256-byte bloom filter for logs |
+
+## Uncle Block Economics
+
+In proof-of-work Ethereum, uncle blocks served multiple purposes:
+
+### Reward Structure
+
+- **Uncle reward**: Miner receives (8 - depth) / 8 of block reward
+- **Nephew reward**: Main block miner receives 1/32 of block reward per uncle
+- **Maximum depth**: Uncles must be within 6 blocks of the including block
+- **Maximum uncles**: 2 uncles per block
+
+```zig
+// Historical (pre-merge) uncle reward formula:
+// reward = base_reward * (8 - depth) / 8, with 1 <= depth <= 6
+```
+
+## Historical Context
+
+Uncle blocks helped secure proof-of-work Ethereum by:
+
+1. **Reducing centralization**: Miners with network latency disadvantages still received rewards
+2. **Increasing security**: More total hashpower contributed to chain security
+3. **Incentivizing propagation**: Miners were incentivized to propagate blocks quickly
+
+## Related Types
+
+- [BlockHash](/primitives/block-hash/index) - Block hash type
+- [BlockNumber](/primitives/block-number/index) - Block number type
+- [Address](/primitives/address/index) - Ethereum address type
+- [Hash](/primitives/hash) - Generic 32-byte hash type
+- [Uint256](/primitives/uint256/index) - 256-bit unsigned integer
+
+## Use Cases
+
+- Historical blockchain analysis
+- Archive node implementations
+- Block reward calculations
+- Chain reorganization analysis
+- Ethereum protocol research
+
+## Example: Analyze Uncle Rate
+
+```zig
+// Analyze uncle rate: iterate blocks, count uncles, compute average depth.
+// Use JSON-RPC to fetch blocks with uncles (pre-merge history only).
+```

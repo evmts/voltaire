@@ -1,0 +1,76 @@
+---
+title: Comparison
+description: Tevm request builders vs raw JSON-RPC and other libraries
+---
+
+# Comparison
+
+How Tevm's request builders compare to other Ethereum libraries.
+
+<Warning>
+TypeScript-oriented page. In Zig, construct JSON-RPC payloads with `std.json` and post with `std.http.Client`; use `primitives.AbiEncoding` for calldata and result decoding.
+</Warning>
+
+## vs Raw EIP-1193
+
+| Feature | Raw EIP-1193 | Tevm Request Builders |
+|---------|--------------|----------------------|
+| Method calls | `request({ method, params })` | Request builder + `request()` |
+| Parameters | Plain strings/objects | Branded primitive types |
+| Type safety | None (manual typing) | Full compile-time checking |
+| Errors | Throws exceptions | Throws exceptions |
+| Autocompletion | No | Yes |
+
+### Example Comparison
+
+```zig
+// Raw EIP-1193 - no type safety
+const balance = await provider.request({
+  method: 'eth_getBalance',
+  params: ['0x...', 'latest']  // Typos not caught!
+});
+
+// Tevm - fully typed
+import * as Rpc from 'tevm/jsonrpc';
+import * as Address from 'tevm/Address';
+
+const balance = await provider.request(
+  Rpc.Eth.GetBalanceRequest(Address('0x...'), 'latest')
+);
+```
+
+## vs ethers.js
+
+| Feature | ethers.js | Tevm |
+|---------|-----------|------|
+| Method style | Abstracted (`getBalance`) | Direct JSON-RPC (`eth_getBalance`) |
+| Types | Runtime classes | Branded primitives (zero overhead) |
+| Type safety | Good | Excellent (branded types) |
+| Tree-shaking | Limited | Full |
+
+Tevm provides lower-level JSON-RPC access with maximum type safety and tree-shaking.
+
+## vs viem
+
+| Feature | viem | Tevm |
+|---------|------|------|
+| API style | Actions | Request builders |
+| Type system | Narrow types | Branded primitives |
+| Tree-shaking | ✅ Yes | ✅ Yes |
+| WASM | ❌ No | ✅ Yes (optional) |
+| Multi-language | ❌ No | ✅ Yes (TS/Zig/Rust/C) |
+
+Both provide excellent type safety. Tevm adds multi-language support and optional WASM acceleration.
+
+## When to Use Tevm
+
+- **Type safety** - Branded primitives catch errors at compile time
+- **Tree-shaking** - Import only what you need
+- **Multi-language** - Building for TypeScript + Zig/Rust/C
+- **WASM acceleration** - Performance-critical crypto operations
+- **Direct JSON-RPC** - Work directly with JSON-RPC spec
+
+## Related
+
+- [Getting Started](/jsonrpc-provider/getting-started) - Installation and setup
+- [Method API](/jsonrpc-provider/method-api) - Request builders

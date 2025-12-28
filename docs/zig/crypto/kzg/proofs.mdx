@@ -1,0 +1,200 @@
+---
+title: Proofs
+description: Computing and verifying KZG proofs for point evaluation
+---
+
+
+# KZG Proofs
+
+Generate and verify cryptographic proofs that a polynomial evaluates to a specific value at a given point.
+
+## Overview
+
+KZG proofs enable proving `p(z) = y` where:
+- `p(x)` is the polynomial representing the blob
+- `z` is the evaluation point (32 bytes)
+- `y` is the claimed value (32 bytes)
+- Proof is 48 bytes
+
+## Compute Proof
+
+<Tabs>
+<Tab title="Standard API">
+
+```zig
+import { Kzg, Blob, Bytes32 } from 'tevm';
+
+Kzg.loadTrustedSetup();
+
+const blob = Blob(131072);
+const z = Bytes32(); // Evaluation point
+
+// Compute proof
+const { proof, y } = Kzg.Proof(blob, z);
+// proof: Uint8Array (48 bytes)
+// y: Uint8Array (32 bytes) - polynomial evaluation at z
+```
+
+</Tab>
+<Tab title="Factory API">
+
+```zig
+import { Kzg, Blob, Bytes32 } from 'tevm';
+import * as ckzg from 'c-kzg';
+
+Kzg.loadTrustedSetup();
+
+const Proof = Kzg.ProofFactory({
+  computeKzgProof: ckzg.computeKzgProof
+});
+
+const blob = Blob(131072);
+const z = Bytes32();
+const { proof, y } = Proof(blob, z);
+```
+
+**Benefits**: Tree-shakeable, testable with mock c-kzg
+
+</Tab>
+</Tabs>
+
+## Verify Proof
+
+<Tabs>
+<Tab title="Standard API">
+
+```zig
+import { Kzg, Bytes32 } from 'tevm';
+
+const commitment = Kzg.Commitment(blob);
+const z = Bytes32();
+const { proof, y } = Kzg.Proof(blob, z);
+
+// Verify proof
+const valid = Kzg.verify(commitment, z, y, proof);
+// Returns: boolean (true if valid, false otherwise)
+```
+
+</Tab>
+<Tab title="Factory API">
+
+```zig
+import { Kzg } from 'tevm';
+import * as ckzg from 'c-kzg';
+
+Kzg.loadTrustedSetup();
+
+const Commitment = Kzg.CommitmentFactory({
+  blobToKzgCommitment: ckzg.blobToKzgCommitment
+});
+const Proof = Kzg.ProofFactory({
+  computeKzgProof: ckzg.computeKzgProof
+});
+const verify = Kzg.VerifyFactory({
+  verifyKzgProof: ckzg.verifyKzgProof
+});
+
+const commitment = Commitment(blob);
+const { proof, y } = Proof(blob, z);
+const valid = verify(commitment, z, y, proof);
+```
+
+</Tab>
+</Tabs>
+
+## Blob Proof Verification
+
+Optimized verification for blob-commitment pairs:
+
+<Tabs>
+<Tab title="Standard API">
+
+```zig
+import { Kzg, Blob, Bytes32 } from 'tevm';
+
+const blob = Blob(131072);
+const commitment = Kzg.Commitment(blob);
+const z = Bytes32();
+const { proof } = Kzg.Proof(blob, z);
+
+// Verify blob proof (optimized)
+const valid = Kzg.verifyBlob(blob, commitment, proof);
+```
+
+</Tab>
+<Tab title="Factory API">
+
+```zig
+import { Kzg } from 'tevm';
+import * as ckzg from 'c-kzg';
+
+const verifyBlob = Kzg.VerifyBlobFactory({
+  verifyBlobKzgProof: ckzg.verifyBlobKzgProof
+});
+
+const valid = verifyBlob(blob, commitment, proof);
+```
+
+</Tab>
+</Tabs>
+
+## Batch Verification
+
+Verify multiple proofs efficiently:
+
+<Tabs>
+<Tab title="Standard API">
+
+```zig
+import { Kzg } from 'tevm';
+
+const blobs = [blob1, blob2, blob3];
+const commitments = blobs.map(b => Kzg.Commitment(b));
+const proofs = [proof1, proof2, proof3];
+
+// Batch verify (more efficient than individual verification)
+const allValid = Kzg.verifyBatch(blobs, commitments, proofs);
+// Returns: boolean (true if ALL proofs valid, false otherwise)
+```
+
+</Tab>
+<Tab title="Factory API">
+
+```zig
+import { Kzg } from 'tevm';
+import * as ckzg from 'c-kzg';
+
+const verifyBatch = Kzg.VerifyBatchFactory({
+  verifyBlobKzgProofBatch: ckzg.verifyBlobKzgProofBatch
+});
+
+const allValid = verifyBatch(blobs, commitments, proofs);
+```
+
+</Tab>
+</Tabs>
+
+## Error Handling
+
+```zig
+try {
+  const { proof, y } = Kzg.Proof(blob, z);
+} catch (error) {
+  if (error instanceof KzgNotInitializedError) {
+    // Trusted setup not loaded
+  } else if (error instanceof KzgInvalidBlobError) {
+    // Invalid blob format
+  } else if (error instanceof KzgError) {
+    // Computation failed
+    console.error('Code:', error.code);
+    console.error('Message:', error.message);
+  }
+}
+```
+
+## Related
+
+- [KZG Overview](./index)
+- [Commitments](./commitments)
+- [Point Evaluation](./point-evaluation)
+- [EIP-4844](./eip-4844)

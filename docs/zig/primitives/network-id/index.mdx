@@ -1,0 +1,113 @@
+---
+title: NetworkId
+description: Ethereum network identifiers for peer-to-peer discovery
+---
+
+# NetworkId
+
+Type-safe Ethereum network identifiers for peer-to-peer network discovery.
+
+## Overview
+
+[Branded](/getting-started/branded-types) `number` type representing Ethereum network IDs. Network IDs are used for peer-to-peer network identification and discovery, distinct from Chain IDs which are used for transaction replay protection.
+
+<Warning>
+**NetworkId vs ChainId**: These are different concepts!
+- **NetworkId**: Used for P2P network discovery (devp2p protocol)
+- **ChainId**: Used for transaction replay protection (EIP-155)
+
+For most public networks they happen to be the same value, but they serve different purposes.
+</Warning>
+
+## Quick Start
+
+```zig
+// Get network id via JSON-RPC
+// {"method":"net_version","params":[]}
+// Chain id via JSON-RPC
+// {"method":"eth_chainId","params":[]}
+```
+
+## Network Constants
+
+| Constant | Value | Network |
+|----------|-------|---------|
+| `MAINNET` | 1 | Ethereum Mainnet |
+| `SEPOLIA` | 11155111 | Sepolia Testnet |
+| `HOLESKY` | 17000 | Holesky Testnet |
+| `GOERLI` | 5 | Goerli Testnet (deprecated) |
+
+## API Reference
+
+### Constructors
+
+```zig
+// Use plain integers for network id (P2P) and chain id (EIP-155)
+const mainnet_id: u64 = 1;
+const sepolia_id: u64 = 11155111;
+```
+
+### Methods
+
+```zig
+// Compare as integers
+const a: u64 = 1;
+const b: u64 = 11155111;
+const equal = a == b; // false
+```
+
+## NetworkId vs ChainId
+
+Understanding the difference:
+
+| Aspect | NetworkId | ChainId |
+|--------|-----------|---------|
+| Purpose | P2P network discovery | Transaction replay protection |
+| Protocol | devp2p | EIP-155 |
+| RPC Method | `net_version` | `eth_chainId` |
+| Used In | Peer handshake | Transaction signing |
+
+For most public networks, NetworkId and ChainId have the same value:
+
+```zig
+// Example values
+const networkId_mainnet: u64 = 1;      // net_version
+const chainId_mainnet: u64 = 1;        // eth_chainId
+const networkId_sepolia: u64 = 11155111;
+const chainId_sepolia: u64 = 11155111;
+```
+
+However, private networks or some L2s may use different values for each.
+
+## Use Cases
+
+### Network Detection
+
+```zig
+// Map integer ids to names as needed.
+```
+
+### Multi-Network Support
+
+```zig
+// Choose RPC URL by network id.
+```
+
+### Node Connection Validation
+
+```zig
+// Validate by comparing net_version result to expected id.
+// {"method":"net_version","params":[]}
+```
+
+## Related
+
+- [Chain](/primitives/chain) - Chain configuration with ChainId
+- [PeerId](/primitives/peer-id) - Peer identifiers for P2P
+- [NodeInfo](/primitives/node-info) - Node information structure
+
+## References
+
+- [EIP-155](https://eips.ethereum.org/EIPS/eip-155) - Chain ID for replay protection
+- [devp2p Protocol](https://github.com/ethereum/devp2p) - Ethereum P2P networking
+- [JSON-RPC net_version](https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version) - RPC method

@@ -1,0 +1,148 @@
+---
+title: calculateErc8042
+description: Calculate ERC-8042 diamond storage slot
+icon: code
+---
+
+## `calculateErc8042(keccak256: Function, id: string): Uint8Array`
+
+Calculates a storage slot using the ERC-8042 (Diamond Storage) formula: `keccak256(id)`.
+
+Simpler than ERC-7201, used primarily by the EIP-2535 Diamond Standard.
+
+**Parameters:**
+- `keccak256: (data: Uint8Array) => Uint8Array` - Keccak256 hash function
+- `id: string` - Storage namespace identifier
+
+**Returns:** `Uint8Array` - 32-byte storage slot
+
+**Example:**
+
+```zig
+import { calculateErc8042 } from '@tevm/voltaire/Storage';
+import { keccak256 } from '@tevm/voltaire/crypto';
+
+// Calculate diamond storage slot
+const slot = calculateErc8042(keccak256, 'diamond.standard.storage');
+
+console.log(Buffer.from(slot).toString('hex'));
+// "7de7edef0e40c7e2c3f605e6af81b038a7b4dd40e1f1e8c7f3f7d9e4f5c3b2a1"
+```
+
+**Defined in:** [src/primitives/Storage/calculateErc8042.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Storage/calculateErc8042.js)
+
+## Formula
+
+```
+result = keccak256(id)
+```
+
+Simple single hash of the namespace identifier. No byte manipulation or decrementation.
+
+## Usage Patterns
+
+### Diamond Standard Storage
+
+```zig
+import { calculateErc8042 } from '@tevm/voltaire/Storage';
+import { keccak256 } from '@tevm/voltaire/crypto';
+
+// Calculate storage for diamond facets
+const facetSlot = calculateErc8042(keccak256, 'diamond.storage.facet');
+const ownerSlot = calculateErc8042(keccak256, 'diamond.storage.owner');
+
+// Convert for Solidity
+const hexSlot = '0x' + Buffer.from(facetSlot).toString('hex');
+
+console.log(`
+library DiamondStorage {
+  bytes32 constant DIAMOND_STORAGE_POSITION = ${hexSlot};
+
+  struct FacetStorage {
+    address[] facets;
+    mapping(bytes4 => address) selectorToFacet;
+  }
+
+  function diamondStorage() internal pure returns (FacetStorage storage ds) {
+    bytes32 position = DIAMOND_STORAGE_POSITION;
+    assembly {
+      ds.slot := position
+    }
+  }
+}
+`);
+```
+
+### Legacy Diamond Implementations
+
+```zig
+import { calculateErc8042 } from '@tevm/voltaire/Storage';
+import { keccak256 } from '@tevm/voltaire/crypto';
+
+// Common diamond storage locations
+const DIAMOND_STORAGE = calculateErc8042(keccak256, 'diamond.standard.diamond.storage');
+const OWNERSHIP_STORAGE = calculateErc8042(keccak256, 'diamond.standard.ownership.storage');
+const ACCESS_CONTROL = calculateErc8042(keccak256, 'diamond.standard.access.control');
+
+// These match existing diamond implementations
+```
+
+## When to Use ERC-8042
+
+**Use ERC-8042 when:**
+- Implementing EIP-2535 Diamond Standard
+- Compatibility with existing diamond contracts required
+- Following established diamond patterns
+- Simpler formula preferred
+
+**Use ERC-7201 when:**
+- General upgradeable proxy patterns
+- Need related storage slots (last byte cleared)
+- Maximum collision resistance required
+- Not tied to diamond standard
+
+## Comparison with ERC-7201
+
+| Feature | ERC-8042 | ERC-7201 |
+|---------|----------|----------|
+| Formula | `keccak256(id)` | `keccak256(keccak256(id) - 1) & ~0xff` |
+| Complexity | Simple | More complex |
+| Related slots | None | 256 (last byte) |
+| Collision resistance | Standard | Higher |
+| Gas cost | Slightly lower | Slightly higher |
+| Primary use | Diamond Standard | General proxies |
+
+## Diamond Standard Integration
+
+```zig
+import { calculateErc8042 } from '@tevm/voltaire/Storage';
+import { keccak256 } from '@tevm/voltaire/crypto';
+
+// Generate storage slots for facets
+const facets = [
+  'OwnershipFacet',
+  'DiamondCutFacet',
+  'DiamondLoupeFacet',
+  'ERC20Facet',
+  'ERC721Facet'
+];
+
+const slots = facets.map(name => ({
+  name,
+  namespace: `diamond.${name.toLowerCase()}.storage`,
+  slot: calculateErc8042(keccak256, `diamond.${name.toLowerCase()}.storage`)
+}));
+
+slots.forEach(({ name, namespace, slot }) => {
+  console.log(`${name}:`);
+  console.log(`  Namespace: ${namespace}`);
+  console.log(`  Slot: 0x${Buffer.from(slot).toString('hex')}`);
+});
+```
+
+## See Also
+
+- [calculateErc7201](/primitives/storage/calculate-erc7201) - Enhanced namespaced storage
+- [ERC-8042 Specification](https://eips.ethereum.org/EIPS/eip-8042)
+- [EIP-2535 Diamond Standard](https://eips.ethereum.org/EIPS/eip-2535)
+- [Keccak256](/crypto/keccak256) - Hash function documentation

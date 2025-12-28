@@ -24,5 +24,8 @@ let pub = try pk.publicKey()
 let compressed = try pub.compressed()
 XCTAssertEqual(pub.uncompressed.count, 64)
 XCTAssertEqual(compressed.count, 33)
-```
 
+ // Raw bytes access
+ let privBytes = pk.bytes
+ XCTAssertEqual(privBytes.count, 32)
+```

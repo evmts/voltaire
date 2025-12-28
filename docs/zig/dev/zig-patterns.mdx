@@ -1,0 +1,395 @@
+---
+title: Zig Patterns
+description: Zig 0.15.1 style guide, memory management, and testing patterns
+---
+
+# Zig Patterns
+
+Voltaire uses Zig 0.15.1 for performance-critical implementations. This guide covers style, memory management, and common patterns.
+
+## Style Guide
+
+### Variable Naming
+
+Single-word variables when meaning is clear:
+
+```zig
+// ✅ Good
+var n: usize = 0;
+var top: u256 = stack.peek();
+var result: [32]u8 = undefined;
+
+// ❌ Avoid
+var numberOfIterations: usize = 0;
+var topOfStack: u256 = stack.peek();
+var hashResult: [32]u8 = undefined;
+```
+
+Use descriptive names when ambiguity exists:
+
+```zig
+// ✅ Descriptive when needed
+var input_len: usize = input.len;
+var output_ptr: [*]u8 = output.ptr;
+```
+
+### Function Structure
+
+Prefer long imperative function bodies over small abstractions:
+
+```zig
+// ✅ Good - inline logic, clear flow
+pub fn fromHex(hex_str: []const u8) !Address {
+    if (hex_str.len < 2) return error.InvalidHex;
+
+    const start: usize = if (hex_str[0] == '0' and hex_str[1] == 'x') 2 else 0;
+    const hex = hex_str[start..];
+
+    if (hex.len != 40) return error.InvalidLength;
+
+    var bytes: [20]u8 = undefined;
+    var i: usize = 0;
+    while (i < 20) : (i += 1) {
+        const high = try hexDigitToInt(hex[i * 2]);
+        const low = try hexDigitToInt(hex[i * 2 + 1]);
+        bytes[i] = (high << 4) | low;
+    }
+
+    return Address{ .bytes = bytes };
+}
+
+// ❌ Avoid - unnecessary abstraction
+pub fn fromHex(hex_str: []const u8) !Address {
+    const clean = try stripPrefix(hex_str);
+    try validateLength(clean);
+    return try decodeHex(clean);
+}
+```
+
+### Only Abstract When Reused
+
+```zig
+// ✅ Reused utility - worth abstracting
+fn hexDigitToInt(c: u8) !u4 {
+    return switch (c) {
+        '0'...'9' => @intCast(c - '0'),
+        'a'...'f' => @intCast(c - 'a' + 10),
+        'A'...'F' => @intCast(c - 'A' + 10),
+        else => error.InvalidHexDigit,
+    };
+}
+```
+
+## Memory Management
+
+### Allocator Convention
+
+Functions that allocate take an explicit allocator:
+
+```zig
+pub fn toHex(allocator: Allocator, address: Address) ![]u8 {
+    const result = try allocator.alloc(u8, 42);
+    errdefer allocator.free(result);
+
+    result[0] = '0';
+    result[1] = 'x';
+    // ... fill hex digits ...
+
+    return result;  // Caller owns this memory
+}
+```
+
+### Memory Ownership
+
+**Return to caller, caller frees:**
+
+```zig
+// Function allocates, returns owned memory
+pub fn encode(allocator: Allocator, value: anytype) ![]u8 {
+    const result = try allocator.alloc(u8, calcSize(value));
+    // ... encode ...
+    return result;
+}
+
+// Caller is responsible for freeing
+const encoded = try encode(allocator, value);
+defer allocator.free(encoded);
+```
+
+### defer and errdefer
+
+Always clean up with defer/errdefer:
+
+```zig
+pub fn process(allocator: Allocator, input: []const u8) ![]u8 {
+    const temp = try allocator.alloc(u8, 1024);
+    defer allocator.free(temp);  // Always free temp
+
+    const result = try allocator.alloc(u8, 256);
+    errdefer allocator.free(result);  // Free on error only
+
+    // ... processing ...
+
+    return result;  // Caller owns result
+}
+```
+
+## ArrayList (0.15.1 API)
+
+<Warning>
+Zig 0.15.1 uses unmanaged ArrayList. This is different from older versions.
+</Warning>
+
+```zig
+// ✅ Correct 0.15.1 API
+var list = std.ArrayList(u8){};
+defer list.deinit(allocator);
+
+try list.append(allocator, 42);
+try list.appendSlice(allocator, "hello");
+const slice = list.items;
+
+// ❌ Wrong - old API patterns
+var list = std.ArrayList(u8).init(allocator);  // No init()
+defer list.deinit();                             // deinit takes allocator
+list.append(42);                                 // append takes allocator
+```
+
+### ArrayList Operations
+
+```zig
+var list = std.ArrayList(u8){};
+defer list.deinit(allocator);
+
+// Append operations
+try list.append(allocator, item);
+try list.appendSlice(allocator, slice);
+try list.appendNTimes(allocator, value, count);
+
+// Access
+const item = list.items[0];
+const len = list.items.len;
+
+// Capacity
+try list.ensureTotalCapacity(allocator, min_capacity);
+list.clearRetainingCapacity();
+```
+
+## Struct Pattern
+
+### Simple Data Struct
+
+```zig
+pub const Address = struct {
+    bytes: [20]u8,
+
+    pub fn fromHex(hex_str: []const u8) !Address {
+        // ...
+    }
+
+    pub fn toHex(self: Address) [42]u8 {
+        var result: [42]u8 = undefined;
+        result[0] = '0';
+        result[1] = 'x';
+        // ...
+        return result;
+    }
+
+    pub fn equals(self: Address, other: Address) bool {
+        return std.mem.eql(u8, &self.bytes, &other.bytes);
+    }
+};
+```
+
+### Using @This()
+
+```zig
+pub const Hash = struct {
+    const Self = @This();
+    bytes: [32]u8,
+
+    pub fn from(data: []const u8) Self {
+        return Self{ .bytes = Keccak256.hash(data) };
+    }
+};
+```
+
+## Error Handling
+
+### Error Sets
+
+```zig
+pub const AddressError = error{
+    InvalidHex,
+    InvalidLength,
+    InvalidChecksum,
+};
+
+pub fn fromHex(hex: []const u8) AddressError!Address {
+    // ...
+}
+```
+
+### Error Union Returns
+
+```zig
+// Can fail
+pub fn fromHex(hex: []const u8) !Address { ... }
+
+// Cannot fail - no error union
+pub fn toHex(address: Address) [42]u8 { ... }
+
+// Nullable - no error, but might not exist
+pub fn tryParse(input: []const u8) ?Address { ... }
+```
+
+## Testing
+
+### Inline Tests
+
+Tests live in the same file as implementation:
+
+```zig
+// address.zig
+
+pub const Address = struct {
+    bytes: [20]u8,
+
+    pub fn fromHex(hex: []const u8) !Address {
+        // implementation
+    }
+};
+
+test "Address.fromHex valid lowercase" {
+    const addr = try Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+    try std.testing.expectEqual(@as(u8, 0x74), addr.bytes[0]);
+}
+
+test "Address.fromHex rejects invalid length" {
+    const result = Address.fromHex("0x123");
+    try std.testing.expectError(error.InvalidLength, result);
+}
+
+test "Address.fromHex rejects invalid characters" {
+    const result = Address.fromHex("0xgggggggggggggggggggggggggggggggggggggggg");
+    try std.testing.expectError(error.InvalidHexDigit, result);
+}
+```
+
+### Testing Utilities
+
+```zig
+const testing = std.testing;
+
+test "equality" {
+    try testing.expectEqual(expected, actual);
+}
+
+test "slices" {
+    try testing.expectEqualSlices(u8, expected, actual);
+}
+
+test "errors" {
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "debug output" {
+    // Enable debug logging for this test
+    testing.log_level = .debug;
+    std.log.debug("value: {}", .{value});
+}
+```
+
+### Running Tests
+
+```bash
+# All tests
+zig build test
+
+# Filter by name
+zig build -Dtest-filter=Address
+
+# With debug output
+zig build test 2>&1 | head -100
+```
+
+## Constant Time Operations
+
+<Warning>
+Security-critical code must be constant-time.
+</Warning>
+
+```zig
+// ✅ Constant time comparison
+pub fn secureEquals(a: []const u8, b: []const u8) bool {
+    if (a.len != b.len) return false;
+
+    var result: u8 = 0;
+    for (a, b) |x, y| {
+        result |= x ^ y;
+    }
+    return result == 0;
+}
+
+// ❌ Timing leak - early return
+pub fn insecureEquals(a: []const u8, b: []const u8) bool {
+    for (a, b) |x, y| {
+        if (x != y) return false;  // Leaks info via timing
+    }
+    return true;
+}
+```
+
+## Comptime
+
+Use comptime for zero-cost abstractions:
+
+```zig
+pub fn hexToBytes(comptime len: usize, hex: []const u8) ![len]u8 {
+    if (hex.len != len * 2) return error.InvalidLength;
+
+    var result: [len]u8 = undefined;
+    // ... decode ...
+    return result;
+}
+
+// Usage - len known at compile time
+const addr_bytes = try hexToBytes(20, hex_str);
+const hash_bytes = try hexToBytes(32, hex_str);
+```
+
+## Common Mistakes
+
+<Warning>
+Avoid these patterns:
+</Warning>
+
+```zig
+// ❌ Allocating when not needed
+pub fn toHex(allocator: Allocator, addr: Address) ![]u8 {
+    // Use fixed-size array instead - no allocation needed
+}
+
+// ✅ Fixed-size return
+pub fn toHex(addr: Address) [42]u8 {
+    var result: [42]u8 = undefined;
+    // ...
+    return result;
+}
+
+// ❌ Forgetting errdefer
+const buffer = try allocator.alloc(u8, size);
+const result = try process(buffer);  // If this fails, buffer leaks!
+
+// ✅ With errdefer
+const buffer = try allocator.alloc(u8, size);
+errdefer allocator.free(buffer);
+const result = try process(buffer);
+
+// ❌ Using old ArrayList API
+var list = std.ArrayList(u8).init(allocator);
+
+// ✅ 0.15.1 unmanaged API
+var list = std.ArrayList(u8){};
+defer list.deinit(allocator);
+```

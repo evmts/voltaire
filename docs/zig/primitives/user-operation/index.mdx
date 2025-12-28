@@ -1,0 +1,249 @@
+---
+title: UserOperation
+description: ERC-4337 user operation structure (v0.6)
+---
+
+# UserOperation
+
+UserOperation represents an ERC-4337 v0.6 user operation. User operations enable account abstraction by separating transaction validation from execution, allowing smart contract wallets with custom logic for signatures, gas payment, and access control.
+
+## Quick Start
+
+```zig
+import { UserOperation } from 'tevm/primitives/UserOperation';
+import { ENTRYPOINT_V06 } from 'tevm/primitives/EntryPoint';
+
+// Create user operation
+const userOp = UserOperation.from({
+  sender: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+  nonce: 0n,
+  initCode: "0x", // Empty if account exists
+  callData: "0x...", // Call to execute
+  callGasLimit: 100000n,
+  verificationGasLimit: 200000n,
+  preVerificationGas: 50000n,
+  maxFeePerGas: 1000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  paymasterAndData: "0x", // Empty if self-paying
+  signature: "0x", // Add after signing
+});
+
+// Hash for signing
+const hash = UserOperation.hash(userOp, ENTRYPOINT_V06, 1);
+
+// Pack to v0.7 format
+const packed = UserOperation.pack(userOp);
+```
+
+## Type Definition
+
+```zig
+export type UserOperationType = {
+  readonly sender: AddressType;
+  readonly nonce: Uint256Type;
+  readonly initCode: Uint8Array;
+  readonly callData: Uint8Array;
+  readonly callGasLimit: Uint256Type;
+  readonly verificationGasLimit: Uint256Type;
+  readonly preVerificationGas: Uint256Type;
+  readonly maxFeePerGas: Uint256Type;
+  readonly maxPriorityFeePerGas: Uint256Type;
+  readonly paymasterAndData: Uint8Array;
+  readonly signature: Uint8Array;
+} & { readonly [brand]: "UserOperation" };
+```
+
+## Fields
+
+### sender
+
+Smart account address initiating the operation.
+
+### nonce
+
+Anti-replay nonce. Often encoded as `key || sequence` where:
+- `key`: High 192 bits - nonce key for parallel operations
+- `sequence`: Low 64 bits - sequential counter per key
+
+### initCode
+
+Account creation code (factory address + calldata). Empty if account already deployed.
+
+### callData
+
+Calldata to execute on the account contract.
+
+### callGasLimit
+
+Gas limit for the execution phase (after validation).
+
+### verificationGasLimit
+
+Gas limit for the validation phase (signature verification).
+
+### preVerificationGas
+
+Fixed gas overhead for bundler compensation (calldata costs, loop overhead).
+
+### maxFeePerGas
+
+Maximum total fee per gas (EIP-1559 format).
+
+### maxPriorityFeePerGas
+
+Maximum priority fee per gas (EIP-1559 tip).
+
+### paymasterAndData
+
+Paymaster address (20 bytes) + paymaster-specific data. Empty if self-paying.
+
+### signature
+
+Account signature over the userOpHash.
+
+## API Reference
+
+### from
+
+Create UserOperation from parameters.
+
+```zig
+function from(params: {
+  sender: AddressType | string | number | bigint | Uint8Array;
+  nonce: Uint256Type | bigint | number | string;
+  initCode: Uint8Array | string;
+  callData: Uint8Array | string;
+  callGasLimit: Uint256Type | bigint | number | string;
+  verificationGasLimit: Uint256Type | bigint | number | string;
+  preVerificationGas: Uint256Type | bigint | number | string;
+  maxFeePerGas: Uint256Type | bigint | number | string;
+  maxPriorityFeePerGas: Uint256Type | bigint | number | string;
+  paymasterAndData: Uint8Array | string;
+  signature: Uint8Array | string;
+}): UserOperationType
+```
+
+### hash
+
+Compute userOpHash for signing.
+
+```zig
+function hash(
+  userOp: UserOperationType,
+  entryPoint: AddressType | string | number | bigint | Uint8Array,
+  chainId: bigint | number
+): Uint8Array
+```
+
+Formula: `keccak256(abi.encode(userOp, entryPoint, chainId))`
+
+### pack
+
+Convert UserOperation (v0.6) to PackedUserOperation (v0.7).
+
+```zig
+function pack(userOp: UserOperationType): PackedUserOperationType
+```
+
+## User Operation Lifecycle
+
+1. **Creation**: Wallet creates unsigned user operation
+2. **Gas estimation**: Bundler simulates and estimates gas
+3. **Signing**: Wallet signs userOpHash
+4. **Submission**: Submit to bundler mempool
+5. **Bundling**: Bundler aggregates operations
+6. **Execution**: EntryPoint validates and executes
+
+## Usage Patterns
+
+### Basic Operation
+
+```zig
+import { UserOperation } from 'tevm/primitives/UserOperation';
+import { ENTRYPOINT_V06 } from 'tevm/primitives/EntryPoint';
+
+const userOp = UserOperation.from({
+  sender: smartAccountAddress,
+  nonce: await account.getNonce(),
+  initCode: "0x",
+  callData: encodeFunctionData({
+    abi: accountAbi,
+    functionName: "execute",
+    args: [targetAddress, value, data],
+  }),
+  callGasLimit: 100000n,
+  verificationGasLimit: 200000n,
+  preVerificationGas: 50000n,
+  maxFeePerGas: baseFee + priorityFee,
+  maxPriorityFeePerGas: priorityFee,
+  paymasterAndData: "0x",
+  signature: "0x",
+});
+
+// Sign
+const hash = UserOperation.hash(userOp, ENTRYPOINT_V06, chainId);
+const signature = await account.signMessage(hash);
+const signedUserOp = { ...userOp, signature };
+
+// Submit to bundler
+await bundler.request({
+  method: "eth_sendUserOperation",
+  params: [signedUserOp, ENTRYPOINT_V06],
+});
+```
+
+### With Paymaster
+
+```zig
+import { UserOperation } from 'tevm/primitives/UserOperation';
+import { Paymaster } from 'tevm/primitives/Paymaster';
+
+const paymaster = Paymaster.from(paymasterAddress);
+const paymasterAndData = new Uint8Array([
+  ...paymaster,
+  // ...paymasterData
+]);
+
+const userOp = UserOperation.from({
+  sender: smartAccountAddress,
+  // ... other fields
+  paymasterAndData,
+  signature: "0x",
+});
+```
+
+### Account Deployment
+
+```zig
+import { UserOperation } from 'tevm/primitives/UserOperation';
+
+// initCode = factoryAddress (20 bytes) + factoryCalldata
+const factoryCalldata = encodeFunctionData({
+  abi: factoryAbi,
+  functionName: "createAccount",
+  args: [owner, salt],
+});
+
+const initCode = concat([factoryAddress, factoryCalldata]);
+
+const userOp = UserOperation.from({
+  sender: predictedAccountAddress,
+  nonce: 0n, // First operation
+  initCode, // Deploy account
+  callData: "0x", // No execution yet
+  // ... gas fields
+  signature: "0x",
+});
+```
+
+## Related Types
+
+- [PackedUserOperation](/primitives/packed-user-operation) - v0.7 packed format
+- [EntryPoint](/primitives/entry-point) - Entry point contract
+- [Paymaster](/primitives/paymaster) - Gas sponsorship
+- [Bundler](/primitives/bundler) - Operation bundler
+
+## References
+
+- [ERC-4337 Specification](https://eips.ethereum.org/EIPS/eip-4337)
+- [Entry Point v0.6](https://github.com/eth-infinitism/account-abstraction/tree/v0.6.0)

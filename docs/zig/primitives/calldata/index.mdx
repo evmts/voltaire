@@ -1,0 +1,187 @@
+---
+title: CallData
+description: Transaction calldata for EVM function calls with ABI encoding
+---
+
+Transaction calldata contains the function selector and ABI-encoded parameters sent to smart contracts. It's the primary mechanism for invoking contract functions on Ethereum.
+
+<Tip title="Learn the fundamentals">
+New to EVM calldata? Start with [Fundamentals](/primitives/calldata/fundamentals) to learn how calldata works in the EVM, function selectors, and ABI encoding.
+</Tip>
+
+## Overview
+
+CallData is a specialized [branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) that subtypes Hex for representing transaction data. It contains a 4-byte function selector followed by ABI-encoded parameters.
+
+<Tabs>
+<Tab title="Type Definition">
+
+```zig
+import type { brand } from './brand.js'
+
+export type CallDataType = Uint8Array & {
+  readonly [brand]: "CallData"
+}
+```
+
+CallData is a branded `Uint8Array`. TypeScript enforces type safety through a unique Symbol brand, preventing accidental mixing with other byte arrays while maintaining zero runtime overhead.
+
+</Tab>
+<Tab title="Decoded Form">
+
+```zig
+export type CallDataDecoded = {
+  selector: [4]u8,        // Function selector
+  signature: ?[]const u8, // Optional function signature
+  parameters: []AbiValue, // Decoded parameters
+}
+```
+
+CallDataDecoded represents the structured form with parsed selector and parameters.
+
+</Tab>
+</Tabs>
+
+### Developer Experience
+
+Despite being a `Uint8Array`, calldata displays formatted in most environments:
+
+```zig
+const calldata = CallData("0xa9059cbb000000000000000000000000...");
+console.log(calldata);
+// CallData("0xa9059cbb...")
+```
+
+This makes debugging more readable than raw byte arrays while maintaining performance.
+
+## Quick Start
+
+<Tabs>
+<Tab title="Encode Function Call">
+
+```zig
+import { CallData, Abi, Address, TokenBalance } from 'tevm';
+
+// Define ABI
+const abi = Abi([{
+  name: "transfer",
+  type: "function",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" }
+  ]
+}]);
+
+// Encode function call
+const recipient = Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+const amount = TokenBalance.fromUnits("1", 18);
+
+const calldata: CallData = abi.transfer.encode(recipient, amount);
+
+console.log(CallData.toHex(calldata));
+// "0xa9059cbb00000000000000000000000070997970..."
+```
+
+</Tab>
+<Tab title="Decode CallData">
+
+```zig
+import { CallData } from 'tevm';
+
+const calldata = CallData("0xa9059cbb...");
+
+// Decode to structured form
+const decoded = CallData.decode(calldata, abi);
+
+console.log(decoded.selector); // [0xa9, 0x05, 0x9c, 0xbb]
+console.log(decoded.signature); // "transfer(address,uint256)"
+console.log(decoded.parameters); // [Address, Uint256]
+```
+
+</Tab>
+<Tab title="Extract Selector">
+
+```zig
+import { CallData } from 'tevm';
+
+const calldata = CallData("0xa9059cbb...");
+
+// Get function selector (first 4 bytes)
+const selector = CallData.getSelector(calldata);
+console.log(selector); // 0xa9059cbb
+
+// Check for specific function
+if (CallData.hasSelector(calldata, "0xa9059cbb")) {
+  console.log("This is a transfer call");
+}
+```
+
+</Tab>
+</Tabs>
+
+## Practical Examples
+
+See [Fundamentals](/primitives/calldata/fundamentals) for detailed explanations of how the EVM processes calldata, function selector derivation, and ABI encoding mechanics.
+
+## API Methods
+
+### Constructors
+
+- [`from(value)`](./from) - Universal constructor from any input
+- [`fromHex(hex)`](./from-hex) - Parse hex string (with or without 0x prefix)
+- [`fromBytes(bytes)`](./from-bytes) - Create from Uint8Array
+- [`encode(signature, params)`](./encode) - Encode function call from signature and parameters
+
+### Conversions
+
+- [`toHex(calldata)`](./to-hex) - Convert to hex string with 0x prefix
+- [`toBytes(calldata)`](./to-bytes) - Return raw Uint8Array
+- [`decode(calldata, abi)`](./decode) - Decode to CallDataDecoded structure
+
+### Selectors
+
+- [`getSelector(calldata)`](./get-selector) - Extract 4-byte function selector
+- [`hasSelector(calldata, selector)`](./has-selector) - Check if calldata matches selector
+
+### Validation
+
+- [`isValid(value)`](./is-valid) - Check if value can be converted to calldata
+- [`is(value)`](./is) - Type guard to check if value is CallData
+
+### Comparisons
+
+- [`equals(a, b)`](./equals) - Check equality of two calldata instances
+
+## Type Hierarchy
+
+CallData conceptually subtypes Hex but stores as `Uint8Array` internally:
+
+```zig
+// Conceptual relationship
+CallData extends Hex
+
+// Runtime representation
+CallData: Uint8Array & { readonly [brand]: "CallData" }
+```
+
+This design provides:
+- **Type safety**: Can't accidentally pass arbitrary Uint8Array where CallData expected
+- **Performance**: Direct byte manipulation without string conversion
+- **Interop**: Works with Web APIs expecting Uint8Array
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Abi" icon="brackets-curly" href="/primitives/abi">
+    ABI encoding and decoding for function calls
+  </Card>
+  <Card title="Bytecode" icon="file-code" href="/primitives/bytecode">
+    Contract bytecode and EVM instructions
+  </Card>
+  <Card title="Transaction" icon="paper-plane" href="/primitives/transaction">
+    Ethereum transactions that carry calldata
+  </Card>
+  <Card title="Hex" icon="hashtag" href="/primitives/hex">
+    Hexadecimal encoding utilities
+  </Card>
+</CardGroup>
