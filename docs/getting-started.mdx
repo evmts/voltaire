@@ -26,22 +26,22 @@ New to Ethereum? Check out our [Guides](/guides) for example-based educational c
 <Tabs>
   <Tab title="npm">
     ```bash
-    npm install tevm
+    npm install @tevm/voltaire
     ```
   </Tab>
   <Tab title="bun">
     ```bash
-    bun add tevm
+    bun add @tevm/voltaire
     ```
   </Tab>
   <Tab title="pnpm">
     ```bash
-    pnpm add tevm
+    pnpm add @tevm/voltaire
     ```
   </Tab>
   <Tab title="yarn">
     ```bash
-    yarn add tevm
+    yarn add @tevm/voltaire
     ```
   </Tab>
   <Tab title="Zig">
@@ -58,6 +58,26 @@ New to Ethereum? Check out our [Guides](/guides) for example-based educational c
     </Warning>
   </Tab>
 </Tabs>
+
+<Tip>
+Prefer importing from `"voltaire"` instead of `"@tevm/voltaire"`? Install with an alias:
+
+```bash
+# npm
+npm install voltaire@npm:@tevm/voltaire
+
+# bun
+bun add voltaire@npm:@tevm/voltaire
+
+# pnpm
+pnpm add voltaire@npm:@tevm/voltaire
+
+# yarn
+yarn add voltaire@npm:@tevm/voltaire
+```
+
+Then import as `import { Address } from "voltaire"`.
+</Tip>
 
 <Warning>
 Runtime support: Native FFI is currently supported on <strong>Bun</strong>. In <strong>Node.js</strong>, use the regular TypeScript API or the WASM modules. Browsers use WASM.
@@ -99,7 +119,7 @@ import {
   State,
   Transaction,
   Uint
-} from "tevm";
+} from "@tevm/voltaire";
 ```
   </Tab>
   <Tab title="Cryptography">
@@ -126,7 +146,7 @@ import {
   Sha3,
   Sha512,
   X25519
-} from "tevm";
+} from "@tevm/voltaire";
 ```
   </Tab>
   <Tab title="EVM">
@@ -135,7 +155,7 @@ import {
   Opcode,
   Bytecode,
   GasConstants
-} from "tevm";
+} from "@tevm/voltaire";
 ```
   </Tab>
   <Tab title="Utils">
@@ -144,12 +164,12 @@ import {
   Base64,
   Hex,
   Rlp
-} from "tevm";
+} from "@tevm/voltaire";
 ```
   </Tab>
   <Tab title="JSON-RPC Provider">
 ```typescript
-import { Provider } from "tevm";
+import { Provider } from "@tevm/voltaire";
 ```
   </Tab>
 </Tabs>
