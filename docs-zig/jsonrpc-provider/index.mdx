@@ -174,28 +174,32 @@ OpenRPC Specification (ethereum/execution-apis)
 <Tab title="Error Handling">
 
 ```zig
-// Provider throws on error (EIP-1193)
-try {
-  const blockNumber = await provider.request(
-    Rpc.Eth.BlockNumberRequest()
-  );
-  console.log('Block number:', blockNumber);
-} catch (error) {
-  if (error.code) {
-    console.error('RPC error:', error.code, error.message);
-  } else {
-    console.error('Unexpected error:', error);
+// Handle JSON-RPC errors in Zig by parsing the response
+const std = @import("std");
+pub fn handleRpcResponse(resp_body: []const u8) !void {
+  var parser = std.json.Parser.init(std.heap.page_allocator, .{});
+  defer parser.deinit();
+  const tree = try parser.parse(resp_body);
+  defer tree.deinit();
+  const root = tree.root;
+  if (root.object.get("error")) |err_node| {
+    const code = err_node.object.get("code").?.integer;
+    const message = err_node.object.get("message").?.string;
+    return error.RpcError; // attach code/message in your error type
   }
+  // else handle result
 }
 ```
 
 **EIP-1193 Error Structure:**
 
 ```zig
-interface ProviderRpcError extends Error {
-  code: number;
-  data?: unknown;
-}
+// Represent EIP-1193 errors in Zig
+pub const ProviderRpcError = struct {
+  code: i64,
+  message: []const u8,
+  data: ?[]const u8 = null,
+};
 ```
 
 </Tab>

@@ -2,9 +2,9 @@
 
 ## Overview
 
-This is the **Zig** documentation for Voltaire - mirroring the TypeScript docs at voltaire.sh.
+This is the **Zig** documentation for Voltaire — mirroring the TypeScript docs at https://voltaire.tevm.sh.
 
-**Target**: zig.voltaire.sh
+**Target**: local `docs-zig/` site (Mintlify)
 
 ## Key Differences from TypeScript Docs
 
@@ -32,8 +32,8 @@ const hex = addr.toHex();
 
 | TypeScript | Zig |
 |------------|-----|
-| `import { Address } from 'tevm'` | `@import("primitives").Address` |
-| `import { Keccak256 } from 'tevm/crypto'` | `@import("crypto").keccak256` |
+| `import { Address } from '@tevm/voltaire'` | `@import("primitives").Address` |
+| `import { Keccak256 } from '@tevm/voltaire/Keccak256'` | `@import("crypto").keccak256` |
 | `Address.from(...)` | `Address.from(...)` or `Address.fromHex(...)` |
 | `Address.toHex(addr)` | `addr.toHex()` |
 

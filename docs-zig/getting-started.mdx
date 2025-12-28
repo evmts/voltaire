@@ -1,152 +1,137 @@
 ---
 title: Getting Started
-description: Install Tevm and explore the API
+description: Install Voltaire Zig and explore the API
 ---
 
 <Tip>
-Looking to learn more about why to use Tevm? Check out [What is Tevm?](/introduction)
+Looking to learn more about why to use Voltaire? Check out [What is Voltaire?](/introduction)
 </Tip>
 
 ## Prerequisites
 
-- **Node.js:** 24.x or higher
-- **Package Manager:** npm, bun, pnpm, or yarn
-- **Knowledge:** Basic JavaScript/TypeScript
+- Zig: 0.15.1 or newer (matches `.minimum_zig_version`)
+- Tooling: git (optional), a C toolchain for some crypto backends
+- Knowledge: Basic Zig and Ethereum concepts
 
 <Tip>
-New to Ethereum? Check out our [Guides](/guides) for example-based educational content with no assumption of prior Ethereum knowledge.
+New to Ethereum? Check out our [Guides](/guides) for example-based content. No prior Ethereum knowledge required.
 </Tip>
 
 ## Installation
 
+You can add Voltaire as a dependency via the Zig package manager.
+
 <Tabs>
-  <Tab title="npm">
+  <Tab title="zig fetch (recommended)">
     ```bash
-    npm install tevm
+    zig fetch --save https://github.com/evmts/voltaire/archive/refs/heads/main.tar.gz
     ```
   </Tab>
-  <Tab title="bun">
-    ```bash
-    bun add tevm
-    ```
-  </Tab>
-  <Tab title="pnpm">
-    ```bash
-    pnpm add tevm
-    ```
-  </Tab>
-  <Tab title="yarn">
-    ```bash
-    yarn add tevm
-    ```
+  <Tab title="Edit build.zig.zon">
+```zig
+.dependencies = .{
+  .voltaire = .{
+    .url = "https://github.com/evmts/voltaire/archive/refs/heads/main.tar.gz",
+    // .hash = "..." // optional: add when pinning
+  },
+},
+```
   </Tab>
 </Tabs>
+
+Then in your `build.zig` add the modules:
+
+```zig
+const voltaire = b.dependency("voltaire", .{});
+exe.root_module.addImport("primitives", voltaire.module("primitives"));
+exe.root_module.addImport("crypto", voltaire.module("crypto"));
+```
 
 ## Imports
 
 <Tabs>
   <Tab title="Primitives">
 ```zig
-import {
-  Abi,
-  AccessList,
-  Address,
-  Authorization,
-  Base64,
-  BinaryTree,
-  Blob,
-  BloomFilter,
-  Bytecode,
-  Chain,
-  ChainId,
-  Denomination,
-  Ens,
-  EventLog,
-  FeeMarket,
-  GasConstants,
-  Hardfork,
-  Hash,
-  Hex,
-  Int,
-  Nonce,
-  Opcode,
-  PrivateKey,
-  PublicKey,
-  Rlp,
-  Signature,
-  Siwe,
-  State,
-  Transaction,
-  Uint
-} from "tevm";
+const primitives = @import("primitives");
+
+const Address = primitives.Address;
+const Hex = primitives.Hex;
+const Rlp = primitives.Rlp;
+const Uint = primitives.Uint;
+const Transaction = primitives.Transaction;
+const Opcode = primitives.Opcode;
+const GasConstants = primitives.GasConstants;
+
+// Example
+const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 ```
   </Tab>
   <Tab title="Cryptography">
 ```zig
-import {
-  AesGcm,
-  Bip39,
-  Blake2,
-  Bls12381,
-  Bn254,
-  Ed25519,
-  EIP712,
-  HDWallet,
-  Keccak256,
-  Kzg,
-  P256,
-  Pbkdf2,
-  Poseidon,
-  Ripemd160,
-  Schnorr,
-  Secp256k1,
-  Secp256r1,
-  Sha256,
-  Sha3,
-  Sha512,
-  X25519
-} from "tevm";
+const crypto = @import("crypto");
+
+const keccak256 = crypto.keccak256;
+const secp256k1 = crypto.secp256k1;
+const sha256 = crypto.sha256;
+// See docs for additional modules (bls12_381, bn254, kzg, bip39, …)
 ```
   </Tab>
   <Tab title="EVM">
 ```zig
-import {
-  Opcode,
-  Bytecode,
-  GasConstants
-} from "tevm";
+const primitives = @import("primitives");
+const Opcode = primitives.Opcode;
+const Bytecode = primitives.Bytecode;
+const GasConstants = primitives.GasConstants;
 ```
   </Tab>
-  <Tab title="Utils">
+  <Tab title="JSON-RPC">
 ```zig
-import {
-  Base64,
-  Hex,
-  Rlp
-} from "tevm";
-```
-  </Tab>
-  <Tab title="JSON-RPC Provider">
-```zig
-import { Provider } from "tevm";
+// Build JSON-RPC requests with std.json and send with std.http.Client
+const std = @import("std");
+
+pub fn eth_blockNumber(allocator: std.mem.Allocator, url: []const u8) !void {
+    var s = std.json.Stringify.init(allocator);
+    defer s.deinit();
+    try s.beginObject();
+    try s.field("jsonrpc", "2.0");
+    try s.field("id", 1);
+    try s.field("method", "eth_blockNumber");
+    try s.field("params", &[_]u8{});
+    try s.endObject();
+    // POST s.buf.* to your node URL using std.http.Client
+}
 ```
   </Tab>
 </Tabs>
+
+## Verify Installation
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const crypto = @import("crypto");
+
+pub fn main() !void {
+    const addr = try primitives.Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+    const hash = crypto.keccak256.hash("hello");
+    std.debug.print("{s} {s}\n", .{ addr.toHex(), std.fmt.fmtSliceHexLower(&hash) });
+}
+```
 
 ## Learn More
 
 <CardGroup cols={2}>
   <Card title="Guides" icon="book" href="/guides">
-    Example-based educational content for learning Ethereum concepts
+    Example-based educational content for Ethereum concepts
   </Card>
   <Card title="Examples" icon="code" href="/examples">
     Code examples and common usage patterns
   </Card>
-  <Card title="What is Tevm?" icon="circle-question" href="/introduction">
-    Learn why to use Tevm and what makes it unique
+  <Card title="What is Voltaire?" icon="circle-question" href="/introduction">
+    Learn why to use Voltaire and what makes it unique
   </Card>
   <Card title="Core Concepts" icon="lightbulb" href="/getting-started/branded-types">
-    Understand branded types and the data-first design pattern
+    Understand data-first primitives and ergonomic APIs
   </Card>
 </CardGroup>
 

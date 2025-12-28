@@ -171,31 +171,16 @@ Nodes may limit:
 ## Example: Paginated Query
 
 ```zig
-async function getLogs(filter: LogFilterType, batchSize = 1000) {
-  const logs = [];
-  let fromBlock = filter.fromBlock as bigint;
-  const toBlock = filter.toBlock as bigint;
-
-  while (fromBlock <= toBlock) {
-    const batchToBlock = fromBlock + BigInt(batchSize) - 1n;
-    const batchFilter = LogFilter.from({
-      ...filter,
-      fromBlock,
-      toBlock: batchToBlock > toBlock ? toBlock : batchToBlock
-    });
-
-    try {
-      const batchLogs = await rpc.eth_getLogs(batchFilter);
-      logs.push(...batchLogs);
-      fromBlock = batchToBlock + 1n;
-    } catch (error) {
-      // Reduce batch size and retry
-      batchSize = Math.floor(batchSize / 2);
-      if (batchSize < 10) throw error;
-    }
+// Build batched eth_getLogs requests in Zig
+pub fn getLogsPaginated(allocator: std.mem.Allocator, base_filter: Filter, batch_size: u64) !void {
+  var from_block: u64 = base_filter.from_block.?;
+  const to_block: u64 = base_filter.to_block.?;
+  while (from_block <= to_block) {
+    const end_block = @min(from_block + batch_size - 1, to_block);
+    // build JSON body with from_block..end_block
+    // POST with std.http.Client and parse response
+    from_block = end_block + 1;
   }
-
-  return logs;
 }
 ```
 

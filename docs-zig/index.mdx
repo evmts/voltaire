@@ -1,5 +1,4 @@
----
-title: Tevm
+title: Voltaire (Zig)
 description: High-performance, type-safe Ethereum primitives and cryptography
 mode: "custom"
 ---
@@ -20,10 +19,10 @@ mode: "custom"
 
 <div style={{ textAlign: 'center', padding: '3rem 2rem 6rem', maxWidth: '1280px', margin: '0 auto' }}>
     <h1 style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', fontWeight: '800', lineHeight: '1.1', marginBottom: '1.5rem' }}>
-      <span style={{ display: 'block', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Tevm</span>
+      <span style={{ display: 'block', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Voltaire</span>
     </h1>
 
-    <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}><strong>Modern, high-performance Ethereum library for <span style={{ position: 'relative', display: 'inline-block', overflow: 'hidden', verticalAlign: 'middle', top: '-0.1em', width: '10ch', textAlign: 'left' }}><span id="language-text" style={{ display: 'inline-block', color: '#3178C6', transition: 'transform 0.2s ease-out' }}>TypeScript</span></span></strong></p>
+    <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}><strong>Modern, high-performance Ethereum library for <span style={{ position: 'relative', display: 'inline-block', overflow: 'hidden', verticalAlign: 'middle', top: '-0.1em', width: '10ch', textAlign: 'left' }}><span id="language-text" style={{ display: 'inline-block', color: '#3178C6', transition: 'transform 0.2s ease-out' }}>Zig</span></span></strong></p>
 
     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '3rem' }}>
       <a href="/introduction"
@@ -32,7 +31,7 @@ mode: "custom"
          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.99)'; }}
          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
-        Why Tevm?
+        Why Voltaire?
       </a>
       <a href="/getting-started"
          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'currentColor', border: '2px solid rgba(128, 128, 128, 0.3)', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
@@ -42,7 +41,7 @@ mode: "custom"
          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
         Get Started
       </a>
-      <a href="https://github.com/evmts/tevm" target="_blank" rel="noopener"
+      <a href="https://github.com/evmts/voltaire" target="_blank" rel="noopener"
          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'currentColor', border: '2px solid rgba(128, 128, 128, 0.3)', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(128, 128, 128, 0.1)'; e.currentTarget.style.borderColor = 'rgba(128, 128, 128, 0.5)'; e.currentTarget.style.transform = 'scale(1.02)'; }}
          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(128, 128, 128, 0.3)'; e.currentTarget.style.transform = 'scale(1)'; }}
@@ -311,14 +310,14 @@ url = "https://tevm.sh/mcp"
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>📐</div>
           <div>
             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Simple API</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Write intuitive, readable code with Tevm. API maps directly to Ethereum specifications</p>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Write intuitive, readable code with Voltaire. API maps directly to Ethereum specifications</p>
           </div>
         </a>
         <a href="/getting-started/branded-types" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🛡️</div>
           <div>
             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Modern Type Safety</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Tevm utilizes branded types to provide the best possible TypeScript type safety for Ethereum</p>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Voltaire provides data-first primitives and strong typing in Zig for safe Ethereum development</p>
           </div>
         </a>
         <a href="/getting-started/wasm" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textDecoration: 'none', transition: 'all 0.15s ease', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 147, 30, 0.2)'; e.currentTarget.style.borderColor = 'rgba(212, 147, 30, 0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}>
@@ -346,394 +345,11 @@ url = "https://tevm.sh/mcp"
           <div style={{ fontSize: '2rem', color: '#D4931E', flexShrink: 0 }}>🌐</div>
           <div>
             <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '700', color: '#D4931E' }}>Multi-Platform</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Utilize Tevm in the browser, mobile, Node.js, Bun, native environments, Zig, WASM or C-FFI to use in Swift or other languages that support C-FFI</p>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#999' }}>Use Voltaire Zig in native apps and via WASM/C-FFI from other environments</p>
           </div>
         </a>
       </div>
     </div>
 
-    <div style={{ textAlign: 'left' }}>
-      <div id="editor-mount-point" style={{ maxWidth: '1000px', margin: '5rem auto 0' }}></div>
-    </div>
-
-    <script dangerouslySetInnerHTML={{__html: `
-      // Wait for full page load and React hydration
-      window.addEventListener('load', function() {
-        setTimeout(initMonaco, 500);
-        setTimeout(initTextAnimation, 500);
-        setTimeout(initTabIndicator, 500);
-        setTimeout(observeThemeChanges, 500);
-      });
-
-      function initTabIndicator() {
-        const claude = document.getElementById('claude-btn');
-        const indicator = document.getElementById('tab-indicator');
-
-        if (claude && indicator) {
-          const claudeRect = claude.getBoundingClientRect();
-          const containerRect = claude.parentElement.getBoundingClientRect();
-          indicator.style.left = (claudeRect.left - containerRect.left) + 'px';
-          indicator.style.width = claudeRect.width + 'px';
-        }
-      }
-
-      function initTextAnimation() {
-        // Language and platform animation
-        const languages = [
-          { name: 'TypeScript', color: '#3178C6' },
-          { name: 'WASM', color: '#654FF0' },
-          { name: 'Zig', color: '#F7A41D' },
-          { name: 'Browser', color: '#E34F26' },
-          { name: 'Serverless', color: '#FF9900' },
-          { name: 'Bun', color: '#FBF0DF' },
-          { name: 'Node', color: '#68A063' }
-        ];
-        let langIndex = 0;
-        const languageText = document.getElementById('language-text');
-
-        if (!languageText) {
-          console.error('language-text element not found');
-          return;
-        }
-
-        function animateLanguage() {
-          // Slide up (exit)
-          languageText.style.transform = 'translateY(-100%)';
-
-          setTimeout(() => {
-            langIndex = (langIndex + 1) % languages.length;
-            const lang = languages[langIndex];
-
-            languageText.textContent = lang.name;
-            languageText.style.color = lang.color;
-            languageText.style.transform = 'translateY(100%)';
-
-            setTimeout(() => {
-              languageText.style.transform = 'translateY(0)';
-            }, 50);
-          }, 200);
-        }
-
-        // Start animation cycle (every 5 seconds)
-        setInterval(animateLanguage, 5000);
-      }
-
-      // Detect current theme from Mintlify's DOM
-      function getCurrentTheme() {
-        return document.documentElement.classList.contains('dark') ? 'vs-dark' : 'vs';
-      }
-
-      // Setup code execution with Web Worker sandbox
-      function setupCodeExecution(editor) {
-        const runButton = document.getElementById('run-button');
-        const clearButton = document.getElementById('clear-console-button');
-        const consoleOutput = document.getElementById('console-output');
-
-        let currentWorker = null;
-        let executionTimeout = null;
-
-        // Create Web Worker for sandboxed execution
-        function createWorker() {
-          const workerCode = 'let Tevm = null;' +
-            'self.onmessage = async function(e) {' +
-            '  const { code, loadTevm } = e.data;' +
-            '  const console = {' +
-            '    log: (...args) => {' +
-            '      self.postMessage({' +
-            '        type: "log",' +
-            '        args: args.map(arg => {' +
-            '          if (typeof arg === "object") {' +
-            '            try { return JSON.stringify(arg, null, 2); }' +
-            '            catch { return String(arg); }' +
-            '          }' +
-            '          return String(arg);' +
-            '        })' +
-            '      });' +
-            '    },' +
-            '    error: (...args) => {' +
-            '      self.postMessage({' +
-            '        type: "error",' +
-            '        args: args.map(arg => String(arg))' +
-            '      });' +
-            '    },' +
-            '    warn: (...args) => {' +
-            '      self.postMessage({' +
-            '        type: "warn",' +
-            '        args: args.map(arg => String(arg))' +
-            '      });' +
-            '    }' +
-            '  };' +
-            '  if (loadTevm && !Tevm) {' +
-            '    try {' +
-            '      self.postMessage({ type: "log", args: ["Loading Tevm APIs..."] });' +
-            '      const module = await import("https://esm.sh/@tevm/index@1.0.0-next.100");' +
-            '      Tevm = module;' +
-            '      Object.assign(globalThis, module);' +
-            '      self.postMessage({ type: "log", args: ["Tevm loaded! Available: Address, Hex, Keccak256, etc."] });' +
-            '    } catch (err) {' +
-            '      self.postMessage({ type: "error", args: ["Failed to load Tevm: " + err.message] });' +
-            '    }' +
-            '  }' +
-            '  try {' +
-            '    const fn = new Function("console", "Tevm", code);' +
-            '    fn(console, Tevm);' +
-            '    self.postMessage({ type: "complete" });' +
-            '  } catch (error) {' +
-            '    self.postMessage({' +
-            '      type: "error",' +
-            '      args: [error.message]' +
-            '    });' +
-            '  }' +
-            '};';
-
-          const blob = new Blob([workerCode], { type: 'application/javascript' });
-          return new Worker(URL.createObjectURL(blob));
-        }
-
-        // Add log entry to console output
-        function addLog(type, args) {
-          const entry = document.createElement('div');
-          entry.style.marginBottom = '0.5rem';
-          entry.style.paddingLeft = '1rem';
-          entry.style.borderLeft = '3px solid';
-
-          if (type === 'log') {
-            entry.style.borderLeftColor = '#4CAF50';
-            entry.style.color = '#d4d4d4';
-          } else if (type === 'error') {
-            entry.style.borderLeftColor = '#f44336';
-            entry.style.color = '#f48771';
-          } else if (type === 'warn') {
-            entry.style.borderLeftColor = '#ff9800';
-            entry.style.color = '#dcdcaa';
-          }
-
-          entry.textContent = args.join(' ');
-          entry.style.whiteSpace = 'pre-wrap';
-          entry.style.wordWrap = 'break-word';
-
-          // Remove placeholder if present
-          const placeholder = consoleOutput.querySelector('[style*="italic"]');
-          if (placeholder) placeholder.remove();
-
-          consoleOutput.appendChild(entry);
-          consoleOutput.scrollTop = consoleOutput.scrollHeight;
-        }
-
-        // Execute code
-        function executeCode() {
-          // Clear previous output
-          consoleOutput.innerHTML = '';
-
-          // Terminate previous worker if running
-          if (currentWorker) {
-            currentWorker.terminate();
-            clearTimeout(executionTimeout);
-          }
-
-          // Update button state
-          runButton.textContent = '⏸ Running...';
-          runButton.disabled = true;
-          runButton.style.opacity = '0.7';
-
-          // Create new worker
-          currentWorker = createWorker();
-
-          // Set up timeout (5 seconds)
-          executionTimeout = setTimeout(() => {
-            currentWorker.terminate();
-            addLog('error', ['Execution timeout (5s limit)']);
-            resetButton();
-          }, 5000);
-
-          // Handle messages from worker
-          currentWorker.onmessage = (e) => {
-            const { type, args } = e.data;
-
-            if (type === 'complete') {
-              clearTimeout(executionTimeout);
-              resetButton();
-            } else if (type === 'log' || type === 'error' || type === 'warn') {
-              addLog(type, args);
-            }
-          };
-
-          // Handle worker errors
-          currentWorker.onerror = (error) => {
-            clearTimeout(executionTimeout);
-            addLog('error', ['Worker error:', error.message]);
-            resetButton();
-          };
-
-          // Get code and execute
-          const code = editor.getValue();
-          currentWorker.postMessage({ code, loadTevm: true });
-        }
-
-        function resetButton() {
-          runButton.textContent = '▶ Run Code';
-          runButton.disabled = false;
-          runButton.style.opacity = '1';
-        }
-
-        // Clear console
-        function clearConsole() {
-          consoleOutput.innerHTML = '<div style="color: #666; font-style: italic;">Console output will appear here...</div>';
-        }
-
-        // Event listeners
-        runButton.addEventListener('click', executeCode);
-        clearButton.addEventListener('click', clearConsole);
-
-        // Hover effects
-        runButton.addEventListener('mouseenter', () => {
-          if (!runButton.disabled) {
-            runButton.style.transform = 'scale(1.01)';
-            runButton.style.boxShadow = '0 2px 8px rgba(230, 162, 60, 0.3)';
-          }
-        });
-        runButton.addEventListener('mouseleave', () => {
-          runButton.style.transform = 'scale(1)';
-          runButton.style.boxShadow = 'none';
-        });
-
-        clearButton.addEventListener('mouseenter', () => {
-          clearButton.style.background = 'rgba(128, 128, 128, 0.1)';
-        });
-        clearButton.addEventListener('mouseleave', () => {
-          clearButton.style.background = 'transparent';
-        });
-      }
-
-      async function initMonaco() {
-        const mountPoint = document.getElementById('editor-mount-point');
-        if (!mountPoint) return;
-
-        mountPoint.innerHTML = \`
-          <h2 style="font-size: clamp(2rem, 5vw, 2.5rem); font-weight: 700; text-align: center; margin-bottom: 1rem; background: linear-gradient(135deg, #E6A23C 0%, #A0522D 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Try It Now</h2>
-          <p style="font-size: 1.1rem; color: #999; text-align: center; margin-bottom: 2rem;">
-            Edit and experiment with live Tevm code examples.
-          </p>
-          <div id="editor-container" style="width: 100%; height: 600px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px 12px 0 0; overflow: hidden; position: relative;"></div>
-          <div style="display: flex; gap: 0; border: 1px solid rgba(255, 255, 255, 0.1); border-top: none;">
-            <button id="run-button" style="flex: 1; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #E6A23C 0%, #A0522D 100%); color: white; border: none; font-weight: 600; cursor: pointer; transition: all 0.15s ease; font-size: 0.95rem;">
-              ▶ Run Code
-            </button>
-            <button id="clear-console-button" style="flex: 0 0 auto; padding: 0.75rem 1.5rem; background: transparent; color: #E6A23C; border: none; border-left: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; transition: all 0.15s ease; font-size: 0.95rem; font-weight: 600;">
-              Clear
-            </button>
-          </div>
-          <div id="console-output" style="min-height: 150px; max-height: 300px; overflow-y: auto; background: #1e1e1e; border: 1px solid rgba(255, 255, 255, 0.1); border-top: none; border-radius: 0 0 12px 12px; padding: 1rem; font-family: 'Menlo, Monaco, Courier New, monospace'; font-size: 0.875rem; line-height: 1.6; color: #d4d4d4; word-wrap: break-word; white-space: pre-wrap;">
-            <div style="color: #858585; font-style: italic;">Console output will appear here...</div>
-          </div>
-        \`;
-
-        try {
-          const { init } = await import('https://esm.sh/modern-monaco@0.2.2');
-          const monaco = await init();
-
-          const code = '// Try out Tevm primitives in your browser!\\n' +
-            '// All Tevm APIs are available globally\\n' +
-            '// Click "Run Code" to execute\\n' +
-            '\\n' +
-            '// Address utilities\\n' +
-            'const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");\\n' +
-            'console.log("Address:", Address.toHex(addr));\\n' +
-            'console.log("Checksummed:", Address.toChecksummed(addr));\\n' +
-            '\\n' +
-            '// Hex encoding\\n' +
-            'const message = "Hello, Tevm!";\\n' +
-            'const hexMsg = Hex.fromString(message);\\n' +
-            'console.log("Hex encoded:", hexMsg);\\n' +
-            'console.log("Decoded:", Hex.toString(hexMsg));\\n' +
-            '\\n' +
-            '// Keccak256 hashing\\n' +
-            'const hash = Keccak256.hash(Hex.fromString("Voltaire"));\\n' +
-            'console.log("Keccak256 hash:", Hex.fromBytes(hash));\\n' +
-            '\\n' +
-            '// Uint256 operations\\n' +
-            'const a = Uint256.from(100n);\\n' +
-            'const b = Uint256.from(42n);\\n' +
-            'console.log("100 + 42 =", Uint256.toBigInt(Uint256.add(a, b)));\\n' +
-            '\\n' +
-            'console.log("\\\\n✓ Try modifying the code above!");';
-
-          const model = monaco.editor.createModel(code, 'typescript');
-
-          const editor = monaco.editor.create(document.getElementById('editor-container'), {
-            model: model,
-            theme: getCurrentTheme(),
-            fontSize: 14,
-            lineHeight: 21,
-            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            padding: { top: 16, bottom: 16, left: 16 },
-            automaticLayout: true,
-            lineNumbers: 'on',
-            glyphMargin: false,
-            folding: false,
-            lineDecorationsWidth: 0,
-            lineNumbersMinChars: 3,
-            renderLineHighlight: 'line',
-            scrollbar: {
-              vertical: 'visible',
-              horizontal: 'visible',
-              useShadows: false,
-              verticalScrollbarSize: 10,
-              horizontalScrollbarSize: 10
-            },
-            tabSize: 2,
-            insertSpaces: true
-          });
-
-          // Add CSS to increase gap between line numbers and content
-          const style = document.createElement('style');
-          style.textContent = \`
-            .monaco-editor .margin-view-overlays .line-numbers {
-              padding-right: 16px !important;
-            }
-          \`;
-          document.head.appendChild(style);
-
-          // Store globally for theme updates
-          window.monacoInstance = monaco;
-          window.monacoEditor = editor;
-
-          // Setup code execution with Web Worker
-          setupCodeExecution(editor);
-
-          // Trigger auto-formatting
-          setTimeout(() => {
-            editor.getAction('editor.action.formatDocument')?.run();
-          }, 100);
-
-        } catch (e) {
-          document.getElementById('editor-container').innerHTML = '<div style="padding: 2rem; text-align: center; color: #999;">Failed to load editor</div>';
-        }
-      }
-
-      // Watch for theme changes
-      function observeThemeChanges() {
-        const observer = new MutationObserver(() => {
-          if (window.monacoInstance && window.monacoEditor) {
-            const container = document.getElementById('editor-container');
-            // Re-initialize if container was destroyed
-            if (!container || !container.parentElement) {
-              initMonaco();
-            } else {
-              // Update theme on existing editor
-              window.monacoInstance.editor.setTheme(getCurrentTheme());
-            }
-          }
-        });
-
-        observer.observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ['class']
-        });
-      }
-    `}}>
-    </script>
+    {/* Removed interactive editor for release */}
   </div>
-
