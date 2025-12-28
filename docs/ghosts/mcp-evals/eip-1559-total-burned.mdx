@@ -17,22 +17,32 @@ ANSWER: <eth_amount>
 2. Multiply to get wei burned; sum across the range.
 3. Convert total wei to ETH accurately (avoid floating point issues).
 
-## Example (TypeScript)
+## Example (TypeScript + Voltaire JSON-RPC)
 
 ```ts
-import { createPublicClient, http, formatEther } from 'viem'
-import { mainnet } from 'viem/chains'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
-const client = createPublicClient({ chain: mainnet, transport: http(process.env.ETHEREUM_RPC_URL!) })
+const provider = createJsonRpcProvider(process.env.ETHEREUM_RPC_URL!)
+
+function formatEth(wei: bigint): string {
+  const s = wei.toString()
+  const pad = 18
+  if (s.length <= pad) return `0.${s.padStart(pad, '0')}`.replace(/\.0+$/, '')
+  const int = s.slice(0, -pad)
+  const frac = s.slice(-pad).replace(/0+$/, '')
+  return frac ? `${int}.${frac}` : int
+}
 
 async function totalBurned(start: bigint, end: bigint): Promise<string> {
   let total = 0n
   for (let i = start; i <= end; i++) {
-    const b = await client.getBlock({ blockNumber: i })
-    const base = b.baseFeePerGas ?? 0n
-    total += base * b.gasUsed
+    const hexBlock = `0x${i.toString(16)}`
+    const b = await provider.eth_getBlockByNumber(hexBlock, false)
+    const base = BigInt(b.baseFeePerGas ?? '0x0')
+    const gasUsed = BigInt(b.gasUsed)
+    total += base * gasUsed
   }
-  return formatEther(total)
+  return formatEth(total)
 }
 
 const start = 13_000_000n
@@ -40,4 +50,3 @@ const end = 13_000_100n
 const burned = await totalBurned(start, end)
 console.log(`ANSWER: ${burned}`)
 ```
-

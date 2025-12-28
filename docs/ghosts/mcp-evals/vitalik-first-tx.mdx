@@ -20,27 +20,25 @@ ANSWER: 0x...
 - Query earliest historical transactions via an indexer-like approach if available; otherwise, use RPC with range scans and `eth_getLogs` on Transfer-like events if relevant.
 - If an archive node is available, scanning from genesis with stepping is feasible.
 
-## Example (TypeScript)
+## Example (TypeScript + Voltaire JSON-RPC)
 
 ```ts
-import { createPublicClient, http } from 'viem'
-import { mainnet } from 'viem/chains'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
-const client = createPublicClient({ chain: mainnet, transport: http(process.env.ETHEREUM_RPC_URL!) })
+const provider = createJsonRpcProvider(process.env.ETHEREUM_RPC_URL!)
 const VITALIK = '0xab5801a7d398351b8be11c439e05c5b3259aec9b'
 
-// Pseudocode placeholder for paging through tx history if you maintain an index.
-// With plain RPC only, consider scanning blocks in chunks and filtering tx.from.
-async function findFirstTx(): Promise<`0x${string}`> {
+// Pseudocode for plain-RPC scan: walk blocks, fetch transactions, filter by from.
+async function findFirstTx(): Promise<string> {
   let from = 0n
   const step = 50_000n
   while (true) {
     const to = from + step
-    const block = await client.getBlock({ blockNumber: to }).catch(() => null)
+    const block = await provider.eth_getBlockByNumber(`0x${to.toString(16)}`, false).catch(() => null)
     if (!block) break
     for (let i = from; i <= to; i++) {
-      const b = await client.getBlock({ blockNumber: i, includeTransactions: true })
-      const tx = b.transactions.find((t) => t.from?.toLowerCase() === VITALIK)
+      const b = await provider.eth_getBlockByNumber(`0x${i.toString(16)}`, true)
+      const tx = b.transactions.find((t: any) => (t.from || '').toLowerCase() === VITALIK)
       if (tx) return tx.hash
     }
     from = to + 1n
@@ -51,4 +49,3 @@ async function findFirstTx(): Promise<`0x${string}`> {
 const hash = await findFirstTx()
 console.log(`ANSWER: ${hash}`)
 ```
-

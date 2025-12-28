@@ -14,10 +14,9 @@ ANSWER: 0x...
 ## Example (TypeScript)
 
 ```ts
-import { keccak256 } from '@tevm/voltaire/crypto/keccak256'
+import { Keccak256 } from '@tevm/voltaire/Keccak256'
 
 const input = '0x1234567890abcdef'
-const out = keccak256.fromHex(input)
+const out = Keccak256.hashHex(input)
 console.log(`ANSWER: ${out}`)
 ```
-
