@@ -22,6 +22,9 @@ ETHEREUM_RPC_URL=https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY
 
 # Optional: Anthropic API key (if not using system credentials)
 ANTHROPIC_API_KEY=sk-ant-...
+
+# Optional: override MCP server (useful for local MCP docs testing)
+MCP_SERVER_URL=http://localhost:8787/mcp
 ```
 
 **RPC Provider Options:**
@@ -49,7 +52,7 @@ bun run test:mcp --reporter=verbose
 Each test:
 
 1. **Defines a prompt** with a clear Ethereum challenge (e.g., "Find the block hash where first CryptoPunk was minted")
-2. **Launches Claude** with access to the Voltaire MCP server at `https://voltaire.tevm.sh/mcp`
+2. **Launches Claude** with access to the Voltaire MCP server at `https://voltaire.tevm.sh/mcp` (overridable via `MCP_SERVER_URL`)
 3. **Claude generates code** using Voltaire primitives to solve the challenge
 4. **Executes the script** and captures the output
 5. **Validates the answer** against known ground truth from `fixtures/expected-answers.ts`

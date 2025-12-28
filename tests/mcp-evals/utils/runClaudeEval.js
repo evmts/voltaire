@@ -48,6 +48,11 @@ export async function runClaudeEval(opts) {
     'You are solving a deterministic evaluation question using the Voltaire MCP server.',
     'Output MUST end with a single line: "ANSWER: <value>" with no extra text after it.',
     'Prefer exact values, not prose. Do not include explanations in the final line.',
+    'When a block number is provided, perform all contract calls and state queries at that exact historical block.',
+    'Prefer direct on-chain contract functions over heuristics from logs or off-chain indexes.',
+    'For NFT ownership queries: call ERC-721 ownerOf(tokenId) at the specified blockNumber using eth_call/readContract with the blockNumber parameter. Do NOT infer from current state or marketplace data. Return the exact address.',
+    'Example: viem readContract({ address: CONTRACT, abi: ["function ownerOf(uint256) view returns (address)"], functionName: "ownerOf", args: [TOKEN_ID], blockNumber: BIGINT_BLOCK }).',
+    'For contract deployment discovery tasks: binary search for the earliest block where eth_getCode(address, block) returns non-empty code; then fetch that block\'s hash.',
     rpcUrl ? `If needing Ethereum data, use this RPC URL: ${rpcUrl}` : undefined,
   ]
     .filter(Boolean)

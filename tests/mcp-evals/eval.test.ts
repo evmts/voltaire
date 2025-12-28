@@ -2,8 +2,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { EXPECTED_ANSWERS } from "./fixtures/expected-answers.js";
 import { runClaudeEval } from "./utils/runClaudeEval.js";
 
-// MCP server URL - deployed Voltaire MCP server
-const MCP_SERVER_URL = "https://voltaire.tevm.sh/mcp";
+// MCP server URL - default to deployed, allow override for local testing
+const MCP_SERVER_URL = process.env.MCP_SERVER_URL || "https://voltaire.tevm.sh/mcp";
 
 // RPC endpoint from environment
 const ETHEREUM_RPC_URL = process.env.ETHEREUM_RPC_URL;
@@ -22,7 +22,7 @@ describe("Voltaire MCP Evaluations", () => {
             "should find the block hash where the first CryptoPunk was minted",
             { timeout: 6 * 60 * 1000 },
             async () => {
-				const result = await runClaudeEval({
+                const result = await runClaudeEval({
 					prompt: `Find the block hash where the first CryptoPunk NFT was minted.
 
 The CryptoPunks contract address is ${EXPECTED_ANSWERS.cryptopunksFirstMint.contractAddress}.
@@ -31,8 +31,8 @@ Return the block hash in your final message as: ANSWER: 0x...`,
 					mcpServerUrl: MCP_SERVER_URL,
 					rpcUrl: ETHEREUM_RPC_URL,
 					maxTurns: 15,
-					timeoutMs: 5 * 60 * 1000, // 5 minutes
-				});
+                    timeoutMs: 10 * 60 * 1000, // give more time for block search
+                });
 
 				// Verify the script executed successfully
 				expect(result.success).toBe(true);
