@@ -3,8 +3,8 @@
  */
 
 /**
- * @typedef {import('../../types/index.js').Data} Data
- * @typedef {import('../../types/index.js').Quantity} Quantity
+ * @typedef {import('../../index.js').Data} Data
+ * @typedef {import('../../index.js').Quantity} Quantity
  * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  */
 

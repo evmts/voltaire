@@ -10,4 +10,4 @@ export * from "./eth/methods.js";
 export * from "./debug/methods.js";
 
 // Export primitive types separately
-export * as types from "./types/index.js";
+export * as types from "./index.js";

@@ -4,10 +4,10 @@
 
 /**
  * @typedef {import('../../../primitives/Address/AddressType.js').AddressType} Address
- * @typedef {import('../../types/index.js').Hash} Hash
- * @typedef {import('../../types/index.js').Quantity} Quantity
- * @typedef {import('../../types/index.js').BlockTag} BlockTag
- * @typedef {import('../../types/index.js').BlockSpec} BlockSpec
+ * @typedef {import('../../index.js').Hash} Hash
+ * @typedef {import('../../index.js').Quantity} Quantity
+ * @typedef {import('../../index.js').BlockTag} BlockTag
+ * @typedef {import('../../index.js').BlockSpec} BlockSpec
  * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  * @typedef {import('../call/eth_call.js').CallParams} CallParams
  */

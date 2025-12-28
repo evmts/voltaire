@@ -35,6 +35,7 @@
 		"src/content/docs/primitives/state",
 		"astro.config.mjs",
 		"src/components/**/*",
-		"src/env.d.ts"
+		"src/env.d.ts",
+		"src/jsonrpc/**/*"
 	]
 }

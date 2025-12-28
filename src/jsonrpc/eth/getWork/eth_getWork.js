@@ -3,7 +3,7 @@
  */
 
 /**
- * @typedef {import('../../types/index.js').Data} Data
+ * @typedef {import('../../index.js').Data} Data
  * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  */
 

@@ -3,9 +3,9 @@
  */
 
 /**
- * @typedef {import('../../types/index.js').Hash} Hash
- * @typedef {import('../../types/index.js').Quantity} Quantity
- * @typedef {import('../../types/index.js').Block} Block
+ * @typedef {import('../../index.js').Hash} Hash
+ * @typedef {import('../../index.js').Quantity} Quantity
+ * @typedef {import('../../index.js').Block} Block
  * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
  */
 
