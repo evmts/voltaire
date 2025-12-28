@@ -1,4 +1,4 @@
-import { Uint256 } from "voltaire";
+import { Uint256 } from "@tevm/voltaire";
 // Create Uint256 from bigint
 const value = Uint256.fromBigInt(42n);
 

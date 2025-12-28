@@ -1,7 +1,7 @@
-import { Withdrawal } from "voltaire";
+import { Withdrawal } from "@tevm/voltaire";
 // Valid withdrawal
 try {
-	const valid = Withdrawal.from({
+	const valid = Withdrawal({
 		index: 1000000n,
 		validatorIndex: 123456,
 		address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -9,7 +9,7 @@ try {
 	});
 } catch (error) {}
 try {
-	Withdrawal.from({
+	Withdrawal({
 		index: -1,
 		validatorIndex: 123456,
 		address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -17,7 +17,7 @@ try {
 	});
 } catch (error) {}
 try {
-	Withdrawal.from({
+	Withdrawal({
 		index: 1000000n,
 		validatorIndex: -1,
 		address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -25,7 +25,7 @@ try {
 	});
 } catch (error) {}
 try {
-	Withdrawal.from({
+	Withdrawal({
 		index: 1000000n,
 		validatorIndex: 123456,
 		address: "0xinvalid",
@@ -33,7 +33,7 @@ try {
 	});
 } catch (error) {}
 try {
-	Withdrawal.from({
+	Withdrawal({
 		index: 1000000n,
 		validatorIndex: 123456,
 		address: "0x742d35Cc",
@@ -41,7 +41,7 @@ try {
 	});
 } catch (error) {}
 try {
-	const zero = Withdrawal.from({
+	const zero = Withdrawal({
 		index: 1000000n,
 		validatorIndex: 123456,
 		address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -49,21 +49,21 @@ try {
 	});
 } catch (error) {}
 try {
-	const large = Withdrawal.from({
+	const large = Withdrawal({
 		index: 1000000n,
 		validatorIndex: 123456,
 		address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 		amount: 100000000000n, // 100 ETH (unlikely but valid)
 	});
 } catch (error) {}
-const correctGwei = Withdrawal.from({
+const correctGwei = Withdrawal({
 	index: 1000000n,
 	validatorIndex: 123456,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 	amount: 32000000000n, // 32 ETH in Gwei
 });
 
-const wrongWei = Withdrawal.from({
+const wrongWei = Withdrawal({
 	index: 1000000n,
 	validatorIndex: 123456,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",

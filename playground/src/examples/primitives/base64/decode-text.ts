@@ -1,4 +1,4 @@
-import { Base64 } from "voltaire";
+import { Base64 } from "@tevm/voltaire";
 const simple = "SGVsbG8sIFdvcmxkIQ==";
 const simpleDecoded = Base64.decodeToString(simple);
 const vectors = [

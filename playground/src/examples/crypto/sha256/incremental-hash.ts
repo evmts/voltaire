@@ -1,4 +1,4 @@
-import { Hex, SHA256 } from "voltaire";
+import { Bytes, Hex, SHA256 } from "@tevm/voltaire";
 // Incremental hashing for streaming data
 // Useful when processing large files or streams
 
@@ -20,9 +20,9 @@ const matches = hash.every((b, i) => b === oneShot[i]);
 const fileHasher = SHA256.create();
 
 const fileChunks = [
-	new Uint8Array(1024).fill(0x41), // 1KB of 'A'
-	new Uint8Array(1024).fill(0x42), // 1KB of 'B'
-	new Uint8Array(1024).fill(0x43), // 1KB of 'C'
+	Bytes(Array(1024).fill(0x41)), // 1KB of 'A'
+	Bytes(Array(1024).fill(0x42)), // 1KB of 'B'
+	Bytes(Array(1024).fill(0x43)), // 1KB of 'C'
 ];
 
 fileChunks.forEach((chunk, i) => {

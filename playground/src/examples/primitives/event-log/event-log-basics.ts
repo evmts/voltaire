@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash } from "voltaire";
+import { Address, EventLog, Hash, Bytes, Bytes32 } from "@tevm/voltaire";
 // ERC20 Transfer event: Transfer(address indexed from, address indexed to, uint256 value)
 // Event signature hash: keccak256("Transfer(address,address,uint256)")
 const transferSig = Hash(
@@ -14,7 +14,7 @@ const toAddr = Hash(
 const transferLog = EventLog.create({
 	address: Address("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"), // USDC
 	topics: [transferSig, fromAddr, toAddr], // topic0 = signature, topic1-2 = indexed params
-	data: new Uint8Array([
+	data: Bytes([
 		// 100 USDC (6 decimals) = 100000000 = 0x05F5E100
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 5, 245, 225, 0,
@@ -66,21 +66,21 @@ const filter = {
 const log1 = EventLog.create({
 	address: usdcAddr,
 	topics: [transferSig, fromAddr, toAddr],
-	data: new Uint8Array(32),
+	data: Bytes32.zero(),
 	blockNumber: 18000000n,
 });
 
 const log2 = EventLog.create({
 	address: daiAddr,
 	topics: [transferSig, fromAddr, toAddr],
-	data: new Uint8Array(32),
+	data: Bytes32.zero(),
 	blockNumber: 18000001n,
 });
 
 const log3 = EventLog.create({
 	address: usdcAddr,
 	topics: [transferSig, toAddr, fromAddr], // Different direction
-	data: new Uint8Array(32),
+	data: Bytes32.zero(),
 	blockNumber: 18000002n,
 });
 

@@ -1,5 +1,5 @@
-import { Address, BlockHash, BlockHeader, Hash } from "voltaire";
-const preMergeHeader = BlockHeader.from({
+import { Address, BlockHash, BlockHeader, Hash, Bytes } from "@tevm/voltaire";
+const preMergeHeader = BlockHeader({
 	parentHash:
 		"0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6",
 	ommersHash:
@@ -11,7 +11,7 @@ const preMergeHeader = BlockHeader.from({
 		"0x578f087d49e0db8d577c28edd5e19bc7e7bac8f9d8db87f11aede4ce1f8dfa13",
 	receiptsRoot:
 		"0x9e75c4c8cf9b8e97b85b6f0e3e2be8fc61f5ea6d5c1c90f7e48e6d0c3d2e1f0a",
-	logsBloom: new Uint8Array(256),
+	logsBloom: Bytes.zero(256),
 	difficulty: 2n ** 40n, // ~1.1 trillion
 	number: 15537393n, // Pre-merge block
 	gasLimit: 30000000n,
@@ -19,9 +19,9 @@ const preMergeHeader = BlockHeader.from({
 	timestamp: 1663224179n, // September 15, 2022
 	extraData: new TextEncoder().encode("Mined with love"),
 	mixHash: "0x7c3e9b6e4a1f2d8c5b3a6f9e8d7c6b5a4e3d2c1b0a9f8e7d6c5b4a3e2d1c0b9a",
-	nonce: new Uint8Array(8).fill(0x42),
+	nonce: Bytes.repeat(0x42, 8),
 });
-const postMergeHeader = BlockHeader.from({
+const postMergeHeader = BlockHeader({
 	parentHash:
 		"0xf2e5d8a1b3c4e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1",
 	ommersHash:
@@ -33,18 +33,18 @@ const postMergeHeader = BlockHeader.from({
 		"0xb2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3",
 	receiptsRoot:
 		"0xc3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4",
-	logsBloom: new Uint8Array(256),
+	logsBloom: Bytes.zero(256),
 	difficulty: 0n, // Zero difficulty post-merge
 	number: 15537394n, // First post-merge block
 	gasLimit: 30000000n,
 	gasUsed: 15234567n,
 	timestamp: 1663224191n,
-	extraData: new Uint8Array(0),
+	extraData: Bytes.zero(0),
 	mixHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-	nonce: new Uint8Array(8), // Zero nonce post-merge
+	nonce: Bytes.zero(8), // Zero nonce post-merge
 	baseFeePerGas: 15000000000n, // EIP-1559: 15 gwei
 });
-const shanghaiHeader = BlockHeader.from({
+const shanghaiHeader = BlockHeader({
 	parentHash:
 		"0xa1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
 	ommersHash:
@@ -56,20 +56,20 @@ const shanghaiHeader = BlockHeader.from({
 		"0xe5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6",
 	receiptsRoot:
 		"0xf6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7",
-	logsBloom: new Uint8Array(256),
+	logsBloom: Bytes.zero(256),
 	difficulty: 0n,
 	number: 17034870n, // Post-Shanghai
 	gasLimit: 30000000n,
 	gasUsed: 18345678n,
 	timestamp: 1681338455n, // April 2023
-	extraData: new Uint8Array(0),
+	extraData: Bytes.zero(0),
 	mixHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-	nonce: new Uint8Array(8),
+	nonce: Bytes.zero(8),
 	baseFeePerGas: 20000000000n,
 	withdrawalsRoot:
 		"0xa7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8", // Shanghai: withdrawals
 });
-const cancunHeader = BlockHeader.from({
+const cancunHeader = BlockHeader({
 	parentHash:
 		"0xb1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2",
 	ommersHash:
@@ -81,15 +81,15 @@ const cancunHeader = BlockHeader.from({
 		"0xd3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4",
 	receiptsRoot:
 		"0xe4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5",
-	logsBloom: new Uint8Array(256),
+	logsBloom: Bytes.zero(256),
 	difficulty: 0n,
 	number: 19426587n, // Post-Cancun
 	gasLimit: 30000000n,
 	gasUsed: 14567890n,
 	timestamp: 1710338455n, // March 2024
-	extraData: new Uint8Array(0),
+	extraData: Bytes.zero(0),
 	mixHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-	nonce: new Uint8Array(8),
+	nonce: Bytes.zero(8),
 	baseFeePerGas: 12000000000n,
 	withdrawalsRoot:
 		"0xf5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6",

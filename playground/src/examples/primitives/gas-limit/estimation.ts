@@ -1,4 +1,4 @@
-import { Gas } from "voltaire";
+import { Gas } from "@tevm/voltaire";
 // Use constants for well-known operations
 const ethTransfer = Gas.gasLimitFrom(Gas.SIMPLE_TRANSFER);
 

@@ -1,4 +1,4 @@
-import { Bytes } from "voltaire";
+import { Bytes } from "@tevm/voltaire";
 // Create independent copy
 const original = Bytes.fromHex("0x1234");
 const copy = Bytes.clone(original);

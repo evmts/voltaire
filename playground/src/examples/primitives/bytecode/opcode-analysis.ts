@@ -1,4 +1,4 @@
-import { Bytecode } from "voltaire";
+import { Bytecode } from "@tevm/voltaire";
 // Example: Opcode analysis and instruction parsing
 
 // Complex bytecode with various opcode types

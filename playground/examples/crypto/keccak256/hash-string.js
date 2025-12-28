@@ -1,6 +1,5 @@
 // Keccak256: Ethereum's primary hash function
-import * as Keccak256 from "../../../../src/crypto/Keccak256/index.js";
-import * as Hex from "../../../../src/primitives/Hex/index.js";
+import { Hex, Keccak256 } from "@tevm/voltaire";
 
 // Hash a string - returns 32-byte Uint8Array
 const hash = Keccak256.hashString("Hello Voltaire!");

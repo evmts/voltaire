@@ -1,8 +1,8 @@
-import { Address, Authorization } from "voltaire";
+import { Address, Authorization, Bytes, Bytes32 } from "@tevm/voltaire";
 
-const delegate1 = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
-const delegate2 = Address.from("0xd8da6bf26964af9d7eed9e03e53415d37aa96045");
-const privateKey = new Uint8Array(32).fill(1);
+const delegate1 = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+const delegate2 = Address("0xd8da6bf26964af9d7eed9e03e53415d37aa96045");
+const privateKey = Bytes32.zero().fill(1);
 
 // Create base authorization
 const auth1 = Authorization.sign(

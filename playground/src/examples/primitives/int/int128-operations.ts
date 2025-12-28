@@ -1,4 +1,4 @@
-import { Int128 } from "voltaire";
+import { Int128 } from "@tevm/voltaire";
 const large_pos = Int128.fromBigInt(123456789012345678901234567890n);
 const large_neg = Int128.fromBigInt(-123456789012345678901234567890n);
 const medium = Int128.fromBigInt(1000000000000000000n);

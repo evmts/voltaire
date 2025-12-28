@@ -1,4 +1,4 @@
-import { Blake2, Hex } from "voltaire";
+import { Blake2, Bytes, Hex } from "@tevm/voltaire";
 // Build Merkle tree using Blake2b for fast hashing
 
 function merkleRoot(leaves: Uint8Array[], outputSize = 32): Uint8Array {
@@ -17,9 +17,7 @@ function merkleRoot(leaves: Uint8Array[], outputSize = 32): Uint8Array {
 			const right = hashes[i + 1] || left; // Duplicate last if odd
 
 			// Concatenate and hash
-			const combined = new Uint8Array(outputSize * 2);
-			combined.set(left, 0);
-			combined.set(right, outputSize);
+			const combined = Bytes.concat(left, right);
 			nextLevel.push(Blake2.hash(combined, outputSize));
 		}
 

@@ -1,5 +1,5 @@
-import { Base64 } from "voltaire";
-const data = new Uint8Array([72, 101, 108, 108, 111]);
+import { Base64, Bytes, Bytes32 } from "@tevm/voltaire";
+const data = Bytes([72, 101, 108, 108, 111]);
 const encoded = Base64.encode(data);
 const decoded = Base64.decode(encoded);
 const matches = data.every((byte, i) => byte === decoded[i]);
@@ -19,13 +19,13 @@ for (const str of strings) {
 	const match = decoded === str ? "✓" : "✗";
 }
 const edgeCases = [
-	{ desc: "Empty", data: new Uint8Array([]) },
-	{ desc: "Single byte", data: new Uint8Array([0x42]) },
-	{ desc: "All zeros", data: new Uint8Array(32) },
-	{ desc: "All 0xFF", data: new Uint8Array(32).fill(255) },
+	{ desc: "Empty", data: Bytes([]) },
+	{ desc: "Single byte", data: Bytes([0x42]) },
+	{ desc: "All zeros", data: Bytes32.zero() },
+	{ desc: "All 0xFF", data: Bytes32.zero().fill(255) },
 	{
 		desc: "Sequential",
-		data: new Uint8Array(Array.from({ length: 100 }, (_, i) => i)),
+		data: Bytes(Array.from({ length: 100 }, (_, i) => i)),
 	},
 ];
 
@@ -35,10 +35,10 @@ for (const { desc, data } of edgeCases) {
 	const match = data.every((byte, i) => byte === decoded[i]);
 }
 const urlSafeCases = [
-	new Uint8Array([]),
-	new Uint8Array([255]),
-	new Uint8Array([255, 254, 253, 252, 251]),
-	new Uint8Array(Array.from({ length: 50 }, (_, i) => (i * 5) % 256)),
+	Bytes([]),
+	Bytes([255]),
+	Bytes([255, 254, 253, 252, 251]),
+	Bytes(Array.from({ length: 50 }, (_, i) => (i * 5) % 256)),
 ];
 
 for (const data of urlSafeCases) {
@@ -46,10 +46,10 @@ for (const data of urlSafeCases) {
 	const decoded = Base64.decodeUrlSafe(encoded);
 	const match = data.every((byte, i) => byte === decoded[i]);
 }
-const original = new Uint8Array([1, 2, 3, 4, 5]);
+const original = Bytes([1, 2, 3, 4, 5]);
 
 // Standard branded
-const brandedStd = Base64.from(original);
+const brandedStd = Base64(original);
 const bytesFromBranded = Base64.toBytes(brandedStd);
 const matchStd = original.every((byte, i) => byte === bytesFromBranded[i]);
 
@@ -57,15 +57,15 @@ const matchStd = original.every((byte, i) => byte === bytesFromBranded[i]);
 const brandedUrl = Base64.fromUrlSafe(original);
 const bytesFromUrl = Base64.toBytesUrlSafe(brandedUrl);
 const matchUrl = original.every((byte, i) => byte === bytesFromUrl[i]);
-const testData = new Uint8Array([255, 254, 253]);
-const standard = Base64.from(testData);
+const testData = Bytes([255, 254, 253]);
+const standard = Base64(testData);
 const urlSafe = Base64.toBase64Url(standard);
 const backToStandard = Base64.toBase64(urlSafe);
 const finalBytes = Base64.toBytes(backToStandard);
 const matchConversion = testData.every((byte, i) => byte === finalBytes[i]);
 const sizes = [100, 1000, 10000];
 for (const size of sizes) {
-	const large = new Uint8Array(size);
+	const large = Bytes.zero(size);
 	for (let i = 0; i < size; i++) large[i] = (i * 13 + 7) % 256;
 
 	const start = performance.now();

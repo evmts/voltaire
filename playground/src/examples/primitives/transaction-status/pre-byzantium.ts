@@ -1,5 +1,5 @@
-import { type Uint256Type } from "voltaire";
-import { TransactionStatus } from "voltaire";
+import { type Uint256Type } from "@tevm/voltaire";
+import { TransactionStatus } from "@tevm/voltaire";
 
 // Byzantium fork: block 4,370,000 on mainnet (October 2017)
 // Before this, receipts had no status field

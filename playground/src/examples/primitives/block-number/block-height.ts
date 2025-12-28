@@ -1,16 +1,16 @@
-import { BlockNumber } from "voltaire";
+import { BlockNumber } from "@tevm/voltaire";
 // Genesis and early milestones
-const genesis = BlockNumber.from(0);
-const firstMillion = BlockNumber.from(1000000);
-const fiveMillion = BlockNumber.from(5000000);
-const tenMillion = BlockNumber.from(10000000);
+const genesis = BlockNumber(0);
+const firstMillion = BlockNumber(1000000);
+const fiveMillion = BlockNumber(5000000);
+const tenMillion = BlockNumber(10000000);
 
-const fifteenMillion = BlockNumber.from(15000000);
-const twentyMillion = BlockNumber.from(20000000);
-const currentHeight = BlockNumber.from(21000000);
+const fifteenMillion = BlockNumber(15000000);
+const twentyMillion = BlockNumber(20000000);
+const currentHeight = BlockNumber(21000000);
 
 // Calculate blocks until next million
-const nextMilestone = BlockNumber.from(22000000n);
+const nextMilestone = BlockNumber(22000000n);
 const blocksUntilNext =
 	BlockNumber.toBigInt(nextMilestone) - BlockNumber.toBigInt(currentHeight);
 
@@ -22,8 +22,8 @@ const daysUntilNext = hoursUntilNext / 24n;
 // Blocks per time period (post-Merge: ~12 sec blocks)
 const BLOCKS_PER_YEAR = 7200n * 365n; // ~2,628,000
 
-const mergeBl = BlockNumber.from(15537394); // Sept 2022
-const currentBl = BlockNumber.from(21000000); // ~Oct 2024
+const mergeBl = BlockNumber(15537394); // Sept 2022
+const currentBl = BlockNumber(21000000); // ~Oct 2024
 
 const blocksSinceMerge =
 	BlockNumber.toBigInt(currentBl) - BlockNumber.toBigInt(mergeBl);
@@ -38,8 +38,8 @@ const ranges = [
 ];
 
 ranges.forEach(({ name, start, end }) => {
-	const startBlock = BlockNumber.from(start);
-	const endBlock = BlockNumber.from(end);
+	const startBlock = BlockNumber(start);
+	const endBlock = BlockNumber(end);
 	const span =
 		BlockNumber.toBigInt(endBlock) - BlockNumber.toBigInt(startBlock);
 });
@@ -52,18 +52,18 @@ function isValidHeight(block: BlockNumber.BlockNumberType): boolean {
 }
 
 const testHeights = [
-	BlockNumber.from(0),
-	BlockNumber.from(10000000),
-	BlockNumber.from(21000000),
-	BlockNumber.from(25000000),
+	BlockNumber(0),
+	BlockNumber(10000000),
+	BlockNumber(21000000),
+	BlockNumber(25000000),
 ];
 testHeights.forEach((h) => {});
 
 // Create checkpoints every N blocks
 const CHECKPOINT_INTERVAL = 100000n;
-const base = BlockNumber.from(20000000);
+const base = BlockNumber(20000000);
 for (let i = 0n; i < 5n; i++) {
-	const checkpoint = BlockNumber.from(
+	const checkpoint = BlockNumber(
 		BlockNumber.toBigInt(base) + i * CHECKPOINT_INTERVAL,
 	);
 }

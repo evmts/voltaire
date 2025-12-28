@@ -1,4 +1,4 @@
-import { Bytecode } from "voltaire";
+import { Bytecode } from "@tevm/voltaire";
 // Example: Gas analysis and cost calculation
 
 // Simple bytecode with known gas costs

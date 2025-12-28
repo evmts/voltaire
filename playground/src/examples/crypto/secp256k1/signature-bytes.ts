@@ -1,4 +1,4 @@
-import { Hash, Hex, Secp256k1 } from "voltaire";
+import { Hash, Hex, Secp256k1 } from "@tevm/voltaire";
 // Signature serialization to bytes
 
 // Create signature

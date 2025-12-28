@@ -1,4 +1,4 @@
-import { Uint, Uint128, Uint16, Uint32, Uint64, Uint8 } from "voltaire";
+import { Uint, Uint128, Uint16, Uint32, Uint64, Uint8 } from "@tevm/voltaire";
 const u8a = Uint8.fromNumber(42);
 const u8b = Uint8.fromHex("0xff");
 const u8c = Uint8.from("200");
@@ -21,4 +21,4 @@ const u256a =
 const u256b = Uint.fromHex(
 	"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 );
-const u256c = Uint.from("999999999999999999999999999999999999999999");
+const u256c = Uint("999999999999999999999999999999999999999999");

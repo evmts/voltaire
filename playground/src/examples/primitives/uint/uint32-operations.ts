@@ -1,4 +1,4 @@
-import { Uint32 } from "voltaire";
+import { Uint32 } from "@tevm/voltaire";
 const timestamp1 = Uint32.fromNumber(1609459200); // 2021-01-01 00:00:00 UTC
 const timestamp2 = Uint32.fromNumber(1640995200); // 2022-01-01 00:00:00 UTC
 const secondsInYear = Uint32.fromNumber(31536000);

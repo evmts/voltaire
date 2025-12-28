@@ -1,4 +1,4 @@
-import { Int32 } from "voltaire";
+import { Int32 } from "@tevm/voltaire";
 const lat_sf = Int32.fromNumber(37774929); // San Francisco: 37.774929°N
 const lon_sf = Int32.fromNumber(-122419416); // -122.419416°W
 const lat_nyc = Int32.fromNumber(40712776); // New York: 40.712776°N

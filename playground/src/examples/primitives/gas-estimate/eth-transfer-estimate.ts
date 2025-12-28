@@ -1,8 +1,8 @@
-import { GasEstimate } from "voltaire";
+import { GasEstimate } from "@tevm/voltaire";
 // Example: ETH transfer gas estimation
 
 // Standard ETH transfer always uses 21000 gas (base transaction cost)
-const baseTransfer = GasEstimate.from(21000n);
+const baseTransfer = GasEstimate(21000n);
 const with10Percent = GasEstimate.withBuffer(baseTransfer, 10);
 const with20Percent = GasEstimate.withBuffer(baseTransfer, 20);
 const with30Percent = GasEstimate.withBuffer(baseTransfer, 30);

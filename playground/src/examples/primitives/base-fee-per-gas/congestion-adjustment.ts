@@ -1,4 +1,4 @@
-import { BaseFeePerGas } from "voltaire";
+import { BaseFeePerGas } from "@tevm/voltaire";
 
 // Example: Base fee adjusts based on network congestion
 

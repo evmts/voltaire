@@ -1,10 +1,10 @@
-import { P256 } from "voltaire";
+import { Bytes, P256 } from "@tevm/voltaire";
 // Alice's keypair
-const alicePrivateKey = crypto.getRandomValues(new Uint8Array(32));
+const alicePrivateKey = Bytes.random(32);
 const alicePublicKey = P256.derivePublicKey(alicePrivateKey);
 
 // Bob's keypair
-const bobPrivateKey = crypto.getRandomValues(new Uint8Array(32));
+const bobPrivateKey = Bytes.random(32);
 const bobPublicKey = P256.derivePublicKey(bobPrivateKey);
 
 // ECDH: Alice computes shared secret using her private key + Bob's public key
@@ -19,7 +19,7 @@ const secretsMatch = aliceSharedSecret.every(
 );
 
 // Carol joins
-const carolPrivateKey = crypto.getRandomValues(new Uint8Array(32));
+const carolPrivateKey = Bytes.random(32);
 const carolPublicKey = P256.derivePublicKey(carolPrivateKey);
 
 const sharedAB = P256.ecdh(alicePrivateKey, bobPublicKey);
@@ -37,10 +37,10 @@ const abVsBc = sharedAB.every((v, i) => v === sharedBC[i]);
 const acVsBc = sharedAC.every((v, i) => v === sharedBC[i]);
 
 // Client and server establish shared secret
-const clientPrivateKey = crypto.getRandomValues(new Uint8Array(32));
+const clientPrivateKey = Bytes.random(32);
 const clientPublicKey = P256.derivePublicKey(clientPrivateKey);
 
-const serverPrivateKey = crypto.getRandomValues(new Uint8Array(32));
+const serverPrivateKey = Bytes.random(32);
 const serverPublicKey = P256.derivePublicKey(serverPrivateKey);
 
 const clientShared = P256.ecdh(clientPrivateKey, serverPublicKey);

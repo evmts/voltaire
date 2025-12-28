@@ -1,8 +1,8 @@
-import { Ed25519, Hex } from "voltaire";
+import { Bytes, Ed25519, Hex } from "@tevm/voltaire";
 // Generate Ed25519 keypair
 
 // Generate random seed (32 bytes)
-const seed = crypto.getRandomValues(new Uint8Array(32));
+const seed = Bytes.random(32);
 
 // Generate keypair from seed (deterministic)
 const keypair = Ed25519.keypairFromSeed(seed);

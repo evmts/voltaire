@@ -1,9 +1,9 @@
-import { Slot } from "voltaire";
+import { Slot } from "@tevm/voltaire";
 // Define a range
-const startSlot = Slot.from(7000000n);
-const endSlot = Slot.from(7000100n);
+const startSlot = Slot(7000000n);
+const endSlot = Slot(7000100n);
 for (let i = 0; i < 10; i++) {
-	const slot = Slot.from(startSlot + BigInt(i));
+	const slot = Slot(startSlot + BigInt(i));
 	const epoch = Slot.toEpoch(slot);
 }
 const SLOTS_PER_EPOCH = 32;
@@ -17,8 +17,8 @@ function getEpochRange(epoch: bigint): { start: bigint; end: bigint } {
 const epochs = [1000n, 1001n, 1002n];
 for (const epoch of epochs) {
 	const range = getEpochRange(epoch);
-	const startSlot = Slot.from(range.start);
-	const endSlot = Slot.from(range.end);
+	const startSlot = Slot(range.start);
+	const endSlot = Slot(range.end);
 }
 function alignToEpochStart(slot: bigint): bigint {
 	const epoch = slot / BigInt(SLOTS_PER_EPOCH);
@@ -32,9 +32,9 @@ function alignToEpochEnd(slot: bigint): bigint {
 
 const testSlots = [7000000n, 7000015n, 7000031n, 7000032n];
 for (const slotNum of testSlots) {
-	const slot = Slot.from(slotNum);
-	const epochStart = Slot.from(alignToEpochStart(slot));
-	const epochEnd = Slot.from(alignToEpochEnd(slot));
+	const slot = Slot(slotNum);
+	const epochStart = Slot(alignToEpochStart(slot));
+	const epochEnd = Slot(alignToEpochEnd(slot));
 }
 const SECONDS_PER_SLOT = 12;
 
@@ -49,7 +49,7 @@ function slotRange(
 	};
 }
 
-const baseSlot = Slot.from(7500000n);
+const baseSlot = Slot(7500000n);
 const durations = [
 	{ seconds: 60, label: "1 minute" },
 	{ seconds: 600, label: "10 minutes" },
@@ -59,8 +59,8 @@ const durations = [
 
 for (const { seconds, label } of durations) {
 	const range = slotRange(baseSlot, seconds);
-	const start = Slot.from(range.start);
-	const end = Slot.from(range.end);
+	const start = Slot(range.start);
+	const end = Slot(range.end);
 	const count = Number(range.end - range.start) + 1;
 }
 const observedSlots = [
@@ -74,8 +74,8 @@ const observedSlots = [
 	7600008n,
 ];
 for (let i = 0; i < observedSlots.length - 1; i++) {
-	const current = Slot.from(observedSlots[i]);
-	const next = Slot.from(observedSlots[i + 1]);
+	const current = Slot(observedSlots[i]);
+	const next = Slot(observedSlots[i + 1]);
 	const gap = Number(next - current) - 1;
 
 	if (gap > 0) {
@@ -84,20 +84,20 @@ for (let i = 0; i < observedSlots.length - 1; i++) {
 }
 const totalSlots = 1000n;
 const pageSize = 100;
-const startPagination = Slot.from(8000000n);
+const startPagination = Slot(8000000n);
 
 for (let page = 0; page < 5; page++) {
-	const pageStart = Slot.from(startPagination + BigInt(page * pageSize));
-	const pageEnd = Slot.from(
+	const pageStart = Slot(startPagination + BigInt(page * pageSize));
+	const pageEnd = Slot(
 		startPagination + BigInt((page + 1) * pageSize - 1),
 	);
 }
-const sampleStart = Slot.from(8100000n);
+const sampleStart = Slot(8100000n);
 const sampleCount = 10;
 const sampleInterval = 10;
 
 for (let i = 0; i < sampleCount; i++) {
-	const slot = Slot.from(sampleStart + BigInt(i * sampleInterval));
+	const slot = Slot(sampleStart + BigInt(i * sampleInterval));
 	const epoch = Slot.toEpoch(slot);
 }
 function rangeIntersects(
@@ -135,8 +135,8 @@ const intersection = rangeIntersection(
 );
 
 if (intersection) {
-	const intersectStart = Slot.from(intersection.start);
-	const intersectEnd = Slot.from(intersection.end);
+	const intersectStart = Slot(intersection.start);
+	const intersectEnd = Slot(intersection.end);
 	const intersectSize = Number(intersection.end - intersection.start) + 1;
 } else {
 }

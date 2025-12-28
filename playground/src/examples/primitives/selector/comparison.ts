@@ -1,4 +1,4 @@
-import { Selector } from "voltaire";
+import { Selector } from "@tevm/voltaire";
 const sel1 = Selector.fromSignature("transfer(address,uint256)");
 const sel2 = Selector.fromSignature("transfer(address,uint256)");
 const sel3 = Selector.fromHex("0xa9059cbb");
@@ -52,13 +52,13 @@ for (const sel of overlap) {
 
 function isERC20Call(calldata: string): boolean {
 	if (calldata.length < 10) return false;
-	const sel = Selector.toHex(Selector.from(calldata.slice(0, 10)));
+	const sel = Selector.toHex(Selector(calldata.slice(0, 10)));
 	return erc20Sels.has(sel);
 }
 
 function isERC721Call(calldata: string): boolean {
 	if (calldata.length < 10) return false;
-	const sel = Selector.toHex(Selector.from(calldata.slice(0, 10)));
+	const sel = Selector.toHex(Selector(calldata.slice(0, 10)));
 	return erc721Sels.has(sel);
 }
 

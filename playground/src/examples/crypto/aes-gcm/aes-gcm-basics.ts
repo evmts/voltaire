@@ -1,4 +1,4 @@
-import { AesGcm } from "voltaire";
+import { AesGcm, Bytes } from "@tevm/voltaire";
 // Generate 256-bit AES key (recommended)
 const key256 = await AesGcm.generateKey(256);
 
@@ -19,7 +19,7 @@ const nonce1 = AesGcm.generateNonce();
 const nonce2 = AesGcm.generateNonce();
 
 // Attempt to modify ciphertext
-const tampered = new Uint8Array(ciphertext);
+const tampered = Bytes(ciphertext);
 tampered[0] ^= 1; // Flip one bit
 
 try {

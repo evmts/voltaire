@@ -1,4 +1,4 @@
-import { Address, BlockBody, Transaction } from "voltaire";
+import { Address, BlockBody, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
 // Full Block: Create block body with many transactions
 
 // Generate many transactions to simulate full block
@@ -11,12 +11,12 @@ for (let i = 0; i < 20; i++) {
 		nonce: BigInt(i),
 		gasPrice: 20_000_000_000n,
 		gasLimit: 21_000n,
-		to: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
+		to: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 		value: BigInt(i) * 1_000_000_000_000_000n, // Varying amounts
-		data: new Uint8Array(),
+		data: Bytes.zero(0),
 		v: 27n,
-		r: new Uint8Array(32),
-		s: new Uint8Array(32),
+		r: Bytes32.zero(),
+		s: Bytes32.zero(),
 	});
 }
 
@@ -29,13 +29,13 @@ for (let i = 0; i < 15; i++) {
 		maxPriorityFeePerGas: 2_000_000_000n,
 		maxFeePerGas: 30_000_000_000n,
 		gasLimit: 50_000n,
-		to: Address.from("0xd8da6bf26964af9d7eed9e03e53415d37aa96045"),
+		to: Address("0xd8da6bf26964af9d7eed9e03e53415d37aa96045"),
 		value: 0n,
-		data: new Uint8Array([0x12, 0x34]),
+		data: Bytes([0x12, 0x34]),
 		accessList: [],
 		yParity: i % 2,
-		r: new Uint8Array(32),
-		s: new Uint8Array(32),
+		r: Bytes32.zero(),
+		s: Bytes32.zero(),
 	});
 }
 
@@ -50,15 +50,15 @@ for (let i = 0; i < 10; i++) {
 		gasLimit: 2_000_000n, // More gas for contract creation
 		to: null, // Contract creation
 		value: 0n,
-		data: new Uint8Array(1000), // Contract bytecode
+		data: Bytes.zero(1000), // Contract bytecode
 		accessList: [],
 		yParity: 0,
-		r: new Uint8Array(32),
-		s: new Uint8Array(32),
+		r: Bytes32.zero(),
+		s: Bytes32.zero(),
 	});
 }
 
-const fullBlock = BlockBody.from({
+const fullBlock = BlockBody({
 	transactions,
 	ommers: [],
 });

@@ -1,4 +1,4 @@
-import { Selector } from "voltaire";
+import { Selector, Bytes } from "@tevm/voltaire";
 // Create from function signature (most common)
 const transferSel = Selector.fromSignature("transfer(address,uint256)");
 
@@ -10,8 +10,8 @@ const balanceOfSel = Selector.fromSignature("balanceOf(address)");
 const transferFromHex = Selector.fromHex("0x23b872dd");
 
 // Create from bytes
-const swapBytes = new Uint8Array([0x38, 0xed, 0x17, 0x39]);
-const swapSel = Selector.from(swapBytes);
+const swapBytes = Bytes([0x38, 0xed, 0x17, 0x39]);
+const swapSel = Selector(swapBytes);
 
 const erc20Selectors = {
 	transfer: Selector.fromSignature("transfer(address,uint256)"),
@@ -46,7 +46,7 @@ const sel3 = Selector.fromSignature("approve(address,uint256)");
 // Typical calldata: selector + encoded parameters
 const calldata =
 	"0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc454e4438f44e0000000000000000000000000000000000000000000000000de0b6b3a7640000";
-const extractedSel = Selector.from(calldata.slice(0, 10)); // "0x" + 8 hex chars
+const extractedSel = Selector(calldata.slice(0, 10)); // "0x" + 8 hex chars
 
 try {
 	const validSel = Selector.fromHex("0xa9059cbb");
@@ -57,5 +57,5 @@ try {
 } catch (e) {}
 
 try {
-	Selector.from(new Uint8Array(5)); // 5 bytes
+	Selector(Bytes.zero(5)); // 5 bytes
 } catch (e) {}

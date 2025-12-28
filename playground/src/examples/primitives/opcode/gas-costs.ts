@@ -1,4 +1,4 @@
-import { Opcode } from "voltaire";
+import { Opcode } from "@tevm/voltaire";
 const veryLowOps = [
 	Opcode.ADD,
 	Opcode.SUB,

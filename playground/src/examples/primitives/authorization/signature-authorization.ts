@@ -1,10 +1,10 @@
-import { Address, Authorization } from "voltaire";
+import { Address, Authorization, Bytes, Bytes32 } from "@tevm/voltaire";
 
 // Delegate contract address
-const delegate = Address.from("0x5aAeD5932B9EB3Cd462dDBAeFA21Da757F30FBD");
+const delegate = Address("0x5aAeD5932B9EB3Cd462dDBAeFA21Da757F30FBD");
 
 // Private key for signing
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32.zero();
 privateKey.fill(3);
 
 // Create unsigned authorization

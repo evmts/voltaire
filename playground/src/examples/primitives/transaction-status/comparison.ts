@@ -1,5 +1,5 @@
-import { type Uint256Type } from "voltaire";
-import { TransactionStatus } from "voltaire";
+import { type Uint256Type } from "@tevm/voltaire";
+import { TransactionStatus } from "@tevm/voltaire";
 
 const pending1 = TransactionStatus.pending();
 const pending2 = TransactionStatus.pending();

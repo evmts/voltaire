@@ -1,5 +1,5 @@
 // WASM: P256 (secp256r1) basic sign/verify
-import { P256Wasm, sha256, bytesToHex } from "voltaire/wasm";
+import { P256Wasm, sha256, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   const priv = P256Wasm.generatePrivateKey();

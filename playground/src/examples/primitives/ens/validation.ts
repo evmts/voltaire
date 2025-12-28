@@ -1,4 +1,4 @@
-import { Ens } from "voltaire";
+import { Ens } from "@tevm/voltaire";
 const validNames = [
 	"vitalik.eth",
 	"nick.eth",

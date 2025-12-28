@@ -1,4 +1,4 @@
-import { Bytes } from "voltaire";
+import { Bytes } from "@tevm/voltaire";
 // Compare byte arrays for equality
 const a = Bytes.fromHex("0x1234");
 const b = Bytes.fromHex("0x1234");

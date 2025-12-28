@@ -1,4 +1,4 @@
-import { BloomFilter } from "voltaire";
+import { BloomFilter, Bytes } from "@tevm/voltaire";
 
 const m = 2048;
 const k = 3;
@@ -9,7 +9,7 @@ for (const n of itemCounts) {
 	// Create bloom and add n items
 	const bloom = BloomFilter.create(m, k);
 	for (let i = 0; i < n; i++) {
-		const item = new Uint8Array(20);
+		const item = Bytes.zero(20);
 		item[0] = i & 0xff;
 		item[1] = (i >> 8) & 0xff;
 		BloomFilter.add(bloom, item);
@@ -23,7 +23,7 @@ const testBloom = BloomFilter.create(m, k);
 // Add 100 items
 const addedItems = new Set<string>();
 for (let i = 0; i < 100; i++) {
-	const item = new Uint8Array(20);
+	const item = Bytes.zero(20);
 	item[0] = i;
 	item[19] = i;
 	addedItems.add(item.join(","));
@@ -34,7 +34,7 @@ for (let i = 0; i < 100; i++) {
 let falsePositives = 0;
 const testCount = 1000;
 for (let i = 100; i < 100 + testCount; i++) {
-	const item = new Uint8Array(20);
+	const item = Bytes.zero(20);
 	item[0] = i & 0xff;
 	item[1] = (i >> 8) & 0xff;
 	const key = item.join(",");

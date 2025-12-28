@@ -1,4 +1,4 @@
-import { Uint256 } from "voltaire";
+import { Uint256 } from "@tevm/voltaire";
 // Minimum of two values
 const a = Uint256.fromNumber(10);
 const b = Uint256.fromNumber(20);

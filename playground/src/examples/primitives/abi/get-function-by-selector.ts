@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI } from "@tevm/voltaire";
 
 // Example: Create ABI instance with multiple functions
 const abi = ABI.Abi([

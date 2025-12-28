@@ -1,4 +1,4 @@
-import { Hex, KZG } from "voltaire";
+import { Bytes, Hex, KZG } from "@tevm/voltaire";
 import { createHash } from "node:crypto";
 
 // Example: Complete EIP-4844 blob transaction workflow
@@ -27,18 +27,14 @@ for (let i = 0; i < MAX_BLOBS_PER_TX; i++) {
 	// Compute versioned hash (EIP-4844 spec)
 	// versionedHash = sha256(VERSIONED_HASH_VERSION_KZG || commitment)
 	const VERSIONED_HASH_VERSION_KZG = 0x01;
-	const versionedHashInput = new Uint8Array(1 + commitment.length);
-	versionedHashInput[0] = VERSIONED_HASH_VERSION_KZG;
-	versionedHashInput.set(commitment, 1);
+	const versionedHashInput = Bytes.concat(Bytes([VERSIONED_HASH_VERSION_KZG]), commitment);
 	const versionedHash = createHash("sha256")
 		.update(versionedHashInput)
 		.digest("hex");
 
 	blobSidecars.push({ blob, commitment, versionedHash: `0x${versionedHash}` });
 }
-const z = new Uint8Array(32);
-z[0] = 0;
-z[31] = 0x42;
+const z = Bytes([...Array(31).fill(0), 0x42]);
 
 for (let i = 0; i < blobSidecars.length; i++) {
 	const { blob, commitment } = blobSidecars[i];

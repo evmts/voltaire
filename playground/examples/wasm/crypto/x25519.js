@@ -1,5 +1,5 @@
 // WASM: X25519 shared secret
-import { X25519Wasm, bytesToHex } from "voltaire/wasm";
+import { X25519Wasm, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   const alicePriv = X25519Wasm.generatePrivateKey();

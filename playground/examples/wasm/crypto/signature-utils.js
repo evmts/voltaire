@@ -1,5 +1,5 @@
 // WASM: signature utilities (parse/serialize/normalize/validate)
-import { signatureParse, signatureSerialize, signatureNormalize, secp256k1ValidateSignature, bytesToHex } from "voltaire/wasm";
+import { signatureParse, signatureSerialize, signatureNormalize, secp256k1ValidateSignature, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   // Example 64-byte (r||s) signature (dummy data) and recovery bit

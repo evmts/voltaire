@@ -1,4 +1,4 @@
-import { Bytecode } from "voltaire";
+import { Bytecode } from "@tevm/voltaire";
 // Example: Constructor arguments in deployment bytecode
 
 // Constructor arguments are appended to the end of deployment bytecode

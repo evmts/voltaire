@@ -1,22 +1,20 @@
-import { Hex, Secp256k1 } from "voltaire";
+import { Bytes, Hex, Secp256k1 } from "@tevm/voltaire";
 // Validate private keys
 
 // Valid random private key
 const validKey = Secp256k1.PrivateKey.random();
 
 // Invalid: all zeros
-const zeros = new Uint8Array(32);
+const zeros = Bytes.zero(32);
 
 // Invalid: exceeds curve order
-const tooLarge = new Uint8Array(32);
-tooLarge.fill(0xff);
+const tooLarge = Bytes(Array(32).fill(0xff));
 
 // Invalid: wrong length
-const wrongLength = new Uint8Array(16);
-wrongLength.fill(0x42);
+const wrongLength = Bytes(Array(16).fill(0x42));
 
 // Valid: close to curve order but below it
-const nearOrder = new Uint8Array([
+const nearOrder = Bytes([
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b, 0xbf, 0xd2,
 	0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,

@@ -1,10 +1,10 @@
-import { BlockNumber } from "voltaire";
-const block1 = BlockNumber.from(15000000);
-const block2 = BlockNumber.from(15000000);
-const block3 = BlockNumber.from(15000001);
+import { BlockNumber } from "@tevm/voltaire";
+const block1 = BlockNumber(15000000);
+const block2 = BlockNumber(15000000);
+const block3 = BlockNumber(15000001);
 
-const older = BlockNumber.from(10000000);
-const newer = BlockNumber.from(20000000);
+const older = BlockNumber(10000000);
+const newer = BlockNumber(20000000);
 
 const olderLessThanNewer =
 	BlockNumber.toBigInt(older) < BlockNumber.toBigInt(newer);
@@ -12,11 +12,11 @@ const newerGreaterThanOlder =
 	BlockNumber.toBigInt(newer) > BlockNumber.toBigInt(older);
 
 const blocks = [
-	BlockNumber.from(15537394), // The Merge
-	BlockNumber.from(12965000), // London
-	BlockNumber.from(17034870), // Shanghai
-	BlockNumber.from(19426587), // Cancun
-	BlockNumber.from(4370000), // Byzantium
+	BlockNumber(15537394), // The Merge
+	BlockNumber(12965000), // London
+	BlockNumber(17034870), // Shanghai
+	BlockNumber(19426587), // Cancun
+	BlockNumber(4370000), // Byzantium
 ];
 blocks.forEach((b) => console.log(BlockNumber.toNumber(b)));
 
@@ -37,10 +37,10 @@ for (const block of blocks) {
 }
 
 const unsorted = [
-	BlockNumber.from(19426587),
-	BlockNumber.from(12965000),
-	BlockNumber.from(17034870),
-	BlockNumber.from(15537394),
+	BlockNumber(19426587),
+	BlockNumber(12965000),
+	BlockNumber(17034870),
+	BlockNumber(15537394),
 ];
 unsorted.forEach((b) => console.log(BlockNumber.toNumber(b)));
 
@@ -50,9 +50,9 @@ const sorted = [...unsorted].sort((a, b) => {
 });
 sorted.forEach((b) => console.log(BlockNumber.toNumber(b)));
 
-const target = BlockNumber.from(16000000);
-const rangeStart = BlockNumber.from(15000000);
-const rangeEnd = BlockNumber.from(17000000);
+const target = BlockNumber(16000000);
+const rangeStart = BlockNumber(15000000);
+const rangeEnd = BlockNumber(17000000);
 
 const inRange =
 	BlockNumber.toBigInt(target) >= BlockNumber.toBigInt(rangeStart) &&

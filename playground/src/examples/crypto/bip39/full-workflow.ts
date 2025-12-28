@@ -1,4 +1,4 @@
-import { Bip39, Hex } from "voltaire";
+import { Bip39, Hex } from "@tevm/voltaire";
 // Complete BIP-39 wallet workflow
 
 const mnemonic = Bip39.generateMnemonic(256);

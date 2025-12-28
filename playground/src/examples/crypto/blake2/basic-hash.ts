@@ -1,4 +1,4 @@
-import { Blake2, Hex } from "voltaire";
+import { Blake2, Hex } from "@tevm/voltaire";
 // Hash string data with Blake2b (default 64-byte output)
 const message = "Hello, Ethereum!";
 const hash = Blake2.hashString(message);

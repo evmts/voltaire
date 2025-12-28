@@ -1,4 +1,4 @@
-import { GasUsed } from "voltaire";
+import { GasUsed } from "@tevm/voltaire";
 // EIP-3529: Gas refunds reduced to max 20% of gas used
 const MAX_REFUND_QUOTIENT = 5n; // Refund capped at gasUsed/5
 
@@ -33,7 +33,7 @@ const scenarios = [
 const gasPrice = 25_000_000_000n; // 25 gwei
 
 for (const scenario of scenarios) {
-	const gasUsed = GasUsed.from(scenario.gasUsed);
+	const gasUsed = GasUsed(scenario.gasUsed);
 	const potentialRefund =
 		scenario.refundPerSlot * BigInt(scenario.slotsCleared);
 	const maxRefund = scenario.gasUsed / MAX_REFUND_QUOTIENT;

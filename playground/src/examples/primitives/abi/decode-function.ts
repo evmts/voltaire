@@ -1,5 +1,5 @@
-import { ABI } from "voltaire";
-import { Hex } from "voltaire";
+import { ABI } from "@tevm/voltaire";
+import { Hex } from "@tevm/voltaire";
 
 // Example: Decode ERC20 transfer function result
 const transferReturnData = Hex.fromString(

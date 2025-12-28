@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash } from "voltaire";
+import { Address, EventLog, Hash, Bytes, Bytes32 } from "@tevm/voltaire";
 const TRANSFER_SIG = Hash(
 	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
 );
@@ -14,7 +14,7 @@ const bob = Hash(
 const normalLog = EventLog.create({
 	address: usdcAddr,
 	topics: [TRANSFER_SIG, alice, bob],
-	data: new Uint8Array(32),
+	data: Bytes32.zero(),
 	blockNumber: 19300000n,
 	removed: false, // Explicitly set to false
 });
@@ -22,7 +22,7 @@ const normalLog = EventLog.create({
 const removedLog = EventLog.create({
 	address: usdcAddr,
 	topics: [TRANSFER_SIG, alice, bob],
-	data: new Uint8Array(32),
+	data: Bytes32.zero(),
 	blockNumber: 19300001n,
 	removed: true, // Marked as removed
 });
@@ -32,7 +32,7 @@ const logsChainA = [
 	EventLog.create({
 		address: usdcAddr,
 		topics: [TRANSFER_SIG, alice, bob],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19300100n,
 		blockHash: Hash(
 			"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -42,7 +42,7 @@ const logsChainA = [
 	EventLog.create({
 		address: usdcAddr,
 		topics: [TRANSFER_SIG, bob, alice],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19300101n,
 		blockHash: Hash(
 			"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
@@ -52,7 +52,7 @@ const logsChainA = [
 	EventLog.create({
 		address: usdcAddr,
 		topics: [TRANSFER_SIG, alice, bob],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19300102n,
 		blockHash: Hash(
 			"0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
@@ -76,7 +76,7 @@ const logsAfterReorg = [
 	EventLog.create({
 		address: usdcAddr,
 		topics: [TRANSFER_SIG, bob, alice],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19300101n,
 		blockHash: Hash(
 			"0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
@@ -86,7 +86,7 @@ const logsAfterReorg = [
 	EventLog.create({
 		address: usdcAddr,
 		topics: [TRANSFER_SIG, alice, bob],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19300102n,
 		blockHash: Hash(
 			"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
@@ -105,7 +105,7 @@ const removedLogs = logsAfterReorg.filter((log) => EventLog.isRemoved(log));
 const oldBlock = EventLog.create({
 	address: usdcAddr,
 	topics: [TRANSFER_SIG, alice, bob],
-	data: new Uint8Array(32),
+	data: Bytes32.zero(),
 	blockNumber: 19300200n,
 	blockHash: Hash(
 		"0x1111111111111111111111111111111111111111111111111111111111111111",
@@ -115,7 +115,7 @@ const oldBlock = EventLog.create({
 const newBlock = EventLog.create({
 	address: usdcAddr,
 	topics: [TRANSFER_SIG, alice, bob],
-	data: new Uint8Array(32),
+	data: Bytes32.zero(),
 	blockNumber: 19300200n,
 	blockHash: Hash(
 		"0x2222222222222222222222222222222222222222222222222222222222222222",

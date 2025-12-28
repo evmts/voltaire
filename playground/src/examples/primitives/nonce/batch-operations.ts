@@ -1,4 +1,4 @@
-import { Nonce } from "voltaire";
+import { Nonce } from "@tevm/voltaire";
 
 // Batch transaction builder
 interface BatchTx {
@@ -41,7 +41,7 @@ class BatchTransactionBuilder {
 		);
 	}
 }
-const batch = new BatchTransactionBuilder(Nonce.from(0));
+const batch = new BatchTransactionBuilder(Nonce(0));
 
 batch.add("0x742d35Cc6634C0532925a3b844Bc454e4438f44e", "1.0 ETH");
 batch.add("0xd8da6bf26964af9d7eed9e03e53415d37aa96045", "0.5 ETH");
@@ -97,7 +97,7 @@ class ParallelSubmitter {
 
 const submitter = new ParallelSubmitter();
 for (let i = 0; i < 5; i++) {
-	submitter.submit(Nonce.from(i), `0xhash${i}`);
+	submitter.submit(Nonce(i), `0xhash${i}`);
 }
 
 submitter.getStatus();
@@ -118,7 +118,7 @@ function generateNonceRange(start: bigint, count: number): bigint[] {
 	}
 	return range;
 }
-const range = generateNonceRange(Nonce.from(100), 10);
+const range = generateNonceRange(Nonce(100), 10);
 
 function validateNonceSequence(
 	nonces: bigint[],
@@ -142,21 +142,21 @@ function validateNonceSequence(
 	};
 }
 const validSeq = [
-	Nonce.from(0),
-	Nonce.from(1),
-	Nonce.from(2),
-	Nonce.from(3),
-	Nonce.from(4),
+	Nonce(0),
+	Nonce(1),
+	Nonce(2),
+	Nonce(3),
+	Nonce(4),
 ];
-const result1 = validateNonceSequence(validSeq, Nonce.from(0));
+const result1 = validateNonceSequence(validSeq, Nonce(0));
 const invalidSeq = [
-	Nonce.from(0),
-	Nonce.from(1),
-	Nonce.from(3),
-	Nonce.from(4),
-	Nonce.from(5),
+	Nonce(0),
+	Nonce(1),
+	Nonce(3),
+	Nonce(4),
+	Nonce(5),
 ];
-const result2 = validateNonceSequence(invalidSeq, Nonce.from(0));
+const result2 = validateNonceSequence(invalidSeq, Nonce(0));
 if (!result2.valid) {
 	for (const error of result2.errors) {
 	}
@@ -183,6 +183,6 @@ class BatchNonceAllocator {
 	}
 }
 
-const allocator = new BatchNonceAllocator(Nonce.from(0));
+const allocator = new BatchNonceAllocator(Nonce(0));
 const batch1 = allocator.allocateBatch(5);
 const batch2 = allocator.allocateBatch(3);

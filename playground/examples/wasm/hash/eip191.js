@@ -1,5 +1,5 @@
 // WASM: EIP-191 hash message
-import { eip191HashMessage, bytesToHex } from "voltaire/wasm";
+import { eip191HashMessage, bytesToHex } from "@tevm/voltaire/wasm";
 
 (async () => {
   const msg = new TextEncoder().encode("Sign me");

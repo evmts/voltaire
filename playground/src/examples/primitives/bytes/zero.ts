@@ -1,4 +1,4 @@
-import { Bytes } from "voltaire";
+import { Bytes } from "@tevm/voltaire";
 // Create zero-filled byte arrays
 const zeros8 = Bytes.zero(8);
 

@@ -1,5 +1,5 @@
-import { hash as keccak256 } from "voltaire";
-import { Domain, Hex } from "voltaire";
+import { hash as keccak256 } from "@tevm/voltaire";
+import { Domain, Hex } from "@tevm/voltaire";
 
 // Example: Computing and using EIP-712 domain separators
 
@@ -13,7 +13,7 @@ import { Domain, Hex } from "voltaire";
 // )
 
 // Simple domain
-const simple = Domain.from({
+const simple = Domain({
 	name: "SimpleApp",
 	version: "1",
 });
@@ -21,7 +21,7 @@ const simple = Domain.from({
 const simpleSeparator = Domain.toHash(simple, { keccak256 });
 
 // Domain with chainId
-const withChain = Domain.from({
+const withChain = Domain({
 	name: "SimpleApp",
 	version: "1",
 	chainId: 1,
@@ -30,7 +30,7 @@ const withChain = Domain.from({
 const chainSeparator = Domain.toHash(withChain, { keccak256 });
 
 // Domain with contract
-const withContract = Domain.from({
+const withContract = Domain({
 	name: "SimpleApp",
 	version: "1",
 	chainId: 1,
@@ -40,7 +40,7 @@ const withContract = Domain.from({
 const contractSeparator = Domain.toHash(withContract, { keccak256 });
 
 // Domain with salt
-const withSalt = Domain.from({
+const withSalt = Domain({
 	name: "SimpleApp",
 	version: "1",
 	salt: "0x0000000000000000000000000000000000000000000000000000000000000001",

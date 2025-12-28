@@ -1,5 +1,5 @@
-import { PrivateKey } from "voltaire";
-import { Address, Hash } from "voltaire";
+import { PrivateKey } from "@tevm/voltaire";
+import { Address, Hash } from "@tevm/voltaire";
 
 // Example: Signing transaction data with private key
 

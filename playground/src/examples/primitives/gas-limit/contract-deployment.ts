@@ -1,4 +1,4 @@
-import { Gas } from "voltaire";
+import { Gas } from "@tevm/voltaire";
 // Minimal contract (e.g., simple storage)
 const simpleContract = Gas.gasLimitFrom(200000);
 // Standard ERC20 deployment

@@ -1,12 +1,12 @@
-import { Sha256 } from "voltaire";
-import { AesGcm, X25519 } from "voltaire";
+import { Bytes, Sha256 } from "@tevm/voltaire";
+import { AesGcm, X25519 } from "@tevm/voltaire";
 
 // Alice (sender)
-const aliceSeed = crypto.getRandomValues(new Uint8Array(32));
+const aliceSeed = Bytes.random(32);
 const aliceKeypair = X25519.keypairFromSeed(aliceSeed);
 
 // Bob (receiver)
-const bobSeed = crypto.getRandomValues(new Uint8Array(32));
+const bobSeed = Bytes.random(32);
 const bobKeypair = X25519.keypairFromSeed(bobSeed);
 
 // Alice computes shared secret using Bob's public key
@@ -71,7 +71,7 @@ const replyDecrypted = await AesGcm.decrypt(
 );
 
 // Eve intercepts but doesn't have Bob's private key
-const eveSeed = crypto.getRandomValues(new Uint8Array(32));
+const eveSeed = Bytes.random(32);
 const eveKeypair = X25519.keypairFromSeed(eveSeed);
 
 // Eve tries to decrypt using wrong key

@@ -1,4 +1,4 @@
-import { Address, EIP712, Hex } from "voltaire";
+import { Address, EIP712, Hex } from "@tevm/voltaire";
 // EIP-712: Basic typed message signing
 
 // Define typed data with simple message

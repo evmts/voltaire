@@ -1,4 +1,4 @@
-import { Hex } from "voltaire";
+import { Hex } from "@tevm/voltaire";
 // Validate hex strings
 const valid1 = "0x1234";
 const valid2 = "0xdeadbeef";

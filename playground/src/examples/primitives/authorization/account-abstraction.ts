@@ -1,10 +1,10 @@
-import { Address, Authorization } from "voltaire";
+import { Address, Authorization, Bytes, Bytes32 } from "@tevm/voltaire";
 
 // Smart wallet contract (batching, gas sponsorship, etc.)
-const smartWallet = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+const smartWallet = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 
 // EOA private key
-const eoaKey = new Uint8Array(32);
+const eoaKey = Bytes32.zero();
 eoaKey.fill(2);
 
 // Create authorization to use smart wallet code

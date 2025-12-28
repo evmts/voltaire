@@ -1,13 +1,13 @@
-import { Withdrawal } from "voltaire";
+import { Withdrawal } from "@tevm/voltaire";
 // Identical withdrawals
-const withdrawal1 = Withdrawal.from({
+const withdrawal1 = Withdrawal({
 	index: 1000000n,
 	validatorIndex: 123456,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 	amount: 32000000000n,
 });
 
-const withdrawal2 = Withdrawal.from({
+const withdrawal2 = Withdrawal({
 	index: 1000000n,
 	validatorIndex: 123456,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -15,7 +15,7 @@ const withdrawal2 = Withdrawal.from({
 });
 
 // Different index
-const differentIndex = Withdrawal.from({
+const differentIndex = Withdrawal({
 	index: 1000001n, // Different
 	validatorIndex: 123456,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -23,7 +23,7 @@ const differentIndex = Withdrawal.from({
 });
 
 // Different validator
-const differentValidator = Withdrawal.from({
+const differentValidator = Withdrawal({
 	index: 1000000n,
 	validatorIndex: 123457, // Different
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -31,7 +31,7 @@ const differentValidator = Withdrawal.from({
 });
 
 // Different address
-const differentAddress = Withdrawal.from({
+const differentAddress = Withdrawal({
 	index: 1000000n,
 	validatorIndex: 123456,
 	address: "0xd8da6bf26964af9d7eed9e03e53415d37aa96045", // Different
@@ -39,7 +39,7 @@ const differentAddress = Withdrawal.from({
 });
 
 // Different amount
-const differentAmount = Withdrawal.from({
+const differentAmount = Withdrawal({
 	index: 1000000n,
 	validatorIndex: 123456,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -48,19 +48,19 @@ const differentAmount = Withdrawal.from({
 
 // Sorting withdrawals by index
 const unsorted = [
-	Withdrawal.from({
+	Withdrawal({
 		index: 3n,
 		validatorIndex: 300,
 		address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 		amount: 32000000000n,
 	}),
-	Withdrawal.from({
+	Withdrawal({
 		index: 1n,
 		validatorIndex: 100,
 		address: "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
 		amount: 32000000000n,
 	}),
-	Withdrawal.from({
+	Withdrawal({
 		index: 2n,
 		validatorIndex: 200,
 		address: "0x5aAed5930B9EB3cd462dDbaEfA21Da757F30FbDd",
@@ -79,19 +79,19 @@ if (found) {
 
 // Grouping by validator
 const multipleWithdrawals = [
-	Withdrawal.from({
+	Withdrawal({
 		index: 1n,
 		validatorIndex: 100,
 		address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 		amount: 50000000n,
 	}),
-	Withdrawal.from({
+	Withdrawal({
 		index: 2n,
 		validatorIndex: 100,
 		address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 		amount: 45000000n,
 	}),
-	Withdrawal.from({
+	Withdrawal({
 		index: 3n,
 		validatorIndex: 200,
 		address: "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",

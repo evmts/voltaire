@@ -1,4 +1,4 @@
-import { Hex, Keccak256 } from "voltaire";
+import { Hex, Keccak256 } from "@tevm/voltaire";
 // Example: Build simple merkle tree using Keccak256
 const data = ["alice", "bob", "charlie", "dave"];
 

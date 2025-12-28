@@ -1,5 +1,5 @@
-import { Signature } from "voltaire";
-import { Hash } from "voltaire";
+import { Signature } from "@tevm/voltaire";
+import { Hash } from "@tevm/voltaire";
 
 // Real signature from Ethereum mainnet transaction
 // Transaction hash: 0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060
@@ -14,8 +14,8 @@ const txSignature = {
 };
 
 // Create signature from components
-const r = Hash.from(txSignature.r);
-const s = Hash.from(txSignature.s);
+const r = Hash(txSignature.r);
+const s = Hash(txSignature.s);
 const sig = Signature.fromSecp256k1(r, s, txSignature.v);
 const bytes = Signature.toBytes(sig);
 

@@ -1,4 +1,4 @@
-import { KZG } from "voltaire";
+import { Bytes, KZG } from "@tevm/voltaire";
 // Example: KZG basics for EIP-4844 blob commitments
 
 // Initialize trusted setup (required once before any KZG operations)
@@ -11,9 +11,7 @@ KZG.validateBlob(blob);
 // Generate KZG commitment from blob (48-byte BLS12-381 G1 point)
 const commitment = KZG.Commitment(blob);
 // Create evaluation point (32-byte field element)
-const z = new Uint8Array(32);
-z[0] = 0; // Ensure valid field element
-z[31] = 0x42;
+const z = Bytes([...Array(31).fill(0), 0x42]);
 
 // Compute proof at evaluation point z
 const { proof, y } = KZG.Proof(blob, z);

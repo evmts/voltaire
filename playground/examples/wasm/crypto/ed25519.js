@@ -1,5 +1,5 @@
 // WASM: Ed25519 sign/verify
-import { Ed25519Wasm, bytesToHex } from "voltaire/wasm";
+import { Ed25519Wasm, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   const priv = Ed25519Wasm.generatePrivateKey();

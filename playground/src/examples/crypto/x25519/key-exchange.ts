@@ -1,4 +1,4 @@
-import { Hex, X25519 } from "voltaire";
+import { Hex, X25519 } from "@tevm/voltaire";
 // Complete key exchange protocol
 
 const aliceKeypair = X25519.generateKeypair();

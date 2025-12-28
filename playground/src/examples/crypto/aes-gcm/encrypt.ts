@@ -1,4 +1,4 @@
-import { AesGcm } from "voltaire";
+import { AesGcm, Bytes } from "@tevm/voltaire";
 // Generate a key
 const key = await AesGcm.generateKey(256);
 
@@ -16,8 +16,7 @@ for (const msg of messages) {
 
 	const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
 }
-const binaryData = new Uint8Array(1024); // 1 KB
-crypto.getRandomValues(binaryData);
+const binaryData = Bytes.random(1024); // 1 KB
 
 const nonce = AesGcm.generateNonce();
 const encrypted = await AesGcm.encrypt(binaryData, key, nonce);

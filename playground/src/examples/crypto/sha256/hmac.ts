@@ -1,4 +1,4 @@
-import { Hex, SHA256 } from "voltaire";
+import { Bytes, Hex, SHA256 } from "@tevm/voltaire";
 // HMAC-SHA256: Hash-based Message Authentication Code
 // Provides message integrity and authentication using a secret key
 
@@ -12,28 +12,18 @@ function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array {
 		k = SHA256.hash(k);
 	}
 	if (k.length < blockSize) {
-		const padded = new Uint8Array(blockSize);
-		padded.set(k);
-		k = padded;
+		k = Bytes.concat(k, Bytes.zero(blockSize - k.length));
 	}
 
 	// Generate inner and outer padding
-	const ipad = new Uint8Array(blockSize);
-	const opad = new Uint8Array(blockSize);
-	for (let i = 0; i < blockSize; i++) {
-		ipad[i] = k[i] ^ 0x36;
-		opad[i] = k[i] ^ 0x5c;
-	}
+	const ipad = Bytes(Array.from({ length: blockSize }, (_, i) => k[i] ^ 0x36));
+	const opad = Bytes(Array.from({ length: blockSize }, (_, i) => k[i] ^ 0x5c));
 
 	// HMAC = H(opad || H(ipad || message))
-	const innerMsg = new Uint8Array(blockSize + message.length);
-	innerMsg.set(ipad);
-	innerMsg.set(message, blockSize);
+	const innerMsg = Bytes.concat(ipad, message);
 	const innerHash = SHA256.hash(innerMsg);
 
-	const outerMsg = new Uint8Array(blockSize + 32);
-	outerMsg.set(opad);
-	outerMsg.set(innerHash, blockSize);
+	const outerMsg = Bytes.concat(opad, innerHash);
 	return SHA256.hash(outerMsg);
 }
 

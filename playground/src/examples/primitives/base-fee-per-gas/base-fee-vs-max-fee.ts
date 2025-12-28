@@ -1,4 +1,4 @@
-import { BaseFeePerGas } from "voltaire";
+import { BaseFeePerGas } from "@tevm/voltaire";
 
 // Current network state
 const currentBase = BaseFeePerGas.fromGwei(25n);

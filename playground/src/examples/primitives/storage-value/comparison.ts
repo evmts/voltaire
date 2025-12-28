@@ -1,21 +1,21 @@
-import { StorageValue } from "voltaire";
+import { StorageValue } from "@tevm/voltaire";
 
 // Example: Comparing storage values
 
 // Create test values
-const val1 = StorageValue.from(100n);
-const val2 = StorageValue.from(100n);
-const val3 = StorageValue.from(200n);
+const val1 = StorageValue(100n);
+const val2 = StorageValue(100n);
+const val3 = StorageValue(200n);
 
 // Zero value comparisons
-const zero1 = StorageValue.from(0n);
-const zero2 = StorageValue.from(0n);
-const nonZero = StorageValue.from(1n);
+const zero1 = StorageValue(0n);
+const zero2 = StorageValue(0n);
+const nonZero = StorageValue(1n);
 
 // Maximum value comparison
-const max1 = StorageValue.from(2n ** 256n - 1n);
-const max2 = StorageValue.from(2n ** 256n - 1n);
-const almostMax = StorageValue.from(2n ** 256n - 2n);
+const max1 = StorageValue(2n ** 256n - 1n);
+const max2 = StorageValue(2n ** 256n - 1n);
+const almostMax = StorageValue(2n ** 256n - 2n);
 
 // Numeric comparisons (convert to bigint)
 const compare = (
@@ -45,9 +45,9 @@ const greaterThan = (
 };
 
 // Range checks
-const value = StorageValue.from(150n);
-const min = StorageValue.from(100n);
-const max = StorageValue.from(200n);
+const value = StorageValue(150n);
+const min = StorageValue(100n);
+const max = StorageValue(200n);
 
 const inRange = (
 	val: StorageValue.StorageValueType,
@@ -62,11 +62,11 @@ const inRange = (
 
 // Array of storage values - find min/max
 const values = [
-	StorageValue.from(100n),
-	StorageValue.from(500n),
-	StorageValue.from(50n),
-	StorageValue.from(1000n),
-	StorageValue.from(250n),
+	StorageValue(100n),
+	StorageValue(500n),
+	StorageValue(50n),
+	StorageValue(1000n),
+	StorageValue(250n),
 ];
 
 const findMin = (
@@ -102,14 +102,14 @@ const hasDuplicates = (vals: StorageValue.StorageValueType[]): boolean => {
 };
 
 const uniqueValues = [
-	StorageValue.from(1n),
-	StorageValue.from(2n),
-	StorageValue.from(3n),
+	StorageValue(1n),
+	StorageValue(2n),
+	StorageValue(3n),
 ];
 const duplicateValues = [
-	StorageValue.from(1n),
-	StorageValue.from(2n),
-	StorageValue.from(1n),
+	StorageValue(1n),
+	StorageValue(2n),
+	StorageValue(1n),
 ];
 
 // Comparing hex representations

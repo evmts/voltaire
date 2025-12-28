@@ -1,4 +1,4 @@
-import { Opcode } from "voltaire";
+import { Opcode } from "@tevm/voltaire";
 // Common EVM opcodes (hex values)
 const add = Opcode.ADD; // 0x01
 const mul = Opcode.MUL; // 0x02

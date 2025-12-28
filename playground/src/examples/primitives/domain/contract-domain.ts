@@ -1,10 +1,10 @@
-import { hash as keccak256 } from "voltaire";
-import { Domain, Hex } from "voltaire";
+import { hash as keccak256 } from "@tevm/voltaire";
+import { Domain, Hex } from "@tevm/voltaire";
 
 // Example: Real-world contract domains from major protocols
 
 // Uniswap V2 Pair
-const uniswapV2 = Domain.from({
+const uniswapV2 = Domain({
 	name: "Uniswap V2",
 	version: "1",
 	chainId: 1,
@@ -12,7 +12,7 @@ const uniswapV2 = Domain.from({
 });
 
 // Uniswap V3
-const uniswapV3 = Domain.from({
+const uniswapV3 = Domain({
 	name: "Uniswap V3",
 	version: "1",
 	chainId: 1,
@@ -20,7 +20,7 @@ const uniswapV3 = Domain.from({
 });
 
 // Aave V2
-const aaveV2 = Domain.from({
+const aaveV2 = Domain({
 	name: "Aave interest bearing USDC",
 	version: "1",
 	chainId: 1,
@@ -28,7 +28,7 @@ const aaveV2 = Domain.from({
 });
 
 // Compound cDAI
-const compound = Domain.from({
+const compound = Domain({
 	name: "Compound Dai",
 	version: "1",
 	chainId: 1,
@@ -36,7 +36,7 @@ const compound = Domain.from({
 });
 
 // OpenSea Wyvern Exchange
-const openSea = Domain.from({
+const openSea = Domain({
 	name: "Wyvern Exchange Contract",
 	version: "2.3",
 	chainId: 1,
@@ -44,7 +44,7 @@ const openSea = Domain.from({
 });
 
 // 1inch Exchange
-const oneInch = Domain.from({
+const oneInch = Domain({
 	name: "1inch Aggregation Router",
 	version: "5",
 	chainId: 1,
@@ -52,7 +52,7 @@ const oneInch = Domain.from({
 });
 
 // Gnosis Safe
-const safe = Domain.from({
+const safe = Domain({
 	name: "Gnosis Safe",
 	version: "1.3.0",
 	chainId: 1,

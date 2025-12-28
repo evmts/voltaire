@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI } from "@tevm/voltaire";
 
 // Example: Create ERC20 interface
 const erc20 = ABI.Interface.erc20();

@@ -1,8 +1,8 @@
-import { Ed25519, Hex } from "voltaire";
+import { Bytes, Ed25519, Hex } from "@tevm/voltaire";
 // Ed25519 deterministic signatures (no nonce needed)
 
 // Generate keypair
-const seed = new Uint8Array(32).fill(1);
+const seed = Bytes(Array(32).fill(1));
 const keypair = Ed25519.keypairFromSeed(seed);
 
 // Sign same message multiple times
@@ -31,7 +31,7 @@ const secretKeysMatch =
 	Hex.fromBytes(keypair2.secretKey).toString() ===
 		Hex.fromBytes(keypair3.secretKey).toString();
 
-const seed2 = new Uint8Array(32).fill(2);
+const seed2 = Bytes(Array(32).fill(2));
 const keypair4 = Ed25519.keypairFromSeed(seed2);
 
 const differentPublicKeys =

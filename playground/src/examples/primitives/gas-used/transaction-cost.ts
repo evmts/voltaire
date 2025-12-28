@@ -1,5 +1,5 @@
-import { GasUsed } from "voltaire";
-const gasUsed = GasUsed.from(51234n);
+import { GasUsed } from "@tevm/voltaire";
+const gasUsed = GasUsed(51234n);
 
 // Different gas price scenarios
 const gasPrices = [

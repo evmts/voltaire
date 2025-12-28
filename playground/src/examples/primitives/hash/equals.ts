@@ -1,4 +1,4 @@
-import { Hash } from "voltaire";
+import { Hash } from "@tevm/voltaire";
 // Example: Comparing hashes for equality
 
 // Same hash values

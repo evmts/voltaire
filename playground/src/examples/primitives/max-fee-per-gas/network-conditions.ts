@@ -1,4 +1,4 @@
-import { MaxFeePerGas } from "voltaire";
+import { MaxFeePerGas } from "@tevm/voltaire";
 
 const lowCongestionBase = 12n; // Gwei
 const lowCongestionPriority = 1n; // Gwei

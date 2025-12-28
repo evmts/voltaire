@@ -1,11 +1,11 @@
-import { AccessList, Address, Hash } from "voltaire";
+import { AccessList, Address, Hash } from "@tevm/voltaire";
 
 // Valid access list
-const validList = AccessList.from([
+const validList = AccessList([
 	{
-		address: Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
+		address: Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
 		storageKeys: [
-			Hash.from(
+			Hash(
 				"0x0000000000000000000000000000000000000000000000000000000000000001",
 			),
 		],
@@ -13,49 +13,49 @@ const validList = AccessList.from([
 ]);
 const item = validList[0];
 const empty = AccessList.create();
-const noKeys = AccessList.from([
+const noKeys = AccessList([
 	{
-		address: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
+		address: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 		storageKeys: [],
 	},
 ]);
-const multiple = AccessList.from([
+const multiple = AccessList([
 	{
-		address: Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
+		address: Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
 		storageKeys: [
-			Hash.from(
+			Hash(
 				"0x0000000000000000000000000000000000000000000000000000000000000001",
 			),
 		],
 	},
 	{
-		address: Address.from("0x6B175474E89094C44Da98b954EedeAC495271d0F"),
+		address: Address("0x6B175474E89094C44Da98b954EedeAC495271d0F"),
 		storageKeys: [],
 	},
 ]);
 try {
 	AccessList.assertValid(validList);
 } catch (error) {}
-const usdc = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-const dai = Address.from("0x6B175474E89094C44Da98b954EedeAC495271d0F");
-const weth = Address.from("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
+const usdc = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const dai = Address("0x6B175474E89094C44Da98b954EedeAC495271d0F");
+const weth = Address("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
 
-const list = AccessList.from([
+const list = AccessList([
 	{ address: usdc, storageKeys: [] },
 	{ address: dai, storageKeys: [] },
 ]);
-const slot1 = Hash.from(
+const slot1 = Hash(
 	"0x0000000000000000000000000000000000000000000000000000000000000001",
 );
-const slot2 = Hash.from(
+const slot2 = Hash(
 	"0x0000000000000000000000000000000000000000000000000000000000000002",
 );
-const slot3 = Hash.from(
+const slot3 = Hash(
 	"0x0000000000000000000000000000000000000000000000000000000000000003",
 );
 
-const listWithKeys = AccessList.from([
+const listWithKeys = AccessList([
 	{ address: usdc, storageKeys: [slot1, slot2] },
 ]);
-const original = AccessList.from([{ address: usdc, storageKeys: [slot1] }]);
+const original = AccessList([{ address: usdc, storageKeys: [slot1] }]);
 const modified = AccessList.withStorageKey(original, usdc, slot2);

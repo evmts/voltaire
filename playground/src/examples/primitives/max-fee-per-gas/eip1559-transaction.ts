@@ -1,4 +1,4 @@
-import { MaxFeePerGas } from "voltaire";
+import { MaxFeePerGas } from "@tevm/voltaire";
 
 // Network state
 const currentBaseFee = 45n; // Gwei - current block's base fee

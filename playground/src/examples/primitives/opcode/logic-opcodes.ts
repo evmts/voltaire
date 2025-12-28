@@ -1,4 +1,4 @@
-import { Opcode } from "voltaire";
+import { Opcode } from "@tevm/voltaire";
 // LT (0x10) - Less than
 const ltInfo = Opcode.info(Opcode.LT);
 

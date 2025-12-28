@@ -1,9 +1,9 @@
-import { StorageValue } from "voltaire";
+import { StorageValue } from "@tevm/voltaire";
 
 // Example: Decoding storage values into different types
 
 // Raw storage value from chain
-const rawStorage = StorageValue.from(
+const rawStorage = StorageValue(
 	"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
 );
 
@@ -19,7 +19,7 @@ const decodeAsBool = (storage: StorageValue.StorageValueType): boolean => {
 };
 
 // Decode address from storage (right-aligned 20 bytes)
-const addressStorage = StorageValue.from(
+const addressStorage = StorageValue(
 	"0x000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e",
 );
 
@@ -31,12 +31,12 @@ const decodeAddress = (storage: StorageValue.StorageValueType): string => {
 };
 
 // Decode bytes32 (already 32 bytes)
-const bytes32Storage = StorageValue.from(
+const bytes32Storage = StorageValue(
 	"0xdeadbeefcafebabedeadbeefcafebabedeadbeefcafebabedeadbeefcafebabe",
 );
 
 // Decode timestamp (uint256 as Unix timestamp)
-const timestampStorage = StorageValue.from(1700000000n);
+const timestampStorage = StorageValue(1700000000n);
 
 const decodeTimestamp = (storage: StorageValue.StorageValueType): Date => {
 	const unixSeconds = Number(StorageValue.toUint256(storage));
@@ -44,7 +44,7 @@ const decodeTimestamp = (storage: StorageValue.StorageValueType): Date => {
 };
 
 // Decode packed uint128 values
-const packedStorage = StorageValue.from(
+const packedStorage = StorageValue(
 	"0x00000000000000000000000000000001000000000000000000000000000000ff",
 );
 
@@ -66,17 +66,17 @@ const decodeUint128Pair = (
 const [high, low] = decodeUint128Pair(packedStorage);
 
 // Decode string length (for dynamic strings)
-const stringLengthStorage = StorageValue.from(64n); // String is 64 bytes
+const stringLengthStorage = StorageValue(64n); // String is 64 bytes
 
 // Decode enum value (stored as uint8 in uint256)
-const enumStorage = StorageValue.from(2n); // Enum variant 2
+const enumStorage = StorageValue(2n); // Enum variant 2
 
 const decodeEnum = (storage: StorageValue.StorageValueType): number => {
 	return Number(StorageValue.toUint256(storage));
 };
 
 // Decode bit flags from storage
-const flagsStorage = StorageValue.from(0b1101n); // Binary flags
+const flagsStorage = StorageValue(0b1101n); // Binary flags
 
 const decodeBitFlags = (storage: StorageValue.StorageValueType): boolean[] => {
 	const value = StorageValue.toUint256(storage);
@@ -90,7 +90,7 @@ const decodeBitFlags = (storage: StorageValue.StorageValueType): boolean[] => {
 };
 
 // Decode fixed-point decimal (e.g., price with 8 decimals)
-const priceStorage = StorageValue.from(123456789n); // $1.23456789
+const priceStorage = StorageValue(123456789n); // $1.23456789
 
 const decodeFixedPoint = (
 	storage: StorageValue.StorageValueType,
@@ -102,7 +102,7 @@ const decodeFixedPoint = (
 };
 
 // Decode percentage (stored as basis points: 10000 = 100%)
-const percentageStorage = StorageValue.from(2500n); // 25%
+const percentageStorage = StorageValue(2500n); // 25%
 
 const decodePercentage = (storage: StorageValue.StorageValueType): string => {
 	const bps = Number(StorageValue.toUint256(storage));

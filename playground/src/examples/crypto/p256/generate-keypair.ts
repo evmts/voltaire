@@ -1,8 +1,6 @@
-import { P256 } from "voltaire";
+import { Bytes, P256 } from "@tevm/voltaire";
 // Generate random private key
-const privateKey = crypto.getRandomValues(
-	new Uint8Array(P256.PRIVATE_KEY_SIZE),
-);
+const privateKey = Bytes.random(P256.PRIVATE_KEY_SIZE);
 
 // Derive public key (uncompressed format: x || y)
 const publicKey = P256.derivePublicKey(privateKey);

@@ -1,6 +1,6 @@
-import { TransactionHash } from "voltaire";
+import { TransactionHash, Bytes, Bytes32 } from "@tevm/voltaire";
 try {
-	const valid = TransactionHash.from(
+	const valid = TransactionHash(
 		"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",
 	);
 } catch (error) {}
@@ -28,17 +28,17 @@ try {
 	);
 } catch (error) {}
 try {
-	const valid = TransactionHash.fromBytes(new Uint8Array(32).fill(0xab));
+	const valid = TransactionHash.fromBytes(Bytes32.zero().fill(0xab));
 } catch (error) {}
 try {
-	TransactionHash.fromBytes(new Uint8Array(31));
+	TransactionHash.fromBytes(Bytes.zero(31));
 } catch (error) {}
 try {
-	TransactionHash.fromBytes(new Uint8Array(33));
+	TransactionHash.fromBytes(Bytes.zero(33));
 } catch (error) {}
 try {
-	TransactionHash.from(12345 as any);
+	TransactionHash(12345 as any);
 } catch (error) {}
 try {
-	TransactionHash.from({ hash: "0x1234" } as any);
+	TransactionHash({ hash: "0x1234" } as any);
 } catch (error) {}

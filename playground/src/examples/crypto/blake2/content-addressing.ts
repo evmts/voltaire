@@ -1,4 +1,4 @@
-import { Blake2, Hex } from "voltaire";
+import { Blake2, Hex } from "@tevm/voltaire";
 // Content addressing (IPFS-style) using Blake2b
 
 function contentAddress(data: Uint8Array): string {

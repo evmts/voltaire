@@ -1,4 +1,4 @@
-import { Bytecode } from "voltaire";
+import { Bytecode } from "@tevm/voltaire";
 // Example: Runtime bytecode (code stored on-chain after deployment)
 
 // Simple runtime bytecode: returns 42

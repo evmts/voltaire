@@ -1,14 +1,14 @@
-import { Hash, P256 } from "voltaire";
-const iosPrivateKey = crypto.getRandomValues(new Uint8Array(32));
+import { Bytes, Hash, P256 } from "@tevm/voltaire";
+const iosPrivateKey = Bytes.random(32);
 const iosPublicKey = P256.derivePublicKey(iosPrivateKey);
 
-const androidPrivateKey = crypto.getRandomValues(new Uint8Array(32));
+const androidPrivateKey = Bytes.random(32);
 const androidPublicKey = P256.derivePublicKey(androidPrivateKey);
 
-const webauthnPrivateKey = crypto.getRandomValues(new Uint8Array(32));
+const webauthnPrivateKey = Bytes.random(32);
 const webauthnPublicKey = P256.derivePublicKey(webauthnPrivateKey);
 
-const yubikeyPrivateKey = crypto.getRandomValues(new Uint8Array(32));
+const yubikeyPrivateKey = Bytes.random(32);
 const yubikeyPublicKey = P256.derivePublicKey(yubikeyPrivateKey);
 
 // Sign message on iOS
@@ -22,7 +22,7 @@ const verifiedOnWebAuthn = P256.verify(iosSignature, messageHash, iosPublicKey);
 const verifiedOnYubiKey = P256.verify(iosSignature, messageHash, iosPublicKey);
 
 // Register new device
-const newDevicePrivateKey = crypto.getRandomValues(new Uint8Array(32));
+const newDevicePrivateKey = Bytes.random(32);
 const newDevicePublicKey = P256.derivePublicKey(newDevicePrivateKey);
 
 // Sign migration authorization on old device

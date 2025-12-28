@@ -1,10 +1,10 @@
-import { GasEstimate } from "voltaire";
-const estimate = GasEstimate.from(65000n);
+import { GasEstimate } from "@tevm/voltaire";
+const estimate = GasEstimate(65000n);
 const gasPrice = 50_000_000_000n; // 50 gwei in wei
 
 const cost = GasEstimate.toBigInt(estimate) * gasPrice;
 const ethCost = Number(cost) / 1e18;
-const erc20Estimate = GasEstimate.from(65000n);
+const erc20Estimate = GasEstimate(65000n);
 
 const gasPrices = [
 	{ name: "Low", gwei: 10n, wei: 10_000_000_000n },
@@ -17,7 +17,7 @@ for (const { name, gwei, wei } of gasPrices) {
 	const cost = GasEstimate.toBigInt(erc20Estimate) * wei;
 	const ethCost = Number(cost) / 1e18;
 }
-const baseEstimate = GasEstimate.from(100000n);
+const baseEstimate = GasEstimate(100000n);
 const buffered = GasEstimate.withBuffer(baseEstimate, 25);
 const priceWei = 50_000_000_000n;
 
@@ -34,12 +34,12 @@ const transactions = [
 const stdGasPrice = 50_000_000_000n;
 
 for (const { name, gas } of transactions) {
-	const estimate = GasEstimate.from(gas);
+	const estimate = GasEstimate(gas);
 	const cost = GasEstimate.toBigInt(estimate) * stdGasPrice;
 	const ethCost = Number(cost) / 1e18;
 }
 const txPerDay = 100;
-const txEstimate = GasEstimate.from(65000n);
+const txEstimate = GasEstimate(65000n);
 const txGasPrice = 50_000_000_000n;
 
 const singleTxCost = GasEstimate.toBigInt(txEstimate) * txGasPrice;
@@ -49,7 +49,7 @@ const dailyEthCost = Number(dailyCost) / 1e18;
 // USD cost calculation (example ETH price)
 const ethPriceUSD = 2000;
 const dailyUSDCost = dailyEthCost * ethPriceUSD;
-const rpcEstimate = GasEstimate.from(120000n);
+const rpcEstimate = GasEstimate(120000n);
 const withBuffer = GasEstimate.withBuffer(rpcEstimate, 30);
 const maxGasLimit = GasEstimate.toGasLimit(withBuffer);
 
@@ -62,8 +62,8 @@ const actualCost = actualUsed * stdGasPrice;
 const actualEthCost = Number(actualCost) / 1e18;
 const refunded = (maxGasLimit - actualUsed) * stdGasPrice;
 const refundedEth = Number(refunded) / 1e18;
-const unoptimized = GasEstimate.from(150000n);
-const optimized = GasEstimate.from(100000n);
+const unoptimized = GasEstimate(150000n);
+const optimized = GasEstimate(100000n);
 const savings =
 	GasEstimate.toBigInt(unoptimized) - GasEstimate.toBigInt(optimized);
 const savingsCost = savings * stdGasPrice;

@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash } from "voltaire";
+import { Address, EventLog, Hash, Bytes, Bytes32 } from "@tevm/voltaire";
 // Setup: Create sample ERC20 Transfer logs
 const TRANSFER_SIG = Hash(
 	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
@@ -23,31 +23,31 @@ const logs = [
 	EventLog.create({
 		address: usdcAddr,
 		topics: [TRANSFER_SIG, alice, bob],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19100000n,
 	}), // Alice -> Bob
 	EventLog.create({
 		address: usdcAddr,
 		topics: [TRANSFER_SIG, bob, charlie],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19100001n,
 	}), // Bob -> Charlie
 	EventLog.create({
 		address: usdcAddr,
 		topics: [TRANSFER_SIG, charlie, alice],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19100002n,
 	}), // Charlie -> Alice
 	EventLog.create({
 		address: usdcAddr,
 		topics: [TRANSFER_SIG, alice, dave],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19100003n,
 	}), // Alice -> Dave
 	EventLog.create({
 		address: usdcAddr,
 		topics: [TRANSFER_SIG, dave, bob],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19100004n,
 	}), // Dave -> Bob
 ];
@@ -98,7 +98,7 @@ const moreLogs = [
 	EventLog.create({
 		address: daiAddr,
 		topics: [TRANSFER_SIG, alice, bob],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19100005n,
 	}), // Alice -> Bob on DAI
 ];

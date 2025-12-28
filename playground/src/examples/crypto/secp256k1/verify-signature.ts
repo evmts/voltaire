@@ -1,4 +1,4 @@
-import { Hash, Secp256k1 } from "voltaire";
+import { Hash, Secp256k1 } from "@tevm/voltaire";
 // Verify secp256k1 signature
 
 // Create message hash

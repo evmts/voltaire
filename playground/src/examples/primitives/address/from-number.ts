@@ -1,4 +1,4 @@
-import { Address } from "voltaire";
+import { Address } from "@tevm/voltaire";
 // Example: Create address from number
 // Numbers are zero-padded to 20 bytes
 const addr1 = Address.fromNumber(1);

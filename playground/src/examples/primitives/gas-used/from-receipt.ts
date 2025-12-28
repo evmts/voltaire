@@ -1,4 +1,4 @@
-import { GasUsed } from "voltaire";
+import { GasUsed } from "@tevm/voltaire";
 // Simulate different transaction receipt scenarios
 const receipts = [
 	{
@@ -30,7 +30,7 @@ const receipts = [
 
 const gasPrice = 30_000_000_000n; // 30 gwei
 for (const receipt of receipts) {
-	const gasUsed = GasUsed.from(receipt.gasUsed);
+	const gasUsed = GasUsed(receipt.gasUsed);
 	const cost = GasUsed.calculateCost(gasUsed, gasPrice);
 	const costInEth = Number(cost) / 1e18;
 }

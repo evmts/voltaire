@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash } from "voltaire";
+import { Address, EventLog, Hash, Bytes, Bytes32 } from "@tevm/voltaire";
 // Event signature: keccak256("Approval(address,address,uint256)")
 const APPROVAL_SIGNATURE = Hash(
 	"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
@@ -16,7 +16,7 @@ const spenderAddress = Hash(
 );
 
 // Approval for max uint256 (unlimited approval)
-const maxUint256Data = new Uint8Array(32);
+const maxUint256Data = Bytes32.zero();
 maxUint256Data.fill(0xff);
 
 const approvalLog = EventLog.create({
@@ -78,7 +78,7 @@ const user2 = Hash(
 	"0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045",
 );
 
-const limitedApprovalData = new Uint8Array(32);
+const limitedApprovalData = Bytes32.zero();
 // 10,000 USDT (6 decimals) = 10000000000 = 0x2540BE400
 limitedApprovalData[27] = 0x02;
 limitedApprovalData[28] = 0x54;

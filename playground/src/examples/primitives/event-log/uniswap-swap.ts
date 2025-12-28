@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash } from "voltaire";
+import { Address, EventLog, Hash, Bytes } from "@tevm/voltaire";
 // Event signature: keccak256("Swap(address,uint256,uint256,uint256,uint256,address)")
 const SWAP_SIGNATURE = Hash(
 	"0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822",
@@ -20,7 +20,7 @@ const recipientAddress = Hash(
 // amount1In: 1000 USDC (6 decimals) = 1000000000 = 0x3B9ACA00
 // amount0Out: 0.5 WETH (18 decimals) = 500000000000000000 = 0x06F05B59D3B20000
 // amount1Out: 0 (no USDC out)
-const swapData = new Uint8Array(128); // 4 uint256 values = 128 bytes
+const swapData = Bytes.zero(128); // 4 uint256 values = 128 bytes
 
 // amount0In (32 bytes) - 0
 // already zero
@@ -92,7 +92,7 @@ function createSwapData(
 	amt0Out: bigint,
 	amt1Out: bigint,
 ): Uint8Array {
-	const data = new Uint8Array(128);
+	const data = Bytes.zero(128);
 	const view = new DataView(data.buffer);
 	view.setBigUint64(24, amt0In, false);
 	view.setBigUint64(56, amt1In, false);

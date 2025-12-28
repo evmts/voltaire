@@ -1,4 +1,4 @@
-import { AesGcm } from "voltaire";
+import { AesGcm, Bytes } from "@tevm/voltaire";
 const key = await AesGcm.generateKey(256);
 
 const plaintext = new TextEncoder().encode("Sensitive data");
@@ -57,10 +57,7 @@ try {
 	await AesGcm.decrypt(testCt, key, testNonce);
 } catch {}
 
-const largeAad = new Uint8Array(1024 * 100); // 100 KB
-for (let i = 0; i < largeAad.length; i++) {
-	largeAad[i] = i % 256;
-}
+const largeAad = Bytes(Array.from({ length: 1024 * 100 }, (_, i) => i % 256)); // 100 KB
 
 const smallData = new TextEncoder().encode("Small data");
 const nonceL = AesGcm.generateNonce();

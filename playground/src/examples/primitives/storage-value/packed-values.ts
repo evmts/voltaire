@@ -1,4 +1,4 @@
-import { StorageValue } from "voltaire";
+import { StorageValue, Bytes, Bytes32 } from "@tevm/voltaire";
 
 // Example: Packed storage values - multiple values in a single 32-byte slot
 
@@ -9,11 +9,11 @@ import { StorageValue } from "voltaire";
 // Layout: [uint128 value][uint64 timestamp][uint64 flags]
 
 const packedValue = (): StorageValue.StorageValueType => {
-	const bytes = new Uint8Array(32);
+	const bytes = Bytes32.zero();
 
 	// uint128 value at bytes 0-15 (1000 tokens with 18 decimals)
 	const value = 1000n * 10n ** 18n;
-	const valueBytes = new Uint8Array(16);
+	const valueBytes = Bytes.zero(16);
 	for (let i = 15; i >= 0; i--) {
 		valueBytes[i] = Number((value >> BigInt((15 - i) * 8)) & 0xffn);
 	}
@@ -31,7 +31,7 @@ const packedValue = (): StorageValue.StorageValueType => {
 		bytes[24 + i] = Number((flags >> BigInt((7 - i) * 8)) & 0xffn);
 	}
 
-	return StorageValue.from(bytes);
+	return StorageValue(bytes);
 };
 
 const packed = packedValue();
@@ -61,7 +61,7 @@ const packAddressUint96 = (
 	address: string,
 	amount: bigint,
 ): StorageValue.StorageValueType => {
-	const bytes = new Uint8Array(32);
+	const bytes = Bytes32.zero();
 
 	// Address in first 20 bytes (remove 0x prefix)
 	const addrBytes = address.slice(2).match(/.{2}/g) || [];
@@ -74,7 +74,7 @@ const packAddressUint96 = (
 		bytes[20 + i] = Number((amount >> BigInt((11 - i) * 8)) & 0xffn);
 	}
 
-	return StorageValue.from(bytes);
+	return StorageValue(bytes);
 };
 
 const packedAddr = packAddressUint96(
@@ -100,18 +100,18 @@ const extractUint96 = (storage: Uint8Array): bigint => {
 };
 
 // Example 3: Multiple uint8 values (32 individual bytes)
-const packedBytes = new Uint8Array(32);
+const packedBytes = Bytes32.zero();
 for (let i = 0; i < 32; i++) {
 	packedBytes[i] = i * 8; // 0, 8, 16, 24, ...
 }
-const multiPacked = StorageValue.from(packedBytes);
+const multiPacked = StorageValue(packedBytes);
 
 // Example 4: Bit flags (256 individual bits)
-const flagsStorage = new Uint8Array(32);
+const flagsStorage = Bytes32.zero();
 flagsStorage[0] = 0b10101010; // Set some flags in first byte
 flagsStorage[31] = 0b00001111; // Set some flags in last byte
 
-const flags = StorageValue.from(flagsStorage);
+const flags = StorageValue(flagsStorage);
 
 const checkFlag = (storage: Uint8Array, flagIndex: number): boolean => {
 	const byteIndex = Math.floor(flagIndex / 8);

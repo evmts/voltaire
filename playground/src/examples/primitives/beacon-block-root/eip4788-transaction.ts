@@ -1,36 +1,36 @@
-import { BeaconBlockRoot, BlockHeader } from "voltaire";
+import { BeaconBlockRoot, BlockHeader, Bytes, Bytes32 } from "@tevm/voltaire";
 // Example: EIP-4788 beacon root in transaction context
 
 // The beacon root is exposed via a system contract at:
 // BEACON_ROOTS_ADDRESS = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02
 
 // Block with beacon root (Cancun+)
-const cancunBlock = BlockHeader.from({
-	parentHash: new Uint8Array(32).fill(0x01),
+const cancunBlock = BlockHeader({
+	parentHash: Bytes32.zero().fill(0x01),
 	ommersHash:
 		"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
 	beneficiary: "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5",
-	stateRoot: new Uint8Array(32).fill(0x02),
-	transactionsRoot: new Uint8Array(32).fill(0x03),
-	receiptsRoot: new Uint8Array(32).fill(0x04),
-	logsBloom: new Uint8Array(256),
+	stateRoot: Bytes32.zero().fill(0x02),
+	transactionsRoot: Bytes32.zero().fill(0x03),
+	receiptsRoot: Bytes32.zero().fill(0x04),
+	logsBloom: Bytes.zero(256),
 	difficulty: 0n,
 	number: 19426587n, // Cancun activation block
 	gasLimit: 30000000n,
 	gasUsed: 15000000n,
 	timestamp: 1710338135n,
-	extraData: new Uint8Array(0),
-	mixHash: new Uint8Array(32),
-	nonce: new Uint8Array(8),
+	extraData: Bytes.zero(0),
+	mixHash: Bytes32.zero(),
+	nonce: Bytes.zero(8),
 	baseFeePerGas: 25000000000n,
-	withdrawalsRoot: new Uint8Array(32).fill(0x05),
+	withdrawalsRoot: Bytes32.zero().fill(0x05),
 	blobGasUsed: 262144n,
 	excessBlobGas: 0n,
-	parentBeaconBlockRoot: new Uint8Array(32).fill(0xaa), // EIP-4788
+	parentBeaconBlockRoot: Bytes32.zero().fill(0xaa), // EIP-4788
 });
 
 // Extract the beacon root
-const beaconRoot = BeaconBlockRoot.from(
+const beaconRoot = BeaconBlockRoot(
 	cancunBlock.parentBeaconBlockRoot as Uint8Array,
 );
 

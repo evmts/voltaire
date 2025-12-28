@@ -1,4 +1,4 @@
-import { Address, EIP712, Hex, Secp256k1 } from "voltaire";
+import { Address, EIP712, Hex, Secp256k1 } from "@tevm/voltaire";
 // EIP-712: ERC-2612 Permit signature (gasless token approval)
 
 // Generate owner keypair
@@ -7,10 +7,10 @@ const ownerPublicKey = Secp256k1.PrivateKey.toPublicKey(ownerPrivateKey);
 const ownerAddress = Secp256k1.PublicKey.toAddress(ownerPublicKey);
 
 // Spender and token contract addresses
-const spenderAddress = Address.from(
+const spenderAddress = Address(
 	"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 );
-const tokenAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"); // USDC
+const tokenAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"); // USDC
 
 // ERC-2612 Permit typed data
 const permit = {

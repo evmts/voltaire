@@ -1,4 +1,4 @@
-import { Address, Hash, Transaction } from "voltaire";
+import { Address, Hash, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
 // EIP-1559 transaction
 const eip1559Tx: Transaction.EIP1559 = {
 	type: Transaction.Type.EIP1559,
@@ -9,11 +9,11 @@ const eip1559Tx: Transaction.EIP1559 = {
 	gasLimit: 21000n,
 	to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 	value: 1000000000000000000n, // 1 ETH
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	accessList: [],
 	yParity: 1,
-	r: new Uint8Array(32).fill(1),
-	s: new Uint8Array(32).fill(2),
+	r: Bytes32.zero().fill(1),
+	s: Bytes32.zero().fill(2),
 };
 
 const eip1559Hash = Transaction.hash(eip1559Tx);
@@ -26,10 +26,10 @@ const legacyTx: Transaction.Legacy = {
 	gasLimit: 21000n,
 	to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 	value: 1000000000000000000n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	v: 27n,
-	r: new Uint8Array(32).fill(1),
-	s: new Uint8Array(32).fill(2),
+	r: Bytes32.zero().fill(1),
+	s: Bytes32.zero().fill(2),
 };
 
 const legacyHash = Transaction.hash(legacyTx);
@@ -44,14 +44,14 @@ const contractTx: Transaction.EIP1559 = {
 	gasLimit: 3000000n,
 	to: null, // null = contract creation
 	value: 0n,
-	data: new Uint8Array([
+	data: Bytes([
 		// Simple contract bytecode
 		0x60, 0x80, 0x60, 0x40, 0x52, 0x34, 0x80, 0x15,
 	]),
 	accessList: [],
 	yParity: 0,
-	r: new Uint8Array(32).fill(3),
-	s: new Uint8Array(32).fill(4),
+	r: Bytes32.zero().fill(3),
+	s: Bytes32.zero().fill(4),
 };
 
 const contractHash = Transaction.hash(contractTx);
@@ -66,16 +66,16 @@ const accessListTx: Transaction.EIP1559 = {
 	gasLimit: 100000n,
 	to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 	value: 0n,
-	data: new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]), // transfer() function selector
+	data: Bytes([0xa9, 0x05, 0x9c, 0xbb]), // transfer() function selector
 	accessList: [
 		{
 			address: Address("0x1234567890123456789012345678901234567890"),
-			storageKeys: [new Uint8Array(32).fill(1), new Uint8Array(32).fill(2)],
+			storageKeys: [Bytes32.zero().fill(1), Bytes32.zero().fill(2)],
 		},
 	],
 	yParity: 1,
-	r: new Uint8Array(32).fill(5),
-	s: new Uint8Array(32).fill(6),
+	r: Bytes32.zero().fill(5),
+	s: Bytes32.zero().fill(6),
 };
 
 const accessListHash = Transaction.hash(accessListTx);

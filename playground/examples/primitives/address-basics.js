@@ -1,6 +1,5 @@
-import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
+import { Address, Secp256k1 } from "@tevm/voltaire";
 // Address: Creating and validating Ethereum addresses
-import { Address } from "../../../src/primitives/Address/index.js";
 
 // Address extends Uint8Array - can use as bytes directly
 const addr = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");

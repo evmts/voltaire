@@ -1,20 +1,20 @@
-import { ChainId } from "voltaire";
+import { ChainId } from "@tevm/voltaire";
 
 // Calculate EIP-155 v value
 // v = CHAIN_ID * 2 + 35 + {0,1}
 const calculateV = (chainId: number, recoveryId: 0 | 1): number => {
-	const id = ChainId.from(chainId);
+	const id = ChainId(chainId);
 	return ChainId.toNumber(id) * 2 + 35 + recoveryId;
 };
 
 // Mainnet
-const mainnet = ChainId.from(ChainId.MAINNET);
+const mainnet = ChainId(ChainId.MAINNET);
 
 // Optimism
-const optimism = ChainId.from(ChainId.OPTIMISM);
+const optimism = ChainId(ChainId.OPTIMISM);
 
 // Arbitrum
-const arbitrum = ChainId.from(ChainId.ARBITRUM);
+const arbitrum = ChainId(ChainId.ARBITRUM);
 
 // Recover chainId from v
 const recoverChainId = (v: number): number | null => {
@@ -42,7 +42,7 @@ const testVValues = [37, 38, 55, 56, 84359, 84360];
 testVValues.forEach((v) => {
 	const recovered = recoverChainId(v);
 	if (recovered !== null) {
-		const chainId = ChainId.from(recovered);
+		const chainId = ChainId(recovered);
 	}
 });
 
@@ -57,7 +57,7 @@ interface TransactionData {
 }
 
 const createTransaction = (chainId: number): TransactionData => {
-	const id = ChainId.from(chainId);
+	const id = ChainId(chainId);
 	return {
 		nonce: 0,
 		gasPrice: 20000000000n,

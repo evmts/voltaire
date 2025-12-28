@@ -1,18 +1,18 @@
-import { BeaconBlockRoot } from "voltaire";
+import { BeaconBlockRoot } from "@tevm/voltaire";
 // Example: Using beacon roots to access consensus layer data
 
 // Beacon root from a finalized block
-const finalizedRoot = BeaconBlockRoot.from(
+const finalizedRoot = BeaconBlockRoot(
 	"0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
 );
 
 // Recent root (not yet finalized)
-const recentRoot = BeaconBlockRoot.from(
+const recentRoot = BeaconBlockRoot(
 	"0x3c59dc048e8850243be8079a5c74d079e77c4e3c3a6e8c3a6c8e3c3a6e8c3a6e",
 );
 
 // Root for validator withdrawal verification
-const withdrawalRoot = BeaconBlockRoot.from(
+const withdrawalRoot = BeaconBlockRoot(
 	"0x7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
 );
 

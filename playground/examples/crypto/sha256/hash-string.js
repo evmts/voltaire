@@ -1,6 +1,5 @@
 // SHA256: Hash string data
-import * as SHA256 from "../../../../src/crypto/SHA256/index.js";
-import * as Hex from "../../../../src/primitives/Hex/index.js";
+import { Hex, SHA256 } from "@tevm/voltaire";
 
 const message = "Hello, World!";
 const hash = SHA256.hashString(message);

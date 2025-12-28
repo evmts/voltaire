@@ -1,5 +1,5 @@
-import { Chain } from "voltaire";
-import type { Hardfork } from "voltaire/primitives/Chain";
+import { Chain } from "@tevm/voltaire";
+import type { Hardfork } from "@tevm/voltaire/primitives/Chain";
 
 // Example: Hardfork detection and EIP support
 

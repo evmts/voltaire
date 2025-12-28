@@ -1,4 +1,4 @@
-import { MaxFeePerGas } from "voltaire";
+import { MaxFeePerGas } from "@tevm/voltaire";
 
 // Common gas price levels in Gwei
 const slow = MaxFeePerGas.fromGwei(30n);

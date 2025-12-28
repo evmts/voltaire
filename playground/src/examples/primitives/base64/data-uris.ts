@@ -1,4 +1,4 @@
-import { Base64 } from "voltaire";
+import { Base64, Bytes } from "@tevm/voltaire";
 const text = "Hello, World!";
 const textEncoded = Base64.encodeString(text);
 const textDataUri = `data:text/plain;base64,${textEncoded}`;
@@ -18,7 +18,7 @@ const svg =
 const svgEncoded = Base64.encodeString(svg);
 const svgDataUri = `data:image/svg+xml;base64,${svgEncoded}`;
 // Simulate a small 2x2 pixel image (header + data)
-const imageData = new Uint8Array([
+const imageData = Bytes([
 	0x89,
 	0x50,
 	0x4e,
@@ -56,7 +56,7 @@ if (match) {
 }
 const sizes = [100, 1000, 10000];
 for (const size of sizes) {
-	const data = new Uint8Array(size);
+	const data = Bytes.zero(size);
 	const encoded = Base64.encode(data);
 	const dataUri = `data:application/octet-stream;base64,${encoded}`;
 	const overhead = ((dataUri.length / size - 1) * 100).toFixed(1);

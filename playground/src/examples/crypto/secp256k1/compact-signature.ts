@@ -1,4 +1,4 @@
-import { Hash, Hex, Secp256k1 } from "voltaire";
+import { Hash, Hex, Secp256k1 } from "@tevm/voltaire";
 // Compact signature format (65 bytes)
 
 // Create and sign message

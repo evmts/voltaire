@@ -1,4 +1,4 @@
-import { MaxFeePerGas } from "voltaire";
+import { MaxFeePerGas } from "@tevm/voltaire";
 
 // Base fee increases 12.5% per block when full
 // Base fee decreases 12.5% per block when empty

@@ -1,4 +1,4 @@
-import { Uint256 } from "voltaire";
+import { Uint256 } from "@tevm/voltaire";
 // Create Uint256 from number
 const small = Uint256.fromNumber(42);
 

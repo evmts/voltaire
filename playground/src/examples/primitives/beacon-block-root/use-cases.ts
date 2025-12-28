@@ -1,23 +1,23 @@
-import { BeaconBlockRoot } from "voltaire";
+import { BeaconBlockRoot } from "@tevm/voltaire";
 // Example: Real-world use cases for beacon block roots
 
 // MEV Protection: Verify validator set to prevent manipulation
-const mevProtectionRoot = BeaconBlockRoot.from(
+const mevProtectionRoot = BeaconBlockRoot(
 	"0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
 );
 
 // L2 Bridge: Prove finality for cross-chain message
-const l2BridgeRoot = BeaconBlockRoot.from(
+const l2BridgeRoot = BeaconBlockRoot(
 	"0x9f8e7d6c5b4a3928170f1e2d3c4b5a69780f1e2d3c4b5a69780f1e2d3c4b5a69",
 );
 
 // Oracle: Trustless random number from beacon RANDAO
-const oracleRoot = BeaconBlockRoot.from(
+const oracleRoot = BeaconBlockRoot(
 	"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 );
 
 // Lido: Verify validator withdrawal credentials
-const lidoRoot = BeaconBlockRoot.from(
+const lidoRoot = BeaconBlockRoot(
 	"0x7f8e9d0c1b2a3948576e0d1c2b3a4958677e0d1c2b3a4958677e0d1c2b3a4958",
 );
 const mevExample = `

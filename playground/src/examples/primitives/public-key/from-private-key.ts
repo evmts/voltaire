@@ -1,13 +1,13 @@
-import { PrivateKey, PublicKey } from "voltaire";
+import { PrivateKey, PublicKey } from "@tevm/voltaire";
 
 // Method 1: Using PublicKey.fromPrivateKey
-const privateKey1 = PrivateKey.from(
+const privateKey1 = PrivateKey(
 	"0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a",
 );
 const publicKey1 = PublicKey.fromPrivateKey(privateKey1);
 
 // Method 2: Using PrivateKey.toPublicKey
-const privateKey2 = PrivateKey.from(
+const privateKey2 = PrivateKey(
 	"0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f",
 );
 const publicKey2 = PrivateKey._toPublicKey.call(privateKey2);
@@ -19,6 +19,6 @@ const privateKeys = [
 	"0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
 ];
 for (let i = 0; i < privateKeys.length; i++) {
-	const pk = PrivateKey.from(privateKeys[i]);
+	const pk = PrivateKey(privateKeys[i]);
 	const pubKey = PublicKey.fromPrivateKey(pk);
 }

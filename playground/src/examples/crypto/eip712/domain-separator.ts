@@ -1,4 +1,4 @@
-import { Address, EIP712, Hash, Hex } from "voltaire";
+import { Address, EIP712, Hash, Hex } from "@tevm/voltaire";
 // EIP-712: Domain separator - prevents signature replay
 
 // Different domain configurations
@@ -6,21 +6,21 @@ const domain1 = {
 	name: "MyApp",
 	version: "1",
 	chainId: 1n, // Mainnet
-	verifyingContract: Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
+	verifyingContract: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
 };
 
 const domain2 = {
 	name: "MyApp",
 	version: "1",
 	chainId: 137n, // Polygon
-	verifyingContract: Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
+	verifyingContract: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
 };
 
 const domain3 = {
 	name: "MyApp",
 	version: "2", // Different version
 	chainId: 1n,
-	verifyingContract: Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
+	verifyingContract: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
 };
 
 // Hash each domain
@@ -37,8 +37,8 @@ const saltedDomain = {
 	name: "MyApp",
 	version: "1",
 	chainId: 1n,
-	verifyingContract: Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
-	salt: Hash.from(
+	verifyingContract: Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
+	salt: Hash(
 		"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 	),
 };

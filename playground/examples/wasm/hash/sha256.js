@@ -1,5 +1,5 @@
 // WASM: sha256 on bytes
-import { sha256, bytesToHex } from "voltaire/wasm";
+import { sha256, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   const data = new TextEncoder().encode("abc");

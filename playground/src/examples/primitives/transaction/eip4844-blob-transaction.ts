@@ -1,4 +1,4 @@
-import { Address, Hash, Transaction } from "voltaire";
+import { Address, Hash, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
 // EIP-4844 Transaction: Blob transactions for L2 data availability
 
 // Create EIP-4844 blob transaction (for L2 rollups)
@@ -9,18 +9,18 @@ const eip4844: Transaction.EIP4844 = {
 	maxPriorityFeePerGas: 1_000_000_000n,
 	maxFeePerGas: 20_000_000_000n,
 	gasLimit: 100_000n,
-	to: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"), // Must be contract
+	to: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"), // Must be contract
 	value: 0n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	accessList: [],
 	maxFeePerBlobGas: 1_000_000_000n, // Max willing to pay per blob gas
 	blobVersionedHashes: [
-		Hash.from(`0x01${"00".repeat(31)}`), // KZG commitment hash for blob 1
-		Hash.from(`0x01${"11".repeat(31)}`), // KZG commitment hash for blob 2
+		Hash(`0x01${"00".repeat(31)}`), // KZG commitment hash for blob 1
+		Hash(`0x01${"11".repeat(31)}`), // KZG commitment hash for blob 2
 	],
 	yParity: 0,
-	r: new Uint8Array(32),
-	s: new Uint8Array(32),
+	r: Bytes32.zero(),
+	s: Bytes32.zero(),
 };
 
 // Get blob count

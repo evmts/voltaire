@@ -1,4 +1,4 @@
-import { Nonce } from "voltaire";
+import { Nonce } from "@tevm/voltaire";
 
 // Strategy 1: Simple sequential nonce tracker
 class SimpleNonceTracker {
@@ -18,7 +18,7 @@ class SimpleNonceTracker {
 		return this.current;
 	}
 }
-const tracker = new SimpleNonceTracker(Nonce.from(0));
+const tracker = new SimpleNonceTracker(Nonce(0));
 
 // Strategy 2: Nonce tracker with pending awareness
 class PendingAwareTracker {
@@ -63,7 +63,7 @@ class PendingAwareTracker {
 		};
 	}
 }
-const advTracker = new PendingAwareTracker(Nonce.from(0));
+const advTracker = new PendingAwareTracker(Nonce(0));
 
 const nonce1 = advTracker.getNext();
 
@@ -115,7 +115,7 @@ class NonceReservationSystem {
 		}
 	}
 }
-const reservationSystem = new NonceReservationSystem(Nonce.from(0));
+const reservationSystem = new NonceReservationSystem(Nonce(0));
 const reserved1 = reservationSystem.reserve("tx-001");
 const reserved2 = reservationSystem.reserve("tx-002");
 const reserved3 = reservationSystem.reserve("tx-003");
@@ -141,13 +141,13 @@ class MultiAccountNonceManager {
 
 	getNext(address: string): bigint {
 		const key = address.toLowerCase();
-		const current = this.accounts.get(key) ?? Nonce.from(0);
+		const current = this.accounts.get(key) ?? Nonce(0);
 		this.accounts.set(key, Nonce.increment(current));
 		return current;
 	}
 
 	peek(address: string): bigint {
-		return this.accounts.get(address.toLowerCase()) ?? Nonce.from(0);
+		return this.accounts.get(address.toLowerCase()) ?? Nonce(0);
 	}
 
 	showAll(): void {
@@ -160,15 +160,15 @@ const multiManager = new MultiAccountNonceManager();
 
 multiManager.initialize(
 	"0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-	Nonce.from(5),
+	Nonce(5),
 );
 multiManager.initialize(
 	"0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
-	Nonce.from(10),
+	Nonce(10),
 );
 multiManager.initialize(
 	"0x5aAed5930b9EB3Cd462dDbAEfA21DA757F30FbD",
-	Nonce.from(0),
+	Nonce(0),
 );
 
 multiManager.showAll();

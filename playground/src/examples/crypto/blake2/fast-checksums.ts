@@ -1,4 +1,4 @@
-import { Blake2, Hex } from "voltaire";
+import { Blake2, Bytes, Hex } from "@tevm/voltaire";
 // Blake2b is optimized for speed - ideal for checksums
 
 // Fast 16-byte checksum for data deduplication
@@ -11,8 +11,8 @@ function cryptoChecksum(data: Uint8Array): Uint8Array {
 	return Blake2.hash(data, 32);
 }
 
-const file1 = new Uint8Array(1024).fill(0x41); // 1KB of 'A'
-const file2 = new Uint8Array(1024).fill(0x42); // 1KB of 'B'
+const file1 = Bytes(Array(1024).fill(0x41)); // 1KB of 'A'
+const file2 = Bytes(Array(1024).fill(0x42)); // 1KB of 'B'
 
 const checksum1 = fastChecksum(file1);
 

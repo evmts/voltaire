@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI } from "@tevm/voltaire";
 
 // Example: Encode constructor with basic parameters
 const basicConstructor = ABI.Constructor.encodeParams(

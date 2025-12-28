@@ -1,4 +1,4 @@
-import { Opcode } from "voltaire";
+import { Opcode } from "@tevm/voltaire";
 // SLOAD (0x54) - Load from storage
 const sloadInfo = Opcode.info(Opcode.SLOAD);
 

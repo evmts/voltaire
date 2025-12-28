@@ -1,4 +1,4 @@
-import { KZG } from "voltaire";
+import { Bytes, KZG } from "@tevm/voltaire";
 // Example: Batch verification of multiple blob proofs
 
 KZG.loadTrustedSetup();
@@ -15,9 +15,7 @@ for (let i = 0; i < numBlobs; i++) {
 
 	// For batch verification, use specialized blob proofs
 	// (Note: simplified example - real blob proofs have specific format)
-	const z = new Uint8Array(32);
-	z[0] = 0;
-	z[31] = i;
+	const z = Bytes([...Array(31).fill(0), i]);
 	const { proof } = KZG.Proof(blob, z);
 
 	blobs.push(blob);
@@ -27,9 +25,7 @@ for (let i = 0; i < numBlobs; i++) {
 const individualStart = performance.now();
 
 for (let i = 0; i < numBlobs; i++) {
-	const z = new Uint8Array(32);
-	z[0] = 0;
-	z[31] = i;
+	const z = Bytes([...Array(31).fill(0), i]);
 	const { y } = KZG.Proof(blobs[i], z);
 	const valid = KZG.verifyKzgProof(commitments[i], z, y, proofs[i]);
 }
@@ -53,7 +49,7 @@ try {
 	);
 } catch (error: any) {}
 try {
-	const wrongBlob = new Uint8Array(1000);
+	const wrongBlob = Bytes.zero(1000);
 	KZG.verifyBlobKzgProofBatch([wrongBlob], [commitments[0]], [proofs[0]]);
 } catch (error: any) {}
 

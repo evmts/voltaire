@@ -1,7 +1,7 @@
-import { Block, BlockBody, BlockHash, BlockHeader } from "voltaire";
+import { Block, BlockBody, BlockHash, BlockHeader, Bytes } from "@tevm/voltaire";
 // Create a valid block
-const validBlock = Block.from({
-	header: BlockHeader.from({
+const validBlock = Block({
+	header: BlockHeader({
 		parentHash:
 			"0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3",
 		ommersHash:
@@ -13,19 +13,19 @@ const validBlock = Block.from({
 			"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 		receiptsRoot:
 			"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-		logsBloom: new Uint8Array(256),
+		logsBloom: Bytes.zero(256),
 		difficulty: 0n,
 		number: 19426587n,
 		gasLimit: 30000000n,
 		gasUsed: 15234567n, // <= gasLimit (valid)
 		timestamp: 1710338455n,
-		extraData: new Uint8Array(0),
+		extraData: Bytes.zero(0),
 		mixHash:
 			"0x0000000000000000000000000000000000000000000000000000000000000000",
-		nonce: new Uint8Array(8),
+		nonce: Bytes.zero(8),
 		baseFeePerGas: 12345678900n,
 	}),
-	body: BlockBody.from({
+	body: BlockBody({
 		transactions: [],
 		ommers: [],
 	}),

@@ -1,12 +1,12 @@
-import { BaseFeePerGas } from "voltaire";
+import { BaseFeePerGas } from "@tevm/voltaire";
 
 // Example: BaseFeePerGas basics - EIP-1559 base fee mechanism
 
 // Create base fees from various units
-const fee1 = BaseFeePerGas.from(25000000000n); // Wei
+const fee1 = BaseFeePerGas(25000000000n); // Wei
 const fee2 = BaseFeePerGas.fromWei(30000000000n); // Wei
 const fee3 = BaseFeePerGas.fromGwei(15n); // Gwei (common unit)
-const fee4 = BaseFeePerGas.from("0x5d21dba00"); // Hex
+const fee4 = BaseFeePerGas("0x5d21dba00"); // Hex
 const mainnetFee = BaseFeePerGas.fromGwei(25n);
 const lowCongestion = BaseFeePerGas.fromGwei(15n);
 const mediumCongestion = BaseFeePerGas.fromGwei(30n);

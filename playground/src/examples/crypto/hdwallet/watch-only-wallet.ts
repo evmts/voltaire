@@ -1,4 +1,4 @@
-import { Bip39, HDWallet, Hex } from "voltaire";
+import { Bip39, HDWallet, Hex } from "@tevm/voltaire";
 // HD Wallet: Watch-only wallet (xpub for monitoring without spending)
 
 const mnemonic =

@@ -1,4 +1,4 @@
-import { BeaconBlockRoot } from "voltaire";
+import { BeaconBlockRoot } from "@tevm/voltaire";
 // Example: EIP-4788 ring buffer mechanics
 
 // The BEACON_ROOTS_ADDRESS stores roots in a ring buffer
@@ -16,25 +16,25 @@ const currentTime = 1710338135n; // Example: March 2024
 const recentBlocks = [
 	{
 		timestamp: currentTime,
-		root: BeaconBlockRoot.from(
+		root: BeaconBlockRoot(
 			"0x1111111111111111111111111111111111111111111111111111111111111111",
 		),
 	},
 	{
 		timestamp: currentTime - 12n,
-		root: BeaconBlockRoot.from(
+		root: BeaconBlockRoot(
 			"0x2222222222222222222222222222222222222222222222222222222222222222",
 		),
 	},
 	{
 		timestamp: currentTime - 24n,
-		root: BeaconBlockRoot.from(
+		root: BeaconBlockRoot(
 			"0x3333333333333333333333333333333333333333333333333333333333333333",
 		),
 	},
 	{
 		timestamp: currentTime - 36n,
-		root: BeaconBlockRoot.from(
+		root: BeaconBlockRoot(
 			"0x4444444444444444444444444444444444444444444444444444444444444444",
 		),
 	},

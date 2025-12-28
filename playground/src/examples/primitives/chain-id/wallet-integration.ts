@@ -1,13 +1,13 @@
-import { ChainId } from "voltaire";
+import { ChainId } from "@tevm/voltaire";
 
 class WalletProvider {
 	private currentChain: number;
 	private supportedChains: Set<number>;
 
 	constructor(initialChain: number, supportedChains: number[]) {
-		this.currentChain = ChainId.toNumber(ChainId.from(initialChain));
+		this.currentChain = ChainId.toNumber(ChainId(initialChain));
 		this.supportedChains = new Set(
-			supportedChains.map((id) => ChainId.toNumber(ChainId.from(id))),
+			supportedChains.map((id) => ChainId.toNumber(ChainId(id))),
 		);
 	}
 
@@ -16,14 +16,14 @@ class WalletProvider {
 	}
 
 	async switchChain(targetChain: number): Promise<boolean> {
-		const target = ChainId.from(targetChain);
+		const target = ChainId(targetChain);
 		const targetNum = ChainId.toNumber(target);
 
 		if (!this.supportedChains.has(targetNum)) {
 			return false;
 		}
 
-		if (ChainId.equals(ChainId.from(this.currentChain), target)) {
+		if (ChainId.equals(ChainId(this.currentChain), target)) {
 			return true;
 		}
 		this.currentChain = targetNum;
@@ -31,7 +31,7 @@ class WalletProvider {
 	}
 
 	async addChain(chainId: number, config: ChainConfig): Promise<boolean> {
-		const chain = ChainId.from(chainId);
+		const chain = ChainId(chainId);
 		const chainNum = ChainId.toNumber(chain);
 
 		if (this.supportedChains.has(chainNum)) {
@@ -95,11 +95,11 @@ class TransactionManager {
 		// Use current chain if not specified
 		const chainId =
 			tx.chainId !== undefined ? tx.chainId : this.wallet.getCurrentChainId();
-		const chain = ChainId.from(chainId);
+		const chain = ChainId(chainId);
 		const chainNum = ChainId.toNumber(chain);
 
 		// Validate chain matches wallet
-		const currentChain = ChainId.from(this.wallet.getCurrentChainId());
+		const currentChain = ChainId(this.wallet.getCurrentChainId());
 		if (!ChainId.equals(chain, currentChain)) {
 			await this.wallet.switchChain(chainNum);
 		}
@@ -133,8 +133,8 @@ class ChainGuard {
 	) {}
 
 	async executeWithGuard<T>(operation: () => Promise<T>): Promise<T> {
-		const expected = ChainId.from(this.expectedChain);
-		const current = ChainId.from(this.wallet.getCurrentChainId());
+		const expected = ChainId(this.expectedChain);
+		const current = ChainId(this.wallet.getCurrentChainId());
 
 		if (!ChainId.equals(current, expected)) {
 			await this.wallet.switchChain(ChainId.toNumber(expected));
@@ -158,7 +158,7 @@ class BalanceChecker {
 		address: string,
 		chainId: number,
 	): Promise<{ chainId: number; balance: bigint }> {
-		const chain = ChainId.from(chainId);
+		const chain = ChainId(chainId);
 		const chainNum = ChainId.toNumber(chain);
 
 		// Switch to target chain

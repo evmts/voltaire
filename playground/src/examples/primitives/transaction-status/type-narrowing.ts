@@ -1,5 +1,5 @@
-import { type Uint256Type } from "voltaire";
-import { TransactionStatus } from "voltaire";
+import { type Uint256Type } from "@tevm/voltaire";
+import { TransactionStatus } from "@tevm/voltaire";
 
 type Status =
 	| ReturnType<typeof TransactionStatus.pending>

@@ -1,10 +1,10 @@
-import { hash as keccak256 } from "voltaire";
-import { Domain, Hex } from "voltaire";
+import { hash as keccak256 } from "@tevm/voltaire";
+import { Domain, Hex } from "@tevm/voltaire";
 
 // Example: EIP-712 domain separator usage for typed data signing
 
 // EIP-712 domain for a decentralized exchange
-const dexDomain = Domain.from({
+const dexDomain = Domain({
 	name: "DecentralizedExchange",
 	version: "1.0.0",
 	chainId: 1,

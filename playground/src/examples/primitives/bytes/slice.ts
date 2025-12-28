@@ -1,4 +1,4 @@
-import { Bytes } from "voltaire";
+import { Bytes } from "@tevm/voltaire";
 // Slice byte arrays
 const data = Bytes.fromHex("0x0123456789abcdef");
 

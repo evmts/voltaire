@@ -1,4 +1,4 @@
-import { Hex, X25519 } from "voltaire";
+import { Hex, X25519 } from "@tevm/voltaire";
 // Multi-party key exchange scenarios
 
 const alice = X25519.generateKeypair();

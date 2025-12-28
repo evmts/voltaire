@@ -1,11 +1,10 @@
-
-import { hash as keccak256, Labelhash, Namehash } from "voltaire";
+import { Ens, hash as keccak256, Hex, Labelhash, Namehash } from "@tevm/voltaire";
 // Factory API (explicit dependency injection)
 
 const namehash = Namehash({ keccak256 });
 const labelhash = Labelhash({ keccak256 });
 
-const name = Ens.from("vitalik.eth");
+const name = Ens("vitalik.eth");
 
 // Wrapper API (auto-converts)
 const hash1 = Ens.namehash("vitalik.eth");
@@ -19,11 +18,11 @@ const input = "VITALIK.eth";
 const publicResult = Ens.normalize(input);
 
 // Internal method (requires branded type)
-const branded = Ens.from(input);
+const branded = Ens(input);
 const internalResult = Ens._normalize(branded);
 
 const regularString: string = "vitalik.eth";
-const ensName = Ens.from(regularString);
+const ensName = Ens(regularString);
 const backToString = Ens.toString(ensName);
 const testValues = ["vitalik.eth", "", "   ", null, undefined, 123];
 for (const value of testValues) {

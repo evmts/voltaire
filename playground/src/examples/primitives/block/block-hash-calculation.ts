@@ -1,5 +1,5 @@
-import { BlockHash, BlockHeader, Hash } from "voltaire";
-const header = BlockHeader.from({
+import { BlockHash, BlockHeader, Hash, Bytes, Bytes32 } from "@tevm/voltaire";
+const header = BlockHeader({
 	parentHash:
 		"0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3",
 	ommersHash:
@@ -11,22 +11,22 @@ const header = BlockHeader.from({
 		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 	receiptsRoot:
 		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-	logsBloom: new Uint8Array(256),
+	logsBloom: Bytes.zero(256),
 	difficulty: 17171480576n,
 	number: 1n,
 	gasLimit: 5000n,
 	gasUsed: 0n,
 	timestamp: 1438269988n,
-	extraData: new Uint8Array(32),
+	extraData: Bytes32.zero(),
 	mixHash: "0x969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f59",
-	nonce: new Uint8Array(8).fill(0x53),
+	nonce: Bytes.repeat(0x53, 8),
 });
 
 // The expected block hash for block 1 on mainnet
-const expectedHash = BlockHash.from(
+const expectedHash = BlockHash(
 	"0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6",
 );
-const modifiedHeader = BlockHeader.from({
+const modifiedHeader = BlockHeader({
 	parentHash:
 		"0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3",
 	ommersHash:
@@ -38,13 +38,13 @@ const modifiedHeader = BlockHeader.from({
 		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 	receiptsRoot:
 		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-	logsBloom: new Uint8Array(256),
+	logsBloom: Bytes.zero(256),
 	difficulty: 17171480576n,
 	number: 2n, // Changed from 1 to 2
 	gasLimit: 5000n,
 	gasUsed: 0n,
 	timestamp: 1438269988n,
-	extraData: new Uint8Array(32),
+	extraData: Bytes32.zero(),
 	mixHash: "0x969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f59",
-	nonce: new Uint8Array(8).fill(0x53),
+	nonce: Bytes.repeat(0x53, 8),
 });

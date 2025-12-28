@@ -1,8 +1,8 @@
-import { BeaconBlockRoot } from "voltaire";
+import { BeaconBlockRoot } from "@tevm/voltaire";
 // Example: Merkle proof verification using beacon roots
 
 // Beacon root for a finalized block
-const beaconRoot = BeaconBlockRoot.from(
+const beaconRoot = BeaconBlockRoot(
 	"0x8e47c00dcd5d2d4e5b1f6e4c8e2fce50cf842a8c5a8b0b5c1e4d3a2b1c0d9e8f",
 );
 const sszStructure = `
@@ -118,7 +118,7 @@ const beaconBlock = await fetch(
   'http://localhost:5052/eth/v2/beacon/blocks/head'
 ).then(r => r.json());
 
-const beaconRoot = BeaconBlockRoot.from(beaconBlock.data.root);
+const beaconRoot = BeaconBlockRoot(beaconBlock.data.root);
 
 // Get state
 const state = await fetch(

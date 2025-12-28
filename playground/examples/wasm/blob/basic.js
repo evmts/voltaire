@@ -1,5 +1,5 @@
 // WASM: EIP-4844 blob helpers
-import { blobFromData, blobToData, blobIsValid, blobEstimateCount, blobCalculateGas, blobCalculateGasPrice, blobCalculateExcessGas } from "voltaire/wasm";
+import { blobFromData, blobToData, blobIsValid, blobEstimateCount, blobCalculateGas, blobCalculateGasPrice, blobCalculateExcessGas } from "@tevm/voltaire/wasm";
 
 (() => {
   // Create a small fake blob from bytes

@@ -1,6 +1,5 @@
 // EVM Frame: Create execution frames
-import { Frame } from "../../../src/evm/Frame/index.js";
-import { Address } from "../../../src/primitives/Address/index.js";
+import { Address, Frame } from "@tevm/voltaire";
 
 // Create a simple frame with defaults
 const frame = Frame({

@@ -1,4 +1,4 @@
-import { Ens, Hex } from "voltaire";
+import { Ens, Hex } from "@tevm/voltaire";
 const ethFoundation = [
 	{ name: "vitalik.eth", desc: "Vitalik Buterin - Ethereum founder" },
 	{ name: "nick.eth", desc: "Nick Johnson - ENS creator" },

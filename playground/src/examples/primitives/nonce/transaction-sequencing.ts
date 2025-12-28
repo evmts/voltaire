@@ -1,7 +1,7 @@
-import { Nonce } from "voltaire";
+import { Nonce } from "@tevm/voltaire";
 
 // Account starts with nonce 0
-let accountNonce = Nonce.from(0);
+let accountNonce = Nonce(0);
 
 // Create transaction queue
 interface PendingTx {
@@ -31,9 +31,9 @@ for (const tx of txQueue) {
 }
 
 const receivedTxs = [
-	{ nonce: Nonce.from(2), label: "Tx 3" },
-	{ nonce: Nonce.from(0), label: "Tx 1" },
-	{ nonce: Nonce.from(1), label: "Tx 2" },
+	{ nonce: Nonce(2), label: "Tx 3" },
+	{ nonce: Nonce(0), label: "Tx 1" },
+	{ nonce: Nonce(1), label: "Tx 2" },
 ];
 for (const tx of receivedTxs) {
 }
@@ -43,12 +43,12 @@ receivedTxs.sort((a, b) => Number(a.nonce - b.nonce));
 for (const tx of receivedTxs) {
 }
 
-let expectedNonce = Nonce.from(0);
+let expectedNonce = Nonce(0);
 const incomingTxs = [
-	Nonce.from(0),
-	Nonce.from(1),
-	Nonce.from(3), // Gap! Missing nonce 2
-	Nonce.from(4),
+	Nonce(0),
+	Nonce(1),
+	Nonce(3), // Gap! Missing nonce 2
+	Nonce(4),
 ];
 
 for (const txNonce of incomingTxs) {

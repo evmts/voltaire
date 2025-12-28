@@ -1,4 +1,4 @@
-import { Ens } from "voltaire";
+import { Ens } from "@tevm/voltaire";
 // Normalization converts names to canonical lowercase form
 // This ensures consistent hashing and lookups
 

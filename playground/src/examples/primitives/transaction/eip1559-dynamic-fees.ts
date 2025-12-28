@@ -1,4 +1,4 @@
-import { Address, Hex, Transaction } from "voltaire";
+import { Address, Hex, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
 // EIP-1559 Transaction: Dynamic fee market with priority fees
 
 // Create EIP-1559 transaction (most common type post-London fork)
@@ -9,13 +9,13 @@ const eip1559: Transaction.EIP1559 = {
 	maxPriorityFeePerGas: 2_000_000_000n, // 2 gwei tip to miner
 	maxFeePerGas: 30_000_000_000n, // 30 gwei maximum willing to pay
 	gasLimit: 21_000n,
-	to: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
+	to: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 	value: 500_000_000_000_000_000n, // 0.5 ETH
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	accessList: [],
 	yParity: 0,
-	r: new Uint8Array(32),
-	s: new Uint8Array(32),
+	r: Bytes32.zero(),
+	s: Bytes32.zero(),
 };
 
 // Calculate effective gas price given current base fee

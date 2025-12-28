@@ -1,12 +1,11 @@
-import { Hex, X25519 } from "voltaire";
+import { Bytes, Hex, X25519 } from "@tevm/voltaire";
 // Deriving public keys from secret keys
 
 const secretKey = X25519.generateSecretKey();
 
 // Derive public key
 const publicKey = X25519.derivePublicKey(secretKey);
-const seed = new Uint8Array(32);
-crypto.getRandomValues(seed);
+const seed = Bytes.random(32);
 const keypair = X25519.keypairFromSeed(seed);
 
 const manuallyDerived = X25519.derivePublicKey(keypair.secretKey);
@@ -20,8 +19,7 @@ const testSecret = X25519.generateSecretKey();
 const derivedPub = X25519.derivePublicKey(testSecret);
 
 // Manually multiply by base point (9)
-const basePoint = new Uint8Array(32);
-basePoint[0] = 9;
+const basePoint = Bytes([9, ...Array(31).fill(0)]);
 const baseMult = X25519.scalarmult(testSecret, basePoint);
 
 const matchesBasePoint = derivedPub.every((byte, i) => byte === baseMult[i]);

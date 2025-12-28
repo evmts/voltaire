@@ -1,4 +1,4 @@
-import { Blob } from "voltaire";
+import { Blob } from "@tevm/voltaire";
 // Create blob with some data
 const data = new TextEncoder().encode(
 	"This blob will generate a KZG commitment",

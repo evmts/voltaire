@@ -1,11 +1,11 @@
-import { Signature } from "voltaire";
-import { Hash } from "voltaire";
+import { Signature } from "@tevm/voltaire";
+import { Hash } from "@tevm/voltaire";
 
 // Create signature
-const r = Hash.from(
+const r = Hash(
 	"0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0",
 );
-const s = Hash.from(
+const s = Hash(
 	"0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a",
 );
 const sig = Signature.fromSecp256k1(r, s, 28);

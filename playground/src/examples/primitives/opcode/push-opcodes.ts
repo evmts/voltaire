@@ -1,4 +1,4 @@
-import { Opcode } from "voltaire";
+import { Opcode, Bytes } from "@tevm/voltaire";
 // PUSH0 (0x5f) - Push 0 onto stack
 const push0Info = Opcode.info(Opcode.PUSH0);
 
@@ -27,11 +27,11 @@ const pushOpcodes = [
 for (const op of pushOpcodes) {
 }
 // Manually construct PUSH instructions
-const push1Bytecode = new Uint8Array([Opcode.PUSH1, 0x42]);
+const push1Bytecode = Bytes([Opcode.PUSH1, 0x42]);
 
-const push2Bytecode = new Uint8Array([Opcode.PUSH2, 0x12, 0x34]);
+const push2Bytecode = Bytes([Opcode.PUSH2, 0x12, 0x34]);
 
-const push4Bytecode = new Uint8Array([Opcode.PUSH4, 0xaa, 0xbb, 0xcc, 0xdd]);
+const push4Bytecode = Bytes([Opcode.PUSH4, 0xaa, 0xbb, 0xcc, 0xdd]);
 // Show all 33 PUSH opcodes (PUSH0 + PUSH1-PUSH32)
 const allPushOpcodes = [
 	Opcode.PUSH0,

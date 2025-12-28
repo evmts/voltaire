@@ -1,4 +1,4 @@
-import { Hash, Secp256k1 } from "voltaire";
+import { Bytes, Hash, Secp256k1 } from "@tevm/voltaire";
 // Validate signatures
 
 // Valid signature
@@ -8,7 +8,7 @@ const validSig = Secp256k1.sign(messageHash, privateKey);
 
 // Invalid: wrong r length
 const wrongRLength = {
-	r: new Uint8Array(16),
+	r: Bytes.zero(16),
 	s: validSig.s,
 	yParity: validSig.yParity,
 };
@@ -16,13 +16,13 @@ const wrongRLength = {
 // Invalid: wrong s length
 const wrongSLength = {
 	r: validSig.r,
-	s: new Uint8Array(16),
+	s: Bytes.zero(16),
 	yParity: validSig.yParity,
 };
 
 // Invalid: r is zero
 const zeroR = {
-	r: new Uint8Array(32),
+	r: Bytes.zero(32),
 	s: validSig.s,
 	yParity: validSig.yParity,
 };
@@ -30,7 +30,7 @@ const zeroR = {
 // Invalid: s is zero
 const zeroS = {
 	r: validSig.r,
-	s: new Uint8Array(32),
+	s: Bytes.zero(32),
 	yParity: validSig.yParity,
 };
 

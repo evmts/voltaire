@@ -1,4 +1,4 @@
-import { Uint256 } from "voltaire";
+import { Uint256 } from "@tevm/voltaire";
 // Basic division
 const a = Uint256.fromNumber(100);
 const b = Uint256.fromNumber(10);

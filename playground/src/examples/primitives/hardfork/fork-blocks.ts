@@ -1,4 +1,4 @@
-import { Hardfork } from "voltaire";
+import { Hardfork } from "@tevm/voltaire";
 interface ForkBlock {
 	name: string;
 	block: number | string;

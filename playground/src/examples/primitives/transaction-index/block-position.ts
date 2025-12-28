@@ -1,6 +1,6 @@
-import { TransactionIndex } from "voltaire";
+import { TransactionIndex } from "@tevm/voltaire";
 const blockSize = 200;
-const txIndex = TransactionIndex.from(50);
+const txIndex = TransactionIndex(50);
 
 const position = TransactionIndex.toNumber(txIndex) + 1; // 1-based position
 const percentComplete =
@@ -17,14 +17,14 @@ function categorizePosition(idx: typeof txIndex, total: number): string {
 }
 
 const positions = [0, 25, 50, 100, 150, 199].map((n) =>
-	TransactionIndex.from(n),
+	TransactionIndex(n),
 );
 positions.forEach((idx) => {
 	const cat = categorizePosition(idx, blockSize);
 });
 const block18500000Size = 172;
 const sampleIndexes = [0, 43, 86, 129, 171].map((n) =>
-	TransactionIndex.from(n),
+	TransactionIndex(n),
 );
 
 sampleIndexes.forEach((idx) => {
@@ -48,15 +48,15 @@ function indexAtPercent(
 	total: number,
 ): ReturnType<typeof TransactionIndex.from> {
 	const index = Math.floor((total - 1) * (percent / 100));
-	return TransactionIndex.from(index);
+	return TransactionIndex(index);
 }
 
 const percentages = [0, 25, 50, 75, 100];
 percentages.forEach((pct) => {
 	const idx = indexAtPercent(pct, blockSize);
 });
-const reference = TransactionIndex.from(100);
-const others = [50, 100, 150].map((n) => TransactionIndex.from(n));
+const reference = TransactionIndex(100);
+const others = [50, 100, 150].map((n) => TransactionIndex(n));
 others.forEach((idx) => {
 	const num = TransactionIndex.toNumber(idx);
 	const ref = TransactionIndex.toNumber(reference);

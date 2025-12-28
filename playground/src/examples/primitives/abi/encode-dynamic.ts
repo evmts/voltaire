@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI, Bytes } from "@tevm/voltaire";
 
 // Example: Encode dynamic string type
 const stringParams = ABI.encodeParameters(
@@ -12,7 +12,7 @@ const stringParams = ABI.encodeParameters(
 // Example: Encode dynamic bytes type
 const bytesParams = ABI.encodeParameters(
 	[{ type: "bytes", name: "data" }],
-	[new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])],
+	[Bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])],
 );
 
 // Example: Encode dynamic array
@@ -45,7 +45,7 @@ const mixedParams = ABI.encodeParameters(
 		1n,
 		"NFT #1",
 		"0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-		new Uint8Array([0x01, 0x02, 0x03]),
+		Bytes([0x01, 0x02, 0x03]),
 	],
 );
 

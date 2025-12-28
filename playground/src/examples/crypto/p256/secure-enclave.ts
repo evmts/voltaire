@@ -1,7 +1,7 @@
-import { Hash, P256 } from "voltaire";
+import { Bytes, Hash, P256 } from "@tevm/voltaire";
 // In real Secure Enclave, this happens in hardware
 // Private key never accessible to main CPU
-const secureEnclavePrivateKey = crypto.getRandomValues(new Uint8Array(32));
+const secureEnclavePrivateKey = Bytes.random(32);
 const publicKey = P256.derivePublicKey(secureEnclavePrivateKey);
 
 const userAuthenticated = true; // Simulated biometric auth

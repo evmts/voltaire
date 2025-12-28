@@ -1,11 +1,11 @@
-import { BloomFilter } from "voltaire";
+import { BloomFilter, Bytes } from "@tevm/voltaire";
 
 const bloom = BloomFilter.create(2048, 3);
 
 // Add some addresses
 const addedAddresses: Uint8Array[] = [];
 for (let i = 1; i <= 10; i++) {
-	const addr = new Uint8Array(20);
+	const addr = Bytes.zero(20);
 	addr[0] = i;
 	addr[19] = i;
 	addedAddresses.push(addr);
@@ -19,7 +19,7 @@ for (let i = 0; i < addedAddresses.length; i++) {
 let trueNegatives = 0;
 let falsePositives = 0;
 for (let i = 100; i < 110; i++) {
-	const addr = new Uint8Array(20);
+	const addr = Bytes.zero(20);
 	addr[0] = i;
 	addr[19] = i;
 	const contains = BloomFilter.contains(bloom, addr);
@@ -29,7 +29,7 @@ for (let i = 100; i < 110; i++) {
 		falsePositives++;
 	}
 }
-const targetAddress = new Uint8Array(20);
+const targetAddress = Bytes.zero(20);
 targetAddress[0] = 5;
 targetAddress[19] = 5;
 const inBloom = BloomFilter.contains(bloom, targetAddress);

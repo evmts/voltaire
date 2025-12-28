@@ -1,6 +1,6 @@
-import { Hex } from "voltaire";
+import { Hex } from "@tevm/voltaire";
 // Slice hex strings by byte offsets
-const hex = Hex.from("0x123456789abcdef0");
+const hex = Hex("0x123456789abcdef0");
 
 // Extract first 4 bytes
 const first4 = hex.slice(0, 4);
@@ -12,7 +12,7 @@ const last4 = hex.slice(4, 8);
 const middle = hex.slice(2, 6);
 
 // Extract function selector (first 4 bytes of calldata)
-const calldata = Hex.from(
+const calldata = Hex(
 	"0x70a08231000000000000000000000000742d35Cc6634C0532925a3b844Bc454e4438f44e",
 );
 const selector = calldata.slice(0, 4);

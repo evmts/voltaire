@@ -1,4 +1,4 @@
-import { GasUsed } from "voltaire";
+import { GasUsed } from "@tevm/voltaire";
 // Real-world transaction gas usage data
 const transactions = [
 	{ name: "Alice: ETH Transfer", gasUsed: 21000n },
@@ -15,7 +15,7 @@ const sorted = [...transactions].sort((a, b) =>
 
 for (let i = 0; i < sorted.length; i++) {
 	const tx = sorted[i];
-	const gasUsed = GasUsed.from(tx.gasUsed);
+	const gasUsed = GasUsed(tx.gasUsed);
 	const position = i + 1;
 
 	if (i > 0) {
@@ -24,10 +24,10 @@ for (let i = 0; i < sorted.length; i++) {
 		const percentMore = (Number(tx.gasUsed) / Number(prev.gasUsed) - 1) * 100;
 	}
 }
-const gas1 = GasUsed.from(21000n);
-const gas2 = GasUsed.from("21000");
-const gas3 = GasUsed.from(21000);
-const gas4 = GasUsed.from(46000n);
+const gas1 = GasUsed(21000n);
+const gas2 = GasUsed("21000");
+const gas3 = GasUsed(21000);
+const gas4 = GasUsed(46000n);
 const base = transactions[0].gasUsed; // ETH transfer
 
 for (const tx of transactions.slice(1)) {

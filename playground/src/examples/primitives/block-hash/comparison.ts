@@ -1,22 +1,22 @@
-import { BlockHash } from "voltaire";
+import { BlockHash } from "@tevm/voltaire";
 // Create some block hashes for comparison
-const genesis = BlockHash.from(
+const genesis = BlockHash(
 	"0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3",
 );
-const block1 = BlockHash.from(
+const block1 = BlockHash(
 	"0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6",
 );
-const merge = BlockHash.from(
+const merge = BlockHash(
 	"0x56a9bb0302da44b8c0b3df540781424684c3af04d0b7a38d72842b762076a664",
 );
 
-const genesisClone = BlockHash.from(
+const genesisClone = BlockHash(
 	"0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3",
 );
-const upperCase = BlockHash.from(
+const upperCase = BlockHash(
 	"0xD4E56740F876AEF8C010B86A40D5F56745A118D0906A34E69AEC8C0DB1CB8FA3",
 );
-const lowerCase = BlockHash.from(
+const lowerCase = BlockHash(
 	"0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3",
 );
 
@@ -40,9 +40,9 @@ const knownBlocks = [
 ];
 
 function findBlock(searchHash: string): string | null {
-	const search = BlockHash.from(searchHash);
+	const search = BlockHash(searchHash);
 	for (const block of knownBlocks) {
-		const blockHash = BlockHash.from(block.hash);
+		const blockHash = BlockHash(block.hash);
 		if (BlockHash.equals(search, blockHash)) {
 			return block.name;
 		}
@@ -66,9 +66,9 @@ const duplicates = [
 
 const unique: string[] = [];
 for (const hashStr of duplicates) {
-	const hash = BlockHash.from(hashStr);
+	const hash = BlockHash(hashStr);
 	const isDuplicate = unique.some((u) =>
-		BlockHash.equals(hash, BlockHash.from(u)),
+		BlockHash.equals(hash, BlockHash(u)),
 	);
 	if (!isDuplicate) {
 		unique.push(BlockHash.toHex(hash));

@@ -1,5 +1,5 @@
-import { RIPEMD160 } from "voltaire";
-import { Hex, SHA256 } from "voltaire";
+import { RIPEMD160 } from "@tevm/voltaire";
+import { Hex, SHA256 } from "@tevm/voltaire";
 
 // Example: Uncompressed public key
 const uncompressedPubKey = Hex.fromString(

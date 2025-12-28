@@ -1,6 +1,6 @@
-import { Withdrawal } from "voltaire";
+import { Withdrawal } from "@tevm/voltaire";
 // Small rewards withdrawal (typical weekly amount)
-const weeklyRewards = Withdrawal.from({
+const weeklyRewards = Withdrawal({
 	index: 8000000n,
 	validatorIndex: 400000,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -8,7 +8,7 @@ const weeklyRewards = Withdrawal.from({
 });
 
 // Larger rewards withdrawal (accumulated over time)
-const monthlyRewards = Withdrawal.from({
+const monthlyRewards = Withdrawal({
 	index: 8000001n,
 	validatorIndex: 400001,
 	address: "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
@@ -16,7 +16,7 @@ const monthlyRewards = Withdrawal.from({
 });
 
 // High-performing validator rewards
-const highPerformer = Withdrawal.from({
+const highPerformer = Withdrawal({
 	index: 8000002n,
 	validatorIndex: 400002,
 	address: "0x5aAed5930B9EB3cd462dDbaEfA21Da757F30FbDd",
@@ -24,7 +24,7 @@ const highPerformer = Withdrawal.from({
 });
 
 // Validator with 0x01 withdrawal credentials
-const credentialsSet = Withdrawal.from({
+const credentialsSet = Withdrawal({
 	index: 8000003n,
 	validatorIndex: 400003,
 	address: "0x8bBe03F3e48391a3aC1Ee5e09e23e5b8F5E4c078",

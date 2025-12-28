@@ -1,4 +1,4 @@
-import { Opcode } from "voltaire";
+import { Opcode } from "@tevm/voltaire";
 // POP (0x50) - Remove from stack
 const popInfo = Opcode.info(Opcode.POP);
 // DUP duplicates stack items

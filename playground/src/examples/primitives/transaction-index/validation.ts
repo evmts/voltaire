@@ -1,22 +1,22 @@
-import { InvalidTransactionIndexError } from "voltaire";
-import { TransactionIndex } from "voltaire";
+import { InvalidTransactionIndexError } from "@tevm/voltaire";
+import { TransactionIndex } from "@tevm/voltaire";
 
 const validIndexes = [0, 1, 100, 1000, 10000];
 validIndexes.forEach((num) => {
 	try {
-		const idx = TransactionIndex.from(num);
+		const idx = TransactionIndex(num);
 	} catch (error) {}
 });
 const validBigInts = [0n, 1n, 100n, 1000n];
 validBigInts.forEach((num) => {
 	try {
-		const idx = TransactionIndex.from(num);
+		const idx = TransactionIndex(num);
 	} catch (error) {}
 });
 const negatives = [-1, -10, -100];
 negatives.forEach((num) => {
 	try {
-		TransactionIndex.from(num);
+		TransactionIndex(num);
 	} catch (error) {
 		if (error instanceof InvalidTransactionIndexError) {
 		}
@@ -25,7 +25,7 @@ negatives.forEach((num) => {
 const nonIntegers = [1.5, 3.14, 0.1];
 nonIntegers.forEach((num) => {
 	try {
-		TransactionIndex.from(num);
+		TransactionIndex(num);
 	} catch (error) {
 		if (error instanceof InvalidTransactionIndexError) {
 		}
@@ -35,7 +35,7 @@ const wrongTypes = ["42", null, undefined, {}, []];
 wrongTypes.forEach((val) => {
 	try {
 		// @ts-expect-error - testing invalid types
-		TransactionIndex.from(val);
+		TransactionIndex(val);
 	} catch (error) {
 		if (error instanceof InvalidTransactionIndexError) {
 		}
@@ -49,7 +49,7 @@ function isValidInBlock(
 }
 
 const blockSize = 100;
-const testIndexes = [0, 50, 99, 100, 150].map((n) => TransactionIndex.from(n));
+const testIndexes = [0, 50, 99, 100, 150].map((n) => TransactionIndex(n));
 testIndexes.forEach((idx) => {
 	const num = TransactionIndex.toNumber(idx);
 	const valid = isValidInBlock(idx, blockSize);
@@ -58,7 +58,7 @@ function safeCreateIndex(
 	value: unknown,
 ): ReturnType<typeof TransactionIndex.from> | null {
 	try {
-		return TransactionIndex.from(value as number);
+		return TransactionIndex(value as number);
 	} catch (error) {
 		if (error instanceof InvalidTransactionIndexError) {
 			return null;
@@ -90,6 +90,6 @@ responses.forEach((resp, i) => {
 			typeof resp.transactionIndex === "string"
 				? Number.parseInt(resp.transactionIndex, 16)
 				: resp.transactionIndex;
-		const idx = TransactionIndex.from(parsed);
+		const idx = TransactionIndex(parsed);
 	} catch (error) {}
 });

@@ -1,5 +1,5 @@
-import { GasEstimate } from "voltaire";
-const base = GasEstimate.from(100000n);
+import { GasEstimate } from "@tevm/voltaire";
+const base = GasEstimate(100000n);
 
 const buffers = [0, 5, 10, 15, 20, 25, 30, 40, 50];
 for (const pct of buffers) {
@@ -25,11 +25,11 @@ const recommendations = [
 ];
 
 for (const { type, gas, buffer, reason } of recommendations) {
-	const estimate = GasEstimate.from(gas);
+	const estimate = GasEstimate(gas);
 	const buffered = GasEstimate.withBuffer(estimate, buffer);
 }
 const gasPrice = 50_000_000_000n;
-const testEstimate = GasEstimate.from(100000n);
+const testEstimate = GasEstimate(100000n);
 
 for (const bufferPct of [10, 20, 30, 40]) {
 	const buffered = GasEstimate.withBuffer(testEstimate, bufferPct);
@@ -37,13 +37,13 @@ for (const bufferPct of [10, 20, 30, 40]) {
 	const ethCost = Number(cost) / 1e18;
 	const increase = bufferPct;
 }
-const estimate = GasEstimate.from(100000n);
+const estimate = GasEstimate(100000n);
 const fractionalBuffers = [12.5, 17.5, 22.5, 27.5];
 
 for (const pct of fractionalBuffers) {
 	const buffered = GasEstimate.withBuffer(estimate, pct);
 }
-const rpcEstimate = GasEstimate.from(51234n);
+const rpcEstimate = GasEstimate(51234n);
 
 // Try different buffers
 for (const pct of [20, 25, 30]) {
@@ -51,5 +51,5 @@ for (const pct of [20, 25, 30]) {
 	const limit = GasEstimate.toGasLimit(buffered);
 }
 const actualGas = 51234n;
-const noBuffer = GasEstimate.from(actualGas);
+const noBuffer = GasEstimate(actualGas);
 const withBuffer = GasEstimate.withBuffer(actualGas, 20);

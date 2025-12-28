@@ -1,4 +1,4 @@
-import { Address, EIP712, Hex } from "voltaire";
+import { Address, Bytes, EIP712, Hex } from "@tevm/voltaire";
 // EIP-712: Encoding different value types
 
 const types = {};
@@ -10,7 +10,7 @@ const uint256 = EIP712.encodeValue("uint256", 42n, types);
 const largeUint = EIP712.encodeValue("uint256", 2n ** 128n, types);
 
 // Encode address - 32 bytes, right-aligned (12-byte zero padding)
-const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
 const encodedAddr = EIP712.encodeValue("address", addr, types);
 
 // Encode bool - 32 bytes, 0 or 1
@@ -23,14 +23,14 @@ const str = EIP712.encodeValue("string", "Hello, World!", types);
 // Encode dynamic bytes - keccak256 hash
 const dynamicBytes = EIP712.encodeValue(
 	"bytes",
-	new Uint8Array([1, 2, 3]),
+	Bytes([1, 2, 3]),
 	types,
 );
 
 // Encode fixed bytes - left-aligned, zero-padded
 const bytes4 = EIP712.encodeValue(
 	"bytes4",
-	new Uint8Array([0xab, 0xcd, 0xef, 0x12]),
+	Bytes([0xab, 0xcd, 0xef, 0x12]),
 	types,
 );
 

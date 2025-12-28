@@ -1,4 +1,4 @@
-import { FeeMarket } from "voltaire";
+import { FeeMarket } from "@tevm/voltaire";
 // Example: Fee predictions using projectBaseFees
 // Estimate future fees based on expected demand
 

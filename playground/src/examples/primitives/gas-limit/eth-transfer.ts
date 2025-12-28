@@ -1,4 +1,4 @@
-import { Gas } from "voltaire";
+import { Gas } from "@tevm/voltaire";
 // Standard ETH transfer always costs exactly 21000 gas
 const ethTransferGas = Gas.gasLimitFrom(21000);
 const gasLimit = 21000n;

@@ -1,5 +1,5 @@
-import { type EventLogType, type Uint256Type } from "voltaire";
-import { Address, BlockHash, BlockNumber, Hash, Hex, Receipt, TransactionHash, TransactionIndex, TransactionStatus } from "voltaire";
+import { type EventLogType, type Uint256Type, Bytes } from "@tevm/voltaire";
+import { Address, BlockHash, BlockNumber, Hash, Hex, Receipt, TransactionHash, TransactionIndex, TransactionStatus } from "@tevm/voltaire";
 
 // Example: Receipt with event logs
 
@@ -29,22 +29,22 @@ const transferEventLog: EventLogType = {
 	removed: false,
 };
 
-const receiptWithLogs = Receipt.from({
+const receiptWithLogs = Receipt({
 	transactionHash: TransactionHash.fromHex(
 		"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 	),
-	transactionIndex: TransactionIndex.from(5),
+	transactionIndex: TransactionIndex(5),
 	blockHash: BlockHash.fromHex(
 		"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 	),
-	blockNumber: BlockNumber.from(15537394n),
+	blockNumber: BlockNumber(15537394n),
 	from: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1"),
 	to: Address.fromHex("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"),
 	cumulativeGasUsed: 456789n as Uint256Type,
 	gasUsed: 65000n as Uint256Type,
 	contractAddress: null,
 	logs: [transferEventLog],
-	logsBloom: new Uint8Array(256),
+	logsBloom: Bytes.zero(256),
 	status: TransactionStatus.success(65000n as Uint256Type),
 	effectiveGasPrice: 25000000000n as Uint256Type,
 	type: "eip1559",
@@ -77,22 +77,22 @@ const swapLog: EventLogType = {
 	removed: false,
 };
 
-const receiptWithMultipleLogs = Receipt.from({
+const receiptWithMultipleLogs = Receipt({
 	transactionHash: TransactionHash.fromHex(
 		"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 	),
-	transactionIndex: TransactionIndex.from(8),
+	transactionIndex: TransactionIndex(8),
 	blockHash: BlockHash.fromHex(
 		"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 	),
-	blockNumber: BlockNumber.from(15537395n),
+	blockNumber: BlockNumber(15537395n),
 	from: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1"),
 	to: Address.fromHex("0x7a250d5630b4cf539739df2c5dacb4c659f2488d"),
 	cumulativeGasUsed: 1234567n as Uint256Type,
 	gasUsed: 180000n as Uint256Type,
 	contractAddress: null,
 	logs: [transferEventLog, swapLog],
-	logsBloom: new Uint8Array(256),
+	logsBloom: Bytes.zero(256),
 	status: TransactionStatus.success(180000n as Uint256Type),
 	effectiveGasPrice: 30000000000n as Uint256Type,
 	type: "eip1559",

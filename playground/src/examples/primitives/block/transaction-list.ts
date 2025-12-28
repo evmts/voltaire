@@ -1,5 +1,5 @@
-import { type Any as AnyTransaction } from "voltaire";
-import { Address, Block, BlockBody, BlockHash, BlockHeader } from "voltaire";
+import { type Any as AnyTransaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Block, BlockBody, BlockHash, BlockHeader } from "@tevm/voltaire";
 
 // Create sample transactions (simplified)
 const tx1: AnyTransaction = {
@@ -11,11 +11,11 @@ const tx1: AnyTransaction = {
 	gasLimit: 21000n,
 	to: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 	value: 1000000000000000000n, // 1 ETH
-	data: new Uint8Array(0),
+	data: Bytes.zero(0),
 	accessList: [],
 	yParity: 1,
-	r: new Uint8Array(32).fill(0x11),
-	s: new Uint8Array(32).fill(0x22),
+	r: Bytes32.zero().fill(0x11),
+	s: Bytes32.zero().fill(0x22),
 };
 
 const tx2: AnyTransaction = {
@@ -27,11 +27,11 @@ const tx2: AnyTransaction = {
 	gasLimit: 51000n,
 	to: Address.fromHex("0xd8da6bf26964af9d7eed9e03e53415d37aa96045"),
 	value: 500000000000000000n, // 0.5 ETH
-	data: new Uint8Array(4).fill(0xab), // Contract call
+	data: Bytes.repeat(0xab, 4), // Contract call
 	accessList: [],
 	yParity: 0,
-	r: new Uint8Array(32).fill(0x33),
-	s: new Uint8Array(32).fill(0x44),
+	r: Bytes32.zero().fill(0x33),
+	s: Bytes32.zero().fill(0x44),
 };
 
 const tx3: AnyTransaction = {
@@ -43,15 +43,15 @@ const tx3: AnyTransaction = {
 	gasLimit: 100000n,
 	to: Address.fromHex("0x1f9090aaE28b8a3dCeaDf281B0F12828e676c326"),
 	value: 0n, // Contract interaction
-	data: new Uint8Array(68).fill(0xcd), // Larger calldata
+	data: Bytes.repeat(0xcd, 68), // Larger calldata
 	accessList: [],
 	yParity: 1,
-	r: new Uint8Array(32).fill(0x55),
-	s: new Uint8Array(32).fill(0x66),
+	r: Bytes32.zero().fill(0x55),
+	s: Bytes32.zero().fill(0x66),
 };
 
 // Create block header
-const header = BlockHeader.from({
+const header = BlockHeader({
 	parentHash:
 		"0xa1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
 	ommersHash:
@@ -63,26 +63,26 @@ const header = BlockHeader.from({
 		"0xc3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4",
 	receiptsRoot:
 		"0xd4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5",
-	logsBloom: new Uint8Array(256),
+	logsBloom: Bytes.zero(256),
 	difficulty: 0n,
 	number: 19426587n,
 	gasLimit: 30000000n,
 	gasUsed: 172000n, // Sum of gas from all transactions
 	timestamp: 1710338455n,
-	extraData: new Uint8Array(0),
+	extraData: Bytes.zero(0),
 	mixHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-	nonce: new Uint8Array(8),
+	nonce: Bytes.zero(8),
 	baseFeePerGas: 15000000000n, // 15 gwei
 });
 
 // Create block body with transactions
-const body = BlockBody.from({
+const body = BlockBody({
 	transactions: [tx1, tx2, tx3],
 	ommers: [],
 });
 
 // Create block
-const block = Block.from({
+const block = Block({
 	header,
 	body,
 	hash: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",

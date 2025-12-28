@@ -1,11 +1,11 @@
-import { MaxPriorityFeePerGas } from "voltaire";
+import { MaxPriorityFeePerGas } from "@tevm/voltaire";
 
 // Example: Comparing MaxPriorityFeePerGas values
 
 // Create several priority fees
 const tip1 = MaxPriorityFeePerGas.fromGwei(1);
 const tip2 = MaxPriorityFeePerGas.fromGwei(2);
-const tip2Copy = MaxPriorityFeePerGas.from(2000000000n);
+const tip2Copy = MaxPriorityFeePerGas(2000000000n);
 const tip5 = MaxPriorityFeePerGas.fromGwei(5);
 const tip10 = MaxPriorityFeePerGas.fromGwei(10);
 const userTip = MaxPriorityFeePerGas.fromGwei(3);

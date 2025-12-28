@@ -1,12 +1,12 @@
-import { ChainId } from "voltaire";
+import { ChainId } from "@tevm/voltaire";
 
-const mainnet = ChainId.from(1);
-const optimism = ChainId.from(10);
-const custom = ChainId.from(12345);
+const mainnet = ChainId(1);
+const optimism = ChainId(10);
+const custom = ChainId(12345);
 
 // Production safety: prevent accidental mainnet operations
 const isDangerousOperation = (chainId: number, operation: string): boolean => {
-	const chain = ChainId.from(chainId);
+	const chain = ChainId(chainId);
 	if (ChainId.isMainnet(chain)) {
 		return true;
 	}
@@ -23,7 +23,7 @@ interface DeployConfig {
 }
 
 const getDeployConfig = (chainId: number): DeployConfig => {
-	const chain = ChainId.from(chainId);
+	const chain = ChainId(chainId);
 
 	if (ChainId.isMainnet(chain)) {
 		return {
@@ -49,7 +49,7 @@ class FeatureManager {
 	}
 
 	isFeatureEnabled(feature: string, chainId: number): boolean {
-		const chain = ChainId.from(chainId);
+		const chain = ChainId(chainId);
 
 		// All features enabled on testnets
 		if (!ChainId.isMainnet(chain)) {
@@ -77,7 +77,7 @@ testFeatures.forEach((feature) => {
 const getRateLimitForChain = (
 	chainId: number,
 ): { requestsPerSecond: number; burstSize: number } => {
-	const chain = ChainId.from(chainId);
+	const chain = ChainId(chainId);
 
 	if (ChainId.isMainnet(chain)) {
 		return {
@@ -96,7 +96,7 @@ const estimateOperationCost = (
 	chainId: number,
 	operation: string,
 ): { cost: bigint; currency: string } => {
-	const chain = ChainId.from(chainId);
+	const chain = ChainId(chainId);
 
 	if (ChainId.isMainnet(chain)) {
 		return {
@@ -117,15 +117,15 @@ const testnetCost = estimateOperationCost(ChainId.SEPOLIA, "deploy");
 type NetworkClass = "production" | "staging" | "development";
 
 const classifyNetwork = (chainId: number): NetworkClass => {
-	const chain = ChainId.from(chainId);
+	const chain = ChainId(chainId);
 
 	if (ChainId.isMainnet(chain)) {
 		return "production";
 	}
 
 	if (
-		ChainId.equals(chain, ChainId.from(ChainId.SEPOLIA)) ||
-		ChainId.equals(chain, ChainId.from(ChainId.HOLESKY))
+		ChainId.equals(chain, ChainId(ChainId.SEPOLIA)) ||
+		ChainId.equals(chain, ChainId(ChainId.HOLESKY))
 	) {
 		return "staging";
 	}

@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI } from "@tevm/voltaire";
 
 // Example: Encode a simple ERC20 transfer function call
 const transfer = ABI.Function.encodeParams(

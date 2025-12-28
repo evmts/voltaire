@@ -1,4 +1,4 @@
-import { PrivateKey } from "voltaire";
+import { PrivateKey } from "@tevm/voltaire";
 
 // Helper to convert PublicKeyType to hex
 function pubKeyToHex(pk: Uint8Array): string {

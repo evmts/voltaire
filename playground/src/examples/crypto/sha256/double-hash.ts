@@ -1,4 +1,4 @@
-import { Hex, SHA256 } from "voltaire";
+import { Bytes, Hex, SHA256 } from "@tevm/voltaire";
 // Double SHA256 (Bitcoin-style: SHA256(SHA256(data)))
 // Used in Bitcoin for block headers and transaction IDs
 
@@ -18,7 +18,7 @@ function doubleSha256(data: Uint8Array): Uint8Array {
 const doubleHash = doubleSha256(new TextEncoder().encode(message));
 
 // Bitcoin example: Block header structure
-const blockHeader = new Uint8Array(80).fill(0x00);
+const blockHeader = Bytes.zero(80);
 const blockHash = doubleSha256(blockHeader);
 
 // Transaction ID simulation

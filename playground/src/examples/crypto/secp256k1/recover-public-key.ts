@@ -1,4 +1,4 @@
-import { Hash, Hex, Secp256k1 } from "voltaire";
+import { Hash, Hex, Secp256k1 } from "@tevm/voltaire";
 // Recover public key from signature
 
 // Create message and sign

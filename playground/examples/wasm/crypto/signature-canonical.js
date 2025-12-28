@@ -1,5 +1,5 @@
 // WASM: signatureIsCanonical example
-import { signatureParse, signatureIsCanonical } from "voltaire/wasm";
+import { signatureParse, signatureIsCanonical } from "@tevm/voltaire/wasm";
 
 (() => {
   // Dummy signature (r||s)

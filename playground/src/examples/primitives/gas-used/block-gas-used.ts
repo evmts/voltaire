@@ -1,4 +1,4 @@
-import { GasUsed } from "voltaire";
+import { GasUsed } from "@tevm/voltaire";
 // Simulate a block with multiple transactions
 const blockTransactions = [
 	{ index: 0, gasUsed: 21000n },
@@ -15,12 +15,12 @@ const blockGasLimit = 30_000_000n;
 let cumulativeGasUsed = 0n;
 
 for (const tx of blockTransactions) {
-	const gasUsed = GasUsed.from(tx.gasUsed);
+	const gasUsed = GasUsed(tx.gasUsed);
 	cumulativeGasUsed += tx.gasUsed;
 	const percentOfBlock =
 		(Number(cumulativeGasUsed) / Number(blockGasLimit)) * 100;
 }
-const totalGasUsed = GasUsed.from(cumulativeGasUsed);
+const totalGasUsed = GasUsed(cumulativeGasUsed);
 const utilizationPercent =
 	(Number(cumulativeGasUsed) / Number(blockGasLimit)) * 100;
 const avgGasPrice = 25_000_000_000n; // 25 gwei

@@ -1,4 +1,4 @@
-import { Address, Transaction } from "voltaire";
+import { Address, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
 // Transaction Replacement: Bump fees to replace pending transaction
 
 // Original pending transaction
@@ -9,13 +9,13 @@ const pendingTx: Transaction.EIP1559 = {
 	maxPriorityFeePerGas: 2_000_000_000n, // 2 gwei
 	maxFeePerGas: 30_000_000_000n, // 30 gwei
 	gasLimit: 21_000n,
-	to: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
+	to: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 	value: 1_000_000_000_000_000_000n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	accessList: [],
 	yParity: 0,
-	r: new Uint8Array(32),
-	s: new Uint8Array(32),
+	r: Bytes32.zero(),
+	s: Bytes32.zero(),
 };
 
 // Replace with default 10% fee bump
@@ -40,12 +40,12 @@ const pendingLegacy: Transaction.Legacy = {
 	nonce: 5n,
 	gasPrice: 20_000_000_000n,
 	gasLimit: 21_000n,
-	to: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
+	to: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 	value: 1_000_000_000_000_000_000n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	v: 27n,
-	r: new Uint8Array(32),
-	s: new Uint8Array(32),
+	r: Bytes32.zero(),
+	s: Bytes32.zero(),
 };
 
 const replacedLegacy = Transaction.replaceWith(pendingLegacy);

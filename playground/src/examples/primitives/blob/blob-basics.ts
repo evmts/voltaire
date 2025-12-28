@@ -1,6 +1,6 @@
-import { Blob } from "voltaire";
+import { Blob, Bytes } from "@tevm/voltaire";
 // Create empty blob
-const emptyBlob = Blob.from(new Uint8Array(Blob.SIZE));
+const emptyBlob = Blob(Bytes.zero(Blob.SIZE));
 
 // Create blob from data (auto-encoded with field element format)
 const message = "Hello, EIP-4844! This is blob data.";
@@ -12,8 +12,8 @@ const extracted = Blob.toData(blob);
 const decoded = new TextDecoder().decode(extracted);
 
 // Invalid blob (wrong size)
-const invalid = new Uint8Array(1000);
+const invalid = Bytes.zero(1000);
 const singleBlobGas = Blob.calculateGas(1);
 const maxBlobsGas = Blob.calculateGas(Blob.MAX_PER_TRANSACTION);
-const smallData = new Uint8Array(50000);
-const largeData = new Uint8Array(200000);
+const smallData = Bytes.zero(50000);
+const largeData = Bytes.zero(200000);

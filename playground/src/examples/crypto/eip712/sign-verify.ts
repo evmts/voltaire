@@ -1,4 +1,4 @@
-import { Address, EIP712, Hex, Secp256k1 } from "voltaire";
+import { Address, EIP712, Hex, Secp256k1 } from "@tevm/voltaire";
 // EIP-712: Sign and verify typed data
 
 // Generate keypair
@@ -38,5 +38,5 @@ const recoveredAddress = EIP712.recoverAddress(signature, typedData);
 const isValid = EIP712.verifyTypedData(signature, typedData, signerAddress);
 
 // Verify with wrong address fails
-const wrongAddress = Address.from("0x0000000000000000000000000000000000000001");
+const wrongAddress = Address("0x0000000000000000000000000000000000000001");
 const invalidCheck = EIP712.verifyTypedData(signature, typedData, wrongAddress);

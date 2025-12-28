@@ -1,4 +1,4 @@
-import { Hash } from "voltaire";
+import { Hash } from "@tevm/voltaire";
 // Example: Creating hashes from hex strings
 
 // Ethereum transaction hash

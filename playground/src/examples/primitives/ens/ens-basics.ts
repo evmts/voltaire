@@ -1,7 +1,7 @@
-import { Ens, Hex } from "voltaire";
-const name1 = Ens.from("vitalik.eth");
-const name2 = Ens.from("nick.eth");
-const name3 = Ens.from("sub.domain.eth");
+import { Ens, Hex } from "@tevm/voltaire";
+const name1 = Ens("vitalik.eth");
+const name2 = Ens("nick.eth");
+const name3 = Ens("sub.domain.eth");
 
 // Normalize converts to lowercase and canonical form per ENSIP-15
 const normalized1 = Ens.normalize("VITALIK.eth");

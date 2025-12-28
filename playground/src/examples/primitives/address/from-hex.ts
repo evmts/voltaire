@@ -1,4 +1,4 @@
-import { Address } from "voltaire";
+import { Address } from "@tevm/voltaire";
 // Example: Create address from hex string
 // Accepts various hex formats
 const addr1 = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");

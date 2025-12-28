@@ -1,4 +1,4 @@
-import { Hex, Keccak256 } from "voltaire";
+import { Bytes, Hex, Keccak256 } from "@tevm/voltaire";
 // Example: Chain multiple hashes together
 const message = "Hello, Ethereum!";
 
@@ -20,7 +20,7 @@ function buildHashChain(data: string[], length: number): Uint8Array[] {
 	for (let i = 1; i < length && i < data.length; i++) {
 		// Hash previous hash + new data
 		const newData = new TextEncoder().encode(data[i]);
-		const combined = new Uint8Array([...prevHash, ...newData]);
+		const combined = Bytes.concat(prevHash, newData);
 		prevHash = Keccak256.hash(combined);
 		chain.push(prevHash);
 	}

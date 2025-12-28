@@ -1,7 +1,7 @@
 // EVM Opcodes: Arithmetic operations
 // Note: EVM stack is LIFO. For binary ops, first value pushed is 'b', second is 'a'.
 // So for "a op b", push b first, then a. When popped: a (top), b (second).
-import { Frame } from "../../../src/evm/Frame/index.js";
+import { Frame } from "@tevm/voltaire";
 let frame = Frame({ gas: 100n, stack: [10n, 20n] });
 frame.add();
 frame = Frame({ gas: 100n, stack: [7n, 6n] });

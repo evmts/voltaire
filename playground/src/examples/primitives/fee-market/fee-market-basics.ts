@@ -1,4 +1,4 @@
-import { FeeMarket } from "voltaire";
+import { FeeMarket } from "@tevm/voltaire";
 // Example: FeeMarket basics - EIP-1559 fee market dynamics
 
 // 1. Base fee calculation (EIP-1559)

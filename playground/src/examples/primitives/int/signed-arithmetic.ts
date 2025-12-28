@@ -1,5 +1,5 @@
-import { Int64 } from "voltaire";
-import { Int32 } from "voltaire";
+import { Int64 } from "@tevm/voltaire";
+import { Int32 } from "@tevm/voltaire";
 
 const pos = Int32.fromNumber(100);
 const neg = Int32.fromNumber(-50);

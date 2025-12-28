@@ -1,6 +1,5 @@
 // EVM Host: In-memory blockchain state
-import { Host } from "../../../src/evm/Host/index.js";
-import { Address } from "../../../src/primitives/Address/index.js";
+import { Address, Host } from "@tevm/voltaire";
 
 // Create in-memory host for testing
 const host = Host.createMemoryHost();

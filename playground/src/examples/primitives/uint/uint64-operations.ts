@@ -1,4 +1,4 @@
-import { Uint64 } from "voltaire";
+import { Uint64 } from "@tevm/voltaire";
 const gb = Uint64.fromBigInt(1024n * 1024n * 1024n);
 const tb = Uint64.fromBigInt(1024n * 1024n * 1024n * 1024n);
 const fileSize = Uint64.fromBigInt(5497558138880n); // 5 TB

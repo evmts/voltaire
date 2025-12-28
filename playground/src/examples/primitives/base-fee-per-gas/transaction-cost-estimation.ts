@@ -1,4 +1,4 @@
-import { BaseFeePerGas } from "voltaire";
+import { BaseFeePerGas } from "@tevm/voltaire";
 
 // Gas costs for common operations
 const GAS_TRANSFER = 21000n; // Simple ETH transfer

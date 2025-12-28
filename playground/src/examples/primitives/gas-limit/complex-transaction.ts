@@ -1,4 +1,4 @@
-import { Gas } from "voltaire";
+import { Gas } from "@tevm/voltaire";
 // Simple swap (2 token transfers + AMM logic)
 const uniswapSwap = Gas.gasLimitFrom(150000);
 

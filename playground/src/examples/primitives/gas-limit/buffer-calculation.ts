@@ -1,4 +1,4 @@
-import { Gas } from "voltaire";
+import { Gas } from "@tevm/voltaire";
 const baseEstimate = 100000;
 
 // Conservative 10%

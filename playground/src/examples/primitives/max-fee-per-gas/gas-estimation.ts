@@ -1,4 +1,4 @@
-import { MaxFeePerGas } from "voltaire";
+import { MaxFeePerGas } from "@tevm/voltaire";
 
 // Common gas limits for different operations
 const GAS_LIMITS = {

@@ -1,5 +1,5 @@
-import { Address, Siwe } from "voltaire";
-const address = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+import { Address, Siwe } from "@tevm/voltaire";
+const address = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 
 // Message expires in 1 hour
 const oneHourLater = new Date(Date.now() + 3600000).toISOString();

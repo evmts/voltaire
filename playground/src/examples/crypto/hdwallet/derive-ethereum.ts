@@ -1,4 +1,4 @@
-import { Bip39, HDWallet, Hex } from "voltaire";
+import { Bip39, HDWallet, Hex } from "@tevm/voltaire";
 // HD Wallet: Derive Ethereum accounts using BIP-44
 
 // Generate master key

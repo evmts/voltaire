@@ -1,5 +1,5 @@
-import { RIPEMD160 } from "voltaire";
-import { Hex } from "voltaire";
+import { RIPEMD160 } from "@tevm/voltaire";
+import { Hex } from "@tevm/voltaire";
 
 // Hash string data with RIPEMD160
 const message = "Hello, Bitcoin!";

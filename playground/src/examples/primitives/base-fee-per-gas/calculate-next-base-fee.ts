@@ -1,4 +1,4 @@
-import { BaseFeePerGas } from "voltaire";
+import { BaseFeePerGas } from "@tevm/voltaire";
 
 // Example: Calculate next block's base fee using EIP-1559 formula
 

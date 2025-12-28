@@ -1,12 +1,12 @@
-import { hash as keccak256 } from "voltaire";
-import { Domain, Hex } from "voltaire";
+import { hash as keccak256 } from "@tevm/voltaire";
+import { Domain, Hex } from "@tevm/voltaire";
 
 // Example: DAI permit (different from ERC-2612)
 
 // DAI uses a different permit implementation than ERC-2612
 // It predates EIP-2612 and has slightly different semantics
 
-const dai = Domain.from({
+const dai = Domain({
 	name: "Dai Stablecoin",
 	version: "1",
 	chainId: 1,
@@ -48,14 +48,14 @@ const encodedPermit = Domain.encodeData("Permit", daiPermit, daiPermitTypes, {
 });
 
 // Compare with MakerDAO MCD contracts
-const mcdJug = Domain.from({
+const mcdJug = Domain({
 	name: "Maker Jug",
 	version: "1",
 	chainId: 1,
 	verifyingContract: "0x19c0976f590D67707E62397C87829d896Dc0f1F1",
 });
 
-const mcdVat = Domain.from({
+const mcdVat = Domain({
 	name: "Maker Vat",
 	version: "1",
 	chainId: 1,
@@ -63,14 +63,14 @@ const mcdVat = Domain.from({
 });
 
 // DAI on other chains
-const daiPolygon = Domain.from({
+const daiPolygon = Domain({
 	name: "Dai Stablecoin",
 	version: "1",
 	chainId: 137, // Polygon
 	verifyingContract: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
 });
 
-const daiOptimism = Domain.from({
+const daiOptimism = Domain({
 	name: "Dai Stablecoin",
 	version: "1",
 	chainId: 10, // Optimism

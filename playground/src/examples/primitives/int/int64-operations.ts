@@ -1,4 +1,4 @@
-import { Int64 } from "voltaire";
+import { Int64 } from "@tevm/voltaire";
 
 const balance = Int64.fromBigInt(1000000000000n); // $1,000.00
 const fee = Int64.fromBigInt(-50000000n); // -$0.05 fee

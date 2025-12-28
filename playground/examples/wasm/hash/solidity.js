@@ -1,5 +1,5 @@
 // WASM: Solidity-style hashing (tightly packed data, already packed)
-import { solidityKeccak256, soliditySha256, bytesToHex } from "voltaire/wasm";
+import { solidityKeccak256, soliditySha256, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   // Dummy tightly-packed data (already ABI-encoded if needed).

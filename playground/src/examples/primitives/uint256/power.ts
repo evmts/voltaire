@@ -1,4 +1,4 @@
-import { Uint256 } from "voltaire";
+import { Uint256 } from "@tevm/voltaire";
 // Basic exponentiation
 const base = Uint256.fromNumber(2);
 const exp = Uint256.fromNumber(10);

@@ -1,8 +1,8 @@
-import { Ed25519, Hex } from "voltaire";
+import { Bytes, Ed25519, Hex } from "@tevm/voltaire";
 // Derive Ed25519 public key from secret key
 
 // Generate keypair from seed
-const seed = crypto.getRandomValues(new Uint8Array(32));
+const seed = Bytes.random(32);
 const keypair = Ed25519.keypairFromSeed(seed);
 
 // Derive public key from secret key

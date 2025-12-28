@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI } from "@tevm/voltaire";
 
 // Example: Encode custom error without parameters
 const unauthorized = ABI.Error.encodeParams({

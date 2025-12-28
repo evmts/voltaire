@@ -1,4 +1,4 @@
-import { Hash } from "voltaire";
+import { Hash } from "@tevm/voltaire";
 // Example: Generating random hashes
 
 // Generate random hashes

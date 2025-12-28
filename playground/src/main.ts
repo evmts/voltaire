@@ -7,6 +7,7 @@ window.addEventListener("unhandledrejection", (e) =>
 );
 
 import "./style.css";
+import { type ApiMode, ApiModeToggle } from "./components/ApiModeToggle.js";
 import { Breadcrumbs } from "./components/Breadcrumbs.js";
 import { Console } from "./components/Console.js";
 import { Editor } from "./components/Editor.js";
@@ -15,7 +16,6 @@ import { type FileNode, FileTree } from "./components/FileTree.js";
 import { cryptoExamples } from "./examples/crypto.js";
 import { evmExamples } from "./examples/evm.js";
 import { primitiveExamples } from "./examples/primitives.js";
-import { wasmExamples } from "./examples/wasm.js";
 import { AutoSave } from "./features/AutoSave.js";
 import { BenchmarkMode } from "./features/BenchmarkMode.js";
 import { CodeLensProvider } from "./features/CodeLens.js";
@@ -60,21 +60,14 @@ const fileTree: FileNode[] = [
 			content,
 		})),
 	},
-  {
-    name: "WASM API",
-    path: "wasm",
-    children: Object.entries(wasmExamples).map(([name, content]) => ({
-      name,
-      path: `wasm/${name}`,
-      content,
-    })),
-  },
 ];
 
 // State
 let currentFile: FileNode | null = null;
 let restoreConsole: (() => void) | null = null;
 let settingsPanelOpen = false;
+let currentApiMode: ApiMode = 'regular';
+let apiModeToggle: ApiModeToggle | null = null;
 
 // Initialize components
 const editor = new Editor(document.getElementById("editor")!);
@@ -135,9 +128,47 @@ function handleFileSelect(file: FileNode): void {
 	consoleComponent.clear();
 }
 
+// API mode change handler
+function handleApiModeChange(mode: ApiMode): void {
+	currentApiMode = mode;
+	const runButton = document.getElementById("run-button") as HTMLButtonElement;
+	const nativeBanner = document.getElementById("native-mode-banner");
+
+	if (mode === 'native') {
+		runButton.disabled = true;
+		runButton.classList.add('native-disabled');
+		runButton.dataset.tooltip = 'Native mode requires Bun runtime';
+
+		// Show native mode banner if not exists
+		if (!nativeBanner) {
+			const banner = document.createElement('div');
+			banner.id = 'native-mode-banner';
+			banner.className = 'native-mode-banner';
+			banner.textContent = 'Native FFI mode - Run examples with: bun playground/examples/<file>.ts';
+			const editorContainer = document.getElementById('editor-container');
+			const breadcrumbs = document.getElementById('breadcrumbs');
+			if (editorContainer && breadcrumbs) {
+				editorContainer.insertBefore(banner, breadcrumbs);
+			}
+		}
+	} else {
+		runButton.classList.remove('native-disabled');
+		delete runButton.dataset.tooltip;
+		if (currentFile) {
+			runButton.disabled = false;
+		}
+
+		// Remove native mode banner
+		if (nativeBanner) {
+			nativeBanner.remove();
+		}
+	}
+}
+
 // Run button handler
 async function handleRun(): Promise<void> {
 	if (!currentFile) return;
+	if (currentApiMode === 'native') return;
 
 	const runButton = document.getElementById("run-button") as HTMLButtonElement;
 	runButton.disabled = true;
@@ -319,6 +350,15 @@ async function init(): Promise<void> {
 	// Setup run button
 	const runButton = document.getElementById("run-button")!;
 	runButton.addEventListener("click", handleRun);
+
+	// Initialize API mode toggle
+	const apiModeContainer = document.getElementById("api-mode-toggle")!;
+	apiModeToggle = new ApiModeToggle(apiModeContainer, {
+		onChange: handleApiModeChange,
+	});
+	// Apply initial mode
+	currentApiMode = apiModeToggle.getMode();
+	handleApiModeChange(currentApiMode);
 
 	// Setup history button
 	const historyButton = document.getElementById("history-button")!;

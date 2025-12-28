@@ -1,9 +1,9 @@
 // Example: CORRECT generation
-const secureKey = new Uint8Array(32);
+const secureKey = Bytes32.zero();
 crypto.getRandomValues(secureKey);
 
 // Example: Clear sensitive data
-const tempKey = new Uint8Array(32);
+const tempKey = Bytes32.zero();
 crypto.getRandomValues(tempKey);
 // ... use key ...
 // Clear when done:

@@ -1,4 +1,4 @@
-import { Hex, Secp256k1 } from "voltaire";
+import { Hex, Secp256k1 } from "@tevm/voltaire";
 // ECDH key exchange
 
 // Alice generates keypair

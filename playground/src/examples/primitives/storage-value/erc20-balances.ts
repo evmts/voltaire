@@ -1,4 +1,4 @@
-import { StorageValue } from "voltaire";
+import { StorageValue } from "@tevm/voltaire";
 
 // Example: ERC20 token balance storage patterns
 
@@ -6,44 +6,44 @@ import { StorageValue } from "voltaire";
 // Storage layout: mapping(address => uint256) balances at slot 0
 
 // Sample balances for different accounts
-const balance1 = StorageValue.from(1000n * 10n ** 18n); // 1000 tokens
-const balance2 = StorageValue.from(500n * 10n ** 18n); // 500 tokens
-const balance3 = StorageValue.from(250n * 10n ** 18n); // 250 tokens
+const balance1 = StorageValue(1000n * 10n ** 18n); // 1000 tokens
+const balance2 = StorageValue(500n * 10n ** 18n); // 500 tokens
+const balance3 = StorageValue(250n * 10n ** 18n); // 250 tokens
 
 // Zero balance (uninitialized or spent)
-const zeroBalance = StorageValue.from(0n);
+const zeroBalance = StorageValue(0n);
 
 // Maximum possible balance (max uint256)
-const maxBalance = StorageValue.from(2n ** 256n - 1n);
+const maxBalance = StorageValue(2n ** 256n - 1n);
 
 // Total supply storage (common at slot 2)
-const totalSupply = StorageValue.from(1_000_000n * 10n ** 18n); // 1M tokens
+const totalSupply = StorageValue(1_000_000n * 10n ** 18n); // 1M tokens
 
 // Allowance storage: mapping(address => mapping(address => uint256))
-const allowance = StorageValue.from(100n * 10n ** 18n); // Approved 100 tokens
+const allowance = StorageValue(100n * 10n ** 18n); // Approved 100 tokens
 
 // Unlimited allowance (common pattern: max uint256)
-const unlimitedAllowance = StorageValue.from(2n ** 256n - 1n);
+const unlimitedAllowance = StorageValue(2n ** 256n - 1n);
 
 // Balance arithmetic (simulating transfers)
-const senderBalance = StorageValue.from(1000n * 10n ** 18n);
+const senderBalance = StorageValue(1000n * 10n ** 18n);
 const transferAmount = 250n * 10n ** 18n;
 
-const newSenderBalance = StorageValue.from(
+const newSenderBalance = StorageValue(
 	StorageValue.toUint256(senderBalance) - transferAmount,
 );
-const receiverBalance = StorageValue.from(0n);
-const newReceiverBalance = StorageValue.from(
+const receiverBalance = StorageValue(0n);
+const newReceiverBalance = StorageValue(
 	StorageValue.toUint256(receiverBalance) + transferAmount,
 );
 
 // Different decimal precisions
-const usdc6Decimals = StorageValue.from(1000n * 10n ** 6n); // USDC uses 6
-const dai18Decimals = StorageValue.from(1000n * 10n ** 18n); // DAI uses 18
+const usdc6Decimals = StorageValue(1000n * 10n ** 6n); // USDC uses 6
+const dai18Decimals = StorageValue(1000n * 10n ** 18n); // DAI uses 18
 
 // Checking balance thresholds
-const balance = StorageValue.from(750n * 10n ** 18n);
+const balance = StorageValue(750n * 10n ** 18n);
 const threshold = 500n * 10n ** 18n;
 
 // Small balance (dust)
-const dust = StorageValue.from(1n); // 1 wei
+const dust = StorageValue(1n); // 1 wei

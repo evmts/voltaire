@@ -1,12 +1,12 @@
-import { Ed25519, Hash, Hex, Secp256k1 } from "voltaire";
+import { Bytes, Ed25519, Hash, Hex, Secp256k1 } from "@tevm/voltaire";
 // Compare Ed25519 with secp256k1
 
 // Ed25519 key generation
-const ed25519Seed = crypto.getRandomValues(new Uint8Array(32));
+const ed25519Seed = Bytes.random(32);
 const ed25519Keypair = Ed25519.keypairFromSeed(ed25519Seed);
 
 // secp256k1 key generation
-const secp256k1PrivateKey = crypto.getRandomValues(new Uint8Array(32));
+const secp256k1PrivateKey = Bytes.random(32);
 const secp256k1PublicKey = Secp256k1.derivePublicKey(secp256k1PrivateKey);
 
 // Ed25519 signing

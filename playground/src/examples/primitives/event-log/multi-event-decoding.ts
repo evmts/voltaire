@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash } from "voltaire";
+import { Address, EventLog, Hash, Bytes, Bytes32 } from "@tevm/voltaire";
 // Event signatures
 const TRANSFER_SIG = Hash(
 	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
@@ -30,35 +30,35 @@ const events = [
 	EventLog.create({
 		address: tokenAddr,
 		topics: [MINT_SIG, alice],
-		data: new Uint8Array(32).fill(0, 0, 31).fill(100, 31, 32), // 100 tokens
+		data: Bytes32.zero().fill(0, 0, 31).fill(100, 31, 32), // 100 tokens
 		blockNumber: 19400000n,
 		logIndex: 0,
 	}), // Mint to Alice
 	EventLog.create({
 		address: tokenAddr,
 		topics: [TRANSFER_SIG, alice, bob],
-		data: new Uint8Array(32).fill(0, 0, 31).fill(50, 31, 32), // 50 tokens
+		data: Bytes32.zero().fill(0, 0, 31).fill(50, 31, 32), // 50 tokens
 		blockNumber: 19400000n,
 		logIndex: 1,
 	}), // Transfer Alice -> Bob
 	EventLog.create({
 		address: tokenAddr,
 		topics: [APPROVAL_SIG, bob, charlie],
-		data: new Uint8Array(32).fill(0xff), // Unlimited
+		data: Bytes32.zero().fill(0xff), // Unlimited
 		blockNumber: 19400001n,
 		logIndex: 0,
 	}), // Bob approves Charlie
 	EventLog.create({
 		address: tokenAddr,
 		topics: [TRANSFER_SIG, bob, charlie],
-		data: new Uint8Array(32).fill(0, 0, 31).fill(25, 31, 32), // 25 tokens
+		data: Bytes32.zero().fill(0, 0, 31).fill(25, 31, 32), // 25 tokens
 		blockNumber: 19400001n,
 		logIndex: 1,
 	}), // Transfer Bob -> Charlie
 	EventLog.create({
 		address: tokenAddr,
 		topics: [BURN_SIG, charlie],
-		data: new Uint8Array(32).fill(0, 0, 31).fill(10, 31, 32), // 10 tokens
+		data: Bytes32.zero().fill(0, 0, 31).fill(10, 31, 32), // 10 tokens
 		blockNumber: 19400002n,
 		logIndex: 0,
 	}), // Charlie burns 10

@@ -14,8 +14,8 @@ export function voltairePlugin(): Plugin {
 	return {
 		name: "voltaire-resolver",
 		setup(build) {
-			// Resolve voltaire/* imports to virtual namespace
-			build.onResolve({ filter: /^voltaire\// }, (args) => {
+			// Resolve voltaire and voltaire/* imports to virtual namespace
+			build.onResolve({ filter: /^voltaire(\/|$)/ }, (args) => {
 				const specifier = args.path;
 
 				// Validate module exists

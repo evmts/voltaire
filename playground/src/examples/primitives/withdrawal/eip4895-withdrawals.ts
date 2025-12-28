@@ -1,6 +1,6 @@
-import { Withdrawal } from "voltaire";
+import { Withdrawal } from "@tevm/voltaire";
 // First withdrawal after Shanghai (block 17,034,870)
-const firstWithdrawal = Withdrawal.from({
+const firstWithdrawal = Withdrawal({
 	index: 0n,
 	validatorIndex: 0,
 	address: "0x8bBe03F3e48391a3aC1Ee5e09e23e5b8F5E4c078",
@@ -8,7 +8,7 @@ const firstWithdrawal = Withdrawal.from({
 });
 
 // Typical validator exit withdrawal (32 ETH)
-const validatorExit = Withdrawal.from({
+const validatorExit = Withdrawal({
 	index: 1000000n,
 	validatorIndex: 500000,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -16,7 +16,7 @@ const validatorExit = Withdrawal.from({
 });
 
 // Rewards withdrawal (excess over 32 ETH)
-const rewardsWithdrawal = Withdrawal.from({
+const rewardsWithdrawal = Withdrawal({
 	index: 1000001n,
 	validatorIndex: 500001,
 	address: "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
@@ -24,7 +24,7 @@ const rewardsWithdrawal = Withdrawal.from({
 });
 
 const blockWithdrawals = Array.from({ length: 16 }, (_, i) =>
-	Withdrawal.from({
+	Withdrawal({
 		index: 2000000n + BigInt(i),
 		validatorIndex: 600000 + i,
 		address: "0x0000000000000000000000000000000000000000",

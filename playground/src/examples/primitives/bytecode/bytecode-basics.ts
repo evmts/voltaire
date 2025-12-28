@@ -1,4 +1,4 @@
-import { Bytecode } from "voltaire";
+import { Bytecode } from "@tevm/voltaire";
 // Example: Bytecode basics
 
 // Create bytecode from hex (simple PUSH1 0x01, STOP)

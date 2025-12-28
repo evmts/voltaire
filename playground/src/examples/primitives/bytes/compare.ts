@@ -1,4 +1,4 @@
-import { Bytes } from "voltaire";
+import { Bytes } from "@tevm/voltaire";
 // Lexicographic comparison
 const a = Bytes.fromHex("0x1234");
 const b = Bytes.fromHex("0x5678");

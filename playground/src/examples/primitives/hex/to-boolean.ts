@@ -1,4 +1,4 @@
-import { Hex } from "voltaire";
+import { Hex } from "@tevm/voltaire";
 // Convert hex to boolean (0x00 = false, anything else = true)
 const hexFalse = "0x00";
 const hexTrue = "0x01";

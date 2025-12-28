@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI } from "@tevm/voltaire";
 
 // Example: Calculate function selector from signature string
 const transferSelector = ABI.Function.getSelector("transfer(address,uint256)");

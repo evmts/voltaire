@@ -1,4 +1,4 @@
-import { Opcode } from "voltaire";
+import { Opcode } from "@tevm/voltaire";
 // ADD (0x01) - Addition
 const addInfo = Opcode.info(Opcode.ADD);
 

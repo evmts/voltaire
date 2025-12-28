@@ -1,4 +1,4 @@
-import { Hex, X25519 } from "voltaire";
+import { Hex, X25519 } from "@tevm/voltaire";
 // Computing shared secrets via scalar multiplication
 
 // Generate two keypairs

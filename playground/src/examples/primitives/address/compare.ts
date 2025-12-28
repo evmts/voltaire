@@ -1,8 +1,8 @@
-import { Address } from "voltaire";
+import { Address } from "@tevm/voltaire";
 // Example: Compare addresses lexicographically
-const addr1 = Address.from("0x0000000000000000000000000000000000000001");
-const addr2 = Address.from("0x0000000000000000000000000000000000000002");
-const addr3 = Address.from("0x0000000000000000000000000000000000000001");
+const addr1 = Address("0x0000000000000000000000000000000000000001");
+const addr2 = Address("0x0000000000000000000000000000000000000002");
+const addr3 = Address("0x0000000000000000000000000000000000000001");
 
 // Sort addresses
 const addrs = [addr2, addr1, addr3];

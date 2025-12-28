@@ -1,5 +1,5 @@
 // WASM: Direct secp256k1 helpers (recover/derive)
-import { keccak256, bytesToHex, secp256k1PubkeyFromPrivate, secp256k1RecoverPubkey, secp256k1RecoverAddress, generatePrivateKey } from "voltaire/wasm";
+import { keccak256, bytesToHex, secp256k1PubkeyFromPrivate, secp256k1RecoverPubkey, secp256k1RecoverAddress, generatePrivateKey } from "@tevm/voltaire/wasm";
 
 (async () => {
   const msg = new TextEncoder().encode("direct");

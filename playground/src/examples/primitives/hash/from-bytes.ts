@@ -1,8 +1,8 @@
-import { Hash } from "voltaire";
+import { Hash, Bytes32 } from "@tevm/voltaire";
 // Example: Creating hashes from byte arrays
 
 // Hash from raw bytes (32 bytes)
-const bytes = new Uint8Array([
+const bytes = Bytes32.from([
 	0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33,
 	0x22, 0x11, 0x00, 0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88, 0x77, 0x66,
 	0x55, 0x44, 0x33, 0x22, 0x11, 0x00,
@@ -13,5 +13,5 @@ const hash = Hash.fromBytes(bytes);
 const converted = Hash.toBytes(hash);
 
 // Zero hash from bytes
-const zeroBytes = new Uint8Array(32);
+const zeroBytes = Bytes32.zero();
 const zeroHash = Hash.fromBytes(zeroBytes);

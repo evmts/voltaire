@@ -1,4 +1,4 @@
-import { GasUsed } from "voltaire";
+import { GasUsed } from "@tevm/voltaire";
 // Base operation costs (in gas units)
 const operations = [
 	{ name: "ETH Transfer", gas: 21000n, description: "Simple value transfer" },
@@ -56,7 +56,7 @@ const gasPrices = [
 ];
 
 for (const op of operations) {
-	const gasUsed = GasUsed.from(op.gas);
+	const gasUsed = GasUsed(op.gas);
 
 	for (const price of gasPrices) {
 		const cost = GasUsed.calculateCost(gasUsed, price.wei);
@@ -74,7 +74,7 @@ const storageOps = [
 const mediumGasPrice = 30_000_000_000n;
 
 for (const op of storageOps) {
-	const gasUsed = GasUsed.from(op.gas);
+	const gasUsed = GasUsed(op.gas);
 	const cost = GasUsed.calculateCost(gasUsed, mediumGasPrice);
 	if (op.refund) {
 		const refund = GasUsed.calculateCost(op.refund, mediumGasPrice);

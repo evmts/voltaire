@@ -1,30 +1,30 @@
-import { BeaconBlockRoot } from "voltaire";
+import { BeaconBlockRoot, Bytes, Bytes32 } from "@tevm/voltaire";
 // Example: Comparing beacon block roots
 
 // Identical roots
-const root1a = BeaconBlockRoot.from(
+const root1a = BeaconBlockRoot(
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 );
-const root1b = BeaconBlockRoot.from(
+const root1b = BeaconBlockRoot(
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 );
 
 // Different roots
-const root2 = BeaconBlockRoot.from(
+const root2 = BeaconBlockRoot(
 	"0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
 );
-const root3 = BeaconBlockRoot.from(
+const root3 = BeaconBlockRoot(
 	"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 );
 
 // Sequential beacon roots (simulating chain progression)
-const slot1000 = BeaconBlockRoot.fromBytes(new Uint8Array(32).fill(0x01));
-const slot1001 = BeaconBlockRoot.fromBytes(new Uint8Array(32).fill(0x02));
-const slot1002 = BeaconBlockRoot.fromBytes(new Uint8Array(32).fill(0x03));
+const slot1000 = BeaconBlockRoot.fromBytes(Bytes32.zero().fill(0x01));
+const slot1001 = BeaconBlockRoot.fromBytes(Bytes32.zero().fill(0x02));
+const slot1002 = BeaconBlockRoot.fromBytes(Bytes32.zero().fill(0x03));
 
 // Zero and max roots
-const zeroRoot = BeaconBlockRoot.fromBytes(new Uint8Array(32));
-const maxRoot = BeaconBlockRoot.fromBytes(new Uint8Array(32).fill(0xff));
+const zeroRoot = BeaconBlockRoot.fromBytes(Bytes32.zero());
+const maxRoot = BeaconBlockRoot.fromBytes(Bytes32.zero().fill(0xff));
 
 // Comparison tests
 const sameRoot = BeaconBlockRoot.equals(root1a, root1b);

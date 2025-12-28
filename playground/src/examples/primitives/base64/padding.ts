@@ -1,6 +1,6 @@
-import { Base64 } from "voltaire";
+import { Base64, Bytes } from "@tevm/voltaire";
 for (let len = 0; len <= 6; len++) {
-	const data = new Uint8Array(len).fill(0x41); // 'A'
+	const data = Bytes.repeat(0x41, len); // 'A'
 	const encoded = Base64.encode(data);
 	const paddingCount = (encoded.match(/=/g) || []).length;
 	const encodedLen = encoded.length;
@@ -15,7 +15,7 @@ for (const { inputMod3, padding, example } of paddingRules) {
 }
 const withoutPadding = "SGVsbG8"; // Missing "="
 const withPadding = "SGVsbG8=";
-const data = new Uint8Array([72, 101, 108, 108, 111]);
+const data = Bytes([72, 101, 108, 108, 111]);
 const standard = Base64.encode(data);
 const urlSafe = Base64.encodeUrlSafe(data);
 const invalidPadding = [
@@ -44,7 +44,7 @@ for (const { value, padding } of validPadding) {
 }
 for (let inputBytes = 1; inputBytes <= 10; inputBytes++) {
 	const encodedLen = Base64.calcEncodedSize(inputBytes);
-	const data = new Uint8Array(inputBytes);
+	const data = Bytes.zero(inputBytes);
 	const encoded = Base64.encode(data);
 	const actualPadding = (encoded.match(/=/g) || []).length;
 	const expectedPadding = (3 - (inputBytes % 3)) % 3;

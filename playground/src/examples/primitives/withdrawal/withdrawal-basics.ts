@@ -1,4 +1,4 @@
-import { Withdrawal } from "voltaire";
+import { Withdrawal, Bytes } from "@tevm/voltaire";
 // Example: Withdrawal basics (EIP-4895 Shanghai upgrade)
 
 // EIP-4895 introduced withdrawals in the Shanghai upgrade (April 2023)
@@ -11,7 +11,7 @@ import { Withdrawal } from "voltaire";
 // - amount: Amount in Gwei (1 ETH = 1,000,000,000 Gwei)
 
 // Create a full withdrawal (validator exit, 32 ETH)
-const fullWithdrawal = Withdrawal.from({
+const fullWithdrawal = Withdrawal({
 	index: 1000000n,
 	validatorIndex: 123456,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -19,7 +19,7 @@ const fullWithdrawal = Withdrawal.from({
 });
 
 // Create a partial withdrawal (rewards sweep)
-const partialWithdrawal = Withdrawal.from({
+const partialWithdrawal = Withdrawal({
 	index: 1000001n,
 	validatorIndex: 123456,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -31,7 +31,7 @@ const partialWithdrawal = Withdrawal.from({
 // Partial withdrawals occur for rewards when balance > 32 ETH
 
 // Compare withdrawals
-const duplicate = Withdrawal.from({
+const duplicate = Withdrawal({
 	index: 1000000n,
 	validatorIndex: 123456,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -39,9 +39,9 @@ const duplicate = Withdrawal.from({
 });
 
 // Mixed input types supported
-const mixedTypes = Withdrawal.from({
+const mixedTypes = Withdrawal({
 	index: "1000002", // string
 	validatorIndex: 123457n, // bigint
-	address: new Uint8Array(20), // bytes
+	address: Bytes.zero(20), // bytes
 	amount: "0x77359400", // hex string
 });

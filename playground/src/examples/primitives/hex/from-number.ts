@@ -1,4 +1,4 @@
-import { Hex } from "voltaire";
+import { Hex } from "@tevm/voltaire";
 // Convert numbers to hex
 const num1 = 255;
 const hex1 = Hex.fromNumber(num1);

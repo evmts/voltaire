@@ -1,4 +1,4 @@
-import { Address, Hash, Transaction } from "voltaire";
+import { Address, Hash, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
 const legacyTx: Transaction.Legacy = {
 	type: Transaction.Type.Legacy,
 	nonce: 0n,
@@ -6,10 +6,10 @@ const legacyTx: Transaction.Legacy = {
 	gasLimit: 21000n,
 	to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 	value: 1000000000000000000n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	v: 27n,
-	r: new Uint8Array(32).fill(1),
-	s: new Uint8Array(32).fill(2),
+	r: Bytes32.zero().fill(1),
+	s: Bytes32.zero().fill(2),
 };
 const eip2930Tx: Transaction.EIP2930 = {
 	type: Transaction.Type.EIP2930,
@@ -19,16 +19,16 @@ const eip2930Tx: Transaction.EIP2930 = {
 	gasLimit: 21000n,
 	to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 	value: 1000000000000000000n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	accessList: [
 		{
 			address: Address("0x1234567890123456789012345678901234567890"),
-			storageKeys: [new Uint8Array(32).fill(1)],
+			storageKeys: [Bytes32.zero().fill(1)],
 		},
 	],
 	yParity: 0,
-	r: new Uint8Array(32).fill(3),
-	s: new Uint8Array(32).fill(4),
+	r: Bytes32.zero().fill(3),
+	s: Bytes32.zero().fill(4),
 };
 const eip1559Tx: Transaction.EIP1559 = {
 	type: Transaction.Type.EIP1559,
@@ -39,11 +39,11 @@ const eip1559Tx: Transaction.EIP1559 = {
 	gasLimit: 21000n,
 	to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 	value: 1000000000000000000n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	accessList: [],
 	yParity: 1,
-	r: new Uint8Array(32).fill(5),
-	s: new Uint8Array(32).fill(6),
+	r: Bytes32.zero().fill(5),
+	s: Bytes32.zero().fill(6),
 };
 const eip4844Tx: Transaction.EIP4844 = {
 	type: Transaction.Type.EIP4844,
@@ -55,12 +55,12 @@ const eip4844Tx: Transaction.EIP4844 = {
 	gasLimit: 21000n,
 	to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 	value: 0n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	accessList: [],
-	blobVersionedHashes: [new Uint8Array(32).fill(1)],
+	blobVersionedHashes: [Bytes32.zero().fill(1)],
 	yParity: 0,
-	r: new Uint8Array(32).fill(7),
-	s: new Uint8Array(32).fill(8),
+	r: Bytes32.zero().fill(7),
+	s: Bytes32.zero().fill(8),
 };
 const hashes = [
 	{ type: "Legacy", hash: Transaction.hash(legacyTx) },

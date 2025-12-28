@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI } from "@tevm/voltaire";
 
 // Example: Calculate event signature (topic0) from signature string
 const transferSignature = ABI.Event.getSelector(

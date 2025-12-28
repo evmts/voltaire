@@ -1,4 +1,4 @@
-import { Hex, Keccak256 } from "voltaire";
+import { Hex, Keccak256 } from "@tevm/voltaire";
 // Example: Compute ERC-20 function selectors
 const transferSelector = Keccak256.selector("transfer(address,uint256)");
 

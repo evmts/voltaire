@@ -1,11 +1,11 @@
-import { Address, Authorization } from "voltaire";
+import { Address, Authorization, Bytes, Bytes32 } from "@tevm/voltaire";
 
 // Account delegating execution (EOA)
-const eoaPrivateKey = new Uint8Array(32);
+const eoaPrivateKey = Bytes32.zero();
 eoaPrivateKey.fill(1);
 
 // Contract to delegate to (e.g., smart wallet implementation)
-const delegateContract = Address.from(
+const delegateContract = Address(
 	"0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
 );
 

@@ -1,5 +1,5 @@
-import { ABI } from "voltaire";
-import { Hex } from "voltaire";
+import { ABI } from "@tevm/voltaire";
+import { Hex } from "@tevm/voltaire";
 
 // Example: Decode custom error without parameters
 const unauthorizedData = Hex.fromString("0x82b42900");

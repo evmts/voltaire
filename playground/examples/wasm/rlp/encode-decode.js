@@ -1,5 +1,5 @@
 // WASM: RLP encode/decode utilities
-import { rlpEncodeBytes, rlpEncodeUint, rlpEncodeUintFromBigInt, rlpToHex, rlpFromHex, bytesToHex } from "voltaire/wasm";
+import { rlpEncodeBytes, rlpEncodeUint, rlpEncodeUintFromBigInt, rlpToHex, rlpFromHex, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   const enc1 = rlpEncodeBytes(new Uint8Array([0x01, 0x02]));

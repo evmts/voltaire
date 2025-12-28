@@ -1,6 +1,6 @@
 // WASM: secp256k1 sign/verify/recover
-import { keccak256, bytesToHex, Secp256k1Wasm, hexToBytes } from "voltaire/wasm";
-import { generatePrivateKey } from "voltaire/wasm";
+import { keccak256, bytesToHex, Secp256k1Wasm, hexToBytes } from "@tevm/voltaire/wasm";
+import { generatePrivateKey } from "@tevm/voltaire/wasm";
 
 (async () => {
   // Message hash

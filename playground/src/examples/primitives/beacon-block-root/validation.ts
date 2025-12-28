@@ -1,21 +1,21 @@
-import { BeaconBlockRoot } from "voltaire";
+import { BeaconBlockRoot, Bytes, Bytes32 } from "@tevm/voltaire";
 // Example: Beacon block root validation
 
 // Valid roots (32 bytes)
 const validRoot1 = BeaconBlockRoot.fromHex(
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 );
-const validRoot2 = BeaconBlockRoot.fromBytes(new Uint8Array(32).fill(0x42));
+const validRoot2 = BeaconBlockRoot.fromBytes(Bytes32.zero().fill(0x42));
 
 // Zero root (valid but special meaning)
-const zeroRoot = BeaconBlockRoot.fromBytes(new Uint8Array(32));
+const zeroRoot = BeaconBlockRoot.fromBytes(Bytes32.zero());
 
 // All 0xff (valid but unlikely)
-const maxRoot = BeaconBlockRoot.fromBytes(new Uint8Array(32).fill(0xff));
+const maxRoot = BeaconBlockRoot.fromBytes(Bytes32.zero().fill(0xff));
 
 // Validation checks
 const isZero = (root: ReturnType<typeof BeaconBlockRoot.from>): boolean => {
-	const zero = BeaconBlockRoot.fromBytes(new Uint8Array(32));
+	const zero = BeaconBlockRoot.fromBytes(Bytes32.zero());
 	return BeaconBlockRoot.equals(root, zero);
 };
 

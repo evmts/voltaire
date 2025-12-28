@@ -1,19 +1,19 @@
-import { Withdrawal } from "voltaire";
+import { Withdrawal } from "@tevm/voltaire";
 // Sequential withdrawals in a single block
 const block1 = [
-	Withdrawal.from({
+	Withdrawal({
 		index: 20000000n,
 		validatorIndex: 100000,
 		address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 		amount: 32000000000n, // Full withdrawal
 	}),
-	Withdrawal.from({
+	Withdrawal({
 		index: 20000001n,
 		validatorIndex: 100025,
 		address: "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
 		amount: 50000000n, // Partial withdrawal
 	}),
-	Withdrawal.from({
+	Withdrawal({
 		index: 20000002n,
 		validatorIndex: 100050,
 		address: "0x5aAed5930B9EB3cd462dDbaEfA21Da757F30FbDd",
@@ -24,7 +24,7 @@ block1.forEach((w, i) => {});
 
 // Full block (16 withdrawals max)
 const fullBlock = Array.from({ length: 16 }, (_, i) =>
-	Withdrawal.from({
+	Withdrawal({
 		index: 20100000n + BigInt(i),
 		validatorIndex: 200000 + i * 25, // Spaced validators
 		address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -50,19 +50,19 @@ const daysUntilWithdrawal = indexDifference / withdrawalsPerDay;
 
 // Block with mix of full and partial
 const mixedBlock = [
-	Withdrawal.from({
+	Withdrawal({
 		index: 20200000n,
 		validatorIndex: 300000,
 		address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 		amount: 32000000000n, // Full
 	}),
-	Withdrawal.from({
+	Withdrawal({
 		index: 20200001n,
 		validatorIndex: 300025,
 		address: "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
 		amount: 45000000n, // Partial
 	}),
-	Withdrawal.from({
+	Withdrawal({
 		index: 20200002n,
 		validatorIndex: 300050,
 		address: "0x5aAed5930B9EB3cd462dDbaEfA21Da757F30FbDd",

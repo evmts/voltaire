@@ -1,4 +1,4 @@
-import { ChainId } from "voltaire";
+import { ChainId } from "@tevm/voltaire";
 
 const ethereumChains = [
 	{ name: "Ethereum Mainnet", id: ChainId.MAINNET },
@@ -36,7 +36,7 @@ const devChains = [
 
 devChains.forEach(({ name, id }) => {});
 const detectChain = (chainId: number) => {
-	const id = ChainId.from(chainId);
+	const id = ChainId(chainId);
 	if (ChainId.isMainnet(id)) {
 		return "Ethereum Mainnet";
 	}

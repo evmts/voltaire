@@ -1,4 +1,4 @@
-import { GasEstimate } from "voltaire";
+import { GasEstimate } from "@tevm/voltaire";
 const scenarios = [
 	{ name: "ETH transfer", estimate: 21000n, actual: 21000n },
 	{ name: "ERC20 (cached)", estimate: 45000n, actual: 45000n },
@@ -9,12 +9,12 @@ const scenarios = [
 ];
 
 for (const { name, estimate, actual } of scenarios) {
-	const est = GasEstimate.from(estimate);
+	const est = GasEstimate(estimate);
 	const diff = Number(actual - estimate);
 	const pctDiff = ((diff / Number(estimate)) * 100).toFixed(1);
 	const safe = actual <= estimate;
 }
-const testEstimate = GasEstimate.from(100000n);
+const testEstimate = GasEstimate(100000n);
 
 const accuracyLevels = [
 	{ name: "High accuracy (±2%)", buffer: 10 },
@@ -27,7 +27,7 @@ const accuracyLevels = [
 for (const { name, buffer } of accuracyLevels) {
 	const buffered = GasEstimate.withBuffer(testEstimate, buffer);
 }
-const rpcEstimate = GasEstimate.from(150000n);
+const rpcEstimate = GasEstimate(150000n);
 
 // Check if estimate seems reasonable
 const minExpected = 21000n;

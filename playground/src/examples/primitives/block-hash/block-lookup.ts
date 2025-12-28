@@ -1,4 +1,4 @@
-import { BlockHash } from "voltaire";
+import { BlockHash } from "@tevm/voltaire";
 // Example: Block lookup and tracking patterns
 
 // Block database simulation
@@ -41,10 +41,10 @@ const blockDatabase: BlockInfo[] = [
 
 // Lookup by hash
 function lookupBlock(hashStr: string): BlockInfo | null {
-	const searchHash = BlockHash.from(hashStr);
+	const searchHash = BlockHash(hashStr);
 
 	for (const block of blockDatabase) {
-		const blockHash = BlockHash.from(block.hash);
+		const blockHash = BlockHash(block.hash);
 		if (BlockHash.equals(searchHash, blockHash)) {
 			return block;
 		}
@@ -79,20 +79,20 @@ class BlockHashIndex {
 	constructor(blocks: BlockInfo[]) {
 		for (const block of blocks) {
 			// Normalize to lowercase for case-insensitive lookups
-			const hash = BlockHash.from(block.hash);
+			const hash = BlockHash(block.hash);
 			const normalized = BlockHash.toHex(hash).toLowerCase();
 			this.index.set(normalized, block);
 		}
 	}
 
 	lookup(hashStr: string): BlockInfo | null {
-		const hash = BlockHash.from(hashStr);
+		const hash = BlockHash(hashStr);
 		const normalized = BlockHash.toHex(hash).toLowerCase();
 		return this.index.get(normalized) ?? null;
 	}
 
 	has(hashStr: string): boolean {
-		const hash = BlockHash.from(hashStr);
+		const hash = BlockHash(hashStr);
 		const normalized = BlockHash.toHex(hash).toLowerCase();
 		return this.index.has(normalized);
 	}

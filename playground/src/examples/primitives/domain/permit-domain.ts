@@ -1,10 +1,10 @@
-import { hash as keccak256 } from "voltaire";
-import { Domain, Hex } from "voltaire";
+import { hash as keccak256 } from "@tevm/voltaire";
+import { Domain, Hex } from "@tevm/voltaire";
 
 // Example: ERC-2612 Permit domain for gasless token approvals
 
 // USDC on Ethereum mainnet
-const usdc = Domain.from({
+const usdc = Domain({
 	name: "USD Coin",
 	version: "2",
 	chainId: 1,
@@ -38,14 +38,14 @@ const encodedPermit = Domain.encodeData("Permit", permit, permitTypes, {
 });
 
 // USDT (older version, no version field)
-const usdt = Domain.from({
+const usdt = Domain({
 	name: "Tether USD",
 	chainId: 1,
 	verifyingContract: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
 });
 
 // DAI uses Dai Permit (different from ERC-2612)
-const dai = Domain.from({
+const dai = Domain({
 	name: "Dai Stablecoin",
 	version: "1",
 	chainId: 1,
@@ -53,7 +53,7 @@ const dai = Domain.from({
 });
 
 // WETH (no permit)
-const weth = Domain.from({
+const weth = Domain({
 	name: "Wrapped Ether",
 	version: "1",
 	chainId: 1,

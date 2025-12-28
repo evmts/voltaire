@@ -1,5 +1,5 @@
 // WASM: hexToBytes <-> bytesToHex
-import { hexToBytes, bytesToHex } from "voltaire/wasm";
+import { hexToBytes, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   const hex = "0xdeadbeef";

@@ -1,4 +1,4 @@
-import { Blob } from "voltaire";
+import { Blob } from "@tevm/voltaire";
 const applicationData = JSON.stringify({
 	type: "rollup_batch",
 	transactions: [

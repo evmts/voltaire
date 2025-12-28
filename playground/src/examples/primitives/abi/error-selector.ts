@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI } from "@tevm/voltaire";
 
 // Example: Calculate error selector from signature string
 const unauthorizedSelector = ABI.Error.getSelector("Unauthorized()");

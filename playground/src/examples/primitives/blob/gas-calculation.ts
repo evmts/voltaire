@@ -1,4 +1,4 @@
-import { Blob } from "voltaire";
+import { Blob } from "@tevm/voltaire";
 const gas1 = Blob.calculateGas(1);
 for (let count = 2; count <= Blob.MAX_PER_TRANSACTION; count++) {
 	const gas = Blob.calculateGas(count);

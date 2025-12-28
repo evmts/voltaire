@@ -1,4 +1,4 @@
-import { AesGcm, Hex, X25519 } from "voltaire";
+import { AesGcm, Hex, X25519 } from "@tevm/voltaire";
 // End-to-end encryption using X25519 + AES-GCM
 
 const aliceKeypair = X25519.generateKeypair();

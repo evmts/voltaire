@@ -1,4 +1,4 @@
-import { Base64 } from "voltaire";
+import { Base64, Bytes, Bytes32 } from "@tevm/voltaire";
 const simple = "SGVsbG8=";
 const simpleBytes = Base64.decode(simple);
 const zerosEncoded = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
@@ -19,7 +19,7 @@ const paddingExamples = [
 for (const { encoded, desc } of paddingExamples) {
 	const decoded = Base64.decode(encoded);
 }
-const original = new Uint8Array(32);
+const original = Bytes32.zero();
 for (let i = 0; i < 32; i++) original[i] = (i * 13 + 7) % 256;
 const encoded = Base64.encode(original);
 const decoded = Base64.decode(encoded);

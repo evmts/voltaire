@@ -1,4 +1,4 @@
-import { Bip39 } from "voltaire";
+import { Bip39 } from "@tevm/voltaire";
 // Utility functions for BIP-39
 
 // Verify conversions

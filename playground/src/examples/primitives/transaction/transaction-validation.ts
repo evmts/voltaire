@@ -1,4 +1,4 @@
-import { Address, Transaction } from "voltaire";
+import { Address, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
 // Transaction Validation: Validate transaction fields
 
 // Create transaction to validate
@@ -9,13 +9,13 @@ const tx: Transaction.EIP1559 = {
 	maxPriorityFeePerGas: 2_000_000_000n,
 	maxFeePerGas: 30_000_000_000n,
 	gasLimit: 21_000n,
-	to: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
+	to: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 	value: 1_000_000_000_000_000_000n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	accessList: [],
 	yParity: 0,
-	r: new Uint8Array(32),
-	s: new Uint8Array(32),
+	r: Bytes32.zero(),
+	s: Bytes32.zero(),
 };
 
 // Validate gas price

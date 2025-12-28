@@ -1,4 +1,4 @@
-import { Block, BlockBody, BlockHash, BlockHeader } from "voltaire";
+import { Block, BlockBody, BlockHash, BlockHeader } from "@tevm/voltaire";
 // Simulated eth_getBlockByNumber RPC response (recent mainnet block)
 const rpcResponse = {
 	number: "0x12a7f27", // 19595047
@@ -41,7 +41,7 @@ const rpcResponse = {
 const parseHexToBigInt = (hex: string): bigint => BigInt(hex);
 const parseHexToBytes = (hex: string): Uint8Array => {
 	const cleaned = hex.startsWith("0x") ? hex.slice(2) : hex;
-	const bytes = new Uint8Array(cleaned.length / 2);
+	const bytes = Bytes.zero(cleaned.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
 		bytes[i] = Number.parseInt(cleaned.slice(i * 2, i * 2 + 2), 16);
 	}
@@ -49,7 +49,7 @@ const parseHexToBytes = (hex: string): Uint8Array => {
 };
 
 // Create block header from RPC data
-const header = BlockHeader.from({
+const header = BlockHeader({
 	parentHash: rpcResponse.parentHash,
 	ommersHash: rpcResponse.sha3Uncles,
 	beneficiary: rpcResponse.miner,
@@ -73,14 +73,14 @@ const header = BlockHeader.from({
 });
 
 // Create block body from RPC data
-const body = BlockBody.from({
+const body = BlockBody({
 	transactions: rpcResponse.transactions, // Would parse transaction objects
 	ommers: [], // Would parse uncle blocks
 	withdrawals: [], // Would parse withdrawal objects
 });
 
 // Create complete block
-const block = Block.from({
+const block = Block({
 	header,
 	body,
 	hash: rpcResponse.hash,

@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash } from "voltaire";
+import { Address, EventLog, Hash, Bytes, Bytes32 } from "@tevm/voltaire";
 const TRANSFER_SIG = Hash(
 	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
 );
@@ -10,7 +10,7 @@ const to = Hash(
 );
 
 // 1000.5 USDC (6 decimals) = 1000500000 = 0x3B9B0290
-const valueData = new Uint8Array(32);
+const valueData = Bytes32.zero();
 valueData[28] = 0x3b;
 valueData[29] = 0x9b;
 valueData[30] = 0x02;
@@ -45,7 +45,7 @@ const recipient = Hash(
 );
 
 // 4 uint256 values: amount0In, amount1In, amount0Out, amount1Out
-const swapData = new Uint8Array(128);
+const swapData = Bytes.zero(128);
 // amount0In = 0
 // amount1In = 1000 USDC
 swapData[60] = 0x3b;
@@ -95,12 +95,12 @@ const senderIndexed = Hash(
 );
 
 // Data: uint256 amount + address beneficiary
-const depositData = new Uint8Array(64); // 2 slots
+const depositData = Bytes.zero(64); // 2 slots
 // Amount: 500 tokens
 depositData[31] = 0xff; // 255
 depositData[30] = 0x01; // 511 total
 // Beneficiary address (last 20 bytes of second slot)
-const beneficiaryBytes = new Uint8Array([
+const beneficiaryBytes = Bytes([
 	0xd8, 0xda, 0x6b, 0xf2, 0x69, 0x64, 0xaf, 0x9d, 0x7e, 0xed, 0x9e, 0x03, 0xe5,
 	0x34, 0x15, 0xd3, 0x7a, 0xa9, 0x60, 0x45,
 ]);
@@ -126,7 +126,7 @@ const user = Hash(
 	"0x000000000000000000000000742d35cc6634c0532925a3b844bc454e4438f44e",
 );
 
-const statusData = new Uint8Array(32);
+const statusData = Bytes32.zero();
 statusData[31] = 1; // true
 
 const statusLog = EventLog.create({
@@ -144,12 +144,12 @@ const EVENT_SIG = Hash(
 	"0xfedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
 );
 
-const multiData = new Uint8Array(96); // 3 slots
+const multiData = Bytes.zero(96); // 3 slots
 // ID: 12345
 multiData[30] = 0x30;
 multiData[31] = 0x39;
 // Target address (20 bytes)
-const targetBytes = new Uint8Array([
+const targetBytes = Bytes([
 	0x5a, 0xae, 0xd5, 0x93, 0x20, 0xb9, 0xeb, 0x3c, 0xd4, 0x62, 0xdd, 0xba, 0xef,
 	0xa2, 0x1d, 0xa7, 0x57, 0xf3, 0x0f, 0xbd,
 ]);

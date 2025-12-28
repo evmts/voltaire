@@ -1,4 +1,4 @@
-import { Hardfork } from "voltaire";
+import { Hardfork } from "@tevm/voltaire";
 // Create some hardforks for comparison
 const frontier = Hardfork.FRONTIER;
 const london = Hardfork.LONDON;

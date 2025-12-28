@@ -1,4 +1,4 @@
-import { Ens, Hex } from "voltaire";
+import { Ens, Hex } from "@tevm/voltaire";
 const rootHash = Ens.namehash("");
 const singleLabels = ["eth", "com", "xyz"];
 

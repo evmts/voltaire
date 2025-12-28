@@ -1,5 +1,5 @@
 // WASM: Wallet helpers (generate/compress)
-import { generatePrivateKey, compressPublicKey, Secp256k1Wasm, bytesToHex } from "voltaire/wasm";
+import { generatePrivateKey, compressPublicKey, Secp256k1Wasm, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   const priv = generatePrivateKey();

@@ -1,6 +1,6 @@
-import { Hash, P256 } from "voltaire";
+import { Bytes, Hash, P256 } from "@tevm/voltaire";
 // Generate a random private key (32 bytes)
-const privateKey = crypto.getRandomValues(new Uint8Array(32));
+const privateKey = Bytes.random(32);
 
 // Derive public key from private key
 const publicKey = P256.derivePublicKey(privateKey);
@@ -16,7 +16,7 @@ const isValid = P256.verify(signature, messageHash, publicKey);
 const wrongMessageHash = Hash.keccak256String("Wrong message");
 const isInvalid = P256.verify(signature, wrongMessageHash, publicKey);
 // Create second keypair for ECDH
-const privateKey2 = crypto.getRandomValues(new Uint8Array(32));
+const privateKey2 = Bytes.random(32);
 const publicKey2 = P256.derivePublicKey(privateKey2);
 
 // Compute shared secrets (symmetric)

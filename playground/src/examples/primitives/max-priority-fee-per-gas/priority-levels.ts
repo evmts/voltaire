@@ -1,7 +1,7 @@
-import { MaxPriorityFeePerGas } from "voltaire";
+import { MaxPriorityFeePerGas } from "@tevm/voltaire";
 
 const priorityLevels = {
-	minimal: MaxPriorityFeePerGas.from(500000000n), // 0.5 Gwei
+	minimal: MaxPriorityFeePerGas(500000000n), // 0.5 Gwei
 	low: MaxPriorityFeePerGas.fromGwei(1),
 	medium: MaxPriorityFeePerGas.fromGwei(2),
 	high: MaxPriorityFeePerGas.fromGwei(5),

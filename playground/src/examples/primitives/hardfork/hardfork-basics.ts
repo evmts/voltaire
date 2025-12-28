@@ -1,4 +1,4 @@
-import { Hardfork } from "voltaire";
+import { Hardfork } from "@tevm/voltaire";
 // Hardfork Basics - Core concepts of Ethereum hardforks
 
 // Hardforks represent protocol upgrades in Ethereum's history

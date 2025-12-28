@@ -1,5 +1,5 @@
-import { hash as keccak256 } from "voltaire";
-import { Domain, Hex } from "voltaire";
+import { hash as keccak256 } from "@tevm/voltaire";
+import { Domain, Hex } from "@tevm/voltaire";
 
 // Example: Chain-specific domains prevent cross-chain replay attacks
 
@@ -8,7 +8,7 @@ const version = "1";
 const contract = "0x1111111111111111111111111111111111111111";
 
 // Ethereum Mainnet (Chain ID: 1)
-const mainnet = Domain.from({
+const mainnet = Domain({
 	name: protocolName,
 	version,
 	chainId: 1,
@@ -16,7 +16,7 @@ const mainnet = Domain.from({
 });
 
 // Optimism (Chain ID: 10)
-const optimism = Domain.from({
+const optimism = Domain({
 	name: protocolName,
 	version,
 	chainId: 10,
@@ -24,7 +24,7 @@ const optimism = Domain.from({
 });
 
 // BSC (Chain ID: 56)
-const bsc = Domain.from({
+const bsc = Domain({
 	name: protocolName,
 	version,
 	chainId: 56,
@@ -32,7 +32,7 @@ const bsc = Domain.from({
 });
 
 // Polygon (Chain ID: 137)
-const polygon = Domain.from({
+const polygon = Domain({
 	name: protocolName,
 	version,
 	chainId: 137,
@@ -40,7 +40,7 @@ const polygon = Domain.from({
 });
 
 // Arbitrum (Chain ID: 42161)
-const arbitrum = Domain.from({
+const arbitrum = Domain({
 	name: protocolName,
 	version,
 	chainId: 42161,
@@ -48,7 +48,7 @@ const arbitrum = Domain.from({
 });
 
 // Base (Chain ID: 8453)
-const base = Domain.from({
+const base = Domain({
 	name: protocolName,
 	version,
 	chainId: 8453,
@@ -56,7 +56,7 @@ const base = Domain.from({
 });
 
 // Sepolia Testnet (Chain ID: 11155111)
-const sepolia = Domain.from({
+const sepolia = Domain({
 	name: protocolName,
 	version,
 	chainId: 11155111,

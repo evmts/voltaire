@@ -1,4 +1,4 @@
-import { Hex, Keccak256 } from "voltaire";
+import { Bytes, Hex, Keccak256 } from "@tevm/voltaire";
 // Example: Universal from() constructor handles multiple input types
 
 // 1. Hash hex string (with 0x prefix)
@@ -8,7 +8,7 @@ const hexHash = Keccak256.from("0xdeadbeef");
 const stringHash = Keccak256.from("Hello");
 
 // 3. Hash raw bytes
-const bytes = new Uint8Array([1, 2, 3]);
+const bytes = Bytes([1, 2, 3]);
 const bytesHash = Keccak256.from(bytes);
 
 // Compare with specific methods

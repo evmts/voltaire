@@ -1,27 +1,27 @@
-import { GasEstimate } from "voltaire";
+import { GasEstimate } from "@tevm/voltaire";
 // Example: Contract interaction gas estimation
 
 // Common DeFi operations
 const operations = {
 	// Uniswap V2
-	uniswapSwap: GasEstimate.from(150000n),
-	uniswapAddLiquidity: GasEstimate.from(180000n),
-	uniswapRemoveLiquidity: GasEstimate.from(120000n),
+	uniswapSwap: GasEstimate(150000n),
+	uniswapAddLiquidity: GasEstimate(180000n),
+	uniswapRemoveLiquidity: GasEstimate(120000n),
 
 	// Uniswap V3 (more complex)
-	uniswapV3Swap: GasEstimate.from(180000n),
-	uniswapV3Mint: GasEstimate.from(250000n),
+	uniswapV3Swap: GasEstimate(180000n),
+	uniswapV3Mint: GasEstimate(250000n),
 
 	// Other protocols
-	aaveDeposit: GasEstimate.from(200000n),
-	compoundSupply: GasEstimate.from(180000n),
-	curveSwap: GasEstimate.from(160000n),
+	aaveDeposit: GasEstimate(200000n),
+	compoundSupply: GasEstimate(180000n),
+	curveSwap: GasEstimate(160000n),
 };
 for (const [op, estimate] of Object.entries(operations)) {
 }
-const swapEstimate = GasEstimate.from(150000n);
-const stakeEstimate = GasEstimate.from(120000n);
-const totalEstimate = GasEstimate.from(
+const swapEstimate = GasEstimate(150000n);
+const stakeEstimate = GasEstimate(120000n);
+const totalEstimate = GasEstimate(
 	GasEstimate.toBigInt(swapEstimate) + GasEstimate.toBigInt(stakeEstimate),
 );
 
@@ -33,22 +33,22 @@ const gasLimit = GasEstimate.toGasLimit(buffered);
 const complexityLevels = [
 	{
 		name: "Simple (read-only)",
-		estimate: GasEstimate.from(50000n),
+		estimate: GasEstimate(50000n),
 		buffer: 10,
 	},
 	{
 		name: "Medium (single write)",
-		estimate: GasEstimate.from(80000n),
+		estimate: GasEstimate(80000n),
 		buffer: 20,
 	},
 	{
 		name: "Complex (multi-write)",
-		estimate: GasEstimate.from(150000n),
+		estimate: GasEstimate(150000n),
 		buffer: 25,
 	},
 	{
 		name: "Very complex (DeFi)",
-		estimate: GasEstimate.from(250000n),
+		estimate: GasEstimate(250000n),
 		buffer: 30,
 	},
 ];

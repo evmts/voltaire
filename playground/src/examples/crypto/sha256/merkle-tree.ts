@@ -1,4 +1,4 @@
-import { Hex, SHA256 } from "voltaire";
+import { Bytes, Hex, SHA256 } from "@tevm/voltaire";
 // Build Merkle tree using SHA256 for hashing
 
 function merkleRoot(leaves: Uint8Array[]): Uint8Array {
@@ -17,9 +17,7 @@ function merkleRoot(leaves: Uint8Array[]): Uint8Array {
 			const right = hashes[i + 1] || left; // Duplicate last if odd
 
 			// Concatenate and hash
-			const combined = new Uint8Array(64);
-			combined.set(left, 0);
-			combined.set(right, 32);
+			const combined = Bytes.concat(left, right);
 			nextLevel.push(SHA256.hash(combined));
 		}
 

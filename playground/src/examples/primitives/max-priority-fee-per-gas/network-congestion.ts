@@ -1,9 +1,9 @@
-import { MaxPriorityFeePerGas } from "voltaire";
+import { MaxPriorityFeePerGas } from "@tevm/voltaire";
 
 const congestionLevels = {
 	veryLow: {
 		baseFee: 10n,
-		recommendedTip: MaxPriorityFeePerGas.from(500000000n), // 0.5 Gwei
+		recommendedTip: MaxPriorityFeePerGas(500000000n), // 0.5 Gwei
 	},
 	low: {
 		baseFee: 20n,
@@ -46,7 +46,7 @@ for (const baseFee of baseFeeSamples) {
 const historicalTips = [
 	{ block: 18000000, tip: MaxPriorityFeePerGas.fromGwei(2) },
 	{ block: 18100000, tip: MaxPriorityFeePerGas.fromGwei(3) },
-	{ block: 18200000, tip: MaxPriorityFeePerGas.from(1500000000n) }, // 1.5 Gwei
+	{ block: 18200000, tip: MaxPriorityFeePerGas(1500000000n) }, // 1.5 Gwei
 	{ block: 18300000, tip: MaxPriorityFeePerGas.fromGwei(5) },
 	{ block: 18400000, tip: MaxPriorityFeePerGas.fromGwei(2) },
 ];

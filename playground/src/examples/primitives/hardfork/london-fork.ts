@@ -1,4 +1,4 @@
-import { Hardfork } from "voltaire";
+import { Hardfork } from "@tevm/voltaire";
 const london = Hardfork.LONDON;
 
 // Check if hardfork is pre or post London

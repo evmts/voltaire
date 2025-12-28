@@ -1,4 +1,4 @@
-import { Hash, TransactionHash } from "voltaire";
+import { Hash, TransactionHash } from "@tevm/voltaire";
 // Simulated transaction database
 interface TransactionRecord {
 	hash: Uint8Array;
@@ -12,7 +12,7 @@ interface TransactionRecord {
 
 const transactionDatabase: TransactionRecord[] = [
 	{
-		hash: TransactionHash.from(
+		hash: TransactionHash(
 			"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",
 		),
 		blockNumber: 12965000n,
@@ -23,7 +23,7 @@ const transactionDatabase: TransactionRecord[] = [
 		status: "success",
 	},
 	{
-		hash: TransactionHash.from(
+		hash: TransactionHash(
 			"0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35",
 		),
 		blockNumber: 12965001n,
@@ -34,7 +34,7 @@ const transactionDatabase: TransactionRecord[] = [
 		status: "success",
 	},
 	{
-		hash: TransactionHash.from(
+		hash: TransactionHash(
 			"0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060",
 		),
 		blockNumber: 46147n,
@@ -52,19 +52,19 @@ function lookupTransaction(hash: Uint8Array): TransactionRecord | undefined {
 		TransactionHash.equals(tx.hash, hash),
 	);
 }
-const lookup1 = TransactionHash.from(
+const lookup1 = TransactionHash(
 	"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",
 );
 const result1 = lookupTransaction(lookup1);
 if (result1) {
 }
-const lookup2 = TransactionHash.from(
+const lookup2 = TransactionHash(
 	"0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060",
 );
 const result2 = lookupTransaction(lookup2);
 if (result2) {
 }
-const lookup3 = TransactionHash.from(
+const lookup3 = TransactionHash(
 	"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 );
 const result3 = lookupTransaction(lookup3);
@@ -72,13 +72,13 @@ if (result3) {
 } else {
 }
 const hashesToLookup = [
-	TransactionHash.from(
+	TransactionHash(
 		"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",
 	),
-	TransactionHash.from(
+	TransactionHash(
 		"0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35",
 	),
-	TransactionHash.from(
+	TransactionHash(
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 	),
 ];

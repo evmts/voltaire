@@ -1,4 +1,4 @@
-import { Blake2, Hex } from "voltaire";
+import { Blake2, Hex } from "@tevm/voltaire";
 const message = "Voltaire";
 
 // 20 bytes (address-sized, 160 bits)

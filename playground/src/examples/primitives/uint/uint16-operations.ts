@@ -1,4 +1,4 @@
-import { Uint16 } from "voltaire";
+import { Uint16 } from "@tevm/voltaire";
 const httpPort = Uint16.fromNumber(80);
 const httpsPort = Uint16.fromNumber(443);
 const customPort = Uint16.fromNumber(8080);

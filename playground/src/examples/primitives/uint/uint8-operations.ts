@@ -1,4 +1,4 @@
-import { Uint8 } from "voltaire";
+import { Uint8 } from "@tevm/voltaire";
 const a = Uint8.fromNumber(100);
 const b = Uint8.fromNumber(50);
 const x = Uint8.fromNumber(0b11001100); // 204

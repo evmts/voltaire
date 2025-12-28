@@ -1,14 +1,14 @@
-import { Hash, P256 } from "voltaire";
+import { Bytes, Hash, P256 } from "@tevm/voltaire";
 // Simulated user and device info
 const userId = "user@example.com";
 const deviceName = "iPhone 15 Pro";
 
 // 1. Server sends registration challenge
-const registrationChallenge = crypto.getRandomValues(new Uint8Array(32));
+const registrationChallenge = Bytes.random(32);
 
 // 2. Authenticator creates new credential
-const credentialId = crypto.getRandomValues(new Uint8Array(16));
-const privateKey = crypto.getRandomValues(new Uint8Array(32));
+const credentialId = Bytes.random(16);
+const privateKey = Bytes.random(32);
 const publicKey = P256.derivePublicKey(privateKey);
 
 // 3. Create attestation signature
@@ -27,26 +27,18 @@ const clientDataHash = Hash.keccak256String(
 );
 
 // Attestation statement
-const attestationData = new Uint8Array([
-	...rpIdHash,
-	0x41, // flags: user present + user verified
-	0x00,
-	0x00,
-	0x00,
-	0x00, // sign count
-	...credentialId,
-	...publicKey,
-]);
-
-const attestationHash = Hash.keccak256(
-	new Uint8Array([...attestationData, ...clientDataHash]),
+const attestationData = Bytes.concat(
+	rpIdHash,
+	Bytes([0x41, 0x00, 0x00, 0x00, 0x00]), // flags + sign count
+	credentialId,
+	publicKey,
 );
+
+const attestationHash = Hash.keccak256(Bytes.concat(attestationData, clientDataHash));
 const attestationSignature = P256.sign(attestationHash, privateKey);
 
 // 4. Server verifies and stores credential
-const verifyAttestationHash = Hash.keccak256(
-	new Uint8Array([...attestationData, ...clientDataHash]),
-);
+const verifyAttestationHash = Hash.keccak256(Bytes.concat(attestationData, clientDataHash));
 const attestationValid = P256.verify(
 	attestationSignature,
 	verifyAttestationHash,
@@ -54,7 +46,7 @@ const attestationValid = P256.verify(
 );
 
 // 1. Server sends authentication challenge
-const authChallenge = crypto.getRandomValues(new Uint8Array(32));
+const authChallenge = Bytes.random(32);
 
 // 2. Authenticator creates assertion
 const signCount = 1;
@@ -69,25 +61,19 @@ const authClientData = {
 const authClientDataHash = Hash.keccak256String(JSON.stringify(authClientData));
 
 // Authenticator data
-const authData = new Uint8Array([
-	...rpIdHash,
-	0x05, // flags: user present + user verified
-	...new Uint8Array([0x00, 0x00, 0x00, signCount]), // counter
-]);
+const authData = Bytes.concat(
+	rpIdHash,
+	Bytes([0x05]), // flags: user present + user verified
+	Bytes([0x00, 0x00, 0x00, signCount]), // counter
+);
 
-const assertionSignedData = new Uint8Array([
-	...authData,
-	...authClientDataHash,
-]);
+const assertionSignedData = Bytes.concat(authData, authClientDataHash);
 
 const assertionHash = Hash.keccak256(assertionSignedData);
 const assertionSignature = P256.sign(assertionHash, privateKey);
 
 // 3. Server verifies assertion
-const verifyAssertionSignedData = new Uint8Array([
-	...authData,
-	...authClientDataHash,
-]);
+const verifyAssertionSignedData = Bytes.concat(authData, authClientDataHash);
 
 const verifyAssertionHash = Hash.keccak256(verifyAssertionSignedData);
 const assertionValid = P256.verify(
@@ -97,7 +83,7 @@ const assertionValid = P256.verify(
 );
 
 // Check 1: Replay attack prevention (wrong challenge)
-const replayChallenge = crypto.getRandomValues(new Uint8Array(32));
+const replayChallenge = Bytes.random(32);
 const replayClientData = {
 	...authClientData,
 	challenge: Array.from(replayChallenge)
@@ -105,10 +91,7 @@ const replayClientData = {
 		.join(""),
 };
 const replayHash = Hash.keccak256(
-	new Uint8Array([
-		...authData,
-		...Hash.keccak256String(JSON.stringify(replayClientData)),
-	]),
+	Bytes.concat(authData, Hash.keccak256String(JSON.stringify(replayClientData))),
 );
 
 // Check 2: Phishing prevention (wrong origin)
@@ -117,12 +100,9 @@ const phishingClientData = {
 	origin: "https://evil-example.com",
 };
 const phishingHash = Hash.keccak256(
-	new Uint8Array([
-		...authData,
-		...Hash.keccak256String(JSON.stringify(phishingClientData)),
-	]),
+	Bytes.concat(authData, Hash.keccak256String(JSON.stringify(phishingClientData))),
 );
 
 // Check 3: Wrong credential
-const wrongPrivateKey = crypto.getRandomValues(new Uint8Array(32));
+const wrongPrivateKey = Bytes.random(32);
 const wrongPublicKey = P256.derivePublicKey(wrongPrivateKey);

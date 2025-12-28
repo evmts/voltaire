@@ -1,4 +1,4 @@
-import { MaxFeePerGas } from "voltaire";
+import { MaxFeePerGas } from "@tevm/voltaire";
 
 const baseFee = 45n; // Gwei
 const maxPriorityFee = 2n; // Gwei - tip to validators

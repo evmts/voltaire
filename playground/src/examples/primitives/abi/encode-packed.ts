@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI, Bytes, Bytes32 } from "@tevm/voltaire";
 
 // Example: encodePacked for signature verification
 const packed1 = ABI.encodePacked(
@@ -25,7 +25,7 @@ const leaf = ABI.encodePacked(
 // Example: encodePacked with bytes
 const signature = ABI.encodePacked(
 	[{ type: "bytes32" }, { type: "bytes32" }, { type: "uint8" }],
-	[new Uint8Array(32).fill(1), new Uint8Array(32).fill(2), 27],
+	[Bytes32.zero().fill(1), Bytes32.zero().fill(2), 27],
 );
 
 // Example: encodePacked with strings (concatenation)

@@ -1,11 +1,11 @@
-import { RIPEMD160 } from "voltaire";
-import { Hex } from "voltaire";
+import { Bytes, RIPEMD160 } from "@tevm/voltaire";
+import { Hex } from "@tevm/voltaire";
 
 // From string
 const stringHash = RIPEMD160.from("hello");
 
 // From Uint8Array
-const bytes = new Uint8Array([1, 2, 3]);
+const bytes = Bytes([1, 2, 3]);
 const bytesHash = RIPEMD160.from(bytes);
 
 // Equivalent to specific methods

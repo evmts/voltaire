@@ -1,4 +1,4 @@
-import { Opcode } from "voltaire";
+import { Opcode, Bytes } from "@tevm/voltaire";
 // LOG0 (0xa0) - Log with no topics
 const log0Info = Opcode.info(Opcode.LOG0);
 
@@ -30,7 +30,7 @@ for (const op of opcodes) {
 	const isLog = Opcode.isLog(op);
 }
 // Simple LOG1 example: emit event with one topic
-const logBytecode = new Uint8Array([
+const logBytecode = Bytes([
 	Opcode.PUSH1,
 	0x00, // PUSH1 0x00 (offset)
 	Opcode.PUSH1,

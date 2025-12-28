@@ -1,4 +1,4 @@
-import { MaxFeePerGas } from "voltaire";
+import { MaxFeePerGas } from "@tevm/voltaire";
 
 // Create different fee levels
 const lowFee = MaxFeePerGas.fromGwei(30n);

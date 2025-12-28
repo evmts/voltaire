@@ -1,4 +1,4 @@
-import { GasUsed } from "voltaire";
+import { GasUsed } from "@tevm/voltaire";
 // Different transaction scenarios
 const scenarios = [
 	{
@@ -31,13 +31,13 @@ const scenarios = [
 const gasPrice = 30_000_000_000n; // 30 gwei
 
 for (const scenario of scenarios) {
-	const gasUsed = GasUsed.from(scenario.gasUsed);
+	const gasUsed = GasUsed(scenario.gasUsed);
 	const unusedGas = scenario.gasLimit - scenario.gasUsed;
 	const efficiency =
 		(Number(scenario.gasUsed) / Number(scenario.gasLimit)) * 100;
 	const refund = unusedGas * gasPrice;
 }
 const conservative = scenarios[2];
-const conservativeUsed = GasUsed.from(conservative.gasUsed);
+const conservativeUsed = GasUsed(conservative.gasUsed);
 const buffer =
 	(Number(conservative.gasLimit) / Number(conservative.gasUsed) - 1) * 100;

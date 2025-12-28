@@ -1,7 +1,7 @@
 
-import { Address, PrivateKey, PublicKey } from "voltaire";
+import { Address, PrivateKey, PublicKey } from "@tevm/voltaire";
 // Create a public key
-const privateKey = PrivateKey.from(
+const privateKey = PrivateKey(
 	"0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a",
 );
 const publicKey = PublicKey.fromPrivateKey(privateKey);

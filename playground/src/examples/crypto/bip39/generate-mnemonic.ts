@@ -1,4 +1,4 @@
-import { Bip39, Hex } from "voltaire";
+import { Bip39, Hex } from "@tevm/voltaire";
 // Generate BIP-39 mnemonic phrases with different entropy levels
 
 // Generate 12-word mnemonic (128-bit entropy)

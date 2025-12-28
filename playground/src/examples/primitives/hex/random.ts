@@ -1,4 +1,4 @@
-import { Hex } from "voltaire";
+import { Hex } from "@tevm/voltaire";
 // Generate random hex values
 const random4 = Hex.random(4);
 

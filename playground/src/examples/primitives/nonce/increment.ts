@@ -1,26 +1,26 @@
-import { Nonce } from "voltaire";
+import { Nonce } from "@tevm/voltaire";
 
 // Start from zero
-let nonce = Nonce.from(0);
+let nonce = Nonce(0);
 
 // Increment once
 nonce = Nonce.increment(nonce);
 
 // Increment again
 nonce = Nonce.increment(nonce);
-nonce = Nonce.from(10);
+nonce = Nonce(10);
 
 for (let i = 0; i < 5; i++) {
 	nonce = Nonce.increment(nonce);
 }
-let largeNonce = Nonce.from(999_998n);
+let largeNonce = Nonce(999_998n);
 
 largeNonce = Nonce.increment(largeNonce);
 
 largeNonce = Nonce.increment(largeNonce);
 
 largeNonce = Nonce.increment(largeNonce);
-let accountNonce = Nonce.from(0);
+let accountNonce = Nonce(0);
 
 const transactions = [
 	"Send ETH",

@@ -1,6 +1,6 @@
-import { Block, BlockBody, BlockHash, BlockHeader } from "voltaire";
+import { Block, BlockBody, BlockHash, BlockHeader, Bytes } from "@tevm/voltaire";
 // Genesis block header (block 0)
-const genesisHeader = BlockHeader.from({
+const genesisHeader = BlockHeader({
 	// No parent block
 	parentHash:
 		"0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -19,7 +19,7 @@ const genesisHeader = BlockHeader.from({
 	receiptsRoot:
 		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 	// Empty bloom filter
-	logsBloom: new Uint8Array(256),
+	logsBloom: Bytes.zero(256),
 	// Initial difficulty
 	difficulty: 17179869184n,
 	// Block number 0
@@ -35,22 +35,22 @@ const genesisHeader = BlockHeader.from({
 	// Mix hash
 	mixHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
 	// Nonce
-	nonce: new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x42]),
+	nonce: Bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x42]),
 });
 
 // Genesis block body (empty)
-const genesisBody = BlockBody.from({
+const genesisBody = BlockBody({
 	transactions: [], // No transactions in genesis
 	ommers: [], // No uncles
 });
 
 // Genesis block hash
-const genesisHash = BlockHash.from(
+const genesisHash = BlockHash(
 	"0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3",
 );
 
 // Create genesis block
-const genesisBlock = Block.from({
+const genesisBlock = Block({
 	header: genesisHeader,
 	body: genesisBody,
 	hash: genesisHash,

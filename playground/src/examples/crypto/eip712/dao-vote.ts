@@ -1,4 +1,4 @@
-import { Address, EIP712, Hex, Secp256k1 } from "voltaire";
+import { Address, EIP712, Hex, Secp256k1 } from "@tevm/voltaire";
 // EIP-712: DAO governance vote signature
 
 // Generate voter keypair
@@ -6,7 +6,7 @@ const voterPrivateKey = Secp256k1.PrivateKey.random();
 const voterPublicKey = Secp256k1.PrivateKey.toPublicKey(voterPrivateKey);
 const voterAddress = Secp256k1.PublicKey.toAddress(voterPublicKey);
 
-const governorAddress = Address.from(
+const governorAddress = Address(
 	"0xc0Da02939E1441F497fd74F78cE7Decb17B66529",
 ); // Compound Governor
 

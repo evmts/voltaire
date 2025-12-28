@@ -1,4 +1,4 @@
-import { KZG } from "voltaire";
+import { Bytes, KZG } from "@tevm/voltaire";
 // Example: Generating KZG proofs at evaluation points
 
 KZG.loadTrustedSetup();
@@ -9,10 +9,7 @@ const commitment = KZG.Commitment(blob);
 
 // Helper to create valid field elements
 const createFieldElement = (value: number): Uint8Array => {
-	const z = new Uint8Array(BYTES_PER_FIELD_ELEMENT);
-	z[0] = 0; // Ensure < BLS12-381 modulus
-	z[31] = value;
-	return z;
+	return Bytes([...Array(31).fill(0), value]);
 };
 
 const evaluationPoints = [0x00, 0x01, 0x42, 0xff];

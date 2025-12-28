@@ -1,4 +1,4 @@
-import { FeeMarket } from "voltaire";
+import { FeeMarket } from "@tevm/voltaire";
 // Example: Base fee adjustment dynamics (EIP-1559)
 // Shows how base fee responds to block utilization
 

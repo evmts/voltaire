@@ -1,4 +1,4 @@
-import { BlockHash, Hash, Hex } from "voltaire";
+import { BlockHash, Hash, Hex } from "@tevm/voltaire";
 // Example: Calculate block hash from block header fields
 // Note: Real block hash calculation requires RLP encoding of header
 
@@ -78,10 +78,10 @@ const genesisHeader: BlockHeader = {
 // Known genesis hash
 const knownGenesisHash =
 	"0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3";
-const genesis = BlockHash.from(knownGenesisHash);
+const genesis = BlockHash(knownGenesisHash);
 const block1Hash =
 	"0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6";
-const block1 = BlockHash.from(block1Hash);
+const block1 = BlockHash(block1Hash);
 
 interface SimpleBlock {
 	number: number;
@@ -111,13 +111,13 @@ const blocks: SimpleBlock[] = [
 ];
 
 for (const block of blocks) {
-	const hash = BlockHash.from(block.hash);
-	const parent = BlockHash.from(block.parentHash);
+	const hash = BlockHash(block.hash);
+	const parent = BlockHash(block.parentHash);
 
 	// Verify chain continuity
 	if (block.number > 0) {
 		const prevBlock = blocks[block.number - 1];
-		const prevHash = BlockHash.from(prevBlock.hash);
+		const prevHash = BlockHash(prevBlock.hash);
 		const chainValid = BlockHash.equals(parent, prevHash);
 	}
 }

@@ -1,5 +1,5 @@
-import { Signature } from "voltaire";
-import { Hash } from "voltaire";
+import { Signature, Bytes } from "@tevm/voltaire";
+import { Hash } from "@tevm/voltaire";
 
 // Example: Signature basics covering all core functionality
 
@@ -12,8 +12,8 @@ const sHex =
 const v = 28;
 
 // 1. Create from secp256k1 components (r, s, v)
-const r = Hash.from(rHex);
-const s = Hash.from(sHex);
+const r = Hash(rHex);
+const s = Hash(sHex);
 const sig1 = Signature.fromSecp256k1(r, s, v);
 const rRecovered = Signature.getR(sig1);
 const sRecovered = Signature.getS(sig1);
@@ -25,4 +25,4 @@ const compact = Signature.toCompact(sig1);
 
 // 5. From compact format
 const fromCompactSig = Signature.fromCompact(compact);
-const randomBytes = new Uint8Array(64);
+const randomBytes = Bytes.zero(64);

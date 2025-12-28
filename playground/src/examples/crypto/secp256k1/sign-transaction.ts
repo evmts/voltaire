@@ -1,4 +1,4 @@
-import { Address, Hash, Hex, Secp256k1 } from "voltaire";
+import { Address, Hash, Hex, Secp256k1 } from "@tevm/voltaire";
 // Sign Ethereum transaction
 
 // Simulated transaction data

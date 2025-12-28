@@ -1,50 +1,50 @@
-import { ChainId } from "voltaire";
+import { ChainId } from "@tevm/voltaire";
 
 // Standard creation
-const mainnet = ChainId.from(1);
+const mainnet = ChainId(1);
 
 // Large chain IDs
-const sepolia = ChainId.from(11155111);
+const sepolia = ChainId(11155111);
 
 // Custom/private chains
-const customChain = ChainId.from(999999);
-const optimism = ChainId.from(ChainId.OPTIMISM);
+const customChain = ChainId(999999);
+const optimism = ChainId(ChainId.OPTIMISM);
 
-const base = ChainId.from(ChainId.BASE);
+const base = ChainId(ChainId.BASE);
 
 // Valid chain IDs
 try {
-	const valid1 = ChainId.from(0); // Valid: zero is allowed
+	const valid1 = ChainId(0); // Valid: zero is allowed
 } catch (error) {
 	console.error("Error:", error.message);
 }
 
 try {
-	const valid2 = ChainId.from(2147483647); // Valid: max safe integer
+	const valid2 = ChainId(2147483647); // Valid: max safe integer
 } catch (error) {
 	console.error("Error:", error.message);
 }
 
 try {
-	ChainId.from(-1); // Invalid: negative
+	ChainId(-1); // Invalid: negative
 } catch (error) {}
 
 try {
-	ChainId.from(1.5); // Invalid: not an integer
+	ChainId(1.5); // Invalid: not an integer
 } catch (error) {}
 
 try {
-	ChainId.from(Number.NaN); // Invalid: NaN
+	ChainId(Number.NaN); // Invalid: NaN
 } catch (error) {}
 
 try {
-	ChainId.from(Number.POSITIVE_INFINITY); // Invalid: infinity
+	ChainId(Number.POSITIVE_INFINITY); // Invalid: infinity
 } catch (error) {}
 
 // Configuration-based chain selection
 const config = { chainId: 137 };
-const chain = ChainId.from(config.chainId);
+const chain = ChainId(config.chainId);
 
 // Array of chain IDs
 const chainIds = [1, 10, 42161, 8453, 137];
-const chains = chainIds.map((id) => ChainId.from(id));
+const chains = chainIds.map((id) => ChainId(id));

@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash } from "voltaire";
+import { Address, EventLog, Hash, Bytes, Bytes32 } from "@tevm/voltaire";
 const erc721Transfer = Hash(
 	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
 );
@@ -15,7 +15,7 @@ const tokenId = Hash(
 const log1 = EventLog.create({
 	address: Address("0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d"),
 	topics: [erc721Transfer, from1, to1, tokenId], // 4 topics total
-	data: new Uint8Array(0), // Empty data - all params indexed
+	data: Bytes.zero(0), // Empty data - all params indexed
 	blockNumber: 19000000n,
 });
 const erc20Transfer = erc721Transfer; // Same signature
@@ -25,7 +25,7 @@ const from2 = Hash(
 const to2 = Hash(
 	"0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045",
 );
-const valueData = new Uint8Array(32);
+const valueData = Bytes32.zero();
 valueData[31] = 100; // 100 tokens
 
 const log2 = EventLog.create({
@@ -39,7 +39,7 @@ const dataStoredSig = Hash(
 );
 
 // Both key and value in data field (ABI encoded)
-const customData = new Uint8Array(128);
+const customData = Bytes.zero(128);
 // Simplified: would normally be ABI encoded string + bytes
 
 const log3 = EventLog.create({
@@ -60,19 +60,19 @@ const logs = [
 	EventLog.create({
 		address: Address("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"),
 		topics: [erc20Transfer, user, otherUser],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19000000n,
 	}),
 	EventLog.create({
 		address: Address("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"),
 		topics: [erc20Transfer, otherUser, user],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19000001n,
 	}),
 	EventLog.create({
 		address: Address("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"),
 		topics: [erc20Transfer, user, user],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 19000002n,
 	}),
 ];
@@ -109,6 +109,6 @@ const owner = Hash(
 const nameLog = EventLog.create({
 	address: Address("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"), // ENS
 	topics: [nameRegisteredSig, nameHash], // Name is hashed!
-	data: new Uint8Array(32), // Owner could be here or indexed
+	data: Bytes32.zero(), // Owner could be here or indexed
 	blockNumber: 19000003n,
 });

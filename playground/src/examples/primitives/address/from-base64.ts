@@ -1,4 +1,4 @@
-import { Address } from "voltaire";
+import { Address } from "@tevm/voltaire";
 // Example: Create address from base64
 // Useful for some APIs that encode addresses in base64
 const base64 = "dC01zGY0wFMpJaO4RLxFTkQ49E4=";

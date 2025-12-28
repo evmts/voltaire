@@ -1,4 +1,4 @@
-import { Address, Transaction } from "voltaire";
+import { Address, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
 // Transaction Gas Price: Calculate effective gas prices
 
 // Legacy transaction - fixed gas price
@@ -7,12 +7,12 @@ const legacy: Transaction.Legacy = {
 	nonce: 0n,
 	gasPrice: 20_000_000_000n, // 20 gwei
 	gasLimit: 21_000n,
-	to: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
+	to: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 	value: 1_000_000_000_000_000_000n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	v: 27n,
-	r: new Uint8Array(32),
-	s: new Uint8Array(32),
+	r: Bytes32.zero(),
+	s: Bytes32.zero(),
 };
 const legacyGasPrice = Transaction.getGasPrice(legacy);
 
@@ -24,13 +24,13 @@ const eip1559: Transaction.EIP1559 = {
 	maxPriorityFeePerGas: 2_000_000_000n, // 2 gwei tip
 	maxFeePerGas: 30_000_000_000n, // 30 gwei max
 	gasLimit: 21_000n,
-	to: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
+	to: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 	value: 1_000_000_000_000_000_000n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	accessList: [],
 	yParity: 0,
-	r: new Uint8Array(32),
-	s: new Uint8Array(32),
+	r: Bytes32.zero(),
+	s: Bytes32.zero(),
 };
 
 // Calculate effective gas price with different base fees

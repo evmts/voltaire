@@ -1,4 +1,4 @@
-import { Bip39, Hex } from "voltaire";
+import { Bip39, Hex } from "@tevm/voltaire";
 // Synchronous seed derivation with mnemonicToSeedSync
 
 const mnemonic =

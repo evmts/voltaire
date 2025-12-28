@@ -1,4 +1,4 @@
-import { Hex, Keccak256 } from "voltaire";
+import { Hex, Keccak256 } from "@tevm/voltaire";
 // Example: Hash UTF-8 strings
 const message = "Hello Voltaire!";
 const hash = Keccak256.hashString(message);

@@ -1,4 +1,4 @@
-import { Hardfork } from "voltaire";
+import { Hardfork } from "@tevm/voltaire";
 const merge = Hardfork.MERGE;
 const paris = Hardfork.fromString("paris"); // Alias for merge
 const prePost = [

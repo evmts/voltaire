@@ -1,4 +1,4 @@
-import { Chain } from "voltaire";
+import { Chain } from "@tevm/voltaire";
 
 // Example: Ethereum Mainnet chain configuration and properties
 

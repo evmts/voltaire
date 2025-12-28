@@ -1,14 +1,14 @@
-import { Selector } from "voltaire";
+import { Selector, Bytes } from "@tevm/voltaire";
 try {
 	const sel1 = Selector.fromHex("0xa9059cbb");
 } catch (e) {}
 
 try {
-	const sel2 = Selector.from("0xa9059cbb");
+	const sel2 = Selector("0xa9059cbb");
 } catch (e) {}
 
 try {
-	const sel3 = Selector.from(new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]));
+	const sel3 = Selector(Bytes([0xa9, 0x05, 0x9c, 0xbb]));
 } catch (e) {}
 
 try {
@@ -34,14 +34,14 @@ const invalidByteLengths = [0, 1, 2, 3, 5, 8, 16, 32];
 
 for (const len of invalidByteLengths) {
 	try {
-		const bytes = new Uint8Array(len);
-		Selector.from(bytes);
+		const bytes = Bytes.zero(len);
+		Selector(bytes);
 	} catch (e) {}
 }
 
 try {
-	const bytes4 = new Uint8Array(4);
-	const sel = Selector.from(bytes4);
+	const bytes4 = Bytes.zero(4);
+	const sel = Selector(bytes4);
 } catch (e) {}
 
 const invalidTypes = [null, undefined, 42, true, {}, []];
@@ -49,7 +49,7 @@ const invalidTypes = [null, undefined, 42, true, {}, []];
 for (const val of invalidTypes) {
 	try {
 		// @ts-expect-error - Testing invalid input
-		Selector.from(val);
+		Selector(val);
 	} catch (e) {}
 }
 
@@ -67,7 +67,7 @@ function validateCalldata(calldata: string): {
 			return { valid: false, error: "Calldata too short for selector" };
 		}
 
-		const selector = Selector.from(calldata.slice(0, 10));
+		const selector = Selector(calldata.slice(0, 10));
 		return { valid: true, selector: Selector.toHex(selector) };
 	} catch (e) {
 		return { valid: false, error: e.message };
@@ -100,7 +100,7 @@ const allowedSelectors = new Set([
 function isAllowedFunction(calldata: string): boolean {
 	try {
 		if (calldata.length < 10) return false;
-		const sel = Selector.toHex(Selector.from(calldata.slice(0, 10)));
+		const sel = Selector.toHex(Selector(calldata.slice(0, 10)));
 		return allowedSelectors.has(sel);
 	} catch {
 		return false;
@@ -146,11 +146,11 @@ function safeExtractSelector(
 				return { success: false, error: "Byte array too short" };
 			}
 			const bytes = input.slice(0, 4);
-			const sel = Selector.from(bytes);
+			const sel = Selector(bytes);
 			return { success: true, selector: Selector.toHex(sel) };
 		}
 
-		const selector = Selector.from(selectorData);
+		const selector = Selector(selectorData);
 		return { success: true, selector: Selector.toHex(selector) };
 	} catch (e) {
 		return { success: false, error: e.message };
@@ -159,7 +159,7 @@ function safeExtractSelector(
 
 const testInputs: unknown[] = [
 	"0xa9059cbb000000",
-	new Uint8Array([0xa9, 0x05, 0x9c, 0xbb, 0x00]),
+	Bytes([0xa9, 0x05, 0x9c, 0xbb, 0x00]),
 	"invalid",
 	null,
 	"0x12",

@@ -1,4 +1,4 @@
-import { Blob } from "voltaire";
+import {  Blob , Bytes } from "@tevm/voltaire";
 const maxPerBlob =
 	Blob.FIELD_ELEMENTS_PER_BLOB * (Blob.BYTES_PER_FIELD_ELEMENT - 1);
 const smallText = "This fits in one blob easily.";
@@ -10,7 +10,7 @@ const joinedSmall = Blob.joinData(smallBlobs);
 const decodedSmall = new TextDecoder().decode(joinedSmall);
 // Create data that requires multiple blobs
 const largeSize = maxPerBlob * 2.5; // 2.5 blobs worth
-const largeData = new Uint8Array(Math.floor(largeSize));
+const largeData = Bytes.zero(Math.floor(largeSize));
 crypto.getRandomValues(largeData);
 
 const largeBlobs = Blob.splitData(largeData);

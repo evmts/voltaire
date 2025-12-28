@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI, Bytes } from "@tevm/voltaire";
 
 // Example: Encode simple tuple
 const simpleTuple = ABI.encodeParameters(
@@ -28,7 +28,7 @@ const dynamicTuple = ABI.encodeParameters(
 			],
 		},
 	],
-	[["MyNFT", "A unique NFT", new Uint8Array([1, 2, 3])]],
+	[["MyNFT", "A unique NFT", Bytes([1, 2, 3])]],
 );
 
 // Example: Encode array of tuples

@@ -1,4 +1,4 @@
-import { Bytecode } from "voltaire";
+import { Bytecode } from "@tevm/voltaire";
 // Example: EIP-1167 Minimal Proxy Contract
 
 // EIP-1167 defines a minimal bytecode implementation that delegates all calls

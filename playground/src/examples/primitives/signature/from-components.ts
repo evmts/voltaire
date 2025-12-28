@@ -1,12 +1,12 @@
-import { Signature } from "voltaire";
-import { Hash } from "voltaire";
+import { Signature } from "@tevm/voltaire";
+import { Hash } from "@tevm/voltaire";
 
 // Real signature from Ethereum mainnet
 // Transaction: 0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060
-const r = Hash.from(
+const r = Hash(
 	"0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0",
 );
-const s = Hash.from(
+const s = Hash(
 	"0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a",
 );
 const v = 28;
@@ -18,10 +18,10 @@ const sig1 = Signature.fromSecp256k1(r, s, v);
 const sig2 = Signature.fromSecp256k1(r, s);
 
 // Another signature with v = 27
-const r2 = Hash.from(
+const r2 = Hash(
 	"0x9242685bf161793cc25603c231bc2f568eb630ea16aa137d2664ac8038825608",
 );
-const s2 = Hash.from(
+const s2 = Hash(
 	"0x4f8ae3bd7535248d0bd448298cc2e2071e56992d0774dc340c368ae950852ada",
 );
 const sig3 = Signature.fromSecp256k1(r2, s2, 27);

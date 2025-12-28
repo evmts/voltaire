@@ -1,4 +1,4 @@
-import { TransactionStatus } from "voltaire";
+import { TransactionStatus } from "@tevm/voltaire";
 // Generic failure (no reason provided)
 const genericFailure = TransactionStatus.failed();
 

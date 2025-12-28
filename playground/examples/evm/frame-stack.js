@@ -1,5 +1,5 @@
 // EVM Frame: Stack operations (push, pop, peek)
-import { Frame } from "../../../src/evm/Frame/index.js";
+import { Frame } from "@tevm/voltaire";
 
 const frame = Frame({ gas: 100000n });
 Frame.pushStack(frame, 10n);

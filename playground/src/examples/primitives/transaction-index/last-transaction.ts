@@ -1,27 +1,27 @@
-import { TransactionIndex } from "voltaire";
+import { TransactionIndex } from "@tevm/voltaire";
 const blockTxCount = 150;
-const lastTx = TransactionIndex.from(blockTxCount - 1);
+const lastTx = TransactionIndex(blockTxCount - 1);
 
 // Block 18500000: 172 transactions
-const block18500000Last = TransactionIndex.from(171);
+const block18500000Last = TransactionIndex(171);
 
 // Block 18500001: 157 transactions
-const block18500001Last = TransactionIndex.from(156);
+const block18500001Last = TransactionIndex(156);
 
 // Block 18500002: 143 transactions
-const block18500002Last = TransactionIndex.from(142);
+const block18500002Last = TransactionIndex(142);
 function isLastTransaction(idx: typeof lastTx, totalCount: number): boolean {
 	return TransactionIndex.toNumber(idx) === totalCount - 1;
 }
 
-const testIdx = TransactionIndex.from(171);
+const testIdx = TransactionIndex(171);
 const counts = [100, 200, 250, 300];
 counts.forEach((count) => {
-	const last = TransactionIndex.from(count - 1);
+	const last = TransactionIndex(count - 1);
 });
 const blockSize = 200;
 const positions = [0, 50, 150, 199];
 positions.forEach((pos) => {
-	const idx = TransactionIndex.from(pos);
+	const idx = TransactionIndex(pos);
 	const fromEnd = blockSize - TransactionIndex.toNumber(idx);
 });

@@ -1,4 +1,4 @@
-import { Ether, Gwei, Uint, Wei } from "voltaire";
+import { Ether, Gwei, Uint, Wei } from "@tevm/voltaire";
 // Define all denomination conversion factors
 const DENOMINATION_FACTORS = {
 	wei: 1n,
@@ -10,23 +10,23 @@ const DENOMINATION_FACTORS = {
 	ether: 1_000_000_000_000_000_000n,
 };
 
-const oneEtherInWei = Wei.from(1_000_000_000_000_000_000n);
+const oneEtherInWei = Wei(1_000_000_000_000_000_000n);
 
 // Kwei examples
-const tenKwei = Wei.from(10_000n);
+const tenKwei = Wei(10_000n);
 
 // Mwei examples
-const fiveMwei = Wei.from(5_000_000n);
+const fiveMwei = Wei(5_000_000n);
 
 // Szabo examples (microether)
-const oneSzabo = Wei.from(1_000_000_000_000n);
+const oneSzabo = Wei(1_000_000_000_000n);
 
 // Finney examples (milliether)
-const oneFinney = Wei.from(1_000_000_000_000_000n);
+const oneFinney = Wei(1_000_000_000_000_000n);
 
 // Using the built-in types for common conversions
-const gasPrice = Gwei.from(30n);
+const gasPrice = Gwei(30n);
 const gasPriceWei = Gwei.toWei(gasPrice);
 
-const balance = Ether.from(5n);
+const balance = Ether(5n);
 const balanceWei = Ether.toWei(balance);

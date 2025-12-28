@@ -1,4 +1,4 @@
-import { Hex } from "voltaire";
+import { Hex } from "@tevm/voltaire";
 // Convert hex to BigInt (for values beyond Number.MAX_SAFE_INTEGER)
 const hex1 =
 	"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";

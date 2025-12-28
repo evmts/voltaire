@@ -1,8 +1,7 @@
-import { Bytes } from "voltaire";
+import { Bytes } from "@tevm/voltaire";
 // Convert bytes to hex string
-const data = new Uint8Array([0x12, 0x34, 0x56, 0x78]);
-const branded = Bytes.from(data);
-const hex = branded.toHex();
+const data = Bytes([0x12, 0x34, 0x56, 0x78]);
+const hex = data.toHex();
 
 // String to hex (via bytes)
 const message = "Hello";

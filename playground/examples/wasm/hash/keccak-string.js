@@ -1,5 +1,5 @@
 // WASM: keccak256 on string input
-import { keccak256, bytesToHex } from "voltaire/wasm";
+import { keccak256, bytesToHex } from "@tevm/voltaire/wasm";
 
 (async () => {
   const hash = await keccak256("Hello, Voltaire!");

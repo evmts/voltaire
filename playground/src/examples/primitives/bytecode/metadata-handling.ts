@@ -1,4 +1,4 @@
-import { Bytecode } from "voltaire";
+import { Bytecode } from "@tevm/voltaire";
 // Example: Solidity metadata handling
 
 // Solidity compiler appends metadata to contract bytecode

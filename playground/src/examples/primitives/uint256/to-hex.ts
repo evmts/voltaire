@@ -1,4 +1,4 @@
-import { Uint256 } from "voltaire";
+import { Uint256 } from "@tevm/voltaire";
 // Convert to hex
 const value = Uint256.fromNumber(255);
 const hex = Uint256.toHex(value);

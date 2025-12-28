@@ -1,4 +1,4 @@
-import { Address, BlockBody, Transaction } from "voltaire";
+import { Address, BlockBody, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
 // Body Size: Calculate and analyze block body size metrics
 
 // Helper to estimate transaction size
@@ -35,12 +35,12 @@ const smallTx: Transaction.Legacy = {
 	nonce: 0n,
 	gasPrice: 20_000_000_000n,
 	gasLimit: 21_000n,
-	to: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
+	to: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 	value: 1_000_000_000_000_000_000n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	v: 27n,
-	r: new Uint8Array(32),
-	s: new Uint8Array(32),
+	r: Bytes32.zero(),
+	s: Bytes32.zero(),
 };
 
 const mediumTx: Transaction.EIP1559 = {
@@ -50,13 +50,13 @@ const mediumTx: Transaction.EIP1559 = {
 	maxPriorityFeePerGas: 2_000_000_000n,
 	maxFeePerGas: 30_000_000_000n,
 	gasLimit: 100_000n,
-	to: Address.from("0xd8da6bf26964af9d7eed9e03e53415d37aa96045"),
+	to: Address("0xd8da6bf26964af9d7eed9e03e53415d37aa96045"),
 	value: 0n,
-	data: new Uint8Array(256), // 256 bytes of data
+	data: Bytes.zero(256), // 256 bytes of data
 	accessList: [],
 	yParity: 0,
-	r: new Uint8Array(32),
-	s: new Uint8Array(32),
+	r: Bytes32.zero(),
+	s: Bytes32.zero(),
 };
 
 const largeTx: Transaction.EIP1559 = {
@@ -68,13 +68,13 @@ const largeTx: Transaction.EIP1559 = {
 	gasLimit: 2_000_000n,
 	to: null, // Contract creation
 	value: 0n,
-	data: new Uint8Array(10_000), // 10KB of contract bytecode
+	data: Bytes.zero(10_000), // 10KB of contract bytecode
 	accessList: [],
 	yParity: 0,
-	r: new Uint8Array(32),
-	s: new Uint8Array(32),
+	r: Bytes32.zero(),
+	s: Bytes32.zero(),
 };
-const smallBlock = BlockBody.from({
+const smallBlock = BlockBody({
 	transactions: [smallTx, smallTx],
 	ommers: [],
 });
@@ -83,7 +83,7 @@ let smallBlockSize = 0;
 smallBlock.transactions.forEach((tx) => {
 	smallBlockSize += estimateTxSize(tx);
 });
-const mediumBlock = BlockBody.from({
+const mediumBlock = BlockBody({
 	transactions: [smallTx, smallTx, mediumTx, mediumTx, mediumTx],
 	ommers: [],
 });
@@ -92,7 +92,7 @@ let mediumBlockSize = 0;
 mediumBlock.transactions.forEach((tx) => {
 	mediumBlockSize += estimateTxSize(tx);
 });
-const largeBlock = BlockBody.from({
+const largeBlock = BlockBody({
 	transactions: [largeTx, largeTx, mediumTx, mediumTx, smallTx],
 	ommers: [],
 });
@@ -108,20 +108,20 @@ largeBlock.transactions.forEach((tx) => {
 	const min = Math.min(...sizes);
 	const max = Math.max(...sizes);
 });
-const postShanghaiBlock = BlockBody.from({
+const postShanghaiBlock = BlockBody({
 	transactions: [smallTx, mediumTx],
 	ommers: [],
 	withdrawals: [
 		{
 			index: 1000n,
 			validatorIndex: 12345n,
-			address: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
+			address: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 			amount: 32_000_000_000n,
 		},
 		{
 			index: 1001n,
 			validatorIndex: 12346n,
-			address: Address.from("0xd8da6bf26964af9d7eed9e03e53415d37aa96045"),
+			address: Address("0xd8da6bf26964af9d7eed9e03e53415d37aa96045"),
 			amount: 64_000_000n,
 		},
 	],

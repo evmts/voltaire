@@ -1,7 +1,7 @@
-import { Address, Authorization } from "voltaire";
+import { Address, Authorization, Bytes, Bytes32 } from "@tevm/voltaire";
 
-const delegate = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
-const zeroAddress = Address.from("0x0000000000000000000000000000000000000000");
+const delegate = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+const zeroAddress = Address("0x0000000000000000000000000000000000000000");
 
 // Helper to test validation
 function testValidation(name: string, auth: any, shouldPass: boolean): void {
@@ -22,8 +22,8 @@ const valid = {
 	address: delegate,
 	nonce: 0n,
 	yParity: 0,
-	r: new Uint8Array(32).fill(1),
-	s: new Uint8Array(32).fill(2),
+	r: Bytes32.zero().fill(1),
+	s: Bytes32.zero().fill(2),
 };
 
 testValidation("Valid authorization", valid, true);
@@ -40,16 +40,16 @@ testValidation("yParity = 1", { ...valid, yParity: 1 }, true);
 testValidation("yParity = 2 (invalid)", { ...valid, yParity: 2 }, false);
 testValidation("yParity = -1 (invalid)", { ...valid, yParity: -1 }, false);
 
-testValidation("r = 0 (invalid)", { ...valid, r: new Uint8Array(32) }, false);
-testValidation("r = 1", { ...valid, r: new Uint8Array(32).fill(1) }, true);
+testValidation("r = 0 (invalid)", { ...valid, r: Bytes32.zero() }, false);
+testValidation("r = 1", { ...valid, r: Bytes32.zero().fill(1) }, true);
 testValidation(
 	"r >= N (invalid)",
 	{ ...valid, r: Authorization.SECP256K1_N },
 	false,
 );
 
-testValidation("s = 0 (invalid)", { ...valid, s: new Uint8Array(32) }, false);
-testValidation("s = 1", { ...valid, s: new Uint8Array(32).fill(1) }, true);
+testValidation("s = 0 (invalid)", { ...valid, s: Bytes32.zero() }, false);
+testValidation("s = 1", { ...valid, s: Bytes32.zero().fill(1) }, true);
 testValidation(
 	"s = N/2 (max valid)",
 	{ ...valid, s: Authorization.SECP256K1_HALF_N },

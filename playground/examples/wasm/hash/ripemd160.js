@@ -1,5 +1,5 @@
 // WASM: ripemd160 on bytes
-import { ripemd160, bytesToHex } from "voltaire/wasm";
+import { ripemd160, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   const data = new TextEncoder().encode("abc");

@@ -1,4 +1,4 @@
-import { FeeMarket } from "voltaire";
+import { FeeMarket } from "@tevm/voltaire";
 const excessLevels = [
 	{ name: "No excess (min fee)", excess: 0n },
 	{

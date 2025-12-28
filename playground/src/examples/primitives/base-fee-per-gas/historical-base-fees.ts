@@ -1,4 +1,4 @@
-import { BaseFeePerGas } from "voltaire";
+import { BaseFeePerGas } from "@tevm/voltaire";
 
 const eip1559Launch = BaseFeePerGas.fromGwei(50n); // Initial base fee
 const preMerge = BaseFeePerGas.fromGwei(25n);

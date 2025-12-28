@@ -1,4 +1,4 @@
-import { Hash } from "voltaire";
+import { Hash } from "@tevm/voltaire";
 // Example: Concatenating and hashing multiple values
 
 // Concatenate two hashes

@@ -1,4 +1,4 @@
-import { Hex } from "voltaire";
+import { Hex } from "@tevm/voltaire";
 // Create zero-filled hex values
 const zero4 = Hex.zero(4);
 
@@ -11,5 +11,5 @@ const zeroAddress = Hex.zero(20);
 const zeroHash = Hex.zero(32);
 
 // Compare with empty
-const empty = Hex.from("0x");
+const empty = Hex("0x");
 const zero0 = Hex.zero(0);

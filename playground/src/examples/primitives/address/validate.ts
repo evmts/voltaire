@@ -1,4 +1,4 @@
-import { Address } from "voltaire";
+import { Address } from "@tevm/voltaire";
 // Example: Validating Ethereum addresses
 const validAddr = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e";
 const invalidAddr = "0x123"; // Too short

@@ -1,4 +1,4 @@
-import { FeeMarket } from "voltaire";
+import { FeeMarket } from "@tevm/voltaire";
 // Example: Network congestion scenarios
 // Shows how fee market responds to demand spikes and recovery
 

@@ -1,6 +1,5 @@
 // SHA256: Hash raw byte arrays
-import * as SHA256 from "../../../../src/crypto/SHA256/index.js";
-import * as Hex from "../../../../src/primitives/Hex/index.js";
+import { Hex, SHA256 } from "@tevm/voltaire";
 
 const bytes = new Uint8Array([0x01, 0x02, 0x03, 0x04, 0x05]);
 const hash = SHA256.hash(bytes);

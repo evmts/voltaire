@@ -1,7 +1,6 @@
-import { AesGcm } from "voltaire";
+import { AesGcm, Bytes } from "@tevm/voltaire";
 const password = "user-secret-password-123";
-const salt = new Uint8Array(16);
-crypto.getRandomValues(salt);
+const salt = Bytes.random(16);
 
 // PBKDF2 parameters
 const iterations = 100_000; // Recommended: 100k-600k iterations
@@ -33,10 +32,7 @@ try {
 } catch {}
 
 // Store: salt + nonce + ciphertext
-const stored = new Uint8Array(salt.length + nonce.length + ciphertext.length);
-stored.set(salt, 0);
-stored.set(nonce, salt.length);
-stored.set(ciphertext, salt.length + nonce.length);
+const stored = Bytes.concat(salt, nonce, ciphertext);
 
 // Retrieve and decrypt
 const retrievedSalt = stored.slice(0, 16);
@@ -58,8 +54,8 @@ const retrieved = await AesGcm.decrypt(
 const weakPassword = "123456";
 const strongPassword = "correct-horse-battery-staple-2024!";
 
-const salt1 = new Uint8Array(16).fill(1);
-const salt2 = new Uint8Array(16).fill(2);
+const salt1 = Bytes(Array(16).fill(1));
+const salt2 = Bytes(Array(16).fill(2));
 
 const key1 = await AesGcm.deriveKey(password, salt1, 10000, 256);
 const key2 = await AesGcm.deriveKey(password, salt2, 10000, 256);
@@ -70,7 +66,7 @@ const exp2 = await AesGcm.exportKey(key2);
 const start = Date.now();
 await AesGcm.deriveKey(
 	"test",
-	crypto.getRandomValues(new Uint8Array(16)),
+	Bytes.random(16),
 	100_000,
 	256,
 );

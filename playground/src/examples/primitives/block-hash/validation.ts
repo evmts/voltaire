@@ -1,4 +1,4 @@
-import { BlockHash } from "voltaire";
+import { BlockHash, Bytes, Bytes32 } from "@tevm/voltaire";
 try {
 	// With 0x prefix
 	const hash1 = BlockHash.fromHex(
@@ -15,7 +15,7 @@ try {
 
 try {
 	// From bytes (32 bytes)
-	const bytes = new Uint8Array(32).fill(0xff);
+	const bytes = Bytes32.zero().fill(0xff);
 	const hash3 = BlockHash.fromBytes(bytes);
 } catch (e) {}
 
@@ -40,7 +40,7 @@ try {
 
 // Wrong byte length
 try {
-	const invalid = BlockHash.fromBytes(new Uint8Array(31));
+	const invalid = BlockHash.fromBytes(Bytes.zero(31));
 } catch (e) {}
 
 const knownHashes = {
@@ -50,7 +50,7 @@ const knownHashes = {
 
 function verifyBlockHash(name: string, hashStr: string): boolean {
 	try {
-		const hash = BlockHash.from(hashStr);
+		const hash = BlockHash(hashStr);
 		const roundtrip = BlockHash.toHex(hash);
 		const matches = roundtrip.toLowerCase() === hashStr.toLowerCase();
 		return matches;
@@ -61,6 +61,6 @@ function verifyBlockHash(name: string, hashStr: string): boolean {
 
 verifyBlockHash("Genesis", knownHashes.genesis);
 verifyBlockHash("Merge", knownHashes.merge);
-const hash1 = BlockHash.from(knownHashes.genesis);
-const hash2 = BlockHash.from(knownHashes.genesis.toUpperCase());
-const hash3 = BlockHash.from(knownHashes.merge);
+const hash1 = BlockHash(knownHashes.genesis);
+const hash2 = BlockHash(knownHashes.genesis.toUpperCase());
+const hash3 = BlockHash(knownHashes.merge);

@@ -1,5 +1,5 @@
-import { PrivateKey, Signature } from "voltaire";
-import { Hash } from "voltaire";
+import { PrivateKey, Signature } from "@tevm/voltaire";
+import { Hash } from "@tevm/voltaire";
 
 // Helper to convert signature to hex
 function sigToHex(sig: Uint8Array): string {

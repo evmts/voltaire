@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI } from "@tevm/voltaire";
 
 // Example: Encode ERC20 Transfer event topics
 const transferTopics = ABI.Event.encodeTopics(

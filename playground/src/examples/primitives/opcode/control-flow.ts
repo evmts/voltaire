@@ -1,4 +1,4 @@
-import { Opcode } from "voltaire";
+import { Opcode, Bytes } from "@tevm/voltaire";
 // JUMP (0x56) - Unconditional jump
 const jumpInfo = Opcode.info(Opcode.JUMP);
 
@@ -23,7 +23,7 @@ const selfdestructInfo = Opcode.info(Opcode.SELFDESTRUCT);
 // INVALID (0xfe) - Invalid opcode
 const invalidInfo = Opcode.info(Opcode.INVALID);
 // Example bytecode with JUMPDEST
-const bytecode = new Uint8Array([
+const bytecode = Bytes([
 	Opcode.PUSH1,
 	0x05, // PUSH1 0x05
 	Opcode.JUMP, // JUMP

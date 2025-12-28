@@ -1,5 +1,5 @@
 // WASM: Bytecode helpers
-import { analyzeJumpDestinations, isBytecodeBoundary, isValidJumpDest, validateBytecode, bytesToHex } from "voltaire/wasm";
+import { analyzeJumpDestinations, isBytecodeBoundary, isValidJumpDest, validateBytecode, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   // Simple bytecode: PUSH1 0x01 PUSH1 0x02 ADD STOP

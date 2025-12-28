@@ -1,4 +1,4 @@
-import { Ens, Hex } from "voltaire";
+import { Ens, Hex } from "@tevm/voltaire";
 const basicLabels = ["eth", "com", "xyz", "org", "io"];
 
 for (const label of basicLabels) {

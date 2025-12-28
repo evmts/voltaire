@@ -1,4 +1,4 @@
-import { AesGcm, Base64 } from "voltaire";
+import { AesGcm, Base64, Bytes } from "@tevm/voltaire";
 const key128 = await AesGcm.generateKey(128);
 const key256 = await AesGcm.generateKey(256);
 
@@ -6,8 +6,7 @@ const exported128 = await AesGcm.exportKey(key128);
 const exported256 = await AesGcm.exportKey(key256);
 
 // Import from raw bytes
-const keyMaterial = new Uint8Array(32);
-crypto.getRandomValues(keyMaterial);
+const keyMaterial = Bytes.random(32);
 
 const imported = await AesGcm.importKey(keyMaterial);
 

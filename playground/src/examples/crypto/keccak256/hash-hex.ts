@@ -1,4 +1,4 @@
-import { Hex, Keccak256 } from "voltaire";
+import { Hex, Keccak256 } from "@tevm/voltaire";
 // Example: Hash hex-encoded data
 const hexData = "0xdeadbeef";
 const hash = Keccak256.hashHex(hexData);

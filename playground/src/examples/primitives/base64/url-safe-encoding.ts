@@ -1,5 +1,5 @@
-import { Base64 } from "voltaire";
-const data = new Uint8Array([255, 254, 253, 252, 251, 250]);
+import { Base64, Bytes } from "@tevm/voltaire";
+const data = Bytes([255, 254, 253, 252, 251, 250]);
 const standard = Base64.encode(data);
 const urlSafe = Base64.encodeUrlSafe(data);
 const message = "Hello?World&Foo=Bar";
@@ -21,7 +21,7 @@ const brandedUrlSafe = Base64.fromUrlSafe(urlSafeStr);
 try {
 	Base64.fromUrlSafe("SGVsbG8="); // Has padding
 } catch (err) {}
-const standardBranded = Base64.from("SGVsbG8=");
+const standardBranded = Base64("SGVsbG8=");
 const convertedToUrlSafe = Base64.toBase64Url(standardBranded);
 
 const urlSafeBranded = Base64.fromUrlSafe("SGVsbG8");

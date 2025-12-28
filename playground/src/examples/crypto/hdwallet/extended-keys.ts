@@ -1,4 +1,4 @@
-import { Bip39, HDWallet, Hex } from "voltaire";
+import { Bip39, HDWallet, Hex } from "@tevm/voltaire";
 // HD Wallet: Extended keys (xprv/xpub) export and import
 
 // Generate master key

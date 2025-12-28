@@ -1,6 +1,6 @@
-import { Hash, P256 } from "voltaire";
+import { Bytes, Hash, P256 } from "@tevm/voltaire";
 // Generate keypair
-const privateKey = crypto.getRandomValues(new Uint8Array(32));
+const privateKey = Bytes.random(32);
 const publicKey = P256.derivePublicKey(privateKey);
 
 // Sign different messages

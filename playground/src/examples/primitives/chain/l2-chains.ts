@@ -1,4 +1,4 @@
-import { Chain } from "voltaire";
+import { Chain } from "@tevm/voltaire";
 
 // Example: Layer 2 and sidechain configurations
 

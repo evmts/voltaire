@@ -1,5 +1,5 @@
 // Hex: Convert UTF-8 strings to hex encoding
-import * as Hex from "../../../../src/primitives/Hex/index.js";
+import { Hex } from "@tevm/voltaire";
 
 const message = "Hello, Ethereum!";
 const hex = Hex.fromString(message);

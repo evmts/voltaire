@@ -1,5 +1,5 @@
 // WASM: U256 conversions
-import { u256FromHex, u256ToHex, u256FromBigInt, u256ToBigInt } from "voltaire/wasm";
+import { u256FromHex, u256ToHex, u256FromBigInt, u256ToBigInt } from "@tevm/voltaire/wasm";
 
 (() => {
   const v1 = u256FromBigInt(123456789n);

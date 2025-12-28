@@ -1,4 +1,4 @@
-import { Hash } from "voltaire";
+import { Hash, Bytes } from "@tevm/voltaire";
 // Example: Generating hashes using Keccak256
 
 // Hash a string
@@ -10,7 +10,7 @@ const hexData = "0xdeadbeef";
 const hexHash = Hash.keccak256Hex(hexData);
 
 // Hash bytes directly
-const bytes = new Uint8Array([1, 2, 3, 4, 5]);
+const bytes = Bytes([1, 2, 3, 4, 5]);
 const bytesHash = Hash.keccak256(bytes);
 
 // Empty string hash (common case)

@@ -1,5 +1,5 @@
 // WASM: Sha256Wasm namespace usage
-import { Sha256Wasm, bytesToHex } from "voltaire/wasm";
+import { Sha256Wasm, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   const data = new TextEncoder().encode("namespace");

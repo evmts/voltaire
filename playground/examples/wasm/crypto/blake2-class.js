@@ -1,5 +1,5 @@
 // WASM: Blake2Wasm namespace usage
-import { Blake2Wasm, bytesToHex } from "voltaire/wasm";
+import { Blake2Wasm, bytesToHex } from "@tevm/voltaire/wasm";
 
 (() => {
   const data = new TextEncoder().encode("class");

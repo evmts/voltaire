@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI, Bytes, Bytes32 } from "@tevm/voltaire";
 
 // Example: Encode static uint types
 const uintParams = ABI.encodeParameters(
@@ -56,8 +56,8 @@ const bytesParams = ABI.encodeParameters(
 		{ type: "bytes32", name: "hash" },
 	],
 	[
-		new Uint8Array([0xff]),
-		new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]),
-		new Uint8Array(32).fill(1),
+		Bytes([0xff]),
+		Bytes([0xa9, 0x05, 0x9c, 0xbb]),
+		Bytes32.zero().fill(1),
 	],
 );

@@ -1,4 +1,4 @@
-import { Hex, Secp256k1 } from "voltaire";
+import { Hex, Secp256k1 } from "@tevm/voltaire";
 // Elliptic curve point addition
 
 // Generate two public keys (points on curve)

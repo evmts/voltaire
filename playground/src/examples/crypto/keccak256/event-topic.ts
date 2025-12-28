@@ -1,4 +1,4 @@
-import { Hex, Keccak256 } from "voltaire";
+import { Hex, Keccak256 } from "@tevm/voltaire";
 // Example: Compute event topics for log filtering
 const transferTopic = Keccak256.topic("Transfer(address,address,uint256)");
 

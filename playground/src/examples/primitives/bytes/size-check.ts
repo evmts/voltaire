@@ -1,4 +1,4 @@
-import { Bytes } from "voltaire";
+import { Bytes } from "@tevm/voltaire";
 // Get byte array size
 const small = Bytes.fromHex("0x1234");
 

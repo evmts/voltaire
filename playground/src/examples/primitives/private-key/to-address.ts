@@ -1,5 +1,5 @@
-import { PrivateKey } from "voltaire";
-import { Address } from "voltaire";
+import { PrivateKey } from "@tevm/voltaire";
+import { Address } from "@tevm/voltaire";
 
 // Example private keys (from hardhat accounts)
 const pk1 =

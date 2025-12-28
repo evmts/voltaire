@@ -1,5 +1,5 @@
-import { PrivateKey } from "voltaire";
-import { Address, Bip39, HDWallet } from "voltaire";
+import { PrivateKey } from "@tevm/voltaire";
+import { Address, Bip39, HDWallet } from "@tevm/voltaire";
 
 const mnemonic = Bip39.generateMnemonic(128);
 const seed = await Bip39.mnemonicToSeed(mnemonic);

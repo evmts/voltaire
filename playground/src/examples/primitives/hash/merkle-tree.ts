@@ -1,4 +1,4 @@
-import { Hash } from "voltaire";
+import { Hash } from "@tevm/voltaire";
 // Example: Building Merkle trees for data verification
 
 // Transaction hashes in a block

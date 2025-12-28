@@ -1,6 +1,6 @@
-import { Block, BlockBody, BlockHash, BlockHeader } from "voltaire";
-const block19426587 = Block.from({
-	header: BlockHeader.from({
+import { Block, BlockBody, BlockHash, BlockHeader, Bytes } from "@tevm/voltaire";
+const block19426587 = Block({
+	header: BlockHeader({
 		parentHash:
 			"0x8e5a0c5b4a8c6e9f1d2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e",
 		ommersHash:
@@ -12,16 +12,16 @@ const block19426587 = Block.from({
 			"0xb2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3",
 		receiptsRoot:
 			"0xc3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4",
-		logsBloom: new Uint8Array(256),
+		logsBloom: Bytes.zero(256),
 		difficulty: 0n,
 		number: 19426587n,
 		gasLimit: 30000000n,
 		gasUsed: 14623891n,
 		timestamp: 1710338455n,
-		extraData: new Uint8Array(0),
+		extraData: Bytes.zero(0),
 		mixHash:
 			"0x0000000000000000000000000000000000000000000000000000000000000000",
-		nonce: new Uint8Array(8),
+		nonce: Bytes.zero(8),
 		baseFeePerGas: 12345678900n,
 		withdrawalsRoot:
 			"0xd4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5",
@@ -30,15 +30,15 @@ const block19426587 = Block.from({
 		parentBeaconBlockRoot:
 			"0xe5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6",
 	}),
-	body: BlockBody.from({
+	body: BlockBody({
 		transactions: [],
 		ommers: [],
 	}),
 	hash: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
 	size: 45678n,
 });
-const block17034870 = Block.from({
-	header: BlockHeader.from({
+const block17034870 = Block({
+	header: BlockHeader({
 		parentHash:
 			"0x7e6a9b8c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a",
 		ommersHash:
@@ -50,29 +50,29 @@ const block17034870 = Block.from({
 			"0xa8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9",
 		receiptsRoot:
 			"0xb9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0",
-		logsBloom: new Uint8Array(256),
+		logsBloom: Bytes.zero(256),
 		difficulty: 0n,
 		number: 17034870n,
 		gasLimit: 30000000n,
 		gasUsed: 15789234n,
 		timestamp: 1681338455n,
-		extraData: new Uint8Array(0),
+		extraData: Bytes.zero(0),
 		mixHash:
 			"0x0000000000000000000000000000000000000000000000000000000000000000",
-		nonce: new Uint8Array(8),
+		nonce: Bytes.zero(8),
 		baseFeePerGas: 23456789000n,
 		withdrawalsRoot:
 			"0xc0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1",
 	}),
-	body: BlockBody.from({
+	body: BlockBody({
 		transactions: [],
 		ommers: [],
 	}),
 	hash: "0x2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c",
 	size: 38234n,
 });
-const block15537394 = Block.from({
-	header: BlockHeader.from({
+const block15537394 = Block({
+	header: BlockHeader({
 		parentHash:
 			"0x6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
 		ommersHash:
@@ -84,27 +84,27 @@ const block15537394 = Block.from({
 			"0xf9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0",
 		receiptsRoot:
 			"0xa0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
-		logsBloom: new Uint8Array(256),
+		logsBloom: Bytes.zero(256),
 		difficulty: 0n, // First block with 0 difficulty
 		number: 15537394n,
 		gasLimit: 30000000n,
 		gasUsed: 11234567n,
 		timestamp: 1663224179n,
-		extraData: new Uint8Array(0),
+		extraData: Bytes.zero(0),
 		mixHash:
 			"0x0000000000000000000000000000000000000000000000000000000000000000",
-		nonce: new Uint8Array(8),
+		nonce: Bytes.zero(8),
 		baseFeePerGas: 34567890000n,
 	}),
-	body: BlockBody.from({
+	body: BlockBody({
 		transactions: [],
 		ommers: [],
 	}),
 	hash: "0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
 	size: 35678n,
 });
-const block12965000 = Block.from({
-	header: BlockHeader.from({
+const block12965000 = Block({
+	header: BlockHeader({
 		parentHash:
 			"0x5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
 		ommersHash:
@@ -116,19 +116,19 @@ const block12965000 = Block.from({
 			"0xe8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9",
 		receiptsRoot:
 			"0xf9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0",
-		logsBloom: new Uint8Array(256),
+		logsBloom: Bytes.zero(256),
 		difficulty: 7500000000000000n, // PoW difficulty
 		number: 12965000n,
 		gasLimit: 30000000n,
 		gasUsed: 9876543n,
 		timestamp: 1628166822n,
-		extraData: new Uint8Array(0),
+		extraData: Bytes.zero(0),
 		mixHash:
 			"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-		nonce: new Uint8Array(8).fill(0xaa),
+		nonce: Bytes.repeat(0xaa, 8),
 		baseFeePerGas: 1000000000n, // First block with base fee (1 gwei)
 	}),
-	body: BlockBody.from({
+	body: BlockBody({
 		transactions: [],
 		ommers: [],
 	}),

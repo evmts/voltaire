@@ -1,4 +1,4 @@
-import { FeeMarket } from "voltaire";
+import { FeeMarket } from "@tevm/voltaire";
 const currentBaseFee = 50_000_000_000n; // 50 gwei
 
 const tx1 = {

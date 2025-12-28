@@ -1,8 +1,8 @@
-import { MaxPriorityFeePerGas } from "voltaire";
+import { MaxPriorityFeePerGas } from "@tevm/voltaire";
 
-const tipWei = MaxPriorityFeePerGas.from(2000000000n); // 2 Gwei in Wei
+const tipWei = MaxPriorityFeePerGas(2000000000n); // 2 Gwei in Wei
 const tipGwei = MaxPriorityFeePerGas.fromGwei(2n); // 2 Gwei
-const tipHex = MaxPriorityFeePerGas.from("0x77359400"); // 2 Gwei as hex
+const tipHex = MaxPriorityFeePerGas("0x77359400"); // 2 Gwei as hex
 const tip = MaxPriorityFeePerGas.fromGwei(2);
 const low = MaxPriorityFeePerGas.fromGwei(1); // Low priority - 1 Gwei
 const medium = MaxPriorityFeePerGas.fromGwei(2); // Medium - 2 Gwei

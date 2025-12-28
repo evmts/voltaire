@@ -1,4 +1,4 @@
-import { FeeMarket } from "voltaire";
+import { FeeMarket } from "@tevm/voltaire";
 // Start with imbalanced market (high demand, low base fee)
 let state: FeeMarket.State = {
 	gasUsed: 0n,

@@ -1,4 +1,4 @@
-import { AesGcm } from "voltaire";
+import { AesGcm, Bytes } from "@tevm/voltaire";
 const key = await AesGcm.generateKey(256);
 
 const nonce = AesGcm.generateNonce();
@@ -26,9 +26,7 @@ const storageNonce = AesGcm.generateNonce();
 const storageCt = await AesGcm.encrypt(data, key, storageNonce);
 
 // Store nonce with ciphertext
-const stored = new Uint8Array(storageNonce.length + storageCt.length);
-stored.set(storageNonce, 0);
-stored.set(storageCt, storageNonce.length);
+const stored = Bytes.concat(storageNonce, storageCt);
 
 // Retrieve and decrypt
 const retrievedNonce = stored.slice(0, AesGcm.NONCE_SIZE);
@@ -39,7 +37,7 @@ let counter = 0n;
 const counterNonces: Uint8Array[] = [];
 
 for (let i = 0; i < 5; i++) {
-	const counterNonce = new Uint8Array(12);
+	const counterNonce = Bytes.zero(12);
 	// Store counter in little-endian
 	const counterBig = counter;
 	counterNonce[0] = Number(counterBig & 0xffn);

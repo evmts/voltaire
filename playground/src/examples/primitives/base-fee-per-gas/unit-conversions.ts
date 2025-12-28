@@ -1,9 +1,9 @@
-import { BaseFeePerGas } from "voltaire";
+import { BaseFeePerGas } from "@tevm/voltaire";
 
 const fromWei = BaseFeePerGas.fromWei(25000000000n);
 const fromGwei = BaseFeePerGas.fromGwei(25n);
-const fromHex = BaseFeePerGas.from("0x5d21dba00");
-const fromNumber = BaseFeePerGas.from(25000000000);
+const fromHex = BaseFeePerGas("0x5d21dba00");
+const fromNumber = BaseFeePerGas(25000000000);
 const baseFee = BaseFeePerGas.fromGwei(30n);
 const gweiValues = [1n, 10n, 25n, 100n, 1000n];
 

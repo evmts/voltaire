@@ -1,4 +1,4 @@
-import { KZG } from "voltaire";
+import { KZG } from "@tevm/voltaire";
 KZG.loadTrustedSetup();
 try {
 	const blob = KZG.generateRandomBlob();

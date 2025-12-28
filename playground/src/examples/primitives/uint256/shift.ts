@@ -1,4 +1,4 @@
-import { Uint256 } from "voltaire";
+import { Uint256 } from "@tevm/voltaire";
 // Left shift (multiply by powers of 2)
 const value = Uint256.fromNumber(1);
 const shifted = Uint256.shiftLeft(value, 8);

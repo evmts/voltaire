@@ -1,4 +1,4 @@
-import { Base64 } from "voltaire";
+import { Base64 } from "@tevm/voltaire";
 const ascii = "Hello, World!";
 const asciiEncoded = Base64.encodeString(ascii);
 const emoji = "Hello 🌍 World 🚀";

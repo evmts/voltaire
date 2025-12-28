@@ -1,9 +1,9 @@
-import { BloomFilter } from "voltaire";
+import { BloomFilter } from "@tevm/voltaire";
 import {
 	BITS,
 	DEFAULT_HASH_COUNT,
 	SIZE,
-} from "voltaire/primitives/BloomFilter";
+} from "@tevm/voltaire/primitives/BloomFilter";
 const ethBloom = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
 
 // Create from hex string

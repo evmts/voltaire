@@ -1,26 +1,26 @@
-import { BlockNumber } from "voltaire";
+import { BlockNumber } from "@tevm/voltaire";
 // Early forks
-const frontier = BlockNumber.from(0); // Genesis
-const homestead = BlockNumber.from(1150000); // March 2016
-const daoFork = BlockNumber.from(1920000); // July 2016
+const frontier = BlockNumber(0); // Genesis
+const homestead = BlockNumber(1150000); // March 2016
+const daoFork = BlockNumber(1920000); // July 2016
 
 // Metropolis era
-const byzantium = BlockNumber.from(4370000); // October 2017
-const constantinople = BlockNumber.from(7280000); // February 2019
-const petersburg = BlockNumber.from(7280000); // February 2019 (same block)
-const istanbul = BlockNumber.from(9069000); // December 2019
+const byzantium = BlockNumber(4370000); // October 2017
+const constantinople = BlockNumber(7280000); // February 2019
+const petersburg = BlockNumber(7280000); // February 2019 (same block)
+const istanbul = BlockNumber(9069000); // December 2019
 
 // Pre-merge
-const muirGlacier = BlockNumber.from(9200000); // January 2020
-const berlin = BlockNumber.from(12244000); // April 2021
-const london = BlockNumber.from(12965000); // August 2021 - EIP-1559
-const arrowGlacier = BlockNumber.from(13773000); // December 2021
-const grayGlacier = BlockNumber.from(15050000); // June 2022
+const muirGlacier = BlockNumber(9200000); // January 2020
+const berlin = BlockNumber(12244000); // April 2021
+const london = BlockNumber(12965000); // August 2021 - EIP-1559
+const arrowGlacier = BlockNumber(13773000); // December 2021
+const grayGlacier = BlockNumber(15050000); // June 2022
 
 // The Merge and beyond
-const paris = BlockNumber.from(15537394); // September 2022 - The Merge
-const shanghai = BlockNumber.from(17034870); // April 2023 - Withdrawals
-const cancun = BlockNumber.from(19426587); // March 2024 - Dencun (EIP-4844)
+const paris = BlockNumber(15537394); // September 2022 - The Merge
+const shanghai = BlockNumber(17034870); // April 2023 - Withdrawals
+const cancun = BlockNumber(19426587); // March 2024 - Dencun (EIP-4844)
 
 // Check what features are available at a given block
 function checkFeatures(block: BlockNumber.BlockNumberType, label: string) {
@@ -32,11 +32,11 @@ function checkFeatures(block: BlockNumber.BlockNumberType, label: string) {
 }
 
 const testBlocks = [
-	{ block: BlockNumber.from(12000000), label: "Pre-London" },
-	{ block: BlockNumber.from(13000000), label: "Post-London" },
-	{ block: BlockNumber.from(16000000), label: "Post-Merge" },
-	{ block: BlockNumber.from(18000000), label: "Post-Shanghai" },
-	{ block: BlockNumber.from(20000000), label: "Post-Cancun" },
+	{ block: BlockNumber(12000000), label: "Pre-London" },
+	{ block: BlockNumber(13000000), label: "Post-London" },
+	{ block: BlockNumber(16000000), label: "Post-Merge" },
+	{ block: BlockNumber(18000000), label: "Post-Shanghai" },
+	{ block: BlockNumber(20000000), label: "Post-Cancun" },
 ];
 
 testBlocks.forEach(({ block, label }) => checkFeatures(block, label));

@@ -1,6 +1,6 @@
-import { Withdrawal } from "voltaire";
+import { Withdrawal } from "@tevm/voltaire";
 // Scenario 1: Voluntary exit (full 32 ETH)
-const voluntaryExit = Withdrawal.from({
+const voluntaryExit = Withdrawal({
 	index: 5000000n,
 	validatorIndex: 250000,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -8,7 +8,7 @@ const voluntaryExit = Withdrawal.from({
 });
 
 // Scenario 2: Exit with rewards (32 + accumulated rewards)
-const exitWithRewards = Withdrawal.from({
+const exitWithRewards = Withdrawal({
 	index: 5000001n,
 	validatorIndex: 250001,
 	address: "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
@@ -16,7 +16,7 @@ const exitWithRewards = Withdrawal.from({
 });
 
 // Scenario 3: Ejection (balance fell below 16 ETH)
-const ejection = Withdrawal.from({
+const ejection = Withdrawal({
 	index: 5000002n,
 	validatorIndex: 250002,
 	address: "0x5aAed5930B9EB3cd462dDbaEfA21Da757F30FbDd",
@@ -24,7 +24,7 @@ const ejection = Withdrawal.from({
 });
 
 // Scenario 4: Slashed validator exit
-const slashedExit = Withdrawal.from({
+const slashedExit = Withdrawal({
 	index: 5000003n,
 	validatorIndex: 250003,
 	address: "0x8bBe03F3e48391a3aC1Ee5e09e23e5b8F5E4c078",

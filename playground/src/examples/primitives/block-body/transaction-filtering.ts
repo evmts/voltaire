@@ -1,8 +1,8 @@
-import { Address, BlockBody, Transaction } from "voltaire";
+import { Address, BlockBody, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
 // Transaction Filtering: Filter and analyze block body transactions
 
 // Create diverse set of transactions
-const targetAddress = Address.from(
+const targetAddress = Address(
 	"0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
 );
 
@@ -15,10 +15,10 @@ const transactions: Transaction.Any[] = [
 		gasLimit: 21_000n,
 		to: targetAddress,
 		value: 1_000_000_000_000_000_000n,
-		data: new Uint8Array(),
+		data: Bytes.zero(0),
 		v: 27n,
-		r: new Uint8Array(32),
-		s: new Uint8Array(32),
+		r: Bytes32.zero(),
+		s: Bytes32.zero(),
 	},
 	// Contract interactions (with data)
 	{
@@ -28,13 +28,13 @@ const transactions: Transaction.Any[] = [
 		maxPriorityFeePerGas: 2_000_000_000n,
 		maxFeePerGas: 30_000_000_000n,
 		gasLimit: 100_000n,
-		to: Address.from("0xd8da6bf26964af9d7eed9e03e53415d37aa96045"),
+		to: Address("0xd8da6bf26964af9d7eed9e03e53415d37aa96045"),
 		value: 0n,
-		data: new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]), // Method signature
+		data: Bytes([0xa9, 0x05, 0x9c, 0xbb]), // Method signature
 		accessList: [],
 		yParity: 0,
-		r: new Uint8Array(32),
-		s: new Uint8Array(32),
+		r: Bytes32.zero(),
+		s: Bytes32.zero(),
 	},
 	// Another to target
 	{
@@ -46,11 +46,11 @@ const transactions: Transaction.Any[] = [
 		gasLimit: 50_000n,
 		to: targetAddress,
 		value: 500_000_000_000_000_000n,
-		data: new Uint8Array(),
+		data: Bytes.zero(0),
 		accessList: [],
 		yParity: 1,
-		r: new Uint8Array(32),
-		s: new Uint8Array(32),
+		r: Bytes32.zero(),
+		s: Bytes32.zero(),
 	},
 	// Contract creation
 	{
@@ -62,11 +62,11 @@ const transactions: Transaction.Any[] = [
 		gasLimit: 2_000_000n,
 		to: null,
 		value: 0n,
-		data: new Uint8Array(500),
+		data: Bytes.zero(500),
 		accessList: [],
 		yParity: 0,
-		r: new Uint8Array(32),
-		s: new Uint8Array(32),
+		r: Bytes32.zero(),
+		s: Bytes32.zero(),
 	},
 	// Zero value transaction
 	{
@@ -74,16 +74,16 @@ const transactions: Transaction.Any[] = [
 		nonce: 4n,
 		gasPrice: 15_000_000_000n,
 		gasLimit: 21_000n,
-		to: Address.from("0x5aAed5937020b9EB3Cd462dDbAefA21DA757f30f"),
+		to: Address("0x5aAed5937020b9EB3Cd462dDbAefA21DA757f30f"),
 		value: 0n,
-		data: new Uint8Array(),
+		data: Bytes.zero(0),
 		v: 27n,
-		r: new Uint8Array(32),
-		s: new Uint8Array(32),
+		r: Bytes32.zero(),
+		s: Bytes32.zero(),
 	},
 ];
 
-const body = BlockBody.from({
+const body = BlockBody({
 	transactions,
 	ommers: [],
 });

@@ -1,43 +1,43 @@
-import { BlockHeader } from "voltaire";
+import { BlockHeader, Bytes, Bytes32 } from "@tevm/voltaire";
 // Block N
-const blockN = BlockHeader.from({
-	parentHash: new Uint8Array(32).fill(0x00),
+const blockN = BlockHeader({
+	parentHash: Bytes32.zero().fill(0x00),
 	ommersHash:
 		"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
 	beneficiary: "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5",
-	stateRoot: new Uint8Array(32).fill(0x01),
-	transactionsRoot: new Uint8Array(32).fill(0x02),
-	receiptsRoot: new Uint8Array(32).fill(0x03),
-	logsBloom: new Uint8Array(256),
+	stateRoot: Bytes32.zero().fill(0x01),
+	transactionsRoot: Bytes32.zero().fill(0x02),
+	receiptsRoot: Bytes32.zero().fill(0x03),
+	logsBloom: Bytes.zero(256),
 	difficulty: 0n,
 	number: 18000000n,
 	gasLimit: 30000000n,
 	gasUsed: 15000000n,
 	timestamp: 1693903403n, // Sept 5, 2023 12:30:03 UTC
-	extraData: new Uint8Array(0),
-	mixHash: new Uint8Array(32),
-	nonce: new Uint8Array(8),
+	extraData: Bytes.zero(0),
+	mixHash: Bytes32.zero(),
+	nonce: Bytes.zero(8),
 	baseFeePerGas: 20000000000n,
 });
 
 // Block N+1 (12 seconds later - normal)
-const blockN1 = BlockHeader.from({
-	parentHash: new Uint8Array(32).fill(0x01),
+const blockN1 = BlockHeader({
+	parentHash: Bytes32.zero().fill(0x01),
 	ommersHash:
 		"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
 	beneficiary: "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5",
-	stateRoot: new Uint8Array(32).fill(0x02),
-	transactionsRoot: new Uint8Array(32).fill(0x03),
-	receiptsRoot: new Uint8Array(32).fill(0x04),
-	logsBloom: new Uint8Array(256),
+	stateRoot: Bytes32.zero().fill(0x02),
+	transactionsRoot: Bytes32.zero().fill(0x03),
+	receiptsRoot: Bytes32.zero().fill(0x04),
+	logsBloom: Bytes.zero(256),
 	difficulty: 0n,
 	number: 18000001n,
 	gasLimit: 30000000n,
 	gasUsed: 16000000n,
 	timestamp: 1693903415n, // +12 seconds
-	extraData: new Uint8Array(0),
-	mixHash: new Uint8Array(32),
-	nonce: new Uint8Array(8),
+	extraData: Bytes.zero(0),
+	mixHash: Bytes32.zero(),
+	nonce: Bytes.zero(8),
 	baseFeePerGas: 21000000000n,
 });
 

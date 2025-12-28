@@ -1,4 +1,4 @@
-import { Slot } from "voltaire";
+import { Slot } from "@tevm/voltaire";
 // Example: Time calculations with slots
 // Slots are 12 seconds apart starting from the merge (genesis time)
 
@@ -17,11 +17,11 @@ function timestampToSlot(timestamp: number): bigint {
 	return BigInt(Math.floor(secondsSinceGenesis / SECONDS_PER_SLOT));
 }
 const slots = [
-	Slot.from(0),
-	Slot.from(1000),
-	Slot.from(100000),
-	Slot.from(1000000),
-	Slot.from(7000000),
+	Slot(0),
+	Slot(1000),
+	Slot(100000),
+	Slot(1000000),
+	Slot(7000000),
 ];
 
 for (const slot of slots) {
@@ -29,7 +29,7 @@ for (const slot of slots) {
 	const date = new Date(timestamp * 1000);
 }
 const now = Math.floor(Date.now() / 1000);
-const currentSlot = Slot.from(timestampToSlot(now));
+const currentSlot = Slot(timestampToSlot(now));
 const currentEpoch = Slot.toEpoch(currentSlot);
 const durations = [
 	{ slots: 1, label: "1 slot" },
@@ -57,7 +57,7 @@ for (const { slots, label } of durations) {
 	}
 }
 const currentTimestamp = slotToTimestamp(currentSlot);
-const nextSlot = Slot.from(currentSlot + 1n);
+const nextSlot = Slot(currentSlot + 1n);
 const nextTimestamp = slotToTimestamp(nextSlot);
 const secondsUntilNext = nextTimestamp - now;
 const historicalDates = [
@@ -69,7 +69,7 @@ const historicalDates = [
 
 for (const { date, label } of historicalDates) {
 	const timestamp = Math.floor(new Date(date).getTime() / 1000);
-	const slot = Slot.from(timestampToSlot(timestamp));
+	const slot = Slot(timestampToSlot(timestamp));
 	const epoch = Slot.toEpoch(slot);
 }
 const periods = [

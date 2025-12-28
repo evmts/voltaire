@@ -1,4 +1,4 @@
-import { Gas } from "voltaire";
+import { Gas } from "@tevm/voltaire";
 // Create from wei
 const priceWei = Gas.gasPriceFrom(20000000000n); // 20 gwei in wei
 

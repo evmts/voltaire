@@ -1,4 +1,4 @@
-import { Address, Authorization } from "voltaire";
+import { Address, Authorization, Bytes, Bytes32 } from "@tevm/voltaire";
 
 // Example: Authorization basics (EIP-7702)
 // EIP-7702 allows EOAs to delegate code execution to a contract address
@@ -6,12 +6,12 @@ import { Address, Authorization } from "voltaire";
 // Create a basic unsigned authorization
 const unsigned = {
 	chainId: 1n, // Mainnet
-	address: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
+	address: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 	nonce: 0n,
 };
 
 // Create a private key for signing (example only, never hardcode in production)
-const privateKey = new Uint8Array(32);
+const privateKey = Bytes32.zero();
 privateKey.fill(1);
 
 // Sign the authorization

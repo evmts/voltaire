@@ -1,5 +1,5 @@
 // WASM: Detect transaction type
-import { detectTransactionType, TransactionType, hexToBytes } from "voltaire/wasm";
+import { detectTransactionType, TransactionType, hexToBytes } from "@tevm/voltaire/wasm";
 
 (() => {
   // Legacy transaction (starts with RLP-encoded list 0xF8...)

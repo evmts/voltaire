@@ -1,4 +1,4 @@
-import { Address, EIP712, Hex } from "voltaire";
+import { Address, EIP712, Hex } from "@tevm/voltaire";
 // EIP-712: Nested struct types
 
 // Define nested type hierarchy
@@ -19,11 +19,11 @@ const types = {
 const message = {
 	from: {
 		name: "Alice",
-		wallet: Address.from("0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826"),
+		wallet: Address("0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826"),
 	},
 	to: {
 		name: "Bob",
-		wallet: Address.from("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"),
+		wallet: Address("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"),
 	},
 	subject: "Meeting Tomorrow",
 	contents: "Let's meet at 3pm!",

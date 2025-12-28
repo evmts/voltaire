@@ -1,14 +1,14 @@
-import { Address, Authorization } from "voltaire";
+import { Address, Authorization, Bytes, Bytes32 } from "@tevm/voltaire";
 
 // Different EOA private keys
-const key1 = new Uint8Array(32).fill(1);
-const key2 = new Uint8Array(32).fill(2);
-const key3 = new Uint8Array(32).fill(3);
+const key1 = Bytes32.zero().fill(1);
+const key2 = Bytes32.zero().fill(2);
+const key3 = Bytes32.zero().fill(3);
 
 // Delegate contracts
-const smartWallet = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
-const gasManager = Address.from("0xd8da6bf26964af9d7eed9e03e53415d37aa96045");
-const batchExecutor = Address.from("0x5aAeD5932B9EB3Cd462dDBAeFA21Da757F30FBD");
+const smartWallet = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+const gasManager = Address("0xd8da6bf26964af9d7eed9e03e53415d37aa96045");
+const batchExecutor = Address("0x5aAeD5932B9EB3Cd462dDBAeFA21Da757F30FBD");
 
 // Create multiple authorizations
 const auth1 = Authorization.sign(

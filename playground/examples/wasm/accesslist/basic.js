@@ -1,5 +1,5 @@
 // WASM: Access List helpers (EIP-2930)
-import { accessListGasCost, accessListGasSavings, accessListIncludesAddress, accessListIncludesStorageKey, hexToBytes } from "voltaire/wasm";
+import { accessListGasCost, accessListGasSavings, accessListIncludesAddress, accessListIncludesStorageKey, hexToBytes } from "@tevm/voltaire/wasm";
 
 (() => {
   const addr = hexToBytes("0x0000000000000000000000000000000000000001");

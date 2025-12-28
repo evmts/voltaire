@@ -1,4 +1,4 @@
-import { Address, Siwe } from "voltaire";
+import { Address, Siwe } from "@tevm/voltaire";
 for (let i = 0; i < 5; i++) {
 	const nonce = Siwe.generateNonce();
 }
@@ -17,7 +17,7 @@ for (let i = 0; i < count; i++) {
 }
 
 // Messages automatically generate nonces if not provided
-const address = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+const address = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const autoNonce1 = Siwe.create({
 	domain: "example.com",
 	address: address,

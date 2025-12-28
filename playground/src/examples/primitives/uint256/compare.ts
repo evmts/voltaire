@@ -1,4 +1,4 @@
-import { Uint256 } from "voltaire";
+import { Uint256 } from "@tevm/voltaire";
 // Equality
 const a = Uint256.fromNumber(42);
 const b = Uint256.fromNumber(42);

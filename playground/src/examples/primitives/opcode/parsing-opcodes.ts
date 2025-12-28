@@ -1,6 +1,6 @@
-import { Opcode } from "voltaire";
+import { Opcode, Bytes } from "@tevm/voltaire";
 // Simple bytecode: PUSH1 0x60 PUSH1 0x40 MSTORE
-const simpleBytecode = new Uint8Array([
+const simpleBytecode = Bytes([
 	Opcode.PUSH1,
 	0x60, // PUSH1 0x60
 	Opcode.PUSH1,
@@ -22,7 +22,7 @@ for (const inst of instructions) {
 const disassembly = Opcode.disassemble(simpleBytecode);
 
 // Bytecode with conditional jump
-const jumpBytecode = new Uint8Array([
+const jumpBytecode = Bytes([
 	Opcode.PUSH1,
 	0x01, // PUSH1 0x01
 	Opcode.PUSH1,
@@ -41,7 +41,7 @@ const jumpBytecode = new Uint8Array([
 const dests = Opcode.jumpDests(jumpBytecode);
 
 // Bytecode with various PUSH sizes
-const pushBytecode = new Uint8Array([
+const pushBytecode = Bytes([
 	Opcode.PUSH1,
 	0x01, // PUSH1
 	Opcode.PUSH2,
@@ -61,7 +61,7 @@ for (const inst of parsedInstructions) {
 }
 
 // Bytecode with undefined opcodes
-const invalidBytecode = new Uint8Array([
+const invalidBytecode = Bytes([
 	Opcode.PUSH1,
 	0x01, // Valid
 	0x0c, // Invalid opcode
@@ -70,7 +70,7 @@ const invalidBytecode = new Uint8Array([
 ]);
 
 // Common Solidity constructor pattern
-const constructorPattern = new Uint8Array([
+const constructorPattern = Bytes([
 	Opcode.PUSH1,
 	0x80, // PUSH1 0x80 (free memory pointer)
 	Opcode.PUSH1,

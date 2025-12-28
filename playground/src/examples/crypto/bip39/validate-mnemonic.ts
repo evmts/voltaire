@@ -1,4 +1,4 @@
-import { Bip39 } from "voltaire";
+import { Bip39 } from "@tevm/voltaire";
 // Validate BIP-39 mnemonic phrases
 
 // Valid 12-word mnemonic (official BIP-39 test vector)

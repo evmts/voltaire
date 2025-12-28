@@ -1,4 +1,4 @@
-import { Ens, Hex } from "voltaire";
+import { Ens, Hex } from "@tevm/voltaire";
 const domain = "example.eth";
 const subdomains = [
 	"example.eth",

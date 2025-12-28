@@ -1,4 +1,4 @@
-import { Bip39, Hex } from "voltaire";
+import { Bip39, Hex } from "@tevm/voltaire";
 // Convert BIP-39 mnemonic to seed using PBKDF2
 
 // Test vector from BIP-39 spec

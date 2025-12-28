@@ -1,4 +1,4 @@
-import { MaxFeePerGas } from "voltaire";
+import { MaxFeePerGas } from "@tevm/voltaire";
 
 // Create from Wei (most precise unit)
 const fee1 = MaxFeePerGas.fromWei(50000000000n); // 50 Gwei in Wei

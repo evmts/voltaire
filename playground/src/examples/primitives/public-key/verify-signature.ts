@@ -1,8 +1,8 @@
-import { PrivateKey, PublicKey } from "voltaire";
-import { Hash } from "voltaire";
+import { PrivateKey, PublicKey } from "@tevm/voltaire";
+import { Hash } from "@tevm/voltaire";
 
 // Create key pair
-const privateKey = PrivateKey.from(
+const privateKey = PrivateKey(
 	"0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a",
 );
 const publicKey = PublicKey.fromPrivateKey(privateKey);
@@ -17,7 +17,7 @@ const isValid = PublicKey._verify(publicKey, hash1, signature1);
 const message2 = "Wrong message";
 const hash2 = Hash.keccak256String(message2);
 const isInvalid = PublicKey._verify(publicKey, hash2, signature1);
-const wrongPrivateKey = PrivateKey.from(
+const wrongPrivateKey = PrivateKey(
 	"0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f",
 );
 const wrongPublicKey = PublicKey.fromPrivateKey(wrongPrivateKey);

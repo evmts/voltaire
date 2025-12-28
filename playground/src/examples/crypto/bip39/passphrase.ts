@@ -1,4 +1,4 @@
-import { Bip39, Hex } from "voltaire";
+import { Bip39, Hex } from "@tevm/voltaire";
 // Optional passphrase for plausible deniability
 
 const mnemonic = Bip39.generateMnemonic(256);

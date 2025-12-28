@@ -1,7 +1,7 @@
-import { Ether, Gwei, Uint, Wei } from "voltaire";
-const smallWei = Wei.from(123n);
-const mediumWei = Wei.from(456_789n);
-const largeWei = Wei.from(1_234_567_890_123_456_789n);
+import { Ether, Gwei, Uint, Wei } from "@tevm/voltaire";
+const smallWei = Wei(123n);
+const mediumWei = Wei(456_789n);
+const largeWei = Wei(1_234_567_890_123_456_789n);
 
 // Format wei with separators
 function formatWei(wei: Wei.Type): string {
@@ -9,19 +9,19 @@ function formatWei(wei: Wei.Type): string {
 	return str.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-const lowGas = Gwei.from(5n);
-const mediumGas = Gwei.from(30n);
-const highGas = Gwei.from(150n);
-const extremeGas = Gwei.from(1000n);
+const lowGas = Gwei(5n);
+const mediumGas = Gwei(30n);
+const highGas = Gwei(150n);
+const extremeGas = Gwei(1000n);
 
 function formatGwei(gwei: Gwei.Type): string {
 	return Uint.toString(Gwei.toU256(gwei));
 }
 
-const smallBalance = Ether.from(1n);
-const mediumBalance = Ether.from(123n);
-const largeBalance = Ether.from(45678n);
-const whaleBalance = Ether.from(1000000n);
+const smallBalance = Ether(1n);
+const mediumBalance = Ether(123n);
+const largeBalance = Ether(45678n);
+const whaleBalance = Ether(1000000n);
 
 function formatEther(ether: Ether.Type): string {
 	const str = Uint.toString(Ether.toU256(ether));
@@ -29,20 +29,20 @@ function formatEther(ether: Ether.Type): string {
 }
 
 // Display same value in multiple units
-const value = Wei.from(1_500_000_000_000_000_000n);
+const value = Wei(1_500_000_000_000_000_000n);
 
-const txValue = Wei.from(250_000_000_000_000_000n);
-const gasPrice = Gwei.from(35n);
+const txValue = Wei(250_000_000_000_000_000n);
+const gasPrice = Gwei(35n);
 const gasUsed = 21000n;
-const gasCostWei = Uint.times(Gwei.toU256(gasPrice), Uint.from(gasUsed));
+const gasCostWei = Uint.times(Gwei.toU256(gasPrice), Uint(gasUsed));
 
 function displayTransaction(value: Wei.Type, gasCost: bigint) {
-	const total = Uint.plus(Wei.toU256(value), Uint.from(gasCost));
+	const total = Uint.plus(Wei.toU256(value), Uint(gasCost));
 }
 
 displayTransaction(txValue, gasCostWei);
 
-const walletBalance = Wei.from(3_750_000_000_000_000_000n);
+const walletBalance = Wei(3_750_000_000_000_000_000n);
 
 function displayBalance(balance: Wei.Type) {
 	const ether = Wei.toEther(balance);
@@ -55,12 +55,12 @@ function displayGasPrice(gwei: Gwei.Type) {
 	const wei = Gwei.toWei(gwei);
 	const priceStr = Uint.toString(Gwei.toU256(gwei));
 
-	const standardTx = Uint.times(Gwei.toU256(gwei), Uint.from(21000n));
+	const standardTx = Uint.times(Gwei.toU256(gwei), Uint(21000n));
 }
 
-displayGasPrice(Gwei.from(42n));
+displayGasPrice(Gwei(42n));
 
-const contractBalance = Wei.from(125_000_000_000_000_000_000_000n);
+const contractBalance = Wei(125_000_000_000_000_000_000_000n);
 
 function displayContractValue(wei: Wei.Type) {
 	const ether = Wei.toEther(wei);
@@ -68,8 +68,8 @@ function displayContractValue(wei: Wei.Type) {
 
 displayContractValue(contractBalance);
 
-const totalSupply = Ether.from(100000n);
-const userBalance = Ether.from(2500n);
+const totalSupply = Ether(100000n);
+const userBalance = Ether(2500n);
 
 function displayPercentage(part: Ether.Type, whole: Ether.Type) {
 	const partBigInt = Uint.toBigInt(Ether.toU256(part));

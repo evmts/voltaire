@@ -1,4 +1,4 @@
-import { ChainId } from "voltaire";
+import { ChainId } from "@tevm/voltaire";
 
 // Private/enterprise chains often use custom chain IDs
 const customChains = [
@@ -8,7 +8,7 @@ const customChains = [
 	{ name: "Company Sidechain", id: 424242 },
 ];
 customChains.forEach(({ name, id }) => {
-	const chainId = ChainId.from(id);
+	const chainId = ChainId(id);
 });
 
 // Common local development chain IDs
@@ -19,7 +19,7 @@ const localChains = [
 ];
 
 localChains.forEach(({ name, id }) => {
-	const chainId = ChainId.from(id);
+	const chainId = ChainId(id);
 });
 
 interface ChainConfig {
@@ -36,7 +36,7 @@ const createChainConfig = (
 	blockExplorer?: string,
 ): ChainConfig => {
 	// Validate chain ID
-	const id = ChainId.from(chainId);
+	const id = ChainId(chainId);
 
 	return {
 		chainId: ChainId.toNumber(id),
@@ -66,12 +66,12 @@ class MultiChainApp {
 	constructor(chainIds: number[]) {
 		// Validate all chain IDs during initialization
 		this.supportedChains = new Set(
-			chainIds.map((id) => ChainId.toNumber(ChainId.from(id))),
+			chainIds.map((id) => ChainId.toNumber(ChainId(id))),
 		);
 	}
 
 	isSupported(chainId: number): boolean {
-		const id = ChainId.from(chainId);
+		const id = ChainId(chainId);
 		return this.supportedChains.has(ChainId.toNumber(id));
 	}
 
@@ -98,7 +98,7 @@ class ChainRegistry {
 	private chains = new Map<number, ChainMetadata>();
 
 	register(chainId: number, name: string, type: ChainMetadata["type"]): void {
-		const id = ChainId.from(chainId);
+		const id = ChainId(chainId);
 		const numericId = ChainId.toNumber(id);
 
 		this.chains.set(numericId, {
@@ -109,7 +109,7 @@ class ChainRegistry {
 	}
 
 	get(chainId: number): ChainMetadata | undefined {
-		const id = ChainId.from(chainId);
+		const id = ChainId(chainId);
 		return this.chains.get(ChainId.toNumber(id));
 	}
 

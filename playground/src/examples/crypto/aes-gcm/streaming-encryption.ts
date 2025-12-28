@@ -1,10 +1,7 @@
-import { AesGcm } from "voltaire";
+import { AesGcm, Bytes } from "@tevm/voltaire";
 const key = await AesGcm.generateKey(256);
 
-const singleMessage = new Uint8Array(1024 * 100); // 100 KB
-for (let i = 0; i < singleMessage.length; i++) {
-	singleMessage[i] = i % 256;
-}
+const singleMessage = Bytes(Array.from({ length: 1024 * 100 }, (_, i) => i % 256)); // 100 KB
 
 const singleNonce = AesGcm.generateNonce();
 const singleCt = await AesGcm.encrypt(singleMessage, key, singleNonce);
@@ -19,12 +16,7 @@ const chunks: { nonce: Uint8Array; ciphertext: Uint8Array }[] = [];
 for (let i = 0; i < numChunks; i++) {
 	const start = i * chunkSize;
 	const end = Math.min(start + chunkSize, totalSize);
-	const chunk = new Uint8Array(end - start);
-
-	// Fill with data
-	for (let j = 0; j < chunk.length; j++) {
-		chunk[j] = (start + j) % 256;
-	}
+	const chunk = Bytes(Array.from({ length: end - start }, (_, j) => (start + j) % 256));
 
 	// Each chunk gets unique nonce
 	const nonce = AesGcm.generateNonce();

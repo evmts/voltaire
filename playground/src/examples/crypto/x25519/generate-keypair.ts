@@ -1,11 +1,10 @@
-import { Hex, X25519 } from "voltaire";
+import { Bytes, Hex, X25519 } from "@tevm/voltaire";
 // Generate X25519 keypairs
 
 const keypair1 = X25519.generateKeypair();
 
 const keypair2 = X25519.generateKeypair();
-const seed = new Uint8Array(32);
-for (let i = 0; i < 32; i++) seed[i] = i;
+const seed = Bytes(Array.from({ length: 32 }, (_, i) => i));
 
 const deterministicKeypair = X25519.keypairFromSeed(seed);
 

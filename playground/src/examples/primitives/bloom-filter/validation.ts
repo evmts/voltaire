@@ -1,4 +1,4 @@
-import { BloomFilter } from "voltaire";
+import { BloomFilter, Bytes } from "@tevm/voltaire";
 const empty = BloomFilter.create(2048, 3);
 
 // All bytes should be zero
@@ -9,13 +9,13 @@ for (let i = 0; i < empty.length; i++) {
 		break;
 	}
 }
-const item = new Uint8Array(20).fill(0x01);
+const item = Bytes.repeat(0x01, 20);
 BloomFilter.add(empty, item);
 const bloom1 = BloomFilter.create(2048, 3);
 const bloom2 = BloomFilter.create(2048, 3);
 
-const addr1 = new Uint8Array(20).fill(0x01);
-const addr2 = new Uint8Array(20).fill(0x02);
+const addr1 = Bytes.repeat(0x01, 20);
+const addr2 = Bytes.repeat(0x02, 20);
 
 BloomFilter.add(bloom1, addr1);
 BloomFilter.add(bloom2, addr2);
@@ -26,7 +26,7 @@ const d2 = BloomFilter.density(bloom2);
 const dm = BloomFilter.density(merged);
 const original = BloomFilter.create(2048, 3);
 for (let i = 0; i < 5; i++) {
-	const addr = new Uint8Array(20).fill(i);
+	const addr = Bytes.zero(20).fill(i);
 	BloomFilter.add(original, addr);
 }
 
@@ -36,7 +36,7 @@ const restored = BloomFilter.fromHex(hex, 2048, 3);
 // Verify all items still present
 let allPresent = true;
 for (let i = 0; i < 5; i++) {
-	const addr = new Uint8Array(20).fill(i);
+	const addr = Bytes.zero(20).fill(i);
 	if (!BloomFilter.contains(restored, addr)) {
 		allPresent = false;
 		break;
@@ -60,7 +60,7 @@ const testItems: Uint8Array[] = [];
 
 // Add 50 items
 for (let i = 0; i < 50; i++) {
-	const item = new Uint8Array(20);
+	const item = Bytes.zero(20);
 	item[0] = i;
 	item[19] = i;
 	testItems.push(item);

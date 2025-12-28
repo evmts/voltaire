@@ -1,4 +1,4 @@
-import { MaxPriorityFeePerGas } from "voltaire";
+import { MaxPriorityFeePerGas } from "@tevm/voltaire";
 
 const gasLimit = 21000n; // Standard ETH transfer
 const baseFeeGwei = 30n;

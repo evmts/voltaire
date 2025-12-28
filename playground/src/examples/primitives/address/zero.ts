@@ -1,4 +1,4 @@
-import { Address } from "voltaire";
+import { Address } from "@tevm/voltaire";
 // Example: Working with zero address
 // The zero address is 0x0000000000000000000000000000000000000000
 const zero = Address.zero();
@@ -7,7 +7,7 @@ const zero = Address.zero();
 const zeroFromNumber = Address.fromNumber(0);
 
 // Non-zero address
-const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 
 // Zero address is commonly used in Ethereum for:
 // - Token burns (sending to 0x0)

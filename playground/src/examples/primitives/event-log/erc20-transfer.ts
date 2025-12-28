@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash } from "voltaire";
+import { Address, EventLog, Hash, Bytes, Bytes32 } from "@tevm/voltaire";
 // Event signature: keccak256("Transfer(address,address,uint256)")
 const TRANSFER_SIGNATURE = Hash(
 	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
@@ -16,7 +16,7 @@ const toAddress = Hash(
 );
 
 // Value: 1,000,000 USDC (6 decimals) = 1000000000000 wei = 0xE8D4A51000
-const valueData = new Uint8Array(32);
+const valueData = Bytes32.zero();
 valueData[26] = 0xe8;
 valueData[27] = 0xd4;
 valueData[28] = 0xa5;
@@ -79,13 +79,13 @@ const transfers = [
 	EventLog.create({
 		address: usdcAddress,
 		topics: [TRANSFER_SIGNATURE, fromAddress, randomUser],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 18500001n,
 	}), // Binance 14 -> User
 	EventLog.create({
 		address: usdcAddress,
 		topics: [TRANSFER_SIGNATURE, randomUser, burnAddress],
-		data: new Uint8Array(32),
+		data: Bytes32.zero(),
 		blockNumber: 18500002n,
 	}), // User -> Burn
 ];

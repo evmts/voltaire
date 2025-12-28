@@ -1,4 +1,4 @@
-import { Selector } from "voltaire";
+import { Selector } from "@tevm/voltaire";
 const transfer = Selector.fromSignature("transfer(address,uint256)");
 
 const transferFrom = Selector.fromSignature(

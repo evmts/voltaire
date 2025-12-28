@@ -1,11 +1,11 @@
-import { MaxFeePerGas } from "voltaire";
+import { MaxFeePerGas } from "@tevm/voltaire";
 
 // Example: MaxFeePerGas basics - EIP-1559 transaction fees
 
 // Create MaxFeePerGas from different units
 const feeFromGwei = MaxFeePerGas.fromGwei(100n); // 100 Gwei
 const feeFromWei = MaxFeePerGas.fromWei(100000000000n); // Same as above
-const feeFromHex = MaxFeePerGas.from("0x174876e800"); // Same value
+const feeFromHex = MaxFeePerGas("0x174876e800"); // Same value
 const conservative = MaxFeePerGas.fromGwei(50n); // Low priority
 const normal = MaxFeePerGas.fromGwei(100n); // Standard
 const aggressive = MaxFeePerGas.fromGwei(200n); // High priority

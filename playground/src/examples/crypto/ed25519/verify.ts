@@ -1,8 +1,8 @@
-import { Ed25519 } from "voltaire";
+import { Bytes, Ed25519 } from "@tevm/voltaire";
 // Verify Ed25519 signature
 
 // Generate keypair and sign
-const seed = crypto.getRandomValues(new Uint8Array(32));
+const seed = Bytes.random(32);
 const keypair = Ed25519.keypairFromSeed(seed);
 const message = new TextEncoder().encode("Verify this message");
 const signature = Ed25519.sign(message, keypair.secretKey);
@@ -11,7 +11,7 @@ const signature = Ed25519.sign(message, keypair.secretKey);
 const isValid = Ed25519.verify(signature, message, keypair.publicKey);
 
 // Try with wrong public key
-const wrongSeed = crypto.getRandomValues(new Uint8Array(32));
+const wrongSeed = Bytes.random(32);
 const wrongKeypair = Ed25519.keypairFromSeed(wrongSeed);
 const wrongPublicKey = Ed25519.verify(
 	signature,
@@ -28,7 +28,7 @@ const wrongMessageVerify = Ed25519.verify(
 );
 
 // Try with corrupted signature
-const corruptedSignature = new Uint8Array(signature);
+const corruptedSignature = Bytes(signature);
 corruptedSignature[0] ^= 1;
 const corruptedVerify = Ed25519.verify(
 	corruptedSignature,

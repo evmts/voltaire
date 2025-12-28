@@ -1,4 +1,4 @@
-import { Int16 } from "voltaire";
+import { Int16 } from "@tevm/voltaire";
 const room_temp = Int16.fromNumber(215); // 21.5°C
 const freezing = Int16.fromNumber(-100); // -10.0°C
 const boiling = Int16.fromNumber(1000); // 100.0°C

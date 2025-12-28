@@ -1,4 +1,4 @@
-import { AesGcm } from "voltaire";
+import { AesGcm, Bytes } from "@tevm/voltaire";
 // Setup: generate key and encrypt some data
 const key = await AesGcm.generateKey(256);
 const plaintext = new TextEncoder().encode("This is a secret message!");
@@ -15,12 +15,12 @@ const wrongNonce = AesGcm.generateNonce();
 try {
 	await AesGcm.decrypt(ciphertext, key, wrongNonce);
 } catch {}
-const modified = new Uint8Array(ciphertext);
+const modified = Bytes(ciphertext);
 modified[5] ^= 1; // Flip one bit
 try {
 	await AesGcm.decrypt(modified, key, nonce);
 } catch {}
-const tamperedTag = new Uint8Array(ciphertext);
+const tamperedTag = Bytes(ciphertext);
 tamperedTag[tamperedTag.length - 1] ^= 1; // Flip bit in tag
 try {
 	await AesGcm.decrypt(tamperedTag, key, nonce);

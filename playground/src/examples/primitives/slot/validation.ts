@@ -1,4 +1,4 @@
-import { Slot } from "voltaire";
+import { Slot } from "@tevm/voltaire";
 const validInputs = [
 	{ input: 0, label: "Zero" },
 	{ input: 0n, label: "Zero bigint" },
@@ -11,7 +11,7 @@ const validInputs = [
 
 for (const { input, label } of validInputs) {
 	try {
-		const slot = Slot.from(input as any);
+		const slot = Slot(input as any);
 	} catch (error) {}
 }
 const invalidInputs = [
@@ -26,20 +26,20 @@ const invalidInputs = [
 
 for (const { input, label } of invalidInputs) {
 	try {
-		const slot = Slot.from(input as any);
+		const slot = Slot(input as any);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 	}
 }
 
 // Safe conversion to number
-const safeSlot = Slot.from(1000000n);
+const safeSlot = Slot(1000000n);
 try {
 	const num = Slot.toNumber(safeSlot);
 } catch (error) {}
 
 // Unsafe conversion to number
-const unsafeSlot = Slot.from(BigInt(Number.MAX_SAFE_INTEGER) + 1n);
+const unsafeSlot = Slot(BigInt(Number.MAX_SAFE_INTEGER) + 1n);
 try {
 	const num = Slot.toNumber(unsafeSlot);
 } catch (error) {
@@ -48,7 +48,7 @@ try {
 const SLOTS_PER_EPOCH = 32;
 
 function validateEpochCalculation(slotNum: bigint): void {
-	const slot = Slot.from(slotNum);
+	const slot = Slot(slotNum);
 	const epoch = Slot.toEpoch(slot);
 	const expectedEpoch = slotNum / BigInt(SLOTS_PER_EPOCH);
 
@@ -64,9 +64,9 @@ validateEpochCalculation(63n);
 validateEpochCalculation(64n);
 validateEpochCalculation(1000000n);
 
-const slot1 = Slot.from(1000000n);
-const slot2 = Slot.from(1000000n);
-const slot3 = Slot.from(1000001n);
+const slot1 = Slot(1000000n);
+const slot2 = Slot(1000000n);
+const slot3 = Slot(1000001n);
 
 function validateSlotRange(start: bigint, end: bigint): boolean {
 	if (start < 0n) {
@@ -86,24 +86,24 @@ validateSlotRange(1000100n, 1000000n); // Invalid: end < start
 validateSlotRange(-100n, 100n); // Invalid: negative start
 validateSlotRange(0n, 0n); // Valid: single slot
 
-const baseSlot = Slot.from(1000000n);
+const baseSlot = Slot(1000000n);
 
 // Addition
-const nextSlot = Slot.from(baseSlot + 1n);
+const nextSlot = Slot(baseSlot + 1n);
 
 // Subtraction
-const prevSlot = Slot.from(baseSlot - 1n);
+const prevSlot = Slot(baseSlot - 1n);
 
 // Difference
-const slotA = Slot.from(1000100n);
-const slotB = Slot.from(1000000n);
+const slotA = Slot(1000100n);
+const slotB = Slot(1000000n);
 const difference = slotA - slotB;
 
 // Prevent negative result
 try {
-	const slotC = Slot.from(1000000n);
-	const slotD = Slot.from(1000100n);
-	const invalid = Slot.from(slotC - slotD); // Negative
+	const slotC = Slot(1000000n);
+	const slotD = Slot(1000100n);
+	const invalid = Slot(slotC - slotD); // Negative
 } catch (error) {
 	const message = error instanceof Error ? error.message : String(error);
 }
@@ -117,7 +117,7 @@ const boundaries = [
 
 for (const { value, label } of boundaries) {
 	try {
-		const slot = Slot.from(value);
+		const slot = Slot(value);
 		const canConvertToNumber = value <= BigInt(Number.MAX_SAFE_INTEGER);
 	} catch (error) {}
 }

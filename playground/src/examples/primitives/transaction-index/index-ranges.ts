@@ -1,7 +1,7 @@
-import { TransactionIndex } from "voltaire";
-const target = TransactionIndex.from(50);
-const rangeStart = TransactionIndex.from(0);
-const rangeEnd = TransactionIndex.from(100);
+import { TransactionIndex } from "@tevm/voltaire";
+const target = TransactionIndex(50);
+const rangeStart = TransactionIndex(0);
+const rangeEnd = TransactionIndex(100);
 
 const inRange =
 	TransactionIndex.toNumber(target) >= TransactionIndex.toNumber(rangeStart) &&
@@ -11,13 +11,13 @@ const segmentSize = 50;
 const segments = Math.ceil(blockSize / segmentSize);
 
 for (let i = 0; i < segments; i++) {
-	const start = TransactionIndex.from(i * segmentSize);
-	const end = TransactionIndex.from(
+	const start = TransactionIndex(i * segmentSize);
+	const end = TransactionIndex(
 		Math.min((i + 1) * segmentSize - 1, blockSize - 1),
 	);
 }
-const iterStart = TransactionIndex.from(10);
-const iterEnd = TransactionIndex.from(15);
+const iterStart = TransactionIndex(10);
+const iterEnd = TransactionIndex(15);
 
 const indexes: ReturnType<typeof TransactionIndex.from>[] = [];
 for (
@@ -25,13 +25,13 @@ for (
 	i <= TransactionIndex.toNumber(iterEnd);
 	i++
 ) {
-	indexes.push(TransactionIndex.from(i));
+	indexes.push(TransactionIndex(i));
 }
 indexes.forEach((idx) => {});
 const totalTxs = 180;
-const early = TransactionIndex.from(Math.floor(totalTxs * 0.1)); // First 10%
-const middle = TransactionIndex.from(Math.floor(totalTxs * 0.5)); // Middle
-const late = TransactionIndex.from(Math.floor(totalTxs * 0.9)); // Last 10%
+const early = TransactionIndex(Math.floor(totalTxs * 0.1)); // First 10%
+const middle = TransactionIndex(Math.floor(totalTxs * 0.5)); // Middle
+const late = TransactionIndex(Math.floor(totalTxs * 0.9)); // Last 10%
 function isValidRange(
 	start: typeof rangeStart,
 	end: typeof rangeEnd,
@@ -42,7 +42,7 @@ function isValidRange(
 	return s <= e && s >= 0 && e < blockSize;
 }
 
-const validStart = TransactionIndex.from(10);
-const validEnd = TransactionIndex.from(20);
-const invalidStart = TransactionIndex.from(50);
-const invalidEnd = TransactionIndex.from(30);
+const validStart = TransactionIndex(10);
+const validEnd = TransactionIndex(20);
+const invalidStart = TransactionIndex(50);
+const invalidEnd = TransactionIndex(30);

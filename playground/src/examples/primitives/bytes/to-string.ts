@@ -1,4 +1,4 @@
-import { Bytes } from "voltaire";
+import { Bytes } from "@tevm/voltaire";
 // Decode bytes to UTF-8 string
 const bytes = Bytes.fromHex("0x48656c6c6f2c20457468657265756d21");
 const text = Bytes.toString(bytes);

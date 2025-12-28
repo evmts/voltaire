@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI, Bytes, Bytes32 } from "@tevm/voltaire";
 
 // Example: Encode dynamic uint256 array
 const dynamicUintArray = ABI.encodeParameters(
@@ -39,9 +39,9 @@ const dynamicBytes32Array = ABI.encodeParameters(
 	[{ type: "bytes32[]", name: "hashes" }],
 	[
 		[
-			new Uint8Array(32).fill(1),
-			new Uint8Array(32).fill(2),
-			new Uint8Array(32).fill(3),
+			Bytes32.zero().fill(1),
+			Bytes32.zero().fill(2),
+			Bytes32.zero().fill(3),
 		],
 	],
 );

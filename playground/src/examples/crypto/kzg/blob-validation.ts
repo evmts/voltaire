@@ -1,4 +1,4 @@
-import { KZG } from "voltaire";
+import { Bytes, KZG } from "@tevm/voltaire";
 // Example: Blob validation and constraints
 
 KZG.loadTrustedSetup();
@@ -19,7 +19,7 @@ try {
 		}
 	}
 } catch (error: any) {}
-const customBlob = new Uint8Array(BYTES_PER_BLOB);
+const customBlob = Bytes.zero(BYTES_PER_BLOB);
 for (let i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
 	customBlob[i * BYTES_PER_FIELD_ELEMENT] = 0; // High byte must be 0
 	// Fill rest with pattern
@@ -30,11 +30,11 @@ for (let i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
 try {
 	KZG.validateBlob(customBlob);
 } catch (error: any) {}
-const tooSmall = new Uint8Array(1000);
+const tooSmall = Bytes.zero(1000);
 try {
 	KZG.validateBlob(tooSmall);
 } catch (error: any) {}
-const tooLarge = new Uint8Array(200000);
+const tooLarge = Bytes.zero(200000);
 try {
 	KZG.validateBlob(tooLarge);
 } catch (error: any) {}

@@ -1,5 +1,5 @@
-import { Address, Siwe } from "voltaire";
-const address = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+import { Address, Siwe } from "@tevm/voltaire";
+const address = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const basic = Siwe.create({
 	domain: "example.com",
 	address: address,
@@ -163,9 +163,9 @@ const parsedComplex = Siwe.parse(formattedComplex);
 
 // Different address formats
 const addresses = [
-	Address.from("0x0000000000000000000000000000000000000000"), // zero
-	Address.from("0xffffffffffffffffffffffffffffffffffffffff"), // max
-	Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"), // mixed
+	Address("0x0000000000000000000000000000000000000000"), // zero
+	Address("0xffffffffffffffffffffffffffffffffffffffff"), // max
+	Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"), // mixed
 ];
 
 addresses.forEach((addr) => {

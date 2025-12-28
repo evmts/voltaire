@@ -1,6 +1,6 @@
-import { Withdrawal } from "voltaire";
+import { Withdrawal } from "@tevm/voltaire";
 // Baseline validator (good performance)
-const baselineValidator = Withdrawal.from({
+const baselineValidator = Withdrawal({
 	index: 10000000n,
 	validatorIndex: 500000,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -8,7 +8,7 @@ const baselineValidator = Withdrawal.from({
 });
 
 // Sync committee member (higher rewards)
-const syncCommittee = Withdrawal.from({
+const syncCommittee = Withdrawal({
 	index: 10000001n,
 	validatorIndex: 500001,
 	address: "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
@@ -16,7 +16,7 @@ const syncCommittee = Withdrawal.from({
 });
 
 // Block proposer rewards
-const blockProposer = Withdrawal.from({
+const blockProposer = Withdrawal({
 	index: 10000002n,
 	validatorIndex: 500002,
 	address: "0x5aAed5930B9EB3cd462dDbaEfA21Da757F30FbDd",
@@ -24,7 +24,7 @@ const blockProposer = Withdrawal.from({
 });
 
 // Perfect validator (100% uptime)
-const perfectValidator = Withdrawal.from({
+const perfectValidator = Withdrawal({
 	index: 10000003n,
 	validatorIndex: 500003,
 	address: "0x8bBe03F3e48391a3aC1Ee5e09e23e5b8F5E4c078",
@@ -32,7 +32,7 @@ const perfectValidator = Withdrawal.from({
 });
 
 // Poor performing validator
-const poorValidator = Withdrawal.from({
+const poorValidator = Withdrawal({
 	index: 10000004n,
 	validatorIndex: 500004,
 	address: "0x0000000000000000000000000000000000000001",
@@ -40,7 +40,7 @@ const poorValidator = Withdrawal.from({
 });
 
 // Slashing whistleblower reward
-const whistleblower = Withdrawal.from({
+const whistleblower = Withdrawal({
 	index: 10000005n,
 	validatorIndex: 500005,
 	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",

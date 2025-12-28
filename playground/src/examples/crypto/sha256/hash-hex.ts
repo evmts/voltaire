@@ -1,4 +1,4 @@
-import { Hex, SHA256 } from "voltaire";
+import { Hex, SHA256 } from "@tevm/voltaire";
 // Hash hex string data with SHA256
 const hexData = "0xdeadbeef";
 const hash = SHA256.hashHex(hexData);

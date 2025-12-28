@@ -1,4 +1,4 @@
-import { Uint, Uint32, Uint64 } from "voltaire";
+import { Uint, Uint32, Uint64 } from "@tevm/voltaire";
 const a32 = Uint32.fromNumber(1000);
 const b32 = Uint32.fromNumber(250);
 const base32 = Uint32.fromNumber(2);

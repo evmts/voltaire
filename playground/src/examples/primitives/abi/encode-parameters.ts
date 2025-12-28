@@ -1,4 +1,4 @@
-import { ABI } from "voltaire";
+import { ABI, Bytes, Bytes32 } from "@tevm/voltaire";
 
 // Example: Encode basic types
 const basicParams = ABI.encodeParameters(
@@ -33,7 +33,7 @@ const fixedArrayParams = ABI.encodeParameters(
 	],
 	[
 		[1n, 2n, 3n],
-		[new Uint8Array(32), new Uint8Array(32)],
+		[Bytes32.zero(), Bytes32.zero()],
 	],
 );
 
@@ -43,7 +43,7 @@ const dynamicParams = ABI.encodeParameters(
 		{ type: "string", name: "message" },
 		{ type: "bytes", name: "data" },
 	],
-	["Hello, World!", new Uint8Array([1, 2, 3, 4, 5])],
+	["Hello, World!", Bytes([1, 2, 3, 4, 5])],
 );
 
 // Example: Encode tuple

@@ -1,14 +1,14 @@
-import { ChainId } from "voltaire";
+import { ChainId } from "@tevm/voltaire";
 
-const mainnet1 = ChainId.from(1);
-const mainnet2 = ChainId.from(1);
-const optimism = ChainId.from(10);
+const mainnet1 = ChainId(1);
+const mainnet2 = ChainId(1);
+const optimism = ChainId(10);
 
-const userChain = ChainId.from(1);
+const userChain = ChainId(1);
 
 const validateNetwork = (chainId: number, expectedChainId: number): boolean => {
-	const actual = ChainId.from(chainId);
-	const expected = ChainId.from(expectedChainId);
+	const actual = ChainId(chainId);
+	const expected = ChainId(expectedChainId);
 	return ChainId.equals(actual, expected);
 };
 
@@ -21,33 +21,33 @@ if (validateNetwork(currentChainId, expectedChainId)) {
 }
 
 const supportedChains = [
-	ChainId.from(ChainId.MAINNET),
-	ChainId.from(ChainId.OPTIMISM),
-	ChainId.from(ChainId.ARBITRUM),
-	ChainId.from(ChainId.BASE),
+	ChainId(ChainId.MAINNET),
+	ChainId(ChainId.OPTIMISM),
+	ChainId(ChainId.ARBITRUM),
+	ChainId(ChainId.BASE),
 ];
 
 const isSupported = (chainId: number): boolean => {
-	const chain = ChainId.from(chainId);
+	const chain = ChainId(chainId);
 	return supportedChains.some((supported) => ChainId.equals(chain, supported));
 };
 
 const isMainnet = (chainId: number): boolean => {
-	return ChainId.isMainnet(ChainId.from(chainId));
+	return ChainId.isMainnet(ChainId(chainId));
 };
 
 const isL2 = (chainId: number): boolean => {
-	const chain = ChainId.from(chainId);
+	const chain = ChainId(chainId);
 	return (
-		ChainId.equals(chain, ChainId.from(ChainId.OPTIMISM)) ||
-		ChainId.equals(chain, ChainId.from(ChainId.ARBITRUM)) ||
-		ChainId.equals(chain, ChainId.from(ChainId.BASE))
+		ChainId.equals(chain, ChainId(ChainId.OPTIMISM)) ||
+		ChainId.equals(chain, ChainId(ChainId.ARBITRUM)) ||
+		ChainId.equals(chain, ChainId(ChainId.BASE))
 	);
 };
 
 const testChains = [1, 10, 42161, 8453, 137];
 testChains.forEach((id) => {
-	const chain = ChainId.from(id);
+	const chain = ChainId(id);
 });
 
 interface Transaction {
@@ -61,8 +61,8 @@ const validateTransaction = (
 	tx: Transaction,
 	expectedChainId: number,
 ): { valid: boolean; error?: string } => {
-	const txChain = ChainId.from(tx.chainId);
-	const expected = ChainId.from(expectedChainId);
+	const txChain = ChainId(tx.chainId);
+	const expected = ChainId(expectedChainId);
 
 	if (!ChainId.equals(txChain, expected)) {
 		return {
@@ -98,7 +98,7 @@ class ChainManager {
 	private currentChain: number;
 
 	constructor(initialChain: number) {
-		this.currentChain = ChainId.toNumber(ChainId.from(initialChain));
+		this.currentChain = ChainId.toNumber(ChainId(initialChain));
 	}
 
 	getCurrentChain(): number {
@@ -106,8 +106,8 @@ class ChainManager {
 	}
 
 	switchChain(newChain: number): boolean {
-		const current = ChainId.from(this.currentChain);
-		const target = ChainId.from(newChain);
+		const current = ChainId(this.currentChain);
+		const target = ChainId(newChain);
 
 		if (ChainId.equals(current, target)) {
 			return false;
@@ -118,8 +118,8 @@ class ChainManager {
 	}
 
 	isOnChain(chainId: number): boolean {
-		const current = ChainId.from(this.currentChain);
-		const target = ChainId.from(chainId);
+		const current = ChainId(this.currentChain);
+		const target = ChainId(chainId);
 		return ChainId.equals(current, target);
 	}
 }

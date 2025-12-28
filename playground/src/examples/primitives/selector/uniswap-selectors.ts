@@ -1,4 +1,4 @@
-import { Selector } from "voltaire";
+import { Selector } from "@tevm/voltaire";
 const swapExactTokensForTokens = Selector.fromSignature(
 	"swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
 );

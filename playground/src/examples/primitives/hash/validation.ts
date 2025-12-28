@@ -1,4 +1,4 @@
-import { Hash } from "voltaire";
+import { Hash, Bytes32, Bytes } from "@tevm/voltaire";
 // Example: Validating hash values
 
 // Valid hash hex string
@@ -14,10 +14,10 @@ const notHex =
 
 // Check if value is a Hash type
 const hash = Hash.fromHex(validHex);
-const zeroBytes = new Uint8Array(32);
+const zeroBytes = Bytes32.zero();
 const zeroHash = Hash.fromBytes(zeroBytes);
 
 // Assert throws on invalid input
 try {
-	Hash.assert(new Uint8Array(16));
+	Hash.assert(Bytes([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
 } catch (e) {}

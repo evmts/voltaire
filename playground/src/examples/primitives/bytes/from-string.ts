@@ -1,4 +1,4 @@
-import { Bytes } from "voltaire";
+import { Bytes } from "@tevm/voltaire";
 // Convert UTF-8 string to bytes
 const hello = Bytes.fromString("Hello, Ethereum!");
 

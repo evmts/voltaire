@@ -1,4 +1,4 @@
-import { BlockHash } from "voltaire";
+import { BlockHash } from "@tevm/voltaire";
 // Example: Chain reorganization detection using block hashes
 
 interface BlockHeader {
@@ -21,10 +21,10 @@ class BlockchainState {
 	}
 
 	getBlockByHash(hashStr: string): BlockHeader | null {
-		const searchHash = BlockHash.from(hashStr);
+		const searchHash = BlockHash(hashStr);
 		return (
 			this.blocks.find((b) => {
-				const blockHash = BlockHash.from(b.hash);
+				const blockHash = BlockHash(b.hash);
 				return BlockHash.equals(searchHash, blockHash);
 			}) ?? null
 		);
@@ -119,8 +119,8 @@ function detectReorg(
 			break;
 		}
 
-		const oldHash = BlockHash.from(oldBlock.hash);
-		const newHash = BlockHash.from(newBlock.hash);
+		const oldHash = BlockHash(oldBlock.hash);
+		const newHash = BlockHash(newBlock.hash);
 
 		if (BlockHash.equals(oldHash, newHash)) {
 			return { reorgDepth: depth, commonAncestor: i };
@@ -139,8 +139,8 @@ if (reorg.commonAncestor !== null) {
 		const newBlock = newChain.getBlock(i);
 
 		if (oldBlock && newBlock) {
-			const oldHash = BlockHash.from(oldBlock.hash);
-			const newHash = BlockHash.from(newBlock.hash);
+			const oldHash = BlockHash(oldBlock.hash);
+			const newHash = BlockHash(newBlock.hash);
 		}
 	}
 }
@@ -150,8 +150,8 @@ const expectedTipHash =
 const currentTipHash =
 	"0x5555555555555555555555555555555555555555555555555555555555555555";
 
-const expectedTip = BlockHash.from(expectedTipHash);
-const currentTip = BlockHash.from(currentTipHash);
+const expectedTip = BlockHash(expectedTipHash);
+const currentTip = BlockHash(currentTipHash);
 
 if (!BlockHash.equals(expectedTip, currentTip)) {
 } else {

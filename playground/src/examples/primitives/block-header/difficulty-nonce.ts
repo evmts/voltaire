@@ -1,6 +1,6 @@
-import { BlockHeader, Hex } from "voltaire";
+import { BlockHeader, Hex, Bytes, Bytes32 } from "@tevm/voltaire";
 // Pre-merge block example (difficulty > 0)
-const powBlock = BlockHeader.from({
+const powBlock = BlockHeader({
 	parentHash:
 		"0xaa12acd8e4b97ca7a24e5e3c8e7c1d3f5b8e3d4c5a3b8e7c1d3f5b8e3d4c5a3b",
 	ommersHash:
@@ -12,7 +12,7 @@ const powBlock = BlockHeader.from({
 		"0x5b8e3d4c5a3b8e7c1d3f5b8e3d4c5a3b8e7c1d3f5b8e3d4c5a3b8e7c1d3f5b8e",
 	receiptsRoot:
 		"0x7c1d3f5b8e3d4c5a3b8e7c1d3f5b8e3d4c5a3b8e7c1d3f5b8e3d4c5a3b8e7c1d",
-	logsBloom: new Uint8Array(256),
+	logsBloom: Bytes.zero(256),
 	difficulty: 13000000000000000n, // ~13 PH (petahash)
 	number: 15000000n, // Pre-merge block
 	gasLimit: 30000000n,
@@ -25,7 +25,7 @@ const powBlock = BlockHeader.from({
 });
 
 // Post-merge block (difficulty = 0)
-const posBlock = BlockHeader.from({
+const posBlock = BlockHeader({
 	parentHash:
 		"0xbb23bcd9f5c98db8b35f6f4d9f8d2e4f6c9f4e5d6b4c9f8d2e4f6c9f4e5d6b4c",
 	ommersHash:
@@ -37,15 +37,15 @@ const posBlock = BlockHeader.from({
 		"0x6c9f4e5d6b4c9f8d2e4f6c9f4e5d6b4c9f8d2e4f6c9f4e5d6b4c9f8d2e4f6c9f",
 	receiptsRoot:
 		"0x8d2e4f6c9f4e5d6b4c9f8d2e4f6c9f4e5d6b4c9f8d2e4f6c9f4e5d6b4c9f8d2e",
-	logsBloom: new Uint8Array(256),
+	logsBloom: Bytes.zero(256),
 	difficulty: 0n, // Zero post-merge
 	number: 18000000n, // Post-merge block
 	gasLimit: 30000000n,
 	gasUsed: 15000000n,
 	timestamp: 1693903403n, // Sept 2023 (post-merge)
 	extraData: Hex.toBytes("0x"), // Often empty post-merge
-	mixHash: new Uint8Array(32), // Zero post-merge
-	nonce: new Uint8Array(8), // Zero post-merge
+	mixHash: Bytes32.zero(), // Zero post-merge
+	nonce: Bytes.zero(8), // Zero post-merge
 	baseFeePerGas: 25000000000n, // 25 gwei
 	withdrawalsRoot:
 		"0x9f4e5d6b4c9f8d2e4f6c9f4e5d6b4c9f8d2e4f6c9f4e5d6b4c9f8d2e4f6c9f4e",

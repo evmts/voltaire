@@ -1,4 +1,4 @@
-import { Hash } from "voltaire";
+import { Hash } from "@tevm/voltaire";
 // Example: Slicing hashes to extract portions
 
 const hash = Hash.fromHex(

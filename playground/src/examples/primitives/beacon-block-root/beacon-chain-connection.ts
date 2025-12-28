@@ -1,4 +1,4 @@
-import { BeaconBlockRoot } from "voltaire";
+import { BeaconBlockRoot, Bytes, Bytes32 } from "@tevm/voltaire";
 // Example: Beacon chain connection and consensus layer integration
 
 // Beacon block roots connect execution layer (EL) to consensus layer (CL)
@@ -6,7 +6,7 @@ import { BeaconBlockRoot } from "voltaire";
 // The root represents the SSZ hash tree root of the beacon block
 
 // Example beacon block root from mainnet
-const beaconRoot = BeaconBlockRoot.from(
+const beaconRoot = BeaconBlockRoot(
 	"0x8e47c00dcd5d2d4e5b1f6e4c8e2fce50cf842a8c5a8b0b5c1e4d3a2b1c0d9e8f",
 );
 
@@ -16,7 +16,7 @@ const slot8M = BeaconBlockRoot.fromHex(
 );
 
 // Genesis beacon root (all zeros)
-const genesisRoot = BeaconBlockRoot.fromBytes(new Uint8Array(32));
+const genesisRoot = BeaconBlockRoot.fromBytes(Bytes32.zero());
 
 // What the beacon block root represents:
 const beaconBlockStructure = `

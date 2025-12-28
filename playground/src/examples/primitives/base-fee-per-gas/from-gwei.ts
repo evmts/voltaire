@@ -1,4 +1,4 @@
-import { BaseFeePerGas } from "voltaire";
+import { BaseFeePerGas } from "@tevm/voltaire";
 
 // Typical mainnet base fees
 const veryLow = BaseFeePerGas.fromGwei(5n);

@@ -1,4 +1,4 @@
-import { Address, EIP712, Hex, Secp256k1 } from "voltaire";
+import { Address, EIP712, Hex, Secp256k1 } from "@tevm/voltaire";
 // EIP-712: DEX order signature (0x Protocol style)
 
 // Generate maker keypair
@@ -7,9 +7,9 @@ const makerPublicKey = Secp256k1.PrivateKey.toPublicKey(makerPrivateKey);
 const makerAddress = Secp256k1.PublicKey.toAddress(makerPublicKey);
 
 // Token addresses
-const daiAddress = Address.from("0x6B175474E89094C44Da98b954EedeAC495271d0F");
-const usdcAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-const exchangeAddress = Address.from(
+const daiAddress = Address("0x6B175474E89094C44Da98b954EedeAC495271d0F");
+const usdcAddress = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const exchangeAddress = Address(
 	"0xDef1C0ded9bec7F1a1670819833240f027b25EfF",
 );
 
@@ -36,7 +36,7 @@ const order = {
 	primaryType: "Order",
 	message: {
 		maker: makerAddress,
-		taker: Address.from("0x0000000000000000000000000000000000000000"), // Anyone can fill
+		taker: Address("0x0000000000000000000000000000000000000000"), // Anyone can fill
 		makerToken: daiAddress,
 		takerToken: usdcAddress,
 		makerAmount: 1000n * 10n ** 18n, // 1000 DAI

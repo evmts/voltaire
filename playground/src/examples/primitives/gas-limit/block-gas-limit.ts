@@ -1,4 +1,4 @@
-import { Gas } from "voltaire";
+import { Gas } from "@tevm/voltaire";
 // Ethereum mainnet block gas limit
 const blockLimit = Gas.gasLimitFrom(30000000);
 

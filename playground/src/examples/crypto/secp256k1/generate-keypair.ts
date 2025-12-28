@@ -1,4 +1,4 @@
-import { Hex, Secp256k1 } from "voltaire";
+import { Hex, Secp256k1 } from "@tevm/voltaire";
 // Generate secp256k1 keypair
 
 // Generate random private key (32 bytes)

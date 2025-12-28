@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash } from "voltaire";
+import { Address, EventLog, Hash, Bytes } from "@tevm/voltaire";
 // Event signature: keccak256("Transfer(address,address,uint256)")
 // Same as ERC20, but tokenId is indexed
 const TRANSFER_SIGNATURE = Hash(
@@ -24,7 +24,7 @@ const tokenId = Hash(
 const transferLog = EventLog.create({
 	address: baycAddress,
 	topics: [TRANSFER_SIGNATURE, fromAddress, toAddress, tokenId],
-	data: new Uint8Array(0), // Empty data - all params are indexed
+	data: Bytes.zero(0), // Empty data - all params are indexed
 	blockNumber: 18700000n,
 	transactionHash: Hash(
 		"0x1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff",
@@ -90,31 +90,31 @@ const transfers = [
 	EventLog.create({
 		address: baycAddress,
 		topics: [TRANSFER_SIGNATURE, zeroAddress, user1, tokenId1],
-		data: new Uint8Array(0),
+		data: Bytes.zero(0),
 		blockNumber: 18700000n,
 	}), // Mint to user1
 	EventLog.create({
 		address: baycAddress,
 		topics: [TRANSFER_SIGNATURE, user1, user2, tokenId1],
-		data: new Uint8Array(0),
+		data: Bytes.zero(0),
 		blockNumber: 18700010n,
 	}), // Transfer user1 -> user2
 	EventLog.create({
 		address: baycAddress,
 		topics: [TRANSFER_SIGNATURE, zeroAddress, user2, tokenId2],
-		data: new Uint8Array(0),
+		data: Bytes.zero(0),
 		blockNumber: 18700020n,
 	}), // Mint to user2
 	EventLog.create({
 		address: baycAddress,
 		topics: [TRANSFER_SIGNATURE, user2, user3, tokenId2],
-		data: new Uint8Array(0),
+		data: Bytes.zero(0),
 		blockNumber: 18700030n,
 	}), // Transfer user2 -> user3
 	EventLog.create({
 		address: baycAddress,
 		topics: [TRANSFER_SIGNATURE, user2, zeroAddress, tokenId1],
-		data: new Uint8Array(0),
+		data: Bytes.zero(0),
 		blockNumber: 18700040n,
 	}), // Burn by user2
 ];

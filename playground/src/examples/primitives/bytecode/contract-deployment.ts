@@ -1,4 +1,4 @@
-import { Bytecode } from "voltaire";
+import { Bytecode } from "@tevm/voltaire";
 // Example: Contract deployment bytecode
 
 // Constructor bytecode copies runtime code to memory and returns it

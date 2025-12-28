@@ -1,4 +1,4 @@
-import { Address, EIP712, Hex, Secp256k1 } from "voltaire";
+import { Address, Bytes, EIP712, Hex, Secp256k1 } from "@tevm/voltaire";
 // EIP-712: Meta-transaction signature (gasless transactions)
 
 // Generate user keypair
@@ -6,16 +6,16 @@ const userPrivateKey = Secp256k1.PrivateKey.random();
 const userPublicKey = Secp256k1.PrivateKey.toPublicKey(userPrivateKey);
 const userAddress = Secp256k1.PublicKey.toAddress(userPublicKey);
 
-const forwarderAddress = Address.from(
+const forwarderAddress = Address(
 	"0x84a0856b038eaAd1cC7E297cF34A7e72685A8693",
 ); // MinimalForwarder
-const targetContract = Address.from(
+const targetContract = Address(
 	"0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
 ); // Target contract
 
 // Encode function call data (example: transfer(address,uint256))
 // In real usage, you'd encode actual function call
-const callData = new Uint8Array(68); // Simplified for example
+const callData = Bytes.zero(68); // Simplified for example
 
 // Meta-transaction typed data
 const metaTx = {

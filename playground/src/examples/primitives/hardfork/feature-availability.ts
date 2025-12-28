@@ -1,4 +1,4 @@
-import { Hardfork } from "voltaire";
+import { Hardfork } from "@tevm/voltaire";
 // Define feature sets
 interface FeatureSet {
 	fork: string;

@@ -1,4 +1,4 @@
-import { FeeMarket } from "voltaire";
+import { FeeMarket } from "@tevm/voltaire";
 // Current network state
 const baseFee = 50_000_000_000n; // 50 gwei
 const gasUsed = 21_000n; // Standard transfer

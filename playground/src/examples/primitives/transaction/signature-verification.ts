@@ -1,4 +1,4 @@
-import { Address, Hex, Transaction } from "voltaire";
+import { Address, Hex, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
 // Transaction Signature: Verify and recover sender
 
 // Example signed transaction (with real signature components)
@@ -9,13 +9,13 @@ const signedTx: Transaction.EIP1559 = {
 	maxPriorityFeePerGas: 2_000_000_000n,
 	maxFeePerGas: 30_000_000_000n,
 	gasLimit: 21_000n,
-	to: Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
+	to: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 	value: 1_000_000_000_000_000_000n,
-	data: new Uint8Array(),
+	data: Bytes.zero(0),
 	accessList: [],
 	yParity: 0,
-	r: new Uint8Array(32).fill(1), // Signature r component
-	s: new Uint8Array(32).fill(2), // Signature s component
+	r: Bytes32.repeat(0x01), // Signature r component
+	s: Bytes32.repeat(0x02), // Signature s component
 };
 
 // Check if transaction is signed

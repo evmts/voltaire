@@ -1,4 +1,4 @@
-import { Uint256 } from "voltaire";
+import { Uint256 } from "@tevm/voltaire";
 // Convert to bigint
 const value = Uint256.fromNumber(42);
 const bigint = Uint256.toBigInt(value);
