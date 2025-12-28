@@ -31,6 +31,24 @@ bun run examples/typescript/02-rlp-encoding.ts
 bun run examples/typescript/03-transactions.ts
 ```
 
+### Running Swift Examples
+
+```bash
+# Build native Zig library once from repo root
+zig build build-ts-native
+
+# Run the Swift examples
+cd examples/swift-examples
+swift run
+```
+
+See `examples/swift-examples/README.md` for details. The program demonstrates:
+- Address parsing and EIP-55 checksum
+- Keccak-256 hashing from strings/bytes
+- Key generation, public key derivation, and address derivation
+- Hex, U256, and Bytes32 utilities
+- Signature parsing, normalization, and recovery
+
 ## Zig Examples
 
 ### Core Primitives
@@ -104,6 +122,15 @@ Keccak-256 hash function usage:
 
 ```bash
 zig build run -- examples/keccak256.zig
+```
+
+#### `hashing/event-topics.zig` - Event Topics
+Compute event topics for common patterns like ERC-20 `Transfer`:
+- Topic0 from event signature
+- Topic1/2 by left-padding indexed addresses to 32 bytes
+
+```bash
+zig build run -- examples/hashing/event-topics.zig
 ```
 
 #### `secp256k1.zig` - secp256k1 Signatures
