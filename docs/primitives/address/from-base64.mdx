@@ -119,7 +119,7 @@ const base64 = addr.toBase64()
 
 // Later, restore from base64
 const restored = Address(base64)
-console.log(Address.equals(addr, restored)) // true
+console.log(addr.equals(restored)) // true
 ```
 
 ### Binary Protocol
@@ -180,7 +180,7 @@ const b64 = original.toBase64()
 const decoded = Address(b64)
 
 // Verify round-trip
-console.log(Address.equals(original, decoded)) // true
+console.log(original.equals(decoded)) // true
 ```
 
 ## See Also

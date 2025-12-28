@@ -41,13 +41,13 @@ const eth0 = HDWallet.deriveEthereum(root, 0, 0); // m/44'/60'/0'/0/0
 const eth1 = HDWallet.deriveEthereum(root, 0, 1); // m/44'/60'/0'/0/1
 
 // 5. Get keys
-const privateKey = HDWallet.getPrivateKey(eth0);
-const publicKey = HDWallet.getPublicKey(eth0);
-const chainCode = HDWallet.getChainCode(eth0);
+const privateKey = eth0.getPrivateKey();
+const publicKey = eth0.getPublicKey();
+const chainCode = eth0.getChainCode();
 
 // 6. Export extended keys
-const xprv = HDWallet.toExtendedPrivateKey(root); // xprv...
-const xpub = HDWallet.toExtendedPublicKey(root);  // xpub...
+const xprv = root.toExtendedPrivateKey(); // xprv...
+const xpub = root.toExtendedPublicKey();  // xpub...
 ```
 
 <Tip>
@@ -155,7 +155,7 @@ const btc1 = HDWallet.deriveBitcoin(root, 0, 1); // m/44'/0'/0'/0/1
 Exports extended private key (xprv...).
 
 ```typescript
-const xprv = HDWallet.toExtendedPrivateKey(root);
+const xprv = root.toExtendedPrivateKey();
 // "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi"
 
 // Can be stored and later restored
@@ -167,7 +167,7 @@ const restored = HDWallet.fromExtendedKey(xprv);
 Exports extended public key (xpub...).
 
 ```typescript
-const xpub = HDWallet.toExtendedPublicKey(root);
+const xpub = root.toExtendedPublicKey();
 // "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
 
 // Public key can be shared for watch-only wallets
@@ -181,7 +181,7 @@ const watchOnly = HDWallet.fromPublicExtendedKey(xpub);
 Returns 32-byte private key (null for public-only keys).
 
 ```typescript
-const privateKey = HDWallet.getPrivateKey(eth0);
+const privateKey = eth0.getPrivateKey();
 // Uint8Array(32) or null
 ```
 
@@ -190,7 +190,7 @@ const privateKey = HDWallet.getPrivateKey(eth0);
 Returns 33-byte compressed public key.
 
 ```typescript
-const publicKey = HDWallet.getPublicKey(eth0);
+const publicKey = eth0.getPublicKey();
 // Uint8Array(33) - compressed secp256k1 public key
 ```
 
@@ -199,7 +199,7 @@ const publicKey = HDWallet.getPublicKey(eth0);
 Returns 32-byte chain code (used for child derivation).
 
 ```typescript
-const chainCode = HDWallet.getChainCode(eth0);
+const chainCode = eth0.getChainCode();
 // Uint8Array(32)
 ```
 
@@ -209,11 +209,11 @@ Checks if key can derive hardened children (requires private key).
 
 ```typescript
 const root = HDWallet.fromSeed(seed);
-console.log(HDWallet.canDeriveHardened(root)); // true
+console.log(root.canDeriveHardened()); // true
 
-const xpub = HDWallet.toExtendedPublicKey(root);
+const xpub = root.toExtendedPublicKey();
 const pubOnly = HDWallet.fromPublicExtendedKey(xpub);
-console.log(HDWallet.canDeriveHardened(pubOnly)); // false
+console.log(pubOnly.canDeriveHardened()); // false
 ```
 
 #### `toPublic(key: ExtendedKey): ExtendedKey`
@@ -222,11 +222,11 @@ Converts to public-only key (removes private key).
 
 ```typescript
 const root = HDWallet.fromSeed(seed);
-const pubOnly = HDWallet.toPublic(root);
+const pubOnly = root.toPublic();
 
-console.log(HDWallet.getPrivateKey(root));   // Uint8Array(32)
-console.log(HDWallet.getPrivateKey(pubOnly)); // null
-console.log(HDWallet.getPublicKey(pubOnly));  // Uint8Array(33)
+console.log(root.getPrivateKey());   // Uint8Array(32)
+console.log(pubOnly.getPrivateKey()); // null
+console.log(pubOnly.getPublicKey());  // Uint8Array(33)
 ```
 
 ### Path Utilities
@@ -388,7 +388,7 @@ Extended keys encode key + chain code + metadata:
 Contains private key - can derive all children (hardened + normal).
 
 ```typescript
-const xprv = HDWallet.toExtendedPrivateKey(root);
+const xprv = root.toExtendedPrivateKey();
 // "xprv9s21ZrQH143K..."
 
 // Format: version (4) + depth (1) + parent_fingerprint (4) +
@@ -406,7 +406,7 @@ const xprv = HDWallet.toExtendedPrivateKey(root);
 Contains public key - can only derive normal children.
 
 ```typescript
-const xpub = HDWallet.toExtendedPublicKey(root);
+const xpub = root.toExtendedPublicKey();
 // "xpub661MyMwAqRbcF..."
 
 // Same format as xprv, but contains public key instead
@@ -428,7 +428,7 @@ const xpub = HDWallet.toExtendedPublicKey(root);
 ```typescript
 // 1. Export xpub from secure device
 const root = HDWallet.fromSeed(seed);
-const xpub = HDWallet.toExtendedPublicKey(root);
+const xpub = root.toExtendedPublicKey();
 
 // 2. Import xpub on watch-only system
 const watchOnly = HDWallet.fromPublicExtendedKey(xpub);
@@ -438,8 +438,8 @@ const addr0 = HDWallet.deriveChild(watchOnly, 0);
 const addr1 = HDWallet.deriveChild(watchOnly, 1);
 
 // Can view addresses but cannot spend
-console.log(HDWallet.getPublicKey(addr0));    // Works
-console.log(HDWallet.getPrivateKey(addr0));   // null
+console.log(addr0.getPublicKey());    // Works
+console.log(addr0.getPrivateKey());   // null
 ```
 
 ## Complete Workflow
@@ -466,14 +466,14 @@ const root = HDWallet.fromSeed(seed);
 const eth0 = HDWallet.deriveEthereum(root, 0, 0);
 
 // 5. Get keys
-const privateKey = HDWallet.getPrivateKey(eth0);
-const publicKey = HDWallet.getPublicKey(eth0);
+const privateKey = eth0.getPrivateKey();
+const publicKey = eth0.getPublicKey();
 
 // 6. Derive Ethereum address from public key
 const pubKeyUncompressed = secp256k1.getPublicKey(privateKey, false);
 const address = Address.fromPublicKey(pubKeyUncompressed.slice(1)); // Remove 0x04 prefix
 
-console.log('Address:', Address.toHex(address));
+console.log('Address:', address.toHex());
 ```
 
 ### Restore Existing Wallet
@@ -539,7 +539,7 @@ const seed = await Bip39.mnemonicToSeed(mnemonic);
 
 // Only derive public data for transmission
 const root = HDWallet.fromSeed(seed);
-const xpub = HDWallet.toExtendedPublicKey(root);
+const xpub = root.toExtendedPublicKey();
 // ✅ Can share xpub (read-only access)
 ```
 
@@ -569,7 +569,7 @@ const addressLevel = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
 ```typescript
 // For high-security applications, clear keys after use
 function clearKey(key) {
-  const privateKey = HDWallet.getPrivateKey(key);
+  const privateKey = key.getPrivateKey();
   if (privateKey) {
     privateKey.fill(0); // Zero out memory
   }
@@ -636,13 +636,13 @@ const testSeed = new Uint8Array([
 ]);
 
 const root = HDWallet.fromSeed(testSeed);
-const xprv = HDWallet.toExtendedPrivateKey(root);
+const xprv = root.toExtendedPrivateKey();
 
 // Expected:
 // xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi
 
 const child = HDWallet.derivePath(root, "m/0'");
-const childXprv = HDWallet.toExtendedPrivateKey(child);
+const childXprv = child.toExtendedPrivateKey();
 
 // Expected:
 // xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7

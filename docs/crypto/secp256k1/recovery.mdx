@@ -199,7 +199,7 @@ const publicKey = Secp256k1.recoverPublicKey(signature, txHash);
 
 // Derive sender address
 const senderAddress = Address.fromPublicKey(publicKey);
-console.log(Address.toHex(senderAddress));
+console.log(senderAddress.toHex());
 ```
 
 ### EIP-191 Personal Sign
@@ -381,7 +381,7 @@ const expectedAddress = Address.fromPublicKey(
   Secp256k1.derivePublicKey(privateKey)
 );
 
-assert(Address.equals(recoveredAddress, expectedAddress));
+assert(recoveredAddress.equals(expectedAddress));
 ```
 
 ### Invalid Signature Recovery

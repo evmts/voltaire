@@ -27,7 +27,7 @@ const codeBytes = Buffer.from(code.slice(2), 'hex');
 const result = parseErc3448(codeBytes);
 
 if (result) {
-  console.log('Implementation:', Address.toHex(result.implementation));
+  console.log('Implementation:', result.implementation.toHex());
 
   // Decode metadata (example: JSON)
   const metadata = JSON.parse(

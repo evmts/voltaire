@@ -574,7 +574,7 @@ EIP712.validate(typedData); // Throws on invalid structure
 ### 2. Verify Recovered Address
 ```typescript
 const recovered = EIP712.recoverAddress(signature, typedData);
-if (!Address.equals(recovered, expectedSigner)) {
+if (!recovered.equals(expectedSigner)) {
   throw new Error('Invalid signer');
 }
 ```

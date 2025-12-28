@@ -239,7 +239,7 @@ for (const addr of addresses) {
   if (accountDiff?.balance) {
     const delta = accountDiff.balance.to - accountDiff.balance.from;
     if (delta > 1000000000000000000n) {  // > 1 ETH
-      console.log(`Large transfer to ${Address.toHex(addr)}: ${delta}`);
+      console.log(`Large transfer to ${addr.toHex()}: ${delta}`);
     }
   }
 }

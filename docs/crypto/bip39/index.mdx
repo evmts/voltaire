@@ -295,7 +295,7 @@ fetch('https://api.example.com', {
 // ✅ SAFE - Only transmit public data
 const seed = await Bip39.mnemonicToSeed(mnemonic);
 const hdKey = HDWallet.fromSeed(seed);
-const publicKey = HDWallet.getPublicKey(hdKey);
+const publicKey = hdKey.getPublicKey();
 ```
 
 **2. Validate user-provided mnemonics**
@@ -381,8 +381,8 @@ const eth0 = HDWallet.deriveEthereum(root, 0, 0); // m/44'/60'/0'/0/0
 const eth1 = HDWallet.deriveEthereum(root, 0, 1); // m/44'/60'/0'/0/1
 
 // 5. Get keys
-const privateKey0 = HDWallet.getPrivateKey(eth0);
-const publicKey0 = HDWallet.getPublicKey(eth0);
+const privateKey0 = eth0.getPrivateKey();
+const publicKey0 = eth0.getPublicKey();
 ```
 
 **Flow:**

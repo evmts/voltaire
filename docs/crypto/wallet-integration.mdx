@@ -74,17 +74,17 @@ import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
 const root = HDWallet.fromSeed(seed);
 
 // Master key properties
-const masterPrivateKey = HDWallet.getPrivateKey(root);
-const masterPublicKey = HDWallet.getPublicKey(root);
-const masterChainCode = HDWallet.getChainCode(root);
+const masterPrivateKey = root.getPrivateKey();
+const masterPublicKey = root.getPublicKey();
+const masterChainCode = root.getChainCode();
 
 console.log('Master private key:', masterPrivateKey); // Uint8Array(32)
 console.log('Master public key:', masterPublicKey);   // Uint8Array(33)
 console.log('Master chain code:', masterChainCode);   // Uint8Array(32)
 
 // Export master extended keys
-const xprv = HDWallet.toExtendedPrivateKey(root);
-const xpub = HDWallet.toExtendedPublicKey(root);
+const xprv = root.toExtendedPrivateKey();
+const xpub = root.toExtendedPublicKey();
 
 console.log('xprv:', xprv); // "xprv9s21ZrQH143K..."
 console.log('xpub:', xpub); // "xpub661MyMwAqRbcF..."
@@ -106,8 +106,8 @@ const eth2 = HDWallet.deriveEthereum(root, 0, 2); // m/44'/60'/0'/0/2
 const eth_account2 = HDWallet.deriveEthereum(root, 1, 0); // m/44'/60'/1'/0/0
 
 // Get private keys
-const privateKey0 = HDWallet.getPrivateKey(eth0);
-const privateKey1 = HDWallet.getPrivateKey(eth1);
+const privateKey0 = eth0.getPrivateKey();
+const privateKey1 = eth1.getPrivateKey();
 
 console.log('Private key 0:', privateKey0); // Uint8Array(32)
 console.log('Private key 1:', privateKey1); // Uint8Array(32)
@@ -122,7 +122,7 @@ import * as Address from '@tevm/voltaire/primitives/address';
 
 function deriveEthereumAddress(hdKey: ExtendedKey): string {
   // 1. Get private key
-  const privateKey = HDWallet.getPrivateKey(hdKey)!;
+  const privateKey = hdKey.getPrivateKey()!;
 
   // 2. Derive uncompressed public key (65 bytes)
   const publicKey = Secp256k1.derivePublicKey(privateKey, false); // false = uncompressed
@@ -139,7 +139,7 @@ function deriveEthereumAddress(hdKey: ExtendedKey): string {
   // 6. Convert to checksummed hex address
   const address = Address(addressBytes);
 
-  return Address.toHex(address);
+  return address.toHex();
 }
 
 // Derive addresses
@@ -181,8 +181,8 @@ async function createWallet(): Promise<{
   }
 
   // 5. Export extended keys
-  const xprv = HDWallet.toExtendedPrivateKey(root);
-  const xpub = HDWallet.toExtendedPublicKey(root);
+  const xprv = root.toExtendedPrivateKey();
+  const xpub = root.toExtendedPublicKey();
 
   return { mnemonic, addresses, xprv, xpub };
 }
@@ -254,7 +254,7 @@ class EthereumWallet {
   } {
     const key = HDWallet.deriveEthereum(this.root, accountIndex, addressIndex);
     const address = deriveEthereumAddress(key);
-    const privateKey = HDWallet.getPrivateKey(key)!;
+    const privateKey = key.getPrivateKey()!;
     const path = `m/44'/60'/${accountIndex}'/0/${addressIndex}`;
 
     return { address, privateKey, path };
@@ -276,7 +276,7 @@ class EthereumWallet {
       this.root,
       `m/44'/60'/${accountIndex}'`
     );
-    return HDWallet.toExtendedPrivateKey(accountKey);
+    return accountKey.toExtendedPrivateKey();
   }
 
   // Export account xpub (watch-only)
@@ -285,7 +285,7 @@ class EthereumWallet {
       this.root,
       `m/44'/60'/${accountIndex}'`
     );
-    return HDWallet.toExtendedPublicKey(accountKey);
+    return accountKey.toExtendedPublicKey();
   }
 }
 
@@ -329,7 +329,7 @@ class WatchOnlyWallet {
 
   // Cannot sign transactions
   canSign(): boolean {
-    return HDWallet.canDeriveHardened(this.accountKey);
+    return this.accountKey.canDeriveHardened();
   }
 }
 
@@ -500,7 +500,7 @@ class MetaMaskWallet {
 
   getPrivateKey(index: number): Uint8Array {
     const key = HDWallet.derivePath(this.root, `m/44'/60'/0'/0/${index}`);
-    return HDWallet.getPrivateKey(key)!;
+    return key.getPrivateKey()!;
   }
 }
 ```

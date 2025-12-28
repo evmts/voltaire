@@ -199,7 +199,7 @@ const hash = Keccak256.hash(publicKey);
 
 // 3. Take last 20 bytes as address
 const address = Address(hash.slice(12));
-console.log(Address.toHex(address)); // 0x...
+console.log(address.toHex()); // 0x...
 ```
 
 **Important:** Ethereum addresses use the **last 20 bytes** of the Keccak256 hash, not the first 20 bytes.

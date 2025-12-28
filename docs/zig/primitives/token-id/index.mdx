@@ -244,7 +244,7 @@ const data = encodeTransferFrom(from, to, tokenId);
 const tokenId = TokenId.from(42n);
 const owner = await getOwnerOf(tokenId);
 
-if (Address.equals(owner, userAddress)) {
+if (owner.equals(userAddress)) {
   console.log("User owns this NFT");
 }
 ```

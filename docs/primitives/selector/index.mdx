@@ -26,7 +26,7 @@ The most common way to create a selector is from a function signature:
 import * as Selector from '@tevm/primitives';
 
 const transferSelector = Selector.fromSignature('transfer(address,uint256)');
-console.log(Selector.toHex(transferSelector)); // '0xa9059cbb'
+console.log(transferSelector.toHex()); // '0xa9059cbb'
 ```
 
 ### From Hex String
@@ -47,7 +47,7 @@ const selector = Selector.from(bytes);
 ### Convert to Hex
 
 ```typescript
-const hex = Selector.toHex(selector);
+const hex = selector.toHex();
 // '0xa9059cbb'
 ```
 
@@ -56,7 +56,7 @@ const hex = Selector.toHex(selector);
 ```typescript
 const sel1 = Selector.fromSignature('transfer(address,uint256)');
 const sel2 = Selector.fromSignature('approve(address,uint256)');
-const equal = Selector.equals(sel1, sel2); // false
+const equal = sel1.equals(sel2); // false
 ```
 
 ## Common Selectors

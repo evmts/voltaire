@@ -140,8 +140,8 @@ const creationReceipt = Receipt.from({
 })
 
 if (creationReceipt.contractAddress) {
-  console.log('Contract deployed at:', 
-    Address.toHex(creationReceipt.contractAddress))
+  console.log('Contract deployed at:',
+    creationReceipt.contractAddress.toHex())
 }
 ```
 
@@ -151,8 +151,8 @@ if (creationReceipt.contractAddress) {
 import * as EventLog from '@tevm/primitives/EventLog'
 
 for (const log of receipt.logs) {
-  console.log('Event from:', Address.toHex(log.address))
-  console.log('Topics:', log.topics.map(Hash.toHex))
+  console.log('Event from:', log.address.toHex())
+  console.log('Topics:', log.topics.map(t => t.toHex()))
 }
 ```
 

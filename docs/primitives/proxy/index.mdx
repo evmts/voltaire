@@ -62,7 +62,7 @@ console.log('Runtime size:', 45); // 45 bytes after deployment
 const code = await eth_getCode(cloneAddress);
 const parsed = Proxy.parseErc1167(code);
 
-console.log('Implementation:', Address.toHex(parsed));
+console.log('Implementation:', parsed.toHex());
 ```
 
 </Tab>
@@ -89,7 +89,7 @@ const metaProxyBytecode = Proxy.generateErc3448(
 const code = await eth_getCode(metaProxyAddress);
 const result = Proxy.parseErc3448(code);
 
-console.log('Implementation:', Address.toHex(result.implementation));
+console.log('Implementation:', result.implementation.toHex());
 console.log('Metadata:', new TextDecoder().decode(result.metadata));
 ```
 
@@ -194,7 +194,7 @@ class CloneFactory {
     }
 
     const impl = Proxy.parseErc1167(bytecode);
-    return Address.equals(impl, this.implementation);
+    return impl.equals(this.implementation);
   }
 }
 ```
@@ -247,7 +247,7 @@ class MetaProxyFactory {
     );
 
     return {
-      implementation: Address.toHex(implementation),
+      implementation: implementation.toHex(),
       ...metadataObj
     };
   }

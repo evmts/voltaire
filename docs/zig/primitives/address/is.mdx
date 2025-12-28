@@ -57,15 +57,15 @@ function is(value: unknown): value is AddressType {
 
 // Before type guard
 function example1(value: unknown) {
-  const hex = Address.toHex(value) // Type error: unknown not assignable
+  const hex = value.toHex() // Type error: unknown not assignable
 }
 
 // After type guard
 function example2(value: unknown) {
   if (Address.is(value)) {
     // Type narrowed to AddressType
-    const hex = Address.toHex(value) // OK
-    const checksummed = Address.toChecksummed(value) // OK
+    const hex = value.toHex() // OK
+    const checksummed = value.toChecksummed() // OK
   }
 }
 ```
@@ -89,7 +89,7 @@ function handleUnknown(value: unknown) {
   if (Address.is(value)) {
     // Type: AddressType
     console.log(value.length) // 20
-    const hex = Address.toHex(value)
+    const hex = value.toHex()
   } else {
     // Type: unknown
     console.log("Not an address")
@@ -108,10 +108,10 @@ type AddressOrHash = AddressType | Hash
 function process(value: AddressOrHash) {
   if (Address.is(value)) {
     // Narrowed to AddressType
-    console.log("Address:", Address.toHex(value))
+    console.log("Address:", value.toHex())
   } else {
     // Narrowed to Hash
-    console.log("Hash:", Hash.toHex(value))
+    console.log("Hash:", value.toHex())
   }
 }
 ```
@@ -134,7 +134,7 @@ const addresses = mixed.filter(Address.is)
 // Type: AddressType[]
 
 addresses.forEach(addr => {
-  console.log(Address.toHex(addr)) // Type-safe
+  console.log(addr.toHex()) // Type-safe
 })
 ```
 
@@ -153,7 +153,7 @@ function transferTokens(to: unknown, amount: bigint) {
   }
 
   // Type-safe operations
-  if (Address.equals(to, Address.zero())) {
+  if (to.equals(Address.zero())) {
     throw new Error("Cannot transfer to zero address")
   }
 
@@ -199,7 +199,7 @@ function validateTransaction(tx: Transaction): boolean {
   }
 
   // Validate not zero addresses
-  if (Address.equals(tx.from, Address.zero())) {
+  if (tx.from.equals(Address.zero())) {
     return false
   }
 

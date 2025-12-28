@@ -123,7 +123,7 @@ function getTransactionSender(signedTx: SignedTransaction): string {
 
   // Derive sender address
   const addressHash = Keccak256.hash(publicKey);
-  return Address.toHex(addressHash.slice(12));
+  return Address(addressHash.slice(12)).toHex();
 }
 ```
 
@@ -172,7 +172,7 @@ function personalVerify(
   // Recover signer
   const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
   const addressHash = Keccak256.hash(publicKey);
-  const signerAddress = Address.toHex(addressHash.slice(12));
+  const signerAddress = Address(addressHash.slice(12)).toHex();
 
   // Compare addresses
   return signerAddress.toLowerCase() === expectedAddress.toLowerCase();
@@ -244,7 +244,7 @@ function verifyTypedData(
   // Recover signer
   const publicKey = Secp256k1.recoverPublicKey(signature, typedDataHash);
   const addressHash = Keccak256.hash(publicKey);
-  const signerAddress = Address.toHex(addressHash.slice(12));
+  const signerAddress = Address(addressHash.slice(12)).toHex();
 
   return signerAddress.toLowerCase() === expectedSigner.toLowerCase();
 }
@@ -299,7 +299,7 @@ const masterKey = HDWallet.fromSeed(seed);
 function deriveEthereumAccount(masterKey: ExtendedKey, index: number): string {
   const path = `m/44'/60'/0'/0/${index}`;
   const accountKey = HDWallet.derivePath(masterKey, path);
-  const privateKey = HDWallet.getPrivateKey(accountKey);
+  const privateKey = accountKey.getPrivateKey();
 
   return deriveAddress(privateKey);
 }
@@ -484,7 +484,7 @@ function createMockSignature(
   const publicKey = Secp256k1.derivePublicKey(privateKey);
   const signer = Address.fromPublicKey(publicKey);
 
-  return { signature, signer: Address.toHex(signer) };
+  return { signature, signer: signer.toHex() };
 }
 ```
 

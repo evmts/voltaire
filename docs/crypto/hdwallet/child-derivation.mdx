@@ -75,8 +75,8 @@ const h_notation = "m/0h/1h/2h";    // 'h' suffix
 const key1 = HDWallet.derivePath(root, apostrophe);
 const key2 = HDWallet.derivePath(root, h_notation);
 
-const priv1 = HDWallet.getPrivateKey(key1);
-const priv2 = HDWallet.getPrivateKey(key2);
+const priv1 = key1.getPrivateKey();
+const priv2 = key2.getPrivateKey();
 
 console.log(priv1.every((b, i) => b === priv2![i])); // true
 ```
@@ -87,12 +87,12 @@ console.log(priv1.every((b, i) => b === priv2![i])); // true
 
 ```typescript
 // ✅ Can derive hardened from private key
-const xprv = HDWallet.toExtendedPrivateKey(root);
+const xprv = root.toExtendedPrivateKey();
 const key = HDWallet.fromExtendedKey(xprv);
 const hardened = HDWallet.deriveChild(key, HARDENED + 0); // Works
 
 // ❌ Cannot derive hardened from public key
-const xpub = HDWallet.toExtendedPublicKey(root);
+const xpub = root.toExtendedPublicKey();
 const pubOnly = HDWallet.fromPublicExtendedKey(xpub);
 
 try {
@@ -119,7 +119,7 @@ try {
 
 // Example vulnerability (NON-hardened)
 const parent = HDWallet.derivePath(root, "m/44'/60'/0'");
-const parentXpub = HDWallet.toExtendedPublicKey(parent);
+const parentXpub = parent.toExtendedPublicKey();
 
 // Derive non-hardened children
 const child0 = HDWallet.derivePath(parent, "m/0/0");
@@ -156,7 +156,7 @@ Normal derivation allows deriving children from parent public key:
 
 ```typescript
 // From parent xpub
-const xpub = HDWallet.toExtendedPublicKey(root);
+const xpub = root.toExtendedPublicKey();
 const pubOnly = HDWallet.fromPublicExtendedKey(xpub);
 
 // ✅ Can derive normal children
@@ -164,11 +164,11 @@ const child0 = HDWallet.deriveChild(pubOnly, 0);
 const child1 = HDWallet.deriveChild(pubOnly, 1);
 
 // Get public keys (no private keys)
-const pubKey0 = HDWallet.getPublicKey(child0);
-const pubKey1 = HDWallet.getPublicKey(child1);
+const pubKey0 = child0.getPublicKey();
+const pubKey1 = child1.getPublicKey();
 
 console.log(pubKey0); // Uint8Array(33)
-console.log(HDWallet.getPrivateKey(child0)); // null
+console.log(child0.getPrivateKey()); // null
 ```
 
 ### Use Cases
@@ -238,8 +238,8 @@ const level5 = HDWallet.deriveChild(level4, 0); // m/44'/60'/0'/0/0
 const direct = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
 
 // Verify equivalence
-const seq = HDWallet.getPrivateKey(level5);
-const dir = HDWallet.getPrivateKey(direct);
+const seq = level5.getPrivateKey();
+const dir = direct.getPrivateKey();
 console.log(seq!.every((b, i) => b === dir![i])); // true
 ```
 
@@ -331,8 +331,8 @@ const child1 = HDWallet.deriveChild(key1, 0);
 const child2 = HDWallet.deriveChild(key2, 0);
 
 // Always produces same result
-const priv1 = HDWallet.getPrivateKey(child1);
-const priv2 = HDWallet.getPrivateKey(child2);
+const priv1 = child1.getPrivateKey();
+const priv2 = child2.getPrivateKey();
 
 console.log(priv1!.every((b, i) => b === priv2![i])); // true
 ```
@@ -375,7 +375,7 @@ async function testWalletRecovery() {
  * - Essential for deterministic derivation
  */
 
-const chainCode = HDWallet.getChainCode(root);
+const chainCode = root.getChainCode();
 console.log(chainCode); // Uint8Array(32)
 
 // Child derivation uses parent's chain code
@@ -397,7 +397,7 @@ console.log(chainCode); // Uint8Array(32)
  */
 
 // xpub includes chain code
-const xpub = HDWallet.toExtendedPublicKey(root);
+const xpub = root.toExtendedPublicKey();
 // Contains: public_key + chain_code + metadata
 
 // Safe to share xpub (designed for this)
@@ -506,7 +506,7 @@ try {
 ### Hardened from Public Key
 
 ```typescript
-const xpub = HDWallet.toExtendedPublicKey(root);
+const xpub = root.toExtendedPublicKey();
 const pubOnly = HDWallet.fromPublicExtendedKey(xpub);
 
 try {
@@ -570,7 +570,7 @@ for (let i = 0; i < 1000; i++) {
 
 ```typescript
 function safeDeriveChild(parent: ExtendedKey, index: number): ExtendedKey {
-  if (!HDWallet.canDeriveHardened(parent) && index >= HARDENED) {
+  if (!parent.canDeriveHardened() && index >= HARDENED) {
     throw new Error('Cannot derive hardened from public key');
   }
 

@@ -89,7 +89,7 @@ import * as Hash from '@tevm/voltaire/primitives/Hash'
 
 const data = new Uint8Array([1, 2, 3, 4])
 const hash = Hash.keccak256(data)
-const hex = Hash.toHex(hash)
+const hex = hash.toHex()
 const isValid = Hash.isHash(hash)
 
 // New approach

@@ -98,7 +98,7 @@ function visualizeCallFlow(result: TraceResultType): string {
   function formatCall(call: CallTraceType, depth: number): string[] {
     const indent = "  ".repeat(depth);
     const status = CallTrace.hasError(call) ? "❌" : "✅";
-    const to = call.to ? Address.toHex(call.to).slice(0, 10) : "CREATE";
+    const to = call.to ? call.to.toHex().slice(0, 10) : "CREATE";
 
     const lines = [
       `${indent}${status} ${call.type} ${to} (${call.gasUsed} gas)`
@@ -143,7 +143,7 @@ const result = await rpc.debug_traceTransaction(txHash, config);
 // Result contains callTrace
 const trace = TraceResult.getCallTrace(result);
 if (trace) {
-  console.log(`${trace.type} from ${Address.toHex(trace.from)}`);
+  console.log(`${trace.type} from ${trace.from.toHex()}`);
 }
 ```
 
@@ -204,7 +204,7 @@ function detectReentrancy(result: TraceResultType): boolean {
   function check(call: CallTraceType): boolean {
     if (!call.to) return false;
 
-    const addr = Address.toHex(call.to);
+    const addr = call.to.toHex();
     if (visited.has(addr)) return true;
 
     visited.add(addr);

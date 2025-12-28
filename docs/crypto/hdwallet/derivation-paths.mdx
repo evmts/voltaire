@@ -201,7 +201,7 @@ const normalPath = "m/44'/60'/0'/0/0"; // Last two (0, 0) are normal
 
 ```typescript
 // xpub can derive normal children only
-const xpub = HDWallet.toExtendedPublicKey(root);
+const xpub = root.toExtendedPublicKey();
 const pubOnly = HDWallet.fromPublicExtendedKey(xpub);
 
 // ✅ Can derive normal children
@@ -261,7 +261,7 @@ const paths = {
 // Derive all from same seed
 for (const [coin, path] of Object.entries(paths)) {
   const key = HDWallet.derivePath(root, path);
-  console.log(`${coin}:`, HDWallet.getPublicKey(key));
+  console.log(`${coin}:`, key.getPublicKey());
 }
 ```
 

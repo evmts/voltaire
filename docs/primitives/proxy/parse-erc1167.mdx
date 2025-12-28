@@ -27,7 +27,7 @@ const codeBytes = Buffer.from(code.slice(2), 'hex');
 const implementation = parseErc1167(codeBytes);
 
 if (implementation) {
-  console.log('Implementation:', Address.toHex(implementation));
+  console.log('Implementation:', implementation.toHex());
 } else {
   console.log('Not a valid ERC-1167 proxy');
 }

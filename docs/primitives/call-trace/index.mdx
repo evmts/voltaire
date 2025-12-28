@@ -151,7 +151,7 @@ const calls = CallTrace.getCalls(trace);
 console.log(`${calls.length} direct subcalls`);
 
 for (const call of calls) {
-  console.log(`${call.type} to ${Address.toHex(call.to)} - ${call.gasUsed} gas`);
+  console.log(`${call.type} to ${call.to.toHex()} - ${call.gasUsed} gas`);
 }
 ```
 
@@ -168,7 +168,7 @@ console.log(`${allCalls.length} total calls`);
 // Find all failed calls
 const failures = allCalls.filter(CallTrace.hasError);
 for (const fail of failures) {
-  console.log(`Failed: ${fail.error} at ${Address.toHex(fail.to)}`);
+  console.log(`Failed: ${fail.error} at ${fail.to.toHex()}`);
 }
 ```
 
@@ -227,7 +227,7 @@ function analyzeGas(trace: CallTraceType): {
   const byContract = new Map<string, bigint>();
   for (const call of allCalls) {
     if (call.to) {
-      const addr = Address.toHex(call.to);
+      const addr = call.to.toHex();
       const current = byContract.get(addr) ?? 0n;
       byContract.set(addr, current + call.gasUsed);
     }
@@ -246,7 +246,7 @@ function countCallsByContract(trace: CallTraceType): Map<string, number> {
 
   for (const call of allCalls) {
     if (call.to) {
-      const addr = Address.toHex(call.to);
+      const addr = call.to.toHex();
       counts.set(addr, (counts.get(addr) ?? 0) + 1);
     }
   }

@@ -105,7 +105,7 @@ try {
   if (err.data?.startsWith('0x91a3a3b5')) { // WrappedError selector
     const wrapped = decodeWrappedError(Buffer.from(err.data.slice(2), 'hex'));
 
-    console.log('Failed call to:', Address.toHex(wrapped.target));
+    console.log('Failed call to:', wrapped.target.toHex());
     console.log('Function:', '0x' + Buffer.from(wrapped.selector).toString('hex'));
     console.log('Original reason:', wrapped.reason);
     console.log('Details:', new TextDecoder().decode(wrapped.details));
@@ -161,7 +161,7 @@ function traceWrappedError(errorData: string, depth = 0) {
 
   const wrapped = decodeWrappedError(Buffer.from(errorData.slice(2), 'hex'));
 
-  console.log('  '.repeat(depth) + 'Call to:', Address.toHex(wrapped.target));
+  console.log('  '.repeat(depth) + 'Call to:', wrapped.target.toHex());
   console.log('  '.repeat(depth) + 'Function:', '0x' + Buffer.from(wrapped.selector).toString('hex'));
   console.log('  '.repeat(depth) + 'Details:', new TextDecoder().decode(wrapped.details));
 

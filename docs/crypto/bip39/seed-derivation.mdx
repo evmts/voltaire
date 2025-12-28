@@ -465,7 +465,7 @@ const root = HDWallet.fromSeed(seed);
 
 // 4. Derive accounts
 const eth0 = HDWallet.deriveEthereum(root, 0, 0);
-const privateKey = HDWallet.getPrivateKey(eth0);
+const privateKey = eth0.getPrivateKey();
 
 console.log(privateKey); // Uint8Array(32)
 ```

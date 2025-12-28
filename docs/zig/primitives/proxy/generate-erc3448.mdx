@@ -83,7 +83,7 @@ class MetaProxyFactory {
 
     return {
       bytecode,
-      address: Address.toHex(proxyAddress),
+      address: proxyAddress.toHex(),
       metadata: config
     };
   }

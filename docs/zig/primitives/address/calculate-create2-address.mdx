@@ -36,7 +36,7 @@ const salt = Bytes32() // 32-byte salt
 const initCode = Bytecode([0x60, 0x80]) // Contract bytecode
 
 const contractAddr = calculateCreate2Address(deployer, salt, initCode)
-console.log(Address.toHex(contractAddr))
+console.log(contractAddr.toHex())
 ```
 
 Tree-shakeable - only bundles keccak256 hash function
