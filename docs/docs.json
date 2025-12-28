@@ -2162,7 +2162,13 @@
               "primitives/transaction-status/index",
               "primitives/log-index/index",
               "primitives/block-hash/index",
-              "primitives/block-number/index"
+              "primitives/block-number/index",
+              {
+                "group": "Integrations",
+                "pages": [
+                  "integrations/tanstack-query"
+                ]
+              }
             ]
           },
           {
