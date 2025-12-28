@@ -1,4 +1,4 @@
-import * as Chain from "voltaire/primitives/Chain";
+import { Chain } from "voltaire";
 import type { Hardfork } from "voltaire/primitives/Chain";
 
 // Example: Hardfork detection and EIP support

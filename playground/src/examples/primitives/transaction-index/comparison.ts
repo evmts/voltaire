@@ -1,4 +1,4 @@
-import * as TransactionIndex from "../../../primitives/TransactionIndex/index.js";
+import { TransactionIndex } from "voltaire";
 const idx1 = TransactionIndex.from(42);
 const idx2 = TransactionIndex.from(42);
 const idx3 = TransactionIndex.from(43);

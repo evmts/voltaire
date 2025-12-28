@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Generate random hex values
 const random4 = Hex.random(4);
 

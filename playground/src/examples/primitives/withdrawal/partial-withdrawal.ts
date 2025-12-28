@@ -1,5 +1,4 @@
-import * as Withdrawal from "../../../primitives/Withdrawal/index.js";
-
+import { Withdrawal } from "voltaire";
 // Small rewards withdrawal (typical weekly amount)
 const weeklyRewards = Withdrawal.from({
 	index: 8000000n,

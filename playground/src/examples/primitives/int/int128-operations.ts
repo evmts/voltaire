@@ -1,4 +1,4 @@
-import * as Int128 from "../../../primitives/Int128/index.js";
+import { Int128 } from "voltaire";
 const large_pos = Int128.fromBigInt(123456789012345678901234567890n);
 const large_neg = Int128.fromBigInt(-123456789012345678901234567890n);
 const medium = Int128.fromBigInt(1000000000000000000n);

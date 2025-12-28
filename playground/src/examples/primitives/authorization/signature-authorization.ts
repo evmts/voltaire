@@ -1,5 +1,4 @@
-import * as Address from "voltaire/primitives/Address";
-import * as Authorization from "voltaire/primitives/Authorization";
+import { Address, Authorization } from "voltaire";
 
 // Delegate contract address
 const delegate = Address.from("0x5aAeD5932B9EB3Cd462dDBAeFA21Da757F30FBD");

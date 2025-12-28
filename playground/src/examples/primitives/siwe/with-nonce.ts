@@ -1,5 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Siwe from "../../../primitives/Siwe/index.js";
+import { Address, Siwe } from "voltaire";
 for (let i = 0; i < 5; i++) {
 	const nonce = Siwe.generateNonce();
 }

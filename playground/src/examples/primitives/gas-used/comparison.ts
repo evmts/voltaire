@@ -1,5 +1,4 @@
-import * as GasUsed from "../../../primitives/GasUsed/index.js";
-
+import { GasUsed } from "voltaire";
 // Real-world transaction gas usage data
 const transactions = [
 	{ name: "Alice: ETH Transfer", gasUsed: 21000n },

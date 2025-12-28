@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Pad hex to specified size (left padding with zeros)
 const hex = Hex.from("0x1234");
 

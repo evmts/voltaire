@@ -1,4 +1,4 @@
-import * as Nonce from "../../../primitives/Nonce/index.js";
+import { Nonce } from "voltaire";
 
 // Account starts with nonce 0
 let accountNonce = Nonce.from(0);

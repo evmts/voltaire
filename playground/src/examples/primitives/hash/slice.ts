@@ -1,5 +1,4 @@
-import * as Hash from "../../../primitives/Hash/index.js";
-
+import { Hash } from "voltaire";
 // Example: Slicing hashes to extract portions
 
 const hash = Hash.fromHex(

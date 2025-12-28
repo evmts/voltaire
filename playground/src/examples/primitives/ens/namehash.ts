@@ -1,5 +1,4 @@
-import * as Ens from "../../../primitives/Ens/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { Ens, Hex } from "voltaire";
 const rootHash = Ens.namehash("");
 const singleLabels = ["eth", "com", "xyz"];
 

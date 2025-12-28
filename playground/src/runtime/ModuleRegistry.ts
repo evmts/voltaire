@@ -1,25 +1,16 @@
 /**
  * Dynamic module registry using Vite's import.meta.glob
- * Auto-discovers all voltaire modules at build time
+ * Registers "voltaire" and "voltaire/wasm" as main entry points
  */
 
-// Use import.meta.glob to discover modules at build time
-// These are eagerly loaded so they're available synchronously at runtime
-const primitiveModules = import.meta.glob("../../../src/primitives/*/index.{ts,js}", {
+// Root voltaire entry (primitives + crypto)
+const rootEntry = import.meta.glob("../../../src/index.{ts,js}", {
 	eager: true,
 });
-const cryptoModules = import.meta.glob("../../../src/crypto/*/index.{ts,js}", {
+
+// WASM aggregate entry
+const wasmEntry = import.meta.glob("../../../src/wasm/index.{ts,js}", {
 	eager: true,
-});
-const evmModules = import.meta.glob("../../../src/evm/*/index.{ts,js}", {
-	eager: true,
-});
-// WASM aggregate entry + loader
-const wasmAggregate = import.meta.glob("../../../src/wasm/index.{ts,js}", {
-  eager: true,
-});
-const wasmLoader = import.meta.glob("../../../src/wasm-loader/loader.{ts,js}", {
-  eager: true,
 });
 
 export interface ModuleEntry {
@@ -29,75 +20,24 @@ export interface ModuleEntry {
 }
 
 /**
- * Extract module name from glob path
- * e.g., "../../src/primitives/Address/index.ts" -> "Address"
- * e.g., "../../src/crypto/Secp256k1/index.js" -> "Secp256k1"
- */
-function extractModuleName(path: string): string | null {
-	const match = path.match(/\/([^/]+)\/index\.(ts|js)$/);
-	return match ? match[1] : null;
-}
-
-/**
  * Build the module registry from glob results
  */
 function buildRegistry(): Map<string, ModuleEntry> {
 	const registry = new Map<string, ModuleEntry>();
 
-	// Register primitives
-	for (const [path, mod] of Object.entries(primitiveModules)) {
-		const name = extractModuleName(path);
-		if (name) {
-			const specifier = `voltaire/primitives/${name}`;
-			registry.set(specifier, {
-				specifier,
-				module: mod,
-				exports: Object.keys(mod as object),
-			});
-		}
-	}
-
-	// Register crypto
-	for (const [path, mod] of Object.entries(cryptoModules)) {
-		const name = extractModuleName(path);
-		if (name) {
-			const specifier = `voltaire/crypto/${name}`;
-			registry.set(specifier, {
-				specifier,
-				module: mod,
-				exports: Object.keys(mod as object),
-			});
-		}
-	}
-
-	// Register evm
-	for (const [path, mod] of Object.entries(evmModules)) {
-		const name = extractModuleName(path);
-		if (name) {
-			const specifier = `voltaire/evm/${name}`;
-			registry.set(specifier, {
-				specifier,
-				module: mod,
-				exports: Object.keys(mod as object),
-			});
-		}
-	}
-
-	// Register wasm aggregate API under a stable specifier
-	for (const [, mod] of Object.entries(wasmAggregate)) {
-		const specifier = "voltaire/wasm";
-		registry.set(specifier, {
-			specifier,
+	// Register root "voltaire" entry
+	for (const [, mod] of Object.entries(rootEntry)) {
+		registry.set("voltaire", {
+			specifier: "voltaire",
 			module: mod,
 			exports: Object.keys(mod as object),
 		});
 	}
 
-	// Register wasm-loader so examples can initialize WASM
-	for (const [, mod] of Object.entries(wasmLoader)) {
-		const specifier = "voltaire/wasm-loader/loader";
-		registry.set(specifier, {
-			specifier,
+	// Register "voltaire/wasm" entry
+	for (const [, mod] of Object.entries(wasmEntry)) {
+		registry.set("voltaire/wasm", {
+			specifier: "voltaire/wasm",
 			module: mod,
 			exports: Object.keys(mod as object),
 		});
@@ -113,7 +53,7 @@ export const moduleRegistry = buildRegistry();
 if (moduleRegistry.size === 0) {
 	console.warn("[ModuleRegistry] No voltaire modules discovered. Check glob paths.");
 } else {
-	console.log(`[ModuleRegistry] Discovered ${moduleRegistry.size} voltaire modules`);
+	console.log(`[ModuleRegistry] Discovered ${moduleRegistry.size} voltaire modules:`, Array.from(moduleRegistry.keys()));
 }
 
 /**
@@ -149,9 +89,7 @@ export function getModuleEntry(specifier: string): ModuleEntry | undefined {
  */
 export function findSimilarModules(partial: string): string[] {
 	const lower = partial.toLowerCase();
-	const lastPart = lower.split("/").pop() || "";
-
 	return getAllSpecifiers()
-		.filter((spec) => spec.toLowerCase().includes(lastPart))
+		.filter((spec) => spec.toLowerCase().includes(lower))
 		.slice(0, 5);
 }

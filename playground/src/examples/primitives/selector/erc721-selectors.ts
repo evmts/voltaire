@@ -1,5 +1,4 @@
-import * as Selector from "../../../primitives/Selector/index.js";
-
+import { Selector } from "voltaire";
 const safeTransferFrom = Selector.fromSignature(
 	"safeTransferFrom(address,address,uint256)",
 );

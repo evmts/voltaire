@@ -1,4 +1,4 @@
-import * as GasEstimate from "../../../primitives/GasEstimate/index.js";
+import { GasEstimate } from "voltaire";
 const base = GasEstimate.from(100000n);
 
 const buffers = [0, 5, 10, 15, 20, 25, 30, 40, 50];

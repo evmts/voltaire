@@ -1,5 +1,4 @@
-import * as Slot from "../../../primitives/Slot/index.js";
-
+import { Slot } from "voltaire";
 // Example: Epoch calculations
 // Ethereum PoS uses epochs (32 slots each) for validator duties and finality
 

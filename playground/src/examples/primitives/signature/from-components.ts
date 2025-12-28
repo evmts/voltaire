@@ -1,5 +1,5 @@
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Signature from "../../../primitives/Signature/index.js";
+import { Signature } from "voltaire";
+import { Hash } from "voltaire";
 
 // Real signature from Ethereum mainnet
 // Transaction: 0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060

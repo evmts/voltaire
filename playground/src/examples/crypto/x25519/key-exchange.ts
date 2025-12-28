@@ -1,6 +1,6 @@
+import { Hex, X25519 } from "voltaire";
 // Complete key exchange protocol
-import * as X25519 from "../../../crypto/X25519/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+
 const aliceKeypair = X25519.generateKeypair();
 const bobKeypair = X25519.generateKeypair();
 const aliceShared = X25519.scalarmult(

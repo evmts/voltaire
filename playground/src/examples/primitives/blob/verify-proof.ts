@@ -1,5 +1,4 @@
-import * as Blob from "../../../primitives/Blob/index.js";
-
+import { Blob } from "voltaire";
 try {
 	const data = new TextEncoder().encode("Data to verify with KZG proof");
 	const blob = Blob.fromData(data);

@@ -1,5 +1,4 @@
-import * as BeaconBlockRoot from "../../../primitives/BeaconBlockRoot/index.js";
-
+import { BeaconBlockRoot } from "voltaire";
 // Example: Using beacon roots to access consensus layer data
 
 // Beacon root from a finalized block

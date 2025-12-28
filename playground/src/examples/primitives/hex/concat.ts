@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Concatenate multiple hex strings
 const part1 = Hex.from("0x1234");
 const part2 = Hex.from("0x5678");

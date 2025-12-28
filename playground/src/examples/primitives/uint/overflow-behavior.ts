@@ -1,7 +1,4 @@
-import * as Uint8 from "../../../primitives/Uint8/index.js";
-import * as Uint16 from "../../../primitives/Uint16/index.js";
-import * as Uint32 from "../../../primitives/Uint32/index.js";
-import * as Uint64 from "../../../primitives/Uint64/index.js";
+import { Uint16, Uint32, Uint64, Uint8 } from "voltaire";
 const u8Max = Uint8.MAX;
 try {
 	const overflow = Uint8.plus(u8Max, Uint8.fromNumber(1));

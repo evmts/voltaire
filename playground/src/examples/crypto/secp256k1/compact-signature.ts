@@ -1,7 +1,5 @@
+import { Hash, Hex, Secp256k1 } from "voltaire";
 // Compact signature format (65 bytes)
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Create and sign message
 const messageHash = Hash.keccak256String("Compact signature test");

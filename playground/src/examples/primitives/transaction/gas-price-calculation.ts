@@ -1,6 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
+import { Address, Transaction } from "voltaire";
 // Transaction Gas Price: Calculate effective gas prices
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Legacy transaction - fixed gas price
 const legacy: Transaction.Legacy = {

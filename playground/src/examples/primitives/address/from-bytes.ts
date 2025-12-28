@@ -1,5 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-
+import { Address } from "voltaire";
 // Example: Create address from byte array
 const bytes = new Uint8Array([
 	0x74, 0x2d, 0x35, 0xcc, 0x66, 0x34, 0xc0, 0x53, 0x29, 0x25, 0xa3, 0xb8, 0x44,

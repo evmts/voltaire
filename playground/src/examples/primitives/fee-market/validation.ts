@@ -1,5 +1,4 @@
-import * as FeeMarket from "../../../primitives/FeeMarket/index.js";
-
+import { FeeMarket } from "voltaire";
 // Valid state
 const validState: FeeMarket.State = {
 	gasUsed: 15_000_000n,

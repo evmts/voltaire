@@ -1,6 +1,4 @@
-import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { BlockHeader, Hex } from "voltaire";
 // Pre-merge block example (difficulty > 0)
 const powBlock = BlockHeader.from({
 	parentHash:

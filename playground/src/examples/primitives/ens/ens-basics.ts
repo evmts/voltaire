@@ -1,6 +1,4 @@
-import * as Ens from "../../../primitives/Ens/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Ens, Hex } from "voltaire";
 const name1 = Ens.from("vitalik.eth");
 const name2 = Ens.from("nick.eth");
 const name3 = Ens.from("sub.domain.eth");

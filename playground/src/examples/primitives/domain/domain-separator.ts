@@ -1,6 +1,5 @@
-import { hash as keccak256 } from "../../../../../src/crypto/Keccak256/index.js";
-import * as Domain from "../../../../../src/primitives/Domain/index.js";
-import * as Hex from "../../../../../src/primitives/Hex/index.js";
+import { hash as keccak256 } from "voltaire";
+import { Domain, Hex } from "voltaire";
 
 // Example: Computing and using EIP-712 domain separators
 

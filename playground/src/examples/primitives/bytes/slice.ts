@@ -1,5 +1,4 @@
-import * as Bytes from "../../../primitives/Bytes/index.js";
-
+import { Bytes } from "voltaire";
 // Slice byte arrays
 const data = Bytes.fromHex("0x0123456789abcdef");
 

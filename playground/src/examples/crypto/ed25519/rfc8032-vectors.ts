@@ -1,6 +1,5 @@
+import { Ed25519, Hex } from "voltaire";
 // RFC 8032 test vectors for Ed25519
-import * as Ed25519 from "../../../crypto/Ed25519/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Test vector 1: Empty message
 const secretKey1 = new Uint8Array([

@@ -9,7 +9,7 @@ const addr = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 // From various formats
 const fromHex = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const fromBytes = Address.fromBytes(new Uint8Array(20));
-const fromNumber = Address.fromNumber(0x742d35n);
+const fromNumber = Address.fromNumber(BigInt("0x742d35"));
 const fromBase64 = Address.fromBase64("dC01zGY0wFMpJaO4RLxFTkQ49E4=");
 const zero = Address.zero();
 

@@ -1,5 +1,4 @@
-import * as Opcode from "../../../primitives/Opcode/index.js";
-
+import { Opcode } from "voltaire";
 // PUSH0 (0x5f) - Push 0 onto stack
 const push0Info = Opcode.info(Opcode.PUSH0);
 

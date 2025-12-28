@@ -1,8 +1,4 @@
-import * as Block from "../../../primitives/Block/index.js";
-import * as BlockBody from "../../../primitives/BlockBody/index.js";
-import * as BlockHash from "../../../primitives/BlockHash/index.js";
-import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
-
+import { Block, BlockBody, BlockHash, BlockHeader } from "voltaire";
 // Genesis block header (block 0)
 const genesisHeader = BlockHeader.from({
 	// No parent block

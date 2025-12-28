@@ -1,6 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
+import { Address, Transaction } from "voltaire";
 // Transaction Validation: Validate transaction fields
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create transaction to validate
 const tx: Transaction.EIP1559 = {

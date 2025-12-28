@@ -1,6 +1,4 @@
-import * as Blake2 from "../../../crypto/Blake2/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Blake2, Hex } from "voltaire";
 // Blake2b is optimized for speed - ideal for checksums
 
 // Fast 16-byte checksum for data deduplication

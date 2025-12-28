@@ -1,4 +1,4 @@
-import * as ABI from "../../../primitives/ABI/index.js";
+import { ABI } from "voltaire";
 
 // Example: Create ABI instance with multiple functions
 const abi = ABI.Abi([

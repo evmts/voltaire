@@ -1,6 +1,4 @@
-import * as BeaconBlockRoot from "../../../primitives/BeaconBlockRoot/index.js";
-import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
-
+import { BeaconBlockRoot, BlockHeader } from "voltaire";
 // Example: Extracting beacon block root from block headers
 
 // Pre-Cancun block (no beacon root)

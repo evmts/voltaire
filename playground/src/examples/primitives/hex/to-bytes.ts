@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Convert hex string to Uint8Array
 const hex = "0x123456789abcdef0";
 const bytes = hex.toBytes();

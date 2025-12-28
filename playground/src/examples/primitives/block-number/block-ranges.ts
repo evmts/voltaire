@@ -1,5 +1,4 @@
-import * as BlockNumber from "../../../primitives/BlockNumber/index.js";
-
+import { BlockNumber } from "voltaire";
 // Define a range (e.g., for getLogs queries)
 const startBlock = BlockNumber.from(20000000);
 const endBlock = BlockNumber.from(20001000);

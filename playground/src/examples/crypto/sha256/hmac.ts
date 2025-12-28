@@ -1,6 +1,4 @@
-import * as SHA256 from "../../../crypto/SHA256/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex, SHA256 } from "voltaire";
 // HMAC-SHA256: Hash-based Message Authentication Code
 // Provides message integrity and authentication using a secret key
 

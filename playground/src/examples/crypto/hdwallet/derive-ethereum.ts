@@ -1,7 +1,5 @@
+import { Bip39, HDWallet, Hex } from "voltaire";
 // HD Wallet: Derive Ethereum accounts using BIP-44
-import * as Bip39 from "../../../crypto/Bip39/Bip39.js";
-import * as HDWallet from "../../../crypto/HDWallet/HDWallet.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Generate master key
 const mnemonic =

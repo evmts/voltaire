@@ -1,5 +1,4 @@
-import * as Hardfork from "../../../primitives/Hardfork/index.js";
-
+import { Hardfork } from "voltaire";
 interface ForkBlock {
 	name: string;
 	block: number | string;

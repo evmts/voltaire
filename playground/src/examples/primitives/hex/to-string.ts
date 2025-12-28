@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Decode hex to UTF-8 string
 const hex = "0x48656c6c6f2c20457468657265756d21";
 const decoded = Hex.toString(hex);

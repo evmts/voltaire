@@ -1,4 +1,4 @@
-import * as BaseFeePerGas from "../../../primitives/BaseFeePerGas/index.js";
+import { BaseFeePerGas } from "voltaire";
 
 // Example: BaseFeePerGas basics - EIP-1559 base fee mechanism
 

@@ -1,6 +1,5 @@
+import { Hash, Secp256k1 } from "voltaire";
 // Validate signatures
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
 
 // Valid signature
 const messageHash = Hash.keccak256String("Test message");

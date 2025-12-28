@@ -1,5 +1,4 @@
-import * as AccessList from "voltaire/primitives/AccessList";
-import * as Address from "voltaire/primitives/Address";
+import { AccessList, Address } from "voltaire";
 
 // Create empty list
 const empty = AccessList.create();

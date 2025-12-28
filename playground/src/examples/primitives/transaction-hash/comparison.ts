@@ -1,5 +1,4 @@
-import * as TransactionHash from "../../../primitives/TransactionHash/index.js";
-
+import { TransactionHash } from "voltaire";
 // Create test hashes
 const hash1 = TransactionHash.from(
 	"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",

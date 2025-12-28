@@ -1,4 +1,4 @@
-import * as Gas from "../../../primitives/Gas/index.js";
+import { Gas } from "voltaire";
 // Minimal contract (e.g., simple storage)
 const simpleContract = Gas.gasLimitFrom(200000);
 // Standard ERC20 deployment

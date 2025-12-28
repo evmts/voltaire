@@ -1,4 +1,4 @@
-import * as Gas from "../../../primitives/Gas/index.js";
+import { Gas } from "voltaire";
 // Create from wei
 const priceWei = Gas.gasPriceFrom(20000000000n); // 20 gwei in wei
 

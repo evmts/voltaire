@@ -1,4 +1,4 @@
-import * as GasEstimate from "../../../primitives/GasEstimate/index.js";
+import { GasEstimate } from "voltaire";
 const estimate = GasEstimate.from(51234n);
 
 const gasLimit = GasEstimate.toGasLimit(estimate);

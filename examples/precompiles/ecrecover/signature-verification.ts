@@ -86,7 +86,7 @@ const secp256k1_n =
 const secp256k1_n_half = secp256k1_n / 2n;
 
 // Check s value
-const s_value = Buffer.from(validSig.s).reduce(
+const s_value = validSig.s.reduce(
 	(acc, byte, i) => acc + (BigInt(byte) << BigInt(8 * (31 - i))),
 	0n,
 );

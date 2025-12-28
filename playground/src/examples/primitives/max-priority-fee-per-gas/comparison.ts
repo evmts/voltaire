@@ -1,4 +1,4 @@
-import * as MaxPriorityFeePerGas from "../../../primitives/MaxPriorityFeePerGas/index.js";
+import { MaxPriorityFeePerGas } from "voltaire";
 
 // Example: Comparing MaxPriorityFeePerGas values
 

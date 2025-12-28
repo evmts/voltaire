@@ -1,7 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { Address, Hex, Transaction } from "voltaire";
 // EIP-1559 Transaction: Dynamic fee market with priority fees
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create EIP-1559 transaction (most common type post-London fork)
 const eip1559: Transaction.EIP1559 = {

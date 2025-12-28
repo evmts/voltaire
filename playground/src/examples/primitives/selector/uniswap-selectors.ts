@@ -1,5 +1,4 @@
-import * as Selector from "../../../primitives/Selector/index.js";
-
+import { Selector } from "voltaire";
 const swapExactTokensForTokens = Selector.fromSignature(
 	"swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
 );

@@ -1,5 +1,4 @@
-import * as Address from "voltaire/primitives/Address";
-import * as Authorization from "voltaire/primitives/Authorization";
+import { Address, Authorization } from "voltaire";
 
 const delegate = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const privateKey = new Uint8Array(32).fill(1);

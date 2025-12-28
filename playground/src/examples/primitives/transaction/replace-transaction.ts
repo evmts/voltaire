@@ -1,6 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
+import { Address, Transaction } from "voltaire";
 // Transaction Replacement: Bump fees to replace pending transaction
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Original pending transaction
 const pendingTx: Transaction.EIP1559 = {

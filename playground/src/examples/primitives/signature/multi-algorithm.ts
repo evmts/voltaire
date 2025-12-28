@@ -1,5 +1,5 @@
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Signature from "../../../primitives/Signature/index.js";
+import { Signature } from "voltaire";
+import { Hash } from "voltaire";
 
 // 1. secp256k1 (Ethereum/Bitcoin)
 const secp256k1R = Hash.from(

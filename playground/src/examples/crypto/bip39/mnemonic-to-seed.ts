@@ -1,6 +1,5 @@
+import { Bip39, Hex } from "voltaire";
 // Convert BIP-39 mnemonic to seed using PBKDF2
-import * as Bip39 from "../../../crypto/BIP39/Bip39.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Test vector from BIP-39 spec
 const mnemonic =

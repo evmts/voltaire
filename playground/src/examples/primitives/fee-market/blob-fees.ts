@@ -1,5 +1,4 @@
-import * as FeeMarket from "../../../primitives/FeeMarket/index.js";
-
+import { FeeMarket } from "voltaire";
 const excessLevels = [
 	{ name: "No excess (min fee)", excess: 0n },
 	{

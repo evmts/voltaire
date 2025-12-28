@@ -1,5 +1,4 @@
-import * as Hash from "../../../primitives/Hash/index.js";
-
+import { Hash } from "voltaire";
 // Example: Generating random hashes
 
 // Generate random hashes

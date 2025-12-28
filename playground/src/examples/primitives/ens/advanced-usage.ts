@@ -1,9 +1,6 @@
-import * as Ens from "../../../primitives/Ens/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
-import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
+import { hash as keccak256, Labelhash, Namehash } from "voltaire";
 // Factory API (explicit dependency injection)
-import { Labelhash, Namehash } from "../../../primitives/Ens/index.js";
 
 const namehash = Namehash({ keccak256 });
 const labelhash = Labelhash({ keccak256 });

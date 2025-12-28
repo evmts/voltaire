@@ -1,5 +1,4 @@
-import * as Bytes from "../../../primitives/Bytes/index.js";
-
+import { Bytes } from "voltaire";
 // Convert UTF-8 string to bytes
 const hello = Bytes.fromString("Hello, Ethereum!");
 

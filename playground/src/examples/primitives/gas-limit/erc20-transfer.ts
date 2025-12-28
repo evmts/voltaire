@@ -1,5 +1,4 @@
-import * as Gas from "../../../primitives/Gas/index.js";
-
+import { Gas } from "voltaire";
 // Standard ERC20 transfer typically costs ~65000 gas
 const erc20TransferGas = Gas.gasLimitFrom(65000);
 const ethGas = 21000;

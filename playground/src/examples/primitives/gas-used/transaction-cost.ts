@@ -1,5 +1,4 @@
-import * as GasUsed from "../../../primitives/GasUsed/index.js";
-
+import { GasUsed } from "voltaire";
 const gasUsed = GasUsed.from(51234n);
 
 // Different gas price scenarios

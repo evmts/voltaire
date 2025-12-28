@@ -1,4 +1,4 @@
-import * as MaxPriorityFeePerGas from "../../../primitives/MaxPriorityFeePerGas/index.js";
+import { MaxPriorityFeePerGas } from "voltaire";
 
 // Valid ways to create priority fees
 const validTip1 = MaxPriorityFeePerGas.from(2000000000n); // bigint Wei

@@ -13,11 +13,13 @@ class Trie {
 	private data = new Map<string, Uint8Array>();
 
 	put(key: Uint8Array, value: Uint8Array): void {
-		this.data.set(Buffer.from(key).toString("hex"), value);
+		const hex = Array.from(key).map((b) => b.toString(16).padStart(2, "0")).join("");
+		this.data.set(hex, value);
 	}
 
 	get(key: Uint8Array): Uint8Array | null {
-		return this.data.get(Buffer.from(key).toString("hex")) || null;
+		const hex = Array.from(key).map((b) => b.toString(16).padStart(2, "0")).join("");
+		return this.data.get(hex) || null;
 	}
 
 	rootHash(): Uint8Array | null {

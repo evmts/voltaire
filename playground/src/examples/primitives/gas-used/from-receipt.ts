@@ -1,5 +1,4 @@
-import * as GasUsed from "../../../primitives/GasUsed/index.js";
-
+import { GasUsed } from "voltaire";
 // Simulate different transaction receipt scenarios
 const receipts = [
 	{

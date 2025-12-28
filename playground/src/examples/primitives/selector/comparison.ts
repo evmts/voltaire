@@ -1,5 +1,4 @@
-import * as Selector from "../../../primitives/Selector/index.js";
-
+import { Selector } from "voltaire";
 const sel1 = Selector.fromSignature("transfer(address,uint256)");
 const sel2 = Selector.fromSignature("transfer(address,uint256)");
 const sel3 = Selector.fromHex("0xa9059cbb");

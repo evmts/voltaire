@@ -1,6 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-import * as Rlp from "../../../primitives/RLP/index.js";
-
+import { Hex, Rlp } from "voltaire";
 // Example: Batch encoding and decoding
 
 // Encode multiple items in batch

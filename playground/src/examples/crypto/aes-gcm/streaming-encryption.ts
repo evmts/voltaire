@@ -1,5 +1,4 @@
-import * as AesGcm from "../../../crypto/AesGcm/index.js";
-
+import { AesGcm } from "voltaire";
 const key = await AesGcm.generateKey(256);
 
 const singleMessage = new Uint8Array(1024 * 100); // 100 KB

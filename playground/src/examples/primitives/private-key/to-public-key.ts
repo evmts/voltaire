@@ -1,4 +1,4 @@
-import * as PrivateKey from "../../../primitives/PrivateKey/index.js";
+import { PrivateKey } from "voltaire";
 
 // Helper to convert PublicKeyType to hex
 function pubKeyToHex(pk: Uint8Array): string {

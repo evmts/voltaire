@@ -1,4 +1,4 @@
-import * as Opcode from "../../../primitives/Opcode/index.js";
+import { Opcode } from "voltaire";
 const veryLowOps = [
 	Opcode.ADD,
 	Opcode.SUB,

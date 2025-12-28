@@ -1,4 +1,4 @@
-import * as BaseFeePerGas from "../../../primitives/BaseFeePerGas/index.js";
+import { BaseFeePerGas } from "voltaire";
 
 // Example: Calculate next block's base fee using EIP-1559 formula
 

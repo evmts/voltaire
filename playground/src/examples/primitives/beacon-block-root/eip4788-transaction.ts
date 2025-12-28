@@ -1,6 +1,4 @@
-import * as BeaconBlockRoot from "../../../primitives/BeaconBlockRoot/index.js";
-import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
-
+import { BeaconBlockRoot, BlockHeader } from "voltaire";
 // Example: EIP-4788 beacon root in transaction context
 
 // The beacon root is exposed via a system contract at:

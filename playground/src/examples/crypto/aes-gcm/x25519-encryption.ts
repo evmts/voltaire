@@ -1,6 +1,5 @@
-import * as AesGcm from "../../../crypto/AesGcm/index.js";
-import * as Sha256 from "../../../crypto/Sha256/index.js";
-import * as X25519 from "../../../crypto/X25519/index.js";
+import { Sha256 } from "voltaire";
+import { AesGcm, X25519 } from "voltaire";
 
 // Alice (sender)
 const aliceSeed = crypto.getRandomValues(new Uint8Array(32));

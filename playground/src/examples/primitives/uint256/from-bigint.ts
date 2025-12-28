@@ -1,5 +1,4 @@
-import * as Uint256 from "../../../../../src/primitives/Uint/index.js";
-
+import { Uint256 } from "voltaire";
 // Create Uint256 from bigint
 const value = Uint256.fromBigInt(42n);
 

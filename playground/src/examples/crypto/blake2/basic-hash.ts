@@ -1,6 +1,4 @@
-import * as Blake2 from "../../../crypto/Blake2/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Blake2, Hex } from "voltaire";
 // Hash string data with Blake2b (default 64-byte output)
 const message = "Hello, Ethereum!";
 const hash = Blake2.hashString(message);

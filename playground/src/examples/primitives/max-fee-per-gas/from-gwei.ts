@@ -1,4 +1,4 @@
-import * as MaxFeePerGas from "../../../primitives/MaxFeePerGas/index.js";
+import { MaxFeePerGas } from "voltaire";
 
 // Common gas price levels in Gwei
 const slow = MaxFeePerGas.fromGwei(30n);

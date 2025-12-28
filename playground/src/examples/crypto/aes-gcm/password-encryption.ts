@@ -1,5 +1,4 @@
-import * as AesGcm from "../../../crypto/AesGcm/index.js";
-
+import { AesGcm } from "voltaire";
 const password = "user-secret-password-123";
 const salt = new Uint8Array(16);
 crypto.getRandomValues(salt);

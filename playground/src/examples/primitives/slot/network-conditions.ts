@@ -1,5 +1,4 @@
-import * as Slot from "../../../primitives/Slot/index.js";
-
+import { Slot } from "voltaire";
 // Example: Network conditions and slot processing
 // Analyzing network health through slot metrics
 

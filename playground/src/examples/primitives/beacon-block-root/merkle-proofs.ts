@@ -1,5 +1,4 @@
-import * as BeaconBlockRoot from "../../../primitives/BeaconBlockRoot/index.js";
-
+import { BeaconBlockRoot } from "voltaire";
 // Example: Merkle proof verification using beacon roots
 
 // Beacon root for a finalized block

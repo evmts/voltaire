@@ -1,5 +1,4 @@
-import * as GasEstimate from "../../../primitives/GasEstimate/index.js";
-
+import { GasEstimate } from "voltaire";
 const scenarios = [
 	{ name: "ETH transfer", estimate: 21000n, actual: 21000n },
 	{ name: "ERC20 (cached)", estimate: 45000n, actual: 45000n },

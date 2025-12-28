@@ -1,5 +1,5 @@
-import * as TransactionStatus from "../../../primitives/TransactionStatus/index.js";
-import type { Uint256Type } from "../../../primitives/Uint/Uint256Type.js";
+import { type Uint256Type } from "voltaire";
+import { TransactionStatus } from "voltaire";
 
 // Simple transfer: 21000 gas (base cost)
 const simpleTransfer = TransactionStatus.success(21000n as Uint256Type);

@@ -1,6 +1,4 @@
-import * as AccessList from "voltaire/primitives/AccessList";
-import * as Address from "voltaire/primitives/Address";
-import * as Hash from "voltaire/primitives/Hash";
+import { AccessList, Address, Hash } from "voltaire";
 
 // Valid access list
 const validList = AccessList.from([

@@ -1,4 +1,5 @@
-import * as BaseFeePerGas from "../../../primitives/BaseFeePerGas/index.js";
+import { BaseFeePerGas } from "voltaire";
+
 const fromWei = BaseFeePerGas.fromWei(25000000000n);
 const fromGwei = BaseFeePerGas.fromGwei(25n);
 const fromHex = BaseFeePerGas.from("0x5d21dba00");

@@ -1,8 +1,4 @@
-import * as Ether from "../../../primitives/Denomination/Ether.js";
-import * as Gwei from "../../../primitives/Denomination/Gwei.js";
-import * as Wei from "../../../primitives/Denomination/Wei.js";
-import * as Uint from "../../../primitives/Uint/index.js";
-
+import { Ether, Gwei, Uint, Wei } from "voltaire";
 // Define all denomination conversion factors
 const DENOMINATION_FACTORS = {
 	wei: 1n,

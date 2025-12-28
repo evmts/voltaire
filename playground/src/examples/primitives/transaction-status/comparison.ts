@@ -1,5 +1,5 @@
-import * as TransactionStatus from "../../../primitives/TransactionStatus/index.js";
-import type { Uint256Type } from "../../../primitives/Uint/Uint256Type.js";
+import { type Uint256Type } from "voltaire";
+import { TransactionStatus } from "voltaire";
 
 const pending1 = TransactionStatus.pending();
 const pending2 = TransactionStatus.pending();

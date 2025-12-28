@@ -1,4 +1,4 @@
-import * as Nonce from "../../../primitives/Nonce/index.js";
+import { Nonce } from "voltaire";
 
 interface Transaction {
 	nonce: bigint;

@@ -1,6 +1,4 @@
-import * as Keccak256 from "../../../crypto/Keccak256/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex, Keccak256 } from "voltaire";
 // Example: Compute ERC-20 function selectors
 const transferSelector = Keccak256.selector("transfer(address,uint256)");
 

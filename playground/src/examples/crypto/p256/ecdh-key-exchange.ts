@@ -1,5 +1,4 @@
-import * as P256 from "../../../crypto/P256/index.js";
-
+import { P256 } from "voltaire";
 // Alice's keypair
 const alicePrivateKey = crypto.getRandomValues(new Uint8Array(32));
 const alicePublicKey = P256.derivePublicKey(alicePrivateKey);

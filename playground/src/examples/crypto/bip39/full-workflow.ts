@@ -1,6 +1,6 @@
+import { Bip39, Hex } from "voltaire";
 // Complete BIP-39 wallet workflow
-import * as Bip39 from "../../../crypto/BIP39/Bip39.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+
 const mnemonic = Bip39.generateMnemonic(256);
 const words = mnemonic.split(" ");
 const isValid = Bip39.validateMnemonic(mnemonic);

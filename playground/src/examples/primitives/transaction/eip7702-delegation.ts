@@ -1,6 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
+import { Address, Transaction } from "voltaire";
 // EIP-7702 Transaction: EOA delegation to smart contracts
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create EIP-7702 transaction with authorization list
 const eip7702: Transaction.EIP7702 = {

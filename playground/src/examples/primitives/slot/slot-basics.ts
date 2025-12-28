@@ -1,5 +1,4 @@
-import * as Slot from "../../../primitives/Slot/index.js";
-
+import { Slot } from "voltaire";
 // Example: Slot basics - Consensus layer slot numbers
 // Slots are the fundamental unit of time in Ethereum's proof-of-stake consensus
 // Each slot is 12 seconds, and 32 slots form one epoch

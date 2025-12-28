@@ -1,5 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-
+import { Address } from "voltaire";
 // Example: CREATE opcode address generation
 // When a contract deploys another contract using CREATE,
 // the new contract's address is deterministically calculated

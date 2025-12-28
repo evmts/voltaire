@@ -1,5 +1,4 @@
-import * as FeeMarket from "../../../primitives/FeeMarket/index.js";
-
+import { FeeMarket } from "voltaire";
 // Example: Target utilization and gas elasticity
 // EIP-1559 targets 50% utilization for optimal fee stability
 

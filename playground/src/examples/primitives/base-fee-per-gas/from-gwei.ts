@@ -1,4 +1,4 @@
-import * as BaseFeePerGas from "../../../primitives/BaseFeePerGas/index.js";
+import { BaseFeePerGas } from "voltaire";
 
 // Typical mainnet base fees
 const veryLow = BaseFeePerGas.fromGwei(5n);

@@ -1,8 +1,5 @@
+import { Address, EIP712, Hash, Hex } from "voltaire";
 // EIP-712: Domain separator - prevents signature replay
-import * as EIP712 from "../../../crypto/EIP712/index.js";
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Different domain configurations
 const domain1 = {

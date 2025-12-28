@@ -1,5 +1,4 @@
-import * as FeeMarket from "../../../primitives/FeeMarket/index.js";
-
+import { FeeMarket } from "voltaire";
 // Current network state
 const baseFee = 50_000_000_000n; // 50 gwei
 const gasUsed = 21_000n; // Standard transfer

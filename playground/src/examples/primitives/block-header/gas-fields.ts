@@ -1,5 +1,4 @@
-import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
-
+import { BlockHeader } from "voltaire";
 // Empty block
 const emptyBlock = BlockHeader.from({
 	parentHash: new Uint8Array(32).fill(0x00),

@@ -1,5 +1,4 @@
-import * as BeaconBlockRoot from "../../../primitives/BeaconBlockRoot/index.js";
-
+import { BeaconBlockRoot } from "voltaire";
 // Example: Beacon chain connection and consensus layer integration
 
 // Beacon block roots connect execution layer (EL) to consensus layer (CL)

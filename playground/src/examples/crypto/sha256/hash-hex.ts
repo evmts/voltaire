@@ -1,6 +1,4 @@
-import * as SHA256 from "../../../crypto/SHA256/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex, SHA256 } from "voltaire";
 // Hash hex string data with SHA256
 const hexData = "0xdeadbeef";
 const hash = SHA256.hashHex(hexData);

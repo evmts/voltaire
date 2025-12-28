@@ -1,5 +1,4 @@
-import * as GasEstimate from "../../../primitives/GasEstimate/index.js";
-
+import { GasEstimate } from "voltaire";
 // Example: ETH transfer gas estimation
 
 // Standard ETH transfer always uses 21000 gas (base transaction cost)

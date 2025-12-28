@@ -1,6 +1,4 @@
-import * as Keccak256 from "../../../crypto/Keccak256/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex, Keccak256 } from "voltaire";
 // Example: Hash raw bytes with Keccak256
 const data = new Uint8Array([1, 2, 3, 4, 5]);
 const hash = Keccak256.hash(data);

@@ -1,9 +1,6 @@
-import * as Int8 from "../../../primitives/Int8/index.js";
-import * as Int16 from "../../../primitives/Int16/index.js";
-import * as Int32 from "../../../primitives/Int32/index.js";
-import * as Int64 from "../../../primitives/Int64/index.js";
-import * as Int128 from "../../../primitives/Int128/index.js";
-import * as Int256 from "../../../primitives/Int256/index.js";
+import { Int64 } from "voltaire";
+import { Int128, Int16, Int256, Int32, Int8 } from "voltaire";
+
 const i8_pos = Int8.fromNumber(42);
 const i8_neg = Int8.fromNumber(-42);
 const i8_min = Int8.fromNumber(Int8.INT8_MIN);

@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Convert BigInt to hex (for large values beyond Number.MAX_SAFE_INTEGER)
 const bigNum = 2n ** 256n - 1n; // Max uint256
 const hex = Hex.fromBigInt(bigNum);

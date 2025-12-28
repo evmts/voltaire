@@ -1,7 +1,5 @@
-import Address from "../../../primitives/Address/index.js";
+import { Address, BlockBody, Transaction } from "voltaire";
 // Body Size: Calculate and analyze block body size metrics
-import * as BlockBody from "../../../primitives/BlockBody/index.js";
-import Transaction from "../../../primitives/Transaction/index.js";
 
 // Helper to estimate transaction size
 function estimateTxSize(tx: Transaction.Any): number {

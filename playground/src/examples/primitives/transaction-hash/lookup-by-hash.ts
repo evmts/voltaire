@@ -1,6 +1,4 @@
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as TransactionHash from "../../../primitives/TransactionHash/index.js";
-
+import { Hash, TransactionHash } from "voltaire";
 // Simulated transaction database
 interface TransactionRecord {
 	hash: Uint8Array;

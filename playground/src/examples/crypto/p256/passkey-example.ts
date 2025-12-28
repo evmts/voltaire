@@ -1,6 +1,4 @@
-import * as P256 from "../../../crypto/P256/index.js";
-import { Hash } from "../../../primitives/Hash/index.js";
-
+import { Hash, P256 } from "voltaire";
 // Simulated user and device info
 const userId = "user@example.com";
 const deviceName = "iPhone 15 Pro";

@@ -1,4 +1,4 @@
-import * as Base64 from "../../../primitives/Base64/index.js";
+import { Base64 } from "voltaire";
 for (let len = 0; len <= 6; len++) {
 	const data = new Uint8Array(len).fill(0x41); // 'A'
 	const encoded = Base64.encode(data);

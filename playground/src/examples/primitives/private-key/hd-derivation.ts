@@ -1,7 +1,6 @@
-import * as Bip39 from "../../../crypto/Bip39/Bip39.js";
-import * as HDWallet from "../../../crypto/HDWallet/HDWallet.js";
-import * as Address from "../../../primitives/Address/index.js";
-import * as PrivateKey from "../../../primitives/PrivateKey/index.js";
+import { PrivateKey } from "voltaire";
+import { Address, Bip39, HDWallet } from "voltaire";
+
 const mnemonic = Bip39.generateMnemonic(128);
 const seed = await Bip39.mnemonicToSeed(mnemonic);
 const root = HDWallet.fromSeed(seed);

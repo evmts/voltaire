@@ -1,5 +1,4 @@
-import * as GasUsed from "../../../primitives/GasUsed/index.js";
-
+import { GasUsed } from "voltaire";
 // Simulate a block with multiple transactions
 const blockTransactions = [
 	{ index: 0, gasUsed: 21000n },

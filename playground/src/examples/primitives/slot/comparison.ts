@@ -1,4 +1,4 @@
-import * as Slot from "../../../primitives/Slot/index.js";
+import { Slot } from "voltaire";
 const slotA = Slot.from(1000000n);
 const slotB = Slot.from(1000000n);
 const slotC = Slot.from(1000001n);

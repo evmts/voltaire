@@ -1,5 +1,4 @@
-import * as Uint256 from "../../../../../src/primitives/Uint/index.js";
-
+import { Uint256 } from "voltaire";
 // Convert to hex
 const value = Uint256.fromNumber(255);
 const hex = Uint256.toHex(value);

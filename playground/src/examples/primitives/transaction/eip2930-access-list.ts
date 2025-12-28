@@ -1,8 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { Address, Hash, Hex, Transaction } from "voltaire";
 // EIP-2930 Transaction: Access lists for gas optimization
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create EIP-2930 transaction with access list
 const eip2930: Transaction.EIP2930 = {

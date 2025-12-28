@@ -1,6 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Siwe from "../../../primitives/Siwe/index.js";
-
+import { Address, Siwe } from "voltaire";
 const address = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const validMessage = Siwe.create({
 	domain: "example.com",

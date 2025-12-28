@@ -1,5 +1,4 @@
-import * as Uint256 from "../../../../../src/primitives/Uint/index.js";
-
+import { Uint256 } from "voltaire";
 // Minimum of two values
 const a = Uint256.fromNumber(10);
 const b = Uint256.fromNumber(20);

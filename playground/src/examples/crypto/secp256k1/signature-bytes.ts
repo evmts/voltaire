@@ -1,7 +1,5 @@
+import { Hash, Hex, Secp256k1 } from "voltaire";
 // Signature serialization to bytes
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Create signature
 const messageHash = Hash.keccak256String("Serialize signature");

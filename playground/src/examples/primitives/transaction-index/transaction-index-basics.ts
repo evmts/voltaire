@@ -1,5 +1,4 @@
-import * as TransactionIndex from "../../../primitives/TransactionIndex/index.js";
-
+import { TransactionIndex } from "voltaire";
 // Example: TransactionIndex basics
 
 // Create transaction indexes

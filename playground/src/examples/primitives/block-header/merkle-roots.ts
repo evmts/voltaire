@@ -1,6 +1,4 @@
-import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { BlockHeader, Hex } from "voltaire";
 const header = BlockHeader.from({
 	parentHash: new Uint8Array(32).fill(0x00),
 	ommersHash:

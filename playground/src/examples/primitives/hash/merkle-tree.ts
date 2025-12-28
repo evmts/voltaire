@@ -1,5 +1,4 @@
-import * as Hash from "../../../primitives/Hash/index.js";
-
+import { Hash } from "voltaire";
 // Example: Building Merkle trees for data verification
 
 // Transaction hashes in a block

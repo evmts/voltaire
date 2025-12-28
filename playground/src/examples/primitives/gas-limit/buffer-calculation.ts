@@ -1,4 +1,4 @@
-import * as Gas from "../../../primitives/Gas/index.js";
+import { Gas } from "voltaire";
 const baseEstimate = 100000;
 
 // Conservative 10%

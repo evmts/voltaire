@@ -1,6 +1,6 @@
+import { Hex, X25519 } from "voltaire";
 // Generate X25519 keypairs
-import * as X25519 from "../../../crypto/X25519/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+
 const keypair1 = X25519.generateKeypair();
 
 const keypair2 = X25519.generateKeypair();

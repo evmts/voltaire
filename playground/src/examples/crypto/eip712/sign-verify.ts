@@ -1,8 +1,5 @@
+import { Address, EIP712, Hex, Secp256k1 } from "voltaire";
 // EIP-712: Sign and verify typed data
-import * as EIP712 from "../../../crypto/EIP712/index.js";
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Generate keypair
 const privateKey = Secp256k1.PrivateKey.random();

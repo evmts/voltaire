@@ -135,8 +135,9 @@ const upperHex = `0x${Array.from(dataHash)
 	.map((b) => b.toString(16).padStart(2, "0").toUpperCase())
 	.join("")}`;
 
-// Base64 (custom encoding)
-const base64 = Buffer.from(dataHash).toString("base64");
+import * as Base64 from "../../../src/primitives/Base64/index.js";
+// Base64 (using Base64 primitive)
+const base64 = Base64.encode(dataHash);
 
 // Decimal bytes
 const decimalBytes = Array.from(

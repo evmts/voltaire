@@ -1,5 +1,4 @@
-import { Bytecode } from "../../../primitives/Bytecode/index.js";
-
+import { Bytecode } from "voltaire";
 // Example: EIP-1167 Minimal Proxy Contract
 
 // EIP-1167 defines a minimal bytecode implementation that delegates all calls

@@ -1,5 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-
+import { Address } from "voltaire";
 // Example: Create address from base64
 // Useful for some APIs that encode addresses in base64
 const base64 = "dC01zGY0wFMpJaO4RLxFTkQ49E4=";

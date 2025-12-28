@@ -1,5 +1,4 @@
-import { Bytecode } from "../../../primitives/Bytecode/index.js";
-
+import { Bytecode } from "voltaire";
 // Example: Bytecode basics
 
 // Create bytecode from hex (simple PUSH1 0x01, STOP)

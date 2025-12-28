@@ -1,7 +1,6 @@
-import * as AesGcm from "../../../crypto/AesGcm/index.js";
+import { AesGcm, Hex, X25519 } from "voltaire";
 // End-to-end encryption using X25519 + AES-GCM
-import * as X25519 from "../../../crypto/X25519/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+
 const aliceKeypair = X25519.generateKeypair();
 const bobKeypair = X25519.generateKeypair();
 

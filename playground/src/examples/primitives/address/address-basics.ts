@@ -1,3 +1,4 @@
+import { Address } from "voltaire";
 /**
  * Address Basics
  *
@@ -8,8 +9,6 @@
  * - Shift+F12: Find All References
  * - Cmd/Ctrl+Click: Jump to Definition
  */
-
-import * as Address from "voltaire/primitives/Address";
 
 // Example: Address basics using namespace API
 

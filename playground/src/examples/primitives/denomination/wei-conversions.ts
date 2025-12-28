@@ -1,8 +1,4 @@
-import * as Ether from "../../../primitives/Denomination/Ether.js";
-import * as Gwei from "../../../primitives/Denomination/Gwei.js";
-import * as Wei from "../../../primitives/Denomination/Wei.js";
-import * as Uint from "../../../primitives/Uint/index.js";
-
+import { Ether, Gwei, Uint, Wei } from "voltaire";
 // Creating Wei values
 const oneWei = Wei.from(1n);
 const thousandWei = Wei.from(1000n);

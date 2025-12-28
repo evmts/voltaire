@@ -1,5 +1,4 @@
-import * as Opcode from "../../../primitives/Opcode/index.js";
-
+import { Opcode } from "voltaire";
 // ADD (0x01) - Addition
 const addInfo = Opcode.info(Opcode.ADD);
 

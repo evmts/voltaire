@@ -1,4 +1,4 @@
-import * as BloomFilter from "voltaire/primitives/BloomFilter";
+import { BloomFilter } from "voltaire";
 const log1Bloom = BloomFilter.create(2048, 3);
 const contract1 = new Uint8Array(20).fill(0x01);
 const transferSig = new Uint8Array(32).fill(0xaa);

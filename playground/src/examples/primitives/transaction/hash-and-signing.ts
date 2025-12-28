@@ -1,7 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { Address, Hex, Transaction } from "voltaire";
 // Transaction Hashing: Compute transaction and signing hashes
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create transaction
 const tx: Transaction.EIP1559 = {

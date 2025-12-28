@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Slice hex strings by byte offsets
 const hex = Hex.from("0x123456789abcdef0");
 

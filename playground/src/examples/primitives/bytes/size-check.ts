@@ -1,5 +1,4 @@
-import * as Bytes from "../../../primitives/Bytes/index.js";
-
+import { Bytes } from "voltaire";
 // Get byte array size
 const small = Bytes.fromHex("0x1234");
 

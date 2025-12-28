@@ -1,5 +1,4 @@
-import * as Opcode from "../../../primitives/Opcode/index.js";
-
+import { Opcode } from "voltaire";
 // SLOAD (0x54) - Load from storage
 const sloadInfo = Opcode.info(Opcode.SLOAD);
 

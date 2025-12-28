@@ -1,6 +1,4 @@
-import * as AccessList from "voltaire/primitives/AccessList";
-import * as Address from "voltaire/primitives/Address";
-import * as Hash from "voltaire/primitives/Hash";
+import { AccessList, Address, Hash } from "voltaire";
 
 // Uniswap V2 contracts
 const router = Address.from("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D");

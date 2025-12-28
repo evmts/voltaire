@@ -1,4 +1,4 @@
-import * as Nonce from "../../../primitives/Nonce/index.js";
+import { Nonce } from "voltaire";
 
 // Zero nonce (first transaction for an account)
 const firstTx = Nonce.from(0);

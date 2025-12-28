@@ -1,7 +1,5 @@
+import { Address, EIP712, Hex } from "voltaire";
 // EIP-712: Encoding different value types
-import * as EIP712 from "../../../crypto/EIP712/index.js";
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 const types = {};
 

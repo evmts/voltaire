@@ -1,5 +1,4 @@
-import * as Withdrawal from "../../../primitives/Withdrawal/index.js";
-
+import { Withdrawal } from "voltaire";
 // Example: Withdrawal basics (EIP-4895 Shanghai upgrade)
 
 // EIP-4895 introduced withdrawals in the Shanghai upgrade (April 2023)

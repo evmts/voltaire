@@ -1,6 +1,5 @@
+import { Hex, Secp256k1 } from "voltaire";
 // Validate public keys
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Valid public key from private key
 const privateKey = Secp256k1.PrivateKey.random();

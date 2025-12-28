@@ -1,5 +1,4 @@
-import { Bytecode } from "../../../primitives/Bytecode/index.js";
-
+import { Bytecode } from "voltaire";
 // Example: Constructor arguments in deployment bytecode
 
 // Constructor arguments are appended to the end of deployment bytecode

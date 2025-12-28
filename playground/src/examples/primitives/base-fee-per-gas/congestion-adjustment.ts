@@ -1,4 +1,4 @@
-import * as BaseFeePerGas from "../../../primitives/BaseFeePerGas/index.js";
+import { BaseFeePerGas } from "voltaire";
 
 // Example: Base fee adjusts based on network congestion
 

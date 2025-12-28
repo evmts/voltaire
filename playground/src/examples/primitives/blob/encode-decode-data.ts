@@ -1,4 +1,4 @@
-import * as Blob from "../../../primitives/Blob/index.js";
+import { Blob } from "voltaire";
 const text = "Hello, EIP-4844! Blobs enable cheap data availability.";
 const textBytes = new TextEncoder().encode(text);
 

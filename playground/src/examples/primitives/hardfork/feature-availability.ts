@@ -1,5 +1,4 @@
-import * as Hardfork from "../../../primitives/Hardfork/index.js";
-
+import { Hardfork } from "voltaire";
 // Define feature sets
 interface FeatureSet {
 	fork: string;

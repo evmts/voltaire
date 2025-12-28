@@ -1,5 +1,4 @@
-import * as AesGcm from "../../../crypto/AesGcm/index.js";
-
+import { AesGcm, Base64 } from "voltaire";
 const key128 = await AesGcm.generateKey(128);
 const key256 = await AesGcm.generateKey(256);
 
@@ -22,7 +21,8 @@ const keyBytes = await AesGcm.exportKey(keyToStore);
 const hex = Array.from(keyBytes)
 	.map((b) => b.toString(16).padStart(2, "0"))
 	.join("");
-const base64 = Buffer.from(keyBytes).toString("base64");
+
+const base64 = Base64.encode(keyBytes);
 
 const keys = await Promise.all([
 	AesGcm.generateKey(256),

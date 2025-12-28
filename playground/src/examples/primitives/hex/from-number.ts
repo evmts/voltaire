@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Convert numbers to hex
 const num1 = 255;
 const hex1 = Hex.fromNumber(num1);

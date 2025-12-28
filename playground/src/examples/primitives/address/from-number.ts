@@ -1,5 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-
+import { Address } from "voltaire";
 // Example: Create address from number
 // Numbers are zero-padded to 20 bytes
 const addr1 = Address.fromNumber(1);

@@ -1,5 +1,4 @@
-import * as Selector from "../../../primitives/Selector/index.js";
-
+import { Selector } from "voltaire";
 // Create from function signature (most common)
 const transferSel = Selector.fromSignature("transfer(address,uint256)");
 

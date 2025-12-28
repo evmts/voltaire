@@ -1,5 +1,4 @@
-import * as TransactionHash from "../../../primitives/TransactionHash/index.js";
-
+import { TransactionHash } from "voltaire";
 // Example: TransactionHash basics
 
 // Create from hex string (most common)

@@ -1,5 +1,4 @@
-import * as BlockNumber from "../../../primitives/BlockNumber/index.js";
-
+import { BlockNumber } from "voltaire";
 // Example: BlockNumber basics - creation, conversion, comparison
 
 // Create from number

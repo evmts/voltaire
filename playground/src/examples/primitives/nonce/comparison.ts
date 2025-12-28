@@ -1,4 +1,4 @@
-import * as Nonce from "../../../primitives/Nonce/index.js";
+import { Nonce } from "voltaire";
 
 // Create nonces for comparison
 const nonce0 = Nonce.from(0);

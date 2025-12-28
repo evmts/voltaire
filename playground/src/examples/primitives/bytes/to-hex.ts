@@ -1,5 +1,4 @@
-import * as Bytes from "../../../primitives/Bytes/index.js";
-
+import { Bytes } from "voltaire";
 // Convert bytes to hex string
 const data = new Uint8Array([0x12, 0x34, 0x56, 0x78]);
 const branded = Bytes.from(data);

@@ -1,4 +1,4 @@
-import * as BaseFeePerGas from "../../../primitives/BaseFeePerGas/index.js";
+import { BaseFeePerGas } from "voltaire";
 
 // Current network state
 const currentBase = BaseFeePerGas.fromGwei(25n);

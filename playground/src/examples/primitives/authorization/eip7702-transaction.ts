@@ -1,5 +1,4 @@
-import * as Address from "voltaire/primitives/Address";
-import * as Authorization from "voltaire/primitives/Authorization";
+import { Address, Authorization } from "voltaire";
 
 // Account delegating execution (EOA)
 const eoaPrivateKey = new Uint8Array(32);

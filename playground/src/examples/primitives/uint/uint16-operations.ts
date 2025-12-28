@@ -1,4 +1,4 @@
-import * as Uint16 from "../../../primitives/Uint16/index.js";
+import { Uint16 } from "voltaire";
 const httpPort = Uint16.fromNumber(80);
 const httpsPort = Uint16.fromNumber(443);
 const customPort = Uint16.fromNumber(8080);

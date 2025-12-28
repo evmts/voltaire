@@ -1,5 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as PrivateKey from "../../../primitives/PrivateKey/index.js";
+import { PrivateKey } from "voltaire";
+import { Address } from "voltaire";
 
 // Example private keys (from hardhat accounts)
 const pk1 =

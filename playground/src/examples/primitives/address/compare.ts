@@ -1,5 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-
+import { Address } from "voltaire";
 // Example: Compare addresses lexicographically
 const addr1 = Address.from("0x0000000000000000000000000000000000000001");
 const addr2 = Address.from("0x0000000000000000000000000000000000000002");

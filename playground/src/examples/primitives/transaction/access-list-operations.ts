@@ -1,8 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { Address, Hash, Hex, Transaction } from "voltaire";
 // Access List Operations: Work with transaction access lists
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Transaction with access list
 const txWithAccessList: Transaction.EIP1559 = {

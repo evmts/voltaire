@@ -1,4 +1,4 @@
-import * as TransactionIndex from "../../../primitives/TransactionIndex/index.js";
+import { TransactionIndex } from "voltaire";
 const firstTx = TransactionIndex.from(0);
 
 // Block 18500000 (172 transactions)

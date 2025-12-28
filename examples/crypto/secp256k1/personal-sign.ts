@@ -10,12 +10,13 @@
 
 import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
 import { keccak256 } from "../../../src/primitives/Hash/index.js";
+import * as Hex from "../../../src/primitives/Hex/index.js";
 
 // Helper: Derive Ethereum address from public key
 function deriveAddress(publicKey: Uint8Array): string {
 	const hash = keccak256(publicKey);
 	const addressBytes = hash.slice(12);
-	return `0x${Buffer.from(addressBytes).toString("hex")}`;
+	return Hex.fromBytes(addressBytes);
 }
 
 // EIP-191: Personal message signing

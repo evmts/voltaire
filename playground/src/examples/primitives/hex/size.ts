@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Get size in bytes of hex strings
 const hex1 = Hex.from("0x1234");
 

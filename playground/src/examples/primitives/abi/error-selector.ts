@@ -1,4 +1,4 @@
-import * as ABI from "../../../primitives/ABI/index.js";
+import { ABI } from "voltaire";
 
 // Example: Calculate error selector from signature string
 const unauthorizedSelector = ABI.Error.getSelector("Unauthorized()");

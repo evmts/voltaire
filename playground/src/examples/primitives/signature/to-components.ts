@@ -1,5 +1,5 @@
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Signature from "../../../primitives/Signature/index.js";
+import { Signature } from "voltaire";
+import { Hash } from "voltaire";
 
 // Create a signature
 const r = Hash.from(

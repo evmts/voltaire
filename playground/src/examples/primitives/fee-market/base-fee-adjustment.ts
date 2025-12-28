@@ -1,5 +1,4 @@
-import * as FeeMarket from "../../../primitives/FeeMarket/index.js";
-
+import { FeeMarket } from "voltaire";
 // Example: Base fee adjustment dynamics (EIP-1559)
 // Shows how base fee responds to block utilization
 

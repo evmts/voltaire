@@ -1,5 +1,4 @@
-import { Bytecode } from "../../../primitives/Bytecode/index.js";
-
+import { Bytecode } from "voltaire";
 // Example: Opcode analysis and instruction parsing
 
 // Complex bytecode with various opcode types

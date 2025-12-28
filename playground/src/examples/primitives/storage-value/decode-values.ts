@@ -1,4 +1,4 @@
-import * as StorageValue from "../../../primitives/StorageValue/index.js";
+import { StorageValue } from "voltaire";
 
 // Example: Decoding storage values into different types
 

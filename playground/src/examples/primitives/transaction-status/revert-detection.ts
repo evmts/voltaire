@@ -1,5 +1,5 @@
-import * as TransactionStatus from "../../../primitives/TransactionStatus/index.js";
-import type { Uint256Type } from "../../../primitives/Uint/Uint256Type.js";
+import { type Uint256Type } from "voltaire";
+import { TransactionStatus } from "voltaire";
 
 // Various transaction outcomes
 const success = TransactionStatus.success(50000n as Uint256Type);

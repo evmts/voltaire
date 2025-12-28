@@ -1,5 +1,4 @@
-import * as Ens from "../../../primitives/Ens/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { Ens, Hex } from "voltaire";
 const domain = "example.eth";
 const subdomains = [
 	"example.eth",

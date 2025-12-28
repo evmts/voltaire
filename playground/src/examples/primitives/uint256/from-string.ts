@@ -1,5 +1,4 @@
-import * as Uint256 from "../../../../../src/primitives/Uint/index.js";
-
+import { Uint256 } from "voltaire";
 // Create Uint256 from decimal string
 const decimal = Uint256.from("12345678901234567890");
 

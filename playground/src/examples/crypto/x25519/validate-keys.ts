@@ -1,6 +1,6 @@
+import { Hex, X25519 } from "voltaire";
 // Key validation
-import * as X25519 from "../../../crypto/X25519/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+
 const validSecret = X25519.generateSecretKey();
 
 const validSecretResult = X25519.validateSecretKey(validSecret);

@@ -1,5 +1,4 @@
-import * as Address from "voltaire/primitives/Address";
-import * as Authorization from "voltaire/primitives/Authorization";
+import { Address, Authorization } from "voltaire";
 
 // Smart wallet contract (batching, gas sponsorship, etc.)
 const smartWallet = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");

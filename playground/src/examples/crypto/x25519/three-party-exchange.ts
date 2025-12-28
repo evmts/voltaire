@@ -1,6 +1,6 @@
+import { Hex, X25519 } from "voltaire";
 // Multi-party key exchange scenarios
-import * as X25519 from "../../../crypto/X25519/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+
 const alice = X25519.generateKeypair();
 const bob = X25519.generateKeypair();
 const charlie = X25519.generateKeypair();

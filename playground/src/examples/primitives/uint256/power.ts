@@ -1,5 +1,4 @@
-import * as Uint256 from "../../../../../src/primitives/Uint/index.js";
-
+import { Uint256 } from "voltaire";
 // Basic exponentiation
 const base = Uint256.fromNumber(2);
 const exp = Uint256.fromNumber(10);

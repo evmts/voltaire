@@ -10,6 +10,7 @@
 
 import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
 import { keccak256 } from "../../../src/primitives/Hash/index.js";
+import * as Hex from "../../../src/primitives/Hex/index.js";
 
 // Generate keypair
 const privateKeyBytes = new Uint8Array(32);
@@ -22,7 +23,7 @@ function deriveAddress(pubKey: Uint8Array): string {
 	const hash = keccak256(pubKey);
 	// Take last 20 bytes as address (Ethereum uses last 20 bytes)
 	const addressBytes = hash.slice(12);
-	return `0x${Buffer.from(addressBytes).toString("hex")}`;
+return Hex.fromBytes(addressBytes);
 }
 
 const signerAddress = deriveAddress(publicKey);

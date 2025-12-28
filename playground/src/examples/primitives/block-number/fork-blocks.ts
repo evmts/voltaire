@@ -1,5 +1,4 @@
-import * as BlockNumber from "../../../primitives/BlockNumber/index.js";
-
+import { BlockNumber } from "voltaire";
 // Early forks
 const frontier = BlockNumber.from(0); // Genesis
 const homestead = BlockNumber.from(1150000); // March 2016

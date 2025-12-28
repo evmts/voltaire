@@ -1,6 +1,5 @@
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as PrivateKey from "../../../primitives/PrivateKey/index.js";
-import * as Signature from "../../../primitives/Signature/index.js";
+import { PrivateKey, Signature } from "voltaire";
+import { Hash } from "voltaire";
 
 // Helper to convert signature to hex
 function sigToHex(sig: Uint8Array): string {

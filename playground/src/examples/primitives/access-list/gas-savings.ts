@@ -1,6 +1,4 @@
-import * as AccessList from "voltaire/primitives/AccessList";
-import * as Address from "voltaire/primitives/Address";
-import * as Hash from "voltaire/primitives/Hash";
+import { AccessList, Address, Hash } from "voltaire";
 
 // Example: Uniswap V2 swap (USDC -> WETH)
 const usdc = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");

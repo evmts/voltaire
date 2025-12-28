@@ -1,6 +1,5 @@
+import { Hex, Secp256k1 } from "voltaire";
 // Elliptic curve point addition
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Generate two public keys (points on curve)
 const privateKey1 = Secp256k1.PrivateKey.random();

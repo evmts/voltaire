@@ -1,5 +1,4 @@
-import * as GasEstimate from "../../../primitives/GasEstimate/index.js";
-
+import { GasEstimate } from "voltaire";
 // Example: Contract interaction gas estimation
 
 // Common DeFi operations

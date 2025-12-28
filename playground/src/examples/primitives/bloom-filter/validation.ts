@@ -1,4 +1,4 @@
-import * as BloomFilter from "voltaire/primitives/BloomFilter";
+import { BloomFilter } from "voltaire";
 const empty = BloomFilter.create(2048, 3);
 
 // All bytes should be zero

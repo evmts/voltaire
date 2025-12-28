@@ -1,5 +1,6 @@
-import * as TransactionIndex from "../../../primitives/TransactionIndex/index.js";
-import { InvalidTransactionIndexError } from "../../../primitives/TransactionIndex/index.js";
+import { InvalidTransactionIndexError } from "voltaire";
+import { TransactionIndex } from "voltaire";
+
 const validIndexes = [0, 1, 100, 1000, 10000];
 validIndexes.forEach((num) => {
 	try {

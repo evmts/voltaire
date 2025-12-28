@@ -1,5 +1,4 @@
-import * as BeaconBlockRoot from "../../../primitives/BeaconBlockRoot/index.js";
-
+import { BeaconBlockRoot } from "voltaire";
 // Example: Comparing beacon block roots
 
 // Identical roots

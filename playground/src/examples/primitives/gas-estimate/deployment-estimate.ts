@@ -1,5 +1,4 @@
-import * as GasEstimate from "../../../primitives/GasEstimate/index.js";
-
+import { GasEstimate } from "voltaire";
 // Example: Contract deployment gas estimation
 
 // Typical deployment costs (highly variable based on contract size)

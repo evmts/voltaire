@@ -1,4 +1,4 @@
-import * as Chain from "voltaire/primitives/Chain";
+import { Chain } from "voltaire";
 
 // Example: Block explorer URLs and links
 

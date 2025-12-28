@@ -1,4 +1,4 @@
-import * as Base64 from "../../../primitives/Base64/index.js";
+import { Base64 } from "voltaire";
 const simple = "SGVsbG8=";
 const simpleBytes = Base64.decode(simple);
 const zerosEncoded = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";

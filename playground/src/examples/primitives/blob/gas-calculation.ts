@@ -1,4 +1,4 @@
-import * as Blob from "../../../primitives/Blob/index.js";
+import { Blob } from "voltaire";
 const gas1 = Blob.calculateGas(1);
 for (let count = 2; count <= Blob.MAX_PER_TRANSACTION; count++) {
 	const gas = Blob.calculateGas(count);

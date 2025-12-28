@@ -1,4 +1,4 @@
-import * as ChainId from "../../../primitives/ChainId/index.js";
+import { ChainId } from "voltaire";
 
 class WalletProvider {
 	private currentChain: number;

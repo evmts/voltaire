@@ -1,6 +1,4 @@
-import * as SHA256 from "../../../crypto/SHA256/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex, SHA256 } from "voltaire";
 // Double SHA256 (Bitcoin-style: SHA256(SHA256(data)))
 // Used in Bitcoin for block headers and transaction IDs
 

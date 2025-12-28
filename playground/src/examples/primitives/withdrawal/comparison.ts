@@ -1,5 +1,4 @@
-import * as Withdrawal from "../../../primitives/Withdrawal/index.js";
-
+import { Withdrawal } from "voltaire";
 // Identical withdrawals
 const withdrawal1 = Withdrawal.from({
 	index: 1000000n,

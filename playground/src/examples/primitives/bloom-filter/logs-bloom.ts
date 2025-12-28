@@ -1,4 +1,4 @@
-import * as BloomFilter from "voltaire/primitives/BloomFilter";
+import { BloomFilter } from "voltaire";
 
 // ERC20 Transfer event: Transfer(address indexed from, address indexed to, uint256 value)
 // Event signature hash: keccak256("Transfer(address,address,uint256)")

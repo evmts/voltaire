@@ -1,5 +1,5 @@
-import * as ABI from "../../../primitives/ABI/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { ABI } from "voltaire";
+import { Hex } from "voltaire";
 
 // Example: Decode ERC20 transfer function result
 const transferReturnData = Hex.fromString(

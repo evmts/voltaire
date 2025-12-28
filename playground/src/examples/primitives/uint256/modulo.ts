@@ -1,5 +1,4 @@
-import * as Uint256 from "../../../../../src/primitives/Uint/index.js";
-
+import { Uint256 } from "voltaire";
 // Basic modulo operation
 const a = Uint256.fromNumber(10);
 const b = Uint256.fromNumber(3);

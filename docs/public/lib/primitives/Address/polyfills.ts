@@ -1,6 +1,7 @@
 /**
  * Polyfills for Uint8Array methods that may not be available in all environments
  */
+import * as Base64 from "../Base64/index.js";
 
 /**
  * Convert Uint8Array to hex string with 0x prefix
@@ -40,15 +41,7 @@ export function setFromHexPolyfill(this: Uint8Array, hex: string): void {
  * Convert Uint8Array to base64 string
  */
 export function toBase64Polyfill(this: Uint8Array): string {
-	if (typeof Buffer !== "undefined") {
-		return Buffer.from(this).toString("base64");
-	}
-	// Browser fallback
-	let binary = "";
-	for (let i = 0; i < this.length; i++) {
-		binary += String.fromCharCode(this[i]!);
-	}
-	return btoa(binary);
+	return Base64.encode(this) as unknown as string;
 }
 
 /**
@@ -63,16 +56,7 @@ export function setFromBase64Polyfill(this: Uint8Array, b64: string): void {
 	let decoded: Uint8Array;
 
 	try {
-		if (typeof Buffer !== "undefined") {
-			decoded = Buffer.from(b64, "base64");
-		} else {
-			// Browser fallback
-			const binary = atob(b64);
-			decoded = new Uint8Array(binary.length);
-			for (let i = 0; i < binary.length; i++) {
-				decoded[i] = binary.charCodeAt(i);
-			}
-		}
+		decoded = Base64.decode(b64);
 	} catch (e) {
 		throw new Error("Invalid base64 string");
 	}

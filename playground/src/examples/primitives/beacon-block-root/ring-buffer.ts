@@ -1,9 +1,8 @@
-import * as BeaconBlockRoot from "../../../primitives/BeaconBlockRoot/index.js";
-
+import { BeaconBlockRoot } from "voltaire";
 // Example: EIP-4788 ring buffer mechanics
 
 // The BEACON_ROOTS_ADDRESS stores roots in a ring buffer
-// Buffer size: 8191 slots
+// Ring capacity: 8191 slots
 // Each slot stores: timestamp → root mapping
 
 // Simulate ring buffer with timestamps

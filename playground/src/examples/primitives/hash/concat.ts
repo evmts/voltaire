@@ -1,5 +1,4 @@
-import * as Hash from "../../../primitives/Hash/index.js";
-
+import { Hash } from "voltaire";
 // Example: Concatenating and hashing multiple values
 
 // Concatenate two hashes

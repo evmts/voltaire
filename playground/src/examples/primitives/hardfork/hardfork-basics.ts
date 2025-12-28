@@ -1,5 +1,4 @@
-import * as Hardfork from "../../../primitives/Hardfork/index.js";
-
+import { Hardfork } from "voltaire";
 // Hardfork Basics - Core concepts of Ethereum hardforks
 
 // Hardforks represent protocol upgrades in Ethereum's history

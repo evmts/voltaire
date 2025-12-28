@@ -1,5 +1,4 @@
-import * as Opcode from "../../../primitives/Opcode/index.js";
-
+import { Opcode } from "voltaire";
 // LOG0 (0xa0) - Log with no topics
 const log0Info = Opcode.info(Opcode.LOG0);
 

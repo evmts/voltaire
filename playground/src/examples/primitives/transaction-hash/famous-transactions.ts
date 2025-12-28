@@ -1,4 +1,4 @@
-import * as TransactionHash from "../../../primitives/TransactionHash/index.js";
+import { TransactionHash } from "voltaire";
 const firstTx = TransactionHash.from(
 	"0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060",
 );

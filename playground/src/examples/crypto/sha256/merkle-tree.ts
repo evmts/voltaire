@@ -1,6 +1,4 @@
-import * as SHA256 from "../../../crypto/SHA256/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex, SHA256 } from "voltaire";
 // Build Merkle tree using SHA256 for hashing
 
 function merkleRoot(leaves: Uint8Array[]): Uint8Array {

@@ -1,4 +1,4 @@
-import { Bytecode } from "../../../primitives/Bytecode/index.js";
+import { Bytecode } from "voltaire";
 const code1 = Bytecode.fromHex("0x600100");
 
 const code2 = Bytecode.fromHex("600100");

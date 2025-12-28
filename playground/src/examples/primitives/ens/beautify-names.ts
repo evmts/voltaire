@@ -1,4 +1,4 @@
-import * as Ens from "../../../primitives/Ens/index.js";
+import { Ens } from "voltaire";
 const basicExamples = [
 	"VITALIK.eth",
 	"Nick.ETH",

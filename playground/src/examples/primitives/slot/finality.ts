@@ -1,5 +1,4 @@
-import * as Slot from "../../../primitives/Slot/index.js";
-
+import { Slot } from "voltaire";
 // Example: Finality and checkpoints
 // Ethereum PoS uses Casper FFG for finality with justified and finalized checkpoints
 

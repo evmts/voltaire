@@ -1,4 +1,4 @@
-import * as Blob from "../../../primitives/Blob/index.js";
+import { Blob } from "voltaire";
 const validData = new TextEncoder().encode("Valid blob data");
 const validBlob = Blob.fromData(validData);
 const emptyBlob = Blob.from(new Uint8Array(Blob.SIZE));

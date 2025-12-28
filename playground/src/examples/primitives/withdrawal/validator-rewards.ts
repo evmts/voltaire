@@ -1,5 +1,4 @@
-import * as Withdrawal from "../../../primitives/Withdrawal/index.js";
-
+import { Withdrawal } from "voltaire";
 // Baseline validator (good performance)
 const baselineValidator = Withdrawal.from({
 	index: 10000000n,

@@ -1,6 +1,4 @@
-import { Address } from "../../../primitives/Address/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Transaction from "../../../primitives/Transaction/index.js";
+import { Address, Hash, Transaction } from "voltaire";
 const blobTx: Transaction.EIP4844 = {
 	type: Transaction.Type.EIP4844,
 	chainId: 1n,

@@ -1,4 +1,4 @@
-import * as Base64 from "../../../primitives/Base64/index.js";
+import { Base64 } from "voltaire";
 const data = new Uint8Array([255, 254, 253, 252, 251, 250]);
 const standard = Base64.encode(data);
 const urlSafe = Base64.encodeUrlSafe(data);

@@ -1,9 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Block from "../../../primitives/Block/index.js";
-import * as BlockBody from "../../../primitives/BlockBody/index.js";
-import * as BlockHash from "../../../primitives/BlockHash/index.js";
-import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
-import type { Any as AnyTransaction } from "../../../primitives/Transaction/types.js";
+import { type Any as AnyTransaction } from "voltaire";
+import { Address, Block, BlockBody, BlockHash, BlockHeader } from "voltaire";
 
 // Create sample transactions (simplified)
 const tx1: AnyTransaction = {

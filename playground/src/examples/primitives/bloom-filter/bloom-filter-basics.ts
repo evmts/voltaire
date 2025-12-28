@@ -1,4 +1,4 @@
-import * as BloomFilter from "voltaire/primitives/BloomFilter";
+import { BloomFilter } from "voltaire";
 
 // Create empty bloom filter
 const bloom = BloomFilter.create(2048, 3);

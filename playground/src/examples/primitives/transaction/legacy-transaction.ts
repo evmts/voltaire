@@ -1,7 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { Address, Hex, Transaction } from "voltaire";
 // Legacy Transaction: Create and serialize Legacy (Type 0) transaction
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create a Legacy transaction (original Ethereum transaction type)
 const legacy: Transaction.Legacy = {

@@ -1,5 +1,4 @@
-import * as BeaconBlockRoot from "../../../primitives/BeaconBlockRoot/index.js";
-
+import { BeaconBlockRoot } from "voltaire";
 // Example: Real-world use cases for beacon block roots
 
 // MEV Protection: Verify validator set to prevent manipulation

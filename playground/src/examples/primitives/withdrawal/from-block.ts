@@ -1,5 +1,4 @@
-import * as Withdrawal from "../../../primitives/Withdrawal/index.js";
-
+import { Withdrawal } from "voltaire";
 // First Shanghai block with withdrawals (17,034,870)
 const shanghaiFirst = [
 	Withdrawal.from({

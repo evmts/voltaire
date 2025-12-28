@@ -1,5 +1,4 @@
-import * as GasUsed from "../../../primitives/GasUsed/index.js";
-
+import { GasUsed } from "voltaire";
 // Base operation costs (in gas units)
 const operations = [
 	{ name: "ETH Transfer", gas: 21000n, description: "Simple value transfer" },

@@ -1,6 +1,5 @@
+import { Hash, Secp256k1 } from "voltaire";
 // Verify secp256k1 signature
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
 
 // Create message hash
 const message = "Verify this message";

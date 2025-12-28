@@ -1,5 +1,5 @@
-import * as ABI from "../../../primitives/ABI/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { ABI } from "voltaire";
+import { Hex } from "voltaire";
 
 // Example: Decode custom error without parameters
 const unauthorizedData = Hex.fromString("0x82b42900");

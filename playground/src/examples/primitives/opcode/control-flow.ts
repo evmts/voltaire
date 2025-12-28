@@ -1,5 +1,4 @@
-import * as Opcode from "../../../primitives/Opcode/index.js";
-
+import { Opcode } from "voltaire";
 // JUMP (0x56) - Unconditional jump
 const jumpInfo = Opcode.info(Opcode.JUMP);
 

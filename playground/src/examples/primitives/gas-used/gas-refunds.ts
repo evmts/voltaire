@@ -1,5 +1,4 @@
-import * as GasUsed from "../../../primitives/GasUsed/index.js";
-
+import { GasUsed } from "voltaire";
 // EIP-3529: Gas refunds reduced to max 20% of gas used
 const MAX_REFUND_QUOTIENT = 5n; // Refund capped at gasUsed/5
 

@@ -1,4 +1,4 @@
-import * as BaseFeePerGas from "../../../primitives/BaseFeePerGas/index.js";
+import { BaseFeePerGas } from "voltaire";
 
 // Gas costs for common operations
 const GAS_TRANSFER = 21000n; // Simple ETH transfer

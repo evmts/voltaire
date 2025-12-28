@@ -1,6 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Siwe from "../../../primitives/Siwe/index.js";
-
+import { Address, Siwe } from "voltaire";
 // Minimal message with required fields only
 const address = Address.from("0xd8da6bf26964af9d7eed9e03e53415d37aa96045");
 const minimal = Siwe.create({

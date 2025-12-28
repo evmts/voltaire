@@ -1,5 +1,4 @@
-import * as FeeMarket from "../../../primitives/FeeMarket/index.js";
-
+import { FeeMarket } from "voltaire";
 // Example: Fee predictions using projectBaseFees
 // Estimate future fees based on expected demand
 

@@ -1,7 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
+import { Address, Hash, Transaction } from "voltaire";
 // EIP-4844 Transaction: Blob transactions for L2 data availability
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create EIP-4844 blob transaction (for L2 rollups)
 const eip4844: Transaction.EIP4844 = {

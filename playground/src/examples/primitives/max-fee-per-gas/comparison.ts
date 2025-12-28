@@ -1,4 +1,4 @@
-import * as MaxFeePerGas from "../../../primitives/MaxFeePerGas/index.js";
+import { MaxFeePerGas } from "voltaire";
 
 // Create different fee levels
 const lowFee = MaxFeePerGas.fromGwei(30n);

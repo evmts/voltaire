@@ -1,7 +1,5 @@
-import Address from "../../../primitives/Address/index.js";
+import { Address, BlockBody, Transaction } from "voltaire";
 // Withdrawals: EIP-4895 post-Shanghai block withdrawals
-import * as BlockBody from "../../../primitives/BlockBody/index.js";
-import Transaction from "../../../primitives/Transaction/index.js";
 
 // Create sample transaction
 const tx: Transaction.Legacy = {

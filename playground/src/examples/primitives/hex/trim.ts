@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Remove leading zeros from hex
 const padded = Hex.from(
 	"0x000000000000000000000000000000000000000000000000000000000000002a",

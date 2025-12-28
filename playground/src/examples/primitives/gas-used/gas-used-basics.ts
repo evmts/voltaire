@@ -1,4 +1,4 @@
-import * as GasUsed from "../../../primitives/GasUsed/index.js";
+import { GasUsed } from "voltaire";
 const simpleTransfer = GasUsed.from(21000n); // Minimum ETH transfer
 const erc20Transfer = GasUsed.from(65000n); // ERC-20 transfer
 const complexContract = GasUsed.from(150000n); // Complex contract call

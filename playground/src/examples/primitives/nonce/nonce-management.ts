@@ -1,4 +1,4 @@
-import * as Nonce from "../../../primitives/Nonce/index.js";
+import { Nonce } from "voltaire";
 
 // Strategy 1: Simple sequential nonce tracker
 class SimpleNonceTracker {

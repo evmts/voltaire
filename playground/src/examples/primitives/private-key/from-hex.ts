@@ -1,4 +1,4 @@
-import * as PrivateKey from "../../../primitives/PrivateKey/index.js";
+import { PrivateKey } from "voltaire";
 
 // Example test keys (from hardhat)
 const testKey1 =

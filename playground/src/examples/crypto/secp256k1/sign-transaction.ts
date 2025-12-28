@@ -1,8 +1,5 @@
+import { Address, Hash, Hex, Secp256k1 } from "voltaire";
 // Sign Ethereum transaction
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Simulated transaction data
 const txData = {

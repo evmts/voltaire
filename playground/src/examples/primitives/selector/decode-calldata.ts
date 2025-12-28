@@ -1,5 +1,4 @@
-import * as Selector from "../../../primitives/Selector/index.js";
-
+import { Selector } from "voltaire";
 const transferCalldata =
 	"0xa9059cbb" + // transfer(address,uint256)
 	"000000000000000000000000742d35cc6634c0532925a3b844bc454e4438f44e" + // to address

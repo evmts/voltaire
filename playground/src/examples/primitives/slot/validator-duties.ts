@@ -1,5 +1,4 @@
-import * as Slot from "../../../primitives/Slot/index.js";
-
+import { Slot } from "voltaire";
 // Example: Validator duty scheduling
 // Validators are assigned duties based on slots and epochs
 

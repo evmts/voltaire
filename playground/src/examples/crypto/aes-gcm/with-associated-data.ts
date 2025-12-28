@@ -1,5 +1,4 @@
-import * as AesGcm from "../../../crypto/AesGcm/index.js";
-
+import { AesGcm } from "voltaire";
 const key = await AesGcm.generateKey(256);
 
 const plaintext = new TextEncoder().encode("Sensitive data");

@@ -16,7 +16,8 @@ import { keccak256 } from "../../../src/primitives/Hash/index.js";
 function deriveAddress(publicKey: Uint8Array): string {
 	const hash = keccak256(publicKey);
 	const addressBytes = hash.slice(12);
-	return `0x${Buffer.from(addressBytes).toString("hex")}`;
+import * as Hex from "../../../src/primitives/Hex/index.js";
+return Hex.fromBytes(addressBytes);
 }
 
 // Helper: Simple transaction message (in production, use proper RLP encoding)

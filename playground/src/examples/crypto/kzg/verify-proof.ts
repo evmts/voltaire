@@ -1,5 +1,4 @@
-import { KZG } from "../../../crypto/KZG/index.js";
-
+import { KZG } from "voltaire";
 // Example: Verifying KZG proofs
 
 KZG.loadTrustedSetup();

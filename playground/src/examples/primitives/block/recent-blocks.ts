@@ -1,7 +1,4 @@
-import * as Block from "../../../primitives/Block/index.js";
-import * as BlockBody from "../../../primitives/BlockBody/index.js";
-import * as BlockHash from "../../../primitives/BlockHash/index.js";
-import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
+import { Block, BlockBody, BlockHash, BlockHeader } from "voltaire";
 const block19426587 = Block.from({
 	header: BlockHeader.from({
 		parentHash:

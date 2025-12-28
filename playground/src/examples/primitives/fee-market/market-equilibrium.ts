@@ -1,5 +1,4 @@
-import * as FeeMarket from "../../../primitives/FeeMarket/index.js";
-
+import { FeeMarket } from "voltaire";
 // Start with imbalanced market (high demand, low base fee)
 let state: FeeMarket.State = {
 	gasUsed: 0n,

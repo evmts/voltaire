@@ -1,4 +1,4 @@
-import * as TransactionIndex from "../../../primitives/TransactionIndex/index.js";
+import { TransactionIndex } from "voltaire";
 const target = TransactionIndex.from(50);
 const rangeStart = TransactionIndex.from(0);
 const rangeEnd = TransactionIndex.from(100);

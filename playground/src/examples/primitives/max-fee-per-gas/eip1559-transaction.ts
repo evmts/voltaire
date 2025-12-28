@@ -1,4 +1,4 @@
-import * as MaxFeePerGas from "../../../primitives/MaxFeePerGas/index.js";
+import { MaxFeePerGas } from "voltaire";
 
 // Network state
 const currentBaseFee = 45n; // Gwei - current block's base fee

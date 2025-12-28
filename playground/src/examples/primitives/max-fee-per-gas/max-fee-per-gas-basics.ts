@@ -1,4 +1,4 @@
-import * as MaxFeePerGas from "../../../primitives/MaxFeePerGas/index.js";
+import { MaxFeePerGas } from "voltaire";
 
 // Example: MaxFeePerGas basics - EIP-1559 transaction fees
 

@@ -1,5 +1,4 @@
-import * as Hash from "../../../primitives/Hash/index.js";
-
+import { Hash } from "voltaire";
 // Example: Comparing hashes for equality
 
 // Same hash values

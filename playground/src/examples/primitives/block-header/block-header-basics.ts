@@ -1,6 +1,4 @@
-import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { BlockHeader, Hex } from "voltaire";
 // Example: BlockHeader basics - comprehensive field access
 
 // Real Ethereum mainnet block 18000000 (post-Merge, post-Shanghai, pre-Cancun)

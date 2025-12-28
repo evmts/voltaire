@@ -1,4 +1,4 @@
-import * as ABI from "../../../primitives/ABI/index.js";
+import { ABI } from "voltaire";
 
 // Example: Calculate event signature (topic0) from signature string
 const transferSignature = ABI.Event.getSelector(

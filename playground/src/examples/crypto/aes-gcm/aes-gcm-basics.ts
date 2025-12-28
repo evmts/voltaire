@@ -1,5 +1,4 @@
-import * as AesGcm from "../../../crypto/AesGcm/index.js";
-
+import { AesGcm } from "voltaire";
 // Generate 256-bit AES key (recommended)
 const key256 = await AesGcm.generateKey(256);
 

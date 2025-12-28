@@ -1,4 +1,4 @@
-import { KZG } from "../../../crypto/KZG/index.js";
+import { KZG } from "voltaire";
 KZG.loadTrustedSetup();
 try {
 	const blob = KZG.generateRandomBlob();

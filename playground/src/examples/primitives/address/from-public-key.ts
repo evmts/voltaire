@@ -1,5 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-
+import { Address } from "voltaire";
 // Example: Derive address from public key
 // Uncompressed public key (65 bytes: 0x04 + x + y)
 const publicKey = new Uint8Array([

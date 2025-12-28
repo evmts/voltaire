@@ -1,4 +1,4 @@
-import * as StorageValue from "../../../primitives/StorageValue/index.js";
+import { StorageValue } from "voltaire";
 
 // Example: Working with uint256 values in storage
 

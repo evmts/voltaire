@@ -1,9 +1,4 @@
-import {
-	BYTES_PER_BLOB,
-	BYTES_PER_COMMITMENT,
-	KZG,
-} from "../../../crypto/KZG/index.js";
-
+import { KZG } from "voltaire";
 // Example: Converting blobs to KZG commitments
 
 // Initialize

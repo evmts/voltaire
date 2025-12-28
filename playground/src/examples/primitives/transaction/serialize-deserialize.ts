@@ -1,7 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { Address, Hex, Transaction } from "voltaire";
 // Transaction Serialization: RLP encode/decode transactions
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create EIP-1559 transaction
 const tx: Transaction.EIP1559 = {

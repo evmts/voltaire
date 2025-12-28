@@ -1,6 +1,4 @@
-import * as Blake2 from "../../../crypto/Blake2/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Blake2, Hex } from "voltaire";
 // Empty input (64-byte output)
 const emptyHash = Blake2.hash(new Uint8Array(0), 64);
 const emptyExpected = new Uint8Array([

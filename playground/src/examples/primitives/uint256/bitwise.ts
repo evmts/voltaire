@@ -1,5 +1,4 @@
-import * as Uint256 from "../../../../../src/primitives/Uint/index.js";
-
+import { Uint256 } from "voltaire";
 // Bitwise AND
 const a = Uint256.fromNumber(0b1100);
 const b = Uint256.fromNumber(0b1010);

@@ -1,5 +1,4 @@
-import * as Hash from "../../../primitives/Hash/index.js";
-
+import { Hash } from "voltaire";
 // Example: Creating hashes from byte arrays
 
 // Hash from raw bytes (32 bytes)

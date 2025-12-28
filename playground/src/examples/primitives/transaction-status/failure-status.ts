@@ -1,5 +1,4 @@
-import * as TransactionStatus from "../../../primitives/TransactionStatus/index.js";
-
+import { TransactionStatus } from "voltaire";
 // Generic failure (no reason provided)
 const genericFailure = TransactionStatus.failed();
 

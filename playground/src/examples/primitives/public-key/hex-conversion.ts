@@ -1,5 +1,4 @@
-import * as PrivateKey from "../../../primitives/PrivateKey/index.js";
-import * as PublicKey from "../../../primitives/PublicKey/index.js";
+import { PrivateKey, PublicKey } from "voltaire";
 
 // Create public key from private key
 const privateKey = PrivateKey.from(

@@ -1,6 +1,4 @@
-import * as P256 from "../../../crypto/P256/index.js";
-import { Hash } from "../../../primitives/Hash/index.js";
-
+import { Hash, P256 } from "voltaire";
 // In real Secure Enclave, this happens in hardware
 // Private key never accessible to main CPU
 const secureEnclavePrivateKey = crypto.getRandomValues(new Uint8Array(32));

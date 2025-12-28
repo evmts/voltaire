@@ -1,6 +1,5 @@
+import { Bip39, Hex } from "voltaire";
 // Optional passphrase for plausible deniability
-import * as Bip39 from "../../../crypto/BIP39/Bip39.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 const mnemonic = Bip39.generateMnemonic(256);
 

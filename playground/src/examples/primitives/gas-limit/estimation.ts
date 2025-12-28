@@ -1,5 +1,4 @@
-import * as Gas from "../../../primitives/Gas/index.js";
-
+import { Gas } from "voltaire";
 // Use constants for well-known operations
 const ethTransfer = Gas.gasLimitFrom(Gas.SIMPLE_TRANSFER);
 

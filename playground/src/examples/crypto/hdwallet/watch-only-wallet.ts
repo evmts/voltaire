@@ -1,7 +1,6 @@
+import { Bip39, HDWallet, Hex } from "voltaire";
 // HD Wallet: Watch-only wallet (xpub for monitoring without spending)
-import * as Bip39 from "../../../crypto/Bip39/Bip39.js";
-import * as HDWallet from "../../../crypto/HDWallet/HDWallet.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+
 const mnemonic =
 	"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 const seed = await Bip39.mnemonicToSeed(mnemonic);

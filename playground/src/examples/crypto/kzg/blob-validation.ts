@@ -1,10 +1,4 @@
-import {
-	BYTES_PER_BLOB,
-	BYTES_PER_FIELD_ELEMENT,
-	FIELD_ELEMENTS_PER_BLOB,
-	KZG,
-} from "../../../crypto/KZG/index.js";
-
+import { KZG } from "voltaire";
 // Example: Blob validation and constraints
 
 KZG.loadTrustedSetup();

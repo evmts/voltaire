@@ -1,4 +1,4 @@
-import * as BloomFilter from "voltaire/primitives/BloomFilter";
+import { BloomFilter } from "voltaire";
 
 const m = 2048;
 const k = 3;

@@ -1,6 +1,5 @@
+import { Ed25519, Hex } from "voltaire";
 // Sign message with Ed25519
-import * as Ed25519 from "../../../crypto/Ed25519/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Generate keypair
 const seed = crypto.getRandomValues(new Uint8Array(32));

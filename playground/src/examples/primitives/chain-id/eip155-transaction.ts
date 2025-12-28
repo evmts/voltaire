@@ -1,4 +1,4 @@
-import * as ChainId from "../../../primitives/ChainId/index.js";
+import { ChainId } from "voltaire";
 
 // Calculate EIP-155 v value
 // v = CHAIN_ID * 2 + 35 + {0,1}

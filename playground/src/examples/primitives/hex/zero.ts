@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Create zero-filled hex values
 const zero4 = Hex.zero(4);
 

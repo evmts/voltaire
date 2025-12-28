@@ -1,4 +1,4 @@
-import * as TransactionIndex from "../../../primitives/TransactionIndex/index.js";
+import { TransactionIndex } from "voltaire";
 const blockTxCount = 150;
 const lastTx = TransactionIndex.from(blockTxCount - 1);
 

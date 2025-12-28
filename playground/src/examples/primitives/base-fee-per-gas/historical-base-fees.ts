@@ -1,4 +1,5 @@
-import * as BaseFeePerGas from "../../../primitives/BaseFeePerGas/index.js";
+import { BaseFeePerGas } from "voltaire";
+
 const eip1559Launch = BaseFeePerGas.fromGwei(50n); // Initial base fee
 const preMerge = BaseFeePerGas.fromGwei(25n);
 const postMerge = BaseFeePerGas.fromGwei(13n);

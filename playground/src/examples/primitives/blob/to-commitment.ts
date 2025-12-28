@@ -1,5 +1,4 @@
-import * as Blob from "../../../primitives/Blob/index.js";
-
+import { Blob } from "voltaire";
 // Create blob with some data
 const data = new TextEncoder().encode(
 	"This blob will generate a KZG commitment",

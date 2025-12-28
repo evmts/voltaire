@@ -1,8 +1,5 @@
+import { Ed25519, Hash, Hex, Secp256k1 } from "voltaire";
 // Compare Ed25519 with secp256k1
-import * as Ed25519 from "../../../crypto/Ed25519/index.js";
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Ed25519 key generation
 const ed25519Seed = crypto.getRandomValues(new Uint8Array(32));

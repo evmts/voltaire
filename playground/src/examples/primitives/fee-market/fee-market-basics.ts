@@ -1,5 +1,4 @@
-import * as FeeMarket from "../../../primitives/FeeMarket/index.js";
-
+import { FeeMarket } from "voltaire";
 // Example: FeeMarket basics - EIP-1559 fee market dynamics
 
 // 1. Base fee calculation (EIP-1559)

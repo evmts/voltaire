@@ -1,5 +1,4 @@
-import * as BlockNumber from "../../../primitives/BlockNumber/index.js";
-
+import { BlockNumber } from "voltaire";
 // Small block numbers (recent transactions)
 const block1 = BlockNumber.from(100);
 const block2 = BlockNumber.from(1000);

@@ -1,5 +1,4 @@
-import * as Withdrawal from "../../../primitives/Withdrawal/index.js";
-
+import { Withdrawal } from "voltaire";
 // Scenario 1: Voluntary exit (full 32 ETH)
 const voluntaryExit = Withdrawal.from({
 	index: 5000000n,

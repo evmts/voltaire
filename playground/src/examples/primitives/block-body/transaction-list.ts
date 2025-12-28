@@ -1,7 +1,5 @@
-import Address from "../../../primitives/Address/index.js";
+import { Address, BlockBody, Transaction } from "voltaire";
 // Transaction List: Accessing and iterating block body transactions
-import * as BlockBody from "../../../primitives/BlockBody/index.js";
-import Transaction from "../../../primitives/Transaction/index.js";
 
 // Create transactions of different types
 const legacyTx: Transaction.Legacy = {

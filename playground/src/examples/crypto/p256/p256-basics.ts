@@ -1,5 +1,4 @@
-import * as P256 from "../../../crypto/P256/index.js";
-import { Hash } from "../../../primitives/Hash/index.js";
+import { Hash, P256 } from "voltaire";
 // Generate a random private key (32 bytes)
 const privateKey = crypto.getRandomValues(new Uint8Array(32));
 

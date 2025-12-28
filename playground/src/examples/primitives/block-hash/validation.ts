@@ -1,4 +1,4 @@
-import * as BlockHash from "../../../primitives/BlockHash/index.js";
+import { BlockHash } from "voltaire";
 try {
 	// With 0x prefix
 	const hash1 = BlockHash.fromHex(

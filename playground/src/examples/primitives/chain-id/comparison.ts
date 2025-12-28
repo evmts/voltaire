@@ -1,4 +1,4 @@
-import * as ChainId from "../../../primitives/ChainId/index.js";
+import { ChainId } from "voltaire";
 
 const mainnet1 = ChainId.from(1);
 const mainnet2 = ChainId.from(1);

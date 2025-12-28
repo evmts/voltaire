@@ -1,6 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
+import { Address, Transaction } from "voltaire";
 // Transaction Modification: Create modified copies of transactions
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Original transaction
 const original: Transaction.EIP1559 = {

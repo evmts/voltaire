@@ -1,5 +1,4 @@
-import * as Bytes from "../../../primitives/Bytes/index.js";
-
+import { Bytes } from "voltaire";
 // Create zero-filled byte arrays
 const zeros8 = Bytes.zero(8);
 

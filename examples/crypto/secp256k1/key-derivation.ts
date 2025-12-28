@@ -26,7 +26,8 @@ const publicKeyHash = keccak256(publicKey);
 
 // Take last 20 bytes as address
 const addressBytes = publicKeyHash.slice(12);
-const addressHex = `0x${Buffer.from(addressBytes).toString("hex")}`;
+import * as Hex from "../../../src/primitives/Hex/index.js";
+const addressHex = Hex.fromBytes(addressBytes);
 const publicKey2 = Secp256k1.derivePublicKey(privateKey);
 const keysMatch = publicKey.every((byte, i) => byte === publicKey2[i]);
 
@@ -47,7 +48,7 @@ for (let i = 0; i < 3; i++) {
 	crypto.getRandomValues(pk);
 	const pubKey = Secp256k1.derivePublicKey(pk);
 	const hash = keccak256(pubKey);
-	const addr = `0x${Buffer.from(hash.slice(12)).toString("hex")}`;
+	const addr = Hex.fromBytes(hash.slice(12));
 }
 const privateKeyOne = new Uint8Array(32);
 privateKeyOne[31] = 1;
@@ -61,9 +62,5 @@ const expectedGy = BigInt(
 	"0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8",
 );
 
-const actualGx = BigInt(
-	`0x${Buffer.from(generatorPoint.slice(0, 32)).toString("hex")}`,
-);
-const actualGy = BigInt(
-	`0x${Buffer.from(generatorPoint.slice(32, 64)).toString("hex")}`,
-);
+const actualGx = BigInt(Hex.fromBytes(generatorPoint.slice(0, 32)));
+const actualGy = BigInt(Hex.fromBytes(generatorPoint.slice(32, 64)));

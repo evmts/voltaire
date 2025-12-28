@@ -172,7 +172,7 @@ const signature = Secp256k1.sign(messageHash, privateKey);
 ```typescript
 const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
 const hash = keccak256(publicKey);
-const address = '0x' + Buffer.from(hash.slice(12)).toString('hex');
+const address = Hex.fromBytes(hash.slice(12));
 ```
 
 ### Verify signature

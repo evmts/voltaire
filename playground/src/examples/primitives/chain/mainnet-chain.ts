@@ -1,4 +1,4 @@
-import * as Chain from "voltaire/primitives/Chain";
+import { Chain } from "voltaire";
 
 // Example: Ethereum Mainnet chain configuration and properties
 

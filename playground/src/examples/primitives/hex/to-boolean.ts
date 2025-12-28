@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Convert hex to boolean (0x00 = false, anything else = true)
 const hexFalse = "0x00";
 const hexTrue = "0x01";

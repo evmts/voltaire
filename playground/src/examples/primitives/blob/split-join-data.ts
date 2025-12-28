@@ -1,5 +1,4 @@
-import * as Blob from "../../../primitives/Blob/index.js";
-
+import { Blob } from "voltaire";
 const maxPerBlob =
 	Blob.FIELD_ELEMENTS_PER_BLOB * (Blob.BYTES_PER_FIELD_ELEMENT - 1);
 const smallText = "This fits in one blob easily.";

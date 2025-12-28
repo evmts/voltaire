@@ -1,7 +1,5 @@
-import Address from "../../../primitives/Address/index.js";
+import { Address, BlockBody, Transaction } from "voltaire";
 // Full Block: Create block body with many transactions
-import * as BlockBody from "../../../primitives/BlockBody/index.js";
-import Transaction from "../../../primitives/Transaction/index.js";
 
 // Generate many transactions to simulate full block
 const transactions: Transaction.Any[] = [];

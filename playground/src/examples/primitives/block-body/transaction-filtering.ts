@@ -1,7 +1,5 @@
-import Address from "../../../primitives/Address/index.js";
+import { Address, BlockBody, Transaction } from "voltaire";
 // Transaction Filtering: Filter and analyze block body transactions
-import * as BlockBody from "../../../primitives/BlockBody/index.js";
-import Transaction from "../../../primitives/Transaction/index.js";
 
 // Create diverse set of transactions
 const targetAddress = Address.from(

@@ -1,4 +1,4 @@
-import * as BloomFilter from "voltaire/primitives/BloomFilter";
+import { BloomFilter } from "voltaire";
 import {
 	BITS,
 	DEFAULT_HASH_COUNT,

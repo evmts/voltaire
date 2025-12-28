@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Compare hex values for equality
 const hex1 = Hex.from("0xdeadbeef");
 const hex2 = Hex.from("0xdeadbeef");

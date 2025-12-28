@@ -1,4 +1,4 @@
-import * as Blob from "../../../primitives/Blob/index.js";
+import { Blob } from "voltaire";
 const empty = Blob.from(new Uint8Array(Blob.SIZE));
 const text = "This data will be automatically encoded into field elements";
 const encoded = new TextEncoder().encode(text);

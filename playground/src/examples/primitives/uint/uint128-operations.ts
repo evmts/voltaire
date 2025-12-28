@@ -1,4 +1,4 @@
-import * as Uint128 from "../../../primitives/Uint128/index.js";
+import { Uint128 } from "voltaire";
 const ipv6Localhost = Uint128.fromHex("0x00000000000000000000000000000001"); // ::1
 const ipv6Google = Uint128.fromHex("0x2001048860486860000000008888"); // 2001:4860:4860::8888
 const uuid1 = Uint128.fromHex("0x550e8400e29b41d4a716446655440000");

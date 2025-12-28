@@ -11,6 +11,7 @@
 
 import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
 import { keccak256 } from "../../../src/primitives/Hash/index.js";
+import * as Hex from "../../../src/primitives/Hex/index.js";
 
 // Generate test keypair
 const privateKey = new Uint8Array(32);
@@ -65,7 +66,7 @@ const CURVE_ORDER = BigInt(
 );
 
 // Convert s to BigInt
-const sValue = BigInt(`0x${Buffer.from(validSignature.s).toString("hex")}`);
+const sValue = BigInt(Hex.fromBytes(validSignature.s));
 const halfOrder = CURVE_ORDER / 2n;
 
 // Valid key

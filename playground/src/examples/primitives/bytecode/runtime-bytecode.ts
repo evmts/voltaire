@@ -1,5 +1,4 @@
-import { Bytecode } from "../../../primitives/Bytecode/index.js";
-
+import { Bytecode } from "voltaire";
 // Example: Runtime bytecode (code stored on-chain after deployment)
 
 // Simple runtime bytecode: returns 42

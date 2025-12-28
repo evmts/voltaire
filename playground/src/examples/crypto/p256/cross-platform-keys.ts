@@ -1,6 +1,4 @@
-import * as P256 from "../../../crypto/P256/index.js";
-import { Hash } from "../../../primitives/Hash/index.js";
-
+import { Hash, P256 } from "voltaire";
 const iosPrivateKey = crypto.getRandomValues(new Uint8Array(32));
 const iosPublicKey = P256.derivePublicKey(iosPrivateKey);
 

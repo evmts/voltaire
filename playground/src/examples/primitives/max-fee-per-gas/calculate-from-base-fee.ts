@@ -1,4 +1,4 @@
-import * as MaxFeePerGas from "../../../primitives/MaxFeePerGas/index.js";
+import { MaxFeePerGas } from "voltaire";
 
 // Base fee increases 12.5% per block when full
 // Base fee decreases 12.5% per block when empty

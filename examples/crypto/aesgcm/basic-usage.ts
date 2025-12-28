@@ -65,6 +65,7 @@ const ct1 = await AesGcm.encrypt(testMsg, testKey, testNonce);
 const ct2 = await AesGcm.encrypt(testMsg, testKey, testNonce);
 const ct3 = await AesGcm.encrypt(testMsg, testKey, testNonce);
 
+import * as Hex from "../../../src/primitives/Hex/index.js";
 const allMatch =
-	Buffer.from(ct1).toString("hex") === Buffer.from(ct2).toString("hex") &&
-	Buffer.from(ct2).toString("hex") === Buffer.from(ct3).toString("hex");
+	Hex.fromBytes(ct1) === Hex.fromBytes(ct2) &&
+	Hex.fromBytes(ct2) === Hex.fromBytes(ct3);

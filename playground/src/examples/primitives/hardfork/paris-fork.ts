@@ -1,5 +1,4 @@
-import * as Hardfork from "../../../primitives/Hardfork/index.js";
-
+import { Hardfork } from "voltaire";
 const merge = Hardfork.MERGE;
 const paris = Hardfork.fromString("paris"); // Alias for merge
 const prePost = [

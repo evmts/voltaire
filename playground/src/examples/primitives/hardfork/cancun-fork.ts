@@ -1,3 +1,2 @@
-import * as Hardfork from "../../../primitives/Hardfork/index.js";
-
+import { Hardfork } from "voltaire";
 const cancun = Hardfork.CANCUN;

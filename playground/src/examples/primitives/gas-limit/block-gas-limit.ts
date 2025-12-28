@@ -1,5 +1,4 @@
-import * as Gas from "../../../primitives/Gas/index.js";
-
+import { Gas } from "voltaire";
 // Ethereum mainnet block gas limit
 const blockLimit = Gas.gasLimitFrom(30000000);
 

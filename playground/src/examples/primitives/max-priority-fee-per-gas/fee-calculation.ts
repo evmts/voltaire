@@ -1,4 +1,5 @@
-import * as MaxPriorityFeePerGas from "../../../primitives/MaxPriorityFeePerGas/index.js";
+import { MaxPriorityFeePerGas } from "voltaire";
+
 const gasLimit = 21000n; // Standard ETH transfer
 const baseFeeGwei = 30n;
 const priorityFee = MaxPriorityFeePerGas.fromGwei(2);
@@ -23,7 +24,7 @@ for (const { label, tip } of fees) {
 	const feePerGas = baseFeeWei + MaxPriorityFeePerGas.toWei(tip);
 	const total = feePerGas * gasLimit;
 }
-// MaxFeePerGas = Expected Base Fee + Priority Fee + Buffer
+// MaxFeePerGas = Expected Base Fee + Priority Fee + Padding
 const expectedBaseFee = 30n;
 const desiredPriorityFee = MaxPriorityFeePerGas.fromGwei(2);
 const buffer = 10n; // 10 Gwei buffer for base fee volatility

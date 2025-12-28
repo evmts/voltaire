@@ -1,4 +1,4 @@
-import * as ABI from "../../../primitives/ABI/index.js";
+import { ABI } from "voltaire";
 
 // Example: Encode ERC20 Transfer event topics
 const transferTopics = ABI.Event.encodeTopics(

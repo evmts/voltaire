@@ -1,5 +1,4 @@
-import * as Gas from "../../../primitives/Gas/index.js";
-
+import { Gas } from "voltaire";
 // Standard ETH transfer always costs exactly 21000 gas
 const ethTransferGas = Gas.gasLimitFrom(21000);
 const gasLimit = 21000n;

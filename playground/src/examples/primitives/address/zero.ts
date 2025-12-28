@@ -1,5 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-
+import { Address } from "voltaire";
 // Example: Working with zero address
 // The zero address is 0x0000000000000000000000000000000000000000
 const zero = Address.zero();

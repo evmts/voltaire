@@ -1,6 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
+import { Address, Transaction } from "voltaire";
 // Transaction Utilities: Helper functions for transaction analysis
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Contract creation transaction (to is null)
 const contractCreation: Transaction.EIP1559 = {

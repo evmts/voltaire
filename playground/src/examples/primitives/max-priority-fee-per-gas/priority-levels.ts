@@ -1,4 +1,4 @@
-import * as MaxPriorityFeePerGas from "../../../primitives/MaxPriorityFeePerGas/index.js";
+import { MaxPriorityFeePerGas } from "voltaire";
 
 const priorityLevels = {
 	minimal: MaxPriorityFeePerGas.from(500000000n), // 0.5 Gwei

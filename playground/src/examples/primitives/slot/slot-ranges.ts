@@ -1,5 +1,4 @@
-import * as Slot from "../../../primitives/Slot/index.js";
-
+import { Slot } from "voltaire";
 // Define a range
 const startSlot = Slot.from(7000000n);
 const endSlot = Slot.from(7000100n);

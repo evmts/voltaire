@@ -1,5 +1,5 @@
-import * as RIPEMD160 from "../../../crypto/RIPEMD160/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { RIPEMD160 } from "voltaire";
+import { Hex } from "voltaire";
 
 // Hash raw byte arrays
 const data = new Uint8Array([1, 2, 3, 4, 5]);

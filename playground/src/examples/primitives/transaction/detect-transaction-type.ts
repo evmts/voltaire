@@ -1,7 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { Address, Hex, Transaction } from "voltaire";
 // Transaction Type Detection: Identify transaction type from bytes
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Create different transaction types and serialize them
 const legacy: Transaction.Legacy = {

@@ -1,9 +1,4 @@
-import * as Uint from "../../../primitives/Uint/index.js";
-import * as Uint8 from "../../../primitives/Uint8/index.js";
-import * as Uint16 from "../../../primitives/Uint16/index.js";
-import * as Uint32 from "../../../primitives/Uint32/index.js";
-import * as Uint64 from "../../../primitives/Uint64/index.js";
-import * as Uint128 from "../../../primitives/Uint128/index.js";
+import { Uint, Uint128, Uint16, Uint32, Uint64, Uint8 } from "voltaire";
 const u8a = Uint8.fromNumber(42);
 const u8b = Uint8.fromHex("0xff");
 const u8c = Uint8.from("200");

@@ -1,5 +1,4 @@
-import { BYTES_PER_FIELD_ELEMENT, KZG } from "../../../crypto/KZG/index.js";
-
+import { KZG } from "voltaire";
 // Example: Generating KZG proofs at evaluation points
 
 KZG.loadTrustedSetup();

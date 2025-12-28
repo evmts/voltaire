@@ -1,5 +1,5 @@
+import { Ed25519 } from "voltaire";
 // Verify Ed25519 signature
-import * as Ed25519 from "../../../crypto/Ed25519/index.js";
 
 // Generate keypair and sign
 const seed = crypto.getRandomValues(new Uint8Array(32));

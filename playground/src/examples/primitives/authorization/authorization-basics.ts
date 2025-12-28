@@ -1,5 +1,4 @@
-import * as Address from "voltaire/primitives/Address";
-import * as Authorization from "voltaire/primitives/Authorization";
+import { Address, Authorization } from "voltaire";
 
 // Example: Authorization basics (EIP-7702)
 // EIP-7702 allows EOAs to delegate code execution to a contract address

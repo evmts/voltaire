@@ -1,4 +1,4 @@
-import * as Blob from "../../../primitives/Blob/index.js";
+import { Blob } from "voltaire";
 const applicationData = JSON.stringify({
 	type: "rollup_batch",
 	transactions: [

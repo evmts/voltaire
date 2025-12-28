@@ -1,5 +1,6 @@
-import * as Int32 from "../../../primitives/Int32/index.js";
-import * as Int64 from "../../../primitives/Int64/index.js";
+import { Int64 } from "voltaire";
+import { Int32 } from "voltaire";
+
 const pos = Int32.fromNumber(100);
 const neg = Int32.fromNumber(-50);
 const revenue = Int64.fromBigInt(1000000n);

@@ -1,4 +1,4 @@
-import * as ABI from "../../../primitives/ABI/index.js";
+import { ABI } from "voltaire";
 
 // Example: Format function signature
 const transferSig = ABI.Function.getSignature({

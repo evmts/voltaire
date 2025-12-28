@@ -1,7 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Bytecode from "../../../primitives/Bytecode/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-
+import { Address, Bytecode, Hash } from "voltaire";
 // Example: CREATE2 opcode address generation
 // CREATE2 allows deterministic contract addresses independent of nonce
 

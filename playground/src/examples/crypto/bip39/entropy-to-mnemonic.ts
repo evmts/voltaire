@@ -1,6 +1,5 @@
+import { Bip39, Hex } from "voltaire";
 // Convert raw entropy to BIP-39 mnemonic
-import * as Bip39 from "../../../crypto/BIP39/Bip39.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // 16 bytes (128 bits) = 12 words
 const entropy16 = new Uint8Array(16).fill(0);

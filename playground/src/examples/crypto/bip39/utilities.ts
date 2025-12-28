@@ -1,5 +1,5 @@
+import { Bip39 } from "voltaire";
 // Utility functions for BIP-39
-import * as Bip39 from "../../../crypto/BIP39/Bip39.js";
 
 // Verify conversions
 const entropy = Bip39.ENTROPY_256;

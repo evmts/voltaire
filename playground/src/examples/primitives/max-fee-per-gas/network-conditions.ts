@@ -1,4 +1,5 @@
-import * as MaxFeePerGas from "../../../primitives/MaxFeePerGas/index.js";
+import { MaxFeePerGas } from "voltaire";
+
 const lowCongestionBase = 12n; // Gwei
 const lowCongestionPriority = 1n; // Gwei
 const lowCongestionMax = MaxFeePerGas.fromGwei(

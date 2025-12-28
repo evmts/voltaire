@@ -1,6 +1,5 @@
+import { Ed25519, Hex } from "voltaire";
 // Ed25519 deterministic signatures (no nonce needed)
-import * as Ed25519 from "../../../crypto/Ed25519/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Generate keypair
 const seed = new Uint8Array(32).fill(1);

@@ -1,5 +1,4 @@
-import * as Selector from "../../../primitives/Selector/index.js";
-
+import { Selector } from "voltaire";
 try {
 	const sel1 = Selector.fromHex("0xa9059cbb");
 } catch (e) {}

@@ -1,7 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { Address, Hex, Transaction } from "voltaire";
 // Transaction Signature: Verify and recover sender
-import * as Transaction from "../../../primitives/Transaction/index.js";
 
 // Example signed transaction (with real signature components)
 const signedTx: Transaction.EIP1559 = {

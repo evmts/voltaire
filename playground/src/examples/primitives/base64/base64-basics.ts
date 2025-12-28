@@ -1,4 +1,4 @@
-import * as Base64 from "../../../primitives/Base64/index.js";
+import { Base64 } from "voltaire";
 const data = new Uint8Array([72, 101, 108, 108, 111]);
 const encoded = Base64.encode(data);
 const text = "Hello, world!";

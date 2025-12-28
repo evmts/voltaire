@@ -1,5 +1,4 @@
-import * as Slot from "../../../primitives/Slot/index.js";
-
+import { Slot } from "voltaire";
 // Example: Time calculations with slots
 // Slots are 12 seconds apart starting from the merge (genesis time)
 

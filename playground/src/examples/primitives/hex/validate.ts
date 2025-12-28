@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Validate hex strings
 const valid1 = "0x1234";
 const valid2 = "0xdeadbeef";

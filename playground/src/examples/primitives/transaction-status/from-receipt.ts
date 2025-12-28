@@ -1,5 +1,5 @@
-import * as TransactionStatus from "../../../primitives/TransactionStatus/index.js";
-import type { Uint256Type } from "../../../primitives/Uint/Uint256Type.js";
+import { type Uint256Type } from "voltaire";
+import { TransactionStatus } from "voltaire";
 
 // Simulated receipt data structures
 interface Receipt {

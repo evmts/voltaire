@@ -1,6 +1,5 @@
-import { Hash } from "../../../primitives/Hash/index.js";
-import * as PrivateKey from "../../../primitives/PrivateKey/index.js";
-import * as PublicKey from "../../../primitives/PublicKey/index.js";
+import { PrivateKey, PublicKey } from "voltaire";
+import { Hash } from "voltaire";
 
 // Create key pair
 const privateKey = PrivateKey.from(

@@ -1,7 +1,5 @@
+import { Hash, Hex, Secp256k1 } from "voltaire";
 // Recover public key from signature
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Create message and sign
 const message = "Recover my public key";

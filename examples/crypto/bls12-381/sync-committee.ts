@@ -28,7 +28,8 @@ const syncCommittee = Array.from({ length: SYNC_COMMITTEE_SIZE }, (_, i) => {
 
 // Simulate beacon block root (32 bytes)
 const blockRoot = randomBytes(32);
-const blockRootHex = `0x${Buffer.from(blockRoot).toString("hex")}`;
+import * as Hex from "../../../src/primitives/Hex/index.js";
+const blockRootHex = Hex.fromBytes(blockRoot);
 
 // Random participation (85% of validators online)
 const participationBits = Array.from(

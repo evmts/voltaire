@@ -1,4 +1,4 @@
-import * as ABI from "../../../primitives/ABI/index.js";
+import { ABI } from "voltaire";
 
 // Example: Encode simple tuple
 const simpleTuple = ABI.encodeParameters(

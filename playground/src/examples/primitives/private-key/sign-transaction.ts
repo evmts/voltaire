@@ -1,6 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as PrivateKey from "../../../primitives/PrivateKey/index.js";
+import { PrivateKey } from "voltaire";
+import { Address, Hash } from "voltaire";
 
 // Example: Signing transaction data with private key
 

@@ -1,5 +1,4 @@
-import { KZG } from "../../../crypto/KZG/index.js";
-
+import { KZG } from "voltaire";
 // Example: KZG basics for EIP-4844 blob commitments
 
 // Initialize trusted setup (required once before any KZG operations)

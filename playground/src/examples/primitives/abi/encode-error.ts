@@ -1,4 +1,4 @@
-import * as ABI from "../../../primitives/ABI/index.js";
+import { ABI } from "voltaire";
 
 // Example: Encode custom error without parameters
 const unauthorized = ABI.Error.encodeParams({

@@ -1,4 +1,4 @@
-import * as Hash from "../../../primitives/Hash/index.js";
+import { Hash } from "voltaire";
 // From hex string
 const hash1 = Hash.from(
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",

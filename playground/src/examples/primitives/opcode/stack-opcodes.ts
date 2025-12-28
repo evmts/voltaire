@@ -1,5 +1,4 @@
-import * as Opcode from "../../../primitives/Opcode/index.js";
-
+import { Opcode } from "voltaire";
 // POP (0x50) - Remove from stack
 const popInfo = Opcode.info(Opcode.POP);
 // DUP duplicates stack items

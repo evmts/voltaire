@@ -1,7 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as BlockHash from "../../../primitives/BlockHash/index.js";
-import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
+import { Address, BlockHash, BlockHeader, Hash } from "voltaire";
 const preMergeHeader = BlockHeader.from({
 	parentHash:
 		"0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6",

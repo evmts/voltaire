@@ -1,5 +1,4 @@
-import * as FeeMarket from "../../../primitives/FeeMarket/index.js";
-
+import { FeeMarket } from "voltaire";
 // Example: Network congestion scenarios
 // Shows how fee market responds to demand spikes and recovery
 

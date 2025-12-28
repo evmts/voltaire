@@ -1,5 +1,5 @@
-import { hash as keccak256 } from "../../../../../src/crypto/Keccak256/index.js";
-import * as Domain from "../../../../../src/primitives/Domain/index.js";
+import { hash as keccak256 } from "voltaire";
+import { Domain } from "voltaire";
 
 // Minimal valid domains (at least one field)
 try {

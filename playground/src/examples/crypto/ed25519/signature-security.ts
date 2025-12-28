@@ -1,5 +1,5 @@
+import { Ed25519 } from "voltaire";
 // Ed25519 signature security edge cases
-import * as Ed25519 from "../../../crypto/Ed25519/index.js";
 
 // Generate valid keypair
 const seed = new Uint8Array(32).fill(1);

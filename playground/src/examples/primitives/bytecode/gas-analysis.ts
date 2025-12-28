@@ -1,5 +1,4 @@
-import { Bytecode } from "../../../primitives/Bytecode/index.js";
-
+import { Bytecode } from "voltaire";
 // Example: Gas analysis and cost calculation
 
 // Simple bytecode with known gas costs

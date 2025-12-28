@@ -1,11 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as BlockHash from "../../../primitives/BlockHash/index.js";
-import * as BlockNumber from "../../../primitives/BlockNumber/index.js";
-import * as Receipt from "../../../primitives/Receipt/index.js";
-import * as TransactionHash from "../../../primitives/TransactionHash/index.js";
-import * as TransactionIndex from "../../../primitives/TransactionIndex/index.js";
-import * as TransactionStatus from "../../../primitives/TransactionStatus/index.js";
-import type { Uint256Type } from "../../../primitives/Uint/Uint256Type.js";
+import { type Uint256Type } from "voltaire";
+import { Address, BlockHash, BlockNumber, Receipt, TransactionHash, TransactionIndex, TransactionStatus } from "voltaire";
 
 // Example: Successful transaction receipt
 

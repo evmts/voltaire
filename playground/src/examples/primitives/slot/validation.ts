@@ -1,4 +1,4 @@
-import * as Slot from "../../../primitives/Slot/index.js";
+import { Slot } from "voltaire";
 const validInputs = [
 	{ input: 0, label: "Zero" },
 	{ input: 0n, label: "Zero bigint" },

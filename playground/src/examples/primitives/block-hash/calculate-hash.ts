@@ -1,7 +1,4 @@
-import * as BlockHash from "../../../primitives/BlockHash/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { BlockHash, Hash, Hex } from "voltaire";
 // Example: Calculate block hash from block header fields
 // Note: Real block hash calculation requires RLP encoding of header
 

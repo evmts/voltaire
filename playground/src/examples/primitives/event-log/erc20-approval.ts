@@ -1,7 +1,4 @@
-import { Address } from "../../../primitives/Address/index.js";
-import { EventLog } from "../../../primitives/EventLog/index.js";
-import { Hash } from "../../../primitives/Hash/index.js";
-
+import { Address, EventLog, Hash } from "voltaire";
 // Event signature: keccak256("Approval(address,address,uint256)")
 const APPROVAL_SIGNATURE = Hash(
 	"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",

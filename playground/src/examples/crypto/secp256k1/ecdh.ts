@@ -1,6 +1,5 @@
+import { Hex, Secp256k1 } from "voltaire";
 // ECDH key exchange
-import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Alice generates keypair
 const alicePrivateKey = Secp256k1.PrivateKey.random();

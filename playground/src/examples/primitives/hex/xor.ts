@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // XOR two hex values (bitwise exclusive OR)
 const hex1 = Hex.from("0xff00ff00");
 const hex2 = Hex.from("0x00ff00ff");

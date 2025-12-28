@@ -1,5 +1,4 @@
-import * as Withdrawal from "../../../primitives/Withdrawal/index.js";
-
+import { Withdrawal } from "voltaire";
 // First withdrawal after Shanghai (block 17,034,870)
 const firstWithdrawal = Withdrawal.from({
 	index: 0n,

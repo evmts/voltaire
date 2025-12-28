@@ -1,4 +1,4 @@
-import * as Int256 from "../../../primitives/Int256/index.js";
+import { Int256 } from "voltaire";
 const sol_pos = Int256.fromBigInt(123456789012345678901234567890123456789n);
 const sol_neg = Int256.fromBigInt(-123456789012345678901234567890123456789n);
 const sol_one = Int256.ONE;

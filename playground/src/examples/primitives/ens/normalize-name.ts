@@ -1,5 +1,4 @@
-import * as Ens from "../../../primitives/Ens/index.js";
-
+import { Ens } from "voltaire";
 // Normalization converts names to canonical lowercase form
 // This ensures consistent hashing and lookups
 

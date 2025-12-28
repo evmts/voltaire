@@ -1,4 +1,4 @@
-import * as ABI from "../../../primitives/ABI/index.js";
+import { ABI } from "voltaire";
 
 // Example: Encode constructor with basic parameters
 const basicConstructor = ABI.Constructor.encodeParams(

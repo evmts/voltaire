@@ -1,4 +1,4 @@
-import * as GasEstimate from "../../../primitives/GasEstimate/index.js";
+import { GasEstimate } from "voltaire";
 const estimate = GasEstimate.from(65000n);
 const gasPrice = 50_000_000_000n; // 50 gwei in wei
 

@@ -1,4 +1,5 @@
-import * as MaxFeePerGas from "../../../primitives/MaxFeePerGas/index.js";
+import { MaxFeePerGas } from "voltaire";
+
 const baseFee = 45n; // Gwei
 const maxPriorityFee = 2n; // Gwei - tip to validators
 const maxFeePerGas = MaxFeePerGas.fromGwei(50n);

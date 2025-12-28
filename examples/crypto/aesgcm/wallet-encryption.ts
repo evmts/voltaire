@@ -11,6 +11,7 @@
 import * as AesGcm from "../../../src/crypto/AesGcm/index.js";
 import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
 import * as Address from "../../../src/primitives/Address/index.js";
+import * as Hex from "../../../src/primitives/Hex/index.js";
 
 // Wallet encryption format
 interface EncryptedWallet {
@@ -54,9 +55,9 @@ async function encryptWallet(
 		address: Address.toHex(address),
 		crypto: {
 			cipher: "aes-256-gcm",
-			ciphertext: Buffer.from(ciphertext).toString("hex"),
-			salt: Buffer.from(salt).toString("hex"),
-			nonce: Buffer.from(nonce).toString("hex"),
+			ciphertext: Hex.fromBytes(ciphertext).slice(2),
+			salt: Hex.fromBytes(salt).slice(2),
+			nonce: Hex.fromBytes(nonce).slice(2),
 			iterations,
 		},
 		timestamp: Date.now(),
@@ -71,9 +72,9 @@ async function decryptWallet(
 	const { crypto: cryptoParams } = wallet;
 
 	// Parse hex strings
-	const salt = Buffer.from(cryptoParams.salt, "hex");
-	const nonce = Buffer.from(cryptoParams.nonce, "hex");
-	const ciphertext = Buffer.from(cryptoParams.ciphertext, "hex");
+	const salt = Hex.toBytes(`0x${cryptoParams.salt}`);
+	const nonce = Hex.toBytes(`0x${cryptoParams.nonce}`);
+	const ciphertext = Hex.toBytes(`0x${cryptoParams.ciphertext}`);
 
 	// Derive key
 	const key = await AesGcm.deriveKey(

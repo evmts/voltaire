@@ -1,4 +1,4 @@
-import * as ABI from "../../../primitives/ABI/index.js";
+import { ABI } from "voltaire";
 
 // Example: Encode dynamic uint256 array
 const dynamicUintArray = ABI.encodeParameters(

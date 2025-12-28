@@ -1,7 +1,5 @@
-import Address from "../../../primitives/Address/index.js";
-import * as BlockBody from "../../../primitives/BlockBody/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-import Transaction from "../../../primitives/Transaction/index.js";
+
+import { Address, BlockBody, Hex, Transaction } from "voltaire";
 const emptyBody = BlockBody.from({
 	transactions: [],
 	ommers: [],

@@ -1,5 +1,4 @@
-import * as Ens from "../../../primitives/Ens/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { Ens, Hex } from "voltaire";
 const basicLabels = ["eth", "com", "xyz", "org", "io"];
 
 for (const label of basicLabels) {

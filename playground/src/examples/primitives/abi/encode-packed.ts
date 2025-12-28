@@ -1,4 +1,4 @@
-import * as ABI from "../../../primitives/ABI/index.js";
+import { ABI } from "voltaire";
 
 // Example: encodePacked for signature verification
 const packed1 = ABI.encodePacked(

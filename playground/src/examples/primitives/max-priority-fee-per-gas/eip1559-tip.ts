@@ -1,4 +1,5 @@
-import * as MaxPriorityFeePerGas from "../../../primitives/MaxPriorityFeePerGas/index.js";
+import { MaxPriorityFeePerGas } from "voltaire";
+
 const baseFee = 30n; // Current base fee (Gwei) - network determines this
 const priorityFee = MaxPriorityFeePerGas.fromGwei(2); // Your tip - you choose this
 const maxFeePerGas = 50n; // Max you're willing to pay total (Gwei)

@@ -1,6 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as Siwe from "../../../primitives/Siwe/index.js";
-
+import { Address, Base64, Hex, Siwe } from "voltaire";
 const address = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const message = Siwe.create({
 	domain: "example.com",
@@ -131,8 +129,9 @@ const testMessage = Siwe.create({
 });
 
 const testHash = Siwe.getMessageHash(testMessage);
-const hexString = Buffer.from(testHash).toString("hex");
-const base64String = Buffer.from(testHash).toString("base64");
+
+const hexString = Hex.fromBytes(testHash).slice(2);
+const base64String = Base64.encode(testHash);
 
 const signingMessage = Siwe.create({
 	domain: "app.example.com",
@@ -155,7 +154,7 @@ const consistentMessage = Siwe.create({
 const hashes = [];
 for (let i = 0; i < 5; i++) {
 	const h = Siwe.getMessageHash(consistentMessage);
-	hashes.push(Buffer.from(h).toString("hex"));
+	hashes.push(Hex.fromBytes(h).slice(2));
 }
 
 const allSame = hashes.every((h) => h === hashes[0]);

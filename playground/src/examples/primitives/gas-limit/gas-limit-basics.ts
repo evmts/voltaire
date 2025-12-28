@@ -1,4 +1,4 @@
-import * as Gas from "../../../primitives/Gas/index.js";
+import { Gas } from "voltaire";
 // Create from number
 const limit1 = Gas.gasLimitFrom(21000);
 

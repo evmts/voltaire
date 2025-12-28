@@ -1,5 +1,4 @@
-import * as Withdrawal from "../../../primitives/Withdrawal/index.js";
-
+import { Withdrawal } from "voltaire";
 // Sequential withdrawals in a single block
 const block1 = [
 	Withdrawal.from({

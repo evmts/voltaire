@@ -1,8 +1,4 @@
-import * as Block from "../../../primitives/Block/index.js";
-import * as BlockBody from "../../../primitives/BlockBody/index.js";
-import * as BlockHash from "../../../primitives/BlockHash/index.js";
-import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
-
+import { Block, BlockBody, BlockHash, BlockHeader } from "voltaire";
 // Create a valid block
 const validBlock = Block.from({
 	header: BlockHeader.from({

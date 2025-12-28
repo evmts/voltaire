@@ -1,5 +1,4 @@
-import * as Blob from "../../../primitives/Blob/index.js";
-
+import { Blob } from "voltaire";
 // Create empty blob
 const emptyBlob = Blob.from(new Uint8Array(Blob.SIZE));
 

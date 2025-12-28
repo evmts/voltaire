@@ -1,5 +1,4 @@
-import * as Hardfork from "../../../primitives/Hardfork/index.js";
-
+import { Hardfork } from "voltaire";
 const shanghai = Hardfork.SHANGHAI;
 const forks = [
 	{ name: "Merge", date: "Sep 2022", months: 0 },

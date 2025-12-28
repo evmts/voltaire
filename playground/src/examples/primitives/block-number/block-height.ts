@@ -1,5 +1,4 @@
-import * as BlockNumber from "../../../primitives/BlockNumber/index.js";
-
+import { BlockNumber } from "voltaire";
 // Genesis and early milestones
 const genesis = BlockNumber.from(0);
 const firstMillion = BlockNumber.from(1000000);

@@ -1,6 +1,4 @@
-import * as SHA256 from "../../../crypto/SHA256/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex, SHA256 } from "voltaire";
 // 1. from() - Universal constructor (accepts Uint8Array, hex, or string)
 const fromBytes = SHA256.from(new Uint8Array([1, 2, 3]));
 

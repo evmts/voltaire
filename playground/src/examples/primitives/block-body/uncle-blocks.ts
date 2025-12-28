@@ -1,8 +1,5 @@
-import Address from "../../../primitives/Address/index.js";
+import { Address, BlockBody, Transaction, type UncleType } from "voltaire";
 // Uncle Blocks: Working with ommers/uncle blocks (pre-merge)
-import * as BlockBody from "../../../primitives/BlockBody/index.js";
-import Transaction from "../../../primitives/Transaction/index.js";
-import type { UncleType } from "../../../src/primitives/Uncle/UncleType.ts";
 
 // Create sample uncle block header
 const uncle1: UncleType = {

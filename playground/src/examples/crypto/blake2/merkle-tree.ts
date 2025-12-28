@@ -1,6 +1,4 @@
-import * as Blake2 from "../../../crypto/Blake2/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Blake2, Hex } from "voltaire";
 // Build Merkle tree using Blake2b for fast hashing
 
 function merkleRoot(leaves: Uint8Array[], outputSize = 32): Uint8Array {

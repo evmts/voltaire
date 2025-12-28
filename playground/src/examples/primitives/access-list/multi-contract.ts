@@ -1,6 +1,4 @@
-import * as AccessList from "voltaire/primitives/AccessList";
-import * as Address from "voltaire/primitives/Address";
-import * as Hash from "voltaire/primitives/Hash";
+import { AccessList, Address, Hash } from "voltaire";
 
 // DeFi protocols
 const aavePool = Address.from("0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9");

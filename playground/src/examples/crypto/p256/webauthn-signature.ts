@@ -1,5 +1,4 @@
-import * as P256 from "../../../crypto/P256/index.js";
-import { Hash } from "../../../primitives/Hash/index.js";
+import { Hash, P256 } from "voltaire";
 const authenticatorPrivateKey = crypto.getRandomValues(new Uint8Array(32));
 const credentialPublicKey = P256.derivePublicKey(authenticatorPrivateKey);
 const challenge = crypto.getRandomValues(new Uint8Array(32));

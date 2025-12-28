@@ -1,4 +1,4 @@
-import * as TransactionIndex from "../../../primitives/TransactionIndex/index.js";
+import { TransactionIndex } from "voltaire";
 const blockSize = 200;
 const txIndex = TransactionIndex.from(50);
 

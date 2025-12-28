@@ -1,6 +1,5 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as PrivateKey from "../../../primitives/PrivateKey/index.js";
-import * as PublicKey from "../../../primitives/PublicKey/index.js";
+import { PrivateKey, PublicKey } from "voltaire";
+import { Address } from "voltaire";
 
 // Example: PrivateKey basics - NEVER log actual private keys in production
 

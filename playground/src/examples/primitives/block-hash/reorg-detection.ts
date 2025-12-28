@@ -1,5 +1,4 @@
-import * as BlockHash from "../../../primitives/BlockHash/index.js";
-
+import { BlockHash } from "voltaire";
 // Example: Chain reorganization detection using block hashes
 
 interface BlockHeader {

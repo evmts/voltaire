@@ -1,7 +1,4 @@
-import { Address } from "../../../primitives/Address/index.js";
-import * as Hash from "../../../primitives/Hash/index.js";
-import * as Transaction from "../../../primitives/Transaction/index.js";
-
+import { Address, Hash, Transaction } from "voltaire";
 // EIP-1559 transaction
 const eip1559Tx: Transaction.EIP1559 = {
 	type: Transaction.Type.EIP1559,

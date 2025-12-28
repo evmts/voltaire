@@ -1,6 +1,4 @@
-import * as Uint from "../../../primitives/Uint/index.js";
-import * as Uint32 from "../../../primitives/Uint32/index.js";
-import * as Uint64 from "../../../primitives/Uint64/index.js";
+import { Uint, Uint32, Uint64 } from "voltaire";
 const a32 = Uint32.fromNumber(1000);
 const b32 = Uint32.fromNumber(250);
 const base32 = Uint32.fromNumber(2);

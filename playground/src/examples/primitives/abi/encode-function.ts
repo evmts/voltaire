@@ -1,4 +1,4 @@
-import * as ABI from "../../../primitives/ABI/index.js";
+import { ABI } from "voltaire";
 
 // Example: Encode a simple ERC20 transfer function call
 const transfer = ABI.Function.encodeParams(

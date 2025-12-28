@@ -1,5 +1,5 @@
+import { Bip39 } from "voltaire";
 // Validate BIP-39 mnemonic phrases
-import * as Bip39 from "../../../crypto/BIP39/Bip39.js";
 
 // Valid 12-word mnemonic (official BIP-39 test vector)
 const validMnemonic =

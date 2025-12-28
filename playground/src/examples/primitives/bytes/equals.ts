@@ -1,5 +1,4 @@
-import * as Bytes from "../../../primitives/Bytes/index.js";
-
+import { Bytes } from "voltaire";
 // Compare byte arrays for equality
 const a = Bytes.fromHex("0x1234");
 const b = Bytes.fromHex("0x1234");

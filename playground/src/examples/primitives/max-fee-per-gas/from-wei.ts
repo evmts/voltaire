@@ -1,4 +1,4 @@
-import * as MaxFeePerGas from "../../../primitives/MaxFeePerGas/index.js";
+import { MaxFeePerGas } from "voltaire";
 
 // Create from Wei (most precise unit)
 const fee1 = MaxFeePerGas.fromWei(50000000000n); // 50 Gwei in Wei

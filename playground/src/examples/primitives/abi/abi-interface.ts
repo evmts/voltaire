@@ -1,4 +1,4 @@
-import * as ABI from "../../../primitives/ABI/index.js";
+import { ABI } from "voltaire";
 
 // Example: Create ERC20 interface
 const erc20 = ABI.Interface.erc20();

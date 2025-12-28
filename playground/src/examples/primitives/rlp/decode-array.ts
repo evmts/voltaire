@@ -1,6 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-import * as Rlp from "../../../primitives/RLP/index.js";
-
+import { Hex, Rlp } from "voltaire";
 // Example: Decode arrays with schema
 
 // Decode to typed array

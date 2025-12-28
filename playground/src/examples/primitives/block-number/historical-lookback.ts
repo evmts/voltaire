@@ -1,5 +1,4 @@
-import * as BlockNumber from "../../../primitives/BlockNumber/index.js";
-
+import { BlockNumber } from "voltaire";
 // Approximate block times (post-Merge: ~12 seconds)
 const SECONDS_PER_BLOCK = 12n;
 const BLOCKS_PER_MINUTE = 5n; // 60 / 12

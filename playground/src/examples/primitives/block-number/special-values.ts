@@ -1,5 +1,4 @@
-import * as BlockNumber from "../../../primitives/BlockNumber/index.js";
-
+import { BlockNumber } from "voltaire";
 // Genesis block - the beginning of the chain
 const genesis = BlockNumber.from(0);
 

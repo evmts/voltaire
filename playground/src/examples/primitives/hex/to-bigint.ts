@@ -1,5 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { Hex } from "voltaire";
 // Convert hex to BigInt (for values beyond Number.MAX_SAFE_INTEGER)
 const hex1 =
 	"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";

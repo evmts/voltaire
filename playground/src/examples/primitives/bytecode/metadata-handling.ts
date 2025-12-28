@@ -1,5 +1,4 @@
-import { Bytecode } from "../../../primitives/Bytecode/index.js";
-
+import { Bytecode } from "voltaire";
 // Example: Solidity metadata handling
 
 // Solidity compiler appends metadata to contract bytecode

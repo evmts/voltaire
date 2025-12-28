@@ -1,4 +1,5 @@
-import * as Int64 from "../../../primitives/Int64/index.js";
+import { Int64 } from "voltaire";
+
 const balance = Int64.fromBigInt(1000000000000n); // $1,000.00
 const fee = Int64.fromBigInt(-50000000n); // -$0.05 fee
 const interest = Int64.fromBigInt(1234567n); // $0.001234567 interest

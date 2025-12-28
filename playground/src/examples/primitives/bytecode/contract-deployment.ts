@@ -1,5 +1,4 @@
-import { Bytecode } from "../../../primitives/Bytecode/index.js";
-
+import { Bytecode } from "voltaire";
 // Example: Contract deployment bytecode
 
 // Constructor bytecode copies runtime code to memory and returns it

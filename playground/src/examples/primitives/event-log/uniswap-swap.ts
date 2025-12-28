@@ -1,7 +1,4 @@
-import { Address } from "../../../primitives/Address/index.js";
-import { EventLog } from "../../../primitives/EventLog/index.js";
-import { Hash } from "../../../primitives/Hash/index.js";
-
+import { Address, EventLog, Hash } from "voltaire";
 // Event signature: keccak256("Swap(address,uint256,uint256,uint256,uint256,address)")
 const SWAP_SIGNATURE = Hash(
 	"0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822",

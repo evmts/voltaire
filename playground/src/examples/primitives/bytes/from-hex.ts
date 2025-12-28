@@ -1,5 +1,4 @@
-import * as Bytes from "../../../primitives/Bytes/index.js";
-
+import { Bytes } from "voltaire";
 // Convert hex string to bytes
 const data = Bytes.fromHex("0x48656c6c6f");
 

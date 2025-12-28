@@ -1,7 +1,4 @@
-import * as Keccak256 from "../../../crypto/Keccak256/index.js";
-import * as BlockHeader from "../../../primitives/BlockHeader/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
-
+import { BlockHeader, Hex, Keccak256 } from "voltaire";
 const header = BlockHeader.from({
 	parentHash:
 		"0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",

@@ -1,6 +1,5 @@
+import { Hex, X25519 } from "voltaire";
 // Computing shared secrets via scalar multiplication
-import * as X25519 from "../../../crypto/X25519/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Generate two keypairs
 const keypair1 = X25519.generateKeypair();

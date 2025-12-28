@@ -1,6 +1,6 @@
+import { Hex, X25519 } from "voltaire";
 // Deriving public keys from secret keys
-import * as X25519 from "../../../crypto/X25519/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+
 const secretKey = X25519.generateSecretKey();
 
 // Derive public key

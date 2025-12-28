@@ -1,5 +1,4 @@
-import * as Ens from "../../../primitives/Ens/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { Ens, Hex } from "voltaire";
 const ethFoundation = [
 	{ name: "vitalik.eth", desc: "Vitalik Buterin - Ethereum founder" },
 	{ name: "nick.eth", desc: "Nick Johnson - ENS creator" },

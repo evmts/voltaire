@@ -1,6 +1,5 @@
-import * as RIPEMD160 from "../../../crypto/RIPEMD160/index.js";
-import * as SHA256 from "../../../crypto/SHA256/index.js";
-import * as Hex from "../../../primitives/Hex/index.js";
+import { RIPEMD160 } from "voltaire";
+import { Hex, SHA256 } from "voltaire";
 
 // Example: Uncompressed public key
 const uncompressedPubKey = Hex.fromString(

@@ -1,5 +1,4 @@
-import * as Bytes from "../../../primitives/Bytes/index.js";
-
+import { Bytes } from "voltaire";
 // Create independent copy
 const original = Bytes.fromHex("0x1234");
 const copy = Bytes.clone(original);

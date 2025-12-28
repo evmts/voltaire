@@ -1,5 +1,4 @@
-import * as Hardfork from "../../../primitives/Hardfork/index.js";
-
+import { Hardfork } from "voltaire";
 // Create some hardforks for comparison
 const frontier = Hardfork.FRONTIER;
 const london = Hardfork.LONDON;

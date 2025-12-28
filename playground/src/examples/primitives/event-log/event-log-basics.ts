@@ -1,7 +1,4 @@
-import { Address } from "../../../primitives/Address/index.js";
-import { EventLog } from "../../../primitives/EventLog/index.js";
-import { Hash } from "../../../primitives/Hash/index.js";
-
+import { Address, EventLog, Hash } from "voltaire";
 // ERC20 Transfer event: Transfer(address indexed from, address indexed to, uint256 value)
 // Event signature hash: keccak256("Transfer(address,address,uint256)")
 const transferSig = Hash(

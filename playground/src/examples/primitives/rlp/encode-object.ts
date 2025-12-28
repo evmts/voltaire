@@ -1,6 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-import * as Rlp from "../../../primitives/RLP/index.js";
-
+import { Hex, Rlp } from "voltaire";
 // Example: Encode objects with schema
 
 // Define schema for encoding

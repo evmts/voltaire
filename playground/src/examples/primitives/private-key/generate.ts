@@ -1,5 +1,6 @@
-import * as Address from "../../../primitives/Address/index.js";
-import * as PrivateKey from "../../../primitives/PrivateKey/index.js";
+import { PrivateKey } from "voltaire";
+import { Address } from "voltaire";
+
 const randomBytes = new Uint8Array(32);
 crypto.getRandomValues(randomBytes);
 const pk1 = PrivateKey.fromBytes(randomBytes);

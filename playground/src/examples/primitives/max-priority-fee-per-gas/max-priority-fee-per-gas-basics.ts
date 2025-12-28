@@ -1,4 +1,5 @@
-import * as MaxPriorityFeePerGas from "../../../primitives/MaxPriorityFeePerGas/index.js";
+import { MaxPriorityFeePerGas } from "voltaire";
+
 const tipWei = MaxPriorityFeePerGas.from(2000000000n); // 2 Gwei in Wei
 const tipGwei = MaxPriorityFeePerGas.fromGwei(2n); // 2 Gwei
 const tipHex = MaxPriorityFeePerGas.from("0x77359400"); // 2 Gwei as hex

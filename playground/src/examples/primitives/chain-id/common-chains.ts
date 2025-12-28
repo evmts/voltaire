@@ -1,4 +1,5 @@
-import * as ChainId from "../../../primitives/ChainId/index.js";
+import { ChainId } from "voltaire";
+
 const ethereumChains = [
 	{ name: "Ethereum Mainnet", id: ChainId.MAINNET },
 	{ name: "Sepolia (testnet)", id: ChainId.SEPOLIA },

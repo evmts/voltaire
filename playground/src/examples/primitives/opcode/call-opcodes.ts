@@ -1,5 +1,4 @@
-import * as Opcode from "../../../primitives/Opcode/index.js";
-
+import { Opcode } from "voltaire";
 // CALL (0xf1) - Message call
 const callInfo = Opcode.info(Opcode.CALL);
 

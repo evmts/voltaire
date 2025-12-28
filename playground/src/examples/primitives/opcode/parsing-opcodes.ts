@@ -1,5 +1,4 @@
-import * as Opcode from "../../../primitives/Opcode/index.js";
-
+import { Opcode } from "voltaire";
 // Simple bytecode: PUSH1 0x60 PUSH1 0x40 MSTORE
 const simpleBytecode = new Uint8Array([
 	Opcode.PUSH1,

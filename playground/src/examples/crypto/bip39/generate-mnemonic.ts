@@ -1,6 +1,5 @@
+import { Bip39, Hex } from "voltaire";
 // Generate BIP-39 mnemonic phrases with different entropy levels
-import * as Bip39 from "../../../crypto/BIP39/Bip39.js";
-import * as Hex from "../../../primitives/Hex/index.js";
 
 // Generate 12-word mnemonic (128-bit entropy)
 const mnemonic12 = Bip39.generateMnemonic(128);

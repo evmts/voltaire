@@ -1,5 +1,4 @@
-import * as Opcode from "../../../primitives/Opcode/index.js";
-
+import { Opcode } from "voltaire";
 // LT (0x10) - Less than
 const ltInfo = Opcode.info(Opcode.LT);
 

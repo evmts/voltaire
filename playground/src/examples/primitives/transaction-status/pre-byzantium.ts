@@ -1,5 +1,5 @@
-import * as TransactionStatus from "../../../primitives/TransactionStatus/index.js";
-import type { Uint256Type } from "../../../primitives/Uint/Uint256Type.js";
+import { type Uint256Type } from "voltaire";
+import { TransactionStatus } from "voltaire";
 
 // Byzantium fork: block 4,370,000 on mainnet (October 2017)
 // Before this, receipts had no status field

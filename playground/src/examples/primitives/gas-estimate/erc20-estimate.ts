@@ -1,5 +1,4 @@
-import * as GasEstimate from "../../../primitives/GasEstimate/index.js";
-
+import { GasEstimate } from "voltaire";
 // Example: ERC20 token gas estimation
 
 // Typical ERC20 operations

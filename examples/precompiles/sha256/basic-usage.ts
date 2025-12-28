@@ -45,7 +45,8 @@ const emptyResult = execute(
 
 const expectedEmpty =
 	"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-const emptyHash = Buffer.from(emptyResult.output).toString("hex");
+import * as Hex from "../../../src/primitives/Hex/index.js";
+const emptyHash = Hex.fromBytes(emptyResult.output).slice(2);
 
 // Test vector 2: "abc"
 const abc = new TextEncoder().encode("abc");
@@ -59,7 +60,7 @@ const abcResult = execute(
 
 const expectedAbc =
 	"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
-const abcHash = Buffer.from(abcResult.output).toString("hex");
+const abcHash = Hex.fromBytes(abcResult.output).slice(2);
 const sizes = [0, 1, 32, 33, 64, 100, 1000];
 
 for (const size of sizes) {

@@ -1,8 +1,5 @@
-import Address from "../../../primitives/Address/index.js";
-import { Hash } from "../../../primitives/Hash/index.js";
-import * as PrivateKey from "../../../primitives/PrivateKey/index.js";
-import * as PublicKey from "../../../primitives/PublicKey/index.js";
 
+import { Address, PrivateKey, PublicKey } from "voltaire";
 // Example: PublicKey basics
 
 // Create a private key for testing

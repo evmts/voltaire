@@ -1,5 +1,4 @@
-import * as Uint256 from "../../../../../src/primitives/Uint/index.js";
-
+import { Uint256 } from "voltaire";
 // Left shift (multiply by powers of 2)
 const value = Uint256.fromNumber(1);
 const shifted = Uint256.shiftLeft(value, 8);

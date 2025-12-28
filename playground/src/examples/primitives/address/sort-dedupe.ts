@@ -1,5 +1,4 @@
-import * as Address from "../../../primitives/Address/index.js";
-
+import { Address } from "voltaire";
 // Example: Sort and deduplicate addresses
 const addr1 = Address.from("0x0000000000000000000000000000000000000003");
 const addr2 = Address.from("0x0000000000000000000000000000000000000001");

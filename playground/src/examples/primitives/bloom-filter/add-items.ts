@@ -1,4 +1,4 @@
-import * as BloomFilter from "voltaire/primitives/BloomFilter";
+import { BloomFilter } from "voltaire";
 
 const bloom = BloomFilter.create(2048, 3);
 const address = new Uint8Array([

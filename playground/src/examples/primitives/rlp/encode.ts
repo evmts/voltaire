@@ -1,6 +1,4 @@
-import * as Hex from "../../../primitives/Hex/index.js";
-import * as Rlp from "../../../primitives/RLP/index.js";
-
+import { Hex, Rlp } from "voltaire";
 // Example: Universal RLP encoding
 
 // Encode Uint8Array (as bytes)

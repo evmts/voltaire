@@ -1,9 +1,5 @@
+import { Hex, KZG } from "voltaire";
 import { createHash } from "node:crypto";
-import {
-	BYTES_PER_BLOB,
-	FIELD_ELEMENTS_PER_BLOB,
-	KZG,
-} from "../../../crypto/KZG/index.js";
 
 // Example: Complete EIP-4844 blob transaction workflow
 
@@ -31,10 +27,9 @@ for (let i = 0; i < MAX_BLOBS_PER_TX; i++) {
 	// Compute versioned hash (EIP-4844 spec)
 	// versionedHash = sha256(VERSIONED_HASH_VERSION_KZG || commitment)
 	const VERSIONED_HASH_VERSION_KZG = 0x01;
-	const versionedHashInput = Buffer.concat([
-		Buffer.from([VERSIONED_HASH_VERSION_KZG]),
-		Buffer.from(commitment),
-	]);
+	const versionedHashInput = new Uint8Array(1 + commitment.length);
+	versionedHashInput[0] = VERSIONED_HASH_VERSION_KZG;
+	versionedHashInput.set(commitment, 1);
 	const versionedHash = createHash("sha256")
 		.update(versionedHashInput)
 		.digest("hex");
