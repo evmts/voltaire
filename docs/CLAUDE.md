@@ -21,7 +21,7 @@
 - **Config**: mint.json for navigation, theme, settings
 - **Components**: Mintlify built-in components (Tabs, Tab, Accordion, Tip, Warning, Note, etc.)
 - **Architecture**: Ethereum primitives + crypto library for TypeScript and Zig
-- **Main docs location**: `/Users/williamcory/tevm/docs/`
+- **Main docs location**: `docs/` (this repo)
 
 ## Content strategy
 - Document just enough for user success - not too much, not too little

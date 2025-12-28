@@ -31,6 +31,7 @@
             "icon": "rocket",
             "pages": [
               "getting-started",
+              "playground",
               "comparisons",
               "model-context-protocol"
             ]

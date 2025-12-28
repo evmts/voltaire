@@ -130,6 +130,10 @@ Wallet operations (git submodule).
 
 From `package.json`.
 
+<Tip>
+Runtime support: Native FFI is currently <strong>Bun-only</strong>. In <strong>Node.js</strong>, use the regular TypeScript API or the <strong>WASM</strong> modules.
+</Tip>
+
 ### Runtime Dependencies
 
 | Package | Purpose |
@@ -242,7 +246,7 @@ bun update
 |------|-----------------|
 | Zig | 0.15.1 |
 | Bun | 1.0+ |
-| Node.js | 18+ (for native modules) |
+| Node.js | 18+ |
 | Rust | 1.70+ (for arkworks) |
 
 ---

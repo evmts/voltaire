@@ -7,6 +7,10 @@ description: Install Tevm and explore the API
 Looking to learn more about why to use Tevm? Check out [What is Tevm?](/introduction)
 </Tip>
 
+<Tip>
+Try it live: open the <a href="/playground">Playground</a> or run <code>bun run docs:playground:build</code> to embed it locally under the docs.
+</Tip>
+
 ## Prerequisites
 
 - **Node.js:** 24.x or higher
@@ -54,6 +58,10 @@ New to Ethereum? Check out our [Guides](/guides) for example-based educational c
     </Warning>
   </Tab>
 </Tabs>
+
+<Warning>
+Runtime support: Native FFI is currently supported on <strong>Bun</strong>. In <strong>Node.js</strong>, use the regular TypeScript API or the WASM modules. Browsers use WASM.
+</Warning>
 
 ## Imports
 
@@ -154,6 +162,9 @@ import { Provider } from "tevm";
   </Card>
   <Card title="Examples" icon="code" href="/examples">
     Code examples and common usage patterns
+  </Card>
+  <Card title="Playground" icon="flask" href="/playground">
+    Experiment interactively with Tevm primitives in your browser
   </Card>
   <Card title="What is Tevm?" icon="circle-question" href="/introduction">
     Learn why to use Tevm and what makes it unique

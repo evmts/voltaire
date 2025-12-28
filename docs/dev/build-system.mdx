@@ -63,6 +63,10 @@ zig build build-ts-wasm-fast   # ReleaseFast (perf-optimized)
 zig build crypto-wasm          # Individual crypto modules (tree-shaking)
 ```
 
+<Tip>
+Runtime support: The TypeScript <em>native</em> bindings are currently supported on <strong>Bun</strong>. In <strong>Node.js</strong>, prefer the regular TypeScript paths or WASM builds.
+</Tip>
+
 ### Quality Checks
 
 ```bash

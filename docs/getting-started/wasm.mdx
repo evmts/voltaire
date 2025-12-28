@@ -11,7 +11,7 @@ Voltaire provides three implementation tiers for performance-critical operations
 |------|--------|---------|----------|
 | **TypeScript** | `@tevm/voltaire` | Any JS runtime | Default, universal compatibility |
 | **WASM** | `@tevm/voltaire/wasm` | Browser, Node, Bun, Deno | High performance, portable |
-| **Native** | `@tevm/voltaire/native` | Node.js, Bun only | Maximum performance via FFI |
+| **Native** | `@tevm/voltaire/native` | Bun | Maximum performance via FFI |
 
 <Note>
 All three tiers expose identical APIs. Swap implementations without changing your code.
@@ -64,9 +64,9 @@ Best for:
 - Serverless/edge functions (Cloudflare Workers, Vercel Edge)
 - Cross-platform consistency
 
-## Native FFI
+## Native FFI (Bun)
 
-Direct bindings to Zig via Bun FFI or Node-API. Maximum performance.
+Direct bindings to Zig via Bun FFI. Maximum performance.
 
 ```typescript
 import * as native from '@tevm/voltaire/native'
@@ -84,7 +84,7 @@ const hash2 = native.Keccak256.hashSync(data)
 ```
 
 <Warning>
-Native FFI requires the compiled `.dylib` (macOS), `.so` (Linux), or `.dll` (Windows) to be available. Run `zig build build-ts-native` to compile.
+Runtime support: Native FFI is <strong>Bun-only</strong> right now. In <strong>Node.js</strong>, use the regular TypeScript API or the WASM modules. Also ensure the compiled `.dylib`/`.so`/`.dll` is available (run `zig build build-ts-native`).
 </Warning>
 
 Best for:
@@ -142,10 +142,10 @@ Benchmark your actual workload. Default implementations are chosen for common us
 zig build build-ts-wasm       # ReleaseSmall (optimized for size)
 zig build build-ts-wasm-fast  # ReleaseFast (optimized for speed)
 
-# Build Native FFI (for Node/Bun)
+# Build Native FFI (for Bun)
 zig build build-ts-native     # Produces .dylib/.so/.dll
 
 # Run tests for each tier
 bun run test:wasm             # WASM tests
-bun run test:native           # Native FFI tests
+bun run test:native           # Native FFI tests (run in Bun)
 ```

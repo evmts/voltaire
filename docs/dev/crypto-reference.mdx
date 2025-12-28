@@ -443,6 +443,10 @@ const result = modexp.calculate(base, exp, mod);
 | Bip39 | Mnemonics | ✅ | ✅ |
 | HDWallet | Key derivation | ✅ | ✅ |
 
+<Tip>
+Native indicates the <strong>Bun</strong> native bindings. In <strong>Node.js</strong>, use the regular TypeScript API or the <strong>WASM</strong> variants.
+</Tip>
+
 **WASM Limitations**:
 - BLS12-381: Requires blst C library
 - KZG: Requires trusted setup file and c-kzg library

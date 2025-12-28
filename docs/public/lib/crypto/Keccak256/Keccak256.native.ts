@@ -1,6 +1,6 @@
 /**
  * Keccak256 native implementation using FFI
- * Auto-detects Bun FFI or Node-API
+ * Uses Bun FFI (Node.js native FFI not shipped yet)
  */
 
 import {
