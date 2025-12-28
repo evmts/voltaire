@@ -29,8 +29,7 @@
 			"scripts/dist-noble",
 			"scripts/migrate-crypto-docs.ts",
 			"scripts/inspect-ox-api.ts",
-			"docs/.astro",
-			"docs/primitives/abi",
+			"docs",
 			"worktrees"
 		]
 	},
