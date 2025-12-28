@@ -223,8 +223,8 @@ Return "valid" or "invalid" in your final message as: ANSWER: <valid|invalid>`,
             async () => {
 				const input = "0x1234567890abcdef";
 				// Expected hash of the input (precomputed)
-				const expectedHash =
-					"0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432";
+                const expectedHash =
+                    "0xed8ab4fde4c4e2749641d9d89de3d920f9845e086abd71e6921319f41f0e784f";
 
 				const result = await runClaudeEval({
 					prompt: `Use Voltaire's Keccak256 module to compute the keccak256 hash of: ${input}

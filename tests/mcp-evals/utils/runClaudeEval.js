@@ -37,7 +37,7 @@ export async function runClaudeEval(opts) {
   const mcpConfig = {
     mcpServers: {
       tevm: {
-        transport: 'http',
+        type: 'http',
         url: mcpServerUrl,
       },
     },
@@ -108,4 +108,3 @@ export async function runClaudeEval(opts) {
     })
   })
 }
-
