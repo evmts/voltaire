@@ -987,7 +987,7 @@ test "hexToBytes" {
 test "pbkdf2 round trip" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0xde, 0xad, 0xbe, 0xef} ++ [_]u8{0} ** 28;
+    const private_key = [_]u8{ 0xde, 0xad, 0xbe, 0xef } ++ [_]u8{0} ** 28;
     const password = "secure-password-123";
 
     var keystore = try encrypt(allocator, private_key, password, .{
@@ -1006,7 +1006,7 @@ test "pbkdf2 round trip" {
 test "scrypt custom parameters" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0xca, 0xfe} ** 16;
+    const private_key = [_]u8{ 0xca, 0xfe } ** 16;
     const password = "password";
 
     var keystore = try encrypt(allocator, private_key, password, .{

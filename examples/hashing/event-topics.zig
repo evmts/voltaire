@@ -30,4 +30,3 @@ pub fn main() !void {
 
     std.debug.print("\nUse topic0 in the first log topic, and topic1/topic2 for indexed address filters.\n\n", .{});
 }
-
