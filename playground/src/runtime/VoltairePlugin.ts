@@ -14,9 +14,10 @@ export function voltairePlugin(): Plugin {
 	return {
 		name: "voltaire-resolver",
 		setup(build) {
-			// Resolve voltaire and voltaire/* imports to virtual namespace
-			build.onResolve({ filter: /^voltaire(\/|$)/ }, (args) => {
-				const specifier = args.path;
+			// Resolve voltaire, voltaire/*, @tevm/voltaire, and @tevm/voltaire/* imports to virtual namespace
+			build.onResolve({ filter: /^(@tevm\/)?voltaire(\/|$)/ }, (args) => {
+				// Normalize @tevm/voltaire to voltaire for registry lookup
+				const specifier = args.path.replace(/^@tevm\//, "");
 
 				// Validate module exists
 				if (!hasModule(specifier)) {
