@@ -132,13 +132,13 @@ crypto.getRandomValues(largeFileBytes);
 const largeFile = Hex.fromBytes(largeFileBytes);
 
 // Create chunks as hex strings
-const chunks: string[] = [];
+const chunks: ReturnType<typeof Hex>[] = [];
 for (let i = 0; i < largeFileSize * 2; i += chunkSize * 2) {
-	chunks.push(`0x${largeFile.slice(2 + i, 2 + i + chunkSize * 2)}` as any);
+	chunks.push(Hex(`0x${largeFile.slice(2 + i, 2 + i + chunkSize * 2)}`));
 }
 
 // Hash each chunk
-const chunkHashes = chunks.map((chunk) => Keccak256(chunk as any));
+const chunkHashes = chunks.map((chunk) => Keccak256(chunk));
 for (let i = 0; i < chunkHashes.length; i++) {}
 
 // Build root hash from all chunk hashes

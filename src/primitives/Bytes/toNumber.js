@@ -21,12 +21,12 @@ export function toNumber(bytes) {
 	// MAX_SAFE_INTEGER = 2^53 - 1 = 0x1FFFFFFFFFFFFF (7 bytes, but limited)
 	if (bytes.length > 7) {
 		throw new Error(
-			`Bytes too large to convert to number safely. Use Bytes.toBigInt() instead.`,
+			"Bytes too large to convert to number safely. Use Bytes.toBigInt() instead.",
 		);
 	}
 	if (bytes.length === 7 && /** @type {number} */ (bytes[0]) > 0x1f) {
 		throw new Error(
-			`Value exceeds MAX_SAFE_INTEGER. Use Bytes.toBigInt() instead.`,
+			"Value exceeds MAX_SAFE_INTEGER. Use Bytes.toBigInt() instead.",
 		);
 	}
 
@@ -37,7 +37,7 @@ export function toNumber(bytes) {
 
 	if (result > Number.MAX_SAFE_INTEGER) {
 		throw new Error(
-			`Value exceeds MAX_SAFE_INTEGER. Use Bytes.toBigInt() instead.`,
+			"Value exceeds MAX_SAFE_INTEGER. Use Bytes.toBigInt() instead.",
 		);
 	}
 

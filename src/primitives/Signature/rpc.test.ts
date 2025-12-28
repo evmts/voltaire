@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fromRpc } from "./fromRpc.js";
-import { toRpc } from "./toRpc.js";
 import { fromSecp256k1 } from "./fromSecp256k1.js";
+import { toRpc } from "./toRpc.js";
 
 describe("Signature RPC format", () => {
 	const r = new Uint8Array(32).fill(0);

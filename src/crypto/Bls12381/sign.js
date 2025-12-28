@@ -12,8 +12,8 @@
  */
 
 import { bls12_381 } from "@noble/curves/bls12-381.js";
-import { SignatureError, InvalidScalarError } from "./errors.js";
 import { FR_MOD } from "./constants.js";
+import { InvalidScalarError, SignatureError } from "./errors.js";
 
 // Ethereum consensus uses "short signatures" scheme
 // Signatures are G1 points (48 bytes compressed)

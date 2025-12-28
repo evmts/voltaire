@@ -1,5 +1,5 @@
-import { fromBytes } from "./fromBytes.js";
 import * as Base64 from "../Base64/index.js";
+import { fromBytes } from "./fromBytes.js";
 
 /**
  * Create Address from base64 string

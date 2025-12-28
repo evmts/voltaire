@@ -1,4 +1,4 @@
-import { TransactionHash, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Bytes, Bytes32, TransactionHash } from "@tevm/voltaire";
 try {
 	const valid = TransactionHash(
 		"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",

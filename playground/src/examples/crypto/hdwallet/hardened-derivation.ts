@@ -15,8 +15,10 @@ const hardened1 = HDWallet.deriveChild(root, HDWallet.HARDENED_OFFSET + 1);
 const hardened2 = HDWallet.deriveChild(root, HDWallet.HARDENED_OFFSET + 2);
 
 // Compare normal vs hardened at same index
-const normalKey = HDWallet.getPrivateKey(normal0)!;
-const hardenedKey = HDWallet.getPrivateKey(hardened0)!;
+const normalKey = HDWallet.getPrivateKey(normal0);
+if (!normalKey) throw new Error("Private key not available");
+const hardenedKey = HDWallet.getPrivateKey(hardened0);
+if (!hardenedKey) throw new Error("Private key not available");
 const different = !normalKey.every((b, i) => b === hardenedKey[i]);
 const xpub = HDWallet.toExtendedPublicKey(root);
 const pubOnly = HDWallet.fromPublicExtendedKey(xpub);

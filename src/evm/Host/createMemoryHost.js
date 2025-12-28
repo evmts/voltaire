@@ -1,5 +1,5 @@
-import { from } from "./from.js";
 import * as Hex from "../../primitives/Hex/index.js";
+import { from } from "./from.js";
 
 /**
  * Create an in-memory Host implementation for testing

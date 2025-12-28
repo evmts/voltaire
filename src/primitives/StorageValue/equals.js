@@ -1,4 +1,3 @@
-
 /**
  * @typedef {import('./StorageValueType.js').StorageValueType} StorageValueType
  */

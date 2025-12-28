@@ -1,4 +1,4 @@
-import { Hash, Bytes32 } from "@tevm/voltaire";
+import { Bytes32, Hash } from "@tevm/voltaire";
 // Example: Converting hashes to hex strings
 
 // Create a hash from bytes

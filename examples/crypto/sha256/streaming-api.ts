@@ -118,7 +118,11 @@ function efficientHash(parts: Uint8Array[]): Uint8Array {
 	return hasher.digest();
 }
 
-const parts = [Bytes.from([1, 2, 3]), Bytes.from([4, 5, 6]), Bytes.from([7, 8, 9])];
+const parts = [
+	Bytes.from([1, 2, 3]),
+	Bytes.from([4, 5, 6]),
+	Bytes.from([7, 8, 9]),
+];
 
 const hash1 = inefficientHash(parts);
 const hash2 = efficientHash(parts);

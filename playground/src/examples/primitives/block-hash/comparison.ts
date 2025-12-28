@@ -67,9 +67,7 @@ const duplicates = [
 const unique: string[] = [];
 for (const hashStr of duplicates) {
 	const hash = BlockHash(hashStr);
-	const isDuplicate = unique.some((u) =>
-		BlockHash.equals(hash, BlockHash(u)),
-	);
+	const isDuplicate = unique.some((u) => BlockHash.equals(hash, BlockHash(u)));
 	if (!isDuplicate) {
 		unique.push(BlockHash.toHex(hash));
 	}

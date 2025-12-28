@@ -21,15 +21,19 @@ export async function generateMnemonic(strength = 128) {
 	const entropyLen = strength / 8;
 	const entropy = new Uint8Array(entropyLen);
 	// Cross-platform secure random fill
-	if (typeof globalThis.crypto !== "undefined" && globalThis.crypto.getRandomValues) {
+	if (
+		typeof globalThis.crypto !== "undefined" &&
+		globalThis.crypto.getRandomValues
+	) {
 		globalThis.crypto.getRandomValues(entropy);
 	} else {
 		const nodeCrypto = await import("node:crypto");
-		if (nodeCrypto.webcrypto && nodeCrypto.webcrypto.getRandomValues) {
+		if (nodeCrypto.webcrypto?.getRandomValues) {
 			nodeCrypto.webcrypto.getRandomValues(entropy);
 		} else {
 			const buf = nodeCrypto.randomBytes(entropyLen);
-			for (let i = 0; i < entropyLen; i++) entropy[i] = /** @type {number} */ (buf[i]);
+			for (let i = 0; i < entropyLen; i++)
+				entropy[i] = /** @type {number} */ (buf[i]);
 		}
 	}
 

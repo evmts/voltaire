@@ -8,10 +8,10 @@
  * in Zig only and not yet exposed to TypeScript through FFI bindings.
  */
 
-import { Hash } from "../../../src/primitives/Hash/index.js";
 import * as Bytes from "../../../src/primitives/Bytes/Bytes.index.js";
-import type { HashType } from "../../../src/primitives/Hash/HashType.js";
 import type { BytesType } from "../../../src/primitives/Bytes/BytesType.js";
+import type { HashType } from "../../../src/primitives/Hash/HashType.js";
+import { Hash } from "../../../src/primitives/Hash/index.js";
 
 // Conceptual Trie implementation for demonstration
 class Trie {
@@ -61,10 +61,7 @@ const encoder = new TextEncoder();
 	const trie = new Trie();
 
 	trie.put(Bytes.fromHex("0x1234"), encoder.encode("short_key") as BytesType);
-	trie.put(
-		Bytes.fromHex("0x123456"),
-		encoder.encode("long_key") as BytesType,
-	);
+	trie.put(Bytes.fromHex("0x123456"), encoder.encode("long_key") as BytesType);
 	trie.put(
 		Bytes.fromHex("0x12345678"),
 		encoder.encode("longer_key") as BytesType,
@@ -79,24 +76,15 @@ const encoder = new TextEncoder();
 	const trie = new Trie();
 
 	// Start with single key
-	trie.put(
-		Bytes.fromHex("0xaabbccdd"),
-		encoder.encode("first") as BytesType,
-	);
+	trie.put(Bytes.fromHex("0xaabbccdd"), encoder.encode("first") as BytesType);
 	const root1 = trie.rootHash();
 
 	// Add key with common prefix of length 2
-	trie.put(
-		Bytes.fromHex("0xaabb1122"),
-		encoder.encode("second") as BytesType,
-	);
+	trie.put(Bytes.fromHex("0xaabb1122"), encoder.encode("second") as BytesType);
 	const root2 = trie.rootHash();
 
 	// Add key diverging earlier
-	trie.put(
-		Bytes.fromHex("0xaa334455"),
-		encoder.encode("third") as BytesType,
-	);
+	trie.put(Bytes.fromHex("0xaa334455"), encoder.encode("third") as BytesType);
 	const root3 = trie.rootHash();
 }
 {

@@ -32,7 +32,7 @@ describe("Secp256k1.PublicKey.from", () => {
 
 	describe("from hex string", () => {
 		// Helper to get a valid public key hex
-		const getValidPubKeyHex = (seed: number = 1) => {
+		const getValidPubKeyHex = (seed = 1) => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = seed;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);

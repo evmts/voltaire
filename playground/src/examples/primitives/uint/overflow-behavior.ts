@@ -1,4 +1,4 @@
-import { Uint16, Uint32, Uint64, Uint8 } from "@tevm/voltaire";
+import { Uint8, Uint16, Uint32, Uint64 } from "@tevm/voltaire";
 const u8Max = Uint8.MAX;
 try {
 	const overflow = Uint8.plus(u8Max, Uint8.fromNumber(1));

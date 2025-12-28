@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { isBytes } from "./isBytes.js";
 import { assert } from "./assert.js";
+import { isBytes } from "./isBytes.js";
 
 describe("Bytes.isBytes", () => {
 	it("returns true for Uint8Array", () => {

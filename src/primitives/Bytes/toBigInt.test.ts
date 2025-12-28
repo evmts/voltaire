@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { toBigInt } from "./toBigInt.js";
 import { fromBigInt } from "./fromBigInt.js";
+import { toBigInt } from "./toBigInt.js";
 
 describe("Bytes.toBigInt", () => {
 	it("converts empty bytes to zero", () => {

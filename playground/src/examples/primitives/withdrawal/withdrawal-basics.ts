@@ -1,4 +1,4 @@
-import { Withdrawal, Bytes } from "@tevm/voltaire";
+import { Bytes, Withdrawal } from "@tevm/voltaire";
 // Example: Withdrawal basics (EIP-4895 Shanghai upgrade)
 
 // EIP-4895 introduced withdrawals in the Shanghai upgrade (April 2023)

@@ -1,4 +1,4 @@
-import { Address, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, Transaction } from "@tevm/voltaire";
 // Transaction Replacement: Bump fees to replace pending transaction
 
 // Original pending transaction

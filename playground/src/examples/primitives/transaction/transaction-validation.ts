@@ -1,4 +1,4 @@
-import { Address, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, Transaction } from "@tevm/voltaire";
 // Transaction Validation: Validate transaction fields
 
 // Create transaction to validate

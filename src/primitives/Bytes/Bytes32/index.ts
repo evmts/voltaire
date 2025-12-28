@@ -1,6 +1,6 @@
 // From Type file
 export type { Bytes32Type, Bytes32Like } from "./Bytes32Type.js";
-import type { Bytes32Type, Bytes32Like } from "./Bytes32Type.js";
+import type { Bytes32Like, Bytes32Type } from "./Bytes32Type.js";
 export { SIZE } from "./Bytes32Type.js";
 // From constants
 export { ZERO } from "./constants.js";

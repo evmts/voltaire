@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { hash } from "../../crypto/Keccak256/hash.js";
 import { assert, Assert } from "./assert.js";
 import { InvalidAddressError, InvalidChecksumError } from "./errors.js";
-import { hash } from "../../crypto/Keccak256/hash.js";
 
 describe("Address.assert", () => {
 	const validAddress = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e";

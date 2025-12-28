@@ -3,7 +3,11 @@
  * Maps imports to the pre-loaded module registry
  */
 import type { Plugin } from "esbuild-wasm";
-import { findSimilarModules, getAllSpecifiers, hasModule } from "./ModuleRegistry.js";
+import {
+	findSimilarModules,
+	getAllSpecifiers,
+	hasModule,
+} from "./ModuleRegistry.js";
 
 const VOLTAIRE_NAMESPACE = "voltaire-virtual";
 

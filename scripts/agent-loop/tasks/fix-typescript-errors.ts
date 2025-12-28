@@ -2,7 +2,7 @@
  * Task: Fix TypeScript Errors
  */
 
-import type { TaskConfig, SessionState } from "../index.ts";
+import type { SessionState, TaskConfig } from "../index.ts";
 
 async function runCommand(cmd: string): Promise<string> {
 	const proc = Bun.spawn(["sh", "-c", cmd], {
@@ -25,7 +25,7 @@ const config: TaskConfig = {
 			const result = await runCommand(
 				'bun run tsc --noEmit 2>&1 | grep -c "error TS" || echo "0"',
 			);
-			const count = parseInt(result.trim()) || 0;
+			const count = Number.parseInt(result.trim()) || 0;
 			return {
 				value: count,
 				status: count === 0 ? "No errors" : `${count} errors`,

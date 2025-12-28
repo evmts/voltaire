@@ -20,9 +20,9 @@ function describeComparison(a: bigint, b: bigint): string {
 }
 const unsorted = [high, veryLow, medium, veryHigh, low];
 const sorted = [...unsorted].sort((a, b) => BaseFeePerGas.compare(a, b));
-unsorted.forEach((fee) => console.log(BaseFeePerGas.toGwei(fee)));
-sorted.forEach((fee) => console.log(BaseFeePerGas.toGwei(fee)));
-[...sorted].reverse().forEach((fee) => console.log(BaseFeePerGas.toGwei(fee)));
+unsorted.forEach((_fee) => {});
+sorted.forEach((_fee) => {});
+[...sorted].reverse().forEach((_fee) => {});
 const fees = [veryLow, low, medium, high, veryHigh];
 const minFee = fees.reduce((min, fee) =>
 	BaseFeePerGas.compare(fee, min) < 0 ? fee : min,

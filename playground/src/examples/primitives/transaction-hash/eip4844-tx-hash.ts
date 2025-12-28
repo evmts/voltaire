@@ -1,4 +1,4 @@
-import { Address, Hash, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, Hash, Transaction } from "@tevm/voltaire";
 const blobTx: Transaction.EIP4844 = {
 	type: Transaction.Type.EIP4844,
 	chainId: 1n,
@@ -73,10 +73,7 @@ const blobWithAccessList: Transaction.EIP4844 = {
 			storageKeys: [Bytes32.zero().fill(0)],
 		},
 	],
-	blobVersionedHashes: [
-		Bytes32.zero().fill(9),
-		Bytes32.zero().fill(10),
-	],
+	blobVersionedHashes: [Bytes32.zero().fill(9), Bytes32.zero().fill(10)],
 	yParity: 0,
 	r: Bytes32.zero().fill(11),
 	s: Bytes32.zero().fill(12),

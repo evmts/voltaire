@@ -1729,12 +1729,12 @@ body {
 
 /* Swift mode button */
 .api-mode-btn.swift-mode.active {
-	background-color: #F05138;
+	background-color: #f05138;
 }
 
 /* Zig mode button */
 .api-mode-btn.zig-mode.active {
-	background-color: #F7A41D;
+	background-color: #f7a41d;
 }
 
 /* ============================================
@@ -2022,20 +2022,20 @@ body {
 .swift-mode-banner {
 	background-color: rgba(240, 81, 56, 0.15);
 	border-bottom: 1px solid rgba(240, 81, 56, 0.3);
-	color: #F05138;
+	color: #f05138;
 }
 
 .swift-mode-banner::before {
-	background-color: #F05138;
+	background-color: #f05138;
 }
 
 /* Zig mode banner */
 .zig-mode-banner {
 	background-color: rgba(247, 164, 29, 0.15);
 	border-bottom: 1px solid rgba(247, 164, 29, 0.3);
-	color: #F7A41D;
+	color: #f7a41d;
 }
 
 .zig-mode-banner::before {
-	background-color: #F7A41D;
+	background-color: #f7a41d;
 }

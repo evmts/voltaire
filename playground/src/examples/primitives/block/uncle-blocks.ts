@@ -1,4 +1,4 @@
-import { type UncleType, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Bytes, Bytes32, type UncleType } from "@tevm/voltaire";
 import { Block, BlockBody, BlockHash, BlockHeader } from "@tevm/voltaire";
 
 // Create uncle blocks (headers only, no body)

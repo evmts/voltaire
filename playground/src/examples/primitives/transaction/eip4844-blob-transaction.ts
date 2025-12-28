@@ -1,4 +1,4 @@
-import { Address, Hash, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, Hash, Transaction } from "@tevm/voltaire";
 // EIP-4844 Transaction: Blob transactions for L2 data availability
 
 // Create EIP-4844 blob transaction (for L2 rollups)

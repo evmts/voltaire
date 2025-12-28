@@ -1,5 +1,5 @@
-import { PrivateKey, PublicKey } from "@tevm/voltaire";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { PrivateKey, PublicKey } from "@tevm/voltaire";
 
 // Create a public key
 const privateKey = PrivateKey(

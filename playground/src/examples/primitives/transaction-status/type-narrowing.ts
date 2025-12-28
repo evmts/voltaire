@@ -1,4 +1,4 @@
-import { type Uint256Type } from "@tevm/voltaire";
+import type { Uint256Type } from "@tevm/voltaire";
 import { TransactionStatus } from "@tevm/voltaire";
 
 type Status =
@@ -147,6 +147,6 @@ function handleStatus<T extends Status>(
 }
 
 handleStatus(success, {
-	onSuccess: (gas) => console.log(gas),
-	onFailed: (reason) => console.log(reason),
+	onSuccess: (gas) => ,
+	onFailed: (reason) => ,
 });

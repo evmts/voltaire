@@ -5,7 +5,7 @@
  * Issue #33: 393 TypeScript Test Failures
  */
 
-import type { TaskConfig, SessionState } from "../index.ts";
+import type { SessionState, TaskConfig } from "../index.ts";
 
 async function runCommand(cmd: string): Promise<string> {
 	const proc = Bun.spawn(["sh", "-c", cmd], {
@@ -37,11 +37,13 @@ const config: TaskConfig = {
 			// Parse vitest output: "Tests  X failed | Y passed"
 			// Handle various spacing from stripped ANSI
 			const failMatch = result.match(/Tests\s+(\d+)\s+failed/);
-			const failCount = failMatch ? parseInt(failMatch[1]) : 0;
+			const failCount = failMatch ? Number.parseInt(failMatch[1]) : 0;
 
 			// Also check for file-level failures
 			const fileFailMatch = result.match(/Test Files\s+(\d+)\s+failed/);
-			const fileFailCount = fileFailMatch ? parseInt(fileFailMatch[1]) : 0;
+			const fileFailCount = fileFailMatch
+				? Number.parseInt(fileFailMatch[1])
+				: 0;
 
 			// Get details
 			const details: string[] = [];

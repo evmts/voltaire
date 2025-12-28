@@ -1,5 +1,9 @@
 import * as P256 from "../../../src/crypto/P256/index.js";
-import { Bytes, Bytes16, Bytes32 } from "../../../src/primitives/Bytes/index.js";
+import {
+	Bytes,
+	Bytes16,
+	Bytes32,
+} from "../../../src/primitives/Bytes/index.js";
 import * as Hash from "../../../src/primitives/Hash/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
 import * as PrivateKey from "../../../src/primitives/PrivateKey/index.js";

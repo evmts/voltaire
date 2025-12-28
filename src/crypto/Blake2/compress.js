@@ -77,10 +77,17 @@ function G(v, a, b, c, d, x, y) {
 	v[d] = rotr64(vd ^ /** @type {bigint} */ (v[a]), 32);
 	v[c] = (vc + /** @type {bigint} */ (v[d])) & MASK_64;
 	v[b] = rotr64(vb ^ /** @type {bigint} */ (v[c]), 24);
-	v[a] = (/** @type {bigint} */ (v[a]) + /** @type {bigint} */ (v[b]) + y) & MASK_64;
-	v[d] = rotr64(/** @type {bigint} */ (v[d]) ^ /** @type {bigint} */ (v[a]), 16);
-	v[c] = (/** @type {bigint} */ (v[c]) + /** @type {bigint} */ (v[d])) & MASK_64;
-	v[b] = rotr64(/** @type {bigint} */ (v[b]) ^ /** @type {bigint} */ (v[c]), 63);
+	v[a] =
+		/** @type {bigint} */ (v[a] + /** @type {bigint} */ (v[b]) + y) & MASK_64;
+	v[d] = rotr64(
+		/** @type {bigint} */ (v[d]) ^ /** @type {bigint} */ (v[a]),
+		16,
+	);
+	v[c] = /** @type {bigint} */ (v[c] + /** @type {bigint} */ (v[d])) & MASK_64;
+	v[b] = rotr64(
+		/** @type {bigint} */ (v[b]) ^ /** @type {bigint} */ (v[c]),
+		63,
+	);
 }
 
 /**
@@ -93,16 +100,80 @@ function blake2bRound(v, m, round) {
 	const s = /** @type {number[]} */ (SIGMA[round % 12]);
 
 	// Column mixing
-	G(v, 0, 4, 8, 12, /** @type {bigint} */ (m[/** @type {number} */ (s[0])]), /** @type {bigint} */ (m[/** @type {number} */ (s[1])]));
-	G(v, 1, 5, 9, 13, /** @type {bigint} */ (m[/** @type {number} */ (s[2])]), /** @type {bigint} */ (m[/** @type {number} */ (s[3])]));
-	G(v, 2, 6, 10, 14, /** @type {bigint} */ (m[/** @type {number} */ (s[4])]), /** @type {bigint} */ (m[/** @type {number} */ (s[5])]));
-	G(v, 3, 7, 11, 15, /** @type {bigint} */ (m[/** @type {number} */ (s[6])]), /** @type {bigint} */ (m[/** @type {number} */ (s[7])]));
+	G(
+		v,
+		0,
+		4,
+		8,
+		12,
+		/** @type {bigint} */ (m[/** @type {number} */ (s[0])]),
+		/** @type {bigint} */ (m[/** @type {number} */ (s[1])]),
+	);
+	G(
+		v,
+		1,
+		5,
+		9,
+		13,
+		/** @type {bigint} */ (m[/** @type {number} */ (s[2])]),
+		/** @type {bigint} */ (m[/** @type {number} */ (s[3])]),
+	);
+	G(
+		v,
+		2,
+		6,
+		10,
+		14,
+		/** @type {bigint} */ (m[/** @type {number} */ (s[4])]),
+		/** @type {bigint} */ (m[/** @type {number} */ (s[5])]),
+	);
+	G(
+		v,
+		3,
+		7,
+		11,
+		15,
+		/** @type {bigint} */ (m[/** @type {number} */ (s[6])]),
+		/** @type {bigint} */ (m[/** @type {number} */ (s[7])]),
+	);
 
 	// Diagonal mixing
-	G(v, 0, 5, 10, 15, /** @type {bigint} */ (m[/** @type {number} */ (s[8])]), /** @type {bigint} */ (m[/** @type {number} */ (s[9])]));
-	G(v, 1, 6, 11, 12, /** @type {bigint} */ (m[/** @type {number} */ (s[10])]), /** @type {bigint} */ (m[/** @type {number} */ (s[11])]));
-	G(v, 2, 7, 8, 13, /** @type {bigint} */ (m[/** @type {number} */ (s[12])]), /** @type {bigint} */ (m[/** @type {number} */ (s[13])]));
-	G(v, 3, 4, 9, 14, /** @type {bigint} */ (m[/** @type {number} */ (s[14])]), /** @type {bigint} */ (m[/** @type {number} */ (s[15])]));
+	G(
+		v,
+		0,
+		5,
+		10,
+		15,
+		/** @type {bigint} */ (m[/** @type {number} */ (s[8])]),
+		/** @type {bigint} */ (m[/** @type {number} */ (s[9])]),
+	);
+	G(
+		v,
+		1,
+		6,
+		11,
+		12,
+		/** @type {bigint} */ (m[/** @type {number} */ (s[10])]),
+		/** @type {bigint} */ (m[/** @type {number} */ (s[11])]),
+	);
+	G(
+		v,
+		2,
+		7,
+		8,
+		13,
+		/** @type {bigint} */ (m[/** @type {number} */ (s[12])]),
+		/** @type {bigint} */ (m[/** @type {number} */ (s[13])]),
+	);
+	G(
+		v,
+		3,
+		4,
+		9,
+		14,
+		/** @type {bigint} */ (m[/** @type {number} */ (s[14])]),
+		/** @type {bigint} */ (m[/** @type {number} */ (s[15])]),
+	);
 }
 
 /**
@@ -154,7 +225,12 @@ export function compress(input) {
 
 	// Parse rounds (4 bytes, big-endian) - use >>> 0 to force unsigned 32-bit interpretation
 	const rounds =
-		((/** @type {number} */ (input[0]) << 24) | (/** @type {number} */ (input[1]) << 16) | (/** @type {number} */ (input[2]) << 8) | /** @type {number} */ (input[3])) >>> 0;
+		/** @type {number} */ (
+			(input[0] << 24) |
+				/** @type {number} */ (input[1] << 16) |
+				/** @type {number} */ (input[2] << 8) |
+				/** @type {number} */ (input[3])
+		) >>> 0;
 
 	// Parse h (64 bytes, 8x u64 little-endian)
 	/** @type {bigint[]} */
@@ -191,7 +267,7 @@ export function compress(input) {
 
 	// Mix in final block flag
 	if (f) {
-		v[14] = ~/** @type {bigint} */ (v[14]) & MASK_64;
+		v[14] = ~(/** @type {bigint} */ (v[14])) & MASK_64;
 	}
 
 	// Perform compression rounds
@@ -201,7 +277,10 @@ export function compress(input) {
 
 	// Finalize state
 	for (let i = 0; i < 8; i++) {
-		h[i] = (/** @type {bigint} */ (h[i]) ^ /** @type {bigint} */ (v[i]) ^ /** @type {bigint} */ (v[i + 8])) & MASK_64;
+		h[i] =
+			/** @type {bigint} */ (
+				h[i] ^ /** @type {bigint} */ (v[i]) ^ /** @type {bigint} */ (v[i + 8])
+			) & MASK_64;
 	}
 
 	// Write output (64 bytes, 8x u64 little-endian)

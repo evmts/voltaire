@@ -1,4 +1,4 @@
-import { Address, Hash, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, Hash, Transaction } from "@tevm/voltaire";
 const legacyTx: Transaction.Legacy = {
 	type: Transaction.Type.Legacy,
 	nonce: 0n,

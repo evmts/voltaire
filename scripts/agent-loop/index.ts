@@ -13,8 +13,8 @@
  *   bun run scripts/agent-loop/index.ts fix-test-failures --max-cycles=15
  */
 
-import { existsSync, mkdirSync, writeFileSync } from "fs";
-import { join } from "path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 // ============================================================================
 // Types
@@ -83,19 +83,10 @@ export async function runAgentLoop(
 	const maxCycles = options.maxCycles ?? 15;
 	const maxBudgetPerCycle = options.maxBudget ?? config.maxBudgetPerCycle;
 
-	console.log(`\n🚀 Starting Agent Loop: ${config.name}`);
-	console.log(`   Task ID: ${config.id}`);
-	console.log(`   Max cycles: ${maxCycles}`);
-	console.log(`   Target: ${config.targetValue}\n`);
-
 	// Initialize state
 	const initialState = await config.checkState();
-	console.log(
-		`📊 Initial state: ${initialState.value} (${initialState.status})`,
-	);
 
 	if (initialState.value === config.targetValue) {
-		console.log(`✅ Already at target! Nothing to do.`);
 		return createInitialSessionState(config, initialState.value);
 	}
 
@@ -112,10 +103,6 @@ export async function runAgentLoop(
 
 	// Main loop
 	for (let cycle = 1; cycle <= maxCycles; cycle++) {
-		console.log(`\n${"=".repeat(60)}`);
-		console.log(`🔄 CYCLE ${cycle}/${maxCycles}`);
-		console.log(`${"=".repeat(60)}\n`);
-
 		const cycleStart = new Date();
 		const stateBefore = await config.checkState();
 
@@ -162,16 +149,6 @@ export async function runAgentLoop(
 				? ((state.initialValue - stateAfter.value) / state.initialValue) * 100
 				: 0;
 
-		// Log results
-		console.log(`\n📈 Cycle ${cycle} Results:`);
-		console.log(
-			`   Value: ${stateBefore.value} → ${stateAfter.value} (${delta >= 0 ? "-" : "+"}${Math.abs(delta)})`,
-		);
-		console.log(`   Status: ${report.status}`);
-		console.log(
-			`   Total Progress: ${state.totalPercentReduction.toFixed(1)}% reduced`,
-		);
-
 		// Save report
 		saveReport(config, state);
 
@@ -182,7 +159,6 @@ export async function runAgentLoop(
 
 		// Check if done
 		if (stateAfter.value === config.targetValue) {
-			console.log(`\n🎉 Target reached! ${config.name} complete.`);
 			break;
 		}
 
@@ -190,15 +166,11 @@ export async function runAgentLoop(
 		if (delta === 0 && cycle > 1) {
 			const lastTwo = state.reports.slice(-2);
 			if (lastTwo.length === 2 && lastTwo.every((r) => r.delta === 0)) {
-				console.log(
-					`\n⚠️ No progress for 2 cycles. May need manual intervention.`,
-				);
 			}
 		}
 
 		// Small delay between cycles
 		if (cycle < maxCycles) {
-			console.log(`\n⏳ Waiting 5 seconds before next cycle...`);
 			await new Promise((resolve) => setTimeout(resolve, 5000));
 		}
 	}
@@ -236,8 +208,6 @@ async function runClaudeCodeCycle(
 	taskId: string,
 	maxBudget: number,
 ): Promise<{ success: boolean; output: string }> {
-	console.log("🤖 Starting Claude Code cycle...\n");
-
 	const promptFile = `/tmp/claude-prompt-${taskId}-${cycleNum}.txt`;
 	writeFileSync(promptFile, prompt);
 
@@ -318,7 +288,6 @@ ${state.reports
 `;
 
 	writeFileSync(summaryPath, summary);
-	console.log(`📝 Report saved to ${reportPath}`);
 }
 
 async function commitProgress(message: string): Promise<string | null> {
@@ -345,18 +314,7 @@ async function commitProgress(message: string): Promise<string | null> {
 	}
 }
 
-function printFinalSummary(config: TaskConfig, state: SessionState): void {
-	console.log(`\n${"=".repeat(60)}`);
-	console.log("📋 FINAL SUMMARY");
-	console.log(`${"=".repeat(60)}`);
-	console.log(`   Task: ${config.name}`);
-	console.log(`   Initial: ${state.initialValue}`);
-	console.log(`   Final: ${state.currentValue}`);
-	console.log(`   Total Fixed: ${state.totalDelta}`);
-	console.log(`   Reduction: ${state.totalPercentReduction.toFixed(1)}%`);
-	console.log(`   Cycles: ${state.totalCycles}`);
-	console.log(`\n   Reports: ${config.reportsDir}/`);
-}
+function printFinalSummary(config: TaskConfig, state: SessionState): void {}
 
 // ============================================================================
 // CLI Entry Point
@@ -367,22 +325,13 @@ async function main() {
 	const taskName = args.find((a) => !a.startsWith("--"));
 
 	if (!taskName) {
-		console.log(
-			"Usage: bun run scripts/agent-loop/index.ts <task-name> [options]",
-		);
-		console.log("\nAvailable tasks:");
-		console.log("  fix-typescript-errors  - Fix TypeScript type errors");
-		console.log("  fix-test-failures      - Fix failing tests");
-		console.log("\nOptions:");
-		console.log("  --max-cycles=N         - Maximum cycles (default: 15)");
-		console.log("  --max-budget=N         - Max USD per cycle (default: 2.0)");
 		process.exit(1);
 	}
 
-	const maxCycles = parseInt(
+	const maxCycles = Number.parseInt(
 		args.find((a) => a.startsWith("--max-cycles="))?.split("=")[1] ?? "15",
 	);
-	const maxBudget = parseFloat(
+	const maxBudget = Number.parseFloat(
 		args.find((a) => a.startsWith("--max-budget="))?.split("=")[1] ?? "2.0",
 	);
 

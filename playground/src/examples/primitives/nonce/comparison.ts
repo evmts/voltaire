@@ -27,24 +27,12 @@ for (const tx of testTxNonces) {
 	}
 }
 
-const nonces = [
-	Nonce(15),
-	Nonce(3),
-	Nonce(42),
-	Nonce(8),
-	Nonce(1),
-];
+const nonces = [Nonce(15), Nonce(3), Nonce(42), Nonce(8), Nonce(1)];
 
 const minNonce = nonces.reduce((min, n) => (n < min ? n : min));
 const maxNonce = nonces.reduce((max, n) => (n > max ? n : max));
 
-const unsorted = [
-	Nonce(20),
-	Nonce(5),
-	Nonce(15),
-	Nonce(1),
-	Nonce(10),
-];
+const unsorted = [Nonce(20), Nonce(5), Nonce(15), Nonce(1), Nonce(10)];
 
 const sorted = [...unsorted].sort((a, b) => Number(a - b));
 

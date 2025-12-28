@@ -1,4 +1,4 @@
-import { Hash, Bytes32 } from "@tevm/voltaire";
+import { Bytes32, Hash } from "@tevm/voltaire";
 // From hex string
 const hash1 = Hash(
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",

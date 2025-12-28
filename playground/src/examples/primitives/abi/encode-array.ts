@@ -37,13 +37,7 @@ const fixedAddressArray = ABI.encodeParameters(
 // Example: Encode dynamic bytes32 array
 const dynamicBytes32Array = ABI.encodeParameters(
 	[{ type: "bytes32[]", name: "hashes" }],
-	[
-		[
-			Bytes32.zero().fill(1),
-			Bytes32.zero().fill(2),
-			Bytes32.zero().fill(3),
-		],
-	],
+	[[Bytes32.zero().fill(1), Bytes32.zero().fill(2), Bytes32.zero().fill(3)]],
 );
 
 // Example: Encode array of strings

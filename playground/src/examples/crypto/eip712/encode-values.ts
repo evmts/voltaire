@@ -21,11 +21,7 @@ const falseVal = EIP712.encodeValue("bool", false, types);
 const str = EIP712.encodeValue("string", "Hello, World!", types);
 
 // Encode dynamic bytes - keccak256 hash
-const dynamicBytes = EIP712.encodeValue(
-	"bytes",
-	Bytes([1, 2, 3]),
-	types,
-);
+const dynamicBytes = EIP712.encodeValue("bytes", Bytes([1, 2, 3]), types);
 
 // Encode fixed bytes - left-aligned, zero-padded
 const bytes4 = EIP712.encodeValue(

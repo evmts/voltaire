@@ -1,4 +1,4 @@
-import { Address, Hex, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, Hex, Transaction } from "@tevm/voltaire";
 // Legacy Transaction: Create and serialize Legacy (Type 0) transaction
 
 // Create a Legacy transaction (original Ethereum transaction type)

@@ -1,5 +1,11 @@
-
-import { Address, BlockBody, Hex, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import {
+	Address,
+	BlockBody,
+	Bytes,
+	Bytes32,
+	Hex,
+	Transaction,
+} from "@tevm/voltaire";
 const emptyBody = BlockBody({
 	transactions: [],
 	ommers: [],

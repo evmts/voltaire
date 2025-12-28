@@ -18,12 +18,13 @@ import {
 	pointEvaluation,
 } from "../evm/precompiles/precompiles.js";
 import { Address } from "../primitives/Address/index.js";
-import * as Hex from "../primitives/Hex/index.js";
 import * as Hardfork from "../primitives/Hardfork/index.js";
+import * as Hex from "../primitives/Hex/index.js";
 import * as Rlp from "../primitives/Rlp/index.js";
 import * as Signature from "../primitives/Signature/index.js";
 
-const equalBytes = (a: Uint8Array, b: Uint8Array) => Hex.fromBytes(a) === Hex.fromBytes(b);
+const equalBytes = (a: Uint8Array, b: Uint8Array) =>
+	Hex.fromBytes(a) === Hex.fromBytes(b);
 
 /**
  * Comprehensive Integration Tests: Cross-Module Workflows
@@ -287,9 +288,7 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			// 3. Commitments should be deterministic for same blob
 			const commitment2 = Kzg.KZG.Commitment(blob);
-			expect(equalBytes(commitment, commitment2)).toBe(
-				true,
-			);
+			expect(equalBytes(commitment, commitment2)).toBe(true);
 		});
 
 		it("should compute and verify blob proof", () => {
@@ -350,9 +349,7 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			// But commitment should be the same
 			const commitment2 = Kzg.KZG.Commitment(blob);
-			expect(equalBytes(commitment, commitment2)).toBe(
-				true,
-			);
+			expect(equalBytes(commitment, commitment2)).toBe(true);
 		});
 	});
 
@@ -530,9 +527,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			expect(addresses.length).toBe(3);
 			for (let i = 0; i < addresses.length; i++) {
 				for (let j = i + 1; j < addresses.length; j++) {
-					expect(
-						equalBytes(addresses[i], addresses[j]),
-					).toBe(false);
+					expect(equalBytes(addresses[i], addresses[j])).toBe(false);
 				}
 			}
 		});
@@ -881,7 +876,7 @@ describe("Integration: Cross-Module Workflows", () => {
 				const hash1 = Keccak256.hash(input);
 				const hash2 = Keccak256.hash(input);
 
-			expect(equalBytes(hash1, hash2)).toBe(true);
+				expect(equalBytes(hash1, hash2)).toBe(true);
 				expect(hash1.length).toBe(32);
 			}
 		});

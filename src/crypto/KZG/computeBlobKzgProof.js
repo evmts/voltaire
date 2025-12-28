@@ -61,7 +61,10 @@ export function ComputeBlobKzgProof({
 				`Failed to compute blob proof: ${error instanceof Error ? error.message : String(error)}`,
 				{
 					code: "KZG_BLOB_PROOF_COMPUTATION_FAILED",
-					context: { blobLength: blob.length, commitmentLength: commitment.length },
+					context: {
+						blobLength: blob.length,
+						commitmentLength: commitment.length,
+					},
 					docsPath: "/crypto/kzg/compute-blob-kzg-proof#error-handling",
 					cause: error instanceof Error ? error : undefined,
 				},

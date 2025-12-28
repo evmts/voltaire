@@ -145,7 +145,7 @@ describe("GasEstimate", () => {
 		it("throws on negative buffer", () => {
 			const estimate = GasEstimate.from(100_000n);
 			expect(() => GasEstimate._withBuffer.call(estimate, -10)).toThrow(
-                "Padding percentage must be non-negative",
+				"Padding percentage must be non-negative",
 			);
 		});
 

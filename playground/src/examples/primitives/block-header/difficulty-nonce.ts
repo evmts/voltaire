@@ -1,4 +1,4 @@
-import { BlockHeader, Hex, Bytes, Bytes32 } from "@tevm/voltaire";
+import { BlockHeader, Bytes, Bytes32, Hex } from "@tevm/voltaire";
 // Pre-merge block example (difficulty > 0)
 const powBlock = BlockHeader({
 	parentHash:

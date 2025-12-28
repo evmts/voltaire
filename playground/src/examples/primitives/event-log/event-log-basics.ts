@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, EventLog, Hash } from "@tevm/voltaire";
 // ERC20 Transfer event: Transfer(address indexed from, address indexed to, uint256 value)
 // Event signature hash: keccak256("Transfer(address,address,uint256)")
 const transferSig = Hash(

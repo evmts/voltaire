@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Keccak256 } from "../../crypto/Keccak256/index.js";
-import * as Hex from "../../primitives/Hex/index.js";
 import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
+import * as Hex from "../../primitives/Hex/index.js";
 import {
 	bn254Add as evmBn254Add,
 	bn254Mul as evmBn254Mul,

@@ -41,7 +41,7 @@ export function loadWasm(wasmPath: string | URL | ArrayBuffer): Promise<void>;
  * const exports = getExports();
  * ```
  */
-export function getExports(): any;
+export function getExports(): WebAssembly.Exports;
 
 // ============================================================================
 // Address API

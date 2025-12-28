@@ -16,13 +16,7 @@ function timestampToSlot(timestamp: number): bigint {
 	if (secondsSinceGenesis < 0) return 0n;
 	return BigInt(Math.floor(secondsSinceGenesis / SECONDS_PER_SLOT));
 }
-const slots = [
-	Slot(0),
-	Slot(1000),
-	Slot(100000),
-	Slot(1000000),
-	Slot(7000000),
-];
+const slots = [Slot(0), Slot(1000), Slot(100000), Slot(1000000), Slot(7000000)];
 
 for (const slot of slots) {
 	const timestamp = slotToTimestamp(slot);

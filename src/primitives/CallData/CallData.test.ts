@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { CallData } from "./index.js";
 import type { CallDataType } from "./CallDataType.js";
 import {
 	InvalidCallDataLengthError,
 	InvalidHexFormatError,
 	InvalidValueError,
 } from "./errors.js";
+import { CallData } from "./index.js";
 
 describe("CallData", () => {
 	// Known transfer selector: keccak256("transfer(address,uint256)")[0:4] = 0xa9059cbb

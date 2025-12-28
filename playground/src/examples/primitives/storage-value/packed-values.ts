@@ -1,4 +1,4 @@
-import { StorageValue, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Bytes, Bytes32, StorageValue } from "@tevm/voltaire";
 
 // Example: Packed storage values - multiple values in a single 32-byte slot
 

@@ -1,6 +1,6 @@
+import * as Hex from "../Hex/index.js";
 import { SELECTOR_SIZE } from "./constants.js";
 import { getSelector } from "./getSelector.js";
-import * as Hex from "../Hex/index.js";
 
 /**
  * Check if CallData matches a specific function selector

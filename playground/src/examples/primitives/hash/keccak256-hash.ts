@@ -1,4 +1,4 @@
-import { Hash, Bytes } from "@tevm/voltaire";
+import { Bytes, Hash } from "@tevm/voltaire";
 // Example: Generating hashes using Keccak256
 
 // Hash a string

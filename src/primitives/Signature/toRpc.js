@@ -27,18 +27,14 @@ export function toRpc(signature) {
 	const v = getV(signature);
 
 	// Convert r to hex
-	const rHex =
-		"0x" +
-		Array.from(r)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
+	const rHex = `0x${Array.from(r)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 
 	// Convert s to hex
-	const sHex =
-		"0x" +
-		Array.from(s)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
+	const sHex = `0x${Array.from(s)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 
 	// Calculate yParity from v
 	let yParity;
@@ -52,11 +48,12 @@ export function toRpc(signature) {
 		yParity = vv;
 	}
 
-	const result = /** @type {{ r: string, s: string, yParity: string, v?: string }} */ ({
-		r: rHex,
-		s: sHex,
-		yParity: `0x${yParity.toString(16)}`,
-	});
+	const result =
+		/** @type {{ r: string, s: string, yParity: string, v?: string }} */ ({
+			r: rHex,
+			s: sHex,
+			yParity: `0x${yParity.toString(16)}`,
+		});
 
 	// Include v if it was set
 	if (v !== undefined) {

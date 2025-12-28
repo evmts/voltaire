@@ -1,10 +1,14 @@
-import { Address, BlockBody, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import {
+	Address,
+	BlockBody,
+	Bytes,
+	Bytes32,
+	Transaction,
+} from "@tevm/voltaire";
 // Transaction Filtering: Filter and analyze block body transactions
 
 // Create diverse set of transactions
-const targetAddress = Address(
-	"0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-);
+const targetAddress = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 
 const transactions: Transaction.Any[] = [
 	// ETH transfers to target

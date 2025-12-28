@@ -23,7 +23,7 @@ function deriveAddress(pubKey: Uint8Array): string {
 	const hash = keccak256(pubKey);
 	// Take last 20 bytes as address (Ethereum uses last 20 bytes)
 	const addressBytes = hash.slice(12);
-return Hex.fromBytes(addressBytes);
+	return Hex.fromBytes(addressBytes);
 }
 
 const signerAddress = deriveAddress(publicKey);

@@ -30,8 +30,8 @@ export {
 // Export backward-compatible wrappers with auto-injected c-kzg
 import * as ckzg from "c-kzg";
 import { BlobToKzgCommitment as BlobToKzgCommitmentFactory } from "./blobToKzgCommitment.js";
-import { ComputeKzgProof as ComputeKzgProofFactory } from "./computeKzgProof.js";
 import { ComputeBlobKzgProof as ComputeBlobKzgProofFactory } from "./computeBlobKzgProof.js";
+import { ComputeKzgProof as ComputeKzgProofFactory } from "./computeKzgProof.js";
 import { VerifyBlobKzgProof as VerifyBlobKzgProofFactory } from "./verifyBlobKzgProof.js";
 import { VerifyBlobKzgProofBatch as VerifyBlobKzgProofBatchFactory } from "./verifyBlobKzgProofBatch.js";
 import { VerifyKzgProof as VerifyKzgProofFactory } from "./verifyKzgProof.js";

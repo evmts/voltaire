@@ -54,9 +54,6 @@ import * as G1 from "./G1/index.js";
 import * as G2 from "./G2/index.js";
 import * as Pairing from "./Pairing/index.js";
 
-// High-level BLS signature operations
-import { sign, signPoint } from "./sign.js";
-import { verify, verifyPoint } from "./verify.js";
 import { aggregate, aggregatePublicKeys } from "./aggregate.js";
 import {
 	aggregateVerify,
@@ -64,7 +61,10 @@ import {
 	fastAggregateVerify,
 } from "./aggregateVerify.js";
 import { derivePublicKey, derivePublicKeyPoint } from "./derivePublicKey.js";
-import { randomPrivateKey, isValidPrivateKey } from "./randomPrivateKey.js";
+import { isValidPrivateKey, randomPrivateKey } from "./randomPrivateKey.js";
+// High-level BLS signature operations
+import { sign, signPoint } from "./sign.js";
+import { verify, verifyPoint } from "./verify.js";
 
 export { Fp, Fp2, Fr, G1, G2, Pairing };
 

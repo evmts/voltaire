@@ -1,5 +1,5 @@
-import type { HexType } from "../HexType.js";
 import { InvalidLengthError } from "../../errors/index.js";
+import type { HexType } from "../HexType.js";
 
 /**
  * Assert that hex value has a specific size, throws if not

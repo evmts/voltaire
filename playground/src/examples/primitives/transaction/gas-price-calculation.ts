@@ -1,4 +1,4 @@
-import { Address, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, Transaction } from "@tevm/voltaire";
 // Transaction Gas Price: Calculate effective gas prices
 
 // Legacy transaction - fixed gas price

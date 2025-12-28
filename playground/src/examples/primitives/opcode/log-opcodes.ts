@@ -1,4 +1,4 @@
-import { Opcode, Bytes } from "@tevm/voltaire";
+import { Bytes, Opcode } from "@tevm/voltaire";
 // LOG0 (0xa0) - Log with no topics
 const log0Info = Opcode.info(Opcode.LOG0);
 

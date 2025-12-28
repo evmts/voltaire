@@ -1,4 +1,4 @@
-import { BlockHeader, Hex, Bytes, Bytes32 } from "@tevm/voltaire";
+import { BlockHeader, Bytes, Bytes32, Hex } from "@tevm/voltaire";
 const header = BlockHeader({
 	parentHash: Bytes32.zero().fill(0x00),
 	ommersHash:

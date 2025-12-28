@@ -10,7 +10,7 @@
  */
 
 import { bls12_381 } from "@noble/curves/bls12-381.js";
-import { SignatureError, InvalidPointError } from "./errors.js";
+import { InvalidPointError, SignatureError } from "./errors.js";
 
 // Ethereum consensus uses "short signatures" scheme
 const bls = bls12_381.shortSignatures;

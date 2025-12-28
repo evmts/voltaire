@@ -149,10 +149,11 @@ export function fromRpc(rpc) {
 				gasPrice: hexToBigInt(rpc.gasPrice),
 				accessList: (rpc.accessList || []).map((item) => ({
 					address: hexToAddressRequired(item.address),
-					storageKeys: (item.storageKeys || []).map((key) =>
-						/** @type {import('../Hash/HashType.js').HashType} */ (
-							/** @type {unknown} */ (hexToHash(key))
-						),
+					storageKeys: (item.storageKeys || []).map(
+						(key) =>
+							/** @type {import('../Hash/HashType.js').HashType} */ (
+								/** @type {unknown} */ (hexToHash(key))
+							),
 					),
 				})),
 				yParity: Number(hexToBigInt(rpc.yParity ?? rpc.v ?? "0x0")),
@@ -167,10 +168,11 @@ export function fromRpc(rpc) {
 				maxFeePerGas: hexToBigInt(rpc.maxFeePerGas),
 				accessList: (rpc.accessList || []).map((item) => ({
 					address: hexToAddressRequired(item.address),
-					storageKeys: (item.storageKeys || []).map((key) =>
-						/** @type {import('../Hash/HashType.js').HashType} */ (
-							/** @type {unknown} */ (hexToHash(key))
-						),
+					storageKeys: (item.storageKeys || []).map(
+						(key) =>
+							/** @type {import('../Hash/HashType.js').HashType} */ (
+								/** @type {unknown} */ (hexToHash(key))
+							),
 					),
 				})),
 				yParity: Number(hexToBigInt(rpc.yParity ?? rpc.v ?? "0x0")),
@@ -189,10 +191,11 @@ export function fromRpc(rpc) {
 				maxFeePerGas: hexToBigInt(rpc.maxFeePerGas),
 				accessList: (rpc.accessList || []).map((item) => ({
 					address: hexToAddressRequired(item.address),
-					storageKeys: (item.storageKeys || []).map((key) =>
-						/** @type {import('../Hash/HashType.js').HashType} */ (
-							/** @type {unknown} */ (hexToHash(key))
-						),
+					storageKeys: (item.storageKeys || []).map(
+						(key) =>
+							/** @type {import('../Hash/HashType.js').HashType} */ (
+								/** @type {unknown} */ (hexToHash(key))
+							),
 					),
 				})),
 				maxFeePerBlobGas: hexToBigInt(rpc.maxFeePerBlobGas),
@@ -214,10 +217,11 @@ export function fromRpc(rpc) {
 				maxFeePerGas: hexToBigInt(rpc.maxFeePerGas),
 				accessList: (rpc.accessList || []).map((item) => ({
 					address: hexToAddressRequired(item.address),
-					storageKeys: (item.storageKeys || []).map((key) =>
-						/** @type {import('../Hash/HashType.js').HashType} */ (
-							/** @type {unknown} */ (hexToHash(key))
-						),
+					storageKeys: (item.storageKeys || []).map(
+						(key) =>
+							/** @type {import('../Hash/HashType.js').HashType} */ (
+								/** @type {unknown} */ (hexToHash(key))
+							),
 					),
 				})),
 				authorizationList: (rpc.authorizationList || []).map((auth) => ({

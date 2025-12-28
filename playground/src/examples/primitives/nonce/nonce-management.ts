@@ -158,18 +158,12 @@ class MultiAccountNonceManager {
 
 const multiManager = new MultiAccountNonceManager();
 
-multiManager.initialize(
-	"0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-	Nonce(5),
-);
+multiManager.initialize("0x742d35Cc6634C0532925a3b844Bc454e4438f44e", Nonce(5));
 multiManager.initialize(
 	"0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
 	Nonce(10),
 );
-multiManager.initialize(
-	"0x5aAed5930b9EB3Cd462dDbAEfA21DA757F30FbD",
-	Nonce(0),
-);
+multiManager.initialize("0x5aAed5930b9EB3Cd462dDbAEfA21DA757F30FbD", Nonce(0));
 
 multiManager.showAll();
 

@@ -1,4 +1,4 @@
-import { Address, Hash, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, Hash, Transaction } from "@tevm/voltaire";
 // EIP-1559 transaction
 const eip1559Tx: Transaction.EIP1559 = {
 	type: Transaction.Type.EIP1559,

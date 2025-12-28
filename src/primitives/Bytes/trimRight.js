@@ -21,5 +21,7 @@ export function trimRight(bytes) {
 		return bytes;
 	}
 
-	return /** @type {import('./BytesType.js').BytesType} */ (bytes.slice(0, end));
+	return /** @type {import('./BytesType.js').BytesType} */ (
+		bytes.slice(0, end)
+	);
 }

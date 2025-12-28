@@ -20,12 +20,15 @@ const final = HDWallet.deriveChild(m44_60_0_0, 0);
 // Compare with direct path derivation
 const direct = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
 
-const seqKey = HDWallet.getPrivateKey(final)!;
-const dirKey = HDWallet.getPrivateKey(direct)!;
+const seqKey = HDWallet.getPrivateKey(final);
+if (!seqKey) throw new Error("Private key not available");
+const dirKey = HDWallet.getPrivateKey(direct);
+if (!dirKey) throw new Error("Private key not available");
 const identical = seqKey.every((b, i) => b === dirKey[i]);
 const accountLevel = HDWallet.derivePath(root, "m/44'/60'/0'/0");
 
 for (let i = 0; i < 5; i++) {
 	const child = HDWallet.deriveChild(accountLevel, i);
-	const pk = HDWallet.getPrivateKey(child)!;
+	const pk = HDWallet.getPrivateKey(child);
+	if (!pk) throw new Error("Private key not available");
 }

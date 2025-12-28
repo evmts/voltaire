@@ -10,9 +10,7 @@ const ALLOWANCE = Hash(
 const singleNoKeys = AccessList([{ address: usdc, storageKeys: [] }]);
 const cost1 = AccessList.gasCost(singleNoKeys);
 const savings1 = AccessList.gasSavings(singleNoKeys);
-const singleOneKey = AccessList([
-	{ address: usdc, storageKeys: [BALANCE] },
-]);
+const singleOneKey = AccessList([{ address: usdc, storageKeys: [BALANCE] }]);
 const cost2 = AccessList.gasCost(singleOneKey);
 const savings2 = AccessList.gasSavings(singleOneKey);
 const singleTwoKeys = AccessList([

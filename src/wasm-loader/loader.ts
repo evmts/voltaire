@@ -167,7 +167,10 @@ export async function loadWasm(
 			if (!wasmMemory) return -1;
 			const view = new Uint8Array(wasmMemory.buffer, buf, len);
 			// Use crypto.getRandomValues for secure random bytes
-			if (typeof globalThis.crypto !== "undefined" && globalThis.crypto.getRandomValues) {
+			if (
+				typeof globalThis.crypto !== "undefined" &&
+				globalThis.crypto.getRandomValues
+			) {
 				globalThis.crypto.getRandomValues(view);
 			} else {
 				// Fallback for Node.js without global crypto
@@ -177,7 +180,9 @@ export async function loadWasm(
 					nodeCrypto.randomFillSync(view);
 				} catch {
 					// Last resort: throw error rather than return predictable zeros
-					throw new Error("No secure random source available for WASI random_get");
+					throw new Error(
+						"No secure random source available for WASI random_get",
+					);
 				}
 			}
 			return 0;

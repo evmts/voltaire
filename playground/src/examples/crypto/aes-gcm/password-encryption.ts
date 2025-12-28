@@ -64,10 +64,5 @@ const exp1 = await AesGcm.exportKey(key1);
 const exp2 = await AesGcm.exportKey(key2);
 
 const start = Date.now();
-await AesGcm.deriveKey(
-	"test",
-	Bytes.random(16),
-	100_000,
-	256,
-);
+await AesGcm.deriveKey("test", Bytes.random(16), 100_000, 256);
 const elapsed = Date.now() - start;

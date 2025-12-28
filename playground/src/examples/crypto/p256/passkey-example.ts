@@ -34,11 +34,15 @@ const attestationData = Bytes.concat(
 	publicKey,
 );
 
-const attestationHash = Hash.keccak256(Bytes.concat(attestationData, clientDataHash));
+const attestationHash = Hash.keccak256(
+	Bytes.concat(attestationData, clientDataHash),
+);
 const attestationSignature = P256.sign(attestationHash, privateKey);
 
 // 4. Server verifies and stores credential
-const verifyAttestationHash = Hash.keccak256(Bytes.concat(attestationData, clientDataHash));
+const verifyAttestationHash = Hash.keccak256(
+	Bytes.concat(attestationData, clientDataHash),
+);
 const attestationValid = P256.verify(
 	attestationSignature,
 	verifyAttestationHash,
@@ -91,7 +95,10 @@ const replayClientData = {
 		.join(""),
 };
 const replayHash = Hash.keccak256(
-	Bytes.concat(authData, Hash.keccak256String(JSON.stringify(replayClientData))),
+	Bytes.concat(
+		authData,
+		Hash.keccak256String(JSON.stringify(replayClientData)),
+	),
 );
 
 // Check 2: Phishing prevention (wrong origin)
@@ -100,7 +107,10 @@ const phishingClientData = {
 	origin: "https://evil-example.com",
 };
 const phishingHash = Hash.keccak256(
-	Bytes.concat(authData, Hash.keccak256String(JSON.stringify(phishingClientData))),
+	Bytes.concat(
+		authData,
+		Hash.keccak256String(JSON.stringify(phishingClientData)),
+	),
 );
 
 // Check 3: Wrong credential

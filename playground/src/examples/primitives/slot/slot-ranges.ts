@@ -88,9 +88,7 @@ const startPagination = Slot(8000000n);
 
 for (let page = 0; page < 5; page++) {
 	const pageStart = Slot(startPagination + BigInt(page * pageSize));
-	const pageEnd = Slot(
-		startPagination + BigInt((page + 1) * pageSize - 1),
-	);
+	const pageEnd = Slot(startPagination + BigInt((page + 1) * pageSize - 1));
 }
 const sampleStart = Slot(8100000n);
 const sampleCount = 10;

@@ -1,4 +1,4 @@
-import { Selector, Bytes } from "@tevm/voltaire";
+import { Bytes, Selector } from "@tevm/voltaire";
 // Create from function signature (most common)
 const transferSel = Selector.fromSignature("transfer(address,uint256)");
 

@@ -1,16 +1,16 @@
 // Primitives examples - imported as raw strings
 // These demonstrate the Voltaire primitives API
 
+import accesslist from "./primitives/accesslist.ts?raw";
 import address from "./primitives/address.ts?raw";
-import hex from "./primitives/hex.ts?raw";
+import blob from "./primitives/blob.ts?raw";
+import bytes from "./primitives/bytes.ts?raw";
+import denomination from "./primitives/denomination.ts?raw";
 import hash from "./primitives/hash.ts?raw";
-import uint256 from "./primitives/uint256.ts?raw";
+import hex from "./primitives/hex.ts?raw";
 import rlp from "./primitives/rlp.ts?raw";
 import transaction from "./primitives/transaction.ts?raw";
-import accesslist from "./primitives/accesslist.ts?raw";
-import blob from "./primitives/blob.ts?raw";
-import denomination from "./primitives/denomination.ts?raw";
-import bytes from "./primitives/bytes.ts?raw";
+import uint256 from "./primitives/uint256.ts?raw";
 
 export const primitiveExamples: Record<string, string> = {
 	"address.ts": address,

@@ -27,9 +27,7 @@ const listWithKeys = AccessList([
 ]);
 
 // Multi-address access list
-const uniswapRouter = Address(
-	"0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-);
+const uniswapRouter = Address("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D");
 const weth = Address("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
 const multiList = AccessList([
 	{ address: uniswapRouter, storageKeys: [balanceSlot] },

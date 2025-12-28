@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, EventLog, Hash } from "@tevm/voltaire";
 // Event signatures
 const TRANSFER_SIG = Hash(
 	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",

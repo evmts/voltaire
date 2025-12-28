@@ -16,16 +16,12 @@ function categorizePosition(idx: typeof txIndex, total: number): string {
 	return "LATE";
 }
 
-const positions = [0, 25, 50, 100, 150, 199].map((n) =>
-	TransactionIndex(n),
-);
+const positions = [0, 25, 50, 100, 150, 199].map((n) => TransactionIndex(n));
 positions.forEach((idx) => {
 	const cat = categorizePosition(idx, blockSize);
 });
 const block18500000Size = 172;
-const sampleIndexes = [0, 43, 86, 129, 171].map((n) =>
-	TransactionIndex(n),
-);
+const sampleIndexes = [0, 43, 86, 129, 171].map((n) => TransactionIndex(n));
 
 sampleIndexes.forEach((idx) => {
 	const num = TransactionIndex.toNumber(idx);

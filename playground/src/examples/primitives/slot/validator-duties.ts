@@ -15,9 +15,7 @@ const proposalPositions = [2, 17, 29];
 const proposalEpoch = 1500n;
 
 for (const position of proposalPositions) {
-	const slot = Slot(
-		proposalEpoch * BigInt(SLOTS_PER_EPOCH) + BigInt(position),
-	);
+	const slot = Slot(proposalEpoch * BigInt(SLOTS_PER_EPOCH) + BigInt(position));
 	const slotEpoch = Slot.toEpoch(slot);
 }
 const EPOCHS_PER_SYNC_COMMITTEE = 256;
@@ -25,12 +23,8 @@ const syncCommitteeStartEpoch = 2000n;
 const syncCommitteeEndEpoch =
 	syncCommitteeStartEpoch + BigInt(EPOCHS_PER_SYNC_COMMITTEE);
 
-const syncStartSlot = Slot(
-	syncCommitteeStartEpoch * BigInt(SLOTS_PER_EPOCH),
-);
-const syncEndSlot = Slot(
-	syncCommitteeEndEpoch * BigInt(SLOTS_PER_EPOCH) - 1n,
-);
+const syncStartSlot = Slot(syncCommitteeStartEpoch * BigInt(SLOTS_PER_EPOCH));
+const syncEndSlot = Slot(syncCommitteeEndEpoch * BigInt(SLOTS_PER_EPOCH) - 1n);
 const depositSlot = Slot(7500000n);
 const depositEpoch = Slot.toEpoch(depositSlot);
 

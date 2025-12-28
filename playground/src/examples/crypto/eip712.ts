@@ -55,7 +55,7 @@ const privateKey = Secp256k1.PrivateKey.random();
 const signature = Secp256k1.sign(hash, privateKey);
 
 // Recover signer address
-const publicKey = Secp256k1.recover(signature, hash)!;
+const publicKey = Secp256k1.recoverPublicKey(signature, hash);
 const signerAddress = Address.fromPublicKey(publicKey);
 const signerChecksummed = Address.toChecksummed(signerAddress);
 

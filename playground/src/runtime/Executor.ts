@@ -1,3 +1,5 @@
+// Ensure WASM is available so wasm API calls work synchronously
+import { loadWasm } from "../../../src/wasm-loader/loader.js";
 /**
  * Executor - Bundles and executes user TypeScript code using esbuild-wasm
  *
@@ -8,8 +10,6 @@
  * 4. Execute bundled code via Function constructor
  */
 import { esbuild, initEsbuild } from "./EsbuildService.js";
-// Ensure WASM is available so wasm API calls work synchronously
-import { loadWasm } from "../../../src/wasm-loader/loader.js";
 import { moduleRegistry } from "./ModuleRegistry.js";
 import { voltairePlugin } from "./VoltairePlugin.js";
 

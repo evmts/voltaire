@@ -6,9 +6,7 @@ const voterPrivateKey = Secp256k1.PrivateKey.random();
 const voterPublicKey = voterPrivateKey.toPublicKey();
 const voterAddress = voterPublicKey.toAddress();
 
-const governorAddress = Address(
-	"0xc0Da02939E1441F497fd74F78cE7Decb17B66529",
-); // Compound Governor
+const governorAddress = Address("0xc0Da02939E1441F497fd74F78cE7Decb17B66529"); // Compound Governor
 
 // Governance vote typed data
 const vote = {

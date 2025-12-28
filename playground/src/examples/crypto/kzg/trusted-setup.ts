@@ -2,15 +2,19 @@ import { KZG } from "@tevm/voltaire";
 KZG.loadTrustedSetup();
 try {
 	const blob = KZG.generateRandomBlob();
-	const commitment = KZG.Commitment(blob);
-} catch (error) {}
+	KZG.Commitment(blob);
+} catch (_error: unknown) {
+	// Handle commitment error
+}
 KZG.loadTrustedSetup();
 KZG.loadTrustedSetup();
 KZG.freeTrustedSetup();
 try {
 	const blob = KZG.createEmptyBlob();
 	KZG.Commitment(blob);
-} catch (error: any) {}
+} catch (_error: unknown) {
+	// Expected: setup not loaded
+}
 KZG.loadTrustedSetup();
 
 KZG.freeTrustedSetup();

@@ -95,19 +95,9 @@ const unique = duplicates.filter(
 );
 for (const slot of unique) {
 }
-const setA = [
-	Slot(8500000n),
-	Slot(8500001n),
-	Slot(8500002n),
-	Slot(8500003n),
-];
+const setA = [Slot(8500000n), Slot(8500001n), Slot(8500002n), Slot(8500003n)];
 
-const setB = [
-	Slot(8500002n),
-	Slot(8500003n),
-	Slot(8500004n),
-	Slot(8500005n),
-];
+const setB = [Slot(8500002n), Slot(8500003n), Slot(8500004n), Slot(8500005n)];
 
 // Union
 const union = [...setA, ...setB].filter(

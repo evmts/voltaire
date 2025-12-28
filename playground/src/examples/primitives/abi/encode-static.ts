@@ -55,9 +55,5 @@ const bytesParams = ABI.encodeParameters(
 		{ type: "bytes4", name: "selector" },
 		{ type: "bytes32", name: "hash" },
 	],
-	[
-		Bytes([0xff]),
-		Bytes([0xa9, 0x05, 0x9c, 0xbb]),
-		Bytes32.zero().fill(1),
-	],
+	[Bytes([0xff]), Bytes([0xa9, 0x05, 0x9c, 0xbb]), Bytes32.zero().fill(1)],
 );

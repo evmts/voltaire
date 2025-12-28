@@ -13,8 +13,10 @@ const xprv = HDWallet.toExtendedPrivateKey(root);
 // Export extended public key (xpub)
 const xpub = HDWallet.toExtendedPublicKey(root);
 const importedPriv = HDWallet.fromExtendedKey(xprv);
-const originalKey = HDWallet.getPrivateKey(root)!;
-const importedKey = HDWallet.getPrivateKey(importedPriv)!;
+const originalKey = HDWallet.getPrivateKey(root);
+if (!originalKey) throw new Error("Private key not available");
+const importedKey = HDWallet.getPrivateKey(importedPriv);
+if (!importedKey) throw new Error("Private key not available");
 const keysMatch = originalKey.every((b, i) => b === importedKey[i]);
 const watchOnly = HDWallet.fromPublicExtendedKey(xpub);
 const child0 = HDWallet.deriveChild(watchOnly, 0);

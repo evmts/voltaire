@@ -27,30 +27,36 @@ const individualStart = performance.now();
 for (let i = 0; i < numBlobs; i++) {
 	const z = Bytes([...Array(31).fill(0), i]);
 	const { y } = KZG.Proof(blobs[i], z);
-	const valid = KZG.verifyKzgProof(commitments[i], z, y, proofs[i]);
+	KZG.verifyKzgProof(commitments[i], z, y, proofs[i]);
 }
 
 const individualTime = performance.now() - individualStart;
 
 const batchStart = performance.now();
 try {
-	const batchValid = KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs);
+	KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs);
 	const batchTime = performance.now() - batchStart;
 
 	if (individualTime > 0) {
-		const speedup = individualTime / batchTime;
+		const _speedup = individualTime / batchTime;
 	}
-} catch (error: any) {}
+} catch (_error: unknown) {
+	// Handle batch verification error
+}
 try {
 	KZG.verifyBlobKzgProofBatch(
 		[blobs[0]],
 		[commitments[0], commitments[1]], // Wrong length
 		[proofs[0]],
 	);
-} catch (error: any) {}
+} catch (_error: unknown) {
+	// Expected: mismatched array lengths
+}
 try {
 	const wrongBlob = Bytes.zero(1000);
 	KZG.verifyBlobKzgProofBatch([wrongBlob], [commitments[0]], [proofs[0]]);
-} catch (error: any) {}
+} catch (_error: unknown) {
+	// Expected: invalid blob size
+}
 
 KZG.freeTrustedSetup();

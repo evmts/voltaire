@@ -1,4 +1,3 @@
-
 /**
  * Compress a public key from 64 bytes (uncompressed) to 33 bytes (compressed)
  *

@@ -1,4 +1,4 @@
-import { TransactionHash, Bytes } from "@tevm/voltaire";
+import { Bytes, TransactionHash } from "@tevm/voltaire";
 // Example: TransactionHash basics
 
 // Create from hex string (most common)

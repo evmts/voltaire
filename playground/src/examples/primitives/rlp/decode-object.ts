@@ -1,4 +1,4 @@
-import { Hex, Rlp, Bytes, type BytesType } from "@tevm/voltaire";
+import { Bytes, type BytesType, Hex, Rlp } from "@tevm/voltaire";
 // Example: Decode objects with schema
 
 // Define transaction schema

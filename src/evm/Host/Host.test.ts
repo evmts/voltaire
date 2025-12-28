@@ -90,9 +90,7 @@ describe("Host", () => {
 					return 0n;
 				},
 				setBalance: (addr, balance) => {
-					logs.push(
-						`setBalance: ${Hex.fromBytes(addr).slice(2)} = ${balance}`,
-					);
+					logs.push(`setBalance: ${Hex.fromBytes(addr).slice(2)} = ${balance}`);
 				},
 				getCode: (addr) => {
 					logs.push(`getCode: ${Hex.fromBytes(addr).slice(2)}`);
@@ -104,9 +102,7 @@ describe("Host", () => {
 					);
 				},
 				getStorage: (addr, slot) => {
-					logs.push(
-						`getStorage: ${Hex.fromBytes(addr).slice(2)} [${slot}]`,
-					);
+					logs.push(`getStorage: ${Hex.fromBytes(addr).slice(2)} [${slot}]`);
 					return 0n;
 				},
 				setStorage: (addr, slot, value) => {
@@ -119,9 +115,7 @@ describe("Host", () => {
 					return 0n;
 				},
 				setNonce: (addr, nonce) => {
-					logs.push(
-						`setNonce: ${Hex.fromBytes(addr).slice(2)} = ${nonce}`,
-					);
+					logs.push(`setNonce: ${Hex.fromBytes(addr).slice(2)} = ${nonce}`);
 				},
 				getTransientStorage: (addr, slot) => {
 					logs.push(

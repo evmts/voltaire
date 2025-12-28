@@ -29,7 +29,8 @@ const isValid = Secp256k1.verify(signature, messageHash, publicKey);
 // Recover public key from signature
 const recoveredPubKey = Secp256k1.recover(signature, messageHash);
 const recoveryMatches =
-	Hex.fromBytes(publicKey) === Hex.fromBytes(recoveredPubKey!);
+	recoveredPubKey !== null &&
+	Hex.fromBytes(publicKey) === Hex.fromBytes(recoveredPubKey);
 
 // Compact signature format (64 bytes)
 const compactSig = signature.toCompact();

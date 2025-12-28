@@ -1,4 +1,11 @@
-import { Address, Hash, Hex, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import {
+	Address,
+	Bytes,
+	Bytes32,
+	Hash,
+	Hex,
+	Transaction,
+} from "@tevm/voltaire";
 // Access List Operations: Work with transaction access lists
 
 // Transaction with access list
@@ -15,10 +22,7 @@ const txWithAccessList: Transaction.EIP1559 = {
 	accessList: [
 		{
 			address: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
-			storageKeys: [
-				Hash(`0x${"00".repeat(32)}`),
-				Hash(`0x${"01".repeat(32)}`),
-			],
+			storageKeys: [Hash(`0x${"00".repeat(32)}`), Hash(`0x${"01".repeat(32)}`)],
 		},
 		{
 			address: Address("0x1234567890123456789012345678901234567890"),

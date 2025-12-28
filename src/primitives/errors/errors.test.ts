@@ -396,7 +396,11 @@ describe("Usage examples", () => {
 
 		expect(
 			handleError(
-				new IntegerOverflowError("test", { value: 256, max: 255, type: "uint8" }),
+				new IntegerOverflowError("test", {
+					value: 256,
+					max: 255,
+					type: "uint8",
+				}),
 			),
 		).toBe("OVERFLOW");
 		expect(

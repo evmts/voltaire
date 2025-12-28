@@ -1,4 +1,4 @@
-import { type Uint256Type } from "@tevm/voltaire";
+import type { Uint256Type } from "@tevm/voltaire";
 import { TransactionStatus } from "@tevm/voltaire";
 
 // Simple transfer: 21000 gas (base cost)

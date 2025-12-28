@@ -1,11 +1,18 @@
 import { Bytes, KZG } from "@tevm/voltaire";
 // Example: Blob validation and constraints
 
+// EIP-4844 constants
+const BYTES_PER_BLOB = 131072;
+const BYTES_PER_FIELD_ELEMENT = 32;
+const FIELD_ELEMENTS_PER_BLOB = 4096;
+
 KZG.loadTrustedSetup();
 const emptyBlob = KZG.createEmptyBlob();
 try {
 	KZG.validateBlob(emptyBlob);
-} catch (error: any) {}
+} catch (_error: unknown) {
+	// Handle validation error
+}
 const randomBlob = KZG.generateRandomBlob();
 try {
 	KZG.validateBlob(randomBlob);
@@ -18,7 +25,13 @@ try {
 			break;
 		}
 	}
-} catch (error: any) {}
+	// Use validElements to avoid unused variable warning
+	if (!validElements) {
+		console.info("Invalid field elements detected");
+	}
+} catch (_error: unknown) {
+	// Handle validation error
+}
 const customBlob = Bytes.zero(BYTES_PER_BLOB);
 for (let i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
 	customBlob[i * BYTES_PER_FIELD_ELEMENT] = 0; // High byte must be 0
@@ -29,21 +42,33 @@ for (let i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
 }
 try {
 	KZG.validateBlob(customBlob);
-} catch (error: any) {}
+} catch (_error: unknown) {
+	// Handle validation error
+}
 const tooSmall = Bytes.zero(1000);
 try {
 	KZG.validateBlob(tooSmall);
-} catch (error: any) {}
+} catch (_error: unknown) {
+	// Expected: blob too small
+}
 const tooLarge = Bytes.zero(200000);
 try {
 	KZG.validateBlob(tooLarge);
-} catch (error: any) {}
+} catch (_error: unknown) {
+	// Expected: blob too large
+}
 try {
-	KZG.validateBlob(null as any);
-} catch (error: any) {}
+	// @ts-expect-error Testing null input handling
+	KZG.validateBlob(null);
+} catch (_error: unknown) {
+	// Expected: null input
+}
 try {
-	KZG.validateBlob("blob" as any);
-} catch (error: any) {}
+	// @ts-expect-error Testing string input handling
+	KZG.validateBlob("blob");
+} catch (_error: unknown) {
+	// Expected: wrong type
+}
 const generatedBlob = KZG.generateRandomBlob();
 let allHighBytesZero = true;
 for (let i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
@@ -51,6 +76,10 @@ for (let i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
 		allHighBytesZero = false;
 		break;
 	}
+}
+// Use allHighBytesZero to avoid unused variable warning
+if (!allHighBytesZero) {
+	console.info("Generated blob has non-zero high bytes");
 }
 
 KZG.freeTrustedSetup();

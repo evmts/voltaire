@@ -90,12 +90,12 @@ describe("Transaction RPC format", () => {
 				nonce: "0x1",
 				gasPrice: "0x4a817c800",
 				gas: "0x5208",
-				to: "0x" + "12".repeat(20),
+				to: `0x${"12".repeat(20)}`,
 				value: "0xde0b6b3a7640000",
 				data: "0xabcd",
 				v: "0x1b",
-				r: "0x" + "11".repeat(32),
-				s: "0x" + "22".repeat(32),
+				r: `0x${"11".repeat(32)}`,
+				s: `0x${"22".repeat(32)}`,
 			};
 
 			const tx = fromRpc(rpc);
@@ -115,13 +115,13 @@ describe("Transaction RPC format", () => {
 				maxPriorityFeePerGas: "0x3b9aca00",
 				maxFeePerGas: "0x4a817c800",
 				gas: "0x5208",
-				to: "0x" + "12".repeat(20),
+				to: `0x${"12".repeat(20)}`,
 				value: "0x0",
 				input: "0x",
 				accessList: [],
 				yParity: "0x0",
-				r: "0x" + "11".repeat(32),
-				s: "0x" + "22".repeat(32),
+				r: `0x${"11".repeat(32)}`,
+				s: `0x${"22".repeat(32)}`,
 			};
 
 			const tx = fromRpc(rpc);

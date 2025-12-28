@@ -6,11 +6,11 @@
  */
 
 import type {
+	EIP1193EventMap,
 	TypedProvider,
 	VoltaireRpcSchema,
-	EIP1193EventMap,
 } from "../index.js";
-import { ProviderRpcError, EIP1193ErrorCode } from "../index.js";
+import { EIP1193ErrorCode, ProviderRpcError } from "../index.js";
 
 /**
  * Example 1: Creating a mock typed provider
@@ -64,7 +64,7 @@ export function createMockProvider(): TypedProvider<
 			if (!listeners.has(event as string)) {
 				listeners.set(event as string, new Set());
 			}
-			listeners.get(event as string)!.add(listener);
+			listeners.get(event as string)?.add(listener);
 			return provider;
 		},
 
@@ -90,20 +90,17 @@ export async function exampleTypeSafeRequests() {
 	const blockNumber = await provider.request({
 		method: "eth_blockNumber",
 	});
-	console.log("Block number:", blockNumber); // Type: string
 
 	// Request with params: eth_getBalance
 	const balance = await provider.request({
 		method: "eth_getBalance",
 		params: ["0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0", "latest"],
 	});
-	console.log("Balance:", balance); // Type: string
 
 	// Array return type: eth_accounts
 	const accounts = await provider.request({
 		method: "eth_accounts",
 	});
-	console.log("Accounts:", accounts); // Type: string[]
 
 	// Complex params: eth_call
 	const result = await provider.request({
@@ -116,7 +113,6 @@ export async function exampleTypeSafeRequests() {
 			"latest",
 		],
 	});
-	console.log("Call result:", result); // Type: string
 }
 
 /**
@@ -127,22 +123,16 @@ export function exampleEventHandling() {
 
 	// Type-safe event listeners
 	provider.on("chainChanged", (chainId) => {
-		// chainId is typed as string
-		console.log("Chain changed to:", parseInt(chainId, 16));
 	});
 
 	provider.on("accountsChanged", (accounts) => {
 		// accounts is typed as string[]
 		if (accounts.length === 0) {
-			console.log("Wallet disconnected");
 		} else {
-			console.log("Active account:", accounts[0]);
 		}
 	});
 
 	provider.on("connect", ({ chainId }) => {
-		// chainId is typed as string
-		console.log("Connected to chain:", chainId);
 	});
 
 	provider.on("disconnect", (error) => {
@@ -152,8 +142,8 @@ export function exampleEventHandling() {
 
 	// Method chaining
 	provider
-		.on("chainChanged", (chainId) => console.log("Chain:", chainId))
-		.on("accountsChanged", (accounts) => console.log("Accounts:", accounts));
+		.on("chainChanged", (chainId) => )
+		.on("accountsChanged", (accounts) => );
 
 	return provider;
 }
@@ -174,19 +164,15 @@ export async function exampleErrorHandling() {
 			// Handle specific error codes
 			switch (error.code) {
 				case EIP1193ErrorCode.UserRejectedRequest:
-					console.log("User rejected the request");
 					break;
 
 				case EIP1193ErrorCode.Unauthorized:
-					console.log("Not authorized to perform this action");
 					break;
 
 				case EIP1193ErrorCode.UnsupportedMethod:
-					console.log("Method not supported by this provider");
 					break;
 
 				case EIP1193ErrorCode.Disconnected:
-					console.log("Provider is disconnected");
 					break;
 
 				default:
@@ -195,7 +181,6 @@ export async function exampleErrorHandling() {
 
 			// Access error data if available
 			if (error.data) {
-				console.log("Error data:", error.data);
 			}
 		} else {
 			console.error("Unexpected error:", error);
@@ -220,8 +205,6 @@ export async function exampleWithOptions() {
 			timeout: 5000,
 		},
 	);
-
-	console.log("Block number with retries:", blockNumber);
 }
 
 /**

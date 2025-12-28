@@ -4,7 +4,11 @@ const delegate = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const zeroAddress = Address("0x0000000000000000000000000000000000000000");
 
 // Helper to test validation
-function testValidation(name: string, auth: any, shouldPass: boolean): void {
+function testValidation(
+	name: string,
+	auth: unknown,
+	shouldPass: boolean,
+): void {
 	try {
 		Authorization.validate(auth);
 		if (shouldPass) {

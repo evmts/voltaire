@@ -1,8 +1,8 @@
+import { keccak256String } from "../../Hash/index.js";
 // @ts-nocheck
 import { decodeParams as _decodeParams } from "./decodeParams.js";
 import { encodeParams as _encodeParams } from "./encodeParams.js";
 import { getSignature as _getSignature } from "./getSignature.js";
-import { keccak256String } from "../../Hash/index.js";
 
 /**
  * Factory function for creating AbiError instances

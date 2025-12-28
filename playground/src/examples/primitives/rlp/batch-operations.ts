@@ -1,12 +1,8 @@
-import { Hex, Rlp, Bytes } from "@tevm/voltaire";
+import { Bytes, Hex, Rlp } from "@tevm/voltaire";
 // Example: Batch encoding and decoding
 
 // Encode multiple items in batch
-const items = [
-	Bytes([0x01]),
-	Bytes([0x02, 0x03]),
-	Bytes([0x04, 0x05, 0x06]),
-];
+const items = [Bytes([0x01]), Bytes([0x02, 0x03]), Bytes([0x04, 0x05, 0x06])];
 
 const batchEncoded = Rlp.encodeBatch(items);
 // Each item encoded separately: ['0x01', '0x820203', '0x83040506']
@@ -42,9 +38,7 @@ const mixedItems = [
 const mixedEncoded = Rlp.encodeBatch(mixedItems);
 
 // Process large batch
-const largeItems = Array.from({ length: 1000 }, (_, i) =>
-	Bytes([i % 256]),
-);
+const largeItems = Array.from({ length: 1000 }, (_, i) => Bytes([i % 256]));
 
 const largeEncoded = Rlp.encodeBatch(largeItems);
 

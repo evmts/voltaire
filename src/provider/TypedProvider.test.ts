@@ -4,11 +4,11 @@
  * Tests demonstrating usage of the strongly-typed provider interface.
  */
 
-import { describe, it, expect, expectTypeOf } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import type { TypedProvider } from "./TypedProvider.js";
-import type { VoltaireRpcSchema } from "./schemas/VoltaireRpcSchema.js";
 import type { EIP1193EventMap } from "./events/EIP1193Events.js";
 import { ProviderRpcError } from "./events/ProviderRpcError.js";
+import type { VoltaireRpcSchema } from "./schemas/VoltaireRpcSchema.js";
 
 describe("TypedProvider", () => {
 	it("provides type-safe request method", async () => {

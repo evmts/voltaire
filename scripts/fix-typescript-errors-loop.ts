@@ -11,17 +11,17 @@
  * Usage: bun run scripts/fix-typescript-errors-loop.ts [--max-cycles N] [--max-budget N]
  */
 
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { $ } from "bun";
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from "fs";
-import { join } from "path";
 
 // Configuration
 const CONFIG = {
-	maxCycles: parseInt(
+	maxCycles: Number.parseInt(
 		process.argv.find((a) => a.startsWith("--max-cycles="))?.split("=")[1] ??
 			"10",
 	),
-	maxBudgetPerCycle: parseFloat(
+	maxBudgetPerCycle: Number.parseFloat(
 		process.argv.find((a) => a.startsWith("--max-budget="))?.split("=")[1] ??
 			"2.0",
 	),
@@ -60,7 +60,7 @@ async function getErrorCount(): Promise<number> {
 	try {
 		const result =
 			await $`bun run tsc --noEmit 2>&1 | grep -c "error TS"`.quiet();
-		return parseInt(result.stdout.toString().trim()) || 0;
+		return Number.parseInt(result.stdout.toString().trim()) || 0;
 	} catch {
 		// grep returns exit code 1 if no matches, which throws
 		return 0;
@@ -185,8 +185,6 @@ async function runClaudeCodeCycle(
 	prompt: string,
 	cycleNum: number,
 ): Promise<{ success: boolean; output: string }> {
-	console.log("\n🤖 Starting Claude Code cycle...\n");
-
 	// Write prompt to temp file to avoid shell escaping issues
 	const promptFile = `/tmp/claude-prompt-${cycleNum}.txt`;
 	writeFileSync(promptFile, prompt);
@@ -303,20 +301,13 @@ ${state.lastHandoff}
 `;
 
 	writeFileSync(summaryPath, summary);
-	console.log(`📝 Report saved to ${reportPath}`);
 }
 
 async function main() {
-	console.log("🚀 Starting Automated TypeScript Error Fixing Loop");
-	console.log(`   Max cycles: ${CONFIG.maxCycles}`);
-	console.log(`   Target: ${CONFIG.targetErrors} errors\n`);
-
 	// Initialize state
 	const initialErrors = await getErrorCount();
-	console.log(`📊 Initial error count: ${initialErrors}`);
 
 	if (initialErrors === 0) {
-		console.log("✅ No TypeScript errors! Nothing to fix.");
 		return;
 	}
 
@@ -332,10 +323,6 @@ async function main() {
 
 	// Main loop
 	for (let cycle = 1; cycle <= CONFIG.maxCycles; cycle++) {
-		console.log(`\n${"=".repeat(60)}`);
-		console.log(`🔄 CYCLE ${cycle}/${CONFIG.maxCycles}`);
-		console.log(`${"=".repeat(60)}\n`);
-
 		const cycleStart = new Date();
 		const errorsBefore = await getErrorCount();
 
@@ -377,16 +364,6 @@ async function main() {
 		state.totalPercentReduction =
 			((state.initialErrors - errorsAfter) / state.initialErrors) * 100;
 
-		// Log cycle results
-		console.log(`\n📈 Cycle ${cycle} Results:`);
-		console.log(
-			`   Errors: ${errorsBefore} → ${errorsAfter} (-${report.errorsFixed})`,
-		);
-		console.log(`   Status: ${report.status}`);
-		console.log(
-			`   Total Progress: ${state.totalPercentReduction.toFixed(1)}% reduced`,
-		);
-
 		// Save report
 		saveReport(state);
 
@@ -397,33 +374,15 @@ async function main() {
 
 		// Check if we're done
 		if (errorsAfter === 0) {
-			console.log("\n🎉 All TypeScript errors fixed!");
 			break;
 		}
 
 		// Check if we're making progress
 		if (report.errorsFixed <= 0 && cycle > 1) {
-			console.log(
-				"\n⚠️ No progress made this cycle. Consider manual intervention.",
-			);
 			// Continue anyway - might just need a different approach
 		}
-
-		// Small delay between cycles
-		console.log("\n⏳ Waiting 5 seconds before next cycle...");
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 	}
-
-	// Final summary
-	console.log(`\n${"=".repeat(60)}`);
-	console.log("📋 FINAL SUMMARY");
-	console.log(`${"=".repeat(60)}`);
-	console.log(`   Initial Errors: ${state.initialErrors}`);
-	console.log(`   Final Errors: ${state.currentErrors}`);
-	console.log(`   Total Fixed: ${state.totalErrorsFixed}`);
-	console.log(`   Reduction: ${state.totalPercentReduction.toFixed(1)}%`);
-	console.log(`   Cycles: ${state.totalCycles}`);
-	console.log(`\n   Reports saved to: ${CONFIG.reportsDir}/`);
 }
 
 // Run

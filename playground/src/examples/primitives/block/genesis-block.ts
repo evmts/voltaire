@@ -1,4 +1,10 @@
-import { Block, BlockBody, BlockHash, BlockHeader, Bytes } from "@tevm/voltaire";
+import {
+	Block,
+	BlockBody,
+	BlockHash,
+	BlockHeader,
+	Bytes,
+} from "@tevm/voltaire";
 // Genesis block header (block 0)
 const genesisHeader = BlockHeader({
 	// No parent block

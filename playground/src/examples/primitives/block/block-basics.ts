@@ -1,4 +1,11 @@
-import { Block, BlockBody, BlockHash, BlockHeader, Bytes, Bytes32 } from "@tevm/voltaire";
+import {
+	Block,
+	BlockBody,
+	BlockHash,
+	BlockHeader,
+	Bytes,
+	Bytes32,
+} from "@tevm/voltaire";
 // Block header contains all metadata
 const header = BlockHeader({
 	parentHash:

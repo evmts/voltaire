@@ -1,4 +1,4 @@
-import { Selector, Bytes } from "@tevm/voltaire";
+import { Bytes, Selector } from "@tevm/voltaire";
 try {
 	const sel1 = Selector.fromHex("0xa9059cbb");
 } catch (e) {}

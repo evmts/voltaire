@@ -1,4 +1,10 @@
-import { Ens, hash as keccak256, Hex, Labelhash, Namehash } from "@tevm/voltaire";
+import {
+	Ens,
+	Hex,
+	Labelhash,
+	Namehash,
+	hash as keccak256,
+} from "@tevm/voltaire";
 // Factory API (explicit dependency injection)
 
 const namehash = Namehash({ keccak256 });

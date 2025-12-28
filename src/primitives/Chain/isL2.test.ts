@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { isL2 } from "./isL2.js";
 import type { Chain } from "./ChainType.js";
+import { isL2 } from "./isL2.js";
 
 /** Helper to create a minimal chain object for testing */
 const createChain = (chainId: number): Chain =>

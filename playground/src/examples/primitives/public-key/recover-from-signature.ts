@@ -1,4 +1,3 @@
-
 import { Address, PrivateKey, PublicKey } from "@tevm/voltaire";
 // Create key pair
 const privateKey = PrivateKey(

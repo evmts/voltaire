@@ -1,4 +1,4 @@
-import { Address, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, Transaction } from "@tevm/voltaire";
 // Transaction Utilities: Helper functions for transaction analysis
 
 // Contract creation transaction (to is null)

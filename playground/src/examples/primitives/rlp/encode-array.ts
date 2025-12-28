@@ -1,4 +1,4 @@
-import { Hex, Rlp, Bytes } from "@tevm/voltaire";
+import { Bytes, Hex, Rlp } from "@tevm/voltaire";
 // Example: Encode arrays with encodeArray
 
 // Empty array
@@ -24,10 +24,7 @@ const withEmpty = Rlp.encodeArray([
 ]);
 
 // Nested arrays
-const nested = Rlp.encodeArray([
-	Bytes([0x01]),
-	[Bytes([0x02]), Bytes([0x03])],
-]);
+const nested = Rlp.encodeArray([Bytes([0x01]), [Bytes([0x02]), Bytes([0x03])]]);
 
 // Deeply nested
 const deepNested = Rlp.encodeArray([[[Bytes([0x01])]]]);

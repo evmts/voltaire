@@ -46,12 +46,15 @@ export function VerifyBatch({ verifyBlobKzgProofBatch }) {
 		for (let i = 0; i < blobs.length; i++) {
 			const blob = /** @type {Uint8Array} */ (blobs[i]);
 			if (blob.length !== SIZE) {
-				throw new InvalidLengthError(`Invalid blob size at index ${i}: ${blob.length}`, {
-					value: blob.length,
-					expected: `${SIZE} bytes`,
-					code: "BLOB_INVALID_SIZE",
-					docsPath: "/primitives/blob/verify-batch#error-handling",
-				});
+				throw new InvalidLengthError(
+					`Invalid blob size at index ${i}: ${blob.length}`,
+					{
+						value: blob.length,
+						expected: `${SIZE} bytes`,
+						code: "BLOB_INVALID_SIZE",
+						docsPath: "/primitives/blob/verify-batch#error-handling",
+					},
+				);
 			}
 		}
 		// Validate commitment sizes
@@ -73,12 +76,15 @@ export function VerifyBatch({ verifyBlobKzgProofBatch }) {
 		for (let i = 0; i < proofs.length; i++) {
 			const proof = /** @type {Uint8Array} */ (proofs[i]);
 			if (proof.length !== 48) {
-				throw new InvalidLengthError(`Invalid proof size at index ${i}: ${proof.length}`, {
-					value: proof.length,
-					expected: "48 bytes",
-					code: "BLOB_INVALID_PROOF_SIZE",
-					docsPath: "/primitives/blob/verify-batch#error-handling",
-				});
+				throw new InvalidLengthError(
+					`Invalid proof size at index ${i}: ${proof.length}`,
+					{
+						value: proof.length,
+						expected: "48 bytes",
+						code: "BLOB_INVALID_PROOF_SIZE",
+						docsPath: "/primitives/blob/verify-batch#error-handling",
+					},
+				);
 			}
 		}
 		try {

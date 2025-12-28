@@ -1,4 +1,4 @@
-import { Int16, Int32, Int8 } from "@tevm/voltaire";
+import { Int8, Int16, Int32 } from "@tevm/voltaire";
 const i8_pos = Int8.fromNumber(5);
 const i8_neg = Int8.fromNumber(-5);
 const i8_neg_one = Int8.fromNumber(-1);

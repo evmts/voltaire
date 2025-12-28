@@ -11,8 +11,8 @@
  */
 
 import { bls12_381 } from "@noble/curves/bls12-381.js";
-import { InvalidScalarError } from "./errors.js";
 import { FR_MOD } from "./constants.js";
+import { InvalidScalarError } from "./errors.js";
 
 // Ethereum consensus uses "short signatures" scheme
 // Public keys are G2 points (96 bytes compressed)
@@ -64,7 +64,9 @@ export function derivePublicKey(privateKey) {
 		// Return compressed G2 bytes
 		return pk.toBytes();
 	} catch (error) {
-		throw new InvalidScalarError(`Failed to derive public key: ${error.message}`);
+		throw new InvalidScalarError(
+			`Failed to derive public key: ${error.message}`,
+		);
 	}
 }
 
@@ -103,6 +105,8 @@ export function derivePublicKeyPoint(privateKey) {
 			z: 1n,
 		};
 	} catch (error) {
-		throw new InvalidScalarError(`Failed to derive public key: ${error.message}`);
+		throw new InvalidScalarError(
+			`Failed to derive public key: ${error.message}`,
+		);
 	}
 }

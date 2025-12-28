@@ -91,8 +91,8 @@ import { hash as sha256 } from "../../crypto/SHA256/hash.js";
 // Import KZG functions from crypto module
 import {
 	blobToKzgCommitment,
-	verifyBlobKzgProof,
 	verifyBlobKzgProofBatch as kzgVerifyBlobKzgProofBatch,
+	verifyBlobKzgProof,
 } from "../../crypto/KZG/index.js";
 
 // Import c-kzg directly for computeBlobKzgProof (not yet wrapped in KZG module)

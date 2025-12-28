@@ -1,4 +1,4 @@
-import { Opcode, Bytes } from "@tevm/voltaire";
+import { Bytes, Opcode } from "@tevm/voltaire";
 // Simple bytecode: PUSH1 0x60 PUSH1 0x40 MSTORE
 const simpleBytecode = Bytes([
 	Opcode.PUSH1,

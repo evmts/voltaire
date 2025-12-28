@@ -1,3 +1,5 @@
+import type * as monaco from "monaco-editor";
+
 /**
  * @typedef {Object} BreadcrumbSegment
  * @property {string} label - Display text
@@ -7,8 +9,8 @@
 
 export class Breadcrumbs {
 	private container: HTMLElement;
-	private editor: any;
-	private monaco: any;
+	private editor: monaco.editor.IStandaloneCodeEditor | null = null;
+	private monaco: typeof monaco | null = null;
 	private onNavigate: ((path: string) => void) | null = null;
 
 	constructor(container: HTMLElement) {
@@ -17,12 +19,15 @@ export class Breadcrumbs {
 
 	/**
 	 * Initialize with editor reference for symbol breadcrumbs
-	 * @param {any} editor - Monaco editor instance
-	 * @param {any} monaco - Monaco API
+	 * @param {monaco.editor.IStandaloneCodeEditor} editor - Monaco editor instance
+	 * @param {typeof monaco} monacoApi - Monaco API
 	 */
-	setEditor(editor: any, monaco: any): void {
+	setEditor(
+		editor: monaco.editor.IStandaloneCodeEditor,
+		monacoApi: typeof monaco,
+	): void {
 		this.editor = editor;
-		this.monaco = monaco;
+		this.monaco = monacoApi;
 
 		// Update symbol breadcrumbs on cursor position change
 		if (this.editor) {
@@ -181,11 +186,14 @@ export class Breadcrumbs {
 
 	/**
 	 * Find symbols at cursor position (function/class names)
-	 * @param {any} model - Monaco text model
-	 * @param {any} position - Cursor position
+	 * @param {monaco.editor.ITextModel} model - Monaco text model
+	 * @param {monaco.IPosition} position - Cursor position
 	 * @returns {string[]} Symbol names
 	 */
-	private findSymbolsAtPosition(model: any, position: any): string[] {
+	private findSymbolsAtPosition(
+		model: monaco.editor.ITextModel,
+		position: monaco.IPosition,
+	): string[] {
 		const content = model.getValue();
 		const offset = model.getOffsetAt(position);
 

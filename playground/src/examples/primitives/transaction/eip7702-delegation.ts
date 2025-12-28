@@ -1,4 +1,4 @@
-import { Address, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, Transaction } from "@tevm/voltaire";
 // EIP-7702 Transaction: EOA delegation to smart contracts
 
 // Create EIP-7702 transaction with authorization list

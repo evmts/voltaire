@@ -1,4 +1,4 @@
-import { Hash, Bytes32, Bytes } from "@tevm/voltaire";
+import { Bytes, Bytes32, Hash } from "@tevm/voltaire";
 // Example: Validating hash values
 
 // Valid hash hex string

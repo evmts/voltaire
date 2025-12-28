@@ -1,8 +1,8 @@
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { decodeParameters } from "../Abi/Encoding.js";
-import { getSelector } from "./getSelector.js";
-import { SELECTOR_SIZE } from "./constants.js";
 import * as Hex from "../Hex/index.js";
+import { SELECTOR_SIZE } from "./constants.js";
+import { getSelector } from "./getSelector.js";
 
 /**
  * Decoded calldata structure

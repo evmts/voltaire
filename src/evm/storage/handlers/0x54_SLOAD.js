@@ -1,6 +1,9 @@
-import { ColdSload, WarmStorageRead } from "../../../primitives/GasConstants/constants.js";
-import * as Frame from "../../Frame/index.js";
+import {
+	ColdSload,
+	WarmStorageRead,
+} from "../../../primitives/GasConstants/constants.js";
 import * as Hex from "../../../primitives/Hex/index.js";
+import * as Frame from "../../Frame/index.js";
 
 /**
  * SLOAD (0x54) - Load word from storage

@@ -7,6 +7,12 @@
  * @module provider/InMemoryProvider
  */
 
+import { Frame } from "../evm/Frame/index.js";
+import type { BrandedHost } from "../evm/Host/HostType.js";
+import { Host } from "../evm/Host/index.js";
+import type { AddressType } from "../primitives/Address/AddressType.js";
+import { Address } from "../primitives/Address/index.js";
+import * as Hex from "../primitives/Hex/index.js";
 import type { Provider } from "./Provider.js";
 import type {
 	ProviderEvent,
@@ -15,12 +21,6 @@ import type {
 	ProviderEvents,
 	RequestArguments,
 } from "./types.js";
-import { Address } from "../primitives/Address/index.js";
-import * as Hex from "../primitives/Hex/index.js";
-import { Host } from "../evm/Host/index.js";
-import { Frame } from "../evm/Frame/index.js";
-import type { BrandedHost } from "../evm/Host/HostType.js";
-import type { AddressType } from "../primitives/Address/AddressType.js";
 
 /**
  * In-Memory Provider configuration options
@@ -157,7 +157,7 @@ export class InMemoryProvider implements Provider {
 	private nextBlockTimestamp: bigint | null = null;
 	private filters: Map<string, any> = new Map();
 	private filterIdCounter = 0;
-	private coinbase: string = "0x0000000000000000000000000000000000000000";
+	private coinbase = "0x0000000000000000000000000000000000000000";
 
 	// Snapshots for revert functionality
 	private snapshots: Map<
@@ -314,14 +314,12 @@ export class InMemoryProvider implements Provider {
 	 */
 	private createBlock(transactions: string[] = []): BlockHeader {
 		const parentBlock = this.blocks.get(this.currentBlockNumber);
-		const parentHash = parentBlock?.hash ?? "0x" + "0".repeat(64);
+		const parentHash = parentBlock?.hash ?? `0x${"0".repeat(64)}`;
 
 		const blockNumber = this.currentBlockNumber + 1n;
-		const blockHash =
-			"0x" +
-			this.generateHash(
-				`block-${blockNumber}-${Date.now()}-${Math.random()}`,
-			);
+		const blockHash = `0x${this.generateHash(
+			`block-${blockNumber}-${Date.now()}-${Math.random()}`,
+		)}`;
 
 		const block: BlockHeader = {
 			number: blockNumber,
@@ -334,9 +332,9 @@ export class InMemoryProvider implements Provider {
 			coinbase: this.coinbase,
 			difficulty: 0n,
 			transactions,
-			transactionsRoot: "0x" + "0".repeat(64),
-			stateRoot: "0x" + "0".repeat(64),
-			receiptsRoot: "0x" + "0".repeat(64),
+			transactionsRoot: `0x${"0".repeat(64)}`,
+			stateRoot: `0x${"0".repeat(64)}`,
+			receiptsRoot: `0x${"0".repeat(64)}`,
 		};
 
 		this.blocks.set(blockNumber, block);
@@ -371,23 +369,23 @@ export class InMemoryProvider implements Provider {
 	 */
 	private formatBlock(block: BlockHeader, fullTransactions = false): any {
 		return {
-			number: "0x" + block.number.toString(16),
+			number: `0x${block.number.toString(16)}`,
 			hash: block.hash,
 			parentHash: block.parentHash,
-			timestamp: "0x" + block.timestamp.toString(16),
-			gasLimit: "0x" + block.gasLimit.toString(16),
-			gasUsed: "0x" + block.gasUsed.toString(16),
-			baseFeePerGas: "0x" + block.baseFeePerGas.toString(16),
+			timestamp: `0x${block.timestamp.toString(16)}`,
+			gasLimit: `0x${block.gasLimit.toString(16)}`,
+			gasUsed: `0x${block.gasUsed.toString(16)}`,
+			baseFeePerGas: `0x${block.baseFeePerGas.toString(16)}`,
 			miner: block.coinbase,
-			difficulty: "0x" + block.difficulty.toString(16),
+			difficulty: `0x${block.difficulty.toString(16)}`,
 			totalDifficulty: "0x0",
 			extraData: "0x",
 			size: "0x0",
 			nonce: "0x0000000000000000",
-			mixHash: "0x" + "0".repeat(64),
+			mixHash: `0x${"0".repeat(64)}`,
 			sha3Uncles:
 				"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-			logsBloom: "0x" + "0".repeat(512),
+			logsBloom: `0x${"0".repeat(512)}`,
 			transactionsRoot: block.transactionsRoot,
 			stateRoot: block.stateRoot,
 			receiptsRoot: block.receiptsRoot,
@@ -459,13 +457,13 @@ export class InMemoryProvider implements Provider {
 		const from = tx.from.toLowerCase();
 		const to = tx.to?.toLowerCase() ?? null;
 		const value = tx.value ? BigInt(tx.value) : 0n;
-		const data = tx.data ? Hex.toBytes(tx.data as `0x${string}`) : new Uint8Array(0);
+		const data = tx.data
+			? Hex.toBytes(tx.data as `0x${string}`)
+			: new Uint8Array(0);
 		const gasLimit = tx.gas ? BigInt(tx.gas) : 21000n;
 
 		const fromAccount = this.getOrCreateAccount(from);
-		const txHash =
-			"0x" +
-			this.generateHash(`tx-${from}-${fromAccount.nonce}-${Date.now()}`);
+		const txHash = `0x${this.generateHash(`tx-${from}-${fromAccount.nonce}-${Date.now()}`)}`;
 
 		// Increment nonce
 		fromAccount.nonce += 1n;
@@ -480,7 +478,7 @@ export class InMemoryProvider implements Provider {
 		}
 
 		// Execute code if contract call
-		let status = "0x1"; // success
+		const status = "0x1"; // success
 		let gasUsed = 21000n;
 		const logs: any[] = [];
 		let contractAddress: string | null = null;
@@ -522,15 +520,15 @@ export class InMemoryProvider implements Provider {
 		// Store transaction
 		this.transactions.set(txHash, {
 			hash: txHash,
-			nonce: "0x" + (fromAccount.nonce - 1n).toString(16),
+			nonce: `0x${(fromAccount.nonce - 1n).toString(16)}`,
 			blockHash: null,
 			blockNumber: null,
 			transactionIndex: null,
 			from,
 			to,
-			value: "0x" + value.toString(16),
-			gasPrice: "0x" + this.baseFeePerGas.toString(16),
-			gas: "0x" + gasLimit.toString(16),
+			value: `0x${value.toString(16)}`,
+			gasPrice: `0x${this.baseFeePerGas.toString(16)}`,
+			gas: `0x${gasLimit.toString(16)}`,
 			input: tx.data ?? "0x",
 			v: "0x0",
 			r: "0x0",
@@ -542,15 +540,15 @@ export class InMemoryProvider implements Provider {
 			transactionHash: txHash,
 			transactionIndex: "0x0",
 			blockHash: "",
-			blockNumber: "0x" + (this.currentBlockNumber + 1n).toString(16),
+			blockNumber: `0x${(this.currentBlockNumber + 1n).toString(16)}`,
 			from,
 			to,
-			cumulativeGasUsed: "0x" + gasUsed.toString(16),
-			gasUsed: "0x" + gasUsed.toString(16),
+			cumulativeGasUsed: `0x${gasUsed.toString(16)}`,
+			gasUsed: `0x${gasUsed.toString(16)}`,
 			contractAddress,
 			logs,
 			status,
-			logsBloom: "0x" + "0".repeat(512),
+			logsBloom: `0x${"0".repeat(512)}`,
 		};
 
 		this.receipts.set(txHash, receipt);
@@ -563,7 +561,7 @@ export class InMemoryProvider implements Provider {
 	private computeContractAddress(from: string, nonce: bigint): string {
 		// Simplified - real impl uses RLP + Keccak
 		const hash = this.generateHash(`${from}-${nonce}`);
-		return "0x" + hash.slice(0, 40);
+		return `0x${hash.slice(0, 40)}`;
 	}
 
 	/**
@@ -579,14 +577,14 @@ export class InMemoryProvider implements Provider {
 				return String(this.chainId);
 
 			case "eth_chainId":
-				return "0x" + this.chainId.toString(16);
+				return `0x${this.chainId.toString(16)}`;
 
 			case "eth_syncing":
 				return false;
 
 			// Block
 			case "eth_blockNumber":
-				return "0x" + this.currentBlockNumber.toString(16);
+				return `0x${this.currentBlockNumber.toString(16)}`;
 
 			case "eth_getBlockByNumber": {
 				const blockTag = p[0] as string;
@@ -609,13 +607,13 @@ export class InMemoryProvider implements Provider {
 			case "eth_getBalance": {
 				const addr = (p[0] as string).toLowerCase();
 				const balance = this.accounts.get(addr)?.balance ?? 0n;
-				return "0x" + balance.toString(16);
+				return `0x${balance.toString(16)}`;
 			}
 
 			case "eth_getTransactionCount": {
 				const addr = (p[0] as string).toLowerCase();
 				const nonce = this.accounts.get(addr)?.nonce ?? 0n;
-				return "0x" + nonce.toString(16);
+				return `0x${nonce.toString(16)}`;
 			}
 
 			case "eth_getCode": {
@@ -629,7 +627,7 @@ export class InMemoryProvider implements Provider {
 				const slot = BigInt(p[1] as string);
 				const account = this.accounts.get(addr);
 				const value = account?.storage.get(slot.toString(16)) ?? 0n;
-				return "0x" + value.toString(16).padStart(64, "0");
+				return `0x${value.toString(16).padStart(64, "0")}`;
 			}
 
 			// Transaction
@@ -645,14 +643,14 @@ export class InMemoryProvider implements Provider {
 				const from = tx.from.toLowerCase();
 				const fromAccount = this.accounts.get(from);
 				const nonce = fromAccount?.nonce ?? 0n;
-				return "0x" + this.generateHash(`tx-${from}-${nonce}-${Date.now()}`);
+				return `0x${this.generateHash(`tx-${from}-${nonce}-${Date.now()}`)}`;
 			}
 
 			case "eth_sendRawTransaction": {
 				// For raw tx, we'd need to decode RLP
 				// Simplified: just store and return hash
 				const rawTx = p[0] as string;
-				const txHash = "0x" + this.generateHash(`raw-${rawTx}-${Date.now()}`);
+				const txHash = `0x${this.generateHash(`raw-${rawTx}-${Date.now()}`)}`;
 				return txHash;
 			}
 
@@ -675,11 +673,11 @@ export class InMemoryProvider implements Provider {
 					: new Uint8Array(0);
 				const value = tx.value ? BigInt(tx.value) : 0n;
 				const gas = tx.gas ? BigInt(tx.gas) : 10000000n;
-				const from = tx.from?.toLowerCase() ?? "0x" + "0".repeat(40);
+				const from = tx.from?.toLowerCase() ?? `0x${"0".repeat(40)}`;
 
 				if (!to) {
 					// Contract creation - return init code hash
-					return "0x" + this.generateHash(Hex.fromBytes(data).slice(2));
+					return `0x${this.generateHash(Hex.fromBytes(data).slice(2))}`;
 				}
 
 				const toAccount = this.accounts.get(to);
@@ -715,15 +713,15 @@ export class InMemoryProvider implements Provider {
 				// Simplified estimation
 				const baseGas = 21000n;
 				const dataGas = BigInt(((data.length - 2) / 2) * 16);
-				return "0x" + (baseGas + dataGas).toString(16);
+				return `0x${(baseGas + dataGas).toString(16)}`;
 			}
 
 			// Gas
 			case "eth_gasPrice":
-				return "0x" + this.baseFeePerGas.toString(16);
+				return `0x${this.baseFeePerGas.toString(16)}`;
 
 			case "eth_maxPriorityFeePerGas":
-				return "0x" + (1000000000n).toString(16); // 1 gwei
+				return `0x${(1000000000n).toString(16)}`; // 1 gwei
 
 			case "eth_feeHistory": {
 				const blockCount = Number(p[0]);
@@ -734,13 +732,13 @@ export class InMemoryProvider implements Provider {
 				for (let i = 0; i < blockCount; i++) {
 					const bn = this.currentBlockNumber - BigInt(i);
 					if (bn >= 0n) {
-						baseFees.push("0x" + this.baseFeePerGas.toString(16));
+						baseFees.push(`0x${this.baseFeePerGas.toString(16)}`);
 						gasUsedRatios.push(0.5);
 					}
 				}
 
 				return {
-					oldestBlock: "0x" + (this.currentBlockNumber - BigInt(blockCount - 1)).toString(16),
+					oldestBlock: `0x${(this.currentBlockNumber - BigInt(blockCount - 1)).toString(16)}`,
 					baseFeePerGas: baseFees,
 					gasUsedRatio: gasUsedRatios,
 					reward: [],
@@ -752,7 +750,7 @@ export class InMemoryProvider implements Provider {
 
 			// Filters
 			case "eth_newBlockFilter": {
-				const filterId = "0x" + (++this.filterIdCounter).toString(16);
+				const filterId = `0x${(++this.filterIdCounter).toString(16)}`;
 				this.filters.set(filterId, {
 					type: "block",
 					lastBlock: this.currentBlockNumber,
@@ -761,14 +759,14 @@ export class InMemoryProvider implements Provider {
 			}
 
 			case "eth_newPendingTransactionFilter": {
-				const filterId = "0x" + (++this.filterIdCounter).toString(16);
+				const filterId = `0x${(++this.filterIdCounter).toString(16)}`;
 				this.filters.set(filterId, { type: "pendingTx", txs: [] });
 				return filterId;
 			}
 
 			case "eth_newFilter": {
 				const filterParams = p[0] as any;
-				const filterId = "0x" + (++this.filterIdCounter).toString(16);
+				const filterId = `0x${(++this.filterIdCounter).toString(16)}`;
 				this.filters.set(filterId, {
 					type: "logs",
 					params: filterParams,
@@ -882,7 +880,7 @@ export class InMemoryProvider implements Provider {
 			}
 
 			case "evm_snapshot": {
-				const id = "0x" + (++this.snapshotIdCounter).toString(16);
+				const id = `0x${(++this.snapshotIdCounter).toString(16)}`;
 				this.snapshots.set(id, {
 					accounts: new Map(
 						Array.from(this.accounts.entries()).map(([k, v]) => [
@@ -914,13 +912,13 @@ export class InMemoryProvider implements Provider {
 			case "evm_increaseTime": {
 				const seconds = BigInt(p[0] as number);
 				this.nextBlockTimestamp = this.currentTimestamp + seconds;
-				return "0x" + this.nextBlockTimestamp.toString(16);
+				return `0x${this.nextBlockTimestamp.toString(16)}`;
 			}
 
 			case "evm_setNextBlockTimestamp": {
 				const timestamp = BigInt(p[0] as number);
 				this.nextBlockTimestamp = timestamp;
-				return "0x" + timestamp.toString(16);
+				return `0x${timestamp.toString(16)}`;
 			}
 
 			// Coinbase
@@ -940,18 +938,18 @@ export class InMemoryProvider implements Provider {
 			case "web3_sha3": {
 				// Would use Keccak - simplified
 				const data = p[0] as string;
-				return "0x" + this.generateHash(data);
+				return `0x${this.generateHash(data)}`;
 			}
 
 			case "eth_getBlockTransactionCountByHash": {
 				const hash = p[0] as string;
 				const block = this.blocksByHash.get(hash);
-				return block ? "0x" + block.transactions.length.toString(16) : null;
+				return block ? `0x${block.transactions.length.toString(16)}` : null;
 			}
 
 			case "eth_getBlockTransactionCountByNumber": {
 				const block = this.resolveBlock(p[0] as string);
-				return block ? "0x" + block.transactions.length.toString(16) : null;
+				return block ? `0x${block.transactions.length.toString(16)}` : null;
 			}
 
 			case "eth_getTransactionByBlockHashAndIndex": {
@@ -960,7 +958,7 @@ export class InMemoryProvider implements Provider {
 				const block = this.blocksByHash.get(hash);
 				if (!block || index >= block.transactions.length) return null;
 				const txHash = block.transactions[index];
-				return txHash ? this.transactions.get(txHash) ?? null : null;
+				return txHash ? (this.transactions.get(txHash) ?? null) : null;
 			}
 
 			case "eth_getTransactionByBlockNumberAndIndex": {
@@ -968,7 +966,7 @@ export class InMemoryProvider implements Provider {
 				const index = Number(p[1]);
 				if (!block || index >= block.transactions.length) return null;
 				const txHash = block.transactions[index];
-				return txHash ? this.transactions.get(txHash) ?? null : null;
+				return txHash ? (this.transactions.get(txHash) ?? null) : null;
 			}
 
 			case "eth_getUncleCountByBlockHash":
@@ -1033,7 +1031,12 @@ export class InMemoryProvider implements Provider {
 	 * Resolve block tag to block header
 	 */
 	private resolveBlock(tag: string): BlockHeader | undefined {
-		if (tag === "latest" || tag === "pending" || tag === "safe" || tag === "finalized") {
+		if (
+			tag === "latest" ||
+			tag === "pending" ||
+			tag === "safe" ||
+			tag === "finalized"
+		) {
 			return this.blocks.get(this.currentBlockNumber);
 		}
 		if (tag === "earliest") {

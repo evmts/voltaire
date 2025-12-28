@@ -94,21 +94,23 @@ const arrayHash = Keccak256.hashMultiple([
 
 // Create many small chunks
 const numChunks = 100;
-const smallChunks: string[] = [];
+const smallChunks: Uint8Array[] = [];
 
 for (let i = 0; i < numChunks; i++) {
 	const chunkBytes = new Uint8Array(16);
 	crypto.getRandomValues(chunkBytes);
-	smallChunks.push(Hex.fromBytes(chunkBytes));
+	smallChunks.push(chunkBytes);
 }
 
 // Method 1: hashMultiple
 const start1 = performance.now();
-const hash1 = Keccak256.hashMultiple(smallChunks as any);
+const hash1 = Keccak256.hashMultiple(smallChunks);
 const time1 = performance.now() - start1;
 
 // Method 2: Concatenate then hash
 const start2 = performance.now();
-const combined = Hex.concat(...smallChunks);
+const combined = Hex.concat(
+	...smallChunks.map((chunk) => Hex.fromBytes(chunk)),
+);
 const hash2 = Keccak256(combined);
 const time2 = performance.now() - start2;

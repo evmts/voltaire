@@ -1,5 +1,5 @@
-import { isValid } from "./isValid.js";
 import { InvalidAddressError, InvalidChecksumError } from "./errors.js";
+import { isValid } from "./isValid.js";
 
 /**
  * Assert that value is a valid address, optionally with strict checksum validation
@@ -62,7 +62,10 @@ export function assert(value, options = {}) {
 				const char = /** @type {string} */ (lowerHex[i]);
 				if (/[a-f]/.test(char)) {
 					// Use 4th bit of hash nibble to determine case
-					const hashNibble = Number.parseInt(/** @type {string} */ (hashHex[i]), 16);
+					const hashNibble = Number.parseInt(
+						/** @type {string} */ (hashHex[i]),
+						16,
+					);
 					expectedChecksum += hashNibble >= 8 ? char.toUpperCase() : char;
 				} else {
 					expectedChecksum += char;

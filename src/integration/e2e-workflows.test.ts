@@ -210,10 +210,7 @@ describe("E2E Workflows", () => {
 			const txHash = keccak256(
 				new TextEncoder().encode(JSON.stringify(deploymentTx)),
 			);
-			const signature = Secp256k1.sign(
-				txHash,
-				hexToBytes(testPrivateKey),
-			);
+			const signature = Secp256k1.sign(txHash, hexToBytes(testPrivateKey));
 
 			expect(signature.r).toBeDefined();
 			expect(signature.s).toBeDefined();
@@ -282,10 +279,7 @@ describe("E2E Workflows", () => {
 			const txHash = keccak256(
 				new TextEncoder().encode(JSON.stringify(transferTx)),
 			);
-			const signature = Secp256k1.sign(
-				txHash,
-				hexToBytes(testPrivateKey),
-			);
+			const signature = Secp256k1.sign(txHash, hexToBytes(testPrivateKey));
 
 			expect(signature).toBeDefined();
 
@@ -353,10 +347,7 @@ describe("E2E Workflows", () => {
 			const txHash = keccak256(
 				new TextEncoder().encode(JSON.stringify(mintTx)),
 			);
-			const signature = Secp256k1.sign(
-				txHash,
-				hexToBytes(testPrivateKey),
-			);
+			const signature = Secp256k1.sign(txHash, hexToBytes(testPrivateKey));
 
 			const txHashResult = await provider.request("eth_sendRawTransaction", [
 				mintTx,
@@ -505,7 +496,7 @@ describe("E2E Workflows", () => {
 		});
 	});
 
-describe("6. Gas Estimation with Padding", () => {
+	describe("6. Gas Estimation with Padding", () => {
 		it("should estimate gas, add buffer, execute, and verify actual usage", async () => {
 			const targetAddress = Address.from(
 				"0x2222222222222222222222222222222222222222",
@@ -539,10 +530,7 @@ describe("6. Gas Estimation with Padding", () => {
 			const txHash = keccak256(
 				new TextEncoder().encode(JSON.stringify(executeTx)),
 			);
-			const signature = Secp256k1.sign(
-				txHash,
-				hexToBytes(testPrivateKey),
-			);
+			const signature = Secp256k1.sign(txHash, hexToBytes(testPrivateKey));
 
 			const txHashResult = await provider.request("eth_sendRawTransaction", [
 				executeTx,
@@ -639,10 +627,7 @@ describe("6. Gas Estimation with Padding", () => {
 			};
 
 			const txHash = keccak256(new TextEncoder().encode(JSON.stringify(tx)));
-			const signature = Secp256k1.sign(
-				txHash,
-				hexToBytes(testPrivateKey),
-			);
+			const signature = Secp256k1.sign(txHash, hexToBytes(testPrivateKey));
 
 			const txHashResult = await provider.request("eth_sendRawTransaction", [
 				tx,
@@ -784,10 +769,7 @@ describe("6. Gas Estimation with Padding", () => {
 			};
 
 			const txHash = keccak256(new TextEncoder().encode(JSON.stringify(tx)));
-			const signature = Secp256k1.sign(
-				txHash,
-				hexToBytes(testPrivateKey),
-			);
+			const signature = Secp256k1.sign(txHash, hexToBytes(testPrivateKey));
 
 			// Transaction should still be created (validation happens on chain)
 			expect(signature).toBeDefined();

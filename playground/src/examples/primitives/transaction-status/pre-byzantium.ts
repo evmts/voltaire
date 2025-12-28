@@ -1,4 +1,4 @@
-import { type Uint256Type } from "@tevm/voltaire";
+import type { Uint256Type } from "@tevm/voltaire";
 import { TransactionStatus } from "@tevm/voltaire";
 
 // Byzantium fork: block 4,370,000 on mainnet (October 2017)

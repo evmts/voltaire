@@ -57,9 +57,7 @@ const ethereum: ChainState = {
 
 const optimism: ChainState = {
 	chainId: 10,
-	accounts: new Map([
-		["0x742d35Cc6634C0532925a3b844Bc454e4438f44e", Nonce(5)],
-	]),
+	accounts: new Map([["0x742d35Cc6634C0532925a3b844Bc454e4438f44e", Nonce(5)]]),
 };
 
 interface NonceHistory {

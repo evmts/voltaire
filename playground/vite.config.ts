@@ -48,7 +48,10 @@ function copyModernMonacoPlugin(): Plugin {
 			}
 
 			// Also copy typescript for workers
-			const tsSrc = resolve(__dirname, "node_modules/typescript/lib/typescript.js");
+			const tsSrc = resolve(
+				__dirname,
+				"node_modules/typescript/lib/typescript.js",
+			);
 			const tsDest = resolve(__dirname, "dist/typescript.js");
 			if (existsSync(tsSrc)) {
 				// Read and convert to ESM
@@ -91,7 +94,9 @@ function modernMonacoPlugin(): Plugin {
 					} catch {
 						// Fallback stub
 						res.setHeader("Content-Type", "application/typescript");
-						res.end(`export * from "./primitives/index.js"; export * from "./crypto/index.js";`);
+						res.end(
+							`export * from "./primitives/index.js"; export * from "./crypto/index.js";`,
+						);
 						return;
 					}
 				}
@@ -107,7 +112,7 @@ function modernMonacoPlugin(): Plugin {
 					} catch {
 						// Fallback stub
 						res.setHeader("Content-Type", "application/typescript");
-						res.end(`export function keccak256(data: Uint8Array): Uint8Array;`);
+						res.end("export function keccak256(data: Uint8Array): Uint8Array;");
 						return;
 					}
 				}
@@ -159,7 +164,11 @@ function modernMonacoPlugin(): Plugin {
 }
 
 export default defineConfig({
-	plugins: [modernMonacoPlugin(), copyEsbuildWasmPlugin(), copyModernMonacoPlugin()],
+	plugins: [
+		modernMonacoPlugin(),
+		copyEsbuildWasmPlugin(),
+		copyModernMonacoPlugin(),
+	],
 	test: {
 		environment: "jsdom",
 	},

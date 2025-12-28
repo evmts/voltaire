@@ -1,4 +1,4 @@
-import { Hex, Rlp, Bytes } from "@tevm/voltaire";
+import { Bytes, Hex, Rlp } from "@tevm/voltaire";
 // Example: Encode bytes with RLP
 
 // Single byte < 0x80 encodes as itself

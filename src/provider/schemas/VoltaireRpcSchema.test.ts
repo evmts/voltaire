@@ -4,13 +4,13 @@
  * These tests validate the type system at compile time.
  */
 
-import { describe, it, expectTypeOf } from "vitest";
-import type { VoltaireRpcSchema } from "./VoltaireRpcSchema.js";
+import { describe, expectTypeOf, it } from "vitest";
 import type {
 	RpcMethodNames,
 	RpcMethodParameters,
 	RpcMethodReturnType,
 } from "../RpcSchema.js";
+import type { VoltaireRpcSchema } from "./VoltaireRpcSchema.js";
 
 describe("VoltaireRpcSchema type tests", () => {
 	it("extracts method names correctly", () => {

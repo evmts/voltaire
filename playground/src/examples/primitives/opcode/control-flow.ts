@@ -1,4 +1,4 @@
-import { Opcode, Bytes } from "@tevm/voltaire";
+import { Bytes, Opcode } from "@tevm/voltaire";
 // JUMP (0x56) - Unconditional jump
 const jumpInfo = Opcode.info(Opcode.JUMP);
 

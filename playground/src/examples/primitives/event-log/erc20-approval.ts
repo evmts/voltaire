@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, EventLog, Hash } from "@tevm/voltaire";
 // Event signature: keccak256("Approval(address,address,uint256)")
 const APPROVAL_SIGNATURE = Hash(
 	"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",

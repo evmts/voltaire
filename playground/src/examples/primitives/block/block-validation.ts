@@ -1,4 +1,10 @@
-import { Block, BlockBody, BlockHash, BlockHeader, Bytes } from "@tevm/voltaire";
+import {
+	Block,
+	BlockBody,
+	BlockHash,
+	BlockHeader,
+	Bytes,
+} from "@tevm/voltaire";
 // Create a valid block
 const validBlock = Block({
 	header: BlockHeader({

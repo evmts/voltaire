@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
-	assertInRange,
-	assertInRangeBigInt,
-} from "./assertInRange.js";
+	IntegerOverflowError,
+	IntegerUnderflowError,
+	InvalidRangeError,
+	InvalidSizeError,
+} from "../errors/index.js";
 import {
-	assertUint8,
-	assertUint16,
-	assertUint32,
-	assertUint64,
-	assertUint128,
-	assertUint256,
-} from "./assertUint.js";
+	assertNonNegative,
+	assertNonZero,
+	assertPositive,
+} from "./assertCommon.js";
+import { assertInRange, assertInRangeBigInt } from "./assertInRange.js";
 import {
 	assertInt8,
 	assertInt16,
@@ -19,22 +19,15 @@ import {
 	assertInt128,
 	assertInt256,
 } from "./assertInt.js";
+import { assertMaxSize, assertMinSize, assertSize } from "./assertSize.js";
 import {
-	assertSize,
-	assertMaxSize,
-	assertMinSize,
-} from "./assertSize.js";
-import {
-	assertPositive,
-	assertNonNegative,
-	assertNonZero,
-} from "./assertCommon.js";
-import {
-	IntegerOverflowError,
-	IntegerUnderflowError,
-	InvalidSizeError,
-	InvalidRangeError,
-} from "../errors/index.js";
+	assertUint8,
+	assertUint16,
+	assertUint32,
+	assertUint64,
+	assertUint128,
+	assertUint256,
+} from "./assertUint.js";
 
 describe("assertInRange", () => {
 	it("passes for values within range", () => {
@@ -78,9 +71,7 @@ describe("assertInRange", () => {
 
 describe("assertInRangeBigInt", () => {
 	it("passes for values within range", () => {
-		expect(() =>
-			assertInRangeBigInt(50n, 0n, 100n, "test"),
-		).not.toThrow();
+		expect(() => assertInRangeBigInt(50n, 0n, 100n, "test")).not.toThrow();
 		expect(() =>
 			assertInRangeBigInt(0n, 0n, 2n ** 256n - 1n, "uint256"),
 		).not.toThrow();
@@ -295,7 +286,7 @@ describe("assertSize", () => {
 	it("passes for correct hex string size", () => {
 		expect(() => assertSize("0x1234", 2, "hex")).not.toThrow();
 		expect(() =>
-			assertSize("0x" + "00".repeat(20), 20, "address"),
+			assertSize(`0x${"00".repeat(20)}`, 20, "address"),
 		).not.toThrow();
 	});
 
@@ -321,7 +312,9 @@ describe("assertMaxSize", () => {
 		expect(() =>
 			assertMaxSize(new Uint8Array(100), 1000, "data"),
 		).not.toThrow();
-		expect(() => assertMaxSize(new Uint8Array(1000), 1000, "data")).not.toThrow();
+		expect(() =>
+			assertMaxSize(new Uint8Array(1000), 1000, "data"),
+		).not.toThrow();
 	});
 
 	it("throws for data exceeding max size", () => {

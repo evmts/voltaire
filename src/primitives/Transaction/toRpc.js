@@ -6,12 +6,9 @@ import { Type } from "./types.js";
  * @returns {string}
  */
 function toHex(bytes) {
-	return (
-		"0x" +
-		Array.from(bytes)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")
-	);
+	return `0x${Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 /**
@@ -129,7 +126,9 @@ export function toRpc(tx) {
 
 		default: {
 			const _exhaustive = /** @type {never} */ (tx);
-			throw new Error(`Unknown transaction type: ${/** @type {any} */ (_exhaustive).type}`);
+			throw new Error(
+				`Unknown transaction type: ${/** @type {any} */ (_exhaustive).type}`,
+			);
 		}
 	}
 }

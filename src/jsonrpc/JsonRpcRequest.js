@@ -22,5 +22,7 @@ export function createRequest(method, params, id) {
 		method,
 		...(params !== undefined && { params: /** @type {unknown[]} */ (params) }),
 	});
-	return /** @type {import('./JsonRpcRequest/JsonRpcRequestType.js').JsonRpcRequestType} */ (request);
+	return /** @type {import('./JsonRpcRequest/JsonRpcRequestType.js').JsonRpcRequestType} */ (
+		request
+	);
 }

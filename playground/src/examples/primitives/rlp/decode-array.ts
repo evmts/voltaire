@@ -1,4 +1,4 @@
-import { Hex, Rlp, Bytes } from "@tevm/voltaire";
+import { Bytes, Hex, Rlp } from "@tevm/voltaire";
 // Example: Decode arrays with schema
 
 // Decode to typed array

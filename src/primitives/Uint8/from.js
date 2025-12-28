@@ -1,9 +1,9 @@
-import { MAX } from "./constants.js";
 import {
 	IntegerOverflowError,
 	IntegerUnderflowError,
 	InvalidFormatError,
 } from "../errors/index.js";
+import { MAX } from "./constants.js";
 
 /**
  * Create Uint8 from number or string
@@ -45,12 +45,15 @@ export function from(value) {
 	}
 
 	if (!Number.isInteger(numValue)) {
-		throw new InvalidFormatError(`Uint8 value must be an integer: ${numValue}`, {
-			code: "UINT8_NOT_INTEGER",
-			value: numValue,
-			expected: "integer value",
-			docsPath: "/primitives/uint8#error-handling",
-		});
+		throw new InvalidFormatError(
+			`Uint8 value must be an integer: ${numValue}`,
+			{
+				code: "UINT8_NOT_INTEGER",
+				value: numValue,
+				expected: "integer value",
+				docsPath: "/primitives/uint8#error-handling",
+			},
+		);
 	}
 
 	if (numValue < 0) {

@@ -19,15 +19,19 @@ for (let i = 0; i < 5; i++) {
 	// Derive m/0/i from account level
 	const changeLevel = HDWallet.deriveChild(watchOnly, 0);
 	const address = HDWallet.deriveChild(changeLevel, i);
-	const pubKey = HDWallet.getPublicKey(address)!;
+	const pubKey = HDWallet.getPublicKey(address);
+	if (!pubKey) throw new Error("Public key not available");
 }
 const testAddr = HDWallet.deriveChild(HDWallet.deriveChild(watchOnly, 0), 0);
 const coldChild = HDWallet.deriveChild(
 	HDWallet.deriveChild(accountLevel, 0),
 	0,
 );
-const coldPubKey = HDWallet.getPublicKey(coldChild)!;
-const coldPrivKey = HDWallet.getPrivateKey(coldChild)!;
+const coldPubKey = HDWallet.getPublicKey(coldChild);
+if (!coldPubKey) throw new Error("Public key not available");
+const coldPrivKey = HDWallet.getPrivateKey(coldChild);
+if (!coldPrivKey) throw new Error("Private key not available");
 
 const watchChild = HDWallet.deriveChild(HDWallet.deriveChild(watchOnly, 0), 0);
-const watchPubKey = HDWallet.getPublicKey(watchChild)!;
+const watchPubKey = HDWallet.getPublicKey(watchChild);
+if (!watchPubKey) throw new Error("Public key not available");

@@ -18,6 +18,8 @@ const eth2 = HDWallet.deriveEthereum(root, 0, 2);
 const account1 = HDWallet.deriveEthereum(root, 1, 0);
 
 // Verify different accounts produce different keys
-const key0 = HDWallet.getPrivateKey(eth0)!;
-const key1 = HDWallet.getPrivateKey(account1)!;
+const key0 = HDWallet.getPrivateKey(eth0);
+if (!key0) throw new Error("Private key not available");
+const key1 = HDWallet.getPrivateKey(account1);
+if (!key1) throw new Error("Private key not available");
 const different = !key0.every((b, i) => b === key1[i]);

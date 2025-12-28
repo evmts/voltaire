@@ -1,4 +1,3 @@
-
 /**
  * @typedef {import('./BundleHashType.js').BundleHashType} BundleHashType
  * @typedef {import('../Bundle/BundleType.js').BundleType} BundleType

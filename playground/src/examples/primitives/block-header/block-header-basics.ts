@@ -1,4 +1,4 @@
-import { BlockHeader, Hex, Bytes } from "@tevm/voltaire";
+import { BlockHeader, Bytes, Hex } from "@tevm/voltaire";
 // Example: BlockHeader basics - comprehensive field access
 
 // Real Ethereum mainnet block 18000000 (post-Merge, post-Shanghai, pre-Cancun)

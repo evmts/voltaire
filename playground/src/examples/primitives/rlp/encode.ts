@@ -1,4 +1,4 @@
-import { Hex, Rlp, Bytes } from "@tevm/voltaire";
+import { Bytes, Hex, Rlp } from "@tevm/voltaire";
 // Example: Universal RLP encoding
 
 // Encode Bytes (as bytes)
@@ -17,11 +17,7 @@ const encoded3 = Rlp.encode(rlpData);
 // Output: 0x81ff
 
 // Encode nested arrays
-const nested = [
-	Bytes([0x01]),
-	[Bytes([0x02])],
-	[[Bytes([0x03])]],
-];
+const nested = [Bytes([0x01]), [Bytes([0x02])], [[Bytes([0x03])]]];
 const encoded4 = Rlp.encode(nested);
 
 // Encode string data

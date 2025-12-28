@@ -58,9 +58,7 @@ export function aggregateVerify(aggregatedSignature, message, publicKeys) {
 
 	try {
 		// Deserialize public keys from bytes
-		const pkPoints = publicKeys.map((pk) =>
-			bls12_381.G2.Point.fromBytes(pk),
-		);
+		const pkPoints = publicKeys.map((pk) => bls12_381.G2.Point.fromBytes(pk));
 		// Aggregate all public keys first
 		const aggPubKey = bls.aggregatePublicKeys(pkPoints);
 		// Hash message to G1 curve point

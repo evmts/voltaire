@@ -102,16 +102,12 @@ export function aggregatePublicKeys(publicKeys) {
 
 	try {
 		// Deserialize each public key from bytes (G2 points)
-		const pkPoints = publicKeys.map((pk) =>
-			bls12_381.G2.Point.fromBytes(pk),
-		);
+		const pkPoints = publicKeys.map((pk) => bls12_381.G2.Point.fromBytes(pk));
 		// Aggregate
 		const aggPk = bls.aggregatePublicKeys(pkPoints);
 		// Return as bytes
 		return aggPk.toBytes();
 	} catch (error) {
-		throw new SignatureError(
-			`Public key aggregation failed: ${error.message}`,
-		);
+		throw new SignatureError(`Public key aggregation failed: ${error.message}`);
 	}
 }

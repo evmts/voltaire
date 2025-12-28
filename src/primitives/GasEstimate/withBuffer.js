@@ -17,9 +17,9 @@ import { from } from "./from.js";
  */
 export function withBuffer(percentageBuffer) {
 	if (percentageBuffer < 0) {
-        throw new Error(
-            `Padding percentage must be non-negative, got ${percentageBuffer}`,
-        );
+		throw new Error(
+			`Padding percentage must be non-negative, got ${percentageBuffer}`,
+		);
 	}
 
 	const buffer = (this * BigInt(Math.floor(percentageBuffer * 100))) / 10000n;

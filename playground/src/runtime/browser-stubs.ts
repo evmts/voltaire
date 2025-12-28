@@ -5,7 +5,9 @@
 
 // Stub for c-kzg (native KZG implementation)
 export const loadTrustedSetup = () => {
-	throw new Error("c-kzg is not available in browser. Use WASM implementation.");
+	throw new Error(
+		"c-kzg is not available in browser. Use WASM implementation.",
+	);
 };
 export const freeTrustedSetup = () => {};
 export const blobToKzgCommitment = () => {

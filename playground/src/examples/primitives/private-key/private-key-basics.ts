@@ -1,4 +1,4 @@
-import { PrivateKey, PublicKey, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Bytes, Bytes32, PrivateKey, PublicKey } from "@tevm/voltaire";
 import { Address } from "@tevm/voltaire";
 
 // Example: PrivateKey basics - NEVER log actual private keys in production

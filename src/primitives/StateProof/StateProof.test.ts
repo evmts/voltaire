@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as AccountState from "../AccountState/index.js";
 import { Address } from "../Address/index.js";
-import { from as weiFrom, Wei } from "../Denomination/Wei.js";
+import { Wei, from as weiFrom } from "../Denomination/Wei.js";
 import { Hash } from "../Hash/index.js";
 import { from as nonceFrom } from "../Nonce/from.js";
 import { Nonce } from "../Nonce/index.js";

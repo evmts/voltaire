@@ -22,7 +22,10 @@ export function random(size) {
 	const bytes = new Uint8Array(size);
 	if (size > 0) {
 		// Use crypto.getRandomValues if available (browser/Node.js)
-		if (typeof globalThis.crypto !== "undefined" && globalThis.crypto.getRandomValues) {
+		if (
+			typeof globalThis.crypto !== "undefined" &&
+			globalThis.crypto.getRandomValues
+		) {
 			globalThis.crypto.getRandomValues(bytes);
 		} else {
 			// Fallback for environments without crypto

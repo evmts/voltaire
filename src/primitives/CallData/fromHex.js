@@ -1,6 +1,6 @@
 import * as Hex from "../Hex/index.js";
-import { fromBytes } from "./fromBytes.js";
 import { InvalidHexFormatError } from "./errors.js";
+import { fromBytes } from "./fromBytes.js";
 
 /**
  * Create CallData from hex string

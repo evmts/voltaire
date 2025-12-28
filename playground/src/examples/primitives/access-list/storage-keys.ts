@@ -38,9 +38,7 @@ const multiList = AccessList([
 	{ address: dai, storageKeys: [BALANCE_SLOT] },
 	{ address: weth, storageKeys: [] },
 ]);
-const oneKey = AccessList([
-	{ address: token, storageKeys: [BALANCE_SLOT] },
-]);
+const oneKey = AccessList([{ address: token, storageKeys: [BALANCE_SLOT] }]);
 const twoKeys = AccessList([
 	{ address: token, storageKeys: [BALANCE_SLOT, ALLOWANCE_SLOT] },
 ]);

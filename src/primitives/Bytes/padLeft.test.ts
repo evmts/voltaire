@@ -20,6 +20,8 @@ describe("Bytes.padLeft", () => {
 	});
 
 	it("handles empty bytes", () => {
-		expect(padLeft(new Uint8Array([]), 4)).toEqual(new Uint8Array([0, 0, 0, 0]));
+		expect(padLeft(new Uint8Array([]), 4)).toEqual(
+			new Uint8Array([0, 0, 0, 0]),
+		);
 	});
 });

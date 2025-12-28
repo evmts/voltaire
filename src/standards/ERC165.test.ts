@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hash as keccak256 } from "../crypto/Keccak256/hash.js";
-import * as ERC165 from "./ERC165.js";
 import * as Hex from "../primitives/Hex/index.js";
+import * as ERC165 from "./ERC165.js";
 
 describe("ERC165", () => {
 	describe("SELECTOR", () => {

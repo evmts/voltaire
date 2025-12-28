@@ -66,7 +66,7 @@ const fileTree: FileNode[] = [
 let currentFile: FileNode | null = null;
 let restoreConsole: (() => void) | null = null;
 let settingsPanelOpen = false;
-let currentApiMode: ApiMode = 'regular';
+let currentApiMode: ApiMode = "regular";
 let apiModeToggle: ApiModeToggle | null = null;
 
 // Initialize components
@@ -97,13 +97,13 @@ const autoSave = new AutoSave(editor, {
 // URL parameter handling for deep linking
 function getExampleFromUrl(): string | null {
 	const params = new URLSearchParams(window.location.search);
-	return params.get('example');
+	return params.get("example");
 }
 
 function updateUrlWithExample(path: string): void {
 	const url = new URL(window.location.href);
-	url.searchParams.set('example', path);
-	window.history.replaceState({}, '', url.toString());
+	url.searchParams.set("example", path);
+	window.history.replaceState({}, "", url.toString());
 }
 
 // File selection handler
@@ -116,7 +116,10 @@ function handleFileSelect(file: FileNode): void {
 	updateUrlWithExample(file.path);
 
 	// Transform content based on current API mode
-	const transformedContent = transformImportsForMode(file.content, currentApiMode);
+	const transformedContent = transformImportsForMode(
+		file.content,
+		currentApiMode,
+	);
 
 	// Use EditorTabs if available, fallback to old behavior
 	if (editorTabs) {
@@ -152,27 +155,56 @@ function handleFileSelect(file: FileNode): void {
 // Transform import paths based on API mode
 function transformImportsForMode(code: string, mode: ApiMode): string {
 	switch (mode) {
-		case 'wasm':
+		case "wasm":
 			return code
 				.replace(/from ["']@tevm\/voltaire["']/g, 'from "@tevm/voltaire/wasm"')
 				.replace(/from ["']voltaire["']/g, 'from "voltaire/wasm"');
-		case 'native':
+		case "native":
 			return code
-				.replace(/from ["']@tevm\/voltaire["']/g, 'from "@tevm/voltaire/native"')
+				.replace(
+					/from ["']@tevm\/voltaire["']/g,
+					'from "@tevm/voltaire/native"',
+				)
 				.replace(/from ["']voltaire["']/g, 'from "voltaire/native"');
-		case 'swift': {
+		case "swift": {
 			// Extract imports and convert to Swift syntax
-			const importMatch = code.match(/import\s*\{([^}]+)\}\s*from\s*["']@?tevm\/voltaire["']/);
-			const imports = importMatch ? importMatch[1].split(',').map(s => s.trim()).join(', ') : '';
-			const codeWithoutImport = code.replace(/import\s*\{[^}]+\}\s*from\s*["']@?tevm\/voltaire["'][;\n]*/g, '');
-			return `import Voltaire  // ${imports}\n\n// Swift preview (not executable in browser)\n// TypeScript equivalent:\n${codeWithoutImport.split('\n').map(line => '// ' + line).join('\n')}`;
+			const importMatch = code.match(
+				/import\s*\{([^}]+)\}\s*from\s*["']@?tevm\/voltaire["']/,
+			);
+			const imports = importMatch
+				? importMatch[1]
+						.split(",")
+						.map((s) => s.trim())
+						.join(", ")
+				: "";
+			const codeWithoutImport = code.replace(
+				/import\s*\{[^}]+\}\s*from\s*["']@?tevm\/voltaire["'][;\n]*/g,
+				"",
+			);
+			return `import Voltaire  // ${imports}\n\n// Swift preview (not executable in browser)\n// TypeScript equivalent:\n${codeWithoutImport
+				.split("\n")
+				.map((line) => `// ${line}`)
+				.join("\n")}`;
 		}
-		case 'zig': {
+		case "zig": {
 			// Extract imports and convert to Zig syntax
-			const importMatch = code.match(/import\s*\{([^}]+)\}\s*from\s*["']@?tevm\/voltaire["']/);
-			const imports = importMatch ? importMatch[1].split(',').map(s => s.trim()).join(', ') : '';
-			const codeWithoutImport = code.replace(/import\s*\{[^}]+\}\s*from\s*["']@?tevm\/voltaire["'][;\n]*/g, '');
-			return `const voltaire = @import("voltaire");  // ${imports}\n\n// Zig preview (not executable in browser)\n// TypeScript equivalent:\n${codeWithoutImport.split('\n').map(line => '// ' + line).join('\n')}`;
+			const importMatch = code.match(
+				/import\s*\{([^}]+)\}\s*from\s*["']@?tevm\/voltaire["']/,
+			);
+			const imports = importMatch
+				? importMatch[1]
+						.split(",")
+						.map((s) => s.trim())
+						.join(", ")
+				: "";
+			const codeWithoutImport = code.replace(
+				/import\s*\{[^}]+\}\s*from\s*["']@?tevm\/voltaire["'][;\n]*/g,
+				"",
+			);
+			return `const voltaire = @import("voltaire");  // ${imports}\n\n// Zig preview (not executable in browser)\n// TypeScript equivalent:\n${codeWithoutImport
+				.split("\n")
+				.map((line) => `// ${line}`)
+				.join("\n")}`;
 		}
 		default:
 			return code;
@@ -183,7 +215,10 @@ function transformImportsForMode(code: string, mode: ApiMode): string {
 function updateEditorForMode(): void {
 	if (!currentFile?.content) return;
 
-	const transformedCode = transformImportsForMode(currentFile.content, currentApiMode);
+	const transformedCode = transformImportsForMode(
+		currentFile.content,
+		currentApiMode,
+	);
 
 	if (editorTabs) {
 		const activeTab = editorTabs.getActiveTab();
@@ -198,20 +233,20 @@ function updateEditorForMode(): void {
 // Get banner message for unsupported modes
 function getUnsupportedModeMessage(mode: ApiMode): string {
 	switch (mode) {
-		case 'native':
-			return 'Native FFI requires Bun runtime - not available in browser';
-		case 'swift':
-			return 'Swift API - not available in browser';
-		case 'zig':
-			return 'Zig API - not available in browser';
+		case "native":
+			return "Native FFI requires Bun runtime - not available in browser";
+		case "swift":
+			return "Swift API - not available in browser";
+		case "zig":
+			return "Zig API - not available in browser";
 		default:
-			return '';
+			return "";
 	}
 }
 
 // Check if mode is unsupported in browser
 function isUnsupportedMode(mode: ApiMode): boolean {
-	return mode === 'native' || mode === 'swift' || mode === 'zig';
+	return mode === "native" || mode === "swift" || mode === "zig";
 }
 
 // API mode change handler
@@ -222,7 +257,7 @@ function handleApiModeChange(mode: ApiMode): void {
 
 	if (isUnsupportedMode(mode)) {
 		runButton.disabled = true;
-		runButton.classList.add('native-disabled');
+		runButton.classList.add("native-disabled");
 		runButton.dataset.tooltip = getUnsupportedModeMessage(mode);
 
 		// Remove existing banner if any
@@ -231,17 +266,17 @@ function handleApiModeChange(mode: ApiMode): void {
 		}
 
 		// Show unsupported mode banner
-		const banner = document.createElement('div');
-		banner.id = 'unsupported-mode-banner';
+		const banner = document.createElement("div");
+		banner.id = "unsupported-mode-banner";
 		banner.className = `unsupported-mode-banner ${mode}-mode-banner`;
 		banner.textContent = getUnsupportedModeMessage(mode);
-		const editorContainer = document.getElementById('editor-container');
-		const breadcrumbs = document.getElementById('breadcrumbs');
+		const editorContainer = document.getElementById("editor-container");
+		const breadcrumbs = document.getElementById("breadcrumbs");
 		if (editorContainer && breadcrumbs) {
 			editorContainer.insertBefore(banner, breadcrumbs);
 		}
 	} else {
-		runButton.classList.remove('native-disabled');
+		runButton.classList.remove("native-disabled");
 		delete runButton.dataset.tooltip;
 		if (currentFile) {
 			runButton.disabled = false;

@@ -1,4 +1,4 @@
-import { Hex, Bytes } from "@tevm/voltaire";
+import { Bytes, Hex } from "@tevm/voltaire";
 // Convert hex string to Bytes
 const hex = Hex("0x123456789abcdef0");
 const bytes = hex.toBytes();

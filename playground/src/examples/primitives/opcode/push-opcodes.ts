@@ -1,4 +1,4 @@
-import { Opcode, Bytes } from "@tevm/voltaire";
+import { Bytes, Opcode } from "@tevm/voltaire";
 // PUSH0 (0x5f) - Push 0 onto stack
 const push0Info = Opcode.info(Opcode.PUSH0);
 

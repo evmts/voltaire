@@ -10,13 +10,44 @@ import { getAllSpecifiers } from "../runtime/ModuleRegistry.js";
 // Get available Voltaire modules dynamically from registry
 const VOLTAIRE_MODULES = getAllSpecifiers();
 
+/** Disposable resource with cleanup method */
+interface Disposable {
+	dispose(): void;
+}
+
+/** Monaco editor instance (subset of IStandaloneCodeEditor) */
+interface MonacoEditor {
+	setValue(value: string): void;
+	getValue(): string;
+	updateOptions(options: Record<string, unknown>): void;
+	setModel(model: unknown): void;
+}
+
+/** Monaco namespace returned by modern-monaco init */
+interface MonacoNamespace {
+	editor: {
+		create(
+			container: HTMLElement,
+			options: Record<string, unknown>,
+		): MonacoEditor;
+		createModel(value: string, language: string): unknown;
+	};
+	languages?: {
+		typescript?: {
+			typescriptDefaults?: {
+				addExtraLib(content: string, filePath: string): void;
+			};
+		};
+	};
+}
+
 export class Editor {
-	private editor: any = null;
-	private monaco: any = null;
+	private editor: MonacoEditor | null = null;
+	private monaco: MonacoNamespace | null = null;
 	private container: HTMLElement;
-	private completionDisposables: any[] = [];
-	private quickFixDisposable: any = null;
-	private navigationDisposables: any[] = [];
+	private completionDisposables: Disposable[] = [];
+	private quickFixDisposable: Disposable | null = null;
+	private navigationDisposables: Disposable[] = [];
 	private inlineSuggestions: InlineSuggestions | null = null;
 
 	constructor(container: HTMLElement) {
@@ -67,7 +98,7 @@ export class Editor {
 					importMap: {
 						// $baseURL must match the origin of files being edited
 						// Without this, importMap resolution fails due to origin mismatch
-						$baseURL: baseUrl + "/",
+						$baseURL: `${baseUrl}/`,
 						imports,
 						scopes: {},
 					},
@@ -158,11 +189,11 @@ export class Editor {
 		}
 	}
 
-	getEditor(): any {
+	getEditor(): MonacoEditor | null {
 		return this.editor;
 	}
 
-	getMonaco(): any {
+	getMonaco(): MonacoNamespace | null {
 		return this.monaco;
 	}
 

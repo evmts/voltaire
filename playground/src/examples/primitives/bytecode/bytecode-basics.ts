@@ -11,10 +11,10 @@ const analysis = simple.analyze();
 // Constructor bytecode that returns runtime code
 // PUSH1 0x03, PUSH1 0x0c, PUSH1 0x00, CODECOPY, PUSH1 0x03, PUSH1 0x00, RETURN
 // Runtime code: PUSH1 0x01, STOP
-const constructor = Bytecode.fromHex("0x6003600c60003960036000f3600100");
+const constructorCode = Bytecode.fromHex("0x6003600c60003960036000f3600100");
 
 // Extract runtime bytecode
-const runtime = constructor.extractRuntime();
+const runtime = constructorCode.extractRuntime();
 
 // Bytecode with metadata (common in Solidity contracts)
 const withMetadata = Bytecode.fromHex(

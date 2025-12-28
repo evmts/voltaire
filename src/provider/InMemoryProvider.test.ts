@@ -174,11 +174,7 @@ describe("InMemoryProvider", () => {
 			// First set storage
 			await provider.request({
 				method: "hardhat_setStorageAt",
-				params: [
-					"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
-					"0x0",
-					"0x1234",
-				],
+				params: ["0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0", "0x0", "0x1234"],
 			});
 
 			const result = await provider.request({
@@ -447,10 +443,7 @@ describe("InMemoryProvider", () => {
 		it("hardhat_setCode sets account code", async () => {
 			await provider.request({
 				method: "hardhat_setCode",
-				params: [
-					"0x0000000000000000000000000000000000000001",
-					"0x6080604052",
-				],
+				params: ["0x0000000000000000000000000000000000000001", "0x6080604052"],
 			});
 
 			const code = await provider.request({
@@ -476,11 +469,7 @@ describe("InMemoryProvider", () => {
 		it("hardhat_setStorageAt sets storage", async () => {
 			await provider.request({
 				method: "hardhat_setStorageAt",
-				params: [
-					"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
-					"0x5",
-					"0xabcd",
-				],
+				params: ["0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0", "0x5", "0xabcd"],
 			});
 
 			const storage = await provider.request({

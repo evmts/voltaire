@@ -1,4 +1,4 @@
-import { BlockHeader, Hex, Bytes, Bytes32 } from "@tevm/voltaire";
+import { BlockHeader, Bytes, Bytes32, Hex } from "@tevm/voltaire";
 // Pre-Cancun block (no blob fields)
 const preCancun = BlockHeader({
 	parentHash: Bytes32.zero().fill(0x01),
@@ -46,7 +46,7 @@ const cancunWithBlobs = BlockHeader({
 	parentBeaconBlockRoot: Bytes32.zero().fill(0x07), // EIP-4788
 });
 
-const blobCount = Number(cancunWithBlobs.blobGasUsed!) / 131072;
+const blobCount = Number(cancunWithBlobs.blobGasUsed ?? 0n) / 131072;
 
 // Full blob block
 const fullBlobBlock = BlockHeader({
@@ -73,5 +73,5 @@ const fullBlobBlock = BlockHeader({
 	parentBeaconBlockRoot: Bytes32.zero().fill(0x08),
 });
 
-const fullBlobCount = Number(fullBlobBlock.blobGasUsed!) / 131072;
+const fullBlobCount = Number(fullBlobBlock.blobGasUsed ?? 0n) / 131072;
 const maxBlobs = 6;

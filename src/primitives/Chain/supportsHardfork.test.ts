@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { supportsHardfork } from "./supportsHardfork.js";
 import type { Chain } from "./ChainType.js";
+import { supportsHardfork } from "./supportsHardfork.js";
 
 /** Helper to create a minimal chain object for testing */
 const createChain = (chainId: number): Chain =>

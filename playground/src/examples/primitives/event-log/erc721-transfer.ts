@@ -1,4 +1,4 @@
-import { Address, EventLog, Hash, Bytes } from "@tevm/voltaire";
+import { Address, Bytes, EventLog, Hash } from "@tevm/voltaire";
 // Event signature: keccak256("Transfer(address,address,uint256)")
 // Same as ERC20, but tokenId is indexed
 const TRANSFER_SIGNATURE = Hash(

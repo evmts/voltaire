@@ -1,4 +1,4 @@
-import { Hex, Rlp, Bytes } from "@tevm/voltaire";
+import { Bytes, Hex, Rlp } from "@tevm/voltaire";
 // Example: Encode lists with RLP
 
 // Empty list
@@ -22,10 +22,7 @@ const withEmpty = Rlp.encodeList([Bytes.zero(0), Bytes([0x01])]);
 // Output: 0xc28001 (empty encodes as 0x80)
 
 // Nested list
-const nested = Rlp.encodeList([
-	Bytes([0x01]),
-	[Bytes([0x02]), Bytes([0x03])],
-]);
+const nested = Rlp.encodeList([Bytes([0x01]), [Bytes([0x02]), Bytes([0x03])]]);
 // Output: 0xc501c20203
 
 // Deeply nested

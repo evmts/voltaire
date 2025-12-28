@@ -1,4 +1,4 @@
-import { StorageValue, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Bytes, Bytes32, StorageValue } from "@tevm/voltaire";
 
 // Example: StorageValue basics - 32-byte EVM storage slot values
 

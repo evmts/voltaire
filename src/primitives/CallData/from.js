@@ -1,7 +1,7 @@
 import { brand } from "../../brand.js";
+import { InvalidValueError } from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
 import { fromHex } from "./fromHex.js";
-import { InvalidValueError } from "./errors.js";
 
 /**
  * Create CallData from various input types (universal constructor)

@@ -101,16 +101,8 @@ const hasDuplicates = (vals: StorageValue.StorageValueType[]): boolean => {
 	return false;
 };
 
-const uniqueValues = [
-	StorageValue(1n),
-	StorageValue(2n),
-	StorageValue(3n),
-];
-const duplicateValues = [
-	StorageValue(1n),
-	StorageValue(2n),
-	StorageValue(1n),
-];
+const uniqueValues = [StorageValue(1n), StorageValue(2n), StorageValue(3n)];
+const duplicateValues = [StorageValue(1n), StorageValue(2n), StorageValue(1n)];
 
 // Comparing hex representations
 const hexCompare = (

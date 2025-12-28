@@ -141,21 +141,9 @@ function validateNonceSequence(
 		errors,
 	};
 }
-const validSeq = [
-	Nonce(0),
-	Nonce(1),
-	Nonce(2),
-	Nonce(3),
-	Nonce(4),
-];
+const validSeq = [Nonce(0), Nonce(1), Nonce(2), Nonce(3), Nonce(4)];
 const result1 = validateNonceSequence(validSeq, Nonce(0));
-const invalidSeq = [
-	Nonce(0),
-	Nonce(1),
-	Nonce(3),
-	Nonce(4),
-	Nonce(5),
-];
+const invalidSeq = [Nonce(0), Nonce(1), Nonce(3), Nonce(4), Nonce(5)];
 const result2 = validateNonceSequence(invalidSeq, Nonce(0));
 if (!result2.valid) {
 	for (const error of result2.errors) {

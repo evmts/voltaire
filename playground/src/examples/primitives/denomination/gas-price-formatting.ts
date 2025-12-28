@@ -83,14 +83,8 @@ const originalGasPrice = Gwei(100n);
 const optimizedGasPrice = Gwei(30n);
 const gasUsed = 150000n;
 
-const originalCost = Uint.times(
-	Gwei.toU256(originalGasPrice),
-	Uint(gasUsed),
-);
-const optimizedCost = Uint.times(
-	Gwei.toU256(optimizedGasPrice),
-	Uint(gasUsed),
-);
+const originalCost = Uint.times(Gwei.toU256(originalGasPrice), Uint(gasUsed));
+const optimizedCost = Uint.times(Gwei.toU256(optimizedGasPrice), Uint(gasUsed));
 const savings = Uint.minus(originalCost, optimizedCost);
 
 const estimatedGas = 125000n;

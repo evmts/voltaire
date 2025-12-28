@@ -23,7 +23,10 @@ for (let i = 32; i < 64; i++) {
 }
 
 // Swap R and S components
-const swappedSig = Bytes.concat(signature.slice(32, 64), signature.slice(0, 32));
+const swappedSig = Bytes.concat(
+	signature.slice(32, 64),
+	signature.slice(0, 32),
+);
 const invalidS = Bytes([...signature.slice(0, 32), ...Array(32).fill(0xff)]);
 const testPositions = [0, 1, 15, 16, 31, 32, 47, 48, 63];
 let allRejected = true;

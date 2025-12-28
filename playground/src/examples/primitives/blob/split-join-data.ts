@@ -1,4 +1,4 @@
-import {  Blob , Bytes } from "@tevm/voltaire";
+import { Blob, Bytes } from "@tevm/voltaire";
 const maxPerBlob =
 	Blob.FIELD_ELEMENTS_PER_BLOB * (Blob.BYTES_PER_FIELD_ELEMENT - 1);
 const smallText = "This fits in one blob easily.";

@@ -1,4 +1,4 @@
-import { Signature, Bytes } from "@tevm/voltaire";
+import { Bytes, Signature } from "@tevm/voltaire";
 import { Hash } from "@tevm/voltaire";
 
 // 1. secp256k1 (Ethereum/Bitcoin)

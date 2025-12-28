@@ -7,16 +7,16 @@
 import { describe, expect, it } from "vitest";
 import { Bls12381 } from "./Bls12381.js";
 import {
-	sign,
-	verify,
 	aggregate,
 	aggregatePublicKeys,
 	aggregateVerify,
 	batchVerify,
-	fastAggregateVerify,
 	derivePublicKey,
-	randomPrivateKey,
+	fastAggregateVerify,
 	isValidPrivateKey,
+	randomPrivateKey,
+	sign,
+	verify,
 } from "./Bls12381.js";
 import { InvalidScalarError, SignatureError } from "./errors.js";
 
@@ -324,9 +324,9 @@ describe("BLS12-381 Signatures", () => {
 			const msg1 = new TextEncoder().encode("Msg");
 			const sig1 = sign(msg1, pk1);
 
-			expect(() =>
-				batchVerify(sig1, [msg1, msg1], [pubKey1]),
-			).toThrow(SignatureError);
+			expect(() => batchVerify(sig1, [msg1, msg1], [pubKey1])).toThrow(
+				SignatureError,
+			);
 		});
 	});
 

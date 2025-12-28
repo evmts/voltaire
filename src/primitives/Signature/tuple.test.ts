@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { fromSecp256k1 } from "./fromSecp256k1.js";
 import { fromTuple } from "./fromTuple.js";
 import { toTuple } from "./toTuple.js";
-import { fromSecp256k1 } from "./fromSecp256k1.js";
 
 describe("Signature Tuple format", () => {
 	const r = new Uint8Array(32).fill(0);
@@ -45,7 +45,9 @@ describe("Signature Tuple format", () => {
 				algorithm: "ed25519",
 				v: 27,
 			};
-			expect(() => toTuple(ed25519Sig as any)).toThrow(/only supports secp256k1/);
+			expect(() => toTuple(ed25519Sig as any)).toThrow(
+				/only supports secp256k1/,
+			);
 		});
 	});
 

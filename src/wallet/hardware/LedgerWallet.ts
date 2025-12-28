@@ -1,4 +1,5 @@
 import type { AddressType } from "../../primitives/Address/AddressType.js";
+import * as Hex from "../../primitives/Hex/index.js";
 import type { SignatureType } from "../../primitives/Signature/SignatureType.js";
 import type { Any as TransactionType } from "../../primitives/Transaction/types.js";
 import type {
@@ -6,7 +7,6 @@ import type {
 	EIP712TypedData,
 	HardwareWallet,
 } from "./HardwareWallet.js";
-import * as Hex from "../../primitives/Hex/index.js";
 
 /**
  * Ledger hardware wallet implementation

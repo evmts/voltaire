@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { randomPrivateKey } from "./randomPrivateKey.js";
 import { createKeyPair } from "./createKeyPair.js";
-import { isValidPrivateKey } from "./isValidPrivateKey.js";
 import { derivePublicKey } from "./derivePublicKey.js";
+import { isValidPrivateKey } from "./isValidPrivateKey.js";
+import { randomPrivateKey } from "./randomPrivateKey.js";
 
 describe("Secp256k1.randomPrivateKey", () => {
 	it("generates 32-byte private key", () => {

@@ -14,6 +14,7 @@ import * as CallTrace from "../src/primitives/CallTrace/index.js";
 import * as StructLog from "../src/primitives/StructLog/index.js";
 import * as TraceConfig from "../src/primitives/TraceConfig/index.js";
 import * as TraceResult from "../src/primitives/TraceResult/index.js";
+import * as Uint256 from "../src/primitives/Uint/index.js";
 
 const revertConfig = TraceConfig.from({
 	disableStorage: true,
@@ -27,32 +28,32 @@ const mockStructLogs = [
 	StructLog.from({
 		pc: 0,
 		op: "PUSH1",
-		gas: 1000000n as any,
-		gasCost: 3n as any,
+		gas: Uint256.fromBigInt(1000000n),
+		gasCost: Uint256.fromBigInt(3n),
 		depth: 0,
 		stack: ["0x60"],
 	}),
 	StructLog.from({
 		pc: 2,
 		op: "PUSH1",
-		gas: 999997n as any,
-		gasCost: 3n as any,
+		gas: Uint256.fromBigInt(999997n),
+		gasCost: Uint256.fromBigInt(3n),
 		depth: 0,
 		stack: ["0x60", "0x40"],
 	}),
 	StructLog.from({
 		pc: 4,
 		op: "MSTORE",
-		gas: 999994n as any,
-		gasCost: 6n as any,
+		gas: Uint256.fromBigInt(999994n),
+		gasCost: Uint256.fromBigInt(6n),
 		depth: 0,
 		stack: [],
 	}),
 	StructLog.from({
 		pc: 100,
 		op: "REVERT",
-		gas: 50000n as any,
-		gasCost: 0n as any,
+		gas: Uint256.fromBigInt(50000n),
+		gasCost: Uint256.fromBigInt(0n),
 		depth: 0,
 		stack: [],
 		error: "execution reverted",
@@ -60,7 +61,7 @@ const mockStructLogs = [
 ];
 
 const traceResult = TraceResult.from({
-	gas: 50000n as any,
+	gas: Uint256.fromBigInt(50000n),
 	failed: true,
 	returnValue: Bytes.from([]),
 	structLogs: mockStructLogs,
@@ -81,17 +82,23 @@ for (const log of logs) {
 for (const [op, gas] of gasByOpcode) {
 }
 
-const mockFromAddr = Address.fromHex("0x0101010101010101010101010101010101010101");
-const mockToAddr = Address.fromHex("0x0202020202020202020202020202020202020202");
-const mockContractAddr = Address.fromHex("0x0303030303030303030303030303030303030303");
+const mockFromAddr = Address.fromHex(
+	"0x0101010101010101010101010101010101010101",
+);
+const mockToAddr = Address.fromHex(
+	"0x0202020202020202020202020202020202020202",
+);
+const mockContractAddr = Address.fromHex(
+	"0x0303030303030303030303030303030303030303",
+);
 
 // Create nested call structure
 const nestedCall = CallTrace.from({
 	type: "STATICCALL",
 	from: mockToAddr,
 	to: mockContractAddr,
-	gas: 20000n as any,
-	gasUsed: 10000n as any,
+	gas: Uint256.fromBigInt(20000n),
+	gasUsed: Uint256.fromBigInt(10000n),
 	input: Bytes.from([]),
 	output: Bytes.from([]),
 });
@@ -100,8 +107,8 @@ const failedCall = CallTrace.from({
 	type: "CALL",
 	from: mockToAddr,
 	to: mockContractAddr,
-	gas: 50000n as any,
-	gasUsed: 25000n as any,
+	gas: Uint256.fromBigInt(50000n),
+	gasUsed: Uint256.fromBigInt(25000n),
 	input: Bytes.from([]),
 	output: Bytes.from([]),
 	error: "execution reverted",
@@ -112,15 +119,15 @@ const rootCall = CallTrace.from({
 	type: "CALL",
 	from: mockFromAddr,
 	to: mockToAddr,
-	gas: 100000n as any,
-	gasUsed: 75000n as any,
+	gas: Uint256.fromBigInt(100000n),
+	gasUsed: Uint256.fromBigInt(75000n),
 	input: Bytes.from([]),
 	output: Bytes.from([]),
 	calls: [nestedCall, failedCall],
 });
 
 const callTraceResult = TraceResult.from({
-	gas: 75000n as any,
+	gas: Uint256.fromBigInt(75000n),
 	failed: true,
 	returnValue: Bytes.from([]),
 	callTrace: rootCall,

@@ -13,7 +13,7 @@ import {
 	type CalculateCreate2AddressErrors,
 	type CalculateCreateAddressErrors,
 	type ChecksumAddressFromErrors,
-	CryptoOperationError,
+	type CryptoOperationError,
 	type FromAbiEncodedErrors,
 	type FromBytesErrors,
 	type FromErrors,

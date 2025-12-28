@@ -1,9 +1,9 @@
-import { MAX } from "./constants.js";
 import {
 	IntegerOverflowError,
 	IntegerUnderflowError,
 	InvalidFormatError,
 } from "../errors/index.js";
+import { MAX } from "./constants.js";
 
 /**
  * Create Uint256 from bigint, number, or string (standard form)
@@ -40,12 +40,15 @@ export function from(value) {
 		}
 	} else if (typeof value === "number") {
 		if (!Number.isInteger(value)) {
-			throw new InvalidFormatError(`Uint256 value must be an integer: ${value}`, {
-				code: "UINT256_NOT_INTEGER",
-				value,
-				expected: "integer value",
-				docsPath: "/primitives/uint#error-handling",
-			});
+			throw new InvalidFormatError(
+				`Uint256 value must be an integer: ${value}`,
+				{
+					code: "UINT256_NOT_INTEGER",
+					value,
+					expected: "integer value",
+					docsPath: "/primitives/uint#error-handling",
+				},
+			);
 		}
 		bigintValue = BigInt(value);
 	} else {
@@ -53,21 +56,27 @@ export function from(value) {
 	}
 
 	if (bigintValue < 0n) {
-		throw new IntegerUnderflowError(`Uint256 cannot be negative: ${bigintValue}`, {
-			value: bigintValue,
-			min: 0n,
-			type: "uint256",
-			docsPath: "/primitives/uint#error-handling",
-		});
+		throw new IntegerUnderflowError(
+			`Uint256 cannot be negative: ${bigintValue}`,
+			{
+				value: bigintValue,
+				min: 0n,
+				type: "uint256",
+				docsPath: "/primitives/uint#error-handling",
+			},
+		);
 	}
 
 	if (bigintValue > MAX) {
-		throw new IntegerOverflowError(`Uint256 exceeds maximum (2^256-1): ${bigintValue}`, {
-			value: bigintValue,
-			max: MAX,
-			type: "uint256",
-			docsPath: "/primitives/uint#error-handling",
-		});
+		throw new IntegerOverflowError(
+			`Uint256 exceeds maximum (2^256-1): ${bigintValue}`,
+			{
+				value: bigintValue,
+				max: MAX,
+				type: "uint256",
+				docsPath: "/primitives/uint#error-handling",
+			},
+		);
 	}
 
 	return bigintValue;

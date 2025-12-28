@@ -1,5 +1,5 @@
-import type { BytesType } from "./BytesType.js";
 import * as Internal from "./Bytes.index.js";
+import type { BytesType } from "./BytesType.js";
 
 /**
  * Create Bytes from various input types (callable constructor)

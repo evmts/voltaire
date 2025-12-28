@@ -1,4 +1,4 @@
-import { Address, Siwe, Bytes } from "@tevm/voltaire";
+import { Address, Bytes, Siwe } from "@tevm/voltaire";
 const address = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const validMessage = Siwe.create({
 	domain: "example.com",

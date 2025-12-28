@@ -64,19 +64,21 @@ function processData(input: unknown) {
 		if (Array.isArray(input)) {
 			return input.map((item) => {
 				if (typeof item === "object") {
-					return Object.entries(item).reduce((acc, [key, value]) => {
-						return { ...acc, [key]: String(value) };
-					}, {});
+					return Object.fromEntries(
+						Object.entries(item).map(([key, value]) => [key, String(value)]),
+					);
 				}
 				return item;
 			});
 		}
-		return Object.entries(input).reduce((acc, [key, value]) => {
-			if (typeof value === "object" && value !== null) {
-				return { ...acc, [key]: processData(value) };
-			}
-			return { ...acc, [key]: value };
-		}, {});
+		return Object.fromEntries(
+			Object.entries(input).map(([key, value]) => [
+				key,
+				typeof value === "object" && value !== null
+					? processData(value)
+					: value,
+			]),
+		);
 	}
 	return input;
 }

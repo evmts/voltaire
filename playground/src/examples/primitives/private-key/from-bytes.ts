@@ -1,4 +1,4 @@
-import { PrivateKey, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Bytes, Bytes32, PrivateKey } from "@tevm/voltaire";
 import { Address } from "@tevm/voltaire";
 
 const bytes1 = Bytes([

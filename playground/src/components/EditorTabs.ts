@@ -1,3 +1,4 @@
+import type * as Monaco from "monaco-editor";
 import type { FileNode } from "./FileTree.js";
 
 export interface Tab {
@@ -5,21 +6,21 @@ export interface Tab {
 	name: string;
 	content: string;
 	isDirty: boolean;
-	model: any; // Monaco model
+	model: Monaco.editor.ITextModel;
 }
 
 export class EditorTabs {
 	private tabs: Tab[] = [];
 	private activeTabIndex = -1;
 	private container: HTMLElement;
-	private monaco: any;
-	private editor: any;
+	private monaco: typeof Monaco;
+	private editor: Monaco.editor.IStandaloneCodeEditor;
 	private onTabChange?: (tab: Tab | null) => void;
 
 	constructor(
 		container: HTMLElement,
-		monaco: any,
-		editor: any,
+		monaco: typeof Monaco,
+		editor: Monaco.editor.IStandaloneCodeEditor,
 		onTabChange?: (tab: Tab | null) => void,
 	) {
 		this.container = container;

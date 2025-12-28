@@ -1,4 +1,4 @@
-import { Uint, Uint128, Uint16, Uint32, Uint64, Uint8 } from "@tevm/voltaire";
+import { Uint, Uint8, Uint16, Uint32, Uint64, Uint128 } from "@tevm/voltaire";
 const u8a = Uint8.fromNumber(42);
 const u8b = Uint8.fromHex("0xff");
 const u8c = Uint8.from("200");

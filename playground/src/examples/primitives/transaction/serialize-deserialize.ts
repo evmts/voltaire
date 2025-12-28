@@ -1,4 +1,4 @@
-import { Address, Hex, Transaction, Bytes, Bytes32 } from "@tevm/voltaire";
+import { Address, Bytes, Bytes32, Hex, Transaction } from "@tevm/voltaire";
 // Transaction Serialization: RLP encode/decode transactions
 
 // Create EIP-1559 transaction

@@ -21,9 +21,9 @@ import {
 	sha256,
 } from "./evm/precompiles/precompiles.js";
 import { Address } from "./primitives/Address/index.js";
-import * as Hex from "./primitives/Hex/index.js";
 import * as Hardfork from "./primitives/Hardfork/index.js";
 import type { HashType } from "./primitives/Hash/index.js";
+import * as Hex from "./primitives/Hex/index.js";
 import * as Rlp from "./primitives/Rlp/index.js";
 import * as Signature from "./primitives/Signature/index.js";
 
