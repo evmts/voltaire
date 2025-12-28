@@ -1,0 +1,121 @@
+---
+title: Address.fromAbiEncoded
+description: Decode address from 32-byte ABI-encoded data
+---
+
+
+<Tabs>
+
+<Tab title="C">
+
+## C bindings not available
+
+ABI encoding/decoding functions are not currently exposed in the C API.
+
+<Tip>
+Use the TypeScript or Zig APIs for ABI encoding operations. C API support may be added in future releases.
+</Tip>
+
+</Tab>
+</Tabs>
+
+## ABI Encoding Format
+
+EVM ABI encoding represents addresses as 32-byte words with right-aligned data:
+
+**Structure:**
+- Bytes 0-11: Zero padding (12 bytes)
+- Bytes 12-31: Address data (20 bytes)
+
+**Example:**
+
+```
+32-byte ABI-encoded word:
+0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3
+  └─────── padding ─────┘└────────── address ──────────┘
+     12 bytes (zeros)         20 bytes (address)
+```
+
+## Usage Patterns
+
+### Decoding Contract Call Results
+
+```zig
+import { Address } from 'tevm'
+
+// ABI-encoded address from contract call return data
+const returnData = new Uint8Array([
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x74, 0x2d, 0x35, 0xcc, 0x66, 0x34, 0xc0, 0x53, 0x29, 0x25,
+  0xa3, 0xb8, 0x44, 0xbc, 0x9e, 0x75, 0x95, 0xf2, 0x51, 0xe3
+])
+
+const addr = Address(returnData)
+console.log(addr.toChecksummed())
+```
+
+### Round-trip Encoding
+
+```zig
+import { Address } from 'tevm'
+
+const original = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+
+// Encode to ABI format
+const encoded = original.toAbiEncoded()
+console.log(encoded.length) // 32
+
+// Decode back
+const decoded = Address(encoded)
+console.log(original.equals(decoded)) // true
+```
+
+### Multiple Addresses from ABI Data
+
+```zig
+import { Address } from 'tevm'
+
+// ABI-encoded array of addresses (2 addresses = 64 bytes)
+const abiData = new Uint8Array(64)
+
+// First address at bytes 0-31
+const addr1 = Address(abiData.slice(0, 32))
+
+// Second address at bytes 32-63
+const addr2 = Address(abiData.slice(32, 64))
+```
+
+## Error Handling
+
+```zig
+import { Address } from 'tevm'
+
+// Wrong length - throws error
+try {
+  const tooShort = new Uint8Array(20)
+  Address(tooShort)
+} catch (e) {
+  console.error(e) // "ABI-encoded Address must be exactly 32 bytes, got 20"
+}
+
+try {
+  const tooLong = new Uint8Array(33)
+  Address(tooLong)
+} catch (e) {
+  console.error(e) // "ABI-encoded Address must be exactly 32 bytes, got 33"
+}
+```
+
+## Implementation Notes
+
+- First 12 bytes are ignored (can be any value, typically zeros)
+- Only last 20 bytes are extracted as the address
+- No validation of padding bytes
+- Efficient slice operation (no copying until necessary)
+
+## See Also
+
+- [toAbiEncoded](/primitives/address/to-abi-encoded) - Encode address to 32-byte ABI format
+- [fromBytes](/primitives/address/from-bytes) - Create from 20-byte raw data
+- [fromHex](/primitives/address/from-hex) - Create from hex string
+- [Solidity ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html)

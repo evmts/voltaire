@@ -1,0 +1,220 @@
+title: ERC-721
+description: ERC-721 non-fungible token (NFT) standard interface
+---
+
+# ERC-721
+
+ERC-721 is the standard interface for non-fungible tokens (NFTs) on Ethereum. Each token has a unique identifier and metadata.
+
+<Tip>
+Zig uses ABI helpers to work with ERC-721. Define function signatures with `primitives.AbiEncoding.FunctionDefinition`, compute selectors, and build calldata. Use `EventSignature`/`EventLog` for topics and decoding.
+</Tip>
+
+## Function Selectors
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Abi = primitives.AbiEncoding;
+
+// Helper to compute a selector
+fn selector(allocator: std.mem.Allocator, name: []const u8, inputs: []const Abi.AbiType) ![4]u8 {
+    const f = Abi.FunctionDefinition{
+        .name = name,
+        .inputs = inputs,
+        .outputs = &[_]Abi.AbiType{},
+        .state_mutability = .nonpayable,
+    };
+    return f.get_selector(allocator);
+}
+
+pub fn main() !void {
+    const gpa = std.heap.page_allocator;
+    defer {};
+
+    const SELECTOR_OWNER_OF = try selector(gpa, "ownerOf", &[_]Abi.AbiType{ .uint256 });
+    const SELECTOR_TRANSFER_FROM = try selector(gpa, "transferFrom", &[_]Abi.AbiType{ .address, .address, .uint256 });
+    const SELECTOR_SAFE_TRANSFER_FROM = try selector(gpa, "safeTransferFrom", &[_]Abi.AbiType{ .address, .address, .uint256 });
+
+    // ...similarly for approve, setApprovalForAll, getApproved, isApprovedForAll
+}
+```
+
+## Event Signatures
+
+```zig
+const primitives = @import("primitives");
+const EventSignature = primitives.EventSignature;
+
+const TRANSFER_TOPIC       = EventSignature.fromSignature("Transfer(address,address,uint256)");
+const APPROVAL_TOPIC       = EventSignature.fromSignature("Approval(address,address,uint256)");
+const APPROVAL_FOR_ALL_TOP = EventSignature.fromSignature("ApprovalForAll(address,address,bool)");
+```
+
+## Encoding Calldata
+
+### transferFrom / safeTransferFrom
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Abi = primitives.AbiEncoding;
+
+pub fn encodeTransferFrom(allocator: std.mem.Allocator, from_hex: []const u8, to_hex: []const u8, token_id: u256) ![]u8 {
+    const from = try primitives.Address.fromHex(from_hex);
+    const to = try primitives.Address.fromHex(to_hex);
+    const func = Abi.FunctionDefinition{
+        .name = "transferFrom",
+        .inputs = &[_]Abi.AbiType{ .address, .address, .uint256 },
+        .outputs = &[_]Abi.AbiType{ .bool },
+        .state_mutability = .nonpayable,
+    };
+    const args = [_]Abi.AbiValue{ Abi.addressValue(from), Abi.addressValue(to), Abi.uint256_value(token_id) };
+    return func.encode_params(allocator, &args);
+}
+
+pub fn encodeSafeTransferFrom(allocator: std.mem.Allocator, from_hex: []const u8, to_hex: []const u8, token_id: u256) ![]u8 {
+    const from = try primitives.Address.fromHex(from_hex);
+    const to = try primitives.Address.fromHex(to_hex);
+    const func = Abi.FunctionDefinition{
+        .name = "safeTransferFrom",
+        .inputs = &[_]Abi.AbiType{ .address, .address, .uint256 },
+        .outputs = &[_]Abi.AbiType{},
+        .state_mutability = .nonpayable,
+    };
+    const args = [_]Abi.AbiValue{ Abi.addressValue(from), Abi.addressValue(to), Abi.uint256_value(token_id) };
+    return func.encode_params(allocator, &args);
+}
+```
+
+### approve
+
+```zig
+pub fn encodeApprove(allocator: std.mem.Allocator, approved_hex: []const u8, token_id: u256) ![]u8 {
+    const approved = try primitives.Address.fromHex(approved_hex);
+    const func = Abi.FunctionDefinition{
+        .name = "approve",
+        .inputs = &[_]Abi.AbiType{ .address, .uint256 },
+        .outputs = &[_]Abi.AbiType{},
+        .state_mutability = .nonpayable,
+    };
+    const args = [_]Abi.AbiValue{ Abi.addressValue(approved), Abi.uint256_value(token_id) };
+    return func.encode_params(allocator, &args);
+}
+```
+
+### setApprovalForAll
+
+```zig
+pub fn encodeSetApprovalForAll(allocator: std.mem.Allocator, operator_hex: []const u8, approved: bool) ![]u8 {
+    const operator = try primitives.Address.fromHex(operator_hex);
+    const func = Abi.FunctionDefinition{
+        .name = "setApprovalForAll",
+        .inputs = &[_]Abi.AbiType{ .address, .bool },
+        .outputs = &[_]Abi.AbiType{},
+        .state_mutability = .nonpayable,
+    };
+    const args = [_]Abi.AbiValue{ Abi.addressValue(operator), Abi.boolValue(approved) };
+    return func.encode_params(allocator, &args);
+}
+```
+
+### ownerOf
+
+```zig
+pub fn encodeOwnerOf(allocator: std.mem.Allocator, token_id: u256) ![]u8 {
+    const func = Abi.FunctionDefinition{
+        .name = "ownerOf",
+        .inputs = &[_]Abi.AbiType{ .uint256 },
+        .outputs = &[_]Abi.AbiType{ .address },
+        .state_mutability = .view,
+    };
+    const args = [_]Abi.AbiValue{ Abi.uint256_value(token_id) };
+    return func.encode_params(allocator, &args);
+}
+```
+
+### tokenURI
+
+```zig
+pub fn encodeTokenURI(allocator: std.mem.Allocator, token_id: u256) ![]u8 {
+    const func = Abi.FunctionDefinition{
+        .name = "tokenURI",
+        .inputs = &[_]Abi.AbiType{ .uint256 },
+        .outputs = &[_]Abi.AbiType{ .string },
+        .state_mutability = .view,
+    };
+    const args = [_]Abi.AbiValue{ Abi.uint256_value(token_id) };
+    return func.encode_params(allocator, &args);
+}
+```
+
+## Decoding Events
+
+### Transfer Event
+
+```zig
+const primitives = @import("primitives");
+const EventLog = primitives.EventLog;
+
+const TransferSig = EventLog.EventSignature{
+    .name = "Transfer",
+    .inputs = &[_]EventLog.EventInput{
+        .{ .name = "from", .type = .address, .indexed = true },
+        .{ .name = "to", .type = .address, .indexed = true },
+        .{ .name = "tokenId", .type = .uint256, .indexed = false },
+    },
+};
+
+pub fn decodeTransfer(allocator: std.mem.Allocator, log: EventLog.EventLog) !struct { from: primitives.Address, to: primitives.Address, tokenId: u256 } {
+    const values = try EventLog.parseEventLog(allocator, log, TransferSig);
+    defer allocator.free(values);
+    return .{ .from = values[0].address, .to = values[1].address, .tokenId = values[2].uint256 };
+}
+```
+
+### Approval Event
+
+```zig
+const ApprovalSig = EventLog.EventSignature{
+    .name = "Approval",
+    .inputs = &[_]EventLog.EventInput{
+        .{ .name = "owner", .type = .address, .indexed = true },
+        .{ .name = "approved", .type = .address, .indexed = true },
+        .{ .name = "tokenId", .type = .uint256, .indexed = false },
+    },
+};
+```
+
+### ApprovalForAll Event
+
+```zig
+const ApprovalForAllSig = EventLog.EventSignature{
+    .name = "ApprovalForAll",
+    .inputs = &[_]EventLog.EventInput{
+        .{ .name = "owner", .type = .address, .indexed = true },
+        .{ .name = "operator", .type = .address, .indexed = true },
+        .{ .name = "approved", .type = .bool, .indexed = false },
+    },
+};
+```
+
+## Complete Example
+
+```zig
+// Encode common calls; send/receive via your HTTP client
+// ownerOf(tokenId)
+const owner_call = try encodeOwnerOf(gpa, 1234);
+
+// transferFrom(from,to,tokenId)
+const transfer_call = try encodeTransferFrom(gpa,
+    "0x0000000000000000000000000000000000000001",
+    "0x0000000000000000000000000000000000000002",
+    1234,
+);
+```
+
+## References
+
+- [EIP-721: Non-Fungible Token Standard](https://eips.ethereum.org/EIPS/eip-721)
+- [ERC-165: Interface Detection](/standards/erc165)

@@ -1,0 +1,372 @@
+---
+title: Address
+description: 20-byte Ethereum address with EIP-55 checksumming
+---
+
+
+# Address
+
+Ethereum addresses are 20-byte identifiers for accounts (both externally-owned and contracts). They're derived from public keys (EOAs) or calculated deterministically during contract deployment.
+
+<Tip title="Learn the fundamentals">
+New to Ethereum addresses? Start with [Fundamentals](/primitives/address/fundamentals) to learn address derivation, EIP-55 checksumming, and CREATE/CREATE2 contract deployment.
+</Tip>
+
+## Overview
+
+Address is a specialized [branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) that extends the 20-byte (Bytes20) type with address-specific semantics, including EIP-55 mixed-case checksumming for error detection and validation.
+
+<Tabs>
+<Tab title="Type Definition">
+
+```zig
+import type { brand } from './brand.js'
+
+export type AddressType = Uint8Array & {
+  readonly [brand]: "Address"
+}
+```
+
+Address is a branded `Uint8Array` (20 bytes). TypeScript enforces type safety through a unique Symbol brand, preventing accidental mixing with other Uint8Arrays while maintaining zero runtime overhead.
+
+</Tab>
+</Tabs>
+
+Tevm handles checksums automatically while storing addresses as raw bytes internally to avoid case-sensitivity bugs.
+
+### Developer Experience
+
+Despite being a `Uint8Array`, addresses display formatted in most environments:
+
+```zig
+const address = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
+console.log(address);
+// Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+```
+
+This makes debugging more readable than raw byte arrays while maintaining the performance and compatibility benefits of `Uint8Array`.
+
+## Quick Start
+
+<Tabs>
+<Tab title="Basic Usage">
+
+```zig
+import { Address } from 'tevm/Address';
+
+// Create from hex string
+const addr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+
+// Get checksummed representation
+console.log(Address.toChecksummed(addr));
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Get lowercase hex
+console.log(Address.toHex(addr));
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+
+// Validate checksum
+console.log(Address.isValidChecksum('0x742d35Cc...'));
+// true
+```
+
+</Tab>
+<Tab title="From Public Key">
+
+```zig
+import { Address } from 'tevm/Address';
+import { Secp256k1 } from 'tevm/Secp256k1';
+
+// Derive address from private key
+const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+const addr = Address.fromPrivateKey(privateKey);
+
+// Or from public key coordinates
+const pubKey = Secp256k1.derivePublicKey(privateKey);
+const addr2 = Address.fromPublicKey(pubKey.x, pubKey.y);
+
+console.log(Address.toChecksummed(addr));
+// "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+```
+
+</Tab>
+<Tab title="Contract Addresses">
+
+```zig
+import { Address } from 'tevm/Address';
+import { Bytes32 } from 'tevm/Bytes32';
+import { Bytecode } from 'tevm/Bytecode';
+
+// Predict CREATE address
+const deployer = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const nonce = 0n;
+const createAddr = Address.calculateCreateAddress(deployer, nonce);
+
+// Predict CREATE2 address
+const salt = Bytes32('0x1234...');
+const initCode = Bytecode.from('0x6080...');
+const create2Addr = Address.calculateCreate2Address(deployer, salt, initCode);
+
+console.log(Address.toHex(createAddr));
+console.log(Address.toHex(create2Addr));
+```
+
+</Tab>
+</Tabs>
+
+## Practical Examples
+
+See [Fundamentals](/primitives/address/fundamentals) for detailed explanations of address derivation, checksumming, and contract address calculation.
+
+## API Methods
+
+### Constructors
+
+- [`from(value)`](./from) - Universal constructor from any input
+- [`fromHex(hex)`](./from-hex) - Parse hex string (with or without 0x prefix)
+- [`fromBytes(bytes)`](./from-bytes) - Create from Uint8Array (must be 20 bytes)
+- [`fromNumber(value)`](./from-number) - Create from bigint or number
+- [`fromPublicKey(x, y)`](./from-public-key) - Derive from secp256k1 public key
+- [`fromPrivateKey(privateKey)`](./from-private-key) - Derive from private key
+- [`zero()`](./zero) - Create zero address (0x0000...0000)
+
+### Conversions
+
+- [`toHex(address)`](./to-hex) - Convert to lowercase hex string with 0x prefix
+- [`toChecksummed(address)`](./to-checksummed) - Convert to EIP-55 mixed-case checksummed hex
+- [`toShortHex(address)`](./to-short-hex) - Format for display (0x742d…1e3e)
+- [`toBytes(address)`](./to-bytes) - Return raw Uint8Array
+
+### Validation
+
+- [`isValid(value)`](./is-valid) - Check if value can be converted to address
+- [`isValidChecksum(hex)`](./is-valid-checksum) - Verify EIP-55 checksum (case-sensitive)
+
+### Comparisons
+
+- [`equals(a, b)`](./equals) - Check equality
+- [`compare(a, b)`](./compare) - Compare for sorting (-1, 0, 1)
+
+### Contract Addresses
+
+- [`calculateCreateAddress(address, nonce)`](./calculate-create-address) - Calculate CREATE deployment address
+- [`calculateCreate2Address(address, salt, initCode)`](./calculate-create2-address) - Calculate CREATE2 deployment address
+
+### Reference
+
+- [Fundamentals](./fundamentals) - Address derivation, checksumming, and deployment
+- [Usage Patterns](./usage-patterns) - Common patterns and best practices
+- [AddressType](./branded-address) - Type definition and branded type pattern
+- [Variants](./variants) - Additional utilities and variants
+- [WASM](./wasm) - WebAssembly implementation details
+
+### Complete API
+
+<Tabs>
+
+</Tabs>
+
+## Types
+
+<Tabs>
+<Tab title="AddressType">
+
+```zig
+import type { brand } from './brand.js'
+
+export type AddressType = Uint8Array & {
+  readonly [brand]: "Address"
+}
+```
+
+Main branded type. Runtime is `Uint8Array` (20 bytes), TypeScript enforces type safety through Symbol branding.
+
+</Tab>
+<Tab title="AddressLike">
+
+```zig
+type AddressLike =
+  | Uint8Array
+  | AddressType
+  | Address
+  | string
+  | number
+  | bigint
+```
+
+Union type accepting any input that can be coerced to address. Accepted by `Address.from()`.
+
+</Tab>
+<Tab title="Hex Variants">
+
+```zig
+import type { Hex } from 'tevm'
+
+export type Checksummed = Hex.Sized<20> & {
+  readonly __variant: 'Address'
+  readonly __checksummed: true
+}
+
+export type Lowercase = Hex.Sized<20> & {
+  readonly __variant: 'Address'
+  readonly __lowercase: true
+}
+
+export type Uppercase = Hex.Sized<20> & {
+  readonly __variant: 'Address'
+  readonly __uppercase: true
+}
+```
+
+Branded hex string types for different address formats. See [variants](./variants) for details.
+
+</Tab>
+</Tabs>
+
+## Constants
+
+```zig
+Address.SIZE      // 20 - Address size in bytes
+Address.HEX_SIZE  // 42 - Hex string length with "0x" prefix (2 + 40 characters)
+
+// ERC-7528: Native asset address constant
+Address.NATIVE_ASSET_ADDRESS  // "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+```
+
+### NATIVE_ASSET_ADDRESS (ERC-7528)
+
+```zig
+const NATIVE_ASSET_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+```
+
+Standard address representing native ETH in token-related operations, as defined in [ERC-7528](https://eips.ethereum.org/EIPS/eip-7528).
+
+**Use cases:**
+- Representing ETH in token lists alongside ERC-20 tokens
+- Multicall operations mixing ETH and token transfers
+- DEX interfaces treating ETH as a "token"
+
+**Example:**
+
+```zig
+import { NATIVE_ASSET_ADDRESS } from '@tevm/voltaire/Address';
+
+// Check if address is native ETH
+function isNativeAsset(tokenAddress: string): boolean {
+  return tokenAddress.toLowerCase() === NATIVE_ASSET_ADDRESS.toLowerCase();
+}
+
+// Handle token or ETH transfer
+async function transfer(token: string, to: string, amount: bigint) {
+  if (isNativeAsset(token)) {
+    // Send ETH
+    await sendTransaction({ to, value: amount });
+  } else {
+    // Send ERC-20
+    await erc20.transfer(to, amount);
+  }
+}
+```
+
+## Usage Patterns
+
+### Validating User Input
+
+```zig
+// Safe parsing with validation
+function parseUserAddress(input: string): Address {
+  if (!Address.isValid(input)) {
+    throw new Error("Invalid address format");
+  }
+
+  const addr = Address(input);
+
+  // Optionally verify checksum if provided
+  if (Address.isValidChecksum(input) === false) {
+    console.warn("Checksum mismatch - possible typo");
+  }
+
+  return addr;
+}
+
+// Usage
+try {
+  const addr = parseUserAddress("0x742d35Cc...");
+  console.log(`Valid address: ${addr.toChecksummed()}`);
+} catch (e) {
+  console.error("Invalid address");
+}
+```
+
+### Sorting and Deduplicating
+
+```zig
+// Sort addresses for consistent ordering
+const addresses = [
+  Address("0xCCCC..."),
+  Address("0xAAAA..."),
+  Address("0xBBBB..."),
+];
+
+const sorted = Address.sortAddresses(addresses);
+console.log(sorted.map(a => a.toHex()));
+// ["0xaaaa...", "0xbbbb...", "0xcccc..."]
+
+// Remove duplicates
+const unique = Address.deduplicateAddresses([addr1, addr2, addr1]);
+console.log(unique.length); // 2
+```
+
+### Predicting Contract Addresses
+
+```zig
+// Predict CREATE2 address before deployment
+const factory = Address("0x...");
+const salt = Bytes32();
+const initCode = compileContract(); // bytecode
+
+// Calculate address deterministically
+const predictedAddress = factory.calculateCreate2Address(salt, initCode);
+
+// Deploy contract
+await deployer.deploy(initCode, salt);
+
+// Verify prediction
+const deployedAddress = await getDeployedAddress();
+console.log(predictedAddress.equals(deployedAddress)); // true
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```zig
+// Import specific functions (tree-shakeable)
+import { fromHex, toChecksummed, equals } from 'tevm/Address';
+
+const addr = fromHex("0x742d35cc...");
+const checksummed = toChecksummed(addr);
+const isEqual = equals(addr, addr2);
+
+// Only these 3 functions included in bundle
+// Unused functions (calculateCreateAddress, fromPublicKey, etc.) excluded
+```
+
+<Tip title="Bundle Impact">
+Importing from `tevm/Address` instead of the main entry point enables tree-shaking. For example, if you only need `fromHex` and `toChecksummed`, contract address calculation and public key derivation are excluded from your bundle.
+</Tip>
+
+## Related
+
+- [Keccak256](/crypto/keccak256) - Keccak256 hashing for address derivation and verification
+- [Bytes](/primitives/bytes) - Fixed-size byte types including Bytes32 for salts
+- [Uint](/primitives/uint) - Unsigned integer types for address arithmetic
+
+{/* Removed interactive editor for release */}
+
+## Specification References
+
+- [EIP-55](https://eips.ethereum.org/EIPS/eip-55) - Mixed-case checksum address encoding
+- [EIP-1014](https://eips.ethereum.org/EIPS/eip-1014) - CREATE2 opcode and deterministic addresses
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Address derivation (Section 7)
+- [Account Model](https://ethereum.org/en/developers/docs/accounts/) - EOA vs Contract accounts
