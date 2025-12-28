@@ -18,9 +18,10 @@ describe("Voltaire MCP Evaluations", () => {
 	});
 
 	describe("Blockchain Data Challenges", () => {
-		it(
-			"should find the block hash where the first CryptoPunk was minted",
-			async () => {
+    it(
+            "should find the block hash where the first CryptoPunk was minted",
+            { timeout: 6 * 60 * 1000 },
+            async () => {
 				const result = await runClaudeEval({
 					prompt: `Find the block hash where the first CryptoPunk NFT was minted.
 
@@ -42,13 +43,13 @@ Return the block hash in your final message as: ANSWER: 0x...`,
 				expect(result.scriptOutput?.toLowerCase()).toBe(
 					EXPECTED_ANSWERS.cryptopunksFirstMint.blockHash.toLowerCase(),
 				);
-			},
-			{ timeout: 6 * 60 * 1000 }, // 6 minute test timeout
-		);
+            },
+        );
 
-		it(
-			"should find the block number where Uniswap V2 Factory was deployed",
-			async () => {
+        it(
+            "should find the block number where Uniswap V2 Factory was deployed",
+            { timeout: 6 * 60 * 1000 },
+            async () => {
 				const result = await runClaudeEval({
 					prompt: `Find the block number where the Uniswap V2 Factory contract was deployed.
 
@@ -68,13 +69,13 @@ Return the block number in your final message as: ANSWER: <block_number>`,
 				// Parse and verify block number
 				const blockNumber = Number.parseInt(result.scriptOutput || "", 10);
 				expect(blockNumber).toBe(EXPECTED_ANSWERS.uniswapV2Deploy.blockNumber);
-			},
-			{ timeout: 6 * 60 * 1000 },
-		);
+            },
+        );
 
-		it(
-			"should find Vitalik's first transaction on mainnet",
-			async () => {
+        it(
+            "should find Vitalik's first transaction on mainnet",
+            { timeout: 6 * 60 * 1000 },
+            async () => {
 				const result = await runClaudeEval({
 					prompt: `Find the transaction hash of Vitalik Buterin's first transaction on Ethereum mainnet.
 
@@ -94,13 +95,13 @@ Return the transaction hash in your final message as: ANSWER: 0x...`,
 				expect(result.scriptOutput?.toLowerCase()).toBe(
 					EXPECTED_ANSWERS.vitalikFirstTx.transactionHash.toLowerCase(),
 				);
-			},
-			{ timeout: 6 * 60 * 1000 },
-		);
+            },
+        );
 
-		it(
-			"should calculate total ETH burned in a block range (EIP-1559)",
-			async () => {
+        it(
+            "should calculate total ETH burned in a block range (EIP-1559)",
+            { timeout: 11 * 60 * 1000 },
+            async () => {
 				const { startBlock, endBlock, totalBurned } =
 					EXPECTED_ANSWERS.ethBurnedRange;
 
@@ -126,13 +127,13 @@ Return the total in your final message as: ANSWER: <eth_amount>`,
 				const burned = Number.parseFloat(result.scriptOutput || "0");
 				const expected = Number.parseFloat(totalBurned);
 				expect(Math.abs(burned - expected)).toBeLessThan(0.000001); // 1 wei tolerance
-			},
-			{ timeout: 11 * 60 * 1000 },
-		);
+            },
+        );
 
-		it(
-			"should find the owner of a specific NFT at a specific block",
-			async () => {
+        it(
+            "should find the owner of a specific NFT at a specific block",
+            { timeout: 6 * 60 * 1000 },
+            async () => {
 				const { tokenId, blockNumber, owner } = EXPECTED_ANSWERS.boredApeOwner;
 				const BAYC_CONTRACT = "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D";
 
@@ -153,13 +154,13 @@ Return the owner address in your final message as: ANSWER: 0x...`,
 				expect(result.scriptOutput).toBeDefined();
 
 				expect(result.scriptOutput?.toLowerCase()).toBe(owner.toLowerCase());
-			},
-			{ timeout: 6 * 60 * 1000 },
-		);
+            },
+        );
 
-		it(
-			"should find the first ENS name ever registered",
-			async () => {
+        it(
+            "should find the first ENS name ever registered",
+            { timeout: 11 * 60 * 1000 },
+            async () => {
 				const { ensName } = EXPECTED_ANSWERS.firstENSRegistration;
 
 				const result = await runClaudeEval({
@@ -179,15 +180,15 @@ Return the ENS name in your final message as: ANSWER: <name>.eth`,
 				expect(result.scriptOutput).toBeDefined();
 
 				expect(result.scriptOutput?.toLowerCase()).toBe(ensName.toLowerCase());
-			},
-			{ timeout: 11 * 60 * 1000 },
-		);
+            },
+        );
 	});
 
 	describe("Crypto & Primitives Challenges", () => {
-		it(
-			"should verify a secp256k1 signature using Voltaire",
-			async () => {
+        it(
+            "should verify a secp256k1 signature using Voltaire",
+            { timeout: 4 * 60 * 1000 },
+            async () => {
 				const message = "Hello Voltaire!";
 				const signature =
 					"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef00";
@@ -213,13 +214,13 @@ Return "valid" or "invalid" in your final message as: ANSWER: <valid|invalid>`,
 				expect(["valid", "invalid"]).toContain(
 					result.scriptOutput?.toLowerCase(),
 				);
-			},
-			{ timeout: 4 * 60 * 1000 },
-		);
+            },
+        );
 
-		it(
-			"should compute keccak256 hash using Voltaire",
-			async () => {
+        it(
+            "should compute keccak256 hash using Voltaire",
+            { timeout: 4 * 60 * 1000 },
+            async () => {
 				const input = "0x1234567890abcdef";
 				// Expected hash of the input (precomputed)
 				const expectedHash =
@@ -240,13 +241,13 @@ Return the hash in your final message as: ANSWER: 0x...`,
 				expect(result.scriptOutput?.toLowerCase()).toBe(
 					expectedHash.toLowerCase(),
 				);
-			},
-			{ timeout: 4 * 60 * 1000 },
-		);
+            },
+        );
 
-		it(
-			"should convert between Hex and Address using Voltaire",
-			async () => {
+        it(
+            "should convert between Hex and Address using Voltaire",
+            { timeout: 4 * 60 * 1000 },
+            async () => {
 				const hexValue = "0x1234567890123456789012345678901234567890";
 
 				const result = await runClaudeEval({
@@ -263,8 +264,7 @@ Return the checksummed address in your final message as: ANSWER: 0x...`,
 				expect(result.scriptOutput).toBeDefined();
 				// Should return a valid checksummed address
 				expect(result.scriptOutput).toMatch(/^0x[a-fA-F0-9]{40}$/);
-			},
-			{ timeout: 4 * 60 * 1000 },
-		);
+            },
+        );
 	});
 });
