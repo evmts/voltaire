@@ -100,5 +100,6 @@ Before creating any commits:
 2. Ensure build artifacts and temporary files are properly filtered
 3. Check that test files are not mixed with production code changes
 4. Confirm that each commit represents a logical, atomic change
+5. **NEVER commit submodule changes** without explicit user direction - always skip files in submodule directories (lib/, vendor/)
 
 Arguments: $ARGUMENTS
