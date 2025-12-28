@@ -18,9 +18,12 @@ import {
 	pointEvaluation,
 } from "../evm/precompiles/precompiles.js";
 import { Address } from "../primitives/Address/index.js";
+import * as Hex from "../primitives/Hex/index.js";
 import * as Hardfork from "../primitives/Hardfork/index.js";
 import * as Rlp from "../primitives/Rlp/index.js";
 import * as Signature from "../primitives/Signature/index.js";
+
+const equalBytes = (a: Uint8Array, b: Uint8Array) => Hex.fromBytes(a) === Hex.fromBytes(b);
 
 /**
  * Comprehensive Integration Tests: Cross-Module Workflows
@@ -83,9 +86,7 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			// 5. Verify recovered address matches signer
 			const recoveredAddress = recoverResult.output.slice(12);
-			expect(
-				Buffer.from(recoveredAddress).equals(Buffer.from(signerAddress)),
-			).toBe(true);
+			expect(equalBytes(recoveredAddress, signerAddress)).toBe(true);
 
 			// 6. Verify signature with crypto module
 			const isValidSig = Secp256k1.verify(sig, txHash, publicKey);
@@ -192,9 +193,7 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			// 7. Verify address derivation matches
 			const derivedAddress = Address.fromPrivateKey(privateKey);
-			expect(
-				Buffer.from(signerAddress).equals(Buffer.from(derivedAddress)),
-			).toBe(true);
+			expect(equalBytes(signerAddress, derivedAddress)).toBe(true);
 		});
 
 		it("should handle different domain separators correctly", () => {
@@ -238,7 +237,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			const hash2 = EIP712.hashTypedData(typedData2);
 
 			// Different domains should produce different hashes
-			expect(Buffer.from(hash1).equals(Buffer.from(hash2))).toBe(false);
+			expect(equalBytes(hash1, hash2)).toBe(false);
 		});
 
 		it("should maintain hash consistency for same typed data", () => {
@@ -261,7 +260,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			const hash1 = EIP712.hashTypedData(typedData);
 			const hash2 = EIP712.hashTypedData(typedData);
 
-			expect(Buffer.from(hash1).equals(Buffer.from(hash2))).toBe(true);
+			expect(equalBytes(hash1, hash2)).toBe(true);
 		});
 	});
 
@@ -288,7 +287,7 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			// 3. Commitments should be deterministic for same blob
 			const commitment2 = Kzg.KZG.Commitment(blob);
-			expect(Buffer.from(commitment).equals(Buffer.from(commitment2))).toBe(
+			expect(equalBytes(commitment, commitment2)).toBe(
 				true,
 			);
 		});
@@ -346,12 +345,12 @@ describe("Integration: Cross-Module Workflows", () => {
 			const { proof: proof2, y: y2 } = Kzg.KZG.Proof(blob, z2);
 
 			// Proofs should be different for different evaluation points
-			expect(Buffer.from(proof1).equals(Buffer.from(proof2))).toBe(false);
-			expect(Buffer.from(y1).equals(Buffer.from(y2))).toBe(false);
+			expect(equalBytes(proof1, proof2)).toBe(false);
+			expect(equalBytes(y1, y2)).toBe(false);
 
 			// But commitment should be the same
 			const commitment2 = Kzg.KZG.Commitment(blob);
-			expect(Buffer.from(commitment).equals(Buffer.from(commitment2))).toBe(
+			expect(equalBytes(commitment, commitment2)).toBe(
 				true,
 			);
 		});
@@ -402,9 +401,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			// 6. Verify address derivation
 			const signerAddress = Keccak256.hash(publicKey).slice(-20);
 			const derivedAddress = Address.fromPrivateKey(privateKey);
-			expect(
-				Buffer.from(signerAddress).equals(Buffer.from(derivedAddress)),
-			).toBe(true);
+			expect(equalBytes(signerAddress, derivedAddress)).toBe(true);
 
 			// 7. Verify with ecrecover precompile
 			const recoverInput = new Uint8Array(128);
@@ -415,11 +412,9 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			const recoverResult = ecrecover(recoverInput, 10000n);
 			expect(recoverResult.success).toBe(true);
-			expect(
-				Buffer.from(recoverResult.output.slice(12)).equals(
-					Buffer.from(signerAddress),
-				),
-			).toBe(true);
+			expect(equalBytes(recoverResult.output.slice(12), signerAddress)).toBe(
+				true,
+			);
 		});
 
 		it("should deserialize and re-encode transaction consistently", () => {
@@ -444,7 +439,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			const hash2 = Keccak256.hash(encoded2);
 
 			// Hashes should match
-			expect(Buffer.from(hash1).equals(Buffer.from(hash2))).toBe(true);
+			expect(equalBytes(hash1, hash2)).toBe(true);
 		});
 
 		it("should handle transaction with data payload", () => {
@@ -503,9 +498,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			// 5. Verify with Address.fromPrivateKey
 			const derivedAddress = Address.fromPrivateKey(privateKey);
 
-			expect(
-				Buffer.from(manualAddress).equals(Buffer.from(derivedAddress)),
-			).toBe(true);
+			expect(equalBytes(manualAddress, derivedAddress)).toBe(true);
 
 			// 6. Verify address format
 			expect(derivedAddress.length).toBe(20);
@@ -538,7 +531,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			for (let i = 0; i < addresses.length; i++) {
 				for (let j = i + 1; j < addresses.length; j++) {
 					expect(
-						Buffer.from(addresses[i]).equals(Buffer.from(addresses[j])),
+						equalBytes(addresses[i], addresses[j]),
 					).toBe(false);
 				}
 			}
@@ -552,7 +545,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			const addr1 = Address.fromPrivateKey(privateKey);
 			const addr2 = Address.fromPrivateKey(privateKey);
 
-			expect(Buffer.from(addr1).equals(Buffer.from(addr2))).toBe(true);
+			expect(equalBytes(addr1, addr2)).toBe(true);
 		});
 	});
 
@@ -582,7 +575,7 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			// Re-encode and compare hash
 			const encoded2 = Rlp.encodeArray(txData);
-			expect(Buffer.from(encoded).equals(Buffer.from(encoded2))).toBe(true);
+			expect(equalBytes(encoded, encoded2)).toBe(true);
 		});
 
 		it("should hash RLP-encoded data consistently", () => {
@@ -598,7 +591,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			const encoded2 = Rlp.encodeArray(data);
 			const hash2 = Keccak256.hash(encoded2);
 
-			expect(Buffer.from(hash1).equals(Buffer.from(hash2))).toBe(true);
+			expect(equalBytes(hash1, hash2)).toBe(true);
 		});
 
 		it("should handle nested RLP structures", () => {
@@ -618,7 +611,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			const hash1 = Keccak256.hash(encoded);
 			const hash2 = Keccak256.hash(encoded2);
 
-			expect(Buffer.from(hash1).equals(Buffer.from(hash2))).toBe(true);
+			expect(equalBytes(hash1, hash2)).toBe(true);
 		});
 
 		it("should encode different data to different RLP values", () => {
@@ -628,7 +621,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			const encoded1 = Rlp.encodeArray(data1);
 			const encoded2 = Rlp.encodeArray(data2);
 
-			expect(Buffer.from(encoded1).equals(Buffer.from(encoded2))).toBe(false);
+			expect(equalBytes(encoded1, encoded2)).toBe(false);
 		});
 	});
 
@@ -853,9 +846,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			);
 
 			expect(precompileResult.success).toBe(true);
-			expect(
-				Buffer.from(precompileResult.output).equals(Buffer.from(cryptoHash)),
-			).toBe(true);
+			expect(equalBytes(precompileResult.output, cryptoHash)).toBe(true);
 		});
 
 		it("should produce consistent RIPEMD160 hashes", () => {
@@ -874,11 +865,9 @@ describe("Integration: Cross-Module Workflows", () => {
 			);
 
 			expect(precompileResult.success).toBe(true);
-			expect(
-				Buffer.from(precompileResult.output.slice(12)).equals(
-					Buffer.from(cryptoHash),
-				),
-			).toBe(true);
+			expect(equalBytes(precompileResult.output.slice(12), cryptoHash)).toBe(
+				true,
+			);
 		});
 
 		it("should verify Keccak256 consistency", () => {
@@ -892,7 +881,7 @@ describe("Integration: Cross-Module Workflows", () => {
 				const hash1 = Keccak256.hash(input);
 				const hash2 = Keccak256.hash(input);
 
-				expect(Buffer.from(hash1).equals(Buffer.from(hash2))).toBe(true);
+			expect(equalBytes(hash1, hash2)).toBe(true);
 				expect(hash1.length).toBe(32);
 			}
 		});
@@ -1046,9 +1035,7 @@ describe("Integration: Cross-Module Workflows", () => {
 
 			// 7. Verify signer address matches derived address
 			const signerAddress = Keccak256.hash(publicKey).slice(-20);
-			expect(Buffer.from(address).equals(Buffer.from(signerAddress))).toBe(
-				true,
-			);
+			expect(equalBytes(address, signerAddress)).toBe(true);
 		});
 	});
 
@@ -1127,7 +1114,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			const result = identity(data, 1000n);
 
 			expect(result.success).toBe(true);
-			expect(Buffer.from(result.output).equals(Buffer.from(data))).toBe(true);
+			expect(equalBytes(result.output, data)).toBe(true);
 		});
 
 		it("should pass large data unchanged", () => {
@@ -1137,7 +1124,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			const result = identity(data, 100000n);
 
 			expect(result.success).toBe(true);
-			expect(Buffer.from(result.output).equals(Buffer.from(data))).toBe(true);
+			expect(equalBytes(result.output, data)).toBe(true);
 			expect(result.output.length).toBe(data.length);
 		});
 

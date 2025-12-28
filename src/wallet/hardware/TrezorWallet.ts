@@ -125,22 +125,24 @@ export class TrezorWallet implements HardwareWallet {
 
 		// Convert Transaction to Trezor format
 		const trezorTx: any = {
-			to: tx.to ? Hex.toString(tx.to) : undefined,
-			value: tx.value ? Hex.toString(tx.value) : "0x0",
+			to: tx.to ? Hex.fromBytes(tx.to) : undefined,
+			value: tx.value ? Hex.fromBigInt(tx.value) : "0x0",
 			gasPrice:
-				"gasPrice" in tx && tx.gasPrice ? Hex.toString(tx.gasPrice) : undefined,
-			gasLimit: tx.gasLimit ? Hex.toString(tx.gasLimit) : undefined,
-			nonce: tx.nonce ? Hex.toString(tx.nonce) : undefined,
-			data: tx.data ? Hex.toString(tx.data) : undefined,
+				"gasPrice" in tx && tx.gasPrice
+					? Hex.fromBigInt(tx.gasPrice)
+					: undefined,
+			gasLimit: tx.gasLimit ? Hex.fromBigInt(tx.gasLimit) : undefined,
+			nonce: tx.nonce ? Hex.fromBigInt(tx.nonce) : undefined,
+			data: tx.data ? Hex.fromBytes(tx.data) : undefined,
 			chainId: "chainId" in tx ? tx.chainId : 1,
 		};
 
 		// EIP-1559 fields
 		if ("maxFeePerGas" in tx && tx.maxFeePerGas) {
-			trezorTx.maxFeePerGas = Hex.toString(tx.maxFeePerGas);
+			trezorTx.maxFeePerGas = Hex.fromBigInt(tx.maxFeePerGas);
 		}
 		if ("maxPriorityFeePerGas" in tx && tx.maxPriorityFeePerGas) {
-			trezorTx.maxPriorityFeePerGas = Hex.toString(tx.maxPriorityFeePerGas);
+			trezorTx.maxPriorityFeePerGas = Hex.fromBigInt(tx.maxPriorityFeePerGas);
 		}
 
 		const result = await this.TrezorConnect.ethereumSignTransaction({
@@ -170,6 +172,7 @@ export class TrezorWallet implements HardwareWallet {
 			"../../primitives/Signature/index.js"
 		);
 		const Hash = await import("../../primitives/Hash/index.js");
+		const Hex = await import("../../primitives/Hex/index.js");
 
 		const result = await this.TrezorConnect.ethereumSignTypedData({
 			path,
@@ -181,7 +184,7 @@ export class TrezorWallet implements HardwareWallet {
 			throw new Error(result.payload.error);
 		}
 
-		const sigBytes = Buffer.from(result.payload.signature.slice(2), "hex");
+		const sigBytes = Hex.toBytes(result.payload.signature as string);
 		const r = Hash.fromBytes(sigBytes.slice(0, 32));
 		const s = Hash.fromBytes(sigBytes.slice(32, 64));
 		const v = sigBytes[64];
@@ -196,10 +199,11 @@ export class TrezorWallet implements HardwareWallet {
 			"../../primitives/Signature/index.js"
 		);
 		const Hash = await import("../../primitives/Hash/index.js");
+		const Hex = await import("../../primitives/Hex/index.js");
 
 		const result = await this.TrezorConnect.ethereumSignMessage({
 			path,
-			message: Buffer.from(message).toString("hex"),
+			message: Hex.fromBytes(message).slice(2),
 			hex: true,
 		});
 
@@ -207,7 +211,7 @@ export class TrezorWallet implements HardwareWallet {
 			throw new Error(result.payload.error);
 		}
 
-		const sigBytes = Buffer.from(result.payload.signature.slice(2), "hex");
+		const sigBytes = Hex.toBytes(result.payload.signature as string);
 		const r = Hash.fromBytes(sigBytes.slice(0, 32));
 		const s = Hash.fromBytes(sigBytes.slice(32, 64));
 		const v = sigBytes[64];

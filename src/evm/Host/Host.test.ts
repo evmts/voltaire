@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { from as addressFrom } from "../../primitives/Address/from.js";
+import * as Hex from "../../primitives/Hex/index.js";
 import { Host } from "./index.js";
 
 describe("Host", () => {
@@ -13,29 +14,29 @@ describe("Host", () => {
 
 			const host = Host.from({
 				getBalance: (addr) => {
-					const key = Buffer.from(addr).toString("hex");
+					const key = Hex.fromBytes(addr).slice(2);
 					return balances.get(key) ?? 0n;
 				},
 				setBalance: (addr, balance) => {
-					const key = Buffer.from(addr).toString("hex");
+					const key = Hex.fromBytes(addr).slice(2);
 					balances.set(key, balance);
 				},
 				getCode: (addr) => {
-					const key = Buffer.from(addr).toString("hex");
+					const key = Hex.fromBytes(addr).slice(2);
 					return codes.get(key) ?? new Uint8Array(0);
 				},
 				setCode: (addr, code) => {
-					const key = Buffer.from(addr).toString("hex");
+					const key = Hex.fromBytes(addr).slice(2);
 					codes.set(key, code);
 				},
 				getStorage: (addr, slot) => {
-					const key = Buffer.from(addr).toString("hex");
+					const key = Hex.fromBytes(addr).slice(2);
 					const addrStorage = storage.get(key);
 					if (!addrStorage) return 0n;
 					return addrStorage.get(slot.toString(16)) ?? 0n;
 				},
 				setStorage: (addr, slot, value) => {
-					const key = Buffer.from(addr).toString("hex");
+					const key = Hex.fromBytes(addr).slice(2);
 					let addrStorage = storage.get(key);
 					if (!addrStorage) {
 						addrStorage = new Map();
@@ -44,21 +45,21 @@ describe("Host", () => {
 					addrStorage.set(slot.toString(16), value);
 				},
 				getNonce: (addr) => {
-					const key = Buffer.from(addr).toString("hex");
+					const key = Hex.fromBytes(addr).slice(2);
 					return nonces.get(key) ?? 0n;
 				},
 				setNonce: (addr, nonce) => {
-					const key = Buffer.from(addr).toString("hex");
+					const key = Hex.fromBytes(addr).slice(2);
 					nonces.set(key, nonce);
 				},
 				getTransientStorage: (addr, slot) => {
-					const key = Buffer.from(addr).toString("hex");
+					const key = Hex.fromBytes(addr).slice(2);
 					const addrStorage = transientStorage.get(key);
 					if (!addrStorage) return 0n;
 					return addrStorage.get(slot.toString(16)) ?? 0n;
 				},
 				setTransientStorage: (addr, slot, value) => {
-					const key = Buffer.from(addr).toString("hex");
+					const key = Hex.fromBytes(addr).slice(2);
 					let addrStorage = transientStorage.get(key);
 					if (!addrStorage) {
 						addrStorage = new Map();
@@ -85,52 +86,52 @@ describe("Host", () => {
 
 			const host = Host.from({
 				getBalance: (addr) => {
-					logs.push(`getBalance: ${Buffer.from(addr).toString("hex")}`);
+					logs.push(`getBalance: ${Hex.fromBytes(addr).slice(2)}`);
 					return 0n;
 				},
 				setBalance: (addr, balance) => {
 					logs.push(
-						`setBalance: ${Buffer.from(addr).toString("hex")} = ${balance}`,
+						`setBalance: ${Hex.fromBytes(addr).slice(2)} = ${balance}`,
 					);
 				},
 				getCode: (addr) => {
-					logs.push(`getCode: ${Buffer.from(addr).toString("hex")}`);
+					logs.push(`getCode: ${Hex.fromBytes(addr).slice(2)}`);
 					return new Uint8Array(0);
 				},
 				setCode: (addr, code) => {
 					logs.push(
-						`setCode: ${Buffer.from(addr).toString("hex")} (${code.length} bytes)`,
+						`setCode: ${Hex.fromBytes(addr).slice(2)} (${code.length} bytes)`,
 					);
 				},
 				getStorage: (addr, slot) => {
 					logs.push(
-						`getStorage: ${Buffer.from(addr).toString("hex")} [${slot}]`,
+						`getStorage: ${Hex.fromBytes(addr).slice(2)} [${slot}]`,
 					);
 					return 0n;
 				},
 				setStorage: (addr, slot, value) => {
 					logs.push(
-						`setStorage: ${Buffer.from(addr).toString("hex")} [${slot}] = ${value}`,
+						`setStorage: ${Hex.fromBytes(addr).slice(2)} [${slot}] = ${value}`,
 					);
 				},
 				getNonce: (addr) => {
-					logs.push(`getNonce: ${Buffer.from(addr).toString("hex")}`);
+					logs.push(`getNonce: ${Hex.fromBytes(addr).slice(2)}`);
 					return 0n;
 				},
 				setNonce: (addr, nonce) => {
 					logs.push(
-						`setNonce: ${Buffer.from(addr).toString("hex")} = ${nonce}`,
+						`setNonce: ${Hex.fromBytes(addr).slice(2)} = ${nonce}`,
 					);
 				},
 				getTransientStorage: (addr, slot) => {
 					logs.push(
-						`getTransientStorage: ${Buffer.from(addr).toString("hex")} [${slot}]`,
+						`getTransientStorage: ${Hex.fromBytes(addr).slice(2)} [${slot}]`,
 					);
 					return 0n;
 				},
 				setTransientStorage: (addr, slot, value) => {
 					logs.push(
-						`setTransientStorage: ${Buffer.from(addr).toString("hex")} [${slot}] = ${value}`,
+						`setTransientStorage: ${Hex.fromBytes(addr).slice(2)} [${slot}] = ${value}`,
 					);
 				},
 			});

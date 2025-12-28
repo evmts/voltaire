@@ -1,4 +1,5 @@
 import { from } from "./from.js";
+import * as Hex from "../../primitives/Hex/index.js";
 
 /**
  * Create an in-memory Host implementation for testing
@@ -28,38 +29,38 @@ export function createMemoryHost() {
 	 * @returns {string} Storage key
 	 */
 	const getStorageKey = (address, slot) =>
-		`${Buffer.from(address).toString("hex")}-${slot.toString(16)}`;
+		`${Hex.fromBytes(address).slice(2)}-${slot.toString(16)}`;
 
 	return from({
 		getBalance: (address) => {
-			const key = Buffer.from(address).toString("hex");
+			const key = Hex.fromBytes(address).slice(2);
 			return balances.get(key) ?? 0n;
 		},
 
 		setBalance: (address, balance) => {
-			const key = Buffer.from(address).toString("hex");
+			const key = Hex.fromBytes(address).slice(2);
 			balances.set(key, balance);
 		},
 
 		getCode: (address) => {
-			const key = Buffer.from(address).toString("hex");
+			const key = Hex.fromBytes(address).slice(2);
 			return codes.get(key) ?? new Uint8Array(0);
 		},
 
 		setCode: (address, code) => {
-			const key = Buffer.from(address).toString("hex");
+			const key = Hex.fromBytes(address).slice(2);
 			codes.set(key, code);
 		},
 
 		getStorage: (address, slot) => {
-			const addrKey = Buffer.from(address).toString("hex");
+			const addrKey = Hex.fromBytes(address).slice(2);
 			const addrStorage = storage.get(addrKey);
 			if (!addrStorage) return 0n;
 			return addrStorage.get(slot.toString(16)) ?? 0n;
 		},
 
 		setStorage: (address, slot, value) => {
-			const addrKey = Buffer.from(address).toString("hex");
+			const addrKey = Hex.fromBytes(address).slice(2);
 			let addrStorage = storage.get(addrKey);
 			if (!addrStorage) {
 				addrStorage = new Map();
@@ -69,18 +70,18 @@ export function createMemoryHost() {
 		},
 
 		getNonce: (address) => {
-			const key = Buffer.from(address).toString("hex");
+			const key = Hex.fromBytes(address).slice(2);
 			return nonces.get(key) ?? 0n;
 		},
 
 		setNonce: (address, nonce) => {
-			const key = Buffer.from(address).toString("hex");
+			const key = Hex.fromBytes(address).slice(2);
 			nonces.set(key, nonce);
 		},
 
 		/** @param {Uint8Array} address @param {bigint} slot */
 		getTransientStorage: (address, slot) => {
-			const addrKey = Buffer.from(address).toString("hex");
+			const addrKey = Hex.fromBytes(address).slice(2);
 			const addrStorage = transientStorage.get(addrKey);
 			if (!addrStorage) return 0n;
 			return addrStorage.get(slot.toString(16)) ?? 0n;
@@ -88,7 +89,7 @@ export function createMemoryHost() {
 
 		/** @param {Uint8Array} address @param {bigint} slot @param {bigint} value */
 		setTransientStorage: (address, slot, value) => {
-			const addrKey = Buffer.from(address).toString("hex");
+			const addrKey = Hex.fromBytes(address).slice(2);
 			let addrStorage = transientStorage.get(addrKey);
 			if (!addrStorage) {
 				addrStorage = new Map();

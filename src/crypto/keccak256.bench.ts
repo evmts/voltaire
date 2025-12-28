@@ -129,7 +129,7 @@ bench("hashString - short - WASM", () => {
 });
 
 bench("hashString - short - ethers", () => {
-	ethersKeccak256(Buffer.from(shortString, "utf-8"));
+	ethersKeccak256(new TextEncoder().encode(shortString));
 });
 
 bench("hashString - short - viem", () => {
@@ -147,7 +147,7 @@ bench("hashString - medium - WASM", () => {
 });
 
 bench("hashString - medium - ethers", () => {
-	ethersKeccak256(Buffer.from(mediumString, "utf-8"));
+	ethersKeccak256(new TextEncoder().encode(mediumString));
 });
 
 bench("hashString - medium - viem", () => {
@@ -165,7 +165,7 @@ bench("hashString - long - WASM", () => {
 });
 
 bench("hashString - long - ethers", () => {
-	ethersKeccak256(Buffer.from(longString, "utf-8"));
+	ethersKeccak256(new TextEncoder().encode(longString));
 });
 
 bench("hashString - long - viem", () => {
@@ -219,7 +219,7 @@ bench("selector - WASM", () => {
 });
 
 bench("selector - ethers", () => {
-	ethersKeccak256(Buffer.from(functionSig, "utf-8")).slice(0, 10);
+	ethersKeccak256(new TextEncoder().encode(functionSig)).slice(0, 10);
 });
 
 bench("selector - viem", () => {
@@ -237,7 +237,7 @@ bench("topic - WASM", () => {
 });
 
 bench("topic - ethers", () => {
-	ethersKeccak256(Buffer.from(eventSig, "utf-8"));
+	ethersKeccak256(new TextEncoder().encode(eventSig));
 });
 
 bench("topic - viem", () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Keccak256 } from "../../crypto/Keccak256/index.js";
 import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
 import { Address } from "../../primitives/Address/index.js";
+import * as Hex from "../../primitives/Hex/index.js";
 import * as Hardfork from "../../primitives/Hardfork/index.js";
 import { PrecompileAddress, ecrecover, execute } from "./precompiles.js";
 
@@ -75,9 +76,9 @@ describe("Precompile: ecRecover (0x01)", () => {
 
 			// Last 20 bytes should match expected address
 			const recoveredAddress = result.output.slice(12);
-			expect(
-				Buffer.from(recoveredAddress).equals(Buffer.from(expectedAddress)),
-			).toBe(true);
+			expect(Hex.fromBytes(recoveredAddress)).toBe(
+				Hex.fromBytes(expectedAddress),
+			);
 		});
 
 		it("should recover address with v=27", () => {
@@ -167,10 +168,8 @@ describe("Precompile: ecRecover (0x01)", () => {
 			const addr1 = result1.output.slice(12);
 			const addr2 = result2.output.slice(12);
 
-			expect(Buffer.from(addr1).equals(Buffer.from(addr2))).toBe(true);
-			expect(Buffer.from(addr1).equals(Buffer.from(expectedAddress))).toBe(
-				true,
-			);
+			expect(Hex.fromBytes(addr1)).toBe(Hex.fromBytes(addr2));
+			expect(Hex.fromBytes(addr1)).toBe(Hex.fromBytes(expectedAddress));
 		});
 	});
 
@@ -465,9 +464,9 @@ describe("Precompile: ecRecover (0x01)", () => {
 			expect(result.gasUsed).toBe(3000n);
 
 			const recoveredAddress = result.output.slice(12);
-			expect(
-				Buffer.from(recoveredAddress).equals(Buffer.from(expectedAddress)),
-			).toBe(true);
+			expect(Hex.fromBytes(recoveredAddress)).toBe(
+				Hex.fromBytes(expectedAddress),
+			);
 		});
 
 		it("should verify signature end-to-end", () => {
@@ -494,9 +493,9 @@ describe("Precompile: ecRecover (0x01)", () => {
 			expect(result.success).toBe(true);
 
 			const recoveredAddress = result.output.slice(12);
-			expect(
-				Buffer.from(recoveredAddress).equals(Buffer.from(expectedAddress)),
-			).toBe(true);
+			expect(Hex.fromBytes(recoveredAddress)).toBe(
+				Hex.fromBytes(expectedAddress),
+			);
 		});
 	});
 });

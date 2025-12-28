@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Keccak256 } from "../../crypto/Keccak256/index.js";
+import * as Hex from "../../primitives/Hex/index.js";
 import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
 import {
 	bn254Add as evmBn254Add,
@@ -49,9 +50,7 @@ describe("Precompiles - core behaviors", () => {
 		expect(res.output.length).toBe(32);
 		// Left 12 bytes zero, last 20 = address
 		expect([...res.output.slice(0, 12)].every((b) => b === 0)).toBe(true);
-		expect(Buffer.from(res.output.slice(12)).equals(Buffer.from(addr))).toBe(
-			true,
-		);
+		expect(Hex.fromBytes(res.output.slice(12))).toBe(Hex.fromBytes(addr));
 	});
 
 	it("sha256 hashes input correctly", () => {
@@ -62,7 +61,7 @@ describe("Precompiles - core behaviors", () => {
 		// Known SHA-256 of "abc"
 		const expected =
 			"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
-		expect(Buffer.from(res.output).toString("hex")).toBe(expected);
+		expect(Hex.fromBytes(res.output).slice(2)).toBe(expected);
 	});
 
 	it("ripemd160 hashes and left-pads to 32 bytes", () => {
@@ -74,16 +73,14 @@ describe("Precompiles - core behaviors", () => {
 		expect([...res.output.slice(0, 12)].every((b) => b === 0)).toBe(true);
 		// Known RIPEMD-160 of "abc": 8eb208f7e05d987a9b044a8e98c6b087f15a0bfc
 		const expectedTail = "8eb208f7e05d987a9b044a8e98c6b087f15a0bfc";
-		expect(Buffer.from(res.output.slice(12)).toString("hex")).toBe(
-			expectedTail,
-		);
+		expect(Hex.fromBytes(res.output.slice(12)).slice(2)).toBe(expectedTail);
 	});
 
 	it("identity returns input bytes", () => {
 		const input = new Uint8Array([1, 2, 3, 4, 5]);
 		const res = evmIdentity(input, 1000n);
 		expect(res.success).toBe(true);
-		expect(Buffer.from(res.output)).toEqual(Buffer.from(input));
+		expect(res.output).toEqual(input);
 	});
 
 	it("modexp computes 2^3 mod 5", () => {

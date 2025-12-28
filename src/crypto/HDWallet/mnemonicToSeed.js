@@ -13,7 +13,7 @@ export async function mnemonicToSeed(mnemonic, password) {
 
 	const mnemonicStr =
 		typeof mnemonic === "string" ? mnemonic : mnemonic.join(" ");
-	const seed = Buffer.alloc(64);
+	const seed = new Uint8Array(64);
 
 	const result = libwally.hdwallet_mnemonic_to_seed(
 		mnemonicStr,

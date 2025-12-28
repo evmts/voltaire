@@ -107,21 +107,21 @@ let nativeModule: NativeModule | null = null;
  * @throws Error if library cannot be loaded
  */
 export function loadNodeNative(): NativeModule {
-	if (nativeModule) return nativeModule;
+    if (nativeModule) return nativeModule;
 
-	try {
-		const libPath = getNativeLibPath();
+    try {
+        const libPath = getNativeLibPath();
 
 		// Use dynamic require to load native addon
 		// eslint-disable-next-line @typescript-eslint/no-var-requires
-		nativeModule = require(libPath) as NativeModule;
+        nativeModule = require(libPath) as NativeModule;
 
-		return nativeModule;
-	} catch (error) {
-		throw new Error(
-			`Failed to load native library with Node-API: ${error instanceof Error ? error.message : String(error)}`,
-		);
-	}
+        return nativeModule;
+    } catch (error) {
+        throw new Error(
+            `Failed to load native library with Node-API: ${error instanceof Error ? error.message : String(error)}. Node.js native FFI is not shipped yet — use the regular TypeScript API or WASM modules in Node.`,
+        );
+    }
 }
 
 /**

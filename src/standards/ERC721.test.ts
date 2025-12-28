@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hash as keccak256 } from "../crypto/Keccak256/hash.js";
 import { Address } from "../primitives/Address/index.js";
+import * as Hex from "../primitives/Hex/index.js";
 import * as Uint256 from "../primitives/Uint/index.js";
 import * as ERC721 from "./ERC721.js";
 
@@ -9,105 +10,105 @@ describe("ERC721", () => {
 		it("has correct balanceOf selector", () => {
 			const sig = "balanceOf(address)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.balanceOf).toBe(selector);
 		});
 
 		it("has correct ownerOf selector", () => {
 			const sig = "ownerOf(uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.ownerOf).toBe(selector);
 		});
 
 		it("has correct safeTransferFrom selector", () => {
 			const sig = "safeTransferFrom(address,address,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.safeTransferFrom).toBe(selector);
 		});
 
 		it("has correct safeTransferFromWithData selector", () => {
 			const sig = "safeTransferFrom(address,address,uint256,bytes)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.safeTransferFromWithData).toBe(selector);
 		});
 
 		it("has correct transferFrom selector", () => {
 			const sig = "transferFrom(address,address,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.transferFrom).toBe(selector);
 		});
 
 		it("has correct approve selector", () => {
 			const sig = "approve(address,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.approve).toBe(selector);
 		});
 
 		it("has correct setApprovalForAll selector", () => {
 			const sig = "setApprovalForAll(address,bool)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.setApprovalForAll).toBe(selector);
 		});
 
 		it("has correct getApproved selector", () => {
 			const sig = "getApproved(uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.getApproved).toBe(selector);
 		});
 
 		it("has correct isApprovedForAll selector", () => {
 			const sig = "isApprovedForAll(address,address)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.isApprovedForAll).toBe(selector);
 		});
 
 		it("has correct name selector (Metadata)", () => {
 			const sig = "name()";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.name).toBe(selector);
 		});
 
 		it("has correct symbol selector (Metadata)", () => {
 			const sig = "symbol()";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.symbol).toBe(selector);
 		});
 
 		it("has correct tokenURI selector (Metadata)", () => {
 			const sig = "tokenURI(uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.tokenURI).toBe(selector);
 		});
 
 		it("has correct totalSupply selector (Enumerable)", () => {
 			const sig = "totalSupply()";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.totalSupply).toBe(selector);
 		});
 
 		it("has correct tokenOfOwnerByIndex selector (Enumerable)", () => {
 			const sig = "tokenOfOwnerByIndex(address,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.tokenOfOwnerByIndex).toBe(selector);
 		});
 
 		it("has correct tokenByIndex selector (Enumerable)", () => {
 			const sig = "tokenByIndex(uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC721.SELECTORS.tokenByIndex).toBe(selector);
 		});
 	});
@@ -116,21 +117,21 @@ describe("ERC721", () => {
 		it("has correct Transfer event signature", () => {
 			const sig = "Transfer(address,address,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const eventSig = `0x${Buffer.from(hash).toString("hex")}`;
+			const eventSig = Hex.fromBytes(hash);
 			expect(ERC721.EVENTS.Transfer).toBe(eventSig);
 		});
 
 		it("has correct Approval event signature", () => {
 			const sig = "Approval(address,address,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const eventSig = `0x${Buffer.from(hash).toString("hex")}`;
+			const eventSig = Hex.fromBytes(hash);
 			expect(ERC721.EVENTS.Approval).toBe(eventSig);
 		});
 
 		it("has correct ApprovalForAll event signature", () => {
 			const sig = "ApprovalForAll(address,address,bool)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const eventSig = `0x${Buffer.from(hash).toString("hex")}`;
+			const eventSig = Hex.fromBytes(hash);
 			expect(ERC721.EVENTS.ApprovalForAll).toBe(eventSig);
 		});
 	});

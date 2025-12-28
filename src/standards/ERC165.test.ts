@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { hash as keccak256 } from "../crypto/Keccak256/hash.js";
 import * as ERC165 from "./ERC165.js";
+import * as Hex from "../primitives/Hex/index.js";
 
 describe("ERC165", () => {
 	describe("SELECTOR", () => {
 		it("has correct supportsInterface selector", () => {
 			const sig = "supportsInterface(bytes4)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC165.SELECTOR).toBe(selector);
 		});
 	});

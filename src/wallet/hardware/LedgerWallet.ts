@@ -6,6 +6,7 @@ import type {
 	EIP712TypedData,
 	HardwareWallet,
 } from "./HardwareWallet.js";
+import * as Hex from "../../primitives/Hex/index.js";
 
 /**
  * Ledger hardware wallet implementation
@@ -95,7 +96,7 @@ export class LedgerWallet implements HardwareWallet {
 
 		// Serialize transaction for Ledger
 		const serialized = Transaction.serialize(tx);
-		const hexString = Buffer.from(serialized).toString("hex");
+		const hexString = Hex.fromBytes(serialized).slice(2);
 
 		const result = await this.eth.signTransaction(path, hexString);
 
@@ -143,7 +144,7 @@ export class LedgerWallet implements HardwareWallet {
 		);
 		const Hash = await import("../../primitives/Hash/index.js");
 
-		const hexMessage = Buffer.from(message).toString("hex");
+		const hexMessage = Hex.fromBytes(message).slice(2);
 		const result = await this.eth.signPersonalMessage(path, hexMessage);
 
 		return Signature.from({
@@ -168,11 +169,15 @@ export class LedgerWallet implements HardwareWallet {
 	// Helper methods for EIP-712 hashing
 	private hashDomain(domain: EIP712TypedData["domain"]): string {
 		// Simplified - real implementation would use proper EIP-712 encoding
-		return `0x${Buffer.from(JSON.stringify(domain)).toString("hex")}`;
+		const encoder = new TextEncoder();
+		const bytes = encoder.encode(JSON.stringify(domain));
+		return Hex.fromBytes(bytes);
 	}
 
 	private hashMessage(typedData: EIP712TypedData): string {
 		// Simplified - real implementation would use proper EIP-712 encoding
-		return `0x${Buffer.from(JSON.stringify(typedData.message)).toString("hex")}`;
+		const encoder = new TextEncoder();
+		const bytes = encoder.encode(JSON.stringify(typedData.message));
+		return Hex.fromBytes(bytes);
 	}
 }

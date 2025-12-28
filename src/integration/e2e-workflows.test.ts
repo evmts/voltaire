@@ -212,7 +212,7 @@ describe("E2E Workflows", () => {
 			);
 			const signature = Secp256k1.sign(
 				txHash,
-				Buffer.from(testPrivateKey.slice(2), "hex"),
+				hexToBytes(testPrivateKey),
 			);
 
 			expect(signature.r).toBeDefined();
@@ -284,7 +284,7 @@ describe("E2E Workflows", () => {
 			);
 			const signature = Secp256k1.sign(
 				txHash,
-				Buffer.from(testPrivateKey.slice(2), "hex"),
+				hexToBytes(testPrivateKey),
 			);
 
 			expect(signature).toBeDefined();
@@ -355,7 +355,7 @@ describe("E2E Workflows", () => {
 			);
 			const signature = Secp256k1.sign(
 				txHash,
-				Buffer.from(testPrivateKey.slice(2), "hex"),
+				hexToBytes(testPrivateKey),
 			);
 
 			const txHashResult = await provider.request("eth_sendRawTransaction", [
@@ -541,7 +541,7 @@ describe("E2E Workflows", () => {
 			);
 			const signature = Secp256k1.sign(
 				txHash,
-				Buffer.from(testPrivateKey.slice(2), "hex"),
+				hexToBytes(testPrivateKey),
 			);
 
 			const txHashResult = await provider.request("eth_sendRawTransaction", [
@@ -641,7 +641,7 @@ describe("E2E Workflows", () => {
 			const txHash = keccak256(new TextEncoder().encode(JSON.stringify(tx)));
 			const signature = Secp256k1.sign(
 				txHash,
-				Buffer.from(testPrivateKey.slice(2), "hex"),
+				hexToBytes(testPrivateKey),
 			);
 
 			const txHashResult = await provider.request("eth_sendRawTransaction", [
@@ -786,7 +786,7 @@ describe("E2E Workflows", () => {
 			const txHash = keccak256(new TextEncoder().encode(JSON.stringify(tx)));
 			const signature = Secp256k1.sign(
 				txHash,
-				Buffer.from(testPrivateKey.slice(2), "hex"),
+				hexToBytes(testPrivateKey),
 			);
 
 			// Transaction should still be created (validation happens on chain)

@@ -10,7 +10,7 @@ import { HDWalletError } from "./errors.js";
 export async function getAddress(node) {
 	const { libwally } = await import("./ffi.js");
 
-	const address = Buffer.alloc(20);
+	const address = new Uint8Array(20);
 	const result = libwally.hdwallet_get_address(node.handle, address);
 
 	if (result !== 0) {

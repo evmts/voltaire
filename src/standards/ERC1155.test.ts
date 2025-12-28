@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hash as keccak256 } from "../crypto/Keccak256/hash.js";
 import { Address } from "../primitives/Address/index.js";
+import * as Hex from "../primitives/Hex/index.js";
 import * as Uint256 from "../primitives/Uint/index.js";
 import * as ERC1155 from "./ERC1155.js";
 
@@ -9,35 +10,35 @@ describe("ERC1155", () => {
 		it("has correct balanceOf selector", () => {
 			const sig = "balanceOf(address,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC1155.SELECTORS.balanceOf).toBe(selector);
 		});
 
 		it("has correct balanceOfBatch selector", () => {
 			const sig = "balanceOfBatch(address[],uint256[])";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC1155.SELECTORS.balanceOfBatch).toBe(selector);
 		});
 
 		it("has correct setApprovalForAll selector", () => {
 			const sig = "setApprovalForAll(address,bool)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC1155.SELECTORS.setApprovalForAll).toBe(selector);
 		});
 
 		it("has correct isApprovedForAll selector", () => {
 			const sig = "isApprovedForAll(address,address)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC1155.SELECTORS.isApprovedForAll).toBe(selector);
 		});
 
 		it("has correct safeTransferFrom selector", () => {
 			const sig = "safeTransferFrom(address,address,uint256,uint256,bytes)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC1155.SELECTORS.safeTransferFrom).toBe(selector);
 		});
 
@@ -45,14 +46,14 @@ describe("ERC1155", () => {
 			const sig =
 				"safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC1155.SELECTORS.safeBatchTransferFrom).toBe(selector);
 		});
 
 		it("has correct uri selector (Metadata)", () => {
 			const sig = "uri(uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC1155.SELECTORS.uri).toBe(selector);
 		});
 	});
@@ -61,28 +62,28 @@ describe("ERC1155", () => {
 		it("has correct TransferSingle event signature", () => {
 			const sig = "TransferSingle(address,address,address,uint256,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const eventSig = `0x${Buffer.from(hash).toString("hex")}`;
+			const eventSig = Hex.fromBytes(hash);
 			expect(ERC1155.EVENTS.TransferSingle).toBe(eventSig);
 		});
 
 		it("has correct TransferBatch event signature", () => {
 			const sig = "TransferBatch(address,address,address,uint256[],uint256[])";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const eventSig = `0x${Buffer.from(hash).toString("hex")}`;
+			const eventSig = Hex.fromBytes(hash);
 			expect(ERC1155.EVENTS.TransferBatch).toBe(eventSig);
 		});
 
 		it("has correct ApprovalForAll event signature", () => {
 			const sig = "ApprovalForAll(address,address,bool)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const eventSig = `0x${Buffer.from(hash).toString("hex")}`;
+			const eventSig = Hex.fromBytes(hash);
 			expect(ERC1155.EVENTS.ApprovalForAll).toBe(eventSig);
 		});
 
 		it("has correct URI event signature", () => {
 			const sig = "URI(string,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const eventSig = `0x${Buffer.from(hash).toString("hex")}`;
+			const eventSig = Hex.fromBytes(hash);
 			expect(ERC1155.EVENTS.URI).toBe(eventSig);
 		});
 	});

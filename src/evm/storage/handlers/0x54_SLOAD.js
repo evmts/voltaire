@@ -1,8 +1,6 @@
-import {
-	ColdSload,
-	WarmStorageRead,
-} from "../../../primitives/GasConstants/constants.js";
+import { ColdSload, WarmStorageRead } from "../../../primitives/GasConstants/constants.js";
 import * as Frame from "../../Frame/index.js";
+import * as Hex from "../../../primitives/Hex/index.js";
 
 /**
  * SLOAD (0x54) - Load word from storage
@@ -67,5 +65,5 @@ export function sload(frame, host) {
  * @returns {string}
  */
 function getStorageMapKey(address, slot) {
-	return `${Buffer.from(address).toString("hex")}-${slot.toString(16)}`;
+	return `${Hex.fromBytes(address).slice(2)}-${slot.toString(16)}`;
 }

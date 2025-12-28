@@ -13,12 +13,13 @@ export async function derive(node, path) {
 	const { parsePath } = await import("./parsePath.js");
 
 	const pathArray = typeof path === "string" ? parsePath(path) : path;
-	const pathBuf = Buffer.alloc(pathArray.length * 4);
+	const pathBuf = new Uint8Array(pathArray.length * 4);
+	const view = new DataView(pathBuf.buffer);
 
 	for (let i = 0; i < pathArray.length; i++) {
 		const index = pathArray[i];
 		if (index !== undefined) {
-			pathBuf.writeUInt32LE(index, i * 4);
+			view.setUint32(i * 4, index, true);
 		}
 	}
 

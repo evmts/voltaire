@@ -21,6 +21,7 @@ import {
 	sha256,
 } from "./evm/precompiles/precompiles.js";
 import { Address } from "./primitives/Address/index.js";
+import * as Hex from "./primitives/Hex/index.js";
 import * as Hardfork from "./primitives/Hardfork/index.js";
 import type { HashType } from "./primitives/Hash/index.js";
 import * as Rlp from "./primitives/Rlp/index.js";
@@ -77,9 +78,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			expect(result.success).toBe(true);
 			expect(result.output.length).toBe(32);
 			const recoveredAddress = result.output.slice(12);
-			expect(
-				Buffer.from(recoveredAddress).equals(Buffer.from(expectedAddress)),
-			).toBe(true);
+			expect(Hex.fromBytes(recoveredAddress)).toBe(
+				Hex.fromBytes(expectedAddress),
+			);
 		});
 
 		it("should handle EIP-155 transaction signature with chain ID", () => {
@@ -136,11 +137,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			expect(result.success).toBe(true);
 			const publicKey = Secp256k1.derivePublicKey(privateKey);
 			const expectedAddress = Keccak256.hash(publicKey).slice(-20);
-			expect(
-				Buffer.from(result.output.slice(12)).equals(
-					Buffer.from(expectedAddress),
-				),
-			).toBe(true);
+			expect(Hex.fromBytes(result.output.slice(12))).toBe(
+				Hex.fromBytes(expectedAddress),
+			);
 		});
 
 		it("should fail gracefully on invalid signature recovery", () => {
@@ -224,11 +223,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			expect(result.success).toBe(true);
 			const publicKey = Secp256k1.derivePublicKey(privateKey);
 			const expectedAddress = Keccak256.hash(publicKey).slice(-20);
-			expect(
-				Buffer.from(result.output.slice(12)).equals(
-					Buffer.from(expectedAddress),
-				),
-			).toBe(true);
+			expect(Hex.fromBytes(result.output.slice(12))).toBe(
+				Hex.fromBytes(expectedAddress),
+			);
 		});
 
 		it("should verify signature matches EIP712 signer", () => {
@@ -284,7 +281,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			const hash1 = EIP712.hashTypedData(typedData1);
 			const hash2 = EIP712.hashTypedData(typedData2);
 
-			expect(Buffer.from(hash1).equals(Buffer.from(hash2))).toBe(true);
+			expect(Hex.fromBytes(hash1)).toBe(Hex.fromBytes(hash2));
 		});
 	});
 
@@ -304,9 +301,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			);
 
 			expect(result.success).toBe(true);
-			expect(Buffer.from(result.output).equals(Buffer.from(cryptoHash))).toBe(
-				true,
-			);
+			expect(Hex.fromBytes(result.output)).toBe(Hex.fromBytes(cryptoHash));
 		});
 
 		it("should produce same SHA256 for multiple inputs", () => {
@@ -321,9 +316,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 				const precompileResult = sha256(input, 100000n);
 
 				expect(precompileResult.success).toBe(true);
-				expect(
-					Buffer.from(precompileResult.output).equals(Buffer.from(cryptoHash)),
-				).toBe(true);
+				expect(Hex.fromBytes(precompileResult.output)).toBe(
+					Hex.fromBytes(cryptoHash),
+				);
 			}
 		});
 
@@ -338,9 +333,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 
 			expect(result.success).toBe(true);
 			expect(result.output.length).toBe(32);
-			expect(
-				Buffer.from(result.output.slice(12)).equals(Buffer.from(cryptoHash)),
-			).toBe(true);
+			expect(Hex.fromBytes(result.output.slice(12))).toBe(
+				Hex.fromBytes(cryptoHash),
+			);
 		});
 
 		it("should handle Blake2 compression function", () => {
@@ -436,9 +431,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			// 5. Verify with Address.fromPrivateKey
 			const directAddress = Address.fromPrivateKey(privateKey);
 
-			expect(Buffer.from(address).equals(Buffer.from(directAddress))).toBe(
-				true,
-			);
+			expect(Hex.fromBytes(address)).toBe(Hex.fromBytes(directAddress));
 		});
 
 		it("should derive address from public key coordinates", () => {
@@ -455,9 +448,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			// Derive using Address primitive
 			const address = Address.fromPrivateKey(privateKey);
 
-			expect(Buffer.from(address).equals(Buffer.from(expectedAddress))).toBe(
-				true,
-			);
+			expect(Hex.fromBytes(address)).toBe(Hex.fromBytes(expectedAddress));
 		});
 
 		it("should derive multiple addresses from HD wallet", () => {
@@ -485,9 +476,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			expect(addresses.length).toBe(3);
 			for (let i = 0; i < addresses.length; i++) {
 				for (let j = i + 1; j < addresses.length; j++) {
-					expect(
-						Buffer.from(addresses[i]!).equals(Buffer.from(addresses[j]!)),
-					).toBe(false);
+					expect(Hex.fromBytes(addresses[i]!)).not.toBe(
+						Hex.fromBytes(addresses[j]!),
+					);
 				}
 			}
 		});
@@ -545,9 +536,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			const commitment2 = Kzg.KZG.Commitment(blob);
 
 			// Should be deterministic
-			expect(Buffer.from(commitment1).equals(Buffer.from(commitment2))).toBe(
-				true,
-			);
+			expect(Hex.fromBytes(commitment1)).toBe(Hex.fromBytes(commitment2));
 		});
 	});
 
@@ -653,7 +642,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			const encoded2 = Rlp.encodeArray(fields);
 			const hash2 = Keccak256.hash(encoded2);
 
-			expect(Buffer.from(hash1).equals(Buffer.from(hash2))).toBe(true);
+			expect(Hex.fromBytes(hash1)).toBe(Hex.fromBytes(hash2));
 		});
 
 		it("should handle nested RLP structures", () => {
@@ -762,7 +751,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			const result = identity(data, 1000n);
 
 			expect(result.success).toBe(true);
-			expect(Buffer.from(result.output).equals(Buffer.from(data))).toBe(true);
+			expect(result.output).toEqual(data);
 		});
 
 		it("should handle large data through identity precompile", () => {
@@ -772,7 +761,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			const result = identity(data, 100000n);
 
 			expect(result.success).toBe(true);
-			expect(Buffer.from(result.output).equals(Buffer.from(data))).toBe(true);
+			expect(result.output).toEqual(data);
 		});
 	});
 

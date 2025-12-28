@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hash as keccak256 } from "../crypto/Keccak256/hash.js";
 import { Address } from "../primitives/Address/index.js";
+import * as Hex from "../primitives/Hex/index.js";
 import * as Uint256 from "../primitives/Uint/index.js";
 import * as ERC20 from "./ERC20.js";
 
@@ -9,28 +10,28 @@ describe("ERC20", () => {
 		it("has correct totalSupply selector", () => {
 			const sig = "totalSupply()";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC20.SELECTORS.totalSupply).toBe(selector);
 		});
 
 		it("has correct balanceOf selector", () => {
 			const sig = "balanceOf(address)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC20.SELECTORS.balanceOf).toBe(selector);
 		});
 
 		it("has correct transfer selector", () => {
 			const sig = "transfer(address,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC20.SELECTORS.transfer).toBe(selector);
 		});
 
 		it("has correct approve selector", () => {
 			const sig = "approve(address,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC20.SELECTORS.approve).toBe(selector);
 		});
 
@@ -38,7 +39,7 @@ describe("ERC20", () => {
 			const sig =
 				"permit(address,address,uint256,uint256,uint8,bytes32,bytes32)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const selector = `0x${Buffer.from(hash.slice(0, 4)).toString("hex")}`;
+			const selector = Hex.fromBytes(hash.slice(0, 4));
 			expect(ERC20.SELECTORS.permit).toBe(selector);
 		});
 	});
@@ -47,14 +48,14 @@ describe("ERC20", () => {
 		it("has correct Transfer event signature", () => {
 			const sig = "Transfer(address,address,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const eventSig = `0x${Buffer.from(hash).toString("hex")}`;
+			const eventSig = Hex.fromBytes(hash);
 			expect(ERC20.EVENTS.Transfer).toBe(eventSig);
 		});
 
 		it("has correct Approval event signature", () => {
 			const sig = "Approval(address,address,uint256)";
 			const hash = keccak256(new TextEncoder().encode(sig));
-			const eventSig = `0x${Buffer.from(hash).toString("hex")}`;
+			const eventSig = Hex.fromBytes(hash);
 			expect(ERC20.EVENTS.Approval).toBe(eventSig);
 		});
 	});

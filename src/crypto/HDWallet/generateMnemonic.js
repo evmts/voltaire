@@ -17,13 +17,23 @@ export async function generateMnemonic(strength = 128) {
 	}
 
 	const { libwally } = await import("./ffi.js");
-	const crypto = await import("node:crypto");
 
 	const entropyLen = strength / 8;
-	const entropy = Buffer.alloc(entropyLen);
-	crypto.randomFillSync(entropy);
+	const entropy = new Uint8Array(entropyLen);
+	// Cross-platform secure random fill
+	if (typeof globalThis.crypto !== "undefined" && globalThis.crypto.getRandomValues) {
+		globalThis.crypto.getRandomValues(entropy);
+	} else {
+		const nodeCrypto = await import("node:crypto");
+		if (nodeCrypto.webcrypto && nodeCrypto.webcrypto.getRandomValues) {
+			nodeCrypto.webcrypto.getRandomValues(entropy);
+		} else {
+			const buf = nodeCrypto.randomBytes(entropyLen);
+			for (let i = 0; i < entropyLen; i++) entropy[i] = buf[i];
+		}
+	}
 
-	const outBuf = Buffer.alloc(256);
+	const outBuf = new Uint8Array(256);
 	const result = libwally.hdwallet_generate_mnemonic(
 		entropy,
 		entropyLen,
@@ -39,6 +49,6 @@ export async function generateMnemonic(strength = 128) {
 		});
 	}
 
-	const mnemonicStr = outBuf.toString("utf8", 0, result);
+	const mnemonicStr = new TextDecoder().decode(outBuf.slice(0, result));
 	return mnemonicStr.split(" ");
 }

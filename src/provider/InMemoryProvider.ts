@@ -289,9 +289,7 @@ export class InMemoryProvider implements Provider {
 	 * Convert address to lowercase hex key
 	 */
 	private addressToKey(address: AddressType | Uint8Array): string {
-		return (
-			"0x" + Buffer.from(address).toString("hex").toLowerCase().padStart(40, "0")
-		);
+		return Hex.fromBytes(address as Uint8Array).toLowerCase();
 	}
 
 	/**
@@ -623,7 +621,7 @@ export class InMemoryProvider implements Provider {
 			case "eth_getCode": {
 				const addr = (p[0] as string).toLowerCase();
 				const code = this.accounts.get(addr)?.code ?? new Uint8Array(0);
-				return "0x" + Buffer.from(code).toString("hex");
+				return Hex.fromBytes(code);
 			}
 
 			case "eth_getStorageAt": {
@@ -681,7 +679,7 @@ export class InMemoryProvider implements Provider {
 
 				if (!to) {
 					// Contract creation - return init code hash
-					return "0x" + this.generateHash(Buffer.from(data).toString("hex"));
+					return "0x" + this.generateHash(Hex.fromBytes(data).slice(2));
 				}
 
 				const toAccount = this.accounts.get(to);
@@ -708,7 +706,7 @@ export class InMemoryProvider implements Provider {
 				frame.blockBaseFee = this.baseFeePerGas;
 
 				// Return output (simplified - full impl executes bytecode)
-				return "0x" + Buffer.from(frame.output).toString("hex");
+				return Hex.fromBytes(frame.output);
 			}
 
 			case "eth_estimateGas": {

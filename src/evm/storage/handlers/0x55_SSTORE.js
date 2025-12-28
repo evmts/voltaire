@@ -1,12 +1,13 @@
 import {
-	ColdSload,
-	SstoreRefund,
-	SstoreReset,
-	SstoreSentry,
-	SstoreSet,
-	WarmStorageRead,
+    ColdSload,
+    SstoreRefund,
+    SstoreReset,
+    SstoreSentry,
+    SstoreSet,
+    WarmStorageRead,
 } from "../../../primitives/GasConstants/constants.js";
 import * as Frame from "../../Frame/index.js";
+import * as Hex from "../../../primitives/Hex/index.js";
 
 /**
  * SSTORE (0x55) - Save word to storage
@@ -158,5 +159,5 @@ export function sstore(frame, host) {
  * @returns {string}
  */
 function getStorageMapKey(address, slot) {
-	return `${Buffer.from(address).toString("hex")}-${slot.toString(16)}`;
+	return `${Hex.fromBytes(address).slice(2)}-${slot.toString(16)}`;
 }
