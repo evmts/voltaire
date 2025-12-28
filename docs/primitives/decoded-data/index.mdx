@@ -19,7 +19,7 @@ type DecodedDataType<T = unknown> = {
 ## Construction
 
 ```typescript
-import * as DecodedData from 'voltaire/primitives/DecodedData';
+import * as DecodedData from '@tevm/voltaire/primitives/DecodedData';
 
 // Single value
 const data = DecodedData.from(42n, ["uint256"]);
@@ -58,7 +58,7 @@ const amount: bigint = data.values.amount;
 ## Example
 
 ```typescript
-import * as DecodedData from 'voltaire/primitives/DecodedData';
+import * as DecodedData from '@tevm/voltaire/primitives/DecodedData';
 
 // Function return values
 const returnValues = DecodedData.from(

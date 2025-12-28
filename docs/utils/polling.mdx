@@ -27,7 +27,7 @@ Polling utilities provide:
 Poll until result is truthy:
 
 ```typescript
-import { poll } from 'voltaire/utils';
+import { poll } from '@tevm/voltaire/utils';
 
 const receipt = await poll(
   () => provider.eth_getTransactionReceipt(txHash),
@@ -93,7 +93,7 @@ const data = await poll(
 More expressive when checking specific conditions:
 
 ```typescript
-import { pollUntil } from 'voltaire/utils';
+import { pollUntil } from '@tevm/voltaire/utils';
 
 const blockNumber = await pollUntil(
   () => provider.eth_blockNumber(),
@@ -107,7 +107,7 @@ const blockNumber = await pollUntil(
 Convenience function for transaction receipts:
 
 ```typescript
-import { pollForReceipt } from 'voltaire/utils';
+import { pollForReceipt } from '@tevm/voltaire/utils';
 
 const receipt = await pollForReceipt(
   txHash,
@@ -125,7 +125,7 @@ if (receipt.status === '0x1') {
 Poll with exponential backoff enabled by default:
 
 ```typescript
-import { pollWithBackoff } from 'voltaire/utils';
+import { pollWithBackoff } from '@tevm/voltaire/utils';
 
 const data = await pollWithBackoff(
   () => provider.eth_call({ to, data }),
@@ -233,7 +233,7 @@ console.log('Contract deployed!');
 Poll contract state until condition met:
 
 ```typescript
-import * as Abi from 'voltaire/primitives/Abi';
+import * as Abi from '@tevm/voltaire/primitives/Abi';
 
 const abi = [
   {
@@ -323,7 +323,7 @@ await poll(
 Retry each poll attempt:
 
 ```typescript
-import { poll, retryWithBackoff } from 'voltaire/utils';
+import { poll, retryWithBackoff } from '@tevm/voltaire/utils';
 
 const data = await poll(
   () => retryWithBackoff(
@@ -342,7 +342,7 @@ const data = await poll(
 Add timeout to each poll attempt:
 
 ```typescript
-import { poll, withTimeout } from 'voltaire/utils';
+import { poll, withTimeout } from '@tevm/voltaire/utils';
 
 const result = await poll(
   () => withTimeout(
@@ -361,7 +361,7 @@ const result = await poll(
 Rate limit polling attempts:
 
 ```typescript
-import { poll, RateLimiter } from 'voltaire/utils';
+import { poll, RateLimiter } from '@tevm/voltaire/utils';
 
 const limiter = new RateLimiter({
   maxRequests: 10,

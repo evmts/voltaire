@@ -127,11 +127,11 @@ const uint2 = Uint(bytes32)  // Efficient
 
 ## Usage Patterns
 
-### Buffer Conversion
+### Binary Conversion
 
 ```typescript
-// Node.js Buffer to Uint
-const buffer = Buffer([0x01, 0x02, 0x03, 0x04])
+// Convert raw bytes to Uint
+const bytes = new Uint8Array([0x01, 0x02, 0x03, 0x04])
 const uint = Uint(new Uint8Array(buffer))
 ```
 

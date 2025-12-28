@@ -266,14 +266,14 @@ function precomputeCommitments(testData: Uint8Array[]) {
     const proof = Blob.toProof(blob);
     const versionedHash = Blob.Commitment.toVersionedHash(commitment);
 
-    const key = Buffer(data).toString('hex');
+    const key = Hex.fromBytes(data).slice(2);
     precomputed.set(key, { commitment, proof, versionedHash });
   }
 }
 
 // Use in WASM environment
 function getKZGData(data: Uint8Array): KZGData {
-  const key = Buffer(data).toString('hex');
+  const key = Hex.fromBytes(data).slice(2);
   const cached = precomputed.get(key);
 
   if (!cached) {

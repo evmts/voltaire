@@ -505,7 +505,7 @@ describe("E2E Workflows", () => {
 		});
 	});
 
-	describe("6. Gas Estimation with Buffer", () => {
+describe("6. Gas Estimation with Padding", () => {
 		it("should estimate gas, add buffer, execute, and verify actual usage", async () => {
 			const targetAddress = Address.from(
 				"0x2222222222222222222222222222222222222222",

@@ -28,7 +28,7 @@ bun install voltaire
 ## Basic Usage
 
 ```typescript
-import * as MultiTokenId from 'voltaire/primitives/MultiTokenId';
+import * as MultiTokenId from '@tevm/voltaire/primitives/MultiTokenId';
 
 // Fungible token type (like ERC-20)
 const fungibleId = MultiTokenId.from(1n);
@@ -250,8 +250,8 @@ const shield = MultiTokenId.from(2n ** 128n + 1n);
 ### Query Balance
 
 ```typescript
-import * as MultiTokenId from 'voltaire/primitives/MultiTokenId';
-import * as Address from 'voltaire/primitives/Address';
+import * as MultiTokenId from '@tevm/voltaire/primitives/MultiTokenId';
+import * as Address from '@tevm/voltaire/primitives/Address';
 
 const tokenId = MultiTokenId.from(1n);
 const account = Address.from("0x...");
@@ -281,8 +281,8 @@ const balances = decodeBalanceOfBatch(response);
 ### Transfer Tokens
 
 ```typescript
-import * as MultiTokenId from 'voltaire/primitives/MultiTokenId';
-import * as Address from 'voltaire/primitives/Address';
+import * as MultiTokenId from '@tevm/voltaire/primitives/MultiTokenId';
+import * as Address from '@tevm/voltaire/primitives/Address';
 
 const from = Address.from("0x...");
 const to = Address.from("0x...");
@@ -329,7 +329,7 @@ const nonFungible = Array.from(tokenIds).filter(id =>
 ## Error Handling
 
 ```typescript
-import { InvalidMultiTokenIdError } from 'voltaire/primitives/MultiTokenId';
+import { InvalidMultiTokenIdError } from '@tevm/voltaire/primitives/MultiTokenId';
 
 try {
   const tokenId = MultiTokenId.from(-1n);

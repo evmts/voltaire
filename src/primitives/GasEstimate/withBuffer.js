@@ -5,7 +5,7 @@ import { from } from "./from.js";
  * Recommended: 20-30% to account for variability
  *
  * @this {import('./GasEstimateType.js').GasEstimateType}
- * @param {number} percentageBuffer - Buffer percentage (e.g., 20 for 20%)
+ * @param {number} percentageBuffer - Padding percentage (e.g., 20 for 20%)
  * @returns {import('./GasEstimateType.js').GasEstimateType} Estimate with buffer
  *
  * @example
@@ -17,9 +17,9 @@ import { from } from "./from.js";
  */
 export function withBuffer(percentageBuffer) {
 	if (percentageBuffer < 0) {
-		throw new Error(
-			`Buffer percentage must be non-negative, got ${percentageBuffer}`,
-		);
+        throw new Error(
+            `Padding percentage must be non-negative, got ${percentageBuffer}`,
+        );
 	}
 
 	const buffer = (this * BigInt(Math.floor(percentageBuffer * 100))) / 10000n;

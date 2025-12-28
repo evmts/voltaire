@@ -29,7 +29,7 @@ All items eventually processed, results returned individually.
 ### Basic Usage
 
 ```typescript
-import { BatchQueue } from 'voltaire/utils';
+import { BatchQueue } from '@tevm/voltaire/utils';
 
 const queue = new BatchQueue({
   maxBatchSize: 50,
@@ -68,7 +68,7 @@ interface BatchQueueOptions<T, R> {
 Create batched version of function:
 
 ```typescript
-import { createBatchedFunction } from 'voltaire/utils';
+import { createBatchedFunction } from '@tevm/voltaire/utils';
 
 const getBalance = createBatchedFunction(
   async (addresses: string[]) => {
@@ -98,7 +98,7 @@ Process items with concurrency limit.
 ### Basic Usage
 
 ```typescript
-import { AsyncQueue } from 'voltaire/utils';
+import { AsyncQueue } from '@tevm/voltaire/utils';
 
 const processor = new AsyncQueue<string, Balance>(
   async (address) => provider.eth_getBalance(address),
@@ -163,7 +163,7 @@ const balances = await Promise.all(
 Batch eth_call operations:
 
 ```typescript
-import * as Abi from 'voltaire/primitives/Abi';
+import * as Abi from '@tevm/voltaire/primitives/Abi';
 
 const abi = [
   {
@@ -201,7 +201,7 @@ const balances = await Promise.all(
 Combine batching with rate limiting:
 
 ```typescript
-import { BatchQueue, RateLimiter } from 'voltaire/utils';
+import { BatchQueue, RateLimiter } from '@tevm/voltaire/utils';
 
 const limiter = new RateLimiter({
   maxRequests: 10,
@@ -417,7 +417,7 @@ const queue = new BatchQueue({
 ### Batch + Rate Limit
 
 ```typescript
-import { BatchQueue, RateLimiter } from 'voltaire/utils';
+import { BatchQueue, RateLimiter } from '@tevm/voltaire/utils';
 
 const limiter = new RateLimiter({
   maxRequests: 10,
@@ -434,7 +434,7 @@ const queue = new BatchQueue({
 ### Batch + Retry
 
 ```typescript
-import { BatchQueue, retryWithBackoff } from 'voltaire/utils';
+import { BatchQueue, retryWithBackoff } from '@tevm/voltaire/utils';
 
 const queue = new BatchQueue({
   maxBatchSize: 50,
@@ -449,7 +449,7 @@ const queue = new BatchQueue({
 ### Batch + Timeout
 
 ```typescript
-import { BatchQueue, withTimeout } from 'voltaire/utils';
+import { BatchQueue, withTimeout } from '@tevm/voltaire/utils';
 
 const queue = new BatchQueue({
   maxBatchSize: 50,

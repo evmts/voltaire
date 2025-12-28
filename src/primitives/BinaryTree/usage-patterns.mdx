@@ -595,7 +595,7 @@ class BatchedStateTree {
   }
 
   stage(key: Uint8Array, value: Uint8Array): void {
-    const keyHex = Buffer(key).toString('hex')
+    const keyHex = Hex.fromBytes(key).slice(2)
     this.pending.set(keyHex, { key, value })
   }
 

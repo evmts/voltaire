@@ -25,7 +25,7 @@ export function setFromHexPolyfill(this: Uint8Array, hex: string): void {
 	}
 
 	if (str.length / 2 > this.length) {
-		throw new Error("Buffer too small");
+		throw new Error("Output array too small");
 	}
 
 	for (let i = 0; i < str.length; i += 2) {
@@ -62,7 +62,7 @@ export function setFromBase64Polyfill(this: Uint8Array, b64: string): void {
 	}
 
 	if (decoded.length > this.length) {
-		throw new Error("Buffer too small");
+		throw new Error("Output array too small");
 	}
 
 	this.set(decoded);

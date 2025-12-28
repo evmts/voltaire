@@ -13,7 +13,7 @@ description: Convert address to lowercase hex string
 
 ## `primitives_address_to_hex(address: *const PrimitivesAddress, buf: [*]u8): c_int`
 
-Convert address to hex string with `0x` prefix. Buffer must be at least 42 bytes.
+Convert address to hex string with `0x` prefix. Output array must be at least 42 bytes.
 
 **Parameters:**
 - `address: *const PrimitivesAddress` - Address to convert (20 bytes)

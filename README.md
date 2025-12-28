@@ -25,9 +25,7 @@
 
 ## Features
 
-> ⚠️ **Alpha Release** - This library is under active development. APIs may change. Not recommended for production use yet.
-
-Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https://ziglang.org/), [TypeScript](https://www.typescriptlang.org/), and C-FFI support.
+Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https://ziglang.org/), [TypeScript](https://www.typescriptlang.org/), [Swift](https://swift.org/), and C-FFI support.
 
 - **Simple APIs** - The minimal close-to-spec APIs needed for [Ethereum development](https://ethereum.org/en/developers/)
 - **LLM-Optimized** - API and documentation built and tested to perform well with LLMs
@@ -43,10 +41,8 @@ Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https:
 
 > **Note:** Voltaire focuses on Ethereum primitives and cryptography. For additional functionality:
 >
-> - **JSON-RPC/Provider**: [evmts/chappe](https://github.com/evmts/chappe) - Provider and JSON-RPC client library
 > - **EVM Execution**: [evmts/guillotine](https://github.com/evmts/guillotine) - EVM-related functionality
 > - **Solidity Compilation**: [evmts/compiler](https://github.com/evmts/compiler) - Solidity compilation support
-> - **Unified Library**: [evmts/tevm-monorepo](https://github.com/evmts/tevm-monorepo) - Complete Tevm ecosystem
 
 ### Core Primitives
 
@@ -287,32 +283,6 @@ Voltaire provides low-level tree-shakable EVM utilities, types, and all 19 preco
 
 ---
 
-## Performance & WASM
-
-All implementations optimized for production use:
-
-- **Native/WASM**: Optional native bindings via [Zig](https://ziglang.org/) for 2-10x speedup on performance-critical operations
-- **Audited crypto**: [@noble/curves](https://github.com/paulmillr/noble-curves), [c-kzg-4844](https://github.com/ethereum/c-kzg-4844), [blst](https://github.com/supranational/blst) for security
-- **Minimal bundle**: Tree-shakeable, only pay for what you use
-- **WASM modes**: ReleaseSmall (size-optimized) and ReleaseFast (performance-optimized) builds available
-
-📚 **[Benchmarks](./BENCHMARKING.md)**
-
-### Runtime Support
-
-- **Bun**: Native FFI + WASM are supported. Highest performance via Zig native bindings.
-- **Node.js**: Use the regular TypeScript API or WASM. Native FFI via Node-API is not shipped yet.
-- **Browser/Edge runtimes**: WASM only.
-
----
-
-## Alternatives
-
-- **[Alloy](https://github.com/alloy-rs/alloy)** - High-performance Rust library (Zig FFI integration available)
-- **[@noble/curves](https://github.com/paulmillr/noble-curves)** - Audited cryptographic library for pure JS implementations
-
----
-
 ## Language Support
 
 - TypeScript/JavaScript (Node.js, Bun, browser)
@@ -366,34 +336,6 @@ Voltaire has minimal runtime dependencies:
 - **[tiny-keccak](https://github.com/debris/tiny-keccak)** - Pure Rust Keccak implementation (WASM builds)
 
 All dependencies are actively maintained and security-audited where applicable.
-
----
-
-## MCP Evaluation Tests
-
-Voltaire includes an Advent-of-Code style evaluation suite that tests Claude's ability to use the Voltaire MCP server for solving Ethereum challenges.
-
-### Running MCP Evals
-
-```bash
-# Set up RPC endpoint
-export ETHEREUM_RPC_URL="https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY"
-
-# Run all MCP evaluation tests
-bun run test:mcp
-
-# Run specific test
-bun run test:mcp -t "CryptoPunk"
-```
-
-### Example Challenges
-
-- Find block hash where first CryptoPunk minted
-- Calculate total ETH burned via EIP-1559 in block range
-- Verify secp256k1 signatures using Voltaire primitives
-- Query NFT ownership at specific blocks
-
-See [src/mcp-evals/README.md](./src/mcp-evals/README.md) for detailed documentation.
 
 ---
 

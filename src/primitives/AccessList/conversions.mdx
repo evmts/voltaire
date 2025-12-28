@@ -133,12 +133,12 @@ function safeFromBytes(bytes: Uint8Array): BrandedAccessList | null {
 
 ```typescript
 // Store in database
-const serialized = Buffer(list.toBytes()).toString('hex');
+const serialized = Hex.fromBytes(list.toBytes()).slice(2);
 await db.store('access_list', serialized);
 
 // Retrieve from database
 const stored = await db.get('access_list');
-const bytes = Buffer(stored, 'hex');
+const bytes = Hex.toBytes(stored);
 const list = AccessList(bytes);
 ```
 

@@ -26,7 +26,7 @@ Execute a function at most once per specified wait time.
 ### Basic Usage
 
 ```typescript
-import { throttle } from 'voltaire/utils';
+import { throttle } from '@tevm/voltaire/utils';
 
 const getBalance = throttle(
   (address: string) => provider.eth_getBalance(address),
@@ -71,7 +71,7 @@ Execute a function only after calls have stopped for specified wait time.
 ### Basic Usage
 
 ```typescript
-import { debounce } from 'voltaire/utils';
+import { debounce } from '@tevm/voltaire/utils';
 
 const searchBlocks = debounce(
   (query: string) => provider.eth_getBlockByNumber(query),
@@ -130,7 +130,7 @@ Token bucket rate limiter with queuing, rejection, or dropping strategies.
 ### Basic Usage
 
 ```typescript
-import { RateLimiter } from 'voltaire/utils';
+import { RateLimiter } from '@tevm/voltaire/utils';
 
 const limiter = new RateLimiter({
   maxRequests: 10,
@@ -243,7 +243,7 @@ if (result === undefined) {
 Respect public RPC rate limits:
 
 ```typescript
-import { RateLimiter } from 'voltaire/utils';
+import { RateLimiter } from '@tevm/voltaire/utils';
 
 // Infura: 10 requests/second
 const infuraLimiter = new RateLimiter({
@@ -361,7 +361,7 @@ Always rate limit public RPC calls.
 Combine with batching for optimal throughput:
 
 ```typescript
-import { RateLimiter, BatchQueue } from 'voltaire/utils';
+import { RateLimiter, BatchQueue } from '@tevm/voltaire/utils';
 
 const limiter = new RateLimiter({
   maxRequests: 10,

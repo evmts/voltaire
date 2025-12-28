@@ -27,7 +27,7 @@ Timeout utilities provide:
 Wrap a promise with timeout:
 
 ```typescript
-import { withTimeout } from 'voltaire/utils';
+import { withTimeout } from '@tevm/voltaire/utils';
 
 const result = await withTimeout(
   provider.eth_getBlockByNumber('latest'),
@@ -83,7 +83,7 @@ try {
 Create timeout-wrapped functions:
 
 ```typescript
-import { wrapWithTimeout } from 'voltaire/utils';
+import { wrapWithTimeout } from '@tevm/voltaire/utils';
 
 const getBalanceWithTimeout = wrapWithTimeout(
   (address: string) => provider.eth_getBalance(address),
@@ -99,7 +99,7 @@ const balance = await getBalanceWithTimeout('0x123...');
 Async delay with optional cancellation:
 
 ```typescript
-import { sleep } from 'voltaire/utils';
+import { sleep } from '@tevm/voltaire/utils';
 
 // Simple delay
 await sleep(1000);
@@ -123,7 +123,7 @@ try {
 Manual promise control:
 
 ```typescript
-import { createDeferred } from 'voltaire/utils';
+import { createDeferred } from '@tevm/voltaire/utils';
 
 const { promise, resolve, reject } = createDeferred<number>();
 
@@ -145,7 +145,7 @@ const result = await promise;
 Timeout with built-in retry:
 
 ```typescript
-import { executeWithTimeout } from 'voltaire/utils';
+import { executeWithTimeout } from '@tevm/voltaire/utils';
 
 const block = await executeWithTimeout(
   () => provider.eth_getBlockByNumber('latest'),
@@ -325,7 +325,7 @@ try {
 Retry with timeout per attempt:
 
 ```typescript
-import { retryWithBackoff, withTimeout } from 'voltaire/utils';
+import { retryWithBackoff, withTimeout } from '@tevm/voltaire/utils';
 
 const data = await retryWithBackoff(
   () => withTimeout(
@@ -347,7 +347,7 @@ const data = await retryWithBackoff(
 Add timeout to polling:
 
 ```typescript
-import { poll, withTimeout } from 'voltaire/utils';
+import { poll, withTimeout } from '@tevm/voltaire/utils';
 
 const receipt = await withTimeout(
   poll(
@@ -366,7 +366,7 @@ const receipt = await withTimeout(
 Timeout rate-limited operations:
 
 ```typescript
-import { RateLimiter, withTimeout } from 'voltaire/utils';
+import { RateLimiter, withTimeout } from '@tevm/voltaire/utils';
 
 const limiter = new RateLimiter({
   maxRequests: 10,
@@ -389,7 +389,7 @@ const result = await withTimeout(
 Catch timeout-specific errors:
 
 ```typescript
-import { withTimeout, TimeoutError } from 'voltaire/utils';
+import { withTimeout, TimeoutError } from '@tevm/voltaire/utils';
 
 try {
   await withTimeout(

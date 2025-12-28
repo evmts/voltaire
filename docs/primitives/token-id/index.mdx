@@ -27,7 +27,7 @@ bun install voltaire
 ## Basic Usage
 
 ```typescript
-import * as TokenId from 'voltaire/primitives/TokenId';
+import * as TokenId from '@tevm/voltaire/primitives/TokenId';
 
 // Create token ID
 const tokenId = TokenId.from(42n);
@@ -215,7 +215,7 @@ console.log(TokenId.toHex(largeId));
 ### Query Owner
 
 ```typescript
-import * as TokenId from 'voltaire/primitives/TokenId';
+import * as TokenId from '@tevm/voltaire/primitives/TokenId';
 
 const tokenId = TokenId.from(42n);
 const data = encodeOwnerOf(tokenId);
@@ -228,8 +228,8 @@ console.log(`Token #${TokenId.toNumber(tokenId)} owned by ${owner}`);
 ### Transfer NFT
 
 ```typescript
-import * as TokenId from 'voltaire/primitives/TokenId';
-import * as Address from 'voltaire/primitives/Address';
+import * as TokenId from '@tevm/voltaire/primitives/TokenId';
+import * as Address from '@tevm/voltaire/primitives/Address';
 
 const tokenId = TokenId.from(42n);
 const from = Address.from("0x...");
@@ -266,7 +266,7 @@ for (let i = 0n; i < totalSupply; i++) {
 ## Error Handling
 
 ```typescript
-import { InvalidTokenIdError } from 'voltaire/primitives/TokenId';
+import { InvalidTokenIdError } from '@tevm/voltaire/primitives/TokenId';
 
 try {
   const tokenId = TokenId.from(-1n);

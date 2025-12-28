@@ -26,7 +26,7 @@ The retry utilities implement exponential backoff with jitter:
 Retry an RPC call with default settings:
 
 ```typescript
-import { retryWithBackoff } from 'voltaire/utils';
+import { retryWithBackoff } from '@tevm/voltaire/utils';
 
 const blockNumber = await retryWithBackoff(
   () => provider.eth_blockNumber()
@@ -142,7 +142,7 @@ Configuration: `{ initialDelay: 1000, factor: 2, maxDelay: 10000, jitter: false 
 Create reusable retry-wrapped functions:
 
 ```typescript
-import { withRetry } from 'voltaire/utils';
+import { withRetry } from '@tevm/voltaire/utils';
 
 // Wrap provider method
 const getBlockWithRetry = withRetry(
@@ -198,8 +198,8 @@ const criticalData = await retryWithBackoff(
 The HttpProvider already has basic retry built-in, but you can wrap it for more control:
 
 ```typescript
-import { retryWithBackoff } from 'voltaire/utils';
-import { HttpProvider } from 'voltaire/provider';
+import { retryWithBackoff } from '@tevm/voltaire/utils';
+import { HttpProvider } from '@tevm/voltaire/provider';
 
 const provider = new HttpProvider({
   url: 'https://eth.llamarpc.com',
@@ -267,7 +267,7 @@ const code = await retryWithBackoff(
 Retry with per-attempt timeout:
 
 ```typescript
-import { retryWithBackoff, withTimeout } from 'voltaire/utils';
+import { retryWithBackoff, withTimeout } from '@tevm/voltaire/utils';
 
 const data = await retryWithBackoff(
   () => withTimeout(

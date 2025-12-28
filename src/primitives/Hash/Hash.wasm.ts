@@ -8,7 +8,7 @@ import { ValidationError } from "../errors/ValidationError.js";
 
 /**
  * Compute SHA-256 hash
- * @param data - Input data (string, Uint8Array, or Buffer)
+ * @param data - Input data (string or Uint8Array)
  * @returns 32-byte SHA-256 hash
  */
 export function sha256(data: string | Uint8Array): Uint8Array {
@@ -22,7 +22,7 @@ export function sha256(data: string | Uint8Array): Uint8Array {
 
 /**
  * Compute RIPEMD-160 hash
- * @param data - Input data (string, Uint8Array, or Buffer)
+ * @param data - Input data (string or Uint8Array)
  * @returns 20-byte RIPEMD-160 hash
  */
 export function ripemd160(data: string | Uint8Array): Uint8Array {
@@ -36,7 +36,7 @@ export function ripemd160(data: string | Uint8Array): Uint8Array {
 
 /**
  * Compute BLAKE2b hash
- * @param data - Input data (string, Uint8Array, or Buffer)
+ * @param data - Input data (string or Uint8Array)
  * @returns 64-byte BLAKE2b hash
  */
 export function blake2b(data: string | Uint8Array): Uint8Array {

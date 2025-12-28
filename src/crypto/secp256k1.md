@@ -342,8 +342,8 @@ do {
 const publicKey = Secp256k1.derivePublicKey(privateKey);
 
 console.log('Generated key pair');
-console.log('Private key:', Buffer.from(privateKey).toString('hex'));
-console.log('Public key:', Buffer.from(publicKey).toString('hex'));
+console.log('Private key:', Hex.fromBytes(privateKey));
+console.log('Public key:', Hex.fromBytes(publicKey));
 ```
 
 ### Signature Verification Before Broadcasting

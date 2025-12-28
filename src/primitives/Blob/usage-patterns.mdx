@@ -227,7 +227,7 @@ class L2Sync {
     const json = await response.json();
 
     return json.data.map((sidecar: any) =>
-      Blob(new Uint8Array(Buffer(sidecar.blob, 'hex')))
+      Blob(Hex.toBytes(sidecar.blob))
     );
   }
 }

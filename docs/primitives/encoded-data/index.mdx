@@ -16,7 +16,7 @@ type EncodedDataType = `0x${string}` & { readonly [brand]: "EncodedData" };
 ## Construction
 
 ```typescript
-import * as EncodedData from 'voltaire/primitives/EncodedData';
+import * as EncodedData from '@tevm/voltaire/primitives/EncodedData';
 
 // From hex string
 const data = EncodedData.from("0x00000001");
@@ -36,7 +36,7 @@ const data = EncodedData.fromBytes(bytes);
 ## Example
 
 ```typescript
-import * as EncodedData from 'voltaire/primitives/EncodedData';
+import * as EncodedData from '@tevm/voltaire/primitives/EncodedData';
 
 // Function call data
 const calldata = EncodedData.from("0xa9059cbb000000000000000000000000...");

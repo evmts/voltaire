@@ -135,7 +135,7 @@ const privateKey = randomBytes(32)
 const addr = Address(privateKey)
 
 console.log('Address:', addr.toChecksummed())
-console.log('Private key:', Buffer(privateKey).toString('hex'))
+console.log('Private key:', Hex.fromBytes(privateKey))
 
 // Store private key securely (encrypted)
 // Store address publicly (for receiving funds)
@@ -158,7 +158,7 @@ function generateAccount() {
 
   return {
     address: address.toChecksummed(),
-    privateKey: Buffer(privateKey).toString('hex')
+    privateKey: Hex.fromBytes(privateKey)
   }
 }
 

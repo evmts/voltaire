@@ -29,7 +29,7 @@ export async function generateMnemonic(strength = 128) {
 			nodeCrypto.webcrypto.getRandomValues(entropy);
 		} else {
 			const buf = nodeCrypto.randomBytes(entropyLen);
-			for (let i = 0; i < entropyLen; i++) entropy[i] = buf[i];
+			for (let i = 0; i < entropyLen; i++) entropy[i] = /** @type {number} */ (buf[i]);
 		}
 	}
 

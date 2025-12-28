@@ -378,7 +378,7 @@ class TxCache {
   private cache = new Map<string, any[]>()
 
   decode(bytes: Uint8Array): any[] {
-    const key = Buffer(bytes).toString('hex')
+    const key = Hex.fromBytes(bytes).slice(2)
 
     let cached = this.cache.get(key)
     if (!cached) {

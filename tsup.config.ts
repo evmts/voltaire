@@ -56,5 +56,7 @@ export default createTsUpOptions({
 		"src/crypto/Ripemd160/index.ts",
 		"src/crypto/Secp256k1/index.js",
 		"src/crypto/SHA256/index.ts",
+		// WASM
+		"src/wasm/index.ts",
 	],
 });

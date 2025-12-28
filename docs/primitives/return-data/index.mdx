@@ -16,7 +16,7 @@ type ReturnDataType = Uint8Array & { readonly [brand]: "ReturnData" };
 ## Construction
 
 ```typescript
-import * as ReturnData from 'voltaire/primitives/ReturnData';
+import * as ReturnData from '@tevm/voltaire/primitives/ReturnData';
 
 // From hex string
 const data = ReturnData.fromHex("0x00000001");
@@ -39,7 +39,7 @@ const data = ReturnData.from(bytes);
 ## Example
 
 ```typescript
-import * as ReturnData from 'voltaire/primitives/ReturnData';
+import * as ReturnData from '@tevm/voltaire/primitives/ReturnData';
 
 // Parse contract return data
 const returnData = ReturnData.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");

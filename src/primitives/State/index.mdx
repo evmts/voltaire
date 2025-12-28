@@ -146,7 +146,7 @@ const mappingSlotBytes = Bytes64();
 mappingSlotBytes.set(userAddress, 0);          // First 32 bytes (padded address)
 mappingSlotBytes.set(encodeBigInt(balanceSlot, 32), 32); // Last 32 bytes
 
-const computedSlot = BigInt('0x' + Buffer(
+const computedSlot = BigInt(Hex.fromBytes(
   Keccak256.hash(mappingSlotBytes)
 ).toString('hex'));
 

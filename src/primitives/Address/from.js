@@ -6,7 +6,7 @@ import { fromNumber } from "./fromNumber.js";
 /**
  * Create Address from various input types (universal constructor)
  *
- * @param {number | bigint | string | Uint8Array} value - Number, bigint, hex string, or Uint8Array
+ * @param {number | bigint | string | Uint8Array | number[]} value - Number, bigint, hex string, Uint8Array, or number array
  * @returns {import('./AddressType.js').AddressType} Address
  * @throws {InvalidValueError} If value type is unsupported or invalid
  * @throws {InvalidHexFormatError} If hex string is invalid
@@ -18,11 +18,15 @@ import { fromNumber } from "./fromNumber.js";
  * const addr2 = Address.from(12345);
  * const _addr3 = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
  * const addr4 = Address.from(new Uint8Array(20));
+ * const addr5 = Address.from([0x74, 0x2d, 0x35, ...]);
  * ```
  */
 export function from(value) {
 	if (typeof value === "number" || typeof value === "bigint") {
 		return fromNumber(value);
+	}
+	if (Array.isArray(value)) {
+		return fromBytes(new Uint8Array(value));
 	}
 	if (typeof value === "string") {
 		// Normalize to lowercase
@@ -42,6 +46,6 @@ export function from(value) {
 	}
 	throw new InvalidValueError("Unsupported address value type", {
 		value,
-		expected: "number, bigint, string, or Uint8Array",
+		expected: "number, bigint, string, Uint8Array, or number[]",
 	});
 }

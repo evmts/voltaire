@@ -41,7 +41,7 @@ RIPEMD160 is primarily maintained for Bitcoin compatibility. For new application
 <Tabs>
 <Tab title="Basic Hashing">
 ```typescript
-import * as RIPEMD160 from 'voltaire/crypto/RIPEMD160';
+import * as RIPEMD160 from '@tevm/voltaire/crypto/RIPEMD160';
 
 // Hash string data
 const message = "Hello, Bitcoin!";
@@ -63,8 +63,8 @@ const autoHash = RIPEMD160.from("hello");
 
 <Tab title="Bitcoin Address">
 ```typescript
-import * as RIPEMD160 from 'voltaire/crypto/RIPEMD160';
-import * as SHA256 from 'voltaire/crypto/SHA256';
+import * as RIPEMD160 from '@tevm/voltaire/crypto/RIPEMD160';
+import * as SHA256 from '@tevm/voltaire/crypto/SHA256';
 
 // Bitcoin P2PKH address derivation (simplified)
 const publicKey = new Uint8Array([0x04, ...]); // 65-byte uncompressed
@@ -99,7 +99,7 @@ Accepts both Uint8Array and string inputs. Strings are UTF-8 encoded before hash
 
 **Example:**
 ```typescript
-import * as RIPEMD160 from 'voltaire/crypto/RIPEMD160';
+import * as RIPEMD160 from '@tevm/voltaire/crypto/RIPEMD160';
 
 // Hash bytes
 const hash1 = RIPEMD160.hash(new Uint8Array([1, 2, 3]));
@@ -188,7 +188,7 @@ RIPEMD160.SIZE  // 20 - Output size in bytes (160 bits)
 Official RIPEMD160 test vectors:
 
 ```typescript
-import * as RIPEMD160 from 'voltaire/crypto/RIPEMD160';
+import * as RIPEMD160 from '@tevm/voltaire/crypto/RIPEMD160';
 
 // Empty string
 RIPEMD160.hashString("")
@@ -341,8 +341,8 @@ const hash = Ripemd160Wasm.hash(data);
 ### Bitcoin P2PKH Address
 Pay-to-PubKey-Hash (most common Bitcoin address):
 ```typescript
-import * as SHA256 from 'voltaire/crypto/SHA256';
-import * as RIPEMD160 from 'voltaire/crypto/RIPEMD160';
+import * as SHA256 from '@tevm/voltaire/crypto/SHA256';
+import * as RIPEMD160 from '@tevm/voltaire/crypto/RIPEMD160';
 
 function createPubKeyHash(publicKey: Uint8Array): Uint8Array {
   // Bitcoin uses SHA256 followed by RIPEMD160
@@ -359,8 +359,8 @@ function createPubKeyHash(publicKey: Uint8Array): Uint8Array {
 ### Bitcoin P2SH Address
 Pay-to-Script-Hash addresses:
 ```typescript
-import * as SHA256 from 'voltaire/crypto/SHA256';
-import * as RIPEMD160 from 'voltaire/crypto/RIPEMD160';
+import * as SHA256 from '@tevm/voltaire/crypto/SHA256';
+import * as RIPEMD160 from '@tevm/voltaire/crypto/RIPEMD160';
 
 function createScriptHash(redeemScript: Uint8Array): Uint8Array {
   const sha256Hash = SHA256.hash(redeemScript);

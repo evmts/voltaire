@@ -18,9 +18,9 @@ type ContractResultType =
 ## Construction
 
 ```typescript
-import * as ContractResult from 'voltaire/primitives/ContractResult';
-import * as ReturnData from 'voltaire/primitives/ReturnData';
-import * as RevertReason from 'voltaire/primitives/RevertReason';
+import * as ContractResult from '@tevm/voltaire/primitives/ContractResult';
+import * as ReturnData from '@tevm/voltaire/primitives/ReturnData';
+import * as RevertReason from '@tevm/voltaire/primitives/RevertReason';
 
 // Success result
 const success = ContractResult.success(ReturnData.fromHex("0x..."));
@@ -45,7 +45,7 @@ const result = ContractResult.from(true, "0x...");
 ## Example
 
 ```typescript
-import * as ContractResult from 'voltaire/primitives/ContractResult';
+import * as ContractResult from '@tevm/voltaire/primitives/ContractResult';
 
 const result = ContractResult.from(success, returnData);
 

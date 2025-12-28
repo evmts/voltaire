@@ -42,8 +42,8 @@ PANIC_SELECTOR = "0x4e487b71";  // Panic(uint256)
 ## Construction
 
 ```typescript
-import * as RevertReason from 'voltaire/primitives/RevertReason';
-import * as ReturnData from 'voltaire/primitives/ReturnData';
+import * as RevertReason from '@tevm/voltaire/primitives/RevertReason';
+import * as ReturnData from '@tevm/voltaire/primitives/ReturnData';
 
 // From return data
 const returnData = ReturnData.fromHex("0x08c379a0...");
@@ -53,7 +53,7 @@ const reason = RevertReason.fromReturnData(returnData);
 ## Example
 
 ```typescript
-import * as RevertReason from 'voltaire/primitives/RevertReason';
+import * as RevertReason from '@tevm/voltaire/primitives/RevertReason';
 
 const reason = RevertReason.from("0x08c379a0...");
 

@@ -1608,3 +1608,110 @@ body {
 	background-color: rgba(0, 122, 204, 0.15);
 	color: var(--accent);
 }
+
+/* API Mode Toggle */
+.api-mode-toggle {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-right: 12px;
+}
+
+.api-mode-label {
+	font-size: 12px;
+	color: var(--text-secondary);
+	font-weight: 500;
+}
+
+.api-mode-buttons {
+	display: flex;
+	border: 1px solid var(--border-color);
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.api-mode-btn {
+	padding: 4px 10px;
+	background-color: var(--bg-tertiary);
+	color: var(--text-secondary);
+	border: none;
+	border-right: 1px solid var(--border-color);
+	cursor: pointer;
+	font-size: 11px;
+	font-weight: 500;
+	transition: all 0.15s;
+}
+
+.api-mode-btn:last-child {
+	border-right: none;
+}
+
+.api-mode-btn:hover:not(.active) {
+	background-color: var(--bg-secondary);
+	color: var(--text-primary);
+}
+
+.api-mode-btn.active {
+	background-color: var(--accent);
+	color: white;
+}
+
+.api-mode-btn.native-mode.active {
+	background-color: #e67e22;
+}
+
+/* Run button disabled for native mode */
+#run-button.native-disabled {
+	background-color: var(--bg-tertiary);
+	color: var(--text-secondary);
+	cursor: not-allowed;
+	position: relative;
+}
+
+#run-button.native-disabled::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	bottom: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 6px 10px;
+	background-color: #333;
+	color: white;
+	font-size: 11px;
+	border-radius: 4px;
+	white-space: nowrap;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s;
+	margin-bottom: 4px;
+}
+
+#run-button.native-disabled:hover::after {
+	opacity: 1;
+}
+
+/* Native mode indicator */
+.native-mode-banner {
+	padding: 8px 16px;
+	background-color: rgba(230, 126, 34, 0.15);
+	border-bottom: 1px solid rgba(230, 126, 34, 0.3);
+	color: #e67e22;
+	font-size: 12px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.native-mode-banner::before {
+	content: "!";
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	background-color: #e67e22;
+	color: white;
+	border-radius: 50%;
+	font-size: 10px;
+	font-weight: bold;
+}

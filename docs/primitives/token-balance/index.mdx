@@ -27,7 +27,7 @@ bun install voltaire
 ## Basic Usage
 
 ```typescript
-import * as TokenBalance from 'voltaire/primitives/TokenBalance';
+import * as TokenBalance from '@tevm/voltaire/primitives/TokenBalance';
 
 // Create from raw balance (wei-like units)
 const balance = TokenBalance.from(1000000000000000000n); // 1 token with 18 decimals
@@ -241,8 +241,8 @@ Always check the token's `decimals()` function before formatting.
 ### Query Balance
 
 ```typescript
-import * as TokenBalance from 'voltaire/primitives/TokenBalance';
-import * as Address from 'voltaire/primitives/Address';
+import * as TokenBalance from '@tevm/voltaire/primitives/TokenBalance';
+import * as Address from '@tevm/voltaire/primitives/Address';
 
 // Encode balanceOf call
 const account = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
@@ -257,8 +257,8 @@ console.log(`Balance: ${formatted} tokens`);
 ### Transfer Tokens
 
 ```typescript
-import * as TokenBalance from 'voltaire/primitives/TokenBalance';
-import * as Address from 'voltaire/primitives/Address';
+import * as TokenBalance from '@tevm/voltaire/primitives/TokenBalance';
+import * as Address from '@tevm/voltaire/primitives/Address';
 
 // Convert user input to raw amount
 const amount = TokenBalance.fromBaseUnit("10.5", 18); // 10.5 tokens
@@ -283,7 +283,7 @@ if (TokenBalance.compare(balance, required) >= 0) {
 ## Error Handling
 
 ```typescript
-import { InvalidTokenBalanceError } from 'voltaire/primitives/TokenBalance';
+import { InvalidTokenBalanceError } from '@tevm/voltaire/primitives/TokenBalance';
 
 try {
   const balance = TokenBalance.from(-100n);

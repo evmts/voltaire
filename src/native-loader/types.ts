@@ -232,7 +232,7 @@ export function getNativeErrorMessage(code: number): string {
 		case NativeErrorCode.INVALID_CHECKSUM:
 			return "Invalid checksum";
 		case NativeErrorCode.BUFFER_TOO_SMALL:
-			return "Buffer too small";
+			return "Output array too small";
 		case NativeErrorCode.INVALID_SIGNATURE:
 			return "Invalid signature";
 		case NativeErrorCode.INVALID_RECOVERY_ID:

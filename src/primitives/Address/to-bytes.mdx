@@ -17,7 +17,7 @@ Convert address to byte array in C. Copies 20 bytes to provided buffer.
 
 **Parameters:**
 - `address: PrimitivesAddress` - Address to convert
-- `out_bytes: uint8_t*` - Buffer for output bytes (must be at least 20 bytes)
+- `out_bytes: uint8_t*` - Output array for bytes (must be at least 20 bytes)
 
 **Returns:** `void` - Bytes written to `out_bytes`
 
@@ -141,7 +141,7 @@ async function saveAddress(db: Database, addr: Address) {
   const bytes = addr.toBytes()
   await db.execute(
     'INSERT INTO addresses (address_bytes) VALUES (?)',
-    [Buffer(bytes)]
+    [Uint8Array(bytes)]
   )
 }
 
