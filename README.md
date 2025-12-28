@@ -27,19 +27,19 @@
 
 ## Why Voltaire?
 
-**Modern Ethereum library built for TypeScript, Zig, and AI-assisted development.**
+**Modern Ethereum library built for TypeScript, Zig, Swift, and AI-assisted development.**
 
 ```typescript
 import { Address, Wei, Gwei, Ether, Rlp, Abi, Keccak256 } from '@tevm/voltaire';
 
 // Type-safe addresses - casing bugs eliminated
 const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
-Address.toChecksummed(addr); // "0x742d35Cc..."
+addr.toChecksummed(); // "0x742d35Cc..."
 
 // Denomination safety - can't accidentally mix Wei and Ether
 const value = Wei(1000000000000000000n);
-Wei.toEther(value);  // 1n
-Wei.toGwei(value);   // 1000000000n
+value.toEther();  // 1n
+value.toGwei();   // 1000000000n
 
 // Keccak256 hashing
 const selector = Keccak256.selector('transfer(address,uint256)');
