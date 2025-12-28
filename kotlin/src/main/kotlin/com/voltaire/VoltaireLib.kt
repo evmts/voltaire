@@ -80,7 +80,7 @@ internal interface VoltaireLib : Library {
 
 /** Ethereum address (20 bytes) */
 @Structure.FieldOrder("bytes")
-open class PrimitivesAddress : Structure() {
+internal open class PrimitivesAddress : Structure() {
     @JvmField var bytes = ByteArray(20)
 
     class ByReference : PrimitivesAddress(), Structure.ByReference
@@ -89,7 +89,7 @@ open class PrimitivesAddress : Structure() {
 
 /** Hash value (32 bytes) */
 @Structure.FieldOrder("bytes")
-open class PrimitivesHash : Structure() {
+internal open class PrimitivesHash : Structure() {
     @JvmField var bytes = ByteArray(32)
 
     class ByReference : PrimitivesHash(), Structure.ByReference
@@ -98,7 +98,7 @@ open class PrimitivesHash : Structure() {
 
 /** 256-bit unsigned integer (32 bytes, big-endian) */
 @Structure.FieldOrder("bytes")
-open class PrimitivesU256 : Structure() {
+internal open class PrimitivesU256 : Structure() {
     @JvmField var bytes = ByteArray(32)
 
     class ByReference : PrimitivesU256(), Structure.ByReference
@@ -107,7 +107,7 @@ open class PrimitivesU256 : Structure() {
 
 /** Signature (r + s + v) */
 @Structure.FieldOrder("r", "s", "v")
-open class PrimitivesSignature : Structure() {
+internal open class PrimitivesSignature : Structure() {
     @JvmField var r = ByteArray(32)
     @JvmField var s = ByteArray(32)
     @JvmField var v: Byte = 0

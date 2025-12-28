@@ -1,5 +1,7 @@
 package com.voltaire
 
+import java.nio.charset.StandardCharsets
+
 /** 32-byte hash value (Keccak-256, etc.) */
 class Hash internal constructor(internal val raw: PrimitivesHash) {
 
@@ -32,8 +34,9 @@ class Hash internal constructor(internal val raw: PrimitivesHash) {
     val hex: String
         get() {
             val buf = ByteArray(67)
-            VoltaireLib.INSTANCE.primitives_hash_to_hex(raw, buf)
-            return String(buf, 0, 66)
+            val rc = VoltaireLib.INSTANCE.primitives_hash_to_hex(raw, buf)
+            require(rc >= 0) { "primitives_hash_to_hex failed: $rc" }
+            return String(buf, 0, 66, StandardCharsets.UTF_8)
         }
 
     /** Raw bytes */

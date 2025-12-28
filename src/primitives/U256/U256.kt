@@ -1,5 +1,7 @@
 package com.voltaire
 
+import java.nio.charset.StandardCharsets
+
 /** 256-bit unsigned integer (32 bytes, big-endian) */
 class U256 private constructor(private val raw: PrimitivesU256) {
 
@@ -42,9 +44,10 @@ class U256 private constructor(private val raw: PrimitivesU256) {
     val hex: String
         get() {
             val buf = ByteArray(67)
-            VoltaireLib.INSTANCE.primitives_u256_to_hex(raw, buf, 67)
+            val rc = VoltaireLib.INSTANCE.primitives_u256_to_hex(raw, buf, 67)
+            require(rc >= 0) { "primitives_u256_to_hex failed: $rc" }
             val end = buf.indexOf(0)
-            return String(buf, 0, if (end > 0) end else 66)
+            return String(buf, 0, if (end > 0) end else 66, StandardCharsets.UTF_8)
         }
 
     /** Raw bytes (32 bytes, big-endian) */

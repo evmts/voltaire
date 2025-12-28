@@ -1,5 +1,7 @@
 package com.voltaire
 
+import java.nio.charset.StandardCharsets
+
 /** Ethereum address (20 bytes) */
 class Address private constructor(private val raw: PrimitivesAddress) {
 
@@ -66,22 +68,41 @@ class Address private constructor(private val raw: PrimitivesAddress) {
             ))
             return Address(out)
         }
+
+        /** Create address from 32-byte ABI-encoded value */
+        @JvmStatic
+        @Throws(VoltaireError::class)
+        fun fromAbiEncoded(bytes: ByteArray): Address {
+            if (bytes.size != 32) throw VoltaireError.InvalidLength
+            return fromBytes(bytes.copyOfRange(12, 32))
+        }
+
+        /** Create address from U256 (uses least significant 20 bytes) */
+        @JvmStatic
+        fun from(u256: U256): Address {
+            val bytes = u256.bytes
+            val addr = PrimitivesAddress()
+            System.arraycopy(bytes, 12, addr.bytes, 0, 20)
+            return Address(addr)
+        }
     }
 
     /** Lowercase hex string with 0x prefix */
     val hex: String
         get() {
             val buf = ByteArray(43)
-            VoltaireLib.INSTANCE.primitives_address_to_hex(raw, buf)
-            return String(buf, 0, 42)
+            val rc = VoltaireLib.INSTANCE.primitives_address_to_hex(raw, buf)
+            require(rc >= 0) { "primitives_address_to_hex failed: $rc" }
+            return String(buf, 0, 42, StandardCharsets.UTF_8)
         }
 
     /** Checksummed hex string (EIP-55) */
     val checksumHex: String
         get() {
             val buf = ByteArray(43)
-            VoltaireLib.INSTANCE.primitives_address_to_checksum_hex(raw, buf)
-            return String(buf, 0, 42)
+            val rc = VoltaireLib.INSTANCE.primitives_address_to_checksum_hex(raw, buf)
+            require(rc >= 0) { "primitives_address_to_checksum_hex failed: $rc" }
+            return String(buf, 0, 42, StandardCharsets.UTF_8)
         }
 
     /** Raw bytes */
@@ -106,6 +127,10 @@ class Address private constructor(private val raw: PrimitivesAddress) {
             System.arraycopy(raw.bytes, 0, out, 12, 20)
             return out
         }
+
+    /** Convert address to U256 (20 bytes as least significant bytes) */
+    val asU256: U256
+        get() = U256.fromBytes(abiEncoded)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

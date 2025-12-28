@@ -1,5 +1,7 @@
 package com.voltaire
 
+import java.nio.charset.StandardCharsets
+
 /** Hex encoding/decoding utilities */
 object Hex {
     /** Decode hex string to bytes */
@@ -19,6 +21,7 @@ object Hex {
         val bufLen = data.size * 2 + 3
         val buf = ByteArray(bufLen)
         val result = VoltaireLib.INSTANCE.primitives_bytes_to_hex(data, data.size.toLong(), buf, bufLen.toLong())
-        return if (result > 0) String(buf, 0, result) else "0x"
+        require(result >= 0) { "primitives_bytes_to_hex failed: $result" }
+        return String(buf, 0, result, StandardCharsets.UTF_8)
     }
 }

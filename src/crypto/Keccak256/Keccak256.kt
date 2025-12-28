@@ -6,7 +6,8 @@ object Keccak256 {
     @JvmStatic
     fun hash(data: ByteArray): Hash {
         val out = PrimitivesHash()
-        VoltaireLib.INSTANCE.primitives_keccak256(data, data.size.toLong(), out)
+        val rc = VoltaireLib.INSTANCE.primitives_keccak256(data, data.size.toLong(), out)
+        require(rc == VoltaireLib.SUCCESS) { "primitives_keccak256 failed: $rc" }
         return Hash(out)
     }
 
@@ -16,13 +17,14 @@ object Keccak256 {
 
     /** Hash message with EIP-191 personal sign format */
     @JvmStatic
-    fun hashMessage(message: ByteArray): Hash {
+    fun hashEthereumMessage(message: ByteArray): Hash {
         val out = PrimitivesHash()
-        VoltaireLib.INSTANCE.primitives_eip191_hash_message(message, message.size.toLong(), out)
+        val rc = VoltaireLib.INSTANCE.primitives_eip191_hash_message(message, message.size.toLong(), out)
+        require(rc == VoltaireLib.SUCCESS) { "primitives_eip191_hash_message failed: $rc" }
         return Hash(out)
     }
 
     /** Hash message string with EIP-191 personal sign format */
     @JvmStatic
-    fun hashMessage(message: String): Hash = hashMessage(message.toByteArray(Charsets.UTF_8))
+    fun hashEthereumMessage(message: String): Hash = hashEthereumMessage(message.toByteArray(Charsets.UTF_8))
 }
