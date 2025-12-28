@@ -1,4 +1,7 @@
-export * as Bytes from "./Bytes.index.js";
+// Callable constructor
+export { Bytes } from "./Bytes.js";
+// Namespace for functional API
+export * as BrandedBytes from "./Bytes.index.js";
 export * as Bytes1 from "./Bytes1/index.js";
 export * as Bytes2 from "./Bytes2/index.js";
 export * as Bytes3 from "./Bytes3/index.js";

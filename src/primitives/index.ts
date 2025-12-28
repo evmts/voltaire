@@ -193,7 +193,8 @@ export * as Base64 from "./Base64/index.js";
 export * as BrandedBase64 from "./Base64/Base64.js";
 
 // Utilities - Bytes types
-export * as Bytes from "./Bytes/Bytes.index.js";
+export { Bytes } from "./Bytes/Bytes.js";
+export * as BrandedBytes from "./Bytes/Bytes.index.js";
 export * as Bytes1 from "./Bytes/Bytes1/index.js";
 export * as Bytes2 from "./Bytes/Bytes2/index.js";
 export * as Bytes3 from "./Bytes/Bytes3/index.js";
