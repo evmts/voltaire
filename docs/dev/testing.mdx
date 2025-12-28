@@ -252,18 +252,21 @@ describe("toChecksummed", () => {
 
 ## Cross-Validation
 
-Test against reference implementations:
+Validate against known-good vectors (no external libs):
 
 ```typescript
-import { getAddress } from "viem";
 import * as Address from "./index.js";
 
-describe("cross-validation with viem", () => {
-  it("matches viem checksum output", () => {
-    const input = "0x742d35cc6634c0532925a3b844bc9e7595f251e3";
+describe("checksum test vectors", () => {
+  const cases = [
+    ["0x742d35cc6634c0532925a3b844bc9e7595f251e3", "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"],
+    ["0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"],
+    ["0xffffffffffffffffffffffffffffffffffffffff", "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF"],
+  ] as const;
+
+  it.each(cases)("checksums %s", (input, expected) => {
     const ours = Address.toChecksummed(Address.fromHex(input));
-    const viem = getAddress(input);
-    expect(ours).toBe(viem);
+    expect(ours).toBe(expected);
   });
 });
 ```

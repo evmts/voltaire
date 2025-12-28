@@ -21,6 +21,8 @@
       <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License" />
     </a>
   </sup>
+  <br/>
+  <a href="https://playground.tevm.sh"><strong>Try it now in live playground →</strong></a>
 </div>
 
 ## Why Voltaire?
