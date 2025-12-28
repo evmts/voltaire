@@ -130,7 +130,7 @@ export * as BlockHeader from "./BlockHeader/index.js";
 export * as Uncle from "./Uncle/index.js";
 
 // Events & Logs
-export { EventLog } from "./EventLog/EventLog.js";
+export * as EventLog from "./EventLog/index.js";
 export * as BrandedEventLog from "./EventLog/index.js";
 
 // Filters
@@ -212,13 +212,18 @@ export { Bytes } from "./Bytes/Bytes.js";
 export * as BrandedBytes from "./Bytes/Bytes.index.js";
 export { Bytes1 } from "./Bytes/Bytes1/index.js";
 export * as BrandedBytes1 from "./Bytes/Bytes1/index.js";
-export * as Bytes2 from "./Bytes/Bytes2/index.js";
-export * as Bytes3 from "./Bytes/Bytes3/index.js";
+export { Bytes2 } from "./Bytes/Bytes2/Bytes2.js";
+export * as BrandedBytes2 from "./Bytes/Bytes2/index.js";
+export { Bytes3 } from "./Bytes/Bytes3/Bytes3.js";
+export * as BrandedBytes3 from "./Bytes/Bytes3/index.js";
 export { Bytes4 } from "./Bytes/Bytes4/index.js";
 export * as BrandedBytes4 from "./Bytes/Bytes4/index.js";
-export * as Bytes5 from "./Bytes/Bytes5/index.js";
-export * as Bytes6 from "./Bytes/Bytes6/index.js";
-export * as Bytes7 from "./Bytes/Bytes7/index.js";
+export { Bytes5 } from "./Bytes/Bytes5/Bytes5.js";
+export * as BrandedBytes5 from "./Bytes/Bytes5/index.js";
+export { Bytes6 } from "./Bytes/Bytes6/Bytes6.js";
+export * as BrandedBytes6 from "./Bytes/Bytes6/index.js";
+export { Bytes7 } from "./Bytes/Bytes7/Bytes7.js";
+export * as BrandedBytes7 from "./Bytes/Bytes7/index.js";
 export { Bytes8 } from "./Bytes/Bytes8/index.js";
 export * as BrandedBytes8 from "./Bytes/Bytes8/index.js";
 export { Bytes16 } from "./Bytes/Bytes16/index.js";
