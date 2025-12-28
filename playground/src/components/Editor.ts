@@ -56,7 +56,7 @@ export class Editor {
 					compilerOptions: {
 						target: 99, // ESNext
 						module: 99, // ESNext
-						lib: ["ES2023", "DOM"],
+						lib: ["ESNext", "DOM"],
 						moduleResolution: 2, // Node
 						allowSyntheticDefaultImports: true,
 						esModuleInterop: true,
