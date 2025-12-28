@@ -773,6 +773,6 @@
     "@tevm/chains": "^0.0.1",
     "@trezor/connect-web": "^9.4.3",
     "c-kzg": "^4.1.0",
-    "modern-monaco": "./modern-monaco"
+    "modern-monaco": "^0.3.6"
   }
 }
