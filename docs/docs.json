@@ -2166,7 +2166,11 @@
               {
                 "group": "Integrations",
                 "pages": [
-                  "integrations/tanstack-query"
+                  "integrations/tanstack-query",
+                  "integrations/svelte",
+                  "integrations/vue",
+                  "integrations/solid",
+                  "integrations/astro"
                 ]
               }
             ]

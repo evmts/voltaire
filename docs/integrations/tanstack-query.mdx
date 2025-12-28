@@ -8,7 +8,7 @@ TanStack Query (React Query) integrates seamlessly with Tevm for fetching and ca
 ## Installation
 
 ```bash
-bun add @tanstack/react-query tevm
+bun add @tanstack/react-query @tevm/voltaire
 ```
 
 ## Setup
@@ -35,9 +35,9 @@ function App() {
 
 ```tsx
 import { useQuery } from '@tanstack/react-query'
-import * as Address from 'tevm/primitives/Address'
-import * as Uint from 'tevm/primitives/Uint'
-import { createJsonRpcProvider } from 'tevm/jsonrpc'
+import * as Address from '@tevm/voltaire/Address'
+import * as Uint from '@tevm/voltaire/Uint'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
 
@@ -67,7 +67,7 @@ function BalanceDisplay({ address }: { address: string }) {
 
 ```tsx
 import { useQuery } from '@tanstack/react-query'
-import { createJsonRpcProvider } from 'tevm/jsonrpc'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
 
@@ -87,8 +87,8 @@ function useBlock(blockNumber?: bigint | 'latest') {
 
 ```tsx
 import { useQuery } from '@tanstack/react-query'
-import * as Address from 'tevm/primitives/Address'
-import { createJsonRpcProvider } from 'tevm/jsonrpc'
+import * as Address from '@tevm/voltaire/Address'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
 
@@ -111,9 +111,9 @@ Fetch multiple addresses simultaneously:
 
 ```tsx
 import { useQueries } from '@tanstack/react-query'
-import * as Address from 'tevm/primitives/Address'
-import * as Uint from 'tevm/primitives/Uint'
-import { createJsonRpcProvider } from 'tevm/jsonrpc'
+import * as Address from '@tevm/voltaire/Address'
+import * as Uint from '@tevm/voltaire/Uint'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
 
@@ -137,8 +137,8 @@ Chain queries when one depends on another:
 
 ```tsx
 import { useQuery } from '@tanstack/react-query'
-import * as Address from 'tevm/primitives/Address'
-import { createJsonRpcProvider } from 'tevm/jsonrpc'
+import * as Address from '@tevm/voltaire/Address'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
 
@@ -165,7 +165,7 @@ Poll for block updates:
 
 ```tsx
 import { useQuery } from '@tanstack/react-query'
-import { createJsonRpcProvider } from 'tevm/jsonrpc'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
 

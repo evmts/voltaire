@@ -22,14 +22,12 @@ Use a standard EIP-1193 provider (like window.ethereum, viem, or ethers):
 const provider = window.ethereum;
 
 // From viem
-import { createPublicClient, http } from 'viem';
-const provider = createPublicClient({
-  transport: http('https://eth.llamarpc.com')
-});
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc';
+const provider = createJsonRpcProvider('https://eth.llamarpc.com');
 
 // From ethers
-import { ethers } from 'ethers';
-const provider = new ethers.JsonRpcProvider('https://eth.llamarpc.com');
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc';
+const provider = createJsonRpcProvider('https://eth.llamarpc.com');
 ```
 
 All EIP-1193 providers work with Voltaire's request builders.
