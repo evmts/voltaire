@@ -30,19 +30,31 @@ export * as BrandedHex from "./Hex/internal-index.js";
 // Numeric types - Unsigned integers
 export { Uint } from "./Uint/Uint.js";
 export * as BrandedUint from "./Uint/index.js";
-export * as Uint8 from "./Uint8/index.js";
-export * as Uint16 from "./Uint16/index.js";
-export * as Uint32 from "./Uint32/index.js";
-export * as Uint64 from "./Uint64/index.js";
-export * as Uint128 from "./Uint128/index.js";
+export { Uint8 } from "./Uint8/Uint8.js";
+export * as BrandedUint8 from "./Uint8/index.js";
+export { Uint16 } from "./Uint16/Uint16.js";
+export * as BrandedUint16 from "./Uint16/index.js";
+export { Uint32 } from "./Uint32/Uint32.js";
+export * as BrandedUint32 from "./Uint32/index.js";
+export { Uint64 } from "./Uint64/Uint64.js";
+export * as BrandedUint64 from "./Uint64/index.js";
+export { Uint128 } from "./Uint128/Uint128.js";
+export * as BrandedUint128 from "./Uint128/index.js";
 export * as Uint256 from "./Uint/index.js"; // Alias for backward compatibility
 
 // Numeric types - Signed integers
-export * as Int8 from "./Int8/index.js";
-export * as Int16 from "./Int16/index.js";
-export * as Int32 from "./Int32/index.js";
-export * as Int128 from "./Int128/index.js";
-export * as Int256 from "./Int256/index.js";
+export { Int8 } from "./Int8/Int8.js";
+export * as BrandedInt8 from "./Int8/index.js";
+export { Int16 } from "./Int16/Int16.js";
+export * as BrandedInt16 from "./Int16/index.js";
+export { Int32 } from "./Int32/Int32.js";
+export * as BrandedInt32 from "./Int32/index.js";
+export { Int64 } from "./Int64/Int64.js";
+export * as BrandedInt64 from "./Int64/index.js";
+export { Int128 } from "./Int128/Int128.js";
+export * as BrandedInt128 from "./Int128/index.js";
+export { Int256 } from "./Int256/Int256.js";
+export * as BrandedInt256 from "./Int256/index.js";
 
 // Denomination
 export { Wei, Gwei, Ether } from "./Denomination/index.js";
@@ -118,7 +130,7 @@ export * as BlockHeader from "./BlockHeader/index.js";
 export * as Uncle from "./Uncle/index.js";
 
 // Events & Logs
-export * as EventLog from "./EventLog/index.js";
+export { EventLog } from "./EventLog/EventLog.js";
 export * as BrandedEventLog from "./EventLog/index.js";
 
 // Filters
