@@ -239,6 +239,17 @@ body {
 	display: flex;
 	align-items: center;
 	gap: 12px;
+	padding-right: 12px;
+}
+
+/* Mobile menu toggle - hidden by default on desktop */
+.mobile-menu-toggle {
+	display: none;
+}
+
+/* Mobile file tree header - hidden on desktop */
+.mobile-file-tree-header {
+	display: none;
 }
 
 #vim-status {
@@ -1724,6 +1735,254 @@ body {
 /* Zig mode button */
 .api-mode-btn.zig-mode.active {
 	background-color: #F7A41D;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+/* Tablet breakpoint */
+@media (max-width: 1024px) {
+	#app {
+		grid-template-columns: 180px 1fr 250px;
+	}
+
+	#editor-controls {
+		gap: 6px;
+		padding-right: 8px;
+	}
+
+	#editor-controls button {
+		padding: 5px 8px;
+		font-size: 11px;
+	}
+
+	#vim-status {
+		display: none;
+	}
+
+	.api-mode-toggle {
+		margin-right: 6px;
+	}
+
+	.api-mode-btn {
+		padding: 3px 6px;
+		font-size: 10px;
+	}
+}
+
+/* Mobile landscape / small tablet */
+@media (max-width: 768px) {
+	#app {
+		grid-template-columns: 1fr;
+		grid-template-rows: auto 1fr auto;
+	}
+
+	#file-tree {
+		display: none;
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 280px;
+		height: 100vh;
+		z-index: 1100;
+		box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+	}
+
+	#file-tree.mobile-open {
+		display: block;
+	}
+
+	/* Show mobile file tree header on mobile */
+	.mobile-file-tree-header {
+		display: flex !important;
+		justify-content: space-between;
+		align-items: center;
+		padding: 12px 16px;
+		background-color: var(--bg-tertiary);
+		border-bottom: 1px solid var(--border-color);
+	}
+
+	.mobile-file-tree-header h3 {
+		margin: 0;
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	.mobile-file-tree-close {
+		background: none;
+		border: none;
+		color: var(--text-secondary);
+		font-size: 24px;
+		cursor: pointer;
+		padding: 0;
+		width: 28px;
+		height: 28px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 4px;
+	}
+
+	.mobile-file-tree-close:hover {
+		background-color: rgba(255, 255, 255, 0.1);
+		color: var(--text-primary);
+	}
+
+	#console {
+		border-left: none;
+		border-top: 1px solid var(--border-color);
+		max-height: 200px;
+	}
+
+	#editor-header {
+		flex-wrap: wrap;
+		gap: 8px;
+		padding: 8px;
+	}
+
+	#editor-tabs {
+		order: 2;
+		width: 100%;
+		flex: none;
+	}
+
+	#editor-controls {
+		order: 1;
+		width: 100%;
+		justify-content: flex-end;
+		flex-wrap: wrap;
+		gap: 4px;
+		padding: 0;
+	}
+
+	/* Hide less important buttons on mobile */
+	#vim-toggle,
+	#vim-status,
+	#diff-toggle,
+	#revert-button,
+	#split-horizontal,
+	#split-vertical,
+	#sync-scroll,
+	#history-button,
+	#settings-button {
+		display: none;
+	}
+
+	/* Keep essential buttons visible */
+	#run-button {
+		padding: 8px 20px;
+		font-size: 14px;
+	}
+
+	#benchmark-button {
+		padding: 6px 10px;
+		font-size: 11px;
+	}
+
+	.api-mode-toggle {
+		margin-right: 0;
+	}
+
+	#breadcrumbs {
+		padding: 4px 12px;
+		min-height: 28px;
+	}
+
+	/* Add mobile menu toggle button */
+	.mobile-menu-toggle {
+		display: flex !important;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		background-color: var(--bg-tertiary);
+		border: 1px solid var(--border-color);
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 18px;
+		color: var(--text-primary);
+	}
+
+	.mobile-menu-toggle:hover {
+		background-color: var(--bg-secondary);
+	}
+
+	/* Mobile overlay for file tree */
+	.mobile-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.5);
+		z-index: 1050;
+		display: none;
+	}
+
+	.mobile-overlay.visible {
+		display: block;
+	}
+
+	/* Panels should be full width on mobile */
+	#history-panel,
+	#benchmark-panel {
+		width: 100%;
+		max-width: 100%;
+	}
+
+	#settings-panel {
+		width: 90%;
+		max-width: 360px;
+	}
+
+	#search-panel {
+		width: 95%;
+		max-width: 500px;
+	}
+}
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+	#editor-controls {
+		justify-content: space-between;
+	}
+
+	#run-button {
+		flex: 1;
+		max-width: 120px;
+	}
+
+	#benchmark-button {
+		display: none;
+	}
+
+	.api-mode-label {
+		display: none;
+	}
+
+	.api-mode-btn {
+		padding: 4px 8px;
+	}
+
+	#console-header {
+		padding: 6px 12px;
+		font-size: 11px;
+	}
+
+	#console-content {
+		padding: 8px;
+		font-size: 12px;
+	}
+
+	.editor-tab {
+		padding: 6px 8px;
+		font-size: 12px;
+	}
+
+	.breadcrumb-trail {
+		font-size: 12px;
+	}
 }
 
 /* Unsupported mode banners - generic styles */

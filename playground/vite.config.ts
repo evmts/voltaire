@@ -183,6 +183,8 @@ export default defineConfig({
 				"node_modules/typescript/lib/typescript.js",
 			),
 			// Main entry points
+			"@tevm/voltaire/wasm": resolve(__dirname, "../src/wasm/index.ts"),
+			"@tevm/voltaire": resolve(__dirname, "../src/index.ts"),
 			"voltaire/wasm": resolve(__dirname, "../src/wasm/index.ts"),
 			voltaire: resolve(__dirname, "../src/index.ts"),
 		},

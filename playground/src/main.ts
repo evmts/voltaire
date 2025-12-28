@@ -436,8 +436,55 @@ async function init(): Promise<void> {
 	});
 
 	// Initialize file tree
-	const fileTreeEl = document.getElementById("file-tree");
-	new FileTree(fileTreeEl!, fileTree, handleFileSelect);
+	const fileTreeEl = document.getElementById("file-tree")!;
+	new FileTree(fileTreeEl, fileTree, (file) => {
+		handleFileSelect(file);
+		// Close mobile menu on file select
+		closeMobileMenu();
+	});
+
+	// Setup mobile menu toggle
+	const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+	const mobileOverlay = document.getElementById("mobile-overlay");
+
+	// Add mobile header to file tree
+	const mobileHeader = document.createElement("div");
+	mobileHeader.className = "mobile-file-tree-header";
+	mobileHeader.innerHTML = `
+		<h3>Examples</h3>
+		<button class="mobile-file-tree-close" title="Close">×</button>
+	`;
+	fileTreeEl.insertBefore(mobileHeader, fileTreeEl.firstChild);
+
+	function openMobileMenu(): void {
+		fileTreeEl.classList.add("mobile-open");
+		mobileOverlay?.classList.add("visible");
+	}
+
+	function closeMobileMenu(): void {
+		fileTreeEl.classList.remove("mobile-open");
+		mobileOverlay?.classList.remove("visible");
+	}
+
+	// Close button in mobile header
+	const mobileCloseBtn = mobileHeader.querySelector(".mobile-file-tree-close");
+	if (mobileCloseBtn) {
+		mobileCloseBtn.addEventListener("click", closeMobileMenu);
+	}
+
+	if (mobileMenuToggle) {
+		mobileMenuToggle.addEventListener("click", () => {
+			if (fileTreeEl.classList.contains("mobile-open")) {
+				closeMobileMenu();
+			} else {
+				openMobileMenu();
+			}
+		});
+	}
+
+	if (mobileOverlay) {
+		mobileOverlay.addEventListener("click", closeMobileMenu);
+	}
 
 	// Handle URL deep linking - select file from ?example= parameter
 	const examplePath = getExampleFromUrl();
