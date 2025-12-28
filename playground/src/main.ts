@@ -115,9 +115,14 @@ function handleFileSelect(file: FileNode): void {
 	// Update URL for deep linking
 	updateUrlWithExample(file.path);
 
+	// Transform content based on current API mode
+	const transformedContent = transformImportsForMode(file.content, currentApiMode);
+
 	// Use EditorTabs if available, fallback to old behavior
 	if (editorTabs) {
-		editorTabs.openFile(file);
+		// Create a modified file object with transformed content
+		const transformedFile = { ...file, content: transformedContent };
+		editorTabs.openFile(transformedFile);
 
 		// Store original content for diff view
 		if (diffView) {
@@ -125,7 +130,7 @@ function handleFileSelect(file: FileNode): void {
 		}
 	} else {
 		// Fallback: Load file with AutoSave (will restore from LocalStorage if available)
-		autoSave.loadFile(file.path, file.content);
+		autoSave.loadFile(file.path, transformedContent);
 	}
 
 	// Update breadcrumbs
@@ -138,33 +143,102 @@ function handleFileSelect(file: FileNode): void {
 	}
 
 	const runButton = document.getElementById("run-button") as HTMLButtonElement;
-	runButton.disabled = false;
+	// Only enable run button if mode is supported
+	runButton.disabled = isUnsupportedMode(currentApiMode);
 
 	consoleComponent.clear();
+}
+
+// Transform import paths based on API mode
+function transformImportsForMode(code: string, mode: ApiMode): string {
+	switch (mode) {
+		case 'wasm':
+			return code
+				.replace(/from ["']@tevm\/voltaire["']/g, 'from "@tevm/voltaire/wasm"')
+				.replace(/from ["']voltaire["']/g, 'from "voltaire/wasm"');
+		case 'native':
+			return code
+				.replace(/from ["']@tevm\/voltaire["']/g, 'from "@tevm/voltaire/native"')
+				.replace(/from ["']voltaire["']/g, 'from "voltaire/native"');
+		case 'swift': {
+			// Extract imports and convert to Swift syntax
+			const importMatch = code.match(/import\s*\{([^}]+)\}\s*from\s*["']@?tevm\/voltaire["']/);
+			const imports = importMatch ? importMatch[1].split(',').map(s => s.trim()).join(', ') : '';
+			const codeWithoutImport = code.replace(/import\s*\{[^}]+\}\s*from\s*["']@?tevm\/voltaire["'][;\n]*/g, '');
+			return `import Voltaire  // ${imports}\n\n// Swift preview (not executable in browser)\n// TypeScript equivalent:\n${codeWithoutImport.split('\n').map(line => '// ' + line).join('\n')}`;
+		}
+		case 'zig': {
+			// Extract imports and convert to Zig syntax
+			const importMatch = code.match(/import\s*\{([^}]+)\}\s*from\s*["']@?tevm\/voltaire["']/);
+			const imports = importMatch ? importMatch[1].split(',').map(s => s.trim()).join(', ') : '';
+			const codeWithoutImport = code.replace(/import\s*\{[^}]+\}\s*from\s*["']@?tevm\/voltaire["'][;\n]*/g, '');
+			return `const voltaire = @import("voltaire");  // ${imports}\n\n// Zig preview (not executable in browser)\n// TypeScript equivalent:\n${codeWithoutImport.split('\n').map(line => '// ' + line).join('\n')}`;
+		}
+		default:
+			return code;
+	}
+}
+
+// Update editor content for current mode
+function updateEditorForMode(): void {
+	if (!currentFile?.content) return;
+
+	const transformedCode = transformImportsForMode(currentFile.content, currentApiMode);
+
+	if (editorTabs) {
+		const activeTab = editorTabs.getActiveTab();
+		if (activeTab) {
+			activeTab.model.setValue(transformedCode);
+		}
+	} else {
+		editor.setValue(transformedCode);
+	}
+}
+
+// Get banner message for unsupported modes
+function getUnsupportedModeMessage(mode: ApiMode): string {
+	switch (mode) {
+		case 'native':
+			return 'Native FFI requires Bun runtime - not available in browser';
+		case 'swift':
+			return 'Swift API - not available in browser';
+		case 'zig':
+			return 'Zig API - not available in browser';
+		default:
+			return '';
+	}
+}
+
+// Check if mode is unsupported in browser
+function isUnsupportedMode(mode: ApiMode): boolean {
+	return mode === 'native' || mode === 'swift' || mode === 'zig';
 }
 
 // API mode change handler
 function handleApiModeChange(mode: ApiMode): void {
 	currentApiMode = mode;
 	const runButton = document.getElementById("run-button") as HTMLButtonElement;
-	const nativeBanner = document.getElementById("native-mode-banner");
+	const existingBanner = document.getElementById("unsupported-mode-banner");
 
-	if (mode === 'native') {
+	if (isUnsupportedMode(mode)) {
 		runButton.disabled = true;
 		runButton.classList.add('native-disabled');
-		runButton.dataset.tooltip = 'Native mode requires Bun runtime';
+		runButton.dataset.tooltip = getUnsupportedModeMessage(mode);
 
-		// Show native mode banner if not exists
-		if (!nativeBanner) {
-			const banner = document.createElement('div');
-			banner.id = 'native-mode-banner';
-			banner.className = 'native-mode-banner';
-			banner.textContent = 'Native FFI mode - Run examples with: bun playground/examples/<file>.ts';
-			const editorContainer = document.getElementById('editor-container');
-			const breadcrumbs = document.getElementById('breadcrumbs');
-			if (editorContainer && breadcrumbs) {
-				editorContainer.insertBefore(banner, breadcrumbs);
-			}
+		// Remove existing banner if any
+		if (existingBanner) {
+			existingBanner.remove();
+		}
+
+		// Show unsupported mode banner
+		const banner = document.createElement('div');
+		banner.id = 'unsupported-mode-banner';
+		banner.className = `unsupported-mode-banner ${mode}-mode-banner`;
+		banner.textContent = getUnsupportedModeMessage(mode);
+		const editorContainer = document.getElementById('editor-container');
+		const breadcrumbs = document.getElementById('breadcrumbs');
+		if (editorContainer && breadcrumbs) {
+			editorContainer.insertBefore(banner, breadcrumbs);
 		}
 	} else {
 		runButton.classList.remove('native-disabled');
@@ -173,17 +247,20 @@ function handleApiModeChange(mode: ApiMode): void {
 			runButton.disabled = false;
 		}
 
-		// Remove native mode banner
-		if (nativeBanner) {
-			nativeBanner.remove();
+		// Remove unsupported mode banner
+		if (existingBanner) {
+			existingBanner.remove();
 		}
 	}
+
+	// Update editor content with transformed imports
+	updateEditorForMode();
 }
 
 // Run button handler
 async function handleRun(): Promise<void> {
 	if (!currentFile) return;
-	if (currentApiMode === 'native') return;
+	if (isUnsupportedMode(currentApiMode)) return;
 
 	const runButton = document.getElementById("run-button") as HTMLButtonElement;
 	runButton.disabled = true;

@@ -1,8 +1,8 @@
 /**
- * API Mode Toggle - Switch between Regular, WASM, and Native execution modes
+ * API Mode Toggle - Switch between Regular, WASM, Native, Swift, and Zig execution modes
  */
 
-export type ApiMode = 'regular' | 'wasm' | 'native';
+export type ApiMode = 'regular' | 'wasm' | 'native' | 'swift' | 'zig';
 
 export interface ApiModeToggleOptions {
   onChange?: (mode: ApiMode) => void;
@@ -25,7 +25,7 @@ export class ApiModeToggle {
 
   private loadMode(): ApiMode {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === 'regular' || saved === 'wasm' || saved === 'native') {
+    if (saved === 'regular' || saved === 'wasm' || saved === 'native' || saved === 'swift' || saved === 'zig') {
       return saved;
     }
     return 'regular';
@@ -60,6 +60,16 @@ export class ApiModeToggle {
         label: 'Native',
         tooltip: 'Native FFI - Bun only, not available in browser'
       },
+      {
+        mode: 'swift',
+        label: 'Swift',
+        tooltip: 'Swift API - Not available in browser'
+      },
+      {
+        mode: 'zig',
+        label: 'Zig',
+        tooltip: 'Zig API - Not available in browser'
+      },
     ];
 
     const buttonGroup = document.createElement('div');
@@ -74,6 +84,10 @@ export class ApiModeToggle {
 
       if (mode === 'native') {
         button.classList.add('native-mode');
+      } else if (mode === 'swift') {
+        button.classList.add('swift-mode');
+      } else if (mode === 'zig') {
+        button.classList.add('zig-mode');
       }
 
       button.addEventListener('click', () => this.setMode(mode));
@@ -108,5 +122,17 @@ export class ApiModeToggle {
 
   isWasmMode(): boolean {
     return this.mode === 'wasm';
+  }
+
+  isSwiftMode(): boolean {
+    return this.mode === 'swift';
+  }
+
+  isZigMode(): boolean {
+    return this.mode === 'zig';
+  }
+
+  isUnsupportedInBrowser(): boolean {
+    return this.mode === 'native' || this.mode === 'swift' || this.mode === 'zig';
   }
 }
