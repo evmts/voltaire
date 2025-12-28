@@ -358,6 +358,7 @@ Propose→wait. Blocked: stop, explain, wait.
 ## Git Safety
 
 ❌ `git reset --hard` - NEVER use. Destructive, loses work.
+❌ `git push --force` - NEVER use without explicit user permission. Always ask first.
 ✅ `git revert` - Use for reverting commits safely.
 
 ## GitHub
