@@ -7,7 +7,7 @@ console.log("Hex from string:", hex1);
 
 // From bytes
 const bytes = Bytes([0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0]);
-const hexFromBytes = Hex.fromBytes(bytes);
+const hexFromBytes = bytes.toHex();
 console.log("Hex from bytes:", hexFromBytes);
 
 // From number/bigint

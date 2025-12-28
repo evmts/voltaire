@@ -64,7 +64,7 @@ const erc20AccessList = AccessList([
 console.log("ERC-20 access list for USDC");
 
 // === Access List Serialization ===
-const serialized = AccessList.toBytes(multiAddress);
+const serialized = multiAddress.toBytes();
 console.log("Serialized bytes length:", serialized.length);
 
 // === Gas Estimation ===

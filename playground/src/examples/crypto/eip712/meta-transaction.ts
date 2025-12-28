@@ -3,8 +3,8 @@ import { Address, Bytes, EIP712, Hex, Secp256k1 } from "@tevm/voltaire";
 
 // Generate user keypair
 const userPrivateKey = Secp256k1.PrivateKey.random();
-const userPublicKey = Secp256k1.PrivateKey.toPublicKey(userPrivateKey);
-const userAddress = Secp256k1.PublicKey.toAddress(userPublicKey);
+const userPublicKey = userPrivateKey.toPublicKey();
+const userAddress = userPublicKey.toAddress();
 
 const forwarderAddress = Address(
 	"0x84a0856b038eaAd1cC7E297cF34A7e72685A8693",

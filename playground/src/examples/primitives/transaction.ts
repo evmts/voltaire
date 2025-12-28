@@ -58,8 +58,8 @@ console.log("EIP-1559 max fee:", eip1559.maxFeePerGas, "wei");
 // === Serialization ===
 const serializedLegacy = Transaction.serialize(legacy);
 const serializedEip1559 = Transaction.serialize(eip1559);
-console.log("Legacy serialized:", Hex.fromBytes(serializedLegacy).slice(0, 40) + "...");
-console.log("EIP-1559 serialized:", Hex.fromBytes(serializedEip1559).slice(0, 40) + "...");
+console.log("Legacy serialized:", serializedLegacy.toHex().slice(0, 40) + "...");
+console.log("EIP-1559 serialized:", serializedEip1559.toHex().slice(0, 40) + "...");
 
 // === Type Detection ===
 const detectedLegacy = Transaction.detectType(serializedLegacy);

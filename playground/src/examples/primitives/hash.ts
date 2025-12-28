@@ -5,7 +5,7 @@ import { Hash, Bytes32, Hex } from "@tevm/voltaire";
 const hash1 = Hash(
   "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 );
-console.log("Hash from hex:", Hash.toHex(hash1));
+console.log("Hash from hex:", hash1.toHex());
 
 // From bytes
 const hash2 = Hash.fromBytes(
@@ -16,39 +16,39 @@ const hash2 = Hash.fromBytes(
     0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef
   ])
 );
-console.log("Hash from bytes:", Hash.toHex(hash2));
+console.log("Hash from bytes:", hash2.toHex());
 
 // Random hash (useful for testing)
 const randomHash = Hash.random();
-console.log("Random hash:", Hash.toHex(randomHash));
+console.log("Random hash:", randomHash.toHex());
 
 // Zero hash
 const zeroHash = Hash.zero();
-console.log("Zero hash:", Hash.toHex(zeroHash));
+console.log("Zero hash:", zeroHash.toHex());
 
 // === Keccak256 Hashing ===
 // Hash bytes
 const data = new TextEncoder().encode("Hello, Ethereum!");
 const dataHash = Hash.keccak256(data);
-console.log("Keccak256 of 'Hello, Ethereum!':", Hash.toHex(dataHash));
+console.log("Keccak256 of 'Hello, Ethereum!':", dataHash.toHex());
 
 // Hash hex string
 const hexData = Hex("0x48656c6c6f"); // "Hello"
-const hexHash = Hash.keccak256(Hex.toBytes(hexData));
-console.log("Keccak256 of hex data:", Hash.toHex(hexHash));
+const hexHash = Hash.keccak256(hexData.toBytes());
+console.log("Keccak256 of hex data:", hexHash.toHex());
 
 // === Hash Comparison ===
-console.log("Equals:", Hash.equals(hash1, hash2));
-console.log("Is zero:", Hash.isZero(zeroHash));
+console.log("Equals:", hash1.equals(hash2));
+console.log("Is zero:", zeroHash.isZero());
 
 // === Hash Operations ===
 // Clone
-const cloned = Hash.clone(hash1);
-console.log("Cloned:", Hash.toHex(cloned));
+const cloned = hash1.clone();
+console.log("Cloned:", cloned.toHex());
 
 // Slice (get portion of hash)
-const first16 = Hash.slice(hash1, 0, 16);
-console.log("First 16 bytes:", Hex.fromBytes(first16));
+const first16 = hash1.slice(0, 16);
+console.log("First 16 bytes:", first16.toHex());
 
 // Concatenate hashes (for Merkle trees)
 const combined = Hash.concat(hash1, hash2);
@@ -59,11 +59,11 @@ console.log("Concatenated length:", combined.length, "bytes");
 const signature = "transfer(address,uint256)";
 const sigBytes = new TextEncoder().encode(signature);
 const sigHash = Hash.keccak256(sigBytes);
-const selector = Hash.slice(sigHash, 0, 4);
-console.log("Function selector:", Hex.fromBytes(selector));
+const selector = sigHash.slice(0, 4);
+console.log("Function selector:", selector.toHex());
 
 // Event topic
 const eventSig = "Transfer(address,address,uint256)";
 const eventBytes = new TextEncoder().encode(eventSig);
 const eventTopic = Hash.keccak256(eventBytes);
-console.log("Event topic:", Hash.toHex(eventTopic));
+console.log("Event topic:", eventTopic.toHex());

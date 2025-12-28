@@ -32,7 +32,7 @@ const recoveryMatches =
 	Hex.fromBytes(publicKey) === Hex.fromBytes(recoveredPubKey!);
 
 // Compact signature format (64 bytes)
-const compactSig = Secp256k1.Signature.toCompact(signature);
+const compactSig = signature.toCompact();
 
 // ECDH shared secret
 const privateKey2 = Secp256k1.PrivateKey.random();

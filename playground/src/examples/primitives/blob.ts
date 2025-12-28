@@ -17,7 +17,7 @@ const blob = Blob.fromData(data);
 console.log("Data blob created from:", message.length, "bytes");
 
 // === Extracting Data ===
-const extracted = Blob.toData(blob);
+const extracted = blob.toData();
 const decoded = new TextDecoder().decode(extracted);
 console.log("Extracted data:", decoded);
 
@@ -62,5 +62,5 @@ const rollupBlob = Blob.fromData(batchData);
 console.log("Rollup batch blob size:", rollupBlob.length);
 
 // === Validation ===
-console.log("Is valid blob size:", Blob.isValid(emptyBlob));
+console.log("Is valid blob size:", emptyBlob.isValid());
 console.log("Is valid (wrong size):", Blob.isValid(Bytes.zero(1000)));

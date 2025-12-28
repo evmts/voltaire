@@ -7,7 +7,7 @@ const privateKey = Secp256k1.PrivateKey.random();
 const signature = Secp256k1.sign(messageHash, privateKey);
 
 // Convert to compact format (r + s + v = 65 bytes)
-const compact = Secp256k1.Signature.toCompact(signature);
+const compact = signature.toCompact();
 
 // Convert back from compact
 const fromCompact = Secp256k1.Signature.fromCompact(compact);

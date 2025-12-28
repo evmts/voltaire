@@ -3,8 +3,8 @@ import { Address, EIP712, Hex, Secp256k1 } from "@tevm/voltaire";
 
 // Generate voter keypair
 const voterPrivateKey = Secp256k1.PrivateKey.random();
-const voterPublicKey = Secp256k1.PrivateKey.toPublicKey(voterPrivateKey);
-const voterAddress = Secp256k1.PublicKey.toAddress(voterPublicKey);
+const voterPublicKey = voterPrivateKey.toPublicKey();
+const voterAddress = voterPublicKey.toAddress();
 
 const governorAddress = Address(
 	"0xc0Da02939E1441F497fd74F78cE7Decb17B66529",
