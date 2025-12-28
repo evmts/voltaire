@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /**
  * Decompress a public key from 33 bytes (compressed) to 64 bytes (uncompressed)
@@ -24,9 +23,10 @@ export function decompress(compressed) {
 	}
 
 	// Validate prefix
-	if (compressed[0] !== 0x02 && compressed[0] !== 0x03) {
+	const prefix = /** @type {number} */ (compressed[0]);
+	if (prefix !== 0x02 && prefix !== 0x03) {
 		throw new Error(
-			`Invalid compressed public key prefix: expected 0x02 or 0x03, got 0x${compressed[0].toString(16).padStart(2, "0")}`,
+			`Invalid compressed public key prefix: expected 0x02 or 0x03, got 0x${prefix.toString(16).padStart(2, "0")}`,
 		);
 	}
 
@@ -36,7 +36,7 @@ export function decompress(compressed) {
 	// Parse x coordinate
 	let x = 0n;
 	for (let i = 1; i < 33; i++) {
-		x = (x << 8n) | BigInt(compressed[i]);
+		x = (x << 8n) | BigInt(/** @type {number} */ (compressed[i]));
 	}
 
 	// Validate x is in field
@@ -58,7 +58,7 @@ export function decompress(compressed) {
 
 	// Choose correct y based on prefix parity
 	const yIsOdd = (yCandidate & 1n) === 1n;
-	const prefixIsOdd = compressed[0] === 0x03;
+	const prefixIsOdd = prefix === 0x03;
 	const y = yIsOdd === prefixIsOdd ? yCandidate : P - yCandidate;
 
 	// Convert to 64 byte uncompressed format

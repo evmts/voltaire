@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /**
  * Compress a public key from 64 bytes (uncompressed) to 33 bytes (compressed)
@@ -21,7 +20,7 @@ export function compress(publicKey) {
 	// Parse y coordinate to determine parity
 	let y = 0n;
 	for (let i = 32; i < 64; i++) {
-		y = (y << 8n) | BigInt(publicKey[i]);
+		y = (y << 8n) | BigInt(/** @type {number} */ (publicKey[i]));
 	}
 
 	// Set prefix based on y parity

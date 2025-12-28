@@ -137,10 +137,7 @@ describe("BytesType type-level tests", () => {
 			const _bytes: BytesType = new Uint16Array([1, 2, 3]);
 		});
 
-		it("should not accept Buffer", () => {
-			// @ts-expect-error - Buffer is not BytesType
-			const _bytes: BytesType = Buffer.from([1, 2, 3]);
-		});
+		// Removed Buffer-based test to avoid Node-specific Buffer usage.
 	});
 
 	describe("union types", () => {

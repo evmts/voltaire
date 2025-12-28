@@ -18,7 +18,7 @@ import { hexCharToValue } from "./utils.js";
  * const bytes = Hex.toBytes(hex); // Uint8Array([0x12, 0x34])
  * ```
  */
-export function toBytes(hex: HexType): Uint8Array {
+export function toBytes(hex: HexType | `0x${string}` | string): Uint8Array {
 	if (!hex.startsWith("0x"))
 		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
 			code: "HEX_MISSING_PREFIX",

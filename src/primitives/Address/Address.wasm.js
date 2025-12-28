@@ -322,9 +322,12 @@ export function toUppercase(address) {
  * ```
  */
 export function toU256(address) {
-	const bytes = new Uint8Array(32);
-	bytes.set(address, 12); // Left-pad with 12 zero bytes
-	return /** @type {import('../Uint/index.js').Uint256Type} */ (bytes);
+	// Convert 20-byte address to bigint (unsigned 160-bit)
+	let value = 0n;
+	for (let i = 0; i < SIZE; i++) {
+		value = (value << 8n) + BigInt(address[i]);
+	}
+	return value;
 }
 
 /**
@@ -362,9 +365,28 @@ export function toAbiEncoded(address) {
  * // "0x742d...51e3"
  * ```
  */
-export function toShortHex(address) {
+export function toShortHex(address, sliceLength = 4, endLength = sliceLength) {
 	const hex = loader.addressToHex(address);
-	return `${hex.slice(0, 6)}...${hex.slice(-4)}`;
+	// Remove 0x for slicing math, then re-add
+	const body = hex.slice(2);
+	const totalLen = body.length; // 40
+	const startChars = Math.max(0, Math.min(totalLen, sliceLength));
+	const endChars = Math.max(0, Math.min(totalLen - startChars, endLength));
+	if (startChars + endChars >= totalLen) return hex;
+	return `0x${body.slice(0, startChars)}...${body.slice(-endChars)}`;
+}
+
+/**
+ * Format Address as an EIP-55 checksummed hex string
+ *
+ * Mirrors the behavior of format() in the TS implementation and is
+ * equivalent to toChecksummed(address).
+ *
+ * @param {BrandedAddress} address - Address to format
+ * @returns {import('./ChecksumAddress.js').ChecksumAddress} Checksummed hex string
+ */
+export function format(address) {
+	return toChecksummed(address);
 }
 
 // ============================================================================

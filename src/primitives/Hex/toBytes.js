@@ -6,7 +6,7 @@ import { hexCharToValue } from "./utils.js";
  *
  * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
  * @since 0.0.0
- * @param {import('./HexType.js').HexType} hex - Hex string to convert
+ * @param {import('./HexType.js').HexType | `0x${string}` | string} hex - Hex string to convert
  * @returns {Uint8Array} Byte array
  * @throws {InvalidFormatError} If missing 0x prefix or contains invalid hex characters
  * @throws {InvalidLengthError} If hex has odd number of digits

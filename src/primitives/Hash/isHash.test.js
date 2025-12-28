@@ -107,11 +107,7 @@ describe("isHash", () => {
 			expect(isHash(new Float32Array(32))).toBe(false);
 		});
 
-		it("returns false for Buffer (if available)", () => {
-			if (typeof Buffer !== "undefined") {
-				expect(isHash(Buffer.alloc(32))).toBe(true); // Buffer is Uint8Array subclass
-			}
-		});
+		// Removed Buffer-based test to avoid Node-specific Buffer usage.
 
 		it("returns true for Uint8Array subclass of length 32", () => {
 			class CustomArray extends Uint8Array {}

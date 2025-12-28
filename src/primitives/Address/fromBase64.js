@@ -1,4 +1,5 @@
 import { fromBytes } from "./fromBytes.js";
+import * as Base64 from "../Base64/index.js";
 
 /**
  * Create Address from base64 string
@@ -13,28 +14,6 @@ import { fromBytes } from "./fromBytes.js";
  * ```
  */
 export function fromBase64(b64) {
-	// Validate base64 string format
-	if (!/^[A-Za-z0-9+/]*={0,2}$/.test(b64)) {
-		throw new Error("Invalid base64 string");
-	}
-
-	let decoded;
-
-	try {
-		if (typeof Buffer !== "undefined") {
-			decoded = Buffer.from(b64, "base64");
-		} else {
-			// Browser fallback
-			const binary = atob(b64);
-			decoded = new Uint8Array(binary.length);
-			for (let i = 0; i < binary.length; i++) {
-				decoded[i] = binary.charCodeAt(i);
-			}
-		}
-	} catch (e) {
-		throw new Error("Invalid base64 string");
-	}
-
 	// Validate via fromBytes (ensures 20-byte length)
-	return fromBytes(decoded);
+	return fromBytes(Base64.decode(b64));
 }

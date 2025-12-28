@@ -12,5 +12,5 @@ import * as Hex from "../Hex/index.js";
  * ```
  */
 export function toBytes(data) {
-	return Hex.toBytes(data);
+	return Hex.toBytes(/** @type {string} */ (data));
 }

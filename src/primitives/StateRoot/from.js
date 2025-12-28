@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Hash } from "../Hash/index.js";
 
 /**
@@ -21,12 +20,15 @@ import { Hash } from "../Hash/index.js";
  */
 export function from(value) {
 	// If already a StateRoot, return as-is
-	if (value && value[Symbol.for("voltaire.brand")] === "StateRoot") {
-		return value;
+	if (
+		value &&
+		/** @type {any} */ (value)[Symbol.for("voltaire.brand")] === "StateRoot"
+	) {
+		return /** @type {StateRootType} */ (value);
 	}
 
 	// Convert to Hash first (validates 32 bytes)
-	const hash = Hash(value);
+	const hash = Hash(/** @type {string | Uint8Array} */ (value));
 
 	// Brand as StateRoot
 	Object.defineProperty(hash, Symbol.for("voltaire.brand"), {
@@ -36,5 +38,5 @@ export function from(value) {
 		configurable: false,
 	});
 
-	return /** @type {StateRootType} */ (hash);
+	return /** @type {StateRootType} */ (/** @type {unknown} */ (hash));
 }

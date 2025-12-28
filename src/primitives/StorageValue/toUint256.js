@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /**
  * @typedef {import('./StorageValueType.js').StorageValueType} StorageValueType
@@ -20,7 +19,7 @@
 export function toUint256(value) {
 	let result = 0n;
 	for (let i = 0; i < value.length; i++) {
-		result = (result << 8n) | BigInt(value[i]);
+		result = (result << 8n) | BigInt(/** @type {number} */ (value[i]));
 	}
 	return result;
 }

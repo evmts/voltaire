@@ -1,3 +1,3 @@
-export { Hex } from "./Hex.js";
+export { Hex, fromBytes, toBytes } from "./Hex.js";
 export * from "./Hex.js";
-export type { HexType } from "./HexType.js";
+export type { HexType, Sized, Bytes } from "./HexType.js";

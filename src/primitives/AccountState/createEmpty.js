@@ -1,6 +1,5 @@
 import { from as weiFrom } from "../Denomination/Wei.js";
 import { Hash } from "../Hash/index.js";
-// @ts-nocheck
 import { from as nonceFrom } from "../Nonce/from.js";
 import * as StateRoot from "../StateRoot/index.js";
 import { EMPTY_CODE_HASH, EMPTY_TRIE_HASH } from "./AccountStateType.js";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /**
  * @typedef {import('./BundleHashType.js').BundleHashType} BundleHashType
@@ -34,5 +33,5 @@ export function fromBundle(bundle, crypto) {
 	}
 
 	// Hash the concatenated hashes to get bundle hash
-	return crypto.keccak256(data);
+	return /** @type {BundleHashType} */ (crypto.keccak256(data));
 }

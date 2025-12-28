@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Hash } from "../Hash/index.js";
 
 /**
@@ -19,5 +18,12 @@ import { Hash } from "../Hash/index.js";
  * ```
  */
 export function equals(a, b) {
-	return Hash.equals(a, b);
+	return Hash.equals(
+		/** @type {import('../Hash/HashType.js').HashType} */ (
+			/** @type {unknown} */ (a)
+		),
+		/** @type {import('../Hash/HashType.js').HashType} */ (
+			/** @type {unknown} */ (b)
+		),
+	);
 }

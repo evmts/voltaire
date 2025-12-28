@@ -1,6 +1,5 @@
-// @ts-nocheck
 export * from "./errors.js";
-export type { Hex as HexType } from "./Hex.js";
+export type { Hex as HexType } from "./HexType.js";
 
 import { assertSize } from "./assertSize.js";
 import { clone } from "./clone.js";

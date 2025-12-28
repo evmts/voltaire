@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * @typedef {import('./AccountStateType.js').AccountStateType} AccountStateType
  * @typedef {import('./AccountStateType.js').AccountStateLike} AccountStateLike

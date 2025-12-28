@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /**
  * @typedef {import('./StorageValueType.js').StorageValueType} StorageValueType
@@ -25,7 +24,7 @@ export function equals(a, b) {
 	// Constant-time comparison
 	let result = 0;
 	for (let i = 0; i < a.length; i++) {
-		result |= a[i] ^ b[i];
+		result |= /** @type {number} */ (a[i]) ^ /** @type {number} */ (b[i]);
 	}
 
 	return result === 0;

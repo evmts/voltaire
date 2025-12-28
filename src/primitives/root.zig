@@ -332,3 +332,5 @@ pub const crypto = @import("crypto");
 // Fuzz tests are standalone and run with: zig build test --fuzz
 // They use std.testing.fuzzInput which only exists in fuzz mode
 // Files: Address/address.fuzz.zig, Abi/Abi.fuzz.zig, Hex/hex.fuzz.zig, etc.
+
+// Note: extra tests are compiled via a separate test runner (see build.zig)

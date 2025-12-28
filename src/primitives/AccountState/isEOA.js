@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Hash } from "../Hash/index.js";
 import { EMPTY_CODE_HASH } from "./AccountStateType.js";
 

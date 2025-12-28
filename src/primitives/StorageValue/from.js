@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as Hex from "../Hex/index.js";
 
 /**
@@ -22,8 +21,11 @@ import * as Hex from "../Hex/index.js";
  */
 export function from(value) {
 	// If already a StorageValue, return as-is
-	if (value && value[Symbol.for("voltaire.brand")] === "StorageValue") {
-		return value;
+	if (
+		value &&
+		/** @type {any} */ (value)[Symbol.for("voltaire.brand")] === "StorageValue"
+	) {
+		return /** @type {StorageValueType} */ (value);
 	}
 
 	let bytes;

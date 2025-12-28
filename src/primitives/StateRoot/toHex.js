@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Hash } from "../Hash/index.js";
 
 /**
@@ -18,5 +17,9 @@ import { Hash } from "../Hash/index.js";
  * ```
  */
 export function toHex(stateRoot) {
-	return Hash.toHex(stateRoot);
+	return Hash.toHex(
+		/** @type {import('../Hash/HashType.js').HashType} */ (
+			/** @type {unknown} */ (stateRoot)
+		),
+	);
 }

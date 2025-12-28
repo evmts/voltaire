@@ -26,7 +26,7 @@ export function from(value) {
 	}
 	if (typeof value === "string") {
 		// Normalize to lowercase
-		const normalized = value.toLowerCase();
+		const normalized = /** @type {`0x${string}`} */ (value.toLowerCase());
 		try {
 			// Parse hex string to bytes
 			const bytes = Hex.toBytes(normalized);

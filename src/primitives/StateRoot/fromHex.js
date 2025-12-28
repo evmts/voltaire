@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Hash } from "../Hash/index.js";
 
 /**
@@ -27,5 +26,5 @@ export function fromHex(hex) {
 		configurable: false,
 	});
 
-	return /** @type {StateRootType} */ (hash);
+	return /** @type {StateRootType} */ (/** @type {unknown} */ (hash));
 }

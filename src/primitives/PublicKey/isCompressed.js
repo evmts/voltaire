@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /**
  * Check if a public key is in compressed format

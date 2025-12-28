@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /**
  * @typedef {import('./BundleHashType.js').BundleHashType} BundleHashType
