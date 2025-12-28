@@ -112,10 +112,10 @@ const features: FeatureSet[] = [
 // Display features
 features.forEach(({ fork, opcodes, transactionTypes, specialFeatures }) => {
 	if (opcodes.length > 0) {
-		opcodes.forEach((op) => );
+		opcodes.forEach((op) => console.log(op));
 	}
-	transactionTypes.forEach((type) => );
-	specialFeatures.forEach((feat) => );
+	transactionTypes.forEach((type) => console.log(type));
+	specialFeatures.forEach((feat) => console.log(feat));
 });
 
 const forks = [

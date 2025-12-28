@@ -5,23 +5,10 @@ import { InlineSuggestions } from "../features/InlineSuggestions.js";
 import { registerNavigationProviders } from "../features/Navigation.js";
 import { registerQuickFixes } from "../features/QuickFixes.js";
 import { registerVoltaireSnippets } from "../features/Snippets.js";
+import { getAllSpecifiers } from "../runtime/ModuleRegistry.js";
 
-// Available Voltaire modules for LSP
-const VOLTAIRE_MODULES = [
-	"voltaire/primitives/Address",
-	"voltaire/primitives/Hex",
-	"voltaire/primitives/Hash",
-	"voltaire/primitives/Rlp",
-	"voltaire/primitives/Abi",
-	"voltaire/crypto/Keccak256",
-	"voltaire/crypto/Secp256k1",
-	"voltaire/crypto/SHA256",
-	"voltaire/crypto/Blake2",
-	"voltaire/crypto/Ripemd160",
-	"voltaire/crypto/HDWallet",
-	"voltaire/evm/Frame",
-	"voltaire/evm/Host",
-];
+// Get available Voltaire modules dynamically from registry
+const VOLTAIRE_MODULES = getAllSpecifiers();
 
 export class Editor {
 	private editor: any = null;
@@ -78,13 +65,19 @@ export class Editor {
 						resolveJsonModule: true,
 					},
 					importMap: {
+						// $baseURL must match the origin of files being edited
+						// Without this, importMap resolution fails due to origin mismatch
+						$baseURL: baseUrl + "/",
 						imports,
+						scopes: {},
 					},
 				},
 			},
 		});
 
 		// Add fetched type definitions to Monaco
+		// Note: modern-monaco doesn't expose typescriptDefaults.addExtraLib
+		// Types are provided via importMap in the init config above
 		if (this.monaco.languages?.typescript?.typescriptDefaults) {
 			for (const [modulePath, typeDef] of Object.entries(typeDefinitions)) {
 				this.monaco.languages.typescript.typescriptDefaults.addExtraLib(

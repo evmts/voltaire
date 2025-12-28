@@ -14,7 +14,7 @@ const unsorted = [
 ];
 
 const sorted = [...unsorted].sort(Bytes.compare);
-sorted.forEach((b) => );
+sorted.forEach((b) => console.log(Bytes.toHex(b)));
 
 // Length affects comparison
 const short = Bytes.fromHex("0xff");

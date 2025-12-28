@@ -19,8 +19,10 @@
 			"voltaire/primitives/Address": ["../src/primitives/Address/index.ts"],
 			"voltaire/primitives/Hex": ["../src/primitives/Hex/index.ts"],
 			"voltaire/primitives/Hash": ["../src/primitives/Hash/index.ts"],
-			"voltaire/primitives/RLP": ["../src/primitives/RLP/index.ts"],
-			"voltaire/primitives/ABI": ["../src/primitives/ABI/index.ts"],
+			"voltaire/primitives/RLP": ["../src/primitives/Rlp/index.ts"],
+			"voltaire/primitives/Rlp": ["../src/primitives/Rlp/index.ts"],
+			"voltaire/primitives/ABI": ["../src/primitives/Abi/index.ts"],
+			"voltaire/primitives/Abi": ["../src/primitives/Abi/index.ts"],
 			"voltaire/primitives/BloomFilter": [
 				"../src/primitives/BloomFilter/index.ts"
 			],

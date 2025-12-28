@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
+		"build:docs": "vite build --base=/playground/",
 		"typecheck": "tsc",
 		"preview": "vite preview"
 	},
@@ -18,7 +19,8 @@
 		"vite": "npm:rolldown-vite@7.2.5"
 	},
 	"dependencies": {
-		"modern-monaco": "^0.2.2",
+		"esbuild-wasm": "^0.24.2",
+		"modern-monaco": "^0.3.6",
 		"monaco-editor": "^0.55.1",
 		"monaco-vim": "^0.4.4"
 	}

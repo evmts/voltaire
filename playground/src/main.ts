@@ -15,6 +15,7 @@ import { type FileNode, FileTree } from "./components/FileTree.js";
 import { cryptoExamples } from "./examples/crypto.js";
 import { evmExamples } from "./examples/evm.js";
 import { primitiveExamples } from "./examples/primitives.js";
+import { wasmExamples } from "./examples/wasm.js";
 import { AutoSave } from "./features/AutoSave.js";
 import { BenchmarkMode } from "./features/BenchmarkMode.js";
 import { CodeLensProvider } from "./features/CodeLens.js";
@@ -59,6 +60,15 @@ const fileTree: FileNode[] = [
 			content,
 		})),
 	},
+  {
+    name: "WASM API",
+    path: "wasm",
+    children: Object.entries(wasmExamples).map(([name, content]) => ({
+      name,
+      path: `wasm/${name}`,
+      content,
+    })),
+  },
 ];
 
 // State
