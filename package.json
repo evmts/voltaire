@@ -581,6 +581,56 @@
         "default": "./dist/jsonrpc/index.cjs"
       }
     },
+    "./provider": {
+      "import": {
+        "types": "./types/provider/index.d.ts",
+        "default": "./dist/provider/index.js"
+      },
+      "require": {
+        "types": "./types/provider/index.d.ts",
+        "default": "./dist/provider/index.cjs"
+      }
+    },
+    "./utils": {
+      "import": {
+        "types": "./types/utils/index.d.ts",
+        "default": "./dist/utils/index.js"
+      },
+      "require": {
+        "types": "./types/utils/index.d.ts",
+        "default": "./dist/utils/index.cjs"
+      }
+    },
+    "./evm": {
+      "import": {
+        "types": "./types/evm/index.d.ts",
+        "default": "./dist/evm/index.js"
+      },
+      "require": {
+        "types": "./types/evm/index.d.ts",
+        "default": "./dist/evm/index.cjs"
+      }
+    },
+    "./evm/*": {
+      "import": {
+        "types": "./types/evm/*/index.d.ts",
+        "default": "./dist/evm/*/index.js"
+      },
+      "require": {
+        "types": "./types/evm/*/index.d.ts",
+        "default": "./dist/evm/*/index.cjs"
+      }
+    },
+    "./precompiles": {
+      "import": {
+        "types": "./types/evm/precompiles/index.d.ts",
+        "default": "./dist/evm/precompiles/index.js"
+      },
+      "require": {
+        "types": "./types/evm/precompiles/index.d.ts",
+        "default": "./dist/evm/precompiles/index.cjs"
+      }
+    },
     "./Rlp/effect": {
       "import": {
         "types": "./types/primitives/Rlp/effect.d.ts",

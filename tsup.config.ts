@@ -4,6 +4,27 @@ export default createTsUpOptions({
 	target: "js",
 	entry: [
 		"src/index.ts",
+		// Core modules
+		"src/jsonrpc/index.ts",
+		"src/provider/index.ts",
+		"src/utils/index.ts",
+		// EVM modules (top-level and subpaths used in docs)
+		"src/evm/index.ts",
+		"src/evm/Frame/index.ts",
+		"src/evm/Host/index.ts",
+		"src/evm/block/index.ts",
+		"src/evm/context/index.ts",
+		"src/evm/arithmetic/index.ts",
+		"src/evm/bitwise/index.ts",
+		"src/evm/comparison/index.ts",
+		"src/evm/keccak/index.ts",
+		"src/evm/memory/index.ts",
+		"src/evm/system/index.ts",
+		"src/evm/log/index.ts",
+		"src/evm/control/index.ts",
+		"src/evm/stack/handlers/index.ts",
+		"src/evm/storage/handlers/index.ts",
+		"src/evm/precompiles/precompiles.ts",
 		// Primitives
 		"src/primitives/Abi/index.ts",
 		"src/primitives/AccessList/index.ts",
