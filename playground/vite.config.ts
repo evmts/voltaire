@@ -1,8 +1,10 @@
 import {
 	copyFileSync,
+	cpSync,
 	existsSync,
 	mkdirSync,
 	readFileSync,
+	writeFileSync,
 } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,6 +29,32 @@ function copyEsbuildWasmPlugin(): Plugin {
 			// Copy WASM file if source exists
 			if (existsSync(src)) {
 				copyFileSync(src, dest);
+			}
+		},
+	};
+}
+
+// Plugin to copy modern-monaco dist to public/ for production
+function copyModernMonacoPlugin(): Plugin {
+	return {
+		name: "copy-modern-monaco",
+		writeBundle() {
+			const src = resolve(__dirname, "node_modules/modern-monaco/dist");
+			const dest = resolve(__dirname, "dist/node_modules/modern-monaco/dist");
+
+			// Copy entire modern-monaco dist folder recursively
+			if (existsSync(src)) {
+				cpSync(src, dest, { recursive: true });
+			}
+
+			// Also copy typescript for workers
+			const tsSrc = resolve(__dirname, "node_modules/typescript/lib/typescript.js");
+			const tsDest = resolve(__dirname, "dist/typescript.js");
+			if (existsSync(tsSrc)) {
+				// Read and convert to ESM
+				const content = readFileSync(tsSrc, "utf-8");
+				const esmContent = `${content}\nexport default ts;\nexport { ts };`;
+				writeFileSync(tsDest, esmContent);
 			}
 		},
 	};
@@ -131,7 +159,7 @@ function modernMonacoPlugin(): Plugin {
 }
 
 export default defineConfig({
-	plugins: [modernMonacoPlugin(), copyEsbuildWasmPlugin()],
+	plugins: [modernMonacoPlugin(), copyEsbuildWasmPlugin(), copyModernMonacoPlugin()],
 	test: {
 		environment: "jsdom",
 	},
