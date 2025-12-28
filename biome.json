@@ -30,6 +30,7 @@
 			"scripts/migrate-crypto-docs.ts",
 			"scripts/inspect-ox-api.ts",
 			"docs",
+			"vendor",
 			"worktrees"
 		]
 	},
