@@ -51,5 +51,3 @@ Bytes.toBigInt = Internal.toBigInt;
 Bytes.toHex = Internal.toHex;
 Bytes.toNumber = Internal.toNumber;
 Bytes.toString = Internal.toString;
-
-export default Bytes;
