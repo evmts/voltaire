@@ -28,7 +28,8 @@ export { Hex } from "./Hex/index.js";
 export * as BrandedHex from "./Hex/internal-index.js";
 
 // Numeric types - Unsigned integers
-export * as Uint from "./Uint/index.js";
+export { Uint } from "./Uint/Uint.js";
+export * as BrandedUint from "./Uint/index.js";
 export * as Uint8 from "./Uint8/index.js";
 export * as Uint16 from "./Uint16/index.js";
 export * as Uint32 from "./Uint32/index.js";
@@ -50,10 +51,11 @@ export * as BrandedGwei from "./Denomination/gwei-index.js";
 export * as BrandedEther from "./Denomination/ether-index.js";
 
 // Encoding
-export * as Rlp from "./Rlp/index.js";
-export * as BrandedRlp from "./Rlp/index.js";
+export { Rlp } from "./Rlp/index.js";
+export * as BrandedRlp from "./Rlp/internal-index.js";
 export * as Ssz from "./Ssz/index.js";
-export * as Abi from "./Abi/index.js";
+export { Abi } from "./Abi/Abi.js";
+export * as BrandedAbi from "./Abi/index.js";
 
 // Transactions
 export * as Transaction from "./Transaction/index.js";
