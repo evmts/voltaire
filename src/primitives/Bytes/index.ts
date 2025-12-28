@@ -1,5 +1,6 @@
-// Callable constructor
+// Callable constructor with static methods
 export { Bytes } from "./Bytes.js";
+export * from "./Bytes.js";
 // Namespace for functional API
 export * as BrandedBytes from "./Bytes.index.js";
 export * as Bytes1 from "./Bytes1/index.js";

@@ -21,10 +21,11 @@
 // Core primitives
 export { Address } from "./Address/index.js";
 export * as BrandedAddress from "./Address/internal-index.js";
-export * as Hash from "./Hash/index.js";
+export { Hash } from "./Hash/index.js";
+export * as BrandedHash from "./Hash/index.js";
 export * as HashType from "./Hash/HashType.js";
-export * as Hex from "./Hex/index.js";
-export * as BrandedHex from "./Hex/index.js";
+export { Hex } from "./Hex/index.js";
+export * as BrandedHex from "./Hex/internal-index.js";
 
 // Numeric types - Unsigned integers
 export * as Uint from "./Uint/index.js";
@@ -195,17 +196,23 @@ export * as BrandedBase64 from "./Base64/Base64.js";
 // Utilities - Bytes types
 export { Bytes } from "./Bytes/Bytes.js";
 export * as BrandedBytes from "./Bytes/Bytes.index.js";
-export * as Bytes1 from "./Bytes/Bytes1/index.js";
+export { Bytes1 } from "./Bytes/Bytes1/index.js";
+export * as BrandedBytes1 from "./Bytes/Bytes1/index.js";
 export * as Bytes2 from "./Bytes/Bytes2/index.js";
 export * as Bytes3 from "./Bytes/Bytes3/index.js";
-export * as Bytes4 from "./Bytes/Bytes4/index.js";
+export { Bytes4 } from "./Bytes/Bytes4/index.js";
+export * as BrandedBytes4 from "./Bytes/Bytes4/index.js";
 export * as Bytes5 from "./Bytes/Bytes5/index.js";
 export * as Bytes6 from "./Bytes/Bytes6/index.js";
 export * as Bytes7 from "./Bytes/Bytes7/index.js";
-export * as Bytes8 from "./Bytes/Bytes8/index.js";
-export * as Bytes16 from "./Bytes/Bytes16/index.js";
-export * as Bytes32 from "./Bytes/Bytes32/index.js";
-export * as Bytes64 from "./Bytes/Bytes64/index.js";
+export { Bytes8 } from "./Bytes/Bytes8/index.js";
+export * as BrandedBytes8 from "./Bytes/Bytes8/index.js";
+export { Bytes16 } from "./Bytes/Bytes16/index.js";
+export * as BrandedBytes16 from "./Bytes/Bytes16/index.js";
+export { Bytes32 } from "./Bytes/Bytes32/index.js";
+export * as BrandedBytes32 from "./Bytes/Bytes32/index.js";
+export { Bytes64 } from "./Bytes/Bytes64/index.js";
+export * as BrandedBytes64 from "./Bytes/Bytes64/index.js";
 
 // Errors
 export * from "./errors/index.js";
