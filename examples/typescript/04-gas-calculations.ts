@@ -7,6 +7,7 @@
  * - Working with gas values
  */
 
+import { Bytes } from "../../src/primitives/Bytes/index.js";
 import * as Gas from "../../src/primitives/Gas/index.js";
 import * as GasConstants from "../../src/primitives/GasConstants/index.js";
 
@@ -29,8 +30,8 @@ const sloadCost = GasConstants.Sload; // 100 gas for warm SLOAD
 const coldSloadCost = GasConstants.ColdSload; // 2100 gas for cold SLOAD
 
 // Calculate transaction intrinsic gas
-const emptyTxData = new Uint8Array(0);
-const intrinsicGas = GasConstants.calculateTxIntrinsicGas(emptyTxData, false);
+const emptyTxData = Bytes.from([]);
+const intrinsicGas = GasConstants.calculateTxIntrinsGas(emptyTxData, false);
 
 // Memory expansion cost
 const memSize = 1024n; // bytes

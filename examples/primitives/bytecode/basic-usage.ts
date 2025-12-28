@@ -9,6 +9,7 @@
  */
 
 import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
+import { Bytes } from "../../../src/primitives/Bytes/index.js";
 import { Hash } from "../../../src/primitives/Hash/index.js";
 
 // From hex string (most common)
@@ -18,7 +19,7 @@ const code1 = Bytecode.fromHex("0x60016002015b00");
 const code2 = Bytecode.fromHex("60016002015b00");
 
 // From bytes
-const bytes = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01, 0x5b, 0x00]);
+const bytes = Bytes.from([0x60, 0x01, 0x60, 0x02, 0x01, 0x5b, 0x00]);
 const code3 = Bytecode(bytes);
 
 // Empty bytecode
@@ -92,7 +93,7 @@ try {
 
 // Build simple bytecode programmatically
 function buildSimpleBytecode(): Uint8Array {
-	return new Uint8Array([
+	return Bytes.from([
 		0x60,
 		0x01, // PUSH1 0x01
 		0x60,
@@ -114,7 +115,7 @@ function processBytecode(value: unknown): void {
 	}
 }
 processBytecode("0x60016002015b00");
-processBytecode(new Uint8Array([0x60, 0x01, 0x00]));
+processBytecode(Bytes.from([0x60, 0x01, 0x00]));
 
 const fullCode = Bytecode.fromHex("0x60016002015b60ff60aa01");
 

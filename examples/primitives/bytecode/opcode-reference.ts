@@ -10,6 +10,7 @@
  */
 
 import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
+import { Bytes } from "../../../src/primitives/Bytes/index.js";
 for (let i = 1; i <= 32; i++) {
 	const opcode = 0x5f + i; // PUSH1 = 0x60, PUSH2 = 0x61, etc.
 	const isPush = Bytecode.isPush(opcode);
@@ -121,7 +122,7 @@ for (const [opcode, count] of sorted.slice(0, 10)) {
 }
 
 // Build simple bytecode using constants
-const built = new Uint8Array([
+const built = Bytes.from([
 	Bytecode.PUSH1,
 	0x80, // PUSH1 0x80
 	Bytecode.PUSH1,
@@ -144,7 +145,7 @@ const testOpcodes = [
 ];
 
 for (const test of testOpcodes) {
-	const code = Bytecode(new Uint8Array([test.value, 0x00]));
+	const code = Bytecode(Bytes.from([test.value, 0x00]));
 	const valid = Bytecode.validate(code);
 }
 

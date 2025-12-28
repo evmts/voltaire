@@ -15,7 +15,9 @@ import {
 	PrecompileAddress,
 	execute,
 } from "../../../src/precompiles/precompiles.js";
+import { Bytes } from "../../../src/primitives/Bytes/index.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
+
 const message = "Hello, RIPEMD160!";
 const messageBytes = new TextEncoder().encode(message);
 
@@ -38,7 +40,7 @@ if (result.success) {
 	const padding = result.output.slice(0, 12);
 	const isZeroPadded = padding.every((byte) => byte === 0);
 }
-const empty = new Uint8Array(0);
+const empty = Bytes.from([]);
 const emptyGas = 600n; // 0 bytes = 0 words
 
 const emptyResult = execute(
@@ -86,7 +88,7 @@ for (let i = 0; i < inputs.length; i++) {
 	}
 }
 for (let i = 0; i < hashes.length; i++) {}
-const testData = crypto.getRandomValues(new Uint8Array(100));
+const testData = Bytes.random(100);
 const insufficientGas = 500n; // Need 600 + 120*4 = 1080
 
 const oogResult = execute(

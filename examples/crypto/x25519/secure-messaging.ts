@@ -13,6 +13,7 @@ import { hkdf } from "@noble/hashes/hkdf.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import * as AesGcm from "../../../src/crypto/AesGcm/index.js";
 import * as X25519 from "../../../src/crypto/X25519/index.js";
+import { Bytes } from "../../../src/primitives/Bytes/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
 
 // Message encryption using X25519 + HKDF + AES-GCM
@@ -178,14 +179,8 @@ const storedEnc = await encryptMessage(
 	bob.publicKey,
 );
 
-const combined = new Uint8Array(
-	storedEnc.ephemeralPublicKey.length +
-		storedEnc.nonce.length +
-		storedEnc.ciphertext.length,
-);
-let offset = 0;
-combined.set(storedEnc.ephemeralPublicKey, offset);
-offset += storedEnc.ephemeralPublicKey.length;
-combined.set(storedEnc.nonce, offset);
-offset += storedEnc.nonce.length;
-combined.set(storedEnc.ciphertext, offset);
+const combined = Bytes.concat([
+	storedEnc.ephemeralPublicKey,
+	storedEnc.nonce,
+	storedEnc.ciphertext,
+]);

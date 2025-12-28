@@ -8,117 +8,99 @@
  * in Zig only and not yet exposed to TypeScript through FFI bindings.
  */
 
+import { Address } from "../../../src/primitives/Address/index.js";
+import { Hash } from "../../../src/primitives/Hash/index.js";
+import * as Bytes from "../../../src/primitives/Bytes/Bytes.index.js";
+import * as Bytes32 from "../../../src/primitives/Bytes/Bytes32/index.js";
+import type { AddressType } from "../../../src/primitives/Address/AddressType.js";
+import type { HashType } from "../../../src/primitives/Hash/HashType.js";
+import type { Bytes32Type } from "../../../src/primitives/Bytes/Bytes32/Bytes32Type.js";
+
 // Conceptual Trie implementation for demonstration
 class Trie {
 	private data = new Map<string, Uint8Array>();
 
-	put(key: Uint8Array, value: Uint8Array): void {
-		const hex = Array.from(key).map((b) => b.toString(16).padStart(2, "0")).join("");
+	put(key: Bytes32Type, value: Uint8Array): void {
+		const hex = Bytes32.toHex(key);
 		this.data.set(hex, value);
 	}
 
-	get(key: Uint8Array): Uint8Array | null {
-		const hex = Array.from(key).map((b) => b.toString(16).padStart(2, "0")).join("");
+	get(key: Bytes32Type): Uint8Array | null {
+		const hex = Bytes32.toHex(key);
 		return this.data.get(hex) || null;
 	}
 
-	rootHash(): Uint8Array | null {
+	rootHash(): HashType | null {
 		if (this.data.size === 0) return null;
-		const hash = new Uint8Array(32);
-		crypto.getRandomValues(hash);
-		return hash;
+		return Hash.random();
 	}
 }
 
 /** Compute storage key for a mapping (slot, key) -> Keccak256(key || slot) */
-function computeStorageKey(slot: bigint, key: Uint8Array): Uint8Array {
+function computeStorageKey(slot: bigint, key: Uint8Array): Bytes32Type {
 	// In production, this would use Keccak256
 	// For demo, simplified hash simulation
-	const slotBytes = new Uint8Array(32);
-	new DataView(slotBytes.buffer).setBigUint64(24, slot, false);
+	const slotBytes = Bytes32.fromBigint(slot);
 
 	// Concatenate key + slot
-	const combined = new Uint8Array(key.length + 32);
-	combined.set(key, 0);
-	combined.set(slotBytes, key.length);
+	const combined = Bytes.concat(
+		Bytes.from(key),
+		Bytes.from(slotBytes as Uint8Array),
+	);
 
 	// Mock hash (production would use Keccak256)
-	const hash = new Uint8Array(32);
+	const hash = Bytes32.zero();
 	for (let i = 0; i < 32; i++) {
 		hash[i] = combined[i % combined.length] ^ (i * 7);
 	}
 	return hash;
 }
 
-function formatAddress(addr: Uint8Array): string {
-	return `0x${Array.from(addr)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
-}
-
-function formatHash(hash: Uint8Array): string {
-	return `0x${Array.from(hash)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
-}
-
-function bigintToBytes(value: bigint): Uint8Array {
-	const bytes = new Uint8Array(32);
-	const view = new DataView(bytes.buffer);
-
-	// Write as big-endian
-	for (let i = 0; i < 4; i++) {
-		const offset = 24 - i * 8;
-		const part = Number((value >> BigInt(i * 64)) & 0xffffffffffffffffn);
-		view.setBigUint64(offset, BigInt(part), false);
-	}
-
-	return bytes;
+function bigintToBytes32(value: bigint): Bytes32Type {
+	return Bytes32.fromBigint(value);
 }
 
 // Create storage trie for a contract
 const storageTrie = new Trie();
 
 // Storage slot 0: owner address
-const slot0 = new Uint8Array(32);
-const ownerAddr = new Uint8Array([0x12, 0x34, ...new Array(18).fill(0)]);
-storageTrie.put(slot0, ownerAddr);
+const slot0 = Bytes32.zero();
+const ownerAddr = Address(0x1234n);
+// Pad address to 32 bytes for storage
+const ownerAddrPadded = Bytes.padLeft(Bytes.from(ownerAddr as Uint8Array), 32);
+storageTrie.put(slot0, ownerAddrPadded);
 
 // Storage slot 1: total supply
-const slot1 = new Uint8Array(32);
-slot1[31] = 1;
+const slot1 = Bytes32.fromNumber(1);
 const totalSupply = 1_000_000_000_000_000_000_000_000n; // 1M tokens (18 decimals)
-const supplyBytes = bigintToBytes(totalSupply);
+const supplyBytes = bigintToBytes32(totalSupply);
 storageTrie.put(slot1, supplyBytes);
 
 // Storage slot 2: balances mapping
 // balances[owner_addr] = 500k tokens
 const balanceSlot = computeStorageKey(2n, ownerAddr);
 const ownerBalance = 500_000_000_000_000_000_000_000n;
-const balanceBytes = bigintToBytes(ownerBalance);
+const balanceBytes = bigintToBytes32(ownerBalance);
 storageTrie.put(balanceSlot, balanceBytes);
 
 // Another balance: different address
-const addr2 = new Uint8Array([0xab, 0xcd, ...new Array(18).fill(0)]);
+const addr2 = Address(0xabcdn);
 const balanceSlot2 = computeStorageKey(2n, addr2);
 const balance2 = 300_000_000_000_000_000_000_000n;
-const balance2Bytes = bigintToBytes(balance2);
+const balance2Bytes = bigintToBytes32(balance2);
 storageTrie.put(balanceSlot2, balance2Bytes);
 
 // Storage slot 3: allowances mapping (nested mapping)
 // allowances[owner_addr][spender_addr] = 100k tokens
-const spenderAddr = new Uint8Array([0x56, 0x78, ...new Array(18).fill(0)]);
+const spenderAddr = Address(0x5678n);
 
 // First compute inner mapping key
 const innerKey = computeStorageKey(3n, ownerAddr);
 // Then compute outer mapping key
-const innerKeyBigInt = Array.from(innerKey).reduce(
-	(acc, byte, i) => acc | (BigInt(byte) << BigInt((31 - i) * 8)),
-	0n,
-);
+const innerKeyBigInt = Bytes32.toBigint(innerKey);
 const allowanceSlot = computeStorageKey(innerKeyBigInt, spenderAddr);
 const allowance = 100_000_000_000_000_000_000_000n;
-const allowanceBytes = bigintToBytes(allowance);
+const allowanceBytes = bigintToBytes32(allowance);
 storageTrie.put(allowanceSlot, allowanceBytes);
 
 // Compute storage root
@@ -128,13 +110,7 @@ const retrievedOwner = storageTrie.get(slot0);
 const retrievedSupply = storageTrie.get(slot1);
 if (retrievedSupply) {
 	// Convert bytes back to bigint
-	const view = new DataView(retrievedSupply.buffer);
-	let supplyVal = 0n;
-	for (let i = 0; i < 4; i++) {
-		const offset = 24 - i * 8;
-		const part = view.getBigUint64(offset, false);
-		supplyVal |= part << BigInt(i * 64);
-	}
+	const supplyVal = Bytes32.toBigint(retrievedSupply as Bytes32Type);
 }
 
 /**

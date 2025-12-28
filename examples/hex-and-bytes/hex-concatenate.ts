@@ -2,6 +2,7 @@
 // @description Combine multiple hex strings into a single hex value
 
 // SNIPPET:START
+import { Bytes } from "../../src/primitives/Bytes/index.js";
 import * as Hex from "../../src/primitives/Hex/index.js";
 
 // Create some hex strings
@@ -13,7 +14,7 @@ const hex3 = Hex.from("0xabcd");
 const combined = Hex.concat(hex1, hex2, hex3);
 
 // Can also concatenate with bytes converted to hex
-const bytes = new Uint8Array([0x01, 0x02, 0x03]);
+const bytes = Bytes.from([0x01, 0x02, 0x03]);
 const hexFromBytes = Hex.fromBytes(bytes);
 const withBytes = Hex.concat(hex1, hexFromBytes);
 

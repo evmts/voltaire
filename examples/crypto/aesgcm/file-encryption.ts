@@ -9,6 +9,7 @@
  */
 
 import * as AesGcm from "../../../src/crypto/AesGcm/index.js";
+import { Bytes, Bytes16 } from "../../../src/primitives/Bytes/index.js";
 
 // Complete file encryption with password
 async function encryptFile(
@@ -17,7 +18,7 @@ async function encryptFile(
 	metadata?: { filename: string; mimeType: string },
 ): Promise<Uint8Array> {
 	// Generate salt
-	const salt = crypto.getRandomValues(new Uint8Array(16));
+	const salt = Bytes16.random();
 
 	// Derive key from password
 	const key = await AesGcm.deriveKey(password, salt, 600000, 256);
@@ -36,15 +37,7 @@ async function encryptFile(
 	const ciphertext = await AesGcm.encrypt(fileData, key, nonce, aad);
 
 	// Format: [salt(16) | nonce(12) | ciphertext+tag]
-	const output = new Uint8Array(salt.length + nonce.length + ciphertext.length);
-	let offset = 0;
-	output.set(salt, offset);
-	offset += salt.length;
-	output.set(nonce, offset);
-	offset += nonce.length;
-	output.set(ciphertext, offset);
-
-	return output;
+	return Bytes.concat([salt, nonce, ciphertext]);
 }
 
 async function decryptFile(
@@ -84,7 +77,7 @@ const encrypted = await encryptFile(fileContent, password);
 const decrypted = await decryptFile(encrypted, password);
 const decryptedText = new TextDecoder().decode(decrypted);
 
-const imageData = new Uint8Array(1000).fill(0xab); // Simulated image data
+const imageData = Bytes.from(Array(1000).fill(0xab)); // Simulated image data
 const metadata = {
 	filename: "confidential.jpg",
 	mimeType: "image/jpeg",
@@ -109,16 +102,7 @@ try {
 
 const fileSizes = [0, 100, 1024, 10_000, 100_000];
 for (const size of fileSizes) {
-	const data = new Uint8Array(size);
-	// Fill in chunks due to crypto.getRandomValues 65536 byte limit
-	if (size > 0) {
-		const chunkSize = 65536;
-		for (let i = 0; i < size; i += chunkSize) {
-			const chunk = data.subarray(i, Math.min(i + chunkSize, size));
-			crypto.getRandomValues(chunk);
-		}
-	}
-
+	const data = Bytes.random(size);
 	const enc = await encryptFile(data, password);
 	const overhead = enc.length - size;
 }

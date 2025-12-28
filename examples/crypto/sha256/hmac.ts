@@ -9,6 +9,7 @@
  */
 
 import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
+import { Bytes } from "../../../src/primitives/Bytes/index.js";
 
 // HMAC-SHA256 Implementation
 function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array {
@@ -24,12 +25,12 @@ function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array {
 	}
 
 	// Pad key to block size
-	const paddedKey = new Uint8Array(blockSize);
+	const paddedKey = Bytes.zero(blockSize);
 	paddedKey.set(derivedKey);
 
 	// Step 2: Create inner and outer padding
-	const opad = new Uint8Array(blockSize).fill(0x5c);
-	const ipad = new Uint8Array(blockSize).fill(0x36);
+	const opad = Bytes.from(Array(blockSize).fill(0x5c));
+	const ipad = Bytes.from(Array(blockSize).fill(0x36));
 
 	for (let i = 0; i < blockSize; i++) {
 		opad[i] ^= paddedKey[i];
@@ -37,14 +38,10 @@ function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array {
 	}
 
 	// Step 3: Compute HMAC = H(opad || H(ipad || message))
-	const innerData = new Uint8Array(ipad.length + message.length);
-	innerData.set(ipad, 0);
-	innerData.set(message, ipad.length);
+	const innerData = Bytes.concat([ipad, message]);
 	const innerHash = SHA256.hash(innerData);
 
-	const outerData = new Uint8Array(opad.length + innerHash.length);
-	outerData.set(opad, 0);
-	outerData.set(innerHash, opad.length);
+	const outerData = Bytes.concat([opad, innerHash]);
 
 	return SHA256.hash(outerData);
 }
@@ -89,14 +86,12 @@ const validMac = hmacSha256(authKey, authMessage);
 const tamperedMessage = new TextEncoder().encode("tampered message");
 
 // Tampered MAC
-const tamperedMac = new Uint8Array(validMac);
+const tamperedMac = Bytes.clone(validMac);
 tamperedMac[0] ^= 0x01; // Flip one bit
 
 const secret = new TextEncoder().encode("secret");
 const msg = new TextEncoder().encode("message");
-const insecure = new Uint8Array(secret.length + msg.length);
-insecure.set(secret, 0);
-insecure.set(msg, secret.length);
+const insecure = Bytes.concat([secret, msg]);
 const insecureHash = SHA256.hash(insecure);
 const secureMac = hmacSha256(secret, msg);
 
@@ -133,6 +128,6 @@ const apiRequest: ApiRequest = {
 const apiSecret = "super-secret-api-key-12345";
 const signature = signApiRequest(apiRequest, apiSecret);
 
-const rfcKey = new Uint8Array(20).fill(0x0b);
+const rfcKey = Bytes.from(Array(20).fill(0x0b));
 const rfcData = new TextEncoder().encode("Hi There");
 const rfcMac = hmacSha256(rfcKey, rfcData);

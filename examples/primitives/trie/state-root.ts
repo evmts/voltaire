@@ -8,26 +8,30 @@
  * in Zig only and not yet exposed to TypeScript through FFI bindings.
  */
 
+import { Address } from "../../../src/primitives/Address/index.js";
+import { Hash } from "../../../src/primitives/Hash/index.js";
+import * as Bytes32 from "../../../src/primitives/Bytes/Bytes32/index.js";
+import type { AddressType } from "../../../src/primitives/Address/AddressType.js";
+import type { HashType } from "../../../src/primitives/Hash/HashType.js";
+import type { Bytes32Type } from "../../../src/primitives/Bytes/Bytes32/Bytes32Type.js";
+
 // Conceptual Trie implementation for demonstration
 class Trie {
 	private data = new Map<string, Uint8Array>();
 
-	put(key: Uint8Array, value: Uint8Array): void {
-		const hex = Array.from(key).map((b) => b.toString(16).padStart(2, "0")).join("");
+	put(key: AddressType, value: Uint8Array): void {
+		const hex = Address.toHex(key);
 		this.data.set(hex, value);
 	}
 
-	get(key: Uint8Array): Uint8Array | null {
-		const hex = Array.from(key).map((b) => b.toString(16).padStart(2, "0")).join("");
+	get(key: AddressType): Uint8Array | null {
+		const hex = Address.toHex(key);
 		return this.data.get(hex) || null;
 	}
 
-	rootHash(): Uint8Array | null {
+	rootHash(): HashType | null {
 		if (this.data.size === 0) return null;
-		// Mock hash
-		const hash = new Uint8Array(32);
-		crypto.getRandomValues(hash);
-		return hash;
+		return Hash.random();
 	}
 }
 
@@ -35,8 +39,8 @@ class Trie {
 interface AccountState {
 	nonce: bigint;
 	balance: bigint;
-	storageRoot: Uint8Array;
-	codeHash: Uint8Array;
+	storageRoot: Bytes32Type;
+	codeHash: Bytes32Type;
 }
 
 /** Encode account state to bytes (simplified - production uses RLP) */
@@ -61,52 +65,44 @@ function encodeAccountState(state: AccountState): Uint8Array {
 	return result;
 }
 
-function formatAddress(addr: Uint8Array): string {
-	return `0x${Array.from(addr)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
-}
-
-function formatHash(hash: Uint8Array): string {
-	return `0x${Array.from(hash)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
-}
-
 // Create state trie
 const stateTrie = new Trie();
 
 // Account 1: EOA with balance
-const addr1 = new Uint8Array([0x12, ...new Array(19).fill(0)]);
+const addr1 = Address(0x12n);
 const account1: AccountState = {
 	nonce: 5n,
 	balance: 1_000_000_000_000_000_000n, // 1 ETH in wei
-	storageRoot: new Uint8Array(32), // Empty storage
-	codeHash: new Uint8Array(32), // No code (EOA)
+	storageRoot: Bytes32.zero(), // Empty storage
+	codeHash: Bytes32.zero(), // No code (EOA)
 };
 
 const encoded1 = encodeAccountState(account1);
 stateTrie.put(addr1, encoded1);
 
 // Account 2: Contract with storage
-const addr2 = new Uint8Array([0xab, ...new Array(19).fill(0)]);
+const addr2 = Address(0xabn);
 const account2: AccountState = {
 	nonce: 1n,
 	balance: 500_000_000_000_000_000n, // 0.5 ETH
-	storageRoot: new Uint8Array(32).fill(0xaa), // Has storage
-	codeHash: new Uint8Array(32).fill(0xbb), // Has code
+	storageRoot: Bytes32.fromHex(
+		"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	), // Has storage
+	codeHash: Bytes32.fromHex(
+		"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+	), // Has code
 };
 
 const encoded2 = encodeAccountState(account2);
 stateTrie.put(addr2, encoded2);
 
 // Account 3: Another EOA
-const addr3 = new Uint8Array([0x34, ...new Array(19).fill(0)]);
+const addr3 = Address(0x34n);
 const account3: AccountState = {
 	nonce: 0n,
 	balance: 2_500_000_000_000_000_000n, // 2.5 ETH
-	storageRoot: new Uint8Array(32),
-	codeHash: new Uint8Array(32),
+	storageRoot: Bytes32.zero(),
+	codeHash: Bytes32.zero(),
 };
 
 const encoded3 = encodeAccountState(account3);

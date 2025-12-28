@@ -8,38 +8,33 @@
  * in Zig only and not yet exposed to TypeScript through FFI bindings.
  */
 
+import { Hash } from "../../../src/primitives/Hash/index.js";
+import * as Bytes from "../../../src/primitives/Bytes/Bytes.index.js";
+import type { HashType } from "../../../src/primitives/Hash/HashType.js";
+import type { BytesType } from "../../../src/primitives/Bytes/BytesType.js";
+
 // Conceptual Trie implementation for demonstration
 class Trie {
-	private data = new Map<string, Uint8Array>();
+	private data = new Map<string, BytesType>();
 
-	put(key: Uint8Array, value: Uint8Array): void {
-		const hex = Array.from(key).map((b) => b.toString(16).padStart(2, "0")).join("");
+	put(key: BytesType, value: BytesType): void {
+		const hex = Bytes.toHex(key);
 		this.data.set(hex, value);
 	}
 
-	get(key: Uint8Array): Uint8Array | null {
-		const hex = Array.from(key).map((b) => b.toString(16).padStart(2, "0")).join("");
+	get(key: BytesType): BytesType | null {
+		const hex = Bytes.toHex(key);
 		return this.data.get(hex) || null;
 	}
 
-	rootHash(): Uint8Array | null {
+	rootHash(): HashType | null {
 		if (this.data.size === 0) return null;
-		const hash = new Uint8Array(32);
-		crypto.getRandomValues(hash);
-		return hash;
+		return Hash.random();
 	}
 
 	clear(): void {
 		this.data.clear();
 	}
-}
-
-function formatHash(hash: Uint8Array | null): string {
-	if (!hash) return "null";
-	return `0x${Array.from(hash)
-		.slice(0, 8)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}...`;
 }
 
 const encoder = new TextEncoder();
@@ -48,16 +43,16 @@ const encoder = new TextEncoder();
 
 	// All keys share prefix [0x01, 0x02, 0x03]
 	trie.put(
-		new Uint8Array([0x01, 0x02, 0x03, 0x04]),
-		encoder.encode("value_at_04"),
+		Bytes.fromHex("0x01020304"),
+		encoder.encode("value_at_04") as BytesType,
 	);
 	trie.put(
-		new Uint8Array([0x01, 0x02, 0x03, 0x05]),
-		encoder.encode("value_at_05"),
+		Bytes.fromHex("0x01020305"),
+		encoder.encode("value_at_05") as BytesType,
 	);
 	trie.put(
-		new Uint8Array([0x01, 0x02, 0x03, 0x06]),
-		encoder.encode("value_at_06"),
+		Bytes.fromHex("0x01020306"),
+		encoder.encode("value_at_06") as BytesType,
 	);
 
 	const root1 = trie.rootHash();
@@ -65,41 +60,53 @@ const encoder = new TextEncoder();
 {
 	const trie = new Trie();
 
-	trie.put(new Uint8Array([0x12, 0x34]), encoder.encode("short_key"));
-	trie.put(new Uint8Array([0x12, 0x34, 0x56]), encoder.encode("long_key"));
+	trie.put(Bytes.fromHex("0x1234"), encoder.encode("short_key") as BytesType);
 	trie.put(
-		new Uint8Array([0x12, 0x34, 0x56, 0x78]),
-		encoder.encode("longer_key"),
+		Bytes.fromHex("0x123456"),
+		encoder.encode("long_key") as BytesType,
+	);
+	trie.put(
+		Bytes.fromHex("0x12345678"),
+		encoder.encode("longer_key") as BytesType,
 	);
 
 	// All values retrievable
-	const short = trie.get(new Uint8Array([0x12, 0x34]));
-	const long = trie.get(new Uint8Array([0x12, 0x34, 0x56]));
-	const longer = trie.get(new Uint8Array([0x12, 0x34, 0x56, 0x78]));
+	const short = trie.get(Bytes.fromHex("0x1234"));
+	const long = trie.get(Bytes.fromHex("0x123456"));
+	const longer = trie.get(Bytes.fromHex("0x12345678"));
 }
 {
 	const trie = new Trie();
 
 	// Start with single key
-	trie.put(new Uint8Array([0xaa, 0xbb, 0xcc, 0xdd]), encoder.encode("first"));
+	trie.put(
+		Bytes.fromHex("0xaabbccdd"),
+		encoder.encode("first") as BytesType,
+	);
 	const root1 = trie.rootHash();
 
 	// Add key with common prefix of length 2
-	trie.put(new Uint8Array([0xaa, 0xbb, 0x11, 0x22]), encoder.encode("second"));
+	trie.put(
+		Bytes.fromHex("0xaabb1122"),
+		encoder.encode("second") as BytesType,
+	);
 	const root2 = trie.rootHash();
 
 	// Add key diverging earlier
-	trie.put(new Uint8Array([0xaa, 0x33, 0x44, 0x55]), encoder.encode("third"));
+	trie.put(
+		Bytes.fromHex("0xaa334455"),
+		encoder.encode("third") as BytesType,
+	);
 	const root3 = trie.rootHash();
 }
 {
 	const trie = new Trie();
 
 	// Completely different keys
-	trie.put(new Uint8Array([0x11]), encoder.encode("first"));
-	trie.put(new Uint8Array([0x22]), encoder.encode("second"));
-	trie.put(new Uint8Array([0x33]), encoder.encode("third"));
-	trie.put(new Uint8Array([0x44]), encoder.encode("fourth"));
+	trie.put(Bytes.fromHex("0x11"), encoder.encode("first") as BytesType);
+	trie.put(Bytes.fromHex("0x22"), encoder.encode("second") as BytesType);
+	trie.put(Bytes.fromHex("0x33"), encoder.encode("third") as BytesType);
+	trie.put(Bytes.fromHex("0x44"), encoder.encode("fourth") as BytesType);
 
 	const root = trie.rootHash();
 }

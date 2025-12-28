@@ -9,23 +9,21 @@
  */
 
 import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
+import { Bytes } from "../../../src/primitives/Bytes/index.js";
 
-const data = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+const data = Bytes.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
 // One-shot hashing
 const oneShotHash = SHA256.hash(data);
 
 // Streaming hashing (same result)
 const hasher = SHA256.create();
-hasher.update(new Uint8Array([1, 2, 3]));
-hasher.update(new Uint8Array([4, 5, 6]));
-hasher.update(new Uint8Array([7, 8, 9, 10]));
+hasher.update(Bytes.from([1, 2, 3]));
+hasher.update(Bytes.from([4, 5, 6]));
+hasher.update(Bytes.from([7, 8, 9, 10]));
 const streamHash = hasher.digest();
 
-const testData = new Uint8Array(100);
-for (let i = 0; i < 100; i++) {
-	testData[i] = i & 0xff;
-}
+const testData = Bytes.from(Array.from({ length: 100 }, (_, i) => i & 0xff));
 
 // Various chunk sizes
 const chunkSizes = [1, 7, 16, 32, 64, 100];
@@ -52,10 +50,9 @@ function hashFileWithProgress(fileSize: number, chunkSize: number): Uint8Array {
 		const currentChunk = Math.min(chunkSize, remaining);
 
 		// Simulate chunk data
-		const chunk = new Uint8Array(currentChunk);
-		for (let i = 0; i < currentChunk; i++) {
-			chunk[i] = (processed + i) & 0xff;
-		}
+		const chunk = Bytes.from(
+			Array.from({ length: currentChunk }, (_, i) => (processed + i) & 0xff),
+		);
 
 		hasher.update(chunk);
 		processed += currentChunk;
@@ -108,13 +105,7 @@ const multiPartHash = hashMultiPartMessage(multiPartMessage);
 
 // Inefficient: Concatenate then hash
 function inefficientHash(parts: Uint8Array[]): Uint8Array {
-	const totalSize = parts.reduce((sum, part) => sum + part.length, 0);
-	const combined = new Uint8Array(totalSize);
-	let offset = 0;
-	for (const part of parts) {
-		combined.set(part, offset);
-		offset += part.length;
-	}
+	const combined = Bytes.concat(parts);
 	return SHA256.hash(combined); // Single allocation of full size
 }
 
@@ -127,17 +118,13 @@ function efficientHash(parts: Uint8Array[]): Uint8Array {
 	return hasher.digest();
 }
 
-const parts = [
-	new Uint8Array([1, 2, 3]),
-	new Uint8Array([4, 5, 6]),
-	new Uint8Array([7, 8, 9]),
-];
+const parts = [Bytes.from([1, 2, 3]), Bytes.from([4, 5, 6]), Bytes.from([7, 8, 9])];
 
 const hash1 = inefficientHash(parts);
 const hash2 = efficientHash(parts);
 
 const h = SHA256.create();
-h.update(new Uint8Array([1, 2, 3]));
+h.update(Bytes.from([1, 2, 3]));
 
 const digest = h.digest();
 const newHasher = SHA256.create();

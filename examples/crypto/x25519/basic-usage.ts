@@ -10,6 +10,7 @@
  */
 
 import * as X25519 from "../../../src/crypto/X25519/index.js";
+import { Bytes32 } from "../../../src/primitives/Bytes/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
 
 const aliceKeypair = X25519.generateKeypair();
@@ -41,8 +42,7 @@ const derivedPublicKey = X25519.derivePublicKey(secretKey);
 
 const isValid = X25519.validatePublicKey(derivedPublicKey);
 
-const seedBytes = new Uint8Array(32);
-crypto.getRandomValues(seedBytes);
+const seedBytes = Bytes32.random();
 
 const keypair1 = X25519.keypairFromSeed(seedBytes);
 const keypair2 = X25519.keypairFromSeed(seedBytes);

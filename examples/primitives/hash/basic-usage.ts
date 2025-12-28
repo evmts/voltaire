@@ -8,6 +8,7 @@
  * - Basic comparisons
  */
 
+import { Bytes32 } from "../../../src/primitives/Bytes/index.js";
 import { Hash } from "../../../src/primitives/Hash/index.js";
 
 // From hex string (most common)
@@ -21,7 +22,7 @@ const hash2 = Hash.fromHex(
 );
 
 // From bytes
-const bytes = new Uint8Array(32);
+const bytes = Bytes32.zero();
 bytes[0] = 0x12;
 bytes[1] = 0x34;
 bytes[31] = 0xff;
@@ -65,15 +66,15 @@ function processValue(value: unknown) {
 }
 
 processValue(hash);
-processValue(new Uint8Array(32)); // Valid 32-byte array
-processValue(new Uint8Array(20)); // Wrong length
+processValue(Bytes32.zero()); // Valid 32-byte array
+processValue(Bytes32.zero().slice(0, 20)); // Wrong length
 processValue("0x1234"); // String, not Hash
 
 // Create test hashes
 const hashA = Hash.keccak256String("hello");
 const hashB = Hash.keccak256String("hello");
 const hashC = Hash.keccak256String("world");
-const zeroHash = Hash.fromBytes(new Uint8Array(32));
+const zeroHash = Hash.fromBytes(Bytes32.zero());
 
 const hash4 = Hash.keccak256String("example");
 for (let i = 0; i < 8; i++) {}
@@ -91,7 +92,7 @@ const functionSignature = Hash.keccak256String("transfer(address,uint256)");
 const selector = Uint8Array.prototype.slice.call(functionSignature, 0, 4);
 
 // Using constants for validation
-const buffer = new Uint8Array(Hash.SIZE); // Correct size
+const buffer = Bytes32.zero(); // Correct size
 
 // Zero hash comparison
-const testHash = Hash.fromBytes(new Uint8Array(32));
+const testHash = Hash.fromBytes(Bytes32.zero());

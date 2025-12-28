@@ -9,6 +9,7 @@
  */
 
 import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
+import { Bytes, Bytes64 } from "../../../src/primitives/Bytes/index.js";
 
 // Helper: Double SHA-256 (Bitcoin style)
 function doubleSha256(data: Uint8Array): Uint8Array {
@@ -36,9 +37,7 @@ function buildMerkleTree(leaves: Uint8Array[]): Uint8Array[][] {
 			const right = currentLevel[i + 1] || left; // Duplicate if odd number
 
 			// Combine and hash
-			const combined = new Uint8Array(64);
-			combined.set(left, 0);
-			combined.set(right, 32);
+			const combined = Bytes.concat([left, right]);
 			nextLevel.push(doubleSha256(combined));
 		}
 
@@ -88,14 +87,10 @@ function verifyMerkleProof(
 	let hash = doubleSha256(leaf);
 
 	for (const { hash: siblingHash, position } of proof) {
-		const combined = new Uint8Array(64);
-		if (position === "left") {
-			combined.set(siblingHash, 0);
-			combined.set(hash, 32);
-		} else {
-			combined.set(hash, 0);
-			combined.set(siblingHash, 32);
-		}
+		const combined =
+			position === "left"
+				? Bytes.concat([siblingHash, hash])
+				: Bytes.concat([hash, siblingHash]);
 		hash = doubleSha256(combined);
 	}
 

@@ -2,17 +2,14 @@ import {
 	PrecompileAddress,
 	execute,
 } from "../../../src/evm/precompiles/precompiles.js";
+import { Bytes, Bytes64 } from "../../../src/primitives/Bytes/index.js";
 import { Hardfork } from "../../../src/primitives/Hardfork/index.js";
 
 /**
  * Convert bigint to bytes (big-endian, padded to length)
  */
 function toBytes(value: bigint, length: number): Uint8Array {
-	const bytes = new Uint8Array(length);
-	for (let i = 0; i < length; i++) {
-		bytes[length - 1 - i] = Number((value >> BigInt(i * 8)) & 0xffn);
-	}
-	return bytes;
+	return Bytes.fromBigInt(value, length);
 }
 
 /**
@@ -20,7 +17,7 @@ function toBytes(value: bigint, length: number): Uint8Array {
  * Real impl would use proper hash-to-field from RFC 9380
  */
 function hashToFp2(message: Uint8Array): Uint8Array {
-	const fp2 = new Uint8Array(128); // Two 64-byte field elements
+	const fp2 = Bytes.zero(128); // Two 64-byte field elements
 
 	// Component 0 (bytes 0-63)
 	for (let i = 0; i < 32; i++) {
@@ -37,7 +34,7 @@ function hashToFp2(message: Uint8Array): Uint8Array {
 
 // BLS12-381 G1 generator (simplified coordinates)
 // Real coordinates are much larger
-const G1_GENERATOR = new Uint8Array(128);
+const G1_GENERATOR = Bytes.zero(128);
 // Set generator point bytes (simplified)
 G1_GENERATOR[63] = 0x01; // x = 1
 G1_GENERATOR[127] = 0x02; // y = 2
@@ -45,7 +42,7 @@ G1_GENERATOR[127] = 0x02; // y = 2
 const secretKey = 12345678901234567890n;
 
 // PK = sk × G1
-const pkInput = new Uint8Array(160);
+const pkInput = Bytes.zero(160);
 pkInput.set(G1_GENERATOR, 0); // G1 point (128 bytes)
 pkInput.set(toBytes(secretKey, 32), 128); // Scalar (32 bytes)
 
@@ -76,7 +73,7 @@ if (pkResult.success) {
 		const messageHash = mapResult.output;
 
 		// Signature = sk × H(m)
-		const signInput = new Uint8Array(288);
+		const signInput = Bytes.zero(288);
 		signInput.set(messageHash, 0); // G2 point (256 bytes)
 		signInput.set(toBytes(secretKey, 32), 256); // Scalar (32 bytes)
 
@@ -91,12 +88,12 @@ if (pkResult.success) {
 			const signature = signResult.output;
 
 			// Negate G1 generator (flip y-coordinate)
-			const negG1 = new Uint8Array(G1_GENERATOR);
+			const negG1 = Bytes.clone(G1_GENERATOR);
 			// In real implementation, would flip y-coordinate
 			// Simplified here
 
 			// Build pairing input: 2 pairs (768 bytes)
-			const pairingInput = new Uint8Array(768);
+			const pairingInput = Bytes.zero(768);
 
 			// Pair 1: (PK, H(m))
 			pairingInput.set(publicKey, 0); // G1 point (128 bytes)

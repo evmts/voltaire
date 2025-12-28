@@ -8,41 +8,46 @@
  * in Zig only and not yet exposed to TypeScript through FFI bindings.
  */
 
+import { Address } from "../../../src/primitives/Address/index.js";
+import { Hash } from "../../../src/primitives/Hash/index.js";
+import * as Bytes from "../../../src/primitives/Bytes/Bytes.index.js";
+import type { AddressType } from "../../../src/primitives/Address/AddressType.js";
+import type { HashType } from "../../../src/primitives/Hash/HashType.js";
+import type { BytesType } from "../../../src/primitives/Bytes/BytesType.js";
+
 // Conceptual Trie implementation for demonstration
 class Trie {
-	private data = new Map<string, Uint8Array>();
+	private data = new Map<string, BytesType>();
 
-	put(key: Uint8Array, value: Uint8Array): void {
-		const hex = Array.from(key).map((b) => b.toString(16).padStart(2, "0")).join("");
+	put(key: BytesType, value: BytesType): void {
+		const hex = Bytes.toHex(key);
 		this.data.set(hex, value);
 	}
 
-	get(key: Uint8Array): Uint8Array | null {
-		const hex = Array.from(key).map((b) => b.toString(16).padStart(2, "0")).join("");
+	get(key: BytesType): BytesType | null {
+		const hex = Bytes.toHex(key);
 		return this.data.get(hex) || null;
 	}
 
-	rootHash(): Uint8Array | null {
+	rootHash(): HashType | null {
 		if (this.data.size === 0) return null;
-		const hash = new Uint8Array(32);
-		crypto.getRandomValues(hash);
-		return hash;
+		return Hash.random();
 	}
 }
 
 /** Simplified transaction representation */
 interface Transaction {
-	from: Uint8Array;
-	to: Uint8Array;
+	from: AddressType;
+	to: AddressType;
 	value: bigint;
 	nonce: bigint;
 	gasLimit: bigint;
 }
 
 /** Encode transaction to bytes (simplified - production uses RLP) */
-function encodeTransaction(tx: Transaction): Uint8Array {
+function encodeTransaction(tx: Transaction): BytesType {
 	const buffer = new ArrayBuffer(20 + 20 + 16 + 8 + 8);
-	const bytes = new Uint8Array(buffer);
+	const bytes = new Uint8Array(buffer) as BytesType;
 	const view = new DataView(buffer);
 
 	// from (20 bytes)
@@ -65,31 +70,12 @@ function encodeTransaction(tx: Transaction): Uint8Array {
 }
 
 /** Encode transaction index for use as trie key */
-function encodeIndex(index: number): Uint8Array {
+function encodeIndex(index: number): BytesType {
 	// Simple encoding: convert index to bytes (production uses RLP)
-	const bytes = new Uint8Array(8);
-	const view = new DataView(bytes.buffer);
-	view.setBigUint64(0, BigInt(index), false);
+	const bytes = Bytes.fromNumber(index, { size: 8 });
 
 	// Remove leading zeros for compact representation
-	let start = 0;
-	while (start < bytes.length - 1 && bytes[start] === 0) {
-		start++;
-	}
-
-	return bytes.slice(start);
-}
-
-function formatAddress(addr: Uint8Array): string {
-	return `0x${Array.from(addr)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
-}
-
-function formatHash(hash: Uint8Array): string {
-	return `0x${Array.from(hash)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
+	return Bytes.trimLeft(bytes);
 }
 
 // Create transaction trie
@@ -97,8 +83,8 @@ const txTrie = new Trie();
 
 // Transaction 0: Transfer
 const tx0: Transaction = {
-	from: new Uint8Array([0x12, ...new Array(19).fill(0)]),
-	to: new Uint8Array([0x34, ...new Array(19).fill(0)]),
+	from: Address(0x12n),
+	to: Address(0x34n),
 	value: 1_000_000_000_000_000_000n, // 1 ETH
 	nonce: 5n,
 	gasLimit: 21000n,
@@ -109,8 +95,8 @@ txTrie.put(key0, encoded0);
 
 // Transaction 1: Contract call
 const tx1: Transaction = {
-	from: new Uint8Array([0x56, ...new Array(19).fill(0)]),
-	to: new Uint8Array([0xab, ...new Array(19).fill(0)]),
+	from: Address(0x56n),
+	to: Address(0xabn),
 	value: 0n, // No ETH transfer
 	nonce: 10n,
 	gasLimit: 100000n,
@@ -121,8 +107,8 @@ txTrie.put(key1, encoded1);
 
 // Transaction 2: Another transfer
 const tx2: Transaction = {
-	from: new Uint8Array([0x78, ...new Array(19).fill(0)]),
-	to: new Uint8Array([0x9a, ...new Array(19).fill(0)]),
+	from: Address(0x78n),
+	to: Address(0x9an),
 	value: 500_000_000_000_000_000n, // 0.5 ETH
 	nonce: 3n,
 	gasLimit: 21000n,

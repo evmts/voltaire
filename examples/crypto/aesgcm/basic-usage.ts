@@ -10,6 +10,7 @@
  */
 
 import * as AesGcm from "../../../src/crypto/AesGcm/index.js";
+import { Bytes } from "../../../src/primitives/Bytes/index.js";
 
 const key256 = await AesGcm.generateKey(256);
 
@@ -29,7 +30,7 @@ const decrypted = await AesGcm.decrypt(ciphertext, key256, nonce);
 const decryptedMessage = new TextDecoder().decode(decrypted);
 
 // Tamper with ciphertext
-const tamperedCiphertext = new Uint8Array(ciphertext);
+const tamperedCiphertext = Bytes.clone(ciphertext);
 tamperedCiphertext[0] ^= 0xff; // Flip bits in first byte
 
 try {

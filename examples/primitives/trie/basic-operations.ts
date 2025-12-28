@@ -7,43 +7,37 @@
  * in Zig only and not yet exposed to TypeScript through FFI bindings.
  */
 
-// Future API once Trie is exposed via FFI
-// import { Trie } from '../../src/primitives/Trie/index.js';
+import { Hash } from "../../../src/primitives/Hash/index.js";
+import * as Bytes from "../../../src/primitives/Bytes/Bytes.index.js";
+import type { HashType } from "../../../src/primitives/Hash/HashType.js";
+import type { BytesType } from "../../../src/primitives/Bytes/BytesType.js";
 
 // Conceptual implementation for demonstration
 class Trie {
-	private native: unknown; // Would be native FFI binding
+	private data = new Map<string, BytesType>();
 
-	put(key: Uint8Array, value: Uint8Array): void {}
-
-	get(key: Uint8Array): Uint8Array | null {
-		// Would call native get
-		return null;
+	put(key: BytesType, value: BytesType): void {
+		const hex = Bytes.toHex(key);
+		this.data.set(hex, value);
 	}
 
-	delete(key: Uint8Array): void {
-		// Would call native delete
+	get(key: BytesType): BytesType | null {
+		const hex = Bytes.toHex(key);
+		return this.data.get(hex) || null;
 	}
 
-	rootHash(): Uint8Array | null {
-		// Would call native root_hash
-		return new Uint8Array(32); // Mock hash
+	delete(key: BytesType): void {
+		const hex = Bytes.toHex(key);
+		this.data.delete(hex);
+	}
+
+	rootHash(): HashType | null {
+		if (this.data.size === 0) return null;
+		return Hash.random();
 	}
 
 	clear(): void {
-		// Would call native clear
-	}
-
-	// Helper for demo
-	static fromHex(hex: string): Uint8Array {
-		const clean = hex.replace(/^0x/, "");
-		return new Uint8Array(
-			clean.match(/.{1,2}/g)?.map((byte) => Number.parseInt(byte, 16)),
-		);
-	}
-
-	static toUtf8(bytes: Uint8Array): string {
-		return new TextDecoder().decode(bytes);
+		this.data.clear();
 	}
 }
 
@@ -51,25 +45,25 @@ class Trie {
 const trie = new Trie();
 const encoder = new TextEncoder();
 
-trie.put(new Uint8Array([0x12, 0x34]), encoder.encode("first_value"));
-trie.put(new Uint8Array([0x56, 0x78]), encoder.encode("second_value"));
-trie.put(new Uint8Array([0xab, 0xcd]), encoder.encode("third_value"));
+trie.put(Bytes.fromHex("0x1234"), encoder.encode("first_value") as BytesType);
+trie.put(Bytes.fromHex("0x5678"), encoder.encode("second_value") as BytesType);
+trie.put(Bytes.fromHex("0xabcd"), encoder.encode("third_value") as BytesType);
 
 // 3. Root hash changes after insertions
 const root = trie.rootHash();
-const val1 = trie.get(new Uint8Array([0x12, 0x34]));
+const val1 = trie.get(Bytes.fromHex("0x1234"));
 
-const val2 = trie.get(new Uint8Array([0x56, 0x78]));
+const val2 = trie.get(Bytes.fromHex("0x5678"));
 
-const val3 = trie.get(new Uint8Array([0xab, 0xcd]));
-trie.put(new Uint8Array([0x12, 0x34]), encoder.encode("updated_value"));
-const updated = trie.get(new Uint8Array([0x12, 0x34]));
-trie.delete(new Uint8Array([0xab, 0xcd]));
-const deleted = trie.get(new Uint8Array([0xab, 0xcd]));
-const remaining1 = trie.get(new Uint8Array([0x12, 0x34]));
+const val3 = trie.get(Bytes.fromHex("0xabcd"));
+trie.put(Bytes.fromHex("0x1234"), encoder.encode("updated_value") as BytesType);
+const updated = trie.get(Bytes.fromHex("0x1234"));
+trie.delete(Bytes.fromHex("0xabcd"));
+const deleted = trie.get(Bytes.fromHex("0xabcd"));
+const remaining1 = trie.get(Bytes.fromHex("0x1234"));
 
-const remaining2 = trie.get(new Uint8Array([0x56, 0x78]));
-const missing = trie.get(new Uint8Array([0xff, 0xff]));
+const remaining2 = trie.get(Bytes.fromHex("0x5678"));
+const missing = trie.get(Bytes.fromHex("0xffff"));
 
 /**
  * Expected API usage once FFI bindings are available:

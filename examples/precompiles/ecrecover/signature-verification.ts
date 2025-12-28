@@ -14,10 +14,12 @@ import {
 	PrecompileAddress,
 	execute,
 } from "../../../src/evm/precompiles/precompiles.js";
+import { Bytes } from "../../../src/primitives/Bytes/index.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
+import * as PrivateKey from "../../../src/primitives/PrivateKey/index.js";
 
 // Simulate a signed message scenario
-const signerKey = crypto.getRandomValues(new Uint8Array(32));
+const signerKey = PrivateKey.random();
 const signerPubKey = Secp256k1.derivePublicKey(signerKey);
 const signerAddress = Keccak256.hash(signerPubKey).slice(12);
 const authMessage = "I authorize this action at timestamp 1234567890";
@@ -25,7 +27,7 @@ const authHash = Keccak256.hash(new TextEncoder().encode(authMessage));
 const authSig = Secp256k1.sign(authHash, signerKey);
 
 // Prepare ECRECOVER input
-const authInput = new Uint8Array(128);
+const authInput = Bytes.zero(128);
 authInput.set(authHash, 0);
 authInput[63] = authSig.v;
 authInput.set(authSig.r, 64);
@@ -55,7 +57,7 @@ for (const msg of messages) {
 	const msgHash = Keccak256.hash(new TextEncoder().encode(msg));
 	const sig = Secp256k1.sign(msgHash, signerKey);
 
-	const input = new Uint8Array(128);
+	const input = Bytes.zero(128);
 	input.set(msgHash, 0);
 	input[63] = sig.v;
 	input.set(sig.r, 64);
@@ -92,7 +94,7 @@ const s_value = validSig.s.reduce(
 );
 
 // Try with valid signature
-const validInput = new Uint8Array(128);
+const validInput = Bytes.zero(128);
 validInput.set(testMessage, 0);
 validInput[63] = validSig.v;
 validInput.set(validSig.r, 64);
@@ -109,14 +111,14 @@ const validRecovered = validResult.output.slice(12, 32);
 const validMatch = validRecovered.every((byte, i) => byte === signerAddress[i]);
 
 // Create a different signer
-const wrongKey = crypto.getRandomValues(new Uint8Array(32));
+const wrongKey = PrivateKey.random();
 const wrongPubKey = Secp256k1.derivePublicKey(wrongKey);
 const wrongAddress = Keccak256.hash(wrongPubKey).slice(12);
 
 // Sign message with wrong key
 const wrongSig = Secp256k1.sign(testMessage, wrongKey);
 
-const wrongInput = new Uint8Array(128);
+const wrongInput = Bytes.zero(128);
 wrongInput.set(testMessage, 0);
 wrongInput[63] = wrongSig.v;
 wrongInput.set(wrongSig.r, 64);

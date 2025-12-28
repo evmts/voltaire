@@ -8,6 +8,7 @@
  * - Working with hash as Uint8Array
  */
 
+import { Bytes, Bytes64 } from "../../../src/primitives/Bytes/index.js";
 import { Hash } from "../../../src/primitives/Hash/index.js";
 
 // From hex string
@@ -16,10 +17,7 @@ const hashFromHex = Hash.fromHex(
 );
 
 // From bytes
-const bytes = new Uint8Array(32);
-for (let i = 0; i < 32; i++) {
-	bytes[i] = i;
-}
+const bytes = Bytes.from(Array.from({ length: 32 }, (_, i) => i));
 const hashFromBytes = Hash.fromBytes(bytes);
 
 // From Keccak-256 hash
@@ -112,15 +110,13 @@ const allZero = hash1.every((byte) => byte === 0);
 const hasNonZero = hash1.some((byte) => byte !== 0);
 
 // Map bytes
-const incremented = new Uint8Array(hash1.map((byte) => (byte + 1) & 0xff));
+const incremented = Bytes.from(hash1.map((byte) => (byte + 1) & 0xff));
 
 const left = Hash.keccak256String("left");
 const right = Hash.keccak256String("right");
 
 // Concatenate two hashes
-const combined = new Uint8Array(64);
-combined.set(left, 0);
-combined.set(right, 32);
+const combined = Bytes.concat([left, right]);
 
 // Hash the combination
 const merkleNode = Hash.keccak256(combined);

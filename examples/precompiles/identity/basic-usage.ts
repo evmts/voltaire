@@ -15,8 +15,10 @@ import {
 	PrecompileAddress,
 	execute,
 } from "../../../src/precompiles/precompiles.js";
+import { Bytes } from "../../../src/primitives/Bytes/index.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
-const data = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
+
+const data = Bytes.from([1, 2, 3, 4, 5, 6, 7, 8]);
 
 const words = Math.ceil(data.length / 32);
 const gasNeeded = 15n + 3n * BigInt(words);
@@ -32,7 +34,7 @@ if (result.success) {
 	// Verify output equals input
 	const matches = result.output.every((byte, i) => byte === data[i]);
 }
-const empty = new Uint8Array(0);
+const empty = Bytes.from([]);
 const emptyGas = 15n; // Base cost only
 
 const emptyResult = execute(
@@ -48,7 +50,7 @@ for (const size of sizes) {
 	const gas = 15n + 3n * BigInt(w);
 	const perByte = size > 0 ? Number(gas) / size : 0;
 }
-const largeData = crypto.getRandomValues(new Uint8Array(1024));
+const largeData = Bytes.random(1024);
 
 const largeWords = Math.ceil(largeData.length / 32);
 const largeGas = 15n + 3n * BigInt(largeWords);
@@ -80,7 +82,7 @@ const forwarded = execute(
 	forwardGas,
 	Hardfork.CANCUN,
 );
-const testData = crypto.getRandomValues(new Uint8Array(100));
+const testData = Bytes.random(100);
 const insufficientGas = 10n; // Need 15 + 3*4 = 27
 
 const oogResult = execute(

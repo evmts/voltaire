@@ -11,7 +11,9 @@
 import * as AesGcm from "../../../src/crypto/AesGcm/index.js";
 import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
 import * as Address from "../../../src/primitives/Address/index.js";
+import { Bytes32 } from "../../../src/primitives/Bytes/index.js";
 import * as Hex from "../../../src/primitives/Hex/index.js";
+import * as PrivateKey from "../../../src/primitives/PrivateKey/index.js";
 
 // Wallet encryption format
 interface EncryptedWallet {
@@ -37,7 +39,7 @@ async function encryptWallet(
 	const address = Address.fromPublicKey(publicKey);
 
 	// Generate salt for PBKDF2
-	const salt = crypto.getRandomValues(new Uint8Array(32)); // 32 bytes for extra security
+	const salt = Bytes32.random(); // 32 bytes for extra security
 
 	// Derive encryption key (600,000 iterations for wallet security)
 	const iterations = 600000;
@@ -108,8 +110,7 @@ async function verifyWalletPassword(
 }
 
 // Generate new private key
-const privateKey = new Uint8Array(32);
-crypto.getRandomValues(privateKey);
+const privateKey = PrivateKey.random();
 
 // Derive address
 const publicKey = Secp256k1.derivePublicKey(privateKey);
@@ -137,9 +138,7 @@ const wallets: EncryptedWallet[] = [];
 const walletPasswords = ["pass1", "pass2", "pass3"];
 
 for (let i = 0; i < 3; i++) {
-	const key = new Uint8Array(32);
-	crypto.getRandomValues(key);
-
+	const key = PrivateKey.random();
 	const wallet = await encryptWallet(key, walletPasswords[i]);
 	wallets.push(wallet);
 }

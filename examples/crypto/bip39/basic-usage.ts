@@ -10,6 +10,7 @@
  */
 
 import * as Bip39 from "../../../src/crypto/Bip39/index.js";
+import { Bytes32 } from "../../../src/primitives/Bytes/index.js";
 import * as Hex from "../../../src/primitives/Hex/index.js";
 
 const mnemonic12 = Bip39.generateMnemonic(128); // 12 words
@@ -60,7 +61,7 @@ const seedPass1 = await Bip39.mnemonicToSeed(baseMnemonic, "password1");
 const seedPass2 = await Bip39.mnemonicToSeed(baseMnemonic, "password2");
 const seedEmptyPass = await Bip39.mnemonicToSeed(baseMnemonic, "");
 
-const entropy = crypto.getRandomValues(new Uint8Array(32)); // 256 bits
+const entropy = Bytes32.random(); // 256 bits
 const mnemonicFromEntropy = Bip39.entropyToMnemonic(entropy);
 
 const testVector =

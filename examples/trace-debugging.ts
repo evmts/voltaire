@@ -8,6 +8,8 @@
  * 4. Profile gas usage across operations
  */
 
+import * as Address from "../src/primitives/Address/index.js";
+import { Bytes } from "../src/primitives/Bytes/index.js";
 import * as CallTrace from "../src/primitives/CallTrace/index.js";
 import * as StructLog from "../src/primitives/StructLog/index.js";
 import * as TraceConfig from "../src/primitives/TraceConfig/index.js";
@@ -60,7 +62,7 @@ const mockStructLogs = [
 const traceResult = TraceResult.from({
 	gas: 50000n as any,
 	failed: true,
-	returnValue: new Uint8Array(),
+	returnValue: Bytes.from([]),
 	structLogs: mockStructLogs,
 });
 
@@ -79,9 +81,9 @@ for (const log of logs) {
 for (const [op, gas] of gasByOpcode) {
 }
 
-const mockFromAddr = new Uint8Array(20).fill(1) as any;
-const mockToAddr = new Uint8Array(20).fill(2) as any;
-const mockContractAddr = new Uint8Array(20).fill(3) as any;
+const mockFromAddr = Address.fromHex("0x0101010101010101010101010101010101010101");
+const mockToAddr = Address.fromHex("0x0202020202020202020202020202020202020202");
+const mockContractAddr = Address.fromHex("0x0303030303030303030303030303030303030303");
 
 // Create nested call structure
 const nestedCall = CallTrace.from({
@@ -90,8 +92,8 @@ const nestedCall = CallTrace.from({
 	to: mockContractAddr,
 	gas: 20000n as any,
 	gasUsed: 10000n as any,
-	input: new Uint8Array(),
-	output: new Uint8Array(),
+	input: Bytes.from([]),
+	output: Bytes.from([]),
 });
 
 const failedCall = CallTrace.from({
@@ -100,8 +102,8 @@ const failedCall = CallTrace.from({
 	to: mockContractAddr,
 	gas: 50000n as any,
 	gasUsed: 25000n as any,
-	input: new Uint8Array(),
-	output: new Uint8Array(),
+	input: Bytes.from([]),
+	output: Bytes.from([]),
 	error: "execution reverted",
 	revertReason: "ERC20: transfer amount exceeds balance",
 });
@@ -112,15 +114,15 @@ const rootCall = CallTrace.from({
 	to: mockToAddr,
 	gas: 100000n as any,
 	gasUsed: 75000n as any,
-	input: new Uint8Array(),
-	output: new Uint8Array(),
+	input: Bytes.from([]),
+	output: Bytes.from([]),
 	calls: [nestedCall, failedCall],
 });
 
 const callTraceResult = TraceResult.from({
 	gas: 75000n as any,
 	failed: true,
-	returnValue: new Uint8Array(),
+	returnValue: Bytes.from([]),
 	callTrace: rootCall,
 });
 

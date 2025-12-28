@@ -1,9 +1,9 @@
 import * as Ed25519 from "../../../src/crypto/Ed25519/index.js";
+import { Bytes, Bytes32 } from "../../../src/primitives/Bytes/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
 
 // Generate 32-byte seed (in production, use crypto.getRandomValues())
-const seedBytes = new Uint8Array(32);
-crypto.getRandomValues(seedBytes);
+const seedBytes = Bytes32.random();
 
 const keypair = Ed25519.keypairFromSeed(seedBytes);
 
@@ -18,7 +18,7 @@ const wrongMessage = new TextEncoder().encode("Wrong message");
 const isInvalid = Ed25519.verify(signature, wrongMessage, keypair.publicKey);
 
 // Wrong public key fails
-const wrongSeedBytes = new Uint8Array(32).fill(0x42);
+const wrongSeedBytes = Bytes.from(Array(32).fill(0x42));
 const wrongKeypair = Ed25519.keypairFromSeed(wrongSeedBytes);
 const wrongKey = Ed25519.verify(signature, message, wrongKeypair.publicKey);
 
@@ -34,7 +34,7 @@ const allMatch =
 	Hex.fromBytes(sig2) === Hex.fromBytes(sig3);
 
 // Empty message
-const empty = new Uint8Array(0);
+const empty = Bytes.from([]);
 const sigEmpty = Ed25519.sign(empty, keypair.secretKey);
 
 // Short message
@@ -42,7 +42,7 @@ const short = new TextEncoder().encode("Hi");
 const sigShort = Ed25519.sign(short, keypair.secretKey);
 
 // Long message
-const long = new Uint8Array(10000).fill(0xab);
+const long = Bytes.from(Array(10000).fill(0xab));
 const sigLong = Ed25519.sign(long, keypair.secretKey);
 
 // Invalid keys - these would fail validation but showing the pattern

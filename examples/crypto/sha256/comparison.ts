@@ -10,6 +10,7 @@
 
 import { Keccak256 } from "../../../src/crypto/Keccak256/Keccak256.js";
 import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
+import { Bytes, Bytes64 } from "../../../src/primitives/Bytes/index.js";
 
 const data = new TextEncoder().encode("Hello, World!");
 
@@ -46,18 +47,14 @@ const wrongHash = SHA256.hash(functionBytes);
 const wrongSelector = wrongHash.slice(0, 4);
 
 // Simulated public key
-const publicKey = new Uint8Array(64);
-for (let i = 0; i < 64; i++) {
-	publicKey[i] = i & 0xff;
-}
+const publicKey = Bytes.from(Array.from({ length: 64 }, (_, i) => i & 0xff));
 const bitcoinStep1 = SHA256.hash(publicKey);
 const ethereumStep1 = Keccak256(publicKey);
 const ethereumAddress = ethereumStep1.slice(12);
 
-const testData = new Uint8Array(1024 * 1024); // 1MB
-for (let i = 0; i < testData.length; i++) {
-	testData[i] = i & 0xff;
-}
+const testData = Bytes.from(
+	Array.from({ length: 1024 * 1024 }, (_, i) => i & 0xff),
+); // 1MB
 
 const iterations = 10;
 
@@ -80,8 +77,8 @@ const ratio = (
 	Math.max(sha256Time, keccak256Time) / Math.min(sha256Time, keccak256Time)
 ).toFixed(2);
 
-const input1 = new Uint8Array([1, 2, 3, 4, 5]);
-const input2 = new Uint8Array([1, 2, 3, 4, 6]); // Last byte different
+const input1 = Bytes.from([1, 2, 3, 4, 5]);
+const input2 = Bytes.from([1, 2, 3, 4, 6]); // Last byte different
 
 const sha1 = SHA256.hash(input1);
 const sha2 = SHA256.hash(input2);

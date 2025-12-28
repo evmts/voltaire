@@ -9,11 +9,12 @@
  */
 
 import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
+import { Bytes64 } from "../../../src/primitives/Bytes/index.js";
 import { keccak256 } from "../../../src/primitives/Hash/index.js";
+import * as PrivateKey from "../../../src/primitives/PrivateKey/index.js";
 
 // Generate random private key (in production, use secure key management)
-const privateKey = new Uint8Array(32);
-crypto.getRandomValues(privateKey);
+const privateKey = PrivateKey.random();
 
 // Create message hash
 const message = "Hello, Ethereum!";
@@ -30,8 +31,7 @@ const publicKey = Secp256k1.derivePublicKey(privateKey);
 const isValid = Secp256k1.verify(signature, messageHash, publicKey);
 
 // Test with wrong public key
-const wrongKey = new Uint8Array(64);
-crypto.getRandomValues(wrongKey);
+const wrongKey = Bytes64.random();
 const invalidVerification = Secp256k1.verify(signature, messageHash, wrongKey);
 const sig1 = Secp256k1.sign(messageHash, privateKey);
 const sig2 = Secp256k1.sign(messageHash, privateKey);

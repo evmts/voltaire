@@ -11,12 +11,12 @@
 
 import * as EIP712 from "../../../src/crypto/Eip712/index.js";
 import * as Address from "../../../src/primitives/Address/index.js";
+import { Bytes, Bytes32 } from "../../../src/primitives/Bytes/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
+import * as PrivateKey from "../../../src/primitives/PrivateKey/index.js";
 
 // Generate private key for examples
-const privateKeyBytes = new Uint8Array(32);
-crypto.getRandomValues(privateKeyBytes);
-const privateKey = Hex.fromBytes(privateKeyBytes);
+const privateKey = PrivateKey.toHex(PrivateKey.random());
 
 const simpleTypedData = {
 	domain: {
@@ -174,8 +174,8 @@ const allTypesData = {
 		intValue: -100n,
 		addressValue: Address.fromHex("0x1234567890123456789012345678901234567890"),
 		boolValue: true,
-		bytesValue: new Uint8Array([0x01, 0x02, 0x03]),
-		bytes32Value: new Uint8Array(32).fill(0xab),
+		bytesValue: Bytes.from([0x01, 0x02, 0x03]),
+		bytes32Value: Bytes.from(Array(32).fill(0xab)),
 		stringValue: "Hello",
 	},
 };

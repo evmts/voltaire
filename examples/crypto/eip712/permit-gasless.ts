@@ -12,13 +12,13 @@
 import * as EIP712 from "../../../src/crypto/Eip712/index.js";
 import * as Address from "../../../src/primitives/Address/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
+import * as PrivateKey from "../../../src/primitives/PrivateKey/index.js";
 
 // Simulate token contract
 const USDC_ADDRESS = Address.fromHex(
 	"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 );
-const OWNER_PRIVATE_KEY = new Uint8Array(32);
-crypto.getRandomValues(OWNER_PRIVATE_KEY);
+const OWNER_PRIVATE_KEY = PrivateKey.random();
 
 const SPENDER_ADDRESS = Address.fromHex(
 	"0x1234567890123456789012345678901234567890",

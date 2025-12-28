@@ -9,6 +9,7 @@
  */
 
 import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
+import { Bytes, Bytes32 } from "../../../src/primitives/Bytes/index.js";
 
 interface TestVector {
 	name: string;
@@ -104,19 +105,19 @@ if (streamingResult === largeExpected) {
 const edgeCases = [
 	{
 		name: "Single byte (0x00)",
-		input: new Uint8Array([0x00]),
+		input: Bytes.from([0x00]),
 		expected:
 			"0x6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
 	},
 	{
 		name: "All zeros (32 bytes)",
-		input: new Uint8Array(32).fill(0x00),
+		input: Bytes32.zero(),
 		expected:
 			"0x66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
 	},
 	{
 		name: "All ones (32 bytes)",
-		input: new Uint8Array(32).fill(0xff),
+		input: Bytes.from(Array(32).fill(0xff)),
 		expected:
 			"0xaf9613760f72635fbdb44a5a0a63c39f12af30f950a6ee5c971be188e89c4051",
 	},
@@ -141,13 +142,13 @@ const unicodeTests = [
 		name: "Emoji 🚀",
 		input: "🚀",
 		// UTF-8: F0 9F 9A 80
-		bytes: new Uint8Array([0xf0, 0x9f, 0x9a, 0x80]),
+		bytes: Bytes.from([0xf0, 0x9f, 0x9a, 0x80]),
 	},
 	{
 		name: "Chinese 你好",
 		input: "你好",
 		// UTF-8: E4 BD A0 E5 A5 BD
-		bytes: new Uint8Array([0xe4, 0xbd, 0xa0, 0xe5, 0xa5, 0xbd]),
+		bytes: Bytes.from([0xe4, 0xbd, 0xa0, 0xe5, 0xa5, 0xbd]),
 	},
 ];
 

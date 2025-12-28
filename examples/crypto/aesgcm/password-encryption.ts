@@ -10,6 +10,7 @@
  */
 
 import * as AesGcm from "../../../src/crypto/AesGcm/index.js";
+import { Bytes, Bytes16 } from "../../../src/primitives/Bytes/index.js";
 
 // Helper functions for complete encrypt/decrypt workflow
 async function encryptWithPassword(
@@ -17,7 +18,7 @@ async function encryptWithPassword(
 	password: string,
 ): Promise<{ salt: Uint8Array; nonce: Uint8Array; ciphertext: Uint8Array }> {
 	// Generate random salt for PBKDF2
-	const salt = crypto.getRandomValues(new Uint8Array(16));
+	const salt = Bytes16.random();
 
 	// Derive 256-bit key from password
 	// Using 600,000 iterations (OWASP 2023 recommendation)
@@ -84,7 +85,7 @@ const result1 = await encryptWithPassword(sameMessage, samePassword);
 const result2 = await encryptWithPassword(sameMessage, samePassword);
 
 const testPassword = "test-password";
-const testSalt = crypto.getRandomValues(new Uint8Array(16));
+const testSalt = Bytes16.random();
 
 // Low iterations (fast, less secure)
 const startLow = Date.now();
@@ -107,17 +108,11 @@ const storagePassword = "storage-password";
 const encryptedData = await encryptWithPassword(storageData, storagePassword);
 
 // Format for storage (concatenate salt + nonce + ciphertext)
-const storedBytes = new Uint8Array(
-	encryptedData.salt.length +
-		encryptedData.nonce.length +
-		encryptedData.ciphertext.length,
-);
-let offset = 0;
-storedBytes.set(encryptedData.salt, offset);
-offset += encryptedData.salt.length;
-storedBytes.set(encryptedData.nonce, offset);
-offset += encryptedData.nonce.length;
-storedBytes.set(encryptedData.ciphertext, offset);
+const storedBytes = Bytes.concat([
+	encryptedData.salt,
+	encryptedData.nonce,
+	encryptedData.ciphertext,
+]);
 
 // Extract and decrypt
 const extractedSalt = storedBytes.slice(0, 16);
@@ -134,7 +129,7 @@ const extractedDecrypted = await decryptWithPassword(
 );
 
 const pwd = "test";
-const salt = crypto.getRandomValues(new Uint8Array(16));
+const salt = Bytes16.random();
 const data = new TextEncoder().encode("test data");
 
 const key128 = await AesGcm.deriveKey(pwd, salt, 100000, 128);

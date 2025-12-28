@@ -9,7 +9,9 @@
 
 import { hash as keccak256 } from "../src/crypto/Keccak256/hash.js";
 import { recoverPublicKey } from "../src/crypto/Secp256k1/recoverPublicKey.js";
+import * as Address from "../src/primitives/Address/index.js";
 import { fromPublicKey } from "../src/primitives/Address/fromPublicKey.js";
+import { Bytes } from "../src/primitives/Bytes/index.js";
 import * as ContractSignature from "../src/primitives/ContractSignature/index.js";
 import * as SignedData from "../src/primitives/SignedData/index.js";
 
@@ -20,12 +22,12 @@ const messageHash = hash(message);
 // Personal message (most common)
 const personalMessage = SignedData.from(
 	SignedData.VERSION_PERSONAL_MESSAGE,
-	new Uint8Array(0),
+	Bytes.from([]),
 	new TextEncoder().encode("Test message"),
 );
 
 // Data with validator
-const validatorAddress = new Uint8Array(20).fill(0x42);
+const validatorAddress = Address.fromHex("0x4242424242424242424242424242424242424242");
 const dataWithValidator = SignedData.from(
 	SignedData.VERSION_DATA_WITH_VALIDATOR,
 	validatorAddress,

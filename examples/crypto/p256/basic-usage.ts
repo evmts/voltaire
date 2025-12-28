@@ -1,10 +1,11 @@
 import * as P256 from "../../../src/crypto/P256/index.js";
+import { Bytes, Bytes16, Bytes32 } from "../../../src/primitives/Bytes/index.js";
 import * as Hash from "../../../src/primitives/Hash/index.js";
 import { Hex } from "../../../src/primitives/Hex/index.js";
+import * as PrivateKey from "../../../src/primitives/PrivateKey/index.js";
 
 // In production, use crypto.getRandomValues()
-const privateKey = new Uint8Array(32);
-crypto.getRandomValues(privateKey);
+const privateKey = PrivateKey.random();
 
 const publicKey = P256.derivePublicKey(privateKey);
 
@@ -38,19 +39,18 @@ messages.forEach((msg, i) => {
 });
 
 // Valid private key
-const validPrivate = new Uint8Array(32).fill(1);
+const validPrivate = Bytes.from(Array(32).fill(1));
 
 // Invalid private key (all zeros)
-const zeroKey = new Uint8Array(32);
+const zeroKey = Bytes32.zero();
 
 // Invalid private key (wrong length)
-const shortKey = new Uint8Array(16);
+const shortKey = Bytes16.zero();
 
 // Invalid public key (wrong length)
-const invalidPubKey = new Uint8Array(32);
+const invalidPubKey = Bytes32.zero();
 
-const privateKey2 = new Uint8Array(32);
-crypto.getRandomValues(privateKey2);
+const privateKey2 = PrivateKey.random();
 const publicKey2 = P256.derivePublicKey(privateKey2);
 
 const testMsg = "shared message";

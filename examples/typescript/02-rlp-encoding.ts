@@ -7,6 +7,7 @@
  * - Working with nested structures
  */
 
+import { Bytes } from "../../src/primitives/Bytes/index.js";
 import * as Hex from "../../src/primitives/Hex/index.js";
 import * as Rlp from "../../src/primitives/Rlp/index.js";
 
@@ -16,23 +17,23 @@ import * as Rlp from "../../src/primitives/Rlp/index.js";
 const encoder = new TextEncoder();
 
 // Simple byte arrays
-const num1 = new Uint8Array([0]);
-const num2 = new Uint8Array([127]);
-const num3 = new Uint8Array([0, 128]);
+const num1 = Bytes.from([0]);
+const num2 = Bytes.from([127]);
+const num3 = Bytes.from([0, 128]);
 
 // String as bytes
 const str1 = encoder.encode("dog");
 const str2 = encoder.encode("cat");
 
 // Lists of byte arrays
-const list1 = [new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3])];
+const list1 = [Bytes.from([1]), Bytes.from([2]), Bytes.from([3])];
 const list2 = [encoder.encode("cat"), encoder.encode("dog")];
 const list3 = []; // empty list
 
 // Nested structure: ["hello", [1, 2, 3], "world"]
 const nested = [
 	encoder.encode("hello"),
-	[new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3])],
+	[Bytes.from([1]), Bytes.from([2]), Bytes.from([3])],
 	encoder.encode("world"),
 ];
 
@@ -41,9 +42,9 @@ const decoded = Rlp.decode(encoded);
 
 // Encode and decode a simple list
 const original = [
-	new Uint8Array([1]),
+	Bytes.from([1]),
 	Hex.toBytes("0x1234"),
-	[new Uint8Array([5]), new Uint8Array([6])],
+	[Bytes.from([5]), Bytes.from([6])],
 	encoder.encode("test"),
 ];
 
@@ -52,12 +53,12 @@ const decodedData = Rlp.decode(encodedData);
 
 // Transaction-like data
 const txData = [
-	new Uint8Array([0]), // nonce: 0
+	Bytes.from([0]), // nonce: 0
 	Hex.toBytes("0x04a817c800"), // gasPrice: 20000000000
 	Hex.toBytes("0x5208"), // gasLimit: 21000
 	Hex.toBytes("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"), // to address
 	Hex.toBytes("0x038d7ea4c68000"), // value: 1000000000000000
-	new Uint8Array([]), // data: empty
+	Bytes.from([]), // data: empty
 ];
 
 const encodedTx = Rlp.encode(txData);
