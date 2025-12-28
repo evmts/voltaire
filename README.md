@@ -23,344 +23,189 @@
   </sup>
 </div>
 
-## Features
+## Why Voltaire?
 
-Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https://ziglang.org/), [TypeScript](https://www.typescriptlang.org/), [Swift](https://swift.org/), and C-FFI support.
+**Modern Ethereum library built for TypeScript, Zig, and AI-assisted development.**
 
-- **Simple APIs** - The minimal close-to-spec APIs needed for [Ethereum development](https://ethereum.org/en/developers/)
-- **LLM-Optimized** - API and documentation built and tested to perform well with LLMs
-- **High-performance** - Opt-in [WASM](https://webassembly.org/) implementations for performance-critical operations
-- **Type-safe** - [Branded types](https://voltaire.tevm.sh/concepts/branded-types/) provided for opt-in typesafety
-- **Multi-language** - Currently supports TypeScript and [Zig](https://ziglang.org/). Additional languages planned (see Language Support Wishlist below).
+```typescript
+import { Address, Wei, Gwei, Ether, Rlp, Abi, Keccak256 } from 'tevm';
+
+// Type-safe addresses - casing bugs eliminated
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+Address.toChecksummed(addr); // "0x742d35Cc..."
+
+// Denomination safety - can't accidentally mix Wei and Ether
+const value = Wei(1000000000000000000n);
+Wei.toEther(value);  // 1n
+Wei.toGwei(value);   // 1000000000n
+
+// Keccak256 hashing
+const selector = Keccak256.selector('transfer(address,uint256)');
+// Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
+
+// RLP encoding
+const encoded = Rlp.encode([addr, Hex.fromNumber(42n)]);
+
+// ABI encoding
+const calldata = Abi.Function.encodeParams(transferAbi, [recipient, amount]);
+```
+
+### Branded Types = Type Safety
+
+TypeScript's structural typing lets you pass a `Hash` where an `Address` is expected - both are just `0x${string}`. **Voltaire prevents this entire class of bugs:**
+
+```typescript
+// Traditional libraries - compiles fine, breaks at runtime
+simulateTransfer(bytecode, address); // Wrong order - TypeScript can't catch it!
+
+// Voltaire - compile-time error
+simulateTransfer(bytecode, address);
+// Error: Type 'Bytecode' is not assignable to parameter of type 'Address'
+```
+
+**Zero runtime overhead.** Brands exist only in TypeScript's type checker.
+
+### LLM-Optimized
+
+APIs mirror Ethereum specifications. LLMs can leverage training data from official docs instead of learning library-specific abstractions.
+
+- **MCP Server** - `claude mcp add --transport http tevm https://tevm.sh/mcp`
+- **Smart detection** - Docs return markdown for AI, HTML for humans
+- **Eval-tested** - Comprehensive test suite validates AI can 1-shot implementations
+
+### Multiplatform
+
+Same API across TypeScript, Zig, and C-FFI. Works in Node.js, Bun, browsers, and any language with FFI support.
+
+```zig
+const Address = @import("primitives").Address;
+
+pub fn main() !void {
+    const address = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+    _ = address.toChecksummed();
+}
+```
+
+### Tree-Shakeable
+
+Data-first design. Import only what you need:
+
+```typescript
+// Import specific functions - excludes unused code from bundle
+import { fromHex, toChecksummed } from 'tevm/Address';
+```
+
+---
 
 ## Get Started
 
-📚 **[Installation Guide](https://voltaire.tevm.sh/getting-started/)** | **[API Documentation](https://voltaire.tevm.sh/)**
+```bash
+npm install tevm
+```
 
-## Complete API Reference
-
-> **Note:** Voltaire focuses on Ethereum primitives and cryptography. For additional functionality:
->
-> - **EVM Execution**: [evmts/guillotine](https://github.com/evmts/guillotine) - EVM-related functionality
-> - **Solidity Compilation**: [evmts/compiler](https://github.com/evmts/compiler) - Solidity compilation support
-
-### Core Primitives
-
-| Primitive                                                                      | Description                    | Key Features                                                                                                                                                                                                                                  |
-| ------------------------------------------------------------------------------ | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **[ABI](https://voltaire.tevm.sh/primitives/abi/)**                           | Contract interface encoding    | Functions, events, errors, constructors ([ABI spec](https://docs.soliditylang.org/en/latest/abi-spec.html))                                                                                                                                   |
-| **[AccessList](https://voltaire.tevm.sh/primitives/accesslist/)**             | EIP-2930 access list           | [EIP-2930](https://eips.ethereum.org/EIPS/eip-2930) transaction access lists                                                                                                                                                                  |
-| **[Address](https://voltaire.tevm.sh/primitives/address/)**                   | 20-byte Ethereum address       | [EIP-55](https://eips.ethereum.org/EIPS/eip-55) checksums, [CREATE/CREATE2](https://eips.ethereum.org/EIPS/eip-1014) calculation, validation                                                                                                  |
-| **[Authorization](https://voltaire.tevm.sh/primitives/authorization/)**       | EIP-7702 authorization         | [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) account abstraction authorizations                                                                                                                                                        |
-| **[Base64](https://voltaire.tevm.sh/primitives/base64/)**                     | Base64 encoding                | [RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648) encoding/decoding                                                                                                                                                                   |
-| **[BinaryTree](https://voltaire.tevm.sh/primitives/binarytree/)**             | Binary tree structures         | [Merkle trees](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/)                                                                                                                                    |
-| **[Blob](https://voltaire.tevm.sh/primitives/blob/)**                         | EIP-4844 blob                  | [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) blob transactions                                                                                                                                                                         |
-| **[BloomFilter](https://voltaire.tevm.sh/primitives/bloomfilter/)**           | Bloom filter                   | Log bloom filters                                                                                                                                                                                                                             |
-| **[Bytecode](https://voltaire.tevm.sh/primitives/bytecode/)**                 | Contract bytecode              | EVM bytecode manipulation, deployment                                                                                                                                                                                                         |
-| **[Chain](https://voltaire.tevm.sh/primitives/chain/)**                       | Chain configuration            | Network configuration, chain parameters                                                                                                                                                                                                       |
-| **[ChainId](https://voltaire.tevm.sh/primitives/chain/)**                     | Network identifier             | Mainnet, testnets, L2s (Optimism, Arbitrum, Base, etc.)                                                                                                                                                                                       |
-| **[Denomination](https://voltaire.tevm.sh/primitives/denomination/)**         | Ether denominations            | Wei, gwei, ether conversions                                                                                                                                                                                                                  |
-| **[Ens](https://voltaire.tevm.sh/primitives/ens/)**                           | ENS name normalization         | [ENSIP-15](https://docs.ens.domains/ensip/15) normalization, beautification, validation                                                                                                                                                       |
-| **[EventLog](https://voltaire.tevm.sh/primitives/eventlog/)**                 | Transaction event log          | Event parsing, filtering, decoding                                                                                                                                                                                                            |
-| **[FeeMarket](https://voltaire.tevm.sh/primitives/feemarket/)**               | Fee market calculations        | [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) base fee, priority fee                                                                                                                                                                    |
-| **[GasConstants](https://voltaire.tevm.sh/primitives/gasconstants/)**         | EVM gas costs                  | [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) gas constants                                                                                                                                                                |
-| **[Hardfork](https://voltaire.tevm.sh/primitives/hardfork/)**                 | Network hardfork               | Hardfork detection, feature flags                                                                                                                                                                                                             |
-| **[Hash](https://voltaire.tevm.sh/primitives/hash/)**                         | 32-byte hash type              | Constant-time operations, random generation, formatting                                                                                                                                                                                       |
-| **[Hex](https://voltaire.tevm.sh/primitives/hex/)**                           | Hexadecimal encoding           | Sized types, manipulation, conversion, validation                                                                                                                                                                                             |
-| **[Opcode](https://voltaire.tevm.sh/primitives/opcode/)**                     | EVM opcodes                    | [EVM.codes](https://www.evm.codes/) opcode reference                                                                                                                                                                                          |
-| **[RLP](https://voltaire.tevm.sh/primitives/rlp/)**                           | Recursive Length Prefix        | Encoding/decoding for [Ethereum data structures](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/)                                                                                                                   |
-| **[Signature](https://voltaire.tevm.sh/primitives/signature/)**               | ECDSA signatures               | [Secp256k1](https://en.bitcoin.it/wiki/Secp256k1), [P-256](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf), [Ed25519](https://ed25519.cr.yp.to/), canonical normalization, recovery                                              |
-| **[SIWE](https://voltaire.tevm.sh/primitives/siwe/)**                         | Sign-In with Ethereum          | [EIP-4361](https://eips.ethereum.org/EIPS/eip-4361) authentication                                                                                                                                                                            |
-| **[State](https://voltaire.tevm.sh/primitives/state/)**                       | State management               | Account state, storage slots                                                                                                                                                                                                                  |
-| **[Transaction](https://voltaire.tevm.sh/primitives/transaction/)**           | All transaction types          | [Legacy](https://ethereum.org/en/developers/docs/transactions/), [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559), [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844), [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702), serialization |
-| **[Uint](https://voltaire.tevm.sh/primitives/uint/)**                         | 256-bit unsigned integer       | Wrapping arithmetic, bitwise operations, comparisons                                                                                                                                                                                          |
+**[Documentation](https://voltaire.tevm.sh/)** | **[Playground](https://voltaire.tevm.sh/playground)** | **[API Reference](https://voltaire.tevm.sh/getting-started)**
 
 ---
+
+## What's Included
+
+### Primitives
+
+| Primitive | Description | Key Features |
+| --------- | ----------- | ------------ |
+| **[Address](https://voltaire.tevm.sh/primitives/address/)** | 20-byte Ethereum address | EIP-55 checksums, CREATE/CREATE2 calculation |
+| **[Transaction](https://voltaire.tevm.sh/primitives/transaction/)** | All transaction types | Legacy, EIP-1559, EIP-4844, EIP-7702 |
+| **[ABI](https://voltaire.tevm.sh/primitives/abi/)** | Contract interface encoding | Functions, events, errors, constructors |
+| **[RLP](https://voltaire.tevm.sh/primitives/rlp/)** | Recursive Length Prefix | Encoding/decoding for Ethereum data structures |
+| **[Hex](https://voltaire.tevm.sh/primitives/hex/)** | Hexadecimal encoding | Sized types, manipulation, conversion |
+| **[Uint](https://voltaire.tevm.sh/primitives/uint/)** | 256-bit unsigned integer | Wrapping arithmetic, bitwise operations |
+| **[Hash](https://voltaire.tevm.sh/primitives/hash/)** | 32-byte hash type | Constant-time operations |
+| **[Signature](https://voltaire.tevm.sh/primitives/signature/)** | ECDSA signatures | Secp256k1, P-256, Ed25519 |
+| **[Blob](https://voltaire.tevm.sh/primitives/blob/)** | EIP-4844 blob data | 128KB blobs for rollups |
+| **[Denomination](https://voltaire.tevm.sh/primitives/denomination/)** | Ether denominations | Wei, gwei, ether conversions |
+| **[Ens](https://voltaire.tevm.sh/primitives/ens/)** | ENS name normalization | ENSIP-15 normalization |
+| **[SIWE](https://voltaire.tevm.sh/primitives/siwe/)** | Sign-In with Ethereum | EIP-4361 authentication |
+
+[View all 23 primitives →](https://voltaire.tevm.sh/getting-started#primitives)
 
 ### Cryptography
 
-**Core Algorithms:**
+| Algorithm | Purpose | Key Operations |
+| --------- | ------- | -------------- |
+| **[Keccak256](https://voltaire.tevm.sh/crypto/keccak256/)** | Primary Ethereum hash | Address derivation, selectors, topics |
+| **[Secp256k1](https://voltaire.tevm.sh/crypto/secp256k1/)** | ECDSA signing | Sign, verify, recover public key |
+| **[EIP-712](https://voltaire.tevm.sh/crypto/eip712/)** | Typed data signing | Domain separation, type hashing |
+| **[BN254](https://voltaire.tevm.sh/crypto/bn254/)** | zkSNARK verification | G1/G2 operations, pairing checks |
+| **[KZG](https://voltaire.tevm.sh/crypto/kzg/)** | EIP-4844 blob commitments | Polynomial commitments, proofs |
+| **[BIP-39](https://voltaire.tevm.sh/crypto/bip39/)** | Mnemonic phrases | 12/24-word mnemonics, seed derivation |
+| **[HDWallet](https://voltaire.tevm.sh/crypto/hdwallet/)** | HD wallets | BIP-32/44 key derivation |
 
-| Algorithm                                                | Purpose                                                                                                                                                                                 | Key Operations                                                       |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| **[Keccak256](https://voltaire.tevm.sh/crypto/keccak256/)** | Primary Ethereum hash function ([FIPS 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf))                                                                                   | Address derivation, function selectors, event topics                 |
-| **[Secp256k1](https://voltaire.tevm.sh/crypto/secp256k1/)** | ECDSA transaction signing ([SEC 2](https://www.secg.org/sec2-v2.pdf))                                                                                                                   | Sign, verify, recover public key, address derivation                 |
-| **[EIP-712](https://voltaire.tevm.sh/crypto/eip712/)**      | Typed structured data signing ([EIP-712](https://eips.ethereum.org/EIPS/eip-712))                                                                                                       | Domain separation, type hashing, signature verification              |
-| **[BN254](https://voltaire.tevm.sh/crypto/bn254/)**         | zkSNARK verification ([alt_bn128](https://eips.ethereum.org/EIPS/eip-196))                                                                                                              | G1/G2 point operations, pairing checks for zero-knowledge proofs     |
-| **[KZG](https://voltaire.tevm.sh/crypto/kzg/)**             | EIP-4844 blob commitments ([EIP-4844](https://eips.ethereum.org/EIPS/eip-4844))                                                                                                         | Polynomial commitments, trusted setup, proof generation/verification |
-| **[BIP-39](https://voltaire.tevm.sh/crypto/bip39/)**        | Mnemonic phrases ([BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki))                                                                                             | 12/24-word mnemonics, seed derivation (PBKDF2)                       |
-| **[HDWallet](https://voltaire.tevm.sh/crypto/hdwallet/)**   | Hierarchical deterministic wallets ([BIP-32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki), [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)) | Key derivation, multi-account paths                                  |
+**Hash functions:** [SHA256](https://voltaire.tevm.sh/crypto/sha256/), [RIPEMD160](https://voltaire.tevm.sh/crypto/ripemd160/), [Blake2](https://voltaire.tevm.sh/crypto/blake2/)
 
-**Hash Functions:** [SHA256](https://voltaire.tevm.sh/crypto/sha256/) ([FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf)), [RIPEMD160](https://voltaire.tevm.sh/crypto/ripemd160/) ([RIPEMD-160](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)), [Blake2](https://voltaire.tevm.sh/crypto/blake2/) ([RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693))
+**Elliptic curves:** [Ed25519](https://voltaire.tevm.sh/crypto/ed25519/), [X25519](https://voltaire.tevm.sh/crypto/x25519/), [P256](https://voltaire.tevm.sh/crypto/p256/)
 
-**Elliptic Curves:** [Ed25519](https://voltaire.tevm.sh/crypto/ed25519/) ([RFC 8032](https://datatracker.ietf.org/doc/html/rfc8032)), [X25519](https://voltaire.tevm.sh/crypto/x25519/) ([RFC 7748](https://datatracker.ietf.org/doc/html/rfc7748)), [P256](https://voltaire.tevm.sh/crypto/p256/) ([FIPS 186-5](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf))
+**Encryption:** [AES-GCM](https://voltaire.tevm.sh/crypto/aesgcm/)
 
-**Encryption:** [AES-GCM](https://voltaire.tevm.sh/crypto/aesgcm/) ([NIST SP 800-38D](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf))
-
-**Security Notice:**
-
-> ⚠️ **Cryptography Implementation Status**
->
-> Voltaire provides multiple implementation options for cryptographic operations:
->
-> - **Audited (Recommended)**: [@noble/curves](https://github.com/paulmillr/noble-curves), [@noble/hashes](https://github.com/paulmillr/noble-hashes), [arkworks](https://github.com/arkworks-rs), [blst](https://github.com/supranational/blst), [c-kzg](https://github.com/ethereum/c-kzg-4844), [libwally-core](https://github.com/ElementsProject/libwally-core) - Security-audited implementations used by default
-> - **Unaudited (Use at own risk)**: Zig-native implementations - Experimental, performance-optimized versions available for testing. **Not recommended for production use with real funds.**
->
-> The library defaults to audited implementations. Zig implementations can be enabled via build flags for development/testing purposes.
-
----
+[View all 17 crypto modules →](https://voltaire.tevm.sh/getting-started#cryptography)
 
 ### EVM & Precompiles
 
-Voltaire provides low-level tree-shakable EVM utilities, types, and all 19 precompiled contracts (addresses [0x01-0x13](https://www.evm.codes/precompiled)). For complete spec-compliant EVM implementations, see [evmts/guillotine](https://github.com/evmts/guillotine) and [evmts/tevm-monorepo](https://github.com/evmts/tevm-monorepo).
+Low-level tree-shakable EVM utilities and all 19 precompiled contracts (0x01-0x13).
 
-**Precompiles:**
-- **[ecrecover](https://voltaire.tevm.sh/precompiles/ecrecover/)** (0x01) - ECDSA public key recovery
-- **[sha256](https://voltaire.tevm.sh/precompiles/sha256/)** (0x02) - SHA-256 hash function
-- **[ripemd160](https://voltaire.tevm.sh/precompiles/ripemd160/)** (0x03) - RIPEMD-160 hash function
-- **[identity](https://voltaire.tevm.sh/precompiles/identity/)** (0x04) - Identity function (datacopy)
-- **[modexp](https://voltaire.tevm.sh/precompiles/modexp/)** (0x05) - Modular exponentiation ([EIP-198](https://eips.ethereum.org/EIPS/eip-198))
-- **[BN254 add](https://voltaire.tevm.sh/precompiles/bn254-add/)** (0x06), **[mul](https://voltaire.tevm.sh/precompiles/bn254-mul/)** (0x07), **[pairing](https://voltaire.tevm.sh/precompiles/bn254-pairing/)** (0x08) - zkSNARK verification ([EIP-196](https://eips.ethereum.org/EIPS/eip-196), [EIP-197](https://eips.ethereum.org/EIPS/eip-197))
-- **[blake2f](https://voltaire.tevm.sh/precompiles/blake2f/)** (0x09) - Blake2 compression function ([EIP-152](https://eips.ethereum.org/EIPS/eip-152))
-- **[KZG point evaluation](https://voltaire.tevm.sh/precompiles/point-evaluation/)** (0x0A) - EIP-4844 blob verification ([EIP-4844](https://eips.ethereum.org/EIPS/eip-4844))
-- **[BLS12-381 operations](https://voltaire.tevm.sh/precompiles/bls12-381/)** (0x0B-0x13) - BLS signature verification (Prague+, [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537))
+- **[ecrecover](https://voltaire.tevm.sh/precompiles/ecrecover/)** (0x01) - ECDSA recovery
+- **[sha256](https://voltaire.tevm.sh/precompiles/sha256/)** / **[ripemd160](https://voltaire.tevm.sh/precompiles/ripemd160/)** (0x02-0x03) - Hash functions
+- **[modexp](https://voltaire.tevm.sh/precompiles/modexp/)** (0x05) - Modular exponentiation
+- **[BN254](https://voltaire.tevm.sh/precompiles/bn254-add/)** (0x06-0x08) - zkSNARK verification
+- **[blake2f](https://voltaire.tevm.sh/precompiles/blake2f/)** (0x09) - Blake2 compression
+- **[KZG](https://voltaire.tevm.sh/precompiles/point-evaluation/)** (0x0A) - EIP-4844 verification
+- **[BLS12-381](https://voltaire.tevm.sh/precompiles/bls12-381/)** (0x0B-0x13) - BLS signatures
 
-📚 **[Precompiles Guide](https://voltaire.tevm.sh/precompiles/)** | **[EVM.codes](https://www.evm.codes/)**
+[Precompiles Guide →](https://voltaire.tevm.sh/precompiles/)
 
 ---
 
-## Quick Reference Tables
+## Security
 
-### Primitive Types
-
-| Type        | Size         | Description           | Key Methods                                  | Subtypes                                   |
-| ----------- | ------------ | --------------------- | -------------------------------------------- | ------------------------------------------ |
-| Address     | 20 bytes     | Ethereum address      | from, toChecksummed, calculateCreate2Address | Checksummed, Uppercase, Lowercase          |
-| Hash        | 32 bytes     | 32-byte hash          | from, toHex, equals                          | -                                          |
-| Hex         | Variable     | Hex encoding          | fromBytes, toBytes, concat, slice            | Sized\<N\>, Bytes\<N\>                     |
-| Uint        | 32 bytes     | 256-bit unsigned int  | from, plus, minus, times, dividedBy          | Ether, Wei, Gwei                           |
-| Signature   | 64 bytes     | ECDSA signature       | from, toCompact, verify, normalize           | -                                          |
-| PrivateKey  | 32 bytes     | Private key           | from, toPublicKey, toAddress, sign           | -                                          |
-| PublicKey   | 64 bytes     | Public key            | from, fromPrivateKey, toAddress, verify      | -                                          |
-| Nonce       | Variable     | Transaction nonce     | from, toNumber, toBigInt, increment          | -                                          |
-| ChainId     | 4 bytes      | Network identifier    | from, toNumber, equals, isMainnet            | -                                          |
-| RLP         | Variable     | RLP encoding          | encode, decode                               | -                                          |
-| Transaction | Variable     | Ethereum transactions | serialize, deserialize, hash, from           | Legacy, EIP2930, EIP1559, EIP4844, EIP7702 |
-| ABI         | Variable     | ABI encoding          | Function.encode, Event.decode                | Function, Event, Error, Constructor        |
-| Blob        | 131072 bytes | EIP-4844 blob data    | from, toHex, toVersionedHash                 | Commitment, Proof, VersionedHash           |
-| Bytecode    | Variable     | Contract bytecode     | from, toHex, getDeployedBytecode             | -                                          |
-| BloomFilter | 256 bytes    | Log bloom filter      | from, add, contains                          | -                                          |
-
-### Address Subtypes
-
-| Subtype     | Description                             | Constructor Method      |
-| ----------- | --------------------------------------- | ----------------------- |
-| Checksummed | EIP-55 checksummed hex address          | Address.toChecksummed() |
-| Uppercase   | Uppercase hex address (non-checksummed) | Address.toUppercase()   |
-| Lowercase   | Lowercase hex address                   | Address.toLowercase()   |
-
-### Hex Subtypes (Sized Types)
-
-| Subtype         | Size     | Common Use Case          |
-| --------------- | -------- | ------------------------ |
-| Hex.Bytes\<4\>  | 4 bytes  | Function selectors       |
-| Hex.Bytes\<8\>  | 8 bytes  | Uint64 values            |
-| Hex.Bytes\<20\> | 20 bytes | Addresses                |
-| Hex.Bytes\<32\> | 32 bytes | Hashes, Uint256 values   |
-| Hex.Bytes\<N\>  | N bytes  | Custom sized hex strings |
-
-### Denomination Types (Uint Subtypes)
-
-| Type  | Unit | Wei Equivalent      |
-| ----- | ---- | ------------------- |
-| Ether | ETH  | 1 ether = 10^18 wei |
-| Gwei  | gwei | 1 gwei = 10^9 wei   |
-| Wei   | wei  | Base unit (1 wei)   |
-
-### Gas Types (Uint Subtypes)
-
-| Type     | Description                         | Common Range        |
-| -------- | ----------------------------------- | ------------------- |
-| GasPrice | Gas price in wei per gas unit       | 1-1000 gwei typical |
-| GasLimit | Maximum gas allowed for transaction | 21000-30M gas       |
-| Nonce    | Transaction sequence number         | 0-2^64              |
-
-### Transaction Types
-
-| Type               | EIP                                                 | Description                                   |
-| ------------------ | --------------------------------------------------- | --------------------------------------------- |
-| TransactionLegacy  | -                                                   | Legacy transaction (pre-EIP-2718)             |
-| TransactionEIP2930 | [EIP-2930](https://eips.ethereum.org/EIPS/eip-2930) | Access list transaction                       |
-| TransactionEIP1559 | [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) | Fee market transaction with base/priority fee |
-| TransactionEIP4844 | [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) | Blob transaction (shard blob transactions)    |
-| TransactionEIP7702 | [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) | Set code transaction (account abstraction)    |
-
-### ABI Types
-
-| Type        | Description                        | Key Methods              |
-| ----------- | ---------------------------------- | ------------------------ |
-| Function    | Function signature and encoding    | encode, decode, selector |
-| Event       | Event signature and log parsing    | decode, getTopic         |
-| Error       | Custom error encoding              | encode, decode, selector |
-| Constructor | Constructor signature and encoding | encode                   |
-
-### Blob Types (EIP-4844)
-
-| Type          | Size         | Description                       |
-| ------------- | ------------ | --------------------------------- |
-| Blob          | 131072 bytes | Raw blob data                     |
-| Commitment    | 48 bytes     | KZG commitment to blob            |
-| Proof         | 48 bytes     | KZG proof for blob                |
-| VersionedHash | 32 bytes     | Versioned hash of blob commitment |
-
-### State Types
-
-| Type          | Description                                      | Key Methods         |
-| ------------- | ------------------------------------------------ | ------------------- |
-| State         | Account state with balance, nonce, code, storage | get, set, commit    |
-| StorageKey    | Storage slot identifier (address + slot)         | from, toHex         |
-| EventLog      | Transaction event log entry                      | decode, matches     |
-| AccessList    | EIP-2930 access list for state access            | from, add, contains |
-| Authorization | EIP-7702 code delegation authorization           | from, sign, verify  |
-
-### Other Primitive Types
-
-| Type       | Description                            | Key Methods               |
-| ---------- | -------------------------------------- | ------------------------- |
-| Hardfork   | Network upgrade identifier             | from, isEnabled           |
-| ChainId    | Network chain identifier               | from, toNumber, equals    |
-| Opcode     | EVM opcode byte                        | from, getName, getGasCost |
-| Base64     | Base64 encoded data                    | encode, decode            |
-| BinaryTree | Binary tree structure for Merkle trees | from, getRoot, getProof   |
-
-### Cryptographic Types
-
-| Type           | Size      | Description                           | Algorithm   |
-| -------------- | --------- | ------------------------------------- | ----------- |
-| PrivateKey     | 32 bytes  | Secp256k1 private key                 | Secp256k1   |
-| PublicKey      | 64 bytes  | Secp256k1 public key (uncompressed)   | Secp256k1   |
-| Signature      | 64 bytes  | ECDSA signature (r, s, v)             | Secp256k1   |
-| ExtendedKey    | Variable  | BIP-32 hierarchical deterministic key | BIP-32/44   |
-| Mnemonic       | Variable  | BIP-39 mnemonic phrase                | BIP-39      |
-| Seed           | 64 bytes  | BIP-39 seed derived from mnemonic     | BIP-39      |
-| P256PrivateKey | 32 bytes  | NIST P-256 private key                | P-256       |
-| P256PublicKey  | 64 bytes  | NIST P-256 public key                 | P-256       |
-| P256Signature  | Variable  | NIST P-256 ECDSA signature            | P-256       |
-| G1Point        | 96 bytes  | BN254/BLS12-381 G1 point              | zkSNARK/BLS |
-| G2Point        | 192 bytes | BN254/BLS12-381 G2 point              | zkSNARK/BLS |
-
-### Crypto Functions
-
-| Function                     | Input                       | Output         | Use Case                                                                                                                                                         |
-| ---------------------------- | --------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Keccak256.hash               | Uint8Array                  | 32-byte Hash   | General hashing, contract addresses                                                                                                                              |
-| Secp256k1.sign               | Hash, PrivateKey            | Signature      | Sign transactions/messages                                                                                                                                       |
-| Secp256k1.recover            | Signature, Hash             | PublicKey      | Recover signer address                                                                                                                                           |
-| Secp256k1.generatePrivateKey | -                           | PrivateKey     | Generate new private key                                                                                                                                         |
-| Ed25519.sign                 | Message, SecretKey          | Signature      | EdDSA signatures                                                                                                                                                 |
-| Ed25519.verify               | Signature, Message, PubKey  | boolean        | Verify EdDSA signatures                                                                                                                                          |
-| X25519.scalarmult            | SecretKey, PublicKey        | SharedSecret   | ECDH key exchange                                                                                                                                                |
-| P256.sign                    | Hash, PrivateKey            | Signature      | NIST P-256 signatures                                                                                                                                            |
-| P256.verify                  | Signature, Hash, PubKey     | boolean        | Verify P-256 signatures                                                                                                                                          |
-| P256.ecdh                    | PrivateKey, PublicKey       | SharedSecret   | P-256 ECDH                                                                                                                                                       |
-| EIP712.hash                  | Domain, Types, Message      | Hash           | Typed data signing                                                                                                                                               |
-| SHA256.hash                  | Uint8Array                  | 32-byte hash   | Bitcoin compatibility                                                                                                                                            |
-| RIPEMD160.hash               | Uint8Array                  | 20-byte hash   | Bitcoin addresses                                                                                                                                                |
-| Blake2.hash                  | Uint8Array, size?           | 1-64 byte hash | Zcash compatibility                                                                                                                                              |
-| BN254.add                    | G1Point, G1Point            | G1Point        | BN254 elliptic curve addition                                                                                                                                    |
-| BN254.mul                    | G1Point, scalar             | G1Point        | BN254 scalar multiplication                                                                                                                                      |
-| BN254.pairing                | Point pairs                 | boolean        | zkSNARK verification                                                                                                                                             |
-| KZG.blobToCommitment         | Blob                        | Commitment     | Create KZG commitment                                                                                                                                            |
-| KZG.computeProof             | Blob, Commitment            | Proof          | Generate KZG proof                                                                                                                                               |
-| KZG.verify                   | Blob, Commitment, Proof     | boolean        | [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) blob verification                                                                                            |
-| Bip39.generateMnemonic       | strength (128-256)          | Mnemonic       | [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) mnemonic generation                                                                     |
-| Bip39.mnemonicToSeed         | Mnemonic, password?         | Seed           | Derive seed from mnemonic                                                                                                                                        |
-| HDWallet.fromSeed            | Seed                        | ExtendedKey    | Create master key from seed                                                                                                                                      |
-| HDWallet.derive              | ExtendedKey, Path           | ExtendedKey    | [BIP-32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)/[BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) key derivation |
-| HDWallet.deriveEthereum      | ExtendedKey, account, index | ExtendedKey    | Derive Ethereum account (m/44'/60'/0'/0/n)                                                                                                                       |
-| AesGcm.encrypt               | Data, Key, Nonce            | Ciphertext     | [AES-GCM](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf) authenticated encryption                                                |
-| AesGcm.decrypt               | Ciphertext, Key, Nonce      | Data           | AES-GCM authenticated decryption                                                                                                                                 |
+> **Cryptography Implementation Status**
+>
+> - **Audited (Default)**: [@noble/curves](https://github.com/paulmillr/noble-curves), [@noble/hashes](https://github.com/paulmillr/noble-hashes), [arkworks](https://github.com/arkworks-rs), [blst](https://github.com/supranational/blst), [c-kzg](https://github.com/ethereum/c-kzg-4844)
+> - **Unaudited**: Zig-native implementations available via build flags. Not recommended for production.
 
 ---
 
 ## Language Support
 
-- TypeScript/JavaScript (Node.js, Bun, browser)
-- Zig (native library + examples)
-- Swift (iOS/macOS) — see `swift/` and docs under `docs/swift/`
+| Language | Status | Installation |
+| -------- | ------ | ------------ |
+| TypeScript/JavaScript | Full support | `npm install tevm` |
+| Zig | Full support | [Build from source](https://voltaire.tevm.sh/getting-started/multiplatform#installation-by-language) |
+| Swift | C-FFI bindings | See `swift/` directory |
+| Go, Python, Rust, Kotlin | Planned | [Contribute →](https://github.com/evmts/voltaire/issues) |
 
-### Language Support Wishlist
-
-We welcome help adding idiomatic, type-safe wrappers for additional languages:
-
-- **[Go](https://go.dev/)** - Native Go bindings via cgo
-- **[Python](https://www.python.org/)** - Python bindings via ctypes/cffi
-- **[Rust](https://www.rust-lang.org/)** - Rust bindings via FFI
-- **[Kotlin](https://kotlinlang.org/)** - Kotlin bindings for Android/JVM development
-
-Note: All languages can use Voltaire via the C-FFI interface (see `src/c_api.zig` and `src/primitives.h`), but our goal is to provide ergonomic, idiomatic wrappers.
+All languages can use Voltaire via the C-FFI interface (`src/c_api.zig`).
 
 ---
 
-## Runtime Dependencies
+## Dependencies
 
-Voltaire has minimal runtime dependencies:
+**TypeScript:** [@noble/curves](https://github.com/paulmillr/noble-curves), [@noble/hashes](https://github.com/paulmillr/noble-hashes), [@scure/bip32](https://github.com/paulmillr/scure-bip32), [@scure/bip39](https://github.com/paulmillr/scure-bip39), [abitype](https://github.com/wevm/abitype), [ox](https://github.com/wevm/ox), [whatsabi](https://github.com/shazow/whatsabi)
 
-### TypeScript/JavaScript Dependencies
-
-- **[@scure/bip32](https://github.com/paulmillr/scure-bip32)** - BIP-32 hierarchical deterministic wallet key derivation
-- **[@scure/bip39](https://github.com/paulmillr/scure-bip39)** - BIP-39 mnemonic phrase generation and validation
-- **[@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains)** - Generated Ethereum chain configurations (mainnet, L2s, testnets)
-- **[abitype](https://github.com/wevm/abitype)** - ABI type system utilities and type guards
-- **[@adraffy/ens-normalize](https://github.com/adraffy/ens-normalize.js)** - ENSIP-15 compliant ENS name normalization and beautification
-- **[@noble/curves](https://github.com/paulmillr/noble-curves)** - Audited elliptic curve cryptography (secp256k1, ed25519, p256)
-- **[@noble/hashes](https://github.com/paulmillr/noble-hashes)** - Audited cryptographic hash functions (keccak256, sha256, blake3, ripemd160)
-- **[whatsabi](https://github.com/shazow/whatsabi)** - ABI detection and contract analysis
-- **[ox](https://github.com/wevm/ox)** - Ethereum utilities (used wherever appropriate to share peer dependencies with other TypeScript tools and amortize bundle size costs)
-
-### Zig Dependencies
-
-- **[z-ens-normalize](https://github.com/evmts/z-ens-normalize)** - Zig port of ENSIP-15 ENS name normalization
-- **[Zig std.crypto](https://ziglang.org/documentation/0.15.1/std/#std.crypto)** - Zig standard library cryptography (native/WASM builds only)
-
-### Native/C Dependencies
-
-- **[c-kzg](https://github.com/ethereum/c-kzg-4844)** - KZG polynomial commitments for EIP-4844 blob verification
-- **[libwally-core](https://github.com/ElementsProject/libwally-core)** - Wallet utilities including BIP-32/39/44 implementations
-- **[blst](https://github.com/supranational/blst)** - BLS12-381 signature library for Ethereum consensus layer
-
-### Rust Dependencies
-
-- **[arkworks](https://github.com/arkworks-rs)** - Rust zkSNARK libraries (ark-bn254, ark-bls12-381, ark-ec, ark-ff) for BN254 operations
-- **[keccak-asm](https://github.com/RustCrypto/hashes)** - Assembly-optimized Keccak implementation (native builds)
-- **[tiny-keccak](https://github.com/debris/tiny-keccak)** - Pure Rust Keccak implementation (WASM builds)
-
-All dependencies are actively maintained and security-audited where applicable.
-
----
-
-## License
-
-MIT License - see [LICENSE](./LICENSE) for details
+**Native:** [blst](https://github.com/supranational/blst), [c-kzg-4844](https://github.com/ethereum/c-kzg-4844), [arkworks](https://github.com/arkworks-rs)
 
 ---
 
 ## Links
 
-### Community
+- [Documentation](https://voltaire.tevm.sh/)
+- [GitHub](https://github.com/evmts/voltaire)
+- [NPM](https://www.npmjs.com/package/@tevm/voltaire)
+- [Telegram](https://t.me/+ANThR9bHDLAwMjUx)
+- [Twitter](https://twitter.com/tevmtools)
 
-- [GitHub Repository](https://github.com/evmts/voltaire) - Source code and contributions
-- [GitHub Issues](https://github.com/evmts/voltaire/issues) - Bug reports and feature requests
-- [NPM Package](https://www.npmjs.com/package/@tevm/voltaire) - Package registry
-- [Telegram](https://t.me/+ANThR9bHDLAwMjUx) - Community chat
-- [Twitter](https://twitter.com/tevmtools) - Updates and announcements
+**Related projects:**
+- [evmts/guillotine](https://github.com/evmts/guillotine) - EVM execution
+- [evmts/compiler](https://github.com/evmts/compiler) - Solidity compilation
 
-### Resources
+---
 
-- [Voltaire Documentation](https://voltaire.tevm.sh/) - Complete API reference and guides
-- [Ethereum Developer Documentation](https://ethereum.org/en/developers/docs/)
-- [EIP Repository](https://eips.ethereum.org/) - Ethereum Improvement Proposals
-- [EVM.codes](https://www.evm.codes/) - Opcode reference
-- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Technical specification
-- [Solidity Documentation](https://docs.soliditylang.org/) - Smart contract language
-- [Zig Documentation](https://ziglang.org/documentation/0.15.1/) - Zig language reference
+MIT License - see [LICENSE](./LICENSE)
