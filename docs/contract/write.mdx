@@ -1,0 +1,175 @@
+---
+title: Write Methods
+description: Send state-changing transactions to smart contracts
+---
+
+# Write Methods
+
+The `write` interface sends state-changing transactions via `eth_sendTransaction`. These calls modify blockchain state and require gas.
+
+## Basic Usage
+
+```typescript
+import { Contract } from '@voltaire/contract';
+
+const usdc = Contract({
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  provider
+});
+
+// Transfer tokens
+const txHash = await usdc.write.transfer('0x742d35...', 1000n);
+console.log(`Transaction: ${txHash}`);
+
+// Approve spender
+const txHash = await usdc.write.approve('0xrouter...', 1000000n);
+```
+
+## How It Works
+
+When you call a write method:
+
+1. **Encode** - Arguments are ABI-encoded with the function selector
+2. **Send** - `eth_sendTransaction` is sent to the provider
+3. **Return** - Transaction hash is returned immediately
+
+```typescript
+// What happens under the hood:
+const txHash = await usdc.write.transfer('0x...', 1000n);
+
+// Equivalent to:
+const calldata = usdc.abi.encode('transfer', ['0x...', 1000n]);
+const txHash = await provider.request({
+  method: 'eth_sendTransaction',
+  params: [{
+    to: usdc.address,
+    data: calldata
+  }]
+});
+```
+
+<Warning>
+Write methods return immediately after the transaction is submitted. The transaction may still be pending or could fail during execution.
+</Warning>
+
+## Transaction Options
+
+Override transaction parameters:
+
+```typescript
+// With gas limit
+const txHash = await usdc.write.transfer('0x...', 1000n, {
+  gas: 100000n
+});
+
+// With gas price (legacy)
+const txHash = await usdc.write.transfer('0x...', 1000n, {
+  gasPrice: 20000000000n
+});
+
+// With EIP-1559 fees
+const txHash = await usdc.write.transfer('0x...', 1000n, {
+  maxFeePerGas: 30000000000n,
+  maxPriorityFeePerGas: 2000000000n
+});
+
+// With value (for payable functions)
+const txHash = await weth.write.deposit({
+  value: 1000000000000000000n // 1 ETH
+});
+
+// With nonce
+const txHash = await usdc.write.transfer('0x...', 1000n, {
+  nonce: 42n
+});
+```
+
+## Payable Functions
+
+For functions that accept ETH, pass `value` in options:
+
+```typescript
+// Deposit ETH to WETH
+const txHash = await weth.write.deposit({
+  value: 1000000000000000000n // 1 ETH in wei
+});
+
+// Swap with ETH
+const txHash = await router.write.swapExactETHForTokens(
+  minOut,
+  path,
+  recipient,
+  deadline,
+  { value: 1000000000000000000n }
+);
+```
+
+## Error Handling
+
+Write calls can fail at submission or execution:
+
+```typescript
+import { ContractWriteError } from '@voltaire/contract';
+
+try {
+  const txHash = await usdc.write.transfer('0x...', 1000n);
+} catch (error) {
+  if (error instanceof ContractWriteError) {
+    console.error('Write failed:', error.message);
+    console.error('Cause:', error.cause);
+  }
+}
+```
+
+Common failures:
+- **Insufficient funds** - Not enough ETH for gas
+- **User rejected** - User rejected in wallet
+- **Nonce too low** - Transaction already mined
+- **Gas estimation failed** - Transaction would revert
+
+## Waiting for Confirmation
+
+The write method returns immediately. To wait for confirmation:
+
+```typescript
+const txHash = await usdc.write.transfer('0x...', 1000n);
+
+// Wait for transaction receipt
+const receipt = await provider.request({
+  method: 'eth_getTransactionReceipt',
+  params: [txHash]
+});
+
+// Check status
+if (receipt.status === '0x1') {
+  console.log('Transaction succeeded');
+} else {
+  console.log('Transaction reverted');
+}
+```
+
+## Simulating Before Sending
+
+Use `estimateGas` to simulate the transaction first:
+
+```typescript
+try {
+  // This will throw if the transaction would revert
+  const gas = await usdc.estimateGas.transfer('0x...', 1000n);
+
+  // Safe to send
+  const txHash = await usdc.write.transfer('0x...', 1000n, {
+    gas: gas * 120n / 100n // Add 20% buffer
+  });
+} catch (error) {
+  console.error('Transaction would fail:', error);
+}
+```
+
+## Related
+
+- [Contract Overview](/contract) - Contract module introduction
+- [Read Methods](/contract/read) - Calling view functions
+- [Gas Estimation](/contract/gas-estimation) - Estimating gas before sending
+- [Events](/contract/events) - Watching for transaction events

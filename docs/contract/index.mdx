@@ -1,0 +1,171 @@
+---
+title: Contract
+description: Typed contract abstraction for interacting with deployed smart contracts
+---
+
+# Contract
+
+The Contract module provides a typed abstraction for interacting with deployed Ethereum smart contracts. It combines ABI encoding/decoding with provider calls into a clean, type-safe interface.
+
+## Overview
+
+Contract instances provide four main interfaces:
+
+| Interface | Description | Provider Method |
+|-----------|-------------|-----------------|
+| `read` | View/pure function calls | `eth_call` |
+| `write` | State-changing transactions | `eth_sendTransaction` |
+| `estimateGas` | Gas estimation for writes | `eth_estimateGas` |
+| `events` | Event streaming (async generator) | `eth_getLogs` + `eth_subscribe` |
+
+## Quick Start
+
+```typescript
+import { Contract } from '@voltaire/contract';
+
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ type: 'address', name: 'account' }],
+    outputs: [{ type: 'uint256', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { type: 'address', name: 'to' },
+      { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool', name: '' }]
+  },
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { type: 'address', name: 'from', indexed: true },
+      { type: 'address', name: 'to', indexed: true },
+      { type: 'uint256', name: 'value', indexed: false }
+    ]
+  }
+] as const;
+
+const usdc = Contract({
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  provider
+});
+
+// Read balance
+const balance = await usdc.read.balanceOf('0x742d35...');
+
+// Transfer tokens
+const txHash = await usdc.write.transfer('0x742d35...', 1000n);
+
+// Estimate gas
+const gas = await usdc.estimateGas.transfer('0x742d35...', 1000n);
+
+// Stream transfer events
+for await (const log of usdc.events.Transfer({ from: '0x742d35...' })) {
+  console.log(`${log.args.from} -> ${log.args.to}: ${log.args.value}`);
+}
+```
+
+## API Reference
+
+### Contract Factory
+
+```typescript
+function Contract<TAbi extends readonly Item[]>(options: {
+  address: AddressType | `0x${string}`;
+  abi: TAbi;
+  provider: TypedProvider;
+}): ContractInstance<TAbi>;
+```
+
+Creates a typed contract instance.
+
+**Parameters:**
+- `address` - Contract address (hex string or Address type)
+- `abi` - Contract ABI (use `as const` for full type inference)
+- `provider` - EIP-1193 compatible provider
+
+**Returns:** Typed `ContractInstance` with `read`, `write`, `estimateGas`, and `events` interfaces.
+
+### ContractInstance
+
+```typescript
+type ContractInstance<TAbi> = {
+  readonly address: AddressType;
+  readonly abi: Abi<TAbi>;
+  readonly read: ContractReadMethods<TAbi>;
+  readonly write: ContractWriteMethods<TAbi>;
+  readonly estimateGas: ContractEstimateGasMethods<TAbi>;
+  readonly events: ContractEventFilters<TAbi>;
+};
+```
+
+The contract instance exposes:
+
+- **`address`** - The contract's address as a branded `AddressType`
+- **`abi`** - The ABI instance with `encode()` and `decode()` methods for manual encoding
+- **`read`** - Methods for view/pure functions
+- **`write`** - Methods for state-changing functions
+- **`estimateGas`** - Gas estimation for write methods
+- **`events`** - Async generators for event streaming
+
+## Manual Encoding
+
+For advanced use cases, access the ABI directly:
+
+```typescript
+// Encode calldata manually
+const calldata = usdc.abi.encode('transfer', ['0x...', 1000n]);
+
+// Decode return data
+const decoded = usdc.abi.decode('balanceOf', returnData);
+
+// Build custom transaction
+const tx = {
+  to: usdc.address,
+  data: calldata
+};
+```
+
+## Type Safety
+
+The Contract module provides full type inference from the ABI:
+
+```typescript
+const abi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ type: 'address', name: 'account' }],
+    outputs: [{ type: 'uint256', name: '' }]
+  }
+] as const; // Important: use 'as const'
+
+const contract = Contract({ address, abi, provider });
+
+// TypeScript knows 'balanceOf' exists on read
+const balance = await contract.read.balanceOf('0x...');
+
+// TypeScript error: 'transfer' doesn't exist (not in ABI)
+const result = await contract.read.transfer('0x...', 1000n); // Error!
+```
+
+<Tip>
+Always use `as const` when defining ABIs to get full type inference. Without it, TypeScript treats the array as mutable and loses the specific function names.
+</Tip>
+
+## Related
+
+- [Read Methods](/contract/read) - Calling view/pure functions
+- [Write Methods](/contract/write) - Sending transactions
+- [Events](/contract/events) - Streaming contract events
+- [Gas Estimation](/contract/gas-estimation) - Estimating transaction gas
+- [Abi](/primitives/abi) - Low-level ABI encoding/decoding

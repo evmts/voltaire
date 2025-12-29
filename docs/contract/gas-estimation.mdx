@@ -1,0 +1,211 @@
+---
+title: Gas Estimation
+description: Estimate gas for contract write operations
+---
+
+# Gas Estimation
+
+The `estimateGas` interface estimates gas for write operations via `eth_estimateGas`. Use this to predict costs and detect reverts before sending transactions.
+
+## Basic Usage
+
+```typescript
+import { Contract } from '@voltaire/contract';
+
+const usdc = Contract({
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  provider
+});
+
+// Estimate gas for transfer
+const gas = await usdc.estimateGas.transfer('0x742d35...', 1000n);
+console.log(`Estimated gas: ${gas}`);
+```
+
+## How It Works
+
+Gas estimation simulates the transaction and returns the gas that would be used:
+
+```typescript
+// What happens under the hood:
+const gas = await usdc.estimateGas.transfer('0x...', 1000n);
+
+// Equivalent to:
+const calldata = usdc.abi.encode('transfer', ['0x...', 1000n]);
+const gas = await provider.request({
+  method: 'eth_estimateGas',
+  params: [{
+    to: usdc.address,
+    data: calldata
+  }]
+});
+```
+
+## Revert Detection
+
+If a transaction would revert, `estimateGas` throws:
+
+```typescript
+try {
+  // This throws if transfer would fail
+  const gas = await usdc.estimateGas.transfer('0x...', 1000000000n);
+} catch (error) {
+  // Transaction would revert
+  console.error('Transfer would fail:', error.message);
+}
+```
+
+Use this to validate transactions before sending:
+
+```typescript
+async function safeTransfer(to: string, amount: bigint) {
+  try {
+    const gas = await usdc.estimateGas.transfer(to, amount);
+
+    // Add buffer and send
+    return usdc.write.transfer(to, amount, {
+      gas: gas * 120n / 100n
+    });
+  } catch (error) {
+    throw new Error(`Transfer would fail: ${error.message}`);
+  }
+}
+```
+
+## Gas Buffers
+
+Estimates are approximate. Add a buffer for safety:
+
+```typescript
+const estimated = await usdc.estimateGas.transfer('0x...', 1000n);
+
+// 20% buffer (recommended)
+const gasLimit = estimated * 120n / 100n;
+
+// 10% buffer (aggressive)
+const gasLimit = estimated * 110n / 100n;
+
+// 50% buffer (conservative)
+const gasLimit = estimated * 150n / 100n;
+
+const txHash = await usdc.write.transfer('0x...', 1000n, {
+  gas: gasLimit
+});
+```
+
+<Tip>
+20% buffer is a good default. Some complex transactions (DEX swaps, flash loans) may need higher buffers due to state changes between estimation and execution.
+</Tip>
+
+## Estimation Options
+
+Override sender or value:
+
+```typescript
+// Estimate as specific sender
+const gas = await usdc.estimateGas.transfer('0x...', 1000n, {
+  from: '0xsender...'
+});
+
+// Estimate payable function with value
+const gas = await weth.estimateGas.deposit({
+  value: 1000000000000000000n
+});
+```
+
+## Cost Calculation
+
+Calculate transaction cost in ETH:
+
+```typescript
+// Get current gas price
+const gasPrice = await provider.request({
+  method: 'eth_gasPrice'
+});
+
+// Estimate gas
+const gasLimit = await usdc.estimateGas.transfer('0x...', 1000n);
+
+// Calculate cost
+const costWei = gasLimit * BigInt(gasPrice);
+const costEth = Number(costWei) / 1e18;
+
+console.log(`Estimated cost: ${costEth.toFixed(6)} ETH`);
+```
+
+For EIP-1559:
+
+```typescript
+// Get fee data
+const [baseFee, maxPriorityFee] = await Promise.all([
+  provider.request({ method: 'eth_gasPrice' }),
+  provider.request({ method: 'eth_maxPriorityFeePerGas' })
+]);
+
+const gasLimit = await usdc.estimateGas.transfer('0x...', 1000n);
+
+// Max cost (actual may be lower)
+const maxCostWei = gasLimit * (BigInt(baseFee) + BigInt(maxPriorityFee));
+```
+
+## Batch Estimation
+
+Estimate multiple operations:
+
+```typescript
+const [transferGas, approveGas, swapGas] = await Promise.all([
+  usdc.estimateGas.transfer('0x...', 1000n),
+  usdc.estimateGas.approve('0xrouter...', 1000000n),
+  router.estimateGas.swap(tokenIn, tokenOut, amount)
+]);
+
+const totalGas = transferGas + approveGas + swapGas;
+console.log(`Total gas for all operations: ${totalGas}`);
+```
+
+## Common Patterns
+
+### Estimate Before Approval
+
+```typescript
+async function estimateSwapWithApproval(amount: bigint) {
+  // Check if approval needed
+  const allowance = await token.read.allowance(myAddress, routerAddress);
+
+  let totalGas = 0n;
+
+  if (allowance < amount) {
+    totalGas += await token.estimateGas.approve(routerAddress, amount);
+  }
+
+  totalGas += await router.estimateGas.swap(token, amount);
+
+  return totalGas;
+}
+```
+
+### Retry on Failure
+
+```typescript
+async function estimateWithRetry(fn: () => Promise<bigint>, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
+}
+
+const gas = await estimateWithRetry(() =>
+  usdc.estimateGas.transfer('0x...', 1000n)
+);
+```
+
+## Related
+
+- [Contract Overview](/contract) - Contract module introduction
+- [Write Methods](/contract/write) - Sending transactions
+- [Read Methods](/contract/read) - Calling view functions

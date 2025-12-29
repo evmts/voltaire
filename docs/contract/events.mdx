@@ -1,0 +1,219 @@
+---
+title: Events
+description: Stream contract events with async generators
+---
+
+# Events
+
+The `events` interface provides async generators for streaming contract events. This unified API handles both historical logs and live event subscriptions.
+
+## Basic Usage
+
+```typescript
+import { Contract } from '@voltaire/contract';
+
+const usdc = Contract({
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  provider
+});
+
+// Stream all Transfer events
+for await (const log of usdc.events.Transfer()) {
+  console.log(`${log.args.from} -> ${log.args.to}: ${log.args.value}`);
+}
+```
+
+## Filtering Events
+
+Filter by indexed parameters:
+
+```typescript
+// Transfers from specific address
+for await (const log of usdc.events.Transfer({ from: '0x742d35...' })) {
+  console.log(`Sent ${log.args.value} to ${log.args.to}`);
+}
+
+// Transfers to specific address
+for await (const log of usdc.events.Transfer({ to: '0x742d35...' })) {
+  console.log(`Received ${log.args.value} from ${log.args.from}`);
+}
+
+// Transfers between specific addresses
+for await (const log of usdc.events.Transfer({
+  from: '0xsender...',
+  to: '0xreceiver...'
+})) {
+  console.log(`Transfer: ${log.args.value}`);
+}
+```
+
+## Historical Events
+
+Fetch events from a specific block range:
+
+```typescript
+// From specific block to latest
+for await (const log of usdc.events.Transfer({}, { fromBlock: 18000000n })) {
+  console.log(log);
+}
+
+// Specific block range (completes when done)
+for await (const log of usdc.events.Transfer({}, {
+  fromBlock: 18000000n,
+  toBlock: 18001000n
+})) {
+  console.log(log);
+}
+// Loop ends after processing historical events
+```
+
+## Live Events
+
+By default (no `fromBlock`), the generator yields only new events:
+
+```typescript
+// Only new events from now
+for await (const log of usdc.events.Transfer()) {
+  console.log('New transfer:', log.args);
+}
+```
+
+## Historical + Live
+
+Specify `fromBlock` without `toBlock` to get historical events then continue with live:
+
+```typescript
+// Get all events from block 18000000, then continue live
+for await (const log of usdc.events.Transfer({}, { fromBlock: 18000000n })) {
+  // First: historical events (fast, batched)
+  // Then: live events (as they happen)
+  console.log(log);
+}
+```
+
+## Event Log Structure
+
+Each yielded log contains:
+
+```typescript
+type DecodedEventLog = {
+  // Event identification
+  eventName: string;
+
+  // Decoded arguments (both indexed and non-indexed)
+  args: {
+    from: AddressType;
+    to: AddressType;
+    value: bigint;
+  };
+
+  // Block context
+  blockNumber: bigint;
+  blockHash: `0x${string}`;
+
+  // Transaction context
+  transactionHash: `0x${string}`;
+  logIndex: number;
+};
+```
+
+## Breaking Out
+
+Async generators support clean exit with `break`:
+
+```typescript
+// Stop after first large transfer
+for await (const log of usdc.events.Transfer()) {
+  console.log(log.args.value);
+
+  if (log.args.value > 1000000n * 10n ** 6n) {
+    console.log('Found whale transfer!');
+    break; // Cleanup happens automatically
+  }
+}
+```
+
+<Tip>
+When you `break`, `return`, or `throw` from a `for await` loop, the generator's cleanup code runs automatically. This properly unsubscribes from any active event subscriptions.
+</Tip>
+
+## Multiple Events
+
+Watch multiple event types:
+
+```typescript
+// Run multiple event streams concurrently
+async function watchAll() {
+  const transfers = usdc.events.Transfer();
+  const approvals = usdc.events.Approval();
+
+  // Process first event from either
+  const result = await Promise.race([
+    transfers.next(),
+    approvals.next()
+  ]);
+}
+```
+
+## Error Handling
+
+Handle streaming errors:
+
+```typescript
+try {
+  for await (const log of usdc.events.Transfer()) {
+    console.log(log);
+  }
+} catch (error) {
+  console.error('Event stream error:', error);
+  // Reconnect or handle error
+}
+```
+
+## Common Patterns
+
+### Process Until Condition
+
+```typescript
+// Wait for specific transfer
+for await (const log of usdc.events.Transfer({ to: myAddress })) {
+  if (log.args.value >= expectedAmount) {
+    console.log('Payment received!');
+    break;
+  }
+}
+```
+
+### Collect Events
+
+```typescript
+// Collect first N events
+const events: DecodedEventLog[] = [];
+for await (const log of usdc.events.Transfer({}, { fromBlock: 18000000n })) {
+  events.push(log);
+  if (events.length >= 100) break;
+}
+```
+
+### Transform Stream
+
+```typescript
+// Extract just values
+async function* transferAmounts() {
+  for await (const log of usdc.events.Transfer()) {
+    yield log.args.value;
+  }
+}
+
+for await (const amount of transferAmounts()) {
+  console.log(`Transferred: ${amount}`);
+}
+```
+
+## Related
+
+- [Contract Overview](/contract) - Contract module introduction
+- [Read Methods](/contract/read) - Calling view functions
+- [Write Methods](/contract/write) - Sending transactions
+- [EventLog](/primitives/eventlog) - Low-level event log handling
