@@ -18,6 +18,7 @@ import type {
 	EventType,
 	EncodeTopicsArgs,
 } from "../primitives/Abi/event/EventType.js";
+import type { EventStream } from "./EventStreamType.js";
 import type { AddressType } from "../primitives/Address/AddressType.js";
 import type { TransactionHashType } from "../primitives/TransactionHash/TransactionHashType.js";
 import type { BlockNumberType } from "../primitives/BlockNumber/BlockNumberType.js";
@@ -135,15 +136,14 @@ export type EventFilterOptions = {
 };
 
 /**
- * Event filters interface - async generators for event streaming
+ * Event filters interface - returns EventStream instances
  *
  * Filter args are typed from indexed event parameters
  */
 export type ContractEventFilters<TAbi extends readonly Item[]> = {
 	[TEvent in ExtractEvents<TAbi> as TEvent["name"]]: (
 		filter?: EncodeTopicsArgs<TEvent["inputs"]>,
-		options?: EventFilterOptions,
-	) => AsyncGenerator<DecodedEventLog<TEvent>>;
+	) => EventStream<TEvent>;
 };
 
 /**

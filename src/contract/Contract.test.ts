@@ -538,10 +538,11 @@ describe("Contract.events", () => {
 		});
 
 		const logs: unknown[] = [];
-		for await (const log of contract.events.Transfer(
-			{},
-			{ fromBlock: 0n, toBlock: 100n },
-		)) {
+		const stream = contract.events.Transfer({});
+		for await (const { log } of stream.backfill({
+			fromBlock: 0n,
+			toBlock: 100n,
+		})) {
 			logs.push(log);
 		}
 
@@ -566,10 +567,11 @@ describe("Contract.events", () => {
 
 		const from = Address.from(testAccount);
 		const logs: unknown[] = [];
-		for await (const log of contract.events.Transfer(
-			{ from },
-			{ fromBlock: 0n, toBlock: 100n },
-		)) {
+		const stream = contract.events.Transfer({ from });
+		for await (const { log } of stream.backfill({
+			fromBlock: 0n,
+			toBlock: 100n,
+		})) {
 			logs.push(log);
 		}
 
@@ -612,10 +614,11 @@ describe("Contract.events", () => {
 		});
 
 		const logs: unknown[] = [];
-		for await (const log of contract.events.Transfer(
-			{},
-			{ fromBlock: 0n, toBlock: 100n },
-		)) {
+		const stream = contract.events.Transfer({});
+		for await (const { log } of stream.backfill({
+			fromBlock: 0n,
+			toBlock: 100n,
+		})) {
 			logs.push(log);
 		}
 
@@ -660,10 +663,11 @@ describe("Contract.events", () => {
 			provider,
 		});
 
-		for await (const log of contract.events.Transfer(
-			{},
-			{ fromBlock: 0n, toBlock: 100n },
-		)) {
+		const stream = contract.events.Transfer({});
+		for await (const { log } of stream.backfill({
+			fromBlock: 0n,
+			toBlock: 100n,
+		})) {
 			expect(log).toHaveProperty("eventName");
 			expect(log).toHaveProperty("args");
 			expect(log).toHaveProperty("blockNumber");
@@ -689,10 +693,12 @@ describe("Contract.events", () => {
 		});
 
 		const logs: unknown[] = [];
-		for await (const log of contract.events.Transfer(
-			{},
-			{ fromBlock: 1000n, toBlock: 2000n },
-		)) {
+		const stream = contract.events.Transfer({});
+		// Use small range that fits in one chunk (default 500 blocks)
+		for await (const { log } of stream.backfill({
+			fromBlock: 1000n,
+			toBlock: 1100n,
+		})) {
 			logs.push(log);
 		}
 
@@ -700,7 +706,7 @@ describe("Contract.events", () => {
 			{ fromBlock: string; toBlock: string },
 		];
 		expect(filterParams.fromBlock).toBe("0x3e8"); // 1000
-		expect(filterParams.toBlock).toBe("0x7d0"); // 2000
+		expect(filterParams.toBlock).toBe("0x44c"); // 1100
 	});
 
 	it("runs cleanup on generator break", async () => {
@@ -731,10 +737,11 @@ describe("Contract.events", () => {
 		});
 
 		let count = 0;
-		for await (const _log of contract.events.Transfer(
-			{},
-			{ fromBlock: 0n, toBlock: 100n },
-		)) {
+		const stream = contract.events.Transfer({});
+		for await (const _result of stream.backfill({
+			fromBlock: 0n,
+			toBlock: 100n,
+		})) {
 			count++;
 			if (count >= 3) break; // Break early
 		}
@@ -752,9 +759,9 @@ describe("Contract.events", () => {
 		});
 
 		// @ts-expect-error - testing invalid event name
-		const gen = contract.events.NonexistentEvent({}, { fromBlock: 0n });
-
-		await expect(gen.next()).rejects.toThrow(ContractEventNotFoundError);
+		expect(() => contract.events.NonexistentEvent({})).toThrow(
+			ContractEventNotFoundError,
+		);
 	});
 });
 
@@ -817,10 +824,11 @@ describe("Edge cases", () => {
 		});
 
 		const logs: unknown[] = [];
-		for await (const log of contract.events.Transfer(
-			{},
-			{ fromBlock: 0n, toBlock: 100n },
-		)) {
+		const stream = contract.events.Transfer({});
+		for await (const { log } of stream.backfill({
+			fromBlock: 0n,
+			toBlock: 100n,
+		})) {
 			logs.push(log);
 		}
 

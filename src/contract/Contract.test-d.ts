@@ -316,14 +316,13 @@ describe("ContractEventFilters", () => {
 	});
 
 	describe("Return types", () => {
-		it("returns AsyncGenerator of DecodedEventLog", () => {
+		it("returns EventStream", () => {
 			type EventFilters = ContractEventFilters<TestAbi>;
 			type TransferFilter = EventFilters["Transfer"];
-			type ReturnGen = ReturnType<TransferFilter>;
-			// Verify it's an async generator
-			expectTypeOf<ReturnGen>().toMatchTypeOf<
-				AsyncGenerator<unknown, unknown, unknown>
-			>();
+			type ReturnType_ = ReturnType<TransferFilter>;
+			// Verify it has backfill and watch methods (EventStream)
+			expectTypeOf<ReturnType_>().toHaveProperty("backfill");
+			expectTypeOf<ReturnType_>().toHaveProperty("watch");
 		});
 	});
 });

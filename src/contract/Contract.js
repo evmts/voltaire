@@ -19,6 +19,7 @@ import {
 	ContractReadError,
 	ContractWriteError,
 } from "./errors.js";
+import { EventStream } from "./EventStream.js";
 
 /**
  * @typedef {import('./ContractType.js').ContractInstance} ContractInstance
@@ -191,7 +192,7 @@ export function Contract(options) {
 		},
 	);
 
-	// Build events proxy
+	// Build events proxy - returns EventStream instances
 	const events = new Proxy(
 		{},
 		{
@@ -199,62 +200,19 @@ export function Contract(options) {
 				if (typeof prop !== "string") return undefined;
 				const eventName = prop;
 
-				return async function* (filter, eventOptions) {
+				return (/** @type {*} */ filter) => {
 					const event = abi.getEvent(eventName);
 
 					if (!event) {
 						throw new ContractEventNotFoundError(eventName);
 					}
 
-					const topics = Event.encodeTopics(event, filter || {});
-
-					// Convert topics to hex strings, replacing null with null
-					const topicsHex = topics.map((t) =>
-						t === null ? null : Hex.fromBytes(t),
-					);
-
-					const fromBlock =
-						eventOptions?.fromBlock !== undefined
-							? `0x${eventOptions.fromBlock.toString(16)}`
-							: "latest";
-					const toBlock =
-						eventOptions?.toBlock !== undefined
-							? `0x${eventOptions.toBlock.toString(16)}`
-							: "latest";
-
-					const logs = await provider.request({
-						method: "eth_getLogs",
-						params: [
-							{
-								address: addressHex,
-								topics: topicsHex,
-								fromBlock,
-								toBlock,
-							},
-						],
+					return EventStream({
+						provider,
+						address,
+						event,
+						filter,
 					});
-
-					for (const log of logs) {
-						const dataBytes = Hex.toBytes(log.data);
-						const topicBytes = log.topics.map((/** @type {string} */ t) =>
-							Hex.toBytes(t),
-						);
-
-						const args = Event.decodeLog(
-							event,
-							dataBytes,
-							/** @type {*} */ (topicBytes),
-						);
-
-						yield {
-							eventName: event.name,
-							args,
-							blockNumber: BlockNumber.from(BigInt(log.blockNumber)),
-							blockHash: Hash.fromHex(log.blockHash),
-							transactionHash: TransactionHash.fromHex(log.transactionHash),
-							logIndex: parseInt(log.logIndex, 16),
-						};
-					}
 				};
 			},
 		},
