@@ -1,0 +1,262 @@
+---
+title: '[Zig] src/primitives/base64.fuzz.zig'
+source: 'src/primitives/base64.fuzz.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/base64.fuzz.zig
+
+### fuzz standard encode
+
+```zig
+test "fuzz standard encode" {
+    try testing.fuzz({}, testStandardEncode, .{});
+}
+```
+
+### fuzz standard decode arbitrary
+
+```zig
+test "fuzz standard decode arbitrary" {
+    try testing.fuzz({}, testStandardDecodeArbitrary, .{});
+}
+```
+
+### fuzz standard roundtrip
+
+```zig
+test "fuzz standard roundtrip" {
+    try testing.fuzz({}, testStandardRoundtrip, .{});
+}
+```
+
+### fuzz standard decode with invalid characters
+
+```zig
+test "fuzz standard decode with invalid characters" {
+    try testing.fuzz({}, testStandardDecodeInvalidChars, .{});
+}
+```
+
+### fuzz standard decode with malformed padding
+
+```zig
+test "fuzz standard decode with malformed padding" {
+    try testing.fuzz({}, testStandardDecodeMalformedPadding, .{});
+}
+```
+
+### fuzz url-safe encode
+
+```zig
+test "fuzz url-safe encode" {
+    try testing.fuzz({}, testUrlSafeEncode, .{});
+}
+```
+
+### fuzz url-safe decode arbitrary
+
+```zig
+test "fuzz url-safe decode arbitrary" {
+    try testing.fuzz({}, testUrlSafeDecodeArbitrary, .{});
+}
+```
+
+### fuzz url-safe roundtrip
+
+```zig
+test "fuzz url-safe roundtrip" {
+    try testing.fuzz({}, testUrlSafeRoundtrip, .{});
+}
+```
+
+### fuzz url-safe decode with standard characters
+
+```zig
+test "fuzz url-safe decode with standard characters" {
+    try testing.fuzz({}, testUrlSafeDecodeWithStandardChars, .{});
+}
+```
+
+### fuzz encode-decode symmetry standard
+
+```zig
+test "fuzz encode-decode symmetry standard" {
+    try testing.fuzz({}, testEncodeDecodeSymmetryStandard, .{});
+}
+```
+
+### fuzz encode-decode symmetry url-safe
+
+```zig
+test "fuzz encode-decode symmetry url-safe" {
+    try testing.fuzz({}, testEncodeDecodeSymmetryUrlSafe, .{});
+}
+```
+
+### fuzz size calculations
+
+```zig
+test "fuzz size calculations" {
+    try testing.fuzz({}, testSizeCalculations, .{});
+}
+```
+
+### fuzz partial blocks
+
+```zig
+test "fuzz partial blocks" {
+    try testing.fuzz({}, testPartialBlocks, .{});
+}
+```
+
+### fuzz empty and single byte
+
+```zig
+test "fuzz empty and single byte" {
+    try testing.fuzz({}, testEmptyAndSingleByte, .{});
+}
+```
+
+### fuzz binary data with all byte values
+
+```zig
+test "fuzz binary data with all byte values" {
+    try testing.fuzz({}, testBinaryDataAllBytes, .{});
+}
+```
+
+### fuzz allocation failures
+
+```zig
+test "fuzz allocation failures" {
+    try testing.fuzz({}, testAllocationFailures, .{});
+}
+```
+
+### fuzz whitespace injection standard
+
+```zig
+test "fuzz whitespace injection standard" {
+    try testing.fuzz({}, testWhitespaceInjectionStandard, .{});
+}
+```
+
+### fuzz mixed whitespace patterns
+
+```zig
+test "fuzz mixed whitespace patterns" {
+    try testing.fuzz({}, testMixedWhitespacePatterns, .{});
+}
+```
+
+### fuzz mixed standard and url-safe chars
+
+```zig
+test "fuzz mixed standard and url-safe chars" {
+    try testing.fuzz({}, testMixedCharSets, .{});
+}
+```
+
+### fuzz case sensitivity edge cases
+
+```zig
+test "fuzz case sensitivity edge cases" {
+    try testing.fuzz({}, testCaseSensitivity, .{});
+}
+```
+
+### fuzz very large inputs
+
+```zig
+test "fuzz very large inputs" {
+    try testing.fuzz({}, testVeryLargeInputs, .{});
+}
+```
+
+### fuzz boundary lengths modulo 4
+
+```zig
+test "fuzz boundary lengths modulo 4" {
+    try testing.fuzz({}, testBoundaryLengths, .{});
+}
+```
+
+### fuzz truncated encoded inputs
+
+```zig
+test "fuzz truncated encoded inputs" {
+    try testing.fuzz({}, testTruncatedInputs, .{});
+}
+```
+
+### fuzz null byte in input
+
+```zig
+test "fuzz null byte in input" {
+    try testing.fuzz({}, testNullBytes, .{});
+}
+```
+
+### fuzz triple padding
+
+```zig
+test "fuzz triple padding" {
+    try testing.fuzz({}, testTriplePadding, .{});
+}
+```
+
+### fuzz padding in wrong positions
+
+```zig
+test "fuzz padding in wrong positions" {
+    try testing.fuzz({}, testPaddingWrongPositions, .{});
+}
+```
+
+### fuzz padding before data
+
+```zig
+test "fuzz padding before data" {
+    try testing.fuzz({}, testPaddingBeforeData, .{});
+}
+```
+
+### fuzz non-ascii in standard base64
+
+```zig
+test "fuzz non-ascii in standard base64" {
+    try testing.fuzz({}, testNonAscii, .{});
+}
+```
+
+### fuzz url-safe with padding
+
+```zig
+test "fuzz url-safe with padding" {
+    try testing.fuzz({}, testUrlSafeWithPadding, .{});
+}
+```
+
+### fuzz url-safe wrong length
+
+```zig
+test "fuzz url-safe wrong length" {
+    try testing.fuzz({}, testUrlSafeWrongLength, .{});
+}
+```
+
+### fuzz encoding determinism
+
+```zig
+test "fuzz encoding determinism" {
+    try testing.fuzz({}, testEncodingDeterminism, .{});
+}
+```
+
+### fuzz decoding determinism
+
+```zig
+test "fuzz decoding determinism" {
+    try testing.fuzz({}, testDecodingDeterminism, .{});
+}
+```

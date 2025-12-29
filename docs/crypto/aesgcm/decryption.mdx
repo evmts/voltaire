@@ -18,7 +18,7 @@ Decryption **fails completely** if authentication fails - no partial plaintext i
 ### Basic Decryption
 
 ```typescript
-import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/AesGcm';
 
 // Decrypt data (using same key and nonce from encryption)
 try {
@@ -426,7 +426,7 @@ console.log(`Decryption throughput: ${throughput.toFixed(2)} MB/s`);
 ### Wallet Decryption
 
 ```typescript
-import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/AesGcm';
 
 async function unlockWallet(encryptedWallet, password) {
   try {

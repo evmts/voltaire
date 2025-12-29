@@ -18,8 +18,8 @@ Fetch data at build time:
 ```astro
 ---
 // pages/address/[address].astro
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -40,7 +40,7 @@ const [balance, nonce, code] = await Promise.all([
 
 const data = {
   address,
-  balance: Uint.toEther(balance),
+  balance: Wei.toEther(balance),
   nonce: Number(nonce),
   isContract: code.length > 2,
 }
@@ -63,8 +63,8 @@ Create API routes for dynamic data:
 ```ts
 // pages/api/balance/[address].ts
 import type { APIRoute } from 'astro'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -85,7 +85,7 @@ export const GET: APIRoute = async ({ params }) => {
 
     return new Response(JSON.stringify({
       address,
-      balance: Uint.toEther(balance),
+      balance: Wei.toEther(balance),
     }), {
       headers: { 'Content-Type': 'application/json' },
     })
@@ -105,8 +105,8 @@ Pre-generate pages for known addresses:
 ```astro
 ---
 // pages/address/[address].astro
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 export async function getStaticPaths() {
@@ -128,7 +128,7 @@ const addr = Address.from(address!)
 const balance = await provider.eth.getBalance({ address: addr })
 ---
 
-<p>Balance: {Uint.toEther(balance)} ETH</p>
+<p>Balance: {Wei.toEther(balance)} ETH</p>
 ```
 
 ## Hybrid Rendering
@@ -147,8 +147,8 @@ export default defineConfig({
 // pages/live/[address].astro
 export const prerender = false // Force SSR for this page
 
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -158,7 +158,7 @@ const addr = Address.from(address!)
 const balance = await provider.eth.getBalance({ address: addr })
 ---
 
-<p>Live Balance: {Uint.toEther(balance)} ETH</p>
+<p>Live Balance: {Wei.toEther(balance)} ETH</p>
 <p>Fetched at: {new Date().toISOString()}</p>
 ```
 
@@ -184,8 +184,8 @@ import BalanceChecker from '../components/BalanceChecker.tsx'
 ```tsx
 // components/BalanceChecker.tsx (React)
 import { useState } from 'react'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -201,7 +201,7 @@ export default function BalanceChecker() {
     try {
       const addr = Address.from(address)
       const result = await provider.eth.getBalance({ address: addr })
-      setBalance(Uint.toEther(result))
+      setBalance(Wei.toEther(result))
     } finally {
       setLoading(false)
     }
@@ -256,8 +256,8 @@ export const collections = { addresses }
 ---
 // pages/addresses/[slug].astro
 import { getCollection, getEntry } from 'astro:content'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 export async function getStaticPaths() {
@@ -278,7 +278,7 @@ const balance = await provider.eth.getBalance({ address: addr })
 <h1>{entry.data.name}</h1>
 <p>{entry.data.description}</p>
 <p>Address: {entry.data.address}</p>
-<p>Balance: {Uint.toEther(balance)} ETH</p>
+<p>Balance: {Wei.toEther(balance)} ETH</p>
 ```
 
 ## Middleware for Caching
@@ -331,8 +331,8 @@ Fetch data during build:
 
 ```ts
 // lib/buildData.ts
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -349,7 +349,7 @@ export async function getTopContracts() {
     contracts.map(async (address) => {
       const addr = Address.from(address)
       const balance = await provider.eth.getBalance({ address: addr })
-      return { address, balance: Uint.toEther(balance) }
+      return { address, balance: Wei.toEther(balance) }
     })
   )
 }

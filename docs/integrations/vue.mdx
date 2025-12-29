@@ -18,8 +18,8 @@ Create reusable composables for Ethereum data:
 ```ts
 // composables/useBalance.ts
 import { ref, watch, type Ref } from 'vue'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -38,7 +38,7 @@ export function useBalance(address: Ref<string> | string) {
     try {
       const parsedAddr = Address.from(addr)
       const result = await provider.eth.getBalance({ address: parsedAddr })
-      balance.value = Uint.toEther(result)
+      balance.value = Wei.toEther(result)
     } catch (e) {
       error.value = e as Error
     } finally {
@@ -81,8 +81,8 @@ Fetch data server-side with Nuxt:
 
 ```ts
 // server/api/address/[address].ts
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -101,7 +101,7 @@ export default defineEventHandler(async (event) => {
 
   return {
     address,
-    balance: Uint.toEther(balance),
+    balance: Wei.toEther(balance),
     nonce: Number(nonce),
     isContract: code.length > 2,
   }
@@ -194,8 +194,8 @@ Fetch multiple addresses in parallel:
 ```ts
 // composables/useMultipleBalances.ts
 import { ref, computed, type Ref } from 'vue'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -210,7 +210,7 @@ export function useMultipleBalances(addresses: Ref<string[]>) {
       addresses.value.map(async (addr) => {
         const parsedAddr = Address.from(addr)
         const balance = await provider.eth.getBalance({ address: parsedAddr })
-        return [addr, Uint.toEther(balance)] as const
+        return [addr, Wei.toEther(balance)] as const
       })
     )
     balances.value = new Map(results)
@@ -230,7 +230,7 @@ Load data on component mount:
 ```vue
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import * as Address from '@tevm/voltaire/Address'
+import { Address } from '@tevm/voltaire/Address'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -262,8 +262,8 @@ Use Pinia for global state:
 ```ts
 // stores/ethereum.ts
 import { defineStore } from 'pinia'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -281,7 +281,7 @@ export const useEthereumStore = defineStore('ethereum', {
       try {
         const addr = Address.from(address)
         const balance = await provider.eth.getBalance({ address: addr })
-        this.balances[address] = Uint.toEther(balance)
+        this.balances[address] = Wei.toEther(balance)
       } finally {
         this.loading = false
       }

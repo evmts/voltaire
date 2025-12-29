@@ -16,8 +16,8 @@ Methods for executing contract calls and transaction simulations.
 Execute a read-only contract call without creating a transaction.
 
 ```typescript
-import * as Address from '@tevm/voltaire/Address';
-import * as Hex from '@tevm/voltaire/Hex';
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
 
 const result = await provider.eth_call({
   from: Address('0x742d35Cc6634C0532925a3b844Bc454e4438f44e'),
@@ -54,9 +54,8 @@ if (!result.error) {
 Estimate gas required for a transaction.
 
 ```typescript
-import * as Address from '@tevm/voltaire/Address';
-import * as Hex from '@tevm/voltaire/Hex';
-import * as Quantity from '@tevm/voltaire/Quantity';
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
 
 const gas = await provider.eth_estimateGas({
   from: Address('0x742d35Cc6634C0532925a3b844Bc454e4438f44e'),

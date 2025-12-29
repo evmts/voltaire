@@ -1,0 +1,239 @@
+---
+title: '[Zig] src/primitives/MaxPriorityFeePerGas/MaxPriorityFeePerGas.zig'
+source: 'src/primitives/MaxPriorityFeePerGas/MaxPriorityFeePerGas.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/MaxPriorityFeePerGas/MaxPriorityFeePerGas.zig
+
+### MaxPriorityFeePerGas: from and toU64
+
+```zig
+test "MaxPriorityFeePerGas: from and toU64" {
+    const fee = MaxPriorityFeePerGas.from(2_000_000_000); // 2 gwei in wei
+    try testing.expectEqual(@as(u64, 2_000_000_000), try fee.toU64());
+}
+```
+
+### MaxPriorityFeePerGas: fromGwei
+
+```zig
+test "MaxPriorityFeePerGas: fromGwei" {
+    const fee = MaxPriorityFeePerGas.fromGwei(2);
+    try testing.expectEqual(@as(u64, 2_000_000_000), try fee.toU64());
+}
+```
+
+### MaxPriorityFeePerGas: toGwei
+
+```zig
+test "MaxPriorityFeePerGas: toGwei" {
+    const fee = MaxPriorityFeePerGas.from(2_000_000_000);
+    try testing.expectEqual(@as(u64, 2), try fee.toGweiU64());
+}
+```
+
+### MaxPriorityFeePerGas: toGwei truncates
+
+```zig
+test "MaxPriorityFeePerGas: toGwei truncates" {
+    const fee = MaxPriorityFeePerGas.from(2_500_000_000); // 2.5 gwei
+    try testing.expectEqual(@as(u64, 2), try fee.toGweiU64());
+}
+```
+
+### MaxPriorityFeePerGas: toWei identity
+
+```zig
+test "MaxPriorityFeePerGas: toWei identity" {
+    const fee = MaxPriorityFeePerGas.from(99999);
+    const wei = fee.toWei();
+    try testing.expect(wei.eq(MaxPriorityFeePerGas.U256.from_u64(99999)));
+}
+```
+
+### MaxPriorityFeePerGas: fromBytes and toBytes roundtrip
+
+```zig
+test "MaxPriorityFeePerGas: fromBytes and toBytes roundtrip" {
+    const fee = MaxPriorityFeePerGas.fromGwei(5);
+    const bytes = fee.toBytes();
+    const restored = MaxPriorityFeePerGas.fromBytes(bytes);
+    try testing.expect(fee.equals(restored));
+}
+```
+
+### MaxPriorityFeePerGas: compare less than
+
+```zig
+test "MaxPriorityFeePerGas: compare less than" {
+    const fee1 = MaxPriorityFeePerGas.fromGwei(1);
+    const fee2 = MaxPriorityFeePerGas.fromGwei(2);
+    try testing.expectEqual(std.math.Order.lt, fee1.compare(fee2));
+}
+```
+
+### MaxPriorityFeePerGas: compare greater than
+
+```zig
+test "MaxPriorityFeePerGas: compare greater than" {
+    const fee1 = MaxPriorityFeePerGas.fromGwei(5);
+    const fee2 = MaxPriorityFeePerGas.fromGwei(2);
+    try testing.expectEqual(std.math.Order.gt, fee1.compare(fee2));
+}
+```
+
+### MaxPriorityFeePerGas: compare equal
+
+```zig
+test "MaxPriorityFeePerGas: compare equal" {
+    const fee1 = MaxPriorityFeePerGas.fromGwei(2);
+    const fee2 = MaxPriorityFeePerGas.fromGwei(2);
+    try testing.expectEqual(std.math.Order.eq, fee1.compare(fee2));
+}
+```
+
+### MaxPriorityFeePerGas: equals
+
+```zig
+test "MaxPriorityFeePerGas: equals" {
+    const fee1 = MaxPriorityFeePerGas.fromGwei(2);
+    const fee2 = MaxPriorityFeePerGas.fromGwei(2);
+    const fee3 = MaxPriorityFeePerGas.fromGwei(5);
+    try testing.expect(fee1.equals(fee2));
+    try testing.expect(!fee1.equals(fee3));
+}
+```
+
+### MaxPriorityFeePerGas: add
+
+```zig
+test "MaxPriorityFeePerGas: add" {
+    const fee1 = MaxPriorityFeePerGas.fromGwei(2);
+    const fee2 = MaxPriorityFeePerGas.fromGwei(3);
+    const sum = fee1.add(fee2).?;
+    try testing.expectEqual(@as(u64, 5), try sum.toGweiU64());
+}
+```
+
+### MaxPriorityFeePerGas: sub
+
+```zig
+test "MaxPriorityFeePerGas: sub" {
+    const fee1 = MaxPriorityFeePerGas.fromGwei(5);
+    const fee2 = MaxPriorityFeePerGas.fromGwei(2);
+    const diff = fee1.sub(fee2).?;
+    try testing.expectEqual(@as(u64, 3), try diff.toGweiU64());
+}
+```
+
+### MaxPriorityFeePerGas: sub underflow returns null
+
+```zig
+test "MaxPriorityFeePerGas: sub underflow returns null" {
+    const fee1 = MaxPriorityFeePerGas.fromGwei(2);
+    const fee2 = MaxPriorityFeePerGas.fromGwei(5);
+    try testing.expect(fee1.sub(fee2) == null);
+}
+```
+
+### MaxPriorityFeePerGas: isZero
+
+```zig
+test "MaxPriorityFeePerGas: isZero" {
+    const zero = MaxPriorityFeePerGas.from(0);
+    const nonzero = MaxPriorityFeePerGas.fromGwei(1);
+    try testing.expect(zero.isZero());
+    try testing.expect(!nonzero.isZero());
+}
+```
+
+### MaxPriorityFeePerGas: fromGwei roundtrip
+
+```zig
+test "MaxPriorityFeePerGas: fromGwei roundtrip" {
+    const gwei_values = [_]u64{ 1, 2, 5, 10, 20, 50, 100 };
+    for (gwei_values) |gwei| {
+        const fee = MaxPriorityFeePerGas.fromGwei(gwei);
+        try testing.expectEqual(gwei, try fee.toGweiU64());
+    }
+}
+```
+
+### MaxPriorityFeePerGas: zero value
+
+```zig
+test "MaxPriorityFeePerGas: zero value" {
+    const fee = MaxPriorityFeePerGas.from(0);
+    try testing.expectEqual(@as(u64, 0), try fee.toU64());
+    try testing.expectEqual(@as(u64, 0), try fee.toGweiU64());
+    try testing.expect(fee.isZero());
+}
+```
+
+### MaxPriorityFeePerGas: small tip values
+
+```zig
+test "MaxPriorityFeePerGas: small tip values" {
+    // Priority fees are typically small (1-5 gwei)
+    const fee = MaxPriorityFeePerGas.fromGwei(1);
+    try testing.expectEqual(@as(u64, 1_000_000_000), try fee.toU64());
+}
+```
+
+### MaxPriorityFeePerGas: mul
+
+```zig
+test "MaxPriorityFeePerGas: mul" {
+    const fee = MaxPriorityFeePerGas.fromGwei(2);
+    const tripled = fee.mul(3).?;
+    try testing.expectEqual(@as(u64, 6), try tripled.toGweiU64());
+}
+```
+
+### MaxPriorityFeePerGas: mul by zero
+
+```zig
+test "MaxPriorityFeePerGas: mul by zero" {
+    const fee = MaxPriorityFeePerGas.fromGwei(5);
+    const zeroed = fee.mul(0).?;
+    try testing.expect(zeroed.isZero());
+}
+```
+
+### MaxPriorityFeePerGas: div
+
+```zig
+test "MaxPriorityFeePerGas: div" {
+    const fee = MaxPriorityFeePerGas.fromGwei(10);
+    const halved = fee.div(2).?;
+    try testing.expectEqual(@as(u64, 5), try halved.toGweiU64());
+}
+```
+
+### MaxPriorityFeePerGas: div truncates
+
+```zig
+test "MaxPriorityFeePerGas: div truncates" {
+    const fee = MaxPriorityFeePerGas.fromGwei(5);
+    const result = fee.div(2).?;
+    try testing.expectEqual(@as(u64, 2), try result.toGweiU64());
+}
+```
+
+### MaxPriorityFeePerGas: div by zero returns null
+
+```zig
+test "MaxPriorityFeePerGas: div by zero returns null" {
+    const fee = MaxPriorityFeePerGas.fromGwei(2);
+    try testing.expect(fee.div(0) == null);
+}
+```
+
+### MaxPriorityFeePerGas: fromWei
+
+```zig
+test "MaxPriorityFeePerGas: fromWei" {
+    const fee = MaxPriorityFeePerGas.fromWei(2_000_000_000);
+    try testing.expectEqual(@as(u64, 2), try fee.toGweiU64());
+}
+```

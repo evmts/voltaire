@@ -79,7 +79,7 @@ Get block by hash with full transactions or hashes.
 ```typescript
 import { Provider } from '@tevm/voltaire/provider';
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockHash = Keccak256.from('0x...');
@@ -133,7 +133,7 @@ Get transaction count in a block by hash.
 ```typescript
 import { Provider } from '@tevm/voltaire/provider';
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockHash = Keccak256.from('0x...');
@@ -184,7 +184,7 @@ Get uncle count for a block by hash.
 ```typescript
 import { Provider } from '@tevm/voltaire/provider';
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 const provider = new Provider({ url: 'https://mainnet.infura.io' });
 const blockHash = Keccak256.from('0x...');

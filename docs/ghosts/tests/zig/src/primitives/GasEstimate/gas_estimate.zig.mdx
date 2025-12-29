@@ -1,0 +1,148 @@
+---
+title: '[Zig] src/primitives/GasEstimate/gas_estimate.zig'
+source: 'src/primitives/GasEstimate/gas_estimate.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/GasEstimate/gas_estimate.zig
+
+### GasEstimate: from and toNumber
+
+```zig
+test "GasEstimate: from and toNumber" {
+    const estimate = GasEstimate.from(51234);
+    try testing.expectEqual(@as(u64, 51234), estimate.toNumber());
+
+    const estimate2 = GasEstimate.from(0);
+    try testing.expectEqual(@as(u64, 0), estimate2.toNumber());
+
+    const estimate3 = GasEstimate.from(std.math.maxInt(u64));
+    try testing.expectEqual(std.math.maxInt(u64), estimate3.toNumber());
+}
+```
+
+### GasEstimate: add
+
+```zig
+test "GasEstimate: add" {
+    const a = GasEstimate.from(100000);
+    const b = GasEstimate.from(50000);
+    const result = a.add(b);
+    try testing.expectEqual(@as(u64, 150000), result.toNumber());
+}
+```
+
+### GasEstimate: sub
+
+```zig
+test "GasEstimate: sub" {
+    const a = GasEstimate.from(100000);
+    const b = GasEstimate.from(30000);
+    const result = a.sub(b);
+    try testing.expectEqual(@as(u64, 70000), result.toNumber());
+
+    // Saturating subtraction
+    const c = GasEstimate.from(10000);
+    const d = GasEstimate.from(50000);
+    const result2 = c.sub(d);
+    try testing.expectEqual(@as(u64, 0), result2.toNumber());
+}
+```
+
+### GasEstimate: equals
+
+```zig
+test "GasEstimate: equals" {
+    const a = GasEstimate.from(100000);
+    const b = GasEstimate.from(100000);
+    const c = GasEstimate.from(200000);
+
+    try testing.expect(a.equals(b));
+    try testing.expect(!a.equals(c));
+}
+```
+
+### GasEstimate: compare
+
+```zig
+test "GasEstimate: compare" {
+    const a = GasEstimate.from(100000);
+    const b = GasEstimate.from(200000);
+    const c = GasEstimate.from(100000);
+
+    try testing.expectEqual(@as(i8, -1), a.compare(b));
+    try testing.expectEqual(@as(i8, 1), b.compare(a));
+    try testing.expectEqual(@as(i8, 0), a.compare(c));
+}
+```
+
+### GasEstimate: withBuffer
+
+```zig
+test "GasEstimate: withBuffer" {
+    const estimate = GasEstimate.from(100000);
+
+    // 20% buffer
+    const buffered20 = estimate.withBuffer(20);
+    try testing.expectEqual(@as(u64, 120000), buffered20.toNumber());
+
+    // 30% buffer
+    const buffered30 = estimate.withBuffer(30);
+    try testing.expectEqual(@as(u64, 130000), buffered30.toNumber());
+
+    // 0% buffer (no change)
+    const buffered0 = estimate.withBuffer(0);
+    try testing.expectEqual(@as(u64, 100000), buffered0.toNumber());
+
+    // 100% buffer (double)
+    const buffered100 = estimate.withBuffer(100);
+    try testing.expectEqual(@as(u64, 200000), buffered100.toNumber());
+}
+```
+
+### GasEstimate: toGasLimit
+
+```zig
+test "GasEstimate: toGasLimit" {
+    const estimate = GasEstimate.from(51234);
+    try testing.expectEqual(@as(u64, 51234), estimate.toGasLimit());
+}
+```
+
+### GasEstimate: toHex and fromHex
+
+```zig
+test "GasEstimate: toHex and fromHex" {
+    const estimate = GasEstimate.from(0x1234);
+
+    const hex = try estimate.toHex(testing.allocator);
+    defer testing.allocator.free(hex);
+    try testing.expectEqualStrings("0x1234", hex);
+
+    const parsed = try GasEstimate.fromHex("0x1234");
+    try testing.expectEqual(@as(u64, 0x1234), parsed.toNumber());
+
+    // Without prefix
+    const parsed2 = try GasEstimate.fromHex("1234");
+    try testing.expectEqual(@as(u64, 0x1234), parsed2.toNumber());
+}
+```
+
+### GasEstimate: typical RPC values
+
+```zig
+test "GasEstimate: typical RPC values" {
+    // Simple ETH transfer
+    const transfer = GasEstimate.from(21000);
+    try testing.expectEqual(@as(u64, 21000), transfer.toNumber());
+
+    // ERC20 transfer estimate
+    const erc20 = GasEstimate.from(65000);
+    const erc20_buffered = erc20.withBuffer(20);
+    try testing.expectEqual(@as(u64, 78000), erc20_buffered.toNumber());
+
+    // Complex contract interaction
+    const complex = GasEstimate.from(150000);
+    const complex_buffered = complex.withBuffer(30);
+    try testing.expectEqual(@as(u64, 195000), complex_buffered.toNumber());
+}
+```

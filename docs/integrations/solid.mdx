@@ -18,8 +18,8 @@ Use `createResource` for async data:
 ```tsx
 // components/Balance.tsx
 import { createResource, Show } from 'solid-js'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -27,7 +27,7 @@ const provider = createJsonRpcProvider('https://eth.llamarpc.com')
 async function fetchBalance(address: string) {
   const addr = Address.from(address)
   const balance = await provider.eth.getBalance({ address: addr })
-  return Uint.toEther(balance)
+  return Wei.toEther(balance)
 }
 
 function Balance(props: { address: string }) {
@@ -51,8 +51,8 @@ Fetch data server-side:
 ```tsx
 // routes/address/[address].tsx
 import { createAsync, type RouteDefinition } from '@solidjs/router'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -69,7 +69,7 @@ async function getAddressData(address: string) {
 
   return {
     address,
-    balance: Uint.toEther(balance),
+    balance: Wei.toEther(balance),
     nonce: Number(nonce),
     isContract: code.length > 2,
   }
@@ -103,8 +103,8 @@ Create reactive Ethereum state:
 
 ```tsx
 import { createSignal, createEffect } from 'solid-js'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -122,7 +122,7 @@ function AddressInput() {
     try {
       const parsedAddr = Address.from(addr)
       const result = await provider.eth.getBalance({ address: parsedAddr })
-      setBalance(Uint.toEther(result))
+      setBalance(Wei.toEther(result))
     } finally {
       setLoading(false)
     }
@@ -183,8 +183,8 @@ Fetch multiple addresses:
 
 ```tsx
 import { createResource, For, Show } from 'solid-js'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -194,7 +194,7 @@ async function fetchBalances(addresses: string[]) {
     addresses.map(async (addr) => {
       const parsedAddr = Address.from(addr)
       const balance = await provider.eth.getBalance({ address: parsedAddr })
-      return { address: addr, balance: Uint.toEther(balance) }
+      return { address: addr, balance: Wei.toEther(balance) }
     })
   )
 }
@@ -262,8 +262,8 @@ Use Solid stores for complex state:
 
 ```tsx
 import { createStore } from 'solid-js/store'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -281,7 +281,7 @@ function createEthereumStore() {
       try {
         const addr = Address.from(address)
         const balance = await provider.eth.getBalance({ address: addr })
-        setState('balances', address, Uint.toEther(balance))
+        setState('balances', address, Wei.toEther(balance))
       } finally {
         setState('loading', false)
       }
@@ -306,8 +306,8 @@ Use with Solid's Suspense:
 
 ```tsx
 import { Suspense, createResource } from 'solid-js'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -316,7 +316,7 @@ function Balance(props: { address: string }) {
   const [balance] = createResource(async () => {
     const addr = Address.from(props.address)
     const result = await provider.eth.getBalance({ address: addr })
-    return Uint.toEther(result)
+    return Wei.toEther(result)
   })
 
   return <p>Balance: {balance()} ETH</p>

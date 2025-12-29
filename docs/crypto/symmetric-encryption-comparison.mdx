@@ -258,7 +258,7 @@ const ct2 = encrypt(msg2, key, nonce); // SECURITY FAILURE!
 
 ```typescript
 // Use AES-256-GCM on servers with AES-NI
-import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/AesGcm';
 
 const key = await AesGcm.generateKey(256);
 const nonce = AesGcm.generateNonce();
@@ -359,7 +359,7 @@ const encrypted = chacha20poly1305(key, nonce).encrypt(privateKey);
 
 ```typescript
 // WebCrypto API provides native AES-GCM
-import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/AesGcm';
 
 // Hardware-accelerated in browsers
 const key = await AesGcm.generateKey(256);
@@ -403,7 +403,7 @@ const encrypted = await AesGcm.encrypt(data, key, nonce);
 
 ```typescript
 // Before (AES-GCM)
-import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/AesGcm';
 
 const key = await AesGcm.generateKey(256); // 32 bytes
 const nonce = AesGcm.generateNonce();      // 12 bytes
@@ -432,7 +432,7 @@ import { chacha20poly1305 } from '@noble/ciphers/chacha';
 const ct = chacha20poly1305(key, nonce).encrypt(pt);
 
 // After (AES-GCM)
-import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/AesGcm';
 
 const key = await AesGcm.importKey(keyBytes); // Convert key
 const ct = await AesGcm.encrypt(pt, key, nonce);

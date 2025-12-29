@@ -1,0 +1,94 @@
+---
+title: How to Bridge ETH to L2
+description: Deposit ETH from L1 to L2 using Voltaire primitives and standard bridge contracts.
+---
+
+## Goal
+
+Bridge ETH from Ethereum L1 to an L2 (Optimism, Arbitrum, Base, etc.) using the native bridge.
+
+## Concepts
+
+L2s use deposit contracts on L1 to receive funds. The flow:
+
+1. User sends ETH to L1 bridge contract
+2. L1 contract emits deposit event
+3. L2 sequencer detects event and credits L2 account
+4. Finality depends on L2 type (optimistic vs zk rollup)
+
+## Standard Bridge Addresses
+
+```typescript
+// Optimism Standard Bridge (L1)
+const OP_BRIDGE = Address("0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1");
+
+// Arbitrum Gateway Router (L1)
+const ARB_GATEWAY = Address("0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef");
+
+// Base Standard Bridge (L1)
+const BASE_BRIDGE = Address("0x3154Cf16ccdb4C6d922629664174b904d80F2C35");
+```
+
+## Example: Deposit to Optimism
+
+```typescript
+import * as Address from '@voltaire/primitives/Address';
+import * as Hex from '@voltaire/primitives/Hex';
+import * as Chain from '@voltaire/primitives/Chain';
+import * as Transaction from '@voltaire/primitives/Transaction';
+
+// L1 Standard Bridge ABI (depositETH function)
+const DEPOSIT_ETH_SELECTOR = "0xb1a1a882"; // depositETH(uint32,bytes)
+
+// Build deposit calldata
+const minGasLimit = 200000n;
+const extraData = new Uint8Array(0);
+
+// Encode: depositETH(uint32 _minGasLimit, bytes calldata _extraData)
+const calldata = Hex.concat([
+  Hex.fromString(DEPOSIT_ETH_SELECTOR),
+  Hex.padLeft(Hex.fromBigInt(minGasLimit), 32),
+  Hex.padLeft(Hex.fromBigInt(64n), 32),   // offset to extraData
+  Hex.padLeft(Hex.fromBigInt(0n), 32),    // length of extraData (0)
+]);
+
+// Create deposit transaction
+const depositTx = Transaction.EIP1559({
+  chainId: 1n,                             // Ethereum mainnet
+  nonce: 0n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  maxFeePerGas: 50_000_000_000n,
+  gasLimit: 250_000n,
+  to: Address("0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1"),
+  value: 1_000_000_000_000_000_000n,       // 1 ETH
+  data: Hex.toBytes(calldata),
+  accessList: [],
+});
+
+// Sign and broadcast via your provider
+```
+
+## Detect L2 for Bridge Selection
+
+```typescript
+import * as Chain from '@voltaire/primitives/Chain';
+
+const chain = Chain.fromId(10n); // Optimism
+if (Chain.isL2(chain)) {
+  const l1 = Chain.getL1Chain(chain);
+  console.log(`Bridging to ${Chain.getName(chain)} via ${Chain.getName(l1)}`);
+}
+```
+
+## Key Considerations
+
+- **Gas estimation**: L2 deposit needs enough L2 gas (minGasLimit parameter)
+- **Finality**: Deposits take ~1-20 minutes depending on L2
+- **Withdrawals**: Optimistic rollups have 7-day challenge period; ZK rollups are faster
+- **Custom tokens**: Use depositERC20 with token address and amount
+
+## Related
+
+- `/primitives/chain` - Chain detection and L1/L2 relationships
+- `/primitives/transaction` - Transaction construction
+- `/primitives/address` - Address handling

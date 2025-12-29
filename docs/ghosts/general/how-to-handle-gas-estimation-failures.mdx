@@ -1,0 +1,141 @@
+---
+title: Handle Gas Estimation Failures
+description: Diagnose and recover from gas estimation errors in Ethereum transactions.
+---
+
+## Common Causes
+
+1. **Revert** - Contract execution fails (require, revert, assert)
+2. **Insufficient balance** - Not enough ETH for value + max gas
+3. **Invalid state** - Contract paused, wrong nonce, expired deadline
+4. **Out of gas** - Estimation hits block gas limit
+
+## Error Detection Pattern
+
+```typescript
+import { JsonRpcError } from '@voltaire/jsonrpc/JsonRpcError'
+
+async function estimateWithFallback(
+  provider: Provider,
+  tx: TransactionRequest
+): Promise<bigint> {
+  try {
+    return await provider.estimateGas(tx)
+  } catch (error) {
+    if (error instanceof JsonRpcError) {
+      // Parse revert reason
+      const reason = parseRevertReason(error)
+      throw new GasEstimationError(reason, error)
+    }
+    throw error
+  }
+}
+
+function parseRevertReason(error: JsonRpcError): string {
+  const data = error.data
+  if (typeof data === 'string' && data.startsWith('0x')) {
+    // Decode Error(string) selector: 0x08c379a0
+    if (data.startsWith('0x08c379a0')) {
+      // ABI decode the string
+      return decodeErrorString(data)
+    }
+    // Decode Panic(uint256) selector: 0x4e487b71
+    if (data.startsWith('0x4e487b71')) {
+      return decodePanicCode(data)
+    }
+  }
+  return error.message
+}
+```
+
+## Retry with Gas Buffer
+
+```typescript
+import { Uint256 } from '@voltaire/primitives/Uint'
+
+async function estimateWithBuffer(
+  provider: Provider,
+  tx: TransactionRequest,
+  bufferPercent = 20n
+): Promise<bigint> {
+  const estimate = await provider.estimateGas(tx)
+
+  // Add buffer: estimate * (100 + buffer) / 100
+  const estimateUint = Uint256.from(estimate)
+  const multiplier = Uint256.from(100n + bufferPercent)
+  const divisor = Uint256.from(100n)
+
+  const buffered = Uint256.dividedBy(
+    Uint256.times(estimateUint, multiplier),
+    divisor
+  )
+
+  return Uint256.toBigInt(buffered)
+}
+```
+
+## Simulation Before Estimation
+
+```typescript
+async function safeEstimate(
+  provider: Provider,
+  tx: TransactionRequest
+): Promise<{ gas: bigint; willSucceed: boolean; error?: string }> {
+  // First, simulate with eth_call
+  try {
+    await provider.call(tx)
+  } catch (error) {
+    return {
+      gas: 0n,
+      willSucceed: false,
+      error: error instanceof Error ? error.message : 'Simulation failed'
+    }
+  }
+
+  // If simulation passes, estimate gas
+  try {
+    const gas = await provider.estimateGas(tx)
+    return { gas, willSucceed: true }
+  } catch (error) {
+    return {
+      gas: 0n,
+      willSucceed: false,
+      error: 'Gas estimation failed after successful simulation'
+    }
+  }
+}
+```
+
+## Manual Gas Limit Fallback
+
+```typescript
+const DEFAULT_GAS_LIMITS: Record<string, bigint> = {
+  transfer: 21000n,
+  erc20Transfer: 65000n,
+  erc20Approve: 46000n,
+  swap: 200000n,
+  contractDeploy: 1000000n,
+}
+
+async function estimateOrFallback(
+  provider: Provider,
+  tx: TransactionRequest,
+  txType: keyof typeof DEFAULT_GAS_LIMITS
+): Promise<bigint> {
+  try {
+    return await estimateWithBuffer(provider, tx)
+  } catch {
+    console.warn(`Gas estimation failed, using fallback for ${txType}`)
+    return DEFAULT_GAS_LIMITS[txType]
+  }
+}
+```
+
+## Debug Checklist
+
+1. Check sender balance covers `value + gasLimit * gasPrice`
+2. Verify contract is not paused
+3. Confirm allowances for token transfers
+4. Check deadline timestamps haven't expired
+5. Validate nonce is correct
+6. Test with `eth_call` first to get revert reason

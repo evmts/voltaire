@@ -1,0 +1,119 @@
+---
+title: How to Approve Tokens for DEX
+description: Approve ERC20 tokens for spending by a DEX router before executing swaps.
+---
+
+## Goal
+
+Approve an ERC20 token for spending by a DEX router contract.
+
+Return as:
+
+ANSWER: Approved X TOKEN for SPENDER (tx: 0x...)
+
+## Concepts
+
+ERC20 tokens require explicit approval before a contract can transfer them on your behalf. This is a security feature.
+
+**Approval flow**:
+1. Call `approve(spender, amount)` on the token contract
+2. The spender (DEX router) can now call `transferFrom` up to `amount`
+
+**Common patterns**:
+- **Exact approval**: Approve only the amount needed for the swap
+- **Infinite approval**: Approve `type(uint256).max` to avoid repeated approvals (less secure)
+
+## Example (TypeScript)
+
+```ts
+import { Contract } from '@tevm/voltaire/contract'
+
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'approve',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    outputs: [{ name: '', type: 'bool' }]
+  },
+  {
+    type: 'function',
+    name: 'allowance',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' }
+    ],
+    outputs: [{ name: '', type: 'uint256' }]
+  },
+  {
+    type: 'event',
+    name: 'Approval',
+    inputs: [
+      { name: 'owner', type: 'address', indexed: true },
+      { name: 'spender', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false }
+    ]
+  }
+] as const
+
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const UNISWAP_ROUTER = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
+
+const usdc = Contract({
+  address: USDC_ADDRESS,
+  abi: erc20Abi,
+  provider
+})
+
+// Check current allowance
+const currentAllowance = await usdc.read.allowance(myAddress, UNISWAP_ROUTER)
+console.log(`Current allowance: ${currentAllowance}`)
+
+// Approve exact amount
+const amountToApprove = 1000n * 10n ** 6n // 1000 USDC
+
+const txHash = await usdc.write.approve(UNISWAP_ROUTER, amountToApprove)
+
+console.log(`ANSWER: Approved 1000 USDC for Uniswap Router (tx: ${txHash})`)
+```
+
+## Infinite Approval
+
+```ts
+// Approve max uint256 (use with caution)
+const MAX_UINT256 = 2n ** 256n - 1n
+
+const txHash = await usdc.write.approve(UNISWAP_ROUTER, MAX_UINT256)
+```
+
+## Check Before Approve
+
+```ts
+async function ensureAllowance(
+  token: typeof usdc,
+  owner: string,
+  spender: string,
+  requiredAmount: bigint
+) {
+  const allowance = await token.read.allowance(owner, spender)
+
+  if (allowance < requiredAmount) {
+    const txHash = await token.write.approve(spender, requiredAmount)
+    // Wait for confirmation before proceeding
+    return txHash
+  }
+
+  return null // Already approved
+}
+```
+
+## Notes
+
+- Always check existing allowance before approving to save gas
+- Some tokens (like USDT) require setting allowance to 0 before changing it
+- Consider using Permit2 for gasless approvals via signatures (EIP-2612)
+- Infinite approvals are convenient but expose risk if the spender contract is compromised

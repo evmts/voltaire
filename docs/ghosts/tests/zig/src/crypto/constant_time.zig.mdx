@@ -1,0 +1,421 @@
+---
+title: '[Zig] src/crypto/constant_time.zig'
+source: 'src/crypto/constant_time.zig'
+---
+
+> Auto-generated from Zig tests in: src/crypto/constant_time.zig
+
+### constantTimeEqU256: equal values
+
+```zig
+test "constantTimeEqU256: equal values" {
+    const a: u256 = 0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0;
+    try std.testing.expectEqual(@as(u8, 1), constantTimeEqU256(a, a));
+}
+```
+
+### constantTimeEqU256: different values
+
+```zig
+test "constantTimeEqU256: different values" {
+    const a: u256 = 0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0;
+    const b: u256 = 0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef1;
+    try std.testing.expectEqual(@as(u8, 0), constantTimeEqU256(a, b));
+}
+```
+
+### constantTimeEqU256: zero values
+
+```zig
+test "constantTimeEqU256: zero values" {
+    try std.testing.expectEqual(@as(u8, 1), constantTimeEqU256(0, 0));
+}
+```
+
+### constantTimeEqU256: max values
+
+```zig
+test "constantTimeEqU256: max values" {
+    const max: u256 = std.math.maxInt(u256);
+    try std.testing.expectEqual(@as(u8, 1), constantTimeEqU256(max, max));
+    try std.testing.expectEqual(@as(u8, 0), constantTimeEqU256(max, max - 1));
+}
+```
+
+### constantTimeIsZeroU256: zero
+
+```zig
+test "constantTimeIsZeroU256: zero" {
+    try std.testing.expectEqual(@as(u8, 1), constantTimeIsZeroU256(0));
+}
+```
+
+### constantTimeIsZeroU256: non-zero
+
+```zig
+test "constantTimeIsZeroU256: non-zero" {
+    try std.testing.expectEqual(@as(u8, 0), constantTimeIsZeroU256(1));
+    try std.testing.expectEqual(@as(u8, 0), constantTimeIsZeroU256(std.math.maxInt(u256)));
+}
+```
+
+### constantTimeLteU256: basic comparisons
+
+```zig
+test "constantTimeLteU256: basic comparisons" {
+    try std.testing.expectEqual(@as(u8, 1), constantTimeLteU256(0, 1));
+    try std.testing.expectEqual(@as(u8, 1), constantTimeLteU256(1, 1));
+    try std.testing.expectEqual(@as(u8, 0), constantTimeLteU256(2, 1));
+}
+```
+
+### constantTimeLteU256: large values
+
+```zig
+test "constantTimeLteU256: large values" {
+    const a: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140;
+    const b: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+    try std.testing.expectEqual(@as(u8, 1), constantTimeLteU256(a, b)); // a < b
+    try std.testing.expectEqual(@as(u8, 1), constantTimeLteU256(b, b)); // b == b
+    try std.testing.expectEqual(@as(u8, 0), constantTimeLteU256(b, a)); // b > a
+}
+```
+
+### constantTimeLtU256: basic comparisons
+
+```zig
+test "constantTimeLtU256: basic comparisons" {
+    try std.testing.expectEqual(@as(u8, 1), constantTimeLtU256(0, 1));
+    try std.testing.expectEqual(@as(u8, 0), constantTimeLtU256(1, 1));
+    try std.testing.expectEqual(@as(u8, 0), constantTimeLtU256(2, 1));
+}
+```
+
+### constantTimeGteU256: basic comparisons
+
+```zig
+test "constantTimeGteU256: basic comparisons" {
+    try std.testing.expectEqual(@as(u8, 0), constantTimeGteU256(0, 1));
+    try std.testing.expectEqual(@as(u8, 1), constantTimeGteU256(1, 1));
+    try std.testing.expectEqual(@as(u8, 1), constantTimeGteU256(2, 1));
+}
+```
+
+### constantTimeSelectU256: select first
+
+```zig
+test "constantTimeSelectU256: select first" {
+    const a: u256 = 100;
+    const b: u256 = 200;
+    try std.testing.expectEqual(a, constantTimeSelectU256(1, a, b));
+}
+```
+
+### constantTimeSelectU256: select second
+
+```zig
+test "constantTimeSelectU256: select second" {
+    const a: u256 = 100;
+    const b: u256 = 200;
+    try std.testing.expectEqual(b, constantTimeSelectU256(0, a, b));
+}
+```
+
+### constantTimeEqBytes: equal arrays
+
+```zig
+test "constantTimeEqBytes: equal arrays" {
+    const a = [_]u8{ 1, 2, 3, 4, 5 };
+    const b = [_]u8{ 1, 2, 3, 4, 5 };
+    try std.testing.expect(constantTimeEqBytes(&a, &b));
+}
+```
+
+### constantTimeEqBytes: different arrays
+
+```zig
+test "constantTimeEqBytes: different arrays" {
+    const a = [_]u8{ 1, 2, 3, 4, 5 };
+    const b = [_]u8{ 1, 2, 3, 4, 6 };
+    try std.testing.expect(!constantTimeEqBytes(&a, &b));
+}
+```
+
+### constantTimeEqBytes: different lengths
+
+```zig
+test "constantTimeEqBytes: different lengths" {
+    const a = [_]u8{ 1, 2, 3 };
+    const b = [_]u8{ 1, 2, 3, 4 };
+    try std.testing.expect(!constantTimeEqBytes(&a, &b));
+}
+```
+
+### constantTimeIsZeroBytes: all zeros
+
+```zig
+test "constantTimeIsZeroBytes: all zeros" {
+    const a = [_]u8{ 0, 0, 0, 0 };
+    try std.testing.expect(constantTimeIsZeroBytes(&a));
+}
+```
+
+### constantTimeIsZeroBytes: has non-zero
+
+```zig
+test "constantTimeIsZeroBytes: has non-zero" {
+    const a = [_]u8{ 0, 0, 1, 0 };
+    try std.testing.expect(!constantTimeIsZeroBytes(&a));
+}
+```
+
+### constantTimeIsZeroBytes: empty array
+
+```zig
+test "constantTimeIsZeroBytes: empty array" {
+    const a = [_]u8{};
+    try std.testing.expect(constantTimeIsZeroBytes(&a));
+}
+```
+
+### secp256k1 N boundary test
+
+```zig
+test "secp256k1 N boundary test" {
+    // Test with actual secp256k1 curve order
+    const SECP256K1_N: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+
+    // Valid r must be < N
+    const valid_r: u256 = SECP256K1_N - 1;
+    const invalid_r: u256 = SECP256K1_N;
+
+    // valid_r < N should be true
+    try std.testing.expectEqual(@as(u8, 1), constantTimeLtU256(valid_r, SECP256K1_N));
+
+    // invalid_r < N should be false (they're equal)
+    try std.testing.expectEqual(@as(u8, 0), constantTimeLtU256(invalid_r, SECP256K1_N));
+
+    // invalid_r >= N should be true
+    try std.testing.expectEqual(@as(u8, 1), constantTimeGteU256(invalid_r, SECP256K1_N));
+}
+```
+
+### constantTimeSwapU256: swap when condition is 1
+
+```zig
+test "constantTimeSwapU256: swap when condition is 1" {
+    var a: u256 = 100;
+    var b: u256 = 200;
+
+    constantTimeSwapU256(1, &a, &b);
+    try std.testing.expectEqual(@as(u256, 200), a);
+    try std.testing.expectEqual(@as(u256, 100), b);
+}
+```
+
+### constantTimeSwapU256: no swap when condition is 0
+
+```zig
+test "constantTimeSwapU256: no swap when condition is 0" {
+    var a: u256 = 100;
+    var b: u256 = 200;
+
+    constantTimeSwapU256(0, &a, &b);
+    try std.testing.expectEqual(@as(u256, 100), a);
+    try std.testing.expectEqual(@as(u256, 200), b);
+}
+```
+
+### constantTimeAddU256: add when condition is 1
+
+```zig
+test "constantTimeAddU256: add when condition is 1" {
+    try std.testing.expectEqual(@as(u256, 15), constantTimeAddU256(1, 10, 5));
+}
+```
+
+### constantTimeAddU256: no add when condition is 0
+
+```zig
+test "constantTimeAddU256: no add when condition is 0" {
+    try std.testing.expectEqual(@as(u256, 10), constantTimeAddU256(0, 10, 5));
+}
+```
+
+### constantTimeSubU256: sub when condition is 1
+
+```zig
+test "constantTimeSubU256: sub when condition is 1" {
+    try std.testing.expectEqual(@as(u256, 5), constantTimeSubU256(1, 10, 5));
+}
+```
+
+### constantTimeSubU256: no sub when condition is 0
+
+```zig
+test "constantTimeSubU256: no sub when condition is 0" {
+    try std.testing.expectEqual(@as(u256, 10), constantTimeSubU256(0, 10, 5));
+}
+```
+
+### constantTimeGtU256: basic comparisons
+
+```zig
+test "constantTimeGtU256: basic comparisons" {
+    try std.testing.expectEqual(@as(u8, 0), constantTimeGtU256(0, 1));
+    try std.testing.expectEqual(@as(u8, 0), constantTimeGtU256(1, 1));
+    try std.testing.expectEqual(@as(u8, 1), constantTimeGtU256(2, 1));
+}
+```
+
+### constantTimeIsNonzeroU256: basic
+
+```zig
+test "constantTimeIsNonzeroU256: basic" {
+    try std.testing.expectEqual(@as(u8, 0), constantTimeIsNonzeroU256(0));
+    try std.testing.expectEqual(@as(u8, 1), constantTimeIsNonzeroU256(1));
+    try std.testing.expectEqual(@as(u8, 1), constantTimeIsNonzeroU256(std.math.maxInt(u256)));
+}
+```
+
+### constantTimeSwapBytes: swap when condition is 1
+
+```zig
+test "constantTimeSwapBytes: swap when condition is 1" {
+    var a = [4]u8{ 1, 2, 3, 4 };
+    var b = [4]u8{ 5, 6, 7, 8 };
+
+    constantTimeSwapBytes(4, 1, &a, &b);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 5, 6, 7, 8 }, &a);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 1, 2, 3, 4 }, &b);
+}
+```
+
+### constantTimeSwapBytes: no swap when condition is 0
+
+```zig
+test "constantTimeSwapBytes: no swap when condition is 0" {
+    var a = [4]u8{ 1, 2, 3, 4 };
+    var b = [4]u8{ 5, 6, 7, 8 };
+
+    constantTimeSwapBytes(4, 0, &a, &b);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 1, 2, 3, 4 }, &a);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 5, 6, 7, 8 }, &b);
+}
+```
+
+### constantTimeCopyBytes: copy when condition is 1
+
+```zig
+test "constantTimeCopyBytes: copy when condition is 1" {
+    var dst = [4]u8{ 1, 2, 3, 4 };
+    const src = [4]u8{ 5, 6, 7, 8 };
+
+    constantTimeCopyBytes(4, 1, &dst, &src);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 5, 6, 7, 8 }, &dst);
+}
+```
+
+### constantTimeCopyBytes: no copy when condition is 0
+
+```zig
+test "constantTimeCopyBytes: no copy when condition is 0" {
+    var dst = [4]u8{ 1, 2, 3, 4 };
+    const src = [4]u8{ 5, 6, 7, 8 };
+
+    constantTimeCopyBytes(4, 0, &dst, &src);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 1, 2, 3, 4 }, &dst);
+}
+```
+
+### secureZero: zeros buffer
+
+```zig
+test "secureZero: zeros buffer" {
+    var buf = [4]u8{ 1, 2, 3, 4 };
+    secureZero(4, &buf);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0, 0, 0, 0 }, &buf);
+}
+```
+
+### secureZeroSlice: zeros slice
+
+```zig
+test "secureZeroSlice: zeros slice" {
+    var buf = [_]u8{ 1, 2, 3, 4, 5, 6, 7, 8 };
+    secureZeroSlice(&buf);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0, 0, 0, 0, 0, 0, 0, 0 }, &buf);
+}
+```
+
+### boolean logic: and
+
+```zig
+test "boolean logic: and" {
+    try std.testing.expectEqual(@as(u8, 0), constantTimeAnd(0, 0));
+    try std.testing.expectEqual(@as(u8, 0), constantTimeAnd(0, 1));
+    try std.testing.expectEqual(@as(u8, 0), constantTimeAnd(1, 0));
+    try std.testing.expectEqual(@as(u8, 1), constantTimeAnd(1, 1));
+}
+```
+
+### boolean logic: or
+
+```zig
+test "boolean logic: or" {
+    try std.testing.expectEqual(@as(u8, 0), constantTimeOr(0, 0));
+    try std.testing.expectEqual(@as(u8, 1), constantTimeOr(0, 1));
+    try std.testing.expectEqual(@as(u8, 1), constantTimeOr(1, 0));
+    try std.testing.expectEqual(@as(u8, 1), constantTimeOr(1, 1));
+}
+```
+
+### boolean logic: not
+
+```zig
+test "boolean logic: not" {
+    try std.testing.expectEqual(@as(u8, 1), constantTimeNot(0));
+    try std.testing.expectEqual(@as(u8, 0), constantTimeNot(1));
+}
+```
+
+### boolean logic: xor
+
+```zig
+test "boolean logic: xor" {
+    try std.testing.expectEqual(@as(u8, 0), constantTimeXor(0, 0));
+    try std.testing.expectEqual(@as(u8, 1), constantTimeXor(0, 1));
+    try std.testing.expectEqual(@as(u8, 1), constantTimeXor(1, 0));
+    try std.testing.expectEqual(@as(u8, 0), constantTimeXor(1, 1));
+}
+```
+
+### secp256k1 validation pattern
+
+```zig
+test "secp256k1 validation pattern" {
+    // Demonstrates how to use constant-time operations for secp256k1 validation
+    const SECP256K1_N: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+
+    // Valid scalar (1 <= r < N)
+    const valid_r: u256 = 12345;
+    const r_is_zero = constantTimeIsZeroU256(valid_r);
+    const r_ge_n = constantTimeGteU256(valid_r, SECP256K1_N);
+    const r_invalid = constantTimeOr(r_is_zero, r_ge_n);
+    try std.testing.expectEqual(@as(u8, 0), r_invalid);
+
+    // Invalid scalar (r == 0)
+    const zero_r: u256 = 0;
+    const zero_is_zero = constantTimeIsZeroU256(zero_r);
+    const zero_ge_n = constantTimeGteU256(zero_r, SECP256K1_N);
+    const zero_invalid = constantTimeOr(zero_is_zero, zero_ge_n);
+    try std.testing.expectEqual(@as(u8, 1), zero_invalid);
+
+    // Invalid scalar (r >= N)
+    const big_r: u256 = SECP256K1_N;
+    const big_is_zero = constantTimeIsZeroU256(big_r);
+    const big_ge_n = constantTimeGteU256(big_r, SECP256K1_N);
+    const big_invalid = constantTimeOr(big_is_zero, big_ge_n);
+    try std.testing.expectEqual(@as(u8, 1), big_invalid);
+}
+```

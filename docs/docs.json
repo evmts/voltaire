@@ -230,7 +230,8 @@
                     "pages": [
                       "zig/primitives/block/index",
                       "zig/primitives/block-header/index",
-                      "zig/primitives/block-body/index"
+                      "zig/primitives/block-body/index",
+                      "zig/primitives/block-stream"
                     ]
                   },
                   {
@@ -1323,7 +1324,8 @@
                 "pages": [
                   "primitives/block/index",
                   "primitives/block-header/index",
-                  "primitives/block-body/index"
+                  "primitives/block-body/index",
+                  "primitives/block-stream"
                 ]
               },
               {
@@ -2180,6 +2182,16 @@
             "icon": "book-open",
             "pages": [
               "guides/index",
+              "guides/wallet-generation",
+              "guides/ens-resolution",
+              "guides/transaction-simulation",
+              "guides/gas-estimation",
+              "guides/sign-verify-messages",
+              "guides/siwe-authentication",
+              "guides/eip712-typed-data",
+              "guides/contract-interaction",
+              "guides/event-listening",
+              "guides/send-eth-tokens",
               "primitives/calldata/fundamentals",
               "primitives/receipt/index",
               "primitives/transaction-hash/index",
@@ -2298,7 +2310,7 @@
       "anchors": [
         {
           "anchor": "GitHub",
-          "href": "https://github.com/evmts/tevm",
+          "href": "https://github.com/evmts/voltaire",
           "icon": "github"
         },
         {
@@ -2327,7 +2339,7 @@
     "links": [
       {
         "label": "GitHub",
-        "href": "https://github.com/evmts/tevm"
+        "href": "https://github.com/evmts/voltaire"
       }
     ],
     "primary": {
@@ -2341,7 +2353,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/evmts/tevm",
+      "github": "https://github.com/evmts/voltaire",
       "twitter": "https://twitter.com/tevmtools"
     }
   },

@@ -1,0 +1,89 @@
+---
+title: Compute Event Topic
+description: Calculate 32-byte event topic hashes from Solidity event signatures.
+---
+
+## Using Keccak256
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+
+const topic = Keccak256.topic('Transfer(address,address,uint256)')
+// Uint8Array(32) - full keccak256 hash
+```
+
+## Using fromTopic Alias
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+
+const topic = Keccak256.fromTopic('Transfer(address,address,uint256)')
+```
+
+## Convert to Hex
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+import * as Hex from '@voltaire/primitives/Hex'
+
+const topic = Keccak256.topic('Transfer(address,address,uint256)')
+const topicHex = Hex.fromBytes(topic)
+// '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+```
+
+## Common ERC20 Event Topics
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+import * as Hex from '@voltaire/primitives/Hex'
+
+const topics = {
+  Transfer: Keccak256.topic('Transfer(address,address,uint256)'),
+  Approval: Keccak256.topic('Approval(address,address,uint256)'),
+}
+
+console.log('Transfer:', Hex.fromBytes(topics.Transfer))
+console.log('Approval:', Hex.fromBytes(topics.Approval))
+```
+
+## ERC721 Events
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+
+const topics = {
+  Transfer: Keccak256.topic('Transfer(address,address,uint256)'),
+  Approval: Keccak256.topic('Approval(address,address,uint256)'),
+  ApprovalForAll: Keccak256.topic('ApprovalForAll(address,address,bool)'),
+}
+```
+
+## Filter Logs by Topic
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+
+const transferTopic = Keccak256.topic('Transfer(address,address,uint256)')
+
+// Filter logs
+const transferLogs = logs.filter(log => {
+  if (!log.topics[0]) return false
+  return log.topics[0].every((b, i) => b === transferTopic[i])
+})
+```
+
+## Anonymous Events
+
+Anonymous events have no topic0 signature hash:
+
+```ts
+// event Transfer(address indexed from, address indexed to, uint256 value) anonymous;
+// topic0 = from (indexed param)
+// topic1 = to (indexed param)
+// data = value
+
+// Regular events include signature as topic0:
+// topic0 = keccak256('Transfer(address,address,uint256)')
+// topic1 = from
+// topic2 = to
+```

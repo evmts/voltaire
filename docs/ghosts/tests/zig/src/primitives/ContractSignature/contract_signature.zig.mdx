@@ -1,0 +1,165 @@
+---
+title: '[Zig] src/primitives/ContractSignature/contract_signature.zig'
+source: 'src/primitives/ContractSignature/contract_signature.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/ContractSignature/contract_signature.zig
+
+### isValidReturnData - magic value raw
+
+```zig
+test "isValidReturnData - magic value raw" {
+    const data = [_]u8{ 0x16, 0x26, 0xba, 0x7e };
+    try std.testing.expect(isValidReturnData(&data));
+}
+```
+
+### isValidReturnData - magic value ABI encoded
+
+```zig
+test "isValidReturnData - magic value ABI encoded" {
+    // bytes4 is right-aligned in ABI encoding
+    var data: [32]u8 = [_]u8{0} ** 32;
+    data[28] = 0x16;
+    data[29] = 0x26;
+    data[30] = 0xba;
+    data[31] = 0x7e;
+    try std.testing.expect(isValidReturnData(&data));
+}
+```
+
+### isValidReturnData - magic value left-aligned
+
+```zig
+test "isValidReturnData - magic value left-aligned" {
+    var data: [32]u8 = [_]u8{0} ** 32;
+    data[0] = 0x16;
+    data[1] = 0x26;
+    data[2] = 0xba;
+    data[3] = 0x7e;
+    try std.testing.expect(isValidReturnData(&data));
+}
+```
+
+### isValidReturnData - invalid value
+
+```zig
+test "isValidReturnData - invalid value" {
+    const data = [_]u8{ 0xff, 0xff, 0xff, 0xff };
+    try std.testing.expect(!isValidReturnData(&data));
+}
+```
+
+### isValidReturnData - too short
+
+```zig
+test "isValidReturnData - too short" {
+    const data = [_]u8{ 0x16, 0x26 };
+    try std.testing.expect(!isValidReturnData(&data));
+}
+```
+
+### isValidReturnData - empty
+
+```zig
+test "isValidReturnData - empty" {
+    const data = [_]u8{};
+    try std.testing.expect(!isValidReturnData(&data));
+}
+```
+
+### isIsValidSignatureSelector - valid
+
+```zig
+test "isIsValidSignatureSelector - valid" {
+    try std.testing.expect(isIsValidSignatureSelector(IS_VALID_SIGNATURE_SELECTOR));
+}
+```
+
+### isIsValidSignatureSelector - invalid
+
+```zig
+test "isIsValidSignatureSelector - invalid" {
+    const other = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    try std.testing.expect(!isIsValidSignatureSelector(other));
+}
+```
+
+### encodeIsValidSignatureCall - basic
+
+```zig
+test "encodeIsValidSignatureCall - basic" {
+    const allocator = std.testing.allocator;
+
+    const hash = [_]u8{0xab} ** 32;
+    const signature = [_]u8{0xcd} ** 65;
+
+    const calldata = try encodeIsValidSignatureCall(allocator, hash, &signature);
+    defer allocator.free(calldata);
+
+    // Check selector
+    try std.testing.expectEqual(IS_VALID_SIGNATURE_SELECTOR, calldata[0..4].*);
+
+    // Check hash
+    try std.testing.expectEqual(hash, calldata[4..36].*);
+
+    // Check offset (should be 64 = 0x40)
+    try std.testing.expectEqual(@as(u8, 0x40), calldata[35 + 32]);
+
+    // Check length (should be 65)
+    try std.testing.expectEqual(@as(u8, 65), calldata[67 + 32]);
+}
+```
+
+### encodeIsValidSignatureCall - empty signature
+
+```zig
+test "encodeIsValidSignatureCall - empty signature" {
+    const allocator = std.testing.allocator;
+
+    const hash = [_]u8{0x00} ** 32;
+    const signature = [_]u8{};
+
+    const calldata = try encodeIsValidSignatureCall(allocator, hash, &signature);
+    defer allocator.free(calldata);
+
+    // Should be: 4 (selector) + 32 (hash) + 32 (offset) + 32 (length) = 100 bytes
+    try std.testing.expectEqual(@as(usize, 100), calldata.len);
+}
+```
+
+### getMagicValue
+
+```zig
+test "getMagicValue" {
+    const magic = getMagicValue();
+    try std.testing.expectEqual(MAGIC_VALUE, magic);
+}
+```
+
+### getMagicValueU32
+
+```zig
+test "getMagicValueU32" {
+    try std.testing.expectEqual(@as(u32, 0x1626ba7e), getMagicValueU32());
+}
+```
+
+### magicValueToHex
+
+```zig
+test "magicValueToHex" {
+    const hex = magicValueToHex();
+    try std.testing.expectEqualStrings("0x1626ba7e", &hex);
+}
+```
+
+### selector matches signature
+
+```zig
+test "selector matches signature" {
+    var hash: [32]u8 = undefined;
+    crypto.hash.sha3.Keccak256.hash("isValidSignature(bytes32,bytes)", &hash, .{});
+    try std.testing.expectEqual(IS_VALID_SIGNATURE_SELECTOR, hash[0..4].*);
+}
+```

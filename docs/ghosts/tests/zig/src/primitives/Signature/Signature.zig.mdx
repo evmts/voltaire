@@ -1,0 +1,327 @@
+---
+title: '[Zig] src/primitives/Signature/Signature.zig'
+source: 'src/primitives/Signature/Signature.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Signature/Signature.zig
+
+### Signature.fromSecp256k1
+
+```zig
+test "Signature.fromSecp256k1" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    const s: [32]u8 = [_]u8{2} ** 32;
+    const v: u8 = 27;
+
+    const sig = Signature.fromSecp256k1(r, s, v);
+
+    try std.testing.expectEqual(Algorithm.secp256k1, sig.algorithm);
+    try std.testing.expectEqualSlices(u8, &r, &sig.r);
+    try std.testing.expectEqualSlices(u8, &s, &sig.s);
+    try std.testing.expectEqual(@as(?u8, 27), sig.v);
+}
+```
+
+### Signature.fromP256
+
+```zig
+test "Signature.fromP256" {
+    const r: [32]u8 = [_]u8{3} ** 32;
+    const s: [32]u8 = [_]u8{4} ** 32;
+
+    const sig = Signature.fromP256(r, s);
+
+    try std.testing.expectEqual(Algorithm.p256, sig.algorithm);
+    try std.testing.expectEqualSlices(u8, &r, &sig.r);
+    try std.testing.expectEqualSlices(u8, &s, &sig.s);
+    try std.testing.expectEqual(@as(?u8, null), sig.v);
+}
+```
+
+### Signature.fromEd25519
+
+```zig
+test "Signature.fromEd25519" {
+    var sig_bytes: [64]u8 = undefined;
+    for (0..64) |i| {
+        sig_bytes[i] = @truncate(i);
+    }
+
+    const sig = Signature.fromEd25519(sig_bytes);
+
+    try std.testing.expectEqual(Algorithm.ed25519, sig.algorithm);
+    try std.testing.expectEqualSlices(u8, sig_bytes[0..32], &sig.r);
+    try std.testing.expectEqualSlices(u8, sig_bytes[32..64], &sig.s);
+    try std.testing.expectEqual(@as(?u8, null), sig.v);
+}
+```
+
+### Signature.fromCompact
+
+```zig
+test "Signature.fromCompact" {
+    var bytes: [64]u8 = undefined;
+    @memset(bytes[0..32], 0xaa);
+    @memset(bytes[32..64], 0xbb);
+
+    const sig = Signature.fromCompact(bytes, .secp256k1);
+
+    try std.testing.expectEqual(Algorithm.secp256k1, sig.algorithm);
+    try std.testing.expectEqualSlices(u8, bytes[0..32], &sig.r);
+    try std.testing.expectEqualSlices(u8, bytes[32..64], &sig.s);
+}
+```
+
+### Signature.toBytes with v
+
+```zig
+test "Signature.toBytes with v" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    const s: [32]u8 = [_]u8{2} ** 32;
+    const sig = Signature.fromSecp256k1(r, s, 27);
+
+    const allocator = std.testing.allocator;
+    const bytes = try sig.toBytes(allocator);
+    defer allocator.free(bytes);
+
+    try std.testing.expectEqual(@as(usize, 65), bytes.len);
+    try std.testing.expectEqualSlices(u8, &r, bytes[0..32]);
+    try std.testing.expectEqualSlices(u8, &s, bytes[32..64]);
+    try std.testing.expectEqual(@as(u8, 27), bytes[64]);
+}
+```
+
+### Signature.toBytes without v
+
+```zig
+test "Signature.toBytes without v" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    const s: [32]u8 = [_]u8{2} ** 32;
+    const sig = Signature.fromP256(r, s);
+
+    const allocator = std.testing.allocator;
+    const bytes = try sig.toBytes(allocator);
+    defer allocator.free(bytes);
+
+    try std.testing.expectEqual(@as(usize, 64), bytes.len);
+    try std.testing.expectEqualSlices(u8, &r, bytes[0..32]);
+    try std.testing.expectEqualSlices(u8, &s, bytes[32..64]);
+}
+```
+
+### Signature.toCompact
+
+```zig
+test "Signature.toCompact" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    const s: [32]u8 = [_]u8{2} ** 32;
+    const sig = Signature.fromSecp256k1(r, s, 27);
+
+    const compact = sig.toCompact();
+
+    try std.testing.expectEqual(@as(usize, 64), compact.len);
+    try std.testing.expectEqualSlices(u8, &r, compact[0..32]);
+    try std.testing.expectEqualSlices(u8, &s, compact[32..64]);
+}
+```
+
+### Signature.getR
+
+```zig
+test "Signature.getR" {
+    const r: [32]u8 = [_]u8{0xaa} ** 32;
+    const s: [32]u8 = [_]u8{0xbb} ** 32;
+    const sig = Signature.fromSecp256k1(r, s, null);
+
+    const retrieved_r = sig.getR();
+    try std.testing.expectEqualSlices(u8, &r, &retrieved_r);
+}
+```
+
+### Signature.getS
+
+```zig
+test "Signature.getS" {
+    const r: [32]u8 = [_]u8{0xaa} ** 32;
+    const s: [32]u8 = [_]u8{0xbb} ** 32;
+    const sig = Signature.fromSecp256k1(r, s, null);
+
+    const retrieved_s = sig.getS();
+    try std.testing.expectEqualSlices(u8, &s, &retrieved_s);
+}
+```
+
+### Signature.getV
+
+```zig
+test "Signature.getV" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    const s: [32]u8 = [_]u8{2} ** 32;
+
+    const sig_with_v = Signature.fromSecp256k1(r, s, 27);
+    try std.testing.expectEqual(@as(?u8, 27), sig_with_v.getV());
+
+    const sig_without_v = Signature.fromP256(r, s);
+    try std.testing.expectEqual(@as(?u8, null), sig_without_v.getV());
+}
+```
+
+### Signature.isCanonical - Ed25519 always canonical
+
+```zig
+test "Signature.isCanonical - Ed25519 always canonical" {
+    const sig_bytes = [_]u8{0xff} ** 64;
+    const sig = Signature.fromEd25519(sig_bytes);
+
+    try std.testing.expect(sig.isCanonical());
+}
+```
+
+### Signature.isCanonical - secp256k1 canonical s
+
+```zig
+test "Signature.isCanonical - secp256k1 canonical s" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    // s < SECP256K1_N_DIV_2 (canonical)
+    const s: [32]u8 = [_]u8{0x10} ** 32;
+
+    const sig = Signature.fromSecp256k1(r, s, null);
+    try std.testing.expect(sig.isCanonical());
+}
+```
+
+### Signature.isCanonical - secp256k1 non-canonical s
+
+```zig
+test "Signature.isCanonical - secp256k1 non-canonical s" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    // s > SECP256K1_N_DIV_2 (non-canonical)
+    const s: [32]u8 = [_]u8{0xff} ** 32;
+
+    const sig = Signature.fromSecp256k1(r, s, null);
+    try std.testing.expect(!sig.isCanonical());
+}
+```
+
+### Signature.normalize - already canonical
+
+```zig
+test "Signature.normalize - already canonical" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    const s: [32]u8 = [_]u8{0x10} ** 32;
+
+    const sig = Signature.fromSecp256k1(r, s, 27);
+    const normalized = sig.normalize();
+
+    try std.testing.expect(normalized.equals(sig));
+}
+```
+
+### Signature.normalize - non-canonical
+
+```zig
+test "Signature.normalize - non-canonical" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    // Non-canonical s (just above SECP256K1_N_DIV_2)
+    const s: [32]u8 = .{
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0x5d, 0x57, 0x6e, 0x73, 0x57, 0xa4, 0x50, 0x1d,
+        0xdf, 0xe9, 0x2f, 0x46, 0x68, 0x1b, 0x20, 0xa1, // Last byte is 0xa1 (>0xa0)
+    };
+
+    const sig = Signature.fromSecp256k1(r, s, 27);
+    const normalized = sig.normalize();
+
+    try std.testing.expect(normalized.isCanonical());
+    try std.testing.expect(!normalized.equals(sig));
+    try std.testing.expectEqualSlices(u8, &r, &normalized.r);
+    try std.testing.expectEqual(@as(?u8, 28), normalized.v); // v flipped
+}
+```
+
+### Signature.equals - same signatures
+
+```zig
+test "Signature.equals - same signatures" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    const s: [32]u8 = [_]u8{2} ** 32;
+
+    const sig1 = Signature.fromSecp256k1(r, s, 27);
+    const sig2 = Signature.fromSecp256k1(r, s, 27);
+
+    try std.testing.expect(sig1.equals(sig2));
+}
+```
+
+### Signature.equals - different algorithms
+
+```zig
+test "Signature.equals - different algorithms" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    const s: [32]u8 = [_]u8{2} ** 32;
+
+    const sig1 = Signature.fromSecp256k1(r, s, null);
+    const sig2 = Signature.fromP256(r, s);
+
+    try std.testing.expect(!sig1.equals(sig2));
+}
+```
+
+### Signature.equals - different v values
+
+```zig
+test "Signature.equals - different v values" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    const s: [32]u8 = [_]u8{2} ** 32;
+
+    const sig1 = Signature.fromSecp256k1(r, s, 27);
+    const sig2 = Signature.fromSecp256k1(r, s, 28);
+
+    try std.testing.expect(!sig1.equals(sig2));
+}
+```
+
+### Signature.toDER and fromDER roundtrip
+
+```zig
+test "Signature.toDER and fromDER roundtrip" {
+    const r: [32]u8 = [_]u8{1} ** 32;
+    const s: [32]u8 = [_]u8{2} ** 32;
+
+    const original = Signature.fromSecp256k1(r, s, null);
+
+    const allocator = std.testing.allocator;
+    const der = try original.toDER(allocator);
+    defer allocator.free(der);
+
+    const decoded = try Signature.fromDER(allocator, der, .secp256k1);
+
+    try std.testing.expectEqualSlices(u8, &original.r, &decoded.r);
+    try std.testing.expectEqualSlices(u8, &original.s, &decoded.s);
+    try std.testing.expectEqual(original.algorithm, decoded.algorithm);
+}
+```
+
+### Signature.toDER - Ed25519 returns error
+
+```zig
+test "Signature.toDER - Ed25519 returns error" {
+    const sig_bytes = [_]u8{1} ** 64;
+    const sig = Signature.fromEd25519(sig_bytes);
+
+    const allocator = std.testing.allocator;
+    try std.testing.expectError(error.InvalidAlgorithm, sig.toDER(allocator));
+}
+```
+
+### Signature.fromDER - Ed25519 returns error
+
+```zig
+test "Signature.fromDER - Ed25519 returns error" {
+    const der_bytes = [_]u8{ 0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02 };
+
+    const allocator = std.testing.allocator;
+    try std.testing.expectError(error.InvalidAlgorithm, Signature.fromDER(allocator, &der_bytes, .ed25519));
+}
+```

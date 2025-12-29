@@ -454,7 +454,7 @@ Sizes are approximate and depend on tree-shaking effectiveness. Voltaire and Vie
 **Voltaire** provides optional WASM acceleration for performance-critical operations:
 
 ```typescript
-import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
+import { Keccak256Wasm } from '@tevm/voltaire/Keccak256/wasm';
 
 await Keccak256Wasm.init();
 const hash = Keccak256Wasm.hash(data); // 10-100x faster

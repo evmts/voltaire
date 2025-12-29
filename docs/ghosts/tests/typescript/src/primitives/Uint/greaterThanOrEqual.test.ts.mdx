@@ -1,0 +1,104 @@
+---
+title: '[TS/JS] src/primitives/Uint/greaterThanOrEqual.test.ts'
+source: 'src/primitives/Uint/greaterThanOrEqual.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Uint/greaterThanOrEqual.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import { MAX, ONE, ZERO } from "./constants.js";
+import { from } from "./from.js";
+import { greaterThanOrEqual } from "./greaterThanOrEqual.js";
+
+describe("Uint256.greaterThanOrEqual", () => {
+	describe("known values", () => {
+		it("1 >= 0", () => {
+			expect(greaterThanOrEqual(ONE, ZERO)).toBe(true);
+		});
+
+		it("0 >= 1 is false", () => {
+			expect(greaterThanOrEqual(ZERO, ONE)).toBe(false);
+		});
+
+		it("10 >= 5", () => {
+			expect(greaterThanOrEqual(from(10n), from(5n))).toBe(true);
+		});
+
+		it("5 >= 10 is false", () => {
+			expect(greaterThanOrEqual(from(5n), from(10n))).toBe(false);
+		});
+
+		it("equal values are greater than or equal", () => {
+			expect(greaterThanOrEqual(from(42n), from(42n))).toBe(true);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("0 >= 0", () => {
+			expect(greaterThanOrEqual(ZERO, ZERO)).toBe(true);
+		});
+
+		it("MAX >= 0", () => {
+			expect(greaterThanOrEqual(MAX, ZERO)).toBe(true);
+		});
+
+		it("0 >= MAX is false", () => {
+			expect(greaterThanOrEqual(ZERO, MAX)).toBe(false);
+		});
+
+		it("MAX >= MAX", () => {
+			expect(greaterThanOrEqual(MAX, MAX)).toBe(true);
+		});
+
+		it("MAX >= MAX - 1", () => {
+			expect(greaterThanOrEqual(MAX, MAX - 1n)).toBe(true);
+		});
+	});
+
+	describe("large values", () => {
+		it("compares across 128-bit boundary", () => {
+			const a = from(1n << 128n);
+			const b = from(1n << 127n);
+			expect(greaterThanOrEqual(a, b)).toBe(true);
+		});
+
+		it("equal large values", () => {
+			const a = from(1n << 200n);
+			const b = from(1n << 200n);
+			expect(greaterThanOrEqual(a, b)).toBe(true);
+		});
+	});
+
+	describe("properties", () => {
+		it("reflexive: a >= a", () => {
+			const a = from(42n);
+			expect(greaterThanOrEqual(a, a)).toBe(true);
+		});
+
+		it("antisymmetric: if a >= b and b >= a then a = b", () => {
+			const a = from(42n);
+			const b = from(42n);
+			expect(greaterThanOrEqual(a, b)).toBe(true);
+			expect(greaterThanOrEqual(b, a)).toBe(true);
+			expect(a).toBe(b);
+		});
+
+		it("transitive: if a >= b and b >= c then a >= c", () => {
+			const a = from(30n);
+			const b = from(20n);
+			const c = from(10n);
+			expect(greaterThanOrEqual(a, b)).toBe(true);
+			expect(greaterThanOrEqual(b, c)).toBe(true);
+			expect(greaterThanOrEqual(a, c)).toBe(true);
+		});
+
+		it("total: either a >= b or b >= a", () => {
+			const a = from(10n);
+			const b = from(20n);
+			expect(greaterThanOrEqual(a, b) || greaterThanOrEqual(b, a)).toBe(true);
+		});
+	});
+});
+
+```

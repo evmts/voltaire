@@ -1,0 +1,40 @@
+---
+title: '[Zig] src/crypto/bn254/NAF.zig'
+source: 'src/crypto/bn254/NAF.zig'
+---
+
+> Auto-generated from Zig tests in: src/crypto/bn254/NAF.zig
+
+### naf computation
+
+```zig
+test "naf computation" {
+    const std = @import("std");
+
+    const test_values = [_]u128{
+        0,
+        1,
+        2,
+        54335648765,
+        234567654324567876543,
+        9875876465354765354324325478658675452,
+    };
+
+    for (test_values) |n| {
+        const digits = naf(n);
+
+        var val: u128 = 0;
+        var pow: u128 = 1;
+        for (digits) |digit| {
+            if (digit == 1) {
+                val +%= pow;
+            } else if (digit == -1) {
+                val -%= pow;
+            }
+            pow *%= 2;
+        }
+
+        try std.testing.expectEqual(n, val);
+    }
+}
+```

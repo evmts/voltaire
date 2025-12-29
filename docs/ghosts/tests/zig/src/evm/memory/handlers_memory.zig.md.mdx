@@ -1,0 +1,241 @@
+---
+title: '[Zig] src/evm/memory/handlers_memory.zig.md'
+source: 'src/evm/memory/handlers_memory.zig.md'
+---
+
+> Auto-generated from Zig tests in: src/evm/memory/handlers_memory.zig.md
+
+### MLOAD: load from initialized memory
+
+```zig
+test "MLOAD: load from initialized memory" {
+    const allocator = std.testing.allocator;
+    var evm = try TestEvm.init(allocator);
+    defer evm.deinit();
+
+    var frame = try TestFrame.init(allocator, &[_]u8{}, 100000, &evm);
+    defer frame.deinit();
+
+    // Store value 0x1234...
+    try frame.pushStack(0x1234567890abcdef...);
+    try frame.pushStack(0);  // offset
+    try MemoryHandlers.mstore(&frame);
+
+    // Load it back
+    try frame.pushStack(0);  // offset
+    const gas_before = frame.gas_remaining;
+    try MemoryHandlers.mload(&frame);
+    const value = try frame.popStack();
+
+    try std.testing.expectEqual(0x1234567890abcdef..., value);
+    try std.testing.expectEqual(gas_before - 6, frame.gas_remaining);  // 3 for load + 3 for prior expansion
+}
+```
+
+### MLOAD: load from uninitialized memory returns zero
+
+```zig
+test "MLOAD: load from uninitialized memory returns zero" {
+    const allocator = testing.allocator;
+    var frame = try createTestFrame(allocator, 10000);
+    defer frame.deinit();
+
+    try frame.pushStack(64);  // offset
+    try mload(&frame);
+
+    const value = try frame.popStack();
+    try testing.expectEqual(@as(u256, 0), value);
+}
+```
+
+### MSTORE+MLOAD: round-trip value
+
+```zig
+test "MSTORE+MLOAD: round-trip value" {
+    const allocator = testing.allocator;
+    var frame = try createTestFrame(allocator, 10000);
+    defer frame.deinit();
+
+    const test_value = 0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0;
+
+    // Store
+    try frame.pushStack(test_value);
+    try frame.pushStack(0);  // offset
+    try mstore(&frame);
+
+    // Load
+    try frame.pushStack(0);  // offset
+    try mload(&frame);
+
+    const result = try frame.popStack();
+    try testing.expectEqual(test_value, result);
+}
+```
+
+### MSTORE8: truncates value
+
+```zig
+test "MSTORE8: truncates value" {
+    const allocator = testing.allocator;
+    var frame = try createTestFrame(allocator, 10000);
+    defer frame.deinit();
+
+    try frame.pushStack(0x12345678);  // Only 0x78 should be stored
+    try frame.pushStack(0);  // offset
+    try mstore8(&frame);
+
+    // Read back as full word
+    try frame.pushStack(0);
+    try mload(&frame);
+    const result = try frame.popStack();
+
+    // First byte should be 0x78, rest zeros
+    try testing.expectEqual(@as(u256, 0x78) << 248, result);
+}
+```
+
+### MSIZE: returns zero for pristine memory
+
+```zig
+test "MSIZE: returns zero for pristine memory" {
+    const allocator = testing.allocator;
+    var frame = try createTestFrame(allocator, 10000);
+    defer frame.deinit();
+
+    try msize(&frame);
+    const size = try frame.popStack();
+    try testing.expectEqual(@as(u256, 0), size);
+}
+```
+
+### MSIZE: returns word-aligned size after MSTORE
+
+```zig
+test "MSIZE: returns word-aligned size after MSTORE" {
+    const allocator = testing.allocator;
+    var frame = try createTestFrame(allocator, 10000);
+    defer frame.deinit();
+
+    // Store at offset 0 (expands to 32 bytes)
+    try frame.pushStack(0x1234);
+    try frame.pushStack(0);
+    try mstore(&frame);
+
+    try msize(&frame);
+    const size = try frame.popStack();
+    try testing.expectEqual(@as(u256, 32), size);
+}
+```
+
+### MCOPY: zero-length copy charges gas but doesn't copy
+
+```zig
+test "MCOPY: zero-length copy charges gas but doesn't copy" {
+    const allocator = testing.allocator;
+    var frame = try createTestFrame(allocator, 10000);
+    defer frame.deinit();
+    frame.hardfork = .CANCUN;
+
+    const gas_before = frame.gas_remaining;
+
+    try frame.pushStack(0);  // len
+    try frame.pushStack(32); // src
+    try frame.pushStack(0);  // dest
+    try mcopy(&frame);
+
+    // Should charge base gas (3) but no expansion or copy gas
+    try testing.expectEqual(gas_before - 3, frame.gas_remaining);
+    try testing.expectEqual(@as(u32, 0), frame.memory_size);
+}
+```
+
+### MCOPY: overlapping regions handled correctly
+
+```zig
+test "MCOPY: overlapping regions handled correctly" {
+    const allocator = testing.allocator;
+    var frame = try createTestFrame(allocator, 100000);
+    defer frame.deinit();
+    frame.hardfork = .CANCUN;
+
+    // Write pattern to memory: 0x11, 0x22, 0x33, 0x44 at offset 0
+    for (0..4) |i| {
+        try frame.pushStack(@as(u8, @intCast(0x11 * (i + 1))));
+        try frame.pushStack(@as(u256, @intCast(i)));
+        try mstore8(&frame);
+    }
+
+    // Copy bytes 0-1 to bytes 1-2 (overlapping: src=0, dest=1, len=2)
+    // Expected result: 0x11, 0x11, 0x22, 0x44
+    try frame.pushStack(2);  // len
+    try frame.pushStack(0);  // src
+    try frame.pushStack(1);  // dest
+    try mcopy(&frame);
+
+    // Verify bytes
+    try frame.pushStack(0);
+    try mload(&frame);
+    const word = try frame.popStack();
+    const byte0 = @as(u8, @truncate(word >> 248));
+    const byte1 = @as(u8, @truncate(word >> 240));
+    const byte2 = @as(u8, @truncate(word >> 232));
+    const byte3 = @as(u8, @truncate(word >> 224));
+
+    try testing.expectEqual(@as(u8, 0x11), byte0);
+    try testing.expectEqual(@as(u8, 0x11), byte1);
+    try testing.expectEqual(@as(u8, 0x22), byte2);
+    try testing.expectEqual(@as(u8, 0x44), byte3);
+}
+```
+
+### MCOPY: hardfork guard rejects before Cancun
+
+```zig
+test "MCOPY: hardfork guard rejects before Cancun" {
+    const allocator = testing.allocator;
+    var frame = try createTestFrame(allocator, 10000);
+    defer frame.deinit();
+    frame.hardfork = .SHANGHAI;  // Before Cancun
+
+    try frame.pushStack(4);   // len
+    try frame.pushStack(0);   // src
+    try frame.pushStack(32);  // dest
+
+    const result = mcopy(&frame);
+    try testing.expectError(error.InvalidOpcode, result);
+}
+```
+
+### Memory expansion gas: quadratic cost
+
+```zig
+test "Memory expansion gas: quadratic cost" {
+    const allocator = testing.allocator;
+    var frame = try createTestFrame(allocator, 1000000);
+    defer frame.deinit();
+
+    // First expansion to 32 bytes
+    const gas1 = frame.gas_remaining;
+    try frame.pushStack(0x1234);
+    try frame.pushStack(0);
+    try mstore(&frame);
+    const cost1 = gas1 - frame.gas_remaining;
+
+    // Second expansion to 64 bytes (should cost more than first 32)
+    const gas2 = frame.gas_remaining;
+    try frame.pushStack(0x5678);
+    try frame.pushStack(32);
+    try mstore(&frame);
+    const cost2 = gas2 - frame.gas_remaining;
+
+    // Quadratic cost means second expansion costs more
+    try testing.expect(cost2 > cost1);
+
+    // Cost formula: 3 + (words * 3 + words^2 / 512)
+    // First:  3 + (1*3 + 1/512) = 6 gas
+    // Second: 3 + (2*3 + 4/512) - (1*3 + 1/512) ≈ 6 gas
+    // (Second expansion only pays for NEW words)
+    try testing.expectEqual(@as(i64, 6), cost1);
+    try testing.expectEqual(@as(i64, 6), cost2);  // Marginal cost is similar for small sizes
+}
+```

@@ -55,7 +55,7 @@ Request with branded Address parameter:
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import { Address } from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -76,8 +76,8 @@ Execute read-only contract call:
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hex from '@tevm/voltaire/Hex';
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
 
 const contractAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'); // USDC
 const methodSignature = Hex('0x18160ddd'); // totalSupply()
@@ -102,7 +102,7 @@ Requests throw errors on failure:
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import { Address } from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -163,7 +163,7 @@ Get balance, nonce, and code in parallel:
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import { Address } from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -186,8 +186,8 @@ try {
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hex from '@tevm/voltaire/Hex';
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
 
 try {
   const gasEstimate = await provider.request(
@@ -216,7 +216,7 @@ Use block numbers to query historical data:
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import { Address } from '@tevm/voltaire/Address';
 
 const address = Address('0x...');
 const blockNumber = '0xF4240'; // Block 1,000,000
@@ -259,7 +259,7 @@ Use branded primitive constructors:
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import { Address } from '@tevm/voltaire/Address';
 
 // ❌ Error: string not assignable to Address
 const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');

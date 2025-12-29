@@ -1,0 +1,100 @@
+---
+title: '[TS/JS] src/jsonrpc/JsonRpcId/JsonRpcId.test.ts'
+source: 'src/jsonrpc/JsonRpcId/JsonRpcId.test.ts'
+---
+
+> Auto-generated from test file: src/jsonrpc/JsonRpcId/JsonRpcId.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Test imports intentionally shadow toString for testing
+import { JsonRpcId, equals, from, toString } from "./index.js";
+
+describe("JsonRpcId", () => {
+	describe("from", () => {
+		it("accepts number", () => {
+			expect(from(1)).toBe(1);
+			expect(from(0)).toBe(0);
+			expect(from(-1)).toBe(-1);
+		});
+
+		it("accepts string", () => {
+			expect(from("test")).toBe("test");
+			expect(from("")).toBe("");
+		});
+
+		it("accepts null", () => {
+			expect(from(null)).toBe(null);
+		});
+
+		it("throws on invalid types", () => {
+			// @ts-expect-error - Testing invalid input
+			expect(() => from(undefined)).toThrow(TypeError);
+			// @ts-expect-error - Testing invalid input
+			expect(() => from({})).toThrow(TypeError);
+			// @ts-expect-error - Testing invalid input
+			expect(() => from([])).toThrow(TypeError);
+			// @ts-expect-error - Testing invalid input
+			expect(() => from(true)).toThrow(TypeError);
+		});
+	});
+
+	describe("equals", () => {
+		it("compares numbers", () => {
+			expect(equals(1, 1)).toBe(true);
+			expect(equals(1, 2)).toBe(false);
+		});
+
+		it("compares strings", () => {
+			expect(equals("abc", "abc")).toBe(true);
+			expect(equals("abc", "def")).toBe(false);
+		});
+
+		it("compares null", () => {
+			expect(equals(null, null)).toBe(true);
+			expect(equals(null, 0)).toBe(false);
+		});
+
+		it("different types are not equal", () => {
+			expect(equals(1, "1")).toBe(false);
+			expect(equals(0, null)).toBe(false);
+			expect(equals("null", null)).toBe(false);
+		});
+	});
+
+	describe("toString", () => {
+		it("converts number", () => {
+			expect(toString(1)).toBe("1");
+			expect(toString(0)).toBe("0");
+			expect(toString(-123)).toBe("-123");
+		});
+
+		it("converts string", () => {
+			expect(toString("test")).toBe("test");
+			expect(toString("")).toBe("");
+		});
+
+		it("converts null", () => {
+			expect(toString(null)).toBe("null");
+		});
+	});
+
+	describe("namespace", () => {
+		it("JsonRpcId.from() works", () => {
+			expect(JsonRpcId.from(1)).toBe(1);
+			expect(JsonRpcId.from("test")).toBe("test");
+		});
+
+		it("JsonRpcId.equals() works", () => {
+			expect(JsonRpcId.equals(1, 1)).toBe(true);
+			expect(JsonRpcId.equals(1, 2)).toBe(false);
+		});
+
+		it("JsonRpcId.toString() works", () => {
+			expect(JsonRpcId.toString(1)).toBe("1");
+			expect(JsonRpcId.toString(null)).toBe("null");
+		});
+	});
+});
+
+```

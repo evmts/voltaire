@@ -1,0 +1,115 @@
+---
+title: How to Get Transaction Receipt
+description: Fetch transaction receipt and parse logs
+---
+
+## Fetch Receipt
+
+```typescript
+import { HttpProvider } from 'voltaire/provider';
+
+const provider = new HttpProvider('https://eth.llamarpc.com');
+
+const receipt = await provider.request({
+  method: 'eth_getTransactionReceipt',
+  params: ['0xTransactionHash']
+});
+
+if (receipt === null) {
+  console.log('Transaction not yet mined');
+} else {
+  console.log('Block:', receipt.blockNumber);
+  console.log('Gas used:', receipt.gasUsed);
+  console.log('Status:', receipt.status); // '0x1' success, '0x0' reverted
+}
+```
+
+## Receipt Fields
+
+```typescript
+type Receipt = {
+  transactionHash: string;
+  transactionIndex: string;
+  blockHash: string;
+  blockNumber: string;
+  from: string;
+  to: string | null; // null for contract creation
+  cumulativeGasUsed: string;
+  gasUsed: string;
+  contractAddress: string | null; // non-null for contract creation
+  logs: EventLog[];
+  logsBloom: string;
+  status: '0x1' | '0x0'; // success or revert
+  effectiveGasPrice: string;
+  type: string; // '0x0', '0x1', '0x2', etc.
+  blobGasUsed?: string; // EIP-4844
+  blobGasPrice?: string; // EIP-4844
+};
+```
+
+## Parse Logs
+
+```typescript
+import * as Abi from 'voltaire/primitives/Abi';
+
+const transferEventAbi = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { name: 'from', type: 'address', indexed: true },
+    { name: 'to', type: 'address', indexed: true },
+    { name: 'value', type: 'uint256', indexed: false }
+  ]
+};
+
+// Decode each log
+for (const log of receipt.logs) {
+  try {
+    const decoded = Abi.decodeLog({
+      abi: [transferEventAbi],
+      data: log.data,
+      topics: log.topics
+    });
+    console.log('Transfer:', decoded.from, '->', decoded.to, decoded.value);
+  } catch {
+    // Log doesn't match this event
+  }
+}
+```
+
+## Check Contract Creation
+
+```typescript
+if (receipt.contractAddress !== null) {
+  console.log('Contract deployed at:', receipt.contractAddress);
+}
+```
+
+## Calculate Gas Cost
+
+```typescript
+const gasUsed = BigInt(receipt.gasUsed);
+const effectiveGasPrice = BigInt(receipt.effectiveGasPrice);
+const gasCostWei = gasUsed * effectiveGasPrice;
+
+console.log('Gas cost:', gasCostWei, 'wei');
+console.log('Gas cost:', Number(gasCostWei) / 1e18, 'ETH');
+```
+
+## Batch Fetch Receipts
+
+```typescript
+// Get all receipts for a block
+const receipts = await provider.request({
+  method: 'eth_getBlockReceipts',
+  params: ['0x' + blockNumber.toString(16)]
+});
+```
+
+## Key Points
+
+- Returns `null` if tx not mined yet
+- `status: '0x1'` = success, `status: '0x0'` = reverted (post-Byzantium)
+- `contractAddress` is set only for contract creation txs
+- `logs` contains all events emitted during execution
+- `effectiveGasPrice` shows actual price paid (important for EIP-1559)

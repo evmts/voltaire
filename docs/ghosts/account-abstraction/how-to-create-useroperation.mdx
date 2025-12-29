@@ -1,0 +1,133 @@
+---
+title: How to Create a UserOperation
+description: Build an ERC-4337 UserOperation structure for smart account transactions.
+---
+
+## Overview
+
+A UserOperation is the core data structure in ERC-4337 account abstraction. It replaces traditional transactions for smart contract wallets, enabling custom validation logic, gas sponsorship, and batched operations.
+
+## UserOperation Fields
+
+| Field | Description |
+|-------|-------------|
+| `sender` | Smart account address |
+| `nonce` | Anti-replay counter (key + sequence) |
+| `initCode` | Factory address + calldata for account deployment |
+| `callData` | Encoded call to execute on account |
+| `callGasLimit` | Gas for execution phase |
+| `verificationGasLimit` | Gas for validation phase |
+| `preVerificationGas` | Fixed overhead for bundler |
+| `maxFeePerGas` | EIP-1559 max fee |
+| `maxPriorityFeePerGas` | EIP-1559 priority fee |
+| `paymasterAndData` | Paymaster address + data (or empty) |
+| `signature` | Account signature over userOpHash |
+
+## Basic Creation
+
+```typescript
+import { UserOperation } from '@tevm/voltaire/primitives/UserOperation';
+import { Abi } from '@tevm/voltaire/primitives/Abi';
+
+// Encode the call your smart account will execute
+const callData = Abi.encodeFunction({
+  abi: accountAbi,
+  functionName: 'execute',
+  args: [targetAddress, value, targetCalldata],
+});
+
+const userOp = UserOperation.from({
+  sender: '0xYourSmartAccountAddress',
+  nonce: 0n,
+  initCode: '0x', // Empty if account already deployed
+  callData,
+  callGasLimit: 100000n,
+  verificationGasLimit: 150000n,
+  preVerificationGas: 50000n,
+  maxFeePerGas: 30000000000n, // 30 gwei
+  maxPriorityFeePerGas: 1000000000n, // 1 gwei
+  paymasterAndData: '0x', // Empty if self-paying
+  signature: '0x', // Fill after signing
+});
+```
+
+## Account Deployment (First UserOp)
+
+When deploying a new smart account, include `initCode`:
+
+```typescript
+import { Hex } from '@tevm/voltaire/Hex';
+import { Abi } from '@tevm/voltaire/primitives/Abi';
+
+// Factory calldata to create account
+const factoryCalldata = Abi.encodeFunction({
+  abi: factoryAbi,
+  functionName: 'createAccount',
+  args: [ownerAddress, salt],
+});
+
+// initCode = factory address (20 bytes) + factory calldata
+const initCode = Hex.concat([factoryAddress, factoryCalldata]);
+
+const deployUserOp = UserOperation.from({
+  sender: predictedAccountAddress, // CREATE2 prediction
+  nonce: 0n,
+  initCode,
+  callData: '0x', // Or execute something immediately
+  // ... gas fields
+});
+```
+
+## Nonce Structure
+
+ERC-4337 nonces use a 2D structure: `key (192 bits) || sequence (64 bits)`
+
+```typescript
+// Sequential operations (key = 0)
+const nonce = 0n; // First op
+const nonce = 1n; // Second op
+
+// Parallel operations (different keys)
+const key = 1n;
+const sequence = 0n;
+const parallelNonce = (key << 64n) | sequence;
+```
+
+## Common Patterns
+
+### Simple ETH Transfer
+
+```typescript
+const transferCallData = Abi.encodeFunction({
+  abi: accountAbi,
+  functionName: 'execute',
+  args: [
+    recipientAddress,
+    parseEther('0.1'), // value
+    '0x', // no calldata
+  ],
+});
+```
+
+### ERC-20 Transfer
+
+```typescript
+const tokenCalldata = Abi.encodeFunction({
+  abi: erc20Abi,
+  functionName: 'transfer',
+  args: [recipient, amount],
+});
+
+const userOpCallData = Abi.encodeFunction({
+  abi: accountAbi,
+  functionName: 'execute',
+  args: [tokenAddress, 0n, tokenCalldata],
+});
+```
+
+## Related
+
+- [Estimate UserOperation Gas](/ghosts/account-abstraction/how-to-estimate-userop-gas)
+- [Sign UserOperation](/ghosts/account-abstraction/how-to-sign-useroperation)
+- [Submit to Bundler](/ghosts/account-abstraction/how-to-submit-to-bundler)
+- [UserOperation Reference](/primitives/user-operation)

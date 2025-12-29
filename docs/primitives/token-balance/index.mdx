@@ -242,7 +242,7 @@ Always check the token's `decimals()` function before formatting.
 
 ```typescript
 import * as TokenBalance from '@tevm/voltaire/primitives/TokenBalance';
-import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Address from '@tevm/voltaire/Address';
 
 // Encode balanceOf call
 const account = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
@@ -258,7 +258,7 @@ console.log(`Balance: ${formatted} tokens`);
 
 ```typescript
 import * as TokenBalance from '@tevm/voltaire/primitives/TokenBalance';
-import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Address from '@tevm/voltaire/Address';
 
 // Convert user input to raw amount
 const amount = TokenBalance.fromBaseUnit("10.5", 18); // 10.5 tokens

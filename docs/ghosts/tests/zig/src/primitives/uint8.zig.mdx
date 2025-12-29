@@ -1,0 +1,320 @@
+---
+title: '[Zig] src/primitives/uint8.zig'
+source: 'src/primitives/uint8.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/uint8.zig
+
+### Uint8 constants
+
+```zig
+test "Uint8 constants" {
+    try testing.expectEqual(@as(u8, 0), Uint8.MIN.value);
+    try testing.expectEqual(@as(u8, 255), Uint8.MAX.value);
+    try testing.expectEqual(@as(u8, 0), Uint8.ZERO.value);
+    try testing.expectEqual(@as(u8, 1), Uint8.ONE.value);
+    try testing.expectEqual(@as(usize, 1), Uint8.SIZE);
+    try testing.expectEqual(@as(usize, 8), Uint8.BITS);
+}
+```
+
+### Uint8 from
+
+```zig
+test "Uint8 from" {
+    const a = Uint8.from(42);
+    try testing.expectEqual(@as(u8, 42), a.value);
+
+    const b = Uint8.from(0);
+    try testing.expectEqual(@as(u8, 0), b.value);
+
+    const c = Uint8.from(255);
+    try testing.expectEqual(@as(u8, 255), c.value);
+}
+```
+
+### Uint8 fromNumber
+
+```zig
+test "Uint8 fromNumber" {
+    const a = Uint8.fromNumber(42);
+    try testing.expect(a != null);
+    try testing.expectEqual(@as(u8, 42), a.?.value);
+
+    const b = Uint8.fromNumber(256);
+    try testing.expect(b == null);
+
+    const c = Uint8.fromNumber(-1);
+    try testing.expect(c == null);
+}
+```
+
+### Uint8 fromHex
+
+```zig
+test "Uint8 fromHex" {
+    const a = try Uint8.fromHex("0x2a");
+    try testing.expectEqual(@as(u8, 42), a.value);
+
+    const b = try Uint8.fromHex("ff");
+    try testing.expectEqual(@as(u8, 255), b.value);
+
+    const c = try Uint8.fromHex("0X00");
+    try testing.expectEqual(@as(u8, 0), c.value);
+
+    try testing.expectError(error.InvalidHex, Uint8.fromHex("0x100"));
+    try testing.expectError(error.InvalidHex, Uint8.fromHex(""));
+    try testing.expectError(error.InvalidHex, Uint8.fromHex("0x"));
+}
+```
+
+### Uint8 fromBytes
+
+```zig
+test "Uint8 fromBytes" {
+    const bytes = [_]u8{42};
+    const a = Uint8.fromBytes(&bytes);
+    try testing.expect(a != null);
+    try testing.expectEqual(@as(u8, 42), a.?.value);
+
+    const empty: []const u8 = &.{};
+    try testing.expect(Uint8.fromBytes(empty) == null);
+
+    const too_long = [_]u8{ 1, 2 };
+    try testing.expect(Uint8.fromBytes(&too_long) == null);
+}
+```
+
+### Uint8 toNumber
+
+```zig
+test "Uint8 toNumber" {
+    const a = Uint8.from(42);
+    try testing.expectEqual(@as(u8, 42), a.toNumber());
+}
+```
+
+### Uint8 toHex
+
+```zig
+test "Uint8 toHex" {
+    var buf: [4]u8 = undefined;
+
+    const a = Uint8.from(42);
+    try testing.expectEqualStrings("0x2a", a.toHex(&buf));
+
+    const b = Uint8.from(255);
+    try testing.expectEqualStrings("0xff", b.toHex(&buf));
+
+    const c = Uint8.from(0);
+    try testing.expectEqualStrings("0x00", c.toHex(&buf));
+}
+```
+
+### Uint8 toBytes
+
+```zig
+test "Uint8 toBytes" {
+    var buf: [1]u8 = undefined;
+    const a = Uint8.from(42);
+    const bytes = a.toBytes(&buf);
+    try testing.expectEqual(@as(usize, 1), bytes.len);
+    try testing.expectEqual(@as(u8, 42), bytes[0]);
+}
+```
+
+### Uint8 checked add
+
+```zig
+test "Uint8 checked add" {
+    const a = Uint8.from(100);
+    const b = Uint8.from(50);
+    const result = a.add(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u8, 150), result.?.value);
+
+    const c = Uint8.from(200);
+    const d = Uint8.from(100);
+    try testing.expect(c.add(d) == null);
+}
+```
+
+### Uint8 checked sub
+
+```zig
+test "Uint8 checked sub" {
+    const a = Uint8.from(100);
+    const b = Uint8.from(50);
+    const result = a.sub(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u8, 50), result.?.value);
+
+    const c = Uint8.from(50);
+    const d = Uint8.from(100);
+    try testing.expect(c.sub(d) == null);
+}
+```
+
+### Uint8 checked mul
+
+```zig
+test "Uint8 checked mul" {
+    const a = Uint8.from(10);
+    const b = Uint8.from(20);
+    const result = a.mul(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u8, 200), result.?.value);
+
+    const c = Uint8.from(100);
+    const d = Uint8.from(3);
+    try testing.expect(c.mul(d) == null);
+}
+```
+
+### Uint8 checked div
+
+```zig
+test "Uint8 checked div" {
+    const a = Uint8.from(100);
+    const b = Uint8.from(10);
+    const result = a.div(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u8, 10), result.?.value);
+
+    const c = Uint8.from(100);
+    const d = Uint8.from(0);
+    try testing.expect(c.div(d) == null);
+}
+```
+
+### Uint8 checked mod
+
+```zig
+test "Uint8 checked mod" {
+    const a = Uint8.from(100);
+    const b = Uint8.from(30);
+    const result = a.mod(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u8, 10), result.?.value);
+
+    const c = Uint8.from(100);
+    const d = Uint8.from(0);
+    try testing.expect(c.mod(d) == null);
+}
+```
+
+### Uint8 wrapping arithmetic
+
+```zig
+test "Uint8 wrapping arithmetic" {
+    const a = Uint8.from(200);
+    const b = Uint8.from(100);
+    try testing.expectEqual(@as(u8, 44), a.wrappingAdd(b).value);
+
+    const c = Uint8.from(50);
+    const d = Uint8.from(100);
+    try testing.expectEqual(@as(u8, 206), c.wrappingSub(d).value);
+
+    const e = Uint8.from(100);
+    const f = Uint8.from(3);
+    try testing.expectEqual(@as(u8, 44), e.wrappingMul(f).value);
+}
+```
+
+### Uint8 saturating arithmetic
+
+```zig
+test "Uint8 saturating arithmetic" {
+    const a = Uint8.from(200);
+    const b = Uint8.from(100);
+    try testing.expectEqual(@as(u8, 255), a.saturatingAdd(b).value);
+
+    const c = Uint8.from(50);
+    const d = Uint8.from(100);
+    try testing.expectEqual(@as(u8, 0), c.saturatingSub(d).value);
+
+    const e = Uint8.from(100);
+    const f = Uint8.from(3);
+    try testing.expectEqual(@as(u8, 255), e.saturatingMul(f).value);
+}
+```
+
+### Uint8 comparison
+
+```zig
+test "Uint8 comparison" {
+    const a = Uint8.from(100);
+    const b = Uint8.from(100);
+    const c = Uint8.from(50);
+
+    try testing.expect(a.equals(b));
+    try testing.expect(!a.equals(c));
+
+    try testing.expectEqual(std.math.Order.eq, a.compare(b));
+    try testing.expectEqual(std.math.Order.gt, a.compare(c));
+    try testing.expectEqual(std.math.Order.lt, c.compare(a));
+
+    try testing.expect(!a.lessThan(b));
+    try testing.expect(c.lessThan(a));
+    try testing.expect(a.greaterThan(c));
+    try testing.expect(a.lessThanOrEqual(b));
+    try testing.expect(a.greaterThanOrEqual(b));
+}
+```
+
+### Uint8 bitwise operations
+
+```zig
+test "Uint8 bitwise operations" {
+    const a = Uint8.from(0b11110000);
+    const b = Uint8.from(0b10101010);
+
+    try testing.expectEqual(@as(u8, 0b10100000), a.bitwiseAnd(b).value);
+    try testing.expectEqual(@as(u8, 0b11111010), a.bitwiseOr(b).value);
+    try testing.expectEqual(@as(u8, 0b01011010), a.bitwiseXor(b).value);
+    try testing.expectEqual(@as(u8, 0b00001111), a.bitwiseNot().value);
+}
+```
+
+### Uint8 shift operations
+
+```zig
+test "Uint8 shift operations" {
+    const a = Uint8.from(0b00001111);
+    try testing.expectEqual(@as(u8, 0b00111100), a.shiftLeft(2).value);
+    try testing.expectEqual(@as(u8, 0b00000011), a.shiftRight(2).value);
+}
+```
+
+### Uint8 utility functions
+
+```zig
+test "Uint8 utility functions" {
+    const zero = Uint8.from(0);
+    const nonzero = Uint8.from(42);
+
+    try testing.expect(zero.isZero());
+    try testing.expect(!nonzero.isZero());
+
+    const a = Uint8.from(10);
+    const b = Uint8.from(20);
+    try testing.expectEqual(@as(u8, 10), a.min(b).value);
+    try testing.expectEqual(@as(u8, 20), a.max(b).value);
+}
+```
+
+### Uint8 bit counting
+
+```zig
+test "Uint8 bit counting" {
+    const a = Uint8.from(0b00101100);
+    try testing.expectEqual(@as(u4, 6), a.bitLength());
+    try testing.expectEqual(@as(u4, 2), a.leadingZeros());
+    try testing.expectEqual(@as(u4, 2), a.trailingZeros());
+    try testing.expectEqual(@as(u4, 3), a.popCount());
+
+    const zero = Uint8.from(0);
+    try testing.expectEqual(@as(u4, 0), zero.bitLength());
+    try testing.expectEqual(@as(u4, 8), zero.leadingZeros());
+}
+```

@@ -22,7 +22,7 @@ Keccak256Hash is a branded `Uint8Array` that extends Bytes32 with additional sem
 While Bytes32 is a generic 32-byte value, Keccak256Hash explicitly communicates "this came from a keccak256 operation" at compile-time with zero runtime overhead.
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
 
 // Keccak256Hash output
@@ -65,7 +65,7 @@ This layered branding provides:
 Keccak256Hash and Bytes32 are the same size (32 bytes) but convey different semantics:
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
 
 // Keccak256Hash = semantic "this is a keccak256 hash"
@@ -95,11 +95,11 @@ Old `Hash` primitive replaced by `Keccak256Hash` for clarity:
 
 ```typescript
 // OLD (deprecated Hash primitive)
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 const hash = Keccak256.hash(data);
 
 // NEW (Keccak256Hash type)
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 const hash = Keccak256.hash(data);
 ```
 
@@ -158,7 +158,7 @@ All Keccak256Hash values come from `Keccak256` module methods:
 Direct hashing of bytes:
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 const data = new Uint8Array([1, 2, 3, 4, 5]);
 const hash: Keccak256Hash = Keccak256.hash(data);
@@ -237,7 +237,7 @@ console.log(typeof value); // "bigint"
 Extract address (last 20 bytes):
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 // Ethereum address derivation
 const pubKeyHash = Keccak256.hash(publicKey);
@@ -293,7 +293,7 @@ See [Bytes32 documentation](/primitives/bytes/bytes32) for all operations.
 ### Transaction Hashes
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 import * as Transaction from '@tevm/voltaire/primitives/Transaction';
 
 // Hash transaction for signing

@@ -1,0 +1,32 @@
+---
+title: '[Swift] swift/Tests/VoltaireTests/HexEdgeTests.swift'
+source: 'swift/Tests/VoltaireTests/HexEdgeTests.swift'
+---
+
+> Auto-generated from Swift test file: swift/Tests/VoltaireTests/HexEdgeTests.swift
+
+```swift
+import XCTest
+@testable import Voltaire
+
+final class HexEdgeTests: XCTestCase {
+    func testDecodeOddLengthAndPrefix() {
+        XCTAssertThrowsError(try Hex.decode("0x1"))
+        XCTAssertThrowsError(try Hex.decode("0x123"))
+        XCTAssertThrowsError(try Hex.decode("deadbeef")) // missing 0x
+    }
+
+    func testDecodeUppercaseAndLargeEncode() throws {
+        let bytes = try Hex.decode("0xDEADBEEF")
+        XCTAssertEqual(bytes, [0xde, 0xad, 0xbe, 0xef])
+
+        // Large payload encode sanity
+        let big = [UInt8](repeating: 0xaa, count: 1024)
+        let hex = Hex.encode(big)
+        XCTAssertTrue(hex.hasPrefix("0x"))
+        XCTAssertEqual(hex.count, 2 + 1024 * 2)
+    }
+}
+
+
+```

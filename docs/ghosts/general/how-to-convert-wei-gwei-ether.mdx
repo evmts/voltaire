@@ -1,0 +1,111 @@
+---
+title: Convert Between Wei, Gwei, and Ether
+description: Handle Ethereum denomination conversions with type-safe primitives.
+---
+
+## Denominations
+
+| Unit  | Wei                      | Use Case          |
+|-------|--------------------------|-------------------|
+| Wei   | 1                        | Base unit         |
+| Gwei  | 10^9 (1,000,000,000)     | Gas prices        |
+| Ether | 10^18                    | Balances, values  |
+
+## Create Denomination Values
+
+```typescript
+import { Wei, Gwei, Ether } from '@voltaire/primitives/Denomination'
+
+// From raw bigint values
+const wei = Wei.from(1000000000000000000n)
+const gwei = Gwei.from(1000000000n)
+const ether = Ether.from(1n)
+```
+
+## Convert Between Units
+
+```typescript
+import { Wei, Gwei, Ether } from '@voltaire/primitives/Denomination'
+
+// Ether to smaller units
+const oneEther = Ether.from(1n)
+const weiFromEther = Ether.toWei(oneEther)   // 1000000000000000000n
+const gweiFromEther = Ether.toGwei(oneEther) // 1000000000n
+
+// Gwei to other units
+const hundredGwei = Gwei.from(100n)
+const weiFromGwei = Gwei.toWei(hundredGwei)     // 100000000000n
+const etherFromGwei = Gwei.toEther(hundredGwei) // 0n (integer division)
+
+// Wei to larger units
+const largeWei = Wei.from(2500000000000000000n)
+const gweiFromWei = Wei.toGwei(largeWei)   // 2500000000n
+const etherFromWei = Wei.toEther(largeWei) // 2n
+```
+
+## Common Patterns
+
+### Format Gas Price
+
+```typescript
+import { Gwei, Wei } from '@voltaire/primitives/Denomination'
+
+function formatGasPrice(weiValue: bigint): string {
+  const wei = Wei.from(weiValue)
+  const gwei = Wei.toGwei(wei)
+  return `${gwei} Gwei`
+}
+
+formatGasPrice(30000000000n) // "30 Gwei"
+```
+
+### Calculate Transaction Cost
+
+```typescript
+import { Wei, Gwei, Ether } from '@voltaire/primitives/Denomination'
+import { Uint256 } from '@voltaire/primitives/Uint'
+
+function calculateTxCost(gasPriceGwei: bigint, gasLimit: bigint): {
+  costWei: bigint
+  costEther: bigint
+} {
+  const gasPrice = Gwei.from(gasPriceGwei)
+  const gasPriceWei = Gwei.toWei(gasPrice)
+
+  const costWei = Wei.from(
+    Uint256.toBigInt(
+      Uint256.times(
+        Uint256.from(gasPriceWei),
+        Uint256.from(gasLimit)
+      )
+    )
+  )
+
+  return {
+    costWei: costWei,
+    costEther: Wei.toEther(costWei)
+  }
+}
+
+// 30 Gwei gas price, 21000 gas limit
+const cost = calculateTxCost(30n, 21000n)
+// costWei: 630000000000000n
+// costEther: 0n (0.00063 ETH truncated)
+```
+
+### Parse User Input
+
+```typescript
+import { Ether, Wei } from '@voltaire/primitives/Denomination'
+
+function parseEtherInput(input: string): bigint {
+  // Handle decimal input by converting to wei
+  const [whole, decimal = ''] = input.split('.')
+  const paddedDecimal = decimal.padEnd(18, '0').slice(0, 18)
+  const weiString = whole + paddedDecimal
+  return Wei.from(BigInt(weiString))
+}
+
+parseEtherInput('1.5')    // 1500000000000000000n
+parseEtherInput('0.001')  // 1000000000000000n
+```

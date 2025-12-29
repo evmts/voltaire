@@ -1,0 +1,94 @@
+---
+title: How to Decode a Raw Transaction
+description: Decode RLP-encoded raw transaction data to readable format
+---
+
+## Using Transaction.deserialize
+
+```typescript
+import * as Transaction from 'voltaire/primitives/Transaction';
+import * as Hex from 'voltaire/primitives/Hex';
+
+// Raw transaction hex (from eth_sendRawTransaction or debug_getRawTransaction)
+const rawTxHex = '0x02f8...'; // EIP-1559 tx example
+
+// Convert hex to bytes and deserialize
+const rawBytes = Hex.toBytes(rawTxHex);
+const tx = Transaction.deserialize(rawBytes);
+
+console.log(tx);
+// {
+//   type: 2,
+//   chainId: 1n,
+//   nonce: 5n,
+//   maxFeePerGas: 20000000000n,
+//   maxPriorityFeePerGas: 1000000000n,
+//   gasLimit: 21000n,
+//   to: <Address>,
+//   value: 1000000000000000000n,
+//   data: Uint8Array([]),
+//   accessList: [],
+//   yParity: 0,
+//   r: Uint8Array([...]),
+//   s: Uint8Array([...])
+// }
+```
+
+## Detect Transaction Type
+
+```typescript
+import { detectType, Type } from 'voltaire/primitives/Transaction';
+
+const txType = detectType(rawBytes);
+
+switch (txType) {
+  case Type.Legacy:
+    console.log('Legacy (type 0)');
+    break;
+  case Type.EIP2930:
+    console.log('EIP-2930 (type 1) - Access list');
+    break;
+  case Type.EIP1559:
+    console.log('EIP-1559 (type 2) - Dynamic fee');
+    break;
+  case Type.EIP4844:
+    console.log('EIP-4844 (type 3) - Blob');
+    break;
+  case Type.EIP7702:
+    console.log('EIP-7702 (type 4) - EOA delegation');
+    break;
+}
+```
+
+## Extract Sender
+
+```typescript
+const sender = Transaction.getSender(tx);
+console.log('From:', sender); // BrandedAddress
+
+// Verify signature is valid
+const isValid = Transaction.verifySignature(tx);
+```
+
+## Get Transaction Hash
+
+```typescript
+const txHash = Transaction.hash(tx);
+// Returns HashType (32 bytes)
+```
+
+## Format for Display
+
+```typescript
+const formatted = Transaction.format(tx);
+console.log(formatted);
+// Human-readable string representation
+```
+
+## Key Points
+
+- `deserialize()` auto-detects tx type from first byte
+- Legacy txs: first byte is RLP list marker (0xc0-0xff)
+- Typed txs: first byte is type (0x01, 0x02, 0x03, 0x04)
+- `getSender()` recovers address from signature
+- `verifySignature()` validates cryptographic signature

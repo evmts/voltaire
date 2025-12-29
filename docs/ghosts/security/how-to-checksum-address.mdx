@@ -1,0 +1,65 @@
+---
+title: How to Checksum an Address (EIP-55)
+description: Generate and validate EIP-55 checksummed addresses using Voltaire.
+---
+
+## Goal
+
+Convert an address to EIP-55 mixed-case checksum format and validate checksums.
+
+## Generate Checksum
+
+```ts
+import { Address } from '@voltaire/primitives'
+import { hash as keccak256 } from '@voltaire/crypto/Keccak256'
+
+// Create address with crypto dependency
+const addr = Address("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed", { keccak256 })
+
+// Get checksummed string
+const checksummed = addr.toChecksummed()
+console.log(checksummed) // "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+```
+
+## Validate Checksum
+
+```ts
+import { IsValidChecksum } from '@voltaire/primitives/Address'
+import { hash as keccak256 } from '@voltaire/crypto/Keccak256'
+
+const isValidChecksum = IsValidChecksum({ keccak256 })
+
+// Valid checksum
+isValidChecksum("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed") // true
+
+// Invalid checksum (wrong case)
+isValidChecksum("0x5AAEB6053f3e94c9b9a09f33669435e7ef1beaed") // false
+
+// All lowercase/uppercase bypass checksum (allowed by EIP-55)
+isValidChecksum("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed") // true
+```
+
+## Factory Pattern (Namespace API)
+
+```ts
+import { ToChecksummed, IsValidChecksum } from '@voltaire/primitives/Address'
+import { hash as keccak256 } from '@voltaire/crypto/Keccak256'
+
+const toChecksummed = ToChecksummed({ keccak256 })
+const isValid = IsValidChecksum({ keccak256 })
+
+const addr = Address.fromHex("0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359")
+const checksummed = toChecksummed(addr)
+// "0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359"
+```
+
+## EIP-55 Algorithm
+
+1. Convert address to lowercase hex (no 0x)
+2. Keccak256 hash the lowercase hex string
+3. For each character: if hash nibble >= 8, uppercase; else lowercase
+
+## See Also
+
+- [EIP-55 Specification](https://eips.ethereum.org/EIPS/eip-55)
+- [Address Validation](/ghosts/security/how-to-validate-address)

@@ -1,0 +1,450 @@
+---
+title: "ENS Resolution"
+description: "Resolve ENS names to addresses and vice versa"
+---
+
+# ENS Resolution
+
+Resolve Ethereum Name Service (ENS) names to addresses and retrieve ENS records using Voltaire primitives and Contract modules.
+
+## Overview
+
+ENS resolution requires two components:
+1. **Ens module** - Name validation, normalization, and namehash computation
+2. **Contract module** - Interacting with ENS registry and resolver contracts
+
+## Contract Addresses (Mainnet)
+
+| Contract | Address |
+|----------|---------|
+| ENS Registry | `0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e` |
+| Public Resolver | `0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63` |
+| Reverse Registrar | `0xa58E81fe9b61B5c3fE2AFD33CF304c454AbFc7Cb` |
+
+## Resolving ENS Name to Address
+
+```typescript
+import { Contract } from '@voltaire/contract';
+import * as Ens from 'tevm/Ens';
+import * as Hex from 'tevm/Hex';
+
+// ENS Registry ABI (minimal for resolution)
+const ensRegistryAbi = [
+  {
+    type: 'function',
+    name: 'resolver',
+    stateMutability: 'view',
+    inputs: [{ type: 'bytes32', name: 'node' }],
+    outputs: [{ type: 'address', name: '' }]
+  }
+] as const;
+
+// Public Resolver ABI
+const resolverAbi = [
+  {
+    type: 'function',
+    name: 'addr',
+    stateMutability: 'view',
+    inputs: [{ type: 'bytes32', name: 'node' }],
+    outputs: [{ type: 'address', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'text',
+    stateMutability: 'view',
+    inputs: [
+      { type: 'bytes32', name: 'node' },
+      { type: 'string', name: 'key' }
+    ],
+    outputs: [{ type: 'string', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'name',
+    stateMutability: 'view',
+    inputs: [{ type: 'bytes32', name: 'node' }],
+    outputs: [{ type: 'string', name: '' }]
+  }
+] as const;
+
+async function resolveEnsName(name: string, provider: any) {
+  // Step 1: Validate and normalize the name
+  Ens.validate(name); // Throws if invalid
+  const normalized = Ens.normalize(name);
+
+  // Step 2: Compute namehash
+  const node = Ens.namehash(normalized);
+  const nodeHex = Hex.fromBytes(node);
+
+  // Step 3: Get resolver address from registry
+  const registry = Contract({
+    address: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
+    abi: ensRegistryAbi,
+    provider
+  });
+
+  const resolverAddress = await registry.read.resolver(nodeHex);
+
+  if (resolverAddress === '0x0000000000000000000000000000000000000000') {
+    throw new Error(`No resolver found for ${name}`);
+  }
+
+  // Step 4: Get address from resolver
+  const resolver = Contract({
+    address: resolverAddress,
+    abi: resolverAbi,
+    provider
+  });
+
+  const address = await resolver.read.addr(nodeHex);
+
+  return address;
+}
+
+// Usage
+const address = await resolveEnsName('vitalik.eth', provider);
+console.log(address); // 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+```
+
+## Reverse Resolution (Address to ENS)
+
+Reverse resolution looks up the primary ENS name for an address.
+
+```typescript
+import { Contract } from '@voltaire/contract';
+import * as Ens from 'tevm/Ens';
+import * as Hex from 'tevm/Hex';
+import * as Address from 'tevm/Address';
+
+async function reverseResolve(address: string, provider: any) {
+  // Step 1: Compute reverse node
+  // Format: <address-lowercase-without-0x>.addr.reverse
+  const addrLower = address.toLowerCase().slice(2);
+  const reverseName = `${addrLower}.addr.reverse`;
+
+  const node = Ens.namehash(reverseName);
+  const nodeHex = Hex.fromBytes(node);
+
+  // Step 2: Get resolver from registry
+  const registry = Contract({
+    address: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
+    abi: ensRegistryAbi,
+    provider
+  });
+
+  const resolverAddress = await registry.read.resolver(nodeHex);
+
+  if (resolverAddress === '0x0000000000000000000000000000000000000000') {
+    return null; // No reverse record set
+  }
+
+  // Step 3: Get name from resolver
+  const resolver = Contract({
+    address: resolverAddress,
+    abi: resolverAbi,
+    provider
+  });
+
+  const name = await resolver.read.name(nodeHex);
+
+  if (!name || name === '') {
+    return null;
+  }
+
+  // Step 4: Verify forward resolution matches (security check)
+  const forwardAddress = await resolveEnsName(name, provider);
+
+  if (forwardAddress.toLowerCase() !== address.toLowerCase()) {
+    return null; // Forward resolution doesn't match - invalid reverse record
+  }
+
+  return name;
+}
+
+// Usage
+const name = await reverseResolve(
+  '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+  provider
+);
+console.log(name); // vitalik.eth
+```
+
+<Warning>
+Always verify forward resolution when doing reverse lookups. A user can set any name as their reverse record, but only the verified forward resolution is authoritative.
+</Warning>
+
+## Getting ENS Records
+
+ENS supports various text records like avatar, email, URL, and custom records.
+
+```typescript
+async function getEnsRecords(name: string, provider: any) {
+  // Validate and normalize
+  Ens.validate(name);
+  const normalized = Ens.normalize(name);
+  const node = Ens.namehash(normalized);
+  const nodeHex = Hex.fromBytes(node);
+
+  // Get resolver
+  const registry = Contract({
+    address: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
+    abi: ensRegistryAbi,
+    provider
+  });
+
+  const resolverAddress = await registry.read.resolver(nodeHex);
+
+  if (resolverAddress === '0x0000000000000000000000000000000000000000') {
+    throw new Error(`No resolver found for ${name}`);
+  }
+
+  const resolver = Contract({
+    address: resolverAddress,
+    abi: resolverAbi,
+    provider
+  });
+
+  // Fetch multiple records
+  const [avatar, url, description, twitter, github] = await Promise.all([
+    resolver.read.text(nodeHex, 'avatar').catch(() => ''),
+    resolver.read.text(nodeHex, 'url').catch(() => ''),
+    resolver.read.text(nodeHex, 'description').catch(() => ''),
+    resolver.read.text(nodeHex, 'com.twitter').catch(() => ''),
+    resolver.read.text(nodeHex, 'com.github').catch(() => '')
+  ]);
+
+  return { avatar, url, description, twitter, github };
+}
+
+// Usage
+const records = await getEnsRecords('vitalik.eth', provider);
+console.log(records);
+// {
+//   avatar: 'eip155:1/erc1155:0xb32979486938aa9694bfc898f35dbed459f44424/10063',
+//   url: 'https://vitalik.eth.limo',
+//   description: '',
+//   twitter: 'VitalikButerin',
+//   github: 'vbuterin'
+// }
+```
+
+### Common Text Record Keys
+
+| Key | Description |
+|-----|-------------|
+| `avatar` | NFT or URL for profile image |
+| `url` | Website URL |
+| `description` | Profile description |
+| `email` | Email address |
+| `com.twitter` | Twitter/X handle |
+| `com.github` | GitHub username |
+| `com.discord` | Discord username |
+| `notice` | Legal notice |
+
+## ENS Name Validation
+
+Validate ENS names before resolution to prevent homograph attacks.
+
+```typescript
+import * as Ens from 'tevm/Ens';
+
+// Check if valid
+const isValid = Ens.isValid('vitalik.eth'); // true
+const isInvalid = Ens.isValid('invalid\x00.eth'); // false
+
+// Validate (throws on invalid)
+try {
+  Ens.validate('vitalik.eth'); // OK
+  Ens.validate('VITALIK.ETH'); // OK (will be normalized)
+  Ens.validate(''); // Throws InvalidEnsNameError
+} catch (error) {
+  console.error('Invalid ENS name:', error.message);
+}
+
+// Normalize names (lowercase, ENSIP-15 compliant)
+const normalized = Ens.normalize('VitaliK.ETH'); // 'vitalik.eth'
+
+// Beautify (preserve display formatting)
+const beautified = Ens.beautify('TEST.eth'); // 'test.eth'
+```
+
+<Warning>
+Always normalize ENS names before computing namehash. Names like "Vitalik.eth" and "vitalik.eth" have different namehashes if not normalized first.
+</Warning>
+
+## Computing Namehash
+
+The namehash is a recursive hash used to identify ENS names on-chain.
+
+```typescript
+import * as Ens from 'tevm/Ens';
+import * as Hex from 'tevm/Hex';
+
+// Compute namehash for a full name
+const node = Ens.namehash('vitalik.eth');
+console.log(Hex.fromBytes(node));
+// 0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835
+
+// Compute labelhash for a single label
+const label = Ens.labelhash('vitalik');
+console.log(Hex.fromBytes(label));
+// 0xaf2caa1c2ca1d027f1ac823b529d0a67cd144264b2789fa2ea4d63a67c7103cc
+
+// Empty name has zero hash
+const emptyNode = Ens.namehash('');
+console.log(Hex.fromBytes(emptyNode));
+// 0x0000000000000000000000000000000000000000000000000000000000000000
+```
+
+## Full Resolution Helper
+
+A complete helper function combining all functionality:
+
+```typescript
+import { Contract } from '@voltaire/contract';
+import * as Ens from 'tevm/Ens';
+import * as Hex from 'tevm/Hex';
+
+const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
+
+const ensRegistryAbi = [
+  {
+    type: 'function',
+    name: 'resolver',
+    stateMutability: 'view',
+    inputs: [{ type: 'bytes32', name: 'node' }],
+    outputs: [{ type: 'address', name: '' }]
+  }
+] as const;
+
+const resolverAbi = [
+  {
+    type: 'function',
+    name: 'addr',
+    stateMutability: 'view',
+    inputs: [{ type: 'bytes32', name: 'node' }],
+    outputs: [{ type: 'address', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'text',
+    stateMutability: 'view',
+    inputs: [
+      { type: 'bytes32', name: 'node' },
+      { type: 'string', name: 'key' }
+    ],
+    outputs: [{ type: 'string', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'name',
+    stateMutability: 'view',
+    inputs: [{ type: 'bytes32', name: 'node' }],
+    outputs: [{ type: 'string', name: '' }]
+  }
+] as const;
+
+export async function resolveEns(input: string, provider: any) {
+  // Determine if input is address or name
+  const isAddress = input.startsWith('0x') && input.length === 42;
+
+  if (isAddress) {
+    // Reverse resolution
+    const addrLower = input.toLowerCase().slice(2);
+    const reverseName = `${addrLower}.addr.reverse`;
+    const node = Ens.namehash(reverseName);
+    const nodeHex = Hex.fromBytes(node);
+
+    const registry = Contract({
+      address: ENS_REGISTRY,
+      abi: ensRegistryAbi,
+      provider
+    });
+
+    const resolverAddress = await registry.read.resolver(nodeHex);
+    if (resolverAddress === '0x0000000000000000000000000000000000000000') {
+      return { address: input, name: null, records: {} };
+    }
+
+    const resolver = Contract({
+      address: resolverAddress,
+      abi: resolverAbi,
+      provider
+    });
+
+    const name = await resolver.read.name(nodeHex);
+    if (!name) {
+      return { address: input, name: null, records: {} };
+    }
+
+    // Verify forward resolution
+    const result = await resolveEns(name, provider);
+    if (result.address?.toLowerCase() !== input.toLowerCase()) {
+      return { address: input, name: null, records: {} };
+    }
+
+    return { ...result, name };
+  }
+
+  // Forward resolution
+  Ens.validate(input);
+  const normalized = Ens.normalize(input);
+  const node = Ens.namehash(normalized);
+  const nodeHex = Hex.fromBytes(node);
+
+  const registry = Contract({
+    address: ENS_REGISTRY,
+    abi: ensRegistryAbi,
+    provider
+  });
+
+  const resolverAddress = await registry.read.resolver(nodeHex);
+  if (resolverAddress === '0x0000000000000000000000000000000000000000') {
+    return { address: null, name: normalized, records: {} };
+  }
+
+  const resolver = Contract({
+    address: resolverAddress,
+    abi: resolverAbi,
+    provider
+  });
+
+  const [address, avatar, url] = await Promise.all([
+    resolver.read.addr(nodeHex).catch(() => null),
+    resolver.read.text(nodeHex, 'avatar').catch(() => ''),
+    resolver.read.text(nodeHex, 'url').catch(() => '')
+  ]);
+
+  return {
+    address,
+    name: normalized,
+    records: { avatar, url }
+  };
+}
+
+// Usage
+const result = await resolveEns('vitalik.eth', provider);
+console.log(result);
+// {
+//   address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+//   name: 'vitalik.eth',
+//   records: { avatar: '...', url: 'https://vitalik.eth.limo' }
+// }
+```
+
+## L2 ENS Resolution
+
+For L2 networks, use the same contract addresses but connect to an L1 provider for resolution, or use CCIP-read compatible resolvers.
+
+```typescript
+// For L2s that support CCIP-read (EIP-3668)
+// The resolver contract handles cross-chain reads automatically
+const l2Result = await resolveEns('name.eth', l1Provider);
+```
+
+## See Also
+
+- [Ens Primitives](/primitives/ens/fundamentals) - Name normalization and validation
+- [Contract](/contract) - Contract interaction module
+- [ENS Documentation](https://docs.ens.domains/) - Official ENS docs
+- [ENSIP-15](https://docs.ens.domains/ensip/15) - Normalization standard

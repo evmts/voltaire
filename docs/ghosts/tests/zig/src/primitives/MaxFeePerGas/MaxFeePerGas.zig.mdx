@@ -1,0 +1,269 @@
+---
+title: '[Zig] src/primitives/MaxFeePerGas/MaxFeePerGas.zig'
+source: 'src/primitives/MaxFeePerGas/MaxFeePerGas.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/MaxFeePerGas/MaxFeePerGas.zig
+
+### MaxFeePerGas: from and toU64
+
+```zig
+test "MaxFeePerGas: from and toU64" {
+    const fee = MaxFeePerGas.from(100_000_000_000); // 100 gwei in wei
+    try testing.expectEqual(@as(u64, 100_000_000_000), try fee.toU64());
+}
+```
+
+### MaxFeePerGas: fromGwei
+
+```zig
+test "MaxFeePerGas: fromGwei" {
+    const fee = MaxFeePerGas.fromGwei(100);
+    try testing.expectEqual(@as(u64, 100_000_000_000), try fee.toU64());
+}
+```
+
+### MaxFeePerGas: toGwei
+
+```zig
+test "MaxFeePerGas: toGwei" {
+    const fee = MaxFeePerGas.from(100_000_000_000);
+    try testing.expectEqual(@as(u64, 100), try fee.toGweiU64());
+}
+```
+
+### MaxFeePerGas: toGwei truncates
+
+```zig
+test "MaxFeePerGas: toGwei truncates" {
+    const fee = MaxFeePerGas.from(100_500_000_000); // 100.5 gwei
+    try testing.expectEqual(@as(u64, 100), try fee.toGweiU64());
+}
+```
+
+### MaxFeePerGas: toWei identity
+
+```zig
+test "MaxFeePerGas: toWei identity" {
+    const fee = MaxFeePerGas.from(54321);
+    const wei = fee.toWei();
+    try testing.expect(wei.eq(MaxFeePerGas.U256.from_u64(54321)));
+}
+```
+
+### MaxFeePerGas: fromBytes and toBytes roundtrip
+
+```zig
+test "MaxFeePerGas: fromBytes and toBytes roundtrip" {
+    const fee = MaxFeePerGas.fromGwei(200);
+    const bytes = fee.toBytes();
+    const restored = MaxFeePerGas.fromBytes(bytes);
+    try testing.expect(fee.equals(restored));
+}
+```
+
+### MaxFeePerGas: compare less than
+
+```zig
+test "MaxFeePerGas: compare less than" {
+    const fee1 = MaxFeePerGas.fromGwei(50);
+    const fee2 = MaxFeePerGas.fromGwei(100);
+    try testing.expectEqual(std.math.Order.lt, fee1.compare(fee2));
+}
+```
+
+### MaxFeePerGas: compare greater than
+
+```zig
+test "MaxFeePerGas: compare greater than" {
+    const fee1 = MaxFeePerGas.fromGwei(100);
+    const fee2 = MaxFeePerGas.fromGwei(50);
+    try testing.expectEqual(std.math.Order.gt, fee1.compare(fee2));
+}
+```
+
+### MaxFeePerGas: compare equal
+
+```zig
+test "MaxFeePerGas: compare equal" {
+    const fee1 = MaxFeePerGas.fromGwei(100);
+    const fee2 = MaxFeePerGas.fromGwei(100);
+    try testing.expectEqual(std.math.Order.eq, fee1.compare(fee2));
+}
+```
+
+### MaxFeePerGas: equals
+
+```zig
+test "MaxFeePerGas: equals" {
+    const fee1 = MaxFeePerGas.fromGwei(100);
+    const fee2 = MaxFeePerGas.fromGwei(100);
+    const fee3 = MaxFeePerGas.fromGwei(200);
+    try testing.expect(fee1.equals(fee2));
+    try testing.expect(!fee1.equals(fee3));
+}
+```
+
+### MaxFeePerGas: add
+
+```zig
+test "MaxFeePerGas: add" {
+    const fee1 = MaxFeePerGas.fromGwei(100);
+    const fee2 = MaxFeePerGas.fromGwei(50);
+    const sum = fee1.add(fee2).?;
+    try testing.expectEqual(@as(u64, 150), try sum.toGweiU64());
+}
+```
+
+### MaxFeePerGas: sub
+
+```zig
+test "MaxFeePerGas: sub" {
+    const fee1 = MaxFeePerGas.fromGwei(100);
+    const fee2 = MaxFeePerGas.fromGwei(40);
+    const diff = fee1.sub(fee2).?;
+    try testing.expectEqual(@as(u64, 60), try diff.toGweiU64());
+}
+```
+
+### MaxFeePerGas: sub underflow returns null
+
+```zig
+test "MaxFeePerGas: sub underflow returns null" {
+    const fee1 = MaxFeePerGas.fromGwei(40);
+    const fee2 = MaxFeePerGas.fromGwei(100);
+    try testing.expect(fee1.sub(fee2) == null);
+}
+```
+
+### MaxFeePerGas: isZero
+
+```zig
+test "MaxFeePerGas: isZero" {
+    const zero = MaxFeePerGas.from(0);
+    const nonzero = MaxFeePerGas.fromGwei(1);
+    try testing.expect(zero.isZero());
+    try testing.expect(!nonzero.isZero());
+}
+```
+
+### MaxFeePerGas: coversBaseFee true
+
+```zig
+test "MaxFeePerGas: coversBaseFee true" {
+    const maxFee = MaxFeePerGas.fromGwei(100);
+    const baseFee = MaxFeePerGas.U256.from_u64(50_000_000_000); // 50 gwei
+    try testing.expect(maxFee.coversBaseFee(baseFee));
+}
+```
+
+### MaxFeePerGas: coversBaseFee false
+
+```zig
+test "MaxFeePerGas: coversBaseFee false" {
+    const maxFee = MaxFeePerGas.fromGwei(40);
+    const baseFee = MaxFeePerGas.U256.from_u64(50_000_000_000); // 50 gwei
+    try testing.expect(!maxFee.coversBaseFee(baseFee));
+}
+```
+
+### MaxFeePerGas: coversBaseFee equal
+
+```zig
+test "MaxFeePerGas: coversBaseFee equal" {
+    const maxFee = MaxFeePerGas.fromGwei(50);
+    const baseFee = MaxFeePerGas.U256.from_u64(50_000_000_000); // 50 gwei
+    try testing.expect(maxFee.coversBaseFee(baseFee));
+}
+```
+
+### MaxFeePerGas: fromGwei roundtrip
+
+```zig
+test "MaxFeePerGas: fromGwei roundtrip" {
+    const gwei_values = [_]u64{ 1, 10, 50, 100, 200, 500, 1000 };
+    for (gwei_values) |gwei| {
+        const fee = MaxFeePerGas.fromGwei(gwei);
+        try testing.expectEqual(gwei, try fee.toGweiU64());
+    }
+}
+```
+
+### MaxFeePerGas: zero value
+
+```zig
+test "MaxFeePerGas: zero value" {
+    const fee = MaxFeePerGas.from(0);
+    try testing.expectEqual(@as(u64, 0), try fee.toU64());
+    try testing.expectEqual(@as(u64, 0), try fee.toGweiU64());
+    try testing.expect(fee.isZero());
+}
+```
+
+### MaxFeePerGas: large value in gwei
+
+```zig
+test "MaxFeePerGas: large value in gwei" {
+    const fee = MaxFeePerGas.fromGwei(10_000_000); // 10M gwei
+    try testing.expectEqual(@as(u64, 10_000_000_000_000_000), try fee.toU64());
+    try testing.expectEqual(@as(u64, 10_000_000), try fee.toGweiU64());
+}
+```
+
+### MaxFeePerGas: mul
+
+```zig
+test "MaxFeePerGas: mul" {
+    const fee = MaxFeePerGas.fromGwei(100);
+    const doubled = fee.mul(2).?;
+    try testing.expectEqual(@as(u64, 200), try doubled.toGweiU64());
+}
+```
+
+### MaxFeePerGas: mul by zero
+
+```zig
+test "MaxFeePerGas: mul by zero" {
+    const fee = MaxFeePerGas.fromGwei(100);
+    const zeroed = fee.mul(0).?;
+    try testing.expect(zeroed.isZero());
+}
+```
+
+### MaxFeePerGas: div
+
+```zig
+test "MaxFeePerGas: div" {
+    const fee = MaxFeePerGas.fromGwei(200);
+    const halved = fee.div(2).?;
+    try testing.expectEqual(@as(u64, 100), try halved.toGweiU64());
+}
+```
+
+### MaxFeePerGas: div truncates
+
+```zig
+test "MaxFeePerGas: div truncates" {
+    const fee = MaxFeePerGas.fromGwei(150);
+    const result = fee.div(4).?;
+    try testing.expectEqual(@as(u64, 37), try result.toGweiU64());
+}
+```
+
+### MaxFeePerGas: div by zero returns null
+
+```zig
+test "MaxFeePerGas: div by zero returns null" {
+    const fee = MaxFeePerGas.fromGwei(100);
+    try testing.expect(fee.div(0) == null);
+}
+```
+
+### MaxFeePerGas: fromWei
+
+```zig
+test "MaxFeePerGas: fromWei" {
+    const fee = MaxFeePerGas.fromWei(100_000_000_000);
+    try testing.expectEqual(@as(u64, 100), try fee.toGweiU64());
+}
+```

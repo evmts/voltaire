@@ -1,0 +1,124 @@
+---
+title: How to Trace a Transaction
+description: Debug transaction execution with call traces and opcode-level inspection.
+---
+
+## Goal
+
+Trace transaction execution to understand internal calls, gas usage, and state changes.
+
+## Call Tracer
+
+```typescript
+import { createProvider } from '@tevm/voltaire/provider'
+
+const provider = createProvider('http://localhost:8545')
+
+const trace = await provider.request({
+  method: 'debug_traceTransaction',
+  params: [
+    '0xabc123...', // tx hash
+    { tracer: 'callTracer' }
+  ]
+})
+
+console.log('Calls:', trace.calls)
+console.log('Gas used:', trace.gasUsed)
+console.log('Output:', trace.output)
+```
+
+## Trace Before Sending
+
+```typescript
+// Trace a call without submitting
+const trace = await provider.request({
+  method: 'debug_traceCall',
+  params: [
+    {
+      from: '0x1234...',
+      to: '0x5678...',
+      data: '0xa9059cbb...' // transfer()
+    },
+    'latest',
+    { tracer: 'callTracer' }
+  ]
+})
+
+if (trace.error) {
+  console.log('Would fail:', trace.error)
+} else {
+  console.log('Would succeed, gas:', trace.gasUsed)
+}
+```
+
+## Prestate Tracer
+
+See state before transaction execution:
+
+```typescript
+const trace = await provider.request({
+  method: 'debug_traceTransaction',
+  params: [
+    txHash,
+    { tracer: 'prestateTracer' }
+  ]
+})
+
+// Shows accounts and storage touched
+console.log('Accounts:', Object.keys(trace))
+```
+
+## Trace All Block Transactions
+
+```typescript
+const traces = await provider.request({
+  method: 'debug_traceBlockByNumber',
+  params: ['latest', { tracer: 'callTracer' }]
+})
+
+traces.forEach((trace, i) => {
+  console.log(`Tx ${i}:`, trace.result)
+})
+```
+
+## Opcode-Level Trace
+
+```typescript
+const trace = await provider.request({
+  method: 'debug_traceTransaction',
+  params: [
+    txHash,
+    {
+      enableMemory: true,
+      enableReturnData: true,
+      disableStorage: false
+    }
+  ]
+})
+
+// Step through opcodes
+trace.structLogs.forEach(step => {
+  console.log(`${step.pc}: ${step.op} gas=${step.gas}`)
+})
+```
+
+## Common Tracers
+
+| Tracer | Use Case |
+|--------|----------|
+| `callTracer` | Internal calls, value transfers |
+| `prestateTracer` | State before execution |
+| `4byteTracer` | Function selector counts |
+
+## Trace Options
+
+```typescript
+{
+  tracer: 'callTracer',
+  tracerConfig: {
+    onlyTopCall: false,  // Include nested calls
+    withLog: true        // Include event logs
+  },
+  timeout: '10s'
+}
+```

@@ -1,0 +1,346 @@
+---
+title: Contract Interaction
+description: Read from and write to smart contracts
+---
+
+# Contract Interaction
+
+This guide covers reading contract state, writing transactions, and manual ABI encoding/decoding using Voltaire primitives.
+
+<Note>
+Voltaire provides a **reference implementation** for Contract abstraction, not a library export. Copy the implementation from [Contract Pattern](/contract) into your project and customize as needed. See [Primitives Philosophy](/concepts/primitives-philosophy) for why.
+</Note>
+
+## Prerequisites
+
+- A provider (EIP-1193 compatible)
+- Contract address and ABI
+- Contract implementation copied from [Contract Pattern](/contract) or `examples/contract/`
+
+## Setup
+
+```typescript
+// Contract.js copied from examples/contract/ or docs
+import { Contract } from './Contract.js';
+
+// Define ABI with 'as const' for type inference
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'name',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'string', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'symbol',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'string', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'decimals',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'uint8', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ type: 'address', name: 'account' }],
+    outputs: [{ type: 'uint256', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { type: 'address', name: 'to' },
+      { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'approve',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { type: 'address', name: 'spender' },
+      { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool', name: '' }]
+  }
+] as const;
+
+// Create contract instance
+const usdc = Contract({
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  provider
+});
+```
+
+<Tip>
+Always use `as const` when defining ABIs. This enables TypeScript to infer exact function names and parameter types.
+</Tip>
+
+## Reading Contract State
+
+The `read` interface executes view/pure functions via `eth_call`. No gas required.
+
+### Single Read
+
+```typescript
+const balance = await usdc.read.balanceOf('0x742d35Cc6634C0532925a3b844Bc454e4438f44e');
+console.log(balance); // 1000000n (bigint)
+```
+
+### Multiple Reads in Parallel
+
+```typescript
+const [name, symbol, decimals] = await Promise.all([
+  usdc.read.name(),
+  usdc.read.symbol(),
+  usdc.read.decimals()
+]);
+
+console.log(`${name} (${symbol}) - ${decimals} decimals`);
+// "USD Coin (USDC) - 6 decimals"
+```
+
+### How Read Works
+
+Under the hood, read methods:
+
+1. ABI-encode the function call with arguments
+2. Send `eth_call` to the provider
+3. ABI-decode the return data
+
+```typescript
+// This:
+const balance = await usdc.read.balanceOf('0x742d35...');
+
+// Is equivalent to:
+const calldata = usdc.abi.encode('balanceOf', ['0x742d35...']);
+const result = await provider.request({
+  method: 'eth_call',
+  params: [{ to: usdc.address, data: calldata }, 'latest']
+});
+const decoded = usdc.abi.decode('balanceOf', result);
+```
+
+## Writing to Contracts
+
+The `write` interface sends transactions via `eth_sendTransaction`. Requires gas and modifies state.
+
+### Send Transaction
+
+```typescript
+const txHash = await usdc.write.transfer(
+  '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+  1000000n // 1 USDC (6 decimals)
+);
+console.log(`Transaction: ${txHash}`);
+```
+
+### Approve Spender
+
+```typescript
+const txHash = await usdc.write.approve(
+  '0xRouterAddress...',
+  1000000000n // Approve 1000 USDC
+);
+```
+
+<Warning>
+Write methods return immediately after transaction submission. The transaction may still be pending or could revert during execution.
+</Warning>
+
+### Estimate Gas First
+
+Use `estimateGas` to simulate before sending:
+
+```typescript
+try {
+  const gas = await usdc.estimateGas.transfer('0x742d35...', 1000000n);
+  console.log(`Estimated gas: ${gas}`);
+
+  // Safe to send
+  const txHash = await usdc.write.transfer('0x742d35...', 1000000n);
+} catch (error) {
+  console.error('Transaction would fail:', error);
+}
+```
+
+## Manual ABI Encoding
+
+For advanced use cases, access the `abi` instance directly.
+
+### Encode Function Call
+
+```typescript
+// Encode transfer(address,uint256) calldata
+const calldata = usdc.abi.encode('transfer', [
+  '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+  1000000n
+]);
+
+// calldata is Uint8Array: 0xa9059cbb + encoded params
+console.log(calldata);
+```
+
+### Decode Return Values
+
+```typescript
+// Simulate a call and decode the result
+const result = await provider.request({
+  method: 'eth_call',
+  params: [{
+    to: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    data: usdc.abi.encode('balanceOf', ['0x742d35...'])
+  }, 'latest']
+});
+
+// Decode the return value
+const decoded = usdc.abi.decode('balanceOf', result);
+console.log(decoded); // [1000000n]
+```
+
+### Build Custom Transaction
+
+```typescript
+import { Hex } from '@tevm/voltaire/Hex';
+
+const calldata = usdc.abi.encode('transfer', ['0x...', 1000000n]);
+
+const tx = {
+  to: Hex.fromBytes(usdc.address),
+  data: Hex.fromBytes(calldata),
+  gas: '0x5208'
+};
+
+const txHash = await provider.request({
+  method: 'eth_sendTransaction',
+  params: [tx]
+});
+```
+
+## Return Value Handling
+
+### Single Output
+
+Functions with one output return the value directly:
+
+```typescript
+const balance: bigint = await usdc.read.balanceOf('0x...');
+```
+
+### Multiple Outputs
+
+Functions with multiple outputs return an array:
+
+```typescript
+const pairAbi = [{
+  type: 'function',
+  name: 'getReserves',
+  stateMutability: 'view',
+  inputs: [],
+  outputs: [
+    { type: 'uint112', name: 'reserve0' },
+    { type: 'uint112', name: 'reserve1' },
+    { type: 'uint32', name: 'blockTimestampLast' }
+  ]
+}] as const;
+
+const pair = Contract({ address: pairAddress, abi: pairAbi, provider });
+const [reserve0, reserve1, timestamp] = await pair.read.getReserves();
+```
+
+## Error Handling
+
+```typescript
+// Errors are defined in your local Contract implementation
+import { ContractReadError, ContractWriteError } from './errors.js';
+
+try {
+  const balance = await usdc.read.balanceOf('0x...');
+} catch (error) {
+  if (error instanceof ContractReadError) {
+    console.error('Read failed:', error.message);
+  }
+}
+
+try {
+  const txHash = await usdc.write.transfer('0x...', 1000n);
+} catch (error) {
+  if (error instanceof ContractWriteError) {
+    console.error('Write failed:', error.message);
+  }
+}
+```
+
+## Complete Example
+
+```typescript
+// Contract.js copied from examples/contract/ or docs
+import { Contract } from './Contract.js';
+import type { TypedProvider } from '@tevm/voltaire/provider';
+
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ type: 'address', name: 'account' }],
+    outputs: [{ type: 'uint256', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { type: 'address', name: 'to' },
+      { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool', name: '' }]
+  }
+] as const;
+
+async function transferTokens(
+  provider: TypedProvider,
+  tokenAddress: string,
+  recipient: string,
+  amount: bigint
+) {
+  const token = Contract({
+    address: tokenAddress,
+    abi: erc20Abi,
+    provider
+  });
+
+  // Check balance first
+  const balance = await token.read.balanceOf(recipient);
+  console.log(`Current balance: ${balance}`);
+
+  // Estimate gas
+  const gas = await token.estimateGas.transfer(recipient, amount);
+  console.log(`Estimated gas: ${gas}`);
+
+  // Send transaction
+  const txHash = await token.write.transfer(recipient, amount);
+  console.log(`Transaction sent: ${txHash}`);
+
+  return txHash;
+}
+```
+
+## Related
+
+- [Contract Overview](/contract) - Contract module introduction
+- [Read Methods](/contract/read) - Detailed read documentation
+- [Write Methods](/contract/write) - Detailed write documentation
+- [Gas Estimation](/contract/gas-estimation) - Gas estimation details
+- [Events](/contract/events) - Streaming contract events

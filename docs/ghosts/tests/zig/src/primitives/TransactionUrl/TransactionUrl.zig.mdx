@@ -1,0 +1,467 @@
+---
+title: '[Zig] src/primitives/TransactionUrl/TransactionUrl.zig'
+source: 'src/primitives/TransactionUrl/TransactionUrl.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/TransactionUrl/TransactionUrl.zig
+
+### from - creates with address only
+
+```zig
+test "from - creates with address only" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const url = from(addr);
+    try std.testing.expect(Address.equals(url.target, addr));
+    try std.testing.expect(url.chain_id == null);
+    try std.testing.expect(url.value == null);
+}
+```
+
+### fromHex - creates from hex string
+
+```zig
+test "fromHex - creates from hex string" {
+    const url = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const expected = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    try std.testing.expect(Address.equals(url.target, expected));
+}
+```
+
+### fromHex - invalid hex
+
+```zig
+test "fromHex - invalid hex" {
+    try std.testing.expectError(error.InvalidHexString, fromHex("0xinvalid"));
+}
+```
+
+### parse - address only
+
+```zig
+test "parse - address only" {
+    const url = try parse(std.testing.allocator, "ethereum:0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const expected = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    try std.testing.expect(Address.equals(url.target, expected));
+    try std.testing.expect(url.chain_id == null);
+}
+```
+
+### parse - with chain id
+
+```zig
+test "parse - with chain id" {
+    const url = try parse(std.testing.allocator, "ethereum:0xa0cf798816d4b9b9866b5330eea46a18382f251e@1");
+    try std.testing.expectEqual(@as(?u64, 1), url.chain_id);
+}
+```
+
+### parse - with value
+
+```zig
+test "parse - with value" {
+    const url = try parse(std.testing.allocator, "ethereum:0xa0cf798816d4b9b9866b5330eea46a18382f251e?value=1000000000000000000");
+    try std.testing.expectEqual(@as(?u256, 1000000000000000000), url.value);
+}
+```
+
+### parse - with function name
+
+```zig
+test "parse - with function name" {
+    const url = try parse(std.testing.allocator, "ethereum:0xa0cf798816d4b9b9866b5330eea46a18382f251e/transfer");
+    try std.testing.expectEqualStrings("transfer", url.function_name.?);
+}
+```
+
+### parse - full url
+
+```zig
+test "parse - full url" {
+    const url = try parse(std.testing.allocator, "ethereum:0xa0cf798816d4b9b9866b5330eea46a18382f251e@1/transfer?value=1000000000000000000&gas=21000");
+    try std.testing.expectEqual(@as(?u64, 1), url.chain_id);
+    try std.testing.expectEqual(@as(?u256, 1000000000000000000), url.value);
+    try std.testing.expectEqual(@as(?u64, 21000), url.gas);
+    try std.testing.expectEqualStrings("transfer", url.function_name.?);
+}
+```
+
+### parse - with data
+
+```zig
+test "parse - with data" {
+    const url = try parse(std.testing.allocator, "ethereum:0xa0cf798816d4b9b9866b5330eea46a18382f251e?data=0xdeadbeef");
+    defer if (url.data) |d| std.testing.allocator.free(d);
+    try std.testing.expect(url.data != null);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0xde, 0xad, 0xbe, 0xef }, url.data.?);
+}
+```
+
+### parse - invalid scheme
+
+```zig
+test "parse - invalid scheme" {
+    try std.testing.expectError(error.InvalidTransactionUrlScheme, parse(std.testing.allocator, "http:0xa0cf798816d4b9b9866b5330eea46a18382f251e"));
+}
+```
+
+### parse - invalid address
+
+```zig
+test "parse - invalid address" {
+    try std.testing.expectError(error.InvalidTransactionUrlAddress, parse(std.testing.allocator, "ethereum:invalid"));
+}
+```
+
+### parse - invalid chain id
+
+```zig
+test "parse - invalid chain id" {
+    try std.testing.expectError(error.InvalidChainId, parse(std.testing.allocator, "ethereum:0xa0cf798816d4b9b9866b5330eea46a18382f251e@notanumber"));
+}
+```
+
+### format - address only
+
+```zig
+test "format - address only" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const url = ParsedTransactionUrl{ .target = addr };
+    const formatted = try format(std.testing.allocator, url);
+    defer std.testing.allocator.free(formatted);
+    try std.testing.expect(std.mem.startsWith(u8, formatted, "ethereum:0x"));
+}
+```
+
+### format - with chain id
+
+```zig
+test "format - with chain id" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const url = ParsedTransactionUrl{ .target = addr, .chain_id = 1 };
+    const formatted = try format(std.testing.allocator, url);
+    defer std.testing.allocator.free(formatted);
+    try std.testing.expect(std.mem.indexOf(u8, formatted, "@1") != null);
+}
+```
+
+### format - with value
+
+```zig
+test "format - with value" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const url = ParsedTransactionUrl{ .target = addr, .value = 1000000000000000000 };
+    const formatted = try format(std.testing.allocator, url);
+    defer std.testing.allocator.free(formatted);
+    try std.testing.expect(std.mem.indexOf(u8, formatted, "value=1000000000000000000") != null);
+}
+```
+
+### format - full url
+
+```zig
+test "format - full url" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const url = ParsedTransactionUrl{
+        .target = addr,
+        .chain_id = 1,
+        .function_name = "transfer",
+        .value = 1000000000000000000,
+        .gas = 21000,
+    };
+    const formatted = try format(std.testing.allocator, url);
+    defer std.testing.allocator.free(formatted);
+
+    try std.testing.expect(std.mem.indexOf(u8, formatted, "@1/") != null);
+    try std.testing.expect(std.mem.indexOf(u8, formatted, "transfer") != null);
+    try std.testing.expect(std.mem.indexOf(u8, formatted, "value=") != null);
+    try std.testing.expect(std.mem.indexOf(u8, formatted, "gas=") != null);
+}
+```
+
+### format and parse roundtrip
+
+```zig
+test "format and parse roundtrip" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const original = ParsedTransactionUrl{
+        .target = addr,
+        .chain_id = 1,
+        .value = 1000000000000000000,
+        .gas = 21000,
+    };
+
+    const formatted = try format(std.testing.allocator, original);
+    defer std.testing.allocator.free(formatted);
+
+    const parsed = try parse(std.testing.allocator, formatted);
+
+    try std.testing.expect(Address.equals(original.target, parsed.target));
+    try std.testing.expectEqual(original.chain_id, parsed.chain_id);
+    try std.testing.expectEqual(original.value, parsed.value);
+    try std.testing.expectEqual(original.gas, parsed.gas);
+}
+```
+
+### equals - same urls
+
+```zig
+test "equals - same urls" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const a = ParsedTransactionUrl{ .target = addr, .chain_id = 1, .value = 100 };
+    const b = ParsedTransactionUrl{ .target = addr, .chain_id = 1, .value = 100 };
+    try std.testing.expect(equals(&a, &b));
+}
+```
+
+### equals - different chain id
+
+```zig
+test "equals - different chain id" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const a = ParsedTransactionUrl{ .target = addr, .chain_id = 1 };
+    const b = ParsedTransactionUrl{ .target = addr, .chain_id = 137 };
+    try std.testing.expect(!equals(&a, &b));
+}
+```
+
+### equals - different value
+
+```zig
+test "equals - different value" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const a = ParsedTransactionUrl{ .target = addr, .value = 100 };
+    const b = ParsedTransactionUrl{ .target = addr, .value = 200 };
+    try std.testing.expect(!equals(&a, &b));
+}
+```
+
+### isValid - valid url
+
+```zig
+test "isValid - valid url" {
+    try std.testing.expect(isValid("ethereum:0xa0cf798816d4b9b9866b5330eea46a18382f251e"));
+    try std.testing.expect(isValid("ethereum:0xa0cf798816d4b9b9866b5330eea46a18382f251e@1"));
+    try std.testing.expect(isValid("ethereum:0xa0cf798816d4b9b9866b5330eea46a18382f251e@1?value=100"));
+}
+```
+
+### isValid - invalid url
+
+```zig
+test "isValid - invalid url" {
+    try std.testing.expect(!isValid("http:0xa0cf798816d4b9b9866b5330eea46a18382f251e"));
+    try std.testing.expect(!isValid("ethereum:invalid"));
+    try std.testing.expect(!isValid("ethereum:0xa0cf798816d4b9b9866b5330eea46a18382f251e@notanumber"));
+}
+```
+
+### toString - same as format
+
+```zig
+test "toString - same as format" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const url = ParsedTransactionUrl{ .target = addr, .chain_id = 1 };
+
+    const str = try toString(std.testing.allocator, url);
+    defer std.testing.allocator.free(str);
+    const fmt = try format(std.testing.allocator, url);
+    defer std.testing.allocator.free(fmt);
+
+    try std.testing.expectEqualStrings(fmt, str);
+}
+```
+
+### explorerUrl - etherscan mainnet
+
+```zig
+test "explorerUrl - etherscan mainnet" {
+    var hash: Hash.Hash = undefined;
+    @memset(&hash, 0xab);
+    const url = try explorerUrl(std.testing.allocator, hash, 1, .etherscan);
+    defer std.testing.allocator.free(url);
+    try std.testing.expect(std.mem.startsWith(u8, url, "https://etherscan.io/tx/0x"));
+}
+```
+
+### explorerUrl - default explorer
+
+```zig
+test "explorerUrl - default explorer" {
+    var hash: Hash.Hash = undefined;
+    @memset(&hash, 0xab);
+    const url = try explorerUrl(std.testing.allocator, hash, 1, null);
+    defer std.testing.allocator.free(url);
+    try std.testing.expect(std.mem.startsWith(u8, url, "https://etherscan.io/tx/0x"));
+}
+```
+
+### explorerUrl - sepolia
+
+```zig
+test "explorerUrl - sepolia" {
+    var hash: Hash.Hash = undefined;
+    @memset(&hash, 0xcd);
+    const url = try explorerUrl(std.testing.allocator, hash, 11155111, null);
+    defer std.testing.allocator.free(url);
+    try std.testing.expect(std.mem.startsWith(u8, url, "https://sepolia.etherscan.io/tx/0x"));
+}
+```
+
+### explorerUrl - polygon
+
+```zig
+test "explorerUrl - polygon" {
+    var hash: Hash.Hash = undefined;
+    @memset(&hash, 0xef);
+    const url = try explorerUrl(std.testing.allocator, hash, 137, null);
+    defer std.testing.allocator.free(url);
+    try std.testing.expect(std.mem.startsWith(u8, url, "https://polygonscan.com/tx/0x"));
+}
+```
+
+### explorerUrl - arbitrum
+
+```zig
+test "explorerUrl - arbitrum" {
+    var hash: Hash.Hash = undefined;
+    @memset(&hash, 0x12);
+    const url = try explorerUrl(std.testing.allocator, hash, 42161, null);
+    defer std.testing.allocator.free(url);
+    try std.testing.expect(std.mem.startsWith(u8, url, "https://arbiscan.io/tx/0x"));
+}
+```
+
+### explorerUrl - base
+
+```zig
+test "explorerUrl - base" {
+    var hash: Hash.Hash = undefined;
+    @memset(&hash, 0x34);
+    const url = try explorerUrl(std.testing.allocator, hash, 8453, null);
+    defer std.testing.allocator.free(url);
+    try std.testing.expect(std.mem.startsWith(u8, url, "https://basescan.org/tx/0x"));
+}
+```
+
+### explorerUrl - optimism
+
+```zig
+test "explorerUrl - optimism" {
+    var hash: Hash.Hash = undefined;
+    @memset(&hash, 0x56);
+    const url = try explorerUrl(std.testing.allocator, hash, 10, null);
+    defer std.testing.allocator.free(url);
+    try std.testing.expect(std.mem.startsWith(u8, url, "https://optimistic.etherscan.io/tx/0x"));
+}
+```
+
+### explorerUrl - unsupported chain with specific explorer
+
+```zig
+test "explorerUrl - unsupported chain with specific explorer" {
+    var hash: Hash.Hash = undefined;
+    @memset(&hash, 0x78);
+    try std.testing.expectError(error.UnsupportedChain, explorerUrl(std.testing.allocator, hash, 999999, .etherscan));
+}
+```
+
+### explorerAddressUrl - etherscan mainnet
+
+```zig
+test "explorerAddressUrl - etherscan mainnet" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const url = try explorerAddressUrl(std.testing.allocator, addr, 1, .etherscan);
+    defer std.testing.allocator.free(url);
+    try std.testing.expect(std.mem.startsWith(u8, url, "https://etherscan.io/address/0x"));
+}
+```
+
+### explorerAddressUrl - polygon
+
+```zig
+test "explorerAddressUrl - polygon" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const url = try explorerAddressUrl(std.testing.allocator, addr, 137, null);
+    defer std.testing.allocator.free(url);
+    try std.testing.expect(std.mem.startsWith(u8, url, "https://polygonscan.com/address/0x"));
+}
+```
+
+### explorerBlockUrl - etherscan mainnet
+
+```zig
+test "explorerBlockUrl - etherscan mainnet" {
+    const url = try explorerBlockUrl(std.testing.allocator, 12345678, 1, .etherscan);
+    defer std.testing.allocator.free(url);
+    try std.testing.expectEqualStrings("https://etherscan.io/block/12345678", url);
+}
+```
+
+### explorerBlockUrl - polygon
+
+```zig
+test "explorerBlockUrl - polygon" {
+    const url = try explorerBlockUrl(std.testing.allocator, 50000000, 137, null);
+    defer std.testing.allocator.free(url);
+    try std.testing.expectEqualStrings("https://polygonscan.com/block/50000000", url);
+}
+```
+
+### explorerTokenUrl - etherscan mainnet
+
+```zig
+test "explorerTokenUrl - etherscan mainnet" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const url = try explorerTokenUrl(std.testing.allocator, addr, 1, .etherscan);
+    defer std.testing.allocator.free(url);
+    try std.testing.expect(std.mem.startsWith(u8, url, "https://etherscan.io/token/0x"));
+}
+```
+
+### Explorer.defaultForChain - mainnet
+
+```zig
+test "Explorer.defaultForChain - mainnet" {
+    try std.testing.expectEqual(Explorer.etherscan, Explorer.defaultForChain(1));
+}
+```
+
+### Explorer.defaultForChain - polygon
+
+```zig
+test "Explorer.defaultForChain - polygon" {
+    try std.testing.expectEqual(Explorer.polygonscan, Explorer.defaultForChain(137));
+}
+```
+
+### Explorer.defaultForChain - arbitrum
+
+```zig
+test "Explorer.defaultForChain - arbitrum" {
+    try std.testing.expectEqual(Explorer.arbiscan, Explorer.defaultForChain(42161));
+}
+```
+
+### Explorer.defaultForChain - base
+
+```zig
+test "Explorer.defaultForChain - base" {
+    try std.testing.expectEqual(Explorer.basescan, Explorer.defaultForChain(8453));
+}
+```
+
+### Explorer.defaultForChain - optimism
+
+```zig
+test "Explorer.defaultForChain - optimism" {
+    try std.testing.expectEqual(Explorer.optimistic_etherscan, Explorer.defaultForChain(10));
+}
+```
+
+### Explorer.defaultForChain - unknown chain falls back to blockscout
+
+```zig
+test "Explorer.defaultForChain - unknown chain falls back to blockscout" {
+    try std.testing.expectEqual(Explorer.blockscout, Explorer.defaultForChain(999999));
+}
+```

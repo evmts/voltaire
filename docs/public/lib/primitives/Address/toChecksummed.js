@@ -10,7 +10,7 @@ import { From } from "./ChecksumAddress.js";
  * @example
  * ```typescript
  * import { ToChecksummed } from '@tevm/voltaire/Address/BrandedAddress'
- * import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+ * import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
  *
  * const toChecksummed = ToChecksummed({ keccak256 })
  * const checksummed = toChecksummed(addr)

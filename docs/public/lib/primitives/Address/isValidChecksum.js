@@ -10,7 +10,7 @@ import { IsValid } from "./ChecksumAddress.js";
  * @example
  * ```typescript
  * import { IsValidChecksum } from '@tevm/voltaire/Address/BrandedAddress'
- * import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+ * import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
  *
  * const isValidChecksum = IsValidChecksum({ keccak256 })
  * if (isValidChecksum("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")) {

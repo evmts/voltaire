@@ -1,0 +1,52 @@
+---
+title: Check NFT Ownership
+description: Check who owns an ERC721 NFT using Voltaire's Contract module.
+---
+
+## Goal
+
+Get the owner address of a specific NFT token ID.
+
+Return owner as:
+
+ANSWER: 0x...
+
+## Example (TypeScript)
+
+```ts
+import { Contract } from '@voltaire/contract'
+import * as Hex from '@voltaire/primitives/Hex'
+
+const erc721Abi = [
+  {
+    type: 'function',
+    name: 'ownerOf',
+    stateMutability: 'view',
+    inputs: [{ type: 'uint256', name: 'tokenId' }],
+    outputs: [{ type: 'address', name: '' }],
+  },
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ type: 'address', name: 'owner' }],
+    outputs: [{ type: 'uint256', name: '' }],
+  },
+] as const
+
+const bayc = Contract({
+  address: '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D',
+  abi: erc721Abi,
+  provider,
+})
+
+// Check owner of specific token
+const tokenId = 1234n
+const owner = await bayc.read.ownerOf(tokenId)
+console.log(`ANSWER: ${Hex.fromBytes(owner)}`)
+
+// Check how many NFTs an address owns
+const address = '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
+const balance = await bayc.read.balanceOf(address)
+console.log(`Owns ${balance} NFTs`)
+```

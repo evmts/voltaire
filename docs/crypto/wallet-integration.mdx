@@ -34,7 +34,7 @@ This guide demonstrates the complete wallet cryptography workflow: generating mn
 ### Step 1: Generate Mnemonic
 
 ```typescript
-import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as Bip39 from '@tevm/voltaire/Bip39';
 
 // Generate cryptographically secure mnemonic
 const mnemonic = Bip39.generateMnemonic(256); // 24 words
@@ -68,7 +68,7 @@ console.log('Seeds differ:', seed.some((b, i) => b !== seedWithPass[i])); // tru
 ### Step 3: Create Root HD Wallet
 
 ```typescript
-import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
+import * as HDWallet from '@tevm/voltaire/HDWallet';
 
 // Create master key from seed
 const root = HDWallet.fromSeed(seed);
@@ -116,9 +116,9 @@ console.log('Private key 1:', privateKey1); // Uint8Array(32)
 ### Step 5: Derive Ethereum Addresses
 
 ```typescript
-import * as Secp256k1 from '@tevm/voltaire/crypto/secp256k1';
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
 import * as Keccak256 from '@tevm/voltaire/crypto/keccak256';
-import * as Address from '@tevm/voltaire/primitives/address';
+import { Address } from '@tevm/voltaire/Address';
 
 function deriveEthereumAddress(hdKey: ExtendedKey): string {
   // 1. Get private key
@@ -351,7 +351,7 @@ console.log('Can sign?', watchOnly.canSign()); // false
 ### Sign Ethereum Transaction
 
 ```typescript
-import * as Secp256k1 from '@tevm/voltaire/crypto/secp256k1';
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
 import * as Keccak256 from '@tevm/voltaire/crypto/keccak256';
 
 async function signTransaction(

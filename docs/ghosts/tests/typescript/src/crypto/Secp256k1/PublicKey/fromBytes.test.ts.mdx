@@ -1,0 +1,171 @@
+---
+title: '[TS/JS] src/crypto/Secp256k1/PublicKey/fromBytes.test.ts'
+source: 'src/crypto/Secp256k1/PublicKey/fromBytes.test.ts'
+---
+
+> Auto-generated from test file: src/crypto/Secp256k1/PublicKey/fromBytes.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import { PrivateKey } from "../../../primitives/PrivateKey/index.js";
+import { derivePublicKey } from "../derivePublicKey.js";
+import * as PublicKey from "./index.js";
+
+describe("Secp256k1.PublicKey.fromBytes", () => {
+	describe("valid public keys", () => {
+		it("should create public key from 64-byte Uint8Array", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const bytes = derivePublicKey(privateKey);
+
+			const publicKey = PublicKey.fromBytes(bytes);
+
+			expect(publicKey).toBeInstanceOf(Uint8Array);
+			expect(publicKey.length).toBe(64);
+		});
+
+		it("should accept valid curve point", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 42;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const validBytes = derivePublicKey(privateKey);
+
+			const publicKey = PublicKey.fromBytes(validBytes);
+
+			expect(publicKey.length).toBe(64);
+		});
+
+		it("should return branded type", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 7;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const bytes = derivePublicKey(privateKey);
+
+			const publicKey = PublicKey.fromBytes(bytes);
+
+			expect(publicKey).toBe(bytes);
+		});
+	});
+
+	describe("validation errors", () => {
+		it("should throw on wrong length (too short)", () => {
+			const shortBytes = new Uint8Array(63);
+
+			expect(() => PublicKey.fromBytes(shortBytes)).toThrow(
+				/Invalid public key: expected 64 bytes, got 63/,
+			);
+		});
+
+		it("should throw on wrong length (too long)", () => {
+			const longBytes = new Uint8Array(65);
+
+			expect(() => PublicKey.fromBytes(longBytes)).toThrow(
+				/Invalid public key: expected 64 bytes, got 65/,
+			);
+		});
+
+		it("should throw on empty array", () => {
+			const emptyBytes = new Uint8Array(0);
+
+			expect(() => PublicKey.fromBytes(emptyBytes)).toThrow(
+				/Invalid public key: expected 64 bytes, got 0/,
+			);
+		});
+
+		it("should throw on 32-byte array", () => {
+			const bytes32 = new Uint8Array(32);
+
+			expect(() => PublicKey.fromBytes(bytes32)).toThrow(
+				/Invalid public key: expected 64 bytes, got 32/,
+			);
+		});
+
+		it("should throw on 33-byte compressed public key", () => {
+			const compressed = new Uint8Array(33);
+			compressed[0] = 0x02;
+
+			expect(() => PublicKey.fromBytes(compressed)).toThrow(
+				/Invalid public key: expected 64 bytes, got 33/,
+			);
+		});
+
+		it("should throw on 65-byte prefixed public key", () => {
+			const prefixed = new Uint8Array(65);
+			prefixed[0] = 0x04;
+
+			expect(() => PublicKey.fromBytes(prefixed)).toThrow(
+				/Invalid public key: expected 64 bytes, got 65/,
+			);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("should handle minimum valid public key (G)", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1; // Private key = 1 gives G
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const gBytes = derivePublicKey(privateKey);
+
+			const publicKey = PublicKey.fromBytes(gBytes);
+
+			expect(publicKey.length).toBe(64);
+		});
+
+		it("should handle various valid public keys", () => {
+			for (let i = 1; i <= 10; i++) {
+				const privateKeyBytes = new Uint8Array(32);
+				privateKeyBytes[31] = i;
+				const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+				const bytes = derivePublicKey(privateKey);
+
+				const publicKey = PublicKey.fromBytes(bytes);
+
+				expect(publicKey.length).toBe(64);
+			}
+		});
+	});
+
+	describe("immutability", () => {
+		it("should not modify input bytes", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 5;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const original = derivePublicKey(privateKey);
+			const copy = new Uint8Array(original);
+
+			PublicKey.fromBytes(original);
+
+			expect(original).toEqual(copy);
+		});
+	});
+
+	describe("type branding", () => {
+		it("should return same bytes reference as branded type", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 99;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const bytes = derivePublicKey(privateKey);
+
+			const publicKey = PublicKey.fromBytes(bytes);
+
+			expect(publicKey).toBe(bytes);
+		});
+	});
+
+	describe("determinism", () => {
+		it("should produce same result for same input", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 17;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const bytes = derivePublicKey(privateKey);
+
+			const pk1 = PublicKey.fromBytes(bytes);
+			const pk2 = PublicKey.fromBytes(bytes);
+
+			expect(pk1).toEqual(pk2);
+		});
+	});
+});
+
+```

@@ -251,7 +251,7 @@ const shield = MultiTokenId.from(2n ** 128n + 1n);
 
 ```typescript
 import * as MultiTokenId from '@tevm/voltaire/primitives/MultiTokenId';
-import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Address from '@tevm/voltaire/Address';
 
 const tokenId = MultiTokenId.from(1n);
 const account = Address.from("0x...");
@@ -282,7 +282,7 @@ const balances = decodeBalanceOfBatch(response);
 
 ```typescript
 import * as MultiTokenId from '@tevm/voltaire/primitives/MultiTokenId';
-import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Address from '@tevm/voltaire/Address';
 
 const from = Address.from("0x...");
 const to = Address.from("0x...");

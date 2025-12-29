@@ -1,0 +1,74 @@
+---
+title: Hash Data with Keccak256
+description: Compute Keccak-256 hashes for bytes, hex strings, and UTF-8 text.
+---
+
+## Hash Bytes
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+
+const data = new Uint8Array([1, 2, 3, 4])
+const hash = Keccak256.hash(data)
+// Uint8Array(32) - the 256-bit hash
+```
+
+## Hash Hex String
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+
+const hex = '0x1234567890abcdef'
+const hash = Keccak256.hashHex(hex)
+```
+
+## Hash UTF-8 String
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+
+const hash = Keccak256.hashString('hello world')
+```
+
+## Hash Multiple Values
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+
+const hash = Keccak256.hashMultiple([
+  new Uint8Array([1, 2]),
+  new Uint8Array([3, 4])
+])
+// Hash of concatenated inputs
+```
+
+## Using the Constructor
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+
+// Keccak256.from() accepts hex strings or bytes
+const hash1 = Keccak256.from('0x1234')
+const hash2 = Keccak256.from(new Uint8Array([0x12, 0x34]))
+```
+
+## Convert Hash to Hex
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+import * as Hex from '@voltaire/primitives/Hex'
+
+const hash = Keccak256.hashString('hello')
+const hashHex = Hex.fromBytes(hash)
+// '0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8'
+```
+
+## Common Pattern: Hash Then Slice
+
+```ts
+import { Keccak256 } from '@voltaire/crypto/Keccak256'
+
+// Get first 4 bytes (function selector)
+const hash = Keccak256.hashString('transfer(address,uint256)')
+const selector = hash.slice(0, 4)
+```

@@ -1,0 +1,79 @@
+---
+title: Batch Transfer ERC1155 Tokens
+description: Transfer multiple ERC1155 tokens in a single transaction using Voltaire's Contract module.
+---
+
+## Goal
+
+Batch transfer multiple ERC1155 token IDs and amounts in one transaction.
+
+Return transaction hash as:
+
+ANSWER: 0x...
+
+## Example (TypeScript)
+
+```ts
+import { Contract } from '@voltaire/contract'
+
+const erc1155Abi = [
+  {
+    type: 'function',
+    name: 'safeBatchTransferFrom',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { type: 'address', name: 'from' },
+      { type: 'address', name: 'to' },
+      { type: 'uint256[]', name: 'ids' },
+      { type: 'uint256[]', name: 'amounts' },
+      { type: 'bytes', name: 'data' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'safeTransferFrom',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { type: 'address', name: 'from' },
+      { type: 'address', name: 'to' },
+      { type: 'uint256', name: 'id' },
+      { type: 'uint256', name: 'amount' },
+      { type: 'bytes', name: 'data' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'balanceOfBatch',
+    stateMutability: 'view',
+    inputs: [
+      { type: 'address[]', name: 'accounts' },
+      { type: 'uint256[]', name: 'ids' },
+    ],
+    outputs: [{ type: 'uint256[]', name: '' }],
+  },
+] as const
+
+const openSea = Contract({
+  address: '0x495f947276749Ce646f68AC8c248420045cb7b5e',
+  abi: erc1155Abi,
+  provider,
+})
+
+const from = '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
+const to = '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+
+// Batch transfer multiple tokens
+const ids = [1n, 2n, 3n]
+const amounts = [10n, 5n, 1n]
+
+const txHash = await openSea.write.safeBatchTransferFrom(
+  from,
+  to,
+  ids,
+  amounts,
+  new Uint8Array(0), // empty data
+)
+console.log(`ANSWER: 0x${Buffer.from(txHash).toString('hex')}`)
+```

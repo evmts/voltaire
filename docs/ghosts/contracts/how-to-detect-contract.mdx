@@ -1,0 +1,59 @@
+---
+title: How to Detect if Address is a Contract
+description: Check whether an Ethereum address is a contract or EOA
+---
+
+## Goal
+
+Determine if an address is a smart contract (has bytecode) or an externally owned account (EOA).
+
+## Using eth_getCode
+
+```typescript
+// Get bytecode at address
+const code = await provider.request({
+  method: 'eth_getCode',
+  params: ['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 'latest']
+});
+
+// Empty code = EOA, non-empty = contract
+const isContract = code !== '0x' && code !== '0x0';
+console.log(isContract ? 'Contract' : 'EOA');
+```
+
+## Helper Function
+
+```typescript
+async function isContract(provider: TypedProvider, address: string): Promise<boolean> {
+  const code = await provider.request({
+    method: 'eth_getCode',
+    params: [address, 'latest']
+  });
+  return code !== '0x' && code.length > 2;
+}
+
+// Usage
+if (await isContract(provider, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48')) {
+  console.log('USDC is a contract');
+}
+```
+
+## Check at Specific Block
+
+```typescript
+// Check if address was a contract at historical block
+const wasContract = await provider.request({
+  method: 'eth_getCode',
+  params: ['0x...', '0xF4240'] // block 1,000,000
+});
+```
+
+<Warning>
+A contract can self-destruct, making `eth_getCode` return `0x` for addresses that were previously contracts. Also, `eth_getCode` returns `0x` for contracts that haven't been deployed yet (e.g., CREATE2 addresses).
+</Warning>
+
+## Caveats
+
+- **Pending deployment**: Address may be a future contract (CREATE2 precomputed)
+- **Self-destructed**: Previously deployed contract may now return empty code
+- **Block timing**: Check at `latest` may differ from `pending` during deployment

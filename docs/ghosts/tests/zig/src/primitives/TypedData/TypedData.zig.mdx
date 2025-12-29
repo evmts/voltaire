@@ -1,0 +1,586 @@
+---
+title: '[Zig] src/primitives/TypedData/TypedData.zig'
+source: 'src/primitives/TypedData/TypedData.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/TypedData/TypedData.zig
+
+### TypedData: hash produces consistent result
+
+```zig
+test "TypedData: hash produces consistent result" {
+    const allocator = std.testing.allocator;
+
+    const domain = Domain{
+        .name = "Test",
+        .version = "1",
+        .chain_id = 1,
+    };
+
+    // Simple message encoding (typeHash + encoded fields)
+    const message = "test message for signing";
+    const typed_data = TypedData{
+        .domain = domain,
+        .primary_type = "Message",
+        .message_encoded = message,
+    };
+
+    const hash1 = try typed_data.hash(allocator);
+    const hash2 = try typed_data.hash(allocator);
+
+    try std.testing.expectEqualSlices(u8, &hash1, &hash2);
+}
+```
+
+### TypedData: different messages produce different hashes
+
+```zig
+test "TypedData: different messages produce different hashes" {
+    const allocator = std.testing.allocator;
+
+    const domain = Domain{
+        .name = "Test",
+        .version = "1",
+    };
+
+    const typed_data1 = TypedData{
+        .domain = domain,
+        .primary_type = "Message",
+        .message_encoded = "message1",
+    };
+
+    const typed_data2 = TypedData{
+        .domain = domain,
+        .primary_type = "Message",
+        .message_encoded = "message2",
+    };
+
+    const hash1 = try typed_data1.hash(allocator);
+    const hash2 = try typed_data2.hash(allocator);
+
+    try std.testing.expect(!std.mem.eql(u8, &hash1, &hash2));
+}
+```
+
+### TypedData: different domains produce different hashes
+
+```zig
+test "TypedData: different domains produce different hashes" {
+    const allocator = std.testing.allocator;
+
+    const domain1 = Domain{ .name = "Test1" };
+    const domain2 = Domain{ .name = "Test2" };
+
+    const typed_data1 = TypedData{
+        .domain = domain1,
+        .primary_type = "Message",
+        .message_encoded = "same message",
+    };
+
+    const typed_data2 = TypedData{
+        .domain = domain2,
+        .primary_type = "Message",
+        .message_encoded = "same message",
+    };
+
+    const hash1 = try typed_data1.hash(allocator);
+    const hash2 = try typed_data2.hash(allocator);
+
+    try std.testing.expect(!std.mem.eql(u8, &hash1, &hash2));
+}
+```
+
+### TypedData: getPrefix returns correct prefix
+
+```zig
+test "TypedData: getPrefix returns correct prefix" {
+    const prefix = TypedData.getPrefix();
+    try std.testing.expectEqual(@as(u8, 0x19), prefix[0]);
+    try std.testing.expectEqual(@as(u8, 0x01), prefix[1]);
+}
+```
+
+### TypedData: encode returns correct length
+
+```zig
+test "TypedData: encode returns correct length" {
+    const allocator = std.testing.allocator;
+
+    const domain = Domain{ .name = "Test" };
+
+    const typed_data = TypedData{
+        .domain = domain,
+        .primary_type = "Message",
+        .message_encoded = "test",
+    };
+
+    const encoded = try typed_data.encode(allocator);
+    try std.testing.expectEqual(@as(usize, 66), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0x19), encoded[0]);
+    try std.testing.expectEqual(@as(u8, 0x01), encoded[1]);
+}
+```
+
+### TypedData: validate succeeds with valid data
+
+```zig
+test "TypedData: validate succeeds with valid data" {
+    const domain = Domain{ .name = "Test" };
+
+    const typed_data = TypedData{
+        .domain = domain,
+        .primary_type = "Message",
+        .message_encoded = "test",
+    };
+
+    try typed_data.validate();
+}
+```
+
+### TypedData: validate fails with empty primary type
+
+```zig
+test "TypedData: validate fails with empty primary type" {
+    const domain = Domain{ .name = "Test" };
+
+    const typed_data = TypedData{
+        .domain = domain,
+        .primary_type = "",
+        .message_encoded = "test",
+    };
+
+    try std.testing.expectError(error.InvalidPrimaryType, typed_data.validate());
+}
+```
+
+### TypedData: validate fails with empty message
+
+```zig
+test "TypedData: validate fails with empty message" {
+    const domain = Domain{ .name = "Test" };
+
+    const typed_data = TypedData{
+        .domain = domain,
+        .primary_type = "Message",
+        .message_encoded = "",
+    };
+
+    try std.testing.expectError(error.InvalidMessage, typed_data.validate());
+}
+```
+
+### TypedData: validate fails with invalid domain
+
+```zig
+test "TypedData: validate fails with invalid domain" {
+    const domain = Domain{}; // No fields
+
+    const typed_data = TypedData{
+        .domain = domain,
+        .primary_type = "Message",
+        .message_encoded = "test",
+    };
+
+    try std.testing.expectError(error.InvalidDomain, typed_data.validate());
+}
+```
+
+### encodeType: simple type
+
+```zig
+test "encodeType: simple type" {
+    const allocator = std.testing.allocator;
+    const fields = [_]TypeField{
+        .{ .name = "from", .type = "address" },
+        .{ .name = "to", .type = "address" },
+        .{ .name = "contents", .type = "string" },
+    };
+
+    const type_string = try encodeType("Mail", &fields, allocator);
+    defer allocator.free(type_string);
+
+    try std.testing.expectEqualStrings("Mail(address from,address to,string contents)", type_string);
+}
+```
+
+### encodeType: empty fields
+
+```zig
+test "encodeType: empty fields" {
+    const allocator = std.testing.allocator;
+    const fields = [_]TypeField{};
+
+    const type_string = try encodeType("Empty", &fields, allocator);
+    defer allocator.free(type_string);
+
+    try std.testing.expectEqualStrings("Empty()", type_string);
+}
+```
+
+### hashType: produces 32-byte hash
+
+```zig
+test "hashType: produces 32-byte hash" {
+    const type_string = "Mail(address from,address to,string contents)";
+    const type_hash = hashType(type_string);
+    try std.testing.expectEqual(@as(usize, 32), type_hash.len);
+}
+```
+
+### hashType: same input produces same hash
+
+```zig
+test "hashType: same input produces same hash" {
+    const type_string = "Test(uint256 value)";
+    const hash1 = hashType(type_string);
+    const hash2 = hashType(type_string);
+    try std.testing.expectEqualSlices(u8, &hash1, &hash2);
+}
+```
+
+### encodeAddress: left pads to 32 bytes
+
+```zig
+test "encodeAddress: left pads to 32 bytes" {
+    const addr = [_]u8{0x12} ** 20;
+    const encoded = encodeAddress(addr);
+
+    // First 12 bytes should be zero
+    for (encoded[0..12]) |b| {
+        try std.testing.expectEqual(@as(u8, 0), b);
+    }
+
+    // Last 20 bytes should be address
+    try std.testing.expectEqualSlices(u8, &addr, encoded[12..32]);
+}
+```
+
+### encodeUint256: encodes correctly
+
+```zig
+test "encodeUint256: encodes correctly" {
+    const value: u256 = 12345;
+    const encoded = encodeUint256(value);
+    const decoded = std.mem.readInt(u256, &encoded, .big);
+    try std.testing.expectEqual(value, decoded);
+}
+```
+
+### encodeBytes32: pass through
+
+```zig
+test "encodeBytes32: pass through" {
+    const value = [_]u8{0xab} ** 32;
+    const encoded = encodeBytes32(value);
+    try std.testing.expectEqualSlices(u8, &value, &encoded);
+}
+```
+
+### encodeString: hashes string
+
+```zig
+test "encodeString: hashes string" {
+    const value = "hello world";
+    const encoded = encodeString(value);
+
+    // Should be keccak256 of string
+    var expected: [32]u8 = undefined;
+    crypto.Keccak256.hash(value, &expected);
+    try std.testing.expectEqualSlices(u8, &expected, &encoded);
+}
+```
+
+### encodeBytes: same as encodeString
+
+```zig
+test "encodeBytes: same as encodeString" {
+    const value = "test bytes";
+    const str_encoded = encodeString(value);
+    const bytes_encoded = encodeBytes(value);
+    try std.testing.expectEqualSlices(u8, &str_encoded, &bytes_encoded);
+}
+```
+
+### encodeBool: true encodes to 1
+
+```zig
+test "encodeBool: true encodes to 1" {
+    const encoded = encodeBool(true);
+    try std.testing.expectEqual(@as(u8, 0), encoded[0]);
+    try std.testing.expectEqual(@as(u8, 1), encoded[31]);
+}
+```
+
+### encodeBool: false encodes to 0
+
+```zig
+test "encodeBool: false encodes to 0" {
+    const encoded = encodeBool(false);
+    for (encoded) |b| {
+        try std.testing.expectEqual(@as(u8, 0), b);
+    }
+}
+```
+
+### encodeInt256: positive value
+
+```zig
+test "encodeInt256: positive value" {
+    const value: i256 = 12345;
+    const encoded = encodeInt256(value);
+    const decoded_unsigned = std.mem.readInt(u256, &encoded, .big);
+    const decoded: i256 = @bitCast(decoded_unsigned);
+    try std.testing.expectEqual(value, decoded);
+}
+```
+
+### encodeInt256: negative value
+
+```zig
+test "encodeInt256: negative value" {
+    const value: i256 = -12345;
+    const encoded = encodeInt256(value);
+    const decoded_unsigned = std.mem.readInt(u256, &encoded, .big);
+    const decoded: i256 = @bitCast(decoded_unsigned);
+    try std.testing.expectEqual(value, decoded);
+}
+```
+
+### encodeTypeWithDeps: simple type no deps
+
+```zig
+test "encodeTypeWithDeps: simple type no deps" {
+    const allocator = std.testing.allocator;
+
+    var types = TypesMap{};
+    defer types.deinit(allocator);
+
+    const mail_fields = [_]TypeField{
+        .{ .name = "from", .type = "address" },
+        .{ .name = "to", .type = "address" },
+        .{ .name = "contents", .type = "string" },
+    };
+    try types.put(allocator, "Mail", &mail_fields);
+
+    const encoded = try encodeTypeWithDeps(allocator, "Mail", &types);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqualStrings("Mail(address from,address to,string contents)", encoded);
+}
+```
+
+### encodeTypeWithDeps: with dependencies
+
+```zig
+test "encodeTypeWithDeps: with dependencies" {
+    const allocator = std.testing.allocator;
+
+    var types = TypesMap{};
+    defer types.deinit(allocator);
+
+    const person_fields = [_]TypeField{
+        .{ .name = "name", .type = "string" },
+        .{ .name = "wallet", .type = "address" },
+    };
+    try types.put(allocator, "Person", &person_fields);
+
+    const mail_fields = [_]TypeField{
+        .{ .name = "from", .type = "Person" },
+        .{ .name = "to", .type = "Person" },
+        .{ .name = "contents", .type = "string" },
+    };
+    try types.put(allocator, "Mail", &mail_fields);
+
+    const encoded = try encodeTypeWithDeps(allocator, "Mail", &types);
+    defer allocator.free(encoded);
+
+    // Mail comes first, then Person (sorted dependencies)
+    try std.testing.expectEqualStrings(
+        "Mail(Person from,Person to,string contents)Person(string name,address wallet)",
+        encoded,
+    );
+}
+```
+
+### hashStruct: simple struct
+
+```zig
+test "hashStruct: simple struct" {
+    const allocator = std.testing.allocator;
+
+    var types = TypesMap{};
+    defer types.deinit(allocator);
+
+    const test_fields = [_]TypeField{
+        .{ .name = "value", .type = "uint256" },
+    };
+    try types.put(allocator, "Test", &test_fields);
+
+    var struct_val = std.StringHashMapUnmanaged(Value){};
+    defer struct_val.deinit(allocator);
+    try struct_val.put(allocator, "value", Value{ .uint = 42 });
+
+    const value = Value{ .struct_val = struct_val };
+    const hash1 = try hashStruct(allocator, "Test", &types, value);
+    const hash2 = try hashStruct(allocator, "Test", &types, value);
+
+    try std.testing.expectEqualSlices(u8, &hash1, &hash2);
+}
+```
+
+### hashTypedData: full EIP-712 hash
+
+```zig
+test "hashTypedData: full EIP-712 hash" {
+    const allocator = std.testing.allocator;
+
+    const domain = Domain{
+        .name = "Test App",
+        .version = "1",
+        .chain_id = 1,
+    };
+
+    var types = TypesMap{};
+    defer types.deinit(allocator);
+
+    const test_fields = [_]TypeField{
+        .{ .name = "value", .type = "uint256" },
+    };
+    try types.put(allocator, "Test", &test_fields);
+
+    var struct_val = std.StringHashMapUnmanaged(Value){};
+    defer struct_val.deinit(allocator);
+    try struct_val.put(allocator, "value", Value{ .uint = 42 });
+
+    const message = Value{ .struct_val = struct_val };
+    const hash1 = try hashTypedData(allocator, domain, "Test", &types, message);
+    const hash2 = try hashTypedData(allocator, domain, "Test", &types, message);
+
+    try std.testing.expectEqualSlices(u8, &hash1, &hash2);
+}
+```
+
+### encodeValue: address
+
+```zig
+test "encodeValue: address" {
+    const allocator = std.testing.allocator;
+    var types = TypesMap{};
+
+    const addr = [_]u8{0x12} ** 20;
+    const value = Value{ .address = addr };
+
+    const encoded = try encodeValue(allocator, "address", &types, value);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 32), encoded.len);
+    // First 12 bytes zero
+    for (encoded[0..12]) |b| {
+        try std.testing.expectEqual(@as(u8, 0), b);
+    }
+    // Last 20 bytes is address
+    try std.testing.expectEqualSlices(u8, &addr, encoded[12..32]);
+}
+```
+
+### encodeValue: bool
+
+```zig
+test "encodeValue: bool" {
+    const allocator = std.testing.allocator;
+    var types = TypesMap{};
+
+    const true_val = Value{ .bool_val = true };
+    const false_val = Value{ .bool_val = false };
+
+    const true_encoded = try encodeValue(allocator, "bool", &types, true_val);
+    defer allocator.free(true_encoded);
+
+    const false_encoded = try encodeValue(allocator, "bool", &types, false_val);
+    defer allocator.free(false_encoded);
+
+    try std.testing.expectEqual(@as(u8, 1), true_encoded[31]);
+    try std.testing.expectEqual(@as(u8, 0), false_encoded[31]);
+}
+```
+
+### encodeValue: uint256
+
+```zig
+test "encodeValue: uint256" {
+    const allocator = std.testing.allocator;
+    var types = TypesMap{};
+
+    const value = Value{ .uint = 12345 };
+
+    const encoded = try encodeValue(allocator, "uint256", &types, value);
+    defer allocator.free(encoded);
+
+    const decoded = std.mem.readInt(u256, encoded[0..32], .big);
+    try std.testing.expectEqual(@as(u256, 12345), decoded);
+}
+```
+
+### encodeValue: string
+
+```zig
+test "encodeValue: string" {
+    const allocator = std.testing.allocator;
+    var types = TypesMap{};
+
+    const value = Value{ .string = "hello" };
+
+    const encoded = try encodeValue(allocator, "string", &types, value);
+    defer allocator.free(encoded);
+
+    // Should be keccak256("hello")
+    var expected: [32]u8 = undefined;
+    crypto.Keccak256.hash("hello", &expected);
+    try std.testing.expectEqualSlices(u8, &expected, encoded);
+}
+```
+
+### encodeValue: array
+
+```zig
+test "encodeValue: array" {
+    const allocator = std.testing.allocator;
+    var types = TypesMap{};
+
+    const elements = [_]Value{
+        Value{ .uint = 1 },
+        Value{ .uint = 2 },
+        Value{ .uint = 3 },
+    };
+    const value = Value{ .array = &elements };
+
+    const encoded = try encodeValue(allocator, "uint256[]", &types, value);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 32), encoded.len);
+}
+```
+
+### EIP-712 Mail example type hash
+
+```zig
+test "EIP-712 Mail example type hash" {
+    // Known test vector from EIP-712 spec
+    const type_string = "Mail(Person from,Person to,string contents)Person(string name,address wallet)";
+    const type_hash = hashType(type_string);
+
+    // This should match the known type hash from EIP-712 examples
+    try std.testing.expectEqual(@as(usize, 32), type_hash.len);
+}
+```
+
+### getBaseType: strips array suffix
+
+```zig
+test "getBaseType: strips array suffix" {
+    try std.testing.expectEqualStrings("Person", getBaseType("Person[]"));
+    try std.testing.expectEqualStrings("uint256", getBaseType("uint256[]"));
+    try std.testing.expectEqualStrings("address", getBaseType("address"));
+    try std.testing.expectEqualStrings("string", getBaseType("string"));
+}
+```

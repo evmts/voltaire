@@ -17,7 +17,7 @@ import { toHex } from "./toHex.js";
  * @example
  * ```typescript
  * import { From } from '@tevm/voltaire/Address/ChecksumAddress'
- * import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+ * import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
  *
  * const from = From({ keccak256 })
  * const checksummed = from("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
@@ -63,7 +63,7 @@ export function From({ keccak256 }) {
  * @example
  * ```typescript
  * import { IsValid } from '@tevm/voltaire/Address/ChecksumAddress'
- * import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+ * import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
  *
  * const isValid = IsValid({ keccak256 })
  * if (isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")) {

@@ -1,0 +1,155 @@
+---
+title: '[TS/JS] src/primitives/BundleHash/BundleHash.test.ts'
+source: 'src/primitives/BundleHash/BundleHash.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/BundleHash/BundleHash.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as BundleHash from "./index.js";
+
+describe("BundleHash", () => {
+	const validHex =
+		"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+	const validBytes = new Uint8Array([
+		0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78,
+		0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
+		0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
+	]);
+
+	describe("from", () => {
+		it("creates BundleHash from hex string with 0x prefix", () => {
+			const hash = BundleHash.from(validHex);
+
+			expect(hash).toBeInstanceOf(Uint8Array);
+			expect(hash.length).toBe(32);
+			expect(hash).toEqual(validBytes);
+		});
+
+		it("creates BundleHash from hex string without 0x prefix", () => {
+			const hash = BundleHash.from(validHex.slice(2));
+
+			expect(hash).toEqual(validBytes);
+		});
+
+		it("creates BundleHash from Uint8Array", () => {
+			const hash = BundleHash.from(validBytes);
+
+			expect(hash).toEqual(validBytes);
+		});
+
+		it("throws on invalid length Uint8Array", () => {
+			const invalid = new Uint8Array(16);
+
+			expect(() => BundleHash.from(invalid)).toThrow("must be 32 bytes");
+		});
+
+		it("throws on invalid hex length", () => {
+			expect(() => BundleHash.from("0x1234")).toThrow("must be 64 characters");
+		});
+
+		it("throws on invalid hex characters", () => {
+			expect(() =>
+				BundleHash.from(
+					"0xgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+				),
+			).toThrow("Invalid hex character");
+		});
+
+		it("throws on invalid type", () => {
+			expect(() => BundleHash.from(123 as any)).toThrow(
+				"must be hex string or Uint8Array",
+			);
+		});
+	});
+
+	describe("fromHex", () => {
+		it("creates BundleHash from hex string", () => {
+			const hash = BundleHash.fromHex(validHex);
+
+			expect(hash).toEqual(validBytes);
+		});
+
+		it("throws on non-string input", () => {
+			expect(() => BundleHash.fromHex(123 as any)).toThrow("must be a string");
+		});
+	});
+
+	describe("fromBundle", () => {
+		it("computes BundleHash from bundle", () => {
+			const tx1 = new Uint8Array([1, 2, 3, 4]);
+			const tx2 = new Uint8Array([5, 6, 7, 8]);
+
+			const bundle = {
+				transactions: [tx1, tx2],
+			};
+
+			const mockKeccak = (data: Uint8Array) => {
+				const hash = new Uint8Array(32);
+				hash[0] = data[0];
+				return hash;
+			};
+
+			const hash = BundleHash.fromBundle(bundle, { keccak256: mockKeccak });
+
+			expect(hash).toBeInstanceOf(Uint8Array);
+			expect(hash.length).toBe(32);
+		});
+
+		it("throws if keccak256 not provided", () => {
+			const bundle = {
+				transactions: [new Uint8Array([1, 2, 3, 4])],
+			};
+
+			expect(() => BundleHash.fromBundle(bundle, {} as any)).toThrow(
+				"keccak256 not provided",
+			);
+		});
+	});
+
+	describe("toHex", () => {
+		it("converts BundleHash to hex string", () => {
+			const hex = BundleHash.toHex(validBytes as any);
+
+			expect(hex).toBe(validHex);
+		});
+
+		it("pads bytes correctly", () => {
+			const bytes = new Uint8Array(32);
+			bytes[0] = 0x01;
+			bytes[31] = 0x0f;
+
+			const hex = BundleHash.toHex(bytes as any);
+
+			expect(hex).toBe(
+				"0x010000000000000000000000000000000000000000000000000000000000000f",
+			);
+		});
+	});
+
+	describe("equals", () => {
+		it("returns true for equal hashes", () => {
+			const hash1 = BundleHash.from(validHex);
+			const hash2 = BundleHash.from(validHex);
+
+			expect(BundleHash.equals(hash1, hash2)).toBe(true);
+		});
+
+		it("returns false for different hashes", () => {
+			const hash1 = BundleHash.from(validHex);
+			const hash2 = new Uint8Array(32).fill(0xff);
+
+			expect(BundleHash.equals(hash1, hash2 as any)).toBe(false);
+		});
+
+		it("returns false for different lengths", () => {
+			const hash1 = BundleHash.from(validHex);
+			const hash2 = new Uint8Array(16);
+
+			expect(BundleHash.equals(hash1, hash2 as any)).toBe(false);
+		});
+	});
+});
+
+```

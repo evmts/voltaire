@@ -1,0 +1,49 @@
+---
+title: '[Zig] src/crypto/ed25519.zig'
+source: 'src/crypto/ed25519.zig'
+---
+
+> Auto-generated from Zig tests in: src/crypto/ed25519.zig
+
+### ed25519 basic
+
+```zig
+test "ed25519 basic" {
+    const allocator = std.testing.allocator;
+
+    // Test key generation
+    const seed = [_]u8{1} ** SEED_SIZE;
+    const key_pair = try keypairFromSeed(&seed);
+
+    // Test signing
+    const message = "test message";
+    const signature = try sign(allocator, message, &key_pair.secret_key.toBytes());
+    defer allocator.free(signature);
+
+    try std.testing.expect(signature.len == SIGNATURE_SIZE);
+
+    // Test verification
+    const valid = try verify(signature, message, &key_pair.public_key.toBytes());
+    try std.testing.expect(valid);
+
+    // Test with wrong message
+    const invalid = try verify(signature, "wrong message", &key_pair.public_key.toBytes());
+    try std.testing.expect(!invalid);
+}
+```
+
+### ed25519 public key derivation
+
+```zig
+test "ed25519 public key derivation" {
+    const allocator = std.testing.allocator;
+
+    const seed = [_]u8{2} ** SEED_SIZE;
+    const key_pair = try keypairFromSeed(&seed);
+
+    const pub_key = try publicKeyFromSecret(allocator, &key_pair.secret_key.toBytes());
+    defer allocator.free(pub_key);
+
+    try std.testing.expectEqualSlices(u8, pub_key, &key_pair.public_key.toBytes());
+}
+```

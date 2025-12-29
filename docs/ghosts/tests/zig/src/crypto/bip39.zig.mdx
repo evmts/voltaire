@@ -1,0 +1,473 @@
+---
+title: '[Zig] src/crypto/bip39.zig'
+source: 'src/crypto/bip39.zig'
+---
+
+> Auto-generated from Zig tests in: src/crypto/bip39.zig
+
+### getWordCount
+
+```zig
+test "getWordCount" {
+    try std.testing.expectEqual(@as(u8, 12), try getWordCount(128));
+    try std.testing.expectEqual(@as(u8, 15), try getWordCount(160));
+    try std.testing.expectEqual(@as(u8, 18), try getWordCount(192));
+    try std.testing.expectEqual(@as(u8, 21), try getWordCount(224));
+    try std.testing.expectEqual(@as(u8, 24), try getWordCount(256));
+    try std.testing.expectError(Bip39Error.InvalidEntropySize, getWordCount(100));
+    try std.testing.expectError(Bip39Error.InvalidEntropySize, getWordCount(0));
+}
+```
+
+### getEntropyBits
+
+```zig
+test "getEntropyBits" {
+    try std.testing.expectEqual(@as(u16, 128), try getEntropyBits(12));
+    try std.testing.expectEqual(@as(u16, 160), try getEntropyBits(15));
+    try std.testing.expectEqual(@as(u16, 192), try getEntropyBits(18));
+    try std.testing.expectEqual(@as(u16, 224), try getEntropyBits(21));
+    try std.testing.expectEqual(@as(u16, 256), try getEntropyBits(24));
+    try std.testing.expectError(Bip39Error.InvalidWordCount, getEntropyBits(11));
+    try std.testing.expectError(Bip39Error.InvalidWordCount, getEntropyBits(0));
+}
+```
+
+### entropyToMnemonic - all zeros 16 bytes
+
+```zig
+test "entropyToMnemonic - all zeros 16 bytes" {
+    // All zeros should produce "abandon" x11 + "about"
+    const entropy = [_]u8{0} ** 16;
+    var indices: [12]u11 = undefined;
+
+    const result = try entropyToMnemonic(&entropy, &indices);
+    try std.testing.expectEqual(@as(usize, 12), result.len);
+
+    // First 11 words should be "abandon" (index 0)
+    for (0..11) |i| {
+        try std.testing.expectEqual(@as(u11, 0), result[i]);
+    }
+    // Last word "about" is index 3
+    try std.testing.expectEqual(@as(u11, 3), result[11]);
+}
+```
+
+### entropyToMnemonic - all zeros 32 bytes
+
+```zig
+test "entropyToMnemonic - all zeros 32 bytes" {
+    // All zeros 32 bytes should produce "abandon" x23 + "art"
+    const entropy = [_]u8{0} ** 32;
+    var indices: [24]u11 = undefined;
+
+    const result = try entropyToMnemonic(&entropy, &indices);
+    try std.testing.expectEqual(@as(usize, 24), result.len);
+
+    // First 23 words should be "abandon" (index 0)
+    for (0..23) |i| {
+        try std.testing.expectEqual(@as(u11, 0), result[i]);
+    }
+    // Last word "art" is index 102
+    try std.testing.expectEqual(@as(u11, 102), result[23]);
+}
+```
+
+### mnemonicToEntropy - valid 12-word
+
+```zig
+test "mnemonicToEntropy - valid 12-word" {
+    // "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+    const words = [_][]const u8{
+        "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+        "abandon", "abandon", "abandon", "abandon", "abandon", "about",
+    };
+
+    var entropy: [16]u8 = undefined;
+    const result = try mnemonicToEntropy(&words, &entropy);
+
+    // Should be all zeros
+    for (result) |b| {
+        try std.testing.expectEqual(@as(u8, 0), b);
+    }
+}
+```
+
+### mnemonicToEntropy - invalid checksum
+
+```zig
+test "mnemonicToEntropy - invalid checksum" {
+    // "abandon" x12 - wrong checksum
+    const words = [_][]const u8{
+        "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+        "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+    };
+
+    var entropy: [16]u8 = undefined;
+    try std.testing.expectError(Bip39Error.InvalidChecksum, mnemonicToEntropy(&words, &entropy));
+}
+```
+
+### mnemonicToEntropy - invalid word
+
+```zig
+test "mnemonicToEntropy - invalid word" {
+    const words = [_][]const u8{
+        "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+        "abandon", "abandon", "abandon", "abandon", "abandon", "notaword",
+    };
+
+    var entropy: [16]u8 = undefined;
+    try std.testing.expectError(Bip39Error.InvalidWord, mnemonicToEntropy(&words, &entropy));
+}
+```
+
+### validateMnemonic - valid
+
+```zig
+test "validateMnemonic - valid" {
+    const words = [_][]const u8{
+        "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+        "abandon", "abandon", "abandon", "abandon", "abandon", "about",
+    };
+    try std.testing.expect(validateMnemonic(&words));
+}
+```
+
+### validateMnemonic - invalid checksum
+
+```zig
+test "validateMnemonic - invalid checksum" {
+    const words = [_][]const u8{
+        "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+        "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+    };
+    try std.testing.expect(!validateMnemonic(&words));
+}
+```
+
+### validateMnemonic - invalid word
+
+```zig
+test "validateMnemonic - invalid word" {
+    const words = [_][]const u8{
+        "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+        "abandon", "abandon", "abandon", "abandon", "abandon", "notaword",
+    };
+    try std.testing.expect(!validateMnemonic(&words));
+}
+```
+
+### mnemonicToSeed - BIP-39 test vector 1
+
+```zig
+test "mnemonicToSeed - BIP-39 test vector 1" {
+    // "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+    // with empty passphrase
+    const words = [_][]const u8{
+        "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+        "abandon", "abandon", "abandon", "abandon", "abandon", "about",
+    };
+
+    var seed: [64]u8 = undefined;
+    mnemonicToSeed(&words, "", &seed);
+
+    const expected = [_]u8{
+        0x5e, 0xb0, 0x0b, 0xbd, 0xdc, 0xf0, 0x69, 0x08, 0x48, 0x89, 0xa8, 0xab, 0x91, 0x55, 0x56, 0x81,
+        0x65, 0xf5, 0xc4, 0x53, 0xcc, 0xb8, 0x5e, 0x70, 0x81, 0x1a, 0xae, 0xd6, 0xf6, 0xda, 0x5f, 0xc1,
+        0x9a, 0x5a, 0xc4, 0x0b, 0x38, 0x9c, 0xd3, 0x70, 0xd0, 0x86, 0x20, 0x6d, 0xec, 0x8a, 0xa6, 0xc4,
+        0x3d, 0xae, 0xa6, 0x69, 0x0f, 0x20, 0xad, 0x3d, 0x8d, 0x48, 0xb2, 0xd2, 0xce, 0x9e, 0x38, 0xe4,
+    };
+
+    try std.testing.expectEqualSlices(u8, &expected, &seed);
+}
+```
+
+### mnemonicToSeed - BIP-39 test vector with TREZOR passphrase
+
+```zig
+test "mnemonicToSeed - BIP-39 test vector with TREZOR passphrase" {
+    // "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+    // with passphrase "TREZOR"
+    const words = [_][]const u8{
+        "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+        "abandon", "abandon", "abandon", "abandon", "abandon", "about",
+    };
+
+    var seed: [64]u8 = undefined;
+    mnemonicToSeed(&words, "TREZOR", &seed);
+
+    const expected = [_]u8{
+        0xc5, 0x52, 0x57, 0xc3, 0x60, 0xc0, 0x7c, 0x72, 0x02, 0x9a, 0xeb, 0xc1, 0xb5, 0x3c, 0x05, 0xed,
+        0x03, 0x62, 0xad, 0xa3, 0x8e, 0xad, 0x3e, 0x3e, 0x9e, 0xfa, 0x37, 0x08, 0xe5, 0x34, 0x95, 0x53,
+        0x1f, 0x09, 0xa6, 0x98, 0x75, 0x99, 0xd1, 0x82, 0x64, 0xc1, 0xe1, 0xc9, 0x2f, 0x2c, 0xf1, 0x41,
+        0x63, 0x0c, 0x7a, 0x3c, 0x4a, 0xb7, 0xc8, 0x1b, 0x2f, 0x00, 0x16, 0x98, 0xe7, 0x46, 0x3b, 0x04,
+    };
+
+    try std.testing.expectEqualSlices(u8, &expected, &seed);
+}
+```
+
+### mnemonicToSeed - legal winner test vector
+
+```zig
+test "mnemonicToSeed - legal winner test vector" {
+    // "legal winner thank year wave sausage worth useful legal winner thank yellow"
+    const words = [_][]const u8{
+        "legal", "winner", "thank", "year",   "wave",  "sausage",
+        "worth", "useful", "legal", "winner", "thank", "yellow",
+    };
+
+    var seed: [64]u8 = undefined;
+    mnemonicToSeed(&words, "", &seed);
+
+    const expected = [_]u8{
+        0x87, 0x83, 0x86, 0xef, 0xb7, 0x88, 0x45, 0xb3, 0x35, 0x5b, 0xd1, 0x5e, 0xa4, 0xd3, 0x9e, 0xf9,
+        0x7d, 0x17, 0x9c, 0xb7, 0x12, 0xb7, 0x7d, 0x5c, 0x12, 0xb6, 0xbe, 0x41, 0x5f, 0xff, 0xef, 0xfe,
+        0x5f, 0x37, 0x7b, 0xa0, 0x2b, 0xf3, 0xf8, 0x54, 0x4a, 0xb8, 0x00, 0xb9, 0x55, 0xe5, 0x1f, 0xbf,
+        0xf0, 0x98, 0x28, 0xf6, 0x82, 0x05, 0x2a, 0x20, 0xfa, 0xa6, 0xad, 0xdb, 0xbd, 0xdf, 0xb0, 0x96,
+    };
+
+    try std.testing.expectEqualSlices(u8, &expected, &seed);
+}
+```
+
+### mnemonicToSeed - letter advice test vector
+
+```zig
+test "mnemonicToSeed - letter advice test vector" {
+    // "letter advice cage absurd amount doctor acoustic avoid letter advice cage above"
+    const words = [_][]const u8{
+        "letter",   "advice", "cage",   "absurd", "amount", "doctor",
+        "acoustic", "avoid",  "letter", "advice", "cage",   "above",
+    };
+
+    var seed: [64]u8 = undefined;
+    mnemonicToSeed(&words, "", &seed);
+
+    const expected = [_]u8{
+        0x77, 0xd6, 0xbe, 0x97, 0x08, 0xc8, 0x21, 0x87, 0x38, 0x93, 0x4f, 0x84, 0xbb, 0xbb, 0x78, 0xa2,
+        0xe0, 0x48, 0xca, 0x00, 0x77, 0x46, 0xcb, 0x76, 0x4f, 0x06, 0x73, 0xe4, 0xb1, 0x81, 0x2d, 0x17,
+        0x6b, 0xbb, 0x17, 0x3e, 0x1a, 0x29, 0x1f, 0x31, 0xcf, 0x63, 0x3f, 0x1d, 0x0b, 0xad, 0x7d, 0x3c,
+        0xf0, 0x71, 0xc3, 0x0e, 0x98, 0xcd, 0x06, 0x88, 0xb5, 0xbc, 0xce, 0x65, 0xec, 0xac, 0xeb, 0x36,
+    };
+
+    try std.testing.expectEqualSlices(u8, &expected, &seed);
+}
+```
+
+### mnemonicStringToSeed - valid
+
+```zig
+test "mnemonicStringToSeed - valid" {
+    const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
+    var seed: [64]u8 = undefined;
+    try mnemonicStringToSeed(mnemonic, "", &seed);
+
+    const expected = [_]u8{
+        0x5e, 0xb0, 0x0b, 0xbd, 0xdc, 0xf0, 0x69, 0x08, 0x48, 0x89, 0xa8, 0xab, 0x91, 0x55, 0x56, 0x81,
+        0x65, 0xf5, 0xc4, 0x53, 0xcc, 0xb8, 0x5e, 0x70, 0x81, 0x1a, 0xae, 0xd6, 0xf6, 0xda, 0x5f, 0xc1,
+        0x9a, 0x5a, 0xc4, 0x0b, 0x38, 0x9c, 0xd3, 0x70, 0xd0, 0x86, 0x20, 0x6d, 0xec, 0x8a, 0xa6, 0xc4,
+        0x3d, 0xae, 0xa6, 0x69, 0x0f, 0x20, 0xad, 0x3d, 0x8d, 0x48, 0xb2, 0xd2, 0xce, 0x9e, 0x38, 0xe4,
+    };
+
+    try std.testing.expectEqualSlices(u8, &expected, &seed);
+}
+```
+
+### mnemonicStringToSeed - invalid checksum
+
+```zig
+test "mnemonicStringToSeed - invalid checksum" {
+    const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+
+    var seed: [64]u8 = undefined;
+    try std.testing.expectError(Bip39Error.InvalidChecksum, mnemonicStringToSeed(mnemonic, "", &seed));
+}
+```
+
+### generateMnemonic - generates valid 12-word mnemonic
+
+```zig
+test "generateMnemonic - generates valid 12-word mnemonic" {
+    var indices: [12]u11 = undefined;
+    const result = try generateMnemonic(128, &indices);
+
+    try std.testing.expectEqual(@as(usize, 12), result.len);
+
+    // Verify all indices are valid
+    for (result) |idx| {
+        try std.testing.expect(idx < 2048);
+    }
+
+    // Convert to words and validate
+    var words: [12][]const u8 = undefined;
+    for (result, 0..) |idx, i| {
+        words[i] = wordlist[idx];
+    }
+
+    try std.testing.expect(validateMnemonic(&words));
+}
+```
+
+### generateMnemonic - generates valid 24-word mnemonic
+
+```zig
+test "generateMnemonic - generates valid 24-word mnemonic" {
+    var indices: [24]u11 = undefined;
+    const result = try generateMnemonic(256, &indices);
+
+    try std.testing.expectEqual(@as(usize, 24), result.len);
+
+    // Convert to words and validate
+    var words: [24][]const u8 = undefined;
+    for (result, 0..) |idx, i| {
+        words[i] = wordlist[idx];
+    }
+
+    try std.testing.expect(validateMnemonic(&words));
+}
+```
+
+### generateMnemonic - invalid entropy size
+
+```zig
+test "generateMnemonic - invalid entropy size" {
+    var indices: [24]u11 = undefined;
+    try std.testing.expectError(Bip39Error.InvalidEntropySize, generateMnemonic(100, &indices));
+}
+```
+
+### indicesToString
+
+```zig
+test "indicesToString" {
+    var indices = [_]u11{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3 };
+    var buf: [256]u8 = undefined;
+
+    const len = indicesToString(&indices, &buf);
+    const expected = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
+    try std.testing.expectEqualSlices(u8, expected, buf[0..len]);
+}
+```
+
+### entropy round trip
+
+```zig
+test "entropy round trip" {
+    // Start with known entropy
+    const original_entropy = [_]u8{
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
+        0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
+    };
+
+    // Convert to mnemonic
+    var indices: [12]u11 = undefined;
+    const mnemonic_indices = try entropyToMnemonic(&original_entropy, &indices);
+
+    // Convert indices to words
+    var words: [12][]const u8 = undefined;
+    for (mnemonic_indices, 0..) |idx, i| {
+        words[i] = wordlist[idx];
+    }
+
+    // Convert back to entropy
+    var recovered_entropy: [16]u8 = undefined;
+    const result = try mnemonicToEntropy(&words, &recovered_entropy);
+
+    try std.testing.expectEqualSlices(u8, &original_entropy, result);
+}
+```
+
+### all valid entropy sizes
+
+```zig
+test "all valid entropy sizes" {
+    const sizes = [_]struct { bits: u16, bytes: u8, words: u8 }{
+        .{ .bits = 128, .bytes = 16, .words = 12 },
+        .{ .bits = 160, .bytes = 20, .words = 15 },
+        .{ .bits = 192, .bytes = 24, .words = 18 },
+        .{ .bits = 224, .bytes = 28, .words = 21 },
+        .{ .bits = 256, .bytes = 32, .words = 24 },
+    };
+
+    for (sizes) |s| {
+        var entropy: [32]u8 = undefined;
+        crypto.random.bytes(entropy[0..s.bytes]);
+
+        var indices: [24]u11 = undefined;
+        const result = try entropyToMnemonic(entropy[0..s.bytes], &indices);
+
+        try std.testing.expectEqual(@as(usize, s.words), result.len);
+
+        // Validate the generated mnemonic
+        var words: [24][]const u8 = undefined;
+        for (result, 0..) |idx, i| {
+            words[i] = wordlist[idx];
+        }
+
+        try std.testing.expect(validateMnemonic(words[0..s.words]));
+    }
+}
+```
+
+### different passphrases produce different seeds
+
+```zig
+test "different passphrases produce different seeds" {
+    const words = [_][]const u8{
+        "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+        "abandon", "abandon", "abandon", "abandon", "abandon", "about",
+    };
+
+    var seed1: [64]u8 = undefined;
+    var seed2: [64]u8 = undefined;
+    var seed3: [64]u8 = undefined;
+
+    mnemonicToSeed(&words, "", &seed1);
+    mnemonicToSeed(&words, "password", &seed2);
+    mnemonicToSeed(&words, "different", &seed3);
+
+    try std.testing.expect(!std.mem.eql(u8, &seed1, &seed2));
+    try std.testing.expect(!std.mem.eql(u8, &seed2, &seed3));
+    try std.testing.expect(!std.mem.eql(u8, &seed1, &seed3));
+}
+```
+
+### seed derivation is deterministic
+
+```zig
+test "seed derivation is deterministic" {
+    const words = [_][]const u8{
+        "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+        "abandon", "abandon", "abandon", "abandon", "abandon", "about",
+    };
+
+    var seed1: [64]u8 = undefined;
+    var seed2: [64]u8 = undefined;
+
+    mnemonicToSeed(&words, "test", &seed1);
+    mnemonicToSeed(&words, "test", &seed2);
+
+    try std.testing.expectEqualSlices(u8, &seed1, &seed2);
+}
+```
+
+### wordlist has 2048 words
+
+```zig
+test "wordlist has 2048 words" {
+    try std.testing.expectEqual(@as(usize, 2048), wordlist.len);
+}
+```
+
+### wordlist first and last words
+
+```zig
+test "wordlist first and last words" {
+    try std.testing.expectEqualSlices(u8, "abandon", wordlist[0]);
+    try std.testing.expectEqualSlices(u8, "zoo", wordlist[2047]);
+}
+```

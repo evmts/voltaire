@@ -8,7 +8,7 @@
  * @example
  * ```typescript
  * import { FromPublicKey } from '@tevm/voltaire/Address/BrandedAddress'
- * import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+ * import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
  *
  * const fromPublicKey = FromPublicKey({ keccak256 })
  * const addr = fromPublicKey(xCoord, yCoord)

@@ -13,8 +13,8 @@ import { FromPublicKey } from "./fromPublicKey.js";
  * @example
  * ```typescript
  * import { FromPrivateKey } from '@tevm/voltaire/Address/BrandedAddress'
- * import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
- * import { derivePublicKey } from '@tevm/voltaire/crypto/Secp256k1'
+ * import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
+ * import { derivePublicKey } from '@tevm/voltaire/Secp256k1'
  *
  * const fromPrivateKey = FromPrivateKey({ keccak256, derivePublicKey })
  * const addr = fromPrivateKey(privateKey)

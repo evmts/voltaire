@@ -1,0 +1,219 @@
+---
+title: '[TS/JS] src/primitives/RelayData/RelayData.test.ts'
+source: 'src/primitives/RelayData/RelayData.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/RelayData/RelayData.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as RelayData from "./index.js";
+
+describe("RelayData", () => {
+	const validRelay = {
+		relayUrl: "https://relay.flashbots.net",
+		relayPubkey: new Uint8Array(48).fill(1),
+		slot: 123456n,
+		parentHash: new Uint8Array(32).fill(2),
+		proposerFeeRecipient: new Uint8Array(20).fill(3),
+	};
+
+	describe("from", () => {
+		it("creates RelayData from object", () => {
+			const relay = RelayData.from(validRelay);
+
+			expect(relay.relayUrl).toBe("https://relay.flashbots.net");
+			expect(relay.relayPubkey).toEqual(validRelay.relayPubkey);
+			expect(relay.slot).toBe(123456n);
+			expect(relay.parentHash).toEqual(validRelay.parentHash);
+			expect(relay.proposerFeeRecipient).toEqual(
+				validRelay.proposerFeeRecipient,
+			);
+		});
+
+		it("includes optional builderPubkey", () => {
+			const builderPubkey = new Uint8Array(48).fill(4);
+			const relay = RelayData.from({
+				...validRelay,
+				builderPubkey,
+			});
+
+			expect(relay.builderPubkey).toEqual(builderPubkey);
+		});
+
+		it("converts relayPubkey from hex string", () => {
+			const relay = RelayData.from({
+				...validRelay,
+				relayPubkey: `0x${"11".repeat(48)}`,
+			});
+
+			expect(relay.relayPubkey[0]).toBe(0x11);
+			expect(relay.relayPubkey.length).toBe(48);
+		});
+
+		it("converts builderPubkey from hex string", () => {
+			const relay = RelayData.from({
+				...validRelay,
+				builderPubkey: `0x${"44".repeat(48)}`,
+			});
+
+			expect(relay.builderPubkey?.[0]).toBe(0x44);
+		});
+
+		it("converts slot from number", () => {
+			const relay = RelayData.from({
+				...validRelay,
+				slot: 123456,
+			});
+
+			expect(relay.slot).toBe(123456n);
+		});
+
+		it("converts slot from hex string", () => {
+			const relay = RelayData.from({
+				...validRelay,
+				slot: "0x1e240",
+			});
+
+			expect(relay.slot).toBe(123456n);
+		});
+
+		it("converts parentHash from hex string", () => {
+			const relay = RelayData.from({
+				...validRelay,
+				parentHash:
+					"0x2222222222222222222222222222222222222222222222222222222222222222",
+			});
+
+			expect(relay.parentHash[0]).toBe(0x22);
+		});
+
+		it("converts proposerFeeRecipient from hex string", () => {
+			const relay = RelayData.from({
+				...validRelay,
+				proposerFeeRecipient: `0x${"33".repeat(20)}`,
+			});
+
+			expect(relay.proposerFeeRecipient[0]).toBe(0x33);
+		});
+
+		it("throws on non-object input", () => {
+			expect(() => RelayData.from("invalid" as any)).toThrow(
+				"must be an object",
+			);
+		});
+
+		it("throws on invalid relayUrl type", () => {
+			expect(() =>
+				RelayData.from({
+					...validRelay,
+					relayUrl: 123 as any,
+				}),
+			).toThrow("relayUrl must be a string");
+		});
+
+		it("throws on invalid relayUrl format", () => {
+			expect(() =>
+				RelayData.from({
+					...validRelay,
+					relayUrl: "not-a-url",
+				}),
+			).toThrow("must be a valid HTTP(S) URL");
+		});
+
+		it("accepts http:// URLs", () => {
+			const relay = RelayData.from({
+				...validRelay,
+				relayUrl: "http://localhost:8080",
+			});
+
+			expect(relay.relayUrl).toBe("http://localhost:8080");
+		});
+
+		it("throws on invalid relayPubkey length", () => {
+			expect(() =>
+				RelayData.from({
+					...validRelay,
+					relayPubkey: new Uint8Array(32),
+				}),
+			).toThrow("relayPubkey must be 48 bytes");
+		});
+
+		it("throws on invalid builderPubkey length", () => {
+			expect(() =>
+				RelayData.from({
+					...validRelay,
+					builderPubkey: new Uint8Array(32),
+				}),
+			).toThrow("builderPubkey must be 48 bytes");
+		});
+
+		it("throws on invalid parentHash length", () => {
+			expect(() =>
+				RelayData.from({
+					...validRelay,
+					parentHash: new Uint8Array(16),
+				}),
+			).toThrow("parentHash must be 32 bytes");
+		});
+
+		it("throws on invalid proposerFeeRecipient length", () => {
+			expect(() =>
+				RelayData.from({
+					...validRelay,
+					proposerFeeRecipient: new Uint8Array(32),
+				}),
+			).toThrow("proposerFeeRecipient must be 20 bytes");
+		});
+	});
+
+	describe("getEndpoint", () => {
+		it("constructs endpoint URL", () => {
+			const relay = RelayData.from(validRelay);
+			const url = RelayData.getEndpoint(relay, "/eth/v1/builder/header");
+
+			expect(url).toBe("https://relay.flashbots.net/eth/v1/builder/header");
+		});
+
+		it("handles trailing slash in relayUrl", () => {
+			const relay = RelayData.from({
+				...validRelay,
+				relayUrl: "https://relay.flashbots.net/",
+			});
+			const url = RelayData.getEndpoint(relay, "/eth/v1/builder/header");
+
+			expect(url).toBe("https://relay.flashbots.net/eth/v1/builder/header");
+		});
+
+		it("handles method without leading slash", () => {
+			const relay = RelayData.from(validRelay);
+			const url = RelayData.getEndpoint(relay, "eth/v1/builder/header");
+
+			expect(url).toBe("https://relay.flashbots.net/eth/v1/builder/header");
+		});
+	});
+
+	describe("MEV_RELAYS", () => {
+		it("exports well-known relay URLs", () => {
+			expect(RelayData.MEV_RELAYS.FLASHBOTS).toBe(
+				"https://relay.flashbots.net",
+			);
+			expect(RelayData.MEV_RELAYS.BLOXROUTE_MAX_PROFIT).toBe(
+				"https://bloxroute.max-profit.bloxroute.com",
+			);
+			expect(RelayData.MEV_RELAYS.BLOXROUTE_REGULATED).toBe(
+				"https://bloxroute.regulated.bloxroute.com",
+			);
+			expect(RelayData.MEV_RELAYS.EDEN).toBe("https://relay.edennetwork.io");
+			expect(RelayData.MEV_RELAYS.MANIFOLD).toBe(
+				"https://mainnet-relay.securerpc.com",
+			);
+			expect(RelayData.MEV_RELAYS.ULTRASOUND).toBe(
+				"https://relay.ultrasound.money",
+			);
+			expect(RelayData.MEV_RELAYS.AGNOSTIC).toBe("https://agnostic-relay.net");
+		});
+	});
+});
+
+```

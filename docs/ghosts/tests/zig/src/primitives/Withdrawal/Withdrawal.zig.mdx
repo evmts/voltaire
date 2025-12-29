@@ -1,0 +1,432 @@
+---
+title: '[Zig] src/primitives/Withdrawal/Withdrawal.zig'
+source: 'src/primitives/Withdrawal/Withdrawal.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Withdrawal/Withdrawal.zig
+
+### Withdrawal: from creates withdrawal
+
+```zig
+test "Withdrawal: from creates withdrawal" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const withdrawal = Withdrawal.from(1000000, 123456, addr, 32000000000);
+
+    try std.testing.expectEqual(@as(u64, 1000000), withdrawal.index);
+    try std.testing.expectEqual(@as(u64, 123456), withdrawal.validator_index);
+    try std.testing.expectEqual(@as(u64, 32000000000), withdrawal.amount);
+}
+```
+
+### Withdrawal: fromAddressBytes creates from bytes
+
+```zig
+test "Withdrawal: fromAddressBytes creates from bytes" {
+    const addr_bytes = [_]u8{0x74} ++ [_]u8{0} ** 19;
+    const withdrawal = Withdrawal.fromAddressBytes(1, 2, addr_bytes, 100);
+
+    try std.testing.expectEqual(@as(u64, 1), withdrawal.index);
+    try std.testing.expectEqual(@as(u64, 2), withdrawal.validator_index);
+    try std.testing.expectEqual(@as(u64, 100), withdrawal.amount);
+    try std.testing.expectEqual(@as(u8, 0x74), withdrawal.address.bytes[0]);
+}
+```
+
+### Withdrawal: fromHexAddress creates from hex
+
+```zig
+test "Withdrawal: fromHexAddress creates from hex" {
+    const withdrawal = try Withdrawal.fromHexAddress(
+        1000000,
+        123456,
+        "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+        32000000000,
+    );
+
+    try std.testing.expectEqual(@as(u64, 1000000), withdrawal.index);
+    try std.testing.expectEqual(@as(u64, 123456), withdrawal.validator_index);
+    try std.testing.expectEqual(@as(u64, 32000000000), withdrawal.amount);
+}
+```
+
+### Withdrawal: equals returns true for equal withdrawals
+
+```zig
+test "Withdrawal: equals returns true for equal withdrawals" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const a = Withdrawal.from(1000000, 123456, addr, 32000000000);
+    const b = Withdrawal.from(1000000, 123456, addr, 32000000000);
+
+    try std.testing.expect(a.equals(b));
+}
+```
+
+### Withdrawal: equals returns false for different indices
+
+```zig
+test "Withdrawal: equals returns false for different indices" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const a = Withdrawal.from(1000000, 123456, addr, 32000000000);
+    const b = Withdrawal.from(1000001, 123456, addr, 32000000000);
+
+    try std.testing.expect(!a.equals(b));
+}
+```
+
+### Withdrawal: equals returns false for different validator indices
+
+```zig
+test "Withdrawal: equals returns false for different validator indices" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const a = Withdrawal.from(1000000, 123456, addr, 32000000000);
+    const b = Withdrawal.from(1000000, 123457, addr, 32000000000);
+
+    try std.testing.expect(!a.equals(b));
+}
+```
+
+### Withdrawal: equals returns false for different addresses
+
+```zig
+test "Withdrawal: equals returns false for different addresses" {
+    const addr_a = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const addr_b = try Address.fromHex("0x0000000000000000000000000000000000000000");
+    const a = Withdrawal.from(1000000, 123456, addr_a, 32000000000);
+    const b = Withdrawal.from(1000000, 123456, addr_b, 32000000000);
+
+    try std.testing.expect(!a.equals(b));
+}
+```
+
+### Withdrawal: equals returns false for different amounts
+
+```zig
+test "Withdrawal: equals returns false for different amounts" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const a = Withdrawal.from(1000000, 123456, addr, 32000000000);
+    const b = Withdrawal.from(1000000, 123456, addr, 32000000001);
+
+    try std.testing.expect(!a.equals(b));
+}
+```
+
+### Withdrawal: addressToHex returns correct hex
+
+```zig
+test "Withdrawal: addressToHex returns correct hex" {
+    const withdrawal = try Withdrawal.fromHexAddress(
+        1,
+        1,
+        "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+        100,
+    );
+
+    const hex = withdrawal.addressToHex();
+    try std.testing.expectEqualStrings("0x742d35cc6634c0532925a3b844bc9e7595f251e3", &hex);
+}
+```
+
+### Withdrawal: rlpEncode and rlpDecode roundtrip
+
+```zig
+test "Withdrawal: rlpEncode and rlpDecode roundtrip" {
+    const allocator = std.testing.allocator;
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const withdrawal = Withdrawal.from(1000000, 123456, addr, 32000000000);
+
+    const encoded = try withdrawal.rlpEncode(allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try Withdrawal.rlpDecode(allocator, encoded);
+    try std.testing.expect(withdrawal.equals(decoded));
+}
+```
+
+### Withdrawal: rlpEncode handles zero values
+
+```zig
+test "Withdrawal: rlpEncode handles zero values" {
+    const allocator = std.testing.allocator;
+    const addr = Address.ZERO;
+    const withdrawal = Withdrawal.from(0, 0, addr, 0);
+
+    const encoded = try withdrawal.rlpEncode(allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try Withdrawal.rlpDecode(allocator, encoded);
+    try std.testing.expect(withdrawal.equals(decoded));
+}
+```
+
+### Withdrawal: rlpEncode handles large values
+
+```zig
+test "Withdrawal: rlpEncode handles large values" {
+    const allocator = std.testing.allocator;
+    const addr = try Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff");
+    const withdrawal = Withdrawal.from(
+        std.math.maxInt(u64),
+        std.math.maxInt(u64),
+        addr,
+        std.math.maxInt(u64),
+    );
+
+    const encoded = try withdrawal.rlpEncode(allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try Withdrawal.rlpDecode(allocator, encoded);
+    try std.testing.expect(withdrawal.equals(decoded));
+}
+```
+
+### stripLeadingZeros: strips zeros
+
+```zig
+test "stripLeadingZeros: strips zeros" {
+    const bytes = [_]u8{ 0, 0, 0, 1, 2, 3 };
+    const result = stripLeadingZeros(&bytes);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 1, 2, 3 }, result);
+}
+```
+
+### stripLeadingZeros: all zeros
+
+```zig
+test "stripLeadingZeros: all zeros" {
+    const bytes = [_]u8{ 0, 0, 0, 0 };
+    const result = stripLeadingZeros(&bytes);
+    try std.testing.expectEqual(@as(usize, 0), result.len);
+}
+```
+
+### stripLeadingZeros: no zeros
+
+```zig
+test "stripLeadingZeros: no zeros" {
+    const bytes = [_]u8{ 1, 2, 3, 4 };
+    const result = stripLeadingZeros(&bytes);
+    try std.testing.expectEqualSlices(u8, &bytes, result);
+}
+```
+
+### bytesToU64: converts correctly
+
+```zig
+test "bytesToU64: converts correctly" {
+    try std.testing.expectEqual(@as(u64, 0), bytesToU64(&[_]u8{}));
+    try std.testing.expectEqual(@as(u64, 1), bytesToU64(&[_]u8{1}));
+    try std.testing.expectEqual(@as(u64, 256), bytesToU64(&[_]u8{ 1, 0 }));
+    try std.testing.expectEqual(@as(u64, 0x0F4240), bytesToU64(&[_]u8{ 0x0F, 0x42, 0x40 })); // 1000000
+}
+```
+
+### Withdrawal: getAmountWei returns amount in wei
+
+```zig
+test "Withdrawal: getAmountWei returns amount in wei" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+
+    // 1 Gwei = 1e9 Wei
+    const withdrawal1 = Withdrawal.from(0, 0, addr, 1);
+    try std.testing.expectEqual(@as(u128, 1_000_000_000), withdrawal1.getAmountWei());
+
+    // 32 ETH in Gwei = 32_000_000_000 Gwei = 32e18 Wei
+    const withdrawal2 = Withdrawal.from(0, 0, addr, 32_000_000_000);
+    try std.testing.expectEqual(@as(u128, 32_000_000_000_000_000_000), withdrawal2.getAmountWei());
+}
+```
+
+### Withdrawal: getAmountWei handles zero
+
+```zig
+test "Withdrawal: getAmountWei handles zero" {
+    const addr = Address.ZERO;
+    const withdrawal = Withdrawal.from(0, 0, addr, 0);
+    try std.testing.expectEqual(@as(u128, 0), withdrawal.getAmountWei());
+}
+```
+
+### Withdrawal: getAmountWei handles max u64 amount
+
+```zig
+test "Withdrawal: getAmountWei handles max u64 amount" {
+    const addr = Address.ZERO;
+    const withdrawal = Withdrawal.from(0, 0, addr, std.math.maxInt(u64));
+    // max u64 * 1e9 should fit in u128
+    const expected: u128 = @as(u128, std.math.maxInt(u64)) * GWEI_TO_WEI;
+    try std.testing.expectEqual(expected, withdrawal.getAmountWei());
+}
+```
+
+### Withdrawal: hash returns consistent value
+
+```zig
+test "Withdrawal: hash returns consistent value" {
+    const allocator = std.testing.allocator;
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const withdrawal = Withdrawal.from(1000000, 123456, addr, 32_000_000_000);
+
+    const hash1 = try withdrawal.hash(allocator);
+    const hash2 = try withdrawal.hash(allocator);
+
+    try std.testing.expectEqualSlices(u8, &hash1, &hash2);
+}
+```
+
+### Withdrawal: hash differs for different withdrawals
+
+```zig
+test "Withdrawal: hash differs for different withdrawals" {
+    const allocator = std.testing.allocator;
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+
+    const withdrawal1 = Withdrawal.from(1, 123456, addr, 32_000_000_000);
+    const withdrawal2 = Withdrawal.from(2, 123456, addr, 32_000_000_000);
+
+    const hash1 = try withdrawal1.hash(allocator);
+    const hash2 = try withdrawal2.hash(allocator);
+
+    try std.testing.expect(!std.mem.eql(u8, &hash1, &hash2));
+}
+```
+
+### Withdrawal: hash is keccak256 of RLP encoding
+
+```zig
+test "Withdrawal: hash is keccak256 of RLP encoding" {
+    const allocator = std.testing.allocator;
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const withdrawal = Withdrawal.from(1000000, 123456, addr, 32_000_000_000);
+
+    // Get hash via method
+    const method_hash = try withdrawal.hash(allocator);
+
+    // Compute hash manually
+    const encoded = try withdrawal.rlpEncode(allocator);
+    defer allocator.free(encoded);
+    var manual_hash: [32]u8 = undefined;
+    Keccak256.hash(encoded, &manual_hash, .{});
+
+    try std.testing.expectEqualSlices(u8, &manual_hash, &method_hash);
+}
+```
+
+### EIP-4895: withdrawal RLP encoding format
+
+```zig
+test "EIP-4895: withdrawal RLP encoding format" {
+    // EIP-4895 specifies withdrawals are RLP encoded as:
+    // rlp([index, validator_index, address, amount])
+    const allocator = std.testing.allocator;
+    const addr = Address.ZERO;
+    const withdrawal = Withdrawal.from(0, 0, addr, 0);
+
+    const encoded = try withdrawal.rlpEncode(allocator);
+    defer allocator.free(encoded);
+
+    // Should be a list starting with 0xd6 (short list prefix)
+    // List contains: 0x80 (0), 0x80 (0), 94 bytes addr, 0x80 (0)
+    try std.testing.expect(encoded[0] >= 0xc0); // List prefix
+}
+```
+
+### EIP-4895: withdrawal with typical values
+
+```zig
+test "EIP-4895: withdrawal with typical values" {
+    // Test with values similar to what would appear on mainnet
+    const allocator = std.testing.allocator;
+
+    // Typical withdrawal: validator 12345 withdrawing 32 ETH
+    const addr = try Address.fromHex("0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f");
+    const withdrawal = Withdrawal.from(
+        1, // First withdrawal
+        12345, // Validator index
+        addr,
+        32_000_000_000, // 32 ETH in Gwei
+    );
+
+    const encoded = try withdrawal.rlpEncode(allocator);
+    defer allocator.free(encoded);
+
+    // Decode and verify roundtrip
+    const decoded = try Withdrawal.rlpDecode(allocator, encoded);
+    try std.testing.expect(withdrawal.equals(decoded));
+
+    // Verify amount conversion
+    try std.testing.expectEqual(@as(u128, 32_000_000_000_000_000_000), withdrawal.getAmountWei());
+}
+```
+
+### EIP-4895: withdrawal index monotonically increasing
+
+```zig
+test "EIP-4895: withdrawal index monotonically increasing" {
+    // EIP-4895 specifies withdrawal indices must be monotonically increasing
+    const allocator = std.testing.allocator;
+    const addr = Address.ZERO;
+
+    var prev_index: u64 = 0;
+    for (0..10) |i| {
+        const withdrawal = Withdrawal.from(prev_index + 1, @intCast(i), addr, 1_000_000_000);
+        try std.testing.expect(withdrawal.index > prev_index);
+        prev_index = withdrawal.index;
+
+        // Verify encoding/decoding preserves index
+        const encoded = try withdrawal.rlpEncode(allocator);
+        defer allocator.free(encoded);
+        const decoded = try Withdrawal.rlpDecode(allocator, encoded);
+        try std.testing.expectEqual(withdrawal.index, decoded.index);
+    }
+}
+```
+
+### EIP-4895: partial withdrawal amount
+
+```zig
+test "EIP-4895: partial withdrawal amount" {
+    // Partial withdrawals are rewards above 32 ETH
+    const allocator = std.testing.allocator;
+    const addr = try Address.fromHex("0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f");
+
+    // Partial withdrawal of 0.5 ETH in rewards
+    const partial_withdrawal = Withdrawal.from(
+        100,
+        54321,
+        addr,
+        500_000_000, // 0.5 ETH in Gwei
+    );
+
+    try std.testing.expectEqual(@as(u128, 500_000_000_000_000_000), partial_withdrawal.getAmountWei());
+
+    const encoded = try partial_withdrawal.rlpEncode(allocator);
+    defer allocator.free(encoded);
+    const decoded = try Withdrawal.rlpDecode(allocator, encoded);
+    try std.testing.expect(partial_withdrawal.equals(decoded));
+}
+```
+
+### EIP-4895: full withdrawal amount
+
+```zig
+test "EIP-4895: full withdrawal amount" {
+    // Full withdrawals are when validator exits (32 ETH + rewards)
+    const allocator = std.testing.allocator;
+    const addr = try Address.fromHex("0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f");
+
+    // Full withdrawal of 32 ETH + 1 ETH rewards = 33 ETH
+    const full_withdrawal = Withdrawal.from(
+        200,
+        12345,
+        addr,
+        33_000_000_000, // 33 ETH in Gwei
+    );
+
+    try std.testing.expectEqual(@as(u128, 33_000_000_000_000_000_000), full_withdrawal.getAmountWei());
+
+    const encoded = try full_withdrawal.rlpEncode(allocator);
+    defer allocator.free(encoded);
+    const decoded = try Withdrawal.rlpDecode(allocator, encoded);
+    try std.testing.expect(full_withdrawal.equals(decoded));
+}
+```

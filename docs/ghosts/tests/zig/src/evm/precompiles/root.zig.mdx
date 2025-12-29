@@ -1,0 +1,77 @@
+---
+title: '[Zig] src/evm/precompiles/root.zig'
+source: 'src/evm/precompiles/root.zig'
+---
+
+> Auto-generated from Zig tests in: src/evm/precompiles/root.zig
+
+### isPrecompile - Frontier
+
+```zig
+test "isPrecompile - Frontier" {
+    const testing = std.testing;
+
+    try testing.expect(isPrecompile(Address.fromU256(0x01), .FRONTIER));
+    try testing.expect(isPrecompile(Address.fromU256(0x04), .FRONTIER));
+    try testing.expect(!isPrecompile(Address.fromU256(0x05), .FRONTIER));
+}
+```
+
+### isPrecompile - Byzantium
+
+```zig
+test "isPrecompile - Byzantium" {
+    const testing = std.testing;
+
+    try testing.expect(isPrecompile(Address.fromU256(0x01), .BYZANTIUM));
+    try testing.expect(isPrecompile(Address.fromU256(0x08), .BYZANTIUM));
+    try testing.expect(!isPrecompile(Address.fromU256(0x09), .BYZANTIUM));
+}
+```
+
+### isPrecompile - Istanbul
+
+```zig
+test "isPrecompile - Istanbul" {
+    const testing = std.testing;
+
+    try testing.expect(isPrecompile(Address.fromU256(0x09), .ISTANBUL));
+    try testing.expect(!isPrecompile(Address.fromU256(0x0A), .ISTANBUL));
+}
+```
+
+### isPrecompile - Cancun
+
+```zig
+test "isPrecompile - Cancun" {
+    const testing = std.testing;
+
+    try testing.expect(isPrecompile(Address.fromU256(0x0A), .CANCUN));
+    try testing.expect(!isPrecompile(Address.fromU256(0x0B), .CANCUN));
+}
+```
+
+### isPrecompile - Prague
+
+```zig
+test "isPrecompile - Prague" {
+    const testing = std.testing;
+
+    try testing.expect(isPrecompile(Address.fromU256(0x0B), .PRAGUE));
+    try testing.expect(isPrecompile(Address.fromU256(0x13), .PRAGUE));
+    try testing.expect(!isPrecompile(Address.fromU256(0x14), .PRAGUE));
+}
+```
+
+### precompile - out of gas
+
+```zig
+test "precompile - out of gas" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 32;
+    const result = sha256.execute(allocator, &input, 10);
+    try testing.expectError(error.OutOfGas, result);
+}
+```

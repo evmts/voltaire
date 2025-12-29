@@ -1,0 +1,131 @@
+---
+title: '[Zig] src/evm/control/handlers_control_flow.zig.md'
+source: 'src/evm/control/handlers_control_flow.zig.md'
+---
+
+> Auto-generated from Zig tests in: src/evm/control/handlers_control_flow.zig.md
+
+### STOP halts execution
+
+```zig
+test "STOP halts execution" {
+    // Test that STOP sets stopped flag
+}
+```
+
+### JUMP with valid destination
+
+```zig
+test "JUMP with valid destination" {
+    // Test successful jump
+}
+```
+
+### JUMP with invalid destination returns error
+
+```zig
+test "JUMP with invalid destination returns error" {
+    // Test InvalidJump error
+}
+```
+
+### JUMPI jumps when condition is non-zero
+
+```zig
+test "JUMPI jumps when condition is non-zero" {
+    // Test conditional jump (true case)
+}
+```
+
+### JUMPI doesn't jump when condition is zero
+
+```zig
+test "JUMPI doesn't jump when condition is zero" {
+    // Test conditional jump (false case)
+}
+```
+
+### JUMPDEST is a noop that advances PC
+
+```zig
+test "JUMPDEST is a noop that advances PC" {
+    // Test JUMPDEST behavior
+}
+```
+
+### PC returns current program counter
+
+```zig
+test "PC returns current program counter" {
+    // Test PC opcode
+}
+```
+
+### RETURN with zero-length output
+
+```zig
+test "RETURN with zero-length output" {
+    // Test RETURN with empty output
+}
+```
+
+### RETURN with memory expansion
+
+```zig
+test "RETURN with memory expansion" {
+    // Test RETURN with large offset requiring memory expansion
+}
+```
+
+### RETURN with overflow in offset+length
+
+```zig
+test "RETURN with overflow in offset+length" {
+    // Test overflow handling
+}
+```
+
+### REVERT sets reverted flag
+
+```zig
+test "REVERT sets reverted flag" {
+    // Test REVERT behavior
+}
+```
+
+### REVERT only available from Byzantium+
+
+```zig
+test "REVERT only available from Byzantium+" {
+    // Test hardfork guard
+}
+```
+
+### fuzz JUMP destinations
+
+```zig
+test "fuzz JUMP destinations" {
+    var prng = std.rand.DefaultPrng.init(12345);
+    var i: usize = 0;
+    while (i < 1000) : (i += 1) {
+        const dest = prng.random().int(u32);
+        // Test jump to random destination
+    }
+}
+```
+
+### benchmark JUMP performance
+
+```zig
+test "benchmark JUMP performance" {
+    // Measure average time for 10000 jumps
+}
+```
+
+### benchmark memory copy in RETURN
+
+```zig
+test "benchmark memory copy in RETURN" {
+    // Measure copy performance for various sizes
+}
+```

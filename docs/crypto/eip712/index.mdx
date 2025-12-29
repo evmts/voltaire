@@ -3,6 +3,12 @@ title: EIP-712 Typed Data Signing
 description: Ethereum structured data signing and verification
 ---
 
+<Info>
+Source: https://github.com/evmts/voltaire/blob/main/src/crypto/eip712.zig
+
+Tests: https://github.com/evmts/voltaire/blob/main/src/crypto/eip712.test.ts
+</Info>
+
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/eip712.ts">
   Run EIP-712 examples in the interactive playground
 </Card>
@@ -99,7 +105,7 @@ Tree-shakeable with explicit crypto dependencies. Useful for custom crypto imple
 import { HashTypedData, HashDomain, HashStruct, EncodeData,
          HashType, EncodeValue } from '@tevm/voltaire/crypto/eip712';
 import { hash as keccak256 } from '@tevm/voltaire/crypto/keccak256';
-import { sign as secp256k1Sign } from '@tevm/voltaire/crypto/secp256k1';
+import { sign as secp256k1Sign } from '@tevm/voltaire/Secp256k1';
 
 // Build from bottom up (handle circular dependencies)
 const hashType = HashType({ keccak256 });
@@ -355,8 +361,8 @@ import * as EIP712 from '@tevm/voltaire/crypto/eip712';
 Tree-shakeable WASM modules for custom crypto pipelines:
 ```typescript
 import { HashTypedData } from '@tevm/voltaire/crypto/eip712';
-import { hash as keccak256Wasm } from '@tevm/voltaire/crypto/keccak256/wasm';
-import { sign as secp256k1Wasm } from '@tevm/voltaire/crypto/secp256k1/wasm';
+import { hash as keccak256Wasm } from '@tevm/voltaire/Keccak256/wasm';
+import { sign as secp256k1Wasm } from '@tevm/voltaire/Secp256k1/wasm';
 
 const hashTypedData = HashTypedData({
   keccak256: keccak256Wasm,

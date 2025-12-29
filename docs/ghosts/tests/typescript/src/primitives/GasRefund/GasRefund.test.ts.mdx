@@ -1,0 +1,187 @@
+---
+title: '[TS/JS] src/primitives/GasRefund/GasRefund.test.ts'
+source: 'src/primitives/GasRefund/GasRefund.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/GasRefund/GasRefund.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as GasRefund from "./index.js";
+
+describe("GasRefund", () => {
+	describe("from", () => {
+		it("creates from bigint", () => {
+			const refund = GasRefund.from(15000n);
+			expect(refund).toBe(15000n);
+		});
+
+		it("creates from number", () => {
+			const refund = GasRefund.from(15000);
+			expect(refund).toBe(15000n);
+		});
+
+		it("creates from string", () => {
+			const refund = GasRefund.from("15000");
+			expect(refund).toBe(15000n);
+		});
+
+		it("throws on negative value", () => {
+			expect(() => GasRefund.from(-1n)).toThrow(
+				"Gas refund must be non-negative",
+			);
+		});
+
+		it("accepts zero", () => {
+			const refund = GasRefund.from(0n);
+			expect(refund).toBe(0n);
+		});
+
+		it("accepts SSTORE clear refund", () => {
+			const refund = GasRefund.from(15000n); // Pre-London SSTORE clear
+			expect(refund).toBe(15000n);
+		});
+	});
+
+	describe("toNumber", () => {
+		it("converts to number", () => {
+			const refund = GasRefund.from(15000n);
+			expect(GasRefund.toNumber(refund)).toBe(15000);
+		});
+
+		it("converts with wrapper", () => {
+			expect(GasRefund.toNumber(15000n)).toBe(15000);
+		});
+	});
+
+	describe("toBigInt", () => {
+		it("returns bigint identity", () => {
+			const refund = GasRefund.from(15000n);
+			expect(GasRefund.toBigInt(refund)).toBe(15000n);
+		});
+
+		it("converts with wrapper", () => {
+			expect(GasRefund.toBigInt(15000)).toBe(15000n);
+		});
+	});
+
+	describe("toHex", () => {
+		it("converts to hex", () => {
+			const refund = GasRefund.from(15000n);
+			expect(GasRefund.toHex(refund)).toBe("0x3a98");
+		});
+
+		it("converts zero", () => {
+			expect(GasRefund.toHex(0n)).toBe("0x0");
+		});
+
+		it("converts SSTORE set refund", () => {
+			expect(GasRefund.toHex(20000n)).toBe("0x4e20");
+		});
+	});
+
+	describe("equals", () => {
+		it("returns true for equal values", () => {
+			const a = GasRefund.from(15000n);
+			const b = GasRefund.from(15000n);
+			expect(GasRefund._equals.call(a, b)).toBe(true);
+		});
+
+		it("returns false for different values", () => {
+			const a = GasRefund.from(15000n);
+			const b = GasRefund.from(20000n);
+			expect(GasRefund._equals.call(a, b)).toBe(false);
+		});
+
+		it("works with wrapper", () => {
+			expect(GasRefund.equals(15000n, 15000n)).toBe(true);
+			expect(GasRefund.equals(15000n, 20000n)).toBe(false);
+		});
+	});
+
+	describe("cappedRefund", () => {
+		it("caps refund at gasUsed / 5 when exceeds cap", () => {
+			const refund = GasRefund.from(15000n);
+			const gasUsed = 50000n;
+			// Cap = 50000 / 5 = 10000
+			const capped = GasRefund._cappedRefund.call(refund, gasUsed);
+			expect(capped).toBe(10000n);
+		});
+
+		it("does not cap when refund is below cap", () => {
+			const refund = GasRefund.from(5000n);
+			const gasUsed = 50000n;
+			// Cap = 50000 / 5 = 10000
+			const capped = GasRefund._cappedRefund.call(refund, gasUsed);
+			expect(capped).toBe(5000n);
+		});
+
+		it("caps refund at exact cap", () => {
+			const refund = GasRefund.from(10000n);
+			const gasUsed = 50000n;
+			// Cap = 50000 / 5 = 10000
+			const capped = GasRefund._cappedRefund.call(refund, gasUsed);
+			expect(capped).toBe(10000n);
+		});
+
+		it("handles zero gas used", () => {
+			const refund = GasRefund.from(15000n);
+			const gasUsed = 0n;
+			// Cap = 0 / 5 = 0
+			const capped = GasRefund._cappedRefund.call(refund, gasUsed);
+			expect(capped).toBe(0n);
+		});
+
+		it("handles zero refund", () => {
+			const refund = GasRefund.from(0n);
+			const gasUsed = 50000n;
+			const capped = GasRefund._cappedRefund.call(refund, gasUsed);
+			expect(capped).toBe(0n);
+		});
+
+		it("works with wrapper", () => {
+			const capped = GasRefund.cappedRefund(15000n, 50000n);
+			expect(capped).toBe(10000n);
+		});
+
+		it("handles realistic SSTORE clear scenario", () => {
+			// Pre-London: SSTORE clear gives 15000 gas refund
+			// Post-London: capped at gasUsed / 5
+			const sstoreClearRefund = GasRefund.from(15000n);
+			const gasUsed = 60000n;
+			// Cap = 60000 / 5 = 12000
+			const capped = GasRefund._cappedRefund.call(sstoreClearRefund, gasUsed);
+			expect(capped).toBe(12000n); // Refund capped
+		});
+
+		it("handles multiple SSTORE clears", () => {
+			// 3 SSTORE clears = 45000 gas refund (pre-London)
+			const totalRefund = GasRefund.from(45000n);
+			const gasUsed = 100000n;
+			// Cap = 100000 / 5 = 20000
+			const capped = GasRefund._cappedRefund.call(totalRefund, gasUsed);
+			expect(capped).toBe(20000n); // Heavily capped
+		});
+
+		it("handles low gas usage scenario", () => {
+			const refund = GasRefund.from(15000n);
+			const gasUsed = 30000n;
+			// Cap = 30000 / 5 = 6000
+			const capped = GasRefund._cappedRefund.call(refund, gasUsed);
+			expect(capped).toBe(6000n); // Severely capped due to low gas used
+		});
+	});
+
+	describe("namespace", () => {
+		it("exports all methods", () => {
+			expect(GasRefund.from).toBeDefined();
+			expect(GasRefund.toNumber).toBeDefined();
+			expect(GasRefund.toBigInt).toBeDefined();
+			expect(GasRefund.toHex).toBeDefined();
+			expect(GasRefund.equals).toBeDefined();
+			expect(GasRefund.cappedRefund).toBeDefined();
+		});
+	});
+});
+
+```

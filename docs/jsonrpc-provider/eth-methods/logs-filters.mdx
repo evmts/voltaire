@@ -16,8 +16,8 @@ Query historical event logs and create filters to monitor new blocks, transactio
 Query event logs matching filter criteria.
 
 ```typescript
-import * as Address from '@tevm/voltaire/primitives/Address';
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import { Address } from '@tevm/voltaire/Address';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 const logs = await provider.eth_getLogs({
   fromBlock: 'earliest',
@@ -126,8 +126,8 @@ Always uninstall filters when done to prevent resource leaks.
 ## Usage Example
 
 ```typescript
-import * as Address from '@tevm/voltaire/primitives/Address';
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+import * as Address from '@tevm/voltaire/Address';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 // Create filter for Transfer events
 const filterId = await provider.eth_newFilter({

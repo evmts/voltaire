@@ -1,0 +1,453 @@
+---
+title: "Transaction Simulation"
+description: "Simulate transactions to preview results before sending"
+---
+
+## Overview
+
+Transaction simulation lets you execute contract calls and estimate gas without broadcasting to the network. This catches errors early, prevents wasted gas on reverted transactions, and enables building safer dApps.
+
+## Using eth_call to Simulate
+
+`eth_call` executes a transaction locally against the current blockchain state without creating an on-chain transaction.
+
+```typescript
+import { HttpProvider } from '@voltaire/provider';
+import * as Abi from '@voltaire/primitives/Abi';
+
+const provider = new HttpProvider('https://eth.llamarpc.com');
+
+// ERC-20 transfer simulation
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'transfer',
+    inputs: [
+      { type: 'address', name: 'to' },
+      { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool', name: '' }]
+  }
+] as const;
+
+const callData = Abi.encodeFunction(erc20Abi, 'transfer', [
+  '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+  1000000000000000000n // 1 token (18 decimals)
+]);
+
+const result = await provider.request({
+  method: 'eth_call',
+  params: [
+    {
+      from: '0xYourAddress',
+      to: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
+      data: callData
+    },
+    'latest'
+  ]
+});
+
+// Decode the result
+const transferFunc = erc20Abi.find(item => item.name === 'transfer');
+const [success] = Abi.function.decodeResult(transferFunc, result);
+console.log('Transfer would succeed:', success);
+```
+
+### Simulating Against Different Blocks
+
+```typescript
+// Simulate against specific block states
+const resultAtBlock = await provider.request({
+  method: 'eth_call',
+  params: [
+    { from, to, data },
+    '0x10a5f00' // Specific block number
+  ]
+});
+
+// Simulate against pending state
+const pendingResult = await provider.request({
+  method: 'eth_call',
+  params: [
+    { from, to, data },
+    'pending'
+  ]
+});
+```
+
+## Estimating Gas
+
+`eth_estimateGas` returns the gas needed for a transaction to succeed. Always add a buffer for production.
+
+```typescript
+import { HttpProvider } from '@voltaire/provider';
+import * as Abi from '@voltaire/primitives/Abi';
+
+const provider = new HttpProvider('https://eth.llamarpc.com');
+
+// Estimate gas for ERC-20 transfer
+const gasEstimate = await provider.request({
+  method: 'eth_estimateGas',
+  params: [
+    {
+      from: '0xYourAddress',
+      to: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+      data: callData
+    }
+  ]
+});
+
+// Parse and add safety buffer
+const estimatedGas = BigInt(gasEstimate);
+const gasWithBuffer = estimatedGas * 120n / 100n; // 20% buffer
+
+console.log('Estimated gas:', estimatedGas);
+console.log('With buffer:', gasWithBuffer);
+```
+
+### Estimate with Value Transfer
+
+```typescript
+// ETH transfer estimation
+const ethTransferGas = await provider.request({
+  method: 'eth_estimateGas',
+  params: [
+    {
+      from: '0xYourAddress',
+      to: '0xRecipient',
+      value: '0xde0b6b3a7640000' // 1 ETH in hex
+    }
+  ]
+});
+// Simple transfers = 21000 gas
+```
+
+### Estimate Contract Deployment
+
+```typescript
+// Contract deployment estimation (no 'to' address)
+const deployGas = await provider.request({
+  method: 'eth_estimateGas',
+  params: [
+    {
+      from: '0xDeployer',
+      data: '0x608060405234801561001057600080fd5b50...' // Contract bytecode
+    }
+  ]
+});
+```
+
+## Detecting Revert Reasons
+
+When a call reverts, the RPC returns an error with the revert data. Voltaire provides `RevertReason` to decode it.
+
+```typescript
+import { HttpProvider } from '@voltaire/provider';
+import * as RevertReason from '@voltaire/primitives/RevertReason';
+
+const provider = new HttpProvider('https://eth.llamarpc.com');
+
+async function simulateWithRevertDetection(params: {
+  from: string;
+  to: string;
+  data: string;
+}) {
+  try {
+    const result = await provider.request({
+      method: 'eth_call',
+      params: [params, 'latest']
+    });
+    return { success: true, result };
+  } catch (error: any) {
+    // Extract revert data from error
+    const revertData = error.data || error.message;
+
+    if (typeof revertData === 'string' && revertData.startsWith('0x')) {
+      const reason = RevertReason.from(revertData);
+
+      switch (reason.type) {
+        case 'Error':
+          // Standard Error(string) revert
+          return {
+            success: false,
+            type: 'Error',
+            message: reason.message
+          };
+
+        case 'Panic':
+          // Solidity 0.8+ panic codes
+          return {
+            success: false,
+            type: 'Panic',
+            code: reason.code,
+            description: reason.description
+          };
+
+        case 'Custom':
+          // Custom error with selector
+          return {
+            success: false,
+            type: 'Custom',
+            selector: reason.selector,
+            data: reason.data
+          };
+
+        case 'Unknown':
+          return {
+            success: false,
+            type: 'Unknown',
+            data: reason.data
+          };
+      }
+    }
+
+    throw error;
+  }
+}
+
+// Usage
+const result = await simulateWithRevertDetection({
+  from: '0xYourAddress',
+  to: '0xContractAddress',
+  data: callData
+});
+
+if (!result.success) {
+  console.log('Transaction would revert:', result.message || result.description);
+}
+```
+
+### Common Panic Codes
+
+| Code | Description |
+|------|-------------|
+| 0x01 | Assertion failed |
+| 0x11 | Arithmetic overflow/underflow |
+| 0x12 | Division by zero |
+| 0x21 | Invalid enum value |
+| 0x22 | Storage corruption |
+| 0x31 | Pop on empty array |
+| 0x32 | Array index out of bounds |
+| 0x41 | Too much memory allocated |
+| 0x51 | Zero-initialized function pointer |
+
+### Decoding Custom Errors
+
+```typescript
+import * as Abi from '@voltaire/primitives/Abi';
+import * as RevertReason from '@voltaire/primitives/RevertReason';
+
+// Define custom errors from contract ABI
+const customErrors = [
+  {
+    type: 'error',
+    name: 'InsufficientBalance',
+    inputs: [
+      { type: 'address', name: 'account' },
+      { type: 'uint256', name: 'available' },
+      { type: 'uint256', name: 'required' }
+    ]
+  },
+  {
+    type: 'error',
+    name: 'Unauthorized',
+    inputs: [{ type: 'address', name: 'caller' }]
+  }
+] as const;
+
+function decodeCustomError(revertData: string) {
+  const reason = RevertReason.from(revertData);
+
+  if (reason.type !== 'Custom') {
+    return null;
+  }
+
+  // Find matching error by selector
+  for (const errorDef of customErrors) {
+    const selector = Abi.error.getSelector(errorDef);
+    if (selector === reason.selector) {
+      const params = Abi.error.decodeParams(errorDef, reason.data);
+      return { name: errorDef.name, params };
+    }
+  }
+
+  return null;
+}
+```
+
+## Simulating State Changes
+
+Combine `eth_call` with state overrides to simulate how a transaction would affect balances and storage.
+
+### Check Balance After Transfer
+
+```typescript
+import * as Abi from '@voltaire/primitives/Abi';
+
+const balanceOfAbi = [{
+  type: 'function',
+  name: 'balanceOf',
+  inputs: [{ type: 'address', name: 'account' }],
+  outputs: [{ type: 'uint256', name: '' }]
+}] as const;
+
+async function simulateTransferImpact(
+  provider: HttpProvider,
+  token: string,
+  from: string,
+  to: string,
+  amount: bigint
+) {
+  // Get current balances
+  const balanceCall = Abi.encodeFunction(balanceOfAbi, 'balanceOf', [from]);
+
+  const [fromBalanceBefore] = await provider.request({
+    method: 'eth_call',
+    params: [{ to: token, data: balanceCall }, 'latest']
+  }).then(result => {
+    const func = balanceOfAbi.find(i => i.name === 'balanceOf');
+    return Abi.function.decodeResult(func, result);
+  });
+
+  // Simulate the transfer
+  const transferData = Abi.encodeFunction(erc20Abi, 'transfer', [to, amount]);
+
+  try {
+    await provider.request({
+      method: 'eth_call',
+      params: [{ from, to: token, data: transferData }, 'latest']
+    });
+
+    return {
+      success: true,
+      balanceBefore: fromBalanceBefore,
+      balanceAfter: fromBalanceBefore - amount,
+      transferred: amount
+    };
+  } catch (error) {
+    return { success: false, error };
+  }
+}
+```
+
+### Using Access Lists for Optimization
+
+`eth_createAccessList` generates an access list showing which addresses and storage slots a transaction will touch.
+
+```typescript
+const accessListResult = await provider.request({
+  method: 'eth_createAccessList',
+  params: [
+    {
+      from: '0xYourAddress',
+      to: '0xContractAddress',
+      data: callData
+    },
+    'latest'
+  ]
+});
+
+console.log('Addresses accessed:', accessListResult.accessList);
+console.log('Gas used with access list:', accessListResult.gasUsed);
+
+// Use access list to reduce gas costs
+const txWithAccessList = {
+  from: '0xYourAddress',
+  to: '0xContractAddress',
+  data: callData,
+  accessList: accessListResult.accessList,
+  gas: accessListResult.gasUsed
+};
+```
+
+## Complete Simulation Example
+
+```typescript
+import { HttpProvider } from '@voltaire/provider';
+import * as Abi from '@voltaire/primitives/Abi';
+import * as RevertReason from '@voltaire/primitives/RevertReason';
+
+const provider = new HttpProvider('https://eth.llamarpc.com');
+
+interface SimulationResult {
+  success: boolean;
+  gasEstimate?: bigint;
+  returnData?: string;
+  error?: {
+    type: 'Error' | 'Panic' | 'Custom' | 'Unknown';
+    message?: string;
+    code?: number;
+    selector?: string;
+  };
+}
+
+async function simulateTransaction(params: {
+  from: string;
+  to: string;
+  data: string;
+  value?: string;
+}): Promise<SimulationResult> {
+  // Step 1: Simulate with eth_call
+  try {
+    const callResult = await provider.request({
+      method: 'eth_call',
+      params: [params, 'latest']
+    });
+
+    // Step 2: Estimate gas
+    const gasHex = await provider.request({
+      method: 'eth_estimateGas',
+      params: [params]
+    });
+
+    const gasEstimate = BigInt(gasHex) * 120n / 100n; // 20% buffer
+
+    return {
+      success: true,
+      gasEstimate,
+      returnData: callResult
+    };
+  } catch (err: any) {
+    const revertData = err.data;
+
+    if (typeof revertData === 'string' && revertData.startsWith('0x')) {
+      const reason = RevertReason.from(revertData);
+
+      return {
+        success: false,
+        error: {
+          type: reason.type,
+          message: reason.type === 'Error' ? reason.message : undefined,
+          code: reason.type === 'Panic' ? reason.code : undefined,
+          selector: reason.type === 'Custom' ? reason.selector : undefined
+        }
+      };
+    }
+
+    return {
+      success: false,
+      error: { type: 'Unknown', message: err.message }
+    };
+  }
+}
+
+// Usage
+const result = await simulateTransaction({
+  from: '0xYourAddress',
+  to: '0xContractAddress',
+  data: '0xa9059cbb...'
+});
+
+if (result.success) {
+  console.log('Transaction will succeed');
+  console.log('Gas needed:', result.gasEstimate);
+} else {
+  console.log('Transaction will fail:', result.error);
+}
+```
+
+## Related
+
+- [Contract Call Methods](/jsonrpc-provider/eth-methods/calls) - eth_call, eth_estimateGas reference
+- [Error Handling](/jsonrpc-provider/error-handling) - Handling RPC errors
+- [Usage Patterns](/jsonrpc-provider/usage-patterns) - Common provider recipes

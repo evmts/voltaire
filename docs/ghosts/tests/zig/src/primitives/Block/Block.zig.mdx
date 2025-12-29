@@ -1,0 +1,487 @@
+---
+title: '[Zig] src/primitives/Block/Block.zig'
+source: 'src/primitives/Block/Block.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Block/Block.zig
+
+### from - creates block with computed hash
+
+```zig
+test "from - creates block with computed hash" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expectEqual(@as(usize, 32), block.hash.len);
+    try std.testing.expect(block.size > 0);
+}
+```
+
+### genesis - creates genesis block
+
+```zig
+test "genesis - creates genesis block" {
+    const allocator = std.testing.allocator;
+    const block = try genesis(1, allocator);
+    try std.testing.expectEqual(@as(u64, 0), block.header.number);
+}
+```
+
+### fromHeader - creates block with empty body
+
+```zig
+test "fromHeader - creates block with empty body" {
+    const allocator = std.testing.allocator;
+    var header = BlockHeader.init();
+    header.number = 12345;
+
+    const block = try fromHeader(&header, allocator);
+    try std.testing.expectEqual(@as(u64, 12345), block.header.number);
+    try std.testing.expectEqual(@as(usize, 0), block.body.transactions.len);
+}
+```
+
+### rlpEncode - basic block
+
+```zig
+test "rlpEncode - basic block" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    const encoded = try rlpEncode(&block, allocator);
+    defer allocator.free(encoded);
+
+    try std.testing.expect(encoded.len > 0);
+    // Should be a valid RLP list
+    try std.testing.expect(encoded[0] >= 0xc0 or encoded[0] >= 0xf7);
+}
+```
+
+### computeHash - matches stored hash
+
+```zig
+test "computeHash - matches stored hash" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    const computed = try computeHash(&block, allocator);
+    try std.testing.expect(Hash.equals(&block.hash, &computed));
+}
+```
+
+### equals - same block
+
+```zig
+test "equals - same block" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expect(equals(&block, &block));
+}
+```
+
+### equals - different blocks
+
+```zig
+test "equals - different blocks" {
+    const allocator = std.testing.allocator;
+
+    var header1 = BlockHeader.init();
+    header1.number = 1;
+    const body1 = BlockBody.init();
+    const block1 = try from(&header1, &body1, allocator);
+
+    var header2 = BlockHeader.init();
+    header2.number = 2;
+    const body2 = BlockBody.init();
+    const block2 = try from(&header2, &body2, allocator);
+
+    try std.testing.expect(!equals(&block1, &block2));
+}
+```
+
+### number - returns header number
+
+```zig
+test "number - returns header number" {
+    const allocator = std.testing.allocator;
+    var header = BlockHeader.init();
+    header.number = 12345;
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expectEqual(@as(u64, 12345), number(&block));
+}
+```
+
+### parentHash - returns header parent hash
+
+```zig
+test "parentHash - returns header parent hash" {
+    const allocator = std.testing.allocator;
+    var header = BlockHeader.init();
+    header.parent_hash = [_]u8{0xab} ** 32;
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expectEqual(@as(u8, 0xab), parentHash(&block)[0]);
+}
+```
+
+### timestamp - returns header timestamp
+
+```zig
+test "timestamp - returns header timestamp" {
+    const allocator = std.testing.allocator;
+    var header = BlockHeader.init();
+    header.timestamp = 1640000000;
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expectEqual(@as(u64, 1640000000), timestamp(&block));
+}
+```
+
+### transactionCount - returns body tx count
+
+```zig
+test "transactionCount - returns body tx count" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expectEqual(@as(usize, 0), transactionCount(&block));
+}
+```
+
+### ommerCount - returns body ommer count
+
+```zig
+test "ommerCount - returns body ommer count" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expectEqual(@as(usize, 0), ommerCount(&block));
+}
+```
+
+### withdrawalCount - pre-Shanghai
+
+```zig
+test "withdrawalCount - pre-Shanghai" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expect(withdrawalCount(&block) == null);
+}
+```
+
+### isPostMerge - default header
+
+```zig
+test "isPostMerge - default header" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expect(isPostMerge(&block));
+}
+```
+
+### hasEip1559 - without base fee
+
+```zig
+test "hasEip1559 - without base fee" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expect(!hasEip1559(&block));
+}
+```
+
+### hasEip4844 - without blob fields
+
+```zig
+test "hasEip4844 - without blob fields" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expect(!hasEip4844(&block));
+}
+```
+
+### hasWithdrawals - pre-Shanghai
+
+```zig
+test "hasWithdrawals - pre-Shanghai" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expect(!hasWithdrawals(&block));
+}
+```
+
+### clone - creates copy
+
+```zig
+test "clone - creates copy" {
+    const allocator = std.testing.allocator;
+    var header = BlockHeader.init();
+    header.number = 12345;
+    const body = BlockBody.init();
+    const original = try from(&header, &body, allocator);
+
+    const copy = clone(&original);
+    try std.testing.expectEqual(original.header.number, copy.header.number);
+    try std.testing.expect(equals(&original, &copy));
+}
+```
+
+### preMerge - creates block with total difficulty
+
+```zig
+test "preMerge - creates block with total difficulty" {
+    const allocator = std.testing.allocator;
+    var header = BlockHeader.init();
+    header.difficulty = 17179869184; // Non-zero difficulty
+    const body = BlockBody.init();
+
+    const block = try preMerge(&header, &body, 1000000000000, allocator);
+
+    try std.testing.expect(!isPostMerge(&block));
+    try std.testing.expectEqual(@as(?u256, 1000000000000), block.total_difficulty);
+}
+```
+
+### postMerge - creates block without total difficulty
+
+```zig
+test "postMerge - creates block without total difficulty" {
+    const allocator = std.testing.allocator;
+    var header = BlockHeader.init();
+    header.difficulty = 0;
+    header.base_fee_per_gas = 1000000000;
+    const body = BlockBody.init();
+
+    const block = try postMerge(&header, &body, allocator);
+
+    try std.testing.expect(isPostMerge(&block));
+    try std.testing.expect(block.total_difficulty == null);
+}
+```
+
+### validateHash - valid block
+
+```zig
+test "validateHash - valid block" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expect(try validateHash(&block, allocator));
+}
+```
+
+### hasValidTransactionsRoot - empty transactions
+
+```zig
+test "hasValidTransactionsRoot - empty transactions" {
+    const allocator = std.testing.allocator;
+    var header = BlockHeader.init();
+    header.transactions_root = BlockHeader.EMPTY_TRANSACTIONS_ROOT;
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expect(hasValidTransactionsRoot(&block));
+}
+```
+
+### hasValidOmmersHash - empty ommers
+
+```zig
+test "hasValidOmmersHash - empty ommers" {
+    const allocator = std.testing.allocator;
+    var header = BlockHeader.init();
+    header.ommers_hash = BlockHeader.EMPTY_OMMERS_HASH;
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expect(try hasValidOmmersHash(&block, allocator));
+}
+```
+
+### gasUtilization - calculates ratio
+
+```zig
+test "gasUtilization - calculates ratio" {
+    const allocator = std.testing.allocator;
+    var header = BlockHeader.init();
+    header.gas_limit = 30000000;
+    header.gas_used = 15000000;
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    const util = gasUtilization(&block);
+    try std.testing.expect(util > 0.49 and util < 0.51);
+}
+```
+
+### isEmpty - empty block
+
+```zig
+test "isEmpty - empty block" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expect(isEmpty(&block));
+}
+```
+
+### baseFeePerGas - EIP-1559 block
+
+```zig
+test "baseFeePerGas - EIP-1559 block" {
+    const allocator = std.testing.allocator;
+    var header = BlockHeader.init();
+    header.base_fee_per_gas = 1000000000;
+    const body = BlockBody.init();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expectEqual(@as(?u256, 1000000000), baseFeePerGas(&block));
+}
+```
+
+### real block - mainnet block 1 structure
+
+```zig
+test "real block - mainnet block 1 structure" {
+    const allocator = std.testing.allocator;
+
+    // Block 1 header (first block after genesis)
+    var header = BlockHeader.BlockHeader{
+        .parent_hash = .{
+            0xd4, 0xe5, 0x67, 0x40, 0xf8, 0x76, 0xae, 0xf8,
+            0xc0, 0x10, 0xb8, 0x6a, 0x40, 0xd5, 0xf5, 0x67,
+            0x45, 0xa1, 0x18, 0xd0, 0x90, 0x6a, 0x34, 0xe6,
+            0x9a, 0xec, 0x8c, 0x0d, 0xb1, 0xcb, 0x8f, 0xa3,
+        },
+        .ommers_hash = BlockHeader.EMPTY_OMMERS_HASH,
+        .state_root = .{
+            0xd6, 0x7e, 0x4d, 0x45, 0x03, 0x43, 0x04, 0x64,
+            0x25, 0xae, 0x42, 0x71, 0x47, 0x43, 0x53, 0x85,
+            0x7a, 0xb8, 0x60, 0xdb, 0xc0, 0xa1, 0xdc, 0xe6,
+            0x4b, 0x41, 0xa5, 0x13, 0x72, 0x2e, 0xcc, 0x47,
+        },
+        .transactions_root = BlockHeader.EMPTY_TRANSACTIONS_ROOT,
+        .receipts_root = BlockHeader.EMPTY_RECEIPTS_ROOT,
+        .difficulty = 17179869184,
+        .number = 1,
+        .gas_limit = 5000,
+        .gas_used = 0,
+        .timestamp = 1438269988,
+        .mix_hash = .{
+            0x96, 0x9b, 0x90, 0x0d, 0xe2, 0x7b, 0x6a, 0xc6,
+            0xa6, 0x77, 0x42, 0x36, 0x5d, 0xd6, 0x5f, 0x55,
+            0xa0, 0x52, 0x6c, 0x41, 0xfd, 0x18, 0xe1, 0xb1,
+            0x6f, 0x1a, 0x12, 0x15, 0xc2, 0xe6, 0x6f, 0x59,
+        },
+        .nonce = .{ 0x53, 0x9b, 0xd4, 0x97, 0x9f, 0xef, 0x1e, 0xc4 },
+    };
+
+    const body = BlockBody.init();
+
+    // Create block with total difficulty
+    const block = try preMerge(&header, &body, 17179869184, allocator);
+
+    try std.testing.expectEqual(@as(u64, 1), number(&block));
+    try std.testing.expect(!isPostMerge(&block));
+    try std.testing.expect(isEmpty(&block));
+    try std.testing.expect(try hasValidOmmersHash(&block, allocator));
+}
+```
+
+### real block - post-merge structure
+
+```zig
+test "real block - post-merge structure" {
+    const allocator = std.testing.allocator;
+
+    var header = BlockHeader.init();
+    header.difficulty = 0;
+    header.number = 15537394;
+    header.gas_limit = 30000000;
+    header.gas_used = 29999968;
+    header.timestamp = 1663224162;
+    header.base_fee_per_gas = 7;
+    header.ommers_hash = BlockHeader.EMPTY_OMMERS_HASH;
+    header.transactions_root = BlockHeader.EMPTY_TRANSACTIONS_ROOT;
+    header.receipts_root = BlockHeader.EMPTY_RECEIPTS_ROOT;
+
+    const body = BlockBody.init();
+    const block = try postMerge(&header, &body, allocator);
+
+    try std.testing.expect(isPostMerge(&block));
+    try std.testing.expect(hasEip1559(&block));
+    try std.testing.expect(!hasWithdrawals(&block));
+
+    // Check gas utilization (should be ~99.99%)
+    const util = gasUtilization(&block);
+    try std.testing.expect(util > 0.99);
+}
+```
+
+### real block - cancun with blobs
+
+```zig
+test "real block - cancun with blobs" {
+    const allocator = std.testing.allocator;
+
+    var header = BlockHeader.init();
+    header.difficulty = 0;
+    header.number = 19426587;
+    header.gas_limit = 30000000;
+    header.gas_used = 15000000;
+    header.timestamp = 1710338135;
+    header.base_fee_per_gas = 30000000000;
+    header.withdrawals_root = BlockHeader.EMPTY_WITHDRAWALS_ROOT;
+    header.blob_gas_used = 131072;
+    header.excess_blob_gas = 0;
+    header.parent_beacon_block_root = Hash.ZERO;
+    header.ommers_hash = BlockHeader.EMPTY_OMMERS_HASH;
+    header.transactions_root = BlockHeader.EMPTY_TRANSACTIONS_ROOT;
+    header.receipts_root = BlockHeader.EMPTY_RECEIPTS_ROOT;
+
+    const body = BlockBody.postShanghai();
+    const block = try from(&header, &body, allocator);
+
+    try std.testing.expect(isPostMerge(&block));
+    try std.testing.expect(hasEip1559(&block));
+    try std.testing.expect(hasWithdrawals(&block));
+    try std.testing.expect(hasEip4844(&block));
+    try std.testing.expectEqual(@as(?u256, 30000000000), baseFeePerGas(&block));
+}
+```

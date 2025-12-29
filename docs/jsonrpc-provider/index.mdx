@@ -3,6 +3,20 @@ title: JSONRPCProvider
 description: EIP-1193 compliant Ethereum JSON-RPC provider with branded primitives and EventEmitter pattern
 ---
 
+<Info>
+Source: 
+https://github.com/evmts/voltaire/blob/main/src/provider/Provider.ts •
+https://github.com/evmts/voltaire/blob/main/src/provider/HttpProvider.ts •
+https://github.com/evmts/voltaire/blob/main/src/provider/InMemoryProvider.ts •
+https://github.com/evmts/voltaire/blob/main/src/provider/WebSocketProvider.ts
+
+Tests:
+https://github.com/evmts/voltaire/blob/main/src/provider/HttpProvider.test.ts •
+https://github.com/evmts/voltaire/blob/main/src/provider/WebSocketProvider.test.ts •
+https://github.com/evmts/voltaire/blob/main/src/provider/InMemoryProvider.test.ts •
+https://github.com/evmts/voltaire/blob/main/src/provider/EIP1193Provider.test.ts
+</Info>
+
 <Warning>
 **This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
 </Warning>
@@ -273,7 +287,7 @@ interface LogFilter {
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import { Address } from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -298,8 +312,8 @@ try {
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hex from '@tevm/voltaire/Hex';
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
 
 const contractAddress = Address('0x...');
 
@@ -328,8 +342,8 @@ try {
 ### Monitor Contract Events
 
 ```typescript
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import { Address } from '@tevm/voltaire/Address';
+import { Hash } from '@tevm/voltaire/Hash';
 
 const contractAddress = Address('0x...');
 const transferSignature = Hash(
@@ -358,7 +372,7 @@ provider.on('chainChanged', (chainId) => {
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Hash from '@tevm/voltaire/Hash';
+import { Hash } from '@tevm/voltaire/Hash';
 
 async function waitForConfirmation(
   txHash: Hash,
@@ -404,8 +418,8 @@ Import only what you need for optimal bundle size:
 import type { Provider } from '@tevm/voltaire/provider';
 
 // Import specific primitives used
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import { Address } from '@tevm/voltaire/Address';
+import { Hash } from '@tevm/voltaire/Hash';
 
 // Only these primitives included in bundle
 // Unused primitives (Bytecode, Transaction, etc.) excluded

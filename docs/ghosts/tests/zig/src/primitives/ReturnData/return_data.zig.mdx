@@ -1,0 +1,219 @@
+---
+title: '[Zig] src/primitives/ReturnData/return_data.zig'
+source: 'src/primitives/ReturnData/return_data.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/ReturnData/return_data.zig
+
+### ReturnData.from - creates from bytes
+
+```zig
+test "ReturnData.from - creates from bytes" {
+    const bytes = [_]u8{ 0x00, 0x00, 0x00, 0x01 };
+    const data = ReturnData.from(&bytes);
+
+    try std.testing.expectEqual(@as(usize, 4), data.len());
+    try std.testing.expect(!data.isEmpty());
+}
+```
+
+### ReturnData.from - empty bytes
+
+```zig
+test "ReturnData.from - empty bytes" {
+    const bytes = [_]u8{};
+    const data = ReturnData.from(&bytes);
+
+    try std.testing.expectEqual(@as(usize, 0), data.len());
+    try std.testing.expect(data.isEmpty());
+}
+```
+
+### ReturnData.fromHex - valid hex
+
+```zig
+test "ReturnData.fromHex - valid hex" {
+    const result = try ReturnData.fromHex(std.testing.allocator, "0x00000001");
+    defer std.testing.allocator.free(result.bytes);
+
+    try std.testing.expectEqual(@as(usize, 4), result.data.len());
+    try std.testing.expectEqual(@as(u8, 0x00), result.data.bytes[0]);
+    try std.testing.expectEqual(@as(u8, 0x01), result.data.bytes[3]);
+}
+```
+
+### ReturnData.toHex - converts to hex string
+
+```zig
+test "ReturnData.toHex - converts to hex string" {
+    const bytes = [_]u8{ 0xab, 0xcd };
+    const data = ReturnData.from(&bytes);
+
+    const hex = try data.toHex(std.testing.allocator);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0xabcd", hex);
+}
+```
+
+### ReturnData.hash - computes keccak256
+
+```zig
+test "ReturnData.hash - computes keccak256" {
+    const bytes = [_]u8{ 0x00, 0x00, 0x00, 0x01 };
+    const data = ReturnData.from(&bytes);
+
+    const data_hash = data.hash();
+
+    try std.testing.expectEqual(@as(usize, 32), data_hash.len);
+
+    var all_zero = true;
+    for (data_hash) |b| {
+        if (b != 0) {
+            all_zero = false;
+            break;
+        }
+    }
+    try std.testing.expect(!all_zero);
+}
+```
+
+### ReturnData.equals - same data
+
+```zig
+test "ReturnData.equals - same data" {
+    const bytes1 = [_]u8{ 0xab, 0xcd };
+    const bytes2 = [_]u8{ 0xab, 0xcd };
+
+    const data1 = ReturnData.from(&bytes1);
+    const data2 = ReturnData.from(&bytes2);
+
+    try std.testing.expect(data1.equals(data2));
+}
+```
+
+### ReturnData.equals - different data
+
+```zig
+test "ReturnData.equals - different data" {
+    const bytes1 = [_]u8{ 0xab, 0xcd };
+    const bytes2 = [_]u8{ 0xab, 0xce };
+
+    const data1 = ReturnData.from(&bytes1);
+    const data2 = ReturnData.from(&bytes2);
+
+    try std.testing.expect(!data1.equals(data2));
+}
+```
+
+### ReturnData.get - valid index
+
+```zig
+test "ReturnData.get - valid index" {
+    const bytes = [_]u8{ 0xaa, 0xbb, 0xcc };
+    const data = ReturnData.from(&bytes);
+
+    try std.testing.expectEqual(@as(u8, 0xaa), data.get(0).?);
+    try std.testing.expectEqual(@as(u8, 0xbb), data.get(1).?);
+    try std.testing.expectEqual(@as(u8, 0xcc), data.get(2).?);
+}
+```
+
+### ReturnData.get - out of bounds
+
+```zig
+test "ReturnData.get - out of bounds" {
+    const bytes = [_]u8{ 0xaa, 0xbb };
+    const data = ReturnData.from(&bytes);
+
+    try std.testing.expect(data.get(2) == null);
+    try std.testing.expect(data.get(100) == null);
+}
+```
+
+### ReturnData.slice - valid range
+
+```zig
+test "ReturnData.slice - valid range" {
+    const bytes = [_]u8{ 0xaa, 0xbb, 0xcc, 0xdd };
+    const data = ReturnData.from(&bytes);
+
+    const s = data.slice(1, 3);
+    try std.testing.expect(s != null);
+    try std.testing.expectEqual(@as(usize, 2), s.?.len);
+    try std.testing.expectEqual(@as(u8, 0xbb), s.?[0]);
+    try std.testing.expectEqual(@as(u8, 0xcc), s.?[1]);
+}
+```
+
+### ReturnData.slice - invalid range
+
+```zig
+test "ReturnData.slice - invalid range" {
+    const bytes = [_]u8{ 0xaa, 0xbb };
+    const data = ReturnData.from(&bytes);
+
+    try std.testing.expect(data.slice(1, 0) == null);
+    try std.testing.expect(data.slice(0, 10) == null);
+}
+```
+
+### ReturnData.getSelector - valid selector
+
+```zig
+test "ReturnData.getSelector - valid selector" {
+    const bytes = [_]u8{ 0x08, 0xc3, 0x79, 0xa0, 0x00, 0x00 };
+    const data = ReturnData.from(&bytes);
+
+    const selector = data.getSelector();
+    try std.testing.expect(selector != null);
+    try std.testing.expectEqual(@as(u8, 0x08), selector.?[0]);
+    try std.testing.expectEqual(@as(u8, 0xc3), selector.?[1]);
+    try std.testing.expectEqual(@as(u8, 0x79), selector.?[2]);
+    try std.testing.expectEqual(@as(u8, 0xa0), selector.?[3]);
+}
+```
+
+### ReturnData.getSelector - too short
+
+```zig
+test "ReturnData.getSelector - too short" {
+    const bytes = [_]u8{ 0x08, 0xc3, 0x79 };
+    const data = ReturnData.from(&bytes);
+
+    try std.testing.expect(data.getSelector() == null);
+}
+```
+
+### ReturnData.hasSelector - matches
+
+```zig
+test "ReturnData.hasSelector - matches" {
+    const bytes = [_]u8{ 0x08, 0xc3, 0x79, 0xa0, 0x00, 0x00 };
+    const data = ReturnData.from(&bytes);
+
+    try std.testing.expect(data.hasSelector([_]u8{ 0x08, 0xc3, 0x79, 0xa0 }));
+}
+```
+
+### ReturnData.hasSelector - no match
+
+```zig
+test "ReturnData.hasSelector - no match" {
+    const bytes = [_]u8{ 0x08, 0xc3, 0x79, 0xa0, 0x00, 0x00 };
+    const data = ReturnData.from(&bytes);
+
+    try std.testing.expect(!data.hasSelector([_]u8{ 0x4e, 0x48, 0x7b, 0x71 }));
+}
+```
+
+### ReturnData.hasSelector - too short
+
+```zig
+test "ReturnData.hasSelector - too short" {
+    const bytes = [_]u8{ 0x08, 0xc3 };
+    const data = ReturnData.from(&bytes);
+
+    try std.testing.expect(!data.hasSelector([_]u8{ 0x08, 0xc3, 0x79, 0xa0 }));
+}
+```

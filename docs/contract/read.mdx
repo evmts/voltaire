@@ -7,10 +7,14 @@ description: Execute view and pure function calls on smart contracts
 
 The `read` interface executes view and pure functions via `eth_call`. These calls don't modify state and don't require gas.
 
+<Note>
+This uses the [Contract pattern](/contract) - a copyable implementation you add to your codebase.
+</Note>
+
 ## Basic Usage
 
 ```typescript
-import { Contract } from '@voltaire/contract';
+import { Contract } from './Contract.js';  // Your local copy
 
 const usdc = Contract({
   address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
@@ -93,7 +97,7 @@ const balance = await usdc.read.balanceOf('0x...', {
 Read calls can fail for several reasons:
 
 ```typescript
-import { ContractReadError } from '@voltaire/contract';
+import { ContractReadError } from './errors.js';  // Your local copy
 
 try {
   const balance = await usdc.read.balanceOf('0x...');

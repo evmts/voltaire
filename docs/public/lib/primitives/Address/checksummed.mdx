@@ -59,7 +59,7 @@ Defined in: [primitives/Address/AddressType/ChecksumAddress.js:23](https://githu
 
 ```typescript
 import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
-import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
 
 // Create factory function with crypto dependency
 const from = ChecksumAddress.From({ keccak256 })
@@ -94,7 +94,7 @@ Factory function that creates a checksummed address converter with explicit cryp
 
 ```typescript
 import { From } from '@tevm/voltaire/Address/ChecksumAddress'
-import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
 
 // Create factory with explicit crypto dependency
 const from = From({ keccak256 })
@@ -134,7 +134,7 @@ Defined in: [primitives/Address/AddressType/ChecksumAddress.js:63](https://githu
 
 ```typescript
 import * as ChecksumAddress from '@tevm/voltaire/Address/ChecksumAddress'
-import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
 
 // Create factory function with crypto dependency
 const isValid = ChecksumAddress.IsValid({ keccak256 })
@@ -175,7 +175,7 @@ Factory function that creates a checksum validator with explicit crypto dependen
 
 ```typescript
 import { IsValid } from '@tevm/voltaire/Address/ChecksumAddress'
-import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
 
 // Create factory with explicit crypto dependency
 const isValid = IsValid({ keccak256 })
@@ -444,7 +444,7 @@ import { from, toHex } from '@tevm/voltaire/Address'
 
 // With checksumming - explicit crypto import
 import { From } from '@tevm/voltaire/Address/ChecksumAddress'
-import { hash as keccak256 } from '@tevm/voltaire/crypto/Keccak256'
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
 
 const from = From({ keccak256 })
 ```

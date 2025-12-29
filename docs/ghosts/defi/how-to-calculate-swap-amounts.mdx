@@ -1,0 +1,117 @@
+---
+title: How to Calculate Swap Amounts
+description: Calculate expected output amounts for token swaps using Uniswap's constant product formula.
+---
+
+## Goal
+
+Given an input amount, calculate the expected output amount for a swap on a Uniswap V2-style DEX.
+
+Return as:
+
+ANSWER: X.XXX TOKEN_IN -> Y.YYY TOKEN_OUT
+
+## Concepts
+
+Uniswap V2 uses the constant product formula with a 0.3% fee:
+
+```
+amountOut = (amountIn * 997 * reserveOut) / (reserveIn * 1000 + amountIn * 997)
+```
+
+The formula accounts for:
+- **997/1000**: 0.3% swap fee
+- **Slippage**: Price impact from the trade size relative to pool liquidity
+
+## Example (TypeScript)
+
+```ts
+import { Contract } from '@tevm/voltaire/contract'
+
+const pairAbi = [
+  {
+    type: 'function',
+    name: 'getReserves',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [
+      { name: 'reserve0', type: 'uint112' },
+      { name: 'reserve1', type: 'uint112' },
+      { name: 'blockTimestampLast', type: 'uint32' }
+    ]
+  }
+] as const
+
+const routerAbi = [
+  {
+    type: 'function',
+    name: 'getAmountOut',
+    stateMutability: 'pure',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'reserveIn', type: 'uint256' },
+      { name: 'reserveOut', type: 'uint256' }
+    ],
+    outputs: [{ name: 'amountOut', type: 'uint256' }]
+  },
+  {
+    type: 'function',
+    name: 'getAmountsOut',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'path', type: 'address[]' }
+    ],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }]
+  }
+] as const
+
+const router = Contract({
+  address: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D', // Uniswap V2 Router
+  abi: routerAbi,
+  provider
+})
+
+// Calculate swap: 1 WETH -> USDC
+const WETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const amountIn = 1n * 10n ** 18n // 1 WETH
+
+const amounts = await router.read.getAmountsOut(amountIn, [WETH, USDC])
+const amountOut = amounts[1]
+
+console.log(`ANSWER: 1 WETH -> ${Number(amountOut) / 1e6} USDC`)
+```
+
+## Manual Calculation
+
+```ts
+function getAmountOut(
+  amountIn: bigint,
+  reserveIn: bigint,
+  reserveOut: bigint
+): bigint {
+  const amountInWithFee = amountIn * 997n
+  const numerator = amountInWithFee * reserveOut
+  const denominator = reserveIn * 1000n + amountInWithFee
+  return numerator / denominator
+}
+
+// Price impact
+function calculatePriceImpact(
+  amountIn: bigint,
+  amountOut: bigint,
+  reserveIn: bigint,
+  reserveOut: bigint
+): number {
+  const spotPrice = Number(reserveOut) / Number(reserveIn)
+  const executionPrice = Number(amountOut) / Number(amountIn)
+  return ((spotPrice - executionPrice) / spotPrice) * 100
+}
+```
+
+## Notes
+
+- For multi-hop swaps, use `getAmountsOut` with a path array
+- Set slippage tolerance (e.g., 0.5%) and calculate `amountOutMin`
+- Large trades relative to pool size cause significant price impact

@@ -1,0 +1,100 @@
+---
+title: Primitives Philosophy
+description: Why Voltaire provides low-level primitives and lets you build your own abstractions
+---
+
+# Primitives Philosophy
+
+Voltaire provides low-level, composable primitives rather than high-level abstractions. Higher-level patterns like contract wrappers are reference implementations you copy into your codebase and customize.
+
+## Why Primitives?
+
+Most Ethereum libraries provide high-level abstractions (like ethers.js `Contract` or viem's `getContract`). Voltaire takes a different approach:
+
+| Traditional Libraries | Voltaire |
+|----------------------|----------|
+| High-level abstractions | Low-level primitives |
+| Fixed API surface | Composable building blocks |
+| One-size-fits-all | Customize to your needs |
+| Library lock-in | Code you own |
+
+## The shadcn Model
+
+Like [shadcn/ui](https://ui.shadcn.com/) for React components, Voltaire provides:
+
+1. **Primitives as the library** - Abi, Address, Hex, EventStream, etc.
+2. **Patterns as copyable code** - Contract wrappers, transaction builders, etc.
+
+You import primitives from the library. You copy patterns into your codebase.
+
+```typescript
+// Import primitives
+import { Abi, Address, Hex, EventStream } from '@tevm/voltaire';
+
+// Copy patterns (like Contract) into your codebase
+// See /contract for a reference implementation
+```
+
+## Benefits
+
+### AI-Friendly
+
+With the implementation in your codebase, AI assistants have full context to:
+- Understand how your contract interactions work
+- Modify the abstraction for your specific needs
+- Debug issues with complete visibility
+- Add custom methods, error handling, caching
+
+<Tip>
+Design your abstractions to match ethers.js or viem APIs where possible. LLMs have extensive training data on these libraries and will write better code when the patterns are familiar.
+</Tip>
+
+### Fully Customizable
+
+Your Contract wrapper can:
+- Add project-specific methods
+- Implement custom retry logic
+- Include transaction batching
+- Add logging and monitoring
+- Support your error handling patterns
+
+### No Lock-in
+
+When the abstraction lives in your codebase:
+- Upgrade primitives independently
+- Modify behavior without forking
+- Remove unused features
+- Add features the library doesn't have
+
+### Right-Sized
+
+Copy only what you need:
+- Just `read` methods? Skip `write` and `events`
+- Custom gas estimation? Replace the default
+- Different event streaming? Swap EventStream usage
+
+## What Voltaire Provides
+
+**As Library Exports:**
+- Abi encoding/decoding
+- Address validation and formatting
+- Hex utilities
+- EventStream for event polling
+- All cryptographic primitives
+- Transaction serialization
+- RLP encoding
+
+**As Reference Implementations:**
+- [Contract wrapper](/contract) - ethers/viem-style contract interface
+- More patterns coming
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Contract Pattern" icon="file-code" href="/contract">
+    Reference implementation of a typed contract wrapper
+  </Card>
+  <Card title="EventStream" icon="bolt" href="/primitives/eventstream">
+    Library primitive for robust event streaming
+  </Card>
+</CardGroup>

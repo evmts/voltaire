@@ -1,0 +1,307 @@
+---
+title: '[TS/JS] docs/zig/public/lib/crypto/Keccak256/constants.test.ts'
+source: 'docs/zig/public/lib/crypto/Keccak256/constants.test.ts'
+---
+
+> Auto-generated from test file: docs/zig/public/lib/crypto/Keccak256/constants.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import { DIGEST_SIZE, RATE, STATE_SIZE } from "./constants.js";
+
+describe("Keccak256 constants", () => {
+	describe("DIGEST_SIZE", () => {
+		it("is 32 bytes", () => {
+			expect(DIGEST_SIZE).toBe(32);
+		});
+
+		it("equals 256 bits", () => {
+			expect(DIGEST_SIZE * 8).toBe(256);
+		});
+
+		it("is a number", () => {
+			expect(typeof DIGEST_SIZE).toBe("number");
+		});
+
+		it("is a positive integer", () => {
+			expect(Number.isInteger(DIGEST_SIZE)).toBe(true);
+			expect(DIGEST_SIZE).toBeGreaterThan(0);
+		});
+
+		it("matches Ethereum hash size", () => {
+			expect(DIGEST_SIZE).toBe(32);
+		});
+	});
+
+	describe("RATE", () => {
+		it("is 136 bytes", () => {
+			expect(RATE).toBe(136);
+		});
+
+		it("equals 1088 bits", () => {
+			expect(RATE * 8).toBe(1088);
+		});
+
+		it("is a number", () => {
+			expect(typeof RATE).toBe("number");
+		});
+
+		it("is a positive integer", () => {
+			expect(Number.isInteger(RATE)).toBe(true);
+			expect(RATE).toBeGreaterThan(0);
+		});
+
+		it("is larger than digest size", () => {
+			expect(RATE).toBeGreaterThan(DIGEST_SIZE);
+		});
+
+		it("plus capacity equals state size in bits", () => {
+			const capacity = 512; // c = 2 * digest_size_bits = 2 * 256
+			expect(RATE * 8 + capacity).toBe(STATE_SIZE * 64);
+		});
+	});
+
+	describe("STATE_SIZE", () => {
+		it("is 25", () => {
+			expect(STATE_SIZE).toBe(25);
+		});
+
+		it("represents 25 u64 words", () => {
+			expect(STATE_SIZE).toBe(25);
+		});
+
+		it("equals 1600 bits", () => {
+			expect(STATE_SIZE * 64).toBe(1600);
+		});
+
+		it("is a number", () => {
+			expect(typeof STATE_SIZE).toBe("number");
+		});
+
+		it("is a positive integer", () => {
+			expect(Number.isInteger(STATE_SIZE)).toBe(true);
+			expect(STATE_SIZE).toBeGreaterThan(0);
+		});
+
+		it("is 5x5 state array", () => {
+			expect(STATE_SIZE).toBe(5 * 5);
+		});
+	});
+
+	describe("constant relationships", () => {
+		it("digest size is less than rate", () => {
+			expect(DIGEST_SIZE).toBeLessThan(RATE);
+		});
+
+		it("digest size is less than state size", () => {
+			expect(DIGEST_SIZE).toBeLessThan(STATE_SIZE);
+		});
+
+		it("rate is less than state size in bits", () => {
+			expect(RATE * 8).toBeLessThan(STATE_SIZE * 64);
+		});
+
+		it("digest size fits in single hash output", () => {
+			expect(DIGEST_SIZE).toBeLessThanOrEqual(RATE);
+		});
+	});
+
+	describe("Keccak-256 sponge construction", () => {
+		it("rate plus capacity equals state size", () => {
+			const rateBits = RATE * 8; // 1088 bits
+			const capacityBits = 2 * DIGEST_SIZE * 8; // 512 bits (2c where c = 256)
+			const stateBits = STATE_SIZE * 64; // 1600 bits
+
+			expect(rateBits + capacityBits).toBe(stateBits);
+		});
+
+		it("capacity is twice digest size", () => {
+			const capacityBits = STATE_SIZE * 64 - RATE * 8;
+			const expectedCapacity = 2 * DIGEST_SIZE * 8;
+
+			expect(capacityBits).toBe(expectedCapacity);
+		});
+
+		it("follows Keccak[c] where c=512", () => {
+			const capacity = STATE_SIZE * 64 - RATE * 8;
+			expect(capacity).toBe(512);
+		});
+	});
+
+	describe("constant immutability", () => {
+		it("DIGEST_SIZE cannot be reassigned", () => {
+			expect(() => {
+				// @ts-expect-error - cannot reassign const
+				DIGEST_SIZE = 64;
+			}).toThrow();
+		});
+
+		it("RATE cannot be reassigned", () => {
+			expect(() => {
+				// @ts-expect-error - cannot reassign const
+				RATE = 100;
+			}).toThrow();
+		});
+
+		it("STATE_SIZE cannot be reassigned", () => {
+			expect(() => {
+				// @ts-expect-error - cannot reassign const
+				STATE_SIZE = 50;
+			}).toThrow();
+		});
+	});
+
+	describe("export verification", () => {
+		it("all constants are exported", () => {
+			expect(DIGEST_SIZE).toBeDefined();
+			expect(RATE).toBeDefined();
+			expect(STATE_SIZE).toBeDefined();
+		});
+
+		it("all constants are numbers", () => {
+			expect(typeof DIGEST_SIZE).toBe("number");
+			expect(typeof RATE).toBe("number");
+			expect(typeof STATE_SIZE).toBe("number");
+		});
+
+		it("no constants are NaN", () => {
+			expect(Number.isNaN(DIGEST_SIZE)).toBe(false);
+			expect(Number.isNaN(RATE)).toBe(false);
+			expect(Number.isNaN(STATE_SIZE)).toBe(false);
+		});
+
+		it("no constants are Infinity", () => {
+			expect(Number.isFinite(DIGEST_SIZE)).toBe(true);
+			expect(Number.isFinite(RATE)).toBe(true);
+			expect(Number.isFinite(STATE_SIZE)).toBe(true);
+		});
+	});
+
+	describe("Ethereum compatibility", () => {
+		it("digest size matches Ethereum hash size", () => {
+			const ETHEREUM_HASH_SIZE = 32;
+			expect(DIGEST_SIZE).toBe(ETHEREUM_HASH_SIZE);
+		});
+
+		it("can hash Ethereum transactions", () => {
+			expect(DIGEST_SIZE).toBe(32);
+		});
+
+		it("can derive Ethereum addresses", () => {
+			const ADDRESS_SIZE = 20;
+			expect(DIGEST_SIZE).toBeGreaterThan(ADDRESS_SIZE);
+		});
+
+		it("can compute function selectors", () => {
+			const SELECTOR_SIZE = 4;
+			expect(DIGEST_SIZE).toBeGreaterThan(SELECTOR_SIZE);
+		});
+	});
+
+	describe("security properties", () => {
+		it("has collision resistance of 2^128", () => {
+			const securityBits = DIGEST_SIZE * 8 / 2;
+			expect(securityBits).toBe(128);
+		});
+
+		it("has preimage resistance of 2^256", () => {
+			const preimageStrength = DIGEST_SIZE * 8;
+			expect(preimageStrength).toBe(256);
+		});
+
+		it("capacity provides 256-bit security", () => {
+			const capacity = STATE_SIZE * 64 - RATE * 8;
+			expect(capacity).toBe(512);
+			expect(capacity / 2).toBe(256);
+		});
+	});
+
+	describe("byte alignment", () => {
+		it("digest size is byte-aligned", () => {
+			expect(DIGEST_SIZE % 1).toBe(0);
+		});
+
+		it("rate is byte-aligned", () => {
+			expect(RATE % 1).toBe(0);
+		});
+
+		it("state size is word-aligned", () => {
+			expect(STATE_SIZE % 1).toBe(0);
+		});
+
+		it("no fractional bytes", () => {
+			expect(Number.isInteger(DIGEST_SIZE)).toBe(true);
+			expect(Number.isInteger(RATE)).toBe(true);
+			expect(Number.isInteger(STATE_SIZE)).toBe(true);
+		});
+	});
+
+	describe("performance characteristics", () => {
+		it("rate allows efficient absorption", () => {
+			expect(RATE).toBeGreaterThan(64);
+		});
+
+		it("single-block messages fit in rate", () => {
+			const TYPICAL_MESSAGE_SIZE = 64;
+			expect(RATE).toBeGreaterThan(TYPICAL_MESSAGE_SIZE);
+		});
+
+		it("state size allows 5x5 lane array", () => {
+			expect(STATE_SIZE).toBe(25);
+			expect(Math.sqrt(STATE_SIZE)).toBe(5);
+		});
+	});
+
+	describe("standard compliance", () => {
+		it("follows FIPS 202 Keccak-256", () => {
+			expect(DIGEST_SIZE).toBe(32);
+			expect(RATE).toBe(136);
+			expect(STATE_SIZE * 64).toBe(1600);
+		});
+
+		it("matches Ethereum Yellow Paper specification", () => {
+			expect(DIGEST_SIZE).toBe(32);
+		});
+
+		it("follows sponge construction", () => {
+			const rateBits = RATE * 8;
+			const capacityBits = STATE_SIZE * 64 - rateBits;
+			expect(capacityBits).toBe(2 * DIGEST_SIZE * 8);
+		});
+	});
+
+	describe("mathematical properties", () => {
+		it("all constants are positive", () => {
+			expect(DIGEST_SIZE).toBeGreaterThan(0);
+			expect(RATE).toBeGreaterThan(0);
+			expect(STATE_SIZE).toBeGreaterThan(0);
+		});
+
+		it("state size is perfect square of 5", () => {
+			expect(STATE_SIZE).toBe(5 ** 2);
+		});
+
+		it("digest size is power of 2", () => {
+			const log2 = Math.log2(DIGEST_SIZE);
+			expect(Number.isInteger(log2)).toBe(true);
+		});
+	});
+
+	describe("value ranges", () => {
+		it("digest size is reasonable for hash function", () => {
+			expect(DIGEST_SIZE).toBeGreaterThanOrEqual(16);
+			expect(DIGEST_SIZE).toBeLessThanOrEqual(128);
+		});
+
+		it("rate is within typical sponge construction range", () => {
+			expect(RATE).toBeGreaterThanOrEqual(64);
+			expect(RATE).toBeLessThanOrEqual(200);
+		});
+
+		it("state size matches Keccak-f[1600]", () => {
+			expect(STATE_SIZE * 64).toBe(1600);
+		});
+	});
+});
+
+```

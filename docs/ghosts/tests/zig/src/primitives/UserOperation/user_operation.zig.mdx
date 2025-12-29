@@ -1,0 +1,377 @@
+---
+title: '[Zig] src/primitives/UserOperation/user_operation.zig'
+source: 'src/primitives/UserOperation/user_operation.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/UserOperation/user_operation.zig
+
+### UserOperation.from - basic creation
+
+```zig
+test "UserOperation.from - basic creation" {
+    const sender = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const user_op = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 1,
+        .call_gas_limit = 100000,
+        .verification_gas_limit = 200000,
+        .pre_verification_gas = 50000,
+        .max_fee_per_gas = 1000000000,
+        .max_priority_fee_per_gas = 1000000000,
+    });
+
+    try std.testing.expect(Address.equals(user_op.sender, sender));
+    try std.testing.expectEqual(@as(u256, 1), user_op.nonce);
+    try std.testing.expectEqual(@as(u256, 100000), user_op.call_gas_limit);
+    try std.testing.expectEqual(@as(u256, 200000), user_op.verification_gas_limit);
+    try std.testing.expectEqual(@as(u256, 50000), user_op.pre_verification_gas);
+}
+```
+
+### UserOperation.from - with init code and call data
+
+```zig
+test "UserOperation.from - with init code and call data" {
+    const sender = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const init_code = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 };
+    const call_data = [_]u8{ 0xb6, 0x1d, 0x27, 0xf6 };
+
+    const user_op = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 0,
+        .init_code = &init_code,
+        .call_data = &call_data,
+    });
+
+    try std.testing.expectEqual(@as(usize, 5), user_op.init_code.len);
+    try std.testing.expectEqual(@as(usize, 4), user_op.call_data.len);
+    try std.testing.expectEqualSlices(u8, &init_code, user_op.init_code);
+    try std.testing.expectEqualSlices(u8, &call_data, user_op.call_data);
+}
+```
+
+### UserOperation.pack - produces consistent output
+
+```zig
+test "UserOperation.pack - produces consistent output" {
+    const allocator = std.testing.allocator;
+    const sender = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+
+    const user_op = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 1,
+        .call_gas_limit = 100000,
+        .verification_gas_limit = 200000,
+        .pre_verification_gas = 50000,
+        .max_fee_per_gas = 1000000000,
+        .max_priority_fee_per_gas = 1000000000,
+    });
+
+    const packed1 = try user_op.pack(allocator);
+    defer allocator.free(packed1);
+
+    const packed2 = try user_op.pack(allocator);
+    defer allocator.free(packed2);
+
+    try std.testing.expectEqual(@as(usize, 320), packed1.len);
+    try std.testing.expectEqualSlices(u8, packed1, packed2);
+}
+```
+
+### UserOperation.pack - includes sender correctly
+
+```zig
+test "UserOperation.pack - includes sender correctly" {
+    const allocator = std.testing.allocator;
+    const sender = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+
+    const user_op = UserOperation.from(.{
+        .sender = sender,
+    });
+
+    const pack_data = try user_op.pack(allocator);
+    defer allocator.free(pack_data);
+
+    // First 32 bytes should contain sender (left-padded)
+    try std.testing.expectEqualSlices(u8, &[_]u8{0} ** 12, pack_data[0..12]);
+    try std.testing.expectEqualSlices(u8, &sender.bytes, pack_data[12..32]);
+}
+```
+
+### UserOperation.hash - deterministic
+
+```zig
+test "UserOperation.hash - deterministic" {
+    const allocator = std.testing.allocator;
+    const sender = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const entry_point = try Address.fromHex("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789");
+
+    const user_op = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 1,
+        .call_gas_limit = 100000,
+        .verification_gas_limit = 200000,
+        .pre_verification_gas = 50000,
+        .max_fee_per_gas = 1000000000,
+        .max_priority_fee_per_gas = 1000000000,
+    });
+
+    const hash1 = try user_op.hash(allocator, entry_point, 1);
+    const hash2 = try user_op.hash(allocator, entry_point, 1);
+
+    try std.testing.expectEqualSlices(u8, &hash1, &hash2);
+}
+```
+
+### UserOperation.hash - different chain id produces different hash
+
+```zig
+test "UserOperation.hash - different chain id produces different hash" {
+    const allocator = std.testing.allocator;
+    const sender = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const entry_point = try Address.fromHex("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789");
+
+    const user_op = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 1,
+    });
+
+    const hash1 = try user_op.hash(allocator, entry_point, 1);
+    const hash2 = try user_op.hash(allocator, entry_point, 137);
+
+    try std.testing.expect(!std.mem.eql(u8, &hash1, &hash2));
+}
+```
+
+### UserOperation.hash - different entry point produces different hash
+
+```zig
+test "UserOperation.hash - different entry point produces different hash" {
+    const allocator = std.testing.allocator;
+    const sender = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const entry_point_v06 = try Address.fromHex("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789");
+    const entry_point_v07 = try Address.fromHex("0x0000000071727De22E5E9d8BAf0edAc6f37da032");
+
+    const user_op = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 1,
+    });
+
+    const hash1 = try user_op.hash(allocator, entry_point_v06, 1);
+    const hash2 = try user_op.hash(allocator, entry_point_v07, 1);
+
+    try std.testing.expect(!std.mem.eql(u8, &hash1, &hash2));
+}
+```
+
+### UserOperation.equals - same operations
+
+```zig
+test "UserOperation.equals - same operations" {
+    const sender = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+
+    const user_op1 = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 1,
+        .call_gas_limit = 100000,
+    });
+
+    const user_op2 = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 1,
+        .call_gas_limit = 100000,
+    });
+
+    try std.testing.expect(user_op1.equals(&user_op2));
+}
+```
+
+### UserOperation.equals - different nonce
+
+```zig
+test "UserOperation.equals - different nonce" {
+    const sender = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+
+    const user_op1 = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 1,
+    });
+
+    const user_op2 = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 2,
+    });
+
+    try std.testing.expect(!user_op1.equals(&user_op2));
+}
+```
+
+### UserOperation.equals - different sender
+
+```zig
+test "UserOperation.equals - different sender" {
+    const sender1 = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const sender2 = try Address.fromHex("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789");
+
+    const user_op1 = UserOperation.from(.{
+        .sender = sender1,
+    });
+
+    const user_op2 = UserOperation.from(.{
+        .sender = sender2,
+    });
+
+    try std.testing.expect(!user_op1.equals(&user_op2));
+}
+```
+
+### UserOperation.abiEncode and abiDecode roundtrip
+
+```zig
+test "UserOperation.abiEncode and abiDecode roundtrip" {
+    const allocator = std.testing.allocator;
+    const sender = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+    const init_code = [_]u8{ 0x60, 0x80, 0x60, 0x40 };
+    const call_data = [_]u8{ 0xb6, 0x1d, 0x27, 0xf6 };
+    const signature = [_]u8{ 0x01, 0x02, 0x03 };
+
+    const user_op = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 42,
+        .init_code = &init_code,
+        .call_data = &call_data,
+        .call_gas_limit = 100000,
+        .verification_gas_limit = 200000,
+        .pre_verification_gas = 50000,
+        .max_fee_per_gas = 1000000000,
+        .max_priority_fee_per_gas = 100000000,
+        .signature = &signature,
+    });
+
+    const encoded = try user_op.abiEncode(allocator);
+    defer allocator.free(encoded);
+
+    var decoded = try UserOperation.abiDecode(allocator, encoded);
+    defer decoded.deinit(allocator);
+
+    try std.testing.expect(Address.equals(decoded.sender, sender));
+    try std.testing.expectEqual(@as(u256, 42), decoded.nonce);
+    try std.testing.expectEqual(@as(u256, 100000), decoded.call_gas_limit);
+    try std.testing.expectEqual(@as(u256, 200000), decoded.verification_gas_limit);
+    try std.testing.expectEqual(@as(u256, 50000), decoded.pre_verification_gas);
+    try std.testing.expectEqual(@as(u256, 1000000000), decoded.max_fee_per_gas);
+    try std.testing.expectEqual(@as(u256, 100000000), decoded.max_priority_fee_per_gas);
+    try std.testing.expectEqualSlices(u8, &init_code, decoded.init_code);
+    try std.testing.expectEqualSlices(u8, &call_data, decoded.call_data);
+    try std.testing.expectEqualSlices(u8, &signature, decoded.signature);
+}
+```
+
+### PackedUserOperation.fromUserOp - packs gas limits correctly
+
+```zig
+test "PackedUserOperation.fromUserOp - packs gas limits correctly" {
+    const sender = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+
+    const user_op = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 1,
+        .call_gas_limit = 100000,
+        .verification_gas_limit = 200000,
+        .pre_verification_gas = 50000,
+        .max_fee_per_gas = 1000000000,
+        .max_priority_fee_per_gas = 100000000,
+    });
+
+    const packed_op = PackedUserOperation.fromUserOp(&user_op);
+
+    // Verify sender is preserved
+    try std.testing.expect(Address.equals(packed_op.sender, sender));
+    try std.testing.expectEqual(@as(u256, 1), packed_op.nonce);
+    try std.testing.expectEqual(@as(u256, 50000), packed_op.pre_verification_gas);
+}
+```
+
+### PackedUserOperation roundtrip
+
+```zig
+test "PackedUserOperation roundtrip" {
+    const sender = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+
+    const user_op = UserOperation.from(.{
+        .sender = sender,
+        .nonce = 1,
+        .call_gas_limit = 100000,
+        .verification_gas_limit = 200000,
+        .pre_verification_gas = 50000,
+        .max_fee_per_gas = 1000000000,
+        .max_priority_fee_per_gas = 100000000,
+    });
+
+    const packed_op = PackedUserOperation.fromUserOp(&user_op);
+    const unpacked = packed_op.toUserOp();
+
+    try std.testing.expect(user_op.equals(&unpacked));
+}
+```
+
+### writeU256 and readU256 roundtrip
+
+```zig
+test "writeU256 and readU256 roundtrip" {
+    var buf: [32]u8 = undefined;
+
+    // Test zero
+    writeU256(&buf, 0);
+    try std.testing.expectEqual(@as(u256, 0), readU256(&buf));
+
+    // Test one
+    writeU256(&buf, 1);
+    try std.testing.expectEqual(@as(u256, 1), readU256(&buf));
+
+    // Test max
+    const max_val = std.math.maxInt(u256);
+    writeU256(&buf, max_val);
+    try std.testing.expectEqual(max_val, readU256(&buf));
+
+    // Test arbitrary value
+    const val: u256 = 0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0;
+    writeU256(&buf, val);
+    try std.testing.expectEqual(val, readU256(&buf));
+}
+```
+
+### writeU128 and readU128 roundtrip
+
+```zig
+test "writeU128 and readU128 roundtrip" {
+    var buf: [16]u8 = undefined;
+
+    // Test zero
+    writeU128(&buf, 0);
+    try std.testing.expectEqual(@as(u256, 0), readU128(&buf));
+
+    // Test one
+    writeU128(&buf, 1);
+    try std.testing.expectEqual(@as(u256, 1), readU128(&buf));
+
+    // Test max u128
+    const max_val: u128 = std.math.maxInt(u128);
+    writeU128(&buf, max_val);
+    try std.testing.expectEqual(@as(u256, max_val), readU128(&buf));
+}
+```
+
+### padTo32
+
+```zig
+test "padTo32" {
+    try std.testing.expectEqual(@as(usize, 0), padTo32(0));
+    try std.testing.expectEqual(@as(usize, 32), padTo32(1));
+    try std.testing.expectEqual(@as(usize, 32), padTo32(31));
+    try std.testing.expectEqual(@as(usize, 32), padTo32(32));
+    try std.testing.expectEqual(@as(usize, 64), padTo32(33));
+    try std.testing.expectEqual(@as(usize, 64), padTo32(64));
+    try std.testing.expectEqual(@as(usize, 96), padTo32(65));
+}
+```

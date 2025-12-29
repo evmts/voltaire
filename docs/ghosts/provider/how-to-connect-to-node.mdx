@@ -1,0 +1,63 @@
+---
+title: Connect to Ethereum Node
+description: Connect to an Ethereum node using HTTP or WebSocket transport.
+---
+
+## HTTP Connection
+
+```typescript
+import { HttpProvider } from '@tevm/voltaire/provider';
+
+// Simple URL string
+const provider = new HttpProvider('https://eth.llamarpc.com');
+
+// With options
+const provider = new HttpProvider({
+  url: 'https://eth.llamarpc.com',
+  headers: { 'Authorization': 'Bearer YOUR_API_KEY' },
+  timeout: 30000,
+  retry: 3
+});
+
+// Make requests
+const blockNumber = await provider.request({
+  method: 'eth_blockNumber',
+  params: []
+});
+```
+
+## WebSocket Connection
+
+```typescript
+import { WebSocketProvider } from '@tevm/voltaire/provider';
+
+const provider = new WebSocketProvider({
+  url: 'wss://eth.llamarpc.com',
+  reconnect: true,
+  reconnectDelay: 5000
+});
+
+// Must connect first
+await provider.connect();
+
+// Make requests
+const blockNumber = await provider.request({
+  method: 'eth_blockNumber',
+  params: []
+});
+
+// Subscribe to events (WebSocket only)
+for await (const block of provider.events.newHeads()) {
+  console.log('New block:', block.number);
+}
+
+// Disconnect when done
+provider.disconnect();
+```
+
+## When to Use Each
+
+| Transport | Use Case |
+|-----------|----------|
+| HTTP | Simple queries, stateless requests |
+| WebSocket | Real-time subscriptions, persistent connection |

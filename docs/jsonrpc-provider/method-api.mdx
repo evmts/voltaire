@@ -3,6 +3,12 @@ title: Method API
 description: Request builders for type-safe JSON-RPC calls with branded primitives
 ---
 
+<Info>
+Source: https://github.com/evmts/voltaire/blob/main/src/jsonrpc
+
+Tests: https://github.com/evmts/voltaire/blob/main/src/jsonrpc/Rpc.test.ts • https://github.com/evmts/voltaire/blob/main/src/jsonrpc/anvil.test.ts • https://github.com/evmts/voltaire/blob/main/src/jsonrpc/hardhat.test.ts
+</Info>
+
 # Method API
 
 Request builders create type-safe JSON-RPC requests with branded primitive parameters.
@@ -13,7 +19,7 @@ Request builders return `RequestArguments` objects compatible with EIP-1193 prov
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import { Address } from '@tevm/voltaire/Address';
 
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
@@ -50,9 +56,9 @@ All parameters use Voltaire's branded primitive types for compile-time safety:
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
-import * as Hex from '@tevm/voltaire/Hex';
+import { Address } from '@tevm/voltaire/Address';
+import { Hash } from '@tevm/voltaire/Hash';
+import { Hex } from '@tevm/voltaire/Hex';
 
 // Construct branded types
 const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
@@ -78,7 +84,7 @@ TypeScript catches errors at compile time:
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import { Address } from '@tevm/voltaire/Address';
 
 // ❌ Compile error: string not assignable to Address
 const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');
@@ -138,7 +144,7 @@ Many requests accept `BlockTag` to specify block context:
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import { Address } from '@tevm/voltaire/Address';
 
 type BlockTag =
   | 'latest'      // Most recent block
@@ -166,7 +172,7 @@ try {
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import { Address } from '@tevm/voltaire/Address';
 
 const address = Address('0x...');
 
@@ -194,8 +200,8 @@ try {
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hex from '@tevm/voltaire/Hex';
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
 
 try {
   // Execute read-only contract call
@@ -224,8 +230,8 @@ try {
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Hash from '@tevm/voltaire/Hash';
-import * as Hex from '@tevm/voltaire/Hex';
+import { Hash } from '@tevm/voltaire/Hash';
+import { Hex } from '@tevm/voltaire/Hex';
 
 try {
   // Submit signed transaction
@@ -276,8 +282,8 @@ try {
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
-import * as Hash from '@tevm/voltaire/Hash';
+import { Address } from '@tevm/voltaire/Address';
+import { Hash } from '@tevm/voltaire/Hash';
 
 try {
   // Query logs
@@ -318,7 +324,7 @@ See [Error Handling](/jsonrpc-provider/error-handling) for detailed error patter
 
 ```typescript
 import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+import { Address } from '@tevm/voltaire/Address';
 
 const address = Address('0x...');
 

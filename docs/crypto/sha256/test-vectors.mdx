@@ -34,7 +34,7 @@ new Uint8Array([
 
 **Verification:**
 ```typescript
-import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+import { SHA256 } from '@tevm/voltaire/SHA256';
 
 const hash = SHA256.hashString('');
 const expected = new Uint8Array([
@@ -421,7 +421,7 @@ console.log(oneShot.every((byte, i) => byte === streaming2[i])); // true
 Compare results with well-known implementations:
 
 ```typescript
-import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+import { SHA256 } from '@tevm/voltaire/SHA256';
 import { sha256 } from '@noble/hashes/sha256';
 import crypto from 'crypto';
 

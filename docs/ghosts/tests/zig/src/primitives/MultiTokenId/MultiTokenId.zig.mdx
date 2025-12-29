@@ -1,0 +1,242 @@
+---
+title: '[Zig] src/primitives/MultiTokenId/MultiTokenId.zig'
+source: 'src/primitives/MultiTokenId/MultiTokenId.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/MultiTokenId/MultiTokenId.zig
+
+### MultiTokenId.from creates token ID from u256
+
+```zig
+test "MultiTokenId.from creates token ID from u256" {
+    const token_id = from(42);
+    try std.testing.expectEqual(@as(u256, 42), token_id);
+}
+```
+
+### MultiTokenId.from handles zero
+
+```zig
+test "MultiTokenId.from handles zero" {
+    const token_id = from(0);
+    try std.testing.expectEqual(@as(u256, 0), token_id);
+}
+```
+
+### MultiTokenId.from handles max u256
+
+```zig
+test "MultiTokenId.from handles max u256" {
+    const token_id = from(MAX);
+    try std.testing.expectEqual(MAX, token_id);
+}
+```
+
+### MultiTokenId.fromNumber creates token ID from u64
+
+```zig
+test "MultiTokenId.fromNumber creates token ID from u64" {
+    const token_id = fromNumber(12345);
+    try std.testing.expectEqual(@as(u256, 12345), token_id);
+}
+```
+
+### MultiTokenId.fromHex parses hex with 0x prefix
+
+```zig
+test "MultiTokenId.fromHex parses hex with 0x prefix" {
+    const token_id = try fromHex("0x2a");
+    try std.testing.expectEqual(@as(u256, 42), token_id);
+}
+```
+
+### MultiTokenId.fromHex parses hex without prefix
+
+```zig
+test "MultiTokenId.fromHex parses hex without prefix" {
+    const token_id = try fromHex("ff");
+    try std.testing.expectEqual(@as(u256, 255), token_id);
+}
+```
+
+### MultiTokenId.fromHex returns error for invalid hex
+
+```zig
+test "MultiTokenId.fromHex returns error for invalid hex" {
+    const result = fromHex("0xgg");
+    try std.testing.expectError(error.InvalidHexCharacter, result);
+}
+```
+
+### MultiTokenId.equals returns true for same value
+
+```zig
+test "MultiTokenId.equals returns true for same value" {
+    const a = from(42);
+    const b = from(42);
+    try std.testing.expect(equals(a, b));
+}
+```
+
+### MultiTokenId.equals returns false for different values
+
+```zig
+test "MultiTokenId.equals returns false for different values" {
+    const a = from(42);
+    const b = from(43);
+    try std.testing.expect(!equals(a, b));
+}
+```
+
+### MultiTokenId.compare returns correct ordering
+
+```zig
+test "MultiTokenId.compare returns correct ordering" {
+    try std.testing.expectEqual(@as(i8, -1), compare(from(1), from(2)));
+    try std.testing.expectEqual(@as(i8, 0), compare(from(42), from(42)));
+    try std.testing.expectEqual(@as(i8, 1), compare(from(100), from(50)));
+}
+```
+
+### MultiTokenId.toNumber converts to u64
+
+```zig
+test "MultiTokenId.toNumber converts to u64" {
+    const token_id = from(42);
+    try std.testing.expectEqual(@as(u64, 42), toNumber(token_id));
+}
+```
+
+### MultiTokenId.toBigInt returns u256
+
+```zig
+test "MultiTokenId.toBigInt returns u256" {
+    const token_id = from(42);
+    try std.testing.expectEqual(@as(u256, 42), toBigInt(token_id));
+}
+```
+
+### MultiTokenId.toHex converts to hex string
+
+```zig
+test "MultiTokenId.toHex converts to hex string" {
+    const token_id = from(42);
+    const hex = toHex(token_id);
+    try std.testing.expectEqualStrings("0x000000000000000000000000000000000000000000000000000000000000002a", &hex);
+}
+```
+
+### MultiTokenId.isValidFungible returns true for small IDs
+
+```zig
+test "MultiTokenId.isValidFungible returns true for small IDs" {
+    try std.testing.expect(isValidFungible(from(0)));
+    try std.testing.expect(isValidFungible(from(42)));
+    try std.testing.expect(isValidFungible(from(FUNGIBLE_THRESHOLD - 1)));
+}
+```
+
+### MultiTokenId.isValidFungible returns false for large IDs
+
+```zig
+test "MultiTokenId.isValidFungible returns false for large IDs" {
+    try std.testing.expect(!isValidFungible(from(FUNGIBLE_THRESHOLD)));
+    try std.testing.expect(!isValidFungible(from(FUNGIBLE_THRESHOLD + 1)));
+    try std.testing.expect(!isValidFungible(from(MAX)));
+}
+```
+
+### MultiTokenId.isValidNonFungible returns true for large IDs
+
+```zig
+test "MultiTokenId.isValidNonFungible returns true for large IDs" {
+    try std.testing.expect(isValidNonFungible(from(FUNGIBLE_THRESHOLD)));
+    try std.testing.expect(isValidNonFungible(from(FUNGIBLE_THRESHOLD + 1)));
+    try std.testing.expect(isValidNonFungible(from(MAX)));
+}
+```
+
+### MultiTokenId.isValidNonFungible returns false for small IDs
+
+```zig
+test "MultiTokenId.isValidNonFungible returns false for small IDs" {
+    try std.testing.expect(!isValidNonFungible(from(0)));
+    try std.testing.expect(!isValidNonFungible(from(42)));
+    try std.testing.expect(!isValidNonFungible(from(FUNGIBLE_THRESHOLD - 1)));
+}
+```
+
+### MultiTokenId.getBaseType extracts upper 128 bits
+
+```zig
+test "MultiTokenId.getBaseType extracts upper 128 bits" {
+    const nft_id = makeNonFungible(0xdeadbeef, 0x12345);
+    try std.testing.expectEqual(@as(u128, 0xdeadbeef), getBaseType(nft_id));
+}
+```
+
+### MultiTokenId.getInstanceId extracts lower 128 bits
+
+```zig
+test "MultiTokenId.getInstanceId extracts lower 128 bits" {
+    const nft_id = makeNonFungible(0xdeadbeef, 0x12345);
+    try std.testing.expectEqual(@as(u128, 0x12345), getInstanceId(nft_id));
+}
+```
+
+### MultiTokenId.makeNonFungible creates correct token ID
+
+```zig
+test "MultiTokenId.makeNonFungible creates correct token ID" {
+    const base_type: u128 = 1;
+    const instance: u128 = 42;
+    const nft_id = makeNonFungible(base_type, instance);
+
+    try std.testing.expect(isValidNonFungible(nft_id));
+    try std.testing.expectEqual(base_type, getBaseType(nft_id));
+    try std.testing.expectEqual(instance, getInstanceId(nft_id));
+}
+```
+
+### MultiTokenId constants are correct
+
+```zig
+test "MultiTokenId constants are correct" {
+    try std.testing.expectEqual(@as(u256, 0), MIN);
+    try std.testing.expectEqual(std.math.maxInt(u256), MAX);
+    try std.testing.expectEqual(@as(u256, 1) << 128, FUNGIBLE_THRESHOLD);
+}
+```
+
+### MultiTokenId.ERC1155_SELECTORS are correct
+
+```zig
+test "MultiTokenId.ERC1155_SELECTORS are correct" {
+    // balanceOf(address,uint256) = 0x00fdd58e
+    try std.testing.expectEqual([4]u8{ 0x00, 0xfd, 0xd5, 0x8e }, ERC1155_SELECTORS.balanceOf);
+    // uri(uint256) = 0x0e89341c
+    try std.testing.expectEqual([4]u8{ 0x0e, 0x89, 0x34, 0x1c }, ERC1155_SELECTORS.uri);
+}
+```
+
+### MultiTokenId complete workflow
+
+```zig
+test "MultiTokenId complete workflow" {
+    // Create fungible token ID
+    const fungible_id = fromNumber(100);
+    try std.testing.expect(isValidFungible(fungible_id));
+
+    // Create non-fungible token ID
+    const nft_id = makeNonFungible(1, 42);
+    try std.testing.expect(isValidNonFungible(nft_id));
+
+    // Extract components
+    try std.testing.expectEqual(@as(u128, 1), getBaseType(nft_id));
+    try std.testing.expectEqual(@as(u128, 42), getInstanceId(nft_id));
+
+    // Compare
+    try std.testing.expect(!equals(fungible_id, nft_id));
+    try std.testing.expectEqual(@as(i8, -1), compare(fungible_id, nft_id));
+}
+```

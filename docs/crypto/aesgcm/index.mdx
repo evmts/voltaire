@@ -3,6 +3,12 @@ title: AES-GCM Encryption
 description: Authenticated encryption with AES-GCM
 ---
 
+<Info>
+Source: https://github.com/evmts/voltaire/blob/main/src/crypto/aes_gcm.zig
+
+Tests: https://github.com/evmts/voltaire/blob/main/src/crypto/aes_gcm.test.ts
+</Info>
+
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/aesgcm.ts">
   Run AES-GCM examples in the interactive playground
 </Card>
@@ -25,7 +31,7 @@ Key features:
 ## Quick Start
 
 ```typescript
-import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/AesGcm';
 
 // 1. Generate key (256-bit recommended)
 const key = await AesGcm.generateKey(256);
@@ -81,7 +87,7 @@ Derives key from password using PBKDF2-HMAC-SHA256.
 
 ```typescript
 // Generate salt (store with encrypted data)
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hex from '@tevm/voltaire/Hex';
 const salt = Hex('0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d');
 
 // Derive key from password
@@ -102,7 +108,7 @@ const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
 Imports raw key bytes as CryptoKey.
 
 ```typescript
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hex from '@tevm/voltaire/Hex';
 
 // Import 32-byte key (256-bit)
 const rawKey = Hex('0xf8e9a72d4c3b1a6e7d5f2c8b9e1a4d7f3c6b9e2a5d8f1c4b7e0a3d6f9c2b5e8a');
@@ -263,7 +269,7 @@ With random nonces (12 bytes), collision probability:
 
 ```typescript
 // Counter-based nonce (for high-volume scenarios)
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hex from '@tevm/voltaire/Hex';
 
 class NonceCounter {
   constructor() {
@@ -321,11 +327,11 @@ const ciphertext = await AesGcm.encrypt(message, key, nonce, metadata);
 Derive key from user password using PBKDF2:
 
 ```typescript
-import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+import * as AesGcm from '@tevm/voltaire/AesGcm';
 
 async function encryptWithPassword(plaintext, password) {
   // 1. Generate random salt
-  import * as Hex from '@tevm/voltaire/primitives/Hex';
+  import * as Hex from '@tevm/voltaire/Hex';
   const salt = Hex('0x3e4d5c6b7a8910293847566574839201');
 
   // 2. Derive key from password
@@ -389,7 +395,7 @@ const storedKey = await AesGcm.importKey(storedKeyBytes);
 
 **2. Browser (encrypted with password)**
 ```typescript
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hex from '@tevm/voltaire/Hex';
 
 // Encrypt master key with user password
 async function storeEncryptedKey(masterKey, userPassword) {
@@ -504,7 +510,7 @@ const key = await AesGcm.deriveKey(password, salt, 600000, 256);
 
 **3. Salt randomness:** Use 16+ byte random salt
 ```typescript
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hex from '@tevm/voltaire/Hex';
 
 const salt = Hex('0xa7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2');
 ```
@@ -602,7 +608,7 @@ const key = await AesGcm.deriveKey(password, salt, 100000, 256);
 ### File Encryption
 
 ```typescript
-import * as Hex from '@tevm/voltaire/primitives/Hex';
+import * as Hex from '@tevm/voltaire/Hex';
 
 async function encryptFile(fileData, password) {
   const salt = Hex('0x9e8d7c6b5a4938271605948372615049');

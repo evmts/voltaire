@@ -1,0 +1,68 @@
+---
+title: '[TS/JS] src/jsonrpc/eth/getTransactionReceipt/eth_getTransactionReceipt.test.ts'
+source: 'src/jsonrpc/eth/getTransactionReceipt/eth_getTransactionReceipt.test.ts'
+---
+
+> Auto-generated from test file: src/jsonrpc/eth/getTransactionReceipt/eth_getTransactionReceipt.test.ts
+
+```typescript
+import { describe, expect, test } from "vitest";
+import {
+	GetTransactionReceiptRequest,
+	method,
+} from "./eth_getTransactionReceipt.js";
+
+describe("eth_getTransactionReceipt", () => {
+	describe("Request Creation", () => {
+		test("creates request with transaction hash", () => {
+			const txHash =
+				"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b";
+			const req = GetTransactionReceiptRequest(txHash);
+			expect(req).toEqual({
+				method: "eth_getTransactionReceipt",
+				params: [txHash],
+			});
+		});
+
+		test("method constant is correct", () => {
+			expect(method).toBe("eth_getTransactionReceipt");
+		});
+	});
+
+	describe("Request Structure", () => {
+		test("returns RequestArguments type with params", () => {
+			const txHash =
+				"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b";
+			const req = GetTransactionReceiptRequest(txHash);
+			expect(req).toHaveProperty("method");
+			expect(req).toHaveProperty("params");
+			expect(Array.isArray(req.params)).toBe(true);
+			expect(req.params).toHaveLength(1);
+		});
+
+		test("method matches constant", () => {
+			const txHash =
+				"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b";
+			const req = GetTransactionReceiptRequest(txHash);
+			expect(req.method).toBe(method);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		test("handles successful transaction hash", () => {
+			const txHash =
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+			const req = GetTransactionReceiptRequest(txHash);
+			expect(req.params?.[0]).toBe(txHash);
+		});
+
+		test("handles failed transaction hash", () => {
+			const txHash =
+				"0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321";
+			const req = GetTransactionReceiptRequest(txHash);
+			expect(req.params?.[0]).toBe(txHash);
+		});
+	});
+});
+
+```

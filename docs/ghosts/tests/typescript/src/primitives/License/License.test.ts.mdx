@@ -1,0 +1,94 @@
+---
+title: '[TS/JS] src/primitives/License/License.test.ts'
+source: 'src/primitives/License/License.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/License/License.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as License from "./index.js";
+
+describe("License", () => {
+	describe("from", () => {
+		it("should create license from valid string", () => {
+			const l1 = License.from("MIT");
+			expect(l1).toBe("MIT");
+
+			const l2 = License.from("Apache-2.0");
+			expect(l2).toBe("Apache-2.0");
+
+			const l3 = License.from("UNLICENSED");
+			expect(l3).toBe("UNLICENSED");
+		});
+
+		it("should throw on invalid input", () => {
+			expect(() => License.from("")).toThrow("cannot be empty");
+			expect(() => License.from(123 as any)).toThrow("must be a string");
+			expect(() => License.from("   ")).toThrow("cannot be empty");
+		});
+	});
+
+	describe("isOSI", () => {
+		it("should identify OSI-approved licenses", () => {
+			expect(License.isOSI("MIT")).toBe(true);
+			expect(License.isOSI("Apache-2.0")).toBe(true);
+			expect(License.isOSI("GPL-3.0")).toBe(true);
+			expect(License.isOSI("BSD-3-Clause")).toBe(true);
+		});
+
+		it("should return false for non-OSI licenses", () => {
+			expect(License.isOSI("UNLICENSED")).toBe(false);
+			expect(License.isOSI("Proprietary")).toBe(false);
+			expect(License.isOSI("Custom-License")).toBe(false);
+		});
+	});
+
+	describe("toString", () => {
+		it("should convert to string", () => {
+			const license = License.from("MIT");
+			expect(License.toString(license)).toBe("MIT");
+
+			expect(License.toString("Apache-2.0")).toBe("Apache-2.0");
+		});
+	});
+
+	describe("constants", () => {
+		it("should export common licenses", () => {
+			expect(License.COMMON_LICENSES).toContain("MIT");
+			expect(License.COMMON_LICENSES).toContain("Apache-2.0");
+			expect(License.COMMON_LICENSES).toContain("GPL-3.0");
+			expect(License.COMMON_LICENSES).toContain("UNLICENSED");
+		});
+
+		it("should export OSI-approved licenses", () => {
+			expect(License.OSI_APPROVED_LICENSES).toContain("MIT");
+			expect(License.OSI_APPROVED_LICENSES).toContain("Apache-2.0");
+			expect(License.OSI_APPROVED_LICENSES).toContain("GPL-3.0");
+			expect(License.OSI_APPROVED_LICENSES).not.toContain("UNLICENSED");
+		});
+	});
+
+	describe("real-world usage", () => {
+		it("should handle common Solidity contract licenses", () => {
+			const licenses = ["MIT", "Apache-2.0", "GPL-3.0", "UNLICENSED"];
+
+			for (const l of licenses) {
+				const license = License.from(l);
+				expect(typeof license).toBe("string");
+			}
+		});
+
+		it("should check OSI approval for contract licensing", () => {
+			// MIT is OSI-approved (open source)
+			const mit = License.from("MIT");
+			expect(License.isOSI(mit)).toBe(true);
+
+			// UNLICENSED is not OSI-approved (closed source/proprietary)
+			const unlicensed = License.from("UNLICENSED");
+			expect(License.isOSI(unlicensed)).toBe(false);
+		});
+	});
+});
+
+```

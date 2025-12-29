@@ -1,0 +1,1380 @@
+---
+title: '[Zig] src/primitives/Rlp/Rlp.zig'
+source: 'src/primitives/Rlp/Rlp.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Rlp/Rlp.zig
+
+### RLP single byte
+
+```zig
+test "RLP single byte" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const single_byte = "a";
+    const encoded = try encode(allocator, single_byte);
+    defer allocator.free(encoded);
+
+    try testing.expectEqualSlices(u8, &[_]u8{'a'}, encoded);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |str| try testing.expectEqualSlices(u8, &[_]u8{'a'}, str),
+        .List => unreachable,
+    }
+}
+```
+
+### RLP string 0-55 bytes
+
+```zig
+test "RLP string 0-55 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const dog_str = "dog";
+    const encoded = try encode(allocator, dog_str);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 4), encoded.len);
+    try testing.expectEqual(@as(u8, 131), encoded[0]);
+    try testing.expectEqual(@as(u8, 'd'), encoded[1]);
+    try testing.expectEqual(@as(u8, 'o'), encoded[2]);
+    try testing.expectEqual(@as(u8, 'g'), encoded[3]);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |str| try testing.expectEqualSlices(u8, dog_str, str),
+        .List => unreachable,
+    }
+}
+```
+
+### RLP string >55 bytes
+
+```zig
+test "RLP string >55 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const long_str = "zoo255zoo255zzzzzzzzzzzzssssssssssssssssssssssssssssssssssssssssssssss";
+    const encoded = try encode(allocator, long_str);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 72), encoded.len);
+    try testing.expectEqual(@as(u8, 184), encoded[0]);
+    try testing.expectEqual(@as(u8, 70), encoded[1]);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |str| try testing.expectEqualSlices(u8, long_str, str),
+        .List => unreachable,
+    }
+}
+```
+
+### RLP list 0-55 bytes
+
+```zig
+test "RLP list 0-55 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const list = [_][]const u8{ "dog", "god", "cat" };
+
+    const encoded_list = try encode(allocator, list[0..]);
+    defer allocator.free(encoded_list);
+
+    try testing.expectEqual(@as(usize, 13), encoded_list.len);
+    try testing.expectEqual(@as(u8, 204), encoded_list[0]);
+
+    const decoded = try decode(allocator, encoded_list, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |items| {
+            try testing.expectEqual(@as(usize, 3), items.len);
+            for (items, 0..) |item, i| {
+                switch (item) {
+                    .String => |str| try testing.expectEqualSlices(u8, list[i], str),
+                    .List => unreachable,
+                }
+            }
+        },
+        .String => unreachable,
+    }
+}
+```
+
+### RLP integers
+
+```zig
+test "RLP integers" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Single byte integer
+    {
+        const encoded = try encode(allocator, 15);
+        defer allocator.free(encoded);
+
+        try testing.expectEqual(@as(usize, 1), encoded.len);
+        try testing.expectEqual(@as(u8, 15), encoded[0]);
+
+        const decoded = try decode(allocator, encoded, false);
+        defer decoded.data.deinit(allocator);
+
+        switch (decoded.data) {
+            .String => |str| {
+                try testing.expectEqual(@as(usize, 1), str.len);
+                try testing.expectEqual(@as(u8, 15), str[0]);
+            },
+            .List => unreachable,
+        }
+    }
+
+    // Multi-byte integer
+    {
+        const encoded = try encode(allocator, 1024);
+        defer allocator.free(encoded);
+
+        try testing.expectEqual(@as(usize, 3), encoded.len);
+        try testing.expectEqual(@as(u8, 130), encoded[0]);
+        try testing.expectEqual(@as(u8, 4), encoded[1]);
+        try testing.expectEqual(@as(u8, 0), encoded[2]);
+
+        const decoded = try decode(allocator, encoded, false);
+        defer decoded.data.deinit(allocator);
+
+        switch (decoded.data) {
+            .String => |str| {
+                try testing.expectEqual(@as(usize, 2), str.len);
+                try testing.expectEqual(@as(u8, 4), str[0]);
+                try testing.expectEqual(@as(u8, 0), str[1]);
+            },
+            .List => unreachable,
+        }
+    }
+
+    // Zero
+    {
+        const encoded = try encode(allocator, 0);
+        defer allocator.free(encoded);
+
+        try testing.expectEqual(@as(usize, 1), encoded.len);
+        try testing.expectEqual(@as(u8, 0x80), encoded[0]);
+
+        const decoded = try decode(allocator, encoded, false);
+        defer decoded.data.deinit(allocator);
+
+        switch (decoded.data) {
+            .String => |str| try testing.expectEqual(@as(usize, 0), str.len),
+            .List => unreachable,
+        }
+    }
+}
+```
+
+### RLP nested lists - simple two level [[1,2],[3,4]]
+
+```zig
+test "RLP nested lists - simple two level [[1,2],[3,4]]" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Manually construct [[1, 2], [3, 4]]
+    // [1, 2] = 0xc2 0x01 0x02 (list prefix 0xc0+2, then bytes 1 and 2)
+    // [3, 4] = 0xc2 0x03 0x04 (list prefix 0xc0+2, then bytes 3 and 4)
+    // [[1,2],[3,4]] = 0xc6 0xc2 0x01 0x02 0xc2 0x03 0x04 (list prefix 0xc0+6, then both sublists)
+    const manual_encoding = [_]u8{ 0xc6, 0xc2, 0x01, 0x02, 0xc2, 0x03, 0x04 };
+
+    const decoded = try decode(allocator, &manual_encoding, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 2), outer_list.len);
+
+            // Verify first inner list [1, 2]
+            switch (outer_list[0]) {
+                .List => |inner_list1| {
+                    try testing.expectEqual(@as(usize, 2), inner_list1.len);
+                    switch (inner_list1[0]) {
+                        .String => |bytes| {
+                            try testing.expectEqual(@as(usize, 1), bytes.len);
+                            try testing.expectEqual(@as(u8, 1), bytes[0]);
+                        },
+                        .List => unreachable,
+                    }
+                    switch (inner_list1[1]) {
+                        .String => |bytes| {
+                            try testing.expectEqual(@as(usize, 1), bytes.len);
+                            try testing.expectEqual(@as(u8, 2), bytes[0]);
+                        },
+                        .List => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+
+            // Verify second inner list [3, 4]
+            switch (outer_list[1]) {
+                .List => |inner_list2| {
+                    try testing.expectEqual(@as(usize, 2), inner_list2.len);
+                    switch (inner_list2[0]) {
+                        .String => |bytes| {
+                            try testing.expectEqual(@as(usize, 1), bytes.len);
+                            try testing.expectEqual(@as(u8, 3), bytes[0]);
+                        },
+                        .List => unreachable,
+                    }
+                    switch (inner_list2[1]) {
+                        .String => |bytes| {
+                            try testing.expectEqual(@as(usize, 1), bytes.len);
+                            try testing.expectEqual(@as(u8, 4), bytes[0]);
+                        },
+                        .List => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+        },
+        .String => unreachable,
+    }
+}
+```
+
+### RLP nested lists - empty nested lists [[],[]]
+
+```zig
+test "RLP nested lists - empty nested lists [[],[]]" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // [] = 0xc0 (empty list)
+    // [[],[]] = 0xc2 0xc0 0xc0 (list of 2 bytes, containing two empty lists)
+    const manual_encoding = [_]u8{ 0xc2, 0xc0, 0xc0 };
+
+    const decoded = try decode(allocator, &manual_encoding, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 2), outer_list.len);
+            switch (outer_list[0]) {
+                .List => |inner| try testing.expectEqual(@as(usize, 0), inner.len),
+                .String => unreachable,
+            }
+            switch (outer_list[1]) {
+                .List => |inner| try testing.expectEqual(@as(usize, 0), inner.len),
+                .String => unreachable,
+            }
+        },
+        .String => unreachable,
+    }
+}
+```
+
+### RLP nested lists - single element [[1],[2]]
+
+```zig
+test "RLP nested lists - single element [[1],[2]]" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // [1] = 0xc1 0x01 (list of 1 byte containing 1)
+    // [2] = 0xc1 0x02 (list of 1 byte containing 2)
+    // [[1],[2]] = 0xc4 0xc1 0x01 0xc1 0x02 (list of 4 bytes total)
+    const manual_encoding = [_]u8{ 0xc4, 0xc1, 0x01, 0xc1, 0x02 };
+
+    const decoded = try decode(allocator, &manual_encoding, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 2), outer_list.len);
+            switch (outer_list[0]) {
+                .List => |inner1| {
+                    try testing.expectEqual(@as(usize, 1), inner1.len);
+                    switch (inner1[0]) {
+                        .String => |bytes| try testing.expectEqual(@as(u8, 1), bytes[0]),
+                        .List => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+            switch (outer_list[1]) {
+                .List => |inner2| {
+                    try testing.expectEqual(@as(usize, 1), inner2.len);
+                    switch (inner2[0]) {
+                        .String => |bytes| try testing.expectEqual(@as(u8, 2), bytes[0]),
+                        .List => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+        },
+        .String => unreachable,
+    }
+}
+```
+
+### RLP nested lists - three levels [[[1,2],[3]],[[4]]]
+
+```zig
+test "RLP nested lists - three levels [[[1,2],[3]],[[4]]]" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // [1,2] = 0xc2 0x01 0x02
+    // [3] = 0xc1 0x03
+    // [[1,2],[3]] = 0xc5 0xc2 0x01 0x02 0xc1 0x03
+    // [4] = 0xc1 0x04
+    // [[4]] = 0xc2 0xc1 0x04
+    // [[[1,2],[3]],[[4]]] = 0xc9 0xc5 0xc2 0x01 0x02 0xc1 0x03 0xc2 0xc1 0x04
+    const manual_encoding = [_]u8{ 0xc9, 0xc5, 0xc2, 0x01, 0x02, 0xc1, 0x03, 0xc2, 0xc1, 0x04 };
+
+    const decoded = try decode(allocator, &manual_encoding, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 2), outer_list.len);
+
+            // Verify [[1,2],[3]]
+            switch (outer_list[0]) {
+                .List => |middle1| {
+                    try testing.expectEqual(@as(usize, 2), middle1.len);
+                    // Verify [1,2]
+                    switch (middle1[0]) {
+                        .List => |inner1| {
+                            try testing.expectEqual(@as(usize, 2), inner1.len);
+                            switch (inner1[0]) {
+                                .String => |bytes| try testing.expectEqual(@as(u8, 1), bytes[0]),
+                                .List => unreachable,
+                            }
+                            switch (inner1[1]) {
+                                .String => |bytes| try testing.expectEqual(@as(u8, 2), bytes[0]),
+                                .List => unreachable,
+                            }
+                        },
+                        .String => unreachable,
+                    }
+                    // Verify [3]
+                    switch (middle1[1]) {
+                        .List => |inner2| {
+                            try testing.expectEqual(@as(usize, 1), inner2.len);
+                            switch (inner2[0]) {
+                                .String => |bytes| try testing.expectEqual(@as(u8, 3), bytes[0]),
+                                .List => unreachable,
+                            }
+                        },
+                        .String => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+
+            // Verify [[4]]
+            switch (outer_list[1]) {
+                .List => |middle2| {
+                    try testing.expectEqual(@as(usize, 1), middle2.len);
+                    switch (middle2[0]) {
+                        .List => |inner| {
+                            try testing.expectEqual(@as(usize, 1), inner.len);
+                            switch (inner[0]) {
+                                .String => |bytes| try testing.expectEqual(@as(u8, 4), bytes[0]),
+                                .List => unreachable,
+                            }
+                        },
+                        .String => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+        },
+        .String => unreachable,
+    }
+}
+```
+
+### RLP nested lists - mixed types with strings and lists
+
+```zig
+test "RLP nested lists - mixed types with strings and lists" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // ["cat", [1,2], "dog"]
+    // "cat" = 0x83 'c' 'a' 't' (0x83 = 0x80+3, total 4 bytes)
+    // [1,2] = 0xc2 0x01 0x02 (total 3 bytes)
+    // "dog" = 0x83 'd' 'o' 'g' (total 4 bytes)
+    // ["cat", [1,2], "dog"] = 0xcb 0x83 'c' 'a' 't' 0xc2 0x01 0x02 0x83 'd' 'o' 'g'
+    // Total payload: 4+3+4 = 11 bytes, so 0xc0+11 = 0xcb
+    const manual_encoding = [_]u8{ 0xcb, 0x83, 'c', 'a', 't', 0xc2, 0x01, 0x02, 0x83, 'd', 'o', 'g' };
+
+    const decoded = try decode(allocator, &manual_encoding, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 3), outer_list.len);
+
+            // Verify "cat"
+            switch (outer_list[0]) {
+                .String => |bytes| try testing.expectEqualSlices(u8, "cat", bytes),
+                .List => unreachable,
+            }
+
+            // Verify [1,2]
+            switch (outer_list[1]) {
+                .List => |inner| {
+                    try testing.expectEqual(@as(usize, 2), inner.len);
+                    switch (inner[0]) {
+                        .String => |bytes| try testing.expectEqual(@as(u8, 1), bytes[0]),
+                        .List => unreachable,
+                    }
+                    switch (inner[1]) {
+                        .String => |bytes| try testing.expectEqual(@as(u8, 2), bytes[0]),
+                        .List => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+
+            // Verify "dog"
+            switch (outer_list[2]) {
+                .String => |bytes| try testing.expectEqualSlices(u8, "dog", bytes),
+                .List => unreachable,
+            }
+        },
+        .String => unreachable,
+    }
+}
+```
+
+### RLP nested lists - edge case with empty and non-empty [[],[1],[]]
+
+```zig
+test "RLP nested lists - edge case with empty and non-empty [[],[1],[]]" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // [] = 0xc0
+    // [1] = 0xc1 0x01
+    // [[],[1],[]] = 0xc4 0xc0 0xc1 0x01 0xc0 (list of 4 bytes total)
+    const manual_encoding = [_]u8{ 0xc4, 0xc0, 0xc1, 0x01, 0xc0 };
+
+    const decoded = try decode(allocator, &manual_encoding, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 3), outer_list.len);
+            switch (outer_list[0]) {
+                .List => |inner| try testing.expectEqual(@as(usize, 0), inner.len),
+                .String => unreachable,
+            }
+            switch (outer_list[1]) {
+                .List => |inner| {
+                    try testing.expectEqual(@as(usize, 1), inner.len);
+                    switch (inner[0]) {
+                        .String => |bytes| try testing.expectEqual(@as(u8, 1), bytes[0]),
+                        .List => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+            switch (outer_list[2]) {
+                .List => |inner| try testing.expectEqual(@as(usize, 0), inner.len),
+                .String => unreachable,
+            }
+        },
+        .String => unreachable,
+    }
+}
+```
+
+### RLP stream decoding
+
+```zig
+test "RLP stream decoding" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create a stream of RLP encoded items
+    const encoded_number = try encode(allocator, 1);
+    defer allocator.free(encoded_number);
+
+    const encoded_string = try encode(allocator, "test");
+    defer allocator.free(encoded_string);
+
+    const long_string = "This is a long string that should trigger the long string encoding in RLP";
+    const encoded_long_string = try encode(allocator, long_string);
+    defer allocator.free(encoded_long_string);
+
+    const list_items = [_]i32{ 1, 2, 3 };
+    const encoded_list = try encode(allocator, list_items);
+    defer allocator.free(encoded_list);
+
+    // Concatenate all encoded items
+    const arrays = [_][]const u8{ encoded_number, encoded_string, encoded_long_string, encoded_list };
+    const buffer_stream = try concatBytes(allocator, &arrays);
+    defer allocator.free(buffer_stream);
+
+    // Decode stream one by one
+    var remaining: []const u8 = buffer_stream;
+
+    // First item (number)
+    var decoded = try decode(allocator, remaining, true);
+    remaining = decoded.remainder;
+    switch (decoded.data) {
+        .String => |str| {
+            try testing.expectEqual(@as(usize, 1), str.len);
+            try testing.expectEqual(@as(u8, 1), str[0]);
+        },
+        .List => unreachable,
+    }
+    decoded.data.deinit(allocator);
+
+    // Second item (string)
+    decoded = try decode(allocator, remaining, true);
+    remaining = decoded.remainder;
+    switch (decoded.data) {
+        .String => |str| {
+            try testing.expectEqualSlices(u8, "test", str);
+        },
+        .List => unreachable,
+    }
+    decoded.data.deinit(allocator);
+
+    // Third item (long string)
+    decoded = try decode(allocator, remaining, true);
+    remaining = decoded.remainder;
+    switch (decoded.data) {
+        .String => |str| {
+            try testing.expectEqualSlices(u8, long_string, str);
+        },
+        .List => unreachable,
+    }
+    decoded.data.deinit(allocator);
+
+    // Fourth item (list)
+    decoded = try decode(allocator, remaining, true);
+    remaining = decoded.remainder;
+    switch (decoded.data) {
+        .List => |list| {
+            try testing.expectEqual(@as(usize, 3), list.len);
+            for (list, 0..) |item, i| {
+                switch (item) {
+                    .String => |str| {
+                        try testing.expectEqual(@as(usize, 1), str.len);
+                        try testing.expectEqual(@as(u8, @intCast(i + 1)), str[0]);
+                    },
+                    .List => unreachable,
+                }
+            }
+        },
+        .String => unreachable,
+    }
+    decoded.data.deinit(allocator);
+
+    // Verify all data was consumed
+    try testing.expectEqual(@as(usize, 0), remaining.len);
+}
+```
+
+### RLP recursion depth limit
+
+```zig
+test "RLP recursion depth limit" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test 1: Verify MAX_RLP_DEPTH constant exists and has reasonable value
+    try testing.expect(MAX_RLP_DEPTH == 32);
+
+    // Test 2: Create deeply nested list that exceeds MAX_RLP_DEPTH
+    // Each nested list adds one level of depth
+    // We'll create a list with MAX_RLP_DEPTH + 5 levels of nesting
+    var current_encoded = try encode(allocator, "inner");
+    defer allocator.free(current_encoded);
+
+    // Build nested structure: [[[[["inner"]]]]]
+    var depth: u32 = 0;
+    while (depth < MAX_RLP_DEPTH + 5) : (depth += 1) {
+        const list = [_][]const u8{current_encoded};
+        const new_encoded = try encode(allocator, list[0..]);
+        if (depth > 0) {
+            allocator.free(current_encoded);
+        }
+        current_encoded = new_encoded;
+    }
+    defer if (MAX_RLP_DEPTH + 5 > 0) allocator.free(current_encoded);
+
+    // Test 3: Decoding should fail with RecursionDepthExceeded
+    const result = decode(allocator, current_encoded, false);
+    try testing.expectError(RlpError.RecursionDepthExceeded, result);
+}
+```
+
+### RLP max allowed depth
+
+```zig
+test "RLP max allowed depth" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create nested list exactly at MAX_RLP_DEPTH - 1 (should succeed)
+    var current_encoded = try encode(allocator, "inner");
+    defer allocator.free(current_encoded);
+
+    // Build nested structure up to MAX_RLP_DEPTH - 1 levels
+    var depth: u32 = 0;
+    while (depth < MAX_RLP_DEPTH - 1) : (depth += 1) {
+        const list = [_][]const u8{current_encoded};
+        const new_encoded = try encode(allocator, list[0..]);
+        if (depth > 0) {
+            allocator.free(current_encoded);
+        }
+        current_encoded = new_encoded;
+    }
+    defer if (MAX_RLP_DEPTH - 1 > 0) allocator.free(current_encoded);
+
+    // This should succeed since we're at MAX_RLP_DEPTH - 1
+    const decoded = try decode(allocator, current_encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    // Verify we got a list
+    try testing.expect(decoded.data == .List);
+}
+```
+
+### RLP depth limit edge case
+
+```zig
+test "RLP depth limit edge case" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test with exactly MAX_RLP_DEPTH levels (should succeed)
+    var current_encoded = try encode(allocator, "data");
+    defer allocator.free(current_encoded);
+
+    var depth: u32 = 0;
+    while (depth < MAX_RLP_DEPTH - 1) : (depth += 1) {
+        const list = [_][]const u8{current_encoded};
+        const new_encoded = try encode(allocator, list[0..]);
+        if (depth > 0) {
+            allocator.free(current_encoded);
+        }
+        current_encoded = new_encoded;
+    }
+    defer if (MAX_RLP_DEPTH - 1 > 0) allocator.free(current_encoded);
+
+    // Decoding at exactly MAX_RLP_DEPTH should succeed
+    const decoded = try decode(allocator, current_encoded, false);
+    defer decoded.data.deinit(allocator);
+    try testing.expect(decoded.data == .List);
+}
+```
+
+### RLP depth protection against attack
+
+```zig
+test "RLP depth protection against attack" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Simulate an attack with 100 levels of nesting
+    const attack_depth: u32 = 100;
+    var current_encoded = try encode(allocator, &[_]u8{});
+    defer allocator.free(current_encoded);
+
+    var depth: u32 = 0;
+    while (depth < attack_depth) : (depth += 1) {
+        const list = [_][]const u8{current_encoded};
+        const new_encoded = try encode(allocator, list[0..]);
+        if (depth > 0) {
+            allocator.free(current_encoded);
+        }
+        current_encoded = new_encoded;
+    }
+    defer if (attack_depth > 0) allocator.free(current_encoded);
+
+    // Should fail with RecursionDepthExceeded
+    const result = decode(allocator, current_encoded, false);
+    try testing.expectError(RlpError.RecursionDepthExceeded, result);
+}
+```
+
+### RLP empty string
+
+```zig
+test "RLP empty string" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const empty_str = "";
+    const encoded = try encode(allocator, empty_str);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 1), encoded.len);
+    try testing.expectEqual(@as(u8, 0x80), encoded[0]);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |str| try testing.expectEqual(@as(usize, 0), str.len),
+        .List => unreachable,
+    }
+}
+```
+
+### RLP empty list
+
+```zig
+test "RLP empty list" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const empty_list = [_][]const u8{};
+    const encoded = try encode(allocator, empty_list[0..]);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 1), encoded.len);
+    try testing.expectEqual(@as(u8, 0xc0), encoded[0]);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |items| try testing.expectEqual(@as(usize, 0), items.len),
+        .String => unreachable,
+    }
+}
+```
+
+### RLP malformed input - truncated string
+
+```zig
+test "RLP malformed input - truncated string" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // String header says 5 bytes but only 3 provided
+    const malformed = [_]u8{ 0x85, 'a', 'b', 'c' };
+    const result = decode(allocator, &malformed, false);
+    try testing.expectError(RlpError.InputTooShort, result);
+}
+```
+
+### RLP malformed input - truncated list
+
+```zig
+test "RLP malformed input - truncated list" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // List header says 10 bytes but only 5 provided
+    const malformed = [_]u8{ 0xca, 0x83, 'd', 'o', 'g' };
+    const result = decode(allocator, &malformed, false);
+    try testing.expectError(RlpError.InputTooShort, result);
+}
+```
+
+### RLP malformed input - leading zeros in length
+
+```zig
+test "RLP malformed input - leading zeros in length" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Long string with leading zero in length
+    const malformed = [_]u8{ 0xb8, 0x00, 0x05, 'h', 'e', 'l', 'l', 'o' };
+    const result = decode(allocator, &malformed, false);
+    try testing.expectError(RlpError.LeadingZeros, result);
+}
+```
+
+### RLP non-canonical encoding - single byte as string
+
+```zig
+test "RLP non-canonical encoding - single byte as string" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Single byte less than 0x80 should not have 0x81 prefix
+    const non_canonical = [_]u8{ 0x81, 0x50 };
+    const result = decode(allocator, &non_canonical, false);
+    try testing.expectError(RlpError.NonCanonicalSize, result);
+}
+```
+
+### RLP non-canonical encoding - short form for small string
+
+```zig
+test "RLP non-canonical encoding - short form for small string" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // String of 5 bytes should use short form, not long form
+    const non_canonical = [_]u8{ 0xb8, 0x05, 'h', 'e', 'l', 'l', 'o' };
+    const result = decode(allocator, &non_canonical, false);
+    try testing.expectError(RlpError.NonCanonicalSize, result);
+}
+```
+
+### RLP encode decode round-trip - large integer
+
+```zig
+test "RLP encode decode round-trip - large integer" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const large_value: u64 = 0xFFFFFFFFFFFFFFFF;
+    const encoded = try encode(allocator, large_value);
+    defer allocator.free(encoded);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |bytes| {
+            try testing.expectEqual(@as(usize, 8), bytes.len);
+            var value: u64 = 0;
+            for (bytes) |byte| {
+                value = (value << 8) | byte;
+            }
+            try testing.expectEqual(large_value, value);
+        },
+        .List => unreachable,
+    }
+}
+```
+
+### RLP encode decode round-trip - list with mixed types
+
+```zig
+test "RLP encode decode round-trip - list with mixed types" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create list with string and integer
+    const str = "hello";
+    const encoded_str = try encode(allocator, str);
+    defer allocator.free(encoded_str);
+
+    const encoded_int = try encode(allocator, 42);
+    defer allocator.free(encoded_int);
+
+    const list = [_][]const u8{ encoded_str, encoded_int };
+    const encoded_list = try encode(allocator, list[0..]);
+    defer allocator.free(encoded_list);
+
+    const decoded = try decode(allocator, encoded_list, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |items| {
+            try testing.expectEqual(@as(usize, 2), items.len);
+        },
+        .String => unreachable,
+    }
+}
+```
+
+### RLP extra data in non-stream mode
+
+```zig
+test "RLP extra data in non-stream mode" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Valid encoding followed by extra bytes
+    const with_extra = [_]u8{ 0x83, 'd', 'o', 'g', 0x01, 0x02 };
+    const result = decode(allocator, &with_extra, false);
+    try testing.expectError(RlpError.InvalidRemainder, result);
+}
+```
+
+### RLP extra data allowed in stream mode
+
+```zig
+test "RLP extra data allowed in stream mode" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Valid encoding followed by extra bytes
+    const with_extra = [_]u8{ 0x83, 'd', 'o', 'g', 0x01, 0x02 };
+    const decoded = try decode(allocator, &with_extra, true);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |str| try testing.expectEqualSlices(u8, "dog", str),
+        .List => unreachable,
+    }
+
+    // Remainder should be the extra bytes
+    try testing.expectEqual(@as(usize, 2), decoded.remainder.len);
+    try testing.expectEqual(@as(u8, 0x01), decoded.remainder[0]);
+}
+```
+
+### RLP all single byte values
+
+```zig
+test "RLP all single byte values" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test all values from 0x00 to 0x7f (should encode as themselves)
+    var value: u8 = 0;
+    while (value < 0x7f) : (value += 1) {
+        const bytes = [_]u8{value};
+        const encoded = try encode(allocator, &bytes);
+        defer allocator.free(encoded);
+
+        try testing.expectEqual(@as(usize, 1), encoded.len);
+        try testing.expectEqual(value, encoded[0]);
+
+        const decoded = try decode(allocator, encoded, false);
+        defer decoded.data.deinit(allocator);
+
+        switch (decoded.data) {
+            .String => |str| {
+                try testing.expectEqual(@as(usize, 1), str.len);
+                try testing.expectEqual(value, str[0]);
+            },
+            .List => unreachable,
+        }
+    }
+}
+```
+
+### RLP boundary values - 55 byte string
+
+```zig
+test "RLP boundary values - 55 byte string" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Exactly 55 bytes - should use short form
+    const str_55 = "a" ** 55;
+    const encoded = try encode(allocator, str_55);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 56), encoded.len);
+    try testing.expectEqual(@as(u8, 0x80 + 55), encoded[0]);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |str| try testing.expectEqual(@as(usize, 55), str.len),
+        .List => unreachable,
+    }
+}
+```
+
+### RLP boundary values - 56 byte string
+
+```zig
+test "RLP boundary values - 56 byte string" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Exactly 56 bytes - should use long form
+    const str_56 = "a" ** 56;
+    const encoded = try encode(allocator, str_56);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(u8, 0xb8), encoded[0]);
+    try testing.expectEqual(@as(u8, 56), encoded[1]);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |str| try testing.expectEqual(@as(usize, 56), str.len),
+        .List => unreachable,
+    }
+}
+```
+
+### RLP list boundary - 55 byte total
+
+```zig
+test "RLP list boundary - 55 byte total" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create list where total encoded size is exactly 55 bytes
+    const items = [_][]const u8{ "a" ** 17, "b" ** 17, "c" ** 17 };
+    const encoded = try encode(allocator, items[0..]);
+    defer allocator.free(encoded);
+
+    // Should use short list form
+    try testing.expect(encoded[0] >= 0xc0 and encoded[0] <= 0xf7);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |list| try testing.expectEqual(@as(usize, 3), list.len),
+        .String => unreachable,
+    }
+}
+```
+
+### RLP maximum u8 value
+
+```zig
+test "RLP maximum u8 value" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const max_u8: u8 = 255;
+    const encoded = try encode(allocator, max_u8);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 2), encoded.len);
+    try testing.expectEqual(@as(u8, 0x81), encoded[0]);
+    try testing.expectEqual(@as(u8, 0xff), encoded[1]);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |bytes| {
+            try testing.expectEqual(@as(usize, 1), bytes.len);
+            try testing.expectEqual(@as(u8, 255), bytes[0]);
+        },
+        .List => unreachable,
+    }
+}
+```
+
+### RLP nested list round-trip - two levels
+
+```zig
+test "RLP nested list round-trip - two levels" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create [[1, 2], [3, 4]]
+    const list1_item1 = try encode(allocator, 1);
+    defer allocator.free(list1_item1);
+    const list1_item2 = try encode(allocator, 2);
+    defer allocator.free(list1_item2);
+    const list1_items = [_][]const u8{ list1_item1, list1_item2 };
+    const list1 = try encode(allocator, list1_items[0..]);
+    defer allocator.free(list1);
+
+    const list2_item1 = try encode(allocator, 3);
+    defer allocator.free(list2_item1);
+    const list2_item2 = try encode(allocator, 4);
+    defer allocator.free(list2_item2);
+    const list2_items = [_][]const u8{ list2_item1, list2_item2 };
+    const list2 = try encode(allocator, list2_items[0..]);
+    defer allocator.free(list2);
+
+    const outer_items = [_][]const u8{ list1, list2 };
+    const encoded = try encode(allocator, outer_items[0..]);
+    defer allocator.free(encoded);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 2), outer_list.len);
+            for (outer_list) |inner| {
+                switch (inner) {
+                    .List => |inner_list| {
+                        try testing.expectEqual(@as(usize, 2), inner_list.len);
+                    },
+                    .String => unreachable,
+                }
+            }
+        },
+        .String => unreachable,
+    }
+}
+```
+
+### RLP encodeList
+
+```zig
+test "RLP encodeList" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test empty list
+    const empty_list = [_][]const u8{};
+    const encoded_empty = try encodeList(allocator, empty_list[0..]);
+    defer allocator.free(encoded_empty);
+    try testing.expectEqual(@as(u8, 0xc0), encoded_empty[0]);
+
+    // Test simple list
+    const simple_list = [_][]const u8{ "cat", "dog" };
+    const encoded_simple = try encodeList(allocator, simple_list[0..]);
+    defer allocator.free(encoded_simple);
+    try testing.expect(encoded_simple.len > 0);
+}
+```
+
+### RLP type guards
+
+```zig
+test "RLP type guards" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create bytes Data
+    const bytes_data = Data{ .String = try allocator.dupe(u8, &[_]u8{ 1, 2, 3 }) };
+    defer allocator.free(bytes_data.String);
+
+    try testing.expect(isData(bytes_data));
+    try testing.expect(isBytesData(bytes_data));
+    try testing.expect(!isListData(bytes_data));
+    try testing.expect(isString(bytes_data));
+    try testing.expect(!isList(bytes_data));
+
+    // Create list Data
+    const list_data = Data{ .List = try allocator.alloc(Data, 0) };
+    defer allocator.free(list_data.List);
+
+    try testing.expect(isData(list_data));
+    try testing.expect(!isBytesData(list_data));
+    try testing.expect(isListData(list_data));
+    try testing.expect(!isString(list_data));
+    try testing.expect(isList(list_data));
+}
+```
+
+### RLP getLength
+
+```zig
+test "RLP getLength" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test bytes length
+    const bytes_data = Data{ .String = try allocator.dupe(u8, &[_]u8{ 1, 2, 3 }) };
+    defer allocator.free(bytes_data.String);
+    try testing.expectEqual(@as(usize, 3), getLength(bytes_data));
+
+    // Test list length
+    const list_data = Data{ .List = try allocator.alloc(Data, 5) };
+    defer allocator.free(list_data.List);
+    try testing.expectEqual(@as(usize, 5), getLength(list_data));
+}
+```
+
+### RLP getEncodedLength
+
+```zig
+test "RLP getEncodedLength" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test short string
+    const short_str = "dog";
+    const length = try getEncodedLength(allocator, short_str);
+    try testing.expectEqual(@as(usize, 4), length); // 0x83 + 3 bytes
+
+    // Test empty list
+    const empty_list = [_][]const u8{};
+    const list_length = try getEncodedLength(allocator, empty_list[0..]);
+    try testing.expectEqual(@as(usize, 1), list_length); // 0xc0
+}
+```
+
+### RLP flatten
+
+```zig
+test "RLP flatten" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create nested structure: [[1], [2, 3]]
+    const inner1_data = Data{ .String = try allocator.dupe(u8, &[_]u8{1}) };
+    const inner1 = try allocator.alloc(Data, 1);
+    inner1[0] = inner1_data;
+
+    const inner2_data1 = Data{ .String = try allocator.dupe(u8, &[_]u8{2}) };
+    const inner2_data2 = Data{ .String = try allocator.dupe(u8, &[_]u8{3}) };
+    const inner2 = try allocator.alloc(Data, 2);
+    inner2[0] = inner2_data1;
+    inner2[1] = inner2_data2;
+
+    const outer = try allocator.alloc(Data, 2);
+    outer[0] = Data{ .List = inner1 };
+    outer[1] = Data{ .List = inner2 };
+
+    const nested = Data{ .List = outer };
+    defer nested.deinit(allocator);
+
+    const flattened = try flatten(allocator, nested);
+    defer allocator.free(flattened);
+
+    try testing.expectEqual(@as(usize, 3), flattened.len);
+}
+```
+
+### RLP equals
+
+```zig
+test "RLP equals" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test equal bytes
+    const bytes1 = Data{ .String = try allocator.dupe(u8, &[_]u8{ 1, 2, 3 }) };
+    defer allocator.free(bytes1.String);
+    const bytes2 = Data{ .String = try allocator.dupe(u8, &[_]u8{ 1, 2, 3 }) };
+    defer allocator.free(bytes2.String);
+    try testing.expect(equals(bytes1, bytes2));
+
+    // Test unequal bytes
+    const bytes3 = Data{ .String = try allocator.dupe(u8, &[_]u8{ 1, 2, 4 }) };
+    defer allocator.free(bytes3.String);
+    try testing.expect(!equals(bytes1, bytes3));
+
+    // Test empty lists
+    const list1 = Data{ .List = try allocator.alloc(Data, 0) };
+    defer allocator.free(list1.List);
+    const list2 = Data{ .List = try allocator.alloc(Data, 0) };
+    defer allocator.free(list2.List);
+    try testing.expect(equals(list1, list2));
+
+    // Test different types
+    try testing.expect(!equals(bytes1, list1));
+}
+```
+
+### RLP validate
+
+```zig
+test "RLP validate" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Valid single byte
+    const valid1 = [_]u8{0x7f};
+    try testing.expect(validate(allocator, &valid1));
+
+    // Valid string
+    const valid2 = [_]u8{ 0x83, 'd', 'o', 'g' };
+    try testing.expect(validate(allocator, &valid2));
+
+    // Invalid - truncated
+    const invalid1 = [_]u8{ 0x83, 'd', 'o' };
+    try testing.expect(!validate(allocator, &invalid1));
+
+    // Invalid - non-canonical
+    const invalid2 = [_]u8{ 0x81, 0x7f };
+    try testing.expect(!validate(allocator, &invalid2));
+}
+```
+
+### RLP isCanonical - canonical encodings
+
+```zig
+test "RLP isCanonical - canonical encodings" {
+    const testing = std.testing;
+
+    // Single byte < 0x80
+    const single_byte = [_]u8{0x7f};
+    try testing.expect(isCanonical(&single_byte));
+
+    // Empty bytes
+    const empty_bytes = [_]u8{0x80};
+    try testing.expect(isCanonical(&empty_bytes));
+
+    // Short string
+    const short_string = [_]u8{ 0x83, 'd', 'o', 'g' };
+    try testing.expect(isCanonical(&short_string));
+
+    // Empty list
+    const empty_list = [_]u8{0xc0};
+    try testing.expect(isCanonical(&empty_list));
+
+    // List with items
+    const list = [_]u8{ 0xc3, 0x01, 0x02, 0x03 };
+    try testing.expect(isCanonical(&list));
+
+    // Nested list
+    const nested = [_]u8{ 0xc4, 0xc2, 0x01, 0x02 };
+    try testing.expect(isCanonical(&nested));
+}
+```
+
+### RLP isCanonical - non-canonical encodings
+
+```zig
+test "RLP isCanonical - non-canonical encodings" {
+    const testing = std.testing;
+
+    // Empty input
+    const empty = [_]u8{};
+    try testing.expect(!isCanonical(&empty));
+
+    // Single byte < 0x80 with string prefix
+    const non_canonical_byte = [_]u8{ 0x81, 0x7f };
+    try testing.expect(!isCanonical(&non_canonical_byte));
+
+    // String with leading zeros in length
+    const leading_zeros = [_]u8{ 0xb8, 0x00, 0x05, 'h', 'e', 'l', 'l', 'o' };
+    try testing.expect(!isCanonical(&leading_zeros));
+
+    // Short string using long form
+    const wrong_form = [_]u8{ 0xb8, 0x05, 'h', 'e', 'l', 'l', 'o' };
+    try testing.expect(!isCanonical(&wrong_form));
+
+    // List with leading zeros in length
+    const list_leading_zeros = [_]u8{ 0xf8, 0x00, 0x03, 0x01, 0x02, 0x03 };
+    try testing.expect(!isCanonical(&list_leading_zeros));
+
+    // Short list using long form
+    const list_wrong_form = [_]u8{ 0xf8, 0x03, 0x01, 0x02, 0x03 };
+    try testing.expect(!isCanonical(&list_wrong_form));
+
+    // Truncated string
+    const truncated = [_]u8{ 0x83, 'd', 'o' };
+    try testing.expect(!isCanonical(&truncated));
+
+    // List with non-canonical item
+    const list_non_canonical = [_]u8{ 0xc3, 0x81, 0x7f, 0x02 };
+    try testing.expect(!isCanonical(&list_non_canonical));
+}
+```
+
+### RLP isCanonical - edge cases
+
+```zig
+test "RLP isCanonical - edge cases" {
+    const testing = std.testing;
+
+    // Byte 0x80 must be prefixed (0x81 0x80)
+    const byte_80 = [_]u8{ 0x81, 0x80 };
+    try testing.expect(isCanonical(&byte_80));
+
+    // Boundary: 55 byte string (short form)
+    const str_55 = [_]u8{0xb7} ++ ([_]u8{0x61} ** 55);
+    try testing.expect(isCanonical(&str_55));
+
+    // Boundary: 56 byte string (long form)
+    const str_56 = [_]u8{ 0xb8, 56 } ++ ([_]u8{0x61} ** 56);
+    try testing.expect(isCanonical(&str_56));
+}
+```

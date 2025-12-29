@@ -1,0 +1,131 @@
+---
+title: '[TS/JS] src/primitives/Abi/parameter/from.test.ts'
+source: 'src/primitives/Abi/parameter/from.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Abi/parameter/from.test.ts
+
+```typescript
+/**
+ * Unit tests for from function
+ */
+
+import { describe, expect, it } from "vitest";
+import { from } from "./from.js";
+
+describe("from", () => {
+	it("returns parameter unchanged", () => {
+		const param = { type: "uint256", name: "amount" };
+		const result = from(param);
+		expect(result).toEqual(param);
+		expect(result).toBe(param); // Same reference
+	});
+
+	it("handles parameter with all fields", () => {
+		const param = {
+			type: "address",
+			name: "recipient",
+			internalType: "address",
+			indexed: false,
+		};
+		const result = from(param);
+		expect(result).toEqual(param);
+	});
+
+	it("handles parameter without name", () => {
+		const param = { type: "bool" };
+		const result = from(param);
+		expect(result).toEqual(param);
+	});
+
+	it("handles tuple parameter with components", () => {
+		const param = {
+			type: "tuple",
+			name: "data",
+			components: [
+				{ type: "address", name: "addr" },
+				{ type: "uint256", name: "value" },
+			],
+		};
+		const result = from(param);
+		expect(result).toEqual(param);
+	});
+
+	it("handles indexed parameter", () => {
+		const param = {
+			type: "address",
+			name: "from",
+			indexed: true,
+		};
+		const result = from(param);
+		expect(result).toEqual(param);
+		expect(result.indexed).toBe(true);
+	});
+
+	it("handles array parameter", () => {
+		const param = {
+			type: "uint256[]",
+			name: "values",
+		};
+		const result = from(param);
+		expect(result).toEqual(param);
+	});
+
+	it("handles fixed array parameter", () => {
+		const param = {
+			type: "bytes32[4]",
+			name: "hashes",
+		};
+		const result = from(param);
+		expect(result).toEqual(param);
+	});
+
+	it("handles nested tuple parameter", () => {
+		const param = {
+			type: "tuple",
+			name: "order",
+			components: [
+				{
+					type: "tuple",
+					name: "asset",
+					components: [
+						{ type: "address", name: "token" },
+						{ type: "uint256", name: "amount" },
+					],
+				},
+				{ type: "uint256[]", name: "fees" },
+			],
+		};
+		const result = from(param);
+		expect(result).toEqual(param);
+	});
+
+	it("handles parameter with internalType", () => {
+		const param = {
+			type: "address",
+			name: "token",
+			internalType: "contract IERC20",
+		};
+		const result = from(param);
+		expect(result).toEqual(param);
+		expect(result.internalType).toBe("contract IERC20");
+	});
+
+	it("handles empty name string", () => {
+		const param = {
+			type: "uint256",
+			name: "",
+		};
+		const result = from(param);
+		expect(result).toEqual(param);
+	});
+
+	it("is a simple type cast with no validation", () => {
+		// from() doesn't validate - it's just a type cast
+		const invalidParam = { type: "invalid", something: "else" } as any;
+		const result = from(invalidParam);
+		expect(result).toEqual(invalidParam);
+	});
+});
+
+```

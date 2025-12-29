@@ -1,0 +1,54 @@
+---
+title: Fetch NFT Image from tokenURI
+description: Get the image URL for an ERC721 NFT by calling tokenURI and parsing the metadata.
+---
+
+## Goal
+
+Given an ERC721 contract address and token ID, fetch the image URL.
+
+Return as:
+
+```
+IMAGE: https://...
+```
+
+## Example (TypeScript)
+
+```ts
+import { Contract } from '@voltaire/contract'
+
+const ERC721_ABI = [
+  {
+    type: 'function',
+    name: 'tokenURI',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'string' }]
+  }
+] as const
+
+const nft = Contract({
+  address: '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D', // BAYC
+  abi: ERC721_ABI,
+  provider
+})
+
+const tokenId = 1234n
+const tokenURI = await nft.read.tokenURI(tokenId)
+
+// tokenURI may be: https://..., ipfs://..., or data:application/json;base64,...
+let metadata
+if (tokenURI.startsWith('data:application/json;base64,')) {
+  const json = atob(tokenURI.slice(29))
+  metadata = JSON.parse(json)
+} else {
+  const url = tokenURI.startsWith('ipfs://')
+    ? `https://ipfs.io/ipfs/${tokenURI.slice(7)}`
+    : tokenURI
+  const res = await fetch(url)
+  metadata = await res.json()
+}
+
+console.log(`IMAGE: ${metadata.image}`)
+```

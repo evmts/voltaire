@@ -3,6 +3,12 @@ title: KZG Commitments
 description: Polynomial commitments for EIP-4844 blob transactions and Proto-Danksharding
 ---
 
+<Info>
+Source: https://github.com/evmts/voltaire/blob/main/src/crypto/kzg_trusted_setup.zig • https://github.com/evmts/voltaire/blob/main/src/crypto/c_kzg.zig
+
+Tests: https://github.com/evmts/voltaire/blob/main/src/crypto/kzg.test.ts
+</Info>
+
 # KZG Commitments
 
 Polynomial commitment scheme implementation for EIP-4844 blob transactions enabling Proto-Danksharding data availability.
@@ -80,7 +86,7 @@ await Kzg.freeTrustedSetup();
 #### Load Trusted Setup
 
 ```typescript
-import { loadTrustedSetup } from '@tevm/voltaire/crypto/KZG';
+import { loadTrustedSetup } from '@tevm/voltaire/KZG';
 
 // Load from embedded trusted setup
 await loadTrustedSetup();
@@ -110,7 +116,7 @@ await loadTrustedSetup(trustedSetupData);
 #### Check Initialization
 
 ```typescript
-import { isInitialized } from '@tevm/voltaire/crypto/KZG';
+import { isInitialized } from '@tevm/voltaire/KZG';
 
 if (!isInitialized()) {
   await loadTrustedSetup();
@@ -120,7 +126,7 @@ if (!isInitialized()) {
 #### Free Trusted Setup
 
 ```typescript
-import { freeTrustedSetup } from '@tevm/voltaire/crypto/KZG';
+import { freeTrustedSetup } from '@tevm/voltaire/KZG';
 
 // Free memory when done
 await freeTrustedSetup();
@@ -563,7 +569,7 @@ import {
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
   FIELD_ELEMENTS_PER_BLOB
-} from '@tevm/voltaire/crypto/KZG';
+} from '@tevm/voltaire/KZG';
 
 BYTES_PER_BLOB            // 131,072 (128 KB)
 BYTES_PER_COMMITMENT      // 48 (BLS12-381 G1 compressed)

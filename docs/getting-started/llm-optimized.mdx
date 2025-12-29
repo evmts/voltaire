@@ -22,7 +22,7 @@ By staying close to specs, we minimize the diff between the LLM's training data 
 **Example - Contract Calls:**
 
 ```typescript
-import * as Abi from '@tevm/voltaire/Abi';
+import { Abi } from '@tevm/voltaire/Abi';
 
 // Other libraries (great API, but bespoke abstraction)
 const result = await contract.balanceOf(address, { blockTag: 'latest' });

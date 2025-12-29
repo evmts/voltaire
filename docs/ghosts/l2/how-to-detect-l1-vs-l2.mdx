@@ -1,0 +1,83 @@
+---
+title: How to Detect L1 vs L2
+description: Determine if a chain is Layer 1 or Layer 2 using Voltaire Chain primitives.
+---
+
+## Goal
+
+Programmatically detect whether a chain is L1 or L2 and get the parent chain relationship.
+
+## Example
+
+```typescript
+import * as Chain from '@voltaire/primitives/Chain';
+
+// Create chain from ID
+const optimism = Chain.fromId(10n);
+const mainnet = Chain.fromId(1n);
+const arbitrum = Chain.fromId(42161n);
+
+// Check if L2
+console.log(Chain.isL2(optimism));   // true
+console.log(Chain.isL2(mainnet));    // false
+console.log(Chain.isL2(arbitrum));   // true
+
+// Get parent L1 chain
+const l1 = Chain.getL1Chain(optimism);
+console.log(Chain.getName(l1));       // "Ethereum Mainnet"
+console.log(l1.chainId);              // 1n
+
+// Chain.getL1Chain returns undefined for L1 chains
+console.log(Chain.getL1Chain(mainnet)); // undefined
+```
+
+## Known L2 Chain IDs
+
+```typescript
+// Optimism ecosystem
+const OPTIMISM = 10n;
+const BASE = 8453n;
+const ZORA = 7777777n;
+
+// Arbitrum ecosystem
+const ARBITRUM_ONE = 42161n;
+const ARBITRUM_NOVA = 42170n;
+
+// ZK rollups
+const SCROLL = 534352n;
+const ZKSYNC_ERA = 324n;
+const LINEA = 59144n;
+const POLYGON_ZKEVM = 1101n;
+
+// Check any chain
+function getChainLayer(chainId: bigint): 'L1' | 'L2' {
+  const chain = Chain.fromId(chainId);
+  return Chain.isL2(chain) ? 'L2' : 'L1';
+}
+```
+
+## Network-Aware Logic
+
+```typescript
+import * as Chain from '@voltaire/primitives/Chain';
+import * as FeeMarket from '@voltaire/primitives/FeeMarket';
+
+async function estimateFees(chainId: bigint) {
+  const chain = Chain.fromId(chainId);
+
+  if (Chain.isL2(chain)) {
+    // L2s have additional L1 data fee
+    console.log('Include L1 data fee in estimate');
+    // L2-specific fee estimation logic
+  } else {
+    // Standard L1 fee estimation
+    const baseFee = 30_000_000_000n;
+    console.log(`Base fee: ${baseFee} wei`);
+  }
+}
+```
+
+## Related
+
+- `/primitives/chain` - Full Chain module documentation
+- `/ghosts/l2/how-to-estimate-l1-data-fee` - L1 data fee estimation

@@ -18,8 +18,8 @@ Create reactive stores for Ethereum data:
 ```ts
 // lib/ethereum.ts
 import { writable, derived } from 'svelte/store'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -35,7 +35,7 @@ export function createBalanceStore(address: string) {
     try {
       const addr = Address.from(address)
       const balance = await provider.eth.getBalance({ address: addr })
-      set(Uint.toEther(balance))
+      set(Wei.toEther(balance))
     } catch (e) {
       error.set(e as Error)
     } finally {
@@ -80,8 +80,8 @@ Fetch data server-side with SvelteKit:
 
 ```ts
 // routes/address/[address]/+page.server.ts
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 import type { PageServerLoad } from './$types'
 
@@ -98,7 +98,7 @@ export const load: PageServerLoad = async ({ params }) => {
 
   return {
     address: params.address,
-    balance: Uint.toEther(balance),
+    balance: Wei.toEther(balance),
     nonce: Number(nonce),
     isContract: code.length > 2,
   }
@@ -157,8 +157,8 @@ Compute values from multiple stores:
 ```ts
 // lib/account.ts
 import { derived, writable } from 'svelte/store'
-import * as Address from '@tevm/voltaire/Address'
-import * as Uint from '@tevm/voltaire/Uint'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -182,7 +182,7 @@ export const accountData = derived(
 
       set({
         address: $address,
-        balance: Uint.toEther(balance),
+        balance: Wei.toEther(balance),
         nonce: Number(nonce),
       })
     }
@@ -239,7 +239,7 @@ export function asyncStore<T>(fetcher: () => Promise<T>): AsyncStore<T> {
 ```ts
 // Usage
 import { asyncStore } from '$lib/asyncStore'
-import * as Address from '@tevm/voltaire/Address'
+import { Address } from '@tevm/voltaire/Address'
 import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
 const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -258,7 +258,7 @@ Use Svelte actions for form submissions:
 ```svelte
 <script lang="ts">
   import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-  import * as Address from '@tevm/voltaire/primitives/Address'
+  import { Address } from '@tevm/voltaire/Address'
 
   let to = ''
   let amount = ''
@@ -321,8 +321,8 @@ With Svelte 5 runes:
 
 ```svelte
 <script lang="ts">
-  import * as Address from '@tevm/voltaire/primitives/Address'
-  import * as Uint from '@tevm/voltaire/primitives/Uint'
+  import { Address } from '@tevm/voltaire/Address'
+  import { Wei } from '@tevm/voltaire/Denomination'
   import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
 
   const provider = createJsonRpcProvider('https://eth.llamarpc.com')
@@ -337,7 +337,7 @@ With Svelte 5 runes:
     try {
       const addr = Address.from(address)
       const result = await provider.eth.getBalance({ address: addr })
-      balance = Uint.toEther(result)
+      balance = Wei.toEther(result)
     } finally {
       loading = false
     }

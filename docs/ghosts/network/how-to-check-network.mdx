@@ -1,0 +1,79 @@
+---
+title: How to Check Mainnet vs Testnet
+description: Detect if connected to mainnet or a testnet
+---
+
+# Check Mainnet vs Testnet
+
+```typescript
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const provider = createJsonRpcProvider('https://eth.llamarpc.com');
+
+const chainIdHex = await provider.request(Rpc.Eth.ChainIdRequest());
+const chainId = parseInt(chainIdHex, 16);
+
+// Ethereum networks
+const mainnets = [1, 137, 10, 42161, 8453]; // ETH, Polygon, OP, Arb, Base
+const testnets = [11155111, 17000, 80002, 11155420]; // Sepolia, Holesky, Amoy, OP Sepolia
+
+if (mainnets.includes(chainId)) {
+  console.log('Connected to mainnet');
+} else if (testnets.includes(chainId)) {
+  console.log('Connected to testnet');
+} else {
+  console.log('Unknown network:', chainId);
+}
+```
+
+## Network Type Helper
+
+```typescript
+type NetworkType = 'mainnet' | 'testnet' | 'local' | 'unknown';
+
+const networkTypes: Record<number, NetworkType> = {
+  // Mainnets
+  1: 'mainnet',      // Ethereum
+  137: 'mainnet',    // Polygon
+  10: 'mainnet',     // Optimism
+  42161: 'mainnet',  // Arbitrum
+  8453: 'mainnet',   // Base
+
+  // Testnets
+  11155111: 'testnet', // Sepolia
+  17000: 'testnet',    // Holesky
+  80002: 'testnet',    // Polygon Amoy
+  11155420: 'testnet', // OP Sepolia
+  421614: 'testnet',   // Arbitrum Sepolia
+  84532: 'testnet',    // Base Sepolia
+
+  // Local
+  1337: 'local',     // Hardhat/Ganache
+  31337: 'local',    // Anvil
+};
+
+async function getNetworkType(provider): Promise<NetworkType> {
+  const chainIdHex = await provider.request(Rpc.Eth.ChainIdRequest());
+  const chainId = parseInt(chainIdHex, 16);
+  return networkTypes[chainId] || 'unknown';
+}
+```
+
+## Production Guard
+
+```typescript
+async function requireMainnet(provider) {
+  const chainIdHex = await provider.request(Rpc.Eth.ChainIdRequest());
+  const chainId = parseInt(chainIdHex, 16);
+
+  if (chainId !== 1) {
+    throw new Error(`Expected mainnet (1), got chain ${chainId}`);
+  }
+}
+```
+
+## Related
+
+- [How to Detect Chain ID](/ghosts/network/how-to-detect-chain-id)
+- [Chain Primitive](/primitives/chain)

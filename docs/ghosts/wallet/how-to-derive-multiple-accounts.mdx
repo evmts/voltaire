@@ -1,0 +1,127 @@
+---
+title: Derive Multiple Accounts
+description: Derive multiple Ethereum accounts from a single HD wallet seed
+---
+
+## Basic Multi-Account Derivation
+
+```typescript
+import { Bip39 } from '@voltaire/crypto/Bip39';
+import { HDWallet } from '@voltaire/crypto/HDWallet';
+import * as PrivateKey from '@voltaire/primitives/PrivateKey';
+
+const mnemonic = Bip39.generateMnemonic(256);
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+const root = HDWallet.fromSeed(seed);
+
+// Derive multiple accounts using BIP-44 path
+// m/44'/60'/0'/0/{index}
+const accounts = [];
+
+for (let i = 0; i < 10; i++) {
+  const path = `m/44'/60'/0'/0/${i}`;
+  const account = HDWallet.derivePath(root, path);
+  const privateKey = HDWallet.getPrivateKey(account);
+
+  accounts.push({
+    index: i,
+    path,
+    address: PrivateKey.toAddress(privateKey),
+    privateKey,
+  });
+}
+
+console.log(accounts);
+```
+
+## Using deriveEthereum Helper
+
+```typescript
+// Shortcut for Ethereum derivation
+const account0 = HDWallet.deriveEthereum(root, 0);
+const account1 = HDWallet.deriveEthereum(root, 1);
+const account2 = HDWallet.deriveEthereum(root, 2);
+```
+
+## BIP-44 Path Structure
+
+```
+m / purpose' / coin_type' / account' / change / address_index
+```
+
+| Segment | Value | Meaning |
+|---------|-------|---------|
+| purpose | 44' | BIP-44 standard |
+| coin_type | 60' | Ethereum (ETH) |
+| account | 0' | Account index (hardened) |
+| change | 0 | External chain (receiving) |
+| address_index | 0-n | Address within account |
+
+## Multiple Account Types
+
+```typescript
+// Different account hierarchies
+const wallets = {
+  // Standard accounts (m/44'/60'/0'/0/0, /1, /2...)
+  standard: Array.from({ length: 5 }, (_, i) =>
+    HDWallet.derivePath(root, `m/44'/60'/0'/0/${i}`)
+  ),
+
+  // Multi-account (m/44'/60'/0'/0/0, m/44'/60'/1'/0/0...)
+  accounts: Array.from({ length: 5 }, (_, i) =>
+    HDWallet.derivePath(root, `m/44'/60'/${i}'/0/0`)
+  ),
+
+  // Internal/change addresses (m/44'/60'/0'/1/0, /1, /2...)
+  change: Array.from({ length: 5 }, (_, i) =>
+    HDWallet.derivePath(root, `m/44'/60'/0'/1/${i}`)
+  ),
+};
+```
+
+## Watch-Only Derivation
+
+Derive public keys without exposing private key:
+
+```typescript
+// Export extended public key (no private key exposure)
+const xpub = HDWallet.toExtendedPublicKey(root);
+
+// Later, import and derive public-only
+const publicRoot = HDWallet.fromPublicExtendedKey(xpub);
+
+// Can derive non-hardened paths
+const childPub = HDWallet.derivePath(publicRoot, "m/0/0");
+const publicKey = HDWallet.getPublicKey(childPub);
+
+// Cannot derive hardened paths (throws)
+// HDWallet.derivePath(publicRoot, "m/44'/60'/0'") // Error!
+```
+
+## Generator Function
+
+```typescript
+function* deriveAccounts(root: ExtendedKey, count: number) {
+  for (let i = 0; i < count; i++) {
+    const account = HDWallet.deriveEthereum(root, i);
+    const privateKey = HDWallet.getPrivateKey(account);
+
+    yield {
+      index: i,
+      address: PrivateKey.toAddress(privateKey),
+      privateKey,
+    };
+  }
+}
+
+// Usage
+for (const account of deriveAccounts(root, 100)) {
+  console.log(account.index, account.address);
+}
+```
+
+## Related
+
+- [Import Wallet from Mnemonic](/ghosts/wallet/how-to-import-wallet-from-mnemonic) - Initial wallet setup
+- [HD Wallet](/crypto/hdwallet) - Full BIP-32 documentation
+- [Mnemonic Validation](/crypto/bip39/validation) - Validate seed phrases

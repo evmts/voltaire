@@ -7,10 +7,14 @@ description: Send state-changing transactions to smart contracts
 
 The `write` interface sends state-changing transactions via `eth_sendTransaction`. These calls modify blockchain state and require gas.
 
+<Note>
+This uses the [Contract pattern](/contract) - a copyable implementation you add to your codebase.
+</Note>
+
 ## Basic Usage
 
 ```typescript
-import { Contract } from '@voltaire/contract';
+import { Contract } from './Contract.js';  // Your local copy
 
 const usdc = Contract({
   address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
@@ -110,7 +114,7 @@ const txHash = await router.write.swapExactETHForTokens(
 Write calls can fail at submission or execution:
 
 ```typescript
-import { ContractWriteError } from '@voltaire/contract';
+import { ContractWriteError } from './errors.js';  // Your local copy
 
 try {
   const txHash = await usdc.write.transfer('0x...', 1000n);

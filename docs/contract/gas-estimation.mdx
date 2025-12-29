@@ -7,10 +7,14 @@ description: Estimate gas for contract write operations
 
 The `estimateGas` interface estimates gas for write operations via `eth_estimateGas`. Use this to predict costs and detect reverts before sending transactions.
 
+<Note>
+This uses the [Contract pattern](/contract) - a copyable implementation you add to your codebase.
+</Note>
+
 ## Basic Usage
 
 ```typescript
-import { Contract } from '@voltaire/contract';
+import { Contract } from './Contract.js';  // Your local copy
 
 const usdc = Contract({
   address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
