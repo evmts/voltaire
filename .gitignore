@@ -188,6 +188,10 @@ EVM2_Performance_Report.md
 # Swift build artifacts
 **/.build/
 
+# Kotlin/Gradle build artifacts
+kotlin/.gradle/
+kotlin/build/
+
 # Bun lock files
 bun.lock
 **/bun.lock
