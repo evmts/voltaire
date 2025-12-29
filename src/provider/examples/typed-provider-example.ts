@@ -142,8 +142,8 @@ export function exampleEventHandling() {
 
 	// Method chaining
 	provider
-		.on("chainChanged", (chainId) => )
-		.on("accountsChanged", (accounts) => );
+		.on("chainChanged", (_chainId) => {})
+		.on("accountsChanged", (_accounts) => {});
 
 	return provider;
 }
