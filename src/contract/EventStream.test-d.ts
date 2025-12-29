@@ -6,18 +6,18 @@
 
 import { describe, expectTypeOf, it } from "vitest";
 import type { AddressType } from "../primitives/Address/AddressType.js";
-import type { TransactionHashType } from "../primitives/TransactionHash/TransactionHashType.js";
 import type { BlockNumberType } from "../primitives/BlockNumber/BlockNumberType.js";
 import type { HashType } from "../primitives/Hash/HashType.js";
+import type { TransactionHashType } from "../primitives/TransactionHash/TransactionHashType.js";
 import type { TypedProvider } from "../provider/TypedProvider.js";
+import type { EventStream as EventStreamFactory } from "./EventStream.js";
 import type {
+	BackfillOptions,
 	EventStream,
 	EventStreamOptions,
 	EventStreamResult,
-	BackfillOptions,
 	WatchOptions,
 } from "./EventStreamType.js";
-import { EventStream as EventStreamFactory } from "./EventStream.js";
 
 // ============================================================================
 // Test Event Definition
@@ -138,7 +138,9 @@ describe("EventStreamResult", () => {
 
 	it("log has blockNumber", () => {
 		type Result = EventStreamResult<TransferEvent>;
-		expectTypeOf<Result["log"]["blockNumber"]>().toEqualTypeOf<BlockNumberType>();
+		expectTypeOf<
+			Result["log"]["blockNumber"]
+		>().toEqualTypeOf<BlockNumberType>();
 	});
 
 	it("log has blockHash", () => {
@@ -148,7 +150,9 @@ describe("EventStreamResult", () => {
 
 	it("log has transactionHash", () => {
 		type Result = EventStreamResult<TransferEvent>;
-		expectTypeOf<Result["log"]["transactionHash"]>().toEqualTypeOf<TransactionHashType>();
+		expectTypeOf<
+			Result["log"]["transactionHash"]
+		>().toEqualTypeOf<TransactionHashType>();
 	});
 
 	it("log has logIndex", () => {
@@ -156,9 +160,9 @@ describe("EventStreamResult", () => {
 		expectTypeOf<Result["log"]["logIndex"]>().toEqualTypeOf<number>();
 	});
 
-	it("metadata has currentBlock as bigint", () => {
+	it("metadata has chainHead as bigint", () => {
 		type Result = EventStreamResult<TransferEvent>;
-		expectTypeOf<Result["metadata"]["currentBlock"]>().toEqualTypeOf<bigint>();
+		expectTypeOf<Result["metadata"]["chainHead"]>().toEqualTypeOf<bigint>();
 	});
 
 	it("metadata has fromBlock as bigint", () => {

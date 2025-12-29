@@ -9,12 +9,15 @@
 
 import { Abi } from "../primitives/Abi/Abi.js";
 import * as Event from "../primitives/Abi/event/index.js";
-import * as Hex from "../primitives/Hex/index.js";
-import * as TransactionHash from "../primitives/TransactionHash/index.js";
+import { Address } from "../primitives/Address/index.js";
 import * as BlockNumber from "../primitives/BlockNumber/index.js";
 import * as Hash from "../primitives/Hash/index.js";
-import { Address } from "../primitives/Address/index.js";
-import { BlockRangeTooLargeError, EventStreamAbortedError } from "./errors.js";
+import * as Hex from "../primitives/Hex/index.js";
+import * as TransactionHash from "../primitives/TransactionHash/index.js";
+import {
+	BlockRangeTooLargeError,
+	EventStreamAbortedError,
+} from "../stream/errors.js";
 
 /**
  * @typedef {import('./EventStreamType.js').EventStreamConstructorOptions} EventStreamConstructorOptions
@@ -24,11 +27,11 @@ import { BlockRangeTooLargeError, EventStreamAbortedError } from "./errors.js";
  */
 
 /**
- * Default options
+ * Default options - aligned with BlockStream defaults
  */
-const DEFAULT_CHUNK_SIZE = 500;
+const DEFAULT_CHUNK_SIZE = 100;
 const DEFAULT_MIN_CHUNK_SIZE = 10;
-const DEFAULT_POLLING_INTERVAL = 2000;
+const DEFAULT_POLLING_INTERVAL = 1000;
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_INITIAL_DELAY = 1000;
 const DEFAULT_MAX_DELAY = 30000;
@@ -124,7 +127,11 @@ export function EventStream(options) {
 		const topicBytes = log.topics.map((/** @type {string} */ t) =>
 			Hex.toBytes(t),
 		);
-		const args = Event.decodeLog(event, dataBytes, /** @type {*} */ (topicBytes));
+		const args = Event.decodeLog(
+			event,
+			dataBytes,
+			/** @type {*} */ (topicBytes),
+		);
 
 		return {
 			eventName: event.name,
@@ -132,7 +139,7 @@ export function EventStream(options) {
 			blockNumber: BlockNumber.from(BigInt(log.blockNumber)),
 			blockHash: Hash.fromHex(log.blockHash),
 			transactionHash: TransactionHash.fromHex(log.transactionHash),
-			logIndex: parseInt(log.logIndex, 16),
+			logIndex: Number.parseInt(log.logIndex, 16),
 		};
 	}
 
@@ -222,6 +229,13 @@ export function EventStream(options) {
 		let successStreak = 0;
 		let currentFrom = fromBlock;
 
+		// Get current chain head for metadata
+		const chainHeadHex = await provider.request({
+			method: "eth_blockNumber",
+			params: [],
+		});
+		const chainHead = BigInt(chainHeadHex);
+
 		while (currentFrom <= toBlock) {
 			// Check abort at start of each iteration
 			if (signal?.aborted) {
@@ -242,7 +256,10 @@ export function EventStream(options) {
 
 			if (shouldReduceChunk) {
 				// Reduce chunk size and retry same range
-				chunkSize = Math.max(Math.floor(chunkSize * CHUNK_DECREASE_FACTOR), minChunkSize);
+				chunkSize = Math.max(
+					Math.floor(chunkSize * CHUNK_DECREASE_FACTOR),
+					minChunkSize,
+				);
 				successStreak = 0;
 				continue;
 			}
@@ -266,7 +283,7 @@ export function EventStream(options) {
 				yield {
 					log: decodeLog(log),
 					metadata: {
-						currentBlock: toBlock,
+						chainHead,
 						fromBlock: currentFrom,
 						toBlock: currentTo,
 					},
@@ -343,7 +360,7 @@ export function EventStream(options) {
 					yield {
 						log: decodeLog(log),
 						metadata: {
-							currentBlock,
+							chainHead: currentBlock,
 							fromBlock,
 							toBlock,
 						},

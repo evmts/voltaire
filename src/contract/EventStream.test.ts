@@ -4,13 +4,10 @@
  * Tests EventStream backfill, watch, and dynamic chunking behavior.
  */
 
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { EventStream } from "./EventStream.js";
-import {
-	BlockRangeTooLargeError,
-	EventStreamAbortedError,
-} from "./errors.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TypedProvider } from "../provider/TypedProvider.js";
+import { EventStream } from "./EventStream.js";
+import { BlockRangeTooLargeError, EventStreamAbortedError } from "./errors.js";
 
 // ============================================================================
 // Test Fixtures
@@ -32,13 +29,13 @@ const testAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const transferTopic =
 	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
-function createMockLog(blockNumber: number, logIndex: number = 0) {
+function createMockLog(blockNumber: number, logIndex = 0) {
 	return {
 		address: testAddress.toLowerCase(),
 		topics: [
 			transferTopic,
-			"0x000000000000000000000000" + "1".repeat(40), // from
-			"0x000000000000000000000000" + "2".repeat(40), // to
+			`0x000000000000000000000000${"1".repeat(40)}`, // from
+			`0x000000000000000000000000${"2".repeat(40)}`, // to
 		],
 		data: "0x0000000000000000000000000000000000000000000000000000000000000064", // 100
 		blockNumber: `0x${blockNumber.toString(16)}`,
@@ -51,10 +48,15 @@ function createMockLog(blockNumber: number, logIndex: number = 0) {
 function createMockProvider(
 	handlers: Record<string, (params: unknown[]) => unknown>,
 ): TypedProvider {
+	// Provide default eth_blockNumber handler if not specified
+	const defaultHandlers = {
+		eth_blockNumber: () => "0x1000000", // Default to block 16777216
+		...handlers,
+	};
 	return {
 		request: vi.fn(async ({ method, params }) => {
-			if (handlers[method]) {
-				return handlers[method](params as unknown[]);
+			if (defaultHandlers[method]) {
+				return defaultHandlers[method](params as unknown[]);
 			}
 			throw new Error(`Unhandled method: ${method}`);
 		}),
@@ -87,7 +89,7 @@ describe("EventStream constructor", () => {
 			provider,
 			address: testAddress,
 			event: transferEvent,
-			filter: { from: "0x" + "1".repeat(40) },
+			filter: { from: `0x${"1".repeat(40)}` },
 		});
 
 		expect(stream).toBeDefined();

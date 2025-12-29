@@ -6,10 +6,34 @@
  * @module contract/EventStreamType
  */
 
-import type { EventType, EncodeTopicsArgs } from "../primitives/Abi/event/EventType.js";
+import type {
+	EncodeTopicsArgs,
+	EventType,
+} from "../primitives/Abi/event/EventType.js";
+import type { ParametersToObject } from "../primitives/Abi/Parameter.js";
 import type { AddressType } from "../primitives/Address/AddressType.js";
+import type { BlockNumberType } from "../primitives/BlockNumber/BlockNumberType.js";
+import type { HashType } from "../primitives/Hash/HashType.js";
+import type { TransactionHashType } from "../primitives/TransactionHash/TransactionHashType.js";
 import type { TypedProvider } from "../provider/TypedProvider.js";
-import type { DecodedEventLog } from "./ContractType.js";
+
+/**
+ * Decoded event log with typed args from ABI
+ */
+export type DecodedEventLog<TEvent extends EventType> = {
+	/** Event name */
+	eventName: TEvent["name"];
+	/** Decoded event arguments (typed from ABI) */
+	args: ParametersToObject<TEvent["inputs"]>;
+	/** Block number where event was emitted */
+	blockNumber: BlockNumberType;
+	/** Block hash */
+	blockHash: HashType;
+	/** Transaction hash */
+	transactionHash: TransactionHashType;
+	/** Log index within the block */
+	logIndex: number;
+};
 
 // ============================================================================
 // Options Types
@@ -31,11 +55,11 @@ export interface RetryOptions {
  * Base options for EventStream operations
  */
 export interface EventStreamOptions {
-	/** Initial chunk size in blocks. Default: 500 */
+	/** Initial chunk size in blocks. Default: 100 */
 	chunkSize?: number;
 	/** Minimum chunk size after reduction. Default: 10 */
 	minChunkSize?: number;
-	/** Polling interval for watch mode in ms. Default: 2000 */
+	/** Polling interval for watch mode in ms. Default: 1000 */
 	pollingInterval?: number;
 	/** AbortSignal for cancellation */
 	signal?: AbortSignal;
@@ -69,8 +93,8 @@ export interface WatchOptions extends EventStreamOptions {
  * Metadata included with each event result
  */
 export interface EventStreamMetadata {
-	/** Current block height at time of fetch */
-	currentBlock: bigint;
+	/** Current chain head block number */
+	chainHead: bigint;
 	/** Start block of the range being fetched */
 	fromBlock: bigint;
 	/** End block of the range being fetched */

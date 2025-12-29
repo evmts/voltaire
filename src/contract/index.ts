@@ -1,49 +1,39 @@
 /**
- * Contract Module
+ * EventStream Module
  *
- * Typed contract abstraction for interacting with deployed smart contracts.
+ * Robust event streaming primitive with dynamic chunking, retry logic,
+ * and block context metadata.
  *
  * @example
  * ```typescript
- * import { Contract } from '@voltaire/contract';
+ * import { EventStream } from '@tevm/voltaire/EventStream';
  *
- * const usdc = Contract({
+ * const stream = EventStream({
+ *   provider,
  *   address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
- *   abi: erc20Abi,
- *   provider
+ *   event: transferEvent,
+ *   filter: { from: userAddress }
  * });
  *
- * const balance = await usdc.read.balanceOf('0x...');
- * const txHash = await usdc.write.transfer('0x...', 1000n);
- *
- * for await (const log of usdc.events.Transfer()) {
+ * // Backfill historical events
+ * for await (const { log, metadata } of stream.backfill({
+ *   fromBlock: 18000000n,
+ *   toBlock: 19000000n
+ * })) {
  *   console.log(log.args);
+ * }
+ *
+ * // Watch for new events
+ * for await (const { log } of stream.watch()) {
+ *   console.log('New event:', log);
  * }
  * ```
  *
  * @module contract
  */
 
-// Main factories
-export { Contract } from "./Contract.js";
+// EventStream factory
 export { EventStream } from "./EventStream.js";
-
-// Types
-export type {
-	ContractInstance,
-	ContractOptions,
-	ContractReadMethods,
-	ContractWriteMethods,
-	ContractEstimateGasMethods,
-	ContractEventFilters,
-	DecodedEventLog,
-	EventFilterOptions,
-	ExtractReadFunctions,
-	ExtractWriteFunctions,
-	ExtractEvents,
-	GetFunction,
-	GetEvent,
-} from "./ContractType.js";
 
 // EventStream types
 export type {
@@ -55,15 +45,14 @@ export type {
 	EventStreamResult,
 	EventStreamMetadata,
 	RetryOptions,
+	DecodedEventLog,
 } from "./EventStreamType.js";
 
-// Errors
+// EventStream errors
 export {
-	ContractNotImplementedError,
-	ContractFunctionNotFoundError,
-	ContractEventNotFoundError,
-	ContractReadError,
-	ContractWriteError,
 	BlockRangeTooLargeError,
 	EventStreamAbortedError,
 } from "./errors.js";
+
+// Base stream error (for catching all stream aborts)
+export { StreamAbortedError } from "../stream/errors.js";
