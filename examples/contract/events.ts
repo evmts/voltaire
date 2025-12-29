@@ -4,7 +4,7 @@
  * Demonstrates streaming contract events with async generators.
  */
 
-import { Contract } from "../../src/contract/index.js";
+import { Contract } from "./Contract.js";
 import type { TypedProvider } from "../../src/provider/TypedProvider.js";
 
 const erc20Abi = [
@@ -40,10 +40,6 @@ export async function streamAllTransfers(provider: TypedProvider) {
 
 	// Stream all Transfer events (live only)
 	for await (const log of usdc.events.Transfer()) {
-		console.log(`Transfer: ${log.args.from} -> ${log.args.to}`);
-		console.log(`  Value: ${log.args.value}`);
-		console.log(`  Block: ${log.blockNumber}`);
-		console.log(`  Tx: ${log.transactionHash}`);
 	}
 }
 
@@ -58,17 +54,9 @@ export async function filterByAddress(provider: TypedProvider) {
 	});
 
 	const myAddress = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e";
-
-	// Transfers FROM my address
-	console.log("Outgoing transfers:");
 	for await (const log of usdc.events.Transfer({ from: myAddress })) {
-		console.log(`Sent ${log.args.value} to ${log.args.to}`);
 	}
-
-	// Transfers TO my address
-	console.log("Incoming transfers:");
 	for await (const log of usdc.events.Transfer({ to: myAddress })) {
-		console.log(`Received ${log.args.value} from ${log.args.from}`);
 	}
 }
 
@@ -90,10 +78,7 @@ export async function getHistoricalEvents(provider: TypedProvider) {
 			toBlock: 18001000n,
 		},
 	)) {
-		console.log(log);
 	}
-	// Loop completes after processing historical events
-	console.log("Done processing historical events");
 }
 
 /**
@@ -108,9 +93,6 @@ export async function historicalThenLive(provider: TypedProvider) {
 
 	// Start from historical, continue with live
 	for await (const log of usdc.events.Transfer({}, { fromBlock: 18000000n })) {
-		// First: yields historical events (fast, batched)
-		// Then: continues with live events
-		console.log(`Block ${log.blockNumber}: ${log.args.value}`);
 	}
 }
 
@@ -128,15 +110,10 @@ export async function breakOnCondition(provider: TypedProvider) {
 	const threshold = 1000000n * 10n ** 6n; // 1M USDC
 
 	for await (const log of usdc.events.Transfer()) {
-		console.log(`Transfer: ${log.args.value}`);
-
 		if (log.args.value > threshold) {
-			console.log("Found whale transfer!");
 			break; // Cleanup happens automatically
 		}
 	}
-
-	console.log("Stopped watching events");
 }
 
 /**
@@ -166,7 +143,5 @@ export async function collectEvents(provider: TypedProvider) {
 			break;
 		}
 	}
-
-	console.log(`Collected ${events.length} events`);
 	return events;
 }

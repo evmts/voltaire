@@ -4,7 +4,7 @@
  * Demonstrates estimating gas for contract transactions.
  */
 
-import { Contract } from "../../src/contract/index.js";
+import { Contract } from "./Contract.js";
 import type { TypedProvider } from "../../src/provider/TypedProvider.js";
 
 const erc20Abi = [
@@ -45,8 +45,6 @@ export async function basicGasEstimation(provider: TypedProvider) {
 
 	// Estimate gas for transfer
 	const gas = await usdc.estimateGas.transfer(to, amount);
-
-	console.log(`Estimated gas: ${gas}`);
 }
 
 /**
@@ -68,11 +66,6 @@ export async function estimateWithBuffer(provider: TypedProvider) {
 	const buffer10 = (estimated * 110n) / 100n; // 10% buffer
 	const buffer20 = (estimated * 120n) / 100n; // 20% buffer (recommended)
 	const buffer50 = (estimated * 150n) / 100n; // 50% buffer (conservative)
-
-	console.log(`Estimated: ${estimated}`);
-	console.log(`+10% buffer: ${buffer10}`);
-	console.log(`+20% buffer: ${buffer20}`);
-	console.log(`+50% buffer: ${buffer50}`);
 }
 
 /**
@@ -91,14 +84,6 @@ export async function safeTransfer(provider: TypedProvider) {
 	try {
 		// First estimate - this throws if tx would revert
 		const gas = await usdc.estimateGas.transfer(to, amount);
-		console.log(`Estimation succeeded: ${gas}`);
-
-		// Safe to send with buffer
-		// const txHash = await usdc.write.transfer(to, amount, {
-		//   gas: gas * 120n / 100n
-		// });
-
-		console.log("Transaction would succeed");
 	} catch (error) {
 		console.error("Transaction would fail:", error);
 		// Don't send - would waste gas
@@ -127,14 +112,10 @@ export async function compareGasCosts(provider: TypedProvider) {
 	const estimates = await Promise.all(
 		addresses.map((addr) => usdc.estimateGas.transfer(addr, amount)),
 	);
-
-	console.log("Gas estimates by recipient:");
 	for (const [i, gas] of estimates.entries()) {
-		console.log(`  ${addresses[i]}: ${gas}`);
 	}
 
 	const total = estimates.reduce((sum, gas) => sum + gas, 0n);
-	console.log(`Total gas for all transfers: ${total}`);
 }
 
 /**
@@ -162,10 +143,6 @@ export async function calculateCost(provider: TypedProvider) {
 	const costWei = gasLimit * BigInt(gasPrice);
 	const costGwei = costWei / 10n ** 9n;
 	const costEth = Number(costWei) / 1e18;
-
-	console.log(`Gas limit: ${gasLimit}`);
-	console.log(`Gas price: ${BigInt(gasPrice) / 10n ** 9n} gwei`);
-	console.log(`Cost: ${costGwei} gwei (${costEth.toFixed(6)} ETH)`);
 }
 
 /**
@@ -187,8 +164,4 @@ export async function estimateMultipleOps(provider: TypedProvider) {
 		usdc.estimateGas.approve(spender, amount),
 		usdc.estimateGas.transfer(recipient, amount),
 	]);
-
-	console.log(`Approve gas: ${approveGas}`);
-	console.log(`Transfer gas: ${transferGas}`);
-	console.log(`Total gas: ${approveGas + transferGas}`);
 }

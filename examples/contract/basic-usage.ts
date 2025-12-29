@@ -4,7 +4,7 @@
  * Demonstrates creating a Contract instance and using read/write methods.
  */
 
-import { Contract } from "../../src/contract/index.js";
+import { Contract } from "./Contract.js";
 import type { TypedProvider } from "../../src/provider/TypedProvider.js";
 
 // ERC20 ABI (minimal)
@@ -86,22 +86,14 @@ export async function basicContractUsage(provider: TypedProvider) {
 		provider,
 	});
 
-	// Access contract address
-	console.log("Contract address:", usdc.address);
-
 	// Read token info
 	const name = await usdc.read.name();
 	const symbol = await usdc.read.symbol();
 	const decimals = await usdc.read.decimals();
 
-	console.log(`Token: ${name} (${symbol})`);
-	console.log(`Decimals: ${decimals}`);
-
 	// Read balance
 	const holderAddress = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e";
 	const balance = await usdc.read.balanceOf(holderAddress);
-
-	console.log(`Balance: ${balance}`);
 }
 
 /**
@@ -121,10 +113,6 @@ export async function parallelReads(provider: TypedProvider) {
 		usdc.read.decimals(),
 		usdc.read.totalSupply(),
 	]);
-
-	console.log(`${name} (${symbol})`);
-	console.log(`Decimals: ${decimals}`);
-	console.log(`Total Supply: ${totalSupply}`);
 }
 
 /**
@@ -142,13 +130,9 @@ export async function manualEncoding(provider: TypedProvider) {
 		"0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
 	]);
 
-	console.log("Encoded calldata:", calldata);
-
 	// Build transaction object manually
 	const tx = {
 		to: usdc.address,
 		data: calldata,
 	};
-
-	console.log("Transaction:", tx);
 }

@@ -147,6 +147,6 @@ function handleStatus<T extends Status>(
 }
 
 handleStatus(success, {
-	onSuccess: (gas) => ,
-	onFailed: (reason) => ,
+	onSuccess: (_gas) => {},
+	onFailed: (_reason) => {},
 });

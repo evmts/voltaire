@@ -2,9 +2,56 @@
  * EventStream Usage
  *
  * Demonstrates event streaming with backfill, watch, and dynamic chunking.
+ * Contract is a copyable pattern. EventStream is a library primitive.
  */
 
-import { Contract, EventStream } from "@voltaire/contract";
+import { Abi } from "@tevm/voltaire/Abi";
+import { Address } from "@tevm/voltaire/Address";
+import * as Hex from "@tevm/voltaire/Hex";
+import { EventStream } from "@tevm/voltaire/EventStream";
+
+// ============================================================================
+// Contract Implementation (copy this into your codebase)
+// ============================================================================
+
+class ContractEventNotFoundError extends Error {
+	name = "ContractEventNotFoundError";
+	constructor(eventName: string) {
+		super(`Event "${eventName}" not found in contract ABI`);
+	}
+}
+
+function Contract<TAbi extends readonly any[]>(options: {
+	address: string;
+	abi: TAbi;
+	provider: any;
+}) {
+	const { abi: abiItems, provider } = options;
+	const address = Address.from(options.address);
+	const abi = Abi(abiItems);
+
+	const events = new Proxy(
+		{},
+		{
+			get(_target, prop) {
+				if (typeof prop !== "string") return undefined;
+				const eventName = prop;
+
+				return (filter?: any) => {
+					const event = abi.getEvent(eventName);
+					if (!event) throw new ContractEventNotFoundError(eventName);
+					return EventStream({ provider, address, event, filter });
+				};
+			},
+		},
+	);
+
+	return { address, abi, events };
+}
+
+// ============================================================================
+// Example Usage
+// ============================================================================
 
 // ERC20 ABI with Transfer event
 const erc20Abi = [
@@ -32,7 +79,6 @@ const erc20Abi = [
 const mockProvider = {
 	request: async ({ method, params }: { method: string; params?: any[] }) => {
 		if (method === "eth_getLogs") {
-			console.log("Fetching logs:", params);
 			return [
 				{
 					address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
@@ -43,8 +89,8 @@ const mockProvider = {
 					],
 					data: "0x0000000000000000000000000000000000000000000000000000000005f5e100",
 					blockNumber: "0x1234",
-					blockHash: "0x" + "ab".repeat(32),
-					transactionHash: "0x" + "cd".repeat(32),
+					blockHash: `0x${"ab".repeat(32)}`,
+					transactionHash: `0x${"cd".repeat(32)}`,
 					logIndex: "0x0",
 				},
 			];
@@ -58,12 +104,7 @@ const mockProvider = {
 	removeListener: () => mockProvider,
 };
 
-// ============================================================================
-// Via Contract
-// ============================================================================
-
-console.log("=== EventStream via Contract ===\n");
-
+// Via Contract pattern
 const usdc = Contract({
 	address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 	abi: erc20Abi,
@@ -72,30 +113,13 @@ const usdc = Contract({
 
 // Get EventStream for Transfer events
 const stream = usdc.events.Transfer({});
-
-console.log("EventStream created with backfill and watch methods:");
-console.log("- stream.backfill({ fromBlock, toBlock })");
-console.log("- stream.watch({ signal, pollingInterval })");
-
-// Backfill historical events
-console.log("\n--- Backfilling historical events ---");
 for await (const { log, metadata } of stream.backfill({
 	fromBlock: 4000n,
 	toBlock: 5000n,
 })) {
-	console.log(`Event: ${log.eventName}`);
-	console.log(`  From: ${log.args.from}`);
-	console.log(`  To: ${log.args.to}`);
-	console.log(`  Value: ${log.args.value}`);
-	console.log(`  Block: ${metadata.fromBlock} - ${metadata.toBlock}`);
 }
 
-// ============================================================================
-// Standalone EventStream
-// ============================================================================
-
-console.log("\n=== Standalone EventStream ===\n");
-
+// Or use EventStream directly (library primitive)
 const transferEvent = {
 	type: "event" as const,
 	name: "Transfer" as const,
@@ -113,26 +137,16 @@ const standaloneStream = EventStream({
 	filter: { from: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e" },
 });
 
-console.log("Standalone EventStream created with filter");
-
 for await (const { log } of standaloneStream.backfill({
 	fromBlock: 0n,
 	toBlock: 100n,
 })) {
-	console.log(`Filtered transfer: ${log.args.value}`);
 }
 
-// ============================================================================
-// Abort Signal Example
-// ============================================================================
-
-console.log("\n=== Abort Signal Usage ===\n");
-
+// Cancellation with AbortSignal
 const controller = new AbortController();
 
-// Abort after collecting one event
 setTimeout(() => {
-	console.log("Aborting stream...");
 	controller.abort();
 }, 100);
 
@@ -142,10 +156,5 @@ try {
 		toBlock: 1000n,
 		signal: controller.signal,
 	})) {
-		console.log(`Got event: ${log.eventName}`);
 	}
-} catch (error: any) {
-	console.log(`Stream ended: ${error.name}`);
-}
-
-console.log("\n=== Done ===");
+} catch (error: any) {}

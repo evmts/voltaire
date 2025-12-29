@@ -2,9 +2,92 @@
  * Contract Basic Usage
  *
  * Demonstrates creating a Contract instance and reading from it.
+ * The Contract is a copyable pattern - you add it to your codebase.
  */
 
-import { Contract } from "@voltaire/contract";
+import { Abi } from "@tevm/voltaire/Abi";
+import { Address } from "@tevm/voltaire/Address";
+import * as Hex from "@tevm/voltaire/Hex";
+import { EventStream } from "@tevm/voltaire/EventStream";
+
+// ============================================================================
+// Contract Implementation (copy this into your codebase)
+// ============================================================================
+
+class ContractFunctionNotFoundError extends Error {
+	name = "ContractFunctionNotFoundError";
+	constructor(functionName: string) {
+		super(`Function "${functionName}" not found in contract ABI`);
+	}
+}
+
+class ContractEventNotFoundError extends Error {
+	name = "ContractEventNotFoundError";
+	constructor(eventName: string) {
+		super(`Event "${eventName}" not found in contract ABI`);
+	}
+}
+
+function Contract<TAbi extends readonly any[]>(options: {
+	address: string;
+	abi: TAbi;
+	provider: any;
+}) {
+	const { abi: abiItems, provider } = options;
+	const address = Address.from(options.address);
+	const abi = Abi(abiItems);
+	const addressHex = Hex.fromBytes(address);
+
+	const read = new Proxy(
+		{},
+		{
+			get(_target, prop) {
+				if (typeof prop !== "string") return undefined;
+				const functionName = prop;
+
+				return async (...args: any[]) => {
+					const fn = abi.getFunction(functionName);
+					if (
+						!fn ||
+						(fn.stateMutability !== "view" && fn.stateMutability !== "pure")
+					) {
+						throw new ContractFunctionNotFoundError(functionName);
+					}
+
+					const data = abi.encode(functionName, args);
+					const result = await provider.request({
+						method: "eth_call",
+						params: [{ to: addressHex, data: Hex.fromBytes(data) }, "latest"],
+					});
+					const decoded = abi.decode(functionName, Hex.toBytes(result));
+					return decoded.length === 1 ? decoded[0] : decoded;
+				};
+			},
+		},
+	);
+
+	const events = new Proxy(
+		{},
+		{
+			get(_target, prop) {
+				if (typeof prop !== "string") return undefined;
+				const eventName = prop;
+
+				return (filter?: any) => {
+					const event = abi.getEvent(eventName);
+					if (!event) throw new ContractEventNotFoundError(eventName);
+					return EventStream({ provider, address, event, filter });
+				};
+			},
+		},
+	);
+
+	return { address, abi, read, events };
+}
+
+// ============================================================================
+// Example Usage
+// ============================================================================
 
 // ERC20 ABI (minimal for demo)
 const erc20Abi = [
@@ -36,23 +119,12 @@ const erc20Abi = [
 		inputs: [{ type: "address", name: "account" }],
 		outputs: [{ type: "uint256", name: "" }],
 	},
-	{
-		type: "function",
-		name: "transfer",
-		stateMutability: "nonpayable",
-		inputs: [
-			{ type: "address", name: "to" },
-			{ type: "uint256", name: "amount" },
-		],
-		outputs: [{ type: "bool", name: "" }],
-	},
 ] as const;
 
 // Mock provider for demo
 const mockProvider = {
 	request: async ({ method, params }: { method: string; params?: any[] }) => {
-		console.log(`Provider: ${method}`, params);
-		return "0x" + "00".repeat(32); // Mock response
+		return `0x${"00".repeat(32)}`; // Mock response
 	},
 	on: () => mockProvider,
 	removeListener: () => mockProvider,
@@ -65,20 +137,7 @@ const usdc = Contract({
 	provider: mockProvider as any,
 });
 
-console.log("Contract created!");
-console.log("Address:", usdc.address);
-
 // Access the ABI for manual encoding
 const calldata = usdc.abi.encode("balanceOf", [
 	"0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
 ]);
-console.log("Encoded balanceOf calldata:", calldata);
-
-// The read/write/estimateGas methods require a real provider
-// They will throw NotImplementedError until implemented
-console.log("\nContract interfaces available:");
-console.log("- usdc.read.balanceOf(address)");
-console.log("- usdc.read.name()");
-console.log("- usdc.write.transfer(to, amount)");
-console.log("- usdc.estimateGas.transfer(to, amount)");
-console.log("- usdc.events.Transfer({ from: address })");

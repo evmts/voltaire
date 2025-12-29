@@ -7,4 +7,4 @@ const addr3 = Address("0x0000000000000000000000000000000000000001");
 // Sort addresses
 const addrs = [addr2, addr1, addr3];
 const sorted = Address.sortAddresses(addrs);
-sorted.forEach((addr) => console.log(Address.toHex(addr)));
+sorted.forEach((_addr) => {});

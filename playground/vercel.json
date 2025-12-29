@@ -1,5 +1,5 @@
 {
-  "buildCommand": "bun run build",
-  "outputDirectory": "dist",
-  "framework": "vite"
+	"buildCommand": "bun run build",
+	"outputDirectory": "dist",
+	"framework": "vite"
 }

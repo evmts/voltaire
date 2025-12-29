@@ -13,7 +13,7 @@ const unsorted = [
 ];
 
 const sorted = [...unsorted].sort(Bytes.compare);
-sorted.forEach((b) => );
+sorted.forEach((_b) => {});
 
 // Length affects comparison
 const short = Bytes.fromHex("0xff");
