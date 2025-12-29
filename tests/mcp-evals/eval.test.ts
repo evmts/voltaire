@@ -185,6 +185,152 @@ Return the ENS name in your final message as: ANSWER: <name>.eth`,
 		);
 	});
 
+	describe("Contract API Challenges", () => {
+		it(
+			"should read ERC20 balance using Voltaire Contract API",
+			{ timeout: 6 * 60 * 1000 },
+			async () => {
+				const { contractAddress, holderAddress, blockNumber } =
+					EXPECTED_ANSWERS.contractReadBalance;
+
+				const result = await runClaudeEval({
+					prompt: `Use Voltaire's Contract module to read the USDC balance of an address.
+
+Contract Address (USDC): ${contractAddress}
+Holder Address: ${holderAddress}
+Block Number: ${blockNumber}
+
+Create a Contract instance with the ERC20 ABI (at minimum: balanceOf function).
+Call contract.read.balanceOf() at the specified block.
+
+Return the balance as a string in your final message as: ANSWER: <balance>`,
+					mcpServerUrl: MCP_SERVER_URL,
+					rpcUrl: ETHEREUM_RPC_URL,
+					maxTurns: 15,
+					timeoutMs: 5 * 60 * 1000,
+				});
+
+				expect(result.success).toBe(true);
+				expect(result.error).toBeUndefined();
+				expect(result.scriptOutput).toBeDefined();
+				// Balance should be a valid numeric string
+				expect(result.scriptOutput).toMatch(/^\d+$/);
+			},
+		);
+
+		it(
+			"should encode ERC20 transfer calldata using Voltaire Contract/ABI",
+			{ timeout: 4 * 60 * 1000 },
+			async () => {
+				const { to, amount, expectedCalldata } =
+					EXPECTED_ANSWERS.contractEncodeTransfer;
+
+				const result = await runClaudeEval({
+					prompt: `Use Voltaire's ABI or Contract module to encode calldata for an ERC20 transfer.
+
+Function: transfer(address to, uint256 amount)
+To Address: ${to}
+Amount: ${amount} (as bigint/wei)
+
+Encode the function call and return the hex-encoded calldata.
+
+Return the calldata in your final message as: ANSWER: 0x...`,
+					mcpServerUrl: MCP_SERVER_URL,
+					maxTurns: 10,
+					timeoutMs: 3 * 60 * 1000,
+				});
+
+				expect(result.success).toBe(true);
+				expect(result.error).toBeUndefined();
+				expect(result.scriptOutput).toBeDefined();
+				expect(result.scriptOutput?.toLowerCase()).toBe(
+					expectedCalldata.toLowerCase(),
+				);
+			},
+		);
+
+		it(
+			"should compute function selector using Voltaire",
+			{ timeout: 4 * 60 * 1000 },
+			async () => {
+				const { functionSignature, expectedSelector } =
+					EXPECTED_ANSWERS.contractMethodSelector;
+
+				const result = await runClaudeEval({
+					prompt: `Use Voltaire to compute the 4-byte function selector for: ${functionSignature}
+
+The selector is the first 4 bytes of keccak256 hash of the function signature.
+
+Return the selector in your final message as: ANSWER: 0x...`,
+					mcpServerUrl: MCP_SERVER_URL,
+					maxTurns: 10,
+					timeoutMs: 3 * 60 * 1000,
+				});
+
+				expect(result.success).toBe(true);
+				expect(result.error).toBeUndefined();
+				expect(result.scriptOutput).toBeDefined();
+				expect(result.scriptOutput?.toLowerCase()).toBe(
+					expectedSelector.toLowerCase(),
+				);
+			},
+		);
+
+		it(
+			"should create Contract instance and access ABI methods",
+			{ timeout: 4 * 60 * 1000 },
+			async () => {
+				const result = await runClaudeEval({
+					prompt: `Use Voltaire's Contract module to:
+
+1. Create a Contract instance for USDC (0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)
+2. Include a minimal ERC20 ABI with: name, symbol, decimals, balanceOf, transfer, Transfer event
+3. Verify the contract has read.balanceOf and write.transfer methods available
+
+Return "success" if the Contract was created correctly with the expected methods.
+
+Return in your final message as: ANSWER: success`,
+					mcpServerUrl: MCP_SERVER_URL,
+					maxTurns: 10,
+					timeoutMs: 3 * 60 * 1000,
+				});
+
+				expect(result.success).toBe(true);
+				expect(result.error).toBeUndefined();
+				expect(result.scriptOutput).toBeDefined();
+				expect(result.scriptOutput?.toLowerCase()).toBe("success");
+			},
+		);
+
+		it(
+			"should decode Transfer event topics using Voltaire",
+			{ timeout: 4 * 60 * 1000 },
+			async () => {
+				const { eventSelector } = EXPECTED_ANSWERS.contractDecodeEvent;
+
+				const result = await runClaudeEval({
+					prompt: `Use Voltaire to verify the event selector for ERC20 Transfer event.
+
+The Transfer event signature is: Transfer(address indexed from, address indexed to, uint256 value)
+
+Compute the keccak256 hash of "Transfer(address,address,uint256)" and return the first 32 bytes as the event topic.
+
+Return the topic in your final message as: ANSWER: 0x...`,
+					mcpServerUrl: MCP_SERVER_URL,
+					maxTurns: 10,
+					timeoutMs: 3 * 60 * 1000,
+				});
+
+				expect(result.success).toBe(true);
+				expect(result.error).toBeUndefined();
+				expect(result.scriptOutput).toBeDefined();
+				expect(result.scriptOutput?.toLowerCase()).toBe(
+					eventSelector.toLowerCase(),
+				);
+			},
+		);
+	});
+
 	describe("Crypto & Primitives Challenges", () => {
 		it(
 			"should verify a secp256k1 signature using Voltaire",

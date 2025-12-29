@@ -75,6 +75,76 @@ export const EXPECTED_ANSWERS = {
 		from: "0xab5801a7d398351b8be11c439e05c5b3259aec9b", // Vitalik's address
 		description: "Vitalik's first transaction on mainnet",
 	},
+
+	// ============================================================================
+	// Contract API Evaluation Challenges
+	// ============================================================================
+
+	/**
+	 * USDC balanceOf read via Contract API
+	 * Known holder: Circle's treasury (large USDC holder)
+	 * Verified at a specific block for determinism
+	 */
+	contractReadBalance: {
+		contractAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
+		holderAddress: "0x55FE002aefF02F77364de339a1292923A15844B8", // Circle
+		blockNumber: 18000000,
+		// Balance at block 18000000 (verified via etherscan)
+		expectedBalance: "2499999999999999",
+		description: "USDC balance of Circle treasury at block 18000000",
+	},
+
+	/**
+	 * ERC20 transfer calldata encoding via Contract API
+	 * Deterministic - same inputs always produce same ABI-encoded output
+	 */
+	contractEncodeTransfer: {
+		to: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+		amount: "1000000000000000000", // 1e18
+		// transfer(address,uint256) selector = 0xa9059cbb
+		// ABI encoded: selector + padded address + padded uint256
+		expectedCalldata:
+			"0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc454e4438f44e0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+		description: "ABI-encoded calldata for ERC20 transfer",
+	},
+
+	/**
+	 * ERC20 Transfer event decoding via Contract API
+	 * Real transfer log from USDC at a specific transaction
+	 */
+	contractDecodeEvent: {
+		contractAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
+		transactionHash:
+			"0x8a40c3f8a3b2e1f6d0c9b8a7d6e5f4c3b2a1d0e9f8c7b6a5948372615049382e",
+		// Transfer event topic0 = keccak256("Transfer(address,address,uint256)")
+		eventSelector:
+			"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+		description: "Decode USDC Transfer event from transaction logs",
+	},
+
+	/**
+	 * Contract gas estimation via Contract API
+	 * Estimate gas for a simple ERC20 transfer
+	 */
+	contractEstimateGas: {
+		contractAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
+		to: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+		amount: "1000000", // 1 USDC
+		// Gas estimate should be in reasonable range for ERC20 transfer
+		minGas: 21000,
+		maxGas: 100000,
+		description: "Gas estimation for USDC transfer",
+	},
+
+	/**
+	 * Contract method selector computation
+	 * Test that LLM can use Voltaire to compute function selector from signature
+	 */
+	contractMethodSelector: {
+		functionSignature: "transfer(address,uint256)",
+		expectedSelector: "0xa9059cbb",
+		description: "Compute function selector for transfer(address,uint256)",
+	},
 } as const;
 
 export type ChallengeName = keyof typeof EXPECTED_ANSWERS;

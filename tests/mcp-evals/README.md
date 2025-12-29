@@ -67,6 +67,13 @@ Each test:
 - NFT ownership at specific block
 - First ENS registration
 
+### Contract API Challenges
+- Read ERC20 balance using Contract.read
+- Encode transfer calldata using Contract/ABI
+- Compute function selector (keccak256 of signature)
+- Create Contract instance with ABI methods
+- Decode Transfer event topics
+
 ### Crypto & Primitives Challenges
 - Secp256k1 signature verification
 - Keccak256 hash computation
