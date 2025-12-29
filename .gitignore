@@ -4,6 +4,7 @@ dist/
 types/
 
 modern-monaco
+tevm-monorepo
 
 .crush/
 
