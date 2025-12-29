@@ -1208,7 +1208,8 @@
                 "pages": [
                   "jsonrpc-provider/method-api",
                   "jsonrpc-provider/type-system",
-                  "jsonrpc-provider/events"
+                  "jsonrpc-provider/events",
+                  "jsonrpc-provider/eip6963"
                 ]
               },
               {
