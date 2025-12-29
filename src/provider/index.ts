@@ -106,3 +106,6 @@ export type { InMemoryProviderOptions } from "./InMemoryProvider.js";
 
 // EIP-6963: Multi Injected Provider Discovery
 export * as EIP6963 from "./eip6963/index.js";
+
+// Factory to create provider from a supplied Host/EVM
+export { fromEvm } from "./fromEvm.js";
