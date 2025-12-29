@@ -680,6 +680,7 @@
 		"clean:jsonrpc": "zig build clean-jsonrpc",
 		"docs:dev": "cd docs && mint dev",
 		"docs:playground:build": "cd playground && bun run build:docs && rm -rf ../docs/public/playground && cp -R dist ../docs/public/playground && mkdir -p ../docs/public/node_modules/modern-monaco/dist && cp -R node_modules/modern-monaco/dist/* ../docs/public/node_modules/modern-monaco/dist/ && mkdir -p ../docs/public && cp node_modules/typescript/lib/typescript.js ../docs/public/typescript",
+		"docs:build": "cd docs && mint build",
 		"mint:dev": "cd docs && mint dev",
 		"mint:install": "npm install -g mintlify@latest",
 		"format": "biome format . --write",
@@ -701,7 +702,12 @@
 		"typecheck": "tsc --noEmit",
 		"examples:generate": "bun run scripts/generate-example-docs.ts",
 		"examples:test": "bun run scripts/validate-examples.ts",
-		"examples:ci": "bun run examples:test && bun run examples:generate"
+		"examples:ci": "bun run examples:test && bun run examples:generate",
+		"docs:ghost-tests": "node scripts/generate-ghost-tests.mjs",
+		"predocs:dev": "npm run docs:ghost-tests",
+		"predocs:build": "npm run docs:ghost-tests",
+		"premint:dev": "npm run docs:ghost-tests",
+		"predocs:playground:build": "npm run docs:ghost-tests"
 	},
 	"devDependencies": {
 		"@anthropic-ai/claude-agent-sdk": "^0.1.76",

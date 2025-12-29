@@ -30,7 +30,7 @@
 **Modern Ethereum library built for TypeScript, Zig, Swift, and AI-assisted development.**
 
 ```typescript
-import { Address, Wei, Gwei, Ether, Rlp, Abi, Keccak256 } from '@tevm/voltaire';
+import { Address, Wei, Gwei, Ether, Rlp, Abi, Keccak256, Hex } from '@tevm/voltaire';
 
 // Type-safe addresses - casing bugs eliminated
 const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');

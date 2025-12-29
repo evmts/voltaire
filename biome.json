@@ -51,16 +51,23 @@
 			"recommended": true,
 			"complexity": {
 				"noExcessiveCognitiveComplexity": "warn",
-				"noForEach": "off"
+				"noForEach": "off",
+				"noBannedTypes": "warn"
+			},
+			"correctness": {
+				"noVoidTypeReturn": "warn"
 			},
 			"style": {
 				"useImportType": "error",
 				"useNodejsImportProtocol": "error",
-				"noNonNullAssertion": "warn"
+				"noNonNullAssertion": "warn",
+				"noParameterAssign": "warn"
 			},
 			"suspicious": {
 				"noExplicitAny": "warn",
-				"noConsoleLog": "warn"
+				"noConsoleLog": "warn",
+				"noShadowRestrictedNames": "warn",
+				"noExportsInTest": "warn"
 			}
 		}
 	},
