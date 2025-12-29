@@ -24,8 +24,9 @@
  * @module contract
  */
 
-// Main factory
+// Main factories
 export { Contract } from "./Contract.js";
+export { EventStream } from "./EventStream.js";
 
 // Types
 export type {
@@ -44,6 +45,18 @@ export type {
 	GetEvent,
 } from "./ContractType.js";
 
+// EventStream types
+export type {
+	EventStream as EventStreamInstance,
+	EventStreamConstructorOptions,
+	EventStreamOptions,
+	BackfillOptions,
+	WatchOptions,
+	EventStreamResult,
+	EventStreamMetadata,
+	RetryOptions,
+} from "./EventStreamType.js";
+
 // Errors
 export {
 	ContractNotImplementedError,
@@ -51,4 +64,6 @@ export {
 	ContractEventNotFoundError,
 	ContractReadError,
 	ContractWriteError,
+	BlockRangeTooLargeError,
+	EventStreamAbortedError,
 } from "./errors.js";

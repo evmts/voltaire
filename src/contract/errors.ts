@@ -64,3 +64,34 @@ export class ContractWriteError extends Error {
 		super(`Failed to write "${functionName}" to contract`);
 	}
 }
+
+/**
+ * Error thrown when RPC returns "block range too large" error
+ *
+ * This indicates the eth_getLogs request exceeded the RPC provider's
+ * block range limit and the request should be retried with a smaller range.
+ */
+export class BlockRangeTooLargeError extends Error {
+	override readonly name = "BlockRangeTooLargeError";
+
+	constructor(
+		public readonly fromBlock: bigint,
+		public readonly toBlock: bigint,
+		public readonly cause?: unknown,
+	) {
+		super(`Block range too large: ${fromBlock} to ${toBlock}`);
+	}
+}
+
+/**
+ * Error thrown when an EventStream operation is aborted
+ *
+ * This occurs when the AbortSignal passed to backfill/watch is triggered.
+ */
+export class EventStreamAbortedError extends Error {
+	override readonly name = "EventStreamAbortedError";
+
+	constructor() {
+		super("Event stream was aborted");
+	}
+}
