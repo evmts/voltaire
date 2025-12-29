@@ -15,6 +15,7 @@ export function equals(id1: JsonRpcIdType, id2: JsonRpcIdType): boolean {
 	return _equals(from(id1))(from(id2));
 }
 
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Intentional API design for namespace consistency
 export function toString(id: JsonRpcIdType): string {
 	return _toString(from(id));
 }

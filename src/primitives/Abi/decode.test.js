@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { AbiItemNotFoundError } from "./Errors.js";
 import { decode } from "./decode.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Function is the ABI namespace for function-related utilities
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Function is the ABI namespace
 import * as Function from "./function/index.js";
 
 describe("decode", () => {

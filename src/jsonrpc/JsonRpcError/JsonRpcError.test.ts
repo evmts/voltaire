@@ -14,6 +14,7 @@ import {
 	RESOURCE_UNAVAILABLE,
 	TRANSACTION_REJECTED,
 	from,
+	// biome-ignore lint/suspicious/noShadowRestrictedNames: Test imports intentionally shadow toString for testing
 	toString,
 } from "./index.js";
 

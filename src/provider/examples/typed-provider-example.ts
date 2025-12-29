@@ -122,8 +122,7 @@ export function exampleEventHandling() {
 	const provider = createMockProvider();
 
 	// Type-safe event listeners
-	provider.on("chainChanged", (chainId) => {
-	});
+	provider.on("chainChanged", (chainId) => {});
 
 	provider.on("accountsChanged", (accounts) => {
 		// accounts is typed as string[]
@@ -132,8 +131,7 @@ export function exampleEventHandling() {
 		}
 	});
 
-	provider.on("connect", ({ chainId }) => {
-	});
+	provider.on("connect", ({ chainId }) => {});
 
 	provider.on("disconnect", (error) => {
 		// error is typed as ProviderRpcError

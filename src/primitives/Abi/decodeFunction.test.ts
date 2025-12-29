@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress as Address } from "../Address/AddressType.js";
-import type { Abi } from "./Abi.js";
+import type { Abi as AbiType } from "./Abi.js";
 import { AbiInvalidSelectorError, AbiItemNotFoundError } from "./Errors.js";
 import { decodeFunction } from "./decodeFunction.js";
 import * as Abi from "./index.js";

@@ -29,23 +29,30 @@ type ConvertComponents<T> = T extends readonly Parameter[]
 type ConvertToAbiParameter<T extends Parameter> = {
 	readonly type: T["type"];
 } & (undefined extends T["name"]
-	? {}
+	? // biome-ignore lint/complexity/noBannedTypes: Using {} in conditional types to represent no additional properties
+		{}
 	: T["name"] extends string
 		? { readonly name: T["name"] }
-		: {}) &
+		: // biome-ignore lint/complexity/noBannedTypes: Using {} in conditional types to represent no additional properties
+			{}) &
 	(undefined extends T["internalType"]
-		? {}
+		? // biome-ignore lint/complexity/noBannedTypes: Using {} in conditional types to represent no additional properties
+			{}
 		: T["internalType"] extends string
 			? { readonly internalType: T["internalType"] }
-			: {}) &
+			: // biome-ignore lint/complexity/noBannedTypes: Using {} in conditional types to represent no additional properties
+				{}) &
 	(undefined extends T["indexed"]
-		? {}
+		? // biome-ignore lint/complexity/noBannedTypes: Using {} in conditional types to represent no additional properties
+			{}
 		: T["indexed"] extends boolean
 			? { readonly indexed: T["indexed"] }
-			: {}) &
+			: // biome-ignore lint/complexity/noBannedTypes: Using {} in conditional types to represent no additional properties
+				{}) &
 	(T["components"] extends readonly Parameter[]
 		? { readonly components: ConvertComponents<T["components"]> }
-		: {});
+		: // biome-ignore lint/complexity/noBannedTypes: Using {} in conditional types to represent no additional properties
+			{});
 
 // Resolve basic parameter type (no tuples)
 type ResolveBasicParameterType<T extends Parameter> =

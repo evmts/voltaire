@@ -6,12 +6,8 @@ import * as HDWallet from "./HDWallet/HDWallet.js";
 describe("HDWallet", () => {
 	const testMnemonic =
 		"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-	let testSeed: Uint8Array;
-	let rootKey: BrandedExtendedKey;
-
-	// Setup
-	testSeed = Bip39.mnemonicToSeedSync(testMnemonic);
-	rootKey = HDWallet.fromSeed(testSeed);
+	const testSeed: Uint8Array = Bip39.mnemonicToSeedSync(testMnemonic);
+	const rootKey: BrandedExtendedKey = HDWallet.fromSeed(testSeed);
 
 	describe("Key Generation", () => {
 		it("should create root key from seed", () => {

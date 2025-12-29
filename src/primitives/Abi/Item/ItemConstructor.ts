@@ -1,7 +1,7 @@
 import type { ConstructorType } from "../constructor/ConstructorType.js";
 import type { ErrorType } from "../error/ErrorType.js";
 import type { EventType } from "../event/EventType.js";
-import type { FunctionType as Function } from "../function/FunctionType.js";
+import type { FunctionType as AbiFunction } from "../function/FunctionType.js";
 import type { Fallback, ItemType, Receive } from "./ItemType.js";
 
 /**
@@ -11,7 +11,7 @@ export interface ItemConstructor {
 	/**
 	 * Type guard to check if an item is a Function
 	 */
-	isFunction(item: ItemType): item is Function;
+	isFunction(item: ItemType): item is AbiFunction;
 
 	/**
 	 * Type guard to check if an item is an Event

@@ -1,11 +1,15 @@
 /**
  * Voltaire RPC Schema
  *
- * Default RPC schema combining all JSON-RPC methods from eth, debug, and engine namespaces.
+ * Default RPC schema combining all JSON-RPC methods from eth, debug, engine, web3, net, and txpool namespaces.
  *
  * @module provider/schemas/VoltaireRpcSchema
  */
 
+import type { BlockType } from "../../primitives/Block/BlockType.js";
+import type { EventLogType } from "../../primitives/EventLog/EventLogType.js";
+import type { ReceiptType } from "../../primitives/Receipt/ReceiptType.js";
+import type { Any as TransactionType } from "../../primitives/Transaction/types.js";
 import type { RpcSchema } from "../RpcSchema.js";
 
 /**
@@ -15,6 +19,9 @@ import type { RpcSchema } from "../RpcSchema.js";
  * - eth namespace (52 methods)
  * - debug namespace
  * - engine namespace
+ * - web3 namespace
+ * - net namespace
+ * - txpool namespace
  * - anvil namespace (test methods)
  *
  * @example
@@ -133,17 +140,17 @@ export type VoltaireRpcSchema = readonly [
 	{
 		Method: "eth_getBlockByHash";
 		Parameters: [string, boolean];
-		ReturnType: unknown; // Block object
+		ReturnType: BlockType | null;
 	},
 	{
 		Method: "eth_getBlockByNumber";
 		Parameters: [string, boolean];
-		ReturnType: unknown; // Block object
+		ReturnType: BlockType | null;
 	},
 	{
 		Method: "eth_getBlockReceipts";
 		Parameters: [string];
-		ReturnType: unknown[]; // Receipt array
+		ReturnType: ReceiptType[] | null;
 	},
 	{
 		Method: "eth_getBlockTransactionCountByHash";
@@ -163,12 +170,12 @@ export type VoltaireRpcSchema = readonly [
 	{
 		Method: "eth_getFilterChanges";
 		Parameters: [string];
-		ReturnType: unknown[];
+		ReturnType: EventLogType[] | string[];
 	},
 	{
 		Method: "eth_getFilterLogs";
 		Parameters: [string];
-		ReturnType: unknown[];
+		ReturnType: EventLogType[];
 	},
 	{
 		Method: "eth_getLogs";
@@ -181,7 +188,7 @@ export type VoltaireRpcSchema = readonly [
 				blockHash?: string;
 			},
 		];
-		ReturnType: unknown[];
+		ReturnType: EventLogType[];
 	},
 	{
 		Method: "eth_getProof";
@@ -207,17 +214,17 @@ export type VoltaireRpcSchema = readonly [
 	{
 		Method: "eth_getTransactionByBlockHashAndIndex";
 		Parameters: [string, string];
-		ReturnType: unknown; // Transaction object
+		ReturnType: TransactionType | null;
 	},
 	{
 		Method: "eth_getTransactionByBlockNumberAndIndex";
 		Parameters: [string, string];
-		ReturnType: unknown; // Transaction object
+		ReturnType: TransactionType | null;
 	},
 	{
 		Method: "eth_getTransactionByHash";
 		Parameters: [string];
-		ReturnType: unknown; // Transaction object
+		ReturnType: TransactionType | null;
 	},
 	{
 		Method: "eth_getTransactionCount";
@@ -227,17 +234,17 @@ export type VoltaireRpcSchema = readonly [
 	{
 		Method: "eth_getTransactionReceipt";
 		Parameters: [string];
-		ReturnType: unknown; // Receipt object
+		ReturnType: ReceiptType | null;
 	},
 	{
 		Method: "eth_getUncleByBlockHashAndIndex";
 		Parameters: [string, string];
-		ReturnType: unknown; // Block object
+		ReturnType: BlockType | null;
 	},
 	{
 		Method: "eth_getUncleByBlockNumberAndIndex";
 		Parameters: [string, string];
-		ReturnType: unknown; // Block object
+		ReturnType: BlockType | null;
 	},
 	{
 		Method: "eth_getUncleCountByBlockHash";
@@ -503,6 +510,58 @@ export type VoltaireRpcSchema = readonly [
 		Method: "engine_newPayloadV5";
 		Parameters: [unknown, string[]?, string?];
 		ReturnType: unknown;
+	},
+	// web3 namespace
+	{
+		Method: "web3_clientVersion";
+		Parameters: [];
+		ReturnType: string;
+	},
+	{
+		Method: "web3_sha3";
+		Parameters: [string];
+		ReturnType: string;
+	},
+	// net namespace
+	{
+		Method: "net_version";
+		Parameters: [];
+		ReturnType: string;
+	},
+	{
+		Method: "net_listening";
+		Parameters: [];
+		ReturnType: boolean;
+	},
+	{
+		Method: "net_peerCount";
+		Parameters: [];
+		ReturnType: string;
+	},
+	// txpool namespace
+	{
+		Method: "txpool_status";
+		Parameters: [];
+		ReturnType: {
+			pending: string;
+			queued: string;
+		};
+	},
+	{
+		Method: "txpool_content";
+		Parameters: [];
+		ReturnType: {
+			pending: Record<string, Record<string, unknown>>;
+			queued: Record<string, Record<string, unknown>>;
+		};
+	},
+	{
+		Method: "txpool_inspect";
+		Parameters: [];
+		ReturnType: {
+			pending: Record<string, Record<string, string>>;
+			queued: Record<string, Record<string, string>>;
+		};
 	},
 	// anvil namespace (test methods)
 	{

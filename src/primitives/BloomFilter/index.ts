@@ -20,7 +20,7 @@ export * from "./constants.js";
 
 // Export individual functions with proper types
 export function add(filter: BloomFilterType, item: Uint8Array): void {
-	return _add(filter, item);
+	_add(filter, item);
 }
 
 export function combine(...filters: BloomFilterType[]): BloomFilterType {
@@ -124,7 +124,7 @@ Object.setPrototypeOf(BloomFilter.prototype, Uint8Array.prototype);
 
 // Instance methods
 BloomFilter.prototype.add = function (value: Uint8Array): void {
-	return add(this as BloomFilterType, value);
+	add(this as BloomFilterType, value);
 };
 BloomFilter.prototype.contains = function (value: Uint8Array): boolean {
 	return contains(this as BloomFilterType, value);

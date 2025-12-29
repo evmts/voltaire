@@ -209,7 +209,7 @@ function analyzeFunctionEntry(instructions, selectorIndex) {
  * @returns {string}
  */
 function formatSelector(value) {
-	return "0x" + value.toString(16).padStart(8, "0");
+	return `0x${value.toString(16).padStart(8, "0")}`;
 }
 
 /**
@@ -218,5 +218,5 @@ function formatSelector(value) {
  * @returns {string}
  */
 function formatHash(value) {
-	return "0x" + value.toString(16).padStart(64, "0");
+	return `0x${value.toString(16).padStart(64, "0")}`;
 }

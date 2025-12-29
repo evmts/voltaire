@@ -247,7 +247,6 @@ export class PrivateKeySignerImpl implements Signer {
 		const v = signature[64] ?? 0;
 
 		// Convert v from 0-1 to appropriate format based on tx type
-		let yParity: number;
 		if (transaction.type === 0) {
 			// Legacy: v includes chain ID
 			const chainId = transaction.chainId ?? 0n;
@@ -255,7 +254,7 @@ export class PrivateKeySignerImpl implements Signer {
 			return { ...transaction, v: vValue, r, s };
 		}
 		// EIP-2930, EIP-1559, EIP-4844, EIP-7702: use yParity
-		yParity = v;
+		const yParity = v;
 
 		return { ...transaction, yParity, r, s };
 	}

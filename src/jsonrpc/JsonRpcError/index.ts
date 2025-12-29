@@ -27,6 +27,7 @@ import { toString as _toString } from "./toString.js";
 export { from };
 
 // Export public wrapper functions
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Intentional API design for namespace consistency
 export function toString(error: JsonRpcErrorType): string {
 	return _toString(from(error));
 }

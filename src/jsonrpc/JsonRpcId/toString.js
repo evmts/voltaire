@@ -11,6 +11,7 @@
  * JsonRpcId.toString(null); // "null"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Intentional API design for namespace consistency
 export function toString(id) {
 	if (id === null) return "null";
 	return String(id);

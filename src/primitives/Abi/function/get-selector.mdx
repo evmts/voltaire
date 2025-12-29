@@ -13,6 +13,7 @@ The function selector is the first 4 bytes of the keccak256 hash of the canonica
 
 ```typescript
 import { Keccak256 } from 'tevm'
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Function is the ABI namespace
 import * as Function from 'tevm/Abi/function'
 
 // Get canonical signature

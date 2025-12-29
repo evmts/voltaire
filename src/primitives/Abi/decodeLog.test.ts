@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress as Address } from "../Address/AddressType.js";
 import * as Hex from "../Hex/index.js";
-import type { Abi } from "./Abi.js";
+import type { Abi as AbiType } from "./Abi.js";
 import { AbiItemNotFoundError } from "./Errors.js";
 import { decodeLog } from "./decodeLog.js";
 import * as Abi from "./index.js";

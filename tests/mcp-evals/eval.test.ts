@@ -414,4 +414,127 @@ Return the checksummed address in your final message as: ANSWER: 0x...`,
 			},
 		);
 	});
+
+	describe("BlockStream API Challenges", () => {
+		it(
+			"should understand BlockStream backfill API",
+			{ timeout: 4 * 60 * 1000 },
+			async () => {
+				const { fromBlock, toBlock, expectedBlockCount } =
+					EXPECTED_ANSWERS.blockStreamBackfill;
+
+				const result = await runClaudeEval({
+					prompt: `Use Voltaire's BlockStream module to write code that backfills blocks.
+
+Write TypeScript code that:
+1. Creates a BlockStream with a provider
+2. Calls stream.backfill() with fromBlock=${fromBlock}n and toBlock=${toBlock}n
+3. Counts the total number of blocks received
+
+The code should use async iteration: for await (const event of stream.backfill(...))
+
+Return the expected number of blocks in your final message as: ANSWER: <count>`,
+					mcpServerUrl: MCP_SERVER_URL,
+					maxTurns: 10,
+					timeoutMs: 3 * 60 * 1000,
+				});
+
+				expect(result.success).toBe(true);
+				expect(result.error).toBeUndefined();
+				expect(result.scriptOutput).toBeDefined();
+				const count = Number.parseInt(result.scriptOutput || "0", 10);
+				expect(count).toBe(expectedBlockCount);
+			},
+		);
+
+		it(
+			"should understand BlockStream reorg event handling",
+			{ timeout: 4 * 60 * 1000 },
+			async () => {
+				const { eventTypes, reorgProperties } =
+					EXPECTED_ANSWERS.blockStreamReorgHandling;
+
+				const result = await runClaudeEval({
+					prompt: `Explain how to handle chain reorganizations with Voltaire's BlockStream.
+
+Using the BlockStream watch() method, describe:
+1. What event types can be emitted (list them)
+2. What properties are available on a reorg event
+
+Return the event types as comma-separated values in your final message as: ANSWER: <type1>,<type2>`,
+					mcpServerUrl: MCP_SERVER_URL,
+					maxTurns: 10,
+					timeoutMs: 3 * 60 * 1000,
+				});
+
+				expect(result.success).toBe(true);
+				expect(result.error).toBeUndefined();
+				expect(result.scriptOutput).toBeDefined();
+
+				const types = result.scriptOutput
+					?.split(",")
+					.map((t) => t.trim().toLowerCase());
+				expect(types).toContain("blocks");
+				expect(types).toContain("reorg");
+			},
+		);
+
+		it(
+			"should understand BlockStream include options",
+			{ timeout: 4 * 60 * 1000 },
+			async () => {
+				const { options } = EXPECTED_ANSWERS.blockStreamIncludeOptions;
+
+				const result = await runClaudeEval({
+					prompt: `What are the three 'include' options available for BlockStream's backfill and watch methods?
+
+These options control how much block data is fetched (just headers, with transactions, or with receipts).
+
+Return the options as comma-separated values in your final message as: ANSWER: <option1>,<option2>,<option3>`,
+					mcpServerUrl: MCP_SERVER_URL,
+					maxTurns: 10,
+					timeoutMs: 3 * 60 * 1000,
+				});
+
+				expect(result.success).toBe(true);
+				expect(result.error).toBeUndefined();
+				expect(result.scriptOutput).toBeDefined();
+
+				const returnedOptions = result.scriptOutput
+					?.split(",")
+					.map((o) => o.trim().toLowerCase());
+				for (const opt of options) {
+					expect(returnedOptions).toContain(opt);
+				}
+			},
+		);
+
+		it(
+			"should write BlockStream watch code with reorg handling",
+			{ timeout: 5 * 60 * 1000 },
+			async () => {
+				const result = await runClaudeEval({
+					prompt: `Write TypeScript code using Voltaire's BlockStream to watch for new blocks and handle reorgs.
+
+The code should:
+1. Create a BlockStream with a provider
+2. Use stream.watch() with an AbortSignal
+3. Handle both 'blocks' and 'reorg' event types
+4. For reorg events, iterate over event.removed to rollback state
+
+Return "success" if you can write valid code that handles both event types.
+
+Return in your final message as: ANSWER: success`,
+					mcpServerUrl: MCP_SERVER_URL,
+					maxTurns: 15,
+					timeoutMs: 4 * 60 * 1000,
+				});
+
+				expect(result.success).toBe(true);
+				expect(result.error).toBeUndefined();
+				expect(result.scriptOutput).toBeDefined();
+				expect(result.scriptOutput?.toLowerCase()).toBe("success");
+			},
+		);
+	});
 });

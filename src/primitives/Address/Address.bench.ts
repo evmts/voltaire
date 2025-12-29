@@ -219,7 +219,7 @@ bench("address.equals - WASM (same)", () => {
 });
 
 bench("address.equals - ethers (same)", () => {
-	ethersGetAddress(address1) === ethersGetAddress(address1);
+	ethersGetAddress(address1) === ethersGetAddress(address2);
 });
 
 bench("address.equals - viem (same)", () => {

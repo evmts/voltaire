@@ -43,6 +43,7 @@ const hashType = HashType({ keccak256 });
 
 // Circular dependency: encodeValue needs hashStruct, hashStruct needs encodeData, encodeData needs encodeValue
 // Solution: Create them in order with forward references
+// biome-ignore lint/style/useConst: Required for circular dependency resolution
 let hashStruct;
 const encodeValue = EncodeValue({
 	keccak256,

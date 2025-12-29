@@ -145,6 +145,40 @@ export const EXPECTED_ANSWERS = {
 		expectedSelector: "0xa9059cbb",
 		description: "Compute function selector for transfer(address,uint256)",
 	},
+
+	// ============================================================================
+	// BlockStream API Evaluation Challenges
+	// ============================================================================
+
+	/**
+	 * BlockStream backfill usage
+	 * Test that LLM can use BlockStream to fetch historical blocks
+	 */
+	blockStreamBackfill: {
+		fromBlock: 18000000,
+		toBlock: 18000005,
+		expectedBlockCount: 6,
+		description: "Backfill 6 blocks using BlockStream",
+	},
+
+	/**
+	 * BlockStream watch with reorg detection explanation
+	 * Test that LLM understands BlockStream's reorg handling API
+	 */
+	blockStreamReorgHandling: {
+		eventTypes: ["blocks", "reorg"],
+		reorgProperties: ["removed", "added", "commonAncestor"],
+		description: "Explain how to handle reorgs with BlockStream watch",
+	},
+
+	/**
+	 * BlockStream include options
+	 * Test that LLM understands different include levels
+	 */
+	blockStreamIncludeOptions: {
+		options: ["header", "transactions", "receipts"],
+		description: "List BlockStream include options for block content",
+	},
 } as const;
 
 export type ChallengeName = keyof typeof EXPECTED_ANSWERS;

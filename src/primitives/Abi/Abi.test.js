@@ -230,9 +230,9 @@ describe("Abi", () => {
 
 		describe("getConstructor", () => {
 			it("finds constructor", () => {
-				const constructor = testAbi.getConstructor();
-				expect(constructor).toBeDefined();
-				expect(/** @type {*} */ (constructor).type).toBe("constructor");
+				const ctor = testAbi.getConstructor();
+				expect(ctor).toBeDefined();
+				expect(/** @type {*} */ (ctor).type).toBe("constructor");
 			});
 
 			it("returns undefined when no constructor", () => {
@@ -245,8 +245,8 @@ describe("Abi", () => {
 						outputs: [],
 					},
 				]);
-				const constructor = abi.getConstructor();
-				expect(constructor).toBeUndefined();
+				const ctor = abi.getConstructor();
+				expect(ctor).toBeUndefined();
 			});
 		});
 

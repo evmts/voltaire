@@ -17,6 +17,7 @@ import { decodeParameters } from "../Encoding.js";
  * const decoded = Constructor.decodeParams(constructor, encodedData);
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: constructor is the domain-specific parameter name for ABI constructor type
 export function decodeParams(constructor, data) {
 	return /** @type {any[]} */ (decodeParameters(constructor.inputs, data));
 }

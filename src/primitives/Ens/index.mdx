@@ -115,9 +115,16 @@ type BrandedEns = string & { readonly [brand]: "Ens" }
 Always normalize ENS names before use to prevent homograph attacks. Names like "аpple.eth" (with Cyrillic 'а') can appear identical to "apple.eth" but resolve to different addresses.
 </Warning>
 
+## Related Projects
+
+Voltaire's ENS implementation uses [z-ens-normalize](https://github.com/evmts/z-ens-normalize), a Zig implementation of ENSIP-15 maintained by the evmts organization. It passes 100% of ENSIP-15 validation tests and Unicode normalization tests.
+
+For full ENS resolution (name → address), see [@ensdomains/ensjs](https://github.com/ensdomains/ensjs) or use Voltaire's primitives with your provider.
+
 ## See Also
 
 - [Normalization](/primitives/ens/normalization) - ENSIP-15 details
 - [Validation](/primitives/ens/validation) - Name validation rules
 - [Security](/primitives/ens/security) - Homograph attack prevention
 - [ENSIP Standards](/primitives/ens/ensip-standards) - ENS improvement proposals
+- [z-ens-normalize](https://github.com/evmts/z-ens-normalize) - Zig ENSIP-15 implementation

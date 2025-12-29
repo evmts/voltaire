@@ -4,7 +4,7 @@ import { Constructor } from "./Constructor.js";
 describe("Constructor", () => {
 	describe("factory function", () => {
 		it("creates Constructor from object", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "uint256", name: "initialSupply" }],
@@ -16,7 +16,7 @@ describe("Constructor", () => {
 		});
 
 		it("creates Constructor with no parameters", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [],
@@ -27,7 +27,7 @@ describe("Constructor", () => {
 		});
 
 		it("creates payable Constructor", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "payable",
 				inputs: [],
@@ -37,7 +37,7 @@ describe("Constructor", () => {
 		});
 
 		it("creates Constructor with multiple parameters", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [
@@ -51,7 +51,7 @@ describe("Constructor", () => {
 		});
 
 		it("defaults type to constructor", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				stateMutability: "nonpayable",
 				inputs: [],
 			});
@@ -62,14 +62,14 @@ describe("Constructor", () => {
 
 	describe("prototype setup", () => {
 		it("sets correct prototype", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [],
 			});
 
-			expect(Object.getPrototypeOf(constructor)).toBe(Constructor.prototype);
-			expect(Object.getPrototypeOf(Object.getPrototypeOf(constructor))).toBe(
+			expect(Object.getPrototypeOf(ctor)).toBe(Constructor.prototype);
+			expect(Object.getPrototypeOf(Object.getPrototypeOf(ctor))).toBe(
 				Object.prototype,
 			);
 		});
@@ -103,7 +103,7 @@ describe("Constructor", () => {
 			});
 
 			it("encodes with no parameters", () => {
-				const constructor = Constructor({
+				const ctor = Constructor({
 					type: "constructor",
 					stateMutability: "nonpayable",
 					inputs: [],
@@ -113,7 +113,7 @@ describe("Constructor", () => {
 			});
 
 			it("encodes single parameter", () => {
-				const constructor = Constructor({
+				const ctor = Constructor({
 					type: "constructor",
 					stateMutability: "nonpayable",
 					inputs: [{ type: "uint256", name: "value" }],
@@ -132,7 +132,7 @@ describe("Constructor", () => {
 			});
 
 			it("decodes with no parameters", () => {
-				const constructor = Constructor({
+				const ctor = Constructor({
 					type: "constructor",
 					stateMutability: "nonpayable",
 					inputs: [],
@@ -154,7 +154,7 @@ describe("Constructor", () => {
 
 	describe("toString", () => {
 		it("returns string representation", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "uint256" }],
@@ -166,7 +166,7 @@ describe("Constructor", () => {
 		});
 
 		it("shows correct input count", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "payable",
 				inputs: [{ type: "uint256" }, { type: "string" }],
@@ -176,7 +176,7 @@ describe("Constructor", () => {
 		});
 
 		it("handles no inputs", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [],
@@ -188,14 +188,14 @@ describe("Constructor", () => {
 
 	describe("inspect", () => {
 		it("provides custom inspect output", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "uint256" }],
 			});
 			const inspectSymbol = Symbol.for("nodejs.util.inspect.custom");
 			/** @type {(depth?: number, options?: unknown) => string} */
-			const inspected = /** @type {*} */ (constructor)[inspectSymbol]();
+			const inspected = /** @type {*} */ (ctor)[inspectSymbol]();
 			expect(inspected).toContain("Constructor");
 			expect(inspected).toContain("nonpayable");
 			expect(inspected).toContain("inputs: 1");
@@ -204,7 +204,7 @@ describe("Constructor", () => {
 
 	describe("real-world examples", () => {
 		it("creates ERC20 constructor", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [
@@ -220,7 +220,7 @@ describe("Constructor", () => {
 		});
 
 		it("encodes and decodes ERC20 constructor parameters", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [
@@ -237,7 +237,7 @@ describe("Constructor", () => {
 		});
 
 		it("creates payable contract constructor", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "payable",
 				inputs: [{ type: "address", name: "owner" }],
@@ -250,7 +250,7 @@ describe("Constructor", () => {
 
 	describe("parameter types", () => {
 		it("handles uint256 parameter", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "uint256", name: "value" }],
@@ -262,7 +262,7 @@ describe("Constructor", () => {
 		});
 
 		it("handles address parameter", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "address", name: "owner" }],
@@ -278,7 +278,7 @@ describe("Constructor", () => {
 		});
 
 		it("handles string parameter", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "string", name: "name" }],
@@ -290,7 +290,7 @@ describe("Constructor", () => {
 		});
 
 		it("handles bool parameter", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "bool", name: "flag" }],
@@ -302,7 +302,7 @@ describe("Constructor", () => {
 		});
 
 		it("handles bytes parameter", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "bytes", name: "data" }],
@@ -315,7 +315,7 @@ describe("Constructor", () => {
 		});
 
 		it("handles array parameter", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "uint256[]", name: "values" }],
@@ -330,7 +330,7 @@ describe("Constructor", () => {
 
 	describe("edge cases", () => {
 		it("handles empty inputs array", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [],
@@ -342,7 +342,7 @@ describe("Constructor", () => {
 		});
 
 		it("handles many parameters", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: Array.from({ length: 10 }, (_, i) => ({
@@ -358,7 +358,7 @@ describe("Constructor", () => {
 		});
 
 		it("handles zero values", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "uint256" }],
@@ -372,7 +372,7 @@ describe("Constructor", () => {
 
 	describe("boundary values", () => {
 		it("handles max uint256", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "uint256" }],
@@ -386,7 +386,7 @@ describe("Constructor", () => {
 		});
 
 		it("handles zero address", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "address" }],
@@ -402,7 +402,7 @@ describe("Constructor", () => {
 		});
 
 		it("handles empty string", () => {
-			const constructor = Constructor({
+			const ctor = Constructor({
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [{ type: "string" }],

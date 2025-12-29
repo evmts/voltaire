@@ -10,6 +10,7 @@
  * JsonRpcError.toString(err); // "[-32601] Method not found"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Intentional API design for namespace consistency
 export function toString(error) {
 	return `[${error.code}] ${error.message}`;
 }

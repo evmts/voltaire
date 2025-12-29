@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Test imports intentionally shadow toString for testing
 import { JsonRpcId, equals, from, toString } from "./index.js";
 
 describe("JsonRpcId", () => {

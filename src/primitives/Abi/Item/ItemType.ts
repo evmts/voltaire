@@ -1,7 +1,7 @@
 import type { ConstructorType } from "../constructor/ConstructorType.js";
 import type { ErrorType } from "../error/ErrorType.js";
 import type { EventType } from "../event/EventType.js";
-import type { FunctionType as Function } from "../function/FunctionType.js";
+import type { FunctionType as AbiFunction } from "../function/FunctionType.js";
 import type { StateMutability } from "../function/statemutability.js";
 
 export type Fallback<
@@ -20,7 +20,7 @@ export type Receive = {
  * ItemType - discriminated union of all ABI item types
  */
 export type ItemType =
-	| Function
+	| AbiFunction
 	| EventType
 	| ErrorType
 	| ConstructorType

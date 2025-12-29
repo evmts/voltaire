@@ -129,6 +129,7 @@ export function encodeIsApprovedForAll(
 /**
  * Encode uri(uint256) calldata
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Intentional API naming to match ERC-1155 uri() function
 export function encodeURI(id: Uint256Type): string {
 	const idHex = id.toString(16).padStart(64, "0");
 	return `${SELECTORS.uri}${idHex}`;

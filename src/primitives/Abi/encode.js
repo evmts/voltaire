@@ -1,4 +1,5 @@
 import { AbiItemNotFoundError } from "./Errors.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Function is the ABI namespace
 import * as Function from "./function/index.js";
 
 /**

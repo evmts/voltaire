@@ -586,6 +586,7 @@ function equals(a: AccessListType, b: AccessListType): boolean {
 }
 
 // Add equals to AccessList namespace for testing
+// biome-ignore lint/suspicious/noExportsInTest: Module augmentation for type declarations
 declare module "./index.js" {
 	export function equals(a: AccessListType, b: AccessListType): boolean;
 }
