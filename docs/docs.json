@@ -63,6 +63,12 @@
                 ]
               },
               {
+                "group": "Contract",
+                "pages": [
+                  "swift/contract/index"
+                ]
+              },
+              {
                 "group": "Support",
                 "pages": [
                   "swift/support/errors",
@@ -161,6 +167,13 @@
                   },
                   "zig/jsonrpc-provider/usage-patterns",
                   "zig/jsonrpc-provider/comparison"
+                ]
+              },
+              {
+                "group": "Contract",
+                "icon": "file-contract",
+                "pages": [
+                  "zig/contract/index"
                 ]
               },
               {
@@ -1242,6 +1255,17 @@
               },
               "jsonrpc-provider/usage-patterns",
               "jsonrpc-provider/comparison"
+            ]
+          },
+          {
+            "group": "Contract",
+            "icon": "file-contract",
+            "pages": [
+              "contract/index",
+              "contract/read",
+              "contract/write",
+              "contract/events",
+              "contract/gas-estimation"
             ]
           },
           {
