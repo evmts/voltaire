@@ -103,3 +103,6 @@ export type { WebSocketProviderOptions } from "./WebSocketProvider.js";
 
 export { InMemoryProvider } from "./InMemoryProvider.js";
 export type { InMemoryProviderOptions } from "./InMemoryProvider.js";
+
+// EIP-6963: Multi Injected Provider Discovery
+export * as EIP6963 from "./eip6963/index.js";
