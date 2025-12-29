@@ -1,0 +1,315 @@
+---
+title: Viem Account Abstraction
+description: Viem-compatible account implementation using Voltaire primitives
+---
+
+# Viem Account Abstraction
+
+Drop-in replacement for viem's account module using Voltaire primitives. Implements the full `LocalAccount` interface for signing messages, transactions, and typed data.
+
+## Quick Start
+
+```typescript
+import { privateKeyToAccount } from './examples/viem-account/index.js';
+
+// Create account from private key
+const account = privateKeyToAccount(
+  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
+);
+
+console.log(account.address);   // '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+console.log(account.publicKey); // '0x04...' (65 bytes)
+console.log(account.type);      // 'local'
+console.log(account.source);    // 'privateKey'
+
+// Sign a message (EIP-191)
+const sig = await account.signMessage({ message: 'Hello, Ethereum!' });
+
+// Sign typed data (EIP-712)
+const typedSig = await account.signTypedData({
+  domain: { name: 'App', version: '1', chainId: 1n },
+  types: { Message: [{ name: 'content', type: 'string' }] },
+  primaryType: 'Message',
+  message: { content: 'Hello!' },
+});
+
+// Sign a transaction
+const txSig = await account.signTransaction({
+  type: 2,
+  chainId: 1n,
+  to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  value: 1000000000000000000n,
+});
+```
+
+## API Reference
+
+### privateKeyToAccount
+
+Creates a viem-compatible `PrivateKeyAccount` from a hex-encoded private key.
+
+```typescript
+function privateKeyToAccount(
+  privateKey: `0x${string}`,
+  options?: {
+    nonceManager?: NonceManager;
+  }
+): PrivateKeyAccount;
+```
+
+**Parameters:**
+- `privateKey` - 32-byte private key as hex string with `0x` prefix
+- `options.nonceManager` - Optional nonce manager for transaction ordering
+
+**Returns:** `PrivateKeyAccount` with all signing methods
+
+**Throws:**
+- `InvalidPrivateKeyError` - If private key is invalid length or zero
+
+### Account Methods
+
+#### sign({ hash })
+
+Signs a raw 32-byte hash.
+
+```typescript
+const signature = await account.sign({
+  hash: '0x0000000000000000000000000000000000000000000000000000000000000001'
+});
+// Returns: '0x...' (65 bytes: r + s + v)
+```
+
+#### signMessage({ message })
+
+Signs a message using EIP-191 personal sign format.
+
+```typescript
+// String message
+const sig1 = await account.signMessage({ message: 'Hello!' });
+
+// Raw hex message
+const sig2 = await account.signMessage({
+  message: { raw: '0x48656c6c6f' }
+});
+
+// Raw bytes message
+const sig3 = await account.signMessage({
+  message: { raw: new Uint8Array([72, 101, 108, 108, 111]) }
+});
+```
+
+#### signTypedData({ domain, types, primaryType, message })
+
+Signs EIP-712 typed structured data.
+
+```typescript
+const signature = await account.signTypedData({
+  domain: {
+    name: 'MyApp',
+    version: '1',
+    chainId: 1n,
+  },
+  types: {
+    Transfer: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+  },
+  primaryType: 'Transfer',
+  message: {
+    to: Address.from('0x...'),  // Note: Use Address primitive
+    amount: 1000000000000000000n,
+  },
+});
+```
+
+#### signTransaction(transaction, { serializer? })
+
+Signs an Ethereum transaction.
+
+```typescript
+const signedTx = await account.signTransaction({
+  type: 2,
+  chainId: 1n,
+  nonce: 0n,
+  maxFeePerGas: 20000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  gas: 21000n,
+  to: '0x...',
+  value: 1000000000000000000n,
+});
+```
+
+#### signAuthorization({ chainId, address, nonce })
+
+Signs EIP-7702 authorization for account abstraction.
+
+```typescript
+const auth = await account.signAuthorization({
+  chainId: 1n,
+  address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  nonce: 0n,
+});
+
+console.log(auth);
+// {
+//   address: '0x...',
+//   chainId: 1n,
+//   nonce: 0n,
+//   r: '0x...',
+//   s: '0x...',
+//   v: 27n,
+//   yParity: 0,
+// }
+```
+
+## Standalone Signing Functions
+
+For tree-shaking, use standalone functions:
+
+```typescript
+import { signMessage, signTypedData, signTransaction } from './examples/viem-account/index.js';
+
+// signMessage
+const sig = await signMessage({
+  message: 'Hello!',
+  privateKey: privateKeyBytes,  // Uint8Array
+});
+
+// signTypedData
+const typedSig = await signTypedData({
+  domain: { name: 'App' },
+  types: { Message: [{ name: 'content', type: 'string' }] },
+  primaryType: 'Message',
+  message: { content: 'Hello!' },
+  privateKey: privateKeyBytes,
+});
+```
+
+## Factory Pattern
+
+For dependency injection:
+
+```typescript
+import { PrivateKeyToAccount, SignMessage, SignTypedData } from './examples/viem-account/index.js';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
+import { keccak256 } from './crypto/Keccak256/hash.js';
+import { sign } from './crypto/Secp256k1/sign.js';
+import { hashTypedData } from './crypto/EIP712/EIP712.js';
+
+// Create factory with custom dependencies
+const createAccount = PrivateKeyToAccount({
+  getPublicKey: (pk, compressed) => secp256k1.getPublicKey(pk, compressed),
+  keccak256,
+  sign,
+  hashTypedData,
+});
+
+const account = createAccount('0x...');
+```
+
+## Type Definitions
+
+```typescript
+interface PrivateKeyAccount {
+  address: string;              // Checksummed address
+  publicKey: `0x${string}`;     // Uncompressed (0x04 prefix)
+  source: 'privateKey';
+  type: 'local';
+  nonceManager?: NonceManager;
+
+  sign: ({ hash }) => Promise<`0x${string}`>;
+  signAuthorization: (auth) => Promise<SignedAuthorization>;
+  signMessage: ({ message }) => Promise<`0x${string}`>;
+  signTransaction: (tx, opts?) => Promise<`0x${string}`>;
+  signTypedData: (data) => Promise<`0x${string}`>;
+}
+
+type SignableMessage = string | { raw: `0x${string}` | Uint8Array };
+
+interface TypedDataDefinition {
+  domain?: EIP712Domain;
+  types: Record<string, TypeProperty[]>;
+  primaryType: string;
+  message: Record<string, unknown>;
+}
+```
+
+## Viem Compatibility Notes
+
+### Full Compatibility
+- Account structure matches viem's `LocalAccount`
+- All signing methods return the same format
+- Address is EIP-55 checksummed
+- Public key is uncompressed (65 bytes)
+- Signatures are 65 bytes (r + s + v)
+
+### Known Differences
+- **EIP-712 addresses**: Voltaire's EIP712 expects `Address` primitives (Uint8Array), not strings. Convert addresses using `Address.from('0x...')` before signing typed data with address fields.
+- **Transaction serialization**: Uses placeholder serializer. For production, integrate with Voltaire's Transaction primitive.
+
+## Error Handling
+
+```typescript
+import {
+  InvalidPrivateKeyError,
+  InvalidAddressError,
+  SigningError,
+} from './examples/viem-account/errors.js';
+
+try {
+  const account = privateKeyToAccount('0xinvalid');
+} catch (error) {
+  if (error instanceof InvalidPrivateKeyError) {
+    console.error('Invalid key:', error.message);
+    console.error('Code:', error.code);
+    console.error('Docs:', error.docsPath);
+  }
+}
+```
+
+## Integration with WalletClient
+
+```typescript
+import { createWalletClient, http } from 'viem';
+import { mainnet } from 'viem/chains';
+import { privateKeyToAccount } from './examples/viem-account/index.js';
+
+// Voltaire account works with viem's WalletClient
+const account = privateKeyToAccount('0x...');
+
+const client = createWalletClient({
+  account,  // Use Voltaire account
+  chain: mainnet,
+  transport: http(),
+});
+
+// Send transaction
+const hash = await client.sendTransaction({
+  to: '0x...',
+  value: parseEther('0.01'),
+});
+```
+
+## File Structure
+
+```
+examples/viem-account/
+  AccountTypes.ts       # TypeScript type definitions
+  errors.ts             # Custom error classes
+  index.ts              # Module exports
+  privateKeyToAccount.js # Main factory function
+  signMessage.js        # EIP-191 message signing
+  signTransaction.js    # Transaction signing
+  signTypedData.js      # EIP-712 typed data signing
+  Account.test.ts       # Comprehensive tests
+  REQUIREMENTS.md       # Extracted requirements from viem
+```
+
+## Related
+
+- [EIP-191: Signed Data Standard](https://eips.ethereum.org/EIPS/eip-191)
+- [EIP-712: Typed Structured Data](https://eips.ethereum.org/EIPS/eip-712)
+- [EIP-7702: Account Abstraction](https://eips.ethereum.org/EIPS/eip-7702)
+- [Voltaire EIP712](/crypto/eip712)
+- [Voltaire Secp256k1](/crypto/secp256k1)

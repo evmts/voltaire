@@ -1,0 +1,273 @@
+---
+title: "Viem Contract Abstraction"
+description: "A viem-compatible contract abstraction built on Voltaire primitives"
+---
+
+# Viem Contract Abstraction
+
+A copyable implementation of viem's contract abstraction patterns using Voltaire primitives.
+
+## Overview
+
+This playbook provides a complete viem-compatible contract abstraction including:
+
+- **`getContract`** - Factory returning typed contract instance with proxied methods
+- **`readContract`** - Read view/pure functions via eth_call
+- **`writeContract`** - Execute state-changing functions via eth_sendTransaction
+- **`simulateContract`** - Dry-run write functions to validate and get return values
+- **`estimateContractGas`** - Estimate gas for write operations
+- **`watchContractEvent`** - Subscribe to contract events via polling
+
+## Quick Start
+
+### Using getContract
+
+```typescript
+import { getContract } from './examples/viem-contract';
+
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false },
+    ],
+  },
+] as const;
+
+const contract = getContract({
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  client: provider,
+});
+
+// Read operations
+const balance = await contract.read.balanceOf(['0x...']);
+
+// Write operations (requires account)
+const hash = await contract.write.transfer(['0x...', 1000n], {
+  account: '0x...',
+});
+
+// Simulate before writing
+const { result, request } = await contract.simulate.transfer(['0x...', 1000n], {
+  account: '0x...',
+});
+
+// Watch events
+const unwatch = contract.watchEvent.Transfer(
+  { from: '0x...' },
+  {
+    onLogs: (logs) => console.log(logs),
+  }
+);
+```
+
+## Standalone Actions
+
+### readContract
+
+Call view/pure functions without needing a contract instance:
+
+```typescript
+import { readContract } from './examples/viem-contract';
+
+const balance = await readContract(client, {
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  functionName: 'balanceOf',
+  args: ['0x...'],
+});
+```
+
+### writeContract
+
+Execute state-changing functions:
+
+```typescript
+import { writeContract } from './examples/viem-contract';
+
+const hash = await writeContract(client, {
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  functionName: 'transfer',
+  args: ['0x...', 1000n],
+  account: '0x...',
+});
+```
+
+### simulateContract
+
+Validate a write operation before executing:
+
+```typescript
+import { simulateContract, writeContract } from './examples/viem-contract';
+
+// Simulate first
+const { result, request } = await simulateContract(publicClient, {
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  functionName: 'transfer',
+  args: ['0x...', 1000n],
+  account: '0x...',
+});
+
+// If simulation succeeds, execute with the request object
+const hash = await writeContract(walletClient, request);
+```
+
+### estimateContractGas
+
+Estimate gas before writing:
+
+```typescript
+import { estimateContractGas } from './examples/viem-contract';
+
+const gas = await estimateContractGas(client, {
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  functionName: 'transfer',
+  args: ['0x...', 1000n],
+  account: '0x...',
+});
+```
+
+### watchContractEvent
+
+Subscribe to contract events:
+
+```typescript
+import { watchContractEvent } from './examples/viem-contract';
+
+const unwatch = watchContractEvent(client, {
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  eventName: 'Transfer',
+  args: { from: '0x...' },
+  onLogs: (logs) => {
+    for (const log of logs) {
+      console.log(log.eventName, log.args);
+    }
+  },
+  onError: (error) => console.error(error),
+  pollingInterval: 1000,
+});
+
+// Later, to stop watching:
+unwatch();
+```
+
+## Type Inference
+
+The abstraction provides full type inference from your ABI:
+
+```typescript
+const contract = getContract({
+  address: '0x...',
+  abi: erc20Abi,
+  client,
+});
+
+// Args are typed from ABI inputs
+// Return type inferred from ABI outputs
+const balance = await contract.read.balanceOf(['0x...']);
+//    ^? bigint
+
+// Event filter args typed from indexed params
+const unwatch = contract.watchEvent.Transfer(
+  { from: '0x...' }, // Typed: { from?: Address, to?: Address }
+  {
+    onLogs: (logs) => {
+      // log.args typed: { from: Address, to: Address, value: bigint }
+    },
+  }
+);
+```
+
+## Error Handling
+
+All actions wrap errors in specific error classes:
+
+```typescript
+import {
+  ContractReadError,
+  ContractWriteError,
+  ContractSimulateError,
+  ContractGasEstimationError,
+  AccountNotFoundError,
+} from './examples/viem-contract';
+
+try {
+  await readContract(client, { ... });
+} catch (error) {
+  if (error instanceof ContractReadError) {
+    console.log(error.details.functionName);
+    console.log(error.details.address);
+    console.log(error.cause); // Original error
+  }
+}
+```
+
+## Split Clients
+
+You can provide separate public and wallet clients:
+
+```typescript
+const contract = getContract({
+  address: '0x...',
+  abi: erc20Abi,
+  client: {
+    public: publicClient,  // For read/simulate
+    wallet: walletClient,  // For write
+  },
+});
+```
+
+## Files
+
+Copy these files into your codebase:
+
+- `getContract.js` - Main factory function
+- `readContract.js` - Read action
+- `writeContract.js` - Write action
+- `simulateContract.js` - Simulation action
+- `estimateContractGas.js` - Gas estimation action
+- `watchContractEvent.js` - Event watching action
+- `ViemContractTypes.ts` - TypeScript type definitions
+- `errors.ts` - Custom error classes
+- `index.ts` - Module exports
+
+## Differences from Viem
+
+This implementation:
+
+1. Uses Voltaire's `Abi` primitive for encoding/decoding
+2. Uses polling-only event watching (no WebSocket support)
+3. Does not include `createContractEventFilter` or `getContractEvents`
+4. Simplified parameter handling
+
+For production use, consider adding:
+
+- WebSocket subscription support for events
+- Filter-based event watching
+- Request batching
+- Retry logic for RPC calls

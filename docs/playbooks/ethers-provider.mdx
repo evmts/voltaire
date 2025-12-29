@@ -1,0 +1,355 @@
+---
+title: "Ethers v6 Style Provider"
+description: "An ethers v6-compatible JsonRpcProvider implementation using Voltaire primitives"
+---
+
+# Ethers v6 Style Provider
+
+This playbook documents an ethers v6-compatible `JsonRpcProvider` implementation built on Voltaire primitives. It provides the same API surface as ethers v6 while leveraging Voltaire's batching, retry, and polling utilities.
+
+## Overview
+
+The `EthersProvider` class implements the full ethers v6 provider API:
+
+- Network detection and management
+- Account queries (balance, nonce, code, storage)
+- Transaction execution (call, estimateGas, broadcastTransaction)
+- Block and log retrieval
+- Event subscription system
+- Request batching and caching
+
+## Installation
+
+The provider is located in `examples/ethers-provider/`:
+
+```typescript
+import { EthersProvider } from "./examples/ethers-provider/EthersProvider.js";
+```
+
+## Quick Start
+
+```typescript
+import { EthersProvider } from "./examples/ethers-provider/EthersProvider.js";
+
+// Create provider
+const provider = new EthersProvider("https://eth.llamarpc.com");
+
+// Get network
+const network = await provider.getNetwork();
+console.log(`Connected to ${network.name} (chainId: ${network.chainId})`);
+
+// Get block number
+const blockNumber = await provider.getBlockNumber();
+console.log(`Latest block: ${blockNumber}`);
+
+// Get balance
+const balance = await provider.getBalance("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1");
+console.log(`Balance: ${balance} wei`);
+```
+
+## Configuration
+
+The provider accepts configuration options matching ethers v6:
+
+```typescript
+const provider = new EthersProvider(
+  "https://eth.llamarpc.com",
+  "mainnet", // network (optional)
+  {
+    // Request caching (ms). Set to -1 to disable.
+    cacheTimeout: 250,
+
+    // Block polling interval (ms)
+    pollingInterval: 4000,
+
+    // Use polling for event subscriptions
+    polling: false,
+
+    // Skip network detection
+    staticNetwork: true,
+
+    // Batch request configuration
+    batchStallTime: 10,
+    batchMaxSize: 1 << 20,
+    batchMaxCount: 100,
+  }
+);
+```
+
+## API Reference
+
+### Network Methods
+
+```typescript
+// Get current network
+const network = await provider.getNetwork();
+// { name: "mainnet", chainId: 1n }
+
+// Get current block number
+const blockNumber = await provider.getBlockNumber();
+// 18500000
+
+// Get fee data (gas prices)
+const feeData = await provider.getFeeData();
+// { gasPrice: 30n * 10n**9n, maxFeePerGas: 60n * 10n**9n, maxPriorityFeePerGas: 1n * 10n**9n }
+```
+
+### Account Methods
+
+```typescript
+// Get ETH balance
+const balance = await provider.getBalance(address);
+const balanceAtBlock = await provider.getBalance(address, 18500000);
+
+// Get transaction count (nonce)
+const nonce = await provider.getTransactionCount(address);
+const nonceAtBlock = await provider.getTransactionCount(address, "pending");
+
+// Get contract bytecode
+const code = await provider.getCode(contractAddress);
+
+// Get storage at slot
+const slot0 = await provider.getStorage(contractAddress, 0n);
+```
+
+### Transaction Methods
+
+```typescript
+// Execute read-only call
+const result = await provider.call({
+  to: contractAddress,
+  data: "0x70a08231000000000000000000000000...", // balanceOf(address)
+});
+
+// Estimate gas
+const gasLimit = await provider.estimateGas({
+  to: recipient,
+  value: 1000000000000000000n, // 1 ETH
+});
+
+// Broadcast signed transaction
+const txResponse = await provider.broadcastTransaction(signedTx);
+
+// Get transaction by hash
+const tx = await provider.getTransaction(txHash);
+
+// Get transaction receipt
+const receipt = await provider.getTransactionReceipt(txHash);
+
+// Wait for confirmation
+const confirmedReceipt = await provider.waitForTransaction(txHash, 3);
+```
+
+### Block Methods
+
+```typescript
+// Get block by number
+const block = await provider.getBlock("latest");
+const block1000000 = await provider.getBlock(1000000);
+
+// Get block by hash
+const blockByHash = await provider.getBlock(
+  "0x1234567890abcdef..."
+);
+
+// Prefetch transactions
+const blockWithTxs = await provider.getBlock("latest", true);
+```
+
+### Log Methods
+
+```typescript
+// Get logs with filter
+const logs = await provider.getLogs({
+  address: contractAddress,
+  topics: [
+    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer
+  ],
+  fromBlock: 18500000,
+  toBlock: "latest",
+});
+```
+
+### Event Subscriptions
+
+```typescript
+// Subscribe to new blocks
+await provider.on("block", (blockNumber) => {
+  console.log(`New block: ${blockNumber}`);
+});
+
+// Subscribe once
+await provider.once("block", (blockNumber) => {
+  console.log(`First new block: ${blockNumber}`);
+});
+
+// Unsubscribe
+await provider.off("block", listener);
+
+// Remove all listeners
+await provider.removeAllListeners("block");
+
+// Get listener count
+const count = await provider.listenerCount("block");
+
+// Get all listeners
+const listeners = await provider.listeners("block");
+```
+
+### Raw RPC
+
+```typescript
+// Send raw JSON-RPC request
+const chainId = await provider.send("eth_chainId", []);
+const gasPrice = await provider.send("eth_gasPrice", []);
+```
+
+### Lifecycle
+
+```typescript
+// Pause event emission
+provider.pause(true); // drop events while paused
+
+// Resume
+provider.resume();
+
+// Check states
+console.log(provider.paused);    // false
+console.log(provider.destroyed); // false
+
+// Clean up
+provider.destroy();
+```
+
+## Request Batching
+
+The provider automatically batches requests using Voltaire's `BatchQueue`:
+
+```typescript
+// These three calls are batched into a single HTTP request
+const [balance1, balance2, balance3] = await Promise.all([
+  provider.getBalance(address1),
+  provider.getBalance(address2),
+  provider.getBalance(address3),
+]);
+```
+
+Configuration:
+- `batchStallTime`: Wait time before sending batch (default: 10ms)
+- `batchMaxCount`: Maximum requests per batch (default: 100)
+- `batchMaxSize`: Maximum batch size in bytes (default: 1MB)
+
+## Request Caching
+
+Identical requests within the cache window share the same promise:
+
+```typescript
+// Only one RPC call is made
+const [block1, block2] = await Promise.all([
+  provider.getBlock("latest"),
+  provider.getBlock("latest"),
+]);
+```
+
+Configuration:
+- `cacheTimeout`: Cache duration in ms (default: 250ms, -1 to disable)
+
+## Retry Logic
+
+Failed requests are automatically retried with exponential backoff:
+
+- Max retries: 3
+- Initial delay: 100ms
+- Exponential backoff with jitter
+
+## Error Handling
+
+The provider maps JSON-RPC errors to ethers-compatible error codes:
+
+```typescript
+try {
+  await provider.estimateGas({
+    to: address,
+    value: 1000000000000000000000n, // Too much
+  });
+} catch (error) {
+  if (error.code === "INSUFFICIENT_FUNDS") {
+    console.log("Not enough ETH");
+  }
+}
+```
+
+Error codes:
+- `CALL_EXCEPTION` - Contract call reverted
+- `INSUFFICIENT_FUNDS` - Not enough ETH
+- `NONCE_EXPIRED` - Nonce already used
+- `REPLACEMENT_UNDERPRICED` - Gas too low for replacement
+- `NETWORK_ERROR` - Network issue
+- `TIMEOUT` - Request timeout
+- `UNSUPPORTED_OPERATION` - Method not supported
+- `ACTION_REJECTED` - User rejected
+
+## Network Support
+
+Built-in network detection for:
+- Ethereum Mainnet (chainId: 1)
+- Sepolia (chainId: 11155111)
+- Goerli (chainId: 5)
+- Arbitrum (chainId: 42161)
+- Optimism (chainId: 10)
+- Polygon (chainId: 137)
+- Base (chainId: 8453)
+
+```typescript
+// Static network (skip detection)
+const provider = new EthersProvider(
+  "https://eth.llamarpc.com",
+  "mainnet",
+  { staticNetwork: true }
+);
+```
+
+## Voltaire Primitives Used
+
+The implementation leverages these Voltaire utilities:
+
+- `BatchQueue` - Request batching
+- `retryWithBackoff` - Retry logic
+- `poll` - Transaction confirmation polling
+- `Address` - Address validation (optional)
+
+## Migration from ethers v6
+
+The API is designed to be drop-in compatible:
+
+```typescript
+// Before (ethers v6)
+import { JsonRpcProvider } from "ethers";
+const provider = new JsonRpcProvider("https://eth.llamarpc.com");
+
+// After (Voltaire)
+import { EthersProvider } from "./examples/ethers-provider/EthersProvider.js";
+const provider = new EthersProvider("https://eth.llamarpc.com");
+
+// Same API
+const balance = await provider.getBalance(address);
+const block = await provider.getBlock("latest");
+```
+
+## Differences from ethers v6
+
+Current limitations:
+
+1. **ENS resolution** - `resolveName()` and `lookupAddress()` not implemented
+2. **CCIP Read** - EIP-3668 off-chain data not supported
+3. **Transaction replacement detection** - Not implemented
+4. **Plugin system** - Network plugins not supported
+
+These can be added as needed.
+
+## Source Files
+
+- `examples/ethers-provider/EthersProvider.js` - Implementation
+- `examples/ethers-provider/EthersProviderTypes.ts` - TypeScript types
+- `examples/ethers-provider/EthersProvider.test.ts` - Tests
+- `examples/ethers-provider/REQUIREMENTS.md` - Full API requirements

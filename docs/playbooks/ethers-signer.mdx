@@ -1,0 +1,433 @@
+---
+title: "Ethers v6 Style Signer"
+description: "An ethers v6-compatible Signer implementation using Voltaire primitives"
+---
+
+# Ethers v6 Style Signer
+
+This playbook documents an ethers v6-compatible `Signer` implementation built on Voltaire primitives. It provides the same API surface as ethers v6 `Wallet` while using Voltaire's cryptographic primitives.
+
+## Overview
+
+The `EthersSigner` class implements the full ethers v6 signer API:
+
+- Private key management
+- Transaction signing (Legacy, EIP-1559)
+- Message signing (EIP-191 personal sign)
+- Typed data signing (EIP-712)
+- EIP-7702 authorization signing
+- Provider connection for network operations
+
+## Installation
+
+The signer is located in `examples/ethers-signer/`:
+
+```typescript
+import { EthersSigner } from "./examples/ethers-signer/EthersSigner.js";
+```
+
+## Quick Start
+
+```typescript
+import { EthersSigner } from "./examples/ethers-signer/EthersSigner.js";
+
+// Create signer from private key
+const signer = EthersSigner.fromPrivateKey({
+  privateKey: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+});
+
+// Get address
+console.log(`Address: ${signer.address}`);
+// 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+
+// Sign a message
+const signature = await signer.signMessage("Hello, Ethereum!");
+console.log(`Signature: ${signature}`);
+
+// Connect to provider and send transaction
+const connected = signer.connect(provider);
+const tx = await connected.sendTransaction({
+  to: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  value: 1000000000000000000n // 1 ETH
+});
+console.log(`TX Hash: ${tx.hash}`);
+```
+
+## Creating a Signer
+
+<Tabs>
+  <Tab title="From Hex String">
+```typescript
+// With 0x prefix
+const signer = EthersSigner.fromPrivateKey({
+  privateKey: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+});
+
+// Without prefix
+const signer2 = EthersSigner.fromPrivateKey({
+  privateKey: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+});
+```
+  </Tab>
+  <Tab title="From Uint8Array">
+```typescript
+const privateKeyBytes = new Uint8Array(32);
+// ... populate bytes ...
+
+const signer = EthersSigner.fromPrivateKey({
+  privateKey: privateKeyBytes
+});
+```
+  </Tab>
+  <Tab title="With Provider">
+```typescript
+const signer = EthersSigner.fromPrivateKey({
+  privateKey: "0x...",
+  provider: myProvider
+});
+
+// Or connect later
+const connected = signer.connect(myProvider);
+```
+  </Tab>
+</Tabs>
+
+## API Reference
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `address` | `string` | Checksummed Ethereum address |
+| `privateKey` | `string` | Private key as hex string with 0x prefix |
+| `provider` | `SignerProvider \| null` | Connected provider or null |
+
+### Methods
+
+#### Offline Methods (No Provider Required)
+
+```typescript
+// Get address (async for interface compatibility)
+const address = await signer.getAddress();
+
+// Sign message (EIP-191)
+const sig = await signer.signMessage("Hello, Ethereum!");
+const sigSync = signer.signMessageSync("Hello, Ethereum!");
+
+// Sign typed data (EIP-712)
+const sig712 = await signer.signTypedData(domain, types, value);
+
+// Sign EIP-7702 authorization
+const auth = signer.authorizeSync({
+  address: "0x...",
+  chainId: 1n,
+  nonce: 0n
+});
+```
+
+#### Provider Methods (Provider Required)
+
+```typescript
+// Get nonce
+const nonce = await signer.getNonce();
+const noncePending = await signer.getNonce("pending");
+
+// Estimate gas
+const gas = await signer.estimateGas({
+  to: "0x...",
+  value: 1000000000000000000n
+});
+
+// Execute eth_call
+const result = await signer.call({
+  to: contractAddress,
+  data: "0x70a08231..."
+});
+
+// Resolve ENS name
+const address = await signer.resolveName("vitalik.eth");
+
+// Sign transaction
+const signedTx = await signer.signTransaction({
+  to: "0x...",
+  value: 1000000000000000000n
+});
+
+// Sign and send transaction
+const txResponse = await signer.sendTransaction({
+  to: "0x...",
+  value: 1000000000000000000n
+});
+```
+
+## Signing Messages
+
+### EIP-191 Personal Sign
+
+```typescript
+const signer = EthersSigner.fromPrivateKey({ privateKey: "0x..." });
+
+// Sign string message
+const sig1 = await signer.signMessage("Hello, Ethereum!");
+
+// Sign bytes
+const messageBytes = new TextEncoder().encode("Hello, Ethereum!");
+const sig2 = await signer.signMessage(messageBytes);
+
+// Synchronous version
+const sig3 = signer.signMessageSync("Hello, Ethereum!");
+```
+
+The signature format is `0x` + r (64 hex) + s (64 hex) + v (2 hex) = 132 characters.
+
+### EIP-712 Typed Data
+
+```typescript
+const domain = {
+  name: "My App",
+  version: "1",
+  chainId: 1n,
+  verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
+};
+
+const types = {
+  Person: [
+    { name: "name", type: "string" },
+    { name: "wallet", type: "address" }
+  ],
+  Mail: [
+    { name: "from", type: "Person" },
+    { name: "to", type: "Person" },
+    { name: "contents", type: "string" }
+  ]
+};
+
+const value = {
+  from: { name: "Alice", wallet: "0x..." },
+  to: { name: "Bob", wallet: "0x..." },
+  contents: "Hello!"
+};
+
+const signature = await signer.signTypedData(domain, types, value);
+```
+
+## Signing Transactions
+
+### EIP-1559 Transaction
+
+```typescript
+const signer = EthersSigner.fromPrivateKey({
+  privateKey: "0x...",
+  provider: provider
+});
+
+// Auto-populated EIP-1559 transaction
+const signedTx = await signer.signTransaction({
+  to: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  value: 1000000000000000000n
+});
+// Returns: 0x02... (EIP-1559 serialized)
+
+// Manual gas settings
+const signedTx2 = await signer.signTransaction({
+  to: "0x...",
+  value: 1000000000000000000n,
+  maxFeePerGas: 30000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  gasLimit: 21000n,
+  nonce: 5n
+});
+```
+
+### Legacy Transaction
+
+```typescript
+// Explicit legacy type
+const signedTx = await signer.signTransaction({
+  type: 0,
+  to: "0x...",
+  value: 1000000000000000000n,
+  gasPrice: 20000000000n
+});
+// Returns: 0xf8... (RLP encoded legacy)
+```
+
+### Send Transaction
+
+```typescript
+// Sign and broadcast in one call
+const txResponse = await signer.sendTransaction({
+  to: "0x...",
+  value: 1000000000000000000n
+});
+
+console.log(`Hash: ${txResponse.hash}`);
+
+// Wait for confirmation
+const receipt = await txResponse.wait(1);
+console.log(`Confirmed in block ${receipt.blockNumber}`);
+```
+
+## EIP-7702 Authorization
+
+Sign authorization tuples for account abstraction:
+
+```typescript
+// Synchronous signing (offline)
+const auth = signer.authorizeSync({
+  address: "0x...",   // Implementation address
+  chainId: 1n,
+  nonce: 0n
+});
+// { address, chainId, nonce, signature: { r, s, v } }
+
+// Async version (populates chainId/nonce from provider)
+const auth2 = await signer.authorize({
+  address: "0x..."
+});
+```
+
+## Transaction Population
+
+The signer automatically populates missing transaction fields:
+
+```typescript
+const tx = {
+  to: "0x...",
+  value: 1000000000000000000n
+  // Missing: nonce, gasLimit, maxFeePerGas, maxPriorityFeePerGas, chainId
+};
+
+// populateTransaction fills in:
+const populated = await signer.populateTransaction(tx);
+// {
+//   to: "0x...",
+//   from: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+//   value: 1000000000000000000n,
+//   nonce: 5n,
+//   gasLimit: 21000n,
+//   maxFeePerGas: 30000000000n,
+//   maxPriorityFeePerGas: 1000000000n,
+//   chainId: 1n,
+//   type: 2,
+//   data: Uint8Array(0)
+// }
+```
+
+### Auto-detection Logic
+
+1. **Nonce**: From `provider.getTransactionCount(address, "pending")`
+2. **Gas Limit**: From `provider.estimateGas(tx)`
+3. **Chain ID**: From `provider.getNetwork()`
+4. **Type**: Auto-detect based on fee data:
+   - EIP-1559 network: `type: 2` with `maxFeePerGas`, `maxPriorityFeePerGas`
+   - Legacy network: `type: 0` with `gasPrice`
+
+## Error Handling
+
+```typescript
+import {
+  MissingProviderError,
+  InvalidPrivateKeyError,
+  InvalidTransactionError,
+  AddressMismatchError,
+  ChainIdMismatchError
+} from "./examples/ethers-signer/errors.js";
+
+try {
+  await signer.getNonce();
+} catch (error) {
+  if (error instanceof MissingProviderError) {
+    console.log("Connect to a provider first");
+  }
+}
+
+try {
+  await signer.signTransaction({
+    to: "0x...",
+    chainId: 5n // Wrong chain
+  });
+} catch (error) {
+  if (error instanceof ChainIdMismatchError) {
+    console.log("Chain ID doesn't match provider network");
+  }
+}
+```
+
+### Error Types
+
+| Error | Cause |
+|-------|-------|
+| `MissingProviderError` | Operation requires provider, none connected |
+| `InvalidPrivateKeyError` | Private key invalid (wrong length, zero) |
+| `InvalidTransactionError` | Transaction fields invalid |
+| `AddressMismatchError` | `tx.from` doesn't match signer address |
+| `ChainIdMismatchError` | `tx.chainId` doesn't match network |
+
+## Provider Interface
+
+The signer requires a provider implementing:
+
+```typescript
+interface SignerProvider {
+  getTransactionCount(address: string, blockTag?: BlockTag): Promise<number>;
+  estimateGas(tx: TransactionRequest): Promise<bigint>;
+  call(tx: TransactionRequest): Promise<string>;
+  getNetwork(): Promise<{ chainId: bigint }>;
+  getFeeData(): Promise<FeeData>;
+  broadcastTransaction(signedTx: string): Promise<TransactionResponse>;
+  resolveName?(name: string): Promise<string | null>;
+}
+```
+
+Compatible with:
+- `EthersProvider` (from ethers-provider playbook)
+- ethers v6 `JsonRpcProvider`
+- Any compliant provider
+
+## Voltaire Primitives Used
+
+- `Address` - Address validation and checksumming
+- `PrivateKey` - Private key management
+- `SignedData.Hash` - EIP-191 message hashing
+- `EIP712.signTypedData` - EIP-712 typed data signing
+- `Secp256k1.sign` - ECDSA signing
+- `Keccak256.hash` - Keccak256 hashing
+- `Transaction.EIP1559` - Transaction serialization
+
+## Migration from ethers v6
+
+The API is designed to be drop-in compatible:
+
+```typescript
+// Before (ethers v6)
+import { Wallet } from "ethers";
+const wallet = new Wallet(privateKey, provider);
+
+// After (Voltaire)
+import { EthersSigner } from "./examples/ethers-signer/EthersSigner.js";
+const wallet = EthersSigner.fromPrivateKey({ privateKey, provider });
+
+// Same API
+const sig = await wallet.signMessage("Hello");
+const tx = await wallet.sendTransaction({ to: "0x...", value: 1n });
+```
+
+## Differences from ethers v6
+
+Current limitations:
+
+1. **HDNode derivation** - No mnemonic/HD wallet support
+2. **Keystore JSON** - No encrypt/decrypt JSON keystore
+3. **Crowdsale JSON** - No crowdsale wallet support
+4. **ENS in TypedData** - ENS names in typed data not auto-resolved
+
+These can be added as needed.
+
+## Source Files
+
+- `examples/ethers-signer/EthersSigner.js` - Implementation
+- `examples/ethers-signer/EthersSignerTypes.ts` - TypeScript types
+- `examples/ethers-signer/errors.ts` - Error classes
+- `examples/ethers-signer/EthersSigner.test.ts` - Tests
+- `examples/ethers-signer/REQUIREMENTS.md` - Full API requirements

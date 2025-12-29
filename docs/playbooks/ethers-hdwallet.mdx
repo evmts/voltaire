@@ -1,0 +1,271 @@
+---
+title: "Ethers HD Wallet Compatibility"
+description: "BIP-32/BIP-39 HD wallet with ethers v6 compatible API"
+---
+
+# Ethers HD Wallet
+
+Drop-in ethers v6 compatible HD wallet implementation using Voltaire primitives.
+
+## Quick Start
+
+```typescript
+import { HDNodeWallet, Mnemonic } from 'voltaire/examples/ethers-hdwallet';
+
+// Create from phrase (most common)
+const wallet = HDNodeWallet.fromPhrase(
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+);
+
+console.log(wallet.address);    // 0x9858EfFD232B4033E47d90003D41EC34EcaEda94
+console.log(wallet.privateKey); // 0x1ab42cc412b618bdea3a599e3c9bae199ebf030895b039e9db1e30dafb12b727
+```
+
+## Generate New Wallet
+
+```typescript
+import { HDNodeWallet } from 'voltaire/examples/ethers-hdwallet';
+
+// Create random wallet with 12-word mnemonic
+const wallet = HDNodeWallet.createRandom();
+console.log(wallet.mnemonic.phrase); // "word1 word2 word3 ..."
+console.log(wallet.address);
+
+// With passphrase for extra security
+const secureWallet = HDNodeWallet.createRandom("my secret passphrase");
+```
+
+## Derivation Paths
+
+### BIP-44 Standard Paths
+
+```typescript
+import { HDNodeWallet, getAccountPath, getIndexedAccountPath } from 'voltaire/examples/ethers-hdwallet';
+
+const wallet = HDNodeWallet.fromPhrase(mnemonic);
+
+// Ledger style: m/44'/60'/account'/0/0
+const ledgerPath = getAccountPath(0);  // "m/44'/60'/0'/0/0"
+const ledgerPath1 = getAccountPath(1); // "m/44'/60'/1'/0/0"
+
+// MetaMask style: m/44'/60'/0'/0/index
+const mmPath = getIndexedAccountPath(0);  // "m/44'/60'/0'/0/0"
+const mmPath1 = getIndexedAccountPath(1); // "m/44'/60'/0'/0/1"
+```
+
+### Derive Multiple Accounts
+
+```typescript
+import { HDNodeWallet } from 'voltaire/examples/ethers-hdwallet';
+
+const mnemonic = "abandon abandon abandon ...";
+
+// Method 1: Derive from phrase with custom path
+for (let i = 0; i < 10; i++) {
+  const wallet = HDNodeWallet.fromPhrase(mnemonic, "", `m/44'/60'/0'/0/${i}`);
+  console.log(`Account ${i}: ${wallet.address}`);
+}
+
+// Method 2: Derive children from parent
+const parent = HDNodeWallet.fromPhrase(mnemonic, "", "m/44'/60'/0'/0");
+for (let i = 0; i < 10; i++) {
+  const child = parent.deriveChild(i);
+  console.log(`Account ${i}: ${child.address}`);
+}
+```
+
+## Mnemonic Operations
+
+### Create and Validate
+
+```typescript
+import { Mnemonic } from 'voltaire/examples/ethers-hdwallet';
+
+// From phrase
+const mnemonic = Mnemonic.fromPhrase("abandon abandon ...");
+
+// From entropy (16 bytes = 12 words, 32 bytes = 24 words)
+const entropy = crypto.getRandomValues(new Uint8Array(32));
+const mnemonic24 = Mnemonic.fromEntropy(entropy);
+console.log(mnemonic24.phrase.split(" ").length); // 24
+
+// Validate
+Mnemonic.isValidMnemonic("abandon abandon ..."); // true
+Mnemonic.isValidMnemonic("invalid phrase");      // false
+
+// Convert between entropy and phrase
+const entropyHex = Mnemonic.phraseToEntropy("abandon ...");
+const phrase = Mnemonic.entropyToPhrase(entropyHex);
+```
+
+### With Passphrase
+
+```typescript
+import { Mnemonic, HDNodeWallet } from 'voltaire/examples/ethers-hdwallet';
+
+// Same mnemonic, different passphrase = different wallet
+const mnemonic1 = Mnemonic.fromPhrase("abandon ...", "");
+const mnemonic2 = Mnemonic.fromPhrase("abandon ...", "secret");
+
+const wallet1 = HDNodeWallet.fromMnemonic(mnemonic1);
+const wallet2 = HDNodeWallet.fromMnemonic(mnemonic2);
+
+console.log(wallet1.address !== wallet2.address); // true
+```
+
+## Extended Keys (xprv/xpub)
+
+### Export and Import
+
+```typescript
+import { HDNodeWallet } from 'voltaire/examples/ethers-hdwallet';
+
+const wallet = HDNodeWallet.fromPhrase(mnemonic);
+
+// Export extended private key
+const xprv = wallet.extendedKey; // "xprv9..."
+
+// Export extended public key (neutered)
+const xpub = wallet.neuter().extendedKey; // "xpub9..."
+
+// Import from extended key
+const restored = HDNodeWallet.fromExtendedKey(xprv);
+const publicOnly = HDNodeWallet.fromExtendedKey(xpub);
+```
+
+### Watch-Only Wallets
+
+```typescript
+import { HDNodeWallet } from 'voltaire/examples/ethers-hdwallet';
+
+// Create neutered (public-only) wallet
+const fullWallet = HDNodeWallet.fromPhrase(mnemonic);
+const watchOnly = fullWallet.neuter();
+
+// Can derive non-hardened children
+const child = watchOnly.deriveChild(0);
+console.log(child.address); // Works!
+
+// Cannot derive hardened children
+watchOnly.deriveChild(0x80000000); // Throws!
+watchOnly.derivePath("0'");        // Throws!
+```
+
+## Signing
+
+### Messages (EIP-191)
+
+```typescript
+import { HDNodeWallet } from 'voltaire/examples/ethers-hdwallet';
+
+const wallet = HDNodeWallet.fromPhrase(mnemonic);
+
+const signature = await wallet.signMessage("Hello, Ethereum!");
+// 0x... (65 bytes: r + s + v)
+```
+
+### Transactions
+
+```typescript
+import { HDNodeWallet } from 'voltaire/examples/ethers-hdwallet';
+
+const wallet = HDNodeWallet.fromPhrase(mnemonic);
+
+const signedTx = await wallet.signTransaction({
+  type: 2,
+  chainId: 1n,
+  nonce: 0n,
+  maxFeePerGas: 20000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  gas: 21000n,
+  to: "0x...",
+  value: 1000000000000000000n,
+  data: "0x"
+});
+```
+
+### Typed Data (EIP-712)
+
+```typescript
+import { HDNodeWallet } from 'voltaire/examples/ethers-hdwallet';
+
+const wallet = HDNodeWallet.fromPhrase(mnemonic);
+
+const signature = await wallet.signTypedData({
+  types: {
+    EIP712Domain: [
+      { name: "name", type: "string" },
+      { name: "version", type: "string" }
+    ],
+    Message: [{ name: "content", type: "string" }]
+  },
+  primaryType: "Message",
+  domain: { name: "MyApp", version: "1" },
+  message: { content: "Hello" }
+});
+```
+
+## Security Considerations
+
+<Warning>
+Never log or expose mnemonic phrases. They provide full access to all derived wallets.
+</Warning>
+
+### Best Practices
+
+1. **Never log mnemonics** - Use `[REDACTED]` in error messages
+2. **Use passphrases** - Adds extra protection if phrase is compromised
+3. **Derive fresh addresses** - Don't reuse addresses across transactions
+4. **Clear memory** - Overwrite sensitive data when done (not always possible in JS)
+5. **Validate inputs** - Always validate mnemonics before use
+
+```typescript
+// Good: Validate before use
+if (!Mnemonic.isValidMnemonic(userInput)) {
+  throw new Error("Invalid mnemonic");
+}
+
+// Good: Use passphrase
+const wallet = HDNodeWallet.fromPhrase(mnemonic, "user-provided-passphrase");
+
+// Good: Derive unique addresses
+const paymentAddress = wallet.derivePath(`m/44'/60'/0'/0/${invoiceId}`);
+```
+
+## API Reference
+
+### HDNodeWallet
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `address` | `string` | Checksummed Ethereum address |
+| `privateKey` | `HexString` | 32-byte private key |
+| `publicKey` | `HexString` | 33-byte compressed public key |
+| `mnemonic` | `Mnemonic \| null` | Source mnemonic if available |
+| `path` | `string \| null` | Full derivation path |
+| `depth` | `number` | Derivation depth |
+| `index` | `number` | Child index |
+| `chainCode` | `HexString` | 32-byte chain code |
+| `fingerprint` | `HexString` | 4-byte fingerprint |
+| `extendedKey` | `string` | Base58 xprv/xpub |
+
+### Static Methods
+
+| Method | Description |
+|--------|-------------|
+| `fromPhrase(phrase, password?, path?)` | Create from mnemonic phrase |
+| `fromMnemonic(mnemonic, path?)` | Create from Mnemonic instance |
+| `fromSeed(seed)` | Create from raw seed bytes |
+| `fromExtendedKey(xprv/xpub)` | Create from extended key |
+| `createRandom(password?, path?)` | Generate new random wallet |
+
+### Instance Methods
+
+| Method | Description |
+|--------|-------------|
+| `derivePath(path)` | Derive child by path |
+| `deriveChild(index)` | Derive child by index |
+| `neuter()` | Create public-only wallet |
+| `signMessage(message)` | Sign with EIP-191 prefix |
+| `signTransaction(tx)` | Sign transaction |
+| `signTypedData(data)` | Sign EIP-712 typed data |
