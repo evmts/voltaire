@@ -7,8 +7,18 @@
  */
 
 import { Abi } from "../primitives/Abi/Abi.js";
-import * as Address from "../primitives/Address/index.js";
-import { ContractNotImplementedError } from "./errors.js";
+import * as Event from "../primitives/Abi/event/index.js";
+import * as Hex from "../primitives/Hex/index.js";
+import * as TransactionHash from "../primitives/TransactionHash/index.js";
+import * as BlockNumber from "../primitives/BlockNumber/index.js";
+import * as Hash from "../primitives/Hash/index.js";
+import { Address } from "../primitives/Address/index.js";
+import {
+	ContractFunctionNotFoundError,
+	ContractEventNotFoundError,
+	ContractReadError,
+	ContractWriteError,
+} from "./errors.js";
 
 /**
  * @typedef {import('./ContractType.js').ContractInstance} ContractInstance
@@ -64,6 +74,7 @@ export function Contract(options) {
 	const { abi: abiItems, provider } = options;
 	const address = Address.from(options.address);
 	const abi = Abi(abiItems);
+	const addressHex = Hex.fromBytes(address);
 
 	// Build read methods proxy
 	const read = new Proxy(
@@ -74,7 +85,34 @@ export function Contract(options) {
 				const functionName = prop;
 
 				return async (...args) => {
-					throw new ContractNotImplementedError(`read.${functionName}`);
+					const fn = abi.getFunction(functionName);
+
+					if (
+						!fn ||
+						(fn.stateMutability !== "view" && fn.stateMutability !== "pure")
+					) {
+						throw new ContractFunctionNotFoundError(functionName);
+					}
+
+					try {
+						const data = abi.encode(functionName, args);
+						const dataHex = Hex.fromBytes(data);
+
+						const result = await provider.request({
+							method: "eth_call",
+							params: [{ to: addressHex, data: dataHex }, "latest"],
+						});
+
+						const decoded = abi.decode(functionName, Hex.toBytes(result));
+
+						// Unwrap single output
+						return decoded.length === 1 ? decoded[0] : decoded;
+					} catch (error) {
+						if (error instanceof ContractFunctionNotFoundError) {
+							throw error;
+						}
+						throw new ContractReadError(functionName, error);
+					}
 				};
 			},
 		},
@@ -89,7 +127,32 @@ export function Contract(options) {
 				const functionName = prop;
 
 				return async (...args) => {
-					throw new ContractNotImplementedError(`write.${functionName}`);
+					const fn = abi.getFunction(functionName);
+
+					if (
+						!fn ||
+						(fn.stateMutability !== "nonpayable" &&
+							fn.stateMutability !== "payable")
+					) {
+						throw new ContractFunctionNotFoundError(functionName);
+					}
+
+					try {
+						const data = abi.encode(functionName, args);
+						const dataHex = Hex.fromBytes(data);
+
+						const txHash = await provider.request({
+							method: "eth_sendTransaction",
+							params: [{ to: addressHex, data: dataHex }],
+						});
+
+						return TransactionHash.fromHex(txHash);
+					} catch (error) {
+						if (error instanceof ContractFunctionNotFoundError) {
+							throw error;
+						}
+						throw new ContractWriteError(functionName, error);
+					}
 				};
 			},
 		},
@@ -104,7 +167,25 @@ export function Contract(options) {
 				const functionName = prop;
 
 				return async (...args) => {
-					throw new ContractNotImplementedError(`estimateGas.${functionName}`);
+					const fn = abi.getFunction(functionName);
+
+					if (
+						!fn ||
+						(fn.stateMutability !== "nonpayable" &&
+							fn.stateMutability !== "payable")
+					) {
+						throw new ContractFunctionNotFoundError(functionName);
+					}
+
+					const data = abi.encode(functionName, args);
+					const dataHex = Hex.fromBytes(data);
+
+					const gasHex = await provider.request({
+						method: "eth_estimateGas",
+						params: [{ to: addressHex, data: dataHex }],
+					});
+
+					return BigInt(gasHex);
 				};
 			},
 		},
@@ -119,7 +200,61 @@ export function Contract(options) {
 				const eventName = prop;
 
 				return async function* (filter, eventOptions) {
-					throw new ContractNotImplementedError(`events.${eventName}`);
+					const event = abi.getEvent(eventName);
+
+					if (!event) {
+						throw new ContractEventNotFoundError(eventName);
+					}
+
+					const topics = Event.encodeTopics(event, filter || {});
+
+					// Convert topics to hex strings, replacing null with null
+					const topicsHex = topics.map((t) =>
+						t === null ? null : Hex.fromBytes(t),
+					);
+
+					const fromBlock =
+						eventOptions?.fromBlock !== undefined
+							? `0x${eventOptions.fromBlock.toString(16)}`
+							: "latest";
+					const toBlock =
+						eventOptions?.toBlock !== undefined
+							? `0x${eventOptions.toBlock.toString(16)}`
+							: "latest";
+
+					const logs = await provider.request({
+						method: "eth_getLogs",
+						params: [
+							{
+								address: addressHex,
+								topics: topicsHex,
+								fromBlock,
+								toBlock,
+							},
+						],
+					});
+
+					for (const log of logs) {
+						const dataBytes = Hex.toBytes(log.data);
+						const topicBytes = log.topics.map((/** @type {string} */ t) =>
+							Hex.toBytes(t),
+						);
+
+						const args = Event.decodeLog(
+							event,
+							dataBytes,
+							/** @type {*} */ (topicBytes),
+						);
+
+						yield {
+							eventName: event.name,
+							args,
+							blockNumber: BlockNumber.from(BigInt(log.blockNumber)),
+							blockHash: Hash.fromHex(log.blockHash),
+							transactionHash: TransactionHash.fromHex(log.transactionHash),
+							logIndex: parseInt(log.logIndex, 16),
+						};
+					}
 				};
 			},
 		},
