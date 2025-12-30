@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { EIP712 } from "./crypto/EIP712/index.js";
 import * as HDWallet from "./crypto/HDWallet/HDWallet.js";
 import * as Kzg from "./crypto/KZG/index.js";
+import { hasNativeKzg } from "./crypto/KZG/test-utils.js";
 import { Keccak256 } from "./crypto/Keccak256/index.js";
 import { Ripemd160 } from "./crypto/Ripemd160/index.js";
 import { SHA256 } from "./crypto/SHA256/index.js";
@@ -486,7 +487,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 		});
 	});
 
-	describe("KZG & EIP-4844 Blobs", () => {
+	describe.skipIf(!hasNativeKzg)("KZG & EIP-4844 Blobs", () => {
 		it("should verify KZG proof with point evaluation precompile", () => {
 			if (!Kzg.isInitialized()) {
 				Kzg.loadTrustedSetup();
@@ -708,7 +709,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			expect(result.output.length).toBe(64);
 		});
 
-		it("should verify KZG point evaluation available from Cancun", () => {
+		it.skipIf(!hasNativeKzg)("should verify KZG point evaluation available from Cancun", () => {
 			if (!Kzg.isInitialized()) {
 				Kzg.loadTrustedSetup();
 			}

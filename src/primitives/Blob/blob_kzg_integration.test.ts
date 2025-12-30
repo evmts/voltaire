@@ -6,6 +6,7 @@ import {
 	FIELD_ELEMENTS_PER_BLOB,
 } from "../../crypto/KZG/constants.js";
 import { KZG } from "../../crypto/KZG/index.js";
+import { hasNativeKzg } from "../../crypto/KZG/test-utils.js";
 import { SHA256 } from "../../crypto/SHA256/index.js";
 import {
 	COMMITMENT_VERSION_KZG,
@@ -15,7 +16,7 @@ import {
 } from "./constants.js";
 import { Blob } from "./index.js";
 
-describe("Blob + KZG Integration - EIP-4844 Compliance", () => {
+describe.skipIf(!hasNativeKzg)("Blob + KZG Integration - EIP-4844 Compliance", () => {
 	beforeAll(() => {
 		KZG.loadTrustedSetup();
 	});

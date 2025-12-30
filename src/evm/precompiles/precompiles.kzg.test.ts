@@ -6,10 +6,11 @@ import {
 	FIELD_ELEMENTS_PER_BLOB,
 } from "../../crypto/KZG/constants.js";
 import * as Kzg from "../../crypto/KZG/index.js";
+import { hasNativeKzg } from "../../crypto/KZG/test-utils.js";
 import { Keccak256 } from "../../crypto/Keccak256/index.js";
 import { pointEvaluation } from "./precompiles.js";
 
-describe("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
+describe.skipIf(!hasNativeKzg)("Precompile - Point Evaluation (0x0a) - KZG EIP-4844", () => {
 	beforeAll(() => {
 		Kzg.loadTrustedSetup();
 	});

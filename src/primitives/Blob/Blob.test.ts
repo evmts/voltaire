@@ -385,11 +385,10 @@ describe("Blob.calculateGas() - Static Method", () => {
 // ============================================================================
 
 describe("Blob.toCommitment() - Static Method", () => {
-	it("throws KZG error when trusted setup not loaded", () => {
+	it("throws KZG error when trusted setup not loaded or native unavailable", () => {
 		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
-		expect(() => Blob.toCommitment(blob)).toThrow(
-			"KZG trusted setup not initialized",
-		);
+		// Either "KZG trusted setup not initialized" (WASM) or "requires native bindings" (no native)
+		expect(() => Blob.toCommitment(blob)).toThrow(/KZG/i);
 	});
 
 	it("validates blob size", () => {

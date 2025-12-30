@@ -3,6 +3,7 @@ import * as Bip39 from "../crypto/Bip39/Bip39.js";
 import { EIP712 } from "../crypto/EIP712/index.js";
 import * as HDWallet from "../crypto/HDWallet/HDWallet.js";
 import * as Kzg from "../crypto/KZG/index.js";
+import { hasNativeKzg } from "../crypto/KZG/test-utils.js";
 import { Keccak256 } from "../crypto/Keccak256/index.js";
 import { Ripemd160 } from "../crypto/Ripemd160/index.js";
 import { SHA256 } from "../crypto/SHA256/index.js";
@@ -269,7 +270,7 @@ describe("Integration: Cross-Module Workflows", () => {
 	 * Scenario 3: Blob Flow
 	 * Create blob → generate commitment → compute proof → verify proof
 	 */
-	describe("Scenario 3: Blob Flow (Create → Commitment → Proof → Verify)", () => {
+	describe.skipIf(!hasNativeKzg)("Scenario 3: Blob Flow (Create → Commitment → Proof → Verify)", () => {
 		beforeAll(() => {
 			if (!Kzg.isInitialized()) {
 				Kzg.loadTrustedSetup();
