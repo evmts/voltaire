@@ -311,7 +311,9 @@ const results: Record<
 > = {};
 
 // Monkey-patch mitata's summary function to capture results
+// biome-ignore lint/suspicious/noExplicitAny: mitata injects summary on globalThis
 const originalSummary = (globalThis as any).summary;
+// biome-ignore lint/suspicious/noExplicitAny: mitata injects summary on globalThis
 (globalThis as any).summary = (result: any) => {
 	results[result.name] = {
 		opsPerSec: result.hz || 0,
