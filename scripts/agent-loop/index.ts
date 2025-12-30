@@ -76,6 +76,7 @@ export interface SessionState {
 // Core Agent Loop
 // ============================================================================
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: agent loop logic
 export async function runAgentLoop(
 	config: TaskConfig,
 	options: { maxCycles?: number; maxBudget?: number } = {},

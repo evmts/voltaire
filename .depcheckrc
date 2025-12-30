@@ -1,0 +1,25 @@
+ignores: [
+  "@arethetypeswrong/cli",
+  "@anthropic-ai/claude-agent-sdk",
+  "@codesandbox/sandpack-react",
+  "@ethereumjs/rlp",
+  "@ethersproject/rlp",
+  "@playwright/test",
+  "@shazow/whatsabi",
+  "@size-limit/file",
+  "@size-limit/preset-small-lib",
+  "@size-limit/webpack",
+  "@vitest/coverage-v8",
+  "astro-live-code",
+  "astro-mcp",
+  "bindings",
+  "glob",
+  "modern-monaco",
+  "publint",
+  "react-dom",
+  "tsup",
+  "typescript",
+  "vite",
+  "vitest"
+]
+skip-missing: true

@@ -89,6 +89,7 @@ function buildTestUrl(sourcePath: string): string | null {
 	return null;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: file processing logic
 function updateMdxFile(filePath: string): LinkUpdate[] {
 	let content = readFileSync(filePath, "utf-8");
 	const updates: LinkUpdate[] = [];
@@ -162,6 +163,7 @@ function updateMdxFile(filePath: string): LinkUpdate[] {
 	return updates;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: main script logic
 function main() {
 	const mdxFiles = findMdxFiles(DOCS_DIR);
 

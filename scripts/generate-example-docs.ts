@@ -199,8 +199,11 @@ This is a fully executable example. View the complete source with test assertion
 /**
  * Generate mint.json navigation structure
  */
-function generateNavigation(examples: ExampleMetadata[]): any {
-	const categories = new Map<string, any[]>();
+function generateNavigation(examples: ExampleMetadata[]): {
+	group: string;
+	pages: unknown[];
+} {
+	const categories = new Map<string, { title: string; path: string }[]>();
 
 	for (const example of examples) {
 		if (!categories.has(example.category)) {
@@ -214,9 +217,9 @@ function generateNavigation(examples: ExampleMetadata[]): any {
 		});
 	}
 
-	const navigation = {
+	const navigation: { group: string; pages: unknown[] } = {
 		group: "Examples",
-		pages: [] as any[],
+		pages: [],
 	};
 
 	// Sort categories in preferred order

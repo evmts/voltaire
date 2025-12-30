@@ -125,6 +125,7 @@ function getRelativePath(filePath: string): string {
 /**
  * Main execution
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: main script logic
 async function main() {
 	const files = await findTsFiles(EXAMPLES_DIR);
 
