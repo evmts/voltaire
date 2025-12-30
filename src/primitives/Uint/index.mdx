@@ -161,7 +161,7 @@ class Uint {
 }
 ```
 
-Source: [UintConstructor.ts:68-114](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/UintConstructor.ts#L68-L114)
+Source: [UintConstructor.ts:68-114](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/UintConstructor.ts#L68-L114)
 </Tab>
 <Tab title="type BrandedUint256">
 ```typescript
@@ -172,7 +172,7 @@ export type BrandedUint256 = bigint & {
 
 [Branded type](/getting-started/branded-types) wrapping `bigint`, runtime validated to `0 <= value <= 2^256-1`. Used as underlying type for Uint class and tree-shakeable functions.
 
-Source: [BrandedUint256.ts:1-4](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/BrandedUint256.ts#L1-L4)
+Source: [BrandedUint256.ts:1-4](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint256.ts#L1-L4)
 </Tab>
 </Tabs>
 
@@ -207,7 +207,7 @@ const buffer = new Uint8Array(Uint.SIZE)  // 32-byte buffer
 - `Uint.ONE = 1` - One constant
 - `Uint.SIZE = 32` - Size in bytes
 
-Source: [constants.ts](https://github.com/evmts/tevm/blob/main/src/primitives/Uint/constants.ts)
+Source: [constants.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/constants.ts)
 
 ## Wrapping Arithmetic
 

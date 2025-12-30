@@ -186,7 +186,7 @@ ${transformedSnippet}
 \`\`\`
 
 <Tip>
-This is a fully executable example. View the complete source with test assertions at [\`${relativeSourcePath}\`](https://github.com/roninjin10/voltaire/blob/main/${relativeSourcePath}).
+This is a fully executable example. View the complete source with test assertions at [\`${relativeSourcePath}\`](https://github.com/evmts/voltaire/blob/main/${relativeSourcePath}).
 </Tip>
 
 ## Related

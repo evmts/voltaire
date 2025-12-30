@@ -5,7 +5,7 @@ description: Derive address from secp256k1 public key
 
 
 <Tip>
-View the complete executable example at [`playground/src/examples/primitives/address/from-public-key.ts`](https://github.com/roninjin10/voltaire/blob/main/playground/src/examples/primitives/address/from-public-key.ts).
+View the complete executable example at [`playground/src/examples/primitives/address/from-public-key.ts`](https://github.com/evmts/voltaire/blob/main/playground/src/examples/primitives/address/from-public-key.ts).
 </Tip>
 
 <Tabs>
@@ -114,7 +114,7 @@ memcpy(addr.bytes, hash.bytes + 12, 20);
 
 **Note:** C API does not provide a dedicated `fromPublicKey` function. Derive manually using `primitives_keccak256` and extract last 20 bytes.
 
-**Defined in:** [primitives.h:139](https://github.com/evmts/tevm/blob/main/src/primitives.h#L139)
+**Defined in:** [primitives.h:139](https://github.com/evmts/voltaire/blob/main/src/primitives.h#L139)
 
 </Tab>
 

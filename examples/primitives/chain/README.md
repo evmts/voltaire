@@ -31,7 +31,7 @@ for f in examples/primitives/chain/*.ts; do bun run "$f"; done
 
 ### Why No Zig Version?
 
-Chain is a lightweight wrapper around [@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains), a JavaScript package containing 800+ chain configurations. This data:
+Chain is a lightweight wrapper around [@tevm/chains](https://github.com/evmts/voltaire-monorepo/tree/main/packages/chains), a JavaScript package containing 800+ chain configurations. This data:
 
 - Comes from external sources (chainlist.org)
 - Is maintained as JSON/JavaScript objects
@@ -184,7 +184,7 @@ async function callWithFallback<T>(
 
 ## Data Source
 
-Chain data comes from [@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains), which aggregates chain configurations from:
+Chain data comes from [@tevm/chains](https://github.com/evmts/voltaire-monorepo/tree/main/packages/chains), which aggregates chain configurations from:
 - [chainlist.org](https://chainlist.org) - Community-maintained chain registry
 - [ethereum-lists/chains](https://github.com/ethereum-lists/chains) - GitHub chain database
 
