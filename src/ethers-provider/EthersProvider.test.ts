@@ -25,7 +25,8 @@ function setupMockResponse(result: unknown) {
 			ok: true,
 			json: async () =>
 				Array.isArray(body)
-					? body.map((req: any) => ({ jsonrpc: "2.0", id: req.id, result }))
+					? // biome-ignore lint/suspicious/noExplicitAny: mock request typing
+						body.map((req: any) => ({ jsonrpc: "2.0", id: req.id, result }))
 					: { jsonrpc: "2.0", id: body.id, result },
 		};
 	});
@@ -41,7 +42,8 @@ function setupMockError(code: number, message: string) {
 			ok: true,
 			json: async () =>
 				Array.isArray(body)
-					? body.map((req: any) => ({
+					? // biome-ignore lint/suspicious/noExplicitAny: mock request typing
+						body.map((req: any) => ({
 							jsonrpc: "2.0",
 							id: req.id,
 							error: { code, message },
