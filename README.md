@@ -30,26 +30,26 @@
 **Modern Ethereum library built for TypeScript, Zig, Swift, and AI-assisted development.**
 
 ```typescript
-import { Address, Wei, Gwei, Ether, Rlp, Abi, Keccak256, Hex } from '@tevm/voltaire';
+import { Address, Wei, Gwei, Ether, Rlp, Abi, Keccak256, Hex } from '@tevm/voltaire'
 
 // Type-safe addresses - casing bugs eliminated
-const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
-addr.toChecksummed(); // "0x742d35Cc..."
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+Address.toChecksummed(addr) // "0x742d35Cc..."
 
 // Denomination safety - can't accidentally mix Wei and Ether
-const value = Wei(1000000000000000000n);
-value.toEther();  // 1n
-value.toGwei();   // 1000000000n
+const value = Wei(1000000000000000000n)
+Wei.toEther(value)  // 1n
+Wei.toGwei(value)   // 1000000000n
 
 // Keccak256 hashing
-const selector = Keccak256.selector('transfer(address,uint256)');
+const selector = Keccak256.selector('transfer(address,uint256)')
 // Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
 
 // RLP encoding
-const encoded = Rlp.encode([addr, Hex.fromNumber(42n)]);
+const encoded = Rlp.encode([addr, Hex.fromNumber(42n)])
 
 // ABI encoding
-const calldata = Abi.Function.encodeParams(transferAbi, [recipient, amount]);
+const calldata = Abi.Function.encodeParams(transferAbi, [recipient, amount])
 ```
 
 ### Branded Types = Type Safety
@@ -94,7 +94,7 @@ Data-first design. Import only what you need:
 
 ```typescript
 // Import specific functions - excludes unused code from bundle
-import { fromHex, toChecksummed } from '@tevm/voltaire/Address';
+import { fromHex, toChecksummed } from '@tevm/voltaire/Address'
 ```
 
 ---
@@ -104,6 +104,24 @@ import { fromHex, toChecksummed } from '@tevm/voltaire/Address';
 ```bash
 npm install @tevm/voltaire
 ```
+
+### Three Entrypoints
+
+Voltaire provides three entrypoints with **identical APIs**:
+
+```typescript
+import { Address, Keccak256 } from '@tevm/voltaire'        // JS (default)
+import { Address, Keccak256 } from '@tevm/voltaire/wasm'   // WASM
+import { Address, Keccak256 } from '@tevm/voltaire/native' // Native FFI (Bun)
+```
+
+| Entrypoint | Use Case |
+|------------|----------|
+| `@tevm/voltaire` | Universal compatibility - works everywhere |
+| `@tevm/voltaire/wasm` | Browser/edge crypto performance |
+| `@tevm/voltaire/native` | Maximum performance (Bun only) |
+
+All entrypoints implement the same `VoltaireAPI` interface - switch by changing the import path.
 
 **[Documentation](https://voltaire.tevm.sh/)** | **[Playground](https://voltaire.tevm.sh/playground)** | **[API Reference](https://voltaire.tevm.sh/getting-started)**
 
