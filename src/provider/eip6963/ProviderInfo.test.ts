@@ -32,6 +32,7 @@ describe("ProviderInfo", () => {
 
 	it("has correct brand", () => {
 		const info = ProviderInfo(validInput);
+		// biome-ignore lint/suspicious/noExplicitAny: testing brand access
 		expect((info as any)[brand]).toBe("ProviderInfo");
 	});
 
@@ -45,6 +46,7 @@ describe("ProviderInfo", () => {
 
 	describe("uuid validation", () => {
 		it("throws MissingFieldError when uuid is missing", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			const input = { ...validInput, uuid: undefined as any };
 			expect(() => ProviderInfo(input)).toThrow(MissingFieldError);
 		});
