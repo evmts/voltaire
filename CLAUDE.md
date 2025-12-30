@@ -98,30 +98,30 @@ zig build generate-header     # Generate C header from c_api.zig
 
 ```bash
 # Build
-bun run build                 # Full (Zig + dist + types)
-bun run build:zig             # zig build
-bun run build:wasm            # Both WASM modes
-bun run build:dist            # TS bundling (tsup)
+pnpm build                    # Full (Zig + dist + types)
+pnpm build:zig                # zig build
+pnpm build:wasm               # Both WASM modes
+pnpm build:dist               # TS bundling (tsup)
 
 # Test
-bun run test                  # Vitest watch
-bun run test:run              # Vitest single run
-bun run test:coverage         # Coverage report
-bun run test:native           # Native FFI tests
-bun run test:wasm             # WASM tests
+pnpm test                     # Vitest watch
+pnpm test:run                 # Vitest single run
+pnpm test:coverage            # Coverage report
+pnpm test:native              # Native FFI tests
+pnpm test:wasm                # WASM tests
 
 # Docs
-bun run docs:dev              # Mintlify dev (localhost:3000)
-bun run mint:dev              # Alternative (cd docs && mint dev)
-bun run mint:install          # Install/update Mintlify CLI
+pnpm docs:dev                 # Mintlify dev (localhost:3000)
+pnpm mint:dev                 # Alternative (cd docs && mint dev)
+pnpm mint:install             # Install/update Mintlify CLI
 
 # Quality
-bun run format                # biome format
-bun run lint                  # biome lint
+pnpm format                   # biome format
+pnpm lint                     # biome lint
 
 # Analysis
-bun run bench                 # Benchmarks + BENCHMARKING.md
-bun run size                  # Bundle size analysis
+pnpm bench                    # Benchmarks + BENCHMARKING.md
+pnpm size                     # Bundle size analysis
 ```
 
 ## TypeScript
@@ -220,13 +220,13 @@ zig build test                    # All Zig tests
 zig build -Dtest-filter=address   # Filter
 
 # TypeScript
-bun run test:run                  # All TS tests
-bun run test -- address           # Filter
-bun run test:coverage             # Coverage
+pnpm test:run                     # All TS tests
+pnpm test -- address              # Filter
+pnpm test:coverage                # Coverage
 
 # Benchmarks
 zig build bench                   # zbench
-bun run bench                     # mitata + generate BENCHMARKING.md
+pnpm bench                        # mitata + generate BENCHMARKING.md
 ```
 
 ### Pattern
@@ -250,9 +250,9 @@ Self-contained, fix failures immediately, evidence-based debug. **No output = pa
 ### Commands
 
 ```bash
-bun run docs:dev      # Dev server (localhost:3000)
-bun run mint:dev      # Alternative (cd docs && mint dev)
-bun run mint:install  # Install/update Mintlify CLI
+pnpm docs:dev         # Dev server (localhost:3000)
+pnpm mint:dev         # Alternative (cd docs && mint dev)
+pnpm mint:install     # Install/update Mintlify CLI
 ```
 
 ### Auto-generated
@@ -273,7 +273,7 @@ bun run mint:install  # Install/update Mintlify CLI
 zig build build-ts-wasm       # ReleaseSmall
 zig build build-ts-wasm-fast  # ReleaseFast
 zig build crypto-wasm         # Individual modules (tree-shaking)
-bun run test:wasm             # WASM-specific tests
+pnpm test:wasm                # WASM-specific tests
 ```
 
 ### Output
@@ -324,7 +324,7 @@ bun run test:wasm             # WASM-specific tests
 ### Install
 
 ```bash
-bun install                        # Node deps
+pnpm install                       # Node deps
 zig build                          # Zig deps + build C/Rust libs
 git submodule update --init        # Git submodules
 ```
@@ -339,7 +339,7 @@ git submodule update --init        # Git submodules
 - `generate_c_header.zig` - Auto-generate C API header
 - `compare-wasm-modes.ts` - ReleaseSmall vs ReleaseFast
 
-Run: `bun run scripts/<name>.ts`
+Run: `pnpm dlx tsx scripts/<name>.ts`
 
 ## Crypto Security
 

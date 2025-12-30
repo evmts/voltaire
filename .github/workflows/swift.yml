@@ -41,7 +41,7 @@ jobs:
           CARGO_TARGET_DIR: target
 
       - name: Build Zig native artifacts
-        run: zig build -Doptimize=ReleaseFast
+        run: zig build build-ts-native
 
       - name: Run Swift tests
         run: |

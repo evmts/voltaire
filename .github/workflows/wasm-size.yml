@@ -17,7 +17,16 @@ jobs:
           version: 0.15.1
       - name: Build WASM TypeScript bindings
         run: zig build build-ts-wasm
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Measure WASM bundle sizes
-        run: bun run scripts/wasm-size.ts
+        run: pnpm dlx tsx scripts/wasm-size.ts

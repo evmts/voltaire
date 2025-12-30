@@ -114,35 +114,40 @@ jobs:
         run: zig build build-ts-wasm
       - name: Build fast WASM variant
         run: zig build build-ts-wasm-fast
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 10
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
       - name: Install TypeScript dependencies
-        run: bun install
+        run: pnpm install --frozen-lockfile
       - name: Run typecheck
-        run: bun run typecheck
+        run: pnpm run typecheck
       - name: Run lint check
-        run: bun run lint:check
+        run: pnpm run lint:check
       - name: Run format check
-        run: bun run format:check
+        run: pnpm run format:check
       - name: Run dependency check
-        run: bun run lint:deps
+        run: pnpm run lint:deps
       - name: Run package validation
-        run: bun run lint:package
+        run: pnpm run lint:package
       - name: Build distribution
-        run: bun run build:dist
+        run: pnpm run build:dist
       - name: Build types
-        run: bun run build:types
+        run: pnpm run build:types
       - name: Generate documentation
-        run: bun run generate:docs
+        run: pnpm run generate:docs
       - name: Run TypeScript tests with coverage
-        run: bun run test:coverage
+        run: pnpm run test:coverage
       # Native FFI tests disabled until libwally-core C API is fixed
       # - name: Run native FFI tests
-      #   run: bun run test:native
+      #   run: pnpm run test:native
       - name: Run WASM tests
-        run: bun run test:wasm
+        run: pnpm run test:wasm
 
   benchmarks:
     runs-on: ubuntu-latest
