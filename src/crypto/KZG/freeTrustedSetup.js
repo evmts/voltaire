@@ -1,12 +1,10 @@
-import { setInitialized } from "./loadTrustedSetup.js";
+import { freeTrustedSetup as wasmFreeTrustedSetup } from "./loadTrustedSetup.js";
 
 /**
  * Free trusted setup resources
  *
- * Note: c-kzg v4+ does not provide a freeTrustedSetup function.
- * The trusted setup persists for the lifetime of the process.
- * This function is provided for API compatibility and only resets
- * the initialized flag.
+ * Releases resources associated with the KZG trusted setup.
+ * Call this when KZG operations are no longer needed.
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
@@ -15,12 +13,9 @@ import { setInitialized } from "./loadTrustedSetup.js";
  * @example
  * ```javascript
  * import { freeTrustedSetup } from './crypto/KZG/index.js';
- * // Reset initialization state
  * freeTrustedSetup();
  * ```
  */
 export function freeTrustedSetup() {
-	// c-kzg v4+ doesn't have freeTrustedSetup function
-	// Just reset tracking flag for testing purposes
-	setInitialized(false);
+	wasmFreeTrustedSetup();
 }

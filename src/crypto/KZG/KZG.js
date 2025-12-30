@@ -2,13 +2,8 @@
 /**
  * KZG Commitments for EIP-4844
  *
- * **IMPORTANT: KZG is only available via native FFI, not WASM or pure JavaScript.**
- *
- * The KZG implementation uses the c-kzg-4844 C library compiled via Zig.
- * It requires native bindings and cannot run in browser environments.
- *
- * For browser/WASM environments, use a different KZG implementation or
- * perform KZG operations server-side.
+ * The KZG implementation uses the c-kzg-4844 C library compiled to WASM.
+ * Available in both native and WASM environments.
  *
  * @module
  * @see https://eips.ethereum.org/EIPS/eip-4844
@@ -25,126 +20,265 @@ export { VerifyKzgProof } from "./verifyKzgProof.js";
 export { VerifyBlobKzgProof } from "./verifyBlobKzgProof.js";
 export { VerifyBlobKzgProofBatch } from "./verifyBlobKzgProofBatch.js";
 
+// Import WASM wrappers
+import {
+	kzgBlobToCommitment,
+	kzgComputeProof,
+	kzgComputeBlobProof,
+	kzgVerifyProof,
+	kzgVerifyBlobProof,
+	kzgIsInitialized,
+	kzgLoadTrustedSetup,
+	kzgFreeTrustedSetup,
+} from "../../wasm-loader/loader.ts";
+
 // Export utility functions
 import { createEmptyBlob } from "./createEmptyBlob.js";
-import { freeTrustedSetup } from "./freeTrustedSetup.js";
 import { generateRandomBlob } from "./generateRandomBlob.js";
-import { isInitialized } from "./isInitialized.js";
-import { loadTrustedSetup } from "./loadTrustedSetup.js";
 import { validateBlob } from "./validateBlob.js";
 
-export {
-	loadTrustedSetup,
-	freeTrustedSetup,
-	isInitialized,
-	validateBlob,
-	createEmptyBlob,
-	generateRandomBlob,
-};
+import { KzgError, KzgNotInitializedError } from "./errors.js";
 
 /**
- * Error thrown when KZG operations are attempted without native bindings.
+ * Check if KZG is initialized
+ * @returns {boolean}
  */
-class KZGNotAvailableError extends Error {
-	constructor(operation) {
-		super(
-			`KZG.${operation}() requires native bindings. KZG is not available in WASM or pure JavaScript environments. Use native FFI or perform KZG operations server-side.`,
+export function isInitialized() {
+	return kzgIsInitialized();
+}
+
+/**
+ * Load KZG trusted setup
+ */
+export function loadTrustedSetup() {
+	kzgLoadTrustedSetup();
+}
+
+/**
+ * Free KZG trusted setup
+ */
+export function freeTrustedSetup() {
+	kzgFreeTrustedSetup();
+}
+
+export { validateBlob, createEmptyBlob, generateRandomBlob };
+
+/**
+ * Convert blob to KZG commitment
+ * @param {Uint8Array} blob - 131072-byte blob
+ * @returns {Uint8Array} 48-byte commitment
+ * @throws {KzgNotInitializedError} If trusted setup not loaded
+ * @throws {KzgError} If computation fails
+ */
+export function blobToKzgCommitment(blob) {
+	if (!kzgIsInitialized()) {
+		throw new KzgNotInitializedError();
+	}
+	validateBlob(blob);
+	try {
+		return kzgBlobToCommitment(blob);
+	} catch (error) {
+		throw new KzgError(
+			`Failed to compute commitment: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				code: "KZG_COMMITMENT_FAILED",
+				context: { blobLength: blob.length },
+				docsPath: "/crypto/kzg/blob-to-kzg-commitment#error-handling",
+				cause: error instanceof Error ? error : undefined,
+			},
 		);
-		this.name = "KZGNotAvailableError";
 	}
 }
 
 /**
- * Placeholder that throws - native implementation required
- * @param {Uint8Array} _blob
- * @returns {Uint8Array}
- * @throws {KZGNotAvailableError}
+ * Compute KZG proof for a blob at a given point
+ * @param {Uint8Array} blob - 131072-byte blob
+ * @param {Uint8Array} z - 32-byte field element (evaluation point)
+ * @returns {{ proof: Uint8Array, y: Uint8Array }} Proof and evaluation result
+ * @throws {KzgNotInitializedError} If trusted setup not loaded
+ * @throws {KzgError} If computation fails
  */
-export function blobToKzgCommitment(_blob) {
-	throw new KZGNotAvailableError("blobToKzgCommitment");
+export function computeKzgProof(blob, z) {
+	if (!kzgIsInitialized()) {
+		throw new KzgNotInitializedError();
+	}
+	validateBlob(blob);
+	try {
+		return kzgComputeProof(blob, z);
+	} catch (error) {
+		throw new KzgError(
+			`Failed to compute proof: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				code: "KZG_PROOF_FAILED",
+				context: { blobLength: blob.length },
+				docsPath: "/crypto/kzg/compute-kzg-proof#error-handling",
+				cause: error instanceof Error ? error : undefined,
+			},
+		);
+	}
 }
 
 /**
- * Placeholder that throws - native implementation required
- * @param {Uint8Array} _blob
- * @param {Uint8Array} _z
- * @returns {{ proof: Uint8Array, y: Uint8Array }}
- * @throws {KZGNotAvailableError}
+ * Compute KZG blob proof given commitment
+ * @param {Uint8Array} blob - 131072-byte blob
+ * @param {Uint8Array} commitment - 48-byte commitment
+ * @returns {Uint8Array} 48-byte proof
+ * @throws {KzgNotInitializedError} If trusted setup not loaded
+ * @throws {KzgError} If computation fails
  */
-export function computeKzgProof(_blob, _z) {
-	throw new KZGNotAvailableError("computeKzgProof");
+export function computeBlobKzgProof(blob, commitment) {
+	if (!kzgIsInitialized()) {
+		throw new KzgNotInitializedError();
+	}
+	validateBlob(blob);
+	try {
+		return kzgComputeBlobProof(blob, commitment);
+	} catch (error) {
+		throw new KzgError(
+			`Failed to compute blob proof: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				code: "KZG_BLOB_PROOF_FAILED",
+				context: { blobLength: blob.length },
+				docsPath: "/crypto/kzg/compute-blob-kzg-proof#error-handling",
+				cause: error instanceof Error ? error : undefined,
+			},
+		);
+	}
 }
 
 /**
- * Placeholder that throws - native implementation required
- * @param {Uint8Array} _blob
- * @param {Uint8Array} _commitment
- * @returns {Uint8Array}
- * @throws {KZGNotAvailableError}
+ * Verify a KZG proof
+ * @param {Uint8Array} commitment - 48-byte commitment
+ * @param {Uint8Array} z - 32-byte field element (evaluation point)
+ * @param {Uint8Array} y - 32-byte field element (claimed evaluation)
+ * @param {Uint8Array} proof - 48-byte proof
+ * @returns {boolean} True if proof is valid
+ * @throws {KzgNotInitializedError} If trusted setup not loaded
+ * @throws {KzgError} If verification fails
  */
-export function computeBlobKzgProof(_blob, _commitment) {
-	throw new KZGNotAvailableError("computeBlobKzgProof");
+export function verifyKzgProof(commitment, z, y, proof) {
+	if (!kzgIsInitialized()) {
+		throw new KzgNotInitializedError();
+	}
+	if (commitment.length !== 48) {
+		throw new KzgError(`Invalid commitment length: expected 48, got ${commitment.length}`, {
+			code: "KZG_INVALID_COMMITMENT",
+			context: { length: commitment.length },
+			docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+		});
+	}
+	if (proof.length !== 48) {
+		throw new KzgError(`Invalid proof length: expected 48, got ${proof.length}`, {
+			code: "KZG_INVALID_PROOF",
+			context: { length: proof.length },
+			docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+		});
+	}
+	try {
+		return kzgVerifyProof(commitment, z, y, proof);
+	} catch (error) {
+		throw new KzgError(
+			`Failed to verify proof: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				code: "KZG_VERIFY_FAILED",
+				context: {},
+				docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+				cause: error instanceof Error ? error : undefined,
+			},
+		);
+	}
 }
 
 /**
- * Placeholder that throws - native implementation required
- * @param {Uint8Array} _commitment
- * @param {Uint8Array} _z
- * @param {Uint8Array} _y
- * @param {Uint8Array} _proof
- * @returns {boolean}
- * @throws {KZGNotAvailableError}
+ * Verify a KZG blob proof
+ * @param {Uint8Array} blob - 131072-byte blob
+ * @param {Uint8Array} commitment - 48-byte commitment
+ * @param {Uint8Array} proof - 48-byte proof
+ * @returns {boolean} True if proof is valid
+ * @throws {KzgNotInitializedError} If trusted setup not loaded
+ * @throws {KzgError} If verification fails
  */
-export function verifyKzgProof(_commitment, _z, _y, _proof) {
-	throw new KZGNotAvailableError("verifyKzgProof");
+export function verifyBlobKzgProof(blob, commitment, proof) {
+	if (!kzgIsInitialized()) {
+		throw new KzgNotInitializedError();
+	}
+	validateBlob(blob);
+	try {
+		return kzgVerifyBlobProof(blob, commitment, proof);
+	} catch (error) {
+		throw new KzgError(
+			`Failed to verify blob proof: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				code: "KZG_VERIFY_BLOB_FAILED",
+				context: { blobLength: blob.length },
+				docsPath: "/crypto/kzg/verify-blob-kzg-proof#error-handling",
+				cause: error instanceof Error ? error : undefined,
+			},
+		);
+	}
 }
 
 /**
- * Placeholder that throws - native implementation required
- * @param {Uint8Array} _blob
- * @param {Uint8Array} _commitment
- * @param {Uint8Array} _proof
- * @returns {boolean}
- * @throws {KZGNotAvailableError}
+ * Verify multiple KZG blob proofs in batch
+ * @param {Uint8Array[]} blobs - Array of 131072-byte blobs
+ * @param {Uint8Array[]} commitments - Array of 48-byte commitments
+ * @param {Uint8Array[]} proofs - Array of 48-byte proofs
+ * @returns {boolean} True if all proofs are valid
+ * @throws {KzgNotInitializedError} If trusted setup not loaded
+ * @throws {KzgError} If verification fails
  */
-export function verifyBlobKzgProof(_blob, _commitment, _proof) {
-	throw new KZGNotAvailableError("verifyBlobKzgProof");
-}
-
-/**
- * Placeholder that throws - native implementation required
- * @param {Uint8Array[]} _blobs
- * @param {Uint8Array[]} _commitments
- * @param {Uint8Array[]} _proofs
- * @returns {boolean}
- * @throws {KZGNotAvailableError}
- */
-export function verifyBlobKzgProofBatch(_blobs, _commitments, _proofs) {
-	throw new KZGNotAvailableError("verifyBlobKzgProofBatch");
+export function verifyBlobKzgProofBatch(blobs, commitments, proofs) {
+	if (!kzgIsInitialized()) {
+		throw new KzgNotInitializedError();
+	}
+	if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
+		throw new KzgError("Arrays must have the same length", {
+			code: "KZG_BATCH_LENGTH_MISMATCH",
+			context: {
+				blobsLength: blobs.length,
+				commitmentsLength: commitments.length,
+				proofsLength: proofs.length,
+			},
+			docsPath: "/crypto/kzg/verify-blob-kzg-proof-batch#error-handling",
+		});
+	}
+	// Empty batch is valid
+	if (blobs.length === 0) {
+		return true;
+	}
+	try {
+		for (let i = 0; i < blobs.length; i++) {
+			validateBlob(blobs[i]);
+			if (!kzgVerifyBlobProof(blobs[i], commitments[i], proofs[i])) {
+				return false;
+			}
+		}
+		return true;
+	} catch (error) {
+		throw new KzgError(
+			`Failed to verify blob proofs batch: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				code: "KZG_VERIFY_BATCH_FAILED",
+				context: { batchSize: blobs.length },
+				docsPath: "/crypto/kzg/verify-blob-kzg-proof-batch#error-handling",
+				cause: error instanceof Error ? error : undefined,
+			},
+		);
+	}
 }
 
 /**
  * KZG Commitments for EIP-4844
  *
- * **Native-only**: KZG operations require native FFI bindings.
- * Not available in WASM or pure JavaScript environments.
+ * Available in both native FFI and WASM environments.
  *
  * @see https://voltaire.tevm.sh/crypto/kzg
  * @since 0.0.0
  * @throws {Error} Always throws - use static methods instead
- * @example
- * ```javascript
- * import { KZG } from './crypto/KZG/index.js';
- *
- * // Note: Requires native bindings - will throw in browser/WASM
- * KZG.loadTrustedSetup();
- * const commitment = KZG.blobToKzgCommitment(blob);
- * ```
  */
 export function KZG() {
 	throw new Error(
-		"KZG is not a constructor. Use KZG.loadTrustedSetup() and other static methods. " +
-			"Note: KZG requires native bindings and is not available in WASM/browser.",
+		"KZG is not a constructor. Use KZG.loadTrustedSetup() and other static methods.",
 	);
 }
 
@@ -156,7 +290,7 @@ KZG.validateBlob = validateBlob;
 KZG.createEmptyBlob = createEmptyBlob;
 KZG.generateRandomBlob = generateRandomBlob;
 
-// KZG operations - throw until native bindings loaded
+// KZG operations
 KZG.blobToKzgCommitment = blobToKzgCommitment;
 KZG.computeKzgProof = computeKzgProof;
 KZG.computeBlobKzgProof = computeBlobKzgProof;

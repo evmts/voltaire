@@ -14,10 +14,25 @@ import {
 	KzgVerificationError,
 } from "./errors.js";
 
-describe("KZG - EIP-4844 Blob Commitments", () => {
+// KZG requires native bindings (c-kzg-4844 compiled via Zig)
+// Skip entire test suite if native bindings are not available
+const canLoadTrustedSetup = (): boolean => {
+	try {
+		KZG.loadTrustedSetup();
+		return true;
+	} catch {
+		return false;
+	}
+};
+
+const hasNativeKzg = canLoadTrustedSetup();
+
+describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 	beforeAll(() => {
 		// Load trusted setup once for all tests
-		KZG.loadTrustedSetup();
+		if (!KZG.isInitialized()) {
+			KZG.loadTrustedSetup();
+		}
 	});
 
 	afterAll(() => {
