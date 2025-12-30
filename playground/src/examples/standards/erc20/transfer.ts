@@ -28,22 +28,24 @@ console.log("Amount (32 bytes):", "0x" + calldata.slice(74));
 // Example: Larger transfer amounts
 console.log("\n=== Various Transfer Amounts ===");
 const amounts = [
-  { desc: "0.001 tokens", value: 1000000000000000n },
-  { desc: "1 token", value: 1000000000000000000n },
-  { desc: "100 tokens", value: 100000000000000000000n },
-  { desc: "1,000,000 tokens", value: 1000000000000000000000000n },
+	{ desc: "0.001 tokens", value: 1000000000000000n },
+	{ desc: "1 token", value: 1000000000000000000n },
+	{ desc: "100 tokens", value: 100000000000000000000n },
+	{ desc: "1,000,000 tokens", value: 1000000000000000000000000n },
 ];
 
 for (const { desc, value } of amounts) {
-  const amt = Uint256(value);
-  const data = ERC20.encodeTransfer(recipient, amt);
-  console.log(`${desc}: ${data.slice(74)}`);
+	const amt = Uint256(value);
+	const data = ERC20.encodeTransfer(recipient, amt);
+	console.log(`${desc}: ${data.slice(74)}`);
 }
 
 // Decoding a transfer return value (boolean)
 console.log("\n=== Decoding Return Value ===");
-const successReturn = "0x0000000000000000000000000000000000000000000000000000000000000001";
-const failReturn = "0x0000000000000000000000000000000000000000000000000000000000000000";
+const successReturn =
+	"0x0000000000000000000000000000000000000000000000000000000000000001";
+const failReturn =
+	"0x0000000000000000000000000000000000000000000000000000000000000000";
 
 console.log("Success return:", ERC20.decodeBool(successReturn));
 console.log("Failure return:", ERC20.decodeBool(failReturn));

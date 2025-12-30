@@ -39,12 +39,12 @@ console.log("4. DEX router sends output tokens to user");
 // Decoding Transfer event (emitted by transferFrom)
 console.log("\n=== Decoding Transfer Event ===");
 const mockTransferLog = {
-  topics: [
-    ERC20.EVENTS.Transfer,
-    "0x000000000000000000000000abc0000000000000000000000000000000000001", // from
-    "0x000000000000000000000000def0000000000000000000000000000000000002", // to
-  ],
-  data: "0x00000000000000000000000000000000000000000000001b1ae4d6e2ef500000", // 500 tokens
+	topics: [
+		ERC20.EVENTS.Transfer,
+		"0x000000000000000000000000abc0000000000000000000000000000000000001", // from
+		"0x000000000000000000000000def0000000000000000000000000000000000002", // to
+	],
+	data: "0x00000000000000000000000000000000000000000000001b1ae4d6e2ef500000", // 500 tokens
 };
 
 const decoded = ERC20.decodeTransferEvent(mockTransferLog);

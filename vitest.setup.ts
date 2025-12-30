@@ -9,10 +9,7 @@ import { vi } from "vitest";
 import { loadWasm } from "./src/wasm-loader/loader.js";
 
 // Load WASM module before all tests
-const wasmPath = resolve(
-	import.meta.dirname,
-	"src/wasm-loader/primitives.wasm",
-);
+const wasmPath = resolve(import.meta.dirname, "wasm/primitives.wasm");
 const wasmBuffer = readFileSync(wasmPath);
 await loadWasm(wasmBuffer.buffer);
 

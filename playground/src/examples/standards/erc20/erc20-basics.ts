@@ -13,7 +13,10 @@ console.log("=== ERC-20 Function Selectors ===");
 console.log("totalSupply():", ERC20.SELECTORS.totalSupply);
 console.log("balanceOf(address):", ERC20.SELECTORS.balanceOf);
 console.log("transfer(address,uint256):", ERC20.SELECTORS.transfer);
-console.log("transferFrom(address,address,uint256):", ERC20.SELECTORS.transferFrom);
+console.log(
+	"transferFrom(address,address,uint256):",
+	ERC20.SELECTORS.transferFrom,
+);
 console.log("approve(address,uint256):", ERC20.SELECTORS.approve);
 console.log("allowance(address,address):", ERC20.SELECTORS.allowance);
 console.log("name():", ERC20.SELECTORS.name);
@@ -36,7 +39,9 @@ console.log("Approval(address,address,uint256):", ERC20.EVENTS.Approval);
 console.log("\n=== Available Encoding Functions ===");
 console.log("encodeTransfer(to, amount) - Encode transfer calldata");
 console.log("encodeApprove(spender, amount) - Encode approve calldata");
-console.log("encodeTransferFrom(from, to, amount) - Encode transferFrom calldata");
+console.log(
+	"encodeTransferFrom(from, to, amount) - Encode transferFrom calldata",
+);
 console.log("encodeBalanceOf(account) - Encode balanceOf calldata");
 console.log("encodeAllowance(owner, spender) - Encode allowance calldata");
 

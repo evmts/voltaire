@@ -26,7 +26,8 @@ console.log("Address (32 bytes):", "0x" + calldata.slice(10));
 
 // Simulating decoding a return value
 // In practice, this would come from an eth_call response
-const mockReturnData = "0x0000000000000000000000000000000000000000000000056bc75e2d63100000";
+const mockReturnData =
+	"0x0000000000000000000000000000000000000000000000056bc75e2d63100000";
 const balance = ERC20.decodeUint256(mockReturnData);
 
 console.log("\n=== Decoding Return Value ===");
