@@ -386,9 +386,9 @@ pub fn unauditedRecoverAddress(
     return address;
 }
 
-/// Verify signature with public key (used internally for validation)
+/// Verify signature with public key
 /// SECURITY: Uses constant-time comparison for final r value check
-fn verifySignature(
+pub fn verifySignature(
     hash: [32]u8,
     r: u256,
     s: u256,
