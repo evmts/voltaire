@@ -18,8 +18,8 @@ const hash2 = Hash.fromBytes(
 // Random hash (useful for testing)
 const randomHash = Hash.random();
 
-// Zero hash
-const zeroHash = Hash.zero();
+// Zero hash (constant, not function)
+const zeroHash = Hash.ZERO;
 
 // === Keccak256 Hashing ===
 // Hash bytes

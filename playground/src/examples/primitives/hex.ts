@@ -23,13 +23,12 @@ const concat = Hex.concat("0x1234", "0x5678", "0x9abc");
 // Slicing
 const sliced = Hex.slice("0x1234567890abcdef", 2, 6);
 
-// Padding
-const padLeft = Hex.padLeft("0x1234", 8);
+// Padding (left-pads with zeros)
+const padded = Hex.pad("0x1234", 8);
 const padRight = Hex.padRight("0x1234", 8);
 
-// Trimming
-const trimLeft = Hex.trimLeft("0x00001234");
-const trimRight = Hex.trimRight("0x12340000");
+// Trimming (removes leading zeros)
+const trimmed = Hex.trim("0x00001234");
 
 // === Utilities ===
 const random = Hex.random(32);
