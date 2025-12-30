@@ -171,8 +171,10 @@ interface BenchResult {
 const results: BenchResult[] = [];
 
 // Monkey patch mitata's summary to capture results
+// biome-ignore lint/suspicious/noExplicitAny: mitata internal API
 const originalSummary = (globalThis as any).summary;
 if (!originalSummary) {
+	// biome-ignore lint/suspicious/noExplicitAny: mitata internal API
 	(globalThis as any).summary = (result: any) => {
 		results.push({
 			name: result.name,
