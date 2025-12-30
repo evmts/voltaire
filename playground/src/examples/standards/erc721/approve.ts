@@ -6,30 +6,13 @@
  * 2. setApprovalForAll(address, bool) - Approve an operator for all your tokens
  */
 
-import { Address, Uint256, ERC721 } from "@tevm/voltaire";
-
-// === Single Token Approval ===
-console.log("=== Single Token Approval ===");
+import { Address, ERC721, Uint256 } from "@tevm/voltaire";
 
 const approved = Address("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"); // Approved address
 const tokenId = Uint256(42n);
 
 // Encode approve(address,uint256) calldata
 const approveCalldata = ERC721.encodeApprove(approved, tokenId);
-
-console.log("Approved Address:", "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D");
-console.log("Token ID:", tokenId.toString());
-console.log("Selector:", ERC721.SELECTORS.approve);
-console.log("Encoded calldata:", approveCalldata);
-
-// Breakdown
-console.log("\nCalldata Breakdown:");
-console.log("Selector (4 bytes):", approveCalldata.slice(0, 10));
-console.log("Approved (32 bytes):", "0x" + approveCalldata.slice(10, 74));
-console.log("Token ID (32 bytes):", "0x" + approveCalldata.slice(74));
-
-// === Operator Approval (All Tokens) ===
-console.log("\n=== Operator Approval (All Tokens) ===");
 
 const operator = Address("0x1E0049783F008A0085193E00003D00cd54003c71"); // OpenSea
 const isApproved = true;
@@ -39,19 +22,7 @@ const setApprovalCalldata = ERC721.encodeSetApprovalForAll(
 	operator,
 	isApproved,
 );
-
-console.log("Operator:", "0x1E0049783F008A0085193E00003D00cd54003c71");
-console.log("Approved:", isApproved);
-console.log("Selector:", ERC721.SELECTORS.setApprovalForAll);
-console.log("Encoded calldata:", setApprovalCalldata);
-
-// Revoking operator approval
-console.log("\n=== Revoking Operator Approval ===");
 const revokeCalldata = ERC721.encodeSetApprovalForAll(operator, false);
-console.log("Revoke calldata:", revokeCalldata);
-
-// Decoding Approval event
-console.log("\n=== Decoding Approval Event ===");
 const mockApprovalLog = {
 	topics: [
 		ERC721.EVENTS.Approval,
@@ -63,12 +34,6 @@ const mockApprovalLog = {
 };
 
 const decodedApproval = ERC721.decodeApprovalEvent(mockApprovalLog);
-console.log("Owner:", decodedApproval.owner);
-console.log("Approved:", decodedApproval.approved);
-console.log("Token ID:", decodedApproval.tokenId.toString());
-
-// Decoding ApprovalForAll event
-console.log("\n=== Decoding ApprovalForAll Event ===");
 const mockApprovalForAllLog = {
 	topics: [
 		ERC721.EVENTS.ApprovalForAll,
@@ -81,6 +46,3 @@ const mockApprovalForAllLog = {
 const decodedApprovalForAll = ERC721.decodeApprovalForAllEvent(
 	mockApprovalForAllLog,
 );
-console.log("Owner:", decodedApprovalForAll.owner);
-console.log("Operator:", decodedApprovalForAll.operator);
-console.log("Approved:", decodedApprovalForAll.approved);

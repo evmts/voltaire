@@ -5,7 +5,7 @@
  * up to the approved amount. This is commonly used with DEXes and other contracts.
  */
 
-import { Address, Uint256, ERC20 } from "@tevm/voltaire";
+import { Address, ERC20, Uint256 } from "@tevm/voltaire";
 
 // Setup approval parameters
 const spender = Address("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"); // Uniswap V2 Router
@@ -17,44 +17,14 @@ const amount =
 // Encode approve(address,uint256) calldata
 const calldata = ERC20.encodeApprove(spender, amount);
 
-console.log("=== ERC-20 approve Encoding ===");
-console.log("Spender:", "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D");
-console.log("Amount:", "MAX_UINT256 (unlimited approval)");
-console.log("Selector:", ERC20.SELECTORS.approve);
-console.log("\nEncoded calldata:", calldata);
-
-// Breakdown of the calldata
-console.log("\n=== Calldata Breakdown ===");
-console.log("Selector (4 bytes):", calldata.slice(0, 10));
-console.log("Spender (32 bytes):", "0x" + calldata.slice(10, 74));
-console.log("Amount (32 bytes):", "0x" + calldata.slice(74));
-
-// Common approval patterns
-console.log("\n=== Common Approval Patterns ===");
-
 // 1. Unlimited approval (common but risky)
 const unlimited = Uint256(2n ** 256n - 1n);
-console.log(
-	"Unlimited approval:",
-	ERC20.encodeApprove(spender, unlimited).slice(74),
-);
 
 // 2. Specific amount approval (safer)
 const specific = Uint256(1000000000000000000000n); // 1000 tokens
-console.log(
-	"1000 token approval:",
-	ERC20.encodeApprove(spender, specific).slice(74),
-);
 
 // 3. Zero approval (revoke)
 const zero = Uint256(0n);
-console.log(
-	"Revoke approval (0):",
-	ERC20.encodeApprove(spender, zero).slice(74),
-);
-
-// Decoding Approval event
-console.log("\n=== Decoding Approval Event ===");
 const mockApprovalLog = {
 	topics: [
 		ERC20.EVENTS.Approval,
@@ -65,6 +35,3 @@ const mockApprovalLog = {
 };
 
 const decoded = ERC20.decodeApprovalEvent(mockApprovalLog);
-console.log("Owner:", decoded.owner);
-console.log("Spender:", decoded.spender);
-console.log("Value:", decoded.value.toString());

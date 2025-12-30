@@ -6,36 +6,6 @@ import {
 	Transaction,
 } from "@tevm/voltaire";
 
-// === Multicall Encoding Recipe ===
-// This recipe demonstrates how to encode multiple contract calls
-// into a single transaction using various multicall patterns
-
-console.log("=== Multicall Encoding Recipe ===\n");
-
-// === Step 1: Understanding multicall ===
-console.log("Step 1: Understanding Multicall");
-console.log("-".repeat(50));
-
-console.log(`
-Multicall allows batching multiple contract calls into one transaction:
-
-Benefits:
-- Reduced transaction overhead (pay gas once)
-- Atomic execution (all-or-nothing)
-- Consistent state reads (same block)
-- Better UX (one signature instead of many)
-
-Common patterns:
-1. Multicall3 (standard): aggregate(), tryAggregate()
-2. DEX router: multicall() with deadline
-3. ERC-4337: batch user operations
-4. Custom batchers: protocol-specific
-`);
-
-// === Step 2: Set up contracts ===
-console.log("\nStep 2: Set up Contracts");
-console.log("-".repeat(50));
-
 // Multicall3 contract (deployed on most networks)
 const multicall3 = Address.fromHex(
 	"0xcA11bde05977b3631167028862bE2a173976CA11",
@@ -50,13 +20,6 @@ const dai = Address.fromHex("0x6B175474E89094C44Da98b954EescdecAD3F9e6Db");
 const privateKey = Secp256k1.randomPrivateKey();
 const publicKey = Secp256k1.derivePublicKey(privateKey);
 const userAddress = Address.fromPublicKey(publicKey);
-
-console.log(`Multicall3: ${Address.toChecksummed(multicall3)}`);
-console.log(`User: ${Address.toChecksummed(userAddress)}`);
-
-// === Step 3: Encode individual calls ===
-console.log("\n\nStep 3: Encode Individual Calls");
-console.log("-".repeat(50));
 
 // Helper to encode function calls
 function encodeCall(selector: string, params: Uint8Array[]): Uint8Array {
@@ -85,25 +48,24 @@ function padAddress(addr: Uint8Array): Uint8Array {
 	return padded;
 }
 
-// Encode balanceOf calls for multiple tokens
-console.log("Encoding balanceOf calls for USDC, WETH, DAI:\n");
-
 const balanceOfCalls = [
-	{ target: usdc, callData: encodeCall("balanceOf(address)", [padAddress(userAddress)]) },
-	{ target: weth, callData: encodeCall("balanceOf(address)", [padAddress(userAddress)]) },
-	{ target: dai, callData: encodeCall("balanceOf(address)", [padAddress(userAddress)]) },
+	{
+		target: usdc,
+		callData: encodeCall("balanceOf(address)", [padAddress(userAddress)]),
+	},
+	{
+		target: weth,
+		callData: encodeCall("balanceOf(address)", [padAddress(userAddress)]),
+	},
+	{
+		target: dai,
+		callData: encodeCall("balanceOf(address)", [padAddress(userAddress)]),
+	},
 ];
 
 for (let i = 0; i < balanceOfCalls.length; i++) {
 	const call = balanceOfCalls[i];
-	console.log(`Call ${i + 1}:`);
-	console.log(`  Target: ${Address.toChecksummed(call.target)}`);
-	console.log(`  Data: ${Hex.fromBytes(call.callData)}`);
 }
-
-// === Step 4: Encode Multicall3 aggregate ===
-console.log("\n\nStep 4: Encode Multicall3 aggregate()");
-console.log("-".repeat(50));
 
 // Multicall3.aggregate(Call[] calldata calls) returns (uint256 blockNumber, bytes[] memory returnData)
 // Call struct: { address target, bytes calldata }
@@ -122,9 +84,7 @@ console.log("-".repeat(50));
 function encodeMulticall3Aggregate(
 	calls: Array<{ target: Uint8Array; callData: Uint8Array }>,
 ): Uint8Array {
-	const selector = Keccak256.selector(
-		"aggregate((address,bytes)[])",
-	);
+	const selector = Keccak256.selector("aggregate((address,bytes)[])");
 
 	// Calculate sizes
 	const numCalls = calls.length;
@@ -182,7 +142,9 @@ function encodeMulticall3Aggregate(
 		parts.push(dataLength);
 
 		// callData (padded)
-		const paddedData = new Uint8Array(Math.ceil(call.callData.length / 32) * 32);
+		const paddedData = new Uint8Array(
+			Math.ceil(call.callData.length / 32) * 32,
+		);
 		paddedData.set(call.callData, 0);
 		parts.push(paddedData);
 	}
@@ -204,12 +166,6 @@ function encodeMulticall3Aggregate(
 }
 
 const aggregateCalldata = encodeMulticall3Aggregate(balanceOfCalls);
-console.log(`Aggregate calldata: ${Hex.fromBytes(aggregateCalldata.slice(0, 100))}...`);
-console.log(`Total length: ${aggregateCalldata.length} bytes`);
-
-// === Step 5: Encode tryAggregate (allows failures) ===
-console.log("\n\nStep 5: Encode tryAggregate (allows failures)");
-console.log("-".repeat(50));
 
 // tryAggregate(bool requireSuccess, Call[] calldata calls)
 // returns (Result[] memory returnData)
@@ -219,9 +175,7 @@ function encodeTryAggregate(
 	requireSuccess: boolean,
 	calls: Array<{ target: Uint8Array; callData: Uint8Array }>,
 ): Uint8Array {
-	const selector = Keccak256.selector(
-		"tryAggregate(bool,(address,bytes)[])",
-	);
+	const selector = Keccak256.selector("tryAggregate(bool,(address,bytes)[])");
 
 	const parts: Uint8Array[] = [];
 	parts.push(selector);
@@ -268,7 +222,9 @@ function encodeTryAggregate(
 		const dataLength = new Uint8Array(32);
 		dataLength[31] = call.callData.length & 0xff;
 		parts.push(dataLength);
-		const paddedData = new Uint8Array(Math.ceil(call.callData.length / 32) * 32);
+		const paddedData = new Uint8Array(
+			Math.ceil(call.callData.length / 32) * 32,
+		);
 		paddedData.set(call.callData, 0);
 		parts.push(paddedData);
 	}
@@ -289,20 +245,11 @@ function encodeTryAggregate(
 }
 
 const tryAggregateCalldata = encodeTryAggregate(false, balanceOfCalls);
-console.log(`tryAggregate calldata: ${Hex.fromBytes(tryAggregateCalldata.slice(0, 100))}...`);
-console.log(`Length: ${tryAggregateCalldata.length} bytes`);
-console.log("requireSuccess: false (allows individual call failures)");
-
-// === Step 6: DEX router multicall ===
-console.log("\n\n=== DEX Router Multicall ===");
-console.log("-".repeat(50));
 
 // Uniswap V3 Router uses multicall with deadline
 const uniswapRouter = Address.fromHex(
 	"0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
 );
-
-console.log(`Uniswap Router: ${Address.toChecksummed(uniswapRouter)}`);
 
 // Example: Approve + Swap in one transaction
 // Router multicall(bytes[] data) - each bytes is an encoded function call
@@ -333,10 +280,6 @@ const swapData = encodeCall(
 		new Uint8Array(32), // sqrtPriceLimitX96
 	],
 );
-
-console.log("\nDEX multicall components:");
-console.log(`  Call 1 (selfPermit): ${selfPermitData.length} bytes`);
-console.log(`  Call 2 (swap): ${swapData.length} bytes`);
 
 // Encode router multicall(bytes[] data)
 function encodeRouterMulticall(calls: Uint8Array[]): Uint8Array {
@@ -392,11 +335,6 @@ function encodeRouterMulticall(calls: Uint8Array[]): Uint8Array {
 }
 
 const routerMulticallData = encodeRouterMulticall([selfPermitData, swapData]);
-console.log(`\nRouter multicall: ${Hex.fromBytes(routerMulticallData.slice(0, 100))}...`);
-
-// === Step 7: Create transaction ===
-console.log("\n\nStep 7: Create Multicall Transaction");
-console.log("-".repeat(50));
 
 const multicallTx: Transaction.EIP1559 = {
 	type: 2,
@@ -411,11 +349,6 @@ const multicallTx: Transaction.EIP1559 = {
 	accessList: [],
 };
 
-console.log("Multicall transaction:");
-console.log(`  to: ${Address.toChecksummed(multicall3)}`);
-console.log(`  data: ${aggregateCalldata.length} bytes (3 calls)`);
-console.log(`  gasLimit: ${multicallTx.gasLimit}`);
-
 // Sign
 const signingHash = Transaction.getSigningHash(multicallTx);
 const signature = Secp256k1.sign(signingHash, privateKey);
@@ -428,70 +361,6 @@ const signedTx: Transaction.EIP1559 = {
 };
 
 const serialized = Transaction.serialize(signedTx);
-console.log(`\nSerialized: ${serialized.length} bytes`);
-
-// === Step 8: Common multicall patterns ===
-console.log("\n\n=== Common Multicall Patterns ===");
-console.log("-".repeat(50));
-
-console.log(`
-1. Read multiple balances:
-   - Call balanceOf on multiple tokens
-   - Returns all balances atomically
-
-2. Batch approvals:
-   - Approve multiple spenders in one tx
-   - Useful for DeFi setup
-
-3. Multi-token transfers:
-   - Transfer multiple tokens to one recipient
-   - Or one token to multiple recipients
-
-4. DEX operations:
-   - Approve + Swap
-   - Multi-hop swaps
-   - Add liquidity with permit
-
-5. NFT batch operations:
-   - Batch minting
-   - Batch transfers
-   - Batch approvals
-
-6. Protocol interactions:
-   - Deposit + Stake
-   - Claim + Reinvest
-   - Unwind positions
-`);
-
-// === Step 9: Gas optimization tips ===
-console.log("\n=== Gas Optimization Tips ===");
-console.log("-".repeat(50));
-
-console.log(`
-1. Order calls efficiently:
-   - Put likely-to-fail calls first
-   - Group calls to same contract
-
-2. Use tryAggregate wisely:
-   - requireSuccess=false for optional calls
-   - requireSuccess=true when all must succeed
-
-3. Consider access lists:
-   - Pre-warm storage for repeated reads
-   - Especially useful for token balances
-
-4. Batch similar operations:
-   - Multiple balanceOf cheaper than getAmountsOut
-   - Use view functions over state-changing when possible
-
-5. Check return data:
-   - Some calls return data you don't need
-   - Consider aggregate3Value for value transfers
-`);
-
-// === Step 10: Decoding responses ===
-console.log("\n=== Decoding Multicall Responses ===");
-console.log("-".repeat(50));
 
 // Example response parsing (simulated)
 function decodeAggregateResponse(response: Uint8Array): {
@@ -514,22 +383,3 @@ function decodeAggregateResponse(response: Uint8Array): {
 		returnData: [], // Would parse actual return data
 	};
 }
-
-console.log(`
-Response decoding:
-1. aggregate() returns (uint256 blockNumber, bytes[] returnData)
-2. tryAggregate() returns (Result[] { bool success, bytes data })
-3. Parse each bytes according to expected return type
-
-Example for balanceOf:
-  - Returns: uint256 balance
-  - Decode: first 32 bytes as big-endian integer
-`);
-
-console.log("\n=== Recipe Complete ===");
-console.log("\nKey points:");
-console.log("1. Multicall3 (0xcA11...) is deployed on most networks");
-console.log("2. aggregate() reverts if any call fails");
-console.log("3. tryAggregate() can allow individual failures");
-console.log("4. DEX routers often have their own multicall");
-console.log("5. Always simulate before sending to estimate gas");
