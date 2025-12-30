@@ -148,6 +148,7 @@ describe("LLM One-Shot Tests: EIP-6963", () => {
 
 			// Verify announcement was dispatched
 			const announceEvents = dispatchSpy.mock.calls.filter(
+				// biome-ignore lint/suspicious/noExplicitAny: mock call signature
 				(c: any[]) => c[0].type === "eip6963:announceProvider",
 			);
 			expect(announceEvents.length).toBeGreaterThan(0);
@@ -270,6 +271,7 @@ describe("LLM One-Shot Tests: EIP-6963", () => {
 				name: "Test",
 				icon: "data:image/png;base64,abc",
 				rdns: "com.test",
+				// biome-ignore lint/suspicious/noExplicitAny: testing type coercion
 			} as any;
 			expect(_).toBeDefined();
 		});

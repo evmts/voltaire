@@ -33,10 +33,12 @@ describe("findProvider", () => {
 	});
 
 	it("throws InvalidArgumentError when options is missing", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => findProvider(undefined as any)).toThrow(InvalidArgumentError);
 	});
 
 	it("throws InvalidArgumentError when rdns is missing", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => findProvider({} as any)).toThrow(InvalidArgumentError);
 	});
 
