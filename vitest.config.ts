@@ -6,6 +6,7 @@ export default defineConfig({
 		include: [
 			"src/**/*.{test,test-d,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
 			"examples/**/*.test.ts",
+			"docs/**/*.test.ts",
 		],
 		exclude: [
 			"src/mcp-evals/**",
@@ -30,6 +31,9 @@ export default defineConfig({
 			"examples/typescript/**",
 			"examples/viem-publicclient/**",
 			"examples/ethers-provider/**",
+			// Auto-generated documentation lib copies have broken imports
+			"docs/public/**",
+			"docs/zig/**",
 		],
 		setupFiles: ["./vitest.setup.ts"],
 		environment: "node",

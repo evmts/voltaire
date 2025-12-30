@@ -973,8 +973,8 @@ fn addTypeScriptSteps(b: *std.Build) void {
     // TypeScript Test Steps
     // ============================================================================
 
-    // test-ts: Run all TypeScript tests
-    const test_ts_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "test" });
+    // test-ts: Run all TypeScript tests (single run, not watch mode)
+    const test_ts_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "test:run" });
     test_ts_cmd.setName("test-ts");
     const test_ts_step = b.step("test-ts", "Run all TypeScript tests");
     test_ts_step.dependOn(&test_ts_cmd.step);
