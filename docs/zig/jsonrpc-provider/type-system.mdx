@@ -279,25 +279,6 @@ async function getAccountInfo(
 }
 ```
 
-## Regenerating Types
-
-When ethereum/execution-apis is updated:
-
-```bash
-# Update submodule (if using git submodule)
-git submodule update --remote vendor/execution-apis
-
-# Regenerate all types
-zig build generate-jsonrpc
-
-# Clean generated files (preserves hand-written types/)
-zig build clean-jsonrpc
-```
-
-**Generated files**: Do not edit manually - changes will be overwritten
-
-**Hand-written files** (`jsonrpc/types/`): Safe to edit
-
 ## Related
 
 - [Method API](/jsonrpc-provider/method-api) - Using typed methods
