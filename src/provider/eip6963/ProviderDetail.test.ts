@@ -33,6 +33,7 @@ describe("ProviderDetail", () => {
 
 	it("has correct brand", () => {
 		const detail = ProviderDetail({ info: validInfo, provider: mockProvider });
+		// biome-ignore lint/suspicious/noExplicitAny: testing brand access
 		expect((detail as any)[brand]).toBe("ProviderDetail");
 	});
 
@@ -43,12 +44,14 @@ describe("ProviderDetail", () => {
 
 	it("info has correct brand", () => {
 		const detail = ProviderDetail({ info: validInfo, provider: mockProvider });
+		// biome-ignore lint/suspicious/noExplicitAny: testing brand access
 		expect((detail.info as any)[brand]).toBe("ProviderInfo");
 	});
 
 	describe("info validation", () => {
 		it("throws MissingFieldError when info is missing", () => {
 			expect(() =>
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 				ProviderDetail({ info: undefined as any, provider: mockProvider }),
 			).toThrow(MissingFieldError);
 		});
@@ -64,12 +67,14 @@ describe("ProviderDetail", () => {
 	describe("provider validation", () => {
 		it("throws MissingFieldError when provider is missing", () => {
 			expect(() =>
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 				ProviderDetail({ info: validInfo, provider: undefined as any }),
 			).toThrow(MissingFieldError);
 		});
 
 		it("throws InvalidProviderError when provider.request is not function", () => {
 			expect(() =>
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 				ProviderDetail({ info: validInfo, provider: {} as any }),
 			).toThrow(InvalidProviderError);
 		});

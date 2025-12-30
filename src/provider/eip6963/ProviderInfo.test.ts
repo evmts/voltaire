@@ -59,6 +59,7 @@ describe("ProviderInfo", () => {
 
 	describe("name validation", () => {
 		it("throws MissingFieldError when name is missing", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			const input = { ...validInput, name: undefined as any };
 			expect(() => ProviderInfo(input)).toThrow(MissingFieldError);
 		});
@@ -71,6 +72,7 @@ describe("ProviderInfo", () => {
 
 	describe("icon validation", () => {
 		it("throws MissingFieldError when icon is missing", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			const input = { ...validInput, icon: undefined as any };
 			expect(() => ProviderInfo(input)).toThrow(MissingFieldError);
 		});
@@ -83,6 +85,7 @@ describe("ProviderInfo", () => {
 
 	describe("rdns validation", () => {
 		it("throws MissingFieldError when rdns is missing", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			const input = { ...validInput, rdns: undefined as any };
 			expect(() => ProviderInfo(input)).toThrow(MissingFieldError);
 		});

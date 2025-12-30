@@ -57,7 +57,9 @@ export class WebSocketProvider implements Provider {
 	private protocols?: string | string[];
 	private ws: WebSocket | null = null;
 	private requestId = 0;
+	// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC response type varies
 	private pending = new Map<number, (response: any) => void>();
+	// biome-ignore lint/suspicious/noExplicitAny: subscription data type varies
 	private subscriptions = new Map<string, Set<(data: any) => void>>();
 	private reconnect: boolean;
 	private reconnectDelay: number;
@@ -65,6 +67,7 @@ export class WebSocketProvider implements Provider {
 	private reconnectAttempts = 0;
 	private reconnectTimeout?: ReturnType<typeof setTimeout>;
 	private isConnected = false;
+	// biome-ignore lint/suspicious/noExplicitAny: event listener args vary
 	private eventListeners: Map<ProviderEvent, Set<(...args: any[]) => void>> =
 		new Map();
 
@@ -189,6 +192,7 @@ export class WebSocketProvider implements Provider {
 	 * Submits JSON-RPC request and returns result or throws RpcError
 	 */
 	async request(args: RequestArguments): Promise<unknown> {
+		// biome-ignore lint/suspicious/noExplicitAny: params type varies
 		const response = await this._request(args.method, args.params as any[]);
 		if (response.error) {
 			throw response.error;
@@ -201,6 +205,7 @@ export class WebSocketProvider implements Provider {
 	 */
 	private async _request<T>(
 		method: string,
+		// biome-ignore lint/suspicious/noExplicitAny: params type varies
 		params: any[] = [],
 		options?: RequestOptions,
 	): Promise<Response<T>> {
@@ -251,6 +256,7 @@ export class WebSocketProvider implements Provider {
 	/**
 	 * Subscribe to WebSocket event
 	 */
+	// biome-ignore lint/suspicious/noExplicitAny: params type varies
 	private async subscribe(method: string, params: any[] = []): Promise<string> {
 		const response = await this._request<string>("eth_subscribe", [
 			method,
@@ -259,6 +265,7 @@ export class WebSocketProvider implements Provider {
 		if (response.error) {
 			throw new Error(response.error.message);
 		}
+		// biome-ignore lint/style/noNonNullAssertion: result exists if no error
 		return response.result!;
 	}
 
