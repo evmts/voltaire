@@ -616,10 +616,47 @@ pub fn build(b: *std.Build) void {
         .cpu_arch = .wasm32,
         .os_tag = .wasi,
     });
-    addTypeScriptWasmBuild(b, wasm_target, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+
+    // Build WASM-targeted versions of crypto libraries (native libs won't link to WASM)
+    const wasm_blst_lib = lib_build.BlstLib.createBlstLibrary(b, wasm_target, .ReleaseSmall);
+    const wasm_c_kzg_lib = lib_build.CKzgLib.createCKzgLibrary(b, wasm_target, .ReleaseSmall, wasm_blst_lib);
+
+    // Create WASM-targeted c_kzg module
+    const wasm_c_kzg_mod = b.addModule("c_kzg_wasm", .{
+        .root_source_file = b.path("lib/c-kzg-4844/bindings/zig/root.zig"),
+        .target = wasm_target,
+        .optimize = .ReleaseSmall,
+    });
+    wasm_c_kzg_mod.linkLibrary(wasm_c_kzg_lib);
+    wasm_c_kzg_mod.linkLibrary(wasm_blst_lib);
+    wasm_c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/src"));
+    wasm_c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/blst/bindings"));
+
+    // Create WASM-targeted crypto module
+    const wasm_crypto_mod = b.addModule("crypto_wasm", .{
+        .root_source_file = b.path("src/crypto/root.zig"),
+        .target = wasm_target,
+        .optimize = .ReleaseSmall,
+    });
+    wasm_crypto_mod.addImport("c_kzg", wasm_c_kzg_mod);
+    wasm_crypto_mod.addIncludePath(b.path("lib"));
+
+    // Create WASM-targeted primitives module
+    const wasm_primitives_mod = b.addModule("primitives_wasm", .{
+        .root_source_file = b.path("src/primitives/root.zig"),
+        .target = wasm_target,
+        .optimize = .ReleaseSmall,
+    });
+    wasm_primitives_mod.addImport("crypto", wasm_crypto_mod);
+    wasm_primitives_mod.addImport("z_ens_normalize", z_ens_normalize_mod);
+
+    // Circular dep: crypto needs primitives
+    wasm_crypto_mod.addImport("primitives", wasm_primitives_mod);
+
+    addTypeScriptWasmBuild(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, rust_crypto_lib_path, cargo_build_step);
 
     // Individual crypto WASM modules for treeshaking
-    addCryptoWasmBuilds(b, wasm_target, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+    addCryptoWasmBuilds(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, rust_crypto_lib_path, cargo_build_step);
 
     // Go build and test steps (optional, requires Go toolchain)
     if (!is_wasm) {
