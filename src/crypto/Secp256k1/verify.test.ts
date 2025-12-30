@@ -106,7 +106,7 @@ describe("Secp256k1.verify", () => {
 
 			// Modify r
 			const modifiedRBytes = new Uint8Array(signature.r);
-			modifiedRBytes[0]! ^= 0x01;
+			modifiedRBytes[0] ^= 0x01;
 			const modifiedSig = {
 				r: Hash.from(modifiedRBytes),
 				s: signature.s,
@@ -128,7 +128,7 @@ describe("Secp256k1.verify", () => {
 
 			// Modify s
 			const modifiedSBytes = new Uint8Array(signature.s);
-			modifiedSBytes[0]! ^= 0x01;
+			modifiedSBytes[0] ^= 0x01;
 			const modifiedSig = {
 				r: signature.r,
 				s: Hash.from(modifiedSBytes),
@@ -156,6 +156,7 @@ describe("Secp256k1.verify", () => {
 				v: 26, // Invalid v value
 			};
 
+			// biome-ignore lint/suspicious/noExplicitAny: testing malformed input
 			const valid = verify(malformedSig as any, message, publicKey);
 			expect(valid).toBe(false);
 		});
@@ -175,6 +176,7 @@ describe("Secp256k1.verify", () => {
 				v: 1, // Invalid for verify
 			};
 
+			// biome-ignore lint/suspicious/noExplicitAny: testing malformed input
 			const valid = verify(malformedSig as any, message, publicKey);
 			expect(valid).toBe(false);
 		});

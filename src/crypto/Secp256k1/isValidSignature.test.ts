@@ -10,6 +10,7 @@ describe("Secp256k1.isValidSignature", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			// biome-ignore lint/suspicious/noExplicitAny: sha256 returns Uint8Array, needs branded type
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -23,10 +24,11 @@ describe("Secp256k1.isValidSignature", () => {
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 
 			const messages = [
-				sha256(new TextEncoder().encode("msg1")) as any,
-				sha256(new TextEncoder().encode("msg2")) as any,
-				sha256(new TextEncoder().encode("msg3")) as any,
-			];
+				sha256(new TextEncoder().encode("msg1")),
+				sha256(new TextEncoder().encode("msg2")),
+				sha256(new TextEncoder().encode("msg3")),
+				// biome-ignore lint/suspicious/noExplicitAny: sha256 returns Uint8Array, needs branded Hash
+			] as any[];
 
 			for (const message of messages) {
 				const signature = sign(message, privateKey);
@@ -40,6 +42,7 @@ describe("Secp256k1.isValidSignature", () => {
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 7) % 256;
 			}
+			// biome-ignore lint/suspicious/noExplicitAny: sha256 returns Uint8Array, needs branded type
 			const message = sha256(new TextEncoder().encode("low-s test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -387,6 +390,7 @@ describe("Secp256k1.isValidSignature", () => {
 
 			const sigs = [];
 			for (let i = 0; i < 10; i++) {
+				// biome-ignore lint/suspicious/noExplicitAny: sha256 returns Uint8Array, needs branded type
 				const message = sha256(new TextEncoder().encode(`message ${i}`)) as any;
 				sigs.push(sign(message, privateKey));
 			}
