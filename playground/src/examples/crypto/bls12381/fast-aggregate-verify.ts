@@ -33,7 +33,6 @@ const isValid = Bls12381.fastAggregateVerify(
 	message,
 	aggregatedPubKey,
 );
-console.log("Fast aggregate verify:", isValid);
 
 // Compare: this is equivalent to checking all individual signatures
 // but much more efficient (1 pairing vs N pairings)
@@ -41,7 +40,6 @@ const allIndividuallyValid =
 	Bls12381.verify(sig1, message, pub1) &&
 	Bls12381.verify(sig2, message, pub2) &&
 	Bls12381.verify(sig3, message, pub3);
-console.log("All individually valid:", allIndividuallyValid);
 
 // Wrong aggregated pubkey fails
 const wrongPubKeys = Bls12381.aggregatePublicKeys([pub1, pub2]); // missing pub3
@@ -50,7 +48,6 @@ const wrongResult = Bls12381.fastAggregateVerify(
 	message,
 	wrongPubKeys,
 );
-console.log("Wrong pubkey aggregate:", wrongResult);
 
 // Wrong message fails
 const wrongMessage = new TextEncoder().encode("Different message");
@@ -59,10 +56,6 @@ const wrongMsgResult = Bls12381.fastAggregateVerify(
 	wrongMessage,
 	aggregatedPubKey,
 );
-console.log("Wrong message:", wrongMsgResult);
-
-// Beacon chain use case: verify committee attestation
-console.log("\nBeacon chain committee verification:");
 const committeeSize = 10;
 const committee = Array.from({ length: committeeSize }, () => {
 	const sk = Bls12381.randomPrivateKey();
@@ -82,4 +75,3 @@ const committeeValid = Bls12381.fastAggregateVerify(
 	message,
 	committeeAggPub,
 );
-console.log(`Committee of ${committeeSize} valid:`, committeeValid);

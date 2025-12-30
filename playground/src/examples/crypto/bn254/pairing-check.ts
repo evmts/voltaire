@@ -24,23 +24,14 @@ import { BN254 } from "@tevm/voltaire";
 
 const { G1, G2, Pairing } = BN254;
 
-console.log("=== BN254 Pairing Check ===\n");
-
 const P = G1.generator();
 const Q = G2.generator();
-
-// Simple valid pairing check: e(P, Q) * e(-P, Q) = 1
-console.log("Valid Pairing Check: e(P, Q) * e(-P, Q) = 1");
 const negP = G1.negate(P);
 const validPairs: Array<[typeof P, typeof Q]> = [
 	[P, Q],
 	[negP, Q],
 ];
 const validCheck = Pairing.pairingCheck(validPairs);
-console.log("  Result:", validCheck, "\n");
-
-// Invalid pairing check: random pairs don't satisfy equation
-console.log("Invalid Pairing Check: e(2P, 3Q) * e(5P, 7Q) != 1");
 const P1 = G1.mul(P, 2n);
 const Q1 = G2.mul(Q, 3n);
 const P2 = G1.mul(P, 5n);
@@ -50,17 +41,8 @@ const invalidPairs: Array<[typeof P1, typeof Q1]> = [
 	[P2, Q2],
 ];
 const invalidCheck = Pairing.pairingCheck(invalidPairs);
-console.log("  Result:", invalidCheck, "\n");
-
-// Empty pairing check returns true (empty product = 1)
-console.log("Empty Pairing Check:");
 const emptyPairs: Array<[typeof P, typeof Q]> = [];
 const emptyCheck = Pairing.pairingCheck(emptyPairs);
-console.log("  Result:", emptyCheck, "(empty product = 1)\n");
-
-// Construct a valid 4-pair check simulating zkSNARK structure
-console.log("zkSNARK-style Pairing Check (4 pairs):");
-console.log("  Verifying: e(a*P, b*Q) * e(-(a*b)*P, Q) = 1\n");
 
 const a = 7n;
 const b = 11n;
@@ -76,30 +58,6 @@ const zkPairs: Array<[typeof P, typeof Q]> = [
 	[neg_abP, Q],
 ];
 
-console.log("  Pairs:");
-console.log("    1. (7*P, 11*Q)");
-console.log("    2. (-(7*11)*P, Q)");
-console.log();
-
 // Note: This specific check may or may not pass depending on implementation
 // In a correct implementation with proper bilinearity, it should pass
 const zkCheck = Pairing.pairingCheck(zkPairs);
-console.log("  Pairing check result:", zkCheck);
-console.log();
-
-// Demonstrate the Groth16 verification pattern
-console.log("Groth16 Verification Pattern:");
-console.log("  Verification equation:");
-console.log(
-	"    e(A, B) = e(vk_alpha, vk_beta) * e(vk_ic, vk_gamma) * e(C, vk_delta)",
-);
-console.log();
-console.log("  Rewritten for pairing check:");
-console.log(
-	"    e(-A, B) * e(vk_alpha, vk_beta) * e(vk_ic, vk_gamma) * e(C, vk_delta) = 1",
-);
-console.log();
-console.log("  Where:");
-console.log("    A, B, C = proof elements");
-console.log("    vk_* = verification key elements");
-console.log("    vk_ic = linear combination based on public inputs");

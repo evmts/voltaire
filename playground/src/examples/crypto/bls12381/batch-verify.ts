@@ -31,7 +31,6 @@ const isValid = Bls12381.batchVerify(
 	[msg1, msg2, msg3],
 	[pub1, pub2, pub3],
 );
-console.log("Batch verify (different messages):", isValid);
 
 // Order matters: messages and pubkeys must match
 const wrongOrder = Bls12381.batchVerify(
@@ -39,7 +38,6 @@ const wrongOrder = Bls12381.batchVerify(
 	[msg2, msg1, msg3], // swapped msg1 and msg2
 	[pub1, pub2, pub3],
 );
-console.log("Wrong order:", wrongOrder);
 
 // Missing one pair fails
 const missingPair = Bls12381.batchVerify(
@@ -47,17 +45,12 @@ const missingPair = Bls12381.batchVerify(
 	[msg1, msg2],
 	[pub1, pub2],
 );
-console.log("Missing pair:", missingPair);
 
 // Compare with individual verification
 const allValid =
 	Bls12381.verify(sig1, msg1, pub1) &&
 	Bls12381.verify(sig2, msg2, pub2) &&
 	Bls12381.verify(sig3, msg3, pub3);
-console.log("All individually valid:", allValid);
-
-// Use case: verify multiple independent signatures efficiently
-console.log("\nBatch verification use case:");
 const numSigners = 10;
 const signers = Array.from({ length: numSigners }, (_, i) => {
 	const sk = Bls12381.randomPrivateKey();
@@ -73,4 +66,3 @@ const allPubs = signers.map((s) => s.publicKey);
 
 const aggSig = Bls12381.aggregate(allSigs);
 const batchValid = Bls12381.batchVerify(aggSig, allMsgs, allPubs);
-console.log(`Batch of ${numSigners} signatures valid:`, batchValid);

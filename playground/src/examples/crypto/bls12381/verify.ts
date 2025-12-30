@@ -10,30 +10,25 @@ const signature = Bls12381.sign(message, privateKey);
 
 // Verify valid signature
 const isValid = Bls12381.verify(signature, message, publicKey);
-console.log("Valid signature:", isValid);
 
 // Try with wrong public key
 const wrongPrivateKey = Bls12381.randomPrivateKey();
 const wrongPublicKey = Bls12381.derivePublicKey(wrongPrivateKey);
 const wrongKeyResult = Bls12381.verify(signature, message, wrongPublicKey);
-console.log("Wrong public key:", wrongKeyResult);
 
 // Try with wrong message
 const wrongMessage = new TextEncoder().encode("Different message");
 const wrongMsgResult = Bls12381.verify(signature, wrongMessage, publicKey);
-console.log("Wrong message:", wrongMsgResult);
 
 // Try with corrupted signature
 const corruptedSig = new Uint8Array(signature);
 corruptedSig[0] ^= 0xff; // flip bits
 const corruptedResult = Bls12381.verify(corruptedSig, message, publicKey);
-console.log("Corrupted signature:", corruptedResult);
 
 // Verify empty message signature
 const emptyMessage = new Uint8Array(0);
 const emptySig = Bls12381.sign(emptyMessage, privateKey);
 const emptyValid = Bls12381.verify(emptySig, emptyMessage, publicKey);
-console.log("Empty message signature valid:", emptyValid);
 
 // Cross-verify: Alice signs, Bob verifies
 const alicePrivate = Bls12381.randomPrivateKey();
@@ -43,4 +38,3 @@ const aliceSig = Bls12381.sign(aliceMsg, alicePrivate);
 
 // Bob can verify with Alice's public key
 const bobVerifies = Bls12381.verify(aliceSig, aliceMsg, alicePublic);
-console.log("Bob verifies Alice:", bobVerifies);
