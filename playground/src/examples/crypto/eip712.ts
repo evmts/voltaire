@@ -43,21 +43,28 @@ const typedData = {
 
 // Hash typed data (produces 32-byte digest)
 const hash = EIP712.hashTypedData(typedData);
+console.log("Typed data hash:", Hex.fromBytes(hash));
 
 // Domain separator hash
 const domainHash = EIP712.Domain.hash(domain);
+console.log("Domain hash:", Hex.fromBytes(domainHash));
 
 // Type hash
 const typeHash = EIP712.hashType("Mail", types);
+console.log("Type hash:", Hex.fromBytes(typeHash));
 
 // Sign with private key
-const privateKey = Secp256k1.PrivateKey.random();
+const privateKey = Secp256k1.randomPrivateKey();
 const signature = Secp256k1.sign(hash, privateKey);
+console.log("Signature r:", Hex.fromBytes(signature.r));
+console.log("Signature s:", Hex.fromBytes(signature.s));
+console.log("Signature v:", signature.v);
 
 // Recover signer address
 const publicKey = Secp256k1.recoverPublicKey(signature, hash);
 const signerAddress = Address.fromPublicKey(publicKey);
 const signerChecksummed = Address.toChecksummed(signerAddress);
+console.log("Signer address:", signerChecksummed);
 
 // ERC-2612 Permit example
 const permitTypes = {
@@ -84,3 +91,4 @@ const permit = {
 };
 
 const permitHash = EIP712.hashTypedData(permit);
+console.log("Permit hash:", Hex.fromBytes(permitHash));
