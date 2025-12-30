@@ -1,5 +1,6 @@
 {
-	"buildCommand": "bun run build",
+	"installCommand": "curl -L https://ziglang.org/download/0.15.1/zig-linux-x86_64-0.15.1.tar.xz | tar -xJ && export PATH=$PWD/zig-linux-x86_64-0.15.1:$PATH && bun install",
+	"buildCommand": "export PATH=$PWD/zig-linux-x86_64-0.15.1:$PATH && bun run build",
 	"outputDirectory": "dist",
 	"framework": "vite"
 }
