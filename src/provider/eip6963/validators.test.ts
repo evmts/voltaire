@@ -26,10 +26,12 @@ describe("validateUuid", () => {
 	});
 
 	it("throws MissingFieldError when uuid is undefined", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => validateUuid(undefined as any)).toThrow(MissingFieldError);
 	});
 
 	it("throws MissingFieldError when uuid is null", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => validateUuid(null as any)).toThrow(MissingFieldError);
 	});
 
@@ -66,6 +68,7 @@ describe("validateRdns", () => {
 	});
 
 	it("throws MissingFieldError when rdns is undefined", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => validateRdns(undefined as any)).toThrow(MissingFieldError);
 	});
 
@@ -106,6 +109,7 @@ describe("validateIcon", () => {
 	});
 
 	it("throws MissingFieldError when icon is undefined", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => validateIcon(undefined as any)).toThrow(MissingFieldError);
 	});
 
@@ -150,6 +154,7 @@ describe("validateName", () => {
 	});
 
 	it("throws MissingFieldError when name is undefined", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => validateName(undefined as any)).toThrow(MissingFieldError);
 	});
 

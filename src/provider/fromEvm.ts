@@ -73,6 +73,7 @@ class EvmBackedProvider implements Provider {
 		return this;
 	}
 
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: RPC switch inherently needs many branches
 	async request(args: RequestArguments): Promise<unknown> {
 		// biome-ignore lint/suspicious/noExplicitAny: batch check requires any
 		if (Array.isArray(args as any)) {
@@ -130,13 +131,14 @@ class EvmBackedProvider implements Provider {
 				// biome-ignore lint/suspicious/noExplicitAny: host expects branded type
 				const code = this.host.getCode(Address(to) as any);
 				if (!code || code.length === 0) return "0x";
-				// biome-ignore lint/suspicious/noExplicitAny: Frame accepts branded types
 				const frame = Frame({
 					bytecode: code,
 					gas,
 					caller: Address(
 						tx.from ?? "0x0000000000000000000000000000000000000000",
+						// biome-ignore lint/suspicious/noExplicitAny: Frame accepts branded types
 					) as any,
+					// biome-ignore lint/suspicious/noExplicitAny: Frame accepts branded types
 					address: Address(to) as any,
 					value: tx.value ? BigInt(tx.value) : 0n,
 					calldata: Hex.toBytes(data as `0x${string}`),
@@ -186,6 +188,7 @@ class EvmBackedProvider implements Provider {
  */
 export function fromEvm(evmOrOptions: BrandedHost | FromEvmOptions): Provider {
 	const opts: FromEvmOptions =
+		// biome-ignore lint/suspicious/noExplicitAny: duck-type check for BrandedHost
 		"getBalance" in (evmOrOptions as any)
 			? { host: evmOrOptions as BrandedHost }
 			: (evmOrOptions as FromEvmOptions);

@@ -19,6 +19,7 @@ export function createMockProvider(): TypedProvider<
 	VoltaireRpcSchema,
 	EIP1193EventMap
 > {
+	// biome-ignore lint/suspicious/noExplicitAny: event listeners need flexible args
 	const listeners = new Map<string, Set<(...args: any[]) => void>>();
 
 	const provider: TypedProvider<VoltaireRpcSchema, EIP1193EventMap> = {
@@ -26,12 +27,15 @@ export function createMockProvider(): TypedProvider<
 			// Mock implementation
 			switch (method) {
 				case "eth_blockNumber":
+					// biome-ignore lint/suspicious/noExplicitAny: mock return type
 					return "0x1234" as any;
 
 				case "eth_chainId":
+					// biome-ignore lint/suspicious/noExplicitAny: mock return type
 					return "0x1" as any;
 
 				case "eth_accounts":
+					// biome-ignore lint/suspicious/noExplicitAny: mock return type
 					return ["0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"] as any;
 
 				case "eth_getBalance":
@@ -41,6 +45,7 @@ export function createMockProvider(): TypedProvider<
 							"Invalid params",
 						);
 					}
+					// biome-ignore lint/suspicious/noExplicitAny: mock return type
 					return "0x1234567890abcdef" as any;
 
 				case "eth_call":
@@ -50,6 +55,7 @@ export function createMockProvider(): TypedProvider<
 							"Invalid params",
 						);
 					}
+					// biome-ignore lint/suspicious/noExplicitAny: mock return type
 					return "0xabcdef" as any;
 
 				default:

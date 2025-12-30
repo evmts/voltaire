@@ -32,6 +32,7 @@ describe("subscribe", () => {
 	});
 
 	it("throws InvalidArgumentError when listener is not function", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => subscribe("not-a-function" as any)).toThrow(
 			InvalidArgumentError,
 		);
@@ -55,6 +56,7 @@ describe("subscribe", () => {
 		const unsub = subscribe(() => {});
 
 		const requestEvents = dispatchSpy.mock.calls.filter(
+			// biome-ignore lint/suspicious/noExplicitAny: mock call signature
 			(c: any[]) => c[0].type === "eip6963:requestProvider",
 		);
 		expect(requestEvents.length).toBeGreaterThan(0);
