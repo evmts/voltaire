@@ -28,6 +28,7 @@ function addU32(a, b) {
  * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode implementation
 export function calldataload(frame) {
 	const gasErr = consumeGas(frame, 3n);
 	if (gasErr) return gasErr;

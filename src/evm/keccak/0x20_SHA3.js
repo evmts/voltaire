@@ -21,6 +21,7 @@ import { readMemory } from "../Frame/readMemory.js";
  * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode implementation
 export function sha3(frame) {
 	// Pop offset from stack
 	const offsetResult = popStack(frame);
