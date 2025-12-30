@@ -6,11 +6,11 @@
  * @module contract/EventStreamType
  */
 
+import type { ParametersToObject } from "../primitives/Abi/Parameter.js";
 import type {
 	EncodeTopicsArgs,
 	EventType,
 } from "../primitives/Abi/event/EventType.js";
-import type { ParametersToObject } from "../primitives/Abi/Parameter.js";
 import type { AddressType } from "../primitives/Address/AddressType.js";
 import type { BlockNumberType } from "../primitives/BlockNumber/BlockNumberType.js";
 import type { HashType } from "../primitives/Hash/HashType.js";

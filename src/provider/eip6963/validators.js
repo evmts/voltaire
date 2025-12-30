@@ -5,12 +5,12 @@
  */
 
 import {
-	MissingFieldError,
-	InvalidUuidError,
-	InvalidRdnsError,
+	InvalidFieldError,
 	InvalidIconError,
 	InvalidProviderError,
-	InvalidFieldError,
+	InvalidRdnsError,
+	InvalidUuidError,
+	MissingFieldError,
 } from "./errors.js";
 
 /**
@@ -127,7 +127,7 @@ export function validateProvider(provider) {
 	}
 	if (
 		typeof provider !== "object" ||
-		typeof /** @type {any} */ (provider).request !== "function"
+		typeof (/** @type {any} */ (provider).request) !== "function"
 	) {
 		throw new InvalidProviderError();
 	}

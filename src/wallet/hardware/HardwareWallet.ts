@@ -18,7 +18,7 @@ export interface EIP712TypedData {
 		verifyingContract?: string;
 		salt?: string;
 	};
-	message: Record<string, any>;
+	message: Record<string, unknown>;
 }
 
 /**

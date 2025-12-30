@@ -23,8 +23,11 @@ function createMockBlock(
 	hash?: string,
 	includeTransactions = false,
 ) {
-	const blockHash = hash ?? `0x${"a".repeat(62)}${number.toString(16).padStart(2, "0")}`;
-	const parent = parentHash ?? `0x${"a".repeat(62)}${(number - 1).toString(16).padStart(2, "0")}`;
+	const blockHash =
+		hash ?? `0x${"a".repeat(62)}${number.toString(16).padStart(2, "0")}`;
+	const parent =
+		parentHash ??
+		`0x${"a".repeat(62)}${(number - 1).toString(16).padStart(2, "0")}`;
 
 	return {
 		hash: blockHash,
@@ -350,11 +353,23 @@ describe("BlockStream.watch", () => {
 		let callCount = 0;
 		// Block 100, 101, then 102 with wrong parent hash
 		const block100 = createMockBlock(100, undefined, `0x${"a".repeat(64)}`);
-		const block101 = createMockBlock(101, `0x${"a".repeat(64)}`, `0x${"b".repeat(64)}`);
+		const block101 = createMockBlock(
+			101,
+			`0x${"a".repeat(64)}`,
+			`0x${"b".repeat(64)}`,
+		);
 		// Block 102 points to different parent (not block101)
-		const block102_bad = createMockBlock(102, `0x${"c".repeat(64)}`, `0x${"d".repeat(64)}`);
+		const block102_bad = createMockBlock(
+			102,
+			`0x${"c".repeat(64)}`,
+			`0x${"d".repeat(64)}`,
+		);
 		// The "correct" block 101 on the new chain
-		const block101_new = createMockBlock(101, `0x${"a".repeat(64)}`, `0x${"c".repeat(64)}`);
+		const block101_new = createMockBlock(
+			101,
+			`0x${"a".repeat(64)}`,
+			`0x${"c".repeat(64)}`,
+		);
 
 		const provider = createMockProvider({
 			eth_blockNumber: () => {
@@ -473,7 +488,9 @@ describe("BlockStream.watch", () => {
 		}
 
 		// Should only get one blocks event for the initial block
-		const blocksEvents = results.filter((r) => (r as { type: string }).type === "blocks");
+		const blocksEvents = results.filter(
+			(r) => (r as { type: string }).type === "blocks",
+		);
 		expect(blocksEvents.length).toBe(1);
 	});
 
@@ -505,9 +522,17 @@ describe("Reorg events", () => {
 	it("reorg event has removed and added blocks", async () => {
 		let callCount = 0;
 		const block100 = createMockBlock(100, undefined, `0x${"1".repeat(64)}`);
-		const block101 = createMockBlock(101, `0x${"1".repeat(64)}`, `0x${"2".repeat(64)}`);
+		const block101 = createMockBlock(
+			101,
+			`0x${"1".repeat(64)}`,
+			`0x${"2".repeat(64)}`,
+		);
 		// Reorg block at 101 with different hash but same parent
-		const block101_reorg = createMockBlock(101, `0x${"1".repeat(64)}`, `0x${"3".repeat(64)}`);
+		const block101_reorg = createMockBlock(
+			101,
+			`0x${"1".repeat(64)}`,
+			`0x${"3".repeat(64)}`,
+		);
 
 		const provider = createMockProvider({
 			eth_blockNumber: () => {
@@ -531,7 +556,11 @@ describe("Reorg events", () => {
 
 		const stream = BlockStream({ provider });
 		const controller = new AbortController();
-		const results: Array<{ type: string; removed?: unknown[]; added?: unknown[] }> = [];
+		const results: Array<{
+			type: string;
+			removed?: unknown[];
+			added?: unknown[];
+		}> = [];
 
 		setTimeout(() => controller.abort(), 300);
 
@@ -540,7 +569,7 @@ describe("Reorg events", () => {
 				signal: controller.signal,
 				pollingInterval: 10,
 			})) {
-				results.push(result as typeof results[0]);
+				results.push(result as (typeof results)[0]);
 				if (results.some((r) => r.type === "reorg")) {
 					controller.abort();
 				}
@@ -623,7 +652,8 @@ describe("Error handling", () => {
 
 		const provider = createMockProvider({
 			eth_blockNumber: () => "0x100",
-			eth_getBlockByNumber: () => createMockBlock(100, undefined, undefined, true),
+			eth_getBlockByNumber: () =>
+				createMockBlock(100, undefined, undefined, true),
 			eth_getBlockReceipts: () => {
 				blockReceiptsCalled = true;
 				throw new Error("method not found");

@@ -1,27 +1,37 @@
-import * as Uint from "../Uint/index.js";
 import type { EtherType as BrandedEther } from "./EtherType.js";
 import type { WeiType as BrandedWei } from "./WeiType.js";
-import { WEI_PER_ETHER } from "./ether-constants.js";
+
+const DECIMALS = 18;
 
 /**
  * Convert Wei to Ether
  *
+ * Converts bigint wei to decimal string ether value.
+ *
  * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
  * @since 0.0.0
- * @param wei - Amount in Wei
- * @returns Amount in Ether (wei / 10^18, truncated)
+ * @param wei - Amount in Wei (bigint)
+ * @returns Amount in Ether (string with decimal precision)
  * @throws {never}
  * @example
  * ```typescript
- * const wei = Wei.from(1000000000000000000n);
- * const ether = Wei.toEther(wei);
- * // ether = 1n
+ * const ether1 = Wei.toEther(Wei.from(1000000000000000000n)); // "1"
+ * const ether2 = Wei.toEther(Wei.from(1500000000000000000n)); // "1.5"
+ * const ether3 = Wei.toEther(Wei.from(1000000000000000n));    // "0.001"
  * ```
  */
 export function toEther(wei: BrandedWei): BrandedEther {
-	const ether = Uint.dividedBy(
-		wei as unknown as Uint.Type,
-		Uint.from(WEI_PER_ETHER),
-	);
-	return ether as unknown as BrandedEther;
+	const weiStr = wei.toString().padStart(DECIMALS + 1, "0");
+
+	const intPart = weiStr.slice(0, -DECIMALS) || "0";
+	const decPart = weiStr.slice(-DECIMALS);
+
+	// Remove trailing zeros from decimal part
+	const trimmedDec = decPart.replace(/0+$/, "");
+
+	if (trimmedDec === "") {
+		return intPart as BrandedEther;
+	}
+
+	return `${intPart}.${trimmedDec}` as BrandedEther;
 }

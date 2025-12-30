@@ -39,7 +39,7 @@ export class TrezorWallet implements HardwareWallet {
 		email: string;
 		appUrl: string;
 	};
-	private TrezorConnect?: any;
+	private TrezorConnect?: unknown;
 
 	constructor(options?: { manifest?: { email: string; appUrl: string } }) {
 		this.manifest = options?.manifest;
@@ -64,6 +64,7 @@ export class TrezorWallet implements HardwareWallet {
 
 	async disconnect(): Promise<void> {
 		if (this.TrezorConnect) {
+			// @ts-ignore - Optional dependency, dispose() exists at runtime
 			this.TrezorConnect.dispose();
 			this._isConnected = false;
 		}
@@ -80,6 +81,7 @@ export class TrezorWallet implements HardwareWallet {
 			"../../primitives/Address/index.js"
 		);
 
+		// @ts-ignore - Optional dependency, ethereumGetAddress() exists at runtime
 		const result = await this.TrezorConnect.ethereumGetAddress({ path });
 
 		if (!result.success) {
@@ -102,13 +104,16 @@ export class TrezorWallet implements HardwareWallet {
 			showOnTrezor: false,
 		}));
 
+		// @ts-ignore - Optional dependency, ethereumGetAddress() exists at runtime
 		const result = await this.TrezorConnect.ethereumGetAddress({ bundle });
 
 		if (!result.success) {
 			throw new Error(result.payload.error);
 		}
 
-		return result.payload.map((item: any) => Address.from(item.address));
+		return result.payload.map((item: { address: string }) =>
+			Address.from(item.address),
+		);
 	}
 
 	async signTransaction(
@@ -124,7 +129,7 @@ export class TrezorWallet implements HardwareWallet {
 		const Hash = await import("../../primitives/Hash/index.js");
 
 		// Convert Transaction to Trezor format
-		const trezorTx: any = {
+		const trezorTx: Record<string, unknown> = {
 			to: tx.to ? Hex.fromBytes(tx.to) : undefined,
 			value: tx.value ? Hex.fromBigInt(tx.value) : "0x0",
 			gasPrice:
@@ -145,6 +150,7 @@ export class TrezorWallet implements HardwareWallet {
 			trezorTx.maxPriorityFeePerGas = Hex.fromBigInt(tx.maxPriorityFeePerGas);
 		}
 
+		// @ts-ignore - Optional dependency, ethereumSignTransaction() exists at runtime
 		const result = await this.TrezorConnect.ethereumSignTransaction({
 			path,
 			transaction: trezorTx,
@@ -174,6 +180,7 @@ export class TrezorWallet implements HardwareWallet {
 		const Hash = await import("../../primitives/Hash/index.js");
 		const Hex = await import("../../primitives/Hex/index.js");
 
+		// @ts-ignore - Optional dependency, ethereumSignTypedData() exists at runtime
 		const result = await this.TrezorConnect.ethereumSignTypedData({
 			path,
 			data: typedData,
@@ -201,6 +208,7 @@ export class TrezorWallet implements HardwareWallet {
 		const Hash = await import("../../primitives/Hash/index.js");
 		const Hex = await import("../../primitives/Hex/index.js");
 
+		// @ts-ignore - Optional dependency, ethereumSignMessage() exists at runtime
 		const result = await this.TrezorConnect.ethereumSignMessage({
 			path,
 			message: Hex.fromBytes(message).slice(2),
@@ -222,6 +230,7 @@ export class TrezorWallet implements HardwareWallet {
 	async getDeviceInfo(): Promise<DeviceInfo> {
 		if (!this.TrezorConnect) throw new Error("Trezor not connected");
 
+		// @ts-ignore - Optional dependency, getFeatures() exists at runtime
 		const result = await this.TrezorConnect.getFeatures();
 
 		if (!result.success) {

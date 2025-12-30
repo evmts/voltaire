@@ -10,9 +10,9 @@ describe("Constructor", () => {
 				inputs: [{ type: "uint256", name: "initialSupply" }],
 			});
 
-			expect(constructor.type).toBe("constructor");
-			expect(constructor.stateMutability).toBe("nonpayable");
-			expect(constructor.inputs.length).toBe(1);
+			expect(ctor.type).toBe("constructor");
+			expect(ctor.stateMutability).toBe("nonpayable");
+			expect(ctor.inputs.length).toBe(1);
 		});
 
 		it("creates Constructor with no parameters", () => {
@@ -22,8 +22,8 @@ describe("Constructor", () => {
 				inputs: [],
 			});
 
-			expect(constructor.type).toBe("constructor");
-			expect(constructor.inputs.length).toBe(0);
+			expect(ctor.type).toBe("constructor");
+			expect(ctor.inputs.length).toBe(0);
 		});
 
 		it("creates payable Constructor", () => {
@@ -33,7 +33,7 @@ describe("Constructor", () => {
 				inputs: [],
 			});
 
-			expect(constructor.stateMutability).toBe("payable");
+			expect(ctor.stateMutability).toBe("payable");
 		});
 
 		it("creates Constructor with multiple parameters", () => {
@@ -47,7 +47,7 @@ describe("Constructor", () => {
 				],
 			});
 
-			expect(constructor.inputs.length).toBe(3);
+			expect(ctor.inputs.length).toBe(3);
 		});
 
 		it("defaults type to constructor", () => {
@@ -56,7 +56,7 @@ describe("Constructor", () => {
 				inputs: [],
 			});
 
-			expect(constructor.type).toBe("constructor");
+			expect(ctor.type).toBe("constructor");
 		});
 	});
 
@@ -108,7 +108,7 @@ describe("Constructor", () => {
 					stateMutability: "nonpayable",
 					inputs: [],
 				});
-				const encoded = constructor.encodeParams([]);
+				const encoded = ctor.encodeParams([]);
 				expect(encoded).toBeInstanceOf(Uint8Array);
 			});
 
@@ -118,7 +118,7 @@ describe("Constructor", () => {
 					stateMutability: "nonpayable",
 					inputs: [{ type: "uint256", name: "value" }],
 				});
-				const encoded = constructor.encodeParams([42n]);
+				const encoded = ctor.encodeParams([42n]);
 				expect(encoded).toBeInstanceOf(Uint8Array);
 				expect(encoded.length).toBe(32);
 			});
@@ -137,9 +137,9 @@ describe("Constructor", () => {
 					stateMutability: "nonpayable",
 					inputs: [],
 				});
-				const encoded = constructor.encodeParams([]);
+				const encoded = ctor.encodeParams([]);
 				/** @type {unknown[]} */
-				const decoded = constructor.decodeParams(encoded);
+				const decoded = ctor.decodeParams(encoded);
 				expect(decoded).toEqual([]);
 			});
 
@@ -159,7 +159,7 @@ describe("Constructor", () => {
 				stateMutability: "nonpayable",
 				inputs: [{ type: "uint256" }],
 			});
-			const str = constructor.toString();
+			const str = ctor.toString();
 			expect(str).toContain("Constructor");
 			expect(str).toContain("nonpayable");
 			expect(str).toContain("inputs: 1");
@@ -171,7 +171,7 @@ describe("Constructor", () => {
 				stateMutability: "payable",
 				inputs: [{ type: "uint256" }, { type: "string" }],
 			});
-			const str = constructor.toString();
+			const str = ctor.toString();
 			expect(str).toContain("inputs: 2");
 		});
 
@@ -181,7 +181,7 @@ describe("Constructor", () => {
 				stateMutability: "nonpayable",
 				inputs: [],
 			});
-			const str = constructor.toString();
+			const str = ctor.toString();
 			expect(str).toContain("inputs: 0");
 		});
 	});
@@ -215,8 +215,8 @@ describe("Constructor", () => {
 				],
 			});
 
-			expect(constructor.inputs.length).toBe(4);
-			expect(constructor.stateMutability).toBe("nonpayable");
+			expect(ctor.inputs.length).toBe(4);
+			expect(ctor.stateMutability).toBe("nonpayable");
 		});
 
 		it("encodes and decodes ERC20 constructor parameters", () => {
@@ -231,8 +231,8 @@ describe("Constructor", () => {
 			});
 
 			const args = ["MyToken", "MTK", 1000000n];
-			const encoded = constructor.encodeParams(args);
-			const decoded = constructor.decodeParams(encoded);
+			const encoded = ctor.encodeParams(args);
+			const decoded = ctor.decodeParams(encoded);
 			expect(decoded).toEqual(args);
 		});
 
@@ -243,8 +243,8 @@ describe("Constructor", () => {
 				inputs: [{ type: "address", name: "owner" }],
 			});
 
-			expect(constructor.stateMutability).toBe("payable");
-			expect(constructor.inputs.length).toBe(1);
+			expect(ctor.stateMutability).toBe("payable");
+			expect(ctor.inputs.length).toBe(1);
 		});
 	});
 
@@ -256,8 +256,8 @@ describe("Constructor", () => {
 				inputs: [{ type: "uint256", name: "value" }],
 			});
 
-			const encoded = constructor.encodeParams([42n]);
-			const decoded = constructor.decodeParams(encoded);
+			const encoded = ctor.encodeParams([42n]);
+			const decoded = ctor.decodeParams(encoded);
 			expect(decoded).toEqual([42n]);
 		});
 
@@ -272,8 +272,8 @@ describe("Constructor", () => {
 				/** @type {import('../../Address/AddressType.js').AddressType} */ (
 					/** @type {unknown} */ ("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 				);
-			const encoded = constructor.encodeParams([addr]);
-			const decoded = constructor.decodeParams(encoded);
+			const encoded = ctor.encodeParams([addr]);
+			const decoded = ctor.decodeParams(encoded);
 			expect(decoded).toEqual([addr]);
 		});
 
@@ -284,8 +284,8 @@ describe("Constructor", () => {
 				inputs: [{ type: "string", name: "name" }],
 			});
 
-			const encoded = constructor.encodeParams(["Test"]);
-			const decoded = constructor.decodeParams(encoded);
+			const encoded = ctor.encodeParams(["Test"]);
+			const decoded = ctor.decodeParams(encoded);
 			expect(decoded).toEqual(["Test"]);
 		});
 
@@ -296,8 +296,8 @@ describe("Constructor", () => {
 				inputs: [{ type: "bool", name: "flag" }],
 			});
 
-			const encoded = constructor.encodeParams([true]);
-			const decoded = constructor.decodeParams(encoded);
+			const encoded = ctor.encodeParams([true]);
+			const decoded = ctor.decodeParams(encoded);
 			expect(decoded).toEqual([true]);
 		});
 
@@ -309,8 +309,8 @@ describe("Constructor", () => {
 			});
 
 			const data = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
-			const encoded = constructor.encodeParams([data]);
-			const decoded = constructor.decodeParams(encoded);
+			const encoded = ctor.encodeParams([data]);
+			const decoded = ctor.decodeParams(encoded);
 			expect(/** @type {*} */ (decoded)[0]).toEqual(data);
 		});
 
@@ -322,8 +322,8 @@ describe("Constructor", () => {
 			});
 
 			const values = [1n, 2n, 3n];
-			const encoded = constructor.encodeParams([values]);
-			const decoded = constructor.decodeParams(encoded);
+			const encoded = ctor.encodeParams([values]);
+			const decoded = ctor.decodeParams(encoded);
 			expect(decoded).toEqual([values]);
 		});
 	});
@@ -336,8 +336,8 @@ describe("Constructor", () => {
 				inputs: [],
 			});
 
-			expect(constructor.inputs).toEqual([]);
-			const encoded = constructor.encodeParams([]);
+			expect(ctor.inputs).toEqual([]);
+			const encoded = ctor.encodeParams([]);
 			expect(encoded.length).toBe(0);
 		});
 
@@ -352,8 +352,8 @@ describe("Constructor", () => {
 			});
 
 			const args = Array.from({ length: 10 }, (_, i) => BigInt(i));
-			const encoded = constructor.encodeParams(args);
-			const decoded = constructor.decodeParams(encoded);
+			const encoded = ctor.encodeParams(args);
+			const decoded = ctor.decodeParams(encoded);
 			expect(decoded).toEqual(args);
 		});
 
@@ -364,8 +364,8 @@ describe("Constructor", () => {
 				inputs: [{ type: "uint256" }],
 			});
 
-			const encoded = constructor.encodeParams([0n]);
-			const decoded = constructor.decodeParams(encoded);
+			const encoded = ctor.encodeParams([0n]);
+			const decoded = ctor.decodeParams(encoded);
 			expect(decoded).toEqual([0n]);
 		});
 	});
@@ -380,8 +380,8 @@ describe("Constructor", () => {
 
 			const maxUint256 =
 				0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
-			const encoded = constructor.encodeParams([maxUint256]);
-			const decoded = constructor.decodeParams(encoded);
+			const encoded = ctor.encodeParams([maxUint256]);
+			const decoded = ctor.decodeParams(encoded);
 			expect(decoded).toEqual([maxUint256]);
 		});
 
@@ -396,8 +396,8 @@ describe("Constructor", () => {
 				/** @type {import('../../Address/AddressType.js').AddressType} */ (
 					/** @type {unknown} */ ("0x0000000000000000000000000000000000000000")
 				);
-			const encoded = constructor.encodeParams([zeroAddr]);
-			const decoded = constructor.decodeParams(encoded);
+			const encoded = ctor.encodeParams([zeroAddr]);
+			const decoded = ctor.decodeParams(encoded);
 			expect(decoded).toEqual([zeroAddr]);
 		});
 
@@ -408,8 +408,8 @@ describe("Constructor", () => {
 				inputs: [{ type: "string" }],
 			});
 
-			const encoded = constructor.encodeParams([""]);
-			const decoded = constructor.decodeParams(encoded);
+			const encoded = ctor.encodeParams([""]);
+			const decoded = ctor.decodeParams(encoded);
 			expect(decoded).toEqual([""]);
 		});
 	});

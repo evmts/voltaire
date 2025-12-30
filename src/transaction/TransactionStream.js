@@ -43,7 +43,7 @@ function hexToBytes(hex) {
 	const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
 	const bytes = new Uint8Array(cleanHex.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
-		bytes[i] = parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = Number.parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16);
 	}
 	return bytes;
 }
@@ -54,7 +54,9 @@ function hexToBytes(hex) {
  * @returns {string}
  */
 function bytesToHex(bytes) {
-	return "0x" + Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+	return `0x${Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 /**
@@ -70,7 +72,9 @@ function parsePendingTransaction(tx) {
 		value: BigInt(tx.value || "0x0"),
 		gas: BigInt(tx.gas),
 		gasPrice: BigInt(tx.gasPrice || tx.maxFeePerGas || "0x0"),
-		maxPriorityFeePerGas: tx.maxPriorityFeePerGas ? BigInt(tx.maxPriorityFeePerGas) : undefined,
+		maxPriorityFeePerGas: tx.maxPriorityFeePerGas
+			? BigInt(tx.maxPriorityFeePerGas)
+			: undefined,
 		maxFeePerGas: tx.maxFeePerGas ? BigInt(tx.maxFeePerGas) : undefined,
 		nonce: BigInt(tx.nonce),
 		input: hexToBytes(tx.input || tx.data || "0x"),
@@ -85,14 +89,20 @@ function parsePendingTransaction(tx) {
  */
 function getTransactionType(typeHex) {
 	if (!typeHex) return "legacy";
-	const type = parseInt(typeHex, 16);
+	const type = Number.parseInt(typeHex, 16);
 	switch (type) {
-		case 0: return "legacy";
-		case 1: return "eip2930";
-		case 2: return "eip1559";
-		case 3: return "eip4844";
-		case 4: return "eip7702";
-		default: return "legacy";
+		case 0:
+			return "legacy";
+		case 1:
+			return "eip2930";
+		case 2:
+			return "eip1559";
+		case 3:
+			return "eip4844";
+		case 4:
+			return "eip7702";
+		default:
+			return "legacy";
 	}
 }
 
@@ -102,22 +112,28 @@ function getTransactionType(typeHex) {
  * @param {TransactionFilter | undefined} filter
  * @returns {boolean}
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: transaction filtering logic
 function matchesFilter(tx, filter) {
 	if (!filter) return true;
 
 	if (filter.from) {
-		const filterFrom = typeof filter.from === "string" ? hexToBytes(filter.from) : filter.from;
+		const filterFrom =
+			typeof filter.from === "string" ? hexToBytes(filter.from) : filter.from;
 		if (bytesToHex(tx.from) !== bytesToHex(filterFrom)) return false;
 	}
 
 	if (filter.to) {
 		if (!tx.to) return false;
-		const filterTo = typeof filter.to === "string" ? hexToBytes(filter.to) : filter.to;
+		const filterTo =
+			typeof filter.to === "string" ? hexToBytes(filter.to) : filter.to;
 		if (bytesToHex(tx.to) !== bytesToHex(filterTo)) return false;
 	}
 
 	if (filter.methodId && tx.input.length >= 4) {
-		const filterMethod = typeof filter.methodId === "string" ? hexToBytes(filter.methodId) : filter.methodId;
+		const filterMethod =
+			typeof filter.methodId === "string"
+				? hexToBytes(filter.methodId)
+				: filter.methodId;
 		const txMethod = tx.input.slice(0, 4);
 		if (bytesToHex(txMethod) !== bytesToHex(filterMethod)) return false;
 	}
@@ -170,10 +186,12 @@ export function TransactionStream(options) {
 	 * @returns {Promise<any | null>}
 	 */
 	async function getTransaction(hash) {
-		return provider.request({
-			method: "eth_getTransactionByHash",
-			params: [hash],
-		});
+		return provider.request(
+			/** @type {any} */ ({
+				method: "eth_getTransactionByHash",
+				params: [hash],
+			}),
+		);
 	}
 
 	/**
@@ -182,10 +200,12 @@ export function TransactionStream(options) {
 	 * @returns {Promise<any | null>}
 	 */
 	async function getReceipt(hash) {
-		return provider.request({
-			method: "eth_getTransactionReceipt",
-			params: [hash],
-		});
+		return provider.request(
+			/** @type {any} */ ({
+				method: "eth_getTransactionReceipt",
+				params: [hash],
+			}),
+		);
 	}
 
 	/**
@@ -193,6 +213,7 @@ export function TransactionStream(options) {
 	 * @param {WatchPendingOptions} [opts]
 	 * @returns {AsyncGenerator<PendingTransactionEvent>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: streaming logic
 	async function* watchPending(opts = {}) {
 		const { filter, pollingInterval = DEFAULT_POLLING_INTERVAL, signal } = opts;
 		const seenHashes = new Set();
@@ -201,9 +222,11 @@ export function TransactionStream(options) {
 			try {
 				// Get pending transactions using eth_pendingTransactions or eth_subscribe
 				// Note: Not all nodes support eth_pendingTransactions
-				const pendingTxs = await provider.request({
-					method: "eth_pendingTransactions",
-				}).catch(() => []);
+				const pendingTxs = /** @type {any[]} */ (
+					await provider
+						.request(/** @type {any} */ ({ method: "eth_pendingTransactions" }))
+						.catch(() => [])
+				);
 
 				const chainHead = await getBlockNumber();
 
@@ -214,7 +237,7 @@ export function TransactionStream(options) {
 					const parsed = parsePendingTransaction(tx);
 					if (!matchesFilter(parsed, filter)) continue;
 
-					yield /** @type {PendingTransactionEvent} */ ({
+					yield/** @type {PendingTransactionEvent} */ ({
 						type: "pending",
 						transaction: parsed,
 						metadata: { chainHead, timestamp: Date.now() },
@@ -241,6 +264,7 @@ export function TransactionStream(options) {
 	 * @param {WatchConfirmedOptions} [opts]
 	 * @returns {AsyncGenerator<ConfirmedTransactionEvent>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: streaming logic
 	async function* watchConfirmed(opts = {}) {
 		const {
 			filter,
@@ -259,10 +283,12 @@ export function TransactionStream(options) {
 
 				// Process new blocks
 				while (lastBlock <= confirmedBlock && !signal?.aborted) {
-					const block = await provider.request({
-						method: "eth_getBlockByNumber",
-						params: [`0x${lastBlock.toString(16)}`, true],
-					});
+					const block = await provider.request(
+						/** @type {any} */ ({
+							method: "eth_getBlockByNumber",
+							params: [`0x${lastBlock.toString(16)}`, true],
+						}),
+					);
 
 					if (!block) break;
 
@@ -284,28 +310,38 @@ export function TransactionStream(options) {
 						/** @type {ConfirmedTransaction} */
 						const confirmed = {
 							...parsed,
-							blockHash: hexToBytes(blockData.hash),
+							blockHash:
+								/** @type {import('../primitives/BlockHash/BlockHashType.js').BlockHashType} */ (
+									hexToBytes(blockData.hash)
+								),
 							blockNumber: BigInt(blockData.number),
-							transactionIndex: parseInt(tx.transactionIndex, 16),
+							transactionIndex: Number.parseInt(tx.transactionIndex, 16),
 							receipt: /** @type {any} */ ({
 								transactionHash: hexToBytes(receiptData.transactionHash),
-								transactionIndex: parseInt(receiptData.transactionIndex, 16),
+								transactionIndex: Number.parseInt(
+									receiptData.transactionIndex,
+									16,
+								),
 								blockHash: hexToBytes(receiptData.blockHash),
 								blockNumber: BigInt(receiptData.blockNumber),
 								from: hexToBytes(receiptData.from),
 								to: receiptData.to ? hexToBytes(receiptData.to) : null,
 								cumulativeGasUsed: BigInt(receiptData.cumulativeGasUsed),
 								gasUsed: BigInt(receiptData.gasUsed),
-								contractAddress: receiptData.contractAddress ? hexToBytes(receiptData.contractAddress) : null,
+								contractAddress: receiptData.contractAddress
+									? hexToBytes(receiptData.contractAddress)
+									: null,
 								logs: [],
 								logsBloom: hexToBytes(receiptData.logsBloom),
 								status: receiptData.status === "0x1" ? 1 : 0,
-								effectiveGasPrice: BigInt(receiptData.effectiveGasPrice || "0x0"),
+								effectiveGasPrice: BigInt(
+									receiptData.effectiveGasPrice || "0x0",
+								),
 								type: getTransactionType(receiptData.type),
 							}),
 						};
 
-						yield /** @type {ConfirmedTransactionEvent} */ ({
+						yield/** @type {ConfirmedTransactionEvent} */ ({
 							type: "confirmed",
 							transaction: confirmed,
 							metadata: { chainHead, timestamp: Date.now() },
@@ -328,6 +364,7 @@ export function TransactionStream(options) {
 	 * @param {TrackOptions} [opts]
 	 * @returns {AsyncGenerator<TransactionStreamEvent>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: streaming logic
 	async function* track(txHash, opts = {}) {
 		const {
 			pollingInterval = DEFAULT_POLLING_INTERVAL,
@@ -338,13 +375,15 @@ export function TransactionStream(options) {
 
 		const hashHex = typeof txHash === "string" ? txHash : bytesToHex(txHash);
 		const startTime = Date.now();
-		let lastState = /** @type {"unknown" | "pending" | "confirmed"} */ ("unknown");
+		let lastState = /** @type {"unknown" | "pending" | "confirmed"} */ (
+			"unknown"
+		);
 
 		while (!signal?.aborted) {
 			// Check timeout
 			if (Date.now() - startTime > timeout) {
 				const chainHead = await getBlockNumber();
-				yield /** @type {import('./TransactionStreamType.js').DroppedTransactionEvent} */ ({
+				yield/** @type {import('./TransactionStreamType.js').DroppedTransactionEvent} */ ({
 					type: "dropped",
 					hash: hexToBytes(hashHex),
 					reason: "timeout",
@@ -360,7 +399,7 @@ export function TransactionStream(options) {
 				if (!tx) {
 					// Transaction not found - might be dropped
 					if (lastState === "pending") {
-						yield /** @type {import('./TransactionStreamType.js').DroppedTransactionEvent} */ ({
+						yield/** @type {import('./TransactionStreamType.js').DroppedTransactionEvent} */ ({
 							type: "dropped",
 							hash: hexToBytes(hashHex),
 							reason: "unknown",
@@ -385,28 +424,41 @@ export function TransactionStream(options) {
 								/** @type {ConfirmedTransaction} */
 								const confirmed = {
 									...parsed,
-									blockHash: hexToBytes(txData.blockHash),
+									blockHash:
+										/** @type {import('../primitives/BlockHash/BlockHashType.js').BlockHashType} */ (
+											hexToBytes(txData.blockHash)
+										),
 									blockNumber,
-									transactionIndex: parseInt(txData.transactionIndex, 16),
+									transactionIndex: Number.parseInt(
+										txData.transactionIndex,
+										16,
+									),
 									receipt: /** @type {any} */ ({
 										transactionHash: hexToBytes(receiptData.transactionHash),
-										transactionIndex: parseInt(receiptData.transactionIndex, 16),
+										transactionIndex: Number.parseInt(
+											receiptData.transactionIndex,
+											16,
+										),
 										blockHash: hexToBytes(receiptData.blockHash),
 										blockNumber: BigInt(receiptData.blockNumber),
 										from: hexToBytes(receiptData.from),
 										to: receiptData.to ? hexToBytes(receiptData.to) : null,
 										cumulativeGasUsed: BigInt(receiptData.cumulativeGasUsed),
 										gasUsed: BigInt(receiptData.gasUsed),
-										contractAddress: receiptData.contractAddress ? hexToBytes(receiptData.contractAddress) : null,
+										contractAddress: receiptData.contractAddress
+											? hexToBytes(receiptData.contractAddress)
+											: null,
 										logs: [],
 										logsBloom: hexToBytes(receiptData.logsBloom),
 										status: receiptData.status === "0x1" ? 1 : 0,
-										effectiveGasPrice: BigInt(receiptData.effectiveGasPrice || "0x0"),
+										effectiveGasPrice: BigInt(
+											receiptData.effectiveGasPrice || "0x0",
+										),
 										type: getTransactionType(receiptData.type),
 									}),
 								};
 
-								yield /** @type {ConfirmedTransactionEvent} */ ({
+								yield/** @type {ConfirmedTransactionEvent} */ ({
 									type: "confirmed",
 									transaction: confirmed,
 									metadata: { chainHead, timestamp: Date.now() },
@@ -420,7 +472,7 @@ export function TransactionStream(options) {
 							lastState = "pending";
 							const parsed = parsePendingTransaction(txData);
 
-							yield /** @type {PendingTransactionEvent} */ ({
+							yield/** @type {PendingTransactionEvent} */ ({
 								type: "pending",
 								transaction: parsed,
 								metadata: { chainHead, timestamp: Date.now() },

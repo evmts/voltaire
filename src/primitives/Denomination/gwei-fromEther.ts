@@ -1,23 +1,24 @@
 import type { EtherType as BrandedEther } from "./EtherType.js";
 import type { GweiType as BrandedGwei } from "./GweiType.js";
-import { GWEI_PER_ETHER } from "./gwei-constants.js";
+import { toGwei } from "./ether-toGwei.js";
 
 /**
  * Convert Ether to Gwei
  *
+ * Converts ether string to gwei string (multiplies by 10^9).
+ * Alias for Ether.toGwei().
+ *
  * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
  * @since 0.0.0
- * @param ether - Amount in Ether
- * @returns Amount in Gwei (ether * 10^9)
+ * @param ether - Amount in Ether (string)
+ * @returns Amount in Gwei (string)
  * @throws {never}
  * @example
  * ```typescript
- * const ether = Ether.from(1);
- * const gwei = Gwei.fromEther(ether);
- * // gwei = 1000000000n
+ * const gwei1 = Gwei.fromEther(Ether.from("1"));   // "1000000000"
+ * const gwei2 = Gwei.fromEther(Ether.from("1.5")); // "1500000000"
  * ```
  */
 export function fromEther(ether: BrandedEther): BrandedGwei {
-	const gwei = ether * GWEI_PER_ETHER;
-	return gwei as BrandedGwei;
+	return toGwei(ether);
 }

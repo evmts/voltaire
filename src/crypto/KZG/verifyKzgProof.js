@@ -23,6 +23,7 @@ import { getInitialized } from "./loadTrustedSetup.js";
  * ```
  */
 export function VerifyKzgProof({ verifyKzgProof: ckzgVerifyKzgProof }) {
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: validation logic
 	return function verifyKzgProof(commitment, z, y, proof) {
 		if (!getInitialized()) {
 			throw new KzgNotInitializedError();

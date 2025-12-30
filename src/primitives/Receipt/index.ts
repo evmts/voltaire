@@ -37,7 +37,9 @@ export function isPreByzantium(receipt: ReceiptType): boolean {
  */
 export const poll: (
 	txHash: string,
-	provider: { request(args: { method: string; params?: unknown[] }): Promise<unknown> },
+	provider: {
+		request(args: { method: string; params?: unknown[] }): Promise<unknown>;
+	},
 	options?: { interval?: number; timeout?: number; confirmations?: number },
 ) => Promise<ReceiptType> = _poll;
 

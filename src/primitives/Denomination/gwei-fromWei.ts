@@ -1,23 +1,24 @@
 import type { GweiType as BrandedGwei } from "./GweiType.js";
 import type { WeiType as BrandedWei } from "./WeiType.js";
-import { WEI_PER_GWEI } from "./gwei-constants.js";
+import { toGwei } from "./wei-toGwei.js";
 
 /**
  * Convert Wei to Gwei
  *
+ * Converts bigint wei to decimal string gwei value.
+ * Alias for Wei.toGwei().
+ *
  * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
  * @since 0.0.0
- * @param wei - Amount in Wei
- * @returns Amount in Gwei (wei / 10^9)
+ * @param wei - Amount in Wei (bigint)
+ * @returns Amount in Gwei (string with decimal precision)
  * @throws {never}
  * @example
  * ```typescript
- * const wei = Wei.from(5000000000);
- * const gwei = Gwei.fromWei(wei);
- * // gwei = 5n
+ * const gwei1 = Gwei.fromWei(Wei.from(5000000000n)); // "5"
+ * const gwei2 = Gwei.fromWei(Wei.from(1500000000n)); // "1.5"
  * ```
  */
 export function fromWei(wei: BrandedWei): BrandedGwei {
-	const gwei = wei / WEI_PER_GWEI;
-	return gwei as BrandedGwei;
+	return toGwei(wei);
 }

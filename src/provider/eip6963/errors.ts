@@ -90,10 +90,13 @@ export class InvalidIconError extends EIP6963Error {
 
 	constructor(icon: string) {
 		const preview = icon.length > 30 ? `${icon.slice(0, 30)}...` : icon;
-		super(`Invalid icon: expected data URI (data:image/...), got "${preview}"`, {
-			code: "INVALID_ICON",
-			context: { icon: preview },
-		});
+		super(
+			`Invalid icon: expected data URI (data:image/...), got "${preview}"`,
+			{
+				code: "INVALID_ICON",
+				context: { icon: preview },
+			},
+		);
 		this.name = "InvalidIconError";
 		this.icon = icon;
 	}
@@ -136,12 +139,9 @@ export class InvalidFieldError extends EIP6963Error {
  */
 export class InvalidProviderError extends EIP6963Error {
 	constructor() {
-		super(
-			"Invalid provider: expected EIP1193 provider with request() method",
-			{
-				code: "INVALID_PROVIDER",
-			},
-		);
+		super("Invalid provider: expected EIP1193 provider with request() method", {
+			code: "INVALID_PROVIDER",
+		});
 		this.name = "InvalidProviderError";
 	}
 }

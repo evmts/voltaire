@@ -6,6 +6,14 @@
  * @module provider/eip6963/getPlatform
  */
 
+/** @type {typeof globalThis & { dispatchEvent?: Function }} */
+// @ts-ignore - window may exist in browser environment
+const window = globalThis;
+
+/** @type {Function | undefined} */
+// @ts-ignore - WorkerGlobalScope may exist in worker environment
+const WorkerGlobalScope = globalThis.WorkerGlobalScope;
+
 import { UnsupportedEnvironmentError } from "./errors.js";
 
 /**
@@ -25,7 +33,10 @@ import { UnsupportedEnvironmentError } from "./errors.js";
  */
 export function getPlatform() {
 	// Check for browser first (most common case)
-	if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+	if (
+		typeof window !== "undefined" &&
+		typeof window.dispatchEvent === "function"
+	) {
 		return "browser";
 	}
 

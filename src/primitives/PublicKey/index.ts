@@ -1,6 +1,7 @@
 // Export type definition
 export type { PublicKeyType } from "./PublicKeyType.js";
 
+import type { Secp256k1SignatureType } from "../../crypto/Secp256k1/SignatureType.js";
 // Import crypto dependencies
 import { verify as secp256k1Verify } from "../../crypto/Secp256k1/verify.js";
 
@@ -40,9 +41,7 @@ export function verify(
 	return _verify(
 		from(publicKey),
 		hash,
-		signature as unknown as import(
-			"../../crypto/Secp256k1/SignatureType.js",
-		).Secp256k1SignatureType,
+		signature as unknown as Secp256k1SignatureType,
 	);
 }
 

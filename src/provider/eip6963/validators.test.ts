@@ -1,22 +1,22 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	validateUuid,
-	validateRdns,
-	validateIcon,
-	validateProvider,
-	validateName,
-	UUID_V4_REGEX,
-	RDNS_REGEX,
-	DATA_URI_REGEX,
-} from "./validators.js";
-import {
-	MissingFieldError,
-	InvalidUuidError,
-	InvalidRdnsError,
+	InvalidFieldError,
 	InvalidIconError,
 	InvalidProviderError,
-	InvalidFieldError,
+	InvalidRdnsError,
+	InvalidUuidError,
+	MissingFieldError,
 } from "./errors.js";
+import {
+	DATA_URI_REGEX,
+	RDNS_REGEX,
+	UUID_V4_REGEX,
+	validateIcon,
+	validateName,
+	validateProvider,
+	validateRdns,
+	validateUuid,
+} from "./validators.js";
 
 describe("validateUuid", () => {
 	it("accepts valid UUIDv4", () => {
@@ -39,16 +39,16 @@ describe("validateUuid", () => {
 
 	it("throws InvalidUuidError when uuid has wrong version", () => {
 		// Version 1 UUID (not v4)
-		expect(() =>
-			validateUuid("550e8400-e29b-11d4-a716-446655440000"),
-		).toThrow(InvalidUuidError);
+		expect(() => validateUuid("550e8400-e29b-11d4-a716-446655440000")).toThrow(
+			InvalidUuidError,
+		);
 	});
 
 	it("throws InvalidUuidError when uuid has wrong variant", () => {
 		// Wrong variant (c instead of 8,9,a,b)
-		expect(() =>
-			validateUuid("350670db-19fa-4704-c166-e52e178b59d2"),
-		).toThrow(InvalidUuidError);
+		expect(() => validateUuid("350670db-19fa-4704-c166-e52e178b59d2")).toThrow(
+			InvalidUuidError,
+		);
 	});
 });
 

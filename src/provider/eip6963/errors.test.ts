@@ -1,17 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { PrimitiveError } from "../../primitives/errors/PrimitiveError.js";
 import {
 	EIP6963Error,
-	UnsupportedEnvironmentError,
-	InvalidUuidError,
-	InvalidRdnsError,
-	InvalidIconError,
-	MissingFieldError,
-	InvalidFieldError,
-	InvalidProviderError,
 	InvalidArgumentError,
+	InvalidFieldError,
+	InvalidIconError,
+	InvalidProviderError,
+	InvalidRdnsError,
+	InvalidUuidError,
+	MissingFieldError,
 	NotImplementedError,
+	UnsupportedEnvironmentError,
 } from "./errors.js";
-import { PrimitiveError } from "../../primitives/errors/PrimitiveError.js";
 
 describe("Error Hierarchy", () => {
 	it("EIP6963Error extends PrimitiveError", () => {
@@ -108,12 +108,20 @@ describe("MissingFieldError", () => {
 
 describe("InvalidFieldError", () => {
 	it("has correct code", () => {
-		const error = new InvalidFieldError("ProviderInfo", "name", "cannot be empty");
+		const error = new InvalidFieldError(
+			"ProviderInfo",
+			"name",
+			"cannot be empty",
+		);
 		expect(error.code).toBe("INVALID_FIELD");
 	});
 
 	it("stores field property", () => {
-		const error = new InvalidFieldError("ProviderInfo", "name", "cannot be empty");
+		const error = new InvalidFieldError(
+			"ProviderInfo",
+			"name",
+			"cannot be empty",
+		);
 		expect(error.field).toBe("name");
 	});
 });

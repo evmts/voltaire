@@ -310,7 +310,9 @@ describe("HDWallet", () => {
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
-			expect(() => HDWallet.deriveChild(root, 1.5 as any)).toThrow();
+			expect(() =>
+				HDWallet.deriveChild(root, 1.5 as unknown as number),
+			).toThrow();
 		});
 
 		it("throws on NaN index", async () => {

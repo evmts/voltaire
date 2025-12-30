@@ -116,11 +116,13 @@ export interface Response<T> {
  */
 export interface ProviderEvents {
 	/** Subscribe to new block headers */
-	newHeads: () => AsyncGenerator<any, void, unknown>;
+	newHeads: () => AsyncGenerator<unknown, void, unknown>;
 	/** Subscribe to log events */
-	logs: (params?: any) => AsyncGenerator<any, void, unknown>;
+	logs: (
+		params?: Record<string, unknown>,
+	) => AsyncGenerator<unknown, void, unknown>;
 	/** Subscribe to pending transactions */
-	newPendingTransactions: () => AsyncGenerator<any, void, unknown>;
+	newPendingTransactions: () => AsyncGenerator<unknown, void, unknown>;
 	/** Subscribe to sync status changes */
-	syncing: () => AsyncGenerator<any, void, unknown>;
+	syncing: () => AsyncGenerator<unknown, void, unknown>;
 }

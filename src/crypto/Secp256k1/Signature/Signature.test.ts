@@ -55,6 +55,7 @@ describe("Secp256k1.Signature methods", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			// biome-ignore lint/suspicious/noExplicitAny: testing type compatibility
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -125,6 +126,7 @@ describe("Secp256k1.Signature methods", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			// biome-ignore lint/suspicious/noExplicitAny: testing type compatibility
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -188,6 +190,7 @@ describe("Secp256k1.Signature methods", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			// biome-ignore lint/suspicious/noExplicitAny: testing type compatibility
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -258,6 +261,7 @@ describe("Secp256k1.Signature methods", () => {
 			const privateKeyBytes = new Uint8Array(32);
 			privateKeyBytes[31] = 1;
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			// biome-ignore lint/suspicious/noExplicitAny: testing type compatibility
 			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
@@ -303,6 +307,7 @@ describe("Secp256k1.Signature methods", () => {
 			}
 			const message = sha256(
 				new TextEncoder().encode("conversion test"),
+				// biome-ignore lint/suspicious/noExplicitAny: testing type compatibility
 			) as any;
 
 			const original = sign(message, privateKey);

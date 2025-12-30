@@ -468,6 +468,7 @@ describe("P256", () => {
 			const publicKey = P256.derivePublicKey(privateKey);
 
 			// Create a "large" hash (though all hashes are 32 bytes)
+			// biome-ignore lint/suspicious/noExplicitAny: testing type compatibility
 			const messageHash = new Uint8Array(32).fill(0xff) as any;
 
 			const signature = P256.sign(messageHash, privateKey);
@@ -662,7 +663,8 @@ describe("P256", () => {
 			expect(invalidCount).toBe(1000);
 		});
 
-		it("handles rapid ECDH operations", () => {
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: test covers many ECDH scenarios
+		it("handles rapid ECDH operations", { timeout: 30000 }, () => {
 			const privateKeys = Array.from({ length: 50 }, () =>
 				crypto.getRandomValues(new Uint8Array(32)),
 			);

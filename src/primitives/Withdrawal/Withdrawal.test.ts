@@ -17,7 +17,7 @@ describe("Withdrawal", () => {
 
 			expect(withdrawal.index).toBe(1000000n);
 			expect(withdrawal.validatorIndex).toBe(123456);
-			expect(withdrawal.amount).toBe(32000000000n);
+			expect(withdrawal.amount).toBe("32000000000");
 			expect(withdrawal.address.length).toBe(20);
 		});
 
@@ -31,7 +31,7 @@ describe("Withdrawal", () => {
 
 			expect(withdrawal.index).toBe(1000000n);
 			expect(withdrawal.validatorIndex).toBe(123456);
-			expect(withdrawal.amount).toBe(32000000000n);
+			expect(withdrawal.amount).toBe("32000000000");
 		});
 
 		it("accepts mixed types", () => {

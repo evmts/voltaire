@@ -53,7 +53,8 @@ describe("retryWithBackoff", () => {
 			retryWithBackoff(fn, {
 				maxRetries: 5,
 				initialDelay: 10,
-				shouldRetry: (error: any) => error.message !== "non-retryable",
+				shouldRetry: (error: unknown) =>
+					(error as Error).message !== "non-retryable",
 			}),
 		).rejects.toThrow("non-retryable");
 

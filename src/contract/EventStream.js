@@ -20,8 +20,16 @@ import {
 } from "../stream/errors.js";
 
 /**
- * @typedef {import('./EventStreamType.js').EventStreamConstructorOptions} EventStreamConstructorOptions
- * @typedef {import('./EventStreamType.js').EventStream} EventStreamInstance
+ * @template {import('../primitives/Abi/event/EventType.js').EventType} TEvent
+ * @typedef {import('./EventStreamType.js').EventStreamConstructorOptions<TEvent>} EventStreamConstructorOptions
+ */
+
+/**
+ * @template {import('../primitives/Abi/event/EventType.js').EventType} TEvent
+ * @typedef {import('./EventStreamType.js').EventStream<TEvent>} EventStreamInstance
+ */
+
+/**
  * @typedef {import('./EventStreamType.js').BackfillOptions} BackfillOptions
  * @typedef {import('./EventStreamType.js').WatchOptions} WatchOptions
  */
@@ -120,7 +128,7 @@ export function EventStream(options) {
 	/**
 	 * Decode raw log into structured event
 	 * @param {*} log
-	 * @returns {import('./ContractType.js').DecodedEventLog<TEvent>}
+	 * @returns {import('./EventStreamType.js').DecodedEventLog<TEvent>}
 	 */
 	function decodeLog(log) {
 		const dataBytes = Hex.toBytes(log.data);
@@ -135,7 +143,7 @@ export function EventStream(options) {
 
 		return {
 			eventName: event.name,
-			args,
+			args: /** @type {*} */ (args),
 			blockNumber: BlockNumber.from(BigInt(log.blockNumber)),
 			blockHash: Hash.fromHex(log.blockHash),
 			transactionHash: TransactionHash.fromHex(log.transactionHash),
@@ -160,6 +168,7 @@ export function EventStream(options) {
 	 * @param {AbortSignal} [signal]
 	 * @returns {Promise<{logs: any[], shouldReduceChunk: boolean}>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: retry logic
 	async function fetchLogsWithRetry(fromBlock, toBlock, retryOptions, signal) {
 		const maxRetries = retryOptions?.maxRetries ?? DEFAULT_MAX_RETRIES;
 		const initialDelay = retryOptions?.initialDelay ?? DEFAULT_INITIAL_DELAY;
@@ -175,17 +184,21 @@ export function EventStream(options) {
 			}
 
 			try {
-				const logs = await provider.request({
-					method: "eth_getLogs",
-					params: [
-						{
-							address: addressHex,
-							topics: topicsHex,
-							fromBlock: `0x${fromBlock.toString(16)}`,
-							toBlock: `0x${toBlock.toString(16)}`,
-						},
-					],
-				});
+				const logs = /** @type {any[]} */ (
+					await provider.request(
+						/** @type {*} */ ({
+							method: "eth_getLogs",
+							params: [
+								{
+									address: addressHex,
+									topics: topicsHex,
+									fromBlock: `0x${fromBlock.toString(16)}`,
+									toBlock: `0x${toBlock.toString(16)}`,
+								},
+							],
+						}),
+					)
+				);
 				return { logs, shouldReduceChunk: false };
 			} catch (error) {
 				// Check abort after error
@@ -218,6 +231,7 @@ export function EventStream(options) {
 	 * @param {BackfillOptions} backfillOptions
 	 * @returns {AsyncGenerator<import('./EventStreamType.js').EventStreamResult<TEvent>>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: streaming logic
 	async function* backfill(backfillOptions) {
 		const { fromBlock, toBlock, signal, retry } = backfillOptions;
 		let chunkSize = backfillOptions.chunkSize ?? DEFAULT_CHUNK_SIZE;
@@ -230,10 +244,14 @@ export function EventStream(options) {
 		let currentFrom = fromBlock;
 
 		// Get current chain head for metadata
-		const chainHeadHex = await provider.request({
-			method: "eth_blockNumber",
-			params: [],
-		});
+		const chainHeadHex = /** @type {string} */ (
+			await provider.request(
+				/** @type {*} */ ({
+					method: "eth_blockNumber",
+					params: [],
+				}),
+			)
+		);
 		const chainHead = BigInt(chainHeadHex);
 
 		while (currentFrom <= toBlock) {
@@ -303,6 +321,7 @@ export function EventStream(options) {
 	 * @param {WatchOptions} [watchOptions]
 	 * @returns {AsyncGenerator<import('./EventStreamType.js').EventStreamResult<TEvent>>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: streaming logic
 	async function* watch(watchOptions) {
 		const signal = watchOptions?.signal;
 		const pollingInterval =
@@ -317,10 +336,14 @@ export function EventStream(options) {
 		// Get starting block
 		let lastBlock = watchOptions?.fromBlock;
 		if (lastBlock === undefined) {
-			const currentBlockHex = await provider.request({
-				method: "eth_blockNumber",
-				params: [],
-			});
+			const currentBlockHex = /** @type {string} */ (
+				await provider.request(
+					/** @type {*} */ ({
+						method: "eth_blockNumber",
+						params: [],
+					}),
+				)
+			);
 			lastBlock = BigInt(currentBlockHex);
 		}
 
@@ -334,10 +357,14 @@ export function EventStream(options) {
 			}
 
 			// Get current block
-			const currentBlockHex = await provider.request({
-				method: "eth_blockNumber",
-				params: [],
-			});
+			const currentBlockHex = /** @type {string} */ (
+				await provider.request(
+					/** @type {*} */ ({
+						method: "eth_blockNumber",
+						params: [],
+					}),
+				)
+			);
 			const currentBlock = BigInt(currentBlockHex);
 
 			// Fetch logs if new blocks

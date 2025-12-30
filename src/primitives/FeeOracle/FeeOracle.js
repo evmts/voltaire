@@ -52,17 +52,24 @@ export function FeeOracle(options) {
 		// Fetch in parallel
 		const [gasPriceHex, latestBlock, feeHistory] = await Promise.all([
 			provider.request({ method: "eth_gasPrice" }),
-			provider.request({ method: "eth_getBlockByNumber", params: ["latest", false] }),
 			provider.request({
-				method: "eth_feeHistory",
-				params: [historyBlocks, "latest", [priorityFeePercentile]],
-			}).catch(() => null), // Not all chains support feeHistory
+				method: "eth_getBlockByNumber",
+				params: ["latest", false],
+			}),
+			provider
+				.request({
+					method: "eth_feeHistory",
+					params: [historyBlocks, "latest", [priorityFeePercentile]],
+				})
+				.catch(() => null), // Not all chains support feeHistory
 		]);
 
 		const gasPrice = BigInt(/** @type {string} */ (gasPriceHex));
 		const block = /** @type {any} */ (latestBlock);
 		const blockNumber = BigInt(block.number);
-		const baseFeePerGas = block.baseFeePerGas ? BigInt(block.baseFeePerGas) : null;
+		const baseFeePerGas = block.baseFeePerGas
+			? BigInt(block.baseFeePerGas)
+			: null;
 		const blobBaseFee = block.blobGasPrice ? BigInt(block.blobGasPrice) : null;
 
 		// Calculate suggested priority fee from history
@@ -77,7 +84,7 @@ export function FeeOracle(options) {
 			let totalPriorityFee = 0n;
 			let count = 0;
 			for (const blockRewards of rewards) {
-				if (blockRewards && blockRewards[0]) {
+				if (blockRewards?.[0]) {
 					totalPriorityFee += BigInt(blockRewards[0]);
 					count++;
 				}
@@ -112,7 +119,8 @@ export function FeeOracle(options) {
 		if (feeData.baseFeePerGas === null) {
 			// Fallback for non-EIP-1559 chains
 			const multiplier = PRIORITY_MULTIPLIERS[priority] || 1.0;
-			const adjusted = (feeData.gasPrice * BigInt(Math.floor(multiplier * 100))) / 100n;
+			const adjusted =
+				(feeData.gasPrice * BigInt(Math.floor(multiplier * 100))) / 100n;
 			return {
 				maxFeePerGas: adjusted,
 				maxPriorityFeePerGas: adjusted,
@@ -122,11 +130,14 @@ export function FeeOracle(options) {
 		const priorityMultiplier = PRIORITY_MULTIPLIERS[priority] || 1.0;
 
 		// Calculate priority fee
-		let basePriorityFee = feeData.maxPriorityFeePerGas || 1000000000n; // 1 gwei default
-		const maxPriorityFeePerGas = (basePriorityFee * BigInt(Math.floor(priorityMultiplier * 100))) / 100n;
+		const basePriorityFee = feeData.maxPriorityFeePerGas || 1000000000n; // 1 gwei default
+		const maxPriorityFeePerGas =
+			(basePriorityFee * BigInt(Math.floor(priorityMultiplier * 100))) / 100n;
 
 		// Calculate max fee with buffer for base fee increases
-		const bufferedBaseFee = (feeData.baseFeePerGas * BigInt(Math.floor(baseFeeMultiplier * 100))) / 100n;
+		const bufferedBaseFee =
+			(feeData.baseFeePerGas * BigInt(Math.floor(baseFeeMultiplier * 100))) /
+			100n;
 		const maxFeePerGas = bufferedBaseFee + maxPriorityFeePerGas;
 
 		return { maxFeePerGas, maxPriorityFeePerGas };

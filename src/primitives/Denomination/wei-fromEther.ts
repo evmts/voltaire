@@ -1,27 +1,24 @@
-import * as Uint from "../Uint/index.js";
 import type { EtherType as BrandedEther } from "./EtherType.js";
 import type { WeiType as BrandedWei } from "./WeiType.js";
-import { WEI_PER_ETHER } from "./wei-constants.js";
+import { toWei } from "./ether-toWei.js";
 
 /**
  * Convert Ether to Wei
  *
+ * Parses decimal ether string and converts to bigint wei value.
+ * Alias for Ether.toWei().
+ *
  * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
  * @since 0.0.0
- * @param ether - Amount in Ether
- * @returns Amount in Wei (ether * 10^18)
- * @throws {never}
+ * @param ether - Amount in Ether (string, supports decimals like "1.5")
+ * @returns Amount in Wei (bigint)
+ * @throws {Error} If ether value has more than 18 decimal places
  * @example
  * ```typescript
- * const ether = Ether.from(1);
- * const wei = Wei.fromEther(ether);
- * // wei = 1000000000000000000n
+ * const wei1 = Wei.fromEther(Ether.from("1"));     // 1000000000000000000n
+ * const wei2 = Wei.fromEther(Ether.from("1.5"));   // 1500000000000000000n
  * ```
  */
 export function fromEther(ether: BrandedEther): BrandedWei {
-	const wei = Uint.times(
-		ether as unknown as Uint.Type,
-		Uint.from(WEI_PER_ETHER),
-	);
-	return wei as unknown as BrandedWei;
+	return toWei(ether);
 }

@@ -226,9 +226,9 @@ export function compress(input) {
 	// Parse rounds (4 bytes, big-endian) - use >>> 0 to force unsigned 32-bit interpretation
 	const rounds =
 		/** @type {number} */ (
-			(input[0] << 24) |
-				/** @type {number} */ (input[1] << 16) |
-				/** @type {number} */ (input[2] << 8) |
+			/** @type {number} */ (/** @type {number} */ (input[0]) << 24) |
+				/** @type {number} */ (/** @type {number} */ (input[1]) << 16) |
+				/** @type {number} */ (/** @type {number} */ (input[2]) << 8) |
 				/** @type {number} */ (input[3])
 		) >>> 0;
 
@@ -279,7 +279,9 @@ export function compress(input) {
 	for (let i = 0; i < 8; i++) {
 		h[i] =
 			/** @type {bigint} */ (
-				h[i] ^ /** @type {bigint} */ (v[i]) ^ /** @type {bigint} */ (v[i + 8])
+				/** @type {bigint} */ (h[i]) ^
+					/** @type {bigint} */ (v[i]) ^
+					/** @type {bigint} */ (v[i + 8])
 			) & MASK_64;
 	}
 

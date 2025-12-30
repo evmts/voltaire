@@ -88,7 +88,9 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 		});
 
 		it("should reject non-Uint8Array as blob", () => {
-			expect(() => KZG.validateBlob(null!)).toThrow(KzgInvalidBlobError);
+			expect(() => KZG.validateBlob(null as unknown as Uint8Array)).toThrow(
+				KzgInvalidBlobError,
+			);
 			expect(() => KZG.validateBlob({} as unknown as Uint8Array)).toThrow(
 				KzgInvalidBlobError,
 			);
@@ -232,8 +234,12 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 		it("should reject non-Uint8Array evaluation point", () => {
 			const blob = KZG.generateRandomBlob();
 
-			expect(() => KZG.Proof(blob, null as any)).toThrow(KzgError);
-			expect(() => KZG.Proof(blob, "0x42" as any)).toThrow(KzgError);
+			expect(() => KZG.Proof(blob, null as unknown as Uint8Array)).toThrow(
+				KzgError,
+			);
+			expect(() => KZG.Proof(blob, "0x42" as unknown as Uint8Array)).toThrow(
+				KzgError,
+			);
 		});
 	});
 
@@ -379,12 +385,12 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 		it("should reject non-Uint8Array commitment", () => {
 			const blob = KZG.generateRandomBlob();
 
-			expect(() => KZG.computeBlobKzgProof(blob, null as any)).toThrow(
-				KzgError,
-			);
-			expect(() => KZG.computeBlobKzgProof(blob, "invalid" as any)).toThrow(
-				KzgError,
-			);
+			expect(() =>
+				KZG.computeBlobKzgProof(blob, null as unknown as Uint8Array),
+			).toThrow(KzgError);
+			expect(() =>
+				KZG.computeBlobKzgProof(blob, "invalid" as unknown as Uint8Array),
+			).toThrow(KzgError);
 		});
 
 		it("should reject invalid blob size", () => {
@@ -627,7 +633,12 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const { proof } = KZG.Proof(blob, z);
 
 			expect(() =>
-				KZG.verifyKzgProof(commitment, z, "invalid" as any, proof),
+				KZG.verifyKzgProof(
+					commitment,
+					z,
+					"invalid" as unknown as Uint8Array,
+					proof,
+				),
 			).toThrow(KzgError);
 		});
 
@@ -638,7 +649,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const proof = new Uint8Array(48);
 
 			expect(() =>
-				KZG.verifyKzgProof(commitment, null as any, y, proof),
+				KZG.verifyKzgProof(commitment, null as unknown as Uint8Array, y, proof),
 			).toThrow(KzgError);
 		});
 
@@ -647,9 +658,9 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const y = createValidFieldElement();
 			const proof = new Uint8Array(48);
 
-			expect(() => KZG.verifyKzgProof({} as any, z, y, proof)).toThrow(
-				KzgError,
-			);
+			expect(() =>
+				KZG.verifyKzgProof({} as unknown as Uint8Array, z, y, proof),
+			).toThrow(KzgError);
 		});
 
 		it("should reject non-Uint8Array proof in verifyKzgProof", () => {
@@ -657,9 +668,9 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const z = createValidFieldElement();
 			const y = createValidFieldElement();
 
-			expect(() => KZG.verifyKzgProof(commitment, z, y, [] as any)).toThrow(
-				KzgError,
-			);
+			expect(() =>
+				KZG.verifyKzgProof(commitment, z, y, [] as unknown as Uint8Array),
+			).toThrow(KzgError);
 		});
 
 		it("should handle C_KZG_BADARGS gracefully in verifyKzgProof", () => {
@@ -682,7 +693,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const proof = new Uint8Array(48);
 
 			expect(() =>
-				KZG.verifyBlobKzgProof(blob, "invalid" as any, proof),
+				KZG.verifyBlobKzgProof(blob, "invalid" as unknown as Uint8Array, proof),
 			).toThrow(KzgError);
 		});
 
@@ -690,9 +701,9 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const blob = KZG.generateRandomBlob();
 			const commitment = new Uint8Array(48);
 
-			expect(() => KZG.verifyBlobKzgProof(blob, commitment, [] as any)).toThrow(
-				KzgError,
-			);
+			expect(() =>
+				KZG.verifyBlobKzgProof(blob, commitment, [] as unknown as Uint8Array),
+			).toThrow(KzgError);
 		});
 
 		it("should handle commitment computation failure gracefully", () => {
@@ -746,7 +757,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 		});
 
 		it("should not allow KZG constructor usage", () => {
-			expect(() => new (KZG as any)()).toThrow(Error);
+			expect(() => new (KZG as unknown as new () => object)()).toThrow(Error);
 		});
 	});
 

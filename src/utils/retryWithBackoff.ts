@@ -185,7 +185,7 @@ export async function retryWithBackoff<T>(
  * const data = await fetchWithRetry('https://api.example.com/data');
  * ```
  */
-export function withRetry<TArgs extends any[], TReturn>(
+export function withRetry<TArgs extends unknown[], TReturn>(
 	fn: (...args: TArgs) => Promise<TReturn>,
 	options: RetryOptions = {},
 ): (...args: TArgs) => Promise<TReturn> {

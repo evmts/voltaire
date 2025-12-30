@@ -346,9 +346,11 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			new DataView(input.buffer).setUint32(0, rounds, false);
 
 			// Set some test data
-			for (let i = 4; i < 213; i++) {
+			for (let i = 4; i < 212; i++) {
 				input[i] = i % 256;
 			}
+			// Final flag must be 0 or 1
+			input[212] = 1;
 
 			const result = blake2f(input, 1000n);
 

@@ -90,10 +90,16 @@ export async function poll(txHash, provider, options = {}) {
 			logsBloom: hexToBytes(receipt.logsBloom),
 			status: receipt.status ? (receipt.status === "0x1" ? 1 : 0) : undefined,
 			root: receipt.root ? hexToBytes(receipt.root) : undefined,
-			effectiveGasPrice: BigInt(receipt.effectiveGasPrice || receipt.gasPrice || "0x0"),
+			effectiveGasPrice: BigInt(
+				receipt.effectiveGasPrice || receipt.gasPrice || "0x0",
+			),
 			type: getTransactionType(receipt.type),
-			blobGasUsed: receipt.blobGasUsed ? BigInt(receipt.blobGasUsed) : undefined,
-			blobGasPrice: receipt.blobGasPrice ? BigInt(receipt.blobGasPrice) : undefined,
+			blobGasUsed: receipt.blobGasUsed
+				? BigInt(receipt.blobGasUsed)
+				: undefined,
+			blobGasPrice: receipt.blobGasPrice
+				? BigInt(receipt.blobGasPrice)
+				: undefined,
 		});
 	}
 
@@ -109,7 +115,7 @@ function hexToBytes(hex) {
 	const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
 	const bytes = new Uint8Array(cleanHex.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
-		bytes[i] = parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = Number.parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16);
 	}
 	return bytes;
 }
@@ -140,7 +146,7 @@ function parseLog(log) {
  */
 function getTransactionType(typeHex) {
 	if (!typeHex) return "legacy";
-	const type = parseInt(typeHex, 16);
+	const type = Number.parseInt(typeHex, 16);
 	switch (type) {
 		case 0:
 			return "legacy";

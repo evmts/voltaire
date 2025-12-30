@@ -200,7 +200,9 @@ describe("Keccak256 index exports", () => {
 
 			for (const func of expectedFunctions) {
 				expect(Keccak256Index).toHaveProperty(func);
-				expect(typeof (Keccak256Index as any)[func]).toBe("function");
+				expect(
+					typeof (Keccak256Index as unknown as Record<string, unknown>)[func],
+				).toBe("function");
 			}
 		});
 
@@ -209,7 +211,11 @@ describe("Keccak256 index exports", () => {
 
 			for (const constant of expectedConstants) {
 				expect(Keccak256Index).toHaveProperty(constant);
-				expect(typeof (Keccak256Index as any)[constant]).toBe("number");
+				expect(
+					typeof (Keccak256Index as unknown as Record<string, unknown>)[
+						constant
+					],
+				).toBe("number");
 			}
 		});
 

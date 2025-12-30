@@ -14,7 +14,11 @@ import type { BrandedHost } from "../evm/Host/HostType.js";
 import { Address } from "../primitives/Address/index.js";
 import * as Hex from "../primitives/Hex/index.js";
 import type { Provider } from "./Provider.js";
-import type { RequestArguments } from "./types.js";
+import type {
+	ProviderEvent,
+	ProviderEventMap,
+	RequestArguments,
+} from "./types.js";
 
 export interface FromEvmOptions {
 	host: BrandedHost;
@@ -30,7 +34,10 @@ class EvmBackedProvider implements Provider {
 	private baseFeePerGas: bigint;
 	private blockNumber: bigint;
 	private coinbase: string;
-	private listeners: Map<string, Set<(...args: any[]) => void>> = new Map();
+	private listeners: Map<
+		ProviderEvent,
+		Set<(...args: ProviderEventMap[ProviderEvent]) => void>
+	> = new Map();
 
 	constructor(opts: FromEvmOptions) {
 		this.host = opts.host;
@@ -42,28 +49,39 @@ class EvmBackedProvider implements Provider {
 		).toLowerCase();
 	}
 
-	on(event: any, listener: (...args: any[]) => void) {
+	on<E extends ProviderEvent>(
+		event: E,
+		listener: (...args: ProviderEventMap[E]) => void,
+	): this {
 		const set = this.listeners.get(event) ?? new Set();
-		set.add(listener);
+		set.add(listener as (...args: ProviderEventMap[ProviderEvent]) => void);
 		this.listeners.set(event, set);
 		return this;
 	}
-	removeListener(event: any, listener: (...args: any[]) => void) {
+
+	removeListener<E extends ProviderEvent>(
+		event: E,
+		listener: (...args: ProviderEventMap[E]) => void,
+	): this {
 		const set = this.listeners.get(event);
 		if (set) {
-			set.delete(listener);
+			set.delete(
+				listener as (...args: ProviderEventMap[ProviderEvent]) => void,
+			);
 			if (set.size === 0) this.listeners.delete(event);
 		}
 		return this;
 	}
 
 	async request(args: RequestArguments): Promise<unknown> {
+		// biome-ignore lint/suspicious/noExplicitAny: batch check requires any
 		if (Array.isArray(args as any)) {
 			// Batch support (best-effort): execute sequentially
 			const batch = args as unknown as RequestArguments[];
 			return Promise.all(batch.map((a) => this.request(a)));
 		}
 
+		// biome-ignore lint/suspicious/noExplicitAny: params type varies by method
 		const { method, params = [] } = args as { method: string; params?: any[] };
 		switch (method) {
 			// Chain/meta
@@ -82,31 +100,37 @@ class EvmBackedProvider implements Provider {
 			case "eth_getBalance": {
 				const [addrHex] = params as [string, string?];
 				const addr = Address(addrHex);
+				// biome-ignore lint/suspicious/noExplicitAny: host expects branded type
 				const bal = this.host.getBalance(addr as any);
 				return `0x${bal.toString(16)}`;
 			}
 			case "eth_getCode": {
 				const [addrHex] = params as [string, string?];
 				const addr = Address(addrHex);
+				// biome-ignore lint/suspicious/noExplicitAny: host expects branded type
 				const code = this.host.getCode(addr as any);
 				return Hex.fromBytes(code);
 			}
 			case "eth_getTransactionCount": {
 				const [addrHex] = params as [string, string?];
 				const addr = Address(addrHex);
+				// biome-ignore lint/suspicious/noExplicitAny: host expects branded type
 				const nonce = this.host.getNonce(addr as any);
 				return `0x${BigInt(nonce).toString(16)}`;
 			}
 
 			// Calls (simplified: prepare frame and return default output)
 			case "eth_call": {
+				// biome-ignore lint/suspicious/noExplicitAny: tx params are dynamic
 				const [tx] = params as [any, string?];
 				const to = (tx.to as string | undefined)?.toLowerCase();
 				const data = (tx.data as string | undefined) ?? "0x";
 				const gas = tx.gas ? BigInt(tx.gas) : 30_000_000n;
 				if (!to) return "0x"; // create not supported here
+				// biome-ignore lint/suspicious/noExplicitAny: host expects branded type
 				const code = this.host.getCode(Address(to) as any);
 				if (!code || code.length === 0) return "0x";
+				// biome-ignore lint/suspicious/noExplicitAny: Frame accepts branded types
 				const frame = Frame({
 					bytecode: code,
 					gas,
@@ -124,6 +148,7 @@ class EvmBackedProvider implements Provider {
 
 			// Gas
 			case "eth_estimateGas": {
+				// biome-ignore lint/suspicious/noExplicitAny: tx params are dynamic
 				const [tx] = params as [any];
 				const data = (tx?.data as string | undefined) ?? "0x";
 				const base = 21_000n;

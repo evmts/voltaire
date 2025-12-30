@@ -20,6 +20,7 @@ import { validateBlob } from "./validateBlob.js";
  * ```
  */
 export function ComputeKzgProof({ computeKzgProof: ckzgComputeKzgProof }) {
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: validation logic
 	return function computeKzgProof(blob, z) {
 		if (!getInitialized()) {
 			throw new KzgNotInitializedError();

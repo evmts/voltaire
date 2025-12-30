@@ -8,10 +8,10 @@
 
 import { brand } from "../../brand.js";
 import {
-	validateUuid,
-	validateName,
 	validateIcon,
+	validateName,
 	validateRdns,
+	validateUuid,
 } from "./validators.js";
 
 /**

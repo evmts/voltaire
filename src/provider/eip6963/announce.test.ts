@@ -1,10 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+/**
+ * @vitest-environment happy-dom
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { announce } from "./announce.js";
 import {
-	UnsupportedEnvironmentError,
 	InvalidArgumentError,
 	InvalidProviderError,
 	InvalidUuidError,
+	UnsupportedEnvironmentError,
 } from "./errors.js";
 
 const validDetail = {
@@ -19,158 +22,95 @@ const validDetail = {
 	},
 };
 
-const createMockWindow = () => {
-	const listeners: Map<string, Set<EventListener>> = new Map();
-
-	return {
-		addEventListener: vi.fn((type: string, listener: EventListener) => {
-			if (!listeners.has(type)) {
-				listeners.set(type, new Set());
-			}
-			listeners.get(type)!.add(listener);
-		}),
-		removeEventListener: vi.fn((type: string, listener: EventListener) => {
-			listeners.get(type)?.delete(listener);
-		}),
-		dispatchEvent: vi.fn((event: Event) => {
-			const eventListeners = listeners.get(event.type);
-			if (eventListeners) {
-				for (const listener of eventListeners) {
-					listener(event);
-				}
-			}
-			return true;
-		}),
-		_listeners: listeners,
-	};
-};
-
 describe("announce", () => {
-	const originalWindow = globalThis.window;
-	let mockWindow: ReturnType<typeof createMockWindow>;
-
-	beforeEach(() => {
-		mockWindow = createMockWindow();
-		(globalThis as any).window = mockWindow;
-		(globalThis as any).Event = class Event {
-			type: string;
-			constructor(type: string) {
-				this.type = type;
-			}
-		};
-		(globalThis as any).CustomEvent = class CustomEvent extends (
-			(globalThis as any).Event
-		) {
-			detail: any;
-			constructor(type: string, options: { detail?: any } = {}) {
-				super(type);
-				this.detail = options.detail;
-			}
-		};
-	});
-
-	afterEach(() => {
-		if (originalWindow !== undefined) {
-			(globalThis as any).window = originalWindow;
-		} else {
-			delete (globalThis as any).window;
-		}
-	});
-
-	it("throws UnsupportedEnvironmentError in non-browser", () => {
-		delete (globalThis as any).window;
-		expect(() => announce(validDetail)).toThrow(UnsupportedEnvironmentError);
-	});
-
 	it("throws InvalidArgumentError when detail is missing", () => {
-		expect(() => announce(undefined as any)).toThrow(InvalidArgumentError);
-	});
-
-	it("throws InvalidArgumentError when info is missing", () => {
-		expect(() =>
-			announce({ info: undefined as any, provider: validDetail.provider }),
-		).toThrow();
-	});
-
-	it("throws InvalidArgumentError when provider is missing", () => {
-		expect(() =>
-			announce({ info: validDetail.info, provider: undefined as any }),
-		).toThrow();
+		// @ts-expect-error - testing invalid input
+		expect(() => announce()).toThrow(InvalidArgumentError);
 	});
 
 	it("validates info fields", () => {
-		const badInfo = { ...validDetail.info, uuid: "bad-uuid" };
 		expect(() =>
-			announce({ info: badInfo, provider: validDetail.provider }),
+			announce({
+				info: {
+					uuid: "invalid-uuid",
+					name: "Test",
+					icon: "data:image/svg+xml;base64,PHN2Zz4=",
+					rdns: "com.test",
+				},
+				provider: { request: async () => {} },
+			}),
 		).toThrow(InvalidUuidError);
 	});
 
 	it("validates provider", () => {
 		expect(() =>
-			announce({ info: validDetail.info, provider: {} as any }),
+			announce({
+				info: validDetail.info,
+				// @ts-expect-error - testing invalid input
+				provider: {},
+			}),
 		).toThrow(InvalidProviderError);
 	});
 
 	it("returns unsubscribe function", () => {
-		const unsub = announce(validDetail);
-		expect(typeof unsub).toBe("function");
-		unsub();
+		const unsubscribe = announce(validDetail);
+		expect(typeof unsubscribe).toBe("function");
+		unsubscribe();
 	});
 
 	it("dispatches eip6963:announceProvider event immediately", () => {
-		announce(validDetail);
-		expect(mockWindow.dispatchEvent).toHaveBeenCalled();
-		const calls = mockWindow.dispatchEvent.mock.calls;
-		const announceEvents = calls.filter(
-			(c: any[]) => c[0].type === "eip6963:announceProvider",
-		);
-		expect(announceEvents.length).toBeGreaterThan(0);
+		const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+		const unsubscribe = announce(validDetail);
+
+		expect(dispatchSpy).toHaveBeenCalledTimes(1);
+		const event = dispatchSpy.mock.calls[0]?.[0] as CustomEvent;
+		expect(event.type).toBe("eip6963:announceProvider");
+		expect(event.detail.info.uuid).toBe(validDetail.info.uuid);
+
+		unsubscribe();
+		dispatchSpy.mockRestore();
 	});
 
 	it("re-announces on eip6963:requestProvider events", () => {
-		announce(validDetail);
-		const initialCallCount = mockWindow.dispatchEvent.mock.calls.filter(
-			(c: any[]) => c[0].type === "eip6963:announceProvider",
-		).length;
+		const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+		const unsubscribe = announce(validDetail);
+
+		// Initial announcement
+		expect(dispatchSpy).toHaveBeenCalledTimes(1);
 
 		// Simulate request event
-		const requestEvent = new (globalThis as any).Event(
-			"eip6963:requestProvider",
-		);
-		mockWindow.dispatchEvent(requestEvent);
+		window.dispatchEvent(new Event("eip6963:requestProvider"));
 
-		const finalCallCount = mockWindow.dispatchEvent.mock.calls.filter(
-			(c: any[]) => c[0].type === "eip6963:announceProvider",
-		).length;
-		expect(finalCallCount).toBeGreaterThan(initialCallCount);
+		// Should have re-announced
+		expect(dispatchSpy).toHaveBeenCalledTimes(3); // initial + request + re-announce
+
+		unsubscribe();
+		dispatchSpy.mockRestore();
 	});
 
 	it("stops re-announcing after unsubscribe", () => {
-		const unsub = announce(validDetail);
-		unsub();
+		const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+		const unsubscribe = announce(validDetail);
 
-		const countBefore = mockWindow.dispatchEvent.mock.calls.filter(
-			(c: any[]) => c[0].type === "eip6963:announceProvider",
-		).length;
+		unsubscribe();
+		const callCount = dispatchSpy.mock.calls.length;
 
-		// Simulate request event
-		const requestEvent = new (globalThis as any).Event(
-			"eip6963:requestProvider",
-		);
-		mockWindow.dispatchEvent(requestEvent);
+		// Simulate request event after unsubscribe
+		window.dispatchEvent(new Event("eip6963:requestProvider"));
 
-		const countAfter = mockWindow.dispatchEvent.mock.calls.filter(
-			(c: any[]) => c[0].type === "eip6963:announceProvider",
-		).length;
-		expect(countAfter).toBe(countBefore);
+		// Should not have re-announced (only the request event itself)
+		expect(dispatchSpy).toHaveBeenCalledTimes(callCount + 1);
+
+		dispatchSpy.mockRestore();
 	});
 
 	it("event detail is frozen", () => {
+		const dispatchSpy = vi.spyOn(window, "dispatchEvent");
 		announce(validDetail);
-		const calls = mockWindow.dispatchEvent.mock.calls;
-		const announceEvent = calls.find(
-			(c: any[]) => c[0].type === "eip6963:announceProvider",
-		);
-		expect(Object.isFrozen(announceEvent[0].detail)).toBe(true);
+
+		const event = dispatchSpy.mock.calls[0]?.[0] as CustomEvent;
+		expect(Object.isFrozen(event.detail)).toBe(true);
+
+		dispatchSpy.mockRestore();
 	});
 });

@@ -184,4 +184,3 @@ pub const RpcClient = struct {
         getNonce: *const fn (ptr: *anyopaque, address: Address, block_number: ?u64) u64,
     };
 };
-

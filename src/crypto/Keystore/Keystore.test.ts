@@ -272,7 +272,10 @@ describe("Keystore", () => {
 			};
 
 			expect(() =>
-				Keystore.decrypt(invalidKeystore as any, "password"),
+				Keystore.decrypt(
+					invalidKeystore as unknown as Keystore.KeystoreV3,
+					"password",
+				),
 			).toThrow(Keystore.UnsupportedVersionError);
 		});
 
@@ -284,7 +287,9 @@ describe("Keystore", () => {
 					cipher: "aes-128-ctr",
 					ciphertext: "abc",
 					cipherparams: { iv: "def" },
+					// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 					kdf: "unknown" as any,
+					// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 					kdfparams: {} as any,
 					mac: "jkl",
 				},

@@ -6,15 +6,19 @@
  * @module provider/eip6963/subscribe
  */
 
+/** @type {typeof globalThis & { addEventListener: Function; removeEventListener: Function; dispatchEvent: Function }} */
+// @ts-ignore - window exists in browser environment
+const window = globalThis;
+
+import { ProviderDetail } from "./ProviderDetail.js";
 import { InvalidArgumentError } from "./errors.js";
 import { assertBrowser } from "./getPlatform.js";
-import { ProviderDetail } from "./ProviderDetail.js";
 import {
-	providers,
 	listeners,
 	listening,
-	setListening,
 	notify,
+	providers,
+	setListening,
 } from "./state.js";
 
 /**
@@ -74,11 +78,7 @@ export function subscribe(listener) {
 
 	// Validate listener
 	if (typeof listener !== "function") {
-		throw new InvalidArgumentError(
-			"subscribe",
-			"function",
-			typeof listener,
-		);
+		throw new InvalidArgumentError("subscribe", "function", typeof listener);
 	}
 
 	// Add listener
@@ -90,7 +90,10 @@ export function subscribe(listener) {
 		setListening(true);
 
 		// Request providers to trigger announcements
-		window.dispatchEvent(new Event("eip6963:requestProvider"));
+		// Use CustomEvent for better browser/test environment compatibility
+		window.dispatchEvent(
+			new CustomEvent("eip6963:requestProvider", { bubbles: false }),
+		);
 	}
 
 	// Call listener immediately with current state

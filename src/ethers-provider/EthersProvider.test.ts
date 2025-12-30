@@ -4,8 +4,11 @@
  * Tests for the ethers v6-compatible JsonRpcProvider implementation.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { EthersProvider, NetworkImpl } from "../../examples/ethers-provider/EthersProvider.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	EthersProvider,
+	NetworkImpl,
+} from "../../examples/ethers-provider/EthersProvider.js";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -20,10 +23,10 @@ function setupMockResponse(result: unknown) {
 		const body = JSON.parse(init?.body as string);
 		return {
 			ok: true,
-			json: async () => (Array.isArray(body)
-				? body.map((req: any) => ({ jsonrpc: "2.0", id: req.id, result }))
-				: { jsonrpc: "2.0", id: body.id, result }
-			),
+			json: async () =>
+				Array.isArray(body)
+					? body.map((req: any) => ({ jsonrpc: "2.0", id: req.id, result }))
+					: { jsonrpc: "2.0", id: body.id, result },
 		};
 	});
 }
@@ -36,10 +39,14 @@ function setupMockError(code: number, message: string) {
 		const body = JSON.parse(init?.body as string);
 		return {
 			ok: true,
-			json: async () => (Array.isArray(body)
-				? body.map((req: any) => ({ jsonrpc: "2.0", id: req.id, error: { code, message } }))
-				: { jsonrpc: "2.0", id: body.id, error: { code, message } }
-			),
+			json: async () =>
+				Array.isArray(body)
+					? body.map((req: any) => ({
+							jsonrpc: "2.0",
+							id: req.id,
+							error: { code, message },
+						}))
+					: { jsonrpc: "2.0", id: body.id, error: { code, message } },
 		};
 	});
 }
@@ -93,7 +100,9 @@ describe("NetworkImpl", () => {
 		expect(network.computeIntrinsicGas({ to: null })).toBe(53000n);
 
 		// With data
-		expect(network.computeIntrinsicGas({ to: "0x123", data: "0x00ff" })).toBe(21000n + 4n + 16n);
+		expect(network.computeIntrinsicGas({ to: "0x123", data: "0x00ff" })).toBe(
+			21000n + 4n + 16n,
+		);
 	});
 });
 
@@ -123,7 +132,9 @@ describe("EthersProvider", () => {
 		});
 
 		it("should create with static network", () => {
-			const p = new EthersProvider("http://localhost:8545", "mainnet", { staticNetwork: true });
+			const p = new EthersProvider("http://localhost:8545", "mainnet", {
+				staticNetwork: true,
+			});
 			expect(p.destroyed).toBe(false);
 			p.destroy();
 		});
@@ -150,11 +161,15 @@ describe("EthersProvider", () => {
 
 		it("should cache identical requests", async () => {
 			// Create a new provider with caching enabled for this test
-			const cachingProvider = new EthersProvider("http://localhost:8545", undefined, {
-				batchStallTime: 0,
-				batchMaxCount: 1,
-				cacheTimeout: 250, // Enable caching
-			});
+			const cachingProvider = new EthersProvider(
+				"http://localhost:8545",
+				undefined,
+				{
+					batchStallTime: 0,
+					batchMaxCount: 1,
+					cacheTimeout: 250, // Enable caching
+				},
+			);
 
 			setupMockResponse("0x1");
 
@@ -215,41 +230,58 @@ describe("EthersProvider", () => {
 		it("should get balance", async () => {
 			setupMockResponse("0xde0b6b3a7640000"); // 1 ETH
 
-			const balance = await provider.getBalance("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1");
+			const balance = await provider.getBalance(
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+			);
 			expect(balance).toBe(1000000000000000000n);
 		});
 
 		it("should get transaction count", async () => {
 			setupMockResponse("0x5");
 
-			const count = await provider.getTransactionCount("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1");
+			const count = await provider.getTransactionCount(
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+			);
 			expect(count).toBe(5);
 		});
 
 		it("should get code", async () => {
 			setupMockResponse("0x608060405234801561001057600080fd5b50");
 
-			const code = await provider.getCode("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1");
+			const code = await provider.getCode(
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+			);
 			expect(code).toBe("0x608060405234801561001057600080fd5b50");
 		});
 
 		it("should get storage", async () => {
-			setupMockResponse("0x0000000000000000000000000000000000000000000000000000000000000001");
+			setupMockResponse(
+				"0x0000000000000000000000000000000000000000000000000000000000000001",
+			);
 
-			const storage = await provider.getStorage("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1", 0n);
-			expect(storage).toBe("0x0000000000000000000000000000000000000000000000000000000000000001");
+			const storage = await provider.getStorage(
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+				0n,
+			);
+			expect(storage).toBe(
+				"0x0000000000000000000000000000000000000000000000000000000000000001",
+			);
 		});
 	});
 
 	describe("execution methods", () => {
 		it("should execute call", async () => {
-			setupMockResponse("0x0000000000000000000000000000000000000000000000000000000000000001");
+			setupMockResponse(
+				"0x0000000000000000000000000000000000000000000000000000000000000001",
+			);
 
 			const result = await provider.call({
 				to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
 				data: "0x70a08231000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb1",
 			});
-			expect(result).toBe("0x0000000000000000000000000000000000000000000000000000000000000001");
+			expect(result).toBe(
+				"0x0000000000000000000000000000000000000000000000000000000000000001",
+			);
 		});
 
 		it("should estimate gas", async () => {
@@ -267,7 +299,8 @@ describe("EthersProvider", () => {
 		it("should get block by number", async () => {
 			setupMockResponse({
 				hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-				parentHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+				parentHash:
+					"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 				number: "0xf4240",
 				timestamp: "0x5f5e100",
 				nonce: "0x0",
@@ -282,14 +315,15 @@ describe("EthersProvider", () => {
 
 			const block = await provider.getBlock(1000000);
 			expect(block).not.toBeNull();
-			expect(block!.number).toBe(1000000);
-			expect(block!.baseFeePerGas).toBe(1000000000n);
+			expect(block?.number).toBe(1000000);
+			expect(block?.baseFeePerGas).toBe(1000000000n);
 		});
 
 		it("should get block by hash", async () => {
 			setupMockResponse({
 				hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-				parentHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+				parentHash:
+					"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 				number: "0xf4240",
 				timestamp: "0x5f5e100",
 				nonce: "0x0",
@@ -305,7 +339,9 @@ describe("EthersProvider", () => {
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
 			expect(block).not.toBeNull();
-			expect(block!.hash).toBe("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+			expect(block?.hash).toBe(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
 		});
 
 		it("should return null for non-existent block", async () => {
@@ -320,7 +356,8 @@ describe("EthersProvider", () => {
 		it("should get transaction by hash", async () => {
 			setupMockResponse({
 				hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-				blockHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+				blockHash:
+					"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 				blockNumber: "0xf4240",
 				transactionIndex: "0x0",
 				from: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
@@ -339,14 +376,18 @@ describe("EthersProvider", () => {
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
 			expect(tx).not.toBeNull();
-			expect(tx!.hash).toBe("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
-			expect(tx!.value).toBe(1000000000000000000n);
+			expect(tx?.hash).toBe(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			expect(tx?.value).toBe(1000000000000000000n);
 		});
 
 		it("should get transaction receipt", async () => {
 			setupMockResponse({
-				transactionHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-				blockHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+				transactionHash:
+					"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				blockHash:
+					"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 				blockNumber: "0xf4240",
 				transactionIndex: "0x0",
 				from: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
@@ -363,8 +404,8 @@ describe("EthersProvider", () => {
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
 			expect(receipt).not.toBeNull();
-			expect(receipt!.status).toBe(1);
-			expect(receipt!.gasUsed).toBe(21000n);
+			expect(receipt?.status).toBe(1);
+			expect(receipt?.gasUsed).toBe(21000n);
 		});
 
 		it("should return null for non-existent transaction", async () => {
@@ -382,11 +423,15 @@ describe("EthersProvider", () => {
 			setupMockResponse([
 				{
 					address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
-					topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"],
+					topics: [
+						"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+					],
 					data: "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
 					blockNumber: "0xf4240",
-					blockHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-					transactionHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+					blockHash:
+						"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					transactionHash:
+						"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 					transactionIndex: "0x0",
 					logIndex: "0x0",
 					removed: false,
@@ -400,8 +445,10 @@ describe("EthersProvider", () => {
 			});
 
 			expect(logs).toHaveLength(1);
-			expect(logs[0]!.address).toBe("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1");
-			expect(logs[0]!.blockNumber).toBe(1000000);
+			expect(logs[0]?.address).toBe(
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+			);
+			expect(logs[0]?.blockNumber).toBe(1000000);
 		});
 	});
 
@@ -535,40 +582,52 @@ describe("block tag formatting", () => {
 	it("should format numeric block tags", async () => {
 		setupMockResponse("0x1");
 
-		await provider.getBalance("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1", 12345);
+		await provider.getBalance(
+			"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+			12345,
+		);
 
 		const call = mockFetch.mock.calls[0];
-		const body = JSON.parse(call![1]!.body as string);
+		const body = JSON.parse(call?.[1]?.body as string);
 		expect(body.params[1]).toBe("0x3039");
 	});
 
 	it("should format bigint block tags", async () => {
 		setupMockResponse("0x1");
 
-		await provider.getBalance("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1", 12345n);
+		await provider.getBalance(
+			"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+			12345n,
+		);
 
 		const call = mockFetch.mock.calls[0];
-		const body = JSON.parse(call![1]!.body as string);
+		const body = JSON.parse(call?.[1]?.body as string);
 		expect(body.params[1]).toBe("0x3039");
 	});
 
 	it("should pass through string block tags", async () => {
 		setupMockResponse("0x1");
 
-		await provider.getBalance("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1", "latest");
+		await provider.getBalance(
+			"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+			"latest",
+		);
 
 		const call = mockFetch.mock.calls[0];
-		const body = JSON.parse(call![1]!.body as string);
+		const body = JSON.parse(call?.[1]?.body as string);
 		expect(body.params[1]).toBe("latest");
 	});
 
 	it("should convert 'earliest' to 0x0", async () => {
 		setupMockResponse("0x1");
 
-		await provider.getBalance("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1", "earliest");
+		await provider.getBalance(
+			"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+			"earliest",
+		);
 
 		const call = mockFetch.mock.calls[0];
-		const body = JSON.parse(call![1]!.body as string);
+		const body = JSON.parse(call?.[1]?.body as string);
 		expect(body.params[1]).toBe("0x0");
 	});
 });

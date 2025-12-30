@@ -55,6 +55,7 @@ export function toAbi(bytecode) {
 	// Scan for function selectors and events
 	for (let i = 0; i < instructions.length; i++) {
 		const inst = instructions[i];
+		if (!inst) continue;
 
 		// Look for PUSH4 <selector> pattern followed by EQ (function dispatcher)
 		if (inst.opcode === PUSH4 && inst.value !== undefined) {
@@ -63,7 +64,8 @@ export function toAbi(bytecode) {
 			// Look ahead for EQ + JUMPI pattern (standard dispatcher)
 			let foundDispatcher = false;
 			for (let j = i + 1; j < Math.min(i + 5, instructions.length); j++) {
-				if (instructions[j].opcode === EQ) {
+				const lookAhead = instructions[j];
+				if (lookAhead && lookAhead.opcode === EQ) {
 					foundDispatcher = true;
 					break;
 				}
@@ -88,6 +90,7 @@ export function toAbi(bytecode) {
 			// Look ahead for LOG instruction
 			for (let j = i + 1; j < Math.min(i + 20, instructions.length); j++) {
 				const nextInst = instructions[j];
+				if (!nextInst) break;
 				if (nextInst.opcode >= LOG0 && nextInst.opcode <= LOG4) {
 					eventHashes.add(hash);
 					break;
@@ -153,10 +156,12 @@ export function toAbi(bytecode) {
 function detectGlobalPayabilityGuard(instructions) {
 	// Check first ~20 instructions for CALLVALUE + ISZERO pattern
 	for (let i = 0; i < Math.min(20, instructions.length); i++) {
-		if (instructions[i].opcode === CALLVALUE) {
+		const inst = instructions[i];
+		if (inst && inst.opcode === CALLVALUE) {
 			// Look for ISZERO nearby
 			for (let j = i + 1; j < Math.min(i + 5, instructions.length); j++) {
-				if (instructions[j].opcode === ISZERO) {
+				const lookAhead = instructions[j];
+				if (lookAhead && lookAhead.opcode === ISZERO) {
 					return true;
 				}
 			}
@@ -184,11 +189,13 @@ function analyzeFunctionEntry(instructions, selectorIndex) {
 		i++
 	) {
 		const inst = instructions[i];
+		if (!inst) continue;
 
 		if (inst.opcode === CALLVALUE) {
 			// Look for ISZERO nearby (payability check)
 			for (let j = i + 1; j < Math.min(i + 5, instructions.length); j++) {
-				if (instructions[j].opcode === ISZERO) {
+				const lookAhead = instructions[j];
+				if (lookAhead && lookAhead.opcode === ISZERO) {
 					hasPayabilityCheck = true;
 					break;
 				}

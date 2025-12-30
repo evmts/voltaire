@@ -12,7 +12,7 @@
  * Thrown when an AbortSignal is triggered during stream operations.
  */
 export class StreamAbortedError extends Error {
-	override readonly name = "StreamAbortedError";
+	override readonly name: string = "StreamAbortedError";
 
 	constructor(message = "Stream was aborted") {
 		super(message);
@@ -57,7 +57,7 @@ export class BlockRangeTooLargeError extends Error {
 	constructor(
 		public readonly fromBlock: bigint,
 		public readonly toBlock: bigint,
-		public readonly cause?: unknown,
+		public override readonly cause?: unknown,
 	) {
 		super(`Block range too large: ${fromBlock} to ${toBlock}`);
 	}

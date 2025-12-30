@@ -1,27 +1,37 @@
-import * as Uint from "../Uint/index.js";
 import type { GweiType as BrandedGwei } from "./GweiType.js";
 import type { WeiType as BrandedWei } from "./WeiType.js";
-import { WEI_PER_GWEI } from "./gwei-constants.js";
+
+const DECIMALS = 9; // Gwei has 9 decimal places relative to Wei
 
 /**
  * Convert Wei to Gwei
  *
+ * Converts bigint wei to decimal string gwei value.
+ *
  * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
  * @since 0.0.0
- * @param wei - Amount in Wei
- * @returns Amount in Gwei (wei / 10^9, truncated)
+ * @param wei - Amount in Wei (bigint)
+ * @returns Amount in Gwei (string with decimal precision)
  * @throws {never}
  * @example
  * ```typescript
- * const wei = Wei.from(5000000000n);
- * const gwei = Wei.toGwei(wei);
- * // gwei = 5n
+ * const gwei1 = Wei.toGwei(Wei.from(5000000000n)); // "5"
+ * const gwei2 = Wei.toGwei(Wei.from(1500000000n)); // "1.5"
+ * const gwei3 = Wei.toGwei(Wei.from(1000000n));    // "0.001"
  * ```
  */
 export function toGwei(wei: BrandedWei): BrandedGwei {
-	const gwei = Uint.dividedBy(
-		wei as unknown as Uint.Type,
-		Uint.from(WEI_PER_GWEI),
-	);
-	return gwei as unknown as BrandedGwei;
+	const weiStr = wei.toString().padStart(DECIMALS + 1, "0");
+
+	const intPart = weiStr.slice(0, -DECIMALS) || "0";
+	const decPart = weiStr.slice(-DECIMALS);
+
+	// Remove trailing zeros from decimal part
+	const trimmedDec = decPart.replace(/0+$/, "");
+
+	if (trimmedDec === "") {
+		return intPart as BrandedGwei;
+	}
+
+	return `${intPart}.${trimmedDec}` as BrandedGwei;
 }

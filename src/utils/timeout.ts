@@ -129,7 +129,7 @@ export async function withTimeout<T>(
  * );
  * ```
  */
-export function wrapWithTimeout<TArgs extends any[], TReturn>(
+export function wrapWithTimeout<TArgs extends unknown[], TReturn>(
 	fn: (...args: TArgs) => Promise<TReturn>,
 	ms: number,
 	message?: string,

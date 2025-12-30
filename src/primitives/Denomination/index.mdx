@@ -17,7 +17,7 @@ Start with [Fundamentals](/primitives/denomination/fundamentals) to learn about 
 
 ## Overview
 
-[Branded](/getting-started/branded-types) `Uint256` types representing Ethereum denominations. Each denomination prevents accidental unit mixing at compile time while enabling seamless conversions.
+[Branded](/getting-started/branded-types) types representing Ethereum denominations. Wei is a branded `bigint` (whole numbers only). Ether and Gwei are branded `string` types that support decimal values like `"1.5"`. Each denomination prevents accidental unit mixing at compile time while enabling seamless conversions.
 
 ## Quick Start
 
@@ -29,14 +29,14 @@ import * as Gwei from 'tevm/Gwei'
 import * as Ether from 'tevm/Ether'
 
 // Create values
-const wei = Wei(1_000_000_000n)      // 1 Gwei in Wei
-const gwei = Gwei(21n)                // 21 Gwei
-const ether = Ether(1n)               // 1 Ether
+const wei = Wei(1_000_000_000n)      // 1 Gwei in Wei (bigint)
+const gwei = Gwei("21")               // 21 Gwei (string - supports decimals)
+const ether = Ether("1.5")            // 1.5 Ether (string - supports decimals)
 
 // Convert between units
 const weiFromGwei = Gwei.toWei(gwei)       // 21_000_000_000n Wei
-const gweiFromEther = Ether.toGwei(ether)  // 1_000_000_000n Gwei
-const etherFromWei = Wei.toEther(wei)      // 0n Ether (integer division)
+const gweiFromEther = Ether.toGwei(ether)  // "1500000000" Gwei
+const etherFromWei = Wei.toEther(wei)      // "0.000000001" Ether (preserves precision)
 
 // Type safety prevents mixing
 const total = wei + gwei  // ✗ Type error - cannot mix Wei and Gwei
@@ -49,7 +49,7 @@ import * as Gwei from 'tevm/Gwei'
 import * as Uint from 'tevm/Uint'
 
 // Gas price in Gwei (common format)
-const gasPriceGwei = Gwei(50n)  // 50 Gwei
+const gasPriceGwei = Gwei("50")  // 50 Gwei
 
 // Convert to Wei for calculation
 const gasPriceWei = Gwei.toWei(gasPriceGwei)
@@ -60,7 +60,7 @@ const txCostWei = Uint.times(gasPriceWei, gasUsed)
 
 // Convert to Ether for display
 const txCostEther = Wei.toEther(Wei(txCostWei))
-console.log(`Cost: ${txCostEther} ETH`)
+console.log(`Cost: ${txCostEther} ETH`)  // "0.00105"
 ```
 </Tab>
 <Tab title="Transaction Values">
@@ -68,8 +68,8 @@ console.log(`Cost: ${txCostEther} ETH`)
 import * as Ether from 'tevm/Ether'
 import * as Wei from 'tevm/Wei'
 
-// User inputs value in Ether (500_000_000_000_000_000n Wei = 0.5 ETH)
-const valueEther = Ether(500_000_000_000_000_000n)  // 0.5 ETH
+// User inputs value in Ether with decimals
+const valueEther = Ether("0.5")  // 0.5 ETH
 
 // Transaction requires Wei
 const valueWei = Ether.toWei(valueEther)  // 500_000_000_000_000_000n Wei
@@ -77,7 +77,7 @@ const valueWei = Ether.toWei(valueEther)  // 500_000_000_000_000_000n Wei
 const tx = {
   to: "0x...",
   value: valueWei,  // Wei.Type ensures correct unit
-  gasPrice: Gwei.toWei(Gwei(50n))
+  gasPrice: Gwei.toWei(Gwei("50"))
 }
 ```
 </Tab>
@@ -85,14 +85,15 @@ const tx = {
 
 ## Types
 
-Each denomination is a branded `Uint256` with unique symbol for type safety:
+Each denomination uses branded types for compile-time safety:
 
 <Tabs>
 <Tab title="Wei">
 ```typescript
-export type Wei = Uint256 & { __brand: typeof weiSymbol }
+export type Wei = bigint & { __brand: typeof weiSymbol }
 
 // Smallest unit - 1 Wei = 10^-18 Ether
+// Wei is always a bigint (whole numbers only)
 const wei = Wei(1_000_000_000_000_000_000n)  // 1 Ether in Wei
 ```
 
@@ -100,20 +101,22 @@ See [Wei](/primitives/denomination/wei) for details.
 </Tab>
 <Tab title="Gwei">
 ```typescript
-export type Gwei = Uint256 & { __brand: typeof gweiSymbol }
+export type Gwei = string & { __brand: typeof gweiSymbol }
 
 // 1 Gwei = 10^9 Wei = 10^-9 Ether
-const gwei = Gwei(1n)  // 1 Gwei = 1_000_000_000 Wei
+// Gwei is a decimal string (supports fractional values)
+const gwei = Gwei("1.5")  // 1.5 Gwei = 1_500_000_000 Wei
 ```
 
 See [Gwei](/primitives/denomination/gwei) for details.
 </Tab>
 <Tab title="Ether">
 ```typescript
-export type Ether = Uint256 & { __brand: typeof etherSymbol }
+export type Ether = string & { __brand: typeof etherSymbol }
 
 // 1 Ether = 10^18 Wei = 10^9 Gwei
-const ether = Ether(1n)  // 1 Ether
+// Ether is a decimal string (supports fractional values)
+const ether = Ether("1.5")  // 1.5 Ether
 ```
 
 See [Ether](/primitives/denomination/ether) for details.
@@ -133,7 +136,7 @@ See [Ether](/primitives/denomination/ether) for details.
 1 Ether = 1_000_000_000_000_000_000 Wei  // 10^18
 ```
 
-All conversions use integer arithmetic - fractional values truncate (round down).
+Wei uses integer arithmetic (bigint). Ether and Gwei use decimal strings to preserve fractional precision.
 
 ## Interactive Converter
 
@@ -147,15 +150,15 @@ import * as Gwei from 'tevm/Gwei'
 import * as Ether from 'tevm/Ether'
 
 // Example: Convert 1.5 ETH to all units
-const etherValue = Ether(1n)  // 1 Ether
+const etherValue = Ether("1.5")  // 1.5 Ether
 
 // Forward conversions
-const gweiFromEther = Ether.toGwei(etherValue)      // 1_000_000_000 Gwei
-const weiFromEther = Ether.toWei(etherValue)        // 1_000_000_000_000_000_000 Wei
+const gweiFromEther = Ether.toGwei(etherValue)      // "1500000000" Gwei
+const weiFromEther = Ether.toWei(etherValue)        // 1_500_000_000_000_000_000n Wei
 
-// Reverse conversions
-const etherFromGwei = Gwei.toEther(gweiFromEther)   // 1 Ether ✓
-const etherFromWei = Wei.toEther(weiFromEther)      // 1 Ether ✓
+// Reverse conversions (precision preserved)
+const etherFromGwei = Gwei.toEther(gweiFromEther)   // "1.5" Ether ✓
+const etherFromWei = Wei.toEther(weiFromEther)      // "1.5" Ether ✓
 
 console.log(`${etherValue} ETH = ${gweiFromEther} Gwei = ${weiFromEther} Wei`)
 ```
@@ -172,10 +175,10 @@ console.log(`${etherValue} ETH = ${gweiFromEther} Gwei = ${weiFromEther} Wei`)
 <Tab title="Gas Price Reference">
 ```typescript
 // Typical gas prices (varies by network conditions)
-const slow = Gwei(20n)      // 20 Gwei
-const standard = Gwei(50n)  // 50 Gwei
-const fast = Gwei(100n)     // 100 Gwei
-const urgent = Gwei(200n)   // 200 Gwei
+const slow = Gwei("20")      // 20 Gwei
+const standard = Gwei("50")  // 50 Gwei
+const fast = Gwei("100")     // 100 Gwei
+const urgent = Gwei("200")   // 200 Gwei
 
 // Transfer cost (21,000 gas)
 const transferCostSlow = Uint.times(
@@ -294,7 +297,7 @@ import * as Wei from 'tevm/Wei'
 import * as Gwei from 'tevm/Gwei'
 import * as Uint from 'tevm/Uint'
 
-const gasPrice = Gwei(50n)
+const gasPrice = Gwei("50")
 const gasUsed = Uint(21_000n)
 
 // ✗ Type error - cannot pass Gwei where Wei expected
@@ -305,36 +308,36 @@ const gasPriceWei = Gwei.toWei(gasPrice)
 const cost = Uint.times(gasPriceWei, gasUsed)
 ```
 
-## Integer Division
+## Decimal Precision
 
-All conversions use integer division. Fractional results truncate:
+Ether and Gwei use decimal strings to preserve fractional values:
 
 ```typescript
 import * as Wei from 'tevm/Wei'
 import * as Ether from 'tevm/Ether'
 
-// 500 Wei = 0.000000000000000500 Ether
+// 500 Wei = 0.0000000000000005 Ether
 const wei = Wei(500n)
-const ether = Wei.toEther(wei)  // 0n (truncates)
+const ether = Wei.toEther(wei)  // "0.0000000000000005" (preserved)
 
-// Must have full Ether amount to convert back
-const oneEther = Ether(1n)
-const weiValue = Ether.toWei(oneEther)  // 1_000_000_000_000_000_000n
+// Fractional Ether supported natively
+const fractional = Ether("1.5")
+const weiValue = Ether.toWei(fractional)  // 1_500_000_000_000_000_000n
 ```
 
-For fractional display, use `Uint.dividedBy` and handle remainder:
+Round-trip conversions preserve full precision:
 
 ```typescript
 import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import * as Ether from 'tevm/Ether'
 
-const wei = Wei(1_500_000_000_000_000_000n)  // 1.5 Ether in Wei
+const originalWei = Wei(1_500_000_000_000_000_000n)  // 1.5 Ether in Wei
 
-const weiPerEther = Uint(1_000_000_000_000_000_000n)
-const ether = Uint.dividedBy(wei, weiPerEther)  // 1n
-const remainder = Uint.modulo(wei, weiPerEther)  // 500_000_000_000_000_000n
+// Convert to Ether and back
+const etherValue = Wei.toEther(originalWei)  // "1.5"
+const backToWei = Ether.toWei(etherValue)    // 1_500_000_000_000_000_000n
 
-console.log(`${ether}.${remainder} ETH`)  // "1.500000000000000000 ETH"
+console.log(originalWei === backToWei)  // true - no precision loss
 ```
 
 ## Related Types

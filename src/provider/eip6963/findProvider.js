@@ -44,7 +44,11 @@ export function findProvider(options) {
 
 	// Validate options
 	if (!options || typeof options !== "object") {
-		throw new InvalidArgumentError("findProvider", "{ rdns: string }", typeof options);
+		throw new InvalidArgumentError(
+			"findProvider",
+			"{ rdns: string }",
+			typeof options,
+		);
 	}
 	if (!options.rdns || typeof options.rdns !== "string") {
 		throw new InvalidArgumentError(

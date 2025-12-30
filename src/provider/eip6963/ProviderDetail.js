@@ -7,9 +7,9 @@
  */
 
 import { brand } from "../../brand.js";
+import { ProviderInfo } from "./ProviderInfo.js";
 import { MissingFieldError } from "./errors.js";
 import { validateProvider } from "./validators.js";
-import { ProviderInfo } from "./ProviderInfo.js";
 
 /**
  * Create a validated ProviderDetail object

@@ -1,21 +1,23 @@
 import type { Uint256Type } from "../Uint/Uint256Type.js";
 import type { GweiType as BrandedGwei } from "./GweiType.js";
+import { toWei } from "./gwei-toWei.js";
 
 /**
- * Convert Gwei to base Uint256 type
+ * Convert Gwei to Uint256 (in Wei)
+ *
+ * Converts gwei string to wei bigint, then returns as Uint256.
  *
  * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
  * @since 0.0.0
- * @param gwei - Amount in Gwei
- * @returns Uint256 value (type cast, no conversion)
- * @throws {never}
+ * @param gwei - Amount in Gwei (string)
+ * @returns Uint256 value in Wei
+ * @throws {Error} If gwei value has more than 9 decimal places
  * @example
  * ```typescript
- * const gwei = Gwei.from(1000000000n);
- * const u256 = Gwei.toU256(gwei);
- * // u256 = 1000000000n (as Uint256)
+ * const u256_1 = Gwei.toU256(Gwei.from("5"));   // 5000000000n
+ * const u256_2 = Gwei.toU256(Gwei.from("1.5")); // 1500000000n
  * ```
  */
 export function toU256(gwei: BrandedGwei): Uint256Type {
-	return gwei as unknown as Uint256Type;
+	return toWei(gwei) as unknown as Uint256Type;
 }

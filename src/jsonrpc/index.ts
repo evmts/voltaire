@@ -29,6 +29,13 @@ export * as types from "./types/index.js";
 // ============================================================================
 
 import * as _anvilMethods from "./anvil/methods.js";
+import * as _ethMethods from "./eth/methods.js";
+import * as _hardhatMethods from "./hardhat/methods.js";
+import * as _netMethods from "./net/methods.js";
+import * as _txpoolMethods from "./txpool/methods.js";
+import * as _walletMethods from "./wallet/methods.js";
+import * as _web3Methods from "./web3/methods.js";
+
 /**
  * Rpc namespace - Modern API for creating JSON-RPC requests
  *
@@ -43,18 +50,11 @@ import * as _anvilMethods from "./anvil/methods.js";
  * const switchChain = Rpc.Wallet.SwitchEthereumChainRequest('0x1')
  * ```
  */
-import * as _ethMethods from "./eth/methods.js";
-import * as _hardhatMethods from "./hardhat/methods.js";
-import * as _netMethods from "./net/methods.js";
-import * as _txpoolMethods from "./txpool/methods.js";
-import * as _walletMethods from "./wallet/methods.js";
-import * as _web3Methods from "./web3/methods.js";
-
-export namespace Rpc {
+export const Rpc = {
 	/**
 	 * Eth namespace - Request constructors for eth_ methods
 	 */
-	export const Eth = {
+	Eth: {
 		AccountsRequest: _ethMethods.AccountsRequest,
 		BlobBaseFeeRequest: _ethMethods.BlobBaseFeeRequest,
 		BlockNumberRequest: _ethMethods.BlockNumberRequest,
@@ -114,53 +114,53 @@ export namespace Rpc {
 		HashrateRequest: _ethMethods.HashrateRequest,
 		MiningRequest: _ethMethods.MiningRequest,
 		ProtocolVersionRequest: _ethMethods.ProtocolVersionRequest,
-	};
+	},
 
 	/**
 	 * Wallet namespace - Request constructors for wallet_ methods (EIP-3326, EIP-747)
 	 */
-	export const Wallet = {
+	Wallet: {
 		SwitchEthereumChainRequest: _walletMethods.WalletSwitchEthereumChainRequest,
 		AddEthereumChainRequest: _walletMethods.WalletAddEthereumChainRequest,
 		WatchAssetRequest: _walletMethods.WalletWatchAssetRequest,
 		RequestPermissionsRequest: _walletMethods.WalletRequestPermissionsRequest,
 		GetPermissionsRequest: _walletMethods.WalletGetPermissionsRequest,
 		RevokePermissionsRequest: _walletMethods.WalletRevokePermissionsRequest,
-	};
+	},
 
 	/**
 	 * Anvil namespace - Request constructors for Anvil/Foundry testing methods
 	 */
-	export const Anvil = _anvilMethods;
+	Anvil: _anvilMethods,
 
 	/**
 	 * Hardhat namespace - Request constructors for Hardhat Network methods
 	 */
-	export const Hardhat = _hardhatMethods;
+	Hardhat: _hardhatMethods,
 
 	/**
 	 * Web3 namespace - Request constructors for web3_ methods
 	 */
-	export const Web3 = {
+	Web3: {
 		ClientVersionRequest: _web3Methods.ClientVersionRequest,
 		Sha3Request: _web3Methods.Sha3Request,
-	};
+	},
 
 	/**
 	 * Net namespace - Request constructors for net_ methods
 	 */
-	export const Net = {
+	Net: {
 		VersionRequest: _netMethods.VersionRequest,
 		ListeningRequest: _netMethods.ListeningRequest,
 		PeerCountRequest: _netMethods.PeerCountRequest,
-	};
+	},
 
 	/**
 	 * Txpool namespace - Request constructors for txpool_ methods
 	 */
-	export const Txpool = {
+	Txpool: {
 		StatusRequest: _txpoolMethods.StatusRequest,
 		ContentRequest: _txpoolMethods.ContentRequest,
 		InspectRequest: _txpoolMethods.InspectRequest,
-	};
-}
+	},
+} as const;

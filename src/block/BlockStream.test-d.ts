@@ -5,19 +5,19 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import type { BlockHashType } from "../primitives/BlockHash/BlockHashType.js";
 import type { BlockType } from "../primitives/Block/BlockType.js";
+import type { BlockHashType } from "../primitives/BlockHash/BlockHashType.js";
 import type { ReceiptType } from "../primitives/Receipt/ReceiptType.js";
 import type { TypedProvider } from "../provider/TypedProvider.js";
 import type { BlockStream as BlockStreamFactory } from "./BlockStream.js";
 import type {
 	BackfillOptions,
 	BlockInclude,
-	BlocksEvent,
 	BlockStream,
 	BlockStreamEvent,
 	BlockStreamMetadata,
 	BlockStreamOptions,
+	BlocksEvent,
 	LightBlock,
 	ReorgEvent,
 	StreamBlock,
@@ -225,7 +225,7 @@ describe("BlockStreamMetadata", () => {
 
 describe("BlockStreamOptions", () => {
 	it("include is optional BlockInclude", () => {
-		type Options = BlockStreamOptions;
+		type Options = BlockStreamOptions<BlockInclude>;
 		expectTypeOf<Options["include"]>().toEqualTypeOf<
 			BlockInclude | undefined
 		>();

@@ -14,7 +14,7 @@ import type { PollOptions } from "./types.js";
  * Default polling configuration
  */
 const DEFAULT_POLL_OPTIONS: Required<
-	Omit<PollOptions<any>, "validate" | "onPoll">
+	Omit<PollOptions<unknown>, "validate" | "onPoll">
 > = {
 	interval: 1000,
 	timeout: 60000,

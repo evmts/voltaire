@@ -131,6 +131,7 @@ export class BatchQueue<T, R> {
 			// Safety: Loop bounds guarantee batch[i] exists (i < batch.length)
 			// Contract: processBatch must return results.length === items.length
 			for (let i = 0; i < batch.length; i++) {
+				// biome-ignore lint/style/noNonNullAssertion: loop bounds guarantee indices exist
 				batch[i]?.resolve(results[i]!);
 			}
 		} catch (error) {

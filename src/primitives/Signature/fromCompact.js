@@ -62,7 +62,7 @@ export function fromCompact(bytes, algorithmOrV) {
 		const yParity =
 			explicitV !== undefined
 				? explicitV
-				: /** @type {number} */ (sBytes[0] & 0x80) >> 7;
+				: /** @type {number} */ (/** @type {number} */ (sBytes[0]) & 0x80) >> 7;
 
 		// Clear bit 255 from s
 		const s = /** @type {import('../Hash/HashType.js').HashType} */ (
@@ -86,7 +86,7 @@ export function fromCompact(bytes, algorithmOrV) {
 		const s = /** @type {import('../Hash/HashType.js').HashType} */ (
 			bytes.slice(COMPONENT_SIZE, ECDSA_SIZE)
 		);
-		const v = /** @type {number} */ (bytes[64]);
+		const v = /** @type {number} */ (/** @type {Uint8Array} */ (bytes)[64]);
 		return fromSecp256k1(r, s, v);
 	}
 

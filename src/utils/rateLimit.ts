@@ -36,7 +36,7 @@ import type { RateLimiterOptions } from "./types.js";
  * getBalance('0x789...'); // Ignored (within 1s)
  * ```
  */
-export function throttle<TArgs extends any[], TReturn>(
+export function throttle<TArgs extends unknown[], TReturn>(
 	fn: (...args: TArgs) => TReturn,
 	wait: number,
 ): (...args: TArgs) => TReturn | undefined {
@@ -86,7 +86,7 @@ export function throttle<TArgs extends any[], TReturn>(
  * searchBlocks.cancel();
  * ```
  */
-export function debounce<TArgs extends any[], TReturn>(
+export function debounce<TArgs extends unknown[], TReturn>(
 	fn: (...args: TArgs) => TReturn,
 	wait: number,
 ): ((...args: TArgs) => void) & { cancel: () => void } {
@@ -146,9 +146,9 @@ export class RateLimiter {
 	private tokens: number;
 	private lastRefill: number;
 	private queue: Array<{
-		fn: () => Promise<any>;
-		resolve: (value: any) => void;
-		reject: (error: any) => void;
+		fn: () => Promise<unknown>;
+		resolve: (value: unknown) => void;
+		reject: (error: unknown) => void;
 	}> = [];
 	private processing = false;
 
@@ -242,8 +242,8 @@ export class RateLimiter {
 			case "queue":
 				return new Promise<T>((resolve, reject) => {
 					this.queue.push({
-						fn: fn as () => Promise<any>,
-						resolve,
+						fn: fn as () => Promise<unknown>,
+						resolve: resolve as (value: unknown) => void,
 						reject,
 					});
 					this.processQueue();
@@ -268,7 +268,7 @@ export class RateLimiter {
 	 * @param fn - Function to wrap
 	 * @returns Rate-limited function
 	 */
-	wrap<TArgs extends any[], TReturn>(
+	wrap<TArgs extends unknown[], TReturn>(
 		fn: (...args: TArgs) => Promise<TReturn>,
 	): (...args: TArgs) => Promise<TReturn> {
 		return (...args: TArgs) => this.execute(() => fn(...args));

@@ -6,8 +6,8 @@
  * @module block/BlockStreamType
  */
 
-import type { BlockHashType } from "../primitives/BlockHash/BlockHashType.js";
 import type { BlockType } from "../primitives/Block/BlockType.js";
+import type { BlockHashType } from "../primitives/BlockHash/BlockHashType.js";
 import type { ReceiptType } from "../primitives/Receipt/ReceiptType.js";
 import type { TypedProvider } from "../provider/TypedProvider.js";
 
@@ -43,15 +43,16 @@ export interface LightBlock {
 /**
  * Block with optional transactions based on include level
  */
-export type StreamBlock<TInclude extends BlockInclude> = TInclude extends "receipts"
-	? BlockType & { readonly receipts: readonly ReceiptType[] }
-	: TInclude extends "transactions"
-		? BlockType
-		: Omit<BlockType, "body"> & {
-				readonly body: Omit<BlockType["body"], "transactions"> & {
-					readonly transactions: readonly `0x${string}`[];
+export type StreamBlock<TInclude extends BlockInclude> =
+	TInclude extends "receipts"
+		? BlockType & { readonly receipts: readonly ReceiptType[] }
+		: TInclude extends "transactions"
+			? BlockType
+			: Omit<BlockType, "body"> & {
+					readonly body: Omit<BlockType["body"], "transactions"> & {
+						readonly transactions: readonly `0x${string}`[];
+					};
 				};
-			};
 
 // ============================================================================
 // Options Types

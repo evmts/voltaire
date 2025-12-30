@@ -24,6 +24,7 @@ import { Eip712EncodingError } from "./errors.js";
  * ```
  */
 export function EncodeValue({ keccak256, hashStruct }) {
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: type encoding logic
 	return function encodeValue(type, value, types) {
 		const result = new Uint8Array(32);
 

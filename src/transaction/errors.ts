@@ -8,7 +8,7 @@
  * Error thrown when transaction stream is aborted
  */
 export class TransactionStreamAbortedError extends Error {
-	readonly name = "TransactionStreamAbortedError";
+	override readonly name = "TransactionStreamAbortedError";
 
 	constructor(message = "Transaction stream aborted") {
 		super(message);
@@ -19,7 +19,7 @@ export class TransactionStreamAbortedError extends Error {
  * Error thrown when transaction tracking times out
  */
 export class TransactionTimeoutError extends Error {
-	readonly name = "TransactionTimeoutError";
+	override readonly name = "TransactionTimeoutError";
 	readonly txHash: string;
 	readonly timeoutMs: number;
 
@@ -34,7 +34,7 @@ export class TransactionTimeoutError extends Error {
  * Error thrown when transaction is dropped from mempool
  */
 export class TransactionDroppedError extends Error {
-	readonly name = "TransactionDroppedError";
+	override readonly name = "TransactionDroppedError";
 	readonly txHash: string;
 	readonly reason: "replaced" | "timeout" | "underpriced" | "unknown";
 

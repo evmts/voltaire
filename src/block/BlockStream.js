@@ -17,13 +17,8 @@ import {
 /**
  * @typedef {import('./BlockStreamType.js').BlockStreamConstructorOptions} BlockStreamConstructorOptions
  * @typedef {import('./BlockStreamType.js').BlockStream} BlockStreamInstance
- * @typedef {import('./BlockStreamType.js').BackfillOptions} BackfillOptions
- * @typedef {import('./BlockStreamType.js').WatchOptions} WatchOptions
  * @typedef {import('./BlockStreamType.js').LightBlock} LightBlock
  * @typedef {import('./BlockStreamType.js').BlockInclude} BlockInclude
- * @typedef {import('./BlockStreamType.js').BlockStreamEvent} BlockStreamEvent
- * @typedef {import('./BlockStreamType.js').BlocksEvent} BlocksEvent
- * @typedef {import('./BlockStreamType.js').ReorgEvent} ReorgEvent
  */
 
 /**
@@ -177,6 +172,7 @@ export function BlockStream(options) {
 	 * @param {AbortSignal} [signal]
 	 * @returns {Promise<any>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: retry logic
 	async function fetchBlock(blockNumber, include, retryOptions, signal) {
 		const maxRetries = retryOptions?.maxRetries ?? DEFAULT_MAX_RETRIES;
 		const initialDelay = retryOptions?.initialDelay ?? DEFAULT_INITIAL_DELAY;
@@ -192,7 +188,8 @@ export function BlockStream(options) {
 			}
 
 			try {
-				const block = await provider.request({
+				/** @type {Record<string, unknown> | null} */
+				const block = await /** @type {any} */ (provider).request({
 					method: "eth_getBlockByNumber",
 					params: [`0x${blockNumber.toString(16)}`, includeTransactions],
 				});
@@ -236,6 +233,7 @@ export function BlockStream(options) {
 	 * @param {AbortSignal} [signal]
 	 * @returns {Promise<any>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: retry logic
 	async function fetchBlockByHash(blockHash, include, retryOptions, signal) {
 		const maxRetries = retryOptions?.maxRetries ?? DEFAULT_MAX_RETRIES;
 		const initialDelay = retryOptions?.initialDelay ?? DEFAULT_INITIAL_DELAY;
@@ -251,7 +249,8 @@ export function BlockStream(options) {
 			}
 
 			try {
-				const block = await provider.request({
+				/** @type {Record<string, unknown> | null} */
+				const block = await /** @type {any} */ (provider).request({
 					method: "eth_getBlockByHash",
 					params: [blockHash, includeTransactions],
 				});
@@ -294,6 +293,7 @@ export function BlockStream(options) {
 	 * @param {AbortSignal} [signal]
 	 * @returns {Promise<any[]>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: retry logic
 	async function fetchBlockReceipts(block, retryOptions, signal) {
 		const maxRetries = retryOptions?.maxRetries ?? DEFAULT_MAX_RETRIES;
 		const initialDelay = retryOptions?.initialDelay ?? DEFAULT_INITIAL_DELAY;
@@ -310,7 +310,7 @@ export function BlockStream(options) {
 				}
 
 				try {
-					const receipts = await provider.request({
+					const receipts = await /** @type {any} */ (provider).request({
 						method: "eth_getBlockReceipts",
 						params: [block.hash],
 					});
@@ -345,8 +345,10 @@ export function BlockStream(options) {
 
 		// Fallback: fetch individual receipts
 		const transactions = block.body?.transactions ?? block.transactions ?? [];
+		/** @type {Promise<any>[]} */
 		const receipts = await Promise.all(
-			transactions.map(async (tx) => {
+			// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: retry logic
+			transactions.map(async (/** @type {any} */ tx) => {
 				const txHash = typeof tx === "string" ? tx : tx.hash;
 				let attempt = 0;
 				let delay = initialDelay;
@@ -357,7 +359,7 @@ export function BlockStream(options) {
 					}
 
 					try {
-						const receipt = await provider.request({
+						const receipt = await /** @type {any} */ (provider).request({
 							method: "eth_getTransactionReceipt",
 							params: [txHash],
 						});
@@ -418,7 +420,7 @@ export function BlockStream(options) {
 		if (signal?.aborted) {
 			throw new BlockStreamAbortedError();
 		}
-		const result = await provider.request({
+		const result = await /** @type {any} */ (provider).request({
 			method: "eth_blockNumber",
 			params: [],
 		});
@@ -432,9 +434,10 @@ export function BlockStream(options) {
 	 * No reorg tracking needed for historical blocks.
 	 *
 	 * @template {BlockInclude} TInclude
-	 * @param {BackfillOptions<TInclude>} backfillOptions
-	 * @returns {AsyncGenerator<BlocksEvent<TInclude>>}
+	 * @param {import('./BlockStreamType.js').BackfillOptions<TInclude>} backfillOptions
+	 * @returns {AsyncGenerator<import('./BlockStreamType.js').BlocksEvent<TInclude>>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: streaming logic
 	async function* backfill(backfillOptions) {
 		const { fromBlock, toBlock, signal, retry } = backfillOptions;
 		const include = backfillOptions.include ?? "header";
@@ -477,7 +480,7 @@ export function BlockStream(options) {
 					successStreak = 0;
 				}
 
-				yield /** @type {BlocksEvent<TInclude>} */ ({
+				yield/** @type {import('./BlockStreamType.js').BlocksEvent<TInclude>} */ ({
 					type: "blocks",
 					blocks,
 					metadata: { chainHead },
@@ -511,9 +514,10 @@ export function BlockStream(options) {
 	 * and report reorganizations.
 	 *
 	 * @template {BlockInclude} TInclude
-	 * @param {WatchOptions<TInclude>} [watchOptions]
-	 * @returns {AsyncGenerator<BlockStreamEvent<TInclude>>}
+	 * @param {import('./BlockStreamType.js').WatchOptions<TInclude>} [watchOptions]
+	 * @returns {AsyncGenerator<import('./BlockStreamType.js').BlockStreamEvent<TInclude>>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: streaming logic
 	async function* watch(watchOptions) {
 		const signal = watchOptions?.signal;
 		const pollingInterval =
@@ -542,7 +546,7 @@ export function BlockStream(options) {
 		const initialBlock = await fetchBlock(startBlock, include, retry, signal);
 		unfinalizedBlocks.push(toLightBlock(initialBlock));
 
-		yield /** @type {BlocksEvent<TInclude>} */ ({
+		yield/** @type {import('./BlockStreamType.js').BlocksEvent<TInclude>} */ ({
 			type: "blocks",
 			blocks: [initialBlock],
 			metadata: { chainHead: startBlock },
@@ -553,7 +557,11 @@ export function BlockStream(options) {
 		 * @returns {LightBlock}
 		 */
 		function getLatestBlock() {
-			return unfinalizedBlocks[unfinalizedBlocks.length - 1];
+			const block = unfinalizedBlocks[unfinalizedBlocks.length - 1];
+			if (!block) {
+				throw new Error("No blocks tracked");
+			}
+			return block;
 		}
 
 		/**
@@ -561,6 +569,7 @@ export function BlockStream(options) {
 		 * @param {*} newBlock - Block that doesn't connect to our chain
 		 * @returns {Promise<{ commonAncestor: LightBlock, removed: LightBlock[], newChainBlocks: any[] }>}
 		 */
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: reorg detection logic
 		async function findCommonAncestor(newBlock) {
 			/** @type {LightBlock[]} */
 			const removed = [];
@@ -579,17 +588,25 @@ export function BlockStream(options) {
 				const matchIdx = unfinalizedBlocks.findIndex(
 					(b) =>
 						Hex.fromBytes(b.hash) ===
-						Hex.fromBytes(currentNewBlock.header?.parentHash ?? currentNewBlock.parentHash),
+						Hex.fromBytes(
+							currentNewBlock.header?.parentHash ?? currentNewBlock.parentHash,
+						),
 				);
 
 				if (matchIdx !== -1) {
 					// Found common ancestor
-					const commonAncestor = unfinalizedBlocks[matchIdx];
+					const commonAncestor = /** @type {LightBlock} */ (
+						unfinalizedBlocks[matchIdx]
+					);
 					// Mark all blocks after common ancestor as removed
 					removed.push(...unfinalizedBlocks.slice(matchIdx + 1).reverse());
 					// Trim our chain to common ancestor
 					unfinalizedBlocks = unfinalizedBlocks.slice(0, matchIdx + 1);
-					return { commonAncestor, removed, newChainBlocks: newChainBlocks.reverse() };
+					return {
+						commonAncestor,
+						removed,
+						newChainBlocks: newChainBlocks.reverse(),
+					};
 				}
 
 				// Check if we've exhausted our tracked history
@@ -601,8 +618,12 @@ export function BlockStream(options) {
 				}
 
 				// Need to go further back - fetch parent of current new block
-				const parentHash = currentNewBlock.header?.parentHash ?? currentNewBlock.parentHash;
-				const parentHashHex = typeof parentHash === "string" ? parentHash : Hex.fromBytes(parentHash);
+				const parentHash =
+					currentNewBlock.header?.parentHash ?? currentNewBlock.parentHash;
+				const parentHashHex =
+					typeof parentHash === "string"
+						? parentHash
+						: Hex.fromBytes(parentHash);
 
 				// Remove oldest tracked block and add to removed
 				if (removed.length === 0) {
@@ -633,8 +654,9 @@ export function BlockStream(options) {
 		/**
 		 * Reconcile a new block into our chain
 		 * @param {*} block
-		 * @returns {AsyncGenerator<BlockStreamEvent<TInclude>>}
+		 * @returns {AsyncGenerator<import('./BlockStreamType.js').BlockStreamEvent<TInclude>>}
 		 */
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: reorg reconciliation logic
 		async function* reconcileBlock(block) {
 			const latestBlock = getLatestBlock();
 			const blockNumber =
@@ -661,7 +683,7 @@ export function BlockStream(options) {
 
 				const chainHead = await getCurrentBlockNumber(signal);
 
-				yield /** @type {ReorgEvent<TInclude>} */ ({
+				yield/** @type {import('./BlockStreamType.js').ReorgEvent<TInclude>} */ ({
 					type: "reorg",
 					removed,
 					added: newChainBlocks,
@@ -709,7 +731,7 @@ export function BlockStream(options) {
 
 				const chainHead = await getCurrentBlockNumber(signal);
 
-				yield /** @type {ReorgEvent<TInclude>} */ ({
+				yield/** @type {import('./BlockStreamType.js').ReorgEvent<TInclude>} */ ({
 					type: "reorg",
 					removed,
 					added: newChainBlocks,
@@ -730,7 +752,7 @@ export function BlockStream(options) {
 
 			const chainHead = await getCurrentBlockNumber(signal);
 
-			yield /** @type {BlocksEvent<TInclude>} */ ({
+			yield/** @type {import('./BlockStreamType.js').BlocksEvent<TInclude>} */ ({
 				type: "blocks",
 				blocks: [block],
 				metadata: { chainHead },

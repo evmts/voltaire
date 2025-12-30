@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
-import { ProviderDetail } from "./ProviderDetail.js";
+import { describe, expect, it } from "vitest";
 import { brand } from "../../brand.js";
+import { ProviderDetail } from "./ProviderDetail.js";
 import {
-	MissingFieldError,
 	InvalidProviderError,
 	InvalidUuidError,
+	MissingFieldError,
 } from "./errors.js";
 
 const validInfo = {
@@ -75,7 +75,10 @@ describe("ProviderDetail", () => {
 		});
 
 		it("accepts provider with request method", () => {
-			const detail = ProviderDetail({ info: validInfo, provider: mockProvider });
+			const detail = ProviderDetail({
+				info: validInfo,
+				provider: mockProvider,
+			});
 			expect(detail.provider.request).toBe(mockProvider.request);
 		});
 	});

@@ -1,12 +1,12 @@
-import { describe, it, expect } from "vitest";
-import { ProviderInfo } from "./ProviderInfo.js";
+import { describe, expect, it } from "vitest";
 import { brand } from "../../brand.js";
+import { ProviderInfo } from "./ProviderInfo.js";
 import {
-	MissingFieldError,
-	InvalidUuidError,
-	InvalidRdnsError,
-	InvalidIconError,
 	InvalidFieldError,
+	InvalidIconError,
+	InvalidRdnsError,
+	InvalidUuidError,
+	MissingFieldError,
 } from "./errors.js";
 
 const validInput = {
