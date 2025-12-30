@@ -57,7 +57,8 @@ describe("CREATE (0xf0)", () => {
 		expect(initialGas - frame.gasRemaining).toBe(32000n);
 		expect(err).toEqual({
 			type: "NotImplemented",
-			message: "CREATE requires host.create() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"CREATE requires host.create() - use guillotine or guillotine-mini for full EVM execution",
 		});
 	});
 
@@ -76,7 +77,8 @@ describe("CREATE (0xf0)", () => {
 		expect(initialGas - frame.gasRemaining).toBe(32005n);
 		expect(err).toEqual({
 			type: "NotImplemented",
-			message: "CREATE requires host.create() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"CREATE requires host.create() - use guillotine or guillotine-mini for full EVM execution",
 		});
 	});
 
@@ -88,7 +90,8 @@ describe("CREATE (0xf0)", () => {
 
 		expect(err).toEqual({
 			type: "NotImplemented",
-			message: "CREATE requires host.create() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"CREATE requires host.create() - use guillotine or guillotine-mini for full EVM execution",
 		});
 	});
 
@@ -145,7 +148,8 @@ describe("CALL (0xf1)", () => {
 		// Zero value is allowed in static context, but still needs host.call
 		expect(err).toEqual({
 			type: "NotImplemented",
-			message: "CALL requires host.call() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"CALL requires host.call() - use guillotine or guillotine-mini for full EVM execution",
 		});
 	});
 
@@ -162,7 +166,8 @@ describe("CALL (0xf1)", () => {
 		expect(initialGas - frame.gasRemaining).toBeGreaterThan(700n);
 		expect(err).toEqual({
 			type: "NotImplemented",
-			message: "CALL requires host.call() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"CALL requires host.call() - use guillotine or guillotine-mini for full EVM execution",
 		});
 	});
 
@@ -179,7 +184,8 @@ describe("CALL (0xf1)", () => {
 		expect(initialGas - frame.gasRemaining).toBeGreaterThan(9700n);
 		expect(err).toEqual({
 			type: "NotImplemented",
-			message: "CALL requires host.call() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"CALL requires host.call() - use guillotine or guillotine-mini for full EVM execution",
 		});
 	});
 
@@ -196,7 +202,8 @@ describe("CALL (0xf1)", () => {
 		expect(initialGas - frame.gasRemaining).toBeGreaterThan(700n);
 		expect(err).toEqual({
 			type: "NotImplemented",
-			message: "CALL requires host.call() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"CALL requires host.call() - use guillotine or guillotine-mini for full EVM execution",
 		});
 	});
 
@@ -208,7 +215,8 @@ describe("CALL (0xf1)", () => {
 
 		expect(err).toEqual({
 			type: "NotImplemented",
-			message: "CALL requires host.call() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"CALL requires host.call() - use guillotine or guillotine-mini for full EVM execution",
 		});
 	});
 
@@ -256,7 +264,8 @@ describe("CREATE2 (0xf5)", () => {
 		expect(initialGas - frame.gasRemaining).toBe(32011n);
 		expect(err).toEqual({
 			type: "NotImplemented",
-			message: "CREATE2 requires host.create() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"CREATE2 requires host.create() - use guillotine or guillotine-mini for full EVM execution",
 		});
 	});
 });
@@ -270,7 +279,8 @@ describe("DELEGATECALL (0xf4)", () => {
 
 		expect(err).toEqual({
 			type: "NotImplemented",
-			message: "DELEGATECALL requires host.call() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"DELEGATECALL requires host.call() - use guillotine or guillotine-mini for full EVM execution",
 		});
 	});
 });
@@ -284,7 +294,8 @@ describe("STATICCALL (0xfa)", () => {
 
 		expect(err).toEqual({
 			type: "NotImplemented",
-			message: "STATICCALL requires host.call() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"STATICCALL requires host.call() - use guillotine or guillotine-mini for full EVM execution",
 		});
 	});
 });
