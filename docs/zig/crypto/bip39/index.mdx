@@ -9,6 +9,10 @@ BIP39 is a **mnemonic seed phrase standard** (Bitcoin Improvement Proposal 39) t
 
 **Ethereum context:** **Wallet standard** - De facto standard for Ethereum wallets (MetaMask, Ledger, Trezor). Not part of Ethereum protocol itself, but critical for key management UX.
 
+<Warning>
+**Native Only** - BIP-39 uses libwally-core (C library) and is only available in native environments. WASM builds return errors.
+</Warning>
+
 Key operations:
 - **Generate entropy**: 128/160/192/224/256 bits of cryptographically secure randomness
 - **Entropy → mnemonic**: Convert to 12/15/18/21/24 words from BIP39 wordlist

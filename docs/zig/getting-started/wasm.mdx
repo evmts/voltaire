@@ -136,6 +136,29 @@ Performance is nuanced. WASM/Native aren't always faster than TypeScript.
 Benchmark your actual workload. Default implementations are chosen for common use cases, but your specific access patterns may differ.
 </Tip>
 
+## WASM Limitations
+
+Some cryptographic modules require native C/Rust libraries and are **not available in WASM**. These modules will return errors when called from the WASM entrypoint.
+
+| Module | WASM Status | Reason | Alternative |
+|--------|-------------|--------|-------------|
+| **BLS12-381** | ❌ Not available | Requires BLST (C library) | Use native entrypoint |
+| **BN254 (arkworks)** | ❌ Not available | Requires Rust FFI | Pure Zig `bn254` works in WASM |
+| **KZG** | ❌ Not available | Requires c-kzg-4844 (C library) | Use native entrypoint |
+| **BIP-39 / HD Wallet** | ❌ Not available | Requires libwally-core (C library) | Use native or JS entrypoint |
+
+<Warning>
+Calling unavailable modules in WASM returns `error.NotSupported` or equivalent errors. Check your target environment before using these modules.
+</Warning>
+
+**What works in WASM:**
+- All primitives (Address, Hex, Uint, Hash, RLP, ABI, etc.)
+- Keccak256, SHA256, RIPEMD160, Blake2
+- secp256k1, Ed25519, P256, X25519
+- Pure Zig BN254 implementation (not arkworks)
+- ChaCha20-Poly1305, AES-GCM
+- EIP-712 typed data signing
+
 ## Build Commands
 
 ```bash

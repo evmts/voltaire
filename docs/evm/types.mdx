@@ -134,10 +134,10 @@ Frame represents the complete execution state at any point in EVM execution.
 
 ### Host
 
-Interface for external state access (accounts, storage, code).
+Interface for external state access (accounts, storage, code) and nested execution.
 
 ```typescript
-import type { BrandedHost } from "@tevm/voltaire/evm";
+import type { BrandedHost, CallParams, CallResult, CreateParams, CreateResult } from "@tevm/voltaire/evm";
 import type { Address } from "@tevm/voltaire";
 
 type BrandedHost = {
@@ -162,8 +162,18 @@ type BrandedHost = {
   // Transient storage (EIP-1153, transaction-scoped)
   getTransientStorage: (address: Address, slot: bigint) => bigint;
   setTransientStorage: (address: Address, slot: bigint, value: bigint) => void;
+
+  // Nested execution (optional - for CALL/CREATE opcodes)
+  call?: (params: CallParams) => CallResult;
+  create?: (params: CreateParams) => CreateResult;
 };
 ```
+
+<Note>
+The `call` and `create` methods are optional. When not provided, system opcodes (CALL, CREATE, etc.) return a `NotImplemented` error. For full EVM execution with nested calls, use:
+- **[guillotine](https://github.com/evmts/guillotine)**: Production EVM with async state, tracing, full EIP support
+- **guillotine-mini**: Lightweight synchronous EVM for testing
+</Note>
 
 Host provides pluggable state backend - implement for custom chains or test environments.
 
@@ -369,8 +379,13 @@ type EvmError =
   | { type: "RevertExecuted" }
   | { type: "CallDepthExceeded" }
   | { type: "WriteProtection" }
-  | { type: "InsufficientBalance" };
+  | { type: "InsufficientBalance" }
+  | { type: "NotImplemented"; message: string };
 ```
+
+<Note>
+The `NotImplemented` error is returned by system opcodes (CALL, CREATE, etc.) when the host doesn't provide `call` or `create` methods. This is intentional - these low-level primitives don't include an execution engine. Use guillotine or guillotine-mini for full EVM execution.
+</Note>
 
 Error handling:
 
@@ -388,6 +403,9 @@ if (result.type !== "Success") {
       break;
     case "RevertExecuted":
       console.error("Execution reverted");
+      break;
+    case "NotImplemented":
+      console.error("Feature not implemented:", result.message);
       break;
     // ... handle other errors
   }
