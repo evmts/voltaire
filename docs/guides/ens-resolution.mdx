@@ -25,8 +25,8 @@ ENS resolution requires two components:
 
 ```typescript
 import { Contract } from '@voltaire/contract';
-import * as Ens from 'tevm/Ens';
-import * as Hex from 'tevm/Hex';
+import * as Ens from '@tevm/voltaire/Ens';
+import * as Hex from '@tevm/voltaire/Hex';
 
 // ENS Registry ABI (minimal for resolution)
 const ensRegistryAbi = [
@@ -112,9 +112,9 @@ Reverse resolution looks up the primary ENS name for an address.
 
 ```typescript
 import { Contract } from '@voltaire/contract';
-import * as Ens from 'tevm/Ens';
-import * as Hex from 'tevm/Hex';
-import * as Address from 'tevm/Address';
+import * as Ens from '@tevm/voltaire/Ens';
+import * as Hex from '@tevm/voltaire/Hex';
+import * as Address from '@tevm/voltaire/Address';
 
 async function reverseResolve(address: string, provider: any) {
   // Step 1: Compute reverse node
@@ -246,7 +246,7 @@ console.log(records);
 Validate ENS names before resolution to prevent homograph attacks.
 
 ```typescript
-import * as Ens from 'tevm/Ens';
+import * as Ens from '@tevm/voltaire/Ens';
 
 // Check if valid
 const isValid = Ens.isValid('vitalik.eth'); // true
@@ -277,8 +277,8 @@ Always normalize ENS names before computing namehash. Names like "Vitalik.eth" a
 The namehash is a recursive hash used to identify ENS names on-chain.
 
 ```typescript
-import * as Ens from 'tevm/Ens';
-import * as Hex from 'tevm/Hex';
+import * as Ens from '@tevm/voltaire/Ens';
+import * as Hex from '@tevm/voltaire/Hex';
 
 // Compute namehash for a full name
 const node = Ens.namehash('vitalik.eth');
@@ -302,8 +302,8 @@ A complete helper function combining all functionality:
 
 ```typescript
 import { Contract } from '@voltaire/contract';
-import * as Ens from 'tevm/Ens';
-import * as Hex from 'tevm/Hex';
+import * as Ens from '@tevm/voltaire/Ens';
+import * as Hex from '@tevm/voltaire/Hex';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 

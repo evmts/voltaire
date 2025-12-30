@@ -64,10 +64,11 @@ For cryptographic hashes (32 bytes), use the `Keccak256` module:
 
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Hex } from '@tevm/voltaire/Hex';
 
-// Keccak256 hash (32 bytes)
-const hash = Keccak256.hash('hello');
-const hex = Keccak256.toHex(hash);
+// Keccak256 hash (32 bytes) - use hashString for string input
+const hash = Keccak256.hashString('hello');
+const hex = Hex.fromBytes(hash);
 ```
 
 </Tab>

@@ -12,11 +12,14 @@ All crypto modules in `src/crypto/`. Implementations use Zig core with Rust/C fo
 ### Keccak256
 Primary Ethereum hash function. Used for addresses, transaction hashes, storage keys.
 
-```zig
+```typescript
 import * as Keccak256 from "@voltaire/crypto/Keccak256";
 
-const hash = Keccak256.hash("hello");
+// For string input, use hashString
+const hash = Keccak256.hashString("hello");
+// For Uint8Array input, use hash
 const hash2 = Keccak256.hash(new Uint8Array([1, 2, 3]));
+// For hex input, use hashHex
 Keccak256.hashHex("0x1234");
 ```
 

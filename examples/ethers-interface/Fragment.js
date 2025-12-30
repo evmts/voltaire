@@ -8,7 +8,7 @@
 
 import { InvalidFragmentError } from "./errors.js";
 import * as Hex from "../../src/primitives/Hex/index.js";
-import { keccak256String } from "../../src/crypto/Keccak256/index.js";
+import { hashString, hash } from "../../src/crypto/Keccak256/index.js";
 
 /**
  * Format a parameter type for signature
@@ -75,8 +75,8 @@ function joinParams(params, format) {
  * @returns {string}
  */
 function computeSelector(signature) {
-	const hash = keccak256String(signature);
-	return Hex.fromBytes(hash.slice(0, 4));
+	const h = hashString(signature);
+	return Hex.fromBytes(h.slice(0, 4));
 }
 
 /**
@@ -85,8 +85,8 @@ function computeSelector(signature) {
  * @returns {string}
  */
 function computeTopicHash(signature) {
-	const hash = keccak256String(signature);
-	return Hex.fromBytes(hash);
+	const h = hashString(signature);
+	return Hex.fromBytes(h);
 }
 
 // =============================================================================

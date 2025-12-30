@@ -13,7 +13,7 @@ Try it live: open the <a href="/playground">Playground</a> or run <code>bun run 
 
 ## Prerequisites
 
-- **Node.js:** 24.x or higher
+- **Node.js:** 18+ (20+ recommended)
 - **Package Manager:** npm, bun, pnpm, or yarn
 - **Knowledge:** Basic JavaScript/TypeScript
 
@@ -173,6 +173,13 @@ import { Provider } from "@tevm/voltaire";
 ```
   </Tab>
 </Tabs>
+
+## Import Paths
+
+- Default ergonomic: `import { Address, Hex } from '@tevm/voltaire'`
+- Tree-shakable subpaths: `import { Address } from '@tevm/voltaire/Address'`
+- Avoid: `@tevm/voltaire/primitives/*`, `tevm/*`, `@voltaire/*`
+- Aliasing: with `voltaire@npm:@tevm/voltaire`, you can `import { Address } from 'voltaire'` and still use the same subpaths for tree-shaking.
 
 ## Learn More
 

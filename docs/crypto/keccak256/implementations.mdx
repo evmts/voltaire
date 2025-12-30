@@ -4,7 +4,7 @@ description: Comparison and selection guide for Keccak256 implementation options
 ---
 
 <Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+**Future Plans:** This page is planned and under active development. Examples are placeholders and will be replaced with accurate, tested content.
 </Warning>
 
 # Keccak256 Implementation Guide
@@ -148,13 +148,13 @@ const hash = Keccak256Wasm.hash(data); // Same API
 const Keccak256Impl = await (async () => {
   if (typeof WebAssembly !== 'undefined') {
     // WASM available - use default
-    const { Keccak256Wasm } = await import('tevm/crypto/keccak256.wasm');
+    const { Keccak256Wasm } = await import('@tevm/voltaire/Keccak256/wasm');
     await Keccak256Wasm.init();
     return { Keccak256: Keccak256Wasm };
   }
 
   // Fallback to pure TypeScript
-  const { Keccak256Ts } = await import('tevm/crypto/keccak256.ts');
+  const { Keccak256Ts } = await import('@tevm/voltaire/Keccak256/native');
   return { Keccak256: Keccak256Ts };
 })();
 

@@ -4,7 +4,7 @@ description: Primary Keccak256 hashing methods for bytes, strings, and hex data
 ---
 
 <Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+**Future Plans:** This page is planned and under active development. Examples are placeholders and will be replaced with accurate, tested content.
 </Warning>
 
 # Core Hashing Methods
@@ -44,7 +44,7 @@ console.log(Hex.fromBytes(hash)); // 0x...
 <Tab title="Transaction Data">
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
-import { Rlp } from '@tevm/voltaire/primitives/Rlp';
+import { Rlp } from '@tevm/voltaire/Rlp';
 
 // Hash RLP-encoded transaction
 const transaction = Rlp.encode([

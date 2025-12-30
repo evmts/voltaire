@@ -75,9 +75,9 @@ Even humans struggle to understand hidden retry policies, polling behavior, and 
 Voltaire focuses on low-level primitives. Everything does one thing well:
 
 ```typescript
-import { Address } from '@tevm/voltaire/primitives';
-import { keccak256 } from '@tevm/voltaire/crypto';
-import { encodeFunctionData } from '@tevm/voltaire/abi';
+import { Address } from '@tevm/voltaire';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Abi } from '@tevm/voltaire/Abi';
 ```
 
 Each primitive is a building block. No magical encapsulation, no hidden behavior.

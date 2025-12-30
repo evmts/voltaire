@@ -42,7 +42,7 @@ mode: "custom"
          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}>
         Get Started
       </a>
-      <a href="https://github.com/evmts/tevm" target="_blank" rel="noopener"
+      <a href="https://github.com/evmts/voltaire" target="_blank" rel="noopener"
          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'currentColor', border: '2px solid rgba(128, 128, 128, 0.3)', transition: 'all 0.15s ease', transform: 'scale(1)', boxShadow: 'none' }}
          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(128, 128, 128, 0.1)'; e.currentTarget.style.borderColor = 'rgba(128, 128, 128, 0.5)'; e.currentTarget.style.transform = 'scale(1.02)'; }}
          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(128, 128, 128, 0.3)'; e.currentTarget.style.transform = 'scale(1)'; }}
@@ -434,7 +434,7 @@ url = "https://tevm.sh/mcp"
 
         // Create Web Worker for sandboxed execution
         function createWorker() {
-          const workerCode = 'let Tevm = null;' +
+          const workerCode = 'let Voltaire = null;' +
             'self.onmessage = async function(e) {' +
             '  const { code, loadTevm } = e.data;' +
             '  const console = {' +
@@ -463,11 +463,11 @@ url = "https://tevm.sh/mcp"
             '      });' +
             '    }' +
             '  };' +
-            '  if (loadTevm && !Tevm) {' +
+            '  if (loadTevm && !Voltaire) {' +
             '    try {' +
             '      self.postMessage({ type: "log", args: ["Loading Voltaire APIs..."] });' +
-            '      const module = await import("https://esm.sh/@tevm/index@1.0.0-next.100");' +
-            '      Tevm = module;' +
+            '      const module = await import("https://esm.sh/@tevm/voltaire@0.1.9");' +
+            '      Voltaire = module;' +
             '      Object.assign(globalThis, module);' +
             '      self.postMessage({ type: "log", args: ["Voltaire loaded! Available: Address, Hex, Keccak256, etc."] });' +
             '    } catch (err) {' +
@@ -475,8 +475,8 @@ url = "https://tevm.sh/mcp"
             '    }' +
             '  }' +
             '  try {' +
-            '    const fn = new Function("console", "Tevm", code);' +
-            '    fn(console, Tevm);' +
+            '    const fn = new Function("console", "Voltaire", code);' +
+            '    fn(console, Voltaire);' +
             '    self.postMessage({ type: "complete" });' +
             '  } catch (error) {' +
             '    self.postMessage({' +
@@ -648,13 +648,13 @@ url = "https://tevm.sh/mcp"
             'console.log("Decoded:", Hex.toString(hexMsg));\\n' +
             '\\n' +
             '// Keccak256 hashing\\n' +
-            'const hash = Keccak256.hash(Hex.fromString("Voltaire"));\\n' +
+            'const hash = Keccak256.hash(Hex.toBytes(Hex.fromString("Voltaire")));\\n' +
             'console.log("Keccak256 hash:", Hex.fromBytes(hash));\\n' +
             '\\n' +
             '// Uint256 operations\\n' +
             'const a = Uint256.from(100n);\\n' +
             'const b = Uint256.from(42n);\\n' +
-            'console.log("100 + 42 =", Uint256.toBigInt(Uint256.add(a, b)));\\n' +
+            'console.log("100 + 42 =", Uint256.toBigInt(Uint256.plus(a, b)));\\n' +
             '\\n' +
             'console.log("\\\\n✓ Try modifying the code above!");';
 
@@ -736,4 +736,3 @@ url = "https://tevm.sh/mcp"
     `}}>
     </script>
   </div>
-

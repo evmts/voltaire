@@ -138,8 +138,8 @@ const contractAddr = Keccak256Hash.contractAddress(deployerAddress, nonce);
 // Uint8Array(20) [contract address]
 
 // Calculate contract address (CREATE2)
-import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
-import { Bytecode } from '@tevm/voltaire/primitives/Bytecode';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
+import { Bytecode } from '@tevm/voltaire/Bytecode';
 
 const salt = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001');
 const initCode = Bytecode('0x60806040523480156100105760006000fd5b50610015565b60c3806100236000396000f3fe');
@@ -360,8 +360,8 @@ This allows deterministic contract addresses independent of nonce.
 **Example:**
 ```typescript
 import { Address } from '@tevm/voltaire/Address';
-import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
-import { Bytecode } from '@tevm/voltaire/primitives/Bytecode';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
+import { Bytecode } from '@tevm/voltaire/Bytecode';
 
 const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const salt = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001');

@@ -339,7 +339,7 @@ const signatures = await collectSignatures('Approve proposal #1', signers);
 
 ```typescript
 import { PrivateKeySignerImpl } from '@tevm/voltaire/crypto/signers';
-import * as Siwe from '@tevm/voltaire/primitives/Siwe';
+import * as Siwe from '@tevm/voltaire/Siwe';
 
 const signer = PrivateKeySignerImpl.fromPrivateKey({ privateKey: '0x...' });
 

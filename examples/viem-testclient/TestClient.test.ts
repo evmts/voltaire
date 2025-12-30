@@ -286,7 +286,7 @@ describe("setNextBlockTimestamp", () => {
 
 		expect(provider.request).toHaveBeenCalledWith({
 			method: "evm_setNextBlockTimestamp",
-			params: ["0x63a6d73a"],
+			params: ["0x63a4cb3a"],
 		});
 	});
 });
@@ -522,7 +522,7 @@ describe("TestClient integration", () => {
 
 		expect(provider.calls).toContainEqual({
 			method: "evm_setNextBlockTimestamp",
-			params: ["0x6554f7a0"],
+			params: ["0x6553f100"],
 		});
 		expect(provider.calls).toContainEqual({
 			method: "evm_increaseTime",

@@ -4,7 +4,7 @@ description: Common patterns and best practices for Keccak256
 ---
 
 <Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+**Future Plans:** This page is planned and under active development. Examples are placeholders and will be replaced with accurate, tested content.
 </Warning>
 
 # Usage Patterns
@@ -45,7 +45,7 @@ async function getKeccak256Impl() {
   // Try native first (Node.js/Bun)
   if (typeof process !== 'undefined' && process.versions?.node) {
     try {
-      const { Keccak256 } = await import('tevm/native/crypto/keccak256');
+      const { Keccak256 } = await import('@tevm/voltaire/Keccak256/native');
       return Keccak256;
     } catch {
       // Native not available, fall through
@@ -54,13 +54,13 @@ async function getKeccak256Impl() {
 
   // Try WASM (browser/edge)
   if (typeof WebAssembly !== 'undefined') {
-    const { Keccak256Standalone } = await import('tevm/crypto/keccak256.standalone');
+    const { Keccak256Standalone } = await import('@tevm/voltaire/Keccak256');
     await Keccak256Standalone.init();
     return Keccak256Standalone;
   }
 
   // Fallback to pure JS
-  const { Keccak256 } = await import('tevm/crypto/Keccak256');
+  const { Keccak256 } = await import('@tevm/voltaire/Keccak256');
   return Keccak256;
 }
 
@@ -81,7 +81,7 @@ import { Keccak256Wasm } from '@tevm/voltaire/Keccak256/wasm';
 import { Keccak256Standalone } from '@tevm/voltaire/crypto/keccak256.standalone';
 
 // ✅ Conditional import (3KB WASM only when needed)
-const Keccak256 = await import('tevm/crypto/keccak256.standalone')
+const Keccak256 = await import('@tevm/voltaire/Keccak256')
   .then(m => m.Keccak256Standalone);
 await Keccak256.init();
 ```
@@ -273,7 +273,7 @@ Hash transaction data for signing:
 
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
-import { Rlp } from '@tevm/voltaire/primitives/Rlp';
+import { Rlp } from '@tevm/voltaire/Rlp';
 
 // Legacy transaction hash
 function hashLegacyTransaction(tx: {
@@ -360,7 +360,7 @@ Build contract calls with selectors:
 
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
-import { Abi } from '@tevm/voltaire/primitives/Abi';
+import { Abi } from '@tevm/voltaire/Abi';
 
 function encodeContractCall(
   signature: string,

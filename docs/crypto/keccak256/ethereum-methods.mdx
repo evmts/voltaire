@@ -4,7 +4,7 @@ description: Ethereum-specific Keccak256 methods for selectors, topics, and cont
 ---
 
 <Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+**Future Plans:** This page is planned and under active development. Examples are placeholders and will be replaced with accurate, tested content.
 </Warning>
 
 # Ethereum Methods
@@ -46,7 +46,7 @@ console.log(selector.length); // 4
 <Tab title="Building Calldata">
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
-import { Abi } from '@tevm/voltaire/primitives/Abi';
+import { Abi } from '@tevm/voltaire/Abi';
 import { Hex } from '@tevm/voltaire/Hex';
 
 // Build transaction calldata
@@ -375,8 +375,8 @@ function create2Address(
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
 import { Address } from '@tevm/voltaire/Address';
-import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
-import { Bytecode } from '@tevm/voltaire/primitives/Bytecode';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
+import { Bytecode } from '@tevm/voltaire/Bytecode';
 
 const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const salt = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001');
@@ -392,7 +392,7 @@ console.log(contractAddr.length); // 20
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
 import { Address } from '@tevm/voltaire/Address';
-import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
 
 // Compute address before deployment
 function getCreate2Address(
@@ -421,7 +421,7 @@ await deployContract(factory, salt, bytecode);
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
 import { Address } from '@tevm/voltaire/Address';
-import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
 import { Hex } from '@tevm/voltaire/Hex';
 
 // Predict minimal proxy address
@@ -446,7 +446,7 @@ function predictProxyAddress(
 <Tab title="Salt Generation">
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
-import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
 
 // Generate deterministic salt from parameters
 function generateSalt(owner: Uint8Array, version: number): Uint8Array {
@@ -495,8 +495,8 @@ address = keccak256(0xff ++ deployer ++ salt ++ keccak256(initCode))[12:]
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
 import { Address } from '@tevm/voltaire/Address';
-import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
-import { Bytecode } from '@tevm/voltaire/primitives/Bytecode';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
+import { Bytecode } from '@tevm/voltaire/Bytecode';
 
 // 1. Predict CREATE address
 const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
