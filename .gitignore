@@ -193,9 +193,7 @@ EVM2_Performance_Report.md
 kotlin/.gradle/
 kotlin/build/
 
-# Bun lock files
-bun.lock
-**/bun.lock
+# Note: bun.lock is tracked to ensure consistent CI builds
 
 # TypeScript/JavaScript build artifacts
 **/src/core/
