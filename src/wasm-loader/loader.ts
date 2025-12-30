@@ -1615,30 +1615,30 @@ export function secp256k1Sign(
  * @returns True if signature is valid
  */
 export function secp256k1Verify(
-    messageHash: Uint8Array,
-    r: Uint8Array,
-    s: Uint8Array,
-    publicKey: Uint8Array,
+	messageHash: Uint8Array,
+	r: Uint8Array,
+	s: Uint8Array,
+	publicKey: Uint8Array,
 ): boolean {
-    const savedOffset = memoryOffset;
-    try {
-        const exports = getExports();
-        const hashPtr = malloc(32);
-        const sigPtr = malloc(64);
-        const pubKeyPtr = malloc(64);
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const hashPtr = malloc(32);
+		const sigPtr = malloc(64);
+		const pubKeyPtr = malloc(64);
 
-        writeBytes(messageHash, hashPtr);
-        const sig = new Uint8Array(64);
-        sig.set(r, 0);
-        sig.set(s, 32);
-        writeBytes(sig, sigPtr);
-        writeBytes(publicKey, pubKeyPtr);
+		writeBytes(messageHash, hashPtr);
+		const sig = new Uint8Array(64);
+		sig.set(r, 0);
+		sig.set(s, 32);
+		writeBytes(sig, sigPtr);
+		writeBytes(publicKey, pubKeyPtr);
 
-        const result = exports.secp256k1Verify(hashPtr, sigPtr, pubKeyPtr);
-        return result !== 0; // Returns 1 for valid, 0 for invalid
-    } finally {
-        memoryOffset = savedOffset;
-    }
+		const result = exports.secp256k1Verify(hashPtr, sigPtr, pubKeyPtr);
+		return result !== 0; // Returns 1 for valid, 0 for invalid
+	} finally {
+		memoryOffset = savedOffset;
+	}
 }
 
 /**
