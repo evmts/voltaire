@@ -756,11 +756,6 @@
 		}
 	},
 	"optionalDependencies": {
-		"@tevm/voltaire-darwin-arm64": "0.1.0",
-		"@tevm/voltaire-darwin-x64": "0.1.0",
-		"@tevm/voltaire-linux-arm64": "0.1.0",
-		"@tevm/voltaire-linux-x64": "0.1.0",
-		"@tevm/voltaire-win32-x64": "0.1.0",
 		"effect": "^3.12.6",
 		"ffi-napi": "^4.0.3",
 		"ref-napi": "^3.0.3"
