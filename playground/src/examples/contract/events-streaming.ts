@@ -7,8 +7,8 @@
 
 import { Abi } from "@tevm/voltaire/Abi";
 import { Address } from "@tevm/voltaire/Address";
-import * as Hex from "@tevm/voltaire/Hex";
 import { EventStream } from "@tevm/voltaire/EventStream";
+import * as Hex from "@tevm/voltaire/Hex";
 
 // ============================================================================
 // Contract Implementation (copy this into your codebase)
@@ -21,10 +21,14 @@ class ContractEventNotFoundError extends Error {
 	}
 }
 
-function Contract<TAbi extends readonly any[]>(options: {
+function Contract<TAbi extends readonly unknown[]>(options: {
 	address: string;
 	abi: TAbi;
-	provider: any;
+	provider: {
+		request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+		on: () => unknown;
+		removeListener: () => unknown;
+	};
 }) {
 	const { abi: abiItems, provider } = options;
 	const address = Address.from(options.address);
@@ -37,7 +41,7 @@ function Contract<TAbi extends readonly any[]>(options: {
 				if (typeof prop !== "string") return undefined;
 				const eventName = prop;
 
-				return (filter?: any) => {
+				return (filter?: unknown) => {
 					const event = abi.getEvent(eventName);
 					if (!event) throw new ContractEventNotFoundError(eventName);
 					return EventStream({ provider, address, event, filter });
@@ -77,7 +81,10 @@ const erc20Abi = [
 
 // Mock provider that simulates event logs
 const mockProvider = {
-	request: async ({ method, params }: { method: string; params?: any[] }) => {
+	request: async ({
+		method,
+		params,
+	}: { method: string; params?: unknown[] }) => {
 		if (method === "eth_getLogs") {
 			return [
 				{
@@ -108,7 +115,7 @@ const mockProvider = {
 const usdc = Contract({
 	address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 	abi: erc20Abi,
-	provider: mockProvider as any,
+	provider: mockProvider,
 });
 
 // Get EventStream for Transfer events
@@ -131,7 +138,7 @@ const transferEvent = {
 };
 
 const standaloneStream = EventStream({
-	provider: mockProvider as any,
+	provider: mockProvider,
 	address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 	event: transferEvent,
 	filter: { from: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e" },
@@ -157,4 +164,4 @@ try {
 		signal: controller.signal,
 	})) {
 	}
-} catch (error: any) {}
+} catch (error: unknown) {}

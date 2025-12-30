@@ -3,13 +3,14 @@ import { Chain } from "@tevm/voltaire";
 // Example: Block explorer URLs and links
 
 const chains = [
+	// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 	{ chain: Chain.fromId(1)!, name: "Ethereum Mainnet" },
-	{ chain: Chain.fromId(11155111)!, name: "Sepolia Testnet" },
-	{ chain: Chain.fromId(10)!, name: "Optimism" },
-	{ chain: Chain.fromId(42161)!, name: "Arbitrum One" },
-	{ chain: Chain.fromId(137)!, name: "Polygon" },
-	{ chain: Chain.fromId(8453)!, name: "Base" },
-];
+	{ chain: Chain.fromId(11155111), name: "Sepolia Testnet" },
+	{ chain: Chain.fromId(10), name: "Optimism" },
+	{ chain: Chain.fromId(42161), name: "Arbitrum One" },
+	{ chain: Chain.fromId(137), name: "Polygon" },
+	{ chain: Chain.fromId(8453), name: "Base" },
+].filter((c) => c.chain !== undefined);
 for (const { chain, name } of chains) {
 	const c = Chain.from(chain);
 	const explorer = Chain.getExplorerUrl(c);
@@ -60,16 +61,17 @@ function generateExplorerLink(
 	}
 }
 const eth = Chain.from(mainnet);
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const op = Chain.fromId(10)!;
 
 if (op.blockExplorers?.default) {
 }
 const explorerApis = [
-	{ chain: Chain.fromId(1)!, name: "Etherscan", apiSuffix: "/api" },
-	{ chain: Chain.fromId(10)!, name: "Optimism Explorer", apiSuffix: "/api" },
-	{ chain: Chain.fromId(42161)!, name: "Arbiscan", apiSuffix: "/api" },
-	{ chain: Chain.fromId(137)!, name: "Polygonscan", apiSuffix: "/api" },
-];
+	{ chain: Chain.fromId(1), name: "Etherscan", apiSuffix: "/api" },
+	{ chain: Chain.fromId(10), name: "Optimism Explorer", apiSuffix: "/api" },
+	{ chain: Chain.fromId(42161), name: "Arbiscan", apiSuffix: "/api" },
+	{ chain: Chain.fromId(137), name: "Polygonscan", apiSuffix: "/api" },
+].filter((c) => c.chain !== undefined);
 
 for (const { chain, name, apiSuffix } of explorerApis) {
 	const c = Chain.from(chain);

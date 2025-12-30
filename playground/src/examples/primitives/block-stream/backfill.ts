@@ -7,7 +7,10 @@ import { BlockStream } from "../../../../src/block/index.js";
 
 // Mock provider for demonstration
 const mockProvider = {
-	request: async ({ method, params }: { method: string; params: unknown[] }) => {
+	request: async ({
+		method,
+		params,
+	}: { method: string; params: unknown[] }) => {
 		if (method === "eth_blockNumber") {
 			return "0x1000000"; // Block 16,777,216
 		}
@@ -46,9 +49,7 @@ const mockProvider = {
 };
 
 async function main() {
-	const stream = BlockStream({ provider: mockProvider as any });
-
-	console.log("Starting backfill from block 100 to 105...\n");
+	const stream = BlockStream({ provider: mockProvider });
 
 	let blockCount = 0;
 	for await (const event of stream.backfill({
@@ -59,13 +60,9 @@ async function main() {
 		if (event.type === "blocks") {
 			for (const block of event.blocks) {
 				blockCount++;
-				console.log(`Block ${block.header.number}: ${block.hash.slice(0, 18)}...`);
 			}
 		}
 	}
-
-	console.log(`\nBackfilled ${blockCount} blocks`);
-	console.log("Chain head:", "16,777,216");
 }
 
 main().catch(console.error);

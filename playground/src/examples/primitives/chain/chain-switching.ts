@@ -4,7 +4,9 @@ import { Chain } from "@tevm/voltaire";
 
 // Available chains for switching (by ID)
 const chainIds = [1, 11155111, 10, 42161, 137]; // mainnet, sepolia, optimism, arbitrum, polygon
-const availableChains = chainIds.map((id) => Chain.fromId(id)!).filter(Boolean);
+const availableChains = chainIds
+	.map((id) => Chain.fromId(id))
+	.filter((c): c is NonNullable<typeof c> => c !== undefined);
 for (const chain of availableChains) {
 	const c = Chain.from(chain);
 	const isL2 = Chain.isL2(c);
@@ -54,8 +56,11 @@ function areChainCompatible(
 	const h2 = Chain.getLatestHardfork(chain2);
 	return h1 === h2;
 }
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const ethChain = Chain.fromId(1)!;
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const opChain = Chain.fromId(10)!;
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const sepoliaChain = Chain.fromId(11155111)!;
 
 // Find testnet for mainnet

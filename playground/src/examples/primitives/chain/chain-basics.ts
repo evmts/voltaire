@@ -3,9 +3,13 @@ import { Chain } from "@tevm/voltaire";
 // Example: Chain basics - configuration, properties, and utilities
 
 // Create chain instances by ID
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const eth = Chain.fromId(1)!; // Ethereum Mainnet
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const test = Chain.fromId(11155111)!; // Sepolia
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const l2 = Chain.fromId(10)!; // Optimism
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const sidechain = Chain.fromId(137)!; // Polygon
 
 // L2 parent chain

@@ -63,12 +63,15 @@ const logsChainA = [
 
 // After reorg: Blocks 101-102 removed, replaced with blocks on chain B
 const logsAfterReorg = [
+	// biome-ignore lint/style/noNonNullAssertion: example code with known valid array indices
 	logsChainA[0]!, // Block 100 stays
 	EventLog.create({
+		// biome-ignore lint/style/noNonNullAssertion: example code with known valid array indices
 		...logsChainA[1]!,
 		removed: true, // Block 101 removed
 	}),
 	EventLog.create({
+		// biome-ignore lint/style/noNonNullAssertion: example code with known valid array indices
 		...logsChainA[2]!,
 		removed: true, // Block 102 removed
 	}),

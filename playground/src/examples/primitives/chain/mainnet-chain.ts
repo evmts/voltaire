@@ -2,6 +2,7 @@ import { Chain } from "@tevm/voltaire";
 
 // Example: Ethereum Mainnet chain configuration and properties
 
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const eth = Chain.fromId(1)!; // Ethereum Mainnet
 const hardforks = [
 	"homestead",

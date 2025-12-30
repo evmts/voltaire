@@ -2,9 +2,13 @@ import { Chain } from "@tevm/voltaire";
 
 // Example: Layer 2 and sidechain configurations
 
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const opChain = Chain.fromId(10)!; // Optimism
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const arbChain = Chain.fromId(42161)!; // Arbitrum One
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const baseChain = Chain.fromId(8453)!; // Base
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const polyChain = Chain.fromId(137)!; // Polygon
 
 const opParent = Chain.getL1Chain(opChain);

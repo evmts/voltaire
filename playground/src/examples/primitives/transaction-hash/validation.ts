@@ -37,8 +37,8 @@ try {
 	TransactionHash.fromBytes(Bytes.zero(33));
 } catch (error) {}
 try {
-	TransactionHash(12345 as any);
+	TransactionHash(12345 as unknown as Uint8Array);
 } catch (error) {}
 try {
-	TransactionHash({ hash: "0x1234" } as any);
+	TransactionHash({ hash: "0x1234" } as unknown as Uint8Array);
 } catch (error) {}

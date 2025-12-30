@@ -3,6 +3,7 @@ import type { Hardfork } from "@tevm/voltaire/primitives/Chain";
 
 // Example: Hardfork detection and EIP support
 
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const eth = Chain.fromId(1)!; // Ethereum Mainnet
 
 // Check major hardfork support
@@ -93,11 +94,11 @@ for (const block of testBlocks) {
 	const hardfork = getHardforkAtBlock(eth, block);
 }
 const chains = [
-	{ chain: Chain.fromId(1)!, name: "Mainnet" },
-	{ chain: Chain.fromId(11155111)!, name: "Sepolia" },
-	{ chain: Chain.fromId(10)!, name: "Optimism" },
-	{ chain: Chain.fromId(42161)!, name: "Arbitrum" },
-];
+	{ chain: Chain.fromId(1), name: "Mainnet" },
+	{ chain: Chain.fromId(11155111), name: "Sepolia" },
+	{ chain: Chain.fromId(10), name: "Optimism" },
+	{ chain: Chain.fromId(42161), name: "Arbitrum" },
+].filter((c) => c.chain !== undefined);
 
 const hardforks: Hardfork[] = ["london", "paris", "shanghai", "cancun"];
 

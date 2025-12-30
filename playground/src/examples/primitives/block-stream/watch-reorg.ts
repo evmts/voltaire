@@ -3,14 +3,20 @@
  *
  * Demonstrates watching for new blocks and handling chain reorganizations.
  */
-import { BlockStream, BlockStreamAbortedError } from "../../../../src/block/index.js";
+import {
+	BlockStream,
+	BlockStreamAbortedError,
+} from "../../../../src/block/index.js";
 
 // Simulated chain state for demonstration
 let currentBlock = 100;
 let reorgTriggered = false;
 
 const mockProvider = {
-	request: async ({ method, params }: { method: string; params: unknown[] }) => {
+	request: async ({
+		method,
+		params,
+	}: { method: string; params: unknown[] }) => {
 		if (method === "eth_blockNumber") {
 			// Simulate reorg: block number goes back
 			if (currentBlock >= 103 && !reorgTriggered) {
@@ -61,11 +67,10 @@ const mockProvider = {
 	removeListener: () => mockProvider,
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: example code
 async function main() {
-	const stream = BlockStream({ provider: mockProvider as any });
+	const stream = BlockStream({ provider: mockProvider });
 	const controller = new AbortController();
-
-	console.log("Watching for new blocks (will stop after 5 events)...\n");
 
 	let eventCount = 0;
 	const maxEvents = 5;
@@ -80,20 +85,12 @@ async function main() {
 
 			if (event.type === "blocks") {
 				for (const block of event.blocks) {
-					console.log(`NEW BLOCK ${block.header.number}: ${block.hash.slice(0, 18)}...`);
 				}
 			} else if (event.type === "reorg") {
-				console.log("\n=== REORG DETECTED ===");
-				console.log(`Common ancestor: Block ${event.commonAncestor.number}`);
-				console.log(`Removed ${event.removed.length} blocks:`);
 				for (const block of event.removed) {
-					console.log(`  - Block ${block.number}: ${block.hash.toString().slice(0, 18)}...`);
 				}
-				console.log(`Added ${event.added.length} blocks:`);
 				for (const block of event.added) {
-					console.log(`  + Block ${block.header.number}: ${block.hash.slice(0, 18)}...`);
 				}
-				console.log("======================\n");
 			}
 
 			if (eventCount >= maxEvents) {
@@ -102,13 +99,10 @@ async function main() {
 		}
 	} catch (error) {
 		if (error instanceof BlockStreamAbortedError) {
-			console.log("\nWatch stopped by abort signal");
 		} else {
 			throw error;
 		}
 	}
-
-	console.log(`\nProcessed ${eventCount} events`);
 }
 
 main().catch(console.error);

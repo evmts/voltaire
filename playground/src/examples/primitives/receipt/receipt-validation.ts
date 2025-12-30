@@ -86,7 +86,7 @@ try {
 } catch (error) {}
 try {
 	Receipt({
-		transactionHash: undefined as any,
+		transactionHash: undefined as unknown as TransactionHash,
 		transactionIndex: TransactionIndex(0),
 		blockHash: BlockHash.fromHex(
 			"0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",

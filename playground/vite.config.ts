@@ -68,6 +68,7 @@ function modernMonacoPlugin(): Plugin {
 	return {
 		name: "modern-monaco-support",
 		configureServer(server) {
+			// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: middleware logic
 			server.middlewares.use((req, res, next) => {
 				// Serve typescript as ESM
 				if (req.url === "/typescript" || req.url === "/typescript.js") {

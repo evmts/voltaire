@@ -21,7 +21,7 @@ if (!emptyDomainResult.valid) {
 // Invalid address length
 const shortAddress = {
 	...validMessage,
-	address: Bytes.zero(10) as any,
+	address: Bytes.zero(10) as unknown as ReturnType<typeof Bytes.zero>,
 };
 const shortAddressResult = Siwe.validate(shortAddress);
 if (!shortAddressResult.valid) {
@@ -30,7 +30,7 @@ if (!shortAddressResult.valid) {
 // Zero address
 const zeroAddress = {
 	...validMessage,
-	address: Bytes.zero(20) as any,
+	address: Bytes.zero(20) as unknown as ReturnType<typeof Bytes.zero>,
 };
 const zeroAddressResult = Siwe.validate(zeroAddress);
 
@@ -224,7 +224,10 @@ const completeResult = Siwe.validate(complete);
 const errorTypes = [
 	{ msg: { ...validMessage, domain: "" }, expectedError: "invalid_domain" },
 	{
-		msg: { ...validMessage, address: Bytes.zero(10) as any },
+		msg: {
+			...validMessage,
+			address: Bytes.zero(10) as unknown as ReturnType<typeof Bytes.zero>,
+		},
 		expectedError: "invalid_address",
 	},
 	{ msg: { ...validMessage, uri: "" }, expectedError: "invalid_uri" },

@@ -11,7 +11,7 @@ const validInputs = [
 
 for (const { input, label } of validInputs) {
 	try {
-		const slot = Slot(input as any);
+		const slot = Slot(input as bigint);
 	} catch (error) {}
 }
 const invalidInputs = [
@@ -26,7 +26,7 @@ const invalidInputs = [
 
 for (const { input, label } of invalidInputs) {
 	try {
-		const slot = Slot(input as any);
+		const slot = Slot(input as bigint);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 	}

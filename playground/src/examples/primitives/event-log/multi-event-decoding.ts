@@ -122,21 +122,25 @@ function decodeEvent(log: (typeof events)[0]): DecodedEvent | null {
 
 	if (sigHex === TRANSFER_SIG.toHex()) {
 		const [from, to] = EventLog.getIndexedTopics(log);
+		// biome-ignore lint/style/noNonNullAssertion: topics guaranteed by event signature
 		return { type: "Transfer", from: from!, to: to!, amount };
 	}
 
 	if (sigHex === APPROVAL_SIG.toHex()) {
 		const [owner, spender] = EventLog.getIndexedTopics(log);
+		// biome-ignore lint/style/noNonNullAssertion: topics guaranteed by event signature
 		return { type: "Approval", owner: owner!, spender: spender!, amount };
 	}
 
 	if (sigHex === MINT_SIG.toHex()) {
 		const [to] = EventLog.getIndexedTopics(log);
+		// biome-ignore lint/style/noNonNullAssertion: topics guaranteed by event signature
 		return { type: "Mint", to: to!, amount };
 	}
 
 	if (sigHex === BURN_SIG.toHex()) {
 		const [from] = EventLog.getIndexedTopics(log);
+		// biome-ignore lint/style/noNonNullAssertion: topics guaranteed by event signature
 		return { type: "Burn", from: from!, amount };
 	}
 

@@ -89,6 +89,7 @@ class NonceReservationSystem {
 
 	reserve(txId: string): bigint {
 		if (this.reserved.has(txId)) {
+			// biome-ignore lint/style/noNonNullAssertion: has() check guarantees existence
 			return this.reserved.get(txId)!;
 		}
 		const nonce = this.current;

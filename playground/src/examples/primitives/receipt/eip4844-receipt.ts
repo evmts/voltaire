@@ -37,6 +37,7 @@ const blobReceipt = Receipt({
 
 // Calculate total cost
 const executionCost = blobReceipt.gasUsed * blobReceipt.effectiveGasPrice;
+// biome-ignore lint/style/noNonNullAssertion: EIP-4844 receipts always have blob gas fields
 const blobCost = blobReceipt.blobGasUsed! * blobReceipt.blobGasPrice!;
 const totalCost = executionCost + blobCost;
 
@@ -63,9 +64,11 @@ const multiBlobReceipt = Receipt({
 	blobGasUsed: 393216n as Uint256Type, // 3 blobs (384 KB)
 	blobGasPrice: 10n as Uint256Type,
 });
+// biome-ignore lint/style/noNonNullAssertion: EIP-4844 receipts always have blob gas fields
 const blobCount = Number(multiBlobReceipt.blobGasUsed!) / 131072;
-const multiBlobCost =
-	multiBlobReceipt.blobGasUsed! * multiBlobReceipt.blobGasPrice!;
+const multiBlobGasUsed = multiBlobReceipt.blobGasUsed ?? 0n;
+const multiBlobGasPrice = multiBlobReceipt.blobGasPrice ?? 0n;
+const multiBlobCost = multiBlobGasUsed * multiBlobGasPrice;
 
 // High blob gas price scenario
 const expensiveBlobReceipt = Receipt({
@@ -92,5 +95,6 @@ const expensiveBlobReceipt = Receipt({
 });
 const expensiveExecution =
 	expensiveBlobReceipt.gasUsed * expensiveBlobReceipt.effectiveGasPrice;
-const expensiveBlob =
-	expensiveBlobReceipt.blobGasUsed! * expensiveBlobReceipt.blobGasPrice!;
+const expensiveBlobGasUsed = expensiveBlobReceipt.blobGasUsed ?? 0n;
+const expensiveBlobGasPrice = expensiveBlobReceipt.blobGasPrice ?? 0n;
+const expensiveBlob = expensiveBlobGasUsed * expensiveBlobGasPrice;

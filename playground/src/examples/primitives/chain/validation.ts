@@ -8,7 +8,12 @@ function isValidChainId(chainId: number): boolean {
 }
 
 // Validate chain configuration
-function validateChainConfig(chain: any): {
+function validateChainConfig(chain: {
+	chainId?: number;
+	name?: string;
+	nativeCurrency?: { name?: string; symbol?: string; decimals?: number };
+	rpcUrls?: { default?: { http?: string[] } };
+}): {
 	valid: boolean;
 	errors: string[];
 } {
@@ -50,10 +55,10 @@ function validateChainConfig(chain: any): {
 	};
 }
 const chains = [
-	{ chain: Chain.fromId(1)!, name: "Mainnet" },
-	{ chain: Chain.fromId(11155111)!, name: "Sepolia" },
-	{ chain: Chain.fromId(10)!, name: "Optimism" },
-];
+	{ chain: Chain.fromId(1), name: "Mainnet" },
+	{ chain: Chain.fromId(11155111), name: "Sepolia" },
+	{ chain: Chain.fromId(10), name: "Optimism" },
+].filter((c) => c.chain !== undefined);
 
 for (const { chain, name } of chains) {
 	const result = validateChainConfig(chain);
@@ -82,7 +87,7 @@ for (const error of invalidResult.errors) {
 }
 
 // Check chain uniqueness
-function hasDuplicateChainId(chains: any[]): boolean {
+function hasDuplicateChainId(chains: { chainId: number }[]): boolean {
 	const ids = new Set<number>();
 	for (const chain of chains) {
 		if (ids.has(chain.chainId)) return true;
@@ -90,8 +95,11 @@ function hasDuplicateChainId(chains: any[]): boolean {
 	}
 	return false;
 }
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const mainnetChain = Chain.fromId(1)!;
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const sepoliaChain = Chain.fromId(11155111)!;
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const optimismChain = Chain.fromId(10)!;
 const uniqueChains = [mainnetChain, sepoliaChain, optimismChain];
 
@@ -142,6 +150,7 @@ async function canConnectToChain(
 	if (!rpcUrl) return false;
 	return true;
 }
+// biome-ignore lint/style/noNonNullAssertion: example code with known valid IDs
 const eth = Chain.fromId(1)!;
 canConnectToChain(eth);
 
@@ -166,13 +175,13 @@ function hasCompleteMetadata(chain: ReturnType<typeof Chain.from>): boolean {
 	}
 }
 const testChains = [
-	{ chain: Chain.fromId(1)!, name: "Mainnet" },
-	{ chain: Chain.fromId(11155111)!, name: "Sepolia" },
-	{ chain: Chain.fromId(10)!, name: "Optimism" },
-	{ chain: Chain.fromId(42161)!, name: "Arbitrum" },
-	{ chain: Chain.fromId(137)!, name: "Polygon" },
-	{ chain: Chain.fromId(8453)!, name: "Base" },
-];
+	{ chain: Chain.fromId(1), name: "Mainnet" },
+	{ chain: Chain.fromId(11155111), name: "Sepolia" },
+	{ chain: Chain.fromId(10), name: "Optimism" },
+	{ chain: Chain.fromId(42161), name: "Arbitrum" },
+	{ chain: Chain.fromId(137), name: "Polygon" },
+	{ chain: Chain.fromId(8453), name: "Base" },
+].filter((c) => c.chain !== undefined);
 
 for (const { chain, name } of testChains) {
 	const c = Chain.from(chain);
@@ -180,7 +189,7 @@ for (const { chain, name } of testChains) {
 }
 
 // Safe chain access
-function safeGetChainName(chain: any | undefined): string {
+function safeGetChainName(chain: unknown | undefined): string {
 	if (!chain) return "unknown";
 	try {
 		const c = Chain.from(chain);

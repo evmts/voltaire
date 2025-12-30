@@ -69,18 +69,21 @@ let settingsPanelOpen = false;
 let currentApiMode: ApiMode = "regular";
 let apiModeToggle: ApiModeToggle | null = null;
 
-// Initialize components
-const editor = new Editor(document.getElementById("editor")!);
-const consoleComponent = new Console(
-	document.getElementById("console-content")!,
-);
-const breadcrumbs = new Breadcrumbs(document.getElementById("breadcrumbs")!);
+// Initialize components - DOM elements guaranteed to exist in index.html
+const editorEl = document.getElementById("editor") ?? document.body;
+const consoleEl = document.getElementById("console-content") ?? document.body;
+const breadcrumbsEl = document.getElementById("breadcrumbs") ?? document.body;
+const historyEl = document.getElementById("history-panel") ?? document.body;
+const benchmarkEl = document.getElementById("benchmark-panel") ?? document.body;
+const vimStatusEl = document.getElementById("vim-status") ?? document.body;
+
+const editor = new Editor(editorEl);
+const consoleComponent = new Console(consoleEl);
+const breadcrumbs = new Breadcrumbs(breadcrumbsEl);
 const executor = new Executor();
-const history = new ExecutionHistory(document.getElementById("history-panel")!);
-const benchmark = new BenchmarkMode(
-	document.getElementById("benchmark-panel")!,
-);
-const vimMode = new VimMode(document.getElementById("vim-status")!);
+const history = new ExecutionHistory(historyEl);
+const benchmark = new BenchmarkMode(benchmarkEl);
+const vimMode = new VimMode(vimStatusEl);
 const displaySettings = new DisplaySettingsManager();
 
 // EditorTabs, DiffView, and SearchReplace will be initialized after editor.init()
@@ -318,7 +321,8 @@ async function handleRun(): Promise<void> {
 	let output = "";
 
 	// Capture output for history
-	const consoleContainer = document.getElementById("console-content")!;
+	const consoleContainer =
+		document.getElementById("console-content") ?? document.body;
 	const observer = new MutationObserver(() => {
 		output = consoleContainer.textContent || "";
 	});
@@ -396,6 +400,7 @@ function updateDiffIndicator(): void {
 }
 
 // Initialize app
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: app initialization logic
 async function init(): Promise<void> {
 	// Add keyboard shortcuts styles
 	addShortcutStyles();
@@ -404,7 +409,8 @@ async function init(): Promise<void> {
 	await editor.init();
 
 	// Initialize EditorTabs
-	const editorTabsContainer = document.getElementById("editor-tabs")!;
+	const editorTabsContainer =
+		document.getElementById("editor-tabs") ?? document.body;
 	editorTabs = new EditorTabs(
 		editorTabsContainer,
 		editor.getMonaco(),
@@ -424,7 +430,7 @@ async function init(): Promise<void> {
 	);
 
 	// Initialize DiffView
-	const editorContainer = document.getElementById("editor")!;
+	const editorContainer = document.getElementById("editor") ?? document.body;
 	diffView = new DiffView(
 		editor.getMonaco(),
 		editorContainer,
@@ -432,7 +438,7 @@ async function init(): Promise<void> {
 	);
 
 	// Initialize SearchReplace
-	const searchPanel = document.getElementById("search-panel")!;
+	const searchPanel = document.getElementById("search-panel") ?? document.body;
 	searchReplace = new SearchReplace(
 		editor.getMonaco(),
 		editor.getEditor(),
@@ -444,8 +450,10 @@ async function init(): Promise<void> {
 	CodeLensProvider.register(editor.getMonaco(), editor.getEditor(), handleRun);
 
 	// Initialize AutoSave with UI indicators
-	const unsavedIndicator = document.getElementById("unsaved-indicator")!;
-	const lastSavedIndicator = document.getElementById("last-saved-indicator")!;
+	const unsavedIndicator =
+		document.getElementById("unsaved-indicator") ?? document.body;
+	const lastSavedIndicator =
+		document.getElementById("last-saved-indicator") ?? document.body;
 	autoSave.init(unsavedIndicator, lastSavedIndicator);
 
 	// Initialize breadcrumbs with editor reference
@@ -471,7 +479,7 @@ async function init(): Promise<void> {
 	});
 
 	// Initialize file tree
-	const fileTreeEl = document.getElementById("file-tree")!;
+	const fileTreeEl = document.getElementById("file-tree") ?? document.body;
 	new FileTree(fileTreeEl, fileTree, (file) => {
 		handleFileSelect(file);
 		// Close mobile menu on file select
@@ -531,11 +539,12 @@ async function init(): Promise<void> {
 	}
 
 	// Setup run button
-	const runButton = document.getElementById("run-button")!;
-	runButton.addEventListener("click", handleRun);
+	const runButton = document.getElementById("run-button");
+	runButton?.addEventListener("click", handleRun);
 
 	// Initialize API mode toggle
-	const apiModeContainer = document.getElementById("api-mode-toggle")!;
+	const apiModeContainer =
+		document.getElementById("api-mode-toggle") ?? document.body;
 	apiModeToggle = new ApiModeToggle(apiModeContainer, {
 		onChange: handleApiModeChange,
 	});
@@ -544,12 +553,12 @@ async function init(): Promise<void> {
 	handleApiModeChange(currentApiMode);
 
 	// Setup history button
-	const historyButton = document.getElementById("history-button")!;
-	historyButton.addEventListener("click", () => history.togglePanel());
+	const historyButton = document.getElementById("history-button");
+	historyButton?.addEventListener("click", () => history.togglePanel());
 
 	// Setup benchmark button
-	const benchmarkButton = document.getElementById("benchmark-button")!;
-	benchmarkButton.addEventListener("click", () => {
+	const benchmarkButton = document.getElementById("benchmark-button");
+	benchmarkButton?.addEventListener("click", () => {
 		if (!currentFile) {
 			alert("Please select a file to benchmark");
 			return;
@@ -647,8 +656,8 @@ async function init(): Promise<void> {
 	});
 
 	// Setup history replay
-	const historyPanel = document.getElementById("history-panel")!;
-	historyPanel.addEventListener("history-replay", (e: Event) => {
+	const historyPanel = document.getElementById("history-panel");
+	historyPanel?.addEventListener("history-replay", (e: Event) => {
 		const event = e as CustomEvent;
 		const entry = event.detail;
 
@@ -661,8 +670,8 @@ async function init(): Promise<void> {
 	});
 
 	// Setup vim toggle button
-	const vimToggle = document.getElementById("vim-toggle")!;
-	vimToggle.addEventListener("click", () => {
+	const vimToggle = document.getElementById("vim-toggle");
+	vimToggle?.addEventListener("click", () => {
 		vimMode.toggle(editor.getEditor());
 		vimToggle.classList.toggle("active", vimMode.isEnabled());
 	});

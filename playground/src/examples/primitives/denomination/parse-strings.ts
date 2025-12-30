@@ -50,7 +50,7 @@ const totalCost = Uint.plus(Wei.toU256(txValue), gasCost);
 
 // Parse from hex (using Uint, then converting)
 const hexWei = "0x0de0b6b3a7640000"; // 1 ether in hex
-const parsedHexWei = Wei(Uint.fromHex(hexWei as any));
+const parsedHexWei = Wei(Uint.fromHex(hexWei as `0x${string}`));
 
 const weiStrings = ["1000", "21000", "1000000000", "1000000000000000000"];
 for (const str of weiStrings) {
