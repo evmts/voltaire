@@ -381,6 +381,33 @@ export interface WasmExports {
 		parentUsed: bigint,
 	) => bigint;
 
+	// KZG functions (EIP-4844)
+	kzg_load_trusted_setup: () => number;
+	kzg_free_trusted_setup: () => number;
+	kzg_blob_to_commitment: (blobPtr: number, outCommitmentPtr: number) => number;
+	kzg_compute_proof: (
+		blobPtr: number,
+		zPtr: number,
+		outProofPtr: number,
+		outYPtr: number,
+	) => number;
+	kzg_compute_blob_proof: (
+		blobPtr: number,
+		commitmentPtr: number,
+		outProofPtr: number,
+	) => number;
+	kzg_verify_proof: (
+		commitmentPtr: number,
+		zPtr: number,
+		yPtr: number,
+		proofPtr: number,
+	) => number;
+	kzg_verify_blob_proof: (
+		blobPtr: number,
+		commitmentPtr: number,
+		proofPtr: number,
+	) => number;
+
 	// Event log functions
 	primitives_eventlog_matches_address: (
 		logAddressPtr: number,

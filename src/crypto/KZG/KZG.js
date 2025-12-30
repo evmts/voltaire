@@ -48,9 +48,7 @@ export {
 class KZGNotAvailableError extends Error {
 	constructor(operation) {
 		super(
-			`KZG.${operation}() requires native bindings. ` +
-				`KZG is not available in WASM or pure JavaScript environments. ` +
-				`Use native FFI or perform KZG operations server-side.`,
+			`KZG.${operation}() requires native bindings. KZG is not available in WASM or pure JavaScript environments. Use native FFI or perform KZG operations server-side.`,
 		);
 		this.name = "KZGNotAvailableError";
 	}

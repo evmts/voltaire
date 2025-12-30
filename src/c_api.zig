@@ -2994,6 +2994,134 @@ export fn primitives_bytecode_detect_fusions(
     return @intCast(count);
 }
 
+// ============================================================================
+// KZG Commitments API (EIP-4844)
+// ============================================================================
+
+pub const PRIMITIVES_ERROR_KZG_NOT_LOADED: c_int = -20;
+pub const PRIMITIVES_ERROR_KZG_INVALID_BLOB: c_int = -21;
+pub const PRIMITIVES_ERROR_KZG_INVALID_PROOF: c_int = -22;
+
+/// KZG Blob size (131072 bytes = 128KB)
+pub const KZG_BLOB_SIZE: usize = 131072;
+/// KZG Commitment size (48 bytes)
+pub const KZG_COMMITMENT_SIZE: usize = 48;
+/// KZG Proof size (48 bytes)
+pub const KZG_PROOF_SIZE: usize = 48;
+
+/// Load trusted setup from embedded data
+/// Must be called before any KZG operations
+/// Returns PRIMITIVES_SUCCESS on success
+export fn kzg_load_trusted_setup() c_int {
+    crypto.c_kzg.loadTrustedSetupFromText(crypto.c_kzg.embedded_trusted_setup, 0) catch {
+        return PRIMITIVES_ERROR_KZG_NOT_LOADED;
+    };
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Free trusted setup
+export fn kzg_free_trusted_setup() c_int {
+    crypto.c_kzg.freeTrustedSetup() catch {
+        return PRIMITIVES_ERROR_KZG_NOT_LOADED;
+    };
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Convert blob to KZG commitment
+/// blob: pointer to 131072-byte blob
+/// out_commitment: pointer to 48-byte output buffer
+export fn kzg_blob_to_commitment(
+    blob: [*]const u8,
+    out_commitment: [*]u8,
+) c_int {
+    const blob_ptr: *const [KZG_BLOB_SIZE]u8 = @ptrCast(blob);
+    const commitment = crypto.c_kzg.blobToKZGCommitment(blob_ptr) catch {
+        return PRIMITIVES_ERROR_KZG_INVALID_BLOB;
+    };
+    @memcpy(out_commitment[0..KZG_COMMITMENT_SIZE], &commitment);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Compute KZG proof at evaluation point z
+/// blob: pointer to 131072-byte blob
+/// z: pointer to 32-byte evaluation point
+/// out_proof: pointer to 48-byte proof output
+/// out_y: pointer to 32-byte y value output
+export fn kzg_compute_proof(
+    blob: [*]const u8,
+    z: [*]const u8,
+    out_proof: [*]u8,
+    out_y: [*]u8,
+) c_int {
+    const blob_ptr: *const [KZG_BLOB_SIZE]u8 = @ptrCast(blob);
+    const z_ptr: *const [32]u8 = @ptrCast(z);
+    const result = crypto.c_kzg.computeKZGProof(blob_ptr, z_ptr) catch {
+        return PRIMITIVES_ERROR_KZG_INVALID_BLOB;
+    };
+    @memcpy(out_proof[0..KZG_PROOF_SIZE], &result.proof);
+    @memcpy(out_y[0..32], &result.y);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Compute blob KZG proof
+/// blob: pointer to 131072-byte blob
+/// commitment: pointer to 48-byte commitment
+/// out_proof: pointer to 48-byte proof output
+export fn kzg_compute_blob_proof(
+    blob: [*]const u8,
+    commitment: [*]const u8,
+    out_proof: [*]u8,
+) c_int {
+    const blob_ptr: *const [KZG_BLOB_SIZE]u8 = @ptrCast(blob);
+    const commitment_ptr: *const [KZG_COMMITMENT_SIZE]u8 = @ptrCast(commitment);
+    const proof = crypto.c_kzg.computeBlobKZGProof(blob_ptr, commitment_ptr) catch {
+        return PRIMITIVES_ERROR_KZG_INVALID_BLOB;
+    };
+    @memcpy(out_proof[0..KZG_PROOF_SIZE], &proof);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Verify KZG proof
+/// commitment: pointer to 48-byte commitment
+/// z: pointer to 32-byte evaluation point
+/// y: pointer to 32-byte y value
+/// proof: pointer to 48-byte proof
+/// Returns 1 if valid, 0 if invalid, negative on error
+export fn kzg_verify_proof(
+    commitment: [*]const u8,
+    z: [*]const u8,
+    y: [*]const u8,
+    proof: [*]const u8,
+) c_int {
+    const commitment_ptr: *const [KZG_COMMITMENT_SIZE]u8 = @ptrCast(commitment);
+    const z_ptr: *const [32]u8 = @ptrCast(z);
+    const y_ptr: *const [32]u8 = @ptrCast(y);
+    const proof_ptr: *const [KZG_PROOF_SIZE]u8 = @ptrCast(proof);
+    const valid = crypto.c_kzg.verifyKZGProof(commitment_ptr, z_ptr, y_ptr, proof_ptr) catch {
+        return PRIMITIVES_ERROR_KZG_INVALID_PROOF;
+    };
+    return if (valid) 1 else 0;
+}
+
+/// Verify blob KZG proof
+/// blob: pointer to 131072-byte blob
+/// commitment: pointer to 48-byte commitment
+/// proof: pointer to 48-byte proof
+/// Returns 1 if valid, 0 if invalid, negative on error
+export fn kzg_verify_blob_proof(
+    blob: [*]const u8,
+    commitment: [*]const u8,
+    proof: [*]const u8,
+) c_int {
+    const blob_ptr: *const [KZG_BLOB_SIZE]u8 = @ptrCast(blob);
+    const commitment_ptr: *const [KZG_COMMITMENT_SIZE]u8 = @ptrCast(commitment);
+    const proof_ptr: *const [KZG_PROOF_SIZE]u8 = @ptrCast(proof);
+    const valid = crypto.c_kzg.verifyBlobKZGProof(blob_ptr, commitment_ptr, proof_ptr) catch {
+        return PRIMITIVES_ERROR_KZG_INVALID_PROOF;
+    };
+    return if (valid) 1 else 0;
+}
+
 // WASM reactor pattern - main() is required for executable builds but not called
 // JavaScript will invoke exported functions directly
 // Only define main() for WASM targets (not for native C library builds)
