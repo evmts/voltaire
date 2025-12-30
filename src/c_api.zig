@@ -492,17 +492,8 @@ export fn secp256k1Verify(
     var hash_array: [32]u8 = undefined;
     @memcpy(&hash_array, msgHash);
 
-    // Inline signature verification
-    const e = std.mem.readInt(u256, &hash_array, .big);
-    const s_inv = crypto.secp256k1.unauditedInvmod(s, crypto.secp256k1.SECP256K1_N) orelse return 0;
-    const u_1 = crypto.secp256k1.unauditedMulmod(e, s_inv, crypto.secp256k1.SECP256K1_N);
-    const u_2 = crypto.secp256k1.unauditedMulmod(r, s_inv, crypto.secp256k1.SECP256K1_N);
-    const u1G = crypto.secp256k1.AffinePoint.generator().scalarMul(u_1);
-    const u2Q = pub_key.scalarMul(u_2);
-    const R_prime = u1G.add(u2Q);
-
-    if (R_prime.infinity) return 0;
-    if ((R_prime.x % crypto.secp256k1.SECP256K1_N) == r) {
+    // Use the tested verifySignature function
+    if (crypto.secp256k1.verifySignature(hash_array, r, s, pub_key)) {
         return 1;
     }
     return 0;
