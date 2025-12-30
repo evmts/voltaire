@@ -1737,6 +1737,22 @@ body {
 	background-color: #f7a41d;
 }
 
+/* Mobile overlay - must be outside media query to prevent grid layout issues */
+.mobile-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+	z-index: 1050;
+	display: none;
+}
+
+.mobile-overlay.visible {
+	display: block;
+}
+
 /* ============================================
    RESPONSIVE DESIGN
    ============================================ */
@@ -1906,22 +1922,6 @@ body {
 
 	.mobile-menu-toggle:hover {
 		background-color: var(--bg-secondary);
-	}
-
-	/* Mobile overlay for file tree */
-	.mobile-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: rgba(0, 0, 0, 0.5);
-		z-index: 1050;
-		display: none;
-	}
-
-	.mobile-overlay.visible {
-		display: block;
 	}
 
 	/* Panels should be full width on mobile */
