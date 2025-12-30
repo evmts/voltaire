@@ -1,8 +1,8 @@
-import { AccessList, Address, Bytes, Bytes32, Hash, Hex } from "@tevm/voltaire";
+import { AccessList, Address, Bytes, Bytes32, Hash } from "@tevm/voltaire";
 
 // === Creating Access Lists ===
 // Single address, no storage keys
-const simpleList = AccessList([
+const simpleList = AccessList.from([
 	{
 		address: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 		storageKeys: [],
@@ -10,7 +10,7 @@ const simpleList = AccessList([
 ]);
 
 // Address with storage keys
-const withStorage = AccessList([
+const withStorage = AccessList.from([
 	{
 		address: Address("0xdead000000000000000000000000000000000001"),
 		storageKeys: [
@@ -25,7 +25,7 @@ const withStorage = AccessList([
 ]);
 
 // Multiple addresses
-const multiAddress = AccessList([
+const multiAddress = AccessList.from([
 	{
 		address: Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"),
 		storageKeys: [
@@ -52,17 +52,12 @@ const multiAddress = AccessList([
 const holderAddress = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
 const balanceSlot = 0n; // ERC-20 balances typically at slot 0
 
-// Calculate storage key: keccak256(abi.encode(address, slot))
-const paddedAddress = Bytes.zero(64);
-paddedAddress.set(holderAddress, 12); // Left-pad address to 32 bytes
-// Slot goes in last 32 bytes
-const slotBytes = Bytes32.zero();
-// For demonstration, using placeholder
+// For demonstration, using placeholder storage key
 const storageKey = Hash(
 	"0xabc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc",
 );
 
-const erc20AccessList = AccessList([
+const erc20AccessList = AccessList.from([
 	{
 		address: Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
 		storageKeys: [storageKey],
@@ -70,18 +65,22 @@ const erc20AccessList = AccessList([
 ]);
 
 // === Access List Serialization ===
-const serialized = multiAddress.toBytes();
+const serialized = AccessList.toBytes(multiAddress);
 
 // === Gas Estimation ===
 // Access list gas costs (EIP-2930):
 // - 2400 gas per address
 // - 1900 gas per storage key
-const addressCount = multiAddress.length;
-const storageKeyCount = multiAddress.reduce(
-	(sum, entry) => sum + entry.storageKeys.length,
-	0,
-);
-const accessListGas = addressCount * 2400 + storageKeyCount * 1900;
+const addrCount = AccessList.addressCount(multiAddress);
+const keyCount = AccessList.storageKeyCount(multiAddress);
+const accessListGas = BigInt(addrCount) * AccessList.ADDRESS_COST + BigInt(keyCount) * AccessList.STORAGE_KEY_COST;
+
+// Use built-in gasCost function
+const totalGasCost = AccessList.gasCost(multiAddress);
 
 // === Empty Access List ===
-const emptyList = AccessList([]);
+const emptyList = AccessList.create();
+const isEmpty = AccessList.isEmpty(emptyList);
+
+// === Merging Access Lists ===
+const merged = AccessList.merge(simpleList, withStorage);

@@ -50,7 +50,7 @@ const storageKey = Bytes32.from([
 const zeroHash = Bytes32.zero();
 
 // Random 32 bytes (like a private key)
-const randomKey = Bytes32.random();
+const randomKey = Bytes32.from(Bytes.random(32));
 
 // === Bytes64 (64 bytes) ===
 // Signatures (r + s), public keys

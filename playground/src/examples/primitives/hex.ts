@@ -6,7 +6,7 @@ const hex1 = Hex("0x1234567890abcdef");
 
 // From bytes
 const bytes = Bytes([0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0]);
-const hexFromBytes = bytes.toHex();
+const hexFromBytes = Bytes.toHex(bytes);
 
 // From number/bigint
 const hexFromNumber = Hex.fromNumber(255);

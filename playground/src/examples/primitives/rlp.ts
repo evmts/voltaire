@@ -51,5 +51,6 @@ const emptyBytes = Rlp.encode(Bytes([]));
 const emptyList = Rlp.encode([]);
 
 // === Length Calculation ===
-const longData = Bytes.repeat(0xab, 1000);
-const encodedLong = Rlp.encode(longData);
+// Create a 1000-byte array filled with 0xab
+const longData = new Uint8Array(1000).fill(0xab);
+const encodedLong = Rlp.encode(Bytes(longData));

@@ -32,7 +32,7 @@ const usableBytes = Math.floor((Blob.SIZE * 31) / 32);
 
 // === Multiple Blobs ===
 // Large data spanning multiple blobs
-const largeData = Bytes.repeat(0xab, 200_000);
+const largeData = new Uint8Array(200_000).fill(0xab);
 const blobsNeeded = Blob.estimateBlobCount(largeData.length);
 
 // === Rollup Use Case ===

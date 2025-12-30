@@ -28,7 +28,7 @@ const dataHash = Hash.keccak256(data);
 
 // Hash hex string
 const hexData = Hex("0x48656c6c6f"); // "Hello"
-const hexHash = Hash.keccak256(hexData.toBytes());
+const hexHash = Hash.keccak256(Hex.toBytes(hexData));
 
 // === Hash Operations ===
 // Clone

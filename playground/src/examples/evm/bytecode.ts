@@ -30,7 +30,7 @@ console.log("\nJump destinations:", [...jumpDests]);
 const blocks = Bytecode.analyzeBlocks(code);
 console.log("\nBasic blocks:", blocks.length);
 for (const block of blocks) {
-	console.log(`  Block at ${block.start}-${block.end}`);
+	console.log(`  Block at ${block.startPc}-${block.endPc}`);
 }
 
 // Check for Solidity metadata
