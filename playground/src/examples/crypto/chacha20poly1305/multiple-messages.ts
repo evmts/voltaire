@@ -8,16 +8,11 @@
  */
 import { ChaCha20Poly1305 } from "@tevm/voltaire";
 
-console.log("=== ChaCha20-Poly1305 Multiple Messages ===\n");
-
 const key = ChaCha20Poly1305.generateKey();
-
-// Pattern 1: Counter-based nonces (recommended for sequential messages)
-console.log("=== Pattern 1: Counter-Based Nonces ===");
 
 class CounterEncryptor {
 	private key: Uint8Array;
-	private counter: bigint = 0n;
+	private counter = 0n;
 
 	constructor(key: Uint8Array) {
 		this.key = key;
@@ -49,13 +44,7 @@ const messages = ["First message", "Second message", "Third message"];
 for (const msg of messages) {
 	const plaintext = new TextEncoder().encode(msg);
 	const { nonce, ciphertext } = counterEnc.encrypt(plaintext);
-	console.log(
-		`"${msg}" -> nonce: ${Buffer.from(nonce).toString("hex")}, len: ${ciphertext.length}`,
-	);
 }
-
-// Pattern 2: Random nonces with storage
-console.log("\n=== Pattern 2: Random Nonces with Message Storage ===");
 
 interface StoredMessage {
 	id: number;
@@ -96,14 +85,6 @@ const store = new MessageStore(key);
 const id1 = store.store(new TextEncoder().encode("Secret document 1"));
 const id2 = store.store(new TextEncoder().encode("Secret document 2"));
 const id3 = store.store(new TextEncoder().encode("Secret document 3"));
-
-console.log(`Stored message IDs: ${store.list().join(", ")}`);
-console.log(
-	`Retrieved message ${id2}: "${new TextDecoder().decode(store.retrieve(id2)!)}"`,
-);
-
-// Pattern 3: Batch encryption with serialization
-console.log("\n=== Pattern 3: Batch Encryption with Serialization ===");
 
 function serializeMessages(messages: string[]): Uint8Array {
 	// Format: [4-byte count][for each: 4-byte nonce+ciphertext length, nonce, ciphertext]
@@ -173,20 +154,5 @@ function deserializeMessages(data: Uint8Array): string[] {
 
 const batch = ["Message A", "Message B", "Message C", "Message D"];
 const serialized = serializeMessages(batch);
-console.log(
-	`Serialized ${batch.length} messages into ${serialized.length} bytes`,
-);
 
 const deserialized = deserializeMessages(serialized);
-console.log(`Deserialized messages: ${JSON.stringify(deserialized)}`);
-console.log(`Match: ${JSON.stringify(batch) === JSON.stringify(deserialized)}`);
-
-// Safety reminder
-console.log("\n=== Safety Reminders ===");
-console.log("1. NEVER reuse a nonce with the same key");
-console.log(
-	"2. Counter nonces: simple, no collision risk if state is preserved",
-);
-console.log("3. Random nonces: ~2^48 messages before collision risk");
-console.log("4. Store nonces alongside ciphertext (they are not secret)");
-console.log("5. Consider key rotation after 2^32 messages for extra safety");
