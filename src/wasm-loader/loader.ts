@@ -1813,7 +1813,8 @@ export function signatureNormalize(
 export function signatureIsCanonical(r: Uint8Array, s: Uint8Array): boolean {
 	// Avoid WASM differences by performing canonicality check in JS:
 	// 1 <= r < n and 1 <= s <= n/2 where n is secp256k1 curve order
-	const SECP256K1_N = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+	const SECP256K1_N =
+		0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
 	const HALF_N = SECP256K1_N >> 1n;
 
 	const toBigInt = (bytes: Uint8Array): bigint => {

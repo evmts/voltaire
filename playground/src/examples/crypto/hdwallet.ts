@@ -6,15 +6,12 @@ import * as HDWallet from "@tevm/voltaire";
 // Standard test mnemonic (DO NOT use in production!)
 const mnemonic =
 	"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-console.log("Using test mnemonic");
 
 // Convert mnemonic to seed (64 bytes)
 const seed = await Bip39.mnemonicToSeed(mnemonic);
-console.log("Seed:", Hex.fromBytes(seed).slice(0, 40) + "...");
 
 // Create root (master) extended key
 const root = HDWallet.HDWallet.fromSeed(seed);
-console.log("Root extended key created");
 
 // Derive Ethereum account using BIP-44 path: m/44'/60'/0'/0/0
 // 44' = BIP-44, 60' = Ethereum, 0' = account, 0 = external, 0 = first address
@@ -23,7 +20,6 @@ const privateKey0 = HDWallet.HDWallet.getPrivateKey(eth0);
 if (!privateKey0) throw new Error("Private key not available");
 const publicKey0 = Secp256k1.derivePublicKey(privateKey0);
 const address0 = Address.fromPublicKey(publicKey0);
-console.log("Account 0, Address 0:", Address.toChecksummed(address0));
 
 // Derive more addresses in same account
 const eth1 = HDWallet.HDWallet.deriveEthereum(root, 0, 1);
@@ -32,35 +28,29 @@ const eth2 = HDWallet.HDWallet.deriveEthereum(root, 0, 2);
 const pk1 = HDWallet.HDWallet.getPrivateKey(eth1);
 if (!pk1) throw new Error("Private key not available");
 const addr1 = Address.fromPublicKey(Secp256k1.derivePublicKey(pk1));
-console.log("Account 0, Address 1:", Address.toChecksummed(addr1));
 
 const pk2 = HDWallet.HDWallet.getPrivateKey(eth2);
 if (!pk2) throw new Error("Private key not available");
 const addr2 = Address.fromPublicKey(Secp256k1.derivePublicKey(pk2));
-console.log("Account 0, Address 2:", Address.toChecksummed(addr2));
 
 // Derive second account
 const account1 = HDWallet.HDWallet.deriveEthereum(root, 1, 0);
 const pkAccount1 = HDWallet.HDWallet.getPrivateKey(account1);
 if (!pkAccount1) throw new Error("Private key not available");
 const addr1_0 = Address.fromPublicKey(Secp256k1.derivePublicKey(pkAccount1));
-console.log("Account 1, Address 0:", Address.toChecksummed(addr1_0));
 
 // Custom derivation path: m/44'/60'/0'/0/5
 const custom = HDWallet.HDWallet.derivePath(root, "m/44'/60'/0'/0/5");
 const pkCustom = HDWallet.HDWallet.getPrivateKey(custom);
 if (!pkCustom) throw new Error("Private key not available");
 const customAddr = Address.fromPublicKey(Secp256k1.derivePublicKey(pkCustom));
-console.log("Custom path address:", Address.toChecksummed(customAddr));
 
 // Hardened derivation (uses ')
 // Hardened keys cannot be computed from parent public key
 const hardened = HDWallet.HDWallet.derivePath(root, "m/44'/60'/0'");
-console.log("Hardened derivation completed");
 
 // Get extended public key (for watch-only wallets)
 const xpub = HDWallet.HDWallet.getPublicKey(eth0);
-console.log("Extended public key:", Hex.fromBytes(xpub));
 
 // Verify keys are deterministic (same mnemonic = same keys)
 const seed2 = await Bip39.mnemonicToSeed(mnemonic);
@@ -69,4 +59,3 @@ const eth0_2 = HDWallet.HDWallet.deriveEthereum(root2, 0, 0);
 const key0_2 = HDWallet.HDWallet.getPrivateKey(eth0_2);
 if (!key0_2) throw new Error("Private key not available");
 const keysMatch = Hex.fromBytes(privateKey0) === Hex.fromBytes(key0_2);
-console.log("Deterministic keys match:", keysMatch);

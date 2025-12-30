@@ -73,7 +73,9 @@ const serialized = AccessList.toBytes(multiAddress);
 // - 1900 gas per storage key
 const addrCount = AccessList.addressCount(multiAddress);
 const keyCount = AccessList.storageKeyCount(multiAddress);
-const accessListGas = BigInt(addrCount) * AccessList.ADDRESS_COST + BigInt(keyCount) * AccessList.STORAGE_KEY_COST;
+const accessListGas =
+	BigInt(addrCount) * AccessList.ADDRESS_COST +
+	BigInt(keyCount) * AccessList.STORAGE_KEY_COST;
 
 // Use built-in gasCost function
 const totalGasCost = AccessList.gasCost(multiAddress);
