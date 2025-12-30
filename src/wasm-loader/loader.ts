@@ -221,7 +221,7 @@ export async function loadWasm(
 			// HD Wallet stubs (not implemented in WASM)
 			hdwallet_derive_child: (): number => 0,
 			hdwallet_derive_path: (): number => 0,
-			// KZG / c-kzg-4844 stubs (native-only, not implemented in WASM)
+			// KZG (c-kzg-4844) stubs for WASM builds that expect env imports
 			load_trusted_setup: (): number => -1,
 			load_trusted_setup_file: (): number => -1,
 			free_trusted_setup: (): void => {},
@@ -1811,19 +1811,23 @@ export function signatureNormalize(
  * @returns True if signature is canonical
  */
 export function signatureIsCanonical(r: Uint8Array, s: Uint8Array): boolean {
-	const savedOffset = memoryOffset;
-	try {
-		const exports = getExports();
-		const rPtr = malloc(32);
-		const sPtr = malloc(32);
+	// Avoid WASM differences by performing canonicality check in JS:
+	// 1 <= r < n and 1 <= s <= n/2 where n is secp256k1 curve order
+	const SECP256K1_N = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+	const HALF_N = SECP256K1_N >> 1n;
 
-		writeBytes(r, rPtr);
-		writeBytes(s, sPtr);
+	const toBigInt = (bytes: Uint8Array): bigint => {
+		let v = 0n;
+		for (let i = 0; i < 32; i++) v = (v << 8n) | BigInt(bytes[i] ?? 0);
+		return v;
+	};
 
-		return exports.primitives_signature_is_canonical(rPtr, sPtr) !== 0;
-	} finally {
-		memoryOffset = savedOffset;
-	}
+	const rBig = toBigInt(r);
+	const sBig = toBigInt(s);
+
+	if (rBig === 0n || rBig >= SECP256K1_N) return false;
+	if (sBig === 0n || sBig > HALF_N) return false;
+	return true;
 }
 
 /**
