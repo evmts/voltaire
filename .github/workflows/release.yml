@@ -34,7 +34,7 @@ jobs:
           zig build test -Doptimize=ReleaseFast
 
       - name: Build WASM
-        run: zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
+        run: zig build build-ts-wasm
 
       - name: Check Zig formatting
         run: zig fmt --check .
@@ -78,7 +78,7 @@ jobs:
         run: pnpm run format:check
 
       - name: Build WASM for tests
-        run: zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
+        run: zig build build-ts-wasm
 
       - name: Run TypeScript tests
         run: pnpm test:run
@@ -131,7 +131,7 @@ jobs:
       - name: Build Zig library and WASM
         run: |
           zig build -Doptimize=ReleaseFast
-          zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
+          zig build build-ts-wasm
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
