@@ -95,6 +95,7 @@ describe("Keccak256 WASM - Initialization", () => {
 
 	test("constants are correct", () => {
 		// Constants are exported in the Keccak256Wasm namespace object
+		// biome-ignore lint/suspicious/noExplicitAny: accessing internal properties
 		const K = Keccak256Wasm as any;
 		expect(K.Keccak256Wasm?.DIGEST_SIZE || 32).toBe(32);
 		expect(K.Keccak256Wasm?.RATE || 136).toBe(136);
@@ -859,6 +860,7 @@ describe("Keccak256 WASM - Cross-Validation with Noble", () => {
 			const wasmResult = Keccak256Wasm.hash(data);
 			const nobleResult = nobleKeccak256(data);
 
+			// biome-ignore lint/suspicious/noExplicitAny: noble returns Uint8Array
 			expect(equals(wasmResult, nobleResult as any)).toBe(true);
 		}
 	});
@@ -879,6 +881,7 @@ describe("Keccak256 WASM - Cross-Validation with Noble", () => {
 			const wasmResult = Keccak256Wasm.hashString(str);
 			const nobleResult = nobleKeccak256(new TextEncoder().encode(str));
 
+			// biome-ignore lint/suspicious/noExplicitAny: noble returns Uint8Array
 			expect(equals(wasmResult, nobleResult as any)).toBe(true);
 		}
 	});
@@ -903,6 +906,7 @@ describe("Keccak256 WASM - Cross-Validation with Noble", () => {
 			}
 			const nobleResult = nobleKeccak256(bytes);
 
+			// biome-ignore lint/suspicious/noExplicitAny: noble returns Uint8Array
 			expect(equals(wasmResult, nobleResult as any)).toBe(true);
 		}
 	});
@@ -921,6 +925,7 @@ describe("Keccak256 WASM - Cross-Validation with Noble", () => {
 			const nobleResult = nobleKeccak256(new TextEncoder().encode(sig));
 			const nobleSelector = nobleResult.slice(0, 4);
 
+			// biome-ignore lint/suspicious/noExplicitAny: noble returns Uint8Array
 			expect(equals(wasmResult, nobleSelector as any)).toBe(true);
 		}
 	});
@@ -935,6 +940,7 @@ describe("Keccak256 WASM - Cross-Validation with Noble", () => {
 			const wasmResult = Keccak256Wasm.topic(sig);
 			const nobleResult = nobleKeccak256(new TextEncoder().encode(sig));
 
+			// biome-ignore lint/suspicious/noExplicitAny: noble returns Uint8Array
 			expect(equals(wasmResult, nobleResult as any)).toBe(true);
 		}
 	});
