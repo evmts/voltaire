@@ -155,7 +155,7 @@ export function create2(frame, host) {
 function addressToBigint(addr) {
 	let result = 0n;
 	for (let i = 0; i < 20; i++) {
-		result = (result << 8n) | BigInt(addr[i]);
+		result = (result << 8n) | BigInt(/** @type {number} */ (addr[i]));
 	}
 	return result;
 }

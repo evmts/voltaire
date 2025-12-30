@@ -164,7 +164,7 @@ export function callcode(frame, host) {
 	// Copy output to memory at outOffset (up to outLength bytes)
 	const copyLen = Math.min(outLen, result.output.length);
 	for (let i = 0; i < copyLen; i++) {
-		writeMemory(frame, outOff + i, result.output[i]);
+		writeMemory(frame, outOff + i, /** @type {number} */ (result.output[i]));
 	}
 
 	// Refund unused gas
