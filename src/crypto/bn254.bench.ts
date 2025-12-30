@@ -340,6 +340,7 @@ describe("BN254 Performance Benchmarks", () => {
 	);
 });
 
+// biome-ignore lint/suspicious/noExplicitAny: vitest not in import.meta types
 if ((import.meta as any).vitest) {
 	const { afterAll } = await import("vitest");
 

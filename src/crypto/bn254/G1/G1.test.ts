@@ -438,6 +438,7 @@ describe("G1 curve operations", () => {
 			// All should be distinct
 			for (let i = 0; i < multiples.length; i++) {
 				for (let j = i + 1; j < multiples.length; j++) {
+					// biome-ignore lint/style/noNonNullAssertion: index bounds checked by loop
 					expect(G1.equal(multiples[i]!, multiples[j]!)).toBe(false);
 				}
 			}
