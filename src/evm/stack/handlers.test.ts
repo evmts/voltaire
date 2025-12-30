@@ -23,7 +23,9 @@ function createFrame(
 		pc,
 		gasRemaining,
 		bytecode,
+		// biome-ignore lint/suspicious/noExplicitAny: mock Frame for test
 		caller: new Uint8Array(20) as any,
+		// biome-ignore lint/suspicious/noExplicitAny: mock Frame for test
 		address: new Uint8Array(20) as any,
 		value: 0n,
 		calldata: new Uint8Array(),
