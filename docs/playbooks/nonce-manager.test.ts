@@ -1,0 +1,204 @@
+/**
+ * Tests for nonce manager playbook
+ * @see /docs/playbooks/nonce-manager.mdx
+ *
+ * Note: The playbook documents a REFERENCE IMPLEMENTATION in examples/nonce-manager/.
+ * Tests cover the patterns and data structures shown in the guide.
+ *
+ * API DISCREPANCIES:
+ * - createNonceManager is in examples/nonce-manager/, not exported from library
+ * - NonceManager patterns are documented as copyable reference implementation
+ */
+import { describe, expect, it } from "vitest";
+
+describe("Nonce Manager Playbook", () => {
+	it("should understand nonce concept", () => {
+		// From playbook: nonces are sequential integers
+		const nonce1 = 5n;
+		const nonce2 = 6n;
+		const nonce3 = 7n;
+
+		expect(nonce2).toBe(nonce1 + 1n);
+		expect(nonce3).toBe(nonce2 + 1n);
+	});
+
+	it("should define state management structure", () => {
+		// From playbook: NonceManager state maps
+		interface NonceManagerState {
+			deltaMap: Map<string, number>; // Pending tx count
+			nonceMap: Map<string, number>; // Last confirmed nonce
+			promiseMap: Map<string, Promise<number>>; // Cached chain fetch
+		}
+
+		const state: NonceManagerState = {
+			deltaMap: new Map(),
+			nonceMap: new Map(),
+			promiseMap: new Map(),
+		};
+
+		// Key format: "address.chainId"
+		const key = "0xabc.1";
+		state.deltaMap.set(key, 2);
+		state.nonceMap.set(key, 5);
+
+		// Final nonce = chain_nonce + delta
+		const chainNonce = state.nonceMap.get(key) ?? 0;
+		const delta = state.deltaMap.get(key) ?? 0;
+		const finalNonce = chainNonce + delta;
+
+		expect(finalNonce).toBe(7);
+	});
+
+	it("should handle consume operation pattern", () => {
+		// From playbook: consume increments delta BEFORE awaiting
+		let delta = 0;
+
+		// Simulated consume pattern
+		const consume = () => {
+			const nonce = 5 + delta; // Start with chain nonce + current delta
+			delta++; // Increment BEFORE await
+			return nonce;
+		};
+
+		// Concurrent calls get unique nonces
+		const nonce1 = consume();
+		const nonce2 = consume();
+		const nonce3 = consume();
+
+		expect(nonce1).toBe(5);
+		expect(nonce2).toBe(6);
+		expect(nonce3).toBe(7);
+	});
+
+	it("should handle recycle operation for failed tx", () => {
+		// From playbook: recycle decrements delta after failure
+		let delta = 3;
+
+		const recycle = () => {
+			delta = Math.max(0, delta - 1);
+		};
+
+		recycle();
+		expect(delta).toBe(2);
+	});
+
+	it("should handle reset operation", () => {
+		// From playbook: reset clears cached state
+		const state = {
+			delta: 5,
+			cachedNonce: 10,
+		};
+
+		const reset = () => {
+			state.delta = 0;
+			state.cachedNonce = 0;
+		};
+
+		reset();
+		expect(state.delta).toBe(0);
+		expect(state.cachedNonce).toBe(0);
+	});
+
+	it("should handle multi-chain nonces independently", () => {
+		// From playbook: nonces are scoped by address + chainId
+		const nonces = new Map<string, number>();
+
+		const key1 = "0x123.1"; // Mainnet
+		const key2 = "0x123.137"; // Polygon
+
+		nonces.set(key1, 10);
+		nonces.set(key2, 5);
+
+		expect(nonces.get(key1)).toBe(10);
+		expect(nonces.get(key2)).toBe(5);
+	});
+
+	it("should handle transaction speed up pattern", () => {
+		// From playbook: speed up with same nonce, higher gas
+		const stuckNonce = 5n;
+		const originalGas = 20_000_000_000n;
+
+		const speedUpTx = {
+			nonce: stuckNonce,
+			maxFeePerGas: (originalGas * 120n) / 100n, // 20% higher
+		};
+
+		expect(speedUpTx.nonce).toBe(5n);
+		expect(speedUpTx.maxFeePerGas).toBe(24_000_000_000n);
+	});
+
+	it("should handle LRU cache size configuration", () => {
+		// From playbook: cacheSize option
+		const options = {
+			cacheSize: 8192, // LRU cache entries
+		};
+
+		expect(options.cacheSize).toBe(8192);
+	});
+
+	it("should handle nonce gap detection", () => {
+		// From playbook: nonce gap scenario
+		const confirmedNonces = [5, 7]; // Missing 6
+
+		const hasGap = () => {
+			for (let i = 1; i < confirmedNonces.length; i++) {
+				if (confirmedNonces[i] !== confirmedNonces[i - 1] + 1) {
+					return confirmedNonces[i - 1] + 1; // Return the gap
+				}
+			}
+			return null;
+		};
+
+		expect(hasGap()).toBe(6);
+	});
+
+	it("should define manager API methods", () => {
+		// From playbook: NonceManager interface
+		interface NonceManager {
+			consume(params: {
+				address: string;
+				chainId: number;
+				provider: unknown;
+			}): Promise<number>;
+			get(params: {
+				address: string;
+				chainId: number;
+				provider: unknown;
+			}): Promise<number>;
+			increment(params: { address: string; chainId: number }): void;
+			reset(params: { address: string; chainId: number }): void;
+			recycle(params: { address: string; chainId: number }): void;
+			getDelta(params: { address: string; chainId: number }): number;
+		}
+
+		// Just type checking - all methods defined
+		const methods: (keyof NonceManager)[] = [
+			"consume",
+			"get",
+			"increment",
+			"reset",
+			"recycle",
+			"getDelta",
+		];
+
+		expect(methods).toHaveLength(6);
+	});
+
+	it("should handle in-memory source for testing", () => {
+		// From playbook: inMemory source for testing
+		const inMemoryNonces = new Map<string, number>();
+
+		const setNonce = (address: string, chainId: number, nonce: number) => {
+			const key = `${address}.${chainId}`;
+			inMemoryNonces.set(key, nonce);
+		};
+
+		const getNonce = (address: string, chainId: number) => {
+			const key = `${address}.${chainId}`;
+			return inMemoryNonces.get(key) ?? 0;
+		};
+
+		setNonce("0x123", 1, 10);
+		expect(getNonce("0x123", 1)).toBe(10);
+	});
+});

@@ -1,0 +1,111 @@
+import { describe, expect, it } from "vitest";
+
+describe("Bytecode.analyzeGas (docs/primitives/bytecode/analyze-gas.mdx)", () => {
+	describe("Basic Gas Analysis", () => {
+		it("should analyze gas costs", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// PUSH1 0x01, ADD, STOP
+			const code = Bytecode("0x60010100");
+			const gasAnalysis = code.analyzeGas();
+
+			expect(typeof gasAnalysis.total).toBe("bigint");
+			expect(gasAnalysis.total).toBeGreaterThan(0n);
+		});
+
+		it("should handle empty bytecode", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x");
+			const gasAnalysis = code.analyzeGas();
+
+			expect(gasAnalysis.total).toBe(0n);
+		});
+	});
+
+	describe("Gas Breakdown", () => {
+		it("should provide per-instruction breakdown", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x60010100");
+			const gasAnalysis = code.analyzeGas();
+
+			expect(Array.isArray(gasAnalysis.byInstruction)).toBe(true);
+			expect(gasAnalysis.byInstruction.length).toBeGreaterThan(0);
+		});
+
+		it("should provide per-block breakdown", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// Code with multiple blocks
+			const code = Bytecode("0x60015b600200");
+			const gasAnalysis = code.analyzeGas();
+
+			expect(Array.isArray(gasAnalysis.byBlock)).toBe(true);
+			expect(gasAnalysis.byBlock.length).toBeGreaterThan(0);
+		});
+	});
+
+	describe("Expensive Operations", () => {
+		it("should identify expensive operations", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// Include expensive opcodes: SLOAD, SSTORE
+			const code = Bytecode("0x5455");
+			const gasAnalysis = code.analyzeGas();
+
+			expect(Array.isArray(gasAnalysis.expensive)).toBe(true);
+		});
+
+		it("should track storage operations", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// SLOAD, SSTORE
+			const code = Bytecode("0x5455");
+			const gasAnalysis = code.analyzeGas();
+
+			expect(gasAnalysis.total).toBeGreaterThan(0n);
+		});
+
+		it("should track CALL operations", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// CALL opcode
+			const code = Bytecode("0xf1");
+			const gasAnalysis = code.analyzeGas();
+
+			expect(gasAnalysis.total).toBeGreaterThan(0n);
+		});
+	});
+
+	describe("Return Type", () => {
+		it("should return GasAnalysis structure", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x60010100");
+			const gasAnalysis = code.analyzeGas();
+
+			// Check type structure
+			expect(typeof gasAnalysis.total).toBe("bigint");
+			expect(Array.isArray(gasAnalysis.byInstruction)).toBe(true);
+			expect(Array.isArray(gasAnalysis.byBlock)).toBe(true);
+			expect(Array.isArray(gasAnalysis.expensive)).toBe(true);
+		});
+	});
+});

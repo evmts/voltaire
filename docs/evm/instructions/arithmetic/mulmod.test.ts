@@ -1,0 +1,112 @@
+/**
+ * Test file for MULMOD (0x09) documentation examples
+ * Tests examples from mulmod.mdx
+ *
+ * NOTE: Stack order is [bottom, ..., top] - pop() returns the last element.
+ * For MULMOD(a, b, N): a is popped first, b second, N third. Result = (a * b) % N.
+ * So for (a * b) % N, stack should be [N, b, a].
+ */
+import { describe, expect, it } from "vitest";
+
+describe("MULMOD (0x09) - Documentation Examples", async () => {
+	const { mulmod } = await import("../../../../src/evm/arithmetic/index.js");
+	const { Frame } = await import("../../../../src/evm/Frame/index.js");
+
+	function createFrame(stack: bigint[], gasRemaining = 1000000n) {
+		const frame = Frame({ gas: gasRemaining });
+		frame.stack = [...stack];
+		return frame;
+	}
+
+	describe("Basic Modular Multiplication", () => {
+		it("(5 * 10) % 3 = 2", () => {
+			const frame = createFrame([3n, 10n, 5n]);
+			const err = mulmod(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([2n]); // 50 % 3 = 2
+		});
+	});
+
+	describe("Overflow-Safe Multiplication", () => {
+		it("handles MAX * MAX without overflow", () => {
+			const MAX_U256 = (1n << 256n) - 1n;
+			const frame = createFrame([7n, MAX_U256, MAX_U256]);
+			const err = mulmod(frame);
+
+			expect(err).toBeNull();
+			const expected = (MAX_U256 * MAX_U256) % 7n;
+			expect(frame.stack).toEqual([expected]);
+		});
+	});
+
+	describe("Zero Modulus", () => {
+		it("returns 0 when N = 0", () => {
+			const frame = createFrame([0n, 10n, 5n]);
+			const err = mulmod(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Multiply by Zero", () => {
+		it("0 * anything = 0", () => {
+			const frame = createFrame([17n, 42n, 0n]);
+			const err = mulmod(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		it("any number mod 1 is 0", () => {
+			const frame = createFrame([1n, 888n, 999n]);
+			mulmod(frame);
+			expect(frame.stack).toEqual([0n]);
+		});
+
+		it("(3 * 3) % 10 = 9", () => {
+			const frame = createFrame([10n, 3n, 3n]);
+			mulmod(frame);
+			expect(frame.stack).toEqual([9n]);
+		});
+
+		it("large values with large modulus", () => {
+			const a = (1n << 200n) - 1n;
+			const b = (1n << 200n) - 1n;
+			const n = (1n << 100n) + 7n;
+			const frame = createFrame([n, b, a]);
+			mulmod(frame);
+
+			const expected = (a * b) % n;
+			expect(frame.stack).toEqual([expected]);
+		});
+
+		it("returns StackUnderflow with insufficient stack", () => {
+			const frame = createFrame([5n, 10n]);
+			const err = mulmod(frame);
+
+			expect(err).toEqual({ type: "StackUnderflow" });
+		});
+
+		it("returns OutOfGas when insufficient gas", () => {
+			const frame = createFrame([3n, 10n, 5n], 7n);
+			const err = mulmod(frame);
+
+			expect(err).toEqual({ type: "OutOfGas" });
+			expect(frame.gasRemaining).toBe(0n);
+		});
+	});
+
+	describe("Gas Cost", () => {
+		it("consumes 8 gas (GasMidStep)", () => {
+			const frame = createFrame([3n, 10n, 5n], 100n);
+			const err = mulmod(frame);
+
+			expect(err).toBeNull();
+			expect(frame.gasRemaining).toBe(92n);
+		});
+	});
+});

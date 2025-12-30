@@ -1,0 +1,92 @@
+import { describe, expect, it } from "vitest";
+
+describe("Bytecode.from (docs/primitives/bytecode/from.mdx)", () => {
+	describe("Constructor Inputs", () => {
+		it("should construct from hex string", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x600100");
+
+			expect(code).toBeInstanceOf(Uint8Array);
+			expect(code.length).toBe(3);
+			expect(code[0]).toBe(0x60);
+			expect(code[1]).toBe(0x01);
+			expect(code[2]).toBe(0x00);
+		});
+
+		it("should construct from Uint8Array", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode(new Uint8Array([0x60, 0x01, 0x00]));
+
+			expect(code.length).toBe(3);
+			expect(code[0]).toBe(0x60);
+		});
+
+		it("should construct from number array", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode([0x60, 0x01, 0x00]);
+
+			expect(code.length).toBe(3);
+			expect(code[0]).toBe(0x60);
+		});
+
+		it("should handle hex string without 0x prefix", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// Docs example: hex without prefix
+			const code = Bytecode("600100");
+
+			expect(code.length).toBe(3);
+		});
+
+		it("should handle empty bytecode", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x");
+
+			expect(code.length).toBe(0);
+		});
+
+		it("should handle empty Uint8Array", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode(new Uint8Array([]));
+
+			expect(code.length).toBe(0);
+		});
+	});
+
+	describe("Method Attachment", () => {
+		it("should attach all analysis methods", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x600100");
+
+			// All methods from docs should be attached
+			expect(typeof code.analyze).toBe("function");
+			expect(typeof code.parseInstructions).toBe("function");
+			expect(typeof code.validate).toBe("function");
+			expect(typeof code.size).toBe("function");
+			expect(typeof code.toHex).toBe("function");
+			expect(typeof code.hash).toBe("function");
+			expect(typeof code.equals).toBe("function");
+			expect(typeof code.scan).toBe("function");
+		});
+	});
+});

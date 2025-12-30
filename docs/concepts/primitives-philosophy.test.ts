@@ -1,0 +1,196 @@
+/**
+ * Tests for code examples in docs/concepts/primitives-philosophy.mdx
+ *
+ * These tests verify that all code examples in the documentation work correctly.
+ * API discrepancies are documented as comments.
+ *
+ * Note: This doc is mostly conceptual. The main code example shows imports
+ * from '@tevm/voltaire' which map to src/primitives/*/
+import { describe, expect, it } from "vitest";
+
+describe("primitives-philosophy.mdx code examples", () => {
+	// ==========================================================================
+	// Section: The shadcn Model - Import primitives example
+	// ==========================================================================
+	describe("The shadcn Model - Import primitives", () => {
+		it("Abi module can be imported", async () => {
+			// Doc: import { Abi, Address, Hex, EventStream } from '@tevm/voltaire'
+			// Abi is available from primitives
+			const Abi = await import("../../src/primitives/Abi/index.js");
+
+			// Verify Abi has expected exports
+			expect(typeof Abi.encode).toBe("function");
+			expect(typeof Abi.decode).toBe("function");
+		});
+
+		it("Address module can be imported", async () => {
+			const { Address } = await import(
+				"../../src/primitives/Address/index.js"
+			);
+
+			// Verify Address works
+			const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+			expect(addr instanceof Uint8Array).toBe(true);
+			expect(addr.length).toBe(20);
+		});
+
+		it("Hex module can be imported", async () => {
+			const Hex = await import("../../src/primitives/Hex/index.js");
+
+			// Verify Hex has expected exports
+			expect(typeof Hex.from).toBe("function");
+		});
+
+		it("EventStream module can be imported", async () => {
+			// Doc: import { EventStream } from '@tevm/voltaire'
+			// EventStream is in contract module
+			const { EventStream } = await import("../../src/contract/index.js");
+
+			// Verify EventStream is a function
+			expect(typeof EventStream).toBe("function");
+		});
+	});
+
+	// ==========================================================================
+	// Section: What Voltaire Provides - As Library Exports
+	// These are documented primitives that should be available
+	// ==========================================================================
+	describe("What Voltaire Provides - Library Exports", () => {
+		it("Abi encoding/decoding is available", async () => {
+			const Abi = await import("../../src/primitives/Abi/index.js");
+			expect(typeof Abi.encode).toBe("function");
+			expect(typeof Abi.decode).toBe("function");
+		});
+
+		it("Address validation and formatting is available", async () => {
+			const { Address } = await import(
+				"../../src/primitives/Address/index.js"
+			);
+
+			const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+			// Validation
+			expect(Address.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")).toBe(
+				true,
+			);
+			expect(Address.isValid("invalid")).toBe(false);
+
+			// Formatting
+			expect(Address.toHex(addr)).toBe(
+				"0x742d35cc6634c0532925a3b844bc9e7595f51e3e",
+			);
+			// API discrepancy: Doc shows "0x742d35Cc6634c0532925a3b844bc9e7595F51E3E"
+			// Actual EIP-55 checksum produces different result for this address
+			expect(Address.toChecksummed(addr)).toBe(
+				"0x742d35CC6634c0532925a3B844bc9e7595f51E3e",
+			);
+		});
+
+		it("Hex utilities are available", async () => {
+			const Hex = await import("../../src/primitives/Hex/index.js");
+
+			// Hex from various sources
+			const hex = Hex.from("0x1234");
+			expect(typeof hex).toBe("string");
+		});
+
+		it("EventStream for event polling is available", async () => {
+			const { EventStream } = await import("../../src/contract/index.js");
+			expect(typeof EventStream).toBe("function");
+		});
+
+		it("Cryptographic primitives are available", async () => {
+			// Keccak256
+			const { hash } = await import("../../src/crypto/Keccak256/hash.js");
+			expect(typeof hash).toBe("function");
+
+			// Test keccak256
+			const result = hash(new Uint8Array([0x01, 0x02, 0x03]));
+			expect(result instanceof Uint8Array).toBe(true);
+			expect(result.length).toBe(32);
+		});
+
+		it("RLP encoding is available", async () => {
+			const Rlp = await import("../../src/primitives/Rlp/index.js");
+			expect(typeof Rlp.encode).toBe("function");
+			expect(typeof Rlp.decode).toBe("function");
+		});
+	});
+
+	// ==========================================================================
+	// Section: Benefits - AI-Friendly
+	// The doc mentions designing APIs to match ethers.js or viem where possible
+	// ==========================================================================
+	describe("AI-Friendly API Design", () => {
+		it("Address API is familiar to ethers/viem users", async () => {
+			const { Address } = await import(
+				"../../src/primitives/Address/index.js"
+			);
+
+			// Similar to ethers: ethers.getAddress(), ethers.isAddress()
+			// Similar to viem: isAddress(), getAddress()
+
+			// isValid is like viem's isAddress
+			expect(Address.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")).toBe(
+				true,
+			);
+
+			// toChecksummed is like ethers.getAddress / viem's getAddress
+			const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+			const checksummed = Address.toChecksummed(addr);
+			expect(checksummed.startsWith("0x")).toBe(true);
+		});
+	});
+
+	// ==========================================================================
+	// Section: Right-Sized - Copy only what you need
+	// Demonstrates tree-shaking capability
+	// ==========================================================================
+	describe("Right-Sized - Tree-shakeable imports", () => {
+		it("individual functions can be imported", async () => {
+			// Instead of importing entire namespace, import just what you need
+			const { fromHex, toHex } = await import(
+				"../../src/primitives/Address/index.js"
+			);
+
+			const addr = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+			const hex = toHex(addr);
+
+			expect(hex).toBe("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
+		});
+	});
+
+	// ==========================================================================
+	// Section: No Lock-in
+	// Demonstrates that primitives can be used independently
+	// ==========================================================================
+	describe("No Lock-in - Independent primitives", () => {
+		it("Address works without other primitives", async () => {
+			const { Address } = await import(
+				"../../src/primitives/Address/index.js"
+			);
+
+			const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+			expect(Address.toHex(addr)).toBe(
+				"0x742d35cc6634c0532925a3b844bc9e7595f51e3e",
+			);
+		});
+
+		it("Hex works without other primitives", async () => {
+			const Hex = await import("../../src/primitives/Hex/index.js");
+
+			const hex = Hex.from("0x1234");
+			expect(hex).toBe("0x1234");
+		});
+
+		it("Hash works without other primitives", async () => {
+			const { Hash } = await import("../../src/primitives/Hash/index.js");
+
+			const hash = Hash.fromHex(
+				"0x0000000000000000000000000000000000000000000000000000000000000001",
+			);
+			expect(hash instanceof Uint8Array).toBe(true);
+			expect(hash.length).toBe(32);
+		});
+	});
+});

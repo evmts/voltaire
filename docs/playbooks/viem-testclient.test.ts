@@ -1,0 +1,236 @@
+/**
+ * Tests for viem TestClient playbook
+ * @see /docs/playbooks/viem-testclient.mdx
+ *
+ * Note: The playbook documents a REFERENCE IMPLEMENTATION in examples/viem-testclient/.
+ * Tests cover the data structures and patterns shown in the guide.
+ *
+ * API DISCREPANCIES:
+ * - createTestClient is in examples/viem-testclient/, not library export
+ * - Test client patterns are documented as copyable reference implementation
+ */
+import { describe, expect, it } from "vitest";
+
+describe("Viem TestClient Playbook", () => {
+	it("should define test client modes", () => {
+		// From playbook: mode options
+		const modes = ["anvil", "hardhat", "ganache"];
+
+		expect(modes).toContain("anvil");
+		expect(modes).toContain("hardhat");
+		expect(modes).toContain("ganache");
+	});
+
+	it("should define test actions", () => {
+		// From playbook: test actions list
+		const testActions = [
+			"mine",
+			"setBalance",
+			"setCode",
+			"setStorageAt",
+			"setNonce",
+			"impersonateAccount",
+			"stopImpersonatingAccount",
+			"snapshot",
+			"revert",
+			"increaseTime",
+			"setNextBlockTimestamp",
+			"reset",
+			"dumpState",
+			"loadState",
+			"setAutomine",
+		];
+
+		expect(testActions).toContain("mine");
+		expect(testActions).toContain("setBalance");
+		expect(testActions).toContain("impersonateAccount");
+	});
+
+	it("should handle mine params", () => {
+		// From playbook: mine parameters
+		const params = {
+			blocks: 100,
+			interval: 12, // seconds between blocks
+		};
+
+		expect(params.blocks).toBe(100);
+		expect(params.interval).toBe(12);
+	});
+
+	it("should handle setBalance params", () => {
+		// From playbook: setBalance parameters
+		const params = {
+			address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+			value: 10n ** 18n, // 1 ETH in wei
+		};
+
+		expect(params.value).toBe(1_000_000_000_000_000_000n);
+	});
+
+	it("should handle setCode params", () => {
+		// From playbook: setCode parameters
+		const params = {
+			address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			bytecode: "0x608060405260006003...",
+		};
+
+		expect(params.bytecode).toMatch(/^0x/);
+	});
+
+	it("should handle setStorageAt params", () => {
+		// From playbook: setStorageAt parameters
+		const params = {
+			address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			index: 0,
+			value:
+				"0x0000000000000000000000000000000000000000000000000000000000000001",
+		};
+
+		expect(params.index).toBe(0);
+		expect(params.value.length).toBe(66); // 0x + 64 hex chars
+	});
+
+	it("should handle snapshot and revert flow", () => {
+		// From playbook: snapshot returns ID
+		const snapshotId = "0x1";
+
+		// Revert consumes snapshot
+		const revertParams = {
+			id: snapshotId,
+		};
+
+		expect(revertParams.id).toBe("0x1");
+	});
+
+	it("should handle time manipulation", () => {
+		// From playbook: time manipulation
+		const increaseTimeParams = {
+			seconds: 3600, // 1 hour
+		};
+
+		const setTimestampParams = {
+			timestamp: 1700000000n,
+		};
+
+		expect(increaseTimeParams.seconds).toBe(3600);
+		expect(setTimestampParams.timestamp).toBe(1700000000n);
+	});
+
+	it("should handle reset params", () => {
+		// From playbook: reset options
+		const resetParams = {
+			jsonRpcUrl: "https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY",
+			blockNumber: 18500000n,
+		};
+
+		expect(resetParams.blockNumber).toBe(18500000n);
+	});
+
+	it("should define mode-specific RPC methods", () => {
+		// From playbook: different RPC methods per mode
+		const methods: Record<string, Record<string, string>> = {
+			anvil: {
+				mine: "anvil_mine",
+				setBalance: "anvil_setBalance",
+				setCode: "anvil_setCode",
+				impersonate: "anvil_impersonateAccount",
+			},
+			hardhat: {
+				mine: "hardhat_mine",
+				setBalance: "hardhat_setBalance",
+				setCode: "hardhat_setCode",
+				impersonate: "hardhat_impersonateAccount",
+			},
+			ganache: {
+				mine: "evm_mine",
+				setBalance: "evm_setAccountBalance",
+				setCode: "evm_setAccountCode",
+			},
+		};
+
+		expect(methods.anvil.mine).toBe("anvil_mine");
+		expect(methods.hardhat.mine).toBe("hardhat_mine");
+		expect(methods.ganache.setBalance).toBe("evm_setAccountBalance");
+	});
+
+	it("should handle automine control", () => {
+		// From playbook: setAutomine
+		const automineParams = {
+			enabled: true,
+		};
+
+		expect(automineParams.enabled).toBe(true);
+	});
+
+	it("should handle state serialization", () => {
+		// From playbook: dumpState and loadState
+		interface StateDump {
+			accounts: Record<string, unknown>;
+			storage: Record<string, unknown>;
+		}
+
+		const mockState: StateDump = {
+			accounts: { "0x...": { balance: "0x..." } },
+			storage: { "0x...": { "0x0": "0x..." } },
+		};
+
+		expect(mockState).toHaveProperty("accounts");
+		expect(mockState).toHaveProperty("storage");
+	});
+
+	it("should define EIP-1193 provider interface", () => {
+		// From playbook: minimal provider interface
+		interface TestProvider {
+			request(args: { method: string; params?: unknown[] }): Promise<unknown>;
+		}
+
+		const mockProvider: TestProvider = {
+			request: async ({ method }) => {
+				if (method === "eth_chainId") return "0x1";
+				return null;
+			},
+		};
+
+		expect(mockProvider).toHaveProperty("request");
+	});
+
+	it("should note ganache limitations", () => {
+		// From playbook: ganache doesn't support some actions
+		const unsupportedInGanache = [
+			"impersonateAccount",
+			"setNonce",
+			// Some other test actions
+		];
+
+		expect(unsupportedInGanache).toContain("impersonateAccount");
+	});
+
+	it("should define file structure", () => {
+		// From playbook: implementation files
+		const files = [
+			"createTestClient.js",
+			"mine.js",
+			"setBalance.js",
+			"setCode.js",
+			"setStorageAt.js",
+			"setNonce.js",
+			"impersonateAccount.js",
+			"stopImpersonatingAccount.js",
+			"snapshot.js",
+			"revert.js",
+			"increaseTime.js",
+			"setNextBlockTimestamp.js",
+			"dropTransaction.js",
+			"reset.js",
+			"dumpState.js",
+			"loadState.js",
+			"setAutomine.js",
+			"TestClientTypes.ts",
+			"errors.ts",
+			"index.ts",
+		];
+
+		expect(files).toContain("createTestClient.js");
+		expect(files).toContain("snapshot.js");
+	});
+});

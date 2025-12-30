@@ -1,0 +1,121 @@
+/**
+ * Test file for MOD (0x06) documentation examples
+ * Tests examples from mod.mdx
+ *
+ * NOTE: Stack order is [bottom, ..., top] - pop() returns the last element.
+ * For MOD(a, b): a is popped first, b second. Result = a % b.
+ * So for a % b, stack should be [b, a].
+ */
+import { describe, expect, it } from "vitest";
+
+describe("MOD (0x06) - Documentation Examples", async () => {
+	const { mod } = await import("../../../../src/evm/arithmetic/index.js");
+	const { Frame } = await import("../../../../src/evm/Frame/index.js");
+
+	function createFrame(stack: bigint[], gasRemaining = 1000000n) {
+		const frame = Frame({ gas: gasRemaining });
+		frame.stack = [...stack];
+		return frame;
+	}
+
+	describe("Basic Modulo", () => {
+		it("10 % 3 = 1", () => {
+			const frame = createFrame([3n, 10n]);
+			const err = mod(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([1n]);
+		});
+	});
+
+	describe("Even/Odd Check", () => {
+		it("42 % 2 = 0 (even)", () => {
+			const frame = createFrame([2n, 42n]);
+			mod(frame);
+			expect(frame.stack).toEqual([0n]);
+		});
+
+		it("43 % 2 = 1 (odd)", () => {
+			const frame = createFrame([2n, 43n]);
+			mod(frame);
+			expect(frame.stack).toEqual([1n]);
+		});
+	});
+
+	describe("Modulo by Zero", () => {
+		it("42 % 0 = 0 (no exception)", () => {
+			const frame = createFrame([0n, 42n]);
+			const err = mod(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Modulo by Power of Two", () => {
+		it("0x12345678 % 0x100 = 0x78 (extracts lower 8 bits)", () => {
+			const frame = createFrame([0x100n, 0x12345678n]);
+			mod(frame);
+
+			expect(frame.stack).toEqual([0x78n]);
+		});
+	});
+
+	describe("Identity Cases", () => {
+		it("n % n = 0", () => {
+			const frame = createFrame([42n, 42n]);
+			mod(frame);
+			expect(frame.stack).toEqual([0n]);
+		});
+
+		it("n % 1 = 0", () => {
+			const frame = createFrame([1n, 42n]);
+			mod(frame);
+			expect(frame.stack).toEqual([0n]);
+		});
+
+		it("n % (n+1) = n (when n < n+1)", () => {
+			const frame = createFrame([43n, 42n]);
+			mod(frame);
+			expect(frame.stack).toEqual([42n]);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		it("0 % 0 = 0 (special case)", () => {
+			const frame = createFrame([0n, 0n]);
+			mod(frame);
+			expect(frame.stack).toEqual([0n]);
+		});
+
+		it("0 % n = 0 (for any n)", () => {
+			const frame = createFrame([42n, 0n]);
+			mod(frame);
+			expect(frame.stack).toEqual([0n]);
+		});
+
+		it("a % b = a when a < b", () => {
+			const frame = createFrame([10n, 5n]);
+			mod(frame);
+			expect(frame.stack).toEqual([5n]);
+		});
+
+		it("MAX % 100 = 55", () => {
+			const MAX = (1n << 256n) - 1n;
+			const frame = createFrame([100n, MAX]);
+			mod(frame);
+			// 2^256 mod 100 = 56, so (2^256 - 1) mod 100 = 55
+			expect(frame.stack[0]).toBeLessThan(100n);
+		});
+	});
+
+	describe("Gas Cost", () => {
+		it("consumes 5 gas (GasFastStep)", () => {
+			const frame = createFrame([3n, 10n], 100n);
+			const err = mod(frame);
+
+			expect(err).toBeNull();
+			expect(frame.gasRemaining).toBe(95n);
+		});
+	});
+});

@@ -1,0 +1,102 @@
+/**
+ * Tests for code examples in multiplatform.mdx
+ *
+ * This file tests the multiplatform documentation examples.
+ * Voltaire works in TypeScript, Zig, and any language with C-FFI.
+ * Here we test the TypeScript examples.
+ */
+import { describe, expect, it } from "vitest";
+
+describe("multiplatform.mdx examples", () => {
+	describe("TypeScript Entrypoints", () => {
+		it("imports Address and Keccak256 from JS entrypoint", async () => {
+			// JS (default) - works everywhere
+			const { Address } = await import("../../src/primitives/Address/index.js");
+			const Keccak256 = await import("../../src/crypto/Keccak256/index.js");
+
+			expect(typeof Address).toBe("function");
+			expect(typeof Keccak256.hash).toBe("function");
+		});
+	});
+
+	describe("Consistent API - TypeScript examples", () => {
+		it("creates Address from hex string", async () => {
+			const { Address } = await import("../../src/primitives/Address/index.js");
+
+			const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+			expect(address).toBeInstanceOf(Uint8Array);
+			expect(address.length).toBe(20);
+		});
+
+		it("Address.toHex returns lowercase hex", async () => {
+			const { Address } = await import("../../src/primitives/Address/index.js");
+
+			const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+			const hex = Address.toHex(address);
+
+			expect(hex).toBe("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
+		});
+
+		it("Address.toChecksummed returns EIP-55 checksummed address", async () => {
+			const { Address } = await import("../../src/primitives/Address/index.js");
+
+			const address = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
+			const checksummed = Address.toChecksummed(address);
+
+			// API DISCREPANCY: Docs show "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+			// Actual EIP-55 implementation returns correct checksummed version
+			expect(checksummed).toBe("0x742d35CC6634c0532925a3B844bc9e7595f51E3e");
+		});
+
+		it("Address.isZero checks for zero address", async () => {
+			const { Address } = await import("../../src/primitives/Address/index.js");
+
+			const zeroAddr = Address("0x0000000000000000000000000000000000000000");
+			const nonZeroAddr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+			expect(Address.isZero(zeroAddr)).toBe(true);
+			expect(Address.isZero(nonZeroAddr)).toBe(false);
+		});
+
+		it("Address.equals compares two addresses", async () => {
+			const { Address } = await import("../../src/primitives/Address/index.js");
+
+			const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+			const otherAddress = Address("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+			const sameAddress = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
+
+			expect(Address.equals(address, otherAddress)).toBe(false);
+			expect(Address.equals(address, sameAddress)).toBe(true);
+		});
+	});
+
+	describe("Instance methods (Class API)", () => {
+		it("instance methods mirror static methods", async () => {
+			const { Address } = await import("../../src/primitives/Address/index.js");
+
+			const address = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+			// Instance methods work the same as static methods
+			expect(address.toHex()).toBe(Address.toHex(address));
+			expect(address.isZero()).toBe(Address.isZero(address));
+
+			const otherAddress = Address("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+			expect(address.equals(otherAddress)).toBe(Address.equals(address, otherAddress));
+		});
+
+		// API DISCREPANCY: The docs show address.toChecksummed() as an instance method,
+		// but this requires keccak256 crypto dependency to be passed to the constructor.
+		// The static Address.toChecksummed(address) works without crypto injection.
+		it("toChecksummed works as static method", async () => {
+			const { Address } = await import("../../src/primitives/Address/index.js");
+
+			const address = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
+			const checksummed = Address.toChecksummed(address);
+
+			// API DISCREPANCY: Docs show "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+			// Actual EIP-55 implementation returns correct checksummed version
+			expect(checksummed).toBe("0x742d35CC6634c0532925a3B844bc9e7595f51E3e");
+		});
+	});
+});
