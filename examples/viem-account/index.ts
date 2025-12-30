@@ -33,7 +33,10 @@
  */
 
 // Export main factory function
-export { privateKeyToAccount, PrivateKeyToAccount } from "./privateKeyToAccount.js";
+export {
+	privateKeyToAccount,
+	PrivateKeyToAccount,
+} from "./privateKeyToAccount.js";
 
 // Export signing utilities
 export { signMessage, hashMessage, SignMessage } from "./signMessage.js";

@@ -65,6 +65,56 @@ export function createBatchScheduler(options) {
 	let nextId = 1;
 
 	/**
+	 * Build response map from batch responses
+	 * @param {Array<Object>} responses - Array of JSON-RPC responses
+	 * @returns {Map<number, Object>} Map of id to response
+	 */
+	function buildResponseMap(responses) {
+		const responseMap = new Map();
+		if (!Array.isArray(responses)) {
+			return responseMap;
+		}
+		for (const response of responses) {
+			if (response && typeof response.id !== "undefined") {
+				responseMap.set(response.id, response);
+			}
+		}
+		return responseMap;
+	}
+
+	/**
+	 * Create RPC error with code and data
+	 * @param {Object} errorData - Error object from response
+	 * @returns {Error} Error with code and data properties
+	 */
+	function createRpcError(errorData) {
+		const error = new Error(errorData.message || "RPC Error");
+		/** @type {Record<string, unknown>} */ (error).code = errorData.code;
+		/** @type {Record<string, unknown>} */ (error).data = errorData.data;
+		return error;
+	}
+
+	/**
+	 * Route a single response to its caller
+	 * @param {PendingRequest} item - Pending request item
+	 * @param {Object | undefined} response - Response object
+	 */
+	function routeResponse(item, response) {
+		pending.delete(item.id);
+
+		if (!response) {
+			item.reject(new Error(`Missing response for request id ${item.id}`));
+			return;
+		}
+
+		if (response.error) {
+			item.reject(createRpcError(response.error));
+		} else {
+			item.resolve(response.result);
+		}
+	}
+
+	/**
 	 * Execute the current batch
 	 */
 	async function flush() {
@@ -88,37 +138,11 @@ export function createBatchScheduler(options) {
 
 		try {
 			const responses = await execute(requests);
-
-			// Create ID->response map for fast lookup
-			const responseMap = new Map();
-			if (Array.isArray(responses)) {
-				for (const response of responses) {
-					if (response && typeof response.id !== "undefined") {
-						responseMap.set(response.id, response);
-					}
-				}
-			}
+			const responseMap = buildResponseMap(responses);
 
 			// Route responses to callers
 			for (const item of batch) {
-				const response = responseMap.get(item.id);
-				pending.delete(item.id);
-
-				if (!response) {
-					item.reject(
-						new Error(`Missing response for request id ${item.id}`),
-					);
-					continue;
-				}
-
-				if (response.error) {
-					const error = new Error(response.error.message || "RPC Error");
-					/** @type {any} */ (error).code = response.error.code;
-					/** @type {any} */ (error).data = response.error.data;
-					item.reject(error);
-				} else {
-					item.resolve(response.result);
-				}
+				routeResponse(item, responseMap.get(item.id));
 			}
 		} catch (error) {
 			// Batch-level failure: reject all pending requests

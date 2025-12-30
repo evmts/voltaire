@@ -7,13 +7,13 @@
  */
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { hashTypedData } from "../../src/crypto/EIP712/EIP712.js";
 import { hash as keccak256 } from "../../src/crypto/Keccak256/hash.js";
 import { sign as secp256k1Sign } from "../../src/crypto/Secp256k1/sign.js";
-import { hashTypedData } from "../../src/crypto/EIP712/EIP712.js";
-import { signMessage as _signMessage, hashMessage } from "./signMessage.js";
-import { signTypedData as _signTypedData } from "./signTypedData.js";
-import { signTransaction as _signTransaction } from "./signTransaction.js";
 import { InvalidAddressError, InvalidPrivateKeyError } from "./errors.js";
+import { signMessage as _signMessage, hashMessage } from "./signMessage.js";
+import { signTransaction as _signTransaction } from "./signTransaction.js";
+import { signTypedData as _signTypedData } from "./signTypedData.js";
 
 /**
  * Convert bytes to hex string
@@ -22,7 +22,9 @@ import { InvalidAddressError, InvalidPrivateKeyError } from "./errors.js";
  * @returns {string}
  */
 function toHex(bytes) {
-	return `0x${Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("")}`;
+	return `0x${Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 /**
@@ -100,7 +102,9 @@ function validatePrivateKey(privateKey) {
 			throw new InvalidPrivateKeyError("Private key must start with 0x");
 		}
 		if (privateKey.length !== 66) {
-			throw new InvalidPrivateKeyError("Private key must be 32 bytes (66 hex characters with 0x)");
+			throw new InvalidPrivateKeyError(
+				"Private key must be 32 bytes (66 hex characters with 0x)",
+			);
 		}
 		bytes = hexToBytes(privateKey);
 	} else {
@@ -112,7 +116,7 @@ function validatePrivateKey(privateKey) {
 	}
 
 	// Check not zero
-	if (bytes.every(b => b === 0)) {
+	if (bytes.every((b) => b === 0)) {
 		throw new InvalidPrivateKeyError("Private key cannot be zero");
 	}
 
@@ -181,7 +185,8 @@ export function privateKeyToAccount(privateKey, options = {}) {
 		 */
 		async signAuthorization(authorization) {
 			const { chainId, nonce } = authorization;
-			const authAddress = authorization.contractAddress ?? authorization.address;
+			const authAddress =
+				authorization.contractAddress ?? authorization.address;
 
 			// Hash authorization: keccak256(0x05 || rlp([chainId, address, nonce]))
 			// Simplified RLP encoding for this specific structure
@@ -252,7 +257,7 @@ function encodeAuthorizationRlp(chainId, address, nonce) {
 
 	// Calculate total length
 	let totalLength = 0;
-	const encodedItems = items.map(item => encodeRlpItem(item));
+	const encodedItems = items.map((item) => encodeRlpItem(item));
 	for (const item of encodedItems) {
 		totalLength += item.length;
 	}
@@ -291,7 +296,7 @@ function encodeAuthorizationRlp(chainId, address, nonce) {
 function encodeBigInt(value) {
 	if (value === 0n) return new Uint8Array(0);
 	let hex = value.toString(16);
-	if (hex.length % 2) hex = "0" + hex;
+	if (hex.length % 2) hex = `0${hex}`;
 	const bytes = new Uint8Array(hex.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
 		bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
@@ -336,7 +341,12 @@ function encodeRlpItem(bytes) {
  * @param {(typedData: Object) => Uint8Array} deps.hashTypedData
  * @returns {(privateKey: string, options?: Object) => import('./AccountTypes.js').PrivateKeyAccount}
  */
-export function PrivateKeyToAccount({ getPublicKey, keccak256: keccak256Fn, sign, hashTypedData: hashTypedDataFn }) {
+export function PrivateKeyToAccount({
+	getPublicKey,
+	keccak256: keccak256Fn,
+	sign,
+	hashTypedData: hashTypedDataFn,
+}) {
 	return function privateKeyToAccount(privateKey, options = {}) {
 		const { nonceManager } = options;
 		const privateKeyBytes = validatePrivateKey(privateKey);
@@ -383,7 +393,8 @@ export function PrivateKeyToAccount({ getPublicKey, keccak256: keccak256Fn, sign
 
 			async signAuthorization(authorization) {
 				const { chainId, nonce } = authorization;
-				const authAddress = authorization.contractAddress ?? authorization.address;
+				const authAddress =
+					authorization.contractAddress ?? authorization.address;
 				const rlpData = encodeAuthorizationRlp(chainId, authAddress, nonce);
 				const hashInput = new Uint8Array(1 + rlpData.length);
 				hashInput[0] = 0x05;
@@ -402,12 +413,15 @@ export function PrivateKeyToAccount({ getPublicKey, keccak256: keccak256Fn, sign
 			},
 
 			async signMessage({ message }) {
-				const msgBytes = typeof message === "string"
-					? new TextEncoder().encode(message)
-					: typeof message.raw === "string"
-						? hexToBytes(message.raw)
-						: message.raw;
-				const prefix = new TextEncoder().encode(`\x19Ethereum Signed Message:\n${msgBytes.length}`);
+				const msgBytes =
+					typeof message === "string"
+						? new TextEncoder().encode(message)
+						: typeof message.raw === "string"
+							? hexToBytes(message.raw)
+							: message.raw;
+				const prefix = new TextEncoder().encode(
+					`\x19Ethereum Signed Message:\n${msgBytes.length}`,
+				);
 				const combined = new Uint8Array(prefix.length + msgBytes.length);
 				combined.set(prefix);
 				combined.set(msgBytes, prefix.length);

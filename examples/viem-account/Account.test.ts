@@ -2,23 +2,23 @@
  * Tests for viem-account implementation
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { InvalidAddressError, InvalidPrivateKeyError } from "./errors.js";
 import { privateKeyToAccount } from "./privateKeyToAccount.js";
-import { signMessage, hashMessage } from "./signMessage.js";
-import { signTypedData } from "./signTypedData.js";
+import { hashMessage, signMessage } from "./signMessage.js";
 import { signTransaction } from "./signTransaction.js";
-import {
-	InvalidPrivateKeyError,
-	InvalidAddressError,
-} from "./errors.js";
+import { signTypedData } from "./signTypedData.js";
 
 // Test vectors from viem/foundry anvil
-const TEST_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+const TEST_PRIVATE_KEY =
+	"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 const TEST_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-const TEST_PUBLIC_KEY = "0x048318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5";
+const TEST_PUBLIC_KEY =
+	"0x048318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5";
 
 // Another test key
-const TEST_PRIVATE_KEY_2 = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+const TEST_PRIVATE_KEY_2 =
+	"0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 const TEST_ADDRESS_2 = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
 
 describe("privateKeyToAccount", () => {
@@ -46,13 +46,17 @@ describe("privateKeyToAccount", () => {
 
 	it("rejects private key without 0x prefix", () => {
 		expect(() =>
-			privateKeyToAccount("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+			privateKeyToAccount(
+				"ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			),
 		).toThrow(InvalidPrivateKeyError);
 	});
 
 	it("rejects zero private key", () => {
 		expect(() =>
-			privateKeyToAccount("0x0000000000000000000000000000000000000000000000000000000000000000")
+			privateKeyToAccount(
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+			),
 		).toThrow(InvalidPrivateKeyError);
 	});
 
@@ -73,7 +77,8 @@ describe("privateKeyToAccount", () => {
 describe("account.sign", () => {
 	it("signs a hash", async () => {
 		const account = privateKeyToAccount(TEST_PRIVATE_KEY);
-		const hash = "0x0000000000000000000000000000000000000000000000000000000000000001";
+		const hash =
+			"0x0000000000000000000000000000000000000000000000000000000000000001";
 
 		const signature = await account.sign({ hash });
 
@@ -83,7 +88,8 @@ describe("account.sign", () => {
 
 	it("produces deterministic signatures", async () => {
 		const account = privateKeyToAccount(TEST_PRIVATE_KEY);
-		const hash = "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
+		const hash =
+			"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
 
 		const sig1 = await account.sign({ hash });
 		const sig2 = await account.sign({ hash });
@@ -93,8 +99,10 @@ describe("account.sign", () => {
 
 	it("different hashes produce different signatures", async () => {
 		const account = privateKeyToAccount(TEST_PRIVATE_KEY);
-		const hash1 = "0x0000000000000000000000000000000000000000000000000000000000000001";
-		const hash2 = "0x0000000000000000000000000000000000000000000000000000000000000002";
+		const hash1 =
+			"0x0000000000000000000000000000000000000000000000000000000000000001";
+		const hash2 =
+			"0x0000000000000000000000000000000000000000000000000000000000000002";
 
 		const sig1 = await account.sign({ hash: hash1 });
 		const sig2 = await account.sign({ hash: hash2 });
@@ -107,7 +115,9 @@ describe("account.signMessage", () => {
 	it("signs string message", async () => {
 		const account = privateKeyToAccount(TEST_PRIVATE_KEY);
 
-		const signature = await account.signMessage({ message: "Hello, Ethereum!" });
+		const signature = await account.signMessage({
+			message: "Hello, Ethereum!",
+		});
 
 		expect(signature).toMatch(/^0x[0-9a-f]{130}$/);
 	});

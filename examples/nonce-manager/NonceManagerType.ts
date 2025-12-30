@@ -39,9 +39,7 @@ export type NonceSource<TProvider = unknown> = {
 	 * Get the current nonce from the source
 	 * Should typically fetch with blockTag='pending'
 	 */
-	get(
-		params: NonceParametersWithProvider<TProvider>,
-	): Promise<number> | number;
+	get(params: NonceParametersWithProvider<TProvider>): Promise<number> | number;
 
 	/**
 	 * Optional: notify source after nonce is consumed
@@ -151,9 +149,7 @@ export type NonceManagerWithTracking<TProvider = unknown> =
 		/**
 		 * Mark a transaction as confirmed
 		 */
-		confirmTransaction(
-			params: NonceParameters & { nonce: number },
-		): void;
+		confirmTransaction(params: NonceParameters & { nonce: number }): void;
 
 		/**
 		 * Mark a transaction as failed (allows nonce reuse)

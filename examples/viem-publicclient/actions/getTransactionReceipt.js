@@ -32,7 +32,9 @@ function formatLog(log) {
 		removed: log.removed ?? false,
 		topics: log.topics,
 		transactionHash: log.transactionHash,
-		transactionIndex: log.transactionIndex ? Number(hexToBigInt(log.transactionIndex)) : null,
+		transactionIndex: log.transactionIndex
+			? Number(hexToBigInt(log.transactionIndex))
+			: null,
 	};
 }
 

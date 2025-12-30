@@ -5,7 +5,14 @@ import type { PrivateKeyType } from "../../src/primitives/PrivateKey/PrivateKeyT
 /**
  * Block tag for provider queries
  */
-export type BlockTag = "latest" | "pending" | "earliest" | "safe" | "finalized" | bigint | number;
+export type BlockTag =
+	| "latest"
+	| "pending"
+	| "earliest"
+	| "safe"
+	| "finalized"
+	| bigint
+	| number;
 
 /**
  * Access list item for EIP-2930+ transactions
@@ -241,7 +248,10 @@ export interface Wallet extends Signer {
  */
 export interface SignerCrypto {
 	keccak256: (data: Uint8Array) => Uint8Array;
-	sign: (hash: HashType, privateKey: PrivateKeyType) => {
+	sign: (
+		hash: HashType,
+		privateKey: PrivateKeyType,
+	) => {
 		r: Uint8Array;
 		s: Uint8Array;
 		v: number;

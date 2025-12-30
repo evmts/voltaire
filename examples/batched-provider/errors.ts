@@ -36,12 +36,7 @@ export class RpcError extends BatchedProviderError {
 	/** The method that failed */
 	method?: string;
 
-	constructor(
-		message: string,
-		code: number,
-		data?: unknown,
-		method?: string,
-	) {
+	constructor(message: string, code: number, data?: unknown, method?: string) {
 		super(message);
 		this.code = code;
 		this.data = data;
@@ -72,7 +67,9 @@ export class BatchTimeoutError extends BatchedProviderError {
 	pendingCount: number;
 
 	constructor(timeout: number, pendingCount: number) {
-		super(`Batch request timed out after ${timeout}ms with ${pendingCount} pending requests`);
+		super(
+			`Batch request timed out after ${timeout}ms with ${pendingCount} pending requests`,
+		);
 		this.timeout = timeout;
 		this.pendingCount = pendingCount;
 	}

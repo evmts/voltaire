@@ -5,21 +5,21 @@
  * @module EthersSigner
  */
 
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { EIP712 } from "../../src/crypto/EIP712/EIP712.js";
+import { hash as keccak256 } from "../../src/crypto/Keccak256/hash.js";
+import { sign as secp256k1Sign } from "../../src/crypto/Secp256k1/sign.js";
 import { Address } from "../../src/primitives/Address/index.js";
 import * as BrandedAddress from "../../src/primitives/Address/internal-index.js";
 import { fromBytes as privateKeyFromBytes } from "../../src/primitives/PrivateKey/fromBytes.js";
 import { Hash as SignedDataHash } from "../../src/primitives/SignedData/hash.js";
-import { hash as keccak256 } from "../../src/crypto/Keccak256/hash.js";
-import { sign as secp256k1Sign } from "../../src/crypto/Secp256k1/sign.js";
-import { EIP712 } from "../../src/crypto/EIP712/EIP712.js";
-import { secp256k1 } from "@noble/curves/secp256k1.js";
 
 import {
-	MissingProviderError,
-	InvalidPrivateKeyError,
-	InvalidTransactionError,
 	AddressMismatchError,
 	ChainIdMismatchError,
+	InvalidPrivateKeyError,
+	InvalidTransactionError,
+	MissingProviderError,
 	SigningFailedError,
 } from "./errors.js";
 
@@ -254,9 +254,15 @@ export class EthersSigner {
 
 			const result = { ...obj };
 			for (const field of typeFields) {
-				if (field.type === "address" && typeof result[field.name] === "string") {
+				if (
+					field.type === "address" &&
+					typeof result[field.name] === "string"
+				) {
 					result[field.name] = Address.fromHex(result[field.name]);
-				} else if (types[field.type] && typeof result[field.name] === "object") {
+				} else if (
+					types[field.type] &&
+					typeof result[field.name] === "object"
+				) {
 					// Nested struct
 					result[field.name] = convertAddresses(result[field.name], field.type);
 				}
@@ -265,7 +271,8 @@ export class EthersSigner {
 		};
 
 		// Determine primary type
-		const primaryType = Object.keys(types).find((t) => t !== "EIP712Domain") ?? "";
+		const primaryType =
+			Object.keys(types).find((t) => t !== "EIP712Domain") ?? "";
 
 		// Convert domain to EIP712 format
 		const typedData = {
@@ -358,6 +365,7 @@ export class EthersSigner {
 	 * @param {TransactionRequest} tx
 	 * @returns {Promise<PopulatedTransaction>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: compatibility layer
 	async populateTransaction(tx) {
 		const provider = this.#requireProvider("populateTransaction");
 		const pop = await this.populateCall(tx);
@@ -675,7 +683,7 @@ function bigintToBytes(value) {
 	if (value === 0n) return new Uint8Array(0);
 
 	let hex = value.toString(16);
-	if (hex.length % 2) hex = "0" + hex;
+	if (hex.length % 2) hex = `0${hex}`;
 
 	const bytes = new Uint8Array(hex.length / 2);
 	for (let i = 0; i < bytes.length; i++) {

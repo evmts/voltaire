@@ -95,10 +95,10 @@ export type MulticallResult<
 /**
  * Extract function from ABI by name
  */
-type GetFunction<
-	TAbi extends readonly Item[],
-	TName extends string,
-> = Extract<TAbi[number], FunctionType<TName, any, any, any>>;
+type GetFunction<TAbi extends readonly Item[], TName extends string> = Extract<
+	TAbi[number],
+	FunctionType<TName, unknown, unknown, unknown>
+>;
 
 /**
  * Get function output type from ABI function

@@ -20,7 +20,9 @@ function serializeSignature(signature) {
 	bytes.set(signature.r, 0);
 	bytes.set(signature.s, 32);
 	bytes[64] = signature.v;
-	return `0x${Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("")}`;
+	return `0x${Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 /**
@@ -60,7 +62,13 @@ function serializeSignature(signature) {
  * });
  * ```
  */
-export async function signTypedData({ domain, types, primaryType, message, privateKey }) {
+export async function signTypedData({
+	domain,
+	types,
+	primaryType,
+	message,
+	privateKey,
+}) {
 	const hash = hashTypedData({ domain, types, primaryType, message });
 	const sig = secp256k1Sign(hash, privateKey);
 	return serializeSignature(sig);
@@ -75,13 +83,21 @@ export async function signTypedData({ domain, types, primaryType, message, priva
  * @returns {(params: Object) => Promise<string>}
  */
 export function SignTypedData({ hashTypedData: hashTypedDataFn, sign }) {
-	return async function signTypedData({ domain, types, primaryType, message, privateKey }) {
+	return async function signTypedData({
+		domain,
+		types,
+		primaryType,
+		message,
+		privateKey,
+	}) {
 		const hash = hashTypedDataFn({ domain, types, primaryType, message });
 		const sig = sign(hash, privateKey);
 		const bytes = new Uint8Array(65);
 		bytes.set(sig.r, 0);
 		bytes.set(sig.s, 32);
 		bytes[64] = sig.v;
-		return `0x${Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("")}`;
+		return `0x${Array.from(bytes)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")}`;
 	};
 }

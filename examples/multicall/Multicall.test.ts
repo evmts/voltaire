@@ -6,8 +6,11 @@
  * @module examples/multicall/Multicall.test
  */
 
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { multicall, createMulticall } from "./multicall.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Abi } from "../../src/primitives/Abi/Abi.js";
+import * as Hex from "../../src/primitives/Hex/index.js";
+import type { TypedProvider } from "../../src/provider/TypedProvider.js";
+import { aggregate3Abi } from "./Multicall3Abi.js";
 import {
 	MULTICALL3_ADDRESS,
 	getMulticall3Contract,
@@ -21,10 +24,7 @@ import {
 	MulticallRpcError,
 	MulticallZeroDataError,
 } from "./errors.js";
-import type { TypedProvider } from "../../src/provider/TypedProvider.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
-import { Abi } from "../../src/primitives/Abi/Abi.js";
-import { aggregate3Abi } from "./Multicall3Abi.js";
+import { createMulticall, multicall } from "./multicall.js";
 
 // Test ERC20 ABI
 const erc20Abi = [
@@ -90,7 +90,8 @@ function encodeAggregate3Response(
 ): string {
 	// Manual encoding for aggregate3 return: tuple(bool,bytes)[]
 	// Offset to array data (32 bytes)
-	let hex = "0x0000000000000000000000000000000000000000000000000000000000000020";
+	let hex =
+		"0x0000000000000000000000000000000000000000000000000000000000000020";
 
 	// Array length
 	const lengthHex = results.length.toString(16).padStart(64, "0");
@@ -119,7 +120,10 @@ function encodeAggregate3Response(
 			? result.returnData.slice(2)
 			: result.returnData;
 		const bytesLength = (bytesData.length / 2).toString(16).padStart(64, "0");
-		const bytesPadded = bytesData.padEnd(Math.ceil(bytesData.length / 64) * 64, "0");
+		const bytesPadded = bytesData.padEnd(
+			Math.ceil(bytesData.length / 64) * 64,
+			"0",
+		);
 
 		const tupleHex = successHex + bytesOffset + bytesLength + bytesPadded;
 		tupleData.push(tupleHex);
@@ -170,7 +174,11 @@ describe("multicall", () => {
 
 	describe("error classes", () => {
 		it("should create MulticallEncodingError", () => {
-			const error = new MulticallEncodingError(0, "balanceOf", new Error("test"));
+			const error = new MulticallEncodingError(
+				0,
+				"balanceOf",
+				new Error("test"),
+			);
 			expect(error.name).toBe("MulticallEncodingError");
 			expect(error.contractIndex).toBe(0);
 			expect(error.functionName).toBe("balanceOf");
@@ -178,7 +186,11 @@ describe("multicall", () => {
 		});
 
 		it("should create MulticallDecodingError", () => {
-			const error = new MulticallDecodingError(1, "name", new Error("decode fail"));
+			const error = new MulticallDecodingError(
+				1,
+				"name",
+				new Error("decode fail"),
+			);
 			expect(error.name).toBe("MulticallDecodingError");
 			expect(error.contractIndex).toBe(1);
 			expect(error.functionName).toBe("name");
@@ -225,7 +237,8 @@ describe("multicall", () => {
 			const mockProvider = createMockProvider(() => {
 				// Return a simple encoded response
 				// This is a simplified mock - in real tests you'd encode properly
-				return "0x0000000000000000000000000000000000000000000000000000000000000020" +
+				return (
+					"0x0000000000000000000000000000000000000000000000000000000000000020" +
 					"0000000000000000000000000000000000000000000000000000000000000002" +
 					"0000000000000000000000000000000000000000000000000000000000000040" +
 					"00000000000000000000000000000000000000000000000000000000000000c0" +
@@ -238,7 +251,8 @@ describe("multicall", () => {
 					"0000000000000000000000000000000000000000000000000000000000000001" +
 					"0000000000000000000000000000000000000000000000000000000000000040" +
 					"0000000000000000000000000000000000000000000000000000000000000020" +
-					"0000000000000000000000000000000000000000000000000000000000000006";
+					"0000000000000000000000000000000000000000000000000000000000000006"
+				);
 			});
 
 			const contracts = [

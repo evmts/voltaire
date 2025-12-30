@@ -73,7 +73,12 @@ export interface Chain {
 /**
  * Transaction type enum
  */
-export type TransactionType = "legacy" | "eip2930" | "eip1559" | "eip4844" | "eip7702";
+export type TransactionType =
+	| "legacy"
+	| "eip2930"
+	| "eip1559"
+	| "eip4844"
+	| "eip7702";
 
 /**
  * Access list entry
@@ -205,7 +210,11 @@ export interface RequestOptions {
 /**
  * RPC request function type
  */
-export type RequestFn = <TMethod extends string, TParams = unknown[], TResult = unknown>(
+export type RequestFn = <
+	TMethod extends string,
+	TParams = unknown[],
+	TResult = unknown,
+>(
 	args: { method: TMethod; params?: TParams },
 	options?: RequestOptions,
 ) => Promise<TResult>;
@@ -225,13 +234,14 @@ export interface TransportConfig {
 /**
  * Transport interface
  */
-export interface Transport {
-	(params: { chain?: Chain; pollingInterval?: number }): {
-		config: TransportConfig;
-		request: RequestFn;
-		value?: unknown;
-	};
-}
+export type Transport = (params: {
+	chain?: Chain;
+	pollingInterval?: number;
+}) => {
+	config: TransportConfig;
+	request: RequestFn;
+	value?: unknown;
+};
 
 /**
  * Extension function type
@@ -241,7 +251,9 @@ export type ExtendFn<TClient, TExtension> = (client: TClient) => TExtension;
 /**
  * Send transaction parameters
  */
-export interface SendTransactionParameters<TAccount extends Account | undefined = Account> {
+export interface SendTransactionParameters<
+	TAccount extends Account | undefined = Account,
+> {
 	account?: TAccount | Address;
 	chain?: Chain | null;
 	to?: Address | null;
@@ -262,7 +274,9 @@ export interface SendTransactionParameters<TAccount extends Account | undefined 
 /**
  * Sign message parameters
  */
-export interface SignMessageParameters<TAccount extends Account | undefined = Account> {
+export interface SignMessageParameters<
+	TAccount extends Account | undefined = Account,
+> {
 	account?: TAccount | Address;
 	message: string | { raw: Hex | Uint8Array };
 }
@@ -271,7 +285,10 @@ export interface SignMessageParameters<TAccount extends Account | undefined = Ac
  * Sign typed data parameters
  */
 export interface SignTypedDataParameters<
-	TTypes extends Record<string, readonly TypeProperty[]> = Record<string, TypeProperty[]>,
+	TTypes extends Record<string, readonly TypeProperty[]> = Record<
+		string,
+		TypeProperty[]
+	>,
 	TPrimaryType extends string = string,
 	TAccount extends Account | undefined = Account,
 > {
@@ -285,7 +302,9 @@ export interface SignTypedDataParameters<
 /**
  * Sign transaction parameters
  */
-export interface SignTransactionParameters<TAccount extends Account | undefined = Account> {
+export interface SignTransactionParameters<
+	TAccount extends Account | undefined = Account,
+> {
 	account?: TAccount | Address;
 	chain?: Chain | null;
 	to?: Address | null;
@@ -352,7 +371,9 @@ export interface WalletClient<TAccount extends Account | undefined = Account>
 /**
  * CreateWalletClient parameters
  */
-export interface CreateWalletClientParameters<TAccount extends Account | undefined = undefined> {
+export interface CreateWalletClientParameters<
+	TAccount extends Account | undefined = undefined,
+> {
 	account?: TAccount | Address;
 	chain?: Chain;
 	transport: Transport;

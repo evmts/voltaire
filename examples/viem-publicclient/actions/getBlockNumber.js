@@ -34,7 +34,10 @@ const cacheKey = (id) => `blockNumber.${id}`;
  * // => 19123456n
  * ```
  */
-export async function getBlockNumber(client, { cacheTime = client.cacheTime } = {}) {
+export async function getBlockNumber(
+	client,
+	{ cacheTime = client.cacheTime } = {},
+) {
 	const blockNumberHex = await withCache(
 		() =>
 			client.request({

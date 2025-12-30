@@ -112,10 +112,13 @@ export class SigningFailedError extends SignerError {
  */
 export class AddressMismatchError extends SignerError {
 	constructor(expected: string, actual: string) {
-		super(`Transaction from address mismatch: expected ${expected}, got ${actual}`, {
-			code: SignerErrorCode.ADDRESS_MISMATCH,
-			context: { expected, actual },
-		});
+		super(
+			`Transaction from address mismatch: expected ${expected}, got ${actual}`,
+			{
+				code: SignerErrorCode.ADDRESS_MISMATCH,
+				context: { expected, actual },
+			},
+		);
 		this.name = "AddressMismatchError";
 	}
 }
@@ -138,10 +141,15 @@ export class ChainIdMismatchError extends SignerError {
  */
 export class UnsupportedOperationError extends SignerError {
 	constructor(operation: string, reason?: string) {
-		super(reason ? `${operation}: ${reason}` : `Operation not supported: ${operation}`, {
-			code: SignerErrorCode.UNSUPPORTED_OPERATION,
-			operation,
-		});
+		super(
+			reason
+				? `${operation}: ${reason}`
+				: `Operation not supported: ${operation}`,
+			{
+				code: SignerErrorCode.UNSUPPORTED_OPERATION,
+				operation,
+			},
+		);
 		this.name = "UnsupportedOperationError";
 	}
 }

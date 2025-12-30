@@ -201,26 +201,47 @@ export interface IInterface {
 	formatJson(): string;
 
 	// Function lookups
-	getFunction(key: string, values?: readonly unknown[]): IFunctionFragment | null;
+	getFunction(
+		key: string,
+		values?: readonly unknown[],
+	): IFunctionFragment | null;
 	getFunctionName(key: string): string;
 	hasFunction(key: string): boolean;
-	forEachFunction(callback: (fragment: IFunctionFragment, index: number) => void): void;
+	forEachFunction(
+		callback: (fragment: IFunctionFragment, index: number) => void,
+	): void;
 
 	// Event lookups
 	getEvent(key: string, values?: readonly unknown[]): IEventFragment | null;
 	getEventName(key: string): string;
 	hasEvent(key: string): boolean;
-	forEachEvent(callback: (fragment: IEventFragment, index: number) => void): void;
+	forEachEvent(
+		callback: (fragment: IEventFragment, index: number) => void,
+	): void;
 
 	// Error lookups
 	getError(key: string, values?: readonly unknown[]): IErrorFragment | null;
-	forEachError(callback: (fragment: IErrorFragment, index: number) => void): void;
+	forEachError(
+		callback: (fragment: IErrorFragment, index: number) => void,
+	): void;
 
 	// Function encoding/decoding
-	encodeFunctionData(fragment: string | IFunctionFragment, values?: readonly unknown[]): string;
-	decodeFunctionData(fragment: string | IFunctionFragment, data: string): readonly unknown[];
-	decodeFunctionResult(fragment: string | IFunctionFragment, data: string): readonly unknown[];
-	encodeFunctionResult(fragment: string | IFunctionFragment, values?: readonly unknown[]): string;
+	encodeFunctionData(
+		fragment: string | IFunctionFragment,
+		values?: readonly unknown[],
+	): string;
+	decodeFunctionData(
+		fragment: string | IFunctionFragment,
+		data: string,
+	): readonly unknown[];
+	decodeFunctionResult(
+		fragment: string | IFunctionFragment,
+		data: string,
+	): readonly unknown[];
+	encodeFunctionResult(
+		fragment: string | IFunctionFragment,
+		values?: readonly unknown[],
+	): string;
 
 	// Event encoding/decoding
 	encodeEventLog(
@@ -238,8 +259,14 @@ export interface IInterface {
 	): Array<string | null | Array<string | null>>;
 
 	// Error encoding/decoding
-	encodeErrorResult(fragment: string | IErrorFragment, values?: readonly unknown[]): string;
-	decodeErrorResult(fragment: string | IErrorFragment, data: string): readonly unknown[];
+	encodeErrorResult(
+		fragment: string | IErrorFragment,
+		values?: readonly unknown[],
+	): string;
+	decodeErrorResult(
+		fragment: string | IErrorFragment,
+		data: string,
+	): readonly unknown[];
 
 	// Constructor encoding
 	encodeDeploy(values?: readonly unknown[]): string;

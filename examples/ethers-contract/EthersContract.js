@@ -19,16 +19,16 @@
 import { Abi } from "../../src/primitives/Abi/Abi.js";
 import * as Event from "../../src/primitives/Abi/event/index.js";
 import { Address } from "../../src/primitives/Address/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
-import * as Hash from "../../src/primitives/Hash/index.js";
 import * as BlockNumber from "../../src/primitives/BlockNumber/index.js";
+import * as Hash from "../../src/primitives/Hash/index.js";
+import * as Hex from "../../src/primitives/Hex/index.js";
 import * as TransactionHash from "../../src/primitives/TransactionHash/index.js";
 import {
-	UnsupportedOperationError,
-	CallExceptionError,
-	FunctionNotFoundError,
-	EventNotFoundError,
 	AmbiguousMatchError,
+	CallExceptionError,
+	EventNotFoundError,
+	FunctionNotFoundError,
+	UnsupportedOperationError,
 	decodeRevertReason,
 } from "./errors.js";
 
@@ -171,6 +171,7 @@ function buildWrappedMethod(contract, key) {
 	 * @param  {...any} args
 	 * @returns {*}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ethers compatibility
 	const getFragment = (...args) => {
 		// Try to get by exact name first
 		let fn = abi.getFunction(key);
@@ -559,6 +560,7 @@ function createTransactionResponse(hash, tx, provider, abi) {
  * @param {*} event
  * @returns {Promise<{fragment: *, tag: string, topics: string[]}>}
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ethers compatibility
 async function getSubInfo(contract, event) {
 	let topics;
 	let fragment = null;
@@ -989,6 +991,7 @@ export function EthersContract(options) {
 		return contract;
 	};
 
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ethers compatibility
 	contract.emit = async (event, ...args) => {
 		const { subs } = getInternal(contract);
 		const { tag } = await getSubInfo(contract, event);

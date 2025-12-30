@@ -405,7 +405,7 @@ export function wrapSigner(signer, options) {
 	const wrapped = Object.create(signer);
 
 	// Override sendTransaction
-	wrapped.sendTransaction = async function (tx) {
+	wrapped.sendTransaction = async (tx) => {
 		const address = await signer.getAddress();
 		const provider = getProvider();
 
@@ -441,12 +441,12 @@ export function wrapSigner(signer, options) {
 		},
 	});
 
-	wrapped.resetNonce = async function () {
+	wrapped.resetNonce = async () => {
 		const address = await signer.getAddress();
 		manager.reset({ address, chainId });
 	};
 
-	wrapped.incrementNonce = async function () {
+	wrapped.incrementNonce = async () => {
 		const address = await signer.getAddress();
 		manager.increment({ address, chainId });
 	};

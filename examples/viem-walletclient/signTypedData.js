@@ -19,8 +19,10 @@ function getTypesForEIP712Domain({ domain }) {
 	const types = [];
 	if (domain?.name) types.push({ name: "name", type: "string" });
 	if (domain?.version) types.push({ name: "version", type: "string" });
-	if (domain?.chainId !== undefined) types.push({ name: "chainId", type: "uint256" });
-	if (domain?.verifyingContract) types.push({ name: "verifyingContract", type: "address" });
+	if (domain?.chainId !== undefined)
+		types.push({ name: "chainId", type: "uint256" });
+	if (domain?.verifyingContract)
+		types.push({ name: "verifyingContract", type: "address" });
 	if (domain?.salt) types.push({ name: "salt", type: "bytes32" });
 	return types;
 }
@@ -209,7 +211,12 @@ export function SignTypedData({ parseAccount: parseAccountFn }) {
 			return account.signTypedData({ domain, message, primaryType, types });
 		}
 
-		const typedData = serializeTypedData({ domain, message, primaryType, types });
+		const typedData = serializeTypedData({
+			domain,
+			message,
+			primaryType,
+			types,
+		});
 
 		return client.request(
 			{

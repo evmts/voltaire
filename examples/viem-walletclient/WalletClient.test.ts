@@ -4,18 +4,18 @@
  * Comprehensive tests for the viem-walletclient implementation.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { privateKeyToAccount } from "../viem-account/index.js";
 import {
-	createWalletClient,
-	parseAccount,
 	http,
-	custom,
-	fallback,
 	AccountNotFoundError,
 	AccountTypeNotSupportedError,
 	ChainMismatchError,
+	createWalletClient,
+	custom,
+	fallback,
+	parseAccount,
 } from "./index.js";
-import { privateKeyToAccount } from "../viem-account/index.js";
 
 // Test private key (Anvil's first account)
 const TEST_PRIVATE_KEY =
@@ -41,12 +41,17 @@ function mockTransport(responses: Record<string, unknown> = {}) {
 				name: "Mock Transport",
 				type: "mock",
 			},
-			request: async ({ method, params = [] }: { method: string; params?: unknown[] }) => {
+			request: async ({
+				method,
+				params = [],
+			}: { method: string; params?: unknown[] }) => {
 				requests.push({ method, params });
 
 				if (responses[method] !== undefined) {
 					if (typeof responses[method] === "function") {
-						return (responses[method] as Function)(params);
+						return (responses[method] as (...args: unknown[]) => unknown)(
+							params,
+						);
 					}
 					return responses[method];
 				}
@@ -77,9 +82,9 @@ function mockTransport(responses: Record<string, unknown> = {}) {
 					case "eth_sendRawTransaction":
 						return "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
 					case "personal_sign":
-						return "0x" + "ab".repeat(65);
+						return `0x${"ab".repeat(65)}`;
 					case "eth_signTypedData_v4":
-						return "0x" + "cd".repeat(65);
+						return `0x${"cd".repeat(65)}`;
 					case "eth_signTransaction":
 						return "0x02f850018203118080825208...";
 					default:
@@ -257,9 +262,9 @@ describe("WalletClient", () => {
 				transport: mockTransport(),
 			});
 
-			await expect(
-				client.signMessage({ message: "test" }),
-			).rejects.toThrow(AccountNotFoundError);
+			await expect(client.signMessage({ message: "test" })).rejects.toThrow(
+				AccountNotFoundError,
+			);
 		});
 
 		it("handles raw bytes message", async () => {
@@ -297,7 +302,8 @@ describe("WalletClient", () => {
 				name: "Ether Mail",
 				version: "1",
 				chainId: 1n,
-				verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC" as const,
+				verifyingContract:
+					"0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC" as const,
 			},
 			types: {
 				Person: [
@@ -312,8 +318,14 @@ describe("WalletClient", () => {
 			},
 			primaryType: "Mail" as const,
 			message: {
-				from: { name: "Alice", wallet: "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826" },
-				to: { name: "Bob", wallet: "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB" },
+				from: {
+					name: "Alice",
+					wallet: "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
+				},
+				to: {
+					name: "Bob",
+					wallet: "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
+				},
 				contents: "Hello!",
 			},
 		};
@@ -326,9 +338,7 @@ describe("WalletClient", () => {
 				chainId: 1n,
 			},
 			types: {
-				Message: [
-					{ name: "content", type: "string" },
-				],
+				Message: [{ name: "content", type: "string" }],
 			},
 			primaryType: "Message" as const,
 			message: {
@@ -549,7 +559,10 @@ describe("WalletClient", () => {
 		describe("http", () => {
 			it("creates HTTP transport", () => {
 				const transport = http("https://eth.llamarpc.com");
-				const initialized = transport({ chain: mainnet, pollingInterval: 4000 });
+				const initialized = transport({
+					chain: mainnet,
+					pollingInterval: 4000,
+				});
 
 				expect(initialized.config.key).toBe("http");
 				expect(initialized.config.type).toBe("http");
@@ -558,7 +571,10 @@ describe("WalletClient", () => {
 
 			it("uses chain default URL if not provided", () => {
 				const transport = http();
-				const initialized = transport({ chain: mainnet, pollingInterval: 4000 });
+				const initialized = transport({
+					chain: mainnet,
+					pollingInterval: 4000,
+				});
 
 				expect(initialized.value.url).toBe("https://eth.llamarpc.com");
 			});
@@ -571,7 +587,10 @@ describe("WalletClient", () => {
 				};
 
 				const transport = custom(mockProvider);
-				const initialized = transport({ chain: mainnet, pollingInterval: 4000 });
+				const initialized = transport({
+					chain: mainnet,
+					pollingInterval: 4000,
+				});
 
 				const result = await initialized.request({ method: "eth_chainId" });
 
@@ -597,8 +616,14 @@ describe("WalletClient", () => {
 					request: async () => "success",
 				});
 
-				const transport = fallback([failingTransport, successTransport] as any);
-				const initialized = transport({ chain: mainnet, pollingInterval: 4000 });
+				const transport = fallback([
+					failingTransport,
+					successTransport,
+				] as unknown as Parameters<typeof fallback>[0]);
+				const initialized = transport({
+					chain: mainnet,
+					pollingInterval: 4000,
+				});
 
 				const result = await initialized.request({ method: "test" });
 

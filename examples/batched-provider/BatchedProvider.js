@@ -98,7 +98,9 @@ export function createBatchedProvider(urlOrOptions) {
 
 			if (!response.ok) {
 				const body = await response.text().catch(() => "");
-				const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+				const error = new Error(
+					`HTTP ${response.status}: ${response.statusText}`,
+				);
 				/** @type {any} */ (error).status = response.status;
 				/** @type {any} */ (error).statusText = response.statusText;
 				/** @type {any} */ (error).body = body;
@@ -154,18 +156,17 @@ export function createBatchedProvider(urlOrOptions) {
 					id,
 					result: result.value,
 				});
-			} else {
-				const error = result.reason;
-				return /** @type {JsonRpcResponse} */ ({
-					jsonrpc: "2.0",
-					id,
-					error: {
-						code: error?.code ?? -32603,
-						message: error?.message ?? "Unknown error",
-						data: error?.data,
-					},
-				});
 			}
+			const error = result.reason;
+			return /** @type {JsonRpcResponse} */ ({
+				jsonrpc: "2.0",
+				id,
+				error: {
+					code: error?.code ?? -32603,
+					message: error?.message ?? "Unknown error",
+					data: error?.data,
+				},
+			});
 		});
 	}
 

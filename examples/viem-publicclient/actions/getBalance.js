@@ -6,7 +6,7 @@
  * @module examples/viem-publicclient/actions/getBalance
  */
 
-import { numberToHex, normalizeAddress } from "../utils/encoding.js";
+import { normalizeAddress, numberToHex } from "../utils/encoding.js";
 
 /**
  * @typedef {import('../PublicClientType.js').Client} Client
@@ -28,8 +28,12 @@ import { numberToHex, normalizeAddress } from "../utils/encoding.js";
  * // => 1000000000000000000n (1 ETH)
  * ```
  */
-export async function getBalance(client, { address, blockNumber, blockTag = "latest" }) {
-	const blockNumberHex = typeof blockNumber === "bigint" ? numberToHex(blockNumber) : undefined;
+export async function getBalance(
+	client,
+	{ address, blockNumber, blockTag = "latest" },
+) {
+	const blockNumberHex =
+		typeof blockNumber === "bigint" ? numberToHex(blockNumber) : undefined;
 
 	const balance = await client.request({
 		method: "eth_getBalance",

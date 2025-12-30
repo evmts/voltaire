@@ -7,8 +7,8 @@
  * @module examples/viem-contract/watchContractEvent
  */
 
-import * as Abi from "../../src/primitives/Abi/index.js";
 import * as Event from "../../src/primitives/Abi/event/index.js";
+import * as Abi from "../../src/primitives/Abi/index.js";
 import * as Hex from "../../src/primitives/Hex/index.js";
 import { ContractEventWatchError } from "./errors.js";
 
@@ -72,9 +72,7 @@ export function watchContractEvent(client, parameters) {
 
 	// Find the event in ABI if eventName provided
 	const abiEvent = eventName
-		? abiItems.find(
-				(item) => item.type === "event" && item.name === eventName,
-			)
+		? abiItems.find((item) => item.type === "event" && item.name === eventName)
 		: undefined;
 
 	// Encode topics for filtering
@@ -123,9 +121,7 @@ export function watchContractEvent(client, parameters) {
 				),
 				{},
 			);
-			const topic0Hex = eventTopics[0]
-				? Hex.fromBytes(eventTopics[0])
-				: null;
+			const topic0Hex = eventTopics[0] ? Hex.fromBytes(eventTopics[0]) : null;
 			return topic0Hex === log.topics[0];
 		});
 
@@ -191,6 +187,7 @@ export function watchContractEvent(client, parameters) {
 	/**
 	 * Poll for new events
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: compatibility layer
 	async function poll() {
 		if (!isRunning) return;
 
@@ -246,7 +243,6 @@ export function watchContractEvent(client, parameters) {
 					} catch (err) {
 						if (strict) {
 							onError?.(err);
-							continue;
 						}
 					}
 				}

@@ -6,19 +6,19 @@
  * @module examples/viem-publicclient/publicActions
  */
 
-import { getBlockNumber } from "./actions/getBlockNumber.js";
-import { getBalance } from "./actions/getBalance.js";
-import { getChainId } from "./actions/getChainId.js";
 import { call } from "./actions/call.js";
-import { getBlock } from "./actions/getBlock.js";
 import { estimateGas } from "./actions/estimateGas.js";
-import { getTransaction } from "./actions/getTransaction.js";
-import { getTransactionReceipt } from "./actions/getTransactionReceipt.js";
-import { getLogs } from "./actions/getLogs.js";
+import { getBalance } from "./actions/getBalance.js";
+import { getBlock } from "./actions/getBlock.js";
+import { getBlockNumber } from "./actions/getBlockNumber.js";
+import { getChainId } from "./actions/getChainId.js";
 import { getCode } from "./actions/getCode.js";
-import { getStorageAt } from "./actions/getStorageAt.js";
-import { getTransactionCount } from "./actions/getTransactionCount.js";
 import { getGasPrice } from "./actions/getGasPrice.js";
+import { getLogs } from "./actions/getLogs.js";
+import { getStorageAt } from "./actions/getStorageAt.js";
+import { getTransaction } from "./actions/getTransaction.js";
+import { getTransactionCount } from "./actions/getTransactionCount.js";
+import { getTransactionReceipt } from "./actions/getTransactionReceipt.js";
 
 /**
  * @typedef {import('./PublicClientType.js').Client} Client

@@ -20,16 +20,14 @@ import { uid } from "./utils/uid.js";
  * @returns {Client} Base client
  */
 export function createClient(parameters) {
-	const {
-		batch,
-		chain,
-		key = "base",
-		name = "Base Client",
-	} = parameters;
+	const { batch, chain, key = "base", name = "Base Client" } = parameters;
 
 	// Calculate polling interval from chain block time
 	const blockTime = chain?.blockTime ?? 12_000;
-	const defaultPollingInterval = Math.min(Math.max(Math.floor(blockTime / 2), 500), 4_000);
+	const defaultPollingInterval = Math.min(
+		Math.max(Math.floor(blockTime / 2), 500),
+		4_000,
+	);
 	const pollingInterval = parameters.pollingInterval ?? defaultPollingInterval;
 	const cacheTime = parameters.cacheTime ?? pollingInterval;
 
@@ -53,7 +51,7 @@ export function createClient(parameters) {
 		transport,
 		type: "base",
 		uid: uid(),
-		extend: /** @type {Client['extend']} */ (function () {}), // Placeholder, replaced below
+		extend: /** @type {Client['extend']} */ (() => {}), // Placeholder, replaced below
 	};
 
 	/**

@@ -51,7 +51,12 @@ export interface Network {
 /**
  * Network-like value for initialization
  */
-export type Networkish = Network | string | number | bigint | { name: string; chainId: number };
+export type Networkish =
+	| Network
+	| string
+	| number
+	| bigint
+	| { name: string; chainId: number };
 
 /**
  * Block tag for specifying block context
@@ -326,7 +331,7 @@ export type ProviderEvent =
 /**
  * Event listener function
  */
-export type Listener = (...args: any[]) => void;
+export type Listener = (...args: unknown[]) => void;
 
 /**
  * JSON-RPC request payload
@@ -408,7 +413,11 @@ export interface EthersProvider {
 	getBalance(address: string, blockTag?: BlockTag): Promise<bigint>;
 	getTransactionCount(address: string, blockTag?: BlockTag): Promise<number>;
 	getCode(address: string, blockTag?: BlockTag): Promise<string>;
-	getStorage(address: string, position: bigint, blockTag?: BlockTag): Promise<string>;
+	getStorage(
+		address: string,
+		position: bigint,
+		blockTag?: BlockTag,
+	): Promise<string>;
 
 	// Execution
 	call(tx: TransactionRequest): Promise<string>;
@@ -418,10 +427,17 @@ export interface EthersProvider {
 	broadcastTransaction(signedTx: string): Promise<TransactionResponse>;
 	getTransaction(hash: string): Promise<TransactionResponse | null>;
 	getTransactionReceipt(hash: string): Promise<TransactionReceipt | null>;
-	waitForTransaction(hash: string, confirms?: number, timeout?: number): Promise<TransactionReceipt | null>;
+	waitForTransaction(
+		hash: string,
+		confirms?: number,
+		timeout?: number,
+	): Promise<TransactionReceipt | null>;
 
 	// Blocks
-	getBlock(blockHashOrTag: BlockTag | string, prefetchTxs?: boolean): Promise<Block | null>;
+	getBlock(
+		blockHashOrTag: BlockTag | string,
+		prefetchTxs?: boolean,
+	): Promise<Block | null>;
 
 	// Logs
 	getLogs(filter: Filter): Promise<Log[]>;

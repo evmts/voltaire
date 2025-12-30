@@ -3,16 +3,19 @@
  * Uses BIP-39/BIP-32 test vectors for validation
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
-import { HDNodeWallet as EthersHDNodeWallet, Mnemonic as EthersMnemonic } from "ethers";
 import {
-	HDNodeWallet,
+	HDNodeWallet as EthersHDNodeWallet,
+	Mnemonic as EthersMnemonic,
+} from "ethers";
+import { beforeAll, describe, expect, it } from "vitest";
+import {
 	HDNodeVoidWallet,
+	HDNodeWallet,
+	LangEn,
 	Mnemonic,
 	defaultPath,
 	getAccountPath,
 	getIndexedAccountPath,
-	LangEn,
 } from "./index.js";
 
 // BIP-39 Test Vector (from spec)
@@ -81,11 +84,9 @@ describe("Mnemonic", () => {
 			const mnemonic = Mnemonic.fromPhrase(TEST_MNEMONIC);
 			const seed = mnemonic.computeSeed();
 			expect(seed.length).toBe(64);
-			const seedHex =
-				"0x" +
-				Array.from(seed)
-					.map((b) => b.toString(16).padStart(2, "0"))
-					.join("");
+			const seedHex = `0x${Array.from(seed)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("")}`;
 			expect(seedHex.toLowerCase()).toBe(TEST_SEED.toLowerCase());
 		});
 	});
@@ -131,7 +132,11 @@ describe("HDNodeWallet", () => {
 		});
 
 		it("supports custom path", () => {
-			const wallet = HDNodeWallet.fromPhrase(TEST_MNEMONIC, "", "m/44'/60'/0'/0/1");
+			const wallet = HDNodeWallet.fromPhrase(
+				TEST_MNEMONIC,
+				"",
+				"m/44'/60'/0'/0/1",
+			);
 			expect(wallet.path).toBe("m/44'/60'/0'/0/1");
 			expect(wallet.index).toBe(1);
 		});
@@ -141,10 +146,10 @@ describe("HDNodeWallet", () => {
 			const ethersWallet = EthersHDNodeWallet.fromPhrase(TEST_MNEMONIC);
 
 			expect(voltaireWallet.address.toLowerCase()).toBe(
-				ethersWallet.address.toLowerCase()
+				ethersWallet.address.toLowerCase(),
 			);
 			expect(voltaireWallet.privateKey.toLowerCase()).toBe(
-				ethersWallet.privateKey.toLowerCase()
+				ethersWallet.privateKey.toLowerCase(),
 			);
 		});
 	});
@@ -210,7 +215,9 @@ describe("HDNodeWallet", () => {
 
 	describe("derivePath", () => {
 		it("derives child from path", () => {
-			const root = HDNodeWallet.fromSeed(Mnemonic.fromPhrase(TEST_MNEMONIC).computeSeed());
+			const root = HDNodeWallet.fromSeed(
+				Mnemonic.fromPhrase(TEST_MNEMONIC).computeSeed(),
+			);
 			const child = root.derivePath("m/44'/60'/0'/0/0");
 			expect(child.address.toLowerCase()).toBe(
 				EXPECTED_ADDRESS_PATH_0.toLowerCase(),
@@ -218,7 +225,11 @@ describe("HDNodeWallet", () => {
 		});
 
 		it("derives relative path", () => {
-			const wallet = HDNodeWallet.fromPhrase(TEST_MNEMONIC, "", "m/44'/60'/0'/0");
+			const wallet = HDNodeWallet.fromPhrase(
+				TEST_MNEMONIC,
+				"",
+				"m/44'/60'/0'/0",
+			);
 			const child = wallet.derivePath("0");
 			expect(child.address.toLowerCase()).toBe(
 				EXPECTED_ADDRESS_PATH_0.toLowerCase(),
@@ -233,14 +244,20 @@ describe("HDNodeWallet", () => {
 
 	describe("deriveChild", () => {
 		it("derives child by index", () => {
-			const wallet = HDNodeWallet.fromPhrase(TEST_MNEMONIC, "", "m/44'/60'/0'/0");
+			const wallet = HDNodeWallet.fromPhrase(
+				TEST_MNEMONIC,
+				"",
+				"m/44'/60'/0'/0",
+			);
 			const child = wallet.deriveChild(0);
 			expect(child.index).toBe(0);
 			expect(child.depth).toBe(wallet.depth + 1);
 		});
 
 		it("derives hardened child", () => {
-			const root = HDNodeWallet.fromSeed(Mnemonic.fromPhrase(TEST_MNEMONIC).computeSeed());
+			const root = HDNodeWallet.fromSeed(
+				Mnemonic.fromPhrase(TEST_MNEMONIC).computeSeed(),
+			);
 			const child = root.deriveChild(0x80000000 + 44); // 44'
 			expect(child.index).toBe(0x80000000 + 44);
 		});
@@ -383,7 +400,11 @@ describe("Ethers Compatibility", () => {
 		for (let i = 0; i < 5; i++) {
 			const path = `m/44'/60'/0'/0/${i}`;
 			const voltaireWallet = HDNodeWallet.fromPhrase(TEST_MNEMONIC, "", path);
-			const ethersWallet = EthersHDNodeWallet.fromPhrase(TEST_MNEMONIC, "", path);
+			const ethersWallet = EthersHDNodeWallet.fromPhrase(
+				TEST_MNEMONIC,
+				"",
+				path,
+			);
 
 			expect(voltaireWallet.address.toLowerCase()).toBe(
 				ethersWallet.address.toLowerCase(),

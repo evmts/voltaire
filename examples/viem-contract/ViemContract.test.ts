@@ -4,21 +4,25 @@
  * @module examples/viem-contract/ViemContract.test
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getContract, getFunctionParameters, getEventParameters } from "./getContract.js";
-import { readContract } from "./readContract.js";
-import { writeContract } from "./writeContract.js";
-import { simulateContract } from "./simulateContract.js";
-import { estimateContractGas } from "./estimateContractGas.js";
-import { watchContractEvent } from "./watchContractEvent.js";
-import {
-	ContractReadError,
-	ContractWriteError,
-	ContractSimulateError,
-	ContractGasEstimationError,
-	AccountNotFoundError,
-} from "./errors.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Client } from "./ViemContractTypes.js";
+import {
+	AccountNotFoundError,
+	ContractGasEstimationError,
+	ContractReadError,
+	ContractSimulateError,
+	ContractWriteError,
+} from "./errors.js";
+import { estimateContractGas } from "./estimateContractGas.js";
+import {
+	getContract,
+	getEventParameters,
+	getFunctionParameters,
+} from "./getContract.js";
+import { readContract } from "./readContract.js";
+import { simulateContract } from "./simulateContract.js";
+import { watchContractEvent } from "./watchContractEvent.js";
+import { writeContract } from "./writeContract.js";
 
 // Test ABI - ERC20-like
 const erc20Abi = [
@@ -181,9 +185,11 @@ describe("readContract", () => {
 
 	it("unwraps single output value", async () => {
 		const mockClient = createMockClient({
-			request: vi.fn().mockResolvedValue(
-				"0x00000000000000000000000000000000000000000000000000000000000003e8",
-			),
+			request: vi
+				.fn()
+				.mockResolvedValue(
+					"0x00000000000000000000000000000000000000000000000000000000000003e8",
+				),
 		});
 
 		const result = await readContract(mockClient, {
@@ -214,9 +220,11 @@ describe("readContract", () => {
 
 	it("supports custom block tag", async () => {
 		const mockClient = createMockClient({
-			request: vi.fn().mockResolvedValue(
-				"0x00000000000000000000000000000000000000000000000000000000000003e8",
-			),
+			request: vi
+				.fn()
+				.mockResolvedValue(
+					"0x00000000000000000000000000000000000000000000000000000000000003e8",
+				),
 		});
 
 		await readContract(mockClient, {
@@ -374,9 +382,11 @@ describe("simulateContract", () => {
 
 	it("minimizes ABI in request to just the called function", async () => {
 		const mockClient = createMockClient({
-			request: vi.fn().mockResolvedValue(
-				"0x0000000000000000000000000000000000000000000000000000000000000001",
-			),
+			request: vi
+				.fn()
+				.mockResolvedValue(
+					"0x0000000000000000000000000000000000000000000000000000000000000001",
+				),
 		});
 
 		const { request } = await simulateContract(mockClient, {
@@ -617,9 +627,11 @@ describe("getContract", () => {
 
 	it("delegates read calls to readContract", async () => {
 		const mockClient = createMockClient({
-			request: vi.fn().mockResolvedValue(
-				"0x00000000000000000000000000000000000000000000000000000000000003e8",
-			),
+			request: vi
+				.fn()
+				.mockResolvedValue(
+					"0x00000000000000000000000000000000000000000000000000000000000003e8",
+				),
 		});
 
 		const contract = getContract({

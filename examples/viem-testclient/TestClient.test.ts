@@ -4,25 +4,25 @@
  * @module examples/viem-testclient/TestClient.test
  */
 
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { TestClientMode } from "./TestClientTypes.js";
 import { createTestClient } from "./createTestClient.js";
+import { dropTransaction } from "./dropTransaction.js";
+import { dumpState } from "./dumpState.js";
+import { impersonateAccount } from "./impersonateAccount.js";
+import { increaseTime } from "./increaseTime.js";
+import { loadState } from "./loadState.js";
 import { mine } from "./mine.js";
+import { reset } from "./reset.js";
+import { revert } from "./revert.js";
+import { setAutomine } from "./setAutomine.js";
 import { setBalance } from "./setBalance.js";
 import { setCode } from "./setCode.js";
-import { setStorageAt } from "./setStorageAt.js";
-import { setNonce } from "./setNonce.js";
-import { impersonateAccount } from "./impersonateAccount.js";
-import { stopImpersonatingAccount } from "./stopImpersonatingAccount.js";
-import { snapshot } from "./snapshot.js";
-import { revert } from "./revert.js";
-import { increaseTime } from "./increaseTime.js";
 import { setNextBlockTimestamp } from "./setNextBlockTimestamp.js";
-import { dropTransaction } from "./dropTransaction.js";
-import { reset } from "./reset.js";
-import { dumpState } from "./dumpState.js";
-import { loadState } from "./loadState.js";
-import { setAutomine } from "./setAutomine.js";
-import type { TestClientMode } from "./TestClientTypes.js";
+import { setNonce } from "./setNonce.js";
+import { setStorageAt } from "./setStorageAt.js";
+import { snapshot } from "./snapshot.js";
+import { stopImpersonatingAccount } from "./stopImpersonatingAccount.js";
 
 // Mock provider factory
 function createMockProvider() {
@@ -56,7 +56,7 @@ describe("createTestClient", () => {
 		expect(() =>
 			createTestClient({
 				mode: "anvil",
-			} as any),
+			} as unknown as Parameters<typeof createTestClient>[0]),
 		).toThrow("Provider is required");
 	});
 

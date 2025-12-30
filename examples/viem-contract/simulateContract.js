@@ -100,7 +100,10 @@ export async function simulateContract(client, parameters) {
 		// Execute eth_call (batch: false to ensure accurate simulation)
 		const result = await client.request({
 			method: "eth_call",
-			params: [callParams, callRequest.blockTag ?? callRequest.blockNumber ?? "latest"],
+			params: [
+				callParams,
+				callRequest.blockTag ?? callRequest.blockNumber ?? "latest",
+			],
 		});
 
 		// Decode result

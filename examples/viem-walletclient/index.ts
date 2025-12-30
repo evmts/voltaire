@@ -39,7 +39,11 @@
  */
 
 // Main factory
-export { createWalletClient, parseAccount, CreateWalletClient } from "./createWalletClient.js";
+export {
+	createWalletClient,
+	parseAccount,
+	CreateWalletClient,
+} from "./createWalletClient.js";
 
 // Wallet actions
 export { getAddresses, GetAddresses } from "./getAddresses.js";
@@ -54,7 +58,10 @@ export {
 	PrepareTransactionRequest,
 	defaultParameters,
 } from "./prepareTransactionRequest.js";
-export { sendRawTransaction, SendRawTransaction } from "./sendRawTransaction.js";
+export {
+	sendRawTransaction,
+	SendRawTransaction,
+} from "./sendRawTransaction.js";
 
 // Transports
 export { http, custom, fallback } from "./transports.js";

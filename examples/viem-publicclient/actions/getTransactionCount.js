@@ -6,7 +6,11 @@
  * @module examples/viem-publicclient/actions/getTransactionCount
  */
 
-import { numberToHex, hexToNumber, normalizeAddress } from "../utils/encoding.js";
+import {
+	hexToNumber,
+	normalizeAddress,
+	numberToHex,
+} from "../utils/encoding.js";
 
 /**
  * @typedef {import('../PublicClientType.js').Client} Client
@@ -27,8 +31,12 @@ import { numberToHex, hexToNumber, normalizeAddress } from "../utils/encoding.js
  * });
  * ```
  */
-export async function getTransactionCount(client, { address, blockNumber, blockTag = "latest" }) {
-	const blockNumberHex = typeof blockNumber === "bigint" ? numberToHex(blockNumber) : undefined;
+export async function getTransactionCount(
+	client,
+	{ address, blockNumber, blockTag = "latest" },
+) {
+	const blockNumberHex =
+		typeof blockNumber === "bigint" ? numberToHex(blockNumber) : undefined;
 
 	const count = await client.request({
 		method: "eth_getTransactionCount",

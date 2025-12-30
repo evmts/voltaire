@@ -39,7 +39,14 @@ export class UrlRequiredError extends PublicClientError {
 export class TransactionNotFoundError extends PublicClientError {
 	override name = "TransactionNotFoundError";
 
-	constructor(public details: { hash?: string; blockHash?: string; blockNumber?: bigint; index?: number }) {
+	constructor(
+		public details: {
+			hash?: string;
+			blockHash?: string;
+			blockNumber?: bigint;
+			index?: number;
+		},
+	) {
 		super(
 			details.hash
 				? `Transaction not found: ${details.hash}`

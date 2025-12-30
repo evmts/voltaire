@@ -33,9 +33,11 @@ function formatTransactionRequest(transaction, account) {
 	if (account?.address) request.from = account.address;
 	if (transaction.to) request.to = transaction.to;
 	if (transaction.data) request.data = transaction.data;
-	if (transaction.value !== undefined) request.value = numberToHex(transaction.value);
+	if (transaction.value !== undefined)
+		request.value = numberToHex(transaction.value);
 	if (transaction.gas !== undefined) request.gas = numberToHex(transaction.gas);
-	if (transaction.nonce !== undefined) request.nonce = numberToHex(transaction.nonce);
+	if (transaction.nonce !== undefined)
+		request.nonce = numberToHex(transaction.nonce);
 
 	// Type-specific fields
 	if (transaction.gasPrice !== undefined) {
@@ -45,7 +47,9 @@ function formatTransactionRequest(transaction, account) {
 		request.maxFeePerGas = numberToHex(transaction.maxFeePerGas);
 	}
 	if (transaction.maxPriorityFeePerGas !== undefined) {
-		request.maxPriorityFeePerGas = numberToHex(transaction.maxPriorityFeePerGas);
+		request.maxPriorityFeePerGas = numberToHex(
+			transaction.maxPriorityFeePerGas,
+		);
 	}
 	if (transaction.maxFeePerBlobGas !== undefined) {
 		request.maxFeePerBlobGas = numberToHex(transaction.maxFeePerBlobGas);
@@ -103,7 +107,11 @@ function assertCurrentChain({ currentChainId, chain }) {
  * ```
  */
 export async function signTransaction(client, parameters) {
-	const { account: account_, chain = client.chain, ...transaction } = parameters;
+	const {
+		account: account_,
+		chain = client.chain,
+		...transaction
+	} = parameters;
 
 	// Get account from parameters or client
 	const accountArg = account_ ?? client.account;
@@ -123,7 +131,8 @@ export async function signTransaction(client, parameters) {
 
 	// Get chain formatters
 	const formatters = chain?.formatters || client.chain?.formatters;
-	const format = formatters?.transactionRequest?.format || formatTransactionRequest;
+	const format =
+		formatters?.transactionRequest?.format || formatTransactionRequest;
 
 	// Local account: sign locally
 	if (account.signTransaction) {
@@ -159,9 +168,16 @@ export async function signTransaction(client, parameters) {
  * @param {Function} deps.getChainId
  * @returns {Function}
  */
-export function SignTransaction({ parseAccount: parseAccountFn, getChainId: getChainIdFn }) {
+export function SignTransaction({
+	parseAccount: parseAccountFn,
+	getChainId: getChainIdFn,
+}) {
 	return async function signTransaction(client, parameters) {
-		const { account: account_, chain = client.chain, ...transaction } = parameters;
+		const {
+			account: account_,
+			chain = client.chain,
+			...transaction
+		} = parameters;
 
 		const accountArg = account_ ?? client.account;
 		if (!accountArg) {
@@ -178,7 +194,8 @@ export function SignTransaction({ parseAccount: parseAccountFn, getChainId: getC
 		}
 
 		const formatters = chain?.formatters || client.chain?.formatters;
-		const format = formatters?.transactionRequest?.format || formatTransactionRequest;
+		const format =
+			formatters?.transactionRequest?.format || formatTransactionRequest;
 
 		if (account.signTransaction) {
 			return account.signTransaction(

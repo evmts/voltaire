@@ -6,9 +6,9 @@
 
 /** @import { Parameter } from "../../src/primitives/Abi/Parameter.js" */
 
-import { InvalidFragmentError } from "./errors.js";
+import { hash, hashString } from "../../src/crypto/Keccak256/index.js";
 import * as Hex from "../../src/primitives/Hex/index.js";
-import { hashString, hash } from "../../src/crypto/Keccak256/index.js";
+import { InvalidFragmentError } from "./errors.js";
 
 /**
  * Format a parameter type for signature
@@ -51,7 +51,7 @@ function formatParam(param, format) {
 			result += " indexed";
 		}
 		if (format === "full" && param.name) {
-			result += " " + param.name;
+			result += ` ${param.name}`;
 		}
 	}
 
@@ -66,7 +66,7 @@ function formatParam(param, format) {
  */
 function joinParams(params, format) {
 	const sep = format === "full" ? ", " : ",";
-	return "(" + params.map((p) => formatParam(p, format)).join(sep) + ")";
+	return `(${params.map((p) => formatParam(p, format)).join(sep)})`;
 }
 
 /**
@@ -141,48 +141,69 @@ export class ParamType {
 	}
 
 	/**
+	 * Format as JSON representation
+	 * @returns {string}
+	 */
+	#formatAsJson() {
+		/** @type {Record<string, unknown>} */
+		const result = { type: this.type, name: this.name || "" };
+		if (this.indexed !== null) {
+			result.indexed = this.indexed;
+		}
+		if (this.components) {
+			result.components = this.components.map((c) =>
+				JSON.parse(c.format("json")),
+			);
+		}
+		return JSON.stringify(result);
+	}
+
+	/**
+	 * Format base type (array, tuple, or simple)
+	 * @param {"sighash" | "minimal" | "full"} format
+	 * @returns {string}
+	 */
+	#formatBaseType(format) {
+		if (this.isArray()) {
+			const children = this.arrayChildren?.format(format) ?? "";
+			const length = this.arrayLength === -1 ? "" : String(this.arrayLength);
+			return `${children}[${length}]`;
+		}
+		if (this.isTuple()) {
+			const sep = format === "full" ? ", " : ",";
+			const inner =
+				this.components?.map((c) => c.format(format)).join(sep) ?? "";
+			return `(${inner})`;
+		}
+		return this.type;
+	}
+
+	/**
+	 * Format suffix (indexed, name)
+	 * @param {"sighash" | "minimal" | "full"} format
+	 * @returns {string}
+	 */
+	#formatSuffix(format) {
+		let suffix = "";
+		if (format !== "sighash" && this.indexed === true) {
+			suffix += " indexed";
+		}
+		if (format === "full" && this.name) {
+			suffix += ` ${this.name}`;
+		}
+		return suffix;
+	}
+
+	/**
 	 * Format the parameter type
 	 * @param {"sighash" | "minimal" | "full" | "json"} [format]
 	 * @returns {string}
 	 */
 	format(format = "sighash") {
 		if (format === "json") {
-			/** @type {Record<string, unknown>} */
-			const result = { type: this.type, name: this.name || "" };
-			if (this.indexed !== null) {
-				result.indexed = this.indexed;
-			}
-			if (this.components) {
-				result.components = this.components.map((c) =>
-					JSON.parse(c.format("json")),
-				);
-			}
-			return JSON.stringify(result);
+			return this.#formatAsJson();
 		}
-
-		let result = "";
-
-		if (this.isArray()) {
-			result += this.arrayChildren?.format(format) ?? "";
-			result += `[${this.arrayLength === -1 ? "" : String(this.arrayLength)}]`;
-		} else if (this.isTuple()) {
-			const inner =
-				this.components?.map((c) => c.format(format)).join(format === "full" ? ", " : ",") ?? "";
-			result += `(${inner})`;
-		} else {
-			result += this.type;
-		}
-
-		if (format !== "sighash") {
-			if (this.indexed === true) {
-				result += " indexed";
-			}
-			if (format === "full" && this.name) {
-				result += " " + this.name;
-			}
-		}
-
-		return result;
+		return this.#formatBaseType(format) + this.#formatSuffix(format);
 	}
 
 	/** @returns {boolean} */
@@ -201,6 +222,71 @@ export class ParamType {
 	}
 
 	/**
+	 * Create ParamType for dynamic array type
+	 * @param {string} name
+	 * @param {string} type
+	 * @param {boolean | null} indexed
+	 * @param {Parameter["components"]} components
+	 * @returns {ParamType}
+	 */
+	static #fromDynamicArray(name, type, indexed, components) {
+		const elementType = type.slice(0, -2);
+		const arrayChildren = ParamType.from(
+			{ type: elementType, name: "", components },
+			false,
+		);
+		return new ParamType(name, type, "array", indexed, null, -1, arrayChildren);
+	}
+
+	/**
+	 * Create ParamType for fixed array type
+	 * @param {string} name
+	 * @param {string} type
+	 * @param {boolean | null} indexed
+	 * @param {RegExpMatchArray} match
+	 * @param {Parameter["components"]} components
+	 * @returns {ParamType}
+	 */
+	static #fromFixedArray(name, type, indexed, match, components) {
+		const elementType = match[1];
+		const arrayLength = Number.parseInt(match[2], 10);
+		const arrayChildren = ParamType.from(
+			{ type: elementType, name: "", components },
+			false,
+		);
+		return new ParamType(
+			name,
+			type,
+			"array",
+			indexed,
+			null,
+			arrayLength,
+			arrayChildren,
+		);
+	}
+
+	/**
+	 * Create ParamType for tuple type
+	 * @param {string} name
+	 * @param {string} type
+	 * @param {boolean | null} indexed
+	 * @param {Parameter["components"]} components
+	 * @returns {ParamType}
+	 */
+	static #fromTuple(name, type, indexed, components) {
+		const parsedComponents = components.map((c) => ParamType.from(c, false));
+		return new ParamType(
+			name,
+			type,
+			"tuple",
+			indexed,
+			parsedComponents,
+			null,
+			null,
+		);
+	}
+
+	/**
 	 * Create ParamType from various inputs
 	 * @param {Parameter | string | ParamType} obj
 	 * @param {boolean} [allowIndexed]
@@ -212,7 +298,6 @@ export class ParamType {
 		}
 
 		if (typeof obj === "string") {
-			// Parse simple type string
 			return ParamType.from({ type: obj, name: "" }, allowIndexed);
 		}
 
@@ -223,46 +308,24 @@ export class ParamType {
 
 		// Check for dynamic array
 		if (type.endsWith("[]")) {
-			const elementType = type.slice(0, -2);
-			const arrayChildren = ParamType.from(
-				{ type: elementType, name: "", components: param.components },
-				false,
-			);
-			return new ParamType(
-				name,
-				type,
-				"array",
-				indexed,
-				null,
-				-1,
-				arrayChildren,
-			);
+			return ParamType.#fromDynamicArray(name, type, indexed, param.components);
 		}
 
 		// Check for fixed array
 		const fixedMatch = type.match(/^(.+)\[(\d+)\]$/);
 		if (fixedMatch) {
-			const elementType = fixedMatch[1];
-			const arrayLength = Number.parseInt(fixedMatch[2], 10);
-			const arrayChildren = ParamType.from(
-				{ type: elementType, name: "", components: param.components },
-				false,
-			);
-			return new ParamType(
+			return ParamType.#fromFixedArray(
 				name,
 				type,
-				"array",
 				indexed,
-				null,
-				arrayLength,
-				arrayChildren,
+				fixedMatch,
+				param.components,
 			);
 		}
 
 		// Check for tuple
 		if (type === "tuple" && param.components) {
-			const components = param.components.map((c) => ParamType.from(c, false));
-			return new ParamType(name, type, "tuple", indexed, components, null, null);
+			return ParamType.#fromTuple(name, type, indexed, param.components);
 		}
 
 		// Basic type
@@ -325,7 +388,10 @@ export class Fragment {
 			case "receive":
 				return FallbackFragment.from(obj);
 			default:
-				throw new InvalidFragmentError(`unsupported fragment type: ${type}`, obj);
+				throw new InvalidFragmentError(
+					`unsupported fragment type: ${type}`,
+					obj,
+				);
 		}
 	}
 
@@ -422,7 +488,9 @@ export class FunctionFragment extends NamedFragment {
 			});
 		}
 
-		const params = this.inputs.map((p) => p.format(format)).join(format === "full" ? ", " : ",");
+		const params = this.inputs
+			.map((p) => p.format(format))
+			.join(format === "full" ? ", " : ",");
 		let result = "";
 
 		if (format !== "sighash") {
@@ -433,10 +501,12 @@ export class FunctionFragment extends NamedFragment {
 
 		if (format !== "sighash") {
 			if (this.stateMutability !== "nonpayable") {
-				result += " " + this.stateMutability;
+				result += ` ${this.stateMutability}`;
 			}
 			if (this.outputs.length > 0) {
-				const outs = this.outputs.map((p) => p.format(format)).join(format === "full" ? ", " : ",");
+				const outs = this.outputs
+					.map((p) => p.format(format))
+					.join(format === "full" ? ", " : ",");
 				result += ` returns (${outs})`;
 			}
 		}
@@ -462,9 +532,10 @@ export class FunctionFragment extends NamedFragment {
 		);
 
 		// Determine state mutability
-		let stateMutability = /** @type {"pure" | "view" | "nonpayable" | "payable"} */ (
-			item.stateMutability ?? "nonpayable"
-		);
+		let stateMutability =
+			/** @type {"pure" | "view" | "nonpayable" | "payable"} */ (
+				item.stateMutability ?? "nonpayable"
+			);
 		if (!item.stateMutability) {
 			if (item.constant === true) {
 				stateMutability = "view";
@@ -473,7 +544,9 @@ export class FunctionFragment extends NamedFragment {
 			}
 		}
 
-		const gas = item.gas ? BigInt(/** @type {string | number} */ (item.gas)) : null;
+		const gas = item.gas
+			? BigInt(/** @type {string | number} */ (item.gas))
+			: null;
 
 		return new FunctionFragment(name, stateMutability, inputs, outputs, gas);
 	}
@@ -537,7 +610,9 @@ export class EventFragment extends NamedFragment {
 			});
 		}
 
-		const params = this.inputs.map((p) => p.format(format)).join(format === "full" ? ", " : ",");
+		const params = this.inputs
+			.map((p) => p.format(format))
+			.join(format === "full" ? ", " : ",");
 		let result = "";
 
 		if (format !== "sighash") {
@@ -625,7 +700,9 @@ export class ErrorFragment extends NamedFragment {
 			});
 		}
 
-		const params = this.inputs.map((p) => p.format(format)).join(format === "full" ? ", " : ",");
+		const params = this.inputs
+			.map((p) => p.format(format))
+			.join(format === "full" ? ", " : ",");
 		let result = "";
 
 		if (format !== "sighash") {
@@ -653,7 +730,9 @@ export class ErrorFragment extends NamedFragment {
 				const name = match[1];
 				const paramsStr = match[2];
 				const inputs = paramsStr
-					? paramsStr.split(",").map((t) => ParamType.from({ type: t.trim(), name: "" }))
+					? paramsStr
+							.split(",")
+							.map((t) => ParamType.from({ type: t.trim(), name: "" }))
 					: [];
 				return new ErrorFragment(name, inputs);
 			}
@@ -719,7 +798,9 @@ export class ConstructorFragment extends Fragment {
 			});
 		}
 
-		const params = this.inputs.map((p) => p.format(format)).join(format === "full" ? ", " : ",");
+		const params = this.inputs
+			.map((p) => p.format(format))
+			.join(format === "full" ? ", " : ",");
 		let result = `constructor(${params})`;
 
 		if (this.payable) {
@@ -744,21 +825,27 @@ export class ConstructorFragment extends Fragment {
 			if (match) {
 				const paramsStr = match[1];
 				const inputs = paramsStr
-					? paramsStr.split(",").map((t) => ParamType.from({ type: t.trim(), name: "" }))
+					? paramsStr
+							.split(",")
+							.map((t) => ParamType.from({ type: t.trim(), name: "" }))
 					: [];
 				const payable = obj.includes("payable");
 				return new ConstructorFragment(inputs, payable, null);
 			}
-			throw new InvalidFragmentError(`invalid constructor fragment: ${obj}`, obj);
+			throw new InvalidFragmentError(
+				`invalid constructor fragment: ${obj}`,
+				obj,
+			);
 		}
 
 		const item = /** @type {Record<string, unknown>} */ (obj);
 		const inputs = /** @type {Parameter[]} */ (item.inputs || []).map((p) =>
 			ParamType.from(p),
 		);
-		const payable =
-			item.stateMutability === "payable" || item.payable === true;
-		const gas = item.gas ? BigInt(/** @type {string | number} */ (item.gas)) : null;
+		const payable = item.stateMutability === "payable" || item.payable === true;
+		const gas = item.gas
+			? BigInt(/** @type {string | number} */ (item.gas))
+			: null;
 
 		return new ConstructorFragment(inputs, payable, gas);
 	}

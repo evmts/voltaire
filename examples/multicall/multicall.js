@@ -151,7 +151,9 @@ function encodeContractCalls(contracts, batchSize, allowFailure) {
 			// Build ABI instance and encode function call
 			const abiInstance = Abi(/** @type {*} */ (abi));
 			const callData = abiInstance.encode(functionName, args);
-			const callDataHex = /** @type {`0x${string}`} */ (Hex.fromBytes(callData));
+			const callDataHex = /** @type {`0x${string}`} */ (
+				Hex.fromBytes(callData)
+			);
 
 			// Calculate calldata size (remove 0x prefix, divide by 2 for bytes)
 			const callDataSize = (callDataHex.length - 2) / 2;
@@ -217,7 +219,7 @@ async function executeChunks(
 ) {
 	const blockParam = blockNumber
 		? `0x${blockNumber.toString(16)}`
-		: blockTag ?? "latest";
+		: (blockTag ?? "latest");
 
 	const promises = chunks.map(async (calls, chunkIndex) => {
 		try {
@@ -231,7 +233,9 @@ async function executeChunks(
 
 			// Encode aggregate3 call
 			const callData = multicall3.encode("aggregate3", [callsAsArrays]);
-			const callDataHex = /** @type {`0x${string}`} */ (Hex.fromBytes(callData));
+			const callDataHex = /** @type {`0x${string}`} */ (
+				Hex.fromBytes(callData)
+			);
 
 			// Build call params
 			const callParams = deployless
@@ -265,6 +269,7 @@ async function executeChunks(
  * @param {boolean} allowFailure - Allow failures
  * @returns {Array<{ status: string; result?: unknown; error?: Error } | unknown>}
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: compatibility layer
 function decodeResults(
 	contracts,
 	chunks,
@@ -276,7 +281,9 @@ function decodeResults(
 	const results = [];
 
 	// Build map of encoding errors by index
-	const encodingErrorMap = new Map(encodingErrors.map((e) => [e.index, e.error]));
+	const encodingErrorMap = new Map(
+		encodingErrors.map((e) => [e.index, e.error]),
+	);
 
 	let contractIndex = 0;
 

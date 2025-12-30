@@ -16,18 +16,18 @@
  */
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { Address } from "../../src/primitives/Address/index.js";
-import * as BrandedAddress from "../../src/primitives/Address/internal-index.js";
 import { HDWallet } from "../../src/crypto/HDWallet/HDWallet.js";
 import { Keccak256 } from "../../src/crypto/Keccak256/index.js";
+import { Address } from "../../src/primitives/Address/index.js";
+import * as BrandedAddress from "../../src/primitives/Address/internal-index.js";
+import { Mnemonic } from "./Mnemonic.js";
 import {
+	InvalidExtendedKeyError,
 	InvalidIndexError,
 	InvalidPathError,
 	InvalidSeedError,
 	UnsupportedOperationError,
-	InvalidExtendedKeyError,
 } from "./errors.js";
-import { Mnemonic } from "./Mnemonic.js";
 import { LangEn } from "./wordlists/LangEn.js";
 
 /**
@@ -151,6 +151,7 @@ export class HDNodeWallet {
 	 * @param {string} path - Derivation path (e.g., "m/44'/60'/0'/0/0" or "0/0")
 	 * @returns {HDNodeWallet}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ethers compatibility
 	derivePath(path) {
 		const components = path.split("/");
 		if (components.length === 0) {
@@ -173,7 +174,7 @@ export class HDNodeWallet {
 			const component = components[i];
 			if (component.match(/^[0-9]+'$/)) {
 				// Hardened
-				const index = parseInt(component.slice(0, -1));
+				const index = Number.parseInt(component.slice(0, -1));
 				if (index >= HardenedBit) {
 					throw new InvalidPathError(`Invalid path index: ${component}`, {
 						path,
@@ -183,7 +184,7 @@ export class HDNodeWallet {
 				result = result.deriveChild(HardenedBit + index);
 			} else if (component.match(/^[0-9]+$/)) {
 				// Normal
-				const index = parseInt(component);
+				const index = Number.parseInt(component);
 				if (index >= HardenedBit) {
 					throw new InvalidPathError(`Invalid path index: ${component}`, {
 						path,
@@ -224,7 +225,7 @@ export class HDNodeWallet {
 		let childPath = this.#path;
 		if (childPath) {
 			const childIndex = index & ~HardenedBit;
-			childPath += "/" + childIndex;
+			childPath += `/${childIndex}`;
 			if (index >= HardenedBit) {
 				childPath += "'";
 			}
@@ -302,8 +303,8 @@ export class HDNodeWallet {
 		const rHex = sig.r.toString(16).padStart(64, "0");
 		const sHex = sig.s.toString(16).padStart(64, "0");
 		for (let i = 0; i < 32; i++) {
-			r[i] = parseInt(rHex.slice(i * 2, i * 2 + 2), 16);
-			s[i] = parseInt(sHex.slice(i * 2, i * 2 + 2), 16);
+			r[i] = Number.parseInt(rHex.slice(i * 2, i * 2 + 2), 16);
+			s[i] = Number.parseInt(sHex.slice(i * 2, i * 2 + 2), 16);
 		}
 
 		if (transaction.type === 0) {
@@ -356,7 +357,7 @@ export class HDNodeWallet {
 	 * @param {Wordlist} [wordlist] - Wordlist
 	 * @returns {HDNodeWallet}
 	 */
-	static fromPhrase(phrase, password, path = defaultPath, wordlist) {
+	static fromPhrase(phrase, password, path, wordlist) {
 		const mnemonic = Mnemonic.fromPhrase(
 			phrase,
 			password ?? "",
@@ -414,7 +415,7 @@ export class HDNodeWallet {
 	 * @param {Wordlist} [wordlist] - Wordlist
 	 * @returns {HDNodeWallet}
 	 */
-	static createRandom(password, path = defaultPath, wordlist) {
+	static createRandom(password, path, wordlist) {
 		const entropy = crypto.getRandomValues(new Uint8Array(16));
 		const mnemonic = Mnemonic.fromEntropy(
 			entropy,
@@ -535,7 +536,7 @@ export class HDNodeVoidWallet {
 					component,
 				});
 			}
-			const index = parseInt(component);
+			const index = Number.parseInt(component);
 			result = result.deriveChild(index);
 		}
 		return result;
@@ -558,7 +559,7 @@ export class HDNodeVoidWallet {
 
 		let childPath = this.#path;
 		if (childPath) {
-			childPath += "/" + index;
+			childPath += `/${index}`;
 		}
 
 		return new HDNodeVoidWallet(
@@ -612,12 +613,9 @@ export function getIndexedAccountPath(index) {
  */
 function bytesToHex(bytes) {
 	if (!bytes) return "0x";
-	return (
-		"0x" +
-		Array.from(bytes)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")
-	);
+	return `0x${Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 /**
@@ -626,7 +624,7 @@ function bytesToHex(bytes) {
  * @returns {HexString}
  */
 function numberToHex32(num) {
-	return "0x" + (num >>> 0).toString(16).padStart(8, "0");
+	return `0x${(num >>> 0).toString(16).padStart(8, "0")}`;
 }
 
 /**

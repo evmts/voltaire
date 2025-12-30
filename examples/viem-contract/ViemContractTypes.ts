@@ -7,8 +7,8 @@
  * @module examples/viem-contract/ViemContractTypes
  */
 
-import type { Item } from "../../src/primitives/Abi/AbiType.js";
 import type { Abi } from "../../src/primitives/Abi/AbiConstructor.js";
+import type { Item } from "../../src/primitives/Abi/AbiType.js";
 import type {
 	Parameter,
 	ParametersToObject,
@@ -87,7 +87,7 @@ export type ExtractEvents<TAbi extends readonly Item[]> = Extract<
 export type GetFunction<
 	TAbi extends readonly Item[],
 	TName extends string,
-> = Extract<TAbi[number], FunctionType<TName, any, any, any>>;
+> = Extract<TAbi[number], FunctionType<TName, unknown, unknown, unknown>>;
 
 /**
  * Get event from ABI by name
@@ -95,7 +95,7 @@ export type GetFunction<
 export type GetEvent<
 	TAbi extends readonly Item[],
 	TName extends string,
-> = Extract<TAbi[number], EventType<TName, any>>;
+> = Extract<TAbi[number], EventType<TName, unknown>>;
 
 /**
  * Unwrap single-element tuple to just the value
@@ -146,9 +146,9 @@ export type ReadContractReturnType<
 	TAbi extends readonly Item[],
 	TFunctionName extends string,
 > = GetFunction<TAbi, TFunctionName> extends FunctionType<
-	any,
-	any,
-	any,
+	unknown,
+	unknown,
+	unknown,
 	infer TOutputs
 >
 	? UnwrapSingleOutput<ParametersToPrimitiveTypes<TOutputs>>
@@ -259,7 +259,7 @@ export type WatchContractEventParameters<
 	eventName?: TEventName;
 	/** Event filter arguments for indexed parameters */
 	args?: TEventName extends string
-		? GetEvent<TAbi, TEventName> extends EventType<any, infer TInputs>
+		? GetEvent<TAbi, TEventName> extends EventType<unknown, infer TInputs>
 			? EncodeTopicsArgs<TInputs>
 			: never
 		: never;

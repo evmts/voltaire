@@ -77,10 +77,7 @@ export class SigningError extends AccountError {
  * Error thrown when message format is invalid
  */
 export class InvalidMessageError extends AccountError {
-	constructor(
-		message: string,
-		options?: { code?: string; docsPath?: string },
-	) {
+	constructor(message: string, options?: { code?: string; docsPath?: string }) {
 		super(message, {
 			code: options?.code ?? "INVALID_MESSAGE",
 			docsPath: options?.docsPath ?? "/crypto/eip191#message-format",
@@ -93,10 +90,7 @@ export class InvalidMessageError extends AccountError {
  * Error thrown when typed data is invalid
  */
 export class InvalidTypedDataError extends AccountError {
-	constructor(
-		message: string,
-		options?: { code?: string; docsPath?: string },
-	) {
+	constructor(message: string, options?: { code?: string; docsPath?: string }) {
 		super(message, {
 			code: options?.code ?? "INVALID_TYPED_DATA",
 			docsPath: options?.docsPath ?? "/crypto/eip712#typed-data",

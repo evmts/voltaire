@@ -58,15 +58,7 @@ function buildRequest(request, { retryCount, retryDelay }) {
  * @returns {Transport} Transport object
  */
 export function createTransport(
-	{
-		key,
-		name,
-		request,
-		retryCount = 3,
-		retryDelay = 150,
-		timeout,
-		type,
-	},
+	{ key, name, request, retryCount = 3, retryDelay = 150, timeout, type },
 	value,
 ) {
 	const transportUid = uid();

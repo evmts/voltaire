@@ -4,30 +4,30 @@
  * Tests for the viem-style PublicClient implementation.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	createPublicClient,
-	createClient,
 	http,
-	mainnet,
-	sepolia,
-	publicActions,
-	getBlockNumber,
-	getBalance,
-	getChainId,
-	call,
-	getBlock,
-	getTransaction,
-	getLogs,
-	getCode,
-	getStorageAt,
-	getTransactionCount,
-	getGasPrice,
-	estimateGas,
-	UrlRequiredError,
-	TransactionNotFoundError,
 	BlockNotFoundError,
 	RpcRequestError,
+	TransactionNotFoundError,
+	UrlRequiredError,
+	call,
+	createClient,
+	createPublicClient,
+	estimateGas,
+	getBalance,
+	getBlock,
+	getBlockNumber,
+	getChainId,
+	getCode,
+	getGasPrice,
+	getLogs,
+	getStorageAt,
+	getTransaction,
+	getTransactionCount,
+	mainnet,
+	publicActions,
+	sepolia,
 } from "./index.js";
 import type { Client, PublicClient } from "./index.js";
 
@@ -283,7 +283,8 @@ describe("PublicClient", () => {
 				json: async () => ({
 					jsonrpc: "2.0",
 					id: 1,
-					result: "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+					result:
+						"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
 				}),
 			});
 
@@ -484,7 +485,9 @@ describe("PublicClient", () => {
 			});
 
 			expect(logs).toHaveLength(1);
-			expect(logs[0].address).toBe("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+			expect(logs[0].address).toBe(
+				"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			);
 		});
 	});
 

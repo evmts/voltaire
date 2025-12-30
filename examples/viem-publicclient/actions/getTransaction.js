@@ -7,7 +7,7 @@
  */
 
 import { TransactionNotFoundError } from "../errors.js";
-import { numberToHex, hexToBigInt } from "../utils/encoding.js";
+import { hexToBigInt, numberToHex } from "../utils/encoding.js";
 
 /**
  * @typedef {import('../PublicClientType.js').Client} Client
@@ -29,12 +29,16 @@ function formatTransaction(tx) {
 		gas: hexToBigInt(tx.gas),
 		gasPrice: tx.gasPrice ? hexToBigInt(tx.gasPrice) : undefined,
 		maxFeePerGas: tx.maxFeePerGas ? hexToBigInt(tx.maxFeePerGas) : undefined,
-		maxPriorityFeePerGas: tx.maxPriorityFeePerGas ? hexToBigInt(tx.maxPriorityFeePerGas) : undefined,
+		maxPriorityFeePerGas: tx.maxPriorityFeePerGas
+			? hexToBigInt(tx.maxPriorityFeePerGas)
+			: undefined,
 		hash: tx.hash,
 		input: tx.input,
 		nonce: Number(hexToBigInt(tx.nonce)),
 		to: tx.to,
-		transactionIndex: tx.transactionIndex ? Number(hexToBigInt(tx.transactionIndex)) : null,
+		transactionIndex: tx.transactionIndex
+			? Number(hexToBigInt(tx.transactionIndex))
+			: null,
 		value: hexToBigInt(tx.value),
 		type: tx.type,
 		accessList: tx.accessList,
@@ -74,8 +78,12 @@ export async function getTransaction(client, params) {
 			method: "eth_getTransactionByBlockHashAndIndex",
 			params: [blockHash, numberToHex(BigInt(index))],
 		});
-	} else if ((blockNumber !== undefined || blockTag) && typeof index === "number") {
-		const blockId = typeof blockNumber === "bigint" ? numberToHex(blockNumber) : blockTag;
+	} else if (
+		(blockNumber !== undefined || blockTag) &&
+		typeof index === "number"
+	) {
+		const blockId =
+			typeof blockNumber === "bigint" ? numberToHex(blockNumber) : blockTag;
 		transaction = await client.request({
 			method: "eth_getTransactionByBlockNumberAndIndex",
 			params: [blockId, numberToHex(BigInt(index))],

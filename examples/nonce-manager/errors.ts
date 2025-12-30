@@ -35,10 +35,11 @@ export class NonceTooLowError extends NonceError {
 		public readonly actual: number,
 		context?: { address?: string; chainId?: number },
 	) {
-		super(
-			`Nonce too low: expected >= ${expected}, got ${actual}`,
-			{ ...context, expected, actual },
-		);
+		super(`Nonce too low: expected >= ${expected}, got ${actual}`, {
+			...context,
+			expected,
+			actual,
+		});
 		Object.setPrototypeOf(this, NonceTooLowError.prototype);
 	}
 }
@@ -54,10 +55,11 @@ export class NonceGapError extends NonceError {
 		public readonly actual: number,
 		context?: { address?: string; chainId?: number },
 	) {
-		super(
-			`Nonce gap detected: expected ${expected}, got ${actual}`,
-			{ ...context, expected, actual },
-		);
+		super(`Nonce gap detected: expected ${expected}, got ${actual}`, {
+			...context,
+			expected,
+			actual,
+		});
 		Object.setPrototypeOf(this, NonceGapError.prototype);
 	}
 }

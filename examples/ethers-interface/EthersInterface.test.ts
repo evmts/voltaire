@@ -1,17 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	Interface,
-	FunctionFragment,
-	EventFragment,
-	ErrorFragment,
-	ConstructorFragment,
-	ParamType,
-	LogDescription,
-	TransactionDescription,
-	ErrorDescription,
-	Indexed,
-	FragmentNotFoundError,
 	AmbiguousFragmentError,
+	ConstructorFragment,
+	ErrorDescription,
+	ErrorFragment,
+	EventFragment,
+	FragmentNotFoundError,
+	FunctionFragment,
+	Indexed,
+	Interface,
+	LogDescription,
+	ParamType,
+	TransactionDescription,
 } from "./index.js";
 
 // =============================================================================
@@ -180,7 +180,9 @@ describe("Format Methods", () => {
 		const iface = new Interface(ERC20_ABI);
 		const formatted = iface.format(false);
 
-		expect(formatted).toContain("function transfer(address to, uint256 amount) returns (bool)");
+		expect(formatted).toContain(
+			"function transfer(address to, uint256 amount) returns (bool)",
+		);
 	});
 
 	it("should format as minimal", () => {
@@ -302,7 +304,7 @@ describe("Event Methods", () => {
 
 	it("should get event by topic hash", () => {
 		const transfer = iface.getEvent("Transfer");
-		const ev = iface.getEvent(transfer!.topicHash);
+		const ev = iface.getEvent(transfer?.topicHash);
 
 		expect(ev?.name).toBe("Transfer");
 	});
@@ -393,7 +395,9 @@ describe("Function Encoding/Decoding", () => {
 		const decoded = iface.decodeFunctionData("transfer", data);
 
 		// Voltaire returns lowercase addresses
-		expect((decoded[0] as string).toLowerCase()).toBe("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+		expect((decoded[0] as string).toLowerCase()).toBe(
+			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+		);
 		expect(decoded[1]).toBe(1000n);
 	});
 
@@ -439,8 +443,12 @@ describe("Event Encoding/Decoding", () => {
 		const decoded = iface.decodeEventLog("Transfer", data, topics);
 
 		// Voltaire returns lowercase addresses
-		expect((decoded[0] as string).toLowerCase()).toBe("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
-		expect((decoded[1] as string).toLowerCase()).toBe("0x1234567890123456789012345678901234567890");
+		expect((decoded[0] as string).toLowerCase()).toBe(
+			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+		);
+		expect((decoded[1] as string).toLowerCase()).toBe(
+			"0x1234567890123456789012345678901234567890",
+		);
 		expect(decoded[2]).toBe(1000n);
 	});
 
@@ -451,7 +459,7 @@ describe("Event Encoding/Decoding", () => {
 		]);
 
 		expect(topics.length).toBe(2);
-		expect(topics[0]).toBe(iface.getEvent("Transfer")!.topicHash);
+		expect(topics[0]).toBe(iface.getEvent("Transfer")?.topicHash);
 		expect(typeof topics[1]).toBe("string");
 	});
 });
@@ -524,7 +532,9 @@ describe("Parsing Methods", () => {
 		expect(parsed).toBeInstanceOf(TransactionDescription);
 		expect(parsed?.name).toBe("transfer");
 		// Voltaire returns lowercase addresses
-		expect((parsed?.args[0] as string).toLowerCase()).toBe("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+		expect((parsed?.args[0] as string).toLowerCase()).toBe(
+			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+		);
 		expect(parsed?.args[1]).toBe(1000n);
 		expect(parsed?.value).toBe(0n);
 	});
@@ -551,7 +561,9 @@ describe("Parsing Methods", () => {
 
 	it("should return null for unknown log", () => {
 		const parsed = iface.parseLog({
-			topics: ["0x1234567890123456789012345678901234567890123456789012345678901234"],
+			topics: [
+				"0x1234567890123456789012345678901234567890123456789012345678901234",
+			],
 			data: "0x",
 		});
 
@@ -621,11 +633,14 @@ describe("ParamType", () => {
 	});
 
 	it("should format in different modes", () => {
-		const param = ParamType.from({
-			type: "uint256",
-			name: "amount",
-			indexed: true,
-		}, true);
+		const param = ParamType.from(
+			{
+				type: "uint256",
+				name: "amount",
+				indexed: true,
+			},
+			true,
+		);
 
 		expect(param.format("sighash")).toBe("uint256");
 		expect(param.format("minimal")).toBe("uint256 indexed");
@@ -710,9 +725,13 @@ describe("Fragment Classes", () => {
 
 describe("Indexed", () => {
 	it("should create Indexed value", () => {
-		const indexed = new Indexed("0x1234567890123456789012345678901234567890123456789012345678901234");
+		const indexed = new Indexed(
+			"0x1234567890123456789012345678901234567890123456789012345678901234",
+		);
 
-		expect(indexed.hash).toBe("0x1234567890123456789012345678901234567890123456789012345678901234");
+		expect(indexed.hash).toBe(
+			"0x1234567890123456789012345678901234567890123456789012345678901234",
+		);
 		expect(indexed._isIndexed).toBe(true);
 	});
 

@@ -30,7 +30,8 @@ export const defaultParameters = [
  */
 function getTransactionType(request) {
 	if (request.authorizationList) return "eip7702";
-	if (request.blobs || request.blobVersionedHashes || request.maxFeePerBlobGas) return "eip4844";
+	if (request.blobs || request.blobVersionedHashes || request.maxFeePerBlobGas)
+		return "eip4844";
 	if (request.maxFeePerGas || request.maxPriorityFeePerGas) return "eip1559";
 	if (request.accessList) return "eip2930";
 	if (request.gasPrice) return "legacy";
@@ -133,7 +134,8 @@ function formatRequestForEstimate(request) {
 	if (request.from) formatted.from = request.from;
 	if (request.to) formatted.to = request.to;
 	if (request.data) formatted.data = request.data;
-	if (request.value !== undefined) formatted.value = `0x${request.value.toString(16)}`;
+	if (request.value !== undefined)
+		formatted.value = `0x${request.value.toString(16)}`;
 	return formatted;
 }
 
@@ -165,6 +167,7 @@ function formatRequestForEstimate(request) {
  * // { to: '0x...', value: 1n, gas: 21000n, nonce: 5, ... }
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: viem compatibility
 export async function prepareTransactionRequest(client, args) {
 	const {
 		account: account_ = client.account,
@@ -206,7 +209,10 @@ export async function prepareTransactionRequest(client, args) {
 	}
 
 	// Determine transaction type if needed
-	if ((parameters.includes("fees") || parameters.includes("type")) && type === undefined) {
+	if (
+		(parameters.includes("fees") || parameters.includes("type")) &&
+		type === undefined
+	) {
 		request.type = getTransactionType(request);
 	}
 
@@ -215,9 +221,16 @@ export async function prepareTransactionRequest(client, args) {
 		const block = await getBlock(client);
 		const isEip1559Network = block?.baseFeePerGas !== undefined;
 
-		if (request.type !== "legacy" && request.type !== "eip2930" && isEip1559Network) {
+		if (
+			request.type !== "legacy" &&
+			request.type !== "eip2930" &&
+			isEip1559Network
+		) {
 			// EIP-1559 fees
-			if (request.maxFeePerGas === undefined || request.maxPriorityFeePerGas === undefined) {
+			if (
+				request.maxFeePerGas === undefined ||
+				request.maxPriorityFeePerGas === undefined
+			) {
 				const fees = await estimateFeesPerGas(client, block);
 				if (request.maxPriorityFeePerGas === undefined) {
 					request.maxPriorityFeePerGas = fees.maxPriorityFeePerGas;
@@ -240,7 +253,7 @@ export async function prepareTransactionRequest(client, args) {
 	}
 
 	// Clean up
-	delete request.parameters;
+	request.parameters = undefined;
 
 	return request;
 }
@@ -253,7 +266,11 @@ export async function prepareTransactionRequest(client, args) {
  * @param {Function} deps.getChainId
  * @returns {Function}
  */
-export function PrepareTransactionRequest({ parseAccount: parseAccountFn, getChainId: getChainIdFn }) {
+export function PrepareTransactionRequest({
+	parseAccount: parseAccountFn,
+	getChainId: getChainIdFn,
+}) {
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: viem compatibility
 	return async function prepareTransactionRequest(client, args) {
 		const {
 			account: account_ = client.account,
@@ -289,7 +306,10 @@ export function PrepareTransactionRequest({ parseAccount: parseAccountFn, getCha
 			}
 		}
 
-		if ((parameters.includes("fees") || parameters.includes("type")) && type === undefined) {
+		if (
+			(parameters.includes("fees") || parameters.includes("type")) &&
+			type === undefined
+		) {
 			request.type = getTransactionType(request);
 		}
 
@@ -297,8 +317,15 @@ export function PrepareTransactionRequest({ parseAccount: parseAccountFn, getCha
 			const block = await getBlock(client);
 			const isEip1559Network = block?.baseFeePerGas !== undefined;
 
-			if (request.type !== "legacy" && request.type !== "eip2930" && isEip1559Network) {
-				if (request.maxFeePerGas === undefined || request.maxPriorityFeePerGas === undefined) {
+			if (
+				request.type !== "legacy" &&
+				request.type !== "eip2930" &&
+				isEip1559Network
+			) {
+				if (
+					request.maxFeePerGas === undefined ||
+					request.maxPriorityFeePerGas === undefined
+				) {
 					const fees = await estimateFeesPerGas(client, block);
 					if (request.maxPriorityFeePerGas === undefined) {
 						request.maxPriorityFeePerGas = fees.maxPriorityFeePerGas;
@@ -318,7 +345,7 @@ export function PrepareTransactionRequest({ parseAccount: parseAccountFn, getCha
 			request.gas = await estimateGas(client, request);
 		}
 
-		delete request.parameters;
+		request.parameters = undefined;
 
 		return request;
 	};

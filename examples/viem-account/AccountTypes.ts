@@ -14,9 +14,7 @@ export type Hex = `0x${string}`;
 /**
  * Message formats for signMessage
  */
-export type SignableMessage =
-	| string
-	| { raw: Hex | Uint8Array };
+export type SignableMessage = string | { raw: Hex | Uint8Array };
 
 /**
  * EIP-712 Domain separator
@@ -41,7 +39,10 @@ export interface TypeProperty {
  * EIP-712 Typed data definition
  */
 export interface TypedDataDefinition<
-	TTypes extends Record<string, TypeProperty[]> = Record<string, TypeProperty[]>,
+	TTypes extends Record<string, TypeProperty[]> = Record<
+		string,
+		TypeProperty[]
+	>,
 	TPrimaryType extends string = string,
 > {
 	domain?: EIP712Domain;
@@ -103,7 +104,9 @@ export interface CustomSource {
 	address: string;
 	nonceManager?: NonceManager;
 	sign?: (params: { hash: Hex }) => Promise<Hex>;
-	signAuthorization?: (params: AuthorizationRequest) => Promise<SignedAuthorization | Hex>;
+	signAuthorization?: (
+		params: AuthorizationRequest,
+	) => Promise<SignedAuthorization | Hex>;
 	signMessage: (params: { message: SignableMessage }) => Promise<Hex>;
 	signTransaction: <T>(
 		transaction: T,
@@ -135,7 +138,9 @@ export interface LocalAccount<
 	type: "local";
 	nonceManager?: NonceManager;
 	sign: (params: { hash: Hex }) => Promise<Hex>;
-	signAuthorization: (params: AuthorizationRequest) => Promise<SignedAuthorization>;
+	signAuthorization: (
+		params: AuthorizationRequest,
+	) => Promise<SignedAuthorization>;
 	signMessage: (params: { message: SignableMessage }) => Promise<Hex>;
 	signTransaction: <T>(
 		transaction: T,

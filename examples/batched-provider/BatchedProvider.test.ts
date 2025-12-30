@@ -4,13 +4,13 @@
  * Comprehensive test suite for the batched provider abstraction.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createBatchedProvider, wrapProvider } from "./BatchedProvider.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createBatchScheduler } from "./BatchScheduler.js";
+import { createBatchedProvider, wrapProvider } from "./BatchedProvider.js";
 import type {
+	EIP1193Provider,
 	JsonRpcRequest,
 	JsonRpcResponse,
-	EIP1193Provider,
 } from "./BatchedProviderTypes.js";
 
 describe("BatchScheduler", () => {
@@ -53,11 +53,13 @@ describe("BatchScheduler", () => {
 	});
 
 	it("should flush immediately when maxBatchSize is reached", async () => {
-		const execute = vi.fn().mockImplementation((requests: JsonRpcRequest[]) =>
-			Promise.resolve(
-				requests.map((r) => ({ jsonrpc: "2.0", id: r.id, result: r.id })),
-			),
-		);
+		const execute = vi
+			.fn()
+			.mockImplementation((requests: JsonRpcRequest[]) =>
+				Promise.resolve(
+					requests.map((r) => ({ jsonrpc: "2.0", id: r.id, result: r.id })),
+				),
+			);
 
 		const scheduler = createBatchScheduler({
 			wait: 1000,
@@ -183,9 +185,9 @@ describe("BatchScheduler", () => {
 	});
 
 	it("should force flush with flush()", async () => {
-		const execute = vi.fn().mockResolvedValue([
-			{ jsonrpc: "2.0", id: 1, result: "flushed" },
-		]);
+		const execute = vi
+			.fn()
+			.mockResolvedValue([{ jsonrpc: "2.0", id: 1, result: "flushed" }]);
 
 		const scheduler = createBatchScheduler({
 			wait: 1000,
@@ -247,7 +249,7 @@ describe("BatchedProvider", () => {
 	});
 
 	it("should throw if neither http nor provider is specified", () => {
-		expect(() => createBatchedProvider({} as any)).toThrow(
+		expect(() => createBatchedProvider({} as Record<string, never>)).toThrow(
 			"Either http.url or provider must be specified",
 		);
 	});
@@ -465,8 +467,7 @@ describe("Edge cases", () => {
 	it("should handle empty params", async () => {
 		const mockFetch = vi.fn().mockResolvedValue({
 			ok: true,
-			json: () =>
-				Promise.resolve([{ jsonrpc: "2.0", id: 1, result: "0x1" }]),
+			json: () => Promise.resolve([{ jsonrpc: "2.0", id: 1, result: "0x1" }]),
 		});
 
 		const provider = createBatchedProvider({
@@ -487,8 +488,7 @@ describe("Edge cases", () => {
 	it("should handle single response (not array)", async () => {
 		const mockFetch = vi.fn().mockResolvedValue({
 			ok: true,
-			json: () =>
-				Promise.resolve({ jsonrpc: "2.0", id: 1, result: "0x1" }),
+			json: () => Promise.resolve({ jsonrpc: "2.0", id: 1, result: "0x1" }),
 		});
 
 		const provider = createBatchedProvider({

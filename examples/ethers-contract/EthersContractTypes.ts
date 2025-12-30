@@ -60,7 +60,7 @@ export type ExtractWriteFunctions<TAbi extends readonly Item[]> = Extract<
  */
 export type ExtractFunctions<TAbi extends readonly Item[]> = Extract<
 	TAbi[number],
-	FunctionType<string, any, any, any>
+	FunctionType<string, string, readonly Parameter[], readonly Parameter[]>
 >;
 
 /**
@@ -77,7 +77,10 @@ export type ExtractEvents<TAbi extends readonly Item[]> = Extract<
 export type GetFunction<
 	TAbi extends readonly Item[],
 	TName extends string,
-> = Extract<TAbi[number], FunctionType<TName, any, any, any>>;
+> = Extract<
+	TAbi[number],
+	FunctionType<TName, string, readonly Parameter[], readonly Parameter[]>
+>;
 
 /**
  * Get event from ABI by name
@@ -85,7 +88,7 @@ export type GetFunction<
 export type GetEvent<
 	TAbi extends readonly Item[],
 	TName extends string,
-> = Extract<TAbi[number], EventType<TName, any>>;
+> = Extract<TAbi[number], EventType<TName, readonly Parameter[]>>;
 
 // ============================================================================
 // Output Types
@@ -223,7 +226,10 @@ export interface PreparedTopicFilter<TEvent extends EventType = EventType> {
  * Event listener function
  */
 export type ContractEventListener<TEvent extends EventType = EventType> = (
-	...args: [...ParametersToPrimitiveTypes<TEvent["inputs"]>, DecodedEventLog<TEvent>]
+	...args: [
+		...ParametersToPrimitiveTypes<TEvent["inputs"]>,
+		DecodedEventLog<TEvent>,
+	]
 ) => void;
 
 // ============================================================================
@@ -329,7 +335,9 @@ export type ContractFilters<TAbi extends readonly Item[]> = {
 /**
  * Ethers-style Contract instance
  */
-export interface EthersContract<TAbi extends readonly Item[] = readonly Item[]> {
+export interface EthersContract<
+	TAbi extends readonly Item[] = readonly Item[],
+> {
 	/** Original target (address or ENS) */
 	readonly target: string;
 
@@ -433,9 +441,7 @@ export interface ContractFactoryInterface<
 	attach(target: string): EthersContract<TAbi>;
 
 	/** Build deployment transaction */
-	getDeployTransaction(
-		...args: unknown[]
-	): Promise<ContractTransactionRequest>;
+	getDeployTransaction(...args: unknown[]): Promise<ContractTransactionRequest>;
 
 	/** Deploy contract */
 	deploy(...args: unknown[]): Promise<EthersContract<TAbi>>;

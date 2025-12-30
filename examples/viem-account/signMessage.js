@@ -39,7 +39,9 @@ function toMessageBytes(message) {
 	}
 	if (typeof message.raw === "string") {
 		// Hex string - decode
-		const hex = message.raw.startsWith("0x") ? message.raw.slice(2) : message.raw;
+		const hex = message.raw.startsWith("0x")
+			? message.raw.slice(2)
+			: message.raw;
 		const bytes = new Uint8Array(hex.length / 2);
 		for (let i = 0; i < bytes.length; i++) {
 			bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
@@ -60,7 +62,9 @@ function serializeSignature(signature) {
 	bytes.set(signature.r, 0);
 	bytes.set(signature.s, 32);
 	bytes[64] = signature.v;
-	return `0x${Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("")}`;
+	return `0x${Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 /**

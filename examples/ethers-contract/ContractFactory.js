@@ -12,7 +12,7 @@ import * as Constructor from "../../src/primitives/Abi/constructor/index.js";
 import * as Hex from "../../src/primitives/Hex/index.js";
 import * as TransactionHash from "../../src/primitives/TransactionHash/index.js";
 import { EthersContract } from "./EthersContract.js";
-import { UnsupportedOperationError, InvalidArgumentError } from "./errors.js";
+import { InvalidArgumentError, UnsupportedOperationError } from "./errors.js";
 
 /**
  * @typedef {import('./EthersContractTypes.js').ContractRunner} ContractRunner
@@ -55,12 +55,13 @@ function normalizeBytecode(bytecode) {
 		return Hex.fromBytes(bytecode);
 	}
 
-	if (typeof bytecode === "object" && bytecode !== null && "object" in bytecode) {
+	let bc = bytecode;
+	if (typeof bc === "object" && bc !== null && "object" in bc) {
 		// Solidity compiler output format
-		bytecode = bytecode.object;
+		bc = bc.object;
 	}
 
-	if (typeof bytecode !== "string") {
+	if (typeof bc !== "string") {
 		throw new InvalidArgumentError(
 			"bytecode",
 			"bytecode must be a hex string, Uint8Array, or { object: string }",
@@ -68,12 +69,12 @@ function normalizeBytecode(bytecode) {
 		);
 	}
 
-	if (!bytecode.startsWith("0x")) {
-		bytecode = "0x" + bytecode;
+	if (!bc.startsWith("0x")) {
+		bc = `0x${bc}`;
 	}
 
 	// Validate hex
-	if (!/^0x[0-9a-fA-F]*$/.test(bytecode)) {
+	if (!/^0x[0-9a-fA-F]*$/.test(bc)) {
 		throw new InvalidArgumentError(
 			"bytecode",
 			"invalid bytecode hex string",
@@ -81,7 +82,7 @@ function normalizeBytecode(bytecode) {
 		);
 	}
 
-	return bytecode.toLowerCase();
+	return bc.toLowerCase();
 }
 
 /**
@@ -112,10 +113,10 @@ function getCreateAddress(from, nonce) {
 	// Real implementation should use keccak256
 	let hash = 0n;
 	for (let i = 0; i < combined.length; i++) {
-		hash = (hash * 31n + BigInt(combined.charCodeAt(i))) % (2n ** 160n);
+		hash = (hash * 31n + BigInt(combined.charCodeAt(i))) % 2n ** 160n;
 	}
 
-	return "0x" + hash.toString(16).padStart(40, "0");
+	return `0x${hash.toString(16).padStart(40, "0")}`;
 }
 
 /**
@@ -205,7 +206,10 @@ export function ContractFactory(options) {
 		// Encode constructor arguments
 		let data = bytecode;
 		if (constructorArgs.length > 0 && constructorFragment) {
-			const encodedArgs = Constructor.encodeParams(constructorFragment, constructorArgs);
+			const encodedArgs = Constructor.encodeParams(
+				constructorFragment,
+				constructorArgs,
+			);
 			const encodedHex = Hex.fromBytes(encodedArgs);
 			// Remove 0x prefix from encoded args and append
 			data = bytecode + encodedHex.slice(2);
@@ -253,7 +257,9 @@ export function ContractFactory(options) {
 			});
 			nonce = Number.parseInt(nonceHex, 16);
 		} catch (error) {
-			throw new UnsupportedOperationError("deploy - cannot determine deployer address");
+			throw new UnsupportedOperationError(
+				"deploy - cannot determine deployer address",
+			);
 		}
 
 		// Send deployment transaction
@@ -329,25 +335,34 @@ ContractFactory.fromSolidity = (output, runner) => {
 		throw new InvalidArgumentError("output", "bad compiler output", output);
 	}
 
-	if (typeof output === "string") {
-		output = JSON.parse(output);
+	let parsedOutput = output;
+	if (typeof parsedOutput === "string") {
+		parsedOutput = JSON.parse(parsedOutput);
 	}
 
-	const abi = output.abi;
+	const abi = parsedOutput.abi;
 	let bytecode = "";
 
-	if (output.bytecode) {
-		bytecode = output.bytecode;
-	} else if (output.evm && output.evm.bytecode) {
-		bytecode = output.evm.bytecode.object || output.evm.bytecode;
+	if (parsedOutput.bytecode) {
+		bytecode = parsedOutput.bytecode;
+	} else if (parsedOutput.evm?.bytecode) {
+		bytecode = parsedOutput.evm.bytecode.object || parsedOutput.evm.bytecode;
 	}
 
 	if (!abi) {
-		throw new InvalidArgumentError("output", "no ABI found in compiler output", output);
+		throw new InvalidArgumentError(
+			"output",
+			"no ABI found in compiler output",
+			parsedOutput,
+		);
 	}
 
 	if (!bytecode) {
-		throw new InvalidArgumentError("output", "no bytecode found in compiler output", output);
+		throw new InvalidArgumentError(
+			"output",
+			"no bytecode found in compiler output",
+			parsedOutput,
+		);
 	}
 
 	return ContractFactory({

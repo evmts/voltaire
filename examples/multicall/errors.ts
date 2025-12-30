@@ -18,8 +18,7 @@ export class MulticallNotSupportedError extends Error {
 	) {
 		super(
 			message ??
-				`Multicall3 is not available on chain ${chainId ?? "unknown"}. ` +
-					"Provide a custom multicallAddress or use deployless mode.",
+				`Multicall3 is not available on chain ${chainId ?? "unknown"}. Provide a custom multicallAddress or use deployless mode.`,
 		);
 	}
 }
@@ -87,8 +86,7 @@ export class MulticallContractError extends Error {
 		public readonly revertData?: string,
 	) {
 		super(
-			`Call #${contractIndex} to ${functionName} at ${address} reverted` +
-				(revertData ? ` with: ${revertData}` : ""),
+			`Call #${contractIndex} to ${functionName} at ${address} reverted${revertData ? ` with: ${revertData}` : ""}`,
 		);
 	}
 }
@@ -110,8 +108,7 @@ export class MulticallZeroDataError extends Error {
 		public readonly address: string,
 	) {
 		super(
-			`Call #${contractIndex} to ${functionName} at ${address} returned empty data (0x). ` +
-				"The contract may not be deployed or the function may not exist.",
+			`Call #${contractIndex} to ${functionName} at ${address} returned empty data (0x). The contract may not be deployed or the function may not exist.`,
 		);
 	}
 }

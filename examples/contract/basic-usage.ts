@@ -4,8 +4,8 @@
  * Demonstrates creating a Contract instance and using read/write methods.
  */
 
-import { Contract } from "./Contract.js";
 import type { TypedProvider } from "../../src/provider/TypedProvider.js";
+import { Contract } from "./Contract.js";
 
 // ERC20 ABI (minimal)
 const erc20Abi = [

@@ -7,14 +7,14 @@
  */
 
 import { getAddresses } from "./getAddresses.js";
+import { getChainId } from "./getChainId.js";
+import { prepareTransactionRequest } from "./prepareTransactionRequest.js";
 import { requestAddresses } from "./requestAddresses.js";
+import { sendRawTransaction } from "./sendRawTransaction.js";
 import { sendTransaction } from "./sendTransaction.js";
 import { signMessage } from "./signMessage.js";
 import { signTransaction } from "./signTransaction.js";
 import { signTypedData } from "./signTypedData.js";
-import { getChainId } from "./getChainId.js";
-import { prepareTransactionRequest } from "./prepareTransactionRequest.js";
-import { sendRawTransaction } from "./sendRawTransaction.js";
 
 /**
  * Generate a unique identifier
@@ -53,7 +53,8 @@ function walletActions(client) {
 		signTransaction: (args) => signTransaction(client, args),
 		signTypedData: (args) => signTypedData(client, args),
 		getChainId: () => getChainId(client),
-		prepareTransactionRequest: (args) => prepareTransactionRequest(client, args),
+		prepareTransactionRequest: (args) =>
+			prepareTransactionRequest(client, args),
 		sendRawTransaction: (args) => sendRawTransaction(client, args),
 	};
 }
@@ -125,7 +126,10 @@ export function createWalletClient(parameters) {
 
 	// Calculate polling interval based on chain block time
 	const blockTime = chain?.blockTime ?? 12_000;
-	const defaultPollingInterval = Math.min(Math.max(Math.floor(blockTime / 2), 500), 4_000);
+	const defaultPollingInterval = Math.min(
+		Math.max(Math.floor(blockTime / 2), 500),
+		4_000,
+	);
 	const pollingInterval = pollingInterval_ ?? defaultPollingInterval;
 	const cacheTime = cacheTime_ ?? pollingInterval;
 
@@ -171,7 +175,9 @@ export function createWalletClient(parameters) {
 
 	// Add wallet actions and extend capability
 	const actions = walletActions(client);
-	return Object.assign(client, actions, { extend: extend({ ...client, ...actions }) });
+	return Object.assign(client, actions, {
+		extend: extend({ ...client, ...actions }),
+	});
 }
 
 /**
@@ -197,7 +203,10 @@ export function CreateWalletClient({ walletActions: customWalletActions }) {
 
 		const account = account_ ? parseAccount(account_) : undefined;
 		const blockTime = chain?.blockTime ?? 12_000;
-		const defaultPollingInterval = Math.min(Math.max(Math.floor(blockTime / 2), 500), 4_000);
+		const defaultPollingInterval = Math.min(
+			Math.max(Math.floor(blockTime / 2), 500),
+			4_000,
+		);
 		const pollingInterval = pollingInterval_ ?? defaultPollingInterval;
 		const cacheTime = cacheTime_ ?? pollingInterval;
 
@@ -228,7 +237,9 @@ export function CreateWalletClient({ walletActions: customWalletActions }) {
 		}
 
 		const actions = customWalletActions(client);
-		return Object.assign(client, actions, { extend: extend({ ...client, ...actions }) });
+		return Object.assign(client, actions, {
+			extend: extend({ ...client, ...actions }),
+		});
 	};
 }
 

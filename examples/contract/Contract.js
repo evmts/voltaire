@@ -7,12 +7,12 @@
  * @module examples/contract/Contract
  */
 
+import { EventStream } from "../../src/contract/EventStream.js";
 import { Abi } from "../../src/primitives/Abi/Abi.js";
 import * as Event from "../../src/primitives/Abi/event/index.js";
 import { Address } from "../../src/primitives/Address/index.js";
 import * as Hex from "../../src/primitives/Hex/index.js";
 import * as TransactionHash from "../../src/primitives/TransactionHash/index.js";
-import { EventStream } from "../../src/contract/EventStream.js";
 import {
 	ContractEventNotFoundError,
 	ContractFunctionNotFoundError,

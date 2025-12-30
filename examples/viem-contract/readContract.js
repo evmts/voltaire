@@ -42,7 +42,13 @@ import { ContractReadError } from "./errors.js";
  * ```
  */
 export async function readContract(client, parameters) {
-	const { abi: abiItems, address, args = [], functionName, ...rest } = parameters;
+	const {
+		abi: abiItems,
+		address,
+		args = [],
+		functionName,
+		...rest
+	} = parameters;
 
 	// Create ABI instance and encode function call
 	const abi = Abi.Abi(abiItems);

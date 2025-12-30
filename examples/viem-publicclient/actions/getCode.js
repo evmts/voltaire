@@ -6,7 +6,7 @@
  * @module examples/viem-publicclient/actions/getCode
  */
 
-import { numberToHex, normalizeAddress } from "../utils/encoding.js";
+import { normalizeAddress, numberToHex } from "../utils/encoding.js";
 
 /**
  * @typedef {import('../PublicClientType.js').Client} Client
@@ -27,8 +27,12 @@ import { numberToHex, normalizeAddress } from "../utils/encoding.js";
  * });
  * ```
  */
-export async function getCode(client, { address, blockNumber, blockTag = "latest" }) {
-	const blockNumberHex = typeof blockNumber === "bigint" ? numberToHex(blockNumber) : undefined;
+export async function getCode(
+	client,
+	{ address, blockNumber, blockTag = "latest" },
+) {
+	const blockNumberHex =
+		typeof blockNumber === "bigint" ? numberToHex(blockNumber) : undefined;
 
 	const code = await client.request({
 		method: "eth_getCode",

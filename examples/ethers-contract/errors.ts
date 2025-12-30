@@ -14,7 +14,11 @@ export class ContractError extends Error {
 	override readonly name = "ContractError";
 	readonly code: string;
 
-	constructor(message: string, code: string, public readonly info?: unknown) {
+	constructor(
+		message: string,
+		code: string,
+		public readonly info?: unknown,
+	) {
 		super(message);
 		this.code = code;
 	}
@@ -98,11 +102,10 @@ export class FunctionNotFoundError extends ContractError {
 	override readonly name = "FunctionNotFoundError";
 
 	constructor(key: string, args?: unknown[]) {
-		super(
-			`no matching function (key="${key}")`,
-			"INVALID_ARGUMENT",
-			{ key, args },
-		);
+		super(`no matching function (key="${key}")`, "INVALID_ARGUMENT", {
+			key,
+			args,
+		});
 	}
 }
 
@@ -169,11 +172,7 @@ export const PanicReasons: Record<string, string> = {
 export function decodeRevertReason(data: Uint8Array): string | null {
 	if (data.length < 4) return null;
 
-	const selector =
-		`0x${data[0].toString(16).padStart(2, "0")}` +
-		data[1].toString(16).padStart(2, "0") +
-		data[2].toString(16).padStart(2, "0") +
-		data[3].toString(16).padStart(2, "0");
+	const selector = `0x${data[0].toString(16).padStart(2, "0")}${data[1].toString(16).padStart(2, "0")}${data[2].toString(16).padStart(2, "0")}${data[3].toString(16).padStart(2, "0")}`;
 
 	// Error(string) - 0x08c379a0
 	if (selector === "0x08c379a0" && data.length >= 68) {
@@ -181,10 +180,9 @@ export function decodeRevertReason(data: Uint8Array): string | null {
 			const offset = 4 + 32; // skip selector + offset
 			const length = Number(
 				BigInt(
-					"0x" +
-						Array.from(data.slice(offset, offset + 32))
-							.map((b) => b.toString(16).padStart(2, "0"))
-							.join(""),
+					`0x${Array.from(data.slice(offset, offset + 32))
+						.map((b) => b.toString(16).padStart(2, "0"))
+						.join("")}`,
 				),
 			);
 			const msgBytes = data.slice(offset + 32, offset + 32 + length);
@@ -200,10 +198,9 @@ export function decodeRevertReason(data: Uint8Array): string | null {
 		try {
 			const code = Number(
 				BigInt(
-					"0x" +
-						Array.from(data.slice(4, 36))
-							.map((b) => b.toString(16).padStart(2, "0"))
-							.join(""),
+					`0x${Array.from(data.slice(4, 36))
+						.map((b) => b.toString(16).padStart(2, "0"))
+						.join("")}`,
 				),
 			);
 			const reason = PanicReasons[code.toString()] || "unknown panic code";

@@ -35,17 +35,14 @@ export type {
 	BatchedProviderOptions,
 	BatchOptions,
 	BatchScheduler,
-
 	// JSON-RPC types
 	JsonRpcRequest,
 	JsonRpcResponse,
 	JsonRpcError,
 	RequestArguments,
-
 	// Provider types
 	EIP1193Provider,
 	HttpTransportOptions,
-
 	// Internal types
 	PendingRequest,
 	BatchStats,

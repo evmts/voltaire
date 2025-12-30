@@ -7,22 +7,22 @@
  * @module examples/viem-testclient/createTestClient
  */
 
+import { dropTransaction } from "./dropTransaction.js";
+import { dumpState } from "./dumpState.js";
+import { impersonateAccount } from "./impersonateAccount.js";
+import { increaseTime } from "./increaseTime.js";
+import { loadState } from "./loadState.js";
 import { mine } from "./mine.js";
+import { reset } from "./reset.js";
+import { revert } from "./revert.js";
+import { setAutomine } from "./setAutomine.js";
 import { setBalance } from "./setBalance.js";
 import { setCode } from "./setCode.js";
-import { setStorageAt } from "./setStorageAt.js";
-import { setNonce } from "./setNonce.js";
-import { impersonateAccount } from "./impersonateAccount.js";
-import { stopImpersonatingAccount } from "./stopImpersonatingAccount.js";
-import { snapshot } from "./snapshot.js";
-import { revert } from "./revert.js";
-import { increaseTime } from "./increaseTime.js";
 import { setNextBlockTimestamp } from "./setNextBlockTimestamp.js";
-import { dropTransaction } from "./dropTransaction.js";
-import { reset } from "./reset.js";
-import { dumpState } from "./dumpState.js";
-import { loadState } from "./loadState.js";
-import { setAutomine } from "./setAutomine.js";
+import { setNonce } from "./setNonce.js";
+import { setStorageAt } from "./setStorageAt.js";
+import { snapshot } from "./snapshot.js";
+import { stopImpersonatingAccount } from "./stopImpersonatingAccount.js";
 
 /**
  * @typedef {import('./TestClientTypes.js').TestClientOptions} TestClientOptions
@@ -80,12 +80,7 @@ import { setAutomine } from "./setAutomine.js";
  * ```
  */
 export function createTestClient(options) {
-	const {
-		mode,
-		provider,
-		key = "test",
-		name = "Test Client",
-	} = options;
+	const { mode, provider, key = "test", name = "Test Client" } = options;
 
 	if (!provider) {
 		throw new Error("Provider is required for createTestClient");

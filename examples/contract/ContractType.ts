@@ -7,6 +7,7 @@
  * @module examples/contract/ContractType
  */
 
+import type { EventStream } from "../../src/contract/EventStreamType.js";
 import type { Abi } from "../../src/primitives/Abi/AbiConstructor.js";
 import type { Item } from "../../src/primitives/Abi/AbiType.js";
 import type {
@@ -24,7 +25,6 @@ import type { BlockNumberType } from "../../src/primitives/BlockNumber/BlockNumb
 import type { HashType } from "../../src/primitives/Hash/HashType.js";
 import type { TransactionHashType } from "../../src/primitives/TransactionHash/TransactionHashType.js";
 import type { TypedProvider } from "../../src/provider/TypedProvider.js";
-import type { EventStream } from "../../src/contract/EventStreamType.js";
 
 /**
  * Extract view/pure functions from ABI
@@ -66,7 +66,10 @@ export type ExtractEvents<TAbi extends readonly Item[]> = Extract<
 export type GetFunction<
 	TAbi extends readonly Item[],
 	TName extends string,
-> = Extract<TAbi[number], FunctionType<TName, any, any, any>>;
+> = Extract<
+	TAbi[number],
+	FunctionType<TName, string, readonly Parameter[], readonly Parameter[]>
+>;
 
 /**
  * Get event from ABI by name
@@ -74,7 +77,7 @@ export type GetFunction<
 export type GetEvent<
 	TAbi extends readonly Item[],
 	TName extends string,
-> = Extract<TAbi[number], EventType<TName, any>>;
+> = Extract<TAbi[number], EventType<TName, readonly Parameter[]>>;
 
 /**
  * Unwrap single-element tuple to just the value

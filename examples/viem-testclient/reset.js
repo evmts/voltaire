@@ -41,7 +41,8 @@ export async function reset(client, { blockNumber, jsonRpcUrl } = {}) {
 		params: [
 			{
 				forking: {
-					blockNumber: blockNumber !== undefined ? Number(blockNumber) : undefined,
+					blockNumber:
+						blockNumber !== undefined ? Number(blockNumber) : undefined,
 					jsonRpcUrl,
 				},
 			},

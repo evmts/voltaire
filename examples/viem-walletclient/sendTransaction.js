@@ -41,9 +41,11 @@ function formatTransactionRequest(transaction, chainId) {
 	if (transaction.to) request.to = transaction.to;
 	if (transaction.to === null) request.to = undefined; // Contract deployment
 	if (transaction.data) request.data = transaction.data;
-	if (transaction.value !== undefined) request.value = numberToHex(transaction.value);
+	if (transaction.value !== undefined)
+		request.value = numberToHex(transaction.value);
 	if (transaction.gas !== undefined) request.gas = numberToHex(transaction.gas);
-	if (transaction.nonce !== undefined) request.nonce = numberToHex(transaction.nonce);
+	if (transaction.nonce !== undefined)
+		request.nonce = numberToHex(transaction.nonce);
 	if (chainId !== undefined) request.chainId = numberToHex(chainId);
 
 	// Type-specific fields
@@ -54,7 +56,9 @@ function formatTransactionRequest(transaction, chainId) {
 		request.maxFeePerGas = numberToHex(transaction.maxFeePerGas);
 	}
 	if (transaction.maxPriorityFeePerGas !== undefined) {
-		request.maxPriorityFeePerGas = numberToHex(transaction.maxPriorityFeePerGas);
+		request.maxPriorityFeePerGas = numberToHex(
+			transaction.maxPriorityFeePerGas,
+		);
 	}
 	if (transaction.maxFeePerBlobGas !== undefined) {
 		request.maxFeePerBlobGas = numberToHex(transaction.maxFeePerBlobGas);
@@ -255,7 +259,9 @@ export async function sendTransaction(client, parameters) {
 		// Smart accounts not supported directly
 		if (account?.type === "smart") {
 			throw new AccountTypeNotSupportedError({
-				metaMessages: ["Consider using the `sendUserOperation` Action instead."],
+				metaMessages: [
+					"Consider using the `sendUserOperation` Action instead.",
+				],
 				docsPath: "/docs/actions/bundler/sendUserOperation",
 				type: "smart",
 			});
@@ -291,6 +297,7 @@ export function SendTransaction({
 	prepareTransactionRequest: prepareTransactionRequestFn,
 	sendRawTransaction: sendRawTransactionFn,
 }) {
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: viem compatibility
 	return async function sendTransaction(client, parameters) {
 		const {
 			account: account_ = client.account,
@@ -319,7 +326,8 @@ export function SendTransaction({
 		const account = account_ ? parseAccountFn(account_) : null;
 
 		try {
-			const to = parameters.to ?? (parameters.to === null ? undefined : undefined);
+			const to =
+				parameters.to ?? (parameters.to === null ? undefined : undefined);
 
 			if (account?.type === "json-rpc" || account === null) {
 				let chainId;
@@ -376,7 +384,9 @@ export function SendTransaction({
 				});
 
 				const serializer = chain?.serializers?.transaction;
-				const serializedTransaction = await account.signTransaction(request, { serializer });
+				const serializedTransaction = await account.signTransaction(request, {
+					serializer,
+				});
 
 				return sendRawTransactionFn(client, { serializedTransaction });
 			}

@@ -38,7 +38,12 @@ function getRequestId() {
  * ```
  */
 export function http(url, options = {}) {
-	const { timeout = 10_000, retryCount = 3, retryDelay = 150, fetchOptions = {} } = options;
+	const {
+		timeout = 10_000,
+		retryCount = 3,
+		retryDelay = 150,
+		fetchOptions = {},
+	} = options;
 
 	return function httpTransport({ chain, pollingInterval }) {
 		const resolvedUrl = url || chain?.rpcUrls?.default?.http?.[0];
@@ -56,6 +61,7 @@ export function http(url, options = {}) {
 		 * @param {Object} [requestOptions]
 		 * @returns {Promise<unknown>}
 		 */
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: viem compatibility
 		async function request({ method, params = [] }, requestOptions = {}) {
 			const body = JSON.stringify({
 				jsonrpc: "2.0",
@@ -101,7 +107,9 @@ export function http(url, options = {}) {
 				} catch (err) {
 					lastError = err;
 					if (attempt < maxRetries) {
-						await new Promise((resolve) => setTimeout(resolve, retryDelay * (attempt + 1)));
+						await new Promise((resolve) =>
+							setTimeout(resolve, retryDelay * (attempt + 1)),
+						);
 					}
 				}
 			}
@@ -177,7 +185,9 @@ export function custom(provider, options = {}) {
 				} catch (err) {
 					lastError = err;
 					if (attempt < maxRetries) {
-						await new Promise((resolve) => setTimeout(resolve, retryDelay * (attempt + 1)));
+						await new Promise((resolve) =>
+							setTimeout(resolve, retryDelay * (attempt + 1)),
+						);
 					}
 				}
 			}

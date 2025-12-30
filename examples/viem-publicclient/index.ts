@@ -86,25 +86,20 @@ export type {
 	// Block types
 	BlockTag,
 	BlockIdentifier,
-
 	// Chain types
 	Chain,
-
 	// Transport types
 	TransportConfig,
 	TransportValue,
 	Transport,
 	TransportFactory,
-
 	// Request types
 	RequestFn,
 	RequestOptions,
-
 	// Client types
 	ClientConfig,
 	PublicClientConfig,
 	Client,
-
 	// Action parameter types
 	GetBlockNumberParameters,
 	GetBalanceParameters,
@@ -117,7 +112,6 @@ export type {
 	GetCodeParameters,
 	GetStorageAtParameters,
 	GetTransactionCountParameters,
-
 	// Return types
 	Block,
 	Transaction,
@@ -126,7 +120,6 @@ export type {
 	AccessListItem,
 	Withdrawal,
 	CallResult,
-
 	// Public client types
 	PublicActions,
 	PublicClient,

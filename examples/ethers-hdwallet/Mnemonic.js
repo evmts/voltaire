@@ -97,7 +97,7 @@ export class Mnemonic {
 	 * @returns {Mnemonic}
 	 */
 	static fromPhrase(phrase, password, wordlist) {
-		wordlist = wordlist ?? LangEn.wordlist();
+		const wl = wordlist ?? LangEn.wordlist();
 
 		// Normalize whitespace before validation
 		const normalizedInput = phrase
@@ -114,16 +114,10 @@ export class Mnemonic {
 		}
 
 		// Convert to entropy then back to fully normalized phrase
-		const entropy = Mnemonic.phraseToEntropy(normalizedInput, wordlist);
-		const normalizedPhrase = Mnemonic.entropyToPhrase(entropy, wordlist);
+		const entropy = Mnemonic.phraseToEntropy(normalizedInput, wl);
+		const normalizedPhrase = Mnemonic.entropyToPhrase(entropy, wl);
 
-		return new Mnemonic(
-			_guard,
-			entropy,
-			normalizedPhrase,
-			password ?? "",
-			wordlist,
-		);
+		return new Mnemonic(_guard, entropy, normalizedPhrase, password ?? "", wl);
 	}
 
 	/**
@@ -135,7 +129,7 @@ export class Mnemonic {
 	 * @returns {Mnemonic}
 	 */
 	static fromEntropy(_entropy, password, wordlist) {
-		wordlist = wordlist ?? LangEn.wordlist();
+		const wl = wordlist ?? LangEn.wordlist();
 
 		let entropy;
 		if (typeof _entropy === "string") {
@@ -144,7 +138,11 @@ export class Mnemonic {
 			entropy = _entropy;
 		}
 
-		if (entropy.length < 16 || entropy.length > 32 || entropy.length % 4 !== 0) {
+		if (
+			entropy.length < 16 ||
+			entropy.length > 32 ||
+			entropy.length % 4 !== 0
+		) {
 			throw new InvalidEntropyError(
 				"Entropy must be 16, 20, 24, 28, or 32 bytes",
 				{
@@ -156,7 +154,7 @@ export class Mnemonic {
 		const phrase = Bip39.entropyToMnemonic(entropy);
 		const hexEntropy = bytesToHex(entropy);
 
-		return new Mnemonic(_guard, hexEntropy, phrase, password ?? "", wordlist);
+		return new Mnemonic(_guard, hexEntropy, phrase, password ?? "", wl);
 	}
 
 	/**
@@ -213,7 +211,10 @@ export class Mnemonic {
 		const entropyBitString = bits.slice(0, entropyBits);
 		const entropy = new Uint8Array(entropyBytes);
 		for (let i = 0; i < entropyBytes; i++) {
-			entropy[i] = parseInt(entropyBitString.slice(i * 8, (i + 1) * 8), 2);
+			entropy[i] = Number.parseInt(
+				entropyBitString.slice(i * 8, (i + 1) * 8),
+				2,
+			);
 		}
 
 		return bytesToHex(entropy);
@@ -250,7 +251,7 @@ function hexToBytes(hex) {
 	const h = hex.startsWith("0x") ? hex.slice(2) : hex;
 	const bytes = new Uint8Array(h.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
-		bytes[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = Number.parseInt(h.slice(i * 2, i * 2 + 2), 16);
 	}
 	return bytes;
 }
@@ -261,12 +262,9 @@ function hexToBytes(hex) {
  * @returns {string} 0x-prefixed hex
  */
 function bytesToHex(bytes) {
-	return (
-		"0x" +
-		Array.from(bytes)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")
-	);
+	return `0x${Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 export default Mnemonic;

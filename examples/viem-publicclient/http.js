@@ -6,8 +6,8 @@
  * @module examples/viem-publicclient/http
  */
 
-import { RpcRequestError, UrlRequiredError } from "./errors.js";
 import { createTransport } from "./createTransport.js";
+import { RpcRequestError, UrlRequiredError } from "./errors.js";
 
 /**
  * @typedef {import('./PublicClientType.js').Chain} Chain
@@ -34,12 +34,7 @@ let requestId = 0;
  * @returns {TransportFactory} Transport factory
  */
 export function http(url, config = {}) {
-	const {
-		retryCount,
-		retryDelay,
-		timeout = 10_000,
-		fetchOptions,
-	} = config;
+	const { retryCount, retryDelay, timeout = 10_000, fetchOptions } = config;
 
 	return ({ chain, pollingInterval }) => {
 		const rpcUrl = url ?? chain?.rpcUrls.default.http[0];
@@ -51,6 +46,7 @@ export function http(url, config = {}) {
 		 * @param {{ method: string; params?: unknown[] }} args
 		 * @returns {Promise<unknown>}
 		 */
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: viem compatibility
 		async function request({ method, params }) {
 			const body = {
 				jsonrpc: "2.0",

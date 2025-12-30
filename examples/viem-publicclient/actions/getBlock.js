@@ -7,7 +7,7 @@
  */
 
 import { BlockNotFoundError } from "../errors.js";
-import { numberToHex, hexToBigInt, hexToNumber } from "../utils/encoding.js";
+import { hexToBigInt, hexToNumber, numberToHex } from "../utils/encoding.js";
 
 /**
  * @typedef {import('../PublicClientType.js').Client} Client
@@ -23,10 +23,14 @@ import { numberToHex, hexToBigInt, hexToNumber } from "../utils/encoding.js";
  */
 function formatBlock(block) {
 	return {
-		baseFeePerGas: block.baseFeePerGas ? hexToBigInt(block.baseFeePerGas) : undefined,
+		baseFeePerGas: block.baseFeePerGas
+			? hexToBigInt(block.baseFeePerGas)
+			: undefined,
 		blobGasUsed: block.blobGasUsed ? hexToBigInt(block.blobGasUsed) : undefined,
 		difficulty: block.difficulty ? hexToBigInt(block.difficulty) : undefined,
-		excessBlobGas: block.excessBlobGas ? hexToBigInt(block.excessBlobGas) : undefined,
+		excessBlobGas: block.excessBlobGas
+			? hexToBigInt(block.excessBlobGas)
+			: undefined,
 		extraData: block.extraData,
 		gasLimit: hexToBigInt(block.gasLimit),
 		gasUsed: hexToBigInt(block.gasUsed),
@@ -43,7 +47,9 @@ function formatBlock(block) {
 		size: hexToBigInt(block.size),
 		stateRoot: block.stateRoot,
 		timestamp: hexToBigInt(block.timestamp),
-		totalDifficulty: block.totalDifficulty ? hexToBigInt(block.totalDifficulty) : undefined,
+		totalDifficulty: block.totalDifficulty
+			? hexToBigInt(block.totalDifficulty)
+			: undefined,
 		transactions: block.transactions,
 		transactionsRoot: block.transactionsRoot,
 		uncles: block.uncles ?? [],
@@ -71,7 +77,12 @@ function formatBlock(block) {
  * ```
  */
 export async function getBlock(client, params = {}) {
-	const { blockHash, blockNumber, blockTag = "latest", includeTransactions = false } = params;
+	const {
+		blockHash,
+		blockNumber,
+		blockTag = "latest",
+		includeTransactions = false,
+	} = params;
 
 	let block;
 
@@ -81,7 +92,8 @@ export async function getBlock(client, params = {}) {
 			params: [blockHash, includeTransactions],
 		});
 	} else {
-		const blockId = typeof blockNumber === "bigint" ? numberToHex(blockNumber) : blockTag;
+		const blockId =
+			typeof blockNumber === "bigint" ? numberToHex(blockNumber) : blockTag;
 		block = await client.request({
 			method: "eth_getBlockByNumber",
 			params: [blockId, includeTransactions],

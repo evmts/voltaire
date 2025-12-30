@@ -9,11 +9,11 @@
  */
 
 import * as Hex from "../../src/primitives/Hex/index.js";
-import { readContract } from "./readContract.js";
-import { writeContract } from "./writeContract.js";
-import { simulateContract } from "./simulateContract.js";
 import { estimateContractGas } from "./estimateContractGas.js";
+import { readContract } from "./readContract.js";
+import { simulateContract } from "./simulateContract.js";
 import { watchContractEvent } from "./watchContractEvent.js";
+import { writeContract } from "./writeContract.js";
 
 /**
  * @typedef {import('./ViemContractTypes.js').GetContractParameters} GetContractParameters
@@ -34,10 +34,9 @@ import { watchContractEvent } from "./watchContractEvent.js";
 export function getFunctionParameters(values) {
 	const hasArgs = values.length > 0 && Array.isArray(values[0]);
 	const args = hasArgs ? /** @type {unknown[]} */ (values[0]) : [];
-	const options =
-		/** @type {Record<string, unknown>} */ (
-			(hasArgs ? values[1] : values[0]) ?? {}
-		);
+	const options = /** @type {Record<string, unknown>} */ (
+		(hasArgs ? values[1] : values[0]) ?? {}
+	);
 	return { args, options };
 }
 
@@ -84,10 +83,9 @@ export function getEventParameters(values, abiEvent) {
 	}
 
 	const args = hasArgs ? values[0] : undefined;
-	const options =
-		/** @type {Record<string, unknown>} */ (
-			(hasArgs ? values[1] : values[0]) ?? {}
-		);
+	const options = /** @type {Record<string, unknown>} */ (
+		(hasArgs ? values[1] : values[0]) ?? {}
+	);
 	return { args, options };
 }
 
@@ -126,6 +124,7 @@ export function getEventParameters(values, abiEvent) {
  * });
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: compatibility layer
 export function getContract(params) {
 	const { abi, address, client: client_ } = params;
 

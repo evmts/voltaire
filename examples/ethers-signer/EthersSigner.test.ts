@@ -1,18 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EthersSigner } from "./EthersSigner.js";
-import {
-	MissingProviderError,
-	InvalidPrivateKeyError,
-	AddressMismatchError,
-	ChainIdMismatchError,
-	InvalidTransactionError,
-} from "./errors.js";
 import type {
-	SignerProvider,
-	TransactionRequest,
 	FeeData,
 	Network,
+	SignerProvider,
+	TransactionRequest,
 } from "./EthersSignerTypes.js";
+import {
+	AddressMismatchError,
+	ChainIdMismatchError,
+	InvalidPrivateKeyError,
+	InvalidTransactionError,
+	MissingProviderError,
+} from "./errors.js";
 
 // Test private key (Anvil default account 0)
 const TEST_PRIVATE_KEY =
@@ -287,7 +287,9 @@ describe("EthersSigner", () => {
 				from: OTHER_ADDRESS,
 			};
 
-			await expect(signer.populateCall(tx)).rejects.toThrow(AddressMismatchError);
+			await expect(signer.populateCall(tx)).rejects.toThrow(
+				AddressMismatchError,
+			);
 		});
 	});
 
@@ -491,7 +493,7 @@ function createMockProvider(): SignerProvider {
 		} as FeeData),
 		broadcastTransaction: vi.fn().mockImplementation((signedTx: string) =>
 			Promise.resolve({
-				hash: "0x" + "a".repeat(64),
+				hash: `0x${"a".repeat(64)}`,
 				from: TEST_ADDRESS,
 				to: OTHER_ADDRESS,
 				nonce: 5,
@@ -505,7 +507,7 @@ function createMockProvider(): SignerProvider {
 				wait: vi.fn().mockResolvedValue({
 					status: 1,
 					blockNumber: 1000,
-					blockHash: "0x" + "b".repeat(64),
+					blockHash: `0x${"b".repeat(64)}`,
 					transactionIndex: 0,
 					from: TEST_ADDRESS,
 					gasUsed: 21000n,

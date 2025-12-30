@@ -6,7 +6,7 @@
  * @module examples/viem-publicclient/actions/getStorageAt
  */
 
-import { numberToHex, normalizeAddress } from "../utils/encoding.js";
+import { normalizeAddress, numberToHex } from "../utils/encoding.js";
 
 /**
  * @typedef {import('../PublicClientType.js').Client} Client
@@ -28,15 +28,22 @@ import { numberToHex, normalizeAddress } from "../utils/encoding.js";
  * });
  * ```
  */
-export async function getStorageAt(client, { address, slot, blockNumber, blockTag = "latest" }) {
-	const blockNumberHex = typeof blockNumber === "bigint" ? numberToHex(blockNumber) : undefined;
+export async function getStorageAt(
+	client,
+	{ address, slot, blockNumber, blockTag = "latest" },
+) {
+	const blockNumberHex =
+		typeof blockNumber === "bigint" ? numberToHex(blockNumber) : undefined;
 
 	const value = await client.request({
 		method: "eth_getStorageAt",
 		params: [normalizeAddress(address), slot, blockNumberHex ?? blockTag],
 	});
 
-	if (value === "0x0000000000000000000000000000000000000000000000000000000000000000") {
+	if (
+		value ===
+		"0x0000000000000000000000000000000000000000000000000000000000000000"
+	) {
 		return undefined;
 	}
 

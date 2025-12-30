@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	createNonceManager,
-	jsonRpc,
 	inMemory,
+	jsonRpc,
 	wrapSigner,
 } from "./NonceManager.js";
 import { NonceStateError } from "./errors.js";
@@ -384,14 +384,18 @@ describe("NonceManager", () => {
 					chainId: 1,
 					provider: {},
 				}),
-			).rejects.toThrow("Provider must have getTransactionCount or request method");
+			).rejects.toThrow(
+				"Provider must have getTransactionCount or request method",
+			);
 		});
 	});
 
 	describe("wrapSigner", () => {
 		it("wraps signer with nonce management", async () => {
 			const mockSigner = {
-				getAddress: vi.fn(async () => "0x1234567890123456789012345678901234567890"),
+				getAddress: vi.fn(
+					async () => "0x1234567890123456789012345678901234567890",
+				),
 				sendTransaction: vi.fn(async (tx) => ({ hash: "0xabc", ...tx })),
 				provider: {
 					getTransactionCount: vi.fn(async () => 5),
@@ -404,7 +408,10 @@ describe("NonceManager", () => {
 			expect(wrapped.nonceManager).toBeDefined();
 
 			// Send transaction
-			const result = await wrapped.sendTransaction({ to: "0xabc", value: 100n });
+			const result = await wrapped.sendTransaction({
+				to: "0xabc",
+				value: 100n,
+			});
 
 			// Should have populated nonce
 			expect(mockSigner.sendTransaction).toHaveBeenCalledWith(
@@ -414,7 +421,9 @@ describe("NonceManager", () => {
 
 		it("recycles nonce on send failure", async () => {
 			const mockSigner = {
-				getAddress: vi.fn(async () => "0x1234567890123456789012345678901234567890"),
+				getAddress: vi.fn(
+					async () => "0x1234567890123456789012345678901234567890",
+				),
 				sendTransaction: vi.fn(async () => {
 					throw new Error("tx failed");
 				}),
@@ -440,7 +449,9 @@ describe("NonceManager", () => {
 
 		it("provides resetNonce method", async () => {
 			const mockSigner = {
-				getAddress: vi.fn(async () => "0x1234567890123456789012345678901234567890"),
+				getAddress: vi.fn(
+					async () => "0x1234567890123456789012345678901234567890",
+				),
 				sendTransaction: vi.fn(),
 				provider: {},
 			};
@@ -471,9 +482,9 @@ describe("NonceManager", () => {
 		});
 
 		it("throws without sendTransaction", () => {
-			expect(() =>
-				wrapSigner({ getAddress: vi.fn() }, { chainId: 1 }),
-			).toThrow("Signer must have sendTransaction method");
+			expect(() => wrapSigner({ getAddress: vi.fn() }, { chainId: 1 })).toThrow(
+				"Signer must have sendTransaction method",
+			);
 		});
 	});
 

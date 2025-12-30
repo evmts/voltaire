@@ -9,8 +9,8 @@
 
 import { Address } from "../../src/primitives/Address/index.js";
 import { BatchQueue } from "../../src/utils/batch.js";
-import { retryWithBackoff } from "../../src/utils/retryWithBackoff.js";
 import { poll } from "../../src/utils/poll.js";
+import { retryWithBackoff } from "../../src/utils/retryWithBackoff.js";
 
 /**
  * @typedef {import('./EthersProviderTypes.js').EthersProviderOptions} EthersProviderOptions
@@ -68,7 +68,11 @@ export class NetworkImpl {
 	 */
 	matches(other) {
 		if (other == null) return false;
-		if (typeof other === "string" || typeof other === "number" || typeof other === "bigint") {
+		if (
+			typeof other === "string" ||
+			typeof other === "number" ||
+			typeof other === "bigint"
+		) {
 			try {
 				return this.chainId === BigInt(other);
 			} catch {
@@ -199,9 +203,10 @@ export class EthersProvider {
 		// Handle static network
 		const staticNetwork = this.#options.staticNetwork;
 		if (staticNetwork && staticNetwork !== true) {
-			this.#network = staticNetwork instanceof NetworkImpl
-				? staticNetwork
-				: NetworkImpl.from(staticNetwork);
+			this.#network =
+				staticNetwork instanceof NetworkImpl
+					? staticNetwork
+					: NetworkImpl.from(staticNetwork);
 		} else if (network && network !== "any") {
 			this.#network = NetworkImpl.from(network);
 		}
@@ -242,7 +247,10 @@ export class EthersProvider {
 					body: JSON.stringify(body),
 				});
 				if (!res.ok) {
-					throw makeError(`HTTP ${res.status}: ${res.statusText}`, "SERVER_ERROR");
+					throw makeError(
+						`HTTP ${res.status}: ${res.statusText}`,
+						"SERVER_ERROR",
+					);
 				}
 				return res.json();
 			},
@@ -256,7 +264,11 @@ export class EthersProvider {
 		return payloads.map((payload) => {
 			const result = results.find((r) => r.id === payload.id);
 			if (!result) {
-				return { id: payload.id, jsonrpc: "2.0", error: { code: -32603, message: "Missing response" } };
+				return {
+					id: payload.id,
+					jsonrpc: "2.0",
+					error: { code: -32603, message: "Missing response" },
+				};
 			}
 			return result;
 		});
@@ -282,7 +294,10 @@ export class EthersProvider {
 		const cacheKey = `${method}:${JSON.stringify(params)}`;
 		if (this.#options.cacheTimeout > 0) {
 			const cached = this.#cache.get(cacheKey);
-			if (cached && Date.now() - cached.timestamp < this.#options.cacheTimeout) {
+			if (
+				cached &&
+				Date.now() - cached.timestamp < this.#options.cacheTimeout
+			) {
 				return cached.promise;
 			}
 		}
@@ -329,6 +344,7 @@ export class EthersProvider {
 	 * @param {JsonRpcPayload} payload
 	 * @param {JsonRpcResponse} response
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: compatibility layer
 	#getRpcError(payload, response) {
 		const error = response.error;
 		if (!error) return makeError("Unknown error", "UNKNOWN_ERROR");
@@ -339,34 +355,63 @@ export class EthersProvider {
 		// Map common error patterns
 		if (method === "eth_estimateGas" || method === "eth_call") {
 			if (message.match(/insufficient funds/i)) {
-				return makeError("insufficient funds", "INSUFFICIENT_FUNDS", { payload, error });
+				return makeError("insufficient funds", "INSUFFICIENT_FUNDS", {
+					payload,
+					error,
+				});
 			}
 			if (message.match(/nonce.*too low/i)) {
-				return makeError("nonce has already been used", "NONCE_EXPIRED", { payload, error });
+				return makeError("nonce has already been used", "NONCE_EXPIRED", {
+					payload,
+					error,
+				});
 			}
 			if (message.match(/revert/i)) {
-				return makeError("execution reverted", "CALL_EXCEPTION", { payload, error, data: error.data });
+				return makeError("execution reverted", "CALL_EXCEPTION", {
+					payload,
+					error,
+					data: error.data,
+				});
 			}
 		}
 
-		if (method === "eth_sendRawTransaction" || method === "eth_sendTransaction") {
+		if (
+			method === "eth_sendRawTransaction" ||
+			method === "eth_sendTransaction"
+		) {
 			if (message.match(/insufficient funds/i)) {
-				return makeError("insufficient funds", "INSUFFICIENT_FUNDS", { payload, error });
+				return makeError("insufficient funds", "INSUFFICIENT_FUNDS", {
+					payload,
+					error,
+				});
 			}
 			if (message.match(/nonce.*too low/i)) {
-				return makeError("nonce has already been used", "NONCE_EXPIRED", { payload, error });
+				return makeError("nonce has already been used", "NONCE_EXPIRED", {
+					payload,
+					error,
+				});
 			}
 			if (message.match(/replacement.*underpriced/i)) {
-				return makeError("replacement fee too low", "REPLACEMENT_UNDERPRICED", { payload, error });
+				return makeError("replacement fee too low", "REPLACEMENT_UNDERPRICED", {
+					payload,
+					error,
+				});
 			}
 		}
 
 		if (message.match(/user denied|rejected/i)) {
-			return makeError("user rejected action", "ACTION_REJECTED", { payload, error });
+			return makeError("user rejected action", "ACTION_REJECTED", {
+				payload,
+				error,
+			});
 		}
 
 		if (message.match(/method.*does not exist/i)) {
-			return makeError("unsupported operation", "UNSUPPORTED_OPERATION", { operation: method, payload, error });
+			return makeError("unsupported operation", "UNSUPPORTED_OPERATION", {
+				operation: method,
+				payload,
+				error,
+			});
 		}
 
 		return makeError(message, "UNKNOWN_ERROR", { payload, error });
@@ -436,9 +481,13 @@ export class EthersProvider {
 			this.send("eth_maxPriorityFeePerGas", []).catch(() => null),
 		]);
 
-		const gasPriceBigInt = gasPrice ? BigInt(/** @type {string} */ (gasPrice)) : null;
+		const gasPriceBigInt = gasPrice
+			? BigInt(/** @type {string} */ (gasPrice))
+			: null;
 		let maxFeePerGas = null;
-		let maxPriorityFeePerGas = priorityFee ? BigInt(/** @type {string} */ (priorityFee)) : null;
+		let maxPriorityFeePerGas = priorityFee
+			? BigInt(/** @type {string} */ (priorityFee))
+			: null;
 
 		if (block?.baseFeePerGas) {
 			if (!maxPriorityFeePerGas) {
@@ -466,7 +515,10 @@ export class EthersProvider {
 	 */
 	async getBalance(address, blockTag) {
 		const tag = this.#formatBlockTag(blockTag);
-		const result = await this.send("eth_getBalance", [address.toLowerCase(), tag]);
+		const result = await this.send("eth_getBalance", [
+			address.toLowerCase(),
+			tag,
+		]);
 		return BigInt(/** @type {string} */ (result));
 	}
 
@@ -478,7 +530,10 @@ export class EthersProvider {
 	 */
 	async getTransactionCount(address, blockTag) {
 		const tag = this.#formatBlockTag(blockTag);
-		const result = await this.send("eth_getTransactionCount", [address.toLowerCase(), tag]);
+		const result = await this.send("eth_getTransactionCount", [
+			address.toLowerCase(),
+			tag,
+		]);
 		return Number(BigInt(/** @type {string} */ (result)));
 	}
 
@@ -503,8 +558,12 @@ export class EthersProvider {
 	 */
 	async getStorage(address, position, blockTag) {
 		const tag = this.#formatBlockTag(blockTag);
-		const posHex = "0x" + position.toString(16);
-		const result = await this.send("eth_getStorageAt", [address.toLowerCase(), posHex, tag]);
+		const posHex = `0x${position.toString(16)}`;
+		const result = await this.send("eth_getStorageAt", [
+			address.toLowerCase(),
+			posHex,
+			tag,
+		]);
 		return /** @type {string} */ (result);
 	}
 
@@ -546,13 +605,16 @@ export class EthersProvider {
 	 */
 	async broadcastTransaction(signedTx) {
 		const blockNumber = await this.getBlockNumber();
-		const hash = /** @type {string} */ (await this.send("eth_sendRawTransaction", [signedTx]));
+		const hash = /** @type {string} */ (
+			await this.send("eth_sendRawTransaction", [signedTx])
+		);
 
 		// Poll for the transaction
-		const tx = await poll(
-			() => this.getTransaction(hash),
-			{ interval: 1000, timeout: 30000, validate: (tx) => tx != null },
-		);
+		const tx = await poll(() => this.getTransaction(hash), {
+			interval: 1000,
+			timeout: 30000,
+			validate: (tx) => tx != null,
+		});
 
 		return /** @type {TransactionResponse} */ (tx);
 	}
@@ -624,7 +686,10 @@ export class EthersProvider {
 
 		if (typeof blockHashOrTag === "string" && blockHashOrTag.length === 66) {
 			// Block hash
-			result = await this.send("eth_getBlockByHash", [blockHashOrTag, prefetchTxs]);
+			result = await this.send("eth_getBlockByHash", [
+				blockHashOrTag,
+				prefetchTxs,
+			]);
 		} else {
 			// Block tag
 			const tag = this.#formatBlockTag(blockHashOrTag);
@@ -647,7 +712,7 @@ export class EthersProvider {
 	async getLogs(filter) {
 		const formattedFilter = this.#formatFilter(filter);
 		const result = await this.send("eth_getLogs", [formattedFilter]);
-		return (/** @type {any[]} */ (result)).map((log) => this.#formatLog(log));
+		return /** @type {any[]} */ (result).map((log) => this.#formatLog(log));
 	}
 
 	// =========================================================================
@@ -821,7 +886,10 @@ export class EthersProvider {
 		this.#lastBlockNumber = -1;
 		if (this.#pausedState != null) {
 			if (this.#pausedState === dropWhilePaused) return;
-			throw makeError("cannot change pause type; resume first", "UNSUPPORTED_OPERATION");
+			throw makeError(
+				"cannot change pause type; resume first",
+				"UNSUPPORTED_OPERATION",
+			);
 		}
 		this.#pausedState = dropWhilePaused;
 		for (const sub of this.#subs.values()) {
@@ -889,7 +957,7 @@ export class EthersProvider {
 			return blockTag;
 		}
 		if (typeof blockTag === "number" || typeof blockTag === "bigint") {
-			return "0x" + BigInt(blockTag).toString(16);
+			return `0x${BigInt(blockTag).toString(16)}`;
 		}
 		return "latest";
 	}
@@ -904,14 +972,16 @@ export class EthersProvider {
 		if (tx.from) result.from = tx.from.toLowerCase();
 		if (tx.to) result.to = tx.to.toLowerCase();
 		if (tx.data) result.data = tx.data;
-		if (tx.value != null) result.value = "0x" + tx.value.toString(16);
-		if (tx.gasLimit != null) result.gas = "0x" + tx.gasLimit.toString(16);
-		if (tx.gasPrice != null) result.gasPrice = "0x" + tx.gasPrice.toString(16);
-		if (tx.maxFeePerGas != null) result.maxFeePerGas = "0x" + tx.maxFeePerGas.toString(16);
-		if (tx.maxPriorityFeePerGas != null) result.maxPriorityFeePerGas = "0x" + tx.maxPriorityFeePerGas.toString(16);
-		if (tx.nonce != null) result.nonce = "0x" + tx.nonce.toString(16);
-		if (tx.chainId != null) result.chainId = "0x" + tx.chainId.toString(16);
-		if (tx.type != null) result.type = "0x" + tx.type.toString(16);
+		if (tx.value != null) result.value = `0x${tx.value.toString(16)}`;
+		if (tx.gasLimit != null) result.gas = `0x${tx.gasLimit.toString(16)}`;
+		if (tx.gasPrice != null) result.gasPrice = `0x${tx.gasPrice.toString(16)}`;
+		if (tx.maxFeePerGas != null)
+			result.maxFeePerGas = `0x${tx.maxFeePerGas.toString(16)}`;
+		if (tx.maxPriorityFeePerGas != null)
+			result.maxPriorityFeePerGas = `0x${tx.maxPriorityFeePerGas.toString(16)}`;
+		if (tx.nonce != null) result.nonce = `0x${tx.nonce.toString(16)}`;
+		if (tx.chainId != null) result.chainId = `0x${tx.chainId.toString(16)}`;
+		if (tx.type != null) result.type = `0x${tx.type.toString(16)}`;
 		if (tx.accessList) result.accessList = tx.accessList;
 
 		return result;
@@ -930,8 +1000,10 @@ export class EthersProvider {
 				: filter.address.toLowerCase();
 		}
 		if (filter.topics) result.topics = filter.topics;
-		if (filter.fromBlock != null) result.fromBlock = this.#formatBlockTag(filter.fromBlock);
-		if (filter.toBlock != null) result.toBlock = this.#formatBlockTag(filter.toBlock);
+		if (filter.fromBlock != null)
+			result.fromBlock = this.#formatBlockTag(filter.fromBlock);
+		if (filter.toBlock != null)
+			result.toBlock = this.#formatBlockTag(filter.toBlock);
 		if (filter.blockHash) result.blockHash = filter.blockHash;
 
 		return result;
@@ -1021,17 +1093,25 @@ export class EthersProvider {
 		return {
 			hash: result.hash,
 			blockHash: result.blockHash,
-			blockNumber: result.blockNumber != null ? Number(BigInt(result.blockNumber)) : null,
-			index: result.transactionIndex != null ? Number(BigInt(result.transactionIndex)) : null,
+			blockNumber:
+				result.blockNumber != null ? Number(BigInt(result.blockNumber)) : null,
+			index:
+				result.transactionIndex != null
+					? Number(BigInt(result.transactionIndex))
+					: null,
 			type: Number(result.type || 0),
 			to: result.to,
 			from: result.from,
 			nonce: Number(BigInt(result.nonce)),
 			gasLimit: BigInt(result.gas || result.gasLimit),
 			gasPrice: BigInt(result.gasPrice || 0),
-			maxPriorityFeePerGas: result.maxPriorityFeePerGas ? BigInt(result.maxPriorityFeePerGas) : null,
+			maxPriorityFeePerGas: result.maxPriorityFeePerGas
+				? BigInt(result.maxPriorityFeePerGas)
+				: null,
 			maxFeePerGas: result.maxFeePerGas ? BigInt(result.maxFeePerGas) : null,
-			maxFeePerBlobGas: result.maxFeePerBlobGas ? BigInt(result.maxFeePerBlobGas) : null,
+			maxFeePerBlobGas: result.maxFeePerBlobGas
+				? BigInt(result.maxFeePerBlobGas)
+				: null,
 			data: result.input ?? result.data,
 			value: BigInt(result.value),
 			chainId: result.chainId ? BigInt(result.chainId) : 1n,
@@ -1088,6 +1168,7 @@ export class EthersProvider {
 				start() {
 					if (running) return;
 					running = true;
+					// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: compatibility layer
 					const poll = async () => {
 						if (!running) return;
 						try {

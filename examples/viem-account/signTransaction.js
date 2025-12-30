@@ -22,7 +22,9 @@ import { sign as secp256k1Sign } from "../../src/crypto/Secp256k1/sign.js";
  */
 function formatSignature(signature) {
 	const toHex = (bytes) =>
-		`0x${Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("")}`;
+		`0x${Array.from(bytes)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")}`;
 
 	return {
 		r: toHex(signature.r),
@@ -79,7 +81,11 @@ function defaultSerializer(transaction, signature) {
  * });
  * ```
  */
-export async function signTransaction({ privateKey, transaction, serializer = defaultSerializer }) {
+export async function signTransaction({
+	privateKey,
+	transaction,
+	serializer = defaultSerializer,
+}) {
 	// For EIP-4844, exclude sidecars from signing
 	const signableTransaction =
 		transaction.type === "eip4844" || transaction.type === 3
@@ -123,8 +129,16 @@ function hexToBytes(hex) {
  * @param {Function} [deps.serializeTransaction] - Default serializer
  * @returns {(params: Object) => Promise<string>}
  */
-export function SignTransaction({ keccak256: keccak256Fn, sign, serializeTransaction = defaultSerializer }) {
-	return async function signTransaction({ privateKey, transaction, serializer = serializeTransaction }) {
+export function SignTransaction({
+	keccak256: keccak256Fn,
+	sign,
+	serializeTransaction = defaultSerializer,
+}) {
+	return async function signTransaction({
+		privateKey,
+		transaction,
+		serializer = serializeTransaction,
+	}) {
 		const signableTransaction =
 			transaction.type === "eip4844" || transaction.type === 3
 				? { ...transaction, sidecars: false }

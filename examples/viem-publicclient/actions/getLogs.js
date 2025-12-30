@@ -6,7 +6,11 @@
  * @module examples/viem-publicclient/actions/getLogs
  */
 
-import { numberToHex, hexToBigInt, normalizeAddress } from "../utils/encoding.js";
+import {
+	hexToBigInt,
+	normalizeAddress,
+	numberToHex,
+} from "../utils/encoding.js";
 
 /**
  * @typedef {import('../PublicClientType.js').Client} Client
@@ -30,7 +34,9 @@ function formatLog(log) {
 		removed: log.removed ?? false,
 		topics: log.topics,
 		transactionHash: log.transactionHash,
-		transactionIndex: log.transactionIndex ? Number(hexToBigInt(log.transactionIndex)) : null,
+		transactionIndex: log.transactionIndex
+			? Number(hexToBigInt(log.transactionIndex))
+			: null,
 	};
 }
 
@@ -50,6 +56,7 @@ function formatLog(log) {
  * });
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: viem compatibility
 export async function getLogs(client, params = {}) {
 	const { address, fromBlock, toBlock, blockHash, topics } = params;
 
@@ -72,10 +79,12 @@ export async function getLogs(client, params = {}) {
 		filter.blockHash = blockHash;
 	} else {
 		if (fromBlock !== undefined) {
-			filter.fromBlock = typeof fromBlock === "bigint" ? numberToHex(fromBlock) : fromBlock;
+			filter.fromBlock =
+				typeof fromBlock === "bigint" ? numberToHex(fromBlock) : fromBlock;
 		}
 		if (toBlock !== undefined) {
-			filter.toBlock = typeof toBlock === "bigint" ? numberToHex(toBlock) : toBlock;
+			filter.toBlock =
+				typeof toBlock === "bigint" ? numberToHex(toBlock) : toBlock;
 		}
 	}
 
