@@ -221,6 +221,16 @@ export async function loadWasm(
 			// HD Wallet stubs (not implemented in WASM)
 			hdwallet_derive_child: (): number => 0,
 			hdwallet_derive_path: (): number => 0,
+			// KZG / c-kzg-4844 stubs (native-only, not implemented in WASM)
+			load_trusted_setup: (): number => -1,
+			load_trusted_setup_file: (): number => -1,
+			free_trusted_setup: (): void => {},
+			blob_to_kzg_commitment: (): number => -1,
+			compute_kzg_proof: (): number => -1,
+			compute_blob_kzg_proof: (): number => -1,
+			verify_kzg_proof: (): number => -1,
+			verify_blob_kzg_proof: (): number => -1,
+			verify_blob_kzg_proof_batch: (): number => -1,
 		},
 		wasi_snapshot_preview1: wasi,
 	};
