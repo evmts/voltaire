@@ -287,6 +287,7 @@ export class WebSocketProvider implements Provider {
 		if (!this.eventListeners.has(event)) {
 			this.eventListeners.set(event, new Set());
 		}
+		// biome-ignore lint/suspicious/noExplicitAny: listener type varies by event
 		this.eventListeners.get(event)?.add(listener as any);
 		return this;
 	}
@@ -298,6 +299,7 @@ export class WebSocketProvider implements Provider {
 		event: E,
 		listener: (...args: ProviderEventMap[E]) => void,
 	): this {
+		// biome-ignore lint/suspicious/noExplicitAny: listener type varies by event
 		this.eventListeners.get(event)?.delete(listener as any);
 		return this;
 	}
@@ -333,6 +335,7 @@ export class WebSocketProvider implements Provider {
 		return this._request<string>("eth_blockNumber", [], options);
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC call params type varies
 	eth_call(params: any, blockTag = "latest", options?: RequestOptions) {
 		return this._request<string>("eth_call", [params, blockTag], options);
 	}
@@ -346,10 +349,12 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_createAccessList(
+		// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC call params type varies
 		params: any,
 		blockTag = "latest",
 		options?: RequestOptions,
 	) {
+		// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC response type varies
 		return this._request<any>(
 			"eth_createAccessList",
 			[params, blockTag],
@@ -357,6 +362,7 @@ export class WebSocketProvider implements Provider {
 		);
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC call params type varies
 	eth_estimateGas(params: any, options?: RequestOptions) {
 		return this._request<string>("eth_estimateGas", [params], options);
 	}
@@ -370,6 +376,7 @@ export class WebSocketProvider implements Provider {
 		const params = rewardPercentiles
 			? [blockCount, newestBlock, rewardPercentiles]
 			: [blockCount, newestBlock];
+		// biome-ignore lint/suspicious/noExplicitAny: fee history response structure varies
 		return this._request<any>("eth_feeHistory", params, options);
 	}
 
@@ -394,6 +401,7 @@ export class WebSocketProvider implements Provider {
 		fullTransactions = false,
 		options?: RequestOptions,
 	) {
+		// biome-ignore lint/suspicious/noExplicitAny: block response varies by fullTransactions param
 		return this._request<any>(
 			"eth_getBlockByHash",
 			[blockHash, fullTransactions],
@@ -406,6 +414,7 @@ export class WebSocketProvider implements Provider {
 		fullTransactions = false,
 		options?: RequestOptions,
 	) {
+		// biome-ignore lint/suspicious/noExplicitAny: block response varies by fullTransactions param
 		return this._request<any>(
 			"eth_getBlockByNumber",
 			[blockTag, fullTransactions],
@@ -414,6 +423,7 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_getBlockReceipts(blockTag: string, options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: receipt structure varies by transaction type
 		return this._request<any[]>("eth_getBlockReceipts", [blockTag], options);
 	}
 
@@ -444,14 +454,18 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_getFilterChanges(filterId: string, options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: filter changes return varying types (logs or block/tx hashes)
 		return this._request<any[]>("eth_getFilterChanges", [filterId], options);
 	}
 
 	eth_getFilterLogs(filterId: string, options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: log objects have dynamic structure
 		return this._request<any[]>("eth_getFilterLogs", [filterId], options);
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: filter params have dynamic structure
 	eth_getLogs(params: any, options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: log objects have dynamic structure
 		return this._request<any[]>("eth_getLogs", [params], options);
 	}
 
@@ -461,6 +475,7 @@ export class WebSocketProvider implements Provider {
 		blockTag = "latest",
 		options?: RequestOptions,
 	) {
+		// biome-ignore lint/suspicious/noExplicitAny: proof response has complex nested structure
 		return this._request<any>(
 			"eth_getProof",
 			[address, storageKeys, blockTag],
@@ -486,6 +501,7 @@ export class WebSocketProvider implements Provider {
 		index: string,
 		options?: RequestOptions,
 	) {
+		// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC transaction object type
 		return this._request<any>(
 			"eth_getTransactionByBlockHashAndIndex",
 			[blockHash, index],
@@ -498,6 +514,7 @@ export class WebSocketProvider implements Provider {
 		index: string,
 		options?: RequestOptions,
 	) {
+		// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC transaction object type
 		return this._request<any>(
 			"eth_getTransactionByBlockNumberAndIndex",
 			[blockTag, index],
@@ -506,6 +523,7 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_getTransactionByHash(txHash: string, options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC transaction object type
 		return this._request<any>("eth_getTransactionByHash", [txHash], options);
 	}
 
@@ -522,6 +540,7 @@ export class WebSocketProvider implements Provider {
 	}
 
 	eth_getTransactionReceipt(txHash: string, options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC receipt object type
 		return this._request<any>("eth_getTransactionReceipt", [txHash], options);
 	}
 
@@ -549,6 +568,7 @@ export class WebSocketProvider implements Provider {
 		return this._request<string>("eth_newBlockFilter", [], options);
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: filter params type varies by filter type
 	eth_newFilter(params: any, options?: RequestOptions) {
 		return this._request<string>("eth_newFilter", [params], options);
 	}
@@ -565,6 +585,7 @@ export class WebSocketProvider implements Provider {
 		return this._request<string>("eth_sendRawTransaction", [signedTx], options);
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: transaction params type varies by tx type
 	eth_sendTransaction(params: any, options?: RequestOptions) {
 		return this._request<string>("eth_sendTransaction", [params], options);
 	}
@@ -573,15 +594,19 @@ export class WebSocketProvider implements Provider {
 		return this._request<string>("eth_sign", [address, data], options);
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: transaction params type varies by tx type
 	eth_signTransaction(params: any, options?: RequestOptions) {
 		return this._request<string>("eth_signTransaction", [params], options);
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: simulation params and response types are complex
 	eth_simulateV1(params: any, options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: simulation response type is complex
 		return this._request<any>("eth_simulateV1", [params], options);
 	}
 
 	eth_syncing(options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: syncing returns false or complex sync status object
 		return this._request<any>("eth_syncing", [], options);
 	}
 
@@ -595,40 +620,49 @@ export class WebSocketProvider implements Provider {
 
 	debug_traceTransaction(
 		txHash: string,
+		// biome-ignore lint/suspicious/noExplicitAny: trace options vary by tracer type
 		traceOptions?: any,
 		options?: RequestOptions,
 	) {
 		const params = traceOptions ? [txHash, traceOptions] : [txHash];
+		// biome-ignore lint/suspicious/noExplicitAny: trace result varies by tracer type
 		return this._request<any>("debug_traceTransaction", params, options);
 	}
 
 	debug_traceBlockByNumber(
 		blockTag: string,
+		// biome-ignore lint/suspicious/noExplicitAny: trace options vary by tracer type
 		traceOptions?: any,
 		options?: RequestOptions,
 	) {
 		const params = traceOptions ? [blockTag, traceOptions] : [blockTag];
+		// biome-ignore lint/suspicious/noExplicitAny: trace result varies by tracer type
 		return this._request<any[]>("debug_traceBlockByNumber", params, options);
 	}
 
 	debug_traceBlockByHash(
 		blockHash: string,
+		// biome-ignore lint/suspicious/noExplicitAny: trace options vary by tracer type
 		traceOptions?: any,
 		options?: RequestOptions,
 	) {
 		const params = traceOptions ? [blockHash, traceOptions] : [blockHash];
+		// biome-ignore lint/suspicious/noExplicitAny: trace result varies by tracer type
 		return this._request<any[]>("debug_traceBlockByHash", params, options);
 	}
 
 	debug_traceCall(
+		// biome-ignore lint/suspicious/noExplicitAny: call params type varies
 		params: any,
 		blockTag = "latest",
+		// biome-ignore lint/suspicious/noExplicitAny: trace options vary by tracer type
 		traceOptions?: any,
 		options?: RequestOptions,
 	) {
 		const rpcParams = traceOptions
 			? [params, blockTag, traceOptions]
 			: [params, blockTag];
+		// biome-ignore lint/suspicious/noExplicitAny: trace result varies by tracer type
 		return this._request<any>("debug_traceCall", rpcParams, options);
 	}
 
@@ -640,15 +674,20 @@ export class WebSocketProvider implements Provider {
 	// engine Methods
 	// ============================================================================
 
+	// biome-ignore lint/suspicious/noExplicitAny: Engine API payload structure varies by version
 	engine_newPayloadV1(payload: any, options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API response type varies
 		return this._request<any>("engine_newPayloadV1", [payload], options);
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: Engine API payload structure varies by version
 	engine_newPayloadV2(payload: any, options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API response type varies
 		return this._request<any>("engine_newPayloadV2", [payload], options);
 	}
 
 	engine_newPayloadV3(
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API payload structure varies by version
 		payload: any,
 		expectedBlobVersionedHashes?: string[],
 		parentBeaconBlockRoot?: string,
@@ -657,55 +696,69 @@ export class WebSocketProvider implements Provider {
 		const params = [payload];
 		if (expectedBlobVersionedHashes) params.push(expectedBlobVersionedHashes);
 		if (parentBeaconBlockRoot) params.push(parentBeaconBlockRoot);
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API response type varies
 		return this._request<any>("engine_newPayloadV3", params, options);
 	}
 
 	engine_forkchoiceUpdatedV1(
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API forkchoice state structure
 		forkchoiceState: any,
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API payload attributes vary by version
 		payloadAttributes?: any,
 		options?: RequestOptions,
 	) {
 		const params = payloadAttributes
 			? [forkchoiceState, payloadAttributes]
 			: [forkchoiceState];
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API response type varies
 		return this._request<any>("engine_forkchoiceUpdatedV1", params, options);
 	}
 
 	engine_forkchoiceUpdatedV2(
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API forkchoice state structure
 		forkchoiceState: any,
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API payload attributes vary by version
 		payloadAttributes?: any,
 		options?: RequestOptions,
 	) {
 		const params = payloadAttributes
 			? [forkchoiceState, payloadAttributes]
 			: [forkchoiceState];
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API response type varies
 		return this._request<any>("engine_forkchoiceUpdatedV2", params, options);
 	}
 
 	engine_forkchoiceUpdatedV3(
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API forkchoice state structure
 		forkchoiceState: any,
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API payload attributes vary by version
 		payloadAttributes?: any,
 		options?: RequestOptions,
 	) {
 		const params = payloadAttributes
 			? [forkchoiceState, payloadAttributes]
 			: [forkchoiceState];
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API response type varies
 		return this._request<any>("engine_forkchoiceUpdatedV3", params, options);
 	}
 
 	engine_getPayloadV1(payloadId: string, options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API payload type varies by version
 		return this._request<any>("engine_getPayloadV1", [payloadId], options);
 	}
 
 	engine_getPayloadV2(payloadId: string, options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API payload type varies by version
 		return this._request<any>("engine_getPayloadV2", [payloadId], options);
 	}
 
 	engine_getPayloadV3(payloadId: string, options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API payload type varies by version
 		return this._request<any>("engine_getPayloadV3", [payloadId], options);
 	}
 
 	engine_getBlobsV1(blobVersionedHashes: string[], options?: RequestOptions) {
+		// biome-ignore lint/suspicious/noExplicitAny: Blob response type varies
 		return this._request<any[]>(
 			"engine_getBlobsV1",
 			[blobVersionedHashes],
@@ -725,9 +778,11 @@ export class WebSocketProvider implements Provider {
 	}
 
 	engine_exchangeTransitionConfigurationV1(
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API transition config type not yet defined
 		config: any,
 		options?: RequestOptions,
 	) {
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API response type not yet defined
 		return this._request<any>(
 			"engine_exchangeTransitionConfigurationV1",
 			[config],
@@ -739,6 +794,7 @@ export class WebSocketProvider implements Provider {
 		blockHashes: string[],
 		options?: RequestOptions,
 	) {
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API payload body type not yet defined
 		return this._request<any[]>(
 			"engine_getPayloadBodiesByHashV1",
 			[blockHashes],
@@ -751,6 +807,7 @@ export class WebSocketProvider implements Provider {
 		count: string,
 		options?: RequestOptions,
 	) {
+		// biome-ignore lint/suspicious/noExplicitAny: Engine API payload body type not yet defined
 		return this._request<any[]>(
 			"engine_getPayloadBodiesByRangeV1",
 			[start, count],
@@ -765,9 +822,12 @@ export class WebSocketProvider implements Provider {
 	events: ProviderEvents = {
 		newHeads: async function* (this: WebSocketProvider) {
 			const subscriptionId = await this.subscribe("newHeads");
+			// biome-ignore lint/suspicious/noExplicitAny: subscription data is dynamically typed from RPC
 			const queue: any[] = [];
+			// biome-ignore lint/suspicious/noExplicitAny: resolve callback accepts dynamic RPC data
 			let resolve: ((value: any) => void) | null = null;
 
+			// biome-ignore lint/suspicious/noExplicitAny: callback data is dynamically typed from RPC
 			const callback = (data: any) => {
 				if (resolve) {
 					resolve(data);
@@ -796,14 +856,18 @@ export class WebSocketProvider implements Provider {
 				await this.unsubscribe(subscriptionId);
 			}
 		}.bind(this),
+		// biome-ignore lint/suspicious/noExplicitAny: WebSocket log subscription params are dynamic
 
 		logs: async function* (this: WebSocketProvider, params?: any) {
 			const subscriptionId = await this.subscribe(
 				"logs",
 				params ? [params] : [],
+			// biome-ignore lint/suspicious/noExplicitAny: Log event data structure varies by filter
 			);
+			// biome-ignore lint/suspicious/noExplicitAny: Generic promise resolution
 			const queue: any[] = [];
 			let resolve: ((value: any) => void) | null = null;
+			// biome-ignore lint/suspicious/noExplicitAny: Log event callback data is dynamic
 
 			const callback = (data: any) => {
 				if (resolve) {
@@ -836,9 +900,12 @@ export class WebSocketProvider implements Provider {
 
 		newPendingTransactions: async function* (this: WebSocketProvider) {
 			const subscriptionId = await this.subscribe("newPendingTransactions");
+			// biome-ignore lint/suspicious/noExplicitAny: WebSocket subscription data types vary by event
 			const queue: any[] = [];
+			// biome-ignore lint/suspicious/noExplicitAny: Promise resolve callback for dynamic subscription data
 			let resolve: ((value: any) => void) | null = null;
 
+			// biome-ignore lint/suspicious/noExplicitAny: WebSocket subscription callback receives dynamic data
 			const callback = (data: any) => {
 				if (resolve) {
 					resolve(data);
@@ -870,9 +937,12 @@ export class WebSocketProvider implements Provider {
 
 		syncing: async function* (this: WebSocketProvider) {
 			const subscriptionId = await this.subscribe("syncing");
+			// biome-ignore lint/suspicious/noExplicitAny: WebSocket syncing data structure varies
 			const queue: any[] = [];
+			// biome-ignore lint/suspicious/noExplicitAny: Promise resolver accepts syncing status data
 			let resolve: ((value: any) => void) | null = null;
 
+			// biome-ignore lint/suspicious/noExplicitAny: Subscription callback receives dynamic syncing data
 			const callback = (data: any) => {
 				if (resolve) {
 					resolve(data);

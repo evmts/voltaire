@@ -19,9 +19,13 @@ import { WebSocketProvider } from "./WebSocketProvider.js";
 
 // Mock WebSocket
 class MockWebSocket {
+	// biome-ignore lint/suspicious/noExplicitAny: Mock WebSocket event handlers
 	onopen: ((event: any) => void) | null = null;
+	// biome-ignore lint/suspicious/noExplicitAny: Mock WebSocket event handlers
 	onmessage: ((event: any) => void) | null = null;
+	// biome-ignore lint/suspicious/noExplicitAny: Mock WebSocket event handlers
 	onerror: ((event: any) => void) | null = null;
+	// biome-ignore lint/suspicious/noExplicitAny: Mock WebSocket event handlers
 	onclose: ((event: any) => void) | null = null;
 	readyState = 1; // OPEN
 

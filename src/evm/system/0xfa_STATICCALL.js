@@ -19,6 +19,7 @@
  * @param {import("../Host/HostType.js").BrandedHost} [host] - Host interface (optional)
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode implementation
 export function staticcall(frame, host) {
 	// EIP-214 (Byzantium): STATICCALL requires Byzantium or later
 	// In a full implementation, check hardfork version and return InvalidOpcode if earlier

@@ -19,6 +19,7 @@
  * @param {import("../Host/HostType.js").BrandedHost} [host] - Host interface (optional)
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode implementation
 export function create2(frame, host) {
 	// EIP-1014 (Constantinople): CREATE2 requires Constantinople or later
 	// In a full implementation, check hardfork version and return InvalidOpcode if earlier

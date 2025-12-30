@@ -1009,6 +1009,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			expect(privateKey).toBeDefined();
 
 			// 3. Derive address
+			// biome-ignore lint/style/noNonNullAssertion: privateKey validated by expect above
 			const address = Address.fromPrivateKey(privateKey!);
 			expect(address.length).toBe(20);
 
@@ -1025,9 +1026,11 @@ describe("Integration: Cross-Module Workflows", () => {
 			// 5. Encode and sign
 			const encoded = Rlp.encodeArray(txFields);
 			const txHash = Keccak256.hash(encoded);
+			// biome-ignore lint/style/noNonNullAssertion: privateKey validated by expect above
 			const sig = Secp256k1.sign(txHash, privateKey!);
 
 			// 6. Verify signature
+			// biome-ignore lint/style/noNonNullAssertion: privateKey validated by expect above
 			const publicKey = Secp256k1.derivePublicKey(privateKey!);
 			const isValid = Secp256k1.verify(sig, txHash, publicKey);
 			expect(isValid).toBe(true);

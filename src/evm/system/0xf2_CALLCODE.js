@@ -19,6 +19,7 @@
  * @param {import("../Host/HostType.js").BrandedHost} [host] - Host interface (optional)
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode implementation
 export function callcode(frame, host) {
 	// Pop all 7 arguments (same as CALL)
 	const resultGas = popStack(frame);

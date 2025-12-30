@@ -17,6 +17,7 @@
  * @param {import("../Host/HostType.js").BrandedHost} [host] - Host interface (optional)
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode implementation
 export function create(frame, host) {
 	// EIP-214: CREATE cannot be executed in static call context
 	if (frame.isStatic) {

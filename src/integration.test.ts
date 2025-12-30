@@ -479,7 +479,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			expect(addresses.length).toBe(3);
 			for (let i = 0; i < addresses.length; i++) {
 				for (let j = i + 1; j < addresses.length; j++) {
+					// biome-ignore lint/style/noNonNullAssertion: index bounds checked by loop
 					expect(Hex.fromBytes(addresses[i]!)).not.toBe(
+						// biome-ignore lint/style/noNonNullAssertion: index bounds checked by loop
 						Hex.fromBytes(addresses[j]!),
 					);
 				}

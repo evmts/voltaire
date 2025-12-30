@@ -249,7 +249,8 @@ describe("JsonRpcResponse", () => {
 			try {
 				unwrap(res);
 				expect.fail("Should have thrown");
-			} catch (err: any) {
+				// biome-ignore lint/suspicious/noExplicitAny: testing error properties
+		} catch (err: any) {
 				expect(err.code).toBe(-32601);
 			}
 		});
@@ -263,7 +264,8 @@ describe("JsonRpcResponse", () => {
 			try {
 				unwrap(res);
 				expect.fail("Should have thrown");
-			} catch (err: any) {
+				// biome-ignore lint/suspicious/noExplicitAny: testing error properties
+		} catch (err: any) {
 				expect(err.data).toEqual({ field: "amount" });
 			}
 		});

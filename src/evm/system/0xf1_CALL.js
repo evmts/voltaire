@@ -17,6 +17,7 @@
  * @param {import("../Host/HostType.js").BrandedHost} [host] - Host interface (optional)
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode implementation
 export function call(frame, host) {
 	// Pop all 7 arguments (stack order: bottom to top)
 	// Stack layout: [..., gas, address, value, inOffset, inLength, outOffset, outLength]

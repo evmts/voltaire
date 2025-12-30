@@ -920,6 +920,7 @@ function calculateMsmGas(k: number, baseCost: bigint): bigint {
 		3.78, 3.82, 3.86, 3.9, 3.94,
 	];
 	const multiplier =
+		// biome-ignore lint/style/noNonNullAssertion: k < multipliers.length guarantees element exists
 		k < multipliers.length ? multipliers[k]! : 3.94 + (k - 31) * 0.04;
 	return BigInt(Math.round(Number(baseCost) * multiplier));
 }

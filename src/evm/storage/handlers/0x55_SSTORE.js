@@ -40,6 +40,7 @@ import * as Frame from "../../Frame/index.js";
  * @param {import("../../Host/HostType.js").BrandedHost} host - Host interface
  * @returns {import("../../Frame/FrameType.js").EvmError | null} Error if any
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode implementation
 export function sstore(frame, host) {
 	// EIP-214: Cannot modify state in static call
 	if (frame.isStatic) {
