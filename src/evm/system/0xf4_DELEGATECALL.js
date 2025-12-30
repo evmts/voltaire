@@ -131,7 +131,8 @@ export function delegatecall(frame, host) {
 	if (!host?.call) {
 		return {
 			type: "NotImplemented",
-			message: "DELEGATECALL requires host.call() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"DELEGATECALL requires host.call() - use guillotine or guillotine-mini for full EVM execution",
 		};
 	}
 
@@ -194,7 +195,9 @@ function bigintToAddress(addr) {
 		bytes[i] = Number(val & 0xffn);
 		val >>= 8n;
 	}
-	return /** @type {import("../../primitives/Address/AddressType.js").AddressType} */ (bytes);
+	return /** @type {import("../../primitives/Address/AddressType.js").AddressType} */ (
+		bytes
+	);
 }
 
 /**

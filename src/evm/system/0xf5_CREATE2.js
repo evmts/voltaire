@@ -105,7 +105,8 @@ export function create2(frame, host) {
 	if (!host?.create) {
 		return {
 			type: "NotImplemented",
-			message: "CREATE2 requires host.create() - use guillotine or guillotine-mini for full EVM execution"
+			message:
+				"CREATE2 requires host.create() - use guillotine or guillotine-mini for full EVM execution",
 		};
 	}
 
