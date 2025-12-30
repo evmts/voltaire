@@ -9,8 +9,9 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { hasNativeKzg } from "./test-utils.js";
 
-describe("docs/crypto/kzg/eip-4844.mdx - EIP-4844 Blob Transactions", async () => {
+describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/eip-4844.mdx - EIP-4844 Blob Transactions", async () => {
 	const {
 		KZG,
 		BYTES_PER_BLOB,

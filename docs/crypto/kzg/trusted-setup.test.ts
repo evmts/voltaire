@@ -9,8 +9,9 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { hasNativeKzg } from "./test-utils.js";
 
-describe("docs/crypto/kzg/trusted-setup.mdx - Trusted Setup", async () => {
+describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/trusted-setup.mdx - Trusted Setup", async () => {
 	const {
 		KZG,
 		KzgNotInitializedError,

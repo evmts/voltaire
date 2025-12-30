@@ -9,8 +9,9 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { hasNativeKzg } from "./test-utils.js";
 
-describe("docs/crypto/kzg/commitments.mdx - KZG Commitments", async () => {
+describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/commitments.mdx - KZG Commitments", async () => {
 	const {
 		KZG,
 		BYTES_PER_BLOB,

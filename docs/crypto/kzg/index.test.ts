@@ -11,28 +11,33 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { hasNativeKzg } from "./test-utils.js";
 
-describe("docs/crypto/kzg/index.mdx - KZG Commitments", async () => {
-	// Import KZG module
-	const {
-		KZG,
-		BYTES_PER_BLOB,
-		BYTES_PER_COMMITMENT,
-		BYTES_PER_PROOF,
-		BYTES_PER_FIELD_ELEMENT,
-		FIELD_ELEMENTS_PER_BLOB,
-		KzgError,
-		KzgNotInitializedError,
-		KzgInvalidBlobError,
-	} = await import("../../../src/crypto/KZG/index.js");
+describe.skipIf(!hasNativeKzg)(
+	"docs/crypto/kzg/index.mdx - KZG Commitments",
+	async () => {
+		// Import KZG module
+		const {
+			KZG,
+			BYTES_PER_BLOB,
+			BYTES_PER_COMMITMENT,
+			BYTES_PER_PROOF,
+			BYTES_PER_FIELD_ELEMENT,
+			FIELD_ELEMENTS_PER_BLOB,
+			KzgError,
+			KzgNotInitializedError,
+			KzgInvalidBlobError,
+		} = await import("../../../src/crypto/KZG/index.js");
 
-	beforeAll(() => {
-		KZG.loadTrustedSetup();
-	});
+		beforeAll(() => {
+			if (!KZG.isInitialized()) {
+				KZG.loadTrustedSetup();
+			}
+		});
 
-	afterAll(() => {
-		KZG.freeTrustedSetup();
-	});
+		afterAll(() => {
+			KZG.freeTrustedSetup();
+		});
 
 	describe("Quick Start - Standard API", () => {
 		/**
