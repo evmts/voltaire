@@ -5,8 +5,20 @@ description: Works everywhere - TypeScript, Zig, and any language with C-FFI
 
 Works everywhere. TypeScript, Zig, any language with C-FFI.
 
+## TypeScript Entrypoints
+
+Voltaire provides three entrypoints with identical APIs for different performance profiles:
+
+```typescript
+import { Address, Keccak256 } from '@tevm/voltaire'        // JS (default)
+import { Address, Keccak256 } from '@tevm/voltaire/wasm'   // WASM
+import { Address, Keccak256 } from '@tevm/voltaire/native' // Native FFI (Bun only)
+```
+
+All entrypoints implement the same `VoltaireAPI` interface - switch by changing the import path.
+
 <Tip>
-Runtime support: Native FFI is currently supported on <strong>Bun</strong>. In <strong>Node.js</strong>, use the regular TypeScript API or the <strong>WASM</strong> modules. Browsers use <strong>WASM</strong>.
+For detailed performance comparisons and choosing the right entrypoint, see [Runtime Implementations](/getting-started/wasm).
 </Tip>
 
 ## Installation by Language
@@ -17,6 +29,19 @@ Runtime support: Native FFI is currently supported on <strong>Bun</strong>. In <
 ```bash
 npm install @tevm/voltaire
 # or: bun add @tevm/voltaire / pnpm add @tevm/voltaire / yarn add @tevm/voltaire
+```
+
+Then import from any entrypoint:
+
+```typescript
+// JS (default) - works everywhere
+import { Address, Keccak256 } from '@tevm/voltaire'
+
+// WASM - for browser/edge crypto performance
+import { Address, Keccak256 } from '@tevm/voltaire/wasm'
+
+// Native - for Bun maximum performance
+import { Address, Keccak256 } from '@tevm/voltaire/native'
 ```
 
 </Tab>
@@ -119,16 +144,20 @@ The Voltaire API is consistent across all languages.
 <Tab title="TypeScript">
 
 ```typescript
-import { Address } from '@tevm/voltaire';
+import { Address } from '@tevm/voltaire'
 
-function main() {
-  const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
 
-  address.toChecksummed();
-  address.toHex();
-  address.isZero();
-  address.equals(otherAddress);
-}
+Address.toChecksummed(address)
+Address.toHex(address)
+Address.isZero(address)
+Address.equals(address, otherAddress)
+
+// Also available as instance methods
+address.toChecksummed()
+address.toHex()
+address.isZero()
+address.equals(otherAddress)
 ```
 
 </Tab>

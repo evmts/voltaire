@@ -33,54 +33,53 @@ type AddressType = Uint8Array & { readonly [brand]: "Address" };
 **Example:**
 
 ```typescript
-import { fromHex, toHex, equals } from '@tevm/voltaire/Address';
-import type { AddressType } from '@tevm/voltaire/Address';
+import { fromHex, toHex, equals } from '@tevm/voltaire/Address'
+import type { AddressType } from '@tevm/voltaire/Address'
 
-const addr: AddressType = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-const hex = toHex(addr);
-const same = equals(addr, addr); // true
+const addr: AddressType = fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+const hex = toHex(addr)
+const same = equals(addr, addr) // true
 ```
 
-### 2. Class Instance (Most Convenient)
+### 2. Namespace API (Most Convenient)
 
-Branded type with methods attached via prototype:
+Data-first functions with namespace access:
 
 ```typescript
-import { Address } from '@tevm/voltaire';
+import { Address } from '@tevm/voltaire'
 
-const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-addr.toHex();        // Instance method
-addr.isZero();       // Instance method
-addr.equals(other);  // Instance method
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+Address.toHex(addr)       // Namespace function
+Address.isZero(addr)      // Namespace function
+Address.equals(addr, other)  // Namespace function
 ```
 
 **Use when:**
-- You want familiar OOP ergonomics
-- You prefer method chaining
+- You want consistent API across all entrypoints
+- You prefer explicit data-first style
 - Bundle size is not a primary concern
 
 **Properties:**
-- Runtime: `Uint8Array` with prototype methods
+- Runtime: `Uint8Array` (20 bytes)
 - Validation: Validated during construction
-- Methods: Available as `addr.method()`
-- Overhead: Minimal (prototype chain)
+- Methods: Available as `Address.method(addr)`
+- Overhead: Minimal
 
 **Example:**
 
 ```typescript
-import { Address } from '@tevm/voltaire';
+import { Address } from '@tevm/voltaire'
 
-const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
 
-// Methods available on instance
-const hex = addr.toHex();
-const checksummed = addr.toChecksummed();
-const isZero = addr.isZero();
-const clone = addr.clone();
+// Functions available via namespace
+const hex = Address.toHex(addr)
+const checksummed = Address.toChecksummed(addr)
+const isZero = Address.isZero(addr)
 
 // Still a Uint8Array
-console.log(addr instanceof Uint8Array); // true
-console.log(addr.length); // 20
+console.log(addr instanceof Uint8Array) // true
+console.log(addr.length) // 20
 ```
 
 ### 3. Input Type (Loosest)
@@ -88,87 +87,83 @@ console.log(addr.length); // 20
 **Note:** Voltaire does not currently export `AddressLike` union types. The `Address()` constructor and `from()` functions accept multiple input types:
 
 ```typescript
-import { Address } from '@tevm/voltaire';
+import { Address } from '@tevm/voltaire'
 
 // Accepts: string | Uint8Array | number | bigint
-Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");  // hex string
-Address(new Uint8Array(20));                            // bytes
-Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);  // bigint
+Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')  // hex string
+Address(new Uint8Array(20))                            // bytes
+Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en)  // bigint
 ```
 
 For function parameters accepting flexible input, use the same union:
 
 ```typescript
 function process(input: string | Uint8Array | number | bigint) {
-  const addr = Address(input);
+  const addr = Address(input)
   // Now you have a validated AddressType
 }
 ```
 
 ## API Patterns
 
-### Class API (OOP Style)
+### Namespace API (Default)
 
 ```typescript
-import { Address } from '@tevm/voltaire';
+import { Address } from '@tevm/voltaire'
 
 // Constructor accepts multiple formats
-const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
 
-// Instance methods
-addr.toHex();           // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
-addr.toChecksummed();   // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-addr.isZero();          // false
-addr.equals(other);     // boolean
+// Namespace functions (data-first)
+Address.toHex(addr)           // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+Address.toChecksummed(addr)   // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+Address.isZero(addr)          // false
+Address.equals(addr, other)   // boolean
 
-// Static methods
-Address.fromHex("0x...");
-Address.fromBytes(bytes);
-Address.zero();
+// Static constructors
+Address.fromHex('0x...')
+Address.fromBytes(bytes)
+Address.zero()
 ```
 
 **Pros:**
-- Familiar OOP patterns
+- Consistent across all 3 entrypoints (JS, WASM, Native)
+- Explicit data flow
 - Method discovery via autocomplete
-- Method chaining
 
 **Cons:**
-- Imports entire class (~18 KB)
-- All methods included in bundle
+- Imports entire namespace
+- Must pass value as first argument
 
-### Namespace API (Functional Style)
+### Tree-Shakeable Imports
 
 ```typescript
-import * as Address from '@tevm/voltaire/Address';
+import { fromHex, toHex, toChecksummed, equals } from '@tevm/voltaire/Address'
 
-// Construction
-const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-
-// Functions (not methods)
-Address.toHex(addr);           // "0x742d35cc..."
-Address.toChecksummed(addr);   // "0x742d35Cc..."
-Address.isZero(addr);          // false
-Address.equals(addr, other);   // boolean
+// Direct function calls
+const addr = fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+toHex(addr)           // "0x742d35cc..."
+toChecksummed(addr)   // "0x742d35Cc..."
+equals(addr, other)   // boolean
 ```
 
 **Pros:**
 - Tree-shakeable (only bundle what you use)
+- Minimal bundle impact
 - Functional programming friendly
-- Explicit dependencies
 
 **Cons:**
-- More verbose
-- No method chaining
-- Must pass value as first argument
+- More verbose imports
+- Less discoverable
 
-### Tree-Shakeable Imports (Optimal Bundle Size)
+### Minimal Example (Optimal Bundle Size)
 
 ```typescript
-import { fromHex, toHex, equals } from '@tevm/voltaire/Address';
+import { fromHex, toHex, equals } from '@tevm/voltaire/Address'
 
-const addr = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-const hex = toHex(addr);
-const same = equals(addr, addr);
+const addr = fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+const hex = toHex(addr)
+const same = equals(addr, addr)
 
 // Only these 3 functions in bundle (~500 bytes)
 // Unused methods excluded (toChecksummed, calculateCreateAddress, etc.)
@@ -179,11 +174,11 @@ const same = equals(addr, addr);
 All branded types use a shared `brand` symbol:
 
 ```typescript
-import { brand } from '@tevm/voltaire/brand';
+import { brand } from '@tevm/voltaire/brand'
 
 // This is what makes it "branded"
-type AddressType = Uint8Array & { readonly [brand]: "Address" };
-type HashType = Uint8Array & { readonly [brand]: "Hash" };
+type AddressType = Uint8Array & { readonly [brand]: 'Address' }
+type HashType = Uint8Array & { readonly [brand]: 'Hash' }
 ```
 
 The `brand` symbol:
@@ -199,30 +194,30 @@ Some types have specialized variants using boolean flags:
 
 ```typescript
 // Base hex type
-type Hex = string & { readonly [brand]: "Hex" };
+type Hex = string & { readonly [brand]: 'Hex' }
 
 // Variants with additional flags
-type ChecksumAddress = Hex & { readonly checksum: true };
-type LowercaseHex = Hex & { readonly lowercase: true };
-type UppercaseHex = Hex & { readonly uppercase: true };
+type ChecksumAddress = Hex & { readonly checksum: true }
+type LowercaseHex = Hex & { readonly lowercase: true }
+type UppercaseHex = Hex & { readonly uppercase: true }
 ```
 
 **Example:**
 
 ```typescript
-import { Address } from '@tevm/voltaire';
+import { Address } from '@tevm/voltaire'
 
-const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
 
-const checksummed = addr.toChecksummed(); // ChecksumAddress
-const lowercase = addr.toLowercase();     // LowercaseHex
-const uppercase = addr.toUppercase();     // UppercaseHex
+const checksummed = Address.toChecksummed(addr) // ChecksumAddress
+const lowercase = Address.toLowercase(addr)     // LowercaseHex
+const uppercase = Address.toUppercase(addr)     // UppercaseHex
 
 // Type system enforces correctness
 function requireChecksum(hex: ChecksumAddress) { }
 
-requireChecksum(checksummed);  // ✓ Valid
-requireChecksum(lowercase);    // ✗ Error: missing checksum flag
+requireChecksum(checksummed)  // Valid
+requireChecksum(lowercase)    // Error: missing checksum flag
 ```
 
 ## Validation
@@ -230,15 +225,15 @@ requireChecksum(lowercase);    // ✗ Error: missing checksum flag
 All branded types are validated at construction:
 
 ```typescript
-import { Address } from '@tevm/voltaire';
+import { Address } from '@tevm/voltaire'
 
 // Valid - creates AddressType
-Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
 
 // Invalid - throws error
-Address("0xnot_valid");  // Error: Invalid hex
-Address("0x123");        // Error: Invalid length
-Address(new Uint8Array(10)); // Error: Must be 20 bytes
+Address('0xnot_valid')        // Error: Invalid hex
+Address('0x123')              // Error: Invalid length
+Address(new Uint8Array(10))   // Error: Must be 20 bytes
 ```
 
 **If you have a `AddressType`, it's valid.** No need for runtime validation libraries like Zod.
@@ -248,8 +243,8 @@ Address(new Uint8Array(10)); // Error: Must be 20 bytes
 Branded types display formatted in console:
 
 ```typescript
-const addr = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
-console.log(addr);
+const addr = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en)
+console.log(addr)
 // Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
 ```
 
@@ -257,15 +252,14 @@ This improves debugging while maintaining full `Uint8Array` performance.
 
 ## Comparison Table
 
-| Feature | Class API | Namespace API | Tree-Shakeable |
-|---------|-----------|---------------|----------------|
-| Import | `import { Address }` | `import * as Address` | `import { fromHex, toHex }` |
-| Bundle Size | ~18 KB | ~18 KB | ~500 bytes (3 functions) |
-| Syntax | `addr.toHex()` | `Address.toHex(addr)` | `toHex(addr)` |
-| Type | Class instance | AddressType | AddressType |
-| Methods | Prototype | Functions | Functions |
-| Tree-shaking | ✗ No | ✗ No | ✓ Yes |
-| Performance | Fast | Fast | Fastest |
+| Feature | Namespace API | Tree-Shakeable Imports |
+|---------|---------------|------------------------|
+| Import | `import { Address }` | `import { fromHex, toHex }` |
+| Bundle Size | ~18 KB | ~500 bytes (3 functions) |
+| Syntax | `Address.toHex(addr)` | `toHex(addr)` |
+| Type | AddressType | AddressType |
+| Tree-shaking | Partial | Full |
+| Entrypoint consistency | All 3 (JS, WASM, Native) | All 3 (JS, WASM, Native) |
 
 ## Migration Guide
 
@@ -273,12 +267,12 @@ This improves debugging while maintaining full `Uint8Array` performance.
 
 ```typescript
 // Before - unsafe
-type Address = `0x${string}`;
-const addr: Address = "0x123"; // No validation
+type Address = `0x${string}`
+const addr: Address = '0x123' // No validation
 
 // After - safe
-import { Address } from '@tevm/voltaire';
-const addr = Address("0x123"); // Throws error
+import { Address } from '@tevm/voltaire'
+const addr = Address('0x123') // Throws error
 ```
 
 ### From Generic Uint8Array
@@ -286,14 +280,14 @@ const addr = Address("0x123"); // Throws error
 ```typescript
 // Before - no type safety
 function transfer(to: Uint8Array, amount: bigint) { }
-const hash = keccak256(data);
-transfer(hash, 100n); // Compiles but wrong!
+const hash = keccak256(data)
+transfer(hash, 100n) // Compiles but wrong!
 
 // After - type safe
-import type { AddressType } from '@tevm/voltaire/Address';
+import type { AddressType } from '@tevm/voltaire/Address'
 function transfer(to: AddressType, amount: bigint) { }
-const hash = keccak256(data);
-transfer(hash, 100n); // ✗ Type error
+const hash = keccak256(data)
+transfer(hash, 100n) // Type error
 ```
 
 ## Best Practices
@@ -301,54 +295,54 @@ transfer(hash, 100n); // ✗ Type error
 ### Use Branded Types for Function Parameters
 
 ```typescript
-import type { AddressType } from '@tevm/voltaire/Address';
-import type { HashType } from '@tevm/voltaire/Hash';
+import type { AddressType } from '@tevm/voltaire/Address'
+import type { HashType } from '@tevm/voltaire/Hash'
 
-// ✓ Good - explicit types
+// Good - explicit types
 function verify(addr: AddressType, hash: HashType) {
   // addr and hash cannot be swapped
 }
 
-// ✗ Bad - generic types
+// Bad - generic types
 function verify(addr: Uint8Array, hash: Uint8Array) {
   // Easy to swap arguments
 }
 ```
 
-### Use Class API for Application Code
+### Use Namespace API for Application Code
 
 ```typescript
-import { Address, Hash } from '@tevm/voltaire';
+import { Address, Hash } from '@tevm/voltaire'
 
-const addr = Address("0x...");
-const hash = Hash("0x...");
+const addr = Address('0x...')
+const hash = Hash('0x...')
 
-// Convenient method chaining
-const result = addr.toChecksummed();
+// Namespace functions
+const result = Address.toChecksummed(addr)
 ```
 
 ### Use Tree-Shakeable for Libraries
 
 ```typescript
-import { fromHex, toHex } from '@tevm/voltaire/Address';
+import { fromHex, toHex } from '@tevm/voltaire/Address'
 
 // Minimal bundle impact
 export function formatAddress(input: string) {
-  const addr = fromHex(input);
-  return toHex(addr);
+  const addr = fromHex(input)
+  return toHex(addr)
 }
 ```
 
 ### Validate at Boundaries
 
 ```typescript
-import { Address } from '@tevm/voltaire';
-import type { AddressType } from '@tevm/voltaire/Address';
+import { Address } from '@tevm/voltaire'
+import type { AddressType } from '@tevm/voltaire/Address'
 
 // Validate external input at boundary
 export function processRequest(req: { to: string, amount: string }) {
-  const to = Address(req.to); // Validate here
-  return transfer(to, BigInt(req.amount));
+  const to = Address(req.to) // Validate here
+  return transfer(to, BigInt(req.amount))
 }
 
 // Internal functions trust the type

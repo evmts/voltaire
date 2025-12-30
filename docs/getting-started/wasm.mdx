@@ -3,23 +3,51 @@ title: Runtime Implementations
 description: Choose between TypeScript, WASM, and Native FFI based on your environment
 ---
 
-Voltaire provides three implementation tiers for performance-critical operations. Choose based on your runtime environment and performance needs.
+Voltaire provides three entrypoints with **identical APIs**. All implement the `VoltaireAPI` interface, ensuring compile-time errors if APIs diverge.
 
-## Three Tiers
+## Three Entrypoints
 
-| Tier | Import | Runtime | Use Case |
-|------|--------|---------|----------|
-| **TypeScript** | `@tevm/voltaire` | Any JS runtime | Default, universal compatibility |
+| Entrypoint | Import | Runtime | Use Case |
+|------------|--------|---------|----------|
+| **JS** | `@tevm/voltaire` | Any JS runtime | Default, universal compatibility |
 | **WASM** | `@tevm/voltaire/wasm` | Browser, Node, Bun, Deno | High performance, portable |
 | **Native** | `@tevm/voltaire/native` | Bun | Maximum performance via FFI |
 
+```typescript
+// All three have the SAME API
+import { Address, Keccak256 } from '@tevm/voltaire'        // JS (default)
+import { Address, Keccak256 } from '@tevm/voltaire/wasm'   // WASM
+import { Address, Keccak256 } from '@tevm/voltaire/native' // Native FFI
+```
+
 <Note>
-All three tiers expose identical APIs. Swap implementations without changing your code.
+All three entrypoints export identical namespaces and types. Switch implementations by changing the import path - no code changes required.
 </Note>
 
-## TypeScript (Default)
+## Unified VoltaireAPI Interface
 
-Pure TypeScript with zero dependencies. Works everywhere JavaScript runs.
+The `VoltaireAPI` interface (defined in `src/api-interface.ts`) ensures all entrypoints export:
+
+**Primitives:** Address, Hash, Hex, Uint, Rlp, Abi, Blob, AccessList, Bytecode, Chain, Opcode, BloomFilter, Siwe, Bytes, Bytes32, StorageKey, Wei, Gwei, Ether
+
+**Crypto:** Keccak256, SHA256, Blake2, Ripemd160, Secp256k1, Ed25519, P256, X25519, BN254, Bls12381, KZG, EIP712, ModExp
+
+If any entrypoint is missing an export or has a type mismatch, TypeScript will error at compile time.
+
+## Choosing an Entrypoint
+
+| Concern | Recommendation |
+|---------|----------------|
+| **Universal compatibility** | JS (`@tevm/voltaire`) |
+| **Browser crypto performance** | WASM (`@tevm/voltaire/wasm`) |
+| **Bun/Node crypto performance** | Native (`@tevm/voltaire/native`) |
+| **Serverless/Edge** | WASM (`@tevm/voltaire/wasm`) |
+| **Bundle size** | JS or WASM (comparable) |
+| **Debugging** | JS (`@tevm/voltaire`) |
+
+## JS (Default)
+
+Pure TypeScript/JavaScript. Works everywhere JavaScript runs.
 
 <Note>
 Shares peer dependencies with [Tevm](https://tevm.sh) and [Viem](https://viem.sh) for seamless integration.
@@ -28,9 +56,8 @@ Shares peer dependencies with [Tevm](https://tevm.sh) and [Viem](https://viem.sh
 ```typescript
 import { Keccak256, Address, Hex } from '@tevm/voltaire'
 
-// Keccak256.hash expects Uint8Array, Hex.fromString returns hex string
 const hash = Keccak256.hash(Hex.toBytes(Hex.fromString('hello')))
-const addr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
 ```
 
 Best for:
@@ -44,27 +71,20 @@ Best for:
 WebAssembly bindings to Zig implementations. Portable high-performance.
 
 <Note>
-The WASM API is **100% identical** to the TypeScript API. You can swap implementations without changing your code.
+The WASM entrypoint exports the **same API** as JS. Switch by changing the import path.
 </Note>
 
 ```typescript
-import { Keccak256, Secp256k1, Hex } from '@tevm/voltaire/wasm'
+import { Keccak256, Secp256k1, Hex, Address } from '@tevm/voltaire/wasm'
 
-// Crypto operations - same API as TypeScript
+// Same API as JS entrypoint
 const hash = Keccak256.hash(data)
 const recovered = Secp256k1.recoverAddress(hash, signature)
-
-// Primitives - same API as TypeScript
-const bytes = Hex.toBytes('0xdeadbeef')
-const hex = Hex.fromBytes(bytes)
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
 
 // All namespaces work identically
 Secp256k1.sign(message, privateKey)
 ```
-
-Available WASM modules:
-- **Crypto**: Keccak256, Secp256k1, SHA256, RIPEMD160, Blake2, Ed25519, X25519, P256
-- **Primitives**: Hex, RLP, U256, Blob, AccessList, Transaction, Bytecode
 
 Best for:
 - Browser applications needing crypto performance
@@ -76,26 +96,20 @@ Best for:
 Direct bindings to Zig via Bun FFI. Maximum performance.
 
 <Note>
-The Native API is **100% identical** to the TypeScript API. You can swap implementations without changing your code.
+The Native entrypoint exports the **same API** as JS. Switch by changing the import path.
 </Note>
 
 ```typescript
-import { Keccak256, isBun, isNode } from '@tevm/voltaire/native'
+import { Keccak256, Address, Secp256k1 } from '@tevm/voltaire/native'
 
-// Check runtime
-isBun()   // true in Bun
-isNode()  // true in Node.js
-
-// Keccak256 (async - lazy loads native lib)
-const hash = await Keccak256.hash(data)
-const selector = await Keccak256.selector('transfer(address,uint256)')
-
-// Sync after initial load
-const hash2 = Keccak256.hashSync(data)
+// Same API as JS entrypoint
+const hash = Keccak256.hash(data)
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+const signature = Secp256k1.sign(message, privateKey)
 ```
 
 <Warning>
-Runtime support: Native FFI is <strong>Bun-only</strong> right now. In <strong>Node.js</strong>, use the regular TypeScript API or the WASM modules. Also ensure the compiled `.dylib`/`.so`/`.dll` is available (run `zig build build-ts-native`).
+Runtime support: Native FFI is <strong>Bun-only</strong>. In <strong>Node.js</strong>, use the JS or WASM entrypoint. Ensure the compiled `.dylib`/`.so`/`.dll` is available (run `zig build build-ts-native`).
 </Warning>
 
 Best for:
@@ -103,15 +117,31 @@ Best for:
 - CLI tools
 - Maximum throughput requirements
 
+## WASM-Accelerated Methods (`_wasm`)
+
+Some namespaces expose WASM-accelerated methods via the `_wasm` property:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire'
+
+// Default JS implementation
+const hash1 = Keccak256.hash(data)
+
+// WASM-accelerated (if available)
+const hash2 = Keccak256._wasm.hash(data)
+```
+
+This lets you use WASM for specific hot paths without switching entrypoints entirely. Available on crypto namespaces like `Keccak256`, `Secp256k1`, `SHA256`, etc.
+
 ## Per-Module Imports
 
 For fine-grained control, import specific implementations:
 
 ```typescript
 // Keccak256 variants
-import * as Keccak256 from '@tevm/voltaire/Keccak256'           // Default (TS)
-import * as Keccak256 from '@tevm/voltaire/Keccak256/native'    // Native FFI
+import * as Keccak256 from '@tevm/voltaire/Keccak256'           // JS (default)
 import * as Keccak256 from '@tevm/voltaire/Keccak256/wasm'      // WASM
+import * as Keccak256 from '@tevm/voltaire/Keccak256/native'    // Native FFI
 ```
 
 ## Performance Considerations
@@ -127,20 +157,20 @@ Performance is nuanced. WASM/Native aren't always faster than TypeScript.
 - Large data encoding/decoding (RLP, ABI with big payloads)
 - Batch operations that amortize bridging cost
 
-**When TypeScript wins**:
+**When JS wins**:
 - Simple operations (hex encoding small values, address validation)
 - Single-item operations with low computational cost
-- When avoiding async overhead matters (native FFI is async on first load)
+- When avoiding async overhead matters
 
 **Bundle size**: For cryptography specifically, WASM is often *smaller* than equivalent pure-JS implementations. A full JS secp256k1 library can be 50-100KB, while WASM crypto modules are typically 20-40KB.
 
-| Operation | TypeScript | WASM | Native | Default |
-|-----------|------------|------|--------|---------|
-| keccak256 | 1x | ~5x | ~10x | TypeScript |
-| secp256k1 sign | 1x | ~8x | ~15x | TypeScript |
-| secp256k1 recover | 1x | ~8x | ~15x | TypeScript |
-| RLP encode | 1x | ~1.2x | ~1.5x | TypeScript |
-| Hex encode | 1x | ~1.1x | ~1.2x | TypeScript |
+| Operation | JS | WASM | Native | Default |
+|-----------|-----|------|--------|---------|
+| keccak256 | 1x | ~5x | ~10x | JS |
+| secp256k1 sign | 1x | ~8x | ~15x | JS |
+| secp256k1 recover | 1x | ~8x | ~15x | JS |
+| RLP encode | 1x | ~1.2x | ~1.5x | JS |
+| Hex encode | 1x | ~1.1x | ~1.2x | JS |
 
 <Tip>
 Benchmark your actual workload. Default implementations are chosen for common use cases, but your specific access patterns may differ.
