@@ -295,14 +295,7 @@ const isValid = bn254Pairing(input3); // boolean
 
 ### WASM Builds
 
-**Zig fallback**: WASM builds use Zig implementation (arkworks unavailable in WASM).
-
-```bash
-zig build build-ts-wasm       # WASM with Zig BN254
-zig build build-ts-wasm-fast  # Performance-optimized WASM
-```
-
-**Trade-off**: WASM performance ~50% of native arkworks, but fully functional.
+**Zig fallback**: WASM builds use Zig implementation (arkworks unavailable in WASM). WASM performance is ~50% of native arkworks, but fully functional.
 
 ## Security Considerations
 
@@ -349,13 +342,6 @@ if (!G2.isOnCurve(g2) || !G2.isInSubgroup(g2)) {
 - ECMUL: ~0.3ms
 - Pairing: ~3ms
 - Pairing check (2 pairs): ~5ms
-
-**Benchmarking**:
-```bash
-zig build bench                    # Native Zig benchmarks
-bun run bench                      # TS vs Native comparison
-zig build build-ts-wasm-fast       # Optimized WASM
-```
 
 ## Constants
 

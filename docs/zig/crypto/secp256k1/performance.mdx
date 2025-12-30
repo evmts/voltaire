@@ -64,12 +64,6 @@ TypeScript is ~2-3× slower than native C but still practical for most use cases
 ### Native Build (ReleaseFast)
 
 Measured on MacBook Pro M1:
-
-```bash
-zig build bench -Dbench-filter=secp256k1
-```
-
-**Results:**
 - **Derivation:** 0.15-0.25ms per key
 - **Signing:** 0.40-0.60ms per signature
 - **Verification:** 0.80-1.20ms per signature

@@ -548,12 +548,6 @@ if (!isValid) {
 - Verify blob proof: ~52ms (commitment + verification)
 - Batch verify (4 blobs): ~80ms (vs ~208ms individual)
 
-**Benchmarking**:
-```bash
-zig build bench                    # Native benchmarks
-bun run bench                      # Cross-library comparison
-```
-
 **Optimization Tips**:
 - Precompute commitments during block production
 - Use batch verification for multiple blobs
