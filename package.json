@@ -1,6 +1,6 @@
 {
 	"name": "@tevm/voltaire",
-	"version": "0.1.14",
+	"version": "0.1.15",
 	"private": false,
 	"description": "Ethereum primitives and cryptography library with TypeScript implementations and native Zig bindings via Bun FFI",
 	"keywords": [
@@ -666,6 +666,8 @@
 	"module": "dist/index.js",
 	"types": "types/index.d.ts",
 	"files": ["dist", "types", "bin"],
+	"publishConfig": { "access": "public" },
+	"engines": { "node": ">=18" },
 	"scripts": {
 		"all": "pnpm install && pnpm build && pnpm lint && pnpm format && pnpm test:run",
 		"bench": "pnpm dlx tsx scripts/run-benchmarks.ts",
@@ -708,7 +710,8 @@
 		"predocs:dev": "npm run docs:ghost-tests",
 		"predocs:build": "npm run docs:ghost-tests",
 		"premint:dev": "npm run docs:ghost-tests",
-		"predocs:playground:build": "npm run docs:ghost-tests"
+		"predocs:playground:build": "npm run docs:ghost-tests",
+		"prepublishOnly": "pnpm build && pnpm lint:package && pnpm test:run"
 	},
 	"devDependencies": {
 		"@anthropic-ai/claude-agent-sdk": "^0.1.76",
