@@ -5,10 +5,20 @@
  * Gas: Similar to CALL but no value parameter (preserves current msg.value)
  * Note: Introduced in EIP-7 (Homestead)
  *
+ * ## Architecture Note
+ *
+ * This is a low-level opcode handler. For full nested execution, the host must
+ * provide a `call` method. Full EVM implementations are in:
+ * - **guillotine**: Production EVM with async state, tracing, full EIP support
+ * - **guillotine-mini**: Lightweight synchronous EVM for testing
+ *
+ * When host.call is not provided, returns NotImplemented error.
+ *
  * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @param {import("../Host/HostType.js").BrandedHost} [host] - Host interface (optional)
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
-export function delegatecall(frame) {
+export function delegatecall(frame, host) {
 	// EIP-7 (Homestead): DELEGATECALL requires Homestead or later
 	// In a full implementation, check hardfork version and return InvalidOpcode if earlier
 	// For now, assume Homestead or later
@@ -104,33 +114,96 @@ export function delegatecall(frame) {
 		inputData[i] = readMemory(frame, inOff + i);
 	}
 
-	// Perform nested DELEGATECALL execution
-	// DELEGATECALL executes target's code in current context:
-	// - msg.sender stays the ORIGINAL sender (frame.caller, not frame.address)
-	// - msg.value stays the ORIGINAL value (not transferred, preserves caller's msg.value)
-	// - Uses current account's storage, balance, and nonce
-	// - Only borrows code from target address
-	// - Modifications to storage affect current account
-	//
-	// In a full implementation:
-	// 1. Check call depth (max 1024)
-	// 2. Fetch code from target address
-	// 3. Create new frame with caller=frame.caller, address=frame.address, value=frame.value
-	// 4. Execute target code in this new frame with current storage/balance
-	// 5. Copy output to memory at outOffset
-	// 6. Refund unused gas
-	// 7. Store return data
-	//
-	// For now (stub implementation): push 0 (failure) to stack
-	// Full implementation requires EVM state access and nested frame creation
+	// Check call depth (max 1024)
+	if (frame.callDepth >= 1024) {
+		frame.returnData = new Uint8Array(0);
+		const pushErr = pushStack(frame, 0n);
+		if (pushErr) return pushErr;
+		frame.pc += 1;
+		return null;
+	}
 
-	frame.returnData = new Uint8Array(0);
+	// Convert address from bigint to bytes
+	const targetAddress = bigintToAddress(address);
 
-	const pushErr = pushStack(frame, 0n);
+	// If host.call is not provided, return NotImplemented error
+	// Full EVM implementations (guillotine/guillotine-mini) provide this method
+	if (!host?.call) {
+		return {
+			type: "NotImplemented",
+			message: "DELEGATECALL requires host.call() - use guillotine or guillotine-mini for full EVM execution"
+		};
+	}
+
+	// Execute nested call via host
+	// DELEGATECALL: caller stays same, address stays same, value stays same
+	const result = host.call({
+		callType: "DELEGATECALL",
+		target: targetAddress,
+		value: frame.value, // Preserve original value
+		gasLimit: availableGas,
+		input: inputData,
+		caller: frame.caller, // Preserve original caller
+		isStatic: frame.isStatic,
+		depth: frame.callDepth + 1,
+	});
+
+	// Store return data for RETURNDATASIZE/RETURNDATACOPY
+	frame.returnData = result.output;
+
+	// Copy output to memory at outOffset (up to outLength bytes)
+	const copyLen = Math.min(outLen, result.output.length);
+	for (let i = 0; i < copyLen; i++) {
+		writeMemory(frame, outOff + i, result.output[i]);
+	}
+
+	// Refund unused gas
+	const gasRefund = availableGas - result.gasUsed;
+	if (gasRefund > 0n) {
+		frame.gasRemaining += gasRefund;
+	}
+
+	// Add gas refunds from child
+	if (result.gasRefund > 0n) {
+		frame.gasRefunds = (frame.gasRefunds ?? 0n) + result.gasRefund;
+	}
+
+	// Collect logs from child
+	if (result.logs && result.logs.length > 0) {
+		frame.logs = frame.logs ?? [];
+		frame.logs.push(...result.logs);
+	}
+
+	// Push success (1) or failure (0) to stack
+	const pushErr = pushStack(frame, result.success ? 1n : 0n);
 	if (pushErr) return pushErr;
 
 	frame.pc += 1;
 	return null;
+}
+
+/**
+ * Convert bigint address to 20-byte Uint8Array
+ * @param {bigint} addr
+ * @returns {import("../../primitives/Address/AddressType.js").AddressType}
+ */
+function bigintToAddress(addr) {
+	const bytes = new Uint8Array(20);
+	let val = addr;
+	for (let i = 19; i >= 0; i--) {
+		bytes[i] = Number(val & 0xffn);
+		val >>= 8n;
+	}
+	return /** @type {import("../../primitives/Address/AddressType.js").AddressType} */ (bytes);
+}
+
+/**
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame
+ * @param {number} offset
+ * @param {number} value
+ */
+function writeMemory(frame, offset, value) {
+	frame.memory.set(offset, value);
 }
 
 /**

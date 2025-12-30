@@ -4,10 +4,20 @@
  * Stack: [gas, address, value, inOffset, inLength, outOffset, outLength] => [success]
  * Gas: Complex (base + memory + cold access + value transfer + new account)
  *
+ * ## Architecture Note
+ *
+ * This is a low-level opcode handler. For full nested execution, the host must
+ * provide a `call` method. Full EVM implementations are in:
+ * - **guillotine**: Production EVM with async state, tracing, full EIP support
+ * - **guillotine-mini**: Lightweight synchronous EVM for testing
+ *
+ * When host.call is not provided, returns NotImplemented error.
+ *
  * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @param {import("../Host/HostType.js").BrandedHost} [host] - Host interface (optional)
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
-export function call(frame) {
+export function call(frame, host) {
 	// Pop all 7 arguments (stack order: bottom to top)
 	// Stack layout: [..., gas, address, value, inOffset, inLength, outOffset, outLength]
 	// Pop order (top to bottom): outLength, outOffset, inLength, inOffset, value, address, gas
@@ -129,36 +139,95 @@ export function call(frame) {
 		inputData[i] = readMemory(frame, inOff + i);
 	}
 
-	// Perform nested CALL execution
-	// In a full implementation:
-	// 1. Check call depth (max 1024)
-	// 2. Check sender balance >= value (fails with InsufficientBalance if not)
-	// 3. Increment nonce if value transfer occurs
-	// 4. Transfer value from sender to recipient
-	// 5. Fetch code from target address
-	// 6. Execute target code with inputData
-	// 7. Copy output to memory at outOffset (up to outLength bytes)
-	// 8. Refund unused gas (cap at availableGas to prevent overflow)
-	// 9. Store return data for RETURNDATASIZE/RETURNDATACOPY
-	// 10. Push success status (1 or 0) to stack
-	//
-	// Gas handling:
-	// - Gas stipend (2300): added to available gas for value transfers, but caller doesn't pay for it
-	// - Child gas left: refunded to parent's gas_remaining
-	// - Frame's returnData: set to child's output for RETURNDATASIZE/RETURNDATACOPY
-	//
-	// For now (stub implementation): push 0 (failure) to stack
-	// Full implementation requires EVM state access and nested frame creation
+	// Check call depth (max 1024)
+	if (frame.callDepth >= 1024) {
+		frame.returnData = new Uint8Array(0);
+		const pushErr = pushStack(frame, 0n);
+		if (pushErr) return pushErr;
+		frame.pc += 1;
+		return null;
+	}
 
-	// Set empty return data (failure case)
-	frame.returnData = new Uint8Array(0);
+	// Convert address from bigint to bytes
+	const targetAddress = bigintToAddress(address);
 
-	// Push failure (0) to stack
-	const pushErr = pushStack(frame, 0n);
+	// If host.call is not provided, return NotImplemented error
+	// Full EVM implementations (guillotine/guillotine-mini) provide this method
+	if (!host?.call) {
+		return {
+			type: "NotImplemented",
+			message: "CALL requires host.call() - use guillotine or guillotine-mini for full EVM execution"
+		};
+	}
+
+	// Execute nested call via host
+	const result = host.call({
+		callType: "CALL",
+		target: targetAddress,
+		value,
+		gasLimit: availableGas,
+		input: inputData,
+		caller: frame.address,
+		isStatic: frame.isStatic,
+		depth: frame.callDepth + 1,
+	});
+
+	// Store return data for RETURNDATASIZE/RETURNDATACOPY
+	frame.returnData = result.output;
+
+	// Copy output to memory at outOffset (up to outLength bytes)
+	const copyLen = Math.min(outLen, result.output.length);
+	for (let i = 0; i < copyLen; i++) {
+		writeMemory(frame, outOff + i, result.output[i]);
+	}
+
+	// Refund unused gas
+	const gasRefund = availableGas - result.gasUsed;
+	if (gasRefund > 0n) {
+		frame.gasRemaining += gasRefund;
+	}
+
+	// Add gas refunds from child
+	if (result.gasRefund > 0n) {
+		frame.gasRefunds = (frame.gasRefunds ?? 0n) + result.gasRefund;
+	}
+
+	// Collect logs from child
+	if (result.logs && result.logs.length > 0) {
+		frame.logs = frame.logs ?? [];
+		frame.logs.push(...result.logs);
+	}
+
+	// Push success (1) or failure (0) to stack
+	const pushErr = pushStack(frame, result.success ? 1n : 0n);
 	if (pushErr) return pushErr;
 
 	frame.pc += 1;
 	return null;
+}
+
+/**
+ * Convert bigint address to 20-byte Uint8Array
+ * @param {bigint} addr
+ * @returns {import("../../primitives/Address/AddressType.js").AddressType}
+ */
+function bigintToAddress(addr) {
+	const bytes = new Uint8Array(20);
+	let val = addr;
+	for (let i = 19; i >= 0; i--) {
+		bytes[i] = Number(val & 0xffn);
+		val >>= 8n;
+	}
+	return /** @type {import("../../primitives/Address/AddressType.js").AddressType} */ (bytes);
+}
+
+/**
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame
+ * @param {number} offset
+ * @param {number} value
+ */
+function writeMemory(frame, offset, value) {
+	frame.memory.set(offset, value);
 }
 
 /**

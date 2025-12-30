@@ -4,10 +4,20 @@
  * Stack: [value, offset, length] => [address]
  * Gas: 32000 + memory expansion + init code hash cost
  *
+ * ## Architecture Note
+ *
+ * This is a low-level opcode handler. For full nested execution, the host must
+ * provide a `create` method. Full EVM implementations are in:
+ * - **guillotine**: Production EVM with async state, tracing, full EIP support
+ * - **guillotine-mini**: Lightweight synchronous EVM for testing
+ *
+ * When host.create is not provided, returns NotImplemented error.
+ *
  * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @param {import("../Host/HostType.js").BrandedHost} [host] - Host interface (optional)
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
-export function create(frame) {
+export function create(frame, host) {
 	// EIP-214: CREATE cannot be executed in static call context
 	if (frame.isStatic) {
 		return { type: "WriteProtection" };
@@ -73,25 +83,72 @@ export function create(frame) {
 	// Clear return data before execution
 	frame.returnData = new Uint8Array(0);
 
-	// Perform nested CREATE execution
-	// In a full EVM implementation this would:
-	// 1. Increment sender nonce
-	// 2. Calculate new contract address: keccak256(rlp([sender, nonce]))
-	// 3. Check call depth (max 1024)
-	// 4. Check sender balance sufficient for value transfer
-	// 5. Execute init code in new context (like CALL but target address depends on nonce)
-	// 6. On success: store returned bytecode at address, push address to stack
-	// 7. On failure: push 0 to stack, set returnData to child's output
-	//
-	// For now (stub implementation): push 0 (failure) to stack
-	// Gas refunds and account creation logic require full EVM state access
+	// Check call depth (max 1024)
+	if (frame.callDepth >= 1024) {
+		const pushErr = pushStack(frame, 0n);
+		if (pushErr) return pushErr;
+		frame.pc += 1;
+		return null;
+	}
 
-	// Push failure address (0) to stack
-	const pushErr = pushStack(frame, 0n);
-	if (pushErr) return pushErr;
+	// If host.create is not provided, return NotImplemented error
+	// Full EVM implementations (guillotine/guillotine-mini) provide this method
+	if (!host?.create) {
+		return {
+			type: "NotImplemented",
+			message: "CREATE requires host.create() - use guillotine or guillotine-mini for full EVM execution"
+		};
+	}
+
+	// Execute nested create via host
+	const result = host.create({
+		caller: frame.address,
+		value,
+		initCode,
+		gasLimit: maxGas,
+		depth: frame.callDepth + 1,
+		// salt is undefined for CREATE (only CREATE2 has salt)
+	});
+
+	// Store return data for RETURNDATASIZE/RETURNDATACOPY
+	frame.returnData = result.output;
+
+	// Refund unused gas
+	const gasRefund = maxGas - result.gasUsed;
+	if (gasRefund > 0n) {
+		frame.gasRemaining += gasRefund;
+	}
+
+	// Add gas refunds from child
+	if (result.gasRefund > 0n) {
+		frame.gasRefunds = (frame.gasRefunds ?? 0n) + result.gasRefund;
+	}
+
+	// Push address (success) or 0 (failure) to stack
+	if (result.success && result.address) {
+		const addrBigint = addressToBigint(result.address);
+		const pushErr = pushStack(frame, addrBigint);
+		if (pushErr) return pushErr;
+	} else {
+		const pushErr = pushStack(frame, 0n);
+		if (pushErr) return pushErr;
+	}
 
 	frame.pc += 1;
 	return null;
+}
+
+/**
+ * Convert 20-byte address to bigint
+ * @param {Uint8Array} addr
+ * @returns {bigint}
+ */
+function addressToBigint(addr) {
+	let result = 0n;
+	for (let i = 0; i < 20; i++) {
+		result = (result << 8n) | BigInt(addr[i]);
+	}
+	return result;
 }
 
 /**

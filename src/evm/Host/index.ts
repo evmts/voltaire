@@ -2,6 +2,7 @@
 export type { BrandedHost } from "./HostType.js";
 
 import type { AddressType as Address } from "../../primitives/Address/AddressType.js";
+import type { CallParams, CallResult, CreateParams, CreateResult } from "../InstructionHandlerType.js";
 import type { BrandedHost } from "./HostType.js";
 // Internal imports
 import { createMemoryHost as _createMemoryHost } from "./createMemoryHost.js";
@@ -13,6 +14,15 @@ export { createMemoryHost as _createMemoryHost } from "./createMemoryHost.js";
 
 /**
  * Host implementation interface
+ *
+ * ## Architecture Note
+ *
+ * This module provides low-level EVM primitives. For full EVM execution use:
+ * - **guillotine**: Production EVM with async state, tracing, full EIP support
+ * - **guillotine-mini**: Lightweight synchronous EVM for testing
+ *
+ * The optional `call` and `create` methods enable nested execution. When not
+ * provided, system opcodes (CALL, CREATE, etc.) return NotImplemented error.
  */
 export interface HostImpl {
 	getBalance: (address: Address) => bigint;
@@ -25,6 +35,10 @@ export interface HostImpl {
 	setNonce: (address: Address, nonce: bigint) => void;
 	getTransientStorage?: (address: Address, slot: bigint) => bigint;
 	setTransientStorage?: (address: Address, slot: bigint, value: bigint) => void;
+	/** Optional: nested CALL execution. Provided by guillotine/guillotine-mini. */
+	call?: (params: CallParams) => CallResult;
+	/** Optional: nested CREATE execution. Provided by guillotine/guillotine-mini. */
+	create?: (params: CreateParams) => CreateResult;
 }
 
 /**

@@ -100,4 +100,5 @@ export type EvmError =
 	| { type: "RevertExecuted" }
 	| { type: "CallDepthExceeded" }
 	| { type: "WriteProtection" }
-	| { type: "InsufficientBalance" };
+	| { type: "InsufficientBalance" }
+	| { type: "NotImplemented"; message: string };
