@@ -17,6 +17,16 @@ import type {
 } from "./types.js";
 
 /**
+ * JSON-RPC response structure
+ */
+interface JsonRpcResponse {
+	jsonrpc: string;
+	id: number;
+	result?: unknown;
+	error?: RpcError;
+}
+
+/**
  * HTTP configuration options
  */
 export interface HttpProviderOptions {
@@ -121,10 +131,10 @@ export class HttpProvider implements Provider {
 					throw error;
 				}
 
-				const json: any = await response.json();
+				const json = (await response.json()) as JsonRpcResponse;
 
 				if (json.error) {
-					throw json.error as RpcError;
+					throw json.error;
 				}
 
 				return json.result;
