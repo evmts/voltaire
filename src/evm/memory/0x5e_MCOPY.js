@@ -37,6 +37,7 @@ function copyGasCost(sizeBytes) {
  * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode implementation
 export function mcopy(frame) {
 	// Pop dest, src, len from stack
 	const destResult = popStack(frame);
