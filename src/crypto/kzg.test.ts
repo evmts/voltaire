@@ -77,6 +77,7 @@ describe.skipIf(!hasNativeKzg)("Kzg Blob Validation", () => {
 	});
 
 	it("should reject non-Uint8Array", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => Kzg.validateBlob([] as any)).toThrow(KzgInvalidBlobError);
 	});
 
@@ -274,7 +275,7 @@ describe.skipIf(!hasNativeKzg)("Kzg Verify Proof", () => {
 		const { proof, y } = Kzg.Proof(blob, z);
 		// Corrupt the proof
 		const corruptedProof = new Uint8Array(proof);
-		corruptedProof[0]! ^= 1;
+		corruptedProof[0] ^= 1;
 		const valid = Kzg.verifyKzgProof(commitment, z, y, corruptedProof);
 		expect(valid).toBe(false);
 	});
@@ -299,7 +300,7 @@ describe.skipIf(!hasNativeKzg)("Kzg Verify Proof", () => {
 		const { proof, y } = Kzg.Proof(blob, z);
 		// Corrupt y value
 		const wrongY = new Uint8Array(y);
-		wrongY[0]! ^= 1;
+		wrongY[0] ^= 1;
 		const valid = Kzg.verifyKzgProof(commitment, z, wrongY, proof);
 		expect(valid).toBe(false);
 	});
@@ -361,6 +362,7 @@ describe.skipIf(!hasNativeKzg)("Kzg Batch Verification", () => {
 		];
 		const commitments = blobs.map((blob) => Kzg.Commitment(blob));
 		const proofs = blobs.map((blob, i) =>
+			// biome-ignore lint/style/noNonNullAssertion: index from map callback
 			Kzg.computeBlobKzgProof(blob, commitments[i]!),
 		);
 		const valid = Kzg.verifyBlobKzgProofBatch(blobs, commitments, proofs);
@@ -369,7 +371,9 @@ describe.skipIf(!hasNativeKzg)("Kzg Batch Verification", () => {
 
 	it("should reject mismatched array lengths", () => {
 		const blobs = [Kzg.generateRandomBlob(1), Kzg.generateRandomBlob(2)];
+		// biome-ignore lint/style/noNonNullAssertion: array index checked
 		const commitments = [Kzg.Commitment(blobs[0]!)];
+		// biome-ignore lint/style/noNonNullAssertion: array index checked
 		const proofs = [Kzg.Proof(blobs[0]!, new Uint8Array(32)).proof];
 		expect(() =>
 			Kzg.verifyBlobKzgProofBatch(blobs, commitments, proofs),

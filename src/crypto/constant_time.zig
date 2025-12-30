@@ -33,26 +33,31 @@
 //! - [Timing Attacks on Implementations](https://www.paulkocher.com/doc/TimingAttacks.pdf)
 
 const std = @import("std");
+const builtin = @import("builtin");
 
 /// Constant-time equality check for u256 values.
 /// Returns 1 if equal, 0 if not equal.
 /// Executes in constant time regardless of input values.
 pub fn constantTimeEqU256(a: u256, b: u256) u8 {
-    // XOR to find differing bits
-    const diff: u256 = a ^ b;
+    // On wasm targets, avoid potential miscompilation of wide shifts/truncations by
+    // comparing big-endian byte representations in constant time.
+    if (builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64) {
+        var abuf: [32]u8 = undefined;
+        var bbuf: [32]u8 = undefined;
+        std.mem.writeInt(u256, &abuf, a, .big);
+        std.mem.writeInt(u256, &bbuf, b, .big);
+        return @intFromBool(constantTimeEqBytes(&abuf, &bbuf));
+    }
 
-    // Fold 256 bits down to 64 bits using OR
+    // Default implementation for non-wasm targets using XOR-folding.
+    const diff: u256 = a ^ b;
     const folded: u64 = @as(u64, @truncate(diff)) |
         @as(u64, @truncate(diff >> 64)) |
         @as(u64, @truncate(diff >> 128)) |
         @as(u64, @truncate(diff >> 192));
-
-    // Fold 64 bits down to 8 bits
     const r32: u32 = @truncate(folded | (folded >> 32));
     const r16: u16 = @truncate(r32 | (r32 >> 16));
     const r8: u8 = @truncate(r16 | (r16 >> 8));
-
-    // Return 1 if all bits were 0 (values equal), 0 otherwise
     return @intFromBool(r8 == 0);
 }
 
