@@ -124,6 +124,7 @@ describe("EIP-1193 Compliance", () => {
 
 		it("on() returns provider for chaining", () => {
 			const mockProvider = {
+				// biome-ignore lint/suspicious/noExplicitAny: mock provider uses 'this' binding
 				on: vi.fn(function (this: any) {
 					return this;
 				}),
@@ -138,6 +139,7 @@ describe("EIP-1193 Compliance", () => {
 		it("removeListener() returns provider for chaining", () => {
 			const mockProvider = {
 				on: vi.fn(),
+				// biome-ignore lint/suspicious/noExplicitAny: mock provider uses 'this' binding
 				removeListener: vi.fn(function (this: any) {
 					return this;
 				}),
@@ -341,6 +343,7 @@ describe("EIP-1193 Compliance", () => {
 
 			try {
 				await mockProvider.request({ method: "eth_unknown" });
+				// biome-ignore lint/suspicious/noExplicitAny: test verifies error shape
 			} catch (error: any) {
 				expect(typeof error.code).toBe("number");
 			}
@@ -356,6 +359,7 @@ describe("EIP-1193 Compliance", () => {
 
 			try {
 				await mockProvider.request({ method: "eth_sendTransaction" });
+				// biome-ignore lint/suspicious/noExplicitAny: test verifies error shape
 			} catch (error: any) {
 				expect(typeof error.message).toBe("string");
 			}
