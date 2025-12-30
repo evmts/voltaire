@@ -35,6 +35,9 @@ const ErrorMessages: Record<ErrorCode, string> = {
 	[ErrorCode.MAX_LENGTH_EXCEEDED]: "Maximum length exceeded",
 	[ErrorCode.ACCESS_LIST_INVALID]: "Invalid access list",
 	[ErrorCode.AUTHORIZATION_INVALID]: "Invalid authorization",
+	[ErrorCode.KZG_NOT_LOADED]: "KZG trusted setup not loaded",
+	[ErrorCode.KZG_INVALID_BLOB]: "Invalid KZG blob",
+	[ErrorCode.KZG_INVALID_PROOF]: "Invalid KZG proof",
 };
 
 /**
@@ -3085,6 +3088,330 @@ export function p256Ecdh(
 		}
 
 		return readBytes(sharedPtr, 32);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+// ============================================================================
+// KZG API (EIP-4844)
+// ============================================================================
+
+/** KZG blob size in bytes (128 KB) */
+export const KZG_BLOB_SIZE = 131072;
+/** KZG commitment size in bytes (BLS12-381 G1 point) */
+export const KZG_COMMITMENT_SIZE = 48;
+/** KZG proof size in bytes (BLS12-381 G1 point) */
+export const KZG_PROOF_SIZE = 48;
+/** KZG field element size in bytes */
+export const KZG_FIELD_ELEMENT_SIZE = 32;
+
+let kzgInitialized = false;
+
+/**
+ * Check if KZG trusted setup is initialized
+ * @returns True if initialized
+ */
+export function kzgIsInitialized(): boolean {
+	return kzgInitialized;
+}
+
+/**
+ * Load KZG trusted setup from embedded data
+ *
+ * Must be called once before using any KZG functions.
+ * Uses the embedded trusted setup from c-kzg-4844.
+ *
+ * @throws {Error} If loading fails
+ */
+export function kzgLoadTrustedSetup(): void {
+	const exports = getExports();
+	const result = exports.kzg_load_trusted_setup();
+	if (result !== 0) {
+		throw new Error("Failed to load KZG trusted setup");
+	}
+	kzgInitialized = true;
+}
+
+/**
+ * Free KZG trusted setup resources
+ *
+ * Call when KZG operations are no longer needed.
+ */
+export function kzgFreeTrustedSetup(): void {
+	const exports = getExports();
+	exports.kzg_free_trusted_setup();
+	kzgInitialized = false;
+}
+
+/**
+ * Convert a blob to its KZG commitment
+ *
+ * @param blob - 131072-byte blob
+ * @returns 48-byte KZG commitment (BLS12-381 G1 point)
+ * @throws {Error} If trusted setup not loaded or blob is invalid
+ */
+export function kzgBlobToCommitment(blob: Uint8Array): Uint8Array {
+	if (!kzgInitialized) {
+		throw new Error(
+			"KZG trusted setup not initialized. Call kzgLoadTrustedSetup() first.",
+		);
+	}
+	if (blob.length !== KZG_BLOB_SIZE) {
+		throw new Error(
+			`Invalid blob length: expected ${KZG_BLOB_SIZE}, got ${blob.length}`,
+		);
+	}
+
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const blobPtr = malloc(KZG_BLOB_SIZE);
+		const outPtr = malloc(KZG_COMMITMENT_SIZE);
+
+		writeBytes(blob, blobPtr);
+		const result = exports.kzg_blob_to_commitment(blobPtr, outPtr);
+		if (result !== 0) {
+			throw new Error("Failed to compute KZG commitment");
+		}
+
+		return readBytes(outPtr, KZG_COMMITMENT_SIZE);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Compute KZG proof for a blob at a given point
+ *
+ * @param blob - 131072-byte blob
+ * @param z - 32-byte field element (evaluation point)
+ * @returns Object with proof (48 bytes) and y (32 bytes, evaluation result)
+ * @throws {Error} If trusted setup not loaded or inputs are invalid
+ */
+export function kzgComputeProof(
+	blob: Uint8Array,
+	z: Uint8Array,
+): { proof: Uint8Array; y: Uint8Array } {
+	if (!kzgInitialized) {
+		throw new Error(
+			"KZG trusted setup not initialized. Call kzgLoadTrustedSetup() first.",
+		);
+	}
+	if (blob.length !== KZG_BLOB_SIZE) {
+		throw new Error(
+			`Invalid blob length: expected ${KZG_BLOB_SIZE}, got ${blob.length}`,
+		);
+	}
+	if (z.length !== KZG_FIELD_ELEMENT_SIZE) {
+		throw new Error(
+			`Invalid z length: expected ${KZG_FIELD_ELEMENT_SIZE}, got ${z.length}`,
+		);
+	}
+
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const blobPtr = malloc(KZG_BLOB_SIZE);
+		const zPtr = malloc(KZG_FIELD_ELEMENT_SIZE);
+		const proofPtr = malloc(KZG_PROOF_SIZE);
+		const yPtr = malloc(KZG_FIELD_ELEMENT_SIZE);
+
+		writeBytes(blob, blobPtr);
+		writeBytes(z, zPtr);
+		const result = exports.kzg_compute_proof(blobPtr, zPtr, proofPtr, yPtr);
+		if (result !== 0) {
+			throw new Error("Failed to compute KZG proof");
+		}
+
+		return {
+			proof: readBytes(proofPtr, KZG_PROOF_SIZE),
+			y: readBytes(yPtr, KZG_FIELD_ELEMENT_SIZE),
+		};
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Compute KZG proof for a blob given its commitment
+ *
+ * @param blob - 131072-byte blob
+ * @param commitment - 48-byte KZG commitment
+ * @returns 48-byte KZG proof
+ * @throws {Error} If trusted setup not loaded or inputs are invalid
+ */
+export function kzgComputeBlobProof(
+	blob: Uint8Array,
+	commitment: Uint8Array,
+): Uint8Array {
+	if (!kzgInitialized) {
+		throw new Error(
+			"KZG trusted setup not initialized. Call kzgLoadTrustedSetup() first.",
+		);
+	}
+	if (blob.length !== KZG_BLOB_SIZE) {
+		throw new Error(
+			`Invalid blob length: expected ${KZG_BLOB_SIZE}, got ${blob.length}`,
+		);
+	}
+	if (commitment.length !== KZG_COMMITMENT_SIZE) {
+		throw new Error(
+			`Invalid commitment length: expected ${KZG_COMMITMENT_SIZE}, got ${commitment.length}`,
+		);
+	}
+
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const blobPtr = malloc(KZG_BLOB_SIZE);
+		const commitmentPtr = malloc(KZG_COMMITMENT_SIZE);
+		const proofPtr = malloc(KZG_PROOF_SIZE);
+
+		writeBytes(blob, blobPtr);
+		writeBytes(commitment, commitmentPtr);
+		const result = exports.kzg_compute_blob_proof(
+			blobPtr,
+			commitmentPtr,
+			proofPtr,
+		);
+		if (result !== 0) {
+			throw new Error("Failed to compute KZG blob proof");
+		}
+
+		return readBytes(proofPtr, KZG_PROOF_SIZE);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Verify a KZG proof
+ *
+ * @param commitment - 48-byte KZG commitment
+ * @param z - 32-byte field element (evaluation point)
+ * @param y - 32-byte field element (claimed evaluation)
+ * @param proof - 48-byte KZG proof
+ * @returns True if proof is valid
+ * @throws {Error} If trusted setup not loaded or inputs are invalid
+ */
+export function kzgVerifyProof(
+	commitment: Uint8Array,
+	z: Uint8Array,
+	y: Uint8Array,
+	proof: Uint8Array,
+): boolean {
+	if (!kzgInitialized) {
+		throw new Error(
+			"KZG trusted setup not initialized. Call kzgLoadTrustedSetup() first.",
+		);
+	}
+	if (commitment.length !== KZG_COMMITMENT_SIZE) {
+		throw new Error(
+			`Invalid commitment length: expected ${KZG_COMMITMENT_SIZE}, got ${commitment.length}`,
+		);
+	}
+	if (z.length !== KZG_FIELD_ELEMENT_SIZE) {
+		throw new Error(
+			`Invalid z length: expected ${KZG_FIELD_ELEMENT_SIZE}, got ${z.length}`,
+		);
+	}
+	if (y.length !== KZG_FIELD_ELEMENT_SIZE) {
+		throw new Error(
+			`Invalid y length: expected ${KZG_FIELD_ELEMENT_SIZE}, got ${y.length}`,
+		);
+	}
+	if (proof.length !== KZG_PROOF_SIZE) {
+		throw new Error(
+			`Invalid proof length: expected ${KZG_PROOF_SIZE}, got ${proof.length}`,
+		);
+	}
+
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const commitmentPtr = malloc(KZG_COMMITMENT_SIZE);
+		const zPtr = malloc(KZG_FIELD_ELEMENT_SIZE);
+		const yPtr = malloc(KZG_FIELD_ELEMENT_SIZE);
+		const proofPtr = malloc(KZG_PROOF_SIZE);
+
+		writeBytes(commitment, commitmentPtr);
+		writeBytes(z, zPtr);
+		writeBytes(y, yPtr);
+		writeBytes(proof, proofPtr);
+
+		const result = exports.kzg_verify_proof(
+			commitmentPtr,
+			zPtr,
+			yPtr,
+			proofPtr,
+		);
+		// Returns 1 for valid, 0 for invalid, negative for error
+		if (result < 0) {
+			throw new Error("KZG proof verification failed");
+		}
+		return result === 1;
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Verify a KZG blob proof
+ *
+ * @param blob - 131072-byte blob
+ * @param commitment - 48-byte KZG commitment
+ * @param proof - 48-byte KZG proof
+ * @returns True if proof is valid
+ * @throws {Error} If trusted setup not loaded or inputs are invalid
+ */
+export function kzgVerifyBlobProof(
+	blob: Uint8Array,
+	commitment: Uint8Array,
+	proof: Uint8Array,
+): boolean {
+	if (!kzgInitialized) {
+		throw new Error(
+			"KZG trusted setup not initialized. Call kzgLoadTrustedSetup() first.",
+		);
+	}
+	if (blob.length !== KZG_BLOB_SIZE) {
+		throw new Error(
+			`Invalid blob length: expected ${KZG_BLOB_SIZE}, got ${blob.length}`,
+		);
+	}
+	if (commitment.length !== KZG_COMMITMENT_SIZE) {
+		throw new Error(
+			`Invalid commitment length: expected ${KZG_COMMITMENT_SIZE}, got ${commitment.length}`,
+		);
+	}
+	if (proof.length !== KZG_PROOF_SIZE) {
+		throw new Error(
+			`Invalid proof length: expected ${KZG_PROOF_SIZE}, got ${proof.length}`,
+		);
+	}
+
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const blobPtr = malloc(KZG_BLOB_SIZE);
+		const commitmentPtr = malloc(KZG_COMMITMENT_SIZE);
+		const proofPtr = malloc(KZG_PROOF_SIZE);
+
+		writeBytes(blob, blobPtr);
+		writeBytes(commitment, commitmentPtr);
+		writeBytes(proof, proofPtr);
+
+		const result = exports.kzg_verify_blob_proof(
+			blobPtr,
+			commitmentPtr,
+			proofPtr,
+		);
+		// Returns 1 for valid, 0 for invalid, negative for error
+		if (result < 0) {
+			throw new Error("KZG blob proof verification failed");
+		}
+		return result === 1;
 	} finally {
 		memoryOffset = savedOffset;
 	}
