@@ -665,11 +665,7 @@
 	"main": "dist/index.cjs",
 	"module": "dist/index.js",
 	"types": "types/index.d.ts",
-	"files": [
-		"dist",
-		"types",
-		"bin"
-	],
+	"files": ["dist", "types", "bin"],
 	"scripts": {
 		"all": "pnpm install && pnpm build && pnpm lint && pnpm format && pnpm test:run",
 		"bench": "pnpm dlx tsx scripts/run-benchmarks.ts",
