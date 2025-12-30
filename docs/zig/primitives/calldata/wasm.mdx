@@ -13,12 +13,6 @@ Voltaire provides two WASM build modes optimized for different use cases:
 
 Size-optimized build for production bundles:
 
-```bash
-zig build build-ts-wasm
-```
-
-**Output**: `wasm/primitives.wasm`
-
 **Characteristics**:
 - Minimal bundle size (~50-100KB compressed)
 - Aggressive dead code elimination
@@ -28,12 +22,6 @@ zig build build-ts-wasm
 ### ReleaseFast (Performance)
 
 Performance-optimized build for compute-intensive workloads:
-
-```bash
-zig build build-ts-wasm-fast
-```
-
-**Output**: `wasm/primitives-fast.wasm`
 
 **Characteristics**:
 - Maximum execution speed
@@ -341,24 +329,7 @@ No polyfills or configuration needed.
 
 ## Benchmarking
 
-Run benchmarks to verify performance:
-
-<Tabs>
-<Tab title="Built-in Benchmarks">
-
-```bash
-# Compare JS vs WASM
-bun run bench
-
-# Output includes CallData operations:
-# CallData.encode (JS):        850ms
-# CallData.encode (WASM):      180ms (4.7x faster)
-# CallData.decode (JS):        920ms
-# CallData.decode (WASM):      210ms (4.4x faster)
-```
-
-</Tab>
-<Tab title="Custom Benchmark">
+Write benchmarks to verify performance in your environment:
 
 ```zig
 import { bench, run } from 'mitata';
