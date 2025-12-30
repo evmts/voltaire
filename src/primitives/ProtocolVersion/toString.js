@@ -11,6 +11,7 @@
  * const str = ProtocolVersion._toString.call(proto); // "eth/67"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional override for branded type conversion
 export function toString() {
 	return this;
 }

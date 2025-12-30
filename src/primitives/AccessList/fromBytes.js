@@ -16,6 +16,7 @@ import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
  * const list = AccessList.fromBytes(bytes);
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex parsing logic
 export function fromBytes(bytes) {
 	const decoded = decode(bytes);
 

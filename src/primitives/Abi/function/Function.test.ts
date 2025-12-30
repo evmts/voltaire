@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentionally named Function for ABI function namespace
 import { Function } from "./Function.js";
 
 describe("Function", () => {

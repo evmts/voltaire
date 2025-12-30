@@ -348,6 +348,7 @@ describe("Abi.Event.decodeLog", () => {
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
 		// Decode the log
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(decoded.from).toBeDefined();
@@ -375,6 +376,7 @@ describe("Abi.Event.decodeLog", () => {
 		const topics = Abi.Event.encodeTopics(event, { owner, spender });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(String(decoded.owner).toLowerCase()).toBe(owner.toLowerCase());
@@ -407,6 +409,7 @@ describe("Abi.Event.decodeLog", () => {
 			[1000n, 0n, 0n, 950n],
 		);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(String(decoded.sender).toLowerCase()).toBe(sender.toLowerCase());
@@ -432,6 +435,7 @@ describe("Abi.Event.decodeLog", () => {
 			[42n, "0x0000000000000000000000000000000000000001"],
 		);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(decoded.value).toBe(42n);
@@ -451,6 +455,7 @@ describe("Abi.Event.decodeLog", () => {
 		const topics = Abi.Event.encodeTopics(event, { oldValue: 100n });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [200n]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(decoded.oldValue).toBe(100n);
@@ -473,6 +478,7 @@ describe("Abi.Event.decodeLog", () => {
 		const topics = Abi.Event.encodeTopics(event, { hash });
 		const data = Abi.encodeParameters([{ type: "address" }], [user]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(decoded.hash).toBeDefined();
@@ -495,6 +501,7 @@ describe("Abi.Event.decodeLog", () => {
 		const topics = Abi.Event.encodeTopics(event, { sender });
 		const data = Abi.encodeParameters([{ type: "string" }], [message]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(String(decoded.sender).toLowerCase()).toBe(sender.toLowerCase());
@@ -517,6 +524,7 @@ describe("Abi.Event.decodeLog", () => {
 		const topics = Abi.Event.encodeTopics(event, { id });
 		const data = Abi.encodeParameters([{ type: "bytes" }], [data_value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(decoded.id).toBe(id);
@@ -567,6 +575,7 @@ describe("Abi.Event - anonymous events", () => {
 		const topics = Abi.Event.encodeTopics(event, { user });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(String(decoded.user).toLowerCase()).toBe(user.toLowerCase());
@@ -616,6 +625,7 @@ describe("Abi.Event - complex events", () => {
 			[order],
 		);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(decoded.orderId).toBe(orderId);
@@ -638,6 +648,7 @@ describe("Abi.Event - complex events", () => {
 		const topics = Abi.Event.encodeTopics(event, { processor });
 		const data = Abi.encodeParameters([{ type: "uint256[]" }], [values]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(String(decoded.processor).toLowerCase()).toBe(
@@ -666,6 +677,7 @@ describe("Abi.Event - complex events", () => {
 		const topics = Abi.Event.encodeTopics(event, { from, to, router });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [amount]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(String(decoded.from)).toBe(from);
@@ -732,6 +744,7 @@ describe("Abi.Event - edge cases", () => {
 		const topics = Abi.Event.encodeTopics(event, { from, to });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(decoded.from).toBeDefined();
@@ -752,6 +765,7 @@ describe("Abi.Event - edge cases", () => {
 		const topics = Abi.Event.encodeTopics(event, {});
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 
 		expect(decoded.value).toBe(value);

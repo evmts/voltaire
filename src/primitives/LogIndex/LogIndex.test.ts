@@ -27,6 +27,7 @@ describe("LogIndex", () => {
 		});
 
 		it("throws on invalid type", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => LogIndex.from("5" as any)).toThrow(
 				"must be a number or bigint",
 			);

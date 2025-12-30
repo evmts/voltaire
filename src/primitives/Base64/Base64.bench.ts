@@ -20,8 +20,11 @@ const SIZES = {
 } as const;
 
 // Pre-generate test data
+// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 const testBytes: Record<keyof typeof SIZES, Uint8Array> = {} as any;
+// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 const testBase64: Record<keyof typeof SIZES, string> = {} as any;
+// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 const testBase64Url: Record<keyof typeof SIZES, string> = {} as any;
 
 for (const [name, size] of Object.entries(SIZES)) {
@@ -265,8 +268,10 @@ interface BenchResult {
 const results: BenchResult[] = [];
 
 // Monkey patch mitata's summary to capture results
+// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 const originalSummary = (globalThis as any).summary;
 if (!originalSummary) {
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	(globalThis as any).summary = (result: any) => {
 		// Calculate throughput for size-related benchmarks
 		const sizeMatch = result.name.match(/(\d+)\s*(bytes|KB|MB)/i);

@@ -30,6 +30,7 @@ import { hashEquals } from "./utils.js";
  * });
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex matching logic
 export function matchesFilter(log, filter) {
 	// Check address filter
 	if (filter.address !== undefined) {

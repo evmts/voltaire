@@ -51,6 +51,7 @@ describe("decodeLog", () => {
 		const topics = Abi.Event.encodeTopics(transferEvent, { from, to });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const log = { topics: topics as any, data };
 		const decoded = decodeLog(mockAbi, log);
 
@@ -68,6 +69,7 @@ describe("decodeLog", () => {
 		const topics = Abi.Event.encodeTopics(approvalEvent, { owner, spender });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const log = { topics: topics as any, data };
 		const decoded = decodeLog(mockAbi, log);
 
@@ -105,6 +107,7 @@ describe("decodeLog", () => {
 		const topics = Abi.Event.encodeTopics(transferEvent, { from, to });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const log = { topics: topics as any, data };
 		const decoded = decodeLog(mockAbi, log);
 
@@ -121,6 +124,7 @@ describe("decodeLog", () => {
 	it("throws on log with undefined topic0", () => {
 		// This is a bit contrived but tests the guard
 		const log = {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			topics: [undefined as any],
 			data: new Uint8Array(32),
 		};
@@ -145,6 +149,7 @@ describe("decodeLog", () => {
 		});
 		const data = Abi.encodeParameters([{ type: "uint256" }], [1000n]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const log = { topics: topics as any, data };
 
 		expect(() => decodeLog(emptyAbi, log)).toThrow(AbiItemNotFoundError);
@@ -168,6 +173,7 @@ describe("decodeLog", () => {
 		const topics = Abi.Event.encodeTopics(indexedOnlyEvent, { addr1, addr2 });
 		const data = new Uint8Array(0); // No non-indexed data
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const log = { topics: topics as any, data };
 		const decoded = decodeLog(abiWithIndexed, log);
 
@@ -191,6 +197,7 @@ describe("decodeLog", () => {
 		const selector = Abi.Event.getSelector(nonIndexedEvent);
 		const data = Abi.encodeParameters(
 			[{ type: "uint256" }, { type: "uint256" }],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			[100n, 200n] as any,
 		);
 
@@ -210,6 +217,7 @@ describe("decodeLog", () => {
 		const topics = Abi.Event.encodeTopics(transferEvent, { from, to });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const log = { topics: topics as any, data };
 		const decoded = decodeLog(mockAbi, log);
 
@@ -245,6 +253,7 @@ describe("decodeLog", () => {
 		const topics = Abi.Event.encodeTopics(transferEvent, { from, to });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const log = { topics: topics as any, data };
 		const decoded = decodeLog(mixedAbi, log);
 
@@ -261,6 +270,7 @@ describe("decodeLog", () => {
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
 		// Decode
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const log = { topics: topics as any, data };
 		const decoded = decodeLog(mockAbi, log);
 
@@ -295,6 +305,7 @@ describe("decodeLog", () => {
 			[message, values],
 		);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const log = { topics: topics as any, data };
 		const decoded = decodeLog(abiWithComplex, log);
 
@@ -311,6 +322,7 @@ describe("decodeLog", () => {
 		// Transfer event
 		const transferTopics = Abi.Event.encodeTopics(transferEvent, { from, to });
 		const transferData = Abi.encodeParameters([{ type: "uint256" }], [1000n]);
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const transferLog = { topics: transferTopics as any, data: transferData };
 
 		// Approval event
@@ -319,6 +331,7 @@ describe("decodeLog", () => {
 			spender: to,
 		});
 		const approvalData = Abi.encodeParameters([{ type: "uint256" }], [2000n]);
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const approvalLog = { topics: approvalTopics as any, data: approvalData };
 
 		const decodedTransfer = decodeLog(mockAbi, transferLog);

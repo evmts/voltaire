@@ -15,24 +15,28 @@ import * as Abi from "./index.js";
 
 describe("Abi.decodeParameters - uint types", () => {
 	it("decodes uint8", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint8" }], [42n] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint8" }], encoded);
 		expect(decoded).toEqual([42n]);
 	});
 
 	it("decodes uint8 zero", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint8" }], [0n] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint8" }], encoded);
 		expect(decoded).toEqual([0n]);
 	});
 
 	it("decodes uint8 max (255)", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint8" }], [255n] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint8" }], encoded);
 		expect(decoded).toEqual([255n]);
 	});
 
 	it("decodes uint16", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint16" }], [1234n] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint16" }], encoded);
 		expect(decoded).toEqual([1234n]);
@@ -41,6 +45,7 @@ describe("Abi.decodeParameters - uint types", () => {
 	it("decodes uint32", () => {
 		const encoded = Abi.encodeParameters([{ type: "uint32" }], [
 			123456789n,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint32" }], encoded);
 		expect(decoded).toEqual([123456789n]);
@@ -48,6 +53,7 @@ describe("Abi.decodeParameters - uint types", () => {
 
 	it("decodes uint64", () => {
 		const value = 0x123456789abcdef0n;
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint64" }], [value] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint64" }], encoded);
 		expect(decoded).toEqual([value]);
@@ -55,12 +61,14 @@ describe("Abi.decodeParameters - uint types", () => {
 
 	it("decodes uint128", () => {
 		const value = 0x123456789abcdef0123456789abcdef0n;
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint128" }], [value] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint128" }], encoded);
 		expect(decoded).toEqual([value]);
 	});
 
 	it("decodes uint256 zero", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint256" }], [0n] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint256" }], encoded);
 		expect(decoded).toEqual([0n]);
@@ -69,6 +77,7 @@ describe("Abi.decodeParameters - uint types", () => {
 	it("decodes uint256 max", () => {
 		const max =
 			0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint256" }], [max] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint256" }], encoded);
 		expect(decoded).toEqual([max]);
@@ -78,6 +87,7 @@ describe("Abi.decodeParameters - uint types", () => {
 		const values = [1n, 2n, 3n];
 		const encoded = Abi.encodeParameters(
 			[{ type: "uint8" }, { type: "uint16" }, { type: "uint256" }],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			values as any,
 		);
 		const decoded = Abi.decodeParameters(
@@ -90,36 +100,42 @@ describe("Abi.decodeParameters - uint types", () => {
 
 describe("Abi.decodeParameters - int types", () => {
 	it("decodes int8 zero", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int8" }], [0n] as any);
 		const decoded = Abi.decodeParameters([{ type: "int8" }], encoded);
 		expect(decoded).toEqual([0n]);
 	});
 
 	it("decodes int8 positive", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int8" }], [127n] as any);
 		const decoded = Abi.decodeParameters([{ type: "int8" }], encoded);
 		expect(decoded).toEqual([127n]);
 	});
 
 	it("decodes int8 negative", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int8" }], [-1n] as any);
 		const decoded = Abi.decodeParameters([{ type: "int8" }], encoded);
 		expect(decoded).toEqual([-1n]);
 	});
 
 	it("decodes int8 min (-128)", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int8" }], [-128n] as any);
 		const decoded = Abi.decodeParameters([{ type: "int8" }], encoded);
 		expect(decoded).toEqual([-128n]);
 	});
 
 	it("decodes int16 positive", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int16" }], [1000n] as any);
 		const decoded = Abi.decodeParameters([{ type: "int16" }], encoded);
 		expect(decoded).toEqual([1000n]);
 	});
 
 	it("decodes int16 negative", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int16" }], [-1000n] as any);
 		const decoded = Abi.decodeParameters([{ type: "int16" }], encoded);
 		expect(decoded).toEqual([-1000n]);
@@ -128,6 +144,7 @@ describe("Abi.decodeParameters - int types", () => {
 	it("decodes int32 positive", () => {
 		const encoded = Abi.encodeParameters([{ type: "int32" }], [
 			123456789n,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		] as any);
 		const decoded = Abi.decodeParameters([{ type: "int32" }], encoded);
 		expect(decoded).toEqual([123456789n]);
@@ -136,18 +153,21 @@ describe("Abi.decodeParameters - int types", () => {
 	it("decodes int32 negative", () => {
 		const encoded = Abi.encodeParameters([{ type: "int32" }], [
 			-123456789n,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		] as any);
 		const decoded = Abi.decodeParameters([{ type: "int32" }], encoded);
 		expect(decoded).toEqual([-123456789n]);
 	});
 
 	it("decodes int256 zero", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int256" }], [0n] as any);
 		const decoded = Abi.decodeParameters([{ type: "int256" }], encoded);
 		expect(decoded).toEqual([0n]);
 	});
 
 	it("decodes int256 positive", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int256" }], [12345n] as any);
 		const decoded = Abi.decodeParameters([{ type: "int256" }], encoded);
 		expect(decoded).toEqual([12345n]);
@@ -156,6 +176,7 @@ describe("Abi.decodeParameters - int types", () => {
 	it("decodes int256 negative", () => {
 		const encoded = Abi.encodeParameters([{ type: "int256" }], [
 			-12345n,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		] as any);
 		const decoded = Abi.decodeParameters([{ type: "int256" }], encoded);
 		expect(decoded).toEqual([-12345n]);
@@ -165,6 +186,7 @@ describe("Abi.decodeParameters - int types", () => {
 		const values = [-1n, 100n, -200n];
 		const encoded = Abi.encodeParameters(
 			[{ type: "int8" }, { type: "int32" }, { type: "int256" }],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			values as any,
 		);
 		const decoded = Abi.decodeParameters(
@@ -458,6 +480,7 @@ describe("Abi round-trip encoding/decoding", () => {
 		const original = 123456789n;
 		const encoded = Abi.encodeParameters([{ type: "uint256" }], [
 			original,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint256" }], encoded);
 		expect(decoded).toEqual([original]);
@@ -549,6 +572,7 @@ describe("Abi.decodeParameters - error handling", () => {
 	});
 
 	it("throws on mismatched parameter count", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint256" }], [42n] as any);
 		// Try to decode with wrong number of parameters
 		expect(() =>
@@ -576,6 +600,7 @@ describe("Abi.decodeParameters - edge cases", () => {
 	it("decodes very large uint256", () => {
 		const max =
 			0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint256" }], [max] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint256" }], encoded);
 		expect(decoded).toEqual([max]);
@@ -584,6 +609,7 @@ describe("Abi.decodeParameters - edge cases", () => {
 	it("decodes very negative int256", () => {
 		const min =
 			-57896044618658097711785492504343953926634992332820282019728792003956564819968n;
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int256" }], [min] as any);
 		const decoded = Abi.decodeParameters([{ type: "int256" }], encoded);
 		expect(decoded).toEqual([min]);

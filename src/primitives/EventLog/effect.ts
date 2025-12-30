@@ -20,9 +20,13 @@ export const EventLogBrand = Brand.refined<EventLogBrand>(
 	(x): x is EventLogBrand =>
 		typeof x === "object" &&
 		x !== null &&
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		isAddr20((x as any).address) &&
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		Array.isArray((x as any).topics) &&
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		(x as any).topics.every(isHash32) &&
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		(x as any).data instanceof Uint8Array,
 	() => Brand.error("Invalid EventLog: failed structural validation"),
 );
@@ -74,6 +78,7 @@ export class EventLogSchema extends Schema.Class<EventLogSchema>("EventLog")({
 			blockHash,
 			logIndex,
 			removed: removed ?? false,
+			// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		} as any) as EventLogType;
 	}
 
@@ -83,31 +88,47 @@ export class EventLogSchema extends Schema.Class<EventLogSchema>("EventLog")({
 
 	static fromBranded(log: EventLogBrand): EventLogSchema {
 		const addr =
+			// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 			typeof (log as any).address === "string"
-				? hexToBytes((log as any).address as any)
-				: (log as any).address;
+				? // biome-ignore lint/suspicious/noExplicitAny: type coercion required
+					hexToBytes((log as any).address as any)
+				: // biome-ignore lint/suspicious/noExplicitAny: type coercion required
+					(log as any).address;
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		const topics = (log.topics as any[]).map((t) =>
+			// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 			typeof t === "string" ? hexToBytes(t as any) : t,
 		);
 		const data =
+			// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 			typeof (log as any).data === "string"
-				? hexToBytes((log as any).data as any)
-				: (log as any).data;
+				? // biome-ignore lint/suspicious/noExplicitAny: type coercion required
+					hexToBytes((log as any).data as any)
+				: // biome-ignore lint/suspicious/noExplicitAny: type coercion required
+					(log as any).data;
 		const txHash =
+			// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 			typeof (log as any).transactionHash === "string"
-				? hexToBytes((log as any).transactionHash as any)
-				: (log as any).transactionHash;
+				? // biome-ignore lint/suspicious/noExplicitAny: type coercion required
+					hexToBytes((log as any).transactionHash as any)
+				: // biome-ignore lint/suspicious/noExplicitAny: type coercion required
+					(log as any).transactionHash;
 		const blockHash =
+			// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 			typeof (log as any).blockHash === "string"
-				? hexToBytes((log as any).blockHash as any)
-				: (log as any).blockHash;
+				? // biome-ignore lint/suspicious/noExplicitAny: type coercion required
+					hexToBytes((log as any).blockHash as any)
+				: // biome-ignore lint/suspicious/noExplicitAny: type coercion required
+					(log as any).blockHash;
 		return new EventLogSchema({
 			address: addr as Uint8Array,
 			topics: topics as Uint8Array[],
 			data: data as Uint8Array,
 			blockNumber: log.blockNumber,
+			// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 			transactionHash: txHash as any,
 			transactionIndex: log.transactionIndex,
+			// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 			blockHash: blockHash as any,
 			logIndex: log.logIndex,
 			removed: log.removed,
@@ -119,17 +140,20 @@ export class EventLogSchema extends Schema.Class<EventLogSchema>("EventLog")({
 		return EventLogSchema.fromBranded(log as EventLogBrand);
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 	static fromRpc(rpc: any): EventLogSchema {
 		const log = _fromRpc(rpc);
 		return EventLogSchema.fromBranded(log as EventLogBrand);
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 	matches(filter: any): boolean {
 		return _matchesFilter(this.eventLog, filter);
 	}
 
 	static filter(
 		logs: readonly EventLogSchema[],
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		filter: any,
 	): EventLogSchema[] {
 		const branded = logs.map((l) => l.eventLog);

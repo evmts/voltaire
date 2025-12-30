@@ -111,10 +111,10 @@ describe("InMemoryProvider", () => {
 		});
 
 		it("eth_getBlockByHash returns block", async () => {
-			// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			const latestBlock = (await provider.request({
 				method: "eth_getBlockByNumber",
 				params: ["latest", false],
+				// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			})) as any;
 
 			const result = await provider.request({
@@ -540,6 +540,7 @@ describe("InMemoryProvider", () => {
 			const blockBefore = (await provider.request({
 				method: "eth_getBlockByNumber",
 				params: ["latest", false],
+				// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			})) as any;
 			const timestampBefore = BigInt(blockBefore.timestamp);
 
@@ -553,6 +554,7 @@ describe("InMemoryProvider", () => {
 			const blockAfter = (await provider.request({
 				method: "eth_getBlockByNumber",
 				params: ["latest", false],
+				// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			})) as any;
 			const timestampAfter = BigInt(blockAfter.timestamp);
 
@@ -572,6 +574,7 @@ describe("InMemoryProvider", () => {
 			const block = (await provider.request({
 				method: "eth_getBlockByNumber",
 				params: ["latest", false],
+				// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			})) as any;
 
 			expect(BigInt(block.timestamp)).toBe(targetTimestamp);
@@ -659,6 +662,7 @@ describe("InMemoryProvider", () => {
 			const latestBlock = (await provider.request({
 				method: "eth_getBlockByNumber",
 				params: ["latest", false],
+				// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			})) as any;
 
 			const result = await provider.request({
@@ -677,6 +681,7 @@ describe("InMemoryProvider", () => {
 					},
 				],
 			});
+			// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			expect((result as any).accessList).toEqual([]);
 		});
 

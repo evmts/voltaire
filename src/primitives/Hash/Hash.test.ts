@@ -269,6 +269,7 @@ describe("Hash", () => {
 		});
 
 		it("throws for non-Uint8Array", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => assert("not a hash" as any)).toThrow();
 		});
 	});
@@ -303,6 +304,7 @@ describe("Hash", () => {
 			);
 			const copy = clone(original);
 			// Modify original
+			// biome-ignore lint/suspicious/noExplicitAny: testing mutability
 			(original as any as Uint8Array)[0] = 0xff;
 			expect(copy[0]).toBe(0x12);
 		});

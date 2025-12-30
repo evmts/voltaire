@@ -20,6 +20,7 @@ const keccak256String = (str: string): Uint8Array => {
 const getSelector = GetSelector({ keccak256String });
 
 // Mock AbiError factory for testing
+// biome-ignore lint/suspicious/noExplicitAny: test mock requires any
 function AbiError(error: any) {
 	if (!error || error.type !== "error") {
 		throw new TypeError("Invalid error definition: must have type='error'");
@@ -43,6 +44,7 @@ AbiError.prototype.getSelector = function () {
 AbiError.prototype.getSignature = function () {
 	return getSignature(this);
 };
+// biome-ignore lint/suspicious/noExplicitAny: test mock requires any
 AbiError.prototype.encodeParams = function (args: any) {
 	return encodeParams(this, args);
 };
@@ -71,6 +73,7 @@ describe("AbiError", () => {
 		const invalidDef = {
 			type: "function",
 			name: "transfer",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		} as any;
 
 		expect(() => AbiError(invalidDef)).toThrow(TypeError);
@@ -80,10 +83,12 @@ describe("AbiError", () => {
 	});
 
 	it("throws TypeError when error is null", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		expect(() => AbiError(null as any)).toThrow(TypeError);
 	});
 
 	it("throws TypeError when error is undefined", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		expect(() => AbiError(undefined as any)).toThrow(TypeError);
 	});
 
@@ -296,6 +301,7 @@ describe("AbiError", () => {
 		} as const;
 
 		const error = AbiError(errorDef);
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const args = [1000n, "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"] as any;
 		const encoded = error.encodeParams(args);
 		const decoded = error.decodeParams(encoded);

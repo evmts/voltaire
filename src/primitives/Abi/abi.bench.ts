@@ -13,7 +13,9 @@ import * as Abi from "./index.js";
 import * as Parameter from "./parameter/index.js";
 
 // Helper to work around strict type checking in benchmarks
+// biome-ignore lint/suspicious/noExplicitAny: Benchmark helper bypasses strict types
 const encodeParams = Abi.encodeParameters as any;
+// biome-ignore lint/suspicious/noExplicitAny: Benchmark helper bypasses strict types
 const decodeParams = Abi.decodeParameters as any;
 
 // Benchmark runner
@@ -369,6 +371,7 @@ const eventTopics = Abi.Event.encodeTopics(transferEvent, {
 
 results.push(
 	benchmark("Event.decodeLog", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: Benchmark type coercion
 		Abi.Event.decodeLog(transferEvent, encodedEventData, eventTopics as any);
 	}),
 );
@@ -406,6 +409,7 @@ results.push(
 	benchmark("round-trip (uint256, address)", () => {
 		const params = [{ type: "uint256" }, { type: "address" }];
 		const values = [123n, zeroAddr];
+		// biome-ignore lint/suspicious/noExplicitAny: Benchmark type coercion
 		const encoded = encodeParams(params, values as any);
 		decodeParams(params, encoded);
 	}),

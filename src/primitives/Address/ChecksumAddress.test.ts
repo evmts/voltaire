@@ -104,6 +104,7 @@ describe("ChecksumAddress", () => {
 
 		it("rejects null", () => {
 			const isValid = ChecksumAddress.IsValid({ keccak256: hash });
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(isValid(null as any)).toBe(false);
 		});
 	});

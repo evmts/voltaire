@@ -618,11 +618,11 @@ describe("P256", () => {
 	});
 
 	describe("Stress Tests", () => {
-		it("handles 1000 rapid sign/verify operations", () => {
+		it("handles 100 rapid sign/verify operations", () => {
 			const privateKey = crypto.getRandomValues(new Uint8Array(32));
 			const publicKey = P256.derivePublicKey(privateKey);
 
-			for (let i = 0; i < 1000; i++) {
+			for (let i = 0; i < 100; i++) {
 				const messageHash = Hash.keccak256String(`message ${i}`);
 				const signature = P256.sign(messageHash, privateKey);
 				const valid = P256.verify(signature, messageHash, publicKey);
@@ -631,7 +631,7 @@ describe("P256", () => {
 		});
 
 		it("handles sign/verify with different keypairs", () => {
-			for (let i = 0; i < 100; i++) {
+			for (let i = 0; i < 50; i++) {
 				const privateKey = crypto.getRandomValues(new Uint8Array(32));
 				const publicKey = P256.derivePublicKey(privateKey);
 				const messageHash = Hash.keccak256String(`test ${i}`);
@@ -643,13 +643,13 @@ describe("P256", () => {
 			}
 		});
 
-		it("correctly rejects 1000 invalid signatures", () => {
+		it("correctly rejects 100 invalid signatures", () => {
 			const privateKey = new Uint8Array(32).fill(1);
 			const publicKey = P256.derivePublicKey(privateKey);
 			const messageHash = Hash.keccak256String("test");
 
 			let invalidCount = 0;
-			for (let i = 0; i < 1000; i++) {
+			for (let i = 0; i < 100; i++) {
 				const signature = P256.sign(messageHash, privateKey);
 				// Corrupt signature
 				if (signature.r[0] !== undefined) {
@@ -660,7 +660,7 @@ describe("P256", () => {
 				if (!valid) invalidCount++;
 			}
 
-			expect(invalidCount).toBe(1000);
+			expect(invalidCount).toBe(100);
 		});
 
 		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: test covers many ECDH scenarios

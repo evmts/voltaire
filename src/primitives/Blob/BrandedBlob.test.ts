@@ -141,6 +141,7 @@ describe("Blob.VersionedHash.isValid", () => {
 
 	it("type guards correctly", () => {
 		const hash = new Uint8Array(32);
+		// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 		hash[0]! = COMMITMENT_VERSION_KZG;
 		expect(hash.length).toBe(32);
 		expect(hash[0]).toBe(COMMITMENT_VERSION_KZG);
@@ -530,6 +531,7 @@ describe("splitData", () => {
 		const blobs = splitData(data);
 
 		expect(blobs.length).toBe(1);
+		// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 		expect(isValid(blobs[0]!)).toBe(true);
 	});
 
@@ -594,6 +596,7 @@ describe("joinData", () => {
 		const pattern = new Uint8Array([1, 2, 3, 4, 5]);
 		const data = new Uint8Array(150000);
 		for (let i = 0; i < data.length; i++) {
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			data[i] = pattern[i % pattern.length]!;
 		}
 

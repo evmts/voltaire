@@ -43,6 +43,7 @@ export class Base64Schema extends Schema.Class<Base64Schema>("Base64")({
 		return new Base64Schema({ value: brand });
 	}
 	static from(value: string | Uint8Array): Base64Schema {
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		return new Base64Schema({ value: _from(value as any) });
 	}
 	toBytes(): Uint8Array {
@@ -72,6 +73,7 @@ export class Base64UrlSchema extends Schema.Class<Base64UrlSchema>("Base64Url")(
 		return new Base64UrlSchema({ value: brand });
 	}
 	static from(value: string | Uint8Array): Base64UrlSchema {
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		return new Base64UrlSchema({ value: _fromUrlSafe(value as any) });
 	}
 	toBytes(): Uint8Array {
@@ -86,6 +88,7 @@ export const Base64FromUnknown = Schema.transform(
 	Schema.Union(Schema.String, Schema.Uint8ArrayFromSelf),
 	Schema.instanceOf(Base64Schema),
 	{
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		decode: (v) => Base64Schema.from(v as any),
 		encode: (b) => b.base64,
 	},
@@ -95,6 +98,7 @@ export const Base64UrlFromUnknown = Schema.transform(
 	Schema.Union(Schema.String, Schema.Uint8ArrayFromSelf),
 	Schema.instanceOf(Base64UrlSchema),
 	{
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		decode: (v) => Base64UrlSchema.from(v as any),
 		encode: (b) => b.base64url,
 	},

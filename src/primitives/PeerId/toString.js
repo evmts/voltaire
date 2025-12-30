@@ -11,6 +11,7 @@
  * const str = PeerId._toString.call(peerId);
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional override for branded type conversion
 export function toString() {
 	return this;
 }

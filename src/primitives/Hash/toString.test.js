@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fromBytes } from "./fromBytes.js";
 import { fromHex } from "./fromHex.js";
 import { toHex } from "./toHex.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: testing toString override
 import { toString } from "./toString.js";
 
 describe("toString", () => {

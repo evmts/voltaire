@@ -90,6 +90,7 @@ describe("RelayData", () => {
 		});
 
 		it("throws on non-object input", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => RelayData.from("invalid" as any)).toThrow(
 				"must be an object",
 			);

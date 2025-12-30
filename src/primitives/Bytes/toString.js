@@ -10,6 +10,7 @@
  * // "hello"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional API name
 export function toString(bytes) {
 	const decoder = new TextDecoder();
 	return decoder.decode(bytes);

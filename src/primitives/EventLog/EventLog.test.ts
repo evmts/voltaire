@@ -45,19 +45,27 @@ const EventLog = {
 // Test Data
 // ============================================================================
 
+// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 const addr1 = "0x0000000000000000000000000000000000000001" as any;
+// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 const addr2 = "0x0000000000000000000000000000000000000002" as any;
 const topic0 =
+	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 	"0x0000000000000000000000000000000000000000000000000000000000000010" as any;
 const topic1 =
+	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 	"0x0000000000000000000000000000000000000000000000000000000000000011" as any;
 const topic2 =
+	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 	"0x0000000000000000000000000000000000000000000000000000000000000012" as any;
 const topic3 =
+	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 	"0x0000000000000000000000000000000000000000000000000000000000000013" as any;
 const blockHash =
+	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 	"0x0000000000000000000000000000000000000000000000000000000000000100" as any;
 const txHash =
+	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 	"0x0000000000000000000000000000000000000000000000000000000000000200" as any;
 
 // ============================================================================
@@ -331,7 +339,9 @@ describe("EventLog.matchesAddress", () => {
 	});
 
 	it("matches byte-wise for addresses", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const addrA = "0x0000000000000000000000000000000000000001" as any;
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const addrB = "0x0000000000000000000000000000000000000001" as any;
 
 		const log = EventLog.create({

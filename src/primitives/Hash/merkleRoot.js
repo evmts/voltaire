@@ -27,6 +27,7 @@ export function MerkleRoot({ keccak256 }) {
 	 * const root = getMerkleRoot([hash1, hash2, hash3]);
 	 * ```
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: merkle tree algorithm requires branching
 	return function merkleRoot(hashes) {
 		if (hashes.length === 0) {
 			return ZERO;

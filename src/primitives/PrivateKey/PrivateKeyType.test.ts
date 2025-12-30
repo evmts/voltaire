@@ -157,6 +157,7 @@ describe("PrivateKeyType", () => {
 		it("brand property is readonly", () => {
 			const _test = (pk: PrivateKeyType) => {
 				// @ts-expect-error - cannot reassign readonly property
+				// biome-ignore lint/suspicious/noExplicitAny: testing type error
 				pk.__tag = "Modified" as any;
 			};
 		});
@@ -164,6 +165,7 @@ describe("PrivateKeyType", () => {
 		it("length property is readonly", () => {
 			const _test = (pk: PrivateKeyType) => {
 				// @ts-expect-error - cannot reassign readonly length
+				// biome-ignore lint/suspicious/noExplicitAny: testing type error
 				pk.length = 64 as any;
 			};
 		});

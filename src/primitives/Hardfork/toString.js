@@ -12,6 +12,7 @@
  * toString(MERGE); // "merge"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the function name in our API
 export function toString(fork) {
 	return fork;
 }

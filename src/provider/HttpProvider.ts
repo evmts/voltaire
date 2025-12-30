@@ -91,15 +91,65 @@ export class HttpProvider implements Provider {
 	}
 
 	/**
+	 * Execute single fetch attempt with timeout
+	 */
+	private async executeRequest(
+		body: string,
+		timeout: number,
+	): Promise<unknown> {
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+		try {
+			const response = await fetch(this.url, {
+				method: "POST",
+				headers: this.headers,
+				body,
+				signal: controller.signal,
+			});
+
+			if (!response.ok) {
+				const error: RpcError = {
+					code: -32603,
+					message: `HTTP ${response.status}: ${response.statusText}`,
+				};
+				throw error;
+			}
+
+			const json = (await response.json()) as JsonRpcResponse;
+			if (json.error) {
+				throw json.error;
+			}
+			return json.result;
+		} finally {
+			clearTimeout(timeoutId);
+		}
+	}
+
+	/**
+	 * Handle request error and determine if retry is needed
+	 * Returns true if should retry, throws if error is final
+	 */
+	private handleRequestError(error: Error, timeout: number): boolean {
+		if (error.name === "AbortError") {
+			const timeoutError: RpcError = {
+				code: -32603,
+				message: `Request timeout after ${timeout}ms`,
+			};
+			throw timeoutError;
+		}
+		if ("code" in error && "message" in error) {
+			throw error;
+		}
+		return true;
+	}
+
+	/**
 	 * EIP-1193 request method
 	 * Submits JSON-RPC request and returns result or throws RpcError
 	 */
 	async request(args: RequestArguments): Promise<unknown> {
 		const { method, params = [] } = args;
-		const timeout = this.defaultTimeout;
-		const retry = this.defaultRetry;
-		const retryDelay = this.defaultRetryDelay;
-
 		const body = JSON.stringify({
 			jsonrpc: "2.0",
 			id: ++this.requestIdCounter,
@@ -109,55 +159,19 @@ export class HttpProvider implements Provider {
 
 		let lastError: Error | null = null;
 
-		for (let attempt = 0; attempt <= retry; attempt++) {
+		for (let attempt = 0; attempt <= this.defaultRetry; attempt++) {
 			try {
-				const controller = new AbortController();
-				const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-				const response = await fetch(this.url, {
-					method: "POST",
-					headers: this.headers,
-					body,
-					signal: controller.signal,
-				});
-
-				clearTimeout(timeoutId);
-
-				if (!response.ok) {
-					const error: RpcError = {
-						code: -32603,
-						message: `HTTP ${response.status}: ${response.statusText}`,
-					};
-					throw error;
-				}
-
-				const json = (await response.json()) as JsonRpcResponse;
-
-				if (json.error) {
-					throw json.error;
-				}
-
-				return json.result;
+				return await this.executeRequest(body, this.defaultTimeout);
 			} catch (error) {
 				lastError = error as Error;
-
-				// Don't retry on abort (timeout)
-				if (lastError.name === "AbortError") {
-					const timeoutError: RpcError = {
-						code: -32603,
-						message: `Request timeout after ${timeout}ms`,
-					};
-					throw timeoutError;
-				}
-
-				// If it's already an RpcError, don't retry
-				if ("code" in lastError && "message" in lastError) {
-					throw lastError;
-				}
-
-				// Retry on network errors
-				if (attempt < retry) {
-					await new Promise((resolve) => setTimeout(resolve, retryDelay));
+				const shouldRetry = this.handleRequestError(
+					lastError,
+					this.defaultTimeout,
+				);
+				if (shouldRetry && attempt < this.defaultRetry) {
+					await new Promise((resolve) =>
+						setTimeout(resolve, this.defaultRetryDelay),
+					);
 				}
 			}
 		}

@@ -10,11 +10,13 @@ import { isInbound as _isInbound } from "./isInbound.js";
 export { from };
 
 // Export public wrapper functions
+// biome-ignore lint/suspicious/noExplicitAny: accepts any RPC response shape
 export function hasCapability(peerInfo: any, capability: string): boolean {
 	const peer = from(peerInfo);
 	return _hasCapability.call(peer, capability);
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: accepts any RPC response shape
 export function isInbound(peerInfo: any): boolean {
 	const peer = from(peerInfo);
 	return _isInbound.call(peer);

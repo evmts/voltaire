@@ -136,6 +136,112 @@ Server runs at `http://localhost:3000`.
 </Steps>
 
 </Tab>
+<Tab title="Amp">
+
+<Steps>
+<Step title="Install Playwright Browsers">
+
+```bash
+npx playwright install chromium
+```
+
+</Step>
+
+<Step title="Configure Amp">
+
+Edit your Amp settings file:
+
+**Global (macOS):** `~/.config/amp/settings.json`
+**Project-specific:** `.amp/settings.json` in your project
+
+Add the Playwright MCP server:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    }
+  }
+}
+```
+
+Alternatively, use VS Code settings or the "+ Add MCP Server" button in VS Code.
+
+</Step>
+
+<Step title="Start Local Docs Server">
+
+```bash
+bun run docs:dev
+```
+
+</Step>
+</Steps>
+
+See [Amp Owner's Manual](https://ampcode.com/manual) for full MCP configuration options.
+
+</Tab>
+<Tab title="OpenCode">
+
+<Steps>
+<Step title="Install Playwright Browsers">
+
+```bash
+npx playwright install chromium
+```
+
+</Step>
+
+<Step title="Configure OpenCode">
+
+Edit your OpenCode config:
+
+**Global:** `~/.config/opencode/opencode.json`
+**Project-specific:** `opencode.json` in your project root
+
+Add the Playwright MCP server:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "-y", "@playwright/mcp@latest"],
+      "enabled": true
+    }
+  }
+}
+```
+
+</Step>
+
+<Step title="Manage via CLI (optional)">
+
+OpenCode provides CLI commands for MCP management:
+
+```bash
+opencode mcp enable playwright
+opencode mcp disable playwright
+opencode mcp info playwright
+```
+
+</Step>
+
+<Step title="Start Local Docs Server">
+
+```bash
+bun run docs:dev
+```
+
+</Step>
+</Steps>
+
+See [OpenCode MCP docs](https://opencode.ai/docs/mcp-servers/) for full configuration options.
+
+</Tab>
 </Tabs>
 
 ## Usage

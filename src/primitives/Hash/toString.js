@@ -13,6 +13,7 @@
  * const str = Hash.toString(hash);
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional toString override
 export function toString(hash) {
 	return `0x${Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }

@@ -38,6 +38,7 @@ import { supportsBlobs } from "./supportsBlobs.js";
 import { supportsEIP1559 } from "./supportsEIP1559.js";
 import { supportsPUSH0 } from "./supportsPUSH0.js";
 import { supportsTransientStorage } from "./supportsTransientStorage.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the function name in our API
 import { toString } from "./toString.js";
 
 // ============================================================================
@@ -145,6 +146,7 @@ results.push(benchmark("max", () => max(testArray)));
 let stringIdx = 0;
 results.push(
 	benchmark("fromString", () => {
+		// biome-ignore lint/style/noNonNullAssertion: array index is always valid
 		fromString(testStrings[stringIdx % testStrings.length]!);
 		stringIdx++;
 	}),

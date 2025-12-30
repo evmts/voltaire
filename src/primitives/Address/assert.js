@@ -25,6 +25,7 @@ import { isValid } from "./isValid.js";
  * Address.assert("0x742d35cc6634c0532925a3b844bc9e7595f251e3", { strict: true });
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex validation logic
 export function assert(value, options = {}) {
 	const { strict = false, keccak256 } = options;
 

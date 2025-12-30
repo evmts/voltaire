@@ -13,6 +13,7 @@ import type { random } from "./random.js";
 import type { slice } from "./slice.js";
 import type { toBytes } from "./toBytes.js";
 import type { toHex } from "./toHex.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the canonical name for this conversion
 import type { toString } from "./toString.js";
 
 type HashPrototype = HashType & {

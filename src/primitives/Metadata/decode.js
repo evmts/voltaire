@@ -15,6 +15,7 @@ import * as Hex from "../Hex/index.js";
  * console.log(meta.solc); // "0.8.19"
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: CBOR parsing requires sequential byte handling
 export function decode(raw) {
 	/** @type {import('./MetadataType.js').Metadata} */
 	const metadata = { raw };

@@ -13,6 +13,7 @@ import { hashEquals } from "./utils.js";
  * const matches = matchesTopics(log, [topic0, null, topic2])
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex matching logic
 export function matchesTopics(log, filterTopics) {
 	for (let i = 0; i < filterTopics.length; i++) {
 		const filterTopic = filterTopics[i];

@@ -9,6 +9,7 @@ import { getProtocol as _getProtocol } from "./getProtocol.js";
 export { from };
 
 // Export public wrapper functions
+// biome-ignore lint/suspicious/noExplicitAny: accepts any RPC response shape
 export function getProtocol(nodeInfo: any, protocolName: string) {
 	const node = from(nodeInfo);
 	return _getProtocol.call(node, protocolName);

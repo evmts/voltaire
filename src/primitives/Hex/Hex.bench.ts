@@ -25,6 +25,7 @@ import {
 	toBoolean,
 	toBytes,
 	toNumber,
+	// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is intentional API name
 	toString,
 	trim,
 	validate,

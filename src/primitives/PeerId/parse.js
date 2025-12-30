@@ -17,6 +17,7 @@ import { InvalidFormatError } from "../errors/ValidationError.js";
  * console.log(parsed.discoveryPort); // 30301
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: enode URL parsing requires many validation steps
 export function parse() {
 	// Check for enode:// prefix
 	if (!this.startsWith("enode://")) {

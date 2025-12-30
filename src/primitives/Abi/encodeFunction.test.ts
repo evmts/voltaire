@@ -95,9 +95,11 @@ describe("encodeFunction", () => {
 	});
 
 	it("throws when function not found in ABI", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		expect(() => encodeFunction(mockAbi, "nonExistent" as any, [])).toThrow(
 			AbiItemNotFoundError,
 		);
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		expect(() => encodeFunction(mockAbi, "nonExistent" as any, [])).toThrow(
 			/not found in ABI/,
 		);
@@ -106,6 +108,7 @@ describe("encodeFunction", () => {
 	it("throws on empty ABI", () => {
 		const emptyAbi: Abi = [];
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		expect(() => encodeFunction(emptyAbi, "transfer" as any, [])).toThrow(
 			AbiItemNotFoundError,
 		);

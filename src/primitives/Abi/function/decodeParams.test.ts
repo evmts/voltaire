@@ -209,6 +209,7 @@ describe("decodeParams", () => {
 			const encoded = encodeParams(func, [[addr, 100n]]);
 			const decoded = decodeParams(func, encoded);
 			expect(decoded[0]).toBeInstanceOf(Array);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect((decoded[0] as any[])[1]).toBe(100n);
 		});
 
@@ -239,6 +240,7 @@ describe("decodeParams", () => {
 			]);
 			const decoded = decodeParams(func, encoded);
 			expect(decoded[0]).toBeInstanceOf(Array);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect((decoded[0] as any[]).length).toBe(2);
 		});
 	});

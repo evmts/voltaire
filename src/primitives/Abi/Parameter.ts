@@ -123,6 +123,7 @@ export type ParametersToPrimitiveTypes<TParams extends readonly Parameter[]> = {
 };
 
 export type ParametersToObject<TParams extends readonly Parameter[]> = {
+	// biome-ignore lint/suspicious/noExplicitAny: Required for complex mapped type inference
 	[K in TParams[number] as K extends Parameter<any, infer N, any>
 		? N extends string
 			? N

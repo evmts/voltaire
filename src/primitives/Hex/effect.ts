@@ -53,6 +53,7 @@ export class HexSchema extends Schema.Class<HexSchema>("Hex")({
 	}
 
 	equals(other: HexSchema | HexType | string): boolean {
+		// biome-ignore lint/suspicious/noExplicitAny: HexType is a branded string
 		const rhs = other instanceof HexSchema ? other.hex : (other as any);
 		return _equals(this.hex, rhs);
 	}

@@ -13,6 +13,7 @@ export type BytecodeBrand = Uint8Array & Brand.Brand<"Bytecode">;
 
 export const BytecodeBrand = Brand.refined<BytecodeBrand>(
 	(bytes): bytes is Uint8Array & Brand.Brand<"Bytecode"> =>
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		bytes instanceof Uint8Array && _validate(bytes as any),
 	() => Brand.error("Invalid Bytecode: validation failed"),
 );
@@ -21,6 +22,7 @@ export class BytecodeSchema extends Schema.Class<BytecodeSchema>("Bytecode")({
 	value: Schema.Uint8ArrayFromSelf.pipe(
 		Schema.filter(
 			(bytes): bytes is Uint8Array =>
+				// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 				bytes instanceof Uint8Array && _validate(bytes as any),
 			{
 				message: () => "Invalid bytecode: validation failed",

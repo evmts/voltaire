@@ -19,6 +19,7 @@ import type { toBigInt } from "./toBigInt.js";
 import type { toBoolean } from "./toBoolean.js";
 import type { toBytes } from "./toBytes.js";
 import type { toNumber } from "./toNumber.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is intentional API name
 import type { toString } from "./toString.js";
 import type { trim } from "./trim.js";
 import type { validate } from "./validate.js";

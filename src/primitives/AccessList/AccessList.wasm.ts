@@ -14,6 +14,7 @@ import type { BrandedAccessList as AccessListType } from "./AccessListType.js";
  * @returns Gas cost as bigint
  */
 export function gasCostWasm(accessList: AccessListType): bigint {
+	// biome-ignore lint/suspicious/noExplicitAny: wasm loader interface requires any
 	return loader.accessListGasCost(accessList as any);
 }
 
@@ -23,6 +24,7 @@ export function gasCostWasm(accessList: AccessListType): bigint {
  * @returns Gas savings as bigint
  */
 export function gasSavingsWasm(accessList: AccessListType): bigint {
+	// biome-ignore lint/suspicious/noExplicitAny: wasm loader interface requires any
 	return loader.accessListGasSavings(accessList as any);
 }
 
@@ -36,6 +38,7 @@ export function includesAddressWasm(
 	accessList: AccessListType,
 	address: BrandedAddress,
 ): boolean {
+	// biome-ignore lint/suspicious/noExplicitAny: wasm loader interface requires any
 	return loader.accessListIncludesAddress(accessList as any, address);
 }
 
@@ -52,6 +55,7 @@ export function includesStorageKeyWasm(
 	storageKey: HashType,
 ): boolean {
 	return loader.accessListIncludesStorageKey(
+		// biome-ignore lint/suspicious/noExplicitAny: wasm loader interface requires any
 		accessList as any,
 		address,
 		storageKey,

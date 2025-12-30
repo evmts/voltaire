@@ -50,6 +50,7 @@ describe("BundleHash", () => {
 		});
 
 		it("throws on invalid type", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => BundleHash.from(123 as any)).toThrow(
 				"must be hex string or Uint8Array",
 			);
@@ -64,6 +65,7 @@ describe("BundleHash", () => {
 		});
 
 		it("throws on non-string input", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => BundleHash.fromHex(123 as any)).toThrow("must be a string");
 		});
 	});
@@ -94,6 +96,7 @@ describe("BundleHash", () => {
 				transactions: [new Uint8Array([1, 2, 3, 4])],
 			};
 
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => BundleHash.fromBundle(bundle, {} as any)).toThrow(
 				"keccak256 not provided",
 			);
@@ -102,6 +105,7 @@ describe("BundleHash", () => {
 
 	describe("toHex", () => {
 		it("converts BundleHash to hex string", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			const hex = BundleHash.toHex(validBytes as any);
 
 			expect(hex).toBe(validHex);
@@ -112,6 +116,7 @@ describe("BundleHash", () => {
 			bytes[0] = 0x01;
 			bytes[31] = 0x0f;
 
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			const hex = BundleHash.toHex(bytes as any);
 
 			expect(hex).toBe(
@@ -132,6 +137,7 @@ describe("BundleHash", () => {
 			const hash1 = BundleHash.from(validHex);
 			const hash2 = new Uint8Array(32).fill(0xff);
 
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(BundleHash.equals(hash1, hash2 as any)).toBe(false);
 		});
 
@@ -139,6 +145,7 @@ describe("BundleHash", () => {
 			const hash1 = BundleHash.from(validHex);
 			const hash2 = new Uint8Array(16);
 
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(BundleHash.equals(hash1, hash2 as any)).toBe(false);
 		});
 	});

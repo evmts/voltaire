@@ -439,6 +439,7 @@ describe("Uint8Array integration", () => {
 				);
 				addr.sort();
 				for (let i = 1; i < addr.length; i++) {
+					// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 					expect(addr[i]).toBeGreaterThanOrEqual(addr[i - 1]!);
 				}
 			});
@@ -449,6 +450,7 @@ describe("Uint8Array integration", () => {
 				);
 				addr.sort((a, b) => b - a);
 				for (let i = 1; i < addr.length; i++) {
+					// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 					expect(addr[i]).toBeLessThanOrEqual(addr[i - 1]!);
 				}
 			});
@@ -486,6 +488,7 @@ describe("Uint8Array integration", () => {
 				);
 				const sorted = addr.toSorted();
 				for (let i = 1; i < sorted.length; i++) {
+					// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 					expect(sorted[i]).toBeGreaterThanOrEqual(sorted[i - 1]!);
 				}
 				expect(addr[0]).toBe(0x0f);

@@ -10,7 +10,7 @@ import { poll as _poll } from "./poll.js";
 export const from = _from;
 
 export function assertValid(receipt: ReceiptType): void {
-	return _assertValid(receipt);
+	_assertValid(receipt);
 }
 
 export function isPreByzantium(receipt: ReceiptType): boolean {

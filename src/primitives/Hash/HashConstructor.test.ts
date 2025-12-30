@@ -25,12 +25,14 @@ describe("HashConstructor", () => {
 		});
 
 		it("returns BrandedHash", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: required for type extraction helper
 			type ExtractReturn<T> = T extends (...args: any[]) => infer R ? R : never;
 			type Return = ExtractReturn<HashConstructor>;
 			expectTypeOf<Return>().toMatchTypeOf<BrandedHash>();
 		});
 
 		it("rejects number", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: required for type extraction helper
 			type ExtractParam<T> = T extends (value: infer P) => any ? P : never;
 			type Param = ExtractParam<HashConstructor>;
 			// @ts-expect-error - number not accepted

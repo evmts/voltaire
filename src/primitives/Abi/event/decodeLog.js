@@ -25,6 +25,7 @@ import { getSelector } from "./index.js";
  * // { from: "0x...", to: "0x...", value: 1000n }
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex event decoding logic
 export function decodeLog(event, data, topics) {
 	let topicIndex = 0;
 

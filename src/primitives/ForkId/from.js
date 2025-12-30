@@ -14,6 +14,7 @@ import * as BlockNumber from "../BlockNumber/index.js";
  * });
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex logic required
 export function from(value) {
 	if (!value || typeof value !== "object") {
 		throw new Error("ForkId must be an object with hash and next properties");

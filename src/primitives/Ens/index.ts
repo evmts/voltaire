@@ -27,6 +27,7 @@ const Namehash: (deps: {
 	keccak256: (data: Uint8Array) => Uint8Array;
 }) => (name: EnsType) => Uint8Array = NamehashImpl;
 const _normalize: (name: EnsType) => EnsType = _normalizeImpl;
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the conventional method name for this pattern
 const toString: (name: EnsType) => string = toStringImpl;
 const validate: (name: string) => void = validateImpl;
 

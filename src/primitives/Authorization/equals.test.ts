@@ -524,6 +524,7 @@ describe("Authorization.equalsAuth - array comparisons", () => {
 
 		const found = auths.find((auth) => equalsAuth(auth, target));
 		expect(found).toBeDefined();
+		// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 		expect(equalsAuth(found!, target)).toBe(true);
 	});
 

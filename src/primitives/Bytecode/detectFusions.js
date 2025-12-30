@@ -35,6 +35,7 @@ const SWAP16 = 0x9f;
  * // [{type: 'push_add', pc: 0, length: 3}]
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex bytecode analysis
 export function detectFusions(bytecode) {
 	const fusions = [];
 	let pc = 0;

@@ -457,6 +457,7 @@ describe("Abi.Event encoding/decoding", () => {
 		const topics = Abi.Event.encodeTopics(event, { from, to });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type coercion for topic array
 		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 		expect(decoded.from).toBe(from);
 		expect(decoded.to).toBe(to);
@@ -488,21 +489,21 @@ describe("Abi.Error encoding/decoding", () => {
 });
 
 describe("Abi.Constructor encoding/decoding", () => {
-	const constructor = {
+	const ctor = {
 		type: "constructor",
 		stateMutability: "nonpayable",
 		inputs: [{ type: "uint256", name: "initialSupply" }],
 	} as const satisfies Abi.Constructor;
 
 	it("encodeParams encodes constructor data", () => {
-		const encoded = Abi.Constructor.encodeParams(constructor, [1000n]);
+		const encoded = Abi.Constructor.encodeParams(ctor, [1000n]);
 		expect(encoded).toBeInstanceOf(Uint8Array);
 		expect(encoded.length).toBe(32); // 32 bytes param
 	});
 
 	it("decodeParams decodes constructor data", () => {
-		const encoded = Abi.Constructor.encodeParams(constructor, [1000n]);
-		const decoded = Abi.Constructor.decodeParams(constructor, encoded);
+		const encoded = Abi.Constructor.encodeParams(ctor, [1000n]);
+		const decoded = Abi.Constructor.decodeParams(ctor, encoded);
 		expect(decoded).toEqual([1000n]);
 	});
 });
@@ -537,6 +538,7 @@ describe("Abi.encodeParameters", () => {
 	it("encodes uint256", () => {
 		const encoded = Abi.encodeParameters(
 			[{ type: "uint256", name: "amount" }],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type coercion for parameter values
 			[100n] as any,
 		);
 		expect(encoded).toBeInstanceOf(Uint8Array);
@@ -551,6 +553,7 @@ describe("Abi.encodeParameters", () => {
 				42n,
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address,
 				true,
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type coercion for parameter values
 			] as any,
 		);
 		expect(encoded).toBeInstanceOf(Uint8Array);
@@ -560,6 +563,7 @@ describe("Abi.encodeParameters", () => {
 
 describe("Abi.decodeParameters", () => {
 	it("decodes uint256", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type coercion for parameter values
 		const encoded = Abi.encodeParameters([{ type: "uint256" }], [100n] as any);
 		const decoded = Abi.decodeParameters(
 			[{ type: "uint256", name: "amount" }],
@@ -575,6 +579,7 @@ describe("Abi.decodeParameters", () => {
 			"0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address,
 			true,
 		];
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type coercion for parameter values
 		const encoded = Abi.encodeParameters(params, values as any);
 		const decoded = Abi.decodeParameters(params, encoded);
 		expect(decoded).toEqual(values);
@@ -645,6 +650,7 @@ describe("Abi.encode", () => {
 	});
 
 	it("throws not found error for missing function", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing error handling for invalid function name
 		expect(() => Abi.encode.call(abi, "missing" as any, [] as any)).toThrow(
 			AbiItemNotFoundError,
 		);
@@ -663,6 +669,7 @@ describe("Abi.decode", () => {
 	] as const satisfies Abi;
 
 	it("decodes function result", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type coercion for parameter values
 		const encoded = Abi.encodeParameters([{ type: "uint256" }], [1000n] as any);
 		const decoded = Abi.decode.call(abi, "balanceOf", encoded);
 		expect(decoded).toEqual([1000n]);
@@ -670,6 +677,7 @@ describe("Abi.decode", () => {
 
 	it("throws not found error for missing function", () => {
 		expect(() =>
+			// biome-ignore lint/suspicious/noExplicitAny: testing error handling for invalid function name
 			Abi.decode.call(abi, "missing" as any, new Uint8Array()),
 		).toThrow(AbiItemNotFoundError);
 	});
@@ -725,6 +733,7 @@ describe("Abi.parseLogs", () => {
 		const topics = Abi.Event.encodeTopics(event, { from, to });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const logs = [{ topics: topics as any, data }];
 		const parsed = Abi.parseLogs.call(abi, logs);
 

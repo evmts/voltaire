@@ -21,6 +21,7 @@ export function isOSI(license: string): boolean {
 	return _isOSI(from(license));
 }
 
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional wrapper for branded type
 export function toString(license: string): string {
 	return _toString(from(license));
 }

@@ -69,6 +69,7 @@ export class AccessListSchema extends Schema.Class<AccessListSchema>(
 	}
 
 	static from(value: readonly Item[] | Uint8Array): AccessListSchema {
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		const list = _from(value as any);
 		return AccessListSchema.fromBranded(list as AccessListBrand);
 	}
@@ -96,23 +97,29 @@ export class AccessListSchema extends Schema.Class<AccessListSchema>(
 		return _hasSavings(this.accessList);
 	}
 	includesAddress(address: Uint8Array): boolean {
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		return _includesAddress(this.accessList, address as any);
 	}
 	includesStorageKey(address: Uint8Array, storageKey: Uint8Array): boolean {
 		return _includesStorageKey(
 			this.accessList,
+			// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 			address as any,
+			// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 			storageKey as any,
 		);
 	}
 	keysFor(address: Uint8Array): readonly Uint8Array[] | undefined {
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		return _keysFor(this.accessList, address as any) as any;
 	}
 	deduplicate(): AccessListSchema {
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		return AccessListSchema.fromBranded(_deduplicate(this.accessList) as any);
 	}
 	withAddress(address: Uint8Array): AccessListSchema {
 		return AccessListSchema.fromBranded(
+			// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 			_withAddress(this.accessList, address as any) as any,
 		);
 	}
@@ -123,8 +130,11 @@ export class AccessListSchema extends Schema.Class<AccessListSchema>(
 		return AccessListSchema.fromBranded(
 			_withStorageKey(
 				this.accessList,
+				// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 				address as any,
+				// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 				storageKey as any,
+				// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 			) as any,
 		);
 	}
@@ -133,6 +143,7 @@ export class AccessListSchema extends Schema.Class<AccessListSchema>(
 			o instanceof AccessListSchema ? o.accessList : o,
 		);
 		return AccessListSchema.fromBranded(
+			// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 			_merge(this.accessList, ...lists) as any,
 		);
 	}

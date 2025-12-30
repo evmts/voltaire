@@ -16,6 +16,7 @@ import { InvalidBloomFilterParameterError } from "./errors.js";
  * const combined = BloomFilter.combine(f1, f2, f3);
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex bloom filter logic
 export function combine(...filters) {
 	if (filters.length === 0) {
 		throw new InvalidBloomFilterParameterError(

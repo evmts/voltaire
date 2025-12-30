@@ -489,59 +489,81 @@ describe("Keystore", () => {
 	});
 
 	describe("security", () => {
-		it("different IVs produce different ciphertexts", async () => {
-			const privateKey = PrivateKey.from(
-				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-			);
-			const password = "password";
-			const salt = new Uint8Array(32).fill(1);
+		it(
+			"different IVs produce different ciphertexts",
+			{ timeout: 30000 },
+			async () => {
+				const privateKey = PrivateKey.from(
+					"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+				);
+				const password = "password";
+				const salt = new Uint8Array(32).fill(1);
 
-			const iv1 = new Uint8Array(16).fill(1);
-			const iv2 = new Uint8Array(16).fill(2);
+				const iv1 = new Uint8Array(16).fill(1);
+				const iv2 = new Uint8Array(16).fill(2);
 
-			const keystore1 = await Keystore.encrypt(privateKey, password, {
-				salt,
-				iv: iv1,
-			});
-			const keystore2 = await Keystore.encrypt(privateKey, password, {
-				salt,
-				iv: iv2,
-			});
+				// Use low scrypt parameters for faster tests
+				const keystore1 = await Keystore.encrypt(privateKey, password, {
+					salt,
+					iv: iv1,
+					scryptN: 1024,
+					scryptR: 1,
+					scryptP: 1,
+				});
+				const keystore2 = await Keystore.encrypt(privateKey, password, {
+					salt,
+					iv: iv2,
+					scryptN: 1024,
+					scryptR: 1,
+					scryptP: 1,
+				});
 
-			expect(keystore1.crypto.ciphertext).not.toBe(keystore2.crypto.ciphertext);
+				expect(keystore1.crypto.ciphertext).not.toBe(
+					keystore2.crypto.ciphertext,
+				);
 
-			const decrypted1 = Keystore.decrypt(keystore1, password);
-			const decrypted2 = Keystore.decrypt(keystore2, password);
+				const decrypted1 = Keystore.decrypt(keystore1, password);
+				const decrypted2 = Keystore.decrypt(keystore2, password);
 
-			expect(decrypted1).toEqual(privateKey);
-			expect(decrypted2).toEqual(privateKey);
-		});
+				expect(decrypted1).toEqual(privateKey);
+				expect(decrypted2).toEqual(privateKey);
+			},
+		);
 
-		it("constant-time MAC comparison (no early exit)", async () => {
-			const privateKey = PrivateKey.from(
-				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-			);
+		it(
+			"constant-time MAC comparison (no early exit)",
+			{ timeout: 30000 },
+			async () => {
+				const privateKey = PrivateKey.from(
+					"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+				);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+				// Use low scrypt parameters for faster tests
+				const keystore = await Keystore.encrypt(privateKey, "password", {
+					scryptN: 1024,
+					scryptR: 1,
+					scryptP: 1,
+				});
 
-			// Modify first byte of MAC
-			const corruptedKeystore1 = { ...keystore };
-			corruptedKeystore1.crypto = { ...keystore.crypto };
-			corruptedKeystore1.crypto.mac = `ff${keystore.crypto.mac.slice(2)}`;
+				// Modify first byte of MAC
+				const corruptedKeystore1 = { ...keystore };
+				corruptedKeystore1.crypto = { ...keystore.crypto };
+				corruptedKeystore1.crypto.mac = `ff${keystore.crypto.mac.slice(2)}`;
 
-			// Modify last byte of MAC
-			const corruptedKeystore2 = { ...keystore };
-			corruptedKeystore2.crypto = { ...keystore.crypto };
-			corruptedKeystore2.crypto.mac = `${keystore.crypto.mac.slice(0, -2)}ff`;
+				// Modify last byte of MAC
+				const corruptedKeystore2 = { ...keystore };
+				corruptedKeystore2.crypto = { ...keystore.crypto };
+				corruptedKeystore2.crypto.mac = `${keystore.crypto.mac.slice(0, -2)}ff`;
 
-			// Both should fail
-			expect(() => Keystore.decrypt(corruptedKeystore1, "password")).toThrow(
-				Keystore.InvalidMacError,
-			);
-			expect(() => Keystore.decrypt(corruptedKeystore2, "password")).toThrow(
-				Keystore.InvalidMacError,
-			);
-		});
+				// Both should fail
+				expect(() => Keystore.decrypt(corruptedKeystore1, "password")).toThrow(
+					Keystore.InvalidMacError,
+				);
+				expect(() => Keystore.decrypt(corruptedKeystore2, "password")).toThrow(
+					Keystore.InvalidMacError,
+				);
+			},
+		);
 	});
 
 	describe("performance", () => {

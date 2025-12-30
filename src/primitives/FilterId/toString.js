@@ -9,6 +9,7 @@
  * const str = FilterId.toString(id); // "0x1"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the standard conversion method name for this module
 export function toString(filterId) {
 	return filterId;
 }

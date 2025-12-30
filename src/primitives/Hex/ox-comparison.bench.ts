@@ -8,6 +8,7 @@ import { bench, group, run } from "mitata";
 
 // Import Ox-based implementation (currently disabled - file doesn't exist)
 // import * as OxHex from "./index.ox.js";
+// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 const OxHex = {} as any;
 
 // Import current Voltaire implementation
@@ -15,6 +16,7 @@ import * as VoltaireHex from "./HexType/index.js";
 
 // Test data
 const testBytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
+// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 const testHex = "0xdeadbeef" as any;
 const testNumber = 4660;
 const testBigInt = 12345678901234567890n;
@@ -57,31 +59,42 @@ group("fromString", () => {
 
 group("toString", () => {
 	bench("Ox", () => OxHex.toString("0x68656c6c6f"));
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Voltaire", () => VoltaireHex.toString("0x68656c6c6f" as any));
 });
 
 group("concat", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Ox", () => OxHex.concat("0x12" as any, "0x34" as any));
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Voltaire", () => VoltaireHex.concat("0x12" as any, "0x34" as any));
 });
 
 group("slice", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Ox", () => OxHex.slice("0x1234567890" as any, 1, 3));
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Voltaire", () => VoltaireHex.slice("0x1234567890" as any, 1, 3));
 });
 
 group("pad (padLeft)", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Ox", () => OxHex.pad("0x1234" as any, 4));
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Voltaire", () => VoltaireHex.pad("0x1234" as any, 4));
 });
 
 group("trim (trimLeft)", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Ox", () => OxHex.trim("0x00001234" as any));
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Voltaire", () => VoltaireHex.trim("0x00001234" as any));
 });
 
 group("equals (isEqual)", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Ox", () => OxHex.equals("0x1234" as any, "0x1234" as any));
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Voltaire", () => VoltaireHex.equals("0x1234" as any, "0x1234" as any));
 });
 
@@ -102,7 +115,9 @@ group("random", () => {
 
 // Voltaire-specific extensions (no Ox comparison)
 group("xor (Voltaire only)", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Ox extension", () => OxHex.xor("0xff" as any, "0x0f" as any));
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark requires type flexibility
 	bench("Voltaire", () => VoltaireHex.xor("0xff" as any, "0x0f" as any));
 });
 

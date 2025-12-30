@@ -14,6 +14,7 @@ import { MIN_SIZE } from "./constants.js";
  * CallData.isValid(null); // false
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Validation requires checking multiple value types
 export function isValid(value) {
 	// Handle Uint8Array
 	if (value instanceof Uint8Array) {

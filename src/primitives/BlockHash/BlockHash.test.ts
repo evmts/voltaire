@@ -22,6 +22,7 @@ describe("BlockHash", () => {
 		});
 
 		it("throws on invalid type", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => BlockHash.from(123 as any)).toThrow(
 				"Unsupported BlockHash value type",
 			);

@@ -172,6 +172,7 @@ describe("PublicKeyType", () => {
 		it("brand property is readonly", () => {
 			const _test = (pk: PublicKeyType) => {
 				// @ts-expect-error - cannot reassign readonly property
+				// biome-ignore lint/suspicious/noExplicitAny: testing type error
 				pk.__tag = "Modified" as any;
 			};
 		});
@@ -179,6 +180,7 @@ describe("PublicKeyType", () => {
 		it("length property is readonly", () => {
 			const _test = (pk: PublicKeyType) => {
 				// @ts-expect-error - cannot reassign readonly length
+				// biome-ignore lint/suspicious/noExplicitAny: testing type error
 				pk.length = 32 as any;
 			};
 		});

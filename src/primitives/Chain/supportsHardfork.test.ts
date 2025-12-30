@@ -28,6 +28,7 @@ describe("Chain.supportsHardfork", () => {
 	});
 
 	it("returns false for unsupported hardfork", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid hardfork name
 		expect(supportsHardfork(createChain(1), "prague" as any)).toBe(false);
 	});
 
@@ -40,6 +41,7 @@ describe("Chain.supportsHardfork", () => {
 	});
 
 	it("returns false for Frontier on mainnet", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid hardfork name
 		expect(supportsHardfork(createChain(1), "frontier" as any)).toBe(false);
 	});
 });

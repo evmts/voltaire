@@ -53,6 +53,7 @@ describe("PeerInfo", () => {
 		});
 
 		it("throws on non-object", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => PeerInfo.from("not an object" as any)).toThrow(
 				"Peer info must be an object",
 			);
@@ -60,6 +61,7 @@ describe("PeerInfo", () => {
 
 		it("throws on missing id", () => {
 			const invalid = { ...validPeerInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			(invalid as any).id = undefined;
 			expect(() => PeerInfo.from(invalid)).toThrow(
 				"Peer info must have 'id' string field",
@@ -68,6 +70,7 @@ describe("PeerInfo", () => {
 
 		it("throws on missing name", () => {
 			const invalid = { ...validPeerInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			(invalid as any).name = undefined;
 			expect(() => PeerInfo.from(invalid)).toThrow(
 				"Peer info must have 'name' string field",
@@ -76,6 +79,7 @@ describe("PeerInfo", () => {
 
 		it("throws on missing caps", () => {
 			const invalid = { ...validPeerInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			(invalid as any).caps = undefined;
 			expect(() => PeerInfo.from(invalid)).toThrow(
 				"Peer info must have 'caps' array field",
@@ -84,6 +88,7 @@ describe("PeerInfo", () => {
 
 		it("throws on missing network", () => {
 			const invalid = { ...validPeerInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			(invalid as any).network = undefined;
 			expect(() => PeerInfo.from(invalid)).toThrow(
 				"Peer info must have 'network' object field",
@@ -108,6 +113,7 @@ describe("PeerInfo", () => {
 
 		it("throws on missing protocols", () => {
 			const invalid = { ...validPeerInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			(invalid as any).protocols = undefined;
 			expect(() => PeerInfo.from(invalid)).toThrow(
 				"Peer info must have 'protocols' object field",

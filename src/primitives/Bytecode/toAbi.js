@@ -36,6 +36,7 @@ const LOG4 = 0xa4;
  * // ]
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex bytecode analysis
 export function toAbi(bytecode) {
 	/** @type {Map<string, { payable: boolean; hasReturn: boolean; hasSstore: boolean; hasSload: boolean }>} */
 	const selectors = new Map();
@@ -176,6 +177,7 @@ function detectGlobalPayabilityGuard(instructions) {
  * @param {number} selectorIndex
  * @returns {{ hasPayabilityCheck: boolean; hasReturn: boolean; hasSstore: boolean; hasSload: boolean }}
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex logic required
 function analyzeFunctionEntry(instructions, selectorIndex) {
 	let hasPayabilityCheck = false;
 	let hasReturn = false;

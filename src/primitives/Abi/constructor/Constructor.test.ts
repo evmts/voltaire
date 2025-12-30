@@ -47,6 +47,7 @@ describe("Constructor", () => {
 			const ctor = Constructor({
 				stateMutability: "nonpayable",
 				inputs: [],
+				// biome-ignore lint/suspicious/noExplicitAny: Testing behavior when type field is missing
 			} as any);
 
 			expect(ctor.type).toBe("constructor");
@@ -130,6 +131,7 @@ describe("Constructor", () => {
 				],
 			});
 
+			// biome-ignore lint/suspicious/noExplicitAny: Type assertion needed for test args
 			const args = ["MyToken", "MTK", 18n] as any;
 			const encoded = ctor.encodeParams(args);
 			const decoded = ctor.decodeParams(encoded);

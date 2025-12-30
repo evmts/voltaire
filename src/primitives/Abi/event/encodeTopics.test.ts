@@ -169,6 +169,7 @@ describe("EncodeTopics", () => {
 
 		const topics = encodeTopics(event, {
 			from: "0x0000000000000000000000000000000000000001",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			to: null as any,
 		});
 

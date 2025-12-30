@@ -48,6 +48,7 @@ export function FeeOracle(options) {
 	 * Get current fee data
 	 * @returns {Promise<FeeDataType>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex logic required
 	async function getFeeData() {
 		// Fetch in parallel
 		const [gasPriceHex, latestBlock, feeHistory] = await Promise.all([

@@ -69,6 +69,7 @@ function toBigInt(value) {
  * });
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex logic required
 export function from(value) {
 	if (!value || typeof value !== "object") {
 		throw new InvalidBuilderBidError("BuilderBid must be an object", { value });

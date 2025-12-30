@@ -15,6 +15,7 @@ import { toHex } from "./toHex.js";
  * const str = Hash.toString(hash); // "0x1234..."
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional toString override
 export function toString(hash) {
 	return toHex(hash);
 }

@@ -22,6 +22,7 @@ import type { BrandedAccessList, Item } from "./AccessListType.js";
  * const list = AccessList.fromBytes(bytes);
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex parsing logic
 export function fromBytes(bytes: Uint8Array): BrandedAccessList {
 	const decoded = decode(bytes);
 

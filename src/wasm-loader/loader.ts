@@ -3134,12 +3134,16 @@ export function kzgIsInitialized(): boolean {
 /**
  * Load KZG trusted setup from embedded data
  *
- * Must be called once before using any KZG functions.
+ * Idempotent - safe to call multiple times (no-op if already loaded).
  * Uses the embedded trusted setup from c-kzg-4844.
  *
  * @throws {Error} If loading fails
  */
 export function kzgLoadTrustedSetup(): void {
+	// Already initialized - no-op
+	if (kzgInitialized) {
+		return;
+	}
 	const exports = getExports();
 	const result = exports.kzg_load_trusted_setup();
 	if (result !== 0) {

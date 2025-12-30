@@ -114,6 +114,7 @@ describe("from", () => {
 
 	it("is a simple type cast with no validation", () => {
 		// from() doesn't validate - it's just a type cast
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const invalidParam = { type: "invalid", something: "else" } as any;
 		const result = from(invalidParam);
 		expect(result).toEqual(invalidParam);

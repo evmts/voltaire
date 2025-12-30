@@ -26,6 +26,7 @@ import { random } from "./random.js";
 import { slice } from "./slice.js";
 import { toBytes } from "./toBytes.js";
 import { toHex } from "./toHex.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the canonical name for this conversion
 import { toString } from "./toString.js";
 
 // Factory exports (tree-shakeable)

@@ -16,6 +16,7 @@ export namespace Hex {
 	export function toBytes(hex: HexType | `0x${string}` | string): Uint8Array;
 	export function toNumber(hex: HexType | string): number;
 	export function toBigInt(hex: HexType | string): bigint;
+	// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is intentional API name
 	export function toString(hex: HexType | string): string;
 	export function toBoolean(hex: HexType | string): boolean;
 	export function size(hex: HexType | string): number;

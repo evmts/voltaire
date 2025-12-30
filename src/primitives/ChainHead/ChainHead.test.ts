@@ -82,6 +82,7 @@ describe("ChainHead", () => {
 				from({
 					hash: mockHash,
 					timestamp: 1000n,
+					// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 				} as any),
 			).toThrow("requires number, hash, and timestamp");
 
@@ -89,6 +90,7 @@ describe("ChainHead", () => {
 				from({
 					number: 100n,
 					timestamp: 1000n,
+					// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 				} as any),
 			).toThrow("requires number, hash, and timestamp");
 
@@ -96,6 +98,7 @@ describe("ChainHead", () => {
 				from({
 					number: 100n,
 					hash: mockHash,
+					// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 				} as any),
 			).toThrow("requires number, hash, and timestamp");
 		});
@@ -111,10 +114,12 @@ describe("ChainHead", () => {
 		});
 
 		it("throws on null input", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => from(null as any)).toThrow("Invalid ChainHead input");
 		});
 
 		it("throws on non-object input", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => from(123 as any)).toThrow("Invalid ChainHead input");
 		});
 	});

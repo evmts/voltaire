@@ -12,6 +12,7 @@ import * as TopicFilter from "../TopicFilter/index.js";
  * const matches = LogFilter.matches(filter, log);
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: filter matching logic requires multiple checks
 export function matches(filter, log) {
 	// Check address filter
 	if (filter.address !== undefined) {

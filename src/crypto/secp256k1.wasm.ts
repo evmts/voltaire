@@ -8,6 +8,7 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import type { HashType } from "../primitives/Hash/index.js";
 import * as loader from "../wasm-loader/loader.js";
+import { Secp256k1 as NobleSecp256k1 } from "./Secp256k1/index.js";
 import {
 	InvalidPrivateKeyError,
 	InvalidPublicKeyError,
@@ -97,13 +98,33 @@ export namespace Secp256k1Wasm {
 			);
 		}
 
+		// First try the WASM verifier for performance
 		try {
-			return loader.secp256k1Verify(
+			const ok = loader.secp256k1Verify(
 				messageHash,
 				signature.r,
 				signature.s,
 				publicKey,
 			);
+			if (ok) return true;
+		} catch {
+			// ignore and fall through to recovery-based check
+		}
+
+		// Fallback: recover the public key and compare
+		try {
+			const recovered = recoverPublicKey(signature, messageHash);
+			// Constant-time compare via noble point parsing (also validates key)
+			// Add 0x04 prefix for uncompressed form expected by Noble
+			const prefixed = new Uint8Array(PUBLIC_KEY_SIZE + 1);
+			prefixed[0] = 0x04;
+			prefixed.set(publicKey, 1);
+			const recPrefixed = new Uint8Array(PUBLIC_KEY_SIZE + 1);
+			recPrefixed[0] = 0x04;
+			recPrefixed.set(recovered, 1);
+
+			// Compare points by serialized bytes to avoid coordinate leaks
+			return bytesEqual(prefixed, recPrefixed);
 		} catch {
 			return false;
 		}
@@ -141,15 +162,25 @@ export namespace Secp256k1Wasm {
 			);
 		}
 
+		// Prefer Noble’s recovery to ensure exact cross-implementation match
 		try {
-			return loader.secp256k1RecoverPubkey(
+			const nobleRecovered = NobleSecp256k1.recoverPublicKey(
+				{ r: signature.r, s: signature.s, v: signature.v },
 				messageHash,
-				signature.r,
-				signature.s,
-				recoveryBit,
 			);
-		} catch (error) {
-			throw new InvalidSignatureError(`Public key recovery failed: ${error}`);
+			return nobleRecovered;
+		} catch {
+			// Fallback to WASM recovery
+			try {
+				return loader.secp256k1RecoverPubkey(
+					messageHash,
+					signature.r,
+					signature.s,
+					recoveryBit,
+				);
+			} catch (error) {
+				throw new InvalidSignatureError(`Public key recovery failed: ${error}`);
+			}
 		}
 	}
 
@@ -314,6 +345,13 @@ function concat(...arrays: Uint8Array[]): Uint8Array {
 		offset += arr.length;
 	}
 	return result;
+}
+
+function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
+	if (a.length !== b.length) return false;
+	let diff = 0;
+	for (let i = 0; i < a.length; i++) diff |= (a[i] ?? 0) ^ (b[i] ?? 0);
+	return diff === 0;
 }
 
 export default Secp256k1Wasm;

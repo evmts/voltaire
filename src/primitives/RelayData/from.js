@@ -64,6 +64,7 @@ function toBigInt(value) {
  * });
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: validation requires checking multiple fields
 export function from(value) {
 	if (!value || typeof value !== "object") {
 		throw new InvalidRelayDataError("RelayData must be an object", { value });

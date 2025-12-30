@@ -12,6 +12,7 @@
  * Int256.toString(a); // "-42"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentionally named for API consistency
 export function toString(value) {
 	return value.toString();
 }

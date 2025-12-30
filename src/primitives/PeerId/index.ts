@@ -11,6 +11,7 @@ import { toString as _toString } from "./toString.js";
 export { from };
 
 // Export public wrapper functions
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional override for branded type conversion
 export function toString(peerId: string): string {
 	return _toString.call(from(peerId));
 }

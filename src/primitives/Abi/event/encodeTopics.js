@@ -29,6 +29,7 @@ export function EncodeTopics({ keccak256, keccak256String }) {
 	 * @param {import('./EventType.js').EncodeTopicsArgs<any>} args - Event arguments to encode
 	 * @returns {(import('../../Hash/HashType.js').HashType | null)[]} Topics array (nulls for unspecified indexed params)
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex topic encoding logic
 	return function encodeTopics(event, args) {
 		const topics = [];
 

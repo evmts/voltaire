@@ -32,6 +32,7 @@ describe("Chain.getHardforkBlock", () => {
 	});
 
 	it("returns undefined for unsupported hardfork", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid hardfork name
 		const block = getHardforkBlock(createChain(1), "frontier" as any);
 		expect(block).toBeUndefined();
 	});
@@ -42,6 +43,7 @@ describe("Chain.getHardforkBlock", () => {
 	});
 
 	it("returns undefined for chain without hardfork metadata", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid hardfork name
 		const block = getHardforkBlock(createChain(1), "prague" as any);
 		expect(block).toBeUndefined();
 	});

@@ -11,6 +11,7 @@
  * // "SGVsbG8=" (plain string)
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentionally named toString for API consistency
 export function toString(value) {
 	return value;
 }

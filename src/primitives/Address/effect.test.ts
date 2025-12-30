@@ -110,6 +110,7 @@ describe("AddressSchema Effect Schema", () => {
 
 		it("rejects invalid bytes length in constructor", () => {
 			const invalidBytes = new Uint8Array(19);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => new AddressSchema({ value: invalidBytes as any })).toThrow();
 		});
 
@@ -363,6 +364,7 @@ describe("AddressSchema Effect Schema", () => {
 
 		it("handles validation errors with Effect.try", async () => {
 			const program = Effect.try({
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 				try: () => new AddressSchema({ value: new Uint8Array(19) as any }),
 				catch: (error) => new Error(`Validation failed: ${error}`),
 			});

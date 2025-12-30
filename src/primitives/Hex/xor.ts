@@ -20,6 +20,7 @@ import { hexCharToValue } from "./utils.js";
  * const result = Hex.xor(hex, Hex.from('0x34')); // '0x26'
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: validation logic is inherently complex
 export function xor(hex: HexType, other: HexType): HexType {
 	// Convert hex to bytes
 	if (!hex.startsWith("0x"))
@@ -114,6 +115,7 @@ export function xor(hex: HexType, other: HexType): HexType {
 	}
 	const result = new Uint8Array(bytesA.length);
 	for (let i = 0; i < bytesA.length; i++) {
+		// biome-ignore lint/style/noNonNullAssertion: bounds checked by loop condition
 		result[i] = bytesA[i]! ^ bytesB[i]!;
 	}
 	return fromBytes(result);

@@ -21,6 +21,7 @@ import { slice } from "./slice.js";
 import { toBigInt } from "./toBigInt.js";
 import { toHex } from "./toHex.js";
 import { toNumber } from "./toNumber.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentionally named for API consistency
 import { toString } from "./toString.js";
 import { trimLeft } from "./trimLeft.js";
 import { trimRight } from "./trimRight.js";

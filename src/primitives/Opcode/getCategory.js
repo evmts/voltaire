@@ -14,6 +14,7 @@ import * as constants from "./constants.js";
  * Opcode.getCategory(Opcode.CALL); // "system"
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode categorization requires many conditions
 export function getCategory(opcode) {
 	// Stop and Arithmetic
 	if (

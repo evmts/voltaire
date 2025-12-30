@@ -142,6 +142,7 @@ describe("blob.toCommitment() - Instance Method", () => {
 	it("validates blob size", () => {
 		const invalid = new Uint8Array(100);
 		Object.setPrototypeOf(invalid, Blob.prototype);
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		expect(() => (invalid as any).toCommitment()).toThrow("Invalid blob size");
 	});
 });
@@ -150,6 +151,7 @@ describe("blob.toProof() - Instance Method", () => {
 	it("throws KZG error when trusted setup not loaded", () => {
 		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Commitment;
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		expect(() => (blob as any).toProof(commitment)).toThrow(/KZG/i);
 	});
 
@@ -157,6 +159,7 @@ describe("blob.toProof() - Instance Method", () => {
 		const invalid = new Uint8Array(100);
 		const commitment = new Uint8Array(48) as Commitment;
 		Object.setPrototypeOf(invalid, Blob.prototype);
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		expect(() => (invalid as any).toProof(commitment)).toThrow(
 			"Invalid blob size",
 		);
@@ -168,6 +171,7 @@ describe("blob.verify() - Instance Method", () => {
 		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Commitment;
 		const proof = new Uint8Array(48) as Proof;
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		expect(() => (blob as any).verify(commitment, proof)).toThrow(/KZG/i);
 	});
 
@@ -176,6 +180,7 @@ describe("blob.verify() - Instance Method", () => {
 		const commitment = new Uint8Array(48) as Commitment;
 		const proof = new Uint8Array(48) as Proof;
 		Object.setPrototypeOf(invalid, Blob.prototype);
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		expect(() => (invalid as any).verify(commitment, proof)).toThrow(
 			"Invalid blob size",
 		);
@@ -239,6 +244,7 @@ describe("Blob.splitData() - Static Method", () => {
 		const data = new Uint8Array(1000).fill(0xcd);
 		const blobs = Blob.splitData(data);
 		expect(blobs.length).toBe(1);
+		// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 		expect(Blob.isValid(blobs[0]!)).toBe(true);
 	});
 
@@ -296,6 +302,7 @@ describe("Blob.joinData() - Static Method", () => {
 		const pattern = new Uint8Array([1, 2, 3, 4, 5]);
 		const data = new Uint8Array(150000);
 		for (let i = 0; i < data.length; i++) {
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			data[i] = pattern[i % pattern.length]!;
 		}
 		const blobs = Blob.splitData(data);

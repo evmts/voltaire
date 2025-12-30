@@ -26,6 +26,7 @@ import { getSignature } from "./getSignature.js";
  */
 
 // Static utility methods
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentionally named Error for ABI error namespace
 export const Error = {
 	getSignature,
 	getSelector: GetSelector({ keccak256String: keccak256StringImpl }),

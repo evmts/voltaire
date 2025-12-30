@@ -12,6 +12,7 @@ import * as Abi from "./index.js";
 
 describe("Abi.encodeParameters - uint types", () => {
 	it("encodes uint8 zero", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint8" }], [0n] as any);
 		expect(encoded).toBeInstanceOf(Uint8Array);
 		expect(encoded.length).toBe(32);
@@ -19,6 +20,7 @@ describe("Abi.encodeParameters - uint types", () => {
 	});
 
 	it("encodes uint8 max value (255)", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint8" }], [255n] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded[31]).toBe(255);
@@ -27,6 +29,7 @@ describe("Abi.encodeParameters - uint types", () => {
 	});
 
 	it("encodes uint16 max value (65535)", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint16" }], [65535n] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded[30]).toBe(0xff);
@@ -36,6 +39,7 @@ describe("Abi.encodeParameters - uint types", () => {
 
 	it("encodes uint32", () => {
 		const value = 0x12345678n;
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint32" }], [value] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded[28]).toBe(0x12);
@@ -46,6 +50,7 @@ describe("Abi.encodeParameters - uint types", () => {
 
 	it("encodes uint64", () => {
 		const value = 0x123456789abcdef0n;
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint64" }], [value] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded[24]).toBe(0x12);
@@ -54,6 +59,7 @@ describe("Abi.encodeParameters - uint types", () => {
 
 	it("encodes uint128", () => {
 		const value = 0x123456789abcdef0123456789abcdef0n;
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint128" }], [value] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded[16]).toBe(0x12);
@@ -61,6 +67,7 @@ describe("Abi.encodeParameters - uint types", () => {
 	});
 
 	it("encodes uint256 zero", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint256" }], [0n] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded.every((b) => b === 0)).toBe(true);
@@ -69,6 +76,7 @@ describe("Abi.encodeParameters - uint types", () => {
 	it("encodes uint256 max value", () => {
 		const max =
 			0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint256" }], [max] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded.every((b) => b === 0xff)).toBe(true);
@@ -76,6 +84,7 @@ describe("Abi.encodeParameters - uint types", () => {
 
 	it("encodes uint256 specific value", () => {
 		const value = 42n;
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "uint256" }], [value] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded[31]).toBe(42);
@@ -85,6 +94,7 @@ describe("Abi.encodeParameters - uint types", () => {
 	it("encodes multiple uint values", () => {
 		const encoded = Abi.encodeParameters(
 			[{ type: "uint8" }, { type: "uint16" }, { type: "uint256" }],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			[1n, 2n, 3n] as any,
 		);
 		expect(encoded.length).toBe(96); // 3 * 32 bytes
@@ -96,12 +106,14 @@ describe("Abi.encodeParameters - uint types", () => {
 
 describe("Abi.encodeParameters - int types", () => {
 	it("encodes int8 zero", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int8" }], [0n] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded.every((b) => b === 0)).toBe(true);
 	});
 
 	it("encodes int8 positive (127)", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int8" }], [127n] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded[31]).toBe(127);
@@ -109,6 +121,7 @@ describe("Abi.encodeParameters - int types", () => {
 	});
 
 	it("encodes int8 negative (-1)", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int8" }], [-1n] as any);
 		expect(encoded.length).toBe(32);
 		// Two's complement: -1 = 0xFFFFFFFF...
@@ -116,6 +129,7 @@ describe("Abi.encodeParameters - int types", () => {
 	});
 
 	it("encodes int8 negative (-128)", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int8" }], [-128n] as any);
 		expect(encoded.length).toBe(32);
 		// Two's complement of -128
@@ -124,6 +138,7 @@ describe("Abi.encodeParameters - int types", () => {
 	});
 
 	it("encodes int16 positive", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int16" }], [1000n] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded[30]).toBe(0x03);
@@ -131,6 +146,7 @@ describe("Abi.encodeParameters - int types", () => {
 	});
 
 	it("encodes int16 negative", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int16" }], [-1000n] as any);
 		expect(encoded.length).toBe(32);
 		// Two's complement
@@ -140,6 +156,7 @@ describe("Abi.encodeParameters - int types", () => {
 	it("encodes int32 positive", () => {
 		const encoded = Abi.encodeParameters([{ type: "int32" }], [
 			123456789n,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded[28]).toBe(0x07);
@@ -149,6 +166,7 @@ describe("Abi.encodeParameters - int types", () => {
 	it("encodes int32 negative", () => {
 		const encoded = Abi.encodeParameters([{ type: "int32" }], [
 			-123456789n,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded.slice(0, 28).every((b) => b === 0xff)).toBe(true);
@@ -157,6 +175,7 @@ describe("Abi.encodeParameters - int types", () => {
 	it("encodes int64 positive", () => {
 		const encoded = Abi.encodeParameters(
 			[{ type: "int64" }],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			[9223372036854775807n] as any, // max int64
 		);
 		expect(encoded.length).toBe(32);
@@ -167,6 +186,7 @@ describe("Abi.encodeParameters - int types", () => {
 	it("encodes int64 negative", () => {
 		const encoded = Abi.encodeParameters(
 			[{ type: "int64" }],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			[-9223372036854775808n] as any, // min int64
 		);
 		expect(encoded.length).toBe(32);
@@ -175,12 +195,14 @@ describe("Abi.encodeParameters - int types", () => {
 	});
 
 	it("encodes int256 zero", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int256" }], [0n] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded.every((b) => b === 0)).toBe(true);
 	});
 
 	it("encodes int256 positive", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters([{ type: "int256" }], [12345n] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded[30]).toBe(0x30);
@@ -190,6 +212,7 @@ describe("Abi.encodeParameters - int types", () => {
 	it("encodes int256 negative", () => {
 		const encoded = Abi.encodeParameters([{ type: "int256" }], [
 			-12345n,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		] as any);
 		expect(encoded.length).toBe(32);
 		// Two's complement
@@ -199,6 +222,7 @@ describe("Abi.encodeParameters - int types", () => {
 	it("encodes multiple int values", () => {
 		const encoded = Abi.encodeParameters(
 			[{ type: "int8" }, { type: "int32" }, { type: "int256" }],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			[-1n, 100n, -200n] as any,
 		);
 		expect(encoded.length).toBe(96);
@@ -384,6 +408,7 @@ describe("Abi.encodeParameters - mixed static types", () => {
 				{ type: "uint128" },
 				{ type: "uint256" },
 			],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			[1n, 2n, 3n, 4n, 5n, 6n] as any,
 		);
 		expect(encoded.length).toBe(192); // 6 * 32
@@ -405,6 +430,7 @@ describe("Abi.encodeParameters - mixed static types", () => {
 				{ type: "int128" },
 				{ type: "int256" },
 			],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			[-1n, -2n, -3n, -4n, -5n, -6n] as any,
 		);
 		expect(encoded.length).toBe(192);
@@ -454,6 +480,7 @@ describe("Abi.encodeParameters - edge cases", () => {
 			{ type: "uint256" },
 		];
 		const values = [0n, 0n, 0n, 0n, 0n, 0n];
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = Abi.encodeParameters(types, values as any);
 		expect(encoded.length).toBe(192);
 		expect(encoded.every((b) => b === 0)).toBe(true);
@@ -476,6 +503,7 @@ describe("Abi.encodeParameters - edge cases", () => {
 				18446744073709551615n,
 				340282366920938463463374607431768211455n,
 				115792089237316195423570985008687907853269984665640564039457584007913129639935n,
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			] as any,
 		);
 		expect(encoded.length).toBe(192);
@@ -494,6 +522,7 @@ describe("Abi.encodeParameters - edge cases", () => {
 				127n,
 				-57896044618658097711785492504343953926634992332820282019728792003956564819968n, // min int256
 				57896044618658097711785492504343953926634992332820282019728792003956564819967n, // max int256
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			] as any,
 		);
 		expect(encoded.length).toBe(128);

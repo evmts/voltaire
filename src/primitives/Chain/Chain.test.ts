@@ -3,6 +3,7 @@ import { Chain } from "./Chain.js";
 
 describe("Chain.from", () => {
 	test("identity function returns same chain", () => {
+		// biome-ignore lint/style/noNonNullAssertion: test assumes chain exists
 		const quai = Chain.fromId(9)!;
 		const result = Chain.from(quai);
 		expect(result).toBe(quai);
@@ -10,6 +11,7 @@ describe("Chain.from", () => {
 	});
 
 	test("works with Chain constructor", () => {
+		// biome-ignore lint/style/noNonNullAssertion: test assumes chain exists
 		const quai = Chain.fromId(9)!;
 		const result = Chain(quai);
 		expect(result).toBe(quai);

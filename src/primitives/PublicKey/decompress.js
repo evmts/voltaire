@@ -86,16 +86,18 @@ export function decompress(compressed) {
  * @param {bigint} mod
  * @returns {bigint}
  */
+// biome-ignore lint/style/noParameterAssign: modular exponentiation algorithm requires reassignment
 function modExp(base, exp, mod) {
 	let result = 1n;
-	base = base % mod;
+	let b = base % mod;
+	let e = exp;
 
-	while (exp > 0n) {
-		if (exp & 1n) {
-			result = (result * base) % mod;
+	while (e > 0n) {
+		if (e & 1n) {
+			result = (result * b) % mod;
 		}
-		exp >>= 1n;
-		base = (base * base) % mod;
+		e >>= 1n;
+		b = (b * b) % mod;
 	}
 
 	return result;

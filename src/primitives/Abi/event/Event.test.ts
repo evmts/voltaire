@@ -186,6 +186,7 @@ describe("Event namespace", () => {
 				[{ type: "uint256", name: "value" }],
 				[1000n],
 			);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			const decoded = Event.decodeLog(event, data, topics as any);
 			expect(decoded.value).toBe(1000n);
 		});
@@ -215,6 +216,7 @@ describe("Event namespace", () => {
 				[42n],
 			);
 
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			const decoded = Event.decodeLog(event, logData, topics as any);
 			expect(decoded.value).toBe(42n);
 		});
@@ -244,6 +246,7 @@ describe("Event namespace", () => {
 			);
 
 			// Decode
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			const decoded = Event.decodeLog(event, data, topics as any);
 
 			expect(decoded.oldValue).toBe(originalArgs.oldValue);

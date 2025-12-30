@@ -17,6 +17,7 @@ const keccak256String = (str: string): Uint8Array => {
 
 // Create Error namespace locally to avoid circular dependency
 const getSelector = GetSelector({ keccak256String });
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentionally named Error for ABI error namespace
 const Error = {
 	getSignature,
 	getSelector,
@@ -108,6 +109,7 @@ describe("Error namespace", () => {
 			],
 		} as const;
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const args = ["0x742d35Cc6634C0532925a3b844Bc9e7595f251e3", 1000n] as any;
 		const encoded = Error.encodeParams(error, args);
 		const decoded = Error.decodeParams(error, encoded);

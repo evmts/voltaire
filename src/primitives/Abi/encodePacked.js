@@ -65,6 +65,7 @@ export function encodePacked(types, values) {
  * @param {unknown} value - Value to encode
  * @returns {Uint8Array} Encoded bytes (no padding)
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex type handling is necessary
 function encodePackedValue(type, value) {
 	// Arrays - check this FIRST before other type checks
 	// because "uint256[]" starts with "uint" but should be handled as array

@@ -36,6 +36,7 @@ export * from "./constants.js";
 // Type definitions for all functions
 export const fromString: (name: string) => HardforkType | undefined =
 	_fromString;
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the function name in our API
 export const toString: (fork: HardforkType) => string = _toString;
 export const isValidName: (name: string) => boolean = _isValidName;
 export const isAtLeast: (fork: HardforkType, minFork: HardforkType) => boolean =

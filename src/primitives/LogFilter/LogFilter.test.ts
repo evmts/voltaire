@@ -74,6 +74,7 @@ describe("LogFilter", () => {
 		});
 
 		it("throws on non-object params", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => LogFilter.from("not object" as any)).toThrow(
 				LogFilter.InvalidLogFilterError,
 			);
@@ -100,6 +101,7 @@ describe("LogFilter", () => {
 		it("throws on invalid blockhash", () => {
 			expect(() =>
 				LogFilter.from({
+					// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 					blockhash: new Uint8Array(20) as any,
 				}),
 			).toThrow(LogFilter.InvalidLogFilterError);
@@ -108,6 +110,7 @@ describe("LogFilter", () => {
 		it("throws on invalid fromBlock", () => {
 			expect(() =>
 				LogFilter.from({
+					// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 					fromBlock: "invalid" as any,
 				}),
 			).toThrow(LogFilter.InvalidLogFilterError);
@@ -116,6 +119,7 @@ describe("LogFilter", () => {
 		it("throws on invalid address", () => {
 			expect(() =>
 				LogFilter.from({
+					// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 					address: new Uint8Array(32) as any,
 				}),
 			).toThrow(LogFilter.InvalidLogFilterError);
@@ -124,6 +128,7 @@ describe("LogFilter", () => {
 		it("throws on invalid address in array", () => {
 			expect(() =>
 				LogFilter.from({
+					// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 					address: [addr1, new Uint8Array(32)] as any,
 				}),
 			).toThrow(LogFilter.InvalidLogFilterError);
@@ -132,6 +137,7 @@ describe("LogFilter", () => {
 		it("throws on invalid topics", () => {
 			expect(() =>
 				LogFilter.from({
+					// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 					topics: "not array" as any,
 				}),
 			).toThrow(LogFilter.InvalidLogFilterError);

@@ -26,6 +26,7 @@ import { InvalidLogFilterError } from "./errors.js";
  * });
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: validation logic requires multiple checks
 export function from(params) {
 	if (typeof params !== "object" || params === null) {
 		throw new InvalidLogFilterError("LogFilter params must be an object", {

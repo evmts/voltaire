@@ -738,6 +738,7 @@ describe("FeeMarket.projectBaseFees", () => {
 		expect(fees.length).toBe(5);
 		// Each fee should be higher than previous (above target)
 		for (let i = 1; i < fees.length; i++) {
+			// biome-ignore lint/style/noNonNullAssertion: array bounds checked by loop
 			expect(fees[i]!).toBeGreaterThan(fees[i - 1]!);
 		}
 	});
@@ -756,6 +757,7 @@ describe("FeeMarket.projectBaseFees", () => {
 		expect(fees.length).toBe(5);
 		// Each fee should be lower than previous (below target)
 		for (let i = 1; i < fees.length; i++) {
+			// biome-ignore lint/style/noNonNullAssertion: array bounds checked by loop
 			expect(fees[i]!).toBeLessThan(fees[i - 1]!);
 		}
 	});

@@ -220,7 +220,7 @@ describe("format", () => {
 
 	describe("constructor formatting", () => {
 		it("formats constructor with parameters", () => {
-			const constructor = {
+			const ctor = {
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [
@@ -228,27 +228,27 @@ describe("format", () => {
 					{ type: "string", name: "name" },
 				],
 			};
-			const formatted = format(constructor);
+			const formatted = format(ctor);
 			expect(formatted).toBe("constructor");
 		});
 
 		it("formats constructor with no parameters", () => {
-			const constructor = {
+			const ctor = {
 				type: "constructor",
 				stateMutability: "nonpayable",
 				inputs: [],
 			};
-			const formatted = format(constructor);
+			const formatted = format(ctor);
 			expect(formatted).toBe("constructor");
 		});
 
 		it("includes payable state mutability for constructor", () => {
-			const constructor = {
+			const ctor = {
 				type: "constructor",
 				stateMutability: "payable",
 				inputs: [],
 			};
-			const formatted = format(constructor);
+			const formatted = format(ctor);
 			expect(formatted).toBe("constructor");
 		});
 	});

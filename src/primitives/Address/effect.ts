@@ -112,6 +112,7 @@ export class AddressSchema extends Schema.Class<AddressSchema>("Address")({
 				const addr = BrandedAddressImpl.from(value);
 				return new AddressSchema({ value: addr });
 			},
+			// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex validation logic
 			catch: (error) => {
 				// Map native errors to Effect errors
 				if (error instanceof Error) {
@@ -674,6 +675,7 @@ export class ChecksumAddress extends Schema.Class<ChecksumAddress>(
 	static isValid(
 		str: string,
 	): Effect.Effect<boolean, CryptoOperationError, Keccak256Service> {
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex validation logic
 		return Effect.gen(function* () {
 			if (!str.startsWith("0x") || str.length !== 42) {
 				return false;

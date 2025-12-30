@@ -21,6 +21,7 @@ import { InvalidBundleError } from "./errors.js";
  * });
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex logic required
 export function from(value) {
 	if (!value || typeof value !== "object") {
 		throw new InvalidBundleError("Bundle must be an object", { value });
@@ -127,6 +128,7 @@ export function from(value) {
 				{ value },
 			);
 		}
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex logic required
 		bundle.revertingTxHashes = value.revertingTxHashes.map((hash, idx) => {
 			if (hash instanceof Uint8Array) {
 				if (hash.length !== 32) {

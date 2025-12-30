@@ -86,6 +86,7 @@ describe("Bundle", () => {
 		it("throws on invalid transactions type", () => {
 			expect(() =>
 				Bundle.from({
+					// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 					transactions: "not an array" as any,
 				}),
 			).toThrow("transactions must be an array");
@@ -94,6 +95,7 @@ describe("Bundle", () => {
 		it("throws on invalid transaction format", () => {
 			expect(() =>
 				Bundle.from({
+					// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 					transactions: [123 as any],
 				}),
 			).toThrow("must be Uint8Array or hex string");
@@ -181,6 +183,7 @@ describe("Bundle", () => {
 				transactions: [tx1],
 			});
 
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => Bundle.toHash(bundle, {} as any)).toThrow(
 				"keccak256 not provided",
 			);

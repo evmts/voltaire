@@ -319,6 +319,7 @@ Address.prototype.toHex = function () {
 Address.prototype.setFromHex =
 	Uint8Array.prototype.setFromHex ?? setFromHexPolyfill;
 Address.prototype.toChecksummed = function () {
+	// biome-ignore lint/suspicious/noExplicitAny: wasm interface requires any
 	const crypto = (this as any)._crypto;
 	if (!crypto?.keccak256) {
 		throw new Error(
@@ -364,6 +365,7 @@ Address.prototype.toBytes = function (): Uint8Array {
 Address.prototype.clone = function (): AddressType {
 	const result = BrandedAddress.clone(this as AddressType);
 	Object.setPrototypeOf(result, Address.prototype);
+	// biome-ignore lint/suspicious/noExplicitAny: wasm interface requires any
 	const crypto = (this as any)._crypto;
 	if (crypto) {
 		Object.defineProperty(result, "_crypto", {
@@ -378,6 +380,7 @@ Address.prototype.clone = function (): AddressType {
 Address.prototype.calculateCreateAddress = function (
 	nonce: bigint,
 ): AddressType {
+	// biome-ignore lint/suspicious/noExplicitAny: wasm interface requires any
 	const crypto = (this as any)._crypto;
 	if (!crypto?.keccak256) {
 		throw new Error(
@@ -432,6 +435,7 @@ Address.prototype.calculateCreate2Address = function (
 	salt: HashType,
 	initCode: BrandedBytecode,
 ): AddressType {
+	// biome-ignore lint/suspicious/noExplicitAny: wasm interface requires any
 	const crypto = (this as any)._crypto;
 	if (!crypto?.keccak256) {
 		throw new Error(

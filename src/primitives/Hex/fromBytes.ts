@@ -18,7 +18,9 @@ export function fromBytes(bytes: Uint8Array): HexType {
 	const hexChars = "0123456789abcdef";
 	let result = "0x";
 	for (let i = 0; i < bytes.length; i++) {
+		// biome-ignore lint/style/noNonNullAssertion: bounds checked by loop
 		const b = bytes[i]!;
+		// biome-ignore lint/style/noNonNullAssertion: hex lookup always valid for 0-15
 		result += hexChars[b >> 4]! + hexChars[b & 0x0f]!;
 	}
 	return result as HexType;

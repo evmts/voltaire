@@ -37,6 +37,7 @@ describe("Opcode.info", () => {
 	});
 
 	it("returns undefined for invalid opcodes", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid opcode
 		const invalid = Opcode.info(0x0c as any);
 		expect(invalid).toBeUndefined();
 	});
@@ -50,6 +51,7 @@ describe("Opcode.name", () => {
 	});
 
 	it("returns UNKNOWN for invalid opcodes", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid opcode
 		expect(Opcode.name(0x0c as any)).toBe("UNKNOWN");
 	});
 
@@ -618,6 +620,7 @@ describe("Opcode edge cases", () => {
 
 	it("correctly identifies stack requirements for DUP opcodes", () => {
 		for (let i = 0; i < 16; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			const dupCode = (0x80 + i) as any;
 			const info = Opcode.info(dupCode);
 			expect(info?.stackInputs).toBe(i + 1);
@@ -627,6 +630,7 @@ describe("Opcode edge cases", () => {
 
 	it("correctly identifies stack requirements for SWAP opcodes", () => {
 		for (let i = 0; i < 16; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			const swapCode = (0x90 + i) as any;
 			const info = Opcode.info(swapCode);
 			expect(info?.stackInputs).toBe(i + 2);
@@ -714,6 +718,7 @@ describe("Opcode.getGasCost", () => {
 	});
 
 	it("returns undefined for invalid opcodes", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid opcode
 		expect(Opcode.getGasCost(0x0c as any)).toBeUndefined();
 	});
 });
@@ -739,6 +744,7 @@ describe("Opcode.getStackEffect", () => {
 	});
 
 	it("returns undefined for invalid opcodes", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid opcode
 		expect(Opcode.getStackEffect(0x0c as any)).toBeUndefined();
 	});
 });
@@ -751,6 +757,7 @@ describe("Opcode.getStackInput", () => {
 	});
 
 	it("returns undefined for invalid opcodes", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid opcode
 		expect(Opcode.getStackInput(0x0c as any)).toBeUndefined();
 	});
 });
@@ -763,6 +770,7 @@ describe("Opcode.getStackOutput", () => {
 	});
 
 	it("returns undefined for invalid opcodes", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid opcode
 		expect(Opcode.getStackOutput(0x0c as any)).toBeUndefined();
 	});
 });
@@ -828,6 +836,7 @@ describe("Opcode.getName", () => {
 	});
 
 	it("returns UNKNOWN for invalid opcodes", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid opcode
 		expect(Opcode.getName(0x0c as any)).toBe("UNKNOWN");
 	});
 });
@@ -945,6 +954,7 @@ describe("Opcode.getDescription", () => {
 	});
 
 	it("returns unknown for invalid opcodes", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid opcode
 		expect(Opcode.getDescription(0x0c as any)).toBe("Unknown opcode");
 	});
 });

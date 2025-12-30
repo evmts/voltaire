@@ -88,6 +88,7 @@ export function toBytes(value: Int8Input): Uint8Array {
 	return conv.toBytes(from(value));
 }
 
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional wrapper for branded type
 export function toString(value: Int8Input): string {
 	return conv.toString(from(value));
 }

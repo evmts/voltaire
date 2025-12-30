@@ -42,6 +42,7 @@ export function toBytes(value) {
  * @param {import("./Int16Type.js").BrandedInt16} value
  * @returns {string}
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional wrapper for branded type
 export function toString(value) {
 	return value.toString();
 }

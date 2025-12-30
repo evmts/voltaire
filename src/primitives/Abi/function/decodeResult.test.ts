@@ -223,6 +223,7 @@ describe("decodeResult", () => {
 			const encoded = encodeResult(func, [[addr, 100n]]);
 			const decoded = decodeResult(func, encoded);
 			expect(decoded[0]).toBeInstanceOf(Array);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect((decoded[0] as any[])[1]).toBe(100n);
 		});
 
@@ -253,6 +254,7 @@ describe("decodeResult", () => {
 			]);
 			const decoded = decodeResult(func, encoded);
 			expect(decoded[0]).toBeInstanceOf(Array);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect((decoded[0] as any[]).length).toBe(2);
 		});
 
@@ -281,6 +283,7 @@ describe("decodeResult", () => {
 			const encoded = encodeResult(func, [[[42n], true]]);
 			const decoded = decodeResult(func, encoded);
 			expect(decoded[0]).toBeInstanceOf(Array);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect((decoded[0] as any[])[1]).toBe(true);
 		});
 	});

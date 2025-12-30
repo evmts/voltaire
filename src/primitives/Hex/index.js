@@ -23,6 +23,7 @@ import { toBigInt } from "./toBigInt.js";
 import { toBoolean } from "./toBoolean.js";
 import { toBytes } from "./toBytes.js";
 import { toNumber } from "./toNumber.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is intentional API name
 import { toString } from "./toString.js";
 import { trim } from "./trim.js";
 import { validate } from "./validate.js";

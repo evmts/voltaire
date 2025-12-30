@@ -47,6 +47,7 @@ export class HashSchema extends Schema.Class<HashSchema>("Hash")({
 	}
 
 	static from(value: string | Uint8Array | HashType): HashSchema {
+		// biome-ignore lint/suspicious/noExplicitAny: union type requires cast for polymorphic from()
 		const h = _from(value as any);
 		return new HashSchema({ value: h });
 	}
@@ -105,6 +106,7 @@ export const HashFromUnknown = Schema.transform(
 	Schema.Union(Schema.String, Schema.Uint8ArrayFromSelf),
 	Schema.instanceOf(HashSchema),
 	{
+		// biome-ignore lint/suspicious/noExplicitAny: union type requires cast for polymorphic from()
 		decode: (value) => HashSchema.from(value as any),
 		encode: (h) => h.hash,
 	},

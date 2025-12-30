@@ -6,6 +6,7 @@ import {
 } from "../errors/index.js";
 import type { HexType } from "./HexType.js";
 import { fromString } from "./fromString.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: testing the toString method
 import { toString } from "./toString.js";
 
 describe("toString", () => {

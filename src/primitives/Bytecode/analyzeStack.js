@@ -12,6 +12,7 @@ import { parseInstructions } from "./parseInstructions.js";
  * @param {import('./BytecodeType.js').StackAnalysisOptions} [options]
  * @returns {import('./BytecodeType.js').StackAnalysis}
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex bytecode analysis
 export function analyzeStack(bytecode, options = {}) {
 	const {
 		initialDepth = 0,

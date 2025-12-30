@@ -22,6 +22,7 @@ import { MAX_PER_TRANSACTION, SIZE } from "./constants.js";
  * ```
  */
 export function VerifyBatch({ verifyBlobKzgProofBatch }) {
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex batch verification logic
 	return function verifyBatch(blobs, commitments, proofs) {
 		if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
 			throw new InvalidLengthError("Arrays must have same length", {

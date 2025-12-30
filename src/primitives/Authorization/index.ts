@@ -47,6 +47,7 @@ type VerifyFn = (auth: AuthorizationType) => AddressType;
 export const Hash: (deps: {
 	keccak256: (data: Uint8Array) => Uint8Array;
 	rlpEncode: (data: Uint8Array[]) => Uint8Array;
+	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 }) => HashFn = HashFactory as any;
 
 export const Sign: (deps: {
@@ -61,6 +62,7 @@ export const Sign: (deps: {
 		messageHash: Uint8Array,
 	) => Uint8Array;
 	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
+	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 }) => SignFn = SignFactory as any;
 
 export const Verify: (deps: {
@@ -71,6 +73,7 @@ export const Verify: (deps: {
 		messageHash: Uint8Array,
 	) => Uint8Array;
 	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
+	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 }) => VerifyFn = VerifyFactory as any;
 
 // Import other functions with proper types
@@ -134,19 +137,25 @@ export const validate: (auth: AuthorizationType) => void = validateImpl;
 
 // Create wrapped functions with auto-injected crypto
 const hash: HashFn = Hash({
+	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 	keccak256: keccak256 as any,
 	rlpEncode,
 });
 const verify: VerifyFn = Verify({
+	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 	keccak256: keccak256 as any,
 	rlpEncode,
+	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 	recoverPublicKey: recoverPublicKey as any,
 	addressFromPublicKey,
 });
 const sign: SignFn = Sign({
+	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 	keccak256: keccak256 as any,
 	rlpEncode,
+	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 	sign: secp256k1Sign as any,
+	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 	recoverPublicKey: recoverPublicKey as any,
 	addressFromPublicKey,
 });

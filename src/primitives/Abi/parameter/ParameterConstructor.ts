@@ -26,6 +26,7 @@ export interface ParameterConstructor {
 					name?: TName;
 					internalType?: TInternalType;
 					indexed?: boolean;
+					// biome-ignore lint/suspicious/noExplicitAny: recursive type definition requires any
 					components?: readonly any[];
 			  },
 	): ParameterPrototype<TType, TName, TInternalType>;

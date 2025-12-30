@@ -28,6 +28,7 @@ describe("BytesType", () => {
 		});
 
 		it("should throw on unsupported type", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => Bytes.from(123 as any)).toThrow(
 				"Unsupported bytes value type",
 			);

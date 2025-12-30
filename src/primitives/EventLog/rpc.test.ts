@@ -627,12 +627,17 @@ describe("toRpc - Valid RPC Format Generation", () => {
 	it("converts EventLog to RPC format", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			topics: [topic0 as any, topic1 as any],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x010203" as any,
 			blockNumber: 420n,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			transactionHash: txHash as any,
 			transactionIndex: 5,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			blockHash: blockHash as any,
 			logIndex: 10,
 			removed: false,
@@ -652,12 +657,17 @@ describe("toRpc - Valid RPC Format Generation", () => {
 	it("ensures all hex strings have 0x prefix", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			topics: [topic0 as any],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x0102" as any,
 			blockNumber: 100n,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			transactionHash: txHash as any,
 			transactionIndex: 1,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			blockHash: blockHash as any,
 			logIndex: 1,
 			removed: false,
@@ -678,12 +688,16 @@ describe("toRpc - Valid RPC Format Generation", () => {
 	it("formats numbers as hex strings with 0x prefix", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			blockNumber: 255n,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			transactionHash: txHash as any,
 			transactionIndex: 15,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			blockHash: blockHash as any,
 			logIndex: 31,
 			removed: false,
@@ -705,8 +719,10 @@ describe("toRpc - Field Formatting", () => {
 	it("formats address as 0x + 40 hex chars (lowercase)", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			removed: false,
 		};
@@ -719,8 +735,11 @@ describe("toRpc - Field Formatting", () => {
 	it("formats topics as array of 0x + 64 hex chars", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			topics: [topic0 as any, topic1 as any, topic2 as any],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			removed: false,
 		};
@@ -736,8 +755,10 @@ describe("toRpc - Field Formatting", () => {
 	it("formats data as 0x + hex string", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0xabcdef" as any,
 			removed: false,
 		};
@@ -751,8 +772,10 @@ describe("toRpc - Field Formatting", () => {
 	it("formats blockNumber bigint as 0x + hex", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			blockNumber: 420n,
 			removed: false,
@@ -766,9 +789,12 @@ describe("toRpc - Field Formatting", () => {
 	it("formats blockHash as 0x + 64 hex chars", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			blockHash: blockHash as any,
 			removed: false,
 		};
@@ -781,9 +807,12 @@ describe("toRpc - Field Formatting", () => {
 	it("formats transactionHash as 0x + 64 hex chars", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			transactionHash: txHash as any,
 			removed: false,
 		};
@@ -796,8 +825,10 @@ describe("toRpc - Field Formatting", () => {
 	it("formats transactionIndex number as 0x + hex", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			transactionIndex: 5,
 			removed: false,
@@ -811,8 +842,10 @@ describe("toRpc - Field Formatting", () => {
 	it("formats logIndex number as 0x + hex", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			logIndex: 10,
 			removed: false,
@@ -826,8 +859,10 @@ describe("toRpc - Field Formatting", () => {
 	it("preserves removed boolean", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			removed: true,
 		};
@@ -846,8 +881,10 @@ describe("toRpc - Optional Fields", () => {
 	it("converts undefined blockNumber to null in RPC", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			blockNumber: undefined,
 			removed: false,
@@ -861,8 +898,10 @@ describe("toRpc - Optional Fields", () => {
 	it("handles undefined blockHash", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			blockHash: undefined,
 			removed: false,
@@ -876,8 +915,10 @@ describe("toRpc - Optional Fields", () => {
 	it("handles undefined transactionIndex", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			transactionIndex: undefined,
 			removed: false,
@@ -891,8 +932,10 @@ describe("toRpc - Optional Fields", () => {
 	it("handles undefined logIndex", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			logIndex: undefined,
 			removed: false,
@@ -906,8 +949,10 @@ describe("toRpc - Optional Fields", () => {
 	it("preserves removed false (not null)", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			removed: false,
 		};
@@ -926,8 +971,10 @@ describe("toRpc - Edge Cases", () => {
 	it("converts blockNumber = 0n to 0x0", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			blockNumber: 0n,
 			removed: false,
@@ -941,8 +988,10 @@ describe("toRpc - Edge Cases", () => {
 	it("converts transactionIndex = 0 to 0x0", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			transactionIndex: 0,
 			removed: false,
@@ -956,8 +1005,10 @@ describe("toRpc - Edge Cases", () => {
 	it("converts logIndex = 0 to 0x0", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			logIndex: 0,
 			removed: false,
@@ -971,8 +1022,10 @@ describe("toRpc - Edge Cases", () => {
 	it("handles empty topics array", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			removed: false,
 		};
@@ -985,8 +1038,10 @@ describe("toRpc - Edge Cases", () => {
 	it("handles empty data", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			removed: false,
 		};
@@ -999,8 +1054,10 @@ describe("toRpc - Edge Cases", () => {
 	it("preserves removed = true", () => {
 		const log: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
 			topics: [],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x" as any,
 			removed: true,
 		};
@@ -1019,12 +1076,17 @@ describe("Round-Trip - Conversion Consistency", () => {
 	it("preserves all fields through fromRpc(toRpc(log))", () => {
 		const original: BrandedEventLog = {
 			__tag: "EventLog",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			address: addr1 as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			topics: [topic0 as any, topic1 as any],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			data: "0x01020304" as any,
 			blockNumber: 420n,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			transactionHash: txHash as any,
 			transactionIndex: 5,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			blockHash: blockHash as any,
 			logIndex: 10,
 			removed: false,

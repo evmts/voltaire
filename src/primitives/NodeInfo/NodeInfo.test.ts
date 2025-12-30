@@ -56,6 +56,7 @@ describe("NodeInfo", () => {
 		});
 
 		it("throws on non-object", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => NodeInfo.from("not an object" as any)).toThrow(
 				"Node info must be an object",
 			);
@@ -63,6 +64,7 @@ describe("NodeInfo", () => {
 
 		it("throws on missing enode", () => {
 			const invalid = { ...validNodeInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			(invalid as any).enode = undefined;
 			expect(() => NodeInfo.from(invalid)).toThrow(
 				"Node info must have 'enode' string field",
@@ -71,6 +73,7 @@ describe("NodeInfo", () => {
 
 		it("throws on missing id", () => {
 			const invalid = { ...validNodeInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			(invalid as any).id = undefined;
 			expect(() => NodeInfo.from(invalid)).toThrow(
 				"Node info must have 'id' string field",
@@ -79,6 +82,7 @@ describe("NodeInfo", () => {
 
 		it("throws on missing ports", () => {
 			const invalid = { ...validNodeInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			(invalid as any).ports = undefined;
 			expect(() => NodeInfo.from(invalid)).toThrow(
 				"Node info must have 'ports' object field",
@@ -97,6 +101,7 @@ describe("NodeInfo", () => {
 
 		it("throws on missing protocols", () => {
 			const invalid = { ...validNodeInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			(invalid as any).protocols = undefined;
 			expect(() => NodeInfo.from(invalid)).toThrow(
 				"Node info must have 'protocols' object field",
@@ -109,6 +114,7 @@ describe("NodeInfo", () => {
 			const nodeInfo = NodeInfo.from(validNodeInfo);
 			const ethProtocol = NodeInfo.getProtocol(nodeInfo, "eth");
 			expect(ethProtocol).toBeDefined();
+			// biome-ignore lint/suspicious/noExplicitAny: accessing dynamic protocol fields
 			expect((ethProtocol as any).network).toBe(1);
 		});
 

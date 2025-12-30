@@ -32,6 +32,7 @@ import { scan } from "./scan.js";
  * //   Blocks: 1
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex bytecode analysis
 export function prettyPrint(bytecode, options = {}) {
 	const {
 		colors = true,

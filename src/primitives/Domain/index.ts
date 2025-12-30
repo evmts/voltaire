@@ -46,6 +46,7 @@ export function toHash(
 
 export function encodeData(
 	primaryType: string,
+	// biome-ignore lint/suspicious/noExplicitAny: EIP-712 data is dynamically typed based on primaryType
 	data: any,
 	types: Record<
 		string,
@@ -70,6 +71,7 @@ export function encodeType(
 
 export function encodeValue(
 	type: string,
+	// biome-ignore lint/suspicious/noExplicitAny: EIP-712 values are dynamically typed based on type parameter
 	value: any,
 	types: Record<
 		string,

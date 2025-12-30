@@ -45,6 +45,7 @@ export class BlobSchema extends Schema.Class<BlobSchema>("Blob")({
 		return new BlobSchema({ value: _fromData(data) as unknown as Uint8Array });
 	}
 	toData(): Uint8Array {
+		// biome-ignore lint/suspicious/noExplicitAny: type coercion required
 		return _toData(this.blob as any);
 	}
 	static estimateBlobCount(size: number): number {

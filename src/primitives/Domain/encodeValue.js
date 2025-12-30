@@ -89,6 +89,7 @@ export function encodeValue(type, value, types, crypto) {
  * @param {any} value - Field value
  * @returns {Uint8Array} Encoded value (32 bytes)
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: EIP-712 atomic type encoding requires handling many primitive types
 function encodeAtomicValue(type, value) {
 	const result = new Uint8Array(32);
 

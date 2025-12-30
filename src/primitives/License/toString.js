@@ -10,6 +10,7 @@
  * console.log(str); // "MIT"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional wrapper for branded type
 export function toString(license) {
 	return license;
 }

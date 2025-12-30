@@ -16,8 +16,11 @@ describe("Address batch operations", () => {
 
 			const sorted = Address.sortAddresses([addr3, addr1, addr2]);
 
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.equals(sorted[0]!, addr1)).toBe(true);
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.equals(sorted[1]!, addr2)).toBe(true);
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.equals(sorted[2]!, addr3)).toBe(true);
 		});
 
@@ -43,6 +46,7 @@ describe("Address batch operations", () => {
 			const sorted = Address.sortAddresses([addr]);
 
 			expect(sorted).toHaveLength(1);
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.equals(sorted[0]!, addr)).toBe(true);
 		});
 	});
@@ -62,7 +66,9 @@ describe("Address batch operations", () => {
 			const unique = Address.deduplicateAddresses([addr1, addr2, addr3]);
 
 			expect(unique).toHaveLength(2);
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.equals(unique[0]!, addr1)).toBe(true);
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.equals(unique[1]!, addr2)).toBe(true);
 		});
 
@@ -120,6 +126,7 @@ describe("Address batch operations", () => {
 			const unique = Address.deduplicateAddresses([addr, addr, addr]);
 
 			expect(unique).toHaveLength(1);
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.equals(unique[0]!, addr)).toBe(true);
 		});
 	});

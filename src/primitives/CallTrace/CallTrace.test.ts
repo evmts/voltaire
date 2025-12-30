@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import * as CallTrace from "./index.js";
 
 describe("CallTrace", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 	const fromAddr = new Uint8Array(20).fill(1) as any;
+	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 	const toAddr = new Uint8Array(20).fill(2) as any;
 	const input = new Uint8Array([0x60, 0x60]);
 	const output = new Uint8Array([0x01]);
@@ -12,8 +14,11 @@ describe("CallTrace", () => {
 			type: "CALL",
 			from: fromAddr,
 			to: toAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			value: 1000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 100000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 50000n as any,
 			input,
 			output,
@@ -30,7 +35,9 @@ describe("CallTrace", () => {
 		const trace = CallTrace.from({
 			type: "CREATE",
 			from: fromAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 100000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 80000n as any,
 			input,
 			output,
@@ -44,7 +51,9 @@ describe("CallTrace", () => {
 			type: "CALL",
 			from: fromAddr,
 			to: toAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 10000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 10000n as any,
 			input,
 			output: new Uint8Array(),
@@ -59,7 +68,9 @@ describe("CallTrace", () => {
 			type: "CALL",
 			from: fromAddr,
 			to: toAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 50000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 25000n as any,
 			input,
 			output: new Uint8Array(),
@@ -74,7 +85,9 @@ describe("CallTrace", () => {
 			type: "STATICCALL",
 			from: toAddr,
 			to: fromAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 20000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 10000n as any,
 			input: new Uint8Array(),
 			output: new Uint8Array(),
@@ -84,7 +97,9 @@ describe("CallTrace", () => {
 			type: "CALL",
 			from: fromAddr,
 			to: toAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 100000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 50000n as any,
 			input,
 			output,
@@ -99,7 +114,9 @@ describe("CallTrace", () => {
 			type: "CALL",
 			from: fromAddr,
 			to: toAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 100000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 50000n as any,
 			input,
 			output,
@@ -112,7 +129,9 @@ describe("CallTrace", () => {
 			type: "STATICCALL",
 			from: toAddr,
 			to: fromAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 20000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 10000n as any,
 			input: new Uint8Array(),
 			output: new Uint8Array(),
@@ -122,7 +141,9 @@ describe("CallTrace", () => {
 			type: "CALL",
 			from: fromAddr,
 			to: toAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 100000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 50000n as any,
 			input,
 			output,
@@ -138,7 +159,9 @@ describe("CallTrace", () => {
 			type: "CALL",
 			from: fromAddr,
 			to: toAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 100000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 50000n as any,
 			input,
 			output,
@@ -153,7 +176,9 @@ describe("CallTrace", () => {
 			type: "DELEGATECALL",
 			from: fromAddr,
 			to: toAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 5000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 2000n as any,
 			input: new Uint8Array(),
 			output: new Uint8Array(),
@@ -163,7 +188,9 @@ describe("CallTrace", () => {
 			type: "STATICCALL",
 			from: toAddr,
 			to: fromAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 20000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 10000n as any,
 			input: new Uint8Array(),
 			output: new Uint8Array(),
@@ -174,7 +201,9 @@ describe("CallTrace", () => {
 			type: "CALL",
 			from: fromAddr,
 			to: toAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 100000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 50000n as any,
 			input,
 			output,
@@ -193,7 +222,9 @@ describe("CallTrace", () => {
 			type: "CALL",
 			from: fromAddr,
 			to: toAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gas: 100000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			gasUsed: 50000n as any,
 			input,
 			output,

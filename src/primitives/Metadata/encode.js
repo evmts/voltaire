@@ -18,6 +18,7 @@ import { Hex } from "../Hex/index.js";
  * const encoded = Metadata.encode(meta);
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: CBOR encoding requires field-by-field serialization
 export function encode(metadata) {
 	const parts = [];
 

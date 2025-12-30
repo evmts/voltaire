@@ -23,6 +23,7 @@ describe("BlockNumber", () => {
 		});
 
 		it("throws on invalid type", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => BlockNumber.from("123" as any)).toThrow(
 				"must be a number or bigint",
 			);

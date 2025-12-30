@@ -39,6 +39,7 @@ describe("Receipt", () => {
 
 		it("throws on missing transactionHash", () => {
 			const invalid = { ...mockReceipt, transactionHash: undefined };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => Receipt.from(invalid as any)).toThrow(
 				"transactionHash is required",
 			);
@@ -46,6 +47,7 @@ describe("Receipt", () => {
 
 		it("throws on missing blockHash", () => {
 			const invalid = { ...mockReceipt, blockHash: undefined };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => Receipt.from(invalid as any)).toThrow(
 				"blockHash is required",
 			);
@@ -53,6 +55,7 @@ describe("Receipt", () => {
 
 		it("throws on invalid logsBloom length", () => {
 			const invalid = { ...mockReceipt, logsBloom: new Uint8Array(100) };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => Receipt.from(invalid as any)).toThrow(
 				"logsBloom must be 256 bytes",
 			);

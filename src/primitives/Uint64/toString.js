@@ -13,6 +13,7 @@
  * const str = Uint64.toString(value); // "255"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentionally named for API consistency
 export function toString(uint) {
 	return uint.toString();
 }

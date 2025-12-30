@@ -19,6 +19,7 @@ import { InvalidFormatError } from "../errors/ValidationError.js";
  * console.log(nodeInfo.protocols.eth?.network); // NetworkId
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: validation requires checking multiple fields
 export function from(value) {
 	if (!value || typeof value !== "object") {
 		throw new InvalidFormatError(

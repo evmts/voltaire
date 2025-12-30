@@ -39,6 +39,7 @@ describe("Hash Effect Schema", () => {
 
 		it("validates HashSchema schema (constructor throws on invalid length)", () => {
 			const bad = new Uint8Array(31);
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input intentionally
 			expect(() => new HashSchema({ value: bad as any })).toThrow();
 		});
 
@@ -61,6 +62,7 @@ describe("Hash Effect Schema", () => {
 
 		it("rejects invalid HashBrand", () => {
 			const bad = new Uint8Array(31);
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input intentionally
 			expect(() => HashBrand(bad as any)).toThrow();
 		});
 
@@ -114,6 +116,7 @@ describe("Hash Effect Schema", () => {
 
 		it("handles validation errors", async () => {
 			const program = Effect.try({
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 				try: () => new HashSchema({ value: new Uint8Array(31) as any }),
 				catch: (e) => new Error(`Failed: ${String(e)}`),
 			});

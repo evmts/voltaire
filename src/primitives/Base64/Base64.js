@@ -17,6 +17,7 @@ import { toBase64 } from "./toBase64.js";
 import { toBase64Url } from "./toBase64Url.js";
 import { toBytes } from "./toBytes.js";
 import { toBytesUrlSafe } from "./toBytesUrlSafe.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentionally named for API consistency
 import { toString } from "./toString.js";
 import { toStringUrlSafe } from "./toStringUrlSafe.js";
 

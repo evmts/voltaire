@@ -119,6 +119,7 @@ describe("BuilderBid", () => {
 		});
 
 		it("throws on non-object input", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => BuilderBid.from("invalid" as any)).toThrow(
 				"must be an object",
 			);
@@ -167,6 +168,7 @@ describe("BuilderBid", () => {
 		it("throws if blsVerify not provided", () => {
 			const bid = BuilderBid.from(validBid);
 
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => BuilderBid.verify(bid, {} as any)).toThrow(
 				"blsVerify not provided",
 			);

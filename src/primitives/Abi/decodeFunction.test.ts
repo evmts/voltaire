@@ -81,6 +81,7 @@ describe("decodeFunction", () => {
 			.join("")}`;
 
 		// Decode from hex string
+		// biome-ignore lint/suspicious/noExplicitAny: Testing hex string input coercion
 		const decoded = decodeFunction(mockAbi, hexData as any);
 
 		expect(decoded.name).toBe("transfer");
@@ -248,6 +249,7 @@ describe("decodeFunction", () => {
 		const reEncoded = Abi.Function.encodeParams(mockAbi[0], [
 			decoded.params[0],
 			decoded.params[1],
+			// biome-ignore lint/suspicious/noExplicitAny: Dynamic params from decode don't match static type
 		] as any);
 
 		expect(reEncoded).toEqual(encoded);

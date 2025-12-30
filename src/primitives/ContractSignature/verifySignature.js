@@ -51,6 +51,7 @@ export function VerifySignature({
 	 * );
 	 * ```
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: unified EOA/contract verification requires multiple code paths
 	return async function verifySignature(provider, address, hash, signature) {
 		try {
 			// Convert address to hex string for eth_getCode

@@ -19,6 +19,7 @@
  * }
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex logic required
 export function matches(local, remote) {
 	// Compare hash bytes
 	const localHash = local.hash;

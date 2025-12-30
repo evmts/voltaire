@@ -18,6 +18,7 @@ import { hexCharToValue } from "./utils.js";
  * const str = Hex.toString(hex); // 'hello'
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the standard naming convention for type conversion methods
 export function toString(hex: HexType): string {
 	if (!hex.startsWith("0x"))
 		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {

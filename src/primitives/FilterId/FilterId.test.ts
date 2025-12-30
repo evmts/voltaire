@@ -14,6 +14,7 @@ describe("FilterId", () => {
 		});
 
 		it("throws on non-string", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input type
 			expect(() => FilterId.from(123 as any)).toThrow(
 				FilterId.InvalidFilterIdError,
 			);

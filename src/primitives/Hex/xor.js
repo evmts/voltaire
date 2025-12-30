@@ -19,6 +19,7 @@ import { hexCharToValue } from "./utils.js";
  * const result = Hex.xor(hex, '0x34'); // '0x26'
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: XOR requires inline hex parsing for both operands
 export function xor(hex, other) {
 	// Convert hex to bytes
 	if (!hex.startsWith("0x"))

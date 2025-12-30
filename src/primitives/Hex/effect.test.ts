@@ -18,6 +18,7 @@ describe("Hex Effect Schema", () => {
 		});
 
 		it("rejects invalid format in constructor", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => new HexSchema({ value: "1234" as any })).toThrow();
 		});
 
@@ -35,6 +36,7 @@ describe("Hex Effect Schema", () => {
 		});
 
 		it("rejects invalid HexBrand", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => HexBrand("abc" as any)).toThrow();
 		});
 
@@ -78,6 +80,7 @@ describe("Hex Effect Schema", () => {
 
 		it("handles validation errors", async () => {
 			const program = Effect.try({
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 				try: () => new HexSchema({ value: "abc" as any }),
 				catch: (e) => new Error(`Failed: ${String(e)}`),
 			});
