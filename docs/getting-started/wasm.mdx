@@ -21,6 +21,10 @@ All three tiers expose identical APIs. Swap implementations without changing you
 
 Pure TypeScript with zero dependencies. Works everywhere JavaScript runs.
 
+<Note>
+Shares peer dependencies with [Tevm](https://tevm.sh) and [Viem](https://viem.sh) for seamless integration.
+</Note>
+
 ```typescript
 import { Keccak256, Address, Hex } from '@tevm/voltaire'
 
@@ -39,21 +43,23 @@ Best for:
 
 WebAssembly bindings to Zig implementations. Portable high-performance.
 
+<Note>
+The WASM API is **100% identical** to the TypeScript API. You can swap implementations without changing your code.
+</Note>
+
 ```typescript
-import * as wasm from '@tevm/voltaire/wasm'
+import { Keccak256, Secp256k1, Hex } from '@tevm/voltaire/wasm'
 
-// Crypto operations
-const hash = wasm.keccak256(data)
-const recovered = wasm.secp256k1RecoverAddress(hash, signature)
+// Crypto operations - same API as TypeScript
+const hash = Keccak256.hash(data)
+const recovered = Secp256k1.recoverAddress(hash, signature)
 
-// Primitives
-const bytes = wasm.hexToBytes('0xdeadbeef')
-const hex = wasm.bytesToHex(bytes)
+// Primitives - same API as TypeScript
+const bytes = Hex.toBytes('0xdeadbeef')
+const hex = Hex.fromBytes(bytes)
 
-// Full namespaces
-wasm.Secp256k1Wasm.sign(message, privateKey)
-wasm.Blake2Wasm.hash(data)
-wasm.Sha256Wasm.hash(data)
+// All namespaces work identically
+Secp256k1.sign(message, privateKey)
 ```
 
 Available WASM modules:
@@ -69,19 +75,23 @@ Best for:
 
 Direct bindings to Zig via Bun FFI. Maximum performance.
 
+<Note>
+The Native API is **100% identical** to the TypeScript API. You can swap implementations without changing your code.
+</Note>
+
 ```typescript
-import * as native from '@tevm/voltaire/native'
+import { Keccak256, isBun, isNode } from '@tevm/voltaire/native'
 
 // Check runtime
-native.isBun()   // true in Bun
-native.isNode()  // true in Node.js
+isBun()   // true in Bun
+isNode()  // true in Node.js
 
 // Keccak256 (async - lazy loads native lib)
-const hash = await native.Keccak256.hash(data)
-const selector = await native.Keccak256.selector('transfer(address,uint256)')
+const hash = await Keccak256.hash(data)
+const selector = await Keccak256.selector('transfer(address,uint256)')
 
 // Sync after initial load
-const hash2 = native.Keccak256.hashSync(data)
+const hash2 = Keccak256.hashSync(data)
 ```
 
 <Warning>
@@ -135,18 +145,3 @@ Performance is nuanced. WASM/Native aren't always faster than TypeScript.
 <Tip>
 Benchmark your actual workload. Default implementations are chosen for common use cases, but your specific access patterns may differ.
 </Tip>
-
-## Build Commands
-
-```bash
-# Build WASM (for browser/portable use)
-zig build build-ts-wasm       # ReleaseSmall (optimized for size)
-zig build build-ts-wasm-fast  # ReleaseFast (optimized for speed)
-
-# Build Native FFI (for Bun)
-zig build build-ts-native     # Produces .dylib/.so/.dll
-
-# Run tests for each tier
-bun run test:wasm             # WASM tests
-bun run test:native           # Native FFI tests (run in Bun)
-```

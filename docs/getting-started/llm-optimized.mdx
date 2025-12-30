@@ -35,12 +35,15 @@ const balanceOfFunction = {
   outputs: [{ type: "uint256" }]
 };
 
-const result = await client.request({
+const result = await provider.request({
   method: 'eth_call',
   params: [{
     to: contractAddress,
+    from: callerAddress,  // optional: specify caller
     data: Abi.Function.encodeParams(balanceOfFunction, [address])
-  }, 'latest']
+  }, {
+    blockNumber: 'latest'  // or specific block number
+  }]
 });
 ```
 
@@ -50,14 +53,14 @@ This is intentional. When debugging, there's no missing context. What you pass i
 
 We've found that minimal abstraction close to the spec produces the best LLM results, especially during debugging.
 
-**Everything is explicit and low-level:**
+**You control retry behavior:**
 
 ```typescript
 // Explicit retry behavior (you control it)
 let attempt = 0;
 while (attempt < maxRetries) {
   try {
-    const result = await client.request(params);
+    const result = await provider.request(params);
     break;
   } catch (error) {
     attempt++;
@@ -69,6 +72,8 @@ while (attempt < maxRetries) {
 ```
 
 Even humans struggle to understand hidden retry policies, polling behavior, and automatic retries. We eliminate this confusion by making everything explicit.
+
+Whenever possible, we offer **opinionated recipes** that provide sensible defaults. These are recipes you add to your own codebase and can modify to your liking. See [Playbooks](/playbooks) for examples.
 
 ## Unix Philosophy
 
@@ -86,21 +91,35 @@ Each primitive is a building block. No magical encapsulation, no hidden behavior
 
 Higher-level abstractions (like smart clients with retry policies) exist in Voltaire, but differently.
 
-**Instead of one-size-fits-all, we provide building blocks to create your own client.**
+**Instead of one-size-fits-all, we provide building blocks and recipes you copy into your codebase.**
 
-Think shadcn for Ethereum - the client is rendered in your codebase:
+Think shadcn for Ethereum - the client code lives in your project, not hidden in `node_modules`:
 
 ```typescript
-// In your codebase: src/client.ts
-import { createClient } from '@tevm/voltaire/client';
+// Copy this into your codebase: src/client.ts
+import { Provider } from '@tevm/voltaire';
 
-export const client = createClient({
-  transport: http('https://eth.llamarpc.com'),
-  retry: {
-    maxAttempts: 3,
-    delay: 1000
-  }
-});
+// You own this code - customize it freely
+export function createClient(rpcUrl: string, options?: { maxRetries?: number }) {
+  const provider = Provider.from(rpcUrl);
+
+  return {
+    request: async (params: { method: string; params: unknown[] }) => {
+      let attempt = 0;
+      const maxRetries = options?.maxRetries ?? 3;
+
+      while (attempt < maxRetries) {
+        try {
+          return await provider.request(params);
+        } catch (error) {
+          attempt++;
+          if (attempt >= maxRetries) throw error;
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+        }
+      }
+    }
+  };
+}
 ```
 
 ### Why This Approach?
@@ -126,7 +145,7 @@ const myNFT = {
 } as const;
 
 export async function getOwnerOf(tokenId: bigint) {
-  return client.readContract({
+  return readContract({
     ...myNFT,
     functionName: 'ownerOf',
     args: [tokenId]
@@ -136,21 +155,22 @@ export async function getOwnerOf(tokenId: bigint) {
 // Custom retry for specific methods
 export async function readWithAggressiveRetry(params: ReadParams) {
   return retry(
-    () => client.read(params),
+    () => provider.request(params),
     { maxAttempts: 10, backoff: 'exponential' }
   );
 }
 
 // Override specific JSON-RPC methods
-export const customClient = createClient({
-  ...baseClient,
-  request: async (params) => {
-    if (params.method === 'eth_call') {
-      return callWithCache(params);
+export function createCustomClient(baseProvider: Provider) {
+  return {
+    request: async (params: { method: string; params: unknown[] }) => {
+      if (params.method === 'eth_call') {
+        return callWithCache(params);
+      }
+      return baseProvider.request(params);
     }
-    return baseClient.request(params);
-  }
-});
+  };
+}
 ```
 
 **Common customizations:**
@@ -181,15 +201,3 @@ We maintain a rigorous test suite validating that AI assistants can **1-shot** a
 - Type safety and error handling are correctly applied
 - Performance patterns are followed automatically
 
-## Example Projects
-
-<Accordion title="Built with Voltaire MCP + Claude Code" defaultOpen={false}>
-
-**Example Projects Built as 1-Shot with AI**:
-
-- **EIP-712 Signature Verifier** - _Coming soon: Full implementation built using MCP server guidance_
-- **Transaction Simulator** - _Coming soon: EVM transaction simulation with gas estimation_
-- **Contract Address Predictor** - _Coming soon: CREATE2 address calculator with salt search_
-- **Merkle Proof Generator** - _Coming soon: Generate and verify Merkle proofs for state trees_
-
-</Accordion>
