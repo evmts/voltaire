@@ -284,65 +284,6 @@ const precompiles = {
 
 Always check hardfork before calling newer precompiles.
 
-## Testing
-
-### Zig Tests
-
-```bash
-zig build test -Dtest-filter=precompiles
-zig build test -Dtest-filter=bls12
-zig build test -Dtest-filter=bn254
-```
-
-### TypeScript Tests
-
-```bash
-bun run test -- precompiles
-bun run test -- bls12
-bun run test:coverage
-```
-
-### Test Vectors
-
-All precompiles tested against:
-- EIP specification test vectors
-- Official Ethereum test suite
-- Cross-implementation validation
-- Edge cases (zero, max, infinity)
-
-## Benchmarks
-
-```bash
-# Zig benchmarks (zbench)
-zig build bench -Dbench-filter=precompiles
-
-# TypeScript benchmarks (mitata)
-bun run bench
-
-# Generate comparison report
-bun run scripts/run-benchmarks.ts
-```
-
-See [BENCHMARKING.md](https://github.com/evmts/voltaire/blob/main/BENCHMARKING.md) for detailed results.
-
-## Building
-
-```bash
-# Full build (all precompiles)
-zig build
-
-# Test all precompiles
-zig build test
-
-# Individual precompile tests
-zig build test -Dtest-filter=ecrecover
-zig build test -Dtest-filter=bn254_pairing
-zig build test -Dtest-filter=bls12_g1_msm
-
-# WASM builds
-zig build build-ts-wasm
-```
-
 ## Implementation Status
 
 ### Zig: Complete

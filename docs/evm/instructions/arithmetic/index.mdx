@@ -251,22 +251,6 @@ exp(0, 0)      // = 1 (mathematical convention)
 exp(0, 1)      // = 0
 ```
 
-## Testing
-
-All arithmetic operations tested with:
-- Overflow/underflow wrapping
-- Division by zero handling
-- Signed edge cases (MIN_INT, -1)
-- Modular arithmetic precision
-- Exponent gas costs
-- Sign extension boundaries
-
-```bash
-# Run arithmetic tests
-zig build test -Dtest-filter=arithmetic
-bun run test -- arithmetic
-```
-
 ## Security Considerations
 
 ### Overflow Attacks

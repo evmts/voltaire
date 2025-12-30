@@ -242,22 +242,6 @@ try ComparisonHandlers.eq(frame);
 try ComparisonHandlers.iszero(frame);
 ```
 
-## Testing
-
-All comparison operations tested with:
-- Basic comparisons (less, greater, equal)
-- Edge cases (MIN/MAX values)
-- Signed vs unsigned behavior
-- Zero values
-- Stack underflow
-- Out of gas
-
-```bash
-# Run comparison tests
-zig build test -Dtest-filter=comparison
-bun run test -- comparison
-```
-
 ## Security Considerations
 
 ### Signed Integer Confusion

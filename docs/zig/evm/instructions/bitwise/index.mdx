@@ -322,23 +322,6 @@ try BitwiseHandlers.shr(frame);  // Constantinople+
 try BitwiseHandlers.sar(frame);  // Constantinople+
 ```
 
-## Testing
-
-All bitwise operations tested with:
-- Logical operation truth tables
-- Masking patterns
-- Byte extraction boundaries
-- Shift overflow (>= 256 bits)
-- Signed vs unsigned shifts (SAR vs SHR)
-- Zero and maximum values
-- Hardfork compatibility (EIP-145)
-
-```bash
-# Run bitwise tests
-zig build test -Dtest-filter=bitwise
-bun run test -- bitwise
-```
-
 ## Security Considerations
 
 ### Off-by-One Errors

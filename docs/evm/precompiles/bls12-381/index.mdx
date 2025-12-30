@@ -745,20 +745,6 @@ These wrap **blst** (lib/blst/), a production-grade BLS12-381 library:
 - Used by Ethereum 2.0 clients (Prysm, Lighthouse)
 - Constant-time operations, side-channel resistant
 
-### Building
-
-```bash
-# Build all (includes blst)
-zig build
-
-# Test BLS12-381 precompiles
-zig build test -Dtest-filter=bls12
-
-# WASM builds
-zig build build-ts-wasm      # Production
-zig build build-ts-wasm-fast # Performance
-```
-
 ## Related
 
 - [Crypto: BLS12-381](/crypto/bls12-381) - Underlying cryptographic primitives

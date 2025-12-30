@@ -238,60 +238,6 @@ All 166 instructions and 21 precompiles fully implemented with:
 
 For security-critical operations, always use Zig/WASM implementations.
 
-## Testing
-
-### Test Coverage
-
-Every instruction and precompile includes:
-- EIP specification test vectors
-- Official Ethereum test suite cases
-- Edge cases (zero, max, overflow, underflow)
-- Gas cost validation
-- Cross-implementation parity checks
-
-### Running Tests
-
-```bash
-# Zig tests
-zig build test -Dtest-filter=evm
-zig build test -Dtest-filter=instructions
-zig build test -Dtest-filter=precompiles
-
-# TypeScript tests
-bun run test -- evm
-bun run test -- instructions
-bun run test:coverage
-```
-
-## Building
-
-```bash
-# Full build (instructions + precompiles)
-zig build
-
-# Test all EVM components
-zig build test
-
-# WASM builds
-zig build build-ts-wasm       # ReleaseSmall (production)
-zig build build-ts-wasm-fast  # ReleaseFast (benchmarks)
-```
-
-## Benchmarks
-
-```bash
-# Zig benchmarks (zbench)
-zig build bench -Dfilter=evm
-
-# TypeScript benchmarks (mitata)
-bun run bench
-
-# Generate comparison report
-bun run scripts/run-benchmarks.ts
-```
-
-See [BENCHMARKING.md](https://github.com/evmts/voltaire/blob/main/BENCHMARKING.md) for performance data.
-
 ## Security
 
 ### Validation
@@ -330,12 +276,3 @@ Gas metering prevents computational DoS:
 - [Transaction](/primitives/transaction) - Transaction execution
 - [Gas Constants](/primitives/gas-constants) - Gas cost definitions
 
-## Contributing
-
-EVM implementations require:
-- Exact adherence to Yellow Paper and EIPs
-- Comprehensive test vectors
-- Gas cost validation for all hardforks
-- Cross-language parity (TypeScript ↔ Zig)
-
-See [CONTRIBUTING.md](https://github.com/evmts/voltaire/blob/main/CONTRIBUTING.md)

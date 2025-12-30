@@ -327,21 +327,6 @@ pub fn execute(opcode: u8, ctx: *ExecutionContext) !void {
 }
 ```
 
-## Testing
-
-All instructions tested with:
-- Official Ethereum test vectors
-- Edge cases (overflow, underflow, zero, max)
-- Gas cost validation for all hardforks
-- Stack depth limits
-- Memory expansion costs
-
-```bash
-# Run instruction tests
-zig build test -Dtest-filter=instructions
-bun run test -- instructions
-```
-
 ## References
 
 - **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal EVM specification
