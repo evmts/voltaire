@@ -6,10 +6,20 @@
  * Note: Introduced in EIP-214 (Byzantium)
  * Note: Sets isStatic flag, preventing any state modifications in called context
  *
+ * ## Architecture Note
+ *
+ * This is a low-level opcode handler. For full nested execution, the host must
+ * provide a `call` method. Full EVM implementations are in:
+ * - **guillotine**: Production EVM with async state, tracing, full EIP support
+ * - **guillotine-mini**: Lightweight synchronous EVM for testing
+ *
+ * When host.call is not provided, returns NotImplemented error.
+ *
  * @param {import("../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @param {import("../Host/HostType.js").BrandedHost} [host] - Host interface (optional)
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
-export function staticcall(frame) {
+export function staticcall(frame, host) {
 	// EIP-214 (Byzantium): STATICCALL requires Byzantium or later
 	// In a full implementation, check hardfork version and return InvalidOpcode if earlier
 	// For now, assume Byzantium or later
@@ -106,32 +116,92 @@ export function staticcall(frame) {
 		inputData[i] = readMemory(frame, inOff + i);
 	}
 
-	// Perform nested STATICCALL execution
-	// STATICCALL is like CALL with value = 0, but enforces static context:
-	// - No state modifications allowed (SSTORE, LOG*, CREATE, SELFDESTRUCT)
-	// - No value transfers (value is always 0)
-	// - Calling STATICCALL with isStatic=false propagates isStatic=true to child
-	// - Any state modification opcodes in child should fail with WriteProtection error
-	//
-	// In a full implementation:
-	// 1. Check call depth (max 1024)
-	// 2. Fetch code from target address
-	// 3. Create new frame with isStatic=true
-	// 4. Execute target code in this new frame (without value transfer or account creation)
-	// 5. Copy output to memory at outOffset
-	// 6. Refund unused gas
-	// 7. Store return data
-	//
-	// For now (stub implementation): push 0 (failure) to stack
-	// Full implementation requires EVM state access and nested frame creation with isStatic flag
+	// Check call depth (max 1024)
+	if (frame.callDepth >= 1024) {
+		frame.returnData = new Uint8Array(0);
+		const pushErr = pushStack(frame, 0n);
+		if (pushErr) return pushErr;
+		frame.pc += 1;
+		return null;
+	}
 
-	frame.returnData = new Uint8Array(0);
+	// Convert address from bigint to bytes
+	const targetAddress = bigintToAddress(address);
 
-	const pushErr = pushStack(frame, 0n);
+	// If host.call is not provided, return NotImplemented error
+	// Full EVM implementations (guillotine/guillotine-mini) provide this method
+	if (!host?.call) {
+		return {
+			type: "NotImplemented",
+			message: "STATICCALL requires host.call() - use guillotine or guillotine-mini for full EVM execution"
+		};
+	}
+
+	// Execute nested call via host
+	// STATICCALL: isStatic=true enforces no state modifications
+	const result = host.call({
+		callType: "STATICCALL",
+		target: targetAddress,
+		value: 0n, // STATICCALL always has value=0
+		gasLimit: availableGas,
+		input: inputData,
+		caller: frame.address,
+		isStatic: true, // STATICCALL enforces static context
+		depth: frame.callDepth + 1,
+	});
+
+	// Store return data for RETURNDATASIZE/RETURNDATACOPY
+	frame.returnData = result.output;
+
+	// Copy output to memory at outOffset (up to outLength bytes)
+	const copyLen = Math.min(outLen, result.output.length);
+	for (let i = 0; i < copyLen; i++) {
+		writeMemory(frame, outOff + i, result.output[i]);
+	}
+
+	// Refund unused gas
+	const gasRefund = availableGas - result.gasUsed;
+	if (gasRefund > 0n) {
+		frame.gasRemaining += gasRefund;
+	}
+
+	// Add gas refunds from child
+	if (result.gasRefund > 0n) {
+		frame.gasRefunds = (frame.gasRefunds ?? 0n) + result.gasRefund;
+	}
+
+	// Note: logs are NOT collected for STATICCALL since LOG* is not allowed
+
+	// Push success (1) or failure (0) to stack
+	const pushErr = pushStack(frame, result.success ? 1n : 0n);
 	if (pushErr) return pushErr;
 
 	frame.pc += 1;
 	return null;
+}
+
+/**
+ * Convert bigint address to 20-byte Uint8Array
+ * @param {bigint} addr
+ * @returns {import("../../primitives/Address/AddressType.js").AddressType}
+ */
+function bigintToAddress(addr) {
+	const bytes = new Uint8Array(20);
+	let val = addr;
+	for (let i = 19; i >= 0; i--) {
+		bytes[i] = Number(val & 0xffn);
+		val >>= 8n;
+	}
+	return /** @type {import("../../primitives/Address/AddressType.js").AddressType} */ (bytes);
+}
+
+/**
+ * @param {import("../Frame/FrameType.js").BrandedFrame} frame
+ * @param {number} offset
+ * @param {number} value
+ */
+function writeMemory(frame, offset, value) {
+	frame.memory.set(offset, value);
 }
 
 /**

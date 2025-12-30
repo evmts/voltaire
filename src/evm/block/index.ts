@@ -2,9 +2,7 @@
  * Block context opcode handlers (0x40-0x4a)
  *
  * These opcodes access block-level information like timestamp, number, coinbase, etc.
- * Most require access to block context which will be provided via EVM/Host interface.
- *
- * Current implementations are stubbed with frame properties until full integration.
+ * Implementations read from EVM block context provided via the Host interface.
  */
 
 export { handler_0x40_BLOCKHASH } from "./0x40_BLOCKHASH.js";
