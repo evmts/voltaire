@@ -23,13 +23,13 @@ export { VerifyBlobKzgProofBatch } from "./verifyBlobKzgProofBatch.js";
 // Import WASM wrappers
 import {
 	kzgBlobToCommitment,
-	kzgComputeProof,
 	kzgComputeBlobProof,
-	kzgVerifyProof,
-	kzgVerifyBlobProof,
+	kzgComputeProof,
+	kzgFreeTrustedSetup,
 	kzgIsInitialized,
 	kzgLoadTrustedSetup,
-	kzgFreeTrustedSetup,
+	kzgVerifyBlobProof,
+	kzgVerifyProof,
 } from "../../wasm-loader/loader.ts";
 
 // Export utility functions
@@ -161,18 +161,24 @@ export function verifyKzgProof(commitment, z, y, proof) {
 		throw new KzgNotInitializedError();
 	}
 	if (commitment.length !== 48) {
-		throw new KzgError(`Invalid commitment length: expected 48, got ${commitment.length}`, {
-			code: "KZG_INVALID_COMMITMENT",
-			context: { length: commitment.length },
-			docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
-		});
+		throw new KzgError(
+			`Invalid commitment length: expected 48, got ${commitment.length}`,
+			{
+				code: "KZG_INVALID_COMMITMENT",
+				context: { length: commitment.length },
+				docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+			},
+		);
 	}
 	if (proof.length !== 48) {
-		throw new KzgError(`Invalid proof length: expected 48, got ${proof.length}`, {
-			code: "KZG_INVALID_PROOF",
-			context: { length: proof.length },
-			docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
-		});
+		throw new KzgError(
+			`Invalid proof length: expected 48, got ${proof.length}`,
+			{
+				code: "KZG_INVALID_PROOF",
+				context: { length: proof.length },
+				docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+			},
+		);
 	}
 	try {
 		return kzgVerifyProof(commitment, z, y, proof);

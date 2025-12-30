@@ -1,9 +1,9 @@
-import { KzgError } from "./errors.js";
 import {
-	kzgLoadTrustedSetup as wasmLoadTrustedSetup,
-	kzgIsInitialized as wasmIsInitialized,
 	kzgFreeTrustedSetup as wasmFreeTrustedSetup,
+	kzgIsInitialized as wasmIsInitialized,
+	kzgLoadTrustedSetup as wasmLoadTrustedSetup,
 } from "../../wasm-loader/loader.js";
+import { KzgError } from "./errors.js";
 
 /**
  * Load trusted setup from embedded data
