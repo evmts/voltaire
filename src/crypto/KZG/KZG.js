@@ -1,8 +1,23 @@
 // @ts-nocheck
+/**
+ * KZG Commitments for EIP-4844
+ *
+ * **IMPORTANT: KZG is only available via native FFI, not WASM or pure JavaScript.**
+ *
+ * The KZG implementation uses the c-kzg-4844 C library compiled via Zig.
+ * It requires native bindings and cannot run in browser environments.
+ *
+ * For browser/WASM environments, use a different KZG implementation or
+ * perform KZG operations server-side.
+ *
+ * @module
+ * @see https://eips.ethereum.org/EIPS/eip-4844
+ */
+
 export * from "./errors.ts";
 export * from "./constants.js";
 
-// Export factory functions
+// Export factory functions for dependency injection
 export { BlobToKzgCommitment } from "./blobToKzgCommitment.js";
 export { ComputeKzgProof } from "./computeKzgProof.js";
 export { ComputeBlobKzgProof } from "./computeBlobKzgProof.js";
@@ -10,7 +25,7 @@ export { VerifyKzgProof } from "./verifyKzgProof.js";
 export { VerifyBlobKzgProof } from "./verifyBlobKzgProof.js";
 export { VerifyBlobKzgProofBatch } from "./verifyBlobKzgProofBatch.js";
 
-// Export utility functions (no factory needed)
+// Export utility functions
 import { createEmptyBlob } from "./createEmptyBlob.js";
 import { freeTrustedSetup } from "./freeTrustedSetup.js";
 import { generateRandomBlob } from "./generateRandomBlob.js";
@@ -27,89 +42,111 @@ export {
 	generateRandomBlob,
 };
 
-// Export backward-compatible wrappers with auto-injected c-kzg
-import * as ckzg from "c-kzg";
-import { BlobToKzgCommitment as BlobToKzgCommitmentFactory } from "./blobToKzgCommitment.js";
-import { ComputeBlobKzgProof as ComputeBlobKzgProofFactory } from "./computeBlobKzgProof.js";
-import { ComputeKzgProof as ComputeKzgProofFactory } from "./computeKzgProof.js";
-import { VerifyBlobKzgProof as VerifyBlobKzgProofFactory } from "./verifyBlobKzgProof.js";
-import { VerifyBlobKzgProofBatch as VerifyBlobKzgProofBatchFactory } from "./verifyBlobKzgProofBatch.js";
-import { VerifyKzgProof as VerifyKzgProofFactory } from "./verifyKzgProof.js";
+/**
+ * Error thrown when KZG operations are attempted without native bindings.
+ */
+class KZGNotAvailableError extends Error {
+	constructor(operation) {
+		super(
+			`KZG.${operation}() requires native bindings. ` +
+				`KZG is not available in WASM or pure JavaScript environments. ` +
+				`Use native FFI or perform KZG operations server-side.`,
+		);
+		this.name = "KZGNotAvailableError";
+	}
+}
 
 /**
- * Convert blob to KZG commitment (with auto-injected c-kzg)
- *
- * For tree-shakeable version without auto-injected c-kzg, use `BlobToKzgCommitment({ blobToKzgCommitment })` factory
+ * Placeholder that throws - native implementation required
+ * @param {Uint8Array} _blob
+ * @returns {Uint8Array}
+ * @throws {KZGNotAvailableError}
  */
-export const blobToKzgCommitment = BlobToKzgCommitmentFactory({
-	blobToKzgCommitment: ckzg.blobToKzgCommitment,
-});
+export function blobToKzgCommitment(_blob) {
+	throw new KZGNotAvailableError("blobToKzgCommitment");
+}
 
 /**
- * Compute KZG proof for blob at evaluation point (with auto-injected c-kzg)
- *
- * For tree-shakeable version without auto-injected c-kzg, use `ComputeKzgProof({ computeKzgProof })` factory
+ * Placeholder that throws - native implementation required
+ * @param {Uint8Array} _blob
+ * @param {Uint8Array} _z
+ * @returns {{ proof: Uint8Array, y: Uint8Array }}
+ * @throws {KZGNotAvailableError}
  */
-export const computeKzgProof = ComputeKzgProofFactory({
-	computeKzgProof: ckzg.computeKzgProof,
-});
+export function computeKzgProof(_blob, _z) {
+	throw new KZGNotAvailableError("computeKzgProof");
+}
 
 /**
- * Compute blob KZG proof (with auto-injected c-kzg)
- *
- * For tree-shakeable version without auto-injected c-kzg, use `ComputeBlobKzgProof({ computeBlobKzgProof })` factory
+ * Placeholder that throws - native implementation required
+ * @param {Uint8Array} _blob
+ * @param {Uint8Array} _commitment
+ * @returns {Uint8Array}
+ * @throws {KZGNotAvailableError}
  */
-export const computeBlobKzgProof = ComputeBlobKzgProofFactory({
-	computeBlobKzgProof: ckzg.computeBlobKzgProof,
-});
+export function computeBlobKzgProof(_blob, _commitment) {
+	throw new KZGNotAvailableError("computeBlobKzgProof");
+}
 
 /**
- * Verify KZG proof (with auto-injected c-kzg)
- *
- * For tree-shakeable version without auto-injected c-kzg, use `VerifyKzgProof({ verifyKzgProof })` factory
+ * Placeholder that throws - native implementation required
+ * @param {Uint8Array} _commitment
+ * @param {Uint8Array} _z
+ * @param {Uint8Array} _y
+ * @param {Uint8Array} _proof
+ * @returns {boolean}
+ * @throws {KZGNotAvailableError}
  */
-export const verifyKzgProof = VerifyKzgProofFactory({
-	verifyKzgProof: ckzg.verifyKzgProof,
-});
+export function verifyKzgProof(_commitment, _z, _y, _proof) {
+	throw new KZGNotAvailableError("verifyKzgProof");
+}
 
 /**
- * Verify blob KZG proof (with auto-injected c-kzg)
- *
- * For tree-shakeable version without auto-injected c-kzg, use `VerifyBlobKzgProof({ verifyBlobKzgProof })` factory
+ * Placeholder that throws - native implementation required
+ * @param {Uint8Array} _blob
+ * @param {Uint8Array} _commitment
+ * @param {Uint8Array} _proof
+ * @returns {boolean}
+ * @throws {KZGNotAvailableError}
  */
-export const verifyBlobKzgProof = VerifyBlobKzgProofFactory({
-	verifyBlobKzgProof: ckzg.verifyBlobKzgProof,
-});
+export function verifyBlobKzgProof(_blob, _commitment, _proof) {
+	throw new KZGNotAvailableError("verifyBlobKzgProof");
+}
 
 /**
- * Verify batch of blob KZG proofs (with auto-injected c-kzg)
- *
- * For tree-shakeable version without auto-injected c-kzg, use `VerifyBlobKzgProofBatch({ verifyBlobKzgProofBatch })` factory
+ * Placeholder that throws - native implementation required
+ * @param {Uint8Array[]} _blobs
+ * @param {Uint8Array[]} _commitments
+ * @param {Uint8Array[]} _proofs
+ * @returns {boolean}
+ * @throws {KZGNotAvailableError}
  */
-export const verifyBlobKzgProofBatch = VerifyBlobKzgProofBatchFactory({
-	verifyBlobKzgProofBatch: ckzg.verifyBlobKzgProofBatch,
-});
+export function verifyBlobKzgProofBatch(_blobs, _commitments, _proofs) {
+	throw new KZGNotAvailableError("verifyBlobKzgProofBatch");
+}
 
 /**
  * KZG Commitments for EIP-4844
  *
- * Factory function for KZG operations
+ * **Native-only**: KZG operations require native FFI bindings.
+ * Not available in WASM or pure JavaScript environments.
  *
- * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @see https://voltaire.tevm.sh/crypto/kzg
  * @since 0.0.0
  * @throws {Error} Always throws - use static methods instead
  * @example
  * ```javascript
  * import { KZG } from './crypto/KZG/index.js';
- * // Initialize trusted setup
+ *
+ * // Note: Requires native bindings - will throw in browser/WASM
  * KZG.loadTrustedSetup();
- * // Generate commitment
  * const commitment = KZG.blobToKzgCommitment(blob);
  * ```
  */
 export function KZG() {
 	throw new Error(
-		"KZG is not a constructor. Use KZG.loadTrustedSetup() and other static methods.",
+		"KZG is not a constructor. Use KZG.loadTrustedSetup() and other static methods. " +
+			"Note: KZG requires native bindings and is not available in WASM/browser.",
 	);
 }
 
@@ -121,17 +158,15 @@ KZG.validateBlob = validateBlob;
 KZG.createEmptyBlob = createEmptyBlob;
 KZG.generateRandomBlob = generateRandomBlob;
 
-// Constructor pattern (new API)
-KZG.Commitment = blobToKzgCommitment;
-KZG.Proof = computeKzgProof;
-
-// Constructor pattern aliases
-KZG.BlobProof = computeBlobKzgProof;
-
-// Legacy method names (deprecated)
+// KZG operations - throw until native bindings loaded
 KZG.blobToKzgCommitment = blobToKzgCommitment;
 KZG.computeKzgProof = computeKzgProof;
 KZG.computeBlobKzgProof = computeBlobKzgProof;
 KZG.verifyKzgProof = verifyKzgProof;
 KZG.verifyBlobKzgProof = verifyBlobKzgProof;
 KZG.verifyBlobKzgProofBatch = verifyBlobKzgProofBatch;
+
+// Constructor pattern (new API)
+KZG.Commitment = blobToKzgCommitment;
+KZG.Proof = computeKzgProof;
+KZG.BlobProof = computeBlobKzgProof;

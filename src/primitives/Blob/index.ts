@@ -89,22 +89,22 @@ const VerifyBatch: (deps: {
 import { hash as sha256 } from "../../crypto/SHA256/hash.js";
 
 // Import KZG functions from crypto module
+// Note: KZG is native-only, these will throw in WASM/browser environments
 import {
 	blobToKzgCommitment,
+	computeBlobKzgProof,
 	verifyBlobKzgProofBatch as kzgVerifyBlobKzgProofBatch,
 	verifyBlobKzgProof,
 } from "../../crypto/KZG/index.js";
 
-// Import c-kzg directly for computeBlobKzgProof (not yet wrapped in KZG module)
-import * as ckzg from "c-kzg";
-
 // Create wrapper functions with crypto auto-injected
+// Note: KZG functions require native FFI - will throw in WASM/browser
 export const toVersionedHash = ToVersionedHash({ sha256 });
 export const toCommitment = ToCommitment({
 	blobToKzgCommitment,
 });
 export const toProof = ToProof({
-	computeBlobKzgProof: ckzg.computeBlobKzgProof,
+	computeBlobKzgProof,
 });
 export const verify = Verify({ verifyBlobKzgProof });
 // Batch verification is not implemented on the Blob static API yet.

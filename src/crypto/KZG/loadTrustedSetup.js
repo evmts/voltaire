@@ -1,4 +1,3 @@
-import * as ckzg from "c-kzg";
 import { KzgError } from "./errors.js";
 
 // Track initialization state
@@ -7,56 +6,36 @@ let initialized = false;
 /**
  * Load trusted setup from embedded data or file
  *
- * Uses embedded trusted setup from c-kzg by default.
+ * **IMPORTANT: Requires native FFI bindings.**
+ * KZG is not available in WASM or pure JavaScript environments.
+ *
+ * Uses embedded trusted setup by default when native bindings are available.
  * Call this once during application startup.
  *
- * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @see https://voltaire.tevm.sh/crypto/kzg
  * @since 0.0.0
- * @param {string} [filePath] - Optional path to trusted setup file
+ * @param {string} [_filePath] - Optional path to trusted setup file (native only)
  * @returns {void}
- * @throws {KzgError} If loading fails
+ * @throws {KzgError} Always throws - native bindings required
  * @example
  * ```javascript
  * import { loadTrustedSetup } from './crypto/KZG/index.js';
- * // Use embedded setup (recommended)
- * loadTrustedSetup();
  *
- * // Or load from file
- * loadTrustedSetup('./trusted_setup.txt');
+ * // Note: Requires native bindings
+ * loadTrustedSetup();
  * ```
  */
-export function loadTrustedSetup(filePath) {
-	try {
-		// c-kzg doesn't allow reloading, skip if already initialized
-		if (initialized) {
-			return;
-		}
-		if (filePath) {
-			// Load from file if path provided
-			// c-kzg expects loadTrustedSetup(precompute: number, filePath: string)
-			ckzg.loadTrustedSetup(0, filePath);
-		} else {
-			// Use embedded trusted setup
-			// Just pass precompute=0 to use default embedded setup
-			ckzg.loadTrustedSetup(0);
-		}
-		initialized = true;
-	} catch (error) {
-		// If already loaded by c-kzg, just mark as initialized
-		if (error instanceof Error && error.message.includes("already loaded")) {
-			initialized = true;
-			return;
-		}
-		throw new KzgError(
-			`Failed to load trusted setup: ${error instanceof Error ? error.message : String(error)}`,
-			{
-				code: "KZG_TRUSTED_SETUP_LOAD_FAILED",
-				context: { filePath: filePath || "embedded" },
-				docsPath: "/crypto/kzg/load-trusted-setup#error-handling",
-				cause: error instanceof Error ? error : undefined,
-			},
-		);
-	}
+export function loadTrustedSetup(_filePath) {
+	throw new KzgError(
+		"loadTrustedSetup() requires native FFI bindings. " +
+			"KZG is not available in WASM or pure JavaScript environments. " +
+			"Use native FFI or perform KZG operations server-side.",
+		{
+			code: "KZG_NATIVE_REQUIRED",
+			context: { environment: "javascript" },
+			docsPath: "/crypto/kzg#native-only",
+		},
+	);
 }
 
 /**
