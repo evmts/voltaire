@@ -270,89 +270,92 @@ describe("Integration: Cross-Module Workflows", () => {
 	 * Scenario 3: Blob Flow
 	 * Create blob → generate commitment → compute proof → verify proof
 	 */
-	describe.skipIf(!hasNativeKzg)("Scenario 3: Blob Flow (Create → Commitment → Proof → Verify)", () => {
-		beforeAll(() => {
-			if (!Kzg.isInitialized()) {
-				Kzg.loadTrustedSetup();
-			}
-		});
+	describe.skipIf(!hasNativeKzg)(
+		"Scenario 3: Blob Flow (Create → Commitment → Proof → Verify)",
+		() => {
+			beforeAll(() => {
+				if (!Kzg.isInitialized()) {
+					Kzg.loadTrustedSetup();
+				}
+			});
 
-		it("should complete blob generation and commitment workflow", () => {
-			// 1. Generate random blob
-			const blob = Kzg.generateRandomBlob();
-			expect(blob).toBeInstanceOf(Uint8Array);
+			it("should complete blob generation and commitment workflow", () => {
+				// 1. Generate random blob
+				const blob = Kzg.generateRandomBlob();
+				expect(blob).toBeInstanceOf(Uint8Array);
 
-			// 2. Generate commitment
-			const commitment = Kzg.KZG.Commitment(blob);
-			expect(commitment).toBeInstanceOf(Uint8Array);
-			expect(commitment.length).toBe(48); // Commitment is 48 bytes
+				// 2. Generate commitment
+				const commitment = Kzg.KZG.Commitment(blob);
+				expect(commitment).toBeInstanceOf(Uint8Array);
+				expect(commitment.length).toBe(48); // Commitment is 48 bytes
 
-			// 3. Commitments should be deterministic for same blob
-			const commitment2 = Kzg.KZG.Commitment(blob);
-			expect(equalBytes(commitment, commitment2)).toBe(true);
-		});
+				// 3. Commitments should be deterministic for same blob
+				const commitment2 = Kzg.KZG.Commitment(blob);
+				expect(equalBytes(commitment, commitment2)).toBe(true);
+			});
 
-		it("should compute and verify blob proof", () => {
-			// 1. Create blob and commitment
-			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.KZG.Commitment(blob);
+			it("should compute and verify blob proof", () => {
+				// 1. Create blob and commitment
+				const blob = Kzg.generateRandomBlob();
+				const commitment = Kzg.KZG.Commitment(blob);
 
-			// 2. Compute versioned hash: 0x01 || sha256(commitment)[1:]
-			const commitmentHash = SHA256.hash(commitment);
-			const versionedHash = new Uint8Array(32);
-			versionedHash[0] = 0x01;
-			versionedHash.set(commitmentHash.slice(1), 1);
+				// 2. Compute versioned hash: 0x01 || sha256(commitment)[1:]
+				const commitmentHash = SHA256.hash(commitment);
+				const versionedHash = new Uint8Array(32);
+				versionedHash[0] = 0x01;
+				versionedHash.set(commitmentHash.slice(1), 1);
 
-			// 3. Create evaluation point z
-			const z = new Uint8Array(32);
-			z[31] = 1; // Simple z value
+				// 3. Create evaluation point z
+				const z = new Uint8Array(32);
+				z[31] = 1; // Simple z value
 
-			// 4. Compute proof and evaluation
-			const { proof, y } = Kzg.KZG.Proof(blob, z);
+				// 4. Compute proof and evaluation
+				const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			expect(proof).toBeInstanceOf(Uint8Array);
-			expect(proof.length).toBe(48); // Proof is 48 bytes
-			expect(y).toBeInstanceOf(Uint8Array);
-			expect(y.length).toBe(32);
+				expect(proof).toBeInstanceOf(Uint8Array);
+				expect(proof.length).toBe(48); // Proof is 48 bytes
+				expect(y).toBeInstanceOf(Uint8Array);
+				expect(y.length).toBe(32);
 
-			// 5. Verify with precompile (point evaluation)
-			// Build input per EIP-4844 (192 bytes):
-			// versioned_hash (32) | z (32) | y (32) | commitment (48) | proof (48)
-			const input = new Uint8Array(192);
-			input.set(versionedHash, 0);
-			input.set(z, 32);
-			input.set(y, 64);
-			input.set(commitment, 96);
-			input.set(proof, 144);
+				// 5. Verify with precompile (point evaluation)
+				// Build input per EIP-4844 (192 bytes):
+				// versioned_hash (32) | z (32) | y (32) | commitment (48) | proof (48)
+				const input = new Uint8Array(192);
+				input.set(versionedHash, 0);
+				input.set(z, 32);
+				input.set(y, 64);
+				input.set(commitment, 96);
+				input.set(proof, 144);
 
-			const result = pointEvaluation(input, 100000n);
+				const result = pointEvaluation(input, 100000n);
 
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(64);
-		});
+				expect(result.success).toBe(true);
+				expect(result.output.length).toBe(64);
+			});
 
-		it("should handle multiple proofs for same blob", () => {
-			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.KZG.Commitment(blob);
+			it("should handle multiple proofs for same blob", () => {
+				const blob = Kzg.generateRandomBlob();
+				const commitment = Kzg.KZG.Commitment(blob);
 
-			const z1 = new Uint8Array(32);
-			z1[31] = 1;
+				const z1 = new Uint8Array(32);
+				z1[31] = 1;
 
-			const z2 = new Uint8Array(32);
-			z2[31] = 2;
+				const z2 = new Uint8Array(32);
+				z2[31] = 2;
 
-			const { proof: proof1, y: y1 } = Kzg.KZG.Proof(blob, z1);
-			const { proof: proof2, y: y2 } = Kzg.KZG.Proof(blob, z2);
+				const { proof: proof1, y: y1 } = Kzg.KZG.Proof(blob, z1);
+				const { proof: proof2, y: y2 } = Kzg.KZG.Proof(blob, z2);
 
-			// Proofs should be different for different evaluation points
-			expect(equalBytes(proof1, proof2)).toBe(false);
-			expect(equalBytes(y1, y2)).toBe(false);
+				// Proofs should be different for different evaluation points
+				expect(equalBytes(proof1, proof2)).toBe(false);
+				expect(equalBytes(y1, y2)).toBe(false);
 
-			// But commitment should be the same
-			const commitment2 = Kzg.KZG.Commitment(blob);
-			expect(equalBytes(commitment, commitment2)).toBe(true);
-		});
-	});
+				// But commitment should be the same
+				const commitment2 = Kzg.KZG.Commitment(blob);
+				expect(equalBytes(commitment, commitment2)).toBe(true);
+			});
+		},
+	);
 
 	/**
 	 * Scenario 4: Transaction Flow

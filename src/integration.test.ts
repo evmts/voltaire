@@ -709,42 +709,45 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			expect(result.output.length).toBe(64);
 		});
 
-		it.skipIf(!hasNativeKzg)("should verify KZG point evaluation available from Cancun", () => {
-			if (!Kzg.isInitialized()) {
-				Kzg.loadTrustedSetup();
-			}
+		it.skipIf(!hasNativeKzg)(
+			"should verify KZG point evaluation available from Cancun",
+			() => {
+				if (!Kzg.isInitialized()) {
+					Kzg.loadTrustedSetup();
+				}
 
-			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.KZG.Commitment(blob);
+				const blob = Kzg.generateRandomBlob();
+				const commitment = Kzg.KZG.Commitment(blob);
 
-			// Compute versioned hash: 0x01 || sha256(commitment)[1:]
-			const commitmentHash = SHA256.hash(commitment);
-			const versionedHash = new Uint8Array(32);
-			versionedHash[0] = 0x01;
-			versionedHash.set(commitmentHash.slice(1), 1);
+				// Compute versioned hash: 0x01 || sha256(commitment)[1:]
+				const commitmentHash = SHA256.hash(commitment);
+				const versionedHash = new Uint8Array(32);
+				versionedHash[0] = 0x01;
+				versionedHash.set(commitmentHash.slice(1), 1);
 
-			const z = new Uint8Array(32);
-			const { proof, y } = Kzg.KZG.Proof(blob, z);
+				const z = new Uint8Array(32);
+				const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			// Build precompile input per EIP-4844 (192 bytes):
-			// versioned_hash (32) | z (32) | y (32) | commitment (48) | proof (48)
-			const input = new Uint8Array(192);
-			input.set(versionedHash, 0);
-			input.set(z, 32);
-			input.set(y, 64);
-			input.set(commitment, 96);
-			input.set(proof, 144);
+				// Build precompile input per EIP-4844 (192 bytes):
+				// versioned_hash (32) | z (32) | y (32) | commitment (48) | proof (48)
+				const input = new Uint8Array(192);
+				input.set(versionedHash, 0);
+				input.set(z, 32);
+				input.set(y, 64);
+				input.set(commitment, 96);
+				input.set(proof, 144);
 
-			const cancun = Hardfork.CANCUN;
-			const result = execute(
-				PrecompileAddress.POINT_EVALUATION,
-				input,
-				100000n,
-				cancun,
-			);
+				const cancun = Hardfork.CANCUN;
+				const result = execute(
+					PrecompileAddress.POINT_EVALUATION,
+					input,
+					100000n,
+					cancun,
+				);
 
-			expect(result.success).toBe(true);
-		});
+				expect(result.success).toBe(true);
+			},
+		);
 	});
 
 	describe("Identity Precompile Integration", () => {
