@@ -256,6 +256,7 @@ describe("getItem", () => {
 				stateMutability: "pure",
 				inputs: [],
 				outputs: [],
+				// biome-ignore lint/suspicious/noExplicitAny: test fixture for large ABI performance
 			})) as any;
 
 			const item = getItem(largeAbi, "func999");

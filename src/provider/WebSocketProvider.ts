@@ -856,19 +856,19 @@ export class WebSocketProvider implements Provider {
 				await this.unsubscribe(subscriptionId);
 			}
 		}.bind(this),
-		// biome-ignore lint/suspicious/noExplicitAny: WebSocket log subscription params are dynamic
 
+		// biome-ignore lint/suspicious/noExplicitAny: WebSocket log subscription params are dynamic
 		logs: async function* (this: WebSocketProvider, params?: any) {
 			const subscriptionId = await this.subscribe(
 				"logs",
 				params ? [params] : [],
-			// biome-ignore lint/suspicious/noExplicitAny: Log event data structure varies by filter
 			);
-			// biome-ignore lint/suspicious/noExplicitAny: Generic promise resolution
+			// biome-ignore lint/suspicious/noExplicitAny: Log event data structure varies by filter
 			const queue: any[] = [];
+			// biome-ignore lint/suspicious/noExplicitAny: Generic promise resolution
 			let resolve: ((value: any) => void) | null = null;
-			// biome-ignore lint/suspicious/noExplicitAny: Log event callback data is dynamic
 
+			// biome-ignore lint/suspicious/noExplicitAny: Log event callback data is dynamic
 			const callback = (data: any) => {
 				if (resolve) {
 					resolve(data);

@@ -91,6 +91,7 @@ type ResolveComponent<T extends Parameter> = T["type"] extends "tuple"
 // Custom tuple-to-object converter that handles components recursively
 // Uses union distribution to map each component to its field
 type TupleComponentsToObject<TComponents extends readonly Parameter[]> = {
+	// biome-ignore lint/suspicious/noExplicitAny: type inference requires any for mapped type key extraction
 	[K in TComponents[number] as K extends Parameter<any, infer N, any>
 		? N extends string
 			? N

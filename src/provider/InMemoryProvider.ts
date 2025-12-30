@@ -149,12 +149,15 @@ export class InMemoryProvider implements Provider {
 	private transientStorage: Map<string, Map<string, bigint>> = new Map();
 	private blocks: Map<bigint, BlockHeader> = new Map();
 	private blocksByHash: Map<string, BlockHeader> = new Map();
+	// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC tx objects have varying shapes
 	private transactions: Map<string, any> = new Map();
 	private receipts: Map<string, TransactionReceipt> = new Map();
+	// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC tx objects have varying shapes
 	private pendingTransactions: any[] = [];
 	private currentBlockNumber: bigint;
 	private currentTimestamp: bigint;
 	private nextBlockTimestamp: bigint | null = null;
+	// biome-ignore lint/suspicious/noExplicitAny: filter objects have varying shapes per type
 	private filters: Map<string, any> = new Map();
 	private filterIdCounter = 0;
 	private coinbase = "0x0000000000000000000000000000000000000000";
@@ -367,6 +370,7 @@ export class InMemoryProvider implements Provider {
 	/**
 	 * Format block for JSON-RPC response
 	 */
+	// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC block response has complex shape
 	private formatBlock(block: BlockHeader, fullTransactions = false): any {
 		return {
 			number: `0x${block.number.toString(16)}`,
@@ -453,6 +457,8 @@ export class InMemoryProvider implements Provider {
 	/**
 	 * Execute a transaction
 	 */
+	// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC tx object has varying shape
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: tx execution inherently complex
 	private executeTx(tx: any): TransactionReceipt {
 		const from = tx.from.toLowerCase();
 		const to = tx.to?.toLowerCase() ?? null;
@@ -480,6 +486,7 @@ export class InMemoryProvider implements Provider {
 		// Execute code if contract call
 		const status = "0x1"; // success
 		let gasUsed = 21000n;
+		// biome-ignore lint/suspicious/noExplicitAny: log objects have complex JSON-RPC shape
 		const logs: any[] = [];
 		let contractAddress: string | null = null;
 
@@ -567,6 +574,7 @@ export class InMemoryProvider implements Provider {
 	/**
 	 * EIP-1193 request method
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: EIP-1193 requires handling many RPC methods in single dispatch
 	async request(args: RequestArguments): Promise<unknown> {
 		const { method, params = [] } = args;
 		const p = Array.isArray(params) ? params : [params];
@@ -632,6 +640,7 @@ export class InMemoryProvider implements Provider {
 
 			// Transaction
 			case "eth_sendTransaction": {
+				// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC params are dynamic
 				const tx = p[0] as any;
 				this.pendingTransactions.push(tx);
 
@@ -666,6 +675,7 @@ export class InMemoryProvider implements Provider {
 
 			// Call
 			case "eth_call": {
+				// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC params are dynamic
 				const tx = p[0] as any;
 				const to = tx.to?.toLowerCase();
 				const data = tx.data
@@ -708,6 +718,7 @@ export class InMemoryProvider implements Provider {
 			}
 
 			case "eth_estimateGas": {
+				// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC params are dynamic
 				const tx = p[0] as any;
 				const data = tx.data ?? "0x";
 				// Simplified estimation
@@ -765,6 +776,7 @@ export class InMemoryProvider implements Provider {
 			}
 
 			case "eth_newFilter": {
+				// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC filter params are dynamic
 				const filterParams = p[0] as any;
 				const filterId = `0x${(++this.filterIdCounter).toString(16)}`;
 				this.filters.set(filterId, {
@@ -1110,6 +1122,7 @@ export class InMemoryProvider implements Provider {
 			}
 		}.bind(this),
 
+		// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC filter params are dynamic
 		logs: async function* (this: InMemoryProvider, _params?: any) {
 			// Simplified - yields nothing for now
 			while (true) {

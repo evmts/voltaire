@@ -29,6 +29,7 @@ import type { EIP1193RequestFn } from "./request/EIP1193RequestFn.js";
  */
 export interface TypedProvider<
 	TRpcSchema extends RpcSchema = RpcSchema,
+	// biome-ignore lint/suspicious/noExplicitAny: Event handlers require any[] for variadic callback signatures
 	TEventMap extends Record<string, (...args: any[]) => void> = EIP1193EventMap,
 > {
 	/**

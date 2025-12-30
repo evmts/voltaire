@@ -14,10 +14,15 @@ export interface Abi<TItems extends readonly Item[] = readonly Item[]>
 	// Instance methods for ABI operations
 	getItem(name: string, type: "function" | "event" | "error"): Item | undefined;
 	format(): string[];
+	// biome-ignore lint/suspicious/noExplicitAny: ABI args are dynamically typed based on function signature
 	formatWithArgs(args: Record<string, any>): string[];
+	// biome-ignore lint/suspicious/noExplicitAny: ABI encoding accepts dynamic argument types
 	encode(functionName: string, args: any[]): Uint8Array;
+	// biome-ignore lint/suspicious/noExplicitAny: ABI decoding returns dynamic types based on function signature
 	decode(functionName: string, data: Uint8Array): any[];
+	// biome-ignore lint/suspicious/noExplicitAny: ABI decoding returns dynamic types based on function signature
 	decodeData(data: Uint8Array): { item: Item; decoded: any[] };
+	// biome-ignore lint/suspicious/noExplicitAny: Log parsing accepts and returns dynamic types
 	parseLogs(logs: any[]): any[];
 
 	// Convenience getters for specific item types
@@ -25,7 +30,9 @@ export interface Abi<TItems extends readonly Item[] = readonly Item[]>
 	getEvent(name: string): import("./event/EventType.js").EventType | undefined;
 	getError(name: string): AbiError.ErrorType | undefined;
 	getConstructor(): AbiConstructorNs.ConstructorType | undefined;
+	// biome-ignore lint/suspicious/noExplicitAny: Fallback function type is not fully typed yet
 	getFallback(): any;
+	// biome-ignore lint/suspicious/noExplicitAny: Receive function type is not fully typed yet
 	getReceive(): any;
 }
 
@@ -50,10 +57,15 @@ export interface AbiConstructor {
 		type: "function" | "event" | "error",
 	): Item | undefined;
 	format(abi: AbiType): string[];
+	// biome-ignore lint/suspicious/noExplicitAny: ABI args are dynamically typed based on function signature
 	formatWithArgs(abi: AbiType, args: Record<string, any>): string[];
+	// biome-ignore lint/suspicious/noExplicitAny: ABI encoding accepts dynamic argument types
 	encode(abi: AbiType, functionName: string, args: any[]): Uint8Array;
+	// biome-ignore lint/suspicious/noExplicitAny: ABI decoding returns dynamic types based on function signature
 	decode(abi: AbiType, functionName: string, data: Uint8Array): any[];
+	// biome-ignore lint/suspicious/noExplicitAny: ABI decoding returns dynamic types based on function signature
 	decodeData(abi: AbiType, data: Uint8Array): { item: Item; decoded: any[] };
+	// biome-ignore lint/suspicious/noExplicitAny: Log parsing accepts and returns dynamic types
 	parseLogs(abi: AbiType, logs: any[]): any[];
 
 	// Sub-namespaces

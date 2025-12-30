@@ -96,7 +96,9 @@ describe("InMemoryProvider", () => {
 				params: ["latest", false],
 			});
 			expect(result).toBeDefined();
+			// biome-ignore lint/suspicious/noExplicitAny: test assertion on dynamic RPC response
 			expect((result as any).number).toBeDefined();
+			// biome-ignore lint/suspicious/noExplicitAny: test assertion on dynamic RPC response
 			expect((result as any).hash).toBeDefined();
 		});
 
@@ -109,6 +111,7 @@ describe("InMemoryProvider", () => {
 		});
 
 		it("eth_getBlockByHash returns block", async () => {
+			// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			const latestBlock = (await provider.request({
 				method: "eth_getBlockByNumber",
 				params: ["latest", false],
@@ -119,6 +122,7 @@ describe("InMemoryProvider", () => {
 				params: [latestBlock.hash, false],
 			});
 			expect(result).toBeDefined();
+			// biome-ignore lint/suspicious/noExplicitAny: test assertion on dynamic RPC response
 			expect((result as any).number).toBe(latestBlock.number);
 		});
 
@@ -314,6 +318,7 @@ describe("InMemoryProvider", () => {
 				params: [4, "latest", [25, 75]],
 			});
 			expect(result).toBeDefined();
+			// biome-ignore lint/suspicious/noExplicitAny: test assertion on dynamic RPC response
 			expect((result as any).baseFeePerGas).toBeDefined();
 		});
 	});

@@ -51,6 +51,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 	const mockUrl = "wss://localhost:8546";
 
 	beforeEach(() => {
+		// biome-ignore lint/suspicious/noExplicitAny: Mock WebSocket for testing
 		global.WebSocket = MockWebSocket as any;
 		provider = new WebSocketProvider(mockUrl);
 	});
@@ -63,6 +64,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 		it("executes eth_blockNumber via request()", async () => {
 			await provider.connect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			const sendSpy = vi.spyOn(ws, "send");
 
@@ -87,6 +89,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 		it("executes eth_getBalance via request() with params", async () => {
 			await provider.connect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			const sendSpy = vi.spyOn(ws, "send");
 
@@ -112,6 +115,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 		it("accepts RequestArguments interface", async () => {
 			await provider.connect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			const sendSpy = vi.spyOn(ws, "send");
 
@@ -137,6 +141,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 		it("sends correct JSON-RPC 2.0 format", async () => {
 			await provider.connect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			const sendSpy = vi.spyOn(ws, "send");
 
@@ -165,6 +170,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 		it("throws on JSON-RPC error response", async () => {
 			await provider.connect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			const sendSpy = vi.spyOn(ws, "send");
 
@@ -193,6 +199,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 		it("throws with EIP-1193 error codes", async () => {
 			await provider.connect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			const sendSpy = vi.spyOn(ws, "send");
 
@@ -221,6 +228,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 		it("does NOT return Response<T> union", async () => {
 			await provider.connect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			const sendSpy = vi.spyOn(ws, "send");
 
@@ -300,6 +308,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 			const listener = vi.fn();
 			provider.on("chainChanged", listener);
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			ws.onmessage?.({
 				data: JSON.stringify({
@@ -320,6 +329,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 			const listener = vi.fn();
 			provider.on("accountsChanged", listener);
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			ws.onmessage?.({
 				data: JSON.stringify({
@@ -340,6 +350,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 			const listener = vi.fn();
 			provider.on("message", listener);
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			ws.onmessage?.({
 				data: JSON.stringify({
@@ -367,6 +378,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 
 			await provider.connect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			ws.onmessage?.({
 				data: JSON.stringify({
@@ -423,6 +435,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 		it("subscribes to newHeads via eth_subscribe", async () => {
 			await provider.connect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			const sendSpy = vi.spyOn(ws, "send");
 
@@ -451,6 +464,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 			const listener = vi.fn();
 			provider.on("message", listener);
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 
 			ws.onmessage?.({
@@ -472,6 +486,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 		it("unsubscribes via eth_unsubscribe", async () => {
 			await provider.connect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (provider as any).ws as MockWebSocket;
 			const sendSpy = vi.spyOn(ws, "send");
 
@@ -504,6 +519,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 			await provider.connect();
 			provider.disconnect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			expect((provider as any).ws?.readyState).toBe(3); // CLOSED
 		});
 
@@ -516,11 +532,13 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 
 			await p.connect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (p as any).ws as MockWebSocket;
 			ws.onclose?.({ code: 1006, reason: "Abnormal close" });
 
 			await new Promise((resolve) => setTimeout(resolve, 20));
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal reconnectAttempts for testing
 			expect((p as any).reconnectAttempts).toBeGreaterThan(0);
 		});
 
@@ -534,11 +552,13 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 
 			await p.connect();
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 			const ws = (p as any).ws as MockWebSocket;
 			ws.onclose?.({ code: 1006, reason: "Abnormal close" });
 
 			await new Promise((resolve) => setTimeout(resolve, 50));
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal reconnectAttempts for testing
 			expect((p as any).reconnectAttempts).toBeLessThanOrEqual(2);
 		});
 	});
@@ -566,8 +586,11 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 				maxReconnectAttempts: 5,
 			});
 
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal reconnect for testing
 			expect((p as any).reconnect).toBe(false);
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal reconnectDelay for testing
 			expect((p as any).reconnectDelay).toBe(1000);
+			// biome-ignore lint/suspicious/noExplicitAny: Access internal maxReconnectAttempts for testing
 			expect((p as any).maxReconnectAttempts).toBe(5);
 		});
 	});
@@ -584,6 +607,7 @@ describe.skip("WebSocketProvider - EIP-1193 (Future Implementation)", () => {
 			];
 
 			for (const method of methods) {
+				// biome-ignore lint/suspicious/noExplicitAny: Access internal ws for testing
 				const ws = (provider as any).ws as MockWebSocket;
 				const sendSpy = vi.spyOn(ws, "send");
 

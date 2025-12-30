@@ -94,6 +94,7 @@ function isDynamicType(type, components) {
  * @param {readonly Parameter[]=} components
  * @returns {{ encoded: Uint8Array; isDynamic: boolean }}
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ABI encoding requires handling many type variants in one function
 function encodeValue(type, value, components) {
 	// Handle tuples FIRST
 	if (type === "tuple" && components) {
@@ -268,6 +269,7 @@ function safeToNumber(value, context) {
  * @param {readonly Parameter[]=} components
  * @returns {{ value: unknown; newOffset: number }}
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ABI decoding requires handling many type variants in one function
 function decodeValue(type, data, offset, components) {
 	// Handle tuples
 	if (type === "tuple" && components) {
