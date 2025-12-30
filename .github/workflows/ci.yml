@@ -133,12 +133,12 @@ jobs:
         run: pnpm run format:check
       - name: Run dependency check
         run: pnpm run lint:deps
-      - name: Run package validation
-        run: pnpm run lint:package
       - name: Build distribution
         run: pnpm run build:dist
       - name: Build types
         run: pnpm run build:types
+      - name: Run package validation
+        run: pnpm run lint:package
       - name: Generate documentation
         run: pnpm run generate:docs
       - name: Run TypeScript tests with coverage
