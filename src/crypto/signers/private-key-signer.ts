@@ -34,8 +34,10 @@ export interface Signer {
 	/** Sign a message with EIP-191 prefix */
 	signMessage(message: string | Uint8Array): Promise<string>;
 	/** Sign a transaction */
+	// biome-ignore lint/suspicious/noExplicitAny: transaction and return type vary
 	signTransaction(transaction: any): Promise<any>;
 	/** Sign typed data according to EIP-712 */
+	// biome-ignore lint/suspicious/noExplicitAny: typed data structure varies
 	signTypedData(typedData: any): Promise<string>;
 }
 
@@ -230,6 +232,7 @@ export class PrivateKeySignerImpl implements Signer {
 	 * console.log(signedTx.yParity, signedTx.r, signedTx.s);
 	 * ```
 	 */
+	// biome-ignore lint/suspicious/noExplicitAny: transaction type varies by chain
 	async signTransaction(transaction: any): Promise<any> {
 		const Transaction = await import(
 			"../../primitives/Transaction/index.js"
@@ -294,6 +297,7 @@ export class PrivateKeySignerImpl implements Signer {
 	 * console.log(signature); // '0x...'
 	 * ```
 	 */
+	// biome-ignore lint/suspicious/noExplicitAny: EIP-712 typed data structure varies
 	async signTypedData(typedData: any): Promise<string> {
 		const { Eip712Wasm } = await import("../eip712.wasm.js");
 

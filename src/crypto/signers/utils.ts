@@ -50,6 +50,7 @@ export function getAddress(signer: Signer): string {
  * ```
  */
 export async function recoverTransactionAddress(
+	// biome-ignore lint/suspicious/noExplicitAny: transaction type varies
 	_transaction: any,
 ): Promise<string> {
 	// Note: Transaction address recovery requires:
