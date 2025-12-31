@@ -78,7 +78,9 @@ jobs:
         run: pnpm run format:check
 
       - name: Build WASM for tests
-        run: zig build build-ts-wasm
+        run: |
+          zig build build-ts-wasm
+          zig build crypto-wasm
 
       - name: Run TypeScript tests
         run: pnpm test:run

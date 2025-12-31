@@ -111,7 +111,9 @@ jobs:
       - name: Build Zig library (required for FFI tests)
         run: zig build -Doptimize=ReleaseFast -Dwith-c-api=false
       - name: Build WASM for TypeScript tests
-        run: zig build build-ts-wasm
+        run: |
+          zig build build-ts-wasm
+          zig build crypto-wasm
       - name: Build fast WASM variant
         run: zig build build-ts-wasm-fast
       - name: Install pnpm
