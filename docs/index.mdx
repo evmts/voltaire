@@ -197,7 +197,7 @@ mode: "custom"
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp');
+        navigator.clipboard.writeText('claude mcp add --transport http tevm https://tevm.sh/mcp');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -205,7 +205,7 @@ mode: "custom"
         }, 500);
       }}>
 ```bash
-claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
+claude mcp add --transport http tevm https://tevm.sh/mcp
 ```
       </div>
       <div id="cursor-detail" style={{ cursor: 'pointer', display: 'none', opacity: '0', transform: 'translateX(-20px)', transition: 'opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)' }}
@@ -229,7 +229,7 @@ claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('Add to .cursor/mcp.json:\n{\n  "mcpServers": {\n    "voltaire": {\n      "command": "npx",\n      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]\n    }\n  }\n}');
+        navigator.clipboard.writeText('Add to .cursor/mcp.json:\n{\n  "mcpServers": {\n    "tevm": {\n      "command": "npx",\n      "args": ["mcp-remote", "https://tevm.sh/mcp"]\n    }\n  }\n}');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -240,9 +240,9 @@ claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
 // Add to .cursor/mcp.json
 {
   "mcpServers": {
-    "voltaire": {
+    "tevm": {
       "command": "npx",
-      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]
+      "args": ["mcp-remote", "https://tevm.sh/mcp"]
     }
   }
 }
@@ -269,7 +269,7 @@ claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('Add to ~/.codex/config.toml:\n[mcp_servers.voltaire]\nurl = "https://voltaire.tevm.sh/mcp"');
+        navigator.clipboard.writeText('Add to ~/.codex/config.toml:\n[mcp_servers.tevm]\nurl = "https://tevm.sh/mcp"');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -278,8 +278,8 @@ claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
       }}>
 ```toml
 # Add to ~/.codex/config.toml
-[mcp_servers.voltaire]
-url = "https://voltaire.tevm.sh/mcp"
+[mcp_servers.tevm]
+url = "https://tevm.sh/mcp"
 ```
       </div>
       <div id="amp-detail" style={{ cursor: 'pointer', display: 'none', opacity: '0', transform: 'translateX(-20px)', transition: 'opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)' }}
@@ -303,7 +303,7 @@ url = "https://voltaire.tevm.sh/mcp"
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('// Add to ~/.config/amp/settings.json\n{\n  "mcpServers": {\n    "voltaire": {\n      "url": "https://voltaire.tevm.sh/mcp"\n    }\n  }\n}');
+        navigator.clipboard.writeText('// Add to ~/.config/amp/settings.json\n{\n  "mcpServers": {\n    "tevm": {\n      "url": "https://tevm.sh/mcp"\n    }\n  }\n}');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -314,8 +314,8 @@ url = "https://voltaire.tevm.sh/mcp"
 // Add to ~/.config/amp/settings.json
 {
   "mcpServers": {
-    "voltaire": {
-      "url": "https://voltaire.tevm.sh/mcp"
+    "tevm": {
+      "url": "https://tevm.sh/mcp"
     }
   }
 }
@@ -342,7 +342,7 @@ url = "https://voltaire.tevm.sh/mcp"
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('// Add to ~/.config/opencode/opencode.json\n{\n  "mcp": {\n    "voltaire": {\n      "type": "remote",\n      "url": "https://voltaire.tevm.sh/mcp"\n    }\n  }\n}');
+        navigator.clipboard.writeText('// Add to ~/.config/opencode/opencode.json\n{\n  "mcp": {\n    "tevm": {\n      "type": "remote",\n      "url": "https://tevm.sh/mcp"\n    }\n  }\n}');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -353,9 +353,9 @@ url = "https://voltaire.tevm.sh/mcp"
 // Add to ~/.config/opencode/opencode.json
 {
   "mcp": {
-    "voltaire": {
+    "tevm": {
       "type": "remote",
-      "url": "https://voltaire.tevm.sh/mcp"
+      "url": "https://tevm.sh/mcp"
     }
   }
 }

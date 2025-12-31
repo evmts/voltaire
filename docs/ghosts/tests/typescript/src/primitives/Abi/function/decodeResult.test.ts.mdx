@@ -1,0 +1,566 @@
+---
+title: '[TS/JS] src/primitives/Abi/function/decodeResult.test.ts'
+source: 'src/primitives/Abi/function/decodeResult.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Abi/function/decodeResult.test.ts
+
+```typescript
+/**
+ * Unit tests for decodeResult function
+ */
+
+import { describe, expect, it } from "vitest";
+import { decodeResult } from "./decodeResult.js";
+import { encodeResult } from "./encodeResult.js";
+
+describe("decodeResult", () => {
+	describe("basic decoding", () => {
+		it("decodes function with no outputs", () => {
+			const func = {
+				type: "function",
+				name: "test",
+				stateMutability: "nonpayable",
+				inputs: [],
+				outputs: [],
+			} as const;
+
+			const encoded = encodeResult(func, []);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded).toEqual([]);
+		});
+
+		it("decodes function with single uint256 output", () => {
+			const func = {
+				type: "function",
+				name: "getValue",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [100n]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded).toEqual([100n]);
+		});
+
+		it("decodes function with multiple outputs", () => {
+			const func = {
+				type: "function",
+				name: "getData",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [
+					{ type: "address", name: "" },
+					{ type: "uint256", name: "" },
+				],
+			} as const;
+
+			const encoded = encodeResult(func, [
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+				100n,
+			]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded).toHaveLength(2);
+			expect(decoded[1]).toBe(100n);
+		});
+	});
+
+	describe("round-trip encoding/decoding", () => {
+		it("round-trips address output", () => {
+			const func = {
+				type: "function",
+				name: "getAddress",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "address", name: "" }],
+			} as const;
+
+			const addr = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";
+			const encoded = encodeResult(func, [addr]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe(addr.toLowerCase());
+		});
+
+		it("round-trips bool output", () => {
+			const func = {
+				type: "function",
+				name: "getFlag",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "bool", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [true]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe(true);
+		});
+
+		it("round-trips bytes32 output", () => {
+			const func = {
+				type: "function",
+				name: "getHash",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "bytes32", name: "" }],
+			} as const;
+
+			const hash = new Uint8Array(32);
+			hash[0] = 0xaa;
+			hash[31] = 0xbb;
+			const encoded = encodeResult(func, [hash]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBeInstanceOf(Uint8Array);
+			expect((decoded[0] as Uint8Array)[0]).toBe(0xaa);
+			expect((decoded[0] as Uint8Array)[31]).toBe(0xbb);
+		});
+
+		it("round-trips string output", () => {
+			const func = {
+				type: "function",
+				name: "getName",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "string", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, ["hello"]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe("hello");
+		});
+
+		it("round-trips bytes output", () => {
+			const func = {
+				type: "function",
+				name: "getData",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "bytes", name: "" }],
+			} as const;
+
+			const data = new Uint8Array([1, 2, 3, 4]);
+			const encoded = encodeResult(func, [data]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBeInstanceOf(Uint8Array);
+			expect(Array.from(decoded[0] as Uint8Array)).toEqual([1, 2, 3, 4]);
+		});
+	});
+
+	describe("array outputs", () => {
+		it("decodes fixed-size array", () => {
+			const func = {
+				type: "function",
+				name: "getArray",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256[3]", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [[1n, 2n, 3n]]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toEqual([1n, 2n, 3n]);
+		});
+
+		it("decodes dynamic array", () => {
+			const func = {
+				type: "function",
+				name: "getDynamicArray",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256[]", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [[1n, 2n, 3n, 4n]]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toEqual([1n, 2n, 3n, 4n]);
+		});
+
+		it("decodes empty dynamic array", () => {
+			const func = {
+				type: "function",
+				name: "getDynamicArray",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256[]", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [[]]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toEqual([]);
+		});
+
+		it("decodes address array", () => {
+			const func = {
+				type: "function",
+				name: "getAddresses",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "address[]", name: "" }],
+			} as const;
+
+			const addresses = [
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+				"0x0000000000000000000000000000000000000001",
+			];
+			const encoded = encodeResult(func, [addresses]);
+			const decoded = decodeResult(func, encoded);
+			expect((decoded[0] as string[]).length).toBe(2);
+		});
+	});
+
+	describe("tuple outputs", () => {
+		it("decodes simple tuple", () => {
+			const func = {
+				type: "function",
+				name: "getData",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [
+					{
+						type: "tuple",
+						name: "",
+						components: [
+							{ type: "address", name: "addr" },
+							{ type: "uint256", name: "value" },
+						],
+					},
+				],
+			} as const;
+
+			const addr = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";
+			const encoded = encodeResult(func, [[addr, 100n]]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBeInstanceOf(Array);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+			expect((decoded[0] as any[])[1]).toBe(100n);
+		});
+
+		it("decodes tuple array", () => {
+			const func = {
+				type: "function",
+				name: "getTuples",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [
+					{
+						type: "tuple[]",
+						name: "",
+						components: [
+							{ type: "address", name: "addr" },
+							{ type: "uint256", name: "value" },
+						],
+					},
+				],
+			} as const;
+
+			const addr = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";
+			const encoded = encodeResult(func, [
+				[
+					[addr, 100n],
+					[addr, 200n],
+				],
+			]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBeInstanceOf(Array);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+			expect((decoded[0] as any[]).length).toBe(2);
+		});
+
+		it("decodes nested tuple", () => {
+			const func = {
+				type: "function",
+				name: "getNestedData",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [
+					{
+						type: "tuple",
+						name: "",
+						components: [
+							{
+								type: "tuple",
+								name: "inner",
+								components: [{ type: "uint256", name: "value" }],
+							},
+							{ type: "bool", name: "flag" },
+						],
+					},
+				],
+			} as const;
+
+			const encoded = encodeResult(func, [[[42n], true]]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBeInstanceOf(Array);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+			expect((decoded[0] as any[])[1]).toBe(true);
+		});
+	});
+
+	describe("multiple outputs", () => {
+		it("decodes multiple outputs in order", () => {
+			const func = {
+				type: "function",
+				name: "complexReturn",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [
+					{ type: "address", name: "" },
+					{ type: "uint256", name: "" },
+					{ type: "bool", name: "" },
+				],
+			} as const;
+
+			const addr = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";
+			const encoded = encodeResult(func, [addr, 100n, true]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded).toHaveLength(3);
+			expect(decoded[1]).toBe(100n);
+			expect(decoded[2]).toBe(true);
+		});
+
+		it("decodes mix of static and dynamic outputs", () => {
+			const func = {
+				type: "function",
+				name: "mixedReturn",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [
+					{ type: "uint256", name: "" },
+					{ type: "string", name: "" },
+					{ type: "bool", name: "" },
+				],
+			} as const;
+
+			const encoded = encodeResult(func, [42n, "hello", true]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded).toHaveLength(3);
+			expect(decoded[0]).toBe(42n);
+			expect(decoded[1]).toBe("hello");
+			expect(decoded[2]).toBe(true);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("decodes zero values", () => {
+			const func = {
+				type: "function",
+				name: "getZero",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [0n]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe(0n);
+		});
+
+		it("decodes max uint256", () => {
+			const func = {
+				type: "function",
+				name: "getMax",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			const max =
+				0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
+			const encoded = encodeResult(func, [max]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe(max);
+		});
+
+		it("decodes empty string", () => {
+			const func = {
+				type: "function",
+				name: "getString",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "string", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [""]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe("");
+		});
+
+		it("decodes empty bytes", () => {
+			const func = {
+				type: "function",
+				name: "getBytes",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "bytes", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [new Uint8Array(0)]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBeInstanceOf(Uint8Array);
+			expect((decoded[0] as Uint8Array).length).toBe(0);
+		});
+
+		it("decodes false bool value", () => {
+			const func = {
+				type: "function",
+				name: "getFlag",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "bool", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [false]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe(false);
+		});
+	});
+
+	describe("real-world examples", () => {
+		it("decodes ERC20 balanceOf return", () => {
+			const func = {
+				type: "function",
+				name: "balanceOf",
+				stateMutability: "view",
+				inputs: [{ type: "address", name: "account" }],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			const balance = 1000000000000000000n;
+			const encoded = encodeResult(func, [balance]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe(balance);
+		});
+
+		it("decodes ERC20 transfer return", () => {
+			const func = {
+				type: "function",
+				name: "transfer",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "recipient" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [{ type: "bool", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [true]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe(true);
+		});
+
+		it("decodes ERC20 allowance return", () => {
+			const func = {
+				type: "function",
+				name: "allowance",
+				stateMutability: "view",
+				inputs: [
+					{ type: "address", name: "owner" },
+					{ type: "address", name: "spender" },
+				],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			const allowance = 5000000000000000000n;
+			const encoded = encodeResult(func, [allowance]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe(allowance);
+		});
+
+		it("decodes ERC721 ownerOf return", () => {
+			const func = {
+				type: "function",
+				name: "ownerOf",
+				stateMutability: "view",
+				inputs: [{ type: "uint256", name: "tokenId" }],
+				outputs: [{ type: "address", name: "" }],
+			} as const;
+
+			const owner = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";
+			const encoded = encodeResult(func, [owner]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe(owner.toLowerCase());
+		});
+	});
+
+	describe("different state mutabilities", () => {
+		it("decodes view function result", () => {
+			const func = {
+				type: "function",
+				name: "getValue",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [42n]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe(42n);
+		});
+
+		it("decodes pure function result", () => {
+			const func = {
+				type: "function",
+				name: "calculate",
+				stateMutability: "pure",
+				inputs: [{ type: "uint256", name: "a" }],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [100n]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe(100n);
+		});
+
+		it("decodes nonpayable function result", () => {
+			const func = {
+				type: "function",
+				name: "setState",
+				stateMutability: "nonpayable",
+				inputs: [],
+				outputs: [{ type: "bool", name: "" }],
+			} as const;
+
+			const encoded = encodeResult(func, [true]);
+			const decoded = decodeResult(func, encoded);
+			expect(decoded[0]).toBe(true);
+		});
+	});
+
+	describe("handles raw return data", () => {
+		it("decodes manually constructed return data", () => {
+			const func = {
+				type: "function",
+				name: "getValue",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			// Manually construct return data for uint256 value 42
+			const data = new Uint8Array(32);
+			data[31] = 42;
+
+			const decoded = decodeResult(func, data);
+			expect(decoded[0]).toBe(42n);
+		});
+
+		it("decodes bool from raw data", () => {
+			const func = {
+				type: "function",
+				name: "getFlag",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "bool", name: "" }],
+			} as const;
+
+			// Manually construct return data for bool true
+			const data = new Uint8Array(32);
+			data[31] = 1;
+
+			const decoded = decodeResult(func, data);
+			expect(decoded[0]).toBe(true);
+		});
+	});
+});
+
+```

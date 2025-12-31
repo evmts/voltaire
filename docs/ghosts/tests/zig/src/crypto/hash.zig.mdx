@@ -1,0 +1,21 @@
+---
+title: '[Zig] src/crypto/hash.zig'
+source: 'src/crypto/hash.zig'
+---
+
+> Auto-generated from Zig tests in: src/crypto/hash.zig
+
+### hash module integration
+
+```zig
+test "hash module integration" {
+    // Test basic hash creation
+    const test_hash = keccak256("test");
+    try std.testing.expect(!isZero(test_hash));
+
+    // Test selector creation
+    const sel = selectorFromSignature("transfer(address,uint256)");
+    const expected = [4]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    try std.testing.expectEqual(expected, sel);
+}
+```

@@ -1,0 +1,496 @@
+---
+title: '[Zig] src/primitives/CallData/call_data.zig'
+source: 'src/primitives/CallData/call_data.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/CallData/call_data.zig
+
+### from - hex with prefix
+
+```zig
+test "from - hex with prefix" {
+    const allocator = std.testing.allocator;
+    var calldata = try from(allocator, "0xa9059cbb");
+    defer calldata.deinit();
+    try std.testing.expectEqual(@as(usize, 4), calldata.len());
+}
+```
+
+### from - hex without prefix
+
+```zig
+test "from - hex without prefix" {
+    const allocator = std.testing.allocator;
+    var calldata = try from(allocator, "a9059cbb");
+    defer calldata.deinit();
+    try std.testing.expectEqual(@as(usize, 4), calldata.len());
+}
+```
+
+### from - raw bytes
+
+```zig
+test "from - raw bytes" {
+    const allocator = std.testing.allocator;
+    const bytes = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    var calldata = try from(allocator, &bytes);
+    defer calldata.deinit();
+    try std.testing.expectEqual(@as(usize, 4), calldata.len());
+}
+```
+
+### fromBytes - valid calldata
+
+```zig
+test "fromBytes - valid calldata" {
+    const allocator = std.testing.allocator;
+    const bytes = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb } ++ [_]u8{0} ** 64;
+    var calldata = try fromBytes(allocator, &bytes);
+    defer calldata.deinit();
+
+    try std.testing.expectEqual(@as(usize, 68), calldata.len());
+    try std.testing.expectEqual(@as(u8, 0xa9), calldata.bytes()[0]);
+}
+```
+
+### fromBytes - minimum size
+
+```zig
+test "fromBytes - minimum size" {
+    const allocator = std.testing.allocator;
+    const bytes = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    var calldata = try fromBytes(allocator, &bytes);
+    defer calldata.deinit();
+
+    try std.testing.expectEqual(SELECTOR_SIZE, calldata.len());
+}
+```
+
+### fromBytes - too short
+
+```zig
+test "fromBytes - too short" {
+    const allocator = std.testing.allocator;
+    const bytes = [_]u8{ 0xa9, 0x05, 0x9c };
+    try std.testing.expectError(Error.InvalidCallDataLength, fromBytes(allocator, &bytes));
+}
+```
+
+### fromHex - with 0x prefix
+
+```zig
+test "fromHex - with 0x prefix" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 64);
+    defer calldata.deinit();
+
+    try std.testing.expectEqual(@as(usize, 68), calldata.len());
+    try std.testing.expectEqual(@as(u8, 0xa9), calldata.bytes()[0]);
+}
+```
+
+### fromHex - without 0x prefix
+
+```zig
+test "fromHex - without 0x prefix" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "a9059cbb" ++ "00" ** 64);
+    defer calldata.deinit();
+
+    try std.testing.expectEqual(@as(usize, 68), calldata.len());
+}
+```
+
+### fromHex - minimum size
+
+```zig
+test "fromHex - minimum size" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb");
+    defer calldata.deinit();
+
+    try std.testing.expectEqual(SELECTOR_SIZE, calldata.len());
+}
+```
+
+### fromHex - too short
+
+```zig
+test "fromHex - too short" {
+    const allocator = std.testing.allocator;
+    try std.testing.expectError(Error.InvalidCallDataLength, fromHex(allocator, "0xa9059c"));
+}
+```
+
+### fromHex - invalid hex
+
+```zig
+test "fromHex - invalid hex" {
+    const allocator = std.testing.allocator;
+    try std.testing.expectError(Error.InvalidHexCharacter, fromHex(allocator, "0xzzzzzzzz"));
+}
+```
+
+### toHex - basic
+
+```zig
+test "toHex - basic" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb");
+    defer calldata.deinit();
+
+    const hex = try toHex(&calldata, allocator);
+    defer allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0xa9059cbb", hex);
+}
+```
+
+### toBytes - returns slice
+
+```zig
+test "toBytes - returns slice" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb");
+    defer calldata.deinit();
+
+    const bytes = toBytes(&calldata);
+    try std.testing.expectEqual(SELECTOR_SIZE, bytes.len);
+    try std.testing.expectEqual(@as(u8, 0xa9), bytes[0]);
+}
+```
+
+### getSelector - basic
+
+```zig
+test "getSelector - basic" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 64);
+    defer calldata.deinit();
+
+    const selector = getSelector(&calldata);
+    try std.testing.expectEqual(@as(u8, 0xa9), selector[0]);
+    try std.testing.expectEqual(@as(u8, 0x05), selector[1]);
+    try std.testing.expectEqual(@as(u8, 0x9c), selector[2]);
+    try std.testing.expectEqual(@as(u8, 0xbb), selector[3]);
+}
+```
+
+### hasSelector - matching
+
+```zig
+test "hasSelector - matching" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb");
+    defer calldata.deinit();
+
+    try std.testing.expect(hasSelector(&calldata, .{ 0xa9, 0x05, 0x9c, 0xbb }));
+}
+```
+
+### hasSelector - not matching
+
+```zig
+test "hasSelector - not matching" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb");
+    defer calldata.deinit();
+
+    try std.testing.expect(!hasSelector(&calldata, .{ 0x00, 0x00, 0x00, 0x00 }));
+}
+```
+
+### computeSelector - transfer
+
+```zig
+test "computeSelector - transfer" {
+    // transfer(address,uint256) selector = 0xa9059cbb
+    const selector = computeSelector("transfer(address,uint256)");
+    try std.testing.expectEqual(@as(u8, 0xa9), selector[0]);
+    try std.testing.expectEqual(@as(u8, 0x05), selector[1]);
+    try std.testing.expectEqual(@as(u8, 0x9c), selector[2]);
+    try std.testing.expectEqual(@as(u8, 0xbb), selector[3]);
+}
+```
+
+### computeSelector - approve
+
+```zig
+test "computeSelector - approve" {
+    // approve(address,uint256) selector = 0x095ea7b3
+    const selector = computeSelector("approve(address,uint256)");
+    try std.testing.expectEqual(@as(u8, 0x09), selector[0]);
+    try std.testing.expectEqual(@as(u8, 0x5e), selector[1]);
+    try std.testing.expectEqual(@as(u8, 0xa7), selector[2]);
+    try std.testing.expectEqual(@as(u8, 0xb3), selector[3]);
+}
+```
+
+### computeSelector - balanceOf
+
+```zig
+test "computeSelector - balanceOf" {
+    // balanceOf(address) selector = 0x70a08231
+    const selector = computeSelector("balanceOf(address)");
+    try std.testing.expectEqual(@as(u8, 0x70), selector[0]);
+    try std.testing.expectEqual(@as(u8, 0xa0), selector[1]);
+    try std.testing.expectEqual(@as(u8, 0x82), selector[2]);
+    try std.testing.expectEqual(@as(u8, 0x31), selector[3]);
+}
+```
+
+### equals - identical
+
+```zig
+test "equals - identical" {
+    const allocator = std.testing.allocator;
+    var calldata1 = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 64);
+    defer calldata1.deinit();
+    var calldata2 = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 64);
+    defer calldata2.deinit();
+
+    try std.testing.expect(equals(&calldata1, &calldata2));
+}
+```
+
+### equals - different
+
+```zig
+test "equals - different" {
+    const allocator = std.testing.allocator;
+    var calldata1 = try fromHex(allocator, "0xa9059cbb");
+    defer calldata1.deinit();
+    var calldata2 = try fromHex(allocator, "0x095ea7b3");
+    defer calldata2.deinit();
+
+    try std.testing.expect(!equals(&calldata1, &calldata2));
+}
+```
+
+### equals - different lengths
+
+```zig
+test "equals - different lengths" {
+    const allocator = std.testing.allocator;
+    var calldata1 = try fromHex(allocator, "0xa9059cbb");
+    defer calldata1.deinit();
+    var calldata2 = try fromHex(allocator, "0xa9059cbb00000000");
+    defer calldata2.deinit();
+
+    try std.testing.expect(!equals(&calldata1, &calldata2));
+}
+```
+
+### getParams - with params
+
+```zig
+test "getParams - with params" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 64);
+    defer calldata.deinit();
+
+    const params = getParams(&calldata);
+    try std.testing.expectEqual(@as(usize, 64), params.len);
+}
+```
+
+### getParams - no params
+
+```zig
+test "getParams - no params" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb");
+    defer calldata.deinit();
+
+    const params = getParams(&calldata);
+    try std.testing.expectEqual(@as(usize, 0), params.len);
+}
+```
+
+### isValidHex - valid with 0x
+
+```zig
+test "isValidHex - valid with 0x" {
+    try std.testing.expect(isValidHex("0xa9059cbb"));
+}
+```
+
+### isValidHex - valid without 0x
+
+```zig
+test "isValidHex - valid without 0x" {
+    try std.testing.expect(isValidHex("a9059cbb"));
+}
+```
+
+### isValidHex - too short
+
+```zig
+test "isValidHex - too short" {
+    try std.testing.expect(!isValidHex("0xa905"));
+}
+```
+
+### isValidHex - odd length
+
+```zig
+test "isValidHex - odd length" {
+    try std.testing.expect(!isValidHex("0xa9059cb"));
+}
+```
+
+### isValidHex - invalid chars
+
+```zig
+test "isValidHex - invalid chars" {
+    try std.testing.expect(!isValidHex("0xzzzzzzzz"));
+}
+```
+
+### clone - creates independent copy
+
+```zig
+test "clone - creates independent copy" {
+    const allocator = std.testing.allocator;
+    var original = try fromHex(allocator, "0xa9059cbb");
+    defer original.deinit();
+
+    var copy = try clone(allocator, &original);
+    defer copy.deinit();
+
+    try std.testing.expect(equals(&original, &copy));
+    try std.testing.expect(original.data.ptr != copy.data.ptr);
+}
+```
+
+### getArgs - with args
+
+```zig
+test "getArgs - with args" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 32);
+    defer calldata.deinit();
+
+    const args = getArgs(&calldata);
+    try std.testing.expectEqual(@as(usize, 32), args.len);
+}
+```
+
+### getArgs - no args
+
+```zig
+test "getArgs - no args" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb");
+    defer calldata.deinit();
+
+    const args = getArgs(&calldata);
+    try std.testing.expectEqual(@as(usize, 0), args.len);
+}
+```
+
+### isEmpty - true for selector only
+
+```zig
+test "isEmpty - true for selector only" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb");
+    defer calldata.deinit();
+
+    try std.testing.expect(isEmpty(&calldata));
+}
+```
+
+### isEmpty - false with params
+
+```zig
+test "isEmpty - false with params" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb00000000");
+    defer calldata.deinit();
+
+    try std.testing.expect(!isEmpty(&calldata));
+}
+```
+
+### slice - valid range
+
+```zig
+test "slice - valid range" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 32);
+    defer calldata.deinit();
+
+    const s = slice(&calldata, 0, 4);
+    try std.testing.expectEqual(@as(usize, 4), s.len);
+    try std.testing.expectEqual(@as(u8, 0xa9), s[0]);
+}
+```
+
+### slice - out of bounds clamped
+
+```zig
+test "slice - out of bounds clamped" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb");
+    defer calldata.deinit();
+
+    const s = slice(&calldata, 0, 100);
+    try std.testing.expectEqual(@as(usize, 4), s.len);
+}
+```
+
+### slice - start beyond end
+
+```zig
+test "slice - start beyond end" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb");
+    defer calldata.deinit();
+
+    const s = slice(&calldata, 10, 20);
+    try std.testing.expectEqual(@as(usize, 0), s.len);
+}
+```
+
+### concat - two calldatas
+
+```zig
+test "concat - two calldatas" {
+    const allocator = std.testing.allocator;
+    var calldata1 = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 32);
+    defer calldata1.deinit();
+    var calldata2 = try fromHex(allocator, "0x095ea7b3" ++ "11" ** 32);
+    defer calldata2.deinit();
+
+    var result = try concat(allocator, &calldata1, &calldata2);
+    defer result.deinit();
+
+    // First selector + first params + second params
+    try std.testing.expectEqual(@as(usize, 4 + 32 + 32), result.len());
+    // Verify first selector preserved
+    try std.testing.expectEqual(@as(u8, 0xa9), result.data[0]);
+    // Verify first params
+    try std.testing.expectEqual(@as(u8, 0x00), result.data[4]);
+    // Verify second params appended
+    try std.testing.expectEqual(@as(u8, 0x11), result.data[36]);
+}
+```
+
+### concatBytes - append raw bytes
+
+```zig
+test "concatBytes - append raw bytes" {
+    const allocator = std.testing.allocator;
+    var calldata = try fromHex(allocator, "0xa9059cbb");
+    defer calldata.deinit();
+
+    const extra = [_]u8{ 0x00, 0x11, 0x22, 0x33 };
+    var result = try concatBytes(allocator, &calldata, &extra);
+    defer result.deinit();
+
+    try std.testing.expectEqual(@as(usize, 8), result.len());
+    try std.testing.expectEqual(@as(u8, 0xa9), result.data[0]);
+    try std.testing.expectEqual(@as(u8, 0x00), result.data[4]);
+}
+```

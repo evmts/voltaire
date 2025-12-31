@@ -1,0 +1,286 @@
+---
+title: '[Zig] src/primitives/Selector/Selector.zig'
+source: 'src/primitives/Selector/Selector.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Selector/Selector.zig
+
+### fromSignature - transfer
+
+```zig
+test "fromSignature - transfer" {
+    const sel = fromSignature("transfer(address,uint256)");
+    const expected = [4]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    try std.testing.expectEqual(expected, sel);
+}
+```
+
+### fromSignature - approve
+
+```zig
+test "fromSignature - approve" {
+    const sel = fromSignature("approve(address,uint256)");
+    const expected = [4]u8{ 0x09, 0x5e, 0xa7, 0xb3 };
+    try std.testing.expectEqual(expected, sel);
+}
+```
+
+### fromSignature - balanceOf
+
+```zig
+test "fromSignature - balanceOf" {
+    const sel = fromSignature("balanceOf(address)");
+    const expected = [4]u8{ 0x70, 0xa0, 0x82, 0x31 };
+    try std.testing.expectEqual(expected, sel);
+}
+```
+
+### fromSignature - totalSupply
+
+```zig
+test "fromSignature - totalSupply" {
+    const sel = fromSignature("totalSupply()");
+    const expected = [4]u8{ 0x18, 0x16, 0x0d, 0xdd };
+    try std.testing.expectEqual(expected, sel);
+}
+```
+
+### fromSignature - swap
+
+```zig
+test "fromSignature - swap" {
+    const sel = fromSignature("swap(uint256,uint256,address,bytes)");
+    const expected = [4]u8{ 0x02, 0x2c, 0x0d, 0x9f };
+    try std.testing.expectEqual(expected, sel);
+}
+```
+
+### fromBytes - valid 4 bytes
+
+```zig
+test "fromBytes - valid 4 bytes" {
+    const bytes = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    const sel = try fromBytes(&bytes);
+    try std.testing.expectEqual(bytes, sel);
+}
+```
+
+### fromBytes - invalid length
+
+```zig
+test "fromBytes - invalid length" {
+    const bytes = [_]u8{ 0xa9, 0x05 };
+    try std.testing.expectError(error.InvalidSelectorLength, fromBytes(&bytes));
+}
+```
+
+### fromHex - valid hex
+
+```zig
+test "fromHex - valid hex" {
+    const sel = try fromHex("0xa9059cbb");
+    const expected = [4]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    try std.testing.expectEqual(expected, sel);
+}
+```
+
+### fromHex - uppercase
+
+```zig
+test "fromHex - uppercase" {
+    const sel = try fromHex("0xA9059CBB");
+    const expected = [4]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    try std.testing.expectEqual(expected, sel);
+}
+```
+
+### fromHex - missing prefix
+
+```zig
+test "fromHex - missing prefix" {
+    try std.testing.expectError(error.InvalidHexFormat, fromHex("a9059cbb"));
+}
+```
+
+### fromHex - invalid length
+
+```zig
+test "fromHex - invalid length" {
+    try std.testing.expectError(error.InvalidSelectorHexLength, fromHex("0xa9"));
+}
+```
+
+### fromHex - invalid chars
+
+```zig
+test "fromHex - invalid chars" {
+    try std.testing.expectError(error.InvalidHexCharacter, fromHex("0xa905ggbb"));
+}
+```
+
+### from - Selector passthrough
+
+```zig
+test "from - Selector passthrough" {
+    const sel: Selector = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    const result = try from(sel);
+    try std.testing.expectEqual(sel, result);
+}
+```
+
+### from - hex string
+
+```zig
+test "from - hex string" {
+    const result = try from("0xa9059cbb");
+    const expected = [4]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    try std.testing.expectEqual(expected, result);
+}
+```
+
+### from - raw bytes
+
+```zig
+test "from - raw bytes" {
+    const bytes = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    const result = try from(bytes[0..]);
+    try std.testing.expectEqual(bytes, result);
+}
+```
+
+### toBytes - returns correct slice
+
+```zig
+test "toBytes - returns correct slice" {
+    const sel: Selector = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    const bytes = toBytes(&sel);
+    try std.testing.expectEqual(@as(usize, SIZE), bytes.len);
+    try std.testing.expectEqual(@as(u8, 0xa9), bytes[0]);
+}
+```
+
+### toHex - correct format
+
+```zig
+test "toHex - correct format" {
+    const sel = [4]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    const hex = toHex(sel);
+    try std.testing.expectEqualStrings("0xa9059cbb", &hex);
+}
+```
+
+### toHex - zero selector
+
+```zig
+test "toHex - zero selector" {
+    const sel = ZERO;
+    const hex = toHex(sel);
+    try std.testing.expectEqualStrings("0x00000000", &hex);
+}
+```
+
+### equals - same selector
+
+```zig
+test "equals - same selector" {
+    const sel = fromSignature("transfer(address,uint256)");
+    try std.testing.expect(equals(sel, sel));
+}
+```
+
+### equals - identical selectors
+
+```zig
+test "equals - identical selectors" {
+    const sel1 = fromSignature("transfer(address,uint256)");
+    const sel2 = try fromHex("0xa9059cbb");
+    try std.testing.expect(equals(sel1, sel2));
+}
+```
+
+### equals - different selectors
+
+```zig
+test "equals - different selectors" {
+    const sel1 = fromSignature("transfer(address,uint256)");
+    const sel2 = fromSignature("approve(address,uint256)");
+    try std.testing.expect(!equals(sel1, sel2));
+}
+```
+
+### isZero - zero selector
+
+```zig
+test "isZero - zero selector" {
+    try std.testing.expect(isZero(ZERO));
+}
+```
+
+### isZero - non-zero selector
+
+```zig
+test "isZero - non-zero selector" {
+    const sel = fromSignature("transfer(address,uint256)");
+    try std.testing.expect(!isZero(sel));
+}
+```
+
+### isValidHex - valid
+
+```zig
+test "isValidHex - valid" {
+    try std.testing.expect(isValidHex("0xa9059cbb"));
+    try std.testing.expect(isValidHex("0xA9059CBB"));
+}
+```
+
+### isValidHex - invalid
+
+```zig
+test "isValidHex - invalid" {
+    try std.testing.expect(!isValidHex("a9059cbb")); // missing 0x
+    try std.testing.expect(!isValidHex("0xa905")); // too short
+    try std.testing.expect(!isValidHex("0xa9059cbbaa")); // too long
+    try std.testing.expect(!isValidHex("0xa905ggbb")); // invalid chars
+}
+```
+
+### clone - creates copy
+
+```zig
+test "clone - creates copy" {
+    const original = fromSignature("transfer(address,uint256)");
+    const copy = clone(original);
+    try std.testing.expect(equals(original, copy));
+}
+```
+
+### toU32 - correct conversion
+
+```zig
+test "toU32 - correct conversion" {
+    const sel = [4]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    try std.testing.expectEqual(@as(u32, 0xa9059cbb), toU32(sel));
+}
+```
+
+### fromU32 - correct conversion
+
+```zig
+test "fromU32 - correct conversion" {
+    const sel = fromU32(0xa9059cbb);
+    const expected = [4]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    try std.testing.expectEqual(expected, sel);
+}
+```
+
+### u32 round-trip
+
+```zig
+test "u32 round-trip" {
+    const original: u32 = 0xdeadbeef;
+    const sel = fromU32(original);
+    const back = toU32(sel);
+    try std.testing.expectEqual(original, back);
+}
+```

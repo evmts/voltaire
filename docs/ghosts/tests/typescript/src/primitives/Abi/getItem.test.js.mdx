@@ -1,0 +1,415 @@
+---
+title: '[TS/JS] src/primitives/Abi/getItem.test.js'
+source: 'src/primitives/Abi/getItem.test.js'
+---
+
+> Auto-generated from test file: src/primitives/Abi/getItem.test.js
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { getItem } from "./getItem.js";
+
+describe("getItem", () => {
+	/** @type {import('./Item/ItemType.js').ItemType[]} */
+	const testAbi = [
+		{
+			type: "function",
+			name: "transfer",
+			stateMutability: "nonpayable",
+			inputs: [],
+			outputs: [],
+		},
+		{
+			type: "function",
+			name: "balanceOf",
+			stateMutability: "view",
+			inputs: [],
+			outputs: [],
+		},
+		{
+			type: "event",
+			name: "Transfer",
+			inputs: [],
+		},
+		{
+			type: "event",
+			name: "Approval",
+			inputs: [],
+		},
+		{
+			type: "error",
+			name: "InsufficientBalance",
+			inputs: [],
+		},
+		{
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [],
+		},
+		{
+			type: "fallback",
+			stateMutability: "payable",
+		},
+		{
+			type: "receive",
+			stateMutability: "payable",
+		},
+	];
+
+	describe("finding by name and type", () => {
+		it("finds function by name and type", () => {
+			const item = /** @type {*} */ (getItem(testAbi, "transfer", "function"));
+			expect(item).toBeDefined();
+			expect(item.type).toBe("function");
+			expect(item.name).toBe("transfer");
+		});
+
+		it("finds event by name and type", () => {
+			const item = /** @type {*} */ (getItem(testAbi, "Transfer", "event"));
+			expect(item).toBeDefined();
+			expect(item.type).toBe("event");
+			expect(item.name).toBe("Transfer");
+		});
+
+		it("finds error by name and type", () => {
+			const item = /** @type {*} */ (
+				getItem(testAbi, "InsufficientBalance", "error")
+			);
+			expect(item).toBeDefined();
+			expect(item.type).toBe("error");
+			expect(item.name).toBe("InsufficientBalance");
+		});
+
+		it("returns undefined for wrong type", () => {
+			const item = getItem(testAbi, "transfer", "event");
+			expect(item).toBeUndefined();
+		});
+	});
+
+	describe("finding by name only", () => {
+		it("finds item by name without type filter", () => {
+			const item = /** @type {*} */ (getItem(testAbi, "transfer"));
+			expect(item).toBeDefined();
+			expect(item.name).toBe("transfer");
+		});
+
+		it("finds first matching item when type undefined", () => {
+			const item = /** @type {*} */ (getItem(testAbi, "Transfer"));
+			expect(item).toBeDefined();
+			expect(item.name).toBe("Transfer");
+			expect(item.type).toBe("event");
+		});
+
+		it("returns undefined when name not found", () => {
+			const item = getItem(testAbi, "nonExistent");
+			expect(item).toBeUndefined();
+		});
+	});
+
+	describe("multiple items with same name", () => {
+		it("finds first function with matching name", () => {
+			const item = /** @type {*} */ (getItem(testAbi, "balanceOf", "function"));
+			expect(item).toBeDefined();
+			expect(item.type).toBe("function");
+			expect(item.name).toBe("balanceOf");
+		});
+
+		it("distinguishes between function and event with same name", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
+			const abi = [
+				{
+					type: "function",
+					name: "Swap",
+					stateMutability: "nonpayable",
+					inputs: [],
+					outputs: [],
+				},
+				{
+					type: "event",
+					name: "Swap",
+					inputs: [],
+				},
+			];
+
+			const func = /** @type {*} */ (getItem(abi, "Swap", "function"));
+			expect(func.type).toBe("function");
+
+			const event = /** @type {*} */ (getItem(abi, "Swap", "event"));
+			expect(event.type).toBe("event");
+		});
+	});
+
+	describe("case sensitivity", () => {
+		it("is case sensitive for names", () => {
+			const item = getItem(testAbi, "TRANSFER");
+			expect(item).toBeUndefined();
+		});
+
+		it("matches exact case", () => {
+			const item = /** @type {*} */ (getItem(testAbi, "transfer"));
+			expect(item).toBeDefined();
+			expect(item.name).toBe("transfer");
+		});
+	});
+
+	describe("special items without names", () => {
+		it("does not find constructor by name", () => {
+			const item = getItem(testAbi, "constructor");
+			expect(item).toBeUndefined();
+		});
+
+		it("does not find fallback by name", () => {
+			const item = getItem(testAbi, "fallback");
+			expect(item).toBeUndefined();
+		});
+
+		it("does not find receive by name", () => {
+			const item = getItem(testAbi, "receive");
+			expect(item).toBeUndefined();
+		});
+	});
+
+	describe("empty abi", () => {
+		it("returns undefined for empty abi", () => {
+			const item = getItem([], "anything");
+			expect(item).toBeUndefined();
+		});
+
+		it("returns undefined with type filter", () => {
+			const item = getItem([], "anything", "function");
+			expect(item).toBeUndefined();
+		});
+	});
+
+	describe("finding all types", () => {
+		it("finds function", () => {
+			const item = /** @type {*} */ (getItem(testAbi, "transfer", "function"));
+			expect(item.type).toBe("function");
+		});
+
+		it("finds event", () => {
+			const item = /** @type {*} */ (getItem(testAbi, "Transfer", "event"));
+			expect(item.type).toBe("event");
+		});
+
+		it("finds error", () => {
+			const item = /** @type {*} */ (
+				getItem(testAbi, "InsufficientBalance", "error")
+			);
+			expect(item.type).toBe("error");
+		});
+
+		it("does not find constructor by name", () => {
+			const item = getItem(testAbi, "anyname", "constructor");
+			expect(item).toBeUndefined();
+		});
+	});
+
+	describe("overloaded functions", () => {
+		it("finds first overload", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
+			const abi = [
+				{
+					type: "function",
+					name: "transfer",
+					stateMutability: "nonpayable",
+					inputs: [{ type: "address" }],
+					outputs: [],
+				},
+				{
+					type: "function",
+					name: "transfer",
+					stateMutability: "nonpayable",
+					inputs: [{ type: "address" }, { type: "uint256" }],
+					outputs: [],
+				},
+			];
+
+			const item = /** @type {*} */ (getItem(abi, "transfer", "function"));
+			expect(item).toBeDefined();
+			expect(item.inputs.length).toBe(1);
+		});
+	});
+
+	describe("real-world ABIs", () => {
+		it("finds ERC20 transfer", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
+			const abi = [
+				{
+					type: "function",
+					name: "transfer",
+					stateMutability: "nonpayable",
+					inputs: [
+						{ type: "address", name: "to" },
+						{ type: "uint256", name: "amount" },
+					],
+					outputs: [{ type: "bool" }],
+				},
+				{
+					type: "function",
+					name: "balanceOf",
+					stateMutability: "view",
+					inputs: [{ type: "address", name: "account" }],
+					outputs: [{ type: "uint256" }],
+				},
+				{
+					type: "function",
+					name: "approve",
+					stateMutability: "nonpayable",
+					inputs: [
+						{ type: "address", name: "spender" },
+						{ type: "uint256", name: "amount" },
+					],
+					outputs: [{ type: "bool" }],
+				},
+			];
+
+			const item = /** @type {*} */ (getItem(abi, "transfer", "function"));
+			expect(item).toBeDefined();
+			expect(item.name).toBe("transfer");
+			expect(item.inputs.length).toBe(2);
+		});
+
+		it("finds ERC20 Transfer event", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
+			const abi = [
+				{
+					type: "event",
+					name: "Transfer",
+					inputs: [
+						{ type: "address", name: "from", indexed: true },
+						{ type: "address", name: "to", indexed: true },
+						{ type: "uint256", name: "value", indexed: false },
+					],
+				},
+				{
+					type: "event",
+					name: "Approval",
+					inputs: [
+						{ type: "address", name: "owner", indexed: true },
+						{ type: "address", name: "spender", indexed: true },
+						{ type: "uint256", name: "value", indexed: false },
+					],
+				},
+			];
+
+			const item = /** @type {*} */ (getItem(abi, "Transfer", "event"));
+			expect(item).toBeDefined();
+			expect(item.name).toBe("Transfer");
+			expect(item.inputs.length).toBe(3);
+		});
+
+		it("finds custom error", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
+			const abi = [
+				{
+					type: "error",
+					name: "InsufficientBalance",
+					inputs: [
+						{ type: "uint256", name: "available" },
+						{ type: "uint256", name: "required" },
+					],
+				},
+				{
+					type: "error",
+					name: "Unauthorized",
+					inputs: [],
+				},
+			];
+
+			const item = /** @type {*} */ (
+				getItem(abi, "InsufficientBalance", "error")
+			);
+			expect(item).toBeDefined();
+			expect(item.name).toBe("InsufficientBalance");
+			expect(item.inputs.length).toBe(2);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("handles abi with single item", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
+			const abi = [
+				{
+					type: "function",
+					name: "test",
+					stateMutability: "pure",
+					inputs: [],
+					outputs: [],
+				},
+			];
+
+			const item = getItem(abi, "test");
+			expect(item).toBeDefined();
+		});
+
+		it("handles abi with many items", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
+			const abi = Array.from({ length: 100 }, (_, i) => ({
+				type: /** @type {const} */ ("function"),
+				name: `func${i}`,
+				stateMutability: /** @type {const} */ ("pure"),
+				inputs: /** @type {const} */ ([]),
+				outputs: /** @type {const} */ ([]),
+			}));
+
+			const item = /** @type {*} */ (getItem(abi, "func50"));
+			expect(item).toBeDefined();
+			expect(item.name).toBe("func50");
+		});
+
+		it("returns first match in order", () => {
+			/** @type {import('./Item/ItemType.js').ItemType[]} */
+			const abi = [
+				{
+					type: "event",
+					name: "Test",
+					inputs: [],
+				},
+				{
+					type: "function",
+					name: "Test",
+					stateMutability: "pure",
+					inputs: [],
+					outputs: [],
+				},
+			];
+
+			const item = /** @type {*} */ (getItem(abi, "Test"));
+			expect(item.type).toBe("event");
+		});
+	});
+
+	describe("undefined type parameter", () => {
+		it("treats undefined as no filter", () => {
+			const item1 = getItem(testAbi, "transfer", undefined);
+			const item2 = getItem(testAbi, "transfer");
+			expect(item1).toEqual(item2);
+		});
+
+		it("finds any type when undefined", () => {
+			const item = /** @type {*} */ (getItem(testAbi, "Transfer", undefined));
+			expect(item).toBeDefined();
+			expect(item.type).toBe("event");
+		});
+	});
+
+	describe("name matching", () => {
+		it("requires exact name match", () => {
+			const item = getItem(testAbi, "transfe");
+			expect(item).toBeUndefined();
+		});
+
+		it("does not do partial matching", () => {
+			const item = getItem(testAbi, "trans");
+			expect(item).toBeUndefined();
+		});
+
+		it("does not match by prefix", () => {
+			const item = getItem(testAbi, "tran");
+			expect(item).toBeUndefined();
+		});
+	});
+});
+
+```

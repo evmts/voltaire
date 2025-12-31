@@ -1,0 +1,174 @@
+---
+title: '[Zig] src/primitives/PrivateKey/PrivateKey.zig'
+source: 'src/primitives/PrivateKey/PrivateKey.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/PrivateKey/PrivateKey.zig
+
+### PrivateKey.fromHex - valid key
+
+```zig
+test "PrivateKey.fromHex - valid key" {
+    const allocator = std.testing.allocator;
+    const hex = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+
+    const pk = try fromHex(allocator, hex);
+    defer allocator.free(pk);
+
+    try std.testing.expectEqual(@as(usize, 32), pk.len);
+    try std.testing.expectEqual(@as(u8, 0x12), pk[0]);
+    try std.testing.expectEqual(@as(u8, 0xef), pk[31]);
+}
+```
+
+### PrivateKey.fromHex - without 0x prefix
+
+```zig
+test "PrivateKey.fromHex - without 0x prefix" {
+    const allocator = std.testing.allocator;
+    const hex = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+
+    const pk = try fromHex(allocator, hex);
+    defer allocator.free(pk);
+
+    try std.testing.expectEqual(@as(usize, 32), pk.len);
+    try std.testing.expectEqual(@as(u8, 0x12), pk[0]);
+}
+```
+
+### PrivateKey.fromHex - invalid length
+
+```zig
+test "PrivateKey.fromHex - invalid length" {
+    const allocator = std.testing.allocator;
+    const hex = "0x1234";
+
+    const result = fromHex(allocator, hex);
+    try std.testing.expectError(PrivateKeyError.InvalidLength, result);
+}
+```
+
+### PrivateKey.fromHex - invalid hex chars
+
+```zig
+test "PrivateKey.fromHex - invalid hex chars" {
+    const allocator = std.testing.allocator;
+    const hex = "0xGGGG567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+
+    const result = fromHex(allocator, hex);
+    try std.testing.expectError(PrivateKeyError.InvalidHexFormat, result);
+}
+```
+
+### PrivateKey.fromBytes - valid bytes
+
+```zig
+test "PrivateKey.fromBytes - valid bytes" {
+    const allocator = std.testing.allocator;
+    const bytes = [_]u8{0x12} ** 32;
+
+    const pk = try fromBytes(allocator, &bytes);
+    defer allocator.free(pk);
+
+    try std.testing.expectEqual(@as(usize, 32), pk.len);
+    try std.testing.expectEqual(@as(u8, 0x12), pk[0]);
+}
+```
+
+### PrivateKey.fromBytes - invalid length
+
+```zig
+test "PrivateKey.fromBytes - invalid length" {
+    const allocator = std.testing.allocator;
+    const bytes = [_]u8{0x12} ** 16; // Only 16 bytes
+
+    const result = fromBytes(allocator, &bytes);
+    try std.testing.expectError(PrivateKeyError.InvalidLength, result);
+}
+```
+
+### PrivateKey.toHex - valid conversion
+
+```zig
+test "PrivateKey.toHex - valid conversion" {
+    const allocator = std.testing.allocator;
+    const pk = [_]u8{ 0x12, 0x34 } ++ [_]u8{0} ** 30;
+
+    const hex = try toHex(allocator, &pk);
+    defer allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0x12340000000000000000000000000000000000000000000000000000000000000000", hex);
+}
+```
+
+### PrivateKey.toHex - roundtrip
+
+```zig
+test "PrivateKey.toHex - roundtrip" {
+    const allocator = std.testing.allocator;
+    const original_hex = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+
+    const pk = try fromHex(allocator, original_hex);
+    defer allocator.free(pk);
+
+    const result_hex = try toHex(allocator, pk);
+    defer allocator.free(result_hex);
+
+    try std.testing.expectEqualStrings(original_hex, result_hex);
+}
+```
+
+### PrivateKey.toPublicKey - valid derivation
+
+```zig
+test "PrivateKey.toPublicKey - valid derivation" {
+    const allocator = std.testing.allocator;
+
+    // Use a known test vector
+    const pk_hex = "0x4c0883a69102937d6231471b5dbb1018683788d1fc101a4e4b2e6ca7e1b37b1f";
+    const pk = try fromHex(allocator, pk_hex);
+    defer allocator.free(pk);
+
+    const pubkey = try toPublicKey(allocator, pk);
+    defer allocator.free(pubkey);
+
+    try std.testing.expectEqual(@as(usize, 64), pubkey.len);
+}
+```
+
+### PrivateKey.toAddress - valid derivation
+
+```zig
+test "PrivateKey.toAddress - valid derivation" {
+    const allocator = std.testing.allocator;
+
+    // Use a known test vector
+    const pk_hex = "0x4c0883a69102937d6231471b5dbb1018683788d1fc101a4e4b2e6ca7e1b37b1f";
+    const pk = try fromHex(allocator, pk_hex);
+    defer allocator.free(pk);
+
+    const addr = try toAddress(allocator, pk);
+    defer allocator.free(addr);
+
+    try std.testing.expectEqual(@as(usize, 20), addr.len);
+}
+```
+
+### PrivateKey.sign - valid signature
+
+```zig
+test "PrivateKey.sign - valid signature" {
+    const allocator = std.testing.allocator;
+
+    const pk_hex = "0x4c0883a69102937d6231471b5dbb1018683788d1fc101a4e4b2e6ca7e1b37b1f";
+    const pk = try fromHex(allocator, pk_hex);
+    defer allocator.free(pk);
+
+    const hash = [_]u8{0xAB} ** 32;
+
+    const sig = try sign(allocator, pk, &hash);
+    defer allocator.free(sig);
+
+    try std.testing.expectEqual(@as(usize, 65), sig.len);
+}
+```

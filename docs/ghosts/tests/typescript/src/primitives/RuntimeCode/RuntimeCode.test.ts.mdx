@@ -1,0 +1,66 @@
+---
+title: '[TS/JS] src/primitives/RuntimeCode/RuntimeCode.test.ts'
+source: 'src/primitives/RuntimeCode/RuntimeCode.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/RuntimeCode/RuntimeCode.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as RuntimeCode from "./index.js";
+
+describe("RuntimeCode", () => {
+	describe("from", () => {
+		it("creates from hex string", () => {
+			const code = RuntimeCode.from("0x6001600155");
+			expect(code).toBeInstanceOf(Uint8Array);
+			expect(code.length).toBe(5);
+		});
+
+		it("creates from Uint8Array", () => {
+			const bytes = new Uint8Array([0x60, 0x01, 0x60, 0x01, 0x55]);
+			const code = RuntimeCode.from(bytes);
+			expect(code).toBeInstanceOf(Uint8Array);
+			expect(code.length).toBe(5);
+		});
+	});
+
+	describe("fromHex", () => {
+		it("creates from hex string", () => {
+			const code = RuntimeCode.fromHex("0x6001600155");
+			expect(code).toBeInstanceOf(Uint8Array);
+			expect(code[0]).toBe(0x60);
+			expect(code[1]).toBe(0x01);
+		});
+	});
+
+	describe("toHex", () => {
+		it("converts to hex string", () => {
+			const code = RuntimeCode.from("0x6001600155");
+			const hex = RuntimeCode.toHex(code);
+			expect(hex).toBe("0x6001600155");
+		});
+	});
+
+	describe("equals", () => {
+		it("returns true for equal bytecode", () => {
+			const code1 = RuntimeCode.from("0x6001");
+			const code2 = RuntimeCode.from("0x6001");
+			expect(RuntimeCode.equals(code1, code2)).toBe(true);
+		});
+
+		it("returns false for different bytecode", () => {
+			const code1 = RuntimeCode.from("0x6001");
+			const code2 = RuntimeCode.from("0x6002");
+			expect(RuntimeCode.equals(code1, code2)).toBe(false);
+		});
+
+		it("returns false for different lengths", () => {
+			const code1 = RuntimeCode.from("0x6001");
+			const code2 = RuntimeCode.from("0x600155");
+			expect(RuntimeCode.equals(code1, code2)).toBe(false);
+		});
+	});
+});
+
+```

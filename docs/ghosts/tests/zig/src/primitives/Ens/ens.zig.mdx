@@ -1,0 +1,210 @@
+---
+title: '[Zig] src/primitives/Ens/ens.zig'
+source: 'src/primitives/Ens/ens.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Ens/ens.zig
+
+### normalize basic ENS name
+
+```zig
+test "normalize basic ENS name" {
+    const allocator = std.testing.allocator;
+
+    const result = try normalize(allocator, "Nick.ETH");
+    defer allocator.free(result);
+
+    try std.testing.expectEqualStrings("nick.eth", result);
+}
+```
+
+### normalize preserves lowercase
+
+```zig
+test "normalize preserves lowercase" {
+    const allocator = std.testing.allocator;
+
+    const result = try normalize(allocator, "vitalik.eth");
+    defer allocator.free(result);
+
+    try std.testing.expectEqualStrings("vitalik.eth", result);
+}
+```
+
+### beautify preserves emoji
+
+```zig
+test "beautify preserves emoji" {
+    const allocator = std.testing.allocator;
+
+    const result = try beautify(allocator, "💩.eth");
+    defer allocator.free(result);
+
+    // Should normalize but keep emoji
+    try std.testing.expect(result.len > 0);
+}
+```
+
+### from creates ENS name
+
+```zig
+test "from creates ENS name" {
+    const name = from("vitalik.eth");
+    try std.testing.expectEqualStrings("vitalik.eth", name);
+}
+```
+
+### is returns true for non-empty strings
+
+```zig
+test "is returns true for non-empty strings" {
+    try std.testing.expect(is("vitalik.eth"));
+    try std.testing.expect(is("a"));
+}
+```
+
+### is returns false for empty strings
+
+```zig
+test "is returns false for empty strings" {
+    try std.testing.expect(!is(""));
+}
+```
+
+### toString converts ENS to string
+
+```zig
+test "toString converts ENS to string" {
+    const name = from("vitalik.eth");
+    const str = toString(name);
+    try std.testing.expectEqualStrings("vitalik.eth", str);
+}
+```
+
+### namehash empty name
+
+```zig
+test "namehash empty name" {
+    const allocator = std.testing.allocator;
+
+    const result = try namehash(allocator, "");
+    defer allocator.free(result);
+
+    // Empty name should return 32 zero bytes
+    const expected = [_]u8{0} ** 32;
+    try std.testing.expectEqualSlices(u8, &expected, result);
+}
+```
+
+### namehash vitalik.eth
+
+```zig
+test "namehash vitalik.eth" {
+    const allocator = std.testing.allocator;
+
+    const result = try namehash(allocator, "vitalik.eth");
+    defer allocator.free(result);
+
+    // Expected: 0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835
+    const expected = [_]u8{
+        0xee, 0x6c, 0x45, 0x22, 0xaa, 0xb0, 0x00, 0x3e,
+        0x8d, 0x14, 0xcd, 0x40, 0xa6, 0xaf, 0x43, 0x90,
+        0x55, 0xfd, 0x25, 0x77, 0x95, 0x11, 0x48, 0xc1,
+        0x4b, 0x6c, 0xea, 0x9a, 0x53, 0x47, 0x58, 0x35,
+    };
+    try std.testing.expectEqualSlices(u8, &expected, result);
+}
+```
+
+### namehash subdomain
+
+```zig
+test "namehash subdomain" {
+    const allocator = std.testing.allocator;
+
+    const result = try namehash(allocator, "sub.vitalik.eth");
+    defer allocator.free(result);
+
+    // Should produce 32 bytes
+    try std.testing.expectEqual(@as(usize, 32), result.len);
+}
+```
+
+### labelhash vitalik
+
+```zig
+test "labelhash vitalik" {
+    const allocator = std.testing.allocator;
+
+    const result = try labelhash(allocator, "vitalik");
+    defer allocator.free(result);
+
+    // Expected: 0xaf2caa1c2ca1d027f1ac823b529d0a67cd144264b2789fa2ea4d63a67c7103cc
+    const expected = [_]u8{
+        0xaf, 0x2c, 0xaa, 0x1c, 0x2c, 0xa1, 0xd0, 0x27,
+        0xf1, 0xac, 0x82, 0x3b, 0x52, 0x9d, 0x0a, 0x67,
+        0xcd, 0x14, 0x42, 0x64, 0xb2, 0x78, 0x9f, 0xa2,
+        0xea, 0x4d, 0x63, 0xa6, 0x7c, 0x71, 0x03, 0xcc,
+    };
+    try std.testing.expectEqualSlices(u8, &expected, result);
+}
+```
+
+### labelhash eth
+
+```zig
+test "labelhash eth" {
+    const allocator = std.testing.allocator;
+
+    const result = try labelhash(allocator, "eth");
+    defer allocator.free(result);
+
+    // Should produce 32 bytes
+    try std.testing.expectEqual(@as(usize, 32), result.len);
+}
+```
+
+### isValid returns true for valid names
+
+```zig
+test "isValid returns true for valid names" {
+    const allocator = std.testing.allocator;
+
+    try std.testing.expect(isValid(allocator, "vitalik.eth"));
+    try std.testing.expect(isValid(allocator, "sub.domain.eth"));
+    try std.testing.expect(isValid(allocator, "test.eth"));
+}
+```
+
+### isValid returns false for invalid names
+
+```zig
+test "isValid returns false for invalid names" {
+    const allocator = std.testing.allocator;
+
+    try std.testing.expect(!isValid(allocator, ""));
+}
+```
+
+### validate succeeds for valid names
+
+```zig
+test "validate succeeds for valid names" {
+    const allocator = std.testing.allocator;
+
+    try validate(allocator, "vitalik.eth");
+    try validate(allocator, "sub.domain.eth");
+    try validate(allocator, "test.eth");
+}
+```
+
+### validate fails for invalid names
+
+```zig
+test "validate fails for invalid names" {
+    const allocator = std.testing.allocator;
+
+    const result = validate(allocator, "");
+    try std.testing.expectError(EnsError.DisallowedCharacter, result);
+}
+```

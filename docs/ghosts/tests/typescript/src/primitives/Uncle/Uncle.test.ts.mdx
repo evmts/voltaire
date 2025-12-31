@@ -1,0 +1,69 @@
+---
+title: '[TS/JS] src/primitives/Uncle/Uncle.test.ts'
+source: 'src/primitives/Uncle/Uncle.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Uncle/Uncle.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as Uncle from "./index.js";
+
+describe("Uncle", () => {
+	const validUncle = {
+		parentHash: new Uint8Array(32).fill(0x12),
+		ommersHash: new Uint8Array(32).fill(0x34),
+		beneficiary: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+		stateRoot: new Uint8Array(32).fill(0x56),
+		transactionsRoot: new Uint8Array(32).fill(0x78),
+		receiptsRoot: new Uint8Array(32).fill(0x9a),
+		logsBloom: new Uint8Array(256),
+		difficulty: 0n,
+		number: 12345n,
+		gasLimit: 30000000n,
+		gasUsed: 21000n,
+		timestamp: 1234567890n,
+		extraData: new Uint8Array(0),
+		mixHash: new Uint8Array(32).fill(0xbc),
+		nonce: new Uint8Array(8),
+	};
+
+	describe("from", () => {
+		it("creates uncle from components", () => {
+			const uncle = Uncle.from(validUncle);
+
+			expect(uncle.parentHash).toHaveLength(32);
+			expect(uncle.ommersHash).toHaveLength(32);
+			expect(uncle.beneficiary).toHaveLength(20);
+			expect(uncle.stateRoot).toHaveLength(32);
+			expect(uncle.transactionsRoot).toHaveLength(32);
+			expect(uncle.receiptsRoot).toHaveLength(32);
+			expect(uncle.logsBloom).toHaveLength(256);
+			expect(uncle.difficulty).toBe(0n);
+			expect(uncle.number).toBe(12345n);
+			expect(uncle.gasLimit).toBe(30000000n);
+			expect(uncle.gasUsed).toBe(21000n);
+			expect(uncle.timestamp).toBe(1234567890n);
+			expect(uncle.extraData).toHaveLength(0);
+			expect(uncle.mixHash).toHaveLength(32);
+			expect(uncle.nonce).toHaveLength(8);
+		});
+
+		it("converts number inputs", () => {
+			const uncle = Uncle.from({
+				...validUncle,
+				number: 12345,
+				gasLimit: 30000000,
+				gasUsed: 21000,
+				timestamp: 1234567890,
+			});
+
+			expect(uncle.number).toBe(12345n);
+			expect(uncle.gasLimit).toBe(30000000n);
+			expect(uncle.gasUsed).toBe(21000n);
+			expect(uncle.timestamp).toBe(1234567890n);
+		});
+	});
+});
+
+```

@@ -1,0 +1,40 @@
+---
+title: '[TS/JS] src/jsonrpc/eth/protocolVersion/eth_protocolVersion.test.ts'
+source: 'src/jsonrpc/eth/protocolVersion/eth_protocolVersion.test.ts'
+---
+
+> Auto-generated from test file: src/jsonrpc/eth/protocolVersion/eth_protocolVersion.test.ts
+
+```typescript
+import { describe, expect, test } from "vitest";
+import { ProtocolVersionRequest, method } from "./eth_protocolVersion.js";
+
+describe("eth_protocolVersion", () => {
+	describe("Request Creation", () => {
+		test("creates request with no parameters", () => {
+			const req = ProtocolVersionRequest();
+			expect(req).toEqual({
+				method: "eth_protocolVersion",
+			});
+		});
+
+		test("method constant is correct", () => {
+			expect(method).toBe("eth_protocolVersion");
+		});
+	});
+
+	describe("Request Structure", () => {
+		test("returns RequestArguments type", () => {
+			const req = ProtocolVersionRequest();
+			expect(req).toHaveProperty("method");
+			expect(req.params).toBeUndefined();
+		});
+
+		test("method matches constant", () => {
+			const req = ProtocolVersionRequest();
+			expect(req.method).toBe(method);
+		});
+	});
+});
+
+```

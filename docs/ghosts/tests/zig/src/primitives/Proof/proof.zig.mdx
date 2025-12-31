@@ -1,0 +1,547 @@
+---
+title: '[Zig] src/primitives/Proof/proof.zig'
+source: 'src/primitives/Proof/proof.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Proof/proof.zig
+
+### Proof.init - creates non-owning proof
+
+```zig
+test "Proof.init - creates non-owning proof" {
+    const value = [_]u8{ 1, 2, 3, 4 };
+    const node1 = [_]u8{0xaa} ** 32;
+    const node2 = [_]u8{0xbb} ** 32;
+    const proof_nodes = [_][]const u8{ &node1, &node2 };
+
+    const proof = Proof.init(&value, &proof_nodes);
+
+    try std.testing.expectEqual(@as(usize, 4), proof.value.len);
+    try std.testing.expectEqual(@as(usize, 2), proof.proof.len);
+    try std.testing.expectEqual(false, proof._owned);
+}
+```
+
+### Proof.from - creates owning copy
+
+```zig
+test "Proof.from - creates owning copy" {
+    const allocator = std.testing.allocator;
+
+    const value = [_]u8{ 1, 2, 3, 4 };
+    const node1 = [_]u8{0xaa} ** 32;
+    const node2 = [_]u8{0xbb} ** 32;
+    const proof_nodes = [_][]const u8{ &node1, &node2 };
+
+    const proof = try Proof.from(allocator, &value, &proof_nodes);
+    defer proof.deinit(allocator);
+
+    try std.testing.expectEqual(@as(usize, 4), proof.value.len);
+    try std.testing.expectEqual(@as(usize, 2), proof.proof.len);
+    try std.testing.expectEqual(true, proof._owned);
+}
+```
+
+### Proof.from - creates independent copy
+
+```zig
+test "Proof.from - creates independent copy" {
+    const allocator = std.testing.allocator;
+
+    var value = [_]u8{ 1, 2, 3, 4 };
+    var node1 = [_]u8{0xaa} ** 32;
+    const proof_nodes = [_][]const u8{&node1};
+
+    const proof = try Proof.from(allocator, &value, &proof_nodes);
+    defer proof.deinit(allocator);
+
+    // Modify originals
+    value[0] = 99;
+    node1[0] = 0xff;
+
+    // Proof should be unchanged
+    try std.testing.expectEqual(@as(u8, 1), proof.value[0]);
+    try std.testing.expectEqual(@as(u8, 0xaa), proof.proof[0][0]);
+}
+```
+
+### Proof.equals - identical proofs
+
+```zig
+test "Proof.equals - identical proofs" {
+    const value = [_]u8{ 1, 2, 3, 4 };
+    const node1 = [_]u8{0xaa} ** 32;
+    const proof_nodes = [_][]const u8{&node1};
+
+    const proof1 = Proof.init(&value, &proof_nodes);
+    const proof2 = Proof.init(&value, &proof_nodes);
+
+    try std.testing.expect(Proof.equals(&proof1, &proof2));
+}
+```
+
+### Proof.equals - different values
+
+```zig
+test "Proof.equals - different values" {
+    const value1 = [_]u8{ 1, 2, 3, 4 };
+    const value2 = [_]u8{ 1, 2, 3, 5 };
+    const node1 = [_]u8{0xaa} ** 32;
+    const proof_nodes = [_][]const u8{&node1};
+
+    const proof1 = Proof.init(&value1, &proof_nodes);
+    const proof2 = Proof.init(&value2, &proof_nodes);
+
+    try std.testing.expect(!Proof.equals(&proof1, &proof2));
+}
+```
+
+### Proof.equals - different proof lengths
+
+```zig
+test "Proof.equals - different proof lengths" {
+    const value = [_]u8{ 1, 2, 3, 4 };
+    const node1 = [_]u8{0xaa} ** 32;
+    const node2 = [_]u8{0xbb} ** 32;
+    const proof_nodes1 = [_][]const u8{&node1};
+    const proof_nodes2 = [_][]const u8{ &node1, &node2 };
+
+    const proof1 = Proof.init(&value, &proof_nodes1);
+    const proof2 = Proof.init(&value, &proof_nodes2);
+
+    try std.testing.expect(!Proof.equals(&proof1, &proof2));
+}
+```
+
+### Proof.equals - different proof elements
+
+```zig
+test "Proof.equals - different proof elements" {
+    const value = [_]u8{ 1, 2, 3, 4 };
+    const node1 = [_]u8{0xaa} ** 32;
+    const node2 = [_]u8{0xbb} ** 32;
+    const proof_nodes1 = [_][]const u8{&node1};
+    const proof_nodes2 = [_][]const u8{&node2};
+
+    const proof1 = Proof.init(&value, &proof_nodes1);
+    const proof2 = Proof.init(&value, &proof_nodes2);
+
+    try std.testing.expect(!Proof.equals(&proof1, &proof2));
+}
+```
+
+### Proof.equals - empty proofs
+
+```zig
+test "Proof.equals - empty proofs" {
+    const value = [_]u8{ 1, 2, 3, 4 };
+    const empty_nodes: []const []const u8 = &.{};
+
+    const proof1 = Proof.init(&value, empty_nodes);
+    const proof2 = Proof.init(&value, empty_nodes);
+
+    try std.testing.expect(Proof.equals(&proof1, &proof2));
+}
+```
+
+### Proof.isEmpty - empty proof
+
+```zig
+test "Proof.isEmpty - empty proof" {
+    const value = [_]u8{ 1, 2, 3 };
+    const empty_nodes: []const []const u8 = &.{};
+
+    const proof = Proof.init(&value, empty_nodes);
+    try std.testing.expect(proof.isEmpty());
+}
+```
+
+### Proof.isEmpty - non-empty proof
+
+```zig
+test "Proof.isEmpty - non-empty proof" {
+    const value = [_]u8{ 1, 2, 3 };
+    const node = [_]u8{0xaa} ** 32;
+    const proof_nodes = [_][]const u8{&node};
+
+    const proof = Proof.init(&value, &proof_nodes);
+    try std.testing.expect(!proof.isEmpty());
+}
+```
+
+### Proof.depth - returns correct depth
+
+```zig
+test "Proof.depth - returns correct depth" {
+    const value = [_]u8{ 1, 2, 3 };
+    const node1 = [_]u8{0xaa} ** 32;
+    const node2 = [_]u8{0xbb} ** 32;
+    const node3 = [_]u8{0xcc} ** 32;
+    const proof_nodes = [_][]const u8{ &node1, &node2, &node3 };
+
+    const proof = Proof.init(&value, &proof_nodes);
+    try std.testing.expectEqual(@as(usize, 3), proof.depth());
+}
+```
+
+### Proof.clone - creates independent copy
+
+```zig
+test "Proof.clone - creates independent copy" {
+    const allocator = std.testing.allocator;
+
+    const value = [_]u8{ 5, 6, 7, 8 };
+    const node = [_]u8{0xdd} ** 32;
+    const proof_nodes = [_][]const u8{&node};
+
+    const original = Proof.init(&value, &proof_nodes);
+    const cloned = try original.clone(allocator);
+    defer cloned.deinit(allocator);
+
+    try std.testing.expect(Proof.equals(&original, &cloned));
+    try std.testing.expectEqual(true, cloned._owned);
+}
+```
+
+### Proof.verify - empty proof with hash value equals root
+
+```zig
+test "Proof.verify - empty proof with hash value equals root" {
+    const root = [_]u8{0x11} ** 32;
+    const empty_nodes: []const []const u8 = &.{};
+
+    const proof = Proof.init(&root, empty_nodes);
+
+    try std.testing.expect(proof.verify(&root, 0));
+}
+```
+
+### Proof.verify - simple two-leaf tree
+
+```zig
+test "Proof.verify - simple two-leaf tree" {
+    // Build a simple two-leaf Merkle tree
+    const leaf0 = [_]u8{0xaa} ** 32;
+    const leaf1 = [_]u8{0xbb} ** 32;
+
+    // Root = keccak256(leaf0 || leaf1)
+    var combined: [64]u8 = undefined;
+    @memcpy(combined[0..32], &leaf0);
+    @memcpy(combined[32..64], &leaf1);
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&combined, &root);
+
+    // Proof for leaf0: sibling is leaf1, position 0
+    const sibling = [_][]const u8{&leaf1};
+    const proof0 = Proof.init(&leaf0, &sibling);
+    try std.testing.expect(proof0.verify(&root, 0));
+
+    // Proof for leaf1: sibling is leaf0, position 1
+    const sibling1 = [_][]const u8{&leaf0};
+    const proof1 = Proof.init(&leaf1, &sibling1);
+    try std.testing.expect(proof1.verify(&root, 1));
+}
+```
+
+### Proof.verify - invalid proof returns false
+
+```zig
+test "Proof.verify - invalid proof returns false" {
+    const leaf = [_]u8{0xaa} ** 32;
+    const wrong_sibling = [_]u8{0xff} ** 32;
+    const expected_root = [_]u8{0x00} ** 32;
+
+    const sibling = [_][]const u8{&wrong_sibling};
+    const proof = Proof.init(&leaf, &sibling);
+
+    try std.testing.expect(!proof.verify(&expected_root, 0));
+}
+```
+
+### Proof.computeRoot - matches verify
+
+```zig
+test "Proof.computeRoot - matches verify" {
+    const leaf0 = [_]u8{0xaa} ** 32;
+    const leaf1 = [_]u8{0xbb} ** 32;
+
+    var combined: [64]u8 = undefined;
+    @memcpy(combined[0..32], &leaf0);
+    @memcpy(combined[32..64], &leaf1);
+    var expected_root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&combined, &expected_root);
+
+    const sibling = [_][]const u8{&leaf1};
+    const proof = Proof.init(&leaf0, &sibling);
+
+    const computed = proof.computeRoot(0);
+    try std.testing.expect(std.mem.eql(u8, &computed, &expected_root));
+}
+```
+
+### Proof.from - rejects too deep proof
+
+```zig
+test "Proof.from - rejects too deep proof" {
+    const allocator = std.testing.allocator;
+    const value = [_]u8{0x01};
+
+    // Create array of 257 nodes (exceeds MAX_PROOF_DEPTH)
+    var nodes: [MAX_PROOF_DEPTH + 1][32]u8 = undefined;
+    var node_slices: [MAX_PROOF_DEPTH + 1][]const u8 = undefined;
+    for (&nodes, 0..) |*node, i| {
+        @memset(node, @as(u8, @intCast(i % 256)));
+        node_slices[i] = node;
+    }
+
+    const result = Proof.from(allocator, &value, &node_slices);
+    try std.testing.expectError(error.ProofTooDeep, result);
+}
+```
+
+### verifyMPTProof - empty proof with empty value and empty root
+
+```zig
+test "verifyMPTProof - empty proof with empty value and empty root" {
+    const allocator = std.testing.allocator;
+
+    // Empty trie root = keccak256(0x80) = keccak256(RLP of empty string)
+    const empty_rlp = [_]u8{0x80};
+    var empty_root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&empty_rlp, &empty_root);
+
+    const empty_proof: []const []const u8 = &.{};
+    const empty_value: []const u8 = &.{};
+    const key = [_]u8{0x01};
+
+    const result = try verifyMPTProof(allocator, &empty_root, &key, empty_value, empty_proof);
+    try std.testing.expect(result);
+}
+```
+
+### verifyMPTProof - empty proof with non-empty value fails
+
+```zig
+test "verifyMPTProof - empty proof with non-empty value fails" {
+    const allocator = std.testing.allocator;
+
+    const empty_rlp = [_]u8{0x80};
+    var empty_root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&empty_rlp, &empty_root);
+
+    const empty_proof: []const []const u8 = &.{};
+    const value = [_]u8{ 0x01, 0x02, 0x03 };
+    const key = [_]u8{0x01};
+
+    const result = try verifyMPTProof(allocator, &empty_root, &key, &value, empty_proof);
+    try std.testing.expect(!result);
+}
+```
+
+### verifyMPTProof - simple leaf node verification
+
+```zig
+test "verifyMPTProof - simple leaf node verification" {
+    const allocator = std.testing.allocator;
+
+    // Create a simple leaf node: RLP([encoded_path, value])
+    // For key 0x01 with value 0x1234
+    // The path nibbles are [0, 1] (from 0x01)
+    // As a leaf with even length: prefix = 0x20, path = 0x01 -> encoded as 0x2001
+    // Value = 0x1234 -> RLP = 0x821234
+    // Leaf = RLP([0x2001, 0x1234]) = RLP(["\x20\x01", "\x12\x34"])
+
+    // RLP encoding of the leaf:
+    // - "\x20\x01" (2 bytes) -> 0x82 0x20 0x01
+    // - "\x12\x34" (2 bytes) -> 0x82 0x12 0x34
+    // - List of 7 bytes total -> 0xc7 ...
+    const leaf_node = [_]u8{ 0xc5, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
+
+    // Compute root hash (hash of the leaf node)
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&leaf_node, &root);
+
+    // Key for verification (0x01)
+    const key = [_]u8{0x01};
+
+    // Expected value (0x1234 - but as stored in leaf, not RLP encoded again)
+    const value = [_]u8{ 0x12, 0x34 };
+
+    const proof_nodes = [_][]const u8{&leaf_node};
+    const result = try verifyMPTProof(allocator, &root, &key, &value, &proof_nodes);
+    try std.testing.expect(result);
+}
+```
+
+### verifyMPTProof - leaf node with wrong value fails
+
+```zig
+test "verifyMPTProof - leaf node with wrong value fails" {
+    const allocator = std.testing.allocator;
+
+    const leaf_node = [_]u8{ 0xc5, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
+
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&leaf_node, &root);
+
+    const key = [_]u8{0x01};
+
+    // Wrong value
+    const wrong_value = [_]u8{ 0x56, 0x78 };
+
+    const proof_nodes = [_][]const u8{&leaf_node};
+    const result = try verifyMPTProof(allocator, &root, &key, &wrong_value, &proof_nodes);
+    try std.testing.expect(!result);
+}
+```
+
+### verifyMPTProof - invalid root hash fails
+
+```zig
+test "verifyMPTProof - invalid root hash fails" {
+    const allocator = std.testing.allocator;
+
+    const leaf_node = [_]u8{ 0xc5, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
+
+    // Wrong root hash
+    const wrong_root = [_]u8{0xff} ** 32;
+
+    const key = [_]u8{0x01};
+    const value = [_]u8{ 0x12, 0x34 };
+
+    const proof_nodes = [_][]const u8{&leaf_node};
+    const result = try verifyMPTProof(allocator, &wrong_root, &key, &value, &proof_nodes);
+    try std.testing.expect(!result);
+}
+```
+
+### verifyMPTProof - leaf node with odd path
+
+```zig
+test "verifyMPTProof - leaf node with odd path" {
+    const allocator = std.testing.allocator;
+
+    // Leaf with odd path (single nibble 0x5)
+    // Prefix 0x35 means odd leaf with first nibble 5
+    // Value = 0xAB
+    // RLP([0x35, 0xAB]) = 0xc2 0x35 0x81 0xAB
+    const leaf_node = [_]u8{ 0xc3, 0x35, 0x81, 0xAB };
+
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&leaf_node, &root);
+
+    // Key is a single nibble (half byte), but we need to pass a full byte
+    // Key 0x50 has nibbles [5, 0], but we want just [5]
+    // Actually for a single nibble path, we'd need special handling
+    // Let's test with a proper key
+    const key = [_]u8{0x50}; // nibbles [5, 0]
+
+    const value = [_]u8{0xAB};
+
+    const proof_nodes = [_][]const u8{&leaf_node};
+    // This should fail because path is [5] but key gives [5, 0]
+    const result = try verifyMPTProof(allocator, &root, &key, &value, &proof_nodes);
+    try std.testing.expect(!result);
+}
+```
+
+### verifyAccountProof - hashes address before verification
+
+```zig
+test "verifyAccountProof - hashes address before verification" {
+    const allocator = std.testing.allocator;
+
+    // Create a leaf for address hash
+    // Address: 0x0000000000000000000000000000000000000001
+    const address = [_]u8{0x00} ** 19 ++ [_]u8{0x01};
+
+    // Hash the address to get the key path
+    var address_hash: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&address, &address_hash);
+
+    // For this test, we'd need to construct a proper leaf with the address hash path
+    // This is complex because the path is 64 nibbles (32 bytes)
+    // Let's just verify the function hashes the address correctly
+
+    // Empty proof should fail for non-empty account
+    const empty_rlp = [_]u8{0x80};
+    var empty_root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&empty_rlp, &empty_root);
+
+    const empty_proof: []const []const u8 = &.{};
+    const account_rlp = [_]u8{0x01}; // Some non-empty value
+
+    const result = try verifyAccountProof(allocator, &empty_root, &address, &account_rlp, empty_proof);
+    try std.testing.expect(!result);
+}
+```
+
+### verifyStorageSlotProof - hashes slot before verification
+
+```zig
+test "verifyStorageSlotProof - hashes slot before verification" {
+    const allocator = std.testing.allocator;
+
+    // Storage slot 0
+    const slot = [_]u8{0x00} ** 32;
+
+    // Hash the slot to get the key path
+    var slot_hash: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&slot, &slot_hash);
+
+    // Empty proof should fail for non-empty value
+    const empty_rlp = [_]u8{0x80};
+    var empty_root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&empty_rlp, &empty_root);
+
+    const empty_proof: []const []const u8 = &.{};
+    const value_rlp = [_]u8{0x01}; // Some non-empty value
+
+    const result = try verifyStorageSlotProof(allocator, &empty_root, &slot, &value_rlp, empty_proof);
+    try std.testing.expect(!result);
+}
+```
+
+### verifyMPTProof - branch node navigation
+
+```zig
+test "verifyMPTProof - branch node navigation" {
+    const allocator = std.testing.allocator;
+
+    // Create a simple branch node with a value at position 16 (the value slot)
+    // This tests that the MPT verification correctly handles branch nodes
+    // when the key path ends at a branch.
+
+    // Branch node structure:
+    // - 16 empty children (0x80 each)
+    // - 1 value slot with data [0xAB, 0xCD]
+    // RLP encoding: 0xd3 + 16 * 0x80 + 0x82ABCD
+    // List length = 16 + 3 = 19 bytes (fits in short list)
+    var branch_data: [21]u8 = undefined;
+    branch_data[0] = 0xd3; // Short list prefix (0xc0 + 19)
+    // 16 empty children
+    var i: usize = 1;
+    while (i < 17) : (i += 1) {
+        branch_data[i] = 0x80;
+    }
+    // Value at position 16
+    branch_data[17] = 0x82; // String of length 2
+    branch_data[18] = 0xAB;
+    branch_data[19] = 0xCD;
+    branch_data[20] = 0; // Padding
+
+    // Compute hash of branch node
+    var branch_hash: Hash.Hash = undefined;
+    crypto.Keccak256.hash(branch_data[0..20], &branch_hash);
+
+    // Empty key should match the branch value
+    const empty_key: []const u8 = &.{};
+    const expected_value = [_]u8{ 0xAB, 0xCD };
+
+    const proof_nodes = [_][]const u8{branch_data[0..20]};
+    const result = try verifyMPTProof(allocator, &branch_hash, empty_key, &expected_value, &proof_nodes);
+
+    // This should succeed because empty key points to branch value
+    try std.testing.expect(result);
+}
+```

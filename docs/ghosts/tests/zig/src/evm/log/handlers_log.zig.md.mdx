@@ -1,0 +1,70 @@
+---
+title: '[Zig] src/evm/log/handlers_log.zig.md'
+source: 'src/evm/log/handlers_log.zig.md'
+---
+
+> Auto-generated from Zig tests in: src/evm/log/handlers_log.zig.md
+
+### logGasCost: LOG0 with no data
+
+```zig
+test "logGasCost: LOG0 with no data" {
+    const cost = logGasCost(0, 0);
+    try std.testing.expectEqual(GasConstants.LogGas, cost);
+}
+```
+
+### logGasCost: LOG1 with 32 bytes
+
+```zig
+test "logGasCost: LOG1 with 32 bytes" {
+    const cost = logGasCost(1, 32);
+    const expected = GasConstants.LogGas +
+                     GasConstants.LogTopicGas +
+                     (32 * GasConstants.LogDataGas);
+    try std.testing.expectEqual(expected, cost);
+}
+```
+
+### logGasCost: LOG4 with max topics
+
+```zig
+test "logGasCost: LOG4 with max topics" {
+    const cost = logGasCost(4, 100);
+    const expected = GasConstants.LogGas +
+                     (4 * GasConstants.LogTopicGas) +
+                     (100 * GasConstants.LogDataGas);
+    try std.testing.expectEqual(expected, cost);
+}
+```
+
+### wordAlignedSize: exact word boundary
+
+```zig
+test "wordAlignedSize: exact word boundary" {
+    try std.testing.expectEqual(@as(u32, 32), wordAlignedSize(32));
+    try std.testing.expectEqual(@as(u32, 64), wordAlignedSize(64));
+}
+```
+
+### wordAlignedSize: non-word-aligned values
+
+```zig
+test "wordAlignedSize: non-word-aligned values" {
+    try std.testing.expectEqual(@as(u32, 32), wordAlignedSize(1));
+    try std.testing.expectEqual(@as(u32, 32), wordAlignedSize(31));
+    try std.testing.expectEqual(@as(u32, 64), wordAlignedSize(33));
+    try std.testing.expectEqual(@as(u32, 64), wordAlignedSize(63));
+}
+```
+
+### wordCount: standard cases
+
+```zig
+test "wordCount: standard cases" {
+    try std.testing.expectEqual(@as(u64, 0), wordCount(0));
+    try std.testing.expectEqual(@as(u64, 1), wordCount(1));
+    try std.testing.expectEqual(@as(u64, 1), wordCount(32));
+    try std.testing.expectEqual(@as(u64, 2), wordCount(33));
+}
+```

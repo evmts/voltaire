@@ -1,0 +1,244 @@
+---
+title: '[TS/JS] src/primitives/PrivateKey/PrivateKeyType.test.ts'
+source: 'src/primitives/PrivateKey/PrivateKeyType.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/PrivateKey/PrivateKeyType.test.ts
+
+```typescript
+import { describe, it } from "vitest";
+import type { PrivateKeyType } from "./PrivateKeyType.js";
+
+// Type-level testing utilities
+type Equals<T, U> = (<V>() => V extends T ? 1 : 2) extends <V>() => V extends U
+	? 1
+	: 2
+	? true
+	: false;
+
+describe("PrivateKeyType", () => {
+	describe("type structure", () => {
+		it("is a Uint8Array", () => {
+			type Test = Equals<
+				PrivateKeyType extends Uint8Array ? true : false,
+				true
+			>;
+			const assertion: Test = true;
+			assertion;
+		});
+
+		it("has length 32", () => {
+			type Test = Equals<PrivateKeyType["length"], 32>;
+			const assertion: Test = true;
+			assertion;
+		});
+
+		it("is branded", () => {
+			type HasBrand = "__tag" extends keyof PrivateKeyType ? true : false;
+			type Test = Equals<HasBrand, true>;
+			const assertion: Test = true;
+			assertion;
+		});
+
+		it("is not assignable to plain Uint8Array", () => {
+			const _test = (_pk: PrivateKeyType) => {
+				// @ts-expect-error - PrivateKeyType is not assignable to Uint8Array
+				const _bytes: Uint8Array = _pk;
+			};
+		});
+
+		it("plain Uint8Array is not assignable to PrivateKeyType", () => {
+			const _test = (_bytes: Uint8Array) => {
+				// @ts-expect-error - Uint8Array is not assignable to PrivateKeyType
+				const _pk: PrivateKeyType = _bytes;
+			};
+		});
+	});
+
+	describe("readonly properties", () => {
+		it("length is readonly", () => {
+			const _test = (pk: PrivateKeyType) => {
+				// @ts-expect-error - length is readonly
+				pk.length = 64;
+			};
+		});
+
+		it("brand tag is readonly", () => {
+			const _test = (pk: PrivateKeyType) => {
+				// @ts-expect-error - brand is readonly
+				pk.__tag = "Something";
+			};
+		});
+	});
+
+	describe("type compatibility", () => {
+		it("is not compatible with 64-byte array", () => {
+			type PublicKeyLike = Uint8Array & { readonly length: 64 };
+			type Test = Equals<PrivateKeyType, PublicKeyLike>;
+			const assertion: Test = false;
+			assertion;
+		});
+
+		it("is not compatible with 20-byte array", () => {
+			type AddressLike = Uint8Array & { readonly length: 20 };
+			type Test = Equals<PrivateKeyType, AddressLike>;
+			const assertion: Test = false;
+			assertion;
+		});
+
+		it("is not compatible with plain 32-byte array", () => {
+			type HashLike = Uint8Array & { readonly length: 32 };
+			type Test = Equals<PrivateKeyType, HashLike>;
+			const assertion: Test = false;
+			assertion;
+		});
+
+		it("two PrivateKeyType are the same type", () => {
+			type Test = Equals<PrivateKeyType, PrivateKeyType>;
+			const assertion: Test = true;
+			assertion;
+		});
+	});
+
+	describe("length constraints", () => {
+		it("rejects 31 bytes", () => {
+			type ShortArray = Uint8Array & { readonly length: 31 };
+			const _test = (_short: ShortArray) => {
+				// @ts-expect-error - 31 bytes is not valid
+				const _pk: PrivateKeyType = _short;
+			};
+		});
+
+		it("rejects 33 bytes", () => {
+			type LongArray = Uint8Array & { readonly length: 33 };
+			const _test = (_long: LongArray) => {
+				// @ts-expect-error - 33 bytes is not valid
+				const _pk: PrivateKeyType = _long;
+			};
+		});
+
+		it("rejects 0 bytes", () => {
+			type EmptyArray = Uint8Array & { readonly length: 0 };
+			const _test = (_empty: EmptyArray) => {
+				// @ts-expect-error - 0 bytes is not valid
+				const _pk: PrivateKeyType = _empty;
+			};
+		});
+
+		it("rejects 16 bytes", () => {
+			type HalfArray = Uint8Array & { readonly length: 16 };
+			const _test = (_half: HalfArray) => {
+				// @ts-expect-error - 16 bytes is not valid
+				const _pk: PrivateKeyType = _half;
+			};
+		});
+
+		it("rejects 64 bytes", () => {
+			type DoubleArray = Uint8Array & { readonly length: 64 };
+			const _test = (_double: DoubleArray) => {
+				// @ts-expect-error - 64 bytes is not valid
+				const _pk: PrivateKeyType = _double;
+			};
+		});
+	});
+
+	describe("brand uniqueness", () => {
+		it("has unique PrivateKey brand", () => {
+			type Brand = PrivateKeyType["__tag"];
+			type Test = Equals<Brand, "PrivateKey">;
+			const assertion: Test = true;
+			assertion;
+		});
+
+		it("is not compatible with other brands", () => {
+			type OtherBrand = Uint8Array & {
+				readonly __tag: "SomethingElse";
+				readonly length: 32;
+			};
+			type Test = Equals<PrivateKeyType, OtherBrand>;
+			const assertion: Test = false;
+			assertion;
+		});
+	});
+
+	describe("immutability", () => {
+		it("brand property is readonly", () => {
+			const _test = (pk: PrivateKeyType) => {
+				// @ts-expect-error - cannot reassign readonly property
+				// biome-ignore lint/suspicious/noExplicitAny: testing type error
+				pk.__tag = "Modified" as any;
+			};
+		});
+
+		it("length property is readonly", () => {
+			const _test = (pk: PrivateKeyType) => {
+				// @ts-expect-error - cannot reassign readonly length
+				// biome-ignore lint/suspicious/noExplicitAny: testing type error
+				pk.length = 64 as any;
+			};
+		});
+	});
+
+	describe("utility type compatibility", () => {
+		it("can be used with Array.from", () => {
+			const _test = (pk: PrivateKeyType): number[] => {
+				return Array.from(pk);
+			};
+		});
+
+		it("can be used with spread operator", () => {
+			const _test = (pk: PrivateKeyType): number[] => {
+				return [...pk];
+			};
+		});
+
+		it("can be indexed", () => {
+			const _test = (pk: PrivateKeyType): number | undefined => {
+				return pk[0];
+			};
+		});
+
+		it("can be sliced", () => {
+			const _test = (pk: PrivateKeyType): Uint8Array => {
+				return pk.slice(0, 16);
+			};
+		});
+
+		it("slice returns plain Uint8Array not PrivateKeyType", () => {
+			const _test = (pk: PrivateKeyType) => {
+				const sliced = pk.slice(0, 16);
+				// @ts-expect-error - slice returns plain Uint8Array
+				const _pk: PrivateKeyType = sliced;
+			};
+		});
+	});
+
+	describe("assignability", () => {
+		it("requires exact type", () => {
+			const _test = () => {
+				const bytes = new Uint8Array(32);
+				// @ts-expect-error - plain Uint8Array is not PrivateKeyType
+				const _pk: PrivateKeyType = bytes;
+			};
+		});
+
+		it("can be assigned to wider type", () => {
+			const _test = (pk: PrivateKeyType) => {
+				const bytes: Uint8Array = pk;
+				bytes;
+			};
+		});
+
+		it("cannot be assigned from narrower type", () => {
+			const _test = () => {
+				const bytes = new Uint8Array(32);
+				// @ts-expect-error - missing brand
+				const _pk: PrivateKeyType = bytes as PrivateKeyType & {
+					readonly length: 32;
+				};
+			};
+		});
+	});
+});
+
+```

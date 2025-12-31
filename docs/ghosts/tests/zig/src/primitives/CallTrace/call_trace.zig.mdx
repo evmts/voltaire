@@ -1,0 +1,204 @@
+---
+title: '[Zig] src/primitives/CallTrace/call_trace.zig'
+source: 'src/primitives/CallTrace/call_trace.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/CallTrace/call_trace.zig
+
+### CallTrace: basic creation
+
+```zig
+test "CallTrace: basic creation" {
+    var from_addr: [20]u8 = undefined;
+    @memset(&from_addr, 0xaa);
+
+    const input = [_]u8{ 0x12, 0x34 };
+    const output = [_]u8{};
+
+    const trace = CallTrace.from(.CALL, from_addr, 100000, 50000, &input, &output);
+
+    try testing.expectEqual(CallType.CALL, trace.call_type);
+    try testing.expectEqual(@as(u64, 100000), trace.gas);
+    try testing.expectEqual(@as(u64, 50000), trace.gas_used);
+    try testing.expect(trace.to == null);
+    try testing.expect(trace.value == null);
+    try testing.expect(trace.err == null);
+}
+```
+
+### CallTrace: equality
+
+```zig
+test "CallTrace: equality" {
+    var from1: [20]u8 = undefined;
+    @memset(&from1, 0xaa);
+    var from2: [20]u8 = undefined;
+    @memset(&from2, 0xaa);
+    var from3: [20]u8 = undefined;
+    @memset(&from3, 0xbb);
+
+    const input = [_]u8{};
+    const output = [_]u8{};
+
+    const trace1 = CallTrace.from(.CALL, from1, 100000, 50000, &input, &output);
+    const trace2 = CallTrace.from(.CALL, from2, 100000, 50000, &input, &output);
+    const trace3 = CallTrace.from(.CALL, from3, 100000, 50000, &input, &output);
+
+    try testing.expect(trace1.equals(trace2));
+    try testing.expect(!trace1.equals(trace3));
+}
+```
+
+### CallTrace: hasError
+
+```zig
+test "CallTrace: hasError" {
+    var from_addr: [20]u8 = undefined;
+    @memset(&from_addr, 0xaa);
+    const input = [_]u8{};
+    const output = [_]u8{};
+
+    var trace = CallTrace.from(.CALL, from_addr, 100000, 50000, &input, &output);
+    try testing.expect(!trace.hasError());
+
+    trace.err = "execution reverted";
+    try testing.expect(trace.hasError());
+}
+```
+
+### CallTrace: call type checks
+
+```zig
+test "CallTrace: call type checks" {
+    var from_addr: [20]u8 = undefined;
+    @memset(&from_addr, 0xaa);
+    const input = [_]u8{};
+    const output = [_]u8{};
+
+    const call = CallTrace.from(.CALL, from_addr, 100000, 50000, &input, &output);
+    try testing.expect(!call.isCreate());
+    try testing.expect(!call.isDelegate());
+    try testing.expect(!call.isStatic());
+
+    const create = CallTrace.from(.CREATE, from_addr, 100000, 50000, &input, &output);
+    try testing.expect(create.isCreate());
+
+    const delegate = CallTrace.from(.DELEGATECALL, from_addr, 100000, 50000, &input, &output);
+    try testing.expect(delegate.isDelegate());
+
+    const static = CallTrace.from(.STATICCALL, from_addr, 100000, 50000, &input, &output);
+    try testing.expect(static.isStatic());
+}
+```
+
+### CallTrace: callCount
+
+```zig
+test "CallTrace: callCount" {
+    var from_addr: [20]u8 = undefined;
+    @memset(&from_addr, 0xaa);
+    const input = [_]u8{};
+    const output = [_]u8{};
+
+    const trace1 = CallTrace.from(.CALL, from_addr, 100000, 50000, &input, &output);
+    try testing.expectEqual(@as(usize, 0), trace1.callCount());
+
+    var nested_calls = [_]CallTrace{
+        CallTrace.from(.CALL, from_addr, 50000, 25000, &input, &output),
+        CallTrace.from(.STATICCALL, from_addr, 30000, 15000, &input, &output),
+    };
+
+    var trace2 = CallTrace.from(.CALL, from_addr, 100000, 50000, &input, &output);
+    trace2.calls = &nested_calls;
+    try testing.expectEqual(@as(usize, 2), trace2.callCount());
+}
+```
+
+### CallTrace: flatten
+
+```zig
+test "CallTrace: flatten" {
+    const allocator = testing.allocator;
+
+    var from_addr: [20]u8 = undefined;
+    @memset(&from_addr, 0xaa);
+    const input = [_]u8{};
+    const output = [_]u8{};
+
+    var nested_calls = [_]CallTrace{
+        CallTrace.from(.CALL, from_addr, 50000, 25000, &input, &output),
+        CallTrace.from(.STATICCALL, from_addr, 30000, 15000, &input, &output),
+    };
+
+    var root = CallTrace.from(.CALL, from_addr, 100000, 50000, &input, &output);
+    root.calls = &nested_calls;
+
+    const flat = try root.flatten(allocator);
+    defer allocator.free(flat);
+
+    try testing.expectEqual(@as(usize, 3), flat.len);
+    try testing.expectEqual(CallType.CALL, flat[0].call_type);
+    try testing.expectEqual(@as(u64, 100000), flat[0].gas);
+    try testing.expectEqual(CallType.CALL, flat[1].call_type);
+    try testing.expectEqual(@as(u64, 50000), flat[1].gas);
+    try testing.expectEqual(CallType.STATICCALL, flat[2].call_type);
+}
+```
+
+### CallTrace: totalGasUsed
+
+```zig
+test "CallTrace: totalGasUsed" {
+    var from_addr: [20]u8 = undefined;
+    @memset(&from_addr, 0xaa);
+    const input = [_]u8{};
+    const output = [_]u8{};
+
+    var nested_calls = [_]CallTrace{
+        CallTrace.from(.CALL, from_addr, 50000, 10000, &input, &output),
+        CallTrace.from(.STATICCALL, from_addr, 30000, 5000, &input, &output),
+    };
+
+    var root = CallTrace.from(.CALL, from_addr, 100000, 20000, &input, &output);
+    root.calls = &nested_calls;
+
+    try testing.expectEqual(@as(u64, 35000), root.totalGasUsed());
+}
+```
+
+### CallTrace: JSON encode
+
+```zig
+test "CallTrace: JSON encode" {
+    const allocator = testing.allocator;
+
+    var from_addr: [20]u8 = undefined;
+    @memset(&from_addr, 0xaa);
+    const input = [_]u8{ 0x12, 0x34 };
+    const output = [_]u8{};
+
+    const trace = CallTrace.from(.CALL, from_addr, 100000, 50000, &input, &output);
+
+    const json_str = try trace.toJson(allocator);
+    defer allocator.free(json_str);
+
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"type\":\"CALL\"") != null);
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"gas\":100000") != null);
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"gasUsed\":50000") != null);
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"input\":\"0x1234\"") != null);
+}
+```
+
+### CallType: string conversion
+
+```zig
+test "CallType: string conversion" {
+    try testing.expectEqualStrings("CALL", CallType.CALL.toString());
+    try testing.expectEqualStrings("CREATE", CallType.CREATE.toString());
+    try testing.expectEqualStrings("DELEGATECALL", CallType.DELEGATECALL.toString());
+
+    try testing.expectEqual(CallType.CALL, CallType.fromString("CALL").?);
+    try testing.expectEqual(CallType.CREATE2, CallType.fromString("CREATE2").?);
+    try testing.expect(CallType.fromString("INVALID") == null);
+}
+```

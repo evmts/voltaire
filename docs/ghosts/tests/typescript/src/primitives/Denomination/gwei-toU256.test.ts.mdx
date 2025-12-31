@@ -1,0 +1,47 @@
+---
+title: '[TS/JS] src/primitives/Denomination/gwei-toU256.test.ts'
+source: 'src/primitives/Denomination/gwei-toU256.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Denomination/gwei-toU256.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as Uint from "../Uint/index.js";
+import { from } from "./gwei-from.js";
+import { toU256 } from "./gwei-toU256.js";
+
+describe("toU256", () => {
+	it("converts Gwei to Uint256 (Wei)", () => {
+		const gwei = from("1");
+		const u256 = toU256(gwei);
+		expect(typeof u256).toBe("bigint");
+		expect(u256).toBe(1_000_000_000n);
+	});
+
+	it("converts 0 Gwei to 0 Uint256", () => {
+		const gwei = from("0");
+		const u256 = toU256(gwei);
+		expect(u256).toBe(0n);
+	});
+
+	it("converts large Gwei value", () => {
+		const gwei = from("1000000");
+		const u256 = toU256(gwei);
+		expect(u256).toBe(1_000_000_000_000_000n);
+	});
+
+	it("result is valid Uint256", () => {
+		const gwei = from("42");
+		const u256 = toU256(gwei);
+		expect(Uint.isValid(u256)).toBe(true);
+	});
+
+	it("converts fractional Gwei", () => {
+		const gwei = from("1.5");
+		const u256 = toU256(gwei);
+		expect(u256).toBe(1_500_000_000n);
+	});
+});
+
+```

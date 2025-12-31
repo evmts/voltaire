@@ -1,0 +1,21 @@
+---
+title: '[Zig] src/crypto/bn254_ark_c.zig'
+source: 'src/crypto/bn254_ark_c.zig'
+---
+
+> Auto-generated from Zig tests in: src/crypto/bn254_ark_c.zig
+
+### bn254_ark_c exports work
+
+```zig
+test "bn254_ark_c exports work" {
+    const result = bn254_ark_init();
+    try std.testing.expectEqual(@as(i32, 0), result);
+
+    const out_size = bn254_ark_ecmul_output_size();
+    try std.testing.expectEqual(@as(u32, 64), out_size);
+
+    const pairing_size = bn254_ark_ecpairing_output_size();
+    try std.testing.expectEqual(@as(u32, 32), pairing_size);
+}
+```

@@ -1,0 +1,142 @@
+---
+title: '[Zig] src/primitives/TraceResult/trace_result.zig'
+source: 'src/primitives/TraceResult/trace_result.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/TraceResult/trace_result.zig
+
+### TraceResult: basic creation
+
+```zig
+test "TraceResult: basic creation" {
+    const return_value = [_]u8{ 0x00, 0x00, 0x00, 0x01 };
+    const result = TraceResult.from(50000, false, &return_value);
+
+    try testing.expectEqual(@as(u64, 50000), result.gas);
+    try testing.expect(!result.failed);
+    try testing.expect(result.succeeded());
+    try testing.expectEqualSlices(u8, &return_value, result.return_value);
+    try testing.expect(result.struct_logs == null);
+    try testing.expect(result.call_trace == null);
+}
+```
+
+### TraceResult: with struct logs
+
+```zig
+test "TraceResult: with struct logs" {
+    const return_value = [_]u8{};
+
+    const logs = [_]StructLog{
+        StructLog.from(0, .PUSH1, 1000000, 3, 0),
+        StructLog.from(2, .ADD, 999997, 3, 0),
+    };
+
+    const result = TraceResult.fromStructLogs(50000, false, &return_value, &logs);
+
+    try testing.expect(result.hasStructLogs());
+    try testing.expect(!result.hasCallTrace());
+    try testing.expectEqual(@as(usize, 2), result.structLogCount());
+    try testing.expectEqual(@as(usize, 2), result.getStructLogs().len);
+}
+```
+
+### TraceResult: with call trace
+
+```zig
+test "TraceResult: with call trace" {
+    const return_value = [_]u8{};
+
+    var from_addr: [20]u8 = undefined;
+    @memset(&from_addr, 0xaa);
+    const input = [_]u8{};
+    const output = [_]u8{};
+
+    const trace = CallTrace.from(.CALL, from_addr, 100000, 50000, &input, &output);
+    const result = TraceResult.fromCallTrace(50000, false, &return_value, trace);
+
+    try testing.expect(!result.hasStructLogs());
+    try testing.expect(result.hasCallTrace());
+    try testing.expectEqual(@as(usize, 0), result.structLogCount());
+}
+```
+
+### TraceResult: equality
+
+```zig
+test "TraceResult: equality" {
+    const return_value = [_]u8{0x01};
+    const result1 = TraceResult.from(50000, false, &return_value);
+    const result2 = TraceResult.from(50000, false, &return_value);
+    const result3 = TraceResult.from(60000, false, &return_value);
+
+    try testing.expect(result1.equals(result2));
+    try testing.expect(!result1.equals(result3));
+}
+```
+
+### TraceResult: failed execution
+
+```zig
+test "TraceResult: failed execution" {
+    const return_value = [_]u8{ 0x08, 0xc3, 0x79, 0xa0 }; // Error(string) selector
+    const result = TraceResult.from(21000, true, &return_value);
+
+    try testing.expect(result.failed);
+    try testing.expect(!result.succeeded());
+}
+```
+
+### TraceResult: JSON encode basic
+
+```zig
+test "TraceResult: JSON encode basic" {
+    const allocator = testing.allocator;
+    const return_value = [_]u8{0x01};
+    const result = TraceResult.from(50000, false, &return_value);
+
+    const json_str = try result.toJson(allocator);
+    defer allocator.free(json_str);
+
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"gas\":50000") != null);
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"failed\":false") != null);
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"returnValue\":\"0x01\"") != null);
+}
+```
+
+### TraceResult: JSON encode with struct logs
+
+```zig
+test "TraceResult: JSON encode with struct logs" {
+    const allocator = testing.allocator;
+    const return_value = [_]u8{};
+
+    const logs = [_]StructLog{
+        StructLog.from(0, .PUSH1, 1000000, 3, 0),
+    };
+
+    const result = TraceResult.fromStructLogs(50000, false, &return_value, &logs);
+
+    const json_str = try result.toJson(allocator);
+    defer allocator.free(json_str);
+
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"structLogs\":[") != null);
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"op\":\"PUSH1\"") != null);
+}
+```
+
+### TraceResult: JSON encode failed with revert
+
+```zig
+test "TraceResult: JSON encode failed with revert" {
+    const allocator = testing.allocator;
+    const return_value = [_]u8{ 0x08, 0xc3, 0x79, 0xa0 };
+    const result = TraceResult.from(21000, true, &return_value);
+
+    const json_str = try result.toJson(allocator);
+    defer allocator.free(json_str);
+
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"failed\":true") != null);
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"returnValue\":\"0x08c379a0\"") != null);
+}
+```

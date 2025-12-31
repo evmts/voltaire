@@ -1,0 +1,450 @@
+---
+title: '[Zig] src/primitives/Int8/int8.zig'
+source: 'src/primitives/Int8/int8.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Int8/int8.zig
+
+### Int8: constants
+
+```zig
+test "Int8: constants" {
+    try std.testing.expectEqual(@as(Int8, -128), MIN);
+    try std.testing.expectEqual(@as(Int8, 127), MAX);
+    try std.testing.expectEqual(@as(Int8, 0), ZERO);
+    try std.testing.expectEqual(@as(Int8, 1), ONE);
+    try std.testing.expectEqual(@as(Int8, -1), MINUS_ONE);
+    try std.testing.expectEqual(@as(usize, 1), SIZE);
+}
+```
+
+### Int8: from
+
+```zig
+test "Int8: from" {
+    try std.testing.expectEqual(@as(Int8, 42), from(42));
+    try std.testing.expectEqual(@as(Int8, -42), from(-42));
+    try std.testing.expectEqual(@as(Int8, 0), from(0));
+    try std.testing.expectEqual(@as(Int8, -128), from(-128));
+    try std.testing.expectEqual(@as(Int8, 127), from(127));
+}
+```
+
+### Int8: fromI16
+
+```zig
+test "Int8: fromI16" {
+    try std.testing.expectEqual(@as(Int8, 100), try fromI16(100));
+    try std.testing.expectEqual(@as(Int8, -100), try fromI16(-100));
+    try std.testing.expectError(error.Overflow, fromI16(128));
+    try std.testing.expectError(error.Overflow, fromI16(-129));
+}
+```
+
+### Int8: fromI32
+
+```zig
+test "Int8: fromI32" {
+    try std.testing.expectEqual(@as(Int8, 50), try fromI32(50));
+    try std.testing.expectEqual(@as(Int8, -50), try fromI32(-50));
+    try std.testing.expectError(error.Overflow, fromI32(1000));
+    try std.testing.expectError(error.Overflow, fromI32(-1000));
+}
+```
+
+### Int8: fromU8
+
+```zig
+test "Int8: fromU8" {
+    try std.testing.expectEqual(@as(Int8, 0), try fromU8(0));
+    try std.testing.expectEqual(@as(Int8, 127), try fromU8(127));
+    try std.testing.expectError(error.Overflow, fromU8(128));
+    try std.testing.expectError(error.Overflow, fromU8(255));
+}
+```
+
+### Int8: fromBytes
+
+```zig
+test "Int8: fromBytes" {
+    try std.testing.expectEqual(@as(Int8, 0), fromBytes(.{0x00}));
+    try std.testing.expectEqual(@as(Int8, 127), fromBytes(.{0x7f}));
+    try std.testing.expectEqual(@as(Int8, -128), fromBytes(.{0x80}));
+    try std.testing.expectEqual(@as(Int8, -1), fromBytes(.{0xff}));
+    try std.testing.expectEqual(@as(Int8, -42), fromBytes(.{0xd6}));
+}
+```
+
+### Int8: fromHex
+
+```zig
+test "Int8: fromHex" {
+    try std.testing.expectEqual(@as(Int8, 0), try fromHex("0x00"));
+    try std.testing.expectEqual(@as(Int8, 127), try fromHex("0x7f"));
+    try std.testing.expectEqual(@as(Int8, -128), try fromHex("0x80"));
+    try std.testing.expectEqual(@as(Int8, -1), try fromHex("0xff"));
+    try std.testing.expectEqual(@as(Int8, -42), try fromHex("0xd6"));
+    try std.testing.expectEqual(@as(Int8, 0), try fromHex(""));
+    try std.testing.expectEqual(@as(Int8, 15), try fromHex("f"));
+    try std.testing.expectError(error.InvalidHex, fromHex("0xgg"));
+    try std.testing.expectError(error.Overflow, fromHex("0x100"));
+}
+```
+
+### Int8: toNumber
+
+```zig
+test "Int8: toNumber" {
+    try std.testing.expectEqual(@as(i8, 42), toNumber(from(42)));
+    try std.testing.expectEqual(@as(i8, -42), toNumber(from(-42)));
+}
+```
+
+### Int8: toI16
+
+```zig
+test "Int8: toI16" {
+    try std.testing.expectEqual(@as(i16, 127), toI16(from(127)));
+    try std.testing.expectEqual(@as(i16, -128), toI16(from(-128)));
+}
+```
+
+### Int8: toBytes
+
+```zig
+test "Int8: toBytes" {
+    try std.testing.expectEqual([1]u8{0x00}, toBytes(from(0)));
+    try std.testing.expectEqual([1]u8{0x7f}, toBytes(from(127)));
+    try std.testing.expectEqual([1]u8{0x80}, toBytes(from(-128)));
+    try std.testing.expectEqual([1]u8{0xff}, toBytes(from(-1)));
+    try std.testing.expectEqual([1]u8{0xd6}, toBytes(from(-42)));
+}
+```
+
+### Int8: toHex
+
+```zig
+test "Int8: toHex" {
+    try std.testing.expectEqualSlices(u8, "0x00", &toHex(from(0)));
+    try std.testing.expectEqualSlices(u8, "0x7f", &toHex(from(127)));
+    try std.testing.expectEqualSlices(u8, "0x80", &toHex(from(-128)));
+    try std.testing.expectEqualSlices(u8, "0xff", &toHex(from(-1)));
+    try std.testing.expectEqualSlices(u8, "0xd6", &toHex(from(-42)));
+}
+```
+
+### Int8: add
+
+```zig
+test "Int8: add" {
+    try std.testing.expectEqual(@as(Int8, 30), try add(from(10), from(20)));
+    try std.testing.expectEqual(@as(Int8, -10), try add(from(10), from(-20)));
+    try std.testing.expectEqual(@as(Int8, 0), try add(from(-10), from(10)));
+    try std.testing.expectError(error.Overflow, add(MAX, from(1)));
+    try std.testing.expectError(error.Overflow, add(MIN, from(-1)));
+}
+```
+
+### Int8: sub
+
+```zig
+test "Int8: sub" {
+    try std.testing.expectEqual(@as(Int8, -10), try sub(from(10), from(20)));
+    try std.testing.expectEqual(@as(Int8, 30), try sub(from(10), from(-20)));
+    try std.testing.expectError(error.Overflow, sub(MIN, from(1)));
+    try std.testing.expectError(error.Overflow, sub(MAX, from(-1)));
+}
+```
+
+### Int8: mul
+
+```zig
+test "Int8: mul" {
+    try std.testing.expectEqual(@as(Int8, 20), try mul(from(4), from(5)));
+    try std.testing.expectEqual(@as(Int8, -20), try mul(from(4), from(-5)));
+    try std.testing.expectEqual(@as(Int8, 20), try mul(from(-4), from(-5)));
+    try std.testing.expectError(error.Overflow, mul(from(100), from(2)));
+    try std.testing.expectError(error.Overflow, mul(MIN, from(-1)));
+}
+```
+
+### Int8: div
+
+```zig
+test "Int8: div" {
+    try std.testing.expectEqual(@as(Int8, 5), try div(from(20), from(4)));
+    try std.testing.expectEqual(@as(Int8, -5), try div(from(20), from(-4)));
+    try std.testing.expectEqual(@as(Int8, 5), try div(from(-20), from(-4)));
+    try std.testing.expectEqual(@as(Int8, -5), try div(from(-20), from(4)));
+    try std.testing.expectEqual(@as(Int8, 2), try div(from(7), from(3))); // truncates toward zero
+    try std.testing.expectEqual(@as(Int8, -2), try div(from(-7), from(3))); // truncates toward zero
+    try std.testing.expectError(error.DivisionByZero, div(from(10), from(0)));
+    try std.testing.expectError(error.Overflow, div(MIN, from(-1)));
+}
+```
+
+### Int8: mod
+
+```zig
+test "Int8: mod" {
+    try std.testing.expectEqual(@as(Int8, 1), try mod(from(7), from(3)));
+    try std.testing.expectEqual(@as(Int8, -1), try mod(from(-7), from(3)));
+    try std.testing.expectEqual(@as(Int8, 1), try mod(from(7), from(-3)));
+    try std.testing.expectEqual(@as(Int8, 0), try mod(from(9), from(3)));
+    try std.testing.expectError(error.DivisionByZero, mod(from(10), from(0)));
+}
+```
+
+### Int8: negate
+
+```zig
+test "Int8: negate" {
+    try std.testing.expectEqual(@as(Int8, -42), try negate(from(42)));
+    try std.testing.expectEqual(@as(Int8, 42), try negate(from(-42)));
+    try std.testing.expectEqual(@as(Int8, 0), try negate(from(0)));
+    try std.testing.expectEqual(@as(Int8, -127), try negate(from(127)));
+    try std.testing.expectError(error.Overflow, negate(MIN));
+}
+```
+
+### Int8: abs
+
+```zig
+test "Int8: abs" {
+    try std.testing.expectEqual(@as(Int8, 42), try abs(from(42)));
+    try std.testing.expectEqual(@as(Int8, 42), try abs(from(-42)));
+    try std.testing.expectEqual(@as(Int8, 0), try abs(from(0)));
+    try std.testing.expectEqual(@as(Int8, 127), try abs(from(-127)));
+    try std.testing.expectError(error.Overflow, abs(MIN));
+}
+```
+
+### Int8: equals
+
+```zig
+test "Int8: equals" {
+    try std.testing.expect(equals(from(42), from(42)));
+    try std.testing.expect(!equals(from(42), from(-42)));
+    try std.testing.expect(equals(MIN, MIN));
+    try std.testing.expect(equals(MAX, MAX));
+}
+```
+
+### Int8: compare
+
+```zig
+test "Int8: compare" {
+    try std.testing.expectEqual(@as(i2, 0), compare(from(42), from(42)));
+    try std.testing.expectEqual(@as(i2, -1), compare(from(10), from(20)));
+    try std.testing.expectEqual(@as(i2, 1), compare(from(20), from(10)));
+    try std.testing.expectEqual(@as(i2, -1), compare(MIN, MAX));
+    try std.testing.expectEqual(@as(i2, 1), compare(MAX, MIN));
+}
+```
+
+### Int8: lessThan and greaterThan
+
+```zig
+test "Int8: lessThan and greaterThan" {
+    try std.testing.expect(lessThan(from(10), from(20)));
+    try std.testing.expect(!lessThan(from(20), from(10)));
+    try std.testing.expect(!lessThan(from(10), from(10)));
+    try std.testing.expect(greaterThan(from(20), from(10)));
+    try std.testing.expect(!greaterThan(from(10), from(20)));
+    try std.testing.expect(lessThan(from(-10), from(10)));
+    try std.testing.expect(greaterThan(from(10), from(-10)));
+}
+```
+
+### Int8: isZero, isNegative, isPositive
+
+```zig
+test "Int8: isZero, isNegative, isPositive" {
+    try std.testing.expect(isZero(from(0)));
+    try std.testing.expect(!isZero(from(1)));
+    try std.testing.expect(!isZero(from(-1)));
+
+    try std.testing.expect(isNegative(from(-1)));
+    try std.testing.expect(isNegative(MIN));
+    try std.testing.expect(!isNegative(from(0)));
+    try std.testing.expect(!isNegative(from(1)));
+
+    try std.testing.expect(isPositive(from(1)));
+    try std.testing.expect(isPositive(MAX));
+    try std.testing.expect(!isPositive(from(0)));
+    try std.testing.expect(!isPositive(from(-1)));
+}
+```
+
+### Int8: min and max
+
+```zig
+test "Int8: min and max" {
+    try std.testing.expectEqual(@as(Int8, 10), min(from(10), from(20)));
+    try std.testing.expectEqual(@as(Int8, 10), min(from(20), from(10)));
+    try std.testing.expectEqual(@as(Int8, -20), min(from(-10), from(-20)));
+    try std.testing.expectEqual(@as(Int8, 20), max(from(10), from(20)));
+    try std.testing.expectEqual(@as(Int8, 20), max(from(20), from(10)));
+    try std.testing.expectEqual(@as(Int8, -10), max(from(-10), from(-20)));
+}
+```
+
+### Int8: sign
+
+```zig
+test "Int8: sign" {
+    try std.testing.expectEqual(@as(i2, 0), sign(from(0)));
+    try std.testing.expectEqual(@as(i2, 1), sign(from(42)));
+    try std.testing.expectEqual(@as(i2, -1), sign(from(-42)));
+    try std.testing.expectEqual(@as(i2, 1), sign(MAX));
+    try std.testing.expectEqual(@as(i2, -1), sign(MIN));
+}
+```
+
+### Int8: bitwiseAnd
+
+```zig
+test "Int8: bitwiseAnd" {
+    try std.testing.expectEqual(@as(Int8, 0b0100), bitwiseAnd(from(0b1100), from(0b0110)));
+    try std.testing.expectEqual(@as(Int8, 0), bitwiseAnd(from(0b1010), from(0b0101)));
+    try std.testing.expectEqual(@as(Int8, -128), bitwiseAnd(from(-1), from(-128)));
+}
+```
+
+### Int8: bitwiseOr
+
+```zig
+test "Int8: bitwiseOr" {
+    try std.testing.expectEqual(@as(Int8, 0b1110), bitwiseOr(from(0b1100), from(0b0110)));
+    try std.testing.expectEqual(@as(Int8, 0b1111), bitwiseOr(from(0b1010), from(0b0101)));
+}
+```
+
+### Int8: bitwiseXor
+
+```zig
+test "Int8: bitwiseXor" {
+    try std.testing.expectEqual(@as(Int8, 0b1010), bitwiseXor(from(0b1100), from(0b0110)));
+    try std.testing.expectEqual(@as(Int8, 0b1111), bitwiseXor(from(0b1010), from(0b0101)));
+}
+```
+
+### Int8: bitwiseNot
+
+```zig
+test "Int8: bitwiseNot" {
+    try std.testing.expectEqual(@as(Int8, -1), bitwiseNot(from(0)));
+    try std.testing.expectEqual(@as(Int8, 0), bitwiseNot(from(-1)));
+    try std.testing.expectEqual(@as(Int8, -43), bitwiseNot(from(42)));
+}
+```
+
+### Int8: shiftLeft
+
+```zig
+test "Int8: shiftLeft" {
+    try std.testing.expectEqual(@as(Int8, 8), shiftLeft(from(1), 3));
+    try std.testing.expectEqual(@as(Int8, 40), shiftLeft(from(5), 3));
+    try std.testing.expectEqual(@as(Int8, -8), shiftLeft(from(-1), 3));
+}
+```
+
+### Int8: shiftRight
+
+```zig
+test "Int8: shiftRight" {
+    try std.testing.expectEqual(@as(Int8, 1), shiftRight(from(8), 3));
+    try std.testing.expectEqual(@as(Int8, 5), shiftRight(from(40), 3));
+    try std.testing.expectEqual(@as(Int8, -1), shiftRight(from(-1), 3)); // sign-extending
+    try std.testing.expectEqual(@as(Int8, -2), shiftRight(from(-8), 2)); // sign-extending
+}
+```
+
+### Int8: leadingZeros
+
+```zig
+test "Int8: leadingZeros" {
+    try std.testing.expectEqual(@as(u4, 8), leadingZeros(from(0)));
+    try std.testing.expectEqual(@as(u4, 7), leadingZeros(from(1)));
+    try std.testing.expectEqual(@as(u4, 1), leadingZeros(from(127)));
+    try std.testing.expectEqual(@as(u4, 0), leadingZeros(from(-1)));
+    try std.testing.expectEqual(@as(u4, 0), leadingZeros(from(-128)));
+}
+```
+
+### Int8: trailingZeros
+
+```zig
+test "Int8: trailingZeros" {
+    try std.testing.expectEqual(@as(u4, 8), trailingZeros(from(0)));
+    try std.testing.expectEqual(@as(u4, 0), trailingZeros(from(1)));
+    try std.testing.expectEqual(@as(u4, 3), trailingZeros(from(8)));
+    try std.testing.expectEqual(@as(u4, 0), trailingZeros(from(-1)));
+}
+```
+
+### Int8: popCount
+
+```zig
+test "Int8: popCount" {
+    try std.testing.expectEqual(@as(u4, 0), popCount(from(0)));
+    try std.testing.expectEqual(@as(u4, 1), popCount(from(1)));
+    try std.testing.expectEqual(@as(u4, 8), popCount(from(-1)));
+    try std.testing.expectEqual(@as(u4, 1), popCount(from(-128)));
+    try std.testing.expectEqual(@as(u4, 7), popCount(from(127)));
+}
+```
+
+### Int8: bitLength
+
+```zig
+test "Int8: bitLength" {
+    try std.testing.expectEqual(@as(u4, 0), bitLength(from(0)));
+    try std.testing.expectEqual(@as(u4, 1), bitLength(from(1)));
+    try std.testing.expectEqual(@as(u4, 7), bitLength(from(127)));
+    try std.testing.expectEqual(@as(u4, 8), bitLength(from(-1)));
+    try std.testing.expectEqual(@as(u4, 8), bitLength(from(-128)));
+}
+```
+
+### Int8: roundtrip bytes
+
+```zig
+test "Int8: roundtrip bytes" {
+    const values = [_]Int8{ MIN, -42, -1, 0, 1, 42, MAX };
+    for (values) |v| {
+        try std.testing.expectEqual(v, fromBytes(toBytes(v)));
+    }
+}
+```
+
+### Int8: roundtrip hex
+
+```zig
+test "Int8: roundtrip hex" {
+    const values = [_]Int8{ MIN, -42, -1, 0, 1, 42, MAX };
+    for (values) |v| {
+        const hex = toHex(v);
+        try std.testing.expectEqual(v, try fromHex(&hex));
+    }
+}
+```
+
+### Int8: edge cases
+
+```zig
+test "Int8: edge cases" {
+    // MAX + 1 overflows
+    try std.testing.expectError(error.Overflow, add(MAX, ONE));
+    // MIN - 1 overflows
+    try std.testing.expectError(error.Overflow, sub(MIN, ONE));
+    // MIN * -1 overflows
+    try std.testing.expectError(error.Overflow, mul(MIN, MINUS_ONE));
+    // MIN / -1 overflows
+    try std.testing.expectError(error.Overflow, div(MIN, MINUS_ONE));
+    // -MIN overflows
+    try std.testing.expectError(error.Overflow, negate(MIN));
+    // abs(MIN) overflows
+    try std.testing.expectError(error.Overflow, abs(MIN));
+}
+```

@@ -1,0 +1,112 @@
+---
+title: '[TS/JS] src/primitives/ProtocolVersion/ProtocolVersion.test.ts'
+source: 'src/primitives/ProtocolVersion/ProtocolVersion.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/ProtocolVersion/ProtocolVersion.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as ProtocolVersion from "./index.js";
+
+describe("ProtocolVersion", () => {
+	describe("from", () => {
+		it("creates ProtocolVersion from valid string", () => {
+			const proto = ProtocolVersion.from("eth/67");
+			expect(proto).toBe("eth/67");
+		});
+
+		it("accepts different protocol families", () => {
+			const eth = ProtocolVersion.from("eth/67");
+			const snap = ProtocolVersion.from("snap/1");
+			expect(eth).toBe("eth/67");
+			expect(snap).toBe("snap/1");
+		});
+
+		it("throws on invalid format (missing slash)", () => {
+			expect(() => ProtocolVersion.from("eth67")).toThrow(
+				"Protocol version must be in format 'protocol/version'",
+			);
+		});
+
+		it("throws on invalid format (multiple slashes)", () => {
+			expect(() => ProtocolVersion.from("eth/67/extra")).toThrow(
+				"Protocol version must be in format 'protocol/version'",
+			);
+		});
+
+		it("throws on empty components", () => {
+			expect(() => ProtocolVersion.from("/67")).toThrow(
+				"Protocol version components cannot be empty",
+			);
+			expect(() => ProtocolVersion.from("eth/")).toThrow(
+				"Protocol version components cannot be empty",
+			);
+		});
+
+		it("throws on non-string", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+			expect(() => ProtocolVersion.from(67 as any)).toThrow(
+				"Protocol version must be a string",
+			);
+		});
+	});
+
+	describe("toString", () => {
+		it("converts ProtocolVersion to string", () => {
+			const proto = ProtocolVersion.from("eth/67");
+			expect(ProtocolVersion.toString(proto)).toBe("eth/67");
+		});
+	});
+
+	describe("equals", () => {
+		it("returns true for equal protocol versions", () => {
+			const proto1 = ProtocolVersion.from("eth/67");
+			const proto2 = ProtocolVersion.from("eth/67");
+			expect(ProtocolVersion.equals(proto1, proto2)).toBe(true);
+		});
+
+		it("returns false for different protocol versions", () => {
+			const proto1 = ProtocolVersion.from("eth/67");
+			const proto2 = ProtocolVersion.from("eth/68");
+			expect(ProtocolVersion.equals(proto1, proto2)).toBe(false);
+		});
+	});
+
+	describe("compare", () => {
+		it("returns negative when first version is lower", () => {
+			const v66 = ProtocolVersion.from("eth/66");
+			const v67 = ProtocolVersion.from("eth/67");
+			expect(ProtocolVersion.compare(v66, v67)).toBeLessThan(0);
+		});
+
+		it("returns positive when first version is higher", () => {
+			const v67 = ProtocolVersion.from("eth/67");
+			const v66 = ProtocolVersion.from("eth/66");
+			expect(ProtocolVersion.compare(v67, v66)).toBeGreaterThan(0);
+		});
+
+		it("returns zero for equal versions", () => {
+			const v67a = ProtocolVersion.from("eth/67");
+			const v67b = ProtocolVersion.from("eth/67");
+			expect(ProtocolVersion.compare(v67a, v67b)).toBe(0);
+		});
+
+		it("returns zero for different protocol families", () => {
+			const eth = ProtocolVersion.from("eth/67");
+			const snap = ProtocolVersion.from("snap/1");
+			expect(ProtocolVersion.compare(eth, snap)).toBe(0);
+		});
+	});
+
+	describe("constants", () => {
+		it("exports common protocol versions", () => {
+			expect(ProtocolVersion.ETH_66).toBe("eth/66");
+			expect(ProtocolVersion.ETH_67).toBe("eth/67");
+			expect(ProtocolVersion.ETH_68).toBe("eth/68");
+			expect(ProtocolVersion.SNAP_1).toBe("snap/1");
+		});
+	});
+});
+
+```

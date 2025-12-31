@@ -1,0 +1,585 @@
+---
+title: '[TS/JS] src/primitives/Base64/Base64.test.ts'
+source: 'src/primitives/Base64/Base64.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Base64/Base64.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as Base64 from "./Base64.js";
+
+describe("Base64", () => {
+	describe("Standard Encoding", () => {
+		it("encode should encode bytes to base64", () => {
+			const data = new Uint8Array([72, 101, 108, 108, 111]);
+			const encoded = Base64.encode(data);
+			expect(encoded).toBe("SGVsbG8=");
+		});
+
+		it("encode should handle empty input", () => {
+			const empty = new Uint8Array(0);
+			expect(Base64.encode(empty)).toBe("");
+		});
+
+		it("encode should handle all bytes", () => {
+			const data = new Uint8Array([0, 255, 128, 64]);
+			const encoded = Base64.encode(data);
+			expect(Base64.decode(encoded)).toEqual(data);
+		});
+
+		it("encodeString should encode UTF-8 strings", () => {
+			expect(Base64.encodeString("Hello")).toBe("SGVsbG8=");
+			expect(Base64.encodeString("Hello, world!")).toBe("SGVsbG8sIHdvcmxkIQ==");
+		});
+	});
+
+	describe("Standard Decoding", () => {
+		it("decode should decode base64 to bytes", () => {
+			const decoded = Base64.decode("SGVsbG8=");
+			expect(decoded).toEqual(new Uint8Array([72, 101, 108, 108, 111]));
+		});
+
+		it("decode should handle empty input", () => {
+			expect(Base64.decode("")).toEqual(new Uint8Array(0));
+		});
+
+		it("decode should throw on invalid base64", () => {
+			expect(() => Base64.decode("!!!")).toThrow();
+		});
+
+		it("decodeToString should decode to UTF-8", () => {
+			expect(Base64.decodeToString("SGVsbG8=")).toBe("Hello");
+			expect(Base64.decodeToString("SGVsbG8sIHdvcmxkIQ==")).toBe(
+				"Hello, world!",
+			);
+		});
+	});
+
+	describe("URL-Safe Encoding", () => {
+		it("encodeUrlSafe should use URL-safe alphabet", () => {
+			const data = new Uint8Array([255, 254, 253]);
+			const encoded = Base64.encodeUrlSafe(data);
+
+			expect(encoded).not.toContain("+");
+			expect(encoded).not.toContain("/");
+			expect(encoded).not.toContain("=");
+		});
+
+		it("encodeUrlSafe should be reversible", () => {
+			const data = new Uint8Array([1, 2, 3, 4, 5]);
+			const encoded = Base64.encodeUrlSafe(data);
+			const decoded = Base64.decodeUrlSafe(encoded);
+			expect(decoded).toEqual(data);
+		});
+
+		it("encodeStringUrlSafe should encode strings", () => {
+			const encoded = Base64.encodeStringUrlSafe("test");
+			expect(encoded).not.toContain("=");
+			expect(Base64.decodeUrlSafeToString(encoded)).toBe("test");
+		});
+	});
+
+	describe("URL-Safe Decoding", () => {
+		it("decodeUrlSafe should handle no padding", () => {
+			const encoded = Base64.encodeUrlSafe(new Uint8Array([1, 2, 3]));
+			const decoded = Base64.decodeUrlSafe(encoded);
+			expect(decoded).toEqual(new Uint8Array([1, 2, 3]));
+		});
+
+		it("decodeUrlSafe should handle - and _", () => {
+			const data = new Uint8Array([255, 254, 253]);
+			const encoded = Base64.encodeUrlSafe(data);
+			const decoded = Base64.decodeUrlSafe(encoded);
+			expect(decoded).toEqual(data);
+		});
+	});
+
+	describe("Round-trip", () => {
+		it("should preserve data through encode/decode", () => {
+			const cases = [
+				new Uint8Array([]),
+				new Uint8Array([0]),
+				new Uint8Array([255]),
+				new Uint8Array([1, 2, 3, 4, 5]),
+				new Uint8Array(Array.from({ length: 100 }, (_, i) => i)),
+			];
+
+			for (const data of cases) {
+				const encoded = Base64.encode(data);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			}
+		});
+
+		it("should preserve data through URL-safe encode/decode", () => {
+			const cases = [
+				new Uint8Array([]),
+				new Uint8Array([0]),
+				new Uint8Array([255]),
+				new Uint8Array([1, 2, 3, 4, 5]),
+				new Uint8Array([255, 254, 253, 252, 251]),
+			];
+
+			for (const data of cases) {
+				const encoded = Base64.encodeUrlSafe(data);
+				const decoded = Base64.decodeUrlSafe(encoded);
+				expect(decoded).toEqual(data);
+			}
+		});
+
+		it("should preserve strings", () => {
+			const strings = ["", "a", "Hello", "Hello, world!", "🚀"];
+
+			for (const str of strings) {
+				const encoded = Base64.encodeString(str);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(str);
+			}
+		});
+	});
+
+	describe("Validation", () => {
+		it("isValid should accept valid base64", () => {
+			expect(Base64.isValid("")).toBe(true);
+			expect(Base64.isValid("SGVsbG8=")).toBe(true);
+			expect(Base64.isValid("SGVsbG8sIHdvcmxkIQ==")).toBe(true);
+		});
+
+		it("isValid should reject invalid base64", () => {
+			expect(Base64.isValid("!!!")).toBe(false);
+			expect(Base64.isValid("SGVsbG8")).toBe(false);
+		});
+
+		it("isValidUrlSafe should accept valid URL-safe base64", () => {
+			expect(Base64.isValidUrlSafe("")).toBe(true);
+			expect(Base64.isValidUrlSafe("SGVsbG8")).toBe(true);
+			expect(Base64.isValidUrlSafe("YWJj")).toBe(true);
+			expect(Base64.isValidUrlSafe("_-_-")).toBe(true);
+		});
+
+		it("isValidUrlSafe should reject invalid URL-safe base64", () => {
+			expect(Base64.isValidUrlSafe("SGVsbG8=")).toBe(false);
+			expect(Base64.isValidUrlSafe("+++")).toBe(false);
+			expect(Base64.isValidUrlSafe("///")).toBe(false);
+		});
+	});
+
+	describe("Error Handling", () => {
+		describe("DecodingError structure", () => {
+			it("throws DecodingError with correct structure on invalid base64", () => {
+				try {
+					Base64.decode("!!!");
+					expect.fail("Should have thrown");
+				} catch (error) {
+					expect(error).toBeInstanceOf(Error);
+					expect(error.name).toBe("DecodingError");
+					expect(error.message).toContain("Invalid base64");
+					expect(error.code).toBe("BASE64_INVALID_FORMAT");
+					expect(error.context).toBeDefined();
+					expect(error.context.value).toBe("!!!");
+				}
+			});
+
+			it("throws DecodingError with docsPath", () => {
+				try {
+					Base64.decode("invalid");
+					expect.fail("Should have thrown");
+				} catch (error) {
+					expect(error.docsPath).toContain("/primitives/base64");
+				}
+			});
+		});
+
+		describe("Invalid length errors", () => {
+			it("validates base64 length requirements", () => {
+				expect(Base64.isValid("")).toBe(true);
+				expect(Base64.isValid("AAAA")).toBe(true);
+			});
+
+			it("checks length with padding", () => {
+				const valid1 = Base64.isValid("AA==");
+				const valid2 = Base64.isValid("AAA=");
+				expect(valid1 || valid2).toBe(true);
+			});
+
+			it("accepts valid lengths", () => {
+				expect(() => Base64.decode("")).not.toThrow();
+				expect(() => Base64.decode("AAAA")).not.toThrow();
+				expect(() => Base64.decode("AAAABBBB")).not.toThrow();
+			});
+		});
+
+		describe("Invalid padding", () => {
+			it("throws on padding in middle", () => {
+				expect(() => Base64.decode("AA=A")).toThrow();
+				expect(() => Base64.decode("A=AA")).toThrow();
+				expect(() => Base64.decode("=AAA")).toThrow();
+			});
+
+			it("throws on 3+ padding characters", () => {
+				expect(() => Base64.decode("A===")).toThrow();
+				expect(() => Base64.decode("====")).toThrow();
+			});
+
+			it("accepts valid padding", () => {
+				expect(() => Base64.decode("AA==")).not.toThrow();
+				expect(() => Base64.decode("AAA=")).not.toThrow();
+			});
+		});
+
+		describe("Invalid characters", () => {
+			it("throws on invalid base64 characters", () => {
+				expect(() => Base64.decode("!!!")).toThrow();
+				expect(() => Base64.decode("@#$%")).toThrow();
+				expect(() => Base64.decode("A B C")).toThrow();
+			});
+
+			it("throws on newlines", () => {
+				expect(() => Base64.decode("AAAA\nBBBB")).toThrow();
+			});
+
+			it("throws on unicode characters", () => {
+				expect(() => Base64.decode("AAAA€BBB")).toThrow();
+			});
+		});
+	});
+
+	describe("Edge Cases", () => {
+		describe("Very long inputs", () => {
+			it("handles 1KB base64 string", () => {
+				const data = new Uint8Array(768);
+				for (let i = 0; i < data.length; i++) data[i] = i % 256;
+				const encoded = Base64.encode(data);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+
+			it("handles 10KB base64 string", () => {
+				const data = new Uint8Array(7600);
+				for (let i = 0; i < data.length; i++) data[i] = (i * 7) % 256;
+				const encoded = Base64.encode(data);
+				expect(encoded.length).toBeGreaterThan(10000);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+
+			it("handles 100KB base64 string", () => {
+				const data = new Uint8Array(76000);
+				for (let i = 0; i < data.length; i++) data[i] = (i * 13) % 256;
+				const encoded = Base64.encode(data);
+				expect(encoded.length).toBeGreaterThan(100000);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+		});
+
+		describe("UTF-8 edge cases", () => {
+			it("handles emoji", () => {
+				const emoji = "🚀🌟💎";
+				const encoded = Base64.encodeString(emoji);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(emoji);
+			});
+
+			it("handles multi-byte characters", () => {
+				const text = "こんにちは世界";
+				const encoded = Base64.encodeString(text);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(text);
+			});
+
+			it("handles mixed ASCII and multi-byte", () => {
+				const text = "Hello 世界 🌍";
+				const encoded = Base64.encodeString(text);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(text);
+			});
+
+			it("handles null character", () => {
+				const text = "Hello\x00World";
+				const encoded = Base64.encodeString(text);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(text);
+			});
+
+			it("handles all ASCII control characters", () => {
+				let text = "";
+				for (let i = 0; i < 32; i++) {
+					text += String.fromCharCode(i);
+				}
+				const encoded = Base64.encodeString(text);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(text);
+			});
+
+			it("handles surrogate pairs", () => {
+				const text = "𝕳𝖊𝖑𝖑𝖔";
+				const encoded = Base64.encodeString(text);
+				const decoded = Base64.decodeToString(encoded);
+				expect(decoded).toBe(text);
+			});
+		});
+
+		describe("Mixed standard/URL-safe", () => {
+			it("standard decode rejects URL-safe characters", () => {
+				expect(() => Base64.decode("AA-_")).toThrow();
+			});
+
+			it("URL-safe validation rejects standard characters", () => {
+				expect(Base64.isValidUrlSafe("AA+/")).toBe(false);
+			});
+
+			it("URL-safe validation rejects padding", () => {
+				expect(Base64.isValidUrlSafe("AAA=")).toBe(false);
+			});
+
+			it("can convert between formats", () => {
+				const data = new Uint8Array([255, 254, 253]);
+				const standard = Base64.encode(data);
+				const urlSafe = Base64.encodeUrlSafe(data);
+
+				expect(standard).not.toBe(urlSafe);
+				expect(Base64.decode(standard)).toEqual(data);
+				expect(Base64.decodeUrlSafe(urlSafe)).toEqual(data);
+			});
+		});
+
+		describe("calcDecodedSize edge cases", () => {
+			it("returns 0 for empty string", () => {
+				expect(Base64.calcDecodedSize(0)).toBe(0);
+			});
+
+			it("calculates size for various lengths", () => {
+				expect(Base64.calcDecodedSize(4)).toBe(1);
+				expect(Base64.calcDecodedSize(8)).toBe(4);
+				expect(Base64.calcDecodedSize(12)).toBe(7);
+				expect(Base64.calcDecodedSize(16)).toBe(10);
+			});
+
+			it("handles various input lengths", () => {
+				expect(Base64.calcDecodedSize(1)).toBeGreaterThanOrEqual(0);
+				expect(Base64.calcDecodedSize(3)).toBeGreaterThanOrEqual(0);
+				expect(Base64.calcDecodedSize(5)).toBeGreaterThanOrEqual(0);
+				expect(Base64.calcDecodedSize(7)).toBeGreaterThanOrEqual(0);
+			});
+		});
+
+		describe("Empty string URL-safe validation", () => {
+			it("isValidUrlSafe accepts empty string", () => {
+				expect(Base64.isValidUrlSafe("")).toBe(true);
+			});
+
+			it("decodeUrlSafe accepts empty string", () => {
+				const result = Base64.decodeUrlSafe("");
+				expect(result).toEqual(new Uint8Array(0));
+			});
+
+			it("encodeUrlSafe produces empty string for empty input", () => {
+				const result = Base64.encodeUrlSafe(new Uint8Array(0));
+				expect(result).toBe("");
+			});
+		});
+
+		describe("Binary data edge cases", () => {
+			it("handles all zero bytes", () => {
+				const data = new Uint8Array(32);
+				const encoded = Base64.encode(data);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+
+			it("handles all 0xFF bytes", () => {
+				const data = new Uint8Array(32).fill(255);
+				const encoded = Base64.encode(data);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+
+			it("handles alternating bytes", () => {
+				const data = new Uint8Array(32);
+				for (let i = 0; i < 32; i++) data[i] = i % 2 === 0 ? 0xaa : 0x55;
+				const encoded = Base64.encode(data);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+
+			it("handles random-like patterns", () => {
+				const data = new Uint8Array(32);
+				for (let i = 0; i < 32; i++) data[i] = (i * 7 + 13) % 256;
+				const encoded = Base64.encode(data);
+				const decoded = Base64.decode(encoded);
+				expect(decoded).toEqual(data);
+			});
+		});
+	});
+
+	describe("Size Calculation", () => {
+		it("calcEncodedSize should calculate correct size", () => {
+			expect(Base64.calcEncodedSize(0)).toBe(0);
+			expect(Base64.calcEncodedSize(1)).toBe(4);
+			expect(Base64.calcEncodedSize(2)).toBe(4);
+			expect(Base64.calcEncodedSize(3)).toBe(4);
+			expect(Base64.calcEncodedSize(4)).toBe(8);
+			expect(Base64.calcEncodedSize(5)).toBe(8);
+		});
+
+		it("calcDecodedSize should estimate decoded size", () => {
+			expect(Base64.calcDecodedSize(0)).toBe(0);
+			expect(Base64.calcDecodedSize(4)).toBe(1);
+			expect(Base64.calcDecodedSize(8)).toBe(4);
+		});
+	});
+
+	describe("Known Test Vectors", () => {
+		it("should match RFC 4648 test vectors", () => {
+			const vectors = [
+				{ input: "", output: "" },
+				{ input: "f", output: "Zg==" },
+				{ input: "fo", output: "Zm8=" },
+				{ input: "foo", output: "Zm9v" },
+				{ input: "foob", output: "Zm9vYg==" },
+				{ input: "fooba", output: "Zm9vYmE=" },
+				{ input: "foobar", output: "Zm9vYmFy" },
+			];
+
+			for (const { input, output } of vectors) {
+				expect(Base64.encodeString(input)).toBe(output);
+				expect(Base64.decodeToString(output)).toBe(input);
+			}
+		});
+	});
+
+	describe("Branded Types", () => {
+		describe("from", () => {
+			it("should create BrandedBase64 from valid string", () => {
+				const b64 = Base64.from("SGVsbG8=");
+				expect(b64).toBe("SGVsbG8=");
+				expect(Base64.isValid(b64)).toBe(true);
+			});
+
+			it("should create BrandedBase64 from bytes", () => {
+				const data = new Uint8Array([72, 101, 108, 108, 111]);
+				const b64 = Base64.from(data);
+				expect(b64).toBe("SGVsbG8=");
+			});
+
+			it("should throw on invalid string", () => {
+				expect(() => Base64.from("!!!")).toThrow(TypeError);
+				expect(() => Base64.from("SGVsbG8")).toThrow(TypeError);
+			});
+		});
+
+		describe("fromUrlSafe", () => {
+			it("should create BrandedBase64Url from valid string", () => {
+				const b64url = Base64.fromUrlSafe("SGVsbG8");
+				expect(b64url).toBe("SGVsbG8");
+				expect(Base64.isValidUrlSafe(b64url)).toBe(true);
+			});
+
+			it("should create BrandedBase64Url from bytes", () => {
+				const data = new Uint8Array([72, 101, 108, 108, 111]);
+				const b64url = Base64.fromUrlSafe(data);
+				expect(Base64.isValidUrlSafe(b64url)).toBe(true);
+			});
+
+			it("should throw on invalid string", () => {
+				expect(() => Base64.fromUrlSafe("SGVsbG8=")).toThrow(TypeError);
+				expect(() => Base64.fromUrlSafe("+++")).toThrow(TypeError);
+			});
+		});
+
+		describe("toBytes", () => {
+			it("should convert BrandedBase64 to bytes", () => {
+				const b64 = Base64.from("SGVsbG8=");
+				const bytes = Base64.toBytes(b64);
+				expect(bytes).toEqual(new Uint8Array([72, 101, 108, 108, 111]));
+			});
+		});
+
+		describe("toBytesUrlSafe", () => {
+			it("should convert BrandedBase64Url to bytes", () => {
+				const b64url = Base64.fromUrlSafe("SGVsbG8");
+				const bytes = Base64.toBytesUrlSafe(b64url);
+				expect(bytes).toEqual(new Uint8Array([72, 101, 108, 108, 111]));
+			});
+		});
+
+		describe("toString", () => {
+			it("should strip branding", () => {
+				const b64 = Base64.from("SGVsbG8=");
+				const str = Base64.toString(b64);
+				expect(str).toBe("SGVsbG8=");
+				expect(typeof str).toBe("string");
+			});
+		});
+
+		describe("toStringUrlSafe", () => {
+			it("should strip branding", () => {
+				const b64url = Base64.fromUrlSafe("SGVsbG8");
+				const str = Base64.toStringUrlSafe(b64url);
+				expect(str).toBe("SGVsbG8");
+				expect(typeof str).toBe("string");
+			});
+		});
+
+		describe("toBase64Url", () => {
+			it("should convert Base64 to Base64Url", () => {
+				const b64 = Base64.from("SGVsbG8=");
+				const b64url = Base64.toBase64Url(b64);
+				expect(Base64.isValidUrlSafe(b64url)).toBe(true);
+				expect(b64url).not.toContain("=");
+			});
+		});
+
+		describe("toBase64", () => {
+			it("should convert Base64Url to Base64", () => {
+				const b64url = Base64.fromUrlSafe("SGVsbG8");
+				const b64 = Base64.toBase64(b64url);
+				expect(Base64.isValid(b64)).toBe(true);
+				expect(b64).toBe("SGVsbG8=");
+			});
+		});
+
+		describe("Round-trip with branded types", () => {
+			it("should preserve data through Base64 branded round-trip", () => {
+				const original = new Uint8Array([1, 2, 3, 4, 5]);
+				const b64 = Base64.from(original);
+				const bytes = Base64.toBytes(b64);
+				expect(bytes).toEqual(original);
+			});
+
+			it("should preserve data through Base64Url branded round-trip", () => {
+				const original = new Uint8Array([255, 254, 253]);
+				const b64url = Base64.fromUrlSafe(original);
+				const bytes = Base64.toBytesUrlSafe(b64url);
+				expect(bytes).toEqual(original);
+			});
+
+			it("should convert between Base64 and Base64Url", () => {
+				const original = new Uint8Array([1, 2, 3, 4, 5]);
+				const b64 = Base64.from(original);
+				const b64url = Base64.toBase64Url(b64);
+				const b64Again = Base64.toBase64(b64url);
+				const bytes = Base64.toBytes(b64Again);
+				expect(bytes).toEqual(original);
+			});
+		});
+
+		describe("Type safety", () => {
+			it("should work with already branded values", () => {
+				const b64 = Base64.from("SGVsbG8=");
+				const b64Again = Base64.from(b64);
+				expect(b64Again).toBe(b64);
+			});
+
+			it("should work with already branded URL-safe values", () => {
+				const b64url = Base64.fromUrlSafe("SGVsbG8");
+				const b64urlAgain = Base64.fromUrlSafe(b64url);
+				expect(b64urlAgain).toBe(b64url);
+			});
+		});
+	});
+});
+
+```

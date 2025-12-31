@@ -708,6 +708,11 @@
 		"examples:generate": "pnpm dlx tsx scripts/generate-example-docs.ts",
 		"examples:test": "pnpm dlx tsx scripts/validate-examples.ts",
 		"examples:ci": "pnpm examples:test && pnpm examples:generate",
+		"docs:ghost-tests": "node scripts/generate-ghost-tests.mjs",
+		"predocs:dev": "npm run docs:ghost-tests",
+		"predocs:build": "npm run docs:ghost-tests",
+		"premint:dev": "npm run docs:ghost-tests",
+		"predocs:playground:build": "npm run docs:ghost-tests",
 		"prepublishOnly": "pnpm build && zig build crypto-wasm && pnpm lint:package && pnpm test:run"
 	},
 	"devDependencies": {

@@ -1,0 +1,85 @@
+---
+title: '[TS/JS] src/primitives/Rlp/encodeVariadic.test.ts'
+source: 'src/primitives/Rlp/encodeVariadic.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Rlp/encodeVariadic.test.ts
+
+```typescript
+/**
+ * Tests for Rlp.encodeVariadic
+ */
+
+import { describe, expect, it } from "vitest";
+import { decode } from "./decode.js";
+import { encodeVariadic } from "./encodeVariadic.js";
+import { toRaw } from "./toRaw.js";
+
+describe("Rlp.encodeVariadic", () => {
+	it("encodes no arguments as empty list", () => {
+		const result = encodeVariadic();
+		const decoded = decode(result);
+		const raw = toRaw(decoded.data);
+		expect(Array.isArray(raw)).toBe(true);
+		expect(raw).toHaveLength(0);
+	});
+
+	it("encodes single argument", () => {
+		const result = encodeVariadic(new Uint8Array([1, 2, 3]));
+		const decoded = decode(result);
+		const raw = toRaw(decoded.data);
+		expect(Array.isArray(raw)).toBe(true);
+		expect(raw).toHaveLength(1);
+		expect(raw[0]).toEqual(new Uint8Array([1, 2, 3]));
+	});
+
+	it("encodes multiple arguments", () => {
+		const result = encodeVariadic(
+			new Uint8Array([1]),
+			new Uint8Array([2, 3]),
+			new Uint8Array([4, 5, 6]),
+		);
+		const decoded = decode(result);
+		const raw = toRaw(decoded.data);
+		expect(Array.isArray(raw)).toBe(true);
+		expect(raw).toHaveLength(3);
+		expect(raw[0]).toEqual(new Uint8Array([1]));
+		expect(raw[1]).toEqual(new Uint8Array([2, 3]));
+		expect(raw[2]).toEqual(new Uint8Array([4, 5, 6]));
+	});
+
+	it("encodes nested arrays", () => {
+		const result = encodeVariadic(
+			[new Uint8Array([1])],
+			[new Uint8Array([2]), new Uint8Array([3])],
+		);
+		const decoded = decode(result);
+		const raw = toRaw(decoded.data);
+		expect(Array.isArray(raw)).toBe(true);
+		expect(raw).toHaveLength(2);
+		expect(Array.isArray(raw[0])).toBe(true);
+		expect(Array.isArray(raw[1])).toBe(true);
+	});
+
+	it("encodes mixed types", () => {
+		const result = encodeVariadic(
+			new Uint8Array([1]),
+			[new Uint8Array([2])],
+			new Uint8Array([]),
+			[],
+		);
+		const decoded = decode(result);
+		const raw = toRaw(decoded.data);
+		expect(raw).toHaveLength(4);
+	});
+
+	it("encodes large argument list", () => {
+		const args = Array.from({ length: 50 }, (_, i) => new Uint8Array([i]));
+		const result = encodeVariadic(...args);
+		const decoded = decode(result);
+		const raw = toRaw(decoded.data);
+		expect(raw).toHaveLength(50);
+	});
+});
+
+```

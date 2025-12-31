@@ -1,0 +1,108 @@
+---
+title: '[TS/JS] docs/primitives/bytecode/scan.test.ts'
+source: 'docs/primitives/bytecode/scan.test.ts'
+---
+
+> Auto-generated from test file: docs/primitives/bytecode/scan.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+
+describe("Bytecode.scan (docs/primitives/bytecode/scan.mdx)", () => {
+	describe("Basic Iteration", () => {
+		it("should iterate over instructions", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// PUSH1 0x01, PUSH1 0x02, ADD
+			const code = Bytecode("0x6001600201");
+			const instructions = Array.from(code.scan());
+
+			expect(instructions.length).toBe(3);
+		});
+
+		it("should handle empty bytecode", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x");
+			const instructions = Array.from(code.scan());
+
+			expect(instructions.length).toBe(0);
+		});
+	});
+
+	describe("Instruction Types", () => {
+		it("should identify PUSH instructions", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x6001610203");
+			const instructions = Array.from(code.scan());
+
+			// First instruction is PUSH1
+			expect(instructions[0].opcode).toBe(0x60);
+
+			// Second instruction is PUSH2
+			expect(instructions[1].opcode).toBe(0x61);
+		});
+
+		it("should identify JUMPDEST", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// JUMPDEST, STOP
+			const code = Bytecode("0x5b00");
+			const instructions = Array.from(code.scan());
+
+			expect(instructions[0].opcode).toBe(0x5b); // JUMPDEST
+		});
+	});
+
+	describe("Scan with Options", () => {
+		it("should support withGas option", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x6001600201");
+			const instructions = Array.from(code.scan({ withGas: true }));
+
+			expect(instructions.length).toBe(3);
+		});
+
+		it("should support withStack option", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x6001600201");
+			const instructions = Array.from(code.scan({ withStack: true }));
+
+			expect(instructions.length).toBe(3);
+		});
+	});
+
+	describe("Manual PC Iteration", () => {
+		it("should track instruction positions via pc field", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// PUSH1 0x01 (2 bytes), ADD (1 byte), STOP (1 byte)
+			const code = Bytecode("0x60010100");
+			const instructions = Array.from(code.scan());
+
+			// scan() returns pc field, not position
+			expect(instructions[0].pc).toBe(0);
+			expect(instructions[1].pc).toBe(2);
+			expect(instructions[2].pc).toBe(3);
+		});
+	});
+});
+
+```

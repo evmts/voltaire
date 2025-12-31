@@ -1,0 +1,278 @@
+---
+title: '[Zig] src/primitives/Blob/blob.fuzz.zig'
+source: 'src/primitives/Blob/blob.fuzz.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Blob/blob.fuzz.zig
+
+### fuzz blob size validation
+
+```zig
+test "fuzz blob size validation" {
+    try testing.fuzz({}, fuzzBlobSizeValidation, .{});
+}
+```
+
+### fuzz encodeBlobData length limits
+
+```zig
+test "fuzz encodeBlobData length limits" {
+    try testing.fuzz({}, fuzzEncodeBlobDataLengthLimits, .{});
+}
+```
+
+### fuzz decodeBlobData invalid lengths
+
+```zig
+test "fuzz decodeBlobData invalid lengths" {
+    try testing.fuzz({}, fuzzDecodeBlobDataInvalidLengths, .{});
+}
+```
+
+### fuzz blob encoding roundtrip
+
+```zig
+test "fuzz blob encoding roundtrip" {
+    try testing.fuzz({}, fuzzBlobEncodingRoundtrip, .{});
+}
+```
+
+### fuzz blob field element boundaries
+
+```zig
+test "fuzz blob field element boundaries" {
+    try testing.fuzz({}, fuzzBlobFieldElementBoundaries, .{});
+}
+```
+
+### fuzz commitmentToVersionedHash determinism
+
+```zig
+test "fuzz commitmentToVersionedHash determinism" {
+    try testing.fuzz({}, fuzzCommitmentToVersionedHashDeterminism, .{});
+}
+```
+
+### fuzz commitmentToVersionedHash version byte
+
+```zig
+test "fuzz commitmentToVersionedHash version byte" {
+    try testing.fuzz({}, fuzzCommitmentToVersionedHashVersionByte, .{});
+}
+```
+
+### fuzz isValidVersionedHash
+
+```zig
+test "fuzz isValidVersionedHash" {
+    try testing.fuzz({}, fuzzIsValidVersionedHash, .{});
+}
+```
+
+### fuzz invalid versioned hash versions
+
+```zig
+test "fuzz invalid versioned hash versions" {
+    try testing.fuzz({}, fuzzInvalidVersionedHashVersions, .{});
+}
+```
+
+### fuzz BlobSidecar versionedHash consistency
+
+```zig
+test "fuzz BlobSidecar versionedHash consistency" {
+    try testing.fuzz({}, fuzzBlobSidecarVersionedHashConsistency, .{});
+}
+```
+
+### fuzz commitment and proof sizes
+
+```zig
+test "fuzz commitment and proof sizes" {
+    try testing.fuzz({}, fuzzCommitmentAndProofSizes, .{});
+}
+```
+
+### fuzz calculateBlobGasPrice monotonicity
+
+```zig
+test "fuzz calculateBlobGasPrice monotonicity" {
+    try testing.fuzz({}, fuzzCalculateBlobGasPriceMonotonicity, .{});
+}
+```
+
+### fuzz calculateBlobGasPrice determinism
+
+```zig
+test "fuzz calculateBlobGasPrice determinism" {
+    try testing.fuzz({}, fuzzCalculateBlobGasPriceDeterminism, .{});
+}
+```
+
+### fuzz calculateBlobGasPrice zero excess
+
+```zig
+test "fuzz calculateBlobGasPrice zero excess" {
+    try testing.fuzz({}, fuzzCalculateBlobGasPriceZeroExcess, .{});
+}
+```
+
+### fuzz calculateExcessBlobGas boundary
+
+```zig
+test "fuzz calculateExcessBlobGas boundary" {
+    try testing.fuzz({}, fuzzCalculateExcessBlobGasBoundary, .{});
+}
+```
+
+### fuzz calculateExcessBlobGas no overflow
+
+```zig
+test "fuzz calculateExcessBlobGas no overflow" {
+    try testing.fuzz({}, fuzzCalculateExcessBlobGasNoOverflow, .{});
+}
+```
+
+### fuzz blob gas constants
+
+```zig
+test "fuzz blob gas constants" {
+    try testing.fuzz({}, fuzzBlobGasConstants, .{});
+}
+```
+
+### fuzz BlobTransaction validate blob count
+
+```zig
+test "fuzz BlobTransaction validate blob count" {
+    try testing.fuzz({}, fuzzBlobTransactionValidateBlobCount, .{});
+}
+```
+
+### fuzz BlobTransaction validate max fee
+
+```zig
+test "fuzz BlobTransaction validate max fee" {
+    try testing.fuzz({}, fuzzBlobTransactionValidateMaxFee, .{});
+}
+```
+
+### fuzz BlobTransaction validate invalid hashes
+
+```zig
+test "fuzz BlobTransaction validate invalid hashes" {
+    try testing.fuzz({}, fuzzBlobTransactionValidateInvalidHashes, .{});
+}
+```
+
+### fuzz BlobTransaction blobGasUsed calculation
+
+```zig
+test "fuzz BlobTransaction blobGasUsed calculation" {
+    try testing.fuzz({}, fuzzBlobTransactionBlobGasUsedCalculation, .{});
+}
+```
+
+### fuzz BlobTransaction blobGasCost calculation
+
+```zig
+test "fuzz BlobTransaction blobGasCost calculation" {
+    try testing.fuzz({}, fuzzBlobTransactionBlobGasCostCalculation, .{});
+}
+```
+
+### fuzz BlobTransaction max blobs boundary
+
+```zig
+test "fuzz BlobTransaction max blobs boundary" {
+    try testing.fuzz({}, fuzzBlobTransactionMaxBlobsBoundary, .{});
+}
+```
+
+### fuzz BlobTransaction one over max blobs
+
+```zig
+test "fuzz BlobTransaction one over max blobs" {
+    try testing.fuzz({}, fuzzBlobTransactionOneOverMaxBlobs, .{});
+}
+```
+
+### fuzz blob economics simulation
+
+```zig
+test "fuzz blob economics simulation" {
+    try testing.fuzz({}, fuzzBlobEconomicsSimulation, .{});
+}
+```
+
+### fuzz excess blob gas accumulation
+
+```zig
+test "fuzz excess blob gas accumulation" {
+    try testing.fuzz({}, fuzzExcessBlobGasAccumulation, .{});
+}
+```
+
+### fuzz excess blob gas decay
+
+```zig
+test "fuzz excess blob gas decay" {
+    try testing.fuzz({}, fuzzExcessBlobGasDecay, .{});
+}
+```
+
+### fuzz versioned hash is always 32 bytes
+
+```zig
+test "fuzz versioned hash is always 32 bytes" {
+    try testing.fuzz({}, fuzzVersionedHashIsAlways32Bytes, .{});
+}
+```
+
+### fuzz blob gas price never decreases with more excess
+
+```zig
+test "fuzz blob gas price never decreases with more excess" {
+    try testing.fuzz({}, fuzzBlobGasPriceNeverDecreasesWithMoreExcess, .{});
+}
+```
+
+### fuzz blob transaction gas calculations are consistent
+
+```zig
+test "fuzz blob transaction gas calculations are consistent" {
+    try testing.fuzz({}, fuzzBlobTransactionGasCalculationsAreConsistent, .{});
+}
+```
+
+### fuzz commitment hashing is deterministic
+
+```zig
+test "fuzz commitment hashing is deterministic" {
+    try testing.fuzz({}, fuzzCommitmentHashingIsDeterministic, .{});
+}
+```
+
+### fuzz blob encoding preserves length info
+
+```zig
+test "fuzz blob encoding preserves length info" {
+    try testing.fuzz({}, fuzzBlobEncodingPreservesLengthInfo, .{});
+}
+```
+
+### fuzz zero excess gives minimum price
+
+```zig
+test "fuzz zero excess gives minimum price" {
+    try testing.fuzz({}, fuzzZeroExcessGivesMinimumPrice, .{});
+}
+```
+
+### fuzz max blobs per transaction constant is enforced
+
+```zig
+test "fuzz max blobs per transaction constant is enforced" {
+    try testing.fuzz({}, fuzzMaxBlobsPerTransactionConstantIsEnforced, .{});
+}
+```

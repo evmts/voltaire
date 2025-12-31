@@ -1,0 +1,277 @@
+---
+title: '[TS/JS] src/crypto/Secp256k1/Signature/fromBytes.test.ts'
+source: 'src/crypto/Secp256k1/Signature/fromBytes.test.ts'
+---
+
+> Auto-generated from test file: src/crypto/Secp256k1/Signature/fromBytes.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import { InvalidSignatureError } from "../../../primitives/errors/index.js";
+import * as Signature from "./index.js";
+
+describe("Secp256k1.Signature.fromBytes", () => {
+	describe("valid signatures", () => {
+		it("should create signature from 65-byte array", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(1, 0, 32); // r
+			bytes.fill(2, 32, 64); // s
+			bytes[64] = 27; // v
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig).toHaveProperty("r");
+			expect(sig).toHaveProperty("s");
+			expect(sig).toHaveProperty("v");
+		});
+
+		it("should extract r component correctly", () => {
+			const bytes = new Uint8Array(65);
+			for (let i = 0; i < 32; i++) {
+				bytes[i] = i;
+			}
+			bytes.fill(0, 32, 64);
+			bytes[64] = 27;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.r[0]).toBe(0);
+			expect(sig.r[1]).toBe(1);
+			expect(sig.r[31]).toBe(31);
+		});
+
+		it("should extract s component correctly", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(0, 0, 32);
+			for (let i = 0; i < 32; i++) {
+				bytes[32 + i] = 100 + i;
+			}
+			bytes[64] = 28;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.s[0]).toBe(100);
+			expect(sig.s[1]).toBe(101);
+			expect(sig.s[31]).toBe(131);
+		});
+
+		it("should extract v component correctly", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(1, 0, 32);
+			bytes.fill(2, 32, 64);
+			bytes[64] = 27;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.v).toBe(27);
+		});
+
+		it("should handle v=28", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(1, 0, 32);
+			bytes.fill(2, 32, 64);
+			bytes[64] = 28;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.v).toBe(28);
+		});
+
+		it("should handle v=0 (recovery id format)", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(1, 0, 32);
+			bytes.fill(2, 32, 64);
+			bytes[64] = 0;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.v).toBe(0);
+		});
+
+		it("should handle v=1 (recovery id format)", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(1, 0, 32);
+			bytes.fill(2, 32, 64);
+			bytes[64] = 1;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.v).toBe(1);
+		});
+	});
+
+	describe("validation errors", () => {
+		it("should throw InvalidSignatureError on wrong length (too short)", () => {
+			const shortBytes = new Uint8Array(64);
+
+			expect(() => Signature.fromBytes(shortBytes)).toThrow(
+				InvalidSignatureError,
+			);
+			expect(() => Signature.fromBytes(shortBytes)).toThrow(
+				/Signature must be 65 bytes, got 64/,
+			);
+		});
+
+		it("should throw InvalidSignatureError on wrong length (too long)", () => {
+			const longBytes = new Uint8Array(66);
+
+			expect(() => Signature.fromBytes(longBytes)).toThrow(
+				InvalidSignatureError,
+			);
+			expect(() => Signature.fromBytes(longBytes)).toThrow(
+				/Signature must be 65 bytes, got 66/,
+			);
+		});
+
+		it("should throw on empty array", () => {
+			const emptyBytes = new Uint8Array(0);
+
+			expect(() => Signature.fromBytes(emptyBytes)).toThrow(
+				InvalidSignatureError,
+			);
+		});
+
+		it("should throw on 32-byte array", () => {
+			const bytes32 = new Uint8Array(32);
+
+			expect(() => Signature.fromBytes(bytes32)).toThrow(InvalidSignatureError);
+		});
+
+		it("should include error context", () => {
+			const wrongBytes = new Uint8Array(60);
+
+			try {
+				Signature.fromBytes(wrongBytes);
+				expect.fail("Should have thrown");
+			} catch (error) {
+				expect(error).toBeInstanceOf(InvalidSignatureError);
+				if (error instanceof InvalidSignatureError) {
+					expect(error.code).toBe("INVALID_SIGNATURE_LENGTH");
+					expect(error.context).toHaveProperty("actualLength", 60);
+					expect(error.context).toHaveProperty("expectedLength", 65);
+				}
+			}
+		});
+	});
+
+	describe("edge cases", () => {
+		it("should handle all-zero r", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(0, 0, 32);
+			bytes.fill(1, 32, 64);
+			bytes[64] = 27;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.r.every((b) => b === 0)).toBe(true);
+		});
+
+		it("should handle all-zero s", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(1, 0, 32);
+			bytes.fill(0, 32, 64);
+			bytes[64] = 27;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.s.every((b) => b === 0)).toBe(true);
+		});
+
+		it("should handle max values for r and s", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(0xff, 0, 64);
+			bytes[64] = 27;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.r.every((b) => b === 0xff)).toBe(true);
+			expect(sig.s.every((b) => b === 0xff)).toBe(true);
+		});
+
+		it("should handle v at boundary (27)", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(1, 0, 32);
+			bytes.fill(2, 32, 64);
+			bytes[64] = 27;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.v).toBe(27);
+		});
+
+		it("should handle v at boundary (28)", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(1, 0, 32);
+			bytes.fill(2, 32, 64);
+			bytes[64] = 28;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.v).toBe(28);
+		});
+	});
+
+	describe("component slicing", () => {
+		it("should create independent r slice", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(42, 0, 32);
+			bytes.fill(99, 32, 64);
+			bytes[64] = 27;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.r.length).toBe(32);
+			sig.r[0] = 0;
+			expect(bytes[0]).toBe(42); // Original unchanged
+		});
+
+		it("should create independent s slice", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(42, 0, 32);
+			bytes.fill(99, 32, 64);
+			bytes[64] = 27;
+
+			const sig = Signature.fromBytes(bytes);
+
+			expect(sig.s.length).toBe(32);
+			sig.s[0] = 0;
+			expect(bytes[32]).toBe(99); // Original unchanged
+		});
+	});
+
+	describe("roundtrip with toBytes", () => {
+		it("should roundtrip correctly", () => {
+			const original = new Uint8Array(65);
+			for (let i = 0; i < 32; i++) {
+				original[i] = i;
+			}
+			for (let i = 0; i < 32; i++) {
+				original[32 + i] = 100 + i;
+			}
+			original[64] = 27;
+
+			const sig = Signature.fromBytes(original);
+			const reconstructed = Signature.toBytes(sig);
+
+			expect(reconstructed).toEqual(original);
+		});
+	});
+
+	describe("determinism", () => {
+		it("should produce same result for same input", () => {
+			const bytes = new Uint8Array(65);
+			bytes.fill(7, 0, 32);
+			bytes.fill(13, 32, 64);
+			bytes[64] = 27;
+
+			const sig1 = Signature.fromBytes(bytes);
+			const sig2 = Signature.fromBytes(bytes);
+
+			expect(sig1.r).toEqual(sig2.r);
+			expect(sig1.s).toEqual(sig2.s);
+			expect(sig1.v).toBe(sig2.v);
+		});
+	});
+});
+
+```

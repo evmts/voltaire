@@ -1,0 +1,320 @@
+---
+title: '[Zig] src/primitives/NodeInfo/NodeInfo.zig'
+source: 'src/primitives/NodeInfo/NodeInfo.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/NodeInfo/NodeInfo.zig
+
+### NodeInfo: getProtocol returns eth info
+
+```zig
+test "NodeInfo: getProtocol returns eth info" {
+    const node = createTestNode(true);
+    const eth = node.getProtocol("eth") orelse unreachable;
+    try std.testing.expectEqual(NetworkId.MAINNET, eth.network);
+}
+```
+
+### NodeInfo: getProtocol returns null for unknown protocol
+
+```zig
+test "NodeInfo: getProtocol returns null for unknown protocol" {
+    const node = createTestNode(true);
+    try std.testing.expectEqual(@as(?EthProtocolInfo, null), node.getProtocol("snap"));
+    try std.testing.expectEqual(@as(?EthProtocolInfo, null), node.getProtocol("les"));
+}
+```
+
+### NodeInfo: getEthProtocol returns info when supported
+
+```zig
+test "NodeInfo: getEthProtocol returns info when supported" {
+    const node = createTestNode(true);
+    const eth = node.getEthProtocol() orelse unreachable;
+    try std.testing.expectEqual(NetworkId.MAINNET, eth.network);
+    try std.testing.expectEqual(@as(u256, 123456789), eth.difficulty);
+}
+```
+
+### NodeInfo: getEthProtocol returns null when not supported
+
+```zig
+test "NodeInfo: getEthProtocol returns null when not supported" {
+    const node = createTestNode(false);
+    try std.testing.expectEqual(@as(?EthProtocolInfo, null), node.getEthProtocol());
+}
+```
+
+### NodeInfo: supportsEth returns correct value
+
+```zig
+test "NodeInfo: supportsEth returns correct value" {
+    const node_with_eth = createTestNode(true);
+    try std.testing.expect(node_with_eth.supportsEth());
+
+    const node_without_eth = createTestNode(false);
+    try std.testing.expect(!node_without_eth.supportsEth());
+}
+```
+
+### NodeInfo: getNetworkId returns ID when eth supported
+
+```zig
+test "NodeInfo: getNetworkId returns ID when eth supported" {
+    const node = createTestNode(true);
+    const net_id = node.getNetworkId() orelse unreachable;
+    try std.testing.expectEqual(NetworkId.MAINNET, net_id);
+}
+```
+
+### NodeInfo: getNetworkId returns null when eth not supported
+
+```zig
+test "NodeInfo: getNetworkId returns null when eth not supported" {
+    const node = createTestNode(false);
+    try std.testing.expectEqual(@as(?NetworkId.NetworkId, null), node.getNetworkId());
+}
+```
+
+### NodeInfo: getListenerPort returns correct port
+
+```zig
+test "NodeInfo: getListenerPort returns correct port" {
+    const node = createTestNode(true);
+    try std.testing.expectEqual(@as(u16, 30303), node.getListenerPort());
+}
+```
+
+### NodeInfo: getDiscoveryPort returns correct port
+
+```zig
+test "NodeInfo: getDiscoveryPort returns correct port" {
+    const node = createTestNode(true);
+    try std.testing.expectEqual(@as(u16, 30301), node.getDiscoveryPort());
+}
+```
+
+### NodeInfo: isMainnet returns true for mainnet node
+
+```zig
+test "NodeInfo: isMainnet returns true for mainnet node" {
+    const node = createTestNode(true);
+    try std.testing.expect(node.isMainnet());
+}
+```
+
+### NodeInfo: isMainnet returns false when eth not supported
+
+```zig
+test "NodeInfo: isMainnet returns false when eth not supported" {
+    const node = createTestNode(false);
+    try std.testing.expect(!node.isMainnet());
+}
+```
+
+### NodeInfo: isMainnet returns false for non-mainnet
+
+```zig
+test "NodeInfo: isMainnet returns false for non-mainnet" {
+    const enode = PeerId.from("enode://abc@192.168.1.1:30303") catch unreachable;
+    var genesis: [32]u8 = undefined;
+    var head: [32]u8 = undefined;
+    @memset(&genesis, 0);
+    @memset(&head, 0);
+
+    const node = init(
+        enode,
+        "abc",
+        "192.168.1.1",
+        "192.168.1.1:30303",
+        "Geth/v1.10.26",
+        .{ .discovery = 30301, .listener = 30303 },
+        .{ .eth = .{
+            .network = NetworkId.SEPOLIA,
+            .difficulty = 0,
+            .genesis = genesis,
+            .head = head,
+        } },
+    );
+    try std.testing.expect(!node.isMainnet());
+}
+```
+
+### NodeInfo: getPublicKey returns node ID from enode
+
+```zig
+test "NodeInfo: getPublicKey returns node ID from enode" {
+    const node = createTestNode(true);
+    const pubkey = node.getPublicKey() orelse unreachable;
+    try std.testing.expectEqualStrings("abc123def456", pubkey);
+}
+```
+
+### NodeInfo: access name field
+
+```zig
+test "NodeInfo: access name field" {
+    const node = createTestNode(true);
+    try std.testing.expectEqualStrings("Geth/v1.10.26-stable/linux-amd64/go1.19.5", node.name);
+}
+```
+
+### NodeInfo: access ip field
+
+```zig
+test "NodeInfo: access ip field" {
+    const node = createTestNode(true);
+    try std.testing.expectEqualStrings("192.168.1.1", node.ip);
+}
+```
+
+### NodeInfo: access listen_addr field
+
+```zig
+test "NodeInfo: access listen_addr field" {
+    const node = createTestNode(true);
+    try std.testing.expectEqualStrings("192.168.1.1:30303", node.listen_addr);
+}
+```
+
+### NodeInfo: access id field
+
+```zig
+test "NodeInfo: access id field" {
+    const node = createTestNode(true);
+    try std.testing.expectEqualStrings("abc123def456", node.id);
+}
+```
+
+### NodeInfo: complete workflow
+
+```zig
+test "NodeInfo: complete workflow" {
+    const enode = PeerId.from("enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@203.0.113.100:30303") catch unreachable;
+    var genesis: [32]u8 = undefined;
+    var head: [32]u8 = undefined;
+    @memset(&genesis, 0xD4);
+    @memset(&head, 0xE5);
+
+    const node = init(
+        enode,
+        "6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0",
+        "203.0.113.100",
+        "0.0.0.0:30303",
+        "Geth/v1.13.0-stable/linux-amd64/go1.21.0",
+        .{ .discovery = 30301, .listener = 30303 },
+        .{ .eth = .{
+            .network = NetworkId.MAINNET,
+            .difficulty = 58750003716598352816469,
+            .genesis = genesis,
+            .head = head,
+        } },
+    );
+
+    // Check basic info
+    try std.testing.expectEqualStrings("Geth/v1.13.0-stable/linux-amd64/go1.21.0", node.name);
+    try std.testing.expectEqualStrings("203.0.113.100", node.ip);
+
+    // Check ports
+    try std.testing.expectEqual(@as(u16, 30303), node.getListenerPort());
+    try std.testing.expectEqual(@as(u16, 30301), node.getDiscoveryPort());
+
+    // Check network
+    try std.testing.expect(node.isMainnet());
+    try std.testing.expect(node.supportsEth());
+
+    // Check protocol info
+    const eth = node.getEthProtocol() orelse unreachable;
+    try std.testing.expectEqual(NetworkId.MAINNET, eth.network);
+
+    // Get network ID
+    const net_id = node.getNetworkId() orelse unreachable;
+    try std.testing.expect(NetworkId.isMainnet(net_id));
+}
+```
+
+### NodeInfo: equals returns true for same node ID
+
+```zig
+test "NodeInfo: equals returns true for same node ID" {
+    const node1 = createTestNode(true);
+    const node2 = createTestNode(true);
+    try std.testing.expect(node1.equals(node2));
+}
+```
+
+### NodeInfo: equals returns false for different node IDs
+
+```zig
+test "NodeInfo: equals returns false for different node IDs" {
+    const node1 = createTestNode(true);
+    const enode2 = PeerId.from("enode://different@192.168.1.2:30304") catch unreachable;
+    const node2 = init(
+        enode2,
+        "different_id",
+        "192.168.1.2",
+        "192.168.1.2:30304",
+        "Geth/v1.10.26-stable",
+        .{ .discovery = 30301, .listener = 30304 },
+        .{ .eth = null },
+    );
+    try std.testing.expect(!node1.equals(node2));
+}
+```
+
+### NodeInfo: toEnode returns enode URL string
+
+```zig
+test "NodeInfo: toEnode returns enode URL string" {
+    const node = createTestNode(true);
+    const enode_str = node.toEnode();
+    try std.testing.expect(std.mem.startsWith(u8, enode_str, "enode://"));
+}
+```
+
+### NodeInfo: parseEnode extracts components
+
+```zig
+test "NodeInfo: parseEnode extracts components" {
+    const enode_str = "enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@192.168.1.100:30303?discport=30301";
+    const enode = PeerId.from(enode_str) catch unreachable;
+    var genesis: [32]u8 = undefined;
+    var head: [32]u8 = undefined;
+    @memset(&genesis, 0);
+    @memset(&head, 0);
+
+    const node = init(
+        enode,
+        "6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0",
+        "192.168.1.100",
+        "192.168.1.100:30303",
+        "Geth/v1.10.26",
+        .{ .discovery = 30301, .listener = 30303 },
+        .{ .eth = null },
+    );
+
+    const parsed = try node.parseEnode();
+    try std.testing.expectEqualStrings("192.168.1.100", parsed.ip);
+    try std.testing.expectEqual(@as(u16, 30303), parsed.port);
+    try std.testing.expectEqual(@as(?u16, 30301), parsed.discovery_port);
+}
+```
+
+### NodeInfo: from alias works same as init
+
+```zig
+test "NodeInfo: from alias works same as init" {
+    const enode = PeerId.from("enode://abc@10.0.0.1:30303") catch unreachable;
+    const node = from(
+        enode,
+        "abc",
+        "10.0.0.1",
+        "10.0.0.1:30303",
+        "TestNode",
+        .{ .discovery = 30301, .listener = 30303 },
+        .{ .eth = null },
+    );
+    try std.testing.expectEqualStrings("TestNode", node.name);
+    try std.testing.expectEqualStrings("10.0.0.1", node.ip);
+}
+```

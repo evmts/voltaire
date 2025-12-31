@@ -1,0 +1,337 @@
+---
+title: '[Zig] src/primitives/EncodedData/encoded_data.zig'
+source: 'src/primitives/EncodedData/encoded_data.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/EncodedData/encoded_data.zig
+
+### fromBytes - basic
+
+```zig
+test "fromBytes - basic" {
+    const allocator = std.testing.allocator;
+    const bytes = [_]u8{ 0x00, 0x00, 0x00, 0x01 };
+    var data = try fromBytes(allocator, &bytes);
+    defer data.deinit();
+
+    try std.testing.expectEqual(@as(usize, 4), data.len());
+    try std.testing.expectEqual(@as(u8, 0x00), data.bytes()[0]);
+    try std.testing.expectEqual(@as(u8, 0x01), data.bytes()[3]);
+}
+```
+
+### fromBytes - empty
+
+```zig
+test "fromBytes - empty" {
+    const allocator = std.testing.allocator;
+    var data = try fromBytes(allocator, &[_]u8{});
+    defer data.deinit();
+
+    try std.testing.expectEqual(@as(usize, 0), data.len());
+    try std.testing.expect(data.isEmpty());
+}
+```
+
+### fromHex - with 0x prefix
+
+```zig
+test "fromHex - with 0x prefix" {
+    const allocator = std.testing.allocator;
+    var data = try fromHex(allocator, "0x00000001");
+    defer data.deinit();
+
+    try std.testing.expectEqual(@as(usize, 4), data.len());
+    try std.testing.expectEqual(@as(u8, 0x01), data.bytes()[3]);
+}
+```
+
+### fromHex - without 0x prefix
+
+```zig
+test "fromHex - without 0x prefix" {
+    const allocator = std.testing.allocator;
+    var data = try fromHex(allocator, "00000001");
+    defer data.deinit();
+
+    try std.testing.expectEqual(@as(usize, 4), data.len());
+}
+```
+
+### fromHex - empty
+
+```zig
+test "fromHex - empty" {
+    const allocator = std.testing.allocator;
+    var data = try fromHex(allocator, "0x");
+    defer data.deinit();
+
+    try std.testing.expect(data.isEmpty());
+}
+```
+
+### fromHex - invalid hex
+
+```zig
+test "fromHex - invalid hex" {
+    const allocator = std.testing.allocator;
+    try std.testing.expectError(Error.InvalidHexCharacter, fromHex(allocator, "0xzzzz"));
+}
+```
+
+### toHex - basic
+
+```zig
+test "toHex - basic" {
+    const allocator = std.testing.allocator;
+    var data = try fromHex(allocator, "0x00000001");
+    defer data.deinit();
+
+    const hex = try toHex(&data, allocator);
+    defer allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0x00000001", hex);
+}
+```
+
+### toHex - empty
+
+```zig
+test "toHex - empty" {
+    const allocator = std.testing.allocator;
+    var data = try fromHex(allocator, "0x");
+    defer data.deinit();
+
+    const hex = try toHex(&data, allocator);
+    defer allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0x", hex);
+}
+```
+
+### toBytes - returns slice
+
+```zig
+test "toBytes - returns slice" {
+    const allocator = std.testing.allocator;
+    var data = try fromHex(allocator, "0x12345678");
+    defer data.deinit();
+
+    const bytes = toBytes(&data);
+    try std.testing.expectEqual(@as(usize, 4), bytes.len);
+}
+```
+
+### equals - identical
+
+```zig
+test "equals - identical" {
+    const allocator = std.testing.allocator;
+    var data1 = try fromHex(allocator, "0x00000001");
+    defer data1.deinit();
+    var data2 = try fromHex(allocator, "0x00000001");
+    defer data2.deinit();
+
+    try std.testing.expect(equals(&data1, &data2));
+}
+```
+
+### equals - different
+
+```zig
+test "equals - different" {
+    const allocator = std.testing.allocator;
+    var data1 = try fromHex(allocator, "0x00000001");
+    defer data1.deinit();
+    var data2 = try fromHex(allocator, "0x00000002");
+    defer data2.deinit();
+
+    try std.testing.expect(!equals(&data1, &data2));
+}
+```
+
+### equals - different lengths
+
+```zig
+test "equals - different lengths" {
+    const allocator = std.testing.allocator;
+    var data1 = try fromHex(allocator, "0x00000001");
+    defer data1.deinit();
+    var data2 = try fromHex(allocator, "0x0000000001");
+    defer data2.deinit();
+
+    try std.testing.expect(!equals(&data1, &data2));
+}
+```
+
+### equals - empty
+
+```zig
+test "equals - empty" {
+    const allocator = std.testing.allocator;
+    var data1 = try fromHex(allocator, "0x");
+    defer data1.deinit();
+    var data2 = try fromHex(allocator, "0x");
+    defer data2.deinit();
+
+    try std.testing.expect(equals(&data1, &data2));
+}
+```
+
+### isValidHex - valid with 0x
+
+```zig
+test "isValidHex - valid with 0x" {
+    try std.testing.expect(isValidHex("0x12345678"));
+}
+```
+
+### isValidHex - valid without 0x
+
+```zig
+test "isValidHex - valid without 0x" {
+    try std.testing.expect(isValidHex("12345678"));
+}
+```
+
+### isValidHex - empty with 0x
+
+```zig
+test "isValidHex - empty with 0x" {
+    try std.testing.expect(isValidHex("0x"));
+}
+```
+
+### isValidHex - empty
+
+```zig
+test "isValidHex - empty" {
+    try std.testing.expect(isValidHex(""));
+}
+```
+
+### isValidHex - odd length
+
+```zig
+test "isValidHex - odd length" {
+    try std.testing.expect(!isValidHex("0x123"));
+}
+```
+
+### isValidHex - invalid chars
+
+```zig
+test "isValidHex - invalid chars" {
+    try std.testing.expect(!isValidHex("0xzzzz"));
+}
+```
+
+### clone - creates independent copy
+
+```zig
+test "clone - creates independent copy" {
+    const allocator = std.testing.allocator;
+    var original = try fromHex(allocator, "0x12345678");
+    defer original.deinit();
+
+    var copy = try clone(allocator, &original);
+    defer copy.deinit();
+
+    try std.testing.expect(equals(&original, &copy));
+    try std.testing.expect(original.data.ptr != copy.data.ptr);
+}
+```
+
+### clone - empty
+
+```zig
+test "clone - empty" {
+    const allocator = std.testing.allocator;
+    var original = try fromHex(allocator, "0x");
+    defer original.deinit();
+
+    var copy = try clone(allocator, &original);
+    defer copy.deinit();
+
+    try std.testing.expect(equals(&original, &copy));
+}
+```
+
+### slice - basic
+
+```zig
+test "slice - basic" {
+    const allocator = std.testing.allocator;
+    var data = try fromHex(allocator, "0x12345678");
+    defer data.deinit();
+
+    const s = slice(&data, 1, 3);
+    try std.testing.expectEqual(@as(usize, 2), s.len);
+    try std.testing.expectEqual(@as(u8, 0x34), s[0]);
+    try std.testing.expectEqual(@as(u8, 0x56), s[1]);
+}
+```
+
+### slice - to end
+
+```zig
+test "slice - to end" {
+    const allocator = std.testing.allocator;
+    var data = try fromHex(allocator, "0x12345678");
+    defer data.deinit();
+
+    const s = slice(&data, 2, null);
+    try std.testing.expectEqual(@as(usize, 2), s.len);
+}
+```
+
+### slice - out of bounds
+
+```zig
+test "slice - out of bounds" {
+    const allocator = std.testing.allocator;
+    var data = try fromHex(allocator, "0x12345678");
+    defer data.deinit();
+
+    const s = slice(&data, 10, 20);
+    try std.testing.expectEqual(@as(usize, 0), s.len);
+}
+```
+
+### concat - basic
+
+```zig
+test "concat - basic" {
+    const allocator = std.testing.allocator;
+    var data1 = try fromHex(allocator, "0x1234");
+    defer data1.deinit();
+    var data2 = try fromHex(allocator, "0x5678");
+    defer data2.deinit();
+
+    var result = try concat(allocator, &data1, &data2);
+    defer result.deinit();
+
+    try std.testing.expectEqual(@as(usize, 4), result.len());
+
+    const hex = try toHex(&result, allocator);
+    defer allocator.free(hex);
+    try std.testing.expectEqualStrings("0x12345678", hex);
+}
+```
+
+### concat - with empty
+
+```zig
+test "concat - with empty" {
+    const allocator = std.testing.allocator;
+    var data1 = try fromHex(allocator, "0x1234");
+    defer data1.deinit();
+    var data2 = try fromHex(allocator, "0x");
+    defer data2.deinit();
+
+    var result = try concat(allocator, &data1, &data2);
+    defer result.deinit();
+
+    try std.testing.expectEqual(@as(usize, 2), result.len());
+}
+```

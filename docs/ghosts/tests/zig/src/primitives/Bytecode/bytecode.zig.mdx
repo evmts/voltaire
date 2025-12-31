@@ -1,0 +1,2012 @@
+---
+title: '[Zig] src/primitives/Bytecode/bytecode.zig'
+source: 'src/primitives/Bytecode/bytecode.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Bytecode/bytecode.zig
+
+### analyzeJumpDests: simple JUMPDEST
+
+```zig
+test "analyzeJumpDests: simple JUMPDEST" {
+    const code = [_]u8{ 0x5b, 0x00, 0x5b }; // JUMPDEST, STOP, JUMPDEST
+    var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(std.testing.allocator);
+    defer valid_jumpdests.deinit();
+
+    try analyzeJumpDests(&code, &valid_jumpdests);
+
+    try std.testing.expect(valid_jumpdests.contains(0));
+    try std.testing.expect(valid_jumpdests.contains(2));
+    try std.testing.expect(!valid_jumpdests.contains(1));
+}
+```
+
+### analyzeJumpDests: PUSH data containing JUMPDEST opcode
+
+```zig
+test "analyzeJumpDests: PUSH data containing JUMPDEST opcode" {
+    const code = [_]u8{
+        0x60, 0x5b, // PUSH1 0x5b (pushes JUMPDEST opcode as data)
+        0x5b, // JUMPDEST (actual valid jump destination)
+    };
+    var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(std.testing.allocator);
+    defer valid_jumpdests.deinit();
+
+    try analyzeJumpDests(&code, &valid_jumpdests);
+
+    // Only position 2 should be valid (the actual JUMPDEST)
+    // Position 1 (the 0x5b in PUSH data) should NOT be valid
+    try std.testing.expect(!valid_jumpdests.contains(0));
+    try std.testing.expect(!valid_jumpdests.contains(1));
+    try std.testing.expect(valid_jumpdests.contains(2));
+}
+```
+
+### analyzeJumpDests: PUSH32 with embedded JUMPDEST bytes
+
+```zig
+test "analyzeJumpDests: PUSH32 with embedded JUMPDEST bytes" {
+    var code: [34]u8 = undefined;
+    code[0] = 0x7f; // PUSH32
+    // Fill with 32 bytes of data, including some 0x5b (JUMPDEST) bytes
+    for (1..33) |i| {
+        code[i] = if (i % 2 == 0) 0x5b else 0x00;
+    }
+    code[33] = 0x5b; // Actual JUMPDEST after PUSH32
+
+    var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(std.testing.allocator);
+    defer valid_jumpdests.deinit();
+
+    try analyzeJumpDests(&code, &valid_jumpdests);
+
+    // Only position 33 should be valid
+    try std.testing.expect(!valid_jumpdests.contains(0));
+    for (1..33) |i| {
+        try std.testing.expect(!valid_jumpdests.contains(@intCast(i)));
+    }
+    try std.testing.expect(valid_jumpdests.contains(33));
+}
+```
+
+### Bytecode: initialization and queries
+
+```zig
+test "Bytecode: initialization and queries" {
+    const code = [_]u8{ 0x60, 0x01, 0x5b, 0x00 }; // PUSH1 1, JUMPDEST, STOP
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(usize, 4), bytecode.len());
+    try std.testing.expect(!bytecode.isValidJumpDest(0));
+    try std.testing.expect(!bytecode.isValidJumpDest(1));
+    try std.testing.expect(bytecode.isValidJumpDest(2));
+    try std.testing.expect(!bytecode.isValidJumpDest(3));
+}
+```
+
+### Bytecode: readImmediate
+
+```zig
+test "Bytecode: readImmediate" {
+    const code = [_]u8{ 0x60, 0xff, 0x61, 0x12, 0x34 }; // PUSH1 0xff, PUSH2 0x1234
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // Read PUSH1 immediate (1 byte)
+    if (bytecode.readImmediate(0, 1)) |value| {
+        try std.testing.expectEqual(@as(u256, 0xff), value);
+    } else {
+        try std.testing.expect(false); // Should not be null
+    }
+
+    // Read PUSH2 immediate (2 bytes)
+    if (bytecode.readImmediate(2, 2)) |value| {
+        try std.testing.expectEqual(@as(u256, 0x1234), value);
+    } else {
+        try std.testing.expect(false); // Should not be null
+    }
+
+    // Try to read beyond bytecode (should return null)
+    try std.testing.expect(bytecode.readImmediate(3, 2) == null);
+}
+```
+
+### Bytecode.init: empty bytecode
+
+```zig
+test "Bytecode.init: empty bytecode" {
+    const code = [_]u8{};
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(usize, 0), bytecode.len());
+    try std.testing.expect(!bytecode.isValidJumpDest(0));
+}
+```
+
+### Bytecode.init: no valid jump destinations
+
+```zig
+test "Bytecode.init: no valid jump destinations" {
+    const code = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }; // PUSH1 1, PUSH1 2, ADD, STOP
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(usize, 6), bytecode.len());
+    try std.testing.expect(!bytecode.isValidJumpDest(0));
+    try std.testing.expect(!bytecode.isValidJumpDest(1));
+    try std.testing.expect(!bytecode.isValidJumpDest(2));
+    try std.testing.expect(!bytecode.isValidJumpDest(3));
+    try std.testing.expect(!bytecode.isValidJumpDest(4));
+    try std.testing.expect(!bytecode.isValidJumpDest(5));
+}
+```
+
+### Bytecode.init: multiple consecutive JUMPDESTs
+
+```zig
+test "Bytecode.init: multiple consecutive JUMPDESTs" {
+    const code = [_]u8{ 0x5b, 0x5b, 0x5b, 0x00 }; // JUMPDEST, JUMPDEST, JUMPDEST, STOP
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expect(bytecode.isValidJumpDest(0));
+    try std.testing.expect(bytecode.isValidJumpDest(1));
+    try std.testing.expect(bytecode.isValidJumpDest(2));
+    try std.testing.expect(!bytecode.isValidJumpDest(3));
+}
+```
+
+### Bytecode.deinit: memory cleanup
+
+```zig
+test "Bytecode.deinit: memory cleanup" {
+    const code = [_]u8{ 0x5b, 0x60, 0x01, 0x5b, 0x00 }; // JUMPDEST, PUSH1 1, JUMPDEST, STOP
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    bytecode.deinit();
+
+    // If memory cleanup is incorrect, this would fail in debug builds
+    // Testing that deinit completes without error
+}
+```
+
+### Bytecode.isValidJumpDest: boundary checks
+
+```zig
+test "Bytecode.isValidJumpDest: boundary checks" {
+    const code = [_]u8{ 0x5b, 0x00 }; // JUMPDEST, STOP
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expect(bytecode.isValidJumpDest(0));
+    try std.testing.expect(!bytecode.isValidJumpDest(1));
+    try std.testing.expect(!bytecode.isValidJumpDest(2));
+    try std.testing.expect(!bytecode.isValidJumpDest(100));
+    try std.testing.expect(!bytecode.isValidJumpDest(0xffffffff));
+}
+```
+
+### Bytecode.readImmediate: PUSH1 edge cases
+
+```zig
+test "Bytecode.readImmediate: PUSH1 edge cases" {
+    const code = [_]u8{ 0x60, 0x00, 0x60, 0xff }; // PUSH1 0x00, PUSH1 0xff
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // PUSH1 with zero value
+    if (bytecode.readImmediate(0, 1)) |value| {
+        try std.testing.expectEqual(@as(u256, 0x00), value);
+    } else {
+        try std.testing.expect(false);
+    }
+
+    // PUSH1 with max byte value
+    if (bytecode.readImmediate(2, 1)) |value| {
+        try std.testing.expectEqual(@as(u256, 0xff), value);
+    } else {
+        try std.testing.expect(false);
+    }
+}
+```
+
+### Bytecode.readImmediate: PUSH32 full word
+
+```zig
+test "Bytecode.readImmediate: PUSH32 full word" {
+    var code: [33]u8 = undefined;
+    code[0] = 0x7f; // PUSH32
+    // Fill with max value bytes
+    for (1..33) |i| {
+        code[i] = 0xff;
+    }
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    if (bytecode.readImmediate(0, 32)) |value| {
+        try std.testing.expectEqual(@as(u256, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff), value);
+    } else {
+        try std.testing.expect(false);
+    }
+}
+```
+
+### Bytecode.readImmediate: PUSH32 with zeros
+
+```zig
+test "Bytecode.readImmediate: PUSH32 with zeros" {
+    var code: [33]u8 = undefined;
+    code[0] = 0x7f; // PUSH32
+    // Fill with zeros
+    for (1..33) |i| {
+        code[i] = 0x00;
+    }
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    if (bytecode.readImmediate(0, 32)) |value| {
+        try std.testing.expectEqual(@as(u256, 0), value);
+    } else {
+        try std.testing.expect(false);
+    }
+}
+```
+
+### Bytecode.readImmediate: various PUSH sizes
+
+```zig
+test "Bytecode.readImmediate: various PUSH sizes" {
+    // Test PUSH1 through PUSH8
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 0x01
+        0x61, 0x01, 0x02, // PUSH2 0x0102
+        0x62, 0x01, 0x02, 0x03, // PUSH3 0x010203
+        0x63, 0x01, 0x02, 0x03, 0x04, // PUSH4 0x01020304
+        0x67, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // PUSH8 0x0102030405060708
+    };
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // PUSH1
+    if (bytecode.readImmediate(0, 1)) |value| {
+        try std.testing.expectEqual(@as(u256, 0x01), value);
+    } else {
+        try std.testing.expect(false);
+    }
+
+    // PUSH2
+    if (bytecode.readImmediate(2, 2)) |value| {
+        try std.testing.expectEqual(@as(u256, 0x0102), value);
+    } else {
+        try std.testing.expect(false);
+    }
+
+    // PUSH3
+    if (bytecode.readImmediate(5, 3)) |value| {
+        try std.testing.expectEqual(@as(u256, 0x010203), value);
+    } else {
+        try std.testing.expect(false);
+    }
+
+    // PUSH4
+    if (bytecode.readImmediate(9, 4)) |value| {
+        try std.testing.expectEqual(@as(u256, 0x01020304), value);
+    } else {
+        try std.testing.expect(false);
+    }
+
+    // PUSH8
+    if (bytecode.readImmediate(14, 8)) |value| {
+        try std.testing.expectEqual(@as(u256, 0x0102030405060708), value);
+    } else {
+        try std.testing.expect(false);
+    }
+}
+```
+
+### Bytecode.readImmediate: boundary overflow protection
+
+```zig
+test "Bytecode.readImmediate: boundary overflow protection" {
+    const code = [_]u8{ 0x60, 0x01 }; // PUSH1 0x01
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // Try to read more bytes than available
+    try std.testing.expect(bytecode.readImmediate(0, 2) == null);
+    try std.testing.expect(bytecode.readImmediate(1, 1) == null);
+    try std.testing.expect(bytecode.readImmediate(0, 32) == null);
+}
+```
+
+### Bytecode.readImmediate: at end of bytecode
+
+```zig
+test "Bytecode.readImmediate: at end of bytecode" {
+    const code = [_]u8{ 0x60, 0x01, 0x60 }; // PUSH1 0x01, PUSH1 (incomplete)
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // First PUSH1 should work
+    if (bytecode.readImmediate(0, 1)) |value| {
+        try std.testing.expectEqual(@as(u256, 0x01), value);
+    } else {
+        try std.testing.expect(false);
+    }
+
+    // Second PUSH1 is incomplete (no immediate data)
+    try std.testing.expect(bytecode.readImmediate(2, 1) == null);
+}
+```
+
+### analyzeJumpDests: PUSH inside PUSH data should not be treated as instruction
+
+```zig
+test "analyzeJumpDests: PUSH inside PUSH data should not be treated as instruction" {
+    const code = [_]u8{
+        0x61, 0x60, 0x5b, // PUSH2 0x605b (contains PUSH1 opcode and JUMPDEST opcode as data)
+        0x5b, // JUMPDEST (actual valid jump destination)
+    };
+    var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(std.testing.allocator);
+    defer valid_jumpdests.deinit();
+
+    try analyzeJumpDests(&code, &valid_jumpdests);
+
+    // Only position 3 should be valid
+    try std.testing.expect(!valid_jumpdests.contains(0));
+    try std.testing.expect(!valid_jumpdests.contains(1));
+    try std.testing.expect(!valid_jumpdests.contains(2));
+    try std.testing.expect(valid_jumpdests.contains(3));
+}
+```
+
+### analyzeJumpDests: incomplete PUSH at end of bytecode
+
+```zig
+test "analyzeJumpDests: incomplete PUSH at end of bytecode" {
+    const code = [_]u8{
+        0x5b, // JUMPDEST
+        0x62, 0x01, // PUSH3 with only 2 bytes (incomplete)
+    };
+    var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(std.testing.allocator);
+    defer valid_jumpdests.deinit();
+
+    try analyzeJumpDests(&code, &valid_jumpdests);
+
+    // Only position 0 should be valid
+    try std.testing.expect(valid_jumpdests.contains(0));
+    try std.testing.expect(!valid_jumpdests.contains(1));
+    try std.testing.expect(!valid_jumpdests.contains(2));
+}
+```
+
+### analyzeJumpDests: all PUSH opcodes PUSH1-PUSH32
+
+```zig
+test "analyzeJumpDests: all PUSH opcodes PUSH1-PUSH32" {
+    // Create bytecode with all PUSH opcodes followed by JUMPDEST
+    var code: [32 * 34 + 1]u8 = undefined;
+    var offset: usize = 0;
+
+    // PUSH1 through PUSH32
+    var push_num: u8 = 1;
+    while (push_num <= 32) : (push_num += 1) {
+        const opcode: u8 = 0x5f + push_num; // PUSH1 = 0x60, PUSH2 = 0x61, ..., PUSH32 = 0x7f
+        code[offset] = opcode;
+        offset += 1;
+
+        // Fill with dummy data
+        var i: u8 = 0;
+        while (i < push_num) : (i += 1) {
+            code[offset] = 0xaa;
+            offset += 1;
+        }
+    }
+
+    // Add final JUMPDEST
+    code[offset] = 0x5b;
+    const final_jumpdest_pos: u32 = @intCast(offset);
+
+    var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(std.testing.allocator);
+    defer valid_jumpdests.deinit();
+
+    try analyzeJumpDests(&code, &valid_jumpdests);
+
+    // Only the final position should be a valid JUMPDEST
+    try std.testing.expect(valid_jumpdests.contains(final_jumpdest_pos));
+
+    // Verify none of the PUSH data bytes are treated as JUMPDEST
+    var pos: u32 = 0;
+    while (pos < final_jumpdest_pos) : (pos += 1) {
+        try std.testing.expect(!valid_jumpdests.contains(pos));
+    }
+}
+```
+
+### Bytecode.getOpcode: boundary checks
+
+```zig
+test "Bytecode.getOpcode: boundary checks" {
+    const code = [_]u8{ 0x60, 0x01, 0x5b }; // PUSH1 1, JUMPDEST
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(u8, 0x60), bytecode.getOpcode(0).?);
+    try std.testing.expectEqual(@as(u8, 0x01), bytecode.getOpcode(1).?);
+    try std.testing.expectEqual(@as(u8, 0x5b), bytecode.getOpcode(2).?);
+    try std.testing.expect(bytecode.getOpcode(3) == null);
+    try std.testing.expect(bytecode.getOpcode(100) == null);
+}
+```
+
+### Bytecode.getOpcodeEnum: valid opcodes
+
+```zig
+test "Bytecode.getOpcodeEnum: valid opcodes" {
+    const code = [_]u8{ 0x60, 0x01, 0x5b, 0x00 }; // PUSH1 1, JUMPDEST, STOP
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(Opcode.PUSH1, bytecode.getOpcodeEnum(0).?);
+    try std.testing.expectEqual(@as(u8, 0x01), @intFromEnum(bytecode.getOpcodeEnum(1).?));
+    try std.testing.expectEqual(Opcode.JUMPDEST, bytecode.getOpcodeEnum(2).?);
+    try std.testing.expectEqual(Opcode.STOP, bytecode.getOpcodeEnum(3).?);
+    try std.testing.expect(bytecode.getOpcodeEnum(4) == null);
+}
+```
+
+### Bytecode: large bytecode performance
+
+```zig
+test "Bytecode: large bytecode performance" {
+    // Create a large bytecode (10KB) with scattered JUMPDESTs
+    const allocator = std.testing.allocator;
+    const size = 10 * 1024;
+    const code = try allocator.alloc(u8, size);
+    defer allocator.free(code);
+
+    // Fill with various opcodes including JUMPDESTs every 100 bytes
+    for (0..size) |i| {
+        if (i % 100 == 0) {
+            code[i] = 0x5b; // JUMPDEST
+        } else if (i % 50 == 0) {
+            code[i] = 0x60; // PUSH1
+        } else {
+            code[i] = 0x00; // STOP
+        }
+    }
+
+    var bytecode = try Bytecode.init(allocator, code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(size, bytecode.len());
+
+    // Verify some JUMPDESTs
+    try std.testing.expect(bytecode.isValidJumpDest(0));
+    try std.testing.expect(bytecode.isValidJumpDest(100));
+    try std.testing.expect(bytecode.isValidJumpDest(200));
+    try std.testing.expect(!bytecode.isValidJumpDest(50));
+    try std.testing.expect(!bytecode.isValidJumpDest(150));
+}
+```
+
+### Bytecode: complex real-world-like bytecode
+
+```zig
+test "Bytecode: complex real-world-like bytecode" {
+    // Simulate a more complex bytecode pattern like a simple contract
+    // Position calculation:
+    // 0-1: PUSH1 0x80, 2-3: PUSH1 0x40, 4: MSTORE, 5: JUMPDEST,
+    // 6-7: PUSH1 0x00, 8: CALLDATALOAD, 9-10: PUSH1 0xe0, 11: SHR,
+    // 12-16: PUSH4 0x12345678, 17: JUMPDEST, 18: EQ,
+    // 19-21: PUSH2 0x001e, 22: JUMPI, 23: JUMPDEST, 24: STOP
+    const code = [_]u8{
+        // Constructor-like pattern
+        0x60, 0x80, // PUSH1 0x80 (pos 0-1)
+        0x60, 0x40, // PUSH1 0x40 (pos 2-3)
+        0x52, // MSTORE (pos 4)
+        0x5b, // JUMPDEST (pos 5)
+        0x60, 0x00, // PUSH1 0x00 (pos 6-7)
+        0x35, // CALLDATALOAD (pos 8)
+        0x60, 0xe0, // PUSH1 0xe0 (pos 9-10)
+        0x1c, // SHR (pos 11)
+        0x63, 0x12, 0x34, 0x56, 0x78, // PUSH4 0x12345678 (pos 12-16)
+        0x5b, // JUMPDEST (pos 17)
+        0x14, // EQ (pos 18)
+        0x61, 0x00, 0x1e, // PUSH2 0x001e (pos 19-21)
+        0x57, // JUMPI (pos 22)
+        0x5b, // JUMPDEST (pos 23)
+        0x00, // STOP (pos 24)
+    };
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // Verify JUMPDESTs at correct positions
+    try std.testing.expect(bytecode.isValidJumpDest(5));
+    try std.testing.expect(bytecode.isValidJumpDest(17));
+    try std.testing.expect(bytecode.isValidJumpDest(23));
+
+    // Verify non-JUMPDESTs
+    try std.testing.expect(!bytecode.isValidJumpDest(0));
+    try std.testing.expect(!bytecode.isValidJumpDest(7));
+    try std.testing.expect(!bytecode.isValidJumpDest(15)); // Inside PUSH4 data
+    try std.testing.expect(!bytecode.isValidJumpDest(20)); // Inside PUSH2 data
+
+    // Test readImmediate for various PUSH operations
+    if (bytecode.readImmediate(0, 1)) |value| {
+        try std.testing.expectEqual(@as(u256, 0x80), value);
+    } else {
+        try std.testing.expect(false);
+    }
+
+    if (bytecode.readImmediate(12, 4)) |value| {
+        try std.testing.expectEqual(@as(u256, 0x12345678), value);
+    } else {
+        try std.testing.expect(false);
+    }
+
+    if (bytecode.readImmediate(19, 2)) |value| {
+        try std.testing.expectEqual(@as(u256, 0x001e), value);
+    } else {
+        try std.testing.expect(false);
+    }
+}
+```
+
+### Bytecode: PUSH32 followed immediately by JUMPDEST
+
+```zig
+test "Bytecode: PUSH32 followed immediately by JUMPDEST" {
+    var code: [34]u8 = undefined;
+    code[0] = 0x7f; // PUSH32
+    for (1..33) |i| {
+        code[i] = @intCast(i);
+    }
+    code[33] = 0x5b; // JUMPDEST
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // Only position 33 should be JUMPDEST
+    try std.testing.expect(!bytecode.isValidJumpDest(0));
+    for (1..33) |i| {
+        try std.testing.expect(!bytecode.isValidJumpDest(@intCast(i)));
+    }
+    try std.testing.expect(bytecode.isValidJumpDest(33));
+
+    // Verify PUSH32 data can be read
+    if (bytecode.readImmediate(0, 32)) |value| {
+        var expected: u256 = 0;
+        for (1..33) |i| {
+            expected = (expected << 8) | i;
+        }
+        try std.testing.expectEqual(expected, value);
+    } else {
+        try std.testing.expect(false);
+    }
+}
+```
+
+### Bytecode: bytecode ending with incomplete PUSH should not crash
+
+```zig
+test "Bytecode: bytecode ending with incomplete PUSH should not crash" {
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 0x01 (complete)
+        0x61, 0x02, // PUSH2 0x02?? (incomplete, missing 1 byte)
+    };
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(usize, 4), bytecode.len());
+
+    // First PUSH1 should work
+    if (bytecode.readImmediate(0, 1)) |value| {
+        try std.testing.expectEqual(@as(u256, 0x01), value);
+    } else {
+        try std.testing.expect(false);
+    }
+
+    // Second PUSH2 is incomplete
+    try std.testing.expect(bytecode.readImmediate(2, 2) == null);
+
+    // No crashes during jump dest analysis
+    try std.testing.expect(!bytecode.isValidJumpDest(0));
+    try std.testing.expect(!bytecode.isValidJumpDest(2));
+}
+```
+
+### Bytecode.getNextPc: regular opcode (ADD)
+
+```zig
+test "Bytecode.getNextPc: regular opcode (ADD)" {
+    const code = [_]u8{ 0x01, 0x00 }; // ADD, STOP
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // ADD at pc 0 should jump to pc 1
+    if (bytecode.getNextPc(0)) |next_pc| {
+        try std.testing.expectEqual(@as(u32, 1), next_pc);
+    } else {
+        try std.testing.expect(false);
+    }
+}
+```
+
+### Bytecode.getNextPc: PUSH1 instruction
+
+```zig
+test "Bytecode.getNextPc: PUSH1 instruction" {
+    const code = [_]u8{ 0x60, 0xff, 0x00 }; // PUSH1 0xff, STOP
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // PUSH1 at pc 0 should jump to pc 2 (skip 1 byte immediate)
+    if (bytecode.getNextPc(0)) |next_pc| {
+        try std.testing.expectEqual(@as(u32, 2), next_pc);
+    } else {
+        try std.testing.expect(false);
+    }
+}
+```
+
+### Bytecode.getNextPc: PUSH32 instruction
+
+```zig
+test "Bytecode.getNextPc: PUSH32 instruction" {
+    var code: [34]u8 = undefined;
+    code[0] = 0x7f; // PUSH32
+    for (1..33) |i| {
+        code[i] = @intCast(i);
+    }
+    code[33] = 0x00; // STOP
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // PUSH32 at pc 0 should jump to pc 33 (skip 32 bytes immediate)
+    if (bytecode.getNextPc(0)) |next_pc| {
+        try std.testing.expectEqual(@as(u32, 33), next_pc);
+    } else {
+        try std.testing.expect(false);
+    }
+}
+```
+
+### Bytecode.getNextPc: at end of bytecode
+
+```zig
+test "Bytecode.getNextPc: at end of bytecode" {
+    const code = [_]u8{0x00}; // STOP
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // STOP at pc 0 would jump to pc 1, but that's beyond bytecode
+    try std.testing.expect(bytecode.getNextPc(0) == null);
+}
+```
+
+### Bytecode.getNextPc: invalid PC (beyond bytecode)
+
+```zig
+test "Bytecode.getNextPc: invalid PC (beyond bytecode)" {
+    const code = [_]u8{ 0x60, 0x01, 0x00 }; // PUSH1 1, STOP
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // PC beyond bytecode should return null
+    try std.testing.expect(bytecode.getNextPc(10) == null);
+    try std.testing.expect(bytecode.getNextPc(3) == null);
+}
+```
+
+### Bytecode.fromUint8Array
+
+```zig
+test "Bytecode.fromUint8Array" {
+    const bytes = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01 };
+    var bc = try Bytecode.fromUint8Array(std.testing.allocator, &bytes);
+    defer bc.deinit();
+
+    try std.testing.expectEqual(@as(usize, 5), bc.len());
+}
+```
+
+### detectFusions: PUSH1 + JUMP pattern
+
+```zig
+test "detectFusions: PUSH1 + JUMP pattern" {
+    const code = [_]u8{
+        0x60, 0x05, // PUSH1 5
+        0x56, // JUMP
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 1), fusions.len);
+    try std.testing.expectEqual(FusionType.push_jump, fusions[0].fusion_type);
+    try std.testing.expectEqual(@as(u32, 0), fusions[0].pc);
+    try std.testing.expectEqual(@as(u8, 3), fusions[0].length);
+}
+```
+
+### detectFusions: PUSH2 + JUMPI pattern
+
+```zig
+test "detectFusions: PUSH2 + JUMPI pattern" {
+    const code = [_]u8{
+        0x61, 0x00, 0x10, // PUSH2 0x0010
+        0x57, // JUMPI
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 1), fusions.len);
+    try std.testing.expectEqual(FusionType.push_jumpi, fusions[0].fusion_type);
+    try std.testing.expectEqual(@as(u32, 0), fusions[0].pc);
+    try std.testing.expectEqual(@as(u8, 4), fusions[0].length);
+}
+```
+
+### detectFusions: PUSH1 + ADD pattern
+
+```zig
+test "detectFusions: PUSH1 + ADD pattern" {
+    const code = [_]u8{
+        0x60, 0x02, // PUSH1 2
+        0x01, // ADD
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 1), fusions.len);
+    try std.testing.expectEqual(FusionType.push_add, fusions[0].fusion_type);
+    try std.testing.expectEqual(@as(u32, 0), fusions[0].pc);
+    try std.testing.expectEqual(@as(u8, 3), fusions[0].length);
+}
+```
+
+### detectFusions: PUSH1 + MUL pattern
+
+```zig
+test "detectFusions: PUSH1 + MUL pattern" {
+    const code = [_]u8{
+        0x60, 0x03, // PUSH1 3
+        0x02, // MUL
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 1), fusions.len);
+    try std.testing.expectEqual(FusionType.push_mul, fusions[0].fusion_type);
+}
+```
+
+### detectFusions: PUSH1 + SUB pattern
+
+```zig
+test "detectFusions: PUSH1 + SUB pattern" {
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x03, // SUB
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 1), fusions.len);
+    try std.testing.expectEqual(FusionType.push_sub, fusions[0].fusion_type);
+}
+```
+
+### detectFusions: PUSH1 + DIV pattern
+
+```zig
+test "detectFusions: PUSH1 + DIV pattern" {
+    const code = [_]u8{
+        0x60, 0x08, // PUSH1 8
+        0x04, // DIV
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 1), fusions.len);
+    try std.testing.expectEqual(FusionType.push_div, fusions[0].fusion_type);
+}
+```
+
+### detectFusions: PUSH1 + DUP1 pattern
+
+```zig
+test "detectFusions: PUSH1 + DUP1 pattern" {
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x80, // DUP1
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 1), fusions.len);
+    try std.testing.expectEqual(FusionType.push_dup, fusions[0].fusion_type);
+}
+```
+
+### detectFusions: PUSH1 + SWAP1 pattern
+
+```zig
+test "detectFusions: PUSH1 + SWAP1 pattern" {
+    const code = [_]u8{
+        0x60, 0x02, // PUSH1 2
+        0x90, // SWAP1
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 1), fusions.len);
+    try std.testing.expectEqual(FusionType.push_swap, fusions[0].fusion_type);
+}
+```
+
+### detectFusions: DUP1 + SWAP1 pattern
+
+```zig
+test "detectFusions: DUP1 + SWAP1 pattern" {
+    const code = [_]u8{
+        0x80, // DUP1
+        0x90, // SWAP1
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 1), fusions.len);
+    try std.testing.expectEqual(FusionType.dup_swap, fusions[0].fusion_type);
+    try std.testing.expectEqual(@as(u32, 0), fusions[0].pc);
+    try std.testing.expectEqual(@as(u8, 2), fusions[0].length);
+}
+```
+
+### detectFusions: SWAP1 + POP pattern
+
+```zig
+test "detectFusions: SWAP1 + POP pattern" {
+    const code = [_]u8{
+        0x90, // SWAP1
+        0x50, // POP
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 1), fusions.len);
+    try std.testing.expectEqual(FusionType.swap_pop, fusions[0].fusion_type);
+    try std.testing.expectEqual(@as(u32, 0), fusions[0].pc);
+    try std.testing.expectEqual(@as(u8, 2), fusions[0].length);
+}
+```
+
+### detectFusions: multiple fusions in sequence
+
+```zig
+test "detectFusions: multiple fusions in sequence" {
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 1 (pc 0-1)
+        0x01, // ADD (pc 2)
+        0x60, 0x02, // PUSH1 2 (pc 3-4)
+        0x03, // SUB (pc 5)
+        0x90, // SWAP1 (pc 6)
+        0x50, // POP (pc 7)
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 3), fusions.len);
+
+    // First fusion: PUSH1 + ADD at pc 0
+    try std.testing.expectEqual(FusionType.push_add, fusions[0].fusion_type);
+    try std.testing.expectEqual(@as(u32, 0), fusions[0].pc);
+
+    // Second fusion: PUSH1 + SUB at pc 3
+    try std.testing.expectEqual(FusionType.push_sub, fusions[1].fusion_type);
+    try std.testing.expectEqual(@as(u32, 3), fusions[1].pc);
+
+    // Third fusion: SWAP1 + POP at pc 6
+    try std.testing.expectEqual(FusionType.swap_pop, fusions[2].fusion_type);
+    try std.testing.expectEqual(@as(u32, 6), fusions[2].pc);
+}
+```
+
+### detectFusions: no fusions
+
+```zig
+test "detectFusions: no fusions" {
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x02, // PUSH1 2
+        0x00, // STOP
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 0), fusions.len);
+}
+```
+
+### detectFusions: truncated PUSH at end (no fusion)
+
+```zig
+test "detectFusions: truncated PUSH at end (no fusion)" {
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x01, // ADD
+        0x61, // PUSH2 (incomplete, no operand)
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    // Only the PUSH1 + ADD should be detected
+    try std.testing.expectEqual(@as(usize, 1), fusions.len);
+    try std.testing.expectEqual(FusionType.push_add, fusions[0].fusion_type);
+}
+```
+
+### detectFusions: PUSH32 + JUMP pattern
+
+```zig
+test "detectFusions: PUSH32 + JUMP pattern" {
+    var code: [35]u8 = undefined;
+    code[0] = 0x7f; // PUSH32
+    for (1..33) |i| {
+        code[i] = @intCast(i);
+    }
+    code[33] = 0x56; // JUMP
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 1), fusions.len);
+    try std.testing.expectEqual(FusionType.push_jump, fusions[0].fusion_type);
+    try std.testing.expectEqual(@as(u32, 0), fusions[0].pc);
+    try std.testing.expectEqual(@as(u8, 34), fusions[0].length);
+}
+```
+
+### detectFusions: PUSH with different DUP variants
+
+```zig
+test "detectFusions: PUSH with different DUP variants" {
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x81, // DUP2
+        0x60, 0x02, // PUSH1 2
+        0x8f, // DUP16
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 2), fusions.len);
+    try std.testing.expectEqual(FusionType.push_dup, fusions[0].fusion_type);
+    try std.testing.expectEqual(FusionType.push_dup, fusions[1].fusion_type);
+}
+```
+
+### detectFusions: PUSH with different SWAP variants
+
+```zig
+test "detectFusions: PUSH with different SWAP variants" {
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x91, // SWAP2
+        0x60, 0x02, // PUSH1 2
+        0x9f, // SWAP16
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 2), fusions.len);
+    try std.testing.expectEqual(FusionType.push_swap, fusions[0].fusion_type);
+    try std.testing.expectEqual(FusionType.push_swap, fusions[1].fusion_type);
+}
+```
+
+### detectFusions: DUP with different SWAP variants
+
+```zig
+test "detectFusions: DUP with different SWAP variants" {
+    const code = [_]u8{
+        0x82, // DUP3
+        0x91, // SWAP2
+        0x81, // DUP2
+        0x9f, // SWAP16
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 2), fusions.len);
+    try std.testing.expectEqual(FusionType.dup_swap, fusions[0].fusion_type);
+    try std.testing.expectEqual(FusionType.dup_swap, fusions[1].fusion_type);
+}
+```
+
+### detectFusions: SWAP with different POP variants is only at pc+1
+
+```zig
+test "detectFusions: SWAP with different POP variants is only at pc+1" {
+    const code = [_]u8{
+        0x90, // SWAP1
+        0x50, // POP
+        0x91, // SWAP2
+        0x50, // POP
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 2), fusions.len);
+    try std.testing.expectEqual(FusionType.swap_pop, fusions[0].fusion_type);
+    try std.testing.expectEqual(@as(u32, 0), fusions[0].pc);
+    try std.testing.expectEqual(FusionType.swap_pop, fusions[1].fusion_type);
+    try std.testing.expectEqual(@as(u32, 2), fusions[1].pc);
+}
+```
+
+### detectFusions: empty bytecode
+
+```zig
+test "detectFusions: empty bytecode" {
+    const code = [_]u8{};
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 0), fusions.len);
+}
+```
+
+### detectFusions: single byte bytecode (no fusion)
+
+```zig
+test "detectFusions: single byte bytecode (no fusion)" {
+    const code = [_]u8{0x60}; // PUSH1 (incomplete)
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 0), fusions.len);
+}
+```
+
+### detectFusions: PUSH near end of bytecode
+
+```zig
+test "detectFusions: PUSH near end of bytecode" {
+    const code = [_]u8{
+        0x00, // STOP
+        0x60, // PUSH1 (incomplete, at end)
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    // No fusion should be detected as PUSH is incomplete
+    try std.testing.expectEqual(@as(usize, 0), fusions.len);
+}
+```
+
+### detectFusions: complex real-world sequence
+
+```zig
+test "detectFusions: complex real-world sequence" {
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 1 (pc 0-1)
+        0x01, // ADD (pc 2)
+        0x60, 0x02, // PUSH1 2 (pc 3-4)
+        0x56, // JUMP (pc 5)
+        0x5b, // JUMPDEST (pc 6)
+        0x60, 0x03, // PUSH1 3 (pc 7-8)
+        0x04, // DIV (pc 9)
+        0x80, // DUP1 (pc 10)
+        0x90, // SWAP1 (pc 11)
+        0x50, // POP (pc 12)
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 4), fusions.len);
+
+    // PUSH1 + ADD
+    try std.testing.expectEqual(FusionType.push_add, fusions[0].fusion_type);
+    try std.testing.expectEqual(@as(u32, 0), fusions[0].pc);
+
+    // PUSH1 + JUMP
+    try std.testing.expectEqual(FusionType.push_jump, fusions[1].fusion_type);
+    try std.testing.expectEqual(@as(u32, 3), fusions[1].pc);
+
+    // PUSH1 + DIV
+    try std.testing.expectEqual(FusionType.push_div, fusions[2].fusion_type);
+    try std.testing.expectEqual(@as(u32, 7), fusions[2].pc);
+
+    // SWAP1 + POP
+    try std.testing.expectEqual(FusionType.swap_pop, fusions[3].fusion_type);
+    try std.testing.expectEqual(@as(u32, 11), fusions[3].pc);
+}
+```
+
+### detectFusions: all PUSH sizes with same operation
+
+```zig
+test "detectFusions: all PUSH sizes with same operation" {
+    var code: [7 + 6 + 5 + 4]u8 = undefined;
+    var offset: usize = 0;
+
+    // PUSH1 + ADD
+    code[offset] = 0x60;
+    offset += 1;
+    code[offset] = 0x01;
+    offset += 1;
+    code[offset] = 0x01;
+    offset += 1;
+
+    // PUSH2 + ADD
+    code[offset] = 0x61;
+    offset += 1;
+    code[offset] = 0x01;
+    offset += 1;
+    code[offset] = 0x02;
+    offset += 1;
+    code[offset] = 0x01;
+    offset += 1;
+
+    // PUSH3 + ADD
+    code[offset] = 0x62;
+    offset += 1;
+    code[offset] = 0x01;
+    offset += 1;
+    code[offset] = 0x02;
+    offset += 1;
+    code[offset] = 0x03;
+    offset += 1;
+    code[offset] = 0x01;
+    offset += 1;
+
+    // PUSH4 + ADD
+    code[offset] = 0x63;
+    offset += 1;
+    code[offset] = 0x01;
+    offset += 1;
+    code[offset] = 0x02;
+    offset += 1;
+    code[offset] = 0x03;
+    offset += 1;
+    code[offset] = 0x04;
+    offset += 1;
+    code[offset] = 0x01;
+    offset += 1;
+
+    var bytecode = try Bytecode.init(std.testing.allocator, code[0..offset]);
+    defer bytecode.deinit();
+
+    const fusions = try bytecode.detectFusions(std.testing.allocator);
+    defer std.testing.allocator.free(fusions);
+
+    try std.testing.expectEqual(@as(usize, 4), fusions.len);
+    for (fusions) |fusion| {
+        try std.testing.expectEqual(FusionType.push_add, fusion.fusion_type);
+    }
+}
+```
+
+### Scanner: basic iteration with PUSH1, ADD, STOP
+
+```zig
+test "Scanner: basic iteration with PUSH1, ADD, STOP" {
+    const code = [_]u8{
+        0x60, 0x05, // PUSH1 0x05
+        0x01, // ADD
+        0x00, // STOP
+    };
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    var scanner = bytecode.scan(0, @intCast(code.len));
+
+    // First instruction: PUSH1 0x05
+    const instr1 = scanner.next().?;
+    try std.testing.expectEqual(@as(u32, 0), instr1.pc);
+    try std.testing.expectEqual(@as(u8, 0x60), instr1.opcode);
+    try std.testing.expectEqual(@as(u8, 2), instr1.size);
+    try std.testing.expectEqual(@as(u256, 0x05), instr1.push_value.?);
+
+    // Second instruction: ADD
+    const instr2 = scanner.next().?;
+    try std.testing.expectEqual(@as(u32, 2), instr2.pc);
+    try std.testing.expectEqual(@as(u8, 0x01), instr2.opcode);
+    try std.testing.expectEqual(@as(u8, 1), instr2.size);
+    try std.testing.expect(instr2.push_value == null);
+
+    // Third instruction: STOP
+    const instr3 = scanner.next().?;
+    try std.testing.expectEqual(@as(u32, 3), instr3.pc);
+    try std.testing.expectEqual(@as(u8, 0x00), instr3.opcode);
+    try std.testing.expectEqual(@as(u8, 1), instr3.size);
+    try std.testing.expect(instr3.push_value == null);
+
+    // End of iteration
+    try std.testing.expect(scanner.next() == null);
+}
+```
+
+### Scanner: PUSH2, PUSH4, PUSH32 with values
+
+```zig
+test "Scanner: PUSH2, PUSH4, PUSH32 with values" {
+    const code = [_]u8{
+        0x61, 0x12, 0x34, // PUSH2 0x1234
+        0x63, 0xaa, 0xbb, 0xcc, 0xdd, // PUSH4 0xaabbccdd
+    };
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    var scanner = bytecode.scan(0, @intCast(code.len));
+
+    // First: PUSH2
+    const instr1 = scanner.next().?;
+    try std.testing.expectEqual(@as(u32, 0), instr1.pc);
+    try std.testing.expectEqual(@as(u8, 0x61), instr1.opcode);
+    try std.testing.expectEqual(@as(u8, 3), instr1.size);
+    try std.testing.expectEqual(@as(u256, 0x1234), instr1.push_value.?);
+
+    // Second: PUSH4
+    const instr2 = scanner.next().?;
+    try std.testing.expectEqual(@as(u32, 3), instr2.pc);
+    try std.testing.expectEqual(@as(u8, 0x63), instr2.opcode);
+    try std.testing.expectEqual(@as(u8, 5), instr2.size);
+    try std.testing.expectEqual(@as(u256, 0xaabbccdd), instr2.push_value.?);
+}
+```
+
+### Scanner: range limiting with start_pc and end_pc
+
+```zig
+test "Scanner: range limiting with start_pc and end_pc" {
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 0x01 (pos 0-1)
+        0x01, // ADD (pos 2)
+        0x60, 0x02, // PUSH1 0x02 (pos 3-4)
+        0x00, // STOP (pos 5)
+    };
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // Scan from pos 2 to 5 (should get ADD and PUSH1)
+    var scanner = bytecode.scan(2, 5);
+
+    const instr1 = scanner.next().?;
+    try std.testing.expectEqual(@as(u32, 2), instr1.pc);
+    try std.testing.expectEqual(@as(u8, 0x01), instr1.opcode);
+
+    const instr2 = scanner.next().?;
+    try std.testing.expectEqual(@as(u32, 3), instr2.pc);
+    try std.testing.expectEqual(@as(u8, 0x60), instr2.opcode);
+
+    // STOP at pos 5 should not be included (end_pc=5 is exclusive)
+    try std.testing.expect(scanner.next() == null);
+}
+```
+
+### Scanner: empty iteration
+
+```zig
+test "Scanner: empty iteration" {
+    const code = [_]u8{ 0x60, 0x01, 0x00 };
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // Scan empty range
+    var scanner = bytecode.scan(0, 0);
+    try std.testing.expect(scanner.next() == null);
+}
+```
+
+### Scanner: end_pc clamping
+
+```zig
+test "Scanner: end_pc clamping" {
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 0x01 (pos 0-1)
+        0x00, // STOP (pos 2)
+    };
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    // Request end_pc beyond bytecode length
+    var scanner = bytecode.scan(0, 1000);
+
+    const instr1 = scanner.next().?;
+    try std.testing.expectEqual(@as(u32, 0), instr1.pc);
+
+    const instr2 = scanner.next().?;
+    try std.testing.expectEqual(@as(u32, 2), instr2.pc);
+
+    // Should stop at actual bytecode end
+    try std.testing.expect(scanner.next() == null);
+}
+```
+
+### Scanner: PUSH with zero value
+
+```zig
+test "Scanner: PUSH with zero value" {
+    const code = [_]u8{
+        0x60, 0x00, // PUSH1 0x00
+        0x61, 0x00, 0x00, // PUSH2 0x0000
+    };
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    var scanner = bytecode.scan(0, @intCast(code.len));
+
+    const instr1 = scanner.next().?;
+    try std.testing.expectEqual(@as(u256, 0), instr1.push_value.?);
+
+    const instr2 = scanner.next().?;
+    try std.testing.expectEqual(@as(u256, 0), instr2.push_value.?);
+}
+```
+
+### Scanner: PUSH32 with max value
+
+```zig
+test "Scanner: PUSH32 with max value" {
+    var code: [33]u8 = undefined;
+    code[0] = 0x7f; // PUSH32
+    for (1..33) |i| {
+        code[i] = 0xff;
+    }
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    var scanner = bytecode.scan(0, @intCast(code.len));
+
+    const instr = scanner.next().?;
+    try std.testing.expectEqual(@as(u8, 0x7f), instr.opcode);
+    try std.testing.expectEqual(@as(u8, 33), instr.size);
+    try std.testing.expectEqual(@as(u256, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff), instr.push_value.?);
+}
+```
+
+### Scanner: non-PUSH opcodes have null push_value
+
+```zig
+test "Scanner: non-PUSH opcodes have null push_value" {
+    const code = [_]u8{
+        0x01, // ADD
+        0x02, // MUL
+        0x03, // SUB
+        0x5b, // JUMPDEST
+    };
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    var scanner = bytecode.scan(0, @intCast(code.len));
+
+    var i: usize = 0;
+    while (scanner.next()) |instr| : (i += 1) {
+        try std.testing.expect(instr.push_value == null);
+        try std.testing.expectEqual(@as(u8, 1), instr.size);
+    }
+    try std.testing.expectEqual(@as(usize, 4), i);
+}
+```
+
+### Scanner: complex bytecode traversal
+
+```zig
+test "Scanner: complex bytecode traversal" {
+    const code = [_]u8{
+        0x60, 0x80, // PUSH1 0x80 (pos 0-1)
+        0x60, 0x40, // PUSH1 0x40 (pos 2-3)
+        0x52, // MSTORE (pos 4)
+        0x5b, // JUMPDEST (pos 5)
+        0x60, 0x00, // PUSH1 0x00 (pos 6-7)
+        0x35, // CALLDATALOAD (pos 8)
+        0x60, 0xe0, // PUSH1 0xe0 (pos 9-10)
+        0x1c, // SHR (pos 11)
+    };
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    var scanner = bytecode.scan(0, @intCast(code.len));
+    var pc_array: [10]u32 = undefined;
+    var idx: usize = 0;
+
+    while (scanner.next()) |instr| : (idx += 1) {
+        pc_array[idx] = instr.pc;
+    }
+
+    try std.testing.expectEqual(@as(usize, 8), idx);
+    try std.testing.expectEqual(@as(u32, 0), pc_array[0]);
+    try std.testing.expectEqual(@as(u32, 2), pc_array[1]);
+    try std.testing.expectEqual(@as(u32, 4), pc_array[2]);
+    try std.testing.expectEqual(@as(u32, 5), pc_array[3]);
+    try std.testing.expectEqual(@as(u32, 6), pc_array[4]);
+    try std.testing.expectEqual(@as(u32, 8), pc_array[5]);
+    try std.testing.expectEqual(@as(u32, 9), pc_array[6]);
+    try std.testing.expectEqual(@as(u32, 11), pc_array[7]);
+}
+```
+
+### analyzeGasTotal: empty bytecode
+
+```zig
+test "analyzeGasTotal: empty bytecode" {
+    const code = [_]u8{};
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(u64, 0), bytecode.analyzeGasTotal());
+}
+```
+
+### analyzeGasTotal: single STOP opcode
+
+```zig
+test "analyzeGasTotal: single STOP opcode" {
+    const code = [_]u8{0x00}; // STOP = 0 gas
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(u64, 0), bytecode.analyzeGasTotal());
+}
+```
+
+### analyzeGasTotal: simple arithmetic ADD + SUB
+
+```zig
+test "analyzeGasTotal: simple arithmetic ADD + SUB" {
+    const code = [_]u8{
+        0x01, // ADD (3 gas)
+        0x03, // SUB (3 gas)
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(u64, 6), bytecode.analyzeGasTotal());
+}
+```
+
+### analyzeGasTotal: PUSH1 opcodes cost 3 gas each
+
+```zig
+test "analyzeGasTotal: PUSH1 opcodes cost 3 gas each" {
+    const code = [_]u8{
+        0x60, 0x01, // PUSH1 0x01 (3 gas)
+        0x60, 0x02, // PUSH1 0x02 (3 gas)
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(u64, 6), bytecode.analyzeGasTotal());
+}
+```
+
+### analyzeGasTotal: PUSH1 with ADD
+
+```zig
+test "analyzeGasTotal: PUSH1 with ADD" {
+    const code = [_]u8{
+        0x60, 0x05, // PUSH1 0x05 (3 gas)
+        0x60, 0x03, // PUSH1 0x03 (3 gas)
+        0x01, // ADD (3 gas)
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(u64, 9), bytecode.analyzeGasTotal());
+}
+```
+
+### analyzeGasTotal: PUSH2 skips immediate data correctly
+
+```zig
+test "analyzeGasTotal: PUSH2 skips immediate data correctly" {
+    const code = [_]u8{
+        0x61, 0x12, 0x34, // PUSH2 0x1234 (3 gas, skips 2 bytes)
+        0x00, // STOP (0 gas)
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(u64, 3), bytecode.analyzeGasTotal());
+}
+```
+
+### analyzeGasTotal: all PUSH sizes cost 3 gas each
+
+```zig
+test "analyzeGasTotal: all PUSH sizes cost 3 gas each" {
+    var code: [32 * 34]u8 = undefined;
+    var offset: usize = 0;
+
+    var i: u8 = 1;
+    while (i <= 32) : (i += 1) {
+        const opcode: u8 = 0x5f + i;
+        code[offset] = opcode;
+        offset += 1;
+
+        var j: u8 = 0;
+        while (j < i) : (j += 1) {
+            code[offset] = 0xaa;
+            offset += 1;
+        }
+    }
+
+    var bytecode = try Bytecode.init(std.testing.allocator, code[0..offset]);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(u64, 96), bytecode.analyzeGasTotal());
+}
+```
+
+### analyzeGasTotal: PUSH32 with data containing opcode bytes
+
+```zig
+test "analyzeGasTotal: PUSH32 with data containing opcode bytes" {
+    var code: [34]u8 = undefined;
+    code[0] = 0x7f; // PUSH32
+    for (1..33) |i| {
+        code[i] = 0x01;
+    }
+    code[33] = 0x00; // STOP
+
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(u64, 3), bytecode.analyzeGasTotal());
+}
+```
+
+### analyzeGasTotal: MUL with higher gas cost
+
+```zig
+test "analyzeGasTotal: MUL with higher gas cost" {
+    const code = [_]u8{
+        0x60, 0x02, // PUSH1 0x02 (3 gas)
+        0x60, 0x03, // PUSH1 0x03 (3 gas)
+        0x02, // MUL (5 gas)
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(u64, 11), bytecode.analyzeGasTotal());
+}
+```
+
+### analyzeGasTotal: complex bytecode with multiple PUSH sizes
+
+```zig
+test "analyzeGasTotal: complex bytecode with multiple PUSH sizes" {
+    const code = [_]u8{
+        0x60, 0x80, // PUSH1 0x80 (3 gas)
+        0x60, 0x40, // PUSH1 0x40 (3 gas)
+        0x52, // MSTORE (3 gas)
+        0x5b, // JUMPDEST (1 gas)
+        0x61, 0x12, 0x34, // PUSH2 0x1234 (3 gas)
+        0x00, // STOP (0 gas)
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(u64, 13), bytecode.analyzeGasTotal());
+}
+```
+
+### analyzeGasTotal: JUMPDEST cost 1 gas each
+
+```zig
+test "analyzeGasTotal: JUMPDEST cost 1 gas each" {
+    const code = [_]u8{
+        0x5b, // JUMPDEST (1 gas)
+        0x5b, // JUMPDEST (1 gas)
+        0x5b, // JUMPDEST (1 gas)
+    };
+    var bytecode = try Bytecode.init(std.testing.allocator, &code);
+    defer bytecode.deinit();
+
+    try std.testing.expectEqual(@as(u64, 3), bytecode.analyzeGasTotal());
+}
+```
+
+### isPush: PUSH1 through PUSH32
+
+```zig
+test "isPush: PUSH1 through PUSH32" {
+    // Test all PUSH opcodes
+    var opcode: u8 = 0x60; // PUSH1
+    while (opcode <= 0x7f) : (opcode += 1) { // PUSH32
+        try std.testing.expect(isPush(opcode));
+    }
+}
+```
+
+### isPush: non-PUSH opcodes
+
+```zig
+test "isPush: non-PUSH opcodes" {
+    try std.testing.expect(!isPush(0x00)); // STOP
+    try std.testing.expect(!isPush(0x01)); // ADD
+    try std.testing.expect(!isPush(0x5b)); // JUMPDEST
+    try std.testing.expect(!isPush(0x5f)); // One before PUSH1
+    try std.testing.expect(!isPush(0x80)); // DUP1
+    try std.testing.expect(!isPush(0xff)); // SELFDESTRUCT
+}
+```
+
+### getPushSize: PUSH1
+
+```zig
+test "getPushSize: PUSH1" {
+    try std.testing.expectEqual(@as(u8, 1), getPushSize(0x60));
+}
+```
+
+### getPushSize: PUSH32
+
+```zig
+test "getPushSize: PUSH32" {
+    try std.testing.expectEqual(@as(u8, 32), getPushSize(0x7f));
+}
+```
+
+### getPushSize: PUSH16
+
+```zig
+test "getPushSize: PUSH16" {
+    try std.testing.expectEqual(@as(u8, 16), getPushSize(0x6f));
+}
+```
+
+### getPushSize: non-PUSH opcodes return 0
+
+```zig
+test "getPushSize: non-PUSH opcodes return 0" {
+    try std.testing.expectEqual(@as(u8, 0), getPushSize(0x00)); // STOP
+    try std.testing.expectEqual(@as(u8, 0), getPushSize(0x01)); // ADD
+    try std.testing.expectEqual(@as(u8, 0), getPushSize(0x5b)); // JUMPDEST
+    try std.testing.expectEqual(@as(u8, 0), getPushSize(0x80)); // DUP1
+}
+```
+
+### equals: identical bytecode
+
+```zig
+test "equals: identical bytecode" {
+    const a = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01 };
+    const b = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01 };
+    try std.testing.expect(equals(&a, &b));
+}
+```
+
+### equals: different bytecode
+
+```zig
+test "equals: different bytecode" {
+    const a = [_]u8{ 0x60, 0x01 };
+    const b = [_]u8{ 0x60, 0x02 };
+    try std.testing.expect(!equals(&a, &b));
+}
+```
+
+### equals: different lengths
+
+```zig
+test "equals: different lengths" {
+    const a = [_]u8{ 0x60, 0x01 };
+    const b = [_]u8{ 0x60, 0x01, 0x00 };
+    try std.testing.expect(!equals(&a, &b));
+}
+```
+
+### equals: empty bytecode
+
+```zig
+test "equals: empty bytecode" {
+    const a = [_]u8{};
+    const b = [_]u8{};
+    try std.testing.expect(equals(&a, &b));
+}
+```
+
+### toHex: simple bytecode with prefix
+
+```zig
+test "toHex: simple bytecode with prefix" {
+    const code = [_]u8{ 0x60, 0x01 };
+    const hex = try toHex(std.testing.allocator, &code, true);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0x6001", hex);
+}
+```
+
+### toHex: simple bytecode without prefix
+
+```zig
+test "toHex: simple bytecode without prefix" {
+    const code = [_]u8{ 0x60, 0x01 };
+    const hex = try toHex(std.testing.allocator, &code, false);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("6001", hex);
+}
+```
+
+### toHex: empty bytecode with prefix
+
+```zig
+test "toHex: empty bytecode with prefix" {
+    const code = [_]u8{};
+    const hex = try toHex(std.testing.allocator, &code, true);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0x", hex);
+}
+```
+
+### toHex: empty bytecode without prefix
+
+```zig
+test "toHex: empty bytecode without prefix" {
+    const code = [_]u8{};
+    const hex = try toHex(std.testing.allocator, &code, false);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("", hex);
+}
+```
+
+### toHex: all byte values
+
+```zig
+test "toHex: all byte values" {
+    const code = [_]u8{ 0x00, 0x0f, 0xf0, 0xff };
+    const hex = try toHex(std.testing.allocator, &code, true);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0x000ff0ff", hex);
+}
+```
+
+### toHex: longer bytecode
+
+```zig
+test "toHex: longer bytecode" {
+    const code = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52, 0x5b };
+    const hex = try toHex(std.testing.allocator, &code, true);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0x608060405260", hex);
+}
+```
+
+### fromHex: simple hex with prefix
+
+```zig
+test "fromHex: simple hex with prefix" {
+    const bytes = try fromHex(std.testing.allocator, "0x6001");
+    defer std.testing.allocator.free(bytes);
+
+    const expected = [_]u8{ 0x60, 0x01 };
+    try std.testing.expect(equals(bytes, &expected));
+}
+```
+
+### fromHex: simple hex without prefix
+
+```zig
+test "fromHex: simple hex without prefix" {
+    const bytes = try fromHex(std.testing.allocator, "6001");
+    defer std.testing.allocator.free(bytes);
+
+    const expected = [_]u8{ 0x60, 0x01 };
+    try std.testing.expect(equals(bytes, &expected));
+}
+```
+
+### fromHex: uppercase hex
+
+```zig
+test "fromHex: uppercase hex" {
+    const bytes = try fromHex(std.testing.allocator, "0xABCD");
+    defer std.testing.allocator.free(bytes);
+
+    const expected = [_]u8{ 0xab, 0xcd };
+    try std.testing.expect(equals(bytes, &expected));
+}
+```
+
+### fromHex: mixed case hex
+
+```zig
+test "fromHex: mixed case hex" {
+    const bytes = try fromHex(std.testing.allocator, "0xAbCd");
+    defer std.testing.allocator.free(bytes);
+
+    const expected = [_]u8{ 0xab, 0xcd };
+    try std.testing.expect(equals(bytes, &expected));
+}
+```
+
+### fromHex: empty hex with prefix
+
+```zig
+test "fromHex: empty hex with prefix" {
+    const bytes = try fromHex(std.testing.allocator, "0x");
+    defer std.testing.allocator.free(bytes);
+
+    try std.testing.expectEqual(@as(usize, 0), bytes.len);
+}
+```
+
+### fromHex: empty hex without prefix
+
+```zig
+test "fromHex: empty hex without prefix" {
+    const bytes = try fromHex(std.testing.allocator, "");
+    defer std.testing.allocator.free(bytes);
+
+    try std.testing.expectEqual(@as(usize, 0), bytes.len);
+}
+```
+
+### fromHex: all byte values
+
+```zig
+test "fromHex: all byte values" {
+    const bytes = try fromHex(std.testing.allocator, "0x000ff0ff");
+    defer std.testing.allocator.free(bytes);
+
+    const expected = [_]u8{ 0x00, 0x0f, 0xf0, 0xff };
+    try std.testing.expect(equals(bytes, &expected));
+}
+```
+
+### fromHex: longer bytecode
+
+```zig
+test "fromHex: longer bytecode" {
+    const bytes = try fromHex(std.testing.allocator, "0x608060405260");
+    defer std.testing.allocator.free(bytes);
+
+    const expected = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52, 0x60 };
+    try std.testing.expect(equals(bytes, &expected));
+}
+```
+
+### fromHex: odd length returns error
+
+```zig
+test "fromHex: odd length returns error" {
+    const result = fromHex(std.testing.allocator, "0x123");
+    try std.testing.expectError(error.InvalidHexLength, result);
+}
+```
+
+### fromHex: invalid hex character
+
+```zig
+test "fromHex: invalid hex character" {
+    const result = fromHex(std.testing.allocator, "0x60g1");
+    try std.testing.expectError(error.InvalidHexChar, result);
+}
+```
+
+### fromHex: invalid hex character (space)
+
+```zig
+test "fromHex: invalid hex character (space)" {
+    const result = fromHex(std.testing.allocator, "0x60 01");
+    try std.testing.expectError(error.InvalidHexChar, result);
+}
+```
+
+### toHex/fromHex: roundtrip
+
+```zig
+test "toHex/fromHex: roundtrip" {
+    const original = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 };
+
+    const hex = try toHex(std.testing.allocator, &original, true);
+    defer std.testing.allocator.free(hex);
+
+    const bytes = try fromHex(std.testing.allocator, hex);
+    defer std.testing.allocator.free(bytes);
+
+    try std.testing.expect(equals(&original, bytes));
+}
+```

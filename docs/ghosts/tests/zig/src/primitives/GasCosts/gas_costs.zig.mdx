@@ -1,0 +1,210 @@
+---
+title: '[Zig] src/primitives/GasCosts/gas_costs.zig'
+source: 'src/primitives/GasCosts/gas_costs.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/GasCosts/gas_costs.zig
+
+### GasCosts: init and total
+
+```zig
+test "GasCosts: init and total" {
+    const costs = GasCosts.init();
+    try testing.expectEqual(@as(u64, 0), costs.total());
+}
+```
+
+### GasCosts: from components
+
+```zig
+test "GasCosts: from components" {
+    const costs = GasCosts.from(21000, 500, 30000, 100, 5000, 750);
+    try testing.expectEqual(@as(u64, 57350), costs.total());
+}
+```
+
+### GasCosts: add
+
+```zig
+test "GasCosts: add" {
+    const a = GasCosts.from(21000, 0, 0, 0, 0, 0);
+    const b = GasCosts.from(0, 500, 1000, 100, 5000, 375);
+    const result = a.add(b);
+
+    try testing.expectEqual(@as(u64, 21000), result.base);
+    try testing.expectEqual(@as(u64, 500), result.calldata);
+    try testing.expectEqual(@as(u64, 1000), result.execution);
+    try testing.expectEqual(@as(u64, 100), result.memory);
+    try testing.expectEqual(@as(u64, 5000), result.storage);
+    try testing.expectEqual(@as(u64, 375), result.logs);
+    try testing.expectEqual(@as(u64, 27975), result.total());
+}
+```
+
+### GasCosts: equals
+
+```zig
+test "GasCosts: equals" {
+    const a = GasCosts.from(21000, 500, 1000, 100, 5000, 375);
+    const b = GasCosts.from(21000, 500, 1000, 100, 5000, 375);
+    const c = GasCosts.from(21000, 500, 1000, 100, 5000, 376);
+
+    try testing.expect(a.equals(b));
+    try testing.expect(!a.equals(c));
+}
+```
+
+### GasCosts: calldataCost
+
+```zig
+test "GasCosts: calldataCost" {
+    // All zeros
+    const zeros = [_]u8{ 0, 0, 0, 0 };
+    try testing.expectEqual(@as(u64, 16), GasCosts.calldataCost(&zeros));
+
+    // All non-zeros
+    const nonzeros = [_]u8{ 1, 2, 3, 4 };
+    try testing.expectEqual(@as(u64, 64), GasCosts.calldataCost(&nonzeros));
+
+    // Mixed
+    const mixed = [_]u8{ 0, 1, 0, 2 };
+    try testing.expectEqual(@as(u64, 40), GasCosts.calldataCost(&mixed)); // 2*4 + 2*16
+
+    // Empty
+    const empty = [_]u8{};
+    try testing.expectEqual(@as(u64, 0), GasCosts.calldataCost(&empty));
+}
+```
+
+### GasCosts: memoryExpansionCost
+
+```zig
+test "GasCosts: memoryExpansionCost" {
+    // Expand from 0 to 1 word
+    try testing.expectEqual(@as(u64, 3), GasCosts.memoryExpansionCost(0, 1));
+
+    // Expand from 0 to 2 words
+    try testing.expectEqual(@as(u64, 6), GasCosts.memoryExpansionCost(0, 2));
+
+    // Expand from 1 to 2 words
+    try testing.expectEqual(@as(u64, 3), GasCosts.memoryExpansionCost(1, 2));
+
+    // No expansion (same size)
+    try testing.expectEqual(@as(u64, 0), GasCosts.memoryExpansionCost(2, 2));
+
+    // No expansion (smaller)
+    try testing.expectEqual(@as(u64, 0), GasCosts.memoryExpansionCost(5, 3));
+
+    // Large expansion (quadratic kicks in)
+    // 32 words: 3*32 + 32^2/512 = 96 + 2 = 98
+    try testing.expectEqual(@as(u64, 98), GasCosts.memoryExpansionCost(0, 32));
+}
+```
+
+### GasCosts: wordCount
+
+```zig
+test "GasCosts: wordCount" {
+    try testing.expectEqual(@as(u64, 0), GasCosts.wordCount(0));
+    try testing.expectEqual(@as(u64, 1), GasCosts.wordCount(1));
+    try testing.expectEqual(@as(u64, 1), GasCosts.wordCount(32));
+    try testing.expectEqual(@as(u64, 2), GasCosts.wordCount(33));
+    try testing.expectEqual(@as(u64, 2), GasCosts.wordCount(64));
+    try testing.expectEqual(@as(u64, 32), GasCosts.wordCount(1024));
+}
+```
+
+### GasCosts: percentages
+
+```zig
+test "GasCosts: percentages" {
+    // Simple transfer (100% base)
+    const transfer = GasCosts.from(21000, 0, 0, 0, 0, 0);
+    const pct1 = transfer.percentages();
+    try testing.expectEqual(@as(u8, 100), pct1.base);
+
+    // Complex transaction
+    const complex = GasCosts.from(21000, 1000, 50000, 500, 20000, 7500);
+    const pct2 = complex.percentages();
+    // Total = 100000, base = 21%
+    try testing.expectEqual(@as(u8, 21), pct2.base);
+    try testing.expectEqual(@as(u8, 50), pct2.execution);
+    try testing.expectEqual(@as(u8, 20), pct2.storage);
+
+    // Zero total
+    const empty = GasCosts.init();
+    const pct3 = empty.percentages();
+    try testing.expectEqual(@as(u8, 0), pct3.base);
+}
+```
+
+### GasCosts: totalWithBlob
+
+```zig
+test "GasCosts: totalWithBlob" {
+    var costs = GasCosts.from(21000, 500, 30000, 100, 5000, 750);
+    costs.blob = 131072; // 128KB blob
+    try testing.expectEqual(@as(u64, 57350), costs.total());
+    try testing.expectEqual(@as(u64, 188422), costs.totalWithBlob());
+}
+```
+
+### GasCosts: access_list
+
+```zig
+test "GasCosts: access_list" {
+    var costs = GasCosts.init();
+    costs.base = 21000;
+    // 1 address + 2 storage keys
+    costs.access_list = Constants.ACCESS_LIST_ADDRESS + 2 * Constants.ACCESS_LIST_STORAGE_KEY;
+    try testing.expectEqual(@as(u64, 6200), costs.access_list);
+    try testing.expectEqual(@as(u64, 27200), costs.total());
+}
+```
+
+### Constants: match EVM specs
+
+```zig
+test "Constants: match EVM specs" {
+    try testing.expectEqual(@as(u64, 21000), Constants.TX_BASE);
+    try testing.expectEqual(@as(u64, 53000), Constants.TX_CREATE);
+    try testing.expectEqual(@as(u64, 4), Constants.CALLDATA_ZERO);
+    try testing.expectEqual(@as(u64, 16), Constants.CALLDATA_NONZERO);
+    try testing.expectEqual(@as(u64, 100), Constants.SLOAD_WARM);
+    try testing.expectEqual(@as(u64, 2100), Constants.SLOAD_COLD);
+    try testing.expectEqual(@as(u64, 20000), Constants.SSTORE_SET);
+    try testing.expectEqual(@as(u64, 5000), Constants.SSTORE_RESET);
+    try testing.expectEqual(@as(u64, 4800), Constants.SSTORE_CLEAR_REFUND);
+    try testing.expectEqual(@as(u64, 375), Constants.LOG_BASE);
+    try testing.expectEqual(@as(u64, 375), Constants.LOG_TOPIC);
+    try testing.expectEqual(@as(u64, 8), Constants.LOG_BYTE);
+    try testing.expectEqual(@as(u64, 30), Constants.KECCAK256_BASE);
+    try testing.expectEqual(@as(u64, 6), Constants.KECCAK256_WORD);
+    try testing.expectEqual(@as(u64, 2600), Constants.COLD_ACCOUNT);
+    try testing.expectEqual(@as(u64, 100), Constants.WARM_ACCOUNT);
+    try testing.expectEqual(@as(u64, 9000), Constants.CALL_VALUE);
+    try testing.expectEqual(@as(u64, 25000), Constants.CALL_NEW_ACCOUNT);
+    try testing.expectEqual(@as(u64, 2400), Constants.ACCESS_LIST_ADDRESS);
+    try testing.expectEqual(@as(u64, 1900), Constants.ACCESS_LIST_STORAGE_KEY);
+}
+```
+
+### GasCosts: typical ERC20 transfer
+
+```zig
+test "GasCosts: typical ERC20 transfer" {
+    // ERC20 transfer breakdown
+    var costs = GasCosts.init();
+    costs.base = 21000;
+    // transfer(address,uint256) = 4 bytes selector + 32 bytes address + 32 bytes amount
+    // Assuming ~50% zeros in the data
+    costs.calldata = 34 * 4 + 34 * 16; // ~680
+    costs.execution = 3000; // CALL, JUMP, etc.
+    costs.storage = 2100 + 5000 * 2; // 1 SLOAD + 2 SSTORE (update balances)
+    costs.logs = 375 + 3 * 375 + 32 * 8; // LOG3 with Transfer event
+
+    const total = costs.total();
+    try testing.expect(total > 21000);
+    try testing.expect(total < 100000);
+}
+```

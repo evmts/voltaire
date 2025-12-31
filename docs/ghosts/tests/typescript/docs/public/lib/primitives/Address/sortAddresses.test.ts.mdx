@@ -1,0 +1,189 @@
+---
+title: '[TS/JS] docs/public/lib/primitives/Address/sortAddresses.test.ts'
+source: 'docs/public/lib/primitives/Address/sortAddresses.test.ts'
+---
+
+> Auto-generated from test file: docs/public/lib/primitives/Address/sortAddresses.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import { Address } from "./index.js";
+import { sortAddresses } from "./sortAddresses.js";
+
+describe("sortAddresses", () => {
+	it("sorts addresses lexicographically", () => {
+		const addr1 = Address.fromHex("0x0000000000000000000000000000000000000003");
+		const addr2 = Address.fromHex("0x0000000000000000000000000000000000000001");
+		const addr3 = Address.fromHex("0x0000000000000000000000000000000000000002");
+
+		const result = sortAddresses([addr1, addr2, addr3]);
+
+		expect(result[0]?.[19]).toBe(1);
+		expect(result[1]?.[19]).toBe(2);
+		expect(result[2]?.[19]).toBe(3);
+	});
+
+	it("sorts by first differing byte", () => {
+		const addr1 = Address.fromHex("0x3000000000000000000000000000000000000000");
+		const addr2 = Address.fromHex("0x1000000000000000000000000000000000000000");
+		const addr3 = Address.fromHex("0x2000000000000000000000000000000000000000");
+
+		const result = sortAddresses([addr1, addr2, addr3]);
+
+		expect(result[0]?.[0]).toBe(0x10);
+		expect(result[1]?.[0]).toBe(0x20);
+		expect(result[2]?.[0]).toBe(0x30);
+	});
+
+	it("returns empty array for empty input", () => {
+		const result = sortAddresses([]);
+		expect(result).toEqual([]);
+	});
+
+	it("returns single address unchanged", () => {
+		const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+		const result = sortAddresses([addr]);
+
+		expect(result.length).toBe(1);
+		expect(Address.equals(result[0], addr)).toBe(true);
+	});
+
+	it("handles already sorted array", () => {
+		const addr1 = Address.fromHex("0x0000000000000000000000000000000000000001");
+		const addr2 = Address.fromHex("0x0000000000000000000000000000000000000002");
+		const addr3 = Address.fromHex("0x0000000000000000000000000000000000000003");
+
+		const result = sortAddresses([addr1, addr2, addr3]);
+
+		expect(result[0]?.[19]).toBe(1);
+		expect(result[1]?.[19]).toBe(2);
+		expect(result[2]?.[19]).toBe(3);
+	});
+
+	it("handles reverse sorted array", () => {
+		const addr1 = Address.fromHex("0x0000000000000000000000000000000000000003");
+		const addr2 = Address.fromHex("0x0000000000000000000000000000000000000002");
+		const addr3 = Address.fromHex("0x0000000000000000000000000000000000000001");
+
+		const result = sortAddresses([addr1, addr2, addr3]);
+
+		expect(result[0]?.[19]).toBe(1);
+		expect(result[1]?.[19]).toBe(2);
+		expect(result[2]?.[19]).toBe(3);
+	});
+
+	it("places zero address first", () => {
+		const zero = Address.fromHex("0x0000000000000000000000000000000000000000");
+		const addr1 = Address.fromHex("0x0000000000000000000000000000000000000001");
+		const addr2 = Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff");
+
+		const result = sortAddresses([addr2, addr1, zero]);
+
+		expect(result[0]?.every((b) => b === 0)).toBe(true);
+	});
+
+	it("places max address last", () => {
+		const max = Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff");
+		const addr1 = Address.fromHex("0x0000000000000000000000000000000000000001");
+		const zero = Address.fromHex("0x0000000000000000000000000000000000000000");
+
+		const result = sortAddresses([addr1, max, zero]);
+
+		expect(result[2]?.every((b) => b === 255)).toBe(true);
+	});
+
+	it("handles duplicate addresses", () => {
+		const addr1 = Address.fromHex("0x0000000000000000000000000000000000000001");
+		const addr2 = Address.fromHex("0x0000000000000000000000000000000000000001");
+		const addr3 = Address.fromHex("0x0000000000000000000000000000000000000002");
+
+		const result = sortAddresses([addr3, addr1, addr2]);
+
+		expect(result.length).toBe(3);
+		expect(result[0]?.[19]).toBe(1);
+		expect(result[1]?.[19]).toBe(1);
+		expect(result[2]?.[19]).toBe(2);
+	});
+
+	it("sorts real Ethereum addresses correctly", () => {
+		const vitalik = Address.fromHex(
+			"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+		);
+		const uniswap = Address.fromHex(
+			"0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+		);
+		const usdc = Address.fromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+		const result = sortAddresses([vitalik, uniswap, usdc]);
+
+		expect(Address.toHex(result[0])).toBe(
+			"0x1f9840a85d5af5bf1d1762f925bdaddc4201f984",
+		);
+		expect(Address.toHex(result[1])).toBe(
+			"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+		);
+		expect(Address.toHex(result[2])).toBe(
+			"0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+		);
+	});
+
+	it("returns new array", () => {
+		const addr1 = Address.fromHex("0x0000000000000000000000000000000000000001");
+		const addr2 = Address.fromHex("0x0000000000000000000000000000000000000002");
+		const input = [addr1, addr2];
+
+		const result = sortAddresses(input);
+
+		expect(result).not.toBe(input);
+	});
+
+	it("does not mutate original array", () => {
+		const addr1 = Address.fromHex("0x0000000000000000000000000000000000000003");
+		const addr2 = Address.fromHex("0x0000000000000000000000000000000000000001");
+		const addr3 = Address.fromHex("0x0000000000000000000000000000000000000002");
+		const input = [addr1, addr2, addr3];
+
+		sortAddresses(input);
+
+		expect(input[0]?.[19]).toBe(3);
+		expect(input[1]?.[19]).toBe(1);
+		expect(input[2]?.[19]).toBe(2);
+	});
+
+	it("works with Address namespace method", () => {
+		const addr1 = Address.fromHex("0x0000000000000000000000000000000000000003");
+		const addr2 = Address.fromHex("0x0000000000000000000000000000000000000001");
+		const addr3 = Address.fromHex("0x0000000000000000000000000000000000000002");
+
+		const result = Address.sortAddresses([addr1, addr2, addr3]);
+
+		expect(result[0]?.[19]).toBe(1);
+		expect(result[1]?.[19]).toBe(2);
+		expect(result[2]?.[19]).toBe(3);
+	});
+
+	it("maintains stable sort for equal addresses", () => {
+		const addr1 = Address.fromHex("0x0000000000000000000000000000000000000001");
+		const addr2 = Address.fromHex("0x0000000000000000000000000000000000000001");
+		const input = [addr1, addr2];
+
+		const result = sortAddresses(input);
+
+		expect(result[0]).toBe(addr1);
+		expect(result[1]).toBe(addr2);
+	});
+
+	it("sorts large array of addresses", () => {
+		const addresses = Array.from({ length: 100 }, (_, i) =>
+			Address.fromNumber(BigInt(99 - i)),
+		);
+
+		const result = sortAddresses(addresses);
+
+		for (let i = 0; i < 99; i++) {
+			expect(Address.compare(result[i], result[i + 1])).toBeLessThan(1);
+		}
+	});
+});
+
+```

@@ -1,0 +1,312 @@
+---
+title: '[Zig] src/crypto/bn254/G1.zig'
+source: 'src/crypto/bn254/G1.zig'
+---
+
+> Auto-generated from Zig tests in: src/crypto/bn254/G1.zig
+
+### G1.add opposite
+
+```zig
+test "G1.add opposite" {
+    const Gen = G1.GENERATOR;
+    const minusG = Gen.neg();
+    const G_plus_minusG = Gen.add(&minusG);
+    try std.testing.expect(G_plus_minusG.isInfinity());
+}
+```
+
+### G1.add
+
+```zig
+test "G1.add" {
+    const Gen = G1.GENERATOR;
+    const Gen2 = G1{
+        .x = FpMont.init(21888242871839275222246405745257275088696311157297823662689037894645226208560),
+        .y = FpMont.init(21888242871839275222246405745257275088696311157297823662689037894645226208572),
+        .z = FpMont.init(4),
+    };
+    const expected_result = G1{
+        .x = FpMont.init(119872),
+        .y = FpMont.init(21888242871839275222246405745257275088696311157297823662689037894645159203143),
+        .z = FpMont.init(312),
+    };
+    try std.testing.expect(Gen.add(&Gen2).equal(&expected_result));
+}
+```
+
+### G1.double
+
+```zig
+test "G1.double" {
+    const Gen = G1.GENERATOR;
+    const doubleG = Gen.double();
+    const expected_result = G1{
+        .x = FpMont.init(21888242871839275222246405745257275088696311157297823662689037894645226208560),
+        .y = FpMont.init(21888242871839275222246405745257275088696311157297823662689037894645226208572),
+        .z = FpMont.init(4),
+    };
+
+    try std.testing.expect(doubleG.equal(&expected_result));
+}
+```
+
+### G1.mul
+
+```zig
+test "G1.mul" {
+    const Gen = G1.GENERATOR;
+    const minus_G = try Gen.mul(&Fr.init(1).neg());
+    const G_plus_minus_G = Gen.add(&minus_G);
+    try std.testing.expect(G_plus_minus_G.isInfinity());
+}
+```
+
+### G1.isOnCurve generator
+
+```zig
+test "G1.isOnCurve generator" {
+    const gen = G1.GENERATOR;
+    try std.testing.expect(gen.isOnCurve());
+}
+```
+
+### G1.isOnCurve identity
+
+```zig
+test "G1.isOnCurve identity" {
+    const identity = G1.INFINITY;
+    try std.testing.expect(identity.isOnCurve());
+}
+```
+
+### G1.isOnCurve random point
+
+```zig
+test "G1.isOnCurve random point" {
+    const k = 7; // example scalar
+    const random_point = try G1.GENERATOR.mul(&Fr.init(k));
+    try std.testing.expect(random_point.isOnCurve());
+}
+```
+
+### G1.equal generator to itself
+
+```zig
+test "G1.equal generator to itself" {
+    const gen = G1.GENERATOR;
+    try std.testing.expect(gen.equal(&gen));
+}
+```
+
+### G1.equal different representations same point
+
+```zig
+test "G1.equal different representations same point" {
+    const gen = G1.GENERATOR;
+    const scaled_gen = G1{
+        .x = gen.x.mul(&FpMont.init(4)), // scale by 2²
+        .y = gen.y.mul(&FpMont.init(8)), // scale by 2³
+        .z = gen.z.mul(&FpMont.init(2)), // scale by 2
+    };
+    try std.testing.expect(gen.equal(&scaled_gen));
+}
+```
+
+### G1.toAffine random point
+
+```zig
+test "G1.toAffine random point" {
+    const k = 13; // example scalar
+    const random_point = try G1.GENERATOR.mul(&Fr.init(k));
+    const affine = try random_point.toAffine();
+
+    const expected_result = G1{
+        .x = FpMont.init(2672242651313367459976336264061690128665099451055893690004467838496751824703),
+        .y = FpMont.init(18247534626997477790812670345925575171672701304065784723769023620148097699216),
+        .z = FpMont.ONE, // affine points have z = 1
+    };
+
+    try std.testing.expect(affine.equal(&expected_result));
+    try std.testing.expect(affine.isOnCurve());
+}
+```
+
+### G1.add generator to identity
+
+```zig
+test "G1.add generator to identity" {
+    const gen = G1.GENERATOR;
+    const identity = G1.INFINITY;
+    const result = gen.add(&identity);
+    try std.testing.expect(result.equal(&gen));
+}
+```
+
+### G1.add random points
+
+```zig
+test "G1.add random points" {
+    const k1 = 3; // example scalar
+    const k2 = 5; // example scalar
+    const point1 = try G1.GENERATOR.mul(&Fr.init(k1));
+    const point2 = try G1.GENERATOR.mul(&Fr.init(k2));
+    const result = point1.add(&point2);
+
+    const expected_result = G1{
+        .x = FpMont.init(41677742803929195922238593),
+        .y = FpMont.init(269065159484683478575364835230449703617),
+        .z = FpMont.init(712815062608),
+    };
+
+    try std.testing.expect(result.equal(&expected_result));
+    try std.testing.expect(result.isOnCurve());
+}
+```
+
+### G1.add commutativity
+
+```zig
+test "G1.add commutativity" {
+    const k1 = 11; // example scalar
+    const k2 = 17; // example scalar
+    const point1 = try G1.GENERATOR.mul(&Fr.init(k1));
+    const point2 = try G1.GENERATOR.mul(&Fr.init(k2));
+
+    const result1 = point1.add(&point2);
+    const result2 = point2.add(&point1);
+    try std.testing.expect(result1.equal(&result2));
+}
+```
+
+### G1.double identity
+
+```zig
+test "G1.double identity" {
+    const identity = G1.INFINITY;
+    const result = identity.double();
+    try std.testing.expect(result.isInfinity());
+}
+```
+
+### G1.double random point
+
+```zig
+test "G1.double random point" {
+    const k = 9; // example scalar
+    const random_point = try G1.GENERATOR.mul(&Fr.init(k));
+    const doubled = random_point.double();
+
+    const expected_result = G1{
+        .x = FpMont.init(16214338358589738794944521397038398142658042174982207107873684518498175669939),
+        .y = FpMont.init(11686337248854933627526225912767414320106940505209835321155346996117578735613),
+        .z = FpMont.init(2952297635626254264598100546197407825999396807330657291329469442697244479715),
+    };
+
+    try std.testing.expect(doubled.equal(&expected_result));
+    try std.testing.expect(doubled.isOnCurve());
+}
+```
+
+### G1.chain operations
+
+```zig
+test "G1.chain operations" {
+    const gen = G1.GENERATOR;
+    const doubled = gen.double();
+    const quadrupled = doubled.double();
+    const gen_times_four = gen.add(&gen).add(&gen).add(&gen);
+    try std.testing.expect(quadrupled.equal(&gen_times_four));
+}
+```
+
+### G1.addAssign basic assignment
+
+```zig
+test "G1.addAssign basic assignment" {
+    var a = G1.GENERATOR;
+    const b = G1.GENERATOR.double();
+    const expected = a.add(&b);
+    a.addAssign(&b);
+    try std.testing.expect(a.equal(&expected));
+}
+```
+
+### G1.doubleAssign basic assignment
+
+```zig
+test "G1.doubleAssign basic assignment" {
+    var a = G1.GENERATOR;
+    const expected = a.double();
+    a.doubleAssign();
+    try std.testing.expect(a.equal(&expected));
+}
+```
+
+### G1.negAssign basic assignment
+
+```zig
+test "G1.negAssign basic assignment" {
+    var a = G1.GENERATOR;
+    const expected = a.neg();
+    a.negAssign();
+    try std.testing.expect(a.equal(&expected));
+}
+```
+
+### G1.mulAssign basic assignment
+
+```zig
+test "G1.mulAssign basic assignment" {
+    var a = G1.GENERATOR;
+    const scalar = Fr.init(7);
+    const expected = try a.mul(&scalar);
+    try a.mulAssign(&scalar);
+    try std.testing.expect(a.equal(&expected));
+}
+```
+
+### G1.glsEndomorphism
+
+```zig
+test "G1.glsEndomorphism" {
+    const gen = G1.GENERATOR;
+
+    const test_values = [_]Fr{
+        Fr.init(1),
+        Fr.init(2654765),
+        Fr.init(34567898765434567898765434567898765434567898765434567898765434567898765434567),
+        Fr.init(45677654345678987654345678987654345678987654345678987654345678),
+        Fr.init(5678456789876543456789876543456789876543456789876543456789876543456789),
+    };
+
+    for (test_values) |value| {
+        const point = try gen.mul(&value);
+        const endo = try point.glsEndomorphism();
+        const point_times_lambda = try point.mul(&Fr.init(curve_parameters.G1_SCALAR.lambda));
+        try std.testing.expect(point_times_lambda.equal(&endo));
+    }
+}
+```
+
+### G1.decomposeScalar
+
+```zig
+test "G1.decomposeScalar" {
+    const lambda = curve_parameters.G1_SCALAR.lambda;
+
+    const test_values = [_]Fr{
+        Fr.init(1),
+        Fr.init(2654765),
+        Fr.init(34567898765434567898765434567898765434567898765434567898765434567898765434567),
+        Fr.init(45677654345678987654345678987654345678987654345678987654345678),
+        Fr.init(5678456789876543456789876543456789876543456789876543456789876543456789),
+    };
+
+    for (test_values) |value| {
+        const decomposition = G1.decomposeScalar(value.value);
+        try std.testing.expect(decomposition.k2 >= 0);
+        try std.testing.expect(@mod(decomposition.k1 + lambda * (-@as(i512, decomposition.k2)), curve_parameters.FR_MOD) == value.value);
+    }
+}
+```

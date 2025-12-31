@@ -1,0 +1,187 @@
+---
+title: '[Zig] src/primitives/FunctionSignature/function_signature.zig'
+source: 'src/primitives/FunctionSignature/function_signature.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/FunctionSignature/function_signature.zig
+
+### fromSignature - transfer
+
+```zig
+test "fromSignature - transfer" {
+    const sig = try fromSignature("transfer(address,uint256)");
+    try std.testing.expectEqualStrings("transfer", sig.name());
+    try std.testing.expectEqual(@as(usize, 2), sig.input_count);
+    try std.testing.expectEqualStrings("address", sig.getInput(0).?);
+    try std.testing.expectEqualStrings("uint256", sig.getInput(1).?);
+    try std.testing.expectEqualStrings("0xa9059cbb", &sig.toHex());
+}
+```
+
+### fromSignature - no params
+
+```zig
+test "fromSignature - no params" {
+    const sig = try fromSignature("totalSupply()");
+    try std.testing.expectEqualStrings("totalSupply", sig.name());
+    try std.testing.expectEqual(@as(usize, 0), sig.input_count);
+    try std.testing.expectEqualStrings("0x18160ddd", &sig.toHex());
+}
+```
+
+### fromSignature - balanceOf
+
+```zig
+test "fromSignature - balanceOf" {
+    const sig = try fromSignature("balanceOf(address)");
+    try std.testing.expectEqualStrings("balanceOf", sig.name());
+    try std.testing.expectEqual(@as(usize, 1), sig.input_count);
+    try std.testing.expectEqualStrings("address", sig.getInput(0).?);
+    try std.testing.expectEqualStrings("0x70a08231", &sig.toHex());
+}
+```
+
+### fromSignature - complex types
+
+```zig
+test "fromSignature - complex types" {
+    const sig = try fromSignature("swap(uint256,uint256,address,bytes)");
+    try std.testing.expectEqualStrings("swap", sig.name());
+    try std.testing.expectEqual(@as(usize, 4), sig.input_count);
+    try std.testing.expectEqualStrings("uint256", sig.getInput(0).?);
+    try std.testing.expectEqualStrings("uint256", sig.getInput(1).?);
+    try std.testing.expectEqualStrings("address", sig.getInput(2).?);
+    try std.testing.expectEqualStrings("bytes", sig.getInput(3).?);
+    try std.testing.expectEqualStrings("0x022c0d9f", &sig.toHex());
+}
+```
+
+### fromSignature - tuple types
+
+```zig
+test "fromSignature - tuple types" {
+    const sig = try fromSignature("execute((address,uint256,bytes)[])");
+    try std.testing.expectEqualStrings("execute", sig.name());
+    try std.testing.expectEqual(@as(usize, 1), sig.input_count);
+    try std.testing.expectEqualStrings("(address,uint256,bytes)[]", sig.getInput(0).?);
+}
+```
+
+### fromSignature - nested tuple
+
+```zig
+test "fromSignature - nested tuple" {
+    const sig = try fromSignature("process((uint256,address),bytes)");
+    try std.testing.expectEqualStrings("process", sig.name());
+    try std.testing.expectEqual(@as(usize, 2), sig.input_count);
+    try std.testing.expectEqualStrings("(uint256,address)", sig.getInput(0).?);
+    try std.testing.expectEqualStrings("bytes", sig.getInput(1).?);
+}
+```
+
+### fromSignature - invalid no paren
+
+```zig
+test "fromSignature - invalid no paren" {
+    try std.testing.expectError(ParseError.MissingOpenParen, fromSignature("invalid"));
+}
+```
+
+### fromSignature - invalid no close paren
+
+```zig
+test "fromSignature - invalid no close paren" {
+    try std.testing.expectError(ParseError.MissingCloseParen, fromSignature("test(address"));
+}
+```
+
+### fromSelector - creates minimal signature
+
+```zig
+test "fromSelector - creates minimal signature" {
+    const sel = computeSelector("transfer(address,uint256)");
+    const sig = fromSelector(sel);
+    try std.testing.expectEqualStrings("0xa9059cbb", sig.signature());
+    try std.testing.expectEqualStrings("", sig.name());
+    try std.testing.expectEqual(@as(usize, 0), sig.input_count);
+}
+```
+
+### toSelector - direct computation
+
+```zig
+test "toSelector - direct computation" {
+    const sel = toSelector("transfer(address,uint256)");
+    const expected = [4]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    try std.testing.expectEqual(expected, sel);
+}
+```
+
+### toTopic - full 32-byte hash
+
+```zig
+test "toTopic - full 32-byte hash" {
+    const topic = toTopic("transfer(address,uint256)");
+    // Full keccak256 hash starts with selector bytes
+    try std.testing.expectEqual(@as(u8, 0xa9), topic[0]);
+    try std.testing.expectEqual(@as(u8, 0x05), topic[1]);
+    try std.testing.expectEqual(@as(u8, 0x9c), topic[2]);
+    try std.testing.expectEqual(@as(u8, 0xbb), topic[3]);
+    // Verify it's a proper 32-byte hash (not truncated)
+    try std.testing.expectEqual(@as(usize, 32), topic.len);
+}
+```
+
+### equals - same signature
+
+```zig
+test "equals - same signature" {
+    const sig1 = try fromSignature("transfer(address,uint256)");
+    const sig2 = try fromSignature("transfer(address,uint256)");
+    try std.testing.expect(equals(&sig1, &sig2));
+}
+```
+
+### equals - different signature
+
+```zig
+test "equals - different signature" {
+    const sig1 = try fromSignature("transfer(address,uint256)");
+    const sig2 = try fromSignature("approve(address,uint256)");
+    try std.testing.expect(!equals(&sig1, &sig2));
+}
+```
+
+### parseSignature - basic
+
+```zig
+test "parseSignature - basic" {
+    const parsed = try parseSignature("transfer(address,uint256)");
+    try std.testing.expectEqualStrings("transfer", parsed.name);
+    try std.testing.expectEqual(@as(usize, 2), parsed.count);
+    try std.testing.expectEqualStrings("address", parsed.inputs[0]);
+    try std.testing.expectEqualStrings("uint256", parsed.inputs[1]);
+}
+```
+
+### parseSignature - empty params
+
+```zig
+test "parseSignature - empty params" {
+    const parsed = try parseSignature("totalSupply()");
+    try std.testing.expectEqualStrings("totalSupply", parsed.name);
+    try std.testing.expectEqual(@as(usize, 0), parsed.count);
+}
+```
+
+### parseSignature - tuple
+
+```zig
+test "parseSignature - tuple" {
+    const parsed = try parseSignature("swap((uint256,address),bytes)");
+    try std.testing.expectEqualStrings("swap", parsed.name);
+    try std.testing.expectEqual(@as(usize, 2), parsed.count);
+    try std.testing.expectEqualStrings("(uint256,address)", parsed.inputs[0]);
+    try std.testing.expectEqualStrings("bytes", parsed.inputs[1]);
+}
+```

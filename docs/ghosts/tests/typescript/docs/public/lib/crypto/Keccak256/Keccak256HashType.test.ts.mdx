@@ -1,0 +1,357 @@
+---
+title: '[TS/JS] docs/public/lib/crypto/Keccak256/Keccak256HashType.test.ts'
+source: 'docs/public/lib/crypto/Keccak256/Keccak256HashType.test.ts'
+---
+
+> Auto-generated from test file: docs/public/lib/crypto/Keccak256/Keccak256HashType.test.ts
+
+```typescript
+import { describe, it } from "vitest";
+import type { Keccak256Hash } from "./Keccak256HashType.js";
+
+// Type-level testing utilities
+type Equals<T, U> = (<V>() => V extends T ? 1 : 2) extends <V>() => V extends U
+	? 1
+	: 2
+	? true
+	: false;
+
+describe("Keccak256HashType", () => {
+	describe("type structure", () => {
+		it("is a Uint8Array", () => {
+			type Test = Equals<
+				Keccak256Hash extends Uint8Array ? true : false,
+				true
+			>;
+			const assertion: Test = true;
+			assertion;
+		});
+
+		it("is branded", () => {
+			type HasBrand = symbol extends keyof Keccak256Hash ? true : false;
+			type Test = Equals<HasBrand, true>;
+			const assertion: Test = true;
+			assertion;
+		});
+
+		it("is not assignable to plain Uint8Array", () => {
+			const _test = (_hash: Keccak256Hash) => {
+				// @ts-expect-error - Keccak256Hash is not assignable to Uint8Array
+				const _bytes: Uint8Array = _hash;
+			};
+		});
+
+		it("plain Uint8Array is not assignable to Keccak256Hash", () => {
+			const _test = (_bytes: Uint8Array) => {
+				// @ts-expect-error - Uint8Array is not assignable to Keccak256Hash
+				const _hash: Keccak256Hash = _bytes;
+			};
+		});
+	});
+
+	describe("readonly properties", () => {
+		it("brand tag is readonly", () => {
+			const _test = (hash: Keccak256Hash) => {
+				// @ts-expect-error - brand is readonly
+				hash[Symbol.for("brand")] = "Something";
+			};
+		});
+	});
+
+	describe("type compatibility", () => {
+		it("is not compatible with 20-byte array", () => {
+			type AddressLike = Uint8Array & { readonly length: 20 };
+			type Test = Equals<Keccak256Hash, AddressLike>;
+			const assertion: Test = false;
+			assertion;
+		});
+
+		it("is not compatible with plain 32-byte array", () => {
+			type GenericArray = Uint8Array & { readonly length: 32 };
+			type Test = Equals<Keccak256Hash, GenericArray>;
+			const assertion: Test = false;
+			assertion;
+		});
+
+		it("two Keccak256Hash are the same type", () => {
+			type Test = Equals<Keccak256Hash, Keccak256Hash>;
+			const assertion: Test = true;
+			assertion;
+		});
+	});
+
+	describe("length constraints", () => {
+		it("rejects 20 bytes", () => {
+			type ShortArray = Uint8Array & { readonly length: 20 };
+			const _test = (_short: ShortArray) => {
+				// @ts-expect-error - 20 bytes is not valid
+				const _hash: Keccak256Hash = _short;
+			};
+		});
+
+		it("rejects 31 bytes", () => {
+			type AlmostArray = Uint8Array & { readonly length: 31 };
+			const _test = (_almost: AlmostArray) => {
+				// @ts-expect-error - 31 bytes is not valid
+				const _hash: Keccak256Hash = _almost;
+			};
+		});
+
+		it("rejects 33 bytes", () => {
+			type LongArray = Uint8Array & { readonly length: 33 };
+			const _test = (_long: LongArray) => {
+				// @ts-expect-error - 33 bytes is not valid
+				const _hash: Keccak256Hash = _long;
+			};
+		});
+
+		it("rejects 0 bytes", () => {
+			type EmptyArray = Uint8Array & { readonly length: 0 };
+			const _test = (_empty: EmptyArray) => {
+				// @ts-expect-error - 0 bytes is not valid
+				const _hash: Keccak256Hash = _empty;
+			};
+		});
+
+		it("rejects 64 bytes", () => {
+			type DoubleArray = Uint8Array & { readonly length: 64 };
+			const _test = (_double: DoubleArray) => {
+				// @ts-expect-error - 64 bytes is not valid
+				const _hash: Keccak256Hash = _double;
+			};
+		});
+	});
+
+	describe("brand uniqueness", () => {
+		it("is not compatible with other brands", () => {
+			type OtherBrand = Uint8Array & {
+				readonly [Symbol.for("brand")]: "SomethingElse";
+			};
+			type Test = Equals<Keccak256Hash, OtherBrand>;
+			const assertion: Test = false;
+			assertion;
+		});
+
+		it("is not compatible with Hash brand", () => {
+			type HashBrand = Uint8Array & {
+				readonly [Symbol.for("brand")]: "Hash";
+			};
+			type Test = Equals<Keccak256Hash, HashBrand>;
+			const assertion: Test = false;
+			assertion;
+		});
+
+		it("is not compatible with SHA256Hash brand", () => {
+			type SHA256Brand = Uint8Array & {
+				readonly [Symbol.for("brand")]: "SHA256Hash";
+			};
+			type Test = Equals<Keccak256Hash, SHA256Brand>;
+			const assertion: Test = false;
+			assertion;
+		});
+	});
+
+	describe("immutability", () => {
+		it("brand property is readonly", () => {
+			const _test = (hash: Keccak256Hash) => {
+				// @ts-expect-error - cannot reassign readonly property
+				hash[Symbol.for("brand")] = "Modified" as any;
+			};
+		});
+	});
+
+	describe("utility type compatibility", () => {
+		it("can be used with Array.from", () => {
+			const _test = (hash: Keccak256Hash): number[] => {
+				return Array.from(hash);
+			};
+		});
+
+		it("can be used with spread operator", () => {
+			const _test = (hash: Keccak256Hash): number[] => {
+				return [...hash];
+			};
+		});
+
+		it("can be indexed", () => {
+			const _test = (hash: Keccak256Hash): number | undefined => {
+				return hash[0];
+			};
+		});
+
+		it("can be sliced", () => {
+			const _test = (hash: Keccak256Hash): Uint8Array => {
+				return hash.slice(0, 20);
+			};
+		});
+
+		it("slice returns plain Uint8Array not Keccak256Hash", () => {
+			const _test = (hash: Keccak256Hash) => {
+				const sliced = hash.slice(0, 20);
+				// @ts-expect-error - slice returns plain Uint8Array
+				const _hash: Keccak256Hash = sliced;
+			};
+		});
+	});
+
+	describe("address derivation", () => {
+		it("can extract last 20 bytes for address", () => {
+			const _test = (hash: Keccak256Hash): Uint8Array => {
+				return hash.slice(12, 32);
+			};
+		});
+
+		it("address slice is not Keccak256Hash", () => {
+			const _test = (hash: Keccak256Hash) => {
+				const addr = hash.slice(12, 32);
+				// @ts-expect-error - address is Uint8Array not Keccak256Hash
+				const _hash: Keccak256Hash = addr;
+			};
+		});
+	});
+
+	describe("selector extraction", () => {
+		it("can extract first 4 bytes for selector", () => {
+			const _test = (hash: Keccak256Hash): Uint8Array => {
+				return hash.slice(0, 4);
+			};
+		});
+
+		it("selector slice is not Keccak256Hash", () => {
+			const _test = (hash: Keccak256Hash) => {
+				const sel = hash.slice(0, 4);
+				// @ts-expect-error - selector is Uint8Array not Keccak256Hash
+				const _hash: Keccak256Hash = sel;
+			};
+		});
+	});
+
+	describe("assignability", () => {
+		it("requires exact type", () => {
+			const _test = () => {
+				const bytes = new Uint8Array(32);
+				// @ts-expect-error - plain Uint8Array is not Keccak256Hash
+				const _hash: Keccak256Hash = bytes;
+			};
+		});
+
+		it("can be assigned to wider type", () => {
+			const _test = (hash: Keccak256Hash) => {
+				const bytes: Uint8Array = hash;
+				bytes;
+			};
+		});
+
+		it("cannot be assigned from narrower type", () => {
+			const _test = () => {
+				const bytes = new Uint8Array(32);
+				// @ts-expect-error - missing brand
+				const _hash: Keccak256Hash = bytes as Keccak256Hash;
+			};
+		});
+	});
+
+	describe("semantic meaning", () => {
+		it("represents Keccak256 digest output", () => {
+			const _test = (hash: Keccak256Hash): Uint8Array => {
+				return hash;
+			};
+		});
+
+		it("is 32 bytes (256 bits)", () => {
+			const _test = (hash: Keccak256Hash) => {
+				const length: number = hash.length;
+				length;
+			};
+		});
+
+		it("can be used as Ethereum hash", () => {
+			const _test = (hash: Keccak256Hash): Uint8Array => {
+				return hash;
+			};
+		});
+
+		it("can derive Ethereum address from it", () => {
+			const _test = (hash: Keccak256Hash): Uint8Array => {
+				return hash.slice(12);
+			};
+		});
+	});
+
+	describe("comparison with related types", () => {
+		it("is different from AddressType", () => {
+			type AddressLike = Uint8Array & {
+				readonly [Symbol.for("brand")]: "Address";
+			};
+			type Test = Equals<Keccak256Hash, AddressLike>;
+			const assertion: Test = false;
+			assertion;
+		});
+
+		it("is different from HashType", () => {
+			type HashLike = Uint8Array & {
+				readonly [Symbol.for("brand")]: "Hash";
+			};
+			type Test = Equals<Keccak256Hash, HashLike>;
+			const assertion: Test = false;
+			assertion;
+		});
+
+		it("is different from PrivateKeyType", () => {
+			type PrivateKeyLike = Uint8Array & {
+				readonly [Symbol.for("brand")]: "PrivateKey";
+			};
+			type Test = Equals<Keccak256Hash, PrivateKeyLike>;
+			const assertion: Test = false;
+			assertion;
+		});
+
+		it("is different from PublicKeyType", () => {
+			type PublicKeyLike = Uint8Array & {
+				readonly [Symbol.for("brand")]: "PublicKey";
+			};
+			type Test = Equals<Keccak256Hash, PublicKeyLike>;
+			const assertion: Test = false;
+			assertion;
+		});
+	});
+
+	describe("Ethereum-specific use cases", () => {
+		it("represents transaction hash", () => {
+			const _test = (txHash: Keccak256Hash): Uint8Array => {
+				return txHash;
+			};
+		});
+
+		it("represents block hash", () => {
+			const _test = (blockHash: Keccak256Hash): Uint8Array => {
+				return blockHash;
+			};
+		});
+
+		it("represents state root", () => {
+			const _test = (stateRoot: Keccak256Hash): Uint8Array => {
+				return stateRoot;
+			};
+		});
+
+		it("represents event topic", () => {
+			const _test = (topic: Keccak256Hash): Uint8Array => {
+				return topic;
+			};
+		});
+	});
+
+	describe("SIZE constant", () => {
+		it("SIZE is 32", () => {
+			const _test = () => {
+				// SIZE constant should be 32
+				type Test = 32;
+				const assertion: Test = 32;
+				assertion;
+			};
+		});
+	});
+});
+
+```
