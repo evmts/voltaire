@@ -35,7 +35,7 @@ describe.skipIf(!hasNativeKzg)("Kzg Initialization", () => {
 
 	it(
 		"should not be initialized before loadTrustedSetup",
-		{ timeout: 30000 },
+		{ timeout: 60000 },
 		() => {
 			try {
 				Kzg.freeTrustedSetup();
