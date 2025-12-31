@@ -2304,12 +2304,37 @@
             ]
           },
           {
-            "group": "API Reference",
+            "group": "Generated API (TypeDoc)",
             "icon": "robot",
             "pages": [
+              "generated-api/index",
+              "generated-api/utils",
+              "generated-api/native",
               {
-                "group": "TypeDoc Reference",
-                "href": "https://github.com/evmts/voltaire/tree/main/api-reference/generated-api"
+                "group": "Primitives",
+                "pages": [
+                  "generated-api/primitives/Address",
+                  "generated-api/primitives/Hex",
+                  "generated-api/primitives/Uint"
+                ]
+              },
+              {
+                "group": "Crypto",
+                "pages": [
+                  "generated-api/crypto/KZG"
+                ]
+              },
+              {
+                "group": "EVM",
+                "pages": [
+                  "generated-api/evm/index"
+                ]
+              },
+              {
+                "group": "Provider",
+                "pages": [
+                  "generated-api/provider/index"
+                ]
               }
             ]
           }
