@@ -68,6 +68,7 @@ export const toBigInt: (uint: Uint128Type) => bigint = _toBigInt;
 export const toNumber: (uint: Uint128Type) => number = _toNumber;
 export const toBytes: (uint: Uint128Type) => Uint8Array = _toBytes;
 export const toAbiEncoded: (uint: Uint128Type) => Uint8Array = _toAbiEncoded;
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional override for branded type conversion
 export const toString: (uint: Uint128Type, radix?: number) => string =
 	_toString;
 

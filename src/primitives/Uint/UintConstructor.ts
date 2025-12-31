@@ -29,6 +29,7 @@ import type { toBytes } from "./toBytes.js";
 import type { toHex } from "./toHex.js";
 import type { toNumber } from "./toNumber.js";
 import type { toPower } from "./toPower.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the intended API name for this primitive
 import type { toString } from "./toString.js";
 import type { tryFrom } from "./tryFrom.js";
 

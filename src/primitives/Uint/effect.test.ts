@@ -24,6 +24,7 @@ describe("Uint Effect Schema", () => {
 
 		it("rejects invalid input in constructor", () => {
 			// @ts-expect-error invalid type
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => new UintSchema({ value: -1n as any })).toThrow();
 		});
 	});
@@ -35,6 +36,7 @@ describe("Uint Effect Schema", () => {
 		});
 
 		it("rejects invalid UintBrand (negative)", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => UintBrand(-1n as any)).toThrow();
 		});
 
@@ -74,6 +76,7 @@ describe("Uint Effect Schema", () => {
 
 		it("handles validation errors", async () => {
 			const program = Effect.try({
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 				try: () => new UintSchema({ value: -1n as any }),
 				catch: (e) => new Error(`Failed: ${String(e)}`),
 			});

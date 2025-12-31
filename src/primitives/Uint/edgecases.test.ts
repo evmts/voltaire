@@ -253,7 +253,9 @@ describe("Uint comparison edge cases", () => {
 
 		for (let i = 0; i < values.length; i++) {
 			for (let j = 0; j < values.length; j++) {
+				// biome-ignore lint/style/noNonNullAssertion: loop bounds checked
 				const a = values[i]!;
+				// biome-ignore lint/style/noNonNullAssertion: loop bounds checked
 				const b = values[j]!;
 
 				if (i < j) {

@@ -15,6 +15,7 @@
  * const hex = Uint256.toString(value, 16); // "ff"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the intended API name for this primitive
 export function toString(uint, radix = 10) {
 	return uint.toString(radix);
 }

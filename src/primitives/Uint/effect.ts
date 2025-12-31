@@ -49,6 +49,7 @@ export class UintSchema extends Schema.Class<UintSchema>("Uint")({
 	}
 
 	static from(value: string | number | bigint): UintSchema {
+		// biome-ignore lint/suspicious/noExplicitAny: union type coercion to from() overloads
 		const u = _from(value as any);
 		return new UintSchema({ value: u });
 	}
@@ -140,6 +141,7 @@ export const UintFromUnknown = Schema.transform(
 	Schema.Union(Schema.String, Schema.Number, Schema.BigIntFromSelf),
 	Schema.instanceOf(UintSchema),
 	{
+		// biome-ignore lint/suspicious/noExplicitAny: union type coercion to from() overloads
 		decode: (v) => UintSchema.from(v as any),
 		encode: (u) => u.uint,
 	},

@@ -15,6 +15,7 @@ import type { Uint256Type } from "./Uint256Type.js";
  * const hex = value.toString(16); // "ff"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the intended API name for this primitive
 export function toString(uint: Uint256Type, radix = 10): string {
 	return (uint as bigint).toString(radix);
 }

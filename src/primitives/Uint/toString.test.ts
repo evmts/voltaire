@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MAX, ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the intended API name for this primitive
 import { toString } from "./toString.js";
 
 describe("Uint256.toString", () => {
