@@ -224,50 +224,48 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/performance.mdx - Performance", 
 		 * From index.mdx:
 		 * Setup Size: ~1 MB (4096 G1 points + 65 G2 points)
 		 */
-		it("should load trusted setup within reasonable time", { timeout: 30000 }, () => {
-			try {
-				KZG.freeTrustedSetup();
-				expect(KZG.isInitialized()).toBe(false);
+		it("should load trusted setup within reasonable time", { timeout: 60000 }, () => {
+			KZG.freeTrustedSetup();
+			expect(KZG.isInitialized()).toBe(false);
 
-				const start = performance.now();
-				KZG.loadTrustedSetup();
-				const duration = performance.now() - start;
+			const start = performance.now();
+			// loadTrustedSetup is slow (~13s locally, ~30s in CI)
+			KZG.loadTrustedSetup();
+			const duration = performance.now() - start;
 
-				expect(KZG.isInitialized()).toBe(true);
+			expect(KZG.isInitialized()).toBe(true);
 
-				// Setup loading should complete in reasonable time
-				// Allow generous margin for first-time loading
-				expect(duration).toBeLessThan(30000);
-			} finally {
-				if (!KZG.isInitialized()) {
-					KZG.loadTrustedSetup();
-				}
-			}
+			// Setup loading should complete in reasonable time
+			// Allow generous margin for CI environments
+			expect(duration).toBeLessThan(60000);
 		});
 
-		it("should free trusted setup quickly", { timeout: 30000 }, () => {
-			try {
-				KZG.loadTrustedSetup();
-				expect(KZG.isInitialized()).toBe(true);
+		it("should free trusted setup quickly", () => {
+			KZG.loadTrustedSetup();
+			expect(KZG.isInitialized()).toBe(true);
 
-				const start = performance.now();
-				KZG.freeTrustedSetup();
-				const duration = performance.now() - start;
+			const start = performance.now();
+			KZG.freeTrustedSetup();
+			const duration = performance.now() - start;
 
-				expect(KZG.isInitialized()).toBe(false);
+			expect(KZG.isInitialized()).toBe(false);
 
-				// Free should be very fast (generous for CI)
-				expect(duration).toBeLessThan(1000);
-			} finally {
-				// Always restore for other tests
-				if (!KZG.isInitialized()) {
-					KZG.loadTrustedSetup();
-				}
-			}
+			// Free should be very fast (generous for CI)
+			expect(duration).toBeLessThan(1000);
+			// afterAll will reload
 		});
 	});
 
 	describe("Full Workflow Performance", () => {
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
+
 		/**
 		 * End-to-end performance for typical usage
 		 */

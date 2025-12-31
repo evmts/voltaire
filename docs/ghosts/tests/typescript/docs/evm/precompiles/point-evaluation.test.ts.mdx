@@ -13,11 +13,21 @@ source: 'docs/evm/precompiles/point-evaluation.test.ts'
  * NOTE: KZG/Point Evaluation is stubbed in WASM and may have limited
  * functionality depending on build configuration.
  */
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { PrecompileAddress, execute, pointEvaluation } from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
+import * as KZG from "../../../src/crypto/KZG/index.js";
 
 describe("point-evaluation.mdx documentation examples", () => {
+	// Load KZG for pointEvaluation precompile
+	beforeAll(
+		() => {
+			if (!KZG.isInitialized()) {
+				KZG.loadTrustedSetup();
+			}
+		},
+		{ timeout: 60000 },
+	);
 	describe("Overview section", () => {
 		it("should be available at address 0x0a", () => {
 			// Doc states: Address: 0x000000000000000000000000000000000000000a

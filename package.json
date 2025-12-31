@@ -1,6 +1,6 @@
 {
 	"name": "@tevm/voltaire",
-	"version": "0.1.39",
+	"version": "0.1.40",
 	"private": false,
 	"description": "Ethereum primitives and cryptography library with TypeScript implementations and native Zig bindings via Bun FFI",
 	"keywords": [
@@ -662,11 +662,7 @@
 	"main": "dist/index.cjs",
 	"module": "dist/index.js",
 	"types": "types/index.d.ts",
-	"files": [
-		"dist",
-		"types",
-		"bin"
-	],
+	"files": ["dist", "types", "bin"],
 	"publishConfig": {
 		"access": "public"
 	},
