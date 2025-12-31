@@ -35,6 +35,7 @@ import {
  * const message = Siwe.parse(text);
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: SIWE parsing requires many conditions
 export function parse(text) {
 	try {
 		// Validate domain header format before ox parsing

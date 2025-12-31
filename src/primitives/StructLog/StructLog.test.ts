@@ -6,7 +6,9 @@ describe("StructLog", () => {
 		const log = StructLog.from({
 			pc: 0,
 			op: "PUSH1",
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 1000000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gasCost: 3n as any,
 			depth: 0,
 			stack: ["0x60"],
@@ -23,7 +25,9 @@ describe("StructLog", () => {
 		const log = StructLog.from({
 			pc: 10,
 			op: "MSTORE",
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 999900n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gasCost: 6n as any,
 			depth: 0,
 			stack: ["0x40", "0x60"],
@@ -36,7 +40,9 @@ describe("StructLog", () => {
 		const log = StructLog.from({
 			pc: 20,
 			op: "SSTORE",
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 980000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gasCost: 20000n as any,
 			depth: 0,
 			stack: ["0x01", "0x64"],
@@ -49,10 +55,13 @@ describe("StructLog", () => {
 		const log = StructLog.from({
 			pc: 30,
 			op: "SSTORE",
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 960000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gasCost: 5000n as any,
 			depth: 0,
 			stack: ["0x02", "0x00"],
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			refund: 15000n as any,
 		});
 		expect(log.refund).toBe(15000n);
@@ -62,7 +71,9 @@ describe("StructLog", () => {
 		const log = StructLog.from({
 			pc: 100,
 			op: "REVERT",
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 50000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gasCost: 0n as any,
 			depth: 0,
 			stack: [],
@@ -75,7 +86,9 @@ describe("StructLog", () => {
 		const log = StructLog.from({
 			pc: 0,
 			op: "PUSH1",
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 1000000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gasCost: 3n as any,
 			depth: 0,
 			stack: ["0x60"],

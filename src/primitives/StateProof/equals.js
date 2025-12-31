@@ -22,6 +22,7 @@ import { equals as uintEquals } from "../Uint/equals.js";
  * const isEqual = StateProof.equals(proof1, proof2);
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: state proof equality requires many field comparisons
 export function equals(a, b) {
 	// Check address
 	if (!addressEquals(a.address, b.address)) {

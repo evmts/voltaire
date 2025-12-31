@@ -32,7 +32,9 @@ describe("TransactionEIP1559.deserialize", () => {
 		);
 		expect(deserialized.maxFeePerGas).toBe(original.maxFeePerGas);
 		expect(deserialized.gasLimit).toBe(original.gasLimit);
+		// biome-ignore lint/style/noNonNullAssertion: test asserts to exists
 		expect(new Uint8Array(deserialized.to!)).toEqual(
+			// biome-ignore lint/style/noNonNullAssertion: test asserts to exists
 			new Uint8Array(original.to!),
 		);
 		expect(deserialized.value).toBe(original.value);

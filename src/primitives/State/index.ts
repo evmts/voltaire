@@ -27,6 +27,7 @@ export const equals = _equalsImpl as (
 	b: StorageKeyLike,
 ) => boolean;
 
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional override for branded type conversion
 export const toString = _toStringImpl as (key: StorageKeyLike) => string;
 
 export const fromString = _fromStringImpl as (

@@ -12,6 +12,7 @@
  * const str = SourceMap.toString(map);
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional override for branded type conversion
 export function toString(sourceMap) {
 	if (sourceMap.entries.length === 0) return "";
 

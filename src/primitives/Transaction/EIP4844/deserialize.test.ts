@@ -39,7 +39,9 @@ describe("TransactionEIP4844.deserialize", () => {
 		);
 		expect(deserialized.maxFeePerGas).toBe(original.maxFeePerGas);
 		expect(deserialized.gasLimit).toBe(original.gasLimit);
+		// biome-ignore lint/style/noNonNullAssertion: test asserts to exists
 		expect(new Uint8Array(deserialized.to!)).toEqual(
+			// biome-ignore lint/style/noNonNullAssertion: test asserts to exists
 			new Uint8Array(original.to!),
 		);
 		expect(deserialized.value).toBe(original.value);
@@ -85,7 +87,9 @@ describe("TransactionEIP4844.deserialize", () => {
 
 		expect(deserialized.blobVersionedHashes.length).toBe(3);
 		for (let i = 0; i < 3; i++) {
+			// biome-ignore lint/style/noNonNullAssertion: loop bounds checked
 			expect(new Uint8Array(deserialized.blobVersionedHashes[i]!)).toEqual(
+				// biome-ignore lint/style/noNonNullAssertion: loop bounds checked
 				new Uint8Array(original.blobVersionedHashes[i]!),
 			);
 		}

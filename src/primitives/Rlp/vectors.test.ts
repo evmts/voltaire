@@ -199,6 +199,7 @@ describe("RLP Ethereum Test Vectors", () => {
 
 	describe("Nested structures", () => {
 		it("handles deeply nested empty lists", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: building nested structure
 			let nested: any = [];
 			for (let i = 0; i < 10; i++) {
 				nested = [nested];

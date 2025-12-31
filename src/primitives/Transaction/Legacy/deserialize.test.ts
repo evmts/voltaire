@@ -19,14 +19,18 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original as any);
+		// biome-ignore lint/suspicious/noExplicitAny: branded type cast
+		const serialized = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+			TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.type).toBe(original.type);
 		expect(deserialized.nonce).toBe(original.nonce);
 		expect(deserialized.gasPrice).toBe(original.gasPrice);
 		expect(deserialized.gasLimit).toBe(original.gasLimit);
+		// biome-ignore lint/style/noNonNullAssertion: test asserts to exists
 		expect(new Uint8Array(deserialized.to!)).toEqual(
+			// biome-ignore lint/style/noNonNullAssertion: test asserts to exists
 			new Uint8Array(original.to!),
 		);
 		expect(deserialized.value).toBe(original.value);
@@ -51,7 +55,8 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original as any);
+		const serialized = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+			TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.to).toBe(null);
@@ -73,7 +78,8 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original as any);
+		const serialized = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+			TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.v).toBe(37n);
@@ -94,7 +100,8 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original as any);
+		const serialized = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+			TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.data.length).toBe(0);
@@ -115,7 +122,8 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original as any);
+		const serialized = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+			TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.v).toBe(0n);
@@ -159,7 +167,8 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original as any);
+		const serialized = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+			TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.data).toEqual(original.data);
@@ -181,7 +190,8 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(0xff),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original as any);
+		const serialized = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+			TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.nonce).toBe(original.nonce);
@@ -208,7 +218,8 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original as any);
+		const serialized = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+			TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.v).toBe(v);

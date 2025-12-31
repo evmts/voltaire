@@ -34,6 +34,7 @@ export function Verify({
 	 * }
 	 * ```
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: SIWE verification requires many conditions
 	return function verify(message, signature) {
 		// Validate message structure
 		const validationResult = validate(message);

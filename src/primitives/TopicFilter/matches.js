@@ -15,6 +15,7 @@
  * const matches = TopicFilter.matches(filter, log.topics);
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: topic matching requires complex comparison logic
 export function matches(filter, logTopics) {
 	// Check each filter position
 	for (let i = 0; i < filter.length; i++) {

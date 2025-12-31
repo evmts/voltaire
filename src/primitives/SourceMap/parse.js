@@ -13,6 +13,7 @@
  * console.log(map.entries.length); // 3
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: source map parsing requires many conditions
 export function parse(raw) {
 	/** @type {import('./SourceMapType.js').SourceMapEntry[]} */
 	const entries = [];

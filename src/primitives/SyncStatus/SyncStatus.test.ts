@@ -58,7 +58,9 @@ describe("SyncStatus", () => {
 		});
 
 		it("throws on invalid input", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => from(null as any)).toThrow("Invalid SyncStatus input");
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => from(123 as any)).toThrow("Invalid SyncStatus input");
 		});
 	});

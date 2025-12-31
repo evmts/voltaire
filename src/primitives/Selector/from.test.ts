@@ -70,22 +70,26 @@ describe("Selector.from", () => {
 
 	describe("error cases", () => {
 		it("throws on invalid type (number)", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => Selector.from(0xa9059cbb as any)).toThrow(
 				"Invalid selector input",
 			);
 		});
 
 		it("throws on invalid type (boolean)", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => Selector.from(true as any)).toThrow(
 				"Invalid selector input",
 			);
 		});
 
 		it("throws on invalid type (object)", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => Selector.from({} as any)).toThrow("Invalid selector input");
 		});
 
 		it("throws on null", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => Selector.from(null as any)).toThrow(
 				"Invalid selector input",
 			);

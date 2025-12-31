@@ -233,7 +233,8 @@ describe("StorageKey.equals", () => {
 	it("detects single byte difference in address", () => {
 		const addr1Copy = new Uint8Array(addr1);
 		const addr1Diff = new Uint8Array(addr1);
-		addr1Diff[19]! = addr1[19]! + 1;
+		// biome-ignore lint/style/noNonNullAssertion: test array access
+		addr1Diff[19] = addr1[19]! + 1;
 		const key1: StorageKeyType = {
 			address: addr1Copy as BrandedAddress,
 			slot: 0n,
@@ -320,6 +321,7 @@ describe("StorageKey.fromString", () => {
 		const str = StorageKey.toString(original);
 		const parsed = StorageKey.fromString(str);
 		expect(parsed).toBeDefined();
+		// biome-ignore lint/style/noNonNullAssertion: asserted above with toBeDefined
 		expect(StorageKey.equals(original, parsed!)).toBe(true);
 	});
 
@@ -517,6 +519,7 @@ describe("StorageKey edge cases", () => {
 		const str = StorageKey.toString(key);
 		const parsed = StorageKey.fromString(str);
 		expect(parsed).toBeDefined();
+		// biome-ignore lint/style/noNonNullAssertion: asserted above with toBeDefined
 		expect(StorageKey.equals(key, parsed!)).toBe(true);
 	});
 
@@ -526,6 +529,7 @@ describe("StorageKey edge cases", () => {
 		const str = StorageKey.toString(key);
 		const parsed = StorageKey.fromString(str);
 		expect(parsed).toBeDefined();
+		// biome-ignore lint/style/noNonNullAssertion: asserted above with toBeDefined
 		expect(StorageKey.equals(key, parsed!)).toBe(true);
 	});
 
@@ -548,6 +552,7 @@ describe("StorageKey edge cases", () => {
 		};
 		// In JavaScript, objects are passed by reference
 		// Modifying the original array affects the key
+		// biome-ignore lint/style/noNonNullAssertion: test array access
 		const originalValue = originalAddr[0]!;
 		originalAddr[0] = 0xff;
 		// Since they share reference, both should be updated
@@ -604,6 +609,7 @@ describe("StorageKey performance characteristics", () => {
 
 		// Verify all keys can be retrieved
 		for (let i = 0; i < 100; i++) {
+			// biome-ignore lint/style/noNonNullAssertion: keys array is populated in prior loop
 			const keyStr = StorageKey.toString(keys[i]!);
 			expect(map.get(keyStr)).toBe(BigInt(i * 100));
 		}

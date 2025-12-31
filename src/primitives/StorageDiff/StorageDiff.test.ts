@@ -50,6 +50,7 @@ describe("StorageDiff", () => {
 		});
 
 		it("throws on missing address", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => from(null as any, new Map())).toThrow("Address is required");
 		});
 	});

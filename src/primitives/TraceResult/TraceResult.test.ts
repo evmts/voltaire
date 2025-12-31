@@ -6,6 +6,7 @@ import * as TraceResult from "./index.js";
 describe("TraceResult", () => {
 	it("creates successful TraceResult", () => {
 		const result = TraceResult.from({
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 50000n as any,
 			failed: false,
 			returnValue: new Uint8Array([0x01]),
@@ -17,6 +18,7 @@ describe("TraceResult", () => {
 
 	it("creates failed TraceResult", () => {
 		const result = TraceResult.from({
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 100000n as any,
 			failed: true,
 			returnValue: new Uint8Array(),
@@ -28,7 +30,9 @@ describe("TraceResult", () => {
 		const log1 = StructLog.from({
 			pc: 0,
 			op: "PUSH1",
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 1000000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gasCost: 3n as any,
 			depth: 0,
 			stack: ["0x60"],
@@ -36,13 +40,16 @@ describe("TraceResult", () => {
 		const log2 = StructLog.from({
 			pc: 2,
 			op: "PUSH1",
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 999997n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gasCost: 3n as any,
 			depth: 0,
 			stack: ["0x60", "0x40"],
 		});
 
 		const result = TraceResult.from({
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 50000n as any,
 			failed: false,
 			returnValue: new Uint8Array(),
@@ -52,20 +59,25 @@ describe("TraceResult", () => {
 	});
 
 	it("creates TraceResult with callTrace", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: branded type cast
 		const fromAddr = new Uint8Array(20).fill(1) as any;
+		// biome-ignore lint/suspicious/noExplicitAny: branded type cast
 		const toAddr = new Uint8Array(20).fill(2) as any;
 
 		const trace = CallTrace.from({
 			type: "CALL",
 			from: fromAddr,
 			to: toAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 100000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gasUsed: 50000n as any,
 			input: new Uint8Array(),
 			output: new Uint8Array([0x01]),
 		});
 
 		const result = TraceResult.from({
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 50000n as any,
 			failed: false,
 			returnValue: new Uint8Array([0x01]),
@@ -76,6 +88,7 @@ describe("TraceResult", () => {
 
 	it("getStructLogs returns empty array when undefined", () => {
 		const result = TraceResult.from({
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 50000n as any,
 			failed: false,
 			returnValue: new Uint8Array(),
@@ -87,13 +100,16 @@ describe("TraceResult", () => {
 		const log = StructLog.from({
 			pc: 0,
 			op: "PUSH1",
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 1000000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gasCost: 3n as any,
 			depth: 0,
 			stack: ["0x60"],
 		});
 
 		const result = TraceResult.from({
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 50000n as any,
 			failed: false,
 			returnValue: new Uint8Array(),
@@ -106,6 +122,7 @@ describe("TraceResult", () => {
 
 	it("getCallTrace returns undefined when not present", () => {
 		const result = TraceResult.from({
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 50000n as any,
 			failed: false,
 			returnValue: new Uint8Array(),
@@ -114,20 +131,25 @@ describe("TraceResult", () => {
 	});
 
 	it("getCallTrace returns trace", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: branded type cast
 		const fromAddr = new Uint8Array(20).fill(1) as any;
+		// biome-ignore lint/suspicious/noExplicitAny: branded type cast
 		const toAddr = new Uint8Array(20).fill(2) as any;
 
 		const trace = CallTrace.from({
 			type: "CALL",
 			from: fromAddr,
 			to: toAddr,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 100000n as any,
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gasUsed: 50000n as any,
 			input: new Uint8Array(),
 			output: new Uint8Array(),
 		});
 
 		const result = TraceResult.from({
+			// biome-ignore lint/suspicious/noExplicitAny: branded bigint type cast
 			gas: 50000n as any,
 			failed: false,
 			returnValue: new Uint8Array(),

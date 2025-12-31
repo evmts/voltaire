@@ -30,6 +30,7 @@ export function validate(message, options) {
  * @param {Date} [options.now]
  * @returns {import('./SiweMessageType.js').ValidationResult}
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: SIWE validation requires many conditions
 function validateLegacy(message, options) {
 	// Domain validation
 	if (!message.domain || message.domain.length === 0) {

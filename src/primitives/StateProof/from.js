@@ -24,6 +24,7 @@
  * });
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: state proof validation requires many field checks
 export function from(proof) {
 	if (!proof || typeof proof !== "object") {
 		throw new TypeError("StateProof must be an object");

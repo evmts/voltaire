@@ -32,6 +32,7 @@ import { toBigint } from "./toBigint.js";
 import { toBytes } from "./toBytes.js";
 import { toHex } from "./toHex.js";
 import { toNumber } from "./toNumber.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: re-exporting toString for namespace
 import { toString } from "./toString.js";
 
 export {

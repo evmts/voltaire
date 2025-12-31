@@ -21,6 +21,7 @@ import { InvalidTopicFilterError } from "./errors.js";
  * const filter3 = TopicFilter.from([[eventSig1, eventSig2]]);
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: topic filter validation requires many checks
 export function from(topics) {
 	if (!Array.isArray(topics)) {
 		throw new InvalidTopicFilterError("TopicFilter must be an array", {

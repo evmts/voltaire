@@ -46,6 +46,7 @@ type VerifyMessageFn = (
 // Re-export factories (tree-shakeable) with proper types
 export const GetMessageHash: (deps: {
 	keccak256: (data: Uint8Array) => Uint8Array;
+	// biome-ignore lint/suspicious/noExplicitAny: factory function type coercion
 }) => GetMessageHashFn = _GetMessageHash as any;
 export const Verify: (deps: {
 	keccak256: (data: Uint8Array) => Uint8Array;
@@ -54,6 +55,7 @@ export const Verify: (deps: {
 		hash: HashType,
 	) => Secp256k1PublicKeyType;
 	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
+	// biome-ignore lint/suspicious/noExplicitAny: factory function type coercion
 }) => VerifyFn = _Verify as any;
 export const VerifyMessage: (deps: {
 	keccak256: (data: Uint8Array) => Uint8Array;
@@ -62,6 +64,7 @@ export const VerifyMessage: (deps: {
 		hash: HashType,
 	) => Secp256k1PublicKeyType;
 	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
+	// biome-ignore lint/suspicious/noExplicitAny: factory function type coercion
 }) => VerifyMessageFn = _VerifyMessage as any;
 
 // Import non-crypto functions

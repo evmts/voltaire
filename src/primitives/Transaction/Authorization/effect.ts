@@ -47,6 +47,7 @@ export class AuthorizationSchema extends Schema.Class<AuthorizationSchema>(
 	}
 
 	static fromBranded(brand: AuthorizationBrand): AuthorizationSchema {
+		// biome-ignore lint/suspicious/noExplicitAny: branded type property access
 		const { chainId, address, nonce, yParity, r, s } = brand as any;
 		return new AuthorizationSchema({ chainId, address, nonce, yParity, r, s });
 	}

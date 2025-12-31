@@ -13,6 +13,7 @@
  * const str = Uint128.toString(value); // "255"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional override for branded type conversion
 export function toString(uint) {
 	return uint.toString();
 }

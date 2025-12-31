@@ -19,6 +19,7 @@ import { from } from "./from.js";
  * map.set(str, value);
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional override for branded type conversion
 export function toString(key) {
 	const storageKey = from(key);
 	const addrHex = Array.from(storageKey.address)
