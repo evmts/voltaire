@@ -358,16 +358,6 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 		 * }
 		 * ```
 		 */
-		it("should throw KzgNotInitializedError when trusted setup not loaded", () => {
-			KZG.freeTrustedSetup();
-
-			const blob = KZG.createEmptyBlob();
-			const z = new Uint8Array(32);
-
-			expect(() => KZG.Proof(blob, z)).toThrow(KzgNotInitializedError);
-			// Note: beforeAll of next test suite will reload trusted setup
-		});
-
 		it("should throw KzgInvalidBlobError for invalid blob", () => {
 			const wrongBlob = new Uint8Array(1000);
 			const z = new Uint8Array(32);
@@ -400,6 +390,17 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 					expect(error.message).toBeDefined();
 				}
 			}
+		});
+
+		// This test must be LAST in this describe block because it frees the setup
+		it("should throw KzgNotInitializedError when trusted setup not loaded", () => {
+			KZG.freeTrustedSetup();
+
+			const blob = KZG.createEmptyBlob();
+			const z = new Uint8Array(32);
+
+			expect(() => KZG.Proof(blob, z)).toThrow(KzgNotInitializedError);
+			// Note: beforeAll of next test suite will reload trusted setup
 		});
 	});
 
