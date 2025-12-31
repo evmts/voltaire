@@ -570,11 +570,11 @@
 		},
 		"./jsonrpc": {
 			"import": {
-				"types": "./types/jsonrpc/index.d.ts",
+				"types": "./dist/jsonrpc/index.d.ts",
 				"default": "./dist/jsonrpc/index.js"
 			},
 			"require": {
-				"types": "./types/jsonrpc/index.d.ts",
+				"types": "./dist/jsonrpc/index.d.cts",
 				"default": "./dist/jsonrpc/index.cjs"
 			}
 		},
