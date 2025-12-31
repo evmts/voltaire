@@ -22,9 +22,10 @@ export function encodeLengthValue(length) {
 
 	// Encode as big-endian
 	const result = new Uint8Array(byteCount);
+	let len = length;
 	for (let i = byteCount - 1; i >= 0; i--) {
-		result[i] = length & 0xff;
-		length = Math.floor(length / 256);
+		result[i] = len & 0xff;
+		len = Math.floor(len / 256);
 	}
 
 	return result;

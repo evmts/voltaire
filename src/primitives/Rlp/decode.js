@@ -15,6 +15,7 @@ import { MAX_DEPTH } from "./constants.js";
  * @param {Uint8Array} bytes
  * @returns {number}
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: RLP length calculation requires many conditions
 function getRlpItemLength(bytes) {
 	if (bytes.length === 0) {
 		throw new RlpDecodingError("Cannot decode empty input", {
@@ -249,6 +250,7 @@ function toData(value, depth = 0) {
  * const result = Rlp.decode(list);
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: RLP decoding requires many conditions
 export function decode(bytes, stream = false) {
 	if (bytes.length === 0) {
 		throw new RlpDecodingError("Cannot decode empty input", {

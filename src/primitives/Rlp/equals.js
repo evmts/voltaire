@@ -15,6 +15,7 @@
  * Rlp.equals(a, b); // => true
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: RLP equality requires recursive comparison
 export function equals(data, other) {
 	if (data.type !== other.type) {
 		return false;

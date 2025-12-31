@@ -32,6 +32,7 @@ import { RlpDecodingError } from "./RlpError.js";
  * Rlp.isCanonical(leadingZeros); // => false
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: canonical RLP validation requires many checks
 export function isCanonical(bytes, depth = 0) {
 	if (bytes.length === 0) {
 		return false;
@@ -186,6 +187,7 @@ export function isCanonical(bytes, depth = 0) {
  * @param {Uint8Array} bytes
  * @returns {number}
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: RLP item length calculation requires many checks
 function getItemLength(bytes) {
 	if (bytes.length === 0) {
 		return 0;
