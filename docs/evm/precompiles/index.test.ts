@@ -2,7 +2,8 @@
  * Tests for index.mdx (precompiles overview) documentation examples
  * Validates that all precompiles are available and have correct addresses
  */
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import * as KZG from "../../../src/crypto/KZG/index.js";
 import {
 	PrecompileAddress,
 	execute,
@@ -72,6 +73,16 @@ describe("index.mdx (Precompiles Overview) documentation", () => {
 	});
 
 	describe("Hardfork Availability section", () => {
+		// Load KZG for pointEvaluation precompile (Cancun)
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
+
 		it("should have all Frontier precompiles available", () => {
 			// Doc states: Frontier introduced ecrecover, sha256, ripemd160, identity
 			const inputs = {
