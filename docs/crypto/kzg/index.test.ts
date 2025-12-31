@@ -165,21 +165,16 @@ describe.skipIf(!hasNativeKzg)(
 		 * - 140,000+ participants (Ethereum KZG ceremony 2023)
 		 * - Setup Size: ~1 MB (4096 G1 points + 65 G2 points)
 		 */
-		it("should require trusted setup before operations", { timeout: 30000 }, () => {
-			try {
-				KZG.freeTrustedSetup();
-				expect(KZG.isInitialized()).toBe(false);
+		it("should require trusted setup before operations", { timeout: 60000 }, () => {
+			KZG.freeTrustedSetup();
+			expect(KZG.isInitialized()).toBe(false);
 
-				const blob = KZG.createEmptyBlob();
-				expect(() => KZG.Commitment(blob)).toThrow(KzgNotInitializedError);
+			const blob = KZG.createEmptyBlob();
+			expect(() => KZG.Commitment(blob)).toThrow(KzgNotInitializedError);
 
-				KZG.loadTrustedSetup();
-				expect(KZG.isInitialized()).toBe(true);
-			} finally {
-				if (!KZG.isInitialized()) {
-					KZG.loadTrustedSetup();
-				}
-			}
+			// loadTrustedSetup is slow (~13s locally, ~30s in CI)
+			KZG.loadTrustedSetup();
+			expect(KZG.isInitialized()).toBe(true);
 		});
 
 		it("should allow idempotent loadTrustedSetup calls", () => {

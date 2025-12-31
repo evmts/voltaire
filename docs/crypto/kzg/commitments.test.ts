@@ -194,18 +194,6 @@ describe.skipIf(!hasCkzg)("Factory API", () => {
 		 * }
 		 * ```
 		 */
-		it("should throw KzgNotInitializedError when trusted setup not loaded", { timeout: 30000 }, () => {
-			try {
-				KZG.freeTrustedSetup();
-				const blob = KZG.createEmptyBlob();
-				expect(() => KZG.Commitment(blob)).toThrow(KzgNotInitializedError);
-			} finally {
-				if (!KZG.isInitialized()) {
-					KZG.loadTrustedSetup();
-				}
-			}
-		});
-
 		it("should throw KzgInvalidBlobError for invalid blob format", () => {
 			// Wrong size
 			const wrongSize = new Uint8Array(1000);
@@ -243,9 +231,23 @@ describe.skipIf(!hasCkzg)("Factory API", () => {
 				}
 			}
 		});
+
+		// This test must be LAST in this describe block because it frees the setup
+		it("should throw KzgNotInitializedError when trusted setup not loaded", () => {
+			KZG.freeTrustedSetup();
+			const blob = KZG.createEmptyBlob();
+			expect(() => KZG.Commitment(blob)).toThrow(KzgNotInitializedError);
+			// Note: beforeAll of next test suite will reload trusted setup
+		});
 	});
 
 	describe("Commitment Properties", () => {
+		beforeAll(() => {
+			if (!KZG.isInitialized()) {
+				KZG.loadTrustedSetup();
+			}
+		});
+
 		it("should produce 48-byte commitment (BLS12-381 G1 point)", () => {
 			const blob = KZG.createEmptyBlob();
 			const commitment = KZG.Commitment(blob);
@@ -281,6 +283,12 @@ describe.skipIf(!hasCkzg)("Factory API", () => {
 	});
 
 	describe("Legacy API Compatibility", () => {
+		beforeAll(() => {
+			if (!KZG.isInitialized()) {
+				KZG.loadTrustedSetup();
+			}
+		});
+
 		/**
 		 * The module also exports blobToKzgCommitment as legacy API
 		 */

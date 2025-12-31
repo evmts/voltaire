@@ -358,25 +358,15 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 		 * }
 		 * ```
 		 */
-		it(
-			"should throw KzgNotInitializedError when trusted setup not loaded",
-			{ timeout: 30000 },
-			() => {
-				try {
-					KZG.freeTrustedSetup();
+		it("should throw KzgNotInitializedError when trusted setup not loaded", () => {
+			KZG.freeTrustedSetup();
 
-					const blob = KZG.createEmptyBlob();
-					const z = new Uint8Array(32);
+			const blob = KZG.createEmptyBlob();
+			const z = new Uint8Array(32);
 
-					expect(() => KZG.Proof(blob, z)).toThrow(KzgNotInitializedError);
-				} finally {
-					// Always restore
-					if (!KZG.isInitialized()) {
-						KZG.loadTrustedSetup();
-					}
-				}
-			},
-		);
+			expect(() => KZG.Proof(blob, z)).toThrow(KzgNotInitializedError);
+			// Note: beforeAll of next test suite will reload trusted setup
+		});
 
 		it("should throw KzgInvalidBlobError for invalid blob", () => {
 			const wrongBlob = new Uint8Array(1000);
@@ -414,6 +404,12 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 	});
 
 	describe("Proof Properties", () => {
+		beforeAll(() => {
+			if (!KZG.isInitialized()) {
+				KZG.loadTrustedSetup();
+			}
+		});
+
 		/**
 		 * From proofs.mdx:
 		 * - p(x) is the polynomial representing the blob
@@ -461,6 +457,12 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 	});
 
 	describe("Legacy API Compatibility", () => {
+		beforeAll(() => {
+			if (!KZG.isInitialized()) {
+				KZG.loadTrustedSetup();
+			}
+		});
+
 		it("should support legacy computeKzgProof API", () => {
 			const blob = KZG.generateRandomBlob();
 			const z = new Uint8Array(32);
