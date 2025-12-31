@@ -24,9 +24,10 @@ export function encodeBigintCompact(value: bigint): Uint8Array {
 	}
 
 	const bytes = new Uint8Array(byteLength);
+	let val = value;
 	for (let i = byteLength - 1; i >= 0; i--) {
-		bytes[i] = Number(value & 0xffn);
-		value >>= 8n;
+		bytes[i] = Number(val & 0xffn);
+		val >>= 8n;
 	}
 	return bytes;
 }
@@ -81,6 +82,7 @@ export function decodeBigint(bytes: Uint8Array): bigint {
 	}
 	let result = 0n;
 	for (let i = 0; i < bytes.length; i++) {
+		// biome-ignore lint/style/noNonNullAssertion: loop bounds checked
 		result = (result << 8n) | BigInt(bytes[i]!);
 	}
 	return result;
@@ -107,7 +109,9 @@ export function recoverAddress(
 	let x = 0n;
 	let y = 0n;
 	for (let i = 0; i < 32; i++) {
+		// biome-ignore lint/style/noNonNullAssertion: loop bounds checked
 		x = (x << 8n) | BigInt(publicKey[i]!);
+		// biome-ignore lint/style/noNonNullAssertion: loop bounds checked
 		y = (y << 8n) | BigInt(publicKey[32 + i]!);
 	}
 
@@ -292,6 +296,7 @@ export function decodeAuthorizationList(data: BrandedRlp[]): {
 			// Safe cast: validates length above (20 bytes)
 			address: addressData.value as BrandedAddress,
 			nonce: decodeBigint(nonceData.value),
+			// biome-ignore lint/style/noNonNullAssertion: validated array has content
 			yParity: yParityData.value[0]!,
 			r: rData.value,
 			s: sData.value,

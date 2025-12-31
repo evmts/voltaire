@@ -233,7 +233,7 @@ export function getChainId(tx: Any): bigint | null {
  * Assert transaction is signed
  */
 export function assertSigned(tx: Any): void {
-	return _assertSigned.call(tx);
+	_assertSigned.call(tx);
 }
 
 /**
@@ -268,28 +268,28 @@ export function isContractCall(tx: Any): boolean {
  * Validate gas price is reasonable
  */
 export function validateGasPrice(tx: Any): void {
-	return _validateGasPrice.call(tx);
+	_validateGasPrice.call(tx);
 }
 
 /**
  * Validate gas limit is valid
  */
 export function validateGasLimit(tx: Any): void {
-	return _validateGasLimit.call(tx);
+	_validateGasLimit.call(tx);
 }
 
 /**
  * Validate nonce format
  */
 export function validateNonce(tx: Any): void {
-	return _validateNonce.call(tx);
+	_validateNonce.call(tx);
 }
 
 /**
  * Validate value is valid
  */
 export function validateValue(tx: Any): void {
-	return _validateValue.call(tx);
+	_validateValue.call(tx);
 }
 
 /**
@@ -297,7 +297,7 @@ export function validateValue(tx: Any): void {
  */
 export function validateChainId(tx: Any): void {
 	if ("chainId" in tx) {
-		return _validateChainId.call(tx);
+		_validateChainId.call(tx);
 	}
 }
 

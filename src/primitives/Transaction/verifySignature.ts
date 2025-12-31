@@ -42,9 +42,11 @@ export function verifySignature(this: Any): boolean {
 			return EIP7702.verifySignature(this as unknown as TransactionEIP7702Type);
 		default:
 			throw new InvalidTransactionTypeError(
+				// biome-ignore lint/suspicious/noExplicitAny: error message for unknown type
 				`Unknown transaction type: ${(this as any).type}`,
 				{
 					code: "UNKNOWN_TRANSACTION_TYPE",
+					// biome-ignore lint/suspicious/noExplicitAny: error context for unknown type
 					context: { type: (this as any).type },
 					docsPath: "/primitives/transaction/verify-signature#error-handling",
 				},

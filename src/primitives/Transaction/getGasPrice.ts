@@ -44,21 +44,26 @@ export function getGasPrice(this: Any, baseFee?: bigint): bigint {
 	}
 
 	if (isEIP1559(this)) {
+		// biome-ignore lint/suspicious/noExplicitAny: type narrowed by isEIP1559 guard
 		return EIP1559.getEffectiveGasPrice(this as any, baseFee);
 	}
 
 	if (isEIP4844(this)) {
+		// biome-ignore lint/suspicious/noExplicitAny: type narrowed by isEIP4844 guard
 		return EIP4844.getEffectiveGasPrice(this as any, baseFee);
 	}
 
 	if (isEIP7702(this)) {
+		// biome-ignore lint/suspicious/noExplicitAny: type narrowed by isEIP7702 guard
 		return EIP7702.getEffectiveGasPrice(this as any, baseFee);
 	}
 
 	throw new InvalidTransactionTypeError(
+		// biome-ignore lint/suspicious/noExplicitAny: error message for unknown type
 		`Unknown transaction type: ${(this as any).type}`,
 		{
 			code: "UNKNOWN_TRANSACTION_TYPE",
+			// biome-ignore lint/suspicious/noExplicitAny: error context for unknown type
 			context: { type: (this as any).type },
 			docsPath: "/primitives/transaction/get-gas-price#error-handling",
 		},

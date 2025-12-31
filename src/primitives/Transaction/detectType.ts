@@ -20,6 +20,7 @@ export function detectType(data: Uint8Array): Type {
 		});
 	}
 
+	// biome-ignore lint/style/noNonNullAssertion: array is non-empty per check above
 	const firstByte = data[0]!;
 
 	// Legacy transactions start with RLP list prefix (0xc0-0xff)

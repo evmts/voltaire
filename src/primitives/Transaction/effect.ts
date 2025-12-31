@@ -26,7 +26,9 @@ export const TransactionBrand = Brand.nominal<TransactionBrand>();
 const isTransactionLike = (v: unknown): v is Record<string, unknown> =>
 	typeof v === "object" &&
 	v !== null &&
+	// biome-ignore lint/suspicious/noExplicitAny: unknown type property access
 	typeof (v as any).type === "number" &&
+	// biome-ignore lint/suspicious/noExplicitAny: unknown type property access
 	(v as any).type in Type;
 
 export class TransactionSchema extends Schema.Class<TransactionSchema>(
@@ -38,6 +40,7 @@ export class TransactionSchema extends Schema.Class<TransactionSchema>(
 		}),
 	),
 }) {
+	// biome-ignore lint/suspicious/noExplicitAny: generic transaction return type
 	get tx(): any {
 		return this.value;
 	}
@@ -46,9 +49,11 @@ export class TransactionSchema extends Schema.Class<TransactionSchema>(
 	}
 
 	static fromBranded(brand: TransactionBrand): TransactionSchema {
+		// biome-ignore lint/suspicious/noExplicitAny: branded type coercion
 		return new TransactionSchema({ value: brand as any });
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: RPC input has dynamic structure
 	static fromRpc(rpc: any): TransactionSchema {
 		const tx = _fromRpc(rpc);
 		return new TransactionSchema({ value: tx });
@@ -59,6 +64,7 @@ export class TransactionSchema extends Schema.Class<TransactionSchema>(
 		return new TransactionSchema({ value: tx });
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: RPC output has dynamic structure
 	toRpc(): any {
 		return _toRpc(this.tx);
 	}
@@ -66,12 +72,15 @@ export class TransactionSchema extends Schema.Class<TransactionSchema>(
 		return _serialize_internal.call(this.tx);
 	}
 	hash(): Uint8Array {
+		// biome-ignore lint/suspicious/noExplicitAny: internal call return type
 		return _hash_internal.call(this.tx) as any;
 	}
 	getSigningHash(): Uint8Array {
+		// biome-ignore lint/suspicious/noExplicitAny: internal call return type
 		return _getSigningHash_internal.call(this.tx) as any;
 	}
 	getSender(): Uint8Array {
+		// biome-ignore lint/suspicious/noExplicitAny: internal call return type
 		return _getSender_internal.call(this.tx) as any;
 	}
 	verifySignature(): boolean {
@@ -86,6 +95,7 @@ export class TransactionSchema extends Schema.Class<TransactionSchema>(
 	hasAccessList(): boolean {
 		return _hasAccessList_internal.call(this.tx);
 	}
+	// biome-ignore lint/suspicious/noExplicitAny: access list has dynamic structure
 	getAccessList(): any {
 		return _getAccessList_internal.call(this.tx);
 	}

@@ -23,20 +23,27 @@ import { type Any, Type } from "./types.js";
 export function getSender(this: Any): BrandedAddress {
 	switch (this.type) {
 		case Type.Legacy:
+			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
 			return Legacy.getSender.call(this as any);
 		case Type.EIP2930:
+			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
 			return EIP2930.getSender(this as any);
 		case Type.EIP1559:
+			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
 			return EIP1559.getSender(this as any);
 		case Type.EIP4844:
+			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
 			return EIP4844.getSender(this as any);
 		case Type.EIP7702:
+			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
 			return EIP7702.getSender(this as any);
 		default:
 			throw new InvalidTransactionTypeError(
+				// biome-ignore lint/suspicious/noExplicitAny: error message for unknown type
 				`Unknown transaction type: ${(this as any).type}`,
 				{
 					code: "UNKNOWN_TRANSACTION_TYPE",
+					// biome-ignore lint/suspicious/noExplicitAny: error context for unknown type
 					context: { type: (this as any).type },
 					docsPath: "/primitives/transaction/get-sender#error-handling",
 				},

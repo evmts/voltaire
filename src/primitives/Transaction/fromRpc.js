@@ -106,6 +106,7 @@ function hexToHash(hex) {
  * });
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: RPC parsing requires handling multiple transaction types
 export function fromRpc(rpc) {
 	const type = Number(hexToBigInt(rpc.type));
 
