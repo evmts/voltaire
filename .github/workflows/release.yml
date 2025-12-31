@@ -150,10 +150,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build TypeScript package
-        run: pnpm run build
+        run: |
+          pnpm run build
+          zig build crypto-wasm
+          pnpm lint:package
 
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
