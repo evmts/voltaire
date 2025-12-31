@@ -71,7 +71,7 @@ simulateTransfer(bytecode, address);
 
 APIs mirror Ethereum specifications. LLMs can leverage training data from official docs instead of learning library-specific abstractions.
 
-- **MCP Server** - `claude mcp add --transport http tevm https://tevm.sh/mcp`
+- **MCP Server** - `claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp`
 - **Smart detection** - Docs return markdown for AI, HTML for humans
 - **Eval-tested** - Comprehensive test suite validates AI can 1-shot implementations
 
