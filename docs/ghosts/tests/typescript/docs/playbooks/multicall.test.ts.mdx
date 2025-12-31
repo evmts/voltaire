@@ -1,0 +1,164 @@
+---
+title: '[TS/JS] docs/playbooks/multicall.test.ts'
+source: 'docs/playbooks/multicall.test.ts'
+---
+
+> Auto-generated from test file: docs/playbooks/multicall.test.ts
+
+```typescript
+/**
+ * Tests for multicall playbook
+ * @see /docs/playbooks/multicall.mdx
+ *
+ * Note: The playbook documents a REFERENCE IMPLEMENTATION in examples/multicall/.
+ * Tests cover the primitives and structures that ARE available.
+ *
+ * API DISCREPANCIES:
+ * - multicall function is in examples/multicall/, not exported from library
+ * - Abi primitive IS available for encoding/decoding
+ */
+import { describe, expect, it } from "vitest";
+
+describe("Multicall Playbook", () => {
+	it("should define ERC-20 ABI for multicall", () => {
+		// From playbook: ERC-20 ABI structure
+		const erc20Abi = [
+			{
+				type: "function",
+				name: "name",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "string", name: "" }],
+			},
+			{
+				type: "function",
+				name: "balanceOf",
+				stateMutability: "view",
+				inputs: [{ type: "address", name: "account" }],
+				outputs: [{ type: "uint256", name: "" }],
+			},
+		] as const;
+
+		expect(erc20Abi[0].name).toBe("name");
+		expect(erc20Abi[1].name).toBe("balanceOf");
+	});
+
+	it("should compute function selector for balanceOf", async () => {
+		const { Keccak256 } = await import("../../src/crypto/index.js");
+		const { Hex } = await import("../../src/primitives/Hex/index.js");
+
+		// balanceOf(address) selector
+		const signature = "balanceOf(address)";
+		const hash = Keccak256.hash(new TextEncoder().encode(signature));
+		const selector = Hex.fromBytes(hash.slice(0, 4));
+
+		expect(selector).toBe("0x70a08231");
+	});
+
+	it("should work with contract call structure", () => {
+		// From playbook: multicall contracts array structure
+		const contracts = [
+			{
+				address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+				functionName: "name",
+			},
+			{
+				address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+				functionName: "balanceOf",
+				args: ["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"],
+			},
+		];
+
+		expect(contracts).toHaveLength(2);
+		expect(contracts[1].args).toHaveLength(1);
+	});
+
+	it("should handle multicall result structure with allowFailure", () => {
+		// From playbook: Result structure with status
+		type MulticallResult<T> =
+			| { status: "success"; result: T }
+			| { status: "failure"; error: { message: string } };
+
+		const successResult: MulticallResult<string> = {
+			status: "success",
+			result: "USD Coin",
+		};
+
+		const failureResult: MulticallResult<bigint> = {
+			status: "failure",
+			error: { message: "Contract call failed" },
+		};
+
+		expect(successResult.status).toBe("success");
+		expect(failureResult.status).toBe("failure");
+	});
+
+	it("should define Multicall3 contract address", () => {
+		// From playbook: Universal Multicall3 address
+		const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
+
+		expect(MULTICALL3_ADDRESS).toMatch(/^0x[a-fA-F0-9]{40}$/);
+	});
+
+	it("should handle block tag options", () => {
+		// From playbook: block tag options
+		const blockTags = ["latest", "earliest", "pending", "safe", "finalized"];
+
+		expect(blockTags).toContain("latest");
+		expect(blockTags).toContain("safe");
+		expect(blockTags).toContain("finalized");
+	});
+
+	it("should handle batch size configuration", () => {
+		// From playbook: batching control
+		const options = {
+			batchSize: 2048, // default: 1024
+		};
+
+		expect(options.batchSize).toBe(2048);
+	});
+
+	it("should compute aggregate3 function selector", async () => {
+		const { Keccak256 } = await import("../../src/crypto/index.js");
+		const { Hex } = await import("../../src/primitives/Hex/index.js");
+
+		// aggregate3 is main Multicall3 function
+		const signature = "aggregate3((address,bool,bytes)[])";
+		const hash = Keccak256.hash(new TextEncoder().encode(signature));
+		const selector = Hex.fromBytes(hash.slice(0, 4));
+
+		// aggregate3 selector
+		expect(selector.length).toBe(10); // 0x + 8 hex chars
+	});
+
+	it("should handle chain ID mapping for Multicall3", () => {
+		// From playbook: Supported chains table
+		const multicall3Chains: Record<number, { blockCreated: number }> = {
+			1: { blockCreated: 14353601 }, // Ethereum
+			137: { blockCreated: 25770160 }, // Polygon
+			42161: { blockCreated: 7654707 }, // Arbitrum One
+			10: { blockCreated: 4286263 }, // Optimism
+			8453: { blockCreated: 5022 }, // Base
+		};
+
+		expect(multicall3Chains[1].blockCreated).toBe(14353601);
+		expect(multicall3Chains[8453].blockCreated).toBe(5022);
+	});
+
+	it("should define error types", () => {
+		// From playbook: Error types
+		const errorTypes = [
+			"MulticallEncodingError",
+			"MulticallDecodingError",
+			"MulticallContractError",
+			"MulticallZeroDataError",
+			"MulticallRpcError",
+			"MulticallResultsMismatchError",
+		];
+
+		expect(errorTypes).toContain("MulticallEncodingError");
+		expect(errorTypes).toContain("MulticallContractError");
+	});
+});
+
+```

@@ -1,0 +1,372 @@
+---
+title: '[TS/JS] docs/primitives/eventlog/matchesFilter.test.ts'
+source: 'docs/primitives/eventlog/matchesFilter.test.ts'
+---
+
+> Auto-generated from test file: docs/primitives/eventlog/matchesFilter.test.ts
+
+```typescript
+/**
+ * Tests for docs/primitives/eventlog/matchesFilter.mdx
+ * Tests the code examples from the EventLog.matchesFilter() documentation
+ */
+
+import { describe, expect, it } from "vitest";
+
+describe("EventLog matchesFilter.mdx documentation examples", () => {
+	describe("Address Filter", () => {
+		it("single address or array (OR logic)", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const usdcAddress = Address.Address(
+				"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			);
+			const daiAddress = Address.Address(
+				"0x6B175474E89094C44Da98b954EedeAC495271d0F",
+			);
+
+			const log = EventLog.create({
+				address: usdcAddress,
+				topics: [Hash.from("0x" + "00".repeat(32))],
+				data: new Uint8Array([]),
+			});
+
+			// Single address
+			const matches1 = EventLog.matchesFilter(log, {
+				address: usdcAddress,
+			});
+			expect(matches1).toBe(true);
+
+			// Multiple addresses
+			const matches2 = EventLog.matchesFilter(log, {
+				address: [usdcAddress, daiAddress],
+			});
+			expect(matches2).toBe(true);
+
+			// Wrong address
+			const matches3 = EventLog.matchesFilter(log, {
+				address: daiAddress,
+			});
+			expect(matches3).toBe(false);
+		});
+	});
+
+	describe("Topics Filter", () => {
+		it("array with null wildcards and OR logic", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const TRANSFER_SIG = Hash.from(
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+			);
+			const userHash = Hash.from(
+				"0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12",
+			);
+			const otherHash = Hash.from("0x" + "99".repeat(32));
+
+			const log = EventLog.create({
+				address: Address.Address.zero(),
+				topics: [TRANSFER_SIG, otherHash, userHash],
+				data: new Uint8Array([]),
+			});
+
+			const matches = EventLog.matchesFilter(log, {
+				topics: [
+					TRANSFER_SIG, // topic0: exact match
+					null, // topic1: any value
+					userHash, // topic2: exact match
+				],
+			});
+
+			expect(matches).toBe(true);
+		});
+	});
+
+	describe("Block Range Filter", () => {
+		it("inclusive bounds on block number", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const log = EventLog.create({
+				address: Address.Address.zero(),
+				topics: [Hash.from("0x" + "00".repeat(32))],
+				data: new Uint8Array([]),
+				blockNumber: 18250000n,
+			});
+
+			// Blocks 18M to 18.5M (inclusive)
+			const matches = EventLog.matchesFilter(log, {
+				fromBlock: 18000000n,
+				toBlock: 18500000n,
+			});
+
+			expect(matches).toBe(true);
+
+			// Out of range
+			const notMatches = EventLog.matchesFilter(log, {
+				fromBlock: 18500000n,
+				toBlock: 19000000n,
+			});
+
+			expect(notMatches).toBe(false);
+		});
+	});
+
+	describe("Block Hash Filter", () => {
+		it("exact block match", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const blockHash = Hash.from("0x" + "ab".repeat(32));
+			const differentHash = Hash.from("0x" + "cd".repeat(32));
+
+			const log = EventLog.create({
+				address: Address.Address.zero(),
+				topics: [Hash.from("0x" + "00".repeat(32))],
+				data: new Uint8Array([]),
+				blockHash: blockHash,
+			});
+
+			const matches = EventLog.matchesFilter(log, {
+				blockHash: blockHash,
+			});
+
+			expect(matches).toBe(true);
+
+			const notMatches = EventLog.matchesFilter(log, {
+				blockHash: differentHash,
+			});
+
+			expect(notMatches).toBe(false);
+		});
+	});
+
+	describe("Filter Combinations", () => {
+		it("all specified filters use AND logic", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const usdcAddress = Address.Address(
+				"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			);
+			const daiAddress = Address.Address(
+				"0x6B175474E89094C44Da98b954EedeAC495271d0F",
+			);
+			const TRANSFER_SIG = Hash.from(
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+			);
+			const userHash = Hash.from(
+				"0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12",
+			);
+			const otherHash = Hash.from("0x" + "99".repeat(32));
+
+			const log = EventLog.create({
+				address: usdcAddress,
+				topics: [TRANSFER_SIG, otherHash, userHash],
+				data: new Uint8Array([]),
+				blockNumber: 18250000n,
+			});
+
+			// Must match ALL conditions
+			const matches = EventLog.matchesFilter(log, {
+				address: [usdcAddress, daiAddress], // AND address is USDC or DAI
+				topics: [TRANSFER_SIG, null, userHash], // AND is Transfer to user
+				fromBlock: 18000000n, // AND block >= 18M
+				toBlock: 18500000n, // AND block <= 18.5M
+			});
+
+			expect(matches).toBe(true);
+
+			// Fails if ANY condition is not met
+			const failsAddress = EventLog.matchesFilter(log, {
+				address: daiAddress, // Wrong address
+				topics: [TRANSFER_SIG, null, userHash],
+				fromBlock: 18000000n,
+				toBlock: 18500000n,
+			});
+
+			expect(failsAddress).toBe(false);
+		});
+	});
+
+	describe("Complete RPC-Style Filter", () => {
+		it("equivalent to eth_getLogs filter", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const TRANSFER_SIG = Hash.from(
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+			);
+			const userHash = Hash.from(
+				"0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12",
+			);
+			const usdcAddress = Address.Address(
+				"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			);
+			const daiAddress = Address.Address(
+				"0x6B175474E89094C44Da98b954EedeAC495271d0F",
+			);
+
+			const allLogs = [
+				EventLog.create({
+					address: usdcAddress,
+					topics: [
+						TRANSFER_SIG,
+						Hash.from("0x" + "11".repeat(32)),
+						userHash,
+					],
+					data: new Uint8Array([]),
+					blockNumber: 18100000n,
+				}),
+				EventLog.create({
+					address: daiAddress,
+					topics: [
+						TRANSFER_SIG,
+						Hash.from("0x" + "22".repeat(32)),
+						userHash,
+					],
+					data: new Uint8Array([]),
+					blockNumber: 17000000n, // out of range
+				}),
+			];
+
+			// NOTE: Docs show allLogs.filter(log => log.matchesFilter({...}))
+			// Actual API: allLogs.filter(log => EventLog.matchesFilter(log, {...}))
+			const filtered = allLogs.filter((log) =>
+				EventLog.matchesFilter(log, {
+					address: [usdcAddress, daiAddress],
+					topics: [
+						TRANSFER_SIG, // Transfer events
+						null, // from any
+						userHash, // to user
+					],
+					fromBlock: 18000000n,
+					toBlock: 18500000n,
+				}),
+			);
+
+			expect(filtered.length).toBe(1);
+		});
+	});
+
+	describe("Partial Filters", () => {
+		it("omit unnecessary fields", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const tokenAddress = Address.Address(
+				"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			);
+			const TRANSFER_SIG = Hash.from(
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+			);
+			const userHash = Hash.from(
+				"0x000000000000000000000000a1b2c3d4e5f67890abcdef1234567890abcdef12",
+			);
+
+			const log = EventLog.create({
+				address: tokenAddress,
+				topics: [TRANSFER_SIG, Hash.from("0x" + "11".repeat(32)), userHash],
+				data: new Uint8Array([]),
+				blockNumber: 18100000n,
+			});
+
+			// Only address filter
+			const byAddress = EventLog.matchesFilter(log, {
+				address: tokenAddress,
+			});
+			expect(byAddress).toBe(true);
+
+			// Only topics filter
+			const byTopics = EventLog.matchesFilter(log, {
+				topics: [TRANSFER_SIG, null, userHash],
+			});
+			expect(byTopics).toBe(true);
+
+			// Only block range
+			const byBlock = EventLog.matchesFilter(log, {
+				fromBlock: 18000000n,
+				toBlock: 18500000n,
+			});
+			expect(byBlock).toBe(true);
+		});
+	});
+
+	describe("Missing Optional Fields", () => {
+		it("filter checks only apply if log has required fields", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const TRANSFER_SIG = Hash.from(
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+			);
+
+			const pendingLog = EventLog.create({
+				address: Address.Address.zero(),
+				topics: [TRANSFER_SIG],
+				data: new Uint8Array([]),
+				// No blockNumber, blockHash, etc.
+			});
+
+			// Block range filter ignored (no blockNumber)
+			const matches1 = EventLog.matchesFilter(pendingLog, {
+				fromBlock: 18000000n,
+				toBlock: 18500000n,
+			});
+			expect(matches1).toBe(true); // block filters skipped
+
+			// Block hash filter ignored (no blockHash)
+			const matches2 = EventLog.matchesFilter(pendingLog, {
+				blockHash: Hash.from("0x" + "ab".repeat(32)),
+			});
+			expect(matches2).toBe(true); // block hash filter skipped
+		});
+	});
+
+	describe("Empty Filter", () => {
+		it("matches all logs", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const log = EventLog.create({
+				address: Address.Address.zero(),
+				topics: [Hash.from("0x" + "00".repeat(32))],
+				data: new Uint8Array([]),
+			});
+
+			// Empty filter matches all
+			const matches = EventLog.matchesFilter(log, {});
+			expect(matches).toBe(true);
+		});
+	});
+});
+
+```

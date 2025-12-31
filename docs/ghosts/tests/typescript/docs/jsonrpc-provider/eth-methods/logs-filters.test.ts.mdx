@@ -1,0 +1,202 @@
+---
+title: '[TS/JS] docs/jsonrpc-provider/eth-methods/logs-filters.test.ts'
+source: 'docs/jsonrpc-provider/eth-methods/logs-filters.test.ts'
+---
+
+> Auto-generated from test file: docs/jsonrpc-provider/eth-methods/logs-filters.test.ts
+
+```typescript
+/**
+ * Tests for docs/jsonrpc-provider/eth-methods/logs-filters.mdx
+ *
+ * Tests the Logs & Filters documentation for querying event logs and
+ * creating filters for monitoring.
+ * Note: The docs indicate this page is a placeholder with AI-generated examples.
+ */
+import { describe, expect, it } from "vitest";
+
+describe("Logs & Filters Documentation", () => {
+	describe("eth_getLogs", () => {
+		it("creates request with filter criteria", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			const request = Rpc.Eth.GetLogsRequest({
+				fromBlock: "earliest",
+				toBlock: "latest",
+				address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+				topics: [
+					"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+				],
+			});
+
+			expect(request.method).toBe("eth_getLogs");
+			expect(request.params?.[0]).toHaveProperty("fromBlock", "earliest");
+			expect(request.params?.[0]).toHaveProperty("toBlock", "latest");
+			expect(request.params?.[0]).toHaveProperty("address");
+			expect(request.params?.[0]).toHaveProperty("topics");
+		});
+
+		it("creates request with block range", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			const request = Rpc.Eth.GetLogsRequest({
+				fromBlock: "0x112A880",
+				toBlock: "0x112A8FF",
+				address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			});
+
+			expect(request.params?.[0]).toHaveProperty("fromBlock", "0x112A880");
+			expect(request.params?.[0]).toHaveProperty("toBlock", "0x112A8FF");
+		});
+
+		it("creates request with multiple topics", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			const request = Rpc.Eth.GetLogsRequest({
+				fromBlock: "latest",
+				toBlock: "latest",
+				address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+				topics: [
+					"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+					null, // Any sender
+					"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb0", // Specific recipient
+				],
+			});
+
+			expect(request.params?.[0].topics).toHaveLength(3);
+		});
+	});
+
+	describe("Filter Creation", () => {
+		it("creates eth_newFilter request", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			const request = Rpc.Eth.NewFilterRequest({
+				fromBlock: "latest",
+				toBlock: "latest",
+				address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+				topics: [],
+			});
+
+			expect(request.method).toBe("eth_newFilter");
+		});
+
+		it("creates eth_newBlockFilter request", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			const request = Rpc.Eth.NewBlockFilterRequest();
+
+			expect(request.method).toBe("eth_newBlockFilter");
+		});
+
+		it("creates eth_newPendingTransactionFilter request", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			const request = Rpc.Eth.NewPendingTransactionFilterRequest();
+
+			expect(request.method).toBe("eth_newPendingTransactionFilter");
+		});
+	});
+
+	describe("Filter Polling", () => {
+		it("creates eth_getFilterChanges request", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			const filterId = "0x1";
+			const request = Rpc.Eth.GetFilterChangesRequest(filterId);
+
+			expect(request.method).toBe("eth_getFilterChanges");
+			expect(request.params?.[0]).toBe(filterId);
+		});
+
+		it("creates eth_getFilterLogs request", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			const filterId = "0x1";
+			const request = Rpc.Eth.GetFilterLogsRequest(filterId);
+
+			expect(request.method).toBe("eth_getFilterLogs");
+			expect(request.params?.[0]).toBe(filterId);
+		});
+	});
+
+	describe("Filter Cleanup", () => {
+		it("creates eth_uninstallFilter request", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			const filterId = "0x1";
+			const request = Rpc.Eth.UninstallFilterRequest(filterId);
+
+			expect(request.method).toBe("eth_uninstallFilter");
+			expect(request.params?.[0]).toBe(filterId);
+		});
+	});
+
+	describe("Usage Patterns from Docs", () => {
+		it("demonstrates Transfer event filter pattern", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			const transferEventSignature =
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+
+			// Create filter for Transfer events
+			const filterReq = Rpc.Eth.NewFilterRequest({
+				fromBlock: "latest",
+				address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+				topics: [transferEventSignature],
+			});
+
+			expect(filterReq.method).toBe("eth_newFilter");
+		});
+
+		it("demonstrates filter lifecycle pattern", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			// 1. Create filter
+			const createReq = Rpc.Eth.NewFilterRequest({
+				fromBlock: "latest",
+				address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+				topics: [],
+			});
+			expect(createReq.method).toBe("eth_newFilter");
+
+			// 2. Poll for changes
+			const pollReq = Rpc.Eth.GetFilterChangesRequest("0x1");
+			expect(pollReq.method).toBe("eth_getFilterChanges");
+
+			// 3. Query all (optional)
+			const queryReq = Rpc.Eth.GetFilterLogsRequest("0x1");
+			expect(queryReq.method).toBe("eth_getFilterLogs");
+
+			// 4. Cleanup
+			const cleanupReq = Rpc.Eth.UninstallFilterRequest("0x1");
+			expect(cleanupReq.method).toBe("eth_uninstallFilter");
+		});
+
+		it("demonstrates block monitoring pattern", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			// Create block filter
+			const filterReq = Rpc.Eth.NewBlockFilterRequest();
+			expect(filterReq.method).toBe("eth_newBlockFilter");
+
+			// Poll returns array of block hashes
+			const pollReq = Rpc.Eth.GetFilterChangesRequest("0x1");
+			expect(pollReq.method).toBe("eth_getFilterChanges");
+		});
+
+		it("demonstrates pending transaction monitoring pattern", async () => {
+			const { Rpc } = await import("../../../src/jsonrpc/index.js");
+
+			// Create pending tx filter
+			const filterReq = Rpc.Eth.NewPendingTransactionFilterRequest();
+			expect(filterReq.method).toBe("eth_newPendingTransactionFilter");
+
+			// Poll returns array of transaction hashes
+			const pollReq = Rpc.Eth.GetFilterChangesRequest("0x1");
+			expect(pollReq.method).toBe("eth_getFilterChanges");
+		});
+	});
+});
+
+```
