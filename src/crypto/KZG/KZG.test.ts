@@ -874,19 +874,23 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 			expect(KZG.isInitialized()).toBe(true);
 		});
 
-		it("should handle freeTrustedSetup and re-initialization", { timeout: 60000 }, () => {
-			KZG.freeTrustedSetup();
-			expect(KZG.isInitialized()).toBe(false);
+		it(
+			"should handle freeTrustedSetup and re-initialization",
+			{ timeout: 60000 },
+			() => {
+				KZG.freeTrustedSetup();
+				expect(KZG.isInitialized()).toBe(false);
 
-			// Re-initialize (this is slow ~13s locally, ~30s in CI)
-			KZG.loadTrustedSetup();
-			expect(KZG.isInitialized()).toBe(true);
+				// Re-initialize (this is slow ~13s locally, ~30s in CI)
+				KZG.loadTrustedSetup();
+				expect(KZG.isInitialized()).toBe(true);
 
-			// Verify operations still work
-			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.Commitment(blob);
-			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
-		});
+				// Verify operations still work
+				const blob = KZG.generateRandomBlob();
+				const commitment = KZG.Commitment(blob);
+				expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
+			},
+		);
 	});
 
 	describe("Error Classes", () => {
