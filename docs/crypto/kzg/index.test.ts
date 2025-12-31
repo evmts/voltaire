@@ -29,18 +29,24 @@ describe.skipIf(!hasNativeKzg)(
 			KzgInvalidBlobError,
 		} = await import("../../../src/crypto/KZG/index.js");
 
-		beforeAll(() => {
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
-		afterAll(() => {
-			// Ensure setup is loaded for other tests
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		afterAll(
+			() => {
+				// Ensure setup is loaded for other tests
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
 	describe("Quick Start - Standard API", () => {
 		/**
