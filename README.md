@@ -184,6 +184,21 @@ Low-level tree-shakable EVM utilities and all 19 precompiled contracts (0x01-0x1
 
 ---
 
+## Development
+
+- Install: `pnpm install`
+- Build: `pnpm build` (Zig + JS bundles + types)
+- Lint: `pnpm lint:check` (no warnings) and `pnpm format`
+- Test: `pnpm test:run` (single pass) or `pnpm test:coverage`
+- Package checks: `pnpm lint:package`
+
+### Documentation
+
+- Docs content lives in `docs/` (Mintlify). Docs code samples are validated by tests in `docs/**/*.test.ts`.
+- API reference is generated from JSDoc/TypeScript via `pnpm docs:api` and written to `docs/public/api`.
+
+---
+
 ## Security
 
 > **Cryptography Implementation Status**
