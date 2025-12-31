@@ -3,6 +3,12 @@
 //! Provides a consistent interface for signing operations across different
 //! signer types: local private keys, hardware wallets, and remote RPC signers.
 //!
+//! ⚠️ UNAUDITED - Custom signer implementation that has NOT been security audited.
+//! Uses underlying crypto primitives but orchestration is UNAUDITED.
+//! Use audited alternatives in production:
+//! - ethers.js Signer (audited) - https://docs.ethers.org/
+//! - viem accounts (audited) - https://viem.sh/
+//!
 //! ## Overview
 //! The signer module provides:
 //! - `Signer` - Interface trait for all signing operations

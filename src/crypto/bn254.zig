@@ -3,6 +3,14 @@
 //! Implementation of the BN254 (Barreto-Naehrig) pairing-friendly elliptic curve.
 //! Used in Ethereum precompiles (0x06-0x08) for zkSNARK verification.
 //!
+//! ⚠️ UNAUDITED - Custom cryptographic implementation that has NOT been security audited.
+//! This is a FULL CUSTOM implementation of BN254 pairing curve arithmetic.
+//! DO NOT USE IN PRODUCTION without proper security audit and testing.
+//! Use audited alternatives:
+//! - arkworks (audited) - https://github.com/arkworks-rs/curves
+//! - py_ecc (audited) - https://github.com/ethereum/py_ecc
+//! - gnark-crypto (audited) - https://github.com/ConsenSys/gnark-crypto
+//!
 //! ## Curve Parameters
 //! - Prime field Fp: 254-bit prime modulus
 //! - Scalar field Fr: ~254-bit group order

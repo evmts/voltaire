@@ -1,3 +1,10 @@
+// ⚠️ UNAUDITED - Uses keccak-asm which is an unaudited assembly-optimized Keccak implementation.
+// The keccak-asm crate provides performance optimizations but has NOT been security audited.
+// Use audited alternatives in production:
+// - @noble/hashes (audited) - https://github.com/paulmillr/noble-hashes
+// - sha3 crate (RustCrypto, audited) - https://github.com/RustCrypto/hashes
+// - tiny-keccak (portable, audited) - Used as WASM fallback
+
 // Use assembly-optimized version for native targets, portable for WASM
 #[cfg(feature = "asm")]
 use keccak_asm::{Digest, Keccak256};

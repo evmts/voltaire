@@ -3,6 +3,13 @@
 //! Implements the Web3 Secret Storage Definition (v3) for encrypted private key storage.
 //! Supports both scrypt and PBKDF2 key derivation functions.
 //!
+//! ⚠️ UNAUDITED - Custom keystore implementation that has NOT been security audited.
+//! Uses std.crypto primitives (audited) but orchestration logic is UNAUDITED.
+//! Use audited alternatives in production:
+//! - ethers.js Wallet (audited) - https://docs.ethers.org/
+//! - web3.js accounts (audited) - https://web3js.readthedocs.io/
+//! - ethereumjs-wallet (audited) - https://github.com/ethereumjs/ethereumjs-wallet
+//!
 //! ## Overview
 //! The Web3 Secret Storage format provides a standardized way to encrypt private keys
 //! using password-based encryption. The format includes:

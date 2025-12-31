@@ -1,3 +1,4 @@
+//! ⚠️ UNAUDITED - Custom BN254 G1 implementation. See bn254.zig for audited alternatives.
 const std = @import("std");
 const FpMont = @import("FpMont.zig");
 const Fr = @import("Fr.zig");

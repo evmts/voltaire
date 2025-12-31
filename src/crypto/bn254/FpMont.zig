@@ -1,3 +1,4 @@
+//! ⚠️ UNAUDITED - Custom BN254 field arithmetic. See bn254.zig for audited alternatives.
 const std = @import("std");
 const curve_parameters = @import("curve_parameters.zig");
 

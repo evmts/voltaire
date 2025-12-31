@@ -3,6 +3,12 @@
 //! Implementation of EIP-712 for creating type-safe, human-readable signatures.
 //! Enables secure signing of structured data with domain separation.
 //!
+//! ⚠️ UNAUDITED - Custom EIP-712 implementation that has NOT been security audited.
+//! Type encoding and hashing logic are UNAUDITED. Use audited alternatives in production:
+//! - ethers.js (audited) - https://docs.ethers.org/
+//! - viem (audited) - https://viem.sh/
+//! - @metamask/eth-sig-util (audited) - https://github.com/MetaMask/eth-sig-util
+//!
 //! ## Overview
 //! EIP-712 provides a standard for hashing and signing typed structured data,
 //! making signatures more secure and user-friendly by displaying what users are signing.

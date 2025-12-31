@@ -1,3 +1,4 @@
+//! ⚠️ UNAUDITED - Custom BN254 pairing implementation. See bn254.zig for audited alternatives.
 const Fr = @import("Fr.zig");
 const G1 = @import("G1.zig");
 const G2 = @import("G2.zig");

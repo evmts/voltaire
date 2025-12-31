@@ -4,6 +4,12 @@
 //! This module provides functions for generating, validating, and converting
 //! between mnemonics, entropy, and seeds.
 //!
+//! ⚠️ UNAUDITED - Custom BIP-39 implementation that has NOT been security audited.
+//! Uses std.crypto for PBKDF2-SHA512 (audited) but wordlist handling and
+//! checksum logic are UNAUDITED. Use audited alternatives in production:
+//! - @scure/bip39 (audited) - https://github.com/paulmillr/scure-bip39
+//! - bip39 (Python, audited) - https://github.com/trezor/python-mnemonic
+//!
 //! ## Features
 //! - Generate random mnemonics (12/15/18/21/24 words)
 //! - Convert mnemonic to 64-byte seed (PBKDF2-SHA512)

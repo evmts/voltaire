@@ -4,6 +4,12 @@
 //! This implementation uses Zig's standard library `std.crypto.ecc.Secp256k1` for
 //! curve operations and implements public key recovery on top.
 //!
+//! ⚠️ UNAUDITED - Custom public key recovery implementation that has NOT been security audited.
+//! The underlying std.crypto.ecc.Secp256k1 is audited, but this wrapper code and the
+//! public key recovery logic are UNAUDITED. Use audited alternatives in production:
+//! - @noble/curves (audited) - https://github.com/paulmillr/noble-curves
+//! - libsecp256k1 (audited) - https://github.com/bitcoin-core/secp256k1
+//!
 //! ## Overview
 //! secp256k1 is a Koblitz elliptic curve used in Bitcoin and Ethereum for:
 //! - Transaction signing (ECDSA)

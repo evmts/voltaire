@@ -5,6 +5,12 @@
 //! - SIMD vector operations for parallel processing
 //! - Optimized software fallback
 //!
+//! ⚠️ UNAUDITED - Custom SIMD/accelerated implementation that has NOT been security audited.
+//! The custom AVX2 and acceleration code paths are UNAUDITED. Falls back to
+//! std.crypto.hash.sha2.Sha256 (audited) in many cases. Use audited alternatives in production:
+//! - @noble/hashes (audited) - https://github.com/paulmillr/noble-hashes
+//! - OpenSSL (audited) - https://www.openssl.org/
+//!
 //! The implementation automatically selects the best available method
 //! based on CPU features detected at compile time.
 
