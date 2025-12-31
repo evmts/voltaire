@@ -242,11 +242,14 @@ describe.skipIf(!hasCkzg)("Factory API", () => {
 	});
 
 	describe("Commitment Properties", () => {
-		beforeAll(() => {
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
 		it("should produce 48-byte commitment (BLS12-381 G1 point)", () => {
 			const blob = KZG.createEmptyBlob();
@@ -283,11 +286,14 @@ describe.skipIf(!hasCkzg)("Factory API", () => {
 	});
 
 	describe("Legacy API Compatibility", () => {
-		beforeAll(() => {
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
 		/**
 		 * The module also exports blobToKzgCommitment as legacy API

@@ -249,11 +249,14 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/performance.mdx - Performance", 
 	});
 
 	describe("Full Workflow Performance", () => {
-		beforeAll(() => {
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
 		/**
 		 * End-to-end performance for typical usage

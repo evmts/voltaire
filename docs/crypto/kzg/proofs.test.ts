@@ -405,11 +405,14 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 	});
 
 	describe("Proof Properties", () => {
-		beforeAll(() => {
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
 		/**
 		 * From proofs.mdx:
@@ -458,11 +461,14 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 	});
 
 	describe("Legacy API Compatibility", () => {
-		beforeAll(() => {
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
 		it("should support legacy computeKzgProof API", () => {
 			const blob = KZG.generateRandomBlob();
