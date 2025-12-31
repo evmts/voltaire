@@ -1,0 +1,122 @@
+---
+title: "Blake2Wasm"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../index.mdx) / [index](../../../index.mdx) / [wasm](../index.mdx) / Blake2Wasm
+
+# Blake2Wasm
+
+BLAKE2b operations namespace (WASM variant)
+
+## See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+## Since
+
+0.0.0
+
+## Functions
+
+### hash()
+
+> **hash**(`data`, `outputLength`): `Uint8Array`
+
+Defined in: [src/crypto/Blake2/Blake2.wasm.ts:31](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/Blake2/Blake2.wasm.ts#L31)
+
+Hash data with BLAKE2b using WASM implementation
+
+#### Parameters
+
+##### data
+
+Input data to hash (Uint8Array or string)
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+##### outputLength
+
+`number` = `64`
+
+Output length in bytes (1-64, default 64)
+
+#### Returns
+
+`Uint8Array`
+
+BLAKE2b hash
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If outputLength is invalid
+
+#### Example
+
+```typescript
+import { Blake2Wasm } from './crypto/Blake2/Blake2.wasm.js';
+const hash = Blake2Wasm.hash(new Uint8Array([1, 2, 3]));
+const hash32 = Blake2Wasm.hash("hello", 32);
+```
+
+***
+
+### hashString()
+
+> **hashString**(`str`, `outputLength`): `Uint8Array`
+
+Defined in: [src/crypto/Blake2/Blake2.wasm.ts:62](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/Blake2/Blake2.wasm.ts#L62)
+
+Hash string with BLAKE2b using WASM implementation (convenience function)
+
+#### Parameters
+
+##### str
+
+`string`
+
+Input string to hash
+
+##### outputLength
+
+`number` = `64`
+
+Output length in bytes (1-64, default 64)
+
+#### Returns
+
+`Uint8Array`
+
+BLAKE2b hash
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If outputLength is invalid
+
+#### Example
+
+```typescript
+import { Blake2Wasm } from './crypto/Blake2/Blake2.wasm.js';
+const hash = Blake2Wasm.hashString("hello world");
+const hash48 = Blake2Wasm.hashString("hello world", 48);
+```

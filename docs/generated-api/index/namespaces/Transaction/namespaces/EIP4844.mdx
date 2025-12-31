@@ -1,0 +1,1412 @@
+---
+title: "EIP4844"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../index.mdx) / [index](../../../index.mdx) / [Transaction](../index.mdx) / EIP4844
+
+# EIP4844
+
+## Classes
+
+### TransactionEIP4844
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:57](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L57)
+
+Factory function for creating EIP-4844 Transaction instances
+
+#### Constructors
+
+##### Constructor
+
+> **new TransactionEIP4844**(`tx`): [`TransactionEIP4844`](#transactioneip4844)
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:57](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L57)
+
+Factory function for creating EIP-4844 Transaction instances
+
+###### Parameters
+
+###### tx
+
+`any`
+
+###### Returns
+
+[`TransactionEIP4844`](#transactioneip4844)
+
+#### Properties
+
+##### getBlobGasCost()
+
+> **getBlobGasCost**: (`tx`, `blobBaseFee`) => `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:100](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L100)
+
+Calculate total blob gas cost.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+###### blobBaseFee
+
+`bigint`
+
+Blob base fee per gas
+
+###### Returns
+
+`bigint`
+
+Total blob gas cost
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { getBlobGasCost } from './primitives/Transaction/EIP4844/getBlobGasCost.js';
+const cost = getBlobGasCost(tx, 1000000n);
+```
+
+##### getEffectiveGasPrice()
+
+> **getEffectiveGasPrice**: (`tx`, `baseFee`) => `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:98](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L98)
+
+Calculate effective gas price given base fee.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+###### baseFee
+
+`bigint`
+
+Base fee per gas
+
+###### Returns
+
+`bigint`
+
+Effective gas price
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { getEffectiveGasPrice } from './primitives/Transaction/EIP4844/getEffectiveGasPrice.js';
+const price = getEffectiveGasPrice(tx, 1000000000n);
+```
+
+##### getSender()
+
+> **getSender**: (`tx`) => [`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L94)
+
+Get sender address from signature.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+###### Returns
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Sender address
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If signature recovery fails
+
+###### Example
+
+```javascript
+import { getSender } from './primitives/Transaction/EIP4844/getSender.js';
+const sender = getSender(tx);
+```
+
+##### getSigningHash()
+
+> **getSigningHash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:92](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L92)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+###### Returns
+
+`Uint8Array`
+
+##### hash()
+
+> **hash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:91](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L91)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+###### Returns
+
+`Uint8Array`
+
+##### serialize()
+
+> **serialize**: (`tx`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:89](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L89)
+
+Serialize EIP-4844 transaction to RLP encoded bytes.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP encoded transaction with type prefix
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { serialize } from './primitives/Transaction/EIP4844/serialize.js';
+const encoded = serialize(tx);
+```
+
+##### verifySignature()
+
+> **verifySignature**: (`tx`) => `boolean`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:96](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L96)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+###### Returns
+
+`boolean`
+
+##### getBlobGasCost()
+
+> `static` **getBlobGasCost**: (`tx`, `blobBaseFee`) => `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:87](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L87)
+
+Calculate total blob gas cost.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+###### blobBaseFee
+
+`bigint`
+
+Blob base fee per gas
+
+###### Returns
+
+`bigint`
+
+Total blob gas cost
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { getBlobGasCost } from './primitives/Transaction/EIP4844/getBlobGasCost.js';
+const cost = getBlobGasCost(tx, 1000000n);
+```
+
+##### getEffectiveGasPrice()
+
+> `static` **getEffectiveGasPrice**: (`tx`, `baseFee`) => `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:86](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L86)
+
+Calculate effective gas price given base fee.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+###### baseFee
+
+`bigint`
+
+Base fee per gas
+
+###### Returns
+
+`bigint`
+
+Effective gas price
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { getEffectiveGasPrice } from './primitives/Transaction/EIP4844/getEffectiveGasPrice.js';
+const price = getEffectiveGasPrice(tx, 1000000000n);
+```
+
+##### getSender()
+
+> `static` **getSender**: (`tx`) => [`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:84](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L84)
+
+Get sender address from signature.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+###### Returns
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Sender address
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If signature recovery fails
+
+###### Example
+
+```javascript
+import { getSender } from './primitives/Transaction/EIP4844/getSender.js';
+const sender = getSender(tx);
+```
+
+##### getSigningHash()
+
+> `static` **getSigningHash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:83](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L83)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+###### Returns
+
+`Uint8Array`
+
+##### hash()
+
+> `static` **hash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:82](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L82)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+###### Returns
+
+`Uint8Array`
+
+##### serialize()
+
+> `static` **serialize**: (`tx`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:81](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L81)
+
+Serialize EIP-4844 transaction to RLP encoded bytes.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP encoded transaction with type prefix
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { serialize } from './primitives/Transaction/EIP4844/serialize.js';
+const encoded = serialize(tx);
+```
+
+##### verifySignature()
+
+> `static` **verifySignature**: (`tx`) => `boolean`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:85](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L85)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+###### Returns
+
+`boolean`
+
+## Interfaces
+
+### TransactionEIP4844Constructor()
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts#L22)
+
+> **TransactionEIP4844Constructor**(`tx`): `TransactionEIP4844Prototype`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts#L23)
+
+#### Parameters
+
+##### tx
+
+###### accessList
+
+[`AccessList`](../index.mdx#accesslist)
+
+###### blobVersionedHashes
+
+readonly [`HashType`](../../HashType-2.mdx#hashtype)[]
+
+###### chainId
+
+`bigint`
+
+###### data
+
+`Uint8Array`
+
+###### gasLimit
+
+`bigint`
+
+###### maxFeePerBlobGas
+
+`bigint`
+
+###### maxFeePerGas
+
+`bigint`
+
+###### maxPriorityFeePerGas
+
+`bigint`
+
+###### nonce
+
+`bigint`
+
+###### r
+
+`Uint8Array`
+
+###### s
+
+`Uint8Array`
+
+###### to
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+###### value
+
+`bigint`
+
+###### yParity
+
+`number`
+
+#### Returns
+
+`TransactionEIP4844Prototype`
+
+#### Properties
+
+##### getBlobGasCost()
+
+> **getBlobGasCost**: (`tx`, `blobBaseFee`) => `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts:47](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts#L47)
+
+Calculate total blob gas cost.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+###### blobBaseFee
+
+`bigint`
+
+Blob base fee per gas
+
+###### Returns
+
+`bigint`
+
+Total blob gas cost
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { getBlobGasCost } from './primitives/Transaction/EIP4844/getBlobGasCost.js';
+const cost = getBlobGasCost(tx, 1000000n);
+```
+
+##### getEffectiveGasPrice()
+
+> **getEffectiveGasPrice**: (`tx`, `baseFee`) => `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts:46](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts#L46)
+
+Calculate effective gas price given base fee.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+###### baseFee
+
+`bigint`
+
+Base fee per gas
+
+###### Returns
+
+`bigint`
+
+Effective gas price
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { getEffectiveGasPrice } from './primitives/Transaction/EIP4844/getEffectiveGasPrice.js';
+const price = getEffectiveGasPrice(tx, 1000000000n);
+```
+
+##### getSender()
+
+> **getSender**: (`tx`) => [`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts:44](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts#L44)
+
+Get sender address from signature.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+###### Returns
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Sender address
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If signature recovery fails
+
+###### Example
+
+```javascript
+import { getSender } from './primitives/Transaction/EIP4844/getSender.js';
+const sender = getSender(tx);
+```
+
+##### getSigningHash()
+
+> **getSigningHash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts:43](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts#L43)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+###### Returns
+
+`Uint8Array`
+
+##### hash()
+
+> **hash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts:42](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts#L42)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+###### Returns
+
+`Uint8Array`
+
+##### prototype
+
+> **prototype**: `TransactionEIP4844Prototype`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts#L39)
+
+##### serialize()
+
+> **serialize**: (`tx`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts:41](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts#L41)
+
+Serialize EIP-4844 transaction to RLP encoded bytes.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP encoded transaction with type prefix
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { serialize } from './primitives/Transaction/EIP4844/serialize.js';
+const encoded = serialize(tx);
+```
+
+##### verifySignature()
+
+> **verifySignature**: (`tx`) => `boolean`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts#L45)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+###### Returns
+
+`boolean`
+
+#### Methods
+
+##### deserialize()
+
+> **deserialize**(`bytes`): `TransactionEIP4844Prototype`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts:40](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Constructor.ts#L40)
+
+###### Parameters
+
+###### bytes
+
+`Uint8Array`
+
+###### Returns
+
+`TransactionEIP4844Prototype`
+
+## Type Aliases
+
+### TransactionEIP4844Type
+
+> **TransactionEIP4844Type** = `object`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L8)
+
+EIP-4844 Transaction type
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"TransactionEIP4844"`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L9)
+
+##### accessList
+
+> **accessList**: [`AccessList`](../index.mdx#accesslist)
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L19)
+
+##### blobVersionedHashes
+
+> **blobVersionedHashes**: readonly [`VersionedHash`](../index.mdx#versionedhash)[]
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L21)
+
+##### chainId
+
+> **chainId**: `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L11)
+
+##### data
+
+> **data**: `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L18)
+
+##### gasLimit
+
+> **gasLimit**: `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L15)
+
+##### maxFeePerBlobGas
+
+> **maxFeePerBlobGas**: `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L20)
+
+##### maxFeePerGas
+
+> **maxFeePerGas**: `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L14)
+
+##### maxPriorityFeePerGas
+
+> **maxPriorityFeePerGas**: `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L13)
+
+##### nonce
+
+> **nonce**: `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L12)
+
+##### r
+
+> **r**: `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L23)
+
+##### s
+
+> **s**: `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L24)
+
+##### to
+
+> **to**: [`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L16)
+
+##### type
+
+> **type**: [`EIP4844`](../index.mdx#eip4844)
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L10)
+
+##### value
+
+> **value**: `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L17)
+
+##### yParity
+
+> **yParity**: `number`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844Type.ts#L22)
+
+## Variables
+
+### getSigningHash()
+
+> `const` **getSigningHash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L23)
+
+#### Parameters
+
+##### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### hash()
+
+> `const` **hash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L24)
+
+#### Parameters
+
+##### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### verifySignature()
+
+> `const` **verifySignature**: (`tx`) => `boolean`
+
+Defined in: [src/primitives/Transaction/EIP4844/TransactionEIP4844.js:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/TransactionEIP4844.js#L25)
+
+#### Parameters
+
+##### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+#### Returns
+
+`boolean`
+
+## Functions
+
+### deserialize()
+
+> **deserialize**(`data`): `EIP4844`
+
+Defined in: [src/primitives/Transaction/EIP4844/deserialize.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/deserialize.js#L20)
+
+Deserialize RLP encoded EIP-4844 transaction.
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP encoded transaction with type prefix
+
+#### Returns
+
+`EIP4844`
+
+Deserialized transaction
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If data is invalid or malformed
+
+#### Example
+
+```javascript
+import { deserialize } from './primitives/Transaction/EIP4844/deserialize.js';
+const tx = deserialize(encodedData);
+```
+
+***
+
+### getBlobGasCost()
+
+> **getBlobGasCost**(`tx`, `blobBaseFee`): `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/getBlobGasCost.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/getBlobGasCost.js#L16)
+
+Calculate total blob gas cost.
+
+#### Parameters
+
+##### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+##### blobBaseFee
+
+`bigint`
+
+Blob base fee per gas
+
+#### Returns
+
+`bigint`
+
+Total blob gas cost
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Never throws
+
+#### Example
+
+```javascript
+import { getBlobGasCost } from './primitives/Transaction/EIP4844/getBlobGasCost.js';
+const cost = getBlobGasCost(tx, 1000000n);
+```
+
+***
+
+### getEffectiveGasPrice()
+
+> **getEffectiveGasPrice**(`tx`, `baseFee`): `bigint`
+
+Defined in: [src/primitives/Transaction/EIP4844/getEffectiveGasPrice.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/getEffectiveGasPrice.js#L16)
+
+Calculate effective gas price given base fee.
+
+#### Parameters
+
+##### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+##### baseFee
+
+`bigint`
+
+Base fee per gas
+
+#### Returns
+
+`bigint`
+
+Effective gas price
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Never throws
+
+#### Example
+
+```javascript
+import { getEffectiveGasPrice } from './primitives/Transaction/EIP4844/getEffectiveGasPrice.js';
+const price = getEffectiveGasPrice(tx, 1000000000n);
+```
+
+***
+
+### getSender()
+
+> **getSender**(`tx`): [`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Transaction/EIP4844/getSender.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/getSender.js#L18)
+
+Get sender address from signature.
+
+#### Parameters
+
+##### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+#### Returns
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Sender address
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If signature recovery fails
+
+#### Example
+
+```javascript
+import { getSender } from './primitives/Transaction/EIP4844/getSender.js';
+const sender = getSender(tx);
+```
+
+***
+
+### GetSigningHash()
+
+> **GetSigningHash**(`deps`): (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/getSigningHash.js:26](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/getSigningHash.js#L26)
+
+Factory: Get signing hash for EIP-4844 transaction.
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+###### rlpEncode
+
+(`data`) => `Uint8Array`
+
+RLP encode function
+
+#### Returns
+
+Function that computes signing hash
+
+> (`tx`): `Uint8Array`
+
+##### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+##### Returns
+
+`Uint8Array`
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Never throws
+
+#### Example
+
+```javascript
+import { GetSigningHash } from './primitives/Transaction/EIP4844/getSigningHash.js';
+import { hash as keccak256 } from '../../../crypto/Keccak256/hash.js';
+import { encode as rlpEncode } from '../../Rlp/encode.js';
+const getSigningHash = GetSigningHash({ keccak256, rlpEncode });
+const sigHash = getSigningHash(tx);
+```
+
+***
+
+### Hash()
+
+> **Hash**(`deps`): (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP4844/hash.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/hash.js#L22)
+
+Factory: Compute transaction hash.
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+#### Returns
+
+Function that computes transaction hash
+
+> (`tx`): `Uint8Array`
+
+##### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+##### Returns
+
+`Uint8Array`
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Never throws
+
+#### Example
+
+```javascript
+import { Hash } from './primitives/Transaction/EIP4844/hash.js';
+import { hash as keccak256 } from '../../../crypto/Keccak256/hash.js';
+const hash = Hash({ keccak256 });
+const txHash = hash(tx);
+```
+
+***
+
+### serialize()
+
+> **serialize**(`tx`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Transaction/EIP4844/serialize.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/serialize.js#L19)
+
+Serialize EIP-4844 transaction to RLP encoded bytes.
+
+#### Parameters
+
+##### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+EIP-4844 transaction
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP encoded transaction with type prefix
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Never throws
+
+#### Example
+
+```javascript
+import { serialize } from './primitives/Transaction/EIP4844/serialize.js';
+const encoded = serialize(tx);
+```
+
+***
+
+### VerifySignature()
+
+> **VerifySignature**(`deps`): (`tx`) => `boolean`
+
+Defined in: [src/primitives/Transaction/EIP4844/verifySignature.js:38](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP4844/verifySignature.js#L38)
+
+Factory: Verify transaction signature.
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+###### rlpEncode
+
+(`data`) => `Uint8Array`
+
+RLP encode function
+
+###### secp256k1RecoverPublicKey
+
+`any`
+
+secp256k1 public key recovery
+
+###### secp256k1Verify
+
+`any`
+
+secp256k1 signature verification
+
+#### Returns
+
+Function that verifies signature
+
+> (`tx`): `boolean`
+
+##### Parameters
+
+###### tx
+
+[`TransactionEIP4844Type`](#transactioneip4844type)
+
+##### Returns
+
+`boolean`
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Never throws - returns false on error
+
+#### Example
+
+```javascript
+import { VerifySignature } from './primitives/Transaction/EIP4844/verifySignature.js';
+import { hash as keccak256 } from '../../../crypto/Keccak256/hash.js';
+import { encode as rlpEncode } from '../../Rlp/encode.js';
+import { recoverPublicKey, verify } from '../../../crypto/Secp256k1/index.js';
+const verifySignature = VerifySignature({
+  keccak256,
+  rlpEncode,
+  secp256k1RecoverPublicKey: recoverPublicKey,
+  secp256k1Verify: verify
+});
+const isValid = verifySignature(tx);
+```

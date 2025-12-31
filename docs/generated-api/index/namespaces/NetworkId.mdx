@@ -1,0 +1,287 @@
+---
+title: "NetworkId"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / NetworkId
+
+# NetworkId
+
+## Type Aliases
+
+### NetworkIdType
+
+> **NetworkIdType** = `number` & `object`
+
+Defined in: [src/primitives/NetworkId/NetworkIdType.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/NetworkId/NetworkIdType.ts#L16)
+
+Branded NetworkId type - Ethereum network identifier
+Wraps a number representing a network ID (different from ChainId)
+
+Network IDs identify different Ethereum networks for peer discovery:
+- 1 = Mainnet
+- 5 = Goerli (deprecated)
+- 11155111 = Sepolia
+
+Note: NetworkId is NOT the same as ChainId (EIP-155).
+ChainId is used for replay protection in transactions,
+while NetworkId is used for peer-to-peer network identification.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"NetworkId"`
+
+## Variables
+
+### GOERLI
+
+> `const` **GOERLI**: [`NetworkIdType`](#networkidtype)
+
+Defined in: [src/primitives/NetworkId/constants.js:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/NetworkId/constants.js#L10)
+
+***
+
+### HOLESKY
+
+> `const` **HOLESKY**: [`NetworkIdType`](#networkidtype)
+
+Defined in: [src/primitives/NetworkId/constants.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/NetworkId/constants.js#L18)
+
+***
+
+### MAINNET
+
+> `const` **MAINNET**: [`NetworkIdType`](#networkidtype)
+
+Defined in: [src/primitives/NetworkId/constants.js:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/NetworkId/constants.js#L6)
+
+***
+
+### NetworkId
+
+> `const` **NetworkId**: `object`
+
+Defined in: [src/primitives/NetworkId/index.ts:28](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/NetworkId/index.ts#L28)
+
+#### Type Declaration
+
+##### equals()
+
+> **equals**: (`networkId1`, `networkId2`) => `boolean`
+
+###### Parameters
+
+###### networkId1
+
+`number`
+
+###### networkId2
+
+`number`
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`NetworkIdType`](#networkidtype)
+
+Create NetworkId from number
+
+###### Parameters
+
+###### value
+
+`number`
+
+Network ID number
+
+###### Returns
+
+[`NetworkIdType`](#networkidtype)
+
+Branded network ID
+
+###### Throws
+
+If value is not a non-negative integer
+
+###### Example
+
+```javascript
+import * as NetworkId from './primitives/NetworkId/index.js';
+const mainnet = NetworkId.from(1);
+const sepolia = NetworkId.from(11155111);
+```
+
+##### toNumber()
+
+> **toNumber**: (`networkId`) => `number`
+
+###### Parameters
+
+###### networkId
+
+`number`
+
+###### Returns
+
+`number`
+
+***
+
+### SEPOLIA
+
+> `const` **SEPOLIA**: [`NetworkIdType`](#networkidtype)
+
+Defined in: [src/primitives/NetworkId/constants.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/NetworkId/constants.js#L14)
+
+## Functions
+
+### \_equals()
+
+> **\_equals**(`this`, `other`): `boolean`
+
+Defined in: [src/primitives/NetworkId/equals.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/NetworkId/equals.js#L16)
+
+Compare two NetworkIds for equality
+
+#### Parameters
+
+##### this
+
+[`NetworkIdType`](#networkidtype)
+
+##### other
+
+[`NetworkIdType`](#networkidtype)
+
+Network ID to compare
+
+#### Returns
+
+`boolean`
+
+True if equal
+
+#### Example
+
+```javascript
+import * as NetworkId from './primitives/NetworkId/index.js';
+const a = NetworkId.from(1);
+const b = NetworkId.from(1);
+const equal = NetworkId._equals.call(a, b); // true
+```
+
+***
+
+### \_toNumber()
+
+> **\_toNumber**(`this`): `number`
+
+Defined in: [src/primitives/NetworkId/toNumber.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/NetworkId/toNumber.js#L14)
+
+Convert NetworkId to number (identity function for branded type)
+
+#### Parameters
+
+##### this
+
+[`NetworkIdType`](#networkidtype)
+
+#### Returns
+
+`number`
+
+Network ID as number
+
+#### Example
+
+```javascript
+import * as NetworkId from './primitives/NetworkId/index.js';
+const netId = NetworkId.from(1);
+const num = NetworkId._toNumber.call(netId); // 1
+```
+
+***
+
+### equals()
+
+> **equals**(`networkId1`, `networkId2`): `boolean`
+
+Defined in: [src/primitives/NetworkId/index.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/NetworkId/index.ts#L20)
+
+#### Parameters
+
+##### networkId1
+
+`number`
+
+##### networkId2
+
+`number`
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`NetworkIdType`](#networkidtype)
+
+Defined in: [src/primitives/NetworkId/from.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/NetworkId/from.js#L17)
+
+Create NetworkId from number
+
+#### Parameters
+
+##### value
+
+`number`
+
+Network ID number
+
+#### Returns
+
+[`NetworkIdType`](#networkidtype)
+
+Branded network ID
+
+#### Throws
+
+If value is not a non-negative integer
+
+#### Example
+
+```javascript
+import * as NetworkId from './primitives/NetworkId/index.js';
+const mainnet = NetworkId.from(1);
+const sepolia = NetworkId.from(11155111);
+```
+
+***
+
+### toNumber()
+
+> **toNumber**(`networkId`): `number`
+
+Defined in: [src/primitives/NetworkId/index.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/NetworkId/index.ts#L16)
+
+#### Parameters
+
+##### networkId
+
+`number`
+
+#### Returns
+
+`number`

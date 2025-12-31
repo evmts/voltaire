@@ -1,0 +1,376 @@
+---
+description: Auto-generated TypeScript API documentation from source code
+title: Generated API Reference
+---
+
+[**@tevm/voltaire**](../../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../../index.mdx) / [index](../../../../index.mdx) / [wasm](../../index.mdx) / Eip712Wasm
+
+# Eip712Wasm
+
+## Namespaces
+
+- [Domain](namespaces/Domain.mdx)
+
+## Type Aliases
+
+### Signature
+
+> **Signature** = [`Signature`](../Secp256k1Wasm/index.mdx#signature)
+
+Defined in: [src/crypto/eip712.wasm.ts:54](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L54)
+
+***
+
+### Types
+
+> **Types** = `TypeDefinitions`
+
+Defined in: [src/crypto/eip712.wasm.ts:55](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L55)
+
+## Functions
+
+### encodeData()
+
+> **encodeData**(`primaryType`, `message`, `types`): `Uint8Array`
+
+Defined in: [src/crypto/eip712.wasm.ts:253](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L253)
+
+Encode data for struct
+
+#### Parameters
+
+##### primaryType
+
+`string`
+
+Name of struct type
+
+##### message
+
+`Message`
+
+Message data
+
+##### types
+
+`TypeDefinitions`
+
+Type definitions
+
+#### Returns
+
+`Uint8Array`
+
+Encoded data
+
+***
+
+### encodeType()
+
+> **encodeType**(`primaryType`, `types`): `string`
+
+Defined in: [src/crypto/eip712.wasm.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L110)
+
+Encode type string (e.g., "Mail(Person from,Person to,string contents)")
+
+#### Parameters
+
+##### primaryType
+
+`string`
+
+Name of primary type
+
+##### types
+
+`TypeDefinitions`
+
+Type definitions
+
+#### Returns
+
+`string`
+
+Type encoding string
+
+***
+
+### encodeValue()
+
+> **encodeValue**(`type`, `value`, `types`): `Uint8Array`
+
+Defined in: [src/crypto/eip712.wasm.ts:170](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L170)
+
+Encode single value
+
+#### Parameters
+
+##### type
+
+`string`
+
+Solidity type string
+
+##### value
+
+`unknown`
+
+Value to encode
+
+##### types
+
+`TypeDefinitions`
+
+Type definitions (for structs)
+
+#### Returns
+
+`Uint8Array`
+
+32-byte encoded value
+
+***
+
+### format()
+
+> **format**(`typedData`): `string`
+
+Defined in: [src/crypto/eip712.wasm.ts:407](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L407)
+
+Format typed data for display
+
+#### Parameters
+
+##### typedData
+
+`TypedData`
+
+#### Returns
+
+`string`
+
+***
+
+### hashStruct()
+
+> **hashStruct**(`primaryType`, `message`, `types`): [`HashType`](../../../HashType-2.mdx#hashtype)
+
+Defined in: [src/crypto/eip712.wasm.ts:295](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L295)
+
+Hash struct
+
+#### Parameters
+
+##### primaryType
+
+`string`
+
+Name of struct type
+
+##### message
+
+`Message`
+
+Message data
+
+##### types
+
+`TypeDefinitions`
+
+Type definitions
+
+#### Returns
+
+[`HashType`](../../../HashType-2.mdx#hashtype)
+
+32-byte struct hash
+
+***
+
+### hashType()
+
+> **hashType**(`primaryType`, `types`): [`HashType`](../../../HashType-2.mdx#hashtype)
+
+Defined in: [src/crypto/eip712.wasm.ts:152](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L152)
+
+Hash type string
+
+#### Parameters
+
+##### primaryType
+
+`string`
+
+Name of primary type
+
+##### types
+
+`TypeDefinitions`
+
+Type definitions
+
+#### Returns
+
+[`HashType`](../../../HashType-2.mdx#hashtype)
+
+32-byte type hash
+
+***
+
+### hashTypedData()
+
+> **hashTypedData**(`typedData`): [`HashType`](../../../HashType-2.mdx#hashtype)
+
+Defined in: [src/crypto/eip712.wasm.ts:314](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L314)
+
+Hash typed data (EIP-712 signing hash)
+
+#### Parameters
+
+##### typedData
+
+`TypedData`
+
+Complete typed data structure
+
+#### Returns
+
+[`HashType`](../../../HashType-2.mdx#hashtype)
+
+32-byte hash ready for signing
+
+***
+
+### init()
+
+> **init**(): `Promise`\<`void`\>
+
+Defined in: [src/crypto/eip712.wasm.ts:420](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L420)
+
+Initialize WASM modules
+
+Must be called before using any Eip712Wasm functions.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### recoverAddress()
+
+> **recoverAddress**(`signature`, `typedData`): [`AddressType`](../../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/crypto/eip712.wasm.ts:354](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L354)
+
+Recover signer address from signature
+
+#### Parameters
+
+##### signature
+
+[`Signature`](../Secp256k1Wasm/index.mdx#signature)
+
+Signature to recover from
+
+##### typedData
+
+`TypedData`
+
+Typed data that was signed
+
+#### Returns
+
+[`AddressType`](../../../../../primitives/Address.mdx#addresstype)
+
+Recovered address
+
+***
+
+### signTypedData()
+
+> **signTypedData**(`typedData`, `privateKey`): [`Signature`](../Secp256k1Wasm/index.mdx#signature)
+
+Defined in: [src/crypto/eip712.wasm.ts:339](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L339)
+
+Sign typed data with private key
+
+#### Parameters
+
+##### typedData
+
+`TypedData`
+
+Typed data to sign
+
+##### privateKey
+
+`Uint8Array`
+
+32-byte private key
+
+#### Returns
+
+[`Signature`](../Secp256k1Wasm/index.mdx#signature)
+
+Signature (r, s, v)
+
+***
+
+### validate()
+
+> **validate**(`typedData`): `boolean`
+
+Defined in: [src/crypto/eip712.wasm.ts:394](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L394)
+
+Validate typed data structure
+
+#### Parameters
+
+##### typedData
+
+`TypedData`
+
+#### Returns
+
+`boolean`
+
+***
+
+### verifyTypedData()
+
+> **verifyTypedData**(`signature`, `typedData`, `address`): `boolean`
+
+Defined in: [src/crypto/eip712.wasm.ts:374](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L374)
+
+Verify typed data signature against address
+
+#### Parameters
+
+##### signature
+
+[`Signature`](../Secp256k1Wasm/index.mdx#signature)
+
+Signature to verify
+
+##### typedData
+
+`TypedData`
+
+Typed data that was signed
+
+##### address
+
+[`AddressType`](../../../../../primitives/Address.mdx#addresstype)
+
+Expected signer address
+
+#### Returns
+
+`boolean`
+
+True if signature is valid

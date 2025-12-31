@@ -123,7 +123,7 @@ import { Address, Keccak256 } from '@tevm/voltaire/native' // Native FFI (Bun)
 
 All entrypoints implement the same `VoltaireAPI` interface - switch by changing the import path.
 
-**[Documentation](https://voltaire.tevm.sh/)** | **[Playground](https://voltaire.tevm.sh/playground)** | **[API Reference](https://voltaire.tevm.sh/getting-started)**
+**[Documentation](https://voltaire.tevm.sh/)** | **[Playground](https://voltaire.tevm.sh/playground)** | **[API Reference](https://voltaire.tevm.sh/getting-started)** | **[TypeDoc API](https://voltaire.tevm.sh/generated-api)**
 
 ---
 
@@ -195,7 +195,8 @@ Low-level tree-shakable EVM utilities and all 19 precompiled contracts (0x01-0x1
 ### Documentation
 
 - Docs content lives in `docs/` (Mintlify). Docs code samples are validated by tests in `docs/**/*.test.ts`.
-- API reference is generated from JSDoc/TypeScript via `pnpm docs:api` and written to `docs/public/api`.
+- API reference is generated from JSDoc/TypeScript via `pnpm docs:api` and written to `docs/generated-api/`.
+- [TypeDoc Generated API Reference](https://voltaire.tevm.sh/generated-api) - auto-generated from source.
 
 ---
 

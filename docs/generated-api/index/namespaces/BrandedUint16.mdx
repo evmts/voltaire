@@ -1,0 +1,2846 @@
+---
+title: "BrandedUint16"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / BrandedUint16
+
+# BrandedUint16
+
+## Variables
+
+### MAX
+
+> `const` **MAX**: `Uint16Type`
+
+Defined in: [src/primitives/Uint16/constants.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/constants.js#L12)
+
+***
+
+### MIN
+
+> `const` **MIN**: `Uint16Type`
+
+Defined in: [src/primitives/Uint16/constants.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/constants.js#L9)
+
+***
+
+### ONE
+
+> `const` **ONE**: `Uint16Type`
+
+Defined in: [src/primitives/Uint16/constants.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/constants.js#L18)
+
+***
+
+### SIZE
+
+> `const` **SIZE**: `number` = `16`
+
+Defined in: [src/primitives/Uint16/constants.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/constants.js#L21)
+
+***
+
+### Uint16Type
+
+> `const` **Uint16Type**: `object`
+
+Defined in: [src/primitives/Uint16/index.ts:72](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/index.ts#L72)
+
+#### Type Declaration
+
+##### bitLength()
+
+> **bitLength**: (`uint`) => `number`
+
+Get bit length of Uint16 value (position of highest set bit)
+
+###### Parameters
+
+###### uint
+
+`Uint16Type`
+
+Input value
+
+###### Returns
+
+`number`
+
+Number of bits needed to represent value (0-16)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+Uint16.bitLength(Uint16.from(0)); // 0
+Uint16.bitLength(Uint16.from(1)); // 1
+Uint16.bitLength(Uint16.from(65535)); // 16
+Uint16.bitLength(Uint16.from(32768)); // 16
+```
+
+##### bitwiseAnd()
+
+> **bitwiseAnd**: (`a`, `b`) => `Uint16Type`
+
+Bitwise AND of two Uint16 values
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+First operand
+
+###### b
+
+`Uint16Type`
+
+Second operand
+
+###### Returns
+
+`Uint16Type`
+
+Bitwise AND result
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0b1111111100000000);
+const b = Uint16.from(0b1111000011110000);
+const result = Uint16.bitwiseAnd(a, b); // 0b1111000000000000 = 61440
+```
+
+##### bitwiseNot()
+
+> **bitwiseNot**: (`uint`) => `Uint16Type`
+
+Bitwise NOT of Uint16 value
+
+###### Parameters
+
+###### uint
+
+`Uint16Type`
+
+Input value
+
+###### Returns
+
+`Uint16Type`
+
+Bitwise NOT result
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0b1111111100000000);
+const result = Uint16.bitwiseNot(a); // 0b0000000011111111 = 255
+```
+
+##### bitwiseOr()
+
+> **bitwiseOr**: (`a`, `b`) => `Uint16Type`
+
+Bitwise OR of two Uint16 values
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+First operand
+
+###### b
+
+`Uint16Type`
+
+Second operand
+
+###### Returns
+
+`Uint16Type`
+
+Bitwise OR result
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0b1111111100000000);
+const b = Uint16.from(0b0000000011111111);
+const result = Uint16.bitwiseOr(a, b); // 0b1111111111111111 = 65535
+```
+
+##### bitwiseXor()
+
+> **bitwiseXor**: (`a`, `b`) => `Uint16Type`
+
+Bitwise XOR of two Uint16 values
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+First operand
+
+###### b
+
+`Uint16Type`
+
+Second operand
+
+###### Returns
+
+`Uint16Type`
+
+Bitwise XOR result
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0b1111111100000000);
+const b = Uint16.from(0b1111000011110000);
+const result = Uint16.bitwiseXor(a, b); // 0b0000111111110000 = 4080
+```
+
+##### dividedBy()
+
+> **dividedBy**: (`a`, `b`) => `Uint16Type`
+
+Divide two Uint16 values (integer division)
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+Dividend
+
+###### b
+
+`Uint16Type`
+
+Divisor
+
+###### Returns
+
+`Uint16Type`
+
+Quotient (floor(a / b))
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If divisor is zero
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(10000);
+const b = Uint16.from(100);
+const quotient = Uint16.dividedBy(a, b); // 100
+```
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+Check if two Uint16 values are equal
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+First operand
+
+###### b
+
+`Uint16Type`
+
+Second operand
+
+###### Returns
+
+`boolean`
+
+true if a === b
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(30000);
+const b = Uint16.from(30000);
+const isEqual = Uint16.equals(a, b); // true
+```
+
+##### from()
+
+> **from**: (`value`) => `Uint16Type`
+
+Create Uint16 from number or string
+
+###### Parameters
+
+###### value
+
+number or decimal/hex string
+
+`string` | `number`
+
+###### Returns
+
+`Uint16Type`
+
+Uint16 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is out of range or invalid
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(1000);
+const b = Uint16.from("65535");
+const c = Uint16.from("0xffff");
+```
+
+##### fromBigint()
+
+> **fromBigint**: (`value`) => `Uint16Type`
+
+Create Uint16 from bigint
+
+###### Parameters
+
+###### value
+
+`bigint`
+
+bigint value
+
+###### Returns
+
+`Uint16Type`
+
+Uint16 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is out of range
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.fromBigint(65535n);
+```
+
+##### fromBytes()
+
+> **fromBytes**: (`bytes`) => `Uint16Type`
+
+Create Uint16 from Uint8Array (2 bytes, big-endian)
+
+###### Parameters
+
+###### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Uint8Array (must be exactly 2 bytes)
+
+###### Returns
+
+`Uint16Type`
+
+Uint16 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If bytes length is not 2
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const bytes = new Uint8Array([0xff, 0xff]);
+const value = Uint16.fromBytes(bytes); // 65535
+```
+
+##### fromHex()
+
+> **fromHex**: (`hex`) => `Uint16Type`
+
+Create Uint16 from hex string
+
+###### Parameters
+
+###### hex
+
+`string`
+
+hex string (with or without 0x prefix)
+
+###### Returns
+
+`Uint16Type`
+
+Uint16 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If hex is invalid or out of range
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.fromHex("0xffff");
+const b = Uint16.fromHex("ffff");
+```
+
+##### fromNumber()
+
+> **fromNumber**: (`value`) => `Uint16Type`
+
+Create Uint16 from number
+
+###### Parameters
+
+###### value
+
+`number`
+
+number value
+
+###### Returns
+
+`Uint16Type`
+
+Uint16 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is out of range or not an integer
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.fromNumber(65535);
+```
+
+##### greaterThan()
+
+> **greaterThan**: (`a`, `b`) => `boolean`
+
+Check if first Uint16 is greater than second
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+First operand
+
+###### b
+
+`Uint16Type`
+
+Second operand
+
+###### Returns
+
+`boolean`
+
+true if a > b
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(30000);
+const b = Uint16.from(10000);
+const isGreater = Uint16.greaterThan(a, b); // true
+```
+
+##### isValid()
+
+> **isValid**: (`value`) => `value is Uint16Type`
+
+Check if value is a valid Uint16
+
+###### Parameters
+
+###### value
+
+`unknown`
+
+Value to check
+
+###### Returns
+
+`value is Uint16Type`
+
+true if valid Uint16
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+Uint16.isValid(30000); // true
+Uint16.isValid(65535); // true
+Uint16.isValid(65536); // false
+Uint16.isValid(-1); // false
+Uint16.isValid(1.5); // false
+```
+
+##### isZero()
+
+> **isZero**: (`uint`) => `boolean`
+
+Check if Uint16 value is zero
+
+###### Parameters
+
+###### uint
+
+`Uint16Type`
+
+Uint16 value
+
+###### Returns
+
+`boolean`
+
+true if uint === 0
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0);
+const b = Uint16.from(100);
+Uint16.isZero(a); // true
+Uint16.isZero(b); // false
+```
+
+##### leadingZeros()
+
+> **leadingZeros**: (`uint`) => `number`
+
+Count leading zero bits in Uint16 value
+
+###### Parameters
+
+###### uint
+
+`Uint16Type`
+
+Input value
+
+###### Returns
+
+`number`
+
+Number of leading zero bits (0-16)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+Uint16.leadingZeros(Uint16.from(0)); // 16
+Uint16.leadingZeros(Uint16.from(1)); // 15
+Uint16.leadingZeros(Uint16.from(65535)); // 0
+Uint16.leadingZeros(Uint16.from(32768)); // 0
+```
+
+##### lessThan()
+
+> **lessThan**: (`a`, `b`) => `boolean`
+
+Check if first Uint16 is less than second
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+First operand
+
+###### b
+
+`Uint16Type`
+
+Second operand
+
+###### Returns
+
+`boolean`
+
+true if a < b
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(10000);
+const b = Uint16.from(30000);
+const isLess = Uint16.lessThan(a, b); // true
+```
+
+##### MAX
+
+> **MAX**: `Uint16Type`
+
+##### maximum()
+
+> **maximum**: (`a`, `b`) => `Uint16Type`
+
+Return maximum of two Uint16 values
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+First operand
+
+###### b
+
+`Uint16Type`
+
+Second operand
+
+###### Returns
+
+`Uint16Type`
+
+Maximum value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(30000);
+const b = Uint16.from(10000);
+const max = Uint16.maximum(a, b); // 30000
+```
+
+##### MIN
+
+> **MIN**: `Uint16Type`
+
+##### minimum()
+
+> **minimum**: (`a`, `b`) => `Uint16Type`
+
+Return minimum of two Uint16 values
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+First operand
+
+###### b
+
+`Uint16Type`
+
+Second operand
+
+###### Returns
+
+`Uint16Type`
+
+Minimum value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(30000);
+const b = Uint16.from(10000);
+const min = Uint16.minimum(a, b); // 10000
+```
+
+##### minus()
+
+> **minus**: (`a`, `b`) => `Uint16Type`
+
+Subtract two Uint16 values with underflow checking
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+First operand
+
+###### b
+
+`Uint16Type`
+
+Second operand
+
+###### Returns
+
+`Uint16Type`
+
+Difference (a - b)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If result is negative
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(30000);
+const b = Uint16.from(20000);
+const diff = Uint16.minus(a, b); // 10000
+```
+
+##### modulo()
+
+> **modulo**: (`a`, `b`) => `Uint16Type`
+
+Compute modulo of two Uint16 values
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+Dividend
+
+###### b
+
+`Uint16Type`
+
+Divisor
+
+###### Returns
+
+`Uint16Type`
+
+Remainder (a % b)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If divisor is zero
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(10007);
+const b = Uint16.from(1000);
+const remainder = Uint16.modulo(a, b); // 7
+```
+
+##### ONE
+
+> **ONE**: `Uint16Type`
+
+##### plus()
+
+> **plus**: (`a`, `b`) => `Uint16Type`
+
+Add two Uint16 values with overflow checking
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+First operand
+
+###### b
+
+`Uint16Type`
+
+Second operand
+
+###### Returns
+
+`Uint16Type`
+
+Sum (a + b)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If result exceeds maximum value
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(30000);
+const b = Uint16.from(20000);
+const sum = Uint16.plus(a, b); // 50000
+```
+
+##### popCount()
+
+> **popCount**: (`uint`) => `number`
+
+Count number of set bits (population count) in Uint16 value
+
+###### Parameters
+
+###### uint
+
+`Uint16Type`
+
+Input value
+
+###### Returns
+
+`number`
+
+Number of set bits (0-16)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+Uint16.popCount(Uint16.from(0)); // 0
+Uint16.popCount(Uint16.from(65535)); // 16
+Uint16.popCount(Uint16.from(0b1010101010101010)); // 8
+```
+
+##### shiftLeft()
+
+> **shiftLeft**: (`uint`, `shift`) => `Uint16Type`
+
+Left shift Uint16 value
+
+###### Parameters
+
+###### uint
+
+`Uint16Type`
+
+Value to shift
+
+###### shift
+
+`number`
+
+Number of bits to shift (0-15)
+
+###### Returns
+
+`Uint16Type`
+
+Left-shifted value (masked to 16 bits)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0b0000000011111111);
+const result = Uint16.shiftLeft(a, 8); // 0b1111111100000000 = 65280
+```
+
+##### shiftRight()
+
+> **shiftRight**: (`uint`, `shift`) => `Uint16Type`
+
+Right shift Uint16 value (logical shift)
+
+###### Parameters
+
+###### uint
+
+`Uint16Type`
+
+Value to shift
+
+###### shift
+
+`number`
+
+Number of bits to shift (0-15)
+
+###### Returns
+
+`Uint16Type`
+
+Right-shifted value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0b1111111100000000);
+const result = Uint16.shiftRight(a, 8); // 0b0000000011111111 = 255
+```
+
+##### SIZE
+
+> **SIZE**: `number`
+
+##### times()
+
+> **times**: (`a`, `b`) => `Uint16Type`
+
+Multiply two Uint16 values with overflow checking
+
+###### Parameters
+
+###### a
+
+`Uint16Type`
+
+First operand
+
+###### b
+
+`Uint16Type`
+
+Second operand
+
+###### Returns
+
+`Uint16Type`
+
+Product (a * b)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If result exceeds maximum value
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(100);
+const b = Uint16.from(500);
+const product = Uint16.times(a, b); // 50000
+```
+
+##### toBigint()
+
+> **toBigint**: (`uint`) => `bigint`
+
+Convert Uint16 to bigint
+
+###### Parameters
+
+###### uint
+
+`Uint16Type`
+
+Uint16 value
+
+###### Returns
+
+`bigint`
+
+bigint value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.from(65535);
+const bigintValue = Uint16.toBigint(value); // 65535n
+```
+
+##### toBytes()
+
+> **toBytes**: (`uint`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Convert Uint16 to Uint8Array (2 bytes, big-endian)
+
+###### Parameters
+
+###### uint
+
+`Uint16Type`
+
+Uint16 value
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Uint8Array of length 2
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.from(65535);
+const bytes = Uint16.toBytes(value); // Uint8Array([255, 255])
+```
+
+##### toHex()
+
+> **toHex**: (`uint`, `padded?`) => `string`
+
+Convert Uint16 to hex string
+
+###### Parameters
+
+###### uint
+
+`Uint16Type`
+
+Uint16 value
+
+###### padded?
+
+`boolean` = `true`
+
+Whether to pad to 4 characters (2 bytes)
+
+###### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.from(65535);
+const hex1 = Uint16.toHex(value); // "0xffff"
+const hex2 = Uint16.toHex(value, false); // "0xffff"
+const value2 = Uint16.from(15);
+const hex3 = Uint16.toHex(value2); // "0x000f"
+const hex4 = Uint16.toHex(value2, false); // "0xf"
+```
+
+##### toNumber()
+
+> **toNumber**: (`uint`) => `number`
+
+Convert Uint16 to number
+
+###### Parameters
+
+###### uint
+
+`Uint16Type`
+
+Uint16 value
+
+###### Returns
+
+`number`
+
+number value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.from(65535);
+const num = Uint16.toNumber(value); // 65535
+```
+
+##### toString()
+
+> **toString**: (`uint`) => `string`
+
+Convert Uint16 to decimal string
+
+###### Parameters
+
+###### uint
+
+`Uint16Type`
+
+Uint16 value
+
+###### Returns
+
+`string`
+
+Decimal string representation
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.from(65535);
+const str = Uint16.toString(value); // "65535"
+```
+
+##### ZERO
+
+> **ZERO**: `Uint16Type`
+
+***
+
+### ZERO
+
+> `const` **ZERO**: `Uint16Type`
+
+Defined in: [src/primitives/Uint16/constants.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/constants.js#L15)
+
+## Functions
+
+### bitLength()
+
+> **bitLength**(`uint`): `number`
+
+Defined in: [src/primitives/Uint16/bitLength.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/bitLength.js#L18)
+
+Get bit length of Uint16 value (position of highest set bit)
+
+#### Parameters
+
+##### uint
+
+`Uint16Type`
+
+Input value
+
+#### Returns
+
+`number`
+
+Number of bits needed to represent value (0-16)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+Uint16.bitLength(Uint16.from(0)); // 0
+Uint16.bitLength(Uint16.from(1)); // 1
+Uint16.bitLength(Uint16.from(65535)); // 16
+Uint16.bitLength(Uint16.from(32768)); // 16
+```
+
+***
+
+### bitwiseAnd()
+
+> **bitwiseAnd**(`a`, `b`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/bitwiseAnd.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/bitwiseAnd.js#L18)
+
+Bitwise AND of two Uint16 values
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+First operand
+
+##### b
+
+`Uint16Type`
+
+Second operand
+
+#### Returns
+
+`Uint16Type`
+
+Bitwise AND result
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0b1111111100000000);
+const b = Uint16.from(0b1111000011110000);
+const result = Uint16.bitwiseAnd(a, b); // 0b1111000000000000 = 61440
+```
+
+***
+
+### bitwiseNot()
+
+> **bitwiseNot**(`uint`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/bitwiseNot.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/bitwiseNot.js#L18)
+
+Bitwise NOT of Uint16 value
+
+#### Parameters
+
+##### uint
+
+`Uint16Type`
+
+Input value
+
+#### Returns
+
+`Uint16Type`
+
+Bitwise NOT result
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0b1111111100000000);
+const result = Uint16.bitwiseNot(a); // 0b0000000011111111 = 255
+```
+
+***
+
+### bitwiseOr()
+
+> **bitwiseOr**(`a`, `b`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/bitwiseOr.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/bitwiseOr.js#L18)
+
+Bitwise OR of two Uint16 values
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+First operand
+
+##### b
+
+`Uint16Type`
+
+Second operand
+
+#### Returns
+
+`Uint16Type`
+
+Bitwise OR result
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0b1111111100000000);
+const b = Uint16.from(0b0000000011111111);
+const result = Uint16.bitwiseOr(a, b); // 0b1111111111111111 = 65535
+```
+
+***
+
+### bitwiseXor()
+
+> **bitwiseXor**(`a`, `b`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/bitwiseXor.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/bitwiseXor.js#L18)
+
+Bitwise XOR of two Uint16 values
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+First operand
+
+##### b
+
+`Uint16Type`
+
+Second operand
+
+#### Returns
+
+`Uint16Type`
+
+Bitwise XOR result
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0b1111111100000000);
+const b = Uint16.from(0b1111000011110000);
+const result = Uint16.bitwiseXor(a, b); // 0b0000111111110000 = 4080
+```
+
+***
+
+### dividedBy()
+
+> **dividedBy**(`a`, `b`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/dividedBy.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/dividedBy.js#L18)
+
+Divide two Uint16 values (integer division)
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+Dividend
+
+##### b
+
+`Uint16Type`
+
+Divisor
+
+#### Returns
+
+`Uint16Type`
+
+Quotient (floor(a / b))
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If divisor is zero
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(10000);
+const b = Uint16.from(100);
+const quotient = Uint16.dividedBy(a, b); // 100
+```
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Uint16/equals.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/equals.js#L18)
+
+Check if two Uint16 values are equal
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+First operand
+
+##### b
+
+`Uint16Type`
+
+Second operand
+
+#### Returns
+
+`boolean`
+
+true if a === b
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(30000);
+const b = Uint16.from(30000);
+const isEqual = Uint16.equals(a, b); // true
+```
+
+***
+
+### from()
+
+> **from**(`value`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/from.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/from.js#L19)
+
+Create Uint16 from number or string
+
+#### Parameters
+
+##### value
+
+number or decimal/hex string
+
+`string` | `number`
+
+#### Returns
+
+`Uint16Type`
+
+Uint16 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is out of range or invalid
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(1000);
+const b = Uint16.from("65535");
+const c = Uint16.from("0xffff");
+```
+
+***
+
+### fromBigint()
+
+> **fromBigint**(`value`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/fromBigint.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/fromBigint.js#L17)
+
+Create Uint16 from bigint
+
+#### Parameters
+
+##### value
+
+`bigint`
+
+bigint value
+
+#### Returns
+
+`Uint16Type`
+
+Uint16 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is out of range
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.fromBigint(65535n);
+```
+
+***
+
+### fromBytes()
+
+> **fromBytes**(`bytes`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/fromBytes.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/fromBytes.js#L16)
+
+Create Uint16 from Uint8Array (2 bytes, big-endian)
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Uint8Array (must be exactly 2 bytes)
+
+#### Returns
+
+`Uint16Type`
+
+Uint16 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If bytes length is not 2
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const bytes = new Uint8Array([0xff, 0xff]);
+const value = Uint16.fromBytes(bytes); // 65535
+```
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/fromHex.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/fromHex.js#L18)
+
+Create Uint16 from hex string
+
+#### Parameters
+
+##### hex
+
+`string`
+
+hex string (with or without 0x prefix)
+
+#### Returns
+
+`Uint16Type`
+
+Uint16 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If hex is invalid or out of range
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.fromHex("0xffff");
+const b = Uint16.fromHex("ffff");
+```
+
+***
+
+### fromNumber()
+
+> **fromNumber**(`value`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/fromNumber.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/fromNumber.js#L17)
+
+Create Uint16 from number
+
+#### Parameters
+
+##### value
+
+`number`
+
+number value
+
+#### Returns
+
+`Uint16Type`
+
+Uint16 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is out of range or not an integer
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.fromNumber(65535);
+```
+
+***
+
+### greaterThan()
+
+> **greaterThan**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Uint16/greaterThan.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/greaterThan.js#L18)
+
+Check if first Uint16 is greater than second
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+First operand
+
+##### b
+
+`Uint16Type`
+
+Second operand
+
+#### Returns
+
+`boolean`
+
+true if a > b
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(30000);
+const b = Uint16.from(10000);
+const isGreater = Uint16.greaterThan(a, b); // true
+```
+
+***
+
+### isValid()
+
+> **isValid**(`value`): `value is Uint16Type`
+
+Defined in: [src/primitives/Uint16/isValid.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/isValid.js#L21)
+
+Check if value is a valid Uint16
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+Value to check
+
+#### Returns
+
+`value is Uint16Type`
+
+true if valid Uint16
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+Uint16.isValid(30000); // true
+Uint16.isValid(65535); // true
+Uint16.isValid(65536); // false
+Uint16.isValid(-1); // false
+Uint16.isValid(1.5); // false
+```
+
+***
+
+### isZero()
+
+> **isZero**(`uint`): `boolean`
+
+Defined in: [src/primitives/Uint16/isZero.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/isZero.js#L18)
+
+Check if Uint16 value is zero
+
+#### Parameters
+
+##### uint
+
+`Uint16Type`
+
+Uint16 value
+
+#### Returns
+
+`boolean`
+
+true if uint === 0
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0);
+const b = Uint16.from(100);
+Uint16.isZero(a); // true
+Uint16.isZero(b); // false
+```
+
+***
+
+### leadingZeros()
+
+> **leadingZeros**(`uint`): `number`
+
+Defined in: [src/primitives/Uint16/leadingZeros.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/leadingZeros.js#L18)
+
+Count leading zero bits in Uint16 value
+
+#### Parameters
+
+##### uint
+
+`Uint16Type`
+
+Input value
+
+#### Returns
+
+`number`
+
+Number of leading zero bits (0-16)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+Uint16.leadingZeros(Uint16.from(0)); // 16
+Uint16.leadingZeros(Uint16.from(1)); // 15
+Uint16.leadingZeros(Uint16.from(65535)); // 0
+Uint16.leadingZeros(Uint16.from(32768)); // 0
+```
+
+***
+
+### lessThan()
+
+> **lessThan**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Uint16/lessThan.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/lessThan.js#L18)
+
+Check if first Uint16 is less than second
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+First operand
+
+##### b
+
+`Uint16Type`
+
+Second operand
+
+#### Returns
+
+`boolean`
+
+true if a < b
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(10000);
+const b = Uint16.from(30000);
+const isLess = Uint16.lessThan(a, b); // true
+```
+
+***
+
+### maximum()
+
+> **maximum**(`a`, `b`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/maximum.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/maximum.js#L18)
+
+Return maximum of two Uint16 values
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+First operand
+
+##### b
+
+`Uint16Type`
+
+Second operand
+
+#### Returns
+
+`Uint16Type`
+
+Maximum value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(30000);
+const b = Uint16.from(10000);
+const max = Uint16.maximum(a, b); // 30000
+```
+
+***
+
+### minimum()
+
+> **minimum**(`a`, `b`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/minimum.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/minimum.js#L18)
+
+Return minimum of two Uint16 values
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+First operand
+
+##### b
+
+`Uint16Type`
+
+Second operand
+
+#### Returns
+
+`Uint16Type`
+
+Minimum value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(30000);
+const b = Uint16.from(10000);
+const min = Uint16.minimum(a, b); // 10000
+```
+
+***
+
+### minus()
+
+> **minus**(`a`, `b`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/minus.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/minus.js#L18)
+
+Subtract two Uint16 values with underflow checking
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+First operand
+
+##### b
+
+`Uint16Type`
+
+Second operand
+
+#### Returns
+
+`Uint16Type`
+
+Difference (a - b)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If result is negative
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(30000);
+const b = Uint16.from(20000);
+const diff = Uint16.minus(a, b); // 10000
+```
+
+***
+
+### modulo()
+
+> **modulo**(`a`, `b`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/modulo.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/modulo.js#L18)
+
+Compute modulo of two Uint16 values
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+Dividend
+
+##### b
+
+`Uint16Type`
+
+Divisor
+
+#### Returns
+
+`Uint16Type`
+
+Remainder (a % b)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If divisor is zero
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(10007);
+const b = Uint16.from(1000);
+const remainder = Uint16.modulo(a, b); // 7
+```
+
+***
+
+### plus()
+
+> **plus**(`a`, `b`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/plus.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/plus.js#L20)
+
+Add two Uint16 values with overflow checking
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+First operand
+
+##### b
+
+`Uint16Type`
+
+Second operand
+
+#### Returns
+
+`Uint16Type`
+
+Sum (a + b)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If result exceeds maximum value
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(30000);
+const b = Uint16.from(20000);
+const sum = Uint16.plus(a, b); // 50000
+```
+
+***
+
+### popCount()
+
+> **popCount**(`uint`): `number`
+
+Defined in: [src/primitives/Uint16/popCount.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/popCount.js#L17)
+
+Count number of set bits (population count) in Uint16 value
+
+#### Parameters
+
+##### uint
+
+`Uint16Type`
+
+Input value
+
+#### Returns
+
+`number`
+
+Number of set bits (0-16)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+Uint16.popCount(Uint16.from(0)); // 0
+Uint16.popCount(Uint16.from(65535)); // 16
+Uint16.popCount(Uint16.from(0b1010101010101010)); // 8
+```
+
+***
+
+### shiftLeft()
+
+> **shiftLeft**(`uint`, `shift`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/shiftLeft.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/shiftLeft.js#L19)
+
+Left shift Uint16 value
+
+#### Parameters
+
+##### uint
+
+`Uint16Type`
+
+Value to shift
+
+##### shift
+
+`number`
+
+Number of bits to shift (0-15)
+
+#### Returns
+
+`Uint16Type`
+
+Left-shifted value (masked to 16 bits)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0b0000000011111111);
+const result = Uint16.shiftLeft(a, 8); // 0b1111111100000000 = 65280
+```
+
+***
+
+### shiftRight()
+
+> **shiftRight**(`uint`, `shift`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/shiftRight.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/shiftRight.js#L17)
+
+Right shift Uint16 value (logical shift)
+
+#### Parameters
+
+##### uint
+
+`Uint16Type`
+
+Value to shift
+
+##### shift
+
+`number`
+
+Number of bits to shift (0-15)
+
+#### Returns
+
+`Uint16Type`
+
+Right-shifted value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(0b1111111100000000);
+const result = Uint16.shiftRight(a, 8); // 0b0000000011111111 = 255
+```
+
+***
+
+### times()
+
+> **times**(`a`, `b`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/times.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/times.js#L20)
+
+Multiply two Uint16 values with overflow checking
+
+#### Parameters
+
+##### a
+
+`Uint16Type`
+
+First operand
+
+##### b
+
+`Uint16Type`
+
+Second operand
+
+#### Returns
+
+`Uint16Type`
+
+Product (a * b)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If result exceeds maximum value
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const a = Uint16.from(100);
+const b = Uint16.from(500);
+const product = Uint16.times(a, b); // 50000
+```
+
+***
+
+### toBigint()
+
+> **toBigint**(`uint`): `bigint`
+
+Defined in: [src/primitives/Uint16/toBigint.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/toBigint.js#L16)
+
+Convert Uint16 to bigint
+
+#### Parameters
+
+##### uint
+
+`Uint16Type`
+
+Uint16 value
+
+#### Returns
+
+`bigint`
+
+bigint value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.from(65535);
+const bigintValue = Uint16.toBigint(value); // 65535n
+```
+
+***
+
+### toBytes()
+
+> **toBytes**(`uint`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Uint16/toBytes.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/toBytes.js#L16)
+
+Convert Uint16 to Uint8Array (2 bytes, big-endian)
+
+#### Parameters
+
+##### uint
+
+`Uint16Type`
+
+Uint16 value
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Uint8Array of length 2
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.from(65535);
+const bytes = Uint16.toBytes(value); // Uint8Array([255, 255])
+```
+
+***
+
+### toHex()
+
+> **toHex**(`uint`, `padded?`): `string`
+
+Defined in: [src/primitives/Uint16/toHex.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/toHex.js#L21)
+
+Convert Uint16 to hex string
+
+#### Parameters
+
+##### uint
+
+`Uint16Type`
+
+Uint16 value
+
+##### padded?
+
+`boolean` = `true`
+
+Whether to pad to 4 characters (2 bytes)
+
+#### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.from(65535);
+const hex1 = Uint16.toHex(value); // "0xffff"
+const hex2 = Uint16.toHex(value, false); // "0xffff"
+const value2 = Uint16.from(15);
+const hex3 = Uint16.toHex(value2); // "0x000f"
+const hex4 = Uint16.toHex(value2, false); // "0xf"
+```
+
+***
+
+### toNumber()
+
+> **toNumber**(`uint`): `number`
+
+Defined in: [src/primitives/Uint16/toNumber.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/toNumber.js#L16)
+
+Convert Uint16 to number
+
+#### Parameters
+
+##### uint
+
+`Uint16Type`
+
+Uint16 value
+
+#### Returns
+
+`number`
+
+number value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.from(65535);
+const num = Uint16.toNumber(value); // 65535
+```
+
+***
+
+### toString()
+
+> **toString**(`uint`): `string`
+
+Defined in: [src/primitives/Uint16/toString.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Uint16/toString.js#L17)
+
+Convert Uint16 to decimal string
+
+#### Parameters
+
+##### uint
+
+`Uint16Type`
+
+Uint16 value
+
+#### Returns
+
+`string`
+
+Decimal string representation
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint16 from './primitives/Uint16/index.js';
+const value = Uint16.from(65535);
+const str = Uint16.toString(value); // "65535"
+```

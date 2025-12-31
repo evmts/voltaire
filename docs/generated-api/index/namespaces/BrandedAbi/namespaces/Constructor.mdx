@@ -1,0 +1,416 @@
+---
+title: "Constructor"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../index.mdx) / [index](../../../index.mdx) / [BrandedAbi](../index.mdx) / Constructor
+
+# Constructor
+
+## Classes
+
+### Constructor
+
+Defined in: [src/primitives/Abi/constructor/Constructor.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/Constructor.js#L14)
+
+Factory function for creating Constructor instances
+
+#### Template
+
+#### Template
+
+#### Param
+
+#### Param
+
+#### Param
+
+#### Param
+
+#### Type Parameters
+
+##### TStateMutability
+
+`TStateMutability` *extends* [`StateMutability`](Function.mdx#statemutability-1)
+
+##### TInputs
+
+`TInputs` *extends* readonly `Parameter`[]
+
+#### Constructors
+
+##### Constructor
+
+> **new Constructor**\<`TStateMutability`, `TInputs`\>(`options`): [`Constructor`](#constructor)\<`TStateMutability`, `TInputs`\>
+
+Defined in: [src/primitives/Abi/constructor/Constructor.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/Constructor.js#L14)
+
+Factory function for creating Constructor instances
+
+###### Parameters
+
+###### options
+
+###### inputs
+
+`TInputs`
+
+###### stateMutability
+
+`TStateMutability`
+
+###### type?
+
+`"constructor"` = `"constructor"`
+
+###### Returns
+
+[`Constructor`](#constructor)\<`TStateMutability`, `TInputs`\>
+
+#### Properties
+
+##### decodeParams()
+
+> `static` **decodeParams**: (`constructor`, `data`) => `any`[]
+
+Defined in: [src/primitives/Abi/constructor/Constructor.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/Constructor.js#L22)
+
+Decode constructor parameters
+
+###### Parameters
+
+###### constructor
+
+[`ConstructorType`](#constructortype)\<[`StateMutability`](Function.mdx#statemutability-1), readonly `Parameter`[]\>
+
+Constructor definition
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded data to decode
+
+###### Returns
+
+`any`[]
+
+Decoded parameters
+
+###### Example
+
+```typescript
+const constructor = {
+  type: "constructor",
+  stateMutability: "nonpayable",
+  inputs: [{ type: "uint256" }]
+};
+const decoded = Constructor.decodeParams(constructor, encodedData);
+```
+
+##### encodeParams()
+
+> `static` **encodeParams**: (`constructor`, `args`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Abi/constructor/Constructor.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/Constructor.js#L21)
+
+Encode constructor parameters
+
+###### Parameters
+
+###### constructor
+
+[`ConstructorType`](#constructortype)\<[`StateMutability`](Function.mdx#statemutability-1), readonly `Parameter`[]\>
+
+Constructor definition
+
+###### args
+
+`unknown`[]
+
+Arguments to encode
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded parameters
+
+###### Example
+
+```typescript
+const constructor = {
+  type: "constructor",
+  stateMutability: "nonpayable",
+  inputs: [{ type: "uint256" }]
+};
+const encoded = Constructor.encodeParams(constructor, [123n]);
+```
+
+#### Methods
+
+##### decodeParams()
+
+> **decodeParams**(`data`): `any`[]
+
+Defined in: [src/primitives/Abi/constructor/Constructor.js:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/Constructor.js#L34)
+
+###### Parameters
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+`any`[]
+
+##### encodeParams()
+
+> **encodeParams**(`args`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Abi/constructor/Constructor.js:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/Constructor.js#L29)
+
+###### Parameters
+
+###### args
+
+`unknown`[]
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+##### toString()
+
+> **toString**(): `string`
+
+Defined in: [src/primitives/Abi/constructor/Constructor.js:49](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/Constructor.js#L49)
+
+###### Returns
+
+`string`
+
+## Interfaces
+
+### ConstructorInstance
+
+Defined in: [src/primitives/Abi/constructor/ConstructorType.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/ConstructorType.ts#L19)
+
+Constructor instance with methods (returned by Constructor factory)
+
+#### Extends
+
+- [`ConstructorType`](#constructortype)\<`TStateMutability`, `TInputs`\>
+
+#### Type Parameters
+
+##### TStateMutability
+
+`TStateMutability` *extends* [`StateMutability`](Function.mdx#statemutability-1) = [`StateMutability`](Function.mdx#statemutability-1)
+
+##### TInputs
+
+`TInputs` *extends* readonly `Parameter`[] = readonly `Parameter`[]
+
+#### Properties
+
+##### inputs
+
+> **inputs**: `TInputs`
+
+Defined in: [src/primitives/Abi/constructor/ConstructorType.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/ConstructorType.ts#L13)
+
+###### Inherited from
+
+`ConstructorType.inputs`
+
+##### stateMutability
+
+> **stateMutability**: `TStateMutability`
+
+Defined in: [src/primitives/Abi/constructor/ConstructorType.ts:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/ConstructorType.ts#L12)
+
+###### Inherited from
+
+`ConstructorType.stateMutability`
+
+##### type
+
+> **type**: `"constructor"`
+
+Defined in: [src/primitives/Abi/constructor/ConstructorType.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/ConstructorType.ts#L11)
+
+###### Inherited from
+
+`ConstructorType.type`
+
+#### Methods
+
+##### decodeParams()
+
+> **decodeParams**(`data`): `ParametersToPrimitiveTypes`\<`TInputs`\>
+
+Defined in: [src/primitives/Abi/constructor/ConstructorType.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/ConstructorType.ts#L24)
+
+###### Parameters
+
+###### data
+
+`Uint8Array`
+
+###### Returns
+
+`ParametersToPrimitiveTypes`\<`TInputs`\>
+
+##### encodeParams()
+
+> **encodeParams**(`args`): `Uint8Array`
+
+Defined in: [src/primitives/Abi/constructor/ConstructorType.ts:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/ConstructorType.ts#L23)
+
+###### Parameters
+
+###### args
+
+`ParametersToPrimitiveTypes`\<`TInputs`\>
+
+###### Returns
+
+`Uint8Array`
+
+## Type Aliases
+
+### ConstructorType
+
+> **ConstructorType**\<`TStateMutability`, `TInputs`\> = `object`
+
+Defined in: [src/primitives/Abi/constructor/ConstructorType.ts:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/ConstructorType.ts#L7)
+
+Type definition for Constructor (data only)
+
+#### Extended by
+
+- [`ConstructorInstance`](#constructorinstance)
+
+#### Type Parameters
+
+##### TStateMutability
+
+`TStateMutability` *extends* [`StateMutability`](Function.mdx#statemutability-1) = [`StateMutability`](Function.mdx#statemutability-1)
+
+##### TInputs
+
+`TInputs` *extends* readonly `Parameter`[] = readonly `Parameter`[]
+
+#### Properties
+
+##### inputs
+
+> **inputs**: `TInputs`
+
+Defined in: [src/primitives/Abi/constructor/ConstructorType.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/ConstructorType.ts#L13)
+
+##### stateMutability
+
+> **stateMutability**: `TStateMutability`
+
+Defined in: [src/primitives/Abi/constructor/ConstructorType.ts:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/ConstructorType.ts#L12)
+
+##### type
+
+> **type**: `"constructor"`
+
+Defined in: [src/primitives/Abi/constructor/ConstructorType.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/ConstructorType.ts#L11)
+
+## Functions
+
+### decodeParams()
+
+> **decodeParams**(`constructor`, `data`): `any`[]
+
+Defined in: [src/primitives/Abi/constructor/decodeParams.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/decodeParams.js#L21)
+
+Decode constructor parameters
+
+#### Parameters
+
+##### constructor
+
+[`ConstructorType`](#constructortype)\<[`StateMutability`](Function.mdx#statemutability-1), readonly `Parameter`[]\>
+
+Constructor definition
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded data to decode
+
+#### Returns
+
+`any`[]
+
+Decoded parameters
+
+#### Example
+
+```typescript
+const constructor = {
+  type: "constructor",
+  stateMutability: "nonpayable",
+  inputs: [{ type: "uint256" }]
+};
+const decoded = Constructor.decodeParams(constructor, encodedData);
+```
+
+***
+
+### encodeParams()
+
+> **encodeParams**(`constructor`, `args`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Abi/constructor/encodeParams.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/constructor/encodeParams.js#L21)
+
+Encode constructor parameters
+
+#### Parameters
+
+##### constructor
+
+[`ConstructorType`](#constructortype)\<[`StateMutability`](Function.mdx#statemutability-1), readonly `Parameter`[]\>
+
+Constructor definition
+
+##### args
+
+`unknown`[]
+
+Arguments to encode
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded parameters
+
+#### Example
+
+```typescript
+const constructor = {
+  type: "constructor",
+  stateMutability: "nonpayable",
+  inputs: [{ type: "uint256" }]
+};
+const encoded = Constructor.encodeParams(constructor, [123n]);
+```
+
+## References
+
+### BrandedConstructor
+
+Renames and re-exports [ConstructorType](#constructortype)

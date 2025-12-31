@@ -1,0 +1,586 @@
+---
+title: "CompilerVersion"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / CompilerVersion
+
+# CompilerVersion
+
+## Type Aliases
+
+### CompilerVersionType
+
+> **CompilerVersionType** = `string` & `object`
+
+Defined in: [src/primitives/CompilerVersion/CompilerVersionType.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/CompilerVersionType.ts#L14)
+
+Branded CompilerVersion type - prevents version confusion
+Represents a Solidity or Vyper compiler version string
+
+Format: "v0.8.20+commit.a1b2c3d4" or "0.8.20+commit.a1b2c3d4"
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"CompilerVersion"`
+
+#### Example
+
+```typescript
+const version: CompilerVersionType = "v0.8.20+commit.a1b2c3d4";
+```
+
+## Variables
+
+### CompilerVersion
+
+> `const` **CompilerVersion**: `object`
+
+Defined in: [src/primitives/CompilerVersion/index.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/index.ts#L51)
+
+#### Type Declaration
+
+##### compare()
+
+> **compare**: (`a`, `b`) => `number`
+
+###### Parameters
+
+###### a
+
+`string`
+
+###### b
+
+`string`
+
+###### Returns
+
+`number`
+
+##### from()
+
+> **from**: (`value`) => [`CompilerVersionType`](#compilerversiontype)
+
+Create CompilerVersion from string
+
+###### Parameters
+
+###### value
+
+`string`
+
+Version string (e.g., "v0.8.20+commit.a1b2c3d4")
+
+###### Returns
+
+[`CompilerVersionType`](#compilerversiontype)
+
+CompilerVersion
+
+###### Throws
+
+If version format is invalid
+
+###### Example
+
+```typescript
+const version = CompilerVersion.from("v0.8.20+commit.a1b2c3d4");
+const version2 = CompilerVersion.from("0.8.20"); // Also valid
+```
+
+##### getMajor()
+
+> **getMajor**: (`version`) => `number`
+
+###### Parameters
+
+###### version
+
+`string`
+
+###### Returns
+
+`number`
+
+##### getMinor()
+
+> **getMinor**: (`version`) => `number`
+
+###### Parameters
+
+###### version
+
+`string`
+
+###### Returns
+
+`number`
+
+##### getPatch()
+
+> **getPatch**: (`version`) => `number`
+
+###### Parameters
+
+###### version
+
+`string`
+
+###### Returns
+
+`number`
+
+##### isCompatible()
+
+> **isCompatible**: (`version`, `range`) => `boolean`
+
+###### Parameters
+
+###### version
+
+`string`
+
+###### range
+
+`string`
+
+###### Returns
+
+`boolean`
+
+##### parse()
+
+> **parse**: (`version`) => `object`
+
+###### Parameters
+
+###### version
+
+`string`
+
+###### Returns
+
+`object`
+
+###### commit?
+
+> `optional` **commit**: `string`
+
+###### major
+
+> **major**: `number`
+
+###### minor
+
+> **minor**: `number`
+
+###### patch
+
+> **patch**: `number`
+
+###### prerelease?
+
+> `optional` **prerelease**: `string`
+
+## Functions
+
+### \_compare()
+
+> **\_compare**(`a`, `b`): `number`
+
+Defined in: [src/primitives/CompilerVersion/compare.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/compare.js#L16)
+
+Compare two compiler versions
+
+#### Parameters
+
+##### a
+
+[`CompilerVersionType`](#compilerversiontype)
+
+First version
+
+##### b
+
+[`CompilerVersionType`](#compilerversiontype)
+
+Second version
+
+#### Returns
+
+`number`
+
+-1 if a < b, 0 if a === b, 1 if a > b
+
+#### Example
+
+```typescript
+const result = CompilerVersion.compare("v0.8.20", "v0.8.19");
+console.log(result); // 1 (0.8.20 > 0.8.19)
+```
+
+***
+
+### \_getMajor()
+
+> **\_getMajor**(`version`): `number`
+
+Defined in: [src/primitives/CompilerVersion/getMajor.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/getMajor.js#L15)
+
+Get major version number
+
+#### Parameters
+
+##### version
+
+[`CompilerVersionType`](#compilerversiontype)
+
+Version to extract from
+
+#### Returns
+
+`number`
+
+Major version
+
+#### Example
+
+```typescript
+const major = CompilerVersion.getMajor("v0.8.20");
+console.log(major); // 0
+```
+
+***
+
+### \_getMinor()
+
+> **\_getMinor**(`version`): `number`
+
+Defined in: [src/primitives/CompilerVersion/getMinor.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/getMinor.js#L15)
+
+Get minor version number
+
+#### Parameters
+
+##### version
+
+[`CompilerVersionType`](#compilerversiontype)
+
+Version to extract from
+
+#### Returns
+
+`number`
+
+Minor version
+
+#### Example
+
+```typescript
+const minor = CompilerVersion.getMinor("v0.8.20");
+console.log(minor); // 8
+```
+
+***
+
+### \_getPatch()
+
+> **\_getPatch**(`version`): `number`
+
+Defined in: [src/primitives/CompilerVersion/getPatch.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/getPatch.js#L15)
+
+Get patch version number
+
+#### Parameters
+
+##### version
+
+[`CompilerVersionType`](#compilerversiontype)
+
+Version to extract from
+
+#### Returns
+
+`number`
+
+Patch version
+
+#### Example
+
+```typescript
+const patch = CompilerVersion.getPatch("v0.8.20");
+console.log(patch); // 20
+```
+
+***
+
+### \_isCompatible()
+
+> **\_isCompatible**(`version`, `range`): `boolean`
+
+Defined in: [src/primitives/CompilerVersion/isCompatible.js:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/isCompatible.js#L23)
+
+Check if version is compatible with a semver range
+
+Supports basic semver ranges:
+- "^0.8.0" - Compatible with 0.8.x (same major.minor)
+- "~0.8.20" - Compatible with 0.8.20-0.8.x (same major.minor, patch >= specified)
+- ">=0.8.0" - Greater than or equal
+- "0.8.20" - Exact match
+
+#### Parameters
+
+##### version
+
+[`CompilerVersionType`](#compilerversiontype)
+
+Version to check
+
+##### range
+
+`string`
+
+Semver range
+
+#### Returns
+
+`boolean`
+
+True if compatible
+
+#### Example
+
+```typescript
+const compatible = CompilerVersion.isCompatible("v0.8.20", "^0.8.0");
+console.log(compatible); // true
+```
+
+***
+
+### \_parse()
+
+> **\_parse**(`version`): `object`
+
+Defined in: [src/primitives/CompilerVersion/parse.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/parse.js#L16)
+
+Parse compiler version into components
+
+#### Parameters
+
+##### version
+
+[`CompilerVersionType`](#compilerversiontype)
+
+Version to parse
+
+#### Returns
+
+`object`
+
+##### commit?
+
+> `optional` **commit**: `string`
+
+##### major
+
+> **major**: `number`
+
+##### minor
+
+> **minor**: `number`
+
+##### patch
+
+> **patch**: `number`
+
+##### prerelease?
+
+> `optional` **prerelease**: `string`
+
+#### Example
+
+```typescript
+const parsed = CompilerVersion.parse("v0.8.20+commit.a1b2c3d4");
+console.log(parsed.major); // 0
+console.log(parsed.minor); // 8
+console.log(parsed.patch); // 20
+console.log(parsed.commit); // "a1b2c3d4"
+```
+
+***
+
+### compare()
+
+> **compare**(`a`, `b`): `number`
+
+Defined in: [src/primitives/CompilerVersion/index.ts:27](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/index.ts#L27)
+
+#### Parameters
+
+##### a
+
+`string`
+
+##### b
+
+`string`
+
+#### Returns
+
+`number`
+
+***
+
+### from()
+
+> **from**(`value`): [`CompilerVersionType`](#compilerversiontype)
+
+Defined in: [src/primitives/CompilerVersion/from.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/from.js#L14)
+
+Create CompilerVersion from string
+
+#### Parameters
+
+##### value
+
+`string`
+
+Version string (e.g., "v0.8.20+commit.a1b2c3d4")
+
+#### Returns
+
+[`CompilerVersionType`](#compilerversiontype)
+
+CompilerVersion
+
+#### Throws
+
+If version format is invalid
+
+#### Example
+
+```typescript
+const version = CompilerVersion.from("v0.8.20+commit.a1b2c3d4");
+const version2 = CompilerVersion.from("0.8.20"); // Also valid
+```
+
+***
+
+### getMajor()
+
+> **getMajor**(`version`): `number`
+
+Defined in: [src/primitives/CompilerVersion/index.ts:31](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/index.ts#L31)
+
+#### Parameters
+
+##### version
+
+`string`
+
+#### Returns
+
+`number`
+
+***
+
+### getMinor()
+
+> **getMinor**(`version`): `number`
+
+Defined in: [src/primitives/CompilerVersion/index.ts:35](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/index.ts#L35)
+
+#### Parameters
+
+##### version
+
+`string`
+
+#### Returns
+
+`number`
+
+***
+
+### getPatch()
+
+> **getPatch**(`version`): `number`
+
+Defined in: [src/primitives/CompilerVersion/index.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/index.ts#L39)
+
+#### Parameters
+
+##### version
+
+`string`
+
+#### Returns
+
+`number`
+
+***
+
+### isCompatible()
+
+> **isCompatible**(`version`, `range`): `boolean`
+
+Defined in: [src/primitives/CompilerVersion/index.ts:43](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/index.ts#L43)
+
+#### Parameters
+
+##### version
+
+`string`
+
+##### range
+
+`string`
+
+#### Returns
+
+`boolean`
+
+***
+
+### parse()
+
+> **parse**(`version`): `object`
+
+Defined in: [src/primitives/CompilerVersion/index.ts:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/CompilerVersion/index.ts#L17)
+
+#### Parameters
+
+##### version
+
+`string`
+
+#### Returns
+
+`object`
+
+##### commit?
+
+> `optional` **commit**: `string`
+
+##### major
+
+> **major**: `number`
+
+##### minor
+
+> **minor**: `number`
+
+##### patch
+
+> **patch**: `number`
+
+##### prerelease?
+
+> `optional` **prerelease**: `string`

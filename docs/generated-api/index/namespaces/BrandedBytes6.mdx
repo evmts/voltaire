@@ -1,0 +1,408 @@
+---
+title: "BrandedBytes6"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / BrandedBytes6
+
+# BrandedBytes6
+
+## Type Aliases
+
+### Bytes6Type
+
+> **Bytes6Type** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/Bytes/Bytes6/Bytes6Type.ts:3](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes6/Bytes6Type.ts#L3)
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Bytes6"`
+
+##### size
+
+> `readonly` **size**: `6`
+
+## Variables
+
+### BytesType6
+
+> `const` **BytesType6**: `object`
+
+Defined in: [src/primitives/Bytes/Bytes6/index.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes6/index.ts#L16)
+
+#### Type Declaration
+
+##### clone()
+
+> **clone**: (`bytes`) => [`Bytes6Type`](#bytes6type)
+
+Clone Bytes6
+
+###### Parameters
+
+###### bytes
+
+[`Bytes6Type`](#bytes6type)
+
+Bytes6 to clone
+
+###### Returns
+
+[`Bytes6Type`](#bytes6type)
+
+Cloned Bytes6
+
+###### Example
+
+```typescript
+const copy = Bytes6.clone(bytes);
+```
+
+##### compare()
+
+> **compare**: (`a`, `b`) => `-1` \| `0` \| `1`
+
+###### Parameters
+
+###### a
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### b
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+`-1` \| `0` \| `1`
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+###### Parameters
+
+###### a
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### b
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`Bytes6Type`](#bytes6type)
+
+###### Parameters
+
+###### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+[`Bytes6Type`](#bytes6type)
+
+##### fromHex()
+
+> **fromHex**: (`hex`) => [`Bytes6Type`](#bytes6type)
+
+###### Parameters
+
+###### hex
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+###### Returns
+
+[`Bytes6Type`](#bytes6type)
+
+##### size()
+
+> **size**: (`_bytes`) => `6`
+
+Get size of Bytes6 (always 6)
+
+###### Parameters
+
+###### \_bytes
+
+[`Bytes6Type`](#bytes6type)
+
+Bytes6
+
+###### Returns
+
+`6`
+
+Size (always 6)
+
+###### Example
+
+```typescript
+const size = Bytes6.size(bytes); // 6
+```
+
+##### toBytes()
+
+> **toBytes**: (`bytes`) => `BytesType`
+
+Convert Bytes6 to generic Bytes
+
+###### Parameters
+
+###### bytes
+
+[`Bytes6Type`](#bytes6type)
+
+Bytes6 to convert
+
+###### Returns
+
+`BytesType`
+
+Generic Bytes
+
+###### Example
+
+```typescript
+const genericBytes = Bytes6.toBytes(bytes);
+```
+
+##### toHex()
+
+> **toHex**: (`bytes`) => [`HexType`](../../primitives/Hex.mdx#hextype)
+
+Convert Bytes6 to hex string
+
+###### Parameters
+
+###### bytes
+
+[`Bytes6Type`](#bytes6type)
+
+Bytes6 to convert
+
+###### Returns
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+Hex string
+
+###### Example
+
+```typescript
+const hex = Bytes6.toHex(bytes);
+```
+
+## Functions
+
+### clone()
+
+> **clone**(`bytes`): [`Bytes6Type`](#bytes6type)
+
+Defined in: [src/primitives/Bytes/Bytes6/clone.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes6/clone.js#L12)
+
+Clone Bytes6
+
+#### Parameters
+
+##### bytes
+
+[`Bytes6Type`](#bytes6type)
+
+Bytes6 to clone
+
+#### Returns
+
+[`Bytes6Type`](#bytes6type)
+
+Cloned Bytes6
+
+#### Example
+
+```typescript
+const copy = Bytes6.clone(bytes);
+```
+
+***
+
+### compare()
+
+> **compare**(`a`, `b`): `-1` \| `0` \| `1`
+
+Defined in: [src/primitives/Bytes/Bytes6/compare.js:2](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes6/compare.js#L2)
+
+#### Parameters
+
+##### a
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+##### b
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`-1` \| `0` \| `1`
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Bytes/Bytes6/equals.js:2](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes6/equals.js#L2)
+
+#### Parameters
+
+##### a
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+##### b
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`Bytes6Type`](#bytes6type)
+
+Defined in: [src/primitives/Bytes/Bytes6/from.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes6/from.js#L8)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`Bytes6Type`](#bytes6type)
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`Bytes6Type`](#bytes6type)
+
+Defined in: [src/primitives/Bytes/Bytes6/fromHex.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes6/fromHex.js#L8)
+
+#### Parameters
+
+##### hex
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+#### Returns
+
+[`Bytes6Type`](#bytes6type)
+
+***
+
+### size()
+
+> **size**(`_bytes`): `6`
+
+Defined in: [src/primitives/Bytes/Bytes6/size.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes6/size.js#L12)
+
+Get size of Bytes6 (always 6)
+
+#### Parameters
+
+##### \_bytes
+
+[`Bytes6Type`](#bytes6type)
+
+Bytes6
+
+#### Returns
+
+`6`
+
+Size (always 6)
+
+#### Example
+
+```typescript
+const size = Bytes6.size(bytes); // 6
+```
+
+***
+
+### toBytes()
+
+> **toBytes**(`bytes`): `BytesType`
+
+Defined in: [src/primitives/Bytes/Bytes6/toBytes.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes6/toBytes.js#L12)
+
+Convert Bytes6 to generic Bytes
+
+#### Parameters
+
+##### bytes
+
+[`Bytes6Type`](#bytes6type)
+
+Bytes6 to convert
+
+#### Returns
+
+`BytesType`
+
+Generic Bytes
+
+#### Example
+
+```typescript
+const genericBytes = Bytes6.toBytes(bytes);
+```
+
+***
+
+### toHex()
+
+> **toHex**(`bytes`): [`HexType`](../../primitives/Hex.mdx#hextype)
+
+Defined in: [src/primitives/Bytes/Bytes6/toHex.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes6/toHex.js#L12)
+
+Convert Bytes6 to hex string
+
+#### Parameters
+
+##### bytes
+
+[`Bytes6Type`](#bytes6type)
+
+Bytes6 to convert
+
+#### Returns
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+Hex string
+
+#### Example
+
+```typescript
+const hex = Bytes6.toHex(bytes);
+```

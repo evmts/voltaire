@@ -1,0 +1,1014 @@
+---
+title: "FeeMarket"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / FeeMarket
+
+# FeeMarket
+
+## Type Aliases
+
+### BlobTxFee
+
+> **BlobTxFee** = [`TxFee`](#txfee) & `object`
+
+Defined in: [src/primitives/FeeMarket/BlobTxFee.ts:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/BlobTxFee.ts#L6)
+
+Calculated blob transaction fee breakdown
+
+#### Type Declaration
+
+##### blobGasPrice
+
+> **blobGasPrice**: `bigint`
+
+Blob gas price paid (wei per blob gas)
+
+##### totalBlobFee
+
+> **totalBlobFee**: `bigint`
+
+Total blob fee (wei)
+
+***
+
+### BlobTxFeeParams
+
+> **BlobTxFeeParams** = [`TxFeeParams`](#txfeeparams) & `object`
+
+Defined in: [src/primitives/FeeMarket/BlobTxFeeParams.ts:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/BlobTxFeeParams.ts#L6)
+
+Blob transaction fee parameters (EIP-4844)
+
+#### Type Declaration
+
+##### blobBaseFee
+
+> **blobBaseFee**: `bigint`
+
+Current blob base fee (wei)
+
+##### blobCount
+
+> **blobCount**: `bigint`
+
+Number of blobs in transaction
+
+##### maxFeePerBlobGas
+
+> **maxFeePerBlobGas**: `bigint`
+
+Maximum fee per blob gas (wei)
+
+***
+
+### BrandedState
+
+> **BrandedState** = `object`
+
+Defined in: [src/primitives/FeeMarket/BrandedState.ts:4](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/BrandedState.ts#L4)
+
+Complete fee market state for a block
+
+#### Properties
+
+##### baseFee
+
+> **baseFee**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/BrandedState.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/BrandedState.ts#L10)
+
+Base fee per gas (wei)
+
+##### blobGasUsed
+
+> **blobGasUsed**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/BrandedState.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/BrandedState.ts#L14)
+
+Blob gas used in block
+
+##### excessBlobGas
+
+> **excessBlobGas**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/BrandedState.ts:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/BrandedState.ts#L12)
+
+Excess blob gas accumulated
+
+##### gasLimit
+
+> **gasLimit**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/BrandedState.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/BrandedState.ts#L8)
+
+Gas limit of block
+
+##### gasUsed
+
+> **gasUsed**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/BrandedState.ts:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/BrandedState.ts#L6)
+
+Gas used in block
+
+***
+
+### Eip1559State
+
+> **Eip1559State** = `object`
+
+Defined in: [src/primitives/FeeMarket/Eip1559State.ts:4](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/Eip1559State.ts#L4)
+
+EIP-1559 specific state
+
+#### Properties
+
+##### baseFee
+
+> **baseFee**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/Eip1559State.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/Eip1559State.ts#L10)
+
+Base fee per gas (wei)
+
+##### gasLimit
+
+> **gasLimit**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/Eip1559State.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/Eip1559State.ts#L8)
+
+Gas limit of block
+
+##### gasUsed
+
+> **gasUsed**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/Eip1559State.ts:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/Eip1559State.ts#L6)
+
+Gas used in block
+
+***
+
+### Eip4844State
+
+> **Eip4844State** = `object`
+
+Defined in: [src/primitives/FeeMarket/Eip4844State.ts:4](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/Eip4844State.ts#L4)
+
+EIP-4844 specific state
+
+#### Properties
+
+##### blobGasUsed
+
+> **blobGasUsed**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/Eip4844State.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/Eip4844State.ts#L8)
+
+Blob gas used in block
+
+##### excessBlobGas
+
+> **excessBlobGas**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/Eip4844State.ts:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/Eip4844State.ts#L6)
+
+Excess blob gas accumulated
+
+***
+
+### State
+
+> **State** = `object`
+
+Defined in: [src/primitives/FeeMarket/FeeMarketType.ts:4](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/FeeMarketType.ts#L4)
+
+Complete fee market state for a block
+
+#### Properties
+
+##### baseFee
+
+> **baseFee**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/FeeMarketType.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/FeeMarketType.ts#L10)
+
+Base fee per gas (wei)
+
+##### blobGasUsed
+
+> **blobGasUsed**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/FeeMarketType.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/FeeMarketType.ts#L14)
+
+Blob gas used in block
+
+##### excessBlobGas
+
+> **excessBlobGas**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/FeeMarketType.ts:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/FeeMarketType.ts#L12)
+
+Excess blob gas accumulated
+
+##### gasLimit
+
+> **gasLimit**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/FeeMarketType.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/FeeMarketType.ts#L8)
+
+Gas limit of block
+
+##### gasUsed
+
+> **gasUsed**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/FeeMarketType.ts:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/FeeMarketType.ts#L6)
+
+Gas used in block
+
+***
+
+### TxFee
+
+> **TxFee** = `object`
+
+Defined in: [src/primitives/FeeMarket/TxFee.ts:4](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/TxFee.ts#L4)
+
+Calculated transaction fee breakdown
+
+#### Properties
+
+##### baseFee
+
+> **baseFee**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/TxFee.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/TxFee.ts#L10)
+
+Base fee paid (wei per gas)
+
+##### effectiveGasPrice
+
+> **effectiveGasPrice**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/TxFee.ts:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/TxFee.ts#L6)
+
+Effective gas price paid (wei per gas)
+
+##### priorityFee
+
+> **priorityFee**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/TxFee.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/TxFee.ts#L8)
+
+Priority fee paid (wei per gas)
+
+***
+
+### TxFeeParams
+
+> **TxFeeParams** = `object`
+
+Defined in: [src/primitives/FeeMarket/TxFeeParams.ts:4](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/TxFeeParams.ts#L4)
+
+Transaction fee parameters
+
+#### Properties
+
+##### baseFee
+
+> **baseFee**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/TxFeeParams.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/TxFeeParams.ts#L10)
+
+Current block base fee (wei)
+
+##### maxFeePerGas
+
+> **maxFeePerGas**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/TxFeeParams.ts:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/TxFeeParams.ts#L6)
+
+Maximum fee per gas willing to pay (wei)
+
+##### maxPriorityFeePerGas
+
+> **maxPriorityFeePerGas**: `bigint`
+
+Defined in: [src/primitives/FeeMarket/TxFeeParams.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/TxFeeParams.ts#L8)
+
+Maximum priority fee per gas (tip to miner, wei)
+
+## Variables
+
+### Eip1559
+
+> `const` **Eip1559**: `__module` = `Eip1559Constants`
+
+Defined in: [src/primitives/FeeMarket/FeeMarket.js:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/FeeMarket.js#L39)
+
+***
+
+### Eip4844
+
+> `const` **Eip4844**: `__module` = `Eip4844Constants`
+
+Defined in: [src/primitives/FeeMarket/FeeMarket.js:40](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/FeeMarket.js#L40)
+
+***
+
+### State
+
+> `const` **State**: `object`
+
+Defined in: [src/primitives/FeeMarket/FeeMarket.js:83](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/FeeMarket.js#L83)
+
+State namespace with convenience methods
+
+#### Type Declaration
+
+##### getBlobBaseFee()
+
+> **getBlobBaseFee**: (`this`) => `bigint`
+
+Get current blob base fee
+
+###### Parameters
+
+###### this
+
+[`State`](#state)
+
+###### Returns
+
+`bigint`
+
+##### getGasTarget()
+
+> **getGasTarget**: (`this`) => `bigint`
+
+Get gas target for block
+
+###### Parameters
+
+###### this
+
+[`State`](#state)
+
+###### Returns
+
+`bigint`
+
+##### isAboveBlobGasTarget()
+
+> **isAboveBlobGasTarget**: (`this`) => `boolean`
+
+Check if block is above blob gas target
+
+###### Parameters
+
+###### this
+
+[`State`](#state)
+
+###### Returns
+
+`boolean`
+
+##### isAboveGasTarget()
+
+> **isAboveGasTarget**: (`this`) => `boolean`
+
+Check if block is above gas target
+
+###### Parameters
+
+###### this
+
+[`State`](#state)
+
+###### Returns
+
+`boolean`
+
+##### next()
+
+> **next**: (`this`) => [`State`](#state)
+
+Calculate next block's fee market state
+
+###### Parameters
+
+###### this
+
+[`State`](#state)
+
+###### Returns
+
+[`State`](#state)
+
+## Functions
+
+### BaseFee()
+
+> **BaseFee**(`parentGasUsed`, `parentGasLimit`, `parentBaseFee`): `bigint`
+
+Defined in: [src/primitives/FeeMarket/BaseFee.js:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/BaseFee.js#L29)
+
+Calculate next block's base fee using EIP-1559 formula (constructor form)
+
+Formula:
+- gasTarget = gasLimit / 2
+- If gasUsed > gasTarget: baseFee increases (up to 12.5%)
+- If gasUsed < gasTarget: baseFee decreases (up to 12.5%)
+- If gasUsed == gasTarget: baseFee stays same
+- Always: baseFee >= MIN_BASE_FEE (7 wei)
+
+#### Parameters
+
+##### parentGasUsed
+
+`bigint`
+
+Gas used in parent block
+
+##### parentGasLimit
+
+`bigint`
+
+Gas limit of parent block
+
+##### parentBaseFee
+
+`bigint`
+
+Base fee of parent block (wei)
+
+#### Returns
+
+`bigint`
+
+Next block's base fee (wei)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FeeMarket from './primitives/FeeMarket/index.js';
+// Block at target (50% full): base fee unchanged
+const baseFee1 = FeeMarket.BaseFee(15_000_000n, 30_000_000n, 1_000_000_000n);
+// baseFee1 === 1_000_000_000n
+```
+
+***
+
+### BlobBaseFee()
+
+> **BlobBaseFee**(`excessBlobGas`): `bigint`
+
+Defined in: [src/primitives/FeeMarket/BlobBaseFee.js:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/BlobBaseFee.js#L25)
+
+Calculate blob base fee using EIP-4844 formula (constructor form)
+
+Formula: fakeExponential(MIN_BLOB_BASE_FEE, excessBlobGas, BLOB_BASE_FEE_UPDATE_FRACTION)
+
+Uses Taylor series to approximate: MIN_BLOB_BASE_FEE * e^(excessBlobGas / UPDATE_FRACTION)
+
+#### Parameters
+
+##### excessBlobGas
+
+`bigint`
+
+Excess blob gas from previous blocks
+
+#### Returns
+
+`bigint`
+
+Blob base fee (wei per blob gas)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FeeMarket from './primitives/FeeMarket/index.js';
+// No excess: minimum fee
+const fee1 = FeeMarket.BlobBaseFee(0n);
+// fee1 === 1n
+```
+
+***
+
+### calculateBlobTxFee()
+
+> **calculateBlobTxFee**(`params`): [`BlobTxFee`](#blobtxfee)
+
+Defined in: [src/primitives/FeeMarket/calculateBlobTxFee.js:28](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/calculateBlobTxFee.js#L28)
+
+Calculate blob transaction fee (standard form)
+
+Combines regular gas fee with blob gas fee.
+
+#### Parameters
+
+##### params
+
+[`BlobTxFeeParams`](#blobtxfeeparams)
+
+Blob transaction fee parameters
+
+#### Returns
+
+[`BlobTxFee`](#blobtxfee)
+
+Calculated fee breakdown including blob fees
+
+#### See
+
+https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FeeMarket from './primitives/FeeMarket/index.js';
+const fee = FeeMarket.calculateBlobTxFee({
+  maxFeePerGas: 2_000_000_000n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  baseFee: 800_000_000n,
+  maxFeePerBlobGas: 10_000_000n,
+  blobBaseFee: 5_000_000n,
+  blobCount: 3n
+});
+```
+
+***
+
+### calculateExcessBlobGas()
+
+> **calculateExcessBlobGas**(`parentExcessBlobGas`, `parentBlobGasUsed`): `bigint`
+
+Defined in: [src/primitives/FeeMarket/calculateExcessBlobGas.js:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/calculateExcessBlobGas.js#L23)
+
+Calculate excess blob gas for next block using EIP-4844 formula (standard form)
+
+Formula: max(0, parentExcessBlobGas + parentBlobGasUsed - TARGET_BLOB_GAS_PER_BLOCK)
+
+#### Parameters
+
+##### parentExcessBlobGas
+
+`bigint`
+
+Excess blob gas from parent block
+
+##### parentBlobGasUsed
+
+`bigint`
+
+Blob gas used in parent block
+
+#### Returns
+
+`bigint`
+
+Excess blob gas for next block
+
+#### See
+
+https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FeeMarket from './primitives/FeeMarket/index.js';
+// Below target: no excess
+const excess1 = FeeMarket.calculateExcessBlobGas(0n, 131072n); // 1 blob
+// excess1 === 0n
+```
+
+***
+
+### calculateTxFee()
+
+> **calculateTxFee**(`params`): `any`
+
+Defined in: [src/primitives/FeeMarket/calculateTxFee.js:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/calculateTxFee.js#L25)
+
+Calculate effective transaction fee (standard form)
+
+Formula:
+- effectiveGasPrice = min(maxFeePerGas, baseFee + maxPriorityFeePerGas)
+- priorityFee = effectiveGasPrice - baseFee
+
+#### Parameters
+
+##### params
+
+`any`
+
+Transaction fee parameters
+
+#### Returns
+
+`any`
+
+Calculated fee breakdown
+
+#### See
+
+https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FeeMarket from './primitives/FeeMarket/index.js';
+const fee = FeeMarket.calculateTxFee({
+  maxFeePerGas: 2_000_000_000n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  baseFee: 800_000_000n
+});
+```
+
+***
+
+### canIncludeTx()
+
+> **canIncludeTx**(`params`): `boolean`
+
+Defined in: [src/primitives/FeeMarket/canIncludeTx.js:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/canIncludeTx.js#L25)
+
+Check if transaction can be included in block (standard form)
+
+Transaction is valid if:
+- maxFeePerGas >= baseFee
+- For blob txs: maxFeePerBlobGas >= blobBaseFee
+
+#### Parameters
+
+##### params
+
+`any`
+
+Transaction fee parameters
+
+#### Returns
+
+`boolean`
+
+true if transaction meets minimum fee requirements
+
+#### See
+
+https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FeeMarket from './primitives/FeeMarket/index.js';
+const canInclude = FeeMarket.canIncludeTx({
+  maxFeePerGas: 1_000_000_000n,
+  maxPriorityFeePerGas: 100_000_000n,
+  baseFee: 900_000_000n
+});
+```
+
+***
+
+### gweiToWei()
+
+> **gweiToWei**(`gwei`): `bigint`
+
+Defined in: [src/primitives/FeeMarket/gweiToWei.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/gweiToWei.js#L17)
+
+Convert gwei to wei
+
+#### Parameters
+
+##### gwei
+
+`number`
+
+Amount in gwei
+
+#### Returns
+
+`bigint`
+
+Amount in wei
+
+#### See
+
+https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FeeMarket from './primitives/FeeMarket/index.js';
+const wei = FeeMarket.gweiToWei(1.5); // 1_500_000_000n
+```
+
+***
+
+### nextState()
+
+> **nextState**(`state`): [`State`](#state)
+
+Defined in: [src/primitives/FeeMarket/nextState.js:28](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/nextState.js#L28)
+
+Calculate next block's fee market state (standard form)
+
+Updates both EIP-1559 base fee and EIP-4844 blob base fee components.
+
+#### Parameters
+
+##### state
+
+[`State`](#state)
+
+Current block state
+
+#### Returns
+
+[`State`](#state)
+
+Next block's state
+
+#### See
+
+https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FeeMarket from './primitives/FeeMarket/index.js';
+const currentState = {
+  gasUsed: 20_000_000n,
+  gasLimit: 30_000_000n,
+  baseFee: 1_000_000_000n,
+  excessBlobGas: 0n,
+  blobGasUsed: 262144n
+};
+const next = FeeMarket.nextState(currentState);
+```
+
+***
+
+### projectBaseFees()
+
+> **projectBaseFees**(`initialState`, `blocks`, `avgGasUsed`, `avgBlobGasUsed?`): `bigint`[]
+
+Defined in: [src/primitives/FeeMarket/projectBaseFees.js:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/projectBaseFees.js#L29)
+
+Calculate series of future base fees (standard form)
+
+Useful for estimating fee trends over multiple blocks.
+
+#### Parameters
+
+##### initialState
+
+[`State`](#state)
+
+Starting state
+
+##### blocks
+
+`number`
+
+Number of blocks to project
+
+##### avgGasUsed
+
+`bigint`
+
+Average gas used per block
+
+##### avgBlobGasUsed?
+
+`bigint` = `0n`
+
+Average blob gas used per block
+
+#### Returns
+
+`bigint`[]
+
+Array of future base fees
+
+#### See
+
+https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FeeMarket from './primitives/FeeMarket/index.js';
+const fees = FeeMarket.projectBaseFees(
+  { gasUsed: 15_000_000n, gasLimit: 30_000_000n, baseFee: 1_000_000_000n,
+    excessBlobGas: 0n, blobGasUsed: 0n },
+  10,
+  25_000_000n,
+  262144n
+);
+```
+
+***
+
+### validateState()
+
+> **validateState**(`state`): `string`[]
+
+Defined in: [src/primitives/FeeMarket/validateState.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/validateState.js#L20)
+
+Validate block state
+
+#### Parameters
+
+##### state
+
+[`State`](#state)
+
+Block state
+
+#### Returns
+
+`string`[]
+
+Validation errors, empty array if valid
+
+#### See
+
+https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FeeMarket from './primitives/FeeMarket/index.js';
+const state = { gasUsed: 0n, gasLimit: 30000000n, baseFee: 1000000000n, excessBlobGas: 0n, blobGasUsed: 0n };
+const errors = FeeMarket.validateState(state);
+```
+
+***
+
+### validateTxFeeParams()
+
+> **validateTxFeeParams**(`params`): `string`[]
+
+Defined in: [src/primitives/FeeMarket/validateTxFeeParams.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/validateTxFeeParams.js#L22)
+
+Validate transaction fee parameters
+
+#### Parameters
+
+##### params
+
+`any`
+
+Transaction fee parameters
+
+#### Returns
+
+`string`[]
+
+Validation errors, empty array if valid
+
+#### See
+
+https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FeeMarket from './primitives/FeeMarket/index.js';
+const errors = FeeMarket.validateTxFeeParams({
+  maxFeePerGas: 2000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  baseFee: 800000000n
+});
+```
+
+***
+
+### weiToGwei()
+
+> **weiToGwei**(`wei`): `string`
+
+Defined in: [src/primitives/FeeMarket/weiToGwei.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FeeMarket/weiToGwei.js#L17)
+
+Convert wei to gwei for display
+
+#### Parameters
+
+##### wei
+
+`bigint`
+
+Amount in wei
+
+#### Returns
+
+`string`
+
+Amount in gwei (formatted with 9 decimal places)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FeeMarket from './primitives/FeeMarket/index.js';
+const gwei = FeeMarket.weiToGwei(1_500_000_000n); // "1.500000000"
+```
+
+## References
+
+### FeeMarketType
+
+Renames and re-exports [State](#state)

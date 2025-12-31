@@ -1,0 +1,450 @@
+---
+title: "Receipt"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / Receipt
+
+# Receipt
+
+## Classes
+
+### InvalidReceiptError
+
+Defined in: [src/primitives/Receipt/errors.js:1](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Receipt/errors.js#L1)
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidReceiptError**(`message`, `details?`): [`InvalidReceiptError`](#invalidreceipterror)
+
+Defined in: [src/primitives/Receipt/errors.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Receipt/errors.js#L9)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### details?
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### expected?
+
+`string`
+
+###### value?
+
+`unknown`
+
+###### Returns
+
+[`InvalidReceiptError`](#invalidreceipterror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### details
+
+> **details**: \{ `context?`: `Record`\<`string`, `unknown`\>; `expected?`: `string`; `value?`: `unknown`; \} \| `undefined`
+
+Defined in: [src/primitives/Receipt/errors.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Receipt/errors.js#L13)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Receipt/errors.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Receipt/errors.js#L11)
+
+###### Inherited from
+
+`Error.name`
+
+## Type Aliases
+
+### ReceiptType
+
+> **ReceiptType** = `object` & `object`
+
+Defined in: [src/primitives/Receipt/ReceiptType.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Receipt/ReceiptType.ts#L16)
+
+Transaction receipt
+
+#### Type Declaration
+
+##### blobGasPrice?
+
+> `readonly` `optional` **blobGasPrice**: [`Type`](../../primitives/Uint.mdx#type)
+
+Blob gas price (EIP-4844)
+
+##### blobGasUsed?
+
+> `readonly` `optional` **blobGasUsed**: [`Type`](../../primitives/Uint.mdx#type)
+
+Blob gas used (EIP-4844)
+
+##### blockHash
+
+> `readonly` **blockHash**: [`BlockHashType`](BlockHash.mdx#blockhashtype)
+
+Block hash
+
+##### blockNumber
+
+> `readonly` **blockNumber**: [`BlockNumberType`](BlockNumber.mdx#blocknumbertype)
+
+Block number
+
+##### contractAddress
+
+> `readonly` **contractAddress**: [`AddressType`](../../primitives/Address.mdx#addresstype) \| `null`
+
+Contract address (non-null for creation)
+
+##### cumulativeGasUsed
+
+> `readonly` **cumulativeGasUsed**: [`Type`](../../primitives/Uint.mdx#type)
+
+Cumulative gas used in block
+
+##### effectiveGasPrice
+
+> `readonly` **effectiveGasPrice**: [`Type`](../../primitives/Uint.mdx#type)
+
+Effective gas price
+
+##### from
+
+> `readonly` **from**: [`AddressType`](../../primitives/Address.mdx#addresstype)
+
+Sender address
+
+##### gasUsed
+
+> `readonly` **gasUsed**: [`Type`](../../primitives/Uint.mdx#type)
+
+Gas used by this transaction
+
+##### logs
+
+> `readonly` **logs**: readonly [`EventLogType`](EventLog.mdx#eventlogtype)[]
+
+Event logs
+
+##### logsBloom
+
+> `readonly` **logsBloom**: `Uint8Array`
+
+Logs bloom filter (256 bytes)
+
+##### root?
+
+> `readonly` `optional` **root**: [`HashType`](HashType-2.mdx#hashtype)
+
+State root (pre-Byzantium only)
+
+##### status?
+
+> `readonly` `optional` **status**: [`TransactionStatusType`](TransactionStatus.mdx#transactionstatustype)
+
+Transaction status (post-Byzantium)
+
+##### to
+
+> `readonly` **to**: [`AddressType`](../../primitives/Address.mdx#addresstype) \| `null`
+
+Recipient address (null for contract creation)
+
+##### transactionHash
+
+> `readonly` **transactionHash**: [`TransactionHashType`](TransactionHash.mdx#transactionhashtype)
+
+Transaction hash
+
+##### transactionIndex
+
+> `readonly` **transactionIndex**: [`TransactionIndexType`](TransactionIndex.mdx#transactionindextype)
+
+Transaction index in block
+
+##### type
+
+> `readonly` **type**: `"legacy"` \| `"eip2930"` \| `"eip1559"` \| `"eip4844"` \| `"eip7702"`
+
+Transaction type
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Receipt"`
+
+## Variables
+
+### from()
+
+> `const` **from**: (`data`) => [`ReceiptType`](#receipttype) = `_from`
+
+Defined in: [src/primitives/Receipt/index.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Receipt/index.ts#L10)
+
+Create Receipt from partial data
+
+#### Parameters
+
+##### data
+
+`Omit`\<[`ReceiptType`](#receipttype), *typeof* `brand`\>
+
+#### Returns
+
+[`ReceiptType`](#receipttype)
+
+#### Throws
+
+***
+
+### poll()
+
+> `const` **poll**: (`txHash`, `provider`, `options?`) => `Promise`\<[`ReceiptType`](#receipttype)\> = `_poll`
+
+Defined in: [src/primitives/Receipt/index.ts:38](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Receipt/index.ts#L38)
+
+Poll for a transaction receipt until confirmed
+
+#### Parameters
+
+##### txHash
+
+`string`
+
+Transaction hash to poll for
+
+##### provider
+
+EIP-1193 provider
+
+###### request
+
+##### options?
+
+Polling options (interval, timeout, confirmations)
+
+###### confirmations?
+
+`number`
+
+###### interval?
+
+`number`
+
+###### timeout?
+
+`number`
+
+#### Returns
+
+`Promise`\<[`ReceiptType`](#receipttype)\>
+
+Promise resolving to the transaction receipt
+
+#### Example
+
+```typescript
+import { Receipt } from '@tevm/voltaire';
+
+const receipt = await Receipt.poll(txHash, provider, {
+  timeout: 120000,
+  confirmations: 3
+});
+```
+
+## Functions
+
+### \_assertValid()
+
+> **\_assertValid**(`receipt`): `void`
+
+Defined in: [src/primitives/Receipt/assertValid.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Receipt/assertValid.js#L18)
+
+Validate receipt structure (Byzantium vs pre-Byzantium)
+
+#### Parameters
+
+##### receipt
+
+[`ReceiptType`](#receipttype)
+
+Receipt to validate
+
+#### Returns
+
+`void`
+
+#### Throws
+
+If receipt has both status and root, or neither
+
+#### Example
+
+```javascript
+import { assertValid } from './primitives/Receipt/assertValid.js';
+
+// Post-Byzantium (has status)
+assertValid({ ...receipt, status: 1 });
+
+// Pre-Byzantium (has root)
+assertValid({ ...receipt, root: stateRoot });
+```
+
+***
+
+### \_isPreByzantium()
+
+> **\_isPreByzantium**(`receipt`): `boolean`
+
+Defined in: [src/primitives/Receipt/isPreByzantium.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Receipt/isPreByzantium.js#L18)
+
+Check if receipt is pre-Byzantium (uses state root instead of status)
+
+#### Parameters
+
+##### receipt
+
+[`ReceiptType`](#receipttype)
+
+Receipt to check
+
+#### Returns
+
+`boolean`
+
+True if receipt is pre-Byzantium
+
+#### Example
+
+```javascript
+import { isPreByzantium } from './primitives/Receipt/isPreByzantium.js';
+
+// Pre-Byzantium receipt (has root)
+isPreByzantium({ ...receipt, root: stateRoot }); // true
+
+// Post-Byzantium receipt (has status)
+isPreByzantium({ ...receipt, status: 1 }); // false
+```
+
+***
+
+### \_poll()
+
+> **\_poll**(`txHash`, `provider`, `options?`): `Promise`\<[`ReceiptType`](#receipttype)\>
+
+Defined in: [src/primitives/Receipt/poll.js:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Receipt/poll.js#L45)
+
+Poll for a transaction receipt until it's available
+
+Uses exponential backoff and handles transient RPC errors gracefully.
+
+#### Parameters
+
+##### txHash
+
+`string`
+
+Transaction hash to poll for
+
+##### provider
+
+EIP-1193 provider
+
+###### request
+
+##### options?
+
+`PollReceiptOptions` = `{}`
+
+Polling options
+
+#### Returns
+
+`Promise`\<[`ReceiptType`](#receipttype)\>
+
+Transaction receipt
+
+#### Throws
+
+If timeout is reached before receipt is available
+
+#### Example
+
+```typescript
+import { poll } from '@tevm/voltaire/Receipt';
+
+// Wait for transaction confirmation
+const receipt = await poll(txHash, provider);
+console.log(`Status: ${receipt.status}`);
+
+// With custom options
+const receipt = await poll(txHash, provider, {
+  interval: 2000,      // Poll every 2s
+  timeout: 120000,     // Wait up to 2 minutes
+  confirmations: 3     // Wait for 3 confirmations
+});
+```
+
+***
+
+### assertValid()
+
+> **assertValid**(`receipt`): `void`
+
+Defined in: [src/primitives/Receipt/index.ts:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Receipt/index.ts#L12)
+
+#### Parameters
+
+##### receipt
+
+[`ReceiptType`](#receipttype)
+
+#### Returns
+
+`void`
+
+***
+
+### isPreByzantium()
+
+> **isPreByzantium**(`receipt`): `boolean`
+
+Defined in: [src/primitives/Receipt/index.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Receipt/index.ts#L16)
+
+#### Parameters
+
+##### receipt
+
+[`ReceiptType`](#receipttype)
+
+#### Returns
+
+`boolean`
+
+## References
+
+### TransactionReceiptType
+
+Renames and re-exports [ReceiptType](#receipttype)

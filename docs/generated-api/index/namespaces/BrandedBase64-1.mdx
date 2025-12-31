@@ -1,0 +1,635 @@
+---
+title: "BrandedBase64"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / BrandedBase64
+
+# BrandedBase64
+
+## Functions
+
+### calcDecodedSize()
+
+> **calcDecodedSize**(`encodedLength`): `number`
+
+Defined in: [src/primitives/Base64/calcDecodedSize.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/calcDecodedSize.js#L7)
+
+Calculate decoded size in bytes
+
+#### Parameters
+
+##### encodedLength
+
+`number`
+
+Length of base64 string
+
+#### Returns
+
+`number`
+
+Maximum size of decoded output
+
+***
+
+### calcEncodedSize()
+
+> **calcEncodedSize**(`dataLength`): `number`
+
+Defined in: [src/primitives/Base64/calcEncodedSize.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/calcEncodedSize.js#L7)
+
+Calculate encoded size in bytes
+
+#### Parameters
+
+##### dataLength
+
+`number`
+
+Length of data to encode
+
+#### Returns
+
+`number`
+
+Size of base64 output
+
+***
+
+### decode()
+
+> **decode**(`encoded`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Base64/decode.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/decode.js#L19)
+
+Decode standard base64 string to bytes
+
+#### Parameters
+
+##### encoded
+
+`string`
+
+Base64 string to decode
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Decoded bytes
+
+#### See
+
+https://voltaire.tevm.sh/primitives/base64 for Base64 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If input is invalid base64
+
+#### Example
+
+```javascript
+import * as Base64 from './primitives/Base64/index.js';
+const decoded = Base64.decode('SGVsbG8=');
+// Uint8Array([72, 101, 108, 108, 111])
+```
+
+***
+
+### decodeToString()
+
+> **decodeToString**(`encoded`): `string`
+
+Defined in: [src/primitives/Base64/decodeToString.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/decodeToString.js#L15)
+
+Decode base64 string to UTF-8 string
+
+#### Parameters
+
+##### encoded
+
+`string`
+
+Base64 string
+
+#### Returns
+
+`string`
+
+Decoded string
+
+#### Example
+
+```typescript
+const str = Base64.decodeToString('SGVsbG8=');
+// "Hello"
+```
+
+***
+
+### decodeUrlSafe()
+
+> **decodeUrlSafe**(`encoded`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Base64/decodeUrlSafe.js:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/decodeUrlSafe.js#L10)
+
+Decode URL-safe base64 string to bytes
+
+#### Parameters
+
+##### encoded
+
+`string`
+
+URL-safe base64 string
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Decoded bytes
+
+#### Throws
+
+If input is invalid
+
+***
+
+### decodeUrlSafeToString()
+
+> **decodeUrlSafeToString**(`encoded`): `string`
+
+Defined in: [src/primitives/Base64/decodeUrlSafeToString.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/decodeUrlSafeToString.js#L9)
+
+Decode URL-safe base64 to UTF-8 string
+
+#### Parameters
+
+##### encoded
+
+`string`
+
+URL-safe base64 string
+
+#### Returns
+
+`string`
+
+Decoded string
+
+***
+
+### encode()
+
+> **encode**(`data`): [`BrandedBase64`](Base64.mdx#brandedbase64)
+
+Defined in: [src/primitives/Base64/encode.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/encode.js#L19)
+
+Encode bytes to standard base64 string
+
+Uses standard base64 alphabet (A-Z, a-z, 0-9, +, /)
+with padding (=)
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Bytes to encode
+
+#### Returns
+
+[`BrandedBase64`](Base64.mdx#brandedbase64)
+
+Base64-encoded string
+
+#### Example
+
+```typescript
+const data = new Uint8Array([72, 101, 108, 108, 111]);
+const encoded = Base64.encode(data);
+// "SGVsbG8="
+```
+
+***
+
+### encodeString()
+
+> **encodeString**(`str`): `string`
+
+Defined in: [src/primitives/Base64/encodeString.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/encodeString.js#L14)
+
+Encode string to base64
+
+#### Parameters
+
+##### str
+
+`string`
+
+String to encode (UTF-8)
+
+#### Returns
+
+`string`
+
+Base64-encoded string
+
+#### Example
+
+```typescript
+const encoded = Base64.encodeString('Hello, world!');
+```
+
+***
+
+### encodeStringUrlSafe()
+
+> **encodeStringUrlSafe**(`str`): [`BrandedBase64Url`](Base64.mdx#brandedbase64url)
+
+Defined in: [src/primitives/Base64/encodeStringUrlSafe.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/encodeStringUrlSafe.js#L9)
+
+Encode string to URL-safe base64
+
+#### Parameters
+
+##### str
+
+`string`
+
+String to encode (UTF-8)
+
+#### Returns
+
+[`BrandedBase64Url`](Base64.mdx#brandedbase64url)
+
+URL-safe base64 string
+
+***
+
+### encodeUrlSafe()
+
+> **encodeUrlSafe**(`data`): [`BrandedBase64Url`](Base64.mdx#brandedbase64url)
+
+Defined in: [src/primitives/Base64/encodeUrlSafe.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/encodeUrlSafe.js#L19)
+
+Encode bytes to URL-safe base64 string
+
+Uses URL-safe alphabet (A-Z, a-z, 0-9, -, _)
+without padding
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Bytes to encode
+
+#### Returns
+
+[`BrandedBase64Url`](Base64.mdx#brandedbase64url)
+
+URL-safe base64 string
+
+#### Example
+
+```typescript
+const data = new Uint8Array([255, 254, 253]);
+const encoded = Base64.encodeUrlSafe(data);
+// No padding, uses - and _ instead of + and /
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`BrandedBase64`](Base64.mdx#brandedbase64)
+
+Defined in: [src/primitives/Base64/from.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/from.js#L21)
+
+Convert input to BrandedBase64
+
+#### Parameters
+
+##### value
+
+[`Base64Like`](Base64.mdx#base64like)
+
+Input to convert
+
+#### Returns
+
+[`BrandedBase64`](Base64.mdx#brandedbase64)
+
+Branded Base64 string
+
+#### Throws
+
+If input cannot be converted to valid Base64
+
+#### Example
+
+```typescript
+// From string
+const b64 = Base64.from("SGVsbG8=");
+
+// From bytes
+const data = new Uint8Array([1, 2, 3]);
+const b64 = Base64.from(data);
+```
+
+***
+
+### fromUrlSafe()
+
+> **fromUrlSafe**(`value`): [`BrandedBase64Url`](Base64.mdx#brandedbase64url)
+
+Defined in: [src/primitives/Base64/fromUrlSafe.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/fromUrlSafe.js#L21)
+
+Convert input to BrandedBase64Url
+
+#### Parameters
+
+##### value
+
+[`Base64UrlLike`](Base64.mdx#base64urllike)
+
+Input to convert
+
+#### Returns
+
+[`BrandedBase64Url`](Base64.mdx#brandedbase64url)
+
+Branded Base64Url string
+
+#### Throws
+
+If input cannot be converted to valid Base64Url
+
+#### Example
+
+```typescript
+// From string
+const b64url = Base64.fromUrlSafe("SGVsbG8");
+
+// From bytes
+const data = new Uint8Array([1, 2, 3]);
+const b64url = Base64.fromUrlSafe(data);
+```
+
+***
+
+### isValid()
+
+> **isValid**(`str`): `boolean`
+
+Defined in: [src/primitives/Base64/isValid.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/isValid.js#L7)
+
+Check if string is valid base64
+
+#### Parameters
+
+##### str
+
+`string`
+
+String to validate
+
+#### Returns
+
+`boolean`
+
+True if valid base64
+
+***
+
+### isValidUrlSafe()
+
+> **isValidUrlSafe**(`str`): `boolean`
+
+Defined in: [src/primitives/Base64/isValidUrlSafe.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/isValidUrlSafe.js#L7)
+
+Check if string is valid URL-safe base64
+
+#### Parameters
+
+##### str
+
+`string`
+
+String to validate
+
+#### Returns
+
+`boolean`
+
+True if valid URL-safe base64
+
+***
+
+### toBase64()
+
+> **toBase64**(`value`): [`BrandedBase64`](Base64.mdx#brandedbase64)
+
+Defined in: [src/primitives/Base64/toBase64.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/toBase64.js#L17)
+
+Convert BrandedBase64Url to BrandedBase64
+
+#### Parameters
+
+##### value
+
+[`BrandedBase64Url`](Base64.mdx#brandedbase64url)
+
+Base64Url string
+
+#### Returns
+
+[`BrandedBase64`](Base64.mdx#brandedbase64)
+
+Base64 string
+
+#### Example
+
+```typescript
+const b64url = Base64.fromUrlSafe("SGVsbG8");
+const b64 = Base64.toBase64(b64url);
+// "SGVsbG8=" (with padding)
+```
+
+***
+
+### toBase64Url()
+
+> **toBase64Url**(`value`): [`BrandedBase64Url`](Base64.mdx#brandedbase64url)
+
+Defined in: [src/primitives/Base64/toBase64Url.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/toBase64Url.js#L17)
+
+Convert BrandedBase64 to BrandedBase64Url
+
+#### Parameters
+
+##### value
+
+[`BrandedBase64`](Base64.mdx#brandedbase64)
+
+Base64 string
+
+#### Returns
+
+[`BrandedBase64Url`](Base64.mdx#brandedbase64url)
+
+Base64Url string
+
+#### Example
+
+```typescript
+const b64 = Base64.from("SGVsbG8=");
+const b64url = Base64.toBase64Url(b64);
+// "SGVsbG8" (no padding, URL-safe)
+```
+
+***
+
+### toBytes()
+
+> **toBytes**(`value`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Base64/toBytes.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/toBytes.js#L16)
+
+Convert BrandedBase64 to bytes
+
+#### Parameters
+
+##### value
+
+[`BrandedBase64`](Base64.mdx#brandedbase64)
+
+Base64 string
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Decoded bytes
+
+#### Example
+
+```typescript
+const b64 = Base64.from("SGVsbG8=");
+const bytes = Base64.toBytes(b64);
+// Uint8Array([72, 101, 108, 108, 111])
+```
+
+***
+
+### toBytesUrlSafe()
+
+> **toBytesUrlSafe**(`value`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Base64/toBytesUrlSafe.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/toBytesUrlSafe.js#L16)
+
+Convert BrandedBase64Url to bytes
+
+#### Parameters
+
+##### value
+
+[`BrandedBase64Url`](Base64.mdx#brandedbase64url)
+
+Base64Url string
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Decoded bytes
+
+#### Example
+
+```typescript
+const b64url = Base64.fromUrlSafe("SGVsbG8");
+const bytes = Base64.toBytesUrlSafe(b64url);
+// Uint8Array([72, 101, 108, 108, 111])
+```
+
+***
+
+### toString()
+
+> **toString**(`value`): `string`
+
+Defined in: [src/primitives/Base64/toString.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/toString.js#L15)
+
+Convert BrandedBase64 to plain string (strip branding)
+
+#### Parameters
+
+##### value
+
+[`BrandedBase64`](Base64.mdx#brandedbase64)
+
+Base64 string
+
+#### Returns
+
+`string`
+
+Plain string
+
+#### Example
+
+```typescript
+const b64 = Base64.from("SGVsbG8=");
+const str = Base64.toString(b64);
+// "SGVsbG8=" (plain string)
+```
+
+***
+
+### toStringUrlSafe()
+
+> **toStringUrlSafe**(`value`): `string`
+
+Defined in: [src/primitives/Base64/toStringUrlSafe.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Base64/toStringUrlSafe.js#L14)
+
+Convert BrandedBase64Url to plain string (strip branding)
+
+#### Parameters
+
+##### value
+
+[`BrandedBase64Url`](Base64.mdx#brandedbase64url)
+
+Base64Url string
+
+#### Returns
+
+`string`
+
+Plain string
+
+#### Example
+
+```typescript
+const b64url = Base64.fromUrlSafe("SGVsbG8");
+const str = Base64.toStringUrlSafe(b64url);
+// "SGVsbG8" (plain string)
+```
+
+## References
+
+### Base64
+
+Re-exports [Base64](Base64.mdx#base64)

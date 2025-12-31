@@ -1,0 +1,446 @@
+---
+title: "GasRefund"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / GasRefund
+
+# GasRefund
+
+## Type Aliases
+
+### GasRefundType
+
+> **GasRefundType** = `bigint` & `object`
+
+Defined in: [src/primitives/GasRefund/GasRefundType.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/GasRefundType.ts#L8)
+
+Branded GasRefund type - gas refunded after transaction
+Sources: SSTORE refunds, SELFDESTRUCT refunds (pre-London)
+Post-London (EIP-3529): Capped at gasUsed / 5
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"GasRefund"`
+
+## Variables
+
+### GasRefund
+
+> `const` **GasRefund**: `object`
+
+Defined in: [src/primitives/GasRefund/index.ts:46](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/index.ts#L46)
+
+#### Type Declaration
+
+##### cappedRefund()
+
+> **cappedRefund**: (`refund`, `gasUsed`) => [`GasRefundType`](#gasrefundtype)
+
+###### Parameters
+
+###### refund
+
+`string` | `number` | `bigint`
+
+###### gasUsed
+
+`bigint`
+
+###### Returns
+
+[`GasRefundType`](#gasrefundtype)
+
+##### equals()
+
+> **equals**: (`value1`, `value2`) => `boolean`
+
+###### Parameters
+
+###### value1
+
+`string` | `number` | `bigint`
+
+###### value2
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`GasRefundType`](#gasrefundtype)
+
+Create GasRefund from number, bigint, or string
+
+###### Parameters
+
+###### value
+
+Gas refund value
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+[`GasRefundType`](#gasrefundtype)
+
+Branded gas refund
+
+###### Throws
+
+If value is negative
+
+###### Example
+
+```typescript
+const refund = GasRefund.from(15000n); // SSTORE clear refund
+const noRefund = GasRefund.from(0n);
+```
+
+##### toBigInt()
+
+> **toBigInt**: (`value`) => `bigint`
+
+###### Parameters
+
+###### value
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`bigint`
+
+##### toHex()
+
+> **toHex**: (`value`) => `string`
+
+###### Parameters
+
+###### value
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`string`
+
+##### toNumber()
+
+> **toNumber**: (`value`) => `number`
+
+###### Parameters
+
+###### value
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`number`
+
+## Functions
+
+### \_cappedRefund()
+
+> **\_cappedRefund**(`this`, `gasUsed`): [`GasRefundType`](#gasrefundtype)
+
+Defined in: [src/primitives/GasRefund/cappedRefund.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/cappedRefund.js#L22)
+
+Apply EIP-3529 refund cap (gasUsed / 5)
+Post-London hard fork limitation on gas refunds
+
+#### Parameters
+
+##### this
+
+[`GasRefundType`](#gasrefundtype)
+
+##### gasUsed
+
+`bigint`
+
+Gas used by transaction
+
+#### Returns
+
+[`GasRefundType`](#gasrefundtype)
+
+Capped refund
+
+#### Example
+
+```typescript
+const refund = GasRefund.from(15000n);
+const gasUsed = 50000n;
+// Cap = 50000 / 5 = 10000
+GasRefund._cappedRefund.call(refund, gasUsed); // 10000n (capped)
+
+const smallRefund = GasRefund.from(5000n);
+GasRefund._cappedRefund.call(smallRefund, gasUsed); // 5000n (not capped)
+```
+
+***
+
+### \_equals()
+
+> **\_equals**(`this`, `other`): `boolean`
+
+Defined in: [src/primitives/GasRefund/equals.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/equals.js#L15)
+
+Check if two GasRefund values are equal
+
+#### Parameters
+
+##### this
+
+[`GasRefundType`](#gasrefundtype)
+
+##### other
+
+[`GasRefundType`](#gasrefundtype)
+
+Other gas refund value
+
+#### Returns
+
+`boolean`
+
+True if equal
+
+#### Example
+
+```typescript
+const a = GasRefund.from(15000n);
+const b = GasRefund.from(15000n);
+GasRefund._equals.call(a, b); // true
+```
+
+***
+
+### \_toBigInt()
+
+> **\_toBigInt**(`this`): `bigint`
+
+Defined in: [src/primitives/GasRefund/toBigInt.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/toBigInt.js#L13)
+
+Convert GasRefund to bigint (identity, for compatibility)
+
+#### Parameters
+
+##### this
+
+[`GasRefundType`](#gasrefundtype)
+
+#### Returns
+
+`bigint`
+
+Gas refund as bigint
+
+#### Example
+
+```typescript
+const refund = GasRefund.from(15000n);
+GasRefund.toBigInt(refund); // 15000n
+```
+
+***
+
+### \_toHex()
+
+> **\_toHex**(`this`): `string`
+
+Defined in: [src/primitives/GasRefund/toHex.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/toHex.js#L13)
+
+Convert GasRefund to hex string
+
+#### Parameters
+
+##### this
+
+[`GasRefundType`](#gasrefundtype)
+
+#### Returns
+
+`string`
+
+Gas refund as hex string (0x prefixed)
+
+#### Example
+
+```typescript
+const refund = GasRefund.from(15000n);
+GasRefund.toHex(refund); // "0x3a98"
+```
+
+***
+
+### \_toNumber()
+
+> **\_toNumber**(`this`): `number`
+
+Defined in: [src/primitives/GasRefund/toNumber.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/toNumber.js#L13)
+
+Convert GasRefund to number
+
+#### Parameters
+
+##### this
+
+[`GasRefundType`](#gasrefundtype)
+
+#### Returns
+
+`number`
+
+Gas refund as number
+
+#### Example
+
+```typescript
+const refund = GasRefund.from(15000n);
+GasRefund.toNumber(refund); // 15000
+```
+
+***
+
+### cappedRefund()
+
+> **cappedRefund**(`refund`, `gasUsed`): [`GasRefundType`](#gasrefundtype)
+
+Defined in: [src/primitives/GasRefund/index.ts:35](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/index.ts#L35)
+
+#### Parameters
+
+##### refund
+
+`string` | `number` | `bigint`
+
+##### gasUsed
+
+`bigint`
+
+#### Returns
+
+[`GasRefundType`](#gasrefundtype)
+
+***
+
+### equals()
+
+> **equals**(`value1`, `value2`): `boolean`
+
+Defined in: [src/primitives/GasRefund/index.ts:28](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/index.ts#L28)
+
+#### Parameters
+
+##### value1
+
+`string` | `number` | `bigint`
+
+##### value2
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`GasRefundType`](#gasrefundtype)
+
+Defined in: [src/primitives/GasRefund/from.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/from.js#L16)
+
+Create GasRefund from number, bigint, or string
+
+#### Parameters
+
+##### value
+
+Gas refund value
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`GasRefundType`](#gasrefundtype)
+
+Branded gas refund
+
+#### Throws
+
+If value is negative
+
+#### Example
+
+```typescript
+const refund = GasRefund.from(15000n); // SSTORE clear refund
+const noRefund = GasRefund.from(0n);
+```
+
+***
+
+### toBigInt()
+
+> **toBigInt**(`value`): `bigint`
+
+Defined in: [src/primitives/GasRefund/index.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/index.ts#L20)
+
+#### Parameters
+
+##### value
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`bigint`
+
+***
+
+### toHex()
+
+> **toHex**(`value`): `string`
+
+Defined in: [src/primitives/GasRefund/index.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/index.ts#L24)
+
+#### Parameters
+
+##### value
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`string`
+
+***
+
+### toNumber()
+
+> **toNumber**(`value`): `number`
+
+Defined in: [src/primitives/GasRefund/index.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/GasRefund/index.ts#L16)
+
+#### Parameters
+
+##### value
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`number`

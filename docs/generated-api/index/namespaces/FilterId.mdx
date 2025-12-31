@@ -1,0 +1,175 @@
+---
+title: "FilterId"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / FilterId
+
+# FilterId
+
+## Classes
+
+### InvalidFilterIdError
+
+Defined in: [src/primitives/FilterId/errors.js:4](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FilterId/errors.js#L4)
+
+Error thrown when FilterId is invalid
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidFilterIdError**(`message`, `details?`): [`InvalidFilterIdError`](#invalidfilteriderror)
+
+Defined in: [src/primitives/FilterId/errors.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FilterId/errors.js#L9)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### details?
+
+`object`
+
+###### Returns
+
+[`InvalidFilterIdError`](#invalidfilteriderror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### details
+
+> **details**: `object` \| `undefined`
+
+Defined in: [src/primitives/FilterId/errors.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FilterId/errors.js#L13)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/FilterId/errors.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FilterId/errors.js#L11)
+
+###### Inherited from
+
+`Error.name`
+
+## Type Aliases
+
+### FilterIdType
+
+> **FilterIdType** = `string` & `object`
+
+Defined in: [src/primitives/FilterId/FilterIdType.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FilterId/FilterIdType.ts#L8)
+
+Filter identifier returned by eth_newFilter, eth_newBlockFilter, eth_newPendingTransactionFilter
+
+Opaque identifier used to track active filters on a node. Typically a hex string like "0x1".
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"FilterId"`
+
+## Functions
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/FilterId/equals.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FilterId/equals.js#L13)
+
+Compare two FilterIds for equality
+
+#### Parameters
+
+##### a
+
+[`FilterIdType`](#filteridtype)
+
+##### b
+
+[`FilterIdType`](#filteridtype)
+
+#### Returns
+
+`boolean`
+
+#### Example
+
+```javascript
+import * as FilterId from './primitives/FilterId/index.js';
+const equal = FilterId.equals(id1, id2);
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`FilterIdType`](#filteridtype)
+
+Defined in: [src/primitives/FilterId/from.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FilterId/from.js#L15)
+
+Create FilterId from string
+
+#### Parameters
+
+##### value
+
+`string`
+
+Filter ID string
+
+#### Returns
+
+[`FilterIdType`](#filteridtype)
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as FilterId from './primitives/FilterId/index.js';
+const id = FilterId.from("0x1");
+```
+
+***
+
+### toString()
+
+> **toString**(`filterId`): `string`
+
+Defined in: [src/primitives/FilterId/toString.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FilterId/toString.js#L13)
+
+Convert FilterId to string
+
+#### Parameters
+
+##### filterId
+
+[`FilterIdType`](#filteridtype)
+
+#### Returns
+
+`string`
+
+#### Example
+
+```javascript
+import * as FilterId from './primitives/FilterId/index.js';
+const str = FilterId.toString(id); // "0x1"
+```

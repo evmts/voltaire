@@ -1,0 +1,42 @@
+---
+title: "Keccak"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [evm](../index.mdx) / Keccak
+
+# Keccak
+
+## Functions
+
+### sha3()
+
+> **sha3**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/keccak/0x20\_SHA3.js:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/keccak/0x20_SHA3.js#L25)
+
+SHA3 opcode (0x20) - Compute Keccak-256 hash
+
+Pops offset and length from stack, reads data from memory,
+computes Keccak-256 hash, and pushes the 32-byte result.
+
+Gas cost: 30 (base) + 6 * word_count + memory expansion
+where word_count = ceil(length / 32)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any

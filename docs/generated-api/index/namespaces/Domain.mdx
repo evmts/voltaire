@@ -1,0 +1,845 @@
+---
+title: "Domain"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / Domain
+
+# Domain
+
+## Classes
+
+### InvalidDomainError
+
+Defined in: [src/primitives/Domain/errors.js:4](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/errors.js#L4)
+
+Error thrown when Domain is invalid
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidDomainError**(`message`, `context?`): [`InvalidDomainError`](#invaliddomainerror)
+
+Defined in: [src/primitives/Domain/errors.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/errors.js#L9)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### context?
+
+`any`
+
+###### Returns
+
+[`InvalidDomainError`](#invaliddomainerror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### context
+
+> **context**: `any`
+
+Defined in: [src/primitives/Domain/errors.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/errors.js#L12)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Domain/errors.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/errors.js#L11)
+
+###### Inherited from
+
+`Error.name`
+
+## Type Aliases
+
+### DomainType
+
+> **DomainType** = `object`
+
+Defined in: [src/primitives/Domain/DomainType.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/DomainType.ts#L19)
+
+EIP-712 Domain Separator structure
+Used to create domain-specific signatures for dApps
+
+At least one field must be defined
+
+#### Properties
+
+##### chainId?
+
+> `readonly` `optional` **chainId**: `ChainIdType`
+
+Defined in: [src/primitives/Domain/DomainType.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/DomainType.ts#L22)
+
+##### name?
+
+> `readonly` `optional` **name**: `string`
+
+Defined in: [src/primitives/Domain/DomainType.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/DomainType.ts#L20)
+
+##### salt?
+
+> `readonly` `optional` **salt**: [`HashType`](HashType-2.mdx#hashtype)
+
+Defined in: [src/primitives/Domain/DomainType.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/DomainType.ts#L24)
+
+##### verifyingContract?
+
+> `readonly` `optional` **verifyingContract**: [`AddressType`](../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Domain/DomainType.ts:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/DomainType.ts#L23)
+
+##### version?
+
+> `readonly` `optional` **version**: `string`
+
+Defined in: [src/primitives/Domain/DomainType.ts:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/DomainType.ts#L21)
+
+***
+
+### ERC5267Response
+
+> **ERC5267Response** = `object`
+
+Defined in: [src/primitives/Domain/ERC5267Type.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/ERC5267Type.ts#L11)
+
+ERC-5267 eip712Domain() return type
+
+Standardized format for returning EIP-712 domain parameters
+from smart contracts implementing ERC-5267.
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-5267
+
+#### Properties
+
+##### chainId
+
+> `readonly` **chainId**: `bigint`
+
+Defined in: [src/primitives/Domain/ERC5267Type.ts:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/ERC5267Type.ts#L15)
+
+##### extensions
+
+> `readonly` **extensions**: readonly `bigint`[]
+
+Defined in: [src/primitives/Domain/ERC5267Type.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/ERC5267Type.ts#L18)
+
+##### fields
+
+> `readonly` **fields**: `Uint8Array`
+
+Defined in: [src/primitives/Domain/ERC5267Type.ts:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/ERC5267Type.ts#L12)
+
+##### name
+
+> `readonly` **name**: `string`
+
+Defined in: [src/primitives/Domain/ERC5267Type.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/ERC5267Type.ts#L13)
+
+##### salt
+
+> `readonly` **salt**: `Uint8Array`
+
+Defined in: [src/primitives/Domain/ERC5267Type.ts:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/ERC5267Type.ts#L17)
+
+##### verifyingContract
+
+> `readonly` **verifyingContract**: [`AddressType`](../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Domain/ERC5267Type.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/ERC5267Type.ts#L16)
+
+##### version
+
+> `readonly` **version**: `string`
+
+Defined in: [src/primitives/Domain/ERC5267Type.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/ERC5267Type.ts#L14)
+
+## Variables
+
+### ERC5267\_FIELDS
+
+> `const` **ERC5267\_FIELDS**: `object`
+
+Defined in: [src/primitives/Domain/ERC5267Type.ts:32](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/ERC5267Type.ts#L32)
+
+Field bitmap positions (ERC-5267 spec)
+
+Each bit indicates presence of corresponding field:
+- 0x01: name
+- 0x02: version
+- 0x04: chainId
+- 0x08: verifyingContract
+- 0x10: salt
+- 0x20: extensions (reserved for future use)
+
+#### Type Declaration
+
+##### CHAIN\_ID
+
+> `readonly` **CHAIN\_ID**: `4` = `0x04`
+
+##### EXTENSIONS
+
+> `readonly` **EXTENSIONS**: `32` = `0x20`
+
+##### NAME
+
+> `readonly` **NAME**: `1` = `0x01`
+
+##### SALT
+
+> `readonly` **SALT**: `16` = `0x10`
+
+##### VERIFYING\_CONTRACT
+
+> `readonly` **VERIFYING\_CONTRACT**: `8` = `0x08`
+
+##### VERSION
+
+> `readonly` **VERSION**: `2` = `0x02`
+
+## Functions
+
+### \_encodeData()
+
+> **\_encodeData**(`primaryType`, `data`, `types`, `crypto`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Domain/encodeData.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/encodeData.js#L22)
+
+Encode EIP-712 data structure
+
+encodeData(primaryType, data, types) = encodeType(primaryType, types) || encodeValue(data)
+
+#### Parameters
+
+##### primaryType
+
+`string`
+
+Primary type name
+
+##### data
+
+`any`
+
+Data object
+
+##### types
+
+`Record`\<`string`, readonly `EIP712Field`[]\>
+
+Type definitions
+
+##### crypto
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded data
+
+***
+
+### \_encodeType()
+
+> **\_encodeType**(`primaryType`, `types`): `string`
+
+Defined in: [src/primitives/Domain/encodeType.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/encodeType.js#L15)
+
+Encode EIP-712 type definition
+
+Example: "Mail(Person from,Person to,string contents)Person(string name,address wallet)"
+
+#### Parameters
+
+##### primaryType
+
+`string`
+
+Primary type name
+
+##### types
+
+`Record`\<`string`, readonly `EIP712Field`[]\>
+
+Type definitions
+
+#### Returns
+
+`string`
+
+Encoded type string
+
+***
+
+### \_encodeValue()
+
+> **\_encodeValue**(`type`, `value`, `types`, `crypto`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Domain/encodeValue.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/encodeValue.js#L20)
+
+Encode EIP-712 value according to type
+
+#### Parameters
+
+##### type
+
+`string`
+
+Field type
+
+##### value
+
+`any`
+
+Field value
+
+##### types
+
+`Record`\<`string`, readonly `EIP712Field`[]\>
+
+Type definitions
+
+##### crypto
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded value (32 bytes)
+
+***
+
+### \_from()
+
+> **\_from**(`domain`): [`DomainType`](#domaintype)
+
+Defined in: [src/primitives/Domain/from.js:28](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/from.js#L28)
+
+Create Domain from object
+
+#### Parameters
+
+##### domain
+
+Domain object
+
+###### chainId?
+
+`number` \| `ChainIdType`
+
+EIP-155 chain ID
+
+###### name?
+
+`string`
+
+dApp name
+
+###### salt?
+
+`string` \| [`HashType`](HashType-2.mdx#hashtype)
+
+Salt for disambiguation
+
+###### verifyingContract?
+
+`string` \| [`AddressType`](../../primitives/Address.mdx#addresstype)
+
+Contract address
+
+###### version?
+
+`string`
+
+Domain version
+
+#### Returns
+
+[`DomainType`](#domaintype)
+
+Domain
+
+#### Throws
+
+If domain has no fields
+
+#### Example
+
+```javascript
+import * as Domain from './primitives/Domain/index.js';
+const domain = Domain.from({
+  name: 'MyDApp',
+  version: '1',
+  chainId: 1,
+  verifyingContract: '0x123...'
+});
+```
+
+***
+
+### \_getEIP712DomainType()
+
+> **\_getEIP712DomainType**(`domain`): `object`[]
+
+Defined in: [src/primitives/Domain/getEIP712DomainType.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/getEIP712DomainType.js#L7)
+
+Get EIP712Domain type definition based on domain fields present
+
+#### Parameters
+
+##### domain
+
+[`DomainType`](#domaintype)
+
+Domain
+
+#### Returns
+
+`object`[]
+
+Type definition
+
+***
+
+### \_getFieldsBitmap()
+
+> **\_getFieldsBitmap**(`domain`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Domain/getFieldsBitmap.js:26](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/getFieldsBitmap.js#L26)
+
+Calculate ERC-5267 field bitmap
+
+Returns 1-byte value where each bit indicates presence of a field:
+- 0x01: name
+- 0x02: version
+- 0x04: chainId
+- 0x08: verifyingContract
+- 0x10: salt
+- 0x20: extensions
+
+#### Parameters
+
+##### domain
+
+[`DomainType`](#domaintype)
+
+EIP-712 domain
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+- 1-byte bitmap
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-5267
+
+#### Example
+
+```javascript
+const domain = { name: "Test", version: "1", chainId: 1n };
+const bitmap = getFieldsBitmap(domain);
+// bitmap[0] === 0x07 (name + version + chainId bits set)
+```
+
+***
+
+### \_hashType()
+
+> **\_hashType**(`primaryType`, `types`, `crypto`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Domain/hashType.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/hashType.js#L14)
+
+Hash EIP-712 type definition
+
+typeHash = keccak256(encodeType(primaryType, types))
+
+#### Parameters
+
+##### primaryType
+
+`string`
+
+Primary type name
+
+##### types
+
+`Record`\<`string`, readonly `EIP712Field`[]\>
+
+Type definitions
+
+##### crypto
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Type hash (32 bytes)
+
+***
+
+### \_toErc5267Response()
+
+> **\_toErc5267Response**(`domain`): [`ERC5267Response`](#erc5267response)
+
+Defined in: [src/primitives/Domain/toErc5267Response.js:37](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/toErc5267Response.js#L37)
+
+Convert Domain to ERC-5267 eip712Domain() response format
+
+Calculates field bitmap based on which domain fields are present,
+then returns standardized tuple format. Missing fields are filled
+with appropriate default values per ERC-5267 spec.
+
+#### Parameters
+
+##### domain
+
+[`DomainType`](#domaintype)
+
+EIP-712 domain
+
+#### Returns
+
+[`ERC5267Response`](#erc5267response)
+
+- ERC-5267 formatted response
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-5267
+
+#### Example
+
+```javascript
+import * as Domain from './primitives/Domain/index.js';
+
+const domain = Domain.from({
+  name: "MyContract",
+  version: "1.0.0",
+  chainId: 1,
+  verifyingContract: "0x1234567890123456789012345678901234567890"
+});
+
+const response = Domain.toErc5267Response(domain);
+// response.fields[0] === 0x0f (name + version + chainId + verifyingContract)
+// response.name === "MyContract"
+// response.version === "1.0.0"
+// response.chainId === 1n
+// response.verifyingContract === domain.verifyingContract
+// response.salt === new Uint8Array(32) (all zeros)
+// response.extensions === []
+```
+
+***
+
+### \_toHash()
+
+> **\_toHash**(`domain`, `crypto`): [`DomainSeparatorType`](DomainSeparator.mdx#domainseparatortype)
+
+Defined in: [src/primitives/Domain/toHash.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/toHash.js#L18)
+
+Compute EIP-712 domain separator hash
+
+#### Parameters
+
+##### domain
+
+[`DomainType`](#domaintype)
+
+Domain
+
+##### crypto
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+#### Returns
+
+[`DomainSeparatorType`](DomainSeparator.mdx#domainseparatortype)
+
+Domain separator hash
+
+#### Example
+
+```javascript
+import { keccak256 } from './crypto/Keccak256/index.js';
+const domainSep = Domain.toHash(domain, { keccak256 });
+```
+
+***
+
+### encodeData()
+
+> **encodeData**(`primaryType`, `data`, `types`, `crypto`): `Uint8Array`
+
+Defined in: [src/primitives/Domain/index.ts:47](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/index.ts#L47)
+
+#### Parameters
+
+##### primaryType
+
+`string`
+
+##### data
+
+`any`
+
+##### types
+
+`Record`\<`string`, readonly `object`[]\>
+
+##### crypto
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### encodeType()
+
+> **encodeType**(`primaryType`, `types`): `string`
+
+Defined in: [src/primitives/Domain/index.ts:62](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/index.ts#L62)
+
+#### Parameters
+
+##### primaryType
+
+`string`
+
+##### types
+
+`Record`\<`string`, readonly `object`[]\>
+
+#### Returns
+
+`string`
+
+***
+
+### encodeValue()
+
+> **encodeValue**(`type`, `value`, `types`, `crypto`): `Uint8Array`
+
+Defined in: [src/primitives/Domain/index.ts:72](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/index.ts#L72)
+
+#### Parameters
+
+##### type
+
+`string`
+
+##### value
+
+`any`
+
+##### types
+
+`Record`\<`string`, readonly `object`[]\>
+
+##### crypto
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### from()
+
+> **from**(`domain`): [`DomainType`](#domaintype)
+
+Defined in: [src/primitives/Domain/index.ts:28](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/index.ts#L28)
+
+#### Parameters
+
+##### domain
+
+###### chainId?
+
+`number` \| `ChainIdType`
+
+###### name?
+
+`string`
+
+###### salt?
+
+`string` \| [`HashType`](HashType-2.mdx#hashtype)
+
+###### verifyingContract?
+
+`string` \| [`AddressType`](../../primitives/Address.mdx#addresstype)
+
+###### version?
+
+`string`
+
+#### Returns
+
+[`DomainType`](#domaintype)
+
+***
+
+### getEIP712DomainType()
+
+> **getEIP712DomainType**(`domain`): `object`[]
+
+Defined in: [src/primitives/Domain/index.ts:100](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/index.ts#L100)
+
+#### Parameters
+
+##### domain
+
+[`DomainType`](#domaintype)
+
+#### Returns
+
+`object`[]
+
+***
+
+### getFieldsBitmap()
+
+> **getFieldsBitmap**(`domain`): `Uint8Array`
+
+Defined in: [src/primitives/Domain/index.ts:106](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/index.ts#L106)
+
+#### Parameters
+
+##### domain
+
+[`DomainType`](#domaintype)
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### hashType()
+
+> **hashType**(`primaryType`, `types`, `crypto`): `Uint8Array`
+
+Defined in: [src/primitives/Domain/index.ts:87](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/index.ts#L87)
+
+#### Parameters
+
+##### primaryType
+
+`string`
+
+##### types
+
+`Record`\<`string`, readonly `object`[]\>
+
+##### crypto
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### toErc5267Response()
+
+> **toErc5267Response**(`domain`): [`ERC5267Response`](#erc5267response)
+
+Defined in: [src/primitives/Domain/index.ts:112](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/index.ts#L112)
+
+#### Parameters
+
+##### domain
+
+[`DomainType`](#domaintype)
+
+#### Returns
+
+[`ERC5267Response`](#erc5267response)
+
+***
+
+### toHash()
+
+> **toHash**(`domain`, `crypto`): [`DomainSeparatorType`](DomainSeparator.mdx#domainseparatortype)
+
+Defined in: [src/primitives/Domain/index.ts:38](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Domain/index.ts#L38)
+
+#### Parameters
+
+##### domain
+
+[`DomainType`](#domaintype)
+
+##### crypto
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+#### Returns
+
+[`DomainSeparatorType`](DomainSeparator.mdx#domainseparatortype)

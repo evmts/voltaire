@@ -1,0 +1,478 @@
+---
+title: "Epoch"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / Epoch
+
+# Epoch
+
+## Type Aliases
+
+### EpochType
+
+> **EpochType** = `bigint` & `object`
+
+Defined in: [src/primitives/Epoch/EpochType.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Epoch/EpochType.ts#L13)
+
+Epoch type
+
+Represents a consensus layer epoch (32 slots = 6.4 minutes).
+Epochs are used for validator duties, finality, and checkpoint organization.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Epoch"`
+
+#### See
+
+ - https://voltaire.tevm.sh/primitives/epoch for Epoch documentation
+ - https://github.com/ethereum/consensus-specs for Consensus specifications
+
+#### Since
+
+0.0.0
+
+## Variables
+
+### Epoch
+
+> `const` **Epoch**: `object`
+
+Defined in: [src/primitives/Epoch/index.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Epoch/index.ts#L11)
+
+#### Type Declaration
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+Check if Epoch values are equal
+
+###### Parameters
+
+###### a
+
+[`EpochType`](#epochtype)
+
+First epoch
+
+###### b
+
+[`EpochType`](#epochtype)
+
+Second epoch
+
+###### Returns
+
+`boolean`
+
+true if equal
+
+###### See
+
+https://voltaire.tevm.sh/primitives/epoch for Epoch documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Epoch from './primitives/Epoch/index.js';
+const a = Epoch.from(100000n);
+const b = Epoch.from(100000n);
+const result = Epoch.equals(a, b); // true
+```
+
+##### from()
+
+> **from**: (`value`) => [`EpochType`](#epochtype)
+
+Create Epoch from number, bigint, or string
+
+###### Parameters
+
+###### value
+
+Epoch number (number, bigint, or decimal/hex string)
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+[`EpochType`](#epochtype)
+
+Epoch value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/epoch for Epoch documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is negative or invalid
+
+###### Example
+
+```javascript
+import * as Epoch from './primitives/Epoch/index.js';
+const epoch1 = Epoch.from(100000n);
+const epoch2 = Epoch.from(100000);
+const epoch3 = Epoch.from("0x186a0");
+```
+
+##### toBigInt()
+
+> **toBigInt**: (`epoch`) => `bigint`
+
+Convert Epoch to bigint
+
+###### Parameters
+
+###### epoch
+
+[`EpochType`](#epochtype)
+
+Epoch value
+
+###### Returns
+
+`bigint`
+
+BigInt representation
+
+###### See
+
+https://voltaire.tevm.sh/primitives/epoch for Epoch documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Epoch from './primitives/Epoch/index.js';
+const epoch = Epoch.from(100000);
+const big = Epoch.toBigInt(epoch); // 100000n
+```
+
+##### toNumber()
+
+> **toNumber**: (`epoch`) => `number`
+
+Convert Epoch to number
+
+###### Parameters
+
+###### epoch
+
+[`EpochType`](#epochtype)
+
+Epoch value
+
+###### Returns
+
+`number`
+
+Number representation
+
+###### See
+
+https://voltaire.tevm.sh/primitives/epoch for Epoch documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If epoch exceeds safe integer range
+
+###### Example
+
+```javascript
+import * as Epoch from './primitives/Epoch/index.js';
+const epoch = Epoch.from(100000n);
+const num = Epoch.toNumber(epoch); // 100000
+```
+
+##### toSlot()
+
+> **toSlot**: (`epoch`) => [`SlotType`](Slot.mdx#slottype)
+
+Convert Epoch to the first Slot of that epoch
+
+Each epoch contains 32 slots. This function returns the first slot: slot = epoch * 32.
+
+###### Parameters
+
+###### epoch
+
+[`EpochType`](#epochtype)
+
+Epoch value
+
+###### Returns
+
+[`SlotType`](Slot.mdx#slottype)
+
+First slot of the epoch
+
+###### See
+
+https://voltaire.tevm.sh/primitives/epoch for Epoch documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Epoch from './primitives/Epoch/index.js';
+const epoch = Epoch.from(3n);
+const slot = Epoch.toSlot(epoch); // 96n (3 * 32)
+```
+
+## Functions
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Epoch/equals.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Epoch/equals.js#L18)
+
+Check if Epoch values are equal
+
+#### Parameters
+
+##### a
+
+[`EpochType`](#epochtype)
+
+First epoch
+
+##### b
+
+[`EpochType`](#epochtype)
+
+Second epoch
+
+#### Returns
+
+`boolean`
+
+true if equal
+
+#### See
+
+https://voltaire.tevm.sh/primitives/epoch for Epoch documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Epoch from './primitives/Epoch/index.js';
+const a = Epoch.from(100000n);
+const b = Epoch.from(100000n);
+const result = Epoch.equals(a, b); // true
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`EpochType`](#epochtype)
+
+Defined in: [src/primitives/Epoch/from.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Epoch/from.js#L17)
+
+Create Epoch from number, bigint, or string
+
+#### Parameters
+
+##### value
+
+Epoch number (number, bigint, or decimal/hex string)
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`EpochType`](#epochtype)
+
+Epoch value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/epoch for Epoch documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is negative or invalid
+
+#### Example
+
+```javascript
+import * as Epoch from './primitives/Epoch/index.js';
+const epoch1 = Epoch.from(100000n);
+const epoch2 = Epoch.from(100000);
+const epoch3 = Epoch.from("0x186a0");
+```
+
+***
+
+### toBigInt()
+
+> **toBigInt**(`epoch`): `bigint`
+
+Defined in: [src/primitives/Epoch/toBigInt.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Epoch/toBigInt.js#L16)
+
+Convert Epoch to bigint
+
+#### Parameters
+
+##### epoch
+
+[`EpochType`](#epochtype)
+
+Epoch value
+
+#### Returns
+
+`bigint`
+
+BigInt representation
+
+#### See
+
+https://voltaire.tevm.sh/primitives/epoch for Epoch documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Epoch from './primitives/Epoch/index.js';
+const epoch = Epoch.from(100000);
+const big = Epoch.toBigInt(epoch); // 100000n
+```
+
+***
+
+### toNumber()
+
+> **toNumber**(`epoch`): `number`
+
+Defined in: [src/primitives/Epoch/toNumber.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Epoch/toNumber.js#L16)
+
+Convert Epoch to number
+
+#### Parameters
+
+##### epoch
+
+[`EpochType`](#epochtype)
+
+Epoch value
+
+#### Returns
+
+`number`
+
+Number representation
+
+#### See
+
+https://voltaire.tevm.sh/primitives/epoch for Epoch documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If epoch exceeds safe integer range
+
+#### Example
+
+```javascript
+import * as Epoch from './primitives/Epoch/index.js';
+const epoch = Epoch.from(100000n);
+const num = Epoch.toNumber(epoch); // 100000
+```
+
+***
+
+### toSlot()
+
+> **toSlot**(`epoch`): [`SlotType`](Slot.mdx#slottype)
+
+Defined in: [src/primitives/Epoch/toSlot.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Epoch/toSlot.js#L20)
+
+Convert Epoch to the first Slot of that epoch
+
+Each epoch contains 32 slots. This function returns the first slot: slot = epoch * 32.
+
+#### Parameters
+
+##### epoch
+
+[`EpochType`](#epochtype)
+
+Epoch value
+
+#### Returns
+
+[`SlotType`](Slot.mdx#slottype)
+
+First slot of the epoch
+
+#### See
+
+https://voltaire.tevm.sh/primitives/epoch for Epoch documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Epoch from './primitives/Epoch/index.js';
+const epoch = Epoch.from(3n);
+const slot = Epoch.toSlot(epoch); // 96n (3 * 32)
+```

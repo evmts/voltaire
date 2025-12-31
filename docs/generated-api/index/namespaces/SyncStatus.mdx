@@ -1,0 +1,290 @@
+---
+title: "SyncStatus"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / SyncStatus
+
+# SyncStatus
+
+## Type Aliases
+
+### SyncProgress
+
+> **SyncProgress** = `object`
+
+Defined in: [src/primitives/SyncStatus/SyncStatusType.ts:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/SyncStatusType.ts#L7)
+
+Active sync progress information
+
+#### Properties
+
+##### currentBlock
+
+> `readonly` **currentBlock**: [`BlockNumberType`](BlockNumber.mdx#blocknumbertype)
+
+Defined in: [src/primitives/SyncStatus/SyncStatusType.ts:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/SyncStatusType.ts#L9)
+
+##### highestBlock
+
+> `readonly` **highestBlock**: [`BlockNumberType`](BlockNumber.mdx#blocknumbertype)
+
+Defined in: [src/primitives/SyncStatus/SyncStatusType.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/SyncStatusType.ts#L10)
+
+##### knownStates?
+
+> `readonly` `optional` **knownStates**: [`Type`](../../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/SyncStatus/SyncStatusType.ts:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/SyncStatusType.ts#L12)
+
+##### pulledStates?
+
+> `readonly` `optional` **pulledStates**: [`Type`](../../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/SyncStatus/SyncStatusType.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/SyncStatusType.ts#L11)
+
+##### startingBlock
+
+> `readonly` **startingBlock**: [`BlockNumberType`](BlockNumber.mdx#blocknumbertype)
+
+Defined in: [src/primitives/SyncStatus/SyncStatusType.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/SyncStatusType.ts#L8)
+
+***
+
+### SyncStatusType
+
+> **SyncStatusType** = `false` \| [`SyncProgress`](#syncprogress)
+
+Defined in: [src/primitives/SyncStatus/SyncStatusType.ts:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/SyncStatusType.ts#L34)
+
+Sync status from eth_syncing
+
+false = not syncing (node is fully synced)
+object = actively syncing with progress information
+
+#### Example
+
+```typescript
+// Not syncing
+const notSyncing: SyncStatusType = false;
+
+// Actively syncing
+const syncing: SyncStatusType = {
+  startingBlock: 0n,
+  currentBlock: 1000n,
+  highestBlock: 2000n,
+};
+```
+
+## Variables
+
+### SyncStatus
+
+> `const` **SyncStatus**: `object`
+
+Defined in: [src/primitives/SyncStatus/index.ts:44](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/index.ts#L44)
+
+#### Type Declaration
+
+##### from()
+
+> **from**: (`value`) => [`SyncStatusType`](#syncstatustype) = `_from`
+
+Create SyncStatus from RPC response
+
+###### Parameters
+
+###### value
+
+RPC sync status
+
+`boolean` | \{ `currentBlock`: `string` \| `number` \| `bigint`; `highestBlock`: `string` \| `number` \| `bigint`; `knownStates?`: `string` \| `number` \| `bigint`; `pulledStates?`: `string` \| `number` \| `bigint`; `startingBlock`: `string` \| `number` \| `bigint`; \}
+
+###### Returns
+
+[`SyncStatusType`](#syncstatustype)
+
+SyncStatus
+
+###### Example
+
+```typescript
+const notSyncing = SyncStatus.from(false);
+const syncing = SyncStatus.from({
+  startingBlock: 0n,
+  currentBlock: 1000n,
+  highestBlock: 2000n,
+});
+```
+
+##### getProgress()
+
+> **getProgress**: (`status`) => `number`
+
+###### Parameters
+
+###### status
+
+`true` | [`SyncStatusType`](#syncstatustype) | \{ `currentBlock`: `bigint`; `highestBlock`: `bigint`; `startingBlock`: `bigint`; \}
+
+###### Returns
+
+`number`
+
+##### isSyncing()
+
+> **isSyncing**: (`status`) => `boolean`
+
+###### Parameters
+
+###### status
+
+`true` | [`SyncStatusType`](#syncstatustype) | \{ `currentBlock`: `bigint`; `highestBlock`: `bigint`; `startingBlock`: `bigint`; \}
+
+###### Returns
+
+`boolean`
+
+## Functions
+
+### \_getProgress()
+
+> **\_getProgress**(`status`): `number`
+
+Defined in: [src/primitives/SyncStatus/getProgress.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/getProgress.js#L14)
+
+Calculate sync progress as percentage
+
+#### Parameters
+
+##### status
+
+[`SyncStatusType`](#syncstatustype)
+
+Sync status
+
+#### Returns
+
+`number`
+
+Progress percentage (0-100), or 100 if not syncing
+
+#### Throws
+
+If status is syncing but has invalid block numbers
+
+#### Example
+
+```typescript
+const progress = SyncStatus.getProgress(status);
+console.log(`Syncing: ${progress.toFixed(2)}%`);
+```
+
+***
+
+### \_isSyncing()
+
+> **\_isSyncing**(`status`): `boolean`
+
+Defined in: [src/primitives/SyncStatus/isSyncing.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/isSyncing.js#L16)
+
+Check if node is actively syncing
+
+#### Parameters
+
+##### status
+
+[`SyncStatusType`](#syncstatustype)
+
+Sync status
+
+#### Returns
+
+`boolean`
+
+True if syncing
+
+#### Example
+
+```typescript
+if (SyncStatus.isSyncing(status)) {
+  console.log("Node is syncing");
+} else {
+  console.log("Node is synced");
+}
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`SyncStatusType`](#syncstatustype)
+
+Defined in: [src/primitives/SyncStatus/from.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/from.js#L17)
+
+Create SyncStatus from RPC response
+
+#### Parameters
+
+##### value
+
+RPC sync status
+
+`boolean` | \{ `currentBlock`: `string` \| `number` \| `bigint`; `highestBlock`: `string` \| `number` \| `bigint`; `knownStates?`: `string` \| `number` \| `bigint`; `pulledStates?`: `string` \| `number` \| `bigint`; `startingBlock`: `string` \| `number` \| `bigint`; \}
+
+#### Returns
+
+[`SyncStatusType`](#syncstatustype)
+
+SyncStatus
+
+#### Example
+
+```typescript
+const notSyncing = SyncStatus.from(false);
+const syncing = SyncStatus.from({
+  startingBlock: 0n,
+  currentBlock: 1000n,
+  highestBlock: 2000n,
+});
+```
+
+***
+
+### getProgress()
+
+> **getProgress**(`status`): `number`
+
+Defined in: [src/primitives/SyncStatus/index.ts:27](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/index.ts#L27)
+
+#### Parameters
+
+##### status
+
+`true` | [`SyncStatusType`](#syncstatustype) | \{ `currentBlock`: `bigint`; `highestBlock`: `bigint`; `startingBlock`: `bigint`; \}
+
+#### Returns
+
+`number`
+
+***
+
+### isSyncing()
+
+> **isSyncing**(`status`): `boolean`
+
+Defined in: [src/primitives/SyncStatus/index.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/SyncStatus/index.ts#L14)
+
+#### Parameters
+
+##### status
+
+`true` | [`SyncStatusType`](#syncstatustype) | \{ `currentBlock`: `bigint`; `highestBlock`: `bigint`; `startingBlock`: `bigint`; \}
+
+#### Returns
+
+`boolean`

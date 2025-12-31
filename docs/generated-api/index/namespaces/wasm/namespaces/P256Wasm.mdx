@@ -1,0 +1,348 @@
+---
+title: "P256Wasm"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../index.mdx) / [index](../../../index.mdx) / [wasm](../index.mdx) / P256Wasm
+
+# P256Wasm
+
+## Classes
+
+### InvalidPrivateKeyError
+
+Defined in: [src/crypto/p256.wasm.ts:64](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L64)
+
+#### Extends
+
+- [`P256Error`](#p256error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidPrivateKeyError**(`message`): [`InvalidPrivateKeyError`](#invalidprivatekeyerror)
+
+Defined in: [src/crypto/p256.wasm.ts:65](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L65)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### Returns
+
+[`InvalidPrivateKeyError`](#invalidprivatekeyerror)
+
+###### Overrides
+
+[`P256Error`](#p256error).[`constructor`](#constructor-3)
+
+***
+
+### InvalidPublicKeyError
+
+Defined in: [src/crypto/p256.wasm.ts:57](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L57)
+
+#### Extends
+
+- [`P256Error`](#p256error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidPublicKeyError**(`message`): [`InvalidPublicKeyError`](#invalidpublickeyerror)
+
+Defined in: [src/crypto/p256.wasm.ts:58](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L58)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### Returns
+
+[`InvalidPublicKeyError`](#invalidpublickeyerror)
+
+###### Overrides
+
+[`P256Error`](#p256error).[`constructor`](#constructor-3)
+
+***
+
+### InvalidSignatureError
+
+Defined in: [src/crypto/p256.wasm.ts:50](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L50)
+
+#### Extends
+
+- [`P256Error`](#p256error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidSignatureError**(`message`): [`InvalidSignatureError`](#invalidsignatureerror)
+
+Defined in: [src/crypto/p256.wasm.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L51)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### Returns
+
+[`InvalidSignatureError`](#invalidsignatureerror)
+
+###### Overrides
+
+[`P256Error`](#p256error).[`constructor`](#constructor-3)
+
+***
+
+### P256Error
+
+Defined in: [src/crypto/p256.wasm.ts:43](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L43)
+
+#### Extends
+
+- `Error`
+
+#### Extended by
+
+- [`InvalidSignatureError`](#invalidsignatureerror)
+- [`InvalidPublicKeyError`](#invalidpublickeyerror)
+- [`InvalidPrivateKeyError`](#invalidprivatekeyerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new P256Error**(`message`): [`P256Error`](#p256error)
+
+Defined in: [src/crypto/p256.wasm.ts:44](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L44)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### Returns
+
+[`P256Error`](#p256error)
+
+###### Overrides
+
+`Error.constructor`
+
+## Type Aliases
+
+### PrivateKey
+
+> **PrivateKey** = `Uint8Array`
+
+Defined in: [src/crypto/p256.wasm.ts:26](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L26)
+
+***
+
+### PublicKey
+
+> **PublicKey** = `Uint8Array`
+
+Defined in: [src/crypto/p256.wasm.ts:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L25)
+
+***
+
+### Signature
+
+> **Signature** = `object`
+
+Defined in: [src/crypto/p256.wasm.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L20)
+
+#### Properties
+
+##### r
+
+> **r**: `Uint8Array`
+
+Defined in: [src/crypto/p256.wasm.ts:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L21)
+
+##### s
+
+> **s**: `Uint8Array`
+
+Defined in: [src/crypto/p256.wasm.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L22)
+
+## Variables
+
+### CURVE\_ORDER
+
+> `const` **CURVE\_ORDER**: `115792089210356248762697446949407573529996955224135760342422259061068512044369n` = `0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n`
+
+Defined in: [src/crypto/p256.wasm.ts:32](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L32)
+
+***
+
+### PRIVATE\_KEY\_SIZE
+
+> `const` **PRIVATE\_KEY\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/p256.wasm.ts:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L34)
+
+***
+
+### PUBLIC\_KEY\_SIZE
+
+> `const` **PUBLIC\_KEY\_SIZE**: `64` = `64`
+
+Defined in: [src/crypto/p256.wasm.ts:35](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L35)
+
+***
+
+### SHARED\_SECRET\_SIZE
+
+> `const` **SHARED\_SECRET\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/p256.wasm.ts:37](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L37)
+
+***
+
+### SIGNATURE\_COMPONENT\_SIZE
+
+> `const` **SIGNATURE\_COMPONENT\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/p256.wasm.ts:36](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L36)
+
+## Functions
+
+### derivePublicKey()
+
+> **derivePublicKey**(`privateKey`): [`PublicKey`](#publickey)
+
+Defined in: [src/crypto/p256.wasm.ts:152](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L152)
+
+#### Parameters
+
+##### privateKey
+
+[`PrivateKey`](#privatekey)
+
+#### Returns
+
+[`PublicKey`](#publickey)
+
+***
+
+### ecdh()
+
+> **ecdh**(`privateKey`, `publicKey`): `Uint8Array`
+
+Defined in: [src/crypto/p256.wasm.ts:175](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L175)
+
+#### Parameters
+
+##### privateKey
+
+[`PrivateKey`](#privatekey)
+
+##### publicKey
+
+[`PublicKey`](#publickey)
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### sign()
+
+> **sign**(`messageHash`, `privateKey`): [`Signature`](#signature)
+
+Defined in: [src/crypto/p256.wasm.ts:75](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L75)
+
+#### Parameters
+
+##### messageHash
+
+[`HashType`](../../HashType-2.mdx#hashtype)
+
+##### privateKey
+
+[`PrivateKey`](#privatekey)
+
+#### Returns
+
+[`Signature`](#signature)
+
+***
+
+### validatePrivateKey()
+
+> **validatePrivateKey**(`privateKey`): `boolean`
+
+Defined in: [src/crypto/p256.wasm.ts:202](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L202)
+
+#### Parameters
+
+##### privateKey
+
+[`PrivateKey`](#privatekey)
+
+#### Returns
+
+`boolean`
+
+***
+
+### validatePublicKey()
+
+> **validatePublicKey**(`publicKey`): `boolean`
+
+Defined in: [src/crypto/p256.wasm.ts:216](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L216)
+
+#### Parameters
+
+##### publicKey
+
+[`PublicKey`](#publickey)
+
+#### Returns
+
+`boolean`
+
+***
+
+### verify()
+
+> **verify**(`signature`, `messageHash`, `publicKey`): `boolean`
+
+Defined in: [src/crypto/p256.wasm.ts:100](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/p256.wasm.ts#L100)
+
+#### Parameters
+
+##### signature
+
+[`Signature`](#signature)
+
+##### messageHash
+
+[`HashType`](../../HashType-2.mdx#hashtype)
+
+##### publicKey
+
+[`PublicKey`](#publickey)
+
+#### Returns
+
+`boolean`

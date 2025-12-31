@@ -1,0 +1,291 @@
+---
+title: "Block"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [evm](../index.mdx) / Block
+
+# Block
+
+## Functions
+
+### handler\_0x40\_BLOCKHASH()
+
+> **handler\_0x40\_BLOCKHASH**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/block/0x40\_BLOCKHASH.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/block/0x40_BLOCKHASH.js#L17)
+
+BLOCKHASH opcode (0x40) - Get hash of recent block
+
+Per Python reference (cancun/vm/instructions/block.py:21-64):
+- Charges GAS_BLOCK_HASH (20 gas)
+- Returns hash of one of the 256 most recent complete blocks
+- Returns 0 if block number is out of range (too old or >= current)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if operation fails
+
+***
+
+### handler\_0x41\_COINBASE()
+
+> **handler\_0x41\_COINBASE**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/block/0x41\_COINBASE.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/block/0x41_COINBASE.js#L11)
+
+COINBASE opcode (0x41) - Get block coinbase address
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if operation fails
+
+***
+
+### handler\_0x42\_TIMESTAMP()
+
+> **handler\_0x42\_TIMESTAMP**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/block/0x42\_TIMESTAMP.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/block/0x42_TIMESTAMP.js#L11)
+
+TIMESTAMP opcode (0x42) - Get block timestamp
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if operation fails
+
+***
+
+### handler\_0x43\_NUMBER()
+
+> **handler\_0x43\_NUMBER**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/block/0x43\_NUMBER.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/block/0x43_NUMBER.js#L11)
+
+NUMBER opcode (0x43) - Get block number
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if operation fails
+
+***
+
+### handler\_0x44\_DIFFICULTY()
+
+> **handler\_0x44\_DIFFICULTY**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/block/0x44\_DIFFICULTY.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/block/0x44_DIFFICULTY.js#L14)
+
+DIFFICULTY/PREVRANDAO opcode (0x44) - Get block difficulty or prevrandao
+
+Pre-Merge: returns block difficulty
+Post-Merge: returns prevrandao value
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if operation fails
+
+***
+
+### handler\_0x45\_GASLIMIT()
+
+> **handler\_0x45\_GASLIMIT**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/block/0x45\_GASLIMIT.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/block/0x45_GASLIMIT.js#L11)
+
+GASLIMIT opcode (0x45) - Get block gas limit
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if operation fails
+
+***
+
+### handler\_0x46\_CHAINID()
+
+> **handler\_0x46\_CHAINID**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/block/0x46\_CHAINID.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/block/0x46_CHAINID.js#L11)
+
+CHAINID opcode (0x46) - Get chain ID (EIP-1344, Istanbul+)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if operation fails
+
+***
+
+### handler\_0x47\_SELFBALANCE()
+
+> **handler\_0x47\_SELFBALANCE**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/block/0x47\_SELFBALANCE.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/block/0x47_SELFBALANCE.js#L11)
+
+SELFBALANCE opcode (0x47) - Get balance of currently executing account (EIP-1884, Istanbul+)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if operation fails
+
+***
+
+### handler\_0x48\_BASEFEE()
+
+> **handler\_0x48\_BASEFEE**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/block/0x48\_BASEFEE.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/block/0x48_BASEFEE.js#L11)
+
+BASEFEE opcode (0x48) - Get base fee per gas (EIP-3198, London+)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if operation fails
+
+***
+
+### handler\_0x49\_BLOBHASH()
+
+> **handler\_0x49\_BLOBHASH**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/block/0x49\_BLOBHASH.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/block/0x49_BLOBHASH.js#L15)
+
+BLOBHASH opcode (0x49) - Get versioned blob hash (EIP-4844, Cancun+)
+
+Per Python reference (cancun/vm/gas.py:68):
+- GAS_BLOBHASH_OPCODE = 3 (same as GasFastestStep)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if operation fails
+
+***
+
+### handler\_0x4a\_BLOBBASEFEE()
+
+> **handler\_0x4a\_BLOBBASEFEE**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/block/0x4a\_BLOBBASEFEE.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/block/0x4a_BLOBBASEFEE.js#L15)
+
+BLOBBASEFEE opcode (0x4a) - Get blob base fee (EIP-7516, Cancun+)
+
+Per Python reference (cancun/vm/gas.py and BlobBaseFeeGas constant):
+- GAS_BASE = 2 (same as GasQuickStep)
+- Returns blob_base_fee calculated from excess_blob_gas
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if operation fails

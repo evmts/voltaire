@@ -1,0 +1,248 @@
+---
+title: "FunctionSignature"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / FunctionSignature
+
+# FunctionSignature
+
+## Type Aliases
+
+### FunctionSignatureLike
+
+> **FunctionSignatureLike** = [`FunctionSignatureType`](#functionsignaturetype) \| `string` \| [`SelectorType`](Selector-1.mdx#selectortype)
+
+Defined in: [src/primitives/FunctionSignature/FunctionSignatureType.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FunctionSignature/FunctionSignatureType.ts#L10)
+
+***
+
+### FunctionSignatureType
+
+> **FunctionSignatureType** = `object`
+
+Defined in: [src/primitives/FunctionSignature/FunctionSignatureType.ts:3](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FunctionSignature/FunctionSignatureType.ts#L3)
+
+#### Properties
+
+##### inputs
+
+> `readonly` **inputs**: readonly `string`[]
+
+Defined in: [src/primitives/FunctionSignature/FunctionSignatureType.ts:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FunctionSignature/FunctionSignatureType.ts#L7)
+
+##### name
+
+> `readonly` **name**: `string`
+
+Defined in: [src/primitives/FunctionSignature/FunctionSignatureType.ts:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FunctionSignature/FunctionSignatureType.ts#L6)
+
+##### selector
+
+> `readonly` **selector**: [`SelectorType`](Selector-1.mdx#selectortype)
+
+Defined in: [src/primitives/FunctionSignature/FunctionSignatureType.ts:4](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FunctionSignature/FunctionSignatureType.ts#L4)
+
+##### signature
+
+> `readonly` **signature**: `string`
+
+Defined in: [src/primitives/FunctionSignature/FunctionSignatureType.ts:5](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FunctionSignature/FunctionSignatureType.ts#L5)
+
+## Variables
+
+### FunctionSignature
+
+> `const` **FunctionSignature**: `object`
+
+Defined in: [src/primitives/FunctionSignature/index.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FunctionSignature/index.ts#L45)
+
+#### Type Declaration
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+###### Parameters
+
+###### a
+
+[`FunctionSignatureType`](#functionsignaturetype)
+
+###### b
+
+[`FunctionSignatureType`](#functionsignaturetype)
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`FunctionSignatureType`](#functionsignaturetype)
+
+###### Parameters
+
+###### value
+
+[`FunctionSignatureLike`](#functionsignaturelike)
+
+###### Returns
+
+[`FunctionSignatureType`](#functionsignaturetype)
+
+##### fromSignature()
+
+> **fromSignature**: (`signature`) => [`FunctionSignatureType`](#functionsignaturetype)
+
+###### Parameters
+
+###### signature
+
+`string`
+
+###### Returns
+
+[`FunctionSignatureType`](#functionsignaturetype)
+
+##### parseSignature()
+
+> **parseSignature**: (`signature`) => `object`
+
+###### Parameters
+
+###### signature
+
+`string`
+
+###### Returns
+
+`object`
+
+###### inputs
+
+> **inputs**: `string`[]
+
+###### name
+
+> **name**: `string`
+
+##### toHex()
+
+> **toHex**: (`functionSig`) => `string`
+
+###### Parameters
+
+###### functionSig
+
+[`FunctionSignatureType`](#functionsignaturetype)
+
+###### Returns
+
+`string`
+
+## Functions
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/FunctionSignature/index.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FunctionSignature/index.ts#L18)
+
+#### Parameters
+
+##### a
+
+[`FunctionSignatureType`](#functionsignaturetype)
+
+##### b
+
+[`FunctionSignatureType`](#functionsignaturetype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`FunctionSignatureType`](#functionsignaturetype)
+
+Defined in: [src/primitives/FunctionSignature/index.ts:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FunctionSignature/index.ts#L25)
+
+#### Parameters
+
+##### value
+
+[`FunctionSignatureLike`](#functionsignaturelike)
+
+#### Returns
+
+[`FunctionSignatureType`](#functionsignaturetype)
+
+***
+
+### fromSignature()
+
+> **fromSignature**(`signature`): [`FunctionSignatureType`](#functionsignaturetype)
+
+Defined in: [src/primitives/FunctionSignature/index.ts:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FunctionSignature/index.ts#L29)
+
+#### Parameters
+
+##### signature
+
+`string`
+
+#### Returns
+
+[`FunctionSignatureType`](#functionsignaturetype)
+
+***
+
+### parseSignature()
+
+> **parseSignature**(`signature`): `object`
+
+Defined in: [src/primitives/FunctionSignature/index.ts:33](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FunctionSignature/index.ts#L33)
+
+#### Parameters
+
+##### signature
+
+`string`
+
+#### Returns
+
+`object`
+
+##### inputs
+
+> **inputs**: `string`[]
+
+##### name
+
+> **name**: `string`
+
+***
+
+### toHex()
+
+> **toHex**(`functionSig`): `string`
+
+Defined in: [src/primitives/FunctionSignature/index.ts:40](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/FunctionSignature/index.ts#L40)
+
+#### Parameters
+
+##### functionSig
+
+[`FunctionSignatureType`](#functionsignaturetype)
+
+#### Returns
+
+`string`

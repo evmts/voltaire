@@ -1,0 +1,1090 @@
+---
+title: "HDWallet"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / HDWallet
+
+# HDWallet
+
+HD Wallet (BIP-32) - Hierarchical Deterministic Key Derivation
+
+## Type Aliases
+
+### HDWallet
+
+> **HDWallet** = `HDKey` & `object`
+
+Defined in: [src/crypto/HDWallet/ExtendedKeyType.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/HDWallet/ExtendedKeyType.ts#L10)
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"ExtendedKey"`
+
+##### calculateCreate2Address()
+
+> **calculateCreate2Address**(`salt`, `initCode`): `Uint8Array`
+
+###### Parameters
+
+###### salt
+
+`Uint8Array`
+
+###### initCode
+
+`Uint8Array`
+
+###### Returns
+
+`Uint8Array`
+
+##### calculateCreateAddress()
+
+> **calculateCreateAddress**(`nonce`): `Uint8Array`
+
+###### Parameters
+
+###### nonce
+
+`bigint`
+
+###### Returns
+
+`Uint8Array`
+
+##### canDeriveHardened()
+
+> **canDeriveHardened**(`this`): `boolean`
+
+###### Parameters
+
+###### this
+
+[`HDWallet`](#hdwallet)
+
+###### Returns
+
+`boolean`
+
+##### deriveChild()
+
+> **deriveChild**(`this`, `index`): [`HDWallet`](#hdwallet)
+
+###### Parameters
+
+###### this
+
+[`HDWallet`](#hdwallet)
+
+###### index
+
+`number`
+
+###### Returns
+
+[`HDWallet`](#hdwallet)
+
+##### derivePath()
+
+> **derivePath**(`this`, `path`): [`HDWallet`](#hdwallet)
+
+###### Parameters
+
+###### this
+
+[`HDWallet`](#hdwallet)
+
+###### path
+
+`string`
+
+###### Returns
+
+[`HDWallet`](#hdwallet)
+
+##### getChainCode()
+
+> **getChainCode**(`this`): `ChainCode`
+
+###### Parameters
+
+###### this
+
+[`HDWallet`](#hdwallet)
+
+###### Returns
+
+`ChainCode`
+
+##### getPrivateKey()
+
+> **getPrivateKey**(`this`): `PrivateKey`
+
+###### Parameters
+
+###### this
+
+[`HDWallet`](#hdwallet)
+
+###### Returns
+
+`PrivateKey`
+
+##### getPublicKey()
+
+> **getPublicKey**(`this`): `PublicKey`
+
+###### Parameters
+
+###### this
+
+[`HDWallet`](#hdwallet)
+
+###### Returns
+
+`PublicKey`
+
+##### toExtendedPrivateKey()
+
+> **toExtendedPrivateKey**(`this`): `string`
+
+###### Parameters
+
+###### this
+
+[`HDWallet`](#hdwallet)
+
+###### Returns
+
+`string`
+
+##### toExtendedPublicKey()
+
+> **toExtendedPublicKey**(`this`): `string`
+
+###### Parameters
+
+###### this
+
+[`HDWallet`](#hdwallet)
+
+###### Returns
+
+`string`
+
+##### toPublic()
+
+> **toPublic**(`this`): [`HDWallet`](#hdwallet)
+
+###### Parameters
+
+###### this
+
+[`HDWallet`](#hdwallet)
+
+###### Returns
+
+[`HDWallet`](#hdwallet)
+
+## Variables
+
+### HDWallet
+
+> `const` **HDWallet**: `object`
+
+Defined in: [src/crypto/HDWallet/HDWallet.js:91](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/HDWallet/HDWallet.js#L91)
+
+HDWallet namespace - collection of HD wallet operations
+
+#### Type Declaration
+
+##### BIP44\_PATH
+
+> **BIP44\_PATH**: `Readonly`\<\{ `BTC`: (`account?`, `index?`) => `string`; `ETH`: (`account?`, `index?`) => `string`; \}\>
+
+Standard BIP-44 path template functions.
+
+Format: m / purpose' / coin_type' / account' / change / address_index
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import { BIP44_PATH } from './crypto/HDWallet/constants.js';
+const ethPath = BIP44_PATH.ETH(0, 0); // "m/44'/60'/0'/0/0"
+const btcPath = BIP44_PATH.BTC(0, 1); // "m/44'/0'/0'/0/1"
+```
+
+##### canDeriveHardened()
+
+> **canDeriveHardened**: (`key`) => `boolean`
+
+Check if extended key can derive hardened children.
+
+Only keys with private key material can derive hardened paths.
+
+###### Parameters
+
+###### key
+
+[`HDWallet`](#hdwallet)
+
+Extended key to check
+
+###### Returns
+
+`boolean`
+
+True if key has private key and can derive hardened children, false if public-only
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+if (HDWallet.canDeriveHardened(key)) {
+  const hardened = HDWallet.deriveChild(key, HDWallet.HARDENED_OFFSET);
+}
+```
+
+##### CoinType
+
+> **CoinType**: `Readonly`\<\{ `BTC`: `0`; `BTC_TESTNET`: `1`; `ETC`: `61`; `ETH`: `60`; \}\>
+
+Standard BIP-44 coin type constants.
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import { CoinType } from './crypto/HDWallet/constants.js';
+console.log(CoinType.ETH); // 60
+```
+
+##### deriveBitcoin()
+
+> **deriveBitcoin**: (`key`, `account?`, `index?`) => [`HDWallet`](#hdwallet)
+
+Derive Bitcoin address key using BIP-44 standard path.
+
+Path format: m/44'/0'/account'/0/index
+
+###### Parameters
+
+###### key
+
+[`HDWallet`](#hdwallet)
+
+Root HD key with private key
+
+###### account?
+
+`number` = `0`
+
+BIP-44 account index (default: 0)
+
+###### index?
+
+`number` = `0`
+
+Address index (default: 0)
+
+###### Returns
+
+[`HDWallet`](#hdwallet)
+
+Derived extended key for Bitcoin address
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If derivation path is invalid or derivation fails
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+const root = HDWallet.fromSeed(seed);
+const btcKey = HDWallet.deriveBitcoin(root, 0, 0); // m/44'/0'/0'/0/0
+```
+
+##### deriveChild()
+
+> **deriveChild**: (`key`, `index`) => [`HDWallet`](#hdwallet)
+
+Derive child key by index using BIP-32.
+
+Supports both normal and hardened derivation.
+
+###### Parameters
+
+###### key
+
+[`HDWallet`](#hdwallet)
+
+Parent extended key
+
+###### index
+
+`number`
+
+Child index (add HARDENED_OFFSET for hardened derivation)
+
+###### Returns
+
+[`HDWallet`](#hdwallet)
+
+Derived child extended key
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If derivation fails or index is invalid
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+// Normal derivation
+const child = HDWallet.deriveChild(key, 0);
+// Hardened derivation
+const hardened = HDWallet.deriveChild(key, HDWallet.HARDENED_OFFSET + 0);
+```
+
+##### deriveEthereum()
+
+> **deriveEthereum**: (`key`, `account?`, `index?`) => [`HDWallet`](#hdwallet)
+
+Derive Ethereum address key using BIP-44 standard path.
+
+Path format: m/44'/60'/account'/0/index
+
+###### Parameters
+
+###### key
+
+[`HDWallet`](#hdwallet)
+
+Root HD key with private key
+
+###### account?
+
+`number` = `0`
+
+BIP-44 account index (default: 0)
+
+###### index?
+
+`number` = `0`
+
+Address index (default: 0)
+
+###### Returns
+
+[`HDWallet`](#hdwallet)
+
+Derived extended key for Ethereum address
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If derivation path is invalid or derivation fails
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+const root = HDWallet.fromSeed(seed);
+const ethKey0 = HDWallet.deriveEthereum(root, 0, 0); // m/44'/60'/0'/0/0
+const ethKey1 = HDWallet.deriveEthereum(root, 0, 1); // m/44'/60'/0'/0/1
+```
+
+##### derivePath()
+
+> **derivePath**: (`key`, `path`) => [`HDWallet`](#hdwallet)
+
+Derive child key using BIP-32 derivation path.
+
+Supports hierarchical paths with hardened (') and normal derivation.
+
+###### Parameters
+
+###### key
+
+[`HDWallet`](#hdwallet)
+
+Parent extended key
+
+###### path
+
+`string`
+
+BIP-32 derivation path (e.g., "m/44'/60'/0'/0/0")
+
+###### Returns
+
+[`HDWallet`](#hdwallet)
+
+Derived child extended key
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If path format is invalid or derivation fails
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+const root = HDWallet.fromSeed(seed);
+const child = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
+```
+
+##### fromExtendedKey()
+
+> **fromExtendedKey**: (`xprv`) => [`HDWallet`](#hdwallet)
+
+Create HD key from extended private key string.
+
+Deserializes base58-encoded xprv key.
+
+###### Parameters
+
+###### xprv
+
+`string`
+
+Base58-encoded extended private key (xprv...)
+
+###### Returns
+
+[`HDWallet`](#hdwallet)
+
+Extended key with private key material
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If extended key format is invalid or decoding fails
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+const key = HDWallet.fromExtendedKey("xprv9s21ZrQH143K3...");
+```
+
+##### fromPublicExtendedKey()
+
+> **fromPublicExtendedKey**: (`xpub`) => [`HDWallet`](#hdwallet)
+
+Create HD key from extended public key string.
+
+Cannot derive hardened children from public-only keys.
+
+###### Parameters
+
+###### xpub
+
+`string`
+
+Base58-encoded extended public key (xpub...)
+
+###### Returns
+
+[`HDWallet`](#hdwallet)
+
+Extended key with public key only (no private key)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If extended public key format is invalid or decoding fails
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+const pubKey = HDWallet.fromPublicExtendedKey("xpub661MyMwAqRbcF...");
+// Can only derive normal (non-hardened) children
+```
+
+##### fromSeed()
+
+> **fromSeed**: (`seed`) => [`HDWallet`](#hdwallet)
+
+Create root HD key from BIP-39 seed.
+
+Master key for hierarchical deterministic wallet.
+
+###### Parameters
+
+###### seed
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+BIP-39 seed bytes (typically 64 bytes from mnemonic, must be 16-64 bytes)
+
+###### Returns
+
+[`HDWallet`](#hdwallet)
+
+Root extended key for BIP-32 derivation
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If seed length is not between 16 and 64 bytes
+
+###### Throws
+
+If master key derivation fails
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+const seed = new Uint8Array(64); // From BIP-39 mnemonic
+const root = HDWallet.fromSeed(seed);
+```
+
+##### generateMnemonic()
+
+> **generateMnemonic**: (`strength?`) => `Promise`\<`string`[]\>
+
+Generate BIP-39 mnemonic from entropy
+
+###### Parameters
+
+###### strength?
+
+Entropy strength in bits
+
+`256` | `128`
+
+###### Returns
+
+`Promise`\<`string`[]\>
+
+Mnemonic words
+
+###### Throws
+
+If strength is invalid or generation fails
+
+##### getChainCode()
+
+> **getChainCode**: (`key`) => `Uint8Array`\<`ArrayBufferLike`\> \| `null`
+
+Get chain code from extended key.
+
+Chain code is used in BIP-32 child key derivation.
+
+###### Parameters
+
+###### key
+
+[`HDWallet`](#hdwallet)
+
+Extended key
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\> \| `null`
+
+32-byte chain code or null if not available
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+const chainCode = HDWallet.getChainCode(key);
+```
+
+##### getPrivateKey()
+
+> **getPrivateKey**: (`key`) => `Uint8Array`\<`ArrayBufferLike`\> \| `null`
+
+Get private key bytes from extended key.
+
+Returns null for public-only keys.
+
+###### Parameters
+
+###### key
+
+[`HDWallet`](#hdwallet)
+
+Extended key
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\> \| `null`
+
+32-byte secp256k1 private key or null if public-only key
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+const privKey = HDWallet.getPrivateKey(key);
+if (privKey) console.log('Has private key');
+```
+
+##### getPublicKey()
+
+> **getPublicKey**: (`key`) => `Uint8Array`\<`ArrayBufferLike`\> \| `null`
+
+Get public key bytes from extended key.
+
+Returns compressed secp256k1 public key.
+
+###### Parameters
+
+###### key
+
+[`HDWallet`](#hdwallet)
+
+Extended key
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\> \| `null`
+
+33-byte compressed secp256k1 public key or null
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+const pubKey = HDWallet.getPublicKey(key);
+```
+
+##### HARDENED\_OFFSET
+
+> **HARDENED\_OFFSET**: `number`
+
+First hardened child index offset for BIP-32 derivation.
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import { HARDENED_OFFSET } from './crypto/HDWallet/constants.js';
+const hardenedIndex = 0 + HARDENED_OFFSET; // 0x80000000
+```
+
+##### isHardenedPath()
+
+> **isHardenedPath**: (`path`) => `boolean`
+
+Check if BIP-32 path contains hardened derivation.
+
+Hardened paths use ' or h suffix (e.g., 44' or 44h).
+
+###### Parameters
+
+###### path
+
+`string`
+
+BIP-32 derivation path
+
+###### Returns
+
+`boolean`
+
+True if path contains hardened derivation indicator (' or h), false otherwise
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+HDWallet.isHardenedPath("m/44'/60'/0'"); // true
+HDWallet.isHardenedPath("m/44/60/0");    // false
+```
+
+##### isValidPath()
+
+> **isValidPath**: (`path`) => `boolean`
+
+Validate BIP-32 derivation path format.
+
+Checks syntax but not semantic validity.
+
+###### Parameters
+
+###### path
+
+`string`
+
+Derivation path to validate
+
+###### Returns
+
+`boolean`
+
+True if path matches BIP-32 format (m/number'/number/...), false otherwise
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+HDWallet.isValidPath("m/44'/60'/0'/0/0"); // true
+HDWallet.isValidPath("invalid");          // false
+```
+
+##### mnemonicToSeed()
+
+> **mnemonicToSeed**: (`mnemonic`, `password?`) => `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Convert BIP-39 mnemonic to seed
+
+###### Parameters
+
+###### mnemonic
+
+Mnemonic words (array or space-separated string)
+
+`string` | `string`[]
+
+###### password?
+
+`string`
+
+Optional passphrase
+
+###### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+512-bit seed
+
+###### Throws
+
+If mnemonic conversion fails
+
+##### parseIndex()
+
+> **parseIndex**: (`indexStr`) => `number`
+
+Parse BIP-32 index string with hardened notation.
+
+Converts "0'" or "0h" to hardened index (adds HARDENED_OFFSET).
+
+###### Parameters
+
+###### indexStr
+
+`string`
+
+Index string (e.g., "0", "0'", "0h")
+
+###### Returns
+
+`number`
+
+Numeric index (hardened indices have HARDENED_OFFSET added)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If index format is invalid or not a non-negative integer
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+HDWallet.parseIndex("0");   // 0
+HDWallet.parseIndex("0'");  // 2147483648 (0x80000000)
+HDWallet.parseIndex("44h"); // 2147483692 (44 + 0x80000000)
+```
+
+##### toExtendedPrivateKey()
+
+> **toExtendedPrivateKey**: (`key`) => `string`
+
+Serialize extended key to base58-encoded xprv string.
+
+Requires key with private key material.
+
+###### Parameters
+
+###### key
+
+[`HDWallet`](#hdwallet)
+
+Extended key with private key
+
+###### Returns
+
+`string`
+
+Base58-encoded extended private key (xprv...)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If key does not have private key material
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+const xprv = HDWallet.toExtendedPrivateKey(key);
+console.log(xprv); // "xprv9s21ZrQH143K..."
+```
+
+##### toExtendedPublicKey()
+
+> **toExtendedPublicKey**: (`key`) => `string`
+
+Serialize extended key to base58-encoded xpub string.
+
+Produces public-only key that cannot derive hardened children.
+
+###### Parameters
+
+###### key
+
+[`HDWallet`](#hdwallet)
+
+Extended key
+
+###### Returns
+
+`string`
+
+Base58-encoded extended public key (xpub...)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If key does not have public key
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+const xpub = HDWallet.toExtendedPublicKey(key);
+console.log(xpub); // "xpub661MyMwAqRbcF..."
+```
+
+##### toPublic()
+
+> **toPublic**: (`key`) => [`HDWallet`](#hdwallet)
+
+Create public-only version of extended key (neutered key).
+
+Removes private key material, keeping only public key and chain code.
+
+###### Parameters
+
+###### key
+
+[`HDWallet`](#hdwallet)
+
+Extended key with or without private key
+
+###### Returns
+
+[`HDWallet`](#hdwallet)
+
+Public-only extended key (cannot derive hardened children)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If key does not have public key
+
+###### Example
+
+```javascript
+import * as HDWallet from './crypto/HDWallet/index.js';
+const pubOnlyKey = HDWallet.toPublic(key);
+// Can share publicly without exposing private key
+```
+
+##### validateMnemonic()
+
+> **validateMnemonic**: (`mnemonic`) => `Promise`\<`boolean`\>
+
+Validate BIP-39 mnemonic checksum
+
+###### Parameters
+
+###### mnemonic
+
+Mnemonic words (array or space-separated string)
+
+`string` | `string`[]
+
+###### Returns
+
+`Promise`\<`boolean`\>
+
+True if valid

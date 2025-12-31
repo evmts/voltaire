@@ -1,0 +1,135 @@
+---
+title: "Ssz"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / Ssz
+
+# Ssz
+
+SSZ (Simple Serialize) - Ethereum consensus layer serialization
+
+## Example
+
+```typescript
+import * as Ssz from './primitives/Ssz/index.js';
+
+// Encode basic types
+const encoded = Ssz.encodeBasic(42, 'uint32');
+
+// Decode basic types
+const decoded = Ssz.decodeBasic(encoded, 'uint32');
+
+// Compute hash tree root
+const root = await Ssz.hashTreeRoot(data);
+```
+
+## Type Aliases
+
+### SszType
+
+> **SszType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/Ssz/SszType.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Ssz/SszType.ts#L13)
+
+SSZ encoded data
+
+#### Type Declaration
+
+##### \_\_tag
+
+> `readonly` **\_\_tag**: `"Ssz"`
+
+## Functions
+
+### decodeBasic()
+
+> **decodeBasic**(`bytes`, `type`): `number` \| `bigint` \| `boolean`
+
+Defined in: [src/primitives/Ssz/encodeBasic.js:57](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Ssz/encodeBasic.js#L57)
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+SSZ encoded bytes
+
+##### type
+
+`string`
+
+Type: 'uint8', 'uint16', 'uint32', 'uint64', 'uint256', 'bool'
+
+#### Returns
+
+`number` \| `bigint` \| `boolean`
+
+Decoded value
+
+#### Description
+
+Decodes basic types from SSZ serialization
+
+***
+
+### encodeBasic()
+
+> **encodeBasic**(`value`, `type`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Ssz/encodeBasic.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Ssz/encodeBasic.js#L7)
+
+#### Parameters
+
+##### value
+
+Value to encode
+
+`number` | `bigint` | `boolean`
+
+##### type
+
+`string`
+
+Type: 'uint8', 'uint16', 'uint32', 'uint64', 'uint256', 'bool'
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+SSZ encoded bytes
+
+#### Description
+
+Encodes basic types using SSZ serialization
+
+***
+
+### hashTreeRoot()
+
+> **hashTreeRoot**(`data`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Defined in: [src/primitives/Ssz/hashTreeRoot.js:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Ssz/hashTreeRoot.js#L6)
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Data to merkleize
+
+#### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+32-byte hash tree root
+
+#### Description
+
+Computes the hash tree root of data for Merkle proofs

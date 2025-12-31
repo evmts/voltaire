@@ -1,0 +1,1056 @@
+---
+title: "BrandedInt32"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / BrandedInt32
+
+# BrandedInt32
+
+## Type Aliases
+
+### BrandedInt32
+
+> **BrandedInt32** = `number` & `object`
+
+Defined in: [src/primitives/Int32/Int32Type.ts:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/Int32Type.ts#L25)
+
+A signed 32-bit integer branded type.
+Internally a JavaScript number constrained to [-2147483648, 2147483647].
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Int32"`
+
+## Variables
+
+### INT32\_MAX
+
+> `const` **INT32\_MAX**: `2147483647` = `2147483647`
+
+Defined in: [src/primitives/Int32/Int32Type.ts:30](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/Int32Type.ts#L30)
+
+***
+
+### INT32\_MIN
+
+> `const` **INT32\_MIN**: `-2147483648` = `-2147483648`
+
+Defined in: [src/primitives/Int32/Int32Type.ts:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/Int32Type.ts#L29)
+
+***
+
+### MAX
+
+> `const` **MAX**: `2147483647`
+
+Defined in: [src/primitives/Int32/constants.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/constants.js#L11)
+
+***
+
+### MIN
+
+> `const` **MIN**: `-2147483648`
+
+Defined in: [src/primitives/Int32/constants.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/constants.js#L8)
+
+***
+
+### MINUS\_ONE
+
+> `const` **MINUS\_ONE**: `-1`
+
+Defined in: [src/primitives/Int32/constants.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/constants.js#L20)
+
+***
+
+### ONE
+
+> `const` **ONE**: `1`
+
+Defined in: [src/primitives/Int32/constants.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/constants.js#L17)
+
+***
+
+### SIZE
+
+> `const` **SIZE**: `4` = `4`
+
+Defined in: [src/primitives/Int32/constants.js:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/constants.js#L23)
+
+***
+
+### ZERO
+
+> `const` **ZERO**: `0`
+
+Defined in: [src/primitives/Int32/constants.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/constants.js#L14)
+
+## Functions
+
+### abs()
+
+> **abs**(`value`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/abs.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/abs.js#L8)
+
+Get absolute value of Int32
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Value
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Absolute value
+
+#### Throws
+
+If value is MIN (abs would overflow)
+
+***
+
+### bitwiseAnd()
+
+> **bitwiseAnd**(`a`, `b`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/bitwiseAnd.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/bitwiseAnd.js#L8)
+
+Bitwise AND of two Int32 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+First value
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Second value
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Result
+
+***
+
+### bitwiseNot()
+
+> **bitwiseNot**(`value`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/bitwiseNot.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/bitwiseNot.js#L7)
+
+Bitwise NOT of Int32 value
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Value
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Result
+
+***
+
+### bitwiseOr()
+
+> **bitwiseOr**(`a`, `b`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/bitwiseOr.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/bitwiseOr.js#L8)
+
+Bitwise OR of two Int32 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+First value
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Second value
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Result
+
+***
+
+### bitwiseXor()
+
+> **bitwiseXor**(`a`, `b`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/bitwiseXor.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/bitwiseXor.js#L8)
+
+Bitwise XOR of two Int32 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+First value
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Second value
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Result
+
+***
+
+### clone()
+
+> **clone**(`value`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/clone.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/clone.js#L7)
+
+Clone Int32 value
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Value to clone
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Cloned value
+
+***
+
+### dividedBy()
+
+> **dividedBy**(`a`, `b`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/dividedBy.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/dividedBy.js#L9)
+
+Divide two Int32 values (truncates toward zero)
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+Dividend
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Divisor
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Quotient
+
+#### Throws
+
+If divisor is zero or overflow occurs
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Int32/equals.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/equals.js#L8)
+
+Check if two Int32 values are equal
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+First value
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Second value
+
+#### Returns
+
+`boolean`
+
+True if equal
+
+***
+
+### from()
+
+> **from**(`value`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/from.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/from.js#L15)
+
+Create Int32 from various input types
+
+#### Parameters
+
+##### value
+
+Value to convert
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Int32 value
+
+#### Throws
+
+If value is out of range
+
+#### Example
+
+```javascript
+import * as Int32 from './primitives/Int32/index.js';
+const a = Int32.from(-42);
+const b = Int32.from("123");
+const c = Int32.from(-2147483648n);
+```
+
+***
+
+### fromBigInt()
+
+> **fromBigInt**(`value`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/fromBigInt.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/fromBigInt.js#L8)
+
+Create Int32 from bigint
+
+#### Parameters
+
+##### value
+
+`bigint`
+
+BigInt to convert
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Int32 value
+
+#### Throws
+
+If value is out of range
+
+***
+
+### fromBytes()
+
+> **fromBytes**(`bytes`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/fromBytes.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/fromBytes.js#L8)
+
+Create Int32 from bytes (big-endian, two's complement)
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Bytes to convert (up to 4 bytes)
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Int32 value
+
+#### Throws
+
+If bytes length exceeds 4
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/fromHex.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/fromHex.js#L8)
+
+Create Int32 from hex string (two's complement)
+
+#### Parameters
+
+##### hex
+
+`string`
+
+Hex string (with or without 0x prefix)
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Int32 value
+
+#### Throws
+
+If hex is invalid or exceeds 4 bytes
+
+***
+
+### fromNumber()
+
+> **fromNumber**(`value`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/fromNumber.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/fromNumber.js#L8)
+
+Create Int32 from number
+
+#### Parameters
+
+##### value
+
+`number`
+
+Number to convert
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Int32 value
+
+#### Throws
+
+If value is out of range or NaN
+
+***
+
+### greaterThan()
+
+> **greaterThan**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Int32/greaterThan.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/greaterThan.js#L8)
+
+Check if first Int32 is greater than second
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+First value
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Second value
+
+#### Returns
+
+`boolean`
+
+True if a > b
+
+***
+
+### isNegative()
+
+> **isNegative**(`value`): `boolean`
+
+Defined in: [src/primitives/Int32/isNegative.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/isNegative.js#L7)
+
+Check if Int32 value is negative
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Value
+
+#### Returns
+
+`boolean`
+
+True if negative
+
+***
+
+### isPositive()
+
+> **isPositive**(`value`): `boolean`
+
+Defined in: [src/primitives/Int32/isPositive.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/isPositive.js#L7)
+
+Check if Int32 value is positive
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Value
+
+#### Returns
+
+`boolean`
+
+True if positive
+
+***
+
+### isValid()
+
+> **isValid**(`value`): `boolean`
+
+Defined in: [src/primitives/Int32/isValid.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/isValid.js#L7)
+
+Check if value is a valid Int32
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+Value to check
+
+#### Returns
+
+`boolean`
+
+True if valid Int32
+
+***
+
+### isZero()
+
+> **isZero**(`value`): `boolean`
+
+Defined in: [src/primitives/Int32/isZero.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/isZero.js#L7)
+
+Check if Int32 value is zero
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Value
+
+#### Returns
+
+`boolean`
+
+True if zero
+
+***
+
+### lessThan()
+
+> **lessThan**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Int32/lessThan.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/lessThan.js#L8)
+
+Check if first Int32 is less than second
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+First value
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Second value
+
+#### Returns
+
+`boolean`
+
+True if a < b
+
+***
+
+### maximum()
+
+> **maximum**(`a`, `b`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/maximum.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/maximum.js#L8)
+
+Get maximum of two Int32 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+First value
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Second value
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Maximum value
+
+***
+
+### minimum()
+
+> **minimum**(`a`, `b`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/minimum.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/minimum.js#L8)
+
+Get minimum of two Int32 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+First value
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Second value
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Minimum value
+
+***
+
+### minus()
+
+> **minus**(`a`, `b`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/minus.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/minus.js#L9)
+
+Subtract two Int32 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+First value
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Second value
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Result
+
+#### Throws
+
+If result overflows
+
+***
+
+### modulo()
+
+> **modulo**(`a`, `b`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/modulo.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/modulo.js#L9)
+
+Compute modulo of two Int32 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+Dividend
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Divisor
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Remainder
+
+#### Throws
+
+If divisor is zero
+
+***
+
+### negate()
+
+> **negate**(`value`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/negate.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/negate.js#L8)
+
+Negate Int32 value
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Value
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Negated value
+
+#### Throws
+
+If value is MIN (negation would overflow)
+
+***
+
+### plus()
+
+> **plus**(`a`, `b`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/plus.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/plus.js#L9)
+
+Add two Int32 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+First value
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Second value
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Result
+
+#### Throws
+
+If result overflows
+
+***
+
+### shiftLeft()
+
+> **shiftLeft**(`value`, `n`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/shiftLeft.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/shiftLeft.js#L8)
+
+Shift Int32 left by n bits
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Value to shift
+
+##### n
+
+`number`
+
+Number of bits to shift (0-31)
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Result
+
+***
+
+### shiftRight()
+
+> **shiftRight**(`value`, `n`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/shiftRight.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/shiftRight.js#L8)
+
+Arithmetic shift Int32 right by n bits (preserves sign)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Value to shift
+
+##### n
+
+`number`
+
+Number of bits to shift (0-31)
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Result
+
+***
+
+### sign()
+
+> **sign**(`value`): `-1` \| `0` \| `1`
+
+Defined in: [src/primitives/Int32/sign.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/sign.js#L7)
+
+Get sign of Int32 value
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Value
+
+#### Returns
+
+`-1` \| `0` \| `1`
+
+-1 if negative, 0 if zero, 1 if positive
+
+***
+
+### times()
+
+> **times**(`a`, `b`): [`BrandedInt32`](#brandedint32)
+
+Defined in: [src/primitives/Int32/times.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/times.js#L9)
+
+Multiply two Int32 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt32`](#brandedint32)
+
+First value
+
+##### b
+
+[`BrandedInt32`](#brandedint32)
+
+Second value
+
+#### Returns
+
+[`BrandedInt32`](#brandedint32)
+
+Result
+
+#### Throws
+
+If result overflows
+
+***
+
+### toBigInt()
+
+> **toBigInt**(`value`): `bigint`
+
+Defined in: [src/primitives/Int32/toBigInt.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/toBigInt.js#L7)
+
+Convert Int32 to bigint
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Int32 value
+
+#### Returns
+
+`bigint`
+
+BigInt value
+
+***
+
+### toBytes()
+
+> **toBytes**(`value`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Int32/toBytes.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/toBytes.js#L7)
+
+Convert Int32 to bytes (big-endian, two's complement, 4 bytes)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Int32 value
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+4-byte Uint8Array
+
+***
+
+### toHex()
+
+> **toHex**(`value`): `string`
+
+Defined in: [src/primitives/Int32/toHex.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/toHex.js#L7)
+
+Convert Int32 to hex string (two's complement)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Int32 value
+
+#### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+***
+
+### toNumber()
+
+> **toNumber**(`value`): `number`
+
+Defined in: [src/primitives/Int32/toNumber.js:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/toNumber.js#L7)
+
+Convert Int32 to number
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Int32 value
+
+#### Returns
+
+`number`
+
+Number value
+
+***
+
+### toString()
+
+> **toString**(`value`): `string`
+
+Defined in: [src/primitives/Int32/toString.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Int32/toString.js#L8)
+
+Convert Int32 to string
+
+#### Parameters
+
+##### value
+
+[`BrandedInt32`](#brandedint32)
+
+Int32 value
+
+#### Returns
+
+`string`
+
+String representation

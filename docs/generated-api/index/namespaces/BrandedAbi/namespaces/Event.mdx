@@ -1,0 +1,808 @@
+---
+title: "Event"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../index.mdx) / [index](../../../index.mdx) / [BrandedAbi](../index.mdx) / Event
+
+# Event
+
+## Type Aliases
+
+### DecodeLogResult
+
+> **DecodeLogResult**\<`TInputs`\> = `ParametersToObject`\<`TInputs`\>
+
+Defined in: [src/primitives/Abi/event/EventType.ts:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/EventType.ts#L17)
+
+#### Type Parameters
+
+##### TInputs
+
+`TInputs` *extends* readonly `Parameter`[]
+
+***
+
+### EncodeTopicsArgs
+
+> **EncodeTopicsArgs**\<`TInputs`\> = `Partial`\<`ParametersToObject`\<`TInputs`\>\>
+
+Defined in: [src/primitives/Abi/event/EventType.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/EventType.ts#L13)
+
+#### Type Parameters
+
+##### TInputs
+
+`TInputs` *extends* readonly `Parameter`[]
+
+***
+
+### EventType
+
+> **EventType**\<`TName`, `TInputs`\> = `object`
+
+Defined in: [src/primitives/Abi/event/EventType.ts:3](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/EventType.ts#L3)
+
+#### Type Parameters
+
+##### TName
+
+`TName` *extends* `string` = `string`
+
+##### TInputs
+
+`TInputs` *extends* readonly `Parameter`[] = readonly `Parameter`[]
+
+#### Properties
+
+##### anonymous?
+
+> `optional` **anonymous**: `boolean`
+
+Defined in: [src/primitives/Abi/event/EventType.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/EventType.ts#L10)
+
+##### inputs
+
+> **inputs**: `TInputs`
+
+Defined in: [src/primitives/Abi/event/EventType.ts:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/EventType.ts#L9)
+
+##### name
+
+> **name**: `TName`
+
+Defined in: [src/primitives/Abi/event/EventType.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/EventType.ts#L8)
+
+##### type
+
+> **type**: `"event"`
+
+Defined in: [src/primitives/Abi/event/EventType.ts:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/EventType.ts#L7)
+
+## Variables
+
+### encodeTopics()
+
+> `const` **encodeTopics**: (`event`, `args`) => ([`HashType`](../../HashType-2.mdx#hashtype) \| `null`)[]
+
+Defined in: [src/primitives/Abi/event/index.js:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/index.js#L23)
+
+#### Parameters
+
+##### event
+
+`any`
+
+##### args
+
+`any`
+
+#### Returns
+
+([`HashType`](../../HashType-2.mdx#hashtype) \| `null`)[]
+
+***
+
+### Event
+
+> `const` **Event**: `object`
+
+Defined in: [src/primitives/Abi/event/Event.js:42](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/Event.js#L42)
+
+#### Type Declaration
+
+##### decodeLog()
+
+> **decodeLog**: (`event`, `data`, `topics`) => [`DecodeLogResult`](#decodelogresult)\<`any`\>
+
+Decode event log data and topics into event arguments
+
+###### Parameters
+
+###### event
+
+[`EventType`](#eventtype)\<`string`, readonly `Parameter`[]\>
+
+Event definition
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Log data bytes
+
+###### topics
+
+readonly [`HashType`](../../HashType-2.mdx#hashtype)[]
+
+Log topics
+
+###### Returns
+
+[`DecodeLogResult`](#decodelogresult)\<`any`\>
+
+Decoded event arguments
+
+###### See
+
+https://voltaire.tevm.sh/primitives/abi
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If topics are missing or invalid
+
+###### Throws
+
+If event selector doesn't match topic0
+
+###### Example
+
+```javascript
+import * as Abi from './primitives/Abi/index.js';
+const event = { type: "event", name: "Transfer", inputs: [
+  { type: "address", name: "from", indexed: true },
+  { type: "address", name: "to", indexed: true },
+  { type: "uint256", name: "value" }
+]};
+const decoded = Abi.Event.decodeLog(event, logData, logTopics);
+// { from: "0x...", to: "0x...", value: 1000n }
+```
+
+##### DecodeLog()
+
+> **DecodeLog**: (`event`, `data`, `topics`) => [`DecodeLogResult`](#decodelogresult)\<`any`\> = `decodeLog`
+
+Decode event log data and topics into event arguments
+
+###### Parameters
+
+###### event
+
+[`EventType`](#eventtype)\<`string`, readonly `Parameter`[]\>
+
+Event definition
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Log data bytes
+
+###### topics
+
+readonly [`HashType`](../../HashType-2.mdx#hashtype)[]
+
+Log topics
+
+###### Returns
+
+[`DecodeLogResult`](#decodelogresult)\<`any`\>
+
+Decoded event arguments
+
+###### See
+
+https://voltaire.tevm.sh/primitives/abi
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If topics are missing or invalid
+
+###### Throws
+
+If event selector doesn't match topic0
+
+###### Example
+
+```javascript
+import * as Abi from './primitives/Abi/index.js';
+const event = { type: "event", name: "Transfer", inputs: [
+  { type: "address", name: "from", indexed: true },
+  { type: "address", name: "to", indexed: true },
+  { type: "uint256", name: "value" }
+]};
+const decoded = Abi.Event.decodeLog(event, logData, logTopics);
+// { from: "0x...", to: "0x...", value: 1000n }
+```
+
+##### encodeTopics()
+
+> **encodeTopics**: (`event`, `args`) => ([`HashType`](../../HashType-2.mdx#hashtype) \| `null`)[]
+
+###### Parameters
+
+###### event
+
+`any`
+
+###### args
+
+`any`
+
+###### Returns
+
+([`HashType`](../../HashType-2.mdx#hashtype) \| `null`)[]
+
+##### EncodeTopics()
+
+> **EncodeTopics**: (`deps`) => (`event`, `args`) => ([`HashType`](../../HashType-2.mdx#hashtype) \| `null`)[]
+
+Factory: Encode event arguments into topics array
+
+###### Parameters
+
+###### deps
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+###### keccak256String
+
+(`str`) => `Uint8Array`
+
+Keccak256 hash function for strings
+
+###### Returns
+
+Function that encodes event topics
+
+> (`event`, `args`): ([`HashType`](../../HashType-2.mdx#hashtype) \| `null`)[]
+
+###### Parameters
+
+###### event
+
+`any`
+
+###### args
+
+`any`
+
+###### Returns
+
+([`HashType`](../../HashType-2.mdx#hashtype) \| `null`)[]
+
+###### Example
+
+```typescript
+import { EncodeTopics } from './primitives/Abi/event/index.js';
+import { hash as keccak256, keccak256String } from './primitives/Hash/index.js';
+
+const encodeTopics = EncodeTopics({ keccak256, keccak256String });
+const event = { type: "event", name: "Transfer", inputs: [...], anonymous: false };
+const topics = encodeTopics(event, { from: "0x...", to: "0x..." });
+// [selector, encodedFrom, encodedTo]
+```
+
+##### getSelector()
+
+> **getSelector**: (`event`) => [`HashType`](../../HashType-2.mdx#hashtype)
+
+Factory function for creating Event instances
+Note: Event is a plain object, not a class instance
+This namespace provides convenient methods for working with events
+
+###### Parameters
+
+###### event
+
+`any`
+
+###### Returns
+
+[`HashType`](../../HashType-2.mdx#hashtype)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/abi
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Abi from './primitives/Abi/index.js';
+const event = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value' }
+  ]
+};
+const selector = Abi.Event.getSelector(event);
+```
+
+##### GetSelector()
+
+> **GetSelector**: (`deps`) => (`event`) => [`HashType`](../../HashType-2.mdx#hashtype)
+
+Factory: Get event selector (keccak256 hash of signature)
+
+###### Parameters
+
+###### deps
+
+Crypto dependencies
+
+###### keccak256String
+
+(`str`) => `Uint8Array`
+
+Keccak256 hash function for strings
+
+###### Returns
+
+Function that computes event selector
+
+> (`event`): [`HashType`](../../HashType-2.mdx#hashtype)
+
+###### Parameters
+
+###### event
+
+`any`
+
+###### Returns
+
+[`HashType`](../../HashType-2.mdx#hashtype)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/abi
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import { GetSelector } from './primitives/Abi/event/index.js';
+import { keccak256String } from './primitives/Hash/index.js';
+
+const getSelector = GetSelector({ keccak256String });
+const event = { type: "event", name: "Transfer", inputs: [{ type: "address", indexed: true }] };
+const selector = getSelector(event);
+```
+
+##### getSignature()
+
+> **getSignature**: (`event`) => `string`
+
+Get event signature string (e.g., "Transfer(address,address,uint256)")
+
+###### Parameters
+
+###### event
+
+[`EventType`](#eventtype)\<`string`, readonly `Parameter`[]\>
+
+Event definition
+
+###### Returns
+
+`string`
+
+Event signature
+
+###### Example
+
+```typescript
+const event = { type: "event", name: "Transfer", inputs: [...] };
+const sig = Event.getSignature(event); // "Transfer(address,address,uint256)"
+```
+
+##### Signature()
+
+> **Signature**: (`event`) => `string` = `getSignature`
+
+Get event signature string (e.g., "Transfer(address,address,uint256)")
+
+###### Parameters
+
+###### event
+
+[`EventType`](#eventtype)\<`string`, readonly `Parameter`[]\>
+
+Event definition
+
+###### Returns
+
+`string`
+
+Event signature
+
+###### Example
+
+```typescript
+const event = { type: "event", name: "Transfer", inputs: [...] };
+const sig = Event.getSignature(event); // "Transfer(address,address,uint256)"
+```
+
+##### Topics()
+
+> **Topics**: (`event`, `args`) => ([`HashType`](../../HashType-2.mdx#hashtype) \| `null`)[] = `encodeTopics`
+
+###### Parameters
+
+###### event
+
+`any`
+
+###### args
+
+`any`
+
+###### Returns
+
+([`HashType`](../../HashType-2.mdx#hashtype) \| `null`)[]
+
+***
+
+### getSelector()
+
+> `const` **getSelector**: (`event`) => [`HashType`](../../HashType-2.mdx#hashtype)
+
+Defined in: [src/primitives/Abi/event/index.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/index.js#L20)
+
+#### Parameters
+
+##### event
+
+`any`
+
+#### Returns
+
+[`HashType`](../../HashType-2.mdx#hashtype)
+
+## Functions
+
+### decodeLog()
+
+> **decodeLog**(`event`, `data`, `topics`): [`DecodeLogResult`](#decodelogresult)\<`any`\>
+
+Defined in: [src/primitives/Abi/event/decodeLog.js:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/decodeLog.js#L29)
+
+Decode event log data and topics into event arguments
+
+#### Parameters
+
+##### event
+
+[`EventType`](#eventtype)\<`string`, readonly `Parameter`[]\>
+
+Event definition
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Log data bytes
+
+##### topics
+
+readonly [`HashType`](../../HashType-2.mdx#hashtype)[]
+
+Log topics
+
+#### Returns
+
+[`DecodeLogResult`](#decodelogresult)\<`any`\>
+
+Decoded event arguments
+
+#### See
+
+https://voltaire.tevm.sh/primitives/abi
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If topics are missing or invalid
+
+#### Throws
+
+If event selector doesn't match topic0
+
+#### Example
+
+```javascript
+import * as Abi from './primitives/Abi/index.js';
+const event = { type: "event", name: "Transfer", inputs: [
+  { type: "address", name: "from", indexed: true },
+  { type: "address", name: "to", indexed: true },
+  { type: "uint256", name: "value" }
+]};
+const decoded = Abi.Event.decodeLog(event, logData, logTopics);
+// { from: "0x...", to: "0x...", value: 1000n }
+```
+
+***
+
+### DecodeLog()
+
+> **DecodeLog**(`event`, `data`, `topics`): [`DecodeLogResult`](#decodelogresult)\<`any`\>
+
+Defined in: [src/primitives/Abi/event/decodeLog.js:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/decodeLog.js#L29)
+
+Decode event log data and topics into event arguments
+
+#### Parameters
+
+##### event
+
+[`EventType`](#eventtype)\<`string`, readonly `Parameter`[]\>
+
+Event definition
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Log data bytes
+
+##### topics
+
+readonly [`HashType`](../../HashType-2.mdx#hashtype)[]
+
+Log topics
+
+#### Returns
+
+[`DecodeLogResult`](#decodelogresult)\<`any`\>
+
+Decoded event arguments
+
+#### See
+
+https://voltaire.tevm.sh/primitives/abi
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If topics are missing or invalid
+
+#### Throws
+
+If event selector doesn't match topic0
+
+#### Example
+
+```javascript
+import * as Abi from './primitives/Abi/index.js';
+const event = { type: "event", name: "Transfer", inputs: [
+  { type: "address", name: "from", indexed: true },
+  { type: "address", name: "to", indexed: true },
+  { type: "uint256", name: "value" }
+]};
+const decoded = Abi.Event.decodeLog(event, logData, logTopics);
+// { from: "0x...", to: "0x...", value: 1000n }
+```
+
+***
+
+### EncodeTopics()
+
+> **EncodeTopics**(`deps`): (`event`, `args`) => ([`HashType`](../../HashType-2.mdx#hashtype) \| `null`)[]
+
+Defined in: [src/primitives/Abi/event/encodeTopics.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/encodeTopics.js#L22)
+
+Factory: Encode event arguments into topics array
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+###### keccak256String
+
+(`str`) => `Uint8Array`
+
+Keccak256 hash function for strings
+
+#### Returns
+
+Function that encodes event topics
+
+> (`event`, `args`): ([`HashType`](../../HashType-2.mdx#hashtype) \| `null`)[]
+
+##### Parameters
+
+###### event
+
+`any`
+
+###### args
+
+`any`
+
+##### Returns
+
+([`HashType`](../../HashType-2.mdx#hashtype) \| `null`)[]
+
+#### Example
+
+```typescript
+import { EncodeTopics } from './primitives/Abi/event/index.js';
+import { hash as keccak256, keccak256String } from './primitives/Hash/index.js';
+
+const encodeTopics = EncodeTopics({ keccak256, keccak256String });
+const event = { type: "event", name: "Transfer", inputs: [...], anonymous: false };
+const topics = encodeTopics(event, { from: "0x...", to: "0x..." });
+// [selector, encodedFrom, encodedTo]
+```
+
+***
+
+### GetSelector()
+
+> **GetSelector**(`deps`): (`event`) => [`HashType`](../../HashType-2.mdx#hashtype)
+
+Defined in: [src/primitives/Abi/event/getSelector.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/getSelector.js#L21)
+
+Factory: Get event selector (keccak256 hash of signature)
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### keccak256String
+
+(`str`) => `Uint8Array`
+
+Keccak256 hash function for strings
+
+#### Returns
+
+Function that computes event selector
+
+> (`event`): [`HashType`](../../HashType-2.mdx#hashtype)
+
+##### Parameters
+
+###### event
+
+`any`
+
+##### Returns
+
+[`HashType`](../../HashType-2.mdx#hashtype)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/abi
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import { GetSelector } from './primitives/Abi/event/index.js';
+import { keccak256String } from './primitives/Hash/index.js';
+
+const getSelector = GetSelector({ keccak256String });
+const event = { type: "event", name: "Transfer", inputs: [{ type: "address", indexed: true }] };
+const selector = getSelector(event);
+```
+
+***
+
+### getSignature()
+
+> **getSignature**(`event`): `string`
+
+Defined in: [src/primitives/Abi/event/getSignature.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/getSignature.js#L13)
+
+Get event signature string (e.g., "Transfer(address,address,uint256)")
+
+#### Parameters
+
+##### event
+
+[`EventType`](#eventtype)\<`string`, readonly `Parameter`[]\>
+
+Event definition
+
+#### Returns
+
+`string`
+
+Event signature
+
+#### Example
+
+```typescript
+const event = { type: "event", name: "Transfer", inputs: [...] };
+const sig = Event.getSignature(event); // "Transfer(address,address,uint256)"
+```
+
+***
+
+### Signature()
+
+> **Signature**(`event`): `string`
+
+Defined in: [src/primitives/Abi/event/getSignature.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/event/getSignature.js#L13)
+
+Get event signature string (e.g., "Transfer(address,address,uint256)")
+
+#### Parameters
+
+##### event
+
+[`EventType`](#eventtype)\<`string`, readonly `Parameter`[]\>
+
+Event definition
+
+#### Returns
+
+`string`
+
+Event signature
+
+#### Example
+
+```typescript
+const event = { type: "event", name: "Transfer", inputs: [...] };
+const sig = Event.getSignature(event); // "Transfer(address,address,uint256)"
+```

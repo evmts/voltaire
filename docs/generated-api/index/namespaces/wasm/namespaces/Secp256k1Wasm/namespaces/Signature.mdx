@@ -1,0 +1,88 @@
+---
+title: "Signature"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../../../index.mdx) / [index](../../../../../index.mdx) / [wasm](../../../index.mdx) / [Secp256k1Wasm](../index.mdx) / Signature
+
+# Signature
+
+## Functions
+
+### fromBytes()
+
+> **fromBytes**(`bytes`): [`Signature`](../index.mdx#signature)
+
+Defined in: [src/crypto/secp256k1.wasm.ts:308](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L308)
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`
+
+#### Returns
+
+[`Signature`](../index.mdx#signature)
+
+***
+
+### fromCompact()
+
+> **fromCompact**(`compact`, `v`): [`Signature`](../index.mdx#signature)
+
+Defined in: [src/crypto/secp256k1.wasm.ts:291](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L291)
+
+#### Parameters
+
+##### compact
+
+`Uint8Array`
+
+##### v
+
+`number`
+
+#### Returns
+
+[`Signature`](../index.mdx#signature)
+
+***
+
+### toBytes()
+
+> **toBytes**(`sig`): `Uint8Array`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:283](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L283)
+
+#### Parameters
+
+##### sig
+
+[`Signature`](../index.mdx#signature)
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### toCompact()
+
+> **toCompact**(`sig`): `Uint8Array`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:279](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L279)
+
+#### Parameters
+
+##### sig
+
+[`Signature`](../index.mdx#signature)
+
+#### Returns
+
+`Uint8Array`

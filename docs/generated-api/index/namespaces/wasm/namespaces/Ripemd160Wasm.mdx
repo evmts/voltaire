@@ -1,0 +1,90 @@
+---
+title: "Ripemd160Wasm"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../index.mdx) / [index](../../../index.mdx) / [wasm](../index.mdx) / Ripemd160Wasm
+
+# Ripemd160Wasm
+
+Reset memory allocator (currently unused)
+
+## Functions
+
+### hash()
+
+> **hash**(`data`): `Uint8Array`
+
+Defined in: [src/crypto/ripemd160.wasm.ts:219](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/ripemd160.wasm.ts#L219)
+
+Compute RIPEMD160 hash (20 bytes)
+
+#### Parameters
+
+##### data
+
+Input data (Uint8Array or string)
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`Uint8Array`
+
+20-byte hash
+
+#### Example
+
+```typescript
+const hash = Ripemd160Wasm.hash(data);
+// Uint8Array(20)
+```
+
+***
+
+### hashString()
+
+> **hashString**(`str`): `Uint8Array`
+
+Defined in: [src/crypto/ripemd160.wasm.ts:259](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/ripemd160.wasm.ts#L259)
+
+Compute RIPEMD160 hash of UTF-8 string
+
+#### Parameters
+
+##### str
+
+`string`
+
+Input string
+
+#### Returns
+
+`Uint8Array`
+
+20-byte hash
+
+#### Example
+
+```typescript
+const hash = Ripemd160Wasm.hashString("hello");
+// Uint8Array(20)
+```
+
+***
+
+### load()
+
+> **load**(): `Promise`\<`void`\>
+
+Defined in: [src/crypto/ripemd160.wasm.ts:203](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/ripemd160.wasm.ts#L203)
+
+Load WASM module (must be called before using other functions)
+
+#### Returns
+
+`Promise`\<`void`\>

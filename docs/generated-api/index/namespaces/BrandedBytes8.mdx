@@ -1,0 +1,236 @@
+---
+title: "BrandedBytes8"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / BrandedBytes8
+
+# BrandedBytes8
+
+## Type Aliases
+
+### Bytes8Type
+
+> **Bytes8Type** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/Bytes/Bytes8/Bytes8Type.ts:3](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/Bytes8Type.ts#L3)
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Bytes8"`
+
+##### size
+
+> `readonly` **size**: `8`
+
+## Functions
+
+### clone()
+
+> **clone**(`bytes`): [`Bytes8Type`](#bytes8type)
+
+Defined in: [src/primitives/Bytes/Bytes8/clone.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/clone.js#L12)
+
+Clone Bytes8
+
+#### Parameters
+
+##### bytes
+
+[`Bytes8Type`](#bytes8type)
+
+Bytes8 to clone
+
+#### Returns
+
+[`Bytes8Type`](#bytes8type)
+
+Cloned Bytes8
+
+#### Example
+
+```typescript
+const copy = Bytes8.clone(bytes);
+```
+
+***
+
+### compare()
+
+> **compare**(`a`, `b`): `-1` \| `0` \| `1`
+
+Defined in: [src/primitives/Bytes/Bytes8/compare.js:2](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/compare.js#L2)
+
+#### Parameters
+
+##### a
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+##### b
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`-1` \| `0` \| `1`
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Bytes/Bytes8/equals.js:2](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/equals.js#L2)
+
+#### Parameters
+
+##### a
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+##### b
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`Bytes8Type`](#bytes8type)
+
+Defined in: [src/primitives/Bytes/Bytes8/from.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/from.js#L8)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`Bytes8Type`](#bytes8type)
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`Bytes8Type`](#bytes8type)
+
+Defined in: [src/primitives/Bytes/Bytes8/fromHex.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/fromHex.js#L8)
+
+#### Parameters
+
+##### hex
+
+`string`
+
+#### Returns
+
+[`Bytes8Type`](#bytes8type)
+
+***
+
+### size()
+
+> **size**(`_bytes`): `8`
+
+Defined in: [src/primitives/Bytes/Bytes8/size.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/size.js#L12)
+
+Get size of Bytes8 (always 8)
+
+#### Parameters
+
+##### \_bytes
+
+[`Bytes8Type`](#bytes8type)
+
+Bytes8
+
+#### Returns
+
+`8`
+
+Size (always 8)
+
+#### Example
+
+```typescript
+const size = Bytes8.size(bytes); // 8
+```
+
+***
+
+### toBytes()
+
+> **toBytes**(`bytes`): `BytesType`
+
+Defined in: [src/primitives/Bytes/Bytes8/toBytes.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/toBytes.js#L12)
+
+Convert Bytes8 to generic Bytes
+
+#### Parameters
+
+##### bytes
+
+[`Bytes8Type`](#bytes8type)
+
+Bytes8 to convert
+
+#### Returns
+
+`BytesType`
+
+Generic Bytes
+
+#### Example
+
+```typescript
+const genericBytes = Bytes8.toBytes(bytes);
+```
+
+***
+
+### toHex()
+
+> **toHex**(`bytes`): [`HexType`](../../primitives/Hex.mdx#hextype)
+
+Defined in: [src/primitives/Bytes/Bytes8/toHex.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/toHex.js#L12)
+
+Convert Bytes8 to hex string
+
+#### Parameters
+
+##### bytes
+
+[`Bytes8Type`](#bytes8type)
+
+Bytes8 to convert
+
+#### Returns
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+Hex string
+
+#### Example
+
+```typescript
+const hex = Bytes8.toHex(bytes);
+```
+
+## References
+
+### Bytes8
+
+Re-exports [Bytes8](../index.mdx#bytes8)

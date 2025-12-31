@@ -1,0 +1,257 @@
+---
+title: "ContractSignature"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / ContractSignature
+
+# ContractSignature
+
+## Classes
+
+### ContractCallError
+
+Defined in: [src/primitives/ContractSignature/errors.ts:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/ContractSignature/errors.ts#L17)
+
+Error thrown when contract call for signature validation fails
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new ContractCallError**(`message`, `context?`): [`ContractCallError`](#contractcallerror)
+
+Defined in: [src/primitives/ContractSignature/errors.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/ContractSignature/errors.ts#L18)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### context?
+
+`unknown`
+
+###### Returns
+
+[`ContractCallError`](#contractcallerror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### context?
+
+> `optional` **context**: `unknown`
+
+Defined in: [src/primitives/ContractSignature/errors.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/ContractSignature/errors.ts#L24)
+
+***
+
+### ContractSignatureError
+
+Defined in: [src/primitives/ContractSignature/errors.ts:4](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/ContractSignature/errors.ts#L4)
+
+Error thrown when EIP-1271 signature validation fails
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new ContractSignatureError**(`message`, `context?`): [`ContractSignatureError`](#contractsignatureerror)
+
+Defined in: [src/primitives/ContractSignature/errors.ts:5](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/ContractSignature/errors.ts#L5)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### context?
+
+`unknown`
+
+###### Returns
+
+[`ContractSignatureError`](#contractsignatureerror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### context?
+
+> `optional` **context**: `unknown`
+
+Defined in: [src/primitives/ContractSignature/errors.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/ContractSignature/errors.ts#L11)
+
+## Variables
+
+### EIP1271\_MAGIC\_VALUE
+
+> `const` **EIP1271\_MAGIC\_VALUE**: `"0x1626ba7e"` = `"0x1626ba7e"`
+
+Defined in: [src/primitives/ContractSignature/constants.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/ContractSignature/constants.js#L11)
+
+Magic value returned by isValidSignature for valid signatures
+bytes4(keccak256("isValidSignature(bytes32,bytes)"))
+
+***
+
+### IS\_VALID\_SIGNATURE\_SELECTOR
+
+> `const` **IS\_VALID\_SIGNATURE\_SELECTOR**: `"0x1626ba7e"` = `"0x1626ba7e"`
+
+Defined in: [src/primitives/ContractSignature/constants.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/ContractSignature/constants.js#L16)
+
+Function selector for isValidSignature(bytes32,bytes)
+
+## Functions
+
+### isValidSignature()
+
+> **isValidSignature**(`provider`, `contractAddress`, `hash`, `signature`): `Promise`\<`boolean`\>
+
+Defined in: [src/primitives/ContractSignature/isValidSignature.js:32](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/ContractSignature/isValidSignature.js#L32)
+
+Check if a contract signature is valid via EIP-1271
+
+Calls the contract's isValidSignature(bytes32,bytes) method and checks
+if it returns the magic value 0x1626ba7e.
+
+#### Parameters
+
+##### provider
+
+JSON-RPC provider
+
+###### request
+
+(`method`, `params`) => `Promise`\<`unknown`\>
+
+JSON-RPC request method
+
+##### contractAddress
+
+Contract address to call
+
+`string` | [`AddressType`](../../primitives/Address.mdx#addresstype)
+
+##### hash
+
+Message hash (bytes32)
+
+`Uint8Array`\<`ArrayBufferLike`\> | [`HashType`](HashType-2.mdx#hashtype)
+
+##### signature
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Signature bytes
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+True if signature is valid
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-1271
+
+#### Throws
+
+If the contract call fails
+
+#### Example
+
+```javascript
+import { isValidSignature } from './primitives/ContractSignature/isValidSignature.js';
+
+const isValid = await isValidSignature(
+  provider,
+  '0x1234...', // contract address
+  messageHash,
+  signatureBytes
+);
+```
+
+***
+
+### VerifySignature()
+
+> **VerifySignature**(`deps`): (`provider`, `address`, `hash`, `signature`) => `Promise`\<`boolean`\>
+
+Defined in: [src/primitives/ContractSignature/verifySignature.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/ContractSignature/verifySignature.js#L13)
+
+Factory: Create unified signature verification for EOA and contract accounts
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### addressFromPublicKey
+
+(`x`, `y`) => [`AddressType`](../../primitives/Address.mdx#addresstype)
+
+Address derivation from public key
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+###### recoverPublicKey
+
+(`signature`, `messageHash`) => `Uint8Array`
+
+secp256k1 public key recovery
+
+#### Returns
+
+> (`provider`, `address`, `hash`, `signature`): `Promise`\<`boolean`\>
+
+##### Parameters
+
+###### provider
+
+###### request
+
+(`method`, `params`) => `Promise`\<`unknown`\>
+
+###### address
+
+`string` | [`AddressType`](../../primitives/Address.mdx#addresstype)
+
+###### hash
+
+`Uint8Array`\<`ArrayBufferLike`\> | [`HashType`](HashType-2.mdx#hashtype)
+
+###### signature
+
+`Uint8Array`\<`ArrayBufferLike`\> | \{ `r`: `Uint8Array`; `s`: `Uint8Array`; `v`: `number`; \}
+
+##### Returns
+
+`Promise`\<`boolean`\>

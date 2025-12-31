@@ -1,0 +1,1154 @@
+---
+description: Auto-generated TypeScript API documentation from source code
+title: Generated API Reference
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / evm
+
+# evm
+
+EVM (Ethereum Virtual Machine) module
+
+Provides execution frame, host interface, and complete opcode handler implementations.
+Based on guillotine-mini architecture with TypeScript/Zig dual implementation.
+
+## Namespaces
+
+- [Arithmetic](namespaces/Arithmetic.mdx)
+- [Bitwise](namespaces/Bitwise.mdx)
+- [Block](namespaces/Block.mdx)
+- [Comparison](namespaces/Comparison.mdx)
+- [Context](namespaces/Context.mdx)
+- [Control](namespaces/Control.mdx)
+- [Keccak](namespaces/Keccak.mdx)
+- [Log](namespaces/Log.mdx)
+- [Memory](namespaces/Memory.mdx)
+- [Stack](namespaces/Stack.mdx)
+- [Storage](namespaces/Storage.mdx)
+- [System](namespaces/System.mdx)
+
+## Type Aliases
+
+### BrandedFrame
+
+> **BrandedFrame** = `object`
+
+Defined in: [src/evm/Frame/FrameType.ts:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L12)
+
+BrandedFrame - EVM execution frame
+
+Represents an EVM execution frame with stack, memory, gas accounting,
+and execution state. Based on guillotine-mini Frame structure.
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Frame"`
+
+Defined in: [src/evm/Frame/FrameType.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L13)
+
+##### accessedAddresses?
+
+> `optional` **accessedAddresses**: `Set`\<`string`\>
+
+Defined in: [src/evm/Frame/FrameType.ts:48](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L48)
+
+##### accessedStorageKeys?
+
+> `optional` **accessedStorageKeys**: `Map`\<`string`, `boolean`\>
+
+Defined in: [src/evm/Frame/FrameType.ts:49](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L49)
+
+##### address
+
+> **address**: [`AddressType`](../primitives/Address.mdx#addresstype)
+
+Defined in: [src/evm/Frame/FrameType.ts:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L29)
+
+##### authorized
+
+> **authorized**: `bigint` \| `null`
+
+Defined in: [src/evm/Frame/FrameType.ts:41](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L41)
+
+##### blobBaseFee?
+
+> `optional` **blobBaseFee**: `bigint`
+
+Defined in: [src/evm/Frame/FrameType.ts:63](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L63)
+
+##### blobVersionedHashes?
+
+> `optional` **blobVersionedHashes**: `bigint`[]
+
+Defined in: [src/evm/Frame/FrameType.ts:66](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L66)
+
+##### blockBaseFee?
+
+> `optional` **blockBaseFee**: `bigint`
+
+Defined in: [src/evm/Frame/FrameType.ts:61](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L61)
+
+##### blockDifficulty?
+
+> `optional` **blockDifficulty**: `bigint`
+
+Defined in: [src/evm/Frame/FrameType.ts:59](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L59)
+
+##### blockGasLimit?
+
+> `optional` **blockGasLimit**: `bigint`
+
+Defined in: [src/evm/Frame/FrameType.ts:58](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L58)
+
+##### blockHashes?
+
+> `optional` **blockHashes**: `Map`\<`bigint`, `bigint`\>
+
+Defined in: [src/evm/Frame/FrameType.ts:65](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L65)
+
+##### blockNumber?
+
+> `optional` **blockNumber**: `bigint`
+
+Defined in: [src/evm/Frame/FrameType.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L56)
+
+##### blockPrevrandao?
+
+> `optional` **blockPrevrandao**: `bigint`
+
+Defined in: [src/evm/Frame/FrameType.ts:60](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L60)
+
+##### blockTimestamp?
+
+> `optional` **blockTimestamp**: `bigint`
+
+Defined in: [src/evm/Frame/FrameType.ts:57](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L57)
+
+##### bytecode
+
+> **bytecode**: `Uint8Array`
+
+Defined in: [src/evm/Frame/FrameType.ts:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L25)
+
+##### calldata
+
+> **calldata**: `Uint8Array`
+
+Defined in: [src/evm/Frame/FrameType.ts:31](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L31)
+
+##### callDepth
+
+> **callDepth**: `number`
+
+Defined in: [src/evm/Frame/FrameType.ts:42](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L42)
+
+##### caller
+
+> **caller**: [`AddressType`](../primitives/Address.mdx#addresstype)
+
+Defined in: [src/evm/Frame/FrameType.ts:28](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L28)
+
+##### chainId?
+
+> `optional` **chainId**: `bigint`
+
+Defined in: [src/evm/Frame/FrameType.ts:62](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L62)
+
+##### coinbase?
+
+> `optional` **coinbase**: [`AddressType`](../primitives/Address.mdx#addresstype)
+
+Defined in: [src/evm/Frame/FrameType.ts:64](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L64)
+
+##### gasRefunds?
+
+> `optional` **gasRefunds**: `bigint`
+
+Defined in: [src/evm/Frame/FrameType.ts:53](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L53)
+
+##### gasRemaining
+
+> **gasRemaining**: `bigint`
+
+Defined in: [src/evm/Frame/FrameType.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L24)
+
+##### hardfork?
+
+> `optional` **hardfork**: [`HardforkType`](../index/namespaces/Hardfork.mdx#hardforktype)
+
+Defined in: [src/evm/Frame/FrameType.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L45)
+
+##### isStatic
+
+> **isStatic**: `boolean`
+
+Defined in: [src/evm/Frame/FrameType.ts:38](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L38)
+
+##### logs?
+
+> `optional` **logs**: `object`[]
+
+Defined in: [src/evm/Frame/FrameType.ts:70](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L70)
+
+###### address
+
+> **address**: [`AddressType`](../primitives/Address.mdx#addresstype)
+
+###### data
+
+> **data**: `Uint8Array`
+
+###### topics
+
+> **topics**: `bigint`[]
+
+##### memory
+
+> **memory**: `Map`\<`number`, `number`\>
+
+Defined in: [src/evm/Frame/FrameType.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L19)
+
+##### memorySize
+
+> **memorySize**: `number`
+
+Defined in: [src/evm/Frame/FrameType.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L20)
+
+##### output
+
+> **output**: `Uint8Array`
+
+Defined in: [src/evm/Frame/FrameType.ts:32](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L32)
+
+##### pc
+
+> **pc**: `number`
+
+Defined in: [src/evm/Frame/FrameType.ts:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L23)
+
+##### returnData
+
+> **returnData**: `Uint8Array`
+
+Defined in: [src/evm/Frame/FrameType.ts:33](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L33)
+
+##### reverted
+
+> **reverted**: `boolean`
+
+Defined in: [src/evm/Frame/FrameType.ts:37](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L37)
+
+##### selfBalance?
+
+> `optional` **selfBalance**: `bigint`
+
+Defined in: [src/evm/Frame/FrameType.ts:67](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L67)
+
+##### stack
+
+> **stack**: `bigint`[]
+
+Defined in: [src/evm/Frame/FrameType.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L16)
+
+##### stopped
+
+> **stopped**: `boolean`
+
+Defined in: [src/evm/Frame/FrameType.ts:36](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L36)
+
+##### storageOriginalValues?
+
+> `optional` **storageOriginalValues**: `Map`\<`string`, `bigint`\>
+
+Defined in: [src/evm/Frame/FrameType.ts:52](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L52)
+
+##### value
+
+> **value**: `bigint`
+
+Defined in: [src/evm/Frame/FrameType.ts:30](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L30)
+
+#### Methods
+
+##### add()
+
+> **add**(): [`EvmError`](#evmerror) \| `null`
+
+Defined in: [src/evm/Frame/FrameType.ts:77](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L77)
+
+###### Returns
+
+[`EvmError`](#evmerror) \| `null`
+
+##### addmod()
+
+> **addmod**(): [`EvmError`](#evmerror) \| `null`
+
+Defined in: [src/evm/Frame/FrameType.ts:84](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L84)
+
+###### Returns
+
+[`EvmError`](#evmerror) \| `null`
+
+##### div()
+
+> **div**(): [`EvmError`](#evmerror) \| `null`
+
+Defined in: [src/evm/Frame/FrameType.ts:80](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L80)
+
+###### Returns
+
+[`EvmError`](#evmerror) \| `null`
+
+##### exp()
+
+> **exp**(): [`EvmError`](#evmerror) \| `null`
+
+Defined in: [src/evm/Frame/FrameType.ts:86](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L86)
+
+###### Returns
+
+[`EvmError`](#evmerror) \| `null`
+
+##### mod()
+
+> **mod**(): [`EvmError`](#evmerror) \| `null`
+
+Defined in: [src/evm/Frame/FrameType.ts:82](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L82)
+
+###### Returns
+
+[`EvmError`](#evmerror) \| `null`
+
+##### mul()
+
+> **mul**(): [`EvmError`](#evmerror) \| `null`
+
+Defined in: [src/evm/Frame/FrameType.ts:78](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L78)
+
+###### Returns
+
+[`EvmError`](#evmerror) \| `null`
+
+##### mulmod()
+
+> **mulmod**(): [`EvmError`](#evmerror) \| `null`
+
+Defined in: [src/evm/Frame/FrameType.ts:85](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L85)
+
+###### Returns
+
+[`EvmError`](#evmerror) \| `null`
+
+##### sdiv()
+
+> **sdiv**(): [`EvmError`](#evmerror) \| `null`
+
+Defined in: [src/evm/Frame/FrameType.ts:81](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L81)
+
+###### Returns
+
+[`EvmError`](#evmerror) \| `null`
+
+##### signextend()
+
+> **signextend**(): [`EvmError`](#evmerror) \| `null`
+
+Defined in: [src/evm/Frame/FrameType.ts:87](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L87)
+
+###### Returns
+
+[`EvmError`](#evmerror) \| `null`
+
+##### smod()
+
+> **smod**(): [`EvmError`](#evmerror) \| `null`
+
+Defined in: [src/evm/Frame/FrameType.ts:83](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L83)
+
+###### Returns
+
+[`EvmError`](#evmerror) \| `null`
+
+##### sub()
+
+> **sub**(): [`EvmError`](#evmerror) \| `null`
+
+Defined in: [src/evm/Frame/FrameType.ts:79](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L79)
+
+###### Returns
+
+[`EvmError`](#evmerror) \| `null`
+
+***
+
+### BrandedHost
+
+> **BrandedHost** = `object`
+
+Defined in: [src/evm/Host/HostType.ts:30](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L30)
+
+BrandedHost - EVM host interface for external state access
+
+Provides access to account state (balances, storage, code, nonces) and
+nested execution capabilities.
+
+## Architecture Note
+
+This module provides low-level EVM primitives (opcode handlers, frame management).
+For full EVM execution with nested calls, use:
+
+- **guillotine**: Production EVM with async state access, tracing, and full EIP support
+- **guillotine-mini**: Lightweight synchronous EVM for testing and simple use cases
+
+The `call` and `create` methods on this interface are optional - when not provided,
+system opcodes (CALL, CREATE, etc.) will return a NotImplemented error. This is
+intentional: these low-level utils don't include a full execution engine.
+
+Based on guillotine-mini HostInterface vtable pattern.
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Host"`
+
+Defined in: [src/evm/Host/HostType.ts:31](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L31)
+
+##### call()?
+
+> `optional` **call**: (`params`) => [`CallResult`](#callresult)
+
+Defined in: [src/evm/Host/HostType.ts:91](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L91)
+
+Execute a nested CALL operation (CALL, STATICCALL, DELEGATECALL, CALLCODE)
+
+Optional - when not provided, CALL-family opcodes return NotImplemented error.
+Full implementations provided by guillotine/guillotine-mini EVM engines.
+
+###### Parameters
+
+###### params
+
+[`CallParams`](#callparams)
+
+###### Returns
+
+[`CallResult`](#callresult)
+
+##### create()?
+
+> `optional` **create**: (`params`) => [`CreateResult`](#createresult)
+
+Defined in: [src/evm/Host/HostType.ts:99](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L99)
+
+Execute a nested CREATE operation (CREATE, CREATE2)
+
+Optional - when not provided, CREATE-family opcodes return NotImplemented error.
+Full implementations provided by guillotine/guillotine-mini EVM engines.
+
+###### Parameters
+
+###### params
+
+[`CreateParams`](#createparams)
+
+###### Returns
+
+[`CreateResult`](#createresult)
+
+##### getBalance()
+
+> **getBalance**: (`address`) => `bigint`
+
+Defined in: [src/evm/Host/HostType.ts:36](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L36)
+
+Get account balance
+
+###### Parameters
+
+###### address
+
+[`AddressType`](../primitives/Address.mdx#addresstype)
+
+###### Returns
+
+`bigint`
+
+##### getCode()
+
+> **getCode**: (`address`) => `Uint8Array`
+
+Defined in: [src/evm/Host/HostType.ts:46](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L46)
+
+Get account code
+
+###### Parameters
+
+###### address
+
+[`AddressType`](../primitives/Address.mdx#addresstype)
+
+###### Returns
+
+`Uint8Array`
+
+##### getNonce()
+
+> **getNonce**: (`address`) => `bigint`
+
+Defined in: [src/evm/Host/HostType.ts:66](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L66)
+
+Get account nonce
+
+###### Parameters
+
+###### address
+
+[`AddressType`](../primitives/Address.mdx#addresstype)
+
+###### Returns
+
+`bigint`
+
+##### getStorage()
+
+> **getStorage**: (`address`, `slot`) => `bigint`
+
+Defined in: [src/evm/Host/HostType.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L56)
+
+Get storage slot value
+
+###### Parameters
+
+###### address
+
+[`AddressType`](../primitives/Address.mdx#addresstype)
+
+###### slot
+
+`bigint`
+
+###### Returns
+
+`bigint`
+
+##### getTransientStorage()
+
+> **getTransientStorage**: (`address`, `slot`) => `bigint`
+
+Defined in: [src/evm/Host/HostType.ts:77](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L77)
+
+Get transient storage slot value (EIP-1153)
+Transaction-scoped, cleared at end of transaction
+
+###### Parameters
+
+###### address
+
+[`AddressType`](../primitives/Address.mdx#addresstype)
+
+###### slot
+
+`bigint`
+
+###### Returns
+
+`bigint`
+
+##### setBalance()
+
+> **setBalance**: (`address`, `balance`) => `void`
+
+Defined in: [src/evm/Host/HostType.ts:41](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L41)
+
+Set account balance
+
+###### Parameters
+
+###### address
+
+[`AddressType`](../primitives/Address.mdx#addresstype)
+
+###### balance
+
+`bigint`
+
+###### Returns
+
+`void`
+
+##### setCode()
+
+> **setCode**: (`address`, `code`) => `void`
+
+Defined in: [src/evm/Host/HostType.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L51)
+
+Set account code
+
+###### Parameters
+
+###### address
+
+[`AddressType`](../primitives/Address.mdx#addresstype)
+
+###### code
+
+`Uint8Array`
+
+###### Returns
+
+`void`
+
+##### setNonce()
+
+> **setNonce**: (`address`, `nonce`) => `void`
+
+Defined in: [src/evm/Host/HostType.ts:71](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L71)
+
+Set account nonce
+
+###### Parameters
+
+###### address
+
+[`AddressType`](../primitives/Address.mdx#addresstype)
+
+###### nonce
+
+`bigint`
+
+###### Returns
+
+`void`
+
+##### setStorage()
+
+> **setStorage**: (`address`, `slot`, `value`) => `void`
+
+Defined in: [src/evm/Host/HostType.ts:61](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L61)
+
+Set storage slot value
+
+###### Parameters
+
+###### address
+
+[`AddressType`](../primitives/Address.mdx#addresstype)
+
+###### slot
+
+`bigint`
+
+###### value
+
+`bigint`
+
+###### Returns
+
+`void`
+
+##### setTransientStorage()
+
+> **setTransientStorage**: (`address`, `slot`, `value`) => `void`
+
+Defined in: [src/evm/Host/HostType.ts:83](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/HostType.ts#L83)
+
+Set transient storage slot value (EIP-1153)
+Transaction-scoped, cleared at end of transaction
+
+###### Parameters
+
+###### address
+
+[`AddressType`](../primitives/Address.mdx#addresstype)
+
+###### slot
+
+`bigint`
+
+###### value
+
+`bigint`
+
+###### Returns
+
+`void`
+
+***
+
+### CallParams
+
+> **CallParams** = `object`
+
+Defined in: [src/evm/InstructionHandlerType.ts:60](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L60)
+
+CallParams - Parameters for EVM call operations
+
+Used by CALL, STATICCALL, DELEGATECALL, CALLCODE opcodes.
+
+#### Example
+
+```typescript
+const params: CallParams = {
+  callType: "CALL",
+  target: targetAddress,
+  value: 1000000000000000000n, // 1 ether in wei
+  gasLimit: 100000n,
+  input: calldata,
+  caller: frame.address,
+  isStatic: false,
+};
+```
+
+#### Properties
+
+##### caller
+
+> **caller**: [`AddressType`](../primitives/Address.mdx#addresstype)
+
+Defined in: [src/evm/InstructionHandlerType.ts:77](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L77)
+
+Caller address
+
+##### callType
+
+> **callType**: [`CallType`](#calltype-1)
+
+Defined in: [src/evm/InstructionHandlerType.ts:62](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L62)
+
+Type of call operation
+
+##### depth
+
+> **depth**: `number`
+
+Defined in: [src/evm/InstructionHandlerType.ts:83](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L83)
+
+Call depth
+
+##### gasLimit
+
+> **gasLimit**: `bigint`
+
+Defined in: [src/evm/InstructionHandlerType.ts:71](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L71)
+
+Gas limit for call
+
+##### input
+
+> **input**: `Uint8Array`
+
+Defined in: [src/evm/InstructionHandlerType.ts:74](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L74)
+
+Input data (calldata)
+
+##### isStatic
+
+> **isStatic**: `boolean`
+
+Defined in: [src/evm/InstructionHandlerType.ts:80](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L80)
+
+Static call flag (write protection)
+
+##### target
+
+> **target**: [`AddressType`](../primitives/Address.mdx#addresstype)
+
+Defined in: [src/evm/InstructionHandlerType.ts:65](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L65)
+
+Target contract address
+
+##### value
+
+> **value**: `bigint`
+
+Defined in: [src/evm/InstructionHandlerType.ts:68](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L68)
+
+Value to transfer (wei)
+
+***
+
+### CallResult
+
+> **CallResult** = `object`
+
+Defined in: [src/evm/InstructionHandlerType.ts:112](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L112)
+
+CallResult - Result of EVM call operation
+
+Returned by call operations (CALL, STATICCALL, DELEGATECALL, etc.)
+
+#### Example
+
+```typescript
+// Successful call
+const result: CallResult = {
+  success: true,
+  gasUsed: 21000n,
+  output: returnData,
+  logs: [{ address, topics, data }],
+  gasRefund: 0n,
+};
+
+// Failed call (reverted)
+const revertResult: CallResult = {
+  success: false,
+  gasUsed: 50000n,
+  output: revertReason,
+  logs: [],
+  gasRefund: 0n,
+};
+```
+
+#### Properties
+
+##### gasRefund
+
+> **gasRefund**: `bigint`
+
+Defined in: [src/evm/InstructionHandlerType.ts:130](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L130)
+
+Gas refund from storage deletions
+
+##### gasUsed
+
+> **gasUsed**: `bigint`
+
+Defined in: [src/evm/InstructionHandlerType.ts:117](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L117)
+
+Gas consumed by call
+
+##### logs
+
+> **logs**: `object`[]
+
+Defined in: [src/evm/InstructionHandlerType.ts:123](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L123)
+
+Logs emitted during call
+
+###### address
+
+> **address**: [`AddressType`](../primitives/Address.mdx#addresstype)
+
+###### data
+
+> **data**: `Uint8Array`
+
+###### topics
+
+> **topics**: `bigint`[]
+
+##### output
+
+> **output**: `Uint8Array`
+
+Defined in: [src/evm/InstructionHandlerType.ts:120](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L120)
+
+Return data or revert reason
+
+##### success
+
+> **success**: `boolean`
+
+Defined in: [src/evm/InstructionHandlerType.ts:114](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L114)
+
+Whether call succeeded (false if reverted)
+
+***
+
+### CallType
+
+> **CallType** = `"CALL"` \| `"STATICCALL"` \| `"DELEGATECALL"` \| `"CALLCODE"`
+
+Defined in: [src/evm/InstructionHandlerType.ts:36](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L36)
+
+CallType - EVM call operation types
+
+Determines context preservation for cross-contract calls.
+
+***
+
+### CreateParams
+
+> **CreateParams** = `object`
+
+Defined in: [src/evm/InstructionHandlerType.ts:150](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L150)
+
+CreateParams - Parameters for contract creation
+
+Used by CREATE and CREATE2 opcodes.
+
+#### Example
+
+```typescript
+// CREATE2 with deterministic address
+const params: CreateParams = {
+  caller: deployerAddress,
+  value: 0n,
+  initCode: contractBytecode,
+  gasLimit: 1000000n,
+  salt: 0x123n, // For CREATE2
+};
+```
+
+#### Properties
+
+##### caller
+
+> **caller**: [`AddressType`](../primitives/Address.mdx#addresstype)
+
+Defined in: [src/evm/InstructionHandlerType.ts:152](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L152)
+
+Deployer address
+
+##### depth
+
+> **depth**: `number`
+
+Defined in: [src/evm/InstructionHandlerType.ts:167](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L167)
+
+Call depth
+
+##### gasLimit
+
+> **gasLimit**: `bigint`
+
+Defined in: [src/evm/InstructionHandlerType.ts:161](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L161)
+
+Gas limit for deployment
+
+##### initCode
+
+> **initCode**: `Uint8Array`
+
+Defined in: [src/evm/InstructionHandlerType.ts:158](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L158)
+
+Initialization code
+
+##### salt?
+
+> `optional` **salt**: `bigint`
+
+Defined in: [src/evm/InstructionHandlerType.ts:164](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L164)
+
+Salt for CREATE2 (optional)
+
+##### value
+
+> **value**: `bigint`
+
+Defined in: [src/evm/InstructionHandlerType.ts:155](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L155)
+
+Value to transfer (wei)
+
+***
+
+### CreateResult
+
+> **CreateResult** = `object`
+
+Defined in: [src/evm/InstructionHandlerType.ts:194](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L194)
+
+CreateResult - Result of contract creation
+
+Returned by CREATE and CREATE2 operations.
+
+#### Example
+
+```typescript
+// Successful deployment
+const result: CreateResult = {
+  success: true,
+  address: newContractAddress,
+  gasUsed: 200000n,
+  output: runtimeCode,
+};
+
+// Failed deployment
+const failResult: CreateResult = {
+  success: false,
+  address: null,
+  gasUsed: 100000n,
+  output: revertReason,
+};
+```
+
+#### Properties
+
+##### address
+
+> **address**: [`AddressType`](../primitives/Address.mdx#addresstype) \| `null`
+
+Defined in: [src/evm/InstructionHandlerType.ts:199](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L199)
+
+Address of deployed contract (null if failed)
+
+##### gasRefund
+
+> **gasRefund**: `bigint`
+
+Defined in: [src/evm/InstructionHandlerType.ts:208](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L208)
+
+Gas refund
+
+##### gasUsed
+
+> **gasUsed**: `bigint`
+
+Defined in: [src/evm/InstructionHandlerType.ts:202](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L202)
+
+Gas consumed by deployment
+
+##### output
+
+> **output**: `Uint8Array`
+
+Defined in: [src/evm/InstructionHandlerType.ts:205](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L205)
+
+Runtime code or revert reason
+
+##### success
+
+> **success**: `boolean`
+
+Defined in: [src/evm/InstructionHandlerType.ts:196](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L196)
+
+Whether deployment succeeded
+
+***
+
+### EvmError
+
+> **EvmError** = \{ `type`: `"StackOverflow"`; \} \| \{ `type`: `"StackUnderflow"`; \} \| \{ `type`: `"OutOfGas"`; \} \| \{ `type`: `"OutOfBounds"`; \} \| \{ `type`: `"InvalidJump"`; \} \| \{ `type`: `"InvalidOpcode"`; \} \| \{ `type`: `"RevertExecuted"`; \} \| \{ `type`: `"CallDepthExceeded"`; \} \| \{ `type`: `"WriteProtection"`; \} \| \{ `type`: `"InsufficientBalance"`; \} \| \{ `message`: `string`; `type`: `"NotImplemented"`; \}
+
+Defined in: [src/evm/Frame/FrameType.ts:93](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/FrameType.ts#L93)
+
+EvmError - Frame execution errors
+
+***
+
+### InstructionHandler()
+
+> **InstructionHandler** = (`frame`, `host`) => [`EvmError`](#evmerror) \| \{ `type`: `"Success"`; \}
+
+Defined in: [src/evm/InstructionHandlerType.ts:26](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/InstructionHandlerType.ts#L26)
+
+InstructionHandler - Function signature for EVM opcode handlers
+
+Each opcode is implemented as a function that mutates the frame state
+and returns success or an error.
+
+Based on guillotine-mini instruction handler pattern.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](#brandedframe)
+
+##### host
+
+[`BrandedHost`](#brandedhost)
+
+#### Returns
+
+[`EvmError`](#evmerror) \| \{ `type`: `"Success"`; \}
+
+#### Example
+
+```typescript
+// ADD opcode handler (0x01)
+const addHandler: InstructionHandler = (frame: BrandedFrame, host: BrandedHost) => {
+  if (frame.stack.length < 2) {
+    return { type: "StackUnderflow" };
+  }
+  const b = frame.stack.pop()!;
+  const a = frame.stack.pop()!;
+  frame.stack.push((a + b) % 2n**256n); // Mod 2^256
+  return { type: "Success" };
+};
+```
+
+## Functions
+
+### Frame()
+
+> **Frame**(`params`): [`BrandedFrame`](#brandedframe)
+
+Defined in: [src/evm/Frame/index.ts:65](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Frame/index.ts#L65)
+
+Create a new EVM execution frame
+
+#### Parameters
+
+##### params
+
+`FrameParams` = `{}`
+
+Frame initialization parameters
+
+#### Returns
+
+[`BrandedFrame`](#brandedframe)
+
+New Frame instance
+
+#### Example
+
+```typescript
+import { Frame } from 'voltaire/evm/Frame';
+
+const frame = Frame({
+  bytecode: new Uint8Array([0x60, 0x01]),
+  gas: 100000n,
+});
+```
+
+***
+
+### Host()
+
+> **Host**(`impl`): [`BrandedHost`](#brandedhost)
+
+Defined in: [src/evm/Host/index.ts:65](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/Host/index.ts#L65)
+
+Create a Host interface implementation
+
+#### Parameters
+
+##### impl
+
+`HostImpl`
+
+Host implementation with state access methods
+
+#### Returns
+
+[`BrandedHost`](#brandedhost)
+
+Host instance
+
+#### Example
+
+```typescript
+import { Host } from 'voltaire/evm/Host';
+
+const host = Host({
+  getBalance: (addr) => balances.get(addr) ?? 0n,
+  setBalance: (addr, bal) => balances.set(addr, bal),
+  // ... other methods
+});
+```
+
+## References
+
+### Precompiles
+
+Renames and re-exports [precompiles](../index/namespaces/precompiles.mdx)

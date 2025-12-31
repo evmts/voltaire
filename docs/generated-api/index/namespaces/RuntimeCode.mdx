@@ -1,0 +1,217 @@
+---
+title: "RuntimeCode"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / RuntimeCode
+
+# RuntimeCode
+
+## Type Aliases
+
+### RuntimeCodeType
+
+> **RuntimeCodeType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/RuntimeCode/RuntimeCodeType.ts:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RuntimeCode/RuntimeCodeType.ts#L7)
+
+Branded RuntimeCode type
+Pure runtime bytecode without constructor or metadata
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"RuntimeCode"`
+
+## Functions
+
+### \_equals()
+
+> **\_equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/RuntimeCode/equals.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RuntimeCode/equals.js#L15)
+
+Check if two RuntimeCode instances are equal
+
+#### Parameters
+
+##### a
+
+[`RuntimeCodeType`](#runtimecodetype)
+
+First RuntimeCode
+
+##### b
+
+[`RuntimeCodeType`](#runtimecodetype)
+
+Second RuntimeCode
+
+#### Returns
+
+`boolean`
+
+true if equal
+
+#### Example
+
+```javascript
+import * as RuntimeCode from './primitives/RuntimeCode/index.js';
+const code1 = RuntimeCode.from("0x6001");
+const code2 = RuntimeCode.from("0x6001");
+RuntimeCode._equals(code1, code2); // true
+```
+
+***
+
+### \_toHex()
+
+> **\_toHex**(`data`): [`HexType`](../../primitives/Hex.mdx#hextype)
+
+Defined in: [src/primitives/RuntimeCode/toHex.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RuntimeCode/toHex.js#L15)
+
+Convert RuntimeCode to hex string
+
+#### Parameters
+
+##### data
+
+[`RuntimeCodeType`](#runtimecodetype)
+
+RuntimeCode
+
+#### Returns
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+Hex string
+
+#### Example
+
+```javascript
+import * as RuntimeCode from './primitives/RuntimeCode/index.js';
+const code = RuntimeCode.from("0x6001600155");
+const hex = RuntimeCode._toHex(code);
+```
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/RuntimeCode/index.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RuntimeCode/index.ts#L16)
+
+#### Parameters
+
+##### a
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | [`RuntimeCodeType`](#runtimecodetype)
+
+##### b
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | [`RuntimeCodeType`](#runtimecodetype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`RuntimeCodeType`](#runtimecodetype)
+
+Defined in: [src/primitives/RuntimeCode/from.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RuntimeCode/from.js#L18)
+
+Create RuntimeCode from various input types
+
+#### Parameters
+
+##### value
+
+Hex string or Uint8Array
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`RuntimeCodeType`](#runtimecodetype)
+
+RuntimeCode
+
+#### See
+
+https://voltaire.tevm.sh/primitives/runtime-code for RuntimeCode documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as RuntimeCode from './primitives/RuntimeCode/index.js';
+const code1 = RuntimeCode.from("0x6001600155");
+const code2 = RuntimeCode.from(new Uint8Array([0x60, 0x01, 0x60, 0x01, 0x55]));
+```
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`RuntimeCodeType`](#runtimecodetype)
+
+Defined in: [src/primitives/RuntimeCode/fromHex.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RuntimeCode/fromHex.js#L15)
+
+Create RuntimeCode from hex string
+
+#### Parameters
+
+##### hex
+
+`string`
+
+Hex string
+
+#### Returns
+
+[`RuntimeCodeType`](#runtimecodetype)
+
+RuntimeCode
+
+#### Throws
+
+If hex string is invalid
+
+#### Example
+
+```javascript
+import * as RuntimeCode from './primitives/RuntimeCode/index.js';
+const code = RuntimeCode.fromHex("0x6001600155");
+```
+
+***
+
+### toHex()
+
+> **toHex**(`value`): [`HexType`](../../primitives/Hex.mdx#hextype)
+
+Defined in: [src/primitives/RuntimeCode/index.ts:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RuntimeCode/index.ts#L23)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | [`RuntimeCodeType`](#runtimecodetype)
+
+#### Returns
+
+[`HexType`](../../primitives/Hex.mdx#hextype)

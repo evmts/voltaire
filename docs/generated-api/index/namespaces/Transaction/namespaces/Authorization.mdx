@@ -1,0 +1,498 @@
+---
+title: "Authorization"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../index.mdx) / [index](../../../index.mdx) / [Transaction](../index.mdx) / Authorization
+
+# Authorization
+
+## Classes
+
+### Authorization
+
+Defined in: [src/primitives/Transaction/Authorization/Authorization.js:42](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/Authorization.js#L42)
+
+Factory function for creating Authorization instances.
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Param
+
+Authorization parameters
+
+#### Throws
+
+Never throws
+
+#### Example
+
+```javascript
+import { Authorization } from './primitives/Transaction/Authorization/Authorization.js';
+const auth = Authorization({
+  chainId: 1n,
+  address: addr,
+  nonce: 0n,
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32)
+});
+const hash = Authorization.getSigningHash(auth);
+```
+
+#### Constructors
+
+##### Constructor
+
+> **new Authorization**(`auth`): [`Authorization`](#authorization)
+
+Defined in: [src/primitives/Transaction/Authorization/Authorization.js:42](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/Authorization.js#L42)
+
+Factory function for creating Authorization instances.
+
+###### Parameters
+
+###### auth
+
+Authorization parameters
+
+###### address
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+###### chainId
+
+`bigint`
+
+###### nonce
+
+`bigint`
+
+###### r
+
+`Uint8Array`
+
+###### s
+
+`Uint8Array`
+
+###### yParity
+
+`number`
+
+###### Returns
+
+[`Authorization`](#authorization)
+
+Authorization instance
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { Authorization } from './primitives/Transaction/Authorization/Authorization.js';
+const auth = Authorization({
+  chainId: 1n,
+  address: addr,
+  nonce: 0n,
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32)
+});
+const hash = Authorization.getSigningHash(auth);
+```
+
+#### Properties
+
+##### getAuthorizer()
+
+> **getAuthorizer**: (...`args`) => `any`
+
+Defined in: [src/primitives/Transaction/Authorization/Authorization.js:61](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/Authorization.js#L61)
+
+###### Parameters
+
+###### args
+
+...\[`any`, `...argArray: any[]`\]
+
+###### Returns
+
+`any`
+
+##### getSigningHash()
+
+> **getSigningHash**: (...`args`) => `any`
+
+Defined in: [src/primitives/Transaction/Authorization/Authorization.js:57](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/Authorization.js#L57)
+
+###### Parameters
+
+###### args
+
+...\[`any`, `...argArray: any[]`\]
+
+###### Returns
+
+`any`
+
+##### verifySignature()
+
+> **verifySignature**: (...`args`) => `any`
+
+Defined in: [src/primitives/Transaction/Authorization/Authorization.js:59](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/Authorization.js#L59)
+
+###### Parameters
+
+###### args
+
+...\[`any`, `...argArray: any[]`\]
+
+###### Returns
+
+`any`
+
+##### getAuthorizer()
+
+> `static` **getAuthorizer**: (`auth`) => [`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Transaction/Authorization/Authorization.js:55](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/Authorization.js#L55)
+
+Get authorizing address from signature.
+
+Recovers the Ethereum address that signed the authorization
+using the signature components (r, s, yParity) and the signing hash.
+
+###### Parameters
+
+###### auth
+
+[`BrandedAuthorization`](#brandedauthorization)
+
+Authorization to recover from
+
+###### Returns
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Recovered authorizer address
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If signature recovery fails
+
+###### Example
+
+```javascript
+import { getAuthorizer } from './primitives/Transaction/Authorization/getAuthorizer.js';
+const authorizerAddr = getAuthorizer(auth);
+```
+
+##### getSigningHash()
+
+> `static` **getSigningHash**: (`auth`) => [`HashType`](../../HashType-2.mdx#hashtype)
+
+Defined in: [src/primitives/Transaction/Authorization/Authorization.js:53](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/Authorization.js#L53)
+
+Get signing hash for authorization (EIP-7702).
+
+Per EIP-7702: keccak256(MAGIC || rlp([chain_id, address, nonce]))
+MAGIC = 0x05
+
+###### Parameters
+
+###### auth
+
+[`BrandedAuthorization`](#brandedauthorization)
+
+Authorization to hash
+
+###### Returns
+
+[`HashType`](../../HashType-2.mdx#hashtype)
+
+Signing hash
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { getSigningHash } from './primitives/Transaction/Authorization/getSigningHash.js';
+const hash = getSigningHash(auth);
+```
+
+##### verifySignature()
+
+> `static` **verifySignature**: (`auth`) => `boolean`
+
+Defined in: [src/primitives/Transaction/Authorization/Authorization.js:54](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/Authorization.js#L54)
+
+Verify authorization signature.
+
+Validates that the signature (r, s, yParity) is valid for the
+authorization's signing hash by recovering and verifying the public key.
+
+###### Parameters
+
+###### auth
+
+[`BrandedAuthorization`](#brandedauthorization)
+
+Authorization to verify
+
+###### Returns
+
+`boolean`
+
+True if signature is valid
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws - returns false on error
+
+###### Example
+
+```javascript
+import { verifySignature } from './primitives/Transaction/Authorization/verifySignature.js';
+const isValid = verifySignature(auth);
+```
+
+## Type Aliases
+
+### BrandedAuthorization
+
+> **BrandedAuthorization** = `object`
+
+Defined in: [src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts#L7)
+
+Branded Authorization type for EIP-7702
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Authorization"`
+
+Defined in: [src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts#L8)
+
+##### address
+
+> **address**: [`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts#L10)
+
+##### chainId
+
+> **chainId**: `bigint`
+
+Defined in: [src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts#L9)
+
+##### nonce
+
+> **nonce**: `bigint`
+
+Defined in: [src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts#L11)
+
+##### r
+
+> **r**: `Uint8Array`
+
+Defined in: [src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts#L13)
+
+##### s
+
+> **s**: `Uint8Array`
+
+Defined in: [src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts#L14)
+
+##### yParity
+
+> **yParity**: `number`
+
+Defined in: [src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/BrandedAuthorization.d.ts#L12)
+
+## Functions
+
+### getAuthorizer()
+
+> **getAuthorizer**(`auth`): [`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Transaction/Authorization/getAuthorizer.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/getAuthorizer.js#L21)
+
+Get authorizing address from signature.
+
+Recovers the Ethereum address that signed the authorization
+using the signature components (r, s, yParity) and the signing hash.
+
+#### Parameters
+
+##### auth
+
+[`BrandedAuthorization`](#brandedauthorization)
+
+Authorization to recover from
+
+#### Returns
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Recovered authorizer address
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If signature recovery fails
+
+#### Example
+
+```javascript
+import { getAuthorizer } from './primitives/Transaction/Authorization/getAuthorizer.js';
+const authorizerAddr = getAuthorizer(auth);
+```
+
+***
+
+### getSigningHash()
+
+> **getSigningHash**(`auth`): [`HashType`](../../HashType-2.mdx#hashtype)
+
+Defined in: [src/primitives/Transaction/Authorization/getSigningHash.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/getSigningHash.js#L22)
+
+Get signing hash for authorization (EIP-7702).
+
+Per EIP-7702: keccak256(MAGIC || rlp([chain_id, address, nonce]))
+MAGIC = 0x05
+
+#### Parameters
+
+##### auth
+
+[`BrandedAuthorization`](#brandedauthorization)
+
+Authorization to hash
+
+#### Returns
+
+[`HashType`](../../HashType-2.mdx#hashtype)
+
+Signing hash
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Never throws
+
+#### Example
+
+```javascript
+import { getSigningHash } from './primitives/Transaction/Authorization/getSigningHash.js';
+const hash = getSigningHash(auth);
+```
+
+***
+
+### verifySignature()
+
+> **verifySignature**(`auth`): `boolean`
+
+Defined in: [src/primitives/Transaction/Authorization/verifySignature.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/Authorization/verifySignature.js#L22)
+
+Verify authorization signature.
+
+Validates that the signature (r, s, yParity) is valid for the
+authorization's signing hash by recovering and verifying the public key.
+
+#### Parameters
+
+##### auth
+
+[`BrandedAuthorization`](#brandedauthorization)
+
+Authorization to verify
+
+#### Returns
+
+`boolean`
+
+True if signature is valid
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Never throws - returns false on error
+
+#### Example
+
+```javascript
+import { verifySignature } from './primitives/Transaction/Authorization/verifySignature.js';
+const isValid = verifySignature(auth);
+```

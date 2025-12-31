@@ -1,0 +1,186 @@
+---
+title: "ERC165"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / ERC165
+
+# ERC165
+
+## Variables
+
+### INTERFACE\_IDS
+
+> `const` **INTERFACE\_IDS**: `object`
+
+Defined in: [src/standards/ERC165.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC165.ts#L16)
+
+Known interface IDs (XOR of all function selectors in the interface)
+
+#### Type Declaration
+
+##### ERC1155
+
+> `readonly` **ERC1155**: `"0xd9b67a26"` = `"0xd9b67a26"`
+
+ERC-1155 Multi Token Standard
+
+##### ERC1155MetadataURI
+
+> `readonly` **ERC1155MetadataURI**: `"0x0e89341c"` = `"0x0e89341c"`
+
+ERC-1155 Metadata URI Extension
+
+##### ERC165
+
+> `readonly` **ERC165**: `"0x01ffc9a7"` = `"0x01ffc9a7"`
+
+ERC-165 itself
+
+##### ERC20
+
+> `readonly` **ERC20**: `"0x36372b07"` = `"0x36372b07"`
+
+ERC-20 Token Standard
+
+##### ERC2981
+
+> `readonly` **ERC2981**: `"0x2a55205a"` = `"0x2a55205a"`
+
+ERC-2981 NFT Royalty Standard
+
+##### ERC4906
+
+> `readonly` **ERC4906**: `"0x49064906"` = `"0x49064906"`
+
+ERC-4906 Metadata Update Extension
+
+##### ERC721
+
+> `readonly` **ERC721**: `"0x80ac58cd"` = `"0x80ac58cd"`
+
+ERC-721 Non-Fungible Token
+
+##### ERC721Enumerable
+
+> `readonly` **ERC721Enumerable**: `"0x780e9d63"` = `"0x780e9d63"`
+
+ERC-721 Enumerable Extension
+
+##### ERC721Metadata
+
+> `readonly` **ERC721Metadata**: `"0x5b5e139f"` = `"0x5b5e139f"`
+
+ERC-721 Metadata Extension
+
+***
+
+### SELECTOR
+
+> `const` **SELECTOR**: `"0x01ffc9a7"` = `"0x01ffc9a7"`
+
+Defined in: [src/standards/ERC165.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC165.ts#L11)
+
+ERC-165 function selector
+
+## Functions
+
+### decodeSupportsInterface()
+
+> **decodeSupportsInterface**(`data`): `boolean`
+
+Defined in: [src/standards/ERC165.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC165.ts#L51)
+
+Decode supportsInterface return value
+
+#### Parameters
+
+##### data
+
+`string`
+
+#### Returns
+
+`boolean`
+
+***
+
+### detectInterfaces()
+
+> **detectInterfaces**(`provider`, `contract`): `Promise`\<`string`[]\>
+
+Defined in: [src/standards/ERC165.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC165.ts#L94)
+
+Detect which standard interfaces a contract supports
+
+#### Parameters
+
+##### provider
+
+###### request
+
+##### contract
+
+`string`
+
+#### Returns
+
+`Promise`\<`string`[]\>
+
+***
+
+### encodeSupportsInterface()
+
+> **encodeSupportsInterface**(`interfaceId`): `string`
+
+Defined in: [src/standards/ERC165.ts:40](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC165.ts#L40)
+
+Encode supportsInterface(bytes4) calldata
+
+#### Parameters
+
+##### interfaceId
+
+`string`
+
+#### Returns
+
+`string`
+
+***
+
+### supportsInterface()
+
+> **supportsInterface**(`provider`, `contract`, `interfaceId`): `Promise`\<`boolean`\>
+
+Defined in: [src/standards/ERC165.ts:61](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC165.ts#L61)
+
+Check if contract supports an interface
+
+#### Parameters
+
+##### provider
+
+Ethereum provider (must support eth_call)
+
+###### request
+
+##### contract
+
+`string`
+
+Contract address
+
+##### interfaceId
+
+`string`
+
+Interface ID to check (e.g., INTERFACE_IDS.ERC721)
+
+#### Returns
+
+`Promise`\<`boolean`\>

@@ -1,0 +1,412 @@
+---
+title: "ERC20"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / ERC20
+
+# ERC20
+
+Ethereum Token Standards (ERC Standards)
+
+This module provides low-level interfaces for Ethereum token standards:
+- ERC-20: Fungible tokens
+- ERC-721: Non-fungible tokens (NFTs)
+- ERC-1155: Multi-token standard
+- ERC-165: Interface detection
+
+Each standard exports:
+- Function selectors (first 4 bytes of keccak256 of signature)
+- Event signatures (keccak256 of event signature)
+- Encoding helpers for calldata
+- Decoding helpers for return values and events
+
+## Variables
+
+### EVENTS
+
+> `const` **EVENTS**: `object`
+
+Defined in: [src/standards/ERC20.ts:47](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L47)
+
+ERC-20 event signatures
+keccak256 hash of event signature
+
+#### Type Declaration
+
+##### Approval
+
+> `readonly` **Approval**: `"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"` = `"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"`
+
+Approval(address indexed owner, address indexed spender, uint256 value)
+
+##### Transfer
+
+> `readonly` **Transfer**: `"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"` = `"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"`
+
+Transfer(address indexed from, address indexed to, uint256 value)
+
+***
+
+### SELECTORS
+
+> `const` **SELECTORS**: `object`
+
+Defined in: [src/standards/ERC20.ts:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L15)
+
+ERC-20 function selectors
+First 4 bytes of keccak256 hash of function signature
+
+#### Type Declaration
+
+##### allowance
+
+> `readonly` **allowance**: `"0xdd62ed3e"` = `"0xdd62ed3e"`
+
+allowance(address,address)
+
+##### approve
+
+> `readonly` **approve**: `"0x095ea7b3"` = `"0x095ea7b3"`
+
+approve(address,uint256)
+
+##### balanceOf
+
+> `readonly` **balanceOf**: `"0x70a08231"` = `"0x70a08231"`
+
+balanceOf(address)
+
+##### decimals
+
+> `readonly` **decimals**: `"0x313ce567"` = `"0x313ce567"`
+
+decimals()
+
+##### DOMAIN\_SEPARATOR
+
+> `readonly` **DOMAIN\_SEPARATOR**: `"0x3644e515"` = `"0x3644e515"`
+
+DOMAIN_SEPARATOR()
+
+##### name
+
+> `readonly` **name**: `"0x06fdde03"` = `"0x06fdde03"`
+
+name()
+
+##### nonces
+
+> `readonly` **nonces**: `"0x7ecebe00"` = `"0x7ecebe00"`
+
+nonces(address)
+
+##### permit
+
+> `readonly` **permit**: `"0xd505accf"` = `"0xd505accf"`
+
+permit(address,address,uint256,uint256,uint8,bytes32,bytes32)
+
+##### symbol
+
+> `readonly` **symbol**: `"0x95d89b41"` = `"0x95d89b41"`
+
+symbol()
+
+##### totalSupply
+
+> `readonly` **totalSupply**: `"0x18160ddd"` = `"0x18160ddd"`
+
+totalSupply()
+
+##### transfer
+
+> `readonly` **transfer**: `"0xa9059cbb"` = `"0xa9059cbb"`
+
+transfer(address,uint256)
+
+##### transferFrom
+
+> `readonly` **transferFrom**: `"0x23b872dd"` = `"0x23b872dd"`
+
+transferFrom(address,address,uint256)
+
+## Functions
+
+### decodeAddress()
+
+> **decodeAddress**(`data`): `string`
+
+Defined in: [src/standards/ERC20.ts:196](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L196)
+
+Decode address return value
+
+#### Parameters
+
+##### data
+
+`string`
+
+#### Returns
+
+`string`
+
+***
+
+### decodeApprovalEvent()
+
+> **decodeApprovalEvent**(`log`): `object`
+
+Defined in: [src/standards/ERC20.ts:161](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L161)
+
+Decode Approval event log
+
+#### Parameters
+
+##### log
+
+###### data
+
+`string`
+
+###### topics
+
+`string`[]
+
+#### Returns
+
+`object`
+
+##### owner
+
+> **owner**: `string`
+
+##### spender
+
+> **spender**: `string`
+
+##### value
+
+> **value**: [`Type`](../../primitives/Uint.mdx#type)
+
+***
+
+### decodeBool()
+
+> **decodeBool**(`data`): `boolean`
+
+Defined in: [src/standards/ERC20.ts:204](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L204)
+
+Decode bool return value
+
+#### Parameters
+
+##### data
+
+`string`
+
+#### Returns
+
+`boolean`
+
+***
+
+### decodeString()
+
+> **decodeString**(`data`): `string`
+
+Defined in: [src/standards/ERC20.ts:211](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L211)
+
+Decode string return value
+
+#### Parameters
+
+##### data
+
+`string`
+
+#### Returns
+
+`string`
+
+***
+
+### decodeTransferEvent()
+
+> **decodeTransferEvent**(`log`): `object`
+
+Defined in: [src/standards/ERC20.ts:133](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L133)
+
+Decode Transfer event log
+
+#### Parameters
+
+##### log
+
+###### data
+
+`string`
+
+###### topics
+
+`string`[]
+
+#### Returns
+
+`object`
+
+##### from
+
+> **from**: `string`
+
+##### to
+
+> **to**: `string`
+
+##### value
+
+> **value**: [`Type`](../../primitives/Uint.mdx#type)
+
+***
+
+### decodeUint256()
+
+> **decodeUint256**(`data`): [`Type`](../../primitives/Uint.mdx#type)
+
+Defined in: [src/standards/ERC20.ts:189](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L189)
+
+Decode uint256 return value
+
+#### Parameters
+
+##### data
+
+`string`
+
+#### Returns
+
+[`Type`](../../primitives/Uint.mdx#type)
+
+***
+
+### encodeAllowance()
+
+> **encodeAllowance**(`owner`, `spender`): `string`
+
+Defined in: [src/standards/ERC20.ts:116](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L116)
+
+Encode allowance(address,address) calldata
+
+#### Parameters
+
+##### owner
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+##### spender
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+#### Returns
+
+`string`
+
+***
+
+### encodeApprove()
+
+> **encodeApprove**(`spender`, `amount`): `string`
+
+Defined in: [src/standards/ERC20.ts:71](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L71)
+
+Encode approve(address,uint256) calldata
+
+#### Parameters
+
+##### spender
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+##### amount
+
+[`Type`](../../primitives/Uint.mdx#type)
+
+#### Returns
+
+`string`
+
+***
+
+### encodeBalanceOf()
+
+> **encodeBalanceOf**(`account`): `string`
+
+Defined in: [src/standards/ERC20.ts:105](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L105)
+
+Encode balanceOf(address) calldata
+
+#### Parameters
+
+##### account
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+#### Returns
+
+`string`
+
+***
+
+### encodeTransfer()
+
+> **encodeTransfer**(`to`, `amount`): `string`
+
+Defined in: [src/standards/ERC20.ts:59](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L59)
+
+Encode transfer(address,uint256) calldata
+
+#### Parameters
+
+##### to
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+##### amount
+
+[`Type`](../../primitives/Uint.mdx#type)
+
+#### Returns
+
+`string`
+
+***
+
+### encodeTransferFrom()
+
+> **encodeTransferFrom**(`from`, `to`, `amount`): `string`
+
+Defined in: [src/standards/ERC20.ts:86](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/standards/ERC20.ts#L86)
+
+Encode transferFrom(address,address,uint256) calldata
+
+#### Parameters
+
+##### from
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+##### to
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+##### amount
+
+[`Type`](../../primitives/Uint.mdx#type)
+
+#### Returns
+
+`string`

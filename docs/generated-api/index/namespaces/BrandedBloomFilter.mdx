@@ -1,0 +1,730 @@
+---
+title: "BrandedBloomFilter"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / BrandedBloomFilter
+
+# BrandedBloomFilter
+
+## Classes
+
+### InvalidBloomFilterLengthError
+
+Defined in: [src/primitives/BloomFilter/errors.js:59](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/errors.js#L59)
+
+Error thrown when BloomFilter data length is invalid
+
+#### Example
+
+```typescript
+throw new InvalidBloomFilterLengthError(
+  'Expected 512 hex chars, got 256',
+  {
+    value: 256,
+    expected: '512 hex chars',
+    code: 'BLOOM_FILTER_INVALID_LENGTH',
+    docsPath: '/primitives/bloom-filter/from-hex#error-handling'
+  }
+)
+```
+
+#### Extends
+
+- [`InvalidLengthError`](../index.mdx#invalidlengtherror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidBloomFilterLengthError**(`message`, `options?`): [`InvalidBloomFilterLengthError`](#invalidbloomfilterlengtherror)
+
+Defined in: [src/primitives/BloomFilter/errors.js:70](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/errors.js#L70)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### expected?
+
+`string`
+
+###### value?
+
+`unknown`
+
+###### Returns
+
+[`InvalidBloomFilterLengthError`](#invalidbloomfilterlengtherror)
+
+###### Overrides
+
+[`InvalidLengthError`](../index.mdx#invalidlengtherror).[`constructor`](../index.mdx#constructor-10)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidLengthError`](../index.mdx#invalidlengtherror).[`cause`](../index.mdx#cause-8)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidLengthError`](../index.mdx#invalidlengtherror).[`code`](../index.mdx#code-8)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidLengthError`](../index.mdx#invalidlengtherror).[`context`](../index.mdx#context-8)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidLengthError`](../index.mdx#invalidlengtherror).[`docsPath`](../index.mdx#docspath-8)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidLengthError`](../index.mdx#invalidlengtherror).[`expected`](../index.mdx#expected-4)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/BloomFilter/errors.js:79](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/errors.js#L79)
+
+###### Inherited from
+
+`InvalidLengthError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidLengthError`](../index.mdx#invalidlengtherror).[`value`](../index.mdx#value-4)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidLengthError`](../index.mdx#invalidlengtherror).[`getErrorChain`](../index.mdx#geterrorchain-16)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidLengthError`](../index.mdx#invalidlengtherror).[`toJSON`](../index.mdx#tojson-16)
+
+***
+
+### InvalidBloomFilterParameterError
+
+Defined in: [src/primitives/BloomFilter/errors.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/errors.js#L19)
+
+Error thrown when BloomFilter parameters are invalid
+
+#### Example
+
+```typescript
+throw new InvalidBloomFilterParameterError(
+  'Bloom filter parameters must be positive',
+  {
+    value: { m, k },
+    expected: 'm > 0 and k > 0',
+    code: 'BLOOM_FILTER_INVALID_PARAMETER',
+    docsPath: '/primitives/bloom-filter/create#error-handling'
+  }
+)
+```
+
+#### Extends
+
+- [`InvalidRangeError`](../index.mdx#invalidrangeerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidBloomFilterParameterError**(`message`, `options?`): [`InvalidBloomFilterParameterError`](#invalidbloomfilterparametererror)
+
+Defined in: [src/primitives/BloomFilter/errors.js:30](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/errors.js#L30)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### expected?
+
+`string`
+
+###### value?
+
+`unknown`
+
+###### Returns
+
+[`InvalidBloomFilterParameterError`](#invalidbloomfilterparametererror)
+
+###### Overrides
+
+[`InvalidRangeError`](../index.mdx#invalidrangeerror).[`constructor`](../index.mdx#constructor-13)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidRangeError`](../index.mdx#invalidrangeerror).[`cause`](../index.mdx#cause-11)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](../index.mdx#invalidrangeerror).[`code`](../index.mdx#code-11)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](../index.mdx#invalidrangeerror).[`context`](../index.mdx#context-11)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](../index.mdx#invalidrangeerror).[`docsPath`](../index.mdx#docspath-11)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidRangeError`](../index.mdx#invalidrangeerror).[`expected`](../index.mdx#expected-5)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/BloomFilter/errors.js:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/errors.js#L39)
+
+###### Inherited from
+
+`InvalidRangeError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidRangeError`](../index.mdx#invalidrangeerror).[`value`](../index.mdx#value-5)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidRangeError`](../index.mdx#invalidrangeerror).[`getErrorChain`](../index.mdx#geterrorchain-22)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidRangeError`](../index.mdx#invalidrangeerror).[`toJSON`](../index.mdx#tojson-22)
+
+## Type Aliases
+
+### BloomFilterType
+
+> **BloomFilterType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/BloomFilter/BloomFilterType.ts:3](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/BloomFilterType.ts#L3)
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"BloomFilter"`
+
+##### k
+
+> `readonly` **k**: `number`
+
+##### m
+
+> `readonly` **m**: `number`
+
+##### toHex()
+
+> **toHex**(`this`): `string`
+
+###### Parameters
+
+###### this
+
+[`BloomFilterType`](#bloomfiltertype)
+
+###### Returns
+
+`string`
+
+## Variables
+
+### BITS
+
+> `const` **BITS**: `2048` = `2048`
+
+Defined in: [src/primitives/BloomFilter/constants.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/constants.js#L11)
+
+Number of bits in the bloom filter (2048)
+
+***
+
+### DEFAULT\_HASH\_COUNT
+
+> `const` **DEFAULT\_HASH\_COUNT**: `3` = `3`
+
+Defined in: [src/primitives/BloomFilter/constants.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/constants.js#L17)
+
+Default number of hash functions for Ethereum bloom filters
+
+***
+
+### SIZE
+
+> `const` **SIZE**: `256` = `256`
+
+Defined in: [src/primitives/BloomFilter/constants.js:5](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/constants.js#L5)
+
+Standard Ethereum bloom filter size in bytes (256 bytes = 2048 bits)
+
+## Functions
+
+### add()
+
+> **add**(`filter`, `item`): `void`
+
+Defined in: [src/primitives/BloomFilter/index.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/index.ts#L22)
+
+#### Parameters
+
+##### filter
+
+[`BloomFilterType`](#bloomfiltertype)
+
+##### item
+
+`Uint8Array`
+
+#### Returns
+
+`void`
+
+***
+
+### combine()
+
+> **combine**(...`filters`): [`BloomFilterType`](#bloomfiltertype)
+
+Defined in: [src/primitives/BloomFilter/index.ts:26](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/index.ts#L26)
+
+#### Parameters
+
+##### filters
+
+...[`BloomFilterType`](#bloomfiltertype)[]
+
+#### Returns
+
+[`BloomFilterType`](#bloomfiltertype)
+
+***
+
+### contains()
+
+> **contains**(`filter`, `item`): `boolean`
+
+Defined in: [src/primitives/BloomFilter/index.ts:30](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/index.ts#L30)
+
+#### Parameters
+
+##### filter
+
+[`BloomFilterType`](#bloomfiltertype)
+
+##### item
+
+`Uint8Array`
+
+#### Returns
+
+`boolean`
+
+***
+
+### create()
+
+> **create**(`m`, `k`): [`BloomFilterType`](#bloomfiltertype)
+
+Defined in: [src/primitives/BloomFilter/index.ts:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/index.ts#L34)
+
+#### Parameters
+
+##### m
+
+`number`
+
+##### k
+
+`number`
+
+#### Returns
+
+[`BloomFilterType`](#bloomfiltertype)
+
+***
+
+### density()
+
+> **density**(`filter`): `number`
+
+Defined in: [src/primitives/BloomFilter/index.ts:38](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/index.ts#L38)
+
+#### Parameters
+
+##### filter
+
+[`BloomFilterType`](#bloomfiltertype)
+
+#### Returns
+
+`number`
+
+***
+
+### expectedFalsePositiveRate()
+
+> **expectedFalsePositiveRate**(`filter`, `itemCount`): `number`
+
+Defined in: [src/primitives/BloomFilter/index.ts:42](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/index.ts#L42)
+
+#### Parameters
+
+##### filter
+
+[`BloomFilterType`](#bloomfiltertype)
+
+##### itemCount
+
+`number`
+
+#### Returns
+
+`number`
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`, `m`, `k`): [`BloomFilterType`](#bloomfiltertype)
+
+Defined in: [src/primitives/BloomFilter/index.ts:49](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/index.ts#L49)
+
+#### Parameters
+
+##### hex
+
+`string`
+
+##### m
+
+`number`
+
+##### k
+
+`number`
+
+#### Returns
+
+[`BloomFilterType`](#bloomfiltertype)
+
+***
+
+### hash()
+
+> **hash**(`item`, `seed`, `m`): `number`
+
+Defined in: [src/primitives/BloomFilter/index.ts:53](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/index.ts#L53)
+
+#### Parameters
+
+##### item
+
+`Uint8Array`
+
+##### seed
+
+`number`
+
+##### m
+
+`number`
+
+#### Returns
+
+`number`
+
+***
+
+### isEmpty()
+
+> **isEmpty**(`filter`): `boolean`
+
+Defined in: [src/primitives/BloomFilter/index.ts:57](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/index.ts#L57)
+
+#### Parameters
+
+##### filter
+
+[`BloomFilterType`](#bloomfiltertype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### merge()
+
+> **merge**(`filter1`, `filter2`): [`BloomFilterType`](#bloomfiltertype)
+
+Defined in: [src/primitives/BloomFilter/index.ts:61](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/index.ts#L61)
+
+#### Parameters
+
+##### filter1
+
+[`BloomFilterType`](#bloomfiltertype)
+
+##### filter2
+
+[`BloomFilterType`](#bloomfiltertype)
+
+#### Returns
+
+[`BloomFilterType`](#bloomfiltertype)
+
+***
+
+### toHex()
+
+> **toHex**(`filter`): `string`
+
+Defined in: [src/primitives/BloomFilter/index.ts:68](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/BloomFilter/index.ts#L68)
+
+#### Parameters
+
+##### filter
+
+[`BloomFilterType`](#bloomfiltertype)
+
+#### Returns
+
+`string`
+
+## References
+
+### BloomFilter
+
+Re-exports [BloomFilter](../index.mdx#bloomfilter)

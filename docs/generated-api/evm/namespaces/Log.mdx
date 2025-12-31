@@ -1,0 +1,162 @@
+---
+title: "Log"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [evm](../index.mdx) / Log
+
+# Log
+
+## Functions
+
+### handler\_0xa0\_LOG0()
+
+> **handler\_0xa0\_LOG0**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/log/0xa0\_LOG0.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/log/0xa0_LOG0.js#L19)
+
+LOG0 (0xa0) - Log with 0 topics
+
+Stack:
+  in: offset, length
+  out: -
+
+Gas: 375 (base) + 8 * dataLength + memory expansion
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### handler\_0xa1\_LOG1()
+
+> **handler\_0xa1\_LOG1**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/log/0xa1\_LOG1.js:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/log/0xa1_LOG1.js#L23)
+
+LOG1 (0xa1) - Log with 1 topic
+
+Stack:
+  in: offset, length, topic0
+  out: -
+
+Gas: 375 (base) + 375 (topic) + 8 * dataLength + memory expansion
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### handler\_0xa2\_LOG2()
+
+> **handler\_0xa2\_LOG2**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/log/0xa2\_LOG2.js:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/log/0xa2_LOG2.js#L23)
+
+LOG2 (0xa2) - Log with 2 topics
+
+Stack:
+  in: offset, length, topic0, topic1
+  out: -
+
+Gas: 375 (base) + 750 (2 topics) + 8 * dataLength + memory expansion
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### handler\_0xa3\_LOG3()
+
+> **handler\_0xa3\_LOG3**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/log/0xa3\_LOG3.js:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/log/0xa3_LOG3.js#L24)
+
+LOG3 (0xa3) - Log with 3 topics
+
+Stack:
+  in: offset, length, topic0, topic1, topic2
+  out: -
+
+Gas: 375 (base) + 1125 (3 topics) + 8 * dataLength + memory expansion
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### handler\_0xa4\_LOG4()
+
+> **handler\_0xa4\_LOG4**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/log/0xa4\_LOG4.js:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/log/0xa4_LOG4.js#L24)
+
+LOG4 (0xa4) - Log with 4 topics
+
+Stack:
+  in: offset, length, topic0, topic1, topic2, topic3
+  out: -
+
+Gas: 375 (base) + 1500 (4 topics) + 8 * dataLength + memory expansion
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any

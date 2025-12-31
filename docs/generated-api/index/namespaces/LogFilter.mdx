@@ -1,0 +1,253 @@
+---
+title: "LogFilter"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / LogFilter
+
+# LogFilter
+
+## Classes
+
+### InvalidLogFilterError
+
+Defined in: [src/primitives/LogFilter/errors.js:4](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/LogFilter/errors.js#L4)
+
+Error thrown when LogFilter is invalid
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidLogFilterError**(`message`, `details?`): [`InvalidLogFilterError`](#invalidlogfiltererror)
+
+Defined in: [src/primitives/LogFilter/errors.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/LogFilter/errors.js#L9)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### details?
+
+`object`
+
+###### Returns
+
+[`InvalidLogFilterError`](#invalidlogfiltererror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### details
+
+> **details**: `object` \| `undefined`
+
+Defined in: [src/primitives/LogFilter/errors.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/LogFilter/errors.js#L13)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/LogFilter/errors.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/LogFilter/errors.js#L11)
+
+###### Inherited from
+
+`Error.name`
+
+## Type Aliases
+
+### BlockTag
+
+> **BlockTag** = `"earliest"` \| `"latest"` \| `"pending"`
+
+Defined in: [src/primitives/LogFilter/LogFilterType.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/LogFilter/LogFilterType.ts#L10)
+
+Block identifier for log filter queries
+
+***
+
+### LogFilterType
+
+> **LogFilterType** = `object` & `object`
+
+Defined in: [src/primitives/LogFilter/LogFilterType.ts:36](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/LogFilter/LogFilterType.ts#L36)
+
+Log filter parameters for eth_getLogs and eth_newFilter
+
+Filters can specify:
+- Block range (fromBlock/toBlock) OR specific block (blockhash)
+- Contract address(es) to filter by
+- Topic filters for indexed event parameters
+
+#### Type Declaration
+
+##### address?
+
+> `readonly` `optional` **address**: [`AddressType`](../../primitives/Address.mdx#addresstype) \| readonly [`AddressType`](../../primitives/Address.mdx#addresstype)[]
+
+Single address or array of addresses to filter by
+
+##### blockhash?
+
+> `readonly` `optional` **blockhash**: [`HashType`](HashType-2.mdx#hashtype)
+
+Specific block hash (mutually exclusive with fromBlock/toBlock)
+
+##### fromBlock?
+
+> `readonly` `optional` **fromBlock**: [`BlockNumberType`](BlockNumber.mdx#blocknumbertype) \| [`BlockTag`](#blocktag)
+
+Starting block number or tag
+
+##### toBlock?
+
+> `readonly` `optional` **toBlock**: [`BlockNumberType`](BlockNumber.mdx#blocknumbertype) \| [`BlockTag`](#blocktag)
+
+Ending block number or tag
+
+##### topics?
+
+> `readonly` `optional` **topics**: [`TopicFilterType`](TopicFilter.mdx#topicfiltertype)
+
+Topic filters (up to 4 indexed parameters)
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"LogFilter"`
+
+#### Example
+
+```typescript
+// Filter Transfer events to specific address
+const filter: LogFilter = {
+  fromBlock: "latest",
+  address: contractAddr,
+  topics: [transferEventSig, null, recipientHash]
+};
+
+// Filter by specific block hash
+const filter2: LogFilter = {
+  blockhash: blockHash,
+  address: contractAddr
+};
+```
+
+## Functions
+
+### from()
+
+> **from**(`params`): [`LogFilterType`](#logfiltertype)
+
+Defined in: [src/primitives/LogFilter/from.js:30](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/LogFilter/from.js#L30)
+
+Create LogFilter from parameters
+
+#### Parameters
+
+##### params
+
+`Partial`\<[`LogFilterType`](#logfiltertype)\>
+
+Filter parameters
+
+#### Returns
+
+[`LogFilterType`](#logfiltertype)
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as LogFilter from './primitives/LogFilter/index.js';
+import * as Address from './primitives/Address/index.js';
+import * as BlockNumber from './primitives/BlockNumber/index.js';
+
+// Filter by address and block range
+const filter = LogFilter.from({
+  fromBlock: BlockNumber.from(1000000),
+  toBlock: "latest",
+  address: Address.from("0x...")
+});
+
+// Filter by specific block hash
+const filter2 = LogFilter.from({
+  blockhash: Hash.from("0x..."),
+  address: Address.from("0x...")
+});
+```
+
+***
+
+### isEmpty()
+
+> **isEmpty**(`filter`): `boolean`
+
+Defined in: [src/primitives/LogFilter/isEmpty.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/LogFilter/isEmpty.js#L14)
+
+Check if log filter is empty (no filtering criteria)
+
+#### Parameters
+
+##### filter
+
+[`LogFilterType`](#logfiltertype)
+
+#### Returns
+
+`boolean`
+
+#### Example
+
+```javascript
+import * as LogFilter from './primitives/LogFilter/index.js';
+const empty = LogFilter.isEmpty(filter); // true if no criteria
+```
+
+***
+
+### matches()
+
+> **matches**(`filter`, `log`): `boolean`
+
+Defined in: [src/primitives/LogFilter/matches.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/LogFilter/matches.js#L16)
+
+Check if a log entry matches this filter
+
+#### Parameters
+
+##### filter
+
+[`LogFilterType`](#logfiltertype)
+
+##### log
+
+[`EventLogType`](EventLog.mdx#eventlogtype)\<[`AddressType`](../../primitives/Address.mdx#addresstype), readonly [`HashType`](HashType-2.mdx#hashtype)[]\>
+
+Log entry to test
+
+#### Returns
+
+`boolean`
+
+#### Example
+
+```javascript
+import * as LogFilter from './primitives/LogFilter/index.js';
+const matches = LogFilter.matches(filter, log);
+```

@@ -1,0 +1,1246 @@
+---
+description: Auto-generated TypeScript API documentation from source code
+title: Generated API Reference
+---
+
+[**@tevm/voltaire**](../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../index.mdx) / [index](../../index.mdx) / BrandedAbi
+
+# BrandedAbi
+
+## Namespaces
+
+- [Constructor](namespaces/Constructor.mdx)
+- [Error](namespaces/Error.mdx)
+- [Event](namespaces/Event.mdx)
+- [Function](namespaces/Function.mdx)
+- [Item](namespaces/Item.mdx)
+
+## Type Aliases
+
+### WrappedErrorType
+
+> **WrappedErrorType** = `object`
+
+Defined in: [src/primitives/Abi/error/wrapped/WrappedErrorType.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/wrapped/WrappedErrorType.ts#L14)
+
+ERC-7751 Wrapped Error type
+
+Represents a wrapped execution error with additional context about the failing contract,
+function, and original revert reason.
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-7751
+
+#### Since
+
+0.0.0
+
+#### Properties
+
+##### details
+
+> **details**: `BytesType`
+
+Defined in: [src/primitives/Abi/error/wrapped/WrappedErrorType.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/wrapped/WrappedErrorType.ts#L22)
+
+Additional error details/context
+
+##### reason
+
+> **reason**: `BytesType`
+
+Defined in: [src/primitives/Abi/error/wrapped/WrappedErrorType.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/wrapped/WrappedErrorType.ts#L20)
+
+Original revert reason data
+
+##### selector
+
+> **selector**: [`SelectorType`](../Selector-1.mdx#selectortype)
+
+Defined in: [src/primitives/Abi/error/wrapped/WrappedErrorType.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/wrapped/WrappedErrorType.ts#L18)
+
+Function selector that was called
+
+##### target
+
+> **target**: [`AddressType`](../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Abi/error/wrapped/WrappedErrorType.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/wrapped/WrappedErrorType.ts#L16)
+
+Address of contract that reverted
+
+## Variables
+
+### ERC1155InsufficientBalance
+
+> `const` **ERC1155InsufficientBalance**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC1155Errors.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC1155Errors.ts#L14)
+
+Insufficient balance for transfer
+error ERC1155InsufficientBalance(address sender, uint256 balance, uint256 needed, uint256 tokenId)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"sender"`; `type`: `"address"`; \}, \{ `name`: `"balance"`; `type`: `"uint256"`; \}, \{ `name`: `"needed"`; `type`: `"uint256"`; \}, \{ `name`: `"tokenId"`; `type`: `"uint256"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC1155InsufficientBalance"` = `"ERC1155InsufficientBalance"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC1155InvalidApprover
+
+> `const` **ERC1155InvalidApprover**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC1155Errors.ts:62](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC1155Errors.ts#L62)
+
+Invalid approver address
+error ERC1155InvalidApprover(address approver)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"approver"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC1155InvalidApprover"` = `"ERC1155InvalidApprover"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC1155InvalidArrayLength
+
+> `const` **ERC1155InvalidArrayLength**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC1155Errors.ts:82](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC1155Errors.ts#L82)
+
+Array length mismatch
+error ERC1155InvalidArrayLength(uint256 idsLength, uint256 valuesLength)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"idsLength"`; `type`: `"uint256"`; \}, \{ `name`: `"valuesLength"`; `type`: `"uint256"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC1155InvalidArrayLength"` = `"ERC1155InvalidArrayLength"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC1155InvalidOperator
+
+> `const` **ERC1155InvalidOperator**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC1155Errors.ts:72](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC1155Errors.ts#L72)
+
+Invalid operator address
+error ERC1155InvalidOperator(address operator)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"operator"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC1155InvalidOperator"` = `"ERC1155InvalidOperator"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC1155InvalidReceiver
+
+> `const` **ERC1155InvalidReceiver**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC1155Errors.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC1155Errors.ts#L39)
+
+Invalid receiver address
+error ERC1155InvalidReceiver(address receiver)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"receiver"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC1155InvalidReceiver"` = `"ERC1155InvalidReceiver"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC1155InvalidSender
+
+> `const` **ERC1155InvalidSender**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC1155Errors.ts:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC1155Errors.ts#L29)
+
+Invalid sender address
+error ERC1155InvalidSender(address sender)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"sender"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC1155InvalidSender"` = `"ERC1155InvalidSender"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC1155MissingApprovalForAll
+
+> `const` **ERC1155MissingApprovalForAll**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC1155Errors.ts:49](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC1155Errors.ts#L49)
+
+Missing approval for all tokens
+error ERC1155MissingApprovalForAll(address operator, address owner)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"operator"`; `type`: `"address"`; \}, \{ `name`: `"owner"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC1155MissingApprovalForAll"` = `"ERC1155MissingApprovalForAll"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC20InsufficientAllowance
+
+> `const` **ERC20InsufficientAllowance**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC20Errors.ts:48](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC20Errors.ts#L48)
+
+Insufficient allowance for transfer
+error ERC20InsufficientAllowance(address spender, uint256 allowance, uint256 needed)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"spender"`; `type`: `"address"`; \}, \{ `name`: `"allowance"`; `type`: `"uint256"`; \}, \{ `name`: `"needed"`; `type`: `"uint256"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC20InsufficientAllowance"` = `"ERC20InsufficientAllowance"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC20InsufficientBalance
+
+> `const` **ERC20InsufficientBalance**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC20Errors.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC20Errors.ts#L14)
+
+Insufficient balance for transfer
+error ERC20InsufficientBalance(address sender, uint256 balance, uint256 needed)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"sender"`; `type`: `"address"`; \}, \{ `name`: `"balance"`; `type`: `"uint256"`; \}, \{ `name`: `"needed"`; `type`: `"uint256"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC20InsufficientBalance"` = `"ERC20InsufficientBalance"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC20InvalidApprover
+
+> `const` **ERC20InvalidApprover**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC20Errors.ts:62](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC20Errors.ts#L62)
+
+Invalid approver address
+error ERC20InvalidApprover(address approver)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"approver"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC20InvalidApprover"` = `"ERC20InvalidApprover"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC20InvalidReceiver
+
+> `const` **ERC20InvalidReceiver**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC20Errors.ts:38](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC20Errors.ts#L38)
+
+Invalid receiver address
+error ERC20InvalidReceiver(address receiver)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"receiver"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC20InvalidReceiver"` = `"ERC20InvalidReceiver"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC20InvalidSender
+
+> `const` **ERC20InvalidSender**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC20Errors.ts:28](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC20Errors.ts#L28)
+
+Invalid sender address
+error ERC20InvalidSender(address sender)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"sender"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC20InvalidSender"` = `"ERC20InvalidSender"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC20InvalidSpender
+
+> `const` **ERC20InvalidSpender**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC20Errors.ts:72](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC20Errors.ts#L72)
+
+Invalid spender address
+error ERC20InvalidSpender(address spender)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"spender"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC20InvalidSpender"` = `"ERC20InvalidSpender"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC721IncorrectOwner
+
+> `const` **ERC721IncorrectOwner**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC721Errors.ts:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC721Errors.ts#L34)
+
+Sender is not the owner
+error ERC721IncorrectOwner(address sender, uint256 tokenId, address owner)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"sender"`; `type`: `"address"`; \}, \{ `name`: `"tokenId"`; `type`: `"uint256"`; \}, \{ `name`: `"owner"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC721IncorrectOwner"` = `"ERC721IncorrectOwner"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC721InsufficientApproval
+
+> `const` **ERC721InsufficientApproval**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC721Errors.ts:68](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC721Errors.ts#L68)
+
+Insufficient approval for operation
+error ERC721InsufficientApproval(address operator, uint256 tokenId)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"operator"`; `type`: `"address"`; \}, \{ `name`: `"tokenId"`; `type`: `"uint256"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC721InsufficientApproval"` = `"ERC721InsufficientApproval"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC721InvalidApprover
+
+> `const` **ERC721InvalidApprover**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC721Errors.ts:81](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC721Errors.ts#L81)
+
+Invalid approver address
+error ERC721InvalidApprover(address approver)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"approver"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC721InvalidApprover"` = `"ERC721InvalidApprover"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC721InvalidOperator
+
+> `const` **ERC721InvalidOperator**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC721Errors.ts:91](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC721Errors.ts#L91)
+
+Invalid operator address
+error ERC721InvalidOperator(address operator)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"operator"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC721InvalidOperator"` = `"ERC721InvalidOperator"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC721InvalidOwner
+
+> `const` **ERC721InvalidOwner**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC721Errors.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC721Errors.ts#L14)
+
+Invalid owner address
+error ERC721InvalidOwner(address owner)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"owner"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC721InvalidOwner"` = `"ERC721InvalidOwner"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC721InvalidReceiver
+
+> `const` **ERC721InvalidReceiver**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC721Errors.ts:58](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC721Errors.ts#L58)
+
+Invalid receiver address
+error ERC721InvalidReceiver(address receiver)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"receiver"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC721InvalidReceiver"` = `"ERC721InvalidReceiver"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC721InvalidSender
+
+> `const` **ERC721InvalidSender**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC721Errors.ts:48](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC721Errors.ts#L48)
+
+Invalid sender address
+error ERC721InvalidSender(address sender)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"sender"`; `type`: `"address"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC721InvalidSender"` = `"ERC721InvalidSender"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### ERC721NonexistentToken
+
+> `const` **ERC721NonexistentToken**: `object`
+
+Defined in: [src/primitives/Abi/error/standards/ERC721Errors.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/standards/ERC721Errors.ts#L24)
+
+Token does not exist
+error ERC721NonexistentToken(uint256 tokenId)
+
+#### Type Declaration
+
+##### inputs
+
+> `readonly` **inputs**: readonly \[\{ `name`: `"tokenId"`; `type`: `"uint256"`; \}\]
+
+##### name
+
+> `readonly` **name**: `"ERC721NonexistentToken"` = `"ERC721NonexistentToken"`
+
+##### type
+
+> `readonly` **type**: `"error"` = `"error"`
+
+***
+
+### Interface
+
+> `const` **Interface**: `object`
+
+Defined in: [src/primitives/Abi/interface/index.ts:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/interface/index.ts#L21)
+
+#### Type Declaration
+
+##### ERC1155\_INTERFACE\_ID
+
+> **ERC1155\_INTERFACE\_ID**: [`SelectorType`](../Selector-1.mdx#selectortype)
+
+ERC-1155 Multi Token Standard interface ID
+
+###### See
+
+https://eips.ethereum.org/EIPS/eip-1155
+
+##### ERC165\_INTERFACE\_ID
+
+> **ERC165\_INTERFACE\_ID**: [`SelectorType`](../Selector-1.mdx#selectortype)
+
+ERC-165 supportsInterface(bytes4) interface ID
+
+###### See
+
+https://eips.ethereum.org/EIPS/eip-165
+
+##### ERC20\_INTERFACE\_ID
+
+> **ERC20\_INTERFACE\_ID**: [`SelectorType`](../Selector-1.mdx#selectortype)
+
+ERC-20 Token Standard interface ID
+
+###### See
+
+https://eips.ethereum.org/EIPS/eip-20
+
+##### ERC721\_INTERFACE\_ID
+
+> **ERC721\_INTERFACE\_ID**: [`SelectorType`](../Selector-1.mdx#selectortype)
+
+ERC-721 Non-Fungible Token Standard interface ID
+
+###### See
+
+https://eips.ethereum.org/EIPS/eip-721
+
+##### getInterfaceId()
+
+> **getInterfaceId**: (`selectors`) => [`SelectorType`](../Selector-1.mdx#selectortype)
+
+Calculate ERC-165 interface ID from function selectors
+
+Interface ID is computed by XORing all function selectors in the interface.
+Per ERC-165 specification.
+
+###### Parameters
+
+###### selectors
+
+[`SelectorLike`](../Selector-1.mdx#selectorlike)[]
+
+Array of function selectors
+
+###### Returns
+
+[`SelectorType`](../Selector-1.mdx#selectortype)
+
+Interface ID (4-byte XOR result)
+
+###### Throws
+
+If no selectors provided
+
+###### See
+
+https://eips.ethereum.org/EIPS/eip-165
+
+###### Example
+
+```javascript
+import * as Interface from './primitives/Abi/interface/index.js';
+
+// ERC-20 interface
+const erc20 = Interface.getInterfaceId([
+  '0x70a08231', // balanceOf(address)
+  '0x095ea7b3', // approve(address,uint256)
+  '0xa9059cbb', // transfer(address,uint256)
+  '0xdd62ed3e', // allowance(address,address)
+  '0x23b872dd', // transferFrom(address,address,uint256)
+  '0x18160ddd', // totalSupply()
+]);
+// Returns ERC20_INTERFACE_ID: 0x36372b07
+```
+
+***
+
+### WRAPPED\_ERROR\_SELECTOR
+
+> `const` **WRAPPED\_ERROR\_SELECTOR**: [`SelectorType`](../Selector-1.mdx#selectortype)
+
+Defined in: [src/primitives/Abi/error/wrapped/constants.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/wrapped/constants.js#L11)
+
+ERC-7751 WrappedError selector
+
+Selector for: error WrappedError(address target, bytes4 selector, bytes reason, bytes details)
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-7751
+
+***
+
+### WrappedError
+
+> `const` **WrappedError**: `object`
+
+Defined in: [src/primitives/Abi/error/wrapped/index.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/wrapped/index.ts#L22)
+
+#### Type Declaration
+
+##### decodeWrappedError()
+
+> **decodeWrappedError**: (`data`) => [`WrappedErrorType`](#wrappederrortype)
+
+Decode ERC-7751 wrapped error data
+
+Decodes a WrappedError from encoded bytes following the ERC-7751 specification.
+Expects data to start with the WrappedError selector (0x90bfb865).
+
+###### Parameters
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded error data (selector + ABI-encoded params)
+
+###### Returns
+
+[`WrappedErrorType`](#wrappederrortype)
+
+Decoded wrapped error
+
+###### Throws
+
+If selector doesn't match or data is invalid
+
+###### See
+
+https://eips.ethereum.org/EIPS/eip-7751
+
+###### Example
+
+```javascript
+import * as WrappedError from './primitives/Abi/error/wrapped/index.js';
+
+const decoded = WrappedError.decodeWrappedError(errorData);
+console.log(decoded.target); // Address of failing contract
+console.log(decoded.selector); // Function selector
+console.log(decoded.reason); // Original revert reason
+```
+
+##### encodeWrappedError()
+
+> **encodeWrappedError**: (`wrappedError`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Encode ERC-7751 wrapped error data
+
+Encodes a WrappedError following the ERC-7751 specification:
+error WrappedError(address target, bytes4 selector, bytes reason, bytes details)
+
+###### Parameters
+
+###### wrappedError
+
+[`WrappedErrorType`](#wrappederrortype)
+
+Wrapped error data
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded error data (selector + ABI-encoded params)
+
+###### See
+
+https://eips.ethereum.org/EIPS/eip-7751
+
+###### Example
+
+```javascript
+import * as WrappedError from './primitives/Abi/error/wrapped/index.js';
+import * as Address from './primitives/Address/index.js';
+import * as Selector from './primitives/Selector/index.js';
+
+const encoded = WrappedError.encodeWrappedError({
+  target: Address.from('0x1234...'),
+  selector: Selector.fromHex('0xabcd1234'),
+  reason: new Uint8Array([...]),
+  details: new Uint8Array([...])
+});
+```
+
+##### WRAPPED\_ERROR\_SELECTOR
+
+> **WRAPPED\_ERROR\_SELECTOR**: [`SelectorType`](../Selector-1.mdx#selectortype)
+
+ERC-7751 WrappedError selector
+
+Selector for: error WrappedError(address target, bytes4 selector, bytes reason, bytes details)
+
+###### See
+
+https://eips.ethereum.org/EIPS/eip-7751
+
+## Functions
+
+### decode()
+
+> **decode**(`this`, `functionName`, `data`): readonly `unknown`[]
+
+Defined in: [src/primitives/Abi/decode.js:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/decode.js#L23)
+
+Decode function return values (branded ABI method)
+
+#### Parameters
+
+##### this
+
+readonly `Item`[]
+
+##### functionName
+
+`string`
+
+Function name
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded return data
+
+#### Returns
+
+readonly `unknown`[]
+
+Decoded return values
+
+#### See
+
+https://voltaire.tevm.sh/primitives/abi
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If function not found in ABI
+
+#### Example
+
+```javascript
+import * as Abi from './primitives/Abi/index.js';
+const abi = [{ type: 'function', name: 'balanceOf', outputs: [...] }];
+const decoded = Abi.decode(abi, "balanceOf", encodedData);
+```
+
+***
+
+### decodeData()
+
+> **decodeData**(`this`, `data`): `object`
+
+Defined in: [src/primitives/Abi/decodeData.js:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/decodeData.js#L25)
+
+Decode function call data and identify function (branded ABI method)
+
+#### Parameters
+
+##### this
+
+readonly `Item`[]
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded function call data
+
+#### Returns
+
+`object`
+
+Decoded function name and arguments
+
+##### args
+
+> **args**: readonly `unknown`[]
+
+##### functionName
+
+> **functionName**: `string`
+
+#### See
+
+https://voltaire.tevm.sh/primitives/abi
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If data is too short to contain selector
+
+#### Throws
+
+If function with selector not found in ABI
+
+#### Example
+
+```javascript
+import * as Abi from './primitives/Abi/index.js';
+const abi = [{ type: 'function', name: 'transfer', inputs: [...] }];
+const decoded = Abi.decodeData(abi, calldata);
+// { functionName: "transfer", args: [address, amount] }
+```
+
+***
+
+### decodeParameters()
+
+> **decodeParameters**\<`TParams`\>(`params`, `data`): `ParametersToPrimitiveTypes`\<`TParams`\>
+
+Defined in: [src/primitives/Abi/Encoding.js:515](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/Encoding.js#L515)
+
+#### Type Parameters
+
+##### TParams
+
+`TParams` *extends* readonly `Parameter`[]
+
+#### Parameters
+
+##### params
+
+`TParams`
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`ParametersToPrimitiveTypes`\<`TParams`\>
+
+***
+
+### DecodeParameters()
+
+> **DecodeParameters**\<`TParams`\>(`params`, `data`): `ParametersToPrimitiveTypes`\<`TParams`\>
+
+Defined in: [src/primitives/Abi/Encoding.js:515](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/Encoding.js#L515)
+
+#### Type Parameters
+
+##### TParams
+
+`TParams` *extends* readonly `Parameter`[]
+
+#### Parameters
+
+##### params
+
+`TParams`
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`ParametersToPrimitiveTypes`\<`TParams`\>
+
+***
+
+### decodeWrappedError()
+
+> **decodeWrappedError**(`data`): [`WrappedErrorType`](#wrappederrortype)
+
+Defined in: [src/primitives/Abi/error/wrapped/decodeWrappedError.js:26](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/wrapped/decodeWrappedError.js#L26)
+
+Decode ERC-7751 wrapped error data
+
+Decodes a WrappedError from encoded bytes following the ERC-7751 specification.
+Expects data to start with the WrappedError selector (0x90bfb865).
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded error data (selector + ABI-encoded params)
+
+#### Returns
+
+[`WrappedErrorType`](#wrappederrortype)
+
+Decoded wrapped error
+
+#### Throws
+
+If selector doesn't match or data is invalid
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-7751
+
+#### Example
+
+```javascript
+import * as WrappedError from './primitives/Abi/error/wrapped/index.js';
+
+const decoded = WrappedError.decodeWrappedError(errorData);
+console.log(decoded.target); // Address of failing contract
+console.log(decoded.selector); // Function selector
+console.log(decoded.reason); // Original revert reason
+```
+
+***
+
+### encode()
+
+> **encode**(`this`, `functionName`, `args`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Abi/encode.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/encode.js#L22)
+
+Encode function call data (branded ABI method)
+
+#### Parameters
+
+##### this
+
+readonly `Item`[]
+
+##### functionName
+
+`string`
+
+Function name to encode
+
+##### args
+
+readonly `unknown`[]
+
+Function arguments
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded function call data
+
+#### See
+
+https://voltaire.tevm.sh/primitives/abi
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If function not found in ABI
+
+#### Example
+
+```javascript
+import * as Abi from './primitives/Abi/index.js';
+const abi = [{ type: 'function', name: 'transfer', inputs: [...] }];
+const encoded = Abi.encode(abi, "transfer", [address, amount]);
+```
+
+***
+
+### encodeParameters()
+
+> **encodeParameters**\<`TParams`\>(`params`, `values`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Abi/Encoding.js:454](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/Encoding.js#L454)
+
+#### Type Parameters
+
+##### TParams
+
+`TParams` *extends* readonly `Parameter`[]
+
+#### Parameters
+
+##### params
+
+`TParams`
+
+##### values
+
+`ParametersToPrimitiveTypes`\<`TParams`\>
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+***
+
+### encodeWrappedError()
+
+> **encodeWrappedError**(`wrappedError`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Abi/error/wrapped/encodeWrappedError.js:27](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/error/wrapped/encodeWrappedError.js#L27)
+
+Encode ERC-7751 wrapped error data
+
+Encodes a WrappedError following the ERC-7751 specification:
+error WrappedError(address target, bytes4 selector, bytes reason, bytes details)
+
+#### Parameters
+
+##### wrappedError
+
+[`WrappedErrorType`](#wrappederrortype)
+
+Wrapped error data
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encoded error data (selector + ABI-encoded params)
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-7751
+
+#### Example
+
+```javascript
+import * as WrappedError from './primitives/Abi/error/wrapped/index.js';
+import * as Address from './primitives/Address/index.js';
+import * as Selector from './primitives/Selector/index.js';
+
+const encoded = WrappedError.encodeWrappedError({
+  target: Address.from('0x1234...'),
+  selector: Selector.fromHex('0xabcd1234'),
+  reason: new Uint8Array([...]),
+  details: new Uint8Array([...])
+});
+```
+
+***
+
+### Parameters()
+
+> **Parameters**\<`TParams`\>(`params`, `values`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Abi/Encoding.js:454](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/Encoding.js#L454)
+
+#### Type Parameters
+
+##### TParams
+
+`TParams` *extends* readonly `Parameter`[]
+
+#### Parameters
+
+##### params
+
+`TParams`
+
+##### values
+
+`ParametersToPrimitiveTypes`\<`TParams`\>
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+***
+
+### parseLogs()
+
+> **parseLogs**(`this`, `logs`): readonly `object`[]
+
+Defined in: [src/primitives/Abi/parseLogs.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Abi/parseLogs.js#L21)
+
+Parse event logs (branded ABI method)
+
+#### Parameters
+
+##### this
+
+readonly `Item`[]
+
+##### logs
+
+readonly `object`[]
+
+Array of log objects
+
+#### Returns
+
+readonly `object`[]
+
+Parsed event logs
+
+#### See
+
+https://voltaire.tevm.sh/primitives/abi
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Abi from './primitives/Abi/index.js';
+const abi = [{ type: 'event', name: 'Transfer', inputs: [...] }];
+const parsed = Abi.parseLogs(abi, logs);
+// [{ eventName: "Transfer", args: { from, to, value } }]
+```
+
+## References
+
+### Abi
+
+Re-exports [Abi](../../index.mdx#abi)

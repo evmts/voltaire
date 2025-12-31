@@ -1,0 +1,384 @@
+---
+title: "RevertReason"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / RevertReason
+
+# RevertReason
+
+## Type Aliases
+
+### CustomRevertReason
+
+> **CustomRevertReason** = `object`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:31](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L31)
+
+Custom error with selector and data
+
+#### Properties
+
+##### data
+
+> `readonly` **data**: `Uint8Array`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L34)
+
+##### selector
+
+> `readonly` **selector**: `string`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:33](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L33)
+
+##### type
+
+> `readonly` **type**: `"Custom"`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:32](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L32)
+
+***
+
+### ErrorRevertReason
+
+> **ErrorRevertReason** = `object`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L14)
+
+Standard Error(string) revert
+
+#### Properties
+
+##### message
+
+> `readonly` **message**: `string`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L16)
+
+##### type
+
+> `readonly` **type**: `"Error"`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L15)
+
+***
+
+### PanicCode
+
+> **PanicCode** = keyof *typeof* [`PANIC_CODES`](#panic_codes)
+
+Defined in: [src/primitives/RevertReason/constants.ts:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/constants.ts#L23)
+
+***
+
+### PanicRevertReason
+
+> **PanicRevertReason** = `object`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L22)
+
+Solidity 0.8+ Panic(uint256) revert
+
+#### Properties
+
+##### code
+
+> `readonly` **code**: `number`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L24)
+
+##### description
+
+> `readonly` **description**: `string`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L25)
+
+##### type
+
+> `readonly` **type**: `"Panic"`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L23)
+
+***
+
+### RevertReasonType
+
+> **RevertReasonType** = [`ErrorRevertReason`](#errorrevertreason) \| [`PanicRevertReason`](#panicrevertreason) \| [`CustomRevertReason`](#customrevertreason) \| [`UnknownRevertReason`](#unknownrevertreason)
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:48](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L48)
+
+RevertReason union type
+
+***
+
+### UnknownRevertReason
+
+> **UnknownRevertReason** = `object`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:40](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L40)
+
+Unknown/unrecognized revert
+
+#### Properties
+
+##### data
+
+> `readonly` **data**: `Uint8Array`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:42](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L42)
+
+##### type
+
+> `readonly` **type**: `"Unknown"`
+
+Defined in: [src/primitives/RevertReason/RevertReasonType.ts:41](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/RevertReasonType.ts#L41)
+
+## Variables
+
+### ERROR\_SELECTOR
+
+> `const` **ERROR\_SELECTOR**: `"0x08c379a0"` = `"0x08c379a0"`
+
+Defined in: [src/primitives/RevertReason/constants.ts:4](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/constants.ts#L4)
+
+Standard error selectors
+
+***
+
+### PANIC\_CODES
+
+> `const` **PANIC\_CODES**: `object`
+
+Defined in: [src/primitives/RevertReason/constants.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/constants.ts#L10)
+
+Solidity 0.8+ panic codes
+
+#### Type Declaration
+
+##### 0
+
+> `readonly` **0**: `"Generic panic"` = `"Generic panic"`
+
+##### 1
+
+> `readonly` **1**: `"Assertion failed"` = `"Assertion failed"`
+
+##### 17
+
+> `readonly` **17**: `"Arithmetic overflow/underflow"` = `"Arithmetic overflow/underflow"`
+
+##### 18
+
+> `readonly` **18**: `"Division by zero"` = `"Division by zero"`
+
+##### 33
+
+> `readonly` **33**: `"Invalid enum value"` = `"Invalid enum value"`
+
+##### 34
+
+> `readonly` **34**: `"Invalid storage encoding"` = `"Invalid storage encoding"`
+
+##### 49
+
+> `readonly` **49**: `"Array pop on empty array"` = `"Array pop on empty array"`
+
+##### 50
+
+> `readonly` **50**: `"Array out of bounds"` = `"Array out of bounds"`
+
+##### 65
+
+> `readonly` **65**: `"Out of memory"` = `"Out of memory"`
+
+##### 81
+
+> `readonly` **81**: `"Invalid internal function"` = `"Invalid internal function"`
+
+***
+
+### PANIC\_SELECTOR
+
+> `const` **PANIC\_SELECTOR**: `"0x4e487b71"` = `"0x4e487b71"`
+
+Defined in: [src/primitives/RevertReason/constants.ts:5](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/constants.ts#L5)
+
+## Functions
+
+### \_from()
+
+> **\_from**(`value`): [`RevertReasonType`](#revertreasontype)
+
+Defined in: [src/primitives/RevertReason/from.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/from.js#L15)
+
+Create RevertReason from various inputs
+
+#### Parameters
+
+##### value
+
+Return data
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | [`ReturnDataType`](ReturnData.mdx#returndatatype)
+
+#### Returns
+
+[`RevertReasonType`](#revertreasontype)
+
+Decoded revert reason
+
+#### Example
+
+```typescript
+const reason = RevertReason.from("0x08c379a0...");
+```
+
+***
+
+### \_fromReturnData()
+
+> **\_fromReturnData**(`returnData`): [`RevertReasonType`](#revertreasontype)
+
+Defined in: [src/primitives/RevertReason/fromReturnData.js:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/fromReturnData.js#L24)
+
+Decode RevertReason from ReturnData
+
+#### Parameters
+
+##### returnData
+
+[`ReturnDataType`](ReturnData.mdx#returndatatype)
+
+Return data from failed call
+
+#### Returns
+
+[`RevertReasonType`](#revertreasontype)
+
+Decoded revert reason
+
+#### Example
+
+```typescript
+const returnData = ReturnData.fromHex("0x08c379a0...");
+const reason = RevertReason.fromReturnData(returnData);
+if (reason.type === "Error") {
+  console.log(reason.message);
+}
+```
+
+***
+
+### \_toString()
+
+> **\_toString**(`reason`): `string`
+
+Defined in: [src/primitives/RevertReason/toString.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/toString.js#L17)
+
+Convert RevertReason to string representation
+
+#### Parameters
+
+##### reason
+
+[`RevertReasonType`](#revertreasontype)
+
+Revert reason
+
+#### Returns
+
+`string`
+
+String representation
+
+#### Example
+
+```typescript
+const str = RevertReason.toString(reason);
+// "Error: Insufficient balance"
+// "Panic(0x11): Arithmetic overflow/underflow"
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`RevertReasonType`](#revertreasontype)
+
+Defined in: [src/primitives/RevertReason/index.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/index.ts#L20)
+
+Create RevertReason from various inputs
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | [`ReturnDataType`](ReturnData.mdx#returndatatype)
+
+#### Returns
+
+[`RevertReasonType`](#revertreasontype)
+
+***
+
+### fromReturnData()
+
+> **fromReturnData**(`returnData`): [`RevertReasonType`](#revertreasontype)
+
+Defined in: [src/primitives/RevertReason/index.ts:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/index.ts#L29)
+
+Decode RevertReason from ReturnData
+
+#### Parameters
+
+##### returnData
+
+[`ReturnDataType`](ReturnData.mdx#returndatatype)
+
+#### Returns
+
+[`RevertReasonType`](#revertreasontype)
+
+***
+
+### getPanicDescription()
+
+> **getPanicDescription**(`code`): `string`
+
+Defined in: [src/primitives/RevertReason/constants.ts:28](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/constants.ts#L28)
+
+Get panic code description
+
+#### Parameters
+
+##### code
+
+`number`
+
+#### Returns
+
+`string`
+
+***
+
+### toString()
+
+> **toString**(`reason`): `string`
+
+Defined in: [src/primitives/RevertReason/index.ts:37](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/RevertReason/index.ts#L37)
+
+Convert RevertReason to string representation
+
+#### Parameters
+
+##### reason
+
+[`RevertReasonType`](#revertreasontype)
+
+#### Returns
+
+`string`

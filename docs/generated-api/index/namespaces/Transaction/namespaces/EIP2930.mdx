@@ -1,0 +1,1019 @@
+---
+title: "EIP2930"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../index.mdx) / [index](../../../index.mdx) / [Transaction](../index.mdx) / EIP2930
+
+# EIP2930
+
+## Classes
+
+### TransactionEIP2930
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:53](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L53)
+
+Factory function for creating EIP-2930 Transaction instances
+
+#### Constructors
+
+##### Constructor
+
+> **new TransactionEIP2930**(`tx`): `TransactionEIP2930`
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:53](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L53)
+
+Factory function for creating EIP-2930 Transaction instances
+
+###### Parameters
+
+###### tx
+
+`any`
+
+###### Returns
+
+`TransactionEIP2930`
+
+#### Properties
+
+##### getSender()
+
+> **getSender**: (`tx`) => [`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:87](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L87)
+
+Get sender address from EIP-2930 transaction signature.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+Transaction
+
+###### Returns
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Sender address
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If signature recovery fails
+
+###### Example
+
+```javascript
+import { getSender } from './primitives/Transaction/EIP2930/getSender.js';
+const sender = getSender(tx);
+```
+
+##### getSigningHash()
+
+> **getSigningHash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:85](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L85)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+###### Returns
+
+`Uint8Array`
+
+##### hash()
+
+> **hash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:84](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L84)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+###### Returns
+
+`Uint8Array`
+
+##### serialize()
+
+> **serialize**: (`tx`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:82](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L82)
+
+Serialize EIP-2930 transaction to RLP encoded bytes.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+Transaction to serialize
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP encoded transaction bytes
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { serialize } from './primitives/Transaction/EIP2930/serialize.js';
+const bytes = serialize(tx);
+```
+
+##### verifySignature()
+
+> **verifySignature**: (`tx`) => `boolean`
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:89](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L89)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+###### Returns
+
+`boolean`
+
+##### getSender()
+
+> `static` **getSender**: (`tx`) => [`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:77](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L77)
+
+Get sender address from EIP-2930 transaction signature.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+Transaction
+
+###### Returns
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Sender address
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If signature recovery fails
+
+###### Example
+
+```javascript
+import { getSender } from './primitives/Transaction/EIP2930/getSender.js';
+const sender = getSender(tx);
+```
+
+##### getSigningHash()
+
+> `static` **getSigningHash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:76](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L76)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+###### Returns
+
+`Uint8Array`
+
+##### hash()
+
+> `static` **hash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:75](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L75)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+###### Returns
+
+`Uint8Array`
+
+##### prototype
+
+> `static` **prototype**: `object`
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:81](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L81)
+
+##### serialize()
+
+> `static` **serialize**: (`tx`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:74](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L74)
+
+Serialize EIP-2930 transaction to RLP encoded bytes.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+Transaction to serialize
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP encoded transaction bytes
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { serialize } from './primitives/Transaction/EIP2930/serialize.js';
+const bytes = serialize(tx);
+```
+
+##### verifySignature()
+
+> `static` **verifySignature**: (`tx`) => `boolean`
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:78](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L78)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+###### Returns
+
+`boolean`
+
+## Interfaces
+
+### TransactionEIP2930Constructor()
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts#L18)
+
+> **TransactionEIP2930Constructor**(`tx`): `TransactionEIP2930Prototype`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts#L19)
+
+#### Parameters
+
+##### tx
+
+###### accessList
+
+[`AccessList`](../index.mdx#accesslist)
+
+###### chainId
+
+`bigint`
+
+###### data
+
+`Uint8Array`
+
+###### gasLimit
+
+`bigint`
+
+###### gasPrice
+
+`bigint`
+
+###### nonce
+
+`bigint`
+
+###### r
+
+`Uint8Array`
+
+###### s
+
+`Uint8Array`
+
+###### to
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype) \| `null`
+
+###### value
+
+`bigint`
+
+###### yParity
+
+`number`
+
+#### Returns
+
+`TransactionEIP2930Prototype`
+
+#### Properties
+
+##### getSender()
+
+> **getSender**: (`tx`) => [`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts:37](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts#L37)
+
+Get sender address from EIP-2930 transaction signature.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+Transaction
+
+###### Returns
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Sender address
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If signature recovery fails
+
+###### Example
+
+```javascript
+import { getSender } from './primitives/Transaction/EIP2930/getSender.js';
+const sender = getSender(tx);
+```
+
+##### getSigningHash()
+
+> **getSigningHash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts:36](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts#L36)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+###### Returns
+
+`Uint8Array`
+
+##### hash()
+
+> **hash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts:35](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts#L35)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+###### Returns
+
+`Uint8Array`
+
+##### prototype
+
+> **prototype**: `TransactionEIP2930Prototype`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts:32](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts#L32)
+
+##### serialize()
+
+> **serialize**: (`tx`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts#L34)
+
+Serialize EIP-2930 transaction to RLP encoded bytes.
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+Transaction to serialize
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP encoded transaction bytes
+
+###### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+Never throws
+
+###### Example
+
+```javascript
+import { serialize } from './primitives/Transaction/EIP2930/serialize.js';
+const bytes = serialize(tx);
+```
+
+##### verifySignature()
+
+> **verifySignature**: (`tx`) => `boolean`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts:38](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts#L38)
+
+###### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+###### Returns
+
+`boolean`
+
+#### Methods
+
+##### deserialize()
+
+> **deserialize**(`bytes`): `TransactionEIP2930Prototype`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts:33](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Constructor.ts#L33)
+
+###### Parameters
+
+###### bytes
+
+`Uint8Array`
+
+###### Returns
+
+`TransactionEIP2930Prototype`
+
+## Type Aliases
+
+### TransactionEIP2930Type
+
+> **TransactionEIP2930Type** = `object`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L11)
+
+EIP-2930 Transaction type (Access List Transaction)
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-2930
+
+#### Since
+
+0.0.0
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"TransactionEIP2930"`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L12)
+
+##### accessList
+
+> **accessList**: [`AccessList`](../index.mdx#accesslist)
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L21)
+
+##### chainId
+
+> **chainId**: `bigint`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L14)
+
+##### data
+
+> **data**: `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L20)
+
+##### gasLimit
+
+> **gasLimit**: `bigint`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L17)
+
+##### gasPrice
+
+> **gasPrice**: `bigint`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L16)
+
+##### nonce
+
+> **nonce**: `bigint`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L15)
+
+##### r
+
+> **r**: `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L23)
+
+##### s
+
+> **s**: `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L24)
+
+##### to
+
+> **to**: [`AddressType`](../../../../primitives/Address.mdx#addresstype) \| `null`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L18)
+
+##### type
+
+> **type**: [`EIP2930`](../index.mdx#eip2930)
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L13)
+
+##### value
+
+> **value**: `bigint`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L19)
+
+##### yParity
+
+> **yParity**: `number`
+
+Defined in: [src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/TransactionEIP2930Type.ts#L22)
+
+## Variables
+
+### getSigningHash()
+
+> `const` **getSigningHash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L21)
+
+#### Parameters
+
+##### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### hash()
+
+> `const` **hash**: (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L22)
+
+#### Parameters
+
+##### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### verifySignature()
+
+> `const` **verifySignature**: (`tx`) => `boolean`
+
+Defined in: [src/primitives/Transaction/EIP2930/EIP2930.js:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/EIP2930.js#L23)
+
+#### Parameters
+
+##### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+#### Returns
+
+`boolean`
+
+## Functions
+
+### deserialize()
+
+> **deserialize**(`data`): [`TransactionEIP2930Type`](#transactioneip2930type)
+
+Defined in: [src/primitives/Transaction/EIP2930/deserialize.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/deserialize.js#L20)
+
+Deserialize RLP encoded EIP-2930 transaction.
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP encoded transaction bytes
+
+#### Returns
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+Deserialized transaction
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If data is invalid or malformed
+
+#### Example
+
+```javascript
+import { deserialize } from './primitives/Transaction/EIP2930/deserialize.js';
+const tx = deserialize(bytes);
+```
+
+***
+
+### getSender()
+
+> **getSender**(`tx`): [`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Transaction/EIP2930/getSender.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/getSender.js#L18)
+
+Get sender address from EIP-2930 transaction signature.
+
+#### Parameters
+
+##### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+Transaction
+
+#### Returns
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Sender address
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If signature recovery fails
+
+#### Example
+
+```javascript
+import { getSender } from './primitives/Transaction/EIP2930/getSender.js';
+const sender = getSender(tx);
+```
+
+***
+
+### GetSigningHash()
+
+> **GetSigningHash**(`deps`): (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/getSigningHash.js:30](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/getSigningHash.js#L30)
+
+Factory: Get signing hash for EIP-2930 transaction.
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+###### rlpEncode
+
+(`data`) => `Uint8Array`
+
+RLP encode function
+
+#### Returns
+
+Function that computes signing hash
+
+> (`tx`): `Uint8Array`
+
+##### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+##### Returns
+
+`Uint8Array`
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Never throws
+
+#### Example
+
+```javascript
+import { GetSigningHash } from './primitives/Transaction/EIP2930/getSigningHash.js';
+import { hash as keccak256 } from '../../../crypto/Keccak256/hash.js';
+import { encode as rlpEncode } from '../../Rlp/encode.js';
+const getSigningHash = GetSigningHash({ keccak256, rlpEncode });
+const signingHash = getSigningHash(tx);
+```
+
+***
+
+### Hash()
+
+> **Hash**(`deps`): (`tx`) => `Uint8Array`
+
+Defined in: [src/primitives/Transaction/EIP2930/hash.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/hash.js#L22)
+
+Factory: Compute transaction hash.
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+#### Returns
+
+Function that computes transaction hash
+
+> (`tx`): `Uint8Array`
+
+##### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+##### Returns
+
+`Uint8Array`
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Never throws
+
+#### Example
+
+```javascript
+import { Hash } from './primitives/Transaction/EIP2930/hash.js';
+import { hash as keccak256 } from '../../../crypto/Keccak256/hash.js';
+const hash = Hash({ keccak256 });
+const txHash = hash(tx);
+```
+
+***
+
+### serialize()
+
+> **serialize**(`tx`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Transaction/EIP2930/serialize.js:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/serialize.js#L23)
+
+Serialize EIP-2930 transaction to RLP encoded bytes.
+
+#### Parameters
+
+##### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+Transaction to serialize
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP encoded transaction bytes
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Never throws
+
+#### Example
+
+```javascript
+import { serialize } from './primitives/Transaction/EIP2930/serialize.js';
+const bytes = serialize(tx);
+```
+
+***
+
+### VerifySignature()
+
+> **VerifySignature**(`deps`): (`tx`) => `boolean`
+
+Defined in: [src/primitives/Transaction/EIP2930/verifySignature.js:43](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Transaction/EIP2930/verifySignature.js#L43)
+
+Factory: Verify EIP-2930 transaction signature.
+
+Verifies that the transaction signature is valid. This checks that:
+1. The signature components (r, s) are well-formed
+2. The yParity is valid
+3. A public key can be recovered from the signature
+
+Note: This does NOT verify the transaction was signed by a specific address.
+It only validates the signature is cryptographically valid and can recover
+a sender address. To verify against an expected sender, use getSender() and
+compare the result.
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+###### rlpEncode
+
+(`data`) => `Uint8Array`
+
+RLP encode function
+
+###### secp256k1RecoverPublicKey
+
+`any`
+
+secp256k1 public key recovery
+
+#### Returns
+
+Function that verifies signature
+
+> (`tx`): `boolean`
+
+##### Parameters
+
+###### tx
+
+[`TransactionEIP2930Type`](#transactioneip2930type)
+
+##### Returns
+
+`boolean`
+
+#### See
+
+https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Never throws - returns false on error
+
+#### Example
+
+```javascript
+import { VerifySignature } from './primitives/Transaction/EIP2930/verifySignature.js';
+import { hash as keccak256 } from '../../../crypto/Keccak256/hash.js';
+import { encode as rlpEncode } from '../../Rlp/encode.js';
+import { recoverPublicKey } from '../../../crypto/Secp256k1/index.js';
+const verifySignature = VerifySignature({
+  keccak256,
+  rlpEncode,
+  secp256k1RecoverPublicKey: recoverPublicKey
+});
+const isValid = verifySignature(tx);
+```

@@ -1,0 +1,355 @@
+---
+title: "PeerInfo"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / PeerInfo
+
+# PeerInfo
+
+## Type Aliases
+
+### PeerInfoType
+
+> **PeerInfoType** = `object`
+
+Defined in: [src/primitives/PeerInfo/PeerInfoType.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/PeerInfo/PeerInfoType.ts#L16)
+
+Peer information structure from admin_peers RPC method
+
+Contains metadata about a connected peer including:
+- Peer identity (ID, name, capabilities)
+- Network connection details (local/remote addresses, direction)
+- Protocol-specific state (difficulty, head block)
+
+#### See
+
+https://geth.ethereum.org/docs/interacting-with-geth/rpc/ns-admin#admin-peers
+
+#### Properties
+
+##### caps
+
+> `readonly` **caps**: readonly `string`[]
+
+Defined in: [src/primitives/PeerInfo/PeerInfoType.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/PeerInfo/PeerInfoType.ts#L22)
+
+Supported capabilities (e.g., ["eth/67", "snap/1"])
+
+##### id
+
+> `readonly` **id**: [`PeerIdType`](PeerId.mdx#peeridtype)
+
+Defined in: [src/primitives/PeerInfo/PeerInfoType.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/PeerInfo/PeerInfoType.ts#L18)
+
+Peer ID (enode URL)
+
+##### name
+
+> `readonly` **name**: `string`
+
+Defined in: [src/primitives/PeerInfo/PeerInfoType.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/PeerInfo/PeerInfoType.ts#L20)
+
+Remote client identifier (e.g., "Geth/v1.10.26-stable")
+
+##### network
+
+> `readonly` **network**: `object`
+
+Defined in: [src/primitives/PeerInfo/PeerInfoType.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/PeerInfo/PeerInfoType.ts#L24)
+
+Network connection information
+
+###### inbound
+
+> `readonly` **inbound**: `boolean`
+
+True if inbound connection
+
+###### localAddress
+
+> `readonly` **localAddress**: `string`
+
+Local endpoint (IP:PORT)
+
+###### remoteAddress
+
+> `readonly` **remoteAddress**: `string`
+
+Remote endpoint (IP:PORT)
+
+###### static
+
+> `readonly` **static**: `boolean`
+
+True if static node
+
+###### trusted
+
+> `readonly` **trusted**: `boolean`
+
+True if trusted peer
+
+##### protocols
+
+> `readonly` **protocols**: `object`
+
+Defined in: [src/primitives/PeerInfo/PeerInfoType.ts:37](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/PeerInfo/PeerInfoType.ts#L37)
+
+Protocol-specific information
+
+###### Index Signature
+
+\[`protocol`: `string`\]: `unknown`
+
+Other protocols
+
+###### eth?
+
+> `readonly` `optional` **eth**: `object`
+
+Ethereum protocol info (if supported)
+
+###### eth.difficulty
+
+> `readonly` **difficulty**: [`BrandedUint`](../../primitives/Uint.mdx#brandeduint)
+
+Total difficulty of peer's chain
+
+###### eth.head
+
+> `readonly` **head**: [`BlockHashType`](BlockHash.mdx#blockhashtype)
+
+Peer's head block hash
+
+###### eth.version
+
+> `readonly` **version**: [`ProtocolVersionType`](ProtocolVersion.mdx#protocolversiontype)
+
+Protocol version
+
+## Variables
+
+### PeerInfo
+
+> `const` **PeerInfo**: `object`
+
+Defined in: [src/primitives/PeerInfo/index.ts:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/PeerInfo/index.ts#L29)
+
+#### Type Declaration
+
+##### from()
+
+> **from**: (`value`) => [`PeerInfoType`](#peerinfotype)
+
+Create PeerInfo from RPC response object
+
+###### Parameters
+
+###### value
+
+`any`
+
+Peer info object from admin_peers
+
+###### Returns
+
+[`PeerInfoType`](#peerinfotype)
+
+Peer information
+
+###### Throws
+
+If value is not a valid peer info object
+
+###### Example
+
+```javascript
+import * as PeerInfo from './primitives/PeerInfo/index.js';
+const peers = rpcResponse.map(peer => PeerInfo.from(peer));
+peers.forEach(peer => {
+  console.log(peer.name);
+  console.log(peer.network.inbound);
+});
+```
+
+##### hasCapability()
+
+> **hasCapability**: (`peerInfo`, `capability`) => `boolean`
+
+###### Parameters
+
+###### peerInfo
+
+`any`
+
+###### capability
+
+`string`
+
+###### Returns
+
+`boolean`
+
+##### isInbound()
+
+> **isInbound**: (`peerInfo`) => `boolean`
+
+###### Parameters
+
+###### peerInfo
+
+`any`
+
+###### Returns
+
+`boolean`
+
+## Functions
+
+### \_hasCapability()
+
+> **\_hasCapability**(`this`, `capability`): `boolean`
+
+Defined in: [src/primitives/PeerInfo/hasCapability.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/PeerInfo/hasCapability.js#L15)
+
+Check if peer supports a specific capability
+
+#### Parameters
+
+##### this
+
+[`PeerInfoType`](#peerinfotype)
+
+##### capability
+
+`string`
+
+Capability to check (e.g., "eth/67", "snap/1")
+
+#### Returns
+
+`boolean`
+
+True if peer supports capability
+
+#### Example
+
+```javascript
+import * as PeerInfo from './primitives/PeerInfo/index.js';
+const peer = PeerInfo.from(rpcResponse);
+const hasEth67 = PeerInfo._hasCapability.call(peer, "eth/67");
+```
+
+***
+
+### \_isInbound()
+
+> **\_isInbound**(`this`): `boolean`
+
+Defined in: [src/primitives/PeerInfo/isInbound.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/PeerInfo/isInbound.js#L14)
+
+Check if peer connection is inbound
+
+#### Parameters
+
+##### this
+
+[`PeerInfoType`](#peerinfotype)
+
+#### Returns
+
+`boolean`
+
+True if inbound connection
+
+#### Example
+
+```javascript
+import * as PeerInfo from './primitives/PeerInfo/index.js';
+const peer = PeerInfo.from(rpcResponse);
+const inbound = PeerInfo._isInbound.call(peer);
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`PeerInfoType`](#peerinfotype)
+
+Defined in: [src/primitives/PeerInfo/from.js:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/PeerInfo/from.js#L25)
+
+Create PeerInfo from RPC response object
+
+#### Parameters
+
+##### value
+
+`any`
+
+Peer info object from admin_peers
+
+#### Returns
+
+[`PeerInfoType`](#peerinfotype)
+
+Peer information
+
+#### Throws
+
+If value is not a valid peer info object
+
+#### Example
+
+```javascript
+import * as PeerInfo from './primitives/PeerInfo/index.js';
+const peers = rpcResponse.map(peer => PeerInfo.from(peer));
+peers.forEach(peer => {
+  console.log(peer.name);
+  console.log(peer.network.inbound);
+});
+```
+
+***
+
+### hasCapability()
+
+> **hasCapability**(`peerInfo`, `capability`): `boolean`
+
+Defined in: [src/primitives/PeerInfo/index.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/PeerInfo/index.ts#L14)
+
+#### Parameters
+
+##### peerInfo
+
+`any`
+
+##### capability
+
+`string`
+
+#### Returns
+
+`boolean`
+
+***
+
+### isInbound()
+
+> **isInbound**(`peerInfo`): `boolean`
+
+Defined in: [src/primitives/PeerInfo/index.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/PeerInfo/index.ts#L20)
+
+#### Parameters
+
+##### peerInfo
+
+`any`
+
+#### Returns
+
+`boolean`

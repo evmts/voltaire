@@ -1,0 +1,131 @@
+---
+title: "Memory"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [evm](../index.mdx) / Memory
+
+# Memory
+
+## Functions
+
+### mcopy()
+
+> **mcopy**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/memory/0x5e\_MCOPY.js:41](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/memory/0x5e_MCOPY.js#L41)
+
+MCOPY opcode (0x5e) - Copy memory (EIP-5656, Cancun+)
+
+Pops dest, src, len from stack. Copies len bytes from src to dest.
+Handles overlapping regions correctly using temporary buffer.
+
+Gas cost: GasFastestStep (3) + memory expansion cost + copy cost (3 gas per word)
+
+Note: This opcode was introduced in the Cancun hardfork (EIP-5656).
+Implementation assumes hardfork check is done externally.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### mload()
+
+> **mload**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/memory/0x51\_MLOAD.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/memory/0x51_MLOAD.js#L18)
+
+MLOAD opcode (0x51) - Load word from memory
+
+Pops offset from stack, reads 32 bytes from memory starting at offset,
+and pushes the result as a 256-bit value onto the stack.
+
+Gas cost: GasFastestStep (3) + memory expansion cost
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### mstore()
+
+> **mstore**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/memory/0x52\_MSTORE.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/memory/0x52_MSTORE.js#L17)
+
+MSTORE opcode (0x52) - Save word to memory
+
+Pops offset and value from stack, writes 32 bytes to memory starting at offset.
+Value is stored in big-endian format.
+
+Gas cost: GasFastestStep (3) + memory expansion cost
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### mstore8()
+
+> **mstore8**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/memory/0x53\_MSTORE8.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/evm/memory/0x53_MSTORE8.js#L17)
+
+MSTORE8 opcode (0x53) - Save byte to memory
+
+Pops offset and value from stack, writes the least significant byte
+of value to memory at offset.
+
+Gas cost: GasFastestStep (3) + memory expansion cost
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any

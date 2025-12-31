@@ -12,7 +12,19 @@
 		"src/primitives/Uint/index.ts",
 		"src/crypto/KZG/index.js"
 	],
-	"out": "docs/public/api",
+	"out": "docs/generated-api",
+	"plugin": ["typedoc-plugin-markdown", "typedoc-plugin-frontmatter"],
+	"outputFileStrategy": "modules",
+	"fileExtension": ".mdx",
+	"entryFileName": "index",
+	"frontmatterGlobals": {
+		"description": "Auto-generated API documentation"
+	},
+	"indexFrontmatter": {
+		"title": "Generated API Reference",
+		"description": "Auto-generated TypeScript API documentation from source code"
+	},
+	"frontmatterCommentTags": ["description"],
 	"exclude": [
 		"**/*.test.*",
 		"**/*.bench.*",
@@ -26,6 +38,6 @@
 	"excludePrivate": true,
 	"excludeProtected": true,
 	"categorizeByGroup": true,
-	"readme": "README.md",
+	"readme": "none",
 	"cleanOutputDir": true
 }

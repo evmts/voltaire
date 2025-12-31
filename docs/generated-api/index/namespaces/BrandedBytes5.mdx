@@ -1,0 +1,408 @@
+---
+title: "BrandedBytes5"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / BrandedBytes5
+
+# BrandedBytes5
+
+## Type Aliases
+
+### Bytes5Type
+
+> **Bytes5Type** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/Bytes/Bytes5/Bytes5Type.ts:3](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes5/Bytes5Type.ts#L3)
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Bytes5"`
+
+##### size
+
+> `readonly` **size**: `5`
+
+## Variables
+
+### BytesType5
+
+> `const` **BytesType5**: `object`
+
+Defined in: [src/primitives/Bytes/Bytes5/index.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes5/index.ts#L16)
+
+#### Type Declaration
+
+##### clone()
+
+> **clone**: (`bytes`) => [`Bytes5Type`](#bytes5type)
+
+Clone Bytes5
+
+###### Parameters
+
+###### bytes
+
+[`Bytes5Type`](#bytes5type)
+
+Bytes5 to clone
+
+###### Returns
+
+[`Bytes5Type`](#bytes5type)
+
+Cloned Bytes5
+
+###### Example
+
+```typescript
+const copy = Bytes5.clone(bytes);
+```
+
+##### compare()
+
+> **compare**: (`a`, `b`) => `-1` \| `0` \| `1`
+
+###### Parameters
+
+###### a
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### b
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+`-1` \| `0` \| `1`
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+###### Parameters
+
+###### a
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### b
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`Bytes5Type`](#bytes5type)
+
+###### Parameters
+
+###### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+[`Bytes5Type`](#bytes5type)
+
+##### fromHex()
+
+> **fromHex**: (`hex`) => [`Bytes5Type`](#bytes5type)
+
+###### Parameters
+
+###### hex
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+###### Returns
+
+[`Bytes5Type`](#bytes5type)
+
+##### size()
+
+> **size**: (`_bytes`) => `5`
+
+Get size of Bytes5 (always 5)
+
+###### Parameters
+
+###### \_bytes
+
+[`Bytes5Type`](#bytes5type)
+
+Bytes5
+
+###### Returns
+
+`5`
+
+Size (always 5)
+
+###### Example
+
+```typescript
+const size = Bytes5.size(bytes); // 5
+```
+
+##### toBytes()
+
+> **toBytes**: (`bytes`) => `BytesType`
+
+Convert Bytes5 to generic Bytes
+
+###### Parameters
+
+###### bytes
+
+[`Bytes5Type`](#bytes5type)
+
+Bytes5 to convert
+
+###### Returns
+
+`BytesType`
+
+Generic Bytes
+
+###### Example
+
+```typescript
+const genericBytes = Bytes5.toBytes(bytes);
+```
+
+##### toHex()
+
+> **toHex**: (`bytes`) => [`HexType`](../../primitives/Hex.mdx#hextype)
+
+Convert Bytes5 to hex string
+
+###### Parameters
+
+###### bytes
+
+[`Bytes5Type`](#bytes5type)
+
+Bytes5 to convert
+
+###### Returns
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+Hex string
+
+###### Example
+
+```typescript
+const hex = Bytes5.toHex(bytes);
+```
+
+## Functions
+
+### clone()
+
+> **clone**(`bytes`): [`Bytes5Type`](#bytes5type)
+
+Defined in: [src/primitives/Bytes/Bytes5/clone.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes5/clone.js#L12)
+
+Clone Bytes5
+
+#### Parameters
+
+##### bytes
+
+[`Bytes5Type`](#bytes5type)
+
+Bytes5 to clone
+
+#### Returns
+
+[`Bytes5Type`](#bytes5type)
+
+Cloned Bytes5
+
+#### Example
+
+```typescript
+const copy = Bytes5.clone(bytes);
+```
+
+***
+
+### compare()
+
+> **compare**(`a`, `b`): `-1` \| `0` \| `1`
+
+Defined in: [src/primitives/Bytes/Bytes5/compare.js:2](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes5/compare.js#L2)
+
+#### Parameters
+
+##### a
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+##### b
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`-1` \| `0` \| `1`
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Bytes/Bytes5/equals.js:2](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes5/equals.js#L2)
+
+#### Parameters
+
+##### a
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+##### b
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`Bytes5Type`](#bytes5type)
+
+Defined in: [src/primitives/Bytes/Bytes5/from.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes5/from.js#L8)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`Bytes5Type`](#bytes5type)
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`Bytes5Type`](#bytes5type)
+
+Defined in: [src/primitives/Bytes/Bytes5/fromHex.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes5/fromHex.js#L8)
+
+#### Parameters
+
+##### hex
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+#### Returns
+
+[`Bytes5Type`](#bytes5type)
+
+***
+
+### size()
+
+> **size**(`_bytes`): `5`
+
+Defined in: [src/primitives/Bytes/Bytes5/size.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes5/size.js#L12)
+
+Get size of Bytes5 (always 5)
+
+#### Parameters
+
+##### \_bytes
+
+[`Bytes5Type`](#bytes5type)
+
+Bytes5
+
+#### Returns
+
+`5`
+
+Size (always 5)
+
+#### Example
+
+```typescript
+const size = Bytes5.size(bytes); // 5
+```
+
+***
+
+### toBytes()
+
+> **toBytes**(`bytes`): `BytesType`
+
+Defined in: [src/primitives/Bytes/Bytes5/toBytes.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes5/toBytes.js#L12)
+
+Convert Bytes5 to generic Bytes
+
+#### Parameters
+
+##### bytes
+
+[`Bytes5Type`](#bytes5type)
+
+Bytes5 to convert
+
+#### Returns
+
+`BytesType`
+
+Generic Bytes
+
+#### Example
+
+```typescript
+const genericBytes = Bytes5.toBytes(bytes);
+```
+
+***
+
+### toHex()
+
+> **toHex**(`bytes`): [`HexType`](../../primitives/Hex.mdx#hextype)
+
+Defined in: [src/primitives/Bytes/Bytes5/toHex.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes5/toHex.js#L12)
+
+Convert Bytes5 to hex string
+
+#### Parameters
+
+##### bytes
+
+[`Bytes5Type`](#bytes5type)
+
+Bytes5 to convert
+
+#### Returns
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+Hex string
+
+#### Example
+
+```typescript
+const hex = Bytes5.toHex(bytes);
+```

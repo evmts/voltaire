@@ -1,0 +1,234 @@
+---
+description: Auto-generated TypeScript API documentation from source code
+title: Generated API Reference
+---
+
+[**@tevm/voltaire**](../../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../../index.mdx) / [index](../../../../index.mdx) / [wasm](../../index.mdx) / Secp256k1Wasm
+
+# Secp256k1Wasm
+
+## Namespaces
+
+- [Signature](namespaces/Signature.mdx)
+
+## Type Aliases
+
+### PrivateKey
+
+> **PrivateKey** = `Uint8Array`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:35](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L35)
+
+***
+
+### PublicKey
+
+> **PublicKey** = `Uint8Array`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L34)
+
+***
+
+### Signature
+
+> **Signature** = `object`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:28](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L28)
+
+#### Properties
+
+##### r
+
+> **r**: `Uint8Array`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L29)
+
+##### s
+
+> **s**: `Uint8Array`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:30](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L30)
+
+##### v
+
+> **v**: `number`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:31](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L31)
+
+## Variables
+
+### CURVE\_ORDER
+
+> `const` **CURVE\_ORDER**: `115792089237316195423570985008687907852837564279074904382605163141518161494337n` = `0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:41](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L41)
+
+***
+
+### PRIVATE\_KEY\_SIZE
+
+> `const` **PRIVATE\_KEY\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:43](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L43)
+
+***
+
+### PUBLIC\_KEY\_SIZE
+
+> `const` **PUBLIC\_KEY\_SIZE**: `64` = `64`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:44](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L44)
+
+***
+
+### SIGNATURE\_COMPONENT\_SIZE
+
+> `const` **SIGNATURE\_COMPONENT\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L45)
+
+## Functions
+
+### derivePublicKey()
+
+> **derivePublicKey**(`privateKey`): [`PublicKey`](#publickey)
+
+Defined in: [src/crypto/secp256k1.wasm.ts:191](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L191)
+
+#### Parameters
+
+##### privateKey
+
+[`PrivateKey`](#privatekey)
+
+#### Returns
+
+[`PublicKey`](#publickey)
+
+***
+
+### isValidPrivateKey()
+
+> **isValidPrivateKey**(`privateKey`): `boolean`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:259](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L259)
+
+#### Parameters
+
+##### privateKey
+
+[`PrivateKey`](#privatekey)
+
+#### Returns
+
+`boolean`
+
+***
+
+### isValidPublicKey()
+
+> **isValidPublicKey**(`publicKey`): `boolean`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:241](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L241)
+
+#### Parameters
+
+##### publicKey
+
+[`PublicKey`](#publickey)
+
+#### Returns
+
+`boolean`
+
+***
+
+### isValidSignature()
+
+> **isValidSignature**(`signature`): `boolean`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:209](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L209)
+
+#### Parameters
+
+##### signature
+
+[`Signature`](#signature)
+
+#### Returns
+
+`boolean`
+
+***
+
+### recoverPublicKey()
+
+> **recoverPublicKey**(`signature`, `messageHash`): [`PublicKey`](#publickey)
+
+Defined in: [src/crypto/secp256k1.wasm.ts:137](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L137)
+
+#### Parameters
+
+##### signature
+
+[`Signature`](#signature)
+
+##### messageHash
+
+[`HashType`](../../../HashType-2.mdx#hashtype)
+
+#### Returns
+
+[`PublicKey`](#publickey)
+
+***
+
+### sign()
+
+> **sign**(`messageHash`, `privateKey`): [`Signature`](#signature)
+
+Defined in: [src/crypto/secp256k1.wasm.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L51)
+
+#### Parameters
+
+##### messageHash
+
+[`HashType`](../../../HashType-2.mdx#hashtype)
+
+##### privateKey
+
+[`PrivateKey`](#privatekey)
+
+#### Returns
+
+[`Signature`](#signature)
+
+***
+
+### verify()
+
+> **verify**(`signature`, `messageHash`, `publicKey`): `boolean`
+
+Defined in: [src/crypto/secp256k1.wasm.ts:78](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/secp256k1.wasm.ts#L78)
+
+#### Parameters
+
+##### signature
+
+[`Signature`](#signature)
+
+##### messageHash
+
+[`HashType`](../../../HashType-2.mdx#hashtype)
+
+##### publicKey
+
+[`PublicKey`](#publickey)
+
+#### Returns
+
+`boolean`
