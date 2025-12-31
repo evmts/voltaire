@@ -20,7 +20,7 @@ ark-serialize = "0.5.0"
 ark-bls12-381 = "0.5.0"
 # Keccak implementations - assembly-optimized for native, pure Rust for WASM
 keccak-asm = { version = "0.1.4", optional = true }
-tiny-keccak = { version = "2.0", features = ["keccak"], optional = true }
+tiny-keccak = { version = "2.0.2", features = ["keccak"], optional = true }
 
 [features]
 default = ["asm"]

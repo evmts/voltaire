@@ -11,13 +11,13 @@
 		"preview": "vite preview"
 	},
 	"devDependencies": {
-		"@tevm/tsconfig": "^1.0.0-next.142",
-		"jsdom": "^27.2.0",
+		"@tevm/tsconfig": "1.0.0-next.142",
+		"jsdom": "^27.4.0",
 		"typescript": "~5.9.3",
-		"vite": "^6.0.0"
+		"vite": "^7.3.0"
 	},
 	"dependencies": {
-		"esbuild-wasm": "^0.24.2",
+		"esbuild-wasm": "^0.27.2",
 		"modern-monaco": "^0.3.6",
 		"monaco-editor": "^0.55.1",
 		"monaco-vim": "^0.4.4"
