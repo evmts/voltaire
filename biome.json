@@ -18,6 +18,7 @@
 			"target",
 			"bench",
 			"benchmarks",
+			"examples",
 			".zig-cache",
 			"*.wasm",
 			"*.so",
