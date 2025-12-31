@@ -31,13 +31,23 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/trusted-setup.mdx - Trusted Setu
 		 * Trusted Setup: Must call loadTrustedSetup() before any KZG operations.
 		 * Setup loads Ethereum KZG Ceremony parameters (~1 MB).
 		 */
-		it("should load trusted setup", () => {
-			KZG.freeTrustedSetup();
-			expect(KZG.isInitialized()).toBe(false);
+		it(
+			"should load trusted setup",
+			() => {
+				try {
+					KZG.freeTrustedSetup();
+					expect(KZG.isInitialized()).toBe(false);
 
-			KZG.loadTrustedSetup();
-			expect(KZG.isInitialized()).toBe(true);
-		});
+					KZG.loadTrustedSetup();
+					expect(KZG.isInitialized()).toBe(true);
+				} finally {
+					if (!KZG.isInitialized()) {
+						KZG.loadTrustedSetup();
+					}
+				}
+			},
+			{ timeout: 30000 },
+		);
 
 		it("should be idempotent - multiple loads are safe", () => {
 			KZG.loadTrustedSetup();

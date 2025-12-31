@@ -19,7 +19,8 @@ describe("TransactionLegacy.getSigningHash", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const signingHash = TransactionLegacy.getSigningHash.call(tx as any);
+		const signingHash = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+		TransactionLegacy.getSigningHash.call(tx as any);
 		expect(signingHash).toBeInstanceOf(Uint8Array);
 		expect(signingHash.length).toBe(32);
 	});
@@ -39,7 +40,8 @@ describe("TransactionLegacy.getSigningHash", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const signingHash = TransactionLegacy.getSigningHash.call(tx as any);
+		const signingHash = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+		TransactionLegacy.getSigningHash.call(tx as any);
 		expect(signingHash).toBeInstanceOf(Uint8Array);
 		expect(signingHash.length).toBe(32);
 	});
@@ -61,7 +63,8 @@ describe("TransactionLegacy.getSigningHash", () => {
 		const preEIP155 = { ...base, v: 27n } as const;
 		const eip155 = { ...base, v: 37n } as const; // chainId 1
 
-		const hash1 = TransactionLegacy.getSigningHash.call(preEIP155 as any);
+		const hash1 = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+		TransactionLegacy.getSigningHash.call(preEIP155 as any);
 		const hash2 = TransactionLegacy.getSigningHash.call(eip155 as any);
 
 		expect(hash1).not.toEqual(hash2);
@@ -82,8 +85,10 @@ describe("TransactionLegacy.getSigningHash", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const hash1 = TransactionLegacy.getSigningHash.call(tx as any);
-		const hash2 = TransactionLegacy.getSigningHash.call(tx as any);
+		const hash1 = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+		TransactionLegacy.getSigningHash.call(tx as any);
+		const hash2 = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+		TransactionLegacy.getSigningHash.call(tx as any);
 		expect(hash1).toEqual(hash2);
 	});
 
@@ -156,7 +161,8 @@ describe("TransactionLegacy.getSigningHash", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const signingHash = TransactionLegacy.getSigningHash.call(tx as any);
+		const signingHash = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+		TransactionLegacy.getSigningHash.call(tx as any);
 		expect(signingHash).toBeInstanceOf(Uint8Array);
 		expect(signingHash.length).toBe(32);
 	});
@@ -201,7 +207,8 @@ describe("TransactionLegacy.getSigningHash", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const signingHash = TransactionLegacy.getSigningHash.call(tx as any);
+		const signingHash = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+		TransactionLegacy.getSigningHash.call(tx as any);
 		expect(signingHash).toBeInstanceOf(Uint8Array);
 		expect(signingHash.length).toBe(32);
 	});
