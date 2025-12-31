@@ -21,7 +21,9 @@ export function Library(): Record<string, () => never> {
 		{},
 		{
 			get: () => () => {
-				throw new Error("FFI is not available in browser. Use WASM implementation.");
+				throw new Error(
+					"FFI is not available in browser. Use WASM implementation.",
+				);
 			},
 		},
 	);
