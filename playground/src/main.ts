@@ -20,7 +20,6 @@ import { primitiveExamples } from "./examples/primitives.js";
 import { recipesExamples } from "./examples/recipes.js";
 import { standardsExamples } from "./examples/standards.js";
 import { AutoSave } from "./features/AutoSave.js";
-import { BenchmarkMode } from "./features/BenchmarkMode.js";
 import { CodeLensProvider } from "./features/CodeLens.js";
 import { DiffView } from "./features/DiffView.js";
 import { DisplaySettingsManager } from "./features/DisplaySettings.js";
@@ -104,7 +103,6 @@ const editorEl = document.getElementById("editor") ?? document.body;
 const consoleEl = document.getElementById("console-content") ?? document.body;
 const breadcrumbsEl = document.getElementById("breadcrumbs") ?? document.body;
 const historyEl = document.getElementById("history-panel") ?? document.body;
-const benchmarkEl = document.getElementById("benchmark-panel") ?? document.body;
 const vimStatusEl = document.getElementById("vim-status") ?? document.body;
 
 const editor = new Editor(editorEl);
@@ -112,7 +110,6 @@ const consoleComponent = new Console(consoleEl);
 const breadcrumbs = new Breadcrumbs(breadcrumbsEl);
 const executor = new Executor();
 const history = new ExecutionHistory(historyEl);
-const benchmark = new BenchmarkMode(benchmarkEl);
 const vimMode = new VimMode(vimStatusEl);
 const displaySettings = new DisplaySettingsManager();
 
@@ -586,103 +583,37 @@ async function init(): Promise<void> {
 	const historyButton = document.getElementById("history-button");
 	historyButton?.addEventListener("click", () => history.togglePanel());
 
-	// Setup benchmark button
-	const benchmarkButton = document.getElementById("benchmark-button");
-	benchmarkButton?.addEventListener("click", () => {
-		if (!currentFile) {
-			alert("Please select a file to benchmark");
-			return;
-		}
+	// Setup report bug button
+	const reportBugButton = document.getElementById("report-bug-button");
+	reportBugButton?.addEventListener("click", () => {
+		const issueUrl = "https://github.com/evmts/voltaire/issues/new";
+		const params = new URLSearchParams({
+			title: "[Playground] ",
+			body: `**Note:** Bugs in the playground are more likely to be issues with the playground implementation itself rather than the Voltaire library. If you believe this is a library bug, please remove "[Playground]" from the title.
 
-		// Show configuration modal
-		const modal = document.createElement("div");
-		modal.className = "benchmark-modal";
-		modal.innerHTML = `
-      <div class="benchmark-modal-content">
-        <div class="benchmark-modal-header">
-          <h3>Configure Benchmark</h3>
-          <button class="benchmark-modal-close">✕</button>
-        </div>
-        <div class="benchmark-modal-body">
-          <p style="margin-bottom: 16px;">File: ${currentFile.path}</p>
-          <div style="margin-bottom: 16px;">
-            <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">Iterations:</label>
-            <select id="benchmark-iterations" style="width: 100%; padding: 8px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
-              <option value="10">10 runs (quick)</option>
-              <option value="50">50 runs (recommended)</option>
-              <option value="100">100 runs (detailed)</option>
-              <option value="1000">1000 runs (thorough)</option>
-            </select>
-          </div>
-          <div style="margin-bottom: 16px;">
-            <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">Warmup Runs:</label>
-            <select id="benchmark-warmup" style="width: 100%; padding: 8px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
-              <option value="0">0 (no warmup)</option>
-              <option value="2" selected>2 (recommended)</option>
-              <option value="5">5</option>
-              <option value="10">10</option>
-            </select>
-          </div>
-          <div style="display: flex; gap: 8px; justify-content: flex-end;">
-            <button id="benchmark-cancel" style="padding: 8px 16px; background-color: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">Cancel</button>
-            <button id="benchmark-start" style="padding: 8px 16px; background-color: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer;">Start Benchmark</button>
-          </div>
-        </div>
-      </div>
-    `;
+**Describe the bug**
+A clear description of what the bug is.
 
-		document.body.appendChild(modal);
+**To Reproduce**
+Steps to reproduce:
+1. Go to '...'
+2. Click on '...'
+3. See error
 
-		const closeModal = () => {
-			document.body.removeChild(modal);
-		};
+**Expected behavior**
+What you expected to happen.
 
-		const closeBtn = modal.querySelector(".benchmark-modal-close");
-		if (closeBtn) {
-			closeBtn.addEventListener("click", closeModal);
-		}
+**Example code (if applicable)**
+\`\`\`typescript
+// paste code here
+\`\`\`
 
-		const cancelBtn = modal.querySelector("#benchmark-cancel");
-		if (cancelBtn) {
-			cancelBtn.addEventListener("click", closeModal);
-		}
-
-		modal.addEventListener("click", (e) => {
-			if (e.target === modal) {
-				closeModal();
-			}
+**Environment**
+- Browser:
+- OS:
+`,
 		});
-
-		const startBtn = modal.querySelector("#benchmark-start");
-		if (startBtn) {
-			startBtn.addEventListener("click", async () => {
-				const iterations = Number.parseInt(
-					(modal.querySelector("#benchmark-iterations") as HTMLSelectElement)
-						.value,
-				);
-				const warmupRuns = Number.parseInt(
-					(modal.querySelector("#benchmark-warmup") as HTMLSelectElement).value,
-				);
-
-				closeModal();
-
-				// Open benchmark panel and start
-				benchmark.togglePanel();
-
-				try {
-					const code =
-						editorTabs?.getActiveTab()?.model.getValue() || editor.getValue();
-
-					await benchmark.runBenchmark(code, currentFile?.path, executor, {
-						iterations,
-						warmupRuns,
-					});
-				} catch (error) {
-					console.error("Benchmark failed:", error);
-					alert(`Benchmark failed: ${error}`);
-				}
-			});
-		}
+		window.open(`${issueUrl}?${params.toString()}`, "_blank");
 	});
 
 	// Setup history replay

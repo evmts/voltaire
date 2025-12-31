@@ -57,8 +57,7 @@ export class Executor {
 				},
 				bundle: true,
 				write: false,
-				format: "iife",
-				globalName: "__playground__",
+				format: "esm",
 				target: "es2022",
 				plugins: [voltairePlugin()],
 				sourcemap: "inline",
@@ -86,15 +85,14 @@ export class Executor {
 			// Inject module registry into global scope
 			this.injectModules();
 
-			// Execute bundled code
-			// The bundled code is an IIFE that uses globalThis.__VOLTAIRE_MODULES__
-			const execFn = new Function(`
-				return (async () => {
-					${bundledCode}
-				})();
-			`);
-
-			await execFn();
+			// Execute bundled ESM code via dynamic import
+			const blob = new Blob([bundledCode], { type: "application/javascript" });
+			const url = URL.createObjectURL(blob);
+			try {
+				await import(/* @vite-ignore */ url);
+			} finally {
+				URL.revokeObjectURL(url);
+			}
 
 			return {
 				success: true,
