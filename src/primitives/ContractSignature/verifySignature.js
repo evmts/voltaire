@@ -1,4 +1,4 @@
-import * as Address from "../Address/index.js";
+import { Address } from "../Address/index.js";
 import { isValidSignature } from "./isValidSignature.js";
 
 /**
@@ -96,9 +96,7 @@ export function VerifySignature({
 
 				// Convert expected address to AddressType
 				const expectedAddress =
-					typeof address === "string"
-						? /** @type {*} */ (Address)(address)
-						: address;
+					typeof address === "string" ? Address(address) : address;
 
 				// Compare addresses using utility function
 				return Address.equals(recoveredAddress, expectedAddress);

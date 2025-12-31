@@ -54,5 +54,5 @@ export function encode(
 export function validate(
 	typedData: import("./TypedDataType.js").TypedDataType,
 ): void {
-	return validateImpl(typedData);
+	validateImpl(typedData);
 }

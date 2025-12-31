@@ -22,6 +22,7 @@ describe("TransactionHash", () => {
 		});
 
 		it("throws on invalid type", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => TransactionHash.from(123 as any)).toThrow(
 				"Unsupported TransactionHash value type",
 			);

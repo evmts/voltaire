@@ -10,6 +10,7 @@ import { InvalidTypedDataError } from "./errors.js";
  * TypedData.validate(typedData); // throws if invalid
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: typed data validation requires many checks
 export function validate(typedData) {
 	// Validate types object
 	if (!typedData.types || typeof typedData.types !== "object") {
