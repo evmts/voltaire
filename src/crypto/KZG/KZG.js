@@ -160,6 +160,36 @@ export function verifyKzgProof(commitment, z, y, proof) {
 	if (!kzgIsInitialized()) {
 		throw new KzgNotInitializedError();
 	}
+	// Input type validation
+	if (!(commitment instanceof Uint8Array)) {
+		throw new KzgError("Invalid commitment: expected Uint8Array", {
+			code: "KZG_INVALID_COMMITMENT",
+			context: { type: typeof commitment },
+			docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+		});
+	}
+	if (!(z instanceof Uint8Array)) {
+		throw new KzgError("Invalid z: expected Uint8Array", {
+			code: "KZG_INVALID_INPUT",
+			context: { type: typeof z },
+			docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+		});
+	}
+	if (!(y instanceof Uint8Array)) {
+		throw new KzgError("Invalid y: expected Uint8Array", {
+			code: "KZG_INVALID_INPUT",
+			context: { type: typeof y },
+			docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+		});
+	}
+	if (!(proof instanceof Uint8Array)) {
+		throw new KzgError("Invalid proof: expected Uint8Array", {
+			code: "KZG_INVALID_PROOF",
+			context: { type: typeof proof },
+			docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+		});
+	}
+	// Size validation
 	if (commitment.length !== 48) {
 		throw new KzgError(
 			`Invalid commitment length: expected 48, got ${commitment.length}`,
@@ -169,6 +199,20 @@ export function verifyKzgProof(commitment, z, y, proof) {
 				docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
 			},
 		);
+	}
+	if (z.length !== 32) {
+		throw new KzgError(`Invalid z length: expected 32, got ${z.length}`, {
+			code: "KZG_INVALID_INPUT",
+			context: { length: z.length },
+			docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+		});
+	}
+	if (y.length !== 32) {
+		throw new KzgError(`Invalid y length: expected 32, got ${y.length}`, {
+			code: "KZG_INVALID_INPUT",
+			context: { length: y.length },
+			docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
+		});
 	}
 	if (proof.length !== 48) {
 		throw new KzgError(
@@ -182,16 +226,10 @@ export function verifyKzgProof(commitment, z, y, proof) {
 	}
 	try {
 		return kzgVerifyProof(commitment, z, y, proof);
-	} catch (error) {
-		throw new KzgError(
-			`Failed to verify proof: ${error instanceof Error ? error.message : String(error)}`,
-			{
-				code: "KZG_VERIFY_FAILED",
-				context: {},
-				docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
-				cause: error instanceof Error ? error : undefined,
-			},
-		);
+	} catch {
+		// Verification failures (invalid points, cryptographic failures) return false
+		// This is the expected semantic behavior for a verification function
+		return false;
 	}
 }
 
@@ -209,18 +247,26 @@ export function verifyBlobKzgProof(blob, commitment, proof) {
 		throw new KzgNotInitializedError();
 	}
 	validateBlob(blob);
+	// Input type validation
+	if (!(commitment instanceof Uint8Array)) {
+		throw new KzgError("Invalid commitment: expected Uint8Array", {
+			code: "KZG_INVALID_COMMITMENT",
+			context: { type: typeof commitment },
+			docsPath: "/crypto/kzg/verify-blob-kzg-proof#error-handling",
+		});
+	}
+	if (!(proof instanceof Uint8Array)) {
+		throw new KzgError("Invalid proof: expected Uint8Array", {
+			code: "KZG_INVALID_PROOF",
+			context: { type: typeof proof },
+			docsPath: "/crypto/kzg/verify-blob-kzg-proof#error-handling",
+		});
+	}
 	try {
 		return kzgVerifyBlobProof(blob, commitment, proof);
-	} catch (error) {
-		throw new KzgError(
-			`Failed to verify blob proof: ${error instanceof Error ? error.message : String(error)}`,
-			{
-				code: "KZG_VERIFY_BLOB_FAILED",
-				context: { blobLength: blob.length },
-				docsPath: "/crypto/kzg/verify-blob-kzg-proof#error-handling",
-				cause: error instanceof Error ? error : undefined,
-			},
-		);
+	} catch {
+		// Verification failures (invalid points, cryptographic failures) return false
+		return false;
 	}
 }
 
@@ -252,25 +298,22 @@ export function verifyBlobKzgProofBatch(blobs, commitments, proofs) {
 	if (blobs.length === 0) {
 		return true;
 	}
-	try {
-		for (let i = 0; i < blobs.length; i++) {
-			validateBlob(blobs[i]);
+	// Validate all blobs first (let blob errors bubble up)
+	for (let i = 0; i < blobs.length; i++) {
+		validateBlob(blobs[i]);
+	}
+	// Then verify proofs (return false on verification failure)
+	for (let i = 0; i < blobs.length; i++) {
+		try {
 			if (!kzgVerifyBlobProof(blobs[i], commitments[i], proofs[i])) {
 				return false;
 			}
+		} catch {
+			// Verification failures return false
+			return false;
 		}
-		return true;
-	} catch (error) {
-		throw new KzgError(
-			`Failed to verify blob proofs batch: ${error instanceof Error ? error.message : String(error)}`,
-			{
-				code: "KZG_VERIFY_BATCH_FAILED",
-				context: { batchSize: blobs.length },
-				docsPath: "/crypto/kzg/verify-blob-kzg-proof-batch#error-handling",
-				cause: error instanceof Error ? error : undefined,
-			},
-		);
 	}
+	return true;
 }
 
 /**

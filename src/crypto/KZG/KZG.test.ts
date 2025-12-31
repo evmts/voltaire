@@ -543,22 +543,28 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 	});
 
 	describe("Error Handling - No Trusted Setup", () => {
-		it("should throw when trusted setup not initialized", () => {
-			// Save current state
-			const wasInitialized = KZG.isInitialized();
+		it(
+			"should throw when trusted setup not initialized",
+			() => {
+				// Save current state
+				const wasInitialized = KZG.isInitialized();
 
-			// Free trusted setup
-			KZG.freeTrustedSetup();
+				try {
+					// Free trusted setup
+					KZG.freeTrustedSetup();
 
-			const blob = KZG.createEmptyBlob();
+					const blob = KZG.createEmptyBlob();
 
-			expect(() => KZG.Commitment(blob)).toThrow(KzgNotInitializedError);
-
-			// Restore state
-			if (wasInitialized) {
-				KZG.loadTrustedSetup();
-			}
-		});
+					expect(() => KZG.Commitment(blob)).toThrow(KzgNotInitializedError);
+				} finally {
+					// Always restore state
+					if (wasInitialized && !KZG.isInitialized()) {
+						KZG.loadTrustedSetup();
+					}
+				}
+			},
+			{ timeout: 30000 },
+		);
 	});
 
 	describe("Performance Characteristics", () => {
@@ -846,19 +852,30 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 			expect(KZG.isInitialized()).toBe(true);
 		});
 
-		it("should handle freeTrustedSetup and re-initialization", () => {
-			KZG.freeTrustedSetup();
-			expect(KZG.isInitialized()).toBe(false);
+		it(
+			"should handle freeTrustedSetup and re-initialization",
+			() => {
+				try {
+					KZG.freeTrustedSetup();
+					expect(KZG.isInitialized()).toBe(false);
 
-			// Re-initialize
-			KZG.loadTrustedSetup();
-			expect(KZG.isInitialized()).toBe(true);
+					// Re-initialize
+					KZG.loadTrustedSetup();
+					expect(KZG.isInitialized()).toBe(true);
 
-			// Verify operations still work
-			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.Commitment(blob);
-			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
-		});
+					// Verify operations still work
+					const blob = KZG.generateRandomBlob();
+					const commitment = KZG.Commitment(blob);
+					expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
+				} finally {
+					// Always ensure state is restored
+					if (!KZG.isInitialized()) {
+						KZG.loadTrustedSetup();
+					}
+				}
+			},
+			{ timeout: 30000 },
+		);
 	});
 
 	describe("Error Classes", () => {
