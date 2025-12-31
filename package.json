@@ -665,11 +665,7 @@
 	"main": "dist/index.cjs",
 	"module": "dist/index.js",
 	"types": "types/index.d.ts",
-	"files": [
-		"dist",
-		"types",
-		"bin"
-	],
+	"files": ["dist", "types", "bin"],
 	"publishConfig": {
 		"access": "public"
 	},
