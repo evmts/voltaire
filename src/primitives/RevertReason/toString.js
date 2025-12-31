@@ -13,6 +13,7 @@ import * as Hex from "../Hex/index.js";
  * // "Panic(0x11): Arithmetic overflow/underflow"
  * ```
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional override for branded type conversion
 export function toString(reason) {
 	switch (reason.type) {
 		case "Error":

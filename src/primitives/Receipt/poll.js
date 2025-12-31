@@ -49,6 +49,7 @@ export async function poll(txHash, provider, options = {}) {
 	 * @param {string} hash
 	 * @returns {Promise<ReceiptType | null>}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: receipt polling requires many conditions
 	async function getReceipt(hash) {
 		const result = await provider.request({
 			method: "eth_getTransactionReceipt",

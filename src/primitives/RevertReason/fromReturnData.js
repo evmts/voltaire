@@ -20,6 +20,7 @@ import {
  * }
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: revert reason parsing requires many conditions
 export function fromReturnData(returnData) {
 	// Empty data
 	if (returnData.length === 0) {

@@ -34,6 +34,7 @@ import { toBytes } from "./toBytes.js";
 import { toHex } from "./toHex.js";
 import { toNumber } from "./toNumber.js";
 import { toPower } from "./toPower.js";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: re-exporting toString for namespace
 import { toString } from "./toString.js";
 import { tryFrom } from "./tryFrom.js";
 

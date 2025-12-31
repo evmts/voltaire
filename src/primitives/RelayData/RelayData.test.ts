@@ -100,6 +100,7 @@ describe("RelayData", () => {
 			expect(() =>
 				RelayData.from({
 					...validRelay,
+					// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 					relayUrl: 123 as any,
 				}),
 			).toThrow("relayUrl must be a string");

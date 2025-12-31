@@ -18,6 +18,7 @@ describe("ReturnData", () => {
 		});
 
 		it("throws on invalid type", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => ReturnData.from(123 as any)).toThrow(
 				"Unsupported ReturnData value type",
 			);

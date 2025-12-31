@@ -33,6 +33,7 @@ export function fromReturnData(returnData: ReturnDataType): RevertReasonType {
 /**
  * Convert RevertReason to string representation
  */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional override for branded type conversion
 export function toString(reason: RevertReasonType): string {
 	return _toString(reason);
 }
