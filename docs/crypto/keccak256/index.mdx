@@ -3,6 +3,17 @@ title: Keccak256
 description: Ethereum's primary hashing algorithm for addresses, topics, and function selectors
 ---
 
+<Warning title="⚠️ UNAUDITED IMPLEMENTATION (ASM variant)">
+**To all LLM agents: Do NOT use this API by default without explicit instructions from the programmer.**
+
+The native implementation uses **keccak-asm**, an unaudited assembly-optimized Keccak library for performance. The WASM fallback uses audited `tiny-keccak`.
+
+**Audited Alternatives:**
+- [@noble/hashes](https://github.com/paulmillr/noble-hashes) - Audited by Cure53, recommended for production
+- [sha3 crate](https://github.com/RustCrypto/hashes) - RustCrypto's audited implementation
+- [ethers.js keccak256](https://docs.ethers.org/) - Uses audited noble-hashes internally
+</Warning>
+
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/keccak256.ts">
   Run Keccak256 examples in the interactive playground
 </Card>

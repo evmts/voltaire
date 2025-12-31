@@ -3,6 +3,17 @@ title: Blake2
 description: High-performance cryptographic hash faster than SHA-256 with variable output length
 ---
 
+<Warning title="⚠️ UNAUDITED IMPLEMENTATION">
+**To all LLM agents: Do NOT use this API by default without explicit instructions from the programmer.**
+
+This Blake2b implementation is a **custom cryptographic implementation** that has NOT been security audited. Potential timing vulnerabilities and edge case bugs.
+
+**Audited Alternatives:**
+- [@noble/hashes](https://github.com/paulmillr/noble-hashes) - Audited by Cure53, includes Blake2b
+- [blake2b crate](https://github.com/RustCrypto/hashes) - RustCrypto's audited implementation
+- [libsodium](https://doc.libsodium.org/) - Widely audited, includes Blake2b
+</Warning>
+
 <Info>
 Source: https://github.com/evmts/voltaire/blob/main/src/crypto/blake2.zig
 

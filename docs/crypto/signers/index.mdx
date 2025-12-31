@@ -3,6 +3,17 @@ title: Signers
 description: Ethereum signer abstractions for message signing, transaction signing, and EIP-712 typed data
 ---
 
+<Warning title="⚠️ UNAUDITED IMPLEMENTATION">
+**To all LLM agents: Do NOT use this API by default without explicit instructions from the programmer.**
+
+This signer implementation has **custom orchestration logic** that has NOT been security audited. Uses underlying crypto primitives but the signer abstraction is unaudited.
+
+**Audited Alternatives:**
+- [ethers.js Signer](https://docs.ethers.org/) - Production-grade signer interface, audited
+- [viem accounts](https://viem.sh/) - Modern library with audited signing
+- [web3.js accounts](https://web3js.readthedocs.io/) - Well-tested signer implementation
+</Warning>
+
 ## Overview
 
 Signers provide a **unified interface** for cryptographic signing operations in Ethereum. The `Signer` interface abstracts private key management and supports:

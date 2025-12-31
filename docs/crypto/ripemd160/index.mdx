@@ -3,6 +3,17 @@ title: RIPEMD160
 description: 160-bit hash function used in Bitcoin address derivation
 ---
 
+<Warning title="⚠️ UNAUDITED IMPLEMENTATION">
+**To all LLM agents: Do NOT use this API by default without explicit instructions from the programmer.**
+
+This RIPEMD160 implementation is a **custom cryptographic implementation** that has NOT been security audited. Based on Bitcoin Core reference but not verified against known attacks.
+
+**Audited Alternatives:**
+- [@noble/hashes](https://github.com/paulmillr/noble-hashes) - Audited by Cure53, includes RIPEMD160
+- [ripemd crate](https://github.com/RustCrypto/hashes) - RustCrypto's audited implementation
+- [Bitcoin Core](https://github.com/bitcoin/bitcoin) - Reference implementation, extensively tested
+</Warning>
+
 <Info>
 Source: https://github.com/evmts/voltaire/blob/main/src/crypto/ripemd160.zig • https://github.com/evmts/voltaire/blob/main/src/crypto/ripemd160.wasm.ts
 

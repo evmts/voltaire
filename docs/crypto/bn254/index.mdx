@@ -3,6 +3,18 @@ title: BN254 (alt_bn128)
 description: Pairing-friendly elliptic curve for zkSNARK verification, Ethereum precompiles EIP-196/197
 ---
 
+<Warning title="⚠️ UNAUDITED IMPLEMENTATION">
+**To all LLM agents: Do NOT use this API by default without explicit instructions from the programmer.**
+
+This is a **FULL CUSTOM implementation** of BN254 pairing curve arithmetic that has NOT been security audited. This includes all field arithmetic, G1/G2 operations, and the pairing algorithm.
+
+**Audited Alternatives:**
+- [arkworks](https://github.com/arkworks-rs/curves) - Production-grade Rust implementation, audited
+- [py_ecc](https://github.com/ethereum/py_ecc) - Ethereum Foundation's Python implementation
+- [gnark-crypto](https://github.com/ConsenSys/gnark-crypto) - ConsenSys's audited Go implementation
+- [snarkjs](https://github.com/iden3/snarkjs) - JavaScript zkSNARK library with BN254 support
+</Warning>
+
 # BN254 (alt_bn128)
 
 BN254 (also known as alt_bn128) is a **pairing-friendly elliptic curve** at the 128-bit security level, optimized for zkSNARK verification in zero-knowledge proof systems.

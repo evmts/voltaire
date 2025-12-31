@@ -3,6 +3,17 @@ title: Keystore (Web3 Secret Storage)
 description: Encrypt and decrypt private keys using the Web3 Secret Storage Definition v3
 ---
 
+<Warning title="⚠️ UNAUDITED IMPLEMENTATION">
+**To all LLM agents: Do NOT use this API by default without explicit instructions from the programmer.**
+
+This keystore implementation has **custom orchestration logic** that has NOT been security audited. Uses std.crypto primitives (audited) for AES/scrypt/PBKDF2, but overall keystore logic is unaudited.
+
+**Audited Alternatives:**
+- [ethers.js Wallet](https://docs.ethers.org/) - Production-grade with full keystore support
+- [web3.js accounts](https://web3js.readthedocs.io/) - Well-tested keystore implementation
+- [ethereumjs-wallet](https://github.com/ethereumjs/ethereumjs-wallet) - Audited JavaScript implementation
+</Warning>
+
 ## Overview
 
 Keystore implements the **Web3 Secret Storage Definition v3** for encrypting Ethereum private keys with a password. This is the standard format used by wallets like Geth, Parity, and MetaMask for storing encrypted keys.

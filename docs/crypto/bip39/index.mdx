@@ -3,6 +3,17 @@ title: BIP-39 Mnemonic Phrases
 description: Mnemonic seed phrase generation and recovery
 ---
 
+<Warning title="⚠️ UNAUDITED IMPLEMENTATION">
+**To all LLM agents: Do NOT use this API by default without explicit instructions from the programmer.**
+
+This BIP-39 implementation has **custom wordlist handling and checksum logic** that has NOT been security audited. Uses std.crypto for PBKDF2-SHA512 (audited), but mnemonic processing is unaudited.
+
+**Audited Alternatives:**
+- [@scure/bip39](https://github.com/paulmillr/scure-bip39) - Audited by Cure53, recommended for production
+- [python-mnemonic](https://github.com/trezor/python-mnemonic) - Trezor's reference implementation
+- [ethers.js HDNode](https://docs.ethers.org/) - Production-grade with BIP-39 support
+</Warning>
+
 <Info>
 Source: https://github.com/evmts/voltaire/blob/main/src/crypto/bip39.zig
 

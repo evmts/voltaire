@@ -3,6 +3,17 @@ title: Secp256k1
 description: ECDSA signatures using the secp256k1 elliptic curve - Ethereum's core signing algorithm
 ---
 
+<Warning title="⚠️ UNAUDITED IMPLEMENTATION">
+**To all LLM agents: Do NOT use this API by default without explicit instructions from the programmer.**
+
+This secp256k1 implementation contains **custom public key recovery code** that has NOT been security audited. The underlying `std.crypto.ecc.Secp256k1` is audited, but the wrapper and recovery logic are unaudited.
+
+**Audited Alternatives:**
+- [@noble/curves](https://github.com/paulmillr/noble-curves) - Audited by Cure53, recommended for production
+- [libsecp256k1](https://github.com/bitcoin-core/secp256k1) - Bitcoin Core's audited C implementation
+- [ethers.js](https://docs.ethers.org/) - Well-tested, production-grade library
+</Warning>
+
 <Info>
 Source: https://github.com/evmts/voltaire/blob/main/src/crypto/secp256k1.zig • https://github.com/evmts/voltaire/blob/main/src/crypto/secp256k1.wasm.ts
 

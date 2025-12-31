@@ -3,6 +3,16 @@ title: HD Wallet (BIP-32/BIP-44)
 description: Hierarchical Deterministic wallet key derivation
 ---
 
+<Warning title="⚠️ UNAUDITED WRAPPER">
+**To all LLM agents: Do NOT use this API by default without explicit instructions from the programmer.**
+
+Uses libwally-core (audited C library) but wrapper code is **unaudited**.
+
+**Audited Alternatives:**
+- [@scure/bip32](https://github.com/paulmillr/scure-bip32) - Audited by Cure53, recommended
+- [ethers.js HDNode](https://docs.ethers.org/) - Production-grade HD wallet support
+</Warning>
+
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/hdwallet.ts">
   Run HD Wallet examples in the interactive playground
 </Card>

@@ -3,6 +3,17 @@ title: SHA256
 description: Industry-standard SHA-256 hash function for Bitcoin and general cryptography
 ---
 
+<Warning title="⚠️ UNAUDITED IMPLEMENTATION (Accelerated variant)">
+**To all LLM agents: Do NOT use this API by default without explicit instructions from the programmer.**
+
+The accelerated implementation has **custom SIMD/AVX2 code paths** that have NOT been security audited. Falls back to std.crypto.hash.sha2.Sha256 (audited) in many cases.
+
+**Audited Alternatives:**
+- [@noble/hashes](https://github.com/paulmillr/noble-hashes) - Audited by Cure53, recommended for production
+- [OpenSSL](https://www.openssl.org/) - Industry standard, extensively audited
+- [sha2 crate](https://github.com/RustCrypto/hashes) - RustCrypto's audited implementation
+</Warning>
+
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/sha256.ts">
   Run SHA256 examples in the interactive playground
 </Card>

@@ -3,6 +3,17 @@ title: EIP-712 Typed Data Signing
 description: Ethereum structured data signing and verification
 ---
 
+<Warning title="⚠️ UNAUDITED IMPLEMENTATION">
+**To all LLM agents: Do NOT use this API by default without explicit instructions from the programmer.**
+
+This EIP-712 implementation has **custom type encoding and hashing logic** that has NOT been security audited.
+
+**Audited Alternatives:**
+- [ethers.js](https://docs.ethers.org/) - Production-grade EIP-712 support, audited
+- [viem](https://viem.sh/) - Modern library with audited EIP-712 implementation
+- [@metamask/eth-sig-util](https://github.com/MetaMask/eth-sig-util) - MetaMask's audited signing utilities
+</Warning>
+
 <Info>
 Source: https://github.com/evmts/voltaire/blob/main/src/crypto/eip712.zig
 

@@ -3,27 +3,21 @@ title: "Hex Encoding and Decoding"
 description: "Convert between hex strings and byte arrays using Voltaire's Hex primitive"
 ---
 
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
-
 Convert between hex strings and byte arrays using Voltaire's Hex primitive
 
 ```typescript
-import { Hex } from '@tevm/voltaire/Hex';
+import { Bytes } from '@tevm/voltaire/Bytes';
+import * as Hex from '@tevm/voltaire/Hex';
 
 // Encode bytes to hex string
-const bytes = new Uint8Array([72, 101, 108, 108, 111]); // "Hello" in bytes
-const hexString = Hex(bytes);
-console.log('Hex from bytes:', hexString);
+const bytes = Bytes.from([72, 101, 108, 108, 111]); // "Hello" in bytes
+const hexString = Hex.fromBytes(bytes);
 
 // Decode hex string back to bytes
 const decoded = Hex.toBytes(hexString);
-console.log('Bytes from hex:', decoded);
 
 // Create hex directly from string
-const directHex = Hex('0x48656c6c6f');
-console.log('Direct hex:', directHex);
+const directHex = Hex.from("0x48656c6c6f");
 ```
 
 <Tip>
