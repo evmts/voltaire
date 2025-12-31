@@ -15,6 +15,7 @@ import { isCanonical } from "./isCanonical.js";
  * const normalized = Signature.normalize(sig);
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: signature normalization requires many conditions
 export function normalize(signature) {
 	// Ed25519 signatures are always canonical
 	if (signature.algorithm === "ed25519") {

@@ -43,6 +43,7 @@ export class SignatureSchema extends Schema.Class<SignatureSchema>("Signature")(
 	}
 
 	static from(value: Parameters<typeof _from>[0]): SignatureSchema {
+		// biome-ignore lint/suspicious/noExplicitAny: accepting union type
 		const s = _from(value as any);
 		return new SignatureSchema({ value: s });
 	}

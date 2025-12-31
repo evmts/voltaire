@@ -692,6 +692,7 @@ describe("Signature Fuzz Tests", () => {
 			// All should be different from each other
 			for (let i = 0; i < sigs.length; i++) {
 				for (let j = i + 1; j < sigs.length; j++) {
+					// biome-ignore lint/style/noNonNullAssertion: test array access
 					expect(Signature.equals(sigs[i]!, sigs[j]!)).toBe(false);
 				}
 			}

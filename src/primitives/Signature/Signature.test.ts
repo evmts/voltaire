@@ -1280,6 +1280,7 @@ describe("Signature", () => {
 		});
 
 		it("should throw on non-string input", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => Signature.fromHex(123 as any)).toThrow(
 				Signature.InvalidSignatureFormatError,
 			);

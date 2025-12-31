@@ -312,24 +312,28 @@ await run();
 
 bench("Batch - normalize 10 signatures", () => {
 	for (let i = 0; i < 10; i++) {
+		// biome-ignore lint/style/noNonNullAssertion: benchmark array access
 		Signature.normalize(signatures_batch[i]!);
 	}
 });
 
 bench("Batch - isCanonical check 100 signatures", () => {
 	for (let i = 0; i < 100; i++) {
+		// biome-ignore lint/style/noNonNullAssertion: benchmark array access
 		Signature.isCanonical(signatures_batch[i]!);
 	}
 });
 
 bench("Batch - toCompact 100 signatures", () => {
 	for (let i = 0; i < 100; i++) {
+		// biome-ignore lint/style/noNonNullAssertion: benchmark array access
 		Signature.toCompact(signatures_batch[i]!);
 	}
 });
 
 bench("Batch - toDER 100 signatures", () => {
 	for (let i = 0; i < 100; i++) {
+		// biome-ignore lint/style/noNonNullAssertion: benchmark array access
 		Signature.toDER(signatures_batch[i]!);
 	}
 });

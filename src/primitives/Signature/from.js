@@ -25,6 +25,7 @@ import { fromSecp256k1 } from "./fromSecp256k1.js";
  * const sig3 = Signature.from({ signature: bytes64, algorithm: 'ed25519' });
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: signature parsing requires many conditions
 export function from(value) {
 	// If it's already a SignatureType, return it
 	const val = /** @type {any} */ (value);

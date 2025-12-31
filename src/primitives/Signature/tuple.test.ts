@@ -45,6 +45,7 @@ describe("Signature Tuple format", () => {
 				algorithm: "ed25519",
 				v: 27,
 			};
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => toTuple(ed25519Sig as any)).toThrow(
 				/only supports secp256k1/,
 			);
