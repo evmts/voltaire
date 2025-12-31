@@ -92,7 +92,7 @@ _
 .zig-cache/
 zig-out/
 zig-cache/
-bin/
+/bin/
 /wasm/
 
 # Python
@@ -220,7 +220,7 @@ data/fixtures/out/
 bubblesort_bytecode.txt
 
 # TypeScript wrapper build artifacts
-native/
+/native/
 dist/
 scripts/*.js
 
