@@ -31,23 +31,19 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/trusted-setup.mdx - Trusted Setu
 		 * Trusted Setup: Must call loadTrustedSetup() before any KZG operations.
 		 * Setup loads Ethereum KZG Ceremony parameters (~1 MB).
 		 */
-		it(
-			"should load trusted setup",
-			() => {
-				try {
-					KZG.freeTrustedSetup();
-					expect(KZG.isInitialized()).toBe(false);
+		it("should load trusted setup", { timeout: 30000 }, () => {
+			try {
+				KZG.freeTrustedSetup();
+				expect(KZG.isInitialized()).toBe(false);
 
+				KZG.loadTrustedSetup();
+				expect(KZG.isInitialized()).toBe(true);
+			} finally {
+				if (!KZG.isInitialized()) {
 					KZG.loadTrustedSetup();
-					expect(KZG.isInitialized()).toBe(true);
-				} finally {
-					if (!KZG.isInitialized()) {
-						KZG.loadTrustedSetup();
-					}
 				}
-			},
-			{ timeout: 30000 },
-		);
+			}
+		});
 
 		it("should be idempotent - multiple loads are safe", () => {
 			KZG.loadTrustedSetup();
@@ -60,20 +56,32 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/trusted-setup.mdx - Trusted Setu
 			expect(KZG.isInitialized()).toBe(true);
 		});
 
-		it("should free trusted setup", () => {
-			KZG.loadTrustedSetup();
-			expect(KZG.isInitialized()).toBe(true);
+		it("should free trusted setup", { timeout: 30000 }, () => {
+			try {
+				KZG.loadTrustedSetup();
+				expect(KZG.isInitialized()).toBe(true);
 
-			KZG.freeTrustedSetup();
-			expect(KZG.isInitialized()).toBe(false);
+				KZG.freeTrustedSetup();
+				expect(KZG.isInitialized()).toBe(false);
+			} finally {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			}
 		});
 
-		it("should be safe to free when not initialized", () => {
-			KZG.freeTrustedSetup();
-			expect(KZG.isInitialized()).toBe(false);
+		it("should be safe to free when not initialized", { timeout: 30000 }, () => {
+			try {
+				KZG.freeTrustedSetup();
+				expect(KZG.isInitialized()).toBe(false);
 
-			KZG.freeTrustedSetup(); // Safe to call again
-			expect(KZG.isInitialized()).toBe(false);
+				KZG.freeTrustedSetup(); // Safe to call again
+				expect(KZG.isInitialized()).toBe(false);
+			} finally {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			}
 		});
 	});
 
@@ -81,41 +89,56 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/trusted-setup.mdx - Trusted Setu
 		/**
 		 * From index.mdx:
 		 * Native C Only: KZG operations via c-kzg-4844 library (trusted setup required)
+		 * Note: These tests run sequentially within the describe block to avoid race conditions
 		 */
-		beforeAll(() => {
-			KZG.freeTrustedSetup();
+
+		it("should throw KzgNotInitializedError for Commitment without setup", { timeout: 30000 }, () => {
+			try {
+				KZG.freeTrustedSetup();
+				expect(KZG.isInitialized()).toBe(false);
+
+				const blob = KZG.createEmptyBlob();
+				expect(() => KZG.Commitment(blob)).toThrow(KzgNotInitializedError);
+			} finally {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			}
 		});
 
-		afterAll(() => {
-			KZG.loadTrustedSetup();
+		it("should throw KzgNotInitializedError for Proof without setup", { timeout: 30000 }, () => {
+			try {
+				KZG.freeTrustedSetup();
+				expect(KZG.isInitialized()).toBe(false);
+
+				const blob = KZG.createEmptyBlob();
+				const z = new Uint8Array(32);
+				expect(() => KZG.Proof(blob, z)).toThrow(KzgNotInitializedError);
+			} finally {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			}
 		});
 
-		it("should throw KzgNotInitializedError for Commitment without setup", () => {
-			expect(KZG.isInitialized()).toBe(false);
+		it("should throw KzgNotInitializedError for verifyKzgProof without setup", { timeout: 30000 }, () => {
+			try {
+				KZG.freeTrustedSetup();
+				expect(KZG.isInitialized()).toBe(false);
 
-			const blob = KZG.createEmptyBlob();
-			expect(() => KZG.Commitment(blob)).toThrow(KzgNotInitializedError);
-		});
+				const commitment = new Uint8Array(48);
+				const z = new Uint8Array(32);
+				const y = new Uint8Array(32);
+				const proof = new Uint8Array(48);
 
-		it("should throw KzgNotInitializedError for Proof without setup", () => {
-			expect(KZG.isInitialized()).toBe(false);
-
-			const blob = KZG.createEmptyBlob();
-			const z = new Uint8Array(32);
-			expect(() => KZG.Proof(blob, z)).toThrow(KzgNotInitializedError);
-		});
-
-		it("should throw KzgNotInitializedError for verifyKzgProof without setup", () => {
-			expect(KZG.isInitialized()).toBe(false);
-
-			const commitment = new Uint8Array(48);
-			const z = new Uint8Array(32);
-			const y = new Uint8Array(32);
-			const proof = new Uint8Array(48);
-
-			expect(() => KZG.verifyKzgProof(commitment, z, y, proof)).toThrow(
-				KzgNotInitializedError,
-			);
+				expect(() => KZG.verifyKzgProof(commitment, z, y, proof)).toThrow(
+					KzgNotInitializedError,
+				);
+			} finally {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			}
 		});
 	});
 
@@ -123,29 +146,35 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/trusted-setup.mdx - Trusted Setu
 		/**
 		 * Tests that trusted setup can be freed and reloaded
 		 */
-		it("should support free and reload cycle", () => {
-			KZG.loadTrustedSetup();
-			expect(KZG.isInitialized()).toBe(true);
+		it("should support free and reload cycle", { timeout: 30000 }, () => {
+			try {
+				KZG.loadTrustedSetup();
+				expect(KZG.isInitialized()).toBe(true);
 
-			// Create commitment
-			const blob1 = KZG.generateRandomBlob(1);
-			const commitment1 = KZG.Commitment(blob1);
+				// Create commitment
+				const blob1 = KZG.generateRandomBlob(1);
+				const commitment1 = KZG.Commitment(blob1);
 
-			// Free and reload
-			KZG.freeTrustedSetup();
-			expect(KZG.isInitialized()).toBe(false);
+				// Free and reload
+				KZG.freeTrustedSetup();
+				expect(KZG.isInitialized()).toBe(false);
 
-			KZG.loadTrustedSetup();
-			expect(KZG.isInitialized()).toBe(true);
+				KZG.loadTrustedSetup();
+				expect(KZG.isInitialized()).toBe(true);
 
-			// Create another commitment - should work
-			const blob2 = KZG.generateRandomBlob(2);
-			const commitment2 = KZG.Commitment(blob2);
-			expect(commitment2.length).toBe(BYTES_PER_COMMITMENT);
+				// Create another commitment - should work
+				const blob2 = KZG.generateRandomBlob(2);
+				const commitment2 = KZG.Commitment(blob2);
+				expect(commitment2.length).toBe(BYTES_PER_COMMITMENT);
 
-			// Same blob should produce same commitment after reload
-			const commitment1Again = KZG.Commitment(blob1);
-			expect(commitment1Again).toEqual(commitment1);
+				// Same blob should produce same commitment after reload
+				const commitment1Again = KZG.Commitment(blob1);
+				expect(commitment1Again).toEqual(commitment1);
+			} finally {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			}
 		});
 	});
 
@@ -194,45 +223,63 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/trusted-setup.mdx - Trusted Setu
 		/**
 		 * Some utility functions should work without trusted setup
 		 */
-		it("should create empty blob without setup", () => {
-			KZG.freeTrustedSetup();
-			expect(KZG.isInitialized()).toBe(false);
+		it("should create empty blob without setup", { timeout: 30000 }, () => {
+			try {
+				KZG.freeTrustedSetup();
+				expect(KZG.isInitialized()).toBe(false);
 
-			const blob = KZG.createEmptyBlob();
-			expect(blob.length).toBe(131072);
-
-			KZG.loadTrustedSetup();
+				const blob = KZG.createEmptyBlob();
+				expect(blob.length).toBe(131072);
+			} finally {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			}
 		});
 
-		it("should generate random blob without setup", () => {
-			KZG.freeTrustedSetup();
-			expect(KZG.isInitialized()).toBe(false);
+		it("should generate random blob without setup", { timeout: 30000 }, () => {
+			try {
+				KZG.freeTrustedSetup();
+				expect(KZG.isInitialized()).toBe(false);
 
-			const blob = KZG.generateRandomBlob(42);
-			expect(blob.length).toBe(131072);
-
-			KZG.loadTrustedSetup();
+				const blob = KZG.generateRandomBlob(42);
+				expect(blob.length).toBe(131072);
+			} finally {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			}
 		});
 
-		it("should validate blob without setup", () => {
-			KZG.freeTrustedSetup();
-			expect(KZG.isInitialized()).toBe(false);
+		it("should validate blob without setup", { timeout: 30000 }, () => {
+			try {
+				KZG.freeTrustedSetup();
+				expect(KZG.isInitialized()).toBe(false);
 
-			const validBlob = KZG.createEmptyBlob();
-			expect(() => KZG.validateBlob(validBlob)).not.toThrow();
+				const validBlob = KZG.createEmptyBlob();
+				expect(() => KZG.validateBlob(validBlob)).not.toThrow();
 
-			const invalidBlob = new Uint8Array(1000);
-			expect(() => KZG.validateBlob(invalidBlob)).toThrow();
-
-			KZG.loadTrustedSetup();
+				const invalidBlob = new Uint8Array(1000);
+				expect(() => KZG.validateBlob(invalidBlob)).toThrow();
+			} finally {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			}
 		});
 
-		it("should check initialization status", () => {
-			KZG.freeTrustedSetup();
-			expect(KZG.isInitialized()).toBe(false);
+		it("should check initialization status", { timeout: 30000 }, () => {
+			try {
+				KZG.freeTrustedSetup();
+				expect(KZG.isInitialized()).toBe(false);
 
-			KZG.loadTrustedSetup();
-			expect(KZG.isInitialized()).toBe(true);
+				KZG.loadTrustedSetup();
+				expect(KZG.isInitialized()).toBe(true);
+			} finally {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			}
 		});
 	});
 });

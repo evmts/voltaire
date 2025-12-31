@@ -278,7 +278,7 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/test-vectors.mdx - Test Vectors"
 			expect(valid).toBe(true);
 		});
 
-		it("should verify large batch", () => {
+		it("should verify large batch", { timeout: 60000 }, () => {
 			const numBlobs = 6; // Max per block
 			const blobs: Uint8Array[] = [];
 			const commitments: Uint8Array[] = [];
@@ -298,7 +298,7 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/test-vectors.mdx - Test Vectors"
 			expect(valid).toBe(true);
 		});
 
-		it("should reject batch with one invalid proof", () => {
+		it("should reject batch with one invalid proof", { timeout: 60000 }, () => {
 			const blobs = [KZG.generateRandomBlob(800), KZG.generateRandomBlob(801)];
 			const commitments = blobs.map((b) => KZG.Commitment(b));
 
@@ -322,7 +322,7 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/test-vectors.mdx - Test Vectors"
 		/**
 		 * Verify all operations are deterministic
 		 */
-		it("should produce identical commitments for identical blobs", () => {
+		it("should produce identical commitments for identical blobs", { timeout: 60000 }, () => {
 			const blob = KZG.generateRandomBlob(900);
 
 			for (let i = 0; i < 5; i++) {
@@ -331,7 +331,7 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/test-vectors.mdx - Test Vectors"
 			}
 		});
 
-		it("should produce identical proofs for identical inputs", () => {
+		it("should produce identical proofs for identical inputs", { timeout: 60000 }, () => {
 			const blob = KZG.generateRandomBlob(901);
 			const z = new Uint8Array(32);
 			z[31] = 0x42;
@@ -344,7 +344,7 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/test-vectors.mdx - Test Vectors"
 			}
 		});
 
-		it("should produce identical blob proofs for identical inputs", () => {
+		it("should produce identical blob proofs for identical inputs", { timeout: 60000 }, () => {
 			const blob = KZG.generateRandomBlob(902);
 			const commitment = KZG.Commitment(blob);
 

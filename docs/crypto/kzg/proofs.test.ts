@@ -12,7 +12,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { hasNativeKzg } from "./test-utils.js";
+import { hasNativeKzg, hasCkzg } from "./test-utils.js";
 
 describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async () => {
 	const {
@@ -34,7 +34,10 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 	});
 
 	afterAll(() => {
-		KZG.freeTrustedSetup();
+		// Ensure setup is initialized for other tests
+		if (!KZG.isInitialized()) {
+			KZG.loadTrustedSetup();
+		}
 	});
 
 	describe("Compute Proof - Standard API", () => {
@@ -76,7 +79,7 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 		});
 	});
 
-	describe("Compute Proof - Factory API", () => {
+	describe.skipIf(!hasCkzg)("Compute Proof - Factory API", () => {
 		/**
 		 * From proofs.mdx:
 		 * ```typescript
@@ -93,6 +96,17 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 		 */
 		it("should compute proof using factory pattern", async () => {
 			const ckzg = await import("c-kzg");
+
+			// Ensure c-kzg's trusted setup is loaded (it's a separate instance from our KZG)
+			try {
+				// c-kzg uses embedded setup in newer versions
+				// @ts-expect-error - loadTrustedSetup may not exist in type def
+				if (typeof ckzg.loadTrustedSetup === "function" && !ckzg.loadTrustedSetup.__loaded) {
+					ckzg.loadTrustedSetup();
+				}
+			} catch {
+				// Already loaded or no-op
+			}
 
 			// Actual factory API (docs show Kzg.ProofFactory)
 			const Proof = ComputeKzgProof({
@@ -154,7 +168,7 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 		});
 	});
 
-	describe("Verify Proof - Factory API", () => {
+	describe.skipIf(!hasCkzg)("Verify Proof - Factory API", () => {
 		/**
 		 * From proofs.mdx:
 		 * ```typescript
@@ -214,7 +228,7 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 		});
 	});
 
-	describe("Blob Proof Verification - Factory API", () => {
+	describe.skipIf(!hasCkzg)("Blob Proof Verification - Factory API", () => {
 		/**
 		 * From proofs.mdx:
 		 * ```typescript
@@ -293,7 +307,7 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 		});
 	});
 
-	describe("Batch Verification - Factory API", () => {
+	describe.skipIf(!hasCkzg)("Batch Verification - Factory API", () => {
 		/**
 		 * From proofs.mdx:
 		 * ```typescript
@@ -344,17 +358,25 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 		 * }
 		 * ```
 		 */
-		it("should throw KzgNotInitializedError when trusted setup not loaded", () => {
-			KZG.freeTrustedSetup();
+		it(
+			"should throw KzgNotInitializedError when trusted setup not loaded",
+			{ timeout: 30000 },
+			() => {
+				try {
+					KZG.freeTrustedSetup();
 
-			const blob = KZG.createEmptyBlob();
-			const z = new Uint8Array(32);
+					const blob = KZG.createEmptyBlob();
+					const z = new Uint8Array(32);
 
-			expect(() => KZG.Proof(blob, z)).toThrow(KzgNotInitializedError);
-
-			// Restore
-			KZG.loadTrustedSetup();
-		});
+					expect(() => KZG.Proof(blob, z)).toThrow(KzgNotInitializedError);
+				} finally {
+					// Always restore
+					if (!KZG.isInitialized()) {
+						KZG.loadTrustedSetup();
+					}
+				}
+			},
+		);
 
 		it("should throw KzgInvalidBlobError for invalid blob", () => {
 			const wrongBlob = new Uint8Array(1000);

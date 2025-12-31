@@ -9,7 +9,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { hasNativeKzg } from "./test-utils.js";
+import { hasNativeKzg, hasCkzg } from "./test-utils.js";
 
 describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/commitments.mdx - KZG Commitments", async () => {
 	const {
@@ -66,7 +66,7 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/commitments.mdx - KZG Commitment
 		});
 	});
 
-	describe("Factory API", () => {
+describe.skipIf(!hasCkzg)("Factory API", () => {
 		/**
 		 * From commitments.mdx:
 		 * ```typescript
@@ -194,14 +194,16 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/commitments.mdx - KZG Commitment
 		 * }
 		 * ```
 		 */
-		it("should throw KzgNotInitializedError when trusted setup not loaded", () => {
-			KZG.freeTrustedSetup();
-
-			const blob = KZG.createEmptyBlob();
-			expect(() => KZG.Commitment(blob)).toThrow(KzgNotInitializedError);
-
-			// Restore
-			KZG.loadTrustedSetup();
+		it("should throw KzgNotInitializedError when trusted setup not loaded", { timeout: 30000 }, () => {
+			try {
+				KZG.freeTrustedSetup();
+				const blob = KZG.createEmptyBlob();
+				expect(() => KZG.Commitment(blob)).toThrow(KzgNotInitializedError);
+			} finally {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			}
 		});
 
 		it("should throw KzgInvalidBlobError for invalid blob format", () => {

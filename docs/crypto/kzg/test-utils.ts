@@ -17,3 +17,13 @@ export const checkKzgAvailable = async (): Promise<boolean> => {
 };
 
 export const hasNativeKzg = await checkKzgAvailable();
+
+// Optional c-kzg dependency detection for factory examples
+export const hasCkzg = await (async () => {
+  try {
+    await import("c-kzg");
+    return true;
+  } catch {
+    return false;
+  }
+})();
