@@ -1,31 +1,31 @@
 {
-  "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": [
-    "src/index.ts",
-    "src/utils/index.ts",
-    "src/provider/index.ts",
-    "src/jsonrpc/index.ts",
-    "src/native/index.ts",
-    "src/evm/index.ts",
-    "src/primitives/Address/index.ts",
-    "src/primitives/Hex/index.ts",
-    "src/primitives/Uint/index.ts",
-    "src/crypto/KZG/index.js"
-  ],
-  "out": "docs/public/api",
-  "exclude": [
-    "**/*.test.*",
-    "**/*.bench.*",
-    "**/__mocks__/**",
-    "**/examples/**",
-    "**/docs/**",
-    "dist/**",
-    "types/**"
-  ],
-  "excludeExternals": true,
-  "excludePrivate": true,
-  "excludeProtected": true,
-  "categorizeByGroup": true,
-  "readme": "README.md",
-  "cleanOutputDir": true
+	"$schema": "https://typedoc.org/schema.json",
+	"entryPoints": [
+		"src/index.ts",
+		"src/utils/index.ts",
+		"src/provider/index.ts",
+		"src/jsonrpc/index.ts",
+		"src/native/index.ts",
+		"src/evm/index.ts",
+		"src/primitives/Address/index.ts",
+		"src/primitives/Hex/index.ts",
+		"src/primitives/Uint/index.ts",
+		"src/crypto/KZG/index.js"
+	],
+	"out": "docs/public/api",
+	"exclude": [
+		"**/*.test.*",
+		"**/*.bench.*",
+		"**/__mocks__/**",
+		"**/examples/**",
+		"**/docs/**",
+		"dist/**",
+		"types/**"
+	],
+	"excludeExternals": true,
+	"excludePrivate": true,
+	"excludeProtected": true,
+	"categorizeByGroup": true,
+	"readme": "README.md",
+	"cleanOutputDir": true
 }
