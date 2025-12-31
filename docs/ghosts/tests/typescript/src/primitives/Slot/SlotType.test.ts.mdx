@@ -17,6 +17,7 @@ type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
 
 describe("SlotType", () => {
 	it("should be a branded bigint type", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: type-level test requires any cast
 		const _typeTest = null as any as Equals<SlotType, bigint>;
 		const _assertion: Equals<typeof _typeTest, false> = true;
 		_assertion;

@@ -430,6 +430,7 @@ describe("AccessList transaction scenarios", () => {
 		const valid: AccessListType = [{ address: addr, storageKeys: [key] }];
 		expect(() => AccessList.assertValid(valid)).not.toThrow();
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const invalid = [{ address: "not-an-address", storageKeys: [] }] as any;
 		expect(() => AccessList.assertValid(invalid)).toThrow();
 	});
@@ -567,6 +568,7 @@ describe("AccessList complex scenarios", () => {
 });
 
 // Helper to check equality between two access lists
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex comparison logic
 function equals(a: AccessListType, b: AccessListType): boolean {
 	if (a.length !== b.length) return false;
 
@@ -594,12 +596,13 @@ function equals(a: AccessListType, b: AccessListType): boolean {
 }
 
 // Add equals to AccessList namespace for testing
-// biome-ignore lint/suspicious/noExportsInTest: Module augmentation for type declarations
 declare module "./index.js" {
+	// biome-ignore lint/suspicious/noExportsInTest: Module augmentation for type declarations
 	export function equals(a: AccessListType, b: AccessListType): boolean;
 }
 
 // Export the equals function through the AccessList namespace
+// biome-ignore lint/suspicious/noExplicitAny: extending namespace for test
 (AccessList as any).equals = equals;
 
 ```

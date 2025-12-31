@@ -18,6 +18,7 @@ type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
 
 describe("NonceType", () => {
 	it("should be a branded Uint256Type", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: type-level test requires any cast
 		const _typeTest = null as any as Equals<NonceType, Uint256Type>;
 		const _assertion: Equals<typeof _typeTest, false> = true;
 		_assertion;

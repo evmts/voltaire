@@ -391,6 +391,7 @@ describe("BLS12-381 G2 curve operations", () => {
 			expect(G2.equal(lhs, rhs)).toBe(true);
 		});
 
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: test logic
 		test("group is cyclic", () => {
 			const gen = G2.generator();
 			const multiples: G2PointType[] = [];

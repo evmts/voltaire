@@ -104,7 +104,9 @@ describe("InMemoryProvider", () => {
 				params: ["latest", false],
 			});
 			expect(result).toBeDefined();
+			// biome-ignore lint/suspicious/noExplicitAny: test assertion on dynamic RPC response
 			expect((result as any).number).toBeDefined();
+			// biome-ignore lint/suspicious/noExplicitAny: test assertion on dynamic RPC response
 			expect((result as any).hash).toBeDefined();
 		});
 
@@ -120,6 +122,7 @@ describe("InMemoryProvider", () => {
 			const latestBlock = (await provider.request({
 				method: "eth_getBlockByNumber",
 				params: ["latest", false],
+				// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			})) as any;
 
 			const result = await provider.request({
@@ -127,6 +130,7 @@ describe("InMemoryProvider", () => {
 				params: [latestBlock.hash, false],
 			});
 			expect(result).toBeDefined();
+			// biome-ignore lint/suspicious/noExplicitAny: test assertion on dynamic RPC response
 			expect((result as any).number).toBe(latestBlock.number);
 		});
 
@@ -322,6 +326,7 @@ describe("InMemoryProvider", () => {
 				params: [4, "latest", [25, 75]],
 			});
 			expect(result).toBeDefined();
+			// biome-ignore lint/suspicious/noExplicitAny: test assertion on dynamic RPC response
 			expect((result as any).baseFeePerGas).toBeDefined();
 		});
 	});
@@ -543,6 +548,7 @@ describe("InMemoryProvider", () => {
 			const blockBefore = (await provider.request({
 				method: "eth_getBlockByNumber",
 				params: ["latest", false],
+				// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			})) as any;
 			const timestampBefore = BigInt(blockBefore.timestamp);
 
@@ -556,6 +562,7 @@ describe("InMemoryProvider", () => {
 			const blockAfter = (await provider.request({
 				method: "eth_getBlockByNumber",
 				params: ["latest", false],
+				// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			})) as any;
 			const timestampAfter = BigInt(blockAfter.timestamp);
 
@@ -575,6 +582,7 @@ describe("InMemoryProvider", () => {
 			const block = (await provider.request({
 				method: "eth_getBlockByNumber",
 				params: ["latest", false],
+				// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			})) as any;
 
 			expect(BigInt(block.timestamp)).toBe(targetTimestamp);
@@ -662,6 +670,7 @@ describe("InMemoryProvider", () => {
 			const latestBlock = (await provider.request({
 				method: "eth_getBlockByNumber",
 				params: ["latest", false],
+				// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			})) as any;
 
 			const result = await provider.request({
@@ -680,6 +689,7 @@ describe("InMemoryProvider", () => {
 					},
 				],
 			});
+			// biome-ignore lint/suspicious/noExplicitAny: dynamic RPC response
 			expect((result as any).accessList).toEqual([]);
 		});
 

@@ -81,6 +81,7 @@ describe("BloomFilter - Ethereum Specification", () => {
 	});
 
 	describe("Bit position calculation", () => {
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex logic required
 		it("sets bits within valid range [0, 2047]", () => {
 			const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
 			const item = new TextEncoder().encode("test");

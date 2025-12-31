@@ -207,8 +207,10 @@ describe.skip("HttpProvider - EIP-1193 (Future Implementation)", () => {
 					method: "eth_getBalance",
 					params: ["invalid"],
 				});
-			} catch (error: any) {
-				expect(error.data).toEqual({
+			} catch (error: unknown) {
+				expect(
+					(error as { data: { param: string; issue: string } }).data,
+				).toEqual({
 					param: "address",
 					issue: "invalid format",
 				});

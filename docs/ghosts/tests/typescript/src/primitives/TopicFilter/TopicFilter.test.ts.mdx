@@ -52,6 +52,7 @@ describe("TopicFilter", () => {
 		});
 
 		it("throws on non-array", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => TopicFilter.from("not array" as any)).toThrow(
 				TopicFilter.InvalidTopicFilterError,
 			);
@@ -59,23 +60,27 @@ describe("TopicFilter", () => {
 
 		it("throws on more than 4 entries", () => {
 			expect(() =>
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 				TopicFilter.from([hash1, hash2, hash3, null, hash1] as any),
 			).toThrow(TopicFilter.InvalidTopicFilterError);
 		});
 
 		it("throws on empty array entry", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => TopicFilter.from([[] as any])).toThrow(
 				TopicFilter.InvalidTopicFilterError,
 			);
 		});
 
 		it("throws on invalid hash in array", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => TopicFilter.from([[new Uint8Array(20)] as any])).toThrow(
 				TopicFilter.InvalidTopicFilterError,
 			);
 		});
 
 		it("throws on invalid entry type", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => TopicFilter.from([123 as any])).toThrow(
 				TopicFilter.InvalidTopicFilterError,
 			);

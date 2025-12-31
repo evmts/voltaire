@@ -45,6 +45,7 @@ describe("ProtocolVersion", () => {
 		});
 
 		it("throws on non-string", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => ProtocolVersion.from(67 as any)).toThrow(
 				"Protocol version must be a string",
 			);

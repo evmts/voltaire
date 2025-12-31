@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import { EIP712 } from "./crypto/EIP712/index.js";
 import * as HDWallet from "./crypto/HDWallet/HDWallet.js";
 import * as Kzg from "./crypto/KZG/index.js";
+import { hasNativeKzg } from "./crypto/KZG/test-utils.js";
 import { Keccak256 } from "./crypto/Keccak256/index.js";
 import { Ripemd160 } from "./crypto/Ripemd160/index.js";
 import { SHA256 } from "./crypto/SHA256/index.js";
@@ -354,9 +355,11 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			new DataView(input.buffer).setUint32(0, rounds, false);
 
 			// Set some test data
-			for (let i = 4; i < 213; i++) {
+			for (let i = 4; i < 212; i++) {
 				input[i] = i % 256;
 			}
+			// Final flag must be 0 or 1
+			input[212] = 1;
 
 			const result = blake2f(input, 1000n);
 
@@ -484,7 +487,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			expect(addresses.length).toBe(3);
 			for (let i = 0; i < addresses.length; i++) {
 				for (let j = i + 1; j < addresses.length; j++) {
+					// biome-ignore lint/style/noNonNullAssertion: index bounds checked by loop
 					expect(Hex.fromBytes(addresses[i]!)).not.toBe(
+						// biome-ignore lint/style/noNonNullAssertion: index bounds checked by loop
 						Hex.fromBytes(addresses[j]!),
 					);
 				}
@@ -492,7 +497,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 		});
 	});
 
-	describe("KZG & EIP-4844 Blobs", () => {
+	describe.skipIf(!hasNativeKzg)("KZG & EIP-4844 Blobs", () => {
 		it("should verify KZG proof with point evaluation precompile", () => {
 			if (!Kzg.isInitialized()) {
 				Kzg.loadTrustedSetup();
@@ -714,42 +719,45 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			expect(result.output.length).toBe(64);
 		});
 
-		it("should verify KZG point evaluation available from Cancun", () => {
-			if (!Kzg.isInitialized()) {
-				Kzg.loadTrustedSetup();
-			}
+		it.skipIf(!hasNativeKzg)(
+			"should verify KZG point evaluation available from Cancun",
+			() => {
+				if (!Kzg.isInitialized()) {
+					Kzg.loadTrustedSetup();
+				}
 
-			const blob = Kzg.generateRandomBlob();
-			const commitment = Kzg.KZG.Commitment(blob);
+				const blob = Kzg.generateRandomBlob();
+				const commitment = Kzg.KZG.Commitment(blob);
 
-			// Compute versioned hash: 0x01 || sha256(commitment)[1:]
-			const commitmentHash = SHA256.hash(commitment);
-			const versionedHash = new Uint8Array(32);
-			versionedHash[0] = 0x01;
-			versionedHash.set(commitmentHash.slice(1), 1);
+				// Compute versioned hash: 0x01 || sha256(commitment)[1:]
+				const commitmentHash = SHA256.hash(commitment);
+				const versionedHash = new Uint8Array(32);
+				versionedHash[0] = 0x01;
+				versionedHash.set(commitmentHash.slice(1), 1);
 
-			const z = new Uint8Array(32);
-			const { proof, y } = Kzg.KZG.Proof(blob, z);
+				const z = new Uint8Array(32);
+				const { proof, y } = Kzg.KZG.Proof(blob, z);
 
-			// Build precompile input per EIP-4844 (192 bytes):
-			// versioned_hash (32) | z (32) | y (32) | commitment (48) | proof (48)
-			const input = new Uint8Array(192);
-			input.set(versionedHash, 0);
-			input.set(z, 32);
-			input.set(y, 64);
-			input.set(commitment, 96);
-			input.set(proof, 144);
+				// Build precompile input per EIP-4844 (192 bytes):
+				// versioned_hash (32) | z (32) | y (32) | commitment (48) | proof (48)
+				const input = new Uint8Array(192);
+				input.set(versionedHash, 0);
+				input.set(z, 32);
+				input.set(y, 64);
+				input.set(commitment, 96);
+				input.set(proof, 144);
 
-			const cancun = Hardfork.CANCUN;
-			const result = execute(
-				PrecompileAddress.POINT_EVALUATION,
-				input,
-				100000n,
-				cancun,
-			);
+				const cancun = Hardfork.CANCUN;
+				const result = execute(
+					PrecompileAddress.POINT_EVALUATION,
+					input,
+					100000n,
+					cancun,
+				);
 
-			expect(result.success).toBe(true);
-		});
+				expect(result.success).toBe(true);
+			},
+		);
 	});
 
 	describe("Identity Precompile Integration", () => {

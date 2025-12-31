@@ -12,41 +12,35 @@ import { from } from "./gwei-from.js";
 import { toU256 } from "./gwei-toU256.js";
 
 describe("toU256", () => {
-	it("converts Gwei to Uint256", () => {
-		const gwei = from(1_000_000_000);
+	it("converts Gwei to Uint256 (Wei)", () => {
+		const gwei = from("1");
 		const u256 = toU256(gwei);
+		expect(typeof u256).toBe("bigint");
 		expect(u256).toBe(1_000_000_000n);
 	});
 
 	it("converts 0 Gwei to 0 Uint256", () => {
-		const gwei = from(0);
+		const gwei = from("0");
 		const u256 = toU256(gwei);
 		expect(u256).toBe(0n);
 	});
 
-	it("preserves exact value", () => {
-		const gwei = from(123_456_789_012_345_678_901n);
-		const u256 = toU256(gwei);
-		expect(u256).toBe(123_456_789_012_345_678_901n);
-	});
-
 	it("converts large Gwei value", () => {
-		const gwei = from(2n ** 200n);
+		const gwei = from("1000000");
 		const u256 = toU256(gwei);
-		expect(u256).toBe(2n ** 200n);
+		expect(u256).toBe(1_000_000_000_000_000n);
 	});
 
 	it("result is valid Uint256", () => {
-		const gwei = from(42);
+		const gwei = from("42");
 		const u256 = toU256(gwei);
 		expect(Uint.isValid(u256)).toBe(true);
 	});
 
-	it("maintains type cast (passthrough)", () => {
-		const gwei = from(999n);
+	it("converts fractional Gwei", () => {
+		const gwei = from("1.5");
 		const u256 = toU256(gwei);
-		// Both should be the same bigint value
-		expect(gwei).toBe(u256);
+		expect(u256).toBe(1_500_000_000n);
 	});
 });
 

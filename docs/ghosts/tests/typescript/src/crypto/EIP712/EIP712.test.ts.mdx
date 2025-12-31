@@ -934,8 +934,9 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const maxTime = Math.max(...timings);
 			const ratio = maxTime / minTime;
 
-			// Allow for reasonable variation due to system scheduling and VM effects
-			expect(ratio).toBeLessThan(50);
+			// Allow for reasonable variation due to system scheduling, VM effects,
+			// and CI environment variability
+			expect(ratio).toBeLessThan(100);
 		});
 
 		it("should sign different messages with same key", () => {

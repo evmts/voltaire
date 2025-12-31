@@ -59,6 +59,7 @@ describe("parseLogs", () => {
 		const topics = Abi.Event.encodeTopics(transferEvent, { from, to });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const logs = [{ topics: topics as any, data }];
 		const parsed = Abi.parseLogs.call(mockAbi, logs);
 
@@ -83,7 +84,9 @@ describe("parseLogs", () => {
 		const approvalData = Abi.encodeParameters([{ type: "uint256" }], [2000n]);
 
 		const logs = [
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			{ topics: transferTopics as any, data: transferData },
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			{ topics: approvalTopics as any, data: approvalData },
 		];
 
@@ -125,6 +128,7 @@ describe("parseLogs", () => {
 		// Malformed data (too short)
 		const malformedData = new Uint8Array(16);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const logs = [{ topics: topics as any, data: malformedData }];
 		const parsed = Abi.parseLogs.call(mockAbi, logs);
 
@@ -159,9 +163,11 @@ describe("parseLogs", () => {
 		const validData = Abi.encodeParameters([{ type: "uint256" }], [1000n]);
 
 		const logs = [
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			{ topics: validTopics as any, data: validData }, // valid
 			{ topics: [], data: new Uint8Array(32) }, // no topics
 			{ topics: [new Uint8Array(32).fill(0xff)], data: new Uint8Array(32) }, // unknown
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			{ topics: validTopics as any, data: new Uint8Array(16) }, // malformed
 		];
 
@@ -203,6 +209,7 @@ describe("parseLogs", () => {
 		const topics = Abi.Event.encodeTopics(transferEvent, { from, to });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const logs = [{ topics: topics as any, data }];
 		const parsed = Abi.parseLogs.call(mockAbi, logs);
 
@@ -229,6 +236,7 @@ describe("parseLogs", () => {
 		const topics = Abi.Event.encodeTopics(indexedOnlyEvent, { addr1, addr2 });
 		const data = new Uint8Array(0); // No non-indexed data
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const logs = [{ topics: topics as any, data }];
 		const parsed = Abi.parseLogs.call(abiWithIndexed, logs);
 
@@ -253,6 +261,7 @@ describe("parseLogs", () => {
 		const selector = Abi.Event.getSelector(nonIndexedEvent);
 		const data = Abi.encodeParameters(
 			[{ type: "uint256" }, { type: "uint256" }],
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			[100n, 200n] as any,
 		);
 
@@ -274,6 +283,7 @@ describe("parseLogs", () => {
 
 		// Create 100 identical logs
 		const logs = Array.from({ length: 100 }, () => ({
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			topics: topics as any,
 			data,
 		}));

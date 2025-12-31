@@ -98,6 +98,7 @@ describe("RelayData", () => {
 		});
 
 		it("throws on non-object input", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => RelayData.from("invalid" as any)).toThrow(
 				"must be an object",
 			);
@@ -107,6 +108,7 @@ describe("RelayData", () => {
 			expect(() =>
 				RelayData.from({
 					...validRelay,
+					// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 					relayUrl: 123 as any,
 				}),
 			).toThrow("relayUrl must be a string");

@@ -33,18 +33,21 @@ describe("EncodedData", () => {
 		});
 
 		it("throws on missing 0x prefix", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => EncodedData.from("00000001" as any)).toThrow(
 				"must start with 0x",
 			);
 		});
 
 		it("throws on invalid hex characters", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => EncodedData.from("0xghijk" as any)).toThrow(
 				"Invalid hex string",
 			);
 		});
 
 		it("throws on invalid type", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => EncodedData.from(123 as any)).toThrow(
 				"Unsupported EncodedData value type",
 			);

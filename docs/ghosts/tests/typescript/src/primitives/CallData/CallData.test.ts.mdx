@@ -56,6 +56,7 @@ describe("CallData", () => {
 		});
 
 		it("throws on unsupported value type", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: Testing invalid input type
 			expect(() => CallData.from(123 as any)).toThrow(InvalidValueError);
 		});
 	});
@@ -338,6 +339,7 @@ describe("CallData", () => {
 				1000000000000000000n,
 			]);
 
+			// biome-ignore lint/suspicious/noExplicitAny: ABI type coercion for test
 			const decoded = CallData.decode(calldata, abi as any);
 
 			expect(decoded.signature).toBe("transfer(address,uint256)");
@@ -351,6 +353,7 @@ describe("CallData", () => {
 
 		it("throws on unknown selector", () => {
 			const calldata = CallData.from("0x12345678");
+			// biome-ignore lint/suspicious/noExplicitAny: ABI type coercion for test
 			expect(() => CallData.decode(calldata, abi as any)).toThrow(
 				"Function not found in ABI",
 			);

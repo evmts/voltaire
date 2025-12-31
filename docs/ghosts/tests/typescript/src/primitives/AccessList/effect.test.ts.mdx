@@ -33,6 +33,7 @@ describe("AccessList Effect Schema", () => {
 
 	it("brand interop", () => {
 		const a = AccessListSchema.from([{ address: addr, storageKeys: [slot] }]);
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const brand = AccessListBrand(a.accessList as any);
 		const b = AccessListSchema.fromBranded(brand);
 		expect(Array.isArray(b.branded)).toBe(true);

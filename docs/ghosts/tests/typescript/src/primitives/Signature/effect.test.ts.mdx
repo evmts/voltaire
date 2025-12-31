@@ -32,6 +32,7 @@ describe("Signature Effect Schema", () => {
 
 	it("brand validation works", () => {
 		const s = SignatureSchema.fromBytes(make64(3));
+		// biome-ignore lint/suspicious/noExplicitAny: Brand validation requires any
 		const brand = SignatureBrand(s.signature as any);
 		const s2 = SignatureSchema.fromBranded(brand);
 		expect(s2.branded).toBe(brand);

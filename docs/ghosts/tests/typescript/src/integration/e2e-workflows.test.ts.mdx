@@ -47,8 +47,10 @@ class MockEthereumProvider {
 	private accounts: Map<string, { nonce: number; balance: bigint }> = new Map();
 	private blockHeight = 1;
 	private blockTimestamp: number = Date.now() / 1000;
+	// biome-ignore lint/suspicious/noExplicitAny: Mock receipts have dynamic shape
 	private txReceipts: Map<string, any> = new Map();
 	private contractCode: Map<string, Uint8Array> = new Map();
+	// biome-ignore lint/suspicious/noExplicitAny: Mock logs have dynamic shape
 	private logs: any[] = [];
 
 	constructor() {
@@ -67,6 +69,7 @@ class MockEthereumProvider {
 		});
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: Ethereum JSON-RPC params/return vary by method
 	async request(method: string, params: any[]): Promise<any> {
 		switch (method) {
 			case "eth_chainId":
@@ -146,6 +149,7 @@ class MockEthereumProvider {
 		}
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: Mock contract call tx has dynamic shape
 	private handleContractCall(tx: any): string {
 		// Return mock ERC20 balance query result
 		if (tx.data?.startsWith("0x70a08231")) {
@@ -159,6 +163,7 @@ class MockEthereumProvider {
 		this.contractCode.set(address.toLowerCase(), code);
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: Mock log has dynamic shape
 	emitLog(log: any): void {
 		this.logs.push(log);
 	}
@@ -205,6 +210,7 @@ describe("E2E Workflows", () => {
 			const contractBytecodeHex = hexFromBytes(contractBytecode);
 
 			// Step 2: Create deployment transaction
+			// biome-ignore lint/suspicious/noExplicitAny: Mock provider expects flexible tx object
 			const deploymentTx: any = {
 				from: testSigner.address,
 				data: contractBytecodeHex,
@@ -273,6 +279,7 @@ describe("E2E Workflows", () => {
 			transferData.set(amountBytes, 36);
 
 			// Step 2: Create transaction
+			// biome-ignore lint/suspicious/noExplicitAny: Mock provider expects flexible tx object
 			const transferTx: any = {
 				from: testSigner.address,
 				to: toChecksummed(tokenContractAddress),
@@ -341,6 +348,7 @@ describe("E2E Workflows", () => {
 			mintData.set(tokenIdBytes, 36);
 
 			// Step 2: Create mint transaction
+			// biome-ignore lint/suspicious/noExplicitAny: Mock provider expects flexible tx object
 			const mintTx: any = {
 				from: testSigner.address,
 				to: toChecksummed(nftContractAddress),
@@ -397,8 +405,11 @@ describe("E2E Workflows", () => {
 			const signer2 = HDWallet.deriveEthereum(root, 0, 1);
 			const signer3 = HDWallet.deriveEthereum(root, 0, 2);
 
+			// biome-ignore lint/style/noNonNullAssertion: test context - signer derived from valid seed
 			const privKey1 = HDWallet.getPrivateKey(signer1)!;
+			// biome-ignore lint/style/noNonNullAssertion: test context - signer derived from valid seed
 			const privKey2 = HDWallet.getPrivateKey(signer2)!;
+			// biome-ignore lint/style/noNonNullAssertion: test context - signer derived from valid seed
 			const privKey3 = HDWallet.getPrivateKey(signer3)!;
 
 			// Create message to sign
@@ -465,6 +476,7 @@ describe("E2E Workflows", () => {
 
 			for (let i = 0; i < 5; i++) {
 				const account = HDWallet.deriveEthereum(root, 0, i);
+				// biome-ignore lint/style/noNonNullAssertion: test context - account derived from valid seed
 				const privKey = HDWallet.getPrivateKey(account)!;
 				accounts.push(account);
 
@@ -511,6 +523,7 @@ describe("E2E Workflows", () => {
 			);
 
 			// Step 1: Build transaction to estimate
+			// biome-ignore lint/suspicious/noExplicitAny: Mock provider expects flexible tx object
 			const tx: any = {
 				from: testSigner.address,
 				to: toChecksummed(targetAddress),
@@ -529,6 +542,7 @@ describe("E2E Workflows", () => {
 			expect(gasWithBuffer).toBeGreaterThan(gasAmount);
 
 			// Step 4: Execute with buffered gas
+			// biome-ignore lint/suspicious/noExplicitAny: Mock provider expects flexible tx object
 			const executeTx: any = {
 				...tx,
 				gas: `0x${gasWithBuffer.toString(16)}`,
@@ -624,6 +638,7 @@ describe("E2E Workflows", () => {
 			const targetAddress = Address.from(
 				"0x1111111111111111111111111111111111111111",
 			);
+			// biome-ignore lint/suspicious/noExplicitAny: Mock provider expects flexible tx object
 			const tx: any = {
 				from: testSigner.address,
 				to: toChecksummed(targetAddress),
@@ -690,6 +705,7 @@ describe("E2E Workflows", () => {
 
 			// Derive first account
 			const account = HDWallet.deriveEthereum(root, 0, 0);
+			// biome-ignore lint/style/noNonNullAssertion: test assumes valid HD wallet derivation
 			const privKey = HDWallet.getPrivateKey(account)!;
 
 			// Create custom message
@@ -724,7 +740,9 @@ describe("E2E Workflows", () => {
 
 			for (let i = 0; i < 3; i++) {
 				const account = HDWallet.deriveEthereum(root, 0, i);
+				// biome-ignore lint/style/noNonNullAssertion: test assumes valid HD wallet derivation
 				const privKey = HDWallet.getPrivateKey(account)!;
+				// biome-ignore lint/style/noNonNullAssertion: test assumes valid HD wallet derivation
 				const pubKey = HDWallet.getPublicKey(account)!;
 
 				const message = new TextEncoder().encode(`Message from account ${i}`);
@@ -766,6 +784,7 @@ describe("E2E Workflows", () => {
 		});
 
 		it("should handle insufficient gas", async () => {
+			// biome-ignore lint/suspicious/noExplicitAny: Mock provider expects flexible tx object
 			const tx: any = {
 				from: testSigner.address,
 				to: "0x1111111111111111111111111111111111111111",

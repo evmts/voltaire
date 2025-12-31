@@ -38,6 +38,7 @@ describe("Opcode boundary tests", () => {
 				byte === 0xfe || // INVALID
 				byte === 0xff; // SELFDESTRUCT
 
+			// biome-ignore lint/suspicious/noExplicitAny: testing all byte values
 			expect(Opcode.isValid(byte as any)).toBe(isDefinedOpcode);
 		}
 	});
@@ -55,8 +56,11 @@ describe("Opcode boundary tests", () => {
 
 		for (const [start, end] of undefinedRanges) {
 			for (let byte = start; byte <= end; byte++) {
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid byte values
 				expect(Opcode.isValid(byte as any)).toBe(false);
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid byte values
 				expect(Opcode.info(byte as any)).toBeUndefined();
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid byte values
 				expect(Opcode.name(byte as any)).toBe("UNKNOWN");
 			}
 		}
@@ -65,6 +69,7 @@ describe("Opcode boundary tests", () => {
 	it("handles all PUSH opcodes from PUSH0 to PUSH32", () => {
 		expect(Opcode.pushBytes(Opcode.PUSH0)).toBe(0);
 		for (let i = 1; i <= 32; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			const pushOpcode = (0x5f + i) as any;
 			expect(Opcode.isPush(pushOpcode)).toBe(true);
 			expect(Opcode.pushBytes(pushOpcode)).toBe(i);
@@ -74,6 +79,7 @@ describe("Opcode boundary tests", () => {
 
 	it("handles all DUP opcodes from DUP1 to DUP16", () => {
 		for (let i = 1; i <= 16; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			const dupOpcode = (0x7f + i) as any;
 			expect(Opcode.isDup(dupOpcode)).toBe(true);
 			expect(Opcode.dupPosition(dupOpcode)).toBe(i);
@@ -82,6 +88,7 @@ describe("Opcode boundary tests", () => {
 
 	it("handles all SWAP opcodes from SWAP1 to SWAP16", () => {
 		for (let i = 1; i <= 16; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			const swapOpcode = (0x8f + i) as any;
 			expect(Opcode.isSwap(swapOpcode)).toBe(true);
 			expect(Opcode.swapPosition(swapOpcode)).toBe(i);
@@ -90,6 +97,7 @@ describe("Opcode boundary tests", () => {
 
 	it("handles all LOG opcodes from LOG0 to LOG4", () => {
 		for (let i = 0; i <= 4; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			const logOpcode = (0xa0 + i) as any;
 			expect(Opcode.isLog(logOpcode)).toBe(true);
 			expect(Opcode.logTopics(logOpcode)).toBe(i);
@@ -288,8 +296,11 @@ describe("Opcode jumpDests edge cases", () => {
 describe("Opcode hardfork-specific", () => {
 	it("validates EIP-3855 PUSH0", () => {
 		expect(Opcode.isValid(0x5f)).toBe(true);
+		// biome-ignore lint/suspicious/noExplicitAny: testing with raw byte value
 		expect(Opcode.isPush(0x5f as any)).toBe(true);
+		// biome-ignore lint/suspicious/noExplicitAny: testing with raw byte value
 		expect(Opcode.pushBytes(0x5f as any)).toBe(0);
+		// biome-ignore lint/suspicious/noExplicitAny: testing with raw byte value
 		expect(Opcode.name(0x5f as any)).toBe("PUSH0");
 	});
 
@@ -350,6 +361,7 @@ describe("Opcode hardfork-specific", () => {
 describe("Opcode stack effects comprehensive", () => {
 	it("validates all DUP stack effects", () => {
 		for (let i = 1; i <= 16; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			const dupCode = (0x7f + i) as any;
 			const effect = Opcode.getStackEffect(dupCode);
 			expect(effect).toBeDefined();
@@ -360,6 +372,7 @@ describe("Opcode stack effects comprehensive", () => {
 
 	it("validates all SWAP stack effects", () => {
 		for (let i = 1; i <= 16; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			const swapCode = (0x8f + i) as any;
 			const effect = Opcode.getStackEffect(swapCode);
 			expect(effect).toBeDefined();
@@ -370,6 +383,7 @@ describe("Opcode stack effects comprehensive", () => {
 
 	it("validates all LOG stack effects", () => {
 		for (let i = 0; i <= 4; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			const logCode = (0xa0 + i) as any;
 			const effect = Opcode.getStackEffect(logCode);
 			expect(effect).toBeDefined();
@@ -413,10 +427,12 @@ describe("Opcode gas costs", () => {
 
 	it("validates all PUSH opcodes have base gas cost", () => {
 		// PUSH0 has cost 2, PUSH1-PUSH32 have cost 3
+		// biome-ignore lint/suspicious/noExplicitAny: testing with raw byte value
 		const push0Cost = Opcode.getGasCost(0x5f as any);
 		expect(push0Cost).toBe(2);
 
 		for (let i = 1; i <= 32; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			const pushCode = (0x5f + i) as any;
 			const cost = Opcode.getGasCost(pushCode);
 			expect(cost).toBe(3);
@@ -425,6 +441,7 @@ describe("Opcode gas costs", () => {
 
 	it("validates all DUP opcodes have same gas cost", () => {
 		for (let i = 1; i <= 16; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			const dupCode = (0x7f + i) as any;
 			const cost = Opcode.getGasCost(dupCode);
 			expect(cost).toBe(3);
@@ -433,6 +450,7 @@ describe("Opcode gas costs", () => {
 
 	it("validates all SWAP opcodes have same gas cost", () => {
 		for (let i = 1; i <= 16; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			const swapCode = (0x8f + i) as any;
 			const cost = Opcode.getGasCost(swapCode);
 			expect(cost).toBe(3);
@@ -553,10 +571,13 @@ describe("Opcode comprehensive category tests", () => {
 
 	it("categorizes all PUSH/DUP/SWAP as stack operations", () => {
 		for (let i = 0; i <= 32; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			expect(Opcode.getCategory((0x5f + i) as any)).toBe("stack");
 		}
 		for (let i = 1; i <= 16; i++) {
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			expect(Opcode.getCategory((0x7f + i) as any)).toBe("stack");
+			// biome-ignore lint/suspicious/noExplicitAny: computing opcode from byte value
 			expect(Opcode.getCategory((0x8f + i) as any)).toBe("stack");
 		}
 	});

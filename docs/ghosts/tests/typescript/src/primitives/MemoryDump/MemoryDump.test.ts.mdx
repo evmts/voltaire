@@ -35,7 +35,9 @@ describe("MemoryDump", () => {
 		});
 
 		it("throws on invalid input", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => from(null as any)).toThrow("Invalid MemoryDump input");
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => from(123 as any)).toThrow("Invalid MemoryDump input");
 		});
 	});

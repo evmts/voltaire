@@ -27,6 +27,7 @@ describe("CompilerVersion", () => {
 			expect(() => CompilerVersion.from("abc")).toThrow(
 				"Invalid compiler version format",
 			);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => CompilerVersion.from(123 as any)).toThrow(
 				"must be a string",
 			);

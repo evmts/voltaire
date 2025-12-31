@@ -525,27 +525,32 @@ describe("AccessList.assertValid", () => {
 	});
 
 	it("throws for non-array", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		expect(() => assertValid({} as any)).toThrow(
 			"Access list must be an array",
 		);
 	});
 
 	it("throws for invalid item", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const list = [{ address: "invalid", storageKeys: [] }] as any;
 		expect(() => assertValid(list)).toThrow("Invalid access list item");
 	});
 
 	it("throws for invalid address length", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const list = [{ address: new Uint8Array(19), storageKeys: [] }] as any;
 		expect(() => assertValid(list)).toThrow("Invalid access list item");
 	});
 
 	it("throws for non-Uint8Array address", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const list = [{ address: [1, 2, 3], storageKeys: [] }] as any;
 		expect(() => assertValid(list)).toThrow("Invalid access list item");
 	});
 
 	it("throws for invalid storage key length", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const list = [{ address: addr1, storageKeys: [new Uint8Array(31)] }] as any;
 		expect(() => assertValid(list)).toThrow("Invalid access list item");
 	});

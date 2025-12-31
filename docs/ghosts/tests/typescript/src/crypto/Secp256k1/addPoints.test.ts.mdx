@@ -109,6 +109,7 @@ describe("Secp256k1.addPoints", () => {
 
 		for (let i = 0; i < pubKeys.length; i++) {
 			for (let j = i + 1; j < pubKeys.length; j++) {
+				// biome-ignore lint/style/noNonNullAssertion: bounds are verified by loop
 				const sum = Secp256k1.addPoints(pubKeys[i]!, pubKeys[j]!);
 				expect(Secp256k1.isValidPublicKey(sum)).toBe(true);
 				expect(sum).not.toEqual(pubKeys[i]);

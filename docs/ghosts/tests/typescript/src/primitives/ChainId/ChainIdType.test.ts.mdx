@@ -17,6 +17,7 @@ type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
 
 describe("ChainIdType", () => {
 	it("should be a branded number type", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const _typeTest = null as any as Equals<ChainIdType, number>;
 		const _assertion: Equals<typeof _typeTest, false> = true;
 		_assertion;

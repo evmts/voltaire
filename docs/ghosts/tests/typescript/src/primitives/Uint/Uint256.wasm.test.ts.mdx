@@ -620,6 +620,7 @@ describe("Uint256 WASM - Error Handling", () => {
 	test("error includes context", () => {
 		try {
 			Uint256Wasm.u256FromBigInt(-42n);
+			// biome-ignore lint/suspicious/noExplicitAny: testing error properties
 		} catch (error: any) {
 			expect(error.value).toBe(-42n);
 		}

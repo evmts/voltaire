@@ -38,6 +38,7 @@ describe("encodeParams", () => {
 			],
 		} as const;
 
+		// biome-ignore lint/suspicious/noExplicitAny: test needs type flexibility for mixed tuple args
 		const encoded = encodeParams(ctor, ["Token", "TKN", 18n] as any);
 		expect(encoded).toBeInstanceOf(Uint8Array);
 		expect(encoded.length).toBeGreaterThan(0);
@@ -173,6 +174,7 @@ describe("encodeParams", () => {
 			],
 		} as const;
 
+		// biome-ignore lint/suspicious/noExplicitAny: test needs type flexibility for mixed tuple args
 		const encoded = encodeParams(ctor, [1n, 2n, 3n] as any);
 		expect(encoded).toBeInstanceOf(Uint8Array);
 		expect(encoded.length).toBe(96); // 3 * 32 bytes

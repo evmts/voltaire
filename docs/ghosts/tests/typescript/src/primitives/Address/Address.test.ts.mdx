@@ -663,6 +663,7 @@ describe("Address", () => {
 			// Check all addresses are unique
 			for (let i = 0; i < addresses.length; i++) {
 				for (let j = i + 1; j < addresses.length; j++) {
+					// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 					expect(Address.equals(addresses[i]!, addresses[j]!)).toBe(false);
 				}
 			}
@@ -768,8 +769,11 @@ describe("Address", () => {
 				Address.fromNumber(2),
 			];
 			addrs.sort((a, b) => Address.compare(a, b));
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.toU256(addrs[0]!)).toBe(1n);
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.toU256(addrs[1]!)).toBe(2n);
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.toU256(addrs[2]!)).toBe(3n);
 		});
 	});
@@ -892,9 +896,11 @@ describe("Address", () => {
 		});
 
 		it("throws on unsupported type", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => Address(null as any)).toThrow(
 				AddressNamespace.InvalidValueError,
 			);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => Address({} as any)).toThrow(
 				AddressNamespace.InvalidValueError,
 			);

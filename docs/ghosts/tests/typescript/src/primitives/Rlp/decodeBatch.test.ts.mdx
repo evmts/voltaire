@@ -63,6 +63,7 @@ describe("Rlp.decodeBatch", () => {
 		const result = decodeBatch(items);
 		expect(result).toHaveLength(2);
 		expect(Array.isArray(result[0]?.[0])).toBe(true);
+		// biome-ignore lint/suspicious/noExplicitAny: checking nested array length
 		expect(result[0]?.[0] as any).toHaveLength(2);
 	});
 

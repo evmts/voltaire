@@ -294,6 +294,7 @@ describe("encodeParams", () => {
 			],
 		} as const;
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = encodeParams(error, [1n, 2n, 3n] as any);
 		expect(encoded).toBeInstanceOf(Uint8Array);
 		expect(encoded.length).toBe(100); // 4 + 32 + 32 + 32
@@ -309,6 +310,7 @@ describe("encodeParams", () => {
 			],
 		} as const;
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const encoded = encodeParams(error, [-1n, -100n] as any);
 		expect(encoded).toBeInstanceOf(Uint8Array);
 	});

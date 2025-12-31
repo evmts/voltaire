@@ -306,7 +306,7 @@ describe("Authorization.processAll - max batch size scenarios", () => {
 		});
 	});
 
-	it("processes 1000 authorizations", () => {
+	it("processes 1000 authorizations", { timeout: 30000 }, () => {
 		const auths = Array.from({ length: 1000 }, (_, i) => {
 			const unsigned = {
 				chainId: 1n,

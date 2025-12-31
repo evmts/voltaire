@@ -40,6 +40,7 @@ describe("decodeParams", () => {
 			],
 		} as const;
 
+		// biome-ignore lint/suspicious/noExplicitAny: test needs type flexibility for mixed tuple args
 		const args = ["Token", "TKN", 18n] as any;
 		const encoded = encodeParams(ctor, args);
 		const decoded = decodeParams(ctor, encoded);
@@ -182,6 +183,7 @@ describe("decodeParams", () => {
 			1000n,
 			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			true,
+			// biome-ignore lint/suspicious/noExplicitAny: test needs type flexibility for mixed tuple args
 		] as any;
 		const encoded = encodeParams(ctor, args);
 		const decoded = decodeParams(ctor, encoded);

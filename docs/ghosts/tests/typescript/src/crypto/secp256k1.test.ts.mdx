@@ -198,7 +198,7 @@ for (const { name, impl } of implementations) {
 					...signature,
 					r: new Uint8Array(signature.r),
 				};
-				modifiedSig.r[0]! ^= 0x01;
+				modifiedSig.r[0] ^= 0x01;
 
 				const valid = Secp256k1Impl.verify(
 					modifiedSig,
@@ -220,7 +220,7 @@ for (const { name, impl } of implementations) {
 					...signature,
 					s: new Uint8Array(signature.s),
 				};
-				modifiedSig.s[0]! ^= 0x01;
+				modifiedSig.s[0] ^= 0x01;
 
 				const valid = Secp256k1Impl.verify(
 					modifiedSig,

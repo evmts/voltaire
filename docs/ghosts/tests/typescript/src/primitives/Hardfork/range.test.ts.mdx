@@ -73,18 +73,21 @@ describe("Hardfork.range", () => {
 	});
 
 	it("throws error for invalid start hardfork", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => range("invalid" as any, Hardfork.CANCUN)).toThrow(
 			"Invalid hardfork in range",
 		);
 	});
 
 	it("throws error for invalid end hardfork", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => range(Hardfork.BERLIN, "invalid" as any)).toThrow(
 			"Invalid hardfork in range",
 		);
 	});
 
 	it("throws error for both invalid hardforks", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => range("invalid1" as any, "invalid2" as any)).toThrow(
 			"Invalid hardfork in range",
 		);

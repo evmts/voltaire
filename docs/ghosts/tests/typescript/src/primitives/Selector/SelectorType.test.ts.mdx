@@ -17,6 +17,7 @@ type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
 
 describe("SelectorType", () => {
 	it("should be a branded Uint8Array type", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: type-level test requires any cast
 		const _typeTest = null as any as Equals<SelectorType, Uint8Array>;
 		const _assertion: Equals<typeof _typeTest, false> = true;
 		_assertion;

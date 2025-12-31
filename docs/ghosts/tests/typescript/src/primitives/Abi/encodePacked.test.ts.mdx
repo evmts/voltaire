@@ -416,6 +416,7 @@ describe("encodePacked - error handling", () => {
 	});
 
 	it("throws on too many values", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		expect(() => encodePacked(["uint256"], [42n, 100n] as any)).toThrow(
 			AbiParameterMismatchError,
 		);
@@ -434,6 +435,7 @@ describe("encodePacked - error handling", () => {
 	});
 
 	it("handles unsupported type gracefully", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		expect(() => encodePacked(["invalid_type" as any], [42n])).toThrow();
 	});
 });
@@ -494,6 +496,7 @@ describe("encodePacked - edge cases", () => {
 describe("encodePacked vs standard encoding", () => {
 	it("packed is more compact than standard for uint8", () => {
 		const packed = encodePacked(["uint8"], [42n]);
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const standard = Abi.encodeParameters([{ type: "uint8" }], [42n] as any);
 
 		// Packed: 1 byte = 2 hex chars + "0x" = 4 chars
@@ -509,6 +512,7 @@ describe("encodePacked vs standard encoding", () => {
 		const packed = encodePacked(types, values);
 		const standard = Abi.encodeParameters(
 			types.map((t) => ({ type: t })),
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			values as any,
 		);
 
@@ -524,6 +528,7 @@ describe("encodePacked vs standard encoding", () => {
 		const packed = encodePacked(["uint256"], [value]);
 		const standard = Abi.encodeParameters([{ type: "uint256" }], [
 			value,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		] as any);
 
 		// Both should be 32 bytes (packed is hex string with 0x prefix, standard is Uint8Array)

@@ -423,7 +423,9 @@ describe("P256 WASM Implementation", () => {
 
 			// Each pair should have unique shared secret
 			for (let i = 0; i < keys.length - 1; i++) {
+				// biome-ignore lint/style/noNonNullAssertion: loop bounds checked
 				const shared1 = P256Wasm.ecdh(keys[i]!, publicKeys[i + 1]!);
+				// biome-ignore lint/style/noNonNullAssertion: loop bounds checked
 				const shared2 = P256Wasm.ecdh(keys[i + 1]!, publicKeys[i]!);
 				expect(shared1).toEqual(shared2);
 			}

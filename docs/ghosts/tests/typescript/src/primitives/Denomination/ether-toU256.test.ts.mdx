@@ -11,29 +11,29 @@ import { from } from "./ether-from.js";
 import { toU256 } from "./ether-toU256.js";
 
 describe("toU256", () => {
-	it("converts Ether to Uint256", () => {
-		const ether = from(1n);
+	it("converts Ether to Uint256 (Wei)", () => {
+		const ether = from("1");
 		const u256 = toU256(ether);
 		expect(typeof u256).toBe("bigint");
-		expect(u256).toBe(1n);
+		expect(u256).toBe(1_000_000_000_000_000_000n);
 	});
 
 	it("converts zero Ether", () => {
-		const ether = from(0n);
+		const ether = from("0");
 		const u256 = toU256(ether);
 		expect(u256).toBe(0n);
 	});
 
 	it("converts large Ether value", () => {
-		const ether = from(1_000_000n);
+		const ether = from("1000000");
 		const u256 = toU256(ether);
-		expect(u256).toBe(1_000_000n);
+		expect(u256).toBe(1_000_000_000_000_000_000_000_000n);
 	});
 
-	it("preserves exact value (no conversion)", () => {
-		const ether = from(123_456_789n);
+	it("converts fractional Ether", () => {
+		const ether = from("1.5");
 		const u256 = toU256(ether);
-		expect(u256).toBe(123_456_789n);
+		expect(u256).toBe(1_500_000_000_000_000_000n);
 	});
 });
 

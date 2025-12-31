@@ -87,22 +87,24 @@ vi.mock("@trezor/connect-web", () => {
 	};
 
 	// Setup ethereumGetAddress to handle both single and bundle calls
-	mockTrezorConnect.ethereumGetAddress.mockImplementation((params: any) => {
-		if (params.bundle) {
-			// Bundle call - return array
+	mockTrezorConnect.ethereumGetAddress.mockImplementation(
+		(params: { bundle?: unknown[] }) => {
+			if (params.bundle) {
+				// Bundle call - return array
+				return Promise.resolve({
+					success: true,
+					payload: params.bundle.map((_: unknown) => ({
+						address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+					})),
+				});
+			}
+			// Single call
 			return Promise.resolve({
 				success: true,
-				payload: params.bundle.map((_: any) => ({
-					address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
-				})),
+				payload: { address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0" },
 			});
-		}
-		// Single call
-		return Promise.resolve({
-			success: true,
-			payload: { address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0" },
-		});
-	});
+		},
+	);
 
 	return {
 		default: mockTrezorConnect,
@@ -127,7 +129,9 @@ describe("Hardware Wallet Interface", () => {
 			// Interface check - TypeScript will validate this at compile time
 			const checkInterface = (wallet: HardwareWallet) => {
 				requiredMethods.forEach((method) => {
-					expect(typeof (wallet as any)[method]).toBe("function");
+					expect(
+						typeof (wallet as unknown as Record<string, unknown>)[method],
+					).toBe("function");
 				});
 			};
 
@@ -136,7 +140,7 @@ describe("Hardware Wallet Interface", () => {
 	});
 
 	describe("LedgerWallet", () => {
-		let ledger: any;
+		let ledger: HardwareWallet;
 
 		beforeEach(async () => {
 			const { LedgerWallet } = await import("./LedgerWallet.js");
@@ -174,7 +178,7 @@ describe("Hardware Wallet Interface", () => {
 	});
 
 	describe("TrezorWallet", () => {
-		let trezor: any;
+		let trezor: HardwareWallet;
 
 		beforeEach(async () => {
 			const { TrezorWallet } = await import("./TrezorWallet.js");

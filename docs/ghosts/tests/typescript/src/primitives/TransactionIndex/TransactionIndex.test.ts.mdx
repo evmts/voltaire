@@ -35,6 +35,7 @@ describe("TransactionIndex", () => {
 		});
 
 		it("throws on invalid type", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => TransactionIndex.from("42" as any)).toThrow(
 				"must be a number or bigint",
 			);

@@ -7,40 +7,39 @@ source: 'src/primitives/Denomination/ether-toGwei.test.ts'
 
 ```typescript
 import { describe, expect, it } from "vitest";
-import { GWEI_PER_ETHER } from "./ether-constants.js";
 import { from } from "./ether-from.js";
 import { toGwei } from "./ether-toGwei.js";
 
 describe("toGwei", () => {
 	it("converts 1 Ether to Gwei", () => {
-		const ether = from(1n);
+		const ether = from("1");
 		const gwei = toGwei(ether);
-		expect(typeof gwei).toBe("bigint");
-		expect(gwei).toBe(1_000_000_000n);
+		expect(typeof gwei).toBe("string");
+		expect(gwei).toBe("1000000000");
 	});
 
 	it("converts 0 Ether to Gwei", () => {
-		const ether = from(0n);
+		const ether = from("0");
 		const gwei = toGwei(ether);
-		expect(gwei).toBe(0n);
+		expect(gwei).toBe("0");
 	});
 
 	it("converts multiple Ether to Gwei", () => {
-		const ether = from(5n);
+		const ether = from("5");
 		const gwei = toGwei(ether);
-		expect(gwei).toBe(5_000_000_000n);
+		expect(gwei).toBe("5000000000");
 	});
 
-	it("converts fractional Ether value", () => {
-		const ether = from(100n); // 100 wei as ether unit
+	it("converts fractional Ether to Gwei", () => {
+		const ether = from("1.5");
 		const gwei = toGwei(ether);
-		expect(gwei).toBe(100n * GWEI_PER_ETHER);
+		expect(gwei).toBe("1500000000");
 	});
 
 	it("converts large Ether value", () => {
-		const ether = from(1_000_000n);
+		const ether = from("1000000");
 		const gwei = toGwei(ether);
-		expect(gwei).toBe(1_000_000n * GWEI_PER_ETHER);
+		expect(gwei).toBe("1000000000000000");
 	});
 });
 

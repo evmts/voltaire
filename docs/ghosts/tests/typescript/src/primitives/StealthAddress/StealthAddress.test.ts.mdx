@@ -539,6 +539,7 @@ describe("StealthAddress - ERC-5564", () => {
 			// 7. Recipient computes full stealth private key
 			const stealthPrivKey = StealthAddress.computeStealthPrivateKey(
 				spendingPrivKey,
+				// biome-ignore lint/style/noNonNullAssertion: asserted above with toBeDefined
 				checkResult.stealthPrivateKey!,
 			);
 

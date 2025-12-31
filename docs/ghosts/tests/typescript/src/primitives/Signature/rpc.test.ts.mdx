@@ -45,6 +45,7 @@ describe("Signature RPC format", () => {
 				0: 1,
 				length: 64,
 			};
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 			expect(() => toRpc(ed25519Sig as any)).toThrow(/only supports secp256k1/);
 		});
 	});

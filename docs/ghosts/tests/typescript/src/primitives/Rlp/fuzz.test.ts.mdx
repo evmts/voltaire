@@ -25,6 +25,7 @@ describe("RLP Fuzz Tests", () => {
 	}
 
 	// Helper: generate random nested structure
+	// biome-ignore lint/suspicious/noExplicitAny: fuzz testing requires flexible types
 	function randomNestedList(maxDepth: number, currentDepth = 0): any[] {
 		if (currentDepth >= maxDepth || Math.random() > 0.7) {
 			// Return leaf (byte array)
@@ -34,6 +35,7 @@ describe("RLP Fuzz Tests", () => {
 
 		// Return nested list
 		const listLength = Math.floor(Math.random() * 5) + 1;
+		// biome-ignore lint/suspicious/noExplicitAny: fuzz testing requires flexible types
 		const result: any[] = [];
 		for (let i = 0; i < listLength; i++) {
 			if (Math.random() > 0.5) {
@@ -96,6 +98,7 @@ describe("RLP Fuzz Tests", () => {
 
 		it("should handle empty lists", () => {
 			for (let i = 0; i < 20; i++) {
+				// biome-ignore lint/suspicious/noExplicitAny: fuzz testing requires flexible types
 				const empty: any[] = [];
 				const encoded = Rlp.encodeList(empty);
 				const decoded = Rlp.decode(encoded);
@@ -158,6 +161,7 @@ describe("RLP Fuzz Tests", () => {
 
 		it("should handle mixed empty and non-empty lists", () => {
 			for (let i = 0; i < 50; i++) {
+				// biome-ignore lint/suspicious/noExplicitAny: fuzz testing requires flexible types
 				const mixedList: any[] = [];
 				const listLength = Math.floor(Math.random() * 20) + 1;
 
@@ -299,6 +303,7 @@ describe("RLP Fuzz Tests", () => {
 		it("should handle maximum allowed depth", () => {
 			// Build nested structure at exactly MAX_DEPTH - 1
 			// (MAX_DEPTH is checked after the top-level list adds 1 to depth)
+			// biome-ignore lint/suspicious/noExplicitAny: fuzz testing requires flexible types
 			let nested: any = [randomBytes(5)];
 			for (let i = 1; i < MAX_DEPTH - 1; i++) {
 				nested = [nested];
@@ -312,6 +317,7 @@ describe("RLP Fuzz Tests", () => {
 
 		it("should reject structures exceeding maximum depth", () => {
 			// Build nested structure beyond MAX_DEPTH
+			// biome-ignore lint/suspicious/noExplicitAny: fuzz testing requires flexible types
 			let nested: any = [randomBytes(5)];
 			for (let i = 1; i <= MAX_DEPTH + 5; i++) {
 				nested = [nested];
@@ -394,6 +400,7 @@ describe("RLP Fuzz Tests", () => {
 
 		it("should handle zero-length payloads", () => {
 			const emptyBytes = new Uint8Array(0);
+			// biome-ignore lint/suspicious/noExplicitAny: fuzz testing requires flexible types
 			const emptyList: any[] = [];
 
 			const encodedBytes = Rlp.encodeBytes(emptyBytes);
@@ -483,6 +490,7 @@ describe("RLP Fuzz Tests", () => {
 	});
 
 	describe("Stream Decoding Fuzz", () => {
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: fuzz test requires many conditions
 		it("should handle multiple values in stream mode", () => {
 			for (let i = 0; i < 30; i++) {
 				const values: Uint8Array[] = [];
@@ -603,8 +611,10 @@ describe("RLP Fuzz Tests", () => {
 			}
 		});
 
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: fuzz test requires many conditions
 		it("should handle random combinations of lists and bytes", () => {
 			for (let i = 0; i < 50; i++) {
+				// biome-ignore lint/suspicious/noExplicitAny: fuzz testing requires flexible types
 				const structure: any[] = [];
 				const itemCount = Math.floor(Math.random() * 20) + 1;
 

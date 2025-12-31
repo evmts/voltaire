@@ -53,8 +53,11 @@ describe("ForkId", () => {
 		});
 
 		it("should throw on invalid input", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => ForkId.from(null as any)).toThrow("must be an object");
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => ForkId.from({} as any)).toThrow("hash is required");
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => ForkId.from({ hash: 0xfc64ec04 } as any)).toThrow(
 				"next is required",
 			);

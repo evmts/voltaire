@@ -351,6 +351,7 @@ describe("Hash Test Vectors", () => {
 			expect(original).not.toBe(copy);
 
 			// Modify original
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			(original as any)[0] = 0xff;
 			expect(copy[0]).toBe(0x12);
 		});
@@ -381,10 +382,15 @@ describe("Hash Test Vectors", () => {
 		});
 
 		it("rejects non-Uint8Array", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => Hash.assert("not a hash" as any)).toThrow();
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => Hash.assert(null as any)).toThrow();
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => Hash.assert(undefined as any)).toThrow();
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => Hash.assert(123 as any)).toThrow();
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => Hash.assert([1, 2, 3] as any)).toThrow();
 		});
 	});

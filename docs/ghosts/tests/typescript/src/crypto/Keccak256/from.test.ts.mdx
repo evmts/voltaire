@@ -92,11 +92,21 @@ describe("Keccak256 constructor pattern (from)", () => {
 
 	describe("type validation", () => {
 		it("should throw for invalid input type", () => {
-			expect(() => from(123 as any)).toThrow("Invalid input type");
-			expect(() => from(null as any)).toThrow("Invalid input type");
-			expect(() => from(undefined as any)).toThrow("Invalid input type");
-			expect(() => from({} as any)).toThrow("Invalid input type");
-			expect(() => from([] as any)).toThrow("Invalid input type");
+			expect(() => from(123 as unknown as Uint8Array)).toThrow(
+				"Invalid input type",
+			);
+			expect(() => from(null as unknown as Uint8Array)).toThrow(
+				"Invalid input type",
+			);
+			expect(() => from(undefined as unknown as Uint8Array)).toThrow(
+				"Invalid input type",
+			);
+			expect(() => from({} as unknown as Uint8Array)).toThrow(
+				"Invalid input type",
+			);
+			expect(() => from([] as unknown as Uint8Array)).toThrow(
+				"Invalid input type",
+			);
 		});
 	});
 

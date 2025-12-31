@@ -28,28 +28,28 @@ describe("Denomination Integration Tests", () => {
 		});
 
 		it("Gwei → Ether → Gwei preserves value", () => {
-			const original = Gwei.from(2_000_000_000n);
+			const original = Gwei.from("2000000000");
 			const ether = Gwei.toEther(original);
 			const result = Ether.toGwei(ether);
 			expect(result).toBe(original);
 		});
 
 		it("Gwei → Wei → Gwei preserves value", () => {
-			const original = Gwei.from(42_000_000_000n);
+			const original = Gwei.from("42000000000");
 			const wei = Gwei.toWei(original);
 			const result = Wei.toGwei(wei);
 			expect(result).toBe(original);
 		});
 
 		it("Ether → Wei → Ether preserves value", () => {
-			const original = Ether.from(7n);
+			const original = Ether.from("7");
 			const wei = Ether.toWei(original);
 			const result = Wei.toEther(wei);
 			expect(result).toBe(original);
 		});
 
 		it("Ether → Gwei → Ether preserves value", () => {
-			const original = Ether.from(10n);
+			const original = Ether.from("10");
 			const gwei = Ether.toGwei(original);
 			const result = Gwei.toEther(gwei);
 			expect(result).toBe(original);
@@ -67,24 +67,24 @@ describe("Denomination Integration Tests", () => {
 
 	describe("Cross-denomination comparisons", () => {
 		it("1 ETH = 1,000,000,000 Gwei = 1,000,000,000,000,000,000 Wei", () => {
-			const oneEth = Ether.from(1n);
+			const oneEth = Ether.from("1");
 			const oneEthInGwei = Ether.toGwei(oneEth);
 			const oneEthInWei = Ether.toWei(oneEth);
 
-			expect(oneEthInGwei).toBe(1_000_000_000n);
+			expect(oneEthInGwei).toBe("1000000000");
 			expect(oneEthInWei).toBe(1_000_000_000_000_000_000n);
 		});
 
 		it("1 Gwei = 1,000,000,000 Wei", () => {
-			const oneGwei = Gwei.from(1n);
+			const oneGwei = Gwei.from("1");
 			const oneGweiInWei = Gwei.toWei(oneGwei);
 			expect(oneGweiInWei).toBe(1_000_000_000n);
 		});
 
 		it("Equal values in different denominations compare correctly", () => {
 			const wei = Wei.from(1_000_000_000_000_000_000n);
-			const gwei = Gwei.from(1_000_000_000n);
-			const ether = Ether.from(1n);
+			const gwei = Gwei.from("1000000000");
+			const ether = Ether.from("1");
 
 			// Convert all to Wei for comparison
 			const gweiAsWei = Gwei.toWei(gwei);
@@ -95,33 +95,32 @@ describe("Denomination Integration Tests", () => {
 		});
 	});
 
-	describe("Precision edge cases", () => {
-		it("Wei → Gwei truncates fractional Gwei", () => {
+	describe("Fractional value handling", () => {
+		it("Wei → Gwei preserves fractional Gwei as string", () => {
 			const wei = Wei.from(1_500_000_000n); // 1.5 Gwei
 			const gwei = Wei.toGwei(wei);
-			expect(gwei).toBe(1n); // Truncates to 1 Gwei
+			expect(gwei).toBe("1.5"); // Preserves as string
 		});
 
-		it("Wei → Ether truncates fractional Ether", () => {
+		it("Wei → Ether preserves fractional Ether as string", () => {
 			const wei = Wei.from(1_500_000_000_000_000_000n); // 1.5 ETH
 			const ether = Wei.toEther(wei);
-			expect(ether).toBe(1n); // Truncates to 1 ETH
+			expect(ether).toBe("1.5"); // Preserves as string
 		});
 
-		it("Gwei → Ether truncates fractional Ether", () => {
-			const gwei = Gwei.from(1_500_000_000n); // 1.5 ETH
+		it("Gwei → Ether preserves fractional Ether as string", () => {
+			const gwei = Gwei.from("1500000000"); // 1.5 ETH
 			const ether = Gwei.toEther(gwei);
-			expect(ether).toBe(1n); // Truncates to 1 ETH
+			expect(ether).toBe("1.5"); // Preserves as string
 		});
 
-		it("Truncation is consistent across conversions", () => {
-			const wei = Wei.from(1_999_999_999n); // Just under 2 Gwei
+		it("Fractional round-trip preserves precision", () => {
+			const wei = Wei.from(1_999_999_999n); // 1.999999999 Gwei
 			const gwei = Wei.toGwei(wei);
-			expect(gwei).toBe(1n);
+			expect(gwei).toBe("1.999999999");
 
 			const weiFromGwei = Gwei.toWei(gwei);
-			expect(weiFromGwei).toBe(1_000_000_000n);
-			expect(weiFromGwei).not.toBe(wei); // Data loss from truncation
+			expect(weiFromGwei).toBe(wei); // Full precision preserved
 		});
 	});
 
@@ -133,16 +132,16 @@ describe("Denomination Integration Tests", () => {
 			const ether = Wei.toEther(wei);
 
 			// Verify conversions work without overflow
-			expect(gwei).toBe(large / 1_000_000_000n);
-			expect(ether).toBe(large / 1_000_000_000_000_000_000n);
+			expect(Gwei.toWei(gwei)).toBe(large);
+			expect(Ether.toWei(ether)).toBe(large);
 		});
 
 		it("handles large Ether amounts", () => {
-			const million = 1_000_000n;
+			const million = "1000000";
 			const ether = Ether.from(million);
 			const wei = Ether.toWei(ether);
 
-			expect(wei).toBe(million * 1_000_000_000_000_000_000n);
+			expect(wei).toBe(1_000_000n * 1_000_000_000_000_000_000n);
 		});
 
 		it("round-trip works with very large values", () => {
@@ -151,30 +150,28 @@ describe("Denomination Integration Tests", () => {
 			const ether = Wei.toEther(wei);
 			const backToWei = Ether.toWei(ether);
 
-			// Due to truncation, we lose the fractional part
-			const expectedWei =
-				(large / 1_000_000_000_000_000_000n) * 1_000_000_000_000_000_000n;
-			expect(backToWei).toBe(expectedWei);
+			// Strings preserve full precision
+			expect(backToWei).toBe(large);
 		});
 	});
 
 	describe("Zero value handling", () => {
 		it("0 Wei converts to 0 in all denominations", () => {
 			const zero = Wei.from(0);
-			expect(Wei.toGwei(zero)).toBe(0n);
-			expect(Wei.toEther(zero)).toBe(0n);
+			expect(Wei.toGwei(zero)).toBe("0");
+			expect(Wei.toEther(zero)).toBe("0");
 		});
 
 		it("0 Gwei converts to 0 in all denominations", () => {
-			const zero = Gwei.from(0);
+			const zero = Gwei.from("0");
 			expect(Gwei.toWei(zero)).toBe(0n);
-			expect(Gwei.toEther(zero)).toBe(0n);
+			expect(Gwei.toEther(zero)).toBe("0");
 		});
 
 		it("0 Ether converts to 0 in all denominations", () => {
-			const zero = Ether.from(0);
+			const zero = Ether.from("0");
 			expect(Ether.toWei(zero)).toBe(0n);
-			expect(Ether.toGwei(zero)).toBe(0n);
+			expect(Ether.toGwei(zero)).toBe("0");
 		});
 
 		it("round-trip with zero preserves value", () => {
@@ -189,27 +186,25 @@ describe("Denomination Integration Tests", () => {
 
 	describe("Realistic Ethereum values", () => {
 		it("typical gas price (50 Gwei) converts correctly", () => {
-			const gasPrice = Gwei.from(50n);
+			const gasPrice = Gwei.from("50");
 			const gasPriceWei = Gwei.toWei(gasPrice);
 			expect(gasPriceWei).toBe(50_000_000_000n);
 		});
 
 		it("typical transaction value (0.1 ETH) converts correctly", () => {
-			const value = Ether.from(1n); // 0.1 ETH = 100000000000000000 Wei
+			const value = Ether.from("0.1");
 			const valueWei = Ether.toWei(value);
-			// Note: For 0.1 ETH, we'd use Wei directly as Ether is for whole units
-			// But let's verify 1 ETH
-			expect(valueWei).toBe(1_000_000_000_000_000_000n);
+			expect(valueWei).toBe(100_000_000_000_000_000n);
 		});
 
-		it("typical account balance (1.5 ETH) with precision", () => {
+		it("typical account balance (1.5 ETH) preserves precision", () => {
 			// 1.5 ETH in Wei
 			const balance = Wei.from(1_500_000_000_000_000_000n);
 			const balanceGwei = Wei.toGwei(balance);
-			expect(balanceGwei).toBe(1_500_000_000n);
+			expect(balanceGwei).toBe("1500000000");
 
 			const balanceEther = Wei.toEther(balance);
-			expect(balanceEther).toBe(1n); // Truncates to 1 ETH
+			expect(balanceEther).toBe("1.5"); // Preserves as string
 		});
 	});
 });

@@ -17,8 +17,9 @@ import {
 	FIELD_ELEMENTS_PER_BLOB,
 } from "./constants.js";
 import { KzgError, KzgInvalidBlobError } from "./errors.js";
+import { hasNativeKzg } from "./test-utils.js";
 
-describe("KZG Validation - Edge Cases", () => {
+describe.skipIf(!hasNativeKzg)("KZG Validation - Edge Cases", () => {
 	beforeAll(() => {
 		KZG.loadTrustedSetup();
 	});

@@ -160,8 +160,11 @@ describe("Ens", () => {
 		});
 
 		it("should return false for non-strings", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(Ens.isValid(123 as any)).toBe(false);
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(Ens.isValid(null as any)).toBe(false);
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(Ens.isValid(undefined as any)).toBe(false);
 		});
 	});
@@ -179,8 +182,11 @@ describe("Ens", () => {
 		});
 
 		it("should throw for non-strings", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => Ens.validate(123 as any)).toThrow();
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => Ens.validate(null as any)).toThrow();
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => Ens.validate(undefined as any)).toThrow();
 		});
 	});

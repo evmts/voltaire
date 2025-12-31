@@ -57,22 +57,26 @@ describe("from", () => {
 
 	describe("unsupported types", () => {
 		it("throws on null", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => from(null as any)).toThrow(
 				AddressNamespace.InvalidValueError,
 			);
 		});
 
 		it("throws on undefined", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => from(undefined as any)).toThrow(
 				AddressNamespace.InvalidValueError,
 			);
 		});
 
 		it("throws on object", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => from({} as any)).toThrow(AddressNamespace.InvalidValueError);
 		});
 
 		it("throws on boolean", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => from(true as any)).toThrow(
 				AddressNamespace.InvalidValueError,
 			);

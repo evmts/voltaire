@@ -67,6 +67,7 @@ describe("decodeParams", () => {
 			"0x742d35cc6634c0532925a3b844bc9e7595f251e3" as BrandedAddress,
 			"0x1234567890123456789012345678901234567890" as BrandedAddress,
 			1000n,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		] as any;
 		const encoded = encodeParams(error, args);
 		const decoded = decodeParams(error, encoded);
@@ -240,6 +241,7 @@ describe("decodeParams", () => {
 			1000n,
 			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			true,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		] as any;
 		const encoded = encodeParams(error, args);
 		const decoded = decodeParams(error, encoded);
@@ -344,6 +346,7 @@ describe("decodeParams", () => {
 			],
 		} as const;
 
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 		const args = [1n, 2n, 3n] as any;
 		const encoded = encodeParams(error, args);
 		const decoded = decodeParams(error, encoded);

@@ -24,6 +24,7 @@ describe("License", () => {
 
 		it("should throw on invalid input", () => {
 			expect(() => License.from("")).toThrow("cannot be empty");
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
 			expect(() => License.from(123 as any)).toThrow("must be a string");
 			expect(() => License.from("   ")).toThrow("cannot be empty");
 		});

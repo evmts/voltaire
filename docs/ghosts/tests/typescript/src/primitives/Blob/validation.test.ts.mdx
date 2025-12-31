@@ -96,6 +96,7 @@ describe("Blob Validation - Edge Cases", () => {
 
 		it("should fail toData on wrong size blob", () => {
 			const wrongSize = new Uint8Array(SIZE - 1);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => Blob.toData(wrongSize as any)).toThrow(/Invalid blob size/);
 		});
 
@@ -105,11 +106,13 @@ describe("Blob Validation - Edge Cases", () => {
 			const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
 			view.setUint32(1, MAX_DATA_PER_BLOB + 1000, false); // big-endian
 
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => Blob.toData(blob as any)).toThrow(/Invalid length prefix/);
 		});
 
 		it("should handle blob with all zeros", () => {
 			const blob = new Uint8Array(SIZE);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			const data = Blob.toData(blob as any);
 			expect(data.length).toBe(0);
 		});
@@ -133,6 +136,7 @@ describe("Blob Validation - Edge Cases", () => {
 			const blob = Blob.fromData(data);
 			const corrupted = blob.slice(0, SIZE - 1);
 
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 			expect(() => Blob.toData(corrupted as any)).toThrow(/Invalid blob size/);
 		});
 	});

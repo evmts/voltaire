@@ -921,8 +921,11 @@ describe("Address WASM", () => {
 				Address.fromNumber(2),
 			];
 			addrs.sort((a, b) => Address.compare(a, b));
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.toU256(addrs[0]!)).toBe(1n);
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.toU256(addrs[1]!)).toBe(2n);
+			// biome-ignore lint/style/noNonNullAssertion: test array access is safe
 			expect(Address.toU256(addrs[2]!)).toBe(3n);
 		});
 	});

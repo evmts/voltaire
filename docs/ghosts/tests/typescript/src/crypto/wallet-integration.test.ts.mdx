@@ -148,6 +148,7 @@ describe("Wallet Integration Tests", () => {
 			// Encrypt private key
 			const nonce = AesGcm.generateNonce();
 			const encryptedKey = await AesGcm.encrypt(
+				// biome-ignore lint/style/noNonNullAssertion: derived key exists
 				privateKey!,
 				encryptionKey,
 				nonce,
@@ -179,6 +180,7 @@ describe("Wallet Integration Tests", () => {
 			const iterations = 100000;
 			const key1 = await AesGcm.deriveKey("password1", salt, iterations, 256);
 			const nonce = AesGcm.generateNonce();
+			// biome-ignore lint/style/noNonNullAssertion: derived key exists
 			const encryptedKey = await AesGcm.encrypt(privateKey!, key1, nonce);
 
 			// Try to decrypt with password 2
@@ -213,7 +215,9 @@ describe("Wallet Integration Tests", () => {
 			const nonce0 = AesGcm.generateNonce();
 			const nonce1 = AesGcm.generateNonce();
 
+			// biome-ignore lint/style/noNonNullAssertion: derived keys exist
 			const encrypted0 = await AesGcm.encrypt(key0!, encryptionKey, nonce0);
+			// biome-ignore lint/style/noNonNullAssertion: derived keys exist
 			const encrypted1 = await AesGcm.encrypt(key1!, encryptionKey, nonce1);
 
 			// Decrypt

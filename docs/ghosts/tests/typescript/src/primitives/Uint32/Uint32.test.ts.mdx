@@ -138,6 +138,7 @@ describe("Uint32.fromHex", () => {
 	});
 
 	it("throws on non-string", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => Uint32.fromHex(123 as any)).toThrow("requires string");
 	});
 });
