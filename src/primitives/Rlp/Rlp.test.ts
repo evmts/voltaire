@@ -233,7 +233,9 @@ describe("Rlp.encode", () => {
 	});
 
 	it("throws on invalid input type", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => Rlp.encode("invalid" as any)).toThrow(Rlp.Error);
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => Rlp.encode(123 as any)).toThrow(Rlp.Error);
 	});
 });

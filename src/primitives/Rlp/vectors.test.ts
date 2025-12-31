@@ -76,6 +76,7 @@ describe("RLP Ethereum Test Vectors", () => {
 
 		it("encodes set theoretical representation of three", () => {
 			// [ [], [[]], [ [], [[]] ] ]
+			// biome-ignore lint/suspicious/noExplicitAny: representing nested set structure
 			const empty: any[] = [];
 			const one = [empty];
 			const two = [empty, one];

@@ -226,47 +226,57 @@ describe("Rlp.fromJSON", () => {
 	});
 
 	it("throws on null input", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => fromJSON(null as any)).toThrow(RlpDecodingError);
 	});
 
 	it("throws on undefined input", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => fromJSON(undefined as any)).toThrow(RlpDecodingError);
 	});
 
 	it("throws on string input", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => fromJSON("invalid" as any)).toThrow(RlpDecodingError);
 	});
 
 	it("throws on number input", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => fromJSON(123 as any)).toThrow(RlpDecodingError);
 	});
 
 	it("throws on empty object", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => fromJSON({} as any)).toThrow(RlpDecodingError);
 	});
 
 	it("throws on invalid type", () => {
 		const invalid = { type: "invalid", value: [] };
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => fromJSON(invalid as any)).toThrow(RlpDecodingError);
 	});
 
 	it("throws on missing type field", () => {
 		const invalid = { value: [1, 2, 3] };
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => fromJSON(invalid as any)).toThrow(RlpDecodingError);
 	});
 
 	it("throws on missing value field", () => {
 		const invalid = { type: "bytes" };
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => fromJSON(invalid as any)).toThrow(RlpDecodingError);
 	});
 
 	it("throws on non-array bytes value", () => {
 		const invalid = { type: "bytes", value: "not an array" };
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => fromJSON(invalid as any)).toThrow(RlpDecodingError);
 	});
 
 	it("throws on non-array list value", () => {
 		const invalid = { type: "list", value: "not an array" };
+		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => fromJSON(invalid as any)).toThrow(RlpDecodingError);
 	});
 });

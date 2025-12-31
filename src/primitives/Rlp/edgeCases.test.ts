@@ -20,7 +20,9 @@ describe("RLP edge cases - boundary values", () => {
 
 		const decoded7f = decode(encoded7f);
 		const decoded80 = decode(encoded80);
+		// biome-ignore lint/suspicious/noExplicitAny: accessing decoded RLP value
 		expect((decoded7f.data as any).value).toEqual(byte7f);
+		// biome-ignore lint/suspicious/noExplicitAny: accessing decoded RLP value
 		expect((decoded80.data as any).value).toEqual(byte80);
 	});
 
@@ -42,7 +44,9 @@ describe("RLP edge cases - boundary values", () => {
 		// Round-trip
 		const decoded55 = decode(encoded55);
 		const decoded56 = decode(encoded56);
+		// biome-ignore lint/suspicious/noExplicitAny: accessing decoded RLP value
 		expect((decoded55.data as any).value).toEqual(bytes55);
+		// biome-ignore lint/suspicious/noExplicitAny: accessing decoded RLP value
 		expect((decoded56.data as any).value).toEqual(bytes56);
 	});
 
@@ -66,6 +70,7 @@ describe("RLP edge cases - boundary values", () => {
 
 	it("distinguishes empty string vs empty list", () => {
 		const emptyBytes = new Uint8Array([]);
+		// biome-ignore lint/suspicious/noExplicitAny: empty array for RLP test
 		const emptyList: any[] = [];
 
 		const encodedBytes = encode(emptyBytes);
@@ -84,6 +89,7 @@ describe("RLP edge cases - boundary values", () => {
 
 describe("RLP edge cases - deeply nested structures", () => {
 	it("handles 10-level nested lists", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: building deeply nested structure
 		let nested: any = new Uint8Array([0x01]);
 		for (let i = 0; i < 10; i++) {
 			nested = [nested];
@@ -97,6 +103,7 @@ describe("RLP edge cases - deeply nested structures", () => {
 		for (let i = 0; i < 10; i++) {
 			expect(current.type).toBe("list");
 			if (current.type === "list") {
+				// biome-ignore lint/suspicious/noExplicitAny: traversing nested structure
 				current = current.value[0] as any;
 			}
 		}

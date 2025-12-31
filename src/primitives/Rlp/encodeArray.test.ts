@@ -55,6 +55,7 @@ describe("Rlp.encodeArray", () => {
 		expect(raw).toHaveLength(2);
 		expect(raw[0]).toEqual(new Uint8Array([1]));
 		expect(Array.isArray(raw[1])).toBe(true);
+		// biome-ignore lint/suspicious/noExplicitAny: checking nested array length
 		expect(raw[1] as any).toHaveLength(2);
 	});
 
@@ -65,6 +66,7 @@ describe("Rlp.encodeArray", () => {
 		const raw = toRaw(decoded.data);
 		expect(Array.isArray(raw)).toBe(true);
 		expect(Array.isArray(raw[0])).toBe(true);
+		// biome-ignore lint/suspicious/noExplicitAny: checking deeply nested array
 		expect(Array.isArray((raw[0] as any)[0])).toBe(true);
 	});
 

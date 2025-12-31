@@ -71,8 +71,11 @@ describe("Rlp.toRaw", () => {
 		expect(result).toHaveLength(2);
 		expect(result[0]).toEqual(new Uint8Array([1]));
 		expect(Array.isArray(result[1])).toBe(true);
+		// biome-ignore lint/suspicious/noExplicitAny: accessing nested array
 		expect(result[1] as any).toHaveLength(2);
+		// biome-ignore lint/suspicious/noExplicitAny: accessing nested array
 		expect((result[1] as any)[0]).toEqual(new Uint8Array([2]));
+		// biome-ignore lint/suspicious/noExplicitAny: accessing nested array
 		expect((result[1] as any)[1]).toEqual(new Uint8Array([3]));
 	});
 
@@ -94,7 +97,9 @@ describe("Rlp.toRaw", () => {
 		const result = toRaw(data);
 		expect(Array.isArray(result)).toBe(true);
 		expect(Array.isArray(result[0])).toBe(true);
+		// biome-ignore lint/suspicious/noExplicitAny: accessing deeply nested array
 		expect(Array.isArray((result[0] as any)[0])).toBe(true);
+		// biome-ignore lint/suspicious/noExplicitAny: accessing deeply nested array
 		expect((result[0] as any)[0][0]).toEqual(new Uint8Array([1]));
 	});
 
