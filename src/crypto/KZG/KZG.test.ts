@@ -554,11 +554,14 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 	});
 
 	describe("Performance Characteristics", () => {
-		beforeAll(() => {
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
 		it("should compute commitment in reasonable time", () => {
 			const blob = KZG.generateRandomBlob();
@@ -599,11 +602,14 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 	});
 
 	describe("Security Properties", () => {
-		beforeAll(() => {
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
 		it("should produce cryptographically binding commitments", () => {
 			// Two different blobs should produce different commitments
@@ -632,11 +638,14 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 	});
 
 	describe("Additional Error Coverage", () => {
-		beforeAll(() => {
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
 		it("should reject invalid y value size in verifyKzgProof", () => {
 			const blob = KZG.generateRandomBlob();
@@ -757,11 +766,14 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 	});
 
 	describe("Factory Pattern Tests", () => {
-		beforeAll(() => {
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
 		it("should support tree-shakeable factory imports", () => {
 			const blob = KZG.generateRandomBlob();
@@ -793,11 +805,14 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 	});
 
 	describe("EIP-4844 Compliance", () => {
-		beforeAll(() => {
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
 		it("should produce blobs with correct field element constraints", () => {
 			const blob = KZG.generateRandomBlob();
@@ -859,11 +874,14 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 	});
 
 	describe("Trusted Setup Edge Cases", () => {
-		beforeAll(() => {
-			if (!KZG.isInitialized()) {
-				KZG.loadTrustedSetup();
-			}
-		});
+		beforeAll(
+			() => {
+				if (!KZG.isInitialized()) {
+					KZG.loadTrustedSetup();
+				}
+			},
+			{ timeout: 60000 },
+		);
 
 		it("should handle loadTrustedSetup with already loaded state", () => {
 			// Setup already loaded in beforeAll

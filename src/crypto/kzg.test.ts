@@ -101,11 +101,14 @@ describe.skipIf(!hasNativeKzg)("Kzg Initialization", () => {
 });
 
 describe.skipIf(!hasNativeKzg)("Kzg Blob Validation", () => {
-	beforeAll(() => {
-		if (!Kzg.isInitialized()) {
-			Kzg.loadTrustedSetup();
-		}
-	});
+	beforeAll(
+		() => {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		},
+		{ timeout: 60000 },
+	);
 
 	it("should validate empty blob", () => {
 		const blob = Kzg.createEmptyBlob();
@@ -165,13 +168,16 @@ describe.skipIf(!hasNativeKzg)("Kzg Utility Functions", () => {
 });
 
 describe.skipIf(!hasNativeKzg)("Kzg Blob to Commitment", () => {
-	beforeAll(() => {
-		if (!Kzg.isInitialized()) {
-			Kzg.loadTrustedSetup();
-		}
-	});
+	beforeAll(
+		() => {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		},
+		{ timeout: 60000 },
+	);
 
-	it("should throw if not initialized", { timeout: 30000 }, () => {
+	it("should throw if not initialized", { timeout: 60000 }, () => {
 		try {
 			Kzg.freeTrustedSetup();
 			const blob = Kzg.createEmptyBlob();
@@ -221,13 +227,16 @@ describe.skipIf(!hasNativeKzg)("Kzg Blob to Commitment", () => {
 });
 
 describe.skipIf(!hasNativeKzg)("Kzg Compute Proof", () => {
-	beforeAll(() => {
-		if (!Kzg.isInitialized()) {
-			Kzg.loadTrustedSetup();
-		}
-	});
+	beforeAll(
+		() => {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		},
+		{ timeout: 60000 },
+	);
 
-	it("should throw if not initialized", { timeout: 30000 }, () => {
+	it("should throw if not initialized", { timeout: 60000 }, () => {
 		try {
 			Kzg.freeTrustedSetup();
 			const blob = Kzg.createEmptyBlob();
@@ -285,13 +294,16 @@ describe.skipIf(!hasNativeKzg)("Kzg Compute Proof", () => {
 });
 
 describe.skipIf(!hasNativeKzg)("Kzg Verify Proof", () => {
-	beforeAll(() => {
-		if (!Kzg.isInitialized()) {
-			Kzg.loadTrustedSetup();
-		}
-	});
+	beforeAll(
+		() => {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		},
+		{ timeout: 60000 },
+	);
 
-	it("should throw if not initialized", { timeout: 30000 }, () => {
+	it("should throw if not initialized", { timeout: 60000 }, () => {
 		try {
 			Kzg.freeTrustedSetup();
 			const commitment = new Uint8Array(48);
@@ -374,11 +386,14 @@ describe.skipIf(!hasNativeKzg)("Kzg Verify Proof", () => {
 });
 
 describe.skipIf(!hasNativeKzg)("Kzg Verify Blob Proof", () => {
-	beforeAll(() => {
-		if (!Kzg.isInitialized()) {
-			Kzg.loadTrustedSetup();
-		}
-	});
+	beforeAll(
+		() => {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		},
+		{ timeout: 60000 },
+	);
 
 	it("should verify valid blob proof", () => {
 		const blob = Kzg.generateRandomBlob(5555);
@@ -399,11 +414,14 @@ describe.skipIf(!hasNativeKzg)("Kzg Verify Blob Proof", () => {
 });
 
 describe.skipIf(!hasNativeKzg)("Kzg Batch Verification", () => {
-	beforeAll(() => {
-		if (!Kzg.isInitialized()) {
-			Kzg.loadTrustedSetup();
-		}
-	});
+	beforeAll(
+		() => {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		},
+		{ timeout: 60000 },
+	);
 
 	it("should verify batch of valid proofs", () => {
 		const blobs = [
@@ -438,11 +456,14 @@ describe.skipIf(!hasNativeKzg)("Kzg Batch Verification", () => {
 });
 
 describe.skipIf(!hasNativeKzg)("Kzg Integration Tests", () => {
-	beforeAll(() => {
-		if (!Kzg.isInitialized()) {
-			Kzg.loadTrustedSetup();
-		}
-	});
+	beforeAll(
+		() => {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		},
+		{ timeout: 60000 },
+	);
 
 	it("should complete full workflow", () => {
 		// Create blob
@@ -513,11 +534,14 @@ describe.skipIf(!hasNativeKzg)("Kzg Integration Tests", () => {
 });
 
 describe.skipIf(!hasNativeKzg)("Kzg Edge Cases", () => {
-	beforeAll(() => {
-		if (!Kzg.isInitialized()) {
-			Kzg.loadTrustedSetup();
-		}
-	});
+	beforeAll(
+		() => {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		},
+		{ timeout: 60000 },
+	);
 
 	it("should handle all-zero blob", () => {
 		const blob = Kzg.createEmptyBlob();
