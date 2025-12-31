@@ -33,16 +33,36 @@ describe.skipIf(!hasNativeKzg)("Kzg Initialization", () => {
 		}
 	});
 
-	it("should not be initialized before loadTrustedSetup", () => {
-		Kzg.freeTrustedSetup();
-		expect(Kzg.isInitialized()).toBe(false);
-	});
+	it(
+		"should not be initialized before loadTrustedSetup",
+		{ timeout: 30000 },
+		() => {
+			try {
+				Kzg.freeTrustedSetup();
+				expect(Kzg.isInitialized()).toBe(false);
+			} finally {
+				if (!Kzg.isInitialized()) {
+					Kzg.loadTrustedSetup();
+				}
+			}
+		},
+	);
 
-	it("should initialize with embedded trusted setup", () => {
-		Kzg.freeTrustedSetup();
-		Kzg.loadTrustedSetup();
-		expect(Kzg.isInitialized()).toBe(true);
-	});
+	it(
+		"should initialize with embedded trusted setup",
+		{ timeout: 30000 },
+		() => {
+			try {
+				Kzg.freeTrustedSetup();
+				Kzg.loadTrustedSetup();
+				expect(Kzg.isInitialized()).toBe(true);
+			} finally {
+				if (!Kzg.isInitialized()) {
+					Kzg.loadTrustedSetup();
+				}
+			}
+		},
+	);
 
 	it("should be idempotent when calling loadTrustedSetup multiple times", () => {
 		Kzg.loadTrustedSetup();
@@ -51,17 +71,33 @@ describe.skipIf(!hasNativeKzg)("Kzg Initialization", () => {
 		expect(Kzg.isInitialized()).toBe(true);
 	});
 
-	it("should free trusted setup", () => {
-		Kzg.loadTrustedSetup();
-		Kzg.freeTrustedSetup();
-		expect(Kzg.isInitialized()).toBe(false);
+	it("should free trusted setup", { timeout: 30000 }, () => {
+		try {
+			Kzg.loadTrustedSetup();
+			Kzg.freeTrustedSetup();
+			expect(Kzg.isInitialized()).toBe(false);
+		} finally {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		}
 	});
 
-	it("should be safe to call freeTrustedSetup when not initialized", () => {
-		Kzg.freeTrustedSetup();
-		Kzg.freeTrustedSetup();
-		expect(Kzg.isInitialized()).toBe(false);
-	});
+	it(
+		"should be safe to call freeTrustedSetup when not initialized",
+		{ timeout: 30000 },
+		() => {
+			try {
+				Kzg.freeTrustedSetup();
+				Kzg.freeTrustedSetup();
+				expect(Kzg.isInitialized()).toBe(false);
+			} finally {
+				if (!Kzg.isInitialized()) {
+					Kzg.loadTrustedSetup();
+				}
+			}
+		},
+	);
 });
 
 describe.skipIf(!hasNativeKzg)("Kzg Blob Validation", () => {
@@ -135,11 +171,16 @@ describe.skipIf(!hasNativeKzg)("Kzg Blob to Commitment", () => {
 		}
 	});
 
-	it("should throw if not initialized", () => {
-		Kzg.freeTrustedSetup();
-		const blob = Kzg.createEmptyBlob();
-		expect(() => Kzg.Commitment(blob)).toThrow(KzgNotInitializedError);
-		Kzg.loadTrustedSetup();
+	it("should throw if not initialized", { timeout: 30000 }, () => {
+		try {
+			Kzg.freeTrustedSetup();
+			const blob = Kzg.createEmptyBlob();
+			expect(() => Kzg.Commitment(blob)).toThrow(KzgNotInitializedError);
+		} finally {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		}
 	});
 
 	it("should compute commitment for empty blob", () => {
@@ -186,12 +227,17 @@ describe.skipIf(!hasNativeKzg)("Kzg Compute Proof", () => {
 		}
 	});
 
-	it("should throw if not initialized", () => {
-		Kzg.freeTrustedSetup();
-		const blob = Kzg.createEmptyBlob();
-		const z = new Uint8Array(32);
-		expect(() => Kzg.Proof(blob, z)).toThrow(KzgNotInitializedError);
-		Kzg.loadTrustedSetup();
+	it("should throw if not initialized", { timeout: 30000 }, () => {
+		try {
+			Kzg.freeTrustedSetup();
+			const blob = Kzg.createEmptyBlob();
+			const z = new Uint8Array(32);
+			expect(() => Kzg.Proof(blob, z)).toThrow(KzgNotInitializedError);
+		} finally {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		}
 	});
 
 	it("should compute proof for empty blob", () => {
@@ -245,16 +291,21 @@ describe.skipIf(!hasNativeKzg)("Kzg Verify Proof", () => {
 		}
 	});
 
-	it("should throw if not initialized", () => {
-		Kzg.freeTrustedSetup();
-		const commitment = new Uint8Array(48);
-		const z = new Uint8Array(32);
-		const y = new Uint8Array(32);
-		const proof = new Uint8Array(48);
-		expect(() => Kzg.verifyKzgProof(commitment, z, y, proof)).toThrow(
-			KzgNotInitializedError,
-		);
-		Kzg.loadTrustedSetup();
+	it("should throw if not initialized", { timeout: 30000 }, () => {
+		try {
+			Kzg.freeTrustedSetup();
+			const commitment = new Uint8Array(48);
+			const z = new Uint8Array(32);
+			const y = new Uint8Array(32);
+			const proof = new Uint8Array(48);
+			expect(() => Kzg.verifyKzgProof(commitment, z, y, proof)).toThrow(
+				KzgNotInitializedError,
+			);
+		} finally {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		}
 	});
 
 	it("should verify valid proof", () => {

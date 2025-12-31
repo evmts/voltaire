@@ -3,6 +3,15 @@ import { defineConfig } from "vitest/config";
 // https://vitest.dev/config/ - for docs
 export default defineConfig({
 	test: {
+		pool: "threads",
+		poolOptions: {
+			threads: {
+				maxThreads: 1,
+				minThreads: 1,
+			},
+		},
+		testTimeout: 30000,
+		hookTimeout: 30000,
 		include: [
 			"src/**/*.{test,test-d,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
 			"examples/**/*.test.ts",

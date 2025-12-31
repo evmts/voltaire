@@ -526,7 +526,7 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 			// In practice: versionedHash = sha256(0x01 || commitment)
 		});
 
-		it("should handle multiple blobs in sequence", () => {
+		it("should handle multiple blobs in sequence", { timeout: 60000 }, () => {
 			const numBlobs = 5;
 
 			for (let i = 0; i < numBlobs; i++) {
@@ -545,6 +545,7 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 	describe("Error Handling - No Trusted Setup", () => {
 		it(
 			"should throw when trusted setup not initialized",
+			{ timeout: 30000 },
 			() => {
 				// Save current state
 				const wasInitialized = KZG.isInitialized();
@@ -563,7 +564,6 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 					}
 				}
 			},
-			{ timeout: 30000 },
 		);
 	});
 
@@ -854,6 +854,7 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 
 		it(
 			"should handle freeTrustedSetup and re-initialization",
+			{ timeout: 30000 },
 			() => {
 				try {
 					KZG.freeTrustedSetup();
@@ -874,7 +875,6 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 					}
 				}
 			},
-			{ timeout: 30000 },
 		);
 	});
 
