@@ -1142,6 +1142,12 @@
                     "pages": [
                       "zig/examples/rlp/rlp-encode-list"
                     ]
+                  },
+                  {
+                    "group": "EVM",
+                    "pages": [
+                      "examples/evm/building-an-evm"
+                    ]
                   }
                 ]
               },
@@ -2255,6 +2261,12 @@
                 "group": "RLP Encoding",
                 "pages": [
                   "examples/rlp/rlp-encode-list"
+                ]
+              },
+              {
+                "group": "EVM",
+                "pages": [
+                  "examples/evm/building-an-evm"
                 ]
               }
             ]

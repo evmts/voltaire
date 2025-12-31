@@ -217,7 +217,7 @@ mode: "custom"
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('claude mcp add --transport http tevm https://tevm.sh/mcp');
+        navigator.clipboard.writeText('claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -225,7 +225,7 @@ mode: "custom"
         }, 500);
       }}>
 ```bash
-claude mcp add --transport http tevm https://tevm.sh/mcp
+claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
 ```
       </div>
       <div id="cursor-detail" style={{ cursor: 'pointer', display: 'none', opacity: '0', transform: 'translateX(-20px)', transition: 'opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)' }}
@@ -249,7 +249,7 @@ claude mcp add --transport http tevm https://tevm.sh/mcp
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('Add to .cursor/mcp.json:\n{\n  "mcpServers": {\n    "tevm": {\n      "command": "npx",\n      "args": ["mcp-remote", "https://tevm.sh/mcp"]\n    }\n  }\n}');
+        navigator.clipboard.writeText('Add to .cursor/mcp.json:\n{\n  "mcpServers": {\n    "voltaire": {\n      "command": "npx",\n      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]\n    }\n  }\n}');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -260,9 +260,9 @@ claude mcp add --transport http tevm https://tevm.sh/mcp
 // Add to .cursor/mcp.json
 {
   "mcpServers": {
-    "tevm": {
+    "voltaire": {
       "command": "npx",
-      "args": ["mcp-remote", "https://tevm.sh/mcp"]
+      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]
     }
   }
 }
@@ -289,7 +289,7 @@ claude mcp add --transport http tevm https://tevm.sh/mcp
         }
       }}
            onClick={(e) => {
-        navigator.clipboard.writeText('Add to ~/.codex/config.toml:\n[mcp_servers.tevm]\nurl = "https://tevm.sh/mcp"');
+        navigator.clipboard.writeText('Add to ~/.codex/config.toml:\n[mcp_servers.voltaire]\nurl = "https://voltaire.tevm.sh/mcp"');
         const feedback = document.getElementById('copy-feedback');
         feedback.style.opacity = '1';
         setTimeout(() => {
@@ -298,8 +298,8 @@ claude mcp add --transport http tevm https://tevm.sh/mcp
       }}>
 ```toml
 # Add to ~/.codex/config.toml
-[mcp_servers.tevm]
-url = "https://tevm.sh/mcp"
+[mcp_servers.voltaire]
+url = "https://voltaire.tevm.sh/mcp"
 ```
       </div>
     </div>
