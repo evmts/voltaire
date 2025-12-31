@@ -13,9 +13,12 @@ import { Console } from "./components/Console.js";
 import { Editor } from "./components/Editor.js";
 import { EditorTabs } from "./components/EditorTabs.js";
 import { type FileNode, FileTree } from "./components/FileTree.js";
+import { contractExamples } from "./examples/contract.js";
 import { cryptoExamples } from "./examples/crypto.js";
 import { evmExamples } from "./examples/evm.js";
 import { primitiveExamples } from "./examples/primitives.js";
+import { recipesExamples } from "./examples/recipes.js";
+import { standardsExamples } from "./examples/standards.js";
 import { AutoSave } from "./features/AutoSave.js";
 import { BenchmarkMode } from "./features/BenchmarkMode.js";
 import { CodeLensProvider } from "./features/CodeLens.js";
@@ -57,6 +60,33 @@ const fileTree: FileNode[] = [
 		children: Object.entries(evmExamples).map(([name, content]) => ({
 			name,
 			path: `evm/${name}`,
+			content,
+		})),
+	},
+	{
+		name: "Standards",
+		path: "standards",
+		children: Object.entries(standardsExamples).map(([name, content]) => ({
+			name,
+			path: `standards/${name}`,
+			content,
+		})),
+	},
+	{
+		name: "Recipes",
+		path: "recipes",
+		children: Object.entries(recipesExamples).map(([name, content]) => ({
+			name,
+			path: `recipes/${name}`,
+			content,
+		})),
+	},
+	{
+		name: "Contract",
+		path: "contract",
+		children: Object.entries(contractExamples).map(([name, content]) => ({
+			name,
+			path: `contract/${name}`,
 			content,
 		})),
 	},
