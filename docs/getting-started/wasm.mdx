@@ -3,7 +3,7 @@ title: Runtime Implementations
 description: Choose between TypeScript, WASM, and Native FFI based on your environment
 ---
 
-Voltaire provides three entrypoints with **identical APIs**. All implement the `VoltaireAPI` interface, ensuring compile-time errors if APIs diverge.
+Voltaire provides three entrypoints with **identical APIs**. All implement the [`VoltaireAPI` interface](https://github.com/evmts/voltaire/blob/main/src/api-interface.ts), ensuring compile-time errors if APIs diverge.
 
 ## Three Entrypoints
 
@@ -24,37 +24,12 @@ import { Address, Keccak256 } from '@tevm/voltaire/native' // Native FFI
 All three entrypoints export identical namespaces and types. Switch implementations by changing the import path - no code changes required.
 </Note>
 
-## Unified VoltaireAPI Interface
-
-The `VoltaireAPI` interface (defined in `src/api-interface.ts`) ensures all entrypoints export:
-
-**Primitives:** Address, Hash, Hex, Uint, Rlp, Abi, Blob, AccessList, Bytecode, Chain, Opcode, BloomFilter, Siwe, Bytes, Bytes32, StorageKey, Wei, Gwei, Ether
-
-**Crypto:** Keccak256, SHA256, Blake2, Ripemd160, Secp256k1, Ed25519, P256, X25519, BN254, Bls12381*, KZG*, EIP712, ModExp
-
-<Note>
-*BLS12-381 and KZG are exported for API consistency but only work in native environments. See [WASM Limitations](#wasm-limitations) below.
-</Note>
-
-If any entrypoint is missing an export or has a type mismatch, TypeScript will error at compile time.
-
-## Choosing an Entrypoint
-
-| Concern | Recommendation |
-|---------|----------------|
-| **Universal compatibility** | JS (`@tevm/voltaire`) |
-| **Browser crypto performance** | WASM (`@tevm/voltaire/wasm`) |
-| **Bun/Node crypto performance** | Native (`@tevm/voltaire/native`) |
-| **Serverless/Edge** | WASM (`@tevm/voltaire/wasm`) |
-| **Bundle size** | JS or WASM (comparable) |
-| **Debugging** | JS (`@tevm/voltaire`) |
-
 ## JS (Default)
 
 Pure TypeScript/JavaScript. Works everywhere JavaScript runs.
 
 <Note>
-Shares peer dependencies with [Tevm](https://tevm.sh) and [Viem](https://viem.sh) for seamless integration.
+Shares the [ox](https://oxlib.sh) peer dependency for amortized bundle costs.
 </Note>
 
 ```typescript
@@ -64,11 +39,7 @@ const hash = Keccak256.hash(Hex.toBytes(Hex.fromString('hello')))
 const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
 ```
 
-Best for:
-- Universal browser/server compatibility
-- Debugging and development
-- Bundle size sensitive applications
-- Environments without WASM support
+A useful default - easy to debug and performant enough for most use cases.
 
 ## WASM
 
@@ -90,10 +61,7 @@ const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
 Secp256k1.sign(message, privateKey)
 ```
 
-Best for:
-- Browser applications needing crypto performance
-- Serverless/edge functions (Cloudflare Workers, Vercel Edge)
-- Cross-platform consistency
+We recommend WASM for crypto operations - usually faster and smaller bundle size than JS equivalents. Best for applications needing maximum performance.
 
 ## Native FFI (Bun)
 
@@ -116,26 +84,6 @@ const signature = Secp256k1.sign(message, privateKey)
 Runtime support: Native FFI is <strong>Bun-only</strong>. In <strong>Node.js</strong>, use the JS or WASM entrypoint. Ensure the compiled `.dylib`/`.so`/`.dll` is available (run `zig build build-ts-native`).
 </Warning>
 
-Best for:
-- Server-side applications with heavy crypto workloads
-- CLI tools
-- Maximum throughput requirements
-
-## WASM-Accelerated Methods (`_wasm`)
-
-Some namespaces expose WASM-accelerated methods via the `_wasm` property:
-
-```typescript
-import { Keccak256 } from '@tevm/voltaire'
-
-// Default JS implementation
-const hash1 = Keccak256.hash(data)
-
-// WASM-accelerated (if available)
-const hash2 = Keccak256._wasm.hash(data)
-```
-
-This lets you use WASM for specific hot paths without switching entrypoints entirely. Available on crypto namespaces like `Keccak256`, `Secp256k1`, `SHA256`, etc.
 
 ## Per-Module Imports
 
@@ -143,9 +91,9 @@ For fine-grained control, import specific implementations:
 
 ```typescript
 // Keccak256 variants
-import * as Keccak256 from '@tevm/voltaire/Keccak256'           // JS (default)
-import * as Keccak256 from '@tevm/voltaire/Keccak256/wasm'      // WASM
-import * as Keccak256 from '@tevm/voltaire/Keccak256/native'    // Native FFI
+import { Keccak256 } from '@tevm/voltaire/Keccak256'           // JS (default)
+import { Keccak256 } from '@tevm/voltaire/Keccak256/wasm'      // WASM
+import { Keccak256 } from '@tevm/voltaire/Keccak256/native'    // Native FFI
 ```
 
 ## Performance Considerations
@@ -182,23 +130,8 @@ Benchmark your actual workload. Default implementations are chosen for common us
 
 ## WASM Limitations
 
-Some cryptographic modules require native C/Rust libraries and are **not available in WASM**. These modules will return errors when called from the WASM entrypoint.
-
 | Module | WASM Status | Reason | Alternative |
 |--------|-------------|--------|-------------|
-| **BLS12-381** | ❌ Not available | Requires BLST (C library) | Use native entrypoint |
-| **BN254 (arkworks)** | ❌ Not available | Requires Rust FFI | Pure Zig `bn254` works in WASM |
-| **KZG** | ❌ Not available | Requires c-kzg-4844 (C library) | Use native entrypoint |
 | **BIP-39 / HD Wallet** | ❌ Not available | Requires libwally-core (C library) | Use native or JS entrypoint |
 
-<Warning>
-Calling unavailable modules in WASM returns `error.NotSupported` or equivalent errors. Check your target environment before using these modules.
-</Warning>
-
-**What works in WASM:**
-- All primitives (Address, Hex, Uint, Hash, RLP, ABI, etc.)
-- Keccak256, SHA256, RIPEMD160, Blake2
-- secp256k1, Ed25519, P256, X25519
-- Pure Zig BN254 implementation (not arkworks)
-- ChaCha20-Poly1305, AES-GCM
-- EIP-712 typed data signing
+All other modules including BLS12-381, KZG, and BN254 work in WASM.

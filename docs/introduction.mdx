@@ -6,7 +6,7 @@ description: Modern general-purpose Ethereum library for TypeScript
 Voltaire is a modern general-purpose Ethereum library. Type-safe primitives, WASM-accelerated performance, and designed for AI-assisted development.
 
 <Tip>
-Want to explore Voltaire in your browser? Open the <a href="/playground">Playground</a>.
+Want to explore Voltaire in your browser? Open the [Playground](https://playground.tevm.sh).
 </Tip>
 
 ## Simple, Intuitive API
@@ -23,24 +23,24 @@ import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 // Addresses - branded Uint8Array with type safety
 const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
-console.log(Address.toHex(addr));        // "0x742d35cc..."
-console.log(Address.toChecksummed(addr)); // "0x742d35Cc..."
+console.log(addr.toHex());        // "0x742d35cc..."
+console.log(addr.toChecksummed()); // "0x742d35Cc..."
 
 // Denominations - type-safe ETH value handling
 const value = Wei(1000000000000000000n);
-console.log(Wei.toEther(value));  // 1n
-console.log(Wei.toGwei(value));   // 1000000000n
+console.log(Wei.toEther(value));  // "1"
+console.log(Wei.toGwei(value));   // "1000000000"
 
 // Type safety prevents denomination confusion
 // ❌ This won't compile - Wei and Gwei are incompatible types
 // const confusion: WeiType = someGweiValue; // Type Error!
 
 // Fixed-size bytes
-const hash = Bytes32.fromHex('0x' + '12'.repeat(32));
-console.log(Bytes32.toHex(hash));
+const hash = Bytes32('0x' + '12'.repeat(32));
+console.log(hash.toHex());
 
 // Keccak256 hashing
-const messageHash = Keccak256.hashString('hello');
+const messageHash = Keccak256('hello');
 const selector = Keccak256.selector('transfer(address,uint256)');
 // Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
 

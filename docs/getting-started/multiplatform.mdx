@@ -15,7 +15,7 @@ import { Address, Keccak256 } from '@tevm/voltaire/wasm'   // WASM
 import { Address, Keccak256 } from '@tevm/voltaire/native' // Native FFI (Bun only)
 ```
 
-All entrypoints implement the same `VoltaireAPI` interface - switch by changing the import path.
+All entrypoints implement the same [`VoltaireAPI` interface](https://github.com/evmts/voltaire/blob/main/src/api-interface.ts) - switch by changing the import path.
 
 <Tip>
 For detailed performance comparisons and choosing the right entrypoint, see [Runtime Implementations](/getting-started/wasm).
