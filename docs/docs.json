@@ -1196,7 +1196,8 @@
             "icon": "book",
             "pages": [
               "concepts/branded-types",
-              "concepts/tree-shakeable-api"
+              "concepts/tree-shakeable-api",
+              "concepts/cross-language-consistency"
             ]
           },
           {
