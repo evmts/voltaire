@@ -772,7 +772,7 @@ describe("Bn254Wasm.Pairing", () => {
 			// When implemented:
 			const inf1 = Bn254Wasm.G1.infinity();
 			const g2 = Bn254Wasm.G2.generator();
-			const result = Bn254Wasm.Pairing.pair(inf1, g2);
+			const _result = Bn254Wasm.Pairing.pair(inf1, g2);
 			// Should be identity in GT
 		});
 
@@ -780,7 +780,7 @@ describe("Bn254Wasm.Pairing", () => {
 			// When implemented:
 			const g1 = Bn254Wasm.G1.generator();
 			const inf2 = Bn254Wasm.G2.infinity();
-			const result = Bn254Wasm.Pairing.pair(g1, inf2);
+			const _result = Bn254Wasm.Pairing.pair(g1, inf2);
 			// Should be identity in GT
 		});
 	});
@@ -792,8 +792,8 @@ describe("Bn254Wasm.Pairing", () => {
 			const g2 = Bn254Wasm.G2.generator();
 			const a = 7n;
 
-			const left = Bn254Wasm.Pairing.pair(Bn254Wasm.G1.mul(g1, a), g2);
-			const right = Bn254Wasm.Pairing.pair(g1, Bn254Wasm.G2.mul(g2, a));
+			const _left = Bn254Wasm.Pairing.pair(Bn254Wasm.G1.mul(g1, a), g2);
+			const _right = Bn254Wasm.Pairing.pair(g1, Bn254Wasm.G2.mul(g2, a));
 			// left should equal right in GT
 		});
 
@@ -803,9 +803,9 @@ describe("Bn254Wasm.Pairing", () => {
 			const g2 = Bn254Wasm.G2.generator();
 			const a = 5n;
 
-			const e1 = Bn254Wasm.Pairing.pair(g1, g2);
+			const _e1 = Bn254Wasm.Pairing.pair(g1, g2);
 			// const e1_pow_a = GT.pow(e1, a);
-			const e2 = Bn254Wasm.Pairing.pair(Bn254Wasm.G1.mul(g1, a), g2);
+			const _e2 = Bn254Wasm.Pairing.pair(Bn254Wasm.G1.mul(g1, a), g2);
 			// e1_pow_a should equal e2
 		});
 
@@ -815,11 +815,11 @@ describe("Bn254Wasm.Pairing", () => {
 			const g2 = Bn254Wasm.G2.generator();
 			const a = 3n;
 			const b = 5n;
-			const ab = (a * b) % FR_MOD;
+			const _ab = (a * b) % FR_MOD;
 
-			const e_base = Bn254Wasm.Pairing.pair(g1, g2);
+			const _e_base = Bn254Wasm.Pairing.pair(g1, g2);
 			// const e_pow_ab = GT.pow(e_base, ab);
-			const e_scaled = Bn254Wasm.Pairing.pair(
+			const _e_scaled = Bn254Wasm.Pairing.pair(
 				Bn254Wasm.G1.mul(g1, a),
 				Bn254Wasm.G2.mul(g2, b),
 			);
@@ -832,7 +832,7 @@ describe("Bn254Wasm.Pairing", () => {
 			// When implemented:
 			const g1 = Bn254Wasm.G1.generator();
 			const g2 = Bn254Wasm.G2.generator();
-			const result = Bn254Wasm.Pairing.pair(g1, g2);
+			const _result = Bn254Wasm.Pairing.pair(g1, g2);
 			// Result should not be identity in GT
 		});
 	});
@@ -1043,7 +1043,7 @@ describe("Bn254Wasm Integration", () => {
 		it.skip("should serialize and deserialize G1 points", () => {
 			// When implemented:
 			const g1 = Bn254Wasm.G1.generator();
-			const p = Bn254Wasm.G1.mul(g1, 42n);
+			const _p = Bn254Wasm.G1.mul(g1, 42n);
 			// const bytes = Bn254Wasm.serializeG1(p);
 			// const deserialized = Bn254Wasm.deserializeG1(bytes);
 			// expect(Bn254Wasm.G1.equal(p, deserialized)).toBe(true);
@@ -1052,7 +1052,7 @@ describe("Bn254Wasm Integration", () => {
 		it.skip("should serialize and deserialize G2 points", () => {
 			// When implemented:
 			const g2 = Bn254Wasm.G2.generator();
-			const q = Bn254Wasm.G2.mul(g2, 42n);
+			const _q = Bn254Wasm.G2.mul(g2, 42n);
 			// const bytes = Bn254Wasm.serializeG2(q);
 			// const deserialized = Bn254Wasm.deserializeG2(bytes);
 			// expect(Bn254Wasm.G2.equal(q, deserialized)).toBe(true);

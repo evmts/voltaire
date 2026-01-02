@@ -8,7 +8,7 @@ source: 'src/evm/precompiles/modexp.test.ts'
 ```typescript
 import { describe, expect, it } from "vitest";
 import * as Hardfork from "../../primitives/Hardfork/index.js";
-import { PrecompileAddress, execute, modexp } from "./precompiles.js";
+import { execute, modexp, PrecompileAddress } from "./precompiles.js";
 
 /**
  * Helper to convert bigint to big-endian bytes with padding

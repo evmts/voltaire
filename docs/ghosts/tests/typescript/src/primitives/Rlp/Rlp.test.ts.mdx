@@ -11,10 +11,8 @@ source: 'src/primitives/Rlp/Rlp.test.ts'
  */
 
 import { describe, expect, it } from "vitest";
-import * as Data from "./Data.js";
-import { RlpDecodingError, RlpEncodingError } from "./RlpError.js";
-import type { BrandedRlp } from "./RlpType.js";
 import { MAX_DEPTH } from "./constants.js";
+import * as Data from "./Data.js";
 import { decode } from "./decode.js";
 import type { Encodable } from "./encode.js";
 import { encode } from "./encode.js";
@@ -27,6 +25,8 @@ import { getEncodedLength } from "./getEncodedLength.js";
 import { isBytesData } from "./isBytesData.js";
 import { isData } from "./isData.js";
 import { isListData } from "./isListData.js";
+import { RlpDecodingError, RlpEncodingError } from "./RlpError.js";
+import type { BrandedRlp } from "./RlpType.js";
 import { toJSON } from "./toJSON.js";
 
 // Create Rlp namespace for compatibility with tests
@@ -966,10 +966,27 @@ describe("Rlp.Error types", () => {
 		} catch (err) {
 			expect(err).toBeInstanceOf(Rlp.DecodingError);
 			if (err instanceof RlpDecodingError) {
+				expect(err.name).toBe("RlpDecodingError");
 				expect(err.code).toBe("RLP_INPUT_TOO_SHORT");
 				expect(err.message).toContain("Cannot decode empty input");
 			}
 		}
+	});
+
+	it("encoding error extends EncodingError from base errors", () => {
+		const err = new Rlp.EncodingError("Test");
+		expect(err.name).toBe("RlpEncodingError");
+		// Verify it has properties from base error
+		expect(typeof err.code).toBe("string");
+		expect(typeof err.getErrorChain).toBe("function");
+	});
+
+	it("decoding error extends DecodingError from base errors", () => {
+		const err = new Rlp.DecodingError("Test");
+		expect(err.name).toBe("RlpDecodingError");
+		// Verify it has properties from base error
+		expect(typeof err.code).toBe("string");
+		expect(typeof err.getErrorChain).toBe("function");
 	});
 });
 

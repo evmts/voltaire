@@ -8,12 +8,12 @@ source: 'src/evm/precompiles/bls12_pairing.test.ts'
 ```typescript
 import { describe, expect, it } from "vitest";
 import * as Hardfork from "../../primitives/Hardfork/index.js";
-import { PrecompileAddress, bls12Pairing, execute } from "./precompiles.js";
+import { bls12Pairing, execute, PrecompileAddress } from "./precompiles.js";
 
 /**
  * Helper: Convert hex string to Uint8Array
  */
-function hexToBytes(hex: string): Uint8Array {
+function _hexToBytes(hex: string): Uint8Array {
 	const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
 	const bytes = new Uint8Array(clean.length / 2);
 	for (let i = 0; i < clean.length; i += 2) {
@@ -34,7 +34,7 @@ function bytesToHex(bytes: Uint8Array): string {
 /**
  * Helper: Create big-endian bytes from bigint
  */
-function bigintToBytes(n: bigint, size: number): Uint8Array {
+function _bigintToBytes(n: bigint, size: number): Uint8Array {
 	const bytes = new Uint8Array(size);
 	let val = n;
 	for (let i = size - 1; i >= 0; i--) {

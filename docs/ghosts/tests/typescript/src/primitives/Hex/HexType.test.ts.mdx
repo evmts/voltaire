@@ -9,22 +9,21 @@ source: 'src/primitives/Hex/HexType.test.ts'
 import { describe, expect, it } from "vitest";
 import type { HexType, Sized } from "./HexType.js";
 
-type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<X, Y> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+		? true
+		: false;
 
 describe("HexType type-level tests", () => {
 	describe("basic type structure", () => {
 		it("should be a branded string type", () => {
 			type Test1 = Equals<HexType, string>;
-			const test1: Test1 = false;
-			test1;
+			const _test1: Test1 = false;
+			_test1;
 
 			type Test2 = HexType extends string ? true : false;
-			const test2: Test2 = true;
-			test2;
+			const _test2: Test2 = true;
+			_test2;
 		});
 
 		it("should be assignable to string", () => {
@@ -34,8 +33,8 @@ describe("HexType type-level tests", () => {
 
 		it("should start with 0x prefix in template", () => {
 			type Test = HexType extends `0x${string}` ? true : false;
-			const test: Test = true;
-			test;
+			const _test: Test = true;
+			_test;
 		});
 
 		it("should not allow plain string assignment without cast", () => {
@@ -79,8 +78,8 @@ describe("HexType type-level tests", () => {
 	describe("Sized hex type", () => {
 		it("should be a sized subtype of HexType", () => {
 			type Test = Sized<4> extends HexType ? true : false;
-			const test: Test = true;
-			test;
+			const _test: Test = true;
+			_test;
 		});
 
 		it("should have size property", () => {
@@ -110,8 +109,8 @@ describe("HexType type-level tests", () => {
 	describe("Bytes alias for Sized", () => {
 		it("should be equivalent to Sized", () => {
 			type Test = Equals<import("./HexType.js").Bytes<4>, Sized<4>>;
-			const test: Test = true;
-			test;
+			const _test: Test = true;
+			_test;
 		});
 
 		it("should work with size parameter", () => {
@@ -241,8 +240,8 @@ describe("HexType type-level tests", () => {
 	describe("Hex alias", () => {
 		it("should be equivalent to HexType", () => {
 			type Test = Equals<import("./HexType.js").Hex, HexType>;
-			const test: Test = true;
-			test;
+			const _test: Test = true;
+			_test;
 		});
 
 		it("should be interchangeable", () => {

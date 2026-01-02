@@ -39,6 +39,15 @@ describe("BloomFilter - Basic Operations", () => {
 			);
 		});
 
+		it("throws InvalidBloomFilterParameterError with correct name for zero m", () => {
+			try {
+				BloomFilter.create(0, 3);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidBloomFilterParameterError");
+			}
+		});
+
 		it("throws for negative m parameter", () => {
 			expect(() => BloomFilter.create(-1, 3)).toThrow(
 				"Bloom filter parameters must be positive",
@@ -222,6 +231,18 @@ describe("BloomFilter - Basic Operations", () => {
 			expect(() => BloomFilter.merge(f1, f2)).toThrow(
 				"Cannot merge filters with different parameters",
 			);
+		});
+
+		it("throws InvalidBloomFilterParameterError with correct name for mismatched m", () => {
+			const f1 = BloomFilter.create(2048, 3);
+			const f2 = BloomFilter.create(4096, 3);
+
+			try {
+				BloomFilter.merge(f1, f2);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidBloomFilterParameterError");
+			}
 		});
 
 		it("throws for mismatched k", () => {

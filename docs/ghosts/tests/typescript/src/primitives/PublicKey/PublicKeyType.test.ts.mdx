@@ -10,31 +10,30 @@ import { describe, it } from "vitest";
 import type { PublicKeyType } from "./PublicKeyType.js";
 
 // Type-level testing utilities
-type Equals<T, U> = (<V>() => V extends T ? 1 : 2) extends <V>() => V extends U
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<T, U> =
+	(<V>() => V extends T ? 1 : 2) extends <V>() => V extends U ? 1 : 2
+		? true
+		: false;
 
 describe("PublicKeyType", () => {
 	describe("type structure", () => {
 		it("is a Uint8Array", () => {
 			type Test = Equals<PublicKeyType extends Uint8Array ? true : false, true>;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 
 		it("has length 64", () => {
 			type Test = Equals<PublicKeyType["length"], 64>;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 
 		it("is branded", () => {
 			type HasBrand = "__tag" extends keyof PublicKeyType ? true : false;
 			type Test = Equals<HasBrand, true>;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 
 		it("is not assignable to plain Uint8Array", () => {
@@ -72,28 +71,28 @@ describe("PublicKeyType", () => {
 		it("is not compatible with 32-byte array", () => {
 			type PrivateKeyLike = Uint8Array & { readonly length: 32 };
 			type Test = Equals<PublicKeyType, PrivateKeyLike>;
-			const assertion: Test = false;
-			assertion;
+			const _assertion: Test = false;
+			_assertion;
 		});
 
 		it("is not compatible with 20-byte array", () => {
 			type AddressLike = Uint8Array & { readonly length: 20 };
 			type Test = Equals<PublicKeyType, AddressLike>;
-			const assertion: Test = false;
-			assertion;
+			const _assertion: Test = false;
+			_assertion;
 		});
 
 		it("is not compatible with plain 64-byte array", () => {
 			type GenericArray = Uint8Array & { readonly length: 64 };
 			type Test = Equals<PublicKeyType, GenericArray>;
-			const assertion: Test = false;
-			assertion;
+			const _assertion: Test = false;
+			_assertion;
 		});
 
 		it("two PublicKeyType are the same type", () => {
 			type Test = Equals<PublicKeyType, PublicKeyType>;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 	});
 
@@ -151,8 +150,8 @@ describe("PublicKeyType", () => {
 		it("has unique PublicKey brand", () => {
 			type Brand = PublicKeyType["__tag"];
 			type Test = Equals<Brand, "PublicKey">;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 
 		it("is not compatible with other brands", () => {
@@ -161,8 +160,8 @@ describe("PublicKeyType", () => {
 				readonly length: 64;
 			};
 			type Test = Equals<PublicKeyType, OtherBrand>;
-			const assertion: Test = false;
-			assertion;
+			const _assertion: Test = false;
+			_assertion;
 		});
 
 		it("is not compatible with PrivateKey brand", () => {
@@ -171,8 +170,8 @@ describe("PublicKeyType", () => {
 				readonly length: 64;
 			};
 			type Test = Equals<PublicKeyType, PrivateKeyBrand>;
-			const assertion: Test = false;
-			assertion;
+			const _assertion: Test = false;
+			_assertion;
 		});
 	});
 
@@ -269,8 +268,8 @@ describe("PublicKeyType", () => {
 
 		it("can be assigned to wider type", () => {
 			const _test = (pk: PublicKeyType) => {
-				const bytes: Uint8Array = pk;
-				bytes;
+				const _bytes: Uint8Array = pk;
+				_bytes;
 			};
 		});
 
@@ -288,22 +287,22 @@ describe("PublicKeyType", () => {
 	describe("semantic meaning", () => {
 		it("represents uncompressed secp256k1 public key", () => {
 			type Test = Equals<PublicKeyType["length"], 64>;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 
 		it("is 64 bytes without 0x04 prefix", () => {
 			type Test = Equals<PublicKeyType["length"], 64>;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 
 		it("contains x and y coordinates", () => {
 			const _test = (pk: PublicKeyType) => {
-				const x: Uint8Array = pk.slice(0, 32);
-				const y: Uint8Array = pk.slice(32, 64);
-				x;
-				y;
+				const _x: Uint8Array = pk.slice(0, 32);
+				const _y: Uint8Array = pk.slice(32, 64);
+				_x;
+				_y;
 			};
 		});
 	});
@@ -315,8 +314,8 @@ describe("PublicKeyType", () => {
 				readonly length: 32;
 			};
 			type Test = Equals<PublicKeyType, PrivateKeyLike>;
-			const assertion: Test = false;
-			assertion;
+			const _assertion: Test = false;
+			_assertion;
 		});
 
 		it("is different from AddressType", () => {
@@ -325,8 +324,8 @@ describe("PublicKeyType", () => {
 				readonly length: 20;
 			};
 			type Test = Equals<PublicKeyType, AddressLike>;
-			const assertion: Test = false;
-			assertion;
+			const _assertion: Test = false;
+			_assertion;
 		});
 
 		it("is different from HashType", () => {
@@ -335,8 +334,8 @@ describe("PublicKeyType", () => {
 				readonly length: 32;
 			};
 			type Test = Equals<PublicKeyType, HashLike>;
-			const assertion: Test = false;
-			assertion;
+			const _assertion: Test = false;
+			_assertion;
 		});
 	});
 });

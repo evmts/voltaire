@@ -31,6 +31,16 @@ describe("BinaryTree", () => {
 				"Address must be 20 bytes",
 			);
 		});
+
+		test("throws InvalidAddressLengthError with correct name", () => {
+			const addr = new Uint8Array(19);
+			try {
+				BinaryTree.addressToKey(addr);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidAddressLengthError");
+			}
+		});
 	});
 
 	describe("splitKey", () => {
@@ -50,6 +60,16 @@ describe("BinaryTree", () => {
 		test("throws on invalid key length", () => {
 			const k = new Uint8Array(31);
 			expect(() => BinaryTree.splitKey(k)).toThrow("Key must be 32 bytes");
+		});
+
+		test("throws InvalidKeyLengthError with correct name", () => {
+			const k = new Uint8Array(31);
+			try {
+				BinaryTree.splitKey(k);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidKeyLengthError");
+			}
 		});
 	});
 

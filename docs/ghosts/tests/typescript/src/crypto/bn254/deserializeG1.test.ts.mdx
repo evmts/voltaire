@@ -7,10 +7,10 @@ source: 'src/crypto/bn254/deserializeG1.test.ts'
 
 ```typescript
 import { describe, expect, test } from "vitest";
-import * as G1 from "./G1/index.js";
 import { FP_MOD, G1_GENERATOR_X, G1_GENERATOR_Y } from "./constants.js";
 import { deserializeG1 } from "./deserializeG1.js";
 import { Bn254Error } from "./errors.js";
+import * as G1 from "./G1/index.js";
 import { serializeG1 } from "./serializeG1.js";
 
 describe("deserializeG1", () => {
@@ -169,6 +169,7 @@ describe("deserializeG1", () => {
 			} catch (err) {
 				expect(err).toBeInstanceOf(Bn254Error);
 				const bn254Err = err as Bn254Error;
+				expect(bn254Err.name).toBe("Bn254Error");
 				expect(bn254Err.code).toBe("INVALID_LENGTH");
 			}
 		});

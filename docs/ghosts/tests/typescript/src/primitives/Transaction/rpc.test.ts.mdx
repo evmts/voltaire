@@ -7,6 +7,10 @@ source: 'src/primitives/Transaction/rpc.test.ts'
 
 ```typescript
 import { describe, expect, it } from "vitest";
+import {
+	InvalidLengthError,
+	InvalidTransactionTypeError,
+} from "../errors/index.js";
 import { fromRpc } from "./fromRpc.js";
 import { toRpc } from "./toRpc.js";
 import { Type } from "./types.js";
@@ -188,6 +192,56 @@ describe("Transaction RPC format", () => {
 			expect(restored.gasLimit).toBe(original.gasLimit);
 			expect(restored.value).toBe(original.value);
 			expect(restored.yParity).toBe(original.yParity);
+		});
+	});
+
+	describe("error handling", () => {
+		it("throws InvalidTransactionTypeError for unknown transaction type", () => {
+			const rpc = {
+				type: "0xff",
+				nonce: "0x0",
+				gasPrice: "0x1",
+				gas: "0x5208",
+				to: `0x${"12".repeat(20)}`,
+				value: "0x0",
+				data: "0x",
+				v: "0x1b",
+				r: `0x${"11".repeat(32)}`,
+				s: `0x${"22".repeat(32)}`,
+			};
+
+			try {
+				fromRpc(rpc);
+				expect.fail("Expected to throw");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionTypeError);
+				expect((e as InvalidTransactionTypeError).name).toBe(
+					"InvalidTransactionTypeError",
+				);
+			}
+		});
+
+		it("throws InvalidLengthError for invalid address length", () => {
+			const rpc = {
+				type: "0x0",
+				nonce: "0x0",
+				gasPrice: "0x1",
+				gas: "0x5208",
+				to: "0x1234", // Invalid - only 2 bytes
+				value: "0x0",
+				data: "0x",
+				v: "0x1b",
+				r: `0x${"11".repeat(32)}`,
+				s: `0x${"22".repeat(32)}`,
+			};
+
+			try {
+				fromRpc(rpc);
+				expect.fail("Expected to throw");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidLengthError);
+				expect((e as InvalidLengthError).name).toBe("InvalidLengthError");
+			}
 		});
 	});
 });

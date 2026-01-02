@@ -92,6 +92,17 @@ describe("X25519", () => {
 			expect(() => X25519.derivePublicKey(invalidSecretKey)).toThrow();
 		});
 
+		it("throws InvalidSecretKeyError with correct name for invalid size", () => {
+			const invalidSecretKey = new Uint8Array(16);
+
+			try {
+				X25519.derivePublicKey(invalidSecretKey);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidSecretKeyError");
+			}
+		});
+
 		it("matches @noble/curves implementation", () => {
 			const secretKey = crypto.getRandomValues(new Uint8Array(32));
 			const publicKey = X25519.derivePublicKey(secretKey);
@@ -163,6 +174,19 @@ describe("X25519", () => {
 			).toThrow();
 		});
 
+		it("throws InvalidSecretKeyError with correct name for invalid secret key", () => {
+			const invalidSecretKey = new Uint8Array(16);
+			const seed = new Uint8Array(32).fill(1);
+			const keypair = X25519.keypairFromSeed(seed);
+
+			try {
+				X25519.scalarmult(invalidSecretKey, keypair.publicKey);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidSecretKeyError");
+			}
+		});
+
 		it("throws on invalid public key size", () => {
 			const seed = new Uint8Array(32).fill(1);
 			const keypair = X25519.keypairFromSeed(seed);
@@ -171,6 +195,19 @@ describe("X25519", () => {
 			expect(() =>
 				X25519.scalarmult(keypair.secretKey, invalidPublicKey),
 			).toThrow();
+		});
+
+		it("throws InvalidPublicKeyError with correct name for invalid public key", () => {
+			const seed = new Uint8Array(32).fill(1);
+			const keypair = X25519.keypairFromSeed(seed);
+			const invalidPublicKey = new Uint8Array(16);
+
+			try {
+				X25519.scalarmult(keypair.secretKey, invalidPublicKey);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidPublicKeyError");
+			}
 		});
 
 		it("matches @noble/curves implementation", () => {

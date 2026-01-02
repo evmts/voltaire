@@ -7,12 +7,7 @@ source: 'src/precompiles/modexp.test.ts'
 
 ```typescript
 import { describe, expect, it } from "vitest";
-import {
-	PrecompileAddress,
-	execute,
-	modexp,
-} from "../evm/precompiles/precompiles.js";
-import * as Hardfork from "../primitives/Hardfork/index.js";
+import { modexp } from "../evm/precompiles/precompiles.js";
 
 /**
  * Helper to convert bigint to big-endian bytes with padding
@@ -190,13 +185,13 @@ describe("Modular Exponentiation (0x05) - EIP-198/2565", () => {
 			const input1 = createModExpInput(2n, 255n, 997n); // 255 = 0xFF (8 bits)
 			const res1 = modexp(input1, 100000n);
 			expect(res1.success).toBe(true);
-			const gas1 = res1.gasUsed;
+			const _gas1 = res1.gasUsed;
 
 			// Large exponent (256 bits)
 			const input2 = createModExpInput(2n, (1n << 256n) - 1n, 997n);
 			const res2 = modexp(input2, 1000000n);
 			expect(res2.success).toBe(true);
-			const gas2 = res2.gasUsed;
+			const _gas2 = res2.gasUsed;
 
 			// Gas should be calculated, both should succeed
 			expect(res1.success).toBe(true);

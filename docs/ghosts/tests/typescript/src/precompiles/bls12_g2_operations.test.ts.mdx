@@ -164,7 +164,7 @@ describe("BLS12-381 G2 Point Operations", () => {
 		});
 
 		it("O + O = O (infinity + infinity)", () => {
-			const infinity = new Uint8Array(256);
+			const _infinity = new Uint8Array(256);
 			const input = new Uint8Array(512); // Two infinity points
 			// In actual implementation, this would call g2Add precompile
 			// Here we just verify the input format

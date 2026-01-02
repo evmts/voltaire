@@ -10,11 +10,10 @@ import { describe, expectTypeOf, it } from "vitest";
 import type { SHA256Hash } from "./SHA256HashType.js";
 import { SIZE } from "./SHA256HashType.js";
 
-type Equals<T, U> = (<G>() => G extends T ? 1 : 2) extends <G>() => G extends U
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<T, U> =
+	(<G>() => G extends T ? 1 : 2) extends <G>() => G extends U ? 1 : 2
+		? true
+		: false;
 
 describe("SHA256HashType", () => {
 	describe("type structure", () => {

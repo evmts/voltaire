@@ -104,6 +104,16 @@ describe("Blob.fromData() - Static Factory", () => {
 		const oversized = new Uint8Array(SIZE);
 		expect(() => Blob.fromData(oversized)).toThrow("Data too large");
 	});
+
+	it("throws InvalidBlobDataSizeError with correct name", () => {
+		const oversized = new Uint8Array(SIZE);
+		try {
+			Blob.fromData(oversized);
+			expect.fail("Should have thrown");
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidBlobDataSizeError");
+		}
+	});
 });
 
 // ============================================================================
@@ -360,6 +370,15 @@ describe("Blob.estimateBlobCount() - Static Method", () => {
 		expect(() => Blob.estimateBlobCount(-1)).toThrow("Invalid data size");
 	});
 
+	it("throws InvalidBlobDataSizeError with correct name", () => {
+		try {
+			Blob.estimateBlobCount(-1);
+			expect.fail("Should have thrown");
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidBlobDataSizeError");
+		}
+	});
+
 	it("estimates correctly at exact boundaries", () => {
 		const maxDataPerBlob =
 			FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
@@ -392,6 +411,15 @@ describe("Blob.calculateGas() - Static Method", () => {
 		expect(() => Blob.calculateGas(MAX_PER_TRANSACTION + 1)).toThrow(
 			"Invalid blob count",
 		);
+	});
+
+	it("throws InvalidBlobCountError with correct name", () => {
+		try {
+			Blob.calculateGas(-1);
+			expect.fail("Should have thrown");
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidBlobCountError");
+		}
 	});
 });
 
@@ -449,6 +477,16 @@ describe("Blob.toVersionedHash() - Static Method", () => {
 		expect(() => Blob.toVersionedHash(invalid)).toThrow(
 			"Invalid commitment size",
 		);
+	});
+
+	it("throws InvalidCommitmentSizeError with correct name", () => {
+		const invalid = new Uint8Array(32) as Commitment;
+		try {
+			Blob.toVersionedHash(invalid);
+			expect.fail("Should have thrown");
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidCommitmentSizeError");
+		}
 	});
 
 	it("produces deterministic hash", () => {
@@ -513,6 +551,18 @@ describe("Blob.verifyBatch() - Static Method", () => {
 		);
 	});
 
+	it("throws BlobNotImplementedError with correct name", () => {
+		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
+		const commitment = new Uint8Array(48) as Commitment;
+		const proof = new Uint8Array(48) as Proof;
+		try {
+			Blob.verifyBatch([blob], [commitment], [proof]);
+			expect.fail("Should have thrown");
+		} catch (e) {
+			expect((e as Error).name).toBe("BlobNotImplementedError");
+		}
+	});
+
 	it("validates array lengths match", () => {
 		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Commitment;
@@ -520,6 +570,18 @@ describe("Blob.verifyBatch() - Static Method", () => {
 		expect(() => Blob.verifyBatch([blob, blob], [commitment], [proof])).toThrow(
 			"Arrays must have same length",
 		);
+	});
+
+	it("throws BlobArrayLengthMismatchError with correct name", () => {
+		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
+		const commitment = new Uint8Array(48) as Commitment;
+		const proof = new Uint8Array(48) as Proof;
+		try {
+			Blob.verifyBatch([blob, blob], [commitment], [proof]);
+			expect.fail("Should have thrown");
+		} catch (e) {
+			expect((e as Error).name).toBe("BlobArrayLengthMismatchError");
+		}
 	});
 
 	it("validates max blobs per transaction", () => {
@@ -535,6 +597,24 @@ describe("Blob.verifyBatch() - Static Method", () => {
 		expect(() => Blob.verifyBatch(blobs, commitments, proofs)).toThrow(
 			"Too many blobs",
 		);
+	});
+
+	it("throws InvalidBlobCountError with correct name for too many blobs", () => {
+		const blobs = Array(7)
+			.fill(null)
+			.map(() => Blob.fromData(new Uint8Array([1, 2, 3])));
+		const commitments = Array(7)
+			.fill(null)
+			.map(() => new Uint8Array(48) as Commitment);
+		const proofs = Array(7)
+			.fill(null)
+			.map(() => new Uint8Array(48) as Proof);
+		try {
+			Blob.verifyBatch(blobs, commitments, proofs);
+			expect.fail("Should have thrown");
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidBlobCountError");
+		}
 	});
 
 	it("accepts max blobs per transaction", () => {

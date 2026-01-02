@@ -103,6 +103,17 @@ describe("Secp256k1.PublicKey.from", () => {
 			expect(() => PublicKey.from(invalidHex)).toThrow(/Invalid hex string/);
 		});
 
+		it("should throw InvalidPublicKeyError with correct name for invalid hex", () => {
+			const invalidHex = `0x${"g".repeat(128)}`;
+
+			try {
+				PublicKey.from(invalidHex);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidPublicKeyError");
+			}
+		});
+
 		it("should throw on hex string with invalid characters", () => {
 			const invalidHex = `xyz123${"a".repeat(122)}`;
 

@@ -12,14 +12,10 @@ source: 'src/block/BlockStream.test.ts'
  * Tests BlockStream backfill, watch, and reorg detection behavior.
  */
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { TypedProvider } from "../provider/TypedProvider.js";
 import { BlockStream } from "./BlockStream.js";
-import {
-	BlockRangeTooLargeError,
-	BlockStreamAbortedError,
-	UnrecoverableReorgError,
-} from "./errors.js";
+import { BlockStreamAbortedError } from "./errors.js";
 
 // ============================================================================
 // Test Fixtures
@@ -322,12 +318,12 @@ describe("BlockStream.watch", () => {
 				return "0x64"; // Back to 100 (reorg)
 			},
 			eth_getBlockByNumber: (params) => {
-				const num = Number.parseInt((params as [string])[0], 16);
+				const _num = Number.parseInt((params as [string])[0], 16);
 				if (callCount <= 2) return blocks["100"];
 				if (callCount === 3) return blocks["101"];
 				return blocks["100_reorg"];
 			},
-			eth_getBlockByHash: (params) => {
+			eth_getBlockByHash: (_params) => {
 				// For walking back during reorg detection
 				return blocks["100_reorg"];
 			},
@@ -467,12 +463,12 @@ describe("BlockStream.watch", () => {
 	});
 
 	it("deduplicates blocks by hash", async () => {
-		let callCount = 0;
+		let _callCount = 0;
 		const sameBlock = createMockBlock(100);
 
 		const provider = createMockProvider({
 			eth_blockNumber: () => {
-				callCount++;
+				_callCount++;
 				return "0x64"; // Always return 100
 			},
 			eth_getBlockByNumber: () => sameBlock,
@@ -604,7 +600,7 @@ describe("Reorg events", () => {
 		setTimeout(() => controller.abort(), 50);
 
 		try {
-			for await (const result of stream.watch({
+			for await (const _result of stream.watch({
 				signal: controller.signal,
 				pollingInterval: 10,
 			})) {

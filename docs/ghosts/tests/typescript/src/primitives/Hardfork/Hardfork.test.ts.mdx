@@ -98,8 +98,13 @@ describe("Hardfork.min", () => {
 		expect(Hardfork.min([Hardfork.CANCUN])).toBe(Hardfork.CANCUN);
 	});
 
-	it("throws error for empty array", () => {
+	it("throws ValidationError for empty array", () => {
 		expect(() => Hardfork.min([])).toThrow("Cannot get min of empty array");
+		try {
+			Hardfork.min([]);
+		} catch (e) {
+			expect((e as Error).name).toBe("ValidationError");
+		}
 	});
 });
 
@@ -113,8 +118,13 @@ describe("Hardfork.max", () => {
 		expect(Hardfork.max([Hardfork.BERLIN])).toBe(Hardfork.BERLIN);
 	});
 
-	it("throws error for empty array", () => {
+	it("throws ValidationError for empty array", () => {
 		expect(() => Hardfork.max([])).toThrow("Cannot get max of empty array");
+		try {
+			Hardfork.max([]);
+		} catch (e) {
+			expect((e as Error).name).toBe("ValidationError");
+		}
 	});
 });
 

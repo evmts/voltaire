@@ -7,6 +7,7 @@ source: 'src/primitives/Bytes/fromNumber.test.ts'
 
 ```typescript
 import { describe, expect, it } from "vitest";
+import { NegativeNumberError, NonIntegerError, SizeExceededError, UnsafeIntegerError } from "./errors.js";
 import { fromNumber } from "./fromNumber.js";
 import { toNumber } from "./toNumber.js";
 
@@ -28,23 +29,44 @@ describe("Bytes.fromNumber", () => {
 		expect(fromNumber(0x1234, 4)).toEqual(new Uint8Array([0, 0, 0x12, 0x34]));
 	});
 
-	it("throws when value exceeds size", () => {
-		expect(() => fromNumber(256, 1)).toThrow(/requires 2 bytes/);
-		expect(() => fromNumber(0x10000, 2)).toThrow(/requires 3 bytes/);
+	it("throws SizeExceededError when value exceeds size", () => {
+		try {
+			fromNumber(256, 1);
+			expect.fail("Expected SizeExceededError");
+		} catch (e) {
+			expect(e).toBeInstanceOf(SizeExceededError);
+			expect((e as SizeExceededError).name).toBe("BytesSizeExceededError");
+		}
 	});
 
-	it("throws on negative numbers", () => {
-		expect(() => fromNumber(-1)).toThrow(/must be non-negative/);
+	it("throws NegativeNumberError on negative numbers", () => {
+		try {
+			fromNumber(-1);
+			expect.fail("Expected NegativeNumberError");
+		} catch (e) {
+			expect(e).toBeInstanceOf(NegativeNumberError);
+			expect((e as NegativeNumberError).name).toBe("NegativeNumberError");
+		}
 	});
 
-	it("throws on non-integers", () => {
-		expect(() => fromNumber(1.5)).toThrow(/must be an integer/);
+	it("throws NonIntegerError on non-integers", () => {
+		try {
+			fromNumber(1.5);
+			expect.fail("Expected NonIntegerError");
+		} catch (e) {
+			expect(e).toBeInstanceOf(NonIntegerError);
+			expect((e as NonIntegerError).name).toBe("NonIntegerError");
+		}
 	});
 
-	it("throws on unsafe integers", () => {
-		expect(() => fromNumber(Number.MAX_SAFE_INTEGER + 1)).toThrow(
-			/exceeds MAX_SAFE_INTEGER/,
-		);
+	it("throws UnsafeIntegerError on unsafe integers", () => {
+		try {
+			fromNumber(Number.MAX_SAFE_INTEGER + 1);
+			expect.fail("Expected UnsafeIntegerError");
+		} catch (e) {
+			expect(e).toBeInstanceOf(UnsafeIntegerError);
+			expect((e as UnsafeIntegerError).name).toBe("UnsafeIntegerError");
+		}
 	});
 
 	it("round-trips with toNumber", () => {

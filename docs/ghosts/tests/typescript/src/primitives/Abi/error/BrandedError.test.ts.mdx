@@ -68,11 +68,12 @@ describe("BrandedError", () => {
 			inputs: [],
 		} as const;
 
-		type Test = typeof error extends ErrorType<infer N, infer I>
-			? N extends "Unauthorized"
-				? true
-				: false
-			: false;
+		type Test =
+			typeof error extends ErrorType<infer N, infer I>
+				? N extends "Unauthorized"
+					? true
+					: false
+				: false;
 		const test: Test = true;
 		expect(test).toBe(true);
 	});

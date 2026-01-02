@@ -7,9 +7,9 @@ source: 'src/crypto/Bls12381/G2/G2.test.ts'
 
 ```typescript
 import { describe, expect, test } from "vitest";
+import { FR_MOD, G2_GENERATOR_X, G2_GENERATOR_Y } from "../constants.js";
 import * as Fp2 from "../Fp2/index.js";
 import type { G2PointType } from "../G2PointType.js";
-import { FR_MOD, G2_GENERATOR_X, G2_GENERATOR_Y } from "../constants.js";
 import * as G2 from "./index.js";
 
 describe("BLS12-381 G2 curve operations", () => {

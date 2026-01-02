@@ -14,15 +14,8 @@ import { describe, expect, it } from "vitest";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/index.js";
 import { getRecipient } from "./getRecipient.js";
+import type { EIP1559, EIP2930, EIP4844, EIP7702, Legacy } from "./types.js";
 import { Type } from "./types.js";
-import type {
-	Any,
-	EIP1559,
-	EIP2930,
-	EIP4844,
-	EIP7702,
-	Legacy,
-} from "./types.js";
 
 /**
  * Helper to create a branded address for testing.

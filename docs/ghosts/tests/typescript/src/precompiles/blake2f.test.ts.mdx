@@ -8,9 +8,9 @@ source: 'src/precompiles/blake2f.test.ts'
 ```typescript
 import { describe, expect, it } from "vitest";
 import {
-	PrecompileAddress,
 	blake2f,
 	execute,
+	PrecompileAddress,
 } from "../evm/precompiles/precompiles.js";
 
 /**
@@ -268,10 +268,10 @@ describe("Blake2f Compression Function (0x09) - EIP-152", () => {
 			expect(res2.success).toBe(true);
 
 			// Output should be different (extremely likely for Blake2f)
-			let sameOutput = true;
+			let _sameOutput = true;
 			for (let i = 0; i < 64; i++) {
 				if (res1.output[i] !== res2.output[i]) {
-					sameOutput = false;
+					_sameOutput = false;
 					break;
 				}
 			}

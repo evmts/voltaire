@@ -138,7 +138,7 @@ describe("SHA3/KECCAK256 (0x20)", () => {
 		expect(frame.stack.length).toBe(1);
 
 		// keccak256(bytes32(~0))
-		const expected =
+		const _expected =
 			0x2f4f4d1c88c1c4c8a85f4526f9e5d9a3f6e3b8d6c9c2e2a1c7f7b4d8e3c9f6a2n;
 		// This is a computed hash, not the actual value. Let's just verify it's non-zero
 		expect(frame.stack[0]).not.toBe(0n);

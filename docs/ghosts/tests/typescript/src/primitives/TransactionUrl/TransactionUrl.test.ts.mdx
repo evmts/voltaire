@@ -312,73 +312,147 @@ describe("ERC-681 Transaction URLs", () => {
 
 	describe("error cases", () => {
 		test("invalid scheme", () => {
-			expect(() => parse("http://example.com")).toThrow(
-				InvalidTransactionUrlError,
-			);
-			expect(() => parse("bitcoin:0x1234")).toThrow(InvalidTransactionUrlError);
+			try {
+				parse("http://example.com");
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionUrlError);
+				expect((e as InvalidTransactionUrlError).name).toBe(
+					"InvalidTransactionUrlError",
+				);
+			}
+
+			try {
+				parse("bitcoin:0x1234");
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionUrlError);
+				expect((e as InvalidTransactionUrlError).name).toBe(
+					"InvalidTransactionUrlError",
+				);
+			}
 		});
 
 		test("invalid address", () => {
-			expect(() => parse("ethereum:0xinvalid")).toThrow(
-				InvalidTransactionUrlError,
-			);
-			expect(() => parse("ethereum:notanaddress")).toThrow(
-				InvalidTransactionUrlError,
-			);
+			try {
+				parse("ethereum:0xinvalid");
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionUrlError);
+				expect((e as InvalidTransactionUrlError).name).toBe(
+					"InvalidTransactionUrlError",
+				);
+			}
+
+			try {
+				parse("ethereum:notanaddress");
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionUrlError);
+				expect((e as InvalidTransactionUrlError).name).toBe(
+					"InvalidTransactionUrlError",
+				);
+			}
 		});
 
 		test("invalid chain ID", () => {
-			expect(() =>
-				parse("ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f251e3@abc"),
-			).toThrow(InvalidTransactionUrlError);
-			expect(() =>
-				parse("ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f251e3@-1"),
-			).toThrow(InvalidTransactionUrlError);
+			try {
+				parse("ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f251e3@abc");
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionUrlError);
+				expect((e as InvalidTransactionUrlError).name).toBe(
+					"InvalidTransactionUrlError",
+				);
+			}
+
+			try {
+				parse("ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f251e3@-1");
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionUrlError);
+				expect((e as InvalidTransactionUrlError).name).toBe(
+					"InvalidTransactionUrlError",
+				);
+			}
 		});
 
 		test("invalid value parameter", () => {
-			expect(() =>
+			try {
 				parse(
 					"ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f251e3?value=notanumber",
-				),
-			).toThrow(InvalidTransactionUrlError);
+				);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionUrlError);
+				expect((e as InvalidTransactionUrlError).name).toBe(
+					"InvalidTransactionUrlError",
+				);
+			}
 		});
 
 		test("invalid gas parameter", () => {
-			expect(() =>
+			try {
 				parse(
 					"ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f251e3?gas=invalid",
-				),
-			).toThrow(InvalidTransactionUrlError);
+				);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionUrlError);
+				expect((e as InvalidTransactionUrlError).name).toBe(
+					"InvalidTransactionUrlError",
+				);
+			}
 		});
 
 		test("invalid gasPrice parameter", () => {
-			expect(() =>
+			try {
 				parse(
 					"ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f251e3?gasPrice=xyz",
-				),
-			).toThrow(InvalidTransactionUrlError);
+				);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionUrlError);
+				expect((e as InvalidTransactionUrlError).name).toBe(
+					"InvalidTransactionUrlError",
+				);
+			}
 		});
 
 		test("invalid data parameter", () => {
-			expect(() =>
+			try {
 				parse(
 					"ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f251e3?data=nothex",
-				),
-			).toThrow(InvalidTransactionUrlError);
+				);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionUrlError);
+				expect((e as InvalidTransactionUrlError).name).toBe(
+					"InvalidTransactionUrlError",
+				);
+			}
 		});
 
 		test("error includes context", () => {
 			try {
 				parse("http://example.com");
+				expect.fail("Should have thrown");
 			} catch (error) {
-				if (error instanceof InvalidTransactionUrlError) {
-					expect(error.details?.url).toBe("http://example.com");
-					expect(error.details?.scheme).toBe("http");
-				} else {
-					throw error;
-				}
+				expect(error).toBeInstanceOf(InvalidTransactionUrlError);
+				const e = error as InvalidTransactionUrlError;
+				expect(e.name).toBe("InvalidTransactionUrlError");
+				expect(e.details?.url).toBe("http://example.com");
+				expect(e.details?.scheme).toBe("http");
 			}
+		});
+
+		test("error has correct code property", () => {
+			const error = new InvalidTransactionUrlError("Test error", {
+				url: "invalid",
+			});
+			expect(error.name).toBe("InvalidTransactionUrlError");
+			expect(error.code).toBe("INVALID_TRANSACTION_URL");
+			expect(error.details?.url).toBe("invalid");
 		});
 	});
 

@@ -14,22 +14,21 @@ import type {
 	BrandedBase64Url,
 } from "./Base64Type.js";
 
-type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<X, Y> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+		? true
+		: false;
 
 describe("Base64Type type-level tests", () => {
 	describe("BrandedBase64 basic structure", () => {
 		it("should be a branded string type", () => {
 			type Test1 = Equals<BrandedBase64, string>;
-			const test1: Test1 = false;
-			test1;
+			const _test1: Test1 = false;
+			_test1;
 
 			type Test2 = BrandedBase64 extends string ? true : false;
-			const test2: Test2 = true;
-			test2;
+			const _test2: Test2 = true;
+			_test2;
 		});
 
 		it("should be assignable to string", () => {
@@ -54,12 +53,12 @@ describe("Base64Type type-level tests", () => {
 	describe("BrandedBase64Url basic structure", () => {
 		it("should be a branded string type", () => {
 			type Test1 = Equals<BrandedBase64Url, string>;
-			const test1: Test1 = false;
-			test1;
+			const _test1: Test1 = false;
+			_test1;
 
 			type Test2 = BrandedBase64Url extends string ? true : false;
-			const test2: Test2 = true;
-			test2;
+			const _test2: Test2 = true;
+			_test2;
 		});
 
 		it("should be assignable to string", () => {

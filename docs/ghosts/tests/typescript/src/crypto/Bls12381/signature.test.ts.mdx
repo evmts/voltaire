@@ -13,11 +13,11 @@ source: 'src/crypto/Bls12381/signature.test.ts'
  */
 
 import { describe, expect, it } from "vitest";
-import { Bls12381 } from "./Bls12381.js";
 import {
 	aggregate,
 	aggregatePublicKeys,
 	aggregateVerify,
+	Bls12381,
 	batchVerify,
 	derivePublicKey,
 	fastAggregateVerify,
@@ -103,6 +103,16 @@ describe("BLS12-381 Signatures", () => {
 			key.fill(1);
 			expect(() => derivePublicKey(key)).toThrow(InvalidScalarError);
 		});
+
+		it("should throw InvalidScalarError with correct error.name", () => {
+			try {
+				derivePublicKey(new Uint8Array(32));
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidScalarError);
+				expect((e as InvalidScalarError).name).toBe("InvalidScalarError");
+			}
+		});
 	});
 
 	describe("sign", () => {
@@ -137,6 +147,17 @@ describe("BLS12-381 Signatures", () => {
 			expect(() => sign(message, new Uint8Array(32))).toThrow(
 				InvalidScalarError,
 			);
+		});
+
+		it("should throw InvalidScalarError for sign with correct error.name", () => {
+			const message = new TextEncoder().encode("Test");
+			try {
+				sign(message, new Uint8Array(32));
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidScalarError);
+				expect((e as InvalidScalarError).name).toBe("InvalidScalarError");
+			}
 		});
 	});
 
@@ -206,6 +227,16 @@ describe("BLS12-381 Signatures", () => {
 			expect(() => aggregate([])).toThrow(SignatureError);
 		});
 
+		it("should throw SignatureError with correct error.name for empty aggregate", () => {
+			try {
+				aggregate([]);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(SignatureError);
+				expect((e as SignatureError).name).toBe("SignatureError");
+			}
+		});
+
 		it("should handle single signature", () => {
 			const pk = randomPrivateKey();
 			const message = new TextEncoder().encode("Single");
@@ -258,7 +289,7 @@ describe("BLS12-381 Signatures", () => {
 			const pk2 = randomPrivateKey();
 			const pk3 = randomPrivateKey(); // Different key
 			const pubKey1 = derivePublicKey(pk1);
-			const pubKey2 = derivePublicKey(pk2);
+			const _pubKey2 = derivePublicKey(pk2);
 			const pubKey3 = derivePublicKey(pk3);
 
 			const sig1 = sign(message, pk1);

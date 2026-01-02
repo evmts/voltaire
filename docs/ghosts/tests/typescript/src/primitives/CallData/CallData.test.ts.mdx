@@ -7,11 +7,13 @@ source: 'src/primitives/CallData/CallData.test.ts'
 
 ```typescript
 import { describe, expect, it } from "vitest";
-import type { CallDataType } from "./CallDataType.js";
 import {
+	AbiItemNotFoundError,
 	InvalidCallDataLengthError,
 	InvalidHexFormatError,
+	InvalidSignatureError,
 	InvalidValueError,
+	ParameterCountMismatchError,
 } from "./errors.js";
 import { CallData } from "./index.js";
 
@@ -303,16 +305,32 @@ describe("CallData", () => {
 			expect(CallData.hasSelector(calldata, "0xa9059cbb")).toBe(true);
 		});
 
-		it("throws on parameter count mismatch", () => {
-			expect(() =>
-				CallData.encode("transfer(address,uint256)", ["0x70997970..."]),
-			).toThrow("Parameter count mismatch");
+		it("throws ParameterCountMismatchError on parameter count mismatch", () => {
+			try {
+				CallData.encode("transfer(address,uint256)", ["0x70997970..."]);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(ParameterCountMismatchError);
+				expect((e as ParameterCountMismatchError).name).toBe(
+					"ParameterCountMismatchError",
+				);
+				expect((e as ParameterCountMismatchError).message).toContain(
+					"Parameter count mismatch",
+				);
+			}
 		});
 
-		it("throws on invalid signature format", () => {
-			expect(() => CallData.encode("invalid", [])).toThrow(
-				"Invalid function signature",
-			);
+		it("throws InvalidSignatureError on invalid signature format", () => {
+			try {
+				CallData.encode("invalid", []);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidSignatureError);
+				expect((e as InvalidSignatureError).name).toBe("InvalidSignatureError");
+				expect((e as InvalidSignatureError).message).toContain(
+					"Invalid function signature",
+				);
+			}
 		});
 	});
 
@@ -351,12 +369,19 @@ describe("CallData", () => {
 			expect(decoded.parameters[1]).toBe(1000000000000000000n);
 		});
 
-		it("throws on unknown selector", () => {
+		it("throws AbiItemNotFoundError on unknown selector", () => {
 			const calldata = CallData.from("0x12345678");
-			// biome-ignore lint/suspicious/noExplicitAny: ABI type coercion for test
-			expect(() => CallData.decode(calldata, abi as any)).toThrow(
-				"Function not found in ABI",
-			);
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: ABI type coercion for test
+				CallData.decode(calldata, abi as any);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(AbiItemNotFoundError);
+				expect((e as AbiItemNotFoundError).name).toBe("AbiItemNotFoundError");
+				expect((e as AbiItemNotFoundError).message).toContain(
+					"Function not found in ABI",
+				);
+			}
 		});
 	});
 

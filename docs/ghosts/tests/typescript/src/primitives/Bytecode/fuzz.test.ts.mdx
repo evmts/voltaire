@@ -322,7 +322,7 @@ describe("Bytecode Fuzz: Stack analysis edge cases", () => {
 
 	it("handles stack overflow scenarios", () => {
 		// Lots of PUSH operations to hit stack limit
-		const pushes = new Array(1025).fill(0x60).concat([0x00]); // 1025 PUSH1 ops + data
+		const _pushes = new Array(1025).fill(0x60).concat([0x00]); // 1025 PUSH1 ops + data
 		const parts: number[] = [];
 		for (let i = 0; i < 1025; i++) {
 			parts.push(0x60, 0x00); // PUSH1 0x00

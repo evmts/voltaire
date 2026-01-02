@@ -57,6 +57,17 @@ describe("Secp256k1.PublicKey.fromBytes", () => {
 			);
 		});
 
+		it("should throw InvalidPublicKeyError with correct name for wrong length", () => {
+			const shortBytes = new Uint8Array(63);
+
+			try {
+				PublicKey.fromBytes(shortBytes);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidPublicKeyError");
+			}
+		});
+
 		it("should throw on wrong length (too long)", () => {
 			const longBytes = new Uint8Array(65);
 

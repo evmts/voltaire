@@ -8,15 +8,14 @@ source: 'src/primitives/Transaction/EIP4844/TransactionEIP4844Type.test.ts'
 ```typescript
 import { describe, it } from "vitest";
 import type { AddressType } from "../../Address/AddressType.js";
-import { Type } from "../types.js";
 import type { AccessList, VersionedHash } from "../types.js";
+import { Type } from "../types.js";
 import type { TransactionEIP4844Type } from "./TransactionEIP4844Type.js";
 
-type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<X, Y> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+		? true
+		: false;
 
 describe("TransactionEIP4844Type", () => {
 	it("type structure is correct", () => {
@@ -80,7 +79,7 @@ describe("TransactionEIP4844Type", () => {
 
 	it("rejects missing fields", () => {
 		// @ts-expect-error - missing maxFeePerBlobGas
-		const tx1: TransactionEIP4844Type = {
+		const _tx1: TransactionEIP4844Type = {
 			__brand: "TransactionEIP4844",
 			type: Type.EIP4844,
 			chainId: 1n,
@@ -101,7 +100,7 @@ describe("TransactionEIP4844Type", () => {
 
 	it("rejects wrong type value", () => {
 		// @ts-expect-error - wrong type value
-		const tx: TransactionEIP4844Type = {
+		const _tx: TransactionEIP4844Type = {
 			__brand: "TransactionEIP4844",
 			type: Type.EIP1559,
 			chainId: 1n,

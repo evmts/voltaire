@@ -7,10 +7,10 @@ source: 'src/primitives/Hex/clone.test.ts'
 
 ```typescript
 import { describe, expect, it } from "vitest";
-import type { HexType } from "./HexType.js";
 import { clone } from "./clone.js";
 import { equals } from "./equals.js";
 import { from } from "./from.js";
+import type { HexType } from "./HexType.js";
 
 describe("clone", () => {
 	it("creates a copy of hex string", () => {

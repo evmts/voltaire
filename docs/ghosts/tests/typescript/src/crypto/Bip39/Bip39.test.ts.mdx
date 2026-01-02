@@ -306,6 +306,17 @@ describe("Bip39", () => {
 			);
 		});
 
+		it("throws InvalidMnemonicError with correct name", () => {
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+			try {
+				Bip39.assertValidMnemonic(mnemonic);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidMnemonicError");
+			}
+		});
+
 		it("throws for empty mnemonic", () => {
 			expect(() => Bip39.assertValidMnemonic("")).toThrow();
 		});
@@ -803,6 +814,16 @@ describe("Bip39", () => {
 		it("throws on invalid entropy length - 17 bytes", () => {
 			const entropy = new Uint8Array(17);
 			expect(() => Bip39.entropyToMnemonic(entropy)).toThrow();
+		});
+
+		it("throws InvalidEntropyError with correct name", () => {
+			const entropy = new Uint8Array(17);
+			try {
+				Bip39.entropyToMnemonic(entropy);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidEntropyError");
+			}
 		});
 
 		it("throws on invalid entropy length - 33 bytes", () => {

@@ -7,8 +7,7 @@ source: 'src/evm/system/system.test.ts'
 
 ```typescript
 import { describe, expect, test } from "vitest";
-import type { BrandedFrame, EvmError } from "../Frame/FrameType.js";
-import type { BrandedHost } from "../Host/HostType.js";
+import type { BrandedFrame } from "../Frame/FrameType.js";
 import { create } from "./0xf0_CREATE.js";
 import { call } from "./0xf1_CALL.js";
 import { delegatecall } from "./0xf4_DELEGATECALL.js";

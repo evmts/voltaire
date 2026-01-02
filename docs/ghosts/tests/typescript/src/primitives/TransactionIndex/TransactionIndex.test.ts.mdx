@@ -8,6 +8,7 @@ source: 'src/primitives/TransactionIndex/TransactionIndex.test.ts'
 ```typescript
 import { describe, expect, it } from "vitest";
 import * as TransactionIndex from "./index.js";
+import { InvalidTransactionIndexError } from "./errors.js";
 
 describe("TransactionIndex", () => {
 	describe("from", () => {
@@ -27,18 +28,49 @@ describe("TransactionIndex", () => {
 		});
 
 		it("throws on negative", () => {
-			expect(() => TransactionIndex.from(-1)).toThrow("cannot be negative");
+			try {
+				TransactionIndex.from(-1);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionIndexError);
+				expect((e as InvalidTransactionIndexError).name).toBe(
+					"InvalidTransactionIndexError",
+				);
+				expect((e as InvalidTransactionIndexError).message).toContain(
+					"cannot be negative",
+				);
+			}
 		});
 
 		it("throws on non-integer", () => {
-			expect(() => TransactionIndex.from(1.5)).toThrow("must be an integer");
+			try {
+				TransactionIndex.from(1.5);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionIndexError);
+				expect((e as InvalidTransactionIndexError).name).toBe(
+					"InvalidTransactionIndexError",
+				);
+				expect((e as InvalidTransactionIndexError).message).toContain(
+					"must be an integer",
+				);
+			}
 		});
 
 		it("throws on invalid type", () => {
-			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
-			expect(() => TransactionIndex.from("42" as any)).toThrow(
-				"must be a number or bigint",
-			);
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
+				TransactionIndex.from("42" as any);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionIndexError);
+				expect((e as InvalidTransactionIndexError).name).toBe(
+					"InvalidTransactionIndexError",
+				);
+				expect((e as InvalidTransactionIndexError).message).toContain(
+					"must be a number or bigint",
+				);
+			}
 		});
 	});
 
@@ -60,6 +92,19 @@ describe("TransactionIndex", () => {
 			const a = TransactionIndex.from(42);
 			const b = TransactionIndex.from(43);
 			expect(TransactionIndex.equals(a, b)).toBe(false);
+		});
+	});
+
+	describe("error properties", () => {
+		it("InvalidTransactionIndexError has correct properties", () => {
+			const error = new InvalidTransactionIndexError("Test message", {
+				value: -1,
+				expected: "non-negative integer",
+			});
+			expect(error.name).toBe("InvalidTransactionIndexError");
+			expect(error.code).toBe("INVALID_TRANSACTION_INDEX");
+			expect(error.value).toBe(-1);
+			expect(error.expected).toBe("non-negative integer");
 		});
 	});
 });

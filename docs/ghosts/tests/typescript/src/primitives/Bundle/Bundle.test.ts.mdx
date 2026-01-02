@@ -7,6 +7,7 @@ source: 'src/primitives/Bundle/Bundle.test.ts'
 
 ```typescript
 import { describe, expect, it } from "vitest";
+import { InvalidBundleError, MissingCryptoDependencyError } from "./errors.js";
 import * as Bundle from "./index.js";
 
 describe("Bundle", () => {
@@ -186,15 +187,24 @@ describe("Bundle", () => {
 			expect(hash.length).toBe(32);
 		});
 
-		it("throws if keccak256 not provided", () => {
+		it("throws MissingCryptoDependencyError if keccak256 not provided", () => {
 			const bundle = Bundle.from({
 				transactions: [tx1],
 			});
 
-			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-			expect(() => Bundle.toHash(bundle, {} as any)).toThrow(
-				"keccak256 not provided",
-			);
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+				Bundle.toHash(bundle, {} as any);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(MissingCryptoDependencyError);
+				expect((e as MissingCryptoDependencyError).name).toBe(
+					"MissingCryptoDependencyError",
+				);
+				expect((e as MissingCryptoDependencyError).message).toContain(
+					"keccak256 not provided",
+				);
+			}
 		});
 	});
 

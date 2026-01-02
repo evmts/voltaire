@@ -593,7 +593,7 @@ describe("Host", () => {
 
 	describe("interface completeness", () => {
 		it("Host.from creates branded Host type", () => {
-			const host = Host.from({
+			const _host = Host.from({
 				getBalance: () => 0n,
 				setBalance: () => {},
 				getCode: () => new Uint8Array(0),
@@ -608,7 +608,7 @@ describe("Host", () => {
 		});
 
 		it("Host.createMemoryHost creates branded Host type", () => {
-			const host = Host.createMemoryHost();
+			const _host = Host.createMemoryHost();
 		});
 
 		it("Host interface has all required methods for handlers", () => {

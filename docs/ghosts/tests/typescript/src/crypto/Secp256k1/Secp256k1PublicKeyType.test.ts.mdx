@@ -9,33 +9,32 @@ source: 'src/crypto/Secp256k1/Secp256k1PublicKeyType.test.ts'
 import { describe, it } from "vitest";
 import type { Secp256k1PublicKeyType } from "./Secp256k1PublicKeyType.js";
 
-type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<X, Y> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+		? true
+		: false;
 
 describe("Secp256k1PublicKeyType", () => {
 	describe("type structure", () => {
 		it("should be a Uint8Array", () => {
-			const test: Equals<
+			const _test: Equals<
 				Secp256k1PublicKeyType extends Uint8Array ? true : false,
 				true
 			> = true;
-			test;
+			_test;
 		});
 
 		it("should have length 64", () => {
-			const test: Equals<Secp256k1PublicKeyType["length"], 64> = true;
-			test;
+			const _test: Equals<Secp256k1PublicKeyType["length"], 64> = true;
+			_test;
 		});
 
 		it("should have brand property", () => {
-			const test: Equals<
+			const _test: Equals<
 				keyof Secp256k1PublicKeyType extends keyof Uint8Array ? false : true,
 				true
 			> = true;
-			test;
+			_test;
 		});
 	});
 
@@ -56,16 +55,16 @@ describe("Secp256k1PublicKeyType", () => {
 
 		it("should be assignable to Uint8Array", () => {
 			const publicKey = {} as Secp256k1PublicKeyType;
-			const array: Uint8Array = publicKey;
-			array;
+			const _array: Uint8Array = publicKey;
+			_array;
 		});
 	});
 
 	describe("type narrowing", () => {
 		it("should narrow length to exactly 64", () => {
 			const publicKey = {} as Secp256k1PublicKeyType;
-			const test: Equals<typeof publicKey.length, 64> = true;
-			test;
+			const _test: Equals<typeof publicKey.length, 64> = true;
+			_test;
 		});
 
 		it("should not accept length 65", () => {
@@ -114,8 +113,8 @@ describe("Secp256k1PublicKeyType", () => {
 
 		it("should support indexing", () => {
 			const publicKey = {} as Secp256k1PublicKeyType;
-			const byte: number | undefined = publicKey[0];
-			byte;
+			const _byte: number | undefined = publicKey[0];
+			_byte;
 		});
 
 		it("should support iteration", () => {
@@ -140,8 +139,8 @@ describe("Secp256k1PublicKeyType", () => {
 				);
 			}
 
-			const func = isSecp256k1PublicKey;
-			func;
+			const _func = isSecp256k1PublicKey;
+			_func;
 		});
 	});
 });

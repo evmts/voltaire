@@ -14,9 +14,9 @@ source: 'src/crypto/eip712.test.ts'
 
 import { describe, expect, it } from "vitest";
 import { Address } from "../primitives/Address/index.js";
-import type { HashType } from "../primitives/Hash/HashType.js";
 import { equals } from "../primitives/Hash/equals.js";
 import { fromHex } from "../primitives/Hash/fromHex.js";
+import type { HashType } from "../primitives/Hash/HashType.js";
 import { keccak256String } from "../primitives/Hash/index.js";
 import { isZero } from "../primitives/Hash/isZero.js";
 import {
@@ -1625,7 +1625,7 @@ describe("EIP712", () => {
 
 		it("throws on cyclic struct without arrays", () => {
 			// Direct cycle: A -> B -> A (invalid without arrays)
-			const typedData: TypedData = {
+			const _typedData: TypedData = {
 				domain: { name: "Test" },
 				types: {
 					A: [{ name: "b", type: "B" }],
