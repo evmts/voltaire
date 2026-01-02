@@ -91,7 +91,8 @@
                 "group": "Framework Skills",
                 "pages": [
                   "skills/react-query",
-                  "skills/vue"
+                  "skills/vue",
+                  "skills/effect-ts"
                 ]
               },
               {
