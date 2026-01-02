@@ -15,7 +15,5 @@
  * ```
  */
 export function toNumber(uint) {
-	if (uint > BigInt(Number.MAX_SAFE_INTEGER)) {
-	}
 	return Number(uint);
 }
