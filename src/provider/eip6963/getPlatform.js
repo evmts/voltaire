@@ -7,7 +7,6 @@
  */
 
 /** @type {typeof globalThis & { dispatchEvent?: Function }} */
-// @ts-expect-error - window may exist in browser environment
 const window = globalThis;
 
 /** @type {Function | undefined} */
