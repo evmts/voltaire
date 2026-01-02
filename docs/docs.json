@@ -1619,7 +1619,7 @@
             ]
           },
           {
-            "group": "Swift (Beta)",
+            "group": "Swift",
             "icon": "mobile-screen",
             "pages": [
               "swift/index",
@@ -1660,7 +1660,7 @@
             ]
           },
           {
-            "group": "Zig (Beta)",
+            "group": "Zig",
             "icon": "bolt",
             "pages": [
               {
