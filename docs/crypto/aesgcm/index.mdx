@@ -187,12 +187,9 @@ const decryptedWithAAD = await AesGcm.decrypt(
 );
 ```
 
-**Throws `DecryptionError` if:**
-- Authentication tag verification fails (data tampered)
-- Wrong key used
-- Wrong nonce used
-- Wrong AAD used
-- Corrupted ciphertext
+**Throws:**
+- `InvalidNonceError` - Nonce not 12 bytes
+- `DecryptionError` - Authentication tag verification fails (data tampered), wrong key/nonce/AAD used, or corrupted ciphertext
 
 ### Nonce Generation
 
@@ -683,6 +680,39 @@ async function sendEncryptedMessage(message, recipientPublicKey, senderPrivateKe
   return { nonce, ciphertext };
 }
 ```
+
+## Error Handling
+
+All AesGcm functions throw typed errors that extend `CryptoError`:
+
+| Error | Code | When |
+|-------|------|------|
+| `InvalidKeyError` | `INVALID_KEY` | Key not 16 or 32 bytes on import |
+| `InvalidNonceError` | `INVALID_NONCE` | Nonce not 12 bytes |
+| `DecryptionError` | `DECRYPTION_FAILED` | Auth tag verification fails, wrong key/nonce/AAD, or ciphertext too short |
+| `AesGcmError` | `AES_GCM_ERROR` | Generic encryption failure |
+
+```typescript
+import * as AesGcm from '@tevm/voltaire/AesGcm';
+import { DecryptionError, InvalidNonceError, InvalidKeyError } from '@tevm/voltaire/AesGcm';
+
+try {
+  const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
+} catch (e) {
+  if (e instanceof DecryptionError) {
+    console.error('Authentication failed:', e.message);
+    console.error('Code:', e.code); // "DECRYPTION_FAILED"
+  } else if (e instanceof InvalidNonceError) {
+    console.error('Invalid nonce:', e.message);
+  }
+}
+```
+
+All error classes have:
+- `name` - Error class name (e.g., `"DecryptionError"`)
+- `code` - Machine-readable error code
+- `message` - Human-readable description
+- `docsPath` - Link to relevant documentation
 
 ## Implementation Notes
 

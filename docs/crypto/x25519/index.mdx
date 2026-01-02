@@ -524,6 +524,40 @@ const sharedSecret = X25519.scalarmult(ephemeral.secretKey, peerPublic);
 - Legacy system compatibility
 - WebAuthn integration
 
+## Error Handling
+
+All X25519 functions throw typed errors that extend `CryptoError`:
+
+| Error | Code | When |
+|-------|------|------|
+| `InvalidSecretKeyError` | `INVALID_SECRET_KEY` | Secret key not 32 bytes |
+| `InvalidPublicKeyError` | `INVALID_PUBLIC_KEY` | Public key not 32 bytes or invalid curve point |
+| `X25519Error` | `X25519_ERROR` | Scalar multiplication or keypair generation failed |
+
+```typescript
+import * as X25519 from '@tevm/voltaire/X25519';
+import { InvalidSecretKeyError, InvalidPublicKeyError, X25519Error } from '@tevm/voltaire/X25519';
+
+try {
+  const shared = X25519.scalarmult(secretKey, publicKey);
+} catch (e) {
+  if (e instanceof InvalidSecretKeyError) {
+    console.error('Invalid secret key:', e.message);
+    console.error('Code:', e.code); // "INVALID_SECRET_KEY"
+  } else if (e instanceof InvalidPublicKeyError) {
+    console.error('Invalid public key:', e.message);
+  } else if (e instanceof X25519Error) {
+    console.error('X25519 operation failed:', e.message);
+  }
+}
+```
+
+All error classes have:
+- `name` - Error class name (e.g., `"InvalidSecretKeyError"`)
+- `code` - Machine-readable error code
+- `message` - Human-readable description
+- `docsPath` - Link to relevant documentation
+
 ## Related
 
 - [Crypto: Ed25519](/crypto/ed25519) - Curve25519 signatures (companion to X25519)

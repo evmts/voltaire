@@ -464,6 +464,39 @@ const ciphertext = ChaCha20Poly1305.encrypt(plaintext, key, nonce, aad);
 ✗ Never exceed 2⁴⁸ messages per key
 ✗ Never commit keys to version control
 
+## Error Handling
+
+All ChaCha20Poly1305 functions throw typed errors that extend `CryptoError`:
+
+| Error | Code | When |
+|-------|------|------|
+| `InvalidKeyError` | `INVALID_KEY` | Key not 32 bytes |
+| `InvalidNonceError` | `INVALID_NONCE` | Nonce not 12 bytes |
+| `DecryptionError` | `DECRYPTION_FAILED` | Auth tag verification fails, wrong key/nonce/AAD, or ciphertext too short |
+| `ChaCha20Poly1305Error` | `CHACHA20_POLY1305_ERROR` | Generic encryption failure |
+
+```typescript
+import * as ChaCha20Poly1305 from '@tevm/voltaire/ChaCha20Poly1305';
+import { DecryptionError, InvalidNonceError, InvalidKeyError } from '@tevm/voltaire/ChaCha20Poly1305';
+
+try {
+  const decrypted = ChaCha20Poly1305.decrypt(ciphertext, key, nonce);
+} catch (e) {
+  if (e instanceof DecryptionError) {
+    console.error('Authentication failed:', e.message);
+    console.error('Code:', e.code); // "DECRYPTION_FAILED"
+  } else if (e instanceof InvalidKeyError) {
+    console.error('Invalid key:', e.message);
+  }
+}
+```
+
+All error classes have:
+- `name` - Error class name (e.g., `"DecryptionError"`)
+- `code` - Machine-readable error code
+- `message` - Human-readable description
+- `docsPath` - Link to relevant documentation
+
 ## References
 
 - [RFC 8439 - ChaCha20 and Poly1305 for IETF Protocols](https://www.rfc-editor.org/rfc/rfc8439.html)
