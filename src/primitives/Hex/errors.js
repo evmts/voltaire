@@ -212,6 +212,34 @@ export class NonIntegerError extends BaseInvalidRangeError {
 	}
 }
 
+/**
+ * Error for invalid size parameter (negative or non-integer)
+ * @extends {BaseInvalidRangeError}
+ */
+export class InvalidSizeError extends BaseInvalidRangeError {
+	/**
+	 * @param {string} [message]
+	 * @param {Object} [options]
+	 * @param {string} [options.code]
+	 * @param {unknown} [options.value]
+	 * @param {string} [options.expected]
+	 * @param {Record<string, unknown>} [options.context]
+	 * @param {string} [options.docsPath]
+	 * @param {Error} [options.cause]
+	 */
+	constructor(message = "Size must be a non-negative integer", options = {}) {
+		super(message, {
+			code: options.code || "HEX_INVALID_SIZE",
+			value: options.value,
+			expected: options.expected || "non-negative integer",
+			context: options.context,
+			docsPath: options.docsPath || "/primitives/hex#error-handling",
+			cause: options.cause,
+		});
+		this.name = "InvalidSizeError";
+	}
+}
+
 // Re-export for backward compatibility
 export const InvalidHexFormatError = InvalidFormatError;
 export const InvalidHexCharacterError = InvalidCharacterError;

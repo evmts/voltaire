@@ -1,4 +1,4 @@
-import { SizeExceededError } from "./errors.js";
+import { InvalidSizeError, SizeExceededError } from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
 import { toBytes } from "./toBytes.js";
 
@@ -10,6 +10,7 @@ import { toBytes } from "./toBytes.js";
  * @param {string} hex - Hex string to pad
  * @param {number} targetSize - Target size in bytes
  * @returns {string} Padded hex string
+ * @throws {InvalidSizeError} If targetSize is negative or non-integer
  * @throws {SizeExceededError} If hex exceeds target size
  * @example
  * ```javascript
@@ -20,6 +21,16 @@ import { toBytes } from "./toBytes.js";
  * ```
  */
 export function pad(hex, targetSize) {
+	if (targetSize < 0 || !Number.isInteger(targetSize)) {
+		throw new InvalidSizeError(
+			`Size must be a non-negative integer, got ${targetSize}`,
+			{
+				value: targetSize,
+				expected: "non-negative integer",
+				context: { targetSize },
+			},
+		);
+	}
 	const bytes = toBytes(/** @type {import('./HexType.js').HexType} */ (hex));
 	if (bytes.length > targetSize) {
 		throw new SizeExceededError(
