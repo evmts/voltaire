@@ -125,12 +125,13 @@ export const verify = Verify({ verifyBlobKzgProof });
  * @throws {InvalidCommitmentSizeError} If commitment size is invalid
  * @throws {InvalidProofSizeError} If proof size is invalid
  * @throws {BlobNotImplementedError} Always (not yet implemented)
+ * @returns never - This function always throws
  */
 export const verifyBatch = ((
 	blobs: readonly BrandedBlob[],
 	commitments: readonly CommitmentType[],
 	proofs: readonly ProofType[],
-): boolean => {
+): never => {
 	// Basic validations to mirror factory behavior
 	if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
 		throw new BlobArrayLengthMismatchError("Arrays must have same length", {
@@ -186,7 +187,7 @@ export const verifyBatch = ((
 	blobs: readonly BrandedBlob[],
 	commitments: readonly CommitmentType[],
 	proofs: readonly ProofType[],
-) => boolean;
+) => never;
 
 // Export individual functions
 export {
