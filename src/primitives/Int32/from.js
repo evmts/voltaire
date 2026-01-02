@@ -27,6 +27,21 @@ export function from(value) {
 	let num;
 
 	if (typeof value === "number") {
+		// Check bounds BEFORE truncation to detect overflow
+		if (value > INT32_MAX) {
+			throw new IntegerOverflowError(`Int32 value exceeds maximum: ${value}`, {
+				value,
+				max: INT32_MAX,
+				type: "int32",
+			});
+		}
+		if (value < INT32_MIN) {
+			throw new IntegerUnderflowError(`Int32 value is below minimum: ${value}`, {
+				value,
+				min: INT32_MIN,
+				type: "int32",
+			});
+		}
 		num = value;
 	} else if (typeof value === "bigint") {
 		if (value > BigInt(INT32_MAX)) {
@@ -56,6 +71,21 @@ export function from(value) {
 				docsPath: "/primitives/int32#from",
 			});
 		}
+		// Check bounds BEFORE truncation to detect overflow
+		if (parsed > INT32_MAX) {
+			throw new IntegerOverflowError(`Int32 value exceeds maximum: ${parsed}`, {
+				value: parsed,
+				max: INT32_MAX,
+				type: "int32",
+			});
+		}
+		if (parsed < INT32_MIN) {
+			throw new IntegerUnderflowError(`Int32 value is below minimum: ${parsed}`, {
+				value: parsed,
+				min: INT32_MIN,
+				type: "int32",
+			});
+		}
 		num = parsed;
 	} else {
 		throw new InvalidFormatError(`Cannot convert ${typeof value} to Int32`, {
@@ -65,23 +95,8 @@ export function from(value) {
 		});
 	}
 
-	// Truncate to 32-bit signed integer
+	// Truncate to 32-bit signed integer (bounds already checked above)
 	num = num | 0;
-
-	if (num > INT32_MAX) {
-		throw new IntegerOverflowError(`Int32 value exceeds maximum: ${num}`, {
-			value: num,
-			max: INT32_MAX,
-			type: "int32",
-		});
-	}
-	if (num < INT32_MIN) {
-		throw new IntegerUnderflowError(`Int32 value is below minimum: ${num}`, {
-			value: num,
-			min: INT32_MIN,
-			type: "int32",
-		});
-	}
 
 	return /** @type {import('./Int32Type.js').BrandedInt32} */ (num);
 }
