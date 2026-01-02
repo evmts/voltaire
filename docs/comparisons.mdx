@@ -372,6 +372,42 @@ const decoded = iface.parseLog({
 
 ## Key Differences
 
+### Skills vs Library Abstractions
+
+The biggest philosophical difference between Voltaire and other libraries is how higher-level abstractions are delivered.
+
+**Ethers.js** and **Viem** provide monolithic abstractions as library exports:
+
+```typescript
+// Ethers - rigid provider abstraction
+import { JsonRpcProvider } from 'ethers';
+const provider = new JsonRpcProvider('https://...');
+
+// Viem - rigid client abstraction
+import { createPublicClient, http } from 'viem';
+const client = createPublicClient({ transport: http('https://...') });
+```
+
+These abstractions are excellent "off-the-rack" solutions, but they come with trade-offs:
+- **Rigidity** — Can't easily modify internals (caching, retry logic, error handling)
+- **Bundle bloat** — Include features you don't use
+- **Security surface** — More code means more potential vulnerabilities
+
+**Voltaire** takes the [shadcn/ui](https://ui.shadcn.com/) approach with [Skills](/concepts/skills):
+
+```typescript
+// Copy the ethers-provider Skill into your project
+// Then customize it however you need
+import { EthersProvider } from './EthersProvider.js';  // Your local copy
+const provider = new EthersProvider('https://...');
+```
+
+Skills are copyable reference implementations you own. We provide [ethers-style](/skills/ethers-provider), [viem-style](/skills/viem-publicclient), and [React](/skills/react-query) Skills—use them as-is or customize for your contracts.
+
+<Tip>
+Use the [Voltaire MCP Server](/model-context-protocol) to have AI generate custom Skills tailored to your specific contracts and requirements.
+</Tip>
+
 ### Type System
 
 **Voltaire** uses [branded types](/getting-started/branded-types) for compile-time type safety with zero runtime overhead:

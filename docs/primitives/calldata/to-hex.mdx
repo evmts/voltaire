@@ -5,6 +5,12 @@ description: Convert CallData to hex string
 
 Converts CallData to a hex-encoded string with `0x` prefix. Primary method for serializing calldata for display or transmission.
 
+<Warning>
+WASM performance note: Simple string/hex conversions like `toHex()` usually do not get faster under WASM. Crossing the JS↔WASM boundary adds overhead, and JavaScript already has very fast built-ins for hex/string formatting. Prefer the default JS entrypoint for `toHex()`-style operations; reserve WASM for compute-heavy tasks (e.g., Keccak256 hashing, ABI/RLP encoding/decoding, secp256k1/BLS) where it shines.
+
+Voltaire’s WASM builds intentionally balance performance and bundle size. For maximum performance, build from source using the performance-optimized WASM target. See Build from Source: `/dev/build-system#typescript-targets` and WASM Build Modes: `/dev/wasm#build-modes`.
+</Warning>
+
 ## Signature
 
 <Tabs>

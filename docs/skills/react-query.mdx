@@ -1,0 +1,354 @@
+---
+title: react-query
+description: Use Voltaire with TanStack Query for React applications
+---
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+A pattern for using Voltaire with [TanStack Query](https://tanstack.com/query) in React applications. This is our recommended approach instead of wagmi-like abstractions.
+
+<Note>
+This Skill is typically used **with another Skill** like [ethers-provider](/skills/ethers-provider) or [viem-publicclient](/skills/viem-publicclient). The provider Skill handles blockchain communication; this Skill handles React state management.
+</Note>
+
+## Why Not wagmi?
+
+wagmi is excellent, but it's opinionated and includes features you may not need. This Skill shows how to build React hooks directly with TanStack Query:
+
+- **Smaller bundle** — Only include what you use
+- **Full control** — Customize caching, retries, and error handling
+- **No lock-in** — Standard TanStack Query patterns
+
+## Installation
+
+```bash
+npm install @tevm/voltaire @tanstack/react-query
+```
+
+## Setup
+
+### Provider Setup
+
+```typescript
+// providers.tsx
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createContext, useContext, type ReactNode } from 'react'
+import { JsonRpcProvider } from './JsonRpcProvider'  // Your provider skill
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 10, // 10 seconds
+      gcTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+})
+
+const ProviderContext = createContext<JsonRpcProvider | null>(null)
+
+export function useProvider() {
+  const provider = useContext(ProviderContext)
+  if (!provider) throw new Error('Provider not found')
+  return provider
+}
+
+export function Web3Provider({
+  rpcUrl,
+  children
+}: {
+  rpcUrl: string
+  children: ReactNode
+}) {
+  const provider = new JsonRpcProvider(rpcUrl)
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ProviderContext.Provider value={provider}>
+        {children}
+      </ProviderContext.Provider>
+    </QueryClientProvider>
+  )
+}
+```
+
+## Hook Implementations
+
+### useBalance
+
+```typescript
+// hooks/useBalance.ts
+import { useQuery } from '@tanstack/react-query'
+import { Address } from '@tevm/voltaire/Address'
+import { useProvider } from '../providers'
+
+export function useBalance(address: string | undefined) {
+  const provider = useProvider()
+
+  return useQuery({
+    queryKey: ['balance', address],
+    queryFn: async () => {
+      if (!address) throw new Error('No address')
+      const balance = await provider.getBalance(Address(address))
+      return balance
+    },
+    enabled: !!address,
+    refetchInterval: 12000, // Refetch every block (~12s on mainnet)
+  })
+}
+```
+
+### useBlockNumber
+
+```typescript
+// hooks/useBlockNumber.ts
+import { useQuery } from '@tanstack/react-query'
+import { useProvider } from '../providers'
+
+export function useBlockNumber() {
+  const provider = useProvider()
+
+  return useQuery({
+    queryKey: ['blockNumber'],
+    queryFn: () => provider.getBlockNumber(),
+    refetchInterval: 12000,
+  })
+}
+```
+
+### useContractRead
+
+```typescript
+// hooks/useContractRead.ts
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
+import { Address } from '@tevm/voltaire/Address'
+import { Abi } from '@tevm/voltaire/Abi'
+import { Hex } from '@tevm/voltaire/Hex'
+import { useProvider } from '../providers'
+
+interface UseContractReadOptions<TAbi extends readonly unknown[]> {
+  address: string
+  abi: TAbi
+  functionName: string
+  args?: unknown[]
+  enabled?: boolean
+}
+
+export function useContractRead<TAbi extends readonly unknown[]>({
+  address,
+  abi: abiItems,
+  functionName,
+  args = [],
+  enabled = true,
+}: UseContractReadOptions<TAbi>) {
+  const provider = useProvider()
+
+  return useQuery({
+    queryKey: ['contract', address, functionName, args],
+    queryFn: async () => {
+      const abi = Abi(abiItems)
+      const data = abi.encode(functionName, args)
+
+      const result = await provider.call({
+        to: Address(address),
+        data,
+      })
+
+      const decoded = abi.decode(functionName, Hex.toBytes(result))
+      return decoded.length === 1 ? decoded[0] : decoded
+    },
+    enabled,
+  })
+}
+```
+
+### useContractWrite
+
+```typescript
+// hooks/useContractWrite.ts
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Address } from '@tevm/voltaire/Address'
+import { Abi } from '@tevm/voltaire/Abi'
+import { useProvider } from '../providers'
+
+interface UseContractWriteOptions<TAbi extends readonly unknown[]> {
+  address: string
+  abi: TAbi
+  functionName: string
+}
+
+export function useContractWrite<TAbi extends readonly unknown[]>({
+  address,
+  abi: abiItems,
+  functionName,
+}: UseContractWriteOptions<TAbi>) {
+  const provider = useProvider()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (args: unknown[]) => {
+      const abi = Abi(abiItems)
+      const data = abi.encode(functionName, args)
+
+      const txHash = await provider.sendTransaction({
+        to: Address(address),
+        data,
+      })
+
+      return txHash
+    },
+    onSuccess: () => {
+      // Invalidate related queries after successful write
+      queryClient.invalidateQueries({ queryKey: ['contract', address] })
+      queryClient.invalidateQueries({ queryKey: ['balance'] })
+    },
+  })
+}
+```
+
+### useWaitForTransaction
+
+```typescript
+// hooks/useWaitForTransaction.ts
+import { useQuery } from '@tanstack/react-query'
+import { useProvider } from '../providers'
+
+export function useWaitForTransaction(hash: string | undefined) {
+  const provider = useProvider()
+
+  return useQuery({
+    queryKey: ['transaction', hash],
+    queryFn: async () => {
+      if (!hash) throw new Error('No hash')
+      return provider.waitForTransaction(hash)
+    },
+    enabled: !!hash,
+    retry: false,
+  })
+}
+```
+
+## Usage Example
+
+```tsx
+// App.tsx
+import { Web3Provider } from './providers'
+import { useBalance, useContractRead, useContractWrite } from './hooks'
+
+const ERC20_ABI = [
+  {
+    name: 'balanceOf',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'transfer',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+] as const
+
+function TokenBalance({ address }: { address: string }) {
+  const { data: balance, isLoading, error } = useContractRead({
+    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: [address],
+  })
+
+  if (isLoading) return <div>Loading...</div>
+  if (error) return <div>Error: {error.message}</div>
+
+  return <div>Balance: {balance?.toString()}</div>
+}
+
+function TransferButton({ to, amount }: { to: string; amount: bigint }) {
+  const { mutate, isPending, error } = useContractWrite({
+    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    abi: ERC20_ABI,
+    functionName: 'transfer',
+  })
+
+  return (
+    <button
+      onClick={() => mutate([to, amount])}
+      disabled={isPending}
+    >
+      {isPending ? 'Sending...' : 'Transfer'}
+    </button>
+  )
+}
+
+export function App() {
+  return (
+    <Web3Provider rpcUrl="https://eth.llamarpc.com">
+      <TokenBalance address="0x..." />
+      <TransferButton to="0x..." amount={1000000n} />
+    </Web3Provider>
+  )
+}
+```
+
+## Customization Ideas
+
+### Add Optimistic Updates
+
+```typescript
+const { mutate } = useMutation({
+  mutationFn: async (args) => { /* ... */ },
+  onMutate: async (args) => {
+    await queryClient.cancelQueries({ queryKey: ['balance'] })
+    const previous = queryClient.getQueryData(['balance'])
+    queryClient.setQueryData(['balance'], (old) => old - args.amount)
+    return { previous }
+  },
+  onError: (err, args, context) => {
+    queryClient.setQueryData(['balance'], context?.previous)
+  },
+})
+```
+
+### Add Block-Based Refetching
+
+```typescript
+function useBlockBasedQuery(queryKey, queryFn) {
+  const { data: blockNumber } = useBlockNumber()
+
+  return useQuery({
+    queryKey: [...queryKey, blockNumber],
+    queryFn,
+    staleTime: Infinity, // Only refetch when block changes
+  })
+}
+```
+
+### Add Multicall Batching
+
+```typescript
+// Batch multiple reads into a single RPC call
+import { multicall } from './multicall' // Your multicall skill
+
+function useMulticall(calls) {
+  const provider = useProvider()
+
+  return useQuery({
+    queryKey: ['multicall', calls],
+    queryFn: () => multicall(provider, calls),
+  })
+}
+```
+
+## Related
+
+- [Skills Philosophy](/concepts/skills) — Why Skills instead of libraries
+- [ethers-provider](/skills/ethers-provider) — Provider implementation
+- [viem-publicclient](/skills/viem-publicclient) — Viem-style provider
+- [multicall](/skills/multicall) — Batch contract calls

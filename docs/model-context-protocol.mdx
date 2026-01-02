@@ -1,9 +1,29 @@
 ---
 title: Model Context Protocol (MCP)
-description: Connect AI assistants to live local documentation using MCP servers
+description: Connect AI assistants to Voltaire documentation and generate custom Skills
 ---
 
-[Model Context Protocol](https://modelcontextprotocol.io) allows AI assistants to access external tools and data sources. Use MCP servers to give Claude and other AI assistants access to your local documentation as you work.
+[Model Context Protocol](https://modelcontextprotocol.io) allows AI assistants to access external tools and data sources. Use MCP servers to give Claude and other AI assistants access to Voltaire documentation and generate custom Skills for your contracts.
+
+## Generating Custom Skills
+
+The primary use case for the Voltaire MCP server is **generating custom Skills** tailored to your specific contracts and requirements.
+
+Instead of using generic provider/contract abstractions, you can ask Claude to:
+
+```
+Using the Voltaire docs, generate a custom provider Skill that:
+- Includes automatic retry with exponential backoff
+- Caches eth_getBalance results for 12 seconds
+- Batches requests automatically
+- Is optimized for my ERC-20 token contract at 0x...
+```
+
+Claude will use the Voltaire documentation to generate a custom implementation based on our [Skills](/skills) patterns.
+
+<Tip>
+See [Skills Philosophy](/concepts/skills) to understand why Voltaire uses copyable implementations instead of rigid library abstractions.
+</Tip>
 
 ## Live Documentation Viewer
 

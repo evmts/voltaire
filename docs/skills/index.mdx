@@ -1,0 +1,145 @@
+---
+title: Skills
+description: Copyable reference implementations for common Ethereum patterns
+---
+
+Skills are copyable reference implementations you can use as-is or customize for your needs. Unlike traditional libraries, Skills live in your codebase—visible, debuggable, and fully customizable.
+
+<Tip>
+New to Skills? Read the [Skills Philosophy](/concepts/skills) to understand why we use copyable implementations instead of library abstractions.
+</Tip>
+
+## Provider Skills
+
+Drop-in replacements for ethers and viem provider abstractions.
+
+<CardGroup cols={2}>
+  <Card title="ethers-provider" icon="cube" href="/skills/ethers-provider">
+    ethers v6 compatible JsonRpcProvider
+  </Card>
+  <Card title="viem-publicclient" icon="cube" href="/skills/viem-publicclient">
+    viem compatible PublicClient for read operations
+  </Card>
+  <Card title="viem-walletclient" icon="cube" href="/skills/viem-walletclient">
+    viem compatible WalletClient for signing
+  </Card>
+  <Card title="viem-testclient" icon="cube" href="/skills/viem-testclient">
+    viem compatible TestClient for local testing
+  </Card>
+  <Card title="batched-provider" icon="layer-group" href="/skills/batched-provider">
+    Batch multiple JSON-RPC requests
+  </Card>
+</CardGroup>
+
+## Contract Skills
+
+Typed contract interaction patterns.
+
+<CardGroup cols={2}>
+  <Card title="ethers-contract" icon="file-contract" href="/skills/ethers-contract">
+    ethers v6 compatible Contract wrapper
+  </Card>
+  <Card title="viem-contract" icon="file-contract" href="/skills/viem-contract">
+    viem compatible contract interactions
+  </Card>
+  <Card title="ethers-interface" icon="brackets-curly" href="/skills/ethers-interface">
+    ethers v6 compatible Interface for ABI encoding
+  </Card>
+</CardGroup>
+
+## Wallet Skills
+
+Key management and signing patterns.
+
+<CardGroup cols={2}>
+  <Card title="ethers-signer" icon="key" href="/skills/ethers-signer">
+    ethers v6 compatible Signer
+  </Card>
+  <Card title="ethers-hdwallet" icon="wallet" href="/skills/ethers-hdwallet">
+    HD wallet derivation (BIP-32/39/44)
+  </Card>
+  <Card title="viem-account" icon="user" href="/skills/viem-account">
+    viem compatible Account abstraction
+  </Card>
+  <Card title="nonce-manager" icon="list-ol" href="/skills/nonce-manager">
+    Transaction nonce tracking
+  </Card>
+</CardGroup>
+
+## React Skills
+
+React integration patterns without heavy abstractions.
+
+<CardGroup cols={2}>
+  <Card title="react-query" icon="react" href="/skills/react-query">
+    TanStack Query integration (wagmi alternative)
+  </Card>
+</CardGroup>
+
+## Utility Skills
+
+Common patterns for Ethereum development.
+
+<CardGroup cols={2}>
+  <Card title="multicall" icon="layer-group" href="/skills/multicall">
+    Batch multiple contract calls
+  </Card>
+</CardGroup>
+
+## Task Skills
+
+Step-by-step patterns for specific tasks.
+
+<CardGroup cols={2}>
+  <Card title="Wallet Generation" icon="wallet" href="/skills/wallet-generation">
+    Generate mnemonics, derive HD wallets
+  </Card>
+  <Card title="Send ETH & Tokens" icon="paper-plane" href="/skills/send-eth-tokens">
+    Build and send transfers
+  </Card>
+  <Card title="Contract Interaction" icon="file-contract" href="/skills/contract-interaction">
+    Read state, write transactions
+  </Card>
+  <Card title="Sign & Verify Messages" icon="signature" href="/skills/sign-verify-messages">
+    Personal sign and verification
+  </Card>
+  <Card title="Event Listening" icon="bell" href="/skills/event-listening">
+    Watch and filter events
+  </Card>
+  <Card title="EIP-712 Typed Data" icon="file-signature" href="/skills/eip712-typed-data">
+    Structured data signing
+  </Card>
+  <Card title="SIWE Authentication" icon="user-check" href="/skills/siwe-authentication">
+    Sign-In with Ethereum
+  </Card>
+  <Card title="Gas Estimation" icon="gas-pump" href="/skills/gas-estimation">
+    EIP-1559 fee estimation
+  </Card>
+  <Card title="ENS Resolution" icon="globe" href="/skills/ens-resolution">
+    Resolve ENS names
+  </Card>
+  <Card title="Transaction Simulation" icon="play" href="/skills/transaction-simulation">
+    Simulate with eth_call
+  </Card>
+</CardGroup>
+
+## Using Skills
+
+### Copy into your project
+
+Each Skill page has copyable code. Add it to your project and customize as needed.
+
+### Use the MCP Server
+
+The [Voltaire MCP Server](/model-context-protocol) helps AI assistants generate custom Skills tailored to your contracts.
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Skills Philosophy" icon="lightbulb" href="/concepts/skills">
+    Why Skills instead of libraries
+  </Card>
+  <Card title="MCP Server" icon="robot" href="/model-context-protocol">
+    AI-assisted Skill generation
+  </Card>
+</CardGroup>

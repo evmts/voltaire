@@ -63,6 +63,10 @@ Secp256k1.sign(message, privateKey)
 
 We recommend WASM for crypto operations - usually faster and smaller bundle size than JS equivalents. Best for applications needing maximum performance.
 
+<Note>
+Design trade-off: Voltaire’s published WASM builds target a balance of strong performance and small bundle size. If you need maximum raw speed for specific workloads, build from source using the performance-optimized target (ReleaseFast). See `/dev/build-system#typescript-targets` and `/dev/wasm#build-modes`.
+</Note>
+
 ## Native FFI (Bun)
 
 Direct bindings to Zig via Bun FFI. Maximum performance.
@@ -111,6 +115,8 @@ Performance is nuanced. WASM/Native aren't always faster than TypeScript.
 
 **When JS wins**:
 - Simple operations (hex encoding small values, address validation)
+- String/hex formatting helpers that map to JS built-ins (for example, `toHex()`)
+- Very small, trivial conversions where JS↔WASM overhead dominates
 - Single-item operations with low computational cost
 - When avoiding async overhead matters
 

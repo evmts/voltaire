@@ -79,7 +79,7 @@ const calldata = Abi.Function.encodeParams(transferAbi, [
 
 - **[Branded Types](/getting-started/branded-types)** - Runtime-validated TypeScript types. Prevents passing hex strings where addresses are expected, address casing errors, and type confusion.
 - **[High-Performance](/getting-started/wasm)** - Optimized implementations balancing performance and bundle size. For example, Keccak256 is both faster and smaller than pure JavaScript alternatives.
-- **[LLM-Optimized](/getting-started/llm-optimized)** - API mirrors the Ethereum specification. Lots of time has been put into polishing the [MCP server](/mcp) and [llms.txt](/llms.txt) along with the docs themselves.
+- **[LLM-Optimized](/getting-started/llm-optimized)** - API mirrors the Ethereum specification. Lots of time has been put into polishing the [MCP server](/model-context-protocol) and [llms.txt](/llms.txt) along with the docs themselves.
 - **[Multiplatform](/getting-started/multiplatform)** - Works everywhere: TypeScript in Node.js, browsers, serverless, and any language with C-FFI support. Consistent API across TypeScript, Zig, and C-FFI environments.
   <Tip>Native FFI is currently supported on <strong>Bun</strong>. In <strong>Node.js</strong>, use the regular TypeScript API or WASM.</Tip>
-- **[Powerful Features](/getting-started/powerful-features)** - Features common to all general-purpose Ethereum libraries, plus unique ones exclusive to Voltaire such as EVM execution and bytecode analysis.
+- **[Skills](/concepts/skills)** - Higher-level abstractions as copyable implementations, not rigid library exports. Like shadcn/ui for Ethereum—copy a provider, contract wrapper, or React integration into your codebase and customize it for your needs.

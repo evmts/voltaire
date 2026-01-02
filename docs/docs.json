@@ -41,9 +41,72 @@
             "icon": "book",
             "pages": [
               "concepts/branded-types",
+              "concepts/data-first-api",
               "concepts/tree-shakeable-api",
               "concepts/cross-language-consistency",
+              "concepts/skills",
               "concepts/advanced-build"
+            ]
+          },
+          {
+            "group": "Skills",
+            "icon": "wand-magic-sparkles",
+            "pages": [
+              "skills/index",
+              {
+                "group": "Provider Skills",
+                "pages": [
+                  "skills/ethers-provider",
+                  "skills/viem-publicclient",
+                  "skills/viem-walletclient",
+                  "skills/viem-testclient",
+                  "skills/batched-provider"
+                ]
+              },
+              {
+                "group": "Contract Skills",
+                "pages": [
+                  "skills/ethers-contract",
+                  "skills/viem-contract",
+                  "skills/ethers-interface"
+                ]
+              },
+              {
+                "group": "Wallet Skills",
+                "pages": [
+                  "skills/ethers-signer",
+                  "skills/ethers-hdwallet",
+                  "skills/viem-account",
+                  "skills/nonce-manager"
+                ]
+              },
+              {
+                "group": "React Skills",
+                "pages": [
+                  "skills/react-query"
+                ]
+              },
+              {
+                "group": "Utility Skills",
+                "pages": [
+                  "skills/multicall"
+                ]
+              },
+              {
+                "group": "Task Skills",
+                "pages": [
+                  "skills/wallet-generation",
+                  "skills/send-eth-tokens",
+                  "skills/contract-interaction",
+                  "skills/sign-verify-messages",
+                  "skills/event-listening",
+                  "skills/eip712-typed-data",
+                  "skills/siwe-authentication",
+                  "skills/gas-estimation",
+                  "skills/ens-resolution",
+                  "skills/transaction-simulation"
+                ]
+              }
             ]
           },
           {

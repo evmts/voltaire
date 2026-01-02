@@ -3,6 +3,10 @@ title: "Nonce Manager"
 description: "Manage transaction nonces to prevent gaps and race conditions"
 ---
 
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
 # Nonce Manager
 
 When sending multiple Ethereum transactions, each requires a unique sequential nonce. Concurrent submissions cause collisions. Failed transactions create gaps. The NonceManager solves this.

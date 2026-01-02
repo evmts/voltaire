@@ -15,6 +15,12 @@ description: Convert address to lowercase hex string
 View the complete executable example at [`playground/src/examples/primitives/address/to-hex.ts`](https://github.com/evmts/voltaire/blob/main/playground/src/examples/primitives/address/to-hex.ts).
 </Tip>
 
+<Warning>
+WASM performance note: `toHex()` is a simple conversion that generally does not run faster under WASM. The JS↔WASM boundary adds overhead, while JavaScript’s built-ins already handle hex/string formatting efficiently. Prefer the default JS entrypoint for `toHex()` and similar conversions; use WASM for compute-heavy operations (Keccak256 hashing, ABI/RLP encoding/decoding, secp256k1/BLS) where performance gains are significant.
+
+Voltaire’s WASM builds intentionally optimize for both performance and bundle size. For maximum performance, build from source with the performance-optimized WASM target. See `/dev/build-system#typescript-targets` and `/dev/wasm#build-modes`.
+</Warning>
+
 <Tabs>
 
 <Tab title="C">

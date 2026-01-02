@@ -11,6 +11,12 @@ description: Hex string primitives with type-safe branded strings
 
 Hex provides type-safe hex string primitives for Ethereum development. Unlike byte-array primitives, Hex values are branded `0x${string}` types that preserve the string representation while providing compile-time type safety.
 
+<Warning>
+WASM performance note: Hex string conversions and lightweight helpers (`toBytes`, `toNumber`, `toBigInt`, `toBoolean`, `concat/slice/pad`, and `toHex()` from other primitives) rarely benefit from WASM. The JS↔WASM call overhead typically outweighs the work, and JavaScript built-ins for string/number formatting are already very fast. Prefer the default JS entrypoint for these operations; use WASM for compute-heavy tasks like Keccak256 hashing, ABI/RLP encoding/decoding, or elliptic-curve crypto.
+
+Voltaire’s WASM implementations optimize for a balance of performance and bundle size. If you need maximum performance, build from source with the performance-optimized WASM target. See `/dev/build-system#typescript-targets` and `/dev/wasm#build-modes`.
+</Warning>
+
 <Tabs>
 <Tab title="Type Definition">
 
