@@ -189,3 +189,38 @@ export class EncryptionError extends KeystoreError {
 		this.name = "EncryptionError";
 	}
 }
+
+/**
+ * Error thrown when scrypt N parameter is not a power of 2
+ *
+ * Scrypt requires N to be a power of 2 for correct operation.
+ *
+ * @see https://voltaire.tevm.sh/crypto/keystore
+ * @since 0.1.42
+ */
+export class InvalidScryptNError extends KeystoreError {
+	/** @type {number} */
+	n;
+
+	/**
+	 * @param {number} n
+	 * @param {object} [options]
+	 * @param {string} [options.code]
+	 * @param {Record<string, unknown>} [options.context]
+	 * @param {string} [options.docsPath]
+	 * @param {Error} [options.cause]
+	 */
+	constructor(n, options) {
+		super(
+			`Invalid scrypt N parameter: ${n}. N must be a power of 2 (e.g., 1024, 2048, 4096, 16384, 262144).`,
+			{
+				code: options?.code || "INVALID_SCRYPT_N",
+				context: { n, ...options?.context },
+				docsPath: options?.docsPath || "/crypto/keystore#error-handling",
+				cause: options?.cause,
+			},
+		);
+		this.name = "InvalidScryptNError";
+		this.n = n;
+	}
+}

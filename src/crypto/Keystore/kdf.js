@@ -2,17 +2,29 @@
 import { pbkdf2 } from "@noble/hashes/pbkdf2.js";
 import { scrypt } from "@noble/hashes/scrypt.js";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { InvalidScryptNError } from "./errors.js";
+
+/**
+ * Check if a number is a power of 2
+ *
+ * @param {number} n - Number to check
+ * @returns {boolean} True if n is a power of 2
+ */
+export function isPowerOfTwo(n) {
+	return Number.isInteger(n) && n > 0 && (n & (n - 1)) === 0;
+}
 
 /**
  * Derive key using scrypt KDF
  *
  * @param {string | Uint8Array} password - Password
  * @param {Uint8Array} salt - Salt (32 bytes recommended)
- * @param {number} n - CPU/memory cost parameter (default: 262144)
+ * @param {number} n - CPU/memory cost parameter (default: 262144). Must be a power of 2.
  * @param {number} r - Block size parameter (default: 8)
  * @param {number} p - Parallelization parameter (default: 1)
  * @param {number} dklen - Derived key length (default: 32)
  * @returns {Uint8Array} Derived key
+ * @throws {InvalidScryptNError} If n is not a power of 2
  */
 export function deriveScrypt(
 	password,
@@ -22,6 +34,10 @@ export function deriveScrypt(
 	p = 1,
 	dklen = 32,
 ) {
+	if (!isPowerOfTwo(n)) {
+		throw new InvalidScryptNError(n);
+	}
+
 	const passwordBytes =
 		typeof password === "string"
 			? new TextEncoder().encode(password)
