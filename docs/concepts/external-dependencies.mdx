@@ -1,0 +1,147 @@
+---
+title: External Dependencies
+description: Practical dependency choices for security, performance, and maintainability
+---
+
+Voltaire takes a practical approach to external dependencies. We reject the "zero dependencies" dogma common in crypto projects—not because dependencies are always good, but because the right dependencies can provide audited security, optimized performance, and reduced maintenance burden that would be difficult to replicate.
+
+Every dependency in Voltaire earned its place through clear criteria: security audits, performance characteristics, specialization, or ecosystem benefits.
+
+## JavaScript Runtime Dependencies
+
+### Cryptography (@noble/@scure ecosystem)
+
+| Package | Used In | Purpose |
+|---------|---------|---------|
+| `@noble/ciphers` | ChaCha20Poly1305, Keystore | AEAD encryption, AES-CTR |
+| `@scure/bip32` | HDWallet | Hierarchical deterministic key derivation |
+| `@scure/bip39` | Bip39 | Mnemonic generation, validation, seed derivation |
+
+**Why:** Paul Miller's `@noble` ecosystem is the gold standard for JavaScript cryptography. These libraries are:
+- Audited by multiple security firms (Cure53, Trail of Bits)
+- Constant-time implementations that resist timing attacks
+- Actively maintained with rapid security response
+- Used by major wallets and infrastructure projects
+
+Replicating this level of security and optimization would require significant cryptographic expertise and ongoing security investment.
+
+### ENS Support
+
+| Package | Used In | Purpose |
+|---------|---------|---------|
+| `@adraffy/ens-normalize` | Ens | ENSIP-15 name normalization |
+
+**Why:** This is the authoritative implementation of [ENSIP-15](https://docs.ens.domains/ensip/15), the ENS name normalization standard. ENS normalization involves complex Unicode handling—script detection, confusable character prevention, and punycode encoding. The author (raffy.eth) wrote the specification itself.
+
+### ABI Types
+
+| Package | Used In | Purpose |
+|---------|---------|---------|
+| `abitype` | Abi | Type-level ABI inference |
+
+**Why:** ABIType provides TypeScript type inference from ABI definitions. It includes extensive type-level optimizations that enable features like:
+- Inferring function argument/return types from ABI
+- Type-safe contract interactions without runtime overhead
+- Compatibility with the broader Ethereum TypeScript ecosystem
+
+The level of type-system optimization in ABIType represents significant specialized work that would be difficult to replicate and maintain.
+
+### Ethereum Utilities
+
+| Package | Used In | Purpose |
+|---------|---------|---------|
+| `ox` | Rlp, Base64, Siwe, EventLog, EIP712 | Core Ethereum utilities |
+
+**Why:** [ox](https://github.com/wevm/ox) provides well-tested implementations of Ethereum primitives. By sharing this dependency with other Ethereum libraries (like viem), we amortize bundle costs—users who already have ox in their bundle pay zero additional cost for Voltaire's usage.
+
+### Chain Metadata
+
+| Package | Used In | Purpose |
+|---------|---------|---------|
+| `@tevm/chains` | Chain | Chain definitions, RPC URLs, explorers |
+
+**Why:** Chain metadata (chain IDs, RPC endpoints, block explorers) changes frequently. Maintaining this data in-library would create unnecessary maintenance burden and potential drift from the ecosystem.
+
+### ABI Detection
+
+| Package | Used In | Purpose |
+|---------|---------|---------|
+| `@shazow/whatsabi` | Bytecode analysis | ABI inference from bytecode |
+
+**Why:** WhatsABI is a specialized reverse-engineering tool that can infer contract ABIs from bytecode, even for unverified contracts. This involves opcode analysis, selector extraction, and heuristic matching—specialized work that would be significant effort to replicate.
+
+### Optional Integration
+
+| Package | Used In | Purpose |
+|---------|---------|---------|
+| `effect` | */effect exports | Effect.ts Schema APIs |
+
+**Why:** Effect.ts provides typed error handling and validation schemas. This is an optional peer dependency—only imported when users explicitly use the `/effect` subpath exports. Does not affect bundle size for users who don't use Effect.
+
+### Hardware Wallets (lazy-loaded)
+
+| Package | Used In | Purpose |
+|---------|---------|---------|
+| `@ledgerhq/hw-transport-webusb` | LedgerWallet | WebUSB transport to Ledger |
+| `@ledgerhq/hw-app-eth` | LedgerWallet | Ethereum app communication |
+| `@trezor/connect-web` | TrezorWallet | Trezor device communication |
+
+**Why:** These are the official SDKs from Ledger and Trezor. Hardware wallet integration requires device-specific protocols that only the manufacturers provide. These dependencies are dynamically imported—they're only loaded when users explicitly use hardware wallet features.
+
+## Native Dependencies (Zig/WASM builds)
+
+For native and WASM builds, Voltaire uses battle-tested C and Rust libraries compiled into static binaries.
+
+### Rust (compiled into libcrypto_wrappers.a)
+
+| Package | Used For | Purpose |
+|---------|----------|---------|
+| `ark-bn254` | BN254 | BN254 curve operations |
+| `ark-bls12-381` | BLS12-381 | BLS12-381 curve operations |
+| `ark-ec`, `ark-ff` | Both | Elliptic curve and finite field abstractions |
+| `keccak-asm` | Keccak256 (native) | Assembly-optimized Keccak |
+| `tiny-keccak` | Keccak256 (WASM) | Pure Rust Keccak for WASM |
+
+**Why:** The arkworks ecosystem provides audited, production-proven implementations of pairing-friendly curves used in Ethereum (BN254 for EIP-196/197, BLS12-381 for EIP-2537). These curves require complex mathematical operations that are security-critical and performance-sensitive.
+
+The dual Keccak implementation uses assembly optimization for native builds (maximum performance) and pure Rust for WASM builds (portability).
+
+### C Libraries
+
+| Library | Used For | Purpose |
+|---------|----------|---------|
+| `libwally-core` | HDWallet, BIP39 | Wallet primitives |
+| `c-kzg-4844` | KZG | Polynomial commitments (EIP-4844) |
+
+**Why:** These are reference implementations used across the Ethereum ecosystem:
+- **libwally-core** is from Blockstream, used in production Bitcoin/Liquid wallets
+- **c-kzg-4844** is the official Ethereum Foundation implementation for blob transactions
+
+## What Ships to End Users
+
+| Category | Dependencies | Bundle Impact |
+|----------|-------------|---------------|
+| Core crypto | @noble/ciphers, @scure/bip32, @scure/bip39 | Tree-shakeable, only pay for what you use |
+| ENS | @adraffy/ens-normalize | Only included if ENS features used |
+| Types | abitype | Types only, zero runtime cost |
+| Utilities | ox | Shared with viem/ethers users |
+| Effect | effect | Optional, only if /effect imports used |
+| Hardware | @ledgerhq/*, @trezor/* | Lazy-loaded, zero cost if unused |
+| Native | Compiled into .wasm/.so/.dylib | Single binary, no runtime deps |
+
+## Dependency Philosophy
+
+We evaluate dependencies on these criteria:
+
+1. **Security**: Is it audited? Who uses it in production? How quickly are vulnerabilities addressed?
+2. **Maintenance**: Is it actively maintained? What's the bus factor?
+3. **Bundle impact**: Is it tree-shakeable? Can we lazy-load it?
+4. **Replication cost**: How much effort to build and maintain ourselves?
+5. **Ecosystem alignment**: Does using it benefit users who also use related libraries?
+
+The "zero dependencies" approach sounds good but often leads to:
+- Unaudited reimplementations of security-critical code
+- Maintenance burden that distracts from core functionality
+- Subtle bugs from underspecified edge cases
+
+We'd rather use well-audited, well-maintained code from specialists than reinvent the wheel—especially for cryptography.

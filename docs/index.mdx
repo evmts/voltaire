@@ -704,31 +704,37 @@ url = "https://voltaire.tevm.sh/mcp"
           const { init } = await import('https://esm.sh/modern-monaco@0.2.2');
           const monaco = await init();
 
-          const code = '// Try out Voltaire primitives in your browser!\\n' +
-            '// All Voltaire APIs are available globally\\n' +
-            '// Click "Run Code" to execute\\n' +
+          const code = '// Voltaire: Type-safe Ethereum primitives\\n' +
             '\\n' +
-            '// Address utilities\\n' +
-            'const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");\\n' +
-            'console.log("Address:", Address.toHex(addr));\\n' +
-            'console.log("Checksummed:", Address.toChecksummed(addr));\\n' +
+            '// 1. BRANDED TYPES - Address and Hash are distinct types\\n' +
+            'const recipient = Address.from("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");\\n' +
+            'const txHash = Hash.from("0x" + "ab".repeat(32));\\n' +
+            '// TypeScript prevents: sendTo(txHash) ❌ - wrong type!\\n' +
             '\\n' +
-            '// Hex encoding\\n' +
-            'const message = "Hello, Voltaire!";\\n' +
-            'const hexMsg = Hex.fromString(message);\\n' +
-            'console.log("Hex encoded:", hexMsg);\\n' +
-            'console.log("Decoded:", Hex.toString(hexMsg));\\n' +
+            'console.log("Address:", Address.toHex(recipient));\\n' +
             '\\n' +
-            '// Keccak256 hashing\\n' +
-            'const hash = Keccak256.hash(Hex.toBytes(Hex.fromString("Voltaire")));\\n' +
-            'console.log("Keccak256 hash:", Hex.fromBytes(hash));\\n' +
+            '// 2. DATA-FIRST - Just Uint8Array, works with native APIs\\n' +
+            'console.log("Is Uint8Array?", recipient instanceof Uint8Array);\\n' +
+            'const view = new DataView(recipient.buffer); // Native interop!\\n' +
             '\\n' +
-            '// Uint256 operations\\n' +
-            'const a = Uint256.from(100n);\\n' +
-            'const b = Uint256.from(42n);\\n' +
-            'console.log("100 + 42 =", Uint256.toBigInt(Uint256.plus(a, b)));\\n' +
+            '// 3. FAST CRYPTO - Powered by Zig\\n' +
+            'const hash = Keccak256.fromString("Hello, Ethereum!");\\n' +
+            'console.log("Hash:", Hex.fromBytes(hash));\\n' +
             '\\n' +
-            'console.log("\\\\n✓ Try modifying the code above!");';
+            '// 4. FUNCTION SELECTORS - Common Ethereum operation\\n' +
+            'const selector = Keccak256.selector("transfer(address,uint256)");\\n' +
+            'console.log("Selector:", Hex.fromBytes(selector)); // 0xa9059cbb\\n' +
+            '\\n' +
+            '// 5. SKILLS API - LLM-generated project-specific abstractions\\n' +
+            '// Copy a Skill into your project, customize it, own it:\\n' +
+            '//\\n' +
+            '// import { useTokenBalance } from \\'./skills/useTokenBalance\\';\\n' +
+            '// import { sendTransaction } from \\'./skills/sendTransaction\\';\\n' +
+            '//\\n' +
+            '// const balance = useTokenBalance(recipient, \\'USDC\\');\\n' +
+            '// await sendTransaction({ to: recipient, value: Wei.fromEther(\\'1\\') });\\n' +
+            '\\n' +
+            'console.log("\\\\n✓ Primitives + Skills = your custom Ethereum toolkit");';
 
           const model = monaco.editor.createModel(code, 'typescript');
 

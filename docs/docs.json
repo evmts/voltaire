@@ -45,7 +45,8 @@
               "concepts/tree-shakeable-api",
               "concepts/cross-language-consistency",
               "concepts/skills",
-              "concepts/advanced-build"
+              "concepts/advanced-build",
+              "concepts/external-dependencies"
             ]
           },
           {

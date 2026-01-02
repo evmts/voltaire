@@ -1,0 +1,290 @@
+---
+title: EIP-1193 Browser Provider
+description: Connect to browser wallets like MetaMask using the EIP-1193 provider interface
+---
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+Connect to browser-injected wallets (MetaMask, Rabby, etc.) using the standard EIP-1193 provider interface. This Skill wraps `window.ethereum` with type safety and event handling.
+
+## Quick Start
+
+```typescript
+import { BrowserProvider } from './BrowserProvider.js';  // Your local copy
+
+// Connect to injected provider
+const provider = BrowserProvider();
+
+// Request accounts (triggers wallet popup)
+const accounts = await provider.requestAccounts();
+console.log('Connected:', accounts[0]);
+
+// Use like any other provider
+const balance = await provider.request({
+  method: 'eth_getBalance',
+  params: [accounts[0], 'latest']
+});
+```
+
+## Implementation
+
+Copy this into your project:
+
+```typescript
+// BrowserProvider.js
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
+
+/**
+ * EIP-1193 Browser Provider
+ * Wraps window.ethereum with type safety
+ */
+
+class NoProviderError extends Error {
+  name = 'NoProviderError';
+  constructor() {
+    super('No injected provider found. Install MetaMask or another wallet.');
+  }
+}
+
+class UserRejectedError extends Error {
+  name = 'UserRejectedError';
+  code = 4001;
+  constructor() {
+    super('User rejected the request');
+  }
+}
+
+export function BrowserProvider(options = {}) {
+  const ethereum = options.ethereum ?? globalThis.ethereum ?? window?.ethereum;
+
+  if (!ethereum) {
+    throw new NoProviderError();
+  }
+
+  // Track connected accounts
+  let accounts = [];
+
+  // Request method (EIP-1193)
+  async function request(args) {
+    try {
+      return await ethereum.request(args);
+    } catch (error) {
+      if (error.code === 4001) {
+        throw new UserRejectedError();
+      }
+      throw error;
+    }
+  }
+
+  // Request account access
+  async function requestAccounts() {
+    const result = await request({ method: 'eth_requestAccounts' });
+    accounts = result.map(addr => Address(addr));
+    return accounts;
+  }
+
+  // Get currently connected accounts (no popup)
+  async function getAccounts() {
+    const result = await request({ method: 'eth_accounts' });
+    accounts = result.map(addr => Address(addr));
+    return accounts;
+  }
+
+  // Get current chain ID
+  async function getChainId() {
+    const result = await request({ method: 'eth_chainId' });
+    return parseInt(result, 16);
+  }
+
+  // Switch chain (EIP-3326)
+  async function switchChain(chainId) {
+    await request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: Hex.fromNumber(chainId) }]
+    });
+  }
+
+  // Add chain (EIP-3085)
+  async function addChain(chainConfig) {
+    await request({
+      method: 'wallet_addEthereumChain',
+      params: [chainConfig]
+    });
+  }
+
+  // Event subscription
+  function on(event, handler) {
+    ethereum.on(event, handler);
+    return () => ethereum.removeListener(event, handler);
+  }
+
+  // Subscribe to account changes
+  function onAccountsChanged(handler) {
+    return on('accountsChanged', (accts) => {
+      accounts = accts.map(addr => Address(addr));
+      handler(accounts);
+    });
+  }
+
+  // Subscribe to chain changes
+  function onChainChanged(handler) {
+    return on('chainChanged', (chainId) => {
+      handler(parseInt(chainId, 16));
+    });
+  }
+
+  // Subscribe to disconnect
+  function onDisconnect(handler) {
+    return on('disconnect', handler);
+  }
+
+  return {
+    request,
+    requestAccounts,
+    getAccounts,
+    getChainId,
+    switchChain,
+    addChain,
+    on,
+    onAccountsChanged,
+    onChainChanged,
+    onDisconnect,
+    get accounts() { return accounts; },
+    get isConnected() { return accounts.length > 0; },
+    // Raw provider access for advanced use
+    _ethereum: ethereum
+  };
+}
+```
+
+## Usage Examples
+
+### Connect Wallet Button
+
+```typescript
+const provider = BrowserProvider();
+
+async function connectWallet() {
+  try {
+    const accounts = await provider.requestAccounts();
+    console.log('Connected:', accounts[0].toChecksummed());
+  } catch (error) {
+    if (error.name === 'UserRejectedError') {
+      console.log('User cancelled connection');
+    } else if (error.name === 'NoProviderError') {
+      console.log('Please install MetaMask');
+    }
+  }
+}
+```
+
+### Handle Account/Chain Changes
+
+```typescript
+const provider = BrowserProvider();
+
+// React to account changes (user switches account in wallet)
+provider.onAccountsChanged((accounts) => {
+  if (accounts.length === 0) {
+    console.log('Disconnected');
+  } else {
+    console.log('Switched to:', accounts[0].toChecksummed());
+  }
+});
+
+// React to chain changes
+provider.onChainChanged((chainId) => {
+  console.log('Switched to chain:', chainId);
+  // Reload app state for new chain
+  window.location.reload();
+});
+```
+
+### Switch Networks
+
+```typescript
+const provider = BrowserProvider();
+
+// Switch to Arbitrum
+await provider.switchChain(42161);
+
+// Add and switch to custom network
+await provider.addChain({
+  chainId: '0xa4b1', // 42161
+  chainName: 'Arbitrum One',
+  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+  rpcUrls: ['https://arb1.arbitrum.io/rpc'],
+  blockExplorerUrls: ['https://arbiscan.io']
+});
+```
+
+### With React
+
+```typescript
+import { useState, useEffect } from 'react';
+import { BrowserProvider } from './BrowserProvider.js';
+
+function useWallet() {
+  const [provider] = useState(() => {
+    try {
+      return BrowserProvider();
+    } catch {
+      return null;
+    }
+  });
+  const [accounts, setAccounts] = useState([]);
+  const [chainId, setChainId] = useState(null);
+
+  useEffect(() => {
+    if (!provider) return;
+
+    // Check if already connected
+    provider.getAccounts().then(setAccounts);
+    provider.getChainId().then(setChainId);
+
+    // Subscribe to changes
+    const unsubAccounts = provider.onAccountsChanged(setAccounts);
+    const unsubChain = provider.onChainChanged(setChainId);
+
+    return () => {
+      unsubAccounts();
+      unsubChain();
+    };
+  }, [provider]);
+
+  return {
+    provider,
+    accounts,
+    chainId,
+    isConnected: accounts.length > 0,
+    connect: () => provider?.requestAccounts().then(setAccounts),
+    hasProvider: !!provider
+  };
+}
+```
+
+## EIP-6963 Multi-Wallet Discovery
+
+For discovering multiple installed wallets, see the [EIP-6963 documentation](/jsonrpc-provider/eip6963).
+
+```typescript
+import { getProviders } from '@tevm/voltaire/provider/eip6963';
+
+// Discover all installed wallets
+const wallets = await getProviders();
+// [{ info: { name: 'MetaMask', ... }, provider }, ...]
+
+// Let user choose which wallet to connect
+const chosen = wallets.find(w => w.info.name === 'Rabby');
+const provider = BrowserProvider({ ethereum: chosen.provider });
+```
+
+## Related
+
+- [EIP-6963 Wallet Discovery](/jsonrpc-provider/eip6963) — Multi-wallet detection
+- [ethers-signer](/skills/ethers-signer) — Signing transactions
+- [react-query](/skills/react-query) — React integration patterns
+- [chain-switching](#switch-networks) — Network switching patterns
