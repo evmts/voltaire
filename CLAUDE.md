@@ -20,6 +20,10 @@ LLMS ARE NEVER TO COMMENT OUT OR DISABLE TESTS
 
 Never make time or work estimates of how long work will take it is not useful context
 
+### Ownership Mindset
+
+**Treat this codebase as YOUR codebase.** You are not a visitor making drive-by changes—you are a maintainer with full responsibility. Every file you touch, every test you run, every error you see is YOUR problem to solve.
+
 ### Test Failure Policy
 
 **ALL test failures are P0.** If tests were passing before your changes and fail after, YOU caused the regression regardless of whether the failure appears related. Fix it.
@@ -29,6 +33,16 @@ Never make time or work estimates of how long work will take it is not useful co
 - If main was green and now it's red, your change broke it
 - Run full test suite before and after changes
 - No excuses—fix every failure you introduce
+
+### Type Error Policy
+
+**ALL type errors are absolutely unacceptable.** TypeScript errors are not warnings—they are failures that block shipping.
+
+- Type errors indicate broken contracts and potential runtime bugs
+- Never dismiss type errors as "pre-existing" or "unrelated to my changes"
+- If you see type errors after your changes, YOU fix them
+- Run `pnpm typecheck` or `tsc --noEmit` to verify before considering work complete
+- Zero type errors is the only acceptable state
 
 **Status**: Alpha release. Expect frequent refactors/renames. Coordinate changes that affect published exports.
 
