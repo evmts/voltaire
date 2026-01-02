@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { BytesTooLargeError } from "./errors.js";
 import { toNumber } from "./toNumber.js";
 
 describe("Bytes.toNumber", () => {
@@ -23,11 +24,16 @@ describe("Bytes.toNumber", () => {
 		expect(toNumber(new Uint8Array([0, 0, 0, 255]))).toBe(255);
 	});
 
-	it("throws on values exceeding MAX_SAFE_INTEGER", () => {
+	it("throws BytesTooLargeError on values exceeding MAX_SAFE_INTEGER", () => {
 		// 8 bytes is always too large
-		expect(() => toNumber(new Uint8Array(8).fill(0xff))).toThrow(
-			/too large to convert/,
-		);
+		try {
+			toNumber(new Uint8Array(8).fill(0xff));
+			expect.fail("Expected BytesTooLargeError");
+		} catch (e) {
+			expect(e).toBeInstanceOf(BytesTooLargeError);
+			expect((e as BytesTooLargeError).name).toBe("BytesTooLargeError");
+			expect((e as BytesTooLargeError).message).toMatch(/too large to convert/);
+		}
 	});
 
 	it("handles MAX_SAFE_INTEGER", () => {

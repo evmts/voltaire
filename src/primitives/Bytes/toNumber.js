@@ -1,9 +1,12 @@
+import { BytesTooLargeError, UnsafeIntegerError } from "./errors.js";
+
 /**
  * Convert Bytes to number
  *
  * @param {import('./BytesType.js').BytesType} bytes - Bytes to convert
  * @returns {number} Number value
- * @throws {Error} If value exceeds MAX_SAFE_INTEGER
+ * @throws {BytesTooLargeError} If bytes are too large to convert safely
+ * @throws {UnsafeIntegerError} If value exceeds MAX_SAFE_INTEGER
  *
  * @example
  * ```javascript
@@ -20,13 +23,19 @@ export function toNumber(bytes) {
 	// Check if value would exceed MAX_SAFE_INTEGER
 	// MAX_SAFE_INTEGER = 2^53 - 1 = 0x1FFFFFFFFFFFFF (7 bytes, but limited)
 	if (bytes.length > 7) {
-		throw new Error(
+		throw new BytesTooLargeError(
 			"Bytes too large to convert to number safely. Use Bytes.toBigInt() instead.",
+			{
+				value: bytes,
+				expected: "7 bytes or fewer",
+				context: { actualLength: bytes.length },
+			},
 		);
 	}
 	if (bytes.length === 7 && /** @type {number} */ (bytes[0]) > 0x1f) {
-		throw new Error(
+		throw new UnsafeIntegerError(
 			"Value exceeds MAX_SAFE_INTEGER. Use Bytes.toBigInt() instead.",
+			{ value: bytes },
 		);
 	}
 
@@ -36,8 +45,9 @@ export function toNumber(bytes) {
 	}
 
 	if (result > Number.MAX_SAFE_INTEGER) {
-		throw new Error(
+		throw new UnsafeIntegerError(
 			"Value exceeds MAX_SAFE_INTEGER. Use Bytes.toBigInt() instead.",
+			{ value: bytes, context: { computedValue: result } },
 		);
 	}
 

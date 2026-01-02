@@ -1,3 +1,5 @@
+import { Uint8InvalidLengthError } from "./errors.js";
+
 /**
  * Create Uint8 from Uint8Array (single byte)
  *
@@ -5,7 +7,7 @@
  * @since 0.0.0
  * @param {Uint8Array} bytes - Uint8Array (must be exactly 1 byte)
  * @returns {import('./Uint8Type.js').Uint8Type} Uint8 value
- * @throws {Error} If bytes length is not 1
+ * @throws {Uint8InvalidLengthError} If bytes length is not 1
  * @example
  * ```javascript
  * import * as Uint8 from './primitives/Uint8/index.js';
@@ -15,7 +17,14 @@
  */
 export function fromBytes(bytes) {
 	if (bytes.length !== 1) {
-		throw new Error(`Uint8 requires exactly 1 byte, got ${bytes.length}`);
+		throw new Uint8InvalidLengthError(
+			`Uint8 requires exactly 1 byte, got ${bytes.length}`,
+			{
+				value: bytes,
+				expected: "1 byte",
+				actualLength: bytes.length,
+			},
+		);
 	}
 
 	return /** @type {import('./Uint8Type.js').Uint8Type} */ (bytes[0]);

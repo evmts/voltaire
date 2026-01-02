@@ -1,10 +1,13 @@
+import { NegativeBigIntError, SizeExceededError } from "./errors.js";
+
 /**
  * Convert bigint to Bytes
  *
  * @param {bigint} value - BigInt to convert (must be non-negative)
  * @param {number} [size] - Optional byte size (pads or throws if too small)
  * @returns {import('./BytesType.js').BytesType} Bytes
- * @throws {Error} If value is negative or doesn't fit in size
+ * @throws {NegativeBigIntError} If value is negative
+ * @throws {SizeExceededError} If value doesn't fit in size
  *
  * @example
  * ```javascript
@@ -16,7 +19,9 @@
  */
 export function fromBigInt(value, size) {
 	if (value < 0n) {
-		throw new Error(`BigInt must be non-negative. Got: ${value}`);
+		throw new NegativeBigIntError(`BigInt must be non-negative. Got: ${value}`, {
+			value,
+		});
 	}
 
 	// Calculate minimum bytes needed
@@ -29,8 +34,13 @@ export function fromBigInt(value, size) {
 	const targetSize = size !== undefined ? size : minBytes;
 
 	if (minBytes > targetSize) {
-		throw new Error(
+		throw new SizeExceededError(
 			`BigInt requires ${minBytes} bytes but size is ${targetSize}.`,
+			{
+				value,
+				expected: `${targetSize} bytes`,
+				context: { requiredBytes: minBytes, targetSize },
+			},
 		);
 	}
 

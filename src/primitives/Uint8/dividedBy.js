@@ -1,3 +1,5 @@
+import { Uint8DivisionByZeroError } from "./errors.js";
+
 /**
  * Divide two Uint8 values (integer division)
  *
@@ -6,7 +8,7 @@
  * @param {import('./Uint8Type.js').Uint8Type} a - Dividend
  * @param {import('./Uint8Type.js').Uint8Type} b - Divisor
  * @returns {import('./Uint8Type.js').Uint8Type} Quotient (floor(a / b))
- * @throws {Error} If divisor is zero
+ * @throws {Uint8DivisionByZeroError} If divisor is zero
  * @example
  * ```javascript
  * import * as Uint8 from './primitives/Uint8/index.js';
@@ -17,7 +19,7 @@
  */
 export function dividedBy(a, b) {
 	if (b === 0) {
-		throw new Error("Division by zero");
+		throw new Uint8DivisionByZeroError("Division by zero", { dividend: a });
 	}
 	return /** @type {import('./Uint8Type.js').Uint8Type} */ (Math.floor(a / b));
 }

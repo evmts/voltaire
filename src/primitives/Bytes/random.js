@@ -1,8 +1,12 @@
+import { NegativeNumberError, NonIntegerError } from "./errors.js";
+
 /**
  * Generate random Bytes of specified size
  *
  * @param {number} size - Number of random bytes to generate
  * @returns {import('./BytesType.js').BytesType} Random bytes
+ * @throws {NegativeNumberError} If size is negative
+ * @throws {NonIntegerError} If size is not an integer
  *
  * @example
  * ```javascript
@@ -13,10 +17,14 @@
  */
 export function random(size) {
 	if (size < 0) {
-		throw new Error(`Size must be non-negative. Got: ${size}`);
+		throw new NegativeNumberError(`Size must be non-negative. Got: ${size}`, {
+			value: size,
+		});
 	}
 	if (!Number.isInteger(size)) {
-		throw new Error(`Size must be an integer. Got: ${size}`);
+		throw new NonIntegerError(`Size must be an integer. Got: ${size}`, {
+			value: size,
+		});
 	}
 
 	const bytes = new Uint8Array(size);

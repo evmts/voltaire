@@ -1,3 +1,5 @@
+import { Uint8UnderflowError } from "./errors.js";
+
 /**
  * Subtract two Uint8 values with underflow checking
  *
@@ -6,7 +8,7 @@
  * @param {import('./Uint8Type.js').Uint8Type} a - First operand
  * @param {import('./Uint8Type.js').Uint8Type} b - Second operand
  * @returns {import('./Uint8Type.js').Uint8Type} Difference (a - b)
- * @throws {Error} If result is negative
+ * @throws {Uint8UnderflowError} If result is negative
  * @example
  * ```javascript
  * import * as Uint8 from './primitives/Uint8/index.js';
@@ -17,7 +19,10 @@
  */
 export function minus(a, b) {
 	if (a < b) {
-		throw new Error(`Uint8 underflow: ${a} - ${b} = ${a - b} is negative`);
+		throw new Uint8UnderflowError(
+			`Uint8 underflow: ${a} - ${b} = ${a - b} is negative`,
+			{ a, b },
+		);
 	}
 	return /** @type {import('./Uint8Type.js').Uint8Type} */ (a - b);
 }

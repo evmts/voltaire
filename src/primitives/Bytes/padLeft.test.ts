@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SizeExceededError } from "./errors.js";
 import { padLeft } from "./padLeft.js";
 
 describe("Bytes.padLeft", () => {
@@ -13,10 +14,15 @@ describe("Bytes.padLeft", () => {
 		expect(padLeft(bytes, 4)).toBe(bytes);
 	});
 
-	it("throws if bytes exceed target size", () => {
-		expect(() => padLeft(new Uint8Array([1, 2, 3, 4]), 2)).toThrow(
-			/exceeds padding size/,
-		);
+	it("throws SizeExceededError if bytes exceed target size", () => {
+		try {
+			padLeft(new Uint8Array([1, 2, 3, 4]), 2);
+			expect.fail("Expected SizeExceededError");
+		} catch (e) {
+			expect(e).toBeInstanceOf(SizeExceededError);
+			expect((e as SizeExceededError).name).toBe("BytesSizeExceededError");
+			expect((e as SizeExceededError).message).toMatch(/exceeds padding size/);
+		}
 	});
 
 	it("handles empty bytes", () => {
