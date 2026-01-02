@@ -144,6 +144,26 @@ describe("Bytes32", () => {
 			const result = Bytes32.from(42n);
 			expect(result[31]).toBe(42);
 		});
+
+		it("should throw on oversized bytes input", () => {
+			expect(() => Bytes32.from(new Uint8Array(33))).toThrow();
+			expect(() => Bytes32.from(new Uint8Array(64))).toThrow();
+		});
+
+		it("should throw on oversized hex input", () => {
+			expect(() => Bytes32.from(`0x${"aa".repeat(33)}`)).toThrow();
+			expect(() => Bytes32.from(`0x${"aa".repeat(64)}`)).toThrow();
+		});
+
+		it("should throw on undersized bytes input", () => {
+			expect(() => Bytes32.from(new Uint8Array(31))).toThrow();
+			expect(() => Bytes32.from(new Uint8Array(0))).toThrow();
+		});
+
+		it("should throw on undersized hex input", () => {
+			expect(() => Bytes32.from("0xaa")).toThrow();
+			expect(() => Bytes32.from(`0x${"aa".repeat(31)}`)).toThrow();
+		});
 	});
 
 	describe("toHex", () => {
