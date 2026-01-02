@@ -251,6 +251,81 @@ describe("Keystore", () => {
 	});
 
 	describe("error handling", () => {
+		it("throws on invalid scrypt N (not power of 2) during encrypt", async () => {
+			const privateKey = PrivateKey.from(
+				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			);
+
+			// N = 1000 is not a power of 2
+			await expect(
+				Keystore.encrypt(privateKey, "password", { scryptN: 1000 }),
+			).rejects.toThrow(Keystore.InvalidScryptNError);
+
+			// N = 3 is not a power of 2
+			await expect(
+				Keystore.encrypt(privateKey, "password", { scryptN: 3 }),
+			).rejects.toThrow(Keystore.InvalidScryptNError);
+
+			// N = 0 is not valid
+			await expect(
+				Keystore.encrypt(privateKey, "password", { scryptN: 0 }),
+			).rejects.toThrow(Keystore.InvalidScryptNError);
+
+			// N = -1 is not valid
+			await expect(
+				Keystore.encrypt(privateKey, "password", { scryptN: -1 }),
+			).rejects.toThrow(Keystore.InvalidScryptNError);
+		});
+
+		it("throws on invalid scrypt N during decrypt", async () => {
+			// Craft a keystore with invalid N
+			const invalidKeystore: Keystore.KeystoreV3 = {
+				version: 3,
+				id: "test-id",
+				crypto: {
+					cipher: "aes-128-ctr",
+					ciphertext:
+						"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					cipherparams: {
+						iv: "0123456789abcdef0123456789abcdef",
+					},
+					kdf: "scrypt",
+					kdfparams: {
+						dklen: 32,
+						n: 1000, // Invalid: not a power of 2
+						r: 8,
+						p: 1,
+						salt: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					},
+					mac: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+				},
+			};
+
+			expect(() => Keystore.decrypt(invalidKeystore, "password")).toThrow(
+				Keystore.InvalidScryptNError,
+			);
+		});
+
+		it("accepts valid power of 2 scrypt N values", async () => {
+			const privateKey = PrivateKey.from(
+				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			);
+
+			// Test various valid powers of 2
+			// Note: @noble/hashes/scrypt requires N >= 2
+			const validNValues = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048];
+
+			for (const n of validNValues) {
+				const keystore = await Keystore.encrypt(privateKey, "password", {
+					scryptN: n,
+					scryptR: 1,
+					scryptP: 1,
+				});
+				const params = keystore.crypto.kdfparams as Keystore.ScryptParams;
+				expect(params.n).toBe(n);
+			}
+		});
+
 		it("throws on unsupported version", async () => {
 			const invalidKeystore = {
 				version: 2,

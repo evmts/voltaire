@@ -4,6 +4,7 @@ import { decryptAesCtr } from "./aesCtr.js";
 import {
 	DecryptionError,
 	InvalidMacError,
+	InvalidScryptNError,
 	UnsupportedKdfError,
 	UnsupportedVersionError,
 } from "./errors.js";
@@ -83,7 +84,8 @@ export function decrypt(keystore, password) {
 		if (
 			error instanceof UnsupportedVersionError ||
 			error instanceof UnsupportedKdfError ||
-			error instanceof InvalidMacError
+			error instanceof InvalidMacError ||
+			error instanceof InvalidScryptNError
 		) {
 			throw error;
 		}
