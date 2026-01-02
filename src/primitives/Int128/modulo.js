@@ -1,3 +1,5 @@
+import { InvalidRangeError } from "../errors/index.js";
+
 /**
  * Modulo Int128 values (sign follows dividend)
  *
@@ -6,7 +8,7 @@
  * @param {import('./Int128Type.js').BrandedInt128} a - Dividend
  * @param {import('./Int128Type.js').BrandedInt128} b - Divisor
  * @returns {import('./Int128Type.js').BrandedInt128} Remainder (sign follows dividend)
- * @throws {Error} If divisor is zero
+ * @throws {InvalidRangeError} If divisor is zero
  * @example
  * ```javascript
  * import * as Int128 from './primitives/Int128/index.js';
@@ -17,7 +19,11 @@
  */
 export function modulo(a, b) {
 	if (b === 0n) {
-		throw new Error("Division by zero");
+		throw new InvalidRangeError("Division by zero", {
+			value: b,
+			expected: "non-zero divisor",
+			docsPath: "/primitives/int128#modulo",
+		});
 	}
 
 	return /** @type {import('./Int128Type.js').BrandedInt128} */ (a % b);

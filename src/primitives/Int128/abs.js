@@ -1,4 +1,5 @@
-import { MIN } from "./constants.js";
+import { IntegerOverflowError } from "../errors/index.js";
+import { MAX, MIN } from "./constants.js";
 
 /**
  * Absolute value of Int128
@@ -7,7 +8,7 @@ import { MIN } from "./constants.js";
  * @since 0.0.0
  * @param {import('./Int128Type.js').BrandedInt128} value - Input value
  * @returns {import('./Int128Type.js').BrandedInt128} Absolute value
- * @throws {Error} If value is MIN (abs(MIN) overflows)
+ * @throws {IntegerOverflowError} If value is MIN (abs(MIN) overflows)
  * @example
  * ```javascript
  * import * as Int128 from './primitives/Int128/index.js';
@@ -17,7 +18,12 @@ import { MIN } from "./constants.js";
  */
 export function abs(value) {
 	if (value === MIN) {
-		throw new Error("Int128 overflow: abs(MIN)");
+		throw new IntegerOverflowError("Int128 overflow: abs(MIN)", {
+			value: -MIN,
+			max: MAX,
+			type: "int128",
+			context: { operation: "abs" },
+		});
 	}
 
 	return /** @type {import('./Int128Type.js').BrandedInt128} */ (

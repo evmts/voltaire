@@ -1,4 +1,5 @@
-import { MIN } from "./constants.js";
+import { IntegerOverflowError, InvalidRangeError } from "../errors/index.js";
+import { MAX, MIN } from "./constants.js";
 
 /**
  * Divide Int128 values (truncate toward zero)
@@ -8,7 +9,8 @@ import { MIN } from "./constants.js";
  * @param {import('./Int128Type.js').BrandedInt128} a - Dividend
  * @param {import('./Int128Type.js').BrandedInt128} b - Divisor
  * @returns {import('./Int128Type.js').BrandedInt128} Quotient (truncated toward zero)
- * @throws {Error} If divisor is zero or MIN / -1 (overflow)
+ * @throws {InvalidRangeError} If divisor is zero
+ * @throws {IntegerOverflowError} If MIN / -1 (overflow)
  * @example
  * ```javascript
  * import * as Int128 from './primitives/Int128/index.js';
@@ -19,12 +21,21 @@ import { MIN } from "./constants.js";
  */
 export function dividedBy(a, b) {
 	if (b === 0n) {
-		throw new Error("Division by zero");
+		throw new InvalidRangeError("Division by zero", {
+			value: b,
+			expected: "non-zero divisor",
+			docsPath: "/primitives/int128#divided-by",
+		});
 	}
 
 	// Special case: MIN / -1 overflows
 	if (a === MIN && b === -1n) {
-		throw new Error("Int128 overflow: MIN / -1");
+		throw new IntegerOverflowError("Int128 overflow: MIN / -1", {
+			value: -MIN,
+			max: MAX,
+			type: "int128",
+			context: { operation: "dividedBy", operands: [a, b] },
+		});
 	}
 
 	return /** @type {import('./Int128Type.js').BrandedInt128} */ (a / b);
