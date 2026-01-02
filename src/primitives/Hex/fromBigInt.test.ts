@@ -66,9 +66,9 @@ describe("fromBigInt", () => {
 		expect(toBigInt(hex)).toBe(oneEther);
 	});
 
-	it("handles negative bigints (uses default toString)", () => {
-		const hex = fromBigInt(-1n);
-		expect(hex.startsWith("0x")).toBe(true);
-		expect(hex).toBe("0x-1");
+	it("throws for negative bigints", () => {
+		expect(() => fromBigInt(-1n)).toThrow("Cannot convert negative bigint to hex: -1");
+		expect(() => fromBigInt(-255n)).toThrow("Cannot convert negative bigint to hex: -255");
+		expect(() => fromBigInt(-1000000000000000000n)).toThrow("Cannot convert negative bigint to hex");
 	});
 });
