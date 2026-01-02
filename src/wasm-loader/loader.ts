@@ -3158,9 +3158,13 @@ export function kzgLoadTrustedSetup(): void {
  * Call when KZG operations are no longer needed.
  */
 export function kzgFreeTrustedSetup(): void {
-	const exports = getExports();
-	exports.kzg_free_trusted_setup();
-	kzgInitialized = false;
+    // If not initialized, nothing to free
+    if (!kzgInitialized) {
+        return;
+    }
+    const exports = getExports();
+    exports.kzg_free_trusted_setup();
+    kzgInitialized = false;
 }
 
 /**
