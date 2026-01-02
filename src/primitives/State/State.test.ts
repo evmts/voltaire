@@ -136,6 +136,15 @@ describe("StorageKey.is", () => {
 		expect(StorageKey.is({ address: addr1, slot: "42" })).toBe(false);
 	});
 
+	it("returns false for negative slot", () => {
+		expect(StorageKey.is({ address: addr1, slot: -1n })).toBe(false);
+	});
+
+	it("returns false for slot exceeding bytes32", () => {
+		const tooBig = 2n ** 256n; // Exactly 2^256 is too big (max is 2^256 - 1)
+		expect(StorageKey.is({ address: addr1, slot: tooBig })).toBe(false);
+	});
+
 	it("returns false for array", () => {
 		expect(StorageKey.is([addr1, 0n])).toBe(false);
 	});
@@ -179,6 +188,55 @@ describe("StorageKey.create", () => {
 		const key2 = StorageKey.create(addr2, 2n);
 		expect(key1.address).not.toBe(key2.address);
 		expect(key1.slot).not.toBe(key2.slot);
+	});
+
+	it("throws on negative slot", () => {
+		expect(() => StorageKey.create(addr1, -1n)).toThrow(RangeError);
+		expect(() => StorageKey.create(addr1, -1n)).toThrow(
+			"Storage slot must be a non-negative value that fits in bytes32",
+		);
+	});
+
+	it("throws on slot exceeding bytes32", () => {
+		const tooBig = 2n ** 256n;
+		expect(() => StorageKey.create(addr1, tooBig)).toThrow(RangeError);
+	});
+
+	it("accepts max valid slot (2^256 - 1)", () => {
+		const maxSlot = 2n ** 256n - 1n;
+		const key = StorageKey.create(addr1, maxSlot);
+		expect(key.slot).toBe(maxSlot);
+	});
+});
+
+// ============================================================================
+// StorageKey.from Tests
+// ============================================================================
+
+describe("StorageKey.from", () => {
+	it("converts StorageKeyLike to StorageKey", () => {
+		const key = StorageKey.from({ address: addr1, slot: 42n });
+		expect(key.address).toBe(addr1);
+		expect(key.slot).toBe(42n);
+	});
+
+	it("throws on negative slot", () => {
+		expect(() => StorageKey.from({ address: addr1, slot: -1n })).toThrow(
+			RangeError,
+		);
+	});
+
+	it("throws on slot exceeding bytes32", () => {
+		const tooBig = 2n ** 256n;
+		expect(() => StorageKey.from({ address: addr1, slot: tooBig })).toThrow(
+			RangeError,
+		);
+	});
+
+	it("accepts max valid slot (2^256 - 1)", () => {
+		const maxSlot = 2n ** 256n - 1n;
+		const key = StorageKey.from({ address: addr1, slot: maxSlot });
+		expect(key.slot).toBe(maxSlot);
 	});
 });
 
