@@ -393,6 +393,59 @@ try {
 }
 ```
 
+## Error Handling
+
+BLS12-381 operations throw typed errors that extend `CryptoError`:
+
+```typescript
+import { Bls12381 } from '@tevm/voltaire/crypto';
+import {
+  InvalidScalarError,
+  SignatureError,
+  InvalidFieldElementError,
+  InvalidPointError,
+  PairingError
+} from '@tevm/voltaire/crypto/Bls12381/errors';
+
+// Private key validation
+try {
+  const publicKey = Bls12381.derivePublicKey(new Uint8Array(32)); // Zero key
+} catch (e) {
+  if (e instanceof InvalidScalarError) {
+    console.log(e.name);    // "InvalidScalarError"
+    console.log(e.code);    // "BLS12381_INVALID_SCALAR"
+    console.log(e.context); // { ... }
+  }
+}
+
+// Signature operations
+try {
+  const aggSig = Bls12381.aggregate([]); // Empty array
+} catch (e) {
+  if (e instanceof SignatureError) {
+    console.log(e.name); // "SignatureError"
+  }
+}
+
+// Field operations
+try {
+  const inv = Bls12381.Fp.inv(0n); // Division by zero
+} catch (e) {
+  if (e instanceof InvalidFieldElementError) {
+    console.log(e.name); // "InvalidFieldElementError"
+  }
+}
+```
+
+**Error Types**:
+- `Bls12381Error` - Base error for BLS12-381 operations
+- `InvalidScalarError` - Invalid private key (extends `InvalidPrivateKeyError`)
+- `SignatureError` - Signature operation failed (extends `InvalidSignatureError`)
+- `InvalidFieldElementError` - Invalid field element
+- `InvalidPointError` - Point not on curve
+- `InvalidSubgroupError` - Point not in correct subgroup
+- `PairingError` - Pairing operation failed
+
 ## Security Considerations
 
 **Production Requirements**:
@@ -408,11 +461,13 @@ try {
 // - Subgroup membership check (G2)
 // - Infinity point handling
 
-// Invalid points will return error
+// Invalid points will throw typed errors
 try {
   await bls12_381.g1Add(input, output);
 } catch (error) {
-  // Invalid point or computation failure
+  if (error instanceof InvalidPointError) {
+    // Handle invalid point
+  }
 }
 ```
 

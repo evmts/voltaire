@@ -72,6 +72,30 @@ const domain = Domain.from({
 const domainSep = Domain.toHash(domain, { keccak256 });
 ```
 
+## Error Handling
+
+DomainSeparator operations throw typed errors for precise error handling:
+
+### InvalidDomainSeparatorLengthError
+
+Thrown when the input bytes length is not exactly 32 bytes.
+
+```typescript
+import * as DomainSeparator from './primitives/DomainSeparator/index.js';
+import { InvalidDomainSeparatorLengthError } from './primitives/DomainSeparator/errors.js';
+
+try {
+  DomainSeparator.fromBytes(new Uint8Array(16));
+} catch (e) {
+  if (e instanceof InvalidDomainSeparatorLengthError) {
+    console.log(e.name);     // "InvalidDomainSeparatorLengthError"
+    console.log(e.code);     // "INVALID_DOMAIN_SEPARATOR_LENGTH"
+    console.log(e.value);    // The invalid bytes
+    console.log(e.expected); // "32 bytes"
+  }
+}
+```
+
 ## Specification
 
 - **EIP-712**: https://eips.ethereum.org/EIPS/eip-712

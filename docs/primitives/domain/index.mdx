@@ -176,6 +176,64 @@ Domain separators prevent signatures from being replayed:
 3. **Use semantic versioning** - Clear version tracking
 4. **Don't change domain** - Breaks existing signatures
 
+## Error Handling
+
+Domain operations throw typed errors for precise error handling:
+
+### InvalidDomainError
+
+Thrown when a domain is invalid (e.g., has no fields defined).
+
+```typescript
+import * as Domain from './primitives/Domain/index.js';
+import { InvalidDomainError } from './primitives/Domain/errors.js';
+
+try {
+  Domain.from({});
+} catch (e) {
+  if (e instanceof InvalidDomainError) {
+    console.log(e.name);     // "InvalidDomainError"
+    console.log(e.code);     // "INVALID_DOMAIN"
+    console.log(e.value);    // The invalid domain object
+    console.log(e.expected); // "valid EIP-712 domain"
+  }
+}
+```
+
+### InvalidDomainTypeError
+
+Thrown when a type is not found in the types object during encoding.
+
+```typescript
+import { InvalidDomainTypeError } from './primitives/Domain/errors.js';
+
+try {
+  Domain.encodeData('NonExistent', data, types, { keccak256 });
+} catch (e) {
+  if (e instanceof InvalidDomainTypeError) {
+    console.log(e.name); // "InvalidDomainTypeError"
+    console.log(e.code); // "INVALID_DOMAIN_TYPE"
+  }
+}
+```
+
+### InvalidEIP712ValueError
+
+Thrown when EIP-712 value encoding fails (e.g., wrong type, invalid size).
+
+```typescript
+import { InvalidEIP712ValueError } from './primitives/Domain/errors.js';
+
+try {
+  Domain.encodeValue('uint512', value, types, { keccak256 }); // Invalid size
+} catch (e) {
+  if (e instanceof InvalidEIP712ValueError) {
+    console.log(e.name); // "InvalidEIP712ValueError"
+    console.log(e.code); // "INVALID_EIP712_VALUE"
+  }
+}
+```
+
 ## Specification
 
 - **EIP-712**: https://eips.ethereum.org/EIPS/eip-712

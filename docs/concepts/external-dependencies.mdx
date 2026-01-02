@@ -3,7 +3,7 @@ title: External Dependencies
 description: Practical dependency choices for security, performance, and maintainability
 ---
 
-Voltaire takes a practical approach to external dependencies. We reject the "zero dependencies" dogma common in crypto projects—not because dependencies are always good, but because the right dependencies can provide audited security, optimized performance, and reduced maintenance burden that would be difficult to replicate.
+Voltaire takes a practical approach to external dependencies. We reject the "zero dependencies" dogma common in crypto projects—not because dependencies are always good, but because the right dependencies provide audited security and optimized performance.
 
 Every dependency in Voltaire earned its place through clear criteria: security audits, performance characteristics, specialization, or ecosystem benefits.
 
@@ -44,7 +44,7 @@ Replicating this level of security and optimization would require significant cr
 - Type-safe contract interactions without runtime overhead
 - Compatibility with the broader Ethereum TypeScript ecosystem
 
-The level of type-system optimization in ABIType represents significant specialized work that would be difficult to replicate and maintain.
+ABIType's type-level optimizations are battle-tested across the Ethereum TypeScript ecosystem.
 
 ### Ethereum Utilities
 
@@ -60,7 +60,7 @@ The level of type-system optimization in ABIType represents significant speciali
 |---------|---------|---------|
 | `@tevm/chains` | Chain | Chain definitions, RPC URLs, explorers |
 
-**Why:** Chain metadata (chain IDs, RPC endpoints, block explorers) changes frequently. Maintaining this data in-library would create unnecessary maintenance burden and potential drift from the ecosystem.
+**Why:** Chain metadata (chain IDs, RPC endpoints, block explorers) changes frequently. Using a shared source keeps you in sync with the ecosystem.
 
 ### ABI Detection
 
@@ -68,7 +68,7 @@ The level of type-system optimization in ABIType represents significant speciali
 |---------|---------|---------|
 | `@shazow/whatsabi` | Bytecode analysis | ABI inference from bytecode |
 
-**Why:** WhatsABI is a specialized reverse-engineering tool that can infer contract ABIs from bytecode, even for unverified contracts. This involves opcode analysis, selector extraction, and heuristic matching—specialized work that would be significant effort to replicate.
+**Why:** WhatsABI infers contract ABIs from bytecode, even for unverified contracts. This enables interaction with any deployed contract without needing verified source code.
 
 ### Optional Integration
 
@@ -136,12 +136,12 @@ We evaluate dependencies on these criteria:
 1. **Security**: Is it audited? Who uses it in production? How quickly are vulnerabilities addressed?
 2. **Maintenance**: Is it actively maintained? What's the bus factor?
 3. **Bundle impact**: Is it tree-shakeable? Can we lazy-load it?
-4. **Replication cost**: How much effort to build and maintain ourselves?
+4. **Specialization**: Does the author have domain expertise users benefit from?
 5. **Ecosystem alignment**: Does using it benefit users who also use related libraries?
 
 The "zero dependencies" approach sounds good but often leads to:
 - Unaudited reimplementations of security-critical code
-- Maintenance burden that distracts from core functionality
+- Slower security patches when vulnerabilities are discovered
 - Subtle bugs from underspecified edge cases
 
 We'd rather use well-audited, well-maintained code from specialists than reinvent the wheel—especially for cryptography.

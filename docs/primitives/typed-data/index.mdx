@@ -363,6 +363,52 @@ Message
   deadline: 1234567890
 ```
 
+## Error Handling
+
+TypedData operations throw typed errors for precise error handling:
+
+### InvalidTypedDataError
+
+Thrown when typed data structure is invalid.
+
+```typescript
+import * as TypedData from './primitives/TypedData/index.js';
+import { InvalidTypedDataError } from './primitives/TypedData/errors.js';
+
+try {
+  TypedData.from({ types: undefined, primaryType: 'Mail', domain: {}, message: {} });
+} catch (e) {
+  if (e instanceof InvalidTypedDataError) {
+    console.log(e.name);     // "InvalidTypedDataError"
+    console.log(e.code);     // "INVALID_TYPED_DATA"
+    console.log(e.value);    // The invalid typed data object
+    console.log(e.expected); // "valid EIP-712 typed data"
+  }
+}
+```
+
+### Validation Errors
+
+The `validate()` function throws `InvalidTypedDataError` for various issues:
+
+```typescript
+try {
+  TypedData.validate(typedData);
+} catch (e) {
+  if (e instanceof InvalidTypedDataError) {
+    // Common validation messages:
+    // - "types must be an object"
+    // - "types must include EIP712Domain"
+    // - "primaryType must be a string"
+    // - "primaryType 'X' not found in types"
+    // - "domain must be an object"
+    // - "message is required"
+    // - "type 'X' not found in types"
+    console.log(e.message);
+  }
+}
+```
+
 ## Specification
 
 - **EIP-712**: https://eips.ethereum.org/EIPS/eip-712
