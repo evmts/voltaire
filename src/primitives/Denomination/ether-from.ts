@@ -20,11 +20,17 @@ import type { EtherType as BrandedEther } from "./EtherType.js";
  */
 export function from(value: bigint | number | string): BrandedEther {
 	if (typeof value === "bigint") {
+		if (value < 0n) {
+			throw new Error(`Ether value cannot be negative: ${value}`);
+		}
 		return value.toString() as BrandedEther;
 	}
 	if (typeof value === "number") {
 		if (!Number.isFinite(value)) {
 			throw new Error(`Invalid Ether value: ${value}`);
+		}
+		if (value < 0) {
+			throw new Error(`Ether value cannot be negative: ${value}`);
 		}
 		return value.toString() as BrandedEther;
 	}
@@ -32,6 +38,10 @@ export function from(value: bigint | number | string): BrandedEther {
 	const trimmed = value.trim();
 	if (trimmed === "" || Number.isNaN(Number(trimmed))) {
 		throw new Error(`Invalid Ether value: ${value}`);
+	}
+	const numValue = Number(trimmed);
+	if (numValue < 0) {
+		throw new Error(`Ether value cannot be negative: ${trimmed}`);
 	}
 	return trimmed as BrandedEther;
 }

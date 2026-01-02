@@ -1,0 +1,239 @@
+---
+title: '[TS/JS] docs/skills/ethers-signer.test.ts'
+source: 'docs/skills/ethers-signer.test.ts'
+---
+
+> Auto-generated from test file: docs/skills/ethers-signer.test.ts
+
+```typescript
+/**
+ * Tests for ethers-style signer playbook
+ * @see /docs/playbooks/ethers-signer.mdx
+ *
+ * Note: The playbook documents a REFERENCE IMPLEMENTATION in examples/ethers-signer/.
+ * Tests cover the signing patterns using available crypto primitives.
+ *
+ * API DISCREPANCIES:
+ * - EthersSigner is in examples/ethers-signer/, not library export
+ * - Secp256k1 and EIP712 ARE available in src/crypto/
+ */
+import { describe, expect, it } from "vitest";
+
+describe("Ethers Signer Playbook", () => {
+	it("should define signer properties", () => {
+		// From playbook: signer properties
+		interface SignerLike {
+			address: string;
+			privateKey: string;
+			provider: unknown | null;
+		}
+
+		const signer: SignerLike = {
+			address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+			privateKey:
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			provider: null,
+		};
+
+		expect(signer.address).toMatch(/^0x[a-fA-F0-9]{40}$/);
+		expect(signer.privateKey).toMatch(/^0x[a-fA-F0-9]{64}$/);
+	});
+
+	it("should define offline signing methods", () => {
+		// From playbook: offline methods (no provider required)
+		const offlineMethods = [
+			"getAddress",
+			"signMessage",
+			"signMessageSync",
+			"signTypedData",
+			"authorizeSync",
+		];
+
+		expect(offlineMethods).toContain("signMessage");
+		expect(offlineMethods).toContain("signTypedData");
+	});
+
+	it("should define provider methods", () => {
+		// From playbook: provider required methods
+		const providerMethods = [
+			"getNonce",
+			"estimateGas",
+			"call",
+			"resolveName",
+			"signTransaction",
+			"sendTransaction",
+		];
+
+		expect(providerMethods).toContain("sendTransaction");
+		expect(providerMethods).toContain("signTransaction");
+	});
+
+	it("should work with Secp256k1 signing", async () => {
+		const { Secp256k1, Keccak256 } = await import("../../src/crypto/index.js");
+		const { Hex } = await import("../../src/primitives/Hex/index.js");
+
+		// Create a test private key
+		const privateKey = Hex.toBytes(
+			"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+		);
+
+		// Hash a message
+		const message = "Hello, Ethereum!";
+		const messageHash = Keccak256.hash(new TextEncoder().encode(message));
+
+		// Sign the hash
+		const signature = Secp256k1.sign(messageHash, privateKey);
+
+		expect(signature).toBeDefined();
+		expect(signature.r).toBeInstanceOf(Uint8Array);
+		expect(signature.s).toBeInstanceOf(Uint8Array);
+	});
+
+	it("should define EIP-191 message signing format", () => {
+		// From playbook: EIP-191 personal sign
+		// \x19 is byte value 25 (0x19)
+		const prefix = "\x19Ethereum Signed Message:\n";
+		const message = "Hello, Ethereum!";
+		const prefixedMessage = prefix + message.length + message;
+
+		// Check for the Ethereum Signed Message text (the \x19 is a raw byte)
+		expect(prefixedMessage).toContain("Ethereum Signed Message:");
+		expect(prefixedMessage.charCodeAt(0)).toBe(0x19);
+	});
+
+	it("should work with EIP-712 typed data", async () => {
+		const { EIP712 } = await import("../../src/crypto/index.js");
+
+		// From playbook: EIP-712 domain
+		const domain = {
+			name: "My App",
+			version: "1",
+			chainId: 1n,
+		};
+
+		const types = {
+			Person: [
+				{ name: "name", type: "string" },
+				{ name: "wallet", type: "address" },
+			],
+		};
+
+		expect(EIP712).toBeDefined();
+		expect(domain.chainId).toBe(1n);
+		expect(types.Person).toHaveLength(2);
+	});
+
+	it("should define transaction request structure", () => {
+		// From playbook: transaction request
+		interface TransactionRequest {
+			to?: string;
+			from?: string;
+			nonce?: bigint;
+			gasLimit?: bigint;
+			gasPrice?: bigint;
+			maxFeePerGas?: bigint;
+			maxPriorityFeePerGas?: bigint;
+			data?: string;
+			value?: bigint;
+			chainId?: bigint;
+			type?: number;
+		}
+
+		const tx: TransactionRequest = {
+			to: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+			value: 1_000_000_000_000_000_000n,
+		};
+
+		expect(tx.value).toBe(1_000_000_000_000_000_000n);
+	});
+
+	it("should define error types", () => {
+		// From playbook: error types
+		const errorTypes = [
+			"MissingProviderError",
+			"InvalidPrivateKeyError",
+			"InvalidTransactionError",
+			"AddressMismatchError",
+			"ChainIdMismatchError",
+		];
+
+		expect(errorTypes).toContain("MissingProviderError");
+		expect(errorTypes).toContain("ChainIdMismatchError");
+	});
+
+	it("should define provider interface for signer", () => {
+		// From playbook: SignerProvider interface
+		interface SignerProvider {
+			getTransactionCount(
+				address: string,
+				blockTag?: string,
+			): Promise<number>;
+			estimateGas(tx: unknown): Promise<bigint>;
+			call(tx: unknown): Promise<string>;
+			getNetwork(): Promise<{ chainId: bigint }>;
+			getFeeData(): Promise<{
+				gasPrice: bigint;
+				maxFeePerGas: bigint;
+				maxPriorityFeePerGas: bigint;
+			}>;
+			broadcastTransaction(signedTx: string): Promise<unknown>;
+			resolveName?(name: string): Promise<string | null>;
+		}
+
+		const methods: (keyof SignerProvider)[] = [
+			"getTransactionCount",
+			"estimateGas",
+			"call",
+			"getNetwork",
+			"getFeeData",
+			"broadcastTransaction",
+		];
+
+		expect(methods).toHaveLength(6);
+	});
+
+	it("should handle EIP-7702 authorization", () => {
+		// From playbook: EIP-7702 authorization signing
+		interface Authorization {
+			address: string;
+			chainId: bigint;
+			nonce: bigint;
+		}
+
+		const auth: Authorization = {
+			address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+			chainId: 1n,
+			nonce: 0n,
+		};
+
+		expect(auth.chainId).toBe(1n);
+	});
+
+	it("should handle transaction type detection", () => {
+		// From playbook: auto-detect based on fee data
+		const detectTxType = (hasFeePerGas: boolean) => {
+			return hasFeePerGas ? 2 : 0; // EIP-1559 or Legacy
+		};
+
+		expect(detectTxType(true)).toBe(2);
+		expect(detectTxType(false)).toBe(0);
+	});
+
+	it("should define Voltaire primitives used", () => {
+		// From playbook: Voltaire primitives
+		const primitives = [
+			"Address",
+			"PrivateKey",
+			"SignedData.Hash",
+			"EIP712.signTypedData",
+			"Secp256k1.sign",
+			"Keccak256.hash",
+			"Transaction.EIP1559",
+		];
+
+		expect(primitives).toContain("Secp256k1.sign");
+		expect(primitives).toContain("EIP712.signTypedData");
+	});
+});
+
+```
