@@ -717,6 +717,55 @@ describe("AccessList.from", () => {
 		expect(result[1]?.address).toEqual(addr2);
 		expect(result[2]?.address).toEqual(addr3);
 	});
+
+	it("throws for invalid storage key (string)", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const list = [{ address: addr1, storageKeys: ["invalid"] }] as any;
+		expect(() => from(list)).toThrow("Storage key must be exactly 32 bytes");
+	});
+
+	it("throws for invalid storage key (wrong length hex)", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const list = [{ address: addr1, storageKeys: ["0x123"] }] as any;
+		expect(() => from(list)).toThrow("Storage key must be exactly 32 bytes");
+	});
+
+	it("throws for invalid storage key (empty string)", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const list = [{ address: addr1, storageKeys: [""] }] as any;
+		expect(() => from(list)).toThrow("Storage key must be exactly 32 bytes");
+	});
+
+	it("throws for storage key with wrong byte length", () => {
+		const wrongLength = new Uint8Array(31);
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const list = [{ address: addr1, storageKeys: [wrongLength] }] as any;
+		expect(() => from(list)).toThrow("Storage key must be exactly 32 bytes");
+	});
+
+	it("throws for address with wrong byte length", () => {
+		const wrongAddr = new Uint8Array(19);
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const list = [{ address: wrongAddr, storageKeys: [] }] as any;
+		expect(() => from(list)).toThrow("Invalid address in access list");
+	});
+
+	it("throws for non-array input", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		expect(() => from({} as any)).toThrow("Access list must be an array");
+	});
+
+	it("throws for item missing address", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const list = [{ storageKeys: [] }] as any;
+		expect(() => from(list)).toThrow("Invalid access list item");
+	});
+
+	it("throws for item missing storageKeys", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const list = [{ address: addr1 }] as any;
+		expect(() => from(list)).toThrow("Invalid access list item");
+	});
 });
 
 // ============================================================================
