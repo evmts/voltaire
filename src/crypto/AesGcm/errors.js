@@ -130,3 +130,35 @@ export class DecryptionError extends AesGcmError {
 		this.name = "DecryptionError";
 	}
 }
+
+/**
+ * Invalid iteration count error for PBKDF2 key derivation
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import { InvalidIterationCountError } from './crypto/AesGcm/index.js';
+ * throw new InvalidIterationCountError('Iteration count must be at least 1', {
+ *   code: 'AES_GCM_INVALID_ITERATION_COUNT',
+ *   context: { iterations: 0, minimum: 1 },
+ *   docsPath: '/crypto/aes-gcm/derive-key#error-handling'
+ * });
+ * ```
+ */
+export class InvalidIterationCountError extends AesGcmError {
+	/**
+	 * @param {string} message
+	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 */
+	constructor(message, options) {
+		super(message, {
+			code: options?.code || "AES_GCM_INVALID_ITERATION_COUNT",
+			context: options?.context,
+			docsPath: options?.docsPath,
+			cause: options?.cause,
+		});
+		this.name = "InvalidIterationCountError";
+	}
+}

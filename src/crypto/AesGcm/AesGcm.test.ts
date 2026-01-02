@@ -813,6 +813,40 @@ describe("AesGcm", () => {
 
 			expect(exported1).not.toEqual(exported2);
 		});
+
+		it("throws InvalidIterationCountError for iteration count 0", async () => {
+			const password = "password";
+			const salt = new Uint8Array(16).fill(1);
+
+			try {
+				await AesGcm.deriveKey(password, salt, 0, 256);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidIterationCountError");
+				expect((e as Error).message).toContain("Iteration count must be at least 1");
+			}
+		});
+
+		it("throws InvalidIterationCountError for negative iteration count", async () => {
+			const password = "password";
+			const salt = new Uint8Array(16).fill(1);
+
+			try {
+				await AesGcm.deriveKey(password, salt, -100, 256);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidIterationCountError");
+			}
+		});
+
+		it("accepts iteration count of 1", async () => {
+			const password = "password";
+			const salt = new Uint8Array(16).fill(1);
+
+			const key = await AesGcm.deriveKey(password, salt, 1, 256);
+			expect(key).toBeDefined();
+			expect(key.type).toBe("secret");
+		});
 	});
 
 	describe("integration tests", () => {

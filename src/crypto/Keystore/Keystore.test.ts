@@ -360,6 +360,58 @@ describe("Keystore", () => {
 			const decrypted = Keystore.decrypt(keystore, "password");
 			expect(decrypted).not.toEqual(privateKey);
 		});
+
+		it("throws InvalidIterationCountError for pbkdf2 with iteration count 0", async () => {
+			const privateKey = PrivateKey.from(
+				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			);
+
+			try {
+				await Keystore.encrypt(privateKey, "password", {
+					kdf: "pbkdf2",
+					pbkdf2C: 0,
+				});
+				expect.fail("Should have thrown InvalidIterationCountError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Keystore.InvalidIterationCountError);
+				expect((e as Error).name).toBe("InvalidIterationCountError");
+				expect((e as Error).message).toContain("Iteration count must be at least 1");
+			}
+		});
+
+		it("throws InvalidIterationCountError for pbkdf2 with negative iteration count", async () => {
+			const privateKey = PrivateKey.from(
+				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			);
+
+			try {
+				await Keystore.encrypt(privateKey, "password", {
+					kdf: "pbkdf2",
+					pbkdf2C: -100,
+				});
+				expect.fail("Should have thrown InvalidIterationCountError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Keystore.InvalidIterationCountError);
+				expect((e as Error).name).toBe("InvalidIterationCountError");
+			}
+		});
+
+		it("accepts pbkdf2 with iteration count of 1", async () => {
+			const privateKey = PrivateKey.from(
+				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			);
+
+			const keystore = await Keystore.encrypt(privateKey, "password", {
+				kdf: "pbkdf2",
+				pbkdf2C: 1,
+			});
+
+			const params = keystore.crypto.kdfparams as Keystore.Pbkdf2Params;
+			expect(params.c).toBe(1);
+
+			const decrypted = Keystore.decrypt(keystore, "password");
+			expect(decrypted).toEqual(privateKey);
+		});
 	});
 
 	describe("known test vectors", () => {

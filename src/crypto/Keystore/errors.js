@@ -189,3 +189,33 @@ export class EncryptionError extends KeystoreError {
 		this.name = "EncryptionError";
 	}
 }
+
+/**
+ * Error thrown when PBKDF2 iteration count is invalid
+ *
+ * @see https://voltaire.tevm.sh/crypto/keystore
+ * @since 0.0.0
+ */
+export class InvalidIterationCountError extends KeystoreError {
+	/** @type {number} */
+	iterations;
+
+	/**
+	 * @param {number} iterations
+	 * @param {object} [options]
+	 * @param {string} [options.code]
+	 * @param {Record<string, unknown>} [options.context]
+	 * @param {string} [options.docsPath]
+	 * @param {Error} [options.cause]
+	 */
+	constructor(iterations, options) {
+		super(`Iteration count must be at least 1, got ${iterations}`, {
+			code: options?.code || "INVALID_ITERATION_COUNT",
+			context: { iterations, minimum: 1, ...options?.context },
+			docsPath: options?.docsPath || "/crypto/keystore#error-handling",
+			cause: options?.cause,
+		});
+		this.name = "InvalidIterationCountError";
+		this.iterations = iterations;
+	}
+}

@@ -1,4 +1,4 @@
-import { AesGcmError } from "./errors.js";
+import { AesGcmError, InvalidIterationCountError } from "./errors.js";
 
 /**
  * Derive key from password using PBKDF2
@@ -10,6 +10,7 @@ import { AesGcmError } from "./errors.js";
  * @param {number} iterations - Number of iterations (at least 100000 recommended)
  * @param {128 | 256} bits - Key size in bits (128 or 256)
  * @returns {Promise<CryptoKey>} Derived CryptoKey
+ * @throws {InvalidIterationCountError} If iteration count is less than 1
  * @throws {AesGcmError} If key derivation fails
  * @example
  * ```javascript
@@ -19,6 +20,16 @@ import { AesGcmError } from "./errors.js";
  * ```
  */
 export async function deriveKey(password, salt, iterations, bits) {
+	if (iterations < 1) {
+		throw new InvalidIterationCountError(
+			`Iteration count must be at least 1, got ${iterations}`,
+			{
+				code: "AES_GCM_INVALID_ITERATION_COUNT",
+				context: { iterations, minimum: 1 },
+				docsPath: "/crypto/aes-gcm/derive-key#error-handling",
+			},
+		);
+	}
 	try {
 		const passwordBytes =
 			typeof password === "string"
