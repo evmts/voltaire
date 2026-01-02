@@ -29,7 +29,8 @@ describe("Nonce", () => {
 		});
 
 		it("creates large nonce", () => {
-			const large = 2n ** 200n;
+			// Max uint64 value
+			const large = 18446744073709551615n;
 			const nonce = Nonce.from(large);
 			expect(Nonce.toBigInt(nonce)).toBe(large);
 		});
