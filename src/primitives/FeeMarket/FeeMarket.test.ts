@@ -139,6 +139,87 @@ describe("FeeMarket.BaseFee", () => {
 		);
 		expect(baseFee).toBe(112_500_000_000n);
 	});
+
+	// Edge cases for overflow protection (issue #132)
+	it("handles extreme base fee values without overflow", () => {
+		// Extreme base fee: 10^18 (1 ETH per gas unit - unrealistic but tests overflow)
+		const extremeBaseFee = 1_000_000_000_000_000_000n;
+		const baseFee = FeeMarket.BaseFee(
+			30_000_000n, // Full block
+			30_000_000n,
+			extremeBaseFee,
+		);
+		// Should increase by ~12.5%
+		expect(baseFee).toBeGreaterThan(extremeBaseFee);
+		expect(baseFee).toBeLessThan(extremeBaseFee + extremeBaseFee / 7n); // Less than ~14%
+	});
+
+	it("handles extreme gas limit values without overflow", () => {
+		// Near-max gas limit: 10^15 (way beyond realistic)
+		const extremeGasLimit = 1_000_000_000_000_000n;
+		const extremeGasUsed = extremeGasLimit; // 100% full
+		const baseFee = FeeMarket.BaseFee(
+			extremeGasUsed,
+			extremeGasLimit,
+			1_000_000_000n, // 1 gwei
+		);
+		// Should increase by 12.5%
+		expect(baseFee).toBe(1_125_000_000n);
+	});
+
+	it("handles both extreme base fee and gas values", () => {
+		// Worst case: extreme values for both
+		const extremeBaseFee = 10n ** 18n; // 1 ETH per gas
+		const extremeGasLimit = 10n ** 15n; // Extreme gas limit
+		const extremeGasUsed = extremeGasLimit; // Full block
+
+		const baseFee = FeeMarket.BaseFee(
+			extremeGasUsed,
+			extremeGasLimit,
+			extremeBaseFee,
+		);
+		// Should compute without throwing and increase by ~12.5%
+		expect(baseFee).toBeGreaterThan(extremeBaseFee);
+		// Verify it's approximately 12.5% increase (allowing for integer division)
+		const expectedIncrease = extremeBaseFee / 8n;
+		expect(baseFee - extremeBaseFee).toBeGreaterThanOrEqual(expectedIncrease - 1n);
+		expect(baseFee - extremeBaseFee).toBeLessThanOrEqual(expectedIncrease + 1n);
+	});
+
+	it("handles decrease with extreme values", () => {
+		const extremeBaseFee = 10n ** 18n;
+		const extremeGasLimit = 10n ** 15n;
+		const extremeGasUsed = 0n; // Empty block - max decrease
+
+		const baseFee = FeeMarket.BaseFee(
+			extremeGasUsed,
+			extremeGasLimit,
+			extremeBaseFee,
+		);
+		// Empty block should keep base fee unchanged (special case)
+		expect(baseFee).toBe(extremeBaseFee);
+	});
+
+	it("handles decrease below target with extreme values", () => {
+		const extremeBaseFee = 10n ** 18n;
+		const extremeGasLimit = 10n ** 15n;
+		const extremeGasUsed = 1n; // Near-empty block
+
+		const baseFee = FeeMarket.BaseFee(
+			extremeGasUsed,
+			extremeGasLimit,
+			extremeBaseFee,
+		);
+		// Should decrease by ~12.5% (target - used is nearly target)
+		expect(baseFee).toBeLessThan(extremeBaseFee);
+		const expectedDecrease = extremeBaseFee / 8n;
+		// The overflow-safe division reordering causes ~0.025% precision loss
+		// Allow for that in the comparison (250 parts per million)
+		const actualDecrease = extremeBaseFee - baseFee;
+		const tolerance = expectedDecrease / 4000n; // 0.025% tolerance
+		expect(actualDecrease).toBeGreaterThanOrEqual(expectedDecrease - tolerance);
+		expect(actualDecrease).toBeLessThanOrEqual(expectedDecrease + tolerance);
+	});
 });
 
 // ============================================================================
