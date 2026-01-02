@@ -3,7 +3,10 @@ export type {
 	BuilderBidLike,
 	BuilderBidType,
 } from "./BuilderBidType.js";
-export { InvalidBuilderBidError } from "./errors.js";
+export {
+	InvalidBuilderBidError,
+	MissingCryptoDependencyError,
+} from "./errors.js";
 export { from } from "./from.js";
 export { getValue } from "./getValue.js";
 export { toHex } from "./toHex.js";

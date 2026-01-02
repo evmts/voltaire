@@ -1,4 +1,4 @@
-import { InvalidFormatError } from "../errors/index.js";
+import { InvalidCharacterError, InvalidFormatError } from "./errors.js";
 import { hexCharToValue } from "./utils.js";
 
 /**
@@ -8,7 +8,8 @@ import { hexCharToValue } from "./utils.js";
  * @since 0.0.0
  * @param {string} value - String to validate as hex
  * @returns {string} Validated hex string
- * @throws {InvalidFormatError} If missing 0x prefix or contains invalid hex characters
+ * @throws {InvalidFormatError} If missing 0x prefix
+ * @throws {InvalidCharacterError} If contains invalid hex characters
  * @example
  * ```javascript
  * import * as Hex from './primitives/Hex/index.js';
@@ -21,19 +22,15 @@ export function validate(value) {
 			code: "HEX_MISSING_PREFIX",
 			value,
 			expected: "0x-prefixed hex string",
-			docsPath: "/primitives/hex#error-handling",
 		});
 
 	for (let i = 2; i < value.length; i++) {
 		if (hexCharToValue(value[i]) === null)
-			throw new InvalidFormatError(
+			throw new InvalidCharacterError(
 				`Invalid hex character at position ${i}: '${value[i]}'`,
 				{
-					code: "HEX_INVALID_CHARACTER",
 					value,
-					expected: "valid hex characters (0-9, a-f, A-F)",
 					context: { position: i, character: value[i] },
-					docsPath: "/primitives/hex#error-handling",
 				},
 			);
 	}

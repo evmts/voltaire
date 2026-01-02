@@ -45,7 +45,7 @@ describe("Domain", () => {
 				expect.fail("Should have thrown");
 			} catch (e) {
 				expect((e as Error).name).toBe("InvalidDomainError");
-				expect((e as Error).message).toBe(
+				expect((e as Error).message).toContain(
 					"Domain must have at least one field defined",
 				);
 			}

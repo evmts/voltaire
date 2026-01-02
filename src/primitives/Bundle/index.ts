@@ -1,6 +1,6 @@
 export { addTransaction } from "./addTransaction.js";
 export type { BundleLike, BundleType } from "./BundleType.js";
-export { InvalidBundleError } from "./errors.js";
+export { InvalidBundleError, MissingCryptoDependencyError } from "./errors.js";
 export { from } from "./from.js";
 export { size } from "./size.js";
 export { toFlashbotsParams } from "./toFlashbotsParams.js";
