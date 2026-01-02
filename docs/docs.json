@@ -15,7 +15,7 @@
         "icon": "book-open",
         "groups": [
           {
-            "group": "Why Voltaire?",
+            "group": "Overview",
             "icon": "lightbulb",
             "pages": [
               "introduction",
@@ -211,7 +211,8 @@
                   "primitives/block/index",
                   "primitives/block-header/index",
                   "primitives/block-body/index",
-                  "primitives/block-stream"
+                  "primitives/block-stream",
+                  "primitives/uncle/index"
                 ]
               },
               {
@@ -379,7 +380,7 @@
                 ]
               },
               {
-                "group": "Contracts",
+                "group": "Contract Code",
                 "icon": {
                   "name": "file-code",
                   "style": "solid"
@@ -656,7 +657,9 @@
                   "primitives/network-id/index",
                   "primitives/node-info/index",
                   "primitives/peer-id/index",
-                  "primitives/peer-info/index"
+                  "primitives/peer-info/index",
+                  "primitives/protocol-version/index",
+                  "primitives/relay-data/index"
                 ]
               },
               {
@@ -681,27 +684,6 @@
                   "primitives/state-proof/index",
                   "primitives/storage-proof/index",
                   "primitives/state-root/index"
-                ]
-              },
-              {
-                "group": "Network",
-                "icon": {
-                  "name": "network-wired",
-                  "style": "solid"
-                },
-                "pages": [
-                  "primitives/protocol-version/index",
-                  "primitives/relay-data/index"
-                ]
-              },
-              {
-                "group": "Legacy",
-                "icon": {
-                  "name": "clock-rotate-left",
-                  "style": "solid"
-                },
-                "pages": [
-                  "primitives/uncle/index"
                 ]
               },
               {
@@ -907,12 +889,12 @@
                   "style": "solid"
                 },
                 "pages": [
-                  "primitives/beacon-block-root/overview",
-                  "primitives/epoch/overview",
-                  "primitives/slot/overview",
-                  "primitives/validator-index/overview",
-                  "primitives/withdrawal/overview",
-                  "primitives/withdrawal-index/overview"
+                  "primitives/beacon-block-root/index",
+                  "primitives/epoch/index",
+                  "primitives/slot/index",
+                  "primitives/validator-index/index",
+                  "primitives/withdrawal/index",
+                  "primitives/withdrawal-index/index"
                 ]
               },
               {
