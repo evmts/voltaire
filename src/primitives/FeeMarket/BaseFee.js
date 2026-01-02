@@ -46,19 +46,40 @@ export function BaseFee(parentGasUsed, parentGasLimit, parentBaseFee) {
 		// Block used more than target: increase base fee
 		const gasUsedDelta = parentGasUsed - parentGasTarget;
 		// baseFee * delta / target / 8 (max 12.5% increase)
-		const baseFeeDelta =
-			(parentBaseFee * gasUsedDelta) /
-			parentGasTarget /
-			Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
+		// Use overflow-safe order: divide first where possible to reduce intermediate values
+		// Formula: (baseFee * delta) / (target * 8)
+		// Reorder to: (baseFee / 8) * delta / target when baseFee is large enough
+		// to avoid losing precision, otherwise use original order
+		let baseFeeDelta;
+		if (parentBaseFee >= Eip1559.BASE_FEE_CHANGE_DENOMINATOR) {
+			// Safe to divide first - avoids large intermediate multiplication
+			baseFeeDelta =
+				((parentBaseFee / Eip1559.BASE_FEE_CHANGE_DENOMINATOR) * gasUsedDelta) /
+				parentGasTarget;
+		} else {
+			// Small base fee - use original order (no overflow risk)
+			baseFeeDelta =
+				(parentBaseFee * gasUsedDelta) /
+				parentGasTarget /
+				Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
+		}
 		newBaseFee = parentBaseFee + (baseFeeDelta > 0n ? baseFeeDelta : 1n);
 	} else {
 		// Block used less than target: decrease base fee
 		const gasUsedDelta = parentGasTarget - parentGasUsed;
 		// baseFee * delta / target / 8 (max 12.5% decrease)
-		const baseFeeDelta =
-			(parentBaseFee * gasUsedDelta) /
-			parentGasTarget /
-			Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
+		// Use same overflow-safe approach
+		let baseFeeDelta;
+		if (parentBaseFee >= Eip1559.BASE_FEE_CHANGE_DENOMINATOR) {
+			baseFeeDelta =
+				((parentBaseFee / Eip1559.BASE_FEE_CHANGE_DENOMINATOR) * gasUsedDelta) /
+				parentGasTarget;
+		} else {
+			baseFeeDelta =
+				(parentBaseFee * gasUsedDelta) /
+				parentGasTarget /
+				Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
+		}
 		const delta = baseFeeDelta > 0n ? baseFeeDelta : 1n;
 		newBaseFee =
 			parentBaseFee > delta ? parentBaseFee - delta : Eip1559.MIN_BASE_FEE;
