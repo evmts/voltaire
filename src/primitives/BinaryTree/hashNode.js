@@ -1,3 +1,4 @@
+import { InvalidTreeStateError } from "./errors.js";
 import { HashInternal } from "./hashInternal.js";
 import { HashLeaf } from "./hashLeaf.js";
 import { HashStem } from "./hashStem.js";
@@ -8,7 +9,7 @@ import { HashStem } from "./hashStem.js";
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.blake3 - BLAKE3 hash function
  * @returns {(node: import('./BinaryTreeType.js').Node) => Uint8Array} Function that hashes any node type
- * @throws {Error} If node type is unknown
+ * @throws {InvalidTreeStateError} If node type is unknown
  *
  * @example
  * ```typescript
@@ -38,7 +39,11 @@ export function HashNode({ blake3 }) {
 				return hashLeaf(node);
 			default: {
 				const _exhaustive = node;
-				throw new Error(`Unknown node type: ${_exhaustive}`);
+				throw new InvalidTreeStateError(`Unknown node type: ${_exhaustive}`, {
+					value: _exhaustive,
+					expected: "empty, internal, stem, or leaf",
+					code: "BINARY_TREE_UNKNOWN_NODE_TYPE",
+				});
 			}
 		}
 	};

@@ -1,3 +1,4 @@
+import { InvalidTransactionTypeError } from "../errors/index.js";
 import { Type } from "./types.js";
 
 /**
@@ -34,6 +35,7 @@ function addressToHex(address) {
  *
  * @param {import('./types.js').Any} tx - Transaction to convert
  * @returns {object} JSON-RPC formatted transaction
+ * @throws {InvalidTransactionTypeError} If transaction type is unknown
  *
  * @example
  * ```javascript
@@ -126,8 +128,13 @@ export function toRpc(tx) {
 
 		default: {
 			const _exhaustive = /** @type {never} */ (tx);
-			throw new Error(
+			throw new InvalidTransactionTypeError(
 				`Unknown transaction type: ${/** @type {any} */ (_exhaustive).type}`,
+				{
+					code: "UNKNOWN_TRANSACTION_TYPE",
+					context: { type: /** @type {any} */ (_exhaustive).type },
+					docsPath: "/primitives/transaction/to-rpc#error-handling",
+				},
 			);
 		}
 	}

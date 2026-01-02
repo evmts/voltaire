@@ -171,6 +171,19 @@ describe("Secp256k1.sign", () => {
 			expect(() => sign(message, privateKey)).toThrow(InvalidPrivateKeyError);
 		});
 
+		it("should throw error with correct name for zero private key", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
+
+			try {
+				sign(message, privateKey);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidPrivateKeyError");
+			}
+		});
+
 		it("should throw InvalidPrivateKeyError for private key >= n", () => {
 			// CURVE_ORDER (invalid)
 			const privateKeyBytes = new Uint8Array([

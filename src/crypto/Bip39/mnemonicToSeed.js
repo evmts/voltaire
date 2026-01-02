@@ -26,6 +26,10 @@ export async function mnemonicToSeed(mnemonic, passphrase = "") {
 			await _mnemonicToSeed(mnemonic, passphrase)
 		);
 	} catch (error) {
-		throw new Bip39Error(`Seed derivation failed: ${error}`);
+		throw new Bip39Error(`Seed derivation failed: ${error}`, {
+			code: "BIP39_SEED_DERIVATION_FAILED",
+			docsPath: "/crypto/bip39/mnemonic-to-seed#error-handling",
+			cause: /** @type {Error} */ (error),
+		});
 	}
 }

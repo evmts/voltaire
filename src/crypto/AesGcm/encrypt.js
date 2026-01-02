@@ -11,6 +11,7 @@ import { AesGcmError, InvalidNonceError } from "./errors.js";
  * @param {Uint8Array} nonce - 12-byte nonce (IV)
  * @param {Uint8Array} [additionalData] - Optional additional authenticated data
  * @returns {Promise<Uint8Array>} Ciphertext with authentication tag appended
+ * @throws {InvalidNonceError} If nonce is not 12 bytes
  * @throws {AesGcmError} If encryption fails
  * @example
  * ```javascript

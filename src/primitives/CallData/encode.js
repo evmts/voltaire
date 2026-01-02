@@ -1,5 +1,6 @@
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { encodeParameters } from "../Abi/Encoding.js";
+import { InvalidSignatureError, ParameterCountMismatchError } from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**
@@ -8,6 +9,8 @@ import { fromBytes } from "./fromBytes.js";
  * @param {string} signature - Function signature (e.g., "transfer(address,uint256)")
  * @param {unknown[]} params - Array of parameter values
  * @returns {import('./CallDataType.js').CallDataType} Encoded calldata
+ * @throws {InvalidSignatureError} If function signature format is invalid
+ * @throws {ParameterCountMismatchError} If parameter count doesn't match signature
  *
  * @example
  * ```javascript
@@ -27,15 +30,23 @@ export function encode(signature, params) {
 	// Parse the signature to extract types
 	const match = signature.match(/^\w+\(([^)]*)\)$/);
 	if (!match) {
-		throw new Error(`Invalid function signature: ${signature}`);
+		throw new InvalidSignatureError(`Invalid function signature: ${signature}`, {
+			value: signature,
+			expected: "function(type1,type2,...)",
+		});
 	}
 
 	const typesStr = match[1];
 	const types = typesStr ? typesStr.split(",").map((t) => t.trim()) : [];
 
 	if (types.length !== params.length) {
-		throw new Error(
+		throw new ParameterCountMismatchError(
 			`Parameter count mismatch: signature has ${types.length} parameters, got ${params.length}`,
+			{
+				value: params.length,
+				expected: `${types.length} parameters`,
+				context: { signature, actualCount: params.length },
+			},
 		);
 	}
 

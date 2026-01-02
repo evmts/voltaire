@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import * as TransactionHash from "./index.js";
+import {
+	InvalidTransactionHashFormatError,
+	InvalidTransactionHashLengthError,
+} from "./errors.js";
 
 describe("TransactionHash", () => {
 	const testHash =
@@ -22,10 +26,19 @@ describe("TransactionHash", () => {
 		});
 
 		it("throws on invalid type", () => {
-			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
-			expect(() => TransactionHash.from(123 as any)).toThrow(
-				"Unsupported TransactionHash value type",
-			);
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input types
+				TransactionHash.from(123 as any);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionHashFormatError);
+				expect((e as InvalidTransactionHashFormatError).name).toBe(
+					"InvalidTransactionHashFormatError",
+				);
+				expect((e as InvalidTransactionHashFormatError).message).toContain(
+					"Unsupported TransactionHash value type",
+				);
+			}
 		});
 	});
 
@@ -41,28 +54,62 @@ describe("TransactionHash", () => {
 		});
 
 		it("throws on wrong length", () => {
-			expect(() => TransactionHash.fromHex("0x1234")).toThrow(
-				"must be 64 characters",
-			);
+			try {
+				TransactionHash.fromHex("0x1234");
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionHashFormatError);
+				expect((e as InvalidTransactionHashFormatError).name).toBe(
+					"InvalidTransactionHashFormatError",
+				);
+				expect((e as InvalidTransactionHashFormatError).message).toContain(
+					"must be 64 characters",
+				);
+			}
 		});
 
 		it("throws on invalid characters", () => {
-			expect(() =>
+			try {
 				TransactionHash.fromHex(
 					"0xgg34567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-				),
-			).toThrow("invalid characters");
+				);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionHashFormatError);
+				expect((e as InvalidTransactionHashFormatError).name).toBe(
+					"InvalidTransactionHashFormatError",
+				);
+				expect((e as InvalidTransactionHashFormatError).message).toContain(
+					"invalid characters",
+				);
+			}
 		});
 	});
 
 	describe("fromBytes", () => {
-		it("validates length", () => {
-			expect(() => TransactionHash.fromBytes(new Uint8Array(31))).toThrow(
-				"must be 32 bytes",
-			);
-			expect(() => TransactionHash.fromBytes(new Uint8Array(33))).toThrow(
-				"must be 32 bytes",
-			);
+		it("throws on wrong length", () => {
+			try {
+				TransactionHash.fromBytes(new Uint8Array(31));
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionHashLengthError);
+				expect((e as InvalidTransactionHashLengthError).name).toBe(
+					"InvalidTransactionHashLengthError",
+				);
+				expect((e as InvalidTransactionHashLengthError).message).toContain(
+					"must be 32 bytes",
+				);
+			}
+
+			try {
+				TransactionHash.fromBytes(new Uint8Array(33));
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionHashLengthError);
+				expect((e as InvalidTransactionHashLengthError).name).toBe(
+					"InvalidTransactionHashLengthError",
+				);
+			}
 		});
 
 		it("accepts 32 bytes", () => {
@@ -92,6 +139,30 @@ describe("TransactionHash", () => {
 				"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 			);
 			expect(TransactionHash.equals(a, b)).toBe(false);
+		});
+	});
+
+	describe("error properties", () => {
+		it("InvalidTransactionHashLengthError has correct properties", () => {
+			const error = new InvalidTransactionHashLengthError("Test message", {
+				value: new Uint8Array(10),
+				expected: "32 bytes",
+			});
+			expect(error.name).toBe("InvalidTransactionHashLengthError");
+			expect(error.code).toBe("INVALID_TRANSACTION_HASH_LENGTH");
+			expect(error.value).toEqual(new Uint8Array(10));
+			expect(error.expected).toBe("32 bytes");
+		});
+
+		it("InvalidTransactionHashFormatError has correct properties", () => {
+			const error = new InvalidTransactionHashFormatError("Test message", {
+				value: "0xinvalid",
+				expected: "valid hex",
+			});
+			expect(error.name).toBe("InvalidTransactionHashFormatError");
+			expect(error.code).toBe("INVALID_TRANSACTION_HASH_FORMAT");
+			expect(error.value).toBe("0xinvalid");
+			expect(error.expected).toBe("valid hex");
 		});
 	});
 });

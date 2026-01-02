@@ -127,11 +127,17 @@ console.log(op?.shortName) // "oeth"
 ### Dynamic Chain Loading
 
 ```typescript
+import { ValidationError } from 'tevm/errors'
+
 function getChainConfig(chainIdFromUser: number): Chain {
   const chain = Chain.fromId(chainIdFromUser)
 
   if (!chain) {
-    throw new Error(`Unknown chain ID: ${chainIdFromUser}`)
+    throw new ValidationError(`Unknown chain ID: ${chainIdFromUser}`, {
+      value: chainIdFromUser,
+      expected: "Valid chain ID from registry",
+      code: "UNKNOWN_CHAIN_ID"
+    })
   }
 
   return chain
@@ -217,11 +223,17 @@ if (isChainSupported(9)) {
 ### Type-Safe Chain Handling
 
 ```typescript
+import { ValidationError } from 'tevm/errors'
+
 function processChain(chainOrId: Chain | number): Chain {
   if (typeof chainOrId === 'number') {
     const chain = Chain.fromId(chainOrId)
     if (!chain) {
-      throw new Error(`Invalid chain ID: ${chainOrId}`)
+      throw new ValidationError(`Invalid chain ID: ${chainOrId}`, {
+        value: chainOrId,
+        expected: "Valid chain ID",
+        code: "INVALID_CHAIN_ID"
+      })
     }
     return chain
   }

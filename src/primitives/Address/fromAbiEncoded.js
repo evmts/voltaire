@@ -1,3 +1,5 @@
+import { InvalidAddressLengthError } from "./errors.js";
+
 /**
  * Decode Address from ABI-encoded bytes (32 bytes)
  *
@@ -5,7 +7,7 @@
  *
  * @param {Uint8Array} bytes - 32-byte ABI-encoded data
  * @returns {import('./AddressType.js').AddressType} Decoded Address
- * @throws {Error} If bytes length is not 32
+ * @throws {InvalidAddressLengthError} If bytes length is not 32
  *
  * @example
  * ```typescript
@@ -16,8 +18,13 @@
  */
 export function fromAbiEncoded(bytes) {
 	if (bytes.length !== 32) {
-		throw new Error(
+		throw new InvalidAddressLengthError(
 			`ABI-encoded Address must be exactly 32 bytes, got ${bytes.length}`,
+			{
+				value: bytes.length,
+				expected: "32 bytes",
+				code: "INVALID_ABI_ENCODED_LENGTH",
+			},
 		);
 	}
 	return /** @type {import('./AddressType.js').AddressType} */ (

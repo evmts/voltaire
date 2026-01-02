@@ -1,3 +1,4 @@
+import { AbiParameterMismatchError } from "../Errors.js";
 import * as Selector from "../../Selector/index.js";
 
 /**
@@ -8,7 +9,7 @@ import * as Selector from "../../Selector/index.js";
  *
  * @param {Array<import('../../Selector/SelectorType.js').SelectorLike>} selectors - Array of function selectors
  * @returns {import('./InterfaceIdType.js').InterfaceIdType} Interface ID (4-byte XOR result)
- * @throws {Error} If no selectors provided
+ * @throws {AbiParameterMismatchError} If no selectors provided
  * @see https://eips.ethereum.org/EIPS/eip-165
  * @example
  * ```javascript
@@ -28,7 +29,14 @@ import * as Selector from "../../Selector/index.js";
  */
 export function getInterfaceId(selectors) {
 	if (!selectors || selectors.length === 0) {
-		throw new Error("At least one selector required to compute interface ID");
+		throw new AbiParameterMismatchError(
+			"At least one selector required to compute interface ID",
+			{
+				value: selectors?.length ?? 0,
+				expected: "at least 1 selector",
+				docsPath: "/primitives/abi/interface",
+			},
+		);
 	}
 
 	// Convert all selectors to Uint8Array

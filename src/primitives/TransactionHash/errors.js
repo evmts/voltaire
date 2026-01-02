@@ -1,36 +1,56 @@
+import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
+
 /**
  * @typedef {object} ErrorDetails
  * @property {unknown} [value]
  * @property {string} [expected]
  * @property {Record<string, unknown>} [context]
+ * @property {string} [docsPath]
+ * @property {Error} [cause]
  */
 
-export class InvalidTransactionHashLengthError extends Error {
+/**
+ * Error thrown when TransactionHash byte length is invalid
+ * @extends {InvalidLengthError}
+ */
+export class InvalidTransactionHashLengthError extends InvalidLengthError {
 	/**
-	 * @param {string} message
-	 * @param {ErrorDetails} [details]
+	 * @param {string} [message]
+	 * @param {ErrorDetails} [options]
 	 */
-	constructor(message, details) {
-		super(message);
+	constructor(message, options) {
+		super(message || "Invalid TransactionHash length", {
+			code: "INVALID_TRANSACTION_HASH_LENGTH",
+			value: options?.value,
+			expected: options?.expected || "32 bytes",
+			context: options?.context,
+			docsPath:
+				options?.docsPath || "/primitives/transaction-hash#error-handling",
+			cause: options?.cause,
+		});
 		this.name = "InvalidTransactionHashLengthError";
-		if (details) {
-			/** @type {ErrorDetails} */
-			this.details = details;
-		}
 	}
 }
 
-export class InvalidTransactionHashFormatError extends Error {
+/**
+ * Error thrown when TransactionHash format is invalid
+ * @extends {InvalidFormatError}
+ */
+export class InvalidTransactionHashFormatError extends InvalidFormatError {
 	/**
-	 * @param {string} message
-	 * @param {ErrorDetails} [details]
+	 * @param {string} [message]
+	 * @param {ErrorDetails} [options]
 	 */
-	constructor(message, details) {
-		super(message);
+	constructor(message, options) {
+		super(message || "Invalid TransactionHash format", {
+			code: "INVALID_TRANSACTION_HASH_FORMAT",
+			value: options?.value,
+			expected: options?.expected || "valid hex string",
+			context: options?.context,
+			docsPath:
+				options?.docsPath || "/primitives/transaction-hash#error-handling",
+			cause: options?.cause,
+		});
 		this.name = "InvalidTransactionHashFormatError";
-		if (details) {
-			/** @type {ErrorDetails} */
-			this.details = details;
-		}
 	}
 }

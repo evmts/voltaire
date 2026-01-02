@@ -64,24 +64,42 @@ describe("Hardfork.range", () => {
 		expect(result).toContain(Hardfork.GRAY_GLACIER);
 	});
 
-	it("throws error for invalid start hardfork", () => {
+	it("throws InvalidFormatError for invalid start hardfork", () => {
 		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => range("invalid" as any, Hardfork.CANCUN)).toThrow(
 			"Invalid hardfork in range",
 		);
+		try {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+			range("invalid" as any, Hardfork.CANCUN);
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidFormatError");
+		}
 	});
 
-	it("throws error for invalid end hardfork", () => {
+	it("throws InvalidFormatError for invalid end hardfork", () => {
 		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => range(Hardfork.BERLIN, "invalid" as any)).toThrow(
 			"Invalid hardfork in range",
 		);
+		try {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+			range(Hardfork.BERLIN, "invalid" as any);
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidFormatError");
+		}
 	});
 
-	it("throws error for both invalid hardforks", () => {
+	it("throws InvalidFormatError for both invalid hardforks", () => {
 		// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
 		expect(() => range("invalid1" as any, "invalid2" as any)).toThrow(
 			"Invalid hardfork in range",
 		);
+		try {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+			range("invalid1" as any, "invalid2" as any);
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidFormatError");
+		}
 	});
 });

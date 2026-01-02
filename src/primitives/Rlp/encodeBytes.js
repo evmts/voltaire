@@ -7,7 +7,7 @@ import * as OxRlp from "ox/Rlp";
  * @since 0.0.0
  * @param {Uint8Array} bytes - Byte array to encode
  * @returns {Uint8Array} RLP-encoded bytes
- * @throws {Error} If encoding fails
+ * @throws {import('./RlpError.js').RlpEncodingError} If encoding fails
  * @example
  * ```javascript
  * import * as Rlp from './primitives/Rlp/index.js';

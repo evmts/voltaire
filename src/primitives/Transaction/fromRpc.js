@@ -1,3 +1,7 @@
+import {
+	InvalidLengthError,
+	InvalidTransactionTypeError,
+} from "../errors/index.js";
 import { Type } from "./types.js";
 
 /**
@@ -29,12 +33,22 @@ function hexToBigInt(hex) {
  * Convert hex string to address bytes (20 bytes)
  * @param {string | null | undefined} hex
  * @returns {import('../Address/AddressType.js').AddressType | null}
+ * @throws {InvalidLengthError} If address is not 20 bytes
  */
 function hexToAddress(hex) {
 	if (!hex) return null;
 	const bytes = fromHex(hex);
 	if (bytes.length !== 20) {
-		throw new Error(`Invalid address length: ${bytes.length}, expected 20`);
+		throw new InvalidLengthError(
+			`Invalid address length: ${bytes.length}, expected 20`,
+			{
+				code: "INVALID_ADDRESS_LENGTH",
+				value: bytes,
+				expected: "20 bytes",
+				context: { actualLength: bytes.length },
+				docsPath: "/primitives/transaction/from-rpc#error-handling",
+			},
+		);
 	}
 	return /** @type {import('../Address/AddressType.js').AddressType} */ (bytes);
 }
@@ -43,11 +57,21 @@ function hexToAddress(hex) {
  * Convert hex string to address bytes (20 bytes), throws if null
  * @param {string} hex
  * @returns {import('../Address/AddressType.js').AddressType}
+ * @throws {InvalidLengthError} If address is not 20 bytes
  */
 function hexToAddressRequired(hex) {
 	const bytes = fromHex(hex);
 	if (bytes.length !== 20) {
-		throw new Error(`Invalid address length: ${bytes.length}, expected 20`);
+		throw new InvalidLengthError(
+			`Invalid address length: ${bytes.length}, expected 20`,
+			{
+				code: "INVALID_ADDRESS_LENGTH",
+				value: bytes,
+				expected: "20 bytes",
+				context: { actualLength: bytes.length },
+				docsPath: "/primitives/transaction/from-rpc#error-handling",
+			},
+		);
 	}
 	return /** @type {import('../Address/AddressType.js').AddressType} */ (bytes);
 }
@@ -56,11 +80,21 @@ function hexToAddressRequired(hex) {
  * Convert hex string to 32-byte hash
  * @param {string} hex
  * @returns {import('../Bytes32/Bytes32Type.js').Bytes32Type}
+ * @throws {InvalidLengthError} If hash is not 32 bytes
  */
 function hexToHash(hex) {
 	const bytes = fromHex(hex);
 	if (bytes.length !== 32) {
-		throw new Error(`Invalid hash length: ${bytes.length}, expected 32`);
+		throw new InvalidLengthError(
+			`Invalid hash length: ${bytes.length}, expected 32`,
+			{
+				code: "INVALID_HASH_LENGTH",
+				value: bytes,
+				expected: "32 bytes",
+				context: { actualLength: bytes.length },
+				docsPath: "/primitives/transaction/from-rpc#error-handling",
+			},
+		);
 	}
 	return /** @type {import('../Bytes32/Bytes32Type.js').Bytes32Type} */ (bytes);
 }
@@ -94,6 +128,8 @@ function hexToHash(hex) {
  *
  * @param {RpcTransaction} rpc - JSON-RPC formatted transaction
  * @returns {import('./types.js').Any} Parsed transaction
+ * @throws {InvalidLengthError} If address or hash length is invalid
+ * @throws {InvalidTransactionTypeError} If transaction type is unknown
  *
  * @example
  * ```javascript
@@ -237,6 +273,13 @@ export function fromRpc(rpc) {
 			};
 
 		default:
-			throw new Error(`Unknown transaction type: ${type}`);
+			throw new InvalidTransactionTypeError(
+				`Unknown transaction type: ${type}`,
+				{
+					code: "UNKNOWN_TRANSACTION_TYPE",
+					context: { type },
+					docsPath: "/primitives/transaction/from-rpc#error-handling",
+				},
+			);
 	}
 }

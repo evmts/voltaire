@@ -1,3 +1,5 @@
+import { UintEmptyInputError } from "./errors.js";
+
 /**
  * Find minimum of multiple Uint256 values
  *
@@ -5,7 +7,7 @@
  * @since 0.0.0
  * @param {...import('./Uint256Type.js').Uint256Type} values - Values to compare
  * @returns {import('./Uint256Type.js').Uint256Type} Minimum value
- * @throws {Error} If no values provided
+ * @throws {UintEmptyInputError} If no values provided
  * @example
  * ```javascript
  * import * as Uint256 from './primitives/Uint/index.js';
@@ -14,7 +16,7 @@
  */
 export function min(...values) {
 	if (values.length === 0) {
-		throw new Error("min requires at least one value");
+		throw new UintEmptyInputError("min requires at least one value");
 	}
 	let result = /** @type {import('./Uint256Type.js').Uint256Type} */ (
 		values[0]

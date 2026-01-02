@@ -1,6 +1,7 @@
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { describe, expect, it } from "vitest";
 import { Ed25519 } from "./Ed25519.js";
+import { InvalidSecretKeyError, InvalidSeedError } from "./errors.js";
 
 describe("Ed25519", () => {
 	describe("keypairFromSeed", () => {
@@ -46,6 +47,17 @@ describe("Ed25519", () => {
 			expect(() => Ed25519.keypairFromSeed(invalidSeed)).toThrow();
 		});
 
+		it("throws InvalidSeedError with correct error.name", () => {
+			const invalidSeed = new Uint8Array(16);
+			try {
+				Ed25519.keypairFromSeed(invalidSeed);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidSeedError);
+				expect((e as InvalidSeedError).name).toBe("InvalidSeedError");
+			}
+		});
+
 		it("matches @noble/curves implementation", () => {
 			const seed = crypto.getRandomValues(new Uint8Array(32));
 			const keypair = Ed25519.keypairFromSeed(seed);
@@ -76,6 +88,17 @@ describe("Ed25519", () => {
 			const invalidSecretKey = new Uint8Array(16);
 
 			expect(() => Ed25519.derivePublicKey(invalidSecretKey)).toThrow();
+		});
+
+		it("throws InvalidSecretKeyError with correct error.name", () => {
+			const invalidSecretKey = new Uint8Array(16);
+			try {
+				Ed25519.derivePublicKey(invalidSecretKey);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidSecretKeyError);
+				expect((e as InvalidSecretKeyError).name).toBe("InvalidSecretKeyError");
+			}
 		});
 
 		it("matches @noble/curves implementation", () => {
@@ -139,6 +162,18 @@ describe("Ed25519", () => {
 			const message = new TextEncoder().encode("test");
 
 			expect(() => Ed25519.sign(message, invalidSecretKey)).toThrow();
+		});
+
+		it("throws InvalidSecretKeyError for sign with correct error.name", () => {
+			const invalidSecretKey = new Uint8Array(16);
+			const message = new TextEncoder().encode("test");
+			try {
+				Ed25519.sign(message, invalidSecretKey);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidSecretKeyError);
+				expect((e as InvalidSecretKeyError).name).toBe("InvalidSecretKeyError");
+			}
 		});
 
 		it("matches @noble/curves implementation", () => {

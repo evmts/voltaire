@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
+import { DecodingError } from "../../errors/index.js";
 import { Type } from "../types.js";
 import { deserialize, serialize, TransactionEIP2930 } from "./index.js";
 
@@ -98,5 +99,27 @@ describe("TransactionEIP2930.deserialize", () => {
 	it("throws for invalid type prefix", () => {
 		const invalidData = new Uint8Array([0x02, 0xc0]); // Wrong type
 		expect(() => deserialize(invalidData)).toThrow();
+	});
+
+	it("throws DecodingError with correct name for invalid type prefix", () => {
+		const invalidData = new Uint8Array([0x02, 0xc0]); // Wrong type
+		try {
+			deserialize(invalidData);
+			expect.fail("Expected to throw");
+		} catch (e) {
+			expect(e).toBeInstanceOf(DecodingError);
+			expect((e as DecodingError).name).toBe("DecodingError");
+		}
+	});
+
+	it("throws DecodingError with correct name for empty data", () => {
+		const emptyData = new Uint8Array([]);
+		try {
+			deserialize(emptyData);
+			expect.fail("Expected to throw");
+		} catch (e) {
+			expect(e).toBeInstanceOf(DecodingError);
+			expect((e as DecodingError).name).toBe("DecodingError");
+		}
 	});
 });

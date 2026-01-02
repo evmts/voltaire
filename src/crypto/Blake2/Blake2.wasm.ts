@@ -4,6 +4,7 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
+import { Blake2InvalidOutputLengthError } from "./errors.js";
 
 /**
  * BLAKE2b operations namespace (WASM variant)
@@ -20,7 +21,7 @@ export namespace Blake2Wasm {
 	 * @param data - Input data to hash (Uint8Array or string)
 	 * @param outputLength - Output length in bytes (1-64, default 64)
 	 * @returns BLAKE2b hash
-	 * @throws {Error} If outputLength is invalid
+	 * @throws {Blake2InvalidOutputLengthError} If outputLength is invalid
 	 * @example
 	 * ```typescript
 	 * import { Blake2Wasm } from './crypto/Blake2/Blake2.wasm.js';
@@ -33,9 +34,7 @@ export namespace Blake2Wasm {
 		outputLength = 64,
 	): Uint8Array {
 		if (outputLength < 1 || outputLength > 64) {
-			throw new Error(
-				`Invalid output length: ${outputLength}. Must be between 1 and 64 bytes.`,
-			);
+			throw new Blake2InvalidOutputLengthError(outputLength);
 		}
 
 		const input =
@@ -51,7 +50,7 @@ export namespace Blake2Wasm {
 	 * @param str - Input string to hash
 	 * @param outputLength - Output length in bytes (1-64, default 64)
 	 * @returns BLAKE2b hash
-	 * @throws {Error} If outputLength is invalid
+	 * @throws {Blake2InvalidOutputLengthError} If outputLength is invalid
 	 * @example
 	 * ```typescript
 	 * import { Blake2Wasm } from './crypto/Blake2/Blake2.wasm.js';

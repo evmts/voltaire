@@ -1,14 +1,23 @@
 // @ts-nocheck
 import { CURVE_ORDER } from "./constants.js";
+import { InvalidSignatureError } from "./errors.js";
 
 /**
  * Convert 32-byte big-endian array to bigint
  * @param {Uint8Array} bytes
  * @returns {bigint}
+ * @throws {InvalidSignatureError} If bytes is not 32 bytes
  */
 function bytes32ToBigInt(bytes) {
 	if (bytes.length !== 32) {
-		throw new Error(`Expected 32 bytes, got ${bytes.length}`);
+		throw new InvalidSignatureError(
+			`Expected 32 bytes, got ${bytes.length}`,
+			{
+				code: "SECP256K1_INVALID_SIGNATURE_COMPONENT_LENGTH",
+				context: { length: bytes.length, expected: 32 },
+				docsPath: "/crypto/secp256k1#error-handling",
+			},
+		);
 	}
 	let result = 0n;
 	for (let i = 0; i < 32; i++) {

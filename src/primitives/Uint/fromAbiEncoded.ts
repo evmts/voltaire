@@ -1,3 +1,4 @@
+import { UintInvalidLengthError } from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
 import type { Uint256Type } from "./Uint256Type.js";
 
@@ -6,7 +7,7 @@ import type { Uint256Type } from "./Uint256Type.js";
  *
  * @param bytes - 32-byte ABI-encoded data
  * @returns Decoded Uint256 value
- * @throws Error if bytes length is not 32
+ * @throws {UintInvalidLengthError} If bytes length is not 32
  *
  * @example
  * ```typescript
@@ -17,8 +18,13 @@ import type { Uint256Type } from "./Uint256Type.js";
  */
 export function fromAbiEncoded(bytes: Uint8Array): Uint256Type {
 	if (bytes.length !== 32) {
-		throw new Error(
+		throw new UintInvalidLengthError(
 			`ABI-encoded Uint256 must be exactly 32 bytes, got ${bytes.length}`,
+			{
+				value: bytes,
+				expected: "32 bytes",
+				actualLength: bytes.length,
+			},
 		);
 	}
 	return fromBytes(bytes);

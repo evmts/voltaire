@@ -11,7 +11,8 @@ import { DecryptionError, InvalidNonceError } from "./errors.js";
  * @param {Uint8Array} nonce - 12-byte nonce (IV) used during encryption
  * @param {Uint8Array} [additionalData] - Optional additional authenticated data
  * @returns {Promise<Uint8Array>} Decrypted plaintext
- * @throws {DecryptionError} If authentication fails or decryption error
+ * @throws {InvalidNonceError} If nonce is not 12 bytes
+ * @throws {DecryptionError} If authentication fails, ciphertext too short, or decryption error
  * @example
  * ```javascript
  * import * as AesGcm from './crypto/AesGcm/index.js';

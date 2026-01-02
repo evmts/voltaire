@@ -1,10 +1,15 @@
+import { NegativeNumberError, NonIntegerError, SizeExceededError, UnsafeIntegerError } from "./errors.js";
+
 /**
  * Convert number to Bytes
  *
  * @param {number} value - Number to convert (must be safe integer, non-negative)
  * @param {number} [size] - Optional byte size (pads or throws if too small)
  * @returns {import('./BytesType.js').BytesType} Bytes
- * @throws {Error} If value is negative, not an integer, or exceeds MAX_SAFE_INTEGER
+ * @throws {NegativeNumberError} If value is negative
+ * @throws {UnsafeIntegerError} If value exceeds MAX_SAFE_INTEGER
+ * @throws {NonIntegerError} If value is not an integer
+ * @throws {SizeExceededError} If number requires more bytes than size allows
  *
  * @example
  * ```javascript
@@ -16,15 +21,20 @@
  */
 export function fromNumber(value, size) {
 	if (value < 0) {
-		throw new Error(`Number must be non-negative. Got: ${value}`);
+		throw new NegativeNumberError(`Number must be non-negative. Got: ${value}`, {
+			value,
+		});
 	}
 	if (value > Number.MAX_SAFE_INTEGER) {
-		throw new Error(
+		throw new UnsafeIntegerError(
 			`Number exceeds MAX_SAFE_INTEGER (${Number.MAX_SAFE_INTEGER}). Use Bytes.fromBigInt() for larger values.`,
+			{ value },
 		);
 	}
 	if (!Number.isInteger(value)) {
-		throw new Error(`Number must be an integer. Got: ${value}`);
+		throw new NonIntegerError(`Number must be an integer. Got: ${value}`, {
+			value,
+		});
 	}
 
 	// Calculate minimum bytes needed
@@ -37,8 +47,13 @@ export function fromNumber(value, size) {
 	const targetSize = size !== undefined ? size : minBytes;
 
 	if (minBytes > targetSize) {
-		throw new Error(
+		throw new SizeExceededError(
 			`Number ${value} requires ${minBytes} bytes but size is ${targetSize}.`,
+			{
+				value,
+				expected: `${targetSize} bytes`,
+				context: { requiredBytes: minBytes, targetSize },
+			},
 		);
 	}
 

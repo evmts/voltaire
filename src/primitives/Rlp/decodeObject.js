@@ -1,4 +1,5 @@
 import { decode } from "./decode.js";
+import { RlpDecodingError } from "./errors.js";
 import { toRaw } from "./toRaw.js";
 
 /**
@@ -8,7 +9,7 @@ import { toRaw } from "./toRaw.js";
  * @since 0.0.0
  * @param {Uint8Array} data - RLP-encoded data
  * @returns {Record<string, any>} Decoded object
- * @throws {Error} If decoding fails or data format is invalid
+ * @throws {RlpDecodingError} If decoding fails or data format is invalid
  * @example
  * ```javascript
  * import * as Rlp from './primitives/Rlp/index.js';
@@ -22,7 +23,10 @@ export function decodeObject(data) {
 	const raw = toRaw(decoded.data);
 
 	if (!Array.isArray(raw)) {
-		throw new Error("Expected array from decode");
+		throw new RlpDecodingError("Expected array from decode", {
+			code: "RLP_UNEXPECTED_INPUT",
+			context: { type: typeof raw },
+		});
 	}
 
 	/** @type {Record<string, any>} */

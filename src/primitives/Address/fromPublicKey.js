@@ -1,9 +1,13 @@
+import { InvalidAddressLengthError, InvalidValueError } from "./errors.js";
+
 /**
  * Factory: Create Address from secp256k1 public key
  *
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @returns {(xOrPublicKey: bigint | Uint8Array, y?: bigint) => import('./AddressType.js').AddressType} Function that creates Address from public key
+ * @throws {InvalidAddressLengthError} If Uint8Array public key is not 64 bytes
+ * @throws {InvalidValueError} If x is bigint but y is not provided as bigint
  *
  * @example
  * ```typescript
@@ -24,16 +28,26 @@ export function FromPublicKey({ keccak256 }) {
 		// Handle Uint8Array input (64-byte public key)
 		if (xOrPublicKey instanceof Uint8Array) {
 			if (xOrPublicKey.length !== 64) {
-				throw new Error(
+				throw new InvalidAddressLengthError(
 					`Invalid public key length: expected 64 bytes, got ${xOrPublicKey.length}`,
+					{
+						value: xOrPublicKey.length,
+						expected: "64 bytes",
+						code: "INVALID_PUBLIC_KEY_LENGTH",
+					},
 				);
 			}
 			pubkey = xOrPublicKey;
 		} else {
 			// Handle bigint coordinates (x, y)
 			if (typeof y !== "bigint") {
-				throw new Error(
+				throw new InvalidValueError(
 					"When x is bigint, y coordinate must also be provided as bigint",
+					{
+						value: typeof y,
+						expected: "bigint",
+						code: "MISSING_Y_COORDINATE",
+					},
 				);
 			}
 

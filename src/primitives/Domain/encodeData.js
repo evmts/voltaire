@@ -1,5 +1,6 @@
 import { encodeType } from "./encodeType.js";
 import { encodeValue } from "./encodeValue.js";
+import { InvalidDomainTypeError } from "./errors.js";
 
 /**
  * @typedef {{ readonly name: string; readonly type: string }} EIP712Field
@@ -17,12 +18,13 @@ import { encodeValue } from "./encodeValue.js";
  * @param {object} crypto - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} crypto.keccak256 - Keccak256 hash function
  * @returns {Uint8Array} Encoded data
+ * @throws {InvalidDomainTypeError} If type is not found in types
  */
 export function encodeData(primaryType, data, types, crypto) {
 	// Get the type definition
 	const type = types[primaryType];
 	if (!type) {
-		throw new Error(`Type ${primaryType} not found in types`);
+		throw new InvalidDomainTypeError(primaryType, { value: types });
 	}
 
 	// Compute typeHash = keccak256(encodeType(primaryType, types))

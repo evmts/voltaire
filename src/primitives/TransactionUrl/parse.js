@@ -80,9 +80,15 @@ export function parse(url) {
 			chainId = BigInt(chainIdStr);
 			// Validate chain ID is non-negative
 			if (chainId < 0n) {
-				throw new Error("Chain ID must be non-negative");
+				throw new InvalidTransactionUrlError("Chain ID must be non-negative", {
+					chainId: chainIdStr,
+					url,
+				});
 			}
-		} catch {
+		} catch (error) {
+			if (error instanceof InvalidTransactionUrlError) {
+				throw error;
+			}
 			throw new InvalidTransactionUrlError("Invalid chain ID", {
 				chainId: chainIdStr,
 				url,

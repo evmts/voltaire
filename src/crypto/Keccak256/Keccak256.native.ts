@@ -9,6 +9,7 @@ import {
 	loadNative,
 } from "../../native-loader/index.js";
 import * as Hex from "../../primitives/Hex/index.js";
+import { Keccak256NativeNotLoadedError } from "./errors.js";
 import type { Keccak256Hash as Keccak256HashType } from "./Keccak256HashType.js";
 
 // Lazy-load native library
@@ -26,7 +27,7 @@ async function ensureLoaded() {
  *
  * @param data - Data to hash
  * @returns 32-byte hash
- * @throws Error if native operation fails
+ * @throws {Keccak256Error} If native operation fails
  */
 export async function hash(data: Uint8Array): Promise<Keccak256HashType> {
 	const lib = await ensureLoaded();
@@ -43,7 +44,7 @@ export async function hash(data: Uint8Array): Promise<Keccak256HashType> {
  *
  * @param hex - Hex string to hash
  * @returns 32-byte hash
- * @throws Error if native operation fails
+ * @throws {Keccak256Error} If native operation fails
  */
 export async function hashHex(hex: string): Promise<Keccak256HashType> {
 	const bytes = Hex.toBytes(hex);
@@ -55,7 +56,7 @@ export async function hashHex(hex: string): Promise<Keccak256HashType> {
  *
  * @param str - String to hash
  * @returns 32-byte hash
- * @throws Error if native operation fails
+ * @throws {Keccak256Error} If native operation fails
  */
 export async function hashString(str: string): Promise<Keccak256HashType> {
 	const encoder = new TextEncoder();
@@ -68,7 +69,7 @@ export async function hashString(str: string): Promise<Keccak256HashType> {
  *
  * @param input - Hex string, UTF-8 string, or Uint8Array
  * @returns 32-byte hash
- * @throws Error if native operation fails
+ * @throws {Keccak256Error} If native operation fails
  */
 export async function from(
 	input: string | Uint8Array,
@@ -109,13 +110,11 @@ export async function topic(signature: string): Promise<Keccak256HashType> {
 
 /**
  * Synchronous hash (for backward compatibility)
- * Throws if native library not loaded
+ * @throws {Keccak256NativeNotLoadedError} If native library not loaded
  */
 export function hashSync(data: Uint8Array): Keccak256HashType {
 	if (!nativeLib) {
-		throw new Error(
-			"Native library not loaded. Use await hash() or call await ensureLoaded() first.",
-		);
+		throw new Keccak256NativeNotLoadedError();
 	}
 
 	const output = allocateOutput(32);

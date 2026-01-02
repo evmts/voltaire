@@ -1,3 +1,4 @@
+import { InvalidBytesFormatError } from "./errors.js";
 import { isBytes } from "./isBytes.js";
 
 /**
@@ -5,19 +6,23 @@ import { isBytes } from "./isBytes.js";
  *
  * @param {unknown} value - Value to check
  * @returns {import('./BytesType.js').BytesType} The validated bytes
- * @throws {Error} If value is not valid Bytes
+ * @throws {InvalidBytesFormatError} If value is not valid Bytes
  *
  * @example
  * ```javascript
  * import * as Bytes from './primitives/Bytes/index.js';
  * const bytes = Bytes.assert(new Uint8Array([1, 2, 3])); // returns bytes
- * Bytes.assert("not bytes"); // throws Error
+ * Bytes.assert("not bytes"); // throws InvalidBytesFormatError
  * ```
  */
 export function assert(value) {
 	if (!isBytes(value)) {
-		throw new Error(
-			`Expected Uint8Array but got ${typeof value === "object" ? (value === null ? "null" : value.constructor?.name || "object") : typeof value}`,
+		const actualType = typeof value === "object"
+			? (value === null ? "null" : value.constructor?.name || "object")
+			: typeof value;
+		throw new InvalidBytesFormatError(
+			`Expected Uint8Array but got ${actualType}`,
+			{ value, expected: "Uint8Array", context: { actualType } },
 		);
 	}
 	return value;

@@ -104,9 +104,17 @@ const shanghaiTimestamp = 1681338455;  // April 13, 2023
 const cancunTimestamp = 1710338135;    // March 13, 2024
 
 // Version comparison for feature gating
+import { InvalidFormatError } from 'tevm/errors'
+
 function getGasCostMultiplier(hardfork: string, blockNumber: number): number {
   const fork = Hardfork(hardfork);
-  if (!fork) throw new Error("Invalid hardfork");
+  if (!fork) {
+    throw new InvalidFormatError("Invalid hardfork", {
+      value: hardfork,
+      expected: "Valid hardfork name",
+      code: "INVALID_HARDFORK"
+    })
+  }
 
   // Berlin changed access list gas pricing
   if (Hardfork.isAtLeast(fork, Hardfork.BERLIN)) {
@@ -126,10 +134,17 @@ Use version comparison to gate features based on hardfork:
 
 ```typescript
 import { Hardfork } from 'tevm';
+import { InvalidFormatError, ValidationError } from 'tevm/errors'
 
 function validateTransaction(tx: any, networkHardfork: string) {
   const fork = Hardfork(networkHardfork);
-  if (!fork) throw new Error("Invalid hardfork");
+  if (!fork) {
+    throw new InvalidFormatError("Invalid hardfork", {
+      value: networkHardfork,
+      expected: "Valid hardfork name",
+      code: "INVALID_HARDFORK"
+    })
+  }
 
   // Type 0/1: All hardforks
   if (tx.type === 0 || tx.type === 1) {
@@ -139,7 +154,11 @@ function validateTransaction(tx: any, networkHardfork: string) {
   // Type 2 (EIP-1559): London+
   if (tx.type === 2) {
     if (!Hardfork.hasEIP1559(fork)) {
-      throw new Error("EIP-1559 transactions require London hardfork or later");
+      throw new ValidationError("EIP-1559 transactions require London hardfork or later", {
+        value: tx.type,
+        expected: "London or later hardfork",
+        code: "UNSUPPORTED_TX_TYPE"
+      })
     }
     return true;
   }
@@ -147,12 +166,20 @@ function validateTransaction(tx: any, networkHardfork: string) {
   // Type 3 (EIP-4844): Cancun+
   if (tx.type === 3) {
     if (!Hardfork.hasEIP4844(fork)) {
-      throw new Error("Blob transactions require Cancun hardfork or later");
+      throw new ValidationError("Blob transactions require Cancun hardfork or later", {
+        value: tx.type,
+        expected: "Cancun or later hardfork",
+        code: "UNSUPPORTED_TX_TYPE"
+      })
     }
     return true;
   }
 
-  throw new Error("Unknown transaction type");
+  throw new ValidationError("Unknown transaction type", {
+    value: tx.type,
+    expected: "Transaction type 0, 1, 2, or 3",
+    code: "UNKNOWN_TX_TYPE"
+  })
 }
 
 // Valid - Cancun supports all transaction types
@@ -162,7 +189,11 @@ validateTransaction({ type: 3 }, "cancun");
 try {
   validateTransaction({ type: 3 }, "london");
 } catch (e) {
-  console.error(e.message); // "Blob transactions require Cancun hardfork or later"
+  if (e instanceof ValidationError) {
+    console.error(e.name);    // "ValidationError"
+    console.error(e.message); // "Blob transactions require Cancun hardfork or later"
+    console.error(e.code);    // "UNSUPPORTED_TX_TYPE"
+  }
 }
 ```
 
@@ -172,11 +203,18 @@ Compare feature availability across hardforks:
 
 ```typescript
 import { Hardfork } from 'tevm';
+import { InvalidFormatError } from 'tevm/errors'
 
 function compareFeatures(forkA: string, forkB: string) {
   const a = Hardfork(forkA);
   const b = Hardfork(forkB);
-  if (!a || !b) throw new Error("Invalid hardfork");
+  if (!a || !b) {
+    throw new InvalidFormatError("Invalid hardfork", {
+      value: !a ? forkA : forkB,
+      expected: "Valid hardfork name",
+      code: "INVALID_HARDFORK"
+    })
+  }
 
   return {
     comparison: Hardfork.compare(a, b),
@@ -222,17 +260,28 @@ Common features tied to specific hardforks:
 
 ```typescript
 import { Hardfork } from 'tevm';
+import { InvalidFormatError, ValidationError } from 'tevm/errors'
 
 function calculateMaxFee(hardfork: string, baseFee: bigint, priorityFee: bigint): bigint {
   const fork = Hardfork(hardfork);
-  if (!fork) throw new Error("Invalid hardfork");
+  if (!fork) {
+    throw new InvalidFormatError("Invalid hardfork", {
+      value: hardfork,
+      expected: "Valid hardfork name",
+      code: "INVALID_HARDFORK"
+    })
+  }
 
   if (Hardfork.hasEIP1559(fork)) {
     // London+: maxFeePerGas = baseFee + maxPriorityFeePerGas
     return baseFee + priorityFee;
   } else {
     // Pre-London: Only gas price (no base fee)
-    throw new Error("EIP-1559 not supported before London");
+    throw new ValidationError("EIP-1559 not supported before London", {
+      value: hardfork,
+      expected: "London or later hardfork",
+      code: "EIP1559_NOT_SUPPORTED"
+    })
   }
 }
 
@@ -244,10 +293,17 @@ console.log(calculateMaxFee("cancun", 15n, 3n));   // 18n
 
 ```typescript
 import { Hardfork } from 'tevm';
+import { InvalidFormatError } from 'tevm/errors'
 
 function supportsOptimizedBytecode(hardfork: string): boolean {
   const fork = Hardfork(hardfork);
-  if (!fork) throw new Error("Invalid hardfork");
+  if (!fork) {
+    throw new InvalidFormatError("Invalid hardfork", {
+      value: hardfork,
+      expected: "Valid hardfork name",
+      code: "INVALID_HARDFORK"
+    })
+  }
 
   // PUSH0 (0x5f) allows cheaper zero-pushing
   return Hardfork.hasEIP3855(fork);
@@ -262,10 +318,17 @@ console.log(supportsOptimizedBytecode("cancun"));   // true
 
 ```typescript
 import { Hardfork } from 'tevm';
+import { InvalidFormatError } from 'tevm/errors'
 
 function supportsBlobTransactions(hardfork: string): boolean {
   const fork = Hardfork(hardfork);
-  if (!fork) throw new Error("Invalid hardfork");
+  if (!fork) {
+    throw new InvalidFormatError("Invalid hardfork", {
+      value: hardfork,
+      expected: "Valid hardfork name",
+      code: "INVALID_HARDFORK"
+    })
+  }
 
   // EIP-4844 blob transactions for L2 data availability
   return Hardfork.hasEIP4844(fork);
@@ -279,10 +342,17 @@ console.log(supportsBlobTransactions("cancun"));   // true
 
 ```typescript
 import { Hardfork } from 'tevm';
+import { InvalidFormatError } from 'tevm/errors'
 
 function supportsTransientStorage(hardfork: string): boolean {
   const fork = Hardfork(hardfork);
-  if (!fork) throw new Error("Invalid hardfork");
+  if (!fork) {
+    throw new InvalidFormatError("Invalid hardfork", {
+      value: hardfork,
+      expected: "Valid hardfork name",
+      code: "INVALID_HARDFORK"
+    })
+  }
 
   // TLOAD/TSTORE opcodes for cheaper temporary storage
   return Hardfork.hasEIP1153(fork);

@@ -7,6 +7,7 @@ import * as Fp from "../Fp/index.js";
  *
  * @param {import('../Fp2Type.js').Fp2Type} a - Value to invert
  * @returns {import('../Fp2Type.js').Fp2Type}
+ * @throws {import('../errors.js').InvalidFieldElementError} If element is zero (norm = 0)
  */
 export function inv(a) {
 	// norm = a0^2 + a1^2 (since i^2 = -1, norm of complex is sum of squares)

@@ -1,3 +1,5 @@
+import { UintInvalidLengthError } from "./errors.js";
+
 /**
  * Create Uint256 from bytes (big-endian)
  *
@@ -5,7 +7,7 @@
  * @since 0.0.0
  * @param {Uint8Array} bytes - bytes to convert
  * @returns {import('./BrandedUint.js').BrandedUint} Uint256 value
- * @throws {Error} If bytes length exceeds 32
+ * @throws {UintInvalidLengthError} If bytes length exceeds 32
  * @example
  * ```javascript
  * import * as Uint256 from './primitives/Uint/index.js';
@@ -15,8 +17,13 @@
  */
 export function fromBytes(bytes) {
 	if (bytes.length > 32) {
-		throw new Error(
+		throw new UintInvalidLengthError(
 			`Uint256 bytes cannot exceed 32 bytes, got ${bytes.length}`,
+			{
+				value: bytes,
+				expected: "<= 32 bytes",
+				actualLength: bytes.length,
+			},
 		);
 	}
 

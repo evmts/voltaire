@@ -1,3 +1,5 @@
+import { UintDivisionByZeroError } from "./errors.js";
+
 /**
  * Modulo operation
  *
@@ -6,7 +8,7 @@
  * @param {import('./BrandedUint.js').BrandedUint} uint - Dividend
  * @param {import('./BrandedUint.js').BrandedUint} b - Divisor
  * @returns {import('./BrandedUint.js').BrandedUint} Remainder (uint % b)
- * @throws {Error} If divisor is zero
+ * @throws {UintDivisionByZeroError} If divisor is zero
  * @example
  * ```javascript
  * import * as Uint256 from './primitives/Uint/index.js';
@@ -17,7 +19,7 @@
  */
 export function modulo(uint, b) {
 	if (b === 0n) {
-		throw new Error("Modulo by zero");
+		throw new UintDivisionByZeroError("Modulo by zero", { dividend: uint });
 	}
 	return uint % b;
 }

@@ -3,6 +3,7 @@
  * Uses WebAssembly bindings to Zig implementation
  */
 
+import { InvalidTransactionTypeError } from "../errors/index.js";
 import * as loader from "../../wasm-loader/loader.js";
 
 /**
@@ -25,13 +26,21 @@ export enum TransactionType {
  * Detect transaction type from RLP-encoded data
  * @param data - RLP-encoded transaction data
  * @returns Transaction type (0-4)
+ * @throws {InvalidTransactionTypeError} If transaction type is invalid
  */
 export function detectTransactionType(data: Uint8Array): TransactionType {
 	const input = new Uint8Array(data);
 	const txType: number = loader.txDetectType(input);
 
 	if (txType < 0 || txType > 4) {
-		throw new Error(`Invalid transaction type: ${txType}`);
+		throw new InvalidTransactionTypeError(
+			`Invalid transaction type: ${txType}`,
+			{
+				code: "INVALID_TRANSACTION_TYPE",
+				context: { txType },
+				docsPath: "/primitives/transaction/wasm#error-handling",
+			},
+		);
 	}
 
 	return txType as TransactionType;

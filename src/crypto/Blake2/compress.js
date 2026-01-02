@@ -20,6 +20,7 @@
 
 import { blake2bRound } from "./blake2bRound.js";
 import { IV, MASK_64 } from "./constants.js";
+import { Blake2InvalidInputLengthError } from "./errors.js";
 import { readU64LE, writeU64LE } from "./u64.js";
 
 /**
@@ -27,7 +28,7 @@ import { readU64LE, writeU64LE } from "./u64.js";
  *
  * @param {Uint8Array} input - 213-byte input in EIP-152 format
  * @returns {Uint8Array} 64-byte output (updated state)
- * @throws {Error} If input length is not 213 bytes
+ * @throws {Blake2InvalidInputLengthError} If input length is not 213 bytes
  *
  * @example
  * ```javascript
@@ -40,7 +41,7 @@ import { readU64LE, writeU64LE } from "./u64.js";
  */
 export function compress(input) {
 	if (input.length !== 213) {
-		throw new Error(`Invalid input length: expected 213, got ${input.length}`);
+		throw new Blake2InvalidInputLengthError(input.length);
 	}
 
 	// Parse rounds (4 bytes, big-endian) - use >>> 0 to force unsigned 32-bit interpretation

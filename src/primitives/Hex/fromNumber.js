@@ -1,3 +1,5 @@
+import { NegativeNumberError, NonIntegerError, UnsafeIntegerError } from "./errors.js";
+
 /**
  * Convert number to hex
  *
@@ -6,7 +8,9 @@
  * @param {number} value - Number to convert (must be safe integer)
  * @param {number} [size] - Optional byte size for padding
  * @returns {import('./HexType.js').HexType} Hex string
- * @throws {Error} If value exceeds Number.MAX_SAFE_INTEGER or is negative
+ * @throws {NegativeNumberError} If value is negative
+ * @throws {UnsafeIntegerError} If value exceeds Number.MAX_SAFE_INTEGER
+ * @throws {NonIntegerError} If value is not an integer
  * @example
  * ```javascript
  * import * as Hex from './primitives/Hex/index.js';
@@ -17,15 +21,20 @@
  */
 export function fromNumber(value, size) {
 	if (value < 0) {
-		throw new Error(`Number must be non-negative. Got: ${value}`);
+		throw new NegativeNumberError(`Number must be non-negative. Got: ${value}`, {
+			value,
+		});
 	}
 	if (value > Number.MAX_SAFE_INTEGER) {
-		throw new Error(
+		throw new UnsafeIntegerError(
 			`Number exceeds MAX_SAFE_INTEGER (${Number.MAX_SAFE_INTEGER}). Use Hex.fromBigInt() for larger values.`,
+			{ value },
 		);
 	}
 	if (!Number.isInteger(value)) {
-		throw new Error(`Number must be an integer. Got: ${value}`);
+		throw new NonIntegerError(`Number must be an integer. Got: ${value}`, {
+			value,
+		});
 	}
 	let hex = value.toString(16);
 	if (size !== undefined) {

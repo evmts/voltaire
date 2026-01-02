@@ -1,3 +1,4 @@
+import { InvalidAlgorithmError } from "./errors.js";
 import { getR } from "./getR.js";
 import { getS } from "./getS.js";
 import { getV } from "./getV.js";
@@ -7,7 +8,7 @@ import { getV } from "./getV.js";
  *
  * @param {import('./SignatureType.js').SignatureType} signature - Signature to convert
  * @returns {{ r: string, s: string, yParity: string, v?: string }} RPC format signature
- * @throws {Error} If signature is not secp256k1
+ * @throws {InvalidAlgorithmError} If signature is not secp256k1
  *
  * @example
  * ```javascript
@@ -19,7 +20,11 @@ import { getV } from "./getV.js";
  */
 export function toRpc(signature) {
 	if (signature.algorithm !== "secp256k1") {
-		throw new Error("toRpc only supports secp256k1 signatures");
+		throw new InvalidAlgorithmError("toRpc only supports secp256k1 signatures", {
+			value: signature.algorithm,
+			expected: "secp256k1",
+			code: "UNSUPPORTED_ALGORITHM_FOR_RPC",
+		});
 	}
 
 	const r = getR(signature);

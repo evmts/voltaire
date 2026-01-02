@@ -1,14 +1,26 @@
+import { InvalidLengthError } from "../errors/index.js";
+
 /**
  * Error thrown when DomainSeparator length is invalid
+ *
+ * @extends {InvalidLengthError}
  */
-export class InvalidDomainSeparatorLengthError extends Error {
+export class InvalidDomainSeparatorLengthError extends InvalidLengthError {
 	/**
 	 * @param {string} message
-	 * @param {Record<string, unknown>} context
+	 * @param {object} context
+	 * @param {unknown} context.value
+	 * @param {string} context.expected
+	 * @param {Error} [context.cause]
 	 */
 	constructor(message, context) {
-		super(message);
+		super(message, {
+			code: "INVALID_DOMAIN_SEPARATOR_LENGTH",
+			value: context.value,
+			expected: context.expected,
+			docsPath: "/primitives/domain-separator#error-handling",
+			cause: context.cause,
+		});
 		this.name = "InvalidDomainSeparatorLengthError";
-		this.context = context;
 	}
 }

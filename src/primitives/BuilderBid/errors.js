@@ -1,12 +1,63 @@
-// @ts-nocheck
+import { ValidationError } from "../errors/index.js";
 
 /**
  * Error thrown when BuilderBid operations fail
+ *
+ * @example
+ * ```typescript
+ * throw new InvalidBuilderBidError('Invalid builder bid format', {
+ *   value: bid,
+ *   expected: 'valid PBS builder bid'
+ * })
+ * ```
  */
-export class InvalidBuilderBidError extends Error {
-	constructor(message, details) {
-		super(message);
+export class InvalidBuilderBidError extends ValidationError {
+	/**
+	 * @param {string} message - Error message
+	 * @param {object} [options] - Error options
+	 * @param {string} [options.code] - Error code
+	 * @param {unknown} [options.value] - Invalid value
+	 * @param {string} [options.expected] - Expected value description
+	 * @param {Record<string, unknown>} [options.context] - Additional context
+	 * @param {string} [options.docsPath] - Documentation path
+	 * @param {Error} [options.cause] - Original error
+	 */
+	constructor(message, options) {
+		super(message, {
+			code: options?.code || "INVALID_BUILDER_BID",
+			value: options?.value,
+			expected: options?.expected || "valid builder bid",
+			context: options?.context,
+			docsPath: options?.docsPath || "/primitives/builder-bid",
+			cause: options?.cause,
+		});
 		this.name = "InvalidBuilderBidError";
-		this.details = details;
+	}
+}
+
+/**
+ * Error thrown when crypto dependency is missing
+ */
+export class MissingCryptoDependencyError extends ValidationError {
+	/**
+	 * @param {string} message - Error message
+	 * @param {object} [options] - Error options
+	 * @param {string} [options.code] - Error code
+	 * @param {unknown} [options.value] - Invalid value
+	 * @param {string} [options.expected] - Expected value description
+	 * @param {Record<string, unknown>} [options.context] - Additional context
+	 * @param {string} [options.docsPath] - Documentation path
+	 * @param {Error} [options.cause] - Original error
+	 */
+	constructor(message, options) {
+		super(message, {
+			code: options?.code || "MISSING_CRYPTO_DEPENDENCY",
+			value: options?.value,
+			expected: options?.expected || "crypto function",
+			context: options?.context,
+			docsPath: options?.docsPath || "/primitives/builder-bid",
+			cause: options?.cause,
+		});
+		this.name = "MissingCryptoDependencyError";
 	}
 }

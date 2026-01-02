@@ -1,6 +1,7 @@
 import { p256 } from "@noble/curves/nist.js";
 import { describe, expect, it } from "vitest";
 import { Hash } from "../../primitives/Hash/index.js";
+import { InvalidPrivateKeyError, InvalidPublicKeyError } from "./errors.js";
 import { P256 } from "./P256.js";
 
 describe("P256", () => {
@@ -35,6 +36,17 @@ describe("P256", () => {
 			const invalidPrivateKey = new Uint8Array(16);
 
 			expect(() => P256.derivePublicKey(invalidPrivateKey)).toThrow();
+		});
+
+		it("throws InvalidPrivateKeyError with correct error.name", () => {
+			const invalidPrivateKey = new Uint8Array(16);
+			try {
+				P256.derivePublicKey(invalidPrivateKey);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidPrivateKeyError);
+				expect((e as InvalidPrivateKeyError).name).toBe("InvalidPrivateKeyError");
+			}
 		});
 
 		it("matches @noble/curves implementation", () => {
@@ -120,6 +132,18 @@ describe("P256", () => {
 			expect(() => P256.sign(messageHash, invalidPrivateKey)).toThrow();
 		});
 
+		it("throws InvalidPrivateKeyError for sign with correct error.name", () => {
+			const invalidPrivateKey = new Uint8Array(16);
+			const messageHash = Hash.keccak256String("test");
+			try {
+				P256.sign(messageHash, invalidPrivateKey);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidPrivateKeyError);
+				expect((e as InvalidPrivateKeyError).name).toBe("InvalidPrivateKeyError");
+			}
+		});
+
 		it("matches @noble/curves implementation", () => {
 			const privateKey = crypto.getRandomValues(new Uint8Array(32));
 			const messageHash = Hash.keccak256String("Test message");
@@ -199,6 +223,20 @@ describe("P256", () => {
 			expect(() =>
 				P256.verify(signature, messageHash, invalidPublicKey),
 			).toThrow();
+		});
+
+		it("throws InvalidPublicKeyError for verify with correct error.name", () => {
+			const privateKey = new Uint8Array(32).fill(1);
+			const messageHash = Hash.keccak256String("test");
+			const signature = P256.sign(messageHash, privateKey);
+			const invalidPublicKey = new Uint8Array(32);
+			try {
+				P256.verify(signature, messageHash, invalidPublicKey);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidPublicKeyError);
+				expect((e as InvalidPublicKeyError).name).toBe("InvalidPublicKeyError");
+			}
 		});
 
 		it("rejects invalid signature r size", () => {
@@ -298,11 +336,35 @@ describe("P256", () => {
 			expect(() => P256.ecdh(invalidPrivateKey, publicKey)).toThrow();
 		});
 
+		it("throws InvalidPrivateKeyError for ecdh with correct error.name", () => {
+			const invalidPrivateKey = new Uint8Array(16);
+			const publicKey = P256.derivePublicKey(new Uint8Array(32).fill(1));
+			try {
+				P256.ecdh(invalidPrivateKey, publicKey);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidPrivateKeyError);
+				expect((e as InvalidPrivateKeyError).name).toBe("InvalidPrivateKeyError");
+			}
+		});
+
 		it("throws on invalid public key size", () => {
 			const privateKey = new Uint8Array(32).fill(1);
 			const invalidPublicKey = new Uint8Array(32);
 
 			expect(() => P256.ecdh(privateKey, invalidPublicKey)).toThrow();
+		});
+
+		it("throws InvalidPublicKeyError for ecdh with correct error.name", () => {
+			const privateKey = new Uint8Array(32).fill(1);
+			const invalidPublicKey = new Uint8Array(32);
+			try {
+				P256.ecdh(privateKey, invalidPublicKey);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidPublicKeyError);
+				expect((e as InvalidPublicKeyError).name).toBe("InvalidPublicKeyError");
+			}
 		});
 
 		it("matches @noble/curves implementation", () => {

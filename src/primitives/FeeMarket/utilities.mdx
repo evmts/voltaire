@@ -103,11 +103,17 @@ const errors5 = FeeMarket.validateTxFeeParams(params5);
 **Usage Pattern:**
 
 ```typescript
+import { ValidationError } from 'tevm/errors'
+
 function buildAndValidateTx(params: FeeMarket.TxFeeParams) {
   const errors = FeeMarket.validateTxFeeParams(params);
 
   if (errors.length > 0) {
-    throw new Error(`Invalid transaction parameters: ${errors.join(', ')}`);
+    throw new ValidationError(`Invalid transaction parameters: ${errors.join(', ')}`, {
+      value: params,
+      expected: "Valid fee parameters",
+      code: "INVALID_TX_FEE_PARAMS"
+    });
   }
 
   // Safe to proceed
@@ -210,11 +216,17 @@ const errors5 = FeeMarket.validateState(state5);
 **Usage Pattern:**
 
 ```typescript
+import { ValidationError } from 'tevm/errors'
+
 function processBlock(state: FeeMarket.State) {
   const errors = FeeMarket.validateState(state);
 
   if (errors.length > 0) {
-    throw new Error(`Invalid block state: ${errors.join(', ')}`);
+    throw new ValidationError(`Invalid block state: ${errors.join(', ')}`, {
+      value: state,
+      expected: "Valid block fee market state",
+      code: "INVALID_BLOCK_STATE"
+    });
   }
 
   // Safe to proceed

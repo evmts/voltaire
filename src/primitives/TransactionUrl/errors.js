@@ -1,18 +1,29 @@
+import { InvalidFormatError } from "../errors/index.js";
+
 /**
  * Error thrown when a transaction URL is invalid or malformed
+ * @extends {InvalidFormatError}
  */
-export class InvalidTransactionUrlError extends Error {
+export class InvalidTransactionUrlError extends InvalidFormatError {
 	/**
-	 * @param {string} message - Error message
+	 * Additional error details (url, scheme, address, chainId, etc.)
+	 * @type {Record<string, unknown> | undefined}
+	 */
+	details;
+
+	/**
+	 * @param {string} [message] - Error message
 	 * @param {Record<string, unknown>} [details] - Additional error details
 	 */
 	constructor(message, details) {
-		super(message);
+		super(message || "Invalid transaction URL", {
+			code: "INVALID_TRANSACTION_URL",
+			value: details?.url,
+			expected: "valid ERC-681 transaction URL",
+			context: details,
+			docsPath: "/primitives/transactionurl#error-handling",
+		});
 		this.name = "InvalidTransactionUrlError";
 		this.details = details;
-		// Maintains proper stack trace for where our error was thrown (only available on V8)
-		if (Error.captureStackTrace) {
-			Error.captureStackTrace(this, InvalidTransactionUrlError);
-		}
 	}
 }

@@ -95,6 +95,16 @@ describe("BLS12-381 Signatures", () => {
 			key.fill(1);
 			expect(() => derivePublicKey(key)).toThrow(InvalidScalarError);
 		});
+
+		it("should throw InvalidScalarError with correct error.name", () => {
+			try {
+				derivePublicKey(new Uint8Array(32));
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidScalarError);
+				expect((e as InvalidScalarError).name).toBe("InvalidScalarError");
+			}
+		});
 	});
 
 	describe("sign", () => {
@@ -129,6 +139,17 @@ describe("BLS12-381 Signatures", () => {
 			expect(() => sign(message, new Uint8Array(32))).toThrow(
 				InvalidScalarError,
 			);
+		});
+
+		it("should throw InvalidScalarError for sign with correct error.name", () => {
+			const message = new TextEncoder().encode("Test");
+			try {
+				sign(message, new Uint8Array(32));
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidScalarError);
+				expect((e as InvalidScalarError).name).toBe("InvalidScalarError");
+			}
 		});
 	});
 
@@ -196,6 +217,16 @@ describe("BLS12-381 Signatures", () => {
 
 		it("should throw for empty array", () => {
 			expect(() => aggregate([])).toThrow(SignatureError);
+		});
+
+		it("should throw SignatureError with correct error.name for empty aggregate", () => {
+			try {
+				aggregate([]);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(SignatureError);
+				expect((e as SignatureError).name).toBe("SignatureError");
+			}
 		});
 
 		it("should handle single signature", () => {

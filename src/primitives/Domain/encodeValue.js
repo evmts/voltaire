@@ -1,6 +1,7 @@
 import * as BrandedAddress from "../Address/internal-index.js";
 import * as Hex from "../Hex/index.js";
 import { encodeType } from "./encodeType.js";
+import { InvalidDomainTypeError, InvalidEIP712ValueError } from "./errors.js";
 
 /**
  * @typedef {{ readonly name: string; readonly type: string }} EIP712Field
@@ -16,6 +17,8 @@ import { encodeType } from "./encodeType.js";
  * @param {object} crypto - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} crypto.keccak256 - Keccak256 hash function
  * @returns {Uint8Array} Encoded value (32 bytes)
+ * @throws {InvalidEIP712ValueError} If value encoding fails
+ * @throws {InvalidDomainTypeError} If type is not found
  */
 export function encodeValue(type, value, types, crypto) {
 	// Handle string/bytes specially (need to hash)
@@ -27,7 +30,11 @@ export function encodeValue(type, value, types, crypto) {
 	if (type.endsWith("[]")) {
 		const baseType = type.slice(0, -2);
 		if (!Array.isArray(value)) {
-			throw new Error(`Expected array for type ${type}`);
+			throw new InvalidEIP712ValueError(`Expected array for type ${type}`, {
+				value,
+				expected: "array",
+				type,
+			});
 		}
 		// Array encoding: keccak256(encodeValue(elem1) || encodeValue(elem2) || ...)
 		const encodedElements = value.map((elem) =>
@@ -49,7 +56,7 @@ export function encodeValue(type, value, types, crypto) {
 		// Inline the encodeData logic to avoid circular dependency
 		const typeFields = /** @type {EIP712Field[]} */ (types[type]);
 		if (!typeFields) {
-			throw new Error(`Type ${type} not found in types`);
+			throw new InvalidDomainTypeError(type, { value: types });
 		}
 
 		// Compute typeHash
@@ -88,6 +95,7 @@ export function encodeValue(type, value, types, crypto) {
  * @param {string} type - Field type
  * @param {any} value - Field value
  * @returns {Uint8Array} Encoded value (32 bytes)
+ * @throws {InvalidEIP712ValueError} If type is invalid or unknown
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: EIP-712 atomic type encoding requires handling many primitive types
 function encodeAtomicValue(type, value) {
@@ -111,7 +119,11 @@ function encodeAtomicValue(type, value) {
 	if (bytesMatch) {
 		const size = Number.parseInt(/** @type {string} */ (bytesMatch[1]), 10);
 		if (size < 1 || size > 32) {
-			throw new Error(`Invalid bytes size: ${size}`);
+			throw new InvalidEIP712ValueError(`Invalid bytes size: ${size}`, {
+				value: size,
+				expected: "1-32",
+				type,
+			});
 		}
 		const bytes = value instanceof Uint8Array ? value : Hex.toBytes(value);
 		result.set(bytes.slice(0, size), 0);
@@ -123,7 +135,11 @@ function encodeAtomicValue(type, value) {
 	if (uintMatch) {
 		const bits = Number.parseInt(/** @type {string} */ (uintMatch[1]), 10);
 		if (bits < 8 || bits > 256 || bits % 8 !== 0) {
-			throw new Error(`Invalid uint size: ${bits}`);
+			throw new InvalidEIP712ValueError(`Invalid uint size: ${bits}`, {
+				value: bits,
+				expected: "8-256, multiple of 8",
+				type,
+			});
 		}
 		const num = typeof value === "bigint" ? value : BigInt(value);
 		// Write bigint to bytes (big-endian)
@@ -138,7 +154,11 @@ function encodeAtomicValue(type, value) {
 	if (intMatch) {
 		const bits = Number.parseInt(/** @type {string} */ (intMatch[1]), 10);
 		if (bits < 8 || bits > 256 || bits % 8 !== 0) {
-			throw new Error(`Invalid int size: ${bits}`);
+			throw new InvalidEIP712ValueError(`Invalid int size: ${bits}`, {
+				value: bits,
+				expected: "8-256, multiple of 8",
+				type,
+			});
 		}
 		let num = typeof value === "bigint" ? value : BigInt(value);
 		// Handle negative numbers (two's complement)
@@ -152,7 +172,11 @@ function encodeAtomicValue(type, value) {
 		return result;
 	}
 
-	throw new Error(`Unknown type: ${type}`);
+	throw new InvalidEIP712ValueError(`Unknown type: ${type}`, {
+		value: type,
+		expected: "address, bool, bytes, bytesN, uintN, intN, or custom type",
+		type,
+	});
 }
 
 /**
@@ -163,6 +187,7 @@ function encodeAtomicValue(type, value) {
  * @param {object} crypto - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} crypto.keccak256 - Keccak256 hash function
  * @returns {Uint8Array} Encoded value (32 bytes)
+ * @throws {InvalidEIP712ValueError} If type is not string or bytes
  */
 export function encodeStringOrBytes(type, value, crypto) {
 	if (type === "string") {
@@ -172,5 +197,9 @@ export function encodeStringOrBytes(type, value, crypto) {
 		const bytes = value instanceof Uint8Array ? value : Hex.toBytes(value);
 		return crypto.keccak256(bytes);
 	}
-	throw new Error(`Not a string or bytes type: ${type}`);
+	throw new InvalidEIP712ValueError(`Not a string or bytes type: ${type}`, {
+		value: type,
+		expected: "string or bytes",
+		type,
+	});
 }

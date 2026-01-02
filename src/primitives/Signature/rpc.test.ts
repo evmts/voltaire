@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { InvalidAlgorithmError } from "./errors.js";
 import { fromRpc } from "./fromRpc.js";
 import { fromSecp256k1 } from "./fromSecp256k1.js";
 import { toRpc } from "./toRpc.js";
@@ -38,7 +39,13 @@ describe("Signature RPC format", () => {
 				length: 64,
 			};
 			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
-			expect(() => toRpc(ed25519Sig as any)).toThrow(/only supports secp256k1/);
+			expect(() => toRpc(ed25519Sig as any)).toThrow(InvalidAlgorithmError);
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+				toRpc(ed25519Sig as any);
+			} catch (e) {
+				expect((e as InvalidAlgorithmError).name).toBe("InvalidAlgorithmError");
+			}
 		});
 	});
 

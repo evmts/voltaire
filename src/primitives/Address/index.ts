@@ -1,7 +1,7 @@
 import type { BrandedBytecode } from "../Bytecode/BytecodeType.js";
 import type { HashType } from "../Hash/HashType.js";
 import type { AddressType } from "./AddressType.js";
-import { InvalidAddressLengthError } from "./errors.js";
+import { InvalidAddressLengthError, InvalidValueError } from "./errors.js";
 import * as BrandedAddress from "./internal-index.js";
 import {
 	setFromBase64Polyfill,
@@ -324,8 +324,13 @@ Address.prototype.toChecksummed = function () {
 	// biome-ignore lint/suspicious/noExplicitAny: wasm interface requires any
 	const crypto = (this as any)._crypto;
 	if (!crypto?.keccak256) {
-		throw new Error(
+		throw new InvalidValueError(
 			"keccak256 not provided to Address constructor. Pass { keccak256 } to enable toChecksummed()",
+			{
+				value: undefined,
+				expected: "keccak256 hash function",
+				code: "MISSING_KECCAK256",
+			},
 		);
 	}
 	const factory = BrandedAddress.ToChecksummed({ keccak256: crypto.keccak256 });
@@ -385,20 +390,31 @@ Address.prototype.calculateCreateAddress = function (
 	// biome-ignore lint/suspicious/noExplicitAny: wasm interface requires any
 	const crypto = (this as any)._crypto;
 	if (!crypto?.keccak256) {
-		throw new Error(
+		throw new InvalidValueError(
 			"keccak256 not provided to Address constructor. Pass { keccak256, rlpEncode } to enable calculateCreateAddress()",
+			{
+				value: undefined,
+				expected: "keccak256 hash function",
+				code: "MISSING_KECCAK256",
+			},
 		);
 	}
 	if (!crypto?.rlpEncode) {
-		throw new Error(
+		throw new InvalidValueError(
 			"rlpEncode not provided to Address constructor. Pass { keccak256, rlpEncode } to enable calculateCreateAddress()",
+			{
+				value: undefined,
+				expected: "rlpEncode function",
+				code: "MISSING_RLP_ENCODE",
+			},
 		);
 	}
 	// Manual implementation using crypto deps
-	const { InvalidValueError } = BrandedAddress;
 	if (nonce < 0n) {
 		throw new InvalidValueError("Nonce cannot be negative", {
 			value: nonce,
+			expected: "non-negative bigint",
+			code: "INVALID_NONCE",
 		});
 	}
 
@@ -440,8 +456,13 @@ Address.prototype.calculateCreate2Address = function (
 	// biome-ignore lint/suspicious/noExplicitAny: wasm interface requires any
 	const crypto = (this as any)._crypto;
 	if (!crypto?.keccak256) {
-		throw new Error(
+		throw new InvalidValueError(
 			"keccak256 not provided to Address constructor. Pass { keccak256 } to enable calculateCreate2Address()",
+			{
+				value: undefined,
+				expected: "keccak256 hash function",
+				code: "MISSING_KECCAK256",
+			},
 		);
 	}
 	// Manual implementation using crypto deps

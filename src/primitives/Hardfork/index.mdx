@@ -125,9 +125,17 @@ if (Hardfork.hasEIP4844(fork)) {
 ### Network Configuration
 
 ```typescript
+import { InvalidFormatError } from 'tevm/errors'
+
 function getNetworkCapabilities(hardfork: string) {
   const fork = Hardfork(hardfork);
-  if (!fork) throw new Error("Invalid hardfork");
+  if (!fork) {
+    throw new InvalidFormatError("Invalid hardfork", {
+      value: hardfork,
+      expected: "Valid hardfork name (e.g., 'cancun', 'london')",
+      code: "INVALID_HARDFORK"
+    })
+  }
 
   return {
     consensus: Hardfork.isPostMerge(fork) ? "PoS" : "PoW",
@@ -210,8 +218,16 @@ No WASM implementation - pure TypeScript is optimal for these operations. WASM o
 
 2. **Validate user input**
    ```typescript
+   import { InvalidFormatError } from 'tevm/errors'
+
    const fork = Hardfork(userInput);
-   if (!fork) throw new Error("Invalid hardfork");
+   if (!fork) {
+     throw new InvalidFormatError("Invalid hardfork", {
+       value: userInput,
+       expected: "Valid hardfork name",
+       code: "INVALID_HARDFORK"
+     })
+   }
    ```
 
 3. **Normalize for storage**

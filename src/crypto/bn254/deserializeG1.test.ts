@@ -161,6 +161,7 @@ describe("deserializeG1", () => {
 			} catch (err) {
 				expect(err).toBeInstanceOf(Bn254Error);
 				const bn254Err = err as Bn254Error;
+				expect(bn254Err.name).toBe("Bn254Error");
 				expect(bn254Err.code).toBe("INVALID_LENGTH");
 			}
 		});

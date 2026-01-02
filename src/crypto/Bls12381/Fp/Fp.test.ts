@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { FP_MOD } from "../constants.js";
+import { InvalidFieldElementError } from "../errors.js";
 import * as Fp from "./index.js";
 
 describe("BLS12-381 Fp field arithmetic", () => {
@@ -214,6 +215,22 @@ describe("BLS12-381 Fp field arithmetic", () => {
 			const value = FP_MOD - 1n;
 			const inverse = Fp.inv(value);
 			expect(Fp.mul(value, inverse)).toBe(1n);
+		});
+
+		test("throws on zero inversion", () => {
+			expect(() => Fp.inv(0n)).toThrow(InvalidFieldElementError);
+		});
+
+		test("throws InvalidFieldElementError with correct error.name", () => {
+			try {
+				Fp.inv(0n);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidFieldElementError);
+				expect((e as InvalidFieldElementError).name).toBe(
+					"InvalidFieldElementError",
+				);
+			}
 		});
 	});
 

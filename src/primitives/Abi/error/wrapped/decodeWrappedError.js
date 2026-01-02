@@ -1,5 +1,6 @@
 import { Address } from "../../../Address/index.js";
 import * as Selector from "../../../Selector/index.js";
+import { AbiDecodingError, AbiInvalidSelectorError } from "../../Errors.js";
 import { decodeParameters } from "../../Encoding.js";
 import { WRAPPED_ERROR_SELECTOR } from "./constants.js";
 
@@ -11,7 +12,8 @@ import { WRAPPED_ERROR_SELECTOR } from "./constants.js";
  *
  * @param {Uint8Array} data - Encoded error data (selector + ABI-encoded params)
  * @returns {import('./WrappedErrorType.js').WrappedErrorType} Decoded wrapped error
- * @throws {Error} If selector doesn't match or data is invalid
+ * @throws {AbiDecodingError} If data is too short to contain selector
+ * @throws {AbiInvalidSelectorError} If selector doesn't match WrappedError selector
  * @see https://eips.ethereum.org/EIPS/eip-7751
  * @example
  * ```javascript
@@ -25,7 +27,10 @@ import { WRAPPED_ERROR_SELECTOR } from "./constants.js";
  */
 export function decodeWrappedError(data) {
 	if (data.length < 4) {
-		throw new Error("Data too short to contain selector");
+		throw new AbiDecodingError("Data too short to contain selector", {
+			context: { dataLength: data.length, minLength: 4 },
+			docsPath: "/primitives/abi/error/wrapped",
+		});
 	}
 
 	// Verify selector
@@ -34,8 +39,13 @@ export function decodeWrappedError(data) {
 			data.slice(0, 4)
 		);
 	if (!Selector.equals(selector, WRAPPED_ERROR_SELECTOR)) {
-		throw new Error(
+		throw new AbiInvalidSelectorError(
 			`Invalid WrappedError selector: expected ${Selector.toHex(WRAPPED_ERROR_SELECTOR)}, got ${Selector.toHex(selector)}`,
+			{
+				value: Selector.toHex(selector),
+				expected: Selector.toHex(WRAPPED_ERROR_SELECTOR),
+				docsPath: "/primitives/abi/error/wrapped",
+			},
 		);
 	}
 

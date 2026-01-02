@@ -1,4 +1,5 @@
 import { FP_MOD } from "../constants.js";
+import { InvalidFieldElementError } from "../errors.js";
 import { pow } from "./pow.js";
 
 /**
@@ -7,11 +8,14 @@ import { pow } from "./pow.js";
  *
  * @param {bigint} a - Value to invert
  * @returns {bigint} a^(-1) mod p
- * @throws {Error} If a is zero
+ * @throws {InvalidFieldElementError} If a is zero
  */
 export function inv(a) {
 	if (a === 0n) {
-		throw new Error("Cannot invert zero");
+		throw new InvalidFieldElementError("Cannot invert zero", {
+			code: "BLS12381_DIVISION_BY_ZERO",
+			context: { field: "Fp", value: "0" },
+		});
 	}
 	return pow(a, FP_MOD - 2n);
 }

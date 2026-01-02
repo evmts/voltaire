@@ -271,12 +271,16 @@ describe("Keystore", () => {
 				},
 			};
 
-			expect(() =>
+			try {
 				Keystore.decrypt(
 					invalidKeystore as unknown as Keystore.KeystoreV3,
 					"password",
-				),
-			).toThrow(Keystore.UnsupportedVersionError);
+				);
+				expect.fail("Expected UnsupportedVersionError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Keystore.UnsupportedVersionError);
+				expect((e as Error).name).toBe("UnsupportedVersionError");
+			}
 		});
 
 		it("throws on unsupported KDF", async () => {
@@ -295,9 +299,13 @@ describe("Keystore", () => {
 				},
 			};
 
-			expect(() => Keystore.decrypt(invalidKeystore, "password")).toThrow(
-				Keystore.UnsupportedKdfError,
-			);
+			try {
+				Keystore.decrypt(invalidKeystore, "password");
+				expect.fail("Expected UnsupportedKdfError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Keystore.UnsupportedKdfError);
+				expect((e as Error).name).toBe("UnsupportedKdfError");
+			}
 		});
 
 		it("throws on corrupted ciphertext", async () => {
@@ -310,9 +318,13 @@ describe("Keystore", () => {
 			// Corrupt ciphertext
 			keystore.crypto.ciphertext = `${keystore.crypto.ciphertext.slice(0, -2)}ff`;
 
-			expect(() => Keystore.decrypt(keystore, "password")).toThrow(
-				Keystore.InvalidMacError,
-			);
+			try {
+				Keystore.decrypt(keystore, "password");
+				expect.fail("Expected InvalidMacError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Keystore.InvalidMacError);
+				expect((e as Error).name).toBe("InvalidMacError");
+			}
 		});
 
 		it("throws on corrupted MAC", async () => {
@@ -325,9 +337,13 @@ describe("Keystore", () => {
 			// Corrupt MAC
 			keystore.crypto.mac = `${keystore.crypto.mac.slice(0, -2)}ff`;
 
-			expect(() => Keystore.decrypt(keystore, "password")).toThrow(
-				Keystore.InvalidMacError,
-			);
+			try {
+				Keystore.decrypt(keystore, "password");
+				expect.fail("Expected InvalidMacError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Keystore.InvalidMacError);
+				expect((e as Error).name).toBe("InvalidMacError");
+			}
 		});
 
 		it("corrupted IV produces different plaintext", async () => {

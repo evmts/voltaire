@@ -225,17 +225,47 @@ const reverse = Hardfork.range(LONDON, BERLIN)  // [LONDON, BERLIN]
 
 ### Invalid Hardforks
 
-If hardforks don't exist in order:
+If hardforks don't exist in order, an `InvalidFormatError` is thrown:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork, LONDON } from 'tevm'
+import { InvalidFormatError } from 'tevm/errors'
 
 const invalidFork = "notahardfork" as any
 
 try {
   const range = Hardfork.range(invalidFork, LONDON)
 } catch (e) {
-  console.error("Invalid hardfork")
+  if (e instanceof InvalidFormatError) {
+    console.error(e.name)    // "InvalidFormatError"
+    console.error(e.code)    // "HARDFORK_INVALID_RANGE"
+    console.error(e.value)   // The invalid hardfork value
+  }
+}
+```
+
+## Error Handling
+
+The `range` function throws `InvalidFormatError` when given invalid hardfork values:
+
+| Error Type | Code | When Thrown |
+|------------|------|-------------|
+| `InvalidFormatError` | `HARDFORK_INVALID_RANGE` | Start or end hardfork is not a valid hardfork ID |
+
+```typescript
+import { Hardfork, BERLIN } from 'tevm'
+import { InvalidFormatError } from 'tevm/errors'
+
+function safeRange(start: string, end: string) {
+  try {
+    return Hardfork.range(start as any, end as any)
+  } catch (e) {
+    if (e instanceof InvalidFormatError) {
+      console.error(`Invalid hardfork: ${e.value}`)
+      return null
+    }
+    throw e
+  }
 }
 ```
 

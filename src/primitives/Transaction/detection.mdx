@@ -30,8 +30,8 @@ function detectType(data: Uint8Array): Type
 
 ### Throws
 
-- `Error("Empty transaction data")` - If data is empty
-- `Error("Unknown transaction type: 0xNN")` - If first byte doesn't match any known type
+- `InvalidFormatError` - If data is empty
+- `InvalidTransactionTypeError` - If first byte doesn't match any known type
 
 ### Usage
 
@@ -51,17 +51,25 @@ const eip4844Data = new Uint8Array([0x03, 0xf9, ...])
 detectType(eip4844Data)  // Type.EIP4844 (0x03)
 
 // Error on empty data
+import { InvalidFormatError, InvalidTransactionTypeError } from 'tevm/errors'
+
 try {
   detectType(new Uint8Array())
 } catch (e) {
-  console.error(e.message)  // "Empty transaction data"
+  if (e instanceof InvalidFormatError) {
+    console.error(e.name)     // "InvalidFormatError"
+    console.error(e.message)  // "Empty transaction data"
+  }
 }
 
 // Error on unknown type
 try {
   detectType(new Uint8Array([0x05, ...]))
 } catch (e) {
-  console.error(e.message)  // "Unknown transaction type: 0x5"
+  if (e instanceof InvalidTransactionTypeError) {
+    console.error(e.name)     // "InvalidTransactionTypeError"
+    console.error(e.message)  // "Unknown transaction type: 0x5"
+  }
 }
 ```
 
@@ -102,7 +110,7 @@ switch (firstByte) {
   case 0x02: return Type.EIP1559
   case 0x03: return Type.EIP4844
   case 0x04: return Type.EIP7702
-  default: throw new Error(`Unknown transaction type: 0x${firstByte.toString(16)}`)
+  default: throw new InvalidTransactionTypeError(`Unknown transaction type: 0x${firstByte.toString(16)}`)
 }
 ```
 
@@ -255,7 +263,7 @@ const tx = Transaction.deserialize(data)
 
 ```typescript
 if (data.length === 0) {
-  throw new Error("Empty transaction data")
+  throw new InvalidFormatError("Empty transaction data")
 }
 
 const firstByte = data[0]!  // Single array access

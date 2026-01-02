@@ -1,4 +1,8 @@
-import { InvalidAddressError, InvalidChecksumError } from "./errors.js";
+import {
+	InvalidAddressError,
+	InvalidChecksumError,
+	InvalidValueError,
+} from "./errors.js";
 import { isValid } from "./isValid.js";
 
 /**
@@ -47,8 +51,13 @@ export function assert(value, options = {}) {
 		if (hasLower && hasUpper) {
 			// Mixed case - must validate checksum
 			if (!keccak256) {
-				throw new Error(
+				throw new InvalidValueError(
 					"keccak256 required for strict checksum validation of mixed-case addresses",
+					{
+						value,
+						expected: "keccak256 hash function in options",
+						code: "MISSING_KECCAK256",
+					},
 				);
 			}
 

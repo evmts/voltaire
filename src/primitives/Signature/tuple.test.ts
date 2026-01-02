@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { InvalidAlgorithmError, InvalidSignatureFormatError } from "./errors.js";
 import { fromSecp256k1 } from "./fromSecp256k1.js";
 import { fromTuple } from "./fromTuple.js";
 import { toTuple } from "./toTuple.js";
@@ -37,7 +38,12 @@ describe("Signature Tuple format", () => {
 
 		it("throws for signatures without v", () => {
 			const sig = fromSecp256k1(r, s);
-			expect(() => toTuple(sig)).toThrow(/must have v value/);
+			expect(() => toTuple(sig)).toThrow(InvalidSignatureFormatError);
+			try {
+				toTuple(sig);
+			} catch (e) {
+				expect((e as InvalidSignatureFormatError).name).toBe("InvalidSignatureFormatError");
+			}
 		});
 
 		it("throws for non-secp256k1 signatures", () => {
@@ -46,9 +52,13 @@ describe("Signature Tuple format", () => {
 				v: 27,
 			};
 			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
-			expect(() => toTuple(ed25519Sig as any)).toThrow(
-				/only supports secp256k1/,
-			);
+			expect(() => toTuple(ed25519Sig as any)).toThrow(InvalidAlgorithmError);
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+				toTuple(ed25519Sig as any);
+			} catch (e) {
+				expect((e as InvalidAlgorithmError).name).toBe("InvalidAlgorithmError");
+			}
 		});
 	});
 

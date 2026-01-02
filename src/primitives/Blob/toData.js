@@ -3,6 +3,7 @@ import {
 	FIELD_ELEMENTS_PER_BLOB,
 	SIZE,
 } from "./constants.js";
+import { InvalidBlobLengthPrefixError, InvalidBlobSizeError } from "./errors.js";
 
 /**
  * Extract data from blob using EIP-4844 field element decoding.
@@ -15,7 +16,8 @@ import {
  * @since 0.0.0
  * @param {import('./BlobType.js').BrandedBlob} blob - Blob data
  * @returns {Uint8Array} Original data
- * @throws {Error} If blob size is invalid or format is corrupted
+ * @throws {InvalidBlobSizeError} If blob size is not 131072 bytes
+ * @throws {InvalidBlobLengthPrefixError} If length prefix exceeds maximum
  * @example
  * ```javascript
  * import * as Blob from './primitives/Blob/index.js';
@@ -25,7 +27,10 @@ import {
  */
 export function toData(blob) {
 	if (blob.length !== SIZE) {
-		throw new Error(`Invalid blob size: ${blob.length} (expected ${SIZE})`);
+		throw new InvalidBlobSizeError(`Invalid blob size: ${blob.length} (expected ${SIZE})`, {
+			value: blob.length,
+			expected: `${SIZE} bytes`,
+		});
 	}
 
 	// Read 4-byte big-endian length prefix from positions 1-4
@@ -37,8 +42,12 @@ export function toData(blob) {
 		FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
 
 	if (dataLength > maxDataSize) {
-		throw new Error(
+		throw new InvalidBlobLengthPrefixError(
 			`Invalid length prefix: ${dataLength} (max ${maxDataSize})`,
+			{
+				value: dataLength,
+				expected: `max ${maxDataSize}`,
+			},
 		);
 	}
 

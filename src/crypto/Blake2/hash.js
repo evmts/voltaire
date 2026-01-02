@@ -1,4 +1,5 @@
 import { blake2b } from "@noble/hashes/blake2.js";
+import { Blake2InvalidOutputLengthError } from "./errors.js";
 
 /**
  * Hash data with BLAKE2b
@@ -8,7 +9,7 @@ import { blake2b } from "@noble/hashes/blake2.js";
  * @param {Uint8Array | string} data - Input data to hash (Uint8Array or string)
  * @param {number} [outputLength=64] - Output length in bytes (1-64, default 64)
  * @returns {import('./Blake2HashType.js').Blake2Hash} BLAKE2b hash
- * @throws {Error} If outputLength is invalid
+ * @throws {Blake2InvalidOutputLengthError} If outputLength is invalid
  * @example
  * ```javascript
  * import * as Blake2 from './crypto/Blake2/index.js';
@@ -18,9 +19,7 @@ import { blake2b } from "@noble/hashes/blake2.js";
  */
 export function hash(data, outputLength = 64) {
 	if (outputLength < 1 || outputLength > 64) {
-		throw new Error(
-			`Invalid output length: ${outputLength}. Must be between 1 and 64 bytes.`,
-		);
+		throw new Blake2InvalidOutputLengthError(outputLength);
 	}
 
 	const input =

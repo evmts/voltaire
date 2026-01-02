@@ -6,7 +6,8 @@ import { fromHex } from "./fromHex.js";
  *
  * @param {string | Uint8Array} value - Hex string with optional 0x prefix or Uint8Array
  * @returns {import('./DomainSeparatorType.js').DomainSeparatorType} DomainSeparator bytes
- * @throws {Error} If input is invalid or wrong length
+ * @throws {InvalidDomainSeparatorLengthError} If bytes length is not 32
+ * @throws {import('../Hex/errors.js').InvalidHexError} If hex string is invalid
  * @example
  * ```javascript
  * import * as DomainSeparator from './primitives/DomainSeparator/index.js';

@@ -1,3 +1,4 @@
+import { UintInvalidLengthError } from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**
@@ -7,7 +8,7 @@ import { fromBytes } from "./fromBytes.js";
  * @since 0.0.0
  * @param {Uint8Array} bytes - ABI-encoded bytes (32 bytes)
  * @returns {import('./BrandedUint.js').BrandedUint} Uint256 value
- * @throws {Error} If bytes length is not 32
+ * @throws {UintInvalidLengthError} If bytes length is not 32
  * @example
  * ```javascript
  * import * as Uint256 from './primitives/Uint/index.js';
@@ -17,8 +18,13 @@ import { fromBytes } from "./fromBytes.js";
  */
 export function fromAbiEncoded(bytes) {
 	if (bytes.length !== 32) {
-		throw new Error(
+		throw new UintInvalidLengthError(
 			`ABI-encoded Uint256 must be exactly 32 bytes, got ${bytes.length}`,
+			{
+				value: bytes,
+				expected: "32 bytes",
+				actualLength: bytes.length,
+			},
 		);
 	}
 	return fromBytes(bytes);

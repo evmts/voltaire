@@ -1,30 +1,42 @@
-import { InvalidRangeError, ValidationError } from "../errors/index.js";
+import {
+	IntegerOverflowError,
+	IntegerUnderflowError,
+	InvalidFormatError,
+	InvalidLengthError,
+	InvalidRangeError,
+	ValidationError,
+} from "../errors/index.js";
 
 /**
  * Error thrown when Uint value is negative
  *
- * @throws {UintNegativeError}
+ * @example
+ * ```typescript
+ * throw new UintNegativeError("Uint256 value cannot be negative", {
+ *   value: -1n,
+ * });
+ * ```
  */
-export class UintNegativeError extends InvalidRangeError {
+export class UintNegativeError extends IntegerUnderflowError {
 	constructor(
 		message: string,
-		options?: {
+		options: {
 			code?: string;
-			value: unknown;
-			expected?: string;
+			value: bigint | number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "UINT_NEGATIVE",
-			value: options?.value,
-			expected: options?.expected || "Non-negative value",
-			context: options?.context,
+			code: options.code || "UINT_NEGATIVE",
+			value: options.value,
+			min: 0n,
+			type: "uint256",
+			context: options.context,
 			docsPath:
-				options?.docsPath || "/primitives/uint/fundamentals#error-handling",
-			cause: options?.cause,
+				options.docsPath || "/primitives/uint/fundamentals#error-handling",
+			cause: options.cause,
 		});
 		this.name = "UintNegativeError";
 	}
@@ -33,45 +45,60 @@ export class UintNegativeError extends InvalidRangeError {
 /**
  * Error thrown when Uint value exceeds maximum
  *
- * @throws {UintOverflowError}
+ * @example
+ * ```typescript
+ * throw new UintOverflowError("Uint256 value exceeds maximum", {
+ *   value: 2n ** 256n,
+ *   max: 2n ** 256n - 1n,
+ * });
+ * ```
  */
-export class UintOverflowError extends InvalidRangeError {
+export class UintOverflowError extends IntegerOverflowError {
 	constructor(
 		message: string,
-		options?: {
+		options: {
 			code?: string;
-			value: unknown;
-			expected?: string;
+			value: bigint | number;
+			max?: bigint | number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "UINT_OVERFLOW",
-			value: options?.value,
-			expected: options?.expected || "Value <= 2^256 - 1",
-			context: options?.context,
+			code: options.code || "UINT_OVERFLOW",
+			value: options.value,
+			max: options.max ?? 2n ** 256n - 1n,
+			type: "uint256",
+			context: options.context,
 			docsPath:
-				options?.docsPath || "/primitives/uint/fundamentals#error-handling",
-			cause: options?.cause,
+				options.docsPath || "/primitives/uint/fundamentals#error-handling",
+			cause: options.cause,
 		});
 		this.name = "UintOverflowError";
 	}
 }
 
 /**
- * Error thrown when Uint length is invalid
+ * Error thrown when Uint byte length is invalid
  *
- * @throws {UintInvalidLengthError}
+ * @example
+ * ```typescript
+ * throw new UintInvalidLengthError("Uint256 bytes cannot exceed 32 bytes", {
+ *   value: bytes,
+ *   expected: "<= 32 bytes",
+ *   actualLength: 40,
+ * });
+ * ```
  */
-export class UintInvalidLengthError extends ValidationError {
+export class UintInvalidLengthError extends InvalidLengthError {
 	constructor(
 		message: string,
 		options: {
 			code?: string;
 			value: unknown;
 			expected: string;
+			actualLength?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
@@ -81,7 +108,7 @@ export class UintInvalidLengthError extends ValidationError {
 			code: options.code || "UINT_INVALID_LENGTH",
 			value: options.value,
 			expected: options.expected,
-			context: options.context,
+			context: { ...options.context, actualLength: options.actualLength },
 			docsPath:
 				options.docsPath || "/primitives/uint/fundamentals#error-handling",
 			cause: options.cause,
@@ -93,7 +120,10 @@ export class UintInvalidLengthError extends ValidationError {
 /**
  * Error thrown when Uint operation requires at least one value
  *
- * @throws {UintEmptyInputError}
+ * @example
+ * ```typescript
+ * throw new UintEmptyInputError("min requires at least one value");
+ * ```
  */
 export class UintEmptyInputError extends ValidationError {
 	constructor(
@@ -109,7 +139,7 @@ export class UintEmptyInputError extends ValidationError {
 	) {
 		super(message, {
 			code: options?.code || "UINT_EMPTY_INPUT",
-			value: options?.value ?? undefined,
+			value: options?.value ?? [],
 			expected: options?.expected || "At least one value",
 			context: options?.context,
 			docsPath:
@@ -117,5 +147,140 @@ export class UintEmptyInputError extends ValidationError {
 			cause: options?.cause,
 		});
 		this.name = "UintEmptyInputError";
+	}
+}
+
+/**
+ * Error thrown when division or modulo by zero
+ *
+ * @example
+ * ```typescript
+ * throw new UintDivisionByZeroError("Division by zero");
+ * ```
+ */
+export class UintDivisionByZeroError extends InvalidRangeError {
+	constructor(
+		message?: string,
+		options?: {
+			code?: string;
+			dividend?: bigint | number;
+			context?: Record<string, unknown>;
+			docsPath?: string;
+			cause?: Error;
+		},
+	) {
+		super(message || "Division by zero", {
+			code: options?.code || "UINT_DIVISION_BY_ZERO",
+			value: options?.dividend ?? 0n,
+			expected: "Non-zero divisor",
+			context: options?.context,
+			docsPath:
+				options?.docsPath || "/primitives/uint/fundamentals#error-handling",
+			cause: options?.cause,
+		});
+		this.name = "UintDivisionByZeroError";
+	}
+}
+
+/**
+ * Error thrown when Uint value is not an integer
+ *
+ * @example
+ * ```typescript
+ * throw new UintNotIntegerError("Uint256 value must be an integer", {
+ *   value: 1.5,
+ * });
+ * ```
+ */
+export class UintNotIntegerError extends InvalidFormatError {
+	constructor(
+		message: string,
+		options: {
+			code?: string;
+			value: unknown;
+			context?: Record<string, unknown>;
+			docsPath?: string;
+			cause?: Error;
+		},
+	) {
+		super(message, {
+			code: options.code || "UINT_NOT_INTEGER",
+			value: options.value,
+			expected: "Integer value",
+			context: options.context,
+			docsPath:
+				options.docsPath || "/primitives/uint/fundamentals#error-handling",
+			cause: options.cause,
+		});
+		this.name = "UintNotIntegerError";
+	}
+}
+
+/**
+ * Error thrown when value exceeds safe integer range for number conversion
+ *
+ * @example
+ * ```typescript
+ * throw new UintSafeIntegerOverflowError("Value exceeds MAX_SAFE_INTEGER", {
+ *   value: 2n ** 53n,
+ * });
+ * ```
+ */
+export class UintSafeIntegerOverflowError extends IntegerOverflowError {
+	constructor(
+		message: string,
+		options: {
+			code?: string;
+			value: bigint | number;
+			context?: Record<string, unknown>;
+			docsPath?: string;
+			cause?: Error;
+		},
+	) {
+		super(message, {
+			code: options.code || "UINT_SAFE_INTEGER_OVERFLOW",
+			value: options.value,
+			max: Number.MAX_SAFE_INTEGER,
+			type: "safe integer",
+			context: options.context,
+			docsPath:
+				options.docsPath || "/primitives/uint/fundamentals#error-handling",
+			cause: options.cause,
+		});
+		this.name = "UintSafeIntegerOverflowError";
+	}
+}
+
+/**
+ * Error thrown when hex string format is invalid
+ *
+ * @example
+ * ```typescript
+ * throw new UintInvalidHexError("Invalid hex string", {
+ *   value: "0xGGG",
+ * });
+ * ```
+ */
+export class UintInvalidHexError extends InvalidFormatError {
+	constructor(
+		message: string,
+		options: {
+			code?: string;
+			value: unknown;
+			context?: Record<string, unknown>;
+			docsPath?: string;
+			cause?: Error;
+		},
+	) {
+		super(message, {
+			code: options.code || "UINT_INVALID_HEX",
+			value: options.value,
+			expected: "Valid hex string (0x...)",
+			context: options.context,
+			docsPath:
+				options.docsPath || "/primitives/uint/fundamentals#error-handling",
+			cause: options.cause,
+		});
+		this.name = "UintInvalidHexError";
 	}
 }

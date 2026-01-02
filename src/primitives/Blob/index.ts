@@ -1,4 +1,5 @@
 export * from "./constants.js";
+export * from "./errors.js";
 
 import type {
 	BrandedBlob,
@@ -26,6 +27,14 @@ import {
 	SIZE,
 	TARGET_GAS_PER_BLOCK,
 } from "./constants.js";
+import {
+	BlobArrayLengthMismatchError,
+	BlobNotImplementedError,
+	InvalidBlobCountError,
+	InvalidBlobSizeError,
+	InvalidCommitmentSizeError,
+	InvalidProofSizeError,
+} from "./errors.js";
 import { estimateBlobCount as _estimateBlobCount } from "./estimateBlobCount.js";
 import { from as _from } from "./from.js";
 import { fromData as _fromData } from "./fromData.js";
@@ -107,6 +116,16 @@ export const toProof = ToProof({
 export const verify = Verify({ verifyBlobKzgProof });
 // Batch verification is not implemented on the Blob static API yet.
 // Perform validations for developer feedback, then throw.
+/**
+ * Verify batch of blobs with commitments and proofs
+ *
+ * @throws {BlobArrayLengthMismatchError} If array lengths don't match
+ * @throws {InvalidBlobCountError} If too many blobs
+ * @throws {InvalidBlobSizeError} If blob size is invalid
+ * @throws {InvalidCommitmentSizeError} If commitment size is invalid
+ * @throws {InvalidProofSizeError} If proof size is invalid
+ * @throws {BlobNotImplementedError} Always (not yet implemented)
+ */
 export const verifyBatch = ((
 	blobs: readonly BrandedBlob[],
 	commitments: readonly CommitmentType[],
@@ -114,24 +133,51 @@ export const verifyBatch = ((
 ): boolean => {
 	// Basic validations to mirror factory behavior
 	if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
-		throw new Error("Arrays must have same length");
+		throw new BlobArrayLengthMismatchError("Arrays must have same length", {
+			value: { blobs: blobs.length, commitments: commitments.length, proofs: proofs.length },
+			expected: "equal array lengths",
+		});
 	}
 	if (blobs.length > MAX_PER_TRANSACTION) {
-		throw new Error("Too many blobs");
+		throw new InvalidBlobCountError("Too many blobs", {
+			value: blobs.length,
+			expected: `max ${MAX_PER_TRANSACTION} blobs`,
+		});
 	}
 	for (let i = 0; i < blobs.length; i++) {
 		const blob = blobs[i] as Uint8Array;
-		if (blob.length !== SIZE) throw new Error("Invalid blob size");
+		if (blob.length !== SIZE) {
+			throw new InvalidBlobSizeError("Invalid blob size", {
+				value: blob.length,
+				expected: `${SIZE} bytes`,
+				context: { index: i },
+			});
+		}
 	}
 	for (let i = 0; i < commitments.length; i++) {
 		const commitment = commitments[i] as unknown as Uint8Array;
-		if (commitment.length !== 48) throw new Error("Invalid commitment size");
+		if (commitment.length !== 48) {
+			throw new InvalidCommitmentSizeError("Invalid commitment size", {
+				value: commitment.length,
+				expected: "48 bytes",
+				context: { index: i },
+			});
+		}
 	}
 	for (let i = 0; i < proofs.length; i++) {
 		const proof = proofs[i] as unknown as Uint8Array;
-		if (proof.length !== 48) throw new Error("Invalid proof size");
+		if (proof.length !== 48) {
+			throw new InvalidProofSizeError("Invalid proof size", {
+				value: proof.length,
+				expected: "48 bytes",
+				context: { index: i },
+			});
+		}
 	}
-	throw new Error("Not implemented");
+	throw new BlobNotImplementedError("Not implemented", {
+		value: "verifyBatch",
+		expected: "implementation",
+	});
 }) as (
 	blobs: readonly BrandedBlob[],
 	commitments: readonly CommitmentType[],

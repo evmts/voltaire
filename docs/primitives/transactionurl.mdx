@@ -145,24 +145,58 @@ try {
 }
 ```
 
-## Errors
+## Error Handling
 
 ### InvalidTransactionUrlError
 
-Thrown when URL operations fail.
+Thrown when URL operations fail. Extends `InvalidFormatError` from the error hierarchy.
 
 ```typescript
-class InvalidTransactionUrlError extends Error {
+import { InvalidTransactionUrlError } from '@tevm/primitives/TransactionUrl'
+
+class InvalidTransactionUrlError extends InvalidFormatError {
   name: "InvalidTransactionUrlError"
+  code: "INVALID_TRANSACTION_URL"
+  value: unknown
+  expected: string
   details?: Record<string, unknown>
+  docsPath?: string
 }
 ```
 
-Error details include contextual information:
+**Properties:**
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| `name` | `string` | Always `"InvalidTransactionUrlError"` |
+| `code` | `string` | Always `"INVALID_TRANSACTION_URL"` |
+| `value` | `unknown` | The invalid value that caused the error |
+| `expected` | `string` | Description of what was expected |
+| `details` | `Record<string, unknown>` | Additional contextual information |
+| `docsPath` | `string` | Link to documentation |
+
+**Error details include contextual information:**
 - `url` - The malformed URL
 - `scheme` - For scheme errors
 - `address` - For address errors
 - `chainId` - For chain ID errors
+
+**Example:**
+
+```typescript
+import * as TransactionUrl from '@tevm/primitives/TransactionUrl'
+import { InvalidTransactionUrlError } from '@tevm/primitives/TransactionUrl'
+
+try {
+  TransactionUrl.parse('http://example.com')
+} catch (error) {
+  if (error instanceof InvalidTransactionUrlError) {
+    console.log(error.name)    // "InvalidTransactionUrlError"
+    console.log(error.code)    // "INVALID_TRANSACTION_URL"
+    console.log(error.details) // { url: "http://example.com", scheme: "http" }
+  }
+}
+```
 
 ## Use Cases
 

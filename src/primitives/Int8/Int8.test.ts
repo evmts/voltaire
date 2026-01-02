@@ -28,16 +28,34 @@ describe("Int8", () => {
 			expect(Int8.toNumber(value)).toBe(127);
 		});
 
-		it("throws on value below INT8_MIN", () => {
-			expect(() => Int8.from(-129)).toThrow("out of range");
+		it("throws IntegerUnderflowError on value below INT8_MIN", () => {
+			try {
+				Int8.from(-129);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+				expect((e as Error).message).toContain("below minimum");
+			}
 		});
 
-		it("throws on value above INT8_MAX", () => {
-			expect(() => Int8.from(128)).toThrow("out of range");
+		it("throws IntegerOverflowError on value above INT8_MAX", () => {
+			try {
+				Int8.from(128);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+				expect((e as Error).message).toContain("exceeds maximum");
+			}
 		});
 
-		it("throws on non-integer", () => {
-			expect(() => Int8.from(42.5)).toThrow("must be an integer");
+		it("throws InvalidFormatError on non-integer", () => {
+			try {
+				Int8.from(42.5);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidFormatError");
+				expect((e as Error).message).toContain("must be an integer");
+			}
 		});
 
 		it("creates from bigint", () => {
@@ -45,9 +63,22 @@ describe("Int8", () => {
 			expect(Int8.toNumber(value)).toBe(-42);
 		});
 
-		it("throws on bigint out of range", () => {
-			expect(() => Int8.fromBigint(-200n)).toThrow("out of range");
-			expect(() => Int8.fromBigint(200n)).toThrow("out of range");
+		it("throws IntegerUnderflowError on bigint below range", () => {
+			try {
+				Int8.fromBigint(-200n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
+		});
+
+		it("throws IntegerOverflowError on bigint above range", () => {
+			try {
+				Int8.fromBigint(200n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 	});
 
@@ -111,12 +142,22 @@ describe("Int8", () => {
 			expect(Int8.toNumber(result)).toBe(-2);
 		});
 
-		it("throws on overflow", () => {
-			expect(() => Int8.plus(100, 50)).toThrow("overflow");
+		it("throws IntegerOverflowError on overflow", () => {
+			try {
+				Int8.plus(100, 50);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
-		it("throws on underflow", () => {
-			expect(() => Int8.plus(-100, -50)).toThrow("overflow");
+		it("throws IntegerUnderflowError on underflow", () => {
+			try {
+				Int8.plus(-100, -50);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 
 		it("subtracts correctly", () => {
@@ -129,8 +170,13 @@ describe("Int8", () => {
 			expect(Int8.toNumber(result)).toBe(-5);
 		});
 
-		it("throws on subtraction overflow", () => {
-			expect(() => Int8.minus(-100, 50)).toThrow("overflow");
+		it("throws IntegerUnderflowError on subtraction underflow", () => {
+			try {
+				Int8.minus(-100, 50);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 
 		it("multiplies positive", () => {
@@ -148,8 +194,13 @@ describe("Int8", () => {
 			expect(Int8.toNumber(result)).toBe(50);
 		});
 
-		it("throws on multiplication overflow", () => {
-			expect(() => Int8.times(20, 10)).toThrow("overflow");
+		it("throws IntegerOverflowError on multiplication overflow", () => {
+			try {
+				Int8.times(20, 10);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 	});
 
@@ -174,12 +225,23 @@ describe("Int8", () => {
 			expect(Int8.toNumber(result)).toBe(3);
 		});
 
-		it("throws on division by zero", () => {
-			expect(() => Int8.dividedBy(10, 0)).toThrow("division by zero");
+		it("throws InvalidRangeError on division by zero", () => {
+			try {
+				Int8.dividedBy(10, 0);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+				expect((e as Error).message).toContain("division by zero");
+			}
 		});
 
-		it("throws on INT8_MIN / -1 overflow", () => {
-			expect(() => Int8.dividedBy(-128, -1)).toThrow("overflow");
+		it("throws IntegerOverflowError on INT8_MIN / -1", () => {
+			try {
+				Int8.dividedBy(-128, -1);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 	});
 
@@ -204,8 +266,14 @@ describe("Int8", () => {
 			expect(Int8.toNumber(result)).toBe(-1);
 		});
 
-		it("throws on modulo by zero", () => {
-			expect(() => Int8.modulo(10, 0)).toThrow("modulo by zero");
+		it("throws InvalidRangeError on modulo by zero", () => {
+			try {
+				Int8.modulo(10, 0);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+				expect((e as Error).message).toContain("modulo by zero");
+			}
 		});
 	});
 
@@ -225,8 +293,13 @@ describe("Int8", () => {
 			expect(Int8.toNumber(result)).toBe(0);
 		});
 
-		it("throws on abs(INT8_MIN) overflow", () => {
-			expect(() => Int8.abs(-128)).toThrow("overflow");
+		it("throws IntegerOverflowError on abs(INT8_MIN)", () => {
+			try {
+				Int8.abs(-128);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
 		it("negate positive", () => {
@@ -244,8 +317,13 @@ describe("Int8", () => {
 			expect(Int8.toNumber(result)).toBe(0);
 		});
 
-		it("throws on negate(INT8_MIN) overflow", () => {
-			expect(() => Int8.negate(-128)).toThrow("overflow");
+		it("throws IntegerOverflowError on negate(INT8_MIN)", () => {
+			try {
+				Int8.negate(-128);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 	});
 
@@ -329,9 +407,19 @@ describe("Int8", () => {
 			expect(Int8.toNumber(result)).toBe(-8);
 		});
 
-		it("throws on invalid shift amount", () => {
-			expect(() => Int8.shiftRight(10, -1)).toThrow("out of range");
-			expect(() => Int8.shiftRight(10, 8)).toThrow("out of range");
+		it("throws InvalidRangeError on invalid shift amount", () => {
+			try {
+				Int8.shiftRight(10, -1);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+			}
+			try {
+				Int8.shiftRight(10, 8);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+			}
 		});
 	});
 
@@ -346,9 +434,19 @@ describe("Int8", () => {
 			expect(Int8.toNumber(result)).toBe(-128);
 		});
 
-		it("throws on invalid shift", () => {
-			expect(() => Int8.shiftLeft(10, -1)).toThrow("out of range");
-			expect(() => Int8.shiftLeft(10, 8)).toThrow("out of range");
+		it("throws InvalidRangeError on invalid shift", () => {
+			try {
+				Int8.shiftLeft(10, -1);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+			}
+			try {
+				Int8.shiftLeft(10, 8);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+			}
 		});
 	});
 
@@ -445,14 +543,24 @@ describe("Int8", () => {
 			const min = Int8.from(-128);
 			expect(Int8.toNumber(min)).toBe(-128);
 			expect(Int8.toHex(min)).toBe("0x80");
-			expect(() => Int8.minus(min, 1)).toThrow("overflow");
+			try {
+				Int8.minus(min, 1);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 
 		it("handles INT8_MAX boundary", () => {
 			const max = Int8.from(127);
 			expect(Int8.toNumber(max)).toBe(127);
 			expect(Int8.toHex(max)).toBe("0x7f");
-			expect(() => Int8.plus(max, 1)).toThrow("overflow");
+			try {
+				Int8.plus(max, 1);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
 		it("handles zero boundary", () => {

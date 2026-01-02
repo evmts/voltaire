@@ -145,9 +145,13 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 		it("should throw for non-existent type", () => {
 			const types: TypeDefinitions = {};
 
-			expect(() => EIP712.encodeType("NonExistent", types)).toThrow(
-				Eip712TypeNotFoundError,
-			);
+			try {
+				EIP712.encodeType("NonExistent", types);
+				expect.fail("Expected Eip712TypeNotFoundError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712TypeNotFoundError);
+				expect((e as Error).name).toBe("Eip712TypeNotFoundError");
+			}
 		});
 
 		it("should handle type with array field", () => {
@@ -267,9 +271,13 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 		it("should reject wrong size for fixed bytes", () => {
 			const wrongSize = new Uint8Array(8);
 
-			expect(() => EIP712.encodeValue("bytes4", wrongSize, types)).toThrow(
-				Eip712EncodingError,
-			);
+			try {
+				EIP712.encodeValue("bytes4", wrongSize, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).name).toBe("Eip712EncodingError");
+			}
 		});
 
 		it("should encode array as hash", () => {
@@ -293,9 +301,13 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 		});
 
 		it("should throw for invalid type", () => {
-			expect(() => EIP712.encodeValue("invalidType", 42, types)).toThrow(
-				Eip712EncodingError,
-			);
+			try {
+				EIP712.encodeValue("invalidType", 42, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).name).toBe("Eip712EncodingError");
+			}
 		});
 
 		it("should handle uint8 variants", () => {
@@ -385,9 +397,13 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				// missing age
 			};
 
-			expect(() => EIP712.hashStruct("Person", incompleteData, types)).toThrow(
-				Eip712InvalidMessageError,
-			);
+			try {
+				EIP712.hashStruct("Person", incompleteData, types);
+				expect.fail("Expected Eip712InvalidMessageError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712InvalidMessageError);
+				expect((e as Error).name).toBe("Eip712InvalidMessageError");
+			}
 		});
 	});
 

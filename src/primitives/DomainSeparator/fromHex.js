@@ -6,7 +6,8 @@ import { fromBytes } from "./fromBytes.js";
  *
  * @param {string} hex - Hex string with optional 0x prefix (must be 66 chars with 0x or 64 without)
  * @returns {import('./DomainSeparatorType.js').DomainSeparatorType} DomainSeparator
- * @throws {Error} If hex string is invalid or wrong length
+ * @throws {InvalidDomainSeparatorLengthError} If bytes length is not 32
+ * @throws {import('../Hex/errors.js').InvalidHexError} If hex string is invalid
  * @example
  * ```javascript
  * const sep = DomainSeparator.fromHex('0x1234...');

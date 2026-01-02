@@ -252,6 +252,52 @@ Secp256k1.PUBLIC_KEY_SIZE        // 64 bytes (uncompressed, no prefix)
 Secp256k1.SIGNATURE_COMPONENT_SIZE // 32 bytes (for r and s)
 ```
 
+## Error Handling
+
+All secp256k1 functions throw typed errors that extend `CryptoError`:
+
+```typescript
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
+import { InvalidPrivateKeyError, InvalidPublicKeyError, InvalidSignatureError, Secp256k1Error } from '@tevm/voltaire/Secp256k1';
+
+try {
+  const signature = Secp256k1.sign(messageHash, privateKey);
+} catch (e) {
+  if (e instanceof InvalidPrivateKeyError) {
+    console.error('Invalid private key:', e.message);
+    console.error('Error code:', e.code); // e.g., "PRIVATE_KEY_ZERO"
+  }
+}
+
+try {
+  const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
+} catch (e) {
+  if (e instanceof InvalidSignatureError) {
+    console.error('Invalid signature:', e.message);
+    console.error('Error code:', e.code); // e.g., "INVALID_SIGNATURE_V"
+  }
+}
+```
+
+### Error Types
+
+| Error | When Thrown |
+|-------|-------------|
+| `Secp256k1Error` | Base error for all secp256k1 operations |
+| `InvalidPrivateKeyError` | Invalid private key (wrong length, zero, or >= curve order) |
+| `InvalidPublicKeyError` | Invalid public key (wrong length or not on curve) |
+| `InvalidSignatureError` | Invalid signature (wrong component lengths, invalid v value, recovery failed) |
+
+### Error Properties
+
+All errors include:
+- `name` - Error class name (e.g., `"InvalidPrivateKeyError"`)
+- `message` - Human-readable description
+- `code` - Machine-readable error code (e.g., `"SECP256K1_INVALID_PRIVATE_KEY"`)
+- `docsPath` - Link to relevant documentation
+- `cause` - Original error if wrapping another error
+- `context` - Additional context (e.g., `{ privateKeyLength: 31 }`)
+
 ## Security Considerations
 
 ### Critical Warnings

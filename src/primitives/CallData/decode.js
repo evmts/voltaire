@@ -2,6 +2,7 @@ import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { decodeParameters } from "../Abi/Encoding.js";
 import * as Hex from "../Hex/index.js";
 import { SELECTOR_SIZE } from "./constants.js";
+import { AbiItemNotFoundError } from "./errors.js";
 import { getSelector } from "./getSelector.js";
 
 /**
@@ -18,7 +19,7 @@ import { getSelector } from "./getSelector.js";
  * @param {import('./CallDataType.js').CallDataType} calldata - CallData to decode
  * @param {import('../Abi/AbiType.js').AbiType} abi - ABI specification with function definitions
  * @returns {CallDataDecoded} Decoded structure with selector, signature, and parameters
- * @throws {Error} If function not found in ABI or decoding fails
+ * @throws {AbiItemNotFoundError} If function not found in ABI for the given selector
  *
  * @example
  * ```javascript
@@ -60,7 +61,13 @@ export function decode(calldata, abi) {
 	});
 
 	if (!functionItem || functionItem.type !== "function") {
-		throw new Error(`Function not found in ABI for selector ${selectorHex}`);
+		throw new AbiItemNotFoundError(
+			`Function not found in ABI for selector ${selectorHex}`,
+			{
+				value: selectorHex,
+				expected: "function selector in ABI",
+			},
+		);
 	}
 
 	// Build signature string

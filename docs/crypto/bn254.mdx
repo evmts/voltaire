@@ -321,15 +321,29 @@ const isValid = bn254Pairing(input3); // boolean
 
 **Point Validation**:
 ```typescript
+import { Bn254InvalidPointError, Bn254SubgroupCheckError } from '@tevm/voltaire/crypto/bn254';
+
 // Always validate deserialized points
 const g1 = BN254.deserializeG1(bytes);
 if (!G1.isOnCurve(g1)) {
-  throw new Error("Invalid G1 point");
+  throw new Bn254InvalidPointError("Invalid G1 point", {
+    context: { curve: "G1" },
+    docsPath: "/crypto/bn254#point-validation"
+  });
 }
 
 const g2 = BN254.deserializeG2(bytes);
-if (!G2.isOnCurve(g2) || !G2.isInSubgroup(g2)) {
-  throw new Error("Invalid G2 point");
+if (!G2.isOnCurve(g2)) {
+  throw new Bn254InvalidPointError("Invalid G2 point", {
+    context: { curve: "G2" },
+    docsPath: "/crypto/bn254#point-validation"
+  });
+}
+if (!G2.isInSubgroup(g2)) {
+  throw new Bn254SubgroupCheckError("G2 point not in subgroup", {
+    context: { curve: "G2" },
+    docsPath: "/crypto/bn254#subgroup-check"
+  });
 }
 ```
 

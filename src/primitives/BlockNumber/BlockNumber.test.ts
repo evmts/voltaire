@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as BlockNumber from "./index.js";
+import { InvalidBlockNumberError } from "./errors.js";
 
 describe("BlockNumber", () => {
 	describe("from", () => {
@@ -19,14 +20,34 @@ describe("BlockNumber", () => {
 		});
 
 		it("throws on negative", () => {
-			expect(() => BlockNumber.from(-1n)).toThrow("cannot be negative");
+			try {
+				BlockNumber.from(-1n);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidBlockNumberError);
+				expect((e as InvalidBlockNumberError).name).toBe(
+					"InvalidBlockNumberError",
+				);
+				expect((e as InvalidBlockNumberError).message).toContain(
+					"cannot be negative",
+				);
+			}
 		});
 
 		it("throws on invalid type", () => {
-			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-			expect(() => BlockNumber.from("123" as any)).toThrow(
-				"must be a number or bigint",
-			);
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+				BlockNumber.from("123" as any);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidBlockNumberError);
+				expect((e as InvalidBlockNumberError).name).toBe(
+					"InvalidBlockNumberError",
+				);
+				expect((e as InvalidBlockNumberError).message).toContain(
+					"must be a number or bigint",
+				);
+			}
 		});
 	});
 
@@ -55,6 +76,19 @@ describe("BlockNumber", () => {
 			const a = BlockNumber.from(100n);
 			const b = BlockNumber.from(101n);
 			expect(BlockNumber.equals(a, b)).toBe(false);
+		});
+	});
+
+	describe("error properties", () => {
+		it("InvalidBlockNumberError has correct properties", () => {
+			const error = new InvalidBlockNumberError("Test message", {
+				value: -1n,
+				expected: "non-negative integer",
+			});
+			expect(error.name).toBe("InvalidBlockNumberError");
+			expect(error.code).toBe("INVALID_BLOCK_NUMBER");
+			expect(error.value).toBe(-1n);
+			expect(error.expected).toBe("non-negative integer");
 		});
 	});
 });

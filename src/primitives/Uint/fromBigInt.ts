@@ -1,4 +1,5 @@
 import { MAX } from "./constants.js";
+import { UintNegativeError, UintOverflowError } from "./errors.js";
 import type { Uint256Type } from "./Uint256Type.js";
 
 /**
@@ -6,7 +7,8 @@ import type { Uint256Type } from "./Uint256Type.js";
  *
  * @param value - bigint to convert
  * @returns Uint256 value
- * @throws Error if value out of range
+ * @throws {UintNegativeError} If value is negative
+ * @throws {UintOverflowError} If value exceeds maximum
  *
  * @example
  * ```typescript
@@ -15,11 +17,16 @@ import type { Uint256Type } from "./Uint256Type.js";
  */
 export function fromBigInt(value: bigint): Uint256Type {
 	if (value < 0n) {
-		throw new Error(`Uint256 value cannot be negative: ${value}`);
+		throw new UintNegativeError(`Uint256 value cannot be negative: ${value}`, {
+			value,
+		});
 	}
 
 	if (value > MAX) {
-		throw new Error(`Uint256 value exceeds maximum: ${value}`);
+		throw new UintOverflowError(`Uint256 value exceeds maximum: ${value}`, {
+			value,
+			max: MAX,
+		});
 	}
 
 	return value as Uint256Type;

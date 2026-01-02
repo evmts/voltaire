@@ -4,6 +4,7 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
+import { RlpEncodingError } from "./errors.js";
 
 /**
  * Encode bytes as RLP
@@ -19,11 +20,15 @@ export function encodeBytes(data: Uint8Array): Uint8Array {
  * Encode unsigned integer (u256) as RLP
  * @param value - 32-byte big-endian u256 value
  * @returns RLP-encoded bytes
+ * @throws {RlpEncodingError} If value is not exactly 32 bytes
  */
 export function encodeUint(value: Uint8Array): Uint8Array {
 	const input = new Uint8Array(value);
 	if (input.length !== 32) {
-		throw new Error("Value must be 32 bytes (u256)");
+		throw new RlpEncodingError("Value must be 32 bytes (u256)", {
+			code: "RLP_INVALID_LENGTH",
+			context: { expected: 32, actual: input.length },
+		});
 	}
 	return loader.rlpEncodeUint(input);
 }

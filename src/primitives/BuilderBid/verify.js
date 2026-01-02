@@ -1,4 +1,4 @@
-// @ts-nocheck
+import { MissingCryptoDependencyError } from "./errors.js";
 
 /**
  * @typedef {import('./BuilderBidType.js').BuilderBidType} BuilderBidType
@@ -11,6 +11,7 @@
  * @param {object} crypto - Crypto dependencies
  * @param {(pubkey: Uint8Array, message: Uint8Array, signature: Uint8Array) => boolean} crypto.blsVerify - BLS verification function
  * @returns {boolean} True if signature is valid
+ * @throws {MissingCryptoDependencyError} If blsVerify function is not provided
  * @example
  * ```typescript
  * import * as BuilderBid from './BuilderBid/index.js';
@@ -21,7 +22,10 @@
  */
 export function verify(bid, crypto) {
 	if (!crypto?.blsVerify) {
-		throw new Error("blsVerify not provided");
+		throw new MissingCryptoDependencyError("blsVerify not provided", {
+			value: crypto,
+			expected: "{ blsVerify: (pubkey, message, signature) => boolean }",
+		});
 	}
 
 	// Construct signing message from bid fields

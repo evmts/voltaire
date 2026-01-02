@@ -1,4 +1,5 @@
 import { isData } from "./isData.js";
+import { RlpEncodingError } from "./errors.js";
 
 /**
  * Create RLP data from various inputs
@@ -7,7 +8,7 @@ import { isData } from "./isData.js";
  * @since 0.0.0
  * @param {Uint8Array | import('./RlpType.js').BrandedRlp | import('./RlpType.js').BrandedRlp[]} value - Uint8Array (bytes), RlpData, or array (list)
  * @returns {import('./RlpType.js').BrandedRlp} RLP data structure
- * @throws {Error} If input type is invalid
+ * @throws {RlpEncodingError} If input type is invalid
  * @example
  * ```javascript
  * import * as Rlp from './primitives/Rlp/index.js';
@@ -27,5 +28,8 @@ export function from(value) {
 	if (Array.isArray(value)) {
 		return { type: "list", value };
 	}
-	throw new Error("Invalid input for Rlp.from");
+	throw new RlpEncodingError("Invalid input for Rlp.from", {
+		code: "RLP_INVALID_TYPE",
+		context: { type: typeof value },
+	});
 }

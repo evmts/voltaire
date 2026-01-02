@@ -1,4 +1,4 @@
-import { DecodingError } from "../../errors/index.js";
+import { DecodingError, InvalidFormatError } from "../../errors/index.js";
 import { decode } from "../../Rlp/decode.js";
 import { Type } from "../types.js";
 import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
@@ -11,6 +11,7 @@ import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
  * @param {Uint8Array} data - RLP encoded transaction bytes
  * @returns {import('./TransactionEIP2930Type.js').TransactionEIP2930Type} Deserialized transaction
  * @throws {DecodingError} If data is invalid or malformed
+ * @throws {InvalidFormatError} If access list format is invalid
  * @example
  * ```javascript
  * import { deserialize } from './primitives/Transaction/EIP2930/deserialize.js';
@@ -75,8 +76,14 @@ export function deserialize(data) {
 	).value;
 	const accessListField = fields[7];
 	if (!accessListField || accessListField.type !== "list") {
-		throw new Error(
+		throw new InvalidFormatError(
 			"Invalid EIP-2930 transaction: expected list for accessList",
+			{
+				code: "INVALID_ACCESS_LIST_FORMAT",
+				value: accessListField,
+				expected: "List of access list items",
+				docsPath: "/primitives/transaction/eip2930/deserialize#error-handling",
+			},
 		);
 	}
 	const accessList = decodeAccessList(

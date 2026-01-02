@@ -3,6 +3,7 @@ import {
 	FIELD_ELEMENTS_PER_BLOB,
 	MAX_PER_TRANSACTION,
 } from "./constants.js";
+import { InvalidBlobDataSizeError } from "./errors.js";
 import { estimateBlobCount } from "./estimateBlobCount.js";
 import { fromData } from "./fromData.js";
 
@@ -13,7 +14,7 @@ import { fromData } from "./fromData.js";
  * @since 0.0.0
  * @param {Uint8Array} data - Data to split
  * @returns {import('./BlobType.js').BrandedBlob[]} Array of blobs containing the data
- * @throws {Error} If data requires more blobs than maximum per transaction
+ * @throws {InvalidBlobDataSizeError} If data requires more blobs than maximum per transaction
  * @example
  * ```javascript
  * import * as Blob from './primitives/Blob/index.js';
@@ -28,8 +29,12 @@ export function splitData(data) {
 	const blobCount = estimateBlobCount(data.length);
 
 	if (blobCount > MAX_PER_TRANSACTION) {
-		throw new Error(
+		throw new InvalidBlobDataSizeError(
 			`Data too large: requires ${blobCount} blobs (max ${MAX_PER_TRANSACTION})`,
+			{
+				value: data.length,
+				expected: `max ${maxDataPerBlob * MAX_PER_TRANSACTION} bytes`,
+			},
 		);
 	}
 

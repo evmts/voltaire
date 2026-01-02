@@ -958,9 +958,26 @@ describe("Rlp.Error types", () => {
 		} catch (err) {
 			expect(err).toBeInstanceOf(Rlp.DecodingError);
 			if (err instanceof RlpDecodingError) {
+				expect(err.name).toBe("RlpDecodingError");
 				expect(err.code).toBe("RLP_INPUT_TOO_SHORT");
 				expect(err.message).toContain("Cannot decode empty input");
 			}
 		}
+	});
+
+	it("encoding error extends EncodingError from base errors", () => {
+		const err = new Rlp.EncodingError("Test");
+		expect(err.name).toBe("RlpEncodingError");
+		// Verify it has properties from base error
+		expect(typeof err.code).toBe("string");
+		expect(typeof err.getErrorChain).toBe("function");
+	});
+
+	it("decoding error extends DecodingError from base errors", () => {
+		const err = new Rlp.DecodingError("Test");
+		expect(err.name).toBe("RlpDecodingError");
+		// Verify it has properties from base error
+		expect(typeof err.code).toBe("string");
+		expect(typeof err.getErrorChain).toBe("function");
 	});
 });

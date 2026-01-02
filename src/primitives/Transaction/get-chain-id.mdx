@@ -69,13 +69,18 @@ getChainId(preEip155) // undefined
 
 ```typescript
 import { getChainId } from 'tevm/Transaction'
+import { TransactionError } from 'tevm/errors'
 
 function validateChainId(tx: Transaction.Any, expectedChainId: bigint) {
   const txChainId = getChainId(tx)
 
   if (txChainId !== undefined && txChainId !== expectedChainId) {
-    throw new Error(
-      `Wrong chain: expected ${expectedChainId}, got ${txChainId}`
+    throw new TransactionError(
+      `Wrong chain: expected ${expectedChainId}, got ${txChainId}`,
+      {
+        code: 'WRONG_CHAIN_ID',
+        context: { expected: expectedChainId, actual: txChainId }
+      }
     )
   }
 }

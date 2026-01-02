@@ -1,4 +1,5 @@
 import { COMMITMENT_VERSION_KZG } from "./constants.js";
+import { InvalidCommitmentSizeError } from "./errors.js";
 
 /**
  * Factory: Create versioned hash from commitment
@@ -10,7 +11,7 @@ import { COMMITMENT_VERSION_KZG } from "./constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
  * @since 0.0.0
- * @throws {Error} If commitment size is invalid
+ * @throws {InvalidCommitmentSizeError} If commitment size is not 48 bytes
  * @example
  * ```javascript
  * import { ToVersionedHash } from './primitives/Blob/index.js';
@@ -23,7 +24,10 @@ import { COMMITMENT_VERSION_KZG } from "./constants.js";
 export function ToVersionedHash({ sha256 }) {
 	return function toVersionedHash(commitment) {
 		if (commitment.length !== 48) {
-			throw new Error(`Invalid commitment size: ${commitment.length}`);
+			throw new InvalidCommitmentSizeError(`Invalid commitment size: ${commitment.length}`, {
+				value: commitment.length,
+				expected: "48 bytes",
+			});
 		}
 
 		// Hash the commitment with SHA-256

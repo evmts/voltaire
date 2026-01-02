@@ -1,4 +1,4 @@
-// @ts-nocheck
+import { InvalidBundleError } from "./errors.js";
 
 /**
  * @typedef {import('./BundleType.js').BundleType} BundleType
@@ -10,6 +10,7 @@
  * @param {BundleType} bundle - Bundle instance
  * @param {Uint8Array | string} transaction - Signed transaction to add
  * @returns {BundleType} New bundle with added transaction
+ * @throws {InvalidBundleError} If transaction format is invalid
  * @example
  * ```typescript
  * import * as Bundle from './Bundle/index.js';
@@ -25,14 +26,21 @@ export function addTransaction(bundle, transaction) {
 			? transaction.slice(2)
 			: transaction;
 		if (hex.length % 2 !== 0) {
-			throw new Error("Transaction has invalid hex length");
+			throw new InvalidBundleError("Transaction has invalid hex length", {
+				value: transaction,
+				expected: "even-length hex string",
+				context: { hexLength: hex.length },
+			});
 		}
 		txBytes = new Uint8Array(hex.length / 2);
 		for (let i = 0; i < hex.length; i += 2) {
 			txBytes[i / 2] = Number.parseInt(hex.slice(i, i + 2), 16);
 		}
 	} else {
-		throw new Error("Transaction must be Uint8Array or hex string");
+		throw new InvalidBundleError("Transaction must be Uint8Array or hex string", {
+			value: transaction,
+			expected: "Uint8Array or hex string",
+		});
 	}
 
 	return {

@@ -3,6 +3,7 @@ import {
 	FIELD_ELEMENTS_PER_BLOB,
 	SIZE,
 } from "./constants.js";
+import { InvalidBlobDataSizeError } from "./errors.js";
 
 /**
  * Create blob from arbitrary data using EIP-4844 field element encoding.
@@ -15,7 +16,7 @@ import {
  * @since 0.0.0
  * @param {Uint8Array} data - Data to encode (max 126972 bytes)
  * @returns {import('./BlobType.js').BrandedBlob} Blob containing encoded data
- * @throws {Error} If data exceeds maximum size
+ * @throws {InvalidBlobDataSizeError} If data exceeds maximum size
  * @example
  * ```javascript
  * import * as Blob from './primitives/Blob/index.js';
@@ -30,8 +31,12 @@ export function fromData(data) {
 		FIELD_ELEMENTS_PER_BLOB * (BYTES_PER_FIELD_ELEMENT - 1) - 4;
 
 	if (data.length > maxDataSize) {
-		throw new Error(
+		throw new InvalidBlobDataSizeError(
 			`Data too large: ${data.length} bytes (max ${maxDataSize})`,
+			{
+				value: data.length,
+				expected: `max ${maxDataSize} bytes`,
+			},
 		);
 	}
 

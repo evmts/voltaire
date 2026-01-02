@@ -10,6 +10,7 @@ import * as loader from "../../wasm-loader/loader.js";
 import * as Blake2Namespace from "./Blake2.js";
 import { Blake2 } from "./Blake2.js";
 import { Blake2Wasm } from "./Blake2.wasm.js";
+import { Blake2InvalidOutputLengthError } from "./errors.js";
 
 // Load WASM module before tests
 beforeAll(async () => {
@@ -150,24 +151,54 @@ describe("Blake2 (Noble)", () => {
 			expect(hash48).not.toEqual(hash64.slice(0, 48));
 		});
 
-		it("should throw error for invalid output length (too small)", () => {
-			expect(() => Blake2Namespace.hash(new Uint8Array([]), 0)).toThrow(
-				"Invalid output length: 0. Must be between 1 and 64 bytes.",
-			);
+		it("should throw Blake2InvalidOutputLengthError for invalid output length (too small)", () => {
+			try {
+				Blake2Namespace.hash(new Uint8Array([]), 0);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Blake2InvalidOutputLengthError);
+				expect((e as Blake2InvalidOutputLengthError).name).toBe(
+					"Blake2InvalidOutputLengthError",
+				);
+				expect((e as Blake2InvalidOutputLengthError).message).toContain(
+					"Invalid output length: 0",
+				);
+			}
 
-			expect(() => Blake2Namespace.hash(new Uint8Array([]), -1)).toThrow(
-				"Invalid output length: -1. Must be between 1 and 64 bytes.",
-			);
+			try {
+				Blake2Namespace.hash(new Uint8Array([]), -1);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Blake2InvalidOutputLengthError);
+				expect((e as Blake2InvalidOutputLengthError).name).toBe(
+					"Blake2InvalidOutputLengthError",
+				);
+			}
 		});
 
-		it("should throw error for invalid output length (too large)", () => {
-			expect(() => Blake2Namespace.hash(new Uint8Array([]), 65)).toThrow(
-				"Invalid output length: 65. Must be between 1 and 64 bytes.",
-			);
+		it("should throw Blake2InvalidOutputLengthError for invalid output length (too large)", () => {
+			try {
+				Blake2Namespace.hash(new Uint8Array([]), 65);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Blake2InvalidOutputLengthError);
+				expect((e as Blake2InvalidOutputLengthError).name).toBe(
+					"Blake2InvalidOutputLengthError",
+				);
+				expect((e as Blake2InvalidOutputLengthError).message).toContain(
+					"Invalid output length: 65",
+				);
+			}
 
-			expect(() => Blake2Namespace.hash(new Uint8Array([]), 100)).toThrow(
-				"Invalid output length: 100. Must be between 1 and 64 bytes.",
-			);
+			try {
+				Blake2Namespace.hash(new Uint8Array([]), 100);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Blake2InvalidOutputLengthError);
+				expect((e as Blake2InvalidOutputLengthError).name).toBe(
+					"Blake2InvalidOutputLengthError",
+				);
+			}
 		});
 
 		it("should hash with minimum output length (1 byte)", () => {
@@ -245,14 +276,26 @@ describe("Blake2 (Noble)", () => {
 			expect(hash).toEqual(hashEmpty);
 		});
 
-		it("should throw error for invalid output length", () => {
-			expect(() => Blake2Namespace.hashString("test", 0)).toThrow(
-				"Invalid output length: 0. Must be between 1 and 64 bytes.",
-			);
+		it("should throw Blake2InvalidOutputLengthError for invalid output length", () => {
+			try {
+				Blake2Namespace.hashString("test", 0);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Blake2InvalidOutputLengthError);
+				expect((e as Blake2InvalidOutputLengthError).name).toBe(
+					"Blake2InvalidOutputLengthError",
+				);
+			}
 
-			expect(() => Blake2Namespace.hashString("test", 65)).toThrow(
-				"Invalid output length: 65. Must be between 1 and 64 bytes.",
-			);
+			try {
+				Blake2Namespace.hashString("test", 65);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Blake2InvalidOutputLengthError);
+				expect((e as Blake2InvalidOutputLengthError).name).toBe(
+					"Blake2InvalidOutputLengthError",
+				);
+			}
 		});
 	});
 
@@ -381,14 +424,26 @@ describe("Blake2Wasm", () => {
 			expect(hash.length).toBe(32);
 		});
 
-		it("should throw error for invalid output length", () => {
-			expect(() => Blake2Wasm.hash(new Uint8Array([]), 0)).toThrow(
-				"Invalid output length: 0. Must be between 1 and 64 bytes.",
-			);
+		it("should throw Blake2InvalidOutputLengthError for invalid output length", () => {
+			try {
+				Blake2Wasm.hash(new Uint8Array([]), 0);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Blake2InvalidOutputLengthError);
+				expect((e as Blake2InvalidOutputLengthError).name).toBe(
+					"Blake2InvalidOutputLengthError",
+				);
+			}
 
-			expect(() => Blake2Wasm.hash(new Uint8Array([]), 65)).toThrow(
-				"Invalid output length: 65. Must be between 1 and 64 bytes.",
-			);
+			try {
+				Blake2Wasm.hash(new Uint8Array([]), 65);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Blake2InvalidOutputLengthError);
+				expect((e as Blake2InvalidOutputLengthError).name).toBe(
+					"Blake2InvalidOutputLengthError",
+				);
+			}
 		});
 
 		it("should handle all output lengths from 1 to 64", () => {

@@ -276,6 +276,22 @@ describe("AesGcm", () => {
 			await expect(AesGcm.decrypt(ciphertext, key2, nonce)).rejects.toThrow();
 		});
 
+		it("throws DecryptionError with correct name for wrong key", async () => {
+			const key1 = await AesGcm.generateKey(256);
+			const key2 = await AesGcm.generateKey(256);
+			const nonce = AesGcm.generateNonce();
+			const plaintext = new TextEncoder().encode("Test");
+
+			const ciphertext = await AesGcm.encrypt(plaintext, key1, nonce);
+
+			try {
+				await AesGcm.decrypt(ciphertext, key2, nonce);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("DecryptionError");
+			}
+		});
+
 		it("throws error for wrong nonce during decryption", async () => {
 			const key = await AesGcm.generateKey(256);
 			const nonce1 = AesGcm.generateNonce();
@@ -320,37 +336,53 @@ describe("AesGcm", () => {
 			await expect(AesGcm.decrypt(modified, key, nonce)).rejects.toThrow();
 		});
 
-		it("throws error for ciphertext too short (no tag)", async () => {
+		it("throws DecryptionError with correct name for ciphertext too short", async () => {
 			const key = await AesGcm.generateKey(256);
 			const nonce = AesGcm.generateNonce();
 			const tooShort = new Uint8Array(15); // Less than 16-byte tag
 
-			await expect(AesGcm.decrypt(tooShort, key, nonce)).rejects.toThrow();
+			try {
+				await AesGcm.decrypt(tooShort, key, nonce);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("DecryptionError");
+			}
 		});
 
-		it("throws error for invalid nonce length in encrypt", async () => {
+		it("throws InvalidNonceError with correct name for invalid nonce in encrypt", async () => {
 			const key = await AesGcm.generateKey(256);
 			const wrongNonce = new Uint8Array(16); // Should be 12 bytes
 			const plaintext = new TextEncoder().encode("Test");
 
-			await expect(
-				AesGcm.encrypt(plaintext, key, wrongNonce),
-			).rejects.toThrow();
+			try {
+				await AesGcm.encrypt(plaintext, key, wrongNonce);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidNonceError");
+			}
 		});
 
-		it("throws error for invalid nonce length in decrypt", async () => {
+		it("throws InvalidNonceError with correct name for invalid nonce in decrypt", async () => {
 			const key = await AesGcm.generateKey(256);
 			const wrongNonce = new Uint8Array(8); // Should be 12 bytes
 			const ciphertext = new Uint8Array(32);
 
-			await expect(
-				AesGcm.decrypt(ciphertext, key, wrongNonce),
-			).rejects.toThrow();
+			try {
+				await AesGcm.decrypt(ciphertext, key, wrongNonce);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidNonceError");
+			}
 		});
 
-		it("throws error for invalid key size on import (24 bytes)", async () => {
+		it("throws InvalidKeyError with correct name for invalid key size on import", async () => {
 			const invalidKey = new Uint8Array(24);
-			await expect(AesGcm.importKey(invalidKey)).rejects.toThrow();
+			try {
+				await AesGcm.importKey(invalidKey);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidKeyError");
+			}
 		});
 
 		it("throws error for invalid key size on import (empty)", async () => {

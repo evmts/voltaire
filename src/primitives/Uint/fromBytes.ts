@@ -1,3 +1,4 @@
+import { UintInvalidLengthError } from "./errors.js";
 import type { Uint256Type } from "./Uint256Type.js";
 
 /**
@@ -5,7 +6,7 @@ import type { Uint256Type } from "./Uint256Type.js";
  *
  * @param bytes - bytes to convert
  * @returns Uint256 value
- * @throws Error if bytes length exceeds 32
+ * @throws {UintInvalidLengthError} If bytes length exceeds 32
  *
  * @example
  * ```typescript
@@ -15,8 +16,13 @@ import type { Uint256Type } from "./Uint256Type.js";
  */
 export function fromBytes(bytes: Uint8Array): Uint256Type {
 	if (bytes.length > 32) {
-		throw new Error(
+		throw new UintInvalidLengthError(
 			`Uint256 bytes cannot exceed 32 bytes, got ${bytes.length}`,
+			{
+				value: bytes,
+				expected: "<= 32 bytes",
+				actualLength: bytes.length,
+			},
 		);
 	}
 

@@ -182,6 +182,50 @@ Bip39.ENTROPY_256  // 256 bits = 24 words
 Bip39.SEED_LENGTH  // 64 bytes
 ```
 
+## Error Handling
+
+All BIP-39 functions throw typed errors that extend `CryptoError`:
+
+```typescript
+import * as Bip39 from '@tevm/voltaire/Bip39';
+import { InvalidMnemonicError, InvalidEntropyError, Bip39Error } from '@tevm/voltaire/Bip39';
+
+try {
+  Bip39.assertValidMnemonic(userMnemonic);
+} catch (e) {
+  if (e instanceof InvalidMnemonicError) {
+    console.error('Invalid mnemonic:', e.message);
+    console.error('Error code:', e.code); // e.g., "BIP39_INVALID_MNEMONIC"
+  }
+}
+
+try {
+  const mnemonic = Bip39.entropyToMnemonic(badEntropy);
+} catch (e) {
+  if (e instanceof InvalidEntropyError) {
+    console.error('Invalid entropy:', e.message);
+    console.error('Error code:', e.code); // e.g., "BIP39_INVALID_ENTROPY_SIZE"
+  }
+}
+```
+
+### Error Types
+
+| Error | When Thrown |
+|-------|-------------|
+| `Bip39Error` | Base error for all BIP-39 operations |
+| `InvalidMnemonicError` | Invalid mnemonic phrase (wrong words, bad checksum, wrong length) |
+| `InvalidEntropyError` | Invalid entropy size (must be 16, 20, 24, 28, or 32 bytes) |
+
+### Error Properties
+
+All errors include:
+- `name` - Error class name (e.g., `"InvalidMnemonicError"`)
+- `message` - Human-readable description
+- `code` - Machine-readable error code
+- `docsPath` - Link to relevant documentation
+- `cause` - Original error if wrapping another error
+
 ## Entropy and Word Count
 
 BIP-39 uses entropy + checksum to generate mnemonics:

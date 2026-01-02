@@ -1,10 +1,12 @@
 import { PRIVATE_KEY_SIZE } from "./constants.js";
+import { Secp256k1Error } from "./errors.js";
 import { isValidPrivateKey } from "./isValidPrivateKey.js";
 
 /**
  * Generate a cryptographically secure random secp256k1 private key
  *
  * @returns {Uint8Array} 32-byte private key
+ * @throws {Secp256k1Error} If crypto.getRandomValues is not available or generation fails
  *
  * @example
  * ```javascript
@@ -30,10 +32,21 @@ export function randomPrivateKey() {
 				return bytes;
 			}
 		}
-		throw new Error("Failed to generate valid private key after 100 attempts");
+		throw new Secp256k1Error(
+			"Failed to generate valid private key after 100 attempts",
+			{
+				code: "SECP256K1_KEY_GENERATION_EXHAUSTED",
+				context: { attempts: 100 },
+				docsPath: "/crypto/secp256k1/random-private-key#error-handling",
+			},
+		);
 	}
 
-	throw new Error(
+	throw new Secp256k1Error(
 		"crypto.getRandomValues not available - cannot generate secure private key",
+		{
+			code: "SECP256K1_NO_CRYPTO",
+			docsPath: "/crypto/secp256k1/random-private-key#error-handling",
+		},
 	);
 }

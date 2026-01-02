@@ -1,3 +1,4 @@
+import { InvalidPublicKeyError } from "../errors.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**
@@ -9,7 +10,7 @@ import { fromBytes } from "./fromBytes.js";
  * @since 0.0.0
  * @param {Uint8Array | string} input - Public key as raw bytes or hex string (with or without 0x prefix)
  * @returns {import('../Secp256k1PublicKeyType.js').Secp256k1PublicKeyType} Branded public key
- * @throws {Error} If input format or public key is invalid
+ * @throws {InvalidPublicKeyError} If input format or public key is invalid
  * @example
  * ```javascript
  * import * as PublicKey from './crypto/Secp256k1/PublicKey/index.js';
@@ -24,11 +25,20 @@ export function from(input) {
 		// Convert hex string to bytes
 		const hexStr = input.startsWith("0x") ? input.slice(2) : input;
 		if (!/^[0-9a-fA-F]+$/.test(hexStr)) {
-			throw new Error(`Invalid hex string: ${input}`);
+			throw new InvalidPublicKeyError(`Invalid hex string: ${input}`, {
+				code: "SECP256K1_INVALID_HEX_STRING",
+				context: { input },
+				docsPath: "/crypto/secp256k1/public-key#error-handling",
+			});
 		}
 		if (hexStr.length !== 128) {
-			throw new Error(
+			throw new InvalidPublicKeyError(
 				`Invalid public key hex length: expected 128 characters (64 bytes), got ${hexStr.length}`,
+				{
+					code: "SECP256K1_INVALID_PUBLIC_KEY_HEX_LENGTH",
+					context: { length: hexStr.length, expected: 128 },
+					docsPath: "/crypto/secp256k1/public-key#error-handling",
+				},
 			);
 		}
 		const bytes = new Uint8Array(64);

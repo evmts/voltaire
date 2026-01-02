@@ -8,6 +8,7 @@ import type { AddressType as BrandedAddress } from "./AddressType.js";
 import type { Checksummed } from "./ChecksumAddress.js";
 import type { Lowercase } from "./LowercaseAddress.js";
 import type { Uppercase } from "./UppercaseAddress.js";
+import { InvalidAddressLengthError } from "./errors.js";
 
 /**
  * Create Address from hex string (WASM implementation)
@@ -235,7 +236,7 @@ export function calculateCreate2Address(
  * @since 0.0.0
  * @param bytes - 20-byte array
  * @returns Address
- * @throws {Error} If not exactly 20 bytes
+ * @throws {InvalidAddressLengthError} If not exactly 20 bytes
  * @example
  * ```typescript
  * import * as Address from './primitives/Address/Address.wasm.js';
@@ -244,7 +245,10 @@ export function calculateCreate2Address(
  */
 export function fromBytes(bytes: Uint8Array): BrandedAddress {
 	if (bytes.length !== 20) {
-		throw new Error("Address must be exactly 20 bytes");
+		throw new InvalidAddressLengthError("Address must be exactly 20 bytes", {
+			value: bytes.length,
+			expected: "20 bytes",
+		});
 	}
 	return new Uint8Array(bytes) as BrandedAddress;
 }
@@ -351,7 +355,7 @@ export function toAbiEncoded(address: BrandedAddress): Uint8Array {
  * @since 0.0.0
  * @param encoded - 32-byte ABI-encoded address
  * @returns Address
- * @throws {Error} If not 32 bytes
+ * @throws {InvalidAddressLengthError} If not 32 bytes
  * @example
  * ```typescript
  * import * as Address from './primitives/Address/Address.wasm.js';
@@ -360,7 +364,11 @@ export function toAbiEncoded(address: BrandedAddress): Uint8Array {
  */
 export function fromAbiEncoded(encoded: Uint8Array): BrandedAddress {
 	if (encoded.length !== 32) {
-		throw new Error("ABI-encoded address must be 32 bytes");
+		throw new InvalidAddressLengthError("ABI-encoded address must be 32 bytes", {
+			value: encoded.length,
+			expected: "32 bytes",
+			code: "INVALID_ABI_ENCODED_LENGTH",
+		});
 	}
 	return encoded.slice(12, 32) as BrandedAddress;
 }
