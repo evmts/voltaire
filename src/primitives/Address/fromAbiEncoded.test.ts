@@ -16,7 +16,7 @@ describe("fromAbiEncoded", () => {
 		expect(addr[19]).toBe(20);
 	});
 
-	it("ignores first 12 padding bytes", () => {
+	it("throws on non-zero leading padding bytes", () => {
 		const encoded = new Uint8Array(32);
 		// Fill padding with non-zero values
 		for (let i = 0; i < 12; i++) {
@@ -26,8 +26,44 @@ describe("fromAbiEncoded", () => {
 		for (let i = 12; i < 32; i++) {
 			encoded[i] = 0;
 		}
+		expect(() => fromAbiEncoded(encoded)).toThrow(
+			"ABI-encoded Address must have leading 12 bytes as zeros",
+		);
+	});
+
+	it("throws when any leading byte is non-zero", () => {
+		// Test first byte non-zero
+		const encoded1 = new Uint8Array(32);
+		encoded1[0] = 1;
+		expect(() => fromAbiEncoded(encoded1)).toThrow(
+			"ABI-encoded Address must have leading 12 bytes as zeros",
+		);
+
+		// Test last padding byte (index 11) non-zero
+		const encoded2 = new Uint8Array(32);
+		encoded2[11] = 1;
+		expect(() => fromAbiEncoded(encoded2)).toThrow(
+			"ABI-encoded Address must have leading 12 bytes as zeros",
+		);
+
+		// Test middle padding byte non-zero
+		const encoded3 = new Uint8Array(32);
+		encoded3[5] = 0x42;
+		expect(() => fromAbiEncoded(encoded3)).toThrow(
+			"ABI-encoded Address must have leading 12 bytes as zeros",
+		);
+	});
+
+	it("accepts valid ABI encoding with zero padding", () => {
+		const encoded = new Uint8Array(32);
+		// First 12 bytes are zeros by default
+		// Set address bytes
+		for (let i = 12; i < 32; i++) {
+			encoded[i] = i - 11;
+		}
 		const addr = fromAbiEncoded(encoded);
-		expect(addr.every((b) => b === 0)).toBe(true);
+		expect(addr.length).toBe(20);
+		expect(addr[0]).toBe(1);
 	});
 
 	it("extracts address from known ABI encoding", () => {
