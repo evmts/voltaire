@@ -1,3 +1,4 @@
+import { InvalidSizeError } from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
 import { toBytes } from "./toBytes.js";
 
@@ -9,7 +10,7 @@ import { toBytes } from "./toBytes.js";
  * @param {string} hex - Hex string to pad
  * @param {number} targetSize - Target size in bytes
  * @returns {string} Right-padded hex string
- * @throws {never}
+ * @throws {InvalidSizeError} If targetSize is negative or non-integer
  * @example
  * ```javascript
  * import * as Hex from './primitives/Hex/index.js';
@@ -18,6 +19,16 @@ import { toBytes } from "./toBytes.js";
  * ```
  */
 export function padRight(hex, targetSize) {
+	if (targetSize < 0 || !Number.isInteger(targetSize)) {
+		throw new InvalidSizeError(
+			`Size must be a non-negative integer, got ${targetSize}`,
+			{
+				value: targetSize,
+				expected: "non-negative integer",
+				context: { targetSize },
+			},
+		);
+	}
 	// Normalize odd-length hex by padding with trailing 0
 	let normalized = hex;
 	if (hex.length % 2 !== 0) {

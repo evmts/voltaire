@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { InvalidSizeError } from "./errors.js";
 import { padRight } from "./padRight.js";
 
 describe("Hex.padRight", () => {
@@ -46,6 +47,20 @@ describe("Hex.padRight", () => {
 		it("pads to zero size returns original", () => {
 			const hex = "0x1234";
 			expect(padRight(hex, 0)).toBe("0x1234");
+		});
+
+		it("throws for negative size", () => {
+			expect(() => padRight("0x1234", -1)).toThrow(InvalidSizeError);
+			expect(() => padRight("0x1234", -1)).toThrow(
+				"Size must be a non-negative integer",
+			);
+		});
+
+		it("throws for non-integer size", () => {
+			expect(() => padRight("0x1234", 1.5)).toThrow(InvalidSizeError);
+			expect(() => padRight("0x1234", 1.5)).toThrow(
+				"Size must be a non-negative integer",
+			);
 		});
 
 		it("pads odd hex preserves data", () => {
