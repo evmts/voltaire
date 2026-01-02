@@ -27,7 +27,7 @@ export async function deriveKey(password, salt, iterations, bits) {
 
 		const baseKey = await crypto.subtle.importKey(
 			"raw",
-			passwordBytes,
+			/** @type {BufferSource} */ (passwordBytes),
 			{ name: "PBKDF2" },
 			false,
 			["deriveBits", "deriveKey"],
@@ -36,7 +36,7 @@ export async function deriveKey(password, salt, iterations, bits) {
 		return await crypto.subtle.deriveKey(
 			{
 				name: "PBKDF2",
-				salt,
+				salt: /** @type {BufferSource} */ (salt),
 				iterations,
 				hash: "SHA-256",
 			},

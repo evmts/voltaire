@@ -37,7 +37,7 @@ export async function importKey(keyMaterial) {
 	try {
 		return await crypto.subtle.importKey(
 			"raw",
-			keyMaterial,
+			/** @type {BufferSource} */ (keyMaterial),
 			{ name: "AES-GCM" },
 			true,
 			["encrypt", "decrypt"],
