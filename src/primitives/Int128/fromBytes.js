@@ -1,3 +1,8 @@
+import {
+	IntegerOverflowError,
+	IntegerUnderflowError,
+	InvalidLengthError,
+} from "../errors/index.js";
 import { BITS, MAX, MIN, MODULO, SIZE } from "./constants.js";
 
 /**
@@ -7,7 +12,9 @@ import { BITS, MAX, MIN, MODULO, SIZE } from "./constants.js";
  * @since 0.0.0
  * @param {Uint8Array} bytes - Byte array (16 bytes)
  * @returns {import('./Int128Type.js').BrandedInt128} Int128 value
- * @throws {Error} If bytes length is incorrect
+ * @throws {InvalidLengthError} If bytes length is incorrect
+ * @throws {IntegerOverflowError} If value exceeds maximum
+ * @throws {IntegerUnderflowError} If value is below minimum
  * @example
  * ```javascript
  * import * as Int128 from './primitives/Int128/index.js';
@@ -18,7 +25,11 @@ import { BITS, MAX, MIN, MODULO, SIZE } from "./constants.js";
  */
 export function fromBytes(bytes) {
 	if (bytes.length !== SIZE) {
-		throw new Error(`Int128 requires ${SIZE} bytes, got ${bytes.length}`);
+		throw new InvalidLengthError(`Int128 requires ${SIZE} bytes, got ${bytes.length}`, {
+			value: bytes,
+			expected: `${SIZE} bytes`,
+			docsPath: "/primitives/int128#from-bytes",
+		});
 	}
 
 	// Parse as unsigned
@@ -31,8 +42,19 @@ export function fromBytes(bytes) {
 	const highBit = 2n ** BigInt(BITS - 1);
 	const value = unsigned >= highBit ? unsigned - MODULO : unsigned;
 
-	if (value < MIN || value > MAX) {
-		throw new Error(`Int128 value out of range (${MIN} to ${MAX}): ${value}`);
+	if (value > MAX) {
+		throw new IntegerOverflowError(`Int128 value exceeds maximum (${MAX}): ${value}`, {
+			value,
+			max: MAX,
+			type: "int128",
+		});
+	}
+	if (value < MIN) {
+		throw new IntegerUnderflowError(`Int128 value below minimum (${MIN}): ${value}`, {
+			value,
+			min: MIN,
+			type: "int128",
+		});
 	}
 
 	return /** @type {import('./Int128Type.js').BrandedInt128} */ (value);

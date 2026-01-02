@@ -1,3 +1,4 @@
+import { InvalidRangeError } from "../errors/index.js";
 import { BITS, MODULO } from "./constants.js";
 
 /**
@@ -8,6 +9,7 @@ import { BITS, MODULO } from "./constants.js";
  * @param {import('./Int128Type.js').BrandedInt128} value - Value to shift
  * @param {number | bigint} shift - Shift amount
  * @returns {import('./Int128Type.js').BrandedInt128} Shifted value
+ * @throws {InvalidRangeError} If shift amount is negative
  * @example
  * ```javascript
  * import * as Int128 from './primitives/Int128/index.js';
@@ -19,7 +21,11 @@ export function shiftLeft(value, shift) {
 	const shiftAmount = BigInt(shift);
 
 	if (shiftAmount < 0n) {
-		throw new Error("Shift amount must be non-negative");
+		throw new InvalidRangeError("Shift amount must be non-negative", {
+			value: shift,
+			expected: "non-negative shift amount",
+			docsPath: "/primitives/int128#shift-left",
+		});
 	}
 
 	if (shiftAmount >= BigInt(BITS)) {
