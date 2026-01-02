@@ -17,6 +17,18 @@
  * @param {import("../Host/HostType.js").BrandedHost} [host] - Host interface (optional)
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
+
+import {
+	bigintToAddress,
+	consumeGas,
+	memoryExpansionCost,
+	popStack,
+	pushStack,
+	readMemory,
+	wordAlignedSize,
+	writeMemory,
+} from "./callUtils.js";
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode implementation
 export function call(frame, host) {
 	// Pop all 7 arguments (stack order: bottom to top)
@@ -206,123 +218,4 @@ export function call(frame, host) {
 
 	frame.pc += 1;
 	return null;
-}
-
-/**
- * Convert bigint address to 20-byte Uint8Array
- * @param {bigint} addr
- * @returns {import("../../primitives/Address/AddressType.js").AddressType}
- */
-function bigintToAddress(addr) {
-	const bytes = new Uint8Array(20);
-	let val = addr;
-	for (let i = 19; i >= 0; i--) {
-		bytes[i] = Number(val & 0xffn);
-		val >>= 8n;
-	}
-	return /** @type {import("../../primitives/Address/AddressType.js").AddressType} */ (
-		bytes
-	);
-}
-
-/**
- * @param {import("../Frame/FrameType.js").BrandedFrame} frame
- * @param {number} offset
- * @param {number} value
- */
-function writeMemory(frame, offset, value) {
-	frame.memory.set(offset, value);
-}
-
-/**
- * @param {import("../Frame/FrameType.js").BrandedFrame} frame
- * @param {bigint} amount
- * @returns {import("../Frame/FrameType.js").EvmError | null}
- */
-function consumeGas(frame, amount) {
-	if (frame.gasRemaining < amount) {
-		frame.gasRemaining = 0n;
-		return { type: "OutOfGas" };
-	}
-	frame.gasRemaining -= amount;
-	return null;
-}
-
-/**
- * @param {import("../Frame/FrameType.js").BrandedFrame} frame
- * @returns {{value: bigint, error: null} | {value: null, error: import("../Frame/FrameType.js").EvmError}}
- */
-function popStack(frame) {
-	if (frame.stack.length === 0) {
-		return { value: null, error: { type: "StackUnderflow" } };
-	}
-	const value = /** @type {bigint} */ (frame.stack.pop());
-	return { value, error: null };
-}
-
-/**
- * @param {import("../Frame/FrameType.js").BrandedFrame} frame
- * @param {bigint} value
- * @returns {import("../Frame/FrameType.js").EvmError | null}
- */
-function pushStack(frame, value) {
-	if (frame.stack.length >= 1024) {
-		return { type: "StackOverflow" };
-	}
-	frame.stack.push(value);
-	return null;
-}
-
-/**
- * @param {import("../Frame/FrameType.js").BrandedFrame} frame
- * @param {number} offset
- * @returns {number}
- */
-function readMemory(frame, offset) {
-	return frame.memory.get(offset) ?? 0;
-}
-
-/**
- * @param {number} bytes
- * @returns {number}
- */
-function wordCount(bytes) {
-	return Math.ceil(bytes / 32);
-}
-
-/**
- * @param {number} bytes
- * @returns {number}
- */
-function wordAlignedSize(bytes) {
-	const words = wordCount(bytes);
-	return words * 32;
-}
-
-/**
- * @param {import("../Frame/FrameType.js").BrandedFrame} frame
- * @param {number} endBytes
- * @returns {bigint}
- */
-function memoryExpansionCost(frame, endBytes) {
-	const currentSize = frame.memorySize;
-
-	if (endBytes <= currentSize) return 0n;
-
-	// Cap memory size to prevent overflow (16MB max)
-	const maxMemory = 0x1000000;
-	if (endBytes > maxMemory) return BigInt(Number.MAX_SAFE_INTEGER);
-
-	// Calculate cost for new size
-	const newWords = wordCount(endBytes);
-	const newCost =
-		BigInt(newWords * 3) + BigInt(Math.floor((newWords * newWords) / 512));
-
-	// Calculate cost for current size
-	const currentWords = wordCount(currentSize);
-	const currentCost =
-		BigInt(currentWords * 3) +
-		BigInt(Math.floor((currentWords * currentWords) / 512));
-
-	return newCost - currentCost;
 }
