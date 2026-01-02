@@ -6,9 +6,9 @@
 import * as loader from "../../wasm-loader/loader.js";
 import type { AddressType as BrandedAddress } from "./AddressType.js";
 import type { Checksummed } from "./ChecksumAddress.js";
+import { InvalidAddressLengthError } from "./errors.js";
 import type { Lowercase } from "./LowercaseAddress.js";
 import type { Uppercase } from "./UppercaseAddress.js";
-import { InvalidAddressLengthError } from "./errors.js";
 
 /**
  * Create Address from hex string (WASM implementation)
@@ -364,11 +364,14 @@ export function toAbiEncoded(address: BrandedAddress): Uint8Array {
  */
 export function fromAbiEncoded(encoded: Uint8Array): BrandedAddress {
 	if (encoded.length !== 32) {
-		throw new InvalidAddressLengthError("ABI-encoded address must be 32 bytes", {
-			value: encoded.length,
-			expected: "32 bytes",
-			code: "INVALID_ABI_ENCODED_LENGTH",
-		});
+		throw new InvalidAddressLengthError(
+			"ABI-encoded address must be 32 bytes",
+			{
+				value: encoded.length,
+				expected: "32 bytes",
+				code: "INVALID_ABI_ENCODED_LENGTH",
+			},
+		);
 	}
 	return encoded.slice(12, 32) as BrandedAddress;
 }

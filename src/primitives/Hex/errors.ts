@@ -17,7 +17,10 @@ interface ErrorOptions {
  * Error for invalid hex format (missing 0x prefix)
  */
 export class InvalidFormatError extends BaseInvalidFormatError {
-	constructor(message = "Invalid hex format: missing 0x prefix", options: ErrorOptions = {}) {
+	constructor(
+		message = "Invalid hex format: missing 0x prefix",
+		options: ErrorOptions = {},
+	) {
 		super(message, {
 			code: options.code || "HEX_INVALID_FORMAT",
 			value: options.value,
@@ -85,7 +88,10 @@ export class OddLengthError extends BaseInvalidLengthError {
  * Error for hex size exceeding target size
  */
 export class SizeExceededError extends BaseInvalidLengthError {
-	constructor(message = "Hex size exceeds target size", options: ErrorOptions = {}) {
+	constructor(
+		message = "Hex size exceeds target size",
+		options: ErrorOptions = {},
+	) {
 		super(message, {
 			code: options.code || "HEX_SIZE_EXCEEDED",
 			value: options.value,
@@ -102,7 +108,10 @@ export class SizeExceededError extends BaseInvalidLengthError {
  * Error for invalid boolean hex value
  */
 export class InvalidBooleanHexError extends BaseInvalidRangeError {
-	constructor(message = "Invalid boolean hex value", options: ErrorOptions = {}) {
+	constructor(
+		message = "Invalid boolean hex value",
+		options: ErrorOptions = {},
+	) {
 		super(message, {
 			code: options.code || "HEX_INVALID_BOOLEAN",
 			value: options.value,
@@ -119,7 +128,10 @@ export class InvalidBooleanHexError extends BaseInvalidRangeError {
  * Error for negative number in hex conversion
  */
 export class NegativeNumberError extends BaseInvalidRangeError {
-	constructor(message = "Number must be non-negative", options: ErrorOptions = {}) {
+	constructor(
+		message = "Number must be non-negative",
+		options: ErrorOptions = {},
+	) {
 		super(message, {
 			code: options.code || "HEX_NEGATIVE_NUMBER",
 			value: options.value,
@@ -136,7 +148,10 @@ export class NegativeNumberError extends BaseInvalidRangeError {
  * Error for number exceeding MAX_SAFE_INTEGER
  */
 export class UnsafeIntegerError extends BaseInvalidRangeError {
-	constructor(message = "Number exceeds MAX_SAFE_INTEGER", options: ErrorOptions = {}) {
+	constructor(
+		message = "Number exceeds MAX_SAFE_INTEGER",
+		options: ErrorOptions = {},
+	) {
 		super(message, {
 			code: options.code || "HEX_UNSAFE_INTEGER",
 			value: options.value,
@@ -153,7 +168,10 @@ export class UnsafeIntegerError extends BaseInvalidRangeError {
  * Error for non-integer number
  */
 export class NonIntegerError extends BaseInvalidRangeError {
-	constructor(message = "Number must be an integer", options: ErrorOptions = {}) {
+	constructor(
+		message = "Number must be an integer",
+		options: ErrorOptions = {},
+	) {
 		super(message, {
 			code: options.code || "HEX_NON_INTEGER",
 			value: options.value,

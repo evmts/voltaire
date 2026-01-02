@@ -1,5 +1,5 @@
-import { AbiParameterMismatchError } from "../Errors.js";
 import * as Selector from "../../Selector/index.js";
+import { AbiParameterMismatchError } from "../Errors.js";
 
 /**
  * Calculate ERC-165 interface ID from function selectors

@@ -1,4 +1,7 @@
-import { IntegerOverflowError, IntegerUnderflowError } from "../errors/index.js";
+import {
+	IntegerOverflowError,
+	IntegerUnderflowError,
+} from "../errors/index.js";
 
 /**
  * Add two Int32 values

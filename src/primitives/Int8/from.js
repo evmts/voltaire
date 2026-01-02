@@ -38,25 +38,34 @@ export function from(value) {
  */
 export function fromNumber(value) {
 	if (!Number.isInteger(value)) {
-		throw new InvalidFormatError(`Int8: value must be an integer, got ${value}`, {
-			value,
-			expected: "integer",
-			docsPath: "/primitives/int8#from-number",
-		});
+		throw new InvalidFormatError(
+			`Int8: value must be an integer, got ${value}`,
+			{
+				value,
+				expected: "integer",
+				docsPath: "/primitives/int8#from-number",
+			},
+		);
 	}
 	if (value > INT8_MAX) {
-		throw new IntegerOverflowError(`Int8: value ${value} exceeds maximum ${INT8_MAX}`, {
-			value,
-			max: INT8_MAX,
-			type: "int8",
-		});
+		throw new IntegerOverflowError(
+			`Int8: value ${value} exceeds maximum ${INT8_MAX}`,
+			{
+				value,
+				max: INT8_MAX,
+				type: "int8",
+			},
+		);
 	}
 	if (value < INT8_MIN) {
-		throw new IntegerUnderflowError(`Int8: value ${value} is below minimum ${INT8_MIN}`, {
-			value,
-			min: INT8_MIN,
-			type: "int8",
-		});
+		throw new IntegerUnderflowError(
+			`Int8: value ${value} is below minimum ${INT8_MIN}`,
+			{
+				value,
+				min: INT8_MIN,
+				type: "int8",
+			},
+		);
 	}
 	return /** @type {import("./Int8Type.js").BrandedInt8} */ (value);
 }
@@ -70,18 +79,24 @@ export function fromNumber(value) {
  */
 export function fromBigint(value) {
 	if (value > BigInt(INT8_MAX)) {
-		throw new IntegerOverflowError(`Int8: value ${value} exceeds maximum ${INT8_MAX}`, {
-			value,
-			max: INT8_MAX,
-			type: "int8",
-		});
+		throw new IntegerOverflowError(
+			`Int8: value ${value} exceeds maximum ${INT8_MAX}`,
+			{
+				value,
+				max: INT8_MAX,
+				type: "int8",
+			},
+		);
 	}
 	if (value < BigInt(INT8_MIN)) {
-		throw new IntegerUnderflowError(`Int8: value ${value} is below minimum ${INT8_MIN}`, {
-			value,
-			min: INT8_MIN,
-			type: "int8",
-		});
+		throw new IntegerUnderflowError(
+			`Int8: value ${value} is below minimum ${INT8_MIN}`,
+			{
+				value,
+				min: INT8_MIN,
+				type: "int8",
+			},
+		);
 	}
 	return /** @type {import("./Int8Type.js").BrandedInt8} */ (Number(value));
 }

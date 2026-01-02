@@ -37,10 +37,13 @@ export function addTransaction(bundle, transaction) {
 			txBytes[i / 2] = Number.parseInt(hex.slice(i, i + 2), 16);
 		}
 	} else {
-		throw new InvalidBundleError("Transaction must be Uint8Array or hex string", {
-			value: transaction,
-			expected: "Uint8Array or hex string",
-		});
+		throw new InvalidBundleError(
+			"Transaction must be Uint8Array or hex string",
+			{
+				value: transaction,
+				expected: "Uint8Array or hex string",
+			},
+		);
 	}
 
 	return {

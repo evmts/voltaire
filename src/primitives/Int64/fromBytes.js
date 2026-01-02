@@ -9,11 +9,14 @@ import { InvalidLengthError } from "../errors/index.js";
  */
 export function fromBytes(bytes) {
 	if (bytes.length > 8) {
-		throw new InvalidLengthError(`Int64 bytes cannot exceed 8 bytes, got ${bytes.length}`, {
-			value: bytes,
-			expected: "8 bytes or fewer",
-			docsPath: "/primitives/int64#from-bytes",
-		});
+		throw new InvalidLengthError(
+			`Int64 bytes cannot exceed 8 bytes, got ${bytes.length}`,
+			{
+				value: bytes,
+				expected: "8 bytes or fewer",
+				docsPath: "/primitives/int64#from-bytes",
+			},
+		);
 	}
 
 	// Read as unsigned first

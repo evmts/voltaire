@@ -16,20 +16,26 @@ import { INT8_MAX, INT8_MIN } from "./Int8Type.js";
 export function plus(a, b) {
 	const result = a + b;
 	if (result > INT8_MAX) {
-		throw new IntegerOverflowError(`Int8: overflow in addition ${a} + ${b} = ${result}`, {
-			value: result,
-			max: INT8_MAX,
-			type: "int8",
-			context: { operation: "plus", operands: [a, b] },
-		});
+		throw new IntegerOverflowError(
+			`Int8: overflow in addition ${a} + ${b} = ${result}`,
+			{
+				value: result,
+				max: INT8_MAX,
+				type: "int8",
+				context: { operation: "plus", operands: [a, b] },
+			},
+		);
 	}
 	if (result < INT8_MIN) {
-		throw new IntegerUnderflowError(`Int8: underflow in addition ${a} + ${b} = ${result}`, {
-			value: result,
-			min: INT8_MIN,
-			type: "int8",
-			context: { operation: "plus", operands: [a, b] },
-		});
+		throw new IntegerUnderflowError(
+			`Int8: underflow in addition ${a} + ${b} = ${result}`,
+			{
+				value: result,
+				min: INT8_MIN,
+				type: "int8",
+				context: { operation: "plus", operands: [a, b] },
+			},
+		);
 	}
 	return /** @type {import("./Int8Type.js").BrandedInt8} */ (result);
 }
@@ -45,20 +51,26 @@ export function plus(a, b) {
 export function minus(a, b) {
 	const result = a - b;
 	if (result > INT8_MAX) {
-		throw new IntegerOverflowError(`Int8: overflow in subtraction ${a} - ${b} = ${result}`, {
-			value: result,
-			max: INT8_MAX,
-			type: "int8",
-			context: { operation: "minus", operands: [a, b] },
-		});
+		throw new IntegerOverflowError(
+			`Int8: overflow in subtraction ${a} - ${b} = ${result}`,
+			{
+				value: result,
+				max: INT8_MAX,
+				type: "int8",
+				context: { operation: "minus", operands: [a, b] },
+			},
+		);
 	}
 	if (result < INT8_MIN) {
-		throw new IntegerUnderflowError(`Int8: underflow in subtraction ${a} - ${b} = ${result}`, {
-			value: result,
-			min: INT8_MIN,
-			type: "int8",
-			context: { operation: "minus", operands: [a, b] },
-		});
+		throw new IntegerUnderflowError(
+			`Int8: underflow in subtraction ${a} - ${b} = ${result}`,
+			{
+				value: result,
+				min: INT8_MIN,
+				type: "int8",
+				context: { operation: "minus", operands: [a, b] },
+			},
+		);
 	}
 	return /** @type {import("./Int8Type.js").BrandedInt8} */ (result);
 }
@@ -74,20 +86,26 @@ export function minus(a, b) {
 export function times(a, b) {
 	const result = a * b;
 	if (result > INT8_MAX) {
-		throw new IntegerOverflowError(`Int8: overflow in multiplication ${a} * ${b} = ${result}`, {
-			value: result,
-			max: INT8_MAX,
-			type: "int8",
-			context: { operation: "times", operands: [a, b] },
-		});
+		throw new IntegerOverflowError(
+			`Int8: overflow in multiplication ${a} * ${b} = ${result}`,
+			{
+				value: result,
+				max: INT8_MAX,
+				type: "int8",
+				context: { operation: "times", operands: [a, b] },
+			},
+		);
 	}
 	if (result < INT8_MIN) {
-		throw new IntegerUnderflowError(`Int8: underflow in multiplication ${a} * ${b} = ${result}`, {
-			value: result,
-			min: INT8_MIN,
-			type: "int8",
-			context: { operation: "times", operands: [a, b] },
-		});
+		throw new IntegerUnderflowError(
+			`Int8: underflow in multiplication ${a} * ${b} = ${result}`,
+			{
+				value: result,
+				min: INT8_MIN,
+				type: "int8",
+				context: { operation: "times", operands: [a, b] },
+			},
+		);
 	}
 	return /** @type {import("./Int8Type.js").BrandedInt8} */ (result);
 }
@@ -110,12 +128,15 @@ export function dividedBy(a, b) {
 	}
 	// Special case: INT8_MIN / -1 overflows
 	if (a === INT8_MIN && b === -1) {
-		throw new IntegerOverflowError(`Int8: overflow in division ${INT8_MIN} / -1`, {
-			value: -INT8_MIN,
-			max: INT8_MAX,
-			type: "int8",
-			context: { operation: "dividedBy", operands: [a, b] },
-		});
+		throw new IntegerOverflowError(
+			`Int8: overflow in division ${INT8_MIN} / -1`,
+			{
+				value: -INT8_MIN,
+				max: INT8_MAX,
+				type: "int8",
+				context: { operation: "dividedBy", operands: [a, b] },
+			},
+		);
 	}
 	// JavaScript division truncates toward zero for integers
 	const result = Math.trunc(a / b);

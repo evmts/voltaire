@@ -1,6 +1,9 @@
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { encodeParameters } from "../Abi/Encoding.js";
-import { InvalidSignatureError, ParameterCountMismatchError } from "./errors.js";
+import {
+	InvalidSignatureError,
+	ParameterCountMismatchError,
+} from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**
@@ -30,10 +33,13 @@ export function encode(signature, params) {
 	// Parse the signature to extract types
 	const match = signature.match(/^\w+\(([^)]*)\)$/);
 	if (!match) {
-		throw new InvalidSignatureError(`Invalid function signature: ${signature}`, {
-			value: signature,
-			expected: "function(type1,type2,...)",
-		});
+		throw new InvalidSignatureError(
+			`Invalid function signature: ${signature}`,
+			{
+				value: signature,
+				expected: "function(type1,type2,...)",
+			},
+		);
 	}
 
 	const typesStr = match[1];

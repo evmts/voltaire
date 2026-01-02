@@ -34,7 +34,7 @@ describe("Int16", () => {
 				expect.fail("Should throw");
 			} catch (e) {
 				expect((e as Error).name).toBe("IntegerUnderflowError");
-				expect((e as Error).message).toContain("out of range");
+				expect((e as Error).message).toContain("below minimum");
 			}
 		});
 
@@ -44,7 +44,7 @@ describe("Int16", () => {
 				expect.fail("Should throw");
 			} catch (e) {
 				expect((e as Error).name).toBe("IntegerOverflowError");
-				expect((e as Error).message).toContain("out of range");
+				expect((e as Error).message).toContain("exceeds maximum");
 			}
 		});
 
@@ -149,12 +149,22 @@ describe("Int16", () => {
 			expect(Int16.toNumber(result)).toBe(-200);
 		});
 
-		it("throws on overflow", () => {
-			expect(() => Int16.plus(20000, 15000)).toThrow("overflow");
+		it("throws IntegerOverflowError on overflow", () => {
+			try {
+				Int16.plus(20000, 15000);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
-		it("throws on underflow", () => {
-			expect(() => Int16.plus(-20000, -15000)).toThrow("overflow");
+		it("throws IntegerUnderflowError on underflow", () => {
+			try {
+				Int16.plus(-20000, -15000);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 
 		it("subtracts correctly", () => {
@@ -167,8 +177,13 @@ describe("Int16", () => {
 			expect(Int16.toNumber(result)).toBe(-500);
 		});
 
-		it("throws on subtraction overflow", () => {
-			expect(() => Int16.minus(-20000, 15000)).toThrow("overflow");
+		it("throws IntegerUnderflowError on subtraction overflow", () => {
+			try {
+				Int16.minus(-20000, 15000);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 
 		it("multiplies positive", () => {
@@ -186,8 +201,13 @@ describe("Int16", () => {
 			expect(Int16.toNumber(result)).toBe(5000);
 		});
 
-		it("throws on multiplication overflow", () => {
-			expect(() => Int16.times(200, 200)).toThrow("overflow");
+		it("throws IntegerOverflowError on multiplication overflow", () => {
+			try {
+				Int16.times(200, 200);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 	});
 
@@ -212,12 +232,23 @@ describe("Int16", () => {
 			expect(Int16.toNumber(result)).toBe(333);
 		});
 
-		it("throws on division by zero", () => {
-			expect(() => Int16.dividedBy(1000, 0)).toThrow("division by zero");
+		it("throws InvalidRangeError on division by zero", () => {
+			try {
+				Int16.dividedBy(1000, 0);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+				expect((e as Error).message).toContain("division by zero");
+			}
 		});
 
-		it("throws on INT16_MIN / -1 overflow", () => {
-			expect(() => Int16.dividedBy(-32768, -1)).toThrow("overflow");
+		it("throws IntegerOverflowError on INT16_MIN / -1 overflow", () => {
+			try {
+				Int16.dividedBy(-32768, -1);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 	});
 
@@ -242,8 +273,14 @@ describe("Int16", () => {
 			expect(Int16.toNumber(result)).toBe(-1);
 		});
 
-		it("throws on modulo by zero", () => {
-			expect(() => Int16.modulo(1000, 0)).toThrow("modulo by zero");
+		it("throws InvalidRangeError on modulo by zero", () => {
+			try {
+				Int16.modulo(1000, 0);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+				expect((e as Error).message).toContain("modulo by zero");
+			}
 		});
 	});
 
@@ -263,8 +300,13 @@ describe("Int16", () => {
 			expect(Int16.toNumber(result)).toBe(0);
 		});
 
-		it("throws on abs(INT16_MIN) overflow", () => {
-			expect(() => Int16.abs(-32768)).toThrow("overflow");
+		it("throws IntegerOverflowError on abs(INT16_MIN) overflow", () => {
+			try {
+				Int16.abs(-32768);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
 		it("negate positive", () => {
@@ -282,8 +324,13 @@ describe("Int16", () => {
 			expect(Int16.toNumber(result)).toBe(0);
 		});
 
-		it("throws on negate(INT16_MIN) overflow", () => {
-			expect(() => Int16.negate(-32768)).toThrow("overflow");
+		it("throws IntegerOverflowError on negate(INT16_MIN) overflow", () => {
+			try {
+				Int16.negate(-32768);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 	});
 
@@ -367,9 +414,19 @@ describe("Int16", () => {
 			expect(Int16.toNumber(result)).toBe(-1024);
 		});
 
-		it("throws on invalid shift amount", () => {
-			expect(() => Int16.shiftRight(1000, -1)).toThrow("out of range");
-			expect(() => Int16.shiftRight(1000, 16)).toThrow("out of range");
+		it("throws InvalidRangeError on invalid shift amount", () => {
+			try {
+				Int16.shiftRight(1000, -1);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+			}
+			try {
+				Int16.shiftRight(1000, 16);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+			}
 		});
 	});
 
@@ -384,9 +441,19 @@ describe("Int16", () => {
 			expect(Int16.toNumber(result)).toBe(-32768);
 		});
 
-		it("throws on invalid shift", () => {
-			expect(() => Int16.shiftLeft(1000, -1)).toThrow("out of range");
-			expect(() => Int16.shiftLeft(1000, 16)).toThrow("out of range");
+		it("throws InvalidRangeError on invalid shift", () => {
+			try {
+				Int16.shiftLeft(1000, -1);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+			}
+			try {
+				Int16.shiftLeft(1000, 16);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+			}
 		});
 	});
 
@@ -483,14 +550,24 @@ describe("Int16", () => {
 			const min = Int16.from(-32768);
 			expect(Int16.toNumber(min)).toBe(-32768);
 			expect(Int16.toHex(min)).toBe("0x8000");
-			expect(() => Int16.minus(min, 1)).toThrow("overflow");
+			try {
+				Int16.minus(min, 1);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 
 		it("handles INT16_MAX boundary", () => {
 			const max = Int16.from(32767);
 			expect(Int16.toNumber(max)).toBe(32767);
 			expect(Int16.toHex(max)).toBe("0x7fff");
-			expect(() => Int16.plus(max, 1)).toThrow("overflow");
+			try {
+				Int16.plus(max, 1);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
 		it("handles zero boundary", () => {

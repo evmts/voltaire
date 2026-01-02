@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { NegativeNumberError, NonIntegerError, SizeExceededError, UnsafeIntegerError } from "./errors.js";
+import {
+	NegativeNumberError,
+	NonIntegerError,
+	SizeExceededError,
+	UnsafeIntegerError,
+} from "./errors.js";
 import { fromNumber } from "./fromNumber.js";
 import { toNumber } from "./toNumber.js";
 

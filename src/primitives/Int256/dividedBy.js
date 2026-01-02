@@ -43,12 +43,15 @@ export function dividedBy(a, b) {
 	// EVM SDIV special case: MIN / -1 overflows
 	// In two's complement, -MIN doesn't exist in range
 	if (a === MIN && b === -1n) {
-		throw new IntegerOverflowError("Int256 overflow: MIN / -1 (EVM SDIV overflow)", {
-			value: -MIN,
-			max: MAX,
-			type: "int256",
-			context: { operation: "dividedBy", operands: [a, b] },
-		});
+		throw new IntegerOverflowError(
+			"Int256 overflow: MIN / -1 (EVM SDIV overflow)",
+			{
+				value: -MIN,
+				max: MAX,
+				type: "int256",
+				context: { operation: "dividedBy", operands: [a, b] },
+			},
+		);
 	}
 
 	// BigInt / already truncates toward zero (matches EVM SDIV)

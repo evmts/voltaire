@@ -74,16 +74,31 @@ describe("Int32", () => {
 			expect(val).toBe(-42);
 		});
 
-		it("should throw on overflow", () => {
-			expect(() => Int32.from(2147483648n)).toThrow("out of range");
+		it("should throw IntegerOverflowError on overflow", () => {
+			try {
+				Int32.from(2147483648n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
-		it("should throw on underflow", () => {
-			expect(() => Int32.from(-2147483649n)).toThrow("out of range");
+		it("should throw IntegerUnderflowError on underflow", () => {
+			try {
+				Int32.from(-2147483649n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 
-		it("should throw on invalid string", () => {
-			expect(() => Int32.from("not a number")).toThrow();
+		it("should throw InvalidFormatError on invalid string", () => {
+			try {
+				Int32.from("not a number");
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidFormatError");
+			}
 		});
 	});
 
@@ -100,8 +115,14 @@ describe("Int32", () => {
 			expect(Int32.fromNumber(2147483647.5)).toBe(2147483647);
 		});
 
-		it("should throw on NaN", () => {
-			expect(() => Int32.fromNumber(Number.NaN)).toThrow("NaN");
+		it("should throw InvalidFormatError on NaN", () => {
+			try {
+				Int32.fromNumber(Number.NaN);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidFormatError");
+				expect((e as Error).message).toContain("NaN");
+			}
 		});
 	});
 
@@ -122,12 +143,22 @@ describe("Int32", () => {
 			expect(Int32.fromBigInt(2147483647n)).toBe(2147483647);
 		});
 
-		it("should throw on overflow", () => {
-			expect(() => Int32.fromBigInt(2147483648n)).toThrow("out of range");
+		it("should throw IntegerOverflowError on overflow", () => {
+			try {
+				Int32.fromBigInt(2147483648n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
-		it("should throw on underflow", () => {
-			expect(() => Int32.fromBigInt(-2147483649n)).toThrow("out of range");
+		it("should throw IntegerUnderflowError on underflow", () => {
+			try {
+				Int32.fromBigInt(-2147483649n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 	});
 
@@ -162,9 +193,15 @@ describe("Int32", () => {
 			expect(Int32.fromBytes(bytes)).toBe(2147483647);
 		});
 
-		it("should throw if bytes exceed 4", () => {
+		it("should throw InvalidLengthError if bytes exceed 4", () => {
 			const bytes = new Uint8Array(5);
-			expect(() => Int32.fromBytes(bytes)).toThrow("cannot exceed 4 bytes");
+			try {
+				Int32.fromBytes(bytes);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidLengthError");
+				expect((e as Error).message).toContain("cannot exceed 4 bytes");
+			}
 		});
 	});
 
@@ -189,14 +226,24 @@ describe("Int32", () => {
 			expect(Int32.fromHex("0x7fffffff")).toBe(2147483647);
 		});
 
-		it("should throw if hex exceeds 8 chars", () => {
-			expect(() => Int32.fromHex("0x123456789")).toThrow(
-				"cannot exceed 8 characters",
-			);
+		it("should throw InvalidLengthError if hex exceeds 8 chars", () => {
+			try {
+				Int32.fromHex("0x123456789");
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidLengthError");
+				expect((e as Error).message).toContain("cannot exceed 8 characters");
+			}
 		});
 
-		it("should throw on invalid hex", () => {
-			expect(() => Int32.fromHex("0xgg")).toThrow("Invalid hex");
+		it("should throw InvalidFormatError on invalid hex", () => {
+			try {
+				Int32.fromHex("0xgg");
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidFormatError");
+				expect((e as Error).message).toContain("Invalid hex");
+			}
 		});
 	});
 
@@ -306,16 +353,26 @@ describe("Int32", () => {
 			expect(Int32.plus(a, b)).toBe(30);
 		});
 
-		it("should throw on positive overflow", () => {
+		it("should throw IntegerOverflowError on positive overflow", () => {
 			const a = Int32.from(2147483647);
 			const b = Int32.from(1);
-			expect(() => Int32.plus(a, b)).toThrow("overflow");
+			try {
+				Int32.plus(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
-		it("should throw on negative overflow", () => {
+		it("should throw IntegerUnderflowError on negative overflow", () => {
 			const a = Int32.from(-2147483648);
 			const b = Int32.from(-1);
-			expect(() => Int32.plus(a, b)).toThrow("overflow");
+			try {
+				Int32.plus(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 	});
 
@@ -338,16 +395,26 @@ describe("Int32", () => {
 			expect(Int32.minus(a, b)).toBe(70);
 		});
 
-		it("should throw on overflow", () => {
+		it("should throw IntegerOverflowError on overflow", () => {
 			const a = Int32.from(2147483647);
 			const b = Int32.from(-1);
-			expect(() => Int32.minus(a, b)).toThrow("overflow");
+			try {
+				Int32.minus(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
-		it("should throw on underflow", () => {
+		it("should throw IntegerUnderflowError on underflow", () => {
 			const a = Int32.from(-2147483648);
 			const b = Int32.from(1);
-			expect(() => Int32.minus(a, b)).toThrow("overflow");
+			try {
+				Int32.minus(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 	});
 
@@ -376,10 +443,15 @@ describe("Int32", () => {
 			expect(Int32.times(a, b)).toBe(0);
 		});
 
-		it("should throw on overflow", () => {
+		it("should throw IntegerOverflowError on overflow", () => {
 			const a = Int32.from(2147483647);
 			const b = Int32.from(2);
-			expect(() => Int32.times(a, b)).toThrow("overflow");
+			try {
+				Int32.times(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 	});
 
@@ -414,16 +486,27 @@ describe("Int32", () => {
 			expect(Int32.dividedBy(a, b)).toBe(-3);
 		});
 
-		it("should throw on division by zero", () => {
+		it("should throw InvalidRangeError on division by zero", () => {
 			const a = Int32.from(42);
 			const b = Int32.from(0);
-			expect(() => Int32.dividedBy(a, b)).toThrow("Division by zero");
+			try {
+				Int32.dividedBy(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+				expect((e as Error).message).toContain("Division by zero");
+			}
 		});
 
-		it("should throw on MIN / -1 overflow", () => {
+		it("should throw IntegerOverflowError on MIN / -1 overflow", () => {
 			const a = Int32.from(-2147483648);
 			const b = Int32.from(-1);
-			expect(() => Int32.dividedBy(a, b)).toThrow("overflow");
+			try {
+				Int32.dividedBy(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 	});
 
@@ -440,10 +523,16 @@ describe("Int32", () => {
 			expect(Int32.modulo(a, b)).toBe(-2);
 		});
 
-		it("should throw on modulo by zero", () => {
+		it("should throw InvalidRangeError on modulo by zero", () => {
 			const a = Int32.from(42);
 			const b = Int32.from(0);
-			expect(() => Int32.modulo(a, b)).toThrow("Modulo by zero");
+			try {
+				Int32.modulo(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+				expect((e as Error).message).toContain("Modulo by zero");
+			}
 		});
 	});
 
@@ -460,10 +549,14 @@ describe("Int32", () => {
 			expect(Int32.abs(Int32.from(0))).toBe(0);
 		});
 
-		it("should throw on MIN", () => {
-			expect(() => Int32.abs(Int32.from(-2147483648))).toThrow(
-				"Cannot get absolute value",
-			);
+		it("should throw IntegerOverflowError on MIN", () => {
+			try {
+				Int32.abs(Int32.from(-2147483648));
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+				expect((e as Error).message).toContain("Cannot get absolute value");
+			}
 		});
 	});
 
@@ -481,10 +574,14 @@ describe("Int32", () => {
 			expect(result === 0 || result === 0).toBe(true);
 		});
 
-		it("should throw on MIN", () => {
-			expect(() => Int32.negate(Int32.from(-2147483648))).toThrow(
-				"Cannot negate",
-			);
+		it("should throw IntegerOverflowError on MIN", () => {
+			try {
+				Int32.negate(Int32.from(-2147483648));
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+				expect((e as Error).message).toContain("Cannot negate");
+			}
 		});
 	});
 

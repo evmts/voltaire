@@ -16,20 +16,26 @@ import { INT16_MAX, INT16_MIN } from "./Int16Type.js";
 export function plus(a, b) {
 	const result = a + b;
 	if (result > INT16_MAX) {
-		throw new IntegerOverflowError(`Int16: overflow in addition ${a} + ${b} = ${result}`, {
-			value: result,
-			max: INT16_MAX,
-			type: "int16",
-			context: { operation: "plus", operands: [a, b] },
-		});
+		throw new IntegerOverflowError(
+			`Int16: overflow in addition ${a} + ${b} = ${result}`,
+			{
+				value: result,
+				max: INT16_MAX,
+				type: "int16",
+				context: { operation: "plus", operands: [a, b] },
+			},
+		);
 	}
 	if (result < INT16_MIN) {
-		throw new IntegerUnderflowError(`Int16: underflow in addition ${a} + ${b} = ${result}`, {
-			value: result,
-			min: INT16_MIN,
-			type: "int16",
-			context: { operation: "plus", operands: [a, b] },
-		});
+		throw new IntegerUnderflowError(
+			`Int16: underflow in addition ${a} + ${b} = ${result}`,
+			{
+				value: result,
+				min: INT16_MIN,
+				type: "int16",
+				context: { operation: "plus", operands: [a, b] },
+			},
+		);
 	}
 	return /** @type {import("./Int16Type.js").BrandedInt16} */ (result);
 }
@@ -45,20 +51,26 @@ export function plus(a, b) {
 export function minus(a, b) {
 	const result = a - b;
 	if (result > INT16_MAX) {
-		throw new IntegerOverflowError(`Int16: overflow in subtraction ${a} - ${b} = ${result}`, {
-			value: result,
-			max: INT16_MAX,
-			type: "int16",
-			context: { operation: "minus", operands: [a, b] },
-		});
+		throw new IntegerOverflowError(
+			`Int16: overflow in subtraction ${a} - ${b} = ${result}`,
+			{
+				value: result,
+				max: INT16_MAX,
+				type: "int16",
+				context: { operation: "minus", operands: [a, b] },
+			},
+		);
 	}
 	if (result < INT16_MIN) {
-		throw new IntegerUnderflowError(`Int16: underflow in subtraction ${a} - ${b} = ${result}`, {
-			value: result,
-			min: INT16_MIN,
-			type: "int16",
-			context: { operation: "minus", operands: [a, b] },
-		});
+		throw new IntegerUnderflowError(
+			`Int16: underflow in subtraction ${a} - ${b} = ${result}`,
+			{
+				value: result,
+				min: INT16_MIN,
+				type: "int16",
+				context: { operation: "minus", operands: [a, b] },
+			},
+		);
 	}
 	return /** @type {import("./Int16Type.js").BrandedInt16} */ (result);
 }
@@ -74,20 +86,26 @@ export function minus(a, b) {
 export function times(a, b) {
 	const result = a * b;
 	if (result > INT16_MAX) {
-		throw new IntegerOverflowError(`Int16: overflow in multiplication ${a} * ${b} = ${result}`, {
-			value: result,
-			max: INT16_MAX,
-			type: "int16",
-			context: { operation: "times", operands: [a, b] },
-		});
+		throw new IntegerOverflowError(
+			`Int16: overflow in multiplication ${a} * ${b} = ${result}`,
+			{
+				value: result,
+				max: INT16_MAX,
+				type: "int16",
+				context: { operation: "times", operands: [a, b] },
+			},
+		);
 	}
 	if (result < INT16_MIN) {
-		throw new IntegerUnderflowError(`Int16: underflow in multiplication ${a} * ${b} = ${result}`, {
-			value: result,
-			min: INT16_MIN,
-			type: "int16",
-			context: { operation: "times", operands: [a, b] },
-		});
+		throw new IntegerUnderflowError(
+			`Int16: underflow in multiplication ${a} * ${b} = ${result}`,
+			{
+				value: result,
+				min: INT16_MIN,
+				type: "int16",
+				context: { operation: "times", operands: [a, b] },
+			},
+		);
 	}
 	return /** @type {import("./Int16Type.js").BrandedInt16} */ (result);
 }
@@ -110,12 +128,15 @@ export function dividedBy(a, b) {
 	}
 	// Special case: INT16_MIN / -1 overflows
 	if (a === INT16_MIN && b === -1) {
-		throw new IntegerOverflowError(`Int16: overflow in division ${INT16_MIN} / -1`, {
-			value: -INT16_MIN,
-			max: INT16_MAX,
-			type: "int16",
-			context: { operation: "dividedBy", operands: [a, b] },
-		});
+		throw new IntegerOverflowError(
+			`Int16: overflow in division ${INT16_MIN} / -1`,
+			{
+				value: -INT16_MIN,
+				max: INT16_MAX,
+				type: "int16",
+				context: { operation: "dividedBy", operands: [a, b] },
+			},
+		);
 	}
 	// JavaScript division truncates toward zero for integers
 	const result = Math.trunc(a / b);
@@ -171,12 +192,15 @@ export function abs(value) {
 export function negate(value) {
 	// Special case: -INT16_MIN overflows
 	if (value === INT16_MIN) {
-		throw new IntegerOverflowError(`Int16: overflow in negation -${INT16_MIN}`, {
-			value: -INT16_MIN,
-			max: INT16_MAX,
-			type: "int16",
-			context: { operation: "negate" },
-		});
+		throw new IntegerOverflowError(
+			`Int16: overflow in negation -${INT16_MIN}`,
+			{
+				value: -INT16_MIN,
+				max: INT16_MAX,
+				type: "int16",
+				context: { operation: "negate" },
+			},
+		);
 	}
 	// Special case: avoid -0
 	if (value === 0) {

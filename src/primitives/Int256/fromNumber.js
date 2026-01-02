@@ -34,19 +34,25 @@ export function fromNumber(value) {
 	const bigintValue = BigInt(value);
 
 	if (bigintValue > MAX) {
-		throw new IntegerOverflowError(`Int256 value exceeds maximum (${MAX}): ${bigintValue}`, {
-			value: bigintValue,
-			max: MAX,
-			type: "int256",
-		});
+		throw new IntegerOverflowError(
+			`Int256 value exceeds maximum (${MAX}): ${bigintValue}`,
+			{
+				value: bigintValue,
+				max: MAX,
+				type: "int256",
+			},
+		);
 	}
 
 	if (bigintValue < MIN) {
-		throw new IntegerUnderflowError(`Int256 value below minimum (${MIN}): ${bigintValue}`, {
-			value: bigintValue,
-			min: MIN,
-			type: "int256",
-		});
+		throw new IntegerUnderflowError(
+			`Int256 value below minimum (${MIN}): ${bigintValue}`,
+			{
+				value: bigintValue,
+				min: MIN,
+				type: "int256",
+			},
+		);
 	}
 
 	return /** @type {import('./Int256Type.js').BrandedInt256} */ (bigintValue);

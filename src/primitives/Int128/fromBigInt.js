@@ -1,4 +1,7 @@
-import { IntegerOverflowError, IntegerUnderflowError } from "../errors/index.js";
+import {
+	IntegerOverflowError,
+	IntegerUnderflowError,
+} from "../errors/index.js";
 import { MAX, MIN } from "./constants.js";
 
 /**
@@ -19,19 +22,25 @@ import { MAX, MIN } from "./constants.js";
  */
 export function fromBigInt(value) {
 	if (value > MAX) {
-		throw new IntegerOverflowError(`Int128 value exceeds maximum (${MAX}): ${value}`, {
-			value,
-			max: MAX,
-			type: "int128",
-		});
+		throw new IntegerOverflowError(
+			`Int128 value exceeds maximum (${MAX}): ${value}`,
+			{
+				value,
+				max: MAX,
+				type: "int128",
+			},
+		);
 	}
 
 	if (value < MIN) {
-		throw new IntegerUnderflowError(`Int128 value below minimum (${MIN}): ${value}`, {
-			value,
-			min: MIN,
-			type: "int128",
-		});
+		throw new IntegerUnderflowError(
+			`Int128 value below minimum (${MIN}): ${value}`,
+			{
+				value,
+				min: MIN,
+				type: "int128",
+			},
+		);
 	}
 
 	return /** @type {import('./Int128Type.js').BrandedInt128} */ (value);

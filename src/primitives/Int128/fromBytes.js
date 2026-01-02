@@ -25,11 +25,14 @@ import { BITS, MAX, MIN, MODULO, SIZE } from "./constants.js";
  */
 export function fromBytes(bytes) {
 	if (bytes.length !== SIZE) {
-		throw new InvalidLengthError(`Int128 requires ${SIZE} bytes, got ${bytes.length}`, {
-			value: bytes,
-			expected: `${SIZE} bytes`,
-			docsPath: "/primitives/int128#from-bytes",
-		});
+		throw new InvalidLengthError(
+			`Int128 requires ${SIZE} bytes, got ${bytes.length}`,
+			{
+				value: bytes,
+				expected: `${SIZE} bytes`,
+				docsPath: "/primitives/int128#from-bytes",
+			},
+		);
 	}
 
 	// Parse as unsigned
@@ -43,18 +46,24 @@ export function fromBytes(bytes) {
 	const value = unsigned >= highBit ? unsigned - MODULO : unsigned;
 
 	if (value > MAX) {
-		throw new IntegerOverflowError(`Int128 value exceeds maximum (${MAX}): ${value}`, {
-			value,
-			max: MAX,
-			type: "int128",
-		});
+		throw new IntegerOverflowError(
+			`Int128 value exceeds maximum (${MAX}): ${value}`,
+			{
+				value,
+				max: MAX,
+				type: "int128",
+			},
+		);
 	}
 	if (value < MIN) {
-		throw new IntegerUnderflowError(`Int128 value below minimum (${MIN}): ${value}`, {
-			value,
-			min: MIN,
-			type: "int128",
-		});
+		throw new IntegerUnderflowError(
+			`Int128 value below minimum (${MIN}): ${value}`,
+			{
+				value,
+				min: MIN,
+				type: "int128",
+			},
+		);
 	}
 
 	return /** @type {import('./Int128Type.js').BrandedInt128} */ (value);

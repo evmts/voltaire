@@ -9,11 +9,14 @@ import { InvalidLengthError } from "../errors/index.js";
  */
 export function fromBytes(bytes) {
 	if (bytes.length > 4) {
-		throw new InvalidLengthError(`Int32 bytes cannot exceed 4 bytes, got ${bytes.length}`, {
-			value: bytes,
-			expected: "4 bytes or fewer",
-			docsPath: "/primitives/int32#from-bytes",
-		});
+		throw new InvalidLengthError(
+			`Int32 bytes cannot exceed 4 bytes, got ${bytes.length}`,
+			{
+				value: bytes,
+				expected: "4 bytes or fewer",
+				docsPath: "/primitives/int32#from-bytes",
+			},
+		);
 	}
 
 	// Read as unsigned first

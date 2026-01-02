@@ -3,7 +3,10 @@ import {
 	FIELD_ELEMENTS_PER_BLOB,
 	SIZE,
 } from "./constants.js";
-import { InvalidBlobLengthPrefixError, InvalidBlobSizeError } from "./errors.js";
+import {
+	InvalidBlobLengthPrefixError,
+	InvalidBlobSizeError,
+} from "./errors.js";
 
 /**
  * Extract data from blob using EIP-4844 field element decoding.
@@ -27,10 +30,13 @@ import { InvalidBlobLengthPrefixError, InvalidBlobSizeError } from "./errors.js"
  */
 export function toData(blob) {
 	if (blob.length !== SIZE) {
-		throw new InvalidBlobSizeError(`Invalid blob size: ${blob.length} (expected ${SIZE})`, {
-			value: blob.length,
-			expected: `${SIZE} bytes`,
-		});
+		throw new InvalidBlobSizeError(
+			`Invalid blob size: ${blob.length} (expected ${SIZE})`,
+			{
+				value: blob.length,
+				expected: `${SIZE} bytes`,
+			},
+		);
 	}
 
 	// Read 4-byte big-endian length prefix from positions 1-4

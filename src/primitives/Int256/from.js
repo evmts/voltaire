@@ -35,11 +35,14 @@ export function from(value) {
 		}
 	} else if (typeof value === "number") {
 		if (!Number.isInteger(value)) {
-			throw new InvalidFormatError(`Int256 value must be an integer: ${value}`, {
-				value,
-				expected: "integer",
-				docsPath: "/primitives/int256#from",
-			});
+			throw new InvalidFormatError(
+				`Int256 value must be an integer: ${value}`,
+				{
+					value,
+					expected: "integer",
+					docsPath: "/primitives/int256#from",
+				},
+			);
 		}
 		bigintValue = BigInt(value);
 	} else {
@@ -47,19 +50,25 @@ export function from(value) {
 	}
 
 	if (bigintValue > MAX) {
-		throw new IntegerOverflowError(`Int256 value exceeds maximum (${MAX}): ${bigintValue}`, {
-			value: bigintValue,
-			max: MAX,
-			type: "int256",
-		});
+		throw new IntegerOverflowError(
+			`Int256 value exceeds maximum (${MAX}): ${bigintValue}`,
+			{
+				value: bigintValue,
+				max: MAX,
+				type: "int256",
+			},
+		);
 	}
 
 	if (bigintValue < MIN) {
-		throw new IntegerUnderflowError(`Int256 value below minimum (${MIN}): ${bigintValue}`, {
-			value: bigintValue,
-			min: MIN,
-			type: "int256",
-		});
+		throw new IntegerUnderflowError(
+			`Int256 value below minimum (${MIN}): ${bigintValue}`,
+			{
+				value: bigintValue,
+				min: MIN,
+				type: "int256",
+			},
+		);
 	}
 
 	return /** @type {import('./Int256Type.js').BrandedInt256} */ (bigintValue);

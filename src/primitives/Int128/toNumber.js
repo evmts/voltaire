@@ -20,19 +20,25 @@ const MIN_SAFE_INTEGER = BigInt(Number.MIN_SAFE_INTEGER);
  */
 export function toNumber(value) {
 	if (value > MAX_SAFE_INTEGER) {
-		throw new InvalidRangeError(`Int128 value exceeds Number.MAX_SAFE_INTEGER: ${value}`, {
-			value,
-			expected: `between ${MIN_SAFE_INTEGER} and ${MAX_SAFE_INTEGER}`,
-			docsPath: "/primitives/int128#to-number",
-		});
+		throw new InvalidRangeError(
+			`Int128 value exceeds Number.MAX_SAFE_INTEGER: ${value}`,
+			{
+				value,
+				expected: `between ${MIN_SAFE_INTEGER} and ${MAX_SAFE_INTEGER}`,
+				docsPath: "/primitives/int128#to-number",
+			},
+		);
 	}
 
 	if (value < MIN_SAFE_INTEGER) {
-		throw new InvalidRangeError(`Int128 value below Number.MIN_SAFE_INTEGER: ${value}`, {
-			value,
-			expected: `between ${MIN_SAFE_INTEGER} and ${MAX_SAFE_INTEGER}`,
-			docsPath: "/primitives/int128#to-number",
-		});
+		throw new InvalidRangeError(
+			`Int128 value below Number.MIN_SAFE_INTEGER: ${value}`,
+			{
+				value,
+				expected: `between ${MIN_SAFE_INTEGER} and ${MAX_SAFE_INTEGER}`,
+				docsPath: "/primitives/int128#to-number",
+			},
+		);
 	}
 
 	return Number(value);

@@ -21,25 +21,62 @@ describe("Int128 - Constructors", () => {
 		expect(Int128.from("0xff")).toBe(255n);
 	});
 
-	it("from: throws on non-integer", () => {
-		expect(() => Int128.from(3.14)).toThrow("must be an integer");
+	it("from: throws InvalidFormatError on non-integer", () => {
+		try {
+			Int128.from(3.14);
+			expect.fail("Should throw");
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidFormatError");
+			expect((e as Error).message).toContain("must be an integer");
+		}
 	});
 
-	it("from: throws on overflow", () => {
-		expect(() => Int128.from(Int128.MAX + 1n)).toThrow("exceeds maximum");
-		expect(() => Int128.from(Int128.MIN - 1n)).toThrow("below minimum");
+	it("from: throws IntegerOverflowError on overflow", () => {
+		try {
+			Int128.from(Int128.MAX + 1n);
+			expect.fail("Should throw");
+		} catch (e) {
+			expect((e as Error).name).toBe("IntegerOverflowError");
+			expect((e as Error).message).toContain("exceeds maximum");
+		}
+	});
+
+	it("from: throws IntegerUnderflowError on underflow", () => {
+		try {
+			Int128.from(Int128.MIN - 1n);
+			expect.fail("Should throw");
+		} catch (e) {
+			expect((e as Error).name).toBe("IntegerUnderflowError");
+			expect((e as Error).message).toContain("below minimum");
+		}
 	});
 
 	it("fromNumber: validates range", () => {
 		expect(Int128.fromNumber(-100)).toBe(-100n);
 		expect(Int128.fromNumber(100)).toBe(100n);
-		expect(() => Int128.fromNumber(3.14)).toThrow();
+	});
+
+	it("fromNumber: throws InvalidFormatError on non-integer", () => {
+		try {
+			Int128.fromNumber(3.14);
+			expect.fail("Should throw");
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidFormatError");
+		}
 	});
 
 	it("fromBigInt: validates range", () => {
 		expect(Int128.fromBigInt(-100n)).toBe(-100n);
 		expect(Int128.fromBigInt(100n)).toBe(100n);
-		expect(() => Int128.fromBigInt(Int128.MAX + 1n)).toThrow();
+	});
+
+	it("fromBigInt: throws IntegerOverflowError on overflow", () => {
+		try {
+			Int128.fromBigInt(Int128.MAX + 1n);
+			expect.fail("Should throw");
+		} catch (e) {
+			expect((e as Error).name).toBe("IntegerOverflowError");
+		}
 	});
 });
 
@@ -145,12 +182,23 @@ describe("Int128 - Arithmetic", () => {
 		expect(Int128.dividedBy(-10n, -3n)).toBe(3n);
 	});
 
-	it("dividedBy: throws on division by zero", () => {
-		expect(() => Int128.dividedBy(10n, 0n)).toThrow("Division by zero");
+	it("dividedBy: throws InvalidRangeError on division by zero", () => {
+		try {
+			Int128.dividedBy(10n, 0n);
+			expect.fail("Should throw");
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidRangeError");
+			expect((e as Error).message).toContain("Division by zero");
+		}
 	});
 
-	it("dividedBy: throws on MIN / -1 overflow", () => {
-		expect(() => Int128.dividedBy(Int128.MIN, -1n)).toThrow("overflow");
+	it("dividedBy: throws IntegerOverflowError on MIN / -1 overflow", () => {
+		try {
+			Int128.dividedBy(Int128.MIN, -1n);
+			expect.fail("Should throw");
+		} catch (e) {
+			expect((e as Error).name).toBe("IntegerOverflowError");
+		}
 	});
 
 	it("modulo: sign follows dividend", () => {
@@ -160,8 +208,14 @@ describe("Int128 - Arithmetic", () => {
 		expect(Int128.modulo(-10n, -3n)).toBe(-1n);
 	});
 
-	it("modulo: throws on division by zero", () => {
-		expect(() => Int128.modulo(10n, 0n)).toThrow("Division by zero");
+	it("modulo: throws InvalidRangeError on division by zero", () => {
+		try {
+			Int128.modulo(10n, 0n);
+			expect.fail("Should throw");
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidRangeError");
+			expect((e as Error).message).toContain("Division by zero");
+		}
 	});
 
 	it("abs: returns absolute value", () => {
@@ -170,8 +224,13 @@ describe("Int128 - Arithmetic", () => {
 		expect(Int128.abs(0n)).toBe(0n);
 	});
 
-	it("abs: throws on MIN", () => {
-		expect(() => Int128.abs(Int128.MIN)).toThrow("overflow");
+	it("abs: throws IntegerOverflowError on MIN", () => {
+		try {
+			Int128.abs(Int128.MIN);
+			expect.fail("Should throw");
+		} catch (e) {
+			expect((e as Error).name).toBe("IntegerOverflowError");
+		}
 	});
 
 	it("negate: negates value", () => {
@@ -316,9 +375,19 @@ describe("Int128 - Utilities", () => {
 		expect(Int128.toNumber(42n)).toBe(42);
 	});
 
-	it("toNumber: throws on overflow", () => {
-		expect(() => Int128.toNumber(Int128.MAX)).toThrow();
-		expect(() => Int128.toNumber(Int128.MIN)).toThrow();
+	it("toNumber: throws InvalidRangeError on overflow", () => {
+		try {
+			Int128.toNumber(Int128.MAX);
+			expect.fail("Should throw");
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidRangeError");
+		}
+		try {
+			Int128.toNumber(Int128.MIN);
+			expect.fail("Should throw");
+		} catch (e) {
+			expect((e as Error).name).toBe("InvalidRangeError");
+		}
 	});
 
 	it("toBigInt: converts to bigint", () => {

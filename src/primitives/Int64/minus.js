@@ -1,4 +1,7 @@
-import { IntegerOverflowError, IntegerUnderflowError } from "../errors/index.js";
+import {
+	IntegerOverflowError,
+	IntegerUnderflowError,
+} from "../errors/index.js";
 
 const INT64_MIN = -9223372036854775808n;
 const INT64_MAX = 9223372036854775807n;

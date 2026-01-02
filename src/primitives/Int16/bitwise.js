@@ -65,11 +65,14 @@ export function not(value) {
  */
 export function shiftLeft(value, shift) {
 	if (shift < 0 || shift >= 16) {
-		throw new InvalidRangeError(`Int16: shift amount ${shift} out of range [0, 15]`, {
-			value: shift,
-			expected: "0-15",
-			docsPath: "/primitives/int16#shift-left",
-		});
+		throw new InvalidRangeError(
+			`Int16: shift amount ${shift} out of range [0, 15]`,
+			{
+				value: shift,
+				expected: "0-15",
+				docsPath: "/primitives/int16#shift-left",
+			},
+		);
 	}
 	const unsigned = value < 0 ? value + 65536 : value;
 	const result = (unsigned << shift) & 0xffff;
@@ -86,11 +89,14 @@ export function shiftLeft(value, shift) {
  */
 export function shiftRight(value, shift) {
 	if (shift < 0 || shift >= 16) {
-		throw new InvalidRangeError(`Int16: shift amount ${shift} out of range [0, 15]`, {
-			value: shift,
-			expected: "0-15",
-			docsPath: "/primitives/int16#shift-right",
-		});
+		throw new InvalidRangeError(
+			`Int16: shift amount ${shift} out of range [0, 15]`,
+			{
+				value: shift,
+				expected: "0-15",
+				docsPath: "/primitives/int16#shift-right",
+			},
+		);
 	}
 	// JavaScript >> operator performs arithmetic shift on signed values
 	const result = value >> shift;

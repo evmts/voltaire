@@ -24,10 +24,13 @@ import { InvalidCommitmentSizeError } from "./errors.js";
 export function ToVersionedHash({ sha256 }) {
 	return function toVersionedHash(commitment) {
 		if (commitment.length !== 48) {
-			throw new InvalidCommitmentSizeError(`Invalid commitment size: ${commitment.length}`, {
-				value: commitment.length,
-				expected: "48 bytes",
-			});
+			throw new InvalidCommitmentSizeError(
+				`Invalid commitment size: ${commitment.length}`,
+				{
+					value: commitment.length,
+					expected: "48 bytes",
+				},
+			);
 		}
 
 		// Hash the commitment with SHA-256

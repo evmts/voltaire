@@ -17,9 +17,12 @@ import { isBytes } from "./isBytes.js";
  */
 export function assert(value) {
 	if (!isBytes(value)) {
-		const actualType = typeof value === "object"
-			? (value === null ? "null" : value.constructor?.name || "object")
-			: typeof value;
+		const actualType =
+			typeof value === "object"
+				? value === null
+					? "null"
+					: value.constructor?.name || "object"
+				: typeof value;
 		throw new InvalidBytesFormatError(
 			`Expected Uint8Array but got ${actualType}`,
 			{ value, expected: "Uint8Array", context: { actualType } },

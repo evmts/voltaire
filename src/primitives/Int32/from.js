@@ -37,11 +37,14 @@ export function from(value) {
 			});
 		}
 		if (value < BigInt(INT32_MIN)) {
-			throw new IntegerUnderflowError(`Int32 value is below minimum: ${value}`, {
-				value,
-				min: INT32_MIN,
-				type: "int32",
-			});
+			throw new IntegerUnderflowError(
+				`Int32 value is below minimum: ${value}`,
+				{
+					value,
+					min: INT32_MIN,
+					type: "int32",
+				},
+			);
 		}
 		num = Number(value);
 	} else if (typeof value === "string") {

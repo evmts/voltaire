@@ -35,11 +35,14 @@ export function from(value) {
 		}
 	} else if (typeof value === "number") {
 		if (!Number.isInteger(value)) {
-			throw new InvalidFormatError(`Int128 value must be an integer: ${value}`, {
-				value,
-				expected: "integer",
-				docsPath: "/primitives/int128#from",
-			});
+			throw new InvalidFormatError(
+				`Int128 value must be an integer: ${value}`,
+				{
+					value,
+					expected: "integer",
+					docsPath: "/primitives/int128#from",
+				},
+			);
 		}
 		bigintValue = BigInt(value);
 	} else {
@@ -47,19 +50,25 @@ export function from(value) {
 	}
 
 	if (bigintValue > MAX) {
-		throw new IntegerOverflowError(`Int128 value exceeds maximum (${MAX}): ${bigintValue}`, {
-			value: bigintValue,
-			max: MAX,
-			type: "int128",
-		});
+		throw new IntegerOverflowError(
+			`Int128 value exceeds maximum (${MAX}): ${bigintValue}`,
+			{
+				value: bigintValue,
+				max: MAX,
+				type: "int128",
+			},
+		);
 	}
 
 	if (bigintValue < MIN) {
-		throw new IntegerUnderflowError(`Int128 value below minimum (${MIN}): ${bigintValue}`, {
-			value: bigintValue,
-			min: MIN,
-			type: "int128",
-		});
+		throw new IntegerUnderflowError(
+			`Int128 value below minimum (${MIN}): ${bigintValue}`,
+			{
+				value: bigintValue,
+				min: MIN,
+				type: "int128",
+			},
+		);
 	}
 
 	return /** @type {import('./Int128Type.js').BrandedInt128} */ (bigintValue);

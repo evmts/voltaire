@@ -45,7 +45,7 @@ export function verify(bid, crypto) {
 
 	// slot (little-endian 8 bytes)
 	const slotBytes = new Uint8Array(8);
-	let s = bid.slot;
+	let s = BigInt(bid.slot);
 	for (let i = 0; i < 8; i++) {
 		slotBytes[i] = Number(s & 0xffn);
 		s >>= 8n;
@@ -67,7 +67,7 @@ export function verify(bid, crypto) {
 
 	// gasLimit (big-endian 32 bytes)
 	const gasLimitBytes = new Uint8Array(32);
-	let gl = bid.gasLimit;
+	let gl = BigInt(bid.gasLimit);
 	for (let i = 31; i >= 0; i--) {
 		gasLimitBytes[i] = Number(gl & 0xffn);
 		gl >>= 8n;
@@ -77,7 +77,7 @@ export function verify(bid, crypto) {
 
 	// gasUsed (big-endian 32 bytes)
 	const gasUsedBytes = new Uint8Array(32);
-	let gu = bid.gasUsed;
+	let gu = BigInt(bid.gasUsed);
 	for (let i = 31; i >= 0; i--) {
 		gasUsedBytes[i] = Number(gu & 0xffn);
 		gu >>= 8n;
@@ -87,7 +87,7 @@ export function verify(bid, crypto) {
 
 	// value (big-endian 32 bytes)
 	const valueBytes = new Uint8Array(32);
-	let v = bid.value;
+	let v = BigInt(bid.value);
 	for (let i = 31; i >= 0; i--) {
 		valueBytes[i] = Number(v & 0xffn);
 		v >>= 8n;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as BlockNumber from "./index.js";
 import { InvalidBlockNumberError } from "./errors.js";
+import * as BlockNumber from "./index.js";
 
 describe("BlockNumber", () => {
 	describe("from", () => {

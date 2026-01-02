@@ -1,4 +1,9 @@
-import { NegativeNumberError, NonIntegerError, SizeExceededError, UnsafeIntegerError } from "./errors.js";
+import {
+	NegativeNumberError,
+	NonIntegerError,
+	SizeExceededError,
+	UnsafeIntegerError,
+} from "./errors.js";
 
 /**
  * Convert number to Bytes
@@ -21,9 +26,12 @@ import { NegativeNumberError, NonIntegerError, SizeExceededError, UnsafeIntegerE
  */
 export function fromNumber(value, size) {
 	if (value < 0) {
-		throw new NegativeNumberError(`Number must be non-negative. Got: ${value}`, {
-			value,
-		});
+		throw new NegativeNumberError(
+			`Number must be non-negative. Got: ${value}`,
+			{
+				value,
+			},
+		);
 	}
 	if (value > Number.MAX_SAFE_INTEGER) {
 		throw new UnsafeIntegerError(

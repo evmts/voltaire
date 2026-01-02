@@ -74,20 +74,40 @@ describe("Int64", () => {
 			expect(val).toBe(-42n);
 		});
 
-		it("should throw on overflow", () => {
-			expect(() => Int64.from(9223372036854775808n)).toThrow("out of range");
+		it("should throw IntegerOverflowError on overflow", () => {
+			try {
+				Int64.from(9223372036854775808n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
-		it("should throw on underflow", () => {
-			expect(() => Int64.from(-9223372036854775809n)).toThrow("out of range");
+		it("should throw IntegerUnderflowError on underflow", () => {
+			try {
+				Int64.from(-9223372036854775809n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 
-		it("should throw on NaN", () => {
-			expect(() => Int64.from(Number.NaN)).toThrow();
+		it("should throw InvalidFormatError on NaN", () => {
+			try {
+				Int64.from(Number.NaN);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidFormatError");
+			}
 		});
 
-		it("should throw on Infinity", () => {
-			expect(() => Int64.from(Number.POSITIVE_INFINITY)).toThrow();
+		it("should throw InvalidFormatError on Infinity", () => {
+			try {
+				Int64.from(Number.POSITIVE_INFINITY);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidFormatError");
+			}
 		});
 	});
 
@@ -110,16 +130,22 @@ describe("Int64", () => {
 			expect(Int64.fromBigInt(9223372036854775807n)).toBe(9223372036854775807n);
 		});
 
-		it("should throw on overflow", () => {
-			expect(() => Int64.fromBigInt(9223372036854775808n)).toThrow(
-				"out of range",
-			);
+		it("should throw IntegerOverflowError on overflow", () => {
+			try {
+				Int64.fromBigInt(9223372036854775808n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
-		it("should throw on underflow", () => {
-			expect(() => Int64.fromBigInt(-9223372036854775809n)).toThrow(
-				"out of range",
-			);
+		it("should throw IntegerUnderflowError on underflow", () => {
+			try {
+				Int64.fromBigInt(-9223372036854775809n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 	});
 
@@ -136,14 +162,24 @@ describe("Int64", () => {
 			expect(Int64.fromNumber(42.7)).toBe(42n);
 		});
 
-		it("should throw on NaN", () => {
-			expect(() => Int64.fromNumber(Number.NaN)).toThrow("NaN");
+		it("should throw InvalidFormatError on NaN", () => {
+			try {
+				Int64.fromNumber(Number.NaN);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidFormatError");
+				expect((e as Error).message).toContain("NaN");
+			}
 		});
 
-		it("should throw on Infinity", () => {
-			expect(() => Int64.fromNumber(Number.POSITIVE_INFINITY)).toThrow(
-				"Infinity",
-			);
+		it("should throw InvalidFormatError on Infinity", () => {
+			try {
+				Int64.fromNumber(Number.POSITIVE_INFINITY);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidFormatError");
+				expect((e as Error).message).toContain("Infinity");
+			}
 		});
 	});
 
@@ -186,9 +222,15 @@ describe("Int64", () => {
 			expect(Int64.fromBytes(bytes)).toBe(9223372036854775807n);
 		});
 
-		it("should throw if bytes exceed 8", () => {
+		it("should throw InvalidLengthError if bytes exceed 8", () => {
 			const bytes = new Uint8Array(9);
-			expect(() => Int64.fromBytes(bytes)).toThrow("cannot exceed 8 bytes");
+			try {
+				Int64.fromBytes(bytes);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidLengthError");
+				expect((e as Error).message).toContain("cannot exceed 8 bytes");
+			}
 		});
 	});
 
@@ -213,14 +255,24 @@ describe("Int64", () => {
 			expect(Int64.fromHex("0x7fffffffffffffff")).toBe(9223372036854775807n);
 		});
 
-		it("should throw if hex exceeds 16 chars", () => {
-			expect(() => Int64.fromHex("0x12345678901234567")).toThrow(
-				"cannot exceed 16 characters",
-			);
+		it("should throw InvalidLengthError if hex exceeds 16 chars", () => {
+			try {
+				Int64.fromHex("0x12345678901234567");
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidLengthError");
+				expect((e as Error).message).toContain("cannot exceed 16 characters");
+			}
 		});
 
-		it("should throw on invalid hex", () => {
-			expect(() => Int64.fromHex("0xgg")).toThrow("Invalid hex");
+		it("should throw InvalidFormatError on invalid hex", () => {
+			try {
+				Int64.fromHex("0xgg");
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidFormatError");
+				expect((e as Error).message).toContain("Invalid hex");
+			}
 		});
 	});
 
@@ -235,9 +287,15 @@ describe("Int64", () => {
 			expect(Int64.toNumber(val)).toBe(-42);
 		});
 
-		it("should throw if value exceeds safe integer", () => {
+		it("should throw InvalidRangeError if value exceeds safe integer", () => {
 			const val = Int64.from(9007199254740992n);
-			expect(() => Int64.toNumber(val)).toThrow("exceeds safe integer");
+			try {
+				Int64.toNumber(val);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+				expect((e as Error).message).toContain("exceeds Number.MAX_SAFE_INTEGER");
+			}
 		});
 	});
 
@@ -343,16 +401,26 @@ describe("Int64", () => {
 			expect(Int64.plus(a, b)).toBe(30n);
 		});
 
-		it("should throw on positive overflow", () => {
+		it("should throw IntegerOverflowError on positive overflow", () => {
 			const a = Int64.from(9223372036854775807n);
 			const b = Int64.from(1n);
-			expect(() => Int64.plus(a, b)).toThrow("overflow");
+			try {
+				Int64.plus(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
-		it("should throw on negative overflow", () => {
+		it("should throw IntegerUnderflowError on negative overflow", () => {
 			const a = Int64.from(-9223372036854775808n);
 			const b = Int64.from(-1n);
-			expect(() => Int64.plus(a, b)).toThrow("overflow");
+			try {
+				Int64.plus(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 	});
 
@@ -375,16 +443,26 @@ describe("Int64", () => {
 			expect(Int64.minus(a, b)).toBe(70n);
 		});
 
-		it("should throw on overflow", () => {
+		it("should throw IntegerOverflowError on overflow", () => {
 			const a = Int64.from(9223372036854775807n);
 			const b = Int64.from(-1n);
-			expect(() => Int64.minus(a, b)).toThrow("overflow");
+			try {
+				Int64.minus(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 
-		it("should throw on underflow", () => {
+		it("should throw IntegerUnderflowError on underflow", () => {
 			const a = Int64.from(-9223372036854775808n);
 			const b = Int64.from(1n);
-			expect(() => Int64.minus(a, b)).toThrow("overflow");
+			try {
+				Int64.minus(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
 		});
 	});
 
@@ -413,10 +491,15 @@ describe("Int64", () => {
 			expect(Int64.times(a, b)).toBe(0n);
 		});
 
-		it("should throw on overflow", () => {
+		it("should throw IntegerOverflowError on overflow", () => {
 			const a = Int64.from(9223372036854775807n);
 			const b = Int64.from(2n);
-			expect(() => Int64.times(a, b)).toThrow("overflow");
+			try {
+				Int64.times(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 	});
 
@@ -451,16 +534,27 @@ describe("Int64", () => {
 			expect(Int64.dividedBy(a, b)).toBe(-3n);
 		});
 
-		it("should throw on division by zero", () => {
+		it("should throw InvalidRangeError on division by zero", () => {
 			const a = Int64.from(42n);
 			const b = Int64.from(0n);
-			expect(() => Int64.dividedBy(a, b)).toThrow("Division by zero");
+			try {
+				Int64.dividedBy(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+				expect((e as Error).message).toContain("Division by zero");
+			}
 		});
 
-		it("should throw on MIN / -1 overflow", () => {
+		it("should throw IntegerOverflowError on MIN / -1 overflow", () => {
 			const a = Int64.from(-9223372036854775808n);
 			const b = Int64.from(-1n);
-			expect(() => Int64.dividedBy(a, b)).toThrow("overflow");
+			try {
+				Int64.dividedBy(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 	});
 
@@ -477,10 +571,16 @@ describe("Int64", () => {
 			expect(Int64.modulo(a, b)).toBe(-2n);
 		});
 
-		it("should throw on modulo by zero", () => {
+		it("should throw InvalidRangeError on modulo by zero", () => {
 			const a = Int64.from(42n);
 			const b = Int64.from(0n);
-			expect(() => Int64.modulo(a, b)).toThrow("Modulo by zero");
+			try {
+				Int64.modulo(a, b);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidRangeError");
+				expect((e as Error).message).toContain("Modulo by zero");
+			}
 		});
 	});
 
@@ -497,10 +597,14 @@ describe("Int64", () => {
 			expect(Int64.abs(Int64.from(0n))).toBe(0n);
 		});
 
-		it("should throw on MIN", () => {
-			expect(() => Int64.abs(Int64.from(-9223372036854775808n))).toThrow(
-				"Cannot get absolute value",
-			);
+		it("should throw IntegerOverflowError on MIN", () => {
+			try {
+				Int64.abs(Int64.from(-9223372036854775808n));
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+				expect((e as Error).message).toContain("Cannot get absolute value");
+			}
 		});
 	});
 
@@ -517,10 +621,14 @@ describe("Int64", () => {
 			expect(Int64.negate(Int64.from(0n))).toBe(0n);
 		});
 
-		it("should throw on MIN", () => {
-			expect(() => Int64.negate(Int64.from(-9223372036854775808n))).toThrow(
-				"Cannot negate",
-			);
+		it("should throw IntegerOverflowError on MIN", () => {
+			try {
+				Int64.negate(Int64.from(-9223372036854775808n));
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+				expect((e as Error).message).toContain("Cannot negate");
+			}
 		});
 	});
 

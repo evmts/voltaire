@@ -34,19 +34,25 @@ export function fromNumber(value) {
 	const bigintValue = BigInt(value);
 
 	if (bigintValue > MAX) {
-		throw new IntegerOverflowError(`Int128 value exceeds maximum (${MAX}): ${bigintValue}`, {
-			value: bigintValue,
-			max: MAX,
-			type: "int128",
-		});
+		throw new IntegerOverflowError(
+			`Int128 value exceeds maximum (${MAX}): ${bigintValue}`,
+			{
+				value: bigintValue,
+				max: MAX,
+				type: "int128",
+			},
+		);
 	}
 
 	if (bigintValue < MIN) {
-		throw new IntegerUnderflowError(`Int128 value below minimum (${MIN}): ${bigintValue}`, {
-			value: bigintValue,
-			min: MIN,
-			type: "int128",
-		});
+		throw new IntegerUnderflowError(
+			`Int128 value below minimum (${MIN}): ${bigintValue}`,
+			{
+				value: bigintValue,
+				min: MIN,
+				type: "int128",
+			},
+		);
 	}
 
 	return /** @type {import('./Int128Type.js').BrandedInt128} */ (bigintValue);

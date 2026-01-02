@@ -215,7 +215,10 @@ export class BytesTooLargeError extends BaseInvalidRangeError {
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
 	 */
-	constructor(message = "Bytes too large to convert to number safely", options = {}) {
+	constructor(
+		message = "Bytes too large to convert to number safely",
+		options = {},
+	) {
 		super(message, {
 			code: options.code || "BYTES_TOO_LARGE",
 			value: options.value,

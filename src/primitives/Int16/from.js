@@ -38,25 +38,34 @@ export function from(value) {
  */
 export function fromNumber(value) {
 	if (!Number.isInteger(value)) {
-		throw new InvalidFormatError(`Int16: value must be an integer, got ${value}`, {
-			value,
-			expected: "integer",
-			docsPath: "/primitives/int16#from-number",
-		});
+		throw new InvalidFormatError(
+			`Int16: value must be an integer, got ${value}`,
+			{
+				value,
+				expected: "integer",
+				docsPath: "/primitives/int16#from-number",
+			},
+		);
 	}
 	if (value > INT16_MAX) {
-		throw new IntegerOverflowError(`Int16: value ${value} exceeds maximum ${INT16_MAX}`, {
-			value,
-			max: INT16_MAX,
-			type: "int16",
-		});
+		throw new IntegerOverflowError(
+			`Int16: value ${value} exceeds maximum ${INT16_MAX}`,
+			{
+				value,
+				max: INT16_MAX,
+				type: "int16",
+			},
+		);
 	}
 	if (value < INT16_MIN) {
-		throw new IntegerUnderflowError(`Int16: value ${value} is below minimum ${INT16_MIN}`, {
-			value,
-			min: INT16_MIN,
-			type: "int16",
-		});
+		throw new IntegerUnderflowError(
+			`Int16: value ${value} is below minimum ${INT16_MIN}`,
+			{
+				value,
+				min: INT16_MIN,
+				type: "int16",
+			},
+		);
 	}
 	return /** @type {import("./Int16Type.js").BrandedInt16} */ (value);
 }
@@ -70,18 +79,24 @@ export function fromNumber(value) {
  */
 export function fromBigint(value) {
 	if (value > BigInt(INT16_MAX)) {
-		throw new IntegerOverflowError(`Int16: value ${value} exceeds maximum ${INT16_MAX}`, {
-			value,
-			max: INT16_MAX,
-			type: "int16",
-		});
+		throw new IntegerOverflowError(
+			`Int16: value ${value} exceeds maximum ${INT16_MAX}`,
+			{
+				value,
+				max: INT16_MAX,
+				type: "int16",
+			},
+		);
 	}
 	if (value < BigInt(INT16_MIN)) {
-		throw new IntegerUnderflowError(`Int16: value ${value} is below minimum ${INT16_MIN}`, {
-			value,
-			min: INT16_MIN,
-			type: "int16",
-		});
+		throw new IntegerUnderflowError(
+			`Int16: value ${value} is below minimum ${INT16_MIN}`,
+			{
+				value,
+				min: INT16_MIN,
+				type: "int16",
+			},
+		);
 	}
 	return /** @type {import("./Int16Type.js").BrandedInt16} */ (Number(value));
 }
@@ -115,11 +130,14 @@ export function fromHex(hex) {
  */
 export function fromBytes(bytes) {
 	if (bytes.length !== 2) {
-		throw new InvalidLengthError(`Int16: expected 2 bytes, got ${bytes.length}`, {
-			value: bytes,
-			expected: "2 bytes",
-			docsPath: "/primitives/int16#from-bytes",
-		});
+		throw new InvalidLengthError(
+			`Int16: expected 2 bytes, got ${bytes.length}`,
+			{
+				value: bytes,
+				expected: "2 bytes",
+				docsPath: "/primitives/int16#from-bytes",
+			},
+		);
 	}
 	const unsigned =
 		/** @type {number} */ (/** @type {number} */ (bytes[0]) << 8) |

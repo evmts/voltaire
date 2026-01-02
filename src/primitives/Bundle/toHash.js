@@ -38,5 +38,5 @@ export function toHash(bundle, crypto) {
 	}
 
 	// Hash the concatenated hashes to get bundle hash
-	return crypto.keccak256(data);
+	return /** @type {HashType} */ (crypto.keccak256(data));
 }

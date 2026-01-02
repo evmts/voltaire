@@ -134,7 +134,11 @@ export const verifyBatch = ((
 	// Basic validations to mirror factory behavior
 	if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
 		throw new BlobArrayLengthMismatchError("Arrays must have same length", {
-			value: { blobs: blobs.length, commitments: commitments.length, proofs: proofs.length },
+			value: {
+				blobs: blobs.length,
+				commitments: commitments.length,
+				proofs: proofs.length,
+			},
 			expected: "equal array lengths",
 		});
 	}

@@ -9,8 +9,8 @@ export function fromHex(hex) {
 	const bytes = BytesType.fromHex(hex);
 	if (bytes.length !== 8) {
 		throw new InvalidBytesLengthError("Bytes8 must be exactly 8 bytes", {
-			expected: 8,
-			actual: bytes.length,
+			expected: "8 bytes",
+			context: { actual: bytes.length },
 		});
 	}
 	return /** @type {import('./Bytes8Type.js').Bytes8Type} */ (

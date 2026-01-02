@@ -19,9 +19,12 @@ import { NegativeBigIntError, SizeExceededError } from "./errors.js";
  */
 export function fromBigInt(value, size) {
 	if (value < 0n) {
-		throw new NegativeBigIntError(`BigInt must be non-negative. Got: ${value}`, {
-			value,
-		});
+		throw new NegativeBigIntError(
+			`BigInt must be non-negative. Got: ${value}`,
+			{
+				value,
+			},
+		);
 	}
 
 	// Calculate minimum bytes needed

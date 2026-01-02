@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import * as BlockHash from "./index.js";
 import {
 	InvalidBlockHashFormatError,
 	InvalidBlockHashLengthError,
 } from "./errors.js";
+import * as BlockHash from "./index.js";
 
 describe("BlockHash", () => {
 	const testHash =

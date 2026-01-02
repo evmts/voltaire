@@ -18,8 +18,8 @@ export function from(value) {
 	const bytes = BytesType.from(value);
 	if (bytes.length !== 1) {
 		throw new InvalidBytesLengthError("Bytes1 must be exactly 1 byte", {
-			expected: 1,
-			actual: bytes.length,
+			expected: "1 byte",
+			context: { actual: bytes.length },
 		});
 	}
 	return /** @type {import('./Bytes1Type.js').Bytes1Type} */ (

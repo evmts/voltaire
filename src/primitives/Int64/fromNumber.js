@@ -36,18 +36,24 @@ export function fromNumber(value) {
 	const bigintVal = BigInt(Math.trunc(value));
 
 	if (bigintVal > INT64_MAX) {
-		throw new IntegerOverflowError(`Int64 value exceeds maximum: ${bigintVal}`, {
-			value: bigintVal,
-			max: INT64_MAX,
-			type: "int64",
-		});
+		throw new IntegerOverflowError(
+			`Int64 value exceeds maximum: ${bigintVal}`,
+			{
+				value: bigintVal,
+				max: INT64_MAX,
+				type: "int64",
+			},
+		);
 	}
 	if (bigintVal < INT64_MIN) {
-		throw new IntegerUnderflowError(`Int64 value is below minimum: ${bigintVal}`, {
-			value: bigintVal,
-			min: INT64_MIN,
-			type: "int64",
-		});
+		throw new IntegerUnderflowError(
+			`Int64 value is below minimum: ${bigintVal}`,
+			{
+				value: bigintVal,
+				min: INT64_MIN,
+				type: "int64",
+			},
+		);
 	}
 
 	return /** @type {import('./Int64Type.js').BrandedInt64} */ (bigintVal);

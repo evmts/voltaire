@@ -1,4 +1,8 @@
-import { NegativeNumberError, NonIntegerError, UnsafeIntegerError } from "./errors.js";
+import {
+	NegativeNumberError,
+	NonIntegerError,
+	UnsafeIntegerError,
+} from "./errors.js";
 
 /**
  * Convert number to hex
@@ -21,9 +25,12 @@ import { NegativeNumberError, NonIntegerError, UnsafeIntegerError } from "./erro
  */
 export function fromNumber(value, size) {
 	if (value < 0) {
-		throw new NegativeNumberError(`Number must be non-negative. Got: ${value}`, {
-			value,
-		});
+		throw new NegativeNumberError(
+			`Number must be non-negative. Got: ${value}`,
+			{
+				value,
+			},
+		);
 	}
 	if (value > Number.MAX_SAFE_INTEGER) {
 		throw new UnsafeIntegerError(

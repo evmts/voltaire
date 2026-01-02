@@ -9,8 +9,8 @@ export function from(value) {
 	const bytes = BytesType.from(value);
 	if (bytes.length !== 4) {
 		throw new InvalidBytesLengthError("Bytes4 must be exactly 4 bytes", {
-			expected: 4,
-			actual: bytes.length,
+			expected: "4 bytes",
+			context: { actual: bytes.length },
 		});
 	}
 	return /** @type {import('./Bytes4Type.js').Bytes4Type} */ (

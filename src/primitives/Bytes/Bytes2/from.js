@@ -9,8 +9,8 @@ export function from(value) {
 	const bytes = BytesType.from(value);
 	if (bytes.length !== 2) {
 		throw new InvalidBytesLengthError("Bytes2 must be exactly 2 bytes", {
-			expected: 2,
-			actual: bytes.length,
+			expected: "2 bytes",
+			context: { actual: bytes.length },
 		});
 	}
 	return /** @type {import('./Bytes2Type.js').Bytes2Type} */ (

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { InvalidBundleError, MissingCryptoDependencyError } from "./errors.js";
+import { MissingCryptoDependencyError } from "./errors.js";
 import * as Bundle from "./index.js";
 
 describe("Bundle", () => {
