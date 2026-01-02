@@ -33,5 +33,9 @@ export function fakeExponential(factor, numerator, denominator) {
 		i += 1n;
 	}
 
-	return output / denominator;
+	const result = output / denominator;
+
+	// Per EIP-4844: minimum blob gas price is 1 (MIN_BLOB_BASE_FEE)
+	// Ensure we never return 0 to prevent underflow in callers
+	return result === 0n ? 1n : result;
 }

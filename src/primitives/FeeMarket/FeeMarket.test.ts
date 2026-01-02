@@ -146,6 +146,12 @@ describe("FeeMarket.BaseFee", () => {
 // ============================================================================
 
 describe("FeeMarket.fakeExponential", () => {
+	it("returns minimum 1 when result would be zero", () => {
+		// Edge case: factor=0 would result in 0, but we enforce minimum of 1
+		const result = fakeExponential(0n, 0n, 1_000_000n);
+		expect(result).toBe(1n);
+	});
+
 	it("returns factor when numerator is zero", () => {
 		const result = fakeExponential(1_000_000n, 0n, 1_000_000n);
 		expect(result).toBe(1_000_000n); // e^0 = 1
@@ -216,6 +222,12 @@ describe("FeeMarket.fakeExponential", () => {
 });
 
 describe("FeeMarket.BlobBaseFee", () => {
+	it("never returns zero (minimum is 1)", () => {
+		// Edge case: even with 0 excess, minimum is 1
+		const fee = FeeMarket.BlobBaseFee(0n);
+		expect(fee).toBeGreaterThanOrEqual(1n);
+	});
+
 	it("returns minimum fee with no excess", () => {
 		const fee = FeeMarket.BlobBaseFee(0n);
 		expect(fee).toBe(FeeMarket.Eip4844.MIN_BLOB_BASE_FEE);
