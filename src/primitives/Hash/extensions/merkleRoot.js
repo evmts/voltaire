@@ -1,4 +1,4 @@
-import { keccak256 } from "../../../crypto/Keccak256/index.js";
+import { Keccak256 } from "../../../crypto/Keccak256/index.js";
 import { ZERO } from "./constants.js";
 
 /**
@@ -57,9 +57,7 @@ export function merkleRoot(hashes) {
 				combined.set(left, 0);
 				combined.set(right, left.length);
 				nextLevel.push(
-					/** @type {import('./../BrandedHash.js').BrandedHash} */ (
-						keccak256(combined)
-					),
+					/** @type {*} */ (Keccak256(combined)),
 				);
 			}
 		}
