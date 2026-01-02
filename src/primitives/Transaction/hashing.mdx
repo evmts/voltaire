@@ -209,6 +209,7 @@ console.log('Transaction hash:', Hex(txHash))
 
 ```typescript
 import { getSigningHash, getSender } from 'tevm/Transaction'
+import { InvalidSignerError } from 'tevm/errors'
 
 // Verify signature by recovering sender
 const signingHash = getSigningHash(tx)
@@ -222,7 +223,10 @@ const expectedSender = recoverAddress(signingHash, {
 })
 
 if (!Address.equals(recoveredSender, expectedSender)) {
-  throw new Error('Invalid signature')
+  throw new InvalidSignerError('Invalid signature', {
+    code: 'SIGNATURE_MISMATCH',
+    context: { recovered: recoveredSender, expected: expectedSender }
+  })
 }
 ```
 

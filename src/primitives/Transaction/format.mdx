@@ -135,18 +135,13 @@ records.forEach(record => {
 
 ```typescript
 import { format } from 'tevm/Transaction'
+import { TransactionError } from 'tevm/errors'
 
-class TransactionError extends Error {
-  constructor(
-    message: string,
-    public transaction: Transaction.Any
-  ) {
-    super(`${message}: ${format(transaction)}`)
-  }
-}
-
-// Usage
-throw new TransactionError('Insufficient balance', tx)
+// Use built-in TransactionError with context
+throw new TransactionError('Insufficient balance', {
+  code: 'INSUFFICIENT_BALANCE',
+  context: { tx: format(tx) }
+})
 // Error: "Insufficient balance: EIP-1559 tx to 0x..., value: 10 ETH, nonce: 3"
 ```
 

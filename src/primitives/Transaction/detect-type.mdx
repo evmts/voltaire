@@ -56,6 +56,7 @@ RLP list markers:
 
 ```typescript
 import { detectType, Type } from 'tevm/Transaction'
+import { InvalidTransactionTypeError } from 'tevm/errors'
 
 function routeTransaction(data: Uint8Array) {
   const type = detectType(data)
@@ -72,7 +73,10 @@ function routeTransaction(data: Uint8Array) {
     case Type.EIP7702:
       return processEIP7702(data)
     default:
-      throw new Error(`Unsupported type: ${type}`)
+      throw new InvalidTransactionTypeError(`Unsupported type: ${type}`, {
+        code: 'UNSUPPORTED_TRANSACTION_TYPE',
+        context: { type }
+      })
   }
 }
 ```
@@ -202,9 +206,14 @@ function validateTransactionType(
 }
 
 // Usage: Only allow EIP-1559 and EIP-4844
+import { InvalidTransactionTypeError } from 'tevm/errors'
+
 const allowed = [Type.EIP1559, Type.EIP4844]
 if (!validateTransactionType(txData, allowed)) {
-  throw new Error('Transaction type not supported')
+  throw new InvalidTransactionTypeError('Transaction type not supported', {
+    code: 'UNSUPPORTED_TRANSACTION_TYPE',
+    context: { allowed }
+  })
 }
 ```
 

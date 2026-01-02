@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { InvalidCharacterError, InvalidFormatError } from "../errors/index.js";
+import { InvalidCharacterError, InvalidFormatError } from "./errors.js";
 import { validate } from "./validate.js";
 
 describe("validate", () => {
@@ -26,8 +26,14 @@ describe("validate", () => {
 		expect(validate(long)).toBe(long);
 	});
 
-	it("throws on missing 0x prefix", () => {
-		expect(() => validate("1234")).toThrow(InvalidFormatError);
+	it("throws InvalidFormatError on missing 0x prefix with correct name", () => {
+		try {
+			validate("1234");
+			expect.fail("Expected InvalidFormatError");
+		} catch (e) {
+			expect(e).toBeInstanceOf(InvalidFormatError);
+			expect((e as InvalidFormatError).name).toBe("InvalidHexFormatError");
+		}
 		expect(() => validate("abcdef")).toThrow(InvalidFormatError);
 		expect(() => validate("")).toThrow(InvalidFormatError);
 	});
@@ -37,8 +43,14 @@ describe("validate", () => {
 		expect(() => validate("x")).toThrow(InvalidFormatError);
 	});
 
-	it("throws on invalid hex characters", () => {
-		expect(() => validate("0xg")).toThrow(InvalidCharacterError);
+	it("throws InvalidCharacterError on invalid hex characters with correct name", () => {
+		try {
+			validate("0xg");
+			expect.fail("Expected InvalidCharacterError");
+		} catch (e) {
+			expect(e).toBeInstanceOf(InvalidCharacterError);
+			expect((e as InvalidCharacterError).name).toBe("InvalidHexCharacterError");
+		}
 		expect(() => validate("0x123g")).toThrow(InvalidCharacterError);
 		expect(() => validate("0xGHIJ")).toThrow(InvalidCharacterError);
 	});

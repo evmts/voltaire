@@ -607,16 +607,23 @@ const tx: Transaction.EIP1559 = {
   s: Bytes32(),
 };
 
+// Import typed errors
+import { TransactionError, InvalidSignatureError } from 'tevm/errors';
+
 // 1. Check transaction is signed
 const isSigned = Transaction.isSigned(tx);
 if (!isSigned) {
-  throw new Error('Transaction not signed');
+  throw new TransactionError('Transaction not signed', {
+    code: 'TRANSACTION_NOT_SIGNED'
+  });
 }
 
 // 2. Verify signature is valid
 const isValid = Transaction.verifySignature(tx);
 if (!isValid) {
-  throw new Error('Invalid signature');
+  throw new InvalidSignatureError('Invalid signature', {
+    context: { tx }
+  });
 }
 
 // 3. Recover sender address
@@ -765,10 +772,13 @@ console.log(sender);
 
 ```typescript
 import * as Transaction from 'tevm/Transaction';
+import { TransactionError } from 'tevm/errors';
 
 // Check if transaction is signed
 if (!Transaction.isSigned(tx)) {
-  throw new Error('Transaction not signed');
+  throw new TransactionError('Transaction not signed', {
+    code: 'TRANSACTION_NOT_SIGNED'
+  });
 }
 
 // Or use assertion (throws if not signed)

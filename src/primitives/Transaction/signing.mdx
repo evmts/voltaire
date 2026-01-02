@@ -259,12 +259,15 @@ const eip1559Valid = EIP1559.verifySignature(eip1559Tx)
 
 ```typescript
 import { verifySignature, getSender } from 'tevm/Transaction'
+import { InvalidSignatureError, TransactionError } from 'tevm/errors'
 
 class TransactionPool {
   async add(tx: Transaction.Any): Promise<void> {
     // Verify signature
     if (!verifySignature(tx)) {
-      throw new Error('Invalid signature')
+      throw new InvalidSignatureError('Invalid signature', {
+        context: { tx }
+      })
     }
 
     // Get sender
@@ -274,7 +277,10 @@ class TransactionPool {
     const balance = await getBalance(sender)
     const cost = tx.gasLimit * getGasPrice(tx) + tx.value
     if (balance < cost) {
-      throw new Error('Insufficient balance')
+      throw new TransactionError('Insufficient balance', {
+        code: 'INSUFFICIENT_BALANCE',
+        context: { balance, cost, sender }
+      })
     }
 
     // Add to pool
@@ -287,14 +293,19 @@ class TransactionPool {
 
 ```typescript
 import { getSender } from 'tevm/Transaction'
+import { InvalidSignerError } from 'tevm/errors'
 
 function requireSender(tx: Transaction.Any, expectedSender: AddressType) {
   const actualSender = getSender(tx)
 
   if (!Address.equals(actualSender, expectedSender)) {
-    throw new Error(
+    throw new InvalidSignerError(
       `Unauthorized: expected ${Address.toHex(expectedSender)}, ` +
-      `got ${Address.toHex(actualSender)}`
+      `got ${Address.toHex(actualSender)}`,
+      {
+        code: 'UNAUTHORIZED_SIGNER',
+        context: { expected: expectedSender, actual: actualSender }
+      }
     )
   }
 }
@@ -303,18 +314,24 @@ function requireSender(tx: Transaction.Any, expectedSender: AddressType) {
 ### Replay Protection
 
 ```typescript
-import { getSender, getChainId } from 'tevm/Transaction'
+import { getSender, getChainId, verifySignature } from 'tevm/Transaction'
+import { InvalidSignatureError, TransactionError } from 'tevm/errors'
 
 function validateTransaction(tx: Transaction.Any, currentChainId: bigint) {
   // Verify signature
   if (!verifySignature(tx)) {
-    throw new Error('Invalid signature')
+    throw new InvalidSignatureError('Invalid signature', {
+      context: { tx }
+    })
   }
 
   // Check chain ID (replay protection)
   const txChainId = getChainId(tx)
   if (txChainId && txChainId !== currentChainId) {
-    throw new Error(`Wrong chain: expected ${currentChainId}, got ${txChainId}`)
+    throw new TransactionError(`Wrong chain: expected ${currentChainId}, got ${txChainId}`, {
+      code: 'WRONG_CHAIN_ID',
+      context: { expected: currentChainId, actual: txChainId }
+    })
   }
 
   // Get sender
@@ -371,12 +388,17 @@ ECDSA signatures have malleability issue - for every valid signature `(r, s)`, t
 Ethereum requires `s` value to be in lower half of curve order:
 
 ```typescript
+import { InvalidSignatureError } from 'tevm/errors'
+
 const SECP256K1_N = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n
 const SECP256K1_N_DIV_2 = SECP256K1_N / 2n
 
 // Valid signatures must have s <= N/2
 if (s > SECP256K1_N_DIV_2) {
-  throw new Error('Invalid signature: s value too high')
+  throw new InvalidSignatureError('Invalid signature: s value too high', {
+    code: 'S_VALUE_TOO_HIGH',
+    context: { s, maxS: SECP256K1_N_DIV_2 }
+  })
 }
 ```
 

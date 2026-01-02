@@ -323,6 +323,7 @@ const maxCost = calculateMaxCost(tx, 15000000000n)
 
 ```typescript
 import { getChainId } from 'tevm/Transaction'
+import { TransactionError } from 'tevm/errors'
 
 function validateChainId(
   tx: Transaction.Any,
@@ -331,12 +332,19 @@ function validateChainId(
   const txChainId = getChainId(tx)
 
   if (txChainId === null) {
-    throw new Error('Transaction has no chain ID (pre-EIP-155)')
+    throw new TransactionError('Transaction has no chain ID (pre-EIP-155)', {
+      code: 'MISSING_CHAIN_ID',
+      context: { txType: tx.type }
+    })
   }
 
   if (txChainId !== expectedChainId) {
-    throw new Error(
-      `Wrong chain: expected ${expectedChainId}, got ${txChainId}`
+    throw new TransactionError(
+      `Wrong chain: expected ${expectedChainId}, got ${txChainId}`,
+      {
+        code: 'WRONG_CHAIN_ID',
+        context: { expected: expectedChainId, actual: txChainId }
+      }
     )
   }
 }

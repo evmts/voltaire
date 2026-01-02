@@ -247,7 +247,10 @@ async function submitWithRetry(
     }
   }
 
-  throw new Error('Failed to submit transaction')
+  throw new TransactionError('Failed to submit transaction', {
+    code: 'MAX_RETRIES_EXCEEDED',
+    context: { maxRetries }
+  })
 }
 ```
 
