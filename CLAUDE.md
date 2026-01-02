@@ -20,6 +20,16 @@ LLMS ARE NEVER TO COMMENT OUT OR DISABLE TESTS
 
 Never make time or work estimates of how long work will take it is not useful context
 
+### Test Failure Policy
+
+**ALL test failures are P0.** If tests were passing before your changes and fail after, YOU caused the regression regardless of whether the failure appears related. Fix it.
+
+- Never dismiss failures as "pre-existing" or "unrelated"
+- Never blame other code, dependencies, or flaky tests
+- If main was green and now it's red, your change broke it
+- Run full test suite before and after changes
+- No excuses—fix every failure you introduce
+
 **Status**: Alpha release. Expect frequent refactors/renames. Coordinate changes that affect published exports.
 
 ### Workflow
