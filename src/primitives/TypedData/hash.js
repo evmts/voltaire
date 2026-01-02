@@ -10,6 +10,8 @@ import * as Hash from "../Hash/index.js";
  * @param {object} crypto - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} crypto.keccak256 - Keccak256 hash function
  * @returns {import('../Hash/HashType.js').HashType} Hash for signing
+ * @throws {import('../Domain/errors.js').InvalidDomainTypeError} If type is not found
+ * @throws {import('../Domain/errors.js').InvalidEIP712ValueError} If value encoding fails
  * @example
  * ```javascript
  * import { keccak256 } from './crypto/Keccak256/index.js';
