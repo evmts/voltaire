@@ -70,6 +70,22 @@ export function EncodeValue({ keccak256, hashStruct }) {
 					},
 				);
 			}
+			// Handle signed integers (two's complement within declared bit width)
+			if (type.startsWith("int")) {
+				const match = type.match(/^int(\d+)$/);
+				const bits = match?.[1] ? Number.parseInt(match[1], 10) : 256;
+				if (num < 0n) {
+					// Sign extend within the declared bit width
+					num = (1n << BigInt(bits)) + num;
+				}
+				// Sign-extend to 256 bits if negative (check MSB of declared width)
+				const msbMask = 1n << BigInt(bits - 1);
+				if ((num & msbMask) !== 0n) {
+					// Number is negative in declared width, extend sign to 256 bits
+					const mask = (1n << BigInt(bits)) - 1n;
+					num = num | (~mask & ((1n << 256n) - 1n));
+				}
+			}
 			// Big-endian encoding
 			let v = num;
 			for (let i = 31; i >= 0; i--) {

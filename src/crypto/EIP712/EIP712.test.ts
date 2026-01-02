@@ -319,6 +319,82 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const encoded = EIP712.encodeValue("int256", 42n, types);
 			expect(encoded.length).toBe(32);
 		});
+
+		it("should encode int8 -1 with correct sign extension (issue #66)", () => {
+			// int8 -1 should be sign-extended within 8 bits, then padded to 256 bits
+			// -1 in 8-bit two's complement = 0xff
+			// Sign-extended to 256 bits = 0xffffffff...ff (32 bytes of 0xff)
+			const encoded = EIP712.encodeValue("int8", -1n, types);
+			expect(encoded.length).toBe(32);
+			// All bytes should be 0xff when sign-extended
+			expect(encoded.every((b) => b === 0xff)).toBe(true);
+		});
+
+		it("should encode int16 -1 with correct sign extension", () => {
+			const encoded = EIP712.encodeValue("int16", -1n, types);
+			expect(encoded.length).toBe(32);
+			expect(encoded.every((b) => b === 0xff)).toBe(true);
+		});
+
+		it("should encode int32 -1 with correct sign extension", () => {
+			const encoded = EIP712.encodeValue("int32", -1n, types);
+			expect(encoded.length).toBe(32);
+			expect(encoded.every((b) => b === 0xff)).toBe(true);
+		});
+
+		it("should encode int64 -1 with correct sign extension", () => {
+			const encoded = EIP712.encodeValue("int64", -1n, types);
+			expect(encoded.length).toBe(32);
+			expect(encoded.every((b) => b === 0xff)).toBe(true);
+		});
+
+		it("should encode int128 -1 with correct sign extension", () => {
+			const encoded = EIP712.encodeValue("int128", -1n, types);
+			expect(encoded.length).toBe(32);
+			expect(encoded.every((b) => b === 0xff)).toBe(true);
+		});
+
+		it("should encode int256 -1 with correct sign extension", () => {
+			const encoded = EIP712.encodeValue("int256", -1n, types);
+			expect(encoded.length).toBe(32);
+			expect(encoded.every((b) => b === 0xff)).toBe(true);
+		});
+
+		it("should encode int8 -128 (minimum value) correctly", () => {
+			// int8 min = -128 = 0x80 in 8-bit two's complement
+			// Sign-extended to 256 bits = 0xffffff...80
+			const encoded = EIP712.encodeValue("int8", -128n, types);
+			expect(encoded.length).toBe(32);
+			// First 31 bytes should be 0xff, last byte should be 0x80
+			expect(encoded.slice(0, 31).every((b) => b === 0xff)).toBe(true);
+			expect(encoded[31]).toBe(0x80);
+		});
+
+		it("should encode int8 127 (maximum positive) correctly", () => {
+			// int8 max = 127 = 0x7f in 8-bit two's complement
+			// Not negative, so just left-padded with zeros
+			const encoded = EIP712.encodeValue("int8", 127n, types);
+			expect(encoded.length).toBe(32);
+			// First 31 bytes should be 0x00, last byte should be 0x7f
+			expect(encoded.slice(0, 31).every((b) => b === 0)).toBe(true);
+			expect(encoded[31]).toBe(0x7f);
+		});
+
+		it("should encode int16 -32768 (minimum value) correctly", () => {
+			// int16 min = -32768 = 0x8000 in 16-bit two's complement
+			const encoded = EIP712.encodeValue("int16", -32768n, types);
+			expect(encoded.length).toBe(32);
+			expect(encoded.slice(0, 30).every((b) => b === 0xff)).toBe(true);
+			expect(encoded[30]).toBe(0x80);
+			expect(encoded[31]).toBe(0x00);
+		});
+
+		it("should encode positive int8 without sign extension", () => {
+			const encoded = EIP712.encodeValue("int8", 42n, types);
+			expect(encoded.length).toBe(32);
+			expect(encoded.slice(0, 31).every((b) => b === 0)).toBe(true);
+			expect(encoded[31]).toBe(42);
+		});
 	});
 
 	describe("Struct Hashing", () => {
