@@ -1,4 +1,5 @@
 import { MAX } from "./constants.js";
+import { Uint16OverflowError } from "./errors.js";
 
 /**
  * Add two Uint16 values with overflow checking
@@ -8,7 +9,7 @@ import { MAX } from "./constants.js";
  * @param {import('./Uint16Type.js').Uint16Type} a - First operand
  * @param {import('./Uint16Type.js').Uint16Type} b - Second operand
  * @returns {import('./Uint16Type.js').Uint16Type} Sum (a + b)
- * @throws {Error} If result exceeds maximum value
+ * @throws {Uint16OverflowError} If result exceeds maximum value (65535)
  * @example
  * ```javascript
  * import * as Uint16 from './primitives/Uint16/index.js';
@@ -20,8 +21,9 @@ import { MAX } from "./constants.js";
 export function plus(a, b) {
 	const sum = a + b;
 	if (sum > MAX) {
-		throw new Error(
+		throw new Uint16OverflowError(
 			`Uint16 overflow: ${a} + ${b} = ${sum} exceeds maximum (65535)`,
+			{ value: sum, context: { a, b, operation: "addition" } },
 		);
 	}
 	return /** @type {import('./Uint16Type.js').Uint16Type} */ (sum);

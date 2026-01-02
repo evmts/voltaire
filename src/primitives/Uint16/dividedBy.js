@@ -1,3 +1,5 @@
+import { Uint16DivisionByZeroError } from "./errors.js";
+
 /**
  * Divide two Uint16 values (integer division)
  *
@@ -6,7 +8,7 @@
  * @param {import('./Uint16Type.js').Uint16Type} a - Dividend
  * @param {import('./Uint16Type.js').Uint16Type} b - Divisor
  * @returns {import('./Uint16Type.js').Uint16Type} Quotient (floor(a / b))
- * @throws {Error} If divisor is zero
+ * @throws {Uint16DivisionByZeroError} If divisor is zero
  * @example
  * ```javascript
  * import * as Uint16 from './primitives/Uint16/index.js';
@@ -17,7 +19,7 @@
  */
 export function dividedBy(a, b) {
 	if (b === 0) {
-		throw new Error("Division by zero");
+		throw new Uint16DivisionByZeroError("Division by zero", { dividend: a });
 	}
 	return /** @type {import('./Uint16Type.js').Uint16Type} */ (
 		Math.floor(a / b)

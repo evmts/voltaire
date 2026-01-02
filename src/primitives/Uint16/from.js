@@ -1,4 +1,10 @@
 import { MAX } from "./constants.js";
+import {
+	Uint16InvalidHexError,
+	Uint16NegativeError,
+	Uint16NotIntegerError,
+	Uint16OverflowError,
+} from "./errors.js";
 
 /**
  * Create Uint16 from number or string
@@ -7,7 +13,10 @@ import { MAX } from "./constants.js";
  * @since 0.0.0
  * @param {number | string} value - number or decimal/hex string
  * @returns {import('./Uint16Type.js').Uint16Type} Uint16 value
- * @throws {Error} If value is out of range or invalid
+ * @throws {Uint16InvalidHexError} If string is invalid
+ * @throws {Uint16NotIntegerError} If value is not an integer
+ * @throws {Uint16NegativeError} If value is negative
+ * @throws {Uint16OverflowError} If value exceeds maximum (65535)
  * @example
  * ```javascript
  * import * as Uint16 from './primitives/Uint16/index.js';
@@ -26,22 +35,33 @@ export function from(value) {
 			numValue = Number.parseInt(value, 10);
 		}
 		if (Number.isNaN(numValue)) {
-			throw new Error(`Invalid Uint16 string: ${value}`);
+			throw new Uint16InvalidHexError(`Invalid Uint16 string: ${value}`, {
+				value,
+			});
 		}
 	} else {
 		numValue = value;
 	}
 
 	if (!Number.isInteger(numValue)) {
-		throw new Error(`Uint16 value must be an integer: ${numValue}`);
+		throw new Uint16NotIntegerError(
+			`Uint16 value must be an integer: ${numValue}`,
+			{ value: numValue },
+		);
 	}
 
 	if (numValue < 0) {
-		throw new Error(`Uint16 value cannot be negative: ${numValue}`);
+		throw new Uint16NegativeError(
+			`Uint16 value cannot be negative: ${numValue}`,
+			{ value: numValue },
+		);
 	}
 
 	if (numValue > MAX) {
-		throw new Error(`Uint16 value exceeds maximum (65535): ${numValue}`);
+		throw new Uint16OverflowError(
+			`Uint16 value exceeds maximum (65535): ${numValue}`,
+			{ value: numValue },
+		);
 	}
 
 	return /** @type {import('./Uint16Type.js').Uint16Type} */ (numValue);

@@ -1,3 +1,5 @@
+import { Uint16UnderflowError } from "./errors.js";
+
 /**
  * Subtract two Uint16 values with underflow checking
  *
@@ -6,7 +8,7 @@
  * @param {import('./Uint16Type.js').Uint16Type} a - First operand
  * @param {import('./Uint16Type.js').Uint16Type} b - Second operand
  * @returns {import('./Uint16Type.js').Uint16Type} Difference (a - b)
- * @throws {Error} If result is negative
+ * @throws {Uint16UnderflowError} If result is negative
  * @example
  * ```javascript
  * import * as Uint16 from './primitives/Uint16/index.js';
@@ -17,7 +19,10 @@
  */
 export function minus(a, b) {
 	if (a < b) {
-		throw new Error(`Uint16 underflow: ${a} - ${b} = ${a - b} is negative`);
+		throw new Uint16UnderflowError(
+			`Uint16 underflow: ${a} - ${b} = ${a - b} is negative`,
+			{ a, b },
+		);
 	}
 	return /** @type {import('./Uint16Type.js').Uint16Type} */ (a - b);
 }
