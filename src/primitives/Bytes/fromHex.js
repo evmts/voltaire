@@ -15,19 +15,26 @@ import { InvalidBytesFormatError } from "./errors.js";
  */
 export function fromHex(hex) {
 	if (!hex.startsWith("0x")) {
-		throw new InvalidBytesFormatError("Hex string must start with 0x", { hex });
+		throw new InvalidBytesFormatError("Hex string must start with 0x", {
+			value: hex,
+			expected: "0x-prefixed hex string",
+		});
 	}
 	const hexNoPrefix = hex.slice(2);
 	if (hexNoPrefix.length % 2 !== 0) {
 		throw new InvalidBytesFormatError("Hex string must have even length", {
-			hex,
+			value: hex,
+			expected: "even-length hex string",
 		});
 	}
 	const bytes = new Uint8Array(hexNoPrefix.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
 		const byte = Number.parseInt(hexNoPrefix.slice(i * 2, i * 2 + 2), 16);
 		if (Number.isNaN(byte)) {
-			throw new InvalidBytesFormatError("Invalid hex character", { hex });
+			throw new InvalidBytesFormatError("Invalid hex character", {
+				value: hex,
+				expected: "valid hex characters (0-9, a-f, A-F)",
+			});
 		}
 		bytes[i] = byte;
 	}

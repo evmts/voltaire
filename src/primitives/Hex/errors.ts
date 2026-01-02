@@ -1,28 +1,168 @@
-export class InvalidFormatError extends Error {
-	constructor(message = "Invalid hex format: missing 0x prefix") {
-		super(message);
+import {
+	InvalidFormatError as BaseInvalidFormatError,
+	InvalidLengthError as BaseInvalidLengthError,
+	InvalidRangeError as BaseInvalidRangeError,
+} from "../errors/index.js";
+
+interface ErrorOptions {
+	code?: string;
+	value?: unknown;
+	expected?: string;
+	context?: Record<string, unknown>;
+	docsPath?: string;
+	cause?: Error;
+}
+
+/**
+ * Error for invalid hex format (missing 0x prefix)
+ */
+export class InvalidFormatError extends BaseInvalidFormatError {
+	constructor(message = "Invalid hex format: missing 0x prefix", options: ErrorOptions = {}) {
+		super(message, {
+			code: options.code || "HEX_INVALID_FORMAT",
+			value: options.value,
+			expected: options.expected || "0x-prefixed hex string",
+			context: options.context,
+			docsPath: options.docsPath || "/primitives/hex#error-handling",
+			cause: options.cause,
+		});
 		this.name = "InvalidHexFormatError";
 	}
 }
 
-export class InvalidLengthError extends Error {
-	constructor(message = "Invalid hex length") {
-		super(message);
+/**
+ * Error for invalid hex length
+ */
+export class InvalidLengthError extends BaseInvalidLengthError {
+	constructor(message = "Invalid hex length", options: ErrorOptions = {}) {
+		super(message, {
+			code: options.code || "HEX_INVALID_LENGTH",
+			value: options.value,
+			expected: options.expected || "even-length hex string",
+			context: options.context,
+			docsPath: options.docsPath || "/primitives/hex#error-handling",
+			cause: options.cause,
+		});
 		this.name = "InvalidHexLengthError";
 	}
 }
 
-export class InvalidCharacterError extends Error {
-	constructor(message = "Invalid hex character") {
-		super(message);
+/**
+ * Error for invalid hex character
+ */
+export class InvalidCharacterError extends BaseInvalidFormatError {
+	constructor(message = "Invalid hex character", options: ErrorOptions = {}) {
+		super(message, {
+			code: options.code || "HEX_INVALID_CHARACTER",
+			value: options.value,
+			expected: options.expected || "valid hex characters (0-9, a-f, A-F)",
+			context: options.context,
+			docsPath: options.docsPath || "/primitives/hex#error-handling",
+			cause: options.cause,
+		});
 		this.name = "InvalidHexCharacterError";
 	}
 }
 
-export class OddLengthError extends Error {
-	constructor(message = "Odd length hex string") {
-		super(message);
+/**
+ * Error for odd length hex string
+ */
+export class OddLengthError extends BaseInvalidLengthError {
+	constructor(message = "Odd length hex string", options: ErrorOptions = {}) {
+		super(message, {
+			code: options.code || "HEX_ODD_LENGTH",
+			value: options.value,
+			expected: options.expected || "even number of hex characters",
+			context: options.context,
+			docsPath: options.docsPath || "/primitives/hex#error-handling",
+			cause: options.cause,
+		});
 		this.name = "OddLengthHexError";
+	}
+}
+
+/**
+ * Error for hex size exceeding target size
+ */
+export class SizeExceededError extends BaseInvalidLengthError {
+	constructor(message = "Hex size exceeds target size", options: ErrorOptions = {}) {
+		super(message, {
+			code: options.code || "HEX_SIZE_EXCEEDED",
+			value: options.value,
+			expected: options.expected || "hex that fits within target size",
+			context: options.context,
+			docsPath: options.docsPath || "/primitives/hex#error-handling",
+			cause: options.cause,
+		});
+		this.name = "HexSizeExceededError";
+	}
+}
+
+/**
+ * Error for invalid boolean hex value
+ */
+export class InvalidBooleanHexError extends BaseInvalidRangeError {
+	constructor(message = "Invalid boolean hex value", options: ErrorOptions = {}) {
+		super(message, {
+			code: options.code || "HEX_INVALID_BOOLEAN",
+			value: options.value,
+			expected: options.expected || "0x0/0x00 or 0x1/0x01",
+			context: options.context,
+			docsPath: options.docsPath || "/primitives/hex#error-handling",
+			cause: options.cause,
+		});
+		this.name = "InvalidBooleanHexError";
+	}
+}
+
+/**
+ * Error for negative number in hex conversion
+ */
+export class NegativeNumberError extends BaseInvalidRangeError {
+	constructor(message = "Number must be non-negative", options: ErrorOptions = {}) {
+		super(message, {
+			code: options.code || "HEX_NEGATIVE_NUMBER",
+			value: options.value,
+			expected: options.expected || "non-negative number",
+			context: options.context,
+			docsPath: options.docsPath || "/primitives/hex#error-handling",
+			cause: options.cause,
+		});
+		this.name = "NegativeNumberError";
+	}
+}
+
+/**
+ * Error for number exceeding MAX_SAFE_INTEGER
+ */
+export class UnsafeIntegerError extends BaseInvalidRangeError {
+	constructor(message = "Number exceeds MAX_SAFE_INTEGER", options: ErrorOptions = {}) {
+		super(message, {
+			code: options.code || "HEX_UNSAFE_INTEGER",
+			value: options.value,
+			expected: options.expected || `number <= ${Number.MAX_SAFE_INTEGER}`,
+			context: options.context,
+			docsPath: options.docsPath || "/primitives/hex#error-handling",
+			cause: options.cause,
+		});
+		this.name = "UnsafeIntegerError";
+	}
+}
+
+/**
+ * Error for non-integer number
+ */
+export class NonIntegerError extends BaseInvalidRangeError {
+	constructor(message = "Number must be an integer", options: ErrorOptions = {}) {
+		super(message, {
+			code: options.code || "HEX_NON_INTEGER",
+			value: options.value,
+			expected: options.expected || "integer value",
+			context: options.context,
+			docsPath: options.docsPath || "/primitives/hex#error-handling",
+			cause: options.cause,
+		});
+		this.name = "NonIntegerError";
 	}
 }
 
