@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HEX_SIZE, SIZE } from "./constants.js";
+import { HEX_SIZE, MAX_ADDRESS, SIZE, ZERO_ADDRESS } from "./constants.js";
 
 describe("constants", () => {
 	describe("SIZE", () => {
@@ -24,6 +24,34 @@ describe("constants", () => {
 
 		it("equals SIZE * 2 + 2 for 0x prefix", () => {
 			expect(HEX_SIZE).toBe(SIZE * 2 + 2);
+		});
+	});
+
+	describe("ZERO_ADDRESS", () => {
+		it("is 20 bytes", () => {
+			expect(ZERO_ADDRESS.length).toBe(SIZE);
+		});
+
+		it("is all zeros", () => {
+			expect(ZERO_ADDRESS.every((b) => b === 0)).toBe(true);
+		});
+
+		it("is a Uint8Array", () => {
+			expect(ZERO_ADDRESS).toBeInstanceOf(Uint8Array);
+		});
+	});
+
+	describe("MAX_ADDRESS", () => {
+		it("is 20 bytes", () => {
+			expect(MAX_ADDRESS.length).toBe(SIZE);
+		});
+
+		it("is all 0xff", () => {
+			expect(MAX_ADDRESS.every((b) => b === 0xff)).toBe(true);
+		});
+
+		it("is a Uint8Array", () => {
+			expect(MAX_ADDRESS).toBeInstanceOf(Uint8Array);
 		});
 	});
 });
