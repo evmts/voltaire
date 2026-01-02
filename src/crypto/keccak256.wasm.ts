@@ -20,6 +20,7 @@
  */
 
 import type { HashType } from "../primitives/Hash/index.js";
+import { encodeList } from "../primitives/Rlp/encodeList.js";
 import * as loader from "../wasm-loader/loader.js";
 
 let isInitialized = false;
@@ -142,6 +143,22 @@ export function topic(
 }
 
 /**
+ * Convert nonce to minimal bytes for RLP encoding
+ */
+function nonceToBytes(nonce: bigint): Uint8Array {
+	if (nonce === 0n) {
+		return new Uint8Array(0); // Empty for RLP encoding of 0
+	}
+	const hex = nonce.toString(16);
+	const paddedHex = hex.length % 2 ? `0${hex}` : hex;
+	const bytes = new Uint8Array(paddedHex.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(paddedHex.slice(i * 2, i * 2 + 2), 16);
+	}
+	return bytes;
+}
+
+/**
  * Compute CREATE contract address
  * @param sender - Sender address (20 bytes)
  * @param nonce - Transaction nonce
@@ -154,26 +171,10 @@ export function contractAddress(sender: Uint8Array, nonce: bigint): Uint8Array {
 	if (sender.length !== 20) {
 		throw new Error("Sender must be 20 bytes");
 	}
-	// Convert nonce to minimal bytes
-	let nonceBytes: Uint8Array;
-	if (nonce === 0n) {
-		nonceBytes = new Uint8Array([0x80]); // RLP empty list
-	} else {
-		const hex = nonce.toString(16);
-		const paddedHex = hex.length % 2 ? `0${hex}` : hex;
-		nonceBytes = new Uint8Array(paddedHex.length / 2);
-		for (let i = 0; i < nonceBytes.length; i++) {
-			nonceBytes[i] = Number.parseInt(paddedHex.slice(i * 2, i * 2 + 2), 16);
-		}
-	}
-
-	// Concatenate sender and nonce bytes
-	const combined = new Uint8Array(sender.length + nonceBytes.length);
-	combined.set(sender, 0);
-	combined.set(nonceBytes, sender.length);
-
-	const hash = loader.keccak256(combined);
-	return hash.slice(12); // Take last 20 bytes
+	// RLP encode [sender, nonce]
+	const rlpEncoded = encodeList([sender, nonceToBytes(nonce)]);
+	const hashResult = loader.keccak256(rlpEncoded);
+	return hashResult.slice(12); // Take last 20 bytes
 }
 
 /**
