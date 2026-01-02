@@ -1,21 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import * as BrandedAddress from "../Address/internal-index.js";
 import * as ChainId from "../ChainId/index.js";
 import * as DomainSeparator from "../DomainSeparator/index.js";
 import * as Hash from "../Hash/index.js";
 import * as Domain from "./index.js";
-
-// Mock keccak256 for testing
-function mockKeccak256(data: Uint8Array): Uint8Array {
-	// Simple mock - XOR all bytes and repeat
-	let hash = 0;
-	for (const byte of data) {
-		hash ^= byte;
-	}
-	const result = new Uint8Array(32);
-	result.fill(hash);
-	return result;
-}
 
 describe("Domain", () => {
 	describe("from", () => {
@@ -82,7 +71,7 @@ describe("Domain", () => {
 				chainId: 1,
 			});
 
-			const domainSep = Domain.toHash(domain, { keccak256: mockKeccak256 });
+			const domainSep = Domain.toHash(domain, { keccak256: keccak256 });
 			expect(domainSep.length).toBe(32);
 		});
 
@@ -92,10 +81,103 @@ describe("Domain", () => {
 				version: "1",
 			});
 
-			const sep1 = Domain.toHash(domain, { keccak256: mockKeccak256 });
-			const sep2 = Domain.toHash(domain, { keccak256: mockKeccak256 });
+			const sep1 = Domain.toHash(domain, { keccak256: keccak256 });
+			const sep2 = Domain.toHash(domain, { keccak256: keccak256 });
 
 			expect(DomainSeparator.equals(sep1, sep2)).toBe(true);
+		});
+
+		it("should produce different separator when name changes", () => {
+			const domain1 = Domain.from({
+				name: "DApp1",
+				version: "1",
+				chainId: 1,
+			});
+
+			const domain2 = Domain.from({
+				name: "DApp2",
+				version: "1",
+				chainId: 1,
+			});
+
+			const sep1 = Domain.toHash(domain1, { keccak256: keccak256 });
+			const sep2 = Domain.toHash(domain2, { keccak256: keccak256 });
+
+			expect(DomainSeparator.equals(sep1, sep2)).toBe(false);
+		});
+
+		it("should produce different separator when version changes", () => {
+			const domain1 = Domain.from({
+				name: "MyDApp",
+				version: "1",
+				chainId: 1,
+			});
+
+			const domain2 = Domain.from({
+				name: "MyDApp",
+				version: "2",
+				chainId: 1,
+			});
+
+			const sep1 = Domain.toHash(domain1, { keccak256: keccak256 });
+			const sep2 = Domain.toHash(domain2, { keccak256: keccak256 });
+
+			expect(DomainSeparator.equals(sep1, sep2)).toBe(false);
+		});
+
+		it("should produce different separator when chainId changes", () => {
+			const domain1 = Domain.from({
+				name: "MyDApp",
+				version: "1",
+				chainId: 1,
+			});
+
+			const domain2 = Domain.from({
+				name: "MyDApp",
+				version: "1",
+				chainId: 137,
+			});
+
+			const sep1 = Domain.toHash(domain1, { keccak256: keccak256 });
+			const sep2 = Domain.toHash(domain2, { keccak256: keccak256 });
+
+			expect(DomainSeparator.equals(sep1, sep2)).toBe(false);
+		});
+
+		it("should produce different separator when verifyingContract changes", () => {
+			const domain1 = Domain.from({
+				name: "MyDApp",
+				version: "1",
+				verifyingContract: "0x0000000000000000000000000000000000000001",
+			});
+
+			const domain2 = Domain.from({
+				name: "MyDApp",
+				version: "1",
+				verifyingContract: "0x0000000000000000000000000000000000000002",
+			});
+
+			const sep1 = Domain.toHash(domain1, { keccak256: keccak256 });
+			const sep2 = Domain.toHash(domain2, { keccak256: keccak256 });
+
+			expect(DomainSeparator.equals(sep1, sep2)).toBe(false);
+		});
+
+		it("should produce different separator when salt changes", () => {
+			const domain1 = Domain.from({
+				name: "MyDApp",
+				salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+			});
+
+			const domain2 = Domain.from({
+				name: "MyDApp",
+				salt: "0x0000000000000000000000000000000000000000000000000000000000000002",
+			});
+
+			const sep1 = Domain.toHash(domain1, { keccak256: keccak256 });
+			const sep2 = Domain.toHash(domain2, { keccak256: keccak256 });
+
+			expect(DomainSeparator.equals(sep1, sep2)).toBe(false);
 		});
 	});
 
