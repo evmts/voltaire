@@ -56,9 +56,7 @@ export function merkleRoot(hashes) {
 				const combined = new Uint8Array(left.length + right.length);
 				combined.set(left, 0);
 				combined.set(right, left.length);
-				nextLevel.push(
-					/** @type {*} */ (Keccak256(combined)),
-				);
+				nextLevel.push(/** @type {*} */ (Keccak256(combined)));
 			}
 		}
 
