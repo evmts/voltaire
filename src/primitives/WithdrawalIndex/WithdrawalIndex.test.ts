@@ -34,6 +34,23 @@ describe("WithdrawalIndex", () => {
 		it("rejects non-integer number", () => {
 			expect(() => WithdrawalIndex.from(1.5)).toThrow("safe integer");
 		});
+
+		it("accepts max uint64 value", () => {
+			const maxUint64 = 18446744073709551615n;
+			const idx = WithdrawalIndex.from(maxUint64);
+			expect(idx).toBe(maxUint64);
+		});
+
+		it("rejects value exceeding uint64 max", () => {
+			const overMax = 18446744073709551616n;
+			expect(() => WithdrawalIndex.from(overMax)).toThrow("exceeds uint64 max");
+		});
+
+		it("rejects large string value exceeding uint64", () => {
+			expect(() => WithdrawalIndex.from("18446744073709551616")).toThrow(
+				"exceeds uint64 max",
+			);
+		});
 	});
 
 	describe("toNumber", () => {
