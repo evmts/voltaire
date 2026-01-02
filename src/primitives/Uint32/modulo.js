@@ -1,3 +1,5 @@
+import { Uint32DivisionByZeroError } from "./errors.js";
+
 /**
  * Modulo Uint32 value
  *
@@ -6,7 +8,7 @@
  * @param {import('./Uint32Type.js').Uint32Type} uint - Dividend
  * @param {import('./Uint32Type.js').Uint32Type} b - Divisor
  * @returns {import('./Uint32Type.js').Uint32Type} Remainder (uint % b)
- * @throws {Error} If divisor is zero
+ * @throws {Uint32DivisionByZeroError} If divisor is zero
  * @example
  * ```javascript
  * import * as Uint32 from './primitives/Uint32/index.js';
@@ -17,7 +19,7 @@
  */
 export function modulo(uint, b) {
 	if (b === 0) {
-		throw new Error("Modulo by zero");
+		throw new Uint32DivisionByZeroError("Modulo by zero", { dividend: uint });
 	}
 	return /** @type {import('./Uint32Type.js').Uint32Type} */ (uint % b);
 }

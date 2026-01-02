@@ -1,3 +1,5 @@
+import { Uint32DivisionByZeroError } from "./errors.js";
+
 /**
  * Divide Uint32 value (integer division)
  *
@@ -6,7 +8,7 @@
  * @param {import('./Uint32Type.js').Uint32Type} uint - Dividend
  * @param {import('./Uint32Type.js').Uint32Type} b - Divisor
  * @returns {import('./Uint32Type.js').Uint32Type} Quotient (uint / b) truncated
- * @throws {Error} If divisor is zero
+ * @throws {Uint32DivisionByZeroError} If divisor is zero
  * @example
  * ```javascript
  * import * as Uint32 from './primitives/Uint32/index.js';
@@ -17,7 +19,7 @@
  */
 export function dividedBy(uint, b) {
 	if (b === 0) {
-		throw new Error("Division by zero");
+		throw new Uint32DivisionByZeroError("Division by zero", { dividend: uint });
 	}
 	return /** @type {import('./Uint32Type.js').Uint32Type} */ (
 		Math.floor(uint / b)
