@@ -5,10 +5,10 @@ import type { HexType } from "./HexType.js";
  *
  * @see https://voltaire.tevm.sh/primitives/hex for Hex documentation
  * @since 0.0.0
- * @param value - BigInt to convert
+ * @param value - BigInt to convert (must be non-negative)
  * @param size - Optional byte size for padding
  * @returns Hex string
- * @throws {never}
+ * @throws {Error} If value is negative
  * @example
  * ```typescript
  * import * as Hex from './primitives/Hex/index.js';
@@ -17,6 +17,9 @@ import type { HexType } from "./HexType.js";
  * ```
  */
 export function fromBigInt(value: bigint, size?: number): HexType {
+	if (value < 0n) {
+		throw new Error(`Cannot convert negative bigint to hex: ${value}`);
+	}
 	let hex = value.toString(16);
 	if (size !== undefined) {
 		hex = hex.padStart(size * 2, "0");
