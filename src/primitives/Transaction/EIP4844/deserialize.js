@@ -103,7 +103,7 @@ export function deserialize(data) {
 		});
 	}
 	const blobVersionedHashes = blobHashesData.value.map(
-		(/** @type {any} */ hashData) => {
+		(/** @type {any} */ hashData, /** @type {number} */ index) => {
 			if (hashData.type !== "bytes" || hashData.value.length !== 32) {
 				throw new DecodingError("Invalid blob versioned hash", {
 					code: "INVALID_BLOB_HASH",
@@ -111,6 +111,22 @@ export function deserialize(data) {
 					docsPath:
 						"/primitives/transaction/eip4844/deserialize#error-handling",
 				});
+			}
+			// EIP-4844 requires version byte 0x01
+			if (hashData.value[0] !== 0x01) {
+				throw new DecodingError(
+					`Invalid blob versioned hash version byte at index ${index}: expected 0x01, got 0x${hashData.value[0].toString(16).padStart(2, "0")}`,
+					{
+						code: "INVALID_BLOB_VERSION_BYTE",
+						context: {
+							index,
+							expected: 0x01,
+							actual: hashData.value[0],
+						},
+						docsPath:
+							"/primitives/transaction/eip4844/deserialize#error-handling",
+					},
+				);
 			}
 			return /** @type {import('../../Hash/index.js').HashType} */ (
 				hashData.value

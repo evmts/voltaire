@@ -169,4 +169,88 @@ describe("TransactionEIP4844.deserialize", () => {
 		const invalidData = new Uint8Array([0x02, 0xc0]); // Wrong type
 		expect(() => deserialize(invalidData)).toThrow();
 	});
+
+	it("throws for invalid blob version byte (0x00)", () => {
+		const original = TransactionEIP4844({
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 5n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]),
+			accessList: [],
+			maxFeePerBlobGas: 2000000000n,
+			blobVersionedHashes: [
+				Hash(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		});
+
+		const serialized = serialize(original);
+		// Mutate blob hash to have wrong version byte (0x00 instead of 0x01)
+		// Find the blob hash in the serialized data and change the version byte
+		const serializedCopy = new Uint8Array(serialized);
+		// The blob hash starts with 0x01, find it and change to 0x00
+		for (let i = 0; i < serializedCopy.length - 32; i++) {
+			if (
+				serializedCopy[i] === 0x01 &&
+				serializedCopy[i + 31] === 0x01 &&
+				serializedCopy[i + 1] === 0x00
+			) {
+				serializedCopy[i] = 0x00;
+				break;
+			}
+		}
+		expect(() => deserialize(serializedCopy)).toThrow(
+			"Invalid blob versioned hash version byte",
+		);
+	});
+
+	it("throws for invalid blob version byte (0x02)", () => {
+		const original = TransactionEIP4844({
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 5n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]),
+			accessList: [],
+			maxFeePerBlobGas: 2000000000n,
+			blobVersionedHashes: [
+				Hash(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		});
+
+		const serialized = serialize(original);
+		const serializedCopy = new Uint8Array(serialized);
+		// Find the blob hash and change version byte to 0x02
+		for (let i = 0; i < serializedCopy.length - 32; i++) {
+			if (
+				serializedCopy[i] === 0x01 &&
+				serializedCopy[i + 31] === 0x01 &&
+				serializedCopy[i + 1] === 0x00
+			) {
+				serializedCopy[i] = 0x02;
+				break;
+			}
+		}
+		expect(() => deserialize(serializedCopy)).toThrow(
+			"Invalid blob versioned hash version byte",
+		);
+	});
 });
