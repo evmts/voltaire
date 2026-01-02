@@ -40,9 +40,15 @@ describe("Domain", () => {
 		});
 
 		it("should throw on empty domain", () => {
-			expect(() => Domain.from({})).toThrow(
-				"Domain must have at least one field defined",
-			);
+			try {
+				Domain.from({});
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidDomainError");
+				expect((e as Error).message).toBe(
+					"Domain must have at least one field defined",
+				);
+			}
 		});
 
 		it("should accept ChainId instance", () => {

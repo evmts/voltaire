@@ -60,26 +60,50 @@ describe("TypedData", () => {
 
 		it("should throw on missing types", () => {
 			const invalid = { ...validTypedData, types: undefined };
-			// @ts-expect-error - testing invalid input
-			expect(() => TypedData.from(invalid)).toThrow("must have types");
+			try {
+				// @ts-expect-error - testing invalid input
+				TypedData.from(invalid);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidTypedDataError");
+				expect((e as Error).message).toContain("must have types");
+			}
 		});
 
 		it("should throw on missing primaryType", () => {
 			const invalid = { ...validTypedData, primaryType: undefined };
-			// @ts-expect-error - testing invalid input
-			expect(() => TypedData.from(invalid)).toThrow("must have primaryType");
+			try {
+				// @ts-expect-error - testing invalid input
+				TypedData.from(invalid);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidTypedDataError");
+				expect((e as Error).message).toContain("must have primaryType");
+			}
 		});
 
 		it("should throw on missing domain", () => {
 			const invalid = { ...validTypedData, domain: undefined };
-			// @ts-expect-error - testing invalid input
-			expect(() => TypedData.from(invalid)).toThrow("must have domain");
+			try {
+				// @ts-expect-error - testing invalid input
+				TypedData.from(invalid);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidTypedDataError");
+				expect((e as Error).message).toContain("must have domain");
+			}
 		});
 
 		it("should throw on missing message", () => {
 			const invalid = { ...validTypedData, message: undefined };
-			// @ts-expect-error - testing invalid input
-			expect(() => TypedData.from(invalid)).toThrow("must have message");
+			try {
+				// @ts-expect-error - testing invalid input
+				TypedData.from(invalid);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidTypedDataError");
+				expect((e as Error).message).toContain("must have message");
+			}
 		});
 
 		it("should throw on missing EIP712Domain", () => {
@@ -87,15 +111,25 @@ describe("TypedData", () => {
 				...validTypedData,
 				types: { Person: validTypedData.types.Person },
 			};
-			// @ts-expect-error - testing invalid input
-			expect(() => TypedData.from(invalid)).toThrow(
-				"must include EIP712Domain",
-			);
+			try {
+				// @ts-expect-error - testing invalid input
+				TypedData.from(invalid);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidTypedDataError");
+				expect((e as Error).message).toContain("must include EIP712Domain");
+			}
 		});
 
 		it("should throw on invalid primaryType", () => {
 			const invalid = { ...validTypedData, primaryType: "NonExistent" };
-			expect(() => TypedData.from(invalid)).toThrow("not found in types");
+			try {
+				TypedData.from(invalid);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidTypedDataError");
+				expect((e as Error).message).toContain("not found in types");
+			}
 		});
 	});
 
@@ -132,8 +166,14 @@ describe("TypedData", () => {
 		it("should throw on invalid types", () => {
 			const typedData = TypedData.from(validTypedData);
 			const invalid = { ...typedData, types: "invalid" };
-			// @ts-expect-error - testing invalid input
-			expect(() => TypedData.validate(invalid)).toThrow("must be an object");
+			try {
+				// @ts-expect-error - testing invalid input
+				TypedData.validate(invalid);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidTypedDataError");
+				expect((e as Error).message).toContain("must be an object");
+			}
 		});
 
 		it("should throw on missing type dependency", () => {
@@ -147,7 +187,13 @@ describe("TypedData", () => {
 				message: {},
 			};
 			const typedData = TypedData.from(invalid);
-			expect(() => TypedData.validate(typedData)).toThrow("not found");
+			try {
+				TypedData.validate(typedData);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidTypedDataError");
+				expect((e as Error).message).toContain("not found");
+			}
 		});
 
 		it("should throw on invalid field definition", () => {
@@ -162,7 +208,13 @@ describe("TypedData", () => {
 			};
 			// @ts-expect-error - testing invalid input
 			const typedData = TypedData.from(invalid);
-			expect(() => TypedData.validate(typedData)).toThrow("must have a type");
+			try {
+				TypedData.validate(typedData);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidTypedDataError");
+				expect((e as Error).message).toContain("must have a type");
+			}
 		});
 	});
 

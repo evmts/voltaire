@@ -863,3 +863,71 @@ describe("SIWE Type Safety", () => {
 		}
 	});
 });
+
+// ============================================================================
+// Error Type Tests
+// ============================================================================
+
+import {
+	InvalidFieldError,
+	InvalidNonceLengthError,
+	InvalidSiweMessageError,
+	MissingFieldError,
+	SiweParseError,
+} from "./errors.js";
+
+describe("SIWE Error Types", () => {
+	it("InvalidSiweMessageError has correct name", () => {
+		const err = new InvalidSiweMessageError("test error");
+		expect(err.name).toBe("InvalidSiweMessageError");
+		expect(err.code).toBe("SIWE_INVALID_MESSAGE");
+	});
+
+	it("MissingFieldError has correct name", () => {
+		const err = new MissingFieldError("domain");
+		expect(err.name).toBe("MissingFieldError");
+		expect(err.code).toBe("SIWE_MISSING_FIELD");
+	});
+
+	it("InvalidFieldError has correct name", () => {
+		const err = new InvalidFieldError("chainId", "must be a number");
+		expect(err.name).toBe("InvalidFieldError");
+		expect(err.code).toBe("SIWE_INVALID_CHAINID");
+	});
+
+	it("InvalidNonceLengthError has correct name", () => {
+		const err = new InvalidNonceLengthError(5);
+		expect(err.name).toBe("InvalidNonceLengthError");
+		expect(err.code).toBe("SIWE_INVALID_NONCE_LENGTH");
+	});
+
+	it("SiweParseError has correct name", () => {
+		const err = new SiweParseError("failed to parse");
+		expect(err.name).toBe("SiweParseError");
+		expect(err.code).toBe("SIWE_PARSE_ERROR");
+	});
+
+	it("parse throws error with correct name on invalid input", () => {
+		try {
+			Siwe.parse("invalid message");
+			expect.fail("Should have thrown");
+		} catch (err) {
+			expect(err).toBeInstanceOf(Error);
+			if (err instanceof Error) {
+				expect(err.name).toBe("InvalidSiweMessageError");
+			}
+		}
+	});
+
+	it("generateNonce throws error with correct name", () => {
+		try {
+			Siwe.generateNonce(5);
+			expect.fail("Should have thrown");
+		} catch (err) {
+			expect(err).toBeInstanceOf(Error);
+			if (err instanceof Error) {
+				expect(err.name).toBe("InvalidNonceLengthError");
+			}
+		}
+	});
+});

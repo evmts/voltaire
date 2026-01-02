@@ -37,9 +37,13 @@ describe("DomainSeparator", () => {
 		});
 
 		it("should throw on wrong length", () => {
-			expect(() => DomainSeparator.fromBytes(new Uint8Array(16))).toThrow(
-				"DomainSeparator must be 32 bytes",
-			);
+			try {
+				DomainSeparator.fromBytes(new Uint8Array(16));
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidDomainSeparatorLengthError");
+				expect((e as Error).message).toContain("DomainSeparator must be 32 bytes");
+			}
 		});
 	});
 

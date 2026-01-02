@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { InvalidFilterIdError } from "./errors.js";
 import * as FilterId from "./index.js";
 
 describe("FilterId", () => {
@@ -13,15 +14,25 @@ describe("FilterId", () => {
 			expect(id).toBe("0xabcdef123456");
 		});
 
-		it("throws on non-string", () => {
-			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input type
-			expect(() => FilterId.from(123 as any)).toThrow(
-				FilterId.InvalidFilterIdError,
-			);
+		it("throws on non-string with correct error type", () => {
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input type
+				FilterId.from(123 as any);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidFilterIdError);
+				expect((e as InvalidFilterIdError).name).toBe("InvalidFilterIdError");
+			}
 		});
 
-		it("throws on empty string", () => {
-			expect(() => FilterId.from("")).toThrow(FilterId.InvalidFilterIdError);
+		it("throws on empty string with correct error type", () => {
+			try {
+				FilterId.from("");
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidFilterIdError);
+				expect((e as InvalidFilterIdError).name).toBe("InvalidFilterIdError");
+			}
 		});
 	});
 

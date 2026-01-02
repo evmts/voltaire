@@ -6,6 +6,7 @@ import * as TransactionHash from "../TransactionHash/index.js";
 import * as TransactionIndex from "../TransactionIndex/index.js";
 import * as TransactionStatus from "../TransactionStatus/index.js";
 import type { Uint256Type } from "../Uint/Uint256Type.js";
+import { InvalidReceiptError, InvalidReceiptLengthError } from "./errors.js";
 import * as Receipt from "./index.js";
 
 describe("Receipt", () => {
@@ -55,10 +56,17 @@ describe("Receipt", () => {
 
 		it("throws on invalid logsBloom length", () => {
 			const invalid = { ...mockReceipt, logsBloom: new Uint8Array(100) };
-			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
-			expect(() => Receipt.from(invalid as any)).toThrow(
-				"logsBloom must be 256 bytes",
-			);
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+				Receipt.from(invalid as any);
+				expect.fail("Should have thrown");
+			} catch (err) {
+				expect(err).toBeInstanceOf(InvalidReceiptLengthError);
+				if (err instanceof InvalidReceiptLengthError) {
+					expect(err.name).toBe("InvalidReceiptLengthError");
+					expect(err.message).toContain("logsBloom must be 256 bytes");
+				}
+			}
 		});
 
 		it("handles contract creation receipt", () => {
@@ -84,6 +92,22 @@ describe("Receipt", () => {
 			const receipt = Receipt.from(eip4844);
 			expect(receipt.type).toBe("eip4844");
 			expect(receipt.blobGasUsed).toBe(131072n);
+		});
+	});
+
+	describe("error types", () => {
+		it("InvalidReceiptError extends InvalidFormatError", () => {
+			const err = new InvalidReceiptError("test error");
+			expect(err.name).toBe("InvalidReceiptError");
+			expect(typeof err.code).toBe("string");
+			expect(err.code).toBe("RECEIPT_INVALID");
+		});
+
+		it("InvalidReceiptLengthError extends InvalidLengthError", () => {
+			const err = new InvalidReceiptLengthError("logsBloom", 256, 100);
+			expect(err.name).toBe("InvalidReceiptLengthError");
+			expect(err.code).toBe("RECEIPT_INVALID_LENGTH");
+			expect(err.message).toContain("logsBloom must be 256 bytes");
 		});
 	});
 });
