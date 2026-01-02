@@ -122,4 +122,54 @@ describe("TransactionEIP2930.deserialize", () => {
 			expect((e as DecodingError).name).toBe("DecodingError");
 		}
 	});
+
+	it("throws DecodingError for invalid yParity value", () => {
+		// Create a valid transaction, serialize it, then modify yParity to invalid value
+		const original = TransactionEIP2930({
+			type: Type.EIP2930,
+			chainId: 1n,
+			nonce: 0n,
+			gasPrice: 20000000000n,
+			gasLimit: 21000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		});
+
+		const serialized = serialize(original);
+		// Find and modify yParity byte in the serialized data
+		// yParity is encoded as single byte 0x00 or 0x01, need to find and change to 0x02
+		// The structure is: type byte + RLP list containing fields
+		// yParity is field 8 (0-indexed), encoded as a single byte
+		// We search for the pattern where yParity is located and modify it
+		const modified = new Uint8Array(serialized);
+		// In RLP, single byte 0x00 is encoded as 0x80 (empty string), single byte 0x01 is 0x01
+		// For yParity = 0, it's encoded as 0x80, we need to change to 0x02 (invalid)
+		// Find the position - yParity comes after accessList encoding and before r,s
+		// The r value is 32 bytes of 0x01, so we look for that pattern
+		const rStart = modified.findIndex((_, i) => {
+			if (i + 32 > modified.length) return false;
+			for (let j = 0; j < 32; j++) {
+				if (modified[i + j] !== 0x01) return false;
+			}
+			return true;
+		});
+		// yParity is encoded just before the length prefix of r
+		// r is 32 bytes, so it's prefixed with 0xa0 (0x80 + 32)
+		// yParity is the byte before that
+		if (rStart > 1) {
+			modified[rStart - 2] = 0x02; // Change yParity to invalid value 2
+		}
+
+		expect(() => deserialize(modified)).toThrow(DecodingError);
+		try {
+			deserialize(modified);
+		} catch (e) {
+			expect((e as DecodingError).message).toContain("yParity must be 0 or 1");
+		}
+	});
 });
