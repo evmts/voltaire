@@ -2,6 +2,7 @@
 import { pbkdf2 } from "@noble/hashes/pbkdf2.js";
 import { scrypt } from "@noble/hashes/scrypt.js";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { InvalidIterationCountError } from "./errors.js";
 
 /**
  * Derive key using scrypt KDF
@@ -35,11 +36,16 @@ export function deriveScrypt(
  *
  * @param {string | Uint8Array} password - Password
  * @param {Uint8Array} salt - Salt (32 bytes recommended)
- * @param {number} c - Iteration count (default: 262144)
+ * @param {number} c - Iteration count (default: 262144, must be at least 1)
  * @param {number} dklen - Derived key length (default: 32)
  * @returns {Uint8Array} Derived key
+ * @throws {InvalidIterationCountError} If iteration count is less than 1
  */
 export function derivePbkdf2(password, salt, c = 262144, dklen = 32) {
+	if (c < 1) {
+		throw new InvalidIterationCountError(c);
+	}
+
 	const passwordBytes =
 		typeof password === "string"
 			? new TextEncoder().encode(password)

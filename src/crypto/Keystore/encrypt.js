@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { keccak_256 } from "@noble/hashes/sha3.js";
 import { encryptAesCtr } from "./aesCtr.js";
-import { EncryptionError } from "./errors.js";
+import { EncryptionError, InvalidIterationCountError } from "./errors.js";
 import { derivePbkdf2, deriveScrypt } from "./kdf.js";
 import { bytesToHex, concat, generateUuid } from "./utils.js";
 
@@ -96,6 +96,10 @@ export async function encrypt(privateKey, password, options = {}) {
 
 		return keystore;
 	} catch (error) {
+		// Re-throw InvalidIterationCountError without wrapping
+		if (error instanceof InvalidIterationCountError) {
+			throw error;
+		}
 		throw new EncryptionError(`Encryption failed: ${error.message}`);
 	}
 }
