@@ -1,9 +1,20 @@
+import {
+	IntegerOverflowError,
+	IntegerUnderflowError,
+	InvalidFormatError,
+} from "../errors/index.js";
+
+const INT32_MIN = -2147483648;
+const INT32_MAX = 2147483647;
+
 /**
  * Create Int32 from various input types
  *
  * @param {number | bigint | string} value - Value to convert
  * @returns {import('./Int32Type.js').BrandedInt32} Int32 value
- * @throws {Error} If value is out of range
+ * @throws {InvalidFormatError} If value cannot be converted
+ * @throws {IntegerOverflowError} If value exceeds INT32_MAX
+ * @throws {IntegerUnderflowError} If value is below INT32_MIN
  * @example
  * ```javascript
  * import * as Int32 from './primitives/Int32/index.js';
@@ -18,29 +29,55 @@ export function from(value) {
 	if (typeof value === "number") {
 		num = value;
 	} else if (typeof value === "bigint") {
-		if (value < -2147483648n || value > 2147483647n) {
-			throw new Error(
-				`Int32 value out of range: ${value} (must be between -2147483648 and 2147483647)`,
-			);
+		if (value > BigInt(INT32_MAX)) {
+			throw new IntegerOverflowError(`Int32 value exceeds maximum: ${value}`, {
+				value,
+				max: INT32_MAX,
+				type: "int32",
+			});
+		}
+		if (value < BigInt(INT32_MIN)) {
+			throw new IntegerUnderflowError(`Int32 value is below minimum: ${value}`, {
+				value,
+				min: INT32_MIN,
+				type: "int32",
+			});
 		}
 		num = Number(value);
 	} else if (typeof value === "string") {
 		const parsed = Number(value);
 		if (Number.isNaN(parsed)) {
-			throw new Error(`Cannot convert string to Int32: ${value}`);
+			throw new InvalidFormatError(`Cannot convert string to Int32: ${value}`, {
+				value,
+				expected: "valid numeric string",
+				docsPath: "/primitives/int32#from",
+			});
 		}
 		num = parsed;
 	} else {
-		throw new Error(`Cannot convert ${typeof value} to Int32`);
+		throw new InvalidFormatError(`Cannot convert ${typeof value} to Int32`, {
+			value,
+			expected: "number, bigint, or string",
+			docsPath: "/primitives/int32#from",
+		});
 	}
 
 	// Truncate to 32-bit signed integer
 	num = num | 0;
 
-	if (num < -2147483648 || num > 2147483647) {
-		throw new Error(
-			`Int32 value out of range: ${num} (must be between -2147483648 and 2147483647)`,
-		);
+	if (num > INT32_MAX) {
+		throw new IntegerOverflowError(`Int32 value exceeds maximum: ${num}`, {
+			value: num,
+			max: INT32_MAX,
+			type: "int32",
+		});
+	}
+	if (num < INT32_MIN) {
+		throw new IntegerUnderflowError(`Int32 value is below minimum: ${num}`, {
+			value: num,
+			min: INT32_MIN,
+			type: "int32",
+		});
 	}
 
 	return /** @type {import('./Int32Type.js').BrandedInt32} */ (num);

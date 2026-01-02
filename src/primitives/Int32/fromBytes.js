@@ -1,13 +1,19 @@
+import { InvalidLengthError } from "../errors/index.js";
+
 /**
  * Create Int32 from bytes (big-endian, two's complement)
  *
  * @param {Uint8Array} bytes - Bytes to convert (up to 4 bytes)
  * @returns {import('./Int32Type.js').BrandedInt32} Int32 value
- * @throws {Error} If bytes length exceeds 4
+ * @throws {InvalidLengthError} If bytes length exceeds 4
  */
 export function fromBytes(bytes) {
 	if (bytes.length > 4) {
-		throw new Error(`Int32 bytes cannot exceed 4 bytes, got ${bytes.length}`);
+		throw new InvalidLengthError(`Int32 bytes cannot exceed 4 bytes, got ${bytes.length}`, {
+			value: bytes,
+			expected: "4 bytes or fewer",
+			docsPath: "/primitives/int32#from-bytes",
+		});
 	}
 
 	// Read as unsigned first
