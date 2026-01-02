@@ -1,3 +1,14 @@
+import {
+	bigintToAddress,
+	consumeGas,
+	memoryExpansionCost,
+	popStack,
+	pushStack,
+	readMemory,
+	wordAlignedSize,
+	writeMemory,
+} from "./callUtils.js";
+
 /**
  * CALL opcode (0xf1) - Message call into an account
  *
@@ -17,18 +28,6 @@
  * @param {import("../Host/HostType.js").BrandedHost} [host] - Host interface (optional)
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
-
-import {
-	bigintToAddress,
-	consumeGas,
-	memoryExpansionCost,
-	popStack,
-	pushStack,
-	readMemory,
-	wordAlignedSize,
-	writeMemory,
-} from "./callUtils.js";
-
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode implementation
 export function call(frame, host) {
 	// Pop all 7 arguments (stack order: bottom to top)
