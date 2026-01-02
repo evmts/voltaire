@@ -18,5 +18,7 @@ export function fromBytes(bytes) {
 			},
 		);
 	}
-	return /** @type {import('./BlockHashType.js').BlockHashType} */ (bytes);
+	return /** @type {import('./BlockHashType.js').BlockHashType} */ (
+		new Uint8Array(bytes)
+	);
 }
