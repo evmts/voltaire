@@ -631,12 +631,36 @@ describe("HDWallet", () => {
 			expect(HDWallet.isValidPath("m /44'/60'/0'/0/0")).toBe(false);
 		});
 
-		it("rejects path with mixed hardened notation", () => {
-			// Some implementations might not allow mixing ' and h
-			const mixed = "m/0'/1h/2'";
-			const result = HDWallet.isValidPath(mixed);
-			// Should handle consistently (either accept or reject)
-			expect(typeof result).toBe("boolean");
+		it("validates path with h hardened notation", () => {
+			expect(HDWallet.isValidPath("m/44h/60h/0h/0/0")).toBe(true);
+		});
+
+		it("validates path with mixed hardened notation", () => {
+			// Both ' and h are valid hardened notation
+			expect(HDWallet.isValidPath("m/0'/1h/2'")).toBe(true);
+		});
+
+		it("rejects path with index exceeding 2^31-1", () => {
+			// 2^31 = 2147483648, which is out of range
+			expect(HDWallet.isValidPath("m/2147483648/0")).toBe(false);
+			expect(HDWallet.isValidPath("m/2147483648'/0")).toBe(false);
+		});
+
+		it("validates path with max valid index (2^31-1)", () => {
+			// 2^31-1 = 2147483647, which is valid
+			expect(HDWallet.isValidPath("m/2147483647/0")).toBe(true);
+			expect(HDWallet.isValidPath("m/2147483647'/0")).toBe(true);
+		});
+
+		it("rejects path with leading zeros in index", () => {
+			// Leading zeros are invalid (except for 0 itself)
+			expect(HDWallet.isValidPath("m/00/0")).toBe(false);
+			expect(HDWallet.isValidPath("m/01/0")).toBe(false);
+		});
+
+		it("validates path with zero index", () => {
+			expect(HDWallet.isValidPath("m/0")).toBe(true);
+			expect(HDWallet.isValidPath("m/0'")).toBe(true);
 		});
 
 		it("validates single-level path", () => {
@@ -689,10 +713,10 @@ describe("HDWallet", () => {
 			expect(HDWallet.parseIndex(maxNormal)).toBe(0x7fffffff);
 		});
 
-		it("parses index > 2^31-1 (parseIndex allows, deriveChild will validate)", () => {
+		it("throws on index > 2^31-1", () => {
 			const overMax = "2147483648"; // 2^31
-			// parseIndex just parses, doesn't validate range
-			expect(HDWallet.parseIndex(overMax)).toBe(2147483648);
+			// parseIndex now validates range per BIP-32 spec
+			expect(() => HDWallet.parseIndex(overMax)).toThrow();
 		});
 
 		it("throws on negative strings", () => {
@@ -700,16 +724,16 @@ describe("HDWallet", () => {
 			expect(() => HDWallet.parseIndex("-100")).toThrow();
 		});
 
-		it("parses hex strings as decimal (0x ignored)", () => {
-			// parseInt with base 10 stops at 'x'
-			expect(HDWallet.parseIndex("0x10")).toBe(0);
-			expect(HDWallet.parseIndex("0xFF")).toBe(0);
+		it("throws on hex strings (invalid format)", () => {
+			// Hex strings are not valid BIP-32 indices
+			expect(() => HDWallet.parseIndex("0x10")).toThrow();
+			expect(() => HDWallet.parseIndex("0xFF")).toThrow();
 		});
 
-		it("parses integers from strings with floats", () => {
-			// parseInt truncates floats
-			expect(HDWallet.parseIndex("1.5")).toBe(1);
-			expect(HDWallet.parseIndex("99.9")).toBe(99);
+		it("throws on floats (invalid format)", () => {
+			// Float strings are not valid BIP-32 indices
+			expect(() => HDWallet.parseIndex("1.5")).toThrow();
+			expect(() => HDWallet.parseIndex("99.9")).toThrow();
 		});
 
 		it("throws on non-numeric strings", () => {
@@ -977,6 +1001,56 @@ describe("HDWallet", () => {
 			const root = HDWallet.fromSeed(seed);
 
 			expect(() => HDWallet.derivePath(root, "m/44'/60'/0'/0/🔑")).toThrow();
+		});
+
+		it("throws on index exceeding 2^31-1", async () => {
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const seed = await Bip39.mnemonicToSeed(mnemonic);
+			const root = HDWallet.fromSeed(seed);
+
+			// 2^31 = 2147483648 exceeds max
+			expect(() =>
+				HDWallet.derivePath(root, "m/2147483648'/0"),
+			).toThrow();
+		});
+
+		it("derives path with max valid index (2^31-1)", async () => {
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const seed = await Bip39.mnemonicToSeed(mnemonic);
+			const root = HDWallet.fromSeed(seed);
+
+			// 2^31-1 = 2147483647 is valid (max normal index)
+			const derived = HDWallet.derivePath(root, "m/2147483647/0");
+			expect(derived).toBeDefined();
+		});
+
+		it("throws on path without m/ prefix", async () => {
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const seed = await Bip39.mnemonicToSeed(mnemonic);
+			const root = HDWallet.fromSeed(seed);
+
+			expect(() => HDWallet.derivePath(root, "44'/60'/0'/0/0")).toThrow();
+		});
+
+		it("throws on path with double slashes", async () => {
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const seed = await Bip39.mnemonicToSeed(mnemonic);
+			const root = HDWallet.fromSeed(seed);
+
+			expect(() => HDWallet.derivePath(root, "m/44'//60'/0'/0/0")).toThrow();
+		});
+
+		it("throws on path with trailing slash", async () => {
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const seed = await Bip39.mnemonicToSeed(mnemonic);
+			const root = HDWallet.fromSeed(seed);
+
+			expect(() => HDWallet.derivePath(root, "m/44'/60'/0'/0/0/")).toThrow();
 		});
 	});
 
