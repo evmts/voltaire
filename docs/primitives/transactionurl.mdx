@@ -1,0 +1,244 @@
+---
+title: "TransactionUrl"
+description: "ERC-681 compliant transaction URL format for QR codes and deep links"
+---
+
+## Overview
+
+TransactionUrl is a branded `string` type implementing the [ERC-681](https://eips.ethereum.org/EIPS/eip-681) standard for representing Ethereum transactions as URLs. This enables QR code generation, deep linking, and wallet integrations.
+
+```typescript
+import * as TransactionUrl from '@tevm/primitives/TransactionUrl'
+
+// Parse URL
+const parsed = TransactionUrl.parse('ethereum:0x1234...@1?value=1000000000000000000')
+
+// Format URL
+const url = TransactionUrl.format({
+  target: address,
+  chainId: 1n,
+  value: 1000000000000000000n,
+})
+```
+
+## URL Format
+
+ERC-681 defines the format: `ethereum:<address>[@<chainId>][/<function>][?<params>]`
+
+Examples:
+- `ethereum:0x1234...` - Simple transfer to address
+- `ethereum:0x1234@1` - Transfer on mainnet (chainId 1)
+- `ethereum:0x1234@1?value=1000000000000000000` - Transfer 1 ETH
+- `ethereum:0x1234/transfer?address=0x5678&uint256=100` - ERC-20 transfer call
+
+## Type Definitions
+
+```typescript
+// Branded URL string
+type TransactionUrl = string & { readonly [brand]: "TransactionUrl" }
+
+// Parsed URL components
+type ParsedTransactionUrl = {
+  readonly target: AddressType
+  readonly chainId?: bigint
+  readonly value?: bigint
+  readonly gas?: bigint
+  readonly gasPrice?: bigint
+  readonly data?: BytesType
+  readonly functionName?: string
+  readonly functionParams?: Record<string, string>
+}
+```
+
+## Creating TransactionUrls
+
+### from
+
+Create a branded TransactionUrl from a string. Validates the URL format.
+
+```typescript
+const url = TransactionUrl.from('ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e@1')
+```
+
+**Throws** `InvalidTransactionUrlError` if the URL is malformed.
+
+### format
+
+Build a URL from transaction parameters.
+
+```typescript
+import * as TransactionUrl from '@tevm/primitives/TransactionUrl'
+import * as Address from '@tevm/primitives/Address'
+
+const target = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+
+// Simple transfer
+const url1 = TransactionUrl.format({
+  target,
+  chainId: 1n,
+  value: 1000000000000000000n, // 1 ETH in wei
+})
+// 'ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e@1?value=1000000000000000000'
+
+// With gas parameters
+const url2 = TransactionUrl.format({
+  target,
+  chainId: 1n,
+  value: 1000000000000000000n,
+  gas: 21000n,
+  gasPrice: 20000000000n,
+})
+
+// Contract function call
+const url3 = TransactionUrl.format({
+  target,
+  chainId: 1n,
+  functionName: 'transfer',
+  functionParams: {
+    address: '0x5678...',
+    uint256: '100',
+  },
+})
+// 'ethereum:0x742d35...@1/transfer?address=0x5678...&uint256=100'
+```
+
+## Parsing TransactionUrls
+
+### parse
+
+Parse a URL string into its components.
+
+```typescript
+const parsed = TransactionUrl.parse('ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e@1?value=1000000000000000000')
+
+// parsed.target    - AddressType
+// parsed.chainId   - 1n
+// parsed.value     - 1000000000000000000n
+```
+
+**Supported query parameters:**
+- `value` - Wei amount (decimal or hex with 0x)
+- `gas` - Gas limit
+- `gasPrice` - Gas price in wei
+- `data` - Hex-encoded calldata (0x...)
+- Other parameters are stored in `functionParams`
+
+**Throws** `InvalidTransactionUrlError` for:
+- Missing `ethereum:` scheme
+- Invalid address
+- Invalid chain ID
+- Malformed numeric parameters
+- Invalid hex data
+
+```typescript
+// Parsing errors
+try {
+  TransactionUrl.parse('http://example.com')
+} catch (e) {
+  // InvalidTransactionUrlError: Invalid URL scheme, expected 'ethereum:'
+}
+
+try {
+  TransactionUrl.parse('ethereum:invalid')
+} catch (e) {
+  // InvalidTransactionUrlError: Invalid Ethereum address
+}
+```
+
+## Errors
+
+### InvalidTransactionUrlError
+
+Thrown when URL operations fail.
+
+```typescript
+class InvalidTransactionUrlError extends Error {
+  name: "InvalidTransactionUrlError"
+  details?: Record<string, unknown>
+}
+```
+
+Error details include contextual information:
+- `url` - The malformed URL
+- `scheme` - For scheme errors
+- `address` - For address errors
+- `chainId` - For chain ID errors
+
+## Use Cases
+
+### QR Code Generation
+
+```typescript
+import * as TransactionUrl from '@tevm/primitives/TransactionUrl'
+import * as Address from '@tevm/primitives/Address'
+import QRCode from 'qrcode'
+
+const target = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+
+const url = TransactionUrl.format({
+  target,
+  chainId: 1n,
+  value: 1000000000000000000n, // 1 ETH
+})
+
+// Generate QR code for wallet scanning
+const qr = await QRCode.toDataURL(url)
+```
+
+### Payment Links
+
+```typescript
+// Create payment request link
+const paymentUrl = TransactionUrl.format({
+  target: merchantAddress,
+  chainId: 1n,
+  value: priceInWei,
+})
+
+// Use in anchor tag or button
+const link = `<a href="${paymentUrl}">Pay with Ethereum</a>`
+```
+
+### ERC-20 Token Transfers
+
+```typescript
+// Token transfer via function call
+const tokenTransferUrl = TransactionUrl.format({
+  target: tokenContractAddress,
+  chainId: 1n,
+  functionName: 'transfer',
+  functionParams: {
+    address: recipientAddress,
+    uint256: tokenAmount.toString(),
+  },
+})
+```
+
+### Parsing Deep Links
+
+```typescript
+// Handle incoming deep link in dApp
+function handleDeepLink(urlString: string) {
+  try {
+    const tx = TransactionUrl.parse(urlString)
+
+    // Build transaction from parsed data
+    return {
+      to: tx.target,
+      chainId: tx.chainId,
+      value: tx.value,
+      gas: tx.gas,
+      gasPrice: tx.gasPrice,
+      data: tx.data,
+    }
+  } catch (e) {
+    console.error('Invalid transaction URL:', e)
+  }
+}
+```
+
+## See Also
+
+- [Address](/primitives/address) - Ethereum address type
+- [Transaction](/primitives/transaction) - Transaction encoding/decoding
+- [EIP-681](https://eips.ethereum.org/EIPS/eip-681) - Transaction URL specification

@@ -1,0 +1,266 @@
+---
+title: "FeeOracle"
+description: "Gas price estimation and EIP-1559 fee data for Ethereum transactions"
+---
+
+## Overview
+
+FeeOracle provides real-time gas price estimation for Ethereum transactions. It fetches current network fee data, estimates EIP-1559 fees with configurable priority levels, and supports watching for fee updates.
+
+```typescript
+import { FeeOracle } from '@voltaire/FeeOracle'
+
+const oracle = FeeOracle({ provider })
+
+// Get current fee data
+const feeData = await oracle.getFeeData()
+console.log(`Gas price: ${feeData.gasPrice}`)
+console.log(`Base fee: ${feeData.baseFeePerGas}`)
+
+// Estimate EIP-1559 fees with priority
+const fees = await oracle.estimateEip1559Fees({ priority: 'high' })
+const tx = {
+  maxFeePerGas: fees.maxFeePerGas,
+  maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
+}
+
+// Watch for fee updates
+const unsubscribe = oracle.watchFees(
+  (data) => console.log(`New base fee: ${data.baseFeePerGas}`),
+  { pollingInterval: 12000 }
+)
+```
+
+## API
+
+### Factory
+
+```typescript
+function FeeOracle(options: FeeOracleOptions): FeeOracleInstance
+```
+
+Creates a FeeOracle instance bound to a provider.
+
+**Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `provider` | EIP-1193 Provider | required | JSON-RPC provider with `request` method |
+| `priorityFeePercentile` | number | 50 | Percentile for priority fee calculation from fee history |
+| `historyBlocks` | number | 4 | Number of blocks to analyze for priority fee estimation |
+
+### getFeeData
+
+Fetch current network fee data.
+
+```typescript
+const feeData = await oracle.getFeeData()
+
+console.log(`Gas price: ${feeData.gasPrice}`)           // Legacy gas price
+console.log(`Base fee: ${feeData.baseFeePerGas}`)       // EIP-1559 base fee
+console.log(`Max fee: ${feeData.maxFeePerGas}`)         // Suggested max fee
+console.log(`Priority fee: ${feeData.maxPriorityFeePerGas}`) // Suggested priority fee
+console.log(`Blob fee: ${feeData.blobBaseFee}`)         // EIP-4844 blob fee
+console.log(`Block: ${feeData.blockNumber}`)            // Block this data is from
+```
+
+**Returns:** `Promise<FeeDataType>`
+
+### estimateEip1559Fees
+
+Estimate fees for an EIP-1559 transaction with configurable priority.
+
+```typescript
+// Default (medium priority)
+const fees = await oracle.estimateEip1559Fees()
+
+// High priority for urgent transactions
+const urgentFees = await oracle.estimateEip1559Fees({ priority: 'high' })
+
+// Low priority for non-urgent transactions
+const cheapFees = await oracle.estimateEip1559Fees({ priority: 'low' })
+
+// Custom base fee buffer (50% instead of default 25%)
+const bufferedFees = await oracle.estimateEip1559Fees({
+  priority: 'medium',
+  baseFeeMultiplier: 1.5
+})
+```
+
+**Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `priority` | `'low'` \| `'medium'` \| `'high'` | `'medium'` | Transaction priority level |
+| `baseFeeMultiplier` | number | 1.25 | Buffer multiplier for base fee increases |
+
+**Priority multipliers:**
+- `low`: 0.8x priority fee
+- `medium`: 1.0x priority fee
+- `high`: 1.5x priority fee
+
+**Returns:** `Promise<{ maxFeePerGas: bigint; maxPriorityFeePerGas: bigint }>`
+
+### watchFees
+
+Subscribe to fee updates with polling.
+
+```typescript
+// Basic usage
+const unsubscribe = oracle.watchFees((feeData) => {
+  console.log(`Base fee: ${feeData.baseFeePerGas}`)
+})
+
+// With custom polling interval (every 6 seconds)
+const unsubscribe = oracle.watchFees(
+  (feeData) => updateUI(feeData),
+  { pollingInterval: 6000 }
+)
+
+// With AbortSignal for cleanup
+const controller = new AbortController()
+oracle.watchFees(
+  (feeData) => process(feeData),
+  { signal: controller.signal }
+)
+
+// Later: stop watching
+controller.abort()
+// or: unsubscribe()
+```
+
+**Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `pollingInterval` | number | 12000 | Poll interval in milliseconds |
+| `signal` | AbortSignal | - | Signal for cancellation |
+
+**Returns:** `() => void` - Unsubscribe function
+
+## Types
+
+### FeeDataType
+
+```typescript
+type FeeDataType = {
+  /** Current gas price (legacy transactions) */
+  readonly gasPrice: bigint
+  /** Current base fee per gas (EIP-1559, null if not supported) */
+  readonly baseFeePerGas: bigint | null
+  /** Suggested max fee per gas (EIP-1559) */
+  readonly maxFeePerGas: bigint | null
+  /** Suggested max priority fee per gas (EIP-1559) */
+  readonly maxPriorityFeePerGas: bigint | null
+  /** Current blob base fee (EIP-4844, null if not supported) */
+  readonly blobBaseFee: bigint | null
+  /** Block number this data was fetched from */
+  readonly blockNumber: bigint
+}
+```
+
+### FeeEstimateOptions
+
+```typescript
+interface FeeEstimateOptions {
+  /** Priority level for fee estimation */
+  priority?: 'low' | 'medium' | 'high'
+  /** Multiplier for base fee buffer (default: 1.25) */
+  baseFeeMultiplier?: number
+}
+```
+
+### FeeOracleOptions
+
+```typescript
+interface FeeOracleOptions {
+  /** EIP-1193 provider */
+  provider: {
+    request(args: { method: string; params?: unknown[] }): Promise<unknown>
+  }
+  /** Default priority fee percentile (default: 50) */
+  priorityFeePercentile?: number
+  /** History blocks to analyze for priority fee (default: 4) */
+  historyBlocks?: number
+}
+```
+
+## Examples
+
+### Transaction with Dynamic Fees
+
+```typescript
+import { FeeOracle } from '@voltaire/FeeOracle'
+
+const oracle = FeeOracle({ provider })
+const fees = await oracle.estimateEip1559Fees({ priority: 'high' })
+
+const tx = {
+  to: '0x...',
+  value: 1000000000000000000n, // 1 ETH
+  maxFeePerGas: fees.maxFeePerGas,
+  maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
+}
+
+const hash = await wallet.sendTransaction(tx)
+```
+
+### Fee Display UI
+
+```typescript
+import { FeeOracle } from '@voltaire/FeeOracle'
+
+const oracle = FeeOracle({ provider })
+
+// Update UI every block (~12s on mainnet)
+oracle.watchFees((feeData) => {
+  const gweiBaseFee = Number(feeData.baseFeePerGas) / 1e9
+  document.getElementById('baseFee').textContent = `${gweiBaseFee.toFixed(2)} gwei`
+
+  if (feeData.maxPriorityFeePerGas) {
+    const gweiPriority = Number(feeData.maxPriorityFeePerGas) / 1e9
+    document.getElementById('priorityFee').textContent = `${gweiPriority.toFixed(2)} gwei`
+  }
+}, { pollingInterval: 12000 })
+```
+
+### Legacy Chain Support
+
+FeeOracle handles chains without EIP-1559 support gracefully:
+
+```typescript
+const oracle = FeeOracle({ provider })
+const fees = await oracle.estimateEip1559Fees({ priority: 'medium' })
+
+// On non-EIP-1559 chains, both values equal the adjusted gas price
+console.log(fees.maxFeePerGas === fees.maxPriorityFeePerGas) // true
+```
+
+### Custom Fee History Analysis
+
+```typescript
+// Analyze more blocks for smoother estimates
+const oracle = FeeOracle({
+  provider,
+  historyBlocks: 10,           // Look at last 10 blocks
+  priorityFeePercentile: 75    // Target 75th percentile
+})
+
+const feeData = await oracle.getFeeData()
+```
+
+## How It Works
+
+FeeOracle uses three JSON-RPC methods:
+
+1. **eth_gasPrice** - Gets the legacy gas price
+2. **eth_getBlockByNumber** - Fetches the latest block for base fee and blob fee
+3. **eth_feeHistory** - Analyzes recent blocks for priority fee estimation
+
+The `maxFeePerGas` is calculated as `baseFee * 2 + priorityFee`, providing a buffer for base fee increases across blocks.
+
+## See Also
+
+- [Transaction](/primitives/transaction) - Transaction construction
+- [FeeMarket](/primitives/feemarket) - EIP-1559 fee market calculations
+- [GasConstants](/primitives/gasconstants) - Gas cost constants

@@ -1,0 +1,174 @@
+---
+title: "BundleHash"
+description: "32-byte identifier for MEV transaction bundles"
+---
+
+## Overview
+
+BundleHash is a branded `Uint8Array` type representing a 32-byte identifier for MEV transaction bundles. Computed as keccak256 of concatenated transaction hashes, it's used to track bundle status through MEV relays and block builders like Flashbots.
+
+```typescript
+import * as BundleHash from '@tevm/primitives/BundleHash'
+
+const hash = BundleHash.fromHex(
+  '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+)
+```
+
+## Type Definition
+
+```typescript
+type BundleHashType = Uint8Array & {
+  readonly [brand]: "BundleHash";
+  readonly length: 32;
+}
+
+type BundleHashLike = BundleHashType | string | Uint8Array
+```
+
+## Constants
+
+```typescript
+const SIZE = 32  // Bundle hash is always 32 bytes
+```
+
+## Creating BundleHashes
+
+### from
+
+Universal constructor accepting hex string or bytes.
+
+```typescript
+// From hex string (with 0x prefix)
+const hash1 = BundleHash.from(
+  '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+)
+
+// From hex string (without prefix)
+const hash2 = BundleHash.from(
+  '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+)
+
+// From Uint8Array
+const bytes = new Uint8Array(32)
+const hash3 = BundleHash.from(bytes)
+```
+
+**Throws** `InvalidBundleHashError` if:
+- Bytes length is not 32
+- Hex string is not 64 characters
+- Invalid hex characters
+- Unsupported input type
+
+### fromHex
+
+Parse from hex string (with or without 0x prefix).
+
+```typescript
+const hash = BundleHash.fromHex(
+  '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+)
+```
+
+**Validation**: Must be exactly 64 hex characters (32 bytes).
+
+### fromBundle
+
+Compute bundle hash from a Bundle containing transactions. Requires a keccak256 implementation.
+
+```typescript
+import * as BundleHash from '@tevm/primitives/BundleHash'
+import { keccak256 } from '@tevm/crypto/keccak256'
+
+const bundle = {
+  transactions: [tx1, tx2, tx3]
+}
+
+const hash = BundleHash.fromBundle(bundle, { keccak256 })
+```
+
+The hash is computed by:
+1. Hashing each transaction with keccak256
+2. Concatenating all transaction hashes
+3. Hashing the concatenated result
+
+This matches the bundle hash format used by Flashbots and other MEV relays.
+
+## Converting BundleHashes
+
+### toHex
+
+Convert to lowercase hex string with 0x prefix.
+
+```typescript
+const hex = BundleHash.toHex(hash)
+// '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+```
+
+## Comparing BundleHashes
+
+### equals
+
+Check equality using byte comparison.
+
+```typescript
+const a = BundleHash.fromHex('0x1234...')
+const b = BundleHash.fromHex('0x1234...')
+
+if (BundleHash.equals(a, b)) {
+  console.log('Bundle hashes match')
+}
+```
+
+## Errors
+
+### InvalidBundleHashError
+
+Thrown when BundleHash operations fail.
+
+```typescript
+class InvalidBundleHashError extends Error {
+  name: "InvalidBundleHashError"
+  details?: Record<string, unknown>
+}
+```
+
+Common error messages:
+- `"BundleHash must be 32 bytes, got N"` - Invalid byte length
+- `"BundleHash hex string must be 64 characters, got N"` - Invalid hex length
+- `"Invalid hex character"` - Non-hex character in string
+- `"BundleHash must be hex string or Uint8Array"` - Unsupported type
+- `"keccak256 not provided"` - Missing crypto dependency in fromBundle
+
+## MEV Use Cases
+
+### Tracking Bundle Status
+
+```typescript
+import * as BundleHash from '@tevm/primitives/BundleHash'
+
+// After submitting bundle to Flashbots
+const bundleHash = BundleHash.from(response.bundleHash)
+const hex = BundleHash.toHex(bundleHash)
+
+// Query bundle status
+const status = await relay.getBundleStats(hex)
+```
+
+### Verifying Bundle Inclusion
+
+```typescript
+// Compute expected hash locally
+const expectedHash = BundleHash.fromBundle(bundle, { keccak256 })
+
+// Compare with relay response
+if (BundleHash.equals(expectedHash, receivedHash)) {
+  console.log('Bundle hash verified')
+}
+```
+
+## See Also
+
+- [TransactionHash](/primitives/transaction-hash) - Individual transaction identifier
+- [BlockHash](/primitives/block-hash) - Block identifier
+- [Keccak256](/crypto/keccak256) - Hash function used for bundle hashing

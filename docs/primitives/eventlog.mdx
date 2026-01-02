@@ -1,0 +1,316 @@
+---
+title: "EventLog"
+description: "Ethereum event log primitive for contract events with filtering and RPC support"
+---
+
+## Overview
+
+EventLog represents Ethereum event logs emitted by smart contracts. Events are indexed by topic0 (event signature hash) and up to 3 additional indexed parameters. The EventLog primitive provides type-safe construction, filtering, sorting, and RPC conversion.
+
+```typescript
+import * as EventLog from '@voltaire/primitives/EventLog';
+import * as Address from '@voltaire/primitives/Address';
+import * as Hash from '@voltaire/primitives/Hash';
+
+// Create an event log
+const log = EventLog.create({
+  address: Address.from("0x1234567890123456789012345678901234567890"),
+  topics: [
+    Hash.from("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef") // Transfer event
+  ],
+  data: new Uint8Array([]),
+  blockNumber: 18000000n,
+  logIndex: 0
+});
+```
+
+## Type Definition
+
+```typescript
+type EventLogType<
+  TAddress extends AddressType = AddressType,
+  TTopics extends readonly HashType[] = readonly HashType[]
+> = {
+  address: TAddress;           // Contract address that emitted the log
+  topics: TTopics;             // Event topics (topic0 = signature, topic1-3 = indexed params)
+  data: Uint8Array;            // Non-indexed parameters (ABI-encoded)
+  blockNumber?: bigint;        // Block number where log was emitted
+  transactionHash?: HashType;  // Transaction hash that generated the log
+  transactionIndex?: number;   // Transaction index in block
+  blockHash?: HashType;        // Block hash
+  logIndex?: number;           // Log index in block
+  removed?: boolean;           // True if log was removed due to chain reorg
+} & { readonly __tag: "EventLog" };
+```
+
+## Constructor Methods
+
+### create
+
+Create an EventLog from parameters with branded types.
+
+```typescript
+const log = EventLog.create({
+  address: Address.from("0x1234567890123456789012345678901234567890"),
+  topics: [transferTopic0, senderTopic, recipientTopic],
+  data: new Uint8Array([0, 0, 0, 0, 0, 0, 0, 100]), // amount = 100
+  blockNumber: 18000000n,
+  transactionHash: txHash,
+  transactionIndex: 5,
+  blockHash: blockHash,
+  logIndex: 12,
+  removed: false
+});
+```
+
+### from
+
+Alias for `create`. Creates an EventLog from parameters.
+
+```typescript
+const log = EventLog.from({
+  address: contractAddress,
+  topics: [eventSignature],
+  data: eventData
+});
+```
+
+### fromRpc
+
+Convert RPC log format (hex strings) to EventLog.
+
+```typescript
+const rpcLog = {
+  address: "0x1234567890123456789012345678901234567890",
+  topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"],
+  data: "0x0000000000000000000000000000000000000000000000000000000000000064",
+  blockNumber: "0x112a880",
+  transactionHash: "0x...",
+  transactionIndex: "0x5",
+  blockHash: "0x...",
+  logIndex: "0xc",
+  removed: false
+};
+
+const log = EventLog.fromRpc(rpcLog);
+```
+
+## Conversion Methods
+
+### toRpc
+
+Convert EventLog to RPC format (hex strings).
+
+```typescript
+const log = EventLog.create({ address, topics, data });
+const rpcLog = EventLog.toRpc(log);
+// {
+//   address: "0x...",
+//   topics: ["0x...", "0x..."],
+//   data: "0x...",
+//   blockNumber: "0x112a880",
+//   ...
+// }
+```
+
+### clone / copy
+
+Create a deep copy of an EventLog.
+
+```typescript
+const log = EventLog.create({ address, topics, data });
+const cloned = EventLog.clone(log);
+const copied = EventLog.copy(log);  // alias for clone
+```
+
+## Accessor Methods
+
+### getTopic0 / getSignature
+
+Get the event signature hash (topic0).
+
+```typescript
+const log = EventLog.create({ address, topics, data });
+const signature = EventLog.getTopic0(log);      // HashType | undefined
+const sig = EventLog.getSignature(log);         // alias
+```
+
+### getIndexedTopics / getIndexed
+
+Get indexed parameters (topic1-topic3).
+
+```typescript
+const log = EventLog.create({
+  address,
+  topics: [transferSig, senderHash, recipientHash],
+  data
+});
+
+const indexed = EventLog.getIndexedTopics(log);  // [senderHash, recipientHash]
+const params = EventLog.getIndexed(log);         // alias
+```
+
+### isRemoved / wasRemoved
+
+Check if log was removed due to chain reorganization.
+
+```typescript
+const log = EventLog.create({ address, topics, data, removed: true });
+const removed = EventLog.isRemoved(log);   // true
+const was = EventLog.wasRemoved(log);      // alias
+```
+
+## Filtering Methods
+
+### matchesAddress
+
+Check if log matches an address filter.
+
+```typescript
+const log = EventLog.create({ address: contractA, topics, data });
+
+// Single address
+EventLog.matchesAddress(log, contractA);  // true
+EventLog.matchesAddress(log, contractB);  // false
+
+// Multiple addresses
+EventLog.matchesAddress(log, [contractA, contractB]);  // true
+```
+
+### matchesTopics
+
+Check if log matches a topic filter. Use `null` as wildcard.
+
+```typescript
+const log = EventLog.create({
+  address,
+  topics: [transferSig, senderHash, recipientHash],
+  data
+});
+
+// Match exact topic0
+EventLog.matchesTopics(log, [transferSig]);  // true
+
+// Wildcard topic0, match topic1
+EventLog.matchesTopics(log, [null, senderHash]);  // true
+
+// Match any of multiple topics at position
+EventLog.matchesTopics(log, [null, [senderHash, otherHash]]);  // true
+```
+
+### matchesFilter
+
+Check if log matches a complete filter object.
+
+```typescript
+const filter = {
+  address: contractAddress,
+  topics: [transferSig, null, recipientHash],
+  fromBlock: 18000000n,
+  toBlock: 18100000n
+};
+
+EventLog.matchesFilter(log, filter);  // true if log matches all criteria
+```
+
+### filterLogs
+
+Filter an array of logs by criteria.
+
+```typescript
+const logs = [log1, log2, log3, log4];
+
+const filtered = EventLog.filterLogs(logs, {
+  address: contractAddress,
+  topics: [transferSig]
+});
+// Returns logs from contractAddress with Transfer event signature
+```
+
+## Sorting
+
+### sortLogs
+
+Sort logs by block number and log index.
+
+```typescript
+const unsorted = [log3, log1, log2];
+const sorted = EventLog.sortLogs(unsorted);
+// Sorted by blockNumber ascending, then logIndex ascending
+```
+
+## Filter Type
+
+```typescript
+type Filter<
+  TAddress extends AddressType | AddressType[] | undefined,
+  TTopics extends readonly (HashType | HashType[] | null)[] | undefined
+> = {
+  address?: TAddress;          // Contract address(es) to filter
+  topics?: TTopics;            // Topic filters (null = any, array = any of)
+  fromBlock?: bigint;          // Starting block (inclusive)
+  toBlock?: bigint;            // Ending block (inclusive)
+  blockHash?: HashType;        // Specific block hash (alternative to range)
+};
+```
+
+## Usage Patterns
+
+### Decoding Transfer Events
+
+```typescript
+import * as EventLog from '@voltaire/primitives/EventLog';
+import * as Keccak256 from '@voltaire/crypto/Keccak256';
+
+// Transfer(address indexed from, address indexed to, uint256 value)
+const transferSig = Keccak256.hashString("Transfer(address,address,uint256)");
+
+const logs = await provider.getLogs({
+  address: tokenContract,
+  topics: [transferSig]
+});
+
+for (const rpcLog of logs) {
+  const log = EventLog.fromRpc(rpcLog);
+  const [from, to] = EventLog.getIndexedTopics(log);
+  // Decode log.data for the value parameter
+}
+```
+
+### Filtering by Multiple Addresses
+
+```typescript
+const filter = {
+  address: [usdcAddress, usdtAddress, daiAddress],
+  topics: [transferSig],
+  fromBlock: 18000000n
+};
+
+const filtered = EventLog.filterLogs(allLogs, filter);
+```
+
+### Handling Reorgs
+
+```typescript
+for await (const event of blockStream.watch()) {
+  if (event.type === 'reorg') {
+    // Remove logs from reverted blocks
+    for (const block of event.removed) {
+      const logsToRemove = logs.filter(
+        log => log.blockHash && EventLog.matchesFilter(log, { blockHash: block.hash })
+      );
+      for (const log of logsToRemove) {
+        rollbackLog(log);
+      }
+    }
+  }
+}
+```
+
+## Related
+
+- [Address](/primitives/address) - Contract address type
+- [Hash](/primitives/hash) - Hash type for topics
+- [BlockStream](/primitives/block-stream) - Block streaming with reorg support
+- [LogFilter](/primitives/log-filter/index) - Log filter primitive
+- [EVM LOG Instructions](/evm/instructions/log/index) - LOG0-LOG4 opcodes

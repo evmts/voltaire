@@ -1,0 +1,260 @@
+---
+title: "CompilerVersion"
+description: "Parse and compare Solidity/Vyper compiler version strings"
+---
+
+## Overview
+
+CompilerVersion provides utilities for parsing, comparing, and validating Solidity and Vyper compiler version strings. It handles full version formats including commit hashes and prereleases.
+
+```typescript
+import * as CompilerVersion from '@voltaire/primitives/CompilerVersion'
+
+const version = CompilerVersion.from("v0.8.20+commit.a1b2c3d4")
+
+// Parse into components
+const { major, minor, patch, commit } = CompilerVersion.parse(version)
+// { major: 0, minor: 8, patch: 20, commit: "a1b2c3d4" }
+
+// Check compatibility with pragma ranges
+const compatible = CompilerVersion.isCompatible(version, "^0.8.0")
+// true
+```
+
+## Type Definition
+
+```typescript
+type CompilerVersionType = string & {
+  readonly [brand]: "CompilerVersion"
+}
+```
+
+A branded string type that represents a validated compiler version. Prevents mixing arbitrary strings with validated version strings.
+
+## Constructor
+
+### from
+
+Create a CompilerVersion from a string.
+
+```typescript
+function from(value: string): CompilerVersionType
+```
+
+**Parameters:**
+- `value` - Version string (e.g., `"v0.8.20+commit.a1b2c3d4"` or `"0.8.20"`)
+
+**Throws:**
+- If input is not a string
+- If input is empty
+- If input doesn't match version format
+
+```typescript
+// With v prefix and commit
+const v1 = CompilerVersion.from("v0.8.20+commit.a1b2c3d4")
+
+// Without v prefix
+const v2 = CompilerVersion.from("0.8.20")
+
+// Legacy versions
+const v3 = CompilerVersion.from("0.4.26+commit.4563c3fc")
+```
+
+## Methods
+
+### parse
+
+Parse version into components.
+
+```typescript
+function parse(version: string): {
+  major: number
+  minor: number
+  patch: number
+  commit?: string
+  prerelease?: string
+}
+```
+
+```typescript
+const parsed = CompilerVersion.parse("v0.8.20+commit.a1b2c3d4")
+// { major: 0, minor: 8, patch: 20, commit: "a1b2c3d4" }
+
+const prerelease = CompilerVersion.parse("0.8.20-alpha.1")
+// { major: 0, minor: 8, patch: 20, prerelease: "alpha.1" }
+
+const simple = CompilerVersion.parse("0.8")
+// { major: 0, minor: 8, patch: 0 }
+```
+
+### compare
+
+Compare two versions. Returns `-1`, `0`, or `1`.
+
+```typescript
+function compare(a: string, b: string): number
+```
+
+```typescript
+CompilerVersion.compare("0.8.20", "0.8.19")  // 1  (a > b)
+CompilerVersion.compare("0.8.19", "0.8.20")  // -1 (a < b)
+CompilerVersion.compare("0.8.20", "0.8.20")  // 0  (equal)
+
+// Prerelease versions are less than release
+CompilerVersion.compare("0.8.20-alpha", "0.8.20")  // -1
+CompilerVersion.compare("0.8.20", "0.8.20-alpha")  // 1
+```
+
+### isCompatible
+
+Check if version satisfies a semver range.
+
+```typescript
+function isCompatible(version: string, range: string): boolean
+```
+
+**Supported ranges:**
+- `^0.8.0` - Caret: same major.minor, any compatible patch
+- `~0.8.20` - Tilde: same major.minor, patch >= specified
+- `>=0.8.0` - Greater than or equal
+- `>0.8.0` - Greater than
+- `<=0.8.0` - Less than or equal
+- `<0.8.0` - Less than
+- `0.8.20` - Exact match
+
+```typescript
+// Caret range (^)
+CompilerVersion.isCompatible("0.8.20", "^0.8.0")   // true
+CompilerVersion.isCompatible("0.9.0", "^0.8.0")    // false
+
+// Tilde range (~)
+CompilerVersion.isCompatible("0.8.21", "~0.8.20")  // true
+CompilerVersion.isCompatible("0.8.19", "~0.8.20")  // false
+
+// Comparison operators
+CompilerVersion.isCompatible("0.8.20", ">=0.8.0")  // true
+CompilerVersion.isCompatible("0.7.0", ">=0.8.0")   // false
+
+// Exact match
+CompilerVersion.isCompatible("0.8.20", "0.8.20")   // true
+CompilerVersion.isCompatible("0.8.21", "0.8.20")   // false
+```
+
+### getMajor
+
+Extract major version number.
+
+```typescript
+function getMajor(version: string): number
+```
+
+```typescript
+CompilerVersion.getMajor("v0.8.20")  // 0
+CompilerVersion.getMajor("1.0.0")    // 1
+```
+
+### getMinor
+
+Extract minor version number.
+
+```typescript
+function getMinor(version: string): number
+```
+
+```typescript
+CompilerVersion.getMinor("v0.8.20")  // 8
+CompilerVersion.getMinor("1.2.3")    // 2
+```
+
+### getPatch
+
+Extract patch version number.
+
+```typescript
+function getPatch(version: string): number
+```
+
+```typescript
+CompilerVersion.getPatch("v0.8.20")  // 20
+CompilerVersion.getPatch("1.2.3")    // 3
+```
+
+## Use Cases
+
+### Checking Solidity Feature Support
+
+```typescript
+// Solidity 0.8.0+ has checked arithmetic by default
+function hasCheckedArithmetic(version: string): boolean {
+  return CompilerVersion.isCompatible(version, ">=0.8.0")
+}
+
+hasCheckedArithmetic("0.8.20")  // true
+hasCheckedArithmetic("0.7.6")   // false
+```
+
+### Sorting Versions
+
+```typescript
+const versions = [
+  "0.8.19",
+  "0.8.20",
+  "0.7.6",
+  "0.8.20-alpha"
+]
+
+versions.sort(CompilerVersion.compare)
+// ["0.7.6", "0.8.19", "0.8.20-alpha", "0.8.20"]
+```
+
+### Validating Contract Pragma
+
+```typescript
+function validatePragma(
+  contractVersion: string,
+  pragma: string
+): boolean {
+  return CompilerVersion.isCompatible(contractVersion, pragma)
+}
+
+// Contract has: pragma solidity ^0.8.20;
+validatePragma("0.8.24", "^0.8.20")  // true
+validatePragma("0.8.19", "^0.8.20")  // false
+```
+
+## Version Format
+
+Supported formats:
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| Simple | `0.8.20` | Major.minor.patch |
+| With v | `v0.8.20` | Optional v prefix |
+| With commit | `0.8.20+commit.a1b2c3d4` | Build metadata |
+| Full | `v0.8.20+commit.a1b2c3d4` | v prefix + commit |
+| Prerelease | `0.8.20-alpha.1` | Prerelease identifier |
+| Minimal | `0.8` | Major.minor only (patch = 0) |
+
+## Internal API
+
+For advanced use, internal functions operate directly on `CompilerVersionType`:
+
+```typescript
+import {
+  _parse,
+  _compare,
+  _getMajor,
+  _getMinor,
+  _getPatch,
+  _isCompatible
+} from '@voltaire/primitives/CompilerVersion'
+
+// Skip validation when you know input is valid
+const version = CompilerVersion.from("0.8.20")
+const parsed = _parse(version)
+```
+
+## See Also
+
+- [Bytecode](/primitives/bytecode) - Analyze compiled contract bytecode
+- [Opcode](/primitives/opcode) - EVM opcode utilities
