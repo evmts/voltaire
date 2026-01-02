@@ -1,4 +1,9 @@
 import { MAX } from "./constants.js";
+import {
+	Uint128NegativeError,
+	Uint128NotIntegerError,
+	Uint128OverflowError,
+} from "./errors.js";
 
 /**
  * Create Uint128 from bigint, number, or string (standard form)
@@ -7,7 +12,9 @@ import { MAX } from "./constants.js";
  * @since 0.0.0
  * @param {bigint | number | string} value - bigint, number, or decimal/hex string
  * @returns {import('./Uint128Type.js').Uint128Type} Uint128 value
- * @throws {Error} If value is out of range or invalid
+ * @throws {Uint128NotIntegerError} If number is not an integer
+ * @throws {Uint128NegativeError} If value is negative
+ * @throws {Uint128OverflowError} If value exceeds maximum
  * @example
  * ```javascript
  * import * as Uint128 from './primitives/Uint128/index.js';
@@ -28,7 +35,10 @@ export function from(value) {
 		}
 	} else if (typeof value === "number") {
 		if (!Number.isInteger(value)) {
-			throw new Error(`Uint128 value must be an integer: ${value}`);
+			throw new Uint128NotIntegerError(
+				`Uint128 value must be an integer: ${value}`,
+				{ value },
+			);
 		}
 		bigintValue = BigInt(value);
 	} else {
@@ -36,11 +46,17 @@ export function from(value) {
 	}
 
 	if (bigintValue < 0n) {
-		throw new Error(`Uint128 value cannot be negative: ${bigintValue}`);
+		throw new Uint128NegativeError(
+			`Uint128 value cannot be negative: ${bigintValue}`,
+			{ value: bigintValue },
+		);
 	}
 
 	if (bigintValue > MAX) {
-		throw new Error(`Uint128 value exceeds maximum: ${bigintValue}`);
+		throw new Uint128OverflowError(
+			`Uint128 value exceeds maximum: ${bigintValue}`,
+			{ value: bigintValue },
+		);
 	}
 
 	return /** @type {import('./Uint128Type.js').Uint128Type} */ (bigintValue);

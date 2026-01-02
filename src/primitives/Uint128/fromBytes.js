@@ -1,3 +1,4 @@
+import { Uint128InvalidLengthError } from "./errors.js";
 import { from } from "./from.js";
 
 /**
@@ -7,7 +8,7 @@ import { from } from "./from.js";
  * @since 0.0.0
  * @param {Uint8Array} bytes - Byte array (up to 16 bytes)
  * @returns {import('./Uint128Type.js').Uint128Type} Uint128 value
- * @throws {Error} If bytes length exceeds 16
+ * @throws {Uint128InvalidLengthError} If bytes length exceeds 16
  * @example
  * ```javascript
  * import * as Uint128 from './primitives/Uint128/index.js';
@@ -17,7 +18,10 @@ import { from } from "./from.js";
  */
 export function fromBytes(bytes) {
 	if (bytes.length > 16) {
-		throw new Error(`Uint128 bytes length exceeds 16: ${bytes.length}`);
+		throw new Uint128InvalidLengthError(
+			`Uint128 bytes length exceeds 16: ${bytes.length}`,
+			{ value: bytes, expected: "up to 16 bytes", actualLength: bytes.length },
+		);
 	}
 
 	let result = 0n;

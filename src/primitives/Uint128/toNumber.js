@@ -1,3 +1,5 @@
+import { Uint128SafeIntegerOverflowError } from "./errors.js";
+
 /**
  * Convert Uint128 to number (warns on overflow)
  *
@@ -5,7 +7,7 @@
  * @since 0.0.0
  * @param {import('./Uint128Type.js').Uint128Type} uint - Uint128 value
  * @returns {number} Number value
- * @throws {Error} If value exceeds Number.MAX_SAFE_INTEGER
+ * @throws {Uint128SafeIntegerOverflowError} If value exceeds Number.MAX_SAFE_INTEGER
  * @example
  * ```javascript
  * import * as Uint128 from './primitives/Uint128/index.js';
@@ -15,8 +17,9 @@
  */
 export function toNumber(uint) {
 	if (uint > Number.MAX_SAFE_INTEGER) {
-		throw new Error(
+		throw new Uint128SafeIntegerOverflowError(
 			`Uint128 value ${uint} exceeds Number.MAX_SAFE_INTEGER (${Number.MAX_SAFE_INTEGER})`,
+			{ value: uint },
 		);
 	}
 	return Number(uint);

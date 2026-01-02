@@ -1,4 +1,5 @@
 import { SIZE } from "./constants.js";
+import { Uint64InvalidLengthError } from "./errors.js";
 
 /**
  * Create Uint64 from bytes (big-endian, 8 bytes)
@@ -7,7 +8,7 @@ import { SIZE } from "./constants.js";
  * @since 0.0.0
  * @param {Uint8Array} bytes - byte array (must be exactly 8 bytes)
  * @returns {import('./Uint64Type.js').Uint64Type} Uint64 value
- * @throws {Error} If bytes length is not 8
+ * @throws {Uint64InvalidLengthError} If bytes length is not 8
  * @example
  * ```javascript
  * import * as Uint64 from './primitives/Uint64/index.js';
@@ -17,8 +18,9 @@ import { SIZE } from "./constants.js";
  */
 export function fromBytes(bytes) {
 	if (bytes.length !== SIZE) {
-		throw new Error(
+		throw new Uint64InvalidLengthError(
 			`Uint64 bytes must be exactly ${SIZE} bytes, got ${bytes.length}`,
+			{ value: bytes, expected: `${SIZE} bytes`, actualLength: bytes.length },
 		);
 	}
 

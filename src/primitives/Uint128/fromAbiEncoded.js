@@ -1,3 +1,4 @@
+import { Uint128InvalidLengthError } from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**
@@ -7,7 +8,7 @@ import { fromBytes } from "./fromBytes.js";
  * @since 0.0.0
  * @param {Uint8Array} bytes - 32-byte ABI-encoded value
  * @returns {import('./Uint128Type.js').Uint128Type} Uint128 value
- * @throws {Error} If bytes length is not 32
+ * @throws {Uint128InvalidLengthError} If bytes length is not 32
  * @example
  * ```javascript
  * import * as Uint128 from './primitives/Uint128/index.js';
@@ -18,7 +19,10 @@ import { fromBytes } from "./fromBytes.js";
  */
 export function fromAbiEncoded(bytes) {
 	if (bytes.length !== 32) {
-		throw new Error(`ABI-encoded Uint128 must be 32 bytes: ${bytes.length}`);
+		throw new Uint128InvalidLengthError(
+			`ABI-encoded Uint128 must be 32 bytes: ${bytes.length}`,
+			{ value: bytes, expected: "32 bytes", actualLength: bytes.length },
+		);
 	}
 
 	// Extract last 16 bytes (big-endian)
