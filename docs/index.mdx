@@ -4,9 +4,41 @@ description: High-performance, type-safe Ethereum primitives and cryptography
 mode: "custom"
 ---
 
-<div style={{ textAlign: 'center', padding: '3rem 2rem 6rem', maxWidth: '1280px', margin: '0 auto' }}>
+<style>{`
+  /* Critical CSS - prevents FOUC on homepage */
+  .voltaire-hero {
+    text-align: center !important;
+    padding: 3rem 2rem 6rem !important;
+    max-width: 1280px !important;
+    margin: 0 auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  .voltaire-hero h1 {
+    font-size: clamp(3rem, 8vw, 6rem) !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+    margin-bottom: 1.5rem !important;
+  }
+  .voltaire-hero .voltaire-gradient {
+    display: block !important;
+    background: linear-gradient(135deg, #E6A23C 0%, #A0522D 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+  }
+  .voltaire-hero p {
+    font-size: clamp(1.2rem, 3vw, 1.5rem) !important;
+    color: #999 !important;
+    max-width: 800px !important;
+    margin: 0 auto 3rem !important;
+    line-height: 1.6 !important;
+  }
+`}</style>
+
+<div className="voltaire-hero" style={{ textAlign: 'center', padding: '3rem 2rem 6rem', maxWidth: '1280px', margin: '0 auto' }}>
     <h1 style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', fontWeight: '800', lineHeight: '1.1', marginBottom: '1.5rem' }}>
-      <span style={{ display: 'block', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Voltaire</span>
+      <span className="voltaire-gradient" style={{ display: 'block', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Voltaire</span>
     </h1>
 
     <p style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', color: '#999', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.6' }}><strong>Modern, high-performance Ethereum library for <span style={{ position: 'relative', display: 'inline-block', overflow: 'hidden', verticalAlign: 'middle', top: '-0.1em', width: '10ch', textAlign: 'left' }}><span id="language-text" style={{ display: 'inline-block', color: '#3178C6', transition: 'transform 0.2s ease-out' }}>TypeScript</span></span></strong></p>
