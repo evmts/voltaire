@@ -1774,7 +1774,8 @@
                       "zig/primitives/block/index",
                       "zig/primitives/block-header/index",
                       "zig/primitives/block-body/index",
-                      "zig/primitives/block-stream"
+                      "zig/primitives/block-stream",
+                      "zig/primitives/uncle/index"
                     ]
                   },
                   {

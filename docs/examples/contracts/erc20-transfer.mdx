@@ -1,0 +1,105 @@
+---
+title: "ERC-20 Token Transfer"
+description: "Build and send an ERC-20 token transfer transaction"
+---
+
+Build and encode an ERC-20 token transfer transaction.
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+import { Hex } from '@tevm/voltaire/Hex';
+import { Address } from '@tevm/voltaire/Address';
+
+// ERC-20 transfer function ABI
+const erc20Abi = Abi([
+  {
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { type: "address", name: "to" },
+      { type: "uint256", name: "amount" }
+    ],
+    outputs: [{ type: "bool", name: "" }]
+  }
+]);
+
+// Encode transfer(address,uint256) function call
+const recipient = "0x742d35cc6634c0532925a3b844bc9e7595f251e3";
+const amount = 1000000000000000000n; // 1 token (18 decimals)
+
+const calldata = erc20Abi.encode("transfer", [recipient, amount]);
+// Result: 0xa9059cbb... (4-byte selector + ABI-encoded params)
+
+// The calldata can be used in a transaction
+const tx = {
+  to: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC contract
+  data: Hex.fromBytes(calldata),
+  value: 0n
+};
+```
+
+## Decode Calldata
+
+Verify the encoded calldata by decoding it back:
+
+```typescript
+// Decode the calldata to verify
+const decoded = erc20Abi.decodeData(calldata);
+
+// decoded.name = "transfer"
+// decoded.params = ["0x742d35cc6634c0532925a3b844bc9e7595f251e3", 1000000000000000000n]
+```
+
+## Function Selector
+
+The first 4 bytes are the function selector:
+
+```typescript
+const transferFn = erc20Abi.getFunction("transfer");
+const selector = Abi.Function.getSelector(transferFn);
+// 0xa9059cbb = keccak256("transfer(address,uint256)")[0:4]
+
+const signature = Abi.Function.getSignature(transferFn);
+// "transfer(address,uint256)"
+```
+
+## Full Transaction with Signing
+
+```typescript
+import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
+import { Transaction } from '@tevm/voltaire/Transaction';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+
+// Build unsigned EIP-1559 transaction
+const unsignedTx = Transaction.fromEIP1559({
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1000000000n,
+  maxFeePerGas: 50000000000n,
+  gasLimit: 100000n,
+  to: Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
+  value: 0n,
+  data: calldata
+});
+
+// Sign the transaction
+const privateKey = Hex.toBytes("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80");
+const serialized = Transaction.serialize(unsignedTx);
+const hash = Keccak256(serialized);
+const signature = Secp256k1.sign(hash, privateKey);
+
+// Create signed transaction
+const signedTx = Transaction.addSignature(unsignedTx, signature);
+const rawTx = Transaction.serialize(signedTx);
+// Ready to broadcast via eth_sendRawTransaction
+```
+
+<Tip>
+This is a fully executable example. View the complete source with test assertions at [`examples/contracts/erc20-transfer.ts`](https://github.com/evmts/voltaire/blob/main/examples/contracts/erc20-transfer.ts).
+</Tip>
+
+## Related
+
+- [API Reference](/primitives)
+- [More Examples](/examples)

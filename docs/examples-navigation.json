@@ -63,6 +63,14 @@
         {
           "title": "Personal Sign Message",
           "path": "examples/signing/personal-sign"
+        },
+        {
+          "title": "EIP-712 Permit Signature",
+          "path": "examples/signing/eip712-permit"
+        },
+        {
+          "title": "Verify Signature",
+          "path": "examples/signing/verify-signature"
         }
       ]
     },
@@ -72,6 +80,45 @@
         {
           "title": "RLP Encode List",
           "path": "examples/rlp/rlp-encode-list"
+        }
+      ]
+    },
+    {
+      "group": "Indexing",
+      "pages": [
+        {
+          "title": "BlockStream Indexer",
+          "path": "examples/indexing/blockstream-indexer"
+        }
+      ]
+    },
+    {
+      "group": "Contracts",
+      "pages": [
+        {
+          "title": "Decode Contract Logs",
+          "path": "examples/contracts/decode-logs"
+        },
+        {
+          "title": "ERC-20 Token Transfer",
+          "path": "examples/contracts/erc20-transfer"
+        },
+        {
+          "title": "Read Contract State",
+          "path": "examples/contracts/read-contract"
+        }
+      ]
+    },
+    {
+      "group": "Advanced",
+      "pages": [
+        {
+          "title": "Merkle Proof Verification",
+          "path": "examples/advanced/merkle-proof"
+        },
+        {
+          "title": "Batch Requests with Multicall",
+          "path": "examples/advanced/multicall-batch"
         }
       ]
     }

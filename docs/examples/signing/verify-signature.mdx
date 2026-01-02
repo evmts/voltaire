@@ -1,0 +1,121 @@
+---
+title: "Verify Signature"
+description: "Verify a signed message and recover the signer address"
+---
+
+Verify a signed message and recover the signer address
+
+```typescript
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
+import * as Keccak256 from '@tevm/voltaire/Keccak256';
+import * as Hex from '@tevm/voltaire/Hex';
+import * as Address from '@tevm/voltaire/Address';
+
+// The original message that was signed
+const message = "Hello, Ethereum!";
+
+// Signature components (from a previous signing operation)
+const signatureHex = {
+	r: "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf3305e9bc3b1e9b6a1e3e8e2a",
+	s: "0x1c9d7a8e7f3b2c1d0e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+	v: 28,
+};
+
+// Expected signer address
+const expectedSigner = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+
+// Step 1: Reconstruct the signed message hash (personal_sign format)
+const prefix = "\x19Ethereum Signed Message:\n";
+const messageBytes = new TextEncoder().encode(message);
+const prefixedMessage = new TextEncoder().encode(
+	prefix + messageBytes.length + message,
+);
+const messageHash = Keccak256.hash(prefixedMessage);
+
+// Step 2: Prepare signature for recovery
+const signature = {
+	r: Hex.toBytes(signatureHex.r),
+	s: Hex.toBytes(signatureHex.s),
+	v: signatureHex.v,
+};
+
+// Step 3: Recover the public key from the signature
+const recoveredPublicKey = Secp256k1.recoverPublicKeyFromHash(
+	signature,
+	messageHash,
+);
+
+// Step 4: Derive address from public key (last 20 bytes of keccak256(pubkey))
+const publicKeyHash = Keccak256.hash(recoveredPublicKey);
+const recoveredAddress = Address.fromBytes(publicKeyHash.slice(12));
+
+// Step 5: Compare with expected signer
+const isValid = Address.equals(
+	recoveredAddress,
+	Address.fromHex(expectedSigner),
+);
+```
+
+<Tip>
+This is a fully executable example. View the complete source with test assertions at [`examples/signing/verify-signature.ts`](https://github.com/evmts/voltaire/blob/main/examples/signing/verify-signature.ts).
+</Tip>
+
+## Complete Verification Flow
+
+```typescript
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
+import * as Keccak256 from '@tevm/voltaire/Keccak256';
+import * as Hex from '@tevm/voltaire/Hex';
+import * as Address from '@tevm/voltaire/Address';
+import * as PrivateKey from '@tevm/voltaire/PrivateKey';
+
+// Sign a message (for demonstration)
+const privateKey = PrivateKey.from(
+	"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+);
+const message = "Verify me!";
+
+// Create personal_sign hash
+const prefix = "\x19Ethereum Signed Message:\n";
+const messageBytes = new TextEncoder().encode(message);
+const prefixedMessage = new TextEncoder().encode(
+	prefix + messageBytes.length + message,
+);
+const messageHash = Keccak256.hash(prefixedMessage);
+
+// Sign
+const signature = Secp256k1.signHash(messageHash, privateKey);
+
+// Recover and verify
+const recoveredPubKey = Secp256k1.recoverPublicKeyFromHash(
+	signature,
+	messageHash,
+);
+const recoveredAddr = Address.fromPublicKey(recoveredPubKey);
+const signerAddr = Address.fromPrivateKey(privateKey);
+
+// Verify signer matches
+const verified = Address.equals(recoveredAddr, signerAddr);
+```
+
+## Verifying Raw Hash Signatures
+
+For signatures over raw 32-byte hashes (not personal_sign format):
+
+```typescript
+// If message is already a 32-byte hash
+const rawHash = Hex.toBytes("0x4e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd41");
+
+// Recover directly without personal_sign prefix
+const recoveredPublicKey = Secp256k1.recoverPublicKeyFromHash(
+	signature,
+	rawHash,
+);
+const recoveredAddress = Address.fromPublicKey(recoveredPublicKey);
+```
+
+## Related
+
+- [Personal Sign](/examples/signing/personal-sign)
+- [EIP-712 Permit](/examples/signing/eip712-permit)
+- [API Reference](/primitives)

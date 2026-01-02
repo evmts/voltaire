@@ -1,0 +1,44 @@
+---
+title: "Import Private Key"
+description: "Import a private key and derive the public address"
+---
+
+Import a hex private key and derive the corresponding Ethereum address.
+
+```typescript
+import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Parse hex private key to bytes
+const privateKeyHex = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+const privateKey = Hex.toBytes(privateKeyHex);
+
+// Validate private key is on secp256k1 curve
+if (!Secp256k1.isValidPrivateKey(privateKey)) {
+  throw new Error("Invalid private key");
+}
+
+// Derive uncompressed public key (65 bytes: 04 || x || y)
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+
+// Derive Ethereum address from public key
+// Address = last 20 bytes of keccak256(publicKey[1:])
+const address = Address.fromPublicKey(publicKey);
+const checksummed = Address.toChecksummed(address);
+
+// Alternatively, derive directly from private key
+const addressDirect = Address.fromPrivateKey(privateKey);
+```
+
+<Warning>
+Never share or expose private keys. Store them securely.
+</Warning>
+
+## Related
+
+- [Generate Wallet from Mnemonic](/examples/wallet/generate-wallet)
+- [Derive Address from Private Key](/examples/addresses/address-from-private-key)
+- [Secp256k1 API Reference](/crypto/secp256k1)
+- [More Examples](/examples)
