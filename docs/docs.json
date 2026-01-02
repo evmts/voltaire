@@ -41,8 +41,10 @@
             "icon": "book",
             "pages": [
               "concepts/branded-types",
+              "concepts/type-safe-values",
               "concepts/data-first-api",
               "concepts/tree-shakeable-api",
+              "concepts/error-handling",
               "concepts/cross-language-consistency",
               "concepts/skills",
               "concepts/advanced-build",

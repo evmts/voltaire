@@ -1,0 +1,201 @@
+---
+title: Error Handling
+description: How Voltaire handles validation errors and invalid input
+---
+
+Voltaire uses viem-style errors—synchronous exceptions with rich metadata for debugging. This pattern, pioneered by [viem](https://viem.sh), provides machine-readable error codes alongside human-readable messages.
+
+## Basic Pattern
+
+Constructors throw when given invalid input:
+
+```typescript
+import { Address, Hex } from '@tevm/voltaire'
+
+// Valid input - returns AddressType
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+
+// Invalid input - throws InvalidHexFormatError
+Address('not-an-address');
+
+// Invalid length - throws InvalidAddressLengthError
+Address('0x1234');
+```
+
+Use try/catch to handle errors:
+
+```typescript
+try {
+  const addr = Address(userInput);
+  // addr is guaranteed valid here
+} catch (error) {
+  if (error instanceof InvalidAddressLengthError) {
+    console.log(`Expected 20 bytes, got ${error.context?.actualLength}`);
+  }
+}
+```
+
+## Error Hierarchy
+
+All errors extend `PrimitiveError`:
+
+```
+Error (native)
+  └── AbstractError
+       └── PrimitiveError
+            ├── ValidationError
+            │    ├── InvalidFormatError
+            │    │    └── InvalidHexFormatError
+            │    ├── InvalidLengthError
+            │    │    └── InvalidAddressLengthError
+            │    ├── InvalidRangeError
+            │    │    ├── UintOverflowError
+            │    │    └── UintNegativeError
+            │    ├── InvalidChecksumError
+            │    └── InvalidValueError
+            ├── CryptoError
+            ├── TransactionError
+            └── SerializationError
+```
+
+## Error Metadata
+
+Every error includes debugging information:
+
+```typescript
+try {
+  Address('0x123');
+} catch (error) {
+  console.log(error.name);      // "InvalidAddressLengthError"
+  console.log(error.code);      // "INVALID_ADDRESS_LENGTH"
+  console.log(error.value);     // "0x123"
+  console.log(error.expected);  // "20 bytes"
+  console.log(error.docsPath);  // "/primitives/address#error-handling"
+  console.log(error.context);   // { actualLength: 2 }
+  console.log(error.cause);     // Original error if wrapped
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `string` | Error class name |
+| `code` | `string` | Machine-readable code |
+| `value` | `unknown` | The invalid input |
+| `expected` | `string` | What was expected |
+| `docsPath` | `string` | Link to documentation |
+| `context` | `object` | Additional debug info |
+| `cause` | `Error` | Original error (if wrapped) |
+
+## Validation Functions
+
+Three ways to validate:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// 1. Constructor - throws on invalid
+const addr = Address(input);  // Throws InvalidAddressError
+
+// 2. isValid - returns boolean
+if (Address.isValid(input)) {
+  const addr = Address(input);  // Safe - we know it's valid
+}
+
+// 3. assert - throws with custom handling
+try {
+  const addr = Address.assert(input, { strict: true });
+} catch (error) {
+  // InvalidAddressError or InvalidChecksumError
+}
+```
+
+Choose based on your use case:
+- **Constructor**: When invalid input is unexpected
+- **isValid**: When you want to branch on validity
+- **assert**: When you need validation options (like `strict` checksum)
+
+## Checking Error Types
+
+Use `instanceof` to check error types:
+
+```typescript
+import {
+  InvalidHexFormatError,
+  InvalidAddressLengthError,
+  InvalidChecksumError
+} from '@tevm/voltaire'
+
+try {
+  const addr = Address(userInput);
+} catch (error) {
+  if (error instanceof InvalidHexFormatError) {
+    // Not a valid hex string
+  } else if (error instanceof InvalidAddressLengthError) {
+    // Wrong number of bytes
+  } else if (error instanceof InvalidChecksumError) {
+    // Failed EIP-55 checksum
+  }
+}
+```
+
+Or check the `code` field for simpler handling:
+
+```typescript
+try {
+  const addr = Address(userInput);
+} catch (error) {
+  switch (error.code) {
+    case 'INVALID_HEX_FORMAT':
+    case 'INVALID_ADDRESS_LENGTH':
+    case 'INVALID_CHECKSUM':
+      return { error: 'Invalid address' };
+    default:
+      throw error;  // Unexpected error
+  }
+}
+```
+
+## Effect.ts Integration
+
+For advanced use cases, Voltaire provides Effect.ts schemas:
+
+```typescript
+import { Effect, pipe } from 'effect'
+import { AddressSchema } from '@tevm/voltaire/effect'
+
+const program = pipe(
+  AddressSchema.decode(userInput),
+  Effect.map(addr => addr.toChecksummed()),
+  Effect.catchTag('InvalidAddress', (error) =>
+    Effect.succeed(`Invalid: ${error.message}`)
+  )
+)
+```
+
+Effect.ts errors use `Data.TaggedError`:
+
+```typescript
+import { InvalidAddressLengthError } from '@tevm/voltaire/effect'
+
+// Effect.ts style - tagged errors
+const error = new InvalidAddressLengthError({
+  value: input,
+  actualLength: 10,
+  expectedLength: 20
+});
+
+error._tag;  // "InvalidAddressLength"
+```
+
+Effect.ts is optional—imported from `@tevm/voltaire/effect` subpath. Regular usage just throws standard exceptions.
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Address Validation" icon="shield-check" href="/primitives/address#validation">
+    Address-specific error handling
+  </Card>
+  <Card title="Type-Safe Values" icon="lock" href="/concepts/type-safe-values">
+    Prevent errors with typed values
+  </Card>
+</CardGroup>
