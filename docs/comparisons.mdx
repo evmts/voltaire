@@ -17,18 +17,18 @@ Voltaire, Viem, and Ethers.js are all popular Ethereum libraries. This page comp
 import { Address } from '@tevm/voltaire';
 
 // Create and checksum
-const address = Address.from('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
-const checksummed = Address.toChecksummed(address);
+const address = Address('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+const checksummed = address.toChecksummed();
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 
 // Validate address
-const isValid = Address.validate(address);
+const isValid = address.validate();
 // true
 
 // Compare addresses
-const addr1 = Address.from('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
-const addr2 = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
-const areEqual = Address.equals(addr1, addr2);
+const addr1 = Address('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+const addr2 = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const areEqual = addr1.equals(addr2);
 // true (case-insensitive comparison)
 ```
 
@@ -90,19 +90,16 @@ const areEqual = addr1 === addr2;
 <Tab title="Voltaire">
 
 ```typescript
-import * as Keccak256 from '@tevm/voltaire/Keccak256';
-import { Hex } from '@tevm/voltaire';
+import { Keccak256, Hex } from '@tevm/voltaire';
 
 // Hash a string
-const stringHash = Keccak256.hash(
-  new TextEncoder().encode('hello world')
-);
-const hashHex = Hex.toHex(stringHash);
+const stringHash = Keccak256(new TextEncoder().encode('hello world'));
+const hashHex = Hex(stringHash);
 // "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad"
 
 // Hash hex-encoded data
-const hexData = Hex.fromHex('0x1234');
-const dataHash = Keccak256.hash(hexData);
+const hexData = Hex('0x1234');
+const dataHash = Keccak256(hexData);
 
 // Hash for Ethereum signatures (with prefix)
 const message = 'hello world';
@@ -159,7 +156,7 @@ const ethMessageHash = ethers.hashMessage('hello world');
 <Tab title="Voltaire">
 
 ```typescript
-import * as Abi from '@tevm/voltaire/Abi';
+import { Abi } from '@tevm/voltaire';
 
 // Define ABI
 const transferAbi = {
@@ -173,19 +170,20 @@ const transferAbi = {
 } as const;
 
 // Encode function call
-const encoded = Abi.Function.encodeParams(transferAbi, [
+const fn = Abi.Function(transferAbi);
+const encoded = fn.encodeParams([
   '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
   1000000000000000000n
 ]);
 // Returns Uint8Array with encoded parameters
 
 // Get function selector
-const selector = Abi.Function.getSelector(transferAbi);
+const selector = fn.getSelector();
 // "0xa9059cbb"
 
 // Decode function result
 const resultData = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
-const decoded = Abi.Function.decodeResult(transferAbi, resultData);
+const decoded = fn.decodeResult(resultData);
 // [true]
 ```
 
@@ -260,7 +258,7 @@ const decoded = iface.decodeFunctionResult(
 <Tab title="Voltaire">
 
 ```typescript
-import * as Abi from '@tevm/voltaire/Abi';
+import { Abi } from '@tevm/voltaire';
 
 // Define event ABI
 const transferEvent = {
@@ -274,11 +272,12 @@ const transferEvent = {
 } as const;
 
 // Get event selector (topic0)
-const topic0 = Abi.Event.getSelector(transferEvent);
+const event = Abi.Event(transferEvent);
+const topic0 = event.getSelector();
 // "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 
 // Encode event topics
-const topics = Abi.Event.encodeTopics(transferEvent, {
+const topics = event.encodeTopics({
   from: '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
   to: '0x1234567890123456789012345678901234567890'
 });
@@ -292,7 +291,7 @@ const log = {
   ],
   data: new Uint8Array(32) // uint256 value
 };
-const decoded = Abi.Event.decodeLog(transferEvent, log);
+const decoded = event.decodeLog(log);
 ```
 
 </Tab>
@@ -371,21 +370,6 @@ const decoded = iface.parseLog({
 </Tab>
 </Tabs>
 
-## Quick Reference Table
-
-| Operation | Voltaire | Viem | Ethers.js |
-|-----------|----------|------|-----------|
-| **Address checksumming** | `Address.toChecksummed()` | `getAddress()` | `ethers.getAddress()` |
-| **Address validation** | `Address.validate()` | `isAddress()` | `ethers.isAddress()` |
-| **Address comparison** | `Address.equals()` | `isAddressEqual()` | Manual comparison |
-| **Keccak256 hash** | `Keccak256.hash()` | `keccak256()` | `ethers.keccak256()` |
-| **Hash message (EIP-191)** | `Keccak256.hashEthereumMessage()` | `hashMessage()` | `ethers.hashMessage()` |
-| **Function encoding** | `Abi.Function.encodeParams()` | `encodeFunctionData()` | `iface.encodeFunctionData()` |
-| **Function decoding** | `Abi.Function.decodeResult()` | `decodeFunctionResult()` | `iface.decodeFunctionResult()` |
-| **Event topic encoding** | `Abi.Event.encodeTopics()` | `encodeEventTopics()` | Manual with `topicHash` |
-| **Event log decoding** | `Abi.Event.decodeLog()` | `decodeEventLog()` | `iface.parseLog()` |
-| **Function selector** | `Abi.Function.getSelector()` | Extract from `encodeFunctionData()` | `iface.getFunction().selector` |
-
 ## Key Differences
 
 ### Type System
@@ -397,36 +381,44 @@ type AddressType = Uint8Array & { readonly __tag: "Address" };
 type HashType = Uint8Array & { readonly __tag: "Hash" };
 ```
 
-**Viem** uses plain strings and hex types:
+**Viem** uses template literal types for compile-time format checking:
 
 ```typescript
 type Address = `0x${string}`;
 type Hash = `0x${string}`;
+// Catches format errors at compile time, but doesn't guarantee validity
 ```
 
-**Ethers.js** primarily uses strings with runtime validation:
+**Ethers.js** uses plain strings with runtime-only validation:
 
 ```typescript
-// Addresses and hashes are strings
+// No compile-time safety - validation happens at runtime
 const address: string = ethers.getAddress('0x...');
 const hash: string = ethers.keccak256('0x...');
 ```
 
+In **Voltaire**, the branded type signature proves the value was already runtime validated - if you have an `Address`, it's guaranteed valid.
+
 ### Tree-Shaking
 
-**Voltaire** provides granular tree-shakeable imports:
+**Voltaire** provides granular tree-shakeable imports but primarily documents a simpler class-based API:
 
 ```typescript
-// Import only what you need
-import { from, toHex } from '@tevm/voltaire/AddressType';
+// Simple class-based API (recommended)
+import { Address, Hex } from '@tevm/voltaire';
+const addr = Address('0x...');
+
+// Granular imports available for advanced use cases
+import { from, toChecksummed } from '@tevm/voltaire/Address';
 ```
 
 **Viem** has tree-shakeable functions by default:
 
 ```typescript
-// Functions are automatically tree-shakeable
 import { getAddress, keccak256 } from 'viem';
 ```
+
+Both **Voltaire** and **Viem** use [ox](https://github.com/wevm/ox) under the hood, amortizing bundle cost if you use both libraries.
 
 **Ethers.js** v6 improved tree-shaking but still bundles more:
 
@@ -435,29 +427,15 @@ import { getAddress, keccak256 } from 'viem';
 import { ethers } from 'ethers';
 ```
 
-### Bundle Size
-
-Approximate bundle sizes for common operations:
-
-| Library | Address + Keccak256 | With ABI encoding |
-|---------|---------------------|-------------------|
-| **Voltaire** | ~8 KB | ~25 KB |
-| **Viem** | ~12 KB | ~35 KB |
-| **Ethers.js** | ~95 KB | ~120 KB |
-
-<Note>
-Sizes are approximate and depend on tree-shaking effectiveness. Voltaire and Viem are optimized for minimal bundle size.
-</Note>
-
 ### WASM Acceleration
 
-**Voltaire** provides optional WASM acceleration for performance-critical operations:
+**Voltaire** provides optional WASM acceleration for performance-critical operations. In some cases like Keccak256, the WASM version is both faster and smaller than the JavaScript implementation:
 
 ```typescript
 import { Keccak256Wasm } from '@tevm/voltaire/Keccak256/wasm';
 
 await Keccak256Wasm.init();
-const hash = Keccak256Wasm.hash(data); // 10-100x faster
+const hash = Keccak256Wasm.hash(data); // 10-100x faster, smaller bundle
 ```
 
 **Viem** and **Ethers.js** use JavaScript implementations only.

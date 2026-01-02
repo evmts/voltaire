@@ -1,201 +1,165 @@
 ---
-title: LLM-Optimized
-description: Built from the ground up to be great for LLMs and humans alike
+title: Agentic Coding
+description: Get maximum AI productivity with Voltaire using local context or MCP
 ---
 
-## Mirrors Official Specifications
+## Recommended: Clone the Repo
 
-Voltaire's API mirrors Ethereum specifications and standards. It contains minimal amounts of bespoke abstractions. Wherever possible, we try to use the most simple JavaScript data type, the most simple TypeScript data type. And we try to make both as close to official Ethereum documentation and specifications, including code generating from the specification itself wherever possible.
+Top AI engineers get the best results by cloning the entire Voltaire repository locally. This provides maximum context for your AI coding assistant.
 
-**Why this matters for LLMs:**
+<Tip>
+**This is the recommended approach.** Having the full source code locally gives AI assistants complete context - they can read implementations, understand patterns, and provide more accurate code.
+</Tip>
 
-In the past, libraries optimized for developers who would use them continuously over time. After months of usage, bespoke APIs became intuitive. This made sense when humans were the only consumers.
-
-LLMs are different. They don't have long-term learning - they only have pre-existing training data. When your API differs from official specs:
-- LLMs can't leverage training data from Ethereum documentation
-- Breaking changes create a larger gap between training data and reality
-- LLMs will only be able to use APIs in the most common way showing up in their training data, and will struggle when going off the well-beaten path compared to when there's minimal abstractions or when all the context of the abstraction is present
-- Debugging requires understanding library-specific abstractions - this is friction for both LLMs and humans alike
-
-By staying close to specs, we minimize the diff between the LLM's training data and Voltaire's API.
-
-**Example - Contract Calls:**
-
-```typescript
-import { Abi } from '@tevm/voltaire'
-
-// Other libraries (great API, but bespoke abstraction)
-const result = await contract.balanceOf(address, { blockTag: 'latest' })
-
-// Voltaire (much closer to the JSON RPC spec in this example)
-const balanceOfFunction = {
-  type: 'function',
-  name: 'balanceOf',
-  inputs: [{ type: 'address', name: 'account' }],
-  outputs: [{ type: 'uint256' }]
-}
-
-const result = await provider.request({
-  method: 'eth_call',
-  params: [{
-    to: contractAddress,
-    from: callerAddress,  // optional: specify caller
-    data: Abi.Function.encodeParams(balanceOfFunction, [address])
-  }, {
-    blockNumber: 'latest'  // or specific block number
-  }]
-})
+```bash
+git clone https://github.com/evmts/voltaire.git
 ```
 
-This is intentional. When debugging, there's no missing context. What you pass in as the params is what's gonna show up in the JSON RPC request that gets made over the network.
+Once cloned, point your AI assistant to the repo when working on Ethereum projects. The codebase includes comprehensive inline documentation, tests, and examples.
 
-## Minimal Abstraction
+## llms.txt
 
-We've found that minimal abstraction close to the spec produces the best LLM results, especially during debugging.
+Voltaire provides machine-readable documentation at standard endpoints:
 
-**You control retry behavior:**
+- **[/llms.txt](https://voltaire.tevm.sh/llms.txt)** - Concise summary for quick context
+- **[/llms-full.txt](https://voltaire.tevm.sh/llms-full.txt)** - Complete documentation in plain text
 
-```typescript
-// Explicit retry behavior (you control it)
-let attempt = 0
-while (attempt < maxRetries) {
-  try {
-    const result = await provider.request(params)
-    break
-  } catch (error) {
-    attempt++
-    await sleep(retryDelay * attempt)
-  }
-}
-
-// NOT: Hidden retry policies that confuse both humans and LLMs
-```
-
-Even humans struggle to understand hidden retry policies, polling behavior, and automatic retries. We eliminate this confusion by making everything explicit.
-
-Whenever possible, we offer **opinionated recipes** that provide sensible defaults. These are recipes you add to your own codebase and can modify to your liking. See [Playbooks](/playbooks) for examples.
-
-## Unix Philosophy
-
-Voltaire focuses on low-level primitives. Everything does one thing well:
-
-```typescript
-import { Address, Keccak256, Abi } from '@tevm/voltaire'
-```
-
-Each primitive is a building block. No magical encapsulation, no hidden behavior.
-
-## Higher-Level Abstractions
-
-Higher-level abstractions (like smart clients with retry policies) exist in Voltaire, but differently.
-
-**Instead of one-size-fits-all, we provide building blocks and recipes you copy into your codebase.**
-
-Think shadcn for Ethereum - the client code lives in your project, not hidden in `node_modules`:
-
-```typescript
-// Copy this into your codebase: src/client.ts
-import { Provider } from '@tevm/voltaire'
-
-// You own this code - customize it freely
-export function createClient(rpcUrl: string, options?: { maxRetries?: number }) {
-  const provider = Provider.from(rpcUrl)
-
-  return {
-    request: async (params: { method: string; params: unknown[] }) => {
-      let attempt = 0
-      const maxRetries = options?.maxRetries ?? 3
-
-      while (attempt < maxRetries) {
-        try {
-          return await provider.request(params)
-        } catch (error) {
-          attempt++
-          if (attempt >= maxRetries) throw error
-          await new Promise(r => setTimeout(r, 1000 * attempt))
-        }
-      }
-    }
-  }
-}
-```
-
-### Why This Approach?
-
-**1. Context in Your Codebase**
-
-When the client lives in your codebase:
-- LLMs can read the source directly
-- You can add console.logs for debugging
-- Behavior is transparent, not hidden in `node_modules`
-
-Voltaire primitives are so close to specs that source code isn't needed - JSDoc and patterns make them intuitive. But higher-level abstractions benefit enormously from being visible.
-
-**2. Customize to Your Needs**
-
-Common customizations:
-
-```typescript
-// Hard-code your contract
-const myNFT = {
-  address: NFT_ADDRESS,
-  abi: nftAbi
-} as const
-
-export async function getOwnerOf(tokenId: bigint) {
-  return readContract({
-    ...myNFT,
-    functionName: 'ownerOf',
-    args: [tokenId]
-  })
-}
-
-// Custom retry for specific methods
-export async function readWithAggressiveRetry(params: ReadParams) {
-  return retry(
-    () => provider.request(params),
-    { maxAttempts: 10, backoff: 'exponential' }
-  )
-}
-
-// Override specific JSON-RPC methods
-export function createCustomClient(baseProvider: Provider) {
-  return {
-    request: async (params: { method: string; params: unknown[] }) => {
-      if (params.method === 'eth_call') {
-        return callWithCache(params)
-      }
-      return baseProvider.request(params)
-    }
-  }
-}
-```
-
-**Common customizations:**
-- Hard-code contracts you use frequently
-- Custom methods like `getOwnerOf()` instead of generic `readContract()`
-- Abstractions across multiple contracts
-- Custom retry policies per method
-- Override specific JSON-RPC methods with caching
-
-This is powerful because your application logic is in your codebase, not abstracted away.
-
-## Smart LLM Detection
-
-When AI assistants like Claude Code or Cursor query our documentation, we automatically detect the request and return optimized **markdown** instead of HTML. This significantly reduces token usage and improves response speed.
+These follow the [llms.txt standard](https://llmstxt.org/) and can be fetched by AI assistants to understand Voltaire's API without needing the full repo.
 
 ## MCP Server
+
+For AI assistants that support [Model Context Protocol](https://modelcontextprotocol.io/), Voltaire provides an MCP server with searchable documentation.
+
+<Tabs>
+<Tab title="Claude Code">
 
 ```bash
 claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
 ```
 
-### Comprehensive Eval Testing
+</Tab>
+<Tab title="Claude Desktop">
 
-We maintain a rigorous test suite validating that AI assistants can **1-shot** a comprehensive set of feature requests and code changes using the MCP server. These evals ensure:
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
-- AI can discover and use correct APIs without manual lookup
-- Complex multi-step implementations work end-to-end
-- Type safety and error handling are correctly applied
-- Performance patterns are followed automatically
+```json
+{
+  "mcpServers": {
+    "voltaire": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]
+    }
+  }
+}
+```
 
+</Tab>
+<Tab title="Cursor">
+
+Add to `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "voltaire": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]
+    }
+  }
+}
+```
+
+</Tab>
+<Tab title="Codex">
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.voltaire]
+url = "https://voltaire.tevm.sh/mcp"
+```
+
+</Tab>
+<Tab title="Amp">
+
+Add to `~/.config/amp/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "voltaire": {
+      "url": "https://voltaire.tevm.sh/mcp"
+    }
+  }
+}
+```
+
+</Tab>
+<Tab title="OpenCode">
+
+Add to `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "mcp": {
+    "voltaire": {
+      "type": "remote",
+      "url": "https://voltaire.tevm.sh/mcp"
+    }
+  }
+}
+```
+
+</Tab>
+<Tab title="Windsurf">
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "voltaire": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]
+    }
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+The MCP server provides a `SearchVoltaire` tool that searches across all documentation, returning relevant code examples and API references.
+
+## Why Local Context Works Best
+
+The MCP server is convenient, but cloning the repo locally provides:
+
+- **Full source code** - AI can read actual implementations, not just docs
+- **Test examples** - Real-world usage patterns in test files
+- **Type definitions** - Complete TypeScript types for accurate suggestions
+- **Build context** - Understanding of how modules connect
+
+Most production teams using AI-assisted development keep frequently-used libraries cloned locally for this reason.
+
+## API Design for AI
+
+Voltaire's API is designed to work well with AI assistants:
+
+**Mirrors Ethereum specs** - LLMs trained on Ethereum documentation can leverage that knowledge directly. No bespoke abstractions to learn.
+
+**Minimal abstraction** - What you pass to a function is what happens. No hidden retry policies, automatic caching, or magic behavior that confuses debugging.
+
+**Predictable patterns** - Every primitive follows the same conventions: `Type()` constructor, `.toHex()`, `.equals()`, etc.
+
+```typescript
+// Voltaire API maps directly to Ethereum concepts
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const hash = Keccak256(new TextEncoder().encode('hello'));
+const fn = Abi.Function(transferAbi);
+const encoded = fn.encodeParams([to, amount]);
+```
+
+## Smart LLM Detection
+
+When AI assistants query Voltaire documentation, we detect the request and return optimized markdown instead of HTML. This reduces token usage and improves response quality.

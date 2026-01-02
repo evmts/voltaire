@@ -1,300 +1,234 @@
 ---
 title: Powerful Features
-description: Unique features beyond standard Ethereum libraries
+description: Bytecode analysis and EVM execution capabilities
 ---
 
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
-
-Voltaire provides all standard features including primitive types (Address, Hash, Transaction, etc.), JSON-RPC provider, and cryptography. But we also offer **unique features not found in any other TypeScript-based Ethereum library**.
-
-## EVM Execution
-
-Run Ethereum bytecode directly in JavaScript. Simulate transactions, estimate gas, and debug contracts without network calls.
-
-### Simulate Transactions
-
-```typescript
-import { Evm, ForkStateManager, Provider } from '@tevm/voltaire';
-import { Address } from '@tevm/voltaire/primitives';
-
-// Create EVM with fork state manager
-const stateManager = ForkStateManager({
-  url: 'https://eth.llamarpc.com',
-  blockNumber: 18_000_000n
-});
-
-const evm = Evm({ stateManager });
-
-// Create JSON-RPC provider from EVM
-const provider = Provider.fromEvm(evm);
-
-// Simulate a transfer before sending
-const result = await provider.eth_call({
-  to: Address('0x...token'),
-  data: encodeFunctionData({
-    abi: erc20Abi,
-    functionName: 'transfer',
-    args: [recipient, amount]
-  }),
-  from: sender
-});
-
-if (result.executionGasUsed > gasLimit) {
-  console.warn('Transaction will run out of gas!');
-}
-```
-
-### Optimistic UI Updates
-
-```typescript
-// Show users expected outcome before confirmation
-const simulatedBalance = await provider.eth_call({
-  to: tokenAddress,
-  data: encodeFunctionData({
-    abi: erc20Abi,
-    functionName: 'balanceOf',
-    args: [userAddress]
-  })
-});
-
-// Update UI immediately with simulated result
-updateBalanceDisplay(decodeResult(simulatedBalance.returnValue));
-
-// Then send actual transaction
-await wallet.sendTransaction(tx);
-```
-
-### Step Through Execution
-
-```typescript
-import { Evm, Provider } from '@tevm/voltaire';
-
-const evm = Evm();
-const provider = Provider.fromEvm(evm);
-
-// Hook into every opcode
-evm.on('step', (step) => {
-  console.log(`Opcode: ${step.opcode}`);
-  console.log(`Gas: ${step.gasLeft}`);
-  console.log(`Stack: ${step.stack}`);
-  console.log(`Memory: ${step.memory}`);
-});
-
-// Execute and debug
-await provider.eth_call({
-  to: contractAddress,
-  data: calldata
-});
-```
-
-### Mock Contracts with JavaScript
-
-```typescript
-// Mock external contracts for testing
-evm.setAccountCode(
-  externalContractAddress,
-  Bytecode('0x...')
-);
-
-// Or inject JavaScript behavior
-evm.injectContract(oracleAddress, {
-  async call(data) {
-    // Mock oracle response
-    return encodeAbiParameters(
-      [{ type: 'uint256' }],
-      [currentPrice]
-    );
-  }
-});
-```
-
-<Card title="EVM Documentation" icon="bolt" href="/evm">
-  Complete EVM execution primitives and precompiles
-</Card>
+Voltaire provides powerful bytecode analysis and EVM execution capabilities not found in other TypeScript Ethereum libraries.
 
 ## Bytecode Analysis
 
-Parse and analyze EVM bytecode without executing it. Essential for security analysis, optimization, and tooling.
+Parse and analyze EVM bytecode without executing it. Extract ABIs from unverified contracts, detect patterns, and debug at the opcode level.
+
+### Extract ABI from Bytecode
+
+Recover function selectors and events from any deployed contract—even without source code:
+
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+// Fetch bytecode from any contract (verified or not)
+const bytecode = Bytecode('0x608060405234801561001057600080fd5b50...')
+
+// Extract ABI from bytecode patterns
+const abi = Bytecode.toAbi(bytecode)
+
+console.log(abi)
+// [
+//   { type: "function", selector: "0xa9059cbb", stateMutability: "nonpayable", payable: false },
+//   { type: "function", selector: "0x70a08231", stateMutability: "view", payable: false },
+//   { type: "event", hash: "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" }
+// ]
+```
 
 ### Parse Instructions
 
+Disassemble bytecode into individual opcodes:
+
 ```typescript
-import { Bytecode } from '@tevm/voltaire/primitives';
+const instructions = Bytecode.parseInstructions(bytecode)
 
-const bytecode = Bytecode('0x608060405234801561001057600080fd5b50...');
-
-const instructions = Bytecode.parseInstructions(bytecode);
-
-for (const instruction of instructions) {
-  console.log(`${instruction.pc}: ${instruction.opcode.name}`);
-  if (instruction.pushData) {
-    console.log(`  Push: 0x${instruction.pushData.toString(16)}`);
-  }
+for (const inst of instructions) {
+  console.log(`${inst.pc}: ${inst.opcode} ${inst.pushData ?? ''}`)
 }
-// Output:
-// 0: PUSH1 80
-// 2: PUSH1 40
+// 0: PUSH1 0x80
+// 2: PUSH1 0x40
 // 4: MSTORE
 // 5: CALLVALUE
+// 6: DUP1
+// ...
+```
+
+### Pretty Print
+
+Human-readable bytecode disassembly:
+
+```typescript
+console.log(Bytecode.prettyPrint(bytecode))
+// 0x0000: PUSH1 0x80
+// 0x0002: PUSH1 0x40
+// 0x0004: MSTORE
+// 0x0005: CALLVALUE
 // ...
 ```
 
 ### Analyze Jump Destinations
 
+Find all valid jump targets for control flow analysis:
+
 ```typescript
-const analysis = Bytecode.analyze(bytecode);
+const jumpDests = Bytecode.analyzeJumpDestinations(bytecode)
+console.log('Valid JUMPDEST locations:', [...jumpDests])
+// [16, 42, 128, 256, ...]
 
-// All valid jump destinations
-console.log('Jump destinations:', analysis.jumpDestinations);
-
-// Check if location is valid JUMPDEST
-const isValid = Bytecode.isValidJumpDest(bytecode, 0x123);
-
-// Gas usage analysis
-console.log('Total gas cost:', analysis.gasAnalysis.totalCost);
-console.log('Max stack depth:', analysis.stackAnalysis.maxDepth);
+// Check specific location
+const isValid = Bytecode.isValidJumpDest(bytecode, 0x10)
 ```
 
-### Detect Patterns
+### Gas Analysis
+
+Estimate gas costs per instruction:
 
 ```typescript
-// Find function selectors
-const selectors = new Set<string>();
+const gasAnalysis = Bytecode.analyzeGas(bytecode)
+console.log('Total static gas:', gasAnalysis.totalGas)
+console.log('Instructions:', gasAnalysis.instructions.length)
+```
 
-for (const instruction of instructions) {
-  if (instruction.opcode.name === 'PUSH4') {
-    // Potential function selector
-    selectors.add(instruction.pushData.toString(16));
-  }
-}
+### Stack Analysis
 
-console.log('Function selectors:', selectors);
+Analyze stack depth and effects:
 
-// Detect proxy patterns
-const hasDelegate = instructions.some(
-  instr => instr.opcode.name === 'DELEGATECALL'
-);
-if (hasDelegate) {
-  console.log('⚠️ Proxy contract detected');
-}
+```typescript
+const stackAnalysis = Bytecode.analyzeStack(bytecode)
+console.log('Max stack depth:', stackAnalysis.maxDepth)
 ```
 
 ### Strip Metadata
 
-```typescript
-// Remove Solidity metadata from bytecode
-const hasMetadata = Bytecode.hasMetadata(bytecode);
+Remove Solidity compiler metadata for cleaner analysis:
 
-if (hasMetadata) {
-  const stripped = Bytecode.stripMetadata(bytecode);
-  console.log('Reduced size:',
-    bytecode.length - stripped.length,
-    'bytes'
-  );
+```typescript
+if (Bytecode.hasMetadata(bytecode)) {
+  const stripped = Bytecode.stripMetadata(bytecode)
+  console.log('Removed', bytecode.length - stripped.length, 'metadata bytes')
 }
 ```
 
-### Format for Debugging
+### Hash Bytecode
+
+Compute keccak256 hash (useful for CREATE2 address prediction):
 
 ```typescript
-// Pretty-print bytecode with annotations
-const formatted = Bytecode.prettyPrint(bytecode);
-console.log(formatted);
-// Output:
-// 0x0000: PUSH1 0x80
-// 0x0002: PUSH1 0x40
-// 0x0004: MSTORE      ; Store 0x80 at memory[0x40]
-// 0x0005: CALLVALUE
-// 0x0006: DUP1
-// 0x0007: ISZERO
-// 0x0008: PUSH2 0x0010
-// 0x000b: JUMPI       ; Jump to 0x0010 if callvalue == 0
-// ...
+const codeHash = Bytecode.hash(bytecode)
+console.log('Code hash:', codeHash)
 ```
 
-### Extract Runtime Code
+## EVM Execution
+
+Execute bytecode directly in TypeScript. Build execution frames, manipulate the stack, and run opcodes.
+
+### Create Execution Frames
 
 ```typescript
-// Separate creation code from runtime code
-const runtime = Bytecode.extractRuntime(creationBytecode);
+import { Frame } from '@tevm/voltaire/evm'
 
-// Get code hash (for CREATE2)
-const codeHash = Bytecode.hash(runtime);
-console.log('Runtime code hash:', codeHash);
+// Create a frame with bytecode that pushes 1 + 2
+const frame = Frame({
+  bytecode: new Uint8Array([
+    0x60, 0x01,  // PUSH1 1
+    0x60, 0x02,  // PUSH1 2
+    0x01,        // ADD
+  ]),
+  gas: 100000n,
+})
+
+console.log(frame.pc)           // 0
+console.log(frame.gasRemaining) // 100000n
+console.log(frame.stack)        // []
 ```
 
-<Card title="Bytecode Analysis" icon="magnifying-glass" href="/primitives/bytecode/analyze">
-  Complete bytecode analysis documentation
+### Execute Opcodes
+
+Run individual opcodes with full gas accounting:
+
+```typescript
+import { Frame, Arithmetic } from '@tevm/voltaire/evm'
+
+const frame = Frame({
+  bytecode: new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]),
+  gas: 100000n,
+})
+
+// Push values onto stack
+Frame.pushStack(frame, 1n)
+Frame.pushStack(frame, 2n)
+
+// Execute ADD
+const error = Arithmetic.add(frame)
+
+console.log(frame.stack) // [3n]
+console.log(error)       // null (success)
+```
+
+### Stack Operations
+
+Direct stack manipulation:
+
+```typescript
+// Push values
+Frame.pushStack(frame, 42n)
+Frame.pushStack(frame, 100n)
+
+// Pop and peek
+const top = Frame.popStack(frame)     // 100n
+const next = Frame.peekStack(frame)   // 42n (doesn't remove)
+```
+
+### Memory Operations
+
+Read and write EVM memory:
+
+```typescript
+// Write 32 bytes to memory offset 0
+const data = new Uint8Array(32).fill(0xff)
+Frame.writeMemory(frame, 0, data)
+
+// Read 32 bytes from offset 0
+const result = Frame.readMemory(frame, 0, 32)
+
+// Calculate memory expansion cost
+const cost = Frame.memoryExpansionCost(frame, 64)
+```
+
+### Gas Accounting
+
+Track gas consumption:
+
+```typescript
+const frame = Frame({ gas: 1000n })
+
+// Consume gas (returns error if insufficient)
+const error = Frame.consumeGas(frame, 21n)
+
+console.log(frame.gasRemaining) // 979n
+console.log(error)              // null (success)
+
+// Attempt to consume more than available
+const outOfGas = Frame.consumeGas(frame, 2000n)
+console.log(outOfGas) // { type: "OutOfGas" }
+```
+
+### Full Opcode Categories
+
+All EVM opcodes are implemented:
+
+```typescript
+import {
+  Arithmetic,  // ADD, MUL, SUB, DIV, MOD, EXP, etc.
+  Bitwise,     // AND, OR, XOR, NOT, SHL, SHR, SAR
+  Comparison,  // LT, GT, SLT, SGT, EQ, ISZERO
+  Memory,      // MLOAD, MSTORE, MSTORE8, MCOPY
+  Stack,       // PUSH1-32, POP, DUP1-16, SWAP1-16
+  Control,     // JUMP, JUMPI, JUMPDEST, STOP, RETURN
+  System,      // CALL, CREATE, DELEGATECALL, SELFDESTRUCT
+  Log,         // LOG0-LOG4
+  Block,       // BLOCKHASH, COINBASE, TIMESTAMP, etc.
+  Context,     // ADDRESS, CALLER, CALLVALUE, etc.
+  Storage,     // SLOAD, SSTORE, TLOAD, TSTORE
+  Keccak,      // SHA3
+} from '@tevm/voltaire/evm'
+```
+
+<Card title="Bytecode Documentation" icon="magnifying-glass" href="/primitives/bytecode">
+  Complete bytecode analysis API reference
 </Card>
-
-## Fork Any Network
-
-Create local forks of any Ethereum network for testing and simulation:
-
-```typescript
-import { Evm, ForkStateManager, Provider } from '@tevm/voltaire';
-import { Address } from '@tevm/voltaire/primitives';
-
-// Fork mainnet at specific block
-const stateManager = ForkStateManager({
-  url: 'https://eth.llamarpc.com',
-  blockNumber: 18_000_000n
-});
-
-const mainnetFork = Evm({ stateManager });
-const provider = Provider.fromEvm(mainnetFork);
-
-// Test against real state
-const balance = await provider.eth_call({
-  to: Address('0x...'),
-  data: encodeFunctionData({
-    abi: erc20Abi,
-    functionName: 'balanceOf',
-    args: [someAddress]
-  })
-});
-
-// Modify state locally
-await mainnetFork.setBalance(testAddress, parseEther('1000'));
-```
-
-**Use cases:**
-- **Integration testing** - Test against real contract state
-- **Gas estimation** - Accurate estimates using network state
-- **Transaction simulation** - Preview effects before sending
-- **Security research** - Analyze historical exploits
-
-## Local-First Development
-
-Everything runs in-memory. No external services, no API keys, no rate limits:
-
-```typescript
-import { Evm, Provider } from '@tevm/voltaire';
-
-// All execution is local and instant
-const evm = Evm();
-const provider = Provider.fromEvm(evm);
-
-// Deploy contracts
-await evm.deploy({
-  bytecode: contractBytecode,
-  abi: contractAbi
-});
-
-// Call contracts
-await provider.eth_call({ to, data });
-
-// Inspect state
-const storage = await evm.getStorageAt(address, slot);
-const code = await evm.getCode(address);
-const balance = await evm.getBalance(address);
-```
-
-**Benefits:**
-- **No network latency** - Sub-millisecond execution
-- **Complete privacy** - Sensitive data never leaves your machine
-- **Unlimited requests** - No rate limiting
-- **Offline development** - Work without internet
-- **Deterministic testing** - Reproducible results every time

@@ -217,6 +217,60 @@ print(address == other)
 ```
 
 </Tab>
+
+<Tab title="Kotlin (Experimental)">
+
+```kotlin
+import com.tevm.voltaire.Address
+
+// JNI bindings over C-FFI
+val address = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+println(address.checksumHex)
+println(address.hex)
+println(address.isZero)
+
+val other = Address.fromHex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+println(address == other)
+```
+
+</Tab>
+
+<Tab title="Go (Experimental)">
+
+```go
+package main
+
+import "github.com/evmts/voltaire-go"
+
+func main() {
+    address, _ := voltaire.AddressFromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+    fmt.Println(address.ChecksumHex())
+    fmt.Println(address.Hex())
+    fmt.Println(address.IsZero())
+
+    other, _ := voltaire.AddressFromHex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+    fmt.Println(address.Equals(other))
+}
+```
+
+</Tab>
+
+<Tab title="Python (Experimental)">
+
+```python
+from voltaire import Address
+
+# ctypes/cffi bindings over C-FFI
+address = Address.from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+print(address.checksum_hex)
+print(address.hex)
+print(address.is_zero)
+
+other = Address.from_hex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+print(address == other)
+```
+
+</Tab>
 </Tabs>
 
 ## Looking for Help
@@ -225,7 +279,7 @@ We're looking for contributors to help build idiomatic wrappers for:
 
 - **Go** - Native bindings via cgo
 - **Python** - Bindings via ctypes/cffi
-- **Swift** - iOS/macOS wrapper with automatic memory management
+- **Swift** - Fully implemented but lacking tests and complete documentation
 - **Kotlin** - Android/JVM bindings
 
 <Tip>
