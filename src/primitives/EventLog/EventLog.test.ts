@@ -8,6 +8,7 @@ import {
 	copy,
 	create,
 	filterLogs,
+	from,
 	getIndexed,
 	getIndexedTopics,
 	getSignature,
@@ -19,6 +20,7 @@ import {
 	sortLogs,
 	wasRemoved,
 } from "./index.js";
+import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
 
 const EventLog = {
 	create,
@@ -993,5 +995,171 @@ describe("EventLog edge cases", () => {
 		});
 
 		expect(log.topics).toEqual([topic0, topic1]);
+	});
+});
+
+// ============================================================================
+// Topic Validation Tests (from function)
+// ============================================================================
+
+describe("EventLog.from topic validation", () => {
+	it("accepts valid 32-byte Uint8Array topics", () => {
+		const validTopic = new Uint8Array(32).fill(1);
+		const log = from({
+			address: addr1,
+			topics: [validTopic],
+			data: new Uint8Array([]),
+		});
+		expect(log.topics).toEqual([validTopic]);
+	});
+
+	it("accepts valid 64-character hex string topics", () => {
+		const log = from({
+			address: addr1,
+			topics: [topic0],
+			data: new Uint8Array([]),
+		});
+		expect(log.topics).toEqual([topic0]);
+	});
+
+	it("accepts valid hex string without 0x prefix", () => {
+		const topicWithoutPrefix =
+			"0000000000000000000000000000000000000000000000000000000000000010";
+		const log = from({
+			address: addr1,
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+			topics: [topicWithoutPrefix as any],
+			data: new Uint8Array([]),
+		});
+		expect(log.topics).toEqual([topicWithoutPrefix]);
+	});
+
+	it("rejects topics that are too short (hex string)", () => {
+		expect(() =>
+			from({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+				topics: ["0x123" as any],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidLengthError);
+	});
+
+	it("rejects topics that are too long (hex string)", () => {
+		const tooLong =
+			"0x00000000000000000000000000000000000000000000000000000000000000001234";
+		expect(() =>
+			from({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+				topics: [tooLong as any],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidLengthError);
+	});
+
+	it("rejects topics that are too short (Uint8Array)", () => {
+		expect(() =>
+			from({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+				topics: [new Uint8Array(16) as any],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidLengthError);
+	});
+
+	it("rejects topics that are too long (Uint8Array)", () => {
+		expect(() =>
+			from({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+				topics: [new Uint8Array(64) as any],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidLengthError);
+	});
+
+	it("rejects non-hex string topics", () => {
+		expect(() =>
+			from({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+				topics: ["invalid" as any],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidLengthError);
+	});
+
+	it("rejects hex strings with invalid characters", () => {
+		const invalidHex =
+			"0x000000000000000000000000000000000000000000000000000000000000ZZZZ";
+		expect(() =>
+			from({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+				topics: [invalidHex as any],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidFormatError);
+	});
+
+	it("rejects non-string non-Uint8Array topics", () => {
+		expect(() =>
+			from({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+				topics: [123 as any],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidFormatError);
+	});
+
+	it("rejects null topics", () => {
+		expect(() =>
+			from({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+				topics: [null as any],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidFormatError);
+	});
+
+	it("validates all topics in array", () => {
+		const validTopic = new Uint8Array(32).fill(1);
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const invalidTopic = "0x123" as any;
+		expect(() =>
+			from({
+				address: addr1,
+				topics: [validTopic, invalidTopic],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidLengthError);
+	});
+
+	it("includes topic index in error message", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const invalidTopic = "0x123" as any;
+		try {
+			from({
+				address: addr1,
+				topics: [topic0, invalidTopic],
+				data: new Uint8Array([]),
+			});
+			expect.fail("Should have thrown");
+		} catch (e) {
+			expect((e as Error).message).toContain("index 1");
+		}
+	});
+
+	it("accepts empty topics array", () => {
+		const log = from({
+			address: addr1,
+			topics: [],
+			data: new Uint8Array([]),
+		});
+		expect(log.topics).toEqual([]);
 	});
 });
