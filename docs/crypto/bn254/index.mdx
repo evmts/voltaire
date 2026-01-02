@@ -109,14 +109,14 @@ import { bn254Ark } from '@tevm/voltaire/crypto';
 
 **Location**: `src/crypto/bn254.wasm.ts`
 
-**Status**: Stub/TODO - Not yet implemented
+**Status**: Not yet implemented - WASM loader infrastructure required.
 
-WASM loader infrastructure needed. All methods currently throw:
+All WASM methods currently throw:
 ```
 "Bn254Wasm not yet implemented - requires WASM loader infrastructure"
 ```
 
-Planned features:
+Planned features when implemented:
 - G1/G2 point operations
 - Field arithmetic
 - Pairing operations
@@ -332,7 +332,7 @@ BN254 provides 128-bit security level equivalent to BLS12-381. However, practica
 
 - [BLS12-381](/crypto/bls12-381) - More secure pairing curve
 - [KZG Commitments](/crypto/kzg) - Uses BLS12-381 (not BN254)
-- [Precompiles: BN254](/precompiles/bn254) - Implementation details
+- [Precompiles: BN254](/evm/precompiles) - Implementation details
 
 ## References
 

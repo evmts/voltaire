@@ -194,25 +194,25 @@ Ethereum primitives and cryptography library for TypeScript and Zig. Multi-langu
 ## EVM Precompiles
 
 - [Precompiles Overview](/precompiles): EVM precompiled contract implementations
-- [ecrecover (0x01)](/precompiles/ecrecover): ECDSA public key recovery
-- [SHA-256 (0x02)](/precompiles/sha256): SHA-256 hash function
-- [RIPEMD-160 (0x03)](/precompiles/ripemd160): RIPEMD-160 hash function
-- [Identity (0x04)](/precompiles/identity): Data copy function
-- [ModExp (0x05)](/precompiles/modexp): Modular exponentiation
-- [BN254 Add (0x06)](/precompiles/bn254-add): BN254 elliptic curve addition
-- [BN254 Mul (0x07)](/precompiles/bn254-mul): BN254 elliptic curve multiplication
-- [BN254 Pairing (0x08)](/precompiles/bn254-pairing): BN254 pairing check
-- [Blake2f (0x09)](/precompiles/blake2f): Blake2 compression function
-- [Point Evaluation (0x0a)](/precompiles/point-evaluation): KZG point evaluation (EIP-4844)
-- [BLS12-381 G1 Add (0x0b)](/precompiles/bls12-g1-add): BLS12-381 G1 addition
-- [BLS12-381 G1 Mul (0x0c)](/precompiles/bls12-g1-mul): BLS12-381 G1 multiplication
-- [BLS12-381 G1 MSM (0x0d)](/precompiles/bls12-g1-msm): BLS12-381 G1 multi-scalar multiplication
-- [BLS12-381 G2 Add (0x0e)](/precompiles/bls12-g2-add): BLS12-381 G2 addition
-- [BLS12-381 G2 Mul (0x0f)](/precompiles/bls12-g2-mul): BLS12-381 G2 multiplication
-- [BLS12-381 G2 MSM (0x10)](/precompiles/bls12-g2-msm): BLS12-381 G2 multi-scalar multiplication
-- [BLS12-381 Pairing (0x11)](/precompiles/bls12-pairing): BLS12-381 pairing check
-- [BLS12-381 Map Fp to G1 (0x12)](/precompiles/bls12-map-fp-to-g1): BLS12-381 map field element to G1
-- [BLS12-381 Map Fp2 to G2 (0x13)](/precompiles/bls12-map-fp2-to-g2): BLS12-381 map field element to G2
+- [ecrecover (0x01)](/evm/precompiles/ecrecover): ECDSA public key recovery
+- [SHA-256 (0x02)](/evm/precompiles/sha256): SHA-256 hash function
+- [RIPEMD-160 (0x03)](/evm/precompiles/ripemd160): RIPEMD-160 hash function
+- [Identity (0x04)](/evm/precompiles/identity): Data copy function
+- [ModExp (0x05)](/evm/precompiles/modexp): Modular exponentiation
+- [BN254 Add (0x06)](/evm/precompiles/bn254-add): BN254 elliptic curve addition
+- [BN254 Mul (0x07)](/evm/precompiles/bn254-mul): BN254 elliptic curve multiplication
+- [BN254 Pairing (0x08)](/evm/precompiles/bn254-pairing): BN254 pairing check
+- [Blake2f (0x09)](/evm/precompiles/blake2f): Blake2 compression function
+- [Point Evaluation (0x0a)](/evm/precompiles/point-evaluation): KZG point evaluation (EIP-4844)
+- [BLS12-381 G1 Add (0x0b)](/evm/precompiles/bls12-g1-add): BLS12-381 G1 addition
+- [BLS12-381 G1 Mul (0x0c)](/evm/precompiles/bls12-g1-mul): BLS12-381 G1 multiplication
+- [BLS12-381 G1 MSM (0x0d)](/evm/precompiles/bls12-g1-msm): BLS12-381 G1 multi-scalar multiplication
+- [BLS12-381 G2 Add (0x0e)](/evm/precompiles/bls12-g2-add): BLS12-381 G2 addition
+- [BLS12-381 G2 Mul (0x0f)](/evm/precompiles/bls12-g2-mul): BLS12-381 G2 multiplication
+- [BLS12-381 G2 MSM (0x10)](/evm/precompiles/bls12-g2-msm): BLS12-381 G2 multi-scalar multiplication
+- [BLS12-381 Pairing (0x11)](/evm/precompiles/bls12-pairing): BLS12-381 pairing check
+- [BLS12-381 Map Fp to G1 (0x12)](/evm/precompiles/bls12-map-fp-to-g1): BLS12-381 map field element to G1
+- [BLS12-381 Map Fp2 to G2 (0x13)](/evm/precompiles/bls12-map-fp2-to-g2): BLS12-381 map field element to G2
 
 ## Zig
 

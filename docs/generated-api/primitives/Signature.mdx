@@ -1705,9 +1705,9 @@ if (Signature.is(value)) {
 
 > **isCanonical**: (`signature`) => `boolean`
 
-Check if ECDSA signature has canonical s-value (s <= n/2)
+Check if ECDSA signature has canonical s-value (s is less than or equal to n/2)
 
-For secp256k1 and p256, a signature is canonical if s <= curve_order / 2
+For secp256k1 and p256, a signature is canonical if s is at most curve_order / 2
 This prevents signature malleability.
 
 ###### Parameters
@@ -2675,9 +2675,9 @@ if (Signature.is(value)) {
 
 Defined in: [src/primitives/Signature/isCanonical.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Signature/isCanonical.js#L19)
 
-Check if ECDSA signature has canonical s-value (s <= n/2)
+Check if ECDSA signature has canonical s-value (s is less than or equal to n/2)
 
-For secp256k1 and p256, a signature is canonical if s <= curve_order / 2
+For secp256k1 and p256, a signature is canonical if s is at most curve_order / 2
 This prevents signature malleability.
 
 #### Parameters

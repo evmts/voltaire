@@ -172,15 +172,15 @@ All entrypoints implement the same `VoltaireAPI` interface - switch by changing 
 
 Low-level tree-shakable EVM utilities and all 19 precompiled contracts (0x01-0x13).
 
-- **[ecrecover](https://voltaire.tevm.sh/precompiles/ecrecover/)** (0x01) - ECDSA recovery
-- **[sha256](https://voltaire.tevm.sh/precompiles/sha256/)** / **[ripemd160](https://voltaire.tevm.sh/precompiles/ripemd160/)** (0x02-0x03) - Hash functions
-- **[modexp](https://voltaire.tevm.sh/precompiles/modexp/)** (0x05) - Modular exponentiation
-- **[BN254](https://voltaire.tevm.sh/precompiles/bn254-add/)** (0x06-0x08) - zkSNARK verification
-- **[blake2f](https://voltaire.tevm.sh/precompiles/blake2f/)** (0x09) - Blake2 compression
-- **[KZG](https://voltaire.tevm.sh/precompiles/point-evaluation/)** (0x0A) - EIP-4844 verification
-- **[BLS12-381](https://voltaire.tevm.sh/precompiles/bls12-381/)** (0x0B-0x13) - BLS signatures
+- **[ecrecover](https://voltaire.tevm.sh/evm/precompiles/ecrecover/)** (0x01) - ECDSA recovery
+- **[sha256](https://voltaire.tevm.sh/evm/precompiles/sha256/)** / **[ripemd160](https://voltaire.tevm.sh/evm/precompiles/ripemd160/)** (0x02-0x03) - Hash functions
+- **[modexp](https://voltaire.tevm.sh/evm/precompiles/modexp/)** (0x05) - Modular exponentiation
+- **[BN254](https://voltaire.tevm.sh/evm/precompiles/bn254-add/)** (0x06-0x08) - zkSNARK verification
+- **[blake2f](https://voltaire.tevm.sh/evm/precompiles/blake2f/)** (0x09) - Blake2 compression
+- **[KZG](https://voltaire.tevm.sh/evm/precompiles/point-evaluation/)** (0x0A) - EIP-4844 verification
+- **[BLS12-381](https://voltaire.tevm.sh/evm/precompiles/bls12-381/)** (0x0B-0x13) - BLS signatures
 
-[Precompiles Guide →](https://voltaire.tevm.sh/precompiles/)
+[Precompiles Guide →](https://voltaire.tevm.sh/evm/precompiles/)
 
 ---
 

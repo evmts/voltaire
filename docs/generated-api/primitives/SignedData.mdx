@@ -250,11 +250,11 @@ Defined in: [src/primitives/SignedData/from.js:35](https://github.com/evmts/volt
 
 Create EIP-191 signed data from components
 
-Format: 0x19 <version byte> <version specific data>
+Format: `0x19 <version byte> <version specific data>`
 
-Version 0x00: 0x19 0x00 <validator address (20 bytes)> <data>
-Version 0x01: 0x19 0x01 <domainSeparator (32 bytes)> <data>
-Version 0x45: 0x19 0x45 <ascii "thereum Signed Message:\n" + len> <data>
+- Version 0x00: `0x19 0x00 <validator address (20 bytes)> <data>`
+- Version 0x01: `0x19 0x01 <domainSeparator (32 bytes)> <data>`
+- Version 0x45: `0x19 0x45 <ascii "thereum Signed Message:\n" + len> <data>`
 
 #### Parameters
 

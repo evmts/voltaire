@@ -17,25 +17,25 @@ Voltaire provides low-level tree-shakable implementations of all standard precom
 
 | Address | Name | Gas Cost | Hardfork | Category | Description |
 |---------|------|----------|----------|----------|-------------|
-| 0x01 | [ECRECOVER](/precompiles/ecrecover) | 3,000 | Frontier | Crypto | Recover ECDSA signer address |
-| 0x02 | [SHA256](/precompiles/sha256) | 60 + 12/word | Frontier | Hash | SHA-256 hash function |
-| 0x03 | [RIPEMD160](/precompiles/ripemd160) | 600 + 120/word | Frontier | Hash | RIPEMD-160 hash function |
-| 0x04 | [IDENTITY](/precompiles/identity) | 15 + 3/word | Frontier | Data | Copy input to output |
-| 0x05 | [MODEXP](/precompiles/modexp) | Dynamic | Byzantium | Math | Modular exponentiation |
-| 0x06 | [BN254_ADD](/precompiles/bn254-add) | 150 | Byzantium | zkSNARKs | BN254 G1 point addition |
-| 0x07 | [BN254_MUL](/precompiles/bn254-mul) | 6,000 | Byzantium | zkSNARKs | BN254 G1 scalar multiplication |
-| 0x08 | [BN254_PAIRING](/precompiles/bn254-pairing) | 45,000 + 34,000k | Byzantium | zkSNARKs | BN254 pairing check |
-| 0x09 | [BLAKE2F](/precompiles/blake2f) | Dynamic | Istanbul | Hash | BLAKE2b compression function |
-| 0x0A | [POINT_EVALUATION](/precompiles/point-evaluation) | 50,000 | Cancun | Blobs | KZG point evaluation (EIP-4844) |
-| 0x0B | [BLS12_G1_ADD](/precompiles/bls12-g1-add) | 500 | Prague | ETH2 | BLS12-381 G1 point addition |
-| 0x0C | [BLS12_G1_MUL](/precompiles/bls12-g1-mul) | 12,000 | Prague | ETH2 | BLS12-381 G1 scalar multiplication |
-| 0x0D | [BLS12_G1_MSM](/precompiles/bls12-g1-msm) | Variable | Prague | ETH2 | BLS12-381 G1 multi-scalar multiplication |
-| 0x0E | [BLS12_G2_ADD](/precompiles/bls12-g2-add) | 800 | Prague | ETH2 | BLS12-381 G2 point addition |
-| 0x0F | [BLS12_G2_MUL](/precompiles/bls12-g2-mul) | 45,000 | Prague | ETH2 | BLS12-381 G2 scalar multiplication |
-| 0x10 | [BLS12_G2_MSM](/precompiles/bls12-g2-msm) | Variable | Prague | ETH2 | BLS12-381 G2 multi-scalar multiplication |
-| 0x11 | [BLS12_PAIRING](/precompiles/bls12-pairing) | 115,000 + 23,000k | Prague | ETH2 | BLS12-381 pairing check |
-| 0x12 | [BLS12_MAP_FP_TO_G1](/precompiles/bls12-map-fp-to-g1) | 5,500 | Prague | ETH2 | Map field element to G1 (hash-to-curve) |
-| 0x13 | [BLS12_MAP_FP2_TO_G2](/precompiles/bls12-map-fp2-to-g2) | 75,000 | Prague | ETH2 | Map Fp2 element to G2 (hash-to-curve) |
+| 0x01 | [ECRECOVER](/evm/precompiles/ecrecover) | 3,000 | Frontier | Crypto | Recover ECDSA signer address |
+| 0x02 | [SHA256](/evm/precompiles/sha256) | 60 + 12/word | Frontier | Hash | SHA-256 hash function |
+| 0x03 | [RIPEMD160](/evm/precompiles/ripemd160) | 600 + 120/word | Frontier | Hash | RIPEMD-160 hash function |
+| 0x04 | [IDENTITY](/evm/precompiles/identity) | 15 + 3/word | Frontier | Data | Copy input to output |
+| 0x05 | [MODEXP](/evm/precompiles/modexp) | Dynamic | Byzantium | Math | Modular exponentiation |
+| 0x06 | [BN254_ADD](/evm/precompiles/bn254-add) | 150 | Byzantium | zkSNARKs | BN254 G1 point addition |
+| 0x07 | [BN254_MUL](/evm/precompiles/bn254-mul) | 6,000 | Byzantium | zkSNARKs | BN254 G1 scalar multiplication |
+| 0x08 | [BN254_PAIRING](/evm/precompiles/bn254-pairing) | 45,000 + 34,000k | Byzantium | zkSNARKs | BN254 pairing check |
+| 0x09 | [BLAKE2F](/evm/precompiles/blake2f) | Dynamic | Istanbul | Hash | BLAKE2b compression function |
+| 0x0A | [POINT_EVALUATION](/evm/precompiles/point-evaluation) | 50,000 | Cancun | Blobs | KZG point evaluation (EIP-4844) |
+| 0x0B | [BLS12_G1_ADD](/evm/precompiles/bls12-g1-add) | 500 | Prague | ETH2 | BLS12-381 G1 point addition |
+| 0x0C | [BLS12_G1_MUL](/evm/precompiles/bls12-g1-mul) | 12,000 | Prague | ETH2 | BLS12-381 G1 scalar multiplication |
+| 0x0D | [BLS12_G1_MSM](/evm/precompiles/bls12-g1-msm) | Variable | Prague | ETH2 | BLS12-381 G1 multi-scalar multiplication |
+| 0x0E | [BLS12_G2_ADD](/evm/precompiles/bls12-g2-add) | 800 | Prague | ETH2 | BLS12-381 G2 point addition |
+| 0x0F | [BLS12_G2_MUL](/evm/precompiles/bls12-g2-mul) | 45,000 | Prague | ETH2 | BLS12-381 G2 scalar multiplication |
+| 0x10 | [BLS12_G2_MSM](/evm/precompiles/bls12-g2-msm) | Variable | Prague | ETH2 | BLS12-381 G2 multi-scalar multiplication |
+| 0x11 | [BLS12_PAIRING](/evm/precompiles/bls12-pairing) | 115,000 + 23,000k | Prague | ETH2 | BLS12-381 pairing check |
+| 0x12 | [BLS12_MAP_FP_TO_G1](/evm/precompiles/bls12-map-fp-to-g1) | 5,500 | Prague | ETH2 | Map field element to G1 (hash-to-curve) |
+| 0x13 | [BLS12_MAP_FP2_TO_G2](/evm/precompiles/bls12-map-fp2-to-g2) | 75,000 | Prague | ETH2 | Map Fp2 element to G2 (hash-to-curve) |
 
 ## Precompile Categories
 
@@ -302,7 +302,7 @@ For security-critical operations, always use Zig/WASM implementations.
 ## Related Documentation
 
 ### Curve Documentation
-- [BLS12-381 Overview](/precompiles/bls12-381) - Complete guide to 9 BLS precompiles
+- [BLS12-381 Overview](/crypto/bls12-381) - Complete guide to 9 BLS precompiles
 - [BN254 Operations](/crypto/bn254) - zkSNARK curve primitives
 - [Secp256k1](/crypto/secp256k1) - ECDSA and ECRECOVER
 
