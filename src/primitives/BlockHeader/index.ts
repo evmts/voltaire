@@ -3,9 +3,11 @@ export type { BlockHeaderType } from "./BlockHeaderType.js";
 
 // Import internal functions
 import { from as _from } from "./from.js";
+import { fromRpc as _fromRpc } from "./fromRpc.js";
 
 // Export internal functions (tree-shakeable)
 export { _from };
+export { _fromRpc };
 
 // Export public functions
 export function from(params: {
@@ -33,7 +35,43 @@ export function from(params: {
 	return _from(params as Parameters<typeof _from>[0]);
 }
 
+/**
+ * RPC Block Header fields (from eth_getBlockByNumber/Hash response)
+ */
+export interface RpcBlockHeader {
+	parentHash: string;
+	sha3Uncles: string;
+	miner: string;
+	stateRoot: string;
+	transactionsRoot: string;
+	receiptsRoot: string;
+	logsBloom: string;
+	difficulty: string;
+	number: string;
+	gasLimit: string;
+	gasUsed: string;
+	timestamp: string;
+	extraData: string;
+	mixHash: string;
+	nonce: string;
+	baseFeePerGas?: string | null;
+	withdrawalsRoot?: string | null;
+	blobGasUsed?: string | null;
+	excessBlobGas?: string | null;
+	parentBeaconBlockRoot?: string | null;
+}
+
+/**
+ * Create BlockHeader from JSON-RPC response
+ */
+export function fromRpc(
+	rpc: RpcBlockHeader,
+): import("./BlockHeaderType.js").BlockHeaderType {
+	return _fromRpc(rpc);
+}
+
 // Namespace export
 export const BlockHeader = {
 	from,
+	fromRpc,
 };
