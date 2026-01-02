@@ -36,8 +36,8 @@ Constructor.prototype.decodeParams = function (data) {
 };
 
 /**
- * @param {number} depth
- * @param {*} options
+ * @param {number} _depth
+ * @param {*} _options
  */
 Constructor.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
 	_depth,

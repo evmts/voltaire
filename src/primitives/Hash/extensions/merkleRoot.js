@@ -1,3 +1,4 @@
+import { keccak256 } from "../../../crypto/Keccak256/index.js";
 import { ZERO } from "./constants.js";
 
 /**
