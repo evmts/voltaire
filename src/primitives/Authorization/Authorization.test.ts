@@ -263,14 +263,9 @@ describe("Authorization.validate", () => {
 		expect(() => Authorization.validate(validAuth)).not.toThrow();
 	});
 
-	it("throws for zero chain ID", () => {
+	it("accepts chainId=0 for cross-chain authorization (EIP-7702)", () => {
 		const auth = { ...validAuth, chainId: 0n };
-		expect(() => Authorization.validate(auth)).toThrow(
-			Authorization.ValidationError,
-		);
-		expect(() => Authorization.validate(auth)).toThrow(
-			"Chain ID must be non-zero",
-		);
+		expect(() => Authorization.validate(auth)).not.toThrow();
 	});
 
 	it("throws for zero address", () => {
@@ -454,13 +449,13 @@ describe("Authorization.sign", () => {
 // ============================================================================
 
 describe("Authorization.verify", () => {
-	it("validates before verifying", () => {
+	it("validates before verifying - rejects zero r", () => {
 		const auth: AuthorizationType = {
-			chainId: 0n,
+			chainId: 1n,
 			address: addr1,
 			nonce: 0n,
 			yParity: 0,
-			r: 0x123n,
+			r: 0n,
 			s: 0x456n,
 		};
 		expect(() => Authorization.verify(auth)).toThrow(
@@ -569,13 +564,13 @@ describe("Authorization.getGasCost", () => {
 // ============================================================================
 
 describe("Authorization.process", () => {
-	it("validates before processing", () => {
+	it("validates before processing - rejects zero r", () => {
 		const auth: AuthorizationType = {
-			chainId: 0n,
+			chainId: 1n,
 			address: addr1,
 			nonce: 0n,
 			yParity: 0,
-			r: 0x123n,
+			r: 0n,
 			s: 0x456n,
 		};
 		expect(() => Authorization.process(auth)).toThrow(
