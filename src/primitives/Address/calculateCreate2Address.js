@@ -1,3 +1,5 @@
+import { InvalidLengthError } from "../errors/ValidationError.js";
+
 /**
  * Factory function to create calculateCreate2Address with injected keccak256 dependency
  *
@@ -15,6 +17,7 @@ export function CalculateCreate2Address({ keccak256 }) {
 	 * @param {import('../Hash/HashType.js').HashType} salt - 32-byte salt (use Hash.from to create)
 	 * @param {import('../Bytecode/BytecodeType.js').BrandedBytecode} initCode - Contract initialization code
 	 * @returns {import('./AddressType.js').AddressType} Calculated contract address
+	 * @throws {InvalidLengthError} If salt is not exactly 32 bytes
 	 *
 	 * @example
 	 * ```typescript
@@ -33,6 +36,17 @@ export function CalculateCreate2Address({ keccak256 }) {
 	 * ```
 	 */
 	return function calculateCreate2Address(address, salt, initCode) {
+		// Validate salt is exactly 32 bytes
+		if (salt.length !== 32) {
+			throw new InvalidLengthError("Salt must be exactly 32 bytes", {
+				code: "CREATE2_INVALID_SALT_LENGTH",
+				value: salt,
+				expected: "32 bytes",
+				context: { length: salt.length },
+				docsPath: "/primitives/address/calculate-create2-address#error-handling",
+			});
+		}
+
 		// Hash init code
 		const initCodeHash = keccak256(initCode);
 
