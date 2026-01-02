@@ -174,7 +174,7 @@ export class InMemoryProvider implements Provider {
 	private snapshotIdCounter = 0;
 
 	// Host interface for EVM execution
-	private host: BrandedHost;
+	private host: BrandedHost | null = null;
 
 	// Events
 	private eventListeners: Map<ProviderEvent, Set<ProviderEventListener>> =
