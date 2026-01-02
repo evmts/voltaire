@@ -94,20 +94,10 @@ export function VerifyKzgProof({ verifyKzgProof: ckzgVerifyKzgProof }) {
 		}
 		try {
 			return ckzgVerifyKzgProof(commitment, z, y, proof);
-		} catch (error) {
-			// If verification fails due to bad args/invalid proof, return false
-			// rather than throwing (this is a verification failure, not an error)
-			if (error instanceof Error && error.message.includes("C_KZG_BADARGS")) {
-				return false;
-			}
-			throw new KzgError(
-				`Failed to verify proof: ${error instanceof Error ? error.message : String(error)}`,
-				{
-					code: "KZG_VERIFICATION_FAILED",
-					docsPath: "/crypto/kzg/verify-kzg-proof#error-handling",
-					cause: error instanceof Error ? error : undefined,
-				},
-			);
+		} catch {
+			// Verification failures (invalid points, cryptographic failures) return false
+			// This is the expected semantic behavior for a verification function
+			return false;
 		}
 	};
 }
