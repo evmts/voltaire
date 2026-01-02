@@ -1,7 +1,6 @@
 import { SECP256K1_HALF_N, SECP256K1_N } from "./constants.js";
 import {
 	InvalidAddressError,
-	InvalidChainIdError,
 	InvalidSignatureComponentError,
 	InvalidSignatureRangeError,
 	InvalidYParityError,
@@ -14,7 +13,6 @@ import {
  * @see https://voltaire.tevm.sh/primitives/authorization
  * @since 0.0.0
  * @param {import("./AuthorizationType.js").AuthorizationType} auth - Authorization to validate
- * @throws {InvalidChainIdError} if chainId is zero
  * @throws {InvalidAddressError} if address is zero address
  * @throws {InvalidYParityError} if yParity is not 0 or 1
  * @throws {InvalidSignatureComponentError} if r or s is zero
@@ -32,10 +30,7 @@ import {
  * ```
  */
 export function validate(auth) {
-	// Chain ID must be non-zero
-	if (auth.chainId === 0n) {
-		throw new InvalidChainIdError(auth.chainId);
-	}
+	// Note: chainId=0 is valid per EIP-7702 (cross-chain authorization)
 
 	// Address must not be zero
 	if (Array.from(auth.address).every((byte) => byte === 0)) {
