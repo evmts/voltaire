@@ -288,6 +288,30 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			// Array encoding should be hashed
 		});
 
+		it("should encode fixed-size array (uint256[3])", () => {
+			const arr = [1n, 2n, 3n];
+			const encoded = EIP712.encodeValue("uint256[3]", arr, types);
+
+			expect(encoded.length).toBe(32);
+			// Fixed-size array encoding should also be hashed
+		});
+
+		it("should encode fixed-size bytes32 array (bytes32[10])", () => {
+			const arr = Array.from({ length: 10 }, () => new Uint8Array(32).fill(0xaa));
+			const encoded = EIP712.encodeValue("bytes32[10]", arr, types);
+
+			expect(encoded.length).toBe(32);
+		});
+
+		it("should produce same hash for equivalent fixed and dynamic arrays", () => {
+			const arr = [1n, 2n, 3n];
+			const encodedDynamic = EIP712.encodeValue("uint256[]", arr, types);
+			const encodedFixed = EIP712.encodeValue("uint256[3]", arr, types);
+
+			// Per EIP-712 spec, both array types encode the same way (hash of concatenated elements)
+			expect(encodedFixed).toEqual(encodedDynamic);
+		});
+
 		it("should encode custom struct type", () => {
 			const customTypes: TypeDefinitions = {
 				Person: [{ name: "name", type: "string" }],
@@ -1118,6 +1142,46 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const encoded = EIP712.encodeValue("uint256[]", largeArray, types);
 
 			expect(encoded.length).toBe(32);
+		});
+
+		it("should hash typed data with fixed-size arrays", () => {
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Point: [
+						{ name: "coordinates", type: "uint256[3]" },
+					],
+				},
+				primaryType: "Point",
+				message: {
+					coordinates: [1n, 2n, 3n],
+				},
+			};
+
+			const hash = EIP712.hashTypedData(typedData);
+			expect(hash.length).toBe(32);
+		});
+
+		it("should hash typed data with fixed-size bytes32 array", () => {
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Merkle: [
+						{ name: "proof", type: "bytes32[5]" },
+					],
+				},
+				primaryType: "Merkle",
+				message: {
+					proof: Array.from({ length: 5 }, (_, i) => {
+						const b = new Uint8Array(32);
+						b[0] = i;
+						return b;
+					}),
+				},
+			};
+
+			const hash = EIP712.hashTypedData(typedData);
+			expect(hash.length).toBe(32);
 		});
 
 		it("should handle maximum uint256 value", () => {
