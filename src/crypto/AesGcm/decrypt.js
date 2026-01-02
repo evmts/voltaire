@@ -38,8 +38,8 @@ export async function decrypt(ciphertext, key, nonce, additionalData) {
 		const plaintext = await crypto.subtle.decrypt(
 			{
 				name: "AES-GCM",
-				iv: nonce,
-				additionalData,
+				iv: /** @type {BufferSource} */ (nonce),
+				additionalData: /** @type {BufferSource | undefined} */ (additionalData),
 				tagLength: TAG_SIZE * 8,
 			},
 			key,
