@@ -11,2783 +11,13 @@ description: Auto-generated API documentation
 
 # BrandedOpcode
 
-## Type Aliases
-
-### BrandedOpcode
-
-> **BrandedOpcode** = `number` & `object`
-
-Defined in: [src/primitives/Opcode/OpcodeType.ts:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/OpcodeType.ts#L6)
-
-Branded type for EVM opcodes (number 0x00-0xFF)
-
-#### Type Declaration
-
-##### \[brand\]
-
-> `readonly` **\[brand\]**: `"Opcode"`
-
-***
-
-### Info
-
-> **Info** = `object`
-
-Defined in: [src/primitives/Opcode/OpcodeType.ts:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/OpcodeType.ts#L23)
-
-Opcode metadata structure
-
-#### Properties
-
-##### gasCost
-
-> **gasCost**: `number`
-
-Defined in: [src/primitives/Opcode/OpcodeType.ts:25](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/OpcodeType.ts#L25)
-
-Base gas cost (may be dynamic at runtime)
-
-##### name
-
-> **name**: `string`
-
-Defined in: [src/primitives/Opcode/OpcodeType.ts:31](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/OpcodeType.ts#L31)
-
-Opcode name
-
-##### stackInputs
-
-> **stackInputs**: `number`
-
-Defined in: [src/primitives/Opcode/OpcodeType.ts:27](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/OpcodeType.ts#L27)
-
-Number of stack items consumed
-
-##### stackOutputs
-
-> **stackOutputs**: `number`
-
-Defined in: [src/primitives/Opcode/OpcodeType.ts:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/OpcodeType.ts#L29)
-
-Number of stack items produced
-
-***
-
-### Instruction
-
-> **Instruction** = `object`
-
-Defined in: [src/primitives/Opcode/OpcodeType.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/OpcodeType.ts#L11)
-
-Instruction with opcode and optional immediate data
-
-#### Properties
-
-##### immediate?
-
-> `optional` **immediate**: `Uint8Array`
-
-Defined in: [src/primitives/Opcode/OpcodeType.ts:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/OpcodeType.ts#L17)
-
-Immediate data for PUSH operations
-
-##### offset
-
-> **offset**: `number`
-
-Defined in: [src/primitives/Opcode/OpcodeType.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/OpcodeType.ts#L13)
-
-Program counter offset
-
-##### opcode
-
-> **opcode**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/OpcodeType.ts:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/OpcodeType.ts#L15)
-
-The opcode
-
-## Variables
-
-### ADD
-
-> `const` **ADD**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L10)
-
-***
-
-### ADDMOD
-
-> `const` **ADDMOD**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L17)
-
-***
-
-### ADDRESS
-
-> `const` **ADDRESS**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:52](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L52)
-
-***
-
-### AND
-
-> `const` **AND**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:37](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L37)
-
-***
-
-### AUTH
-
-> `const` **AUTH**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:312](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L312)
-
-***
-
-### AUTHCALL
-
-> `const` **AUTHCALL**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:313](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L313)
-
-***
-
-### BALANCE
-
-> `const` **BALANCE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:55](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L55)
-
-***
-
-### BASEFEE
-
-> `const` **BASEFEE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:121](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L121)
-
-***
-
-### BLOBBASEFEE
-
-> `const` **BLOBBASEFEE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:127](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L127)
-
-***
-
-### BLOBHASH
-
-> `const` **BLOBHASH**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:124](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L124)
-
-***
-
-### BLOCKHASH
-
-> `const` **BLOCKHASH**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:97](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L97)
-
-***
-
-### BrandedOpcode
-
-> `const` **BrandedOpcode**: `object`
-
-Defined in: [src/primitives/Opcode/Opcode.js:164](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/Opcode.js#L164)
-
-#### Type Declaration
-
-##### ADD
-
-> **ADD**: [`BrandedOpcode`](#brandedopcode)
-
-##### ADDMOD
-
-> **ADDMOD**: [`BrandedOpcode`](#brandedopcode)
-
-##### ADDRESS
-
-> **ADDRESS**: [`BrandedOpcode`](#brandedopcode)
-
-##### AND
-
-> **AND**: [`BrandedOpcode`](#brandedopcode)
-
-##### AUTH
-
-> **AUTH**: [`BrandedOpcode`](#brandedopcode)
-
-##### AUTHCALL
-
-> **AUTHCALL**: [`BrandedOpcode`](#brandedopcode)
-
-##### BALANCE
-
-> **BALANCE**: [`BrandedOpcode`](#brandedopcode)
-
-##### BASEFEE
-
-> **BASEFEE**: [`BrandedOpcode`](#brandedopcode)
-
-##### BLOBBASEFEE
-
-> **BLOBBASEFEE**: [`BrandedOpcode`](#brandedopcode)
-
-##### BLOBHASH
-
-> **BLOBHASH**: [`BrandedOpcode`](#brandedopcode)
-
-##### BLOCKHASH
-
-> **BLOCKHASH**: [`BrandedOpcode`](#brandedopcode)
-
-##### BYTE
-
-> **BYTE**: [`BrandedOpcode`](#brandedopcode)
-
-##### CALL
-
-> **CALL**: [`BrandedOpcode`](#brandedopcode)
-
-##### CALLCODE
-
-> **CALLCODE**: [`BrandedOpcode`](#brandedopcode)
-
-##### CALLDATACOPY
-
-> **CALLDATACOPY**: [`BrandedOpcode`](#brandedopcode)
-
-##### CALLDATALOAD
-
-> **CALLDATALOAD**: [`BrandedOpcode`](#brandedopcode)
-
-##### CALLDATASIZE
-
-> **CALLDATASIZE**: [`BrandedOpcode`](#brandedopcode)
-
-##### CALLER
-
-> **CALLER**: [`BrandedOpcode`](#brandedopcode)
-
-##### CALLVALUE
-
-> **CALLVALUE**: [`BrandedOpcode`](#brandedopcode)
-
-##### CHAINID
-
-> **CHAINID**: [`BrandedOpcode`](#brandedopcode)
-
-##### CODECOPY
-
-> **CODECOPY**: [`BrandedOpcode`](#brandedopcode)
-
-##### CODESIZE
-
-> **CODESIZE**: [`BrandedOpcode`](#brandedopcode)
-
-##### COINBASE
-
-> **COINBASE**: [`BrandedOpcode`](#brandedopcode)
-
-##### CREATE
-
-> **CREATE**: [`BrandedOpcode`](#brandedopcode)
-
-##### CREATE2
-
-> **CREATE2**: [`BrandedOpcode`](#brandedopcode)
-
-##### DELEGATECALL
-
-> **DELEGATECALL**: [`BrandedOpcode`](#brandedopcode)
-
-##### DIFFICULTY
-
-> **DIFFICULTY**: [`BrandedOpcode`](#brandedopcode)
-
-##### disassemble()
-
-> **disassemble**: (`bytecode`) => `string`[]
-
-Disassemble bytecode to human-readable strings
-
-###### Parameters
-
-###### bytecode
-
-`Uint8Array`\<`ArrayBufferLike`\>
-
-Raw bytecode bytes
-
-###### Returns
-
-`string`[]
-
-Array of formatted instruction strings
-
-###### Example
-
-```typescript
-const bytecode = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
-const asm = Opcode.disassemble(bytecode);
-// [
-//   "0x0000: PUSH1 0x01",
-//   "0x0002: PUSH1 0x02",
-//   "0x0004: ADD"
-// ]
-```
-
-##### DIV
-
-> **DIV**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP1
-
-> **DUP1**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP10
-
-> **DUP10**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP11
-
-> **DUP11**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP12
-
-> **DUP12**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP13
-
-> **DUP13**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP14
-
-> **DUP14**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP15
-
-> **DUP15**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP16
-
-> **DUP16**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP2
-
-> **DUP2**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP3
-
-> **DUP3**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP4
-
-> **DUP4**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP5
-
-> **DUP5**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP6
-
-> **DUP6**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP7
-
-> **DUP7**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP8
-
-> **DUP8**: [`BrandedOpcode`](#brandedopcode)
-
-##### DUP9
-
-> **DUP9**: [`BrandedOpcode`](#brandedopcode)
-
-##### dupPosition()
-
-> **dupPosition**: (`opcode`) => `number` \| `undefined`
-
-Get position for DUP instruction
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-`number` \| `undefined`
-
-Stack position (1-16), or undefined if not a DUP
-
-###### Example
-
-```typescript
-Opcode.dupPosition(Opcode.DUP1); // 1
-Opcode.dupPosition(Opcode.DUP16); // 16
-Opcode.dupPosition(Opcode.ADD); // undefined
-```
-
-##### EQ
-
-> **EQ**: [`BrandedOpcode`](#brandedopcode)
-
-##### EXP
-
-> **EXP**: [`BrandedOpcode`](#brandedopcode)
-
-##### EXTCODECOPY
-
-> **EXTCODECOPY**: [`BrandedOpcode`](#brandedopcode)
-
-##### EXTCODEHASH
-
-> **EXTCODEHASH**: [`BrandedOpcode`](#brandedopcode)
-
-##### EXTCODESIZE
-
-> **EXTCODESIZE**: [`BrandedOpcode`](#brandedopcode)
-
-##### format()
-
-> **format**: (`instruction`) => `string`
-
-Format instruction to human-readable string
-
-###### Parameters
-
-###### instruction
-
-[`Instruction`](#instruction)
-
-Instruction to format
-
-###### Returns
-
-`string`
-
-Human-readable string
-
-###### Example
-
-```typescript
-const inst = {
-  offset: 0,
-  opcode: Opcode.PUSH1,
-  immediate: new Uint8Array([0x42])
-};
-Opcode.format(inst); // "0x0000: PUSH1 0x42"
-```
-
-##### GAS
-
-> **GAS**: [`BrandedOpcode`](#brandedopcode)
-
-##### GASLIMIT
-
-> **GASLIMIT**: [`BrandedOpcode`](#brandedopcode)
-
-##### GASPRICE
-
-> **GASPRICE**: [`BrandedOpcode`](#brandedopcode)
-
-##### getCategory()
-
-> **getCategory**: (`opcode`) => `string`
-
-Get opcode category
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-`string`
-
-Category name
-
-###### Example
-
-```typescript
-Opcode.getCategory(Opcode.ADD); // "arithmetic"
-Opcode.getCategory(Opcode.SSTORE); // "storage"
-Opcode.getCategory(Opcode.CALL); // "system"
-```
-
-##### getDescription()
-
-> **getDescription**: (`opcode`) => `string`
-
-Get human-readable description of an opcode
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-`string`
-
-Description or generated description for PUSH/DUP/SWAP
-
-###### Example
-
-```typescript
-const desc = Opcode.getDescription(Opcode.ADD);
-// "Addition operation"
-
-const desc2 = Opcode.getDescription(Opcode.PUSH1);
-// "Place 1-byte item on stack"
-```
-
-##### getGasCost()
-
-> **getGasCost**: (`opcode`) => `number` \| `undefined`
-
-Get static gas cost for an opcode
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-`number` \| `undefined`
-
-Static gas cost or undefined if invalid
-
-###### Example
-
-```typescript
-const gas = Opcode.getGasCost(Opcode.ADD); // 3
-const gas2 = Opcode.getGasCost(Opcode.SSTORE); // 100 (base cost, may be higher at runtime)
-```
-
-##### getName()
-
-> **getName**: (`opcode`) => `string`
-
-Get mnemonic name of an opcode (alias for name)
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-`string`
-
-Opcode name or "UNKNOWN" if invalid
-
-###### Example
-
-```typescript
-const name = Opcode.getName(Opcode.ADD); // "ADD"
-const name2 = Opcode.getName(0xFF); // "SELFDESTRUCT"
-```
-
-##### getPushSize()
-
-> **getPushSize**: (`opcode`) => `number`
-
-Get PUSH data size in bytes
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-`number`
-
-Push size (0 for PUSH0, 1-32 for PUSH1-PUSH32, 0 for non-PUSH)
-
-###### Example
-
-```typescript
-Opcode.getPushSize(Opcode.PUSH0); // 0
-Opcode.getPushSize(Opcode.PUSH1); // 1
-Opcode.getPushSize(Opcode.PUSH32); // 32
-Opcode.getPushSize(Opcode.ADD); // 0
-```
-
-##### getStackEffect()
-
-> **getStackEffect**: (`opcode`) => \{ `pop`: `number`; `push`: `number`; \} \| `undefined`
-
-Get stack effect for an opcode
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-\{ `pop`: `number`; `push`: `number`; \} \| `undefined`
-
-Stack items consumed and produced
-
-###### Example
-
-```typescript
-const effect = Opcode.getStackEffect(Opcode.ADD);
-// { pop: 2, push: 1 }
-
-const effect2 = Opcode.getStackEffect(Opcode.DUP1);
-// { pop: 1, push: 2 }
-```
-
-##### getStackInput()
-
-> **getStackInput**: (`opcode`) => `number` \| `undefined`
-
-Get number of stack items consumed by an opcode
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-`number` \| `undefined`
-
-Number of stack items consumed
-
-###### Example
-
-```typescript
-const inputs = Opcode.getStackInput(Opcode.ADD); // 2
-const inputs2 = Opcode.getStackInput(Opcode.PUSH1); // 0
-```
-
-##### getStackOutput()
-
-> **getStackOutput**: (`opcode`) => `number` \| `undefined`
-
-Get number of stack items produced by an opcode
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-`number` \| `undefined`
-
-Number of stack items produced
-
-###### Example
-
-```typescript
-const outputs = Opcode.getStackOutput(Opcode.ADD); // 1
-const outputs2 = Opcode.getStackOutput(Opcode.PUSH1); // 1
-```
-
-##### GT
-
-> **GT**: [`BrandedOpcode`](#brandedopcode)
-
-##### info()
-
-> **info**: (`opcode`) => [`Info`](#info) \| `undefined`
-
-Get metadata for an opcode
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-[`Info`](#info) \| `undefined`
-
-Metadata with gas cost and stack requirements
-
-###### Example
-
-```typescript
-const info = Opcode.info(Opcode.ADD);
-console.log(info?.name); // "ADD"
-console.log(info?.gasCost); // 3
-```
-
-##### INVALID
-
-> **INVALID**: [`BrandedOpcode`](#brandedopcode)
-
-##### isDup()
-
-> **isDup**: (`opcode`) => `boolean`
-
-Check if opcode is a DUP instruction
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to check
-
-###### Returns
-
-`boolean`
-
-True if DUP1-DUP16
-
-###### Example
-
-```typescript
-Opcode.isDup(Opcode.DUP1); // true
-Opcode.isDup(Opcode.ADD); // false
-```
-
-##### isJump()
-
-> **isJump**: (`opcode`) => `boolean`
-
-Check if opcode is a jump
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to check
-
-###### Returns
-
-`boolean`
-
-True if JUMP or JUMPI
-
-###### Example
-
-```typescript
-Opcode.isJump(Opcode.JUMP); // true
-Opcode.isJump(Opcode.JUMPI); // true
-Opcode.isJump(Opcode.ADD); // false
-```
-
-##### isJumpDestination()
-
-> **isJumpDestination**: (`opcode`) => `boolean`
-
-Check if opcode is JUMPDEST
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to check
-
-###### Returns
-
-`boolean`
-
-True if JUMPDEST
-
-###### Example
-
-```typescript
-Opcode.isJumpDestination(Opcode.JUMPDEST); // true
-Opcode.isJumpDestination(Opcode.JUMP); // false
-```
-
-##### isLog()
-
-> **isLog**: (`opcode`) => `boolean`
-
-Check if opcode is a LOG instruction
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to check
-
-###### Returns
-
-`boolean`
-
-True if LOG0-LOG4
-
-###### Example
-
-```typescript
-Opcode.isLog(Opcode.LOG1); // true
-Opcode.isLog(Opcode.ADD); // false
-```
-
-##### isPush()
-
-> **isPush**: (`opcode`) => `boolean`
-
-Check if opcode is a PUSH instruction
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to check
-
-###### Returns
-
-`boolean`
-
-True if PUSH0-PUSH32
-
-###### Example
-
-```typescript
-Opcode.isPush(Opcode.PUSH1); // true
-Opcode.isPush(Opcode.ADD); // false
-```
-
-##### isSwap()
-
-> **isSwap**: (`opcode`) => `boolean`
-
-Check if opcode is a SWAP instruction
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to check
-
-###### Returns
-
-`boolean`
-
-True if SWAP1-SWAP16
-
-###### Example
-
-```typescript
-Opcode.isSwap(Opcode.SWAP1); // true
-Opcode.isSwap(Opcode.ADD); // false
-```
-
-##### isTerminating()
-
-> **isTerminating**: (`opcode`) => `boolean`
-
-Check if opcode terminates execution
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to check
-
-###### Returns
-
-`boolean`
-
-True if STOP, RETURN, REVERT, INVALID, or SELFDESTRUCT
-
-###### Example
-
-```typescript
-Opcode.isTerminating(Opcode.RETURN); // true
-Opcode.isTerminating(Opcode.ADD); // false
-```
-
-##### isTerminator()
-
-> **isTerminator**: (`opcode`) => `boolean`
-
-Check if opcode terminates execution (alias for isTerminating)
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to check
-
-###### Returns
-
-`boolean`
-
-True if STOP, RETURN, REVERT, INVALID, or SELFDESTRUCT
-
-###### Example
-
-```typescript
-Opcode.isTerminator(Opcode.RETURN); // true
-Opcode.isTerminator(Opcode.ADD); // false
-```
-
-##### isValid()
-
-> **isValid**: (`opcode`) => `opcode is BrandedOpcode`
-
-Check if opcode is valid
-
-###### Parameters
-
-###### opcode
-
-`number`
-
-Byte value to check
-
-###### Returns
-
-`opcode is BrandedOpcode`
-
-True if opcode is defined in the EVM
-
-###### Example
-
-```typescript
-Opcode.isValid(0x01); // true (ADD)
-Opcode.isValid(0x0c); // false (undefined)
-```
-
-##### isValidJumpDest()
-
-> **isValidJumpDest**: (`bytecode`, `offset`) => `boolean`
-
-Check if offset is a valid jump destination
-
-###### Parameters
-
-###### bytecode
-
-`Uint8Array`\<`ArrayBufferLike`\>
-
-Raw bytecode bytes
-
-###### offset
-
-`number`
-
-Byte offset to check
-
-###### Returns
-
-`boolean`
-
-True if offset is a JUMPDEST and not inside immediate data
-
-###### Example
-
-```typescript
-const bytecode = new Uint8Array([0x5b, 0x60, 0x01]);
-Opcode.isValidJumpDest(bytecode, 0); // true (JUMPDEST)
-Opcode.isValidJumpDest(bytecode, 2); // false (immediate data)
-```
-
-##### isValidOpcode()
-
-> **isValidOpcode**: (`value`) => `boolean`
-
-Check if value is a valid opcode (alias for isValid)
-
-###### Parameters
-
-###### value
-
-`number`
-
-Value to check
-
-###### Returns
-
-`boolean`
-
-True if valid opcode
-
-###### Example
-
-```typescript
-Opcode.isValidOpcode(0x01); // true (ADD)
-Opcode.isValidOpcode(0xFF); // true (SELFDESTRUCT)
-Opcode.isValidOpcode(0x0C); // false
-```
-
-##### ISZERO
-
-> **ISZERO**: [`BrandedOpcode`](#brandedopcode)
-
-##### JUMP
-
-> **JUMP**: [`BrandedOpcode`](#brandedopcode)
-
-##### JUMPDEST
-
-> **JUMPDEST**: [`BrandedOpcode`](#brandedopcode)
-
-##### jumpDests()
-
-> **jumpDests**: (`bytecode`) => `Set`\<`number`\>
-
-Find all valid JUMPDEST locations
-
-###### Parameters
-
-###### bytecode
-
-`Uint8Array`\<`ArrayBufferLike`\>
-
-Raw bytecode bytes
-
-###### Returns
-
-`Set`\<`number`\>
-
-Set of valid jump destinations (byte offsets)
-
-###### Example
-
-```typescript
-const bytecode = new Uint8Array([0x5b, 0x60, 0x01, 0x5b]);
-const dests = Opcode.jumpDests(bytecode); // Set { 0, 3 }
-```
-
-##### JUMPI
-
-> **JUMPI**: [`BrandedOpcode`](#brandedopcode)
-
-##### KECCAK256
-
-> **KECCAK256**: [`BrandedOpcode`](#brandedopcode)
-
-##### LOG0
-
-> **LOG0**: [`BrandedOpcode`](#brandedopcode)
-
-##### LOG1
-
-> **LOG1**: [`BrandedOpcode`](#brandedopcode)
-
-##### LOG2
-
-> **LOG2**: [`BrandedOpcode`](#brandedopcode)
-
-##### LOG3
-
-> **LOG3**: [`BrandedOpcode`](#brandedopcode)
-
-##### LOG4
-
-> **LOG4**: [`BrandedOpcode`](#brandedopcode)
-
-##### logTopics()
-
-> **logTopics**: (`opcode`) => `number` \| `undefined`
-
-Get number of topics for LOG instruction
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-`number` \| `undefined`
-
-Number of topics (0-4), or undefined if not a LOG
-
-###### Example
-
-```typescript
-Opcode.logTopics(Opcode.LOG0); // 0
-Opcode.logTopics(Opcode.LOG4); // 4
-Opcode.logTopics(Opcode.ADD); // undefined
-```
-
-##### LT
-
-> **LT**: [`BrandedOpcode`](#brandedopcode)
-
-##### MCOPY
-
-> **MCOPY**: [`BrandedOpcode`](#brandedopcode)
-
-##### MLOAD
-
-> **MLOAD**: [`BrandedOpcode`](#brandedopcode)
-
-##### MOD
-
-> **MOD**: [`BrandedOpcode`](#brandedopcode)
-
-##### MSIZE
-
-> **MSIZE**: [`BrandedOpcode`](#brandedopcode)
-
-##### MSTORE
-
-> **MSTORE**: [`BrandedOpcode`](#brandedopcode)
-
-##### MSTORE8
-
-> **MSTORE8**: [`BrandedOpcode`](#brandedopcode)
-
-##### MUL
-
-> **MUL**: [`BrandedOpcode`](#brandedopcode)
-
-##### MULMOD
-
-> **MULMOD**: [`BrandedOpcode`](#brandedopcode)
-
-##### name()
-
-> **name**: (`opcode`) => `string`
-
-Get name of an opcode
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-`string`
-
-Opcode name or "UNKNOWN" if invalid
-
-###### Example
-
-```typescript
-const name = Opcode.name(Opcode.ADD); // "ADD"
-```
-
-##### NOT
-
-> **NOT**: [`BrandedOpcode`](#brandedopcode)
-
-##### NUMBER
-
-> **NUMBER**: [`BrandedOpcode`](#brandedopcode)
-
-##### OR
-
-> **OR**: [`BrandedOpcode`](#brandedopcode)
-
-##### ORIGIN
-
-> **ORIGIN**: [`BrandedOpcode`](#brandedopcode)
-
-##### parse()
-
-> **parse**: (`bytecode`) => [`Instruction`](#instruction)[]
-
-Parse bytecode into instructions
-
-###### Parameters
-
-###### bytecode
-
-`Uint8Array`\<`ArrayBufferLike`\>
-
-Raw bytecode bytes
-
-###### Returns
-
-[`Instruction`](#instruction)[]
-
-Array of parsed instructions
-
-###### Example
-
-```typescript
-const bytecode = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
-const instructions = Opcode.parse(bytecode);
-// [
-//   { offset: 0, opcode: PUSH1, immediate: [0x01] },
-//   { offset: 2, opcode: PUSH1, immediate: [0x02] },
-//   { offset: 4, opcode: ADD }
-// ]
-```
-
-##### PC
-
-> **PC**: [`BrandedOpcode`](#brandedopcode)
-
-##### POP
-
-> **POP**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH0
-
-> **PUSH0**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH1
-
-> **PUSH1**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH10
-
-> **PUSH10**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH11
-
-> **PUSH11**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH12
-
-> **PUSH12**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH13
-
-> **PUSH13**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH14
-
-> **PUSH14**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH15
-
-> **PUSH15**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH16
-
-> **PUSH16**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH17
-
-> **PUSH17**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH18
-
-> **PUSH18**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH19
-
-> **PUSH19**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH2
-
-> **PUSH2**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH20
-
-> **PUSH20**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH21
-
-> **PUSH21**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH22
-
-> **PUSH22**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH23
-
-> **PUSH23**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH24
-
-> **PUSH24**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH25
-
-> **PUSH25**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH26
-
-> **PUSH26**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH27
-
-> **PUSH27**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH28
-
-> **PUSH28**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH29
-
-> **PUSH29**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH3
-
-> **PUSH3**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH30
-
-> **PUSH30**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH31
-
-> **PUSH31**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH32
-
-> **PUSH32**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH4
-
-> **PUSH4**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH5
-
-> **PUSH5**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH6
-
-> **PUSH6**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH7
-
-> **PUSH7**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH8
-
-> **PUSH8**: [`BrandedOpcode`](#brandedopcode)
-
-##### PUSH9
-
-> **PUSH9**: [`BrandedOpcode`](#brandedopcode)
-
-##### pushBytes()
-
-> **pushBytes**: (`opcode`) => `number` \| `undefined`
-
-Get number of bytes pushed by PUSH instruction
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-`number` \| `undefined`
-
-Number of bytes (0-32), or undefined if not a PUSH
-
-###### Example
-
-```typescript
-Opcode.pushBytes(Opcode.PUSH1); // 1
-Opcode.pushBytes(Opcode.PUSH32); // 32
-Opcode.pushBytes(Opcode.PUSH0); // 0
-Opcode.pushBytes(Opcode.ADD); // undefined
-```
-
-##### pushOpcode()
-
-> **pushOpcode**: (`bytes`) => [`BrandedOpcode`](#brandedopcode)
-
-Get PUSH opcode for given byte count
-
-###### Parameters
-
-###### bytes
-
-`number`
-
-Number of bytes (0-32)
-
-###### Returns
-
-[`BrandedOpcode`](#brandedopcode)
-
-PUSH opcode for that size
-
-###### Throws
-
-If bytes is not 0-32
-
-###### Example
-
-```typescript
-Opcode.pushOpcode(1); // Opcode.PUSH1
-Opcode.pushOpcode(32); // Opcode.PUSH32
-Opcode.pushOpcode(0); // Opcode.PUSH0
-```
-
-##### RETURN
-
-> **RETURN**: [`BrandedOpcode`](#brandedopcode)
-
-##### RETURNDATACOPY
-
-> **RETURNDATACOPY**: [`BrandedOpcode`](#brandedopcode)
-
-##### RETURNDATASIZE
-
-> **RETURNDATASIZE**: [`BrandedOpcode`](#brandedopcode)
-
-##### REVERT
-
-> **REVERT**: [`BrandedOpcode`](#brandedopcode)
-
-##### SAR
-
-> **SAR**: [`BrandedOpcode`](#brandedopcode)
-
-##### SDIV
-
-> **SDIV**: [`BrandedOpcode`](#brandedopcode)
-
-##### SELFBALANCE
-
-> **SELFBALANCE**: [`BrandedOpcode`](#brandedopcode)
-
-##### SELFDESTRUCT
-
-> **SELFDESTRUCT**: [`BrandedOpcode`](#brandedopcode)
-
-##### SGT
-
-> **SGT**: [`BrandedOpcode`](#brandedopcode)
-
-##### SHL
-
-> **SHL**: [`BrandedOpcode`](#brandedopcode)
-
-##### SHR
-
-> **SHR**: [`BrandedOpcode`](#brandedopcode)
-
-##### SIGNEXTEND
-
-> **SIGNEXTEND**: [`BrandedOpcode`](#brandedopcode)
-
-##### SLOAD
-
-> **SLOAD**: [`BrandedOpcode`](#brandedopcode)
-
-##### SLT
-
-> **SLT**: [`BrandedOpcode`](#brandedopcode)
-
-##### SMOD
-
-> **SMOD**: [`BrandedOpcode`](#brandedopcode)
-
-##### SSTORE
-
-> **SSTORE**: [`BrandedOpcode`](#brandedopcode)
-
-##### STATICCALL
-
-> **STATICCALL**: [`BrandedOpcode`](#brandedopcode)
-
-##### STOP
-
-> **STOP**: [`BrandedOpcode`](#brandedopcode)
-
-##### SUB
-
-> **SUB**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP1
-
-> **SWAP1**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP10
-
-> **SWAP10**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP11
-
-> **SWAP11**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP12
-
-> **SWAP12**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP13
-
-> **SWAP13**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP14
-
-> **SWAP14**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP15
-
-> **SWAP15**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP16
-
-> **SWAP16**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP2
-
-> **SWAP2**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP3
-
-> **SWAP3**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP4
-
-> **SWAP4**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP5
-
-> **SWAP5**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP6
-
-> **SWAP6**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP7
-
-> **SWAP7**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP8
-
-> **SWAP8**: [`BrandedOpcode`](#brandedopcode)
-
-##### SWAP9
-
-> **SWAP9**: [`BrandedOpcode`](#brandedopcode)
-
-##### swapPosition()
-
-> **swapPosition**: (`opcode`) => `number` \| `undefined`
-
-Get position for SWAP instruction
-
-###### Parameters
-
-###### opcode
-
-[`BrandedOpcode`](#brandedopcode)
-
-Opcode to query
-
-###### Returns
-
-`number` \| `undefined`
-
-Stack position (1-16), or undefined if not a SWAP
-
-###### Example
-
-```typescript
-Opcode.swapPosition(Opcode.SWAP1); // 1
-Opcode.swapPosition(Opcode.SWAP16); // 16
-Opcode.swapPosition(Opcode.ADD); // undefined
-```
-
-##### TIMESTAMP
-
-> **TIMESTAMP**: [`BrandedOpcode`](#brandedopcode)
-
-##### TLOAD
-
-> **TLOAD**: [`BrandedOpcode`](#brandedopcode)
-
-##### TSTORE
-
-> **TSTORE**: [`BrandedOpcode`](#brandedopcode)
-
-##### XOR
-
-> **XOR**: [`BrandedOpcode`](#brandedopcode)
-
-***
-
-### BYTE
-
-> `const` **BYTE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:41](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L41)
-
-***
-
-### CALL
-
-> `const` **CALL**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:300](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L300)
-
-***
-
-### CALLCODE
-
-> `const` **CALLCODE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:301](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L301)
-
-***
-
-### CALLDATACOPY
-
-> `const` **CALLDATACOPY**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:71](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L71)
-
-***
-
-### CALLDATALOAD
-
-> `const` **CALLDATALOAD**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:67](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L67)
-
-***
-
-### CALLDATASIZE
-
-> `const` **CALLDATASIZE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:69](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L69)
-
-***
-
-### CALLER
-
-> `const` **CALLER**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:61](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L61)
-
-***
-
-### CALLVALUE
-
-> `const` **CALLVALUE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:64](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L64)
-
-***
-
-### CHAINID
-
-> `const` **CHAINID**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:115](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L115)
-
-***
-
-### CODECOPY
-
-> `const` **CODECOPY**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:76](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L76)
-
-***
-
-### CODESIZE
-
-> `const` **CODESIZE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:73](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L73)
-
-***
-
-### COINBASE
-
-> `const` **COINBASE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:100](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L100)
-
-***
-
-### CREATE
-
-> `const` **CREATE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:297](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L297)
-
-***
-
-### CREATE2
-
-> `const` **CREATE2**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:309](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L309)
-
-***
-
-### DELEGATECALL
-
-> `const` **DELEGATECALL**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:307](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L307)
-
-***
-
-### DIFFICULTY
-
-> `const` **DIFFICULTY**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:109](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L109)
-
-***
-
-### DIV
-
-> `const` **DIV**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L13)
-
-***
-
-### DUP1
-
-> `const` **DUP1**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:240](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L240)
-
-***
-
-### DUP10
-
-> `const` **DUP10**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:249](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L249)
-
-***
-
-### DUP11
-
-> `const` **DUP11**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:250](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L250)
-
-***
-
-### DUP12
-
-> `const` **DUP12**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:251](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L251)
-
-***
-
-### DUP13
-
-> `const` **DUP13**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:252](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L252)
-
-***
-
-### DUP14
-
-> `const` **DUP14**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:253](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L253)
-
-***
-
-### DUP15
-
-> `const` **DUP15**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:254](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L254)
-
-***
-
-### DUP16
-
-> `const` **DUP16**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:255](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L255)
-
-***
-
-### DUP2
-
-> `const` **DUP2**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:241](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L241)
-
-***
-
-### DUP3
-
-> `const` **DUP3**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:242](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L242)
-
-***
-
-### DUP4
-
-> `const` **DUP4**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:243](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L243)
-
-***
-
-### DUP5
-
-> `const` **DUP5**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:244](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L244)
-
-***
-
-### DUP6
-
-> `const` **DUP6**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:245](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L245)
-
-***
-
-### DUP7
-
-> `const` **DUP7**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:246](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L246)
-
-***
-
-### DUP8
-
-> `const` **DUP8**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:247](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L247)
-
-***
-
-### DUP9
-
-> `const` **DUP9**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:248](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L248)
-
-***
-
-### EQ
-
-> `const` **EQ**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:33](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L33)
-
-***
-
-### EXP
-
-> `const` **EXP**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L23)
-
-***
-
-### EXTCODECOPY
-
-> `const` **EXTCODECOPY**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:85](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L85)
-
-***
-
-### EXTCODEHASH
-
-> `const` **EXTCODEHASH**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:92](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L92)
-
-***
-
-### EXTCODESIZE
-
-> `const` **EXTCODESIZE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:82](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L82)
-
-***
-
-### GAS
-
-> `const` **GAS**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:148](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L148)
-
-***
-
-### GASLIMIT
-
-> `const` **GASLIMIT**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:112](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L112)
-
-***
-
-### GASPRICE
-
-> `const` **GASPRICE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:79](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L79)
-
-***
-
-### GT
-
-> `const` **GT**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:30](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L30)
-
-***
-
-### INVALID
-
-> `const` **INVALID**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:322](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L322)
-
-***
-
-### ISZERO
-
-> `const` **ISZERO**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L34)
-
-***
-
-### JUMP
-
-> `const` **JUMP**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:144](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L144)
-
-***
-
-### JUMPDEST
-
-> `const` **JUMPDEST**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:149](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L149)
-
-***
-
-### JUMPI
-
-> `const` **JUMPI**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:145](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L145)
-
-***
-
-### KECCAK256
-
-> `const` **KECCAK256**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:47](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L47)
-
-***
-
-### LOG0
-
-> `const` **LOG0**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:290](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L290)
-
-***
-
-### LOG1
-
-> `const` **LOG1**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:291](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L291)
-
-***
-
-### LOG2
-
-> `const` **LOG2**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:292](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L292)
-
-***
-
-### LOG3
-
-> `const` **LOG3**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:293](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L293)
-
-***
-
-### LOG4
-
-> `const` **LOG4**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:294](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L294)
-
-***
-
-### LT
-
-> `const` **LT**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L29)
-
-***
-
-### MCOPY
-
-> `const` **MCOPY**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:156](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L156)
-
-***
-
-### MLOAD
-
-> `const` **MLOAD**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:133](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L133)
-
-***
-
-### MOD
-
-> `const` **MOD**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L15)
-
-***
-
-### MSIZE
-
-> `const` **MSIZE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:147](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L147)
-
-***
-
-### MSTORE
-
-> `const` **MSTORE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:134](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L134)
-
-***
-
-### MSTORE8
-
-> `const` **MSTORE8**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:137](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L137)
-
-***
-
-### MUL
-
-> `const` **MUL**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L11)
-
-***
-
-### MULMOD
-
-> `const` **MULMOD**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L20)
-
-***
-
-### NOT
-
-> `const` **NOT**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:40](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L40)
-
-***
-
-### NUMBER
-
-> `const` **NUMBER**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:106](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L106)
-
-***
-
-### OR
-
-> `const` **OR**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:38](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L38)
-
-***
-
-### ORIGIN
-
-> `const` **ORIGIN**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:58](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L58)
-
-***
-
-### PC
-
-> `const` **PC**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:146](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L146)
-
-***
-
-### POP
-
-> `const` **POP**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:132](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L132)
-
-***
-
-### PUSH0
-
-> `const` **PUSH0**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:157](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L157)
-
-***
-
-### PUSH1
-
-> `const` **PUSH1**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:160](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L160)
-
-***
-
-### PUSH10
-
-> `const` **PUSH10**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:169](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L169)
-
-***
-
-### PUSH11
-
-> `const` **PUSH11**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:172](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L172)
-
-***
-
-### PUSH12
-
-> `const` **PUSH12**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:175](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L175)
-
-***
-
-### PUSH13
-
-> `const` **PUSH13**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:178](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L178)
-
-***
-
-### PUSH14
-
-> `const` **PUSH14**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:181](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L181)
-
-***
-
-### PUSH15
-
-> `const` **PUSH15**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:184](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L184)
-
-***
-
-### PUSH16
-
-> `const` **PUSH16**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:187](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L187)
-
-***
-
-### PUSH17
-
-> `const` **PUSH17**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:190](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L190)
-
-***
-
-### PUSH18
-
-> `const` **PUSH18**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:193](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L193)
-
-***
-
-### PUSH19
-
-> `const` **PUSH19**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:196](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L196)
-
-***
-
-### PUSH2
-
-> `const` **PUSH2**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:161](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L161)
-
-***
-
-### PUSH20
-
-> `const` **PUSH20**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:199](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L199)
-
-***
-
-### PUSH21
-
-> `const` **PUSH21**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:202](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L202)
-
-***
-
-### PUSH22
-
-> `const` **PUSH22**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:205](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L205)
-
-***
-
-### PUSH23
-
-> `const` **PUSH23**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:208](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L208)
-
-***
-
-### PUSH24
-
-> `const` **PUSH24**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:211](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L211)
-
-***
-
-### PUSH25
-
-> `const` **PUSH25**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:214](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L214)
-
-***
-
-### PUSH26
-
-> `const` **PUSH26**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:217](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L217)
-
-***
-
-### PUSH27
-
-> `const` **PUSH27**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:220](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L220)
-
-***
-
-### PUSH28
-
-> `const` **PUSH28**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:223](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L223)
-
-***
-
-### PUSH29
-
-> `const` **PUSH29**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:226](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L226)
-
-***
-
-### PUSH3
-
-> `const` **PUSH3**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:162](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L162)
-
-***
-
-### PUSH30
-
-> `const` **PUSH30**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:229](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L229)
-
-***
-
-### PUSH31
-
-> `const` **PUSH31**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:232](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L232)
-
-***
-
-### PUSH32
-
-> `const` **PUSH32**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:235](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L235)
-
-***
-
-### PUSH4
-
-> `const` **PUSH4**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:163](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L163)
-
-***
-
-### PUSH5
-
-> `const` **PUSH5**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:164](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L164)
-
-***
-
-### PUSH6
-
-> `const` **PUSH6**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:165](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L165)
-
-***
-
-### PUSH7
-
-> `const` **PUSH7**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:166](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L166)
-
-***
-
-### PUSH8
-
-> `const` **PUSH8**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:167](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L167)
-
-***
-
-### PUSH9
-
-> `const` **PUSH9**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:168](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L168)
-
-***
-
-### RETURN
-
-> `const` **RETURN**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:304](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L304)
-
-***
-
-### RETURNDATACOPY
-
-> `const` **RETURNDATACOPY**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:90](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L90)
-
-***
-
-### RETURNDATASIZE
-
-> `const` **RETURNDATASIZE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:88](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L88)
-
-***
-
-### REVERT
-
-> `const` **REVERT**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:319](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L319)
-
-***
-
-### SAR
-
-> `const` **SAR**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:44](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L44)
-
-***
-
-### SDIV
-
-> `const` **SDIV**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L14)
-
-***
-
-### SELFBALANCE
-
-> `const` **SELFBALANCE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:118](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L118)
-
-***
-
-### SELFDESTRUCT
-
-> `const` **SELFDESTRUCT**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:325](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L325)
-
-***
-
-### SGT
-
-> `const` **SGT**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:32](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L32)
-
-***
-
-### SHL
-
-> `const` **SHL**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:42](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L42)
-
-***
-
-### SHR
-
-> `const` **SHR**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:43](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L43)
-
-***
-
-### SIGNEXTEND
-
-> `const` **SIGNEXTEND**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L24)
-
-***
-
-### SLOAD
-
-> `const` **SLOAD**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:140](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L140)
-
-***
-
-### SLT
-
-> `const` **SLT**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:31](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L31)
-
-***
-
-### SMOD
-
-> `const` **SMOD**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L16)
-
-***
-
-### SSTORE
-
-> `const` **SSTORE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:141](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L141)
-
-***
-
-### STATICCALL
-
-> `const` **STATICCALL**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:316](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L316)
-
-***
-
-### STOP
-
-> `const` **STOP**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L9)
-
-***
-
-### SUB
-
-> `const` **SUB**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L12)
-
-***
-
-### SWAP1
-
-> `const` **SWAP1**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:258](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L258)
-
-***
-
-### SWAP10
-
-> `const` **SWAP10**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:267](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L267)
-
-***
-
-### SWAP11
-
-> `const` **SWAP11**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:270](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L270)
-
-***
-
-### SWAP12
-
-> `const` **SWAP12**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:273](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L273)
-
-***
-
-### SWAP13
-
-> `const` **SWAP13**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:276](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L276)
-
-***
-
-### SWAP14
-
-> `const` **SWAP14**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:279](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L279)
-
-***
-
-### SWAP15
-
-> `const` **SWAP15**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:282](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L282)
-
-***
-
-### SWAP16
-
-> `const` **SWAP16**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:285](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L285)
-
-***
-
-### SWAP2
-
-> `const` **SWAP2**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:259](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L259)
-
-***
-
-### SWAP3
-
-> `const` **SWAP3**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:260](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L260)
-
-***
-
-### SWAP4
-
-> `const` **SWAP4**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:261](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L261)
-
-***
-
-### SWAP5
-
-> `const` **SWAP5**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:262](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L262)
-
-***
-
-### SWAP6
-
-> `const` **SWAP6**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:263](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L263)
-
-***
-
-### SWAP7
-
-> `const` **SWAP7**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:264](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L264)
-
-***
-
-### SWAP8
-
-> `const` **SWAP8**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:265](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L265)
-
-***
-
-### SWAP9
-
-> `const` **SWAP9**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:266](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L266)
-
-***
-
-### TIMESTAMP
-
-> `const` **TIMESTAMP**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:103](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L103)
-
-***
-
-### TLOAD
-
-> `const` **TLOAD**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:152](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L152)
-
-***
-
-### TSTORE
-
-> `const` **TSTORE**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:153](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L153)
-
-***
-
-### XOR
-
-> `const` **XOR**: [`BrandedOpcode`](#brandedopcode)
-
-Defined in: [src/primitives/Opcode/constants.js:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/constants.js#L39)
-
 ## Functions
 
 ### \_disassemble()
 
 > **\_disassemble**(`bytecode`): `string`[]
 
-Defined in: [src/primitives/Opcode/disassemble.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/disassemble.js#L22)
+Defined in: [src/primitives/Opcode/disassemble.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/disassemble.js#L22)
 
 Disassemble bytecode to human-readable strings
 
@@ -2823,7 +53,7 @@ const asm = Opcode.disassemble(bytecode);
 
 > **\_dupPosition**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/dupPosition.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/dupPosition.js#L17)
+Defined in: [src/primitives/Opcode/dupPosition.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/dupPosition.js#L17)
 
 Get position for DUP instruction
 
@@ -2831,7 +61,7 @@ Get position for DUP instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -2855,7 +85,7 @@ Opcode.dupPosition(Opcode.ADD); // undefined
 
 > **\_format**(`instruction`): `string`
 
-Defined in: [src/primitives/Opcode/format.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/format.js#L20)
+Defined in: [src/primitives/Opcode/format.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/format.js#L20)
 
 Format instruction to human-readable string
 
@@ -2863,7 +93,7 @@ Format instruction to human-readable string
 
 ##### instruction
 
-[`Instruction`](#instruction)
+[`Instruction`](../../primitives/Opcode.mdx#instruction)
 
 Instruction to format
 
@@ -2890,7 +120,7 @@ Opcode.format(inst); // "0x0000: PUSH1 0x42"
 
 > **\_getCategory**(`opcode`): `string`
 
-Defined in: [src/primitives/Opcode/getCategory.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getCategory.js#L18)
+Defined in: [src/primitives/Opcode/getCategory.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getCategory.js#L18)
 
 Get opcode category
 
@@ -2898,7 +128,7 @@ Get opcode category
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -2922,7 +152,7 @@ Opcode.getCategory(Opcode.CALL); // "system"
 
 > **\_getDescription**(`opcode`): `string`
 
-Defined in: [src/primitives/Opcode/getDescription.js:140](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getDescription.js#L140)
+Defined in: [src/primitives/Opcode/getDescription.js:140](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getDescription.js#L140)
 
 Get human-readable description of an opcode
 
@@ -2930,7 +160,7 @@ Get human-readable description of an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -2956,7 +186,7 @@ const desc2 = Opcode.getDescription(Opcode.PUSH1);
 
 > **\_getGasCost**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/getGasCost.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getGasCost.js#L16)
+Defined in: [src/primitives/Opcode/getGasCost.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getGasCost.js#L16)
 
 Get static gas cost for an opcode
 
@@ -2964,7 +194,7 @@ Get static gas cost for an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -2987,7 +217,7 @@ const gas2 = Opcode.getGasCost(Opcode.SSTORE); // 100 (base cost, may be higher 
 
 > **\_getName**(`opcode`): `string`
 
-Defined in: [src/primitives/Opcode/getName.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getName.js#L16)
+Defined in: [src/primitives/Opcode/getName.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getName.js#L16)
 
 Get mnemonic name of an opcode (alias for name)
 
@@ -2995,7 +225,7 @@ Get mnemonic name of an opcode (alias for name)
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3018,7 +248,7 @@ const name2 = Opcode.getName(0xFF); // "SELFDESTRUCT"
 
 > **\_getPushSize**(`opcode`): `number`
 
-Defined in: [src/primitives/Opcode/getPushSize.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getPushSize.js#L18)
+Defined in: [src/primitives/Opcode/getPushSize.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getPushSize.js#L18)
 
 Get PUSH data size in bytes
 
@@ -3026,7 +256,7 @@ Get PUSH data size in bytes
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3051,7 +281,7 @@ Opcode.getPushSize(Opcode.ADD); // 0
 
 > **\_getStackEffect**(`opcode`): \{ `pop`: `number`; `push`: `number`; \} \| `undefined`
 
-Defined in: [src/primitives/Opcode/getStackEffect.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getStackEffect.js#L19)
+Defined in: [src/primitives/Opcode/getStackEffect.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getStackEffect.js#L19)
 
 Get stack effect for an opcode
 
@@ -3059,7 +289,7 @@ Get stack effect for an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3085,7 +315,7 @@ const effect2 = Opcode.getStackEffect(Opcode.DUP1);
 
 > **\_getStackInput**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/getStackInput.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getStackInput.js#L16)
+Defined in: [src/primitives/Opcode/getStackInput.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getStackInput.js#L16)
 
 Get number of stack items consumed by an opcode
 
@@ -3093,7 +323,7 @@ Get number of stack items consumed by an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3116,7 +346,7 @@ const inputs2 = Opcode.getStackInput(Opcode.PUSH1); // 0
 
 > **\_getStackOutput**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/getStackOutput.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getStackOutput.js#L16)
+Defined in: [src/primitives/Opcode/getStackOutput.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getStackOutput.js#L16)
 
 Get number of stack items produced by an opcode
 
@@ -3124,7 +354,7 @@ Get number of stack items produced by an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3145,9 +375,9 @@ const outputs2 = Opcode.getStackOutput(Opcode.PUSH1); // 1
 
 ### \_info()
 
-> **\_info**(`opcode`): [`Info`](#info) \| `undefined`
+> **\_info**(`opcode`): [`Info`](../../primitives/Opcode.mdx#info) \| `undefined`
 
-Defined in: [src/primitives/Opcode/info.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/info.js#L17)
+Defined in: [src/primitives/Opcode/info.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/info.js#L17)
 
 Get metadata for an opcode
 
@@ -3155,13 +385,13 @@ Get metadata for an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
 #### Returns
 
-[`Info`](#info) \| `undefined`
+[`Info`](../../primitives/Opcode.mdx#info) \| `undefined`
 
 Metadata with gas cost and stack requirements
 
@@ -3179,7 +409,7 @@ console.log(info?.gasCost); // 3
 
 > **\_isDup**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isDup.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isDup.js#L16)
+Defined in: [src/primitives/Opcode/isDup.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isDup.js#L16)
 
 Check if opcode is a DUP instruction
 
@@ -3187,7 +417,7 @@ Check if opcode is a DUP instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -3210,7 +440,7 @@ Opcode.isDup(Opcode.ADD); // false
 
 > **\_isJump**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isJump.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isJump.js#L17)
+Defined in: [src/primitives/Opcode/isJump.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isJump.js#L17)
 
 Check if opcode is a jump
 
@@ -3218,7 +448,7 @@ Check if opcode is a jump
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -3242,7 +472,7 @@ Opcode.isJump(Opcode.ADD); // false
 
 > **\_isJumpDestination**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isJumpDestination.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isJumpDestination.js#L16)
+Defined in: [src/primitives/Opcode/isJumpDestination.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isJumpDestination.js#L16)
 
 Check if opcode is JUMPDEST
 
@@ -3250,7 +480,7 @@ Check if opcode is JUMPDEST
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -3273,7 +503,7 @@ Opcode.isJumpDestination(Opcode.JUMP); // false
 
 > **\_isLog**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isLog.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isLog.js#L16)
+Defined in: [src/primitives/Opcode/isLog.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isLog.js#L16)
 
 Check if opcode is a LOG instruction
 
@@ -3281,7 +511,7 @@ Check if opcode is a LOG instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -3304,7 +534,7 @@ Opcode.isLog(Opcode.ADD); // false
 
 > **\_isPush**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isPush.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isPush.js#L16)
+Defined in: [src/primitives/Opcode/isPush.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isPush.js#L16)
 
 Check if opcode is a PUSH instruction
 
@@ -3312,7 +542,7 @@ Check if opcode is a PUSH instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -3335,7 +565,7 @@ Opcode.isPush(Opcode.ADD); // false
 
 > **\_isSwap**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isSwap.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isSwap.js#L16)
+Defined in: [src/primitives/Opcode/isSwap.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isSwap.js#L16)
 
 Check if opcode is a SWAP instruction
 
@@ -3343,7 +573,7 @@ Check if opcode is a SWAP instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -3366,7 +596,7 @@ Opcode.isSwap(Opcode.ADD); // false
 
 > **\_isTerminating**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isTerminating.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isTerminating.js#L16)
+Defined in: [src/primitives/Opcode/isTerminating.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isTerminating.js#L16)
 
 Check if opcode terminates execution
 
@@ -3374,7 +604,7 @@ Check if opcode terminates execution
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -3397,7 +627,7 @@ Opcode.isTerminating(Opcode.ADD); // false
 
 > **\_isTerminator**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isTerminator.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isTerminator.js#L16)
+Defined in: [src/primitives/Opcode/isTerminator.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isTerminator.js#L16)
 
 Check if opcode terminates execution (alias for isTerminating)
 
@@ -3405,7 +635,7 @@ Check if opcode terminates execution (alias for isTerminating)
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -3428,7 +658,7 @@ Opcode.isTerminator(Opcode.ADD); // false
 
 > **\_isValid**(`opcode`): `opcode is BrandedOpcode`
 
-Defined in: [src/primitives/Opcode/isValid.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isValid.js#L16)
+Defined in: [src/primitives/Opcode/isValid.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isValid.js#L16)
 
 Check if opcode is valid
 
@@ -3459,7 +689,7 @@ Opcode.isValid(0x0c); // false (undefined)
 
 > **\_isValidJumpDest**(`bytecode`, `offset`): `boolean`
 
-Defined in: [src/primitives/Opcode/isValidJumpDest.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isValidJumpDest.js#L18)
+Defined in: [src/primitives/Opcode/isValidJumpDest.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isValidJumpDest.js#L18)
 
 Check if offset is a valid jump destination
 
@@ -3497,7 +727,7 @@ Opcode.isValidJumpDest(bytecode, 2); // false (immediate data)
 
 > **\_isValidOpcode**(`value`): `boolean`
 
-Defined in: [src/primitives/Opcode/isValidOpcode.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isValidOpcode.js#L17)
+Defined in: [src/primitives/Opcode/isValidOpcode.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isValidOpcode.js#L17)
 
 Check if value is a valid opcode (alias for isValid)
 
@@ -3529,7 +759,7 @@ Opcode.isValidOpcode(0x0C); // false
 
 > **\_jumpDests**(`bytecode`): `Set`\<`number`\>
 
-Defined in: [src/primitives/Opcode/jumpDests.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/jumpDests.js#L17)
+Defined in: [src/primitives/Opcode/jumpDests.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/jumpDests.js#L17)
 
 Find all valid JUMPDEST locations
 
@@ -3560,7 +790,7 @@ const dests = Opcode.jumpDests(bytecode); // Set { 0, 3 }
 
 > **\_logTopics**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/logTopics.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/logTopics.js#L17)
+Defined in: [src/primitives/Opcode/logTopics.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/logTopics.js#L17)
 
 Get number of topics for LOG instruction
 
@@ -3568,7 +798,7 @@ Get number of topics for LOG instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3592,7 +822,7 @@ Opcode.logTopics(Opcode.ADD); // undefined
 
 > **\_name**(`opcode`): `string`
 
-Defined in: [src/primitives/Opcode/name.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/name.js#L15)
+Defined in: [src/primitives/Opcode/name.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/name.js#L15)
 
 Get name of an opcode
 
@@ -3600,7 +830,7 @@ Get name of an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3620,9 +850,9 @@ const name = Opcode.name(Opcode.ADD); // "ADD"
 
 ### \_parse()
 
-> **\_parse**(`bytecode`): [`Instruction`](#instruction)[]
+> **\_parse**(`bytecode`): [`Instruction`](../../primitives/Opcode.mdx#instruction)[]
 
-Defined in: [src/primitives/Opcode/parse.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/parse.js#L21)
+Defined in: [src/primitives/Opcode/parse.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/parse.js#L21)
 
 Parse bytecode into instructions
 
@@ -3636,7 +866,7 @@ Raw bytecode bytes
 
 #### Returns
 
-[`Instruction`](#instruction)[]
+[`Instruction`](../../primitives/Opcode.mdx#instruction)[]
 
 Array of parsed instructions
 
@@ -3658,7 +888,7 @@ const instructions = Opcode.parse(bytecode);
 
 > **\_pushBytes**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/pushBytes.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/pushBytes.js#L18)
+Defined in: [src/primitives/Opcode/pushBytes.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/pushBytes.js#L18)
 
 Get number of bytes pushed by PUSH instruction
 
@@ -3666,7 +896,7 @@ Get number of bytes pushed by PUSH instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3689,9 +919,9 @@ Opcode.pushBytes(Opcode.ADD); // undefined
 
 ### \_pushOpcode()
 
-> **\_pushOpcode**(`bytes`): [`BrandedOpcode`](#brandedopcode)
+> **\_pushOpcode**(`bytes`): [`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
-Defined in: [src/primitives/Opcode/pushOpcode.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/pushOpcode.js#L19)
+Defined in: [src/primitives/Opcode/pushOpcode.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/pushOpcode.js#L19)
 
 Get PUSH opcode for given byte count
 
@@ -3705,7 +935,7 @@ Number of bytes (0-32)
 
 #### Returns
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 PUSH opcode for that size
 
@@ -3727,7 +957,7 @@ Opcode.pushOpcode(0); // Opcode.PUSH0
 
 > **\_swapPosition**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/swapPosition.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/swapPosition.js#L17)
+Defined in: [src/primitives/Opcode/swapPosition.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/swapPosition.js#L17)
 
 Get position for SWAP instruction
 
@@ -3735,7 +965,7 @@ Get position for SWAP instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3759,7 +989,7 @@ Opcode.swapPosition(Opcode.ADD); // undefined
 
 > **disassemble**(`bytecode`): `string`[]
 
-Defined in: [src/primitives/Opcode/disassemble.js:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/disassemble.js#L22)
+Defined in: [src/primitives/Opcode/disassemble.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/disassemble.js#L22)
 
 Disassemble bytecode to human-readable strings
 
@@ -3795,7 +1025,7 @@ const asm = Opcode.disassemble(bytecode);
 
 > **dupPosition**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/dupPosition.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/dupPosition.js#L17)
+Defined in: [src/primitives/Opcode/dupPosition.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/dupPosition.js#L17)
 
 Get position for DUP instruction
 
@@ -3803,7 +1033,7 @@ Get position for DUP instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3827,7 +1057,7 @@ Opcode.dupPosition(Opcode.ADD); // undefined
 
 > **format**(`instruction`): `string`
 
-Defined in: [src/primitives/Opcode/format.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/format.js#L20)
+Defined in: [src/primitives/Opcode/format.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/format.js#L20)
 
 Format instruction to human-readable string
 
@@ -3835,7 +1065,7 @@ Format instruction to human-readable string
 
 ##### instruction
 
-[`Instruction`](#instruction)
+[`Instruction`](../../primitives/Opcode.mdx#instruction)
 
 Instruction to format
 
@@ -3862,7 +1092,7 @@ Opcode.format(inst); // "0x0000: PUSH1 0x42"
 
 > **getCategory**(`opcode`): `string`
 
-Defined in: [src/primitives/Opcode/getCategory.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getCategory.js#L18)
+Defined in: [src/primitives/Opcode/getCategory.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getCategory.js#L18)
 
 Get opcode category
 
@@ -3870,7 +1100,7 @@ Get opcode category
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3894,7 +1124,7 @@ Opcode.getCategory(Opcode.CALL); // "system"
 
 > **getDescription**(`opcode`): `string`
 
-Defined in: [src/primitives/Opcode/getDescription.js:140](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getDescription.js#L140)
+Defined in: [src/primitives/Opcode/getDescription.js:140](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getDescription.js#L140)
 
 Get human-readable description of an opcode
 
@@ -3902,7 +1132,7 @@ Get human-readable description of an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3928,7 +1158,7 @@ const desc2 = Opcode.getDescription(Opcode.PUSH1);
 
 > **getGasCost**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/getGasCost.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getGasCost.js#L16)
+Defined in: [src/primitives/Opcode/getGasCost.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getGasCost.js#L16)
 
 Get static gas cost for an opcode
 
@@ -3936,7 +1166,7 @@ Get static gas cost for an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3959,7 +1189,7 @@ const gas2 = Opcode.getGasCost(Opcode.SSTORE); // 100 (base cost, may be higher 
 
 > **getName**(`opcode`): `string`
 
-Defined in: [src/primitives/Opcode/getName.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getName.js#L16)
+Defined in: [src/primitives/Opcode/getName.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getName.js#L16)
 
 Get mnemonic name of an opcode (alias for name)
 
@@ -3967,7 +1197,7 @@ Get mnemonic name of an opcode (alias for name)
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -3990,7 +1220,7 @@ const name2 = Opcode.getName(0xFF); // "SELFDESTRUCT"
 
 > **getPushSize**(`opcode`): `number`
 
-Defined in: [src/primitives/Opcode/getPushSize.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getPushSize.js#L18)
+Defined in: [src/primitives/Opcode/getPushSize.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getPushSize.js#L18)
 
 Get PUSH data size in bytes
 
@@ -3998,7 +1228,7 @@ Get PUSH data size in bytes
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -4023,7 +1253,7 @@ Opcode.getPushSize(Opcode.ADD); // 0
 
 > **getStackEffect**(`opcode`): \{ `pop`: `number`; `push`: `number`; \} \| `undefined`
 
-Defined in: [src/primitives/Opcode/getStackEffect.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getStackEffect.js#L19)
+Defined in: [src/primitives/Opcode/getStackEffect.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getStackEffect.js#L19)
 
 Get stack effect for an opcode
 
@@ -4031,7 +1261,7 @@ Get stack effect for an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -4057,7 +1287,7 @@ const effect2 = Opcode.getStackEffect(Opcode.DUP1);
 
 > **getStackInput**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/getStackInput.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getStackInput.js#L16)
+Defined in: [src/primitives/Opcode/getStackInput.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getStackInput.js#L16)
 
 Get number of stack items consumed by an opcode
 
@@ -4065,7 +1295,7 @@ Get number of stack items consumed by an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -4088,7 +1318,7 @@ const inputs2 = Opcode.getStackInput(Opcode.PUSH1); // 0
 
 > **getStackOutput**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/getStackOutput.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/getStackOutput.js#L16)
+Defined in: [src/primitives/Opcode/getStackOutput.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/getStackOutput.js#L16)
 
 Get number of stack items produced by an opcode
 
@@ -4096,7 +1326,7 @@ Get number of stack items produced by an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -4117,9 +1347,9 @@ const outputs2 = Opcode.getStackOutput(Opcode.PUSH1); // 1
 
 ### info()
 
-> **info**(`opcode`): [`Info`](#info) \| `undefined`
+> **info**(`opcode`): [`Info`](../../primitives/Opcode.mdx#info) \| `undefined`
 
-Defined in: [src/primitives/Opcode/info.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/info.js#L17)
+Defined in: [src/primitives/Opcode/info.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/info.js#L17)
 
 Get metadata for an opcode
 
@@ -4127,13 +1357,13 @@ Get metadata for an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
 #### Returns
 
-[`Info`](#info) \| `undefined`
+[`Info`](../../primitives/Opcode.mdx#info) \| `undefined`
 
 Metadata with gas cost and stack requirements
 
@@ -4151,7 +1381,7 @@ console.log(info?.gasCost); // 3
 
 > **isDup**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isDup.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isDup.js#L16)
+Defined in: [src/primitives/Opcode/isDup.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isDup.js#L16)
 
 Check if opcode is a DUP instruction
 
@@ -4159,7 +1389,7 @@ Check if opcode is a DUP instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -4182,7 +1412,7 @@ Opcode.isDup(Opcode.ADD); // false
 
 > **isJump**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isJump.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isJump.js#L17)
+Defined in: [src/primitives/Opcode/isJump.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isJump.js#L17)
 
 Check if opcode is a jump
 
@@ -4190,7 +1420,7 @@ Check if opcode is a jump
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -4214,7 +1444,7 @@ Opcode.isJump(Opcode.ADD); // false
 
 > **isJumpDestination**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isJumpDestination.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isJumpDestination.js#L16)
+Defined in: [src/primitives/Opcode/isJumpDestination.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isJumpDestination.js#L16)
 
 Check if opcode is JUMPDEST
 
@@ -4222,7 +1452,7 @@ Check if opcode is JUMPDEST
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -4245,7 +1475,7 @@ Opcode.isJumpDestination(Opcode.JUMP); // false
 
 > **isLog**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isLog.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isLog.js#L16)
+Defined in: [src/primitives/Opcode/isLog.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isLog.js#L16)
 
 Check if opcode is a LOG instruction
 
@@ -4253,7 +1483,7 @@ Check if opcode is a LOG instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -4276,7 +1506,7 @@ Opcode.isLog(Opcode.ADD); // false
 
 > **isPush**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isPush.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isPush.js#L16)
+Defined in: [src/primitives/Opcode/isPush.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isPush.js#L16)
 
 Check if opcode is a PUSH instruction
 
@@ -4284,7 +1514,7 @@ Check if opcode is a PUSH instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -4307,7 +1537,7 @@ Opcode.isPush(Opcode.ADD); // false
 
 > **isSwap**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isSwap.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isSwap.js#L16)
+Defined in: [src/primitives/Opcode/isSwap.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isSwap.js#L16)
 
 Check if opcode is a SWAP instruction
 
@@ -4315,7 +1545,7 @@ Check if opcode is a SWAP instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -4338,7 +1568,7 @@ Opcode.isSwap(Opcode.ADD); // false
 
 > **isTerminating**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isTerminating.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isTerminating.js#L16)
+Defined in: [src/primitives/Opcode/isTerminating.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isTerminating.js#L16)
 
 Check if opcode terminates execution
 
@@ -4346,7 +1576,7 @@ Check if opcode terminates execution
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -4369,7 +1599,7 @@ Opcode.isTerminating(Opcode.ADD); // false
 
 > **isTerminator**(`opcode`): `boolean`
 
-Defined in: [src/primitives/Opcode/isTerminator.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isTerminator.js#L16)
+Defined in: [src/primitives/Opcode/isTerminator.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isTerminator.js#L16)
 
 Check if opcode terminates execution (alias for isTerminating)
 
@@ -4377,7 +1607,7 @@ Check if opcode terminates execution (alias for isTerminating)
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to check
 
@@ -4400,7 +1630,7 @@ Opcode.isTerminator(Opcode.ADD); // false
 
 > **isValid**(`opcode`): `opcode is BrandedOpcode`
 
-Defined in: [src/primitives/Opcode/isValid.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isValid.js#L16)
+Defined in: [src/primitives/Opcode/isValid.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isValid.js#L16)
 
 Check if opcode is valid
 
@@ -4431,7 +1661,7 @@ Opcode.isValid(0x0c); // false (undefined)
 
 > **isValidJumpDest**(`bytecode`, `offset`): `boolean`
 
-Defined in: [src/primitives/Opcode/isValidJumpDest.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isValidJumpDest.js#L18)
+Defined in: [src/primitives/Opcode/isValidJumpDest.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isValidJumpDest.js#L18)
 
 Check if offset is a valid jump destination
 
@@ -4469,7 +1699,7 @@ Opcode.isValidJumpDest(bytecode, 2); // false (immediate data)
 
 > **isValidOpcode**(`value`): `boolean`
 
-Defined in: [src/primitives/Opcode/isValidOpcode.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/isValidOpcode.js#L17)
+Defined in: [src/primitives/Opcode/isValidOpcode.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/isValidOpcode.js#L17)
 
 Check if value is a valid opcode (alias for isValid)
 
@@ -4501,7 +1731,7 @@ Opcode.isValidOpcode(0x0C); // false
 
 > **jumpDests**(`bytecode`): `Set`\<`number`\>
 
-Defined in: [src/primitives/Opcode/jumpDests.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/jumpDests.js#L17)
+Defined in: [src/primitives/Opcode/jumpDests.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/jumpDests.js#L17)
 
 Find all valid JUMPDEST locations
 
@@ -4532,7 +1762,7 @@ const dests = Opcode.jumpDests(bytecode); // Set { 0, 3 }
 
 > **logTopics**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/logTopics.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/logTopics.js#L17)
+Defined in: [src/primitives/Opcode/logTopics.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/logTopics.js#L17)
 
 Get number of topics for LOG instruction
 
@@ -4540,7 +1770,7 @@ Get number of topics for LOG instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -4564,7 +1794,7 @@ Opcode.logTopics(Opcode.ADD); // undefined
 
 > **name**(`opcode`): `string`
 
-Defined in: [src/primitives/Opcode/name.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/name.js#L15)
+Defined in: [src/primitives/Opcode/name.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/name.js#L15)
 
 Get name of an opcode
 
@@ -4572,7 +1802,7 @@ Get name of an opcode
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -4592,9 +1822,9 @@ const name = Opcode.name(Opcode.ADD); // "ADD"
 
 ### parse()
 
-> **parse**(`bytecode`): [`Instruction`](#instruction)[]
+> **parse**(`bytecode`): [`Instruction`](../../primitives/Opcode.mdx#instruction)[]
 
-Defined in: [src/primitives/Opcode/parse.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/parse.js#L21)
+Defined in: [src/primitives/Opcode/parse.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/parse.js#L21)
 
 Parse bytecode into instructions
 
@@ -4608,7 +1838,7 @@ Raw bytecode bytes
 
 #### Returns
 
-[`Instruction`](#instruction)[]
+[`Instruction`](../../primitives/Opcode.mdx#instruction)[]
 
 Array of parsed instructions
 
@@ -4630,7 +1860,7 @@ const instructions = Opcode.parse(bytecode);
 
 > **pushBytes**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/pushBytes.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/pushBytes.js#L18)
+Defined in: [src/primitives/Opcode/pushBytes.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/pushBytes.js#L18)
 
 Get number of bytes pushed by PUSH instruction
 
@@ -4638,7 +1868,7 @@ Get number of bytes pushed by PUSH instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -4661,9 +1891,9 @@ Opcode.pushBytes(Opcode.ADD); // undefined
 
 ### pushOpcode()
 
-> **pushOpcode**(`bytes`): [`BrandedOpcode`](#brandedopcode)
+> **pushOpcode**(`bytes`): [`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
-Defined in: [src/primitives/Opcode/pushOpcode.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/pushOpcode.js#L19)
+Defined in: [src/primitives/Opcode/pushOpcode.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/pushOpcode.js#L19)
 
 Get PUSH opcode for given byte count
 
@@ -4677,7 +1907,7 @@ Number of bytes (0-32)
 
 #### Returns
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 PUSH opcode for that size
 
@@ -4699,7 +1929,7 @@ Opcode.pushOpcode(0); // Opcode.PUSH0
 
 > **swapPosition**(`opcode`): `number` \| `undefined`
 
-Defined in: [src/primitives/Opcode/swapPosition.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Opcode/swapPosition.js#L17)
+Defined in: [src/primitives/Opcode/swapPosition.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/swapPosition.js#L17)
 
 Get position for SWAP instruction
 
@@ -4707,7 +1937,7 @@ Get position for SWAP instruction
 
 ##### opcode
 
-[`BrandedOpcode`](#brandedopcode)
+[`BrandedOpcode`](../../primitives/Opcode.mdx#brandedopcode)
 
 Opcode to query
 
@@ -4727,6 +1957,930 @@ Opcode.swapPosition(Opcode.ADD); // undefined
 
 ## References
 
+### ADD
+
+Re-exports [ADD](../../primitives/Opcode.mdx#add)
+
+***
+
+### ADDMOD
+
+Re-exports [ADDMOD](../../primitives/Opcode.mdx#addmod)
+
+***
+
+### ADDRESS
+
+Re-exports [ADDRESS](../../primitives/Opcode.mdx#address)
+
+***
+
+### AND
+
+Re-exports [AND](../../primitives/Opcode.mdx#and)
+
+***
+
+### AUTH
+
+Re-exports [AUTH](../../primitives/Opcode.mdx#auth)
+
+***
+
+### AUTHCALL
+
+Re-exports [AUTHCALL](../../primitives/Opcode.mdx#authcall)
+
+***
+
+### BALANCE
+
+Re-exports [BALANCE](../../primitives/Opcode.mdx#balance)
+
+***
+
+### BASEFEE
+
+Re-exports [BASEFEE](../../primitives/Opcode.mdx#basefee)
+
+***
+
+### BLOBBASEFEE
+
+Re-exports [BLOBBASEFEE](../../primitives/Opcode.mdx#blobbasefee)
+
+***
+
+### BLOBHASH
+
+Re-exports [BLOBHASH](../../primitives/Opcode.mdx#blobhash)
+
+***
+
+### BLOCKHASH
+
+Re-exports [BLOCKHASH](../../primitives/Opcode.mdx#blockhash)
+
+***
+
+### BrandedOpcode
+
+Re-exports [BrandedOpcode](../../primitives/Opcode.mdx#brandedopcode-1)
+
+***
+
+### BYTE
+
+Re-exports [BYTE](../../primitives/Opcode.mdx#byte-1)
+
+***
+
+### CALL
+
+Re-exports [CALL](../../primitives/Opcode.mdx#call-1)
+
+***
+
+### CALLCODE
+
+Re-exports [CALLCODE](../../primitives/Opcode.mdx#callcode-1)
+
+***
+
+### CALLDATACOPY
+
+Re-exports [CALLDATACOPY](../../primitives/Opcode.mdx#calldatacopy-1)
+
+***
+
+### CALLDATALOAD
+
+Re-exports [CALLDATALOAD](../../primitives/Opcode.mdx#calldataload-1)
+
+***
+
+### CALLDATASIZE
+
+Re-exports [CALLDATASIZE](../../primitives/Opcode.mdx#calldatasize-1)
+
+***
+
+### CALLER
+
+Re-exports [CALLER](../../primitives/Opcode.mdx#caller-1)
+
+***
+
+### CALLVALUE
+
+Re-exports [CALLVALUE](../../primitives/Opcode.mdx#callvalue-1)
+
+***
+
+### CHAINID
+
+Re-exports [CHAINID](../../primitives/Opcode.mdx#chainid-1)
+
+***
+
+### CODECOPY
+
+Re-exports [CODECOPY](../../primitives/Opcode.mdx#codecopy-1)
+
+***
+
+### CODESIZE
+
+Re-exports [CODESIZE](../../primitives/Opcode.mdx#codesize-1)
+
+***
+
+### COINBASE
+
+Re-exports [COINBASE](../../primitives/Opcode.mdx#coinbase-1)
+
+***
+
+### CREATE
+
+Re-exports [CREATE](../../primitives/Opcode.mdx#create-1)
+
+***
+
+### CREATE2
+
+Re-exports [CREATE2](../../primitives/Opcode.mdx#create2-1)
+
+***
+
+### DELEGATECALL
+
+Re-exports [DELEGATECALL](../../primitives/Opcode.mdx#delegatecall-1)
+
+***
+
+### DIFFICULTY
+
+Re-exports [DIFFICULTY](../../primitives/Opcode.mdx#difficulty-1)
+
+***
+
+### DIV
+
+Re-exports [DIV](../../primitives/Opcode.mdx#div-1)
+
+***
+
+### DUP1
+
+Re-exports [DUP1](../../primitives/Opcode.mdx#dup1-1)
+
+***
+
+### DUP10
+
+Re-exports [DUP10](../../primitives/Opcode.mdx#dup10-1)
+
+***
+
+### DUP11
+
+Re-exports [DUP11](../../primitives/Opcode.mdx#dup11-1)
+
+***
+
+### DUP12
+
+Re-exports [DUP12](../../primitives/Opcode.mdx#dup12-1)
+
+***
+
+### DUP13
+
+Re-exports [DUP13](../../primitives/Opcode.mdx#dup13-1)
+
+***
+
+### DUP14
+
+Re-exports [DUP14](../../primitives/Opcode.mdx#dup14-1)
+
+***
+
+### DUP15
+
+Re-exports [DUP15](../../primitives/Opcode.mdx#dup15-1)
+
+***
+
+### DUP16
+
+Re-exports [DUP16](../../primitives/Opcode.mdx#dup16-1)
+
+***
+
+### DUP2
+
+Re-exports [DUP2](../../primitives/Opcode.mdx#dup2-1)
+
+***
+
+### DUP3
+
+Re-exports [DUP3](../../primitives/Opcode.mdx#dup3-1)
+
+***
+
+### DUP4
+
+Re-exports [DUP4](../../primitives/Opcode.mdx#dup4-1)
+
+***
+
+### DUP5
+
+Re-exports [DUP5](../../primitives/Opcode.mdx#dup5-1)
+
+***
+
+### DUP6
+
+Re-exports [DUP6](../../primitives/Opcode.mdx#dup6-1)
+
+***
+
+### DUP7
+
+Re-exports [DUP7](../../primitives/Opcode.mdx#dup7-1)
+
+***
+
+### DUP8
+
+Re-exports [DUP8](../../primitives/Opcode.mdx#dup8-1)
+
+***
+
+### DUP9
+
+Re-exports [DUP9](../../primitives/Opcode.mdx#dup9-1)
+
+***
+
+### EQ
+
+Re-exports [EQ](../../primitives/Opcode.mdx#eq-1)
+
+***
+
+### EXP
+
+Re-exports [EXP](../../primitives/Opcode.mdx#exp-1)
+
+***
+
+### EXTCODECOPY
+
+Re-exports [EXTCODECOPY](../../primitives/Opcode.mdx#extcodecopy-1)
+
+***
+
+### EXTCODEHASH
+
+Re-exports [EXTCODEHASH](../../primitives/Opcode.mdx#extcodehash-1)
+
+***
+
+### EXTCODESIZE
+
+Re-exports [EXTCODESIZE](../../primitives/Opcode.mdx#extcodesize-1)
+
+***
+
+### GAS
+
+Re-exports [GAS](../../primitives/Opcode.mdx#gas-1)
+
+***
+
+### GASLIMIT
+
+Re-exports [GASLIMIT](../../primitives/Opcode.mdx#gaslimit-1)
+
+***
+
+### GASPRICE
+
+Re-exports [GASPRICE](../../primitives/Opcode.mdx#gasprice-1)
+
+***
+
+### GT
+
+Re-exports [GT](../../primitives/Opcode.mdx#gt-1)
+
+***
+
+### Info
+
+Re-exports [Info](../../primitives/Opcode.mdx#info)
+
+***
+
+### Instruction
+
+Re-exports [Instruction](../../primitives/Opcode.mdx#instruction)
+
+***
+
+### INVALID
+
+Re-exports [INVALID](../../primitives/Opcode.mdx#invalid-1)
+
+***
+
+### ISZERO
+
+Re-exports [ISZERO](../../primitives/Opcode.mdx#iszero-1)
+
+***
+
+### JUMP
+
+Re-exports [JUMP](../../primitives/Opcode.mdx#jump-1)
+
+***
+
+### JUMPDEST
+
+Re-exports [JUMPDEST](../../primitives/Opcode.mdx#jumpdest-1)
+
+***
+
+### JUMPI
+
+Re-exports [JUMPI](../../primitives/Opcode.mdx#jumpi-1)
+
+***
+
+### KECCAK256
+
+Re-exports [KECCAK256](../../primitives/Opcode.mdx#keccak256-1)
+
+***
+
+### LOG0
+
+Re-exports [LOG0](../../primitives/Opcode.mdx#log0-1)
+
+***
+
+### LOG1
+
+Re-exports [LOG1](../../primitives/Opcode.mdx#log1-1)
+
+***
+
+### LOG2
+
+Re-exports [LOG2](../../primitives/Opcode.mdx#log2-1)
+
+***
+
+### LOG3
+
+Re-exports [LOG3](../../primitives/Opcode.mdx#log3-1)
+
+***
+
+### LOG4
+
+Re-exports [LOG4](../../primitives/Opcode.mdx#log4-1)
+
+***
+
+### LT
+
+Re-exports [LT](../../primitives/Opcode.mdx#lt-1)
+
+***
+
+### MCOPY
+
+Re-exports [MCOPY](../../primitives/Opcode.mdx#mcopy-1)
+
+***
+
+### MLOAD
+
+Re-exports [MLOAD](../../primitives/Opcode.mdx#mload-1)
+
+***
+
+### MOD
+
+Re-exports [MOD](../../primitives/Opcode.mdx#mod-1)
+
+***
+
+### MSIZE
+
+Re-exports [MSIZE](../../primitives/Opcode.mdx#msize-1)
+
+***
+
+### MSTORE
+
+Re-exports [MSTORE](../../primitives/Opcode.mdx#mstore-1)
+
+***
+
+### MSTORE8
+
+Re-exports [MSTORE8](../../primitives/Opcode.mdx#mstore8-1)
+
+***
+
+### MUL
+
+Re-exports [MUL](../../primitives/Opcode.mdx#mul-1)
+
+***
+
+### MULMOD
+
+Re-exports [MULMOD](../../primitives/Opcode.mdx#mulmod-1)
+
+***
+
+### NOT
+
+Re-exports [NOT](../../primitives/Opcode.mdx#not-1)
+
+***
+
+### NUMBER
+
+Re-exports [NUMBER](../../primitives/Opcode.mdx#number-1)
+
+***
+
 ### Opcode
 
 Re-exports [Opcode](../index.mdx#opcode)
+
+***
+
+### OR
+
+Re-exports [OR](../../primitives/Opcode.mdx#or-1)
+
+***
+
+### ORIGIN
+
+Re-exports [ORIGIN](../../primitives/Opcode.mdx#origin-1)
+
+***
+
+### PC
+
+Re-exports [PC](../../primitives/Opcode.mdx#pc-1)
+
+***
+
+### POP
+
+Re-exports [POP](../../primitives/Opcode.mdx#pop-1)
+
+***
+
+### PUSH0
+
+Re-exports [PUSH0](../../primitives/Opcode.mdx#push0-1)
+
+***
+
+### PUSH1
+
+Re-exports [PUSH1](../../primitives/Opcode.mdx#push1-1)
+
+***
+
+### PUSH10
+
+Re-exports [PUSH10](../../primitives/Opcode.mdx#push10-1)
+
+***
+
+### PUSH11
+
+Re-exports [PUSH11](../../primitives/Opcode.mdx#push11-1)
+
+***
+
+### PUSH12
+
+Re-exports [PUSH12](../../primitives/Opcode.mdx#push12-1)
+
+***
+
+### PUSH13
+
+Re-exports [PUSH13](../../primitives/Opcode.mdx#push13-1)
+
+***
+
+### PUSH14
+
+Re-exports [PUSH14](../../primitives/Opcode.mdx#push14-1)
+
+***
+
+### PUSH15
+
+Re-exports [PUSH15](../../primitives/Opcode.mdx#push15-1)
+
+***
+
+### PUSH16
+
+Re-exports [PUSH16](../../primitives/Opcode.mdx#push16-1)
+
+***
+
+### PUSH17
+
+Re-exports [PUSH17](../../primitives/Opcode.mdx#push17-1)
+
+***
+
+### PUSH18
+
+Re-exports [PUSH18](../../primitives/Opcode.mdx#push18-1)
+
+***
+
+### PUSH19
+
+Re-exports [PUSH19](../../primitives/Opcode.mdx#push19-1)
+
+***
+
+### PUSH2
+
+Re-exports [PUSH2](../../primitives/Opcode.mdx#push2-1)
+
+***
+
+### PUSH20
+
+Re-exports [PUSH20](../../primitives/Opcode.mdx#push20-1)
+
+***
+
+### PUSH21
+
+Re-exports [PUSH21](../../primitives/Opcode.mdx#push21-1)
+
+***
+
+### PUSH22
+
+Re-exports [PUSH22](../../primitives/Opcode.mdx#push22-1)
+
+***
+
+### PUSH23
+
+Re-exports [PUSH23](../../primitives/Opcode.mdx#push23-1)
+
+***
+
+### PUSH24
+
+Re-exports [PUSH24](../../primitives/Opcode.mdx#push24-1)
+
+***
+
+### PUSH25
+
+Re-exports [PUSH25](../../primitives/Opcode.mdx#push25-1)
+
+***
+
+### PUSH26
+
+Re-exports [PUSH26](../../primitives/Opcode.mdx#push26-1)
+
+***
+
+### PUSH27
+
+Re-exports [PUSH27](../../primitives/Opcode.mdx#push27-1)
+
+***
+
+### PUSH28
+
+Re-exports [PUSH28](../../primitives/Opcode.mdx#push28-1)
+
+***
+
+### PUSH29
+
+Re-exports [PUSH29](../../primitives/Opcode.mdx#push29-1)
+
+***
+
+### PUSH3
+
+Re-exports [PUSH3](../../primitives/Opcode.mdx#push3-1)
+
+***
+
+### PUSH30
+
+Re-exports [PUSH30](../../primitives/Opcode.mdx#push30-1)
+
+***
+
+### PUSH31
+
+Re-exports [PUSH31](../../primitives/Opcode.mdx#push31-1)
+
+***
+
+### PUSH32
+
+Re-exports [PUSH32](../../primitives/Opcode.mdx#push32-1)
+
+***
+
+### PUSH4
+
+Re-exports [PUSH4](../../primitives/Opcode.mdx#push4-1)
+
+***
+
+### PUSH5
+
+Re-exports [PUSH5](../../primitives/Opcode.mdx#push5-1)
+
+***
+
+### PUSH6
+
+Re-exports [PUSH6](../../primitives/Opcode.mdx#push6-1)
+
+***
+
+### PUSH7
+
+Re-exports [PUSH7](../../primitives/Opcode.mdx#push7-1)
+
+***
+
+### PUSH8
+
+Re-exports [PUSH8](../../primitives/Opcode.mdx#push8-1)
+
+***
+
+### PUSH9
+
+Re-exports [PUSH9](../../primitives/Opcode.mdx#push9-1)
+
+***
+
+### RETURN
+
+Re-exports [RETURN](../../primitives/Opcode.mdx#return-1)
+
+***
+
+### RETURNDATACOPY
+
+Re-exports [RETURNDATACOPY](../../primitives/Opcode.mdx#returndatacopy-1)
+
+***
+
+### RETURNDATASIZE
+
+Re-exports [RETURNDATASIZE](../../primitives/Opcode.mdx#returndatasize-1)
+
+***
+
+### REVERT
+
+Re-exports [REVERT](../../primitives/Opcode.mdx#revert-1)
+
+***
+
+### SAR
+
+Re-exports [SAR](../../primitives/Opcode.mdx#sar-1)
+
+***
+
+### SDIV
+
+Re-exports [SDIV](../../primitives/Opcode.mdx#sdiv-1)
+
+***
+
+### SELFBALANCE
+
+Re-exports [SELFBALANCE](../../primitives/Opcode.mdx#selfbalance-1)
+
+***
+
+### SELFDESTRUCT
+
+Re-exports [SELFDESTRUCT](../../primitives/Opcode.mdx#selfdestruct-1)
+
+***
+
+### SGT
+
+Re-exports [SGT](../../primitives/Opcode.mdx#sgt-1)
+
+***
+
+### SHL
+
+Re-exports [SHL](../../primitives/Opcode.mdx#shl-1)
+
+***
+
+### SHR
+
+Re-exports [SHR](../../primitives/Opcode.mdx#shr-1)
+
+***
+
+### SIGNEXTEND
+
+Re-exports [SIGNEXTEND](../../primitives/Opcode.mdx#signextend-1)
+
+***
+
+### SLOAD
+
+Re-exports [SLOAD](../../primitives/Opcode.mdx#sload-1)
+
+***
+
+### SLT
+
+Re-exports [SLT](../../primitives/Opcode.mdx#slt-1)
+
+***
+
+### SMOD
+
+Re-exports [SMOD](../../primitives/Opcode.mdx#smod-1)
+
+***
+
+### SSTORE
+
+Re-exports [SSTORE](../../primitives/Opcode.mdx#sstore-1)
+
+***
+
+### STATICCALL
+
+Re-exports [STATICCALL](../../primitives/Opcode.mdx#staticcall-1)
+
+***
+
+### STOP
+
+Re-exports [STOP](../../primitives/Opcode.mdx#stop-1)
+
+***
+
+### SUB
+
+Re-exports [SUB](../../primitives/Opcode.mdx#sub-1)
+
+***
+
+### SWAP1
+
+Re-exports [SWAP1](../../primitives/Opcode.mdx#swap1-1)
+
+***
+
+### SWAP10
+
+Re-exports [SWAP10](../../primitives/Opcode.mdx#swap10-1)
+
+***
+
+### SWAP11
+
+Re-exports [SWAP11](../../primitives/Opcode.mdx#swap11-1)
+
+***
+
+### SWAP12
+
+Re-exports [SWAP12](../../primitives/Opcode.mdx#swap12-1)
+
+***
+
+### SWAP13
+
+Re-exports [SWAP13](../../primitives/Opcode.mdx#swap13-1)
+
+***
+
+### SWAP14
+
+Re-exports [SWAP14](../../primitives/Opcode.mdx#swap14-1)
+
+***
+
+### SWAP15
+
+Re-exports [SWAP15](../../primitives/Opcode.mdx#swap15-1)
+
+***
+
+### SWAP16
+
+Re-exports [SWAP16](../../primitives/Opcode.mdx#swap16-1)
+
+***
+
+### SWAP2
+
+Re-exports [SWAP2](../../primitives/Opcode.mdx#swap2-1)
+
+***
+
+### SWAP3
+
+Re-exports [SWAP3](../../primitives/Opcode.mdx#swap3-1)
+
+***
+
+### SWAP4
+
+Re-exports [SWAP4](../../primitives/Opcode.mdx#swap4-1)
+
+***
+
+### SWAP5
+
+Re-exports [SWAP5](../../primitives/Opcode.mdx#swap5-1)
+
+***
+
+### SWAP6
+
+Re-exports [SWAP6](../../primitives/Opcode.mdx#swap6-1)
+
+***
+
+### SWAP7
+
+Re-exports [SWAP7](../../primitives/Opcode.mdx#swap7-1)
+
+***
+
+### SWAP8
+
+Re-exports [SWAP8](../../primitives/Opcode.mdx#swap8-1)
+
+***
+
+### SWAP9
+
+Re-exports [SWAP9](../../primitives/Opcode.mdx#swap9-1)
+
+***
+
+### TIMESTAMP
+
+Re-exports [TIMESTAMP](../../primitives/Opcode.mdx#timestamp-1)
+
+***
+
+### TLOAD
+
+Re-exports [TLOAD](../../primitives/Opcode.mdx#tload-1)
+
+***
+
+### TSTORE
+
+Re-exports [TSTORE](../../primitives/Opcode.mdx#tstore-1)
+
+***
+
+### XOR
+
+Re-exports [XOR](../../primitives/Opcode.mdx#xor-1)

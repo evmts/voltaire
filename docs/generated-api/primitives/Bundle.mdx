@@ -1,0 +1,331 @@
+---
+title: "primitives/Bundle"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Bundle
+
+# primitives/Bundle
+
+## Classes
+
+### InvalidBundleError
+
+Defined in: [src/primitives/Bundle/errors.js:6](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/errors.js#L6)
+
+Error thrown when bundle operations fail
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidBundleError**(`message`, `details`): [`InvalidBundleError`](#invalidbundleerror)
+
+Defined in: [src/primitives/Bundle/errors.js:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/errors.js#L7)
+
+###### Parameters
+
+###### message
+
+`any`
+
+###### details
+
+`any`
+
+###### Returns
+
+[`InvalidBundleError`](#invalidbundleerror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### details
+
+> **details**: `any`
+
+Defined in: [src/primitives/Bundle/errors.js:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/errors.js#L10)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Bundle/errors.js:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/errors.js#L9)
+
+###### Inherited from
+
+`Error.name`
+
+## Type Aliases
+
+### BundleLike
+
+> **BundleLike** = [`BundleType`](#bundletype) \| \{ `blockNumber?`: [`BlockNumberType`](BlockNumber.mdx#blocknumbertype) \| `bigint` \| `number` \| `string`; `maxTimestamp?`: [`Type`](Uint.mdx#type) \| `bigint` \| `number` \| `string`; `minTimestamp?`: [`Type`](Uint.mdx#type) \| `bigint` \| `number` \| `string`; `revertingTxHashes?`: ([`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `string`)[]; `transactions`: (`Uint8Array` \| `string`)[]; \}
+
+Defined in: [src/primitives/Bundle/BundleType.ts:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/BundleType.ts#L53)
+
+Inputs that can be converted to Bundle
+
+***
+
+### BundleType
+
+> **BundleType** = `object`
+
+Defined in: [src/primitives/Bundle/BundleType.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/BundleType.ts#L17)
+
+Bundle type
+
+Represents a transaction bundle for MEV (Maximal Extractable Value) strategies.
+Bundles are atomic collections of transactions submitted to block builders via
+MEV relays like Flashbots. All transactions in a bundle execute sequentially
+in the same block or the bundle is discarded.
+
+#### See
+
+ - https://voltaire.tevm.sh/primitives/bundle for Bundle documentation
+ - https://docs.flashbots.net/flashbots-auction/overview for Flashbots Auction
+
+#### Since
+
+0.0.0
+
+#### Properties
+
+##### blockNumber?
+
+> `readonly` `optional` **blockNumber**: [`BlockNumberType`](BlockNumber.mdx#blocknumbertype)
+
+Defined in: [src/primitives/Bundle/BundleType.ts:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/BundleType.ts#L28)
+
+Target block number for bundle inclusion (optional)
+If specified, bundle is only valid for this block
+
+##### maxTimestamp?
+
+> `readonly` `optional` **maxTimestamp**: [`Type`](Uint.mdx#type)
+
+Defined in: [src/primitives/Bundle/BundleType.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/BundleType.ts#L40)
+
+Maximum block timestamp for bundle inclusion (optional)
+Bundle will not be included after this timestamp
+
+##### minTimestamp?
+
+> `readonly` `optional` **minTimestamp**: [`Type`](Uint.mdx#type)
+
+Defined in: [src/primitives/Bundle/BundleType.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/BundleType.ts#L34)
+
+Minimum block timestamp for bundle inclusion (optional)
+Bundle will not be included before this timestamp
+
+##### revertingTxHashes?
+
+> `readonly` `optional` **revertingTxHashes**: readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Defined in: [src/primitives/Bundle/BundleType.ts:47](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/BundleType.ts#L47)
+
+Transaction hashes allowed to revert (optional)
+If any other transaction reverts, entire bundle is discarded
+If a hash in this array reverts, bundle continues execution
+
+##### transactions
+
+> `readonly` **transactions**: readonly `Uint8Array`[]
+
+Defined in: [src/primitives/Bundle/BundleType.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/BundleType.ts#L22)
+
+Ordered array of signed transaction bytes
+All transactions execute sequentially in this order
+
+## Functions
+
+### addTransaction()
+
+> **addTransaction**(`bundle`, `transaction`): [`BundleType`](#bundletype)
+
+Defined in: [src/primitives/Bundle/addTransaction.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/addTransaction.js#L19)
+
+Adds a transaction to the bundle
+
+#### Parameters
+
+##### bundle
+
+[`BundleType`](#bundletype)
+
+Bundle instance
+
+##### transaction
+
+Signed transaction to add
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`BundleType`](#bundletype)
+
+New bundle with added transaction
+
+#### Example
+
+```typescript
+import * as Bundle from './Bundle/index.js';
+const newBundle = Bundle.addTransaction(bundle, signedTx);
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`BundleType`](#bundletype)
+
+Defined in: [src/primitives/Bundle/from.js:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/from.js#L25)
+
+Creates a Bundle from various input types
+
+#### Parameters
+
+##### value
+
+[`BundleLike`](#bundlelike)
+
+Bundle input
+
+#### Returns
+
+[`BundleType`](#bundletype)
+
+Bundle instance
+
+#### Throws
+
+If bundle format is invalid
+
+#### Example
+
+```typescript
+import * as Bundle from './Bundle/index.js';
+const bundle = Bundle.from({
+  transactions: [tx1, tx2],
+  blockNumber: 123456n,
+});
+```
+
+***
+
+### size()
+
+> **size**(`bundle`): `number`
+
+Defined in: [src/primitives/Bundle/size.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/size.js#L19)
+
+Returns the number of transactions in the bundle
+
+#### Parameters
+
+##### bundle
+
+[`BundleType`](#bundletype)
+
+Bundle instance
+
+#### Returns
+
+`number`
+
+Number of transactions
+
+#### Example
+
+```typescript
+import * as Bundle from './Bundle/index.js';
+const count = Bundle.size(bundle);
+console.log(`Bundle contains ${count} transactions`);
+```
+
+***
+
+### toFlashbotsParams()
+
+> **toFlashbotsParams**(`bundle`): `object`
+
+Defined in: [src/primitives/Bundle/toFlashbotsParams.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/toFlashbotsParams.js#L19)
+
+Converts bundle to Flashbots RPC parameters
+
+#### Parameters
+
+##### bundle
+
+[`BundleType`](#bundletype)
+
+Bundle instance
+
+#### Returns
+
+`object`
+
+Flashbots eth_sendBundle parameters
+
+#### Example
+
+```typescript
+import * as Bundle from './Bundle/index.js';
+const params = Bundle.toFlashbotsParams(bundle);
+await flashbots.request({ method: "eth_sendBundle", params: [params] });
+```
+
+***
+
+### toHash()
+
+> **toHash**(`bundle`, `crypto`): [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Defined in: [src/primitives/Bundle/toHash.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundle/toHash.js#L22)
+
+Computes the bundle hash (keccak256 of bundle contents)
+
+#### Parameters
+
+##### bundle
+
+[`BundleType`](#bundletype)
+
+Bundle instance
+
+##### crypto
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 function
+
+#### Returns
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Bundle hash
+
+#### Example
+
+```typescript
+import * as Bundle from './Bundle/index.js';
+import { keccak256 } from './crypto/keccak256.js';
+const hash = Bundle.toHash(bundle, { keccak256 });
+```

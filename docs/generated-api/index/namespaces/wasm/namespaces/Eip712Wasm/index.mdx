@@ -21,15 +21,15 @@ title: Generated API Reference
 
 > **Signature** = [`Signature`](../Secp256k1Wasm/index.mdx#signature)
 
-Defined in: [src/crypto/eip712.wasm.ts:54](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L54)
+Defined in: [src/crypto/eip712.wasm.ts:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L54)
 
 ***
 
 ### Types
 
-> **Types** = `TypeDefinitions`
+> **Types** = [`TypeDefinitions`](../../../../../crypto/EIP712.mdx#typedefinitions)
 
-Defined in: [src/crypto/eip712.wasm.ts:55](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L55)
+Defined in: [src/crypto/eip712.wasm.ts:55](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L55)
 
 ## Functions
 
@@ -37,7 +37,7 @@ Defined in: [src/crypto/eip712.wasm.ts:55](https://github.com/evmts/voltaire/blo
 
 > **encodeData**(`primaryType`, `message`, `types`): `Uint8Array`
 
-Defined in: [src/crypto/eip712.wasm.ts:253](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L253)
+Defined in: [src/crypto/eip712.wasm.ts:253](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L253)
 
 Encode data for struct
 
@@ -51,13 +51,13 @@ Name of struct type
 
 ##### message
 
-`Message`
+[`Message`](../../../../../crypto/EIP712.mdx#message)
 
 Message data
 
 ##### types
 
-`TypeDefinitions`
+[`TypeDefinitions`](../../../../../crypto/EIP712.mdx#typedefinitions)
 
 Type definitions
 
@@ -73,7 +73,7 @@ Encoded data
 
 > **encodeType**(`primaryType`, `types`): `string`
 
-Defined in: [src/crypto/eip712.wasm.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L110)
+Defined in: [src/crypto/eip712.wasm.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L110)
 
 Encode type string (e.g., "Mail(Person from,Person to,string contents)")
 
@@ -87,7 +87,7 @@ Name of primary type
 
 ##### types
 
-`TypeDefinitions`
+[`TypeDefinitions`](../../../../../crypto/EIP712.mdx#typedefinitions)
 
 Type definitions
 
@@ -103,7 +103,7 @@ Type encoding string
 
 > **encodeValue**(`type`, `value`, `types`): `Uint8Array`
 
-Defined in: [src/crypto/eip712.wasm.ts:170](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L170)
+Defined in: [src/crypto/eip712.wasm.ts:170](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L170)
 
 Encode single value
 
@@ -123,7 +123,7 @@ Value to encode
 
 ##### types
 
-`TypeDefinitions`
+[`TypeDefinitions`](../../../../../crypto/EIP712.mdx#typedefinitions)
 
 Type definitions (for structs)
 
@@ -139,7 +139,7 @@ Type definitions (for structs)
 
 > **format**(`typedData`): `string`
 
-Defined in: [src/crypto/eip712.wasm.ts:407](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L407)
+Defined in: [src/crypto/eip712.wasm.ts:407](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L407)
 
 Format typed data for display
 
@@ -147,7 +147,7 @@ Format typed data for display
 
 ##### typedData
 
-`TypedData`
+[`TypedData`](../../../../../crypto/EIP712.mdx#typeddata)
 
 #### Returns
 
@@ -157,9 +157,9 @@ Format typed data for display
 
 ### hashStruct()
 
-> **hashStruct**(`primaryType`, `message`, `types`): [`HashType`](../../../HashType-2.mdx#hashtype)
+> **hashStruct**(`primaryType`, `message`, `types`): [`HashType`](../../../HashType.mdx#hashtype)
 
-Defined in: [src/crypto/eip712.wasm.ts:295](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L295)
+Defined in: [src/crypto/eip712.wasm.ts:295](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L295)
 
 Hash struct
 
@@ -173,19 +173,19 @@ Name of struct type
 
 ##### message
 
-`Message`
+[`Message`](../../../../../crypto/EIP712.mdx#message)
 
 Message data
 
 ##### types
 
-`TypeDefinitions`
+[`TypeDefinitions`](../../../../../crypto/EIP712.mdx#typedefinitions)
 
 Type definitions
 
 #### Returns
 
-[`HashType`](../../../HashType-2.mdx#hashtype)
+[`HashType`](../../../HashType.mdx#hashtype)
 
 32-byte struct hash
 
@@ -193,9 +193,9 @@ Type definitions
 
 ### hashType()
 
-> **hashType**(`primaryType`, `types`): [`HashType`](../../../HashType-2.mdx#hashtype)
+> **hashType**(`primaryType`, `types`): [`HashType`](../../../HashType.mdx#hashtype)
 
-Defined in: [src/crypto/eip712.wasm.ts:152](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L152)
+Defined in: [src/crypto/eip712.wasm.ts:152](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L152)
 
 Hash type string
 
@@ -209,13 +209,13 @@ Name of primary type
 
 ##### types
 
-`TypeDefinitions`
+[`TypeDefinitions`](../../../../../crypto/EIP712.mdx#typedefinitions)
 
 Type definitions
 
 #### Returns
 
-[`HashType`](../../../HashType-2.mdx#hashtype)
+[`HashType`](../../../HashType.mdx#hashtype)
 
 32-byte type hash
 
@@ -223,9 +223,9 @@ Type definitions
 
 ### hashTypedData()
 
-> **hashTypedData**(`typedData`): [`HashType`](../../../HashType-2.mdx#hashtype)
+> **hashTypedData**(`typedData`): [`HashType`](../../../HashType.mdx#hashtype)
 
-Defined in: [src/crypto/eip712.wasm.ts:314](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L314)
+Defined in: [src/crypto/eip712.wasm.ts:314](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L314)
 
 Hash typed data (EIP-712 signing hash)
 
@@ -233,13 +233,13 @@ Hash typed data (EIP-712 signing hash)
 
 ##### typedData
 
-`TypedData`
+[`TypedData`](../../../../../crypto/EIP712.mdx#typeddata)
 
 Complete typed data structure
 
 #### Returns
 
-[`HashType`](../../../HashType-2.mdx#hashtype)
+[`HashType`](../../../HashType.mdx#hashtype)
 
 32-byte hash ready for signing
 
@@ -249,7 +249,7 @@ Complete typed data structure
 
 > **init**(): `Promise`\<`void`\>
 
-Defined in: [src/crypto/eip712.wasm.ts:420](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L420)
+Defined in: [src/crypto/eip712.wasm.ts:420](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L420)
 
 Initialize WASM modules
 
@@ -265,7 +265,7 @@ Must be called before using any Eip712Wasm functions.
 
 > **recoverAddress**(`signature`, `typedData`): [`AddressType`](../../../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/crypto/eip712.wasm.ts:354](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L354)
+Defined in: [src/crypto/eip712.wasm.ts:354](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L354)
 
 Recover signer address from signature
 
@@ -279,7 +279,7 @@ Signature to recover from
 
 ##### typedData
 
-`TypedData`
+[`TypedData`](../../../../../crypto/EIP712.mdx#typeddata)
 
 Typed data that was signed
 
@@ -295,7 +295,7 @@ Recovered address
 
 > **signTypedData**(`typedData`, `privateKey`): [`Signature`](../Secp256k1Wasm/index.mdx#signature)
 
-Defined in: [src/crypto/eip712.wasm.ts:339](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L339)
+Defined in: [src/crypto/eip712.wasm.ts:339](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L339)
 
 Sign typed data with private key
 
@@ -303,7 +303,7 @@ Sign typed data with private key
 
 ##### typedData
 
-`TypedData`
+[`TypedData`](../../../../../crypto/EIP712.mdx#typeddata)
 
 Typed data to sign
 
@@ -325,7 +325,7 @@ Signature (r, s, v)
 
 > **validate**(`typedData`): `boolean`
 
-Defined in: [src/crypto/eip712.wasm.ts:394](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L394)
+Defined in: [src/crypto/eip712.wasm.ts:394](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L394)
 
 Validate typed data structure
 
@@ -333,7 +333,7 @@ Validate typed data structure
 
 ##### typedData
 
-`TypedData`
+[`TypedData`](../../../../../crypto/EIP712.mdx#typeddata)
 
 #### Returns
 
@@ -345,7 +345,7 @@ Validate typed data structure
 
 > **verifyTypedData**(`signature`, `typedData`, `address`): `boolean`
 
-Defined in: [src/crypto/eip712.wasm.ts:374](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/eip712.wasm.ts#L374)
+Defined in: [src/crypto/eip712.wasm.ts:374](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/eip712.wasm.ts#L374)
 
 Verify typed data signature against address
 
@@ -359,7 +359,7 @@ Signature to verify
 
 ##### typedData
 
-`TypedData`
+[`TypedData`](../../../../../crypto/EIP712.mdx#typeddata)
 
 Typed data that was signed
 

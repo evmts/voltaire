@@ -23,7 +23,7 @@ title: Generated API Reference
 
 > `const` **BrandedAddress**: `object`
 
-Defined in: [src/primitives/Address/internal-index.ts:153](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/internal-index.ts#L153)
+Defined in: [src/primitives/Address/internal-index.ts:156](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/internal-index.ts#L156)
 
 #### Type Declaration
 
@@ -99,7 +99,7 @@ For tree-shakeable version without auto-injected crypto, use `CalculateCreate2Ad
 
 ###### arg1
 
-[`HashType`](../HashType-2.mdx#hashtype)
+[`HashType`](../HashType.mdx#hashtype)
 
 ###### arg2
 
@@ -139,7 +139,7 @@ Keccak256 hash function
 
 ###### arg1
 
-[`HashType`](../HashType-2.mdx#hashtype)
+[`HashType`](../HashType.mdx#hashtype)
 
 ###### arg2
 
@@ -1236,7 +1236,7 @@ const zero = Address.zero();
 
 > `const` **calculateCreate2Address**: (`arg0`, `arg1`, `arg2`) => [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/internal-index.ts:59](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/internal-index.ts#L59)
+Defined in: [src/primitives/Address/internal-index.ts:61](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/internal-index.ts#L61)
 
 Calculate CREATE2 contract address (with auto-injected keccak256)
 
@@ -1250,7 +1250,7 @@ For tree-shakeable version without auto-injected crypto, use `CalculateCreate2Ad
 
 ##### arg1
 
-[`HashType`](../HashType-2.mdx#hashtype)
+[`HashType`](../HashType.mdx#hashtype)
 
 ##### arg2
 
@@ -1266,7 +1266,7 @@ For tree-shakeable version without auto-injected crypto, use `CalculateCreate2Ad
 
 > `const` **calculateCreateAddress**: (`address`, `nonce`) => [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/internal-index.ts:49](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/internal-index.ts#L49)
+Defined in: [src/primitives/Address/internal-index.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/internal-index.ts#L51)
 
 Calculate CREATE contract address (with auto-injected keccak256 and rlpEncode)
 
@@ -1292,7 +1292,7 @@ For tree-shakeable version without auto-injected crypto, use `CalculateCreateAdd
 
 > `const` **fromPrivateKey**: (`privateKey`) => [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/internal-index.ts:75](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/internal-index.ts#L75)
+Defined in: [src/primitives/Address/internal-index.ts:77](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/internal-index.ts#L77)
 
 Create Address from secp256k1 private key (with auto-injected crypto)
 
@@ -1314,7 +1314,7 @@ For tree-shakeable version without auto-injected crypto, use `FromPrivateKey({ k
 
 > `const` **fromPublicKey**: (`xOrPublicKey`, `y?`) => [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/internal-index.ts:68](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/internal-index.ts#L68)
+Defined in: [src/primitives/Address/internal-index.ts:70](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/internal-index.ts#L70)
 
 Create Address from secp256k1 public key coordinates (with auto-injected keccak256)
 
@@ -1340,7 +1340,7 @@ For tree-shakeable version without auto-injected crypto, use `FromPublicKey({ ke
 
 > `const` **isValidChecksum**: (`str`) => `boolean`
 
-Defined in: [src/primitives/Address/internal-index.ts:42](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/internal-index.ts#L42)
+Defined in: [src/primitives/Address/internal-index.ts:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/internal-index.ts#L44)
 
 Check if string has valid EIP-55 checksum (with auto-injected keccak256)
 
@@ -1362,7 +1362,7 @@ For tree-shakeable version without auto-injected crypto, use `IsValidChecksum({ 
 
 > `const` **toChecksummed**: (`address`) => [`Checksummed`](namespaces/Checksummed.mdx#checksummed)
 
-Defined in: [src/primitives/Address/internal-index.ts:35](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/internal-index.ts#L35)
+Defined in: [src/primitives/Address/internal-index.ts:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/internal-index.ts#L37)
 
 Convert Address to EIP-55 checksummed hex string (with auto-injected keccak256)
 
@@ -1384,7 +1384,7 @@ For tree-shakeable version without auto-injected crypto, use `ToChecksummed({ ke
 
 > **assert**(`value`, `options?`): [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/internal-index.ts:115](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/internal-index.ts#L115)
+Defined in: [src/primitives/Address/internal-index.ts:118](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/internal-index.ts#L118)
 
 #### Parameters
 
@@ -1408,7 +1408,7 @@ Defined in: [src/primitives/Address/internal-index.ts:115](https://github.com/ev
 
 > **Assert**(`deps`): (`value`, `options?`) => [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/assert.js:106](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/assert.js#L106)
+Defined in: [src/primitives/Address/assert.js:106](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/assert.js#L106)
 
 Factory: Create assert function with keccak256 injected
 
@@ -1448,7 +1448,7 @@ Crypto dependencies
 
 > **CalculateCreate2Address**(`deps`): (`arg0`, `arg1`, `arg2`) => [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/calculateCreate2Address.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/calculateCreate2Address.js#L8)
+Defined in: [src/primitives/Address/calculateCreate2Address.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/calculateCreate2Address.js#L8)
 
 Factory function to create calculateCreate2Address with injected keccak256 dependency
 
@@ -1476,7 +1476,7 @@ Keccak256 hash function
 
 ###### arg1
 
-[`HashType`](../HashType-2.mdx#hashtype)
+[`HashType`](../HashType.mdx#hashtype)
 
 ###### arg2
 
@@ -1492,7 +1492,7 @@ Keccak256 hash function
 
 > **CalculateCreateAddress**(`deps`): (`address`, `nonce`) => [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/calculateCreateAddress.js:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/calculateCreateAddress.js#L51)
+Defined in: [src/primitives/Address/calculateCreateAddress.js:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/calculateCreateAddress.js#L51)
 
 Factory for CREATE contract address calculation with injected dependencies
 
@@ -1550,7 +1550,7 @@ const contractAddr = calculateCreateAddress(deployerAddr, 5n);
 
 > **clone**(`address`): [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/clone.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/clone.js#L17)
+Defined in: [src/primitives/Address/clone.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/clone.js#L17)
 
 Create a deep copy of an Address
 
@@ -1583,7 +1583,7 @@ console.log(addr1 === addr2); // false
 
 > **compare**(`address`, `other`): `number`
 
-Defined in: [src/primitives/Address/compare.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/compare.js#L15)
+Defined in: [src/primitives/Address/compare.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/compare.js#L15)
 
 Compare two addresses lexicographically
 
@@ -1619,7 +1619,7 @@ const sorted = addresses.sort((a, b) => Address.compare(a, b));
 
 > **deduplicateAddresses**(`addresses`): [`AddressType`](../../../primitives/Address.mdx#addresstype)[]
 
-Defined in: [src/primitives/Address/deduplicateAddresses.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/deduplicateAddresses.js#L16)
+Defined in: [src/primitives/Address/deduplicateAddresses.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/deduplicateAddresses.js#L16)
 
 Remove duplicate addresses from array
 Preserves first occurrence of each unique address
@@ -1651,7 +1651,7 @@ const unique = Address.deduplicateAddresses([addr1, addr2, addr1, addr3]);
 
 > **equals**(`address`, `other`): `boolean`
 
-Defined in: [src/primitives/Address/equals.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/equals.js#L15)
+Defined in: [src/primitives/Address/equals.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/equals.js#L15)
 
 Check if two addresses are equal
 
@@ -1689,7 +1689,7 @@ if (Address.equals(addr1, addr2)) {
 
 > **from**(`value`): [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/from.js:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/from.js#L24)
+Defined in: [src/primitives/Address/from.js:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/from.js#L24)
 
 Create Address from various input types (universal constructor)
 
@@ -1735,7 +1735,7 @@ const addr5 = Address.from([0x74, 0x2d, 0x35, ...]);
 
 > **From**(`deps`): (`value`) => [`Checksummed`](namespaces/Checksummed.mdx#checksummed)
 
-Defined in: [src/primitives/Address/ChecksumAddress.js:27](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/ChecksumAddress.js#L27)
+Defined in: [src/primitives/Address/ChecksumAddress.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/ChecksumAddress.js#L27)
 
 Factory: Create checksummed address from any input
 
@@ -1784,7 +1784,7 @@ const checksummed = from("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
 > **fromAbiEncoded**(`bytes`): [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/fromAbiEncoded.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/fromAbiEncoded.js#L17)
+Defined in: [src/primitives/Address/fromAbiEncoded.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/fromAbiEncoded.js#L17)
 
 Decode Address from ABI-encoded bytes (32 bytes)
 
@@ -1822,7 +1822,7 @@ const addr = Address.fromAbiEncoded(encoded);
 
 > **fromBase64**(`b64`): [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/fromBase64.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/fromBase64.js#L16)
+Defined in: [src/primitives/Address/fromBase64.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/fromBase64.js#L16)
 
 Create Address from base64 string
 
@@ -1856,7 +1856,7 @@ const addr = Address.fromBase64("dC01zGY0wFMpJaO4RLyedZXyUeM=");
 
 > **fromBytes**(`bytes`): [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/fromBytes.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/fromBytes.js#L17)
+Defined in: [src/primitives/Address/fromBytes.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/fromBytes.js#L17)
 
 Create Address from raw bytes (standard form)
 
@@ -1891,7 +1891,7 @@ const addr = Address.fromBytes(bytes);
 
 > **fromHex**(`hex`): [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/fromHex.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/fromHex.js#L19)
+Defined in: [src/primitives/Address/fromHex.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/fromHex.js#L19)
 
 Parse hex string to Address (standard form)
 
@@ -1929,7 +1929,7 @@ const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
 
 > **fromNumber**(`value`): [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/fromNumber.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/fromNumber.js#L17)
+Defined in: [src/primitives/Address/fromNumber.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/fromNumber.js#L17)
 
 Create Address from number value (takes lower 160 bits) (standard form)
 
@@ -1964,7 +1964,7 @@ const addr2 = Address.fromNumber(12345);
 
 > **FromPrivateKey**(`deps`): (`privateKey`) => [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/fromPrivateKey.js:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/fromPrivateKey.js#L23)
+Defined in: [src/primitives/Address/fromPrivateKey.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/fromPrivateKey.js#L23)
 
 Factory: Create Address from secp256k1 private key
 
@@ -2019,7 +2019,7 @@ const addr = fromPrivateKey(privateKey)
 
 > **FromPublicKey**(`deps`): (`xOrPublicKey`, `y?`) => [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/fromPublicKey.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/fromPublicKey.js#L20)
+Defined in: [src/primitives/Address/fromPublicKey.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/fromPublicKey.js#L20)
 
 Factory: Create Address from secp256k1 public key
 
@@ -2074,7 +2074,7 @@ const addr2 = fromPublicKey(publicKeyBytes)
 
 > **greaterThan**(`address`, `other`): `boolean`
 
-Defined in: [src/primitives/Address/greaterThan.js:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/greaterThan.js#L10)
+Defined in: [src/primitives/Address/greaterThan.js:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/greaterThan.js#L10)
 
 Check if this address is greater than other
 
@@ -2104,7 +2104,7 @@ True if address > other
 
 > **is**(`value`): `value is AddressType`
 
-Defined in: [src/primitives/Address/is.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/is.js#L16)
+Defined in: [src/primitives/Address/is.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/is.js#L16)
 
 Type guard for Address (standard form)
 
@@ -2136,7 +2136,7 @@ if (Address.is(value)) {
 
 > **isValid**(`value`): `boolean`
 
-Defined in: [src/primitives/Address/isValid.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/isValid.js#L21)
+Defined in: [src/primitives/Address/isValid.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/isValid.js#L21)
 
 Check if value is a valid address (accepts string, Uint8Array, or Address instance)
 
@@ -2175,7 +2175,7 @@ Address.isValid(new Uint8Array(10)); // false (wrong length)
 
 > **IsValid**(`deps`): (`str`) => `boolean`
 
-Defined in: [src/primitives/Address/ChecksumAddress.js:74](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/ChecksumAddress.js#L74)
+Defined in: [src/primitives/Address/ChecksumAddress.js:74](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/ChecksumAddress.js#L74)
 
 Factory: Check if string has valid EIP-55 checksum
 
@@ -2225,7 +2225,7 @@ if (isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")) {
 
 > **IsValidChecksum**(`deps`): (`str`) => `boolean`
 
-Defined in: [src/primitives/Address/isValidChecksum.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/isValidChecksum.js#L21)
+Defined in: [src/primitives/Address/isValidChecksum.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/isValidChecksum.js#L21)
 
 Factory: Check if string has valid EIP-55 checksum
 
@@ -2275,7 +2275,7 @@ if (isValidChecksum("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")) {
 
 > **isZero**(`address`): `boolean`
 
-Defined in: [src/primitives/Address/isZero.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/isZero.js#L14)
+Defined in: [src/primitives/Address/isZero.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/isZero.js#L14)
 
 Check if address is zero address
 
@@ -2307,7 +2307,7 @@ if (Address.isZero(addr)) {
 
 > **lessThan**(`address`, `other`): `boolean`
 
-Defined in: [src/primitives/Address/lessThan.js:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/lessThan.js#L10)
+Defined in: [src/primitives/Address/lessThan.js:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/lessThan.js#L10)
 
 Check if this address is less than other
 
@@ -2337,7 +2337,7 @@ True if address < other
 
 > **sortAddresses**(`addresses`): [`AddressType`](../../../primitives/Address.mdx#addresstype)[]
 
-Defined in: [src/primitives/Address/sortAddresses.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/sortAddresses.js#L14)
+Defined in: [src/primitives/Address/sortAddresses.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/sortAddresses.js#L14)
 
 Sort addresses lexicographically
 
@@ -2367,7 +2367,7 @@ const sorted = Address.sortAddresses([addr3, addr1, addr2]);
 
 > **toAbiEncoded**(`address`): `Uint8Array`\<`ArrayBufferLike`\>
 
-Defined in: [src/primitives/Address/toAbiEncoded.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/toAbiEncoded.js#L16)
+Defined in: [src/primitives/Address/toAbiEncoded.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/toAbiEncoded.js#L16)
 
 Convert Address to ABI-encoded bytes (32 bytes, left-padded)
 
@@ -2401,7 +2401,7 @@ const encoded = Address.toAbiEncoded(addr);
 
 > **toBytes**(`address`): `Uint8Array`\<`ArrayBufferLike`\>
 
-Defined in: [src/primitives/Address/toBytes.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/toBytes.js#L14)
+Defined in: [src/primitives/Address/toBytes.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/toBytes.js#L14)
 
 Convert Address to Uint8Array
 
@@ -2433,7 +2433,7 @@ console.log(bytes); // Uint8Array(20) [...]
 
 > **ToChecksummed**(`deps`): (`address`) => [`Checksummed`](namespaces/Checksummed.mdx#checksummed)
 
-Defined in: [src/primitives/Address/toChecksummed.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/toChecksummed.js#L20)
+Defined in: [src/primitives/Address/toChecksummed.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/toChecksummed.js#L20)
 
 Factory: Convert Address to EIP-55 checksummed hex string
 
@@ -2482,7 +2482,7 @@ const checksummed = toChecksummed(addr)
 
 > **toHex**(`address`): [`HexType`](../../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Address/toHex.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/toHex.js#L13)
+Defined in: [src/primitives/Address/toHex.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/toHex.js#L13)
 
 Convert Address to hex string
 
@@ -2513,7 +2513,7 @@ const hex = Address.toHex(addr);
 
 > **toLowercase**(`address`): [`Lowercase`](namespaces/Lowercase.mdx#lowercase)
 
-Defined in: [src/primitives/Address/toLowercase.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/toLowercase.js#L15)
+Defined in: [src/primitives/Address/toLowercase.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/toLowercase.js#L15)
 
 Convert Address to lowercase hex string
 
@@ -2544,7 +2544,7 @@ const lower = Address.toLowercase(addr);
 
 > **toShortHex**(`address`, `prefixLength?`, `suffixLength?`): `string`
 
-Defined in: [src/primitives/Address/toShortHex.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/toShortHex.js#L19)
+Defined in: [src/primitives/Address/toShortHex.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/toShortHex.js#L19)
 
 Format address with shortened display
 
@@ -2589,7 +2589,7 @@ const custom = Address.toShortHex(addr, 8, 6);
 
 > **toU256**(`address`): `bigint`
 
-Defined in: [src/primitives/Address/toU256.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/toU256.js#L14)
+Defined in: [src/primitives/Address/toU256.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/toU256.js#L14)
 
 Convert Address to uint256
 
@@ -2619,7 +2619,7 @@ const value = Address.toU256(addr);
 
 > **toUppercase**(`address`): [`Uppercase`](namespaces/Uppercase.mdx#uppercase)
 
-Defined in: [src/primitives/Address/toUppercase.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/toUppercase.js#L15)
+Defined in: [src/primitives/Address/toUppercase.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/toUppercase.js#L15)
 
 Convert Address to uppercase hex string
 
@@ -2650,7 +2650,7 @@ const upper = Address.toUppercase(addr);
 
 > **zero**(): [`AddressType`](../../../primitives/Address.mdx#addresstype)
 
-Defined in: [src/primitives/Address/zero.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Address/zero.js#L13)
+Defined in: [src/primitives/Address/zero.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/zero.js#L13)
 
 Create zero address (standard form)
 

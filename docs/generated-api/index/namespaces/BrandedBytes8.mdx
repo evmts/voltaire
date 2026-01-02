@@ -11,31 +11,31 @@ description: Auto-generated API documentation
 
 # BrandedBytes8
 
-## Type Aliases
-
-### Bytes8Type
-
-> **Bytes8Type** = `Uint8Array` & `object`
-
-Defined in: [src/primitives/Bytes/Bytes8/Bytes8Type.ts:3](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/Bytes8Type.ts#L3)
-
-#### Type Declaration
-
-##### \[brand\]
-
-> `readonly` **\[brand\]**: `"Bytes8"`
-
-##### size
-
-> `readonly` **size**: `8`
-
 ## Functions
+
+### Bytes8()
+
+> **Bytes8**(`value`): [`Bytes8Type`](../../primitives/Bytes.mdx#bytes8type)
+
+Defined in: [src/primitives/Bytes/Bytes8/index.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes8/index.ts#L18)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | `number`[]
+
+#### Returns
+
+[`Bytes8Type`](../../primitives/Bytes.mdx#bytes8type)
+
+***
 
 ### clone()
 
-> **clone**(`bytes`): [`Bytes8Type`](#bytes8type)
+> **clone**(`bytes`): [`Bytes8Type`](../../primitives/Bytes.mdx#bytes8type)
 
-Defined in: [src/primitives/Bytes/Bytes8/clone.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/clone.js#L12)
+Defined in: [src/primitives/Bytes/Bytes8/clone.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes8/clone.js#L12)
 
 Clone Bytes8
 
@@ -43,13 +43,13 @@ Clone Bytes8
 
 ##### bytes
 
-[`Bytes8Type`](#bytes8type)
+[`Bytes8Type`](../../primitives/Bytes.mdx#bytes8type)
 
 Bytes8 to clone
 
 #### Returns
 
-[`Bytes8Type`](#bytes8type)
+[`Bytes8Type`](../../primitives/Bytes.mdx#bytes8type)
 
 Cloned Bytes8
 
@@ -65,7 +65,7 @@ const copy = Bytes8.clone(bytes);
 
 > **compare**(`a`, `b`): `-1` \| `0` \| `1`
 
-Defined in: [src/primitives/Bytes/Bytes8/compare.js:2](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/compare.js#L2)
+Defined in: [src/primitives/Bytes/Bytes8/compare.js:2](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes8/compare.js#L2)
 
 #### Parameters
 
@@ -87,7 +87,7 @@ Defined in: [src/primitives/Bytes/Bytes8/compare.js:2](https://github.com/evmts/
 
 > **equals**(`a`, `b`): `boolean`
 
-Defined in: [src/primitives/Bytes/Bytes8/equals.js:2](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/equals.js#L2)
+Defined in: [src/primitives/Bytes/Bytes8/equals.js:2](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes8/equals.js#L2)
 
 #### Parameters
 
@@ -107,9 +107,9 @@ Defined in: [src/primitives/Bytes/Bytes8/equals.js:2](https://github.com/evmts/v
 
 ### from()
 
-> **from**(`value`): [`Bytes8Type`](#bytes8type)
+> **from**(`value`): [`Bytes8Type`](../../primitives/Bytes.mdx#bytes8type)
 
-Defined in: [src/primitives/Bytes/Bytes8/from.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/from.js#L8)
+Defined in: [src/primitives/Bytes/Bytes8/from.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes8/from.js#L8)
 
 #### Parameters
 
@@ -119,15 +119,15 @@ Defined in: [src/primitives/Bytes/Bytes8/from.js:8](https://github.com/evmts/vol
 
 #### Returns
 
-[`Bytes8Type`](#bytes8type)
+[`Bytes8Type`](../../primitives/Bytes.mdx#bytes8type)
 
 ***
 
 ### fromHex()
 
-> **fromHex**(`hex`): [`Bytes8Type`](#bytes8type)
+> **fromHex**(`hex`): [`Bytes8Type`](../../primitives/Bytes.mdx#bytes8type)
 
-Defined in: [src/primitives/Bytes/Bytes8/fromHex.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/fromHex.js#L8)
+Defined in: [src/primitives/Bytes/Bytes8/fromHex.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes8/fromHex.js#L8)
 
 #### Parameters
 
@@ -137,7 +137,7 @@ Defined in: [src/primitives/Bytes/Bytes8/fromHex.js:8](https://github.com/evmts/
 
 #### Returns
 
-[`Bytes8Type`](#bytes8type)
+[`Bytes8Type`](../../primitives/Bytes.mdx#bytes8type)
 
 ***
 
@@ -145,7 +145,7 @@ Defined in: [src/primitives/Bytes/Bytes8/fromHex.js:8](https://github.com/evmts/
 
 > **size**(`_bytes`): `8`
 
-Defined in: [src/primitives/Bytes/Bytes8/size.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/size.js#L12)
+Defined in: [src/primitives/Bytes/Bytes8/size.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes8/size.js#L12)
 
 Get size of Bytes8 (always 8)
 
@@ -153,7 +153,7 @@ Get size of Bytes8 (always 8)
 
 ##### \_bytes
 
-[`Bytes8Type`](#bytes8type)
+[`Bytes8Type`](../../primitives/Bytes.mdx#bytes8type)
 
 Bytes8
 
@@ -173,9 +173,9 @@ const size = Bytes8.size(bytes); // 8
 
 ### toBytes()
 
-> **toBytes**(`bytes`): `BytesType`
+> **toBytes**(`bytes`): [`BytesType`](../../primitives/Bytes.mdx#bytestype)
 
-Defined in: [src/primitives/Bytes/Bytes8/toBytes.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/toBytes.js#L12)
+Defined in: [src/primitives/Bytes/Bytes8/toBytes.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes8/toBytes.js#L12)
 
 Convert Bytes8 to generic Bytes
 
@@ -183,13 +183,13 @@ Convert Bytes8 to generic Bytes
 
 ##### bytes
 
-[`Bytes8Type`](#bytes8type)
+[`Bytes8Type`](../../primitives/Bytes.mdx#bytes8type)
 
 Bytes8 to convert
 
 #### Returns
 
-`BytesType`
+[`BytesType`](../../primitives/Bytes.mdx#bytestype)
 
 Generic Bytes
 
@@ -205,7 +205,7 @@ const genericBytes = Bytes8.toBytes(bytes);
 
 > **toHex**(`bytes`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Bytes/Bytes8/toHex.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes8/toHex.js#L12)
+Defined in: [src/primitives/Bytes/Bytes8/toHex.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes8/toHex.js#L12)
 
 Convert Bytes8 to hex string
 
@@ -213,7 +213,7 @@ Convert Bytes8 to hex string
 
 ##### bytes
 
-[`Bytes8Type`](#bytes8type)
+[`Bytes8Type`](../../primitives/Bytes.mdx#bytes8type)
 
 Bytes8 to convert
 
@@ -231,6 +231,6 @@ const hex = Bytes8.toHex(bytes);
 
 ## References
 
-### Bytes8
+### Bytes8Type
 
-Re-exports [Bytes8](../index.mdx#bytes8)
+Re-exports [Bytes8Type](../../primitives/Bytes.mdx#bytes8type)

@@ -11,31 +11,31 @@ description: Auto-generated API documentation
 
 # BrandedBytes4
 
-## Type Aliases
-
-### Bytes4Type
-
-> **Bytes4Type** = `Uint8Array` & `object`
-
-Defined in: [src/primitives/Bytes/Bytes4/Bytes4Type.ts:3](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes4/Bytes4Type.ts#L3)
-
-#### Type Declaration
-
-##### \[brand\]
-
-> `readonly` **\[brand\]**: `"Bytes4"`
-
-##### size
-
-> `readonly` **size**: `4`
-
 ## Functions
+
+### Bytes4()
+
+> **Bytes4**(`value`): [`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+Defined in: [src/primitives/Bytes/Bytes4/index.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/index.ts#L18)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | `number`[]
+
+#### Returns
+
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+***
 
 ### clone()
 
-> **clone**(`bytes`): [`Bytes4Type`](#bytes4type)
+> **clone**(`bytes`): [`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
 
-Defined in: [src/primitives/Bytes/Bytes4/clone.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes4/clone.js#L12)
+Defined in: [src/primitives/Bytes/Bytes4/clone.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/clone.js#L12)
 
 Clone Bytes4
 
@@ -43,13 +43,13 @@ Clone Bytes4
 
 ##### bytes
 
-[`Bytes4Type`](#bytes4type)
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
 
 Bytes4 to clone
 
 #### Returns
 
-[`Bytes4Type`](#bytes4type)
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
 
 Cloned Bytes4
 
@@ -65,7 +65,7 @@ const copy = Bytes4.clone(bytes);
 
 > **compare**(`a`, `b`): `-1` \| `0` \| `1`
 
-Defined in: [src/primitives/Bytes/Bytes4/compare.js:2](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes4/compare.js#L2)
+Defined in: [src/primitives/Bytes/Bytes4/compare.js:2](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/compare.js#L2)
 
 #### Parameters
 
@@ -87,7 +87,7 @@ Defined in: [src/primitives/Bytes/Bytes4/compare.js:2](https://github.com/evmts/
 
 > **equals**(`a`, `b`): `boolean`
 
-Defined in: [src/primitives/Bytes/Bytes4/equals.js:2](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes4/equals.js#L2)
+Defined in: [src/primitives/Bytes/Bytes4/equals.js:2](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/equals.js#L2)
 
 #### Parameters
 
@@ -107,9 +107,9 @@ Defined in: [src/primitives/Bytes/Bytes4/equals.js:2](https://github.com/evmts/v
 
 ### from()
 
-> **from**(`value`): [`Bytes4Type`](#bytes4type)
+> **from**(`value`): [`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
 
-Defined in: [src/primitives/Bytes/Bytes4/from.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes4/from.js#L8)
+Defined in: [src/primitives/Bytes/Bytes4/from.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/from.js#L8)
 
 #### Parameters
 
@@ -119,15 +119,15 @@ Defined in: [src/primitives/Bytes/Bytes4/from.js:8](https://github.com/evmts/vol
 
 #### Returns
 
-[`Bytes4Type`](#bytes4type)
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
 
 ***
 
 ### fromHex()
 
-> **fromHex**(`hex`): [`Bytes4Type`](#bytes4type)
+> **fromHex**(`hex`): [`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
 
-Defined in: [src/primitives/Bytes/Bytes4/fromHex.js:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes4/fromHex.js#L8)
+Defined in: [src/primitives/Bytes/Bytes4/fromHex.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/fromHex.js#L8)
 
 #### Parameters
 
@@ -137,7 +137,7 @@ Defined in: [src/primitives/Bytes/Bytes4/fromHex.js:8](https://github.com/evmts/
 
 #### Returns
 
-[`Bytes4Type`](#bytes4type)
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
 
 ***
 
@@ -145,7 +145,7 @@ Defined in: [src/primitives/Bytes/Bytes4/fromHex.js:8](https://github.com/evmts/
 
 > **size**(`_bytes`): `4`
 
-Defined in: [src/primitives/Bytes/Bytes4/size.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes4/size.js#L12)
+Defined in: [src/primitives/Bytes/Bytes4/size.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/size.js#L12)
 
 Get size of Bytes4 (always 4)
 
@@ -153,7 +153,7 @@ Get size of Bytes4 (always 4)
 
 ##### \_bytes
 
-[`Bytes4Type`](#bytes4type)
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
 
 Bytes4
 
@@ -173,9 +173,9 @@ const size = Bytes4.size(bytes); // 4
 
 ### toBytes()
 
-> **toBytes**(`bytes`): `BytesType`
+> **toBytes**(`bytes`): [`BytesType`](../../primitives/Bytes.mdx#bytestype)
 
-Defined in: [src/primitives/Bytes/Bytes4/toBytes.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes4/toBytes.js#L12)
+Defined in: [src/primitives/Bytes/Bytes4/toBytes.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/toBytes.js#L12)
 
 Convert Bytes4 to generic Bytes
 
@@ -183,13 +183,13 @@ Convert Bytes4 to generic Bytes
 
 ##### bytes
 
-[`Bytes4Type`](#bytes4type)
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
 
 Bytes4 to convert
 
 #### Returns
 
-`BytesType`
+[`BytesType`](../../primitives/Bytes.mdx#bytestype)
 
 Generic Bytes
 
@@ -205,7 +205,7 @@ const genericBytes = Bytes4.toBytes(bytes);
 
 > **toHex**(`bytes`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Bytes/Bytes4/toHex.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes4/toHex.js#L12)
+Defined in: [src/primitives/Bytes/Bytes4/toHex.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/toHex.js#L12)
 
 Convert Bytes4 to hex string
 
@@ -213,7 +213,7 @@ Convert Bytes4 to hex string
 
 ##### bytes
 
-[`Bytes4Type`](#bytes4type)
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
 
 Bytes4 to convert
 
@@ -231,6 +231,6 @@ const hex = Bytes4.toHex(bytes);
 
 ## References
 
-### Bytes4
+### Bytes4Type
 
-Re-exports [Bytes4](../index.mdx#bytes4)
+Re-exports [Bytes4Type](../../primitives/Bytes.mdx#bytes4type)

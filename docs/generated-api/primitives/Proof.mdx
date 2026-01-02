@@ -1,0 +1,134 @@
+---
+title: "primitives/Proof"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Proof
+
+# primitives/Proof
+
+## Type Aliases
+
+### ProofLike
+
+> **ProofLike** = [`ProofType`](#prooftype) \| \{ `proof`: readonly `Uint8Array`[]; `value`: `Uint8Array`; \}
+
+Defined in: [src/primitives/Proof/ProofType.ts:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Proof/ProofType.ts#L33)
+
+Inputs that can be converted to Proof
+
+***
+
+### ProofType
+
+> **ProofType** = `object`
+
+Defined in: [src/primitives/Proof/ProofType.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Proof/ProofType.ts#L15)
+
+Proof represents a generic Merkle proof for verifying inclusion in a Merkle tree.
+
+A Merkle proof consists of:
+- value: The leaf value being proven
+- proof: An array of sibling hashes forming the path from leaf to root
+
+To verify, you hash the value with each proof element in order, reconstructing
+the path to the root hash. If the final hash matches the known root, the proof
+is valid.
+
+This generic structure is used as the basis for more specific proof types like
+StateProof and StorageProof which follow the Ethereum Merkle Patricia Trie format.
+
+#### Properties
+
+##### proof
+
+> `readonly` **proof**: readonly `Uint8Array`[]
+
+Defined in: [src/primitives/Proof/ProofType.ts:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Proof/ProofType.ts#L27)
+
+Array of sibling hashes forming the Merkle branch.
+Each element is a node hash encountered on the path from leaf to root.
+Order matters - typically bottom-up (leaf to root).
+
+##### value
+
+> `readonly` **value**: `Uint8Array`
+
+Defined in: [src/primitives/Proof/ProofType.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Proof/ProofType.ts#L20)
+
+The leaf value being proven for inclusion.
+This is typically a hash or encoded data.
+
+## Functions
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Proof/equals.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Proof/equals.js#L20)
+
+Compares two Proofs for equality.
+Both value and all proof elements must match.
+
+#### Parameters
+
+##### a
+
+[`ProofType`](#prooftype)
+
+First Proof
+
+##### b
+
+[`ProofType`](#prooftype)
+
+Second Proof
+
+#### Returns
+
+`boolean`
+
+- True if equal
+
+#### Example
+
+```typescript
+const isEqual = Proof.equals(proof1, proof2);
+```
+
+***
+
+### from()
+
+> **from**(`proof`): [`ProofType`](#prooftype)
+
+Defined in: [src/primitives/Proof/from.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Proof/from.js#L22)
+
+Creates a Proof from an object with value and proof array.
+
+#### Parameters
+
+##### proof
+
+[`ProofLike`](#prooflike)
+
+Object containing value and proof array
+
+#### Returns
+
+[`ProofType`](#prooftype)
+
+- A validated Proof
+
+#### Example
+
+```typescript
+const proof = Proof.from({
+  value: leafValue,
+  proof: [hash1, hash2, hash3],
+});
+```

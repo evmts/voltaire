@@ -1,0 +1,737 @@
+---
+title: "crypto/SHA256"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / crypto/SHA256
+
+# crypto/SHA256
+
+## Variables
+
+### BLOCK\_SIZE
+
+> `const` **BLOCK\_SIZE**: `64` = `64`
+
+Defined in: [src/crypto/SHA256/constants.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/SHA256/constants.js#L27)
+
+SHA256 block size in bytes
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { BLOCK_SIZE } from './crypto/SHA256/index.js';
+console.log(BLOCK_SIZE); // 64
+```
+
+***
+
+### OUTPUT\_SIZE
+
+> `const` **OUTPUT\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/SHA256/constants.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/SHA256/constants.js#L13)
+
+SHA256 output size in bytes (256 bits / 8)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { OUTPUT_SIZE } from './crypto/SHA256/index.js';
+console.log(OUTPUT_SIZE); // 32
+```
+
+***
+
+### ~~SHA256~~
+
+> `const` **SHA256**: (`input`) => [`SHA256Hash`](../index/index.mdx#sha256hash) & `object` = `SHA256Hash`
+
+Defined in: [src/crypto/SHA256/SHA256.js:62](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/SHA256/SHA256.js#L62)
+
+#### Type Declaration
+
+##### ~~BLOCK\_SIZE~~
+
+> **BLOCK\_SIZE**: `number`
+
+SHA256 block size in bytes
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { BLOCK_SIZE } from './crypto/SHA256/index.js';
+console.log(BLOCK_SIZE); // 64
+```
+
+##### ~~create()~~
+
+> **create**: () => `object`
+
+Incremental hasher for streaming data
+
+###### Returns
+
+`object`
+
+Hasher instance
+
+###### ~~digest()~~
+
+> **digest**: () => `Uint8Array`
+
+###### Returns
+
+`Uint8Array`
+
+###### ~~update()~~
+
+> **update**: (`data`) => `void`
+
+###### Parameters
+
+###### data
+
+`Uint8Array`
+
+###### Returns
+
+`void`
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { SHA256 } from './crypto/SHA256/index.js';
+const hasher = SHA256.create();
+hasher.update(new Uint8Array([1, 2, 3]));
+hasher.update(new Uint8Array([4, 5, 6]));
+const hash = hasher.digest();
+```
+
+##### ~~from()~~
+
+> **from**: (`input`) => [`SHA256Hash`](../index/index.mdx#sha256hash)
+
+Hash input with SHA256 (constructor pattern)
+
+Auto-detects input type and hashes accordingly:
+- Uint8Array: hash directly
+- string starting with 0x: parse as hex
+- string: UTF-8 encode then hash
+
+###### Parameters
+
+###### input
+
+Data to hash
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+[`SHA256Hash`](../index/index.mdx#sha256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto/sha256 for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { SHA256Hash } from './crypto/SHA256/index.js';
+
+const hash1 = SHA256Hash.from("0x1234");      // Hex
+const hash2 = SHA256Hash.from("hello");       // String
+const hash3 = SHA256Hash.from(uint8array);    // Bytes
+```
+
+##### ~~fromHex()~~
+
+> **fromHex**: (`hex`) => [`SHA256Hash`](../index/index.mdx#sha256hash) = `hashHex`
+
+Compute SHA256 hash of hex string (without 0x prefix)
+
+###### Parameters
+
+###### hex
+
+`string`
+
+Hex string (with or without 0x prefix)
+
+###### Returns
+
+[`SHA256Hash`](../index/index.mdx#sha256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { SHA256 } from './crypto/SHA256/index.js';
+const hash = SHA256.hashHex("0xdeadbeef");
+console.log(hash.length); // 32
+```
+
+##### ~~fromString()~~
+
+> **fromString**: (`str`) => [`SHA256Hash`](../index/index.mdx#sha256hash) = `hashString`
+
+Compute SHA256 hash of UTF-8 string
+
+###### Parameters
+
+###### str
+
+`string`
+
+Input string
+
+###### Returns
+
+[`SHA256Hash`](../index/index.mdx#sha256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { SHA256 } from './crypto/SHA256/index.js';
+const hash = SHA256.hashString("hello world");
+console.log(hash.length); // 32
+```
+
+##### ~~hash()~~
+
+> **hash**: (`data`) => [`SHA256Hash`](../index/index.mdx#sha256hash)
+
+Compute SHA256 hash of input data
+
+###### Parameters
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Input data as Uint8Array
+
+###### Returns
+
+[`SHA256Hash`](../index/index.mdx#sha256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { SHA256Hash } from './crypto/SHA256/index.js';
+const hash = SHA256Hash.from(new Uint8Array([1, 2, 3]));
+console.log(hash.length); // 32
+```
+
+##### ~~hashHex()~~
+
+> **hashHex**: (`hex`) => [`SHA256Hash`](../index/index.mdx#sha256hash)
+
+Compute SHA256 hash of hex string (without 0x prefix)
+
+###### Parameters
+
+###### hex
+
+`string`
+
+Hex string (with or without 0x prefix)
+
+###### Returns
+
+[`SHA256Hash`](../index/index.mdx#sha256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { SHA256 } from './crypto/SHA256/index.js';
+const hash = SHA256.hashHex("0xdeadbeef");
+console.log(hash.length); // 32
+```
+
+##### ~~hashString()~~
+
+> **hashString**: (`str`) => [`SHA256Hash`](../index/index.mdx#sha256hash)
+
+Compute SHA256 hash of UTF-8 string
+
+###### Parameters
+
+###### str
+
+`string`
+
+Input string
+
+###### Returns
+
+[`SHA256Hash`](../index/index.mdx#sha256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { SHA256 } from './crypto/SHA256/index.js';
+const hash = SHA256.hashString("hello world");
+console.log(hash.length); // 32
+```
+
+##### ~~OUTPUT\_SIZE~~
+
+> **OUTPUT\_SIZE**: `number`
+
+SHA256 output size in bytes (256 bits / 8)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { OUTPUT_SIZE } from './crypto/SHA256/index.js';
+console.log(OUTPUT_SIZE); // 32
+```
+
+##### ~~toHex()~~
+
+> **toHex**: (`hash`) => `string`
+
+Convert hash output to hex string
+
+###### Parameters
+
+###### hash
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Hash bytes
+
+###### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { SHA256 } from './crypto/SHA256/index.js';
+const hash = SHA256.hash(new Uint8Array([1, 2, 3]));
+const hexStr = SHA256.toHex(hash);
+console.log(hexStr); // "0x..."
+```
+
+#### Deprecated
+
+Use SHA256Hash instead
+SHA256 alias maintained for backward compatibility
+
+## Functions
+
+### create()
+
+> **create**(): `object`
+
+Defined in: [src/crypto/SHA256/create.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/SHA256/create.js#L19)
+
+Incremental hasher for streaming data
+
+#### Returns
+
+`object`
+
+Hasher instance
+
+##### digest()
+
+> **digest**: () => `Uint8Array`
+
+###### Returns
+
+`Uint8Array`
+
+##### update()
+
+> **update**: (`data`) => `void`
+
+###### Parameters
+
+###### data
+
+`Uint8Array`
+
+###### Returns
+
+`void`
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { SHA256 } from './crypto/SHA256/index.js';
+const hasher = SHA256.create();
+hasher.update(new Uint8Array([1, 2, 3]));
+hasher.update(new Uint8Array([4, 5, 6]));
+const hash = hasher.digest();
+```
+
+***
+
+### from()
+
+> **from**(`input`): [`SHA256Hash`](../index/index.mdx#sha256hash)
+
+Defined in: [src/crypto/SHA256/from.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/SHA256/from.js#L27)
+
+Hash input with SHA256 (constructor pattern)
+
+Auto-detects input type and hashes accordingly:
+- Uint8Array: hash directly
+- string starting with 0x: parse as hex
+- string: UTF-8 encode then hash
+
+#### Parameters
+
+##### input
+
+Data to hash
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`SHA256Hash`](../index/index.mdx#sha256hash)
+
+32-byte hash
+
+#### See
+
+https://voltaire.tevm.sh/crypto/sha256 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { SHA256Hash } from './crypto/SHA256/index.js';
+
+const hash1 = SHA256Hash.from("0x1234");      // Hex
+const hash2 = SHA256Hash.from("hello");       // String
+const hash3 = SHA256Hash.from(uint8array);    // Bytes
+```
+
+***
+
+### hash()
+
+> **hash**(`data`): [`SHA256Hash`](../index/index.mdx#sha256hash)
+
+Defined in: [src/crypto/SHA256/hash.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/SHA256/hash.js#L18)
+
+Compute SHA256 hash of input data
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Input data as Uint8Array
+
+#### Returns
+
+[`SHA256Hash`](../index/index.mdx#sha256hash)
+
+32-byte hash
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { SHA256Hash } from './crypto/SHA256/index.js';
+const hash = SHA256Hash.from(new Uint8Array([1, 2, 3]));
+console.log(hash.length); // 32
+```
+
+***
+
+### hashHex()
+
+> **hashHex**(`hex`): [`SHA256Hash`](../index/index.mdx#sha256hash)
+
+Defined in: [src/crypto/SHA256/hashHex.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/SHA256/hashHex.js#L18)
+
+Compute SHA256 hash of hex string (without 0x prefix)
+
+#### Parameters
+
+##### hex
+
+`string`
+
+Hex string (with or without 0x prefix)
+
+#### Returns
+
+[`SHA256Hash`](../index/index.mdx#sha256hash)
+
+32-byte hash
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { SHA256 } from './crypto/SHA256/index.js';
+const hash = SHA256.hashHex("0xdeadbeef");
+console.log(hash.length); // 32
+```
+
+***
+
+### hashString()
+
+> **hashString**(`str`): [`SHA256Hash`](../index/index.mdx#sha256hash)
+
+Defined in: [src/crypto/SHA256/hashString.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/SHA256/hashString.js#L18)
+
+Compute SHA256 hash of UTF-8 string
+
+#### Parameters
+
+##### str
+
+`string`
+
+Input string
+
+#### Returns
+
+[`SHA256Hash`](../index/index.mdx#sha256hash)
+
+32-byte hash
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { SHA256 } from './crypto/SHA256/index.js';
+const hash = SHA256.hashString("hello world");
+console.log(hash.length); // 32
+```
+
+***
+
+### toHex()
+
+> **toHex**(`hash`): `string`
+
+Defined in: [src/crypto/SHA256/toHex.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/SHA256/toHex.js#L17)
+
+Convert hash output to hex string
+
+#### Parameters
+
+##### hash
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Hash bytes
+
+#### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { SHA256 } from './crypto/SHA256/index.js';
+const hash = SHA256.hash(new Uint8Array([1, 2, 3]));
+const hexStr = SHA256.toHex(hash);
+console.log(hexStr); // "0x..."
+```
+
+## References
+
+### SHA256Hash
+
+Re-exports [SHA256Hash](../index/index.mdx#sha256hash)

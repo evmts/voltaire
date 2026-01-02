@@ -1,0 +1,312 @@
+---
+title: "TransactionUrl"
+description: |-
+  ERC-681 defines a standard URL format for representing Ethereum transactions.
+  This enables QR codes, deep links, and wallet integrations.
+
+  Format:
+---
+
+[**@tevm/voltaire**](index.mdx)
+
+***
+
+[@tevm/voltaire](index.mdx) / TransactionUrl
+
+# TransactionUrl
+
+ERC-681 Transaction URL Format
+
+## See
+
+https://eips.ethereum.org/EIPS/eip-681
+
+## Example
+
+```typescript
+import * as TransactionUrl from './primitives/TransactionUrl/index.js';
+
+// Parse URL
+const parsed = TransactionUrl.parse('ethereum:0x1234@1?value=1000000000000000000');
+// { target: AddressType, chainId: 1n, value: 1000000000000000000n }
+
+// Format URL
+const url = TransactionUrl.format({
+  target: addressValue,
+  chainId: 1n,
+  value: 1000000000000000000n,
+});
+// 'ethereum:0x1234...@1?value=1000000000000000000'
+
+// Create branded URL
+const brandedUrl = TransactionUrl.from('ethereum:0x1234@1');
+```
+
+## Classes
+
+### InvalidTransactionUrlError
+
+Defined in: [src/primitives/TransactionUrl/errors.js:4](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/errors.js#L4)
+
+Error thrown when a transaction URL is invalid or malformed
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidTransactionUrlError**(`message`, `details?`): [`InvalidTransactionUrlError`](#invalidtransactionurlerror)
+
+Defined in: [src/primitives/TransactionUrl/errors.js:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/errors.js#L9)
+
+###### Parameters
+
+###### message
+
+`string`
+
+Error message
+
+###### details?
+
+`Record`\<`string`, `unknown`\>
+
+Additional error details
+
+###### Returns
+
+[`InvalidTransactionUrlError`](#invalidtransactionurlerror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### details
+
+> **details**: `Record`\<`string`, `unknown`\> \| `undefined`
+
+Defined in: [src/primitives/TransactionUrl/errors.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/errors.js#L12)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/TransactionUrl/errors.js:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/errors.js#L11)
+
+###### Inherited from
+
+`Error.name`
+
+## Type Aliases
+
+### ParsedTransactionUrl
+
+> **ParsedTransactionUrl** = `object`
+
+Defined in: [src/primitives/TransactionUrl/TransactionUrlType.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/TransactionUrlType.ts#L16)
+
+Parsed ERC-681 transaction URL components
+
+#### Properties
+
+##### chainId?
+
+> `readonly` `optional` **chainId**: `bigint`
+
+Defined in: [src/primitives/TransactionUrl/TransactionUrlType.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/TransactionUrlType.ts#L18)
+
+##### data?
+
+> `readonly` `optional` **data**: [`BytesType`](primitives/Bytes.mdx#bytestype)
+
+Defined in: [src/primitives/TransactionUrl/TransactionUrlType.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/TransactionUrlType.ts#L22)
+
+##### functionName?
+
+> `readonly` `optional` **functionName**: `string`
+
+Defined in: [src/primitives/TransactionUrl/TransactionUrlType.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/TransactionUrlType.ts#L23)
+
+##### functionParams?
+
+> `readonly` `optional` **functionParams**: `Record`\<`string`, `string`\>
+
+Defined in: [src/primitives/TransactionUrl/TransactionUrlType.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/TransactionUrlType.ts#L24)
+
+##### gas?
+
+> `readonly` `optional` **gas**: `bigint`
+
+Defined in: [src/primitives/TransactionUrl/TransactionUrlType.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/TransactionUrlType.ts#L20)
+
+##### gasPrice?
+
+> `readonly` `optional` **gasPrice**: `bigint`
+
+Defined in: [src/primitives/TransactionUrl/TransactionUrlType.ts:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/TransactionUrlType.ts#L21)
+
+##### target
+
+> `readonly` **target**: [`AddressType`](primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/TransactionUrl/TransactionUrlType.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/TransactionUrlType.ts#L17)
+
+##### value?
+
+> `readonly` `optional` **value**: `bigint`
+
+Defined in: [src/primitives/TransactionUrl/TransactionUrlType.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/TransactionUrlType.ts#L19)
+
+***
+
+### TransactionUrl
+
+> **TransactionUrl** = `string` & `object`
+
+Defined in: [src/primitives/TransactionUrl/TransactionUrlType.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/TransactionUrlType.ts#L11)
+
+ERC-681 compliant transaction URL
+Format: ethereum:<address>[@<chainId>][/<function>][?<params>]
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"TransactionUrl"`
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-681
+
+## Functions
+
+### format()
+
+> **format**(`request`): [`TransactionUrl`](#transactionurl)
+
+Defined in: [src/primitives/TransactionUrl/format.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/format.js#L23)
+
+Format transaction request as ERC-681 URL
+
+#### Parameters
+
+##### request
+
+[`ParsedTransactionUrl`](#parsedtransactionurl)
+
+Transaction parameters
+
+#### Returns
+
+[`TransactionUrl`](#transactionurl)
+
+- ERC-681 formatted URL
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-681
+
+#### Example
+
+```javascript
+import { format } from './primitives/TransactionUrl/format.js';
+
+const url = format({
+  target: addressValue,
+  chainId: 1n,
+  value: 1000000000000000000n,
+});
+// 'ethereum:0x1234...@1?value=1000000000000000000'
+```
+
+***
+
+### from()
+
+> **from**(`url`): [`TransactionUrl`](#transactionurl)
+
+Defined in: [src/primitives/TransactionUrl/from.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/from.js#L17)
+
+Create TransactionUrl from string (alias for parse)
+
+#### Parameters
+
+##### url
+
+`string`
+
+ERC-681 URL string
+
+#### Returns
+
+[`TransactionUrl`](#transactionurl)
+
+#### Throws
+
+if URL is malformed
+
+#### Example
+
+```javascript
+import * as TransactionUrl from './primitives/TransactionUrl/index.js';
+
+const url = TransactionUrl.from('ethereum:0x1234...@1?value=1000000000000000000');
+```
+
+***
+
+### parse()
+
+> **parse**(`url`): [`ParsedTransactionUrl`](#parsedtransactionurl)
+
+Defined in: [src/primitives/TransactionUrl/parse.js:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionUrl/parse.js#L37)
+
+Parse ERC-681 transaction URL
+
+Format: ethereum:<address>[@<chainId>][/<function>][?<params>]
+
+Examples:
+- ethereum:0x1234...
+- ethereum:0x1234@1
+- ethereum:0x1234@1?value=1000000000000000000
+- ethereum:0x1234/transfer?address=0x5678&uint256=100
+
+Query parameters:
+- value: wei amount (decimal or hex with 0x)
+- gas: gas limit
+- gasPrice: gas price in wei
+- data: hex-encoded calldata (0x...)
+
+#### Parameters
+
+##### url
+
+`string`
+
+ERC-681 URL
+
+#### Returns
+
+[`ParsedTransactionUrl`](#parsedtransactionurl)
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-681
+
+#### Throws
+
+if URL is malformed
+
+#### Example
+
+```javascript
+import { parse } from './primitives/TransactionUrl/parse.js';
+
+const parsed = parse('ethereum:0x1234...@1?value=1000000000000000000');
+// { target: AddressType, chainId: 1n, value: 1000000000000000000n }
+```

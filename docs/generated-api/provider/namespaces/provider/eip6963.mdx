@@ -58,7 +58,7 @@ https://eips.ethereum.org/EIPS/eip-6963
 
 ### EIP6963Error
 
-Defined in: [src/provider/eip6963/errors.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L14)
+Defined in: [src/provider/eip6963/errors.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L14)
 
 Base error for all EIP-6963 operations
 
@@ -68,15 +68,15 @@ Base error for all EIP-6963 operations
 
 #### Extended by
 
-- [`UnsupportedEnvironmentError`](#unsupportedenvironmenterror)
-- [`InvalidUuidError`](#invaliduuiderror)
-- [`InvalidRdnsError`](#invalidrdnserror)
-- [`InvalidIconError`](#invalidiconerror)
-- [`MissingFieldError`](#missingfielderror)
-- [`InvalidFieldError`](#invalidfielderror)
-- [`InvalidProviderError`](#invalidprovidererror)
 - [`InvalidArgumentError`](#invalidargumenterror)
+- [`InvalidFieldError`](#invalidfielderror)
+- [`InvalidIconError`](#invalidiconerror)
+- [`InvalidProviderError`](#invalidprovidererror)
+- [`InvalidRdnsError`](#invalidrdnserror)
+- [`InvalidUuidError`](#invaliduuiderror)
+- [`MissingFieldError`](#missingfielderror)
 - [`NotImplementedError`](#notimplementederror)
+- [`UnsupportedEnvironmentError`](#unsupportedenvironmenterror)
 
 #### Constructors
 
@@ -84,7 +84,7 @@ Base error for all EIP-6963 operations
 
 > **new EIP6963Error**(`message`, `options?`): [`EIP6963Error`](#eip6963error)
 
-Defined in: [src/provider/eip6963/errors.ts:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L15)
+Defined in: [src/provider/eip6963/errors.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L15)
 
 ###### Parameters
 
@@ -116,7 +116,7 @@ Defined in: [src/provider/eip6963/errors.ts:15](https://github.com/evmts/voltair
 
 ###### Overrides
 
-[`PrimitiveError`](../../../index/index.mdx#primitiveerror).[`constructor`](../../../index/index.mdx#constructor-18)
+[`PrimitiveError`](../../../index/index.mdx#primitiveerror).[`constructor`](../../../index/index.mdx#constructor-16)
 
 #### Properties
 
@@ -124,7 +124,7 @@ Defined in: [src/provider/eip6963/errors.ts:15](https://github.com/evmts/voltair
 
 > `optional` **cause**: `Error`
 
-Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L56)
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
 
 Root cause of this error (for error chaining)
 
@@ -136,7 +136,7 @@ Root cause of this error (for error chaining)
 
 > **code**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L39)
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
 
 Machine-readable error code for programmatic handling
 
@@ -154,7 +154,7 @@ Machine-readable error code for programmatic handling
 
 > `optional` **context**: `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L45)
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
 
 Additional context metadata for debugging
 
@@ -172,7 +172,7 @@ Additional context metadata for debugging
 
 > `optional` **docsPath**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L51)
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
 
 Path to documentation for this error
 
@@ -192,7 +192,7 @@ Path to documentation for this error
 
 > **getErrorChain**(): `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L94)
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
 
 Get full error chain as string for logging
 
@@ -208,7 +208,7 @@ Get full error chain as string for logging
 
 > **toJSON**(): `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L110)
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
 
 Serialize error to JSON for logging/telemetry
 
@@ -224,7 +224,7 @@ Serialize error to JSON for logging/telemetry
 
 ### InvalidArgumentError
 
-Defined in: [src/provider/eip6963/errors.ts:152](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L152)
+Defined in: [src/provider/eip6963/errors.ts:152](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L152)
 
 Thrown when function argument is invalid
 
@@ -238,7 +238,7 @@ Thrown when function argument is invalid
 
 > **new InvalidArgumentError**(`functionName`, `expected`, `got`): [`InvalidArgumentError`](#invalidargumenterror)
 
-Defined in: [src/provider/eip6963/errors.ts:155](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L155)
+Defined in: [src/provider/eip6963/errors.ts:155](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L155)
 
 ###### Parameters
 
@@ -268,13 +268,13 @@ Defined in: [src/provider/eip6963/errors.ts:155](https://github.com/evmts/voltai
 
 > `readonly` **argument**: `string`
 
-Defined in: [src/provider/eip6963/errors.ts:153](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L153)
+Defined in: [src/provider/eip6963/errors.ts:153](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L153)
 
 ##### cause?
 
 > `optional` **cause**: `Error`
 
-Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L56)
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
 
 Root cause of this error (for error chaining)
 
@@ -286,7 +286,7 @@ Root cause of this error (for error chaining)
 
 > **code**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L39)
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
 
 Machine-readable error code for programmatic handling
 
@@ -304,7 +304,7 @@ Machine-readable error code for programmatic handling
 
 > `optional` **context**: `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L45)
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
 
 Additional context metadata for debugging
 
@@ -322,7 +322,7 @@ Additional context metadata for debugging
 
 > `optional` **docsPath**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L51)
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
 
 Path to documentation for this error
 
@@ -342,7 +342,7 @@ Path to documentation for this error
 
 > **getErrorChain**(): `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L94)
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
 
 Get full error chain as string for logging
 
@@ -358,7 +358,7 @@ Get full error chain as string for logging
 
 > **toJSON**(): `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L110)
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
 
 Serialize error to JSON for logging/telemetry
 
@@ -374,7 +374,7 @@ Serialize error to JSON for logging/telemetry
 
 ### InvalidFieldError
 
-Defined in: [src/provider/eip6963/errors.ts:124](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L124)
+Defined in: [src/provider/eip6963/errors.ts:124](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L124)
 
 Thrown when field value is invalid (e.g., empty string)
 
@@ -388,7 +388,7 @@ Thrown when field value is invalid (e.g., empty string)
 
 > **new InvalidFieldError**(`objectType`, `field`, `reason`): [`InvalidFieldError`](#invalidfielderror)
 
-Defined in: [src/provider/eip6963/errors.ts:127](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L127)
+Defined in: [src/provider/eip6963/errors.ts:127](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L127)
 
 ###### Parameters
 
@@ -418,7 +418,7 @@ Defined in: [src/provider/eip6963/errors.ts:127](https://github.com/evmts/voltai
 
 > `optional` **cause**: `Error`
 
-Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L56)
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
 
 Root cause of this error (for error chaining)
 
@@ -430,7 +430,7 @@ Root cause of this error (for error chaining)
 
 > **code**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L39)
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
 
 Machine-readable error code for programmatic handling
 
@@ -448,7 +448,7 @@ Machine-readable error code for programmatic handling
 
 > `optional` **context**: `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L45)
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
 
 Additional context metadata for debugging
 
@@ -466,7 +466,7 @@ Additional context metadata for debugging
 
 > `optional` **docsPath**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L51)
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
 
 Path to documentation for this error
 
@@ -484,7 +484,7 @@ Path to documentation for this error
 
 > `readonly` **field**: `string`
 
-Defined in: [src/provider/eip6963/errors.ts:125](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L125)
+Defined in: [src/provider/eip6963/errors.ts:125](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L125)
 
 #### Methods
 
@@ -492,7 +492,7 @@ Defined in: [src/provider/eip6963/errors.ts:125](https://github.com/evmts/voltai
 
 > **getErrorChain**(): `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L94)
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
 
 Get full error chain as string for logging
 
@@ -508,7 +508,7 @@ Get full error chain as string for logging
 
 > **toJSON**(): `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L110)
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
 
 Serialize error to JSON for logging/telemetry
 
@@ -524,7 +524,7 @@ Serialize error to JSON for logging/telemetry
 
 ### InvalidIconError
 
-Defined in: [src/provider/eip6963/errors.ts:88](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L88)
+Defined in: [src/provider/eip6963/errors.ts:88](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L88)
 
 Thrown when icon format is invalid
 
@@ -538,7 +538,7 @@ Thrown when icon format is invalid
 
 > **new InvalidIconError**(`icon`): [`InvalidIconError`](#invalidiconerror)
 
-Defined in: [src/provider/eip6963/errors.ts:91](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L91)
+Defined in: [src/provider/eip6963/errors.ts:91](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L91)
 
 ###### Parameters
 
@@ -560,7 +560,7 @@ Defined in: [src/provider/eip6963/errors.ts:91](https://github.com/evmts/voltair
 
 > `optional` **cause**: `Error`
 
-Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L56)
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
 
 Root cause of this error (for error chaining)
 
@@ -572,7 +572,7 @@ Root cause of this error (for error chaining)
 
 > **code**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L39)
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
 
 Machine-readable error code for programmatic handling
 
@@ -590,7 +590,7 @@ Machine-readable error code for programmatic handling
 
 > `optional` **context**: `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L45)
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
 
 Additional context metadata for debugging
 
@@ -608,7 +608,7 @@ Additional context metadata for debugging
 
 > `optional` **docsPath**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L51)
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
 
 Path to documentation for this error
 
@@ -626,7 +626,7 @@ Path to documentation for this error
 
 > `readonly` **icon**: `string`
 
-Defined in: [src/provider/eip6963/errors.ts:89](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L89)
+Defined in: [src/provider/eip6963/errors.ts:89](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L89)
 
 #### Methods
 
@@ -634,7 +634,7 @@ Defined in: [src/provider/eip6963/errors.ts:89](https://github.com/evmts/voltair
 
 > **getErrorChain**(): `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L94)
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
 
 Get full error chain as string for logging
 
@@ -650,7 +650,7 @@ Get full error chain as string for logging
 
 > **toJSON**(): `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L110)
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
 
 Serialize error to JSON for logging/telemetry
 
@@ -666,7 +666,7 @@ Serialize error to JSON for logging/telemetry
 
 ### InvalidProviderError
 
-Defined in: [src/provider/eip6963/errors.ts:140](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L140)
+Defined in: [src/provider/eip6963/errors.ts:140](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L140)
 
 Thrown when provider is invalid (missing request method)
 
@@ -680,7 +680,7 @@ Thrown when provider is invalid (missing request method)
 
 > **new InvalidProviderError**(): [`InvalidProviderError`](#invalidprovidererror)
 
-Defined in: [src/provider/eip6963/errors.ts:141](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L141)
+Defined in: [src/provider/eip6963/errors.ts:141](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L141)
 
 ###### Returns
 
@@ -696,7 +696,7 @@ Defined in: [src/provider/eip6963/errors.ts:141](https://github.com/evmts/voltai
 
 > `optional` **cause**: `Error`
 
-Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L56)
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
 
 Root cause of this error (for error chaining)
 
@@ -708,7 +708,7 @@ Root cause of this error (for error chaining)
 
 > **code**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L39)
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
 
 Machine-readable error code for programmatic handling
 
@@ -726,7 +726,7 @@ Machine-readable error code for programmatic handling
 
 > `optional` **context**: `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L45)
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
 
 Additional context metadata for debugging
 
@@ -744,7 +744,7 @@ Additional context metadata for debugging
 
 > `optional` **docsPath**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L51)
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
 
 Path to documentation for this error
 
@@ -764,7 +764,7 @@ Path to documentation for this error
 
 > **getErrorChain**(): `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L94)
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
 
 Get full error chain as string for logging
 
@@ -780,7 +780,7 @@ Get full error chain as string for logging
 
 > **toJSON**(): `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L110)
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
 
 Serialize error to JSON for logging/telemetry
 
@@ -796,7 +796,7 @@ Serialize error to JSON for logging/telemetry
 
 ### InvalidRdnsError
 
-Defined in: [src/provider/eip6963/errors.ts:69](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L69)
+Defined in: [src/provider/eip6963/errors.ts:69](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L69)
 
 Thrown when RDNS format is invalid
 
@@ -810,7 +810,7 @@ Thrown when RDNS format is invalid
 
 > **new InvalidRdnsError**(`rdns`): [`InvalidRdnsError`](#invalidrdnserror)
 
-Defined in: [src/provider/eip6963/errors.ts:72](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L72)
+Defined in: [src/provider/eip6963/errors.ts:72](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L72)
 
 ###### Parameters
 
@@ -832,7 +832,7 @@ Defined in: [src/provider/eip6963/errors.ts:72](https://github.com/evmts/voltair
 
 > `optional` **cause**: `Error`
 
-Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L56)
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
 
 Root cause of this error (for error chaining)
 
@@ -844,7 +844,7 @@ Root cause of this error (for error chaining)
 
 > **code**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L39)
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
 
 Machine-readable error code for programmatic handling
 
@@ -862,7 +862,7 @@ Machine-readable error code for programmatic handling
 
 > `optional` **context**: `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L45)
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
 
 Additional context metadata for debugging
 
@@ -880,7 +880,7 @@ Additional context metadata for debugging
 
 > `optional` **docsPath**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L51)
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
 
 Path to documentation for this error
 
@@ -898,7 +898,7 @@ Path to documentation for this error
 
 > `readonly` **rdns**: `string`
 
-Defined in: [src/provider/eip6963/errors.ts:70](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L70)
+Defined in: [src/provider/eip6963/errors.ts:70](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L70)
 
 #### Methods
 
@@ -906,7 +906,7 @@ Defined in: [src/provider/eip6963/errors.ts:70](https://github.com/evmts/voltair
 
 > **getErrorChain**(): `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L94)
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
 
 Get full error chain as string for logging
 
@@ -922,7 +922,7 @@ Get full error chain as string for logging
 
 > **toJSON**(): `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L110)
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
 
 Serialize error to JSON for logging/telemetry
 
@@ -938,7 +938,7 @@ Serialize error to JSON for logging/telemetry
 
 ### InvalidUuidError
 
-Defined in: [src/provider/eip6963/errors.ts:53](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L53)
+Defined in: [src/provider/eip6963/errors.ts:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L53)
 
 Thrown when UUID format is invalid
 
@@ -952,7 +952,7 @@ Thrown when UUID format is invalid
 
 > **new InvalidUuidError**(`uuid`): [`InvalidUuidError`](#invaliduuiderror)
 
-Defined in: [src/provider/eip6963/errors.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L56)
+Defined in: [src/provider/eip6963/errors.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L56)
 
 ###### Parameters
 
@@ -974,7 +974,7 @@ Defined in: [src/provider/eip6963/errors.ts:56](https://github.com/evmts/voltair
 
 > `optional` **cause**: `Error`
 
-Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L56)
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
 
 Root cause of this error (for error chaining)
 
@@ -986,7 +986,7 @@ Root cause of this error (for error chaining)
 
 > **code**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L39)
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
 
 Machine-readable error code for programmatic handling
 
@@ -1004,7 +1004,7 @@ Machine-readable error code for programmatic handling
 
 > `optional` **context**: `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L45)
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
 
 Additional context metadata for debugging
 
@@ -1022,7 +1022,7 @@ Additional context metadata for debugging
 
 > `optional` **docsPath**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L51)
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
 
 Path to documentation for this error
 
@@ -1040,7 +1040,7 @@ Path to documentation for this error
 
 > `readonly` **uuid**: `string`
 
-Defined in: [src/provider/eip6963/errors.ts:54](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L54)
+Defined in: [src/provider/eip6963/errors.ts:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L54)
 
 #### Methods
 
@@ -1048,7 +1048,7 @@ Defined in: [src/provider/eip6963/errors.ts:54](https://github.com/evmts/voltair
 
 > **getErrorChain**(): `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L94)
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
 
 Get full error chain as string for logging
 
@@ -1064,7 +1064,7 @@ Get full error chain as string for logging
 
 > **toJSON**(): `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L110)
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
 
 Serialize error to JSON for logging/telemetry
 
@@ -1080,7 +1080,7 @@ Serialize error to JSON for logging/telemetry
 
 ### MissingFieldError
 
-Defined in: [src/provider/eip6963/errors.ts:108](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L108)
+Defined in: [src/provider/eip6963/errors.ts:108](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L108)
 
 Thrown when required field is missing
 
@@ -1094,7 +1094,7 @@ Thrown when required field is missing
 
 > **new MissingFieldError**(`objectType`, `field`): [`MissingFieldError`](#missingfielderror)
 
-Defined in: [src/provider/eip6963/errors.ts:111](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L111)
+Defined in: [src/provider/eip6963/errors.ts:111](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L111)
 
 ###### Parameters
 
@@ -1120,7 +1120,7 @@ Defined in: [src/provider/eip6963/errors.ts:111](https://github.com/evmts/voltai
 
 > `optional` **cause**: `Error`
 
-Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L56)
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
 
 Root cause of this error (for error chaining)
 
@@ -1132,7 +1132,7 @@ Root cause of this error (for error chaining)
 
 > **code**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L39)
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
 
 Machine-readable error code for programmatic handling
 
@@ -1150,7 +1150,7 @@ Machine-readable error code for programmatic handling
 
 > `optional` **context**: `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L45)
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
 
 Additional context metadata for debugging
 
@@ -1168,7 +1168,7 @@ Additional context metadata for debugging
 
 > `optional` **docsPath**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L51)
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
 
 Path to documentation for this error
 
@@ -1186,7 +1186,7 @@ Path to documentation for this error
 
 > `readonly` **field**: `string`
 
-Defined in: [src/provider/eip6963/errors.ts:109](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L109)
+Defined in: [src/provider/eip6963/errors.ts:109](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L109)
 
 #### Methods
 
@@ -1194,7 +1194,7 @@ Defined in: [src/provider/eip6963/errors.ts:109](https://github.com/evmts/voltai
 
 > **getErrorChain**(): `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L94)
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
 
 Get full error chain as string for logging
 
@@ -1210,7 +1210,7 @@ Get full error chain as string for logging
 
 > **toJSON**(): `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L110)
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
 
 Serialize error to JSON for logging/telemetry
 
@@ -1226,7 +1226,7 @@ Serialize error to JSON for logging/telemetry
 
 ### NotImplementedError
 
-Defined in: [src/provider/eip6963/errors.ts:168](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L168)
+Defined in: [src/provider/eip6963/errors.ts:168](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L168)
 
 Thrown when method is not yet implemented
 
@@ -1240,7 +1240,7 @@ Thrown when method is not yet implemented
 
 > **new NotImplementedError**(`methodName`): [`NotImplementedError`](#notimplementederror)
 
-Defined in: [src/provider/eip6963/errors.ts:169](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L169)
+Defined in: [src/provider/eip6963/errors.ts:169](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L169)
 
 ###### Parameters
 
@@ -1262,7 +1262,7 @@ Defined in: [src/provider/eip6963/errors.ts:169](https://github.com/evmts/voltai
 
 > `optional` **cause**: `Error`
 
-Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L56)
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
 
 Root cause of this error (for error chaining)
 
@@ -1274,7 +1274,7 @@ Root cause of this error (for error chaining)
 
 > **code**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L39)
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
 
 Machine-readable error code for programmatic handling
 
@@ -1292,7 +1292,7 @@ Machine-readable error code for programmatic handling
 
 > `optional` **context**: `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L45)
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
 
 Additional context metadata for debugging
 
@@ -1310,7 +1310,7 @@ Additional context metadata for debugging
 
 > `optional` **docsPath**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L51)
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
 
 Path to documentation for this error
 
@@ -1330,7 +1330,7 @@ Path to documentation for this error
 
 > **getErrorChain**(): `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L94)
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
 
 Get full error chain as string for logging
 
@@ -1346,7 +1346,7 @@ Get full error chain as string for logging
 
 > **toJSON**(): `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L110)
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
 
 Serialize error to JSON for logging/telemetry
 
@@ -1362,7 +1362,7 @@ Serialize error to JSON for logging/telemetry
 
 ### UnsupportedEnvironmentError
 
-Defined in: [src/provider/eip6963/errors.ts:37](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L37)
+Defined in: [src/provider/eip6963/errors.ts:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L37)
 
 Thrown when EIP-6963 is used in unsupported environment
 
@@ -1376,7 +1376,7 @@ Thrown when EIP-6963 is used in unsupported environment
 
 > **new UnsupportedEnvironmentError**(`platform`): [`UnsupportedEnvironmentError`](#unsupportedenvironmenterror)
 
-Defined in: [src/provider/eip6963/errors.ts:40](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L40)
+Defined in: [src/provider/eip6963/errors.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L40)
 
 ###### Parameters
 
@@ -1398,7 +1398,7 @@ Defined in: [src/provider/eip6963/errors.ts:40](https://github.com/evmts/voltair
 
 > `optional` **cause**: `Error`
 
-Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L56)
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
 
 Root cause of this error (for error chaining)
 
@@ -1410,7 +1410,7 @@ Root cause of this error (for error chaining)
 
 > **code**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L39)
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
 
 Machine-readable error code for programmatic handling
 
@@ -1428,7 +1428,7 @@ Machine-readable error code for programmatic handling
 
 > `optional` **context**: `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L45)
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
 
 Additional context metadata for debugging
 
@@ -1446,7 +1446,7 @@ Additional context metadata for debugging
 
 > `optional` **docsPath**: `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L51)
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
 
 Path to documentation for this error
 
@@ -1464,7 +1464,7 @@ Path to documentation for this error
 
 > `readonly` **platform**: `string`
 
-Defined in: [src/provider/eip6963/errors.ts:38](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/errors.ts#L38)
+Defined in: [src/provider/eip6963/errors.ts:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L38)
 
 #### Methods
 
@@ -1472,7 +1472,7 @@ Defined in: [src/provider/eip6963/errors.ts:38](https://github.com/evmts/voltair
 
 > **getErrorChain**(): `string`
 
-Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L94)
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
 
 Get full error chain as string for logging
 
@@ -1488,7 +1488,7 @@ Get full error chain as string for logging
 
 > **toJSON**(): `Record`\<`string`, `unknown`\>
 
-Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/errors/AbstractError.ts#L110)
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
 
 Serialize error to JSON for logging/telemetry
 
@@ -1506,7 +1506,7 @@ Serialize error to JSON for logging/telemetry
 
 > **Platform** = `"browser"` \| `"node"` \| `"bun"` \| `"worker"` \| `"unknown"`
 
-Defined in: [src/provider/eip6963/types.ts:92](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/types.ts#L92)
+Defined in: [src/provider/eip6963/types.ts:92](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L92)
 
 Platform detection result
 
@@ -1516,7 +1516,7 @@ Platform detection result
 
 > **ProviderDetailInput** = `object`
 
-Defined in: [src/provider/eip6963/types.ts:79](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/types.ts#L79)
+Defined in: [src/provider/eip6963/types.ts:79](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L79)
 
 Input type for ProviderDetail constructor
 
@@ -1526,13 +1526,13 @@ Input type for ProviderDetail constructor
 
 > **info**: [`ProviderInfoInput`](#providerinfoinput)
 
-Defined in: [src/provider/eip6963/types.ts:80](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/types.ts#L80)
+Defined in: [src/provider/eip6963/types.ts:80](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L80)
 
 ##### provider
 
 > **provider**: [`EIP1193Provider`](../../index.mdx#eip1193provider)
 
-Defined in: [src/provider/eip6963/types.ts:81](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/types.ts#L81)
+Defined in: [src/provider/eip6963/types.ts:81](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L81)
 
 ***
 
@@ -1540,7 +1540,7 @@ Defined in: [src/provider/eip6963/types.ts:81](https://github.com/evmts/voltaire
 
 > **ProviderDetailType** = `Readonly`\<\{ `info`: [`ProviderInfoType`](#providerinfotype); `provider`: [`EIP1193Provider`](../../index.mdx#eip1193provider); \}\> & `object`
 
-Defined in: [src/provider/eip6963/types.ts:69](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/types.ts#L69)
+Defined in: [src/provider/eip6963/types.ts:69](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L69)
 
 Complete provider announcement
 
@@ -1573,7 +1573,7 @@ const detail: ProviderDetailType = EIP6963.ProviderDetail({
 
 > **ProviderInfoInput** = `object`
 
-Defined in: [src/provider/eip6963/types.ts:43](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/types.ts#L43)
+Defined in: [src/provider/eip6963/types.ts:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L43)
 
 Input type for ProviderInfo constructor
 
@@ -1583,25 +1583,25 @@ Input type for ProviderInfo constructor
 
 > **icon**: `string`
 
-Defined in: [src/provider/eip6963/types.ts:46](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/types.ts#L46)
+Defined in: [src/provider/eip6963/types.ts:46](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L46)
 
 ##### name
 
 > **name**: `string`
 
-Defined in: [src/provider/eip6963/types.ts:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/types.ts#L45)
+Defined in: [src/provider/eip6963/types.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L45)
 
 ##### rdns
 
 > **rdns**: `string`
 
-Defined in: [src/provider/eip6963/types.ts:47](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/types.ts#L47)
+Defined in: [src/provider/eip6963/types.ts:47](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L47)
 
 ##### uuid
 
 > **uuid**: `string`
 
-Defined in: [src/provider/eip6963/types.ts:44](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/types.ts#L44)
+Defined in: [src/provider/eip6963/types.ts:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L44)
 
 ***
 
@@ -1609,7 +1609,7 @@ Defined in: [src/provider/eip6963/types.ts:44](https://github.com/evmts/voltaire
 
 > **ProviderInfoType** = `Readonly`\<\{ `icon`: `string`; `name`: `string`; `rdns`: `string`; `uuid`: `string`; \}\> & `object`
 
-Defined in: [src/provider/eip6963/types.ts:29](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/types.ts#L29)
+Defined in: [src/provider/eip6963/types.ts:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L29)
 
 Wallet provider metadata
 
@@ -1639,7 +1639,7 @@ const info: ProviderInfoType = EIP6963.ProviderInfo({
 
 > **ProviderListener** = (`providers`) => `void`
 
-Defined in: [src/provider/eip6963/types.ts:87](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/types.ts#L87)
+Defined in: [src/provider/eip6963/types.ts:87](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L87)
 
 Listener function for provider announcements
 
@@ -1659,7 +1659,7 @@ Listener function for provider announcements
 
 > `const` **DATA\_URI\_REGEX**: `RegExp`
 
-Defined in: [src/provider/eip6963/validators.js:33](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/validators.js#L33)
+Defined in: [src/provider/eip6963/validators.js:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L33)
 
 Data URI format regex for images
 
@@ -1669,7 +1669,7 @@ Data URI format regex for images
 
 > `const` **RDNS\_REGEX**: `RegExp`
 
-Defined in: [src/provider/eip6963/validators.js:27](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/validators.js#L27)
+Defined in: [src/provider/eip6963/validators.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L27)
 
 Reverse DNS format regex
 
@@ -1679,7 +1679,7 @@ Reverse DNS format regex
 
 > `const` **UUID\_V4\_REGEX**: `RegExp`
 
-Defined in: [src/provider/eip6963/validators.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/validators.js#L20)
+Defined in: [src/provider/eip6963/validators.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L20)
 
 UUIDv4 format regex
 
@@ -1689,7 +1689,7 @@ UUIDv4 format regex
 
 > **\_reset**(): `void`
 
-Defined in: [src/provider/eip6963/state.js:52](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/state.js#L52)
+Defined in: [src/provider/eip6963/state.js:52](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/state.js#L52)
 
 Clear all state (for testing)
 
@@ -1703,7 +1703,7 @@ Clear all state (for testing)
 
 > **announce**(`detail`): () => `void`
 
-Defined in: [src/provider/eip6963/announce.js:51](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/announce.js#L51)
+Defined in: [src/provider/eip6963/announce.js:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/announce.js#L51)
 
 Announce a wallet provider
 
@@ -1778,7 +1778,7 @@ unsubscribe();
 
 > **assertBrowser**(): `void`
 
-Defined in: [src/provider/eip6963/getPlatform.js:77](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/getPlatform.js#L77)
+Defined in: [src/provider/eip6963/getPlatform.js:76](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/getPlatform.js#L76)
 
 Assert that we're in a browser environment
 
@@ -1804,7 +1804,7 @@ assertBrowser(); // Throws if not in browser
 
 > **findProvider**(`options`): [`ProviderDetailType`](#providerdetailtype) \| `undefined`
 
-Defined in: [src/provider/eip6963/findProvider.js:42](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/findProvider.js#L42)
+Defined in: [src/provider/eip6963/findProvider.js:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/findProvider.js#L42)
 
 Find a provider by its reverse DNS identifier
 
@@ -1862,7 +1862,7 @@ unsubscribe();
 
 > **getPlatform**(): `"browser"` \| `"node"` \| `"bun"` \| `"worker"` \| `"unknown"`
 
-Defined in: [src/provider/eip6963/getPlatform.js:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/getPlatform.js#L34)
+Defined in: [src/provider/eip6963/getPlatform.js:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/getPlatform.js#L33)
 
 Detect the current platform
 
@@ -1889,7 +1889,7 @@ if (platform === 'browser') {
 
 > **getProviders**(): [`ProviderDetailType`](#providerdetailtype)[]
 
-Defined in: [src/provider/eip6963/getProviders.js:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/getProviders.js#L34)
+Defined in: [src/provider/eip6963/getProviders.js:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/getProviders.js#L34)
 
 Get snapshot of all currently discovered providers
 
@@ -1928,7 +1928,7 @@ unsubscribe();
 
 > **ProviderDetail**(`input`): [`ProviderDetailType`](#providerdetailtype)
 
-Defined in: [src/provider/eip6963/ProviderDetail.js:48](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/ProviderDetail.js#L48)
+Defined in: [src/provider/eip6963/ProviderDetail.js:48](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/ProviderDetail.js#L48)
 
 Create a validated ProviderDetail object
 
@@ -1999,7 +1999,7 @@ const accounts = await detail.provider.request({
 
 > **ProviderInfo**(`input`): [`ProviderInfoType`](#providerinfotype)
 
-Defined in: [src/provider/eip6963/ProviderInfo.js:45](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/ProviderInfo.js#L45)
+Defined in: [src/provider/eip6963/ProviderInfo.js:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/ProviderInfo.js#L45)
 
 Create a validated ProviderInfo object
 
@@ -2061,7 +2061,7 @@ console.log(Object.isFrozen(info)); // true
 
 > **subscribe**(`listener`): () => `void`
 
-Defined in: [src/provider/eip6963/subscribe.js:75](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/subscribe.js#L75)
+Defined in: [src/provider/eip6963/subscribe.js:75](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/subscribe.js#L75)
 
 Subscribe to wallet provider announcements
 
@@ -2118,7 +2118,7 @@ unsubscribe();
 
 > **validateIcon**(`icon`): `void`
 
-Defined in: [src/provider/eip6963/validators.js:99](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/validators.js#L99)
+Defined in: [src/provider/eip6963/validators.js:99](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L99)
 
 Validate icon is a valid data URI
 
@@ -2155,7 +2155,7 @@ validateIcon("https://example.com/icon.png"); // Throws InvalidIconError
 
 > **validateName**(`name`): `void`
 
-Defined in: [src/provider/eip6963/validators.js:143](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/validators.js#L143)
+Defined in: [src/provider/eip6963/validators.js:143](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L143)
 
 Validate name is non-empty string
 
@@ -2185,7 +2185,7 @@ If name is empty
 
 > **validateProvider**(`provider`): `void`
 
-Defined in: [src/provider/eip6963/validators.js:124](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/validators.js#L124)
+Defined in: [src/provider/eip6963/validators.js:124](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L124)
 
 Validate provider has request method
 
@@ -2222,7 +2222,7 @@ validateProvider({}); // Throws InvalidProviderError
 
 > **validateRdns**(`rdns`): `void`
 
-Defined in: [src/provider/eip6963/validators.js:74](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/validators.js#L74)
+Defined in: [src/provider/eip6963/validators.js:74](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L74)
 
 Validate RDNS is valid reverse DNS format
 
@@ -2259,7 +2259,7 @@ validateRdns("metamask"); // Throws InvalidRdnsError
 
 > **validateUuid**(`uuid`): `void`
 
-Defined in: [src/provider/eip6963/validators.js:49](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/provider/eip6963/validators.js#L49)
+Defined in: [src/provider/eip6963/validators.js:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L49)
 
 Validate UUID is UUIDv4 format
 

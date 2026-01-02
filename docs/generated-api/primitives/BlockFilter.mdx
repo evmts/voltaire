@@ -1,0 +1,75 @@
+---
+title: "primitives/BlockFilter"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/BlockFilter
+
+# primitives/BlockFilter
+
+## Type Aliases
+
+### BlockFilterType
+
+> **BlockFilterType** = `object` & `object`
+
+Defined in: [src/primitives/BlockFilter/BlockFilterType.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BlockFilter/BlockFilterType.ts#L10)
+
+Block filter created by eth_newBlockFilter
+
+Notifies of new blocks when polled with eth_getFilterChanges.
+Returns array of block hashes.
+
+#### Type Declaration
+
+##### filterId
+
+> `readonly` **filterId**: [`FilterIdType`](FilterId.mdx#filteridtype)
+
+Filter identifier
+
+##### type
+
+> `readonly` **type**: `"block"`
+
+Filter type discriminator
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"BlockFilter"`
+
+## Functions
+
+### from()
+
+> **from**(`filterId`): [`BlockFilterType`](#blockfiltertype)
+
+Defined in: [src/primitives/BlockFilter/from.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BlockFilter/from.js#L13)
+
+Create BlockFilter from filter ID
+
+#### Parameters
+
+##### filterId
+
+[`FilterIdType`](FilterId.mdx#filteridtype)
+
+Filter identifier from eth_newBlockFilter
+
+#### Returns
+
+[`BlockFilterType`](#blockfiltertype)
+
+#### Example
+
+```javascript
+import * as BlockFilter from './primitives/BlockFilter/index.js';
+import * as FilterId from './primitives/FilterId/index.js';
+const filter = BlockFilter.from(FilterId.from("0x1"));
+```

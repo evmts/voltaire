@@ -17,7 +17,7 @@ description: Auto-generated API documentation
 
 > `const` **BrandedHex**: `object`
 
-Defined in: [src/primitives/Hex/internal-index.ts:63](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/internal-index.ts#L63)
+Defined in: [src/primitives/Hex/internal-index.ts:63](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/internal-index.ts#L63)
 
 #### Type Declaration
 
@@ -1135,7 +1135,7 @@ Hex.zero(4); // '0x00000000'
 
 > **assertSize**\<`TSize`\>(`hex`, `targetSize`): [`Sized`](../../primitives/Hex.mdx#sized)\<`TSize`\>
 
-Defined in: [src/primitives/Hex/assertSize.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/assertSize.ts#L20)
+Defined in: [src/primitives/Hex/assertSize.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/assertSize.ts#L20)
 
 Assert hex has specific size
 
@@ -1191,7 +1191,7 @@ const sized = Hex.assertSize(hex, 2); // Sized<2>
 
 > **clone**(`hex`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/clone.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/clone.js#L17)
+Defined in: [src/primitives/Hex/clone.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/clone.js#L17)
 
 Create a copy of a Hex string
 
@@ -1234,7 +1234,7 @@ console.log(Hex.equals(hex1, hex2)); // true
 
 > **concat**(...`hexes`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/concat.ts:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/concat.ts#L21)
+Defined in: [src/primitives/Hex/concat.ts:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/concat.ts#L21)
 
 Concatenate multiple hex strings
 
@@ -1281,7 +1281,7 @@ Hex.concat('0x12', '0x34', '0x56'); // '0x123456'
 
 > **equals**(`hex`, `other`): `boolean`
 
-Defined in: [src/primitives/Hex/equals.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/equals.ts#L19)
+Defined in: [src/primitives/Hex/equals.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/equals.ts#L19)
 
 Check if two hex strings are equal
 
@@ -1329,7 +1329,7 @@ Hex.equals(hex, Hex.from('0x1234')); // true
 
 > **from**(`value`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/from.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/from.ts#L19)
+Defined in: [src/primitives/Hex/from.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/from.ts#L19)
 
 Create Hex from string or bytes
 
@@ -1371,7 +1371,7 @@ const hex2 = Hex.from(new Uint8Array([0x12, 0x34]));
 
 > **fromBigInt**(`value`, `size?`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/fromBigInt.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/fromBigInt.ts#L19)
+Defined in: [src/primitives/Hex/fromBigInt.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/fromBigInt.ts#L19)
 
 Convert bigint to hex
 
@@ -1419,7 +1419,7 @@ Hex.fromBigInt(255n, 32);  // '0x00...00ff' (32 bytes)
 
 > **fromBoolean**(`value`): [`Sized`](../../primitives/Hex.mdx#sized)\<`1`\>
 
-Defined in: [src/primitives/Hex/fromBoolean.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/fromBoolean.js#L16)
+Defined in: [src/primitives/Hex/fromBoolean.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/fromBoolean.js#L16)
 
 Convert boolean to hex
 
@@ -1461,7 +1461,7 @@ Hex.fromBoolean(false); // '0x00'
 
 > **fromBytes**(`bytes`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/fromBytes.ts:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/fromBytes.ts#L17)
+Defined in: [src/primitives/Hex/fromBytes.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/fromBytes.ts#L17)
 
 Convert bytes to hex
 
@@ -1502,7 +1502,7 @@ const hex = Hex.fromBytes(new Uint8Array([0x12, 0x34])); // '0x1234'
 
 > **fromNumber**(`value`, `size?`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/fromNumber.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/fromNumber.js#L18)
+Defined in: [src/primitives/Hex/fromNumber.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/fromNumber.js#L18)
 
 Convert number to hex
 
@@ -1553,7 +1553,7 @@ Hex.fromNumber(0x1234);  // '0x1234'
 
 > **fromString**(`str`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/fromString.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/fromString.ts#L18)
+Defined in: [src/primitives/Hex/fromString.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/fromString.ts#L18)
 
 Convert string to hex
 
@@ -1594,7 +1594,7 @@ Hex.fromString('hello'); // '0x68656c6c6f'
 
 > **isHex**(`value`): `value is HexType`
 
-Defined in: [src/primitives/Hex/isHex.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/isHex.ts#L20)
+Defined in: [src/primitives/Hex/isHex.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/isHex.ts#L20)
 
 Check if string is valid hex
 
@@ -1637,7 +1637,7 @@ Hex.isHex('0xZZZZ'); // false
 
 > **isSized**\<`TSize`\>(`hex`, `targetSize`): `hex is Sized<TSize>`
 
-Defined in: [src/primitives/Hex/isSized.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/isSized.ts#L19)
+Defined in: [src/primitives/Hex/isSized.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/isSized.ts#L19)
 
 Check if hex has specific byte size
 
@@ -1691,7 +1691,7 @@ Hex.isSized(hex, 2); // true
 
 > **pad**(`hex`, `targetSize`): `string`
 
-Defined in: [src/primitives/Hex/pad.js:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/pad.js#L21)
+Defined in: [src/primitives/Hex/pad.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/pad.js#L21)
 
 Pad hex to target size (left-padded with zeros)
 
@@ -1742,7 +1742,7 @@ Hex.pad('0x1234', 1); // throws Error (2 bytes > 1 byte target)
 
 > **padRight**(`hex`, `targetSize`): `string`
 
-Defined in: [src/primitives/Hex/padRight.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/padRight.js#L20)
+Defined in: [src/primitives/Hex/padRight.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/padRight.js#L20)
 
 Pad hex to right (suffix with zeros)
 
@@ -1790,7 +1790,7 @@ const padded = Hex.padRight(hex, 4); // '0x12340000'
 
 > **random**(`size`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/random.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/random.ts#L18)
+Defined in: [src/primitives/Hex/random.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/random.ts#L18)
 
 Generate random hex of specific size
 
@@ -1831,7 +1831,7 @@ const random = Hex.random(32); // random 32-byte hex
 
 > **size**(`hex`): `number`
 
-Defined in: [src/primitives/Hex/size.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/size.js#L16)
+Defined in: [src/primitives/Hex/size.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/size.js#L16)
 
 Get byte size of hex
 
@@ -1873,7 +1873,7 @@ Hex.size(hex); // 2
 
 > **slice**(`hex`, `start`, `end?`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/slice.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/slice.ts#L24)
+Defined in: [src/primitives/Hex/slice.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/slice.ts#L24)
 
 Slice hex string
 
@@ -1933,7 +1933,7 @@ const sliced = Hex.slice(hex, 1); // '0x3456'
 
 > **toBigInt**(`hex`): `bigint`
 
-Defined in: [src/primitives/Hex/toBigInt.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/toBigInt.ts#L18)
+Defined in: [src/primitives/Hex/toBigInt.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/toBigInt.ts#L18)
 
 Convert hex to bigint
 
@@ -1975,7 +1975,7 @@ const big = Hex.toBigInt(hex); // 255n
 
 > **toBoolean**(`hex`): `boolean`
 
-Defined in: [src/primitives/Hex/toBoolean.js:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/toBoolean.js#L20)
+Defined in: [src/primitives/Hex/toBoolean.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/toBoolean.js#L20)
 
 Convert hex to boolean (strict: only 0x0/0x00 or 0x1/0x01 are valid)
 
@@ -2021,7 +2021,7 @@ Hex.toBoolean('0x02'); // throws Error
 
 > **toBytes**(`hex`): `Uint8Array`
 
-Defined in: [src/primitives/Hex/toBytes.ts:21](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/toBytes.ts#L21)
+Defined in: [src/primitives/Hex/toBytes.ts:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/toBytes.ts#L21)
 
 Convert hex to bytes
 
@@ -2069,7 +2069,7 @@ const bytes = Hex.toBytes(hex); // Uint8Array([0x12, 0x34])
 
 > **toNumber**(`hex`): `number`
 
-Defined in: [src/primitives/Hex/toNumber.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/toNumber.js#L18)
+Defined in: [src/primitives/Hex/toNumber.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/toNumber.js#L18)
 
 Convert hex to number
 
@@ -2113,7 +2113,7 @@ const num = Hex.toNumber(hex); // 255
 
 > **toString**(`hex`): `string`
 
-Defined in: [src/primitives/Hex/toString.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/toString.ts#L22)
+Defined in: [src/primitives/Hex/toString.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/toString.ts#L22)
 
 Convert hex to string
 
@@ -2161,7 +2161,7 @@ const str = Hex.toString(hex); // 'hello'
 
 > **trim**(`hex`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/trim.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/trim.ts#L22)
+Defined in: [src/primitives/Hex/trim.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/trim.ts#L22)
 
 Trim leading zeros from hex
 
@@ -2209,7 +2209,7 @@ const trimmed = Hex.trim(hex); // '0x1234'
 
 > **validate**(`value`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/validate.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/validate.ts#L19)
+Defined in: [src/primitives/Hex/validate.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/validate.ts#L19)
 
 Validate hex string
 
@@ -2252,7 +2252,7 @@ const hex = Hex.validate('0x1234'); // HexType
 
 > **xor**(`hex`, `other`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/xor.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/xor.ts#L24)
+Defined in: [src/primitives/Hex/xor.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/xor.ts#L24)
 
 XOR with another hex string of same length
 
@@ -2306,7 +2306,7 @@ const result = Hex.xor(hex, Hex.from('0x34')); // '0x26'
 
 > **zero**(`size`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Hex/zero.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Hex/zero.ts#L18)
+Defined in: [src/primitives/Hex/zero.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/zero.ts#L18)
 
 Create zero-filled hex of specific size
 

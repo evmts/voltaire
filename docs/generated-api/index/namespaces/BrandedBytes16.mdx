@@ -15,29 +15,11 @@ description: Auto-generated API documentation
 
 ### Bytes16Like
 
-> **Bytes16Like** = [`Bytes16Type`](#bytes16type) \| `string` \| `Uint8Array`
+> **Bytes16Like** = [`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type) \| `string` \| `Uint8Array`
 
-Defined in: [src/primitives/Bytes/Bytes16/Bytes16Type.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/Bytes16Type.ts#L11)
+Defined in: [src/primitives/Bytes/Bytes16/Bytes16Type.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/Bytes16Type.ts#L11)
 
 Inputs that can be converted to Bytes16
-
-***
-
-### Bytes16Type
-
-> **Bytes16Type** = `Uint8Array` & `object`
-
-Defined in: [src/primitives/Bytes/Bytes16/Bytes16Type.ts:3](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/Bytes16Type.ts#L3)
-
-#### Type Declaration
-
-##### \[brand\]
-
-> `readonly` **\[brand\]**: `"Bytes16"`
-
-##### size
-
-> `readonly` **size**: `16`
 
 ## Variables
 
@@ -45,25 +27,43 @@ Defined in: [src/primitives/Bytes/Bytes16/Bytes16Type.ts:3](https://github.com/e
 
 > `const` **SIZE**: `16` = `16`
 
-Defined in: [src/primitives/Bytes/Bytes16/Bytes16Type.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/Bytes16Type.ts#L13)
+Defined in: [src/primitives/Bytes/Bytes16/Bytes16Type.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/Bytes16Type.ts#L13)
 
 ***
 
 ### ZERO
 
-> `const` **ZERO**: [`Bytes16Type`](#bytes16type)
+> `const` **ZERO**: [`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
-Defined in: [src/primitives/Bytes/Bytes16/constants.js:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/constants.js#L10)
+Defined in: [src/primitives/Bytes/Bytes16/constants.js:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/constants.js#L10)
 
 Zero Bytes16 constant (16 zero bytes)
 
 ## Functions
 
+### Bytes16()
+
+> **Bytes16**(`value`): [`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
+
+Defined in: [src/primitives/Bytes/Bytes16/index.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/index.ts#L39)
+
+#### Parameters
+
+##### value
+
+[`Bytes16Like`](#bytes16like)
+
+#### Returns
+
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
+
+***
+
 ### clone()
 
-> **clone**(`bytes`): [`Bytes16Type`](#bytes16type)
+> **clone**(`bytes`): [`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
-Defined in: [src/primitives/Bytes/Bytes16/clone.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/clone.js#L14)
+Defined in: [src/primitives/Bytes/Bytes16/clone.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/clone.js#L14)
 
 Clone a Bytes16 value
 
@@ -71,13 +71,13 @@ Clone a Bytes16 value
 
 ##### bytes
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 Value to clone
 
 #### Returns
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 Cloned value
 
@@ -102,7 +102,7 @@ const cloned = Bytes16.clone(bytes);
 
 > **compare**(`a`, `b`): `number`
 
-Defined in: [src/primitives/Bytes/Bytes16/compare.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/compare.js#L15)
+Defined in: [src/primitives/Bytes/Bytes16/compare.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/compare.js#L15)
 
 Compare two Bytes16 values
 
@@ -110,13 +110,13 @@ Compare two Bytes16 values
 
 ##### a
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 First value
 
 ##### b
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 Second value
 
@@ -147,7 +147,7 @@ const result = Bytes16.compare(a, b);
 
 > **equals**(`a`, `b`): `boolean`
 
-Defined in: [src/primitives/Bytes/Bytes16/equals.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/equals.js#L15)
+Defined in: [src/primitives/Bytes/Bytes16/equals.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/equals.js#L15)
 
 Check if two Bytes16 values are equal
 
@@ -155,13 +155,13 @@ Check if two Bytes16 values are equal
 
 ##### a
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 First value
 
 ##### b
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 Second value
 
@@ -190,9 +190,9 @@ const equal = Bytes16.equals(a, b);
 
 ### from()
 
-> **from**(`value`): [`Bytes16Type`](#bytes16type)
+> **from**(`value`): [`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
-Defined in: [src/primitives/Bytes/Bytes16/from.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/from.js#L19)
+Defined in: [src/primitives/Bytes/Bytes16/from.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/from.js#L19)
 
 Create Bytes16 from string or bytes
 
@@ -206,7 +206,7 @@ Hex string with optional 0x prefix or Uint8Array
 
 #### Returns
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 Bytes16
 
@@ -234,9 +234,9 @@ const bytes2 = Bytes16.from(new Uint8Array(16));
 
 ### fromBytes()
 
-> **fromBytes**(`bytes`): [`Bytes16Type`](#bytes16type)
+> **fromBytes**(`bytes`): [`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
-Defined in: [src/primitives/Bytes/Bytes16/fromBytes.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/fromBytes.js#L18)
+Defined in: [src/primitives/Bytes/Bytes16/fromBytes.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/fromBytes.js#L18)
 
 Create Bytes16 from raw bytes
 
@@ -250,7 +250,7 @@ Raw bytes (must be 16 bytes)
 
 #### Returns
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 Bytes16
 
@@ -277,9 +277,9 @@ const bytes = Bytes16.fromBytes(new Uint8Array(16));
 
 ### fromHex()
 
-> **fromHex**(`hex`): [`Bytes16Type`](#bytes16type)
+> **fromHex**(`hex`): [`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
-Defined in: [src/primitives/Bytes/Bytes16/fromHex.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/fromHex.js#L19)
+Defined in: [src/primitives/Bytes/Bytes16/fromHex.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/fromHex.js#L19)
 
 Create Bytes16 from hex string
 
@@ -293,7 +293,7 @@ Hex string with optional 0x prefix
 
 #### Returns
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 Bytes16
 
@@ -326,7 +326,7 @@ const bytes = Bytes16.fromHex('0x1234567890abcdef1234567890abcdef');
 
 > **isZero**(`bytes`): `boolean`
 
-Defined in: [src/primitives/Bytes/Bytes16/isZero.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/isZero.js#L14)
+Defined in: [src/primitives/Bytes/Bytes16/isZero.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/isZero.js#L14)
 
 Check if Bytes16 is all zeros
 
@@ -334,7 +334,7 @@ Check if Bytes16 is all zeros
 
 ##### bytes
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 Value to check
 
@@ -365,7 +365,7 @@ const isAllZeros = Bytes16.isZero(bytes);
 
 > **size**(`_bytes`): `16`
 
-Defined in: [src/primitives/Bytes/Bytes16/size.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/size.js#L16)
+Defined in: [src/primitives/Bytes/Bytes16/size.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/size.js#L16)
 
 Get size of Bytes16 (always 16)
 
@@ -373,7 +373,7 @@ Get size of Bytes16 (always 16)
 
 ##### \_bytes
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 Bytes16 value
 
@@ -404,7 +404,7 @@ const s = Bytes16.size(bytes); // 16
 
 > **toHex**(`bytes`): `string`
 
-Defined in: [src/primitives/Bytes/Bytes16/toHex.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/toHex.js#L15)
+Defined in: [src/primitives/Bytes/Bytes16/toHex.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/toHex.js#L15)
 
 Convert Bytes16 to hex string
 
@@ -412,7 +412,7 @@ Convert Bytes16 to hex string
 
 ##### bytes
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 Bytes16 to convert
 
@@ -444,7 +444,7 @@ const hex = Bytes16.toHex(bytes);
 
 > **toUint8Array**(`bytes`): `Uint8Array`\<`ArrayBufferLike`\>
 
-Defined in: [src/primitives/Bytes/Bytes16/toUint8Array.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/toUint8Array.js#L14)
+Defined in: [src/primitives/Bytes/Bytes16/toUint8Array.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/toUint8Array.js#L14)
 
 Convert Bytes16 to Uint8Array
 
@@ -452,7 +452,7 @@ Convert Bytes16 to Uint8Array
 
 ##### bytes
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 Bytes16 to convert
 
@@ -481,15 +481,15 @@ const raw = Bytes16.toUint8Array(bytes);
 
 ### zero()
 
-> **zero**(): [`Bytes16Type`](#bytes16type)
+> **zero**(): [`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
-Defined in: [src/primitives/Bytes/Bytes16/zero.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes16/zero.js#L15)
+Defined in: [src/primitives/Bytes/Bytes16/zero.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes16/zero.js#L15)
 
 Create a zero-filled Bytes16
 
 #### Returns
 
-[`Bytes16Type`](#bytes16type)
+[`Bytes16Type`](../../primitives/Bytes.mdx#bytes16type)
 
 Zero-filled Bytes16
 
@@ -510,6 +510,6 @@ const zeros = Bytes16.zero();
 
 ## References
 
-### Bytes16
+### Bytes16Type
 
-Re-exports [Bytes16](../index.mdx#bytes16)
+Re-exports [Bytes16Type](../../primitives/Bytes.mdx#bytes16type)

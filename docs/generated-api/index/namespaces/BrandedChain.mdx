@@ -15,13 +15,13 @@ description: Auto-generated API documentation
 
 ### ChainConstructor()
 
-Defined in: [src/primitives/Chain/ChainConstructor.ts:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/ChainConstructor.ts#L6)
+Defined in: [src/primitives/Chain/ChainConstructor.ts:6](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/ChainConstructor.ts#L6)
 
 Chain constructor type
 
 > **ChainConstructor**(`chain`): `Chain`
 
-Defined in: [src/primitives/Chain/ChainConstructor.ts:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/ChainConstructor.ts#L7)
+Defined in: [src/primitives/Chain/ChainConstructor.ts:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/ChainConstructor.ts#L7)
 
 Chain constructor type
 
@@ -41,13 +41,13 @@ Chain constructor type
 
 > **byId**: `Record`\<`number`, `Chain`\>
 
-Defined in: [src/primitives/Chain/ChainConstructor.ts:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/ChainConstructor.ts#L10)
+Defined in: [src/primitives/Chain/ChainConstructor.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/ChainConstructor.ts#L10)
 
 ##### from()
 
 > **from**: (`chain`) => `Chain`
 
-Defined in: [src/primitives/Chain/ChainConstructor.ts:8](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/ChainConstructor.ts#L8)
+Defined in: [src/primitives/Chain/ChainConstructor.ts:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/ChainConstructor.ts#L8)
 
 ###### Parameters
 
@@ -63,7 +63,7 @@ Defined in: [src/primitives/Chain/ChainConstructor.ts:8](https://github.com/evmt
 
 > **fromId**: (`id`) => `Chain` \| `undefined`
 
-Defined in: [src/primitives/Chain/ChainConstructor.ts:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/ChainConstructor.ts#L9)
+Defined in: [src/primitives/Chain/ChainConstructor.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/ChainConstructor.ts#L9)
 
 ###### Parameters
 
@@ -75,13 +75,23 @@ Defined in: [src/primitives/Chain/ChainConstructor.ts:9](https://github.com/evmt
 
 `Chain` \| `undefined`
 
+## Type Aliases
+
+### Chain
+
+> **Chain**\<\> = `Chain`
+
+Defined in: [src/primitives/Chain/Chain.js:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/Chain.js#L39)
+
+#### Type Parameters
+
 ## Variables
 
 ### BrandedChain
 
 > `const` **BrandedChain**: `object`
 
-Defined in: [src/primitives/Chain/index.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/index.js#L14)
+Defined in: [src/primitives/Chain/index.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/index.js#L14)
 
 #### Type Declaration
 
@@ -191,7 +201,7 @@ const optimism = Chain.fromId(10);
 
 > `const` **byId**: `Record`\<`number`, `Chain`\> = `tevmChainById`
 
-Defined in: [src/primitives/Chain/byId.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/byId.js#L17)
+Defined in: [src/primitives/Chain/byId.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/byId.js#L17)
 
 Record mapping chain IDs to chain objects
 
@@ -219,7 +229,7 @@ const optimism = Chain.byId[10];
 
 > `const` **CHAIN\_METADATA**: `Record`\<`number`, `ChainMetadata`\>
 
-Defined in: [src/primitives/Chain/metadata.ts:48](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/metadata.ts#L48)
+Defined in: [src/primitives/Chain/metadata.ts:48](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/metadata.ts#L48)
 
 Metadata for popular chains
 
@@ -229,7 +239,7 @@ Metadata for popular chains
 
 > `const` **DEFAULT\_METADATA**: `ChainMetadata`
 
-Defined in: [src/primitives/Chain/metadata.ts:449](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/metadata.ts#L449)
+Defined in: [src/primitives/Chain/metadata.ts:449](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/metadata.ts#L449)
 
 Default metadata for chains not in the registry
 
@@ -239,7 +249,7 @@ Default metadata for chains not in the registry
 
 > **\_from**(`chain`): `Chain`
 
-Defined in: [src/primitives/Chain/from.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/from.js#L16)
+Defined in: [src/primitives/Chain/from.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/from.js#L16)
 
 Create Chain from a chain object (identity function)
 
@@ -281,7 +291,7 @@ const chain = Chain.from(mainnet);
 
 > **\_fromId**(`id`): `Chain` \| `undefined`
 
-Defined in: [src/primitives/Chain/fromId.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/fromId.js#L18)
+Defined in: [src/primitives/Chain/fromId.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/fromId.js#L18)
 
 Get a chain by its chain ID
 
@@ -319,11 +329,49 @@ const optimism = Chain.fromId(10);
 
 ***
 
+### Chain()
+
+> **Chain**(`chain`): `Chain`
+
+Defined in: [src/primitives/Chain/Chain.js:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/Chain.js#L39)
+
+Factory function for creating Chain instances
+
+#### Parameters
+
+##### chain
+
+`any`
+
+#### Returns
+
+`Chain`
+
+#### See
+
+https://voltaire.tevm.sh/primitives/chain for Chain documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { mainnet } from '@tevm/chains';
+import * as Chain from './primitives/Chain/index.js';
+const chain = Chain.Chain(mainnet);
+```
+
+***
+
 ### from()
 
 > **from**(`chain`): `Chain`
 
-Defined in: [src/primitives/Chain/from.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/from.js#L16)
+Defined in: [src/primitives/Chain/from.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/from.js#L16)
 
 Create Chain from a chain object (identity function)
 
@@ -365,7 +413,7 @@ const chain = Chain.from(mainnet);
 
 > **fromId**(`id`): `Chain` \| `undefined`
 
-Defined in: [src/primitives/Chain/fromId.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Chain/fromId.js#L18)
+Defined in: [src/primitives/Chain/fromId.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Chain/fromId.js#L18)
 
 Get a chain by its chain ID
 
@@ -406,9 +454,3 @@ const optimism = Chain.fromId(10);
 ### \_byId
 
 Renames and re-exports [byId](#byid-2)
-
-***
-
-### Chain
-
-Re-exports [Chain](../index.mdx#chain-1)

@@ -20,7 +20,7 @@ Includes retry logic, rate limiting, polling, timeouts, and batching.
 
 ### AsyncQueue
 
-Defined in: [src/utils/batch.ts:277](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L277)
+Defined in: [src/utils/batch.ts:277](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L277)
 
 Async queue processor with concurrency limit
 
@@ -68,7 +68,7 @@ Result type
 
 > **new AsyncQueue**\<`T`, `R`\>(`processFn`, `options`): [`AsyncQueue`](#asyncqueue)\<`T`, `R`\>
 
-Defined in: [src/utils/batch.ts:287](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L287)
+Defined in: [src/utils/batch.ts:287](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L287)
 
 ###### Parameters
 
@@ -92,7 +92,7 @@ Defined in: [src/utils/batch.ts:287](https://github.com/evmts/voltaire/blob/c23b
 
 > **activeCount**(): `number`
 
-Defined in: [src/utils/batch.ts:345](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L345)
+Defined in: [src/utils/batch.ts:345](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L345)
 
 Get number of active operations
 
@@ -104,7 +104,7 @@ Get number of active operations
 
 > **add**(`item`): `Promise`\<`R`\>
 
-Defined in: [src/utils/batch.ts:301](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L301)
+Defined in: [src/utils/batch.ts:301](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L301)
 
 Add an item to the queue
 
@@ -126,7 +126,7 @@ Promise resolving to the result
 
 > **drain**(): `Promise`\<`void`\>
 
-Defined in: [src/utils/batch.ts:352](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L352)
+Defined in: [src/utils/batch.ts:352](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L352)
 
 Wait for all operations to complete
 
@@ -138,7 +138,7 @@ Wait for all operations to complete
 
 > **size**(): `number`
 
-Defined in: [src/utils/batch.ts:338](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L338)
+Defined in: [src/utils/batch.ts:338](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L338)
 
 Get current queue size
 
@@ -150,7 +150,7 @@ Get current queue size
 
 ### BatchQueue
 
-Defined in: [src/utils/batch.ts:49](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L49)
+Defined in: [src/utils/batch.ts:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L49)
 
 Batch Queue for async operations
 
@@ -205,7 +205,7 @@ Result type
 
 > **new BatchQueue**\<`T`, `R`\>(`options`): [`BatchQueue`](#batchqueue)\<`T`, `R`\>
 
-Defined in: [src/utils/batch.ts:63](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L63)
+Defined in: [src/utils/batch.ts:63](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L63)
 
 ###### Parameters
 
@@ -223,7 +223,7 @@ Defined in: [src/utils/batch.ts:63](https://github.com/evmts/voltaire/blob/c23bd
 
 > **add**(`item`): `Promise`\<`R`\>
 
-Defined in: [src/utils/batch.ts:76](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L76)
+Defined in: [src/utils/batch.ts:76](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L76)
 
 Add an item to the queue
 
@@ -245,7 +245,7 @@ Promise resolving to the result for this item
 
 > **clear**(): `void`
 
-Defined in: [src/utils/batch.ts:172](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L172)
+Defined in: [src/utils/batch.ts:172](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L172)
 
 Clear the queue without processing
 
@@ -257,7 +257,7 @@ Clear the queue without processing
 
 > **drain**(): `Promise`\<`void`\>
 
-Defined in: [src/utils/batch.ts:189](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L189)
+Defined in: [src/utils/batch.ts:189](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L189)
 
 Wait for all pending items to complete
 
@@ -269,7 +269,7 @@ Wait for all pending items to complete
 
 > **flush**(): `Promise`\<`void`\>
 
-Defined in: [src/utils/batch.ts:108](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L108)
+Defined in: [src/utils/batch.ts:108](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L108)
 
 Flush the current batch
 
@@ -281,7 +281,7 @@ Flush the current batch
 
 > **size**(): `number`
 
-Defined in: [src/utils/batch.ts:165](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L165)
+Defined in: [src/utils/batch.ts:165](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L165)
 
 Get current queue size
 
@@ -293,7 +293,7 @@ Get current queue size
 
 ### RateLimiter
 
-Defined in: [src/utils/rateLimit.ts:142](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/rateLimit.ts#L142)
+Defined in: [src/utils/rateLimit.ts:142](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L142)
 
 Token Bucket Rate Limiter
 
@@ -327,7 +327,7 @@ const balance = await getBalance('0x123...');
 
 > **new RateLimiter**(`options`): [`RateLimiter`](#ratelimiter)
 
-Defined in: [src/utils/rateLimit.ts:155](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/rateLimit.ts#L155)
+Defined in: [src/utils/rateLimit.ts:155](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L155)
 
 ###### Parameters
 
@@ -345,7 +345,7 @@ Defined in: [src/utils/rateLimit.ts:155](https://github.com/evmts/voltaire/blob/
 
 > **clearQueue**(): `void`
 
-Defined in: [src/utils/rateLimit.ts:295](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/rateLimit.ts#L295)
+Defined in: [src/utils/rateLimit.ts:295](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L295)
 
 Clear all queued requests
 
@@ -357,7 +357,7 @@ Clear all queued requests
 
 > **execute**\<`T`\>(`fn`): `Promise`\<`T`\>
 
-Defined in: [src/utils/rateLimit.ts:224](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/rateLimit.ts#L224)
+Defined in: [src/utils/rateLimit.ts:224](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L224)
 
 Execute a function with rate limiting
 
@@ -391,7 +391,7 @@ Error if rate limit exceeded and strategy is 'reject'
 
 > **getQueueLength**(): `number`
 
-Defined in: [src/utils/rateLimit.ts:288](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/rateLimit.ts#L288)
+Defined in: [src/utils/rateLimit.ts:288](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L288)
 
 Get queued request count
 
@@ -403,7 +403,7 @@ Get queued request count
 
 > **getTokens**(): `number`
 
-Defined in: [src/utils/rateLimit.ts:280](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/rateLimit.ts#L280)
+Defined in: [src/utils/rateLimit.ts:280](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L280)
 
 Get current token count
 
@@ -415,7 +415,7 @@ Get current token count
 
 > **wrap**\<`TArgs`, `TReturn`\>(`fn`): (...`args`) => `Promise`\<`TReturn`\>
 
-Defined in: [src/utils/rateLimit.ts:271](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/rateLimit.ts#L271)
+Defined in: [src/utils/rateLimit.ts:271](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L271)
 
 Wrap a function with rate limiting
 
@@ -461,7 +461,7 @@ Rate-limited function
 
 ### TimeoutError
 
-Defined in: [src/utils/timeout.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/timeout.ts#L16)
+Defined in: [src/utils/timeout.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L16)
 
 Timeout error class
 
@@ -475,7 +475,7 @@ Timeout error class
 
 > **new TimeoutError**(`message`): [`TimeoutError`](#timeouterror)
 
-Defined in: [src/utils/timeout.ts:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/timeout.ts#L17)
+Defined in: [src/utils/timeout.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L17)
 
 ###### Parameters
 
@@ -495,7 +495,7 @@ Defined in: [src/utils/timeout.ts:17](https://github.com/evmts/voltaire/blob/c23
 
 ### BatchQueueOptions
 
-Defined in: [src/utils/types.ts:64](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L64)
+Defined in: [src/utils/types.ts:64](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L64)
 
 Batch queue configuration
 
@@ -515,7 +515,7 @@ Batch queue configuration
 
 > **maxBatchSize**: `number`
 
-Defined in: [src/utils/types.ts:66](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L66)
+Defined in: [src/utils/types.ts:66](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L66)
 
 Maximum batch size
 
@@ -523,7 +523,7 @@ Maximum batch size
 
 > **maxWaitTime**: `number`
 
-Defined in: [src/utils/types.ts:68](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L68)
+Defined in: [src/utils/types.ts:68](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L68)
 
 Maximum wait time before flushing batch (ms)
 
@@ -531,7 +531,7 @@ Maximum wait time before flushing batch (ms)
 
 > `optional` **onError**: (`error`, `items`) => `void`
 
-Defined in: [src/utils/types.ts:72](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L72)
+Defined in: [src/utils/types.ts:72](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L72)
 
 Callback on batch processing error
 
@@ -553,7 +553,7 @@ Callback on batch processing error
 
 > **processBatch**: (`items`) => `Promise`\<`R`[]\>
 
-Defined in: [src/utils/types.ts:70](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L70)
+Defined in: [src/utils/types.ts:70](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L70)
 
 Function to process a batch of items
 
@@ -571,7 +571,7 @@ Function to process a batch of items
 
 ### PollOptions
 
-Defined in: [src/utils/types.ts:32](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L32)
+Defined in: [src/utils/types.ts:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L32)
 
 Polling configuration options
 
@@ -587,7 +587,7 @@ Polling configuration options
 
 > `optional` **backoff**: `boolean`
 
-Defined in: [src/utils/types.ts:38](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L38)
+Defined in: [src/utils/types.ts:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L38)
 
 Use exponential backoff for polling intervals (default: false)
 
@@ -595,7 +595,7 @@ Use exponential backoff for polling intervals (default: false)
 
 > `optional` **backoffFactor**: `number`
 
-Defined in: [src/utils/types.ts:40](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L40)
+Defined in: [src/utils/types.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L40)
 
 Backoff factor when backoff enabled (default: 1.5)
 
@@ -603,7 +603,7 @@ Backoff factor when backoff enabled (default: 1.5)
 
 > `optional` **interval**: `number`
 
-Defined in: [src/utils/types.ts:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L34)
+Defined in: [src/utils/types.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L34)
 
 Polling interval in milliseconds (default: 1000)
 
@@ -611,7 +611,7 @@ Polling interval in milliseconds (default: 1000)
 
 > `optional` **maxInterval**: `number`
 
-Defined in: [src/utils/types.ts:42](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L42)
+Defined in: [src/utils/types.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L42)
 
 Maximum interval when using backoff (default: 10000)
 
@@ -619,7 +619,7 @@ Maximum interval when using backoff (default: 10000)
 
 > `optional` **onPoll**: (`result`, `attempt`) => `void`
 
-Defined in: [src/utils/types.ts:46](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L46)
+Defined in: [src/utils/types.ts:46](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L46)
 
 Callback invoked on each poll attempt
 
@@ -641,7 +641,7 @@ Callback invoked on each poll attempt
 
 > `optional` **timeout**: `number`
 
-Defined in: [src/utils/types.ts:36](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L36)
+Defined in: [src/utils/types.ts:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L36)
 
 Maximum polling duration in milliseconds (default: 60000)
 
@@ -649,7 +649,7 @@ Maximum polling duration in milliseconds (default: 60000)
 
 > `optional` **validate**: (`result`) => `boolean`
 
-Defined in: [src/utils/types.ts:44](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L44)
+Defined in: [src/utils/types.ts:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L44)
 
 Predicate to determine if polling should continue
 
@@ -667,7 +667,7 @@ Predicate to determine if polling should continue
 
 ### RateLimiterOptions
 
-Defined in: [src/utils/types.ts:52](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L52)
+Defined in: [src/utils/types.ts:52](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L52)
 
 Rate limiter configuration
 
@@ -677,7 +677,7 @@ Rate limiter configuration
 
 > **interval**: `number`
 
-Defined in: [src/utils/types.ts:56](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L56)
+Defined in: [src/utils/types.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L56)
 
 Time interval in milliseconds
 
@@ -685,7 +685,7 @@ Time interval in milliseconds
 
 > **maxRequests**: `number`
 
-Defined in: [src/utils/types.ts:54](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L54)
+Defined in: [src/utils/types.ts:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L54)
 
 Maximum number of requests per interval
 
@@ -693,7 +693,7 @@ Maximum number of requests per interval
 
 > `optional` **strategy**: `"queue"` \| `"reject"` \| `"drop"`
 
-Defined in: [src/utils/types.ts:58](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L58)
+Defined in: [src/utils/types.ts:58](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L58)
 
 Queue strategy when limit exceeded (default: 'queue')
 
@@ -701,7 +701,7 @@ Queue strategy when limit exceeded (default: 'queue')
 
 ### RetryOptions
 
-Defined in: [src/utils/types.ts:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L12)
+Defined in: [src/utils/types.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L12)
 
 Retry configuration options
 
@@ -711,7 +711,7 @@ Retry configuration options
 
 > `optional` **factor**: `number`
 
-Defined in: [src/utils/types.ts:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L18)
+Defined in: [src/utils/types.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L18)
 
 Exponential backoff factor (default: 2)
 
@@ -719,7 +719,7 @@ Exponential backoff factor (default: 2)
 
 > `optional` **initialDelay**: `number`
 
-Defined in: [src/utils/types.ts:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L16)
+Defined in: [src/utils/types.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L16)
 
 Initial delay in milliseconds (default: 1000)
 
@@ -727,7 +727,7 @@ Initial delay in milliseconds (default: 1000)
 
 > `optional` **jitter**: `boolean`
 
-Defined in: [src/utils/types.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L22)
+Defined in: [src/utils/types.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L22)
 
 Add random jitter to delays (default: true)
 
@@ -735,7 +735,7 @@ Add random jitter to delays (default: true)
 
 > `optional` **maxDelay**: `number`
 
-Defined in: [src/utils/types.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L20)
+Defined in: [src/utils/types.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L20)
 
 Maximum delay cap in milliseconds (default: 30000)
 
@@ -743,7 +743,7 @@ Maximum delay cap in milliseconds (default: 30000)
 
 > `optional` **maxRetries**: `number`
 
-Defined in: [src/utils/types.ts:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L14)
+Defined in: [src/utils/types.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L14)
 
 Maximum number of retry attempts (default: 3)
 
@@ -751,7 +751,7 @@ Maximum number of retry attempts (default: 3)
 
 > `optional` **onRetry**: (`error`, `attempt`, `nextDelay`) => `void`
 
-Defined in: [src/utils/types.ts:26](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L26)
+Defined in: [src/utils/types.ts:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L26)
 
 Callback invoked on each retry attempt
 
@@ -777,7 +777,7 @@ Callback invoked on each retry attempt
 
 > `optional` **shouldRetry**: (`error`, `attempt`) => `boolean`
 
-Defined in: [src/utils/types.ts:24](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L24)
+Defined in: [src/utils/types.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L24)
 
 Predicate to determine if error should be retried (default: always retry)
 
@@ -799,7 +799,7 @@ Predicate to determine if error should be retried (default: always retry)
 
 ### TimeoutOptions
 
-Defined in: [src/utils/types.ts:78](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L78)
+Defined in: [src/utils/types.ts:78](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L78)
 
 Timeout options
 
@@ -809,7 +809,7 @@ Timeout options
 
 > `optional` **message**: `string`
 
-Defined in: [src/utils/types.ts:82](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L82)
+Defined in: [src/utils/types.ts:82](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L82)
 
 Error message for timeout (default: "Operation timed out")
 
@@ -817,7 +817,7 @@ Error message for timeout (default: "Operation timed out")
 
 > **ms**: `number`
 
-Defined in: [src/utils/types.ts:80](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L80)
+Defined in: [src/utils/types.ts:80](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L80)
 
 Timeout duration in milliseconds
 
@@ -825,7 +825,7 @@ Timeout duration in milliseconds
 
 > `optional` **signal**: `AbortSignal`
 
-Defined in: [src/utils/types.ts:84](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/types.ts#L84)
+Defined in: [src/utils/types.ts:84](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L84)
 
 Optional AbortController for cancellation
 
@@ -835,7 +835,7 @@ Optional AbortController for cancellation
 
 > **createBatchedFunction**\<`T`, `R`\>(`fn`, `maxBatchSize`, `maxWaitTime`): (`item`) => `Promise`\<`R`\>
 
-Defined in: [src/utils/batch.ts:234](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/batch.ts#L234)
+Defined in: [src/utils/batch.ts:234](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L234)
 
 Create a batched version of an async function
 
@@ -923,7 +923,7 @@ console.log(await balance3);
 
 > **createDeferred**\<`T`\>(): `object`
 
-Defined in: [src/utils/timeout.ts:226](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/timeout.ts#L226)
+Defined in: [src/utils/timeout.ts:226](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L226)
 
 Create a deferred promise with manual resolve/reject control
 
@@ -1006,7 +1006,7 @@ controller.on('cancel', () => reject(new Error('Cancelled')));
 
 > **debounce**\<`TArgs`, `TReturn`\>(`fn`, `wait`): (...`args`) => `void` & `object`
 
-Defined in: [src/utils/rateLimit.ts:89](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/rateLimit.ts#L89)
+Defined in: [src/utils/rateLimit.ts:89](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L89)
 
 Debounce a function to execute only after calls have stopped for specified wait time
 
@@ -1071,7 +1071,7 @@ searchBlocks.cancel();
 
 > **executeWithTimeout**\<`T`\>(`fn`, `timeoutMs`, `maxRetries`): `Promise`\<`T`\>
 
-Defined in: [src/utils/timeout.ts:275](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/timeout.ts#L275)
+Defined in: [src/utils/timeout.ts:275](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L275)
 
 Execute an async function with a timeout and optional retries
 
@@ -1143,7 +1143,7 @@ const data = await executeWithTimeout(
 
 > **poll**\<`T`\>(`fn`, `options`): `Promise`\<`T`\>
 
-Defined in: [src/utils/poll.ts:84](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/poll.ts#L84)
+Defined in: [src/utils/poll.ts:84](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/poll.ts#L84)
 
 Poll an async operation until it succeeds or times out
 
@@ -1225,7 +1225,7 @@ const balance = await poll(
 
 > **pollForReceipt**\<`TReceipt`\>(`txHash`, `getReceipt`, `options`): `Promise`\<`TReceipt`\>
 
-Defined in: [src/utils/poll.ts:211](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/poll.ts#L211)
+Defined in: [src/utils/poll.ts:211](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/poll.ts#L211)
 
 Poll for a transaction receipt
 
@@ -1289,7 +1289,7 @@ if (receipt.status === '0x1') {
 
 > **pollUntil**\<`T`\>(`fn`, `predicate`, `options`): `Promise`\<`T`\>
 
-Defined in: [src/utils/poll.ts:174](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/poll.ts#L174)
+Defined in: [src/utils/poll.ts:174](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/poll.ts#L174)
 
 Poll until a predicate returns true
 
@@ -1358,7 +1358,7 @@ const code = await pollUntil(
 
 > **pollWithBackoff**\<`T`\>(`fn`, `options`): `Promise`\<`T`\>
 
-Defined in: [src/utils/poll.ts:253](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/poll.ts#L253)
+Defined in: [src/utils/poll.ts:253](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/poll.ts#L253)
 
 Poll with exponential backoff
 
@@ -1418,7 +1418,7 @@ const data = await pollWithBackoff(
 
 > **retryWithBackoff**\<`T`\>(`fn`, `options`): `Promise`\<`T`\>
 
-Defined in: [src/utils/retryWithBackoff.ts:108](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/retryWithBackoff.ts#L108)
+Defined in: [src/utils/retryWithBackoff.ts:108](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/retryWithBackoff.ts#L108)
 
 Retry an async operation with exponential backoff
 
@@ -1498,7 +1498,7 @@ const result = await retryWithBackoff(
 
 > **sleep**(`ms`, `signal?`): `Promise`\<`void`\>
 
-Defined in: [src/utils/timeout.ts:174](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/timeout.ts#L174)
+Defined in: [src/utils/timeout.ts:174](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L174)
 
 Sleep for specified duration with optional cancellation
 
@@ -1555,7 +1555,7 @@ try {
 
 > **throttle**\<`TArgs`, `TReturn`\>(`fn`, `wait`): (...`args`) => `TReturn` \| `undefined`
 
-Defined in: [src/utils/rateLimit.ts:39](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/rateLimit.ts#L39)
+Defined in: [src/utils/rateLimit.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L39)
 
 Throttle a function to execute at most once per specified wait time
 
@@ -1627,7 +1627,7 @@ getBalance('0x789...'); // Ignored (within 1s)
 
 > **withRetry**\<`TArgs`, `TReturn`\>(`fn`, `options`): (...`args`) => `Promise`\<`TReturn`\>
 
-Defined in: [src/utils/retryWithBackoff.ts:188](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/retryWithBackoff.ts#L188)
+Defined in: [src/utils/retryWithBackoff.ts:188](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/retryWithBackoff.ts#L188)
 
 Create a retry wrapper for a function
 
@@ -1708,7 +1708,7 @@ const data = await fetchWithRetry('https://api.example.com/data');
 
 > **withTimeout**\<`T`\>(`promise`, `options`): `Promise`\<`T`\>
 
-Defined in: [src/utils/timeout.ts:65](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/timeout.ts#L65)
+Defined in: [src/utils/timeout.ts:65](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L65)
 
 Wrap a promise with a timeout
 
@@ -1787,7 +1787,7 @@ controller.abort();
 
 > **wrapWithTimeout**\<`TArgs`, `TReturn`\>(`fn`, `ms`, `message?`): (...`args`) => `Promise`\<`TReturn`\>
 
-Defined in: [src/utils/timeout.ts:132](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/utils/timeout.ts#L132)
+Defined in: [src/utils/timeout.ts:132](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L132)
 
 Create a timeout wrapper for a function
 

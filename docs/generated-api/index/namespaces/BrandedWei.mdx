@@ -17,7 +17,7 @@ description: Auto-generated API documentation
 
 > **BrandedWei** = [`WeiType`](#weitype)
 
-Defined in: [src/primitives/Denomination/WeiType.ts:9](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Denomination/WeiType.ts#L9)
+Defined in: [src/primitives/Denomination/WeiType.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/WeiType.ts#L9)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [src/primitives/Denomination/WeiType.ts:9](https://github.com/evmts/
 
 > **WeiType** = `bigint` & `object`
 
-Defined in: [src/primitives/Denomination/WeiType.ts:6](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Denomination/WeiType.ts#L6)
+Defined in: [src/primitives/Denomination/WeiType.ts:6](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/WeiType.ts#L6)
 
 Branded Wei type - represents Ethereum amounts in wei (smallest unit: 10^-18 ETH)
 
@@ -41,7 +41,7 @@ Branded Wei type - represents Ethereum amounts in wei (smallest unit: 10^-18 ETH
 
 > `const` **Wei**: `object`
 
-Defined in: [src/primitives/Denomination/wei-index.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Denomination/wei-index.ts#L19)
+Defined in: [src/primitives/Denomination/wei-index.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/wei-index.ts#L19)
 
 #### Type Declaration
 
@@ -292,7 +292,7 @@ const u256 = Wei.toU256(wei);
 
 > `const` **WEI\_PER\_ETHER**: `1000000000000000000n` = `1_000_000_000_000_000_000n`
 
-Defined in: [src/primitives/Denomination/wei-constants.ts:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Denomination/wei-constants.ts#L15)
+Defined in: [src/primitives/Denomination/wei-constants.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/wei-constants.ts#L15)
 
 Conversion constant: Wei per Ether (10^18)
 
@@ -310,7 +310,7 @@ https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
 
 > `const` **WEI\_PER\_GWEI**: `1000000000n` = `1_000_000_000n`
 
-Defined in: [src/primitives/Denomination/wei-constants.ts:7](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Denomination/wei-constants.ts#L7)
+Defined in: [src/primitives/Denomination/wei-constants.ts:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/wei-constants.ts#L7)
 
 Conversion constant: Wei per Gwei (10^9)
 
@@ -328,7 +328,7 @@ https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
 
 > **from**(`value`): [`WeiType`](#weitype)
 
-Defined in: [src/primitives/Denomination/wei-from.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Denomination/wei-from.ts#L20)
+Defined in: [src/primitives/Denomination/wei-from.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/wei-from.ts#L20)
 
 Create Wei from bigint, number, or string
 
@@ -371,7 +371,7 @@ const wei4 = Wei.from("0x3b9aca00");
 
 > **fromEther**(`ether`): [`WeiType`](#weitype)
 
-Defined in: [src/primitives/Denomination/wei-fromEther.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Denomination/wei-fromEther.ts#L22)
+Defined in: [src/primitives/Denomination/wei-fromEther.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/wei-fromEther.ts#L22)
 
 Convert Ether to Wei
 
@@ -417,7 +417,7 @@ const wei2 = Wei.fromEther(Ether.from("1.5"));   // 1500000000000000000n
 
 > **fromGwei**(`gwei`): [`WeiType`](#weitype)
 
-Defined in: [src/primitives/Denomination/wei-fromGwei.ts:22](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Denomination/wei-fromGwei.ts#L22)
+Defined in: [src/primitives/Denomination/wei-fromGwei.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/wei-fromGwei.ts#L22)
 
 Convert Gwei to Wei
 
@@ -463,7 +463,7 @@ const wei2 = Wei.fromGwei(Gwei.from("1.5"));   // 1500000000n
 
 > **toEther**(`wei`): [`EtherType`](BrandedEther.mdx#ethertype)
 
-Defined in: [src/primitives/Denomination/wei-toEther.ts:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Denomination/wei-toEther.ts#L23)
+Defined in: [src/primitives/Denomination/wei-toEther.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/wei-toEther.ts#L23)
 
 Convert Wei to Ether
 
@@ -507,7 +507,7 @@ const ether3 = Wei.toEther(Wei.from(1000000000000000n));    // "0.001"
 
 > **toGwei**(`wei`): [`GweiType`](BrandedGwei.mdx#gweitype)
 
-Defined in: [src/primitives/Denomination/wei-toGwei.ts:23](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Denomination/wei-toGwei.ts#L23)
+Defined in: [src/primitives/Denomination/wei-toGwei.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/wei-toGwei.ts#L23)
 
 Convert Wei to Gwei
 
@@ -551,7 +551,7 @@ const gwei3 = Wei.toGwei(Wei.from(1000000n));    // "0.001"
 
 > **toU256**(`wei`): [`Type`](../../primitives/Uint.mdx#type)
 
-Defined in: [src/primitives/Denomination/wei-toU256.ts:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Denomination/wei-toU256.ts#L19)
+Defined in: [src/primitives/Denomination/wei-toU256.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/wei-toU256.ts#L19)
 
 Convert Wei to base Uint256 type
 

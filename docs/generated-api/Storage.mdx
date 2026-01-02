@@ -1,0 +1,108 @@
+---
+title: "Storage"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](index.mdx)
+
+***
+
+[@tevm/voltaire](index.mdx) / Storage
+
+# Storage
+
+Storage Layout Utilities
+
+## See
+
+ - https://eips.ethereum.org/EIPS/eip-7201 - Namespaced Storage Layout
+ - https://eips.ethereum.org/EIPS/eip-8042 - Diamond Storage
+
+## Type Aliases
+
+### StorageSlotType
+
+> **StorageSlotType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/Storage/StorageType.ts:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Storage/StorageType.ts#L7)
+
+Storage slot type (32 bytes)
+Represents a storage location in Ethereum contract storage
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"StorageSlot"`
+
+## Functions
+
+### calculateErc7201()
+
+> **calculateErc7201**(`keccak256`, `id`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Storage/calculateErc7201.js:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Storage/calculateErc7201.js#L10)
+
+Calculate ERC-7201 namespaced storage slot
+Formula: keccak256(keccak256(id) - 1) & ~0xff
+The result has the last byte cleared (set to 0x00)
+
+#### Parameters
+
+##### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+##### id
+
+`string`
+
+Namespace identifier string
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte storage slot
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-7201
+
+***
+
+### calculateErc8042()
+
+> **calculateErc8042**(`keccak256`, `id`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Storage/calculateErc8042.js:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Storage/calculateErc8042.js#L10)
+
+Calculate ERC-8042 (Diamond Storage) storage slot
+Formula: keccak256(id)
+Simpler than ERC-7201, just the direct hash of the identifier
+
+#### Parameters
+
+##### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 hash function
+
+##### id
+
+`string`
+
+Storage namespace identifier string
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte storage slot
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-8042

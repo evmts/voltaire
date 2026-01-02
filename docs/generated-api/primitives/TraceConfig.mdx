@@ -1,0 +1,367 @@
+---
+title: "primitives/TraceConfig"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/TraceConfig
+
+# primitives/TraceConfig
+
+## Type Aliases
+
+### TraceConfigType
+
+> **TraceConfigType** = `object`
+
+Defined in: [src/primitives/TraceConfig/TraceConfigType.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/TraceConfigType.ts#L9)
+
+Configuration options for debug_traceTransaction and debug_traceCall
+
+#### See
+
+https://voltaire.tevm.sh/primitives/trace-config for TraceConfig documentation
+
+#### Since
+
+0.0.0
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"TraceConfig"`
+
+Defined in: [src/primitives/TraceConfig/TraceConfigType.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/TraceConfigType.ts#L10)
+
+##### disableMemory?
+
+> `readonly` `optional` **disableMemory**: `boolean`
+
+Defined in: [src/primitives/TraceConfig/TraceConfigType.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/TraceConfigType.ts#L16)
+
+Don't track memory (reduces overhead)
+
+##### disableStack?
+
+> `readonly` `optional` **disableStack**: `boolean`
+
+Defined in: [src/primitives/TraceConfig/TraceConfigType.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/TraceConfigType.ts#L14)
+
+Don't track stack (reduces overhead)
+
+##### disableStorage?
+
+> `readonly` `optional` **disableStorage**: `boolean`
+
+Defined in: [src/primitives/TraceConfig/TraceConfigType.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/TraceConfigType.ts#L12)
+
+Don't track storage changes (reduces overhead)
+
+##### enableMemory?
+
+> `readonly` `optional` **enableMemory**: `boolean`
+
+Defined in: [src/primitives/TraceConfig/TraceConfigType.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/TraceConfigType.ts#L18)
+
+Track memory (conflicts with disableMemory)
+
+##### enableReturnData?
+
+> `readonly` `optional` **enableReturnData**: `boolean`
+
+Defined in: [src/primitives/TraceConfig/TraceConfigType.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/TraceConfigType.ts#L20)
+
+Track return data
+
+##### timeout?
+
+> `readonly` `optional` **timeout**: `string`
+
+Defined in: [src/primitives/TraceConfig/TraceConfigType.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/TraceConfigType.ts#L24)
+
+Timeout for trace execution (e.g., "5s", "30s")
+
+##### tracer?
+
+> `readonly` `optional` **tracer**: `string`
+
+Defined in: [src/primitives/TraceConfig/TraceConfigType.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/TraceConfigType.ts#L22)
+
+Tracer name: "callTracer", "prestateTracer", "4byteTracer", etc
+
+##### tracerConfig?
+
+> `readonly` `optional` **tracerConfig**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/TraceConfig/TraceConfigType.ts:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/TraceConfigType.ts#L26)
+
+Tracer-specific configuration
+
+## Functions
+
+### \_disableAll()
+
+> **\_disableAll**(`config?`): [`TraceConfigType`](#traceconfigtype)
+
+Defined in: [src/primitives/TraceConfig/disableAll.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/disableAll.js#L13)
+
+Creates a minimal TraceConfig with all tracking disabled
+Useful for maximum performance when only basic execution info is needed
+
+#### Parameters
+
+##### config?
+
+[`TraceConfigType`](#traceconfigtype) = `...`
+
+Base config
+
+#### Returns
+
+[`TraceConfigType`](#traceconfigtype)
+
+Config with all tracking disabled
+
+#### Example
+
+```javascript
+import { disableAll } from './disableAll.js';
+const config = disableAll();
+```
+
+***
+
+### \_from()
+
+> **\_from**(`config?`): [`TraceConfigType`](#traceconfigtype)
+
+Defined in: [src/primitives/TraceConfig/from.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/from.js#L20)
+
+Creates a TraceConfig from configuration options
+
+#### Parameters
+
+##### config?
+
+Trace configuration options
+
+###### disableMemory?
+
+`boolean`
+
+Don't track memory
+
+###### disableStack?
+
+`boolean`
+
+Don't track stack
+
+###### disableStorage?
+
+`boolean`
+
+Don't track storage changes
+
+###### enableMemory?
+
+`boolean`
+
+Track memory
+
+###### enableReturnData?
+
+`boolean`
+
+Track return data
+
+###### timeout?
+
+`string`
+
+Timeout (e.g., "5s")
+
+###### tracer?
+
+`string`
+
+Tracer name
+
+###### tracerConfig?
+
+`Record`\<`string`, `unknown`\>
+
+Tracer-specific config
+
+#### Returns
+
+[`TraceConfigType`](#traceconfigtype)
+
+TraceConfig instance
+
+#### Example
+
+```javascript
+import { from } from './from.js';
+const config = from({ disableStorage: true, disableMemory: true });
+```
+
+***
+
+### \_withTracer()
+
+> **\_withTracer**(`config`, `tracer`, `tracerConfig?`): [`TraceConfigType`](#traceconfigtype)
+
+Defined in: [src/primitives/TraceConfig/withTracer.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/withTracer.js#L14)
+
+Creates a TraceConfig with a specific tracer
+
+#### Parameters
+
+##### config
+
+[`TraceConfigType`](#traceconfigtype)
+
+Base config
+
+##### tracer
+
+`string`
+
+Tracer name ("callTracer", "prestateTracer", etc)
+
+##### tracerConfig?
+
+`Record`\<`string`, `unknown`\>
+
+Tracer-specific config
+
+#### Returns
+
+[`TraceConfigType`](#traceconfigtype)
+
+Updated config
+
+#### Example
+
+```javascript
+import { withTracer } from './withTracer.js';
+const config = withTracer({}, "callTracer", { onlyTopCall: true });
+```
+
+***
+
+### disableAll()
+
+> **disableAll**(`config?`): [`TraceConfigType`](#traceconfigtype)
+
+Defined in: [src/primitives/TraceConfig/index.ts:60](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/index.ts#L60)
+
+Creates a minimal TraceConfig with all tracking disabled
+
+#### Parameters
+
+##### config?
+
+[`TraceConfigType`](#traceconfigtype)
+
+Base config
+
+#### Returns
+
+[`TraceConfigType`](#traceconfigtype)
+
+Config with all tracking disabled
+
+#### Example
+
+```typescript
+import { TraceConfig } from './primitives/TraceConfig/index.js';
+const config = TraceConfig.disableAll();
+```
+
+***
+
+### from()
+
+> **from**(`config?`): [`TraceConfigType`](#traceconfigtype)
+
+Defined in: [src/primitives/TraceConfig/index.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/index.ts#L24)
+
+Creates a TraceConfig from configuration options
+
+#### Parameters
+
+##### config?
+
+`Partial`\<[`TraceConfigType`](#traceconfigtype)\>
+
+Trace configuration options
+
+#### Returns
+
+[`TraceConfigType`](#traceconfigtype)
+
+TraceConfig instance
+
+#### See
+
+https://voltaire.tevm.sh/primitives/trace-config for TraceConfig documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```typescript
+import { TraceConfig } from './primitives/TraceConfig/index.js';
+const config = TraceConfig.from({ disableStorage: true });
+```
+
+***
+
+### withTracer()
+
+> **withTracer**(`config`, `tracer`, `tracerConfig?`): [`TraceConfigType`](#traceconfigtype)
+
+Defined in: [src/primitives/TraceConfig/index.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceConfig/index.ts#L41)
+
+Creates a TraceConfig with a specific tracer
+
+#### Parameters
+
+##### config
+
+[`TraceConfigType`](#traceconfigtype)
+
+Base config
+
+##### tracer
+
+`string`
+
+Tracer name ("callTracer", "prestateTracer", etc)
+
+##### tracerConfig?
+
+`Record`\<`string`, `unknown`\>
+
+Tracer-specific config
+
+#### Returns
+
+[`TraceConfigType`](#traceconfigtype)
+
+Updated config
+
+#### Example
+
+```typescript
+import { TraceConfig } from './primitives/TraceConfig/index.js';
+const config = TraceConfig.withTracer({}, "callTracer");
+```

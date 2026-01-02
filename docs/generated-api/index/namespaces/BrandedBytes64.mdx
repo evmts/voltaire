@@ -15,29 +15,11 @@ description: Auto-generated API documentation
 
 ### Bytes64Like
 
-> **Bytes64Like** = [`Bytes64Type`](#bytes64type) \| `string` \| `Uint8Array`
+> **Bytes64Like** = [`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type) \| `string` \| `Uint8Array`
 
-Defined in: [src/primitives/Bytes/Bytes64/Bytes64Type.ts:11](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/Bytes64Type.ts#L11)
+Defined in: [src/primitives/Bytes/Bytes64/Bytes64Type.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/Bytes64Type.ts#L11)
 
 Inputs that can be converted to Bytes64
-
-***
-
-### Bytes64Type
-
-> **Bytes64Type** = `Uint8Array` & `object`
-
-Defined in: [src/primitives/Bytes/Bytes64/Bytes64Type.ts:3](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/Bytes64Type.ts#L3)
-
-#### Type Declaration
-
-##### \[brand\]
-
-> `readonly` **\[brand\]**: `"Bytes64"`
-
-##### size
-
-> `readonly` **size**: `64`
 
 ## Variables
 
@@ -45,25 +27,43 @@ Defined in: [src/primitives/Bytes/Bytes64/Bytes64Type.ts:3](https://github.com/e
 
 > `const` **SIZE**: `64` = `64`
 
-Defined in: [src/primitives/Bytes/Bytes64/Bytes64Type.ts:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/Bytes64Type.ts#L13)
+Defined in: [src/primitives/Bytes/Bytes64/Bytes64Type.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/Bytes64Type.ts#L13)
 
 ***
 
 ### ZERO
 
-> `const` **ZERO**: [`Bytes64Type`](#bytes64type)
+> `const` **ZERO**: [`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
-Defined in: [src/primitives/Bytes/Bytes64/constants.js:10](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/constants.js#L10)
+Defined in: [src/primitives/Bytes/Bytes64/constants.js:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/constants.js#L10)
 
 Zero Bytes64 constant (64 zero bytes)
 
 ## Functions
 
+### Bytes64()
+
+> **Bytes64**(`value`): [`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
+
+Defined in: [src/primitives/Bytes/Bytes64/index.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/index.ts#L39)
+
+#### Parameters
+
+##### value
+
+[`Bytes64Like`](#bytes64like)
+
+#### Returns
+
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
+
+***
+
 ### clone()
 
-> **clone**(`bytes`): [`Bytes64Type`](#bytes64type)
+> **clone**(`bytes`): [`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
-Defined in: [src/primitives/Bytes/Bytes64/clone.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/clone.js#L14)
+Defined in: [src/primitives/Bytes/Bytes64/clone.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/clone.js#L14)
 
 Clone a Bytes64 value
 
@@ -71,13 +71,13 @@ Clone a Bytes64 value
 
 ##### bytes
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 Value to clone
 
 #### Returns
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 Cloned value
 
@@ -102,7 +102,7 @@ const cloned = Bytes64.clone(bytes);
 
 > **compare**(`a`, `b`): `number`
 
-Defined in: [src/primitives/Bytes/Bytes64/compare.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/compare.js#L15)
+Defined in: [src/primitives/Bytes/Bytes64/compare.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/compare.js#L15)
 
 Compare two Bytes64 values
 
@@ -110,13 +110,13 @@ Compare two Bytes64 values
 
 ##### a
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 First value
 
 ##### b
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 Second value
 
@@ -147,7 +147,7 @@ const result = Bytes64.compare(a, b);
 
 > **equals**(`a`, `b`): `boolean`
 
-Defined in: [src/primitives/Bytes/Bytes64/equals.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/equals.js#L15)
+Defined in: [src/primitives/Bytes/Bytes64/equals.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/equals.js#L15)
 
 Check if two Bytes64 values are equal
 
@@ -155,13 +155,13 @@ Check if two Bytes64 values are equal
 
 ##### a
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 First value
 
 ##### b
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 Second value
 
@@ -190,9 +190,9 @@ const equal = Bytes64.equals(a, b);
 
 ### from()
 
-> **from**(`value`): [`Bytes64Type`](#bytes64type)
+> **from**(`value`): [`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
-Defined in: [src/primitives/Bytes/Bytes64/from.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/from.js#L19)
+Defined in: [src/primitives/Bytes/Bytes64/from.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/from.js#L19)
 
 Create Bytes64 from string or bytes
 
@@ -206,7 +206,7 @@ Hex string with optional 0x prefix or Uint8Array
 
 #### Returns
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 Bytes64
 
@@ -234,9 +234,9 @@ const bytes2 = Bytes64.from(new Uint8Array(64));
 
 ### fromBytes()
 
-> **fromBytes**(`bytes`): [`Bytes64Type`](#bytes64type)
+> **fromBytes**(`bytes`): [`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
-Defined in: [src/primitives/Bytes/Bytes64/fromBytes.js:18](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/fromBytes.js#L18)
+Defined in: [src/primitives/Bytes/Bytes64/fromBytes.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/fromBytes.js#L18)
 
 Create Bytes64 from raw bytes
 
@@ -250,7 +250,7 @@ Raw bytes (must be 64 bytes)
 
 #### Returns
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 Bytes64
 
@@ -277,9 +277,9 @@ const bytes = Bytes64.fromBytes(new Uint8Array(64));
 
 ### fromHex()
 
-> **fromHex**(`hex`): [`Bytes64Type`](#bytes64type)
+> **fromHex**(`hex`): [`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
-Defined in: [src/primitives/Bytes/Bytes64/fromHex.js:19](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/fromHex.js#L19)
+Defined in: [src/primitives/Bytes/Bytes64/fromHex.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/fromHex.js#L19)
 
 Create Bytes64 from hex string
 
@@ -293,7 +293,7 @@ Hex string with optional 0x prefix
 
 #### Returns
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 Bytes64
 
@@ -326,7 +326,7 @@ const bytes = Bytes64.fromHex('0x' + '1234'.repeat(32));
 
 > **isZero**(`bytes`): `boolean`
 
-Defined in: [src/primitives/Bytes/Bytes64/isZero.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/isZero.js#L14)
+Defined in: [src/primitives/Bytes/Bytes64/isZero.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/isZero.js#L14)
 
 Check if Bytes64 is all zeros
 
@@ -334,7 +334,7 @@ Check if Bytes64 is all zeros
 
 ##### bytes
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 Value to check
 
@@ -365,7 +365,7 @@ const isAllZeros = Bytes64.isZero(bytes);
 
 > **size**(`_bytes`): `64`
 
-Defined in: [src/primitives/Bytes/Bytes64/size.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/size.js#L16)
+Defined in: [src/primitives/Bytes/Bytes64/size.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/size.js#L16)
 
 Get size of Bytes64 (always 64)
 
@@ -373,7 +373,7 @@ Get size of Bytes64 (always 64)
 
 ##### \_bytes
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 Bytes64 value
 
@@ -404,7 +404,7 @@ const s = Bytes64.size(bytes); // 64
 
 > **toHex**(`bytes`): `string`
 
-Defined in: [src/primitives/Bytes/Bytes64/toHex.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/toHex.js#L14)
+Defined in: [src/primitives/Bytes/Bytes64/toHex.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/toHex.js#L14)
 
 Convert Bytes64 to hex string
 
@@ -412,7 +412,7 @@ Convert Bytes64 to hex string
 
 ##### bytes
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 Bytes64 to convert
 
@@ -443,7 +443,7 @@ const hex = Bytes64.toHex(bytes);
 
 > **toUint8Array**(`bytes`): `Uint8Array`\<`ArrayBufferLike`\>
 
-Defined in: [src/primitives/Bytes/Bytes64/toUint8Array.js:14](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/toUint8Array.js#L14)
+Defined in: [src/primitives/Bytes/Bytes64/toUint8Array.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/toUint8Array.js#L14)
 
 Convert Bytes64 to Uint8Array
 
@@ -451,7 +451,7 @@ Convert Bytes64 to Uint8Array
 
 ##### bytes
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 Bytes64 to convert
 
@@ -480,15 +480,15 @@ const raw = Bytes64.toUint8Array(bytes);
 
 ### zero()
 
-> **zero**(): [`Bytes64Type`](#bytes64type)
+> **zero**(): [`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
-Defined in: [src/primitives/Bytes/Bytes64/zero.js:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes64/zero.js#L15)
+Defined in: [src/primitives/Bytes/Bytes64/zero.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes64/zero.js#L15)
 
 Create a zero-filled Bytes64
 
 #### Returns
 
-[`Bytes64Type`](#bytes64type)
+[`Bytes64Type`](../../primitives/Bytes.mdx#bytes64type)
 
 Zero-filled Bytes64
 
@@ -509,6 +509,6 @@ const zeros = Bytes64.zero();
 
 ## References
 
-### Bytes64
+### Bytes64Type
 
-Re-exports [Bytes64](../index.mdx#bytes64)
+Re-exports [Bytes64Type](../../primitives/Bytes.mdx#bytes64type)

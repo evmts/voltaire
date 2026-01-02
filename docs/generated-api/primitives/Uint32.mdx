@@ -1,0 +1,3417 @@
+---
+title: "primitives/Uint32"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Uint32
+
+# primitives/Uint32
+
+## Type Aliases
+
+### Uint32Type
+
+> **Uint32Type** = `number` & `object`
+
+Defined in: [src/primitives/Uint32/Uint32Type.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/Uint32Type.ts#L12)
+
+Uint32 type
+
+32-bit unsigned integer (0 to 4294967295).
+Used for block numbers, gas limits, timestamps (until year 2106).
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Uint32"`
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+## Variables
+
+### MAX
+
+> `const` **MAX**: [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/constants.js:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/constants.js#L34)
+
+Maximum Uint32 value: 2^32 - 1 = 4294967295
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import { MAX } from './primitives/Uint32/index.js';
+console.log(MAX); // 4294967295
+```
+
+***
+
+### MIN
+
+> `const` **MIN**: [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/constants.js:50](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/constants.js#L50)
+
+Minimum Uint32 value: 0
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import { MIN } from './primitives/Uint32/index.js';
+console.log(MIN); // 0
+```
+
+***
+
+### ONE
+
+> `const` **ONE**: [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/constants.js:78](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/constants.js#L78)
+
+One value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import { ONE } from './primitives/Uint32/index.js';
+console.log(ONE); // 1
+```
+
+***
+
+### SIZE
+
+> `const` **SIZE**: `4` = `4`
+
+Defined in: [src/primitives/Uint32/constants.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/constants.js#L20)
+
+Size in bytes (4 bytes for Uint32)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import { SIZE } from './primitives/Uint32/index.js';
+console.log(SIZE); // 4
+```
+
+***
+
+### Uint32
+
+> `const` **Uint32**: `object`
+
+Defined in: [src/primitives/Uint32/index.ts:82](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/index.ts#L82)
+
+#### Type Declaration
+
+##### bitLength()
+
+> **bitLength**: (`uint`) => `number`
+
+Calculate bit length of Uint32 value
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Value
+
+###### Returns
+
+`number`
+
+Number of bits needed to represent value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(255);
+const result = Uint32.bitLength(a); // 8
+```
+
+##### bitwiseAnd()
+
+> **bitwiseAnd**: (`uint`, `b`) => [`Uint32Type`](#uint32type)
+
+Bitwise AND Uint32 values
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+First operand
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Second operand
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (uint & b)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(0b1100);
+const b = Uint32.from(0b1010);
+const result = Uint32.bitwiseAnd(a, b); // 0b1000 = 8
+```
+
+##### bitwiseNot()
+
+> **bitwiseNot**: (`uint`) => [`Uint32Type`](#uint32type)
+
+Bitwise NOT Uint32 value
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Operand
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (~uint)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(0);
+const result = Uint32.bitwiseNot(a); // 4294967295 (all bits set)
+```
+
+##### bitwiseOr()
+
+> **bitwiseOr**: (`uint`, `b`) => [`Uint32Type`](#uint32type)
+
+Bitwise OR Uint32 values
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+First operand
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Second operand
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (uint | b)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(0b1100);
+const b = Uint32.from(0b1010);
+const result = Uint32.bitwiseOr(a, b); // 0b1110 = 14
+```
+
+##### bitwiseXor()
+
+> **bitwiseXor**: (`uint`, `b`) => [`Uint32Type`](#uint32type)
+
+Bitwise XOR Uint32 values
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+First operand
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Second operand
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (uint ^ b)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(0b1100);
+const b = Uint32.from(0b1010);
+const result = Uint32.bitwiseXor(a, b); // 0b0110 = 6
+```
+
+##### clone()
+
+> **clone**: (`uint`) => [`Uint32Type`](#uint32type)
+
+Clone Uint32 value
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Value to clone
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Cloned value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.clone(a);
+```
+
+##### dividedBy()
+
+> **dividedBy**: (`uint`, `b`) => [`Uint32Type`](#uint32type)
+
+Divide Uint32 value (integer division)
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Dividend
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Divisor
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Quotient (uint / b) truncated
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If divisor is zero
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(3);
+const quotient = Uint32.dividedBy(a, b); // 33
+```
+
+##### equals()
+
+> **equals**: (`uint`, `b`) => `boolean`
+
+Check if Uint32 values are equal
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+First value
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if equal
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(100);
+const result = Uint32.equals(a, b); // true
+```
+
+##### from()
+
+> **from**: (`value`) => [`Uint32Type`](#uint32type)
+
+Create Uint32 from number, bigint, or string
+
+###### Parameters
+
+###### value
+
+number, bigint, or decimal/hex string
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is out of range or invalid
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from("255");
+const c = Uint32.from("0xff");
+const d = Uint32.from(42n);
+```
+
+##### fromAbiEncoded()
+
+> **fromAbiEncoded**: (`bytes`) => [`Uint32Type`](#uint32type)
+
+Create Uint32 from ABI-encoded bytes (32 bytes, big-endian, left-padded)
+
+###### Parameters
+
+###### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+ABI-encoded byte array (32 bytes)
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If bytes length is not 32
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const abiBytes = new Uint8Array(32);
+abiBytes[31] = 255;
+const value = Uint32.fromAbiEncoded(abiBytes); // 255
+```
+
+##### fromBigInt()
+
+> **fromBigInt**: (`value`) => [`Uint32Type`](#uint32type)
+
+Create Uint32 from bigint
+
+###### Parameters
+
+###### value
+
+`bigint`
+
+bigint value
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is out of range
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.fromBigInt(100n);
+```
+
+##### fromBytes()
+
+> **fromBytes**: (`bytes`) => [`Uint32Type`](#uint32type)
+
+Create Uint32 from bytes (big-endian, 4 bytes)
+
+###### Parameters
+
+###### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+byte array (must be exactly 4 bytes)
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If bytes length is not 4
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const bytes = new Uint8Array([0, 0, 0, 255]);
+const value = Uint32.fromBytes(bytes); // 255
+```
+
+##### fromHex()
+
+> **fromHex**: (`hex`) => [`Uint32Type`](#uint32type)
+
+Create Uint32 from hex string
+
+###### Parameters
+
+###### hex
+
+`string`
+
+hex string (with or without 0x prefix)
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is out of range or invalid hex
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.fromHex("0xff");
+const b = Uint32.fromHex("ff");
+```
+
+##### fromNumber()
+
+> **fromNumber**: (`value`) => [`Uint32Type`](#uint32type)
+
+Create Uint32 from number
+
+###### Parameters
+
+###### value
+
+`number`
+
+number value
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is out of range or invalid
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.fromNumber(42);
+```
+
+##### greaterThan()
+
+> **greaterThan**: (`uint`, `b`) => `boolean`
+
+Check if Uint32 value is greater than another
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+First value
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint > b
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(200);
+const b = Uint32.from(100);
+const result = Uint32.greaterThan(a, b); // true
+```
+
+##### isValid()
+
+> **isValid**: (`value`) => `value is Uint32Type`
+
+Check if value is a valid Uint32
+
+###### Parameters
+
+###### value
+
+`unknown`
+
+Value to check
+
+###### Returns
+
+`value is Uint32Type`
+
+true if valid Uint32
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const result1 = Uint32.isValid(100); // true
+const result2 = Uint32.isValid(-1); // false
+const result3 = Uint32.isValid(5000000000); // false (exceeds max)
+```
+
+##### isZero()
+
+> **isZero**: (`uint`) => `boolean`
+
+Check if Uint32 value is zero
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Value to check
+
+###### Returns
+
+`boolean`
+
+true if zero
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(0);
+const result = Uint32.isZero(a); // true
+```
+
+##### leadingZeros()
+
+> **leadingZeros**: (`uint`) => `number`
+
+Count leading zeros in Uint32 value
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Value
+
+###### Returns
+
+`number`
+
+Number of leading zero bits
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(255);
+const result = Uint32.leadingZeros(a); // 24
+```
+
+##### lessThan()
+
+> **lessThan**: (`uint`, `b`) => `boolean`
+
+Check if Uint32 value is less than another
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+First value
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint < b
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(200);
+const result = Uint32.lessThan(a, b); // true
+```
+
+##### MAX
+
+> **MAX**: [`Uint32Type`](#uint32type)
+
+Maximum Uint32 value: 2^32 - 1 = 4294967295
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import { MAX } from './primitives/Uint32/index.js';
+console.log(MAX); // 4294967295
+```
+
+##### maximum()
+
+> **maximum**: (`uint`, `b`) => [`Uint32Type`](#uint32type)
+
+Return maximum of two Uint32 values
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+First value
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Second value
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Maximum value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(200);
+const result = Uint32.maximum(a, b); // 200
+```
+
+##### MIN
+
+> **MIN**: [`Uint32Type`](#uint32type)
+
+Minimum Uint32 value: 0
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import { MIN } from './primitives/Uint32/index.js';
+console.log(MIN); // 0
+```
+
+##### minimum()
+
+> **minimum**: (`uint`, `b`) => [`Uint32Type`](#uint32type)
+
+Return minimum of two Uint32 values
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+First value
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Second value
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Minimum value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(200);
+const result = Uint32.minimum(a, b); // 100
+```
+
+##### minus()
+
+> **minus**: (`uint`, `b`) => [`Uint32Type`](#uint32type)
+
+Subtract Uint32 value with wrapping
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+First operand
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Second operand
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Difference (uint - b) mod 2^32
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(50);
+const diff = Uint32.minus(a, b); // 50
+```
+
+##### modulo()
+
+> **modulo**: (`uint`, `b`) => [`Uint32Type`](#uint32type)
+
+Modulo Uint32 value
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Dividend
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Divisor
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Remainder (uint % b)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If divisor is zero
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(3);
+const remainder = Uint32.modulo(a, b); // 1
+```
+
+##### ONE
+
+> **ONE**: [`Uint32Type`](#uint32type)
+
+One value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import { ONE } from './primitives/Uint32/index.js';
+console.log(ONE); // 1
+```
+
+##### plus()
+
+> **plus**: (`uint`, `b`) => [`Uint32Type`](#uint32type)
+
+Add Uint32 value with wrapping
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+First operand
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Second operand
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Sum (uint + b) mod 2^32
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(50);
+const sum = Uint32.plus(a, b); // 150
+```
+
+##### popCount()
+
+> **popCount**: (`uint`) => `number`
+
+Count set bits (population count) in Uint32 value
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Value
+
+###### Returns
+
+`number`
+
+Number of set bits
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(0b1111);
+const result = Uint32.popCount(a); // 4
+```
+
+##### shiftLeft()
+
+> **shiftLeft**: (`uint`, `bits`) => [`Uint32Type`](#uint32type)
+
+Left shift Uint32 value
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Value to shift
+
+###### bits
+
+`number`
+
+Number of bits to shift (0-31)
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (uint << bits) mod 2^32
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(1);
+const result = Uint32.shiftLeft(a, 8); // 256
+```
+
+##### shiftRight()
+
+> **shiftRight**: (`uint`, `bits`) => [`Uint32Type`](#uint32type)
+
+Right shift Uint32 value (logical shift, zero-fill)
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Value to shift
+
+###### bits
+
+`number`
+
+Number of bits to shift (0-31)
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (uint >>> bits)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(256);
+const result = Uint32.shiftRight(a, 8); // 1
+```
+
+##### SIZE
+
+> **SIZE**: `4`
+
+Size in bytes (4 bytes for Uint32)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import { SIZE } from './primitives/Uint32/index.js';
+console.log(SIZE); // 4
+```
+
+##### times()
+
+> **times**: (`uint`, `b`) => [`Uint32Type`](#uint32type)
+
+Multiply Uint32 value with wrapping
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+First operand
+
+###### b
+
+[`Uint32Type`](#uint32type)
+
+Second operand
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Product (uint * b) mod 2^32
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(50);
+const product = Uint32.times(a, b); // 5000
+```
+
+##### toAbiEncoded()
+
+> **toAbiEncoded**: (`uint`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Convert Uint32 to ABI-encoded bytes (32 bytes, big-endian, left-padded with zeros)
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value to convert
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte Uint8Array
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.from(255);
+const abiBytes = Uint32.toAbiEncoded(value); // 32 bytes with last byte = 255
+```
+
+##### toBigInt()
+
+> **toBigInt**: (`uint`) => `bigint`
+
+Convert Uint32 to bigint
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value to convert
+
+###### Returns
+
+`bigint`
+
+bigint value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.from(255);
+const bigintValue = Uint32.toBigInt(value); // 255n
+```
+
+##### toBytes()
+
+> **toBytes**: (`uint`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Convert Uint32 to bytes (big-endian, 4 bytes)
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value to convert
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+4-byte Uint8Array
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.from(255);
+const bytes = Uint32.toBytes(value); // Uint8Array([0, 0, 0, 255])
+```
+
+##### toHex()
+
+> **toHex**: (`uint`) => `string`
+
+Convert Uint32 to hex string (with 0x prefix)
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value to convert
+
+###### Returns
+
+`string`
+
+hex string with 0x prefix
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.from(255);
+const hex = Uint32.toHex(value); // "0xff"
+```
+
+##### toNumber()
+
+> **toNumber**: (`uint`) => `number`
+
+Convert Uint32 to number
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value to convert
+
+###### Returns
+
+`number`
+
+number value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.from(255);
+const num = Uint32.toNumber(value); // 255
+```
+
+##### toPower()
+
+> **toPower**: (`uint`, `exp`) => [`Uint32Type`](#uint32type)
+
+Raise Uint32 to power with wrapping
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Base
+
+###### exp
+
+[`Uint32Type`](#uint32type)
+
+Exponent
+
+###### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (uint ^ exp) mod 2^32
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const base = Uint32.from(2);
+const exp = Uint32.from(10);
+const result = Uint32.toPower(base, exp); // 1024
+```
+
+##### toString()
+
+> **toString**: (`uint`) => `string`
+
+Convert Uint32 to string
+
+###### Parameters
+
+###### uint
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value to convert
+
+###### Returns
+
+`string`
+
+decimal string representation
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.from(255);
+const str = Uint32.toString(value); // "255"
+```
+
+##### tryFrom()
+
+> **tryFrom**: (`value`) => [`Uint32Type`](#uint32type) \| `null`
+
+Try to create Uint32 from value, return null if invalid
+
+###### Parameters
+
+###### value
+
+`unknown`
+
+Value to convert
+
+###### Returns
+
+[`Uint32Type`](#uint32type) \| `null`
+
+Uint32 value or null
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.tryFrom(100); // 100
+const b = Uint32.tryFrom(-1); // null
+const c = Uint32.tryFrom(5000000000); // null
+```
+
+##### ZERO
+
+> **ZERO**: [`Uint32Type`](#uint32type)
+
+Zero value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import { ZERO } from './primitives/Uint32/index.js';
+console.log(ZERO); // 0
+```
+
+***
+
+### ZERO
+
+> `const` **ZERO**: [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/constants.js:64](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/constants.js#L64)
+
+Zero value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import { ZERO } from './primitives/Uint32/index.js';
+console.log(ZERO); // 0
+```
+
+## Functions
+
+### bitLength()
+
+> **bitLength**(`uint`): `number`
+
+Defined in: [src/primitives/Uint32/bitLength.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/bitLength.js#L16)
+
+Calculate bit length of Uint32 value
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Value
+
+#### Returns
+
+`number`
+
+Number of bits needed to represent value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(255);
+const result = Uint32.bitLength(a); // 8
+```
+
+***
+
+### bitwiseAnd()
+
+> **bitwiseAnd**(`uint`, `b`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/bitwiseAnd.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/bitwiseAnd.js#L18)
+
+Bitwise AND Uint32 values
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+First operand
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Second operand
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (uint & b)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(0b1100);
+const b = Uint32.from(0b1010);
+const result = Uint32.bitwiseAnd(a, b); // 0b1000 = 8
+```
+
+***
+
+### bitwiseNot()
+
+> **bitwiseNot**(`uint`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/bitwiseNot.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/bitwiseNot.js#L16)
+
+Bitwise NOT Uint32 value
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Operand
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (~uint)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(0);
+const result = Uint32.bitwiseNot(a); // 4294967295 (all bits set)
+```
+
+***
+
+### bitwiseOr()
+
+> **bitwiseOr**(`uint`, `b`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/bitwiseOr.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/bitwiseOr.js#L18)
+
+Bitwise OR Uint32 values
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+First operand
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Second operand
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (uint | b)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(0b1100);
+const b = Uint32.from(0b1010);
+const result = Uint32.bitwiseOr(a, b); // 0b1110 = 14
+```
+
+***
+
+### bitwiseXor()
+
+> **bitwiseXor**(`uint`, `b`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/bitwiseXor.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/bitwiseXor.js#L18)
+
+Bitwise XOR Uint32 values
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+First operand
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Second operand
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (uint ^ b)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(0b1100);
+const b = Uint32.from(0b1010);
+const result = Uint32.bitwiseXor(a, b); // 0b0110 = 6
+```
+
+***
+
+### clone()
+
+> **clone**(`uint`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/clone.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/clone.js#L16)
+
+Clone Uint32 value
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Value to clone
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Cloned value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.clone(a);
+```
+
+***
+
+### dividedBy()
+
+> **dividedBy**(`uint`, `b`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/dividedBy.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/dividedBy.js#L18)
+
+Divide Uint32 value (integer division)
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Dividend
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Divisor
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Quotient (uint / b) truncated
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If divisor is zero
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(3);
+const quotient = Uint32.dividedBy(a, b); // 33
+```
+
+***
+
+### equals()
+
+> **equals**(`uint`, `b`): `boolean`
+
+Defined in: [src/primitives/Uint32/equals.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/equals.js#L18)
+
+Check if Uint32 values are equal
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+First value
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Second value
+
+#### Returns
+
+`boolean`
+
+true if equal
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(100);
+const result = Uint32.equals(a, b); // true
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/from.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/from.js#L20)
+
+Create Uint32 from number, bigint, or string
+
+#### Parameters
+
+##### value
+
+number, bigint, or decimal/hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is out of range or invalid
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from("255");
+const c = Uint32.from("0xff");
+const d = Uint32.from(42n);
+```
+
+***
+
+### fromAbiEncoded()
+
+> **fromAbiEncoded**(`bytes`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/fromAbiEncoded.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/fromAbiEncoded.js#L17)
+
+Create Uint32 from ABI-encoded bytes (32 bytes, big-endian, left-padded)
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+ABI-encoded byte array (32 bytes)
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If bytes length is not 32
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const abiBytes = new Uint8Array(32);
+abiBytes[31] = 255;
+const value = Uint32.fromAbiEncoded(abiBytes); // 255
+```
+
+***
+
+### fromBigInt()
+
+> **fromBigInt**(`value`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/fromBigInt.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/fromBigInt.js#L17)
+
+Create Uint32 from bigint
+
+#### Parameters
+
+##### value
+
+`bigint`
+
+bigint value
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is out of range
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.fromBigInt(100n);
+```
+
+***
+
+### fromBytes()
+
+> **fromBytes**(`bytes`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/fromBytes.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/fromBytes.js#L18)
+
+Create Uint32 from bytes (big-endian, 4 bytes)
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+byte array (must be exactly 4 bytes)
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If bytes length is not 4
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const bytes = new Uint8Array([0, 0, 0, 255]);
+const value = Uint32.fromBytes(bytes); // 255
+```
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/fromHex.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/fromHex.js#L18)
+
+Create Uint32 from hex string
+
+#### Parameters
+
+##### hex
+
+`string`
+
+hex string (with or without 0x prefix)
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is out of range or invalid hex
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.fromHex("0xff");
+const b = Uint32.fromHex("ff");
+```
+
+***
+
+### fromNumber()
+
+> **fromNumber**(`value`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/fromNumber.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/fromNumber.js#L17)
+
+Create Uint32 from number
+
+#### Parameters
+
+##### value
+
+`number`
+
+number value
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is out of range or invalid
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.fromNumber(42);
+```
+
+***
+
+### greaterThan()
+
+> **greaterThan**(`uint`, `b`): `boolean`
+
+Defined in: [src/primitives/Uint32/greaterThan.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/greaterThan.js#L18)
+
+Check if Uint32 value is greater than another
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+First value
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Second value
+
+#### Returns
+
+`boolean`
+
+true if uint > b
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(200);
+const b = Uint32.from(100);
+const result = Uint32.greaterThan(a, b); // true
+```
+
+***
+
+### isValid()
+
+> **isValid**(`value`): `value is Uint32Type`
+
+Defined in: [src/primitives/Uint32/isValid.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/isValid.js#L19)
+
+Check if value is a valid Uint32
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+Value to check
+
+#### Returns
+
+`value is Uint32Type`
+
+true if valid Uint32
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const result1 = Uint32.isValid(100); // true
+const result2 = Uint32.isValid(-1); // false
+const result3 = Uint32.isValid(5000000000); // false (exceeds max)
+```
+
+***
+
+### isZero()
+
+> **isZero**(`uint`): `boolean`
+
+Defined in: [src/primitives/Uint32/isZero.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/isZero.js#L16)
+
+Check if Uint32 value is zero
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Value to check
+
+#### Returns
+
+`boolean`
+
+true if zero
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(0);
+const result = Uint32.isZero(a); // true
+```
+
+***
+
+### leadingZeros()
+
+> **leadingZeros**(`uint`): `number`
+
+Defined in: [src/primitives/Uint32/leadingZeros.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/leadingZeros.js#L16)
+
+Count leading zeros in Uint32 value
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Value
+
+#### Returns
+
+`number`
+
+Number of leading zero bits
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(255);
+const result = Uint32.leadingZeros(a); // 24
+```
+
+***
+
+### lessThan()
+
+> **lessThan**(`uint`, `b`): `boolean`
+
+Defined in: [src/primitives/Uint32/lessThan.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/lessThan.js#L18)
+
+Check if Uint32 value is less than another
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+First value
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Second value
+
+#### Returns
+
+`boolean`
+
+true if uint < b
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(200);
+const result = Uint32.lessThan(a, b); // true
+```
+
+***
+
+### maximum()
+
+> **maximum**(`uint`, `b`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/maximum.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/maximum.js#L18)
+
+Return maximum of two Uint32 values
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+First value
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Second value
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Maximum value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(200);
+const result = Uint32.maximum(a, b); // 200
+```
+
+***
+
+### minimum()
+
+> **minimum**(`uint`, `b`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/minimum.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/minimum.js#L18)
+
+Return minimum of two Uint32 values
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+First value
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Second value
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Minimum value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(200);
+const result = Uint32.minimum(a, b); // 100
+```
+
+***
+
+### minus()
+
+> **minus**(`uint`, `b`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/minus.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/minus.js#L18)
+
+Subtract Uint32 value with wrapping
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+First operand
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Second operand
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Difference (uint - b) mod 2^32
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(50);
+const diff = Uint32.minus(a, b); // 50
+```
+
+***
+
+### modulo()
+
+> **modulo**(`uint`, `b`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/modulo.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/modulo.js#L18)
+
+Modulo Uint32 value
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Dividend
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Divisor
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Remainder (uint % b)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If divisor is zero
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(3);
+const remainder = Uint32.modulo(a, b); // 1
+```
+
+***
+
+### plus()
+
+> **plus**(`uint`, `b`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/plus.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/plus.js#L18)
+
+Add Uint32 value with wrapping
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+First operand
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Second operand
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Sum (uint + b) mod 2^32
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(50);
+const sum = Uint32.plus(a, b); // 150
+```
+
+***
+
+### popCount()
+
+> **popCount**(`uint`): `number`
+
+Defined in: [src/primitives/Uint32/popCount.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/popCount.js#L16)
+
+Count set bits (population count) in Uint32 value
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Value
+
+#### Returns
+
+`number`
+
+Number of set bits
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(0b1111);
+const result = Uint32.popCount(a); // 4
+```
+
+***
+
+### shiftLeft()
+
+> **shiftLeft**(`uint`, `bits`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/shiftLeft.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/shiftLeft.js#L17)
+
+Left shift Uint32 value
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Value to shift
+
+##### bits
+
+`number`
+
+Number of bits to shift (0-31)
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (uint << bits) mod 2^32
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(1);
+const result = Uint32.shiftLeft(a, 8); // 256
+```
+
+***
+
+### shiftRight()
+
+> **shiftRight**(`uint`, `bits`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/shiftRight.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/shiftRight.js#L17)
+
+Right shift Uint32 value (logical shift, zero-fill)
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Value to shift
+
+##### bits
+
+`number`
+
+Number of bits to shift (0-31)
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (uint >>> bits)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(256);
+const result = Uint32.shiftRight(a, 8); // 1
+```
+
+***
+
+### times()
+
+> **times**(`uint`, `b`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/times.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/times.js#L18)
+
+Multiply Uint32 value with wrapping
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+First operand
+
+##### b
+
+[`Uint32Type`](#uint32type)
+
+Second operand
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Product (uint * b) mod 2^32
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.from(100);
+const b = Uint32.from(50);
+const product = Uint32.times(a, b); // 5000
+```
+
+***
+
+### toAbiEncoded()
+
+> **toAbiEncoded**(`uint`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Uint32/toAbiEncoded.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/toAbiEncoded.js#L16)
+
+Convert Uint32 to ABI-encoded bytes (32 bytes, big-endian, left-padded with zeros)
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value to convert
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte Uint8Array
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.from(255);
+const abiBytes = Uint32.toAbiEncoded(value); // 32 bytes with last byte = 255
+```
+
+***
+
+### toBigInt()
+
+> **toBigInt**(`uint`): `bigint`
+
+Defined in: [src/primitives/Uint32/toBigInt.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/toBigInt.js#L16)
+
+Convert Uint32 to bigint
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value to convert
+
+#### Returns
+
+`bigint`
+
+bigint value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.from(255);
+const bigintValue = Uint32.toBigInt(value); // 255n
+```
+
+***
+
+### toBytes()
+
+> **toBytes**(`uint`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Uint32/toBytes.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/toBytes.js#L18)
+
+Convert Uint32 to bytes (big-endian, 4 bytes)
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value to convert
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+4-byte Uint8Array
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.from(255);
+const bytes = Uint32.toBytes(value); // Uint8Array([0, 0, 0, 255])
+```
+
+***
+
+### toHex()
+
+> **toHex**(`uint`): `string`
+
+Defined in: [src/primitives/Uint32/toHex.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/toHex.js#L16)
+
+Convert Uint32 to hex string (with 0x prefix)
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value to convert
+
+#### Returns
+
+`string`
+
+hex string with 0x prefix
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.from(255);
+const hex = Uint32.toHex(value); // "0xff"
+```
+
+***
+
+### toNumber()
+
+> **toNumber**(`uint`): `number`
+
+Defined in: [src/primitives/Uint32/toNumber.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/toNumber.js#L16)
+
+Convert Uint32 to number
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value to convert
+
+#### Returns
+
+`number`
+
+number value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.from(255);
+const num = Uint32.toNumber(value); // 255
+```
+
+***
+
+### toPower()
+
+> **toPower**(`uint`, `exp`): [`Uint32Type`](#uint32type)
+
+Defined in: [src/primitives/Uint32/toPower.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/toPower.js#L18)
+
+Raise Uint32 to power with wrapping
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Base
+
+##### exp
+
+[`Uint32Type`](#uint32type)
+
+Exponent
+
+#### Returns
+
+[`Uint32Type`](#uint32type)
+
+Result (uint ^ exp) mod 2^32
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const base = Uint32.from(2);
+const exp = Uint32.from(10);
+const result = Uint32.toPower(base, exp); // 1024
+```
+
+***
+
+### toString()
+
+> **toString**(`uint`): `string`
+
+Defined in: [src/primitives/Uint32/toString.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/toString.js#L17)
+
+Convert Uint32 to string
+
+#### Parameters
+
+##### uint
+
+[`Uint32Type`](#uint32type)
+
+Uint32 value to convert
+
+#### Returns
+
+`string`
+
+decimal string representation
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const value = Uint32.from(255);
+const str = Uint32.toString(value); // "255"
+```
+
+***
+
+### tryFrom()
+
+> **tryFrom**(`value`): [`Uint32Type`](#uint32type) \| `null`
+
+Defined in: [src/primitives/Uint32/tryFrom.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/tryFrom.js#L19)
+
+Try to create Uint32 from value, return null if invalid
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+Value to convert
+
+#### Returns
+
+[`Uint32Type`](#uint32type) \| `null`
+
+Uint32 value or null
+
+#### See
+
+https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Uint32 from './primitives/Uint32/index.js';
+const a = Uint32.tryFrom(100); // 100
+const b = Uint32.tryFrom(-1); // null
+const c = Uint32.tryFrom(5000000000); // null
+```

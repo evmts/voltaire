@@ -1,0 +1,2379 @@
+---
+title: "crypto/Secp256k1"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / crypto/Secp256k1
+
+# crypto/Secp256k1
+
+## Classes
+
+### InvalidPrivateKeyError
+
+Defined in: [src/crypto/Secp256k1/errors.js:71](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/errors.js#L71)
+
+Error for invalid private keys
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { InvalidPrivateKeyError } from './crypto/Secp256k1/index.js';
+throw new InvalidPrivateKeyError('Invalid private key');
+```
+
+#### Extends
+
+- [`Secp256k1Error`](#secp256k1error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidPrivateKeyError**(`message`): [`InvalidPrivateKeyError`](#invalidprivatekeyerror)
+
+Defined in: [src/crypto/Secp256k1/errors.js:72](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/errors.js#L72)
+
+###### Parameters
+
+###### message
+
+`any`
+
+###### Returns
+
+[`InvalidPrivateKeyError`](#invalidprivatekeyerror)
+
+###### Overrides
+
+[`Secp256k1Error`](#secp256k1error).[`constructor`](#constructor-3)
+
+#### Properties
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Secp256k1/errors.js:74](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/errors.js#L74)
+
+###### Inherited from
+
+[`Secp256k1Error`](#secp256k1error).[`name`](#name-3)
+
+***
+
+### InvalidPublicKeyError
+
+Defined in: [src/crypto/Secp256k1/errors.js:52](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/errors.js#L52)
+
+Error for invalid public keys
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { InvalidPublicKeyError } from './crypto/Secp256k1/index.js';
+throw new InvalidPublicKeyError('Invalid public key');
+```
+
+#### Extends
+
+- [`Secp256k1Error`](#secp256k1error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidPublicKeyError**(`message`): [`InvalidPublicKeyError`](#invalidpublickeyerror)
+
+Defined in: [src/crypto/Secp256k1/errors.js:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/errors.js#L53)
+
+###### Parameters
+
+###### message
+
+`any`
+
+###### Returns
+
+[`InvalidPublicKeyError`](#invalidpublickeyerror)
+
+###### Overrides
+
+[`Secp256k1Error`](#secp256k1error).[`constructor`](#constructor-3)
+
+#### Properties
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Secp256k1/errors.js:55](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/errors.js#L55)
+
+###### Inherited from
+
+[`Secp256k1Error`](#secp256k1error).[`name`](#name-3)
+
+***
+
+### InvalidSignatureError
+
+Defined in: [src/crypto/Secp256k1/errors.js:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/errors.js#L33)
+
+Error for invalid signatures
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { InvalidSignatureError } from './crypto/Secp256k1/index.js';
+throw new InvalidSignatureError('Invalid signature');
+```
+
+#### Extends
+
+- [`Secp256k1Error`](#secp256k1error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidSignatureError**(`message`): [`InvalidSignatureError`](#invalidsignatureerror)
+
+Defined in: [src/crypto/Secp256k1/errors.js:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/errors.js#L34)
+
+###### Parameters
+
+###### message
+
+`any`
+
+###### Returns
+
+[`InvalidSignatureError`](#invalidsignatureerror)
+
+###### Overrides
+
+[`Secp256k1Error`](#secp256k1error).[`constructor`](#constructor-3)
+
+#### Properties
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Secp256k1/errors.js:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/errors.js#L36)
+
+###### Inherited from
+
+[`Secp256k1Error`](#secp256k1error).[`name`](#name-3)
+
+***
+
+### Secp256k1Error
+
+Defined in: [src/crypto/Secp256k1/errors.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/errors.js#L14)
+
+Base error for secp256k1 operations
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { Secp256k1Error } from './crypto/Secp256k1/index.js';
+throw new Secp256k1Error('Invalid operation');
+```
+
+#### Extends
+
+- `Error`
+
+#### Extended by
+
+- [`InvalidSignatureError`](#invalidsignatureerror)
+- [`InvalidPublicKeyError`](#invalidpublickeyerror)
+- [`InvalidPrivateKeyError`](#invalidprivatekeyerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new Secp256k1Error**(`message`): [`Secp256k1Error`](#secp256k1error)
+
+Defined in: [src/crypto/Secp256k1/errors.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/errors.js#L15)
+
+###### Parameters
+
+###### message
+
+`any`
+
+###### Returns
+
+[`Secp256k1Error`](#secp256k1error)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Secp256k1/errors.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/errors.js#L17)
+
+###### Inherited from
+
+`Error.name`
+
+## Interfaces
+
+### Secp256k1SignatureType
+
+Defined in: [src/crypto/Secp256k1/SignatureType.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/SignatureType.ts#L22)
+
+ECDSA signature with Ethereum-compatible v value
+
+Components:
+- r: x-coordinate of the ephemeral public key (32 bytes, HashType)
+- s: signature proof value (32 bytes, HashType)
+- v: recovery id (27 or 28 for Ethereum)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```typescript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+const signature: BrandedSignature = {
+  r: Hash.from(new Uint8Array(32)),
+  s: Hash.from(new Uint8Array(32)),
+  v: 27
+};
+```
+
+#### Properties
+
+##### r
+
+> **r**: [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Defined in: [src/crypto/Secp256k1/SignatureType.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/SignatureType.ts#L23)
+
+##### s
+
+> **s**: [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Defined in: [src/crypto/Secp256k1/SignatureType.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/SignatureType.ts#L24)
+
+##### v
+
+> **v**: `number`
+
+Defined in: [src/crypto/Secp256k1/SignatureType.ts:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/SignatureType.ts#L25)
+
+## Type Aliases
+
+### ~~BrandedSignature~~
+
+> **BrandedSignature** = [`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+Defined in: [src/crypto/Secp256k1/SignatureType.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/SignatureType.ts#L31)
+
+#### Deprecated
+
+Use Secp256k1SignatureType instead
+
+***
+
+### Secp256k1PublicKeyType
+
+> **Secp256k1PublicKeyType** = `Uint8Array` & `object`
+
+Defined in: [src/crypto/Secp256k1/Secp256k1PublicKeyType.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/Secp256k1PublicKeyType.ts#L11)
+
+Branded secp256k1 public key type - 64 byte uncompressed public key
+
+Format: x-coordinate (32 bytes) || y-coordinate (32 bytes)
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Secp256k1PublicKey"`
+
+##### length
+
+> `readonly` **length**: `64`
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+## Variables
+
+### CURVE\_ORDER
+
+> `const` **CURVE\_ORDER**: `115792089237316195423570985008687907852837564279074904382605163141518161494337n` = `0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n`
+
+Defined in: [src/crypto/Secp256k1/constants.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/constants.js#L14)
+
+secp256k1 curve order (number of points on the curve)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { CURVE_ORDER } from './crypto/Secp256k1/index.js';
+console.log(CURVE_ORDER); // 0xffffffffffff...
+```
+
+***
+
+### PRIVATE\_KEY\_SIZE
+
+> `const` **PRIVATE\_KEY\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/Secp256k1/constants.js:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/constants.js#L29)
+
+Private key size in bytes
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { PRIVATE_KEY_SIZE } from './crypto/Secp256k1/index.js';
+console.log(PRIVATE_KEY_SIZE); // 32
+```
+
+***
+
+### PrivateKey
+
+> `const` **PrivateKey**: `__module` = `PrivateKeyMethods`
+
+Defined in: [src/crypto/Secp256k1/Secp256k1.js:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/Secp256k1.js#L54)
+
+***
+
+### PUBLIC\_KEY\_SIZE
+
+> `const` **PUBLIC\_KEY\_SIZE**: `64` = `64`
+
+Defined in: [src/crypto/Secp256k1/constants.js:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/constants.js#L43)
+
+Uncompressed public key size in bytes (64 bytes, no prefix)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { PUBLIC_KEY_SIZE } from './crypto/Secp256k1/index.js';
+console.log(PUBLIC_KEY_SIZE); // 64
+```
+
+***
+
+### PublicKey
+
+> `const` **PublicKey**: `__module` = `PublicKeyMethods`
+
+Defined in: [src/crypto/Secp256k1/Secp256k1.js:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/Secp256k1.js#L53)
+
+***
+
+### Secp256k1
+
+> `const` **Secp256k1**: `object`
+
+Defined in: [src/crypto/Secp256k1/Secp256k1.js:93](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/Secp256k1.js#L93)
+
+secp256k1/ECDSA Cryptography namespace
+
+Complete ECDSA signing and verification using the secp256k1 elliptic curve.
+All operations use the audited @noble/curves library for security.
+Full Ethereum compatibility with v = 27/28 recovery IDs.
+
+#### Type Declaration
+
+##### addPoints()
+
+> **addPoints**: (`pubKey1`, `pubKey2`) => [`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Add two secp256k1 public key points
+
+Performs elliptic curve point addition: P1 + P2.
+Used in ERC-5564 stealth address generation.
+
+###### Parameters
+
+###### pubKey1
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+First 64-byte uncompressed public key
+
+###### pubKey2
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Second 64-byte uncompressed public key
+
+###### Returns
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Result 64-byte uncompressed public key
+
+###### See
+
+ - https://voltaire.tevm.sh/crypto for crypto documentation
+ - https://eips.ethereum.org/EIPS/eip-5564 for ERC-5564 stealth addresses
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If either public key is invalid
+
+###### Throws
+
+If point addition fails
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+const pubKey1 = Secp256k1.derivePublicKey(privateKey1);
+const pubKey2 = Secp256k1.derivePublicKey(privateKey2);
+const sum = Secp256k1.addPoints(pubKey1, pubKey2);
+console.log(sum.length); // 64
+```
+
+##### createKeyPair()
+
+> **createKeyPair**: () => `object`
+
+Generate a new secp256k1 key pair
+
+###### Returns
+
+`object`
+
+Key pair with 32-byte private key and 65-byte uncompressed public key
+
+###### privateKey
+
+> **privateKey**: `Uint8Array`
+
+###### publicKey
+
+> **publicKey**: `Uint8Array`
+
+###### Example
+
+```javascript
+import { Secp256k1 } from './crypto/Secp256k1/index.js';
+const { privateKey, publicKey } = Secp256k1.createKeyPair();
+```
+
+##### CURVE\_ORDER
+
+> **CURVE\_ORDER**: `bigint`
+
+secp256k1 curve order (number of points on the curve)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { CURVE_ORDER } from './crypto/Secp256k1/index.js';
+console.log(CURVE_ORDER); // 0xffffffffffff...
+```
+
+##### derivePublicKey()
+
+> **derivePublicKey**: (`privateKey`) => [`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Derive public key from private key
+
+Computes the public key point from a private key using scalar
+multiplication on the secp256k1 curve.
+
+###### Parameters
+
+###### privateKey
+
+[`PrivateKeyType`](../primitives/PrivateKey.mdx#privatekeytype)
+
+32-byte private key
+
+###### Returns
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+64-byte uncompressed public key
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If private key is invalid
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as PrivateKey from './primitives/PrivateKey/index.js';
+const privateKey = PrivateKey.from(new Uint8Array(32));
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+console.log(publicKey.length); // 64
+```
+
+##### ecdh()
+
+> **ecdh**: (`privateKey`, `publicKey`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Perform ECDH key exchange
+
+Computes shared secret from your private key and their public key.
+Returns the x-coordinate of the shared point (32 bytes).
+
+###### Parameters
+
+###### privateKey
+
+[`PrivateKeyType`](../primitives/PrivateKey.mdx#privatekeytype)
+
+Your 32-byte private key
+
+###### publicKey
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Their 64-byte uncompressed public key
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte shared secret (x-coordinate)
+
+###### See
+
+ - https://voltaire.tevm.sh/crypto for crypto documentation
+ - https://eips.ethereum.org/EIPS/eip-5564 for ERC-5564 stealth addresses
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If private key is invalid
+
+###### Throws
+
+If public key is invalid
+
+###### Throws
+
+If ECDH computation fails
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+const myPrivateKey = new Uint8Array(32);
+const theirPublicKey = Secp256k1.derivePublicKey(theirPrivateKey);
+const sharedSecret = Secp256k1.ecdh(myPrivateKey, theirPublicKey);
+console.log(sharedSecret.length); // 32
+```
+
+##### getSharedSecret()
+
+> **getSharedSecret**: (`privateKey`, `publicKey`) => `Uint8Array`\<`ArrayBufferLike`\> = `ecdh`
+
+Perform ECDH key exchange
+
+Computes shared secret from your private key and their public key.
+Returns the x-coordinate of the shared point (32 bytes).
+
+###### Parameters
+
+###### privateKey
+
+[`PrivateKeyType`](../primitives/PrivateKey.mdx#privatekeytype)
+
+Your 32-byte private key
+
+###### publicKey
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Their 64-byte uncompressed public key
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte shared secret (x-coordinate)
+
+###### See
+
+ - https://voltaire.tevm.sh/crypto for crypto documentation
+ - https://eips.ethereum.org/EIPS/eip-5564 for ERC-5564 stealth addresses
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If private key is invalid
+
+###### Throws
+
+If public key is invalid
+
+###### Throws
+
+If ECDH computation fails
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+const myPrivateKey = new Uint8Array(32);
+const theirPublicKey = Secp256k1.derivePublicKey(theirPrivateKey);
+const sharedSecret = Secp256k1.ecdh(myPrivateKey, theirPublicKey);
+console.log(sharedSecret.length); // 32
+```
+
+##### isValidPrivateKey()
+
+> **isValidPrivateKey**: (`privateKey`) => `boolean`
+
+Validate private key
+
+Checks that the private key is within valid range [1, n-1] where n
+is the curve order.
+
+###### Parameters
+
+###### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key
+
+###### Returns
+
+`boolean`
+
+true if private key is valid, false otherwise
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+const privateKey = new Uint8Array(32);
+const valid = Secp256k1.isValidPrivateKey(privateKey);
+```
+
+##### isValidPublicKey()
+
+> **isValidPublicKey**: (`publicKey`) => `publicKey is Secp256k1PublicKeyType`
+
+Validate public key
+
+Checks that the public key is a valid point on the secp256k1 curve.
+
+###### Parameters
+
+###### publicKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+64-byte uncompressed public key
+
+###### Returns
+
+`publicKey is Secp256k1PublicKeyType`
+
+true if public key is valid, false otherwise
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+const publicKey = new Uint8Array(64);
+if (Secp256k1.isValidPublicKey(publicKey)) {
+  const branded = publicKey; // now Secp256k1PublicKeyType
+}
+```
+
+##### isValidSignature()
+
+> **isValidSignature**: (`signature`) => `boolean`
+
+Validate signature components
+
+Checks that r and s are within valid range [1, n-1] where n is the
+curve order. Also enforces low-s values to prevent malleability.
+
+###### Parameters
+
+###### signature
+
+[`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+ECDSA signature to validate (r and s are HashType)
+
+###### Returns
+
+`boolean`
+
+true if signature is valid, false otherwise
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+const signature = { r: Hash.from(new Uint8Array(32)), s: Hash.from(new Uint8Array(32)), v: 27 };
+const valid = Secp256k1.isValidSignature(signature);
+```
+
+##### PRIVATE\_KEY\_SIZE
+
+> **PRIVATE\_KEY\_SIZE**: `number`
+
+Private key size in bytes
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { PRIVATE_KEY_SIZE } from './crypto/Secp256k1/index.js';
+console.log(PRIVATE_KEY_SIZE); // 32
+```
+
+##### PrivateKey
+
+> **PrivateKey**: `__module` = `PrivateKeyMethods`
+
+##### PUBLIC\_KEY\_SIZE
+
+> **PUBLIC\_KEY\_SIZE**: `number`
+
+Uncompressed public key size in bytes (64 bytes, no prefix)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { PUBLIC_KEY_SIZE } from './crypto/Secp256k1/index.js';
+console.log(PUBLIC_KEY_SIZE); // 64
+```
+
+##### PublicKey
+
+> **PublicKey**: `__module` = `PublicKeyMethods`
+
+##### randomPrivateKey()
+
+> **randomPrivateKey**: () => `Uint8Array`\<`ArrayBufferLike`\>
+
+Generate a cryptographically secure random secp256k1 private key
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key
+
+###### Example
+
+```javascript
+import { Secp256k1 } from './crypto/Secp256k1/index.js';
+const privateKey = Secp256k1.randomPrivateKey();
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+```
+
+##### recoverPublicKey()
+
+> **recoverPublicKey**: (`signature`, `messageHash`) => [`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Recover public key from signature and message hash
+
+Uses the recovery id (v) to recover the exact public key that created
+the signature. This is what enables Ethereum's address recovery from
+transaction signatures.
+
+###### Parameters
+
+###### signature
+
+ECDSA signature components
+
+###### r
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte signature component r
+
+###### s
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte signature component s
+
+###### v
+
+`number`
+
+Recovery id (27/28 or 0/1)
+
+###### messageHash
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+32-byte message hash that was signed
+
+###### Returns
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+64-byte uncompressed public key
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If signature or recovery fails
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+const messageHash = Hash.keccak256String('Hello');
+const recovered = Secp256k1.recoverPublicKey(
+  { r: rBytes, s: sBytes, v: 27 },
+  messageHash
+);
+```
+
+##### recoverPublicKeyFromHash()
+
+> **recoverPublicKeyFromHash**: (`signature`, `hash`) => [`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Recover public key from signature and pre-hashed message
+
+This is the hash-level API that operates directly on a 32-byte hash.
+Use this when you need custom hashing schemes or interop with other libraries.
+For standard Ethereum signing, use recoverPublicKey() instead.
+
+Uses the recovery id (v) to recover the exact public key that created
+the signature. This is what enables Ethereum's address recovery from
+transaction signatures.
+
+###### Parameters
+
+###### signature
+
+ECDSA signature components
+
+###### r
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte signature component r
+
+###### s
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte signature component s
+
+###### v
+
+`number`
+
+Recovery id (27/28 or 0/1)
+
+###### hash
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+32-byte hash that was signed (pre-hashed message)
+
+###### Returns
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+64-byte uncompressed public key
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If signature or recovery fails
+
+###### Throws
+
+If hash is not 32 bytes
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+
+// Recover public key from a pre-hashed message (hash-level API)
+const hash = Hash.keccak256String('Hello');
+const recovered = Secp256k1.recoverPublicKeyFromHash(
+  { r: rBytes, s: sBytes, v: 27 },
+  hash
+);
+
+// For comparison, recoverPublicKey() hashes internally (message-level API)
+const recovered2 = Secp256k1.recoverPublicKey(
+  { r: rBytes, s: sBytes, v: 27 },
+  messageHash
+);
+```
+
+##### scalarMultiply()
+
+> **scalarMultiply**: (`scalar`) => [`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Multiply generator point by scalar
+
+Performs scalar multiplication: scalar * G (generator point).
+Used in ERC-5564 stealth address generation.
+
+###### Parameters
+
+###### scalar
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte scalar value
+
+###### Returns
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Result 64-byte uncompressed public key
+
+###### See
+
+ - https://voltaire.tevm.sh/crypto for crypto documentation
+ - https://eips.ethereum.org/EIPS/eip-5564 for ERC-5564 stealth addresses
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If scalar multiplication fails
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+const scalar = new Uint8Array(32);
+scalar[31] = 5; // scalar = 5
+const result = Secp256k1.scalarMultiply(scalar);
+console.log(result.length); // 64
+```
+
+##### sign()
+
+> **sign**: (`messageHash`, `privateKey`) => [`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+Sign a message hash with a private key
+
+Uses deterministic ECDSA (RFC 6979) for signature generation.
+Returns signature with Ethereum-compatible v value (27 or 28).
+
+###### Parameters
+
+###### messageHash
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+32-byte message hash to sign
+
+###### privateKey
+
+[`PrivateKeyType`](../primitives/PrivateKey.mdx#privatekeytype)
+
+32-byte private key
+
+###### Returns
+
+[`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+ECDSA signature with r, s, v components
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If private key is invalid
+
+###### Throws
+
+If signing fails
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+import * as PrivateKey from './primitives/PrivateKey/index.js';
+const messageHash = Hash.keccak256String('Hello!');
+const privateKey = PrivateKey.from(new Uint8Array(32));
+const signature = Secp256k1.sign(messageHash, privateKey);
+```
+
+##### Signature
+
+> **Signature**: `__module` = `SignatureMethods`
+
+##### SIGNATURE\_COMPONENT\_SIZE
+
+> **SIGNATURE\_COMPONENT\_SIZE**: `number`
+
+Signature component size in bytes (r and s are each 32 bytes)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { SIGNATURE_COMPONENT_SIZE } from './crypto/Secp256k1/index.js';
+console.log(SIGNATURE_COMPONENT_SIZE); // 32
+```
+
+##### signHash()
+
+> **signHash**: (`hash`, `privateKey`) => [`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+Sign a pre-hashed message with a private key
+
+This is the hash-level API that operates directly on a 32-byte hash.
+Use this when you need custom hashing schemes or interop with other libraries.
+For standard Ethereum signing, use sign() instead.
+
+Uses deterministic ECDSA (RFC 6979) for signature generation.
+Returns signature with Ethereum-compatible v value (27 or 28).
+
+###### Parameters
+
+###### hash
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+32-byte hash to sign (pre-hashed message)
+
+###### privateKey
+
+[`PrivateKeyType`](../primitives/PrivateKey.mdx#privatekeytype)
+
+32-byte private key
+
+###### Returns
+
+[`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+ECDSA signature with r, s, v components
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If private key is invalid
+
+###### Throws
+
+If signing fails or hash is not 32 bytes
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+import * as PrivateKey from './primitives/PrivateKey/index.js';
+
+// Sign a pre-hashed message (hash-level API)
+const hash = Hash.keccak256String('Hello!');
+const privateKey = PrivateKey.from(new Uint8Array(32));
+const signature = Secp256k1.signHash(hash, privateKey);
+
+// For comparison, sign() hashes internally (message-level API)
+const signature2 = Secp256k1.sign(Hash.keccak256String('Hello!'), privateKey);
+```
+
+##### verify()
+
+> **verify**: (`signature`, `messageHash`, `publicKey`) => `boolean`
+
+Verify an ECDSA signature
+
+###### Parameters
+
+###### signature
+
+[`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+ECDSA signature with r, s, v components (r and s are HashType)
+
+###### messageHash
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+32-byte message hash that was signed
+
+###### publicKey
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+64-byte uncompressed public key
+
+###### Returns
+
+`boolean`
+
+true if signature is valid, false otherwise
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If signature v is invalid
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+const r = Hash.from(rBytes);
+const s = Hash.from(sBytes);
+const valid = Secp256k1.verify({ r, s, v: 27 }, messageHash, publicKey);
+```
+
+##### verifyHash()
+
+> **verifyHash**: (`signature`, `hash`, `publicKey`) => `boolean`
+
+Verify an ECDSA signature against a pre-hashed message
+
+This is the hash-level API that operates directly on a 32-byte hash.
+Use this when you need custom hashing schemes or interop with other libraries.
+For standard Ethereum signing, use verify() instead.
+
+###### Parameters
+
+###### signature
+
+[`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+ECDSA signature with r, s, v components (r and s are HashType)
+
+###### hash
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+32-byte hash that was signed (pre-hashed message)
+
+###### publicKey
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+64-byte uncompressed public key
+
+###### Returns
+
+`boolean`
+
+true if signature is valid, false otherwise
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If hash is not 32 bytes
+
+###### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+
+// Verify a signature against a pre-hashed message (hash-level API)
+const hash = Hash.keccak256String('Hello!');
+const valid = Secp256k1.verifyHash({ r, s, v: 27 }, hash, publicKey);
+
+// For comparison, verify() hashes internally (message-level API)
+const valid2 = Secp256k1.verify({ r, s, v: 27 }, messageHash, publicKey);
+```
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { Secp256k1 } from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+
+// Sign a message hash
+const messageHash = Hash.keccak256String('Hello, Ethereum!');
+const privateKey = new Uint8Array(32);
+const signature = Secp256k1.sign(messageHash, privateKey);
+
+// Verify signature
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+const valid = Secp256k1.verify(signature, messageHash, publicKey);
+
+// Recover public key from signature
+const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
+
+// Hash-level API for interop with other libraries
+const hash = Hash.keccak256String('Hello');
+const hashSig = Secp256k1.signHash(hash, privateKey);
+const hashValid = Secp256k1.verifyHash(hashSig, hash, publicKey);
+```
+
+***
+
+### Signature
+
+> `const` **Signature**: `__module` = `SignatureMethods`
+
+Defined in: [src/crypto/Secp256k1/Secp256k1.js:52](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/Secp256k1.js#L52)
+
+***
+
+### SIGNATURE\_COMPONENT\_SIZE
+
+> `const` **SIGNATURE\_COMPONENT\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/Secp256k1/constants.js:57](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/constants.js#L57)
+
+Signature component size in bytes (r and s are each 32 bytes)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { SIGNATURE_COMPONENT_SIZE } from './crypto/Secp256k1/index.js';
+console.log(SIGNATURE_COMPONENT_SIZE); // 32
+```
+
+## Functions
+
+### addPoints()
+
+> **addPoints**(`pubKey1`, `pubKey2`): [`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Defined in: [src/crypto/Secp256k1/addPoints.js:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/addPoints.js#L29)
+
+Add two secp256k1 public key points
+
+Performs elliptic curve point addition: P1 + P2.
+Used in ERC-5564 stealth address generation.
+
+#### Parameters
+
+##### pubKey1
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+First 64-byte uncompressed public key
+
+##### pubKey2
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Second 64-byte uncompressed public key
+
+#### Returns
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Result 64-byte uncompressed public key
+
+#### See
+
+ - https://voltaire.tevm.sh/crypto for crypto documentation
+ - https://eips.ethereum.org/EIPS/eip-5564 for ERC-5564 stealth addresses
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If either public key is invalid
+
+#### Throws
+
+If point addition fails
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+const pubKey1 = Secp256k1.derivePublicKey(privateKey1);
+const pubKey2 = Secp256k1.derivePublicKey(privateKey2);
+const sum = Secp256k1.addPoints(pubKey1, pubKey2);
+console.log(sum.length); // 64
+```
+
+***
+
+### createKeyPair()
+
+> **createKeyPair**(): `object`
+
+Defined in: [src/crypto/Secp256k1/createKeyPair.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/createKeyPair.js#L15)
+
+Generate a new secp256k1 key pair
+
+#### Returns
+
+`object`
+
+Key pair with 32-byte private key and 65-byte uncompressed public key
+
+##### privateKey
+
+> **privateKey**: `Uint8Array`
+
+##### publicKey
+
+> **publicKey**: `Uint8Array`
+
+#### Example
+
+```javascript
+import { Secp256k1 } from './crypto/Secp256k1/index.js';
+const { privateKey, publicKey } = Secp256k1.createKeyPair();
+```
+
+***
+
+### derivePublicKey()
+
+> **derivePublicKey**(`privateKey`): [`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Defined in: [src/crypto/Secp256k1/derivePublicKey.js:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/derivePublicKey.js#L25)
+
+Derive public key from private key
+
+Computes the public key point from a private key using scalar
+multiplication on the secp256k1 curve.
+
+#### Parameters
+
+##### privateKey
+
+[`PrivateKeyType`](../primitives/PrivateKey.mdx#privatekeytype)
+
+32-byte private key
+
+#### Returns
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+64-byte uncompressed public key
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If private key is invalid
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as PrivateKey from './primitives/PrivateKey/index.js';
+const privateKey = PrivateKey.from(new Uint8Array(32));
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+console.log(publicKey.length); // 64
+```
+
+***
+
+### ecdh()
+
+> **ecdh**(`privateKey`, `publicKey`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/Secp256k1/ecdh.js:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/ecdh.js#L34)
+
+Perform ECDH key exchange
+
+Computes shared secret from your private key and their public key.
+Returns the x-coordinate of the shared point (32 bytes).
+
+#### Parameters
+
+##### privateKey
+
+[`PrivateKeyType`](../primitives/PrivateKey.mdx#privatekeytype)
+
+Your 32-byte private key
+
+##### publicKey
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Their 64-byte uncompressed public key
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte shared secret (x-coordinate)
+
+#### See
+
+ - https://voltaire.tevm.sh/crypto for crypto documentation
+ - https://eips.ethereum.org/EIPS/eip-5564 for ERC-5564 stealth addresses
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If private key is invalid
+
+#### Throws
+
+If public key is invalid
+
+#### Throws
+
+If ECDH computation fails
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+const myPrivateKey = new Uint8Array(32);
+const theirPublicKey = Secp256k1.derivePublicKey(theirPrivateKey);
+const sharedSecret = Secp256k1.ecdh(myPrivateKey, theirPublicKey);
+console.log(sharedSecret.length); // 32
+```
+
+***
+
+### getSharedSecret()
+
+> **getSharedSecret**(`privateKey`, `publicKey`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/Secp256k1/ecdh.js:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/ecdh.js#L34)
+
+Perform ECDH key exchange
+
+Computes shared secret from your private key and their public key.
+Returns the x-coordinate of the shared point (32 bytes).
+
+#### Parameters
+
+##### privateKey
+
+[`PrivateKeyType`](../primitives/PrivateKey.mdx#privatekeytype)
+
+Your 32-byte private key
+
+##### publicKey
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Their 64-byte uncompressed public key
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte shared secret (x-coordinate)
+
+#### See
+
+ - https://voltaire.tevm.sh/crypto for crypto documentation
+ - https://eips.ethereum.org/EIPS/eip-5564 for ERC-5564 stealth addresses
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If private key is invalid
+
+#### Throws
+
+If public key is invalid
+
+#### Throws
+
+If ECDH computation fails
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+const myPrivateKey = new Uint8Array(32);
+const theirPublicKey = Secp256k1.derivePublicKey(theirPrivateKey);
+const sharedSecret = Secp256k1.ecdh(myPrivateKey, theirPublicKey);
+console.log(sharedSecret.length); // 32
+```
+
+***
+
+### isValidPrivateKey()
+
+> **isValidPrivateKey**(`privateKey`): `boolean`
+
+Defined in: [src/crypto/Secp256k1/isValidPrivateKey.js:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/isValidPrivateKey.js#L38)
+
+Validate private key
+
+Checks that the private key is within valid range [1, n-1] where n
+is the curve order.
+
+#### Parameters
+
+##### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key
+
+#### Returns
+
+`boolean`
+
+true if private key is valid, false otherwise
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+const privateKey = new Uint8Array(32);
+const valid = Secp256k1.isValidPrivateKey(privateKey);
+```
+
+***
+
+### isValidPublicKey()
+
+> **isValidPublicKey**(`publicKey`): `publicKey is Secp256k1PublicKeyType`
+
+Defined in: [src/crypto/Secp256k1/isValidPublicKey.js:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/isValidPublicKey.js#L24)
+
+Validate public key
+
+Checks that the public key is a valid point on the secp256k1 curve.
+
+#### Parameters
+
+##### publicKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+64-byte uncompressed public key
+
+#### Returns
+
+`publicKey is Secp256k1PublicKeyType`
+
+true if public key is valid, false otherwise
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+const publicKey = new Uint8Array(64);
+if (Secp256k1.isValidPublicKey(publicKey)) {
+  const branded = publicKey; // now Secp256k1PublicKeyType
+}
+```
+
+***
+
+### isValidSignature()
+
+> **isValidSignature**(`signature`): `boolean`
+
+Defined in: [src/crypto/Secp256k1/isValidSignature.js:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/isValidSignature.js#L39)
+
+Validate signature components
+
+Checks that r and s are within valid range [1, n-1] where n is the
+curve order. Also enforces low-s values to prevent malleability.
+
+#### Parameters
+
+##### signature
+
+[`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+ECDSA signature to validate (r and s are HashType)
+
+#### Returns
+
+`boolean`
+
+true if signature is valid, false otherwise
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+const signature = { r: Hash.from(new Uint8Array(32)), s: Hash.from(new Uint8Array(32)), v: 27 };
+const valid = Secp256k1.isValidSignature(signature);
+```
+
+***
+
+### randomPrivateKey()
+
+> **randomPrivateKey**(): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/Secp256k1/randomPrivateKey.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/randomPrivateKey.js#L16)
+
+Generate a cryptographically secure random secp256k1 private key
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key
+
+#### Example
+
+```javascript
+import { Secp256k1 } from './crypto/Secp256k1/index.js';
+const privateKey = Secp256k1.randomPrivateKey();
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+```
+
+***
+
+### recoverPublicKey()
+
+> **recoverPublicKey**(`signature`, `messageHash`): [`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Defined in: [src/crypto/Secp256k1/recoverPublicKey.js:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/recoverPublicKey.js#L49)
+
+Recover public key from signature and message hash
+
+Uses the recovery id (v) to recover the exact public key that created
+the signature. This is what enables Ethereum's address recovery from
+transaction signatures.
+
+#### Parameters
+
+##### signature
+
+ECDSA signature components
+
+###### r
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte signature component r
+
+###### s
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte signature component s
+
+###### v
+
+`number`
+
+Recovery id (27/28 or 0/1)
+
+##### messageHash
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+32-byte message hash that was signed
+
+#### Returns
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+64-byte uncompressed public key
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If signature or recovery fails
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+const messageHash = Hash.keccak256String('Hello');
+const recovered = Secp256k1.recoverPublicKey(
+  { r: rBytes, s: sBytes, v: 27 },
+  messageHash
+);
+```
+
+***
+
+### recoverPublicKeyFromHash()
+
+> **recoverPublicKeyFromHash**(`signature`, `hash`): [`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Defined in: [src/crypto/Secp256k1/recoverPublicKeyFromHash.js:64](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/recoverPublicKeyFromHash.js#L64)
+
+Recover public key from signature and pre-hashed message
+
+This is the hash-level API that operates directly on a 32-byte hash.
+Use this when you need custom hashing schemes or interop with other libraries.
+For standard Ethereum signing, use recoverPublicKey() instead.
+
+Uses the recovery id (v) to recover the exact public key that created
+the signature. This is what enables Ethereum's address recovery from
+transaction signatures.
+
+#### Parameters
+
+##### signature
+
+ECDSA signature components
+
+###### r
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte signature component r
+
+###### s
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte signature component s
+
+###### v
+
+`number`
+
+Recovery id (27/28 or 0/1)
+
+##### hash
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+32-byte hash that was signed (pre-hashed message)
+
+#### Returns
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+64-byte uncompressed public key
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If signature or recovery fails
+
+#### Throws
+
+If hash is not 32 bytes
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+
+// Recover public key from a pre-hashed message (hash-level API)
+const hash = Hash.keccak256String('Hello');
+const recovered = Secp256k1.recoverPublicKeyFromHash(
+  { r: rBytes, s: sBytes, v: 27 },
+  hash
+);
+
+// For comparison, recoverPublicKey() hashes internally (message-level API)
+const recovered2 = Secp256k1.recoverPublicKey(
+  { r: rBytes, s: sBytes, v: 27 },
+  messageHash
+);
+```
+
+***
+
+### scalarMultiply()
+
+> **scalarMultiply**(`scalar`): [`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Defined in: [src/crypto/Secp256k1/scalarMultiply.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/scalarMultiply.js#L26)
+
+Multiply generator point by scalar
+
+Performs scalar multiplication: scalar * G (generator point).
+Used in ERC-5564 stealth address generation.
+
+#### Parameters
+
+##### scalar
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte scalar value
+
+#### Returns
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+Result 64-byte uncompressed public key
+
+#### See
+
+ - https://voltaire.tevm.sh/crypto for crypto documentation
+ - https://eips.ethereum.org/EIPS/eip-5564 for ERC-5564 stealth addresses
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If scalar multiplication fails
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+const scalar = new Uint8Array(32);
+scalar[31] = 5; // scalar = 5
+const result = Secp256k1.scalarMultiply(scalar);
+console.log(result.length); // 64
+```
+
+***
+
+### sign()
+
+> **sign**(`messageHash`, `privateKey`): [`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+Defined in: [src/crypto/Secp256k1/sign.js:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/sign.js#L32)
+
+Sign a message hash with a private key
+
+Uses deterministic ECDSA (RFC 6979) for signature generation.
+Returns signature with Ethereum-compatible v value (27 or 28).
+
+#### Parameters
+
+##### messageHash
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+32-byte message hash to sign
+
+##### privateKey
+
+[`PrivateKeyType`](../primitives/PrivateKey.mdx#privatekeytype)
+
+32-byte private key
+
+#### Returns
+
+[`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+ECDSA signature with r, s, v components
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If private key is invalid
+
+#### Throws
+
+If signing fails
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+import * as PrivateKey from './primitives/PrivateKey/index.js';
+const messageHash = Hash.keccak256String('Hello!');
+const privateKey = PrivateKey.from(new Uint8Array(32));
+const signature = Secp256k1.sign(messageHash, privateKey);
+```
+
+***
+
+### signHash()
+
+> **signHash**(`hash`, `privateKey`): [`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+Defined in: [src/crypto/Secp256k1/signHash.js:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/signHash.js#L41)
+
+Sign a pre-hashed message with a private key
+
+This is the hash-level API that operates directly on a 32-byte hash.
+Use this when you need custom hashing schemes or interop with other libraries.
+For standard Ethereum signing, use sign() instead.
+
+Uses deterministic ECDSA (RFC 6979) for signature generation.
+Returns signature with Ethereum-compatible v value (27 or 28).
+
+#### Parameters
+
+##### hash
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+32-byte hash to sign (pre-hashed message)
+
+##### privateKey
+
+[`PrivateKeyType`](../primitives/PrivateKey.mdx#privatekeytype)
+
+32-byte private key
+
+#### Returns
+
+[`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+ECDSA signature with r, s, v components
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If private key is invalid
+
+#### Throws
+
+If signing fails or hash is not 32 bytes
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+import * as PrivateKey from './primitives/PrivateKey/index.js';
+
+// Sign a pre-hashed message (hash-level API)
+const hash = Hash.keccak256String('Hello!');
+const privateKey = PrivateKey.from(new Uint8Array(32));
+const signature = Secp256k1.signHash(hash, privateKey);
+
+// For comparison, sign() hashes internally (message-level API)
+const signature2 = Secp256k1.sign(Hash.keccak256String('Hello!'), privateKey);
+```
+
+***
+
+### verify()
+
+> **verify**(`signature`, `messageHash`, `publicKey`): `boolean`
+
+Defined in: [src/crypto/Secp256k1/verify.js:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/verify.js#L41)
+
+Verify an ECDSA signature
+
+#### Parameters
+
+##### signature
+
+[`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+ECDSA signature with r, s, v components (r and s are HashType)
+
+##### messageHash
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+32-byte message hash that was signed
+
+##### publicKey
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+64-byte uncompressed public key
+
+#### Returns
+
+`boolean`
+
+true if signature is valid, false otherwise
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If signature v is invalid
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+const r = Hash.from(rBytes);
+const s = Hash.from(sBytes);
+const valid = Secp256k1.verify({ r, s, v: 27 }, messageHash, publicKey);
+```
+
+***
+
+### verifyHash()
+
+> **verifyHash**(`signature`, `hash`, `publicKey`): `boolean`
+
+Defined in: [src/crypto/Secp256k1/verifyHash.js:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Secp256k1/verifyHash.js#L49)
+
+Verify an ECDSA signature against a pre-hashed message
+
+This is the hash-level API that operates directly on a 32-byte hash.
+Use this when you need custom hashing schemes or interop with other libraries.
+For standard Ethereum signing, use verify() instead.
+
+#### Parameters
+
+##### signature
+
+[`Secp256k1SignatureType`](#secp256k1signaturetype)
+
+ECDSA signature with r, s, v components (r and s are HashType)
+
+##### hash
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+32-byte hash that was signed (pre-hashed message)
+
+##### publicKey
+
+[`Secp256k1PublicKeyType`](#secp256k1publickeytype)
+
+64-byte uncompressed public key
+
+#### Returns
+
+`boolean`
+
+true if signature is valid, false otherwise
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If hash is not 32 bytes
+
+#### Example
+
+```javascript
+import * as Secp256k1 from './crypto/Secp256k1/index.js';
+import * as Hash from './primitives/Hash/index.js';
+
+// Verify a signature against a pre-hashed message (hash-level API)
+const hash = Hash.keccak256String('Hello!');
+const valid = Secp256k1.verifyHash({ r, s, v: 27 }, hash, publicKey);
+
+// For comparison, verify() hashes internally (message-level API)
+const valid2 = Secp256k1.verify({ r, s, v: 27 }, messageHash, publicKey);
+```

@@ -1,0 +1,60 @@
+---
+title: "Fr"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../index.mdx) / [crypto/Bls12381](../index.mdx) / Fr
+
+# Fr
+
+## Functions
+
+### isValid()
+
+> **isValid**(`scalar`): `boolean`
+
+Defined in: [src/crypto/Bls12381/Fr/isValid.js:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/Fr/isValid.js#L9)
+
+Check if a scalar is valid (in the range [0, r-1])
+
+#### Parameters
+
+##### scalar
+
+`bigint`
+
+Scalar to check
+
+#### Returns
+
+`boolean`
+
+True if valid
+
+***
+
+### mod()
+
+> **mod**(`a`): `bigint`
+
+Defined in: [src/crypto/Bls12381/Fr/mod.js:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/Fr/mod.js#L9)
+
+Reduce a bigint modulo the scalar field order r
+
+#### Parameters
+
+##### a
+
+`bigint`
+
+Value to reduce
+
+#### Returns
+
+`bigint`
+
+Value reduced to [0, r-1]

@@ -19,7 +19,7 @@ SHA256 hash function implemented using WASM Zig code
 
 > `const` **BLOCK\_SIZE**: `64` = `64`
 
-Defined in: [src/crypto/sha256.wasm.ts:20](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/sha256.wasm.ts#L20)
+Defined in: [src/crypto/sha256.wasm.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L20)
 
 SHA256 block size in bytes
 
@@ -29,7 +29,7 @@ SHA256 block size in bytes
 
 > `const` **OUTPUT\_SIZE**: `32` = `32`
 
-Defined in: [src/crypto/sha256.wasm.ts:15](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/sha256.wasm.ts#L15)
+Defined in: [src/crypto/sha256.wasm.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L15)
 
 SHA256 output size in bytes (256 bits / 8)
 
@@ -39,7 +39,7 @@ SHA256 output size in bytes (256 bits / 8)
 
 > **create**(): `object`
 
-Defined in: [src/crypto/sha256.wasm.ts:110](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/sha256.wasm.ts#L110)
+Defined in: [src/crypto/sha256.wasm.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L110)
 
 Incremental hasher for streaming data
 
@@ -89,7 +89,7 @@ const hash = hasher.digest();
 
 > **hash**(`data`): `Uint8Array`
 
-Defined in: [src/crypto/sha256.wasm.ts:34](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/sha256.wasm.ts#L34)
+Defined in: [src/crypto/sha256.wasm.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L34)
 
 Compute SHA256 hash of input data
 
@@ -120,7 +120,7 @@ const hash = Sha256Wasm.hash(new Uint8Array([1, 2, 3]));
 
 > **hashHex**(`hex`): `Uint8Array`
 
-Defined in: [src/crypto/sha256.wasm.ts:68](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/sha256.wasm.ts#L68)
+Defined in: [src/crypto/sha256.wasm.ts:68](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L68)
 
 Compute SHA256 hash of hex string (without 0x prefix)
 
@@ -151,7 +151,7 @@ const hash = Sha256Wasm.hashHex("0xdeadbeef");
 
 > **hashString**(`str`): `Uint8Array`
 
-Defined in: [src/crypto/sha256.wasm.ts:50](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/sha256.wasm.ts#L50)
+Defined in: [src/crypto/sha256.wasm.ts:50](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L50)
 
 Compute SHA256 hash of UTF-8 string
 
@@ -182,7 +182,7 @@ const hash = Sha256Wasm.hashString("hello world");
 
 > **toHex**(`hash`): `string`
 
-Defined in: [src/crypto/sha256.wasm.ts:90](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/crypto/sha256.wasm.ts#L90)
+Defined in: [src/crypto/sha256.wasm.ts:90](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L90)
 
 Convert hash output to hex string
 

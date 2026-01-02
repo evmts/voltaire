@@ -2797,30 +2797,315 @@
               "generated-api/index",
               "generated-api/utils",
               "generated-api/native",
+              "generated-api/GasCosts",
+              "generated-api/HDWallet",
+              "generated-api/Proxy",
+              "generated-api/Ssz",
+              "generated-api/Storage",
+              "generated-api/TransactionUrl",
               {
                 "group": "Primitives",
                 "pages": [
+                  "generated-api/primitives",
+                  {
+                    "group": "Abi",
+                    "pages": [
+                      "generated-api/primitives/Abi/index",
+                      "generated-api/primitives/Abi/namespaces/Constructor",
+                      "generated-api/primitives/Abi/namespaces/Error",
+                      "generated-api/primitives/Abi/namespaces/Event",
+                      "generated-api/primitives/Abi/namespaces/Function",
+                      "generated-api/primitives/Abi/namespaces/Item"
+                    ]
+                  },
+                  "generated-api/primitives/AccessList",
+                  "generated-api/primitives/AccountState",
                   "generated-api/primitives/Address",
+                  "generated-api/primitives/Authorization",
+                  "generated-api/primitives/Base64",
+                  "generated-api/primitives/BaseFeePerGas",
+                  "generated-api/primitives/BeaconBlockRoot",
+                  "generated-api/primitives/BinaryTree",
+                  "generated-api/primitives/Blob",
+                  "generated-api/primitives/Block",
+                  "generated-api/primitives/BlockBody",
+                  "generated-api/primitives/BlockFilter",
+                  "generated-api/primitives/BlockHash",
+                  "generated-api/primitives/BlockHeader",
+                  "generated-api/primitives/BlockNumber",
+                  "generated-api/primitives/BloomFilter",
+                  "generated-api/primitives/BuilderBid",
+                  "generated-api/primitives/Bundle",
+                  "generated-api/primitives/BundleHash",
+                  "generated-api/primitives/Bundler",
+                  "generated-api/primitives/Bytecode",
+                  "generated-api/primitives/Bytes",
+                  "generated-api/primitives/Bytes32",
+                  "generated-api/primitives/CallData",
+                  "generated-api/primitives/CallTrace",
+                  "generated-api/primitives/ChainHead",
+                  "generated-api/primitives/ChainId",
+                  "generated-api/primitives/CompilerVersion",
+                  "generated-api/primitives/ContractCode",
+                  "generated-api/primitives/ContractResult",
+                  "generated-api/primitives/ContractSignature",
+                  "generated-api/primitives/DecodedData",
+                  "generated-api/primitives/Domain",
+                  "generated-api/primitives/DomainSeparator",
+                  "generated-api/primitives/EffectiveGasPrice",
+                  "generated-api/primitives/EncodedData",
+                  "generated-api/primitives/Ens",
+                  "generated-api/primitives/EntryPoint",
+                  "generated-api/primitives/Epoch",
+                  "generated-api/primitives/ErrorSignature",
+                  "generated-api/primitives/EventLog",
+                  "generated-api/primitives/EventSignature",
+                  "generated-api/primitives/FeeOracle",
+                  "generated-api/primitives/FilterId",
+                  "generated-api/primitives/ForkId",
+                  "generated-api/primitives/FunctionSignature",
+                  "generated-api/primitives/Gas",
+                  {
+                    "group": "GasConstants",
+                    "pages": [
+                      "generated-api/primitives/GasConstants/index",
+                      "generated-api/primitives/GasConstants/namespaces/Precompile"
+                    ]
+                  },
+                  "generated-api/primitives/GasEstimate",
+                  "generated-api/primitives/GasRefund",
+                  "generated-api/primitives/GasUsed",
+                  "generated-api/primitives/Hardfork",
+                  "generated-api/primitives/Hash",
                   "generated-api/primitives/Hex",
-                  "generated-api/primitives/Uint"
+                  "generated-api/primitives/InitCode",
+                  "generated-api/primitives/Int128",
+                  "generated-api/primitives/Int16",
+                  "generated-api/primitives/Int256",
+                  "generated-api/primitives/Int32",
+                  "generated-api/primitives/Int64",
+                  "generated-api/primitives/Int8",
+                  "generated-api/primitives/License",
+                  "generated-api/primitives/LogFilter",
+                  "generated-api/primitives/LogIndex",
+                  "generated-api/primitives/MaxFeePerGas",
+                  "generated-api/primitives/MaxPriorityFeePerGas",
+                  "generated-api/primitives/MemoryDump",
+                  "generated-api/primitives/Metadata",
+                  "generated-api/primitives/MultiTokenId",
+                  "generated-api/primitives/NetworkId",
+                  "generated-api/primitives/NodeInfo",
+                  "generated-api/primitives/Nonce",
+                  "generated-api/primitives/OpStep",
+                  "generated-api/primitives/Opcode",
+                  "generated-api/primitives/PackedUserOperation",
+                  "generated-api/primitives/Paymaster",
+                  "generated-api/primitives/PeerId",
+                  "generated-api/primitives/PeerInfo",
+                  "generated-api/primitives/PendingTransactionFilter",
+                  {
+                    "group": "Permit",
+                    "pages": [
+                      "generated-api/primitives/Permit/index",
+                      "generated-api/primitives/Permit/namespaces/KnownTokens"
+                    ]
+                  },
+                  "generated-api/primitives/PrivateKey",
+                  "generated-api/primitives/Proof",
+                  "generated-api/primitives/ProtocolVersion",
+                  "generated-api/primitives/PublicKey",
+                  "generated-api/primitives/Receipt",
+                  "generated-api/primitives/RelayData",
+                  "generated-api/primitives/ReturnData",
+                  "generated-api/primitives/RevertReason",
+                  "generated-api/primitives/Rlp",
+                  "generated-api/primitives/RuntimeCode",
+                  "generated-api/primitives/Selector",
+                  "generated-api/primitives/Signature",
+                  "generated-api/primitives/SignedData",
+                  "generated-api/primitives/Siwe",
+                  "generated-api/primitives/Slot",
+                  "generated-api/primitives/SourceMap",
+                  "generated-api/primitives/State",
+                  "generated-api/primitives/StateDiff",
+                  "generated-api/primitives/StateProof",
+                  "generated-api/primitives/StateRoot",
+                  "generated-api/primitives/StealthAddress",
+                  "generated-api/primitives/StorageDiff",
+                  "generated-api/primitives/StorageProof",
+                  "generated-api/primitives/StorageValue",
+                  "generated-api/primitives/StructLog",
+                  "generated-api/primitives/SyncStatus",
+                  "generated-api/primitives/TokenBalance",
+                  "generated-api/primitives/TokenId",
+                  "generated-api/primitives/TopicFilter",
+                  "generated-api/primitives/TraceConfig",
+                  "generated-api/primitives/TraceResult",
+                  {
+                    "group": "Transaction",
+                    "pages": [
+                      "generated-api/primitives/Transaction/index",
+                      "generated-api/primitives/Transaction/namespaces/Authorization",
+                      "generated-api/primitives/Transaction/namespaces/EIP1559",
+                      "generated-api/primitives/Transaction/namespaces/EIP2930",
+                      "generated-api/primitives/Transaction/namespaces/EIP4844",
+                      "generated-api/primitives/Transaction/namespaces/EIP7702",
+                      "generated-api/primitives/Transaction/namespaces/Legacy",
+                      "generated-api/primitives/Transaction/namespaces/default"
+                    ]
+                  },
+                  "generated-api/primitives/TransactionHash",
+                  "generated-api/primitives/TransactionIndex",
+                  "generated-api/primitives/TransactionStatus",
+                  "generated-api/primitives/TypedData",
+                  "generated-api/primitives/Uint",
+                  "generated-api/primitives/Uint128",
+                  "generated-api/primitives/Uint16",
+                  "generated-api/primitives/Uint32",
+                  "generated-api/primitives/Uint64",
+                  "generated-api/primitives/Uint8",
+                  "generated-api/primitives/Uncle",
+                  "generated-api/primitives/UserOperation",
+                  "generated-api/primitives/ValidatorIndex",
+                  "generated-api/primitives/Withdrawal",
+                  "generated-api/primitives/WithdrawalIndex"
                 ]
               },
               {
                 "group": "Crypto",
                 "pages": [
-                  "generated-api/crypto/KZG"
+                  "generated-api/crypto",
+                  "generated-api/crypto/AesGcm",
+                  "generated-api/crypto/Bip39",
+                  "generated-api/crypto/Blake2",
+                  {
+                    "group": "Bls12381",
+                    "pages": [
+                      "generated-api/crypto/Bls12381/index",
+                      "generated-api/crypto/Bls12381/namespaces/Fp",
+                      "generated-api/crypto/Bls12381/namespaces/Fp2",
+                      "generated-api/crypto/Bls12381/namespaces/Fr",
+                      "generated-api/crypto/Bls12381/namespaces/G1",
+                      "generated-api/crypto/Bls12381/namespaces/G2",
+                      "generated-api/crypto/Bls12381/namespaces/Pairing"
+                    ]
+                  },
+                  "generated-api/crypto/ChaCha20Poly1305",
+                  "generated-api/crypto/EIP712",
+                  "generated-api/crypto/Ed25519",
+                  "generated-api/crypto/KZG",
+                  "generated-api/crypto/Keccak256",
+                  "generated-api/crypto/Keystore",
+                  "generated-api/crypto/ModExp",
+                  "generated-api/crypto/P256",
+                  "generated-api/crypto/Ripemd160",
+                  "generated-api/crypto/SHA256",
+                  "generated-api/crypto/Secp256k1",
+                  "generated-api/crypto/X25519"
                 ]
               },
               {
                 "group": "EVM",
                 "pages": [
-                  "generated-api/evm/index"
+                  "generated-api/evm/index",
+                  "generated-api/evm/namespaces/Arithmetic",
+                  "generated-api/evm/namespaces/Bitwise",
+                  "generated-api/evm/namespaces/Block",
+                  "generated-api/evm/namespaces/Comparison",
+                  "generated-api/evm/namespaces/Context",
+                  "generated-api/evm/namespaces/Control",
+                  "generated-api/evm/namespaces/Keccak",
+                  "generated-api/evm/namespaces/Log",
+                  "generated-api/evm/namespaces/Memory",
+                  "generated-api/evm/namespaces/Stack",
+                  "generated-api/evm/namespaces/Storage",
+                  "generated-api/evm/namespaces/System"
                 ]
               },
               {
                 "group": "Provider",
                 "pages": [
-                  "generated-api/provider/index"
+                  "generated-api/provider/index",
+                  "generated-api/provider/namespaces/provider/eip6963"
+                ]
+              },
+              {
+                "group": "Index Namespaces",
+                "pages": [
+                  "generated-api/index/index",
+                  {
+                    "group": "BrandedAddress",
+                    "pages": [
+                      "generated-api/index/namespaces/BrandedAddress/index",
+                      "generated-api/index/namespaces/BrandedAddress/namespaces/Checksummed",
+                      "generated-api/index/namespaces/BrandedAddress/namespaces/Lowercase",
+                      "generated-api/index/namespaces/BrandedAddress/namespaces/Uppercase"
+                    ]
+                  },
+                  "generated-api/index/namespaces/BrandedBase64",
+                  "generated-api/index/namespaces/BrandedBytes",
+                  "generated-api/index/namespaces/BrandedBytes1",
+                  "generated-api/index/namespaces/BrandedBytes16",
+                  "generated-api/index/namespaces/BrandedBytes2",
+                  "generated-api/index/namespaces/BrandedBytes3",
+                  "generated-api/index/namespaces/BrandedBytes32",
+                  "generated-api/index/namespaces/BrandedBytes4",
+                  "generated-api/index/namespaces/BrandedBytes5",
+                  "generated-api/index/namespaces/BrandedBytes6",
+                  "generated-api/index/namespaces/BrandedBytes64",
+                  "generated-api/index/namespaces/BrandedBytes7",
+                  "generated-api/index/namespaces/BrandedBytes8",
+                  "generated-api/index/namespaces/BrandedChain",
+                  "generated-api/index/namespaces/BrandedEther",
+                  "generated-api/index/namespaces/BrandedFeeMarket",
+                  "generated-api/index/namespaces/BrandedGwei",
+                  "generated-api/index/namespaces/BrandedHex",
+                  "generated-api/index/namespaces/BrandedOpcode",
+                  "generated-api/index/namespaces/BrandedRlp",
+                  "generated-api/index/namespaces/BrandedWei",
+                  "generated-api/index/namespaces/ERC1155",
+                  "generated-api/index/namespaces/ERC165",
+                  "generated-api/index/namespaces/ERC20",
+                  "generated-api/index/namespaces/ERC721",
+                  "generated-api/index/namespaces/FeeMarket",
+                  "generated-api/index/namespaces/HashType",
+                  "generated-api/index/namespaces/precompiles",
+                  {
+                    "group": "WASM",
+                    "pages": [
+                      "generated-api/index/namespaces/wasm/index",
+                      "generated-api/index/namespaces/wasm/namespaces/Blake2Wasm",
+                      {
+                        "group": "Bn254Wasm",
+                        "pages": [
+                          "generated-api/index/namespaces/wasm/namespaces/Bn254Wasm/index",
+                          "generated-api/index/namespaces/wasm/namespaces/Bn254Wasm/namespaces/Fr",
+                          "generated-api/index/namespaces/wasm/namespaces/Bn254Wasm/namespaces/G1",
+                          "generated-api/index/namespaces/wasm/namespaces/Bn254Wasm/namespaces/G2",
+                          "generated-api/index/namespaces/wasm/namespaces/Bn254Wasm/namespaces/Pairing"
+                        ]
+                      },
+                      "generated-api/index/namespaces/wasm/namespaces/Ed25519Wasm",
+                      {
+                        "group": "Eip712Wasm",
+                        "pages": [
+                          "generated-api/index/namespaces/wasm/namespaces/Eip712Wasm/index",
+                          "generated-api/index/namespaces/wasm/namespaces/Eip712Wasm/namespaces/Domain"
+                        ]
+                      },
+                      "generated-api/index/namespaces/wasm/namespaces/P256Wasm",
+                      "generated-api/index/namespaces/wasm/namespaces/Ripemd160Wasm",
+                      {
+                        "group": "Secp256k1Wasm",
+                        "pages": [
+                          "generated-api/index/namespaces/wasm/namespaces/Secp256k1Wasm/index",
+                          "generated-api/index/namespaces/wasm/namespaces/Secp256k1Wasm/namespaces/Signature"
+                        ]
+                      },
+                      "generated-api/index/namespaces/wasm/namespaces/Sha256Wasm",
+                      "generated-api/index/namespaces/wasm/namespaces/X25519Wasm"
+                    ]
+                  }
                 ]
               }
             ]

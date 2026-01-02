@@ -1,0 +1,277 @@
+---
+title: "primitives/SourceMap"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/SourceMap
+
+# primitives/SourceMap
+
+## Type Aliases
+
+### SourceMap
+
+> **SourceMap** = `object`
+
+Defined in: [src/primitives/SourceMap/SourceMapType.ts:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/SourceMapType.ts#L26)
+
+Solidity source map
+
+Semicolon-separated entries mapping bytecode to source locations.
+Format: "s:l:f:j:m;s:l:f:j:m;..."
+
+#### Properties
+
+##### entries
+
+> `readonly` **entries**: readonly [`SourceMapEntry`](#sourcemapentry)[]
+
+Defined in: [src/primitives/SourceMap/SourceMapType.ts:30](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/SourceMapType.ts#L30)
+
+Parsed entries
+
+##### raw
+
+> `readonly` **raw**: `string`
+
+Defined in: [src/primitives/SourceMap/SourceMapType.ts:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/SourceMapType.ts#L28)
+
+Raw source map string
+
+***
+
+### SourceMapEntry
+
+> **SourceMapEntry** = `object`
+
+Defined in: [src/primitives/SourceMap/SourceMapType.ts:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/SourceMapType.ts#L7)
+
+Solidity source map entry
+
+Maps bytecode positions to source code locations.
+Format: s:l:f:j:m (start:length:fileIndex:jump:modifierDepth)
+
+#### Properties
+
+##### fileIndex
+
+> `readonly` **fileIndex**: `number`
+
+Defined in: [src/primitives/SourceMap/SourceMapType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/SourceMapType.ts#L13)
+
+Source file index
+
+##### jump
+
+> `readonly` **jump**: `"i"` \| `"o"` \| `"-"`
+
+Defined in: [src/primitives/SourceMap/SourceMapType.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/SourceMapType.ts#L15)
+
+Jump type: 'i' (into), 'o' (out), '-' (regular)
+
+##### length
+
+> `readonly` **length**: `number`
+
+Defined in: [src/primitives/SourceMap/SourceMapType.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/SourceMapType.ts#L11)
+
+Length in source code
+
+##### modifierDepth?
+
+> `readonly` `optional` **modifierDepth**: `number`
+
+Defined in: [src/primitives/SourceMap/SourceMapType.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/SourceMapType.ts#L17)
+
+Modifier depth (optional)
+
+##### start
+
+> `readonly` **start**: `number`
+
+Defined in: [src/primitives/SourceMap/SourceMapType.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/SourceMapType.ts#L9)
+
+Byte offset in source code
+
+## Functions
+
+### from()
+
+> **from**(`raw`): [`SourceMap`](#sourcemap)
+
+Defined in: [src/primitives/SourceMap/from.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/from.js#L17)
+
+Create SourceMap from source map string
+
+#### Parameters
+
+##### raw
+
+`string`
+
+Source map string (semicolon-separated entries)
+
+#### Returns
+
+[`SourceMap`](#sourcemap)
+
+SourceMap
+
+#### See
+
+ - https://voltaire.tevm.sh/primitives/source-map for SourceMap documentation
+ - https://docs.soliditylang.org/en/latest/internals/source_mappings.html
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as SourceMap from './primitives/SourceMap/index.js';
+const map = SourceMap.from("0:50:0:-;51:100:0:-;");
+```
+
+***
+
+### getEntryAt()
+
+> **getEntryAt**(`sourceMap`, `pc`): [`SourceMapEntry`](#sourcemapentry) \| `undefined`
+
+Defined in: [src/primitives/SourceMap/getEntryAt.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/getEntryAt.js#L14)
+
+Get source map entry for specific bytecode position
+
+#### Parameters
+
+##### sourceMap
+
+[`SourceMap`](#sourcemap)
+
+SourceMap
+
+##### pc
+
+`number`
+
+Program counter (bytecode offset)
+
+#### Returns
+
+[`SourceMapEntry`](#sourcemapentry) \| `undefined`
+
+Entry at position
+
+#### Example
+
+```javascript
+import * as SourceMap from './primitives/SourceMap/index.js';
+const map = SourceMap.from("0:50:0:-;51:100:0:-;");
+const entry = SourceMap.getEntryAt(map, 1);
+```
+
+***
+
+### parse()
+
+> **parse**(`raw`): [`SourceMap`](#sourcemap)
+
+Defined in: [src/primitives/SourceMap/parse.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/parse.js#L17)
+
+Parse source map string into entries
+
+Solidity source map format: "s:l:f:j:m;s:l:f:j:m;..."
+Fields can be omitted to inherit from previous entry (compression).
+
+#### Parameters
+
+##### raw
+
+`string`
+
+Source map string
+
+#### Returns
+
+[`SourceMap`](#sourcemap)
+
+Parsed source map
+
+#### Example
+
+```javascript
+import * as SourceMap from './primitives/SourceMap/index.js';
+const map = SourceMap.parse("0:50:0:-;51:100:0:-;151:25:0:o");
+console.log(map.entries.length); // 3
+```
+
+***
+
+### toEntries()
+
+> **toEntries**(`raw`): readonly [`SourceMapEntry`](#sourcemapentry)[]
+
+Defined in: [src/primitives/SourceMap/toEntries.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/toEntries.js#L15)
+
+Convert source map string to array of entries
+
+#### Parameters
+
+##### raw
+
+`string`
+
+Source map string
+
+#### Returns
+
+readonly [`SourceMapEntry`](#sourcemapentry)[]
+
+Parsed entries
+
+#### Example
+
+```javascript
+import * as SourceMap from './primitives/SourceMap/index.js';
+const entries = SourceMap.toEntries("0:50:0:-;51:100:0:-;");
+console.log(entries[0].start); // 0
+```
+
+***
+
+### toString()
+
+> **toString**(`sourceMap`): `string`
+
+Defined in: [src/primitives/SourceMap/toString.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/SourceMap/toString.js#L16)
+
+Convert source map to compressed string format
+
+Applies compression: omits fields that match previous entry.
+
+#### Parameters
+
+##### sourceMap
+
+[`SourceMap`](#sourcemap)
+
+SourceMap
+
+#### Returns
+
+`string`
+
+Compressed source map string
+
+#### Example
+
+```javascript
+import * as SourceMap from './primitives/SourceMap/index.js';
+const map = SourceMap.from("0:50:0:-;51:100:0:-;");
+const str = SourceMap.toString(map);
+```

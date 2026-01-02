@@ -11,31 +11,31 @@ description: Auto-generated API documentation
 
 # BrandedBytes1
 
-## Type Aliases
-
-### Bytes1Type
-
-> **Bytes1Type** = `Uint8Array` & `object`
-
-Defined in: [src/primitives/Bytes/Bytes1/Bytes1Type.ts:3](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes1/Bytes1Type.ts#L3)
-
-#### Type Declaration
-
-##### \[brand\]
-
-> `readonly` **\[brand\]**: `"Bytes1"`
-
-##### size
-
-> `readonly` **size**: `1`
-
 ## Functions
+
+### Bytes1()
+
+> **Bytes1**(`value`): [`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
+
+Defined in: [src/primitives/Bytes/Bytes1/index.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes1/index.ts#L31)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | `number`[]
+
+#### Returns
+
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
+
+***
 
 ### clone()
 
-> **clone**(`bytes`): [`Bytes1Type`](#bytes1type)
+> **clone**(`bytes`): [`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
-Defined in: [src/primitives/Bytes/Bytes1/clone.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes1/clone.js#L12)
+Defined in: [src/primitives/Bytes/Bytes1/clone.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes1/clone.js#L12)
 
 Clone Bytes1
 
@@ -43,13 +43,13 @@ Clone Bytes1
 
 ##### bytes
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 Bytes1 to clone
 
 #### Returns
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 Cloned Bytes1
 
@@ -65,7 +65,7 @@ const copy = Bytes1.clone(bytes);
 
 > **compare**(`a`, `b`): `number`
 
-Defined in: [src/primitives/Bytes/Bytes1/compare.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes1/compare.js#L13)
+Defined in: [src/primitives/Bytes/Bytes1/compare.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes1/compare.js#L13)
 
 Compare two Bytes1
 
@@ -73,13 +73,13 @@ Compare two Bytes1
 
 ##### a
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 First Bytes1
 
 ##### b
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 Second Bytes1
 
@@ -101,7 +101,7 @@ const cmp = Bytes1.compare(bytes1, bytes2);
 
 > **equals**(`a`, `b`): `boolean`
 
-Defined in: [src/primitives/Bytes/Bytes1/equals.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes1/equals.js#L13)
+Defined in: [src/primitives/Bytes/Bytes1/equals.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes1/equals.js#L13)
 
 Check if two Bytes1 are equal
 
@@ -109,13 +109,13 @@ Check if two Bytes1 are equal
 
 ##### a
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 First Bytes1
 
 ##### b
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 Second Bytes1
 
@@ -135,9 +135,9 @@ const equal = Bytes1.equals(bytes1, bytes2);
 
 ### from()
 
-> **from**(`value`): [`Bytes1Type`](#bytes1type)
+> **from**(`value`): [`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
-Defined in: [src/primitives/Bytes/Bytes1/from.js:17](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes1/from.js#L17)
+Defined in: [src/primitives/Bytes/Bytes1/from.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes1/from.js#L17)
 
 Create Bytes1 from various input types with size validation
 
@@ -151,7 +151,7 @@ Uint8Array, hex string, or UTF-8 string (must be exactly 1 byte)
 
 #### Returns
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 Bytes1
 
@@ -170,9 +170,9 @@ const b2 = Bytes1.from("0x12");
 
 ### fromHex()
 
-> **fromHex**(`hex`): [`Bytes1Type`](#bytes1type)
+> **fromHex**(`hex`): [`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
-Defined in: [src/primitives/Bytes/Bytes1/fromHex.js:16](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes1/fromHex.js#L16)
+Defined in: [src/primitives/Bytes/Bytes1/fromHex.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes1/fromHex.js#L16)
 
 Create Bytes1 from hex string with size validation
 
@@ -186,7 +186,7 @@ Hex string (must be exactly 2 hex chars + 0x prefix)
 
 #### Returns
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 Bytes1
 
@@ -204,9 +204,9 @@ const bytes = Bytes1.fromHex("0x12");
 
 ### fromNumber()
 
-> **fromNumber**(`value`): [`Bytes1Type`](#bytes1type)
+> **fromNumber**(`value`): [`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
-Defined in: [src/primitives/Bytes/Bytes1/fromNumber.js:13](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes1/fromNumber.js#L13)
+Defined in: [src/primitives/Bytes/Bytes1/fromNumber.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes1/fromNumber.js#L13)
 
 Create Bytes1 from number (0-255)
 
@@ -220,7 +220,7 @@ Number value (0-255)
 
 #### Returns
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 Bytes1
 
@@ -240,7 +240,7 @@ const bytes = Bytes1.fromNumber(42);
 
 > **size**(`_bytes`): `1`
 
-Defined in: [src/primitives/Bytes/Bytes1/size.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes1/size.js#L12)
+Defined in: [src/primitives/Bytes/Bytes1/size.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes1/size.js#L12)
 
 Get size of Bytes1 (always 1)
 
@@ -248,7 +248,7 @@ Get size of Bytes1 (always 1)
 
 ##### \_bytes
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 Bytes1
 
@@ -268,9 +268,9 @@ const size = Bytes1.size(bytes); // 1
 
 ### toBytes()
 
-> **toBytes**(`bytes`): `BytesType`
+> **toBytes**(`bytes`): [`BytesType`](../../primitives/Bytes.mdx#bytestype)
 
-Defined in: [src/primitives/Bytes/Bytes1/toBytes.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes1/toBytes.js#L12)
+Defined in: [src/primitives/Bytes/Bytes1/toBytes.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes1/toBytes.js#L12)
 
 Convert Bytes1 to generic Bytes
 
@@ -278,13 +278,13 @@ Convert Bytes1 to generic Bytes
 
 ##### bytes
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 Bytes1 to convert
 
 #### Returns
 
-`BytesType`
+[`BytesType`](../../primitives/Bytes.mdx#bytestype)
 
 Generic Bytes
 
@@ -300,7 +300,7 @@ const genericBytes = Bytes1.toBytes(bytes);
 
 > **toHex**(`bytes`): [`HexType`](../../primitives/Hex.mdx#hextype)
 
-Defined in: [src/primitives/Bytes/Bytes1/toHex.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes1/toHex.js#L12)
+Defined in: [src/primitives/Bytes/Bytes1/toHex.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes1/toHex.js#L12)
 
 Convert Bytes1 to hex string
 
@@ -308,7 +308,7 @@ Convert Bytes1 to hex string
 
 ##### bytes
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 Bytes1 to convert
 
@@ -330,7 +330,7 @@ const hex = Bytes1.toHex(bytes);
 
 > **toNumber**(`bytes`): `number`
 
-Defined in: [src/primitives/Bytes/Bytes1/toNumber.js:12](https://github.com/evmts/voltaire/blob/c23bdec42e80cac8af3a4130b0c4c180becd2ad0/src/primitives/Bytes/Bytes1/toNumber.js#L12)
+Defined in: [src/primitives/Bytes/Bytes1/toNumber.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes1/toNumber.js#L12)
 
 Convert Bytes1 to number
 
@@ -338,7 +338,7 @@ Convert Bytes1 to number
 
 ##### bytes
 
-[`Bytes1Type`](#bytes1type)
+[`Bytes1Type`](../../primitives/Bytes.mdx#bytes1type)
 
 Bytes1 to convert
 
@@ -356,6 +356,6 @@ const num = Bytes1.toNumber(bytes);
 
 ## References
 
-### Bytes1
+### Bytes1Type
 
-Re-exports [Bytes1](../index.mdx#bytes1)
+Re-exports [Bytes1Type](../../primitives/Bytes.mdx#bytes1type)

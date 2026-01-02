@@ -1,0 +1,1235 @@
+---
+title: "primitives/Hardfork"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Hardfork
+
+# primitives/Hardfork
+
+## Type Aliases
+
+### HardforkType
+
+> **HardforkType** = `string` & `object`
+
+Defined in: [src/primitives/Hardfork/HardforkType.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/HardforkType.ts#L10)
+
+Branded Hardfork type
+
+Hardfork is a branded string type that represents Ethereum protocol upgrades.
+Each hardfork represents a protocol upgrade that changes EVM behavior,
+gas costs, or adds new features.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Hardfork"`
+
+## Variables
+
+### allIds()
+
+> `const` **allIds**: () => [`HardforkType`](#hardforktype)[] = `_allIds`
+
+Defined in: [src/primitives/Hardfork/index.ts:68](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L68)
+
+#### Returns
+
+[`HardforkType`](#hardforktype)[]
+
+***
+
+### allNames()
+
+> `const` **allNames**: () => `string`[] = `_allNames`
+
+Defined in: [src/primitives/Hardfork/index.ts:67](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L67)
+
+#### Returns
+
+`string`[]
+
+***
+
+### ARROW\_GLACIER
+
+> `const` **ARROW\_GLACIER**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:50](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L50)
+
+***
+
+### BERLIN
+
+> `const` **BERLIN**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L44)
+
+***
+
+### BYZANTIUM
+
+> `const` **BYZANTIUM**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L29)
+
+***
+
+### CANCUN
+
+> `const` **CANCUN**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:62](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L62)
+
+***
+
+### compare()
+
+> `const` **compare**: (`a`, `b`) => `number` = `_compare`
+
+Defined in: [src/primitives/Hardfork/index.ts:47](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L47)
+
+#### Parameters
+
+##### a
+
+[`HardforkType`](#hardforktype)
+
+##### b
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`number`
+
+***
+
+### CONSTANTINOPLE
+
+> `const` **CONSTANTINOPLE**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L32)
+
+***
+
+### DAO
+
+> `const` **DAO**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L18)
+
+***
+
+### DEFAULT
+
+> `const` **DEFAULT**: [`HardforkType`](#hardforktype) = `PRAGUE`
+
+Defined in: [src/primitives/Hardfork/constants.js:76](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L76)
+
+Default hardfork for new chains.
+Set to latest stable fork (currently PRAGUE).
+
+***
+
+### equals()
+
+> `const` **equals**: (`a`, `b`) => `boolean` = `_equals`
+
+Defined in: [src/primitives/Hardfork/index.ts:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L53)
+
+#### Parameters
+
+##### a
+
+[`HardforkType`](#hardforktype)
+
+##### b
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### fromString()
+
+> `const` **fromString**: (`name`) => [`HardforkType`](#hardforktype) \| `undefined` = `_fromString`
+
+Defined in: [src/primitives/Hardfork/index.ts:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L36)
+
+#### Parameters
+
+##### name
+
+`string`
+
+#### Returns
+
+[`HardforkType`](#hardforktype) \| `undefined`
+
+***
+
+### FRONTIER
+
+> `const` **FRONTIER**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L12)
+
+***
+
+### GRAY\_GLACIER
+
+> `const` **GRAY\_GLACIER**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L53)
+
+***
+
+### gt()
+
+> `const` **gt**: (`a`, `b`) => `boolean` = `_gt`
+
+Defined in: [src/primitives/Hardfork/index.ts:52](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L52)
+
+#### Parameters
+
+##### a
+
+[`HardforkType`](#hardforktype)
+
+##### b
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### gte()
+
+> `const` **gte**: (`a`, `b`) => `boolean` = `_gte`
+
+Defined in: [src/primitives/Hardfork/index.ts:50](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L50)
+
+#### Parameters
+
+##### a
+
+[`HardforkType`](#hardforktype)
+
+##### b
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### Hardfork
+
+> `const` **Hardfork**: `object`
+
+Defined in: [src/primitives/Hardfork/index.ts:73](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L73)
+
+#### Type Declaration
+
+##### allIds()
+
+> **allIds**: () => [`HardforkType`](#hardforktype)[]
+
+###### Returns
+
+[`HardforkType`](#hardforktype)[]
+
+##### allNames()
+
+> **allNames**: () => `string`[]
+
+###### Returns
+
+`string`[]
+
+##### compare()
+
+> **compare**: (`a`, `b`) => `number`
+
+###### Parameters
+
+###### a
+
+[`HardforkType`](#hardforktype)
+
+###### b
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`number`
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+###### Parameters
+
+###### a
+
+[`HardforkType`](#hardforktype)
+
+###### b
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### fromString()
+
+> **fromString**: (`name`) => [`HardforkType`](#hardforktype) \| `undefined`
+
+###### Parameters
+
+###### name
+
+`string`
+
+###### Returns
+
+[`HardforkType`](#hardforktype) \| `undefined`
+
+##### gt()
+
+> **gt**: (`a`, `b`) => `boolean`
+
+###### Parameters
+
+###### a
+
+[`HardforkType`](#hardforktype)
+
+###### b
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### gte()
+
+> **gte**: (`a`, `b`) => `boolean`
+
+###### Parameters
+
+###### a
+
+[`HardforkType`](#hardforktype)
+
+###### b
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### hasEIP1153()
+
+> **hasEIP1153**: (`fork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### hasEIP1559()
+
+> **hasEIP1559**: (`fork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### hasEIP3855()
+
+> **hasEIP3855**: (`fork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### hasEIP4844()
+
+> **hasEIP4844**: (`fork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### isAfter()
+
+> **isAfter**: (`fork`, `minFork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### minFork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### isAtLeast()
+
+> **isAtLeast**: (`fork`, `minFork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### minFork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### isBefore()
+
+> **isBefore**: (`fork`, `maxFork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### maxFork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### isPoS()
+
+> **isPoS**: (`fork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### isPostMerge()
+
+> **isPostMerge**: (`fork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### isValidName()
+
+> **isValidName**: (`name`) => `boolean`
+
+###### Parameters
+
+###### name
+
+`string`
+
+###### Returns
+
+`boolean`
+
+##### lt()
+
+> **lt**: (`a`, `b`) => `boolean`
+
+###### Parameters
+
+###### a
+
+[`HardforkType`](#hardforktype)
+
+###### b
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### lte()
+
+> **lte**: (`a`, `b`) => `boolean`
+
+###### Parameters
+
+###### a
+
+[`HardforkType`](#hardforktype)
+
+###### b
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### max()
+
+> **max**: (`forks`) => [`HardforkType`](#hardforktype)
+
+###### Parameters
+
+###### forks
+
+[`HardforkType`](#hardforktype)[]
+
+###### Returns
+
+[`HardforkType`](#hardforktype)
+
+##### min()
+
+> **min**: (`forks`) => [`HardforkType`](#hardforktype)
+
+###### Parameters
+
+###### forks
+
+[`HardforkType`](#hardforktype)[]
+
+###### Returns
+
+[`HardforkType`](#hardforktype)
+
+##### range()
+
+> **range**: (`start`, `end`) => [`HardforkType`](#hardforktype)[]
+
+###### Parameters
+
+###### start
+
+[`HardforkType`](#hardforktype)
+
+###### end
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+[`HardforkType`](#hardforktype)[]
+
+##### supportsBlobs()
+
+> **supportsBlobs**: (`fork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### supportsEIP1559()
+
+> **supportsEIP1559**: (`fork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### supportsPUSH0()
+
+> **supportsPUSH0**: (`fork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### supportsTransientStorage()
+
+> **supportsTransientStorage**: (`fork`) => `boolean`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`boolean`
+
+##### toString()
+
+> **toString**: (`fork`) => `string`
+
+###### Parameters
+
+###### fork
+
+[`HardforkType`](#hardforktype)
+
+###### Returns
+
+`string`
+
+***
+
+### HARDFORK\_ORDER
+
+> `const` **HARDFORK\_ORDER**: [`HardforkType`](#hardforktype)[]
+
+Defined in: [src/primitives/Hardfork/constants.js:82](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L82)
+
+**`Internal`**
+
+Hardfork ordering for version comparison
+
+***
+
+### hasEIP1153()
+
+> `const` **hasEIP1153**: (`fork`) => `boolean` = `_hasEIP1153`
+
+Defined in: [src/primitives/Hardfork/index.ts:62](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L62)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### hasEIP1559()
+
+> `const` **hasEIP1559**: (`fork`) => `boolean` = `_hasEIP1559`
+
+Defined in: [src/primitives/Hardfork/index.ts:55](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L55)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### hasEIP3855()
+
+> `const` **hasEIP3855**: (`fork`) => `boolean` = `_hasEIP3855`
+
+Defined in: [src/primitives/Hardfork/index.ts:58](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L58)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### hasEIP4844()
+
+> `const` **hasEIP4844**: (`fork`) => `boolean` = `_hasEIP4844`
+
+Defined in: [src/primitives/Hardfork/index.ts:60](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L60)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### HOMESTEAD
+
+> `const` **HOMESTEAD**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L15)
+
+***
+
+### isAfter()
+
+> `const` **isAfter**: (`fork`, `minFork`) => `boolean` = `_isAfter`
+
+Defined in: [src/primitives/Hardfork/index.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L45)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+##### minFork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### isAtLeast()
+
+> `const` **isAtLeast**: (`fork`, `minFork`) => `boolean` = `_isAtLeast`
+
+Defined in: [src/primitives/Hardfork/index.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L41)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+##### minFork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### isBefore()
+
+> `const` **isBefore**: (`fork`, `maxFork`) => `boolean` = `_isBefore`
+
+Defined in: [src/primitives/Hardfork/index.ts:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L43)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+##### maxFork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### isPoS()
+
+> `const` **isPoS**: (`fork`) => `boolean` = `_isPoS`
+
+Defined in: [src/primitives/Hardfork/index.ts:66](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L66)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### isPostMerge()
+
+> `const` **isPostMerge**: (`fork`) => `boolean` = `_isPostMerge`
+
+Defined in: [src/primitives/Hardfork/index.ts:65](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L65)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### ISTANBUL
+
+> `const` **ISTANBUL**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L38)
+
+***
+
+### isValidName()
+
+> `const` **isValidName**: (`name`) => `boolean` = `_isValidName`
+
+Defined in: [src/primitives/Hardfork/index.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L40)
+
+#### Parameters
+
+##### name
+
+`string`
+
+#### Returns
+
+`boolean`
+
+***
+
+### LONDON
+
+> `const` **LONDON**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:47](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L47)
+
+***
+
+### lt()
+
+> `const` **lt**: (`a`, `b`) => `boolean` = `_lt`
+
+Defined in: [src/primitives/Hardfork/index.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L51)
+
+#### Parameters
+
+##### a
+
+[`HardforkType`](#hardforktype)
+
+##### b
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### lte()
+
+> `const` **lte**: (`a`, `b`) => `boolean` = `_lte`
+
+Defined in: [src/primitives/Hardfork/index.ts:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L54)
+
+#### Parameters
+
+##### a
+
+[`HardforkType`](#hardforktype)
+
+##### b
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### max()
+
+> `const` **max**: (`forks`) => [`HardforkType`](#hardforktype) = `_max`
+
+Defined in: [src/primitives/Hardfork/index.ts:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L49)
+
+#### Parameters
+
+##### forks
+
+[`HardforkType`](#hardforktype)[]
+
+#### Returns
+
+[`HardforkType`](#hardforktype)
+
+***
+
+### MERGE
+
+> `const` **MERGE**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L56)
+
+***
+
+### min()
+
+> `const` **min**: (`forks`) => [`HardforkType`](#hardforktype) = `_min`
+
+Defined in: [src/primitives/Hardfork/index.ts:48](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L48)
+
+#### Parameters
+
+##### forks
+
+[`HardforkType`](#hardforktype)[]
+
+#### Returns
+
+[`HardforkType`](#hardforktype)
+
+***
+
+### MUIR\_GLACIER
+
+> `const` **MUIR\_GLACIER**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L41)
+
+***
+
+### NAME\_TO\_HARDFORK
+
+> `const` **NAME\_TO\_HARDFORK**: `object`
+
+Defined in: [src/primitives/Hardfork/constants.js:108](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L108)
+
+**`Internal`**
+
+Hardfork name to hardfork mapping for string parsing
+
+#### Type Declaration
+
+##### arrowglacier
+
+> **arrowglacier**: [`HardforkType`](#hardforktype) = `ARROW_GLACIER`
+
+##### berlin
+
+> **berlin**: [`HardforkType`](#hardforktype) = `BERLIN`
+
+##### byzantium
+
+> **byzantium**: [`HardforkType`](#hardforktype) = `BYZANTIUM`
+
+##### cancun
+
+> **cancun**: [`HardforkType`](#hardforktype) = `CANCUN`
+
+##### constantinople
+
+> **constantinople**: [`HardforkType`](#hardforktype) = `CONSTANTINOPLE`
+
+##### constantinoplefix
+
+> **constantinoplefix**: [`HardforkType`](#hardforktype) = `PETERSBURG`
+
+##### dao
+
+> **dao**: [`HardforkType`](#hardforktype) = `DAO`
+
+##### frontier
+
+> **frontier**: [`HardforkType`](#hardforktype) = `FRONTIER`
+
+##### grayglacier
+
+> **grayglacier**: [`HardforkType`](#hardforktype) = `GRAY_GLACIER`
+
+##### homestead
+
+> **homestead**: [`HardforkType`](#hardforktype) = `HOMESTEAD`
+
+##### istanbul
+
+> **istanbul**: [`HardforkType`](#hardforktype) = `ISTANBUL`
+
+##### london
+
+> **london**: [`HardforkType`](#hardforktype) = `LONDON`
+
+##### merge
+
+> **merge**: [`HardforkType`](#hardforktype) = `MERGE`
+
+##### muirglacier
+
+> **muirglacier**: [`HardforkType`](#hardforktype) = `MUIR_GLACIER`
+
+##### osaka
+
+> **osaka**: [`HardforkType`](#hardforktype) = `OSAKA`
+
+##### paris
+
+> **paris**: [`HardforkType`](#hardforktype) = `MERGE`
+
+##### petersburg
+
+> **petersburg**: [`HardforkType`](#hardforktype) = `PETERSBURG`
+
+##### prague
+
+> **prague**: [`HardforkType`](#hardforktype) = `PRAGUE`
+
+##### shanghai
+
+> **shanghai**: [`HardforkType`](#hardforktype) = `SHANGHAI`
+
+##### spuriousdragon
+
+> **spuriousdragon**: [`HardforkType`](#hardforktype) = `SPURIOUS_DRAGON`
+
+##### tangerinewhistle
+
+> **tangerinewhistle**: [`HardforkType`](#hardforktype) = `TANGERINE_WHISTLE`
+
+***
+
+### OSAKA
+
+> `const` **OSAKA**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:68](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L68)
+
+***
+
+### PETERSBURG
+
+> `const` **PETERSBURG**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L35)
+
+***
+
+### PRAGUE
+
+> `const` **PRAGUE**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:65](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L65)
+
+***
+
+### range()
+
+> `const` **range**: (`start`, `end`) => [`HardforkType`](#hardforktype)[] = `_range`
+
+Defined in: [src/primitives/Hardfork/index.ts:69](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L69)
+
+#### Parameters
+
+##### start
+
+[`HardforkType`](#hardforktype)
+
+##### end
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+[`HardforkType`](#hardforktype)[]
+
+***
+
+### SHANGHAI
+
+> `const` **SHANGHAI**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:59](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L59)
+
+***
+
+### SPURIOUS\_DRAGON
+
+> `const` **SPURIOUS\_DRAGON**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L26)
+
+***
+
+### supportsBlobs()
+
+> `const` **supportsBlobs**: (`fork`) => `boolean` = `_supportsBlobs`
+
+Defined in: [src/primitives/Hardfork/index.ts:61](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L61)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### supportsEIP1559()
+
+> `const` **supportsEIP1559**: (`fork`) => `boolean` = `_supportsEIP1559`
+
+Defined in: [src/primitives/Hardfork/index.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L56)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### supportsPUSH0()
+
+> `const` **supportsPUSH0**: (`fork`) => `boolean` = `_supportsPUSH0`
+
+Defined in: [src/primitives/Hardfork/index.ts:59](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L59)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### supportsTransientStorage()
+
+> `const` **supportsTransientStorage**: (`fork`) => `boolean` = `_supportsTransientStorage`
+
+Defined in: [src/primitives/Hardfork/index.ts:63](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L63)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### TANGERINE\_WHISTLE
+
+> `const` **TANGERINE\_WHISTLE**: [`HardforkType`](#hardforktype)
+
+Defined in: [src/primitives/Hardfork/constants.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/constants.js#L21)
+
+***
+
+### toString()
+
+> `const` **toString**: (`fork`) => `string` = `_toString`
+
+Defined in: [src/primitives/Hardfork/index.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hardfork/index.ts#L39)
+
+#### Parameters
+
+##### fork
+
+[`HardforkType`](#hardforktype)
+
+#### Returns
+
+`string`

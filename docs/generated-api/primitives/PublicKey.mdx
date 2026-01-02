@@ -1,0 +1,731 @@
+---
+title: "primitives/PublicKey"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/PublicKey
+
+# primitives/PublicKey
+
+## Type Aliases
+
+### PublicKeyType
+
+> **PublicKeyType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/PublicKey/PublicKeyType.ts:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/PublicKeyType.ts#L7)
+
+PublicKey type - 64 byte uncompressed public key
+Distinguishes from generic Hex/Uint8Array
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"PublicKey"`
+
+##### length
+
+> `readonly` **length**: `64`
+
+## Variables
+
+### \_verify()
+
+> `const` **\_verify**: (`publicKey`, `hash`, `signature`) => `boolean`
+
+Defined in: [src/primitives/PublicKey/index.ts:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/index.ts#L25)
+
+#### Parameters
+
+##### publicKey
+
+[`PublicKeyType`](#publickeytype)
+
+##### hash
+
+`HashType`
+
+##### signature
+
+[`Secp256k1SignatureType`](../crypto/Secp256k1.mdx#secp256k1signaturetype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### PublicKey
+
+> `const` **PublicKey**: `object`
+
+Defined in: [src/primitives/PublicKey/index.ts:122](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/index.ts#L122)
+
+#### Type Declaration
+
+##### compress()
+
+> **compress**: (`publicKey`) => `Uint8Array`
+
+Compress a public key from 64 bytes (uncompressed) to 33 bytes (compressed)
+
+Compressed format: prefix (1 byte) + x-coordinate (32 bytes)
+Prefix is 0x02 if y is even, 0x03 if y is odd
+
+Compressed keys are preferred for storage and transmission due to smaller size.
+Uncompressed keys are needed by some legacy systems.
+
+###### Parameters
+
+###### publicKey
+
+Public key (hex string or 64 bytes)
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+`Uint8Array`
+
+Compressed public key (33 bytes)
+
+###### Example
+
+```typescript
+import * as PublicKey from './primitives/PublicKey/index.js';
+
+const compressed = PublicKey.compress("0x1234...");
+console.log(compressed.length); // 33
+```
+
+##### decompress()
+
+> **decompress**: (`compressed`) => [`PublicKeyType`](#publickeytype)
+
+Decompress a public key from 33 bytes (compressed) to 64 bytes (uncompressed)
+
+Solves the curve equation y² = x³ + 7 mod p and chooses y based on prefix parity.
+
+###### Parameters
+
+###### compressed
+
+`Uint8Array`
+
+Compressed public key (33 bytes with 0x02/0x03 prefix)
+
+###### Returns
+
+[`PublicKeyType`](#publickeytype)
+
+Uncompressed public key (64 bytes)
+
+###### Throws
+
+If compressed format is invalid
+
+###### Example
+
+```typescript
+import * as PublicKey from './primitives/PublicKey/index.js';
+
+const uncompressed = PublicKey.decompress(compressed);
+console.log(uncompressed.length); // 64
+```
+
+##### from()
+
+> **from**: (`hex`) => [`PublicKeyType`](#publickeytype)
+
+Create PublicKey from hex string
+
+###### Parameters
+
+###### hex
+
+`string`
+
+Hex string (64 bytes uncompressed)
+
+###### Returns
+
+[`PublicKeyType`](#publickeytype)
+
+Public key
+
+###### Throws
+
+If hex string format is invalid
+
+###### Throws
+
+If hex is not 64 bytes
+
+###### Example
+
+```typescript
+const pk = PublicKey.from("0x1234...");
+```
+
+##### fromPrivateKey()
+
+> **fromPrivateKey**: (`privateKey`) => [`PublicKeyType`](#publickeytype)
+
+Derive public key from private key
+
+###### Parameters
+
+###### privateKey
+
+[`PrivateKeyType`](PrivateKey.mdx#privatekeytype)
+
+Private key
+
+###### Returns
+
+[`PublicKeyType`](#publickeytype)
+
+Public key (64 bytes uncompressed)
+
+###### Example
+
+```typescript
+const publicKey = PublicKey.fromPrivateKey(pk);
+```
+
+##### isCompressed()
+
+> **isCompressed**: (`bytes`) => `boolean`
+
+Check if a public key is in compressed format
+
+Returns true for 33 bytes with 0x02/0x03 prefix, false otherwise
+
+###### Parameters
+
+###### bytes
+
+`Uint8Array`
+
+Public key bytes
+
+###### Returns
+
+`boolean`
+
+True if compressed format
+
+###### Example
+
+```typescript
+import * as PublicKey from './primitives/PublicKey/index.js';
+
+const isComp = PublicKey.isCompressed(bytes);
+```
+
+##### toAddress()
+
+> **toAddress**: (`publicKey`) => [`AddressType`](Address.mdx#addresstype)
+
+###### Parameters
+
+###### publicKey
+
+`string`
+
+###### Returns
+
+[`AddressType`](Address.mdx#addresstype)
+
+##### toHex()
+
+> **toHex**: (`publicKey`) => `string`
+
+###### Parameters
+
+###### publicKey
+
+`string`
+
+###### Returns
+
+`string`
+
+##### verify()
+
+> **verify**: (`publicKey`, `hash`, `signature`) => `boolean`
+
+###### Parameters
+
+###### publicKey
+
+`string`
+
+###### hash
+
+`HashType`
+
+###### signature
+
+[`SignatureType`](Signature.mdx#signaturetype)
+
+###### Returns
+
+`boolean`
+
+## Functions
+
+### \_compress()
+
+> **\_compress**(`publicKey`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/PublicKey/compress.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/compress.js#L16)
+
+Compress a public key from 64 bytes (uncompressed) to 33 bytes (compressed)
+
+Compressed format: prefix (1 byte) + x-coordinate (32 bytes)
+Prefix is 0x02 if y is even, 0x03 if y is odd
+
+#### Parameters
+
+##### publicKey
+
+[`PublicKeyType`](#publickeytype)
+
+Uncompressed public key (64 bytes)
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Compressed public key (33 bytes)
+
+#### Example
+
+```javascript
+import * as PublicKey from './primitives/PublicKey/index.js';
+const compressed = PublicKey._compress(publicKey);
+```
+
+***
+
+### \_decompress()
+
+> **\_decompress**(`compressed`): [`PublicKeyType`](#publickeytype)
+
+Defined in: [src/primitives/PublicKey/decompress.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/decompress.js#L16)
+
+Decompress a public key from 33 bytes (compressed) to 64 bytes (uncompressed)
+
+Solves y² = x³ + 7 mod p and chooses y based on prefix parity
+
+#### Parameters
+
+##### compressed
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Compressed public key (33 bytes with 0x02/0x03 prefix)
+
+#### Returns
+
+[`PublicKeyType`](#publickeytype)
+
+Uncompressed public key (64 bytes)
+
+#### Throws
+
+If compressed format is invalid
+
+#### Example
+
+```javascript
+import * as PublicKey from './primitives/PublicKey/index.js';
+const uncompressed = PublicKey._decompress(compressed);
+```
+
+***
+
+### \_isCompressed()
+
+> **\_isCompressed**(`bytes`): `boolean`
+
+Defined in: [src/primitives/PublicKey/isCompressed.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/isCompressed.js#L15)
+
+Check if a public key is in compressed format
+
+Returns true for 33 bytes with 0x02/0x03 prefix, false otherwise
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Public key bytes
+
+#### Returns
+
+`boolean`
+
+True if compressed format
+
+#### Example
+
+```javascript
+import * as PublicKey from './primitives/PublicKey/index.js';
+const isCompressed = PublicKey._isCompressed(bytes);
+```
+
+***
+
+### \_toAddress()
+
+> **\_toAddress**(`this`): [`AddressType`](Address.mdx#addresstype)
+
+Defined in: [src/primitives/PublicKey/toAddress.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/toAddress.ts#L16)
+
+Derive Ethereum address from public key
+
+#### Parameters
+
+##### this
+
+[`PublicKeyType`](#publickeytype)
+
+Public key
+
+#### Returns
+
+[`AddressType`](Address.mdx#addresstype)
+
+Ethereum address (20 bytes)
+
+#### Example
+
+```typescript
+const address = PublicKey._toAddress.call(pk);
+```
+
+***
+
+### \_toHex()
+
+> **\_toHex**(`this`): `string`
+
+Defined in: [src/primitives/PublicKey/toHex.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/toHex.ts#L14)
+
+Convert PublicKey to hex string
+
+#### Parameters
+
+##### this
+
+[`PublicKeyType`](#publickeytype)
+
+Public key
+
+#### Returns
+
+`string`
+
+Hex string
+
+#### Example
+
+```typescript
+const hex = PublicKey._toHex.call(pk);
+```
+
+***
+
+### compress()
+
+> **compress**(`publicKey`): `Uint8Array`
+
+Defined in: [src/primitives/PublicKey/index.ts:68](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/index.ts#L68)
+
+Compress a public key from 64 bytes (uncompressed) to 33 bytes (compressed)
+
+Compressed format: prefix (1 byte) + x-coordinate (32 bytes)
+Prefix is 0x02 if y is even, 0x03 if y is odd
+
+Compressed keys are preferred for storage and transmission due to smaller size.
+Uncompressed keys are needed by some legacy systems.
+
+#### Parameters
+
+##### publicKey
+
+Public key (hex string or 64 bytes)
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`Uint8Array`
+
+Compressed public key (33 bytes)
+
+#### Example
+
+```typescript
+import * as PublicKey from './primitives/PublicKey/index.js';
+
+const compressed = PublicKey.compress("0x1234...");
+console.log(compressed.length); // 33
+```
+
+***
+
+### decompress()
+
+> **decompress**(`compressed`): [`PublicKeyType`](#publickeytype)
+
+Defined in: [src/primitives/PublicKey/index.ts:93](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/index.ts#L93)
+
+Decompress a public key from 33 bytes (compressed) to 64 bytes (uncompressed)
+
+Solves the curve equation y² = x³ + 7 mod p and chooses y based on prefix parity.
+
+#### Parameters
+
+##### compressed
+
+`Uint8Array`
+
+Compressed public key (33 bytes with 0x02/0x03 prefix)
+
+#### Returns
+
+[`PublicKeyType`](#publickeytype)
+
+Uncompressed public key (64 bytes)
+
+#### Throws
+
+If compressed format is invalid
+
+#### Example
+
+```typescript
+import * as PublicKey from './primitives/PublicKey/index.js';
+
+const uncompressed = PublicKey.decompress(compressed);
+console.log(uncompressed.length); // 64
+```
+
+***
+
+### from()
+
+> **from**(`hex`): [`PublicKeyType`](#publickeytype)
+
+Defined in: [src/primitives/PublicKey/from.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/from.ts#L22)
+
+Create PublicKey from hex string
+
+#### Parameters
+
+##### hex
+
+`string`
+
+Hex string (64 bytes uncompressed)
+
+#### Returns
+
+[`PublicKeyType`](#publickeytype)
+
+Public key
+
+#### Throws
+
+If hex string format is invalid
+
+#### Throws
+
+If hex is not 64 bytes
+
+#### Example
+
+```typescript
+const pk = PublicKey.from("0x1234...");
+```
+
+***
+
+### fromPrivateKey()
+
+> **fromPrivateKey**(`privateKey`): [`PublicKeyType`](#publickeytype)
+
+Defined in: [src/primitives/PublicKey/fromPrivateKey.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/fromPrivateKey.ts#L16)
+
+Derive public key from private key
+
+#### Parameters
+
+##### privateKey
+
+[`PrivateKeyType`](PrivateKey.mdx#privatekeytype)
+
+Private key
+
+#### Returns
+
+[`PublicKeyType`](#publickeytype)
+
+Public key (64 bytes uncompressed)
+
+#### Example
+
+```typescript
+const publicKey = PublicKey.fromPrivateKey(pk);
+```
+
+***
+
+### isCompressed()
+
+> **isCompressed**(`bytes`): `boolean`
+
+Defined in: [src/primitives/PublicKey/index.ts:114](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/index.ts#L114)
+
+Check if a public key is in compressed format
+
+Returns true for 33 bytes with 0x02/0x03 prefix, false otherwise
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`
+
+Public key bytes
+
+#### Returns
+
+`boolean`
+
+True if compressed format
+
+#### Example
+
+```typescript
+import * as PublicKey from './primitives/PublicKey/index.js';
+
+const isComp = PublicKey.isCompressed(bytes);
+```
+
+***
+
+### toAddress()
+
+> **toAddress**(`publicKey`): [`AddressType`](Address.mdx#addresstype)
+
+Defined in: [src/primitives/PublicKey/index.ts:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/index.ts#L32)
+
+#### Parameters
+
+##### publicKey
+
+`string`
+
+#### Returns
+
+[`AddressType`](Address.mdx#addresstype)
+
+***
+
+### toHex()
+
+> **toHex**(`publicKey`): `string`
+
+Defined in: [src/primitives/PublicKey/index.ts:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/index.ts#L28)
+
+#### Parameters
+
+##### publicKey
+
+`string`
+
+#### Returns
+
+`string`
+
+***
+
+### verify()
+
+> **verify**(`publicKey`, `hash`, `signature`): `boolean`
+
+Defined in: [src/primitives/PublicKey/index.ts:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/index.ts#L36)
+
+#### Parameters
+
+##### publicKey
+
+`string`
+
+##### hash
+
+`HashType`
+
+##### signature
+
+[`SignatureType`](Signature.mdx#signaturetype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### Verify()
+
+> **Verify**(`deps`): (`publicKey`, `hash`, `signature`) => `boolean`
+
+Defined in: [src/primitives/PublicKey/verify.js:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PublicKey/verify.js#L7)
+
+Factory: Verify signature against public key
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### secp256k1Verify
+
+(`signature`, `hash`, `publicKey`) => `boolean`
+
+Secp256k1 signature verification function (expects 64-byte public key)
+
+#### Returns
+
+Function that verifies ECDSA signature
+
+> (`publicKey`, `hash`, `signature`): `boolean`
+
+##### Parameters
+
+###### publicKey
+
+[`PublicKeyType`](#publickeytype)
+
+###### hash
+
+`HashType`
+
+###### signature
+
+[`Secp256k1SignatureType`](../crypto/Secp256k1.mdx#secp256k1signaturetype)
+
+##### Returns
+
+`boolean`

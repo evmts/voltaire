@@ -1,0 +1,299 @@
+---
+title: "primitives/OpStep"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/OpStep
+
+# primitives/OpStep
+
+## Type Aliases
+
+### OpStepType
+
+> **OpStepType** = `object`
+
+Defined in: [src/primitives/OpStep/OpStepType.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/OpStepType.ts#L12)
+
+Single opcode execution step
+Represents the EVM state at a specific instruction
+
+#### See
+
+https://voltaire.tevm.sh/primitives/op-step for OpStep documentation
+
+#### Since
+
+0.0.0
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"OpStep"`
+
+Defined in: [src/primitives/OpStep/OpStepType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/OpStepType.ts#L13)
+
+##### depth
+
+> `readonly` **depth**: `number`
+
+Defined in: [src/primitives/OpStep/OpStepType.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/OpStepType.ts#L23)
+
+Call depth (0 for top-level call)
+
+##### error?
+
+> `readonly` `optional` **error**: `string`
+
+Defined in: [src/primitives/OpStep/OpStepType.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/OpStepType.ts#L31)
+
+Error message if step failed
+
+##### gas
+
+> `readonly` **gas**: [`Type`](Uint.mdx#type)
+
+Defined in: [src/primitives/OpStep/OpStepType.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/OpStepType.ts#L19)
+
+Remaining gas before executing this operation
+
+##### gasCost
+
+> `readonly` **gasCost**: [`Type`](Uint.mdx#type)
+
+Defined in: [src/primitives/OpStep/OpStepType.ts:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/OpStepType.ts#L21)
+
+Gas cost for this operation
+
+##### memory?
+
+> `readonly` `optional` **memory**: `Uint8Array`
+
+Defined in: [src/primitives/OpStep/OpStepType.ts:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/OpStepType.ts#L27)
+
+Memory state (raw bytes)
+
+##### op
+
+> `readonly` **op**: [`BrandedOpcode`](Opcode.mdx#brandedopcode)
+
+Defined in: [src/primitives/OpStep/OpStepType.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/OpStepType.ts#L17)
+
+Opcode number (0x00-0xFF)
+
+##### pc
+
+> `readonly` **pc**: `number`
+
+Defined in: [src/primitives/OpStep/OpStepType.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/OpStepType.ts#L15)
+
+Program counter (bytecode offset)
+
+##### stack?
+
+> `readonly` `optional` **stack**: readonly [`Type`](Uint.mdx#type)[]
+
+Defined in: [src/primitives/OpStep/OpStepType.ts:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/OpStepType.ts#L25)
+
+Stack state (top to bottom)
+
+##### storage?
+
+> `readonly` `optional` **storage**: `Record`\<`string`, [`Type`](Uint.mdx#type)\>
+
+Defined in: [src/primitives/OpStep/OpStepType.ts:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/OpStepType.ts#L29)
+
+Storage changes in this step (key -> value)
+
+## Functions
+
+### \_from()
+
+> **\_from**(`data`): [`OpStepType`](#opsteptype)
+
+Defined in: [src/primitives/OpStep/from.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/from.js#L21)
+
+Creates an OpStep from raw data
+
+#### Parameters
+
+##### data
+
+OpStep data
+
+###### depth
+
+`number`
+
+Call depth
+
+###### error?
+
+`string`
+
+Error message
+
+###### gas
+
+[`Type`](Uint.mdx#type)
+
+Remaining gas
+
+###### gasCost
+
+[`Type`](Uint.mdx#type)
+
+Gas cost
+
+###### memory?
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Memory state
+
+###### op
+
+[`BrandedOpcode`](Opcode.mdx#brandedopcode)
+
+Opcode
+
+###### pc
+
+`number`
+
+Program counter
+
+###### stack?
+
+readonly [`Type`](Uint.mdx#type)[]
+
+Stack state
+
+###### storage?
+
+`Record`\<`string`, [`Type`](Uint.mdx#type)\>
+
+Storage changes
+
+#### Returns
+
+[`OpStepType`](#opsteptype)
+
+OpStep instance
+
+#### Example
+
+```javascript
+import { from } from './from.js';
+const step = from({ pc: 0, op: 0x60, gas: 1000000n, gasCost: 3n, depth: 0 });
+```
+
+***
+
+### \_hasError()
+
+> **\_hasError**(`step`): `boolean`
+
+Defined in: [src/primitives/OpStep/hasError.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/hasError.js#L14)
+
+Checks if an OpStep has an error
+
+#### Parameters
+
+##### step
+
+[`OpStepType`](#opsteptype)
+
+OpStep to check
+
+#### Returns
+
+`boolean`
+
+True if step has an error
+
+#### Example
+
+```javascript
+import { hasError } from './hasError.js';
+if (hasError(step)) {
+  console.error(`Error at PC ${step.pc}: ${step.error}`);
+}
+```
+
+***
+
+### from()
+
+> **from**(`data`): [`OpStepType`](#opsteptype)
+
+Defined in: [src/primitives/OpStep/index.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/index.ts#L22)
+
+Creates an OpStep from raw data
+
+#### Parameters
+
+##### data
+
+`Omit`\<[`OpStepType`](#opsteptype), `brand`\>
+
+OpStep data
+
+#### Returns
+
+[`OpStepType`](#opsteptype)
+
+OpStep instance
+
+#### See
+
+https://voltaire.tevm.sh/primitives/op-step for OpStep documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```typescript
+import { OpStep } from './primitives/OpStep/index.js';
+const step = OpStep.from({ pc: 0, op: 0x60, gas: 1000000n, gasCost: 3n, depth: 0 });
+```
+
+***
+
+### hasError()
+
+> **hasError**(`step`): `boolean`
+
+Defined in: [src/primitives/OpStep/index.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/OpStep/index.ts#L41)
+
+Checks if an OpStep has an error
+
+#### Parameters
+
+##### step
+
+[`OpStepType`](#opsteptype)
+
+OpStep to check
+
+#### Returns
+
+`boolean`
+
+True if step has an error
+
+#### Example
+
+```typescript
+import { OpStep } from './primitives/OpStep/index.js';
+if (OpStep.hasError(step)) {
+  console.error(`Error: ${step.error}`);
+}
+```

@@ -1,0 +1,447 @@
+---
+title: "primitives/PackedUserOperation"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/PackedUserOperation
+
+# primitives/PackedUserOperation
+
+## Type Aliases
+
+### PackedUserOperationType
+
+> **PackedUserOperationType** = `object` & `object`
+
+Defined in: [src/primitives/PackedUserOperation/PackedUserOperationType.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PackedUserOperation/PackedUserOperationType.ts#L19)
+
+PackedUserOperation type - ERC-4337 v0.7+ format
+
+Optimized format that packs gas limits and fees into bytes32 fields,
+reducing calldata size and gas costs for bundlers.
+
+Gas packing format:
+- accountGasLimits: verificationGasLimit (128 bits) || callGasLimit (128 bits)
+- gasFees: maxPriorityFeePerGas (128 bits) || maxFeePerGas (128 bits)
+
+#### Type Declaration
+
+##### accountGasLimits
+
+> `readonly` **accountGasLimits**: `Uint8Array`
+
+Packed gas limits: verificationGasLimit (128) || callGasLimit (128)
+
+##### callData
+
+> `readonly` **callData**: `Uint8Array`
+
+Calldata to execute on the account
+
+##### gasFees
+
+> `readonly` **gasFees**: `Uint8Array`
+
+Packed fees: maxPriorityFeePerGas (128) || maxFeePerGas (128)
+
+##### initCode
+
+> `readonly` **initCode**: `Uint8Array`
+
+Account factory and initialization code for first-time deployment
+
+##### nonce
+
+> `readonly` **nonce**: [`Type`](Uint.mdx#type)
+
+Anti-replay nonce (key + sequence)
+
+##### paymasterAndData
+
+> `readonly` **paymasterAndData**: `Uint8Array`
+
+Paymaster address and data (empty if self-paying)
+
+##### preVerificationGas
+
+> `readonly` **preVerificationGas**: [`Type`](Uint.mdx#type)
+
+Fixed gas overhead for bundler compensation
+
+##### sender
+
+> `readonly` **sender**: [`AddressType`](Address.mdx#addresstype)
+
+Smart account address initiating the operation
+
+##### signature
+
+> `readonly` **signature**: `Uint8Array`
+
+Account signature over userOpHash
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"PackedUserOperation"`
+
+#### See
+
+ - https://eips.ethereum.org/EIPS/eip-4337
+ - https://voltaire.tevm.sh/primitives/packed-user-operation for PackedUserOperation documentation
+
+#### Since
+
+0.0.0
+
+## Variables
+
+### PackedUserOperation
+
+> `const` **PackedUserOperation**: `object`
+
+Defined in: [src/primitives/PackedUserOperation/index.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PackedUserOperation/index.ts#L34)
+
+#### Type Declaration
+
+##### from()
+
+> **from**: (`params`) => [`PackedUserOperationType`](#packeduseroperationtype)
+
+Create PackedUserOperation from input object
+
+###### Parameters
+
+###### params
+
+PackedUserOperation parameters
+
+###### accountGasLimits
+
+`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Packed gas limits (32 bytes)
+
+###### callData
+
+`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Calldata to execute
+
+###### gasFees
+
+`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Packed gas fees (32 bytes)
+
+###### initCode
+
+`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Account initialization code
+
+###### nonce
+
+`string` \| `number` \| `bigint` \| [`Type`](Uint.mdx#type)
+
+Anti-replay nonce
+
+###### paymasterAndData
+
+`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Paymaster address and data
+
+###### preVerificationGas
+
+`string` \| `number` \| `bigint` \| [`Type`](Uint.mdx#type)
+
+Fixed gas overhead
+
+###### sender
+
+`string` \| `number` \| `bigint` \| `Uint8Array`\<`ArrayBufferLike`\> \| [`AddressType`](Address.mdx#addresstype)
+
+Smart account address
+
+###### signature
+
+`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Account signature
+
+###### Returns
+
+[`PackedUserOperationType`](#packeduseroperationtype)
+
+PackedUserOperation
+
+###### Example
+
+```typescript
+const packedUserOp = PackedUserOperation.from({
+  sender: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+  nonce: 0n,
+  initCode: "0x",
+  callData: "0x",
+  accountGasLimits: "0x...", // 32 bytes
+  preVerificationGas: 50000n,
+  gasFees: "0x...", // 32 bytes
+  paymasterAndData: "0x",
+  signature: "0x",
+});
+```
+
+##### hash()
+
+> **hash**: (`packedUserOp`, `entryPoint`, `chainId`) => `Uint8Array`
+
+###### Parameters
+
+###### packedUserOp
+
+[`PackedUserOperationType`](#packeduseroperationtype)
+
+###### entryPoint
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### chainId
+
+`number` | `bigint`
+
+###### Returns
+
+`Uint8Array`
+
+##### unpack()
+
+> **unpack**: (`packedUserOp`) => [`UserOperationType`](UserOperation.mdx#useroperationtype)
+
+###### Parameters
+
+###### packedUserOp
+
+[`PackedUserOperationType`](#packeduseroperationtype)
+
+###### Returns
+
+[`UserOperationType`](UserOperation.mdx#useroperationtype)
+
+## Functions
+
+### \_hash()
+
+> **\_hash**(`packedUserOp`, `entryPoint`, `chainId`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/PackedUserOperation/hash.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PackedUserOperation/hash.js#L21)
+
+Compute userOpHash for PackedUserOperation
+
+userOpHash = keccak256(abi.encode(packedUserOp, entryPoint, chainId))
+
+#### Parameters
+
+##### packedUserOp
+
+[`PackedUserOperationType`](#packeduseroperationtype)
+
+Packed user operation
+
+##### entryPoint
+
+EntryPoint contract address
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+##### chainId
+
+Chain ID
+
+`number` | `bigint`
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte hash for signing
+
+#### Example
+
+```typescript
+const hash = PackedUserOperation.hash(packedUserOp, ENTRYPOINT_V07, 1n);
+const signature = await account.signMessage(hash);
+```
+
+***
+
+### \_unpack()
+
+> **\_unpack**(`packedUserOp`): [`UserOperationType`](UserOperation.mdx#useroperationtype)
+
+Defined in: [src/primitives/PackedUserOperation/unpack.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PackedUserOperation/unpack.js#L16)
+
+Unpack PackedUserOperation (v0.7) to UserOperation (v0.6)
+
+Extracts gas limits and fees from packed bytes32 fields.
+
+#### Parameters
+
+##### packedUserOp
+
+[`PackedUserOperationType`](#packeduseroperationtype)
+
+Packed user operation v0.7
+
+#### Returns
+
+[`UserOperationType`](UserOperation.mdx#useroperationtype)
+
+User operation v0.6
+
+#### Example
+
+```typescript
+const userOp = PackedUserOperation.unpack(packedUserOp);
+```
+
+***
+
+### from()
+
+> **from**(`params`): [`PackedUserOperationType`](#packeduseroperationtype)
+
+Defined in: [src/primitives/PackedUserOperation/from.js:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PackedUserOperation/from.js#L34)
+
+Create PackedUserOperation from input object
+
+#### Parameters
+
+##### params
+
+PackedUserOperation parameters
+
+###### accountGasLimits
+
+`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Packed gas limits (32 bytes)
+
+###### callData
+
+`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Calldata to execute
+
+###### gasFees
+
+`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Packed gas fees (32 bytes)
+
+###### initCode
+
+`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Account initialization code
+
+###### nonce
+
+`string` \| `number` \| `bigint` \| [`Type`](Uint.mdx#type)
+
+Anti-replay nonce
+
+###### paymasterAndData
+
+`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Paymaster address and data
+
+###### preVerificationGas
+
+`string` \| `number` \| `bigint` \| [`Type`](Uint.mdx#type)
+
+Fixed gas overhead
+
+###### sender
+
+`string` \| `number` \| `bigint` \| `Uint8Array`\<`ArrayBufferLike`\> \| [`AddressType`](Address.mdx#addresstype)
+
+Smart account address
+
+###### signature
+
+`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Account signature
+
+#### Returns
+
+[`PackedUserOperationType`](#packeduseroperationtype)
+
+PackedUserOperation
+
+#### Example
+
+```typescript
+const packedUserOp = PackedUserOperation.from({
+  sender: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+  nonce: 0n,
+  initCode: "0x",
+  callData: "0x",
+  accountGasLimits: "0x...", // 32 bytes
+  preVerificationGas: 50000n,
+  gasFees: "0x...", // 32 bytes
+  paymasterAndData: "0x",
+  signature: "0x",
+});
+```
+
+***
+
+### hash()
+
+> **hash**(`packedUserOp`, `entryPoint`, `chainId`): `Uint8Array`
+
+Defined in: [src/primitives/PackedUserOperation/index.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PackedUserOperation/index.ts#L16)
+
+#### Parameters
+
+##### packedUserOp
+
+[`PackedUserOperationType`](#packeduseroperationtype)
+
+##### entryPoint
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+##### chainId
+
+`number` | `bigint`
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### unpack()
+
+> **unpack**(`packedUserOp`): [`UserOperationType`](UserOperation.mdx#useroperationtype)
+
+Defined in: [src/primitives/PackedUserOperation/index.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/PackedUserOperation/index.ts#L24)
+
+#### Parameters
+
+##### packedUserOp
+
+[`PackedUserOperationType`](#packeduseroperationtype)
+
+#### Returns
+
+[`UserOperationType`](UserOperation.mdx#useroperationtype)

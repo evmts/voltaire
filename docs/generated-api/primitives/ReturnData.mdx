@@ -1,0 +1,684 @@
+---
+title: "primitives/ReturnData"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/ReturnData
+
+# primitives/ReturnData
+
+## Classes
+
+### InvalidHexFormatError
+
+Defined in: [src/primitives/ReturnData/errors.ts:6](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/errors.ts#L6)
+
+Error thrown when hex string format is invalid
+
+#### Extends
+
+- [`PrimitiveError`](../index/index.mdx#primitiveerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidHexFormatError**(`message`, `context?`): [`InvalidHexFormatError`](#invalidhexformaterror)
+
+Defined in: [src/primitives/ReturnData/errors.ts:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/errors.ts#L7)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### Returns
+
+[`InvalidHexFormatError`](#invalidhexformaterror)
+
+###### Overrides
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`constructor`](../index/index.mdx#constructor-16)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`cause`](../index/index.mdx#cause-16)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`code`](../index/index.mdx#code-16)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`context`](../index/index.mdx#context-16)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`docsPath`](../index/index.mdx#docspath-16)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`getErrorChain`](../index/index.mdx#geterrorchain-32)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`toJSON`](../index/index.mdx#tojson-32)
+
+***
+
+### InvalidValueError
+
+Defined in: [src/primitives/ReturnData/errors.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/errors.ts#L16)
+
+Error thrown when value type is unsupported
+
+#### Extends
+
+- [`PrimitiveError`](../index/index.mdx#primitiveerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidValueError**(`message`, `context?`): [`InvalidValueError`](#invalidvalueerror)
+
+Defined in: [src/primitives/ReturnData/errors.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/errors.ts#L17)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### Returns
+
+[`InvalidValueError`](#invalidvalueerror)
+
+###### Overrides
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`constructor`](../index/index.mdx#constructor-16)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`cause`](../index/index.mdx#cause-16)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`code`](../index/index.mdx#code-16)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`context`](../index/index.mdx#context-16)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`docsPath`](../index/index.mdx#docspath-16)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`getErrorChain`](../index/index.mdx#geterrorchain-32)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`toJSON`](../index/index.mdx#tojson-32)
+
+## Type Aliases
+
+### ReturnDataType
+
+> **ReturnDataType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/ReturnData/ReturnDataType.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/ReturnDataType.ts#L9)
+
+ReturnData - Raw bytes returned from contract call
+
+Branded Uint8Array representing uninterpreted return data from
+contract execution. Can be decoded using ABI specifications.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"ReturnData"`
+
+## Functions
+
+### \_equals()
+
+> **\_equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/ReturnData/equals.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/equals.js#L13)
+
+Check if two ReturnData instances are equal
+
+#### Parameters
+
+##### a
+
+[`ReturnDataType`](#returndatatype)
+
+First ReturnData
+
+##### b
+
+[`ReturnDataType`](#returndatatype)
+
+Second ReturnData
+
+#### Returns
+
+`boolean`
+
+True if equal
+
+#### Example
+
+```typescript
+const isEqual = ReturnData.equals(data1, data2);
+```
+
+***
+
+### \_from()
+
+> **\_from**(`value`): [`ReturnDataType`](#returndatatype)
+
+Defined in: [src/primitives/ReturnData/from.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/from.js#L19)
+
+Create ReturnData from various input types
+
+#### Parameters
+
+##### value
+
+Hex string or Uint8Array
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`ReturnDataType`](#returndatatype)
+
+ReturnData
+
+#### Throws
+
+If value type is unsupported
+
+#### Throws
+
+If hex string is invalid
+
+#### Example
+
+```typescript
+const data1 = ReturnData.from("0x0000...");
+const data2 = ReturnData.from(new Uint8Array([0, 0, ...]));
+```
+
+***
+
+### \_fromBytes()
+
+> **\_fromBytes**(`value`): [`ReturnDataType`](#returndatatype)
+
+Defined in: [src/primitives/ReturnData/fromBytes.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/fromBytes.js#L12)
+
+Create ReturnData from Uint8Array (zero-copy cast)
+
+#### Parameters
+
+##### value
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Byte array
+
+#### Returns
+
+[`ReturnDataType`](#returndatatype)
+
+ReturnData
+
+#### Example
+
+```typescript
+const data = ReturnData.fromBytes(new Uint8Array([0, 0, 0, 1]));
+```
+
+***
+
+### \_fromHex()
+
+> **\_fromHex**(`value`): [`ReturnDataType`](#returndatatype)
+
+Defined in: [src/primitives/ReturnData/fromHex.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/fromHex.js#L16)
+
+Create ReturnData from hex string
+
+#### Parameters
+
+##### value
+
+`string`
+
+Hex string (with or without 0x prefix)
+
+#### Returns
+
+[`ReturnDataType`](#returndatatype)
+
+ReturnData
+
+#### Throws
+
+If hex string is invalid
+
+#### Example
+
+```typescript
+const data = ReturnData.fromHex("0x00000001");
+```
+
+***
+
+### \_isEmpty()
+
+> **\_isEmpty**(`data`): `boolean`
+
+Defined in: [src/primitives/ReturnData/isEmpty.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/isEmpty.js#L12)
+
+Check if ReturnData is empty
+
+#### Parameters
+
+##### data
+
+[`ReturnDataType`](#returndatatype)
+
+ReturnData
+
+#### Returns
+
+`boolean`
+
+True if empty
+
+#### Example
+
+```typescript
+const empty = ReturnData.isEmpty(data);
+```
+
+***
+
+### \_toBytes()
+
+> **\_toBytes**(`data`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/ReturnData/toBytes.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/toBytes.js#L12)
+
+Convert ReturnData to plain Uint8Array
+
+#### Parameters
+
+##### data
+
+[`ReturnDataType`](#returndatatype)
+
+ReturnData
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Plain byte array
+
+#### Example
+
+```typescript
+const bytes = ReturnData.toBytes(data);
+```
+
+***
+
+### \_toHex()
+
+> **\_toHex**(`data`): `string`
+
+Defined in: [src/primitives/ReturnData/toHex.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/toHex.js#L14)
+
+Convert ReturnData to hex string
+
+#### Parameters
+
+##### data
+
+[`ReturnDataType`](#returndatatype)
+
+ReturnData
+
+#### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+#### Example
+
+```typescript
+const hex = ReturnData.toHex(data); // "0x00000001"
+```
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/ReturnData/index.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/index.ts#L51)
+
+Check if two ReturnData instances are equal
+
+#### Parameters
+
+##### a
+
+[`ReturnDataType`](#returndatatype)
+
+##### b
+
+[`ReturnDataType`](#returndatatype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`ReturnDataType`](#returndatatype)
+
+Defined in: [src/primitives/ReturnData/index.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/index.ts#L16)
+
+Create ReturnData from various input types
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`ReturnDataType`](#returndatatype)
+
+***
+
+### fromBytes()
+
+> **fromBytes**(`value`): [`ReturnDataType`](#returndatatype)
+
+Defined in: [src/primitives/ReturnData/index.ts:30](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/index.ts#L30)
+
+Create ReturnData from Uint8Array
+
+#### Parameters
+
+##### value
+
+`Uint8Array`
+
+#### Returns
+
+[`ReturnDataType`](#returndatatype)
+
+***
+
+### fromHex()
+
+> **fromHex**(`value`): [`ReturnDataType`](#returndatatype)
+
+Defined in: [src/primitives/ReturnData/index.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/index.ts#L23)
+
+Create ReturnData from hex string
+
+#### Parameters
+
+##### value
+
+`string`
+
+#### Returns
+
+[`ReturnDataType`](#returndatatype)
+
+***
+
+### isEmpty()
+
+> **isEmpty**(`data`): `boolean`
+
+Defined in: [src/primitives/ReturnData/index.ts:58](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/index.ts#L58)
+
+Check if ReturnData is empty
+
+#### Parameters
+
+##### data
+
+[`ReturnDataType`](#returndatatype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### toBytes()
+
+> **toBytes**(`data`): `Uint8Array`
+
+Defined in: [src/primitives/ReturnData/index.ts:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/index.ts#L44)
+
+Convert ReturnData to plain Uint8Array
+
+#### Parameters
+
+##### data
+
+[`ReturnDataType`](#returndatatype)
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### toHex()
+
+> **toHex**(`data`): `string`
+
+Defined in: [src/primitives/ReturnData/index.ts:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ReturnData/index.ts#L37)
+
+Convert ReturnData to hex string
+
+#### Parameters
+
+##### data
+
+[`ReturnDataType`](#returndatatype)
+
+#### Returns
+
+`string`
