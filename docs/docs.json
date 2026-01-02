@@ -143,6 +143,13 @@
                   "skills/op-stack",
                   "skills/tempo"
                 ]
+              },
+              {
+                "group": "Development Tools",
+                "pages": [
+                  "skills/foundry",
+                  "skills/hardhat"
+                ]
               }
             ]
           },
