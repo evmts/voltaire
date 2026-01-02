@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
 import { PrivateKey } from "../../../crypto/Secp256k1/index.js";
 import { Address } from "../../Address/index.js";
+import { InvalidRangeError } from "../../errors/index.js";
 import { Type } from "../types.js";
 import { TransactionEIP1559 } from "./index.js";
 
@@ -127,6 +128,62 @@ describe("TransactionEIP1559", () => {
 			});
 
 			expect(tx.data.length).toBe(10000);
+		});
+
+		it("rejects maxPriorityFeePerGas > maxFeePerGas", () => {
+			expect(() =>
+				TransactionEIP1559({
+					chainId: 1n,
+					nonce: 0n,
+					maxPriorityFeePerGas: 30000000000n,
+					maxFeePerGas: 20000000000n,
+					gasLimit: 21000n,
+					to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+					value: 0n,
+					data: new Uint8Array(),
+					accessList: [],
+					yParity: 0,
+					r: new Uint8Array(32).fill(1),
+					s: new Uint8Array(32).fill(2),
+				}),
+			).toThrow(InvalidRangeError);
+		});
+
+		it("rejects maxPriorityFeePerGas > maxFeePerGas with correct error message", () => {
+			expect(() =>
+				TransactionEIP1559({
+					chainId: 1n,
+					nonce: 0n,
+					maxPriorityFeePerGas: 30000000000n,
+					maxFeePerGas: 20000000000n,
+					gasLimit: 21000n,
+					to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+					value: 0n,
+					data: new Uint8Array(),
+					accessList: [],
+					yParity: 0,
+					r: new Uint8Array(32).fill(1),
+					s: new Uint8Array(32).fill(2),
+				}),
+			).toThrow("Max priority fee per gas cannot exceed max fee per gas");
+		});
+
+		it("accepts maxPriorityFeePerGas equal to maxFeePerGas", () => {
+			const tx = TransactionEIP1559({
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 20000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(2),
+			});
+			expect(tx.maxPriorityFeePerGas).toBe(tx.maxFeePerGas);
 		});
 	});
 
