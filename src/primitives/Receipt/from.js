@@ -37,10 +37,10 @@ export function from(data) {
 	if (!data.from) {
 		throw new InvalidReceiptError("from address is required");
 	}
-	if (!data.cumulativeGasUsed) {
+	if (data.cumulativeGasUsed === undefined) {
 		throw new InvalidReceiptError("cumulativeGasUsed is required");
 	}
-	if (!data.gasUsed) {
+	if (data.gasUsed === undefined) {
 		throw new InvalidReceiptError("gasUsed is required");
 	}
 	if (!data.logs) {
@@ -56,7 +56,7 @@ export function from(data) {
 			data.logsBloom.length,
 		);
 	}
-	if (!data.status) {
+	if (data.status === undefined) {
 		throw new InvalidReceiptError("status is required");
 	}
 	if (!data.effectiveGasPrice) {

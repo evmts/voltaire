@@ -20,6 +20,9 @@
     <a href="https://github.com/evmts/voltaire/blob/main/LICENSE">
       <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License" />
     </a>
+    <a href="https://github.com/evmts/voltaire/releases">
+      <img src="https://img.shields.io/badge/status-beta-orange.svg" alt="Status: Beta" />
+    </a>
   </sup>
   <br/>
   <a href="https://playground.tevm.sh"><strong>Try it now in live playground →</strong></a>
