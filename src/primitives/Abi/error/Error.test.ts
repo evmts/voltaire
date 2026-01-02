@@ -169,7 +169,7 @@ describe("Error namespace", () => {
 		} as const;
 
 		const signature = Error.getSignature(error);
-		expect(signature).toBe("TupleError(tuple)");
+		expect(signature).toBe("TupleError((address,uint256))");
 	});
 
 	it("works with array parameter", () => {

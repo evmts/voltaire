@@ -1,3 +1,5 @@
+import { formatCanonicalType } from "../formatCanonicalType.js";
+
 /**
  * Get event signature string (e.g., "Transfer(address,address,uint256)")
  *
@@ -11,6 +13,6 @@
  * ```
  */
 export function getSignature(event) {
-	const inputs = event.inputs.map((p) => p.type).join(",");
+	const inputs = event.inputs.map((p) => formatCanonicalType(p)).join(",");
 	return `${event.name}(${inputs})`;
 }

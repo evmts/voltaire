@@ -104,7 +104,7 @@ describe("getSignature", () => {
 				outputs: [],
 			} as const;
 
-			expect(getSignature(func)).toBe("processData(tuple)");
+			expect(getSignature(func)).toBe("processData((address,uint256))");
 		});
 
 		it("handles tuple array", () => {
@@ -125,7 +125,7 @@ describe("getSignature", () => {
 				outputs: [],
 			} as const;
 
-			expect(getSignature(func)).toBe("processTuples(tuple[])");
+			expect(getSignature(func)).toBe("processTuples((address,uint256)[])");
 		});
 
 		it("handles nested tuples", () => {
@@ -149,7 +149,7 @@ describe("getSignature", () => {
 				outputs: [],
 			} as const;
 
-			expect(getSignature(func)).toBe("processNested(tuple)");
+			expect(getSignature(func)).toBe("processNested(((uint256)))");
 		});
 	});
 

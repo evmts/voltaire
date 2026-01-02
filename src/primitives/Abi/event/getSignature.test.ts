@@ -95,7 +95,7 @@ describe("getSignature", () => {
 			],
 		};
 
-		expect(getSignature(event)).toBe("TupleEvent(tuple)");
+		expect(getSignature(event)).toBe("TupleEvent((address,uint256))");
 	});
 
 	it("handles fixed-size arrays", () => {
