@@ -162,6 +162,70 @@ describe("Secp256k1.recoverPublicKey", () => {
 			);
 		});
 
+		it("should throw InvalidSignatureError for v=2", () => {
+			const message = Hash(sha256(new TextEncoder().encode("test")));
+			const invalidSig = {
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(1),
+				v: 2,
+			};
+
+			expect(() => recoverPublicKey(invalidSig, message)).toThrow(
+				InvalidSignatureError,
+			);
+			expect(() => recoverPublicKey(invalidSig, message)).toThrow(
+				"Invalid v value: 2",
+			);
+		});
+
+		it("should throw InvalidSignatureError for v=26", () => {
+			const message = Hash(sha256(new TextEncoder().encode("test")));
+			const invalidSig = {
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(1),
+				v: 26,
+			};
+
+			expect(() => recoverPublicKey(invalidSig, message)).toThrow(
+				InvalidSignatureError,
+			);
+			expect(() => recoverPublicKey(invalidSig, message)).toThrow(
+				"Invalid v value: 26",
+			);
+		});
+
+		it("should throw InvalidSignatureError for v=29", () => {
+			const message = Hash(sha256(new TextEncoder().encode("test")));
+			const invalidSig = {
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(1),
+				v: 29,
+			};
+
+			expect(() => recoverPublicKey(invalidSig, message)).toThrow(
+				InvalidSignatureError,
+			);
+			expect(() => recoverPublicKey(invalidSig, message)).toThrow(
+				"Invalid v value: 29",
+			);
+		});
+
+		it("should throw InvalidSignatureError for v=100", () => {
+			const message = Hash(sha256(new TextEncoder().encode("test")));
+			const invalidSig = {
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(1),
+				v: 100,
+			};
+
+			expect(() => recoverPublicKey(invalidSig, message)).toThrow(
+				InvalidSignatureError,
+			);
+			expect(() => recoverPublicKey(invalidSig, message)).toThrow(
+				"Invalid v value: 100",
+			);
+		});
+
 		it("should throw InvalidSignatureError for all-zero r", () => {
 			const message = Hash(sha256(new TextEncoder().encode("test")));
 			const invalidSig = {

@@ -62,6 +62,62 @@ describe("Secp256k1.recoverPublicKeyFromHash", () => {
 		).toThrow("Invalid v value: 30");
 	});
 
+	it("should throw on invalid v=2", () => {
+		const hash = Hash.keccak256String("Test");
+		const privateKey = PrivateKey.from(
+			"0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318",
+		);
+
+		const signature = Secp256k1.signHash(hash, privateKey);
+		const invalidSignature = { ...signature, v: 2 };
+
+		expect(() =>
+			Secp256k1.recoverPublicKeyFromHash(invalidSignature, hash),
+		).toThrow("Invalid v value: 2");
+	});
+
+	it("should throw on invalid v=26", () => {
+		const hash = Hash.keccak256String("Test");
+		const privateKey = PrivateKey.from(
+			"0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318",
+		);
+
+		const signature = Secp256k1.signHash(hash, privateKey);
+		const invalidSignature = { ...signature, v: 26 };
+
+		expect(() =>
+			Secp256k1.recoverPublicKeyFromHash(invalidSignature, hash),
+		).toThrow("Invalid v value: 26");
+	});
+
+	it("should throw on invalid v=29", () => {
+		const hash = Hash.keccak256String("Test");
+		const privateKey = PrivateKey.from(
+			"0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318",
+		);
+
+		const signature = Secp256k1.signHash(hash, privateKey);
+		const invalidSignature = { ...signature, v: 29 };
+
+		expect(() =>
+			Secp256k1.recoverPublicKeyFromHash(invalidSignature, hash),
+		).toThrow("Invalid v value: 29");
+	});
+
+	it("should throw on invalid v=100", () => {
+		const hash = Hash.keccak256String("Test");
+		const privateKey = PrivateKey.from(
+			"0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318",
+		);
+
+		const signature = Secp256k1.signHash(hash, privateKey);
+		const invalidSignature = { ...signature, v: 100 };
+
+		expect(() =>
+			Secp256k1.recoverPublicKeyFromHash(invalidSignature, hash),
+		).toThrow("Invalid v value: 100");
+	});
+
 	it("should handle v values 0 and 1", () => {
 		const hash = Hash.keccak256String("Test");
 		const privateKey = PrivateKey.from(
