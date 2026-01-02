@@ -1520,14 +1520,6 @@
               "guides/contract-interaction",
               "guides/event-listening",
               "guides/send-eth-tokens",
-              "primitives/calldata/fundamentals",
-              "primitives/receipt/index",
-              "primitives/transaction-hash/index",
-              "primitives/transaction-index/index",
-              "primitives/transaction-status/index",
-              "primitives/log-index/index",
-              "primitives/block-hash/index",
-              "primitives/block-number/index",
               {
                 "group": "Integrations",
                 "pages": [
@@ -1588,7 +1580,7 @@
             ]
           },
           {
-            "group": "Swift",
+            "group": "Swift (Beta)",
             "icon": "mobile-screen",
             "pages": [
               "swift/index",
@@ -1629,7 +1621,7 @@
             ]
           },
           {
-            "group": "Zig",
+            "group": "Zig (Beta)",
             "icon": "bolt",
             "pages": [
               {
@@ -1991,7 +1983,9 @@
                       "zig/primitives/network-id/index",
                       "zig/primitives/node-info/index",
                       "zig/primitives/peer-id/index",
-                      "zig/primitives/peer-info/index"
+                      "zig/primitives/peer-info/index",
+                      "zig/primitives/protocol-version/index",
+                      "zig/primitives/relay-data/index"
                     ]
                   },
                   {
@@ -2016,27 +2010,6 @@
                       "zig/primitives/state-proof/index",
                       "zig/primitives/storage-proof/index",
                       "zig/primitives/state-root/index"
-                    ]
-                  },
-                  {
-                    "group": "Network",
-                    "icon": {
-                      "name": "network-wired",
-                      "style": "solid"
-                    },
-                    "pages": [
-                      "zig/primitives/protocol-version/index",
-                      "zig/primitives/relay-data/index"
-                    ]
-                  },
-                  {
-                    "group": "Legacy",
-                    "icon": {
-                      "name": "clock-rotate-left",
-                      "style": "solid"
-                    },
-                    "pages": [
-                      "zig/primitives/uncle/index"
                     ]
                   }
                 ]
@@ -2638,15 +2611,7 @@
                 "group": "Guides",
                 "icon": "book-open",
                 "pages": [
-                  "zig/guides/index",
-                  "zig/primitives/calldata/fundamentals",
-                  "zig/primitives/receipt/index",
-                  "zig/primitives/transaction-hash/index",
-                  "zig/primitives/transaction-index/index",
-                  "zig/primitives/transaction-status/index",
-                  "zig/primitives/log-index/index",
-                  "zig/primitives/block-hash/index",
-                  "zig/primitives/block-number/index"
+                  "zig/guides/index"
                 ]
               },
               {
