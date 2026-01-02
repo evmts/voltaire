@@ -31,6 +31,7 @@ export default createTsUpOptions({
 		"src/primitives/Abi/index.ts",
 		"src/primitives/AccessList/index.ts",
 		"src/primitives/Address/index.ts",
+		"src/primitives/Address/functional.ts",
 		"src/primitives/Authorization/index.ts",
 		"src/primitives/Base64/index.ts",
 		"src/primitives/BinaryTree/index.ts",
@@ -85,5 +86,7 @@ export default createTsUpOptions({
 		"src/crypto/SHA256/index.ts",
 		// WASM
 		"src/wasm/index.ts",
+		// Functional API entrypoint
+		"src/functional.ts",
 	],
 });

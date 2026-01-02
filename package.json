@@ -58,6 +58,16 @@
 				"default": "./dist/wasm/index.cjs"
 			}
 		},
+		"./functional": {
+			"import": {
+				"types": "./types/functional.d.ts",
+				"default": "./dist/functional.js"
+			},
+			"require": {
+				"types": "./types/functional.d.ts",
+				"default": "./dist/functional.cjs"
+			}
+		},
 		"./Abi": {
 			"import": {
 				"types": "./types/primitives/Abi/index.d.ts",
@@ -86,6 +96,16 @@
 			"require": {
 				"types": "./types/primitives/Address/index.d.ts",
 				"default": "./dist/primitives/Address/index.cjs"
+			}
+		},
+		"./Address/functional": {
+			"import": {
+				"types": "./types/primitives/Address/functional.d.ts",
+				"default": "./dist/primitives/Address/functional.js"
+			},
+			"require": {
+				"types": "./types/primitives/Address/functional.d.ts",
+				"default": "./dist/primitives/Address/functional.cjs"
 			}
 		},
 		"./Authorization": {
