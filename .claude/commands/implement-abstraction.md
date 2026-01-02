@@ -749,4 +749,43 @@ Before completing, verify:
 
 ---
 
+## Available Utilities (src/utils/)
+
+When implementing abstractions, use these built-in utilities instead of reimplementing:
+
+```typescript
+import {
+  retryWithBackoff, withRetry,           // Exponential backoff retry
+  poll, pollForReceipt, pollWithBackoff, // Polling with timeout
+  RateLimiter, throttle, debounce,       // Rate limiting
+  BatchQueue, AsyncQueue, createBatchedFunction, // Batch processing
+  withTimeout, sleep, createDeferred,    // Timeout/async control
+} from '../../src/utils/index.js';
+```
+
+| Utility | Use Case |
+|---------|----------|
+| `retryWithBackoff(fn, opts)` | Retry RPC calls with exponential backoff + jitter |
+| `withRetry(fn, opts)` | Wrap function with automatic retry |
+| `poll(fn, opts)` | Poll until condition met or timeout |
+| `pollForReceipt(hash, getReceipt)` | Wait for tx confirmation |
+| `RateLimiter({ maxRequests, interval })` | Token bucket rate limiting |
+| `BatchQueue({ maxBatchSize, maxWaitTime, processBatch })` | Auto-batch requests |
+| `createBatchedFunction(fn, size, wait)` | Wrap function with batching |
+| `AsyncQueue(fn, { concurrency })` | Limit concurrent operations |
+| `withTimeout(promise, { ms })` | Add timeout to promise |
+| `sleep(ms, signal?)` | Cancellable delay |
+| `createDeferred()` | Manual promise resolve/reject |
+
+**Example - Batched Provider**:
+```typescript
+const batchedCall = createBatchedFunction(
+  async (calls) => provider.request({ method: 'eth_call', params: calls }),
+  50,   // batch up to 50
+  10    // wait max 10ms
+);
+```
+
+---
+
 **Execute now with abstraction: $ARGUMENTS**
