@@ -26,7 +26,10 @@ export function assertValid(receipt) {
 	if (hasStatus && hasRoot) {
 		throw new InvalidReceiptError(
 			"Receipt cannot have both status and root (Byzantium fork incompatibility)",
-			{ expected: "either status (post-Byzantium) or root (pre-Byzantium), not both" },
+			{
+				expected:
+					"either status (post-Byzantium) or root (pre-Byzantium), not both",
+			},
 		);
 	}
 

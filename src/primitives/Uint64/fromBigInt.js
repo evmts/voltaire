@@ -18,10 +18,9 @@ import { Uint64NegativeError, Uint64OverflowError } from "./errors.js";
  */
 export function fromBigInt(value) {
 	if (value < 0n) {
-		throw new Uint64NegativeError(
-			`Uint64 value cannot be negative: ${value}`,
-			{ value },
-		);
+		throw new Uint64NegativeError(`Uint64 value cannot be negative: ${value}`, {
+			value,
+		});
 	}
 
 	if (value > MAX) {

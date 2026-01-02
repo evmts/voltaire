@@ -1,4 +1,7 @@
-import { InvalidAlgorithmError, InvalidSignatureFormatError } from "./errors.js";
+import {
+	InvalidAlgorithmError,
+	InvalidSignatureFormatError,
+} from "./errors.js";
 import { getR } from "./getR.js";
 import { getS } from "./getS.js";
 import { getV } from "./getV.js";
@@ -20,11 +23,14 @@ import { getV } from "./getV.js";
  */
 export function toTuple(signature) {
 	if (signature.algorithm !== "secp256k1") {
-		throw new InvalidAlgorithmError("toTuple only supports secp256k1 signatures", {
-			value: signature.algorithm,
-			expected: "secp256k1",
-			code: "UNSUPPORTED_ALGORITHM_FOR_TUPLE",
-		});
+		throw new InvalidAlgorithmError(
+			"toTuple only supports secp256k1 signatures",
+			{
+				value: signature.algorithm,
+				expected: "secp256k1",
+				code: "UNSUPPORTED_ALGORITHM_FOR_TUPLE",
+			},
+		);
 	}
 
 	const r = getR(signature);
@@ -32,11 +38,14 @@ export function toTuple(signature) {
 	const v = getV(signature);
 
 	if (v === undefined) {
-		throw new InvalidSignatureFormatError("Signature must have v value for tuple conversion", {
-			value: signature,
-			expected: "secp256k1 signature with v value",
-			code: "MISSING_V_VALUE",
-		});
+		throw new InvalidSignatureFormatError(
+			"Signature must have v value for tuple conversion",
+			{
+				value: signature,
+				expected: "secp256k1 signature with v value",
+				code: "MISSING_V_VALUE",
+			},
+		);
 	}
 
 	// Calculate yParity from v

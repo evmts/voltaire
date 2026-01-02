@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import * as TransactionHash from "./index.js";
 import {
 	InvalidTransactionHashFormatError,
 	InvalidTransactionHashLengthError,
 } from "./errors.js";
+import * as TransactionHash from "./index.js";
 
 describe("TransactionHash", () => {
 	const testHash =

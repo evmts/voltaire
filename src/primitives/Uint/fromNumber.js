@@ -19,9 +19,12 @@ import { from } from "./from.js";
  */
 export function fromNumber(value) {
 	if (!Number.isInteger(value)) {
-		throw new UintNotIntegerError(`Uint256 value must be an integer: ${value}`, {
-			value,
-		});
+		throw new UintNotIntegerError(
+			`Uint256 value must be an integer: ${value}`,
+			{
+				value,
+			},
+		);
 	}
 	return from(value);
 }

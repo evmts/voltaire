@@ -33,10 +33,9 @@ export function fromHex(hex) {
 	const value = BigInt(hex.startsWith("0x") ? hex : `0x${hex}`);
 
 	if (value < 0n) {
-		throw new Uint32NegativeError(
-			`Uint32 value cannot be negative: ${value}`,
-			{ value },
-		);
+		throw new Uint32NegativeError(`Uint32 value cannot be negative: ${value}`, {
+			value,
+		});
 	}
 
 	if (value > BigInt(MAX)) {

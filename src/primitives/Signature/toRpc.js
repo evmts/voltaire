@@ -20,11 +20,14 @@ import { getV } from "./getV.js";
  */
 export function toRpc(signature) {
 	if (signature.algorithm !== "secp256k1") {
-		throw new InvalidAlgorithmError("toRpc only supports secp256k1 signatures", {
-			value: signature.algorithm,
-			expected: "secp256k1",
-			code: "UNSUPPORTED_ALGORITHM_FOR_RPC",
-		});
+		throw new InvalidAlgorithmError(
+			"toRpc only supports secp256k1 signatures",
+			{
+				value: signature.algorithm,
+				expected: "secp256k1",
+				code: "UNSUPPORTED_ALGORITHM_FOR_RPC",
+			},
+		);
 	}
 
 	const r = getR(signature);

@@ -50,7 +50,11 @@ export function from(data) {
 		throw new InvalidReceiptError("logsBloom is required");
 	}
 	if (data.logsBloom.length !== 256) {
-		throw new InvalidReceiptLengthError("logsBloom", 256, data.logsBloom.length);
+		throw new InvalidReceiptLengthError(
+			"logsBloom",
+			256,
+			data.logsBloom.length,
+		);
 	}
 	if (!data.status) {
 		throw new InvalidReceiptError("status is required");

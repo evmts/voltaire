@@ -18,9 +18,12 @@ import type { Uint256Type } from "./Uint256Type.js";
  */
 export function fromNumber(value: number): Uint256Type {
 	if (!Number.isInteger(value)) {
-		throw new UintNotIntegerError(`Uint256 value must be an integer: ${value}`, {
-			value,
-		});
+		throw new UintNotIntegerError(
+			`Uint256 value must be an integer: ${value}`,
+			{
+				value,
+			},
+		);
 	}
 	return from(value);
 }

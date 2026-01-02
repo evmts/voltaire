@@ -51,10 +51,13 @@ export function from(value: bigint | number | string): Uint256Type {
 	}
 
 	if (bigintValue > MAX) {
-		throw new UintOverflowError(`Uint256 value exceeds maximum: ${bigintValue}`, {
-			value: bigintValue,
-			max: MAX,
-		});
+		throw new UintOverflowError(
+			`Uint256 value exceeds maximum: ${bigintValue}`,
+			{
+				value: bigintValue,
+				max: MAX,
+			},
+		);
 	}
 
 	return bigintValue as Uint256Type;

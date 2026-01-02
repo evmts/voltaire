@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as TransactionIndex from "./index.js";
 import { InvalidTransactionIndexError } from "./errors.js";
+import * as TransactionIndex from "./index.js";
 
 describe("TransactionIndex", () => {
 	describe("from", () => {

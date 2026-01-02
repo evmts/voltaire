@@ -22,6 +22,16 @@ export * as types from "./types/index.js";
 export * as wallet from "./wallet/methods.js";
 export * as web3 from "./web3/methods.js";
 
+// Re-export base JSON-RPC primitive types for JSDoc consumers
+export type {
+    Quantity,
+    Hash,
+    BlockTag,
+    BlockSpec,
+    Data,
+    Block,
+} from "./types/index.js";
+
 // ============================================================================
 // Rpc Namespace - Request Constructor API
 // ============================================================================

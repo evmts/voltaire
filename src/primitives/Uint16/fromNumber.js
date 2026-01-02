@@ -30,10 +30,9 @@ export function fromNumber(value) {
 	}
 
 	if (value < 0) {
-		throw new Uint16NegativeError(
-			`Uint16 value cannot be negative: ${value}`,
-			{ value },
-		);
+		throw new Uint16NegativeError(`Uint16 value cannot be negative: ${value}`, {
+			value,
+		});
 	}
 
 	if (value > MAX) {

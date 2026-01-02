@@ -28,7 +28,9 @@ export function fromHex(hex) {
 	const value = Number.parseInt(cleanHex, 16);
 
 	if (Number.isNaN(value)) {
-		throw new Uint8InvalidHexError(`Invalid hex string: ${hex}`, { value: hex });
+		throw new Uint8InvalidHexError(`Invalid hex string: ${hex}`, {
+			value: hex,
+		});
 	}
 
 	if (value < 0) {

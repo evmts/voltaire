@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { InvalidAlgorithmError, InvalidSignatureFormatError } from "./errors.js";
+import {
+	InvalidAlgorithmError,
+	InvalidSignatureFormatError,
+} from "./errors.js";
 import { fromSecp256k1 } from "./fromSecp256k1.js";
 import { fromTuple } from "./fromTuple.js";
 import { toTuple } from "./toTuple.js";
@@ -42,7 +45,9 @@ describe("Signature Tuple format", () => {
 			try {
 				toTuple(sig);
 			} catch (e) {
-				expect((e as InvalidSignatureFormatError).name).toBe("InvalidSignatureFormatError");
+				expect((e as InvalidSignatureFormatError).name).toBe(
+					"InvalidSignatureFormatError",
+				);
 			}
 		});
 

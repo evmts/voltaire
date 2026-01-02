@@ -3,8 +3,8 @@
  * Uses WebAssembly bindings to Zig implementation
  */
 
-import { InvalidTransactionTypeError } from "../errors/index.js";
 import * as loader from "../../wasm-loader/loader.js";
+import { InvalidTransactionTypeError } from "../errors/index.js";
 
 /**
  * Transaction type enumeration

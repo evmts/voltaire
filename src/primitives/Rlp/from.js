@@ -1,5 +1,5 @@
-import { isData } from "./isData.js";
 import { RlpEncodingError } from "./errors.js";
+import { isData } from "./isData.js";
 
 /**
  * Create RLP data from various inputs

@@ -31,10 +31,9 @@ export function fromNumber(value) {
 	}
 
 	if (value < 0) {
-		throw new Uint64NegativeError(
-			`Uint64 value cannot be negative: ${value}`,
-			{ value },
-		);
+		throw new Uint64NegativeError(`Uint64 value cannot be negative: ${value}`, {
+			value,
+		});
 	}
 
 	const bigintValue = BigInt(Math.floor(value));

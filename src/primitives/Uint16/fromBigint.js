@@ -18,10 +18,9 @@ import { Uint16NegativeError, Uint16OverflowError } from "./errors.js";
  */
 export function fromBigint(value) {
 	if (value < 0n) {
-		throw new Uint16NegativeError(
-			`Uint16 value cannot be negative: ${value}`,
-			{ value },
-		);
+		throw new Uint16NegativeError(`Uint16 value cannot be negative: ${value}`, {
+			value,
+		});
 	}
 
 	if (value > BigInt(MAX)) {

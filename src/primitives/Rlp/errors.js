@@ -4,7 +4,8 @@
  */
 
 // Re-export the typed errors from RlpError.ts
-export { RlpEncodingError, RlpDecodingError } from "./RlpError.js";
+export { RlpDecodingError, RlpEncodingError } from "./RlpError.js";
+
 import { RlpDecodingError } from "./RlpError.js";
 
 /**
