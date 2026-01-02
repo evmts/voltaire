@@ -5,14 +5,14 @@
   #navbar,
   [id="navbar"],
   nav {
-    background-color: #280D2E !important;
+    background-color: #0a0a0a !important;
   }
 }
 
 .dark #navbar,
 .dark [id="navbar"],
 .dark nav {
-  background-color: #280D2E !important;
+  background-color: #0a0a0a !important;
 }
 
 /* Homepage critical styles - prevent layout shift */
