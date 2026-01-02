@@ -294,7 +294,9 @@ describe("Int64", () => {
 				expect.fail("Should throw");
 			} catch (e) {
 				expect((e as Error).name).toBe("InvalidRangeError");
-				expect((e as Error).message).toContain("exceeds Number.MAX_SAFE_INTEGER");
+				expect((e as Error).message).toContain(
+					"exceeds Number.MAX_SAFE_INTEGER",
+				);
 			}
 		});
 	});

@@ -17,20 +17,19 @@ export * as hardhat from "./hardhat/methods.js";
 export * from "./JsonRpc.js";
 export * as net from "./net/methods.js";
 export * as txpool from "./txpool/methods.js";
+// Re-export base JSON-RPC primitive types for JSDoc consumers
+export type {
+	Block,
+	BlockSpec,
+	BlockTag,
+	Data,
+	Hash,
+	Quantity,
+} from "./types/index.js";
 // Export shared types
 export * as types from "./types/index.js";
 export * as wallet from "./wallet/methods.js";
 export * as web3 from "./web3/methods.js";
-
-// Re-export base JSON-RPC primitive types for JSDoc consumers
-export type {
-    Quantity,
-    Hash,
-    BlockTag,
-    BlockSpec,
-    Data,
-    Block,
-} from "./types/index.js";
 
 // ============================================================================
 // Rpc Namespace - Request Constructor API
