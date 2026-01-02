@@ -28,16 +28,34 @@ describe("Int16", () => {
 			expect(Int16.toNumber(value)).toBe(32767);
 		});
 
-		it("throws on value below INT16_MIN", () => {
-			expect(() => Int16.from(-32769)).toThrow("out of range");
+		it("throws IntegerUnderflowError on value below INT16_MIN", () => {
+			try {
+				Int16.from(-32769);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+				expect((e as Error).message).toContain("out of range");
+			}
 		});
 
-		it("throws on value above INT16_MAX", () => {
-			expect(() => Int16.from(32768)).toThrow("out of range");
+		it("throws IntegerOverflowError on value above INT16_MAX", () => {
+			try {
+				Int16.from(32768);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+				expect((e as Error).message).toContain("out of range");
+			}
 		});
 
-		it("throws on non-integer", () => {
-			expect(() => Int16.from(42.5)).toThrow("must be an integer");
+		it("throws InvalidFormatError on non-integer", () => {
+			try {
+				Int16.from(42.5);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidFormatError");
+				expect((e as Error).message).toContain("must be an integer");
+			}
 		});
 
 		it("creates from bigint", () => {

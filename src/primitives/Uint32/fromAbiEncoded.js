@@ -1,3 +1,5 @@
+import { Uint32InvalidLengthError } from "./errors.js";
+
 /**
  * Create Uint32 from ABI-encoded bytes (32 bytes, big-endian, left-padded)
  *
@@ -5,7 +7,7 @@
  * @since 0.0.0
  * @param {Uint8Array} bytes - ABI-encoded byte array (32 bytes)
  * @returns {import('./Uint32Type.js').Uint32Type} Uint32 value
- * @throws {Error} If bytes length is not 32
+ * @throws {Uint32InvalidLengthError} If bytes length is not 32
  * @example
  * ```javascript
  * import * as Uint32 from './primitives/Uint32/index.js';
@@ -16,8 +18,9 @@
  */
 export function fromAbiEncoded(bytes) {
 	if (bytes.length !== 32) {
-		throw new Error(
+		throw new Uint32InvalidLengthError(
 			`Uint32 ABI-encoded bytes must be 32 bytes, got ${bytes.length}`,
+			{ value: bytes, expected: "32 bytes", actualLength: bytes.length },
 		);
 	}
 

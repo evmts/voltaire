@@ -1,4 +1,5 @@
 import { SIZE } from "./constants.js";
+import { Uint32InvalidLengthError } from "./errors.js";
 
 /**
  * Create Uint32 from bytes (big-endian, 4 bytes)
@@ -7,7 +8,7 @@ import { SIZE } from "./constants.js";
  * @since 0.0.0
  * @param {Uint8Array} bytes - byte array (must be exactly 4 bytes)
  * @returns {import('./Uint32Type.js').Uint32Type} Uint32 value
- * @throws {Error} If bytes length is not 4
+ * @throws {Uint32InvalidLengthError} If bytes length is not 4
  * @example
  * ```javascript
  * import * as Uint32 from './primitives/Uint32/index.js';
@@ -17,8 +18,9 @@ import { SIZE } from "./constants.js";
  */
 export function fromBytes(bytes) {
 	if (bytes.length !== SIZE) {
-		throw new Error(
+		throw new Uint32InvalidLengthError(
 			`Uint32 bytes must be exactly ${SIZE} bytes, got ${bytes.length}`,
+			{ value: bytes, expected: `${SIZE} bytes`, actualLength: bytes.length },
 		);
 	}
 
