@@ -32,12 +32,12 @@ export async function encrypt(plaintext, key, nonce, additionalData) {
 		const ciphertext = await crypto.subtle.encrypt(
 			{
 				name: "AES-GCM",
-				iv: /** @type {BufferSource} */ (nonce),
-				additionalData: /** @type {BufferSource | undefined} */ (additionalData),
+				iv: /** @type {*} */ (nonce),
+				additionalData: /** @type {*} */ (additionalData),
 				tagLength: TAG_SIZE * 8,
 			},
 			key,
-			plaintext,
+			/** @type {*} */ (plaintext),
 		);
 
 		return new Uint8Array(ciphertext);

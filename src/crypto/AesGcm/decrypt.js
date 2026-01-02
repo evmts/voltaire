@@ -38,12 +38,12 @@ export async function decrypt(ciphertext, key, nonce, additionalData) {
 		const plaintext = await crypto.subtle.decrypt(
 			{
 				name: "AES-GCM",
-				iv: /** @type {BufferSource} */ (nonce),
-				additionalData: /** @type {BufferSource | undefined} */ (additionalData),
+				iv: /** @type {*} */ (nonce),
+				additionalData: /** @type {*} */ (additionalData),
 				tagLength: TAG_SIZE * 8,
 			},
 			key,
-			ciphertext,
+			/** @type {*} */ (ciphertext),
 		);
 
 		return new Uint8Array(plaintext);
