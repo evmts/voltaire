@@ -1,0 +1,218 @@
+---
+title: '[TS/JS] docs/skills/ethers-provider.test.ts'
+source: 'docs/skills/ethers-provider.test.ts'
+---
+
+> Auto-generated from test file: docs/skills/ethers-provider.test.ts
+
+```typescript
+/**
+ * Tests for ethers-style provider playbook
+ * @see /docs/playbooks/ethers-provider.mdx
+ *
+ * Note: The playbook documents a REFERENCE IMPLEMENTATION in examples/ethers-provider/.
+ * Tests cover the data structures and patterns shown in the guide.
+ *
+ * API DISCREPANCIES:
+ * - EthersProvider is in examples/ethers-provider/, not library export
+ * - Provider patterns are documented as copyable reference implementation
+ */
+import { describe, expect, it } from "vitest";
+
+describe("Ethers Provider Playbook", () => {
+	it("should define Network structure", () => {
+		// From playbook: getNetwork returns Network
+		interface Network {
+			name: string;
+			chainId: bigint;
+		}
+
+		const mainnet: Network = {
+			name: "mainnet",
+			chainId: 1n,
+		};
+
+		expect(mainnet.chainId).toBe(1n);
+	});
+
+	it("should define FeeData structure", () => {
+		// From playbook: getFeeData returns FeeData
+		interface FeeData {
+			gasPrice: bigint;
+			maxFeePerGas: bigint;
+			maxPriorityFeePerGas: bigint;
+		}
+
+		const feeData: FeeData = {
+			gasPrice: 30n * 10n ** 9n, // 30 gwei
+			maxFeePerGas: 60n * 10n ** 9n, // 60 gwei
+			maxPriorityFeePerGas: 1n * 10n ** 9n, // 1 gwei
+		};
+
+		expect(feeData.gasPrice).toBe(30_000_000_000n);
+	});
+
+	it("should handle configuration options", () => {
+		// From playbook: provider configuration
+		const config = {
+			cacheTimeout: 250, // Request caching (ms)
+			pollingInterval: 4000, // Block polling interval (ms)
+			polling: false, // Use polling for events
+			staticNetwork: true, // Skip network detection
+			batchStallTime: 10,
+			batchMaxSize: 1 << 20,
+			batchMaxCount: 100,
+		};
+
+		expect(config.cacheTimeout).toBe(250);
+		expect(config.pollingInterval).toBe(4000);
+	});
+
+	it("should define account query methods", () => {
+		// From playbook: account methods
+		const accountMethods = [
+			"getBalance",
+			"getTransactionCount",
+			"getCode",
+			"getStorage",
+		];
+
+		expect(accountMethods).toContain("getBalance");
+		expect(accountMethods).toContain("getCode");
+	});
+
+	it("should define transaction methods", () => {
+		// From playbook: transaction methods
+		const txMethods = [
+			"call",
+			"estimateGas",
+			"broadcastTransaction",
+			"getTransaction",
+			"getTransactionReceipt",
+			"waitForTransaction",
+		];
+
+		expect(txMethods).toContain("call");
+		expect(txMethods).toContain("waitForTransaction");
+	});
+
+	it("should define block methods", () => {
+		// From playbook: block methods
+		const blockMethods = ["getBlock", "getBlockNumber"];
+
+		expect(blockMethods).toContain("getBlock");
+	});
+
+	it("should handle error codes", () => {
+		// From playbook: error codes
+		const errorCodes = [
+			"CALL_EXCEPTION",
+			"INSUFFICIENT_FUNDS",
+			"NONCE_EXPIRED",
+			"REPLACEMENT_UNDERPRICED",
+			"NETWORK_ERROR",
+			"TIMEOUT",
+			"UNSUPPORTED_OPERATION",
+			"ACTION_REJECTED",
+		];
+
+		expect(errorCodes).toContain("CALL_EXCEPTION");
+		expect(errorCodes).toContain("INSUFFICIENT_FUNDS");
+	});
+
+	it("should handle network detection", () => {
+		// From playbook: built-in network detection
+		const networks: Record<number, string> = {
+			1: "mainnet",
+			11155111: "sepolia",
+			5: "goerli",
+			42161: "arbitrum",
+			10: "optimism",
+			137: "polygon",
+			8453: "base",
+		};
+
+		expect(networks[1]).toBe("mainnet");
+		expect(networks[8453]).toBe("base");
+	});
+
+	it("should handle getLogs filter structure", () => {
+		// From playbook: getLogs filter
+		const filter = {
+			address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			topics: [
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+			],
+			fromBlock: 18500000n,
+			toBlock: "latest",
+		};
+
+		expect(filter.address).toBe("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+		expect(filter.fromBlock).toBe(18500000n);
+	});
+
+	it("should handle event subscription methods", () => {
+		// From playbook: event subscription
+		const eventMethods = [
+			"on",
+			"once",
+			"off",
+			"removeAllListeners",
+			"listenerCount",
+			"listeners",
+		];
+
+		expect(eventMethods).toContain("on");
+		expect(eventMethods).toContain("off");
+	});
+
+	it("should handle lifecycle methods", () => {
+		// From playbook: lifecycle
+		const lifecycleMethods = ["pause", "resume", "destroy"];
+		const lifecycleProperties = ["paused", "destroyed"];
+
+		expect(lifecycleMethods).toContain("pause");
+		expect(lifecycleProperties).toContain("paused");
+	});
+
+	it("should handle request batching", () => {
+		// From playbook: automatic request batching
+		const batchConfig = {
+			batchStallTime: 10, // ms before sending batch
+			batchMaxCount: 100, // max requests per batch
+			batchMaxSize: 1 << 20, // max batch size in bytes (1MB)
+		};
+
+		expect(batchConfig.batchStallTime).toBe(10);
+		expect(batchConfig.batchMaxCount).toBe(100);
+	});
+
+	it("should handle request caching", () => {
+		// From playbook: request caching
+		const cacheConfig = {
+			cacheTimeout: 250, // -1 to disable
+		};
+
+		expect(cacheConfig.cacheTimeout).toBe(250);
+	});
+
+	it("should define JSON-RPC send method", () => {
+		// From playbook: raw JSON-RPC
+		interface Provider {
+			send(method: string, params: unknown[]): Promise<unknown>;
+		}
+
+		const methods: (keyof Provider)[] = ["send"];
+
+		expect(methods).toContain("send");
+	});
+
+	it("should handle waitForTransaction confirmations", () => {
+		// From playbook: wait for confirmations
+		const confirmations = 3;
+
+		expect(confirmations).toBe(3);
+	});
+});
+
+```

@@ -133,6 +133,13 @@ describe("BytesType", () => {
 			const result = Bytes.concat(a);
 			expect(result).toEqual(new Uint8Array([0x01, 0x02]));
 		});
+
+		it("should return empty Uint8Array when called with no arguments", () => {
+			const result = Bytes.concat();
+			expect(result).toEqual(new Uint8Array(0));
+			expect(result).toBeInstanceOf(Uint8Array);
+			expect(result.length).toBe(0);
+		});
 	});
 
 	describe("slice", () => {
