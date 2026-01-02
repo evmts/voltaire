@@ -29,18 +29,21 @@ export type ReplaceOptions = {
  */
 export function replaceWith(this: Any, options: ReplaceOptions = {}): Any {
 	const bumpPercentage = options.bumpPercentage ?? 10;
-	const multiplier = 1n + BigInt(bumpPercentage) / 100n;
 
 	if ("gasPrice" in this) {
-		const newGasPrice = options.gasPrice ?? this.gasPrice * multiplier;
+		const newGasPrice =
+			options.gasPrice ??
+			(this.gasPrice * (100n + BigInt(bumpPercentage))) / 100n;
 		return { ...this, gasPrice: newGasPrice } as Legacy | EIP2930;
 	}
 
 	// EIP-1559+ transactions
 	const newMaxFeePerGas =
-		options.maxFeePerGas ?? this.maxFeePerGas * multiplier;
+		options.maxFeePerGas ??
+		(this.maxFeePerGas * (100n + BigInt(bumpPercentage))) / 100n;
 	const newMaxPriorityFeePerGas =
-		options.maxPriorityFeePerGas ?? this.maxPriorityFeePerGas * multiplier;
+		options.maxPriorityFeePerGas ??
+		(this.maxPriorityFeePerGas * (100n + BigInt(bumpPercentage))) / 100n;
 
 	return {
 		...this,
