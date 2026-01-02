@@ -1,0 +1,103 @@
+---
+title: Arbitrum
+description: Build on Arbitrum One and Arbitrum Nova
+---
+
+<Warning>
+**Looking for Contributors!** This Skill needs an implementation.
+
+Contributing a Skill involves:
+1. Writing a reference implementation with full functionality
+2. Adding comprehensive tests
+3. Writing documentation with usage examples
+
+See the [ethers-provider Skill](https://github.com/evmts/voltaire/tree/main/examples/ethers-provider) for an example of a complete Skill implementation.
+
+Interested? Open an issue or PR at [github.com/evmts/voltaire](https://github.com/evmts/voltaire).
+</Warning>
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+Build on Arbitrum with native bridging and Stylus support.
+
+## Planned Implementation
+
+### Provider Setup
+
+```typescript
+import { Arbitrum } from './Arbitrum.js';
+
+const arb = Arbitrum({
+  l1Provider,
+  l2Provider,
+  l1Gateway: L1_GATEWAY_ROUTER,
+  l2Gateway: L2_GATEWAY_ROUTER,
+});
+```
+
+### Bridge Assets
+
+```typescript
+// Deposit ETH to L2
+await arb.depositEth({
+  amount: parseEther('1'),
+  signer: l1Signer,
+});
+
+// Deposit ERC20
+await arb.depositToken({
+  l1Token: USDC_L1,
+  amount: parseUnits('1000', 6),
+  signer: l1Signer,
+});
+
+// Withdraw to L1 (7 day delay)
+await arb.withdrawEth({
+  amount: parseEther('1'),
+  signer: l2Signer,
+});
+```
+
+### Retryable Tickets
+
+```typescript
+// Create L1->L2 message
+const ticket = await arb.createRetryableTicket({
+  to: l2Contract,
+  l2CallValue: 0n,
+  data: encodedCall,
+  maxSubmissionCost,
+  gasLimit: 1000000n,
+  maxFeePerGas,
+  signer: l1Signer,
+});
+
+// Redeem failed ticket
+await arb.redeemRetryable({
+  ticketId,
+  signer: l2Signer,
+});
+```
+
+### ArbOS Precompiles
+
+```typescript
+// Get L1 block number
+const l1Block = await arb.arbSys.arbBlockNumber();
+
+// Get L2 to L1 tx count
+const count = await arb.arbSys.sendTxToL1Count();
+```
+
+## Resources
+
+- [Arbitrum Documentation](https://docs.arbitrum.io/)
+- [Arbitrum SDK](https://github.com/OffchainLabs/arbitrum-sdk)
+- [Stylus Documentation](https://docs.arbitrum.io/stylus/stylus-overview)
+
+## Related
+
+- [op-stack](/skills/op-stack) — OP Stack chains
+- [tempo](/skills/tempo) — Tempo chain

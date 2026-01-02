@@ -114,6 +114,32 @@
                   "skills/ens-resolution",
                   "skills/transaction-simulation"
                 ]
+              },
+              {
+                "group": "Protocol Skills",
+                "pages": [
+                  "skills/uniswap-v4",
+                  "skills/aave-v3",
+                  "skills/curve",
+                  "skills/lido",
+                  "skills/eigenlayer",
+                  "skills/pendle",
+                  "skills/polymarket",
+                  "skills/safe",
+                  "skills/ens",
+                  "skills/chainlink",
+                  "skills/layerzero",
+                  "skills/seaport",
+                  "skills/farcaster"
+                ]
+              },
+              {
+                "group": "L2 Skills",
+                "pages": [
+                  "skills/arbitrum",
+                  "skills/op-stack",
+                  "skills/tempo"
+                ]
               }
             ]
           },

@@ -1,0 +1,106 @@
+---
+title: ENS
+description: Register, manage, and resolve ENS names
+---
+
+<Warning>
+**Looking for Contributors!** This Skill needs an implementation.
+
+Contributing a Skill involves:
+1. Writing a reference implementation with full functionality
+2. Adding comprehensive tests
+3. Writing documentation with usage examples
+
+See the [ethers-provider Skill](https://github.com/evmts/voltaire/tree/main/examples/ethers-provider) for an example of a complete Skill implementation.
+
+Interested? Open an issue or PR at [github.com/evmts/voltaire](https://github.com/evmts/voltaire).
+</Warning>
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+Full ENS integration: registration, resolution, and record management.
+
+## Planned Implementation
+
+### Resolution
+
+```typescript
+import { ENS } from './ENS.js';
+
+const ens = ENS({ provider });
+
+// Resolve name to address
+const address = await ens.resolve('vitalik.eth');
+
+// Reverse resolve address to name
+const name = await ens.lookupAddress(address);
+
+// Get text records
+const twitter = await ens.getText('vitalik.eth', 'com.twitter');
+const avatar = await ens.getAvatar('vitalik.eth');
+```
+
+### Registration
+
+```typescript
+// Check availability
+const available = await ens.available('myname.eth');
+
+// Get registration price
+const price = await ens.rentPrice('myname', 365 * 24 * 60 * 60); // 1 year
+
+// Register (2-step commit-reveal)
+const commitment = await ens.makeCommitment({
+  name: 'myname',
+  owner: userAddress,
+  duration: 365 * 24 * 60 * 60,
+  secret: randomBytes(32),
+});
+
+await ens.commit({ commitment, signer });
+// Wait 1 minute...
+await ens.register({
+  name: 'myname',
+  owner: userAddress,
+  duration: 365 * 24 * 60 * 60,
+  secret,
+  signer,
+});
+```
+
+### Record Management
+
+```typescript
+// Set address
+await ens.setAddr({
+  name: 'myname.eth',
+  address: newAddress,
+  signer,
+});
+
+// Set text record
+await ens.setText({
+  name: 'myname.eth',
+  key: 'com.twitter',
+  value: '@myhandle',
+  signer,
+});
+
+// Set content hash (IPFS)
+await ens.setContentHash({
+  name: 'myname.eth',
+  hash: 'ipfs://Qm...',
+  signer,
+});
+```
+
+## Resources
+
+- [ENS Documentation](https://docs.ens.domains/)
+- [ENS Contracts](https://github.com/ensdomains/ens-contracts)
+
+## Related
+
+- [ens-resolution](/skills/ens-resolution) — Basic resolution task skill
