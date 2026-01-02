@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+	unauthorizedError,
+	unrecognizedChainError,
+	unsupportedMethodError,
+	userRejectedError,
 	WalletAddEthereumChainRequest,
 	WalletErrorCode,
 	WalletGetPermissionsRequest,
@@ -7,10 +11,6 @@ import {
 	WalletRevokePermissionsRequest,
 	WalletSwitchEthereumChainRequest,
 	WalletWatchAssetRequest,
-	unauthorizedError,
-	unrecognizedChainError,
-	unsupportedMethodError,
-	userRejectedError,
 } from "./methods.js";
 
 describe("Wallet RPC Methods", () => {

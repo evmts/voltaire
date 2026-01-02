@@ -6,10 +6,7 @@
 import { describe, expect, it } from "vitest";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/HashType.js";
-import type {
-	BrandedAccessList as AccessListType,
-	Item,
-} from "./AccessListType.js";
+import type { BrandedAccessList as AccessListType } from "./AccessListType.js";
 import * as AccessList from "./index.js";
 
 // Helper to create test addresses
@@ -409,8 +406,8 @@ describe("AccessList transaction scenarios", () => {
 			},
 		];
 
-		const largeCost = AccessList.gasCost(large);
-		const largeSavings = AccessList.gasSavings(large);
+		const _largeCost = AccessList.gasCost(large);
+		const _largeSavings = AccessList.gasSavings(large);
 		// For multiple accesses per slot, savings multiply while cost stays same
 		expect(AccessList.hasSavings(large)).toBe(true);
 	});

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { InvalidRangeError } from "../errors/index.js";
-import type { HexType } from "./HexType.js";
 import { fromNumber } from "./fromNumber.js";
+import type { HexType } from "./HexType.js";
 import { toNumber } from "./toNumber.js";
 
 describe("toNumber", () => {

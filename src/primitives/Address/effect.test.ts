@@ -3,6 +3,12 @@ import * as Either from "effect/Either";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 import {
+	AddressBrand,
+	AddressSchema,
+	ChecksumAddress,
+	ChecksumAddressBrand,
+} from "./effect.js";
+import {
 	InvalidAddressLengthError,
 	InvalidChecksumError,
 	InvalidHexFormatError,
@@ -10,14 +16,6 @@ import {
 	InvalidValueError,
 } from "./effect-errors.js";
 import { AddressServicesLive, AddressServicesTest } from "./effect-layers.js";
-import {
-	AddressBrand,
-	type AddressFromHex,
-	type AddressFromUnknown,
-	AddressSchema,
-	ChecksumAddress,
-	ChecksumAddressBrand,
-} from "./effect.js";
 import * as BrandedAddress from "./internal-index.js";
 
 describe("AddressSchema Effect Schema", () => {
@@ -452,11 +450,11 @@ describe("AddressSchema Effect Schema", () => {
 				const results = [];
 
 				// This should succeed
-				const addr1 = yield* AddressSchema.fromHex(testAddress);
+				const _addr1 = yield* AddressSchema.fromHex(testAddress);
 				results.push("addr1 ok");
 
 				// This should fail
-				const addr2 = yield* AddressSchema.fromHex("invalid");
+				const _addr2 = yield* AddressSchema.fromHex("invalid");
 				results.push("addr2 ok"); // Should not reach here
 
 				return results;

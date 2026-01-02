@@ -4,7 +4,6 @@ import type { BlockHashType } from "../BlockHash/BlockHashType.js";
 import type { BlockNumberType } from "../BlockNumber/BlockNumberType.js";
 import type { EventLogType } from "../EventLog/EventLogType.js";
 import type { HashType } from "../Hash/HashType.js";
-import type { LogIndexType } from "../LogIndex/LogIndexType.js";
 import type { TransactionHashType } from "../TransactionHash/TransactionHashType.js";
 import type { TransactionIndexType } from "../TransactionIndex/TransactionIndexType.js";
 import type { TransactionStatusType } from "../TransactionStatus/TransactionStatusType.js";

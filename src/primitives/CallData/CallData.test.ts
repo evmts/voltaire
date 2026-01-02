@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { CallDataType } from "./CallDataType.js";
 import {
 	InvalidCallDataLengthError,
 	InvalidHexFormatError,

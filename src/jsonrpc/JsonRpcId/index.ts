@@ -1,10 +1,10 @@
 // Export type definition
 export type { JsonRpcIdType } from "./JsonRpcIdType.js";
 
-// Import internal functions
-import type { JsonRpcIdType } from "./JsonRpcIdType.js";
 import { equals as _equals } from "./equals.js";
 import { from } from "./from.js";
+// Import internal functions
+import type { JsonRpcIdType } from "./JsonRpcIdType.js";
 import { toString as _toString } from "./toString.js";
 
 // Export constructors

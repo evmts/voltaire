@@ -5,9 +5,9 @@
  * Imports are kept tree-shakable - only import what you use.
  */
 
+export * from "./debug/methods.js";
 export * from "./engine/methods.js";
 export * from "./eth/methods.js";
-export * from "./debug/methods.js";
 
 // Export primitive types separately
 export * as types from "./index.js";

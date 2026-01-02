@@ -1,5 +1,4 @@
 import { CryptoError } from "../../primitives/errors/CryptoError.js";
-import { InvalidFormatError } from "../../primitives/errors/ValidationError.js";
 
 /**
  * Base EIP-712 error

@@ -1,4 +1,3 @@
-import type { Uint256Type } from "./Uint256Type.js";
 import type { bitLength } from "./bitLength.js";
 import type { bitwiseAnd } from "./bitwiseAnd.js";
 import type { bitwiseNot } from "./bitwiseNot.js";
@@ -32,6 +31,7 @@ import type { toPower } from "./toPower.js";
 // biome-ignore lint/suspicious/noShadowRestrictedNames: toString is the intended API name for this primitive
 import type { toString } from "./toString.js";
 import type { tryFrom } from "./tryFrom.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 type UintPrototype = Uint256Type & {
 	toHex(): string;

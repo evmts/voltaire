@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-import * as Fp from "./Fp/index.js";
+import { FP_MOD } from "./constants.js";
 import * as Fp2 from "./Fp2/index.js";
 import * as G1 from "./G1/index.js";
 import type { G1PointType } from "./G1PointType.js";
 import * as G2 from "./G2/index.js";
 import type { G2PointType } from "./G2PointType.js";
-import { B_G1, FP_MOD } from "./constants.js";
 
 describe("BN254 Point Validation", () => {
 	describe("G1 point validation", () => {

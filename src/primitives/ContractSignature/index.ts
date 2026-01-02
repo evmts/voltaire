@@ -1,8 +1,8 @@
 // Error exports
-export * from "./errors.js";
 
 // Constant exports
 export * from "./constants.js";
+export * from "./errors.js";
 
 // Function exports
 export { isValidSignature } from "./isValidSignature.js";

@@ -7,7 +7,7 @@ import ffi from "ffi-napi";
 import ref from "ref-napi";
 import { LIB_PATH } from "../../lib-path.js";
 
-const voidPtr = ref.refType(ref.types.void);
+const _voidPtr = ref.refType(ref.types.void);
 
 /**
  * @type {Library}

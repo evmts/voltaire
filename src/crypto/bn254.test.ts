@@ -20,6 +20,7 @@ import {
 	type G1PointType,
 	type G2PointType,
 } from "./bn254/BN254.js";
+
 // import { Bn254Wasm } from "./bn254.wasm.js";
 // import { Bn254Ark } from "./bn254.ark.js";
 

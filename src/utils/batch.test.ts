@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AsyncQueue, BatchQueue, createBatchedFunction } from "./batch.js";
 
 describe("BatchQueue", () => {
@@ -445,12 +445,12 @@ describe("AsyncQueue", () => {
 
 	describe("activeCount", () => {
 		it("should track active operations", async () => {
-			let active = 0;
+			let _active = 0;
 
 			const processFn = vi.fn(async () => {
-				active++;
+				_active++;
 				await new Promise((resolve) => setTimeout(resolve, 30));
-				active--;
+				_active--;
 			});
 
 			const queue = new AsyncQueue(processFn, { concurrency: 2 });

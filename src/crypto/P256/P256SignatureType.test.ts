@@ -2,11 +2,10 @@ import { describe, expectTypeOf, it } from "vitest";
 import type { HashType } from "../../primitives/Hash/index.js";
 import type { P256SignatureType } from "./P256SignatureType.js";
 
-type Equals<T, U> = (<G>() => G extends T ? 1 : 2) extends <G>() => G extends U
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<T, U> =
+	(<G>() => G extends T ? 1 : 2) extends <G>() => G extends U ? 1 : 2
+		? true
+		: false;
 
 describe("P256SignatureType", () => {
 	describe("type structure", () => {
@@ -154,14 +153,14 @@ describe("P256SignatureType", () => {
 
 	describe("DER encoding compatibility", () => {
 		it("can be converted to DER format", () => {
-			function toDER(sig: P256SignatureType): Uint8Array {
+			function toDER(_sig: P256SignatureType): Uint8Array {
 				return new Uint8Array(0);
 			}
 			expectTypeOf(toDER).parameter(0).toEqualTypeOf<P256SignatureType>();
 		});
 
 		it("can be parsed from DER format", () => {
-			function fromDER(der: Uint8Array): P256SignatureType {
+			function fromDER(_der: Uint8Array): P256SignatureType {
 				return {
 					r: new Uint8Array(32) as HashType,
 					s: new Uint8Array(32) as HashType,

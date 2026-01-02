@@ -32,27 +32,24 @@
  * @module contract
  */
 
+// Base stream error (for catching all stream aborts)
+export { StreamAbortedError } from "../stream/errors.js";
 // EventStream factory
 export { EventStream } from "./EventStream.js";
-
 // EventStream types
 export type {
+	BackfillOptions,
+	DecodedEventLog,
 	EventStream as EventStreamInstance,
 	EventStreamConstructorOptions,
-	EventStreamOptions,
-	BackfillOptions,
-	WatchOptions,
-	EventStreamResult,
 	EventStreamMetadata,
+	EventStreamOptions,
+	EventStreamResult,
 	RetryOptions,
-	DecodedEventLog,
+	WatchOptions,
 } from "./EventStreamType.js";
-
 // EventStream errors
 export {
 	BlockRangeTooLargeError,
 	EventStreamAbortedError,
 } from "./errors.js";
-
-// Base stream error (for catching all stream aborts)
-export { StreamAbortedError } from "../stream/errors.js";

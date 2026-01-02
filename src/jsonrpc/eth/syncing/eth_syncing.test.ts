@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { SyncingRequest, method } from "./eth_syncing.js";
+import { method, SyncingRequest } from "./eth_syncing.js";
 
 describe("eth_syncing", () => {
 	describe("Request Creation", () => {

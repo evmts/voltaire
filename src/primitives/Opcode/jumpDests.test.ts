@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Opcode from "./Opcode.js";
 import { jumpDests } from "./jumpDests.js";
+import * as Opcode from "./Opcode.js";
 
 describe("Opcode.jumpDests", () => {
 	it("returns empty set for empty bytecode", () => {

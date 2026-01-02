@@ -4,8 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
-import type { BrandedMessage, Signature } from "./SiweMessageType.js";
 import * as Siwe from "./index.js";
+import type { BrandedMessage, Signature } from "./SiweMessageType.js";
 
 // ============================================================================
 // Test Utilities

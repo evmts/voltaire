@@ -1,5 +1,5 @@
-import type { HashType } from "./BrandedHash.js";
 import type { assert } from "./assert.js";
+import type { HashType } from "./BrandedHash.js";
 import type { clone } from "./clone.js";
 import type { equals } from "./equals.js";
 import type { format } from "./format.js";

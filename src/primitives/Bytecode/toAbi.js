@@ -4,7 +4,7 @@ import { scan } from "./scan.js";
 const PUSH4 = 0x63;
 const PUSH32 = 0x7f;
 const EQ = 0x14;
-const JUMPI = 0x57;
+const _JUMPI = 0x57;
 const CALLVALUE = 0x34;
 const ISZERO = 0x15;
 const SSTORE = 0x55;

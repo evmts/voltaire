@@ -15,10 +15,13 @@ export function setupPrototype(Address) {
 	Object.setPrototypeOf(Address.prototype, Uint8Array.prototype);
 
 	// Instance methods
-	Address.prototype.toBase64 = Uint8Array.prototype.toBase64 ?? toBase64Polyfill;
+	Address.prototype.toBase64 =
+		Uint8Array.prototype.toBase64 ?? toBase64Polyfill;
 	Address.prototype.setFromBase64 =
 		Uint8Array.prototype.setFromBase64 ?? setFromBase64Polyfill;
-	Address.prototype.toHex = BrandedAddress.toHex.call.bind(BrandedAddress.toHex);
+	Address.prototype.toHex = BrandedAddress.toHex.call.bind(
+		BrandedAddress.toHex,
+	);
 	Address.prototype.setFromHex =
 		Uint8Array.prototype.setFromHex ?? setFromHexPolyfill;
 	Address.prototype.toChecksummed = BrandedAddress.toChecksummed.call.bind(

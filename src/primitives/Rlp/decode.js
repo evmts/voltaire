@@ -1,7 +1,7 @@
 import * as OxRlp from "ox/Rlp";
+import { MAX_DEPTH } from "./constants.js";
 import { getRlpItemLength } from "./getRlpItemLength.js";
 import { RlpDecodingError } from "./RlpError.js";
-import { MAX_DEPTH } from "./constants.js";
 
 /**
  * @typedef {{

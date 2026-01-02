@@ -1,5 +1,5 @@
-export * from "./Uint16Type.js";
 export * from "./constants.js";
+export * from "./Uint16Type.js";
 
 import { bitLength } from "./bitLength.js";
 import { bitwiseAnd } from "./bitwiseAnd.js";

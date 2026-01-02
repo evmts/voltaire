@@ -1,6 +1,4 @@
 import { describe, expect, test } from "vitest";
-import * as Fp from "../Fp/index.js";
-import type { G1PointType } from "../G1PointType.js";
 import {
 	B_G1,
 	FP_MOD,
@@ -8,6 +6,8 @@ import {
 	G1_GENERATOR_X,
 	G1_GENERATOR_Y,
 } from "../constants.js";
+import * as Fp from "../Fp/index.js";
+import type { G1PointType } from "../G1PointType.js";
 import * as G1 from "./index.js";
 
 describe("BLS12-381 G1 curve operations", () => {

@@ -3,8 +3,8 @@ import * as BrandedCallData from "./internal-index.js";
 
 // Re-export CallDataType and errors
 export type { CallDataType } from "./CallDataType.js";
-export * from "./errors.js";
 export * from "./constants.js";
+export * from "./errors.js";
 
 /**
  * Base CallData interface with instance methods

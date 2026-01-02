@@ -1,14 +1,14 @@
-export type { TraceResultType } from "./TraceResultType.js";
 export { from as _from } from "./from.js";
-export { getStructLogs as _getStructLogs } from "./getStructLogs.js";
 export { getCallTrace as _getCallTrace } from "./getCallTrace.js";
+export { getStructLogs as _getStructLogs } from "./getStructLogs.js";
+export type { TraceResultType } from "./TraceResultType.js";
 
 import type { CallTraceType } from "../CallTrace/CallTraceType.js";
 import type { StructLogType } from "../StructLog/StructLogType.js";
-import type { TraceResultType } from "./TraceResultType.js";
 import { from as _from } from "./from.js";
 import { getCallTrace as _getCallTrace } from "./getCallTrace.js";
 import { getStructLogs as _getStructLogs } from "./getStructLogs.js";
+import type { TraceResultType } from "./TraceResultType.js";
 
 /**
  * Creates a TraceResult from raw data

@@ -1,25 +1,24 @@
-export * from "./errors.js";
 export type {
-	BinaryTree as BinaryTreeType,
-	Node,
-	InternalNode,
-	StemNode,
-	LeafNode,
-	EmptyNode,
 	AccountData,
+	BinaryTree as BinaryTreeType,
+	EmptyNode,
+	InternalNode,
+	LeafNode,
+	Node,
+	StemNode,
 } from "./BinaryTreeType.js";
+export * from "./errors.js";
 
 import { blake3 } from "@noble/hashes/blake3.js";
 import type { HexType } from "../Hex/index.js";
+// Internal function imports
+import { addressToKey as _addressToKey } from "./addressToKey.js";
 import type {
 	BinaryTree as BinaryTreeTypeInternal,
 	LeafNode,
 	Node,
 	StemNode,
 } from "./BinaryTreeType.js";
-
-// Internal function imports
-import { addressToKey as _addressToKey } from "./addressToKey.js";
 import { get as _get } from "./get.js";
 import { getStemBit as _getStemBit } from "./getStemBit.js";
 import { HashInternal as _HashInternal } from "./hashInternal.js";

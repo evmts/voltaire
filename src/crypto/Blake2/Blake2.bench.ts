@@ -244,7 +244,5 @@ group("BLAKE2b - Noble vs WASM Comparison (1 KB input)", () => {
 				2,
 			),
 		);
-	} catch (error) {
-		console.error(`\n❌ Failed to save results: ${error}`);
-	}
+	} catch (_error) {}
 })();

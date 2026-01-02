@@ -357,10 +357,10 @@ results.push(benchmark("clone - full log", () => clone(testLog)));
 results.push(benchmark("copy (this:) - full log", () => copy(testLog)));
 
 // Find fastest and slowest operations
-const fastest = results.reduce((prev, curr) =>
+const _fastest = results.reduce((prev, curr) =>
 	curr.opsPerSec > prev.opsPerSec ? curr : prev,
 );
-const slowest = results.reduce((prev, curr) =>
+const _slowest = results.reduce((prev, curr) =>
 	curr.opsPerSec < prev.opsPerSec ? curr : prev,
 );
 

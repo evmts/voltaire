@@ -3,8 +3,8 @@ import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
 import { PrivateKey } from "../../../crypto/Secp256k1/index.js";
 import { Address } from "../../Address/index.js";
 import { Type } from "../types.js";
-import type { TransactionEIP1559Type } from "./TransactionEIP1559Type.js";
 import * as TransactionEIP1559 from "./index.js";
+import type { TransactionEIP1559Type } from "./TransactionEIP1559Type.js";
 
 describe("TransactionEIP1559.verifySignature", () => {
 	it("returns true for valid signature (yParity 0)", () => {

@@ -7,42 +7,39 @@
  * @module utils
  */
 
-// Types
-export type {
-	RetryOptions,
-	PollOptions,
-	RateLimiterOptions,
-	BatchQueueOptions,
-	TimeoutOptions,
-} from "./types.js";
-
-// Retry with exponential backoff
-export { retryWithBackoff, withRetry } from "./retryWithBackoff.js";
-
-// Rate limiting
-export { throttle, debounce, RateLimiter } from "./rateLimit.js";
-
+// Batch processing
+export {
+	AsyncQueue,
+	BatchQueue,
+	createBatchedFunction,
+} from "./batch.js";
 // Polling
 export {
 	poll,
-	pollUntil,
 	pollForReceipt,
+	pollUntil,
 	pollWithBackoff,
 } from "./poll.js";
 
+// Rate limiting
+export { debounce, RateLimiter, throttle } from "./rateLimit.js";
+// Retry with exponential backoff
+export { retryWithBackoff, withRetry } from "./retryWithBackoff.js";
+
 // Timeout utilities
 export {
-	withTimeout,
-	wrapWithTimeout,
-	sleep,
 	createDeferred,
 	executeWithTimeout,
+	sleep,
 	TimeoutError,
+	withTimeout,
+	wrapWithTimeout,
 } from "./timeout.js";
-
-// Batch processing
-export {
-	BatchQueue,
-	createBatchedFunction,
-	AsyncQueue,
-} from "./batch.js";
+// Types
+export type {
+	BatchQueueOptions,
+	PollOptions,
+	RateLimiterOptions,
+	RetryOptions,
+	TimeoutOptions,
+} from "./types.js";

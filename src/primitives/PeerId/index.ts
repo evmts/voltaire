@@ -1,5 +1,5 @@
 // Export type definitions
-export type { PeerIdType, EnodeComponents } from "./PeerIdType.js";
+export type { EnodeComponents, PeerIdType } from "./PeerIdType.js";
 
 import { equals as _equals } from "./equals.js";
 // Import all functions

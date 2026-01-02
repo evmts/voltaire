@@ -21,16 +21,16 @@
  * ```
  */
 
-// Export branded types
-export * from "./FeeMarketType.js";
+export * from "./BlobTxFee.js";
+export * from "./BlobTxFeeParams.js";
 export * from "./BrandedState.js";
-export * from "./State.js";
 export * from "./Eip1559State.js";
 export * from "./Eip4844State.js";
-export * from "./TxFeeParams.js";
-export * from "./BlobTxFeeParams.js";
+// Export branded types
+export * from "./FeeMarketType.js";
+export * from "./State.js";
 export * from "./TxFee.js";
-export * from "./BlobTxFee.js";
+export * from "./TxFeeParams.js";
 
 // Export constants
 import * as Eip1559Constants from "./eip1559Constants.js";

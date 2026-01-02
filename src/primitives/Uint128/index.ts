@@ -1,7 +1,5 @@
-export type { Uint128Type } from "./Uint128Type.js";
 export { MAX, MIN, ONE, SIZE, ZERO } from "./constants.js";
-
-import type { Uint128Type } from "./Uint128Type.js";
+export type { Uint128Type } from "./Uint128Type.js";
 
 import { bitLength as _bitLength } from "./bitLength.js";
 import { bitwiseAnd as _bitwiseAnd } from "./bitwiseAnd.js";
@@ -50,6 +48,7 @@ import { toNumber as _toNumber } from "./toNumber.js";
 import { toPower as _toPower } from "./toPower.js";
 import { toString as _toString } from "./toString.js";
 import { tryFrom as _tryFrom } from "./tryFrom.js";
+import type { Uint128Type } from "./Uint128Type.js";
 
 // Typed re-exports
 export const from: (value: bigint | number | string) => Uint128Type = _from;

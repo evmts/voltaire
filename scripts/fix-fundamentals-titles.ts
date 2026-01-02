@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { readFile, readdir, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const primitivesDir = "docs/primitives";
@@ -29,7 +29,6 @@ async function fixFundamentalsTitles() {
 		} catch (error) {
 			// Skip if file doesn't exist
 			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-				console.error(`Error processing ${primitive}:`, error);
 			}
 		}
 	}

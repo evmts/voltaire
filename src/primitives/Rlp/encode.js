@@ -1,6 +1,6 @@
 import * as OxRlp from "ox/Rlp";
-import { RlpEncodingError } from "./RlpError.js";
 import { isData } from "./isData.js";
+import { RlpEncodingError } from "./RlpError.js";
 
 /**
  * @typedef {Uint8Array | import('./RlpType.js').BrandedRlp | Array<Uint8Array | import('./RlpType.js').BrandedRlp | any>} Encodable

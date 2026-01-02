@@ -758,7 +758,7 @@ body {
 }
 
 .history-panel.open {
-	right: 0 !important;
+	right: 0;
 }
 
 .history-header {
@@ -1817,7 +1817,7 @@ body {
 
 	/* Show mobile file tree header on mobile */
 	.mobile-file-tree-header {
-		display: flex !important;
+		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		padding: 12px 16px;
@@ -1913,7 +1913,7 @@ body {
 
 	/* Add mobile menu toggle button */
 	.mobile-menu-toggle {
-		display: flex !important;
+		display: flex;
 		align-items: center;
 		justify-content: center;
 		width: 36px;

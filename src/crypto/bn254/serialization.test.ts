@@ -1,8 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { deserializeG1, serializeG1 } from "./BN254.js";
-import { deserializeG2, serializeG2 } from "./BN254.js";
-import * as G1 from "./G1/index.js";
-import * as G2 from "./G2/index.js";
+import {
+	deserializeG1,
+	deserializeG2,
+	serializeG1,
+	serializeG2,
+} from "./BN254.js";
 import {
 	G1_GENERATOR_X,
 	G1_GENERATOR_Y,
@@ -11,6 +13,8 @@ import {
 	G2_GENERATOR_Y_C0,
 	G2_GENERATOR_Y_C1,
 } from "./constants.js";
+import * as G1 from "./G1/index.js";
+import * as G2 from "./G2/index.js";
 
 describe("G1 serialization", () => {
 	describe("serializeG1", () => {

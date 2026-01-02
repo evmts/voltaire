@@ -1,5 +1,10 @@
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
-
+// Import internal functions with proper types
+import { analyze as _analyze } from "./analyze.js";
+import { analyzeBlocks as _analyzeBlocks } from "./analyzeBlocks.js";
+import { analyzeGas as _analyzeGas } from "./analyzeGas.js";
+import { analyzeJumpDestinations as _analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
+import { analyzeStack as _analyzeStack } from "./analyzeStack.js";
 import type {
 	Analysis,
 	BasicBlock,
@@ -14,13 +19,6 @@ import type {
 	StackAnalysis,
 	StackAnalysisOptions,
 } from "./BytecodeType.js";
-
-// Import internal functions with proper types
-import { analyze as _analyze } from "./analyze.js";
-import { analyzeBlocks as _analyzeBlocks } from "./analyzeBlocks.js";
-import { analyzeGas as _analyzeGas } from "./analyzeGas.js";
-import { analyzeJumpDestinations as _analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
-import { analyzeStack as _analyzeStack } from "./analyzeStack.js";
 import { detectFusions as _detectFusions } from "./detectFusions.js";
 import { equals as _equals } from "./equals.js";
 import { extractRuntime as _extractRuntime } from "./extractRuntime.js";
@@ -31,8 +29,8 @@ import { fromHex as _fromHex } from "./fromHex.js";
 import { getBlock as _getBlock } from "./getBlock.js";
 import { getNextPc as _getNextPc } from "./getNextPc.js";
 import { getPushSize as _getPushSize } from "./getPushSize.js";
-import { hasMetadata as _hasMetadata } from "./hasMetadata.js";
 import { Hash as _Hash } from "./hash.js";
+import { hasMetadata as _hasMetadata } from "./hasMetadata.js";
 import { isPush as _isPush } from "./isPush.js";
 import { isTerminator as _isTerminator } from "./isTerminator.js";
 import { isValidJumpDest as _isValidJumpDest } from "./isValidJumpDest.js";

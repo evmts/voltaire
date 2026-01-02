@@ -37,8 +37,8 @@ describe("Keccak256 index exports", () => {
 			}
 				? true
 				: false;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 	});
 

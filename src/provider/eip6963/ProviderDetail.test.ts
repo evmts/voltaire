@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { brand } from "../../brand.js";
-import { ProviderDetail } from "./ProviderDetail.js";
 import {
 	InvalidProviderError,
 	InvalidUuidError,
 	MissingFieldError,
 } from "./errors.js";
+import { ProviderDetail } from "./ProviderDetail.js";
 
 const validInfo = {
 	uuid: "350670db-19fa-4704-a166-e52e178b59d2",

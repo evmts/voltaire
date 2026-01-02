@@ -1,5 +1,3 @@
-import { MAX } from "./constants.js";
-
 /**
  * Add Uint32 value with wrapping
  *

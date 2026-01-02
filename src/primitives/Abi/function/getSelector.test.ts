@@ -281,7 +281,7 @@ describe("getSelector", () => {
 
 		it("factory pattern allows dependency injection", () => {
 			let callCount = 0;
-			const countingKeccak = (str: string) => {
+			const countingKeccak = (_str: string) => {
 				callCount++;
 				const result = new Uint8Array(32);
 				return result;

@@ -1,6 +1,4 @@
 import { describe, expect, test } from "vitest";
-import * as Fp2 from "../Fp2/index.js";
-import type { G2PointType } from "../G2PointType.js";
 import {
 	FR_MOD,
 	G2_GENERATOR_X_C0,
@@ -8,6 +6,8 @@ import {
 	G2_GENERATOR_Y_C0,
 	G2_GENERATOR_Y_C1,
 } from "../constants.js";
+import * as Fp2 from "../Fp2/index.js";
+import type { G2PointType } from "../G2PointType.js";
 import * as G2 from "./index.js";
 
 describe("G2 curve operations", () => {

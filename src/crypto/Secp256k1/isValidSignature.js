@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { CURVE_ORDER, SIGNATURE_COMPONENT_SIZE } from "./constants.js";
+import { CURVE_ORDER } from "./constants.js";
 
 /**
  * Convert 32-byte big-endian array to bigint

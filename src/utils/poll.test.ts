@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { poll, pollForReceipt, pollUntil, pollWithBackoff } from "./poll.js";
 
 describe("poll", () => {

@@ -107,7 +107,7 @@ export function VerifySignature({
 					? signature
 					: concatSignature(signature);
 			return await isValidSignature(provider, address, hash, signatureBytes);
-		} catch (error) {
+		} catch (_error) {
 			// Verification failed
 			return false;
 		}

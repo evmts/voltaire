@@ -1,6 +1,6 @@
 import * as Hex from "../Hex/index.js";
-import { AbiItemNotFoundError } from "./Errors.js";
 import * as Constructor from "./constructor/index.js";
+import { AbiItemNotFoundError } from "./Errors.js";
 
 /**
  * Encode constructor deployment data from ABI

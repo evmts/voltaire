@@ -1,7 +1,5 @@
 import * as Brand from "effect/Brand";
 import * as Schema from "effect/Schema";
-
-import type { HashType } from "./HashType.js";
 import { clone as _clone } from "./clone.js";
 import { SIZE } from "./constants.js";
 import { equals as _equals } from "./equals.js";
@@ -9,6 +7,7 @@ import { format as _format } from "./format.js";
 import { from as _from } from "./from.js";
 import { fromBytes as _fromBytes } from "./fromBytes.js";
 import { fromHex as _fromHex } from "./fromHex.js";
+import type { HashType } from "./HashType.js";
 import { isZero as _isZero } from "./isZero.js";
 import { slice as _slice } from "./slice.js";
 import { toBytes as _toBytes } from "./toBytes.js";

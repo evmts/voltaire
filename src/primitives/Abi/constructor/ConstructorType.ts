@@ -1,5 +1,5 @@
-import type { Parameter, ParametersToPrimitiveTypes } from "../Parameter.js";
 import type { StateMutability } from "../function/statemutability.js";
+import type { Parameter, ParametersToPrimitiveTypes } from "../Parameter.js";
 
 /**
  * Type definition for Constructor (data only)

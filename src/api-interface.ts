@@ -6,6 +6,20 @@
  * WASM (src/wasm/index.ts) and Native (src/native/index.ts) must match this interface.
  */
 
+import type { Blake2 } from "./crypto/Blake2/index.js";
+import type { Bls12381 } from "./crypto/Bls12381/Bls12381.js";
+import type { BN254 } from "./crypto/bn254/BN254.js";
+import type { Ed25519 } from "./crypto/Ed25519/index.js";
+import type { EIP712 } from "./crypto/EIP712/index.js";
+// Crypto types
+import type { Keccak256 } from "./crypto/Keccak256/index.js";
+import type { KZG } from "./crypto/KZG/index.js";
+import type { ModExp } from "./crypto/ModExp/index.js";
+import type { P256 } from "./crypto/P256/index.js";
+import type { Ripemd160 } from "./crypto/Ripemd160/index.js";
+import type { Secp256k1 } from "./crypto/Secp256k1/index.js";
+import type { SHA256 } from "./crypto/SHA256/index.js";
+import type { X25519 } from "./crypto/X25519/X25519.js";
 import type { Abi } from "./primitives/Abi/Abi.js";
 import type { AccessList } from "./primitives/AccessList/index.js";
 // Re-export types from the source of truth
@@ -24,21 +38,6 @@ import type { Rlp } from "./primitives/Rlp/index.js";
 import type { Siwe } from "./primitives/Siwe/index.js";
 import type { StorageKey } from "./primitives/State/index.js";
 import type { Uint } from "./primitives/Uint/Uint.js";
-
-import type { Blake2 } from "./crypto/Blake2/index.js";
-import type { Bls12381 } from "./crypto/Bls12381/Bls12381.js";
-import type { EIP712 } from "./crypto/EIP712/index.js";
-import type { Ed25519 } from "./crypto/Ed25519/index.js";
-import type { KZG } from "./crypto/KZG/index.js";
-// Crypto types
-import type { Keccak256 } from "./crypto/Keccak256/index.js";
-import type { ModExp } from "./crypto/ModExp/index.js";
-import type { P256 } from "./crypto/P256/index.js";
-import type { Ripemd160 } from "./crypto/Ripemd160/index.js";
-import type { SHA256 } from "./crypto/SHA256/index.js";
-import type { Secp256k1 } from "./crypto/Secp256k1/index.js";
-import type { X25519 } from "./crypto/X25519/X25519.js";
-import type { BN254 } from "./crypto/bn254/BN254.js";
 
 /**
  * Core primitives that all entrypoints must export

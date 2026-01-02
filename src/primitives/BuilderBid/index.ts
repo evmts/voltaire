@@ -1,11 +1,10 @@
 export type {
-	BuilderBidType,
-	BuilderBidLike,
 	BuilderBidHex,
+	BuilderBidLike,
+	BuilderBidType,
 } from "./BuilderBidType.js";
-
+export { InvalidBuilderBidError } from "./errors.js";
 export { from } from "./from.js";
 export { getValue } from "./getValue.js";
-export { verify } from "./verify.js";
 export { toHex } from "./toHex.js";
-export { InvalidBuilderBidError } from "./errors.js";
+export { verify } from "./verify.js";

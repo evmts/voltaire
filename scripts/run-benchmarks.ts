@@ -4,7 +4,6 @@
  * This replaces the generic COMPARISON.md files with actual benchmark results
  */
 
-import { existsSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import { basename, dirname, join, relative } from "node:path";
 import { $ } from "bun";

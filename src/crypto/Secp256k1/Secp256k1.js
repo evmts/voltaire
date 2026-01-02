@@ -1,12 +1,10 @@
 // @ts-nocheck
 export * from "./constants.js";
-export * from "./SignatureType.js";
-export * from "./Secp256k1PublicKeyType.js";
 export * from "./errors.js";
+export * from "./Secp256k1PublicKeyType.js";
+export * from "./SignatureType.js";
 
 import * as PrivateKeyMethods from "../../primitives/PrivateKey/index.js";
-import * as PublicKeyMethods from "./PublicKey/index.js";
-import * as SignatureMethods from "./Signature/index.js";
 import { addPoints } from "./addPoints.js";
 import {
 	CURVE_ORDER,
@@ -20,9 +18,11 @@ import { ecdh } from "./ecdh.js";
 import { isValidPrivateKey } from "./isValidPrivateKey.js";
 import { isValidPublicKey } from "./isValidPublicKey.js";
 import { isValidSignature } from "./isValidSignature.js";
+import * as PublicKeyMethods from "./PublicKey/index.js";
 import { randomPrivateKey } from "./randomPrivateKey.js";
 import { recoverPublicKey } from "./recoverPublicKey.js";
 import { recoverPublicKeyFromHash } from "./recoverPublicKeyFromHash.js";
+import * as SignatureMethods from "./Signature/index.js";
 import { scalarMultiply } from "./scalarMultiply.js";
 import { sign } from "./sign.js";
 import { signHash } from "./signHash.js";

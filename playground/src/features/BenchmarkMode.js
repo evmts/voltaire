@@ -22,7 +22,7 @@ export class BenchmarkMode {
 	 * @param {any} executor
 	 * @param {BenchmarkOptions} options
 	 */
-	async runBenchmark(code, path, executor, options) {
+	async runBenchmark(_code, _path, _executor, _options) {
 		// Stub: run benchmark
 	}
 }

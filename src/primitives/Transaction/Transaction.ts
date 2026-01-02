@@ -48,47 +48,47 @@
  * ```
  */
 
-// Export types
-export * from "./types.js";
-export * from "./typeGuards.js";
+export { assertSigned as assertSigned_internal } from "./assertSigned.js";
+export { deserialize } from "./deserialize.js";
 
 // Export operations (internal methods with _internal suffix)
 export { detectType } from "./detectType.js";
-export { deserialize } from "./deserialize.js";
-export { serialize as serialize_internal } from "./serialize.js";
-export { hash as hash_internal } from "./hash.js";
-export { getSigningHash as getSigningHash_internal } from "./getSigningHash.js";
-export { getSender as getSender_internal } from "./getSender.js";
-export { verifySignature as verifySignature_internal } from "./verifySignature.js";
 export { format as format_internal } from "./format.js";
-export { getGasPrice as getGasPrice_internal } from "./getGasPrice.js";
-export { hasAccessList as hasAccessList_internal } from "./hasAccessList.js";
+export { fromRpc } from "./fromRpc.js";
 export { getAccessList as getAccessList_internal } from "./getAccessList.js";
-export { getChainId as getChainId_internal } from "./getChainId.js";
-export { assertSigned as assertSigned_internal } from "./assertSigned.js";
-export { isSigned as isSigned_internal } from "./isSigned.js";
-export { getRecipient as getRecipient_internal } from "./getRecipient.js";
-export { isContractCreation as isContractCreation_internal } from "./isContractCreation.js";
-export { isContractCall as isContractCall_internal } from "./isContractCall.js";
-export { validateGasPrice as validateGasPrice_internal } from "./validateGasPrice.js";
-export { validateGasLimit as validateGasLimit_internal } from "./validateGasLimit.js";
-export { validateNonce as validateNonce_internal } from "./validateNonce.js";
-export { validateValue as validateValue_internal } from "./validateValue.js";
-export { validateChainId as validateChainId_internal } from "./validateChainId.js";
-export { withNonce as withNonce_internal } from "./withNonce.js";
-export { withGasLimit as withGasLimit_internal } from "./withGasLimit.js";
-export { withGasPrice as withGasPrice_internal } from "./withGasPrice.js";
-export { withData as withData_internal } from "./withData.js";
-export {
-	replaceWith as replaceWith_internal,
-	type ReplaceOptions,
-} from "./replaceWith.js";
-export { getBlobCount as getBlobCount_internal } from "./getBlobCount.js";
-export { getBlobVersionedHashes as getBlobVersionedHashes_internal } from "./getBlobVersionedHashes.js";
 export { getAuthorizationCount as getAuthorizationCount_internal } from "./getAuthorizationCount.js";
 export { getAuthorizations as getAuthorizations_internal } from "./getAuthorizations.js";
+export { getBlobCount as getBlobCount_internal } from "./getBlobCount.js";
+export { getBlobVersionedHashes as getBlobVersionedHashes_internal } from "./getBlobVersionedHashes.js";
+export { getChainId as getChainId_internal } from "./getChainId.js";
+export { getGasPrice as getGasPrice_internal } from "./getGasPrice.js";
+export { getRecipient as getRecipient_internal } from "./getRecipient.js";
+export { getSender as getSender_internal } from "./getSender.js";
+export { getSigningHash as getSigningHash_internal } from "./getSigningHash.js";
+export { hasAccessList as hasAccessList_internal } from "./hasAccessList.js";
+export { hash as hash_internal } from "./hash.js";
+export { isContractCall as isContractCall_internal } from "./isContractCall.js";
+export { isContractCreation as isContractCreation_internal } from "./isContractCreation.js";
+export { isSigned as isSigned_internal } from "./isSigned.js";
+export {
+	type ReplaceOptions,
+	replaceWith as replaceWith_internal,
+} from "./replaceWith.js";
+export { serialize as serialize_internal } from "./serialize.js";
 export { toRpc } from "./toRpc.js";
-export { fromRpc } from "./fromRpc.js";
+export * from "./typeGuards.js";
+// Export types
+export * from "./types.js";
+export { validateChainId as validateChainId_internal } from "./validateChainId.js";
+export { validateGasLimit as validateGasLimit_internal } from "./validateGasLimit.js";
+export { validateGasPrice as validateGasPrice_internal } from "./validateGasPrice.js";
+export { validateNonce as validateNonce_internal } from "./validateNonce.js";
+export { validateValue as validateValue_internal } from "./validateValue.js";
+export { verifySignature as verifySignature_internal } from "./verifySignature.js";
+export { withData as withData_internal } from "./withData.js";
+export { withGasLimit as withGasLimit_internal } from "./withGasLimit.js";
+export { withGasPrice as withGasPrice_internal } from "./withGasPrice.js";
+export { withNonce as withNonce_internal } from "./withNonce.js";
 
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/index.js";
@@ -110,8 +110,8 @@ import { isContractCall as _isContractCall } from "./isContractCall.js";
 import { isContractCreation as _isContractCreation } from "./isContractCreation.js";
 import { isSigned as _isSigned } from "./isSigned.js";
 import {
-	type ReplaceOptions,
 	replaceWith as _replaceWith,
+	type ReplaceOptions,
 } from "./replaceWith.js";
 // Import internal methods for public wrappers
 import { serialize as _serialize } from "./serialize.js";
@@ -137,23 +137,20 @@ import { withNonce as _withNonce } from "./withNonce.js";
 // Main Transaction type (re-export Any as Transaction)
 export type Transaction = Any;
 
-// Export Legacy namespace
-export * as Legacy from "./Legacy/index.js";
-
-// Export EIP2930 namespace
-export * as EIP2930 from "./EIP2930/index.js";
-
+// Export Authorization namespace
+export * as Authorization from "./Authorization/index.js";
 // Export EIP1559 namespace
 export * as EIP1559 from "./EIP1559/index.js";
+// Export EIP2930 namespace
+export * as EIP2930 from "./EIP2930/index.js";
 
 // Export EIP4844 namespace
 export * as EIP4844 from "./EIP4844/index.js";
 
 // Export EIP7702 namespace
 export * as EIP7702 from "./EIP7702/index.js";
-
-// Export Authorization namespace
-export * as Authorization from "./Authorization/index.js";
+// Export Legacy namespace
+export * as Legacy from "./Legacy/index.js";
 
 // ============================================================================
 // Public Wrapper Functions (Namespace+Type Overloading Pattern)

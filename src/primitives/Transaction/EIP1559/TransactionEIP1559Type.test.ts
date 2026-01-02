@@ -1,14 +1,13 @@
 import { describe, it } from "vitest";
 import type { AddressType } from "../../Address/AddressType.js";
-import { Type } from "../types.js";
 import type { AccessList } from "../types.js";
+import { Type } from "../types.js";
 import type { TransactionEIP1559Type } from "./TransactionEIP1559Type.js";
 
-type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<X, Y> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+		? true
+		: false;
 
 describe("TransactionEIP1559Type", () => {
 	it("type structure is correct", () => {
@@ -133,7 +132,7 @@ describe("TransactionEIP1559Type", () => {
 
 	it("rejects missing fields", () => {
 		// @ts-expect-error - missing nonce
-		const tx1: TransactionEIP1559Type = {
+		const _tx1: TransactionEIP1559Type = {
 			__brand: "TransactionEIP1559",
 			type: Type.EIP1559,
 			chainId: 1n,
@@ -152,7 +151,7 @@ describe("TransactionEIP1559Type", () => {
 
 	it("rejects wrong type value", () => {
 		// @ts-expect-error - wrong type value
-		const tx: TransactionEIP1559Type = {
+		const _tx: TransactionEIP1559Type = {
 			__brand: "TransactionEIP1559",
 			type: Type.Legacy,
 			chainId: 1n,
@@ -172,7 +171,7 @@ describe("TransactionEIP1559Type", () => {
 
 	it("rejects wrong brand tag", () => {
 		// @ts-expect-error - wrong brand tag
-		const tx: TransactionEIP1559Type = {
+		const _tx: TransactionEIP1559Type = {
 			__brand: "TransactionLegacy",
 			type: Type.EIP1559,
 			chainId: 1n,
@@ -192,7 +191,7 @@ describe("TransactionEIP1559Type", () => {
 
 	it("rejects wrong yParity type", () => {
 		// @ts-expect-error - yParity must be number
-		const tx: TransactionEIP1559Type = {
+		const _tx: TransactionEIP1559Type = {
 			__brand: "TransactionEIP1559",
 			type: Type.EIP1559,
 			chainId: 1n,
@@ -212,7 +211,7 @@ describe("TransactionEIP1559Type", () => {
 
 	it("rejects wrong chainId type", () => {
 		// @ts-expect-error - chainId must be bigint
-		const tx: TransactionEIP1559Type = {
+		const _tx: TransactionEIP1559Type = {
 			__brand: "TransactionEIP1559",
 			type: Type.EIP1559,
 			chainId: 1,
@@ -232,7 +231,7 @@ describe("TransactionEIP1559Type", () => {
 
 	it("rejects wrong to type", () => {
 		// @ts-expect-error - to must be AddressType or null
-		const tx: TransactionEIP1559Type = {
+		const _tx: TransactionEIP1559Type = {
 			__brand: "TransactionEIP1559",
 			type: Type.EIP1559,
 			chainId: 1n,

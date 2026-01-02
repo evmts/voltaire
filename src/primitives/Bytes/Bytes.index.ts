@@ -1,5 +1,5 @@
-export * from "./errors.js";
 export * from "./BytesType.js";
+export * from "./errors.js";
 
 import { assert } from "./assert.js";
 import { clone } from "./clone.js";

@@ -7,13 +7,13 @@
 
 import { beforeAll, describe, expect, it } from "vitest";
 import * as loader from "../../wasm-loader/loader.js";
+import * as Abi from "./index.js";
 import {
 	encodeVectors,
 	functionDataVectors,
 	roundTripVectors,
 	selectorVectors,
 } from "./TestData.js";
-import * as Abi from "./index.js";
 import * as wasmAbi from "./wasm/wasm.js";
 
 // ============================================================================
@@ -362,10 +362,10 @@ describe.skip("WASM vs Pure TS Performance", () => {
 		const wasmStart = performance.now();
 		try {
 			wasmAbi.decodeParametersWasm(params, testData);
-		} catch (e) {
+		} catch (_e) {
 			// Expected - not implemented yet
 		}
-		const wasmTime = performance.now() - wasmStart;
+		const _wasmTime = performance.now() - wasmStart;
 	});
 });
 

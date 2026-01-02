@@ -1,14 +1,14 @@
-import type { ReturnDataType } from "./ReturnDataType.js";
 import { equals as _equals } from "./equals.js";
 import { from as _from } from "./from.js";
 import { fromBytes as _fromBytes } from "./fromBytes.js";
 import { fromHex as _fromHex } from "./fromHex.js";
 import { isEmpty as _isEmpty } from "./isEmpty.js";
+import type { ReturnDataType } from "./ReturnDataType.js";
 import { toBytes as _toBytes } from "./toBytes.js";
 import { toHex as _toHex } from "./toHex.js";
 
-export type { ReturnDataType } from "./ReturnDataType.js";
 export * from "./errors.js";
+export type { ReturnDataType } from "./ReturnDataType.js";
 
 /**
  * Create ReturnData from various input types

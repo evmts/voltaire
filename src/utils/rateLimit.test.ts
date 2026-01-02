@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { RateLimiter, debounce, throttle } from "./rateLimit.js";
+import { debounce, RateLimiter, throttle } from "./rateLimit.js";
 
 describe("throttle", () => {
 	it("should execute function immediately", () => {

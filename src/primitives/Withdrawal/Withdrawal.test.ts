@@ -1,8 +1,4 @@
 import { describe, expect, it } from "vitest";
-import * as Address from "../Address/index.js";
-import * as Gwei from "../Denomination/gwei-index.js";
-import * as ValidatorIndex from "../ValidatorIndex/index.js";
-import * as WithdrawalIndex from "../WithdrawalIndex/index.js";
 import * as Withdrawal from "./index.js";
 
 describe("Withdrawal", () => {

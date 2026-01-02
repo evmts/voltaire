@@ -97,7 +97,9 @@ function findAllOperations(comparisonsDir: string): Operation[] {
 }
 
 // Read implementation files for an operation
-function readImplementations(operationPath: string): BenchmarkImplementation[] {
+function _readImplementations(
+	operationPath: string,
+): BenchmarkImplementation[] {
 	const implementations: BenchmarkImplementation[] = [];
 	const libraries = ["guil-native", "guil-wasm", "ethers", "viem"];
 
@@ -122,7 +124,7 @@ function readImplementations(operationPath: string): BenchmarkImplementation[] {
 }
 
 // Extract function call from implementation code
-function extractFunctionCall(code: string): string {
+function _extractFunctionCall(code: string): string {
 	const lines = code.split("\n");
 	for (const line of lines) {
 		// Look for the main function call (usually in the main() function)
@@ -436,14 +438,14 @@ function main() {
 
 	const operations = findAllOperations(comparisonsDir);
 
-	let generated = 0;
-	let skipped = 0;
+	let _generated = 0;
+	let _skipped = 0;
 
 	for (const operation of operations) {
 		// For operations where files are in the parent directory (e.g., uint256/arithmetic/add-*.ts)
 		// Place COMPARISON.md in parent directory with operation name
 		let comparisonPath: string;
-		let outputPath: string;
+		let _outputPath: string;
 
 		if (
 			fs.existsSync(operation.path) &&
@@ -451,7 +453,7 @@ function main() {
 		) {
 			// Normal case: operation has its own directory
 			comparisonPath = path.join(operation.path, "COMPARISON.md");
-			outputPath = `${operation.category}/${operation.name}/COMPARISON.md`;
+			_outputPath = `${operation.category}/${operation.name}/COMPARISON.md`;
 		} else {
 			// Flat structure case: files are like add-ethers.ts in parent directory
 			const parentDir = path.dirname(operation.path);
@@ -463,19 +465,19 @@ function main() {
 			}
 
 			comparisonPath = path.join(operationDir, "COMPARISON.md");
-			outputPath = `${operation.category}/${operation.name}/COMPARISON.md`;
+			_outputPath = `${operation.category}/${operation.name}/COMPARISON.md`;
 		}
 
 		// Skip if COMPARISON.md already exists
 		if (fs.existsSync(comparisonPath)) {
-			skipped++;
+			_skipped++;
 			continue;
 		}
 
 		// Generate and write COMPARISON.md
 		const content = generateComparisonMd(operation);
 		fs.writeFileSync(comparisonPath, content);
-		generated++;
+		_generated++;
 	}
 }
 

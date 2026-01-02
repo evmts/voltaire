@@ -4,7 +4,6 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
-import { ValidationError } from "../errors/ValidationError.js";
 
 /**
  * Compute SHA-256 hash

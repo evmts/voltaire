@@ -5,7 +5,6 @@ import { EIP712 } from "./EIP712.js";
 import type { Domain, TypeDefinitions, TypedData } from "./EIP712Type.js";
 import {
 	Eip712EncodingError,
-	Eip712Error,
 	Eip712InvalidMessageError,
 	Eip712TypeNotFoundError,
 } from "./errors.js";
@@ -903,7 +902,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 
 			// Derive correct address
 			const publicKey = secp256k1.getPublicKey(privateKey, false).slice(1);
-			const correctAddress = keccak_256(publicKey).slice(-20);
+			const _correctAddress = keccak_256(publicKey).slice(-20);
 
 			// Warmup to avoid JIT compilation and GC effects
 			for (let i = 0; i < 50; i++) {

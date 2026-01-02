@@ -100,6 +100,7 @@ export function validate(bytecode: BrandedBytecode): void {
 // ============================================================================
 
 export {
+	_getNextPc,
 	analyze,
 	analyzeBlocks,
 	analyzeGas,
@@ -122,5 +123,4 @@ export {
 	stripMetadata,
 	toAbi,
 	toHex,
-	_getNextPc,
 } from "./index.js";

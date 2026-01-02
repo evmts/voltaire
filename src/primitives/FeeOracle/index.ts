@@ -31,12 +31,11 @@
  * ```
  */
 
+export { FeeOracle } from "./FeeOracle.js";
 export type {
 	FeeDataType,
 	FeeEstimateOptions,
 	FeeOracle as FeeOracleInstance,
-	FeeOracleOptions,
 	FeeOracleFactory,
+	FeeOracleOptions,
 } from "./FeeOracleType.js";
-
-export { FeeOracle } from "./FeeOracle.js";

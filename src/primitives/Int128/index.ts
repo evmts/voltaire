@@ -1,5 +1,6 @@
 // Export type from Int128Type
 export type { BrandedInt128 } from "./Int128Type.js";
+
 // Constants are re-exported via explicit exports
 
 import { abs } from "./abs.js";

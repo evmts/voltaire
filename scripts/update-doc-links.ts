@@ -5,13 +5,13 @@
  * 2. Test file links alongside source code links
  */
 
-import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { basename, dirname, join, relative } from "node:path";
+import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { basename, join, relative } from "node:path";
 
 const REPO_URL = "https://github.com/evmts/voltaire";
 const OLD_REPO_URL = "https://github.com/evmts/primitives";
 const DOCS_DIR = "src/content/docs";
-const SRC_DIR = "src";
+const _SRC_DIR = "src";
 
 interface LinkUpdate {
 	file: string;
@@ -115,7 +115,7 @@ function updateMdxFile(filePath: string): LinkUpdate[] {
 		const definedInMatch = line.match(/Defined in: \[([^\]]+)\]\(([^)]+)\)/);
 
 		if (definedInMatch) {
-			const [, linkText, url] = definedInMatch;
+			const [, _linkText, url] = definedInMatch;
 
 			// Check if next line already has a test link
 			const nextLine = lines[i + 1];
@@ -168,23 +168,23 @@ function main() {
 	const mdxFiles = findMdxFiles(DOCS_DIR);
 
 	const allUpdates: LinkUpdate[] = [];
-	let filesUpdated = 0;
-	let urlsUpdated = 0;
-	let testsAdded = 0;
+	let _filesUpdated = 0;
+	let _urlsUpdated = 0;
+	let _testsAdded = 0;
 
 	for (const file of mdxFiles) {
 		const updates = updateMdxFile(file);
 
 		if (updates.length > 0) {
-			filesUpdated++;
+			_filesUpdated++;
 			allUpdates.push(...updates);
 
 			for (const update of updates) {
 				if (update.oldUrl !== update.newUrl) {
-					urlsUpdated++;
+					_urlsUpdated++;
 				}
 				if (update.testUrl) {
-					testsAdded++;
+					_testsAdded++;
 				}
 			}
 		}
@@ -192,7 +192,7 @@ function main() {
 
 	if (allUpdates.length > 0) {
 		for (const update of allUpdates.slice(0, 10)) {
-			const relPath = relative(process.cwd(), update.file);
+			const _relPath = relative(process.cwd(), update.file);
 			if (update.testUrl) {
 			}
 			if (update.oldUrl !== update.newUrl) {

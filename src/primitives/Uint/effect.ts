@@ -1,7 +1,5 @@
 import * as Brand from "effect/Brand";
 import * as Schema from "effect/Schema";
-
-import type { Uint256Type } from "./Uint256Type.js";
 import { bitLength as _bitLength } from "./bitLength.js";
 import { dividedBy as _dividedBy } from "./dividedBy.js";
 import { equals as _equals } from "./equals.js";
@@ -21,6 +19,7 @@ import { toBytes as _toBytes } from "./toBytes.js";
 import { toHex as _toHex } from "./toHex.js";
 import { toNumber as _toNumber } from "./toNumber.js";
 import { toPower as _toPower } from "./toPower.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 export type UintBrand = bigint & Brand.Brand<"Uint256">;
 

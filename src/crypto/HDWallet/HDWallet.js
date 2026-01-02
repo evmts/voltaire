@@ -24,8 +24,8 @@
  * ```
  */
 
-export * from "./errors.js";
 export * from "./constants.js";
+export * from "./errors.js";
 
 import { canDeriveHardened } from "./canDeriveHardened.js";
 import { BIP44_PATH, CoinType, HARDENED_OFFSET } from "./constants.js";

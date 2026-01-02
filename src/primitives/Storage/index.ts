@@ -5,6 +5,6 @@
  * @see https://eips.ethereum.org/EIPS/eip-8042 - Diamond Storage
  */
 
-export type { StorageSlotType } from "./StorageType.js";
 export { calculateErc7201 } from "./calculateErc7201.js";
 export { calculateErc8042 } from "./calculateErc8042.js";
+export type { StorageSlotType } from "./StorageType.js";

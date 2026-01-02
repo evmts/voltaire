@@ -7,7 +7,7 @@
  */
 
 export {
+	BlockRangeTooLargeError,
 	BlockStreamAbortedError,
 	UnrecoverableReorgError,
-	BlockRangeTooLargeError,
 } from "../stream/errors.js";

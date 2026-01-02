@@ -5,10 +5,10 @@
  */
 
 import { Address } from "../Address/index.js";
-import type { ItemType as Item } from "./Item/index.js";
 import type { ErrorType } from "./error/ErrorType.js";
 import type { EventType as AbiEvent } from "./event/EventType.js";
 import type { FunctionType as AbiFunction } from "./function/FunctionType.js";
+import type { ItemType as Item } from "./Item/index.js";
 import * as Abi from "./index.js";
 import * as Parameter from "./parameter/index.js";
 

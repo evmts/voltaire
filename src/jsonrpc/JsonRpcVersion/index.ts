@@ -1,8 +1,8 @@
 // Export type definition
-export type { JsonRpcVersionType } from "./JsonRpcVersionType.js";
 
 // Export constants
 export { VERSION } from "./constants.js";
+export type { JsonRpcVersionType } from "./JsonRpcVersionType.js";
 
 // Import functions
 import { from } from "./from.js";

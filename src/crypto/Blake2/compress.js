@@ -18,9 +18,9 @@
  * @since 0.0.0
  */
 
+import { blake2bRound } from "./blake2bRound.js";
 import { IV, MASK_64 } from "./constants.js";
 import { readU64LE, writeU64LE } from "./u64.js";
-import { blake2bRound } from "./blake2bRound.js";
 
 /**
  * BLAKE2b F compression function (EIP-152 format)

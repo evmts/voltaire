@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { KZG } from "./KZG.js";
 import {
 	BYTES_PER_BLOB,
 	BYTES_PER_COMMITMENT,
@@ -13,6 +12,7 @@ import {
 	KzgNotInitializedError,
 	KzgVerificationError,
 } from "./errors.js";
+import { KZG } from "./KZG.js";
 
 // KZG requires native bindings (c-kzg-4844 compiled via Zig)
 // Skip entire test suite if native bindings are not available
@@ -444,7 +444,7 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 		it("should reject corrupted proof", () => {
 			const blob = KZG.generateRandomBlob();
 			const commitment = KZG.Commitment(blob);
-			const proof = KZG.computeBlobKzgProof(blob, commitment);
+			const _proof = KZG.computeBlobKzgProof(blob, commitment);
 
 			// Use a different blob's proof (guaranteed different)
 			const otherBlob = KZG.generateRandomBlob();
@@ -709,7 +709,7 @@ describe.skipIf(!hasNativeKzg)("KZG - EIP-4844 Blob Commitments", () => {
 
 		it("should handle C_KZG_BADARGS gracefully in verifyKzgProof", () => {
 			const blob = KZG.generateRandomBlob();
-			const commitment = KZG.Commitment(blob);
+			const _commitment = KZG.Commitment(blob);
 			const z = createValidFieldElement(0x42);
 			const { proof, y } = KZG.Proof(blob, z);
 

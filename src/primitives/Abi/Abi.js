@@ -1,13 +1,12 @@
-import {
-	DecodeParameters,
-	Parameters,
-	decodeParameters,
-	encodeParameters,
-} from "./Encoding.js";
-import * as ItemNs from "./Item/index.js";
 import * as ConstructorNs from "./constructor/index.js";
 import { decode } from "./decode.js";
 import { decodeData } from "./decodeData.js";
+import {
+	DecodeParameters,
+	decodeParameters,
+	encodeParameters,
+	Parameters,
+} from "./Encoding.js";
 import { encode } from "./encode.js";
 import * as ErrorNs from "./error/index.js";
 import * as EventNs from "./event/index.js";
@@ -15,6 +14,7 @@ import { format } from "./format.js";
 import { formatWithArgs } from "./formatWithArgs.js";
 import * as FunctionNs from "./function/index.js";
 import { getItem } from "./getItem.js";
+import * as ItemNs from "./Item/index.js";
 import { parseLogs } from "./parseLogs.js";
 
 /**
@@ -153,8 +153,8 @@ Abi.prototype.getReceive = function () {
 };
 
 Abi.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
-	/** @type {number} */ depth,
-	/** @type {*} */ options,
+	/** @type {number} */ _depth,
+	/** @type {*} */ _options,
 ) {
 	return `Abi(${/** @type {*} */ (this).length} items)`;
 };

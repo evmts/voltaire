@@ -1,9 +1,9 @@
 export type {
-	StateDiffType,
 	AccountDiff,
 	BalanceChange,
-	NonceChange,
 	CodeChange,
+	NonceChange,
+	StateDiffType,
 } from "./StateDiffType.js";
 
 import { from as _from } from "./from.js";

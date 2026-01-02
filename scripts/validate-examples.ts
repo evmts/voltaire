@@ -52,7 +52,7 @@ async function findTsFiles(dir: string): Promise<string[]> {
 				files.push(fullPath);
 			}
 		}
-	} catch (err) {
+	} catch (_err) {
 		// Directory might not exist
 	}
 
@@ -110,7 +110,7 @@ async function runExample(filePath: string): Promise<TestResult> {
 /**
  * Format duration in ms to human readable
  */
-function formatDuration(ms: number): string {
+function _formatDuration(ms: number): string {
 	if (ms < 1000) return `${ms}ms`;
 	return `${(ms / 1000).toFixed(2)}s`;
 }
@@ -134,7 +134,7 @@ async function main() {
 	}
 
 	const results: TestResult[] = [];
-	let passed = 0;
+	let _passed = 0;
 	let failed = 0;
 
 	for (const file of files) {
@@ -145,7 +145,7 @@ async function main() {
 		results.push(result);
 
 		if (result.passed) {
-			passed++;
+			_passed++;
 		} else {
 			failed++;
 
@@ -166,13 +166,12 @@ async function main() {
 	}
 
 	// Calculate total time
-	const totalTime = results.reduce((sum, r) => sum + r.duration, 0);
+	const _totalTime = results.reduce((sum, r) => sum + r.duration, 0);
 
 	// Exit with appropriate code
 	process.exit(failed > 0 ? 1 : 0);
 }
 
-main().catch((err) => {
-	console.error("Fatal error:", err);
+main().catch((_err) => {
 	process.exit(1);
 });

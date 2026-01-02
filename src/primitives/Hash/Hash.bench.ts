@@ -5,8 +5,8 @@
  * conversion, comparison, validation, hashing, and utilities
  */
 
-import { keccak256String } from "./BrandedHashIndex.js";
 import { assert } from "./assert.js";
+import { keccak256String } from "./BrandedHashIndex.js";
 import { clone } from "./clone.js";
 import { ZERO } from "./constants.js";
 import { equals } from "./equals.js";

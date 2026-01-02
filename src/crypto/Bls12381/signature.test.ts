@@ -5,11 +5,11 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { Bls12381 } from "./Bls12381.js";
 import {
 	aggregate,
 	aggregatePublicKeys,
 	aggregateVerify,
+	Bls12381,
 	batchVerify,
 	derivePublicKey,
 	fastAggregateVerify,
@@ -250,7 +250,7 @@ describe("BLS12-381 Signatures", () => {
 			const pk2 = randomPrivateKey();
 			const pk3 = randomPrivateKey(); // Different key
 			const pubKey1 = derivePublicKey(pk1);
-			const pubKey2 = derivePublicKey(pk2);
+			const _pubKey2 = derivePublicKey(pk2);
 			const pubKey3 = derivePublicKey(pk3);
 
 			const sig1 = sign(message, pk1);

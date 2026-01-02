@@ -6,7 +6,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress as Address } from "../Address/AddressType.js";
 import * as Hex from "../Hex/index.js";
-import { AbiDecodingError } from "./Errors.js";
 import * as Abi from "./index.js";
 
 // ============================================================================

@@ -1,8 +1,8 @@
 // Export type definition
-export type { ProtocolVersionType } from "./ProtocolVersionType.js";
 
 // Export constants
 export { ETH_66, ETH_67, ETH_68, SNAP_1 } from "./constants.js";
+export type { ProtocolVersionType } from "./ProtocolVersionType.js";
 
 import { compare as _compare } from "./compare.js";
 import { equals as _equals } from "./equals.js";

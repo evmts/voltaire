@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
 import { Type } from "../types.js";
-import type { TransactionLegacyType } from "./TransactionLegacyType.js";
 import * as TransactionLegacy from "./index.js";
+import type { TransactionLegacyType } from "./TransactionLegacyType.js";
 
 describe("TransactionLegacy.getChainId", () => {
 	it("returns null for pre-EIP-155 transaction (v = 27)", () => {

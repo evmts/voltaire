@@ -4,8 +4,8 @@ import {
 	InvalidFormatError,
 	OddLengthError,
 } from "../errors/index.js";
-import type { HexType } from "./HexType.js";
 import { fromString } from "./fromString.js";
+import type { HexType } from "./HexType.js";
 // biome-ignore lint/suspicious/noShadowRestrictedNames: testing the toString method
 import { toString } from "./toString.js";
 

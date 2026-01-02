@@ -1,266 +1,307 @@
 ---
-title: "Bundle"
-description: "Transaction bundles for MEV strategies with Flashbots integration"
+title: Bundle
+description: MEV transaction bundles for atomic execution via Flashbots and block builders
 ---
+
+MEV transaction bundles are atomic collections of transactions submitted to block builders via relays like Flashbots. All transactions in a bundle execute sequentially in the same block, or the entire bundle is discarded.
 
 ## Overview
 
-Bundle represents atomic transaction bundles for MEV (Maximal Extractable Value) strategies. Bundles are submitted to block builders via MEV relays like Flashbots. All transactions in a bundle execute sequentially in the same block or the entire bundle is discarded.
+Bundle provides type-safe construction and manipulation of MEV bundles for strategies like arbitrage, liquidations, and backrunning. Bundles guarantee atomic execution - either all transactions succeed in order, or none are included.
+
+<Tabs>
+<Tab title="Type Definition">
 
 ```typescript
-import * as Bundle from '@tevm/voltaire/Bundle'
+type BundleType = {
+  // Ordered array of signed transaction bytes
+  readonly transactions: readonly Uint8Array[];
 
+  // Target block number (optional)
+  readonly blockNumber?: BlockNumberType;
+
+  // Minimum block timestamp (optional)
+  readonly minTimestamp?: Uint256Type;
+
+  // Maximum block timestamp (optional)
+  readonly maxTimestamp?: Uint256Type;
+
+  // Transaction hashes allowed to revert (optional)
+  readonly revertingTxHashes?: readonly HashType[];
+};
+```
+
+</Tab>
+<Tab title="BundleLike Input">
+
+```typescript
+type BundleLike = BundleType | {
+  transactions: (Uint8Array | string)[];
+  blockNumber?: BlockNumberType | bigint | number | string;
+  minTimestamp?: Uint256Type | bigint | number | string;
+  maxTimestamp?: Uint256Type | bigint | number | string;
+  revertingTxHashes?: (HashType | string)[];
+};
+```
+
+</Tab>
+</Tabs>
+
+## Quick Start
+
+<Tabs>
+<Tab title="Create Bundle">
+
+```typescript
+import * as Bundle from '@tevm/voltaire/Bundle';
+
+// Create from signed transactions
 const bundle = Bundle.from({
   transactions: [signedTx1, signedTx2],
   blockNumber: 18500000n,
-  minTimestamp: 1700000000n,
-  maxTimestamp: 1700001000n,
-})
-
-// Submit to Flashbots
-const params = Bundle.toFlashbotsParams(bundle)
-await flashbots.request({ method: 'eth_sendBundle', params: [params] })
-```
-
-## API
-
-### from
-
-Creates a Bundle from various input types.
-
-```typescript
-function from(value: BundleLike): BundleType
-```
-
-**Parameters:**
-- `transactions` - Array of signed transactions (Uint8Array or hex strings)
-- `blockNumber` - Target block number (optional)
-- `minTimestamp` - Minimum block timestamp (optional)
-- `maxTimestamp` - Maximum block timestamp (optional)
-- `revertingTxHashes` - Transaction hashes allowed to revert (optional)
-
-```typescript
-// From bytes
-const bundle = Bundle.from({
-  transactions: [tx1Bytes, tx2Bytes],
-  blockNumber: 18500000n,
-})
+});
 
 // From hex strings
+const bundleFromHex = Bundle.from({
+  transactions: [
+    "0x02f8...", // EIP-1559 tx
+    "0x02f8...", // Another tx
+  ],
+  blockNumber: 18500000n,
+});
+```
+
+</Tab>
+<Tab title="Add Transactions">
+
+```typescript
+import * as Bundle from '@tevm/voltaire/Bundle';
+
 const bundle = Bundle.from({
-  transactions: ['0x02f8...', '0x02f8...'],
-  blockNumber: '0x11a5ec0',
-})
+  transactions: [victimTx],
+});
 
-// With timestamp constraints
-const bundle = Bundle.from({
-  transactions: [signedTx],
-  minTimestamp: BigInt(Math.floor(Date.now() / 1000)),
-  maxTimestamp: BigInt(Math.floor(Date.now() / 1000) + 120),
-})
+// Immutably add transactions
+const withBackrun = Bundle.addTransaction(bundle, backrunTx);
+const withSandwich = Bundle.addTransaction(withBackrun, exitTx);
 
-// With revert allowlist
-const bundle = Bundle.from({
-  transactions: [backrunTx, targetTx],
-  revertingTxHashes: [targetTxHash],
-})
+// Check bundle size
+const count = Bundle.size(withSandwich); // 3
 ```
 
-Throws `InvalidBundleError` if:
-- `transactions` is empty or not an array
-- Transaction format is invalid
-- Reverting hash is not 32 bytes
-
-### addTransaction
-
-Adds a transaction to the bundle, returning a new bundle (immutable).
+</Tab>
+<Tab title="Submit to Flashbots">
 
 ```typescript
-function addTransaction(
-  bundle: BundleType,
-  transaction: Uint8Array | string
-): BundleType
-```
+import * as Bundle from '@tevm/voltaire/Bundle';
 
-```typescript
-const bundle = Bundle.from({ transactions: [tx1] })
-const newBundle = Bundle.addTransaction(bundle, tx2)
-
-console.log(Bundle.size(bundle))    // 1 (original unchanged)
-console.log(Bundle.size(newBundle)) // 2
-```
-
-### size
-
-Returns the number of transactions in the bundle.
-
-```typescript
-function size(bundle: BundleType): number
-```
-
-```typescript
-const bundle = Bundle.from({
-  transactions: [tx1, tx2, tx3],
-})
-
-console.log(Bundle.size(bundle)) // 3
-```
-
-### toHash
-
-Computes the bundle hash (keccak256 of concatenated transaction hashes).
-
-```typescript
-function toHash(
-  bundle: BundleType,
-  crypto: { keccak256: (data: Uint8Array) => Uint8Array }
-): HashType
-```
-
-```typescript
-import * as Keccak256 from '@tevm/voltaire/Keccak256'
-
-const bundle = Bundle.from({ transactions: [tx1, tx2] })
-const hash = Bundle.toHash(bundle, { keccak256: Keccak256.hash })
-
-console.log(hash) // Uint8Array(32)
-```
-
-### toFlashbotsParams
-
-Converts bundle to Flashbots `eth_sendBundle` RPC parameters.
-
-```typescript
-function toFlashbotsParams(bundle: BundleType): {
-  txs: string[]
-  blockNumber?: string
-  minTimestamp?: number
-  maxTimestamp?: number
-  revertingTxHashes?: string[]
-}
-```
-
-```typescript
 const bundle = Bundle.from({
   transactions: [tx1, tx2],
   blockNumber: 18500000n,
   minTimestamp: 1700000000n,
-})
+  maxTimestamp: 1700000012n,
+});
 
-const params = Bundle.toFlashbotsParams(bundle)
-// {
-//   txs: ['0x02f8...', '0x02f8...'],
-//   blockNumber: '0x11a5ec0',
-//   minTimestamp: 1700000000
-// }
+// Convert to Flashbots RPC format
+const params = Bundle.toFlashbotsParams(bundle);
 
-// Submit to Flashbots relay
-const response = await fetch('https://relay.flashbots.net', {
-  method: 'POST',
-  body: JSON.stringify({
-    jsonrpc: '2.0',
-    method: 'eth_sendBundle',
-    params: [params],
-    id: 1,
-  }),
-})
+// Submit via Flashbots RPC
+await flashbots.request({
+  method: "eth_sendBundle",
+  params: [params],
+});
 ```
 
-## Types
+</Tab>
+</Tabs>
 
-### BundleType
+## API Reference
+
+### Constructors
+
+| Method | Description |
+|--------|-------------|
+| `Bundle.from(value)` | Create bundle from transactions and options |
+
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `addTransaction(bundle, tx)` | Add a transaction to the bundle (immutable) |
+| `size(bundle)` | Get number of transactions in bundle |
+| `toHash(bundle, { keccak256 })` | Compute bundle hash |
+| `toFlashbotsParams(bundle)` | Convert to Flashbots RPC format |
+
+### Bundle Options
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `transactions` | `(Uint8Array \| string)[]` | Signed transactions in execution order |
+| `blockNumber` | `bigint` | Target block for inclusion |
+| `minTimestamp` | `bigint` | Earliest valid block timestamp |
+| `maxTimestamp` | `bigint` | Latest valid block timestamp |
+| `revertingTxHashes` | `Hash[]` | Tx hashes allowed to revert |
+
+## Practical Examples
+
+### Sandwich Attack Bundle
 
 ```typescript
-type BundleType = {
-  /** Ordered array of signed transaction bytes */
-  readonly transactions: readonly Uint8Array[]
+import * as Bundle from '@tevm/voltaire/Bundle';
 
-  /** Target block number for inclusion */
-  readonly blockNumber?: BlockNumberType
+// Sandwich structure: frontrun -> victim -> backrun
+const sandwichBundle = Bundle.from({
+  transactions: [
+    frontrunTx,  // Buy before victim
+    victimTx,    // Target transaction
+    backrunTx,   // Sell after victim
+  ],
+  blockNumber: targetBlock,
+});
 
-  /** Minimum block timestamp for inclusion */
-  readonly minTimestamp?: Uint256Type
+const params = Bundle.toFlashbotsParams(sandwichBundle);
+```
 
-  /** Maximum block timestamp for inclusion */
-  readonly maxTimestamp?: Uint256Type
+### Arbitrage with Revert Protection
 
-  /** Transaction hashes allowed to revert without failing bundle */
-  readonly revertingTxHashes?: readonly HashType[]
+```typescript
+import * as Bundle from '@tevm/voltaire/Bundle';
+import { keccak256 } from '@tevm/voltaire/Keccak256';
+
+// Allow first tx to revert (price check might fail)
+const arbBundle = Bundle.from({
+  transactions: [
+    priceCheckTx,  // May revert if arb opportunity gone
+    swapTx1,       // DEX A -> DEX B
+    swapTx2,       // DEX B -> DEX A
+  ],
+  blockNumber: 18500000n,
+  revertingTxHashes: [
+    "0x..." + keccak256(priceCheckTx), // Allow this to revert
+  ],
+});
+```
+
+### Time-Bounded Bundle
+
+```typescript
+import * as Bundle from '@tevm/voltaire/Bundle';
+
+// Bundle valid only within 12-second window
+const timedBundle = Bundle.from({
+  transactions: [tx1, tx2],
+  blockNumber: 18500000n,
+  minTimestamp: 1700000000n,
+  maxTimestamp: 1700000012n, // 12 second window
+});
+```
+
+### Computing Bundle Hash
+
+```typescript
+import * as Bundle from '@tevm/voltaire/Bundle';
+import { keccak256 } from '@tevm/voltaire/Keccak256';
+
+const bundle = Bundle.from({
+  transactions: [tx1, tx2, tx3],
+});
+
+// Bundle hash is keccak256(concat(tx1Hash, tx2Hash, tx3Hash))
+const bundleHash = Bundle.toHash(bundle, { keccak256 });
+console.log("Bundle hash:", bundleHash);
+```
+
+### Building Bundle Incrementally
+
+```typescript
+import * as Bundle from '@tevm/voltaire/Bundle';
+
+// Start with base transaction
+let bundle = Bundle.from({
+  transactions: [baseTx],
+  blockNumber: 18500000n,
+});
+
+// Add transactions based on conditions
+if (needsFrontrun) {
+  bundle = Bundle.addTransaction(bundle, frontrunTx);
 }
-```
 
-### BundleLike
+bundle = Bundle.addTransaction(bundle, mainTx);
 
-Flexible input type accepted by `from()`:
-
-```typescript
-type BundleLike = BundleType | {
-  transactions: (Uint8Array | string)[]
-  blockNumber?: BlockNumberType | bigint | number | string
-  minTimestamp?: Uint256Type | bigint | number | string
-  maxTimestamp?: Uint256Type | bigint | number | string
-  revertingTxHashes?: (HashType | string)[]
+if (needsBackrun) {
+  bundle = Bundle.addTransaction(bundle, backrunTx);
 }
+
+console.log(`Bundle contains ${Bundle.size(bundle)} transactions`);
 ```
 
-## Errors
-
-### InvalidBundleError
-
-Thrown when bundle construction fails.
+## Error Handling
 
 ```typescript
-import { InvalidBundleError } from '@tevm/voltaire/Bundle'
+import * as Bundle from '@tevm/voltaire/Bundle';
+import { InvalidBundleError } from '@tevm/voltaire/Bundle';
 
 try {
-  const bundle = Bundle.from({ transactions: [] })
-} catch (error) {
-  if (error instanceof InvalidBundleError) {
-    console.log(error.message)  // 'Bundle must contain at least one transaction'
-    console.log(error.details)  // { value: { transactions: [] } }
+  // Empty bundle throws
+  Bundle.from({ transactions: [] });
+} catch (e) {
+  if (e instanceof InvalidBundleError) {
+    console.log(e.message);  // "Bundle must contain at least one transaction"
+    console.log(e.details);  // { value: { transactions: [] } }
+  }
+}
+
+try {
+  // Invalid transaction format
+  Bundle.from({
+    transactions: [123], // Not Uint8Array or string
+  });
+} catch (e) {
+  if (e instanceof InvalidBundleError) {
+    console.log(e.message);  // "Transaction 0 must be Uint8Array or hex string"
   }
 }
 ```
 
-## MEV Concepts
+## Flashbots RPC Format
 
-### Atomic Execution
-
-Bundles guarantee atomicity: all transactions execute in order or none execute. This enables:
-- **Arbitrage** - Capture price differences across DEXs
-- **Liquidations** - Execute liquidations with guaranteed profit
-- **Backrunning** - Follow target transactions with profitable trades
-
-### Reverting Transaction Allowlist
-
-Some MEV strategies require allowing specific transactions to revert:
+The `toFlashbotsParams` method converts bundles to the format expected by Flashbots relays:
 
 ```typescript
-// Backrun strategy: target tx might revert, but backrun should still execute
+// Input bundle
 const bundle = Bundle.from({
-  transactions: [targetTx, backrunTx],
-  revertingTxHashes: [targetTxHash],
-})
+  transactions: [tx1, tx2],
+  blockNumber: 18500000n,
+  minTimestamp: 1700000000n,
+  maxTimestamp: 1700000012n,
+  revertingTxHashes: [hash1],
+});
+
+// Output format
+const params = Bundle.toFlashbotsParams(bundle);
+// {
+//   txs: ["0x02f8...", "0x02f8..."],
+//   blockNumber: "0x11a5b20",
+//   minTimestamp: 1700000000,
+//   maxTimestamp: 1700000012,
+//   revertingTxHashes: ["0x..."]
+// }
 ```
 
-If `targetTx` reverts, the bundle continues. If `backrunTx` reverts, the entire bundle fails.
+## Related
 
-### Timestamp Constraints
-
-Control when a bundle is valid:
-
-```typescript
-const now = BigInt(Math.floor(Date.now() / 1000))
-
-const bundle = Bundle.from({
-  transactions: [timeSensitiveTx],
-  minTimestamp: now,           // Not before now
-  maxTimestamp: now + 120n,    // Expires in 2 minutes
-})
-```
-
-## See Also
-
-- [Transaction](/primitives/transaction) - Transaction encoding
-- [Keccak256](/crypto/keccak256) - Hash functions for bundle hashing
-- [Flashbots Docs](https://docs.flashbots.net/flashbots-auction/overview) - Flashbots Auction documentation
+<CardGroup cols={2}>
+  <Card title="Transaction" icon="arrow-right-arrow-left" href="/primitives/transaction">
+    Transaction encoding and signing
+  </Card>
+  <Card title="Keccak256" icon="hashtag" href="/crypto/keccak256">
+    Required for bundle hashing
+  </Card>
+  <Card title="Hash" icon="fingerprint" href="/primitives/hash">
+    32-byte hash type for tx hashes
+  </Card>
+  <Card title="Flashbots Docs" icon="book" href="https://docs.flashbots.net/flashbots-auction/overview">
+    Flashbots Auction documentation
+  </Card>
+</CardGroup>

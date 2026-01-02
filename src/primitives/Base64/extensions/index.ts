@@ -8,15 +8,15 @@
  */
 
 export {
+	calcDecodedSize,
+	// Size utilities
+	calcEncodedSize,
+	decodeUrlSafe,
+	decodeUrlSafeToString,
+	encodeStringUrlSafe,
 	// URL-safe encoding (no padding, RFC 4648 Section 5)
 	encodeUrlSafe,
-	decodeUrlSafe,
-	encodeStringUrlSafe,
-	decodeUrlSafeToString,
 	// Validation
 	isValid,
 	isValidUrlSafe,
-	// Size utilities
-	calcEncodedSize,
-	calcDecodedSize,
 } from "../index.js";

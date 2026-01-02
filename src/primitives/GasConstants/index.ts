@@ -8,9 +8,6 @@ export type * from "./types.js";
 import * as Precompile from "./Precompile.js";
 export { Precompile };
 
-// Import typed functions
-import type { Hardfork } from "./types.js";
-
 // Calculate functions with typed imports
 export { calculateCallCost } from "./calculateCallCost.js";
 export { calculateCopyCost } from "./calculateCopyCost.js";
@@ -26,25 +23,23 @@ export { calculateTxIntrinsicGas } from "./calculateTxIntrinsicGas.js";
 export { callCost } from "./callCost.js";
 export { copyCost } from "./copyCost.js";
 export { createCost } from "./createCost.js";
-export { keccak256Cost } from "./keccak256Cost.js";
-export { logCost } from "./logCost.js";
-export { maxRefund } from "./maxRefund.js";
-export { memoryExpansionCost } from "./memoryExpansionCost.js";
-export { sstoreCost } from "./sstoreCost.js";
-export { txIntrinsicGas } from "./txIntrinsicGas.js";
-
+// Get functions
+export { getColdAccountAccessCost } from "./getColdAccountAccessCost.js";
+export { getColdSloadCost } from "./getColdSloadCost.js";
+export { getSelfdestructRefund } from "./getSelfdestructRefund.js";
+export { getSstoreRefund } from "./getSstoreRefund.js";
 // EIP check functions
 export { hasEIP1153 } from "./hasEIP1153.js";
 export { hasEIP2929 } from "./hasEIP2929.js";
 export { hasEIP3529 } from "./hasEIP3529.js";
 export { hasEIP3860 } from "./hasEIP3860.js";
 export { hasEIP4844 } from "./hasEIP4844.js";
-
-// Get functions
-export { getColdAccountAccessCost } from "./getColdAccountAccessCost.js";
-export { getColdSloadCost } from "./getColdSloadCost.js";
-export { getSelfdestructRefund } from "./getSelfdestructRefund.js";
-export { getSstoreRefund } from "./getSstoreRefund.js";
+export { keccak256Cost } from "./keccak256Cost.js";
+export { logCost } from "./logCost.js";
+export { maxRefund } from "./maxRefund.js";
+export { memoryExpansionCost } from "./memoryExpansionCost.js";
+export { sstoreCost } from "./sstoreCost.js";
+export { txIntrinsicGas } from "./txIntrinsicGas.js";
 
 // Re-import for namespace export
 import { calculateCallCost } from "./calculateCallCost.js";

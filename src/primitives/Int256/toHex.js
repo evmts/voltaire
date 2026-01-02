@@ -1,4 +1,4 @@
-import { BITS, MODULO, SIZE } from "./constants.js";
+import { MODULO, SIZE } from "./constants.js";
 
 /**
  * Convert Int256 to hex string (two's complement)

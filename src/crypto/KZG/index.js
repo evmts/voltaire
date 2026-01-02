@@ -25,35 +25,31 @@
  * ```
  */
 
-export { KZG } from "./KZG.js";
-export * from "./errors.js";
-export * from "./constants.js";
 export * from "./BlobType.js";
-export * from "./KzgCommitmentType.js";
-export * from "./KzgProofType.js";
-
+export * from "./constants.js";
+export * from "./errors.js";
 // Export factory functions (tree-shakeable)
-export {
-	BlobToKzgCommitment,
-	ComputeKzgProof,
-	ComputeBlobKzgProof,
-	VerifyKzgProof,
-	VerifyBlobKzgProof,
-	VerifyBlobKzgProofBatch,
-} from "./KZG.js";
-
 // Export utility functions and wrappers
 export {
-	loadTrustedSetup,
-	freeTrustedSetup,
-	isInitialized,
-	validateBlob,
-	createEmptyBlob,
-	generateRandomBlob,
+	BlobToKzgCommitment,
 	blobToKzgCommitment,
-	computeKzgProof,
+	ComputeBlobKzgProof,
+	ComputeKzgProof,
 	computeBlobKzgProof,
-	verifyKzgProof,
+	computeKzgProof,
+	createEmptyBlob,
+	freeTrustedSetup,
+	generateRandomBlob,
+	isInitialized,
+	KZG,
+	loadTrustedSetup,
+	VerifyBlobKzgProof,
+	VerifyBlobKzgProofBatch,
+	VerifyKzgProof,
+	validateBlob,
 	verifyBlobKzgProof,
 	verifyBlobKzgProofBatch,
+	verifyKzgProof,
 } from "./KZG.js";
+export * from "./KzgCommitmentType.js";
+export * from "./KzgProofType.js";

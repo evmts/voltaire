@@ -83,7 +83,7 @@ try {
 } catch {}
 
 if (wasmResults.length >= 2) {
-	const sizeRatio = (wasmResults[1].bytes / wasmResults[0].bytes).toFixed(2);
+	const _sizeRatio = (wasmResults[1].bytes / wasmResults[0].bytes).toFixed(2);
 }
 
 const primitiveNames = [
@@ -180,8 +180,8 @@ if (cryptoResults.length >= 2) {
 		const { kb } = formatBytes(totalWasm);
 
 		if (nobleOnly) {
-			const ratio = (totalWasm / nobleOnly.bytes).toFixed(2);
-			const diff = ((totalWasm - nobleOnly.bytes) / 1024).toFixed(2);
+			const _ratio = (totalWasm / nobleOnly.bytes).toFixed(2);
+			const _diff = ((totalWasm - nobleOnly.bytes) / 1024).toFixed(2);
 		}
 	}
 }
@@ -194,7 +194,7 @@ if (tsResults.length > 0) {
 	const { kb: tsKb, mb: tsMb } = formatBytes(totalTS);
 
 	if (wasmResults.length > 0) {
-		const tsWasmRatio = (totalTS / wasmResults[0].bytes).toFixed(2);
+		const _tsWasmRatio = (totalTS / wasmResults[0].bytes).toFixed(2);
 	}
 }
 
@@ -279,6 +279,4 @@ bun run bench:size
 
 try {
 	await Bun.write("BUNDLE-SIZES.md", md);
-} catch (error) {
-	console.error("\n✗ Failed to write BUNDLE-SIZES.md:", error);
-}
+} catch (_error) {}

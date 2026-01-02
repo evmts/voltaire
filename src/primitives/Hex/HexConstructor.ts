@@ -1,4 +1,3 @@
-import type { HexType } from "./HexType.js";
 import type { assertSize } from "./assertSize.js";
 import type { concat } from "./concat.js";
 import type { equals } from "./equals.js";
@@ -8,6 +7,7 @@ import type { fromBoolean } from "./fromBoolean.js";
 import type { fromBytes } from "./fromBytes.js";
 import type { fromNumber } from "./fromNumber.js";
 import type { fromString } from "./fromString.js";
+import type { HexType } from "./HexType.js";
 import type { isHex } from "./isHex.js";
 import type { isSized } from "./isSized.js";
 import type { pad } from "./pad.js";

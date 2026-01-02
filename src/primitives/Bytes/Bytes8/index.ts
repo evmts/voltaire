@@ -1,4 +1,5 @@
 export type { Bytes8Type } from "./Bytes8Type.js";
+
 import type { Bytes8Type } from "./Bytes8Type.js";
 
 import { clone } from "./clone.js";

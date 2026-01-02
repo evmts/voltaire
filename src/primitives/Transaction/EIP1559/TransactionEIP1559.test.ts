@@ -193,12 +193,12 @@ describe("TransactionEIP1559", () => {
 		});
 
 		it("getSender works with call pattern", () => {
-			const tx = createTx();
+			const _tx = createTx();
 			expect(typeof TransactionEIP1559.getSender).toBe("function");
 		});
 
 		it("verifySignature works with call pattern", () => {
-			const tx = createTx();
+			const _tx = createTx();
 			expect(typeof TransactionEIP1559.verifySignature).toBe("function");
 		});
 

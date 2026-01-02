@@ -1,11 +1,11 @@
+import { bigintToAddress } from "./lib/bigintToAddress.js";
+import { consumeGas } from "./lib/consumeGas.js";
+import { memoryExpansionCost } from "./lib/memoryExpansionCost.js";
 import { popStack } from "./lib/popStack.js";
 import { pushStack } from "./lib/pushStack.js";
-import { consumeGas } from "./lib/consumeGas.js";
 import { readMemory } from "./lib/readMemory.js";
-import { writeMemory } from "./lib/writeMemory.js";
 import { wordAlignedSize } from "./lib/wordAlignedSize.js";
-import { memoryExpansionCost } from "./lib/memoryExpansionCost.js";
-import { bigintToAddress } from "./lib/bigintToAddress.js";
+import { writeMemory } from "./lib/writeMemory.js";
 
 /**
  * STATICCALL opcode (0xfa) - Static message call (no state modifications allowed)

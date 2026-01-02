@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ModExp, calculateGas, modexp, modexpBytes } from "./ModExp.js";
+import { calculateGas, ModExp, modexp, modexpBytes } from "./ModExp.js";
 
 describe("ModExp", () => {
 	describe("modexp (BigInt API)", () => {

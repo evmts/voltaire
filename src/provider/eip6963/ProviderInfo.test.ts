@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { brand } from "../../brand.js";
-import { ProviderInfo } from "./ProviderInfo.js";
 import {
 	InvalidFieldError,
 	InvalidIconError,
@@ -8,6 +7,7 @@ import {
 	InvalidUuidError,
 	MissingFieldError,
 } from "./errors.js";
+import { ProviderInfo } from "./ProviderInfo.js";
 
 const validInput = {
 	uuid: "350670db-19fa-4704-a166-e52e178b59d2",

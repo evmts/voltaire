@@ -213,7 +213,7 @@ results.push(
 );
 
 // Find fastest and slowest operations
-const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
+const _sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {

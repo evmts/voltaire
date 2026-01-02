@@ -177,9 +177,6 @@ export class InMemoryProvider implements Provider {
 	private eventListeners: Map<ProviderEvent, Set<ProviderEventListener>> =
 		new Map();
 
-	// Host for EVM execution
-	private host: BrandedHost;
-
 	constructor(options: InMemoryProviderOptions = {}) {
 		this.chainId = options.chainId ?? 1;
 		this.miningMode = options.mining ?? "auto";
@@ -736,7 +733,7 @@ export class InMemoryProvider implements Provider {
 
 			case "eth_feeHistory": {
 				const blockCount = Number(p[0]);
-				const blocks: string[] = [];
+				const _blocks: string[] = [];
 				const baseFees: string[] = [];
 				const gasUsedRatios: number[] = [];
 

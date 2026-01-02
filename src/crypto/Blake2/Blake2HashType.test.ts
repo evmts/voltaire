@@ -2,11 +2,10 @@ import { describe, expectTypeOf, it } from "vitest";
 import type { Blake2Hash } from "./Blake2HashType.js";
 import { SIZE } from "./Blake2HashType.js";
 
-type Equals<T, U> = (<G>() => G extends T ? 1 : 2) extends <G>() => G extends U
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<T, U> =
+	(<G>() => G extends T ? 1 : 2) extends <G>() => G extends U ? 1 : 2
+		? true
+		: false;
 
 describe("Blake2HashType", () => {
 	describe("type structure", () => {

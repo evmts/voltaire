@@ -50,9 +50,9 @@ export class FileTree {
 					: "none";
 			});
 
-			node.children.forEach((child) =>
-				this.renderNode(child, childrenContainer),
-			);
+			node.children.forEach((child) => {
+				this.renderNode(child, childrenContainer);
+			});
 
 			folderWrapper.appendChild(folder);
 			folderWrapper.appendChild(childrenContainer);

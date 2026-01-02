@@ -4,6 +4,7 @@ import { PrivateKey } from "../../primitives/PrivateKey/index.js";
 import { CURVE_ORDER } from "./constants.js";
 import { isValidSignature } from "./isValidSignature.js";
 import { sign } from "./sign.js";
+
 describe("Secp256k1.isValidSignature", () => {
 	describe("valid signatures", () => {
 		it("should return true for valid signature", () => {

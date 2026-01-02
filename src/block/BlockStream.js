@@ -548,12 +548,10 @@ export function BlockStream(options) {
 						reconcileLock.unlock();
 					}
 				}
-			} catch (error) {
+			} catch (_error) {
 				if (signal?.aborted) {
 					throw new BlockStreamAbortedError();
 				}
-				// Log error but continue polling
-				console.error("BlockStream watch error:", error);
 			}
 
 			if (signal?.aborted) {

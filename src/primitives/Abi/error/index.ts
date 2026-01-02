@@ -1,10 +1,10 @@
-export type { ErrorType } from "./ErrorType.js";
 export type { AbiErrorConstructor } from "./AbiErrorConstructor.js";
-import { AbiError as AbiErrorImpl } from "./AbiError.js";
-import type { AbiErrorConstructor } from "./AbiErrorConstructor.js";
+export type { ErrorType } from "./ErrorType.js";
 
 // Import crypto dependencies
 import { keccak256String as keccak256StringImpl } from "../../Hash/index.js";
+import { AbiError as AbiErrorImpl } from "./AbiError.js";
+import type { AbiErrorConstructor } from "./AbiErrorConstructor.js";
 
 import { decodeParams } from "./decodeParams.js";
 import { encodeParams } from "./encodeParams.js";

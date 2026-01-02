@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX, ZERO } from "./constants.js";
+import { ZERO } from "./constants.js";
 import { from } from "./from.js";
 import { gcd } from "./gcd.js";
 

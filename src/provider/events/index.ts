@@ -6,19 +6,18 @@
  * @module provider/events
  */
 
-export {
-	ProviderRpcError,
-	EIP1193ErrorCode,
-	JsonRpcErrorCode,
-} from "./ProviderRpcError.js";
+export type {
+	EIP1193EventEmitter,
+	EIP1193EventMap,
+} from "./EIP1193Events.js";
 
 export type {
+	EthSubscription,
 	ProviderConnectInfo,
 	ProviderMessage,
-	EthSubscription,
 } from "./EIP1193Provider.js";
-
-export type {
-	EIP1193EventMap,
-	EIP1193EventEmitter,
-} from "./EIP1193Events.js";
+export {
+	EIP1193ErrorCode,
+	JsonRpcErrorCode,
+	ProviderRpcError,
+} from "./ProviderRpcError.js";

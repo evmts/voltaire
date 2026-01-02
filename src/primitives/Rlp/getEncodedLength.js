@@ -1,5 +1,5 @@
-import { RlpEncodingError } from "./RlpError.js";
 import { isData } from "./isData.js";
+import { RlpEncodingError } from "./RlpError.js";
 import { encodeLengthValue } from "./utils.js";
 
 /**

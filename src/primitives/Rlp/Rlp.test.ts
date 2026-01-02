@@ -3,10 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Data from "./Data.js";
-import { RlpDecodingError, RlpEncodingError } from "./RlpError.js";
-import type { BrandedRlp } from "./RlpType.js";
 import { MAX_DEPTH } from "./constants.js";
+import * as Data from "./Data.js";
 import { decode } from "./decode.js";
 import type { Encodable } from "./encode.js";
 import { encode } from "./encode.js";
@@ -19,6 +17,8 @@ import { getEncodedLength } from "./getEncodedLength.js";
 import { isBytesData } from "./isBytesData.js";
 import { isData } from "./isData.js";
 import { isListData } from "./isListData.js";
+import { RlpDecodingError, RlpEncodingError } from "./RlpError.js";
+import type { BrandedRlp } from "./RlpType.js";
 import { toJSON } from "./toJSON.js";
 
 // Create Rlp namespace for compatibility with tests

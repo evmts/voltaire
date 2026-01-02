@@ -1,5 +1,5 @@
-import * as Fr from "../Fr/index.js";
 import { FP_MOD, FR_MOD } from "../constants.js";
+import * as Fr from "../Fr/index.js";
 
 /**
  * Final exponentiation (simplified)

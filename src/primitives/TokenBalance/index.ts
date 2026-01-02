@@ -1,7 +1,6 @@
-export type { TokenBalanceType } from "./TokenBalanceType.js";
 export * from "./errors.js";
+export type { TokenBalanceType } from "./TokenBalanceType.js";
 
-import type { TokenBalanceType } from "./TokenBalanceType.js";
 import { compare as _compare } from "./compare.js";
 import { DECIMALS, MAX, MIN } from "./constants.js";
 import { equals as _equals } from "./equals.js";

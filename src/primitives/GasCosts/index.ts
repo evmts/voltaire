@@ -10,4 +10,4 @@
  * @module GasCosts
  */
 
-export { GAS_COSTS, BLOCK_GAS_LIMITS, TRANSACTION_COSTS } from "./constants.js";
+export { BLOCK_GAS_LIMITS, GAS_COSTS, TRANSACTION_COSTS } from "./constants.js";

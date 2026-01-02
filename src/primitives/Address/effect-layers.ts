@@ -3,8 +3,8 @@ import * as Layer from "effect/Layer";
 import { hash as keccak256Native } from "../../crypto/Keccak256/hash.js";
 import { derivePublicKey as derivePublicKeyNative } from "../../crypto/Secp256k1/derivePublicKey.js";
 import type { PrivateKeyType } from "../PrivateKey/PrivateKeyType.js";
-import type { Encodable } from "../Rlp/RlpType.js";
 import { encode as rlpEncodeNative } from "../Rlp/encode.js";
+import type { Encodable } from "../Rlp/RlpType.js";
 import { CryptoOperationError, RlpEncodingError } from "./effect-errors.js";
 import {
 	Keccak256Service,
@@ -117,16 +117,16 @@ export const AddressServicesTest = Layer.mergeAll(
 	Layer.succeed(
 		Keccak256Service,
 		Keccak256Service.of({
-			hash: (data) => Effect.succeed(new Uint8Array(32).fill(0xaa)),
+			hash: (_data) => Effect.succeed(new Uint8Array(32).fill(0xaa)),
 		}),
 	),
 	// Mock Secp256k1 that returns predictable keys
 	Layer.succeed(
 		Secp256k1Service,
 		Secp256k1Service.of({
-			derivePublicKey: (privateKey) =>
+			derivePublicKey: (_privateKey) =>
 				Effect.succeed(new Uint8Array(64).fill(0xbb)),
-			getPublicKey: (privateKey) =>
+			getPublicKey: (_privateKey) =>
 				Effect.succeed({ x: 0xccccccccn, y: 0xdddddddddn }),
 		}),
 	),
@@ -134,7 +134,7 @@ export const AddressServicesTest = Layer.mergeAll(
 	Layer.succeed(
 		RlpEncoderService,
 		RlpEncoderService.of({
-			encode: (data) => Effect.succeed(new Uint8Array([0xee, 0xee])),
+			encode: (_data) => Effect.succeed(new Uint8Array([0xee, 0xee])),
 		}),
 	),
 );

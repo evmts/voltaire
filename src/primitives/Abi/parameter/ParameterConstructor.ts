@@ -1,8 +1,8 @@
 import type { AbiType } from "../Type.js";
-import type { ParameterType } from "./ParameterType.js";
 import type { decode } from "./decode.js";
 import type { encode } from "./encode.js";
 import type { from } from "./from.js";
+import type { ParameterType } from "./ParameterType.js";
 
 type ParameterPrototype<
 	TType extends AbiType = AbiType,

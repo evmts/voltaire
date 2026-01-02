@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	from,
 	INTERNAL_ERROR,
 	INVALID_INPUT,
 	INVALID_PARAMS,
@@ -13,7 +14,6 @@ import {
 	RESOURCE_NOT_FOUND,
 	RESOURCE_UNAVAILABLE,
 	TRANSACTION_REJECTED,
-	from,
 	// biome-ignore lint/suspicious/noShadowRestrictedNames: Test imports intentionally shadow toString for testing
 	toString,
 } from "./index.js";

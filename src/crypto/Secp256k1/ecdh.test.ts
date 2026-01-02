@@ -86,8 +86,8 @@ describe("Secp256k1.ecdh", () => {
 		const privateB = new Uint8Array(32);
 		privateB[31] = 3;
 
-		const publicA1 = Secp256k1.derivePublicKey(privateA1);
-		const publicA2 = Secp256k1.derivePublicKey(privateA2);
+		const _publicA1 = Secp256k1.derivePublicKey(privateA1);
+		const _publicA2 = Secp256k1.derivePublicKey(privateA2);
 		const publicB = Secp256k1.derivePublicKey(privateB);
 
 		const secret1 = Secp256k1.ecdh(privateA1, publicB);

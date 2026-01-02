@@ -1,73 +1,63 @@
-export type { BrandedInt8 } from "./Int8Type.js";
-export { INT8_MIN, INT8_MAX } from "./Int8Type.js";
-
-// Constructors - no wrapper needed
-export { from, fromNumber, fromBigint, fromHex, fromBytes } from "./from.js";
-
-// Conversions - internal API (no conversion needed)
-export {
-	toNumber as _toNumber,
-	toBigint as _toBigint,
-	toHex as _toHex,
-	toBytes as _toBytes,
-	toString as _toString,
-} from "./conversions.js";
-
 // Arithmetic - internal API
 export {
-	plus as _plus,
-	minus as _minus,
-	times as _times,
-	dividedBy as _dividedBy,
-	modulo as _modulo,
 	abs as _abs,
+	dividedBy as _dividedBy,
+	minus as _minus,
+	modulo as _modulo,
 	negate as _negate,
+	plus as _plus,
+	times as _times,
 } from "./arithmetic.js";
-
-// Comparison - internal API
-export {
-	equals as _equals,
-	lessThan as _lessThan,
-	greaterThan as _greaterThan,
-	isZero as _isZero,
-	isNegative as _isNegative,
-	isPositive as _isPositive,
-	minimum as _minimum,
-	maximum as _maximum,
-	sign as _sign,
-} from "./comparison.js";
-
 // Bitwise - internal API
 export {
 	and as _and,
-	or as _or,
-	xor as _xor,
 	not as _not,
+	or as _or,
 	shiftLeft as _shiftLeft,
 	shiftRight as _shiftRight,
+	xor as _xor,
 } from "./bitwise.js";
+// Comparison - internal API
+export {
+	equals as _equals,
+	greaterThan as _greaterThan,
+	isNegative as _isNegative,
+	isPositive as _isPositive,
+	isZero as _isZero,
+	lessThan as _lessThan,
+	maximum as _maximum,
+	minimum as _minimum,
+	sign as _sign,
+} from "./comparison.js";
+
+// Conversions - internal API (no conversion needed)
+export {
+	toBigint as _toBigint,
+	toBytes as _toBytes,
+	toHex as _toHex,
+	toNumber as _toNumber,
+	toString as _toString,
+} from "./conversions.js";
+// Constructors - no wrapper needed
+export { from, fromBigint, fromBytes, fromHex, fromNumber } from "./from.js";
+export type { BrandedInt8 } from "./Int8Type.js";
+export { INT8_MAX, INT8_MIN } from "./Int8Type.js";
 
 // Utilities - internal API
 export {
 	bitLength as _bitLength,
+	isValid,
 	leadingZeros as _leadingZeros,
 	popCount as _popCount,
-	isValid,
 } from "./utilities.js";
 
-// Public wrappers (auto-convert inputs)
-import type { BrandedInt8 } from "./Int8Type.js";
 import * as arith from "./arithmetic.js";
 import * as bit from "./bitwise.js";
 import * as cmp from "./comparison.js";
 import * as conv from "./conversions.js";
-import {
-	fromBigint as _fromBigint,
-	fromBytes as _fromBytes,
-	fromHex as _fromHex,
-	fromNumber as _fromNumber,
-	from,
-} from "./from.js";
+import { from } from "./from.js";
+// Public wrappers (auto-convert inputs)
+import type { BrandedInt8 } from "./Int8Type.js";
 import * as util from "./utilities.js";
 
 export type Int8Input = number | bigint | string | BrandedInt8;

@@ -2,11 +2,10 @@ import { describe, it } from "vitest";
 import type { PrivateKeyType } from "./PrivateKeyType.js";
 
 // Type-level testing utilities
-type Equals<T, U> = (<V>() => V extends T ? 1 : 2) extends <V>() => V extends U
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<T, U> =
+	(<V>() => V extends T ? 1 : 2) extends <V>() => V extends U ? 1 : 2
+		? true
+		: false;
 
 describe("PrivateKeyType", () => {
 	describe("type structure", () => {
@@ -15,21 +14,21 @@ describe("PrivateKeyType", () => {
 				PrivateKeyType extends Uint8Array ? true : false,
 				true
 			>;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 
 		it("has length 32", () => {
 			type Test = Equals<PrivateKeyType["length"], 32>;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 
 		it("is branded", () => {
 			type HasBrand = "__tag" extends keyof PrivateKeyType ? true : false;
 			type Test = Equals<HasBrand, true>;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 
 		it("is not assignable to plain Uint8Array", () => {
@@ -67,28 +66,28 @@ describe("PrivateKeyType", () => {
 		it("is not compatible with 64-byte array", () => {
 			type PublicKeyLike = Uint8Array & { readonly length: 64 };
 			type Test = Equals<PrivateKeyType, PublicKeyLike>;
-			const assertion: Test = false;
-			assertion;
+			const _assertion: Test = false;
+			_assertion;
 		});
 
 		it("is not compatible with 20-byte array", () => {
 			type AddressLike = Uint8Array & { readonly length: 20 };
 			type Test = Equals<PrivateKeyType, AddressLike>;
-			const assertion: Test = false;
-			assertion;
+			const _assertion: Test = false;
+			_assertion;
 		});
 
 		it("is not compatible with plain 32-byte array", () => {
 			type HashLike = Uint8Array & { readonly length: 32 };
 			type Test = Equals<PrivateKeyType, HashLike>;
-			const assertion: Test = false;
-			assertion;
+			const _assertion: Test = false;
+			_assertion;
 		});
 
 		it("two PrivateKeyType are the same type", () => {
 			type Test = Equals<PrivateKeyType, PrivateKeyType>;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 	});
 
@@ -138,8 +137,8 @@ describe("PrivateKeyType", () => {
 		it("has unique PrivateKey brand", () => {
 			type Brand = PrivateKeyType["__tag"];
 			type Test = Equals<Brand, "PrivateKey">;
-			const assertion: Test = true;
-			assertion;
+			const _assertion: Test = true;
+			_assertion;
 		});
 
 		it("is not compatible with other brands", () => {
@@ -148,8 +147,8 @@ describe("PrivateKeyType", () => {
 				readonly length: 32;
 			};
 			type Test = Equals<PrivateKeyType, OtherBrand>;
-			const assertion: Test = false;
-			assertion;
+			const _assertion: Test = false;
+			_assertion;
 		});
 	});
 
@@ -216,8 +215,8 @@ describe("PrivateKeyType", () => {
 
 		it("can be assigned to wider type", () => {
 			const _test = (pk: PrivateKeyType) => {
-				const bytes: Uint8Array = pk;
-				bytes;
+				const _bytes: Uint8Array = pk;
+				_bytes;
 			};
 		});
 

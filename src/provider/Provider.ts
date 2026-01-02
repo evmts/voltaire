@@ -9,7 +9,6 @@
 
 import type {
 	ProviderEvent,
-	ProviderEventListener,
 	ProviderEventMap,
 	RequestArguments,
 } from "./types.js";

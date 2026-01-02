@@ -6,8 +6,8 @@ import {
 	addressToChecksumHex,
 	addressToHex,
 	addressValidateChecksum,
-	blake2Hash,
 	blake2b,
+	blake2Hash,
 	bytesToHex,
 	calculateCreate2Address,
 	calculateCreateAddress,
@@ -39,7 +39,6 @@ import {
 	u256FromHex,
 	u256ToHex,
 } from "./loader.js";
-import { ErrorCode } from "./types.js";
 
 const WASM_PATH = new URL("../../wasm/primitives.wasm", import.meta.url);
 

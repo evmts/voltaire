@@ -1,5 +1,5 @@
-import type { Uint256Type } from "./Uint256Type.js";
 import { MAX } from "./constants.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Check if value is a valid Uint256

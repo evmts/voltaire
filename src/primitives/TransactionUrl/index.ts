@@ -31,16 +31,14 @@
  * ```
  */
 
-// Export type definitions
-export type {
-	TransactionUrl,
-	ParsedTransactionUrl,
-} from "./TransactionUrlType.js";
-
 // Export errors
 export { InvalidTransactionUrlError } from "./errors.js";
-
-// Export functions
-export { parse } from "./parse.js";
 export { format } from "./format.js";
 export { from } from "./from.js";
+// Export functions
+export { parse } from "./parse.js";
+// Export type definitions
+export type {
+	ParsedTransactionUrl,
+	TransactionUrl,
+} from "./TransactionUrlType.js";

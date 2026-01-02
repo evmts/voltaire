@@ -149,10 +149,7 @@ export function encodeTokenURI(tokenId: Uint256Type): string {
 /**
  * Decode Transfer event log
  */
-export function decodeTransferEvent(log: {
-	topics: string[];
-	data: string;
-}): {
+export function decodeTransferEvent(log: { topics: string[]; data: string }): {
 	from: string;
 	to: string;
 	tokenId: Uint256Type;
@@ -178,10 +175,7 @@ export function decodeTransferEvent(log: {
 /**
  * Decode Approval event log
  */
-export function decodeApprovalEvent(log: {
-	topics: string[];
-	data: string;
-}): {
+export function decodeApprovalEvent(log: { topics: string[]; data: string }): {
 	owner: string;
 	approved: string;
 	tokenId: Uint256Type;

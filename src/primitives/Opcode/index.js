@@ -1,2 +1,2 @@
-export { Opcode, BrandedOpcode } from "./Opcode.js";
 export * from "./Opcode.js";
+export { BrandedOpcode, Opcode } from "./Opcode.js";

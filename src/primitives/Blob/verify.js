@@ -1,5 +1,3 @@
-import { SIZE } from "./constants.js";
-
 /**
  * Factory: Verify KZG proof
  *
@@ -20,6 +18,7 @@ import { SIZE } from "./constants.js";
  * ```
  */
 import { InvalidLengthError, PrimitiveError } from "../errors/index.js";
+import { SIZE } from "./constants.js";
 
 export function Verify(
 	/** @type {{verifyBlobKzgProof: (blob: Uint8Array, commitment: Uint8Array, proof: Uint8Array) => boolean}} */ {

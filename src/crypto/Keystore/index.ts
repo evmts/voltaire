@@ -1,13 +1,13 @@
 // Export types
-export type {
-	KeystoreV3,
-	EncryptOptions,
-	ScryptParams,
-	Pbkdf2Params,
-} from "./KeystoreType.js";
 
 // Export errors
 export * from "./errors.js";
+export type {
+	EncryptOptions,
+	KeystoreV3,
+	Pbkdf2Params,
+	ScryptParams,
+} from "./KeystoreType.js";
 
 // Export main functions
 import { decrypt } from "./decrypt.js";

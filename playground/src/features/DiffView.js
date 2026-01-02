@@ -1,10 +1,4 @@
 export class DiffView {
-	/** @type {any} */
-	#monaco;
-	/** @type {HTMLElement} */
-	#container;
-	/** @type {any} */
-	#editor;
 	/** @type {Map<string, string>} */
 	#originals = new Map();
 	/** @type {boolean} */
@@ -30,7 +24,7 @@ export class DiffView {
 	}
 
 	/** @param {any} tab */
-	toggleDiffMode(tab) {
+	toggleDiffMode(_tab) {
 		this.#diffMode = !this.#diffMode;
 		// Stub: toggle diff
 	}
@@ -40,7 +34,7 @@ export class DiffView {
 	}
 
 	/** @param {any} tab */
-	onTabChange(tab) {
+	onTabChange(_tab) {
 		// Stub: handle tab change
 	}
 
@@ -57,7 +51,7 @@ export class DiffView {
 	 * @param {string} path
 	 * @param {string} content
 	 */
-	getChangedLineCount(path, content) {
+	getChangedLineCount(_path, _content) {
 		return 0; // Stub
 	}
 

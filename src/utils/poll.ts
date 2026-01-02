@@ -116,7 +116,7 @@ export async function poll<T>(
 			if (isValid) {
 				return result;
 			}
-		} catch (error) {
+		} catch (_error) {
 			// Continue polling on errors (operation may not be ready yet)
 			// Errors will be thrown if timeout is reached
 		}

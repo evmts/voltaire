@@ -8,14 +8,14 @@ import type {
 	CreateParams,
 	CreateResult,
 } from "../InstructionHandlerType.js";
-import type { BrandedHost } from "./HostType.js";
 // Internal imports
 import { createMemoryHost as _createMemoryHost } from "./createMemoryHost.js";
 import { from as _from } from "./from.js";
+import type { BrandedHost } from "./HostType.js";
 
+export { createMemoryHost as _createMemoryHost } from "./createMemoryHost.js";
 // Internal exports for tree-shaking
 export { from as _from } from "./from.js";
-export { createMemoryHost as _createMemoryHost } from "./createMemoryHost.js";
 
 /**
  * Host implementation interface

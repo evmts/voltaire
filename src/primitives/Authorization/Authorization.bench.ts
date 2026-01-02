@@ -5,7 +5,6 @@
  */
 
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
-import type { AuthorizationType } from "../Authorization/AuthorizationType.js";
 import * as Authorization from "../Authorization/index.js";
 
 // Benchmark runner
@@ -301,7 +300,7 @@ results.push(
 );
 
 // Find fastest and slowest operations
-const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
+const _sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {

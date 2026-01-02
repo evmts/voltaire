@@ -6,8 +6,8 @@
  * @module provider/TypedProvider
  */
 
-import type { RpcSchema } from "./RpcSchema.js";
 import type { EIP1193EventMap } from "./events/EIP1193Events.js";
+import type { RpcSchema } from "./RpcSchema.js";
 import type { EIP1193RequestFn } from "./request/EIP1193RequestFn.js";
 
 /**

@@ -7,7 +7,6 @@
 import { describe, expectTypeOf, it } from "vitest";
 import type { BlockType } from "../primitives/Block/BlockType.js";
 import type { BlockHashType } from "../primitives/BlockHash/BlockHashType.js";
-import type { ReceiptType } from "../primitives/Receipt/ReceiptType.js";
 import type { TypedProvider } from "../provider/TypedProvider.js";
 import type { BlockStream as BlockStreamFactory } from "./BlockStream.js";
 import type {
@@ -199,7 +198,7 @@ describe("BlockStreamEvent", () => {
 		type Event = BlockStreamEvent<"header">;
 
 		// Should be able to narrow by type
-		const handleEvent = (event: Event) => {
+		const _handleEvent = (event: Event) => {
 			if (event.type === "blocks") {
 				expectTypeOf(event).toMatchTypeOf<BlocksEvent<"header">>();
 			} else {

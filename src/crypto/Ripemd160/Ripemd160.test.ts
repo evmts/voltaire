@@ -11,8 +11,8 @@
 import { ripemd160 } from "@noble/hashes/legacy.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
-import { Ripemd160 } from "./Ripemd160.js";
 import * as Ripemd160Namespace from "./Ripemd160.js";
+import { Ripemd160 } from "./Ripemd160.js";
 
 describe("Ripemd160 constructor", () => {
 	it("should hash string input", () => {

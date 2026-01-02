@@ -57,7 +57,7 @@ export function setFromBase64Polyfill(this: Uint8Array, b64: string): void {
 
 	try {
 		decoded = Base64.decode(b64);
-	} catch (e) {
+	} catch (_e) {
 		throw new Error("Invalid base64 string");
 	}
 

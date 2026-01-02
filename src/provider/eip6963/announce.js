@@ -7,12 +7,12 @@
  */
 
 /** @type {typeof globalThis & { addEventListener: Function; removeEventListener: Function; dispatchEvent: Function }} */
-// @ts-ignore - window exists in browser environment
+// @ts-expect-error - window exists in browser environment
 const window = globalThis;
 
-import { ProviderDetail } from "./ProviderDetail.js";
 import { InvalidArgumentError } from "./errors.js";
 import { assertBrowser } from "./getPlatform.js";
+import { ProviderDetail } from "./ProviderDetail.js";
 
 /**
  * Announce a wallet provider

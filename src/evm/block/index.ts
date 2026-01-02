@@ -5,6 +5,7 @@
  * Implementations read from EVM block context provided via the Host interface.
  */
 
+export { handler_0x4a_BLOBBASEFEE } from "./0x4a_BLOBBASEFEE.js";
 export { handler_0x40_BLOCKHASH } from "./0x40_BLOCKHASH.js";
 export { handler_0x41_COINBASE } from "./0x41_COINBASE.js";
 export { handler_0x42_TIMESTAMP } from "./0x42_TIMESTAMP.js";
@@ -15,4 +16,3 @@ export { handler_0x46_CHAINID } from "./0x46_CHAINID.js";
 export { handler_0x47_SELFBALANCE } from "./0x47_SELFBALANCE.js";
 export { handler_0x48_BASEFEE } from "./0x48_BASEFEE.js";
 export { handler_0x49_BLOBHASH } from "./0x49_BLOBHASH.js";
-export { handler_0x4a_BLOBBASEFEE } from "./0x4a_BLOBBASEFEE.js";

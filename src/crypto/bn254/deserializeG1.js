@@ -1,5 +1,5 @@
-import * as G1 from "./G1/index.js";
 import { Bn254Error } from "./errors.js";
+import * as G1 from "./G1/index.js";
 
 /**
  * Deserialize G1 point from bytes

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { JsonRpcVersion, VERSION, from } from "./index.js";
+import { from, JsonRpcVersion, VERSION } from "./index.js";
 
 describe("JsonRpcVersion", () => {
 	describe("from", () => {

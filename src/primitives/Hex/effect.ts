@@ -1,9 +1,8 @@
 import * as Brand from "effect/Brand";
 import * as Schema from "effect/Schema";
-
-import type { HexType } from "./HexType.js";
 import { equals as _equals } from "./equals.js";
 import { fromBytes as _fromBytes } from "./fromBytes.js";
+import type { HexType } from "./HexType.js";
 import { isHex as _isHex } from "./isHex.js";
 import { toBytes as _toBytes } from "./toBytes.js";
 import { validate as _validate } from "./validate.js";

@@ -1,10 +1,9 @@
 /**
  * @vitest-environment happy-dom
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ProviderDetail } from "./ProviderDetail.js";
-import { UnsupportedEnvironmentError } from "./errors.js";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getProviders } from "./getProviders.js";
+import { ProviderDetail } from "./ProviderDetail.js";
 import { providers, reset } from "./state.js";
 
 const validInfo = {

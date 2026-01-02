@@ -3,8 +3,8 @@ import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
 import { PrivateKey } from "../../../crypto/Secp256k1/index.js";
 import { Address } from "../../Address/index.js";
 import { Type } from "../types.js";
-import type { TransactionLegacyType } from "./TransactionLegacyType.js";
 import * as TransactionLegacy from "./index.js";
+import type { TransactionLegacyType } from "./TransactionLegacyType.js";
 
 describe("TransactionLegacy.verifySignature", () => {
 	it("returns true for valid pre-EIP-155 signature", () => {

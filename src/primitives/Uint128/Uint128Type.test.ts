@@ -1,11 +1,10 @@
 import { describe, it } from "vitest";
 import type { Uint128Type } from "./Uint128Type.js";
 
-type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<X, Y> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+		? true
+		: false;
 
 describe("Uint128Type", () => {
 	it("satisfies bigint with brand", () => {

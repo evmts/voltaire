@@ -1,7 +1,9 @@
-export type { BrandedBase64 } from "./Base64Type.js";
-export type { BrandedBase64Url } from "./Base64Type.js";
-export type { Base64Like } from "./Base64Type.js";
-export type { Base64UrlLike } from "./Base64Type.js";
+export type {
+	Base64Like,
+	Base64UrlLike,
+	BrandedBase64,
+	BrandedBase64Url,
+} from "./Base64Type.js";
 
 import type { BrandedBase64, BrandedBase64Url } from "./Base64Type.js";
 

@@ -1,6 +1,6 @@
 export type {
-	SyncStatusType,
 	SyncProgress,
+	SyncStatusType,
 } from "./SyncStatusType.js";
 
 import { from as _from } from "./from.js";

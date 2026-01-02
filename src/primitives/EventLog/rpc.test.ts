@@ -1523,7 +1523,7 @@ describe("Integration - Real RPC Formats", () => {
 			removed: false,
 		};
 
-		const log = fromRpc(erigonLog);
+		const _log = fromRpc(erigonLog);
 	});
 
 	it("handles Alchemy/Infura format variations", () => {
@@ -1557,6 +1557,6 @@ describe("Integration - Real RPC Formats", () => {
 			removed: false,
 		};
 
-		const log = fromRpc(hardhatLog);
+		const _log = fromRpc(hardhatLog);
 	});
 });

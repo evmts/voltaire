@@ -33,7 +33,7 @@ const TEST_PRIVATE_KEY = new Uint8Array([
 const TEST_MESSAGE_HASH = Hash.keccak256String("Hello, Ethereum!");
 
 // Message size tests
-const SMALL_MESSAGE = new Uint8Array(32); // 32 bytes
+const _SMALL_MESSAGE = new Uint8Array(32); // 32 bytes
 const MEDIUM_MESSAGE = new Uint8Array(256); // 256 bytes
 const LARGE_MESSAGE = new Uint8Array(1024); // 1KB
 

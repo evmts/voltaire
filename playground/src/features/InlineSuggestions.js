@@ -1,6 +1,6 @@
 export class InlineSuggestions {
 	/** @param {any} monaco */
-	register(monaco) {
+	register(_monaco) {
 		return { dispose: () => {} };
 	}
 
@@ -10,7 +10,7 @@ export class InlineSuggestions {
 }
 
 /** @param {InlineSuggestions} inlineSuggestions */
-export function createInlineSuggestionsButton(inlineSuggestions) {
+export function createInlineSuggestionsButton(_inlineSuggestions) {
 	const button = document.createElement("button");
 	button.textContent = "Suggestions";
 	return button;

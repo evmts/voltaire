@@ -31,7 +31,7 @@ export function parse(raw) {
 	let prevFileIndex = 0;
 	let prevJump = /** @type {"i" | "o" | "-"} */ ("-");
 	/** @type {number | undefined} */
-	let prevModifierDepth = undefined;
+	let prevModifierDepth;
 
 	for (const part of parts) {
 		if (part === "") {

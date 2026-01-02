@@ -130,10 +130,7 @@ export function encodeAllowance(
 /**
  * Decode Transfer event log
  */
-export function decodeTransferEvent(log: {
-	topics: string[];
-	data: string;
-}): {
+export function decodeTransferEvent(log: { topics: string[]; data: string }): {
 	from: string;
 	to: string;
 	value: Uint256Type;
@@ -158,10 +155,7 @@ export function decodeTransferEvent(log: {
 /**
  * Decode Approval event log
  */
-export function decodeApprovalEvent(log: {
-	topics: string[];
-	data: string;
-}): {
+export function decodeApprovalEvent(log: { topics: string[]; data: string }): {
 	owner: string;
 	spender: string;
 	value: Uint256Type;
@@ -211,7 +205,7 @@ export function decodeBool(data: string): boolean {
 export function decodeString(data: string): string {
 	// ABI encoded string: offset (32 bytes) + length (32 bytes) + data
 	const hex = data.startsWith("0x") ? data.slice(2) : data;
-	const offset = Number.parseInt(hex.slice(0, 64), 16);
+	const _offset = Number.parseInt(hex.slice(0, 64), 16);
 	const length = Number.parseInt(hex.slice(64, 128), 16);
 	const stringData = hex.slice(128, 128 + length * 2);
 

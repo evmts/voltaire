@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { HexType } from "./HexType.js";
 import { fromBoolean } from "./fromBoolean.js";
+import type { HexType } from "./HexType.js";
 import { toBoolean } from "./toBoolean.js";
 
 describe("toBoolean", () => {

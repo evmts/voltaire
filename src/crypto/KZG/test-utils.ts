@@ -6,7 +6,7 @@
  */
 
 // Check if native KZG is available by attempting dynamic import and load
-const checkKzgAvailable = async (): Promise<boolean> => {
+const _checkKzgAvailable = async (): Promise<boolean> => {
 	try {
 		const { KZG } = await import("./index.js");
 		KZG.loadTrustedSetup();

@@ -1,5 +1,3 @@
-// @ts-nocheck
-import { isValidPublicKey } from "../isValidPublicKey.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**

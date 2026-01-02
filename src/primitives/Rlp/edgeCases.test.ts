@@ -3,10 +3,10 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { RlpDecodingError } from "./RlpError.js";
 import { MAX_DEPTH } from "./constants.js";
 import { decode } from "./decode.js";
 import { encode } from "./encode.js";
+import { RlpDecodingError } from "./RlpError.js";
 
 describe("RLP edge cases - boundary values", () => {
 	it("handles single byte at 0x7f/0x80 boundary", () => {

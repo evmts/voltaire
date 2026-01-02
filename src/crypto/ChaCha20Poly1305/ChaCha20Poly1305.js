@@ -1,6 +1,7 @@
 // @ts-nocheck
-export * from "./errors.js";
+
 export * from "./constants.js";
+export * from "./errors.js";
 
 import { KEY_SIZE, NONCE_SIZE, TAG_SIZE } from "./constants.js";
 import { decrypt } from "./decrypt.js";

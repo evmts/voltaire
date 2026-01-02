@@ -10,10 +10,12 @@ import {
 } from "./polyfills.js";
 
 // Re-export AddressType and backward-compatible BrandedAddress alias
-export type { AddressType } from "./AddressType.js";
-export type { AddressType as BrandedAddress } from "./AddressType.js";
-export * from "./errors.js";
+export type {
+	AddressType,
+	AddressType as BrandedAddress,
+} from "./AddressType.js";
 export * from "./constants.js";
+export * from "./errors.js";
 
 /**
  * Crypto dependencies for Address operations

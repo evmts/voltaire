@@ -1,10 +1,10 @@
-import { INT16_MAX, INT16_MIN } from "./Int16Type.js";
 // @ts-nocheck
 import * as arith from "./arithmetic.js";
 import * as bit from "./bitwise.js";
 import * as cmp from "./comparison.js";
 import * as conv from "./conversions.js";
 import { from, fromBigint, fromBytes, fromHex, fromNumber } from "./from.js";
+import { INT16_MAX, INT16_MIN } from "./Int16Type.js";
 import * as util from "./utilities.js";
 
 /**

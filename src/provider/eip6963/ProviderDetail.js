@@ -7,8 +7,8 @@
  */
 
 import { brand } from "../../brand.js";
-import { ProviderInfo } from "./ProviderInfo.js";
 import { MissingFieldError } from "./errors.js";
+import { ProviderInfo } from "./ProviderInfo.js";
 import { validateProvider } from "./validators.js";
 
 /**

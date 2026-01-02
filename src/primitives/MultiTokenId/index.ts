@@ -1,7 +1,6 @@
-export type { MultiTokenIdType } from "./MultiTokenIdType.js";
 export * from "./errors.js";
+export type { MultiTokenIdType } from "./MultiTokenIdType.js";
 
-import type { MultiTokenIdType } from "./MultiTokenIdType.js";
 import { compare as _compare } from "./compare.js";
 import { FUNGIBLE_THRESHOLD, MAX, MIN } from "./constants.js";
 import { equals as _equals } from "./equals.js";

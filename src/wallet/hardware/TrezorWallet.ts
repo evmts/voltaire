@@ -47,11 +47,11 @@ export class TrezorWallet implements HardwareWallet {
 
 	async connect(): Promise<void> {
 		const TrezorConnectModule = await import("@trezor/connect-web");
-		// @ts-ignore - Optional dependency, default export has init method at runtime
+		// @ts-expect-error - Optional dependency, default export has init method at runtime
 		const TrezorConnect = TrezorConnectModule.default;
 		this.TrezorConnect = TrezorConnect;
 
-		// @ts-ignore - init exists on TrezorConnect default export
+		// @ts-expect-error - init exists on TrezorConnect default export
 		await TrezorConnect.init({
 			manifest: this.manifest || {
 				email: "unknown@localhost.local",
@@ -64,7 +64,7 @@ export class TrezorWallet implements HardwareWallet {
 
 	async disconnect(): Promise<void> {
 		if (this.TrezorConnect) {
-			// @ts-ignore - Optional dependency, dispose() exists at runtime
+			// @ts-expect-error - Optional dependency, dispose() exists at runtime
 			this.TrezorConnect.dispose();
 			this._isConnected = false;
 		}
@@ -81,7 +81,7 @@ export class TrezorWallet implements HardwareWallet {
 			"../../primitives/Address/index.js"
 		);
 
-		// @ts-ignore - Optional dependency, ethereumGetAddress() exists at runtime
+		// @ts-expect-error - Optional dependency, ethereumGetAddress() exists at runtime
 		const result = await this.TrezorConnect.ethereumGetAddress({ path });
 
 		if (!result.success) {
@@ -104,7 +104,7 @@ export class TrezorWallet implements HardwareWallet {
 			showOnTrezor: false,
 		}));
 
-		// @ts-ignore - Optional dependency, ethereumGetAddress() exists at runtime
+		// @ts-expect-error - Optional dependency, ethereumGetAddress() exists at runtime
 		const result = await this.TrezorConnect.ethereumGetAddress({ bundle });
 
 		if (!result.success) {
@@ -150,7 +150,7 @@ export class TrezorWallet implements HardwareWallet {
 			trezorTx.maxPriorityFeePerGas = Hex.fromBigInt(tx.maxPriorityFeePerGas);
 		}
 
-		// @ts-ignore - Optional dependency, ethereumSignTransaction() exists at runtime
+		// @ts-expect-error - Optional dependency, ethereumSignTransaction() exists at runtime
 		const result = await this.TrezorConnect.ethereumSignTransaction({
 			path,
 			transaction: trezorTx,
@@ -180,7 +180,7 @@ export class TrezorWallet implements HardwareWallet {
 		const Hash = await import("../../primitives/Hash/index.js");
 		const Hex = await import("../../primitives/Hex/index.js");
 
-		// @ts-ignore - Optional dependency, ethereumSignTypedData() exists at runtime
+		// @ts-expect-error - Optional dependency, ethereumSignTypedData() exists at runtime
 		const result = await this.TrezorConnect.ethereumSignTypedData({
 			path,
 			data: typedData,
@@ -208,7 +208,7 @@ export class TrezorWallet implements HardwareWallet {
 		const Hash = await import("../../primitives/Hash/index.js");
 		const Hex = await import("../../primitives/Hex/index.js");
 
-		// @ts-ignore - Optional dependency, ethereumSignMessage() exists at runtime
+		// @ts-expect-error - Optional dependency, ethereumSignMessage() exists at runtime
 		const result = await this.TrezorConnect.ethereumSignMessage({
 			path,
 			message: Hex.fromBytes(message).slice(2),
@@ -230,7 +230,7 @@ export class TrezorWallet implements HardwareWallet {
 	async getDeviceInfo(): Promise<DeviceInfo> {
 		if (!this.TrezorConnect) throw new Error("Trezor not connected");
 
-		// @ts-ignore - Optional dependency, getFeatures() exists at runtime
+		// @ts-expect-error - Optional dependency, getFeatures() exists at runtime
 		const result = await this.TrezorConnect.getFeatures();
 
 		if (!result.success) {

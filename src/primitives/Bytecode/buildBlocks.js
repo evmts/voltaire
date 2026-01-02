@@ -10,7 +10,7 @@ import { isTerminatorOpcode } from "./isTerminatorOpcode.js";
  * @param {Set<number>} jumpDests
  * @returns {Array<import('./BytecodeType.js').BasicBlock>}
  */
-export function buildBlocks(instructions, boundaries, jumpDests) {
+export function buildBlocks(instructions, boundaries, _jumpDests) {
 	const blocks = [];
 	let blockIndex = 0;
 	let currentBlockStart = 0;
@@ -220,7 +220,7 @@ function extractJumpTarget(blockInsts) {
 		return undefined;
 	}
 
-	const lastInst = blockInsts[blockInsts.length - 1];
+	const _lastInst = blockInsts[blockInsts.length - 1];
 	const prevInst = blockInsts[blockInsts.length - 2];
 
 	// Check for PUSH+JUMP(I) pattern

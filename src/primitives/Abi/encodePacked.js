@@ -90,7 +90,7 @@ function encodePackedValue(type, value) {
 	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
 	if (fixedArrayMatch) {
 		const elementType = fixedArrayMatch[1];
-		const length = Number.parseInt(fixedArrayMatch[2]);
+		const length = Number.parseInt(fixedArrayMatch[2], 10);
 		const array = /** @type {unknown[]} */ (value);
 		if (array.length !== length) {
 			throw new AbiEncodingError(
@@ -145,7 +145,7 @@ function encodePackedValue(type, value) {
 
 	// Fixed bytes (bytes1-bytes32) - no padding
 	if (type.startsWith("bytes")) {
-		const size = Number.parseInt(type.slice(5));
+		const size = Number.parseInt(type.slice(5), 10);
 		if (size >= 1 && size <= 32) {
 			const bytes =
 				typeof value === "string"
@@ -165,7 +165,7 @@ function encodePackedValue(type, value) {
 
 	// Uint - minimal bytes needed
 	if (type.startsWith("uint")) {
-		const bits = type === "uint" ? 256 : Number.parseInt(type.slice(4));
+		const bits = type === "uint" ? 256 : Number.parseInt(type.slice(4), 10);
 		const bytes = bits / 8;
 		let bigintValue;
 		if (typeof value === "number") {
@@ -189,7 +189,7 @@ function encodePackedValue(type, value) {
 
 	// Int - minimal bytes needed (two's complement)
 	if (type.startsWith("int")) {
-		const bits = type === "int" ? 256 : Number.parseInt(type.slice(3));
+		const bits = type === "int" ? 256 : Number.parseInt(type.slice(3), 10);
 		const bytes = bits / 8;
 		let bigintValue;
 		if (typeof value === "number") {

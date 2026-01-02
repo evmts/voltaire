@@ -1,5 +1,3 @@
-import { ECDSA_WITH_V_SIZE } from "./constants.js";
-
 /**
  * Convert Signature to compact format (EIP-2098: yParity encoded in bit 255 of s)
  *

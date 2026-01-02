@@ -1,4 +1,5 @@
 export type { Bytes4Type } from "./Bytes4Type.js";
+
 import type { Bytes4Type } from "./Bytes4Type.js";
 
 import { clone } from "./clone.js";

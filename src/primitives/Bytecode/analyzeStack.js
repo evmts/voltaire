@@ -53,7 +53,7 @@ export function analyzeStack(bytecode, options = {}) {
 
 	/** @type {import('./BytecodeType.js').BlockStackInfo[]} */
 	const byBlock = [];
-	const blockStartPc = 0;
+	const _blockStartPc = 0;
 
 	for (let i = 0; i < instructions.length; i++) {
 		const instr = instructions[i];

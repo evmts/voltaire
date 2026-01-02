@@ -5,7 +5,6 @@
  */
 
 import * as Data from "./Data.js";
-import type { BrandedRlp } from "./RlpType.js";
 import { decode } from "./decode.js";
 import type { Encodable } from "./encode.js";
 import { encode } from "./encode.js";
@@ -16,6 +15,7 @@ import { getEncodedLength } from "./getEncodedLength.js";
 import { isBytesData } from "./isBytesData.js";
 import { isData } from "./isData.js";
 import { isListData } from "./isListData.js";
+import type { BrandedRlp } from "./RlpType.js";
 import { toJSON } from "./toJSON.js";
 
 // ============================================================================
@@ -328,9 +328,9 @@ results.push(
 
 // Calculate statistics
 const opsPerSecValues = results.map((r) => r.opsPerSec);
-const minOps = Math.min(...opsPerSecValues);
-const maxOps = Math.max(...opsPerSecValues);
-const avgOps =
+const _minOps = Math.min(...opsPerSecValues);
+const _maxOps = Math.max(...opsPerSecValues);
+const _avgOps =
 	opsPerSecValues.reduce((a, b) => a + b, 0) / opsPerSecValues.length;
 
 // Highlight key metrics
@@ -341,7 +341,7 @@ const keyResults = [
 	results.find((r) => r.name.includes("decode short list")),
 	results.find((r) => r.name.includes("round-trip short bytes")),
 ].filter(Boolean) as BenchmarkResult[];
-keyResults.forEach((r) => {});
+keyResults.forEach((_r) => {});
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {

@@ -1,8 +1,8 @@
 import * as BlockHash from "../BlockHash/index.js";
+import { InvalidFormatError } from "../errors/ValidationError.js";
 import * as NetworkId from "../NetworkId/index.js";
 import * as PeerId from "../PeerId/index.js";
 import * as Uint from "../Uint/index.js";
-import { InvalidFormatError } from "../errors/ValidationError.js";
 
 /**
  * Create NodeInfo from RPC response object

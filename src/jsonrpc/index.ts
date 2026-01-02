@@ -7,22 +7,20 @@
  * @module jsonrpc
  */
 
-// Re-export all JSON-RPC types and methods
-export * from "./JsonRpc.js";
-
-// Export namespace-specific methods for tree-shakable imports
-export * as eth from "./eth/methods.js";
+export * as anvil from "./anvil/methods.js";
 export * as debug from "./debug/methods.js";
 export * as engine from "./engine/methods.js";
-export * as wallet from "./wallet/methods.js";
-export * as anvil from "./anvil/methods.js";
+// Export namespace-specific methods for tree-shakable imports
+export * as eth from "./eth/methods.js";
 export * as hardhat from "./hardhat/methods.js";
-export * as web3 from "./web3/methods.js";
+// Re-export all JSON-RPC types and methods
+export * from "./JsonRpc.js";
 export * as net from "./net/methods.js";
 export * as txpool from "./txpool/methods.js";
-
 // Export shared types
 export * as types from "./types/index.js";
+export * as wallet from "./wallet/methods.js";
+export * as web3 from "./web3/methods.js";
 
 // ============================================================================
 // Rpc Namespace - Request Constructor API

@@ -15,7 +15,7 @@ export function selfdestruct(frame) {
 	// Pop beneficiary address
 	const resultBeneficiary = popStack(frame);
 	if (resultBeneficiary.error) return resultBeneficiary.error;
-	const beneficiary = resultBeneficiary.value;
+	const _beneficiary = resultBeneficiary.value;
 
 	// Calculate base gas cost
 	// EIP-150 (Tangerine Whistle): 5000 gas base cost

@@ -1,11 +1,10 @@
 // Export type definition
-export type { EntryPointType } from "./EntryPointType.js";
 
 // Export constants
 export { ENTRYPOINT_V06, ENTRYPOINT_V07 } from "./constants.js";
+export type { EntryPointType } from "./EntryPointType.js";
 
 import type { AddressType } from "../Address/AddressType.js";
-import type { EntryPointType } from "./EntryPointType.js";
 // Import all functions
 import { equals as _equals } from "./equals.js";
 import { from } from "./from.js";

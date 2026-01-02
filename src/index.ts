@@ -3,20 +3,15 @@
  * TypeScript implementations with native Zig bindings via Bun FFI and WASM
  */
 
-// Core primitives - Data-first, tree-shakeable API
-export * from "./primitives/index.js";
-
 // Cryptography - Data-first crypto operations
 export * from "./crypto/index.js";
-
-// Standards - Ethereum token standards (ERC-20, ERC-721, ERC-1155, ERC-165)
-export * from "./standards/index.js";
-
-// WASM primitives (high-performance WebAssembly bindings)
-export * as wasm from "./wasm/index.js";
-
 // EVM execution (frame, host, instruction handlers)
 export * as evm from "./evm/index.js";
-
 // Precompiles (0x01-0x0a + BLS)
 export * as precompiles from "./evm/precompiles/precompiles.js";
+// Core primitives - Data-first, tree-shakeable API
+export * from "./primitives/index.js";
+// Standards - Ethereum token standards (ERC-20, ERC-721, ERC-1155, ERC-165)
+export * from "./standards/index.js";
+// WASM primitives (high-performance WebAssembly bindings)
+export * as wasm from "./wasm/index.js";

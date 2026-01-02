@@ -18,18 +18,18 @@
 
 import type { AddressType as BrandedAddress } from "../primitives/Address/AddressType.js";
 import type { HashType } from "../primitives/Hash/index.js";
+import type {
+	Domain,
+	Message,
+	TypeDefinitions,
+	TypedData,
+	TypeProperty,
+} from "./EIP712/index.js";
 import {
 	Eip712EncodingError,
 	Eip712Error,
 	Eip712InvalidMessageError,
 	Eip712TypeNotFoundError,
-} from "./EIP712/index.js";
-import type {
-	Domain,
-	Message,
-	TypeDefinitions,
-	TypeProperty,
-	TypedData,
 } from "./EIP712/index.js";
 import { Keccak256Wasm } from "./keccak256.wasm.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
@@ -209,7 +209,7 @@ export namespace Eip712Wasm {
 		}
 
 		if (type.startsWith("bytes")) {
-			const size = Number.parseInt(type.slice(5));
+			const size = Number.parseInt(type.slice(5), 10);
 			const bytes = value as Uint8Array;
 			result.set(bytes.slice(0, size), 0);
 			return result;

@@ -330,13 +330,13 @@ results.push(
 );
 
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-sorted.slice(0, 5).forEach((r, i) => {
+sorted.slice(0, 5).forEach((_r, _i) => {
 	// Top performers
 });
 sorted
 	.slice(-5)
 	.reverse()
-	.forEach((r, i) => {
+	.forEach((_r, _i) => {
 		// Bottom performers
 	});
 

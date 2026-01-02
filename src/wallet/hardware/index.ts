@@ -1,6 +1,7 @@
 export * from "./HardwareWallet.js";
 export { LedgerWallet } from "./LedgerWallet.js";
 export { TrezorWallet } from "./TrezorWallet.js";
+
 import { LedgerWallet } from "./LedgerWallet.js";
 import { TrezorWallet } from "./TrezorWallet.js";
 

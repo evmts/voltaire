@@ -5,10 +5,10 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import type { TypedProvider } from "./TypedProvider.js";
 import type { EIP1193EventMap } from "./events/EIP1193Events.js";
 import { ProviderRpcError } from "./events/ProviderRpcError.js";
 import type { VoltaireRpcSchema } from "./schemas/VoltaireRpcSchema.js";
+import type { TypedProvider } from "./TypedProvider.js";
 
 describe("TypedProvider", () => {
 	it("provides type-safe request method", async () => {

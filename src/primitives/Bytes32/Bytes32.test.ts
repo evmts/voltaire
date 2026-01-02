@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { Bytes32Type } from "./Bytes32Type.js";
 import * as Bytes32 from "./index.js";
 
 describe("Bytes32", () => {

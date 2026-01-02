@@ -24,8 +24,8 @@ Parameter.prototype.encode = encode.call.bind(encode);
 Parameter.prototype.decode = decode.call.bind(decode);
 
 Parameter.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
-	depth,
-	options,
+	_depth,
+	_options,
 ) {
 	return `Parameter(${this.type}${this.name ? ` ${this.name}` : ""})`;
 };

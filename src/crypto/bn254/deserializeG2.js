@@ -1,6 +1,6 @@
+import { Bn254Error } from "./errors.js";
 import * as Fp2 from "./Fp2/index.js";
 import * as G2 from "./G2/index.js";
-import { Bn254Error } from "./errors.js";
 
 /**
  * Deserialize G2 point from bytes

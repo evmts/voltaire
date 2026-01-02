@@ -1,6 +1,6 @@
-import * as Fp from "../Fp/index.js";
 import { B_G1 } from "../constants.js";
 import { Bn254InvalidPointError } from "../errors.js";
+import * as Fp from "../Fp/index.js";
 
 /**
  * Create G1 point from affine coordinates with validation

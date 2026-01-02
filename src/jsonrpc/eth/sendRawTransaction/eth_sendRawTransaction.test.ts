@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { SendRawTransactionRequest, method } from "./eth_sendRawTransaction.js";
+import { method, SendRawTransactionRequest } from "./eth_sendRawTransaction.js";
 
 describe("eth_sendRawTransaction", () => {
 	describe("Request Creation", () => {

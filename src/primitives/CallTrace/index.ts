@@ -1,8 +1,8 @@
 export type { CallTraceType } from "./CallTraceType.js";
+export { flatten as _flatten } from "./flatten.js";
 export { from as _from } from "./from.js";
 export { getCalls as _getCalls } from "./getCalls.js";
 export { hasError as _hasError } from "./hasError.js";
-export { flatten as _flatten } from "./flatten.js";
 
 import type { CallTraceType } from "./CallTraceType.js";
 import { flatten as _flatten } from "./flatten.js";

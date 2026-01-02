@@ -1,10 +1,6 @@
 // Debug: capture unhandled errors
-window.addEventListener("error", (e) =>
-	console.error("Global error:", e.message, e.filename, e.lineno),
-);
-window.addEventListener("unhandledrejection", (e) =>
-	console.error("Unhandled rejection:", e.reason),
-);
+window.addEventListener("error", (_e) => {});
+window.addEventListener("unhandledrejection", (_e) => {});
 
 import "./style.css";
 import { type ApiMode, ApiModeToggle } from "./components/ApiModeToggle.js";
@@ -26,8 +22,8 @@ import { DisplaySettingsManager } from "./features/DisplaySettings.js";
 import { ExecutionHistory } from "./features/ExecutionHistory.js";
 import { createInlineSuggestionsButton } from "./features/InlineSuggestions.js";
 import {
-	KeyboardShortcuts,
 	addShortcutStyles,
+	KeyboardShortcuts,
 } from "./features/KeyboardShortcuts.js";
 import { SearchReplace } from "./features/SearchReplace.js";
 import { VimMode } from "./features/VimMode.js";
@@ -357,7 +353,7 @@ async function handleRun(): Promise<void> {
 
 	try {
 		await executor.execute(code);
-	} catch (error) {
+	} catch (_error) {
 		// Error already logged to console by executor
 	} finally {
 		const duration = performance.now() - startTime;

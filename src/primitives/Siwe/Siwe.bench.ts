@@ -5,8 +5,8 @@
  */
 
 import { Address } from "../../Address/index.js";
-import type { BrandedMessage } from "./SiweMessageType.js";
 import * as Siwe from "./index.js";
+import type { BrandedMessage } from "./SiweMessageType.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -342,7 +342,7 @@ for (const count of resourceCounts) {
 }
 
 // Find fastest and slowest operations
-const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
+const _sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {

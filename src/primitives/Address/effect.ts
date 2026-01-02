@@ -9,6 +9,7 @@ import * as BrandedAddressImpl from "./internal-index.js";
 
 // Create isValidChecksum function for Schema validation (synchronous)
 const isValidChecksum = IsValidChecksumFactory({ keccak256 });
+
 import {
 	type CalculateCreate2AddressErrors,
 	type CalculateCreateAddressErrors,
@@ -27,7 +28,6 @@ import {
 	InvalidHexStringError,
 	InvalidPrivateKeyError,
 	InvalidValueError,
-	RlpEncodingError,
 	type ToChecksummedErrors,
 } from "./effect-errors.js";
 import {
@@ -203,7 +203,7 @@ export class AddressSchema extends Schema.Class<AddressSchema>("Address")({
 				const addr = BrandedAddressImpl.fromBytes(value);
 				return new AddressSchema({ value: addr });
 			},
-			catch: (error) => {
+			catch: (_error) => {
 				return new InvalidAddressLengthError({
 					value,
 					actualLength: value.length,
@@ -738,7 +738,7 @@ export const AddressFromHex = Schema.transform(
 	Schema.String,
 	Schema.instanceOf(AddressSchema),
 	{
-		decode: (hex) => {
+		decode: (_hex) => {
 			// This is problematic because Schema transforms are synchronous
 			// but our method returns Effect now
 			// We'll need to use a different approach
@@ -759,7 +759,7 @@ export const AddressFromChecksummed = Schema.transform(
 	Schema.String,
 	Schema.instanceOf(ChecksumAddress),
 	{
-		decode: (str) => {
+		decode: (_str) => {
 			// This is problematic because Schema transforms are synchronous
 			// but our method returns Effect now
 			throw new Error(
@@ -784,7 +784,7 @@ export const AddressFromUnknown = Schema.transform(
 	),
 	Schema.instanceOf(AddressSchema),
 	{
-		decode: (value) => {
+		decode: (_value) => {
 			// This is problematic because Schema transforms are synchronous
 			// but our method returns Effect now
 			throw new Error(

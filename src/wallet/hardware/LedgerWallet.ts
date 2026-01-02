@@ -35,22 +35,22 @@ export class LedgerWallet implements HardwareWallet {
 
 	async connect(): Promise<void> {
 		const TransportModule = await import("@ledgerhq/hw-transport-webusb");
-		// @ts-ignore - Optional dependency, default export is TransportWebUSB class
+		// @ts-expect-error - Optional dependency, default export is TransportWebUSB class
 		const TransportWebUSB = TransportModule.default;
 		const EthModule = await import("@ledgerhq/hw-app-eth");
-		// @ts-ignore - Optional dependency, default export is Eth class
+		// @ts-expect-error - Optional dependency, default export is Eth class
 		const Eth = EthModule.default;
 
-		// @ts-ignore - request() is a static method on TransportWebUSB
+		// @ts-expect-error - request() is a static method on TransportWebUSB
 		this.transport = await TransportWebUSB.request();
-		// @ts-ignore - Eth is constructable
+		// @ts-expect-error - Eth is constructable
 		this.eth = new Eth(this.transport);
 		this._isConnected = true;
 	}
 
 	async disconnect(): Promise<void> {
 		if (this.transport) {
-			// @ts-ignore - Optional dependency, close() exists at runtime
+			// @ts-expect-error - Optional dependency, close() exists at runtime
 			await this.transport.close();
 			this.transport = undefined;
 			this.eth = undefined;
@@ -68,7 +68,7 @@ export class LedgerWallet implements HardwareWallet {
 		const { default: Address } = await import(
 			"../../primitives/Address/index.js"
 		);
-		// @ts-ignore - Optional dependency, getAddress() exists at runtime
+		// @ts-expect-error - Optional dependency, getAddress() exists at runtime
 		const result = await this.eth.getAddress(path);
 		return Address.from(result.address);
 	}
@@ -100,7 +100,7 @@ export class LedgerWallet implements HardwareWallet {
 		const serialized = Transaction.serialize(tx);
 		const hexString = Hex.fromBytes(serialized).slice(2);
 
-		// @ts-ignore - Optional dependency, signTransaction() exists at runtime
+		// @ts-expect-error - Optional dependency, signTransaction() exists at runtime
 		const result = await this.eth.signTransaction(path, hexString);
 
 		// Combine r, s, v into signature
@@ -126,7 +126,7 @@ export class LedgerWallet implements HardwareWallet {
 		);
 		const Hash = await import("../../primitives/Hash/index.js");
 
-		// @ts-ignore - Optional dependency, signEIP712HashedMessage() exists at runtime
+		// @ts-expect-error - Optional dependency, signEIP712HashedMessage() exists at runtime
 		const result = await this.eth.signEIP712HashedMessage(
 			path,
 			this.hashDomain(typedData.domain),
@@ -149,7 +149,7 @@ export class LedgerWallet implements HardwareWallet {
 		const Hash = await import("../../primitives/Hash/index.js");
 
 		const hexMessage = Hex.fromBytes(message).slice(2);
-		// @ts-ignore - Optional dependency, signPersonalMessage() exists at runtime
+		// @ts-expect-error - Optional dependency, signPersonalMessage() exists at runtime
 		const result = await this.eth.signPersonalMessage(path, hexMessage);
 
 		return Signature.from({
@@ -162,7 +162,7 @@ export class LedgerWallet implements HardwareWallet {
 	async getDeviceInfo(): Promise<DeviceInfo> {
 		if (!this.eth) throw new Error("Ledger not connected");
 
-		// @ts-ignore - Optional dependency, getAppConfiguration() exists at runtime
+		// @ts-expect-error - Optional dependency, getAppConfiguration() exists at runtime
 		const appConfig = await this.eth.getAppConfiguration();
 
 		return {

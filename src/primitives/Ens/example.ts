@@ -4,15 +4,15 @@
  * Demonstrates ENS normalization, validation, namehash, and labelhash operations.
  */
 
-import * as Hex from "../Hex/index.js";
 import * as Ens from "./index.js";
-const normalized = Ens.normalize("VITALIK.eth");
+
+const _normalized = Ens.normalize("VITALIK.eth");
 
 try {
 	Ens.validate("vitalik.eth");
-} catch (err) {}
-const hash = Ens.namehash("vitalik.eth");
-const labelHash = Ens.labelhash("vitalik");
-const subdomainHash = Ens.namehash("sub.vitalik.eth");
-const rootHash = Ens.namehash("");
+} catch (_err) {}
+const _hash = Ens.namehash("vitalik.eth");
+const _labelHash = Ens.labelhash("vitalik");
+const _subdomainHash = Ens.namehash("sub.vitalik.eth");
+const _rootHash = Ens.namehash("");
 // Expected: 0x0000000000000000000000000000000000000000000000000000000000000000

@@ -1,7 +1,6 @@
-import type { BloomFilterType } from "./BloomFilterType.js";
-
 // Import implementation functions with proper types
 import { add as _add } from "./add.js";
+import type { BloomFilterType } from "./BloomFilterType.js";
 import { combine as _combine } from "./combine.js";
 import { contains as _contains } from "./contains.js";
 import { create as _create } from "./create.js";
@@ -15,8 +14,8 @@ import { toHex as _toHex } from "./toHex.js";
 
 // Re-export type and errors
 export type { BloomFilterType } from "./BloomFilterType.js";
-export * from "./errors.js";
 export * from "./constants.js";
+export * from "./errors.js";
 
 // Export individual functions with proper types
 export function add(filter: BloomFilterType, item: Uint8Array): void {

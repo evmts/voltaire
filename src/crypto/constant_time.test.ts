@@ -86,9 +86,6 @@ describe("Constant-time operations", () => {
 
 			// Log for debugging (not an assertion)
 			if (stdDev / mean > 1.0) {
-				console.warn(
-					"High timing variance detected (stdDev/mean > 1.0). This is expected in JS but may indicate timing leaks.",
-				);
 			}
 		});
 	});

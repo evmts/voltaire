@@ -1,6 +1,7 @@
 // @ts-nocheck
-export * from "./EventType.js";
+
 export { Event } from "./Event.js";
+export * from "./EventType.js";
 
 // Import crypto dependencies
 import {

@@ -1,5 +1,3 @@
-import { SIZE } from "./constants.js";
-
 /**
  * Factory: Generate KZG proof for blob
  *
@@ -20,6 +18,7 @@ import { SIZE } from "./constants.js";
  * ```
  */
 import { InvalidLengthError, PrimitiveError } from "../errors/index.js";
+import { SIZE } from "./constants.js";
 
 export function ToProof(
 	/** @type {{ computeBlobKzgProof: (blob: Uint8Array, commitment: Uint8Array) => Uint8Array }} */ {

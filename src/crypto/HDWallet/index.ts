@@ -4,5 +4,5 @@
  * @module HDWallet
  */
 
-export * from "./index.js";
 export { HDWallet } from "./HDWallet.js";
+export * from "./index.js";

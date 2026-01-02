@@ -2,13 +2,12 @@
  * EventLog Type Definitions
  */
 
-// Re-export types
-export type { EventLogType, Filter } from "./EventLogType.js";
-
 // Re-export runtime functions
 export { clone } from "./clone.js";
 export { copy } from "./copy.js";
 export { create } from "./create.js";
+// Re-export types
+export type { EventLogType, Filter } from "./EventLogType.js";
 export { filterLogs } from "./filterLogs.js";
 export { from } from "./from.js";
 export { getIndexed } from "./getIndexed.js";

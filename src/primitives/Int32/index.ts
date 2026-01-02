@@ -1,6 +1,7 @@
 // Export type from Int32Type
 export type { BrandedInt32 } from "./Int32Type.js";
-export { INT32_MIN, INT32_MAX } from "./Int32Type.js";
+export { INT32_MAX, INT32_MIN } from "./Int32Type.js";
+
 // Note: constants.js exports are imported and re-exported below
 
 // Import all functions

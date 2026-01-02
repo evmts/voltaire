@@ -8,11 +8,10 @@
  * @since 0.0.0
  */
 
-export type { WrappedErrorType } from "./WrappedErrorType.js";
-
 export { WRAPPED_ERROR_SELECTOR } from "./constants.js";
-export { encodeWrappedError } from "./encodeWrappedError.js";
 export { decodeWrappedError } from "./decodeWrappedError.js";
+export { encodeWrappedError } from "./encodeWrappedError.js";
+export type { WrappedErrorType } from "./WrappedErrorType.js";
 
 // Namespace export
 import { WRAPPED_ERROR_SELECTOR } from "./constants.js";

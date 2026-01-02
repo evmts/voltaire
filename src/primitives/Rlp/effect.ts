@@ -1,8 +1,7 @@
 import * as Brand from "effect/Brand";
 import * as Schema from "effect/Schema";
-
-import type { BrandedRlp } from "./RlpType.js";
 import * as RlpImpl from "./internal-index.js";
+import type { BrandedRlp } from "./RlpType.js";
 
 export type RlpBrand = BrandedRlp & Brand.Brand<"Rlp">;
 

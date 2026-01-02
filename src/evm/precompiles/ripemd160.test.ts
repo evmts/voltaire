@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as Hardfork from "../../primitives/Hardfork/index.js";
-import { PrecompileAddress, execute, ripemd160 } from "./precompiles.js";
+import { execute, PrecompileAddress, ripemd160 } from "./precompiles.js";
 
 /**
  * Helper: Convert hex string to Uint8Array

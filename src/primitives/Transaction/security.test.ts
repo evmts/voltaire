@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { Address } from "../Address/index.js";
 import { Hash } from "../Hash/index.js";
 import * as Transaction from "./index.js";
-import { Type } from "./types.js";
 import type { EIP1559, EIP4844, Legacy } from "./types.js";
+import { Type } from "./types.js";
 
 describe("Transaction Security Tests", () => {
 	describe("Signature validation", () => {

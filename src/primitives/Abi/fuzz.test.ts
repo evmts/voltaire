@@ -22,7 +22,7 @@ describe("ABI Fuzz Tests", () => {
 	}
 
 	// Helper: generate random ABI type
-	function randomAbiType(): string {
+	function _randomAbiType(): string {
 		const types = [
 			"uint256",
 			"uint128",

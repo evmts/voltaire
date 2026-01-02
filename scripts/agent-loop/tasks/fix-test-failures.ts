@@ -37,12 +37,12 @@ const config: TaskConfig = {
 			// Parse vitest output: "Tests  X failed | Y passed"
 			// Handle various spacing from stripped ANSI
 			const failMatch = result.match(/Tests\s+(\d+)\s+failed/);
-			const failCount = failMatch ? Number.parseInt(failMatch[1]) : 0;
+			const failCount = failMatch ? Number.parseInt(failMatch[1], 10) : 0;
 
 			// Also check for file-level failures
 			const fileFailMatch = result.match(/Test Files\s+(\d+)\s+failed/);
 			const fileFailCount = fileFailMatch
-				? Number.parseInt(fileFailMatch[1])
+				? Number.parseInt(fileFailMatch[1], 10)
 				: 0;
 
 			// Get details

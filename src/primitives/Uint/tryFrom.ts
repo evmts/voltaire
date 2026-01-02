@@ -1,5 +1,5 @@
-import type { Uint256Type } from "./Uint256Type.js";
 import { from } from "./from.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Try to create Uint256, returns undefined if invalid (standard form)

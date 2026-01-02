@@ -1,14 +1,13 @@
 import { describe, it } from "vitest";
 import type { AddressType } from "../../Address/AddressType.js";
-import { Type } from "../types.js";
 import type { AccessList } from "../types.js";
+import { Type } from "../types.js";
 import type { TransactionEIP2930Type } from "./TransactionEIP2930Type.js";
 
-type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<X, Y> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+		? true
+		: false;
 
 describe("TransactionEIP2930Type", () => {
 	it("type structure is correct", () => {
@@ -76,7 +75,7 @@ describe("TransactionEIP2930Type", () => {
 
 	it("rejects missing fields", () => {
 		// @ts-expect-error - missing nonce
-		const tx1: TransactionEIP2930Type = {
+		const _tx1: TransactionEIP2930Type = {
 			__brand: "TransactionEIP2930",
 			type: Type.EIP2930,
 			chainId: 1n,
@@ -94,7 +93,7 @@ describe("TransactionEIP2930Type", () => {
 
 	it("rejects wrong type value", () => {
 		// @ts-expect-error - wrong type value
-		const tx: TransactionEIP2930Type = {
+		const _tx: TransactionEIP2930Type = {
 			__brand: "TransactionEIP2930",
 			type: Type.Legacy,
 			chainId: 1n,

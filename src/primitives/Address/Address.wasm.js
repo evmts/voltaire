@@ -4,12 +4,15 @@
  * Uses WebAssembly bindings to Zig implementation
  */
 
-export * from "./errors.js";
 export * from "./constants.js";
+export * from "./errors.js";
+
 import * as Checksummed from "./ChecksumAddress.js";
 export { Checksummed };
+
 import * as Lowercase from "./LowercaseAddress.js";
 export { Lowercase };
+
 import * as Uppercase from "./UppercaseAddress.js";
 export { Uppercase };
 
@@ -25,7 +28,6 @@ import {
 	setFromBase64Polyfill,
 	setFromHexPolyfill,
 	toBase64Polyfill,
-	toHexPolyfill,
 } from "./polyfills.js";
 
 /**

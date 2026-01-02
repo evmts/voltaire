@@ -1,6 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
-import * as Opcode from "../Opcode/index.js";
 import { Bytecode } from "./index.js";
 
 describe("Bytecode", () => {

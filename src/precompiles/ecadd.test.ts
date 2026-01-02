@@ -1,16 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { deserializeG1, serializeG1 } from "../crypto/bn254/BN254.js";
+import { FR_MOD } from "../crypto/bn254/constants.js";
 import * as G1 from "../crypto/bn254/G1/index.js";
 import {
-	FP_MOD,
-	FR_MOD,
-	G1_GENERATOR_X,
-	G1_GENERATOR_Y,
-} from "../crypto/bn254/constants.js";
-import {
-	PrecompileAddress,
 	bn254Add,
 	execute,
+	PrecompileAddress,
 } from "../evm/precompiles/precompiles.js";
 
 /**
@@ -221,7 +216,7 @@ describe("BN254 Point Addition (0x06) - EIP-196", () => {
 	describe("Edge cases", () => {
 		it("should handle addition with max field coordinates (invalid points rejected)", () => {
 			// Create point with x = p-1, y = p-1 (likely invalid)
-			const maxFp = (1n << 254n) - 1n; // Approximate field modulus
+			const _maxFp = (1n << 254n) - 1n; // Approximate field modulus
 			const input = new Uint8Array(128);
 			// Set coordinates to large values (will be invalid on BN254)
 			for (let i = 0; i < 32; i++) {

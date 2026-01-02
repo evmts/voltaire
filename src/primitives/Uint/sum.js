@@ -1,5 +1,4 @@
-import { MAX } from "./constants.js";
-import { ZERO } from "./constants.js";
+import { MAX, ZERO } from "./constants.js";
 
 /**
  * Sum multiple Uint256 values with wrapping

@@ -1,11 +1,10 @@
 export * from "./SelectorType.js";
 
-import type { SelectorLike, SelectorType } from "./SelectorType.js";
-
 import { equals as _equals } from "./equals.js";
 import { from as _from } from "./from.js";
 import { fromHex as _fromHex } from "./fromHex.js";
 import { fromSignature as _fromSignature } from "./fromSignature.js";
+import type { SelectorLike, SelectorType } from "./SelectorType.js";
 import { toHex as _toHex } from "./toHex.js";
 
 /**

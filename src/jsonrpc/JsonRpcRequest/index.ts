@@ -1,10 +1,10 @@
 // Export type definition
 export type { JsonRpcRequestType } from "./JsonRpcRequestType.js";
 
-// Import internal functions
-import type { JsonRpcRequestType } from "./JsonRpcRequestType.js";
 import { from } from "./from.js";
 import { isNotification as _isNotification } from "./isNotification.js";
+// Import internal functions
+import type { JsonRpcRequestType } from "./JsonRpcRequestType.js";
 import { withParams as _withParams } from "./withParams.js";
 
 // Export constructors

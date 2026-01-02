@@ -8,11 +8,15 @@ import type {
 } from "./BlobType.js";
 
 // Re-export types with original names
-export type { BrandedBlob } from "./BlobType.js";
-export type { Commitment } from "./BlobType.js";
-export type { Proof } from "./BlobType.js";
-export type { VersionedHash } from "./BlobType.js";
+export type {
+	BrandedBlob,
+	Commitment,
+	Proof,
+	VersionedHash,
+} from "./BlobType.js";
 
+// Import functions with proper type annotations
+import { calculateGas as _calculateGas } from "./calculateGas.js";
 import {
 	BYTES_PER_FIELD_ELEMENT,
 	COMMITMENT_VERSION_KZG,
@@ -22,9 +26,6 @@ import {
 	SIZE,
 	TARGET_GAS_PER_BLOCK,
 } from "./constants.js";
-
-// Import functions with proper type annotations
-import { calculateGas as _calculateGas } from "./calculateGas.js";
 import { estimateBlobCount as _estimateBlobCount } from "./estimateBlobCount.js";
 import { from as _from } from "./from.js";
 import { fromData as _fromData } from "./fromData.js";
@@ -32,14 +33,13 @@ import { isValid as _isValid } from "./isValid.js";
 import { isValidVersion as _isValidVersion } from "./isValidVersion.js";
 import { joinData as _joinData } from "./joinData.js";
 import { splitData as _splitData } from "./splitData.js";
-import { toData as _toData } from "./toData.js";
-import { VerifyBatch as _VerifyBatch } from "./verifyBatch.js";
-
 // Import factories with proper type annotations
 import { ToCommitment as _ToCommitment } from "./toCommitment.js";
+import { toData as _toData } from "./toData.js";
 import { ToProof as _ToProof } from "./toProof.js";
 import { ToVersionedHash as _ToVersionedHash } from "./toVersionedHash.js";
 import { Verify as _Verify } from "./verify.js";
+import { VerifyBatch as _VerifyBatch } from "./verifyBatch.js";
 
 // Type-safe wrappers
 const calculateGas: (blobCount: number) => number = _calculateGas;
@@ -85,17 +85,15 @@ const VerifyBatch: (deps: {
 	proofs: readonly ProofType[],
 ) => boolean = _VerifyBatch;
 
-// Import crypto dependencies
-import { hash as sha256 } from "../../crypto/SHA256/hash.js";
-
 // Import KZG functions from crypto module
 // Note: KZG is native-only, these will throw in WASM/browser environments
 import {
 	blobToKzgCommitment,
 	computeBlobKzgProof,
-	verifyBlobKzgProofBatch as kzgVerifyBlobKzgProofBatch,
 	verifyBlobKzgProof,
 } from "../../crypto/KZG/index.js";
+// Import crypto dependencies
+import { hash as sha256 } from "../../crypto/SHA256/hash.js";
 
 // Create wrapper functions with crypto auto-injected
 // Note: KZG functions require native FFI - will throw in WASM/browser

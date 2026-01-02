@@ -22,6 +22,6 @@ declare module "abitype" {
 
 // Re-export abitype types with the scoped configuration applied
 export type {
-	AbiParameterToPrimitiveType as AbiParameterToPrimitiveTypeWithUint8Array,
 	AbiParametersToPrimitiveTypes as AbiParametersToPrimitiveTypesWithUint8Array,
+	AbiParameterToPrimitiveType as AbiParameterToPrimitiveTypeWithUint8Array,
 } from "abitype";

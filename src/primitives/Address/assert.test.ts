@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hash } from "../../crypto/Keccak256/hash.js";
-import { assert, Assert } from "./assert.js";
+import { Assert, assert } from "./assert.js";
 import { InvalidAddressError, InvalidChecksumError } from "./errors.js";
 
 describe("Address.assert", () => {

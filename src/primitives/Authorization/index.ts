@@ -3,22 +3,18 @@ export type {
 	AuthorizationType,
 	BrandedAuthorization,
 } from "./AuthorizationType.js";
-export * from "./errors.js";
 export * from "./constants.js";
+export * from "./errors.js";
 export * from "./types.js";
 
 // Crypto dependencies
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { recoverPublicKey } from "../../crypto/Secp256k1/recoverPublicKey.js";
 import { sign as secp256k1Sign } from "../../crypto/Secp256k1/sign.js";
-import { FromPublicKey } from "../Address/fromPublicKey.js";
-import { encode as rlpEncode } from "../Rlp/encode.js";
-
-import type { Secp256k1PublicKeyType } from "../../crypto/Secp256k1/Secp256k1PublicKeyType.js";
-import type { Secp256k1SignatureType } from "../../crypto/Secp256k1/SignatureType.js";
 import type { AddressType } from "../Address/AddressType.js";
+import { FromPublicKey } from "../Address/fromPublicKey.js";
 import type { HashType } from "../Hash/HashType.js";
-import type { PrivateKeyType } from "../PrivateKey/PrivateKeyType.js";
+import { encode as rlpEncode } from "../Rlp/encode.js";
 import type { AuthorizationType } from "./AuthorizationType.js";
 
 // Create address factory with crypto dependencies

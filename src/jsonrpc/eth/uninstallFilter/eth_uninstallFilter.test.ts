@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { UninstallFilterRequest, method } from "./eth_uninstallFilter.js";
+import { method, UninstallFilterRequest } from "./eth_uninstallFilter.js";
 
 describe("eth_uninstallFilter", () => {
 	describe("Request Creation", () => {

@@ -7,8 +7,8 @@
 
 import { beforeAll, describe, expect, it } from "vitest";
 import * as loader from "../../wasm-loader/loader.js";
-import { Blake2 } from "./Blake2.js";
 import * as Blake2Namespace from "./Blake2.js";
+import { Blake2 } from "./Blake2.js";
 import { Blake2Wasm } from "./Blake2.wasm.js";
 
 // Load WASM module before tests

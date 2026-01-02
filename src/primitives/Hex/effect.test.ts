@@ -2,7 +2,6 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 import { HexBrand, HexFromBytes, HexFromUnknown, HexSchema } from "./effect.js";
-import * as HexImpl from "./index.js";
 
 describe("Hex Effect Schema", () => {
 	describe("HexSchema class", () => {

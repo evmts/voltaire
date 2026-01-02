@@ -1,5 +1,5 @@
-import type { Uint256Type } from "./Uint256Type.js";
 import { toBytes } from "./toBytes.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Convert Uint256 to ABI-encoded bytes (32 bytes, big-endian)

@@ -3,8 +3,6 @@
 export class AutoSave {
 	/** @type {any} */
 	#editor;
-	/** @type {AutoSaveOptions} */
-	#options;
 
 	/**
 	 * @param {any} editor
@@ -19,7 +17,7 @@ export class AutoSave {
 	 * @param {HTMLElement} unsavedIndicator
 	 * @param {HTMLElement} lastSavedIndicator
 	 */
-	init(unsavedIndicator, lastSavedIndicator) {
+	init(_unsavedIndicator, _lastSavedIndicator) {
 		// Stub: init autosave
 	}
 
@@ -27,7 +25,7 @@ export class AutoSave {
 	 * @param {string} path
 	 * @param {string} content
 	 */
-	loadFile(path, content) {
+	loadFile(_path, content) {
 		this.#editor.setValue(content);
 	}
 

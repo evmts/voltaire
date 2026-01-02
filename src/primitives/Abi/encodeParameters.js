@@ -4,7 +4,7 @@
 /** @import { ParametersToPrimitiveTypes } from "./Parameter.js" */
 
 import { AbiParameterMismatchError } from "./Errors.js";
-import { encodeValue, encodeUint256 } from "./encodeValue.js";
+import { encodeUint256, encodeValue } from "./encodeValue.js";
 
 /**
  * @template {readonly Parameter[]} TParams

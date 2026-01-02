@@ -3,8 +3,8 @@ import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
 import { PrivateKey } from "../../../crypto/Secp256k1/index.js";
 import { Address } from "../../Address/index.js";
 import { Type } from "../types.js";
-import type { TransactionEIP2930Type } from "./TransactionEIP2930Type.js";
 import * as TransactionEIP2930 from "./index.js";
+import type { TransactionEIP2930Type } from "./TransactionEIP2930Type.js";
 
 describe("TransactionEIP2930.getSender", () => {
 	it("recovers sender from valid signature (yParity 0)", () => {

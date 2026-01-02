@@ -1,16 +1,13 @@
 import * as Brand from "effect/Brand";
 import * as Schema from "effect/Schema";
-
 import {
-	SIZE,
 	calculateGas as _calculateGas,
 	estimateBlobCount as _estimateBlobCount,
-} from "./index.js";
-import {
 	from as _from,
 	fromData as _fromData,
 	isValid as _isValid,
 	toData as _toData,
+	SIZE,
 } from "./index.js";
 
 export type BlobBrand = Uint8Array & Brand.Brand<"Blob">;

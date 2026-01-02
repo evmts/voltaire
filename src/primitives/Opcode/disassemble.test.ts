@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Opcode from "./Opcode.js";
 import { disassemble } from "./disassemble.js";
+import * as Opcode from "./Opcode.js";
 
 describe("Opcode.disassemble", () => {
 	it("disassembles empty bytecode", () => {

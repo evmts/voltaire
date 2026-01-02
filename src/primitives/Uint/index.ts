@@ -1,8 +1,5 @@
 import type { Uint256Type as Uint256TypeDef } from "./Uint256Type.js";
 
-export type * from "./Uint256Type.js";
-export * from "./constants.js";
-
 // Import functions with explicit types
 export { bitLength } from "./bitLength.js";
 export { bitwiseAnd } from "./bitwiseAnd.js";
@@ -10,6 +7,7 @@ export { bitwiseNot } from "./bitwiseNot.js";
 export { bitwiseOr } from "./bitwiseOr.js";
 export { bitwiseXor } from "./bitwiseXor.js";
 export { clone } from "./clone.js";
+export * from "./constants.js";
 export { MAX, MIN, ONE, SIZE, ZERO } from "./constants.js";
 export { dividedBy } from "./dividedBy.js";
 export { equals } from "./equals.js";
@@ -51,6 +49,7 @@ export { toNumber } from "./toNumber.js";
 export { toPower } from "./toPower.js";
 export { toString } from "./toString.js";
 export { tryFrom } from "./tryFrom.js";
+export type * from "./Uint256Type.js";
 
 // Import for namespace
 import { bitLength } from "./bitLength.js";

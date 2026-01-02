@@ -1,5 +1,5 @@
-import type { Uint256Type } from "./Uint256Type.js";
 import { MAX } from "./constants.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Add Uint256 value with wrapping

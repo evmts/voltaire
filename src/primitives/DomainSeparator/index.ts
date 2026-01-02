@@ -6,14 +6,13 @@ import { toHex as toHexImpl } from "./toHex.js";
 
 export type { DomainSeparatorType } from "./DomainSeparatorType.js";
 export { SIZE } from "./DomainSeparatorType.js";
+export { equals as _equals } from "./equals.js";
 export * from "./errors.js";
-
 // Internal exports (prefixed with _)
 export { from as _from } from "./from.js";
 export { fromBytes as _fromBytes } from "./fromBytes.js";
 export { fromHex as _fromHex } from "./fromHex.js";
 export { toHex as _toHex } from "./toHex.js";
-export { equals as _equals } from "./equals.js";
 
 // Public wrapper functions (auto-convert inputs)
 export function from(

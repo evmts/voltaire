@@ -73,7 +73,7 @@ export function Verify({ keccak256, recoverPublicKey, addressFromPublicKey }) {
 				}
 			}
 			return true;
-		} catch (error) {
+		} catch (_error) {
 			// Recovery or verification failed
 			return false;
 		}

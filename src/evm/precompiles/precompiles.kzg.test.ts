@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { Keccak256 } from "../../crypto/Keccak256/index.js";
 import {
 	BYTES_PER_COMMITMENT,
 	BYTES_PER_FIELD_ELEMENT,
@@ -7,7 +8,6 @@ import {
 } from "../../crypto/KZG/constants.js";
 import * as Kzg from "../../crypto/KZG/index.js";
 import { hasNativeKzg } from "../../crypto/KZG/test-utils.js";
-import { Keccak256 } from "../../crypto/Keccak256/index.js";
 import { pointEvaluation } from "./precompiles.js";
 
 describe.skipIf(!hasNativeKzg)(

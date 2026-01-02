@@ -1,5 +1,5 @@
 // @ts-nocheck
-export { SIZE, HEX_SIZE } from "./constants.js";
+export { HEX_SIZE, SIZE } from "./constants.js";
 
 import { HEX_SIZE, SIZE } from "./constants.js";
 import { from } from "./from.js";

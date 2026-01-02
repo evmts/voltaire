@@ -15,7 +15,7 @@ const keccak256String = (str: string): Uint8Array => {
 	return keccak256(encoder.encode(str));
 };
 
-const getSelector = GetSelector({ keccak256String });
+const _getSelector = GetSelector({ keccak256String });
 
 describe("decodeParams", () => {
 	it("decodes error with no parameters", () => {

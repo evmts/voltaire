@@ -9,9 +9,7 @@ import * as Abi from "./index.js";
 import {
 	AbiDecodingError,
 	AbiEncodingError,
-	AbiInvalidSelectorError,
 	AbiItemNotFoundError,
-	AbiParameterMismatchError,
 } from "./index.js";
 import type {
 	Error as AbiError,

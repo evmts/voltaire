@@ -11,9 +11,8 @@
  * Usage: bun run scripts/generate-example-docs.ts
  */
 
-import { existsSync } from "node:fs";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-import { basename, dirname, join, parse, relative } from "node:path";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join, parse, relative } from "node:path";
 
 interface ExampleMetadata {
 	category: string;
@@ -56,7 +55,7 @@ async function findTsFiles(dir: string): Promise<string[]> {
 				files.push(fullPath);
 			}
 		}
-	} catch (err) {
+	} catch (_err) {
 		// Directory might not exist yet
 	}
 
@@ -85,7 +84,7 @@ function extractSnippet(content: string): string | null {
  */
 function transformImportsForDocs(snippet: string): string {
 	return snippet.replace(
-		/from ['"]\.\.\/\.\.\/src\/(crypto|primitives|evm|jsonrpc)\/([^\/]+)\/index\.js['"]/g,
+		/from ['"]\.\.\/\.\.\/src\/(crypto|primitives|evm|jsonrpc)\/([^/]+)\/index\.js['"]/g,
 		"from '@tevm/voltaire/$2'",
 	);
 }
@@ -137,7 +136,6 @@ async function processExample(
 	const snippet = extractSnippet(content);
 
 	if (!snippet) {
-		console.warn(`⚠️  No snippet markers found in ${filePath}`);
 		return null;
 	}
 
@@ -271,7 +269,7 @@ async function main() {
 		}
 	}
 
-	let generated = 0;
+	let _generated = 0;
 	let skipped = 0;
 
 	for (const example of examples) {
@@ -284,9 +282,8 @@ async function main() {
 
 			// Write file
 			await writeFile(example.outputPath, mdx, "utf-8");
-			generated++;
-		} catch (err) {
-			console.error(`❌ Failed to generate ${example.outputPath}:`, err);
+			_generated++;
+		} catch (_err) {
 			skipped++;
 		}
 	}
@@ -299,7 +296,6 @@ async function main() {
 	process.exit(skipped > 0 ? 1 : 0);
 }
 
-main().catch((err) => {
-	console.error("Fatal error:", err);
+main().catch((_err) => {
 	process.exit(1);
 });

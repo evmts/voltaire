@@ -1,6 +1,7 @@
 // @ts-nocheck
-export * from "./EventLogType.js";
+
 export * from "./EventLogConstructor.js";
+export * from "./EventLogType.js";
 
 import { clone } from "./clone.js";
 import { copy } from "./copy.js";

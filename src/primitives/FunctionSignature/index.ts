@@ -1,14 +1,13 @@
 export type {
-	FunctionSignatureType,
-	FunctionSignatureLike,
-} from "./FunctionSignatureType.js";
-
-import type {
 	FunctionSignatureLike,
 	FunctionSignatureType,
 } from "./FunctionSignatureType.js";
 
 import { equals as _equals } from "./equals.js";
+import type {
+	FunctionSignatureLike,
+	FunctionSignatureType,
+} from "./FunctionSignatureType.js";
 import { from as _from } from "./from.js";
 import { fromSignature as _fromSignature } from "./fromSignature.js";
 import { parseSignature as _parseSignature } from "./parseSignature.js";

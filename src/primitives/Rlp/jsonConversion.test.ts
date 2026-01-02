@@ -3,9 +3,9 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { fromJSON } from "./fromJSON.js";
 import { RlpDecodingError } from "./RlpError.js";
 import type { BrandedRlp } from "./RlpType.js";
-import { fromJSON } from "./fromJSON.js";
 import { toJSON } from "./toJSON.js";
 
 describe("Rlp.toJSON", () => {

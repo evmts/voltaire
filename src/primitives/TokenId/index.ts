@@ -1,7 +1,6 @@
-export type { TokenIdType } from "./TokenIdType.js";
 export * from "./errors.js";
+export type { TokenIdType } from "./TokenIdType.js";
 
-import type { TokenIdType } from "./TokenIdType.js";
 import { compare as _compare } from "./compare.js";
 import { MAX, MIN } from "./constants.js";
 import { equals as _equals } from "./equals.js";

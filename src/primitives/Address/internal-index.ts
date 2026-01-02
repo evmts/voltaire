@@ -1,20 +1,22 @@
-export * from "./errors.js";
-export * from "./constants.js";
-export type { AddressType } from "./AddressType.js";
-export type { AddressType as BrandedAddressType } from "./AddressType.js";
-
+export type {
+	AddressType,
+	AddressType as BrandedAddressType,
+} from "./AddressType.js";
 // Export factory functions from ChecksumAddress
 export { From, IsValid } from "./ChecksumAddress.js";
+export * from "./constants.js";
+export * from "./errors.js";
+
 import * as Checksummed from "./ChecksumAddress.js";
 export { Checksummed };
 
+export { CalculateCreate2Address } from "./calculateCreate2Address.js";
+export { CalculateCreateAddress } from "./calculateCreateAddress.js";
+export { FromPrivateKey } from "./fromPrivateKey.js";
+export { FromPublicKey } from "./fromPublicKey.js";
+export { IsValidChecksum } from "./isValidChecksum.js";
 // Export factory functions from wrappers
 export { ToChecksummed } from "./toChecksummed.js";
-export { IsValidChecksum } from "./isValidChecksum.js";
-export { CalculateCreateAddress } from "./calculateCreateAddress.js";
-export { CalculateCreate2Address } from "./calculateCreate2Address.js";
-export { FromPublicKey } from "./fromPublicKey.js";
-export { FromPrivateKey } from "./fromPrivateKey.js";
 
 // Export backward-compatible wrappers that inject dependencies automatically
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
@@ -81,10 +83,11 @@ export const fromPrivateKey = FromPrivateKeyFactory({
 
 import * as Lowercase from "./LowercaseAddress.js";
 export { Lowercase };
+
 import * as Uppercase from "./UppercaseAddress.js";
 export { Uppercase };
 
-import { assert, Assert } from "./assert.js";
+import { Assert, assert } from "./assert.js";
 import { clone } from "./clone.js";
 import { compare } from "./compare.js";
 import { SIZE } from "./constants.js";

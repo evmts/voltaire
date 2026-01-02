@@ -1,7 +1,7 @@
 import type { ParametersToPrimitiveTypes } from "../Parameter.js";
 import type { ParameterType } from "../parameter/index.js";
-import type { ErrorType } from "./ErrorType.js";
 import type { decodeParams } from "./decodeParams.js";
+import type { ErrorType } from "./ErrorType.js";
 import type { encodeParams } from "./encodeParams.js";
 import type { getSignature } from "./getSignature.js";
 import type { getSelector } from "./index.js";

@@ -200,7 +200,7 @@ describe("TransactionLegacy", () => {
 		});
 
 		it("getSender works with call pattern", () => {
-			const tx = TransactionLegacy({
+			const _tx = TransactionLegacy({
 				nonce: 0n,
 				gasPrice: 20000000000n,
 				gasLimit: 21000n,
@@ -217,7 +217,7 @@ describe("TransactionLegacy", () => {
 		});
 
 		it("verifySignature works with call pattern", () => {
-			const tx = TransactionLegacy({
+			const _tx = TransactionLegacy({
 				nonce: 0n,
 				gasPrice: 20000000000n,
 				gasLimit: 21000n,

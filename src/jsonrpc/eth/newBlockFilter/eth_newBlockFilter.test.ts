@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { NewBlockFilterRequest, method } from "./eth_newBlockFilter.js";
+import { method, NewBlockFilterRequest } from "./eth_newBlockFilter.js";
 
 describe("eth_newBlockFilter", () => {
 	describe("Request Creation", () => {

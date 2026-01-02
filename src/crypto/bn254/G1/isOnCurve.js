@@ -1,5 +1,5 @@
-import * as Fp from "../Fp/index.js";
 import { B_G1 } from "../constants.js";
+import * as Fp from "../Fp/index.js";
 import { isZero } from "./isZero.js";
 
 /**

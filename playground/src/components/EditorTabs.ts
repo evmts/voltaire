@@ -34,7 +34,7 @@ export class EditorTabs {
 	private setupKeyboardShortcuts(): void {
 		document.addEventListener("keydown", (e: KeyboardEvent) => {
 			if (e.metaKey || e.ctrlKey) {
-				const num = Number.parseInt(e.key);
+				const num = Number.parseInt(e.key, 10);
 				if (num >= 1 && num <= 9) {
 					e.preventDefault();
 					const index = num - 1;

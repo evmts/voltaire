@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { Uint256Type } from "./Uint256Type.js";
 import * as Uint from "./index.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 // ============================================================================
 // Boundary Value Tests

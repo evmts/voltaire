@@ -11,7 +11,7 @@
  * Usage: bun run scripts/fix-typescript-errors-loop.ts [--max-cycles N] [--max-budget N]
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { $ } from "bun";
 
@@ -20,6 +20,7 @@ const CONFIG = {
 	maxCycles: Number.parseInt(
 		process.argv.find((a) => a.startsWith("--max-cycles="))?.split("=")[1] ??
 			"10",
+		10,
 	),
 	maxBudgetPerCycle: Number.parseFloat(
 		process.argv.find((a) => a.startsWith("--max-budget="))?.split("=")[1] ??
@@ -60,7 +61,7 @@ async function getErrorCount(): Promise<number> {
 	try {
 		const result =
 			await $`bun run tsc --noEmit 2>&1 | grep -c "error TS"`.quiet();
-		return Number.parseInt(result.stdout.toString().trim()) || 0;
+		return Number.parseInt(result.stdout.toString().trim(), 10) || 0;
 	} catch {
 		// grep returns exit code 1 if no matches, which throws
 		return 0;
@@ -87,7 +88,7 @@ async function getRecentCommits(limit = 5): Promise<string[]> {
 }
 
 function generateHandoffPrompt(state: SessionState): string {
-	const topFiles =
+	const _topFiles =
 		state.reports.length > 0
 			? "See error distribution below"
 			: "Run error count first";
@@ -224,7 +225,6 @@ async function runClaudeCodeCycle(
 		const stderr = await new Response(proc.stderr).text();
 
 		if (exitCode !== 0) {
-			console.error("Claude stderr:", stderr);
 		}
 
 		return {
@@ -232,7 +232,6 @@ async function runClaudeCodeCycle(
 			output: stdout || stderr,
 		};
 	} catch (error) {
-		console.error("Claude Code cycle error:", error);
 		return {
 			success: false,
 			output: error instanceof Error ? error.message : String(error),
@@ -249,7 +248,7 @@ async function commitProgress(message: string): Promise<string | null> {
 		}
 
 		await $`git add -A`.quiet();
-		const result = await $`git commit -m "${message}"`.quiet();
+		const _result = await $`git commit -m "${message}"`.quiet();
 		const hash = await $`git rev-parse --short HEAD`.quiet();
 		return hash.stdout.toString().trim();
 	} catch {

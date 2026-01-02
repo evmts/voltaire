@@ -1,7 +1,6 @@
-import type { AbiParameter as AbiTypeParameter } from "abitype";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
-import type { AbiType } from "./Type.js";
 import type { AbiParameterToPrimitiveTypeWithUint8Array } from "./abitype-uint8array.js";
+import type { AbiType } from "./Type.js";
 
 export type Parameter<
 	TType extends AbiType = AbiType,

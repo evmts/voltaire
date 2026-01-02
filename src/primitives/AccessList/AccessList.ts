@@ -5,11 +5,10 @@
  * AccessList factory function exported from AccessList.js. Use BrandedAccessList for the type.
  */
 
+export type { AccessListConstructor } from "./AccessListConstructor.js";
 // Re-export types
 export type {
 	BrandedAccessList,
 	BrandedAccessList as Type,
 	Item,
 } from "./AccessListType.js";
-
-export type { AccessListConstructor } from "./AccessListConstructor.js";

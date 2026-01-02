@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX, ONE, ZERO } from "./constants.js";
+import { MAX, ZERO } from "./constants.js";
 import { from } from "./from.js";
 import { minimum } from "./minimum.js";
 

@@ -1,6 +1,8 @@
 // Export type definition
-export type { PrivateKeyType } from "./PrivateKeyType.js";
-export type { PrivateKeyType as BrandedPrivateKey } from "./PrivateKeyType.js";
+export type {
+	PrivateKeyType,
+	PrivateKeyType as BrandedPrivateKey,
+} from "./PrivateKeyType.js";
 
 // Import crypto dependencies
 import { sign as secp256k1Sign } from "../../crypto/Secp256k1/sign.js";

@@ -11,18 +11,17 @@ import { toHash as toHashImpl } from "./toHash.js";
 export type { DomainType } from "./DomainType.js";
 export type { ERC5267Response } from "./ERC5267Type.js";
 export { ERC5267_FIELDS } from "./ERC5267Type.js";
-export * from "./errors.js";
-
-// Internal exports (prefixed with _)
-export { from as _from } from "./from.js";
-export { toHash as _toHash } from "./toHash.js";
 export { encodeData as _encodeData } from "./encodeData.js";
 export { encodeType as _encodeType } from "./encodeType.js";
 export { encodeValue as _encodeValue } from "./encodeValue.js";
-export { hashType as _hashType } from "./hashType.js";
+export * from "./errors.js";
+// Internal exports (prefixed with _)
+export { from as _from } from "./from.js";
 export { getEIP712DomainType as _getEIP712DomainType } from "./getEIP712DomainType.js";
 export { getFieldsBitmap as _getFieldsBitmap } from "./getFieldsBitmap.js";
+export { hashType as _hashType } from "./hashType.js";
 export { toErc5267Response as _toErc5267Response } from "./toErc5267Response.js";
+export { toHash as _toHash } from "./toHash.js";
 
 // Public wrapper functions
 export function from(domain: {

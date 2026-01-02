@@ -2,7 +2,7 @@
 export type { BrandedEther, EtherType } from "./EtherType.js";
 
 // Export constants
-export { WEI_PER_ETHER, GWEI_PER_ETHER } from "./ether-constants.js";
+export { GWEI_PER_ETHER, WEI_PER_ETHER } from "./ether-constants.js";
 
 // Import all functions
 import { from } from "./ether-from.js";

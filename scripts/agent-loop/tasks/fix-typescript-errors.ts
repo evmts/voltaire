@@ -25,7 +25,7 @@ const config: TaskConfig = {
 			const result = await runCommand(
 				'bun run tsc --noEmit 2>&1 | grep -c "error TS" || echo "0"',
 			);
-			const count = Number.parseInt(result.trim()) || 0;
+			const count = Number.parseInt(result.trim(), 10) || 0;
 			return {
 				value: count,
 				status: count === 0 ? "No errors" : `${count} errors`,

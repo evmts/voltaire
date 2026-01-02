@@ -239,7 +239,6 @@ async function runClaudeCodeCycle(
 		const stderr = await new Response(proc.stderr).text();
 
 		if (exitCode !== 0) {
-			console.error("Claude stderr:", stderr.slice(0, 500));
 		}
 
 		return {
@@ -247,7 +246,6 @@ async function runClaudeCodeCycle(
 			output: stdout || stderr,
 		};
 	} catch (error) {
-		console.error("Claude Code cycle error:", error);
 		return {
 			success: false,
 			output: error instanceof Error ? error.message : String(error),
@@ -315,7 +313,7 @@ async function commitProgress(message: string): Promise<string | null> {
 	}
 }
 
-function printFinalSummary(config: TaskConfig, state: SessionState): void {}
+function printFinalSummary(_config: TaskConfig, _state: SessionState): void {}
 
 // ============================================================================
 // CLI Entry Point
@@ -331,6 +329,7 @@ async function main() {
 
 	const maxCycles = Number.parseInt(
 		args.find((a) => a.startsWith("--max-cycles="))?.split("=")[1] ?? "15",
+		10,
 	);
 	const maxBudget = Number.parseFloat(
 		args.find((a) => a.startsWith("--max-budget="))?.split("=")[1] ?? "2.0",
@@ -341,11 +340,7 @@ async function main() {
 	try {
 		const module = await import(`./tasks/${taskName}.ts`);
 		config = module.default;
-	} catch (e) {
-		console.error(`❌ Unknown task: ${taskName}`);
-		console.error(
-			`   Create a config at scripts/agent-loop/tasks/${taskName}.ts`,
-		);
+	} catch (_e) {
 		process.exit(1);
 	}
 

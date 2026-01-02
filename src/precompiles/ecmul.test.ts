@@ -1,15 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { deserializeG1, serializeG1 } from "../crypto/bn254/BN254.js";
+import { FR_MOD } from "../crypto/bn254/constants.js";
 import * as G1 from "../crypto/bn254/G1/index.js";
 import {
-	FR_MOD,
-	G1_GENERATOR_X,
-	G1_GENERATOR_Y,
-} from "../crypto/bn254/constants.js";
-import {
-	PrecompileAddress,
 	bn254Mul,
 	execute,
+	PrecompileAddress,
 } from "../evm/precompiles/precompiles.js";
 
 /**
@@ -455,7 +451,7 @@ describe("BN254 Scalar Multiplication (0x07) - EIP-196", () => {
 
 			// Compute (a+b)*G directly
 			const apbG = G1.mul(g, a + b);
-			const apbGBytes = serializeG1(apbG);
+			const _apbGBytes = serializeG1(apbG);
 
 			// They should match after a*G is computed and then added with b*G
 			// This is a consistency check

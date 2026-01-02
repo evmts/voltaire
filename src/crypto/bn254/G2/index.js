@@ -1,8 +1,8 @@
 export { add } from "./add.js";
 export { double } from "./double.js";
 export { equal } from "./equal.js";
-export { fromAffine } from "./fromAffine.js";
 export { frobenius } from "./frobenius.js";
+export { fromAffine } from "./fromAffine.js";
 export { generator } from "./generator.js";
 export { infinity } from "./infinity.js";
 export { isInSubgroup } from "./isInSubgroup.js";

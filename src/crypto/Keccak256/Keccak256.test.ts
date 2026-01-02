@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import * as Keccak256Module from "./Keccak256.js";
 import { hash } from "./hash.js";
 import { hashHex } from "./hashHex.js";
 import { hashString } from "./hashString.js";
+import * as Keccak256Module from "./Keccak256.js";
 
 describe("Keccak256 namespace", () => {
 	describe("exports", () => {

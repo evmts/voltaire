@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { InvalidArgumentError, UnsupportedEnvironmentError } from "./errors.js";
+import { InvalidArgumentError } from "./errors.js";
 import { reset } from "./state.js";
 import { subscribe } from "./subscribe.js";
 

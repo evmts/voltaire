@@ -1,8 +1,8 @@
 // Export type definition
-export type { NetworkIdType } from "./NetworkIdType.js";
 
 // Export constants
-export { MAINNET, GOERLI, SEPOLIA, HOLESKY } from "./constants.js";
+export { GOERLI, HOLESKY, MAINNET, SEPOLIA } from "./constants.js";
+export type { NetworkIdType } from "./NetworkIdType.js";
 
 import { equals as _equals } from "./equals.js";
 // Import all functions

@@ -25,7 +25,7 @@ function findWasmFiles(dir: string, files: WasmFile[] = []): WasmFile[] {
 				});
 			}
 		}
-	} catch (error) {
+	} catch (_error) {
 		// Directory doesn't exist or not accessible
 	}
 
@@ -68,7 +68,7 @@ function main() {
 	// Write to benchmarks/wasm-size.txt
 	try {
 		mkdirSync("benchmarks", { recursive: true });
-	} catch (error) {
+	} catch (_error) {
 		// Directory might already exist
 	}
 

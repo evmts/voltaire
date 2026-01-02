@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { HexType } from "./HexType.js";
 import { fromBigInt } from "./fromBigInt.js";
+import type { HexType } from "./HexType.js";
 import { toBigInt } from "./toBigInt.js";
 
 describe("toBigInt", () => {

@@ -9,16 +9,15 @@
  * @see https://eips.ethereum.org/EIPS/eip-4844
  */
 
-export * from "./errors.js";
-export * from "./constants.js";
-
 // Export factory functions for dependency injection
 export { BlobToKzgCommitment } from "./blobToKzgCommitment.js";
-export { ComputeKzgProof } from "./computeKzgProof.js";
 export { ComputeBlobKzgProof } from "./computeBlobKzgProof.js";
-export { VerifyKzgProof } from "./verifyKzgProof.js";
+export { ComputeKzgProof } from "./computeKzgProof.js";
+export * from "./constants.js";
+export * from "./errors.js";
 export { VerifyBlobKzgProof } from "./verifyBlobKzgProof.js";
 export { VerifyBlobKzgProofBatch } from "./verifyBlobKzgProofBatch.js";
+export { VerifyKzgProof } from "./verifyKzgProof.js";
 
 // Import WASM bindings
 import {
@@ -31,20 +30,19 @@ import {
 
 // Import factory functions
 import { BlobToKzgCommitment } from "./blobToKzgCommitment.js";
-import { ComputeKzgProof } from "./computeKzgProof.js";
 import { ComputeBlobKzgProof } from "./computeBlobKzgProof.js";
-import { VerifyKzgProof } from "./verifyKzgProof.js";
-import { VerifyBlobKzgProof } from "./verifyBlobKzgProof.js";
-import { VerifyBlobKzgProofBatch } from "./verifyBlobKzgProofBatch.js";
-
-// Import setup functions
-import { loadTrustedSetup, freeTrustedSetup } from "./loadTrustedSetup.js";
-import { isInitialized } from "./isInitialized.js";
-
+import { ComputeKzgProof } from "./computeKzgProof.js";
 // Import utility functions
 import { createEmptyBlob } from "./createEmptyBlob.js";
 import { generateRandomBlob } from "./generateRandomBlob.js";
+import { isInitialized } from "./isInitialized.js";
+
+// Import setup functions
+import { freeTrustedSetup, loadTrustedSetup } from "./loadTrustedSetup.js";
 import { validateBlob } from "./validateBlob.js";
+import { VerifyBlobKzgProof } from "./verifyBlobKzgProof.js";
+import { VerifyBlobKzgProofBatch } from "./verifyBlobKzgProofBatch.js";
+import { VerifyKzgProof } from "./verifyKzgProof.js";
 
 // Re-export utilities
 export { validateBlob, createEmptyBlob, generateRandomBlob };

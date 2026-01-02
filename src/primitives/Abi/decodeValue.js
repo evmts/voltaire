@@ -3,10 +3,10 @@
 /** @import { Parameter } from "./Parameter.js" */
 
 import { Address } from "../Address/index.js";
-import { AbiDecodingError } from "./Errors.js";
-import { decodeParameters } from "./decodeParameters.js";
-import { isDynamicType } from "./isDynamicType.js";
 import * as Uint from "../Uint/index.js";
+import { decodeParameters } from "./decodeParameters.js";
+import { AbiDecodingError } from "./Errors.js";
+import { isDynamicType } from "./isDynamicType.js";
 
 /**
  * @param {Uint8Array} data
@@ -68,7 +68,7 @@ export function decodeValue(type, data, offset, components) {
 		);
 		// Calculate static size by summing component sizes
 		let staticSize = 0;
-		for (const comp of components) {
+		for (const _comp of components) {
 			staticSize += 32; // Each component takes at least 32 bytes in static part
 		}
 		return { value, newOffset: offset + staticSize };
@@ -99,7 +99,7 @@ export function decodeValue(type, data, offset, components) {
 	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
 	if (fixedArrayMatch?.[1] && fixedArrayMatch[2]) {
 		const elementType = /** @type {Parameter["type"]} */ (fixedArrayMatch[1]);
-		const arraySize = Number.parseInt(fixedArrayMatch[2]);
+		const arraySize = Number.parseInt(fixedArrayMatch[2], 10);
 
 		const elementParams = Array(arraySize).fill({
 			type: elementType,
@@ -124,7 +124,7 @@ export function decodeValue(type, data, offset, components) {
 	}
 
 	if (type.startsWith("uint")) {
-		const bits = type === "uint" ? 256 : Number.parseInt(type.slice(4));
+		const bits = type === "uint" ? 256 : Number.parseInt(type.slice(4), 10);
 		const value = decodeUint256(data, offset);
 		const max = (1n << BigInt(bits)) - 1n;
 		if (value > max) {
@@ -134,7 +134,7 @@ export function decodeValue(type, data, offset, components) {
 	}
 
 	if (type.startsWith("int")) {
-		const bits = type === "int" ? 256 : Number.parseInt(type.slice(3));
+		const bits = type === "int" ? 256 : Number.parseInt(type.slice(3), 10);
 		const unsigned = decodeUint256(data, offset);
 
 		const mask = (1n << BigInt(bits)) - 1n;
@@ -175,7 +175,7 @@ export function decodeValue(type, data, offset, components) {
 	}
 
 	if (type.startsWith("bytes") && type.length > 5) {
-		const size = Number.parseInt(type.slice(5));
+		const size = Number.parseInt(type.slice(5), 10);
 		if (size >= 1 && size <= 32) {
 			if (offset + 32 > data.length) {
 				throw new AbiDecodingError(`Data too small for ${type}`);

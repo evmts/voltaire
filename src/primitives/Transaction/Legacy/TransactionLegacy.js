@@ -21,6 +21,13 @@
  * ```
  */
 
+// Import crypto dependencies
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
+import {
+	recoverPublicKey as secp256k1RecoverPublicKey,
+	verify as secp256k1Verify,
+} from "../../../crypto/Secp256k1/index.js";
+import { encode as rlpEncode } from "../../Rlp/encode.js";
 // Import all method functions
 import { Type } from "../types.js";
 import { deserialize } from "./deserialize.js";
@@ -30,14 +37,6 @@ import { GetSigningHash } from "./getSigningHash.js";
 import { Hash } from "./hash.js";
 import { serialize } from "./serialize.js";
 import { VerifySignature } from "./verifySignature.js";
-
-// Import crypto dependencies
-import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
-import {
-	recoverPublicKey as secp256k1RecoverPublicKey,
-	verify as secp256k1Verify,
-} from "../../../crypto/Secp256k1/index.js";
-import { encode as rlpEncode } from "../../Rlp/encode.js";
 
 // Create instantiated methods with crypto
 const getSigningHash = GetSigningHash({ keccak256, rlpEncode });

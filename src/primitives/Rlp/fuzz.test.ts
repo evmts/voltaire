@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { RlpDecodingError } from "./RlpError.js";
 import { MAX_DEPTH } from "./constants.js";
 import * as Rlp from "./index.js";
+import { RlpDecodingError } from "./RlpError.js";
 
 /**
  * Fuzz tests for RLP encode/decode functions

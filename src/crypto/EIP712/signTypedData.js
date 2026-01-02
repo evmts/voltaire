@@ -1,5 +1,3 @@
-import { Eip712Error } from "./errors.js";
-
 /**
  * Factory: Sign EIP-712 typed data with ECDSA private key.
  *

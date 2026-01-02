@@ -1,6 +1,6 @@
 export type {
-	StorageDiffType,
 	StorageChange,
+	StorageDiffType,
 } from "./StorageDiffType.js";
 
 import { from as _from } from "./from.js";

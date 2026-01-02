@@ -29,16 +29,12 @@ export async function initEsbuild(): Promise<void> {
 export function preloadEsbuild(): void {
 	if (!initPromise && typeof requestIdleCallback !== "undefined") {
 		requestIdleCallback(() => {
-			initEsbuild().catch((err) => {
-				console.warn("Failed to preload esbuild:", err);
-			});
+			initEsbuild().catch((_err) => {});
 		});
 	} else if (!initPromise) {
 		// Fallback for browsers without requestIdleCallback
 		setTimeout(() => {
-			initEsbuild().catch((err) => {
-				console.warn("Failed to preload esbuild:", err);
-			});
+			initEsbuild().catch((_err) => {});
 		}, 100);
 	}
 }

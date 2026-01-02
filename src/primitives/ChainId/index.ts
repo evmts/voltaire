@@ -3,14 +3,14 @@ export type { ChainIdType } from "./ChainIdType.js";
 
 // Export constants
 export {
-	MAINNET,
-	GOERLI,
-	SEPOLIA,
-	HOLESKY,
-	OPTIMISM,
 	ARBITRUM,
 	BASE,
+	GOERLI,
+	HOLESKY,
+	MAINNET,
+	OPTIMISM,
 	POLYGON,
+	SEPOLIA,
 } from "./constants.js";
 
 import { equals as _equals } from "./equals.js";

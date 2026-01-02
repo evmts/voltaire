@@ -1,9 +1,10 @@
 // Export factory functions and methods
-export { from } from "./from.js";
+
 export { equals } from "./equals.js";
+export { from } from "./from.js";
 
 // Export type definitions
 export type {
-	StorageProofType,
 	StorageProofLike,
+	StorageProofType,
 } from "./StorageProofType.js";

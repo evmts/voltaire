@@ -3,7 +3,7 @@
  * Post-process TypeDoc generated MDX files to add proper frontmatter titles
  */
 
-import { readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 
 const GENERATED_API_DIR = "docs/generated-api";

@@ -1,36 +1,35 @@
 // Export type definitions
-export type {
-	SiweMessageType,
-	BrandedMessage,
-	Signature,
-	ValidationResult,
-	ValidationError,
-} from "./SiweMessageType.js";
+
 export {
-	InvalidSiweMessageError,
-	MissingFieldError,
 	InvalidFieldError,
 	InvalidNonceLengthError,
+	InvalidSiweMessageError,
+	MissingFieldError,
 	SiweParseError,
 } from "./errors.js";
-
-import type { Secp256k1PublicKeyType } from "../../crypto/Secp256k1/Secp256k1PublicKeyType.js";
-import type { AddressType } from "../Address/AddressType.js";
-import type { HashType } from "../Hash/HashType.js";
-// Import types first
-import type {
+export type {
+	BrandedMessage,
 	Signature,
 	SiweMessageType,
+	ValidationError,
 	ValidationResult,
 } from "./SiweMessageType.js";
 
 // Import crypto dependencies
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { recoverPublicKey as secp256k1RecoverPublicKey } from "../../crypto/Secp256k1/recoverPublicKey.js";
+import type { Secp256k1PublicKeyType } from "../../crypto/Secp256k1/Secp256k1PublicKeyType.js";
+import type { AddressType } from "../Address/AddressType.js";
 import { FromPublicKey } from "../Address/fromPublicKey.js";
-
+import type { HashType } from "../Hash/HashType.js";
 // Import factories with proper types
 import { GetMessageHash as _GetMessageHash } from "./getMessageHash.js";
+// Import types first
+import type {
+	Signature,
+	SiweMessageType,
+	ValidationResult,
+} from "./SiweMessageType.js";
 import { Verify as _Verify } from "./verify.js";
 import { VerifyMessage as _VerifyMessage } from "./verifyMessage.js";
 

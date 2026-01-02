@@ -1,5 +1,3 @@
-import { RlpDecodingError } from "./RlpError.js";
-
 /**
  * Validates if RLP encoding is canonical
  *

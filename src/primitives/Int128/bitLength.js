@@ -1,4 +1,4 @@
-import { BITS, MODULO } from "./constants.js";
+import { MODULO } from "./constants.js";
 
 /**
  * Get bit length of Int128 value

@@ -3,15 +3,15 @@
  * Auto-detects Bun vs Node.js and uses appropriate FFI mechanism
  */
 
+export type { NativeModule } from "./node-api.js";
 export {
-	getPlatform,
 	getNativeExtension,
+	getPlatform,
 	isNativeSupported,
 	type Platform,
 } from "./platform.js";
-export { getNativeErrorMessage, NativeErrorCode } from "./types.js";
 export type { NativeErrorCode as NativeErrorCodeType } from "./types.js";
-export type { NativeModule } from "./node-api.js";
+export { getNativeErrorMessage, NativeErrorCode } from "./types.js";
 
 /**
  * Runtime environment detection

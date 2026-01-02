@@ -2,7 +2,7 @@
 export type { BrandedGwei, GweiType } from "./GweiType.js";
 
 // Export constants
-export { WEI_PER_GWEI, GWEI_PER_ETHER } from "./gwei-constants.js";
+export { GWEI_PER_ETHER, WEI_PER_GWEI } from "./gwei-constants.js";
 
 // Import all functions
 import { from } from "./gwei-from.js";

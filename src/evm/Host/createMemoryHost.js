@@ -28,7 +28,7 @@ export function createMemoryHost() {
 	 * @param {bigint} slot - Slot
 	 * @returns {string} Storage key
 	 */
-	const getStorageKey = (address, slot) =>
+	const _getStorageKey = (address, slot) =>
 		`${Hex.fromBytes(address).slice(2)}-${slot.toString(16)}`;
 
 	return from({

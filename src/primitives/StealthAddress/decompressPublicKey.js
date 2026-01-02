@@ -1,9 +1,6 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import {
-	COMPRESSED_PUBLIC_KEY_SIZE,
-	UNCOMPRESSED_PUBLIC_KEY_SIZE,
-} from "./constants.js";
+import { COMPRESSED_PUBLIC_KEY_SIZE } from "./constants.js";
 import { InvalidPublicKeyError } from "./errors.js";
 
 /**

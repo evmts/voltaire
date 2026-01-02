@@ -18,6 +18,6 @@
  * ```
  */
 
-export type { SszType } from "./SszType.js";
-export { encodeBasic, decodeBasic } from "./encodeBasic.js";
+export { decodeBasic, encodeBasic } from "./encodeBasic.js";
 export { hashTreeRoot } from "./hashTreeRoot.js";
+export type { SszType } from "./SszType.js";

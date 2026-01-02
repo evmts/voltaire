@@ -1,5 +1,5 @@
-import type { HexType } from "../HexType.js";
 import { fromBytes } from "../fromBytes.js";
+import type { HexType } from "../HexType.js";
 import { toBytes } from "../toBytes.js";
 
 /**

@@ -1,6 +1,6 @@
-export * from "./errors.js";
-export * from "./constants.js";
 export type { CallDataType } from "./CallDataType.js";
+export * from "./constants.js";
+export * from "./errors.js";
 
 import { MIN_SIZE, SELECTOR_SIZE } from "./constants.js";
 import { decode } from "./decode.js";

@@ -1,10 +1,10 @@
 import type { AddressType as BrandedAddress } from "../../Address/AddressType.js";
-import type { TransactionLegacyType } from "./TransactionLegacyType.js";
 import type { getChainId } from "./getChainId.js";
 import type { getSender } from "./getSender.js";
 import type { getSigningHash } from "./getSigningHash.js";
 import type { hash } from "./hash.js";
 import type { serialize } from "./serialize.js";
+import type { TransactionLegacyType } from "./TransactionLegacyType.js";
 import type { verifySignature } from "./verifySignature.js";
 
 type TransactionLegacyPrototype = TransactionLegacyType & {

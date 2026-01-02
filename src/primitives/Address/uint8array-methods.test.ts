@@ -223,7 +223,7 @@ describe("Uint8Array integration", () => {
 				const addr = Address.fromHex(
 					"0x00010203040506070809ff0a0b0c0d0e0f101112",
 				);
-				const index = addr.findIndex((b) => b === 0xff);
+				const index = addr.indexOf(0xff);
 				expect(index).toBe(10);
 			});
 
@@ -231,7 +231,7 @@ describe("Uint8Array integration", () => {
 				const addr = Address.fromHex(
 					"0x0101010101010101010101010101010101010101",
 				);
-				const index = addr.findIndex((b) => b === 0xff);
+				const index = addr.indexOf(0xff);
 				expect(index).toBe(-1);
 			});
 		});
@@ -259,7 +259,7 @@ describe("Uint8Array integration", () => {
 				const addr = Address.fromHex(
 					"0xff01020304050607080900ff0b0c0d0e0f101112",
 				);
-				const index = addr.findLastIndex((b) => b === 0xff);
+				const index = addr.lastIndexOf(0xff);
 				expect(index).toBe(11);
 			});
 
@@ -267,7 +267,7 @@ describe("Uint8Array integration", () => {
 				const addr = Address.fromHex(
 					"0x0101010101010101010101010101010101010101",
 				);
-				const index = addr.findLastIndex((b) => b === 0xff);
+				const index = addr.lastIndexOf(0xff);
 				expect(index).toBe(-1);
 			});
 		});

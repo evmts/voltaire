@@ -15,8 +15,8 @@ import { unwrapOr as _unwrapOr } from "./unwrapOr.js";
 
 export type {
 	ContractResultType,
-	SuccessResult,
 	FailureResult,
+	SuccessResult,
 } from "./ContractResultType.js";
 export * from "./errors.js";
 

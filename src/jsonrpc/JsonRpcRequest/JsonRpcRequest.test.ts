@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { JsonRpcRequest, from, withParams } from "./index.js";
+import { from, JsonRpcRequest, withParams } from "./index.js";
 
 describe("JsonRpcRequest", () => {
 	describe("from", () => {

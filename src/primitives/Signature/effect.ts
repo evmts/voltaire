@@ -1,7 +1,5 @@
 import * as Brand from "effect/Brand";
 import * as Schema from "effect/Schema";
-
-import type { SignatureAlgorithm, SignatureType } from "./SignatureType.js";
 import { equals as _equals } from "./equals.js";
 import { from as _from } from "./from.js";
 import { fromBytes as _fromBytes } from "./fromBytes.js";
@@ -11,6 +9,7 @@ import { getR as _getR } from "./getR.js";
 import { getS as _getS } from "./getS.js";
 import { getV as _getV } from "./getV.js";
 import { is as _is } from "./is.js";
+import type { SignatureAlgorithm, SignatureType } from "./SignatureType.js";
 import { toBytes as _toBytes } from "./toBytes.js";
 import { toHex as _toHex } from "./toHex.js";
 

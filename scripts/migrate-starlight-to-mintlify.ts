@@ -15,8 +15,8 @@
 import {
 	existsSync,
 	mkdirSync,
-	readFileSync,
 	readdirSync,
+	readFileSync,
 	statSync,
 	writeFileSync,
 } from "node:fs";
@@ -41,23 +41,23 @@ function convertStarlightToMintlify(content: string): string {
 	// Convert Aside to Mintlify callouts
 	result = result.replace(
 		/<Aside\s+type="tip"(?:\s+title="([^"]*)")?>/g,
-		(match, title) => {
+		(_match, title) => {
 			return title ? `<Tip title="${title}">` : "<Tip>";
 		},
 	);
 	result = result.replace(
 		/<Aside\s+type="caution"(?:\s+title="([^"]*)")?>/g,
-		(match, title) => {
+		(_match, title) => {
 			return title ? `<Warning title="${title}">` : "<Warning>";
 		},
 	);
 	result = result.replace(
 		/<Aside\s+type="note"(?:\s+title="([^"]*)")?>/g,
-		(match, title) => {
+		(_match, title) => {
 			return title ? `<Note title="${title}">` : "<Note>";
 		},
 	);
-	result = result.replace(/<\/Aside>/g, (match) => {
+	result = result.replace(/<\/Aside>/g, (_match) => {
 		// Determine which closing tag based on context
 		const lines = result.split("\n");
 		// Simple heuristic: find the last opening tag before this closing
@@ -169,7 +169,7 @@ const primitives = [
 const baseSourceDir = "/Users/williamcory/voltaire/src/content/docs/primitives";
 const baseDestDir = "/Users/williamcory/voltaire/docs/primitives";
 
-let totalFiles = 0;
+let _totalFiles = 0;
 
 for (const primitive of primitives) {
 	const sourceDir = join(baseSourceDir, primitive);
@@ -177,7 +177,7 @@ for (const primitive of primitives) {
 
 	if (existsSync(sourceDir)) {
 		const count = migrateDirectory(sourceDir, destDir);
-		totalFiles += count;
+		_totalFiles += count;
 	} else {
 	}
 }

@@ -1,6 +1,7 @@
 // Export factory functions and methods
-export { from } from "./from.js";
+
 export { equals } from "./equals.js";
+export { from } from "./from.js";
 
 // Export type definitions
-export type { ProofType, ProofLike } from "./ProofType.js";
+export type { ProofLike, ProofType } from "./ProofType.js";

@@ -1,4 +1,3 @@
-import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 import { AccessListBrand, AccessListSchema } from "./effect.js";
 

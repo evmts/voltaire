@@ -2,20 +2,20 @@ import { beforeAll, describe, expect, it } from "vitest";
 import * as Bip39 from "../crypto/Bip39/Bip39.js";
 import { EIP712 } from "../crypto/EIP712/index.js";
 import * as HDWallet from "../crypto/HDWallet/HDWallet.js";
+import { Keccak256 } from "../crypto/Keccak256/index.js";
 import * as Kzg from "../crypto/KZG/index.js";
 import { hasNativeKzg } from "../crypto/KZG/test-utils.js";
-import { Keccak256 } from "../crypto/Keccak256/index.js";
 import { Ripemd160 } from "../crypto/Ripemd160/index.js";
-import { SHA256 } from "../crypto/SHA256/index.js";
 import { Secp256k1 } from "../crypto/Secp256k1/index.js";
+import { SHA256 } from "../crypto/SHA256/index.js";
 import {
-	PrecompileAddress,
 	bn254Add,
 	bn254Mul,
 	bn254Pairing,
 	ecrecover,
 	execute,
 	identity,
+	PrecompileAddress,
 	pointEvaluation,
 } from "../evm/precompiles/precompiles.js";
 import { Address } from "../primitives/Address/index.js";
@@ -433,7 +433,7 @@ describe("Integration: Cross-Module Workflows", () => {
 			const hash1 = Keccak256.hash(encoded1);
 
 			// Decode
-			const decoded = Rlp.decode(encoded1);
+			const _decoded = Rlp.decode(encoded1);
 
 			// Re-encode (would need to parse decoded format)
 			const encoded2 = Rlp.encodeArray(txFields);

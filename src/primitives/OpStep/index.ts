@@ -1,10 +1,10 @@
-export type { OpStepType } from "./OpStepType.js";
 export { from as _from } from "./from.js";
 export { hasError as _hasError } from "./hasError.js";
+export type { OpStepType } from "./OpStepType.js";
 
-import type { OpStepType } from "./OpStepType.js";
 import { from as _from } from "./from.js";
 import { hasError as _hasError } from "./hasError.js";
+import type { OpStepType } from "./OpStepType.js";
 
 /**
  * Creates an OpStep from raw data

@@ -1,11 +1,11 @@
 // Export type definition
-export type { LicenseType } from "./LicenseType.js";
 
 // Export constants
 export {
 	COMMON_LICENSES,
 	OSI_APPROVED_LICENSES,
 } from "./constants.js";
+export type { LicenseType } from "./LicenseType.js";
 
 // Import all functions
 import { COMMON_LICENSES, OSI_APPROVED_LICENSES } from "./constants.js";

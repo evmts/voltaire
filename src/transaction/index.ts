@@ -41,29 +41,28 @@
  * ```
  */
 
-export type {
-	TransactionState,
-	PendingTransaction,
-	ConfirmedTransaction,
-	TransactionFilter,
-	RetryOptions,
-	WatchPendingOptions,
-	WatchConfirmedOptions,
-	TrackOptions,
-	TransactionStreamMetadata,
-	PendingTransactionEvent,
-	ConfirmedTransactionEvent,
-	DroppedTransactionEvent,
-	TransactionStreamEvent,
-	TransactionStream as TransactionStreamInstance,
-	TransactionStreamConstructorOptions,
-	TransactionStreamFactory,
-} from "./TransactionStreamType.js";
-
-export { TransactionStream } from "./TransactionStream.js";
-
 export {
+	TransactionDroppedError,
 	TransactionStreamAbortedError,
 	TransactionTimeoutError,
-	TransactionDroppedError,
 } from "./errors.js";
+
+export { TransactionStream } from "./TransactionStream.js";
+export type {
+	ConfirmedTransaction,
+	ConfirmedTransactionEvent,
+	DroppedTransactionEvent,
+	PendingTransaction,
+	PendingTransactionEvent,
+	RetryOptions,
+	TrackOptions,
+	TransactionFilter,
+	TransactionState,
+	TransactionStream as TransactionStreamInstance,
+	TransactionStreamConstructorOptions,
+	TransactionStreamEvent,
+	TransactionStreamFactory,
+	TransactionStreamMetadata,
+	WatchConfirmedOptions,
+	WatchPendingOptions,
+} from "./TransactionStreamType.js";

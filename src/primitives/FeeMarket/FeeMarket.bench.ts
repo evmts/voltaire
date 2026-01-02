@@ -280,7 +280,7 @@ results.push(benchmark("weiToGwei", () => FeeMarket.weiToGwei(1_234_567_890n)));
 results.push(benchmark("gweiToWei", () => FeeMarket.gweiToWei(1.23456789)));
 
 // Find fastest and slowest
-const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
+const _sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
 
 // Calculate statistics by category
 const categories = {
@@ -301,9 +301,9 @@ const categories = {
 		(r) => r.name.includes("weiToGwei") || r.name.includes("gweiToWei"),
 	),
 };
-for (const [category, items] of Object.entries(categories)) {
+for (const [_category, items] of Object.entries(categories)) {
 	if (items.length > 0) {
-		const avgOps =
+		const _avgOps =
 			items.reduce((sum, r) => sum + r.opsPerSec, 0) / items.length;
 	}
 }

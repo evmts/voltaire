@@ -40,8 +40,8 @@ Constructor.prototype.decodeParams = function (data) {
  * @param {*} options
  */
 Constructor.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
-	depth,
-	options,
+	_depth,
+	_options,
 ) {
 	return `Constructor(stateMutability: ${/** @type {*} */ (this).stateMutability}, inputs: ${/** @type {*} */ (this).inputs.length})`;
 };

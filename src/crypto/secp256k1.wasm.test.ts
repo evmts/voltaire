@@ -10,7 +10,6 @@
  * - Security properties (malleability, validation)
  */
 
-import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { describe, expect, it } from "vitest";
 import type { HashType } from "../primitives/Hash/HashType.js";
 import { keccak256String } from "../primitives/Hash/index.js";
@@ -356,7 +355,7 @@ describe("Secp256k1 WASM Implementation", () => {
 
 	describe("recoverPublicKey", () => {
 		it("recovers public key from valid signature", () => {
-			const originalKey = Secp256k1Wasm.derivePublicKey(TEST_PRIVATE_KEY);
+			const _originalKey = Secp256k1Wasm.derivePublicKey(TEST_PRIVATE_KEY);
 			const signature = Secp256k1Wasm.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
 
 			const recovered = Secp256k1Wasm.recoverPublicKey(
@@ -392,7 +391,7 @@ describe("Secp256k1 WASM Implementation", () => {
 					TEST_MESSAGE_HASH,
 				);
 				expect(recovered.length).toBe(64);
-			} catch (error) {
+			} catch (_error) {
 				expect(signature.v).toBe(28);
 			}
 		});
@@ -408,7 +407,7 @@ describe("Secp256k1 WASM Implementation", () => {
 					TEST_MESSAGE_HASH,
 				);
 				expect(recovered.length).toBe(64);
-			} catch (error) {
+			} catch (_error) {
 				expect(signature.v).toBe(27);
 			}
 		});

@@ -1,5 +1,5 @@
-import * as Fp2 from "../Fp2/index.js";
 import { Bn254InvalidPointError, Bn254SubgroupCheckError } from "../errors.js";
+import * as Fp2 from "../Fp2/index.js";
 import { isInSubgroup } from "./isInSubgroup.js";
 import { isOnCurve } from "./isOnCurve.js";
 

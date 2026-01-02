@@ -153,7 +153,7 @@ function malloc(size: number): number {
 		const pagesToGrow = pagesNeeded - currentPages;
 		try {
 			wasmMemory.grow(pagesToGrow);
-		} catch (e) {
+		} catch (_e) {
 			throw new Error(
 				`Out of memory: failed to grow WASM memory from ${currentPages} to ${pagesNeeded} pages`,
 			);

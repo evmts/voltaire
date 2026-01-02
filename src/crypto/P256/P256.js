@@ -25,11 +25,11 @@
  * ```
  */
 
-export * from "./errors.js";
 export * from "./constants.js";
-export * from "./P256SignatureType.js";
-export * from "./P256PublicKeyType.js";
+export * from "./errors.js";
 export * from "./P256PrivateKeyType.js";
+export * from "./P256PublicKeyType.js";
+export * from "./P256SignatureType.js";
 
 import {
 	CURVE_ORDER,

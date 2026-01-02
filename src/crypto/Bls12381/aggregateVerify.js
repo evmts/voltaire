@@ -67,7 +67,7 @@ export function aggregateVerify(aggregatedSignature, message, publicKeys) {
 		const sig = bls.Signature.fromBytes(aggregatedSignature);
 		// Verify signature against aggregated key
 		return bls.verify(sig, msgPoint, aggPubKey);
-	} catch (error) {
+	} catch (_error) {
 		return false;
 	}
 }
@@ -129,7 +129,7 @@ export function batchVerify(aggregatedSignature, messages, publicKeys) {
 		}));
 		// noble provides verifyBatch for this use case
 		return bls.verifyBatch(sig, items);
-	} catch (error) {
+	} catch (_error) {
 		return false;
 	}
 }
@@ -169,7 +169,7 @@ export function fastAggregateVerify(
 		const pk = bls12_381.G2.Point.fromBytes(aggregatedPublicKey);
 		// Verify
 		return bls.verify(sig, msgPoint, pk);
-	} catch (error) {
+	} catch (_error) {
 		return false;
 	}
 }

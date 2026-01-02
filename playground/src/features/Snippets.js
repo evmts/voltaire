@@ -1,4 +1,4 @@
 /** @param {any} monaco */
-export function registerVoltaireSnippets(monaco) {
+export function registerVoltaireSnippets(_monaco) {
 	// Stub: register snippets
 }

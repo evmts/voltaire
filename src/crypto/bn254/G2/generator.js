@@ -1,10 +1,10 @@
-import * as Fp2 from "../Fp2/index.js";
 import {
 	G2_GENERATOR_X_C0,
 	G2_GENERATOR_X_C1,
 	G2_GENERATOR_Y_C0,
 	G2_GENERATOR_Y_C1,
 } from "../constants.js";
+import * as Fp2 from "../Fp2/index.js";
 
 /**
  * G2 generator point

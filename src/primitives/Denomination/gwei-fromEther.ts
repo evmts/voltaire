@@ -1,6 +1,6 @@
 import type { EtherType as BrandedEther } from "./EtherType.js";
-import type { GweiType as BrandedGwei } from "./GweiType.js";
 import { toGwei } from "./ether-toGwei.js";
+import type { GweiType as BrandedGwei } from "./GweiType.js";
 
 /**
  * Convert Ether to Gwei

@@ -1,12 +1,11 @@
 import { describe, expectTypeOf, it } from "vitest";
 import type { BrandedHash } from "./BrandedHash.js";
-import { type SIZE, ZERO, hashSymbol } from "./BrandedHash.js";
+import { hashSymbol, type SIZE, ZERO } from "./BrandedHash.js";
 
-type Equals<T, U> = (<G>() => G extends T ? 1 : 2) extends <G>() => G extends U
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<T, U> =
+	(<G>() => G extends T ? 1 : 2) extends <G>() => G extends U ? 1 : 2
+		? true
+		: false;
 
 describe("BrandedHash", () => {
 	describe("type structure", () => {

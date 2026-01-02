@@ -139,7 +139,7 @@ function aggregateByBlocks(instructions, byInstruction, totalGas) {
  * @param {number} maxPaths
  * @returns {{ cheapest: import('./BytecodeType.js').ExecutionPath, mostExpensive: import('./BytecodeType.js').ExecutionPath, average: bigint }}
  */
-function analyzeExecutionPaths(instructions, byInstruction, maxPaths) {
+function analyzeExecutionPaths(instructions, byInstruction, _maxPaths) {
 	// Simple path analysis: for linear code, there's only one path
 	// For branching code (JUMP/JUMPI), we'd need CFG traversal
 

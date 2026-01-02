@@ -1,6 +1,7 @@
 // @ts-nocheck
-export * from "./Uint256Type.js";
+
 export * from "./constants.js";
+export * from "./Uint256Type.js";
 
 // Import core methods
 import { bitLength } from "./bitLength.js";

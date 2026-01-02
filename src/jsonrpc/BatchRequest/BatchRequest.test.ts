@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BatchRequest, add, from, size } from "./index.js";
+import { add, BatchRequest, from, size } from "./index.js";
 
 describe("BatchRequest", () => {
 	describe("from", () => {

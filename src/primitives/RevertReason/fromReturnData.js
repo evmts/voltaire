@@ -1,8 +1,8 @@
 import * as Hex from "../Hex/index.js";
 import {
 	ERROR_SELECTOR,
-	PANIC_SELECTOR,
 	getPanicDescription,
+	PANIC_SELECTOR,
 } from "./constants.js";
 
 /**

@@ -1,13 +1,12 @@
 /**
  * @vitest-environment happy-dom
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { announce } from "./announce.js";
 import {
 	InvalidArgumentError,
 	InvalidProviderError,
 	InvalidUuidError,
-	UnsupportedEnvironmentError,
 } from "./errors.js";
 
 const validDetail = {

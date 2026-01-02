@@ -1,5 +1,5 @@
-import * as Fp from "../Fp/index.js";
 import { Bn254Error } from "../errors.js";
+import * as Fp from "../Fp/index.js";
 import { isZero } from "./isZero.js";
 
 /**

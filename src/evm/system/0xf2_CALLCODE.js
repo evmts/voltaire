@@ -21,14 +21,14 @@
  */
 
 import {
+	bigintToAddress,
+	consumeGas,
+	memoryExpansionCost,
 	popStack,
 	pushStack,
-	consumeGas,
 	readMemory,
-	writeMemory,
 	wordAlignedSize,
-	memoryExpansionCost,
-	bigintToAddress,
+	writeMemory,
 } from "./callUtils.js";
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: opcode implementation

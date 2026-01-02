@@ -2,7 +2,7 @@
  * BLAKE2b compression round and mixing function
  */
 
-import { SIGMA, MASK_64 } from "./constants.js";
+import { MASK_64, SIGMA } from "./constants.js";
 import { rotr64 } from "./u64.js";
 
 /**

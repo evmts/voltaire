@@ -9,7 +9,6 @@ import type { AddressType } from "../primitives/Address/AddressType.js";
 import type { BlockNumberType } from "../primitives/BlockNumber/BlockNumberType.js";
 import type { HashType } from "../primitives/Hash/HashType.js";
 import type { TransactionHashType } from "../primitives/TransactionHash/TransactionHashType.js";
-import type { TypedProvider } from "../provider/TypedProvider.js";
 import type { EventStream as EventStreamFactory } from "./EventStream.js";
 import type {
 	BackfillOptions,

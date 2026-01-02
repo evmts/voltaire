@@ -51,9 +51,6 @@ export const moduleRegistry = buildRegistry();
 
 // Log discovered modules for debugging
 if (moduleRegistry.size === 0) {
-	console.warn(
-		"[ModuleRegistry] No voltaire modules discovered. Check glob paths.",
-	);
 } else {
 }
 

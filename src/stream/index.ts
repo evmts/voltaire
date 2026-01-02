@@ -7,9 +7,9 @@
  */
 
 export {
-	StreamAbortedError,
-	EventStreamAbortedError,
-	BlockStreamAbortedError,
 	BlockRangeTooLargeError,
+	BlockStreamAbortedError,
+	EventStreamAbortedError,
+	StreamAbortedError,
 	UnrecoverableReorgError,
 } from "./errors.js";

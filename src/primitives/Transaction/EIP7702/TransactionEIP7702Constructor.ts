@@ -1,11 +1,11 @@
 import type { AddressType as BrandedAddress } from "../../Address/AddressType.js";
 import type { AccessList, AuthorizationList } from "../types.js";
-import type { TransactionEIP7702Type } from "./TransactionEIP7702Type.js";
 import type { getEffectiveGasPrice } from "./getEffectiveGasPrice.js";
 import type { getSender } from "./getSender.js";
 import type { getSigningHash } from "./getSigningHash.js";
 import type { hash } from "./hash.js";
 import type { serialize } from "./serialize.js";
+import type { TransactionEIP7702Type } from "./TransactionEIP7702Type.js";
 import type { verifySignature } from "./verifySignature.js";
 
 type TransactionEIP7702Prototype = TransactionEIP7702Type & {

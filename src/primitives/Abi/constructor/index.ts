@@ -1,9 +1,9 @@
-export * from "./ConstructorType.js";
 export * from "./Constructor.js";
 export type {
-	ConstructorType,
 	ConstructorInstance,
+	ConstructorType,
 } from "./ConstructorType.js";
+export * from "./ConstructorType.js";
 
 import { decodeParams } from "./decodeParams.js";
 import { encodeParams } from "./encodeParams.js";

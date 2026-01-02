@@ -44,7 +44,7 @@ async function ensureDir(dir) {
 	await fs.mkdir(dir, { recursive: true });
 }
 
-function rel(p) {
+function _rel(p) {
 	return path.relative(REPO_ROOT, p).split(path.sep).join("/");
 }
 
@@ -67,7 +67,7 @@ function codeFenceLangByExt(ext) {
 	}
 }
 
-function mdxPathFromRel(relFile, languageRoot) {
+function _mdxPathFromRel(relFile, languageRoot) {
 	// Keep directory structure under languageRoot, convert filename to .mdx
 	const parsed = path.parse(relFile);
 	const mdxFile = `${parsed.name.replace(/\.+/g, "-")}.mdx`;
@@ -247,16 +247,15 @@ async function main() {
 	await safeRmDir(OUTPUT_ROOT);
 	await ensureDir(OUTPUT_ROOT);
 
-	const [tsjs, swift, zig] = await Promise.all([
+	const [_tsjs, _swift, _zig] = await Promise.all([
 		handleTSJSTests(),
 		handleSwiftTests(),
 		handleZigTests(),
 	]);
 
-	const dur = ((Date.now() - start) / 1000).toFixed(1);
+	const _dur = ((Date.now() - start) / 1000).toFixed(1);
 }
 
-main().catch((err) => {
-	console.error("Failed to generate ghost docs:", err);
+main().catch((_err) => {
 	process.exit(1);
 });

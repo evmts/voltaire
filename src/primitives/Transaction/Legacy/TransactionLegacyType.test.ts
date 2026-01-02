@@ -3,11 +3,10 @@ import type { AddressType } from "../../Address/AddressType.js";
 import { Type } from "../types.js";
 import type { TransactionLegacyType } from "./TransactionLegacyType.js";
 
-type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<X, Y> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+		? true
+		: false;
 
 describe("TransactionLegacyType", () => {
 	it("type structure is correct", () => {
@@ -108,7 +107,7 @@ describe("TransactionLegacyType", () => {
 
 	it("rejects missing fields", () => {
 		// @ts-expect-error - missing nonce
-		const tx1: TransactionLegacyType = {
+		const _tx1: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.Legacy,
 			gasPrice: 0n,
@@ -124,7 +123,7 @@ describe("TransactionLegacyType", () => {
 
 	it("rejects wrong type value", () => {
 		// @ts-expect-error - wrong type value
-		const tx: TransactionLegacyType = {
+		const _tx: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.EIP1559,
 			nonce: 0n,
@@ -141,7 +140,7 @@ describe("TransactionLegacyType", () => {
 
 	it("rejects wrong brand tag", () => {
 		// @ts-expect-error - wrong brand tag
-		const tx: TransactionLegacyType = {
+		const _tx: TransactionLegacyType = {
 			__tag: "TransactionEIP1559",
 			type: Type.Legacy,
 			nonce: 0n,
@@ -158,7 +157,7 @@ describe("TransactionLegacyType", () => {
 
 	it("rejects wrong nonce type", () => {
 		// @ts-expect-error - nonce must be bigint
-		const tx: TransactionLegacyType = {
+		const _tx: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.Legacy,
 			nonce: 0,
@@ -175,7 +174,7 @@ describe("TransactionLegacyType", () => {
 
 	it("rejects wrong to type", () => {
 		// @ts-expect-error - to must be AddressType or null
-		const tx: TransactionLegacyType = {
+		const _tx: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.Legacy,
 			nonce: 0n,
@@ -192,7 +191,7 @@ describe("TransactionLegacyType", () => {
 
 	it("rejects wrong data type", () => {
 		// @ts-expect-error - data must be Uint8Array
-		const tx: TransactionLegacyType = {
+		const _tx: TransactionLegacyType = {
 			__tag: "TransactionLegacy",
 			type: Type.Legacy,
 			nonce: 0n,

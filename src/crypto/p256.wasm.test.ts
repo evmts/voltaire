@@ -10,7 +10,6 @@
  * - Security properties (malleability, validation)
  */
 
-import { p256 } from "@noble/curves/nist.js";
 import { describe, expect, it } from "vitest";
 import type { HashType } from "../primitives/Hash/HashType.js";
 import { keccak256String } from "../primitives/Hash/index.js";

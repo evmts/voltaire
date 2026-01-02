@@ -1,6 +1,6 @@
-import type { Uint256Type } from "./Uint256Type.js";
 import { MAX } from "./constants.js";
 import { UintNegativeError, UintOverflowError } from "./errors.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Create Uint256 from hex string

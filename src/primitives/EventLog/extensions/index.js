@@ -7,19 +7,18 @@
  * @module
  */
 
-export { getTopic0 } from "./getTopic0.js";
-export { getIndexedTopics } from "./getIndexedTopics.js";
-export { getSignature } from "./getSignature.js";
-export { getIndexed } from "./getIndexed.js";
-export { isRemoved } from "./isRemoved.js";
-export { wasRemoved } from "./wasRemoved.js";
 export { clone } from "./clone.js";
 export { copy } from "./copy.js";
-export { matchesTopics } from "./matchesTopics.js";
+export { filterLogs } from "./filterLogs.js";
+export { getIndexed } from "./getIndexed.js";
+export { getIndexedTopics } from "./getIndexedTopics.js";
+export { getSignature } from "./getSignature.js";
+export { getTopic0 } from "./getTopic0.js";
+export { isRemoved } from "./isRemoved.js";
 export { matchesAddress } from "./matchesAddress.js";
 export { matchesFilter } from "./matchesFilter.js";
-export { filterLogs } from "./filterLogs.js";
+export { matchesTopics } from "./matchesTopics.js";
 export { sortLogs } from "./sortLogs.js";
-
 // Internal utilities
-export { hashEquals, addressEquals } from "./utils.js";
+export { addressEquals, hashEquals } from "./utils.js";
+export { wasRemoved } from "./wasRemoved.js";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { HexType } from "./HexType.js";
 import { equals } from "./equals.js";
+import type { HexType } from "./HexType.js";
 
 describe("equals", () => {
 	it("compares equal hex strings", () => {

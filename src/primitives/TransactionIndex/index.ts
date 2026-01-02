@@ -1,5 +1,5 @@
-export type { TransactionIndexType } from "./TransactionIndexType.js";
 export * from "./errors.js";
+export type { TransactionIndexType } from "./TransactionIndexType.js";
 
 import { equals as _equals } from "./equals.js";
 import { from as _from } from "./from.js";

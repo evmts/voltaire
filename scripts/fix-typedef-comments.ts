@@ -3,7 +3,7 @@
  * Fix typedef comment blocks in eth method files
  */
 
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ETH_DIR = "/Users/williamcory/voltaire/src/jsonrpc/eth";

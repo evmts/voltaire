@@ -1,5 +1,3 @@
-import type { HardforkType } from "./HardforkType.js";
-
 // Import functions with proper types
 import { allIds as _allIds } from "./allIds.js";
 import { allNames as _allNames } from "./allNames.js";
@@ -8,6 +6,7 @@ import { equals as _equals } from "./equals.js";
 import { fromString as _fromString } from "./fromString.js";
 import { gt as _gt } from "./gt.js";
 import { gte as _gte } from "./gte.js";
+import type { HardforkType } from "./HardforkType.js";
 import { hasEIP1153 as _hasEIP1153 } from "./hasEIP1153.js";
 import { hasEIP1559 as _hasEIP1559 } from "./hasEIP1559.js";
 import { hasEIP3855 as _hasEIP3855 } from "./hasEIP3855.js";
@@ -29,9 +28,9 @@ import { supportsPUSH0 as _supportsPUSH0 } from "./supportsPUSH0.js";
 import { supportsTransientStorage as _supportsTransientStorage } from "./supportsTransientStorage.js";
 import { toString as _toString } from "./toString.js";
 
+export * from "./constants.js";
 // Re-export type
 export type { HardforkType } from "./HardforkType.js";
-export * from "./constants.js";
 
 // Type definitions for all functions
 export const fromString: (name: string) => HardforkType | undefined =

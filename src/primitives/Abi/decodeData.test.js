@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { AbiInvalidSelectorError, AbiItemNotFoundError } from "./Errors.js";
 import { decodeData } from "./decodeData.js";
+import { AbiInvalidSelectorError, AbiItemNotFoundError } from "./Errors.js";
 // biome-ignore lint/suspicious/noShadowRestrictedNames: Function is the ABI namespace
 import * as Function from "./function/index.js";
 

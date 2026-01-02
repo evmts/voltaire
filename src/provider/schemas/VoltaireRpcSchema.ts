@@ -10,7 +10,6 @@ import type { BlockType } from "../../primitives/Block/BlockType.js";
 import type { EventLogType } from "../../primitives/EventLog/EventLogType.js";
 import type { ReceiptType } from "../../primitives/Receipt/ReceiptType.js";
 import type { Any as TransactionType } from "../../primitives/Transaction/types.js";
-import type { RpcSchema } from "../RpcSchema.js";
 
 /**
  * Voltaire's default RPC schema

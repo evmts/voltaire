@@ -1,14 +1,14 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
-import { Hash } from "../../primitives/Hash/index.js";
 import {
 	InvalidLengthError,
 	InvalidPrivateKeyError,
 } from "../../primitives/errors/index.js";
+import { Hash } from "../../primitives/Hash/index.js";
+import { PrivateKey } from "../../primitives/PrivateKey/index.js";
 import { sign } from "./sign.js";
 
-import { PrivateKey } from "../../primitives/PrivateKey/index.js";
 describe("Secp256k1.sign", () => {
 	describe("RFC 6979 deterministic signing", () => {
 		// Test vectors from RFC 6979

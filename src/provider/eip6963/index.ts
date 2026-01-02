@@ -42,56 +42,50 @@
  * @module provider/eip6963
  */
 
-// Types
-export type {
-	ProviderInfoType,
-	ProviderInfoInput,
-	ProviderDetailType,
-	ProviderDetailInput,
-	ProviderListener,
-	Platform,
-} from "./types.js";
+// Wallet API
+export { announce } from "./announce.js";
 
 // Errors
 export {
 	EIP6963Error,
-	UnsupportedEnvironmentError,
-	InvalidUuidError,
-	InvalidRdnsError,
-	InvalidIconError,
-	MissingFieldError,
-	InvalidFieldError,
-	InvalidProviderError,
 	InvalidArgumentError,
+	InvalidFieldError,
+	InvalidIconError,
+	InvalidProviderError,
+	InvalidRdnsError,
+	InvalidUuidError,
+	MissingFieldError,
 	NotImplementedError,
+	UnsupportedEnvironmentError,
 } from "./errors.js";
-
+export { findProvider } from "./findProvider.js";
+// Utilities
+export { assertBrowser, getPlatform } from "./getPlatform.js";
+export { getProviders } from "./getProviders.js";
+export { ProviderDetail } from "./ProviderDetail.js";
 // Constructors
 export { ProviderInfo } from "./ProviderInfo.js";
-export { ProviderDetail } from "./ProviderDetail.js";
-
-// Dapp API
-export { subscribe } from "./subscribe.js";
-export { getProviders } from "./getProviders.js";
-export { findProvider } from "./findProvider.js";
-
-// Wallet API
-export { announce } from "./announce.js";
-
-// Utilities
-export { getPlatform, assertBrowser } from "./getPlatform.js";
-
-// Validation (exported for advanced use)
-export {
-	validateUuid,
-	validateRdns,
-	validateIcon,
-	validateProvider,
-	validateName,
-	UUID_V4_REGEX,
-	RDNS_REGEX,
-	DATA_URI_REGEX,
-} from "./validators.js";
-
 // State management (for testing)
 export { reset as _reset } from "./state.js";
+// Dapp API
+export { subscribe } from "./subscribe.js";
+// Types
+export type {
+	Platform,
+	ProviderDetailInput,
+	ProviderDetailType,
+	ProviderInfoInput,
+	ProviderInfoType,
+	ProviderListener,
+} from "./types.js";
+// Validation (exported for advanced use)
+export {
+	DATA_URI_REGEX,
+	RDNS_REGEX,
+	UUID_V4_REGEX,
+	validateIcon,
+	validateName,
+	validateProvider,
+	validateRdns,
+	validateUuid,
+} from "./validators.js";

@@ -1,6 +1,6 @@
-export { ZERO, ONE } from "./constants.js";
 export { add } from "./add.js";
 export { conjugate } from "./conjugate.js";
+export { ONE, ZERO } from "./constants.js";
 export { create } from "./create.js";
 export { equal } from "./equal.js";
 export { frobeniusMap } from "./frobeniusMap.js";

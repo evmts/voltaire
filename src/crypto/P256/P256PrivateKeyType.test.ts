@@ -1,11 +1,10 @@
 import { describe, expectTypeOf, it } from "vitest";
 import type { P256PrivateKeyType } from "./P256PrivateKeyType.js";
 
-type Equals<T, U> = (<G>() => G extends T ? 1 : 2) extends <G>() => G extends U
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<T, U> =
+	(<G>() => G extends T ? 1 : 2) extends <G>() => G extends U ? 1 : 2
+		? true
+		: false;
 
 describe("P256PrivateKeyType", () => {
 	describe("type structure", () => {

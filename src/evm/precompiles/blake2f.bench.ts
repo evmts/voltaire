@@ -55,7 +55,7 @@ function createBlake2fInput(rounds: number): Uint8Array {
 function blake2fJS(input: Uint8Array): Uint8Array {
 	// Note: This is a simplified benchmark using the Blake2 library
 	// The actual BLAKE2F precompile is a single compression function call
-	const rounds = new DataView(input.buffer, input.byteOffset).getUint32(
+	const _rounds = new DataView(input.buffer, input.byteOffset).getUint32(
 		0,
 		false,
 	);

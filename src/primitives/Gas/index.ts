@@ -4,9 +4,9 @@ export type { GasPriceType } from "./GasPriceType.js";
 
 // Export GasLimit constants
 export {
-	SIMPLE_TRANSFER,
-	ERC20_TRANSFER,
 	DEFAULT_LIMIT,
+	ERC20_TRANSFER,
+	SIMPLE_TRANSFER,
 } from "./gasLimitConstants.js";
 
 // Import GasLimit functions

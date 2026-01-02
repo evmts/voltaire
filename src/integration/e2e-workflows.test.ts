@@ -17,9 +17,9 @@ import { beforeAll, describe, expect, it } from "vitest";
 import * as Bip39 from "../crypto/Bip39/index.js";
 import * as HDWallet from "../crypto/HDWallet/HDWallet.js";
 import { hash as keccak256 } from "../crypto/Keccak256/hash.js";
+import { Keccak256Wasm } from "../crypto/keccak256.wasm.js";
 import * as Secp256k1 from "../crypto/Secp256k1/index.js";
 import { recoverPublicKey } from "../crypto/Secp256k1/recoverPublicKey.js";
-import { Keccak256Wasm } from "../crypto/keccak256.wasm.js";
 import { PrivateKeySignerImpl } from "../crypto/signers/private-key-signer.js";
 import { Address, toHex as addressToHex } from "../primitives/Address/index.js";
 import { toChecksummed } from "../primitives/Address/internal-index.js";
@@ -28,8 +28,6 @@ import {
 	toBytes as hexToBytes,
 } from "../primitives/Hex/index.js";
 import * as SignedData from "../primitives/SignedData/index.js";
-import * as Transaction from "../primitives/Transaction/index.js";
-import * as TypedData from "../primitives/TypedData/index.js";
 
 /**
  * Mock provider for simulating blockchain interactions.
@@ -355,7 +353,7 @@ describe("E2E Workflows", () => {
 			const txHash = keccak256(
 				new TextEncoder().encode(JSON.stringify(mintTx)),
 			);
-			const signature = Secp256k1.sign(txHash, hexToBytes(testPrivateKey));
+			const _signature = Secp256k1.sign(txHash, hexToBytes(testPrivateKey));
 
 			const txHashResult = await provider.request("eth_sendRawTransaction", [
 				mintTx,
@@ -544,7 +542,7 @@ describe("E2E Workflows", () => {
 			const txHash = keccak256(
 				new TextEncoder().encode(JSON.stringify(executeTx)),
 			);
-			const signature = Secp256k1.sign(txHash, hexToBytes(testPrivateKey));
+			const _signature = Secp256k1.sign(txHash, hexToBytes(testPrivateKey));
 
 			const txHashResult = await provider.request("eth_sendRawTransaction", [
 				executeTx,
@@ -624,7 +622,7 @@ describe("E2E Workflows", () => {
 
 	describe("8. Block Polling and Confirmations", () => {
 		it("should wait for block, poll for receipt, verify confirmation depth", async () => {
-			const initialBlockNumber = provider.getBlockHeight();
+			const _initialBlockNumber = provider.getBlockHeight();
 
 			// Step 1: Create and send transaction
 			const targetAddress = Address.from(
@@ -642,7 +640,7 @@ describe("E2E Workflows", () => {
 			};
 
 			const txHash = keccak256(new TextEncoder().encode(JSON.stringify(tx)));
-			const signature = Secp256k1.sign(txHash, hexToBytes(testPrivateKey));
+			const _signature = Secp256k1.sign(txHash, hexToBytes(testPrivateKey));
 
 			const txHashResult = await provider.request("eth_sendRawTransaction", [
 				tx,

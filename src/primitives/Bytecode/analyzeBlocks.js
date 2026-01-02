@@ -70,7 +70,7 @@ export function analyzeBlocks(bytecode, options = {}) {
  * @param {Set<number>} jumpDests
  * @returns {Set<number>}
  */
-function findBlockBoundaries(instructions, jumpDests) {
+function findBlockBoundaries(instructions, _jumpDests) {
 	const boundaries = new Set([0]); // Entry point
 
 	for (let i = 0; i < instructions.length; i++) {

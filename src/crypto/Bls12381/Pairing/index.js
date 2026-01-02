@@ -15,9 +15,9 @@
  * @since 0.0.0
  */
 
+import { PairingError } from "../errors.js";
 import * as G1 from "../G1/index.js";
 import * as G2 from "../G2/index.js";
-import { PairingError } from "../errors.js";
 
 /**
  * Pairing check: verify that product of pairings equals identity

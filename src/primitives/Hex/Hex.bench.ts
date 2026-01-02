@@ -4,7 +4,6 @@
  * Measures performance of hex operations
  */
 
-import type { HexType } from "./HexType.js";
 import {
 	assertSize,
 	concat,
@@ -32,6 +31,7 @@ import {
 	xor,
 	zero,
 } from "./HexType/index.js";
+import type { HexType } from "./HexType.js";
 
 // Benchmark runner
 interface BenchmarkResult {

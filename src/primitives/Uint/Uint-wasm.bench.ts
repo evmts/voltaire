@@ -7,8 +7,8 @@
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
 import * as loader from "../../wasm-loader/loader.js";
-import * as UintWasm from "./Uint256.wasm.js";
 import * as Uint from "./index.js";
+import * as UintWasm from "./Uint256.wasm.js";
 
 // Load WASM module before benchmarking
 await loader.loadWasm(
@@ -22,7 +22,7 @@ await loader.loadWasm(
 const smallValue = Uint.from(100n);
 const mediumValue = Uint.from(1n << 64n);
 const largeValue = Uint.from(1n << 128n);
-const maxValue = Uint.MAX;
+const _maxValue = Uint.MAX;
 
 // WASM equivalent values (32-byte buffers)
 const smallWasm = UintWasm.u256FromBigInt(100n);

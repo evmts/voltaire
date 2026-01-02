@@ -4,9 +4,9 @@
 
 import { describe, expect, it } from "vitest";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
-import type { StorageKeyType } from "./StorageKeyType.js";
 import { EMPTY_CODE_HASH, EMPTY_TRIE_ROOT } from "./constants.js";
 import * as StorageKey from "./index.js";
+import type { StorageKeyType } from "./StorageKeyType.js";
 
 // ============================================================================
 // Test Helpers

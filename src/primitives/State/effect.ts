@@ -1,7 +1,5 @@
 import * as Brand from "effect/Brand";
 import * as Schema from "effect/Schema";
-
-import type { StorageKeyType } from "./StorageKeyType.js";
 import {
 	create as _create,
 	equals as _equals,
@@ -9,6 +7,7 @@ import {
 	hashCode as _hashCode,
 	toString as _toString,
 } from "./index.js";
+import type { StorageKeyType } from "./StorageKeyType.js";
 
 const isAddr20 = (b: unknown): b is Uint8Array =>
 	b instanceof Uint8Array && b.length === 20;

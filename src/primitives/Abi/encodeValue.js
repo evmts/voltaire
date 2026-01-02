@@ -110,7 +110,7 @@ export function encodeValue(type, value, components) {
 	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
 	if (fixedArrayMatch?.[1] && fixedArrayMatch[2]) {
 		const elementType = /** @type {Parameter["type"]} */ (fixedArrayMatch[1]);
-		const arraySize = Number.parseInt(fixedArrayMatch[2]);
+		const arraySize = Number.parseInt(fixedArrayMatch[2], 10);
 		const array = /** @type {unknown[]} */ (value);
 
 		if (array.length !== arraySize) {
@@ -132,13 +132,13 @@ export function encodeValue(type, value, components) {
 	}
 
 	if (type.startsWith("uint")) {
-		const bits = type === "uint" ? 256 : Number.parseInt(type.slice(4));
+		const bits = type === "uint" ? 256 : Number.parseInt(type.slice(4), 10);
 		const encoded = encodeUint(/** @type {bigint | number} */ (value), bits);
 		return { encoded, isDynamic: false };
 	}
 
 	if (type.startsWith("int")) {
-		const bits = type === "int" ? 256 : Number.parseInt(type.slice(3));
+		const bits = type === "int" ? 256 : Number.parseInt(type.slice(3), 10);
 		const encoded = encodeInt(/** @type {bigint | number} */ (value), bits);
 		return { encoded, isDynamic: false };
 	}
@@ -162,7 +162,7 @@ export function encodeValue(type, value, components) {
 	}
 
 	if (type.startsWith("bytes") && type.length > 5) {
-		const size = Number.parseInt(type.slice(5));
+		const size = Number.parseInt(type.slice(5), 10);
 		if (size >= 1 && size <= 32) {
 			let bytes;
 			if (typeof value === "string") {

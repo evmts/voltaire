@@ -1,6 +1,7 @@
 // @ts-nocheck
-export * from "./errors.js";
+
 export * from "./constants.js";
+export * from "./errors.js";
 
 import {
 	PUBLIC_KEY_SIZE,

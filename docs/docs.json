@@ -259,6 +259,16 @@
                 ]
               },
               {
+                "group": "BloomFilter",
+                "icon": {
+                  "name": "filter",
+                  "style": "solid"
+                },
+                "pages": [
+                  "primitives/bloomfilter"
+                ]
+              },
+              {
                 "group": "Bytecode",
                 "icon": {
                   "name": "binary",
@@ -598,8 +608,12 @@
                   "style": "solid"
                 },
                 "pages": [
+                  "primitives/int8/index",
+                  "primitives/int16/index",
                   "primitives/int32/index",
-                  "primitives/int64/index"
+                  "primitives/int64/index",
+                  "primitives/int128/index",
+                  "primitives/int256/index"
                 ]
               },
               {
@@ -1216,6 +1230,8 @@
             "pages": [
               "evm/index",
               "evm/types",
+              "evm/frame",
+              "evm/host",
               {
                 "group": "Instructions",
                 "pages": [

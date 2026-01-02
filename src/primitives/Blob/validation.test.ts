@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-	BYTES_PER_FIELD_ELEMENT,
-	FIELD_ELEMENTS_PER_BLOB,
-	MAX_DATA_PER_BLOB,
-	MAX_PER_TRANSACTION,
-	SIZE,
-} from "./constants.js";
+import { MAX_DATA_PER_BLOB, MAX_PER_TRANSACTION, SIZE } from "./constants.js";
 import { Blob } from "./index.js";
 
 describe("Blob Validation - Edge Cases", () => {

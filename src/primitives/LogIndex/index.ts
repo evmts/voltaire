@@ -1,5 +1,5 @@
-export type { LogIndexType } from "./LogIndexType.js";
 export * from "./errors.js";
+export type { LogIndexType } from "./LogIndexType.js";
 
 import { equals as _equals } from "./equals.js";
 import { from as _from } from "./from.js";

@@ -1,9 +1,9 @@
-import type { BrandedRlp } from "./RlpType.js";
 import * as BrandedRlpNs from "./internal-index.js";
+import type { BrandedRlp } from "./RlpType.js";
 
+export * from "./constants.js";
 // Re-export BrandedRlp type and errors
 export * from "./errors.js";
-export * from "./constants.js";
 export type { BrandedRlp };
 
 type RlpInput = Uint8Array | BrandedRlp | BrandedRlp[];

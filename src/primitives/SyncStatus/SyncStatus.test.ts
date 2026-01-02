@@ -1,6 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { BlockNumberType } from "../BlockNumber/BlockNumberType.js";
-import type { Uint256Type } from "../Uint/Uint256Type.js";
 import { from, getProgress, isSyncing } from "./index.js";
 
 describe("SyncStatus", () => {

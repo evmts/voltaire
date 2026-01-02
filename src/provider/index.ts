@@ -41,71 +41,61 @@
  * @module provider
  */
 
+// EIP-6963: Multi Injected Provider Discovery
+export * as EIP6963 from "./eip6963/index.js";
+export type {
+	EIP1193EventEmitter,
+	EIP1193EventMap,
+	EthSubscription,
+	ProviderConnectInfo,
+	ProviderMessage,
+} from "./events/index.js";
+// Events module
+export {
+	EIP1193ErrorCode,
+	JsonRpcErrorCode,
+	ProviderRpcError,
+} from "./events/index.js";
+// Factory to create provider from a supplied Host/EVM
+export { fromEvm } from "./fromEvm.js";
+export type { HttpProviderOptions } from "./HttpProvider.js";
+// Provider implementations
+export { HttpProvider } from "./HttpProvider.js";
+export type { InMemoryProviderOptions } from "./InMemoryProvider.js";
+export { InMemoryProvider } from "./InMemoryProvider.js";
 // Core types and interfaces (legacy)
 export type { Provider } from "./Provider.js";
-export type {
-	RequestArguments as LegacyRequestArguments,
-	RpcError,
-	RequestOptions,
-	BlockTag,
-	ProviderEventListener,
-	ProviderConnectInfo as LegacyProviderConnectInfo,
-	ProviderEventMap as LegacyProviderEventMap,
-	ProviderEvent,
-} from "./types.js";
-export { ProviderRpcErrorCode } from "./types.js";
-
-// Strongly-typed provider types
-export type { TypedProvider, EIP1193Provider } from "./TypedProvider.js";
-
 // RPC Schema system
 export type {
-	RpcSchema,
 	RpcMethodNames,
 	RpcMethodParameters,
 	RpcMethodReturnType,
+	RpcSchema,
 } from "./RpcSchema.js";
-
 // Request module
 export type {
-	RequestArguments,
 	EIP1193RequestFn,
 	EIP1193RequestOptions,
+	RequestArguments,
 } from "./request/index.js";
-
-// Events module
-export {
-	ProviderRpcError,
-	EIP1193ErrorCode,
-	JsonRpcErrorCode,
-} from "./events/index.js";
-export type {
-	ProviderConnectInfo,
-	ProviderMessage,
-	EthSubscription,
-	EIP1193EventMap,
-	EIP1193EventEmitter,
-} from "./events/index.js";
-
 // Schemas
 export type {
-	VoltaireRpcSchema,
 	DerivedRpcSchema,
 	RpcSchemaOverride,
+	VoltaireRpcSchema,
 } from "./schemas/index.js";
-
-// Provider implementations
-export { HttpProvider } from "./HttpProvider.js";
-export type { HttpProviderOptions } from "./HttpProvider.js";
-
-export { WebSocketProvider } from "./WebSocketProvider.js";
+// Strongly-typed provider types
+export type { EIP1193Provider, TypedProvider } from "./TypedProvider.js";
+export type {
+	BlockTag,
+	ProviderConnectInfo as LegacyProviderConnectInfo,
+	ProviderEvent,
+	ProviderEventListener,
+	ProviderEventMap as LegacyProviderEventMap,
+	RequestArguments as LegacyRequestArguments,
+	RequestOptions,
+	RpcError,
+} from "./types.js";
+export { ProviderRpcErrorCode } from "./types.js";
 export type { WebSocketProviderOptions } from "./WebSocketProvider.js";
-
-export { InMemoryProvider } from "./InMemoryProvider.js";
-export type { InMemoryProviderOptions } from "./InMemoryProvider.js";
-
-// EIP-6963: Multi Injected Provider Discovery
-export * as EIP6963 from "./eip6963/index.js";
-
-// Factory to create provider from a supplied Host/EVM
-export { fromEvm } from "./fromEvm.js";
+export { WebSocketProvider } from "./WebSocketProvider.js";

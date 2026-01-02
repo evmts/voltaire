@@ -1,6 +1,6 @@
 import type { EtherType as BrandedEther } from "./EtherType.js";
-import type { WeiType as BrandedWei } from "./WeiType.js";
 import { toWei } from "./ether-toWei.js";
+import type { WeiType as BrandedWei } from "./WeiType.js";
 
 /**
  * Convert Ether to Wei

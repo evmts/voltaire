@@ -1,9 +1,10 @@
 // @ts-nocheck
-export * from "./errors.js";
+
 export * from "./constants.js";
+export * from "./EntropyType.js";
+export * from "./errors.js";
 export * from "./MnemonicType.js";
 export * from "./SeedType.js";
-export * from "./EntropyType.js";
 
 import { assertValidMnemonic } from "./assertValidMnemonic.js";
 import {

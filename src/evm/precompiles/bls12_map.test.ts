@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 import * as Hardfork from "../../primitives/Hardfork/index.js";
 import {
-	PrecompileAddress,
 	bls12MapFp2ToG2,
 	bls12MapFpToG1,
 	execute,
 	isPrecompile,
+	PrecompileAddress,
 } from "./precompiles.js";
 
 /**
  * Helper: Convert hex string to Uint8Array
  */
-function hexToBytes(hex: string): Uint8Array {
+function _hexToBytes(hex: string): Uint8Array {
 	const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
 	const bytes = new Uint8Array(clean.length / 2);
 	for (let i = 0; i < clean.length; i += 2) {
@@ -125,7 +125,7 @@ describe("Precompile: BLS12_MAP_FP_TO_G1 (0x12)", () => {
 			expect(result.output.length).toBe(128);
 
 			// G1 point should not be all zeros (except identity)
-			const isAllZero = [...result.output].every((b) => b === 0);
+			const _isAllZero = [...result.output].every((b) => b === 0);
 			// Zero maps to a valid point (not necessarily identity)
 			expect(result.output.length).toBe(128);
 		});

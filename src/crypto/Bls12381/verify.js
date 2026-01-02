@@ -10,7 +10,7 @@
  */
 
 import { bls12_381 } from "@noble/curves/bls12-381.js";
-import { InvalidPointError, SignatureError } from "./errors.js";
+import { SignatureError } from "./errors.js";
 
 // Ethereum consensus uses "short signatures" scheme
 const bls = bls12_381.shortSignatures;
@@ -59,7 +59,7 @@ export function verify(signature, message, publicKey) {
 		const pk = bls12_381.G2.Point.fromBytes(publicKey);
 		// Verify
 		return bls.verify(sig, msgPoint, pk);
-	} catch (error) {
+	} catch (_error) {
 		// Invalid signature format or point not on curve
 		return false;
 	}
@@ -102,7 +102,7 @@ export function verifyPoint(signaturePoint, messagePoint, publicKeyPoint) {
 
 		// Compare pairing results
 		return bls12_381.Fp12.eql(lhs, rhs);
-	} catch (error) {
+	} catch (_error) {
 		return false;
 	}
 }

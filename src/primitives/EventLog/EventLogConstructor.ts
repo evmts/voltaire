@@ -1,5 +1,5 @@
-import type { EventLogType as BrandedEventLog } from "./EventLogType.js";
 import type { create } from "./create.js";
+import type { EventLogType as BrandedEventLog } from "./EventLogType.js";
 import type { matchesAddress } from "./matchesAddress.js";
 import type { matchesFilter } from "./matchesFilter.js";
 import type { matchesTopics } from "./matchesTopics.js";

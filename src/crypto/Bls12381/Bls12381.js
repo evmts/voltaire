@@ -41,18 +41,11 @@
  * ```
  */
 
-export * from "./errors.js";
 export * from "./constants.js";
+export * from "./errors.js";
+export * from "./Fp2Type.js";
 export * from "./G1PointType.js";
 export * from "./G2PointType.js";
-export * from "./Fp2Type.js";
-
-import * as Fp from "./Fp/index.js";
-import * as Fp2 from "./Fp2/index.js";
-import * as Fr from "./Fr/index.js";
-import * as G1 from "./G1/index.js";
-import * as G2 from "./G2/index.js";
-import * as Pairing from "./Pairing/index.js";
 
 import { aggregate, aggregatePublicKeys } from "./aggregate.js";
 import {
@@ -61,6 +54,12 @@ import {
 	fastAggregateVerify,
 } from "./aggregateVerify.js";
 import { derivePublicKey, derivePublicKeyPoint } from "./derivePublicKey.js";
+import * as Fp from "./Fp/index.js";
+import * as Fp2 from "./Fp2/index.js";
+import * as Fr from "./Fr/index.js";
+import * as G1 from "./G1/index.js";
+import * as G2 from "./G2/index.js";
+import * as Pairing from "./Pairing/index.js";
 import { isValidPrivateKey, randomPrivateKey } from "./randomPrivateKey.js";
 // High-level BLS signature operations
 import { sign, signPoint } from "./sign.js";

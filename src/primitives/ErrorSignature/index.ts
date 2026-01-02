@@ -1,6 +1,6 @@
 export type {
-	ErrorSignatureType,
 	ErrorSignatureLike,
+	ErrorSignatureType,
 } from "./ErrorSignatureType.js";
 export { SIZE } from "./ErrorSignatureType.js";
 

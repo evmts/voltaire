@@ -1,6 +1,7 @@
 // @ts-nocheck
-export * from "./errors.js";
+
 export * from "./constants.js";
+export * from "./errors.js";
 export * from "./RlpType.js";
 
 import { decode } from "./decode.js";

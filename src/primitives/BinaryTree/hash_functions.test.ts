@@ -1,8 +1,8 @@
 import { blake3 } from "@noble/hashes/blake3.js";
 import { describe, expect, test } from "vitest";
 import type { LeafNode, Node, StemNode } from "./BinaryTreeType.js";
-import { HashInternal, HashLeaf, HashNode, HashStem } from "./index.js";
 import * as BinaryTree from "./index.js";
+import { HashInternal, HashLeaf, HashNode, HashStem } from "./index.js";
 
 // Instantiate factories with blake3
 const hashLeaf = HashLeaf({ blake3 });

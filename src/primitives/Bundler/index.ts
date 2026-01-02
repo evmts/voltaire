@@ -2,7 +2,6 @@
 export type { BundlerType } from "./BundlerType.js";
 
 import type { AddressType } from "../Address/AddressType.js";
-import type { BundlerType } from "./BundlerType.js";
 // Import all functions
 import { equals as _equals } from "./equals.js";
 import { from } from "./from.js";

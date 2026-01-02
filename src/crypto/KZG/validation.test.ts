@@ -1,6 +1,4 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { KZG } from "./KZG.js";
-import type { KzgProofType } from "./KzgProofType.js";
 import {
 	BYTES_PER_BLOB,
 	BYTES_PER_COMMITMENT,
@@ -9,6 +7,8 @@ import {
 	FIELD_ELEMENTS_PER_BLOB,
 } from "./constants.js";
 import { KzgError, KzgInvalidBlobError } from "./errors.js";
+import { KZG } from "./KZG.js";
+import type { KzgProofType } from "./KzgProofType.js";
 import { hasNativeKzg } from "./test-utils.js";
 
 describe.skipIf(!hasNativeKzg)("KZG Validation - Edge Cases", () => {
@@ -51,7 +51,7 @@ describe.skipIf(!hasNativeKzg)("KZG Validation - Edge Cases", () => {
 		});
 
 		it("should reject commitment with invalid size (not 48 bytes)", () => {
-			const blob = KZG.generateRandomBlob();
+			const _blob = KZG.generateRandomBlob();
 			const wrongCommitment = new Uint8Array(32); // Wrong size
 			const z = createFieldElement();
 			const y = createFieldElement();

@@ -2,10 +2,9 @@ import * as Brand from "effect/Brand";
 import * as Schema from "effect/Schema";
 
 import { toBytes as hexToBytes } from "../Hex/toBytes.js";
-import type { EventLogType } from "./EventLogType.js";
 import { create as _create } from "./create.js";
+import type { EventLogType } from "./EventLogType.js";
 import { filterLogs as _filterLogs } from "./filterLogs.js";
-import { from as _from } from "./from.js";
 import { fromRpc as _fromRpc } from "./fromRpc.js";
 import { matchesFilter as _matchesFilter } from "./matchesFilter.js";
 

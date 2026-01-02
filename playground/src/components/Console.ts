@@ -175,9 +175,7 @@ export class Console {
 		const allText = entries
 			.map((e) => `[${this.formatTimestamp(e.timestamp)}] ${e.message}`)
 			.join("\n");
-		navigator.clipboard.writeText(allText).catch((err) => {
-			console.error("Failed to copy:", err);
-		});
+		navigator.clipboard.writeText(allText).catch((_err) => {});
 	}
 
 	captureConsole(): () => void {

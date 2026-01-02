@@ -3,7 +3,7 @@
  * Add Request constructor functions to all eth JSON-RPC method files
  */
 
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ETH_DIR = "/Users/williamcory/voltaire/src/jsonrpc/eth";
@@ -245,7 +245,7 @@ function addRequestConstructor(dir: string, config: MethodConfig) {
 	// Add import after first comment block
 	const importStatement =
 		"import { createRequest } from '../../types/JsonRpcRequest.js'\n";
-	const typedefImport =
+	const _typedefImport =
 		" * @typedef {import('../../types/JsonRpcRequest.js').JsonRpcRequest} JsonRpcRequest\n";
 
 	// Add import after fileoverview

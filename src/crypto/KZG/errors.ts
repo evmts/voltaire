@@ -1,8 +1,8 @@
-import { CryptoError } from "../../primitives/errors/index.js";
 import type {
 	InvalidFormatError,
 	InvalidLengthError,
 } from "../../primitives/errors/index.js";
+import { CryptoError } from "../../primitives/errors/index.js";
 
 /**
  * Base KZG error for polynomial commitment operations

@@ -1,21 +1,20 @@
 import { describe, it } from "vitest";
 import type { Uint8Type } from "./Uint8Type.js";
 
-type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
-	? 1
-	: 2
-	? true
-	: false;
+type Equals<X, Y> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+		? true
+		: false;
 
 describe("Uint8Type type-level tests", () => {
 	it("should be a branded number type", () => {
 		type Test1 = Equals<Uint8Type, number>;
-		const test1: Test1 = false;
-		test1;
+		const _test1: Test1 = false;
+		_test1;
 
 		type Test2 = Uint8Type extends number ? true : false;
-		const test2: Test2 = true;
-		test2;
+		const _test2: Test2 = true;
+		_test2;
 	});
 
 	it("should be assignable to number", () => {

@@ -1,10 +1,9 @@
 // biome-ignore lint/suspicious/noShadowRestrictedNames: intentionally named Function for ABI function namespace
 import { Function } from "./Function.js";
 
-// Re-export FunctionType and types
-export type { FunctionType } from "./FunctionType.js";
-export type { ExtractNames, Get } from "./FunctionType.js";
 export * from "./errors.js";
+// Re-export FunctionType and types
+export type { ExtractNames, FunctionType, Get } from "./FunctionType.js";
 export * from "./statemutability.js";
 
 // Import crypto dependencies

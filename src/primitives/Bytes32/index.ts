@@ -8,13 +8,11 @@
  */
 
 // Type exports
-export type { Bytes32Type, Bytes32Like } from "./Bytes32Type.js";
-
-// Error exports
-export * from "./errors.js";
-
+export type { Bytes32Like, Bytes32Type } from "./Bytes32Type.js";
 // Constants
 export { SIZE, ZERO } from "./constants.js";
+// Error exports
+export * from "./errors.js";
 
 // Import individual functions
 import { bitwiseAnd } from "./bitwiseAnd.js";
@@ -65,25 +63,25 @@ export {
 	max,
 };
 
-// Internal exports (prefixed with _ for advanced usage)
-export { from as _from } from "./from.js";
-export { fromBytes as _fromBytes } from "./fromBytes.js";
-export { fromHex as _fromHex } from "./fromHex.js";
-export { fromNumber as _fromNumber } from "./fromNumber.js";
-export { fromBigint as _fromBigint } from "./fromBigint.js";
-export { toHex as _toHex } from "./toHex.js";
-export { toNumber as _toNumber } from "./toNumber.js";
-export { toBigint as _toBigint } from "./toBigint.js";
-export { equals as _equals } from "./equals.js";
-export { compare as _compare } from "./compare.js";
-export { isZero as _isZero } from "./isZero.js";
-export { clone as _clone } from "./clone.js";
-export { zero as _zero } from "./zero.js";
 export { bitwiseAnd as _bitwiseAnd } from "./bitwiseAnd.js";
 export { bitwiseOr as _bitwiseOr } from "./bitwiseOr.js";
 export { bitwiseXor as _bitwiseXor } from "./bitwiseXor.js";
-export { min as _min } from "./min.js";
+export { clone as _clone } from "./clone.js";
+export { compare as _compare } from "./compare.js";
+export { equals as _equals } from "./equals.js";
+// Internal exports (prefixed with _ for advanced usage)
+export { from as _from } from "./from.js";
+export { fromBigint as _fromBigint } from "./fromBigint.js";
+export { fromBytes as _fromBytes } from "./fromBytes.js";
+export { fromHex as _fromHex } from "./fromHex.js";
+export { fromNumber as _fromNumber } from "./fromNumber.js";
+export { isZero as _isZero } from "./isZero.js";
 export { max as _max } from "./max.js";
+export { min as _min } from "./min.js";
+export { toBigint as _toBigint } from "./toBigint.js";
+export { toHex as _toHex } from "./toHex.js";
+export { toNumber as _toNumber } from "./toNumber.js";
+export { zero as _zero } from "./zero.js";
 
 // Namespace export for convenient grouped access
 export const Bytes32 = {

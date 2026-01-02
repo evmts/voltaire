@@ -11,8 +11,8 @@
 
 import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
-import { SHA256 } from "./SHA256.js";
 import * as SHA256Namespace from "./SHA256.js";
+import { SHA256 } from "./SHA256.js";
 
 describe("SHA256 constructor", () => {
 	it("should hash string input", () => {

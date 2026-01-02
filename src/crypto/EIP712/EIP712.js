@@ -1,6 +1,7 @@
 // @ts-nocheck
-export * from "./errors.js";
+
 export * from "./EIP712Type.js";
+export * from "./errors.js";
 
 import { from as privateKeyFrom } from "../../primitives/PrivateKey/from.js";
 // Import crypto dependencies

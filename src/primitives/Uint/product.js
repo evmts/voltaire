@@ -1,5 +1,4 @@
-import { MAX } from "./constants.js";
-import { ONE } from "./constants.js";
+import { MAX, ONE } from "./constants.js";
 
 /**
  * Multiply multiple Uint256 values with wrapping

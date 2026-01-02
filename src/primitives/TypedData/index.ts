@@ -3,13 +3,13 @@ import { from as fromImpl } from "./from.js";
 import { hash as hashImpl } from "./hash.js";
 import { validate as validateImpl } from "./validate.js";
 
-export type { TypedDataType, TypedDataField } from "./TypedDataType.js";
+export { encode as _encode } from "./encode.js";
 export * from "./errors.js";
 
 // Internal exports (prefixed with _)
 export { from as _from } from "./from.js";
 export { hash as _hash } from "./hash.js";
-export { encode as _encode } from "./encode.js";
+export type { TypedDataField, TypedDataType } from "./TypedDataType.js";
 export { validate as _validate } from "./validate.js";
 
 // Public wrapper functions

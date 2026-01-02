@@ -1,5 +1,5 @@
-export type { TransactionHashType } from "./TransactionHashType.js";
 export * from "./errors.js";
+export type { TransactionHashType } from "./TransactionHashType.js";
 
 import { equals as _equals } from "./equals.js";
 import { from as _from } from "./from.js";

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-	JsonRpcResponse,
 	error,
 	from,
 	isError,
 	isSuccess,
+	JsonRpcResponse,
 	success,
 	unwrap,
 } from "./index.js";

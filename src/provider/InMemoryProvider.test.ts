@@ -241,7 +241,7 @@ describe("InMemoryProvider", () => {
 
 			// The auto-mined tx should be findable
 			// Note: simplified impl returns based on hash generation
-			const result = await provider.request({
+			const _result = await provider.request({
 				method: "eth_getTransactionByHash",
 				params: [txHash],
 			});

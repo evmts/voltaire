@@ -64,7 +64,6 @@ async function packageNative(config: PlatformConfig) {
 
 	// Check if source exists
 	if (!existsSync(sourcePath)) {
-		console.warn(`⚠️  Skipping ${platform}: Source not found at ${sourcePath}`);
 		return false;
 	}
 
@@ -77,7 +76,7 @@ async function packageNative(config: PlatformConfig) {
 	copyFileSync(sourcePath, targetPath);
 
 	const stats = statSync(targetPath);
-	const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
+	const _sizeMB = (stats.size / 1024 / 1024).toFixed(2);
 	return true;
 }
 
@@ -90,20 +89,18 @@ async function main() {
 		: platforms;
 
 	if (requestedPlatform && platformsToPackage.length === 0) {
-		console.error(`❌ Unknown platform: ${requestedPlatform}`);
-		console.error(`Available: ${platforms.map((p) => p.platform).join(", ")}`);
 		process.exit(1);
 	}
 
 	let successCount = 0;
-	let failCount = 0;
+	let _failCount = 0;
 
 	for (const config of platformsToPackage) {
 		const success = await packageNative(config);
 		if (success) {
 			successCount++;
 		} else {
-			failCount++;
+			_failCount++;
 		}
 	}
 
@@ -113,7 +110,6 @@ async function main() {
 	}
 }
 
-main().catch((error) => {
-	console.error("❌ Error:", error);
+main().catch((_error) => {
 	process.exit(1);
 });

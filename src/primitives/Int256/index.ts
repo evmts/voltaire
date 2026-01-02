@@ -1,4 +1,9 @@
-export type { BrandedInt256 } from "./Int256Type.js";
+export { abs } from "./abs.js";
+export { bitLength } from "./bitLength.js";
+export { bitwiseAnd } from "./bitwiseAnd.js";
+export { bitwiseNot } from "./bitwiseNot.js";
+export { bitwiseOr } from "./bitwiseOr.js";
+export { bitwiseXor } from "./bitwiseXor.js";
 export {
 	BITS,
 	MAX,
@@ -9,13 +14,6 @@ export {
 	SIZE,
 	ZERO,
 } from "./constants.js";
-
-export { abs } from "./abs.js";
-export { bitLength } from "./bitLength.js";
-export { bitwiseAnd } from "./bitwiseAnd.js";
-export { bitwiseNot } from "./bitwiseNot.js";
-export { bitwiseOr } from "./bitwiseOr.js";
-export { bitwiseXor } from "./bitwiseXor.js";
 export { dividedBy } from "./dividedBy.js";
 export { equals } from "./equals.js";
 export { from } from "./from.js";
@@ -24,6 +22,7 @@ export { fromBytes } from "./fromBytes.js";
 export { fromHex } from "./fromHex.js";
 export { fromNumber } from "./fromNumber.js";
 export { greaterThan } from "./greaterThan.js";
+export type { BrandedInt256 } from "./Int256Type.js";
 export { isNegative } from "./isNegative.js";
 export { isPositive } from "./isPositive.js";
 export { isValid } from "./isValid.js";

@@ -1,4 +1,4 @@
-import { CURVE_ORDER, PRIVATE_KEY_SIZE } from "./constants.js";
+import { PRIVATE_KEY_SIZE } from "./constants.js";
 import { isValidPrivateKey } from "./isValidPrivateKey.js";
 
 /**

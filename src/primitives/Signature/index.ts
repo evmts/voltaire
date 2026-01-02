@@ -1,12 +1,13 @@
 // Type exports
-export type {
-	SignatureType,
-	SignatureAlgorithm,
-} from "./SignatureType.js";
+
+export * from "./constants.js";
 
 // Export errors and constants
 export * from "./errors.js";
-export * from "./constants.js";
+export type {
+	SignatureAlgorithm,
+	SignatureType,
+} from "./SignatureType.js";
 
 // Import all functions
 import { equals } from "./equals.js";

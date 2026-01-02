@@ -1,5 +1,4 @@
-import { ZERO } from "./constants.js";
-import { MAX } from "./constants.js";
+import { MAX, ZERO } from "./constants.js";
 import { gcd } from "./gcd.js";
 
 /**

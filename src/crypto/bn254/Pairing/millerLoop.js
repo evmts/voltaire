@@ -1,7 +1,7 @@
+import { CURVE_PARAM_T } from "../constants.js";
 import * as Fr from "../Fr/index.js";
 import * as G1 from "../G1/index.js";
 import * as G2 from "../G2/index.js";
-import { CURVE_PARAM_T } from "../constants.js";
 import { pairingResultOne } from "./pairingResult.js";
 
 /**

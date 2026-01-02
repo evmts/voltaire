@@ -1,18 +1,17 @@
 import type { ReturnDataType } from "../ReturnData/ReturnDataType.js";
-import type { RevertReasonType } from "./RevertReasonType.js";
 import { from as _from } from "./from.js";
 import { fromReturnData as _fromReturnData } from "./fromReturnData.js";
+import type { RevertReasonType } from "./RevertReasonType.js";
 import { toString as _toString } from "./toString.js";
 
+export * from "./constants.js";
 export type {
-	RevertReasonType,
+	CustomRevertReason,
 	ErrorRevertReason,
 	PanicRevertReason,
-	CustomRevertReason,
+	RevertReasonType,
 	UnknownRevertReason,
 } from "./RevertReasonType.js";
-
-export * from "./constants.js";
 
 /**
  * Create RevertReason from various inputs

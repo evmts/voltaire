@@ -2,7 +2,6 @@
 export type { PaymasterType } from "./PaymasterType.js";
 
 import type { AddressType } from "../Address/AddressType.js";
-import type { PaymasterType } from "./PaymasterType.js";
 // Import all functions
 import { equals as _equals } from "./equals.js";
 import { from } from "./from.js";

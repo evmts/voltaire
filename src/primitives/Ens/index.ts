@@ -1,11 +1,10 @@
-export * from "./errors.js";
 export type { EnsType as Ens } from "./EnsType.js";
+export * from "./errors.js";
 
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
-import type { EnsType } from "./EnsType.js";
-
 // Import .js files with proper type annotations
 import { beautify as _beautifyImpl } from "./beautify.js";
+import type { EnsType } from "./EnsType.js";
 import { from as fromImpl } from "./from.js";
 import { is as isImpl } from "./is.js";
 import { isValid as isValidImpl } from "./isValid.js";

@@ -1,5 +1,5 @@
-import type { Uint256Type } from "./Uint256Type.js";
 import { bitLength } from "./bitLength.js";
+import type { Uint256Type } from "./Uint256Type.js";
 
 /**
  * Get number of leading zero bits

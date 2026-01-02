@@ -1,6 +1,6 @@
 import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
-import type { HexType } from "./HexType.js";
 import { fromBytes } from "./fromBytes.js";
+import type { HexType } from "./HexType.js";
 import { hexCharToValue } from "./utils.js";
 
 /**

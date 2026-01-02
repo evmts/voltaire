@@ -40,7 +40,7 @@ export class DisplaySettingsManager {
 	}
 
 	/** @param {HTMLElement} panel */
-	createUI(panel) {
+	createUI(_panel) {
 		// Stub: create settings UI
 	}
 

@@ -8,11 +8,11 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import type { HashType } from "../primitives/Hash/index.js";
 import * as loader from "../wasm-loader/loader.js";
-import { Secp256k1 as NobleSecp256k1 } from "./Secp256k1/index.js";
 import {
 	InvalidPrivateKeyError,
 	InvalidPublicKeyError,
 	InvalidSignatureError,
+	Secp256k1 as NobleSecp256k1,
 	Secp256k1Error,
 } from "./Secp256k1/index.js";
 

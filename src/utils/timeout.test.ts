@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
-	TimeoutError,
 	createDeferred,
 	executeWithTimeout,
 	sleep,
+	TimeoutError,
 	withTimeout,
 	wrapWithTimeout,
 } from "./timeout.js";
@@ -362,10 +362,10 @@ describe("executeWithTimeout", () => {
 
 	it("waits between retries", async () => {
 		const start = Date.now();
-		let attempts = 0;
+		let _attempts = 0;
 
 		const fn = async () => {
-			attempts++;
+			_attempts++;
 			await sleep(500);
 			return 42;
 		};

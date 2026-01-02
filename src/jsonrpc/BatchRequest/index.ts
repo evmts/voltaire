@@ -3,8 +3,8 @@ export type { BatchRequestType } from "./BatchRequestType.js";
 
 // Import internal functions
 import type { JsonRpcRequestType } from "../JsonRpcRequest/JsonRpcRequestType.js";
-import type { BatchRequestType } from "./BatchRequestType.js";
 import { add as _add } from "./add.js";
+import type { BatchRequestType } from "./BatchRequestType.js";
 import { from } from "./from.js";
 import { size as _size } from "./size.js";
 

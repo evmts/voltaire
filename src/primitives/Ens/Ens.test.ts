@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import * as Hex from "../Hex/index.js";
-import { Labelhash, Namehash } from "./index.js";
 import * as Ens from "./index.js";
+import { Labelhash, Namehash } from "./index.js";
 
 // Instantiate factory functions
 const namehash = Namehash({ keccak256 });

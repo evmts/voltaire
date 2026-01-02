@@ -4,10 +4,10 @@
  * Tests EventStream backfill, watch, and dynamic chunking behavior.
  */
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { TypedProvider } from "../provider/TypedProvider.js";
 import { EventStream } from "./EventStream.js";
-import { BlockRangeTooLargeError, EventStreamAbortedError } from "./errors.js";
+import { EventStreamAbortedError } from "./errors.js";
 
 // ============================================================================
 // Test Fixtures
@@ -151,14 +151,14 @@ describe("EventStream.backfill", () => {
 
 	it("reduces chunk size on block range too large error", async () => {
 		let callCount = 0;
-		let lastFromBlock: bigint | undefined;
+		let _lastFromBlock: bigint | undefined;
 		let lastToBlock: bigint | undefined;
 
 		const provider = createMockProvider({
 			eth_getLogs: (params) => {
 				callCount++;
 				const filter = (params as [{ fromBlock: string; toBlock: string }])[0];
-				lastFromBlock = BigInt(filter.fromBlock);
+				_lastFromBlock = BigInt(filter.fromBlock);
 				lastToBlock = BigInt(filter.toBlock);
 
 				if (callCount === 1) {

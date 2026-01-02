@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
 import { Hash } from "../../Hash/index.js";
 import { Type } from "../types.js";
-import { TransactionEIP4844, deserialize, serialize } from "./index.js";
+import { deserialize, serialize, TransactionEIP4844 } from "./index.js";
 
 describe("TransactionEIP4844.deserialize", () => {
 	it("round-trips serialize and deserialize", () => {

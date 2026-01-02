@@ -42,32 +42,29 @@
  * @module block
  */
 
-// Main factory
-export { BlockStream } from "./BlockStream.js";
-
-// Types
-export type {
-	BlockStream as BlockStreamInstance,
-	BlockStreamConstructorOptions,
-	BlockStreamOptions,
-	BackfillOptions,
-	WatchOptions,
-	BlockStreamEvent,
-	BlocksEvent,
-	ReorgEvent,
-	BlockStreamMetadata,
-	BlockInclude,
-	LightBlock,
-	StreamBlock,
-	RetryOptions,
-} from "./BlockStreamType.js";
-
-// Errors
-export {
-	BlockStreamAbortedError,
-	UnrecoverableReorgError,
-	BlockRangeTooLargeError,
-} from "./errors.js";
-
 // Base stream error (for catching all stream aborts)
 export { StreamAbortedError } from "../stream/errors.js";
+// Main factory
+export { BlockStream } from "./BlockStream.js";
+// Types
+export type {
+	BackfillOptions,
+	BlockInclude,
+	BlockStream as BlockStreamInstance,
+	BlockStreamConstructorOptions,
+	BlockStreamEvent,
+	BlockStreamMetadata,
+	BlockStreamOptions,
+	BlocksEvent,
+	LightBlock,
+	ReorgEvent,
+	RetryOptions,
+	StreamBlock,
+	WatchOptions,
+} from "./BlockStreamType.js";
+// Errors
+export {
+	BlockRangeTooLargeError,
+	BlockStreamAbortedError,
+	UnrecoverableReorgError,
+} from "./errors.js";

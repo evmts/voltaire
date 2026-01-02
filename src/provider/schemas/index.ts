@@ -6,8 +6,8 @@
  * @module provider/schemas
  */
 
-export type { VoltaireRpcSchema } from "./VoltaireRpcSchema.js";
 export type {
 	DerivedRpcSchema,
 	RpcSchemaOverride,
 } from "./DerivedRpcSchema.js";
+export type { VoltaireRpcSchema } from "./VoltaireRpcSchema.js";

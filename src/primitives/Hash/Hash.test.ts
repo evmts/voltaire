@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
 	assert,
-	ZERO,
 	clone,
 	equals,
 	format,
@@ -18,6 +17,7 @@ import {
 	slice as sliceHash,
 	toBytes,
 	toHex,
+	ZERO,
 } from "./index.js";
 
 describe("Hash", () => {

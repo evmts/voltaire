@@ -1,6 +1,5 @@
 import { encodeType } from "./encodeType.js";
 import { encodeValue } from "./encodeValue.js";
-import { hashType } from "./hashType.js";
 
 /**
  * @typedef {{ readonly name: string; readonly type: string }} EIP712Field

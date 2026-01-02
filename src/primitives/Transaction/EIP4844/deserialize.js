@@ -1,5 +1,5 @@
-import { decode } from "../../Rlp/decode.js";
 import { DecodingError } from "../../errors/index.js";
+import { decode } from "../../Rlp/decode.js";
 import { Type } from "../types.js";
 import { decodeAccessList, decodeBigint } from "../utils.js";
 

@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vitest";
-import * as G2 from "./G2/index.js";
 import {
 	FP_MOD,
 	G2_GENERATOR_X_C0,
@@ -9,6 +8,7 @@ import {
 } from "./constants.js";
 import { deserializeG2 } from "./deserializeG2.js";
 import { Bn254Error } from "./errors.js";
+import * as G2 from "./G2/index.js";
 import { serializeG2 } from "./serializeG2.js";
 
 describe("deserializeG2", () => {
@@ -323,7 +323,7 @@ describe("deserializeG2", () => {
 
 			try {
 				const point = deserializeG2(bytes);
-				const affine = G2.toAffine(point);
+				const _affine = G2.toAffine(point);
 				// These coordinates likely don't form a valid curve point,
 				// so fromAffine may transform or reject them
 				// If accepted, check they were parsed correctly

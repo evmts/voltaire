@@ -731,7 +731,7 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 
 		it("memory reset works after blob operations", () => {
 			const data = new TextEncoder().encode("test");
-			const blob = blobFromData(data);
+			const _blob = blobFromData(data);
 			resetMemory();
 			const blob2 = blobFromData(data);
 			expect(blob2).toHaveLength(131072);

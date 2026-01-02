@@ -60,10 +60,7 @@ export function decodeSupportsInterface(data: string): boolean {
  */
 export async function supportsInterface(
 	provider: {
-		request(args: {
-			method: string;
-			params: unknown[];
-		}): Promise<string>;
+		request(args: { method: string; params: unknown[] }): Promise<string>;
 	},
 	contract: string,
 	interfaceId: string,
@@ -82,7 +79,7 @@ export async function supportsInterface(
 		}
 
 		return decodeSupportsInterface(result);
-	} catch (error) {
+	} catch (_error) {
 		// Contract doesn't support ERC-165 or call failed
 		return false;
 	}
@@ -93,10 +90,7 @@ export async function supportsInterface(
  */
 export async function detectInterfaces(
 	provider: {
-		request(args: {
-			method: string;
-			params: unknown[];
-		}): Promise<string>;
+		request(args: { method: string; params: unknown[] }): Promise<string>;
 	},
 	contract: string,
 ): Promise<string[]> {

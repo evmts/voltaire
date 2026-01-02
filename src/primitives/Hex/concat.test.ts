@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { HexType } from "./HexType.js";
 import { concat } from "./concat.js";
+import type { HexType } from "./HexType.js";
 
 describe("concat", () => {
 	it("concatenates two hex strings", () => {

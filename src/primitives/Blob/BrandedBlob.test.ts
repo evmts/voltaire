@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { hash as sha256 } from "../../crypto/SHA256/hash.js";
 import type {
 	BrandedBlob,
 	Commitment,
@@ -21,15 +22,13 @@ import { isValid } from "./isValid.js";
 import { isValidVersion } from "./isValidVersion.js";
 import { joinData } from "./joinData.js";
 import { splitData } from "./splitData.js";
-import { toData } from "./toData.js";
-import { VerifyBatch } from "./verifyBatch.js";
-
-import { hash as sha256 } from "../../crypto/SHA256/hash.js";
 import { ToCommitment } from "./toCommitment.js";
+import { toData } from "./toData.js";
 import { ToProof } from "./toProof.js";
 // Import factories and crypto dependencies
 import { ToVersionedHash } from "./toVersionedHash.js";
 import { Verify } from "./verify.js";
+import { VerifyBatch } from "./verifyBatch.js";
 
 // Stub KZG functions (until c-kzg-4844 is integrated)
 const stubBlobToKzgCommitment = () => {

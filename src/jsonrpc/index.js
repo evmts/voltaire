@@ -2,27 +2,25 @@
  * JSON-RPC module - Ethereum JSON-RPC Type System
  */
 
-// Re-export all JSON-RPC envelope types as namespaces
-export * as JsonRpcVersion from "./JsonRpcVersion/index.js";
-export * as JsonRpcId from "./JsonRpcId/index.js";
-export * as JsonRpcError from "./JsonRpcError/index.js";
-export * as JsonRpcRequest from "./JsonRpcRequest/index.js";
-export * as JsonRpcResponse from "./JsonRpcResponse/index.js";
 export * as BatchRequest from "./BatchRequest/index.js";
 export * as BatchResponse from "./BatchResponse/index.js";
-
 // Export base primitive types
 export {
-	Quantity,
-	Hash,
-	BlockTag,
-	BlockSpec,
-	Data,
 	Block,
+	BlockSpec,
+	BlockTag,
+	Data,
+	Hash,
+	Quantity,
 } from "./base-types.js";
-
+export * as JsonRpcError from "./JsonRpcError/index.js";
+export * as JsonRpcId from "./JsonRpcId/index.js";
+export * as JsonRpcRequest from "./JsonRpcRequest/index.js";
 // Legacy helper
 export { createRequest } from "./JsonRpcRequest.js";
+export * as JsonRpcResponse from "./JsonRpcResponse/index.js";
+// Re-export all JSON-RPC envelope types as namespaces
+export * as JsonRpcVersion from "./JsonRpcVersion/index.js";
 
 import * as _anvilMethods from "./anvil/methods.js";
 // Export namespace-specific methods for tree-shakable imports
@@ -33,8 +31,8 @@ import * as _txpoolMethods from "./txpool/methods.js";
 import * as _walletMethods from "./wallet/methods.js";
 import * as _web3Methods from "./web3/methods.js";
 
-export * as eth from "./eth/methods.js";
 export * as anvil from "./anvil/methods.js";
+export * as eth from "./eth/methods.js";
 export * as hardhat from "./hardhat/methods.js";
 export * as net from "./net/methods.js";
 export * as txpool from "./txpool/methods.js";

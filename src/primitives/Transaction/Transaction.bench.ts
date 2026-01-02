@@ -9,8 +9,8 @@ import type { HashType } from "../Hash/index.js";
 import type { BrandedTransactionEIP1559 } from "../Transaction/EIP1559/TransactionEIP1559Type.js";
 import type { TransactionEIP4844Type } from "../Transaction/EIP4844/TransactionEIP4844Type.js";
 import type { TransactionEIP7702Type } from "../Transaction/EIP7702/TransactionEIP7702Type.js";
-import type { TransactionLegacyType } from "../Transaction/Legacy/TransactionLegacyType.js";
 import * as Transaction from "../Transaction/index.js";
+import type { TransactionLegacyType } from "../Transaction/Legacy/TransactionLegacyType.js";
 import type {
 	EIP1559,
 	EIP2930,

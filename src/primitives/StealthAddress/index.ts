@@ -53,33 +53,29 @@
  * ```
  */
 
-// Type exports
-export type {
-	StealthMetaAddress,
-	SpendingPublicKey,
-	ViewingPublicKey,
-	EphemeralPublicKey,
-	ViewTag,
-	StealthAnnouncement,
-	GenerateStealthAddressResult,
-	CheckStealthAddressResult,
-} from "./StealthAddressType.js";
-
-// Error exports
-export * from "./errors.js";
-
-// Constants
-export * from "./constants.js";
-
-// Core functions
-export { generateMetaAddress } from "./generateMetaAddress.js";
-export { parseMetaAddress } from "./parseMetaAddress.js";
-export { generateStealthAddress } from "./generateStealthAddress.js";
 export { checkStealthAddress } from "./checkStealthAddress.js";
-export { computeStealthPrivateKey } from "./computeStealthPrivateKey.js";
-
 // Utility functions
 export { compressPublicKey } from "./compressPublicKey.js";
-export { decompressPublicKey } from "./decompressPublicKey.js";
+export { computeStealthPrivateKey } from "./computeStealthPrivateKey.js";
 export { computeViewTag } from "./computeViewTag.js";
+// Constants
+export * from "./constants.js";
+export { decompressPublicKey } from "./decompressPublicKey.js";
+// Error exports
+export * from "./errors.js";
+// Core functions
+export { generateMetaAddress } from "./generateMetaAddress.js";
+export { generateStealthAddress } from "./generateStealthAddress.js";
 export { parseAnnouncement } from "./parseAnnouncement.js";
+export { parseMetaAddress } from "./parseMetaAddress.js";
+// Type exports
+export type {
+	CheckStealthAddressResult,
+	EphemeralPublicKey,
+	GenerateStealthAddressResult,
+	SpendingPublicKey,
+	StealthAnnouncement,
+	StealthMetaAddress,
+	ViewingPublicKey,
+	ViewTag,
+} from "./StealthAddressType.js";

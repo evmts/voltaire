@@ -1,7 +1,6 @@
 import { bls12_381 } from "@noble/curves/bls12-381.js";
 import { describe, expect, test } from "vitest";
 import {
-	PrecompileAddress,
 	bls12G1Add,
 	bls12G1Msm,
 	bls12G1Mul,
@@ -12,6 +11,7 @@ import {
 	bls12MapFpToG1,
 	bls12Pairing,
 	execute,
+	PrecompileAddress,
 } from "./precompiles.js";
 
 const BLS12_FIELD_MODULUS = BigInt(

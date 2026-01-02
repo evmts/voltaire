@@ -13,7 +13,6 @@ import { hasSavings as _hasSavings } from "./hasSavings.js";
 import { includesAddress as _includesAddress } from "./includesAddress.js";
 import { includesStorageKey as _includesStorageKey } from "./includesStorageKey.js";
 import { is as _is } from "./is.js";
-import { isItem as _isItem } from "./isItem.js";
 import { keysFor as _keysFor } from "./keysFor.js";
 import { merge as _merge } from "./merge.js";
 import { toBytes as _toBytes } from "./toBytes.js";

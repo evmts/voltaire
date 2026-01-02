@@ -746,7 +746,7 @@ describe("P256", () => {
 		it("rejects signature from different keypair", () => {
 			const privateKey1 = new Uint8Array(32).fill(1);
 			const privateKey2 = new Uint8Array(32).fill(2);
-			const publicKey1 = P256.derivePublicKey(privateKey1);
+			const _publicKey1 = P256.derivePublicKey(privateKey1);
 			const publicKey2 = P256.derivePublicKey(privateKey2);
 			const messageHash = Hash.keccak256String("test");
 

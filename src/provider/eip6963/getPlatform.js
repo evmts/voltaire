@@ -7,11 +7,11 @@
  */
 
 /** @type {typeof globalThis & { dispatchEvent?: Function }} */
-// @ts-ignore - window may exist in browser environment
+// @ts-expect-error - window may exist in browser environment
 const window = globalThis;
 
 /** @type {Function | undefined} */
-// @ts-ignore - WorkerGlobalScope may exist in worker environment
+// @ts-expect-error - WorkerGlobalScope may exist in worker environment
 const WorkerGlobalScope = globalThis.WorkerGlobalScope;
 
 import { UnsupportedEnvironmentError } from "./errors.js";

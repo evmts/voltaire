@@ -56,9 +56,9 @@
  * @module opcode.wasm
  */
 
+export type { Opcode } from "./Opcode.js";
 // Re-export everything from pure TypeScript implementation
 export * from "./Opcode.js";
-export type { Opcode } from "./Opcode.js";
 
 // ============================================================================
 // Implementation Status

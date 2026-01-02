@@ -101,9 +101,6 @@ export class Executor {
 		} catch (error) {
 			const err = error instanceof Error ? error : new Error(String(error));
 
-			// Format and log error
-			console.error(this.formatError(err));
-
 			return {
 				success: false,
 				error: err,
@@ -121,18 +118,5 @@ export class Executor {
 			modules[specifier] = entry.module;
 		}
 		(globalThis as Record<string, unknown>).__VOLTAIRE_MODULES__ = modules;
-	}
-
-	/**
-	 * Format error for display
-	 */
-	private formatError(error: Error): string {
-		// Try to extract line number from stack trace for better context
-		const match = error.stack?.match(/<anonymous>:(\d+):(\d+)/);
-		if (match) {
-			const line = Number.parseInt(match[1], 10);
-			return `Error at line ${line}: ${error.message}`;
-		}
-		return error.message;
 	}
 }

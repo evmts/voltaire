@@ -33,7 +33,7 @@ describe("Wei", () => {
 // Type tests - these just need to compile
 function _typeTests() {
 	// Wei is usable as both a type and a constructor
-	const wei: Wei = Wei(100n);
+	const _wei: Wei = Wei(100n);
 
 	// Gwei type should be distinct from Wei
 	const gwei: Gwei = Gwei(100n);

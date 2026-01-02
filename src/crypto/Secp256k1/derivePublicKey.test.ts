@@ -1,9 +1,9 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { describe, expect, it } from "vitest";
 import { InvalidPrivateKeyError } from "../../primitives/errors/index.js";
+import { PrivateKey } from "../../primitives/PrivateKey/index.js";
 import { derivePublicKey } from "./derivePublicKey.js";
 
-import { PrivateKey } from "../../primitives/PrivateKey/index.js";
 describe("Secp256k1.derivePublicKey", () => {
 	describe("successful derivation", () => {
 		it("should derive public key from private key", () => {

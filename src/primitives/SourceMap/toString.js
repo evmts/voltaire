@@ -22,7 +22,7 @@ export function toString(sourceMap) {
 	let prevLength = -1;
 	let prevFileIndex = -1;
 	let prevJump = "";
-	let prevModifierDepth = undefined;
+	let prevModifierDepth;
 
 	for (const entry of sourceMap.entries) {
 		const fields = [];

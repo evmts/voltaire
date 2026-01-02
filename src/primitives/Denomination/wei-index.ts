@@ -2,7 +2,7 @@
 export type { BrandedWei, WeiType } from "./WeiType.js";
 
 // Export constants
-export { WEI_PER_GWEI, WEI_PER_ETHER } from "./wei-constants.js";
+export { WEI_PER_ETHER, WEI_PER_GWEI } from "./wei-constants.js";
 
 // Import all functions
 import { from } from "./wei-from.js";

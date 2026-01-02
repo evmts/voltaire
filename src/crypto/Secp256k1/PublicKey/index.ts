@@ -7,6 +7,6 @@
  * @since 0.0.0
  */
 
+export type { Secp256k1PublicKeyType } from "../Secp256k1PublicKeyType.js";
 export { from } from "./from.js";
 export { fromBytes } from "./fromBytes.js";
-export type { Secp256k1PublicKeyType } from "../Secp256k1PublicKeyType.js";
