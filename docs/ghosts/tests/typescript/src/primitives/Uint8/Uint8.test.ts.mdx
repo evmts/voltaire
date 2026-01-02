@@ -302,7 +302,7 @@ describe("Uint8", () => {
 
 		it("should throw on division by zero", () => {
 			expect(() => Uint8.modulo(Uint8.from(10), Uint8.from(0))).toThrow(
-				"Division by zero",
+				"Modulo by zero",
 			);
 		});
 	});
