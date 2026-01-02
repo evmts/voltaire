@@ -116,6 +116,16 @@ describe("BlockHash", () => {
 			const hash = BlockHash.fromBytes(testBytes);
 			expect(hash).toHaveLength(32);
 		});
+
+		it("returns a copy so mutations to input do not affect BlockHash", () => {
+			const input = new Uint8Array(32);
+			input[0] = 0xab;
+			const hash = BlockHash.fromBytes(input);
+			// Mutate original input
+			input[0] = 0xff;
+			// BlockHash should retain original value
+			expect(hash[0]).toBe(0xab);
+		});
 	});
 
 	describe("toHex", () => {
