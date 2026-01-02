@@ -75,6 +75,23 @@
       ]
     },
     {
+      "group": "Transactions",
+      "pages": [
+        {
+          "title": "Build EIP-1559 Transaction",
+          "path": "examples/transactions/build-eip1559-transaction"
+        },
+        {
+          "title": "Decode Transaction",
+          "path": "examples/transactions/decode-transaction"
+        },
+        {
+          "title": "Estimate Gas",
+          "path": "examples/transactions/estimate-gas"
+        }
+      ]
+    },
+    {
       "group": "Rlp",
       "pages": [
         {
