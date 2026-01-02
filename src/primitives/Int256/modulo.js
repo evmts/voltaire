@@ -1,3 +1,5 @@
+import { InvalidRangeError } from "../errors/index.js";
+
 /**
  * Modulo Int256 values (EVM SMOD - signed modulo, sign follows dividend)
  *
@@ -13,7 +15,7 @@
  * @param {import('./Int256Type.js').BrandedInt256} a - Dividend
  * @param {import('./Int256Type.js').BrandedInt256} b - Divisor
  * @returns {import('./Int256Type.js').BrandedInt256} Remainder (sign follows dividend)
- * @throws {Error} If divisor is zero
+ * @throws {InvalidRangeError} If divisor is zero
  * @example
  * ```javascript
  * import * as Int256 from './primitives/Int256/index.js';
@@ -29,7 +31,11 @@
  */
 export function modulo(a, b) {
 	if (b === 0n) {
-		throw new Error("Division by zero");
+		throw new InvalidRangeError("Division by zero", {
+			value: b,
+			expected: "non-zero divisor",
+			docsPath: "/primitives/int256#modulo",
+		});
 	}
 
 	// BigInt % already follows dividend sign (matches EVM SMOD)

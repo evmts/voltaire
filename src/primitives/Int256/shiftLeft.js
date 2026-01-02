@@ -1,13 +1,15 @@
+import { InvalidRangeError } from "../errors/index.js";
 import { BITS, MODULO } from "./constants.js";
 
 /**
  * Shift Int256 left with wrapping
  *
- * @see https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+ * @see https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
  * @since 0.0.0
  * @param {import('./Int256Type.js').BrandedInt256} value - Value to shift
  * @param {number | bigint} shift - Shift amount
  * @returns {import('./Int256Type.js').BrandedInt256} Shifted value
+ * @throws {InvalidRangeError} If shift amount is negative
  * @example
  * ```javascript
  * import * as Int256 from './primitives/Int256/index.js';
@@ -19,7 +21,11 @@ export function shiftLeft(value, shift) {
 	const shiftAmount = BigInt(shift);
 
 	if (shiftAmount < 0n) {
-		throw new Error("Shift amount must be non-negative");
+		throw new InvalidRangeError("Shift amount must be non-negative", {
+			value: shift,
+			expected: "non-negative shift amount",
+			docsPath: "/primitives/int256#shift-left",
+		});
 	}
 
 	if (shiftAmount >= BigInt(BITS)) {

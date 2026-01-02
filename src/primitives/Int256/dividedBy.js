@@ -1,4 +1,5 @@
-import { MIN } from "./constants.js";
+import { IntegerOverflowError, InvalidRangeError } from "../errors/index.js";
+import { MAX, MIN } from "./constants.js";
 
 /**
  * Divide Int256 values (EVM SDIV - signed division, truncate toward zero)
@@ -15,7 +16,8 @@ import { MIN } from "./constants.js";
  * @param {import('./Int256Type.js').BrandedInt256} a - Dividend
  * @param {import('./Int256Type.js').BrandedInt256} b - Divisor
  * @returns {import('./Int256Type.js').BrandedInt256} Quotient (truncated toward zero)
- * @throws {Error} If divisor is zero or MIN / -1 (overflow)
+ * @throws {InvalidRangeError} If divisor is zero
+ * @throws {IntegerOverflowError} If MIN / -1 (overflow)
  * @example
  * ```javascript
  * import * as Int256 from './primitives/Int256/index.js';
@@ -31,13 +33,22 @@ import { MIN } from "./constants.js";
  */
 export function dividedBy(a, b) {
 	if (b === 0n) {
-		throw new Error("Division by zero");
+		throw new InvalidRangeError("Division by zero", {
+			value: b,
+			expected: "non-zero divisor",
+			docsPath: "/primitives/int256#divided-by",
+		});
 	}
 
 	// EVM SDIV special case: MIN / -1 overflows
 	// In two's complement, -MIN doesn't exist in range
 	if (a === MIN && b === -1n) {
-		throw new Error("Int256 overflow: MIN / -1 (EVM SDIV overflow)");
+		throw new IntegerOverflowError("Int256 overflow: MIN / -1 (EVM SDIV overflow)", {
+			value: -MIN,
+			max: MAX,
+			type: "int256",
+			context: { operation: "dividedBy", operands: [a, b] },
+		});
 	}
 
 	// BigInt / already truncates toward zero (matches EVM SDIV)
