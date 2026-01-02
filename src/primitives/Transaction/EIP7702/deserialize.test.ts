@@ -138,4 +138,44 @@ describe("TransactionEIP7702.deserialize", () => {
 		const invalidData = new Uint8Array([0x03, 0xc0]); // Wrong type
 		expect(() => deserialize(invalidData)).toThrow();
 	});
+
+	it("throws DecodingError for invalid yParity value", () => {
+		const original = TransactionEIP7702({
+			type: Type.EIP7702,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			authorizationList: [],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		});
+
+		const serialized = serialize(original);
+		const modified = new Uint8Array(serialized);
+		// Find r value (32 bytes of 0x01) to locate yParity position
+		const rStart = modified.findIndex((_, i) => {
+			if (i + 32 > modified.length) return false;
+			for (let j = 0; j < 32; j++) {
+				if (modified[i + j] !== 0x01) return false;
+			}
+			return true;
+		});
+		if (rStart > 1) {
+			modified[rStart - 2] = 0x02; // Change yParity to invalid value 2
+		}
+
+		expect(() => deserialize(modified)).toThrow();
+		try {
+			deserialize(modified);
+		} catch (e) {
+			expect((e as Error).message).toContain("yParity must be 0 or 1");
+		}
+	});
 });
