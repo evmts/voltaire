@@ -588,4 +588,28 @@ Use TodoWrite to track progress through these phases:
 
 ---
 
+## Available Utilities (src/utils/)
+
+When implementing fixes, these utilities may be useful:
+
+```typescript
+import {
+  retryWithBackoff, withRetry,           // Exponential backoff retry
+  poll, pollForReceipt, pollWithBackoff, // Polling with timeout
+  RateLimiter, throttle, debounce,       // Rate limiting
+  BatchQueue, AsyncQueue, createBatchedFunction, // Batch processing
+  withTimeout, sleep, createDeferred,    // Timeout/async control
+} from './src/utils/index.js';
+```
+
+| Utility | Fix Use Case |
+|---------|--------------|
+| `retryWithBackoff(fn, opts)` | Network/RPC reliability fixes |
+| `poll(fn, opts)` | Async state waiting issues |
+| `RateLimiter` | Rate limit compliance fixes |
+| `BatchQueue` | Request batching optimizations |
+| `withTimeout(promise, { ms })` | Timeout-related bugs |
+
+---
+
 **Execute now with issue: $ARGUMENTS**

@@ -835,3 +835,32 @@ When implementing Effect API, ask:
 7. **How to expose brands?** → `.branded` getter and `.fromBranded()` static method
 
 **Remember**: Effect.ts wraps, never replaces. Zero changes to existing code.
+
+## Available Utilities (src/utils/)
+
+For async operations in Effect wrappers, these utilities can help:
+
+```typescript
+import {
+  retryWithBackoff, withRetry,           // Exponential backoff retry
+  poll, pollForReceipt, pollWithBackoff, // Polling with timeout
+  withTimeout, sleep, createDeferred,    // Timeout/async control
+} from '../../src/utils/index.js';
+```
+
+| Utility | Effect Use Case |
+|---------|-----------------|
+| `retryWithBackoff(fn, opts)` | Wrap in Effect.tryPromise for retry logic |
+| `poll(fn, opts)` | Await async conditions before continuing |
+| `withTimeout(promise, { ms })` | Add timeout to Effect.tryPromise operations |
+| `sleep(ms)` | Use with Effect.promise for delays |
+
+**Example - Effect with retry**:
+```typescript
+static fetchWithRetry(url: string): Effect.Effect<Data, FetchError> {
+  return Effect.tryPromise({
+    try: () => retryWithBackoff(() => fetch(url).then(r => r.json()), { maxRetries: 3 }),
+    catch: (e) => new FetchError({ cause: e })
+  });
+}
+```
