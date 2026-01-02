@@ -1543,12 +1543,49 @@
                 ]
               },
               {
+                "group": "Wallet & Keys",
+                "pages": [
+                  "examples/wallet/generate-wallet",
+                  "examples/wallet/import-private-key"
+                ]
+              },
+              {
                 "group": "Addresses",
                 "pages": [
                   "examples/addresses/validate-address",
                   "examples/addresses/checksum-address",
                   "examples/addresses/address-from-private-key",
                   "examples/addresses/compare-addresses"
+                ]
+              },
+              {
+                "group": "Transactions",
+                "pages": [
+                  "examples/transactions/build-eip1559-transaction",
+                  "examples/transactions/decode-transaction",
+                  "examples/transactions/estimate-gas"
+                ]
+              },
+              {
+                "group": "Contracts",
+                "pages": [
+                  "examples/contracts/read-contract",
+                  "examples/contracts/erc20-transfer",
+                  "examples/contracts/decode-logs"
+                ]
+              },
+              {
+                "group": "Signing",
+                "pages": [
+                  "examples/signing/personal-sign",
+                  "examples/signing/eip712-permit",
+                  "examples/signing/verify-signature"
+                ]
+              },
+              {
+                "group": "Indexing",
+                "pages": [
+                  "examples/indexing/blockstream-indexer"
                 ]
               },
               {
@@ -1566,15 +1603,16 @@
                 ]
               },
               {
-                "group": "Signing",
-                "pages": [
-                  "examples/signing/personal-sign"
-                ]
-              },
-              {
                 "group": "RLP Encoding",
                 "pages": [
                   "examples/rlp/rlp-encode-list"
+                ]
+              },
+              {
+                "group": "Advanced",
+                "pages": [
+                  "examples/advanced/merkle-proof",
+                  "examples/advanced/multicall-batch"
                 ]
               }
             ]
