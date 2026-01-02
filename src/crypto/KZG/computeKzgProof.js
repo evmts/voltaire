@@ -42,10 +42,14 @@ export function ComputeKzgProof({ computeKzgProof: ckzgComputeKzgProof }) {
 		}
 		try {
 			const result = ckzgComputeKzgProof(blob, z);
-			return {
-				proof: result[0],
-				y: result[1],
-			};
+			// Handle both tuple [proof, y] and object { proof, y } formats
+			if (Array.isArray(result)) {
+				return {
+					proof: result[0],
+					y: result[1],
+				};
+			}
+			return result;
 		} catch (error) {
 			throw new KzgError(
 				`Failed to compute proof: ${error instanceof Error ? error.message : String(error)}`,
