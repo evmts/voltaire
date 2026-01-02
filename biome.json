@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -7,32 +7,33 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"ignore": [
-			"node_modules",
-			"dist",
-			"types",
-			"wasm",
-			"native",
-			"zig-out",
-			"zig-cache",
-			"target",
-			"bench",
-			"benchmarks",
-			"examples",
-			".zig-cache",
-			"*.wasm",
-			"*.so",
-			"*.dll",
-			"*.dylib",
-			"lib",
-			"scripts/dist-address-wasm",
-			"scripts/dist-wasm",
-			"scripts/dist-noble",
-			"scripts/migrate-crypto-docs.ts",
-			"scripts/inspect-ox-api.ts",
-			"docs",
-			"vendor",
-			"worktrees"
+		"includes": [
+			"**",
+			"!**/node_modules",
+			"!**/dist",
+			"!**/types",
+			"!**/wasm",
+			"!**/native",
+			"!**/zig-out",
+			"!**/zig-cache",
+			"!**/target",
+			"!**/bench",
+			"!**/benchmarks",
+			"!**/examples",
+			"!**/.zig-cache",
+			"!**/*.wasm",
+			"!**/*.so",
+			"!**/*.dll",
+			"!**/*.dylib",
+			"!**/lib",
+			"!**/scripts/dist-address-wasm",
+			"!**/scripts/dist-wasm",
+			"!**/scripts/dist-noble",
+			"!**/scripts/migrate-crypto-docs.ts",
+			"!**/scripts/inspect-ox-api.ts",
+			"!**/docs",
+			"!**/vendor",
+			"!**/worktrees"
 		]
 	},
 	"formatter": {
@@ -43,9 +44,7 @@
 		"lineWidth": 80,
 		"lineEnding": "lf"
 	},
-	"organizeImports": {
-		"enabled": true
-	},
+	"assist": { "actions": { "source": { "organizeImports": "on" } } },
 	"linter": {
 		"enabled": true,
 		"rules": {
@@ -66,9 +65,9 @@
 			},
 			"suspicious": {
 				"noExplicitAny": "warn",
-				"noConsoleLog": "warn",
 				"noShadowRestrictedNames": "warn",
-				"noExportsInTest": "warn"
+				"noExportsInTest": "warn",
+				"noConsole": { "level": "warn", "options": { "allow": ["log"] } }
 			}
 		}
 	},
