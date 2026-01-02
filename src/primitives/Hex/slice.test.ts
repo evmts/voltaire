@@ -58,12 +58,42 @@ describe("slice", () => {
 		expect(slice(hex, 3, 4)).toBe("0x78");
 	});
 
-	it("handles negative indices (Uint8Array slice behavior)", () => {
+	it("handles negative start index", () => {
+		// 0x1234567890 = 5 bytes: [0x12, 0x34, 0x56, 0x78, 0x90]
+		const hex = "0x1234567890" as HexType;
+		// -2 means start from 2nd to last byte (index 3), go to end
+		expect(slice(hex, -2)).toBe("0x7890");
+		// -1 means start from last byte
+		expect(slice(hex, -1)).toBe("0x90");
+		// -3 means start from 3rd to last byte
+		expect(slice(hex, -3)).toBe("0x567890");
+	});
+
+	it("handles negative end index", () => {
+		const hex = "0x1234567890" as HexType;
+		// 1 to -1 = index 1 to index 4 (exclusive)
+		expect(slice(hex, 1, -1)).toBe("0x34567890".slice(0, -2)); // "0x345678"
+		expect(slice(hex, 1, -1)).toBe("0x345678");
+		// 0 to -2 = index 0 to index 3 (exclusive)
+		expect(slice(hex, 0, -2)).toBe("0x123456");
+		// 2 to -1 = index 2 to index 4 (exclusive)
+		expect(slice(hex, 2, -1)).toBe("0x5678");
+	});
+
+	it("handles both negative start and end", () => {
+		const hex = "0x1234567890" as HexType;
+		// -3 to -1 = index 2 to index 4 (exclusive)
+		expect(slice(hex, -3, -1)).toBe("0x5678");
+		// -4 to -2 = index 1 to index 3 (exclusive)
+		expect(slice(hex, -4, -2)).toBe("0x3456");
+	});
+
+	it("handles negative indices with small hex", () => {
 		const hex = "0x1234" as HexType;
-		const result1 = slice(hex, -1, 2);
-		expect(result1).toBe("0x34");
-		const result2 = slice(hex, 0, -1);
-		expect(result2).toBe("0x12");
+		expect(slice(hex, -1)).toBe("0x34");
+		expect(slice(hex, -2)).toBe("0x1234");
+		expect(slice(hex, 0, -1)).toBe("0x12");
+		expect(slice(hex, -1, 2)).toBe("0x34");
 	});
 
 	it("slices large hex strings", () => {
