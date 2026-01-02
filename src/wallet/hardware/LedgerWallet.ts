@@ -35,15 +35,11 @@ export class LedgerWallet implements HardwareWallet {
 
 	async connect(): Promise<void> {
 		const TransportModule = await import("@ledgerhq/hw-transport-webusb");
-		// @ts-expect-error - Optional dependency, default export is TransportWebUSB class
-		const TransportWebUSB = TransportModule.default;
+		const TransportWebUSB = (TransportModule as unknown as { default: { request: () => Promise<unknown> } }).default;
 		const EthModule = await import("@ledgerhq/hw-app-eth");
-		// @ts-expect-error - Optional dependency, default export is Eth class
-		const Eth = EthModule.default;
+		const Eth = (EthModule as unknown as { default: new (transport: unknown) => unknown }).default;
 
-		// @ts-expect-error - request() is a static method on TransportWebUSB
 		this.transport = await TransportWebUSB.request();
-		// @ts-expect-error - Eth is constructable
 		this.eth = new Eth(this.transport);
 		this._isConnected = true;
 	}

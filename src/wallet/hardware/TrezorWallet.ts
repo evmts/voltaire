@@ -47,12 +47,10 @@ export class TrezorWallet implements HardwareWallet {
 
 	async connect(): Promise<void> {
 		const TrezorConnectModule = await import("@trezor/connect-web");
-		// @ts-expect-error - Optional dependency, default export has init method at runtime
-		const TrezorConnect = TrezorConnectModule.default;
+		const TrezorConnect = (TrezorConnectModule as unknown as { default: { init: (config: unknown) => Promise<void> } }).default;
 		this.TrezorConnect = TrezorConnect;
 
-		// @ts-expect-error - init exists on TrezorConnect default export
-		await TrezorConnect.init({
+		await (TrezorConnect as { init: (config: unknown) => Promise<void> }).init({
 			manifest: this.manifest || {
 				email: "unknown@localhost.local",
 				appUrl: "http://localhost",
