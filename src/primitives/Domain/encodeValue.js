@@ -142,6 +142,18 @@ function encodeAtomicValue(type, value) {
 			});
 		}
 		const num = typeof value === "bigint" ? value : BigInt(value);
+		// Validate range
+		const max = (1n << BigInt(bits)) - 1n;
+		if (num < 0n || num > max) {
+			throw new InvalidEIP712ValueError(
+				`Value ${num} out of range for ${type} (0 to ${max})`,
+				{
+					value: num,
+					expected: `0 to ${max}`,
+					type,
+				},
+			);
+		}
 		// Write bigint to bytes (big-endian)
 		for (let i = 31; i >= 0; i--) {
 			result[i] = Number(num >> BigInt((31 - i) * 8)) & 0xff;
@@ -161,6 +173,19 @@ function encodeAtomicValue(type, value) {
 			});
 		}
 		let num = typeof value === "bigint" ? value : BigInt(value);
+		// Validate range
+		const min = -(1n << (BigInt(bits) - 1n));
+		const max = (1n << (BigInt(bits) - 1n)) - 1n;
+		if (num < min || num > max) {
+			throw new InvalidEIP712ValueError(
+				`Value ${num} out of range for ${type} (${min} to ${max})`,
+				{
+					value: num,
+					expected: `${min} to ${max}`,
+					type,
+				},
+			);
+		}
 		// Handle negative numbers (two's complement)
 		if (num < 0n) {
 			num = (1n << 256n) + num;

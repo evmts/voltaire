@@ -70,6 +70,54 @@ export function EncodeValue({ keccak256, hashStruct }) {
 					},
 				);
 			}
+
+			// Validate bit width
+			const isUnsigned = type.startsWith("uint");
+			const bitsMatch = type.match(/^u?int(\d+)$/);
+			const bits = bitsMatch?.[1] ? Number.parseInt(bitsMatch[1], 10) : 256;
+
+			if (bits < 8 || bits > 256 || bits % 8 !== 0) {
+				throw new Eip712EncodingError(
+					`Invalid ${isUnsigned ? "uint" : "int"} size: ${bits}`,
+					{
+						code: "EIP712_INVALID_INTEGER_SIZE",
+						context: { type, bits },
+						docsPath: "/crypto/eip712/encode-value#error-handling",
+					},
+				);
+			}
+
+			if (isUnsigned) {
+				const max = (1n << BigInt(bits)) - 1n;
+				if (num < 0n || num > max) {
+					throw new Eip712EncodingError(
+						`Value ${num} out of range for ${type} (0 to ${max})`,
+						{
+							code: "EIP712_INTEGER_OUT_OF_RANGE",
+							context: { type, value: num, min: 0n, max },
+							docsPath: "/crypto/eip712/encode-value#error-handling",
+						},
+					);
+				}
+			} else {
+				const min = -(1n << (BigInt(bits) - 1n));
+				const max = (1n << (BigInt(bits) - 1n)) - 1n;
+				if (num < min || num > max) {
+					throw new Eip712EncodingError(
+						`Value ${num} out of range for ${type} (${min} to ${max})`,
+						{
+							code: "EIP712_INTEGER_OUT_OF_RANGE",
+							context: { type, value: num, min, max },
+							docsPath: "/crypto/eip712/encode-value#error-handling",
+						},
+					);
+				}
+				// Convert negative to two's complement for encoding
+				if (num < 0n) {
+					num = (1n << 256n) + num;
+				}
+			}
+
 			// Big-endian encoding
 			let v = num;
 			for (let i = 31; i >= 0; i--) {

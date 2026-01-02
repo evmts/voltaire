@@ -319,6 +319,89 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const encoded = EIP712.encodeValue("int256", 42n, types);
 			expect(encoded.length).toBe(32);
 		});
+
+		it("should reject uint8 value out of range (300)", () => {
+			try {
+				EIP712.encodeValue("uint8", 300n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
+
+		it("should reject negative uint8 value", () => {
+			try {
+				EIP712.encodeValue("uint8", -1n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
+
+		it("should reject int8 value out of range (128)", () => {
+			try {
+				EIP712.encodeValue("int8", 128n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
+
+		it("should reject int8 value out of range (-129)", () => {
+			try {
+				EIP712.encodeValue("int8", -129n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
+
+		it("should accept int8 at boundaries (-128 and 127)", () => {
+			const minEncoded = EIP712.encodeValue("int8", -128n, types);
+			expect(minEncoded.length).toBe(32);
+			const maxEncoded = EIP712.encodeValue("int8", 127n, types);
+			expect(maxEncoded[31]).toBe(127);
+		});
+
+		it("should accept uint16 at max boundary (65535)", () => {
+			const encoded = EIP712.encodeValue("uint16", 65535n, types);
+			expect(encoded[30]).toBe(0xff);
+			expect(encoded[31]).toBe(0xff);
+		});
+
+		it("should reject uint16 over max (65536)", () => {
+			try {
+				EIP712.encodeValue("uint16", 65536n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
+
+		it("should reject uint256 negative value", () => {
+			try {
+				EIP712.encodeValue("uint256", -1n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
+
+		it("should reject uint256 over max (2^256)", () => {
+			try {
+				EIP712.encodeValue("uint256", 2n ** 256n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
 	});
 
 	describe("Struct Hashing", () => {
