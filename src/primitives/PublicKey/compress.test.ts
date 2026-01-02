@@ -80,4 +80,50 @@ describe("PublicKey.compress", () => {
 			expect(compressed[0]).toBe(expectedPrefix);
 		}
 	});
+
+	test("accepts 65-byte SEC1 uncompressed format with 0x04 prefix", () => {
+		// SEC1 format: 0x04 || x || y (65 bytes)
+		const sec1Key = new Uint8Array(65);
+		sec1Key[0] = 0x04; // SEC1 uncompressed prefix
+		// x coordinate starts at byte 1
+		sec1Key[1] = 0x79;
+		// y coordinate starts at byte 33, make it even
+		sec1Key[33] = 0x48;
+
+		const compressed = PublicKey.compress(sec1Key);
+
+		expect(compressed.length).toBe(33);
+		expect(compressed[0]).toBe(0x02); // even y
+		expect(compressed[1]).toBe(0x79);
+	});
+
+	test("throws for invalid length", () => {
+		const shortKey = new Uint8Array(32);
+		expect(() => PublicKey.compress(shortKey)).toThrow(
+			"Invalid public key length: expected 64 or 65 bytes, got 32",
+		);
+
+		const longKey = new Uint8Array(70);
+		expect(() => PublicKey.compress(longKey)).toThrow(
+			"Invalid public key length: expected 64 or 65 bytes, got 70",
+		);
+	});
+
+	test("throws for 65-byte key without 0x04 prefix", () => {
+		const badPrefix = new Uint8Array(65);
+		badPrefix[0] = 0x02; // compressed prefix instead of 0x04
+
+		expect(() => PublicKey.compress(badPrefix)).toThrow(
+			"Invalid uncompressed public key prefix: expected 0x04, got 0x02",
+		);
+	});
+
+	test("throws for 65-byte key with 0x03 prefix", () => {
+		const badPrefix = new Uint8Array(65);
+		badPrefix[0] = 0x03;
+
+		expect(() => PublicKey.compress(badPrefix)).toThrow(
+			"Invalid uncompressed public key prefix: expected 0x04, got 0x03",
+		);
+	});
 });
