@@ -10,14 +10,11 @@ import { InvalidSignatureError } from "./errors.js";
  */
 function bytes32ToBigInt(bytes) {
 	if (bytes.length !== 32) {
-		throw new InvalidSignatureError(
-			`Expected 32 bytes, got ${bytes.length}`,
-			{
-				code: "SECP256K1_INVALID_SIGNATURE_COMPONENT_LENGTH",
-				context: { length: bytes.length, expected: 32 },
-				docsPath: "/crypto/secp256k1#error-handling",
-			},
-		);
+		throw new InvalidSignatureError(`Expected 32 bytes, got ${bytes.length}`, {
+			code: "SECP256K1_INVALID_SIGNATURE_COMPONENT_LENGTH",
+			context: { length: bytes.length, expected: 32 },
+			docsPath: "/crypto/secp256k1#error-handling",
+		});
 	}
 	let result = 0n;
 	for (let i = 0; i < 32; i++) {

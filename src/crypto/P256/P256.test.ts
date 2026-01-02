@@ -45,7 +45,9 @@ describe("P256", () => {
 				expect.fail("Should have thrown");
 			} catch (e) {
 				expect(e).toBeInstanceOf(InvalidPrivateKeyError);
-				expect((e as InvalidPrivateKeyError).name).toBe("InvalidPrivateKeyError");
+				expect((e as InvalidPrivateKeyError).name).toBe(
+					"InvalidPrivateKeyError",
+				);
 			}
 		});
 
@@ -140,7 +142,9 @@ describe("P256", () => {
 				expect.fail("Should have thrown");
 			} catch (e) {
 				expect(e).toBeInstanceOf(InvalidPrivateKeyError);
-				expect((e as InvalidPrivateKeyError).name).toBe("InvalidPrivateKeyError");
+				expect((e as InvalidPrivateKeyError).name).toBe(
+					"InvalidPrivateKeyError",
+				);
 			}
 		});
 
@@ -344,7 +348,9 @@ describe("P256", () => {
 				expect.fail("Should have thrown");
 			} catch (e) {
 				expect(e).toBeInstanceOf(InvalidPrivateKeyError);
-				expect((e as InvalidPrivateKeyError).name).toBe("InvalidPrivateKeyError");
+				expect((e as InvalidPrivateKeyError).name).toBe(
+					"InvalidPrivateKeyError",
+				);
 			}
 		});
 
