@@ -316,6 +316,7 @@ describe("Keccak256 index exports", () => {
 				"create2Address",
 				"Keccak256Hash",
 				"Keccak256",
+				"Keccak256Error",
 				"DIGEST_SIZE",
 				"RATE",
 				"STATE_SIZE",
