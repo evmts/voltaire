@@ -4,6 +4,70 @@ import type { HexType } from "./HexType.js";
 import { toBigInt } from "./toBigInt.js";
 
 describe("toBigInt", () => {
+	describe("signed interpretation", () => {
+		it("converts 0xff to -1n when signed", () => {
+			expect(toBigInt("0xff" as HexType, { signed: true })).toBe(-1n);
+		});
+
+		it("converts 0x80 to -128n when signed (min int8)", () => {
+			expect(toBigInt("0x80" as HexType, { signed: true })).toBe(-128n);
+		});
+
+		it("converts 0x7f to 127n when signed (max int8)", () => {
+			expect(toBigInt("0x7f" as HexType, { signed: true })).toBe(127n);
+		});
+
+		it("converts 0xffff to -1n when signed (16-bit)", () => {
+			expect(toBigInt("0xffff" as HexType, { signed: true })).toBe(-1n);
+		});
+
+		it("converts 0x8000 to -32768n when signed (min int16)", () => {
+			expect(toBigInt("0x8000" as HexType, { signed: true })).toBe(-32768n);
+		});
+
+		it("converts 0x7fff to 32767n when signed (max int16)", () => {
+			expect(toBigInt("0x7fff" as HexType, { signed: true })).toBe(32767n);
+		});
+
+		it("converts 0xffffffff to -1n when signed (32-bit)", () => {
+			expect(toBigInt("0xffffffff" as HexType, { signed: true })).toBe(-1n);
+		});
+
+		it("converts 0x80000000 to -2147483648n when signed (min int32)", () => {
+			expect(toBigInt("0x80000000" as HexType, { signed: true })).toBe(
+				-2147483648n,
+			);
+		});
+
+		it("converts 0x7fffffff to 2147483647n when signed (max int32)", () => {
+			expect(toBigInt("0x7fffffff" as HexType, { signed: true })).toBe(
+				2147483647n,
+			);
+		});
+
+		it("handles 256-bit signed values", () => {
+			// -1n as 256-bit two's complement
+			const negOne =
+				"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" as HexType;
+			expect(toBigInt(negOne, { signed: true })).toBe(-1n);
+		});
+
+		it("handles positive values correctly when signed", () => {
+			expect(toBigInt("0x01" as HexType, { signed: true })).toBe(1n);
+			expect(toBigInt("0x0f" as HexType, { signed: true })).toBe(15n);
+			expect(toBigInt("0x00ff" as HexType, { signed: true })).toBe(255n);
+		});
+
+		it("defaults to unsigned (no options)", () => {
+			expect(toBigInt("0xff" as HexType)).toBe(255n);
+			expect(toBigInt("0x80" as HexType)).toBe(128n);
+		});
+
+		it("defaults to unsigned (signed: false)", () => {
+			expect(toBigInt("0xff" as HexType, { signed: false })).toBe(255n);
+			expect(toBigInt("0x80" as HexType, { signed: false })).toBe(128n);
+		});
+	});
 	it("converts zero", () => {
 		expect(toBigInt("0x0" as HexType)).toBe(0n);
 		expect(toBigInt("0x00" as HexType)).toBe(0n);
