@@ -161,6 +161,36 @@ Address/
 └── *.test.ts            # Tests (separate files, NOT inline)
 ```
 
+### One Function Per File
+
+**Rule**: Each exported function gets its own file. This enables tree-shaking and clear ownership.
+
+**When to split**:
+- Every public/exported function → separate file
+- Complex private helpers (40+ lines) → separate file with tests
+- Simple private helpers (<40 lines, used once) → inline in consumer file
+- Constants → colocate with the single function that uses them
+
+**When NOT to split**:
+- Tiny utilities like `sleep()` (5 lines) used in one place → inline
+- Constants used by only one function → keep in that function's file
+- Private helper that's clearly coupled to one function → inline
+
+**Example split**:
+```
+BlockStream/
+├── BlockStream.js           # Main factory, imports from below
+├── fetchBlock.js            # 50+ lines, retry logic
+├── fetchBlockByHash.js      # 50+ lines, retry logic
+├── fetchBlockReceipts.js    # 90+ lines, fallback logic
+├── toLightBlock.js          # Small but reused
+├── sleep.js                 # Tiny utility (shared)
+├── isBlockRangeTooLargeError.js  # Error detection
+├── BlockStreamType.ts       # Type definitions
+├── index.ts                 # Public exports
+└── *.test.ts                # Tests per function
+```
+
 **Key patterns**:
 
 - `.js` extension for implementation (NOT .ts)
