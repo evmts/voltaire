@@ -58,11 +58,18 @@ Voltaire offers two API styles for Address:
 
 ```typescript
 import { Address } from '@tevm/voltaire/Address'
+import { Keccak256 } from '@tevm/voltaire/Keccak256'
 
+// Direct constructor - preferred pattern
 const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
 addr.toHex()
-addr.toChecksummed()
 addr.equals(otherAddr)
+
+// For checksum methods, pass keccak256 to constructor
+const addrWithCrypto = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e', {
+  keccak256: Keccak256.hash
+})
+addrWithCrypto.toChecksummed()  // Instance method works
 ```
 
 OOP-style with instance methods. Good for method chaining.
@@ -75,7 +82,7 @@ import { from, toHex, toChecksummed, equals } from '@tevm/voltaire/Address/funct
 
 const addr = from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
 toHex(addr)
-toChecksummed(addr)
+toChecksummed(addr)  // Static function has keccak256 auto-injected
 equals(addr, otherAddr)
 ```
 
@@ -87,15 +94,20 @@ Tree-shakeable - only imported functions bundled.
 ```typescript
 import { Address } from '@tevm/voltaire/functional'
 
-const addr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+// Address() direct call preferred over Address.from()
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
 Address.toHex(addr)
-Address.toChecksummed(addr)
+Address.toChecksummed(addr)  // Static method has keccak256 auto-injected
 ```
 
 Functional API with namespace grouping.
 
 </Tab>
 </Tabs>
+
+<Note>
+**Constructor patterns**: Both `Address('0x...')` and `Address.from('0x...')` work identically. The direct call `Address('0x...')` is preferred for conciseness. Use `Address.fromPrivateKey()`, `Address.fromPublicKey()`, etc. for specialized constructors.
+</Note>
 
 ## Quick Start
 
@@ -105,10 +117,10 @@ Functional API with namespace grouping.
 ```typescript
 import { Address } from '@tevm/voltaire/Address';
 
-// Create from hex string
-const addr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+// Create from hex string - direct call preferred
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 
-// Get checksummed representation
+// Get checksummed representation (static method has keccak256 auto-injected)
 console.log(Address.toChecksummed(addr));
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 
@@ -122,22 +134,22 @@ console.log(Address.isValidChecksum('0x742d35Cc...'));
 ```
 
 </Tab>
-<Tab title="From Public Key">
+<Tab title="From Private Key">
 
 ```typescript
 import { Address } from '@tevm/voltaire/Address';
-import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
 
-// Derive address from private key
-const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+// Derive address from private key (uses fromPrivateKey internally)
+const privateKey = new Uint8Array([...]);  // 32-byte private key
 const addr = Address.fromPrivateKey(privateKey);
-
-// Or from public key coordinates
-const pubKey = Secp256k1.derivePublicKey(privateKey);
-const addr2 = Address.fromPublicKey(pubKey.x, pubKey.y);
 
 console.log(Address.toChecksummed(addr));
 // "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+
+// Or from public key coordinates
+import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
+const pubKey = Secp256k1.derivePublicKey(privateKey);
+const addr2 = Address.fromPublicKey(pubKey);  // 65-byte uncompressed public key
 ```
 
 </Tab>
@@ -149,13 +161,13 @@ import { Bytes32 } from '@tevm/voltaire/Bytes32';
 import { Bytecode } from '@tevm/voltaire/Bytecode';
 
 // Predict CREATE address
-const deployer = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 const nonce = 0n;
 const createAddr = Address.calculateCreateAddress(deployer, nonce);
 
 // Predict CREATE2 address
 const salt = Bytes32('0x1234...');
-const initCode = Bytecode.from('0x6080...');
+const initCode = Bytecode('0x6080...');
 const create2Addr = Address.calculateCreate2Address(deployer, salt, initCode);
 
 console.log(Address.toHex(createAddr));
@@ -344,7 +356,8 @@ function parseUserAddress(input: string): Address {
 // Usage
 try {
   const addr = parseUserAddress("0x742d35Cc...");
-  console.log(`Valid address: ${addr.toChecksummed()}`);
+  // Use static method for checksum (has auto-injected keccak256)
+  console.log(`Valid address: ${Address.toChecksummed(addr)}`);
 } catch (e) {
   console.error("Invalid address");
 }
@@ -453,8 +466,8 @@ Importing from `tevm/Address` instead of the main entry point enables tree-shaki
           const code = \\\`// Address utilities demo\\\\n\\\` +
             \\\`// All Voltaire APIs are available globally\\\\n\\\` +
             \\\`\\\\n\\\` +
-            \\\`// Create from hex string\\\\n\\\` +
-            \\\`const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");\\\\n\\\` +
+            \\\`// Create from hex string - direct call preferred\\\\n\\\` +
+            \\\`const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");\\\\n\\\` +
             \\\`console.log("Address:", Address.toHex(addr));\\\\n\\\` +
             \\\`console.log("Checksummed:", Address.toChecksummed(addr));\\\\n\\\` +
             \\\`\\\\n\\\` +
@@ -468,7 +481,7 @@ Importing from `tevm/Address` instead of the main entry point enables tree-shaki
             \\\`console.log("Is zero:", Address.isZero(zero));\\\\n\\\` +
             \\\`\\\\n\\\` +
             \\\`// Compare addresses\\\\n\\\` +
-            \\\`const addr2 = Address.from("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");\\\\n\\\` +
+            \\\`const addr2 = Address("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");\\\\n\\\` +
             \\\`console.log("Addresses equal:", Address.equals(addr, addr2));\\\`;
 
           const model = monaco.editor.createModel(code, 'typescript');
