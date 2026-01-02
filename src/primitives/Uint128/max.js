@@ -1,3 +1,4 @@
+import { Uint128EmptyInputError } from "./errors.js";
 import { maximum } from "./maximum.js";
 
 /**
@@ -7,7 +8,7 @@ import { maximum } from "./maximum.js";
  * @since 0.0.0
  * @param {import('./Uint128Type.js').Uint128Type[]} values - Array of values
  * @returns {import('./Uint128Type.js').Uint128Type} Maximum value
- * @throws {Error} If array is empty
+ * @throws {Uint128EmptyInputError} If array is empty
  * @example
  * ```javascript
  * import * as Uint128 from './primitives/Uint128/index.js';
@@ -17,7 +18,7 @@ import { maximum } from "./maximum.js";
  */
 export function max(values) {
 	if (values.length === 0) {
-		throw new Error("Cannot find maximum of empty array");
+		throw new Uint128EmptyInputError("Cannot find maximum of empty array");
 	}
 
 	let result = /** @type {import('./Uint128Type.js').Uint128Type} */ (

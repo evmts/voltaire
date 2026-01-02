@@ -1,3 +1,5 @@
+import { Uint128DivisionByZeroError } from "./errors.js";
+
 /**
  * Modulo operation
  *
@@ -6,7 +8,7 @@
  * @param {import('./Uint128Type.js').Uint128Type} uint - Dividend
  * @param {import('./Uint128Type.js').Uint128Type} b - Divisor
  * @returns {import('./Uint128Type.js').Uint128Type} Remainder (uint % b)
- * @throws {Error} If divisor is zero
+ * @throws {Uint128DivisionByZeroError} If divisor is zero
  * @example
  * ```javascript
  * import * as Uint128 from './primitives/Uint128/index.js';
@@ -17,7 +19,7 @@
  */
 export function modulo(uint, b) {
 	if (b === 0n) {
-		throw new Error("Modulo by zero");
+		throw new Uint128DivisionByZeroError("Modulo by zero", { dividend: uint });
 	}
 	return /** @type {import('./Uint128Type.js').Uint128Type} */ (uint % b);
 }
