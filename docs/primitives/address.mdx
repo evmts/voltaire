@@ -79,21 +79,34 @@ addr.toAbiEncoded();    // 32-byte Uint8Array (left-padded)
 
 ```typescript
 import * as Address from '@tevm/voltaire/Address';
-import { keccak256 } from '@tevm/voltaire/Keccak256';
 
-// Create with crypto dependency for checksum methods
-const addr = Address(
-  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
-  { keccak256 }
-);
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
-// Get checksummed representation
-addr.toChecksummed();  // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+// RECOMMENDED: Static method (keccak256 auto-injected)
+Address.toChecksummed(addr);  // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 
 // Validate checksum
 Address.isValidChecksum("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"); // true
 Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e"); // false
 ```
+
+<Warning>
+**Instance method requires explicit keccak256:**
+
+```typescript
+import { keccak256 } from '@tevm/voltaire/Keccak256';
+
+// Pass keccak256 to constructor for instance method
+const addr = Address("0x742d35...", { keccak256 });
+addr.toChecksummed();  // Works!
+
+// Without keccak256: throws "keccak256 not provided"
+const addr2 = Address("0x742d35...");
+addr2.toChecksummed();  // Error!
+```
+
+**Why?** Tree-shaking - crypto only bundled if explicitly imported. Use static `Address.toChecksummed(addr)` for convenience.
+</Warning>
 
 </Tab>
 </Tabs>
@@ -123,7 +136,8 @@ Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e"); // false
 | `toHex()` | Convert to lowercase hex string |
 | `toLowercase()` | Convert to lowercase hex string |
 | `toUppercase()` | Convert to uppercase hex string |
-| `toChecksummed()` | Convert to EIP-55 checksummed hex (requires keccak256) |
+| `Address.toChecksummed(addr)` | Convert to EIP-55 checksummed hex (keccak256 auto-injected) |
+| `addr.toChecksummed()` | Instance method (requires `{ keccak256 }` in constructor) |
 | `toShortHex(start?, end?)` | Abbreviated hex (e.g., "0x742d...1e3e") |
 | `toU256()` | Convert to bigint (left-padded to 256 bits) |
 | `toAbiEncoded()` | Convert to 32-byte ABI encoding |
@@ -153,8 +167,10 @@ Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e"); // false
 
 | Method | Description |
 |--------|-------------|
-| `calculateCreateAddress(nonce)` | Derive CREATE address (requires keccak256 + rlpEncode) |
-| `calculateCreate2Address(salt, initCode)` | Derive CREATE2 address (requires keccak256) |
+| `Address.calculateCreateAddress(addr, nonce)` | Derive CREATE address (keccak256/rlpEncode auto-injected) |
+| `addr.calculateCreateAddress(nonce)` | Instance method (requires `{ keccak256, rlpEncode }` in constructor) |
+| `Address.calculateCreate2Address(addr, salt, initCode)` | Derive CREATE2 address (keccak256 auto-injected) |
+| `addr.calculateCreate2Address(salt, initCode)` | Instance method (requires `{ keccak256 }` in constructor) |
 
 ### Batch Operations
 
@@ -177,27 +193,31 @@ Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e"); // false
 
 ```typescript
 import * as Address from '@tevm/voltaire/Address';
-import { keccak256 } from '@tevm/voltaire/Keccak256';
-import { rlpEncode } from '@tevm/voltaire/Rlp';
-
-// Create address with full crypto support
-const deployer = Address(
-  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
-  { keccak256, rlpEncode }
-);
-
-// CREATE address (deployed via regular transaction)
-const contractAddr = deployer.calculateCreateAddress(0n);
-const secondContract = deployer.calculateCreateAddress(1n);
-
-// CREATE2 address (deterministic deployment)
 import * as Hash from '@tevm/voltaire/Hash';
 import * as Bytecode from '@tevm/voltaire/Bytecode';
 
+const deployer = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// RECOMMENDED: Static methods (keccak256/rlpEncode auto-injected)
+const contractAddr = Address.calculateCreateAddress(deployer, 0n);
+const secondContract = Address.calculateCreateAddress(deployer, 1n);
+
 const salt = Hash("0x" + "00".repeat(32));
 const initCode = Bytecode("0x6080604052...");
-const create2Addr = deployer.calculateCreate2Address(salt, initCode);
+const create2Addr = Address.calculateCreate2Address(deployer, salt, initCode);
 ```
+
+<Tip>
+**Instance methods require explicit crypto:**
+
+```typescript
+import { keccak256 } from '@tevm/voltaire/Keccak256';
+import { rlpEncode } from '@tevm/voltaire/Rlp';
+
+const deployer = Address("0x742d35...", { keccak256, rlpEncode });
+deployer.calculateCreateAddress(0n);  // Works with instance method
+```
+</Tip>
 
 ### Comparing and Sorting Addresses
 
