@@ -50,7 +50,8 @@ describe("Nonce.toBigInt", () => {
 		});
 
 		it("preserves large values", () => {
-			const original = 2n ** 200n;
+			// Max uint64 value
+			const original = 18446744073709551615n;
 			const nonce = Nonce.from(original);
 			const result = Nonce.toBigInt(nonce);
 			expect(result).toBe(original);

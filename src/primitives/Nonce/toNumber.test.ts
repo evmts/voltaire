@@ -60,7 +60,8 @@ describe("Nonce.toNumber", () => {
 		});
 
 		it("throws on very large value", () => {
-			const nonce = Nonce.from(2n ** 100n);
+			// Use a value larger than MAX_SAFE_INTEGER but within uint64 range
+			const nonce = Nonce.from(BigInt(Number.MAX_SAFE_INTEGER) + 1000n);
 			expect(() => Nonce.toNumber(nonce)).toThrow();
 		});
 	});
