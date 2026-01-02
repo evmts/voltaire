@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as Proof from "./index.js";
+import * as Rlp from "../Rlp/index.js";
 
 describe("Proof", () => {
 	describe("from", () => {
@@ -165,6 +166,236 @@ describe("Proof", () => {
 			// Original array modification shouldn't affect proof
 			proofArray.push(new Uint8Array([7, 8, 9]));
 			expect(proof.proof).toHaveLength(1);
+		});
+	});
+
+	describe("verify", () => {
+		// Helper to create valid MPT leaf node (2 items: path, value)
+		const createLeafNode = (path: Uint8Array, value: Uint8Array) => {
+			return Rlp.encodeArray([path, value]);
+		};
+
+		// Helper to create valid MPT branch node (17 items: 16 branches + value)
+		const createBranchNode = () => {
+			const branches: Uint8Array[] = [];
+			for (let i = 0; i < 16; i++) {
+				branches.push(new Uint8Array([])); // empty branch
+			}
+			branches.push(new Uint8Array([1, 2, 3])); // value
+			return Rlp.encodeArray(branches);
+		};
+
+		it("validates proof with valid leaf nodes", () => {
+			const leafNode = createLeafNode(
+				new Uint8Array([0x20, 0x01]), // leaf path prefix
+				new Uint8Array([1, 2, 3, 4]),
+			);
+
+			const proof = Proof.from({
+				value: new Uint8Array([1, 2, 3, 4]),
+				proof: [leafNode],
+			});
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(true);
+		});
+
+		it("validates proof with valid branch nodes", () => {
+			const branchNode = createBranchNode();
+
+			const proof = Proof.from({
+				value: new Uint8Array([1, 2, 3, 4]),
+				proof: [branchNode],
+			});
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(true);
+		});
+
+		it("validates proof with mixed node types", () => {
+			const leafNode = createLeafNode(
+				new Uint8Array([0x20]),
+				new Uint8Array([1, 2, 3]),
+			);
+			const branchNode = createBranchNode();
+
+			const proof = Proof.from({
+				value: new Uint8Array([1, 2, 3]),
+				proof: [branchNode, leafNode],
+			});
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(true);
+		});
+
+		it("validates empty proof array", () => {
+			const proof = Proof.from({
+				value: new Uint8Array([1, 2, 3]),
+				proof: [],
+			});
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(true);
+		});
+
+		it("rejects proof with invalid RLP encoding", () => {
+			const proof = {
+				value: new Uint8Array([1, 2, 3]),
+				// Invalid RLP: length prefix says 3 bytes but only 1 byte follows
+				proof: [new Uint8Array([0x83, 0x01])],
+			};
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(false);
+			if (!result.valid) {
+				expect(result.error.code).toBe("PROOF_NODE_INVALID_RLP");
+				expect(result.error.index).toBe(0);
+			}
+		});
+
+		it("rejects proof with empty node", () => {
+			const proof = {
+				value: new Uint8Array([1, 2, 3]),
+				proof: [new Uint8Array([])],
+			};
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(false);
+			if (!result.valid) {
+				expect(result.error.code).toBe("PROOF_NODE_EMPTY");
+				expect(result.error.index).toBe(0);
+			}
+		});
+
+		it("rejects proof node that is not a list", () => {
+			// Single byte value (not a list)
+			const proof = {
+				value: new Uint8Array([1, 2, 3]),
+				proof: [new Uint8Array([0x01])],
+			};
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(false);
+			if (!result.valid) {
+				expect(result.error.code).toBe("PROOF_NODE_NOT_LIST");
+			}
+		});
+
+		it("rejects proof node with invalid item count (1 item)", () => {
+			// RLP list with 1 item - invalid MPT node
+			const invalidNode = Rlp.encodeArray([new Uint8Array([1, 2, 3])]);
+
+			const proof = {
+				value: new Uint8Array([1, 2, 3]),
+				proof: [invalidNode],
+			};
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(false);
+			if (!result.valid) {
+				expect(result.error.code).toBe("PROOF_NODE_INVALID_ITEM_COUNT");
+				expect(result.error.message).toContain("1");
+				expect(result.error.message).toContain("2 (leaf/extension) or 17 (branch)");
+			}
+		});
+
+		it("rejects proof node with invalid item count (3 items)", () => {
+			// RLP list with 3 items - invalid MPT node
+			const invalidNode = Rlp.encodeArray([
+				new Uint8Array([1]),
+				new Uint8Array([2]),
+				new Uint8Array([3]),
+			]);
+
+			const proof = {
+				value: new Uint8Array([1, 2, 3]),
+				proof: [invalidNode],
+			};
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(false);
+			if (!result.valid) {
+				expect(result.error.code).toBe("PROOF_NODE_INVALID_ITEM_COUNT");
+				expect(result.error.message).toContain("3");
+			}
+		});
+
+		it("rejects proof node with invalid item count (16 items)", () => {
+			// RLP list with 16 items - almost branch but missing value
+			const items: Uint8Array[] = [];
+			for (let i = 0; i < 16; i++) {
+				items.push(new Uint8Array([]));
+			}
+			const invalidNode = Rlp.encodeArray(items);
+
+			const proof = {
+				value: new Uint8Array([1, 2, 3]),
+				proof: [invalidNode],
+			};
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(false);
+			if (!result.valid) {
+				expect(result.error.code).toBe("PROOF_NODE_INVALID_ITEM_COUNT");
+				expect(result.error.message).toContain("16");
+			}
+		});
+
+		it("rejects null proof", () => {
+			const result = Proof.verify(null as any);
+			expect(result.valid).toBe(false);
+			if (!result.valid) {
+				expect(result.error.code).toBe("PROOF_INVALID_INPUT");
+			}
+		});
+
+		it("rejects proof without proof array", () => {
+			const result = Proof.verify({ value: new Uint8Array([1, 2, 3]) } as any);
+			expect(result.valid).toBe(false);
+			if (!result.valid) {
+				expect(result.error.code).toBe("PROOF_MISSING_ARRAY");
+			}
+		});
+
+		it("rejects proof with non-Uint8Array node", () => {
+			const result = Proof.verify({
+				value: new Uint8Array([1, 2, 3]),
+				proof: ["not a uint8array"],
+			} as any);
+			expect(result.valid).toBe(false);
+			if (!result.valid) {
+				expect(result.error.code).toBe("PROOF_NODE_INVALID_TYPE");
+				expect(result.error.index).toBe(0);
+			}
+		});
+
+		it("reports correct index for malformed node in middle of proof", () => {
+			const validNode = createLeafNode(
+				new Uint8Array([0x20]),
+				new Uint8Array([1, 2, 3]),
+			);
+			// Invalid: single item list
+			const invalidNode = Rlp.encodeArray([new Uint8Array([1])]);
+
+			const proof = {
+				value: new Uint8Array([1, 2, 3]),
+				proof: [validNode, validNode, invalidNode, validNode],
+			};
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(false);
+			if (!result.valid) {
+				expect(result.error.index).toBe(2);
+			}
+		});
+
+		it("exports ProofValidationError", () => {
+			expect(Proof.ProofValidationError).toBeDefined();
+			const error = new Proof.ProofValidationError("test", { index: 5, code: "TEST" });
+			expect(error.name).toBe("ProofValidationError");
+			expect(error.index).toBe(5);
+			expect(error.code).toBe("TEST");
+			expect(error.message).toBe("test");
 		});
 	});
 });
