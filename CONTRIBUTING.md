@@ -6,34 +6,36 @@ We welcome contributions! This document provides guidelines and instructions for
 
 ## AI-Assisted Contributions
 
-**AI-assisted contributions are welcome with proper disclosure.** If you use AI tools (like GitHub Copilot, Claude, ChatGPT, etc.) to generate code:
+**We welcome and encourage AI-assisted contributions.** Using Claude, Copilot, ChatGPT, or other AI tools is perfectly fine - we care about quality, not how the code was written.
 
-1. **Disclose AI usage** at the top of your PR description
-2. **Include all prompts** used to generate the changes
-3. **Provide a human-written description** explaining:
-   - Why the change is desired
-   - What problem it solves
-   - Link to any related issues
-4. **Review and understand** all AI-generated code before submitting
-5. **Take responsibility** for the correctness and quality of the code
-6. **Run all tests** to ensure nothing breaks
+**⚠️ MANDATORY REQUIREMENT: You MUST include your prompts in the PR.**
+
+PRs without prompts will be rejected - no exceptions - unless:
+- The change is trivial (typo fix, single-line change)
+- You are a known trusted contributor
+
+### Required Format
+
+1. **Include ALL prompts** used to generate the code in your PR description
+2. **Provide a human-written summary** explaining the "why"
+3. **Review and test** all AI-generated code before submitting
 
 Example PR description:
 
 ```
-## AI Disclosure
-This PR contains AI-generated code using Claude.
+## AI Prompts Used
 
-### Prompts used:
-- "Add validation for RLP encoded data to prevent buffer overflows"
-- "Write tests for the new validation logic"
+### Prompt 1:
+"Add validation for RLP encoded data to prevent buffer overflows"
 
-### Human Description:
-This change adds proper input validation for RLP decoding that was missing. Fixes #123.
+### Prompt 2:
+"Write tests for the new validation logic covering edge cases"
 
-### Testing:
+## Summary
+Adds input validation for RLP decoding. Fixes #123.
+
+## Testing
 - ✅ zig build test passes
-- ✅ All primitive and crypto tests pass
 - ✅ Added new test cases for edge conditions
 ```
 
