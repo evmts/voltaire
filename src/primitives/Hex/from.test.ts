@@ -1,11 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { from } from "./from.js";
+import { InvalidCharacterError, InvalidFormatError } from "./errors.js";
 
 describe("from", () => {
 	it("accepts hex string", () => {
 		expect(from("0x1234")).toBe("0x1234");
 		expect(from("0xabcdef")).toBe("0xabcdef");
 		expect(from("0x")).toBe("0x");
+	});
+
+	it("throws on invalid strings", () => {
+		expect(() => from("invalid")).toThrow(InvalidFormatError);
+		expect(() => from("hello")).toThrow(InvalidFormatError);
+		expect(() => from("1234")).toThrow(InvalidFormatError);
+		expect(() => from("")).toThrow(InvalidFormatError);
+	});
+
+	it("throws on invalid hex characters", () => {
+		expect(() => from("0xGG")).toThrow(InvalidCharacterError);
+		expect(() => from("0xZZZZ")).toThrow(InvalidCharacterError);
+		expect(() => from("0x12GH")).toThrow(InvalidCharacterError);
 	});
 
 	it("accepts Uint8Array", () => {
