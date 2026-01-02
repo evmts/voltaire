@@ -1,4 +1,5 @@
 import { fromBytes } from "./fromBytes.js";
+import { validate } from "./validate.js";
 
 /**
  * Create Hex from string or bytes
@@ -7,7 +8,8 @@ import { fromBytes } from "./fromBytes.js";
  * @since 0.0.0
  * @param {string | Uint8Array} value - Hex string or bytes
  * @returns {import('./HexType.js').HexType} Hex value
- * @throws {never}
+ * @throws {import('./errors.js').InvalidFormatError} If string is missing 0x prefix
+ * @throws {import('./errors.js').InvalidCharacterError} If string contains invalid hex characters
  * @example
  * ```javascript
  * import * as Hex from './primitives/Hex/index.js';
@@ -17,7 +19,7 @@ import { fromBytes } from "./fromBytes.js";
  */
 export function from(value) {
 	if (typeof value === "string") {
-		return /** @type {import('./HexType.js').HexType} */ (value);
+		return /** @type {import('./HexType.js').HexType} */ (validate(value));
 	}
 	return fromBytes(value);
 }
