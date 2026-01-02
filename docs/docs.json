@@ -42,7 +42,8 @@
             "pages": [
               "concepts/branded-types",
               "concepts/tree-shakeable-api",
-              "concepts/cross-language-consistency"
+              "concepts/cross-language-consistency",
+              "concepts/advanced-build"
             ]
           },
           {
