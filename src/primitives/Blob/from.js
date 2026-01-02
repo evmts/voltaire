@@ -10,7 +10,7 @@ import { isValid } from "./isValid.js";
  * @since 0.0.0
  * @param {Uint8Array} value - Uint8Array (either 131072 bytes blob or data to encode)
  * @returns {import('../BrandedBlob.js').BrandedBlob} Blob
- * @throws {Error} If data exceeds maximum size
+ * @throws {InvalidBlobDataSizeError} If data exceeds maximum size
  * @example
  * ```javascript
  * // Namespace API
