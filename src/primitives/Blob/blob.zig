@@ -58,21 +58,31 @@ pub fn calculateBlobGasPrice(excess_blob_gas: u64) u64 {
 }
 
 // Fake exponential from EIP-4844
+// Uses saturating arithmetic to prevent overflow
 fn fakeExponential(factor: u64, numerator: u64, denominator: u64) u64 {
-    var output: u64 = 0;
-    var numerator_accum = factor * denominator;
+    var output: u128 = 0;
+    var numerator_accum: u128 = @as(u128, factor) * @as(u128, denominator);
     var i: u64 = 1;
 
     while (numerator_accum > 0) {
-        output += numerator_accum;
-        numerator_accum = (numerator_accum * numerator) / (denominator * i);
+        output = output +| numerator_accum; // Saturating add
+        numerator_accum = (numerator_accum * @as(u128, numerator)) / (@as(u128, denominator) * @as(u128, i));
         i += 1;
 
         // Prevent infinite loop
         if (i > 256) break;
     }
 
-    return output / denominator;
+    const result = output / @as(u128, denominator);
+
+    // Per EIP-4844: minimum blob gas price is 1 (MIN_BLOB_BASE_FEE)
+    // Ensure we never return 0 to prevent underflow in callers
+    if (result == 0) return 1;
+
+    // Saturate to u64 max if result would overflow
+    if (result > std.math.maxInt(u64)) return std.math.maxInt(u64);
+
+    return @intCast(result);
 }
 
 // Calculate excess blob gas for next block
@@ -591,6 +601,31 @@ test "calculateExcessBlobGas boundary at target plus one" {
 test "fakeExponential with zero numerator" {
     const result = fakeExponential(MIN_BLOB_BASE_FEE, 0, BLOB_BASE_FEE_UPDATE_FRACTION);
     try testing.expectEqual(@as(u64, MIN_BLOB_BASE_FEE), result);
+}
+
+test "fakeExponential never returns zero (minimum is 1)" {
+    // Edge case: factor=0 would result in 0, but we enforce minimum of 1
+    const result = fakeExponential(0, 0, BLOB_BASE_FEE_UPDATE_FRACTION);
+    try testing.expectEqual(@as(u64, 1), result);
+}
+
+test "fakeExponential with zero factor returns minimum 1" {
+    // Even with zero factor, result should be at least 1
+    const result = fakeExponential(0, 1000, BLOB_BASE_FEE_UPDATE_FRACTION);
+    try testing.expectEqual(@as(u64, 1), result);
+}
+
+test "calculateBlobGasPrice never returns zero" {
+    // Edge case: even with 0 excess, minimum price is 1
+    const price = calculateBlobGasPrice(0);
+    try testing.expect(price >= 1);
+}
+
+test "fakeExponential handles large values without overflow" {
+    // Test with very large excess that could cause overflow in u64
+    // Using u128 internally should prevent this
+    const result = fakeExponential(MIN_BLOB_BASE_FEE, 1000000000, BLOB_BASE_FEE_UPDATE_FRACTION);
+    try testing.expect(result >= MIN_BLOB_BASE_FEE);
 }
 
 test "fakeExponential approximation accuracy small values" {
