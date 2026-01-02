@@ -161,9 +161,17 @@ function encodeAtomicValue(type, value) {
 			});
 		}
 		let num = typeof value === "bigint" ? value : BigInt(value);
-		// Handle negative numbers (two's complement)
+		// Handle negative numbers (two's complement within declared bit width)
 		if (num < 0n) {
-			num = (1n << 256n) + num;
+			// Sign extend within the declared bit width, then pad to 256 bits
+			num = (1n << BigInt(bits)) + num;
+		}
+		// Sign-extend to 256 bits if negative (check MSB of declared width)
+		const msbMask = 1n << BigInt(bits - 1);
+		if ((num & msbMask) !== 0n) {
+			// Number is negative in declared width, extend sign to 256 bits
+			const mask = (1n << BigInt(bits)) - 1n;
+			num = num | (~mask & ((1n << 256n) - 1n));
 		}
 		// Write bigint to bytes (big-endian)
 		for (let i = 31; i >= 0; i--) {
