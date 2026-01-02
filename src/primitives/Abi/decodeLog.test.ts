@@ -129,7 +129,7 @@ describe("decodeLog", () => {
 		};
 
 		expect(() => decodeLog(mockAbi, log)).toThrow(AbiItemNotFoundError);
-		expect(() => decodeLog(mockAbi, log)).toThrow(/Missing topic0/);
+		expect(() => decodeLog(mockAbi, log)).toThrow(/not found in ABI/);
 	});
 
 	it("throws on unknown event selector", () => {
@@ -339,5 +339,142 @@ describe("decodeLog", () => {
 		expect(decodedTransfer.event).toBe("Transfer");
 		expect(decodedApproval.event).toBe("Approval");
 		expect(decodedTransfer.event).not.toBe(decodedApproval.event);
+	});
+
+	describe("anonymous events", () => {
+		const anonymousTransfer = {
+			type: "event",
+			name: "AnonymousTransfer",
+			anonymous: true,
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "address", name: "to", indexed: true },
+				{ type: "uint256", name: "value", indexed: false },
+			],
+		} as const satisfies Abi.Event;
+
+		const abiWithAnonymous = [anonymousTransfer] as const satisfies Abi;
+
+		it("decodes anonymous event by indexed param count", () => {
+			const from = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+			const to = "0x0000000000000000000000000000000000000001" as Address;
+			const value = 1000n;
+
+			// Anonymous events have NO selector in topic0, only indexed params
+			const fromTopic = new Uint8Array(32);
+			Hex.toBytes(from).forEach((b, i) => {
+				fromTopic[12 + i] = b;
+			});
+			const toTopic = new Uint8Array(32);
+			Hex.toBytes(to).forEach((b, i) => {
+				toTopic[12 + i] = b;
+			});
+
+			const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
+
+			const log = { topics: [fromTopic, toTopic], data };
+			const decoded = decodeLog(abiWithAnonymous, log);
+
+			expect(decoded.event).toBe("AnonymousTransfer");
+			expect(decoded.params.from).toBe(from);
+			expect(decoded.params.to).toBe(to);
+			expect(decoded.params.value).toBe(value);
+		});
+
+		it("decodes anonymous event with eventName hint", () => {
+			const from = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+			const to = "0x0000000000000000000000000000000000000001" as Address;
+			const value = 2000n;
+
+			const fromTopic = new Uint8Array(32);
+			Hex.toBytes(from).forEach((b, i) => {
+				fromTopic[12 + i] = b;
+			});
+			const toTopic = new Uint8Array(32);
+			Hex.toBytes(to).forEach((b, i) => {
+				toTopic[12 + i] = b;
+			});
+
+			const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
+
+			const log = { topics: [fromTopic, toTopic], data };
+			const decoded = decodeLog(abiWithAnonymous, log, {
+				eventName: "AnonymousTransfer",
+			});
+
+			expect(decoded.event).toBe("AnonymousTransfer");
+			expect(decoded.params.value).toBe(value);
+		});
+
+		it("decodes anonymous event with no indexed params", () => {
+			const anonymousLog = {
+				type: "event",
+				name: "AnonymousLog",
+				anonymous: true,
+				inputs: [
+					{ type: "string", name: "message", indexed: false },
+					{ type: "uint256", name: "value", indexed: false },
+				],
+			} as const satisfies Abi.Event;
+
+			const abiWithAnonLog = [anonymousLog] as const satisfies Abi;
+
+			const data = Abi.encodeParameters(
+				[{ type: "string" }, { type: "uint256" }],
+				["hello", 42n],
+			);
+
+			// No topics at all for anonymous event with no indexed params
+			const log = { topics: [] as Uint8Array[], data };
+			const decoded = decodeLog(abiWithAnonLog, log);
+
+			expect(decoded.event).toBe("AnonymousLog");
+			expect(decoded.params.message).toBe("hello");
+			expect(decoded.params.value).toBe(42n);
+		});
+
+		it("handles mixed anonymous and non-anonymous events", () => {
+			const mixedAbi = [
+				transferEvent,
+				anonymousTransfer,
+			] as const satisfies Abi;
+
+			// Regular event with selector
+			const from = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+			const to = "0x0000000000000000000000000000000000000001" as Address;
+
+			const regularTopics = Abi.Event.encodeTopics(transferEvent, { from, to });
+			const regularData = Abi.encodeParameters([{ type: "uint256" }], [1000n]);
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+			const regularLog = { topics: regularTopics as any, data: regularData };
+
+			const decodedRegular = decodeLog(mixedAbi, regularLog);
+			expect(decodedRegular.event).toBe("Transfer");
+		});
+
+		it("throws when no matching anonymous event found", () => {
+			const abiWithDifferentAnon = [
+				{
+					type: "event",
+					name: "DifferentAnon",
+					anonymous: true,
+					inputs: [
+						{ type: "uint256", name: "a", indexed: true },
+						{ type: "uint256", name: "b", indexed: true },
+						{ type: "uint256", name: "c", indexed: true },
+					],
+				},
+			] as const satisfies Abi;
+
+			// Only 1 topic but event expects 3
+			const topic = new Uint8Array(32);
+			topic[31] = 1;
+
+			const log = { topics: [topic], data: new Uint8Array(0) };
+
+			expect(() => decodeLog(abiWithDifferentAnon, log)).toThrow(
+				AbiItemNotFoundError,
+			);
+		});
 	});
 });
