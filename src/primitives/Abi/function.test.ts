@@ -80,7 +80,7 @@ describe("Abi.Function.getSignature", () => {
 			],
 			outputs: [],
 		};
-		expect(Abi.Function.getSignature(func)).toBe("swap(tuple)");
+		expect(Abi.Function.getSignature(func)).toBe("swap((address,uint256))");
 	});
 
 	it("generates signature with arrays", () => {

@@ -69,7 +69,7 @@ describe("Abi.Function.getSignature", () => {
 			outputs: [],
 		} as const satisfies AbiFunction;
 
-		expect(Abi.Function.getSignature(func)).toBe("swap(tuple)");
+		expect(Abi.Function.getSignature(func)).toBe("swap((address,uint256))");
 	});
 });
 

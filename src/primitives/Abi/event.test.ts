@@ -69,7 +69,7 @@ describe("Abi.Event.getSignature", () => {
 				},
 			],
 		};
-		expect(Abi.Event.getSignature(event)).toBe("DataUpdate(tuple)");
+		expect(Abi.Event.getSignature(event)).toBe("DataUpdate((address,uint256))");
 	});
 
 	it("generates signature with array", () => {

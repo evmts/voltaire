@@ -137,7 +137,7 @@ describe("getSignature", () => {
 		} as const;
 
 		const signature = getSignature(error);
-		expect(signature).toBe("InvalidTuple(tuple)");
+		expect(signature).toBe("InvalidTuple((address,uint256))");
 	});
 
 	it("generates signature with nested tuple parameter", () => {
@@ -164,7 +164,7 @@ describe("getSignature", () => {
 		} as const;
 
 		const signature = getSignature(error);
-		expect(signature).toBe("ComplexError(tuple)");
+		expect(signature).toBe("ComplexError((address,(uint256,uint256)))");
 	});
 
 	it("generates signature with mixed parameter types", () => {
@@ -261,7 +261,7 @@ describe("getSignature", () => {
 		} as const;
 
 		const signature = getSignature(error);
-		expect(signature).toBe("BatchError(tuple[])");
+		expect(signature).toBe("BatchError((uint256,string)[])");
 	});
 
 	it("handles error names with underscores", () => {

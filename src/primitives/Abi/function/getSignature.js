@@ -1,3 +1,5 @@
+import { formatCanonicalType } from "../formatCanonicalType.js";
+
 /**
  * Get function signature string (name(type1,type2,...))
  *
@@ -25,6 +27,6 @@
  * ```
  */
 export function getSignature(fn) {
-	const inputs = fn.inputs.map((p) => p.type).join(",");
+	const inputs = fn.inputs.map((p) => formatCanonicalType(p)).join(",");
 	return `${fn.name}(${inputs})`;
 }
