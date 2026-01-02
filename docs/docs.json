@@ -286,6 +286,16 @@
                 ]
               },
               {
+                "group": "Bytes",
+                "icon": {
+                  "name": "cube",
+                  "style": "light"
+                },
+                "pages": [
+                  "primitives/bytes/index"
+                ]
+              },
+              {
                 "group": "Bytes32",
                 "icon": {
                   "name": "cube",
@@ -764,6 +774,18 @@
                 },
                 "pages": [
                   "primitives/forwardrequest"
+                ]
+              },
+              {
+                "group": "MEV",
+                "icon": {
+                  "name": "bolt-lightning",
+                  "style": "solid"
+                },
+                "pages": [
+                  "primitives/builderbid",
+                  "primitives/bundle",
+                  "primitives/bundlehash"
                 ]
               },
               {
