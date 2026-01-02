@@ -450,38 +450,60 @@ Alias for `Sized<N>`. Useful for fixed-size hex values.
 
 ## Error Handling
 
-Hex operations throw typed errors for invalid inputs:
+Hex operations throw typed errors for invalid inputs. All errors extend base classes from `@tevm/voltaire/errors`:
 
 ```typescript
-import { Hex, InvalidFormatError, InvalidLengthError } from '@tevm/voltaire/Hex';
+import { Hex } from '@tevm/voltaire/Hex';
+import {
+  InvalidFormatError,
+  InvalidCharacterError,
+  OddLengthError,
+  SizeExceededError,
+  InvalidBooleanHexError
+} from '@tevm/voltaire/Hex/errors';
 
 try {
   Hex.validate('invalid'); // missing 0x
 } catch (e) {
   if (e instanceof InvalidFormatError) {
+    console.log(e.name);    // 'InvalidHexFormatError'
     console.log(e.code);    // 'HEX_MISSING_PREFIX'
     console.log(e.value);   // 'invalid'
   }
 }
 
 try {
-  Hex.toBytes(Hex('0x123')); // odd length
+  Hex.validate('0xZZ'); // invalid characters
 } catch (e) {
-  if (e instanceof InvalidLengthError) {
-    console.log(e.code); // 'HEX_ODD_LENGTH'
+  if (e instanceof InvalidCharacterError) {
+    console.log(e.name);  // 'InvalidHexCharacterError'
+    console.log(e.code);  // 'HEX_INVALID_CHARACTER'
+  }
+}
+
+try {
+  Hex.pad(Hex('0x1234'), 1); // exceeds target size
+} catch (e) {
+  if (e instanceof SizeExceededError) {
+    console.log(e.name);  // 'HexSizeExceededError'
+    console.log(e.code);  // 'HEX_SIZE_EXCEEDED'
   }
 }
 ```
 
 ### Error Types
 
-| Error | Code | Description |
-|-------|------|-------------|
-| `InvalidFormatError` | `HEX_MISSING_PREFIX` | Missing `0x` prefix |
-| `InvalidFormatError` | `HEX_INVALID_CHARACTER` | Non-hex character found |
-| `InvalidLengthError` | `HEX_ODD_LENGTH` | Odd number of hex digits |
-| `InvalidLengthError` | `HEX_SIZE_MISMATCH` | Size doesn't match expected |
-| `InvalidLengthError` | `HEX_LENGTH_MISMATCH` | Operands have different lengths |
+| Error Class | name Property | Code | Description |
+|-------------|---------------|------|-------------|
+| `InvalidFormatError` | `InvalidHexFormatError` | `HEX_MISSING_PREFIX` | Missing `0x` prefix |
+| `InvalidCharacterError` | `InvalidHexCharacterError` | `HEX_INVALID_CHARACTER` | Non-hex character found |
+| `OddLengthError` | `OddLengthHexError` | `HEX_ODD_LENGTH` | Odd number of hex digits |
+| `InvalidLengthError` | `InvalidHexLengthError` | `HEX_INVALID_LENGTH` | Invalid length |
+| `SizeExceededError` | `HexSizeExceededError` | `HEX_SIZE_EXCEEDED` | Size exceeds target |
+| `InvalidBooleanHexError` | `InvalidBooleanHexError` | `HEX_INVALID_BOOLEAN` | Invalid boolean value |
+| `NegativeNumberError` | `NegativeNumberError` | `HEX_NEGATIVE_NUMBER` | Negative number |
+| `UnsafeIntegerError` | `UnsafeIntegerError` | `HEX_UNSAFE_INTEGER` | Exceeds MAX_SAFE_INTEGER |
+| `NonIntegerError` | `NonIntegerError` | `HEX_NON_INTEGER` | Non-integer value |
 
 ## Tree-Shaking
 

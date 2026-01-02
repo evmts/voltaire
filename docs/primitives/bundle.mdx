@@ -238,17 +238,25 @@ console.log(`Bundle contains ${Bundle.size(bundle)} transactions`);
 
 ## Error Handling
 
+Bundle provides typed errors that extend the Voltaire error hierarchy:
+
 ```typescript
 import * as Bundle from '@tevm/voltaire/Bundle';
-import { InvalidBundleError } from '@tevm/voltaire/Bundle';
+import {
+  InvalidBundleError,
+  MissingCryptoDependencyError
+} from '@tevm/voltaire/Bundle';
 
 try {
   // Empty bundle throws
   Bundle.from({ transactions: [] });
 } catch (e) {
   if (e instanceof InvalidBundleError) {
+    console.log(e.name);     // "InvalidBundleError"
+    console.log(e.code);     // "INVALID_BUNDLE"
     console.log(e.message);  // "Bundle must contain at least one transaction"
-    console.log(e.details);  // { value: { transactions: [] } }
+    console.log(e.value);    // The invalid value
+    console.log(e.expected); // What was expected
   }
 }
 
@@ -259,10 +267,30 @@ try {
   });
 } catch (e) {
   if (e instanceof InvalidBundleError) {
-    console.log(e.message);  // "Transaction 0 must be Uint8Array or hex string"
+    console.log(e.name);    // "InvalidBundleError"
+    console.log(e.message); // "Transaction must be Uint8Array or hex string"
+  }
+}
+
+try {
+  // Missing crypto dependency
+  Bundle.toHash(bundle, {}); // Missing keccak256
+} catch (e) {
+  if (e instanceof MissingCryptoDependencyError) {
+    console.log(e.name);     // "MissingCryptoDependencyError"
+    console.log(e.code);     // "MISSING_CRYPTO_DEPENDENCY"
+    console.log(e.message);  // "keccak256 not provided"
+    console.log(e.expected); // "{ keccak256: (data: Uint8Array) => Uint8Array }"
   }
 }
 ```
+
+### Error Types
+
+| Error | Extends | When Thrown |
+|-------|---------|-------------|
+| `InvalidBundleError` | `ValidationError` | Invalid bundle format or transaction data |
+| `MissingCryptoDependencyError` | `ValidationError` | Required crypto function not provided |
 
 ## Flashbots RPC Format
 

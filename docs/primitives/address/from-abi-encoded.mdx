@@ -98,24 +98,39 @@ const addr2 = Address(abiData.slice(32, 64))
 
 ## Error Handling
 
-```typescript
-import { Address } from '@tevm/voltaire'
+The `fromAbiEncoded` function throws typed errors for invalid input:
 
-// Wrong length - throws error
+```typescript
+import { Address, InvalidAddressLengthError } from '@tevm/voltaire'
+
+// Wrong length - throws InvalidAddressLengthError
 try {
   const tooShort = new Uint8Array(20)
-  Address(tooShort)
+  Address.fromAbiEncoded(tooShort)
 } catch (e) {
-  console.error(e) // "ABI-encoded Address must be exactly 32 bytes, got 20"
+  if (e instanceof InvalidAddressLengthError) {
+    console.error(e.name)     // "InvalidAddressLengthError"
+    console.error(e.code)     // "INVALID_ABI_ENCODED_LENGTH"
+    console.error(e.value)    // 20
+    console.error(e.expected) // "32 bytes"
+  }
 }
 
 try {
   const tooLong = new Uint8Array(33)
-  Address(tooLong)
+  Address.fromAbiEncoded(tooLong)
 } catch (e) {
-  console.error(e) // "ABI-encoded Address must be exactly 32 bytes, got 33"
+  if (e instanceof InvalidAddressLengthError) {
+    console.error(e.message) // "ABI-encoded Address must be exactly 32 bytes, got 33"
+  }
 }
 ```
+
+### Error Types
+
+| Error | When Thrown |
+|-------|-------------|
+| `InvalidAddressLengthError` | Input is not exactly 32 bytes |
 
 ## Implementation Notes
 

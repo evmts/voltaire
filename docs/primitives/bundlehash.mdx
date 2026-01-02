@@ -122,23 +122,58 @@ if (BundleHash.equals(a, b)) {
 
 ## Errors
 
+BundleHash provides typed errors that extend the Voltaire error hierarchy:
+
 ### InvalidBundleHashError
 
-Thrown when BundleHash operations fail.
+Thrown when BundleHash operations fail due to invalid data.
 
 ```typescript
-class InvalidBundleHashError extends Error {
-  name: "InvalidBundleHashError"
-  details?: Record<string, unknown>
+import { InvalidBundleHashError } from '@tevm/primitives/BundleHash'
+
+try {
+  BundleHash.from(new Uint8Array(16)) // Wrong length
+} catch (e) {
+  if (e instanceof InvalidBundleHashError) {
+    console.log(e.name)     // "InvalidBundleHashError"
+    console.log(e.code)     // "INVALID_BUNDLE_HASH"
+    console.log(e.value)    // The invalid value
+    console.log(e.expected) // "32-byte bundle hash"
+  }
 }
 ```
 
-Common error messages:
-- `"BundleHash must be 32 bytes, got N"` - Invalid byte length
-- `"BundleHash hex string must be 64 characters, got N"` - Invalid hex length
-- `"Invalid hex character"` - Non-hex character in string
-- `"BundleHash must be hex string or Uint8Array"` - Unsupported type
-- `"keccak256 not provided"` - Missing crypto dependency in fromBundle
+### MissingCryptoDependencyError
+
+Thrown when required crypto function is not provided.
+
+```typescript
+import { MissingCryptoDependencyError } from '@tevm/primitives/BundleHash'
+
+try {
+  BundleHash.fromBundle(bundle, {}) // Missing keccak256
+} catch (e) {
+  if (e instanceof MissingCryptoDependencyError) {
+    console.log(e.name)     // "MissingCryptoDependencyError"
+    console.log(e.code)     // "MISSING_CRYPTO_DEPENDENCY"
+    console.log(e.expected) // "{ keccak256: (data: Uint8Array) => Uint8Array }"
+  }
+}
+```
+
+### Error Types
+
+| Error | Extends | Code | When Thrown |
+|-------|---------|------|-------------|
+| `InvalidBundleHashError` | `InvalidLengthError` | `INVALID_BUNDLE_HASH` | Invalid hash format or length |
+| `MissingCryptoDependencyError` | `ValidationError` | `MISSING_CRYPTO_DEPENDENCY` | keccak256 not provided |
+
+Common scenarios:
+- Invalid byte length (not 32 bytes)
+- Invalid hex string length (not 64 characters)
+- Invalid hex characters
+- Unsupported input type
+- Missing keccak256 dependency in fromBundle
 
 ## MEV Use Cases
 
