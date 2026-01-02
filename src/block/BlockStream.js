@@ -9,10 +9,15 @@
 
 import * as Hex from "../primitives/Hex/index.js";
 import {
-	BlockRangeTooLargeError,
 	BlockStreamAbortedError,
 	UnrecoverableReorgError,
 } from "../stream/errors.js";
+import { fetchBlock as fetchBlockImpl } from "./fetchBlock.js";
+import { fetchBlockByHash as fetchBlockByHashImpl } from "./fetchBlockByHash.js";
+import { createFetchBlockReceipts } from "./fetchBlockReceipts.js";
+import { isBlockRangeTooLargeError } from "./isBlockRangeTooLargeError.js";
+import { sleep } from "./sleep.js";
+import { toLightBlock } from "./toLightBlock.js";
 
 /**
  * @typedef {import('./BlockStreamType.js').BlockStreamConstructorOptions} BlockStreamConstructorOptions
@@ -27,94 +32,10 @@ import {
 const DEFAULT_CHUNK_SIZE = 100;
 const DEFAULT_MIN_CHUNK_SIZE = 10;
 const DEFAULT_POLLING_INTERVAL = 1000;
-const DEFAULT_MAX_RETRIES = 3;
-const DEFAULT_INITIAL_DELAY = 1000;
-const DEFAULT_MAX_DELAY = 30000;
 const DEFAULT_MAX_QUEUED_BLOCKS = 50;
 const SUCCESS_STREAK_THRESHOLD = 5;
 const CHUNK_INCREASE_FACTOR = 1.25;
 const CHUNK_DECREASE_FACTOR = 0.5;
-
-/**
- * Check if error indicates block range is too large
- * @param {unknown} error
- * @returns {boolean}
- */
-function isBlockRangeTooLargeError(error) {
-	if (!error || typeof error !== "object") return false;
-	const msg =
-		"message" in error && typeof error.message === "string"
-			? error.message.toLowerCase()
-			: "";
-	const code = "code" in error ? error.code : undefined;
-	return (
-		msg.includes("block range") ||
-		msg.includes("too large") ||
-		msg.includes("limit exceeded") ||
-		msg.includes("query returned more than") ||
-		code === -32005
-	);
-}
-
-/**
- * Sleep for specified milliseconds
- * @param {number} ms
- * @returns {Promise<void>}
- */
-function sleep(ms) {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Create a simple mutex lock
- * @returns {{ lock: () => Promise<void>, unlock: () => void }}
- */
-function createLock() {
-	let locked = false;
-	/** @type {Array<() => void>} */
-	const waiting = [];
-
-	return {
-		lock: () => {
-			return new Promise((resolve) => {
-				if (!locked) {
-					locked = true;
-					resolve();
-				} else {
-					waiting.push(resolve);
-				}
-			});
-		},
-		unlock: () => {
-			const next = waiting.shift();
-			if (next) {
-				next();
-			} else {
-				locked = false;
-			}
-		},
-	};
-}
-
-/**
- * Extract light block info from full block
- * @param {*} block
- * @returns {LightBlock}
- */
-function toLightBlock(block) {
-	return {
-		number:
-			typeof block.header?.number === "bigint"
-				? block.header.number
-				: BigInt(block.header?.number ?? block.number),
-		hash: block.hash,
-		parentHash: block.header?.parentHash ?? block.parentHash,
-		timestamp:
-			typeof block.header?.timestamp === "bigint"
-				? block.header.timestamp
-				: BigInt(block.header?.timestamp ?? block.timestamp),
-	};
-}
 
 /**
  * Create a BlockStream for streaming blocks with reorg support.
@@ -161,8 +82,8 @@ function toLightBlock(block) {
 export function BlockStream(options) {
 	const { provider } = options;
 
-	// Track whether eth_getBlockReceipts is supported
-	let isBlockReceiptsSupported = true;
+	// Create the receipt fetcher with memoized support state
+	const fetchBlockReceipts = createFetchBlockReceipts(provider);
 
 	/**
 	 * Fetch a block by number with optional transactions
@@ -172,57 +93,15 @@ export function BlockStream(options) {
 	 * @param {AbortSignal} [signal]
 	 * @returns {Promise<any>}
 	 */
-	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: retry logic
-	async function fetchBlock(blockNumber, include, retryOptions, signal) {
-		const maxRetries = retryOptions?.maxRetries ?? DEFAULT_MAX_RETRIES;
-		const initialDelay = retryOptions?.initialDelay ?? DEFAULT_INITIAL_DELAY;
-		const maxDelay = retryOptions?.maxDelay ?? DEFAULT_MAX_DELAY;
-
-		const includeTransactions = include !== "header";
-		let attempt = 0;
-		let delay = initialDelay;
-
-		while (true) {
-			if (signal?.aborted) {
-				throw new BlockStreamAbortedError();
-			}
-
-			try {
-				/** @type {Record<string, unknown> | null} */
-				const block = await /** @type {any} */ (provider).request({
-					method: "eth_getBlockByNumber",
-					params: [`0x${blockNumber.toString(16)}`, includeTransactions],
-				});
-
-				if (!block) {
-					throw new Error(`Block ${blockNumber} not found`);
-				}
-
-				// Fetch receipts if needed
-				if (include === "receipts") {
-					const receipts = await fetchBlockReceipts(
-						block,
-						retryOptions,
-						signal,
-					);
-					return { ...block, receipts };
-				}
-
-				return block;
-			} catch (error) {
-				if (signal?.aborted) {
-					throw new BlockStreamAbortedError();
-				}
-
-				attempt++;
-				if (attempt >= maxRetries) {
-					throw error;
-				}
-
-				await sleep(delay);
-				delay = Math.min(delay * 2, maxDelay);
-			}
-		}
+	function fetchBlock(blockNumber, include, retryOptions, signal) {
+		return fetchBlockImpl(
+			provider,
+			blockNumber,
+			include,
+			fetchBlockReceipts,
+			retryOptions,
+			signal,
+		);
 	}
 
 	/**
@@ -233,155 +112,15 @@ export function BlockStream(options) {
 	 * @param {AbortSignal} [signal]
 	 * @returns {Promise<any>}
 	 */
-	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: retry logic
-	async function fetchBlockByHash(blockHash, include, retryOptions, signal) {
-		const maxRetries = retryOptions?.maxRetries ?? DEFAULT_MAX_RETRIES;
-		const initialDelay = retryOptions?.initialDelay ?? DEFAULT_INITIAL_DELAY;
-		const maxDelay = retryOptions?.maxDelay ?? DEFAULT_MAX_DELAY;
-
-		const includeTransactions = include !== "header";
-		let attempt = 0;
-		let delay = initialDelay;
-
-		while (true) {
-			if (signal?.aborted) {
-				throw new BlockStreamAbortedError();
-			}
-
-			try {
-				/** @type {Record<string, unknown> | null} */
-				const block = await /** @type {any} */ (provider).request({
-					method: "eth_getBlockByHash",
-					params: [blockHash, includeTransactions],
-				});
-
-				if (!block) {
-					throw new Error(`Block ${blockHash} not found`);
-				}
-
-				// Fetch receipts if needed
-				if (include === "receipts") {
-					const receipts = await fetchBlockReceipts(
-						block,
-						retryOptions,
-						signal,
-					);
-					return { ...block, receipts };
-				}
-
-				return block;
-			} catch (error) {
-				if (signal?.aborted) {
-					throw new BlockStreamAbortedError();
-				}
-
-				attempt++;
-				if (attempt >= maxRetries) {
-					throw error;
-				}
-
-				await sleep(delay);
-				delay = Math.min(delay * 2, maxDelay);
-			}
-		}
-	}
-
-	/**
-	 * Fetch receipts for a block with fallback to individual receipt fetching
-	 * @param {*} block
-	 * @param {import('./BlockStreamType.js').RetryOptions} [retryOptions]
-	 * @param {AbortSignal} [signal]
-	 * @returns {Promise<any[]>}
-	 */
-	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: retry logic
-	async function fetchBlockReceipts(block, retryOptions, signal) {
-		const maxRetries = retryOptions?.maxRetries ?? DEFAULT_MAX_RETRIES;
-		const initialDelay = retryOptions?.initialDelay ?? DEFAULT_INITIAL_DELAY;
-		const maxDelay = retryOptions?.maxDelay ?? DEFAULT_MAX_DELAY;
-
-		// Try eth_getBlockReceipts first if supported
-		if (isBlockReceiptsSupported) {
-			let attempt = 0;
-			let delay = initialDelay;
-
-			while (attempt < maxRetries) {
-				if (signal?.aborted) {
-					throw new BlockStreamAbortedError();
-				}
-
-				try {
-					const receipts = await /** @type {any} */ (provider).request({
-						method: "eth_getBlockReceipts",
-						params: [block.hash],
-					});
-					return receipts ?? [];
-				} catch (error) {
-					if (signal?.aborted) {
-						throw new BlockStreamAbortedError();
-					}
-
-					// Check if method is not supported
-					const errorMsg =
-						error instanceof Error ? error.message.toLowerCase() : "";
-					if (
-						errorMsg.includes("method not found") ||
-						errorMsg.includes("not supported") ||
-						errorMsg.includes("unknown method")
-					) {
-						isBlockReceiptsSupported = false;
-						break;
-					}
-
-					attempt++;
-					if (attempt >= maxRetries) {
-						throw error;
-					}
-
-					await sleep(delay);
-					delay = Math.min(delay * 2, maxDelay);
-				}
-			}
-		}
-
-		// Fallback: fetch individual receipts
-		const transactions = block.body?.transactions ?? block.transactions ?? [];
-		/** @type {Promise<any>[]} */
-		const receipts = await Promise.all(
-			// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: retry logic
-			transactions.map(async (/** @type {any} */ tx) => {
-				const txHash = typeof tx === "string" ? tx : tx.hash;
-				let attempt = 0;
-				let delay = initialDelay;
-
-				while (true) {
-					if (signal?.aborted) {
-						throw new BlockStreamAbortedError();
-					}
-
-					try {
-						const receipt = await /** @type {any} */ (provider).request({
-							method: "eth_getTransactionReceipt",
-							params: [txHash],
-						});
-						return receipt;
-					} catch (error) {
-						if (signal?.aborted) {
-							throw new BlockStreamAbortedError();
-						}
-
-						attempt++;
-						if (attempt >= maxRetries) {
-							throw error;
-						}
-
-						await sleep(delay);
-						delay = Math.min(delay * 2, maxDelay);
-					}
-				}
-			}),
+	function fetchBlockByHash(blockHash, include, retryOptions, signal) {
+		return fetchBlockByHashImpl(
+			provider,
+			blockHash,
+			include,
+			fetchBlockReceipts,
+			retryOptions,
+			signal,
 		);
-
-		return receipts.filter(Boolean);
 	}
 
 	/**
@@ -534,7 +273,30 @@ export function BlockStream(options) {
 		// State for reorg detection
 		/** @type {LightBlock[]} */
 		let unfinalizedBlocks = [];
-		const reconcileLock = createLock();
+
+		// Simple mutex lock (inlined - only used here)
+		let locked = false;
+		/** @type {Array<() => void>} */
+		const waiting = [];
+		const reconcileLock = {
+			lock: () =>
+				new Promise((resolve) => {
+					if (!locked) {
+						locked = true;
+						resolve(undefined);
+					} else {
+						waiting.push(() => resolve(undefined));
+					}
+				}),
+			unlock: () => {
+				const next = waiting.shift();
+				if (next) {
+					next();
+				} else {
+					locked = false;
+				}
+			},
+		};
 
 		// Initialize starting block
 		let startBlock = watchOptions?.fromBlock;
