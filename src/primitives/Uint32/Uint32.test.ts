@@ -246,6 +246,13 @@ describe("Uint32.toBytes", () => {
 		const restored = Uint32.fromBytes(bytes);
 		expect(restored).toBe(original);
 	});
+
+	it("produces big-endian output (most significant byte first)", () => {
+		// Uint32(0x01020304) should produce [0x01, 0x02, 0x03, 0x04] in big-endian
+		// NOT [0x04, 0x03, 0x02, 0x01] which would be little-endian
+		const bytes = Uint32.toBytes(Uint32.from(0x01020304));
+		expect(bytes).toEqual(new Uint8Array([0x01, 0x02, 0x03, 0x04]));
+	});
 });
 
 describe("Uint32.toAbiEncoded", () => {
