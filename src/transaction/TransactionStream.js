@@ -6,7 +6,12 @@
  * @module transaction/TransactionStream
  */
 
-import * as Hex from "../primitives/Hex/index.js";
+import { bytesToHex } from "./bytesToHex.js";
+import { getTransactionType } from "./getTransactionType.js";
+import { hexToBytes } from "./hexToBytes.js";
+import { matchesFilter } from "./matchesFilter.js";
+import { parsePendingTransaction } from "./parsePendingTransaction.js";
+import { sleep } from "./sleep.js";
 
 /**
  * @typedef {import('./TransactionStreamType.js').TransactionStreamConstructorOptions} TransactionStreamConstructorOptions
@@ -24,125 +29,6 @@ import * as Hex from "../primitives/Hex/index.js";
 
 const DEFAULT_POLLING_INTERVAL = 1000;
 const DEFAULT_TIMEOUT = 300000; // 5 minutes
-
-/**
- * Sleep for specified milliseconds
- * @param {number} ms
- * @returns {Promise<void>}
- */
-function sleep(ms) {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Convert hex string to Uint8Array
- * @param {string} hex
- * @returns {Uint8Array}
- */
-function hexToBytes(hex) {
-	const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
-	const bytes = new Uint8Array(cleanHex.length / 2);
-	for (let i = 0; i < bytes.length; i++) {
-		bytes[i] = Number.parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16);
-	}
-	return bytes;
-}
-
-/**
- * Convert Uint8Array to hex string
- * @param {Uint8Array} bytes
- * @returns {string}
- */
-function bytesToHex(bytes) {
-	return `0x${Array.from(bytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
-}
-
-/**
- * Parse transaction from RPC response
- * @param {any} tx
- * @returns {PendingTransaction}
- */
-function parsePendingTransaction(tx) {
-	return /** @type {PendingTransaction} */ ({
-		hash: hexToBytes(tx.hash),
-		from: hexToBytes(tx.from),
-		to: tx.to ? hexToBytes(tx.to) : null,
-		value: BigInt(tx.value || "0x0"),
-		gas: BigInt(tx.gas),
-		gasPrice: BigInt(tx.gasPrice || tx.maxFeePerGas || "0x0"),
-		maxPriorityFeePerGas: tx.maxPriorityFeePerGas
-			? BigInt(tx.maxPriorityFeePerGas)
-			: undefined,
-		maxFeePerGas: tx.maxFeePerGas ? BigInt(tx.maxFeePerGas) : undefined,
-		nonce: BigInt(tx.nonce),
-		input: hexToBytes(tx.input || tx.data || "0x"),
-		type: getTransactionType(tx.type),
-	});
-}
-
-/**
- * Get transaction type string
- * @param {string | undefined} typeHex
- * @returns {"legacy" | "eip2930" | "eip1559" | "eip4844" | "eip7702"}
- */
-function getTransactionType(typeHex) {
-	if (!typeHex) return "legacy";
-	const type = Number.parseInt(typeHex, 16);
-	switch (type) {
-		case 0:
-			return "legacy";
-		case 1:
-			return "eip2930";
-		case 2:
-			return "eip1559";
-		case 3:
-			return "eip4844";
-		case 4:
-			return "eip7702";
-		default:
-			return "legacy";
-	}
-}
-
-/**
- * Check if transaction matches filter
- * @param {PendingTransaction} tx
- * @param {TransactionFilter | undefined} filter
- * @returns {boolean}
- */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: transaction filtering logic
-function matchesFilter(tx, filter) {
-	if (!filter) return true;
-
-	if (filter.from) {
-		const filterFrom =
-			typeof filter.from === "string" ? hexToBytes(filter.from) : filter.from;
-		if (bytesToHex(tx.from) !== bytesToHex(filterFrom)) return false;
-	}
-
-	if (filter.to) {
-		if (!tx.to) return false;
-		const filterTo =
-			typeof filter.to === "string" ? hexToBytes(filter.to) : filter.to;
-		if (bytesToHex(tx.to) !== bytesToHex(filterTo)) return false;
-	}
-
-	if (filter.methodId && tx.input.length >= 4) {
-		const filterMethod =
-			typeof filter.methodId === "string"
-				? hexToBytes(filter.methodId)
-				: filter.methodId;
-		const txMethod = tx.input.slice(0, 4);
-		if (bytesToHex(txMethod) !== bytesToHex(filterMethod)) return false;
-	}
-
-	if (filter.minValue !== undefined && tx.value < filter.minValue) return false;
-	if (filter.maxValue !== undefined && tx.value > filter.maxValue) return false;
-
-	return true;
-}
 
 /**
  * Create a TransactionStream instance
