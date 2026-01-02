@@ -3,6 +3,7 @@ import * as Event from "./event/index.js";
 
 /**
  * Parse event logs (branded ABI method)
+ * Handles both regular events (topic0 = selector) and anonymous events (no selector in topics)
  *
  * @see https://voltaire.tevm.sh/primitives/abi
  * @since 0.0.0
@@ -28,51 +29,76 @@ export function parseLogs(logs) {
 					typeof t === "string" ? Hex.toBytes(t) : t,
 			);
 
-			if (topicBytes.length === 0) {
-				return null; // Skip anonymous events
-			}
-
 			const topic0 = topicBytes[0];
-			if (!topic0) {
-				return null;
+
+			// First try non-anonymous events (topic0 = selector)
+			if (topic0) {
+				const nonAnonEvent =
+					/** @type {import('./event/EventType.js').EventType<string, readonly import('./parameter/index.js').AbiParameter[]> | undefined} */ (
+						this.find((item) => {
+							if (item.type !== "event") return false;
+							if (item.anonymous) return false;
+
+							const eventSelector = Event.getSelector(item);
+							// Compare bytes
+							for (let i = 0; i < 32; i++) {
+								if (topic0[i] !== eventSelector[i]) return false;
+							}
+							return true;
+						})
+					);
+
+				if (nonAnonEvent) {
+					try {
+						const args = Event.decodeLog(
+							nonAnonEvent,
+							dataBytes,
+							/** @type {readonly import('../Hash/index.js').HashType[]} */ (
+								/** @type {unknown} */ (topicBytes)
+							),
+						);
+						return {
+							eventName: nonAnonEvent.name,
+							args,
+						};
+					} catch {
+						// Continue to try anonymous events
+					}
+				}
 			}
 
-			// Find event by selector (topic0 for non-anonymous events)
-			const event =
-				/** @type {import('./event/EventType.js').EventType<string, readonly import('./parameter/index.js').AbiParameter[]> | undefined} */ (
-					this.find((item) => {
-						if (item.type !== "event") return false;
-						if (item.anonymous) return false;
-
-						const eventSelector = Event.getSelector(item);
-						// Compare bytes
-						for (let i = 0; i < 32; i++) {
-							if (topic0[i] !== eventSelector[i]) return false;
-						}
-						return true;
-					})
+			// Try anonymous events
+			// Anonymous events don't have topic0 as selector, all topics are indexed params
+			const anonymousEvents =
+				/** @type {import('./event/EventType.js').EventType<string, readonly import('./parameter/index.js').AbiParameter[]>[]} */ (
+					this.filter((item) => item.type === "event" && item.anonymous === true)
 				);
 
-			if (!event) {
-				return null; // Skip unknown events
+			for (const anonEvent of anonymousEvents) {
+				const indexedCount = anonEvent.inputs.filter((p) => p.indexed).length;
+
+				// For anonymous events, all topics are indexed params (no selector)
+				if (indexedCount === topicBytes.length) {
+					try {
+						const args = Event.decodeLog(
+							anonEvent,
+							dataBytes,
+							/** @type {readonly import('../Hash/index.js').HashType[]} */ (
+								/** @type {unknown} */ (topicBytes)
+							),
+						);
+						return {
+							eventName: anonEvent.name,
+							args,
+						};
+					} catch {
+						// Try next anonymous event
+						continue;
+					}
+				}
 			}
 
-			try {
-				// Cast topicBytes to HashType[] for Event.decodeLog
-				const args = Event.decodeLog(
-					event,
-					dataBytes,
-					/** @type {readonly import('../Hash/index.js').HashType[]} */ (
-						/** @type {unknown} */ (topicBytes)
-					),
-				);
-				return {
-					eventName: event.name,
-					args,
-				};
-			} catch {
-				return null; // Skip malformed logs
-			}
+			return null; // Skip unknown/malformed logs
 		})
 		.filter((result) => result !== null);
 }
