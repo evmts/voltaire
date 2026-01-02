@@ -1,0 +1,194 @@
+---
+title: ERC-4337 Account Abstraction
+description: Build and send UserOperations for smart contract wallets
+---
+
+<Warning>
+**Looking for Contributors!** This Skill needs an implementation.
+
+Contributing a Skill involves:
+1. Writing a reference implementation with full functionality
+2. Adding comprehensive tests
+3. Writing documentation with usage examples
+
+See the [ethers-provider Skill](https://github.com/evmts/voltaire/tree/main/examples/ethers-provider) for an example of a complete Skill implementation.
+
+Interested? Open an issue or PR at [github.com/evmts/voltaire](https://github.com/evmts/voltaire).
+</Warning>
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+Build, sign, and send ERC-4337 UserOperations for smart contract wallets. Interact with bundlers and paymasters.
+
+## Why Account Abstraction?
+
+Traditional EOA wallets have limitations:
+- Single key = single point of failure
+- Can't batch transactions
+- User pays gas in ETH only
+- No account recovery
+
+Smart contract wallets (ERC-4337) enable:
+- Multi-sig, social recovery
+- Batch transactions
+- Sponsored gas (paymasters)
+- Session keys, spending limits
+- Any token for gas
+
+## Planned Implementation
+
+### Build UserOperation
+
+```typescript
+import { UserOperation } from './UserOperation.js';
+
+const userOp = await UserOperation.build({
+  sender: smartWalletAddress,
+  callData: encodeTransfer(recipient, amount),
+  // Optional: use paymaster for sponsored gas
+  paymaster: PAYMASTER_ADDRESS,
+  // Signer for the smart wallet
+  signer,
+  // EntryPoint version
+  entryPoint: ENTRYPOINT_V07,
+});
+
+// userOp is ready to send to bundler
+```
+
+### Send to Bundler
+
+```typescript
+import { Bundler } from './Bundler.js';
+
+const bundler = Bundler('https://api.pimlico.io/v2/1/rpc?apikey=...');
+
+// Send UserOperation
+const userOpHash = await bundler.sendUserOperation(userOp);
+
+// Wait for inclusion
+const receipt = await bundler.waitForUserOperation(userOpHash);
+console.log('Included in tx:', receipt.transactionHash);
+```
+
+### Batch Transactions
+
+```typescript
+// Execute multiple calls in one UserOperation
+const userOp = await UserOperation.build({
+  sender: smartWalletAddress,
+  calls: [
+    { to: USDC, data: encodeApprove(spender, amount) },
+    { to: DEX, data: encodeSwap(USDC, WETH, amount) },
+    { to: WETH, data: encodeWithdraw() },
+  ],
+  signer,
+});
+```
+
+### Paymaster (Sponsored Gas)
+
+```typescript
+// User pays no gas - paymaster covers it
+const userOp = await UserOperation.build({
+  sender: smartWalletAddress,
+  callData: encodeTransfer(recipient, amount),
+  paymaster: {
+    address: PAYMASTER_ADDRESS,
+    // Get paymaster signature
+    getData: async (partialUserOp) => {
+      return await paymasterService.sign(partialUserOp);
+    }
+  },
+  signer,
+});
+```
+
+### ERC-20 Gas Payment
+
+```typescript
+// Pay gas in USDC instead of ETH
+const userOp = await UserOperation.build({
+  sender: smartWalletAddress,
+  callData: encodeTransfer(recipient, amount),
+  paymaster: {
+    address: TOKEN_PAYMASTER,
+    token: USDC_ADDRESS,
+    // Paymaster will pull USDC from user for gas
+  },
+  signer,
+});
+```
+
+### Session Keys
+
+```typescript
+// Create limited session key
+const sessionKey = await SessionKey.create({
+  wallet: smartWalletAddress,
+  permissions: {
+    // Only allow transfers to specific addresses
+    allowedTargets: [FRIEND_ADDRESS],
+    // Max 100 USDC per transaction
+    maxAmount: parseUnits('100', 6),
+    // Valid for 24 hours
+    validUntil: Date.now() + 86400000,
+  },
+  mainSigner,
+});
+
+// Use session key (no main key needed)
+const userOp = await UserOperation.build({
+  sender: smartWalletAddress,
+  callData: encodeTransfer(FRIEND_ADDRESS, parseUnits('50', 6)),
+  signer: sessionKey,
+});
+```
+
+## Bundler Providers
+
+Popular bundler services:
+- [Pimlico](https://pimlico.io)
+- [Alchemy](https://alchemy.com)
+- [Stackup](https://stackup.sh)
+- [Biconomy](https://biconomy.io)
+
+```typescript
+// Pimlico
+const bundler = Bundler('https://api.pimlico.io/v2/1/rpc?apikey=KEY');
+
+// Alchemy
+const bundler = Bundler('https://eth-mainnet.g.alchemy.com/v2/KEY');
+
+// Self-hosted
+const bundler = Bundler('http://localhost:3000/rpc');
+```
+
+## Smart Wallet Factories
+
+Support for popular smart wallet implementations:
+
+```typescript
+// Safe (Gnosis)
+import { SafeAccount } from './accounts/safe.js';
+
+// Kernel (ZeroDev)
+import { KernelAccount } from './accounts/kernel.js';
+
+// SimpleAccount (reference impl)
+import { SimpleAccount } from './accounts/simple.js';
+```
+
+## Resources
+
+- [ERC-4337 Specification](https://eips.ethereum.org/EIPS/eip-4337)
+- [eth-infinitism/account-abstraction](https://github.com/eth-infinitism/account-abstraction)
+- [ERC-4337 Bundler Spec](https://github.com/eth-infinitism/bundler-spec)
+
+## Related
+
+- [ethers-signer](/skills/ethers-signer) — EOA signing
+- [permit](/skills/permit) — Gasless approvals
+- [multicall](/skills/multicall) — Batch reads

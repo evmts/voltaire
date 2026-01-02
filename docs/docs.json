@@ -61,7 +61,10 @@
                   "skills/viem-publicclient",
                   "skills/viem-walletclient",
                   "skills/viem-testclient",
-                  "skills/batched-provider"
+                  "skills/batched-provider",
+                  "skills/eip1193-provider",
+                  "skills/websocket-provider",
+                  "skills/fallback-provider"
                 ]
               },
               {
@@ -78,19 +81,23 @@
                   "skills/ethers-signer",
                   "skills/ethers-hdwallet",
                   "skills/viem-account",
-                  "skills/nonce-manager"
+                  "skills/nonce-manager",
+                  "skills/erc4337"
                 ]
               },
               {
-                "group": "React Skills",
+                "group": "Framework Skills",
                 "pages": [
-                  "skills/react-query"
+                  "skills/react-query",
+                  "skills/vue"
                 ]
               },
               {
                 "group": "Utility Skills",
                 "pages": [
-                  "skills/multicall"
+                  "skills/multicall",
+                  "skills/permit",
+                  "skills/event-indexer"
                 ]
               },
               {
