@@ -1,0 +1,241 @@
+---
+title: '[TS/JS] docs/skills/viem-contract.test.ts'
+source: 'docs/skills/viem-contract.test.ts'
+---
+
+> Auto-generated from test file: docs/skills/viem-contract.test.ts
+
+```typescript
+/**
+ * Tests for viem contract playbook
+ * @see /docs/playbooks/viem-contract.mdx
+ *
+ * Note: The playbook documents a REFERENCE IMPLEMENTATION in examples/viem-contract/.
+ * Tests cover the ABI structures and patterns that ARE available via primitives.
+ *
+ * API DISCREPANCIES:
+ * - getContract is in examples/viem-contract/, not library export
+ * - Abi primitive IS available for encoding/decoding
+ */
+import { describe, expect, it } from "vitest";
+
+describe("Viem Contract Playbook", () => {
+	it("should define ERC-20 ABI structure", () => {
+		// From playbook: ERC-20 ABI
+		const erc20Abi = [
+			{
+				type: "function",
+				name: "balanceOf",
+				stateMutability: "view",
+				inputs: [{ name: "account", type: "address" }],
+				outputs: [{ name: "", type: "uint256" }],
+			},
+			{
+				type: "function",
+				name: "transfer",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ name: "to", type: "address" },
+					{ name: "amount", type: "uint256" },
+				],
+				outputs: [{ name: "", type: "bool" }],
+			},
+			{
+				type: "event",
+				name: "Transfer",
+				inputs: [
+					{ name: "from", type: "address", indexed: true },
+					{ name: "to", type: "address", indexed: true },
+					{ name: "value", type: "uint256", indexed: false },
+				],
+			},
+		] as const;
+
+		expect(erc20Abi).toHaveLength(3);
+		expect(erc20Abi[0].name).toBe("balanceOf");
+	});
+
+	it("should define contract actions", () => {
+		// From playbook: standalone actions
+		const actions = [
+			"readContract",
+			"writeContract",
+			"simulateContract",
+			"estimateContractGas",
+			"watchContractEvent",
+		];
+
+		expect(actions).toContain("readContract");
+		expect(actions).toContain("simulateContract");
+	});
+
+	it("should define getContract structure", () => {
+		// From playbook: getContract returns typed instance
+		interface ContractInstance {
+			read: Record<string, (...args: unknown[]) => Promise<unknown>>;
+			write: Record<string, (...args: unknown[]) => Promise<string>>;
+			simulate: Record<
+				string,
+				(...args: unknown[]) => Promise<{ result: unknown; request: unknown }>
+			>;
+			watchEvent: Record<
+				string,
+				(filter: unknown, opts: unknown) => () => void
+			>;
+		}
+
+		const mockContract: ContractInstance = {
+			read: { balanceOf: async () => 1000n },
+			write: { transfer: async () => "0x..." },
+			simulate: {
+				transfer: async () => ({ result: true, request: {} }),
+			},
+			watchEvent: { Transfer: () => () => {} },
+		};
+
+		expect(mockContract.read).toHaveProperty("balanceOf");
+		expect(mockContract.write).toHaveProperty("transfer");
+	});
+
+	it("should handle readContract params", () => {
+		// From playbook: readContract parameters
+		const params = {
+			address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			abi: [],
+			functionName: "balanceOf",
+			args: ["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"],
+		};
+
+		expect(params.functionName).toBe("balanceOf");
+		expect(params.args).toHaveLength(1);
+	});
+
+	it("should handle writeContract params", () => {
+		// From playbook: writeContract parameters
+		const params = {
+			address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			abi: [],
+			functionName: "transfer",
+			args: ["0x...", 1000n],
+			account: "0x...",
+		};
+
+		expect(params.functionName).toBe("transfer");
+		expect(params.account).toBeDefined();
+	});
+
+	it("should handle simulateContract response", () => {
+		// From playbook: simulation returns result and request
+		interface SimulateResult {
+			result: boolean;
+			request: {
+				address: string;
+				abi: unknown[];
+				functionName: string;
+				args: unknown[];
+			};
+		}
+
+		const result: SimulateResult = {
+			result: true,
+			request: {
+				address: "0x...",
+				abi: [],
+				functionName: "transfer",
+				args: [],
+			},
+		};
+
+		expect(result.result).toBe(true);
+		expect(result.request).toHaveProperty("functionName");
+	});
+
+	it("should handle watchContractEvent params", () => {
+		// From playbook: event watching
+		const params = {
+			address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			abi: [],
+			eventName: "Transfer",
+			args: { from: "0x..." },
+			onLogs: (logs: unknown[]) => {
+				console.log(logs);
+			},
+			onError: (error: Error) => {
+				console.error(error);
+			},
+			pollingInterval: 1000,
+		};
+
+		expect(params.eventName).toBe("Transfer");
+		expect(params.pollingInterval).toBe(1000);
+	});
+
+	it("should define error types", () => {
+		// From playbook: error types
+		const errorTypes = [
+			"ContractReadError",
+			"ContractWriteError",
+			"ContractSimulateError",
+			"ContractGasEstimationError",
+			"AccountNotFoundError",
+		];
+
+		expect(errorTypes).toContain("ContractReadError");
+		expect(errorTypes).toContain("AccountNotFoundError");
+	});
+
+	it("should handle split clients", () => {
+		// From playbook: separate public and wallet clients
+		interface SplitClients {
+			public: unknown; // PublicClient
+			wallet: unknown; // WalletClient
+		}
+
+		const clients: SplitClients = {
+			public: { getBlockNumber: async () => 1n },
+			wallet: { sendTransaction: async () => "0x..." },
+		};
+
+		expect(clients.public).toBeDefined();
+		expect(clients.wallet).toBeDefined();
+	});
+
+	it("should define type inference from ABI", () => {
+		// From playbook: type inference
+		const erc20Abi = [
+			{
+				type: "function",
+				name: "balanceOf",
+				inputs: [{ type: "address", name: "account" }],
+				outputs: [{ type: "uint256", name: "" }],
+			},
+		] as const;
+
+		// Type inference would provide:
+		// - balanceOf takes 1 address argument
+		// - balanceOf returns bigint
+		expect(erc20Abi[0].inputs).toHaveLength(1);
+		expect(erc20Abi[0].outputs[0].type).toBe("uint256");
+	});
+
+	it("should work with Abi primitive", async () => {
+		const Abi = await import("../../src/primitives/Abi/index.js");
+
+		// Abi module should exist
+		expect(Abi).toBeDefined();
+	});
+
+	it("should note differences from viem", () => {
+		// From playbook: implementation differences
+		const differences = [
+			"Uses Voltaire's Abi primitive for encoding/decoding",
+			"Uses polling-only event watching (no WebSocket support)",
+			"Does not include createContractEventFilter or getContractEvents",
+			"Simplified parameter handling",
+		];
+
+		expect(differences).toHaveLength(4);
+	});
+});
+
+```

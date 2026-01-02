@@ -70,10 +70,14 @@ pub fn decodeUint256(bytes: []const u8) !u256 {
     return std.mem.readInt(u256, bytes[0..32], .little);
 }
 
-/// Decodes a boolean value
+/// Decodes a boolean value per SSZ spec (only 0x00 or 0x01 are valid)
 pub fn decodeBool(bytes: []const u8) !bool {
     if (bytes.len != 1) return error.InvalidLength;
-    return bytes[0] != 0;
+    return switch (bytes[0]) {
+        0 => false,
+        1 => true,
+        else => error.InvalidBooleanValue,
+    };
 }
 
 test "encodeUint8" {
@@ -141,4 +145,14 @@ test "decode roundtrip bool" {
     const encoded_false = encodeBool(false);
     try std.testing.expectEqual(true, try decodeBool(&encoded_true));
     try std.testing.expectEqual(false, try decodeBool(&encoded_false));
+}
+
+test "decodeBool rejects invalid values > 1" {
+    // Valid: 0x00 = false, 0x01 = true
+    try std.testing.expectEqual(false, try decodeBool(&[_]u8{0x00}));
+    try std.testing.expectEqual(true, try decodeBool(&[_]u8{0x01}));
+
+    // Invalid: values > 1 must be rejected per SSZ spec
+    try std.testing.expectError(error.InvalidBooleanValue, decodeBool(&[_]u8{0x02}));
+    try std.testing.expectError(error.InvalidBooleanValue, decodeBool(&[_]u8{0xFF}));
 }
