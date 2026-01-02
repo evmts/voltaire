@@ -1099,6 +1099,41 @@ describe("Transaction.isSigned", () => {
 		};
 		expect(Transaction.isSigned(tx)).toBe(false);
 	});
+
+	it("returns false for transaction with zero r and zero s (issue #102)", () => {
+		const tx: Legacy = {
+			type: Transaction.Type.Legacy,
+			nonce: 0n,
+			gasPrice: 20000000000n,
+			gasLimit: 21000n,
+			to: testAddress,
+			value: 0n,
+			data: new Uint8Array(),
+			v: 0n,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+		expect(Transaction.isSigned(tx)).toBe(false);
+	});
+
+	it("returns false for EIP-1559 transaction with zero signature", () => {
+		const tx: EIP1559 = {
+			type: Transaction.Type.EIP1559,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 21000n,
+			to: testAddress,
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+		expect(Transaction.isSigned(tx)).toBe(false);
+	});
 });
 
 describe("Transaction.assertSigned", () => {
