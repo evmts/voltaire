@@ -63,9 +63,22 @@ describe("Int16", () => {
 			expect(Int16.toNumber(value)).toBe(-1000);
 		});
 
-		it("throws on bigint out of range", () => {
-			expect(() => Int16.fromBigint(-40000n)).toThrow("out of range");
-			expect(() => Int16.fromBigint(40000n)).toThrow("out of range");
+		it("throws IntegerUnderflowError on bigint below range", () => {
+			try {
+				Int16.fromBigint(-40000n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
+		});
+
+		it("throws IntegerOverflowError on bigint above range", () => {
+			try {
+				Int16.fromBigint(40000n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
 		});
 	});
 
