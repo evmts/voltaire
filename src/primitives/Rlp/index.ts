@@ -40,6 +40,7 @@ Rlp.encodeVariadic = BrandedRlpNs.encodeVariadic;
 Rlp.decode = BrandedRlpNs.decode;
 Rlp.decodeArray = BrandedRlpNs.decodeArray;
 Rlp.decodeObject = BrandedRlpNs.decodeObject;
+Rlp.decodeValue = BrandedRlpNs.decodeValue;
 Rlp.getEncodedLength = BrandedRlpNs.getEncodedLength;
 Rlp.flatten = BrandedRlpNs.flatten;
 Rlp.equals = BrandedRlpNs.equals;
