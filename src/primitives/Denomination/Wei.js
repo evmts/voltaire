@@ -22,6 +22,7 @@ import * as Uint from "../Uint/index.js";
 
 const WEI_PER_GWEI = 1_000_000_000n;
 const WEI_PER_ETHER = 1_000_000_000_000_000_000n;
+const DECIMALS = 18;
 
 /**
  * Creates a Wei value from bigint, number, or string
@@ -49,16 +50,31 @@ export function fromGwei(gwei) {
 
 /**
  * Creates Wei from Ether value
+ * Supports decimal strings like "1.5" or "0.001"
  *
  * @param {Ether} ether
  * @returns {Wei}
  */
 export function fromEther(ether) {
-	const wei = Uint.times(
-		/** @type {Uint.Type} */ (/** @type {unknown} */ (ether)),
-		Uint.from(WEI_PER_ETHER),
-	);
-	return /** @type {Wei} */ (/** @type {unknown} */ (wei));
+	const str = String(ether);
+	const [intPart, decPart = ""] = str.split(".");
+
+	if (decPart.length > DECIMALS) {
+		throw new Error(
+			`Ether value has too many decimal places (max ${DECIMALS}): ${ether}`,
+		);
+	}
+
+	// Pad decimal part to 18 digits
+	const paddedDec = decPart.padEnd(DECIMALS, "0");
+
+	// Combine integer and decimal parts
+	const combined = intPart + paddedDec;
+
+	// Remove leading zeros and convert to bigint
+	const wei = BigInt(combined.replace(/^0+/, "") || "0");
+
+	return /** @type {Wei} */ (wei);
 }
 
 /**
@@ -77,16 +93,25 @@ export function toGwei(wei) {
 
 /**
  * Converts Wei to Ether
+ * Returns a string with proper decimal representation
  *
  * @param {Wei} wei
  * @returns {Ether}
  */
 export function toEther(wei) {
-	const ether = Uint.dividedBy(
-		/** @type {Uint.Type} */ (/** @type {unknown} */ (wei)),
-		Uint.from(WEI_PER_ETHER),
-	);
-	return /** @type {Ether} */ (/** @type {unknown} */ (ether));
+	const weiValue = BigInt(wei);
+	const intPart = weiValue / WEI_PER_ETHER;
+	const decPart = weiValue % WEI_PER_ETHER;
+
+	if (decPart === 0n) {
+		return /** @type {Ether} */ (intPart.toString());
+	}
+
+	// Convert decimal part to string with leading zeros
+	const decStr = decPart.toString().padStart(DECIMALS, "0");
+	// Remove trailing zeros
+	const trimmedDec = decStr.replace(/0+$/, "");
+	return /** @type {Ether} */ (`${intPart}.${trimmedDec}`);
 }
 
 /**
