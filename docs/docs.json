@@ -129,6 +129,17 @@
                 },
                 "pages": [
                   {
+                    "group": "ABI Extended",
+                    "pages": [
+                      "primitives/abi/index",
+                      "primitives/abi/fundamentals",
+                      "primitives/abi/encode",
+                      "primitives/abi/decode",
+                      "primitives/abi/encodePacked",
+                      "primitives/abi/usage-patterns"
+                    ]
+                  },
+                  {
                     "group": "Signature Types",
                     "pages": [
                       "primitives/selector/index",
@@ -181,6 +192,16 @@
                 ]
               },
               {
+                "group": "AccessList",
+                "icon": {
+                  "name": "list-check",
+                  "style": "solid"
+                },
+                "pages": [
+                  "primitives/accesslist"
+                ]
+              },
+              {
                 "group": "Block",
                 "icon": {
                   "name": "cube",
@@ -206,6 +227,16 @@
                   "primitives/base64/decoding",
                   "primitives/base64/validation",
                   "primitives/base64/usage-patterns"
+                ]
+              },
+              {
+                "group": "BinaryTree",
+                "icon": {
+                  "name": "diagram-project",
+                  "style": "solid"
+                },
+                "pages": [
+                  "primitives/binarytree"
                 ]
               },
               {
@@ -328,6 +359,31 @@
                 ]
               },
               {
+                "group": "Contracts",
+                "icon": {
+                  "name": "file-code",
+                  "style": "solid"
+                },
+                "pages": [
+                  "primitives/contract-code/index",
+                  "primitives/contract-result/index",
+                  "primitives/contract-signature/index",
+                  "primitives/init-code/index",
+                  "primitives/runtime-code/index"
+                ]
+              },
+              {
+                "group": "Domain",
+                "icon": {
+                  "name": "globe",
+                  "style": "solid"
+                },
+                "pages": [
+                  "primitives/domain/index",
+                  "primitives/domain/erc5267"
+                ]
+              },
+              {
                 "group": "Filters",
                 "icon": {
                   "name": "filter",
@@ -358,7 +414,8 @@
                   "style": "solid"
                 },
                 "pages": [
-                  "primitives/gas/index"
+                  "primitives/gas/index",
+                  "primitives/gasconstants"
                 ]
               },
               {
@@ -374,7 +431,8 @@
                   "primitives/max-priority-fee-per-gas/index",
                   "primitives/effective-gas-price/index",
                   "primitives/gas-estimate/index",
-                  "primitives/gas-costs/index"
+                  "primitives/gas-costs/index",
+                  "primitives/feeoracle"
                 ]
               },
               {
@@ -412,6 +470,16 @@
                 ]
               },
               "primitives/hash",
+              {
+                "group": "Hex",
+                "icon": {
+                  "name": "hashtag",
+                  "style": "solid"
+                },
+                "pages": [
+                  "primitives/hex"
+                ]
+              },
               {
                 "group": "Proxy",
                 "icon": {
@@ -675,6 +743,16 @@
                 ]
               },
               {
+                "group": "Meta-Transactions",
+                "icon": {
+                  "name": "paper-plane",
+                  "style": "solid"
+                },
+                "pages": [
+                  "primitives/forwardrequest"
+                ]
+              },
+              {
                 "group": "Tracing",
                 "icon": {
                   "name": "magnifying-glass",
@@ -756,6 +834,60 @@
                   "primitives/denomination/ether",
                   "primitives/denomination/conversions",
                   "primitives/denomination/usage-patterns"
+                ]
+              },
+              {
+                "group": "Tokens",
+                "icon": {
+                  "name": "coins",
+                  "style": "solid"
+                },
+                "pages": [
+                  "primitives/token-balance/index",
+                  "primitives/token-id/index",
+                  "primitives/multi-token-id/index",
+                  "primitives/permit/index",
+                  "primitives/signed-data/index"
+                ]
+              },
+              {
+                "group": "Encoding",
+                "icon": {
+                  "name": "code",
+                  "style": "solid"
+                },
+                "pages": [
+                  "primitives/encoded-data/index",
+                  "primitives/decoded-data/index",
+                  "primitives/typed-data/index",
+                  "primitives/domain-separator/index",
+                  "primitives/ssz/index"
+                ]
+              },
+              {
+                "group": "Beacon Chain",
+                "icon": {
+                  "name": "tower-broadcast",
+                  "style": "solid"
+                },
+                "pages": [
+                  "primitives/beacon-block-root/overview",
+                  "primitives/epoch/overview",
+                  "primitives/slot/overview",
+                  "primitives/validator-index/overview",
+                  "primitives/withdrawal/overview",
+                  "primitives/withdrawal-index/overview"
+                ]
+              },
+              {
+                "group": "Sync",
+                "icon": {
+                  "name": "arrows-rotate",
+                  "style": "solid"
+                },
+                "pages": [
+                  "primitives/sync-status/index",
+                  "primitives/chain-head/index"
                 ]
               }
             ]
