@@ -35,9 +35,15 @@ export class LedgerWallet implements HardwareWallet {
 
 	async connect(): Promise<void> {
 		const TransportModule = await import("@ledgerhq/hw-transport-webusb");
-		const TransportWebUSB = (TransportModule as unknown as { default: { request: () => Promise<unknown> } }).default;
+		const TransportWebUSB = (
+			TransportModule as unknown as {
+				default: { request: () => Promise<unknown> };
+			}
+		).default;
 		const EthModule = await import("@ledgerhq/hw-app-eth");
-		const Eth = (EthModule as unknown as { default: new (transport: unknown) => unknown }).default;
+		const Eth = (
+			EthModule as unknown as { default: new (transport: unknown) => unknown }
+		).default;
 
 		this.transport = await TransportWebUSB.request();
 		this.eth = new Eth(this.transport);
