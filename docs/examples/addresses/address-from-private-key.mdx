@@ -6,7 +6,7 @@ description: "Generate an Ethereum address from a private key using public key d
 Generate an Ethereum address from a private key using public key derivation
 
 ```typescript
-import { Address } from '@tevm/voltaire/Address';
+import * as Address from '@tevm/voltaire/Address';
 import * as Hex from '@tevm/voltaire/Hex';
 
 // Example private key (32 bytes)
@@ -16,6 +16,8 @@ const privateKey = Hex.toBytes(
 
 // Derive address from private key
 const address = Address.fromPrivateKey(privateKey);
+
+// Get checksummed representation (static method)
 const checksummed = Address.toChecksummed(address);
 
 // Try another private key
