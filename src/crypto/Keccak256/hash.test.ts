@@ -325,6 +325,80 @@ describe("Keccak256.hash", () => {
 		});
 	});
 
+	describe("mutation isolation", () => {
+		it("should return independent copy - modifying result should not affect internal state", () => {
+			const input = new Uint8Array([1, 2, 3, 4, 5]);
+
+			const hash1 = hash(input);
+			const originalHash1 = new Uint8Array(hash1);
+
+			// Mutate the returned hash
+			hash1[0] = 0xff;
+			hash1[15] = 0xaa;
+			hash1[31] = 0xbb;
+
+			// Hash again - should get the same original result
+			const hash2 = hash(input);
+
+			expect(hash2).toEqual(originalHash1);
+			expect(hash2).not.toEqual(hash1);
+		});
+
+		it("should return independent copies between calls", () => {
+			const input = new Uint8Array([0x42]);
+
+			const hash1 = hash(input);
+			const hash2 = hash(input);
+
+			// Should be equal but not the same reference
+			expect(hash1).toEqual(hash2);
+
+			// Mutating one should not affect the other
+			hash1[0] = 0x00;
+			expect(hash2[0]).not.toBe(0x00);
+		});
+
+		it("should not be affected by input mutation after hashing", () => {
+			const input = new Uint8Array([1, 2, 3]);
+			const originalInput = new Uint8Array(input);
+
+			const hash1 = hash(input);
+
+			// Mutate the input
+			input[0] = 0xff;
+			input[1] = 0xff;
+			input[2] = 0xff;
+
+			// Hash should remain unchanged
+			const expected = hash(originalInput);
+			expect(hash1).toEqual(expected);
+		});
+
+		it("should return new copy for each call even with same input reference", () => {
+			const input = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
+			const results: Uint8Array[] = [];
+
+			// Call multiple times with same input
+			for (let i = 0; i < 5; i++) {
+				results.push(hash(input));
+			}
+
+			// All should be equal in value
+			for (let i = 1; i < results.length; i++) {
+				expect(results[i]).toEqual(results[0]);
+			}
+
+			// But modifying one shouldn't affect others
+			const firstResult = results[0];
+			if (firstResult) {
+				firstResult.fill(0);
+				for (let i = 1; i < results.length; i++) {
+					expect(results[i]).not.toEqual(firstResult);
+				}
+			}
+		});
+	});
+
 	describe("collision resistance properties", () => {
 		it("should produce unique hashes for sequential inputs", () => {
 			const hashes = new Set();
