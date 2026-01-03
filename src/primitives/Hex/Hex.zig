@@ -268,10 +268,15 @@ pub fn pad(allocator: std.mem.Allocator, bytes: []const u8, target_length: usize
 }
 
 // Trimming utilities
+// Preserves at least one byte for all-zero arrays (represents zero value)
 pub fn trimLeftZeros(bytes: []const u8) []const u8 {
     var start: usize = 0;
     while (start < bytes.len and bytes[start] == 0) {
         start += 1;
+    }
+    // Preserve at least one byte for all-zero arrays (represents zero value)
+    if (start == bytes.len and bytes.len > 0) {
+        return bytes[bytes.len - 1 ..];
     }
     return bytes[start..];
 }
@@ -1078,9 +1083,23 @@ test "padRight with zero target length" {
     try testing.expectEqualSlices(u8, &bytes, result);
 }
 
-test "trimLeftZeros with all zeros" {
+test "trimLeftZeros with all zeros preserves one byte" {
     const all_zeros = [_]u8{ 0x00, 0x00, 0x00 };
     const trimmed = trimLeftZeros(&all_zeros);
+    try testing.expectEqual(@as(usize, 1), trimmed.len);
+    try testing.expectEqual(@as(u8, 0), trimmed[0]);
+}
+
+test "trimLeftZeros with single zero preserves it" {
+    const single_zero = [_]u8{0x00};
+    const trimmed = trimLeftZeros(&single_zero);
+    try testing.expectEqual(@as(usize, 1), trimmed.len);
+    try testing.expectEqual(@as(u8, 0), trimmed[0]);
+}
+
+test "trimLeftZeros with empty slice returns empty" {
+    const empty = [_]u8{};
+    const trimmed = trimLeftZeros(&empty);
     try testing.expectEqual(@as(usize, 0), trimmed.len);
 }
 
