@@ -409,4 +409,140 @@ describe("decodeLog", () => {
 		expect(result.c).toBe(true);
 		expect(result.d).toBeInstanceOf(Uint8Array);
 	});
+
+	it("correctly separates indexed from non-indexed when interleaved", () => {
+		// Issue #123: Event with indexed params at start, middle, and end
+		// This tests that topics[1-3] are used for indexed params
+		// and data is used for non-indexed params
+		const event = {
+			type: "event" as const,
+			name: "ComplexTransfer",
+			inputs: [
+				{ type: "address", name: "from", indexed: true }, // topic[1]
+				{ type: "uint256", name: "amount", indexed: false }, // data[0]
+				{ type: "address", name: "to", indexed: true }, // topic[2]
+				{ type: "string", name: "memo", indexed: false }, // data[1]
+				{ type: "uint256", name: "nonce", indexed: true }, // topic[3]
+			],
+		};
+
+		const selector = Hash.keccak256String(
+			"ComplexTransfer(address,uint256,address,string,uint256)",
+		);
+
+		// Indexed params go in topics[1], topics[2], topics[3]
+		const fromTopic = new Uint8Array(32);
+		fromTopic[31] = 0xab;
+
+		const toTopic = new Uint8Array(32);
+		toTopic[31] = 0xcd;
+
+		const nonceTopic = new Uint8Array(32);
+		nonceTopic[31] = 42;
+
+		// Non-indexed params go in data: [amount, memo]
+		const data = encodeParameters(
+			[
+				{ type: "uint256", name: "amount" },
+				{ type: "string", name: "memo" },
+			],
+			[1000n, "test transfer"],
+		);
+
+		const result = decodeLog(event, data, [
+			selector,
+			fromTopic,
+			toTopic,
+			nonceTopic,
+		]);
+
+		// Verify indexed params extracted from topics
+		expect(result.from).toBeDefined();
+		expect(result.to).toBeDefined();
+		expect(result.nonce).toBe(42n);
+
+		// Verify non-indexed params extracted from data
+		expect(result.amount).toBe(1000n);
+		expect(result.memo).toBe("test transfer");
+	});
+
+	it("handles max 3 indexed parameters correctly", () => {
+		// EVM allows max 3 indexed params (topics[1], topics[2], topics[3])
+		const event = {
+			type: "event" as const,
+			name: "MaxIndexed",
+			inputs: [
+				{ type: "uint256", name: "a", indexed: true },
+				{ type: "uint256", name: "b", indexed: true },
+				{ type: "uint256", name: "c", indexed: true },
+				{ type: "uint256", name: "d", indexed: false },
+			],
+		};
+
+		const selector = Hash.keccak256String(
+			"MaxIndexed(uint256,uint256,uint256,uint256)",
+		);
+
+		const topicA = new Uint8Array(32);
+		topicA[31] = 1;
+		const topicB = new Uint8Array(32);
+		topicB[31] = 2;
+		const topicC = new Uint8Array(32);
+		topicC[31] = 3;
+
+		const data = encodeParameters([{ type: "uint256", name: "d" }], [4n]);
+
+		const result = decodeLog(event, data, [
+			selector,
+			topicA,
+			topicB,
+			topicC,
+		]);
+
+		expect(result.a).toBe(1n);
+		expect(result.b).toBe(2n);
+		expect(result.c).toBe(3n);
+		expect(result.d).toBe(4n);
+	});
+
+	it("decodes non-indexed array and struct correctly from data", () => {
+		const event = {
+			type: "event" as const,
+			name: "BatchTransfer",
+			inputs: [
+				{ type: "address", name: "sender", indexed: true },
+				{ type: "uint256[]", name: "amounts", indexed: false },
+				{ type: "address[]", name: "recipients", indexed: false },
+			],
+		};
+
+		const selector = Hash.keccak256String(
+			"BatchTransfer(address,uint256[],address[])",
+		);
+
+		const senderTopic = new Uint8Array(32);
+		senderTopic[31] = 0x01;
+
+		// Arrays must be in data, not topics (dynamic types)
+		const data = encodeParameters(
+			[
+				{ type: "uint256[]", name: "amounts" },
+				{ type: "address[]", name: "recipients" },
+			],
+			[
+				[100n, 200n, 300n],
+				[
+					new Uint8Array(20).fill(1),
+					new Uint8Array(20).fill(2),
+					new Uint8Array(20).fill(3),
+				],
+			],
+		);
+
+		const result = decodeLog(event, data, [selector, senderTopic]);
+
+		expect(result.sender).toBeDefined();
+		expect(result.amounts).toEqual([100n, 200n, 300n]);
+		expect(result.recipients).toHaveLength(3);
+	});
 });
