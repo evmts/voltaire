@@ -98,6 +98,35 @@ Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e"); // false
 </Tab>
 </Tabs>
 
+## Why keccak256 Must Be Passed Explicitly
+
+Voltaire requires you to pass `keccak256` explicitly for checksumming and contract address derivation. This is intentional:
+
+**Tree-shaking**: Keccak256 adds ~5-10 KB to your bundle. By requiring explicit injection, bundlers can eliminate this code entirely if you never use checksum methods. Libraries that hardcode crypto dependencies force you to ship code you may never use.
+
+**No global crypto dependencies**: Voltaire avoids global singletons and hidden imports. Every dependency is explicit in your code, making the dependency graph predictable and auditable.
+
+**Flexibility**: You can inject any keccak256 implementation - the native Zig/WASM version, a pure JS fallback, or a Web Crypto wrapper. Your choice.
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+import { keccak256 } from '@tevm/voltaire/Keccak256';
+
+// Methods that DON'T need keccak256 - no injection required
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+addr.toHex();        // works
+addr.toLowercase();  // works
+addr.equals(other);  // works
+
+// Methods that DO need keccak256 - inject via options
+const addrWithCrypto = Address(
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  { keccak256 }
+);
+addrWithCrypto.toChecksummed();           // works
+addrWithCrypto.calculateCreate2Address(); // works
+```
+
 ## API Reference
 
 ### Constructors
