@@ -976,3 +976,80 @@ test "RIPEMD160: binary data with all byte values" {
     const result2 = h2.final();
     try std.testing.expectEqualSlices(u8, &result, &result2);
 }
+
+// ============================================================================
+// OUTPUT LENGTH VALIDATION TESTS (GitHub Issue #135)
+// ============================================================================
+// RIPEMD160 output length is enforced at compile-time via the type system:
+// - final() returns [20]u8 (fixed-size array)
+// - Ripemd160.hash() takes output: *[20]u8 (pointer to exactly 20 bytes)
+// No runtime validation is needed because the length is type-enforced.
+
+test "RIPEMD160: output is always exactly 20 bytes (type-enforced)" {
+    // The return type [20]u8 guarantees output length at compile time.
+    // This test documents the behavior for Issue #135.
+    var hasher = RIPEMD160.init();
+    hasher.update("test");
+    const result = hasher.final();
+
+    // Type system enforces this, but we verify explicitly
+    try std.testing.expectEqual(@as(usize, 20), result.len);
+}
+
+test "RIPEMD160: Ripemd160.hash output pointer is exactly 20 bytes" {
+    // The signature hash(input: []const u8, output: *[20]u8) enforces 20-byte output.
+    // Callers cannot pass a different size buffer - it's a compile error.
+    var output: [20]u8 = undefined;
+    Ripemd160.hash("test", &output);
+
+    try std.testing.expectEqual(@as(usize, 20), output.len);
+}
+
+test "RIPEMD160: unauditedHash returns exactly 20 bytes" {
+    const result = unauditedHash("test");
+    try std.testing.expectEqual(@as(usize, 20), result.len);
+}
+
+test "RIPEMD160: empty input produces 20-byte output" {
+    const result = unauditedHash("");
+    try std.testing.expectEqual(@as(usize, 20), result.len);
+
+    // Verify known empty hash
+    const expected = [_]u8{
+        0x9c, 0x11, 0x85, 0xa5, 0xc5, 0xe9, 0xfc, 0x54,
+        0x61, 0x28, 0x08, 0x97, 0x7e, 0xe8, 0xf5, 0x48,
+        0xb2, 0x25, 0x8d, 0x31,
+    };
+    try std.testing.expectEqualSlices(u8, &expected, &result);
+}
+
+test "RIPEMD160: large input produces 20-byte output" {
+    // Even very large inputs compress to exactly 20 bytes
+    const large_input = "a" ** 10000;
+    const result = unauditedHash(large_input);
+    try std.testing.expectEqual(@as(usize, 20), result.len);
+}
+
+test "RIPEMD160: streaming hash produces same 20-byte output" {
+    const data = "The quick brown fox jumps over the lazy dog";
+
+    // Single update
+    var h1 = RIPEMD160.init();
+    h1.update(data);
+    const result1 = h1.final();
+
+    // Multiple updates
+    var h2 = RIPEMD160.init();
+    h2.update("The quick ");
+    h2.update("brown fox ");
+    h2.update("jumps over ");
+    h2.update("the lazy dog");
+    const result2 = h2.final();
+
+    // Both produce exactly 20 bytes
+    try std.testing.expectEqual(@as(usize, 20), result1.len);
+    try std.testing.expectEqual(@as(usize, 20), result2.len);
+
+    // And they match
+    try std.testing.expectEqualSlices(u8, &result1, &result2);
+}
