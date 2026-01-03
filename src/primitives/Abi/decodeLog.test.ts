@@ -129,7 +129,7 @@ describe("decodeLog", () => {
 		};
 
 		expect(() => decodeLog(mockAbi, log)).toThrow(AbiItemNotFoundError);
-		expect(() => decodeLog(mockAbi, log)).toThrow(/Missing topic0/);
+		expect(() => decodeLog(mockAbi, log)).toThrow(/not found in ABI/);
 	});
 
 	it("throws on unknown event selector", () => {
@@ -339,5 +339,133 @@ describe("decodeLog", () => {
 		expect(decodedTransfer.event).toBe("Transfer");
 		expect(decodedApproval.event).toBe("Approval");
 		expect(decodedTransfer.event).not.toBe(decodedApproval.event);
+	});
+
+	it("decodes anonymous event with indexed parameters", () => {
+		const anonymousEvent = {
+			type: "event",
+			name: "AnonymousTransfer",
+			anonymous: true,
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "address", name: "to", indexed: true },
+				{ type: "uint256", name: "value", indexed: false },
+			],
+		} as const satisfies Abi.Event;
+
+		const abiWithAnonymous = [anonymousEvent] as const satisfies Abi;
+
+		const from = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+		const to = "0x0000000000000000000000000000000000000001" as Address;
+		const value = 1000n;
+
+		// Anonymous events don't have selector in topic0
+		// Topics are just the indexed parameters
+		const fromPadded = new Uint8Array(32);
+		fromPadded.set(Hex.toBytes(from), 12); // address is 20 bytes, padded left
+
+		const toPadded = new Uint8Array(32);
+		toPadded.set(Hex.toBytes(to), 12);
+
+		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
+
+		const log = { topics: [fromPadded, toPadded], data };
+		const decoded = decodeLog(abiWithAnonymous, log);
+
+		expect(decoded.event).toBe("AnonymousTransfer");
+		expect(decoded.params.from).toBe(from);
+		expect(decoded.params.to).toBe(to);
+		expect(decoded.params.value).toBe(value);
+	});
+
+	it("decodes anonymous event with no indexed parameters", () => {
+		const anonymousEvent = {
+			type: "event",
+			name: "AnonymousLog",
+			anonymous: true,
+			inputs: [
+				{ type: "string", name: "message", indexed: false },
+				{ type: "uint256", name: "value", indexed: false },
+			],
+		} as const satisfies Abi.Event;
+
+		const abiWithAnonymous = [anonymousEvent] as const satisfies Abi;
+
+		const data = Abi.encodeParameters(
+			[{ type: "string" }, { type: "uint256" }],
+			["hello", 42n],
+		);
+
+		// No topics for anonymous event with no indexed params
+		const log = { topics: [], data };
+		const decoded = decodeLog(abiWithAnonymous, log);
+
+		expect(decoded.event).toBe("AnonymousLog");
+		expect(decoded.params.message).toBe("hello");
+		expect(decoded.params.value).toBe(42n);
+	});
+
+	it("throws when multiple anonymous events match same indexed count", () => {
+		const event1 = {
+			type: "event",
+			name: "Event1",
+			anonymous: true,
+			inputs: [{ type: "address", name: "addr", indexed: true }],
+		} as const satisfies Abi.Event;
+
+		const event2 = {
+			type: "event",
+			name: "Event2",
+			anonymous: true,
+			inputs: [{ type: "uint256", name: "value", indexed: true }],
+		} as const satisfies Abi.Event;
+
+		const abiWithAmbiguous = [event1, event2] as const satisfies Abi;
+
+		const topic = new Uint8Array(32);
+		topic[31] = 1;
+
+		const log = { topics: [topic], data: new Uint8Array(0) };
+
+		expect(() => decodeLog(abiWithAmbiguous, log)).toThrow(AbiItemNotFoundError);
+		expect(() => decodeLog(abiWithAmbiguous, log)).toThrow(
+			/Multiple anonymous events/,
+		);
+	});
+
+	it("prefers non-anonymous event when selector matches", () => {
+		const regularEvent = {
+			type: "event",
+			name: "Transfer",
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "uint256", name: "value", indexed: false },
+			],
+		} as const satisfies Abi.Event;
+
+		const anonymousEvent = {
+			type: "event",
+			name: "AnonymousEvent",
+			anonymous: true,
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "address", name: "to", indexed: true },
+			],
+		} as const satisfies Abi.Event;
+
+		const mixedAbi = [regularEvent, anonymousEvent] as const satisfies Abi;
+
+		const from = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+		const value = 1000n;
+
+		const topics = Abi.Event.encodeTopics(regularEvent, { from });
+		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
+
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const log = { topics: topics as any, data };
+		const decoded = decodeLog(mixedAbi, log);
+
+		// Should match the regular event by selector, not the anonymous one
+		expect(decoded.event).toBe("Transfer");
 	});
 });
