@@ -121,4 +121,69 @@ describe("Rlp.encodeArray", () => {
 		const raw = toRaw(decoded.data);
 		expect(raw).toEqual(items);
 	});
+
+	// Issue #90: Empty nested arrays
+	describe("empty nested arrays (issue #90)", () => {
+		it("encodes [[]] correctly", () => {
+			// [[]] = list containing empty list
+			// Expected: 0xc1 (list, 1 byte payload) + 0xc0 (empty list) = [0xc1, 0xc0]
+			const result = encodeArray([[]]);
+			expect(result).toEqual(new Uint8Array([0xc1, 0xc0]));
+			const decoded = decode(result);
+			const raw = toRaw(decoded.data);
+			expect(raw).toEqual([[]]);
+		});
+
+		it("encodes [[[]]] correctly", () => {
+			// [[[]]] = list containing list containing empty list
+			// Expected: 0xc2 (list, 2 bytes payload) + 0xc1 + 0xc0 = [0xc2, 0xc1, 0xc0]
+			const result = encodeArray([[[]]]);
+			expect(result).toEqual(new Uint8Array([0xc2, 0xc1, 0xc0]));
+			const decoded = decode(result);
+			const raw = toRaw(decoded.data);
+			expect(raw).toEqual([[[]]]);
+		});
+
+		it("encodes [[], [[]], [[[]]]] correctly", () => {
+			// [[], [[]], [[[]]]] = complex nested empty arrays
+			// [] = 0xc0, [[]] = 0xc1c0, [[[]]] = 0xc2c1c0
+			// Total payload = 1 + 2 + 3 = 6 bytes
+			// Expected: 0xc6 (list, 6 bytes) + 0xc0 + 0xc1 + 0xc0 + 0xc2 + 0xc1 + 0xc0
+			const result = encodeArray([[], [[]], [[[]]]]);
+			expect(result).toEqual(
+				new Uint8Array([0xc6, 0xc0, 0xc1, 0xc0, 0xc2, 0xc1, 0xc0]),
+			);
+			const decoded = decode(result);
+			const raw = toRaw(decoded.data);
+			expect(raw).toEqual([[], [[]], [[[]]]]);
+		});
+
+		it("encodes [[[[]]]] correctly", () => {
+			// 4 levels of nesting
+			// Expected: 0xc3 + 0xc2 + 0xc1 + 0xc0
+			const result = encodeArray([[[[]]]]);
+			expect(result).toEqual(new Uint8Array([0xc3, 0xc2, 0xc1, 0xc0]));
+			const decoded = decode(result);
+			const raw = toRaw(decoded.data);
+			expect(raw).toEqual([[[[]]]]);
+		});
+
+		it("encodes [[], []] correctly", () => {
+			// Two empty lists
+			// Expected: 0xc2 (2 bytes payload) + 0xc0 + 0xc0
+			const result = encodeArray([[], []]);
+			expect(result).toEqual(new Uint8Array([0xc2, 0xc0, 0xc0]));
+			const decoded = decode(result);
+			const raw = toRaw(decoded.data);
+			expect(raw).toEqual([[], []]);
+		});
+
+		it("encodes mixed empty and non-empty nested arrays", () => {
+			// [[], [0x01], [[]]]
+			const result = encodeArray([[], [new Uint8Array([0x01])], [[]]]);
+			const decoded = decode(result);
+			const raw = toRaw(decoded.data);
+			expect(raw).toEqual([[], [new Uint8Array([0x01])], [[]]]);
+		});
+	});
 });
