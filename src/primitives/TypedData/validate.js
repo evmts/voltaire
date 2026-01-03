@@ -48,6 +48,47 @@ export function validate(typedData) {
 		});
 	}
 
+	// Validate domain values match EIP712Domain type definition
+	const domainType = typedData.types.EIP712Domain;
+	const validDomainFields = new Set([
+		"name",
+		"version",
+		"chainId",
+		"verifyingContract",
+		"salt",
+	]);
+
+	for (const field of domainType) {
+		// Validate field name is a valid EIP712Domain field
+		if (!validDomainFields.has(field.name)) {
+			throw new InvalidTypedDataError(
+				`EIP712Domain field '${field.name}' is not a valid domain field. Valid fields: name, version, chainId, verifyingContract, salt`,
+				{ value: typedData },
+			);
+		}
+
+		// Validate domain has value for each declared field
+		const domainValue =
+			/** @type {Record<string, unknown>} */ (typedData.domain)[field.name];
+		if (domainValue === undefined) {
+			throw new InvalidTypedDataError(
+				`EIP712Domain declares field '${field.name}' but domain object is missing this value`,
+				{ value: typedData },
+			);
+		}
+	}
+
+	// Validate domain doesn't have extra fields not declared in EIP712Domain
+	const declaredFields = new Set(domainType.map((f) => f.name));
+	for (const key of Object.keys(typedData.domain)) {
+		if (!declaredFields.has(key)) {
+			throw new InvalidTypedDataError(
+				`Domain object has field '${key}' not declared in EIP712Domain type`,
+				{ value: typedData },
+			);
+		}
+	}
+
 	// Validate message exists
 	if (typedData.message === undefined) {
 		throw new InvalidTypedDataError("message is required", {

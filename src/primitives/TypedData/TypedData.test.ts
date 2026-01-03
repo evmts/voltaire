@@ -216,6 +216,99 @@ describe("TypedData", () => {
 				expect((e as Error).message).toContain("must have a type");
 			}
 		});
+
+		it("should throw when domain is missing a declared EIP712Domain field", () => {
+			const invalid = {
+				types: {
+					EIP712Domain: [
+						{ name: "name", type: "string" },
+						{ name: "version", type: "string" },
+					],
+					Person: [{ name: "name", type: "string" }],
+				},
+				primaryType: "Person",
+				domain: { name: "Test" }, // missing version
+				message: { name: "Alice" },
+			};
+			const typedData = TypedData.from(invalid);
+			try {
+				TypedData.validate(typedData);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidTypedDataError");
+				expect((e as Error).message).toContain("missing this value");
+				expect((e as Error).message).toContain("version");
+			}
+		});
+
+		it("should throw when domain has extra fields not in EIP712Domain", () => {
+			const invalid = {
+				types: {
+					EIP712Domain: [{ name: "name", type: "string" }],
+					Person: [{ name: "name", type: "string" }],
+				},
+				primaryType: "Person",
+				domain: { name: "Test", version: "1" }, // version not declared
+				message: { name: "Alice" },
+			};
+			const typedData = TypedData.from(invalid);
+			try {
+				TypedData.validate(typedData);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidTypedDataError");
+				expect((e as Error).message).toContain("not declared in EIP712Domain");
+				expect((e as Error).message).toContain("version");
+			}
+		});
+
+		it("should throw when EIP712Domain has invalid field name", () => {
+			const invalid = {
+				types: {
+					EIP712Domain: [
+						{ name: "name", type: "string" },
+						{ name: "invalidField", type: "string" }, // not a valid domain field
+					],
+					Person: [{ name: "name", type: "string" }],
+				},
+				primaryType: "Person",
+				domain: { name: "Test", invalidField: "foo" },
+				message: { name: "Alice" },
+			};
+			const typedData = TypedData.from(invalid);
+			try {
+				TypedData.validate(typedData);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidTypedDataError");
+				expect((e as Error).message).toContain("not a valid domain field");
+				expect((e as Error).message).toContain("invalidField");
+			}
+		});
+
+		it("should validate domain with all standard fields", () => {
+			const valid = {
+				types: {
+					EIP712Domain: [
+						{ name: "name", type: "string" },
+						{ name: "version", type: "string" },
+						{ name: "chainId", type: "uint256" },
+						{ name: "verifyingContract", type: "address" },
+					],
+					Person: [{ name: "name", type: "string" }],
+				},
+				primaryType: "Person",
+				domain: {
+					name: "Test",
+					version: "1",
+					chainId: 1,
+					verifyingContract: "0x0000000000000000000000000000000000000001",
+				},
+				message: { name: "Alice" },
+			};
+			const typedData = TypedData.from(valid);
+			expect(() => TypedData.validate(typedData)).not.toThrow();
+		});
 	});
 
 	describe("ERC-20 Permit example", () => {
