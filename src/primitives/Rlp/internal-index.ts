@@ -7,6 +7,7 @@ export * from "./RlpType.js";
 import { decode } from "./decode.js";
 import { decodeArray } from "./decodeArray.js";
 import { decodeBatch } from "./decodeBatch.js";
+import { decodeValue } from "./decodeValue.js";
 import { decodeObject } from "./decodeObject.js";
 import { encode } from "./encode.js";
 import { encodeArray } from "./encodeArray.js";
@@ -46,6 +47,7 @@ export {
 	decode,
 	decodeArray,
 	decodeObject,
+	decodeValue,
 	getEncodedLength,
 	flatten,
 	equals,
@@ -76,6 +78,7 @@ export const BrandedRlp = {
 	decode,
 	decodeArray,
 	decodeObject,
+	decodeValue,
 	getEncodedLength,
 	flatten,
 	equals,
