@@ -10,6 +10,10 @@ import {
 import { encode } from "./encode.js";
 import * as ErrorNs from "./error/index.js";
 import * as EventNs from "./event/index.js";
+import {
+	findSelectorCollisions,
+	hasSelectorCollisions,
+} from "./findSelectorCollisions.js";
 import { format } from "./format.js";
 import { formatWithArgs } from "./formatWithArgs.js";
 import * as FunctionNs from "./function/index.js";
@@ -55,6 +59,8 @@ Abi.encode = encode;
 Abi.decode = decode;
 Abi.decodeData = decodeData;
 Abi.parseLogs = parseLogs;
+Abi.findSelectorCollisions = findSelectorCollisions;
+Abi.hasSelectorCollisions = hasSelectorCollisions;
 
 // Parameter encoding/decoding methods
 Abi.encodeParameters = encodeParameters;
@@ -150,6 +156,14 @@ Abi.prototype.getReceive = function () {
 	return /** @type {*} */ (this).find(
 		/** @param {*} item */ (item) => item.type === "receive",
 	);
+};
+
+Abi.prototype.findSelectorCollisions = function () {
+	return findSelectorCollisions(/** @type {*} */ (this));
+};
+
+Abi.prototype.hasSelectorCollisions = function () {
+	return hasSelectorCollisions(/** @type {*} */ (this));
 };
 
 Abi.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
