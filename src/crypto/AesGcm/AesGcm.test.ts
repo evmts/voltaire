@@ -375,6 +375,46 @@ describe("AesGcm", () => {
 			}
 		});
 
+		it("throws InvalidNonceError for empty nonce in encrypt", async () => {
+			const key = await AesGcm.generateKey(256);
+			const emptyNonce = new Uint8Array(0);
+			const plaintext = new TextEncoder().encode("Test");
+
+			try {
+				await AesGcm.encrypt(plaintext, key, emptyNonce);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidNonceError");
+				expect((e as Error).message).toContain("12 bytes");
+			}
+		});
+
+		it("throws InvalidNonceError for 11-byte nonce (off by one)", async () => {
+			const key = await AesGcm.generateKey(256);
+			const shortNonce = new Uint8Array(11);
+			const plaintext = new TextEncoder().encode("Test");
+
+			try {
+				await AesGcm.encrypt(plaintext, key, shortNonce);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidNonceError");
+			}
+		});
+
+		it("throws InvalidNonceError for 13-byte nonce (off by one)", async () => {
+			const key = await AesGcm.generateKey(256);
+			const longNonce = new Uint8Array(13);
+			const plaintext = new TextEncoder().encode("Test");
+
+			try {
+				await AesGcm.encrypt(plaintext, key, longNonce);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as Error).name).toBe("InvalidNonceError");
+			}
+		});
+
 		it("throws InvalidKeyError with correct name for invalid key size on import", async () => {
 			const invalidKey = new Uint8Array(24);
 			try {
@@ -574,6 +614,79 @@ describe("AesGcm", () => {
 				.join("");
 
 			expect(actualHex).toBe(expectedHex);
+		});
+	});
+
+	describe("nonce security requirements", () => {
+		it("demonstrates nonce reuse vulnerability (XOR attack)", async () => {
+			// This test documents WHY nonce reuse is catastrophic
+			const key = await AesGcm.generateKey(256);
+			const reusedNonce = new Uint8Array(12).fill(42);
+
+			const message1 = new TextEncoder().encode("Secret A");
+			const message2 = new TextEncoder().encode("Secret B");
+
+			const ciphertext1 = await AesGcm.encrypt(message1, key, reusedNonce);
+			const ciphertext2 = await AesGcm.encrypt(message2, key, reusedNonce);
+
+			// With nonce reuse, XOR of ciphertexts = XOR of plaintexts
+			// This leaks information and allows plaintext recovery
+			const ct1 = ciphertext1.slice(0, message1.length);
+			const ct2 = ciphertext2.slice(0, message2.length);
+			const minLen = Math.min(ct1.length, ct2.length);
+
+			const xorCt = new Uint8Array(minLen);
+			for (let i = 0; i < minLen; i++) {
+				xorCt[i] = (ct1[i] ?? 0) ^ (ct2[i] ?? 0);
+			}
+
+			const xorPt = new Uint8Array(minLen);
+			for (let i = 0; i < minLen; i++) {
+				xorPt[i] = (message1[i] ?? 0) ^ (message2[i] ?? 0);
+			}
+
+			// XOR of ciphertexts equals XOR of plaintexts - security broken
+			expect(xorCt).toEqual(xorPt);
+		});
+
+		it("unique nonces prevent XOR attack", async () => {
+			const key = await AesGcm.generateKey(256);
+
+			const message1 = new TextEncoder().encode("Secret A");
+			const message2 = new TextEncoder().encode("Secret B");
+
+			// Using different nonces (correct usage)
+			const nonce1 = AesGcm.generateNonce();
+			const nonce2 = AesGcm.generateNonce();
+
+			const ciphertext1 = await AesGcm.encrypt(message1, key, nonce1);
+			const ciphertext2 = await AesGcm.encrypt(message2, key, nonce2);
+
+			const ct1 = ciphertext1.slice(0, message1.length);
+			const ct2 = ciphertext2.slice(0, message2.length);
+			const minLen = Math.min(ct1.length, ct2.length);
+
+			const xorCt = new Uint8Array(minLen);
+			for (let i = 0; i < minLen; i++) {
+				xorCt[i] = (ct1[i] ?? 0) ^ (ct2[i] ?? 0);
+			}
+
+			const xorPt = new Uint8Array(minLen);
+			for (let i = 0; i < minLen; i++) {
+				xorPt[i] = (message1[i] ?? 0) ^ (message2[i] ?? 0);
+			}
+
+			// With unique nonces, XOR relationship does NOT hold
+			expect(xorCt).not.toEqual(xorPt);
+		});
+
+		it("NONCE_SIZE constant is 12 bytes", () => {
+			expect(AesGcm.NONCE_SIZE).toBe(12);
+		});
+
+		it("generateNonce returns exactly 12 bytes", () => {
+			const nonce = AesGcm.generateNonce();
+			expect(nonce.length).toBe(12);
 		});
 	});
 

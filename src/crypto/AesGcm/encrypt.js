@@ -4,11 +4,17 @@ import { AesGcmError, InvalidNonceError } from "./errors.js";
 /**
  * Encrypt data with AES-GCM
  *
+ * **SECURITY WARNING: Nonce reuse breaks AES-GCM security.**
+ * Never reuse the same (key, nonce) pair for different messages.
+ * Nonce reuse allows attackers to XOR ciphertexts to recover plaintext
+ * and forge authentication tags. Use `generateNonce()` for each encryption.
+ *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {Uint8Array} plaintext - Data to encrypt
  * @param {CryptoKey} key - AES key (128 or 256 bit)
- * @param {Uint8Array} nonce - 12-byte nonce (IV)
+ * @param {Uint8Array} nonce - 12-byte nonce (IV). MUST be unique per (key, message) pair.
+ *   Use `generateNonce()` for cryptographically random nonces.
  * @param {Uint8Array} [additionalData] - Optional additional authenticated data
  * @returns {Promise<Uint8Array>} Ciphertext with authentication tag appended
  * @throws {InvalidNonceError} If nonce is not 12 bytes
@@ -18,6 +24,7 @@ import { AesGcmError, InvalidNonceError } from "./errors.js";
  * import * as AesGcm from './crypto/AesGcm/index.js';
  * const plaintext = new TextEncoder().encode('Secret message');
  * const key = await AesGcm.generateKey(256);
+ * // IMPORTANT: Generate a fresh nonce for each encryption
  * const nonce = AesGcm.generateNonce();
  * const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
  * ```
