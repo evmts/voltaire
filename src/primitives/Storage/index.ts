@@ -7,4 +7,5 @@
 
 export { calculateErc7201 } from "./calculateErc7201.js";
 export { calculateErc8042 } from "./calculateErc8042.js";
+export { from } from "./from.js";
 export type { StorageSlotType } from "./StorageType.js";
