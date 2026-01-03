@@ -1,3 +1,5 @@
+import { InvalidLengthError } from "../errors/ValidationError.js";
+
 /**
  * Compress a public key from 64 bytes (uncompressed) to 33 bytes (compressed)
  *
@@ -6,6 +8,7 @@
  *
  * @param {import('./PublicKeyType.js').PublicKeyType} publicKey - Uncompressed public key (64 bytes)
  * @returns {Uint8Array} Compressed public key (33 bytes)
+ * @throws {InvalidLengthError} If public key is not 64 bytes
  *
  * @example
  * ```javascript
@@ -14,6 +17,19 @@
  * ```
  */
 export function compress(publicKey) {
+	// Validate input length
+	if (publicKey.length !== 64) {
+		throw new InvalidLengthError(
+			`Invalid public key length: expected 64 bytes, got ${publicKey.length}`,
+			{
+				value: publicKey.length,
+				expected: "64 bytes (uncompressed public key without 0x04 prefix)",
+				code: "PUBLIC_KEY_INVALID_LENGTH",
+				docsPath: "/primitives/public-key/compress#error-handling",
+			},
+		);
+	}
+
 	const result = new Uint8Array(33);
 
 	// Parse y coordinate to determine parity
