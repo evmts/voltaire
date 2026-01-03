@@ -145,6 +145,113 @@ describe("Proof", () => {
 		});
 	});
 
+	describe("verify", () => {
+		it("validates correctly formatted proof", () => {
+			const proof = Proof.from({
+				value: new Uint8Array([1, 2, 3, 4]),
+				proof: [
+					new Uint8Array(32).fill(0xaa),
+					new Uint8Array(32).fill(0xbb),
+				],
+			});
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(true);
+			expect(result.error).toBeUndefined();
+		});
+
+		it("validates empty proof array", () => {
+			const proof = Proof.from({
+				value: new Uint8Array([1, 2, 3, 4]),
+				proof: [],
+			});
+
+			const result = Proof.verify(proof);
+			expect(result.valid).toBe(true);
+		});
+
+		it("rejects proof node that is not 32 bytes", () => {
+			// Create proof manually to bypass from() validation
+			const invalidProof = {
+				value: new Uint8Array([1, 2, 3]),
+				proof: [new Uint8Array(31).fill(0xaa)], // 31 bytes instead of 32
+			};
+
+			const result = Proof.verify(invalidProof);
+			expect(result.valid).toBe(false);
+			expect(result.error).toBe("Proof.proof[0] must be 32 bytes (got 31)");
+		});
+
+		it("rejects proof node that is too long", () => {
+			const invalidProof = {
+				value: new Uint8Array([1, 2, 3]),
+				proof: [new Uint8Array(33).fill(0xaa)], // 33 bytes instead of 32
+			};
+
+			const result = Proof.verify(invalidProof);
+			expect(result.valid).toBe(false);
+			expect(result.error).toBe("Proof.proof[0] must be 32 bytes (got 33)");
+		});
+
+		it("rejects proof with mixed valid and invalid nodes", () => {
+			const invalidProof = {
+				value: new Uint8Array([1, 2, 3]),
+				proof: [
+					new Uint8Array(32).fill(0xaa), // valid
+					new Uint8Array(16).fill(0xbb), // invalid - only 16 bytes
+					new Uint8Array(32).fill(0xcc), // valid
+				],
+			};
+
+			const result = Proof.verify(invalidProof);
+			expect(result.valid).toBe(false);
+			expect(result.error).toBe("Proof.proof[1] must be 32 bytes (got 16)");
+		});
+
+		it("rejects null proof", () => {
+			// @ts-expect-error - testing invalid input
+			const result = Proof.verify(null);
+			expect(result.valid).toBe(false);
+			expect(result.error).toBe("Proof must be an object");
+		});
+
+		it("rejects proof with non-Uint8Array value", () => {
+			const invalidProof = {
+				value: "not a uint8array",
+				proof: [],
+			};
+
+			// @ts-expect-error - testing invalid input
+			const result = Proof.verify(invalidProof);
+			expect(result.valid).toBe(false);
+			expect(result.error).toBe("Proof.value must be a Uint8Array");
+		});
+
+		it("rejects proof with non-array proof field", () => {
+			const invalidProof = {
+				value: new Uint8Array([1, 2, 3]),
+				proof: "not an array",
+			};
+
+			// @ts-expect-error - testing invalid input
+			const result = Proof.verify(invalidProof);
+			expect(result.valid).toBe(false);
+			expect(result.error).toBe("Proof.proof must be an array");
+		});
+
+		it("rejects proof with non-Uint8Array element", () => {
+			const invalidProof = {
+				value: new Uint8Array([1, 2, 3]),
+				proof: [new Uint8Array(32), "not a uint8array"],
+			};
+
+			// @ts-expect-error - testing invalid input
+			const result = Proof.verify(invalidProof);
+			expect(result.valid).toBe(false);
+			expect(result.error).toBe("Proof.proof[1] must be a Uint8Array");
+		});
+	});
+
 	describe("immutability", () => {
 		it("prevents modification of value", () => {
 			const value = new Uint8Array([1, 2, 3]);
