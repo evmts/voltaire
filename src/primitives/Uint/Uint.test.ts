@@ -452,6 +452,23 @@ describe("Uint.dividedBy", () => {
 		expect(quotient).toBe(1n);
 	});
 
+	it("divides by large divisor near MAX", () => {
+		const a = Uint.MAX;
+		const b = Uint.from((Uint.MAX as bigint) - 1n);
+		const quotient = Uint.dividedBy(a, b);
+		expect(quotient).toBe(1n);
+	});
+
+	it("divides small value by MAX returns zero", () => {
+		const quotient = Uint.dividedBy(Uint.from(100), Uint.MAX);
+		expect(quotient).toBe(0n);
+	});
+
+	it("divides MAX by 2", () => {
+		const quotient = Uint.dividedBy(Uint.MAX, Uint.from(2));
+		expect(quotient).toBe(((Uint.MAX as bigint) - 1n) / 2n);
+	});
+
 	it("throws on division by zero", () => {
 		const a = Uint.from(100);
 		expect(() => Uint.dividedBy(a, Uint.ZERO)).toThrow("Division by zero");
