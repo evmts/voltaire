@@ -18,6 +18,10 @@ export * as Error from "./error/index.js";
 export * from "./error/standards/index.js";
 export * from "./error/wrapped/index.js";
 export * as Event from "./event/index.js";
+export {
+	findSelectorCollisions,
+	hasSelectorCollisions,
+} from "./findSelectorCollisions.js";
 // Re-export sub-namespaces for runtime (Abi.Function.*, Abi.Event.*, etc.)
 export * as Function from "./function/index.js";
 export * as Item from "./Item/index.js";
