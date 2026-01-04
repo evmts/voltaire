@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { InvalidSizeError } from "./errors.js";
 import type { HexType } from "./HexType.js";
 import { pad } from "./pad.js";
 
@@ -70,5 +71,46 @@ describe("pad", () => {
 		expect(padded.length).toBe(2 + 100 * 2);
 		expect(padded.startsWith("0x00000000")).toBe(true);
 		expect(padded.endsWith("12")).toBe(true);
+	});
+
+	describe("size parameter validation", () => {
+		it("throws InvalidSizeError for negative size", () => {
+			const hex = "0x1234" as HexType;
+			expect(() => pad(hex, -1)).toThrow(InvalidSizeError);
+			expect(() => pad(hex, -1)).toThrow(/Invalid target size: -1/);
+		});
+
+		it("throws InvalidSizeError for non-integer size", () => {
+			const hex = "0x1234" as HexType;
+			expect(() => pad(hex, 1.5)).toThrow(InvalidSizeError);
+			expect(() => pad(hex, 2.7)).toThrow(/Invalid target size: 2.7/);
+		});
+
+		it("throws InvalidSizeError for NaN", () => {
+			const hex = "0x1234" as HexType;
+			expect(() => pad(hex, NaN)).toThrow(InvalidSizeError);
+			expect(() => pad(hex, NaN)).toThrow(/Invalid target size: NaN/);
+		});
+
+		it("throws InvalidSizeError for Infinity", () => {
+			const hex = "0x1234" as HexType;
+			expect(() => pad(hex, Infinity)).toThrow(InvalidSizeError);
+			expect(() => pad(hex, -Infinity)).toThrow(InvalidSizeError);
+		});
+
+		it("accepts zero as valid size", () => {
+			const hex = "0x" as HexType;
+			expect(pad(hex, 0)).toBe("0x");
+		});
+
+		it("error includes context with targetSize", () => {
+			const hex = "0x1234" as HexType;
+			try {
+				pad(hex, -5);
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidSizeError);
+				expect((e as InvalidSizeError).context).toEqual({ targetSize: -5 });
+			}
+		});
 	});
 });
