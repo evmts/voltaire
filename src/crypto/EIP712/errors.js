@@ -115,3 +115,33 @@ export class Eip712InvalidMessageError extends Eip712Error {
 		this.name = "Eip712InvalidMessageError";
 	}
 }
+
+/**
+ * EIP-712 invalid domain error
+ *
+ * Thrown when domain fields have incorrect types or values.
+ *
+ * @example
+ * ```javascript
+ * throw new Eip712InvalidDomainError('Invalid domain field: name must be a string', {
+ *   code: 'EIP712_INVALID_DOMAIN',
+ *   context: { field: 'name', value: 123 },
+ *   docsPath: '/crypto/eip712/domain#error-handling',
+ * })
+ * ```
+ */
+export class Eip712InvalidDomainError extends Eip712Error {
+	/**
+	 * @param {string} message
+	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 */
+	constructor(message, options) {
+		super(message, {
+			code: options?.code || "EIP712_INVALID_DOMAIN",
+			context: options?.context,
+			docsPath: options?.docsPath,
+			cause: options?.cause,
+		});
+		this.name = "Eip712InvalidDomainError";
+	}
+}
