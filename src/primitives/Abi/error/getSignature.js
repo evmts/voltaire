@@ -1,3 +1,5 @@
+import { formatCanonicalType } from "../formatCanonicalType.js";
+
 /**
  * Get the signature string for an error (e.g., "MyError(uint256,address)")
  *
@@ -13,6 +15,6 @@
  * ```
  */
 export function getSignature(error) {
-	const inputs = error.inputs.map((p) => p.type).join(",");
+	const inputs = error.inputs.map((p) => formatCanonicalType(p)).join(",");
 	return `${error.name}(${inputs})`;
 }
