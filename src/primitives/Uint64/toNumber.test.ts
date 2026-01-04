@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ONE, ZERO } from "./constants.js";
 import { from } from "./from.js";
 import { toNumber } from "./toNumber.js";
@@ -29,9 +29,14 @@ describe("Uint64.toNumber", () => {
 
 	describe("unsafe conversions", () => {
 		it("logs warning on value exceeding Number.MAX_SAFE_INTEGER", () => {
+			const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 			const unsafe = from(BigInt(Number.MAX_SAFE_INTEGER) + 1n);
 			const result = toNumber(unsafe);
 			expect(typeof result).toBe("number");
+			expect(warnSpy).toHaveBeenCalledWith(
+				expect.stringContaining("exceeds MAX_SAFE_INTEGER"),
+			);
+			warnSpy.mockRestore();
 		});
 
 		it("converts MAX with precision loss", () => {
