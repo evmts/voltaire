@@ -193,6 +193,21 @@ pub const Proof = struct {
         return std.mem.eql(u8, &current, expected_root);
     }
 
+    /// Verify the proof against a known root hash with depth validation.
+    ///
+    /// This is a stricter version of verify() that also validates the proof
+    /// length matches the expected tree depth. For a balanced tree with n leaves,
+    /// the expected depth is ceil(log2(n)).
+    ///
+    /// Returns error.InvalidProofLength if proof.len != expected_depth.
+    /// Returns false if the proof is invalid, true if valid.
+    pub fn verifyWithDepth(self: *const Self, expected_root: *const Hash.Hash, leaf_position: u256, expected_depth: usize) !bool {
+        if (self.proof.len != expected_depth) {
+            return error.InvalidProofLength;
+        }
+        return self.verify(expected_root, leaf_position);
+    }
+
     /// Compute the root hash from this proof.
     /// Returns the computed root (which can be compared to an expected root).
     pub fn computeRoot(self: *const Self, leaf_position: u256) Hash.Hash {
@@ -731,6 +746,89 @@ test "Proof.from - rejects too deep proof" {
 
     const result = Proof.from(allocator, &value, &node_slices);
     try std.testing.expectError(error.ProofTooDeep, result);
+}
+
+test "Proof.verifyWithDepth - validates proof length matches expected depth" {
+    // Build a simple two-leaf Merkle tree
+    const leaf0 = [_]u8{0xaa} ** 32;
+    const leaf1 = [_]u8{0xbb} ** 32;
+
+    // Root = keccak256(leaf0 || leaf1)
+    var combined: [64]u8 = undefined;
+    @memcpy(combined[0..32], &leaf0);
+    @memcpy(combined[32..64], &leaf1);
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&combined, &root);
+
+    // Proof with 1 sibling (correct for depth 1)
+    const sibling = [_][]const u8{&leaf1};
+    const proof = Proof.init(&leaf0, &sibling);
+
+    // Should succeed with correct depth
+    const result_correct = try proof.verifyWithDepth(&root, 0, 1);
+    try std.testing.expect(result_correct);
+
+    // Should fail with wrong depth (too deep)
+    const result_too_deep = proof.verifyWithDepth(&root, 0, 2);
+    try std.testing.expectError(error.InvalidProofLength, result_too_deep);
+
+    // Should fail with wrong depth (too shallow)
+    const result_too_shallow = proof.verifyWithDepth(&root, 0, 0);
+    try std.testing.expectError(error.InvalidProofLength, result_too_shallow);
+}
+
+test "Proof.verifyWithDepth - accepts empty proof with depth 0" {
+    const root = [_]u8{0x11} ** 32;
+    const empty_nodes: []const []const u8 = &.{};
+
+    const proof = Proof.init(&root, empty_nodes);
+
+    // Empty proof with depth 0 should work
+    const result = try proof.verifyWithDepth(&root, 0, 0);
+    try std.testing.expect(result);
+
+    // Empty proof with depth 1 should fail
+    const result_wrong = proof.verifyWithDepth(&root, 0, 1);
+    try std.testing.expectError(error.InvalidProofLength, result_wrong);
+}
+
+test "Proof.verifyWithDepth - four-leaf tree requires depth 2" {
+    // For 4 leaves: depth = log2(4) = 2
+    const leaf0 = [_]u8{0x00} ** 32;
+    const leaf1 = [_]u8{0x01} ** 32;
+    const leaf2 = [_]u8{0x02} ** 32;
+    const leaf3 = [_]u8{0x03} ** 32;
+
+    // Build tree: hash(hash(l0,l1), hash(l2,l3))
+    var combined01: [64]u8 = undefined;
+    @memcpy(combined01[0..32], &leaf0);
+    @memcpy(combined01[32..64], &leaf1);
+    var hash01: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&combined01, &hash01);
+
+    var combined23: [64]u8 = undefined;
+    @memcpy(combined23[0..32], &leaf2);
+    @memcpy(combined23[32..64], &leaf3);
+    var hash23: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&combined23, &hash23);
+
+    var combined_root: [64]u8 = undefined;
+    @memcpy(combined_root[0..32], &hash01);
+    @memcpy(combined_root[32..64], &hash23);
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&combined_root, &root);
+
+    // Proof for leaf0: siblings are [leaf1, hash23], depth = 2
+    const siblings = [_][]const u8{ &leaf1, &hash23 };
+    const proof = Proof.init(&leaf0, &siblings);
+
+    // Correct depth
+    const result = try proof.verifyWithDepth(&root, 0, 2);
+    try std.testing.expect(result);
+
+    // Wrong depth
+    try std.testing.expectError(error.InvalidProofLength, proof.verifyWithDepth(&root, 0, 1));
+    try std.testing.expectError(error.InvalidProofLength, proof.verifyWithDepth(&root, 0, 3));
 }
 
 // ============================================================================
