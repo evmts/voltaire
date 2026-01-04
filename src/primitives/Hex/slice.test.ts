@@ -66,6 +66,46 @@ describe("slice", () => {
 		expect(result2).toBe("0x12");
 	});
 
+	it("handles negative start index only (get last N bytes)", () => {
+		const hex = "0x1234567890abcdef" as HexType; // 8 bytes
+		// slice(-4) should return last 4 bytes
+		expect(slice(hex, -4)).toBe("0x90abcdef");
+		// slice(-2) should return last 2 bytes
+		expect(slice(hex, -2)).toBe("0xcdef");
+		// slice(-1) should return last byte
+		expect(slice(hex, -1)).toBe("0xef");
+		// slice(-8) should return all bytes
+		expect(slice(hex, -8)).toBe("0x1234567890abcdef");
+	});
+
+	it("handles negative end index only (exclude last N bytes)", () => {
+		const hex = "0x1234567890abcdef" as HexType; // 8 bytes
+		// slice(0, -1) should exclude last byte
+		expect(slice(hex, 0, -1)).toBe("0x1234567890abcd");
+		// slice(0, -2) should exclude last 2 bytes
+		expect(slice(hex, 0, -2)).toBe("0x1234567890ab");
+		// slice(0, -4) should exclude last 4 bytes
+		expect(slice(hex, 0, -4)).toBe("0x12345678");
+	});
+
+	it("handles both negative start and end indices", () => {
+		const hex = "0x1234567890abcdef" as HexType; // 8 bytes
+		// slice(-4, -2) should get bytes from -4 to -2 (exclusive)
+		expect(slice(hex, -4, -2)).toBe("0x90ab");
+		// slice(-6, -2) should get 4 bytes
+		expect(slice(hex, -6, -2)).toBe("0x567890ab");
+		// slice(-3, -1) should get 2 bytes
+		expect(slice(hex, -3, -1)).toBe("0xabcd");
+	});
+
+	it("handles negative index larger than length", () => {
+		const hex = "0x1234" as HexType; // 2 bytes
+		// slice(-10) with length 2 should clamp to start
+		expect(slice(hex, -10)).toBe("0x1234");
+		// slice(-10, -5) should return empty when both out of range
+		expect(slice(hex, -10, -5)).toBe("0x");
+	});
+
 	it("slices large hex strings", () => {
 		const large = `0x${"ab".repeat(100)}` as HexType;
 		expect(slice(large, 0, 10).length).toBe(2 + 10 * 2);
