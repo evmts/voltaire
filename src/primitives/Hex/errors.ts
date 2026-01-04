@@ -184,6 +184,23 @@ export class NonIntegerError extends BaseInvalidRangeError {
 	}
 }
 
+/**
+ * Error for invalid size parameter
+ */
+export class InvalidSizeError extends BaseInvalidRangeError {
+	constructor(message = "Invalid size parameter", options: ErrorOptions = {}) {
+		super(message, {
+			code: options.code || "HEX_INVALID_SIZE",
+			value: options.value,
+			expected: options.expected || "non-negative integer",
+			context: options.context,
+			docsPath: options.docsPath || "/primitives/hex#error-handling",
+			cause: options.cause,
+		});
+		this.name = "InvalidSizeError";
+	}
+}
+
 // Re-export for backward compatibility
 export const InvalidHexFormatError = InvalidFormatError;
 export const InvalidHexCharacterError = InvalidCharacterError;
