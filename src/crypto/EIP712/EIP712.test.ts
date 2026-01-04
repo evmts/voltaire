@@ -5,6 +5,7 @@ import { EIP712 } from "./EIP712.js";
 import type { Domain, TypeDefinitions, TypedData } from "./EIP712Type.js";
 import {
 	Eip712EncodingError,
+	Eip712InvalidDomainError,
 	Eip712InvalidMessageError,
 	Eip712TypeNotFoundError,
 } from "./errors.js";
@@ -84,6 +85,151 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const hash2 = EIP712.Domain.hash(domain2);
 
 			expect(hash1).not.toEqual(hash2);
+		});
+	});
+
+	describe("Domain Field Validation", () => {
+		it("should reject non-string name", () => {
+			const domain = { name: 123 } as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				"'name' must be a string",
+			);
+		});
+
+		it("should reject non-string version", () => {
+			const domain = { name: "App", version: 1 } as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				"'version' must be a string",
+			);
+		});
+
+		it("should reject invalid chainId type", () => {
+			const domain = { name: "App", chainId: "1" } as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				"'chainId' must be a bigint, number, or Uint8Array",
+			);
+		});
+
+		it("should accept bigint chainId", () => {
+			const domain = { name: "App", chainId: 1n };
+
+			expect(() => EIP712.Domain.hash(domain)).not.toThrow();
+		});
+
+		it("should accept number chainId", () => {
+			const domain = { name: "App", chainId: 1 };
+
+			expect(() => EIP712.Domain.hash(domain)).not.toThrow();
+		});
+
+		it("should reject invalid verifyingContract type", () => {
+			const domain = {
+				name: "App",
+				verifyingContract: 123,
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				"'verifyingContract' must be an address",
+			);
+		});
+
+		it("should reject wrong length verifyingContract", () => {
+			const domain = {
+				name: "App",
+				verifyingContract: new Uint8Array(19), // 19 bytes instead of 20
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				"must be 20 bytes",
+			);
+		});
+
+		it("should accept valid 20-byte verifyingContract", () => {
+			const domain = {
+				name: "App",
+				verifyingContract: new Uint8Array(20).fill(0xcc),
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).not.toThrow();
+		});
+
+		it("should reject invalid salt type", () => {
+			const domain = { name: "App", salt: 123 } as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow("'salt' must be bytes32");
+		});
+
+		it("should reject wrong length salt", () => {
+			const domain = {
+				name: "App",
+				salt: new Uint8Array(31), // 31 bytes instead of 32
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow("must be 32 bytes");
+		});
+
+		it("should accept valid 32-byte salt", () => {
+			const domain = {
+				name: "App",
+				salt: new Uint8Array(32).fill(0xab),
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).not.toThrow();
+		});
+
+		it("should reject unknown domain fields", () => {
+			const domain = { name: "App", invalidField: "bad" } as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow("Unknown domain field");
+		});
+
+		it("should accept Address type for verifyingContract", () => {
+			const domain = {
+				name: "App",
+				verifyingContract: Address.from(
+					"0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+				),
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).not.toThrow();
+		});
+
+		it("should accept Uint8Array for salt", () => {
+			const domain = {
+				name: "App",
+				salt: hexToBytes(
+					"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+				),
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).not.toThrow();
 		});
 	});
 
