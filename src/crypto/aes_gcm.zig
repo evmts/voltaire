@@ -15,15 +15,32 @@
 //! - Authenticated encryption with associated data (AEAD)
 //! - Constant-time operations
 //! - Hardware acceleration (AES-NI) when available
-//! - Nonce reuse resistance (when nonces are unique)
+//!
+//! ## CRITICAL SECURITY WARNING: Nonce Reuse
+//!
+//! **NEVER reuse a nonce with the same key.** Nonce reuse completely breaks
+//! AES-GCM security, allowing attackers to:
+//!
+//! 1. **Recover XOR of plaintexts**: ct1 ⊕ ct2 = pt1 ⊕ pt2
+//! 2. **Recover the authentication key (H)**: Enables forgery attacks
+//! 3. **Forge arbitrary valid ciphertexts**: Complete authentication bypass
+//!
+//! Generate nonces using a cryptographically secure random number generator
+//! (e.g., std.crypto.random). With 96-bit random nonces, the birthday collision
+//! probability is negligible for up to 2^32 encryptions per key (NIST limit).
+//!
+//! The nonce does not need to be secret - it can be stored with the ciphertext.
+//! Only uniqueness matters.
 //!
 //! ## Usage
 //! ```zig
 //! const aes_gcm = @import("aes_gcm");
 //!
-//! // Encrypt
+//! // Encrypt - ALWAYS use a fresh random nonce
 //! const key: [16]u8 = ...;  // 128-bit key
-//! const nonce: [12]u8 = ...; // 96-bit nonce (must be unique)
+//! var nonce: [12]u8 = undefined;
+//! std.crypto.random.bytes(&nonce); // Cryptographically secure random nonce
+//!
 //! const ciphertext = try aes_gcm.encrypt128(
 //!     allocator,
 //!     plaintext,
@@ -32,6 +49,8 @@
 //!     associated_data
 //! );
 //! defer allocator.free(ciphertext);
+//!
+//! // Store nonce with ciphertext (nonce is not secret)
 //!
 //! // Decrypt
 //! const plaintext = try aes_gcm.decrypt128(
@@ -45,10 +64,11 @@
 //! ```
 //!
 //! ## Security Notes
-//! - Never reuse nonces with the same key
+//! - **NEVER reuse nonces** with the same key - this is catastrophic
 //! - Uses Zig's audited std.crypto implementation
 //! - Constant-time guarantee from underlying primitives
 //! - Authentication tag prevents tampering
+//! - Rotate keys after 2^32 encryptions (NIST recommendation)
 //!
 //! ## References
 //! - [NIST SP 800-38D](https://csrc.nist.gov/publications/detail/sp/800-38d/final) - GCM specification
@@ -513,6 +533,53 @@ test "aes256-gcm different nonces produce different ciphertext" {
 
     const equal = std.mem.eql(u8, ciphertext1, ciphertext2);
     try std.testing.expect(!equal);
+}
+
+// SECURITY DOCUMENTATION TEST: Nonce reuse vulnerability
+//
+// This test documents the CATASTROPHIC security failure that occurs
+// when nonces are reused with the same key in AES-GCM.
+//
+// When nonces are reused, an attacker can:
+// 1. XOR ciphertexts to get XOR of plaintexts: ct1 ⊕ ct2 = pt1 ⊕ pt2
+// 2. Recover the authentication key H
+// 3. Forge arbitrary valid ciphertexts
+//
+// NEVER reuse nonces. Always generate fresh random nonces for each encryption.
+test "SECURITY: nonce reuse allows XOR of plaintexts to be recovered" {
+    const allocator = std.testing.allocator;
+
+    const key = [_]u8{1} ** AES128_KEY_SIZE;
+    const reused_nonce = [_]u8{42} ** NONCE_SIZE; // BAD: reused nonce
+
+    const plaintext1 = "Secret message A";
+    const plaintext2 = "Secret message B";
+    const additional_data = "";
+
+    const ciphertext1 = try encrypt128(allocator, plaintext1, &key, &reused_nonce, additional_data);
+    defer allocator.free(ciphertext1);
+
+    const ciphertext2 = try encrypt128(allocator, plaintext2, &key, &reused_nonce, additional_data);
+    defer allocator.free(ciphertext2);
+
+    // XOR the ciphertext bodies (excluding the 16-byte auth tag)
+    const ct1_body = ciphertext1[0 .. ciphertext1.len - TAG_SIZE];
+    const ct2_body = ciphertext2[0 .. ciphertext2.len - TAG_SIZE];
+
+    var xor_result: [plaintext1.len]u8 = undefined;
+    for (0..plaintext1.len) |i| {
+        xor_result[i] = ct1_body[i] ^ ct2_body[i];
+    }
+
+    // XOR of plaintexts
+    var pt_xor: [plaintext1.len]u8 = undefined;
+    for (0..plaintext1.len) |i| {
+        pt_xor[i] = plaintext1[i] ^ plaintext2[i];
+    }
+
+    // With nonce reuse, XOR of ciphertexts equals XOR of plaintexts
+    // This is a COMPLETE SECURITY FAILURE - attackers can recover plaintext
+    try std.testing.expectEqualSlices(u8, &pt_xor, &xor_result);
 }
 
 test "aes128-gcm NIST vector: all zeros" {
