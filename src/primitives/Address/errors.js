@@ -182,6 +182,41 @@ export class InvalidAddressError extends ValidationError {
 }
 
 /**
+ * Error thrown when ABI-encoded address has non-zero padding bytes
+ *
+ * @throws {InvalidAbiEncodedPaddingError}
+ */
+export class InvalidAbiEncodedPaddingError extends ValidationError {
+	/**
+	 * @param {string} [message] - Error message
+	 * @param {object} [options] - Error options
+	 * @param {string} [options.code] - Error code
+	 * @param {unknown} [options.value] - Invalid value
+	 * @param {string} [options.expected] - Expected format
+	 * @param {Record<string, unknown>} [options.context] - Additional context
+	 * @param {string} [options.docsPath] - Documentation path
+	 * @param {Error} [options.cause] - Root cause error
+	 */
+	constructor(message, options) {
+		super(
+			message ||
+				"ABI-encoded address has non-zero padding in first 12 bytes",
+			{
+				code: options?.code || "INVALID_ABI_ENCODED_PADDING",
+				value: options?.value,
+				expected: options?.expected || "First 12 bytes must be zero",
+				context: options?.context,
+				docsPath:
+					options?.docsPath ||
+					"/primitives/address/from-abi-encoded#error-handling",
+				cause: options?.cause,
+			},
+		);
+		this.name = "InvalidAbiEncodedPaddingError";
+	}
+}
+
+/**
  * Error thrown when address checksum is invalid
  *
  * @throws {InvalidChecksumError}

@@ -1,13 +1,18 @@
-import { InvalidAddressLengthError } from "./errors.js";
+import {
+	InvalidAbiEncodedPaddingError,
+	InvalidAddressLengthError,
+} from "./errors.js";
 
 /**
  * Decode Address from ABI-encoded bytes (32 bytes)
  *
  * Extracts the last 20 bytes from 32-byte ABI-encoded address data.
+ * Validates that the first 12 padding bytes are all zeros per ABI spec.
  *
  * @param {Uint8Array} bytes - 32-byte ABI-encoded data
  * @returns {import('./AddressType.js').AddressType} Decoded Address
  * @throws {InvalidAddressLengthError} If bytes length is not 32
+ * @throws {InvalidAbiEncodedPaddingError} If first 12 bytes are not all zeros
  *
  * @example
  * ```typescript
@@ -26,6 +31,19 @@ export function fromAbiEncoded(bytes) {
 				code: "INVALID_ABI_ENCODED_LENGTH",
 			},
 		);
+	}
+	// Validate first 12 bytes are zeros per ABI spec
+	for (let i = 0; i < 12; i++) {
+		if (bytes[i] !== 0) {
+			throw new InvalidAbiEncodedPaddingError(
+				`ABI-encoded address has non-zero byte at position ${i}: 0x${bytes[i].toString(16).padStart(2, "0")}`,
+				{
+					value: bytes,
+					expected: "First 12 bytes must be zero",
+					context: { position: i, byte: bytes[i] },
+				},
+			);
+		}
 	}
 	return /** @type {import('./AddressType.js').AddressType} */ (
 		bytes.slice(12, 32)
