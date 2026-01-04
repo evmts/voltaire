@@ -6,6 +6,7 @@ import { clone } from "./clone.js";
 import { compare } from "./compare.js";
 import { concat } from "./concat.js";
 import { equals } from "./equals.js";
+import { equalsConstantTime } from "./equalsConstantTime.js";
 import { from } from "./from.js";
 import { fromBigInt } from "./fromBigInt.js";
 import { fromHex } from "./fromHex.js";
@@ -34,6 +35,7 @@ export {
 	compare,
 	concat,
 	equals,
+	equalsConstantTime,
 	from,
 	fromBigInt,
 	fromHex,
@@ -62,6 +64,7 @@ export const BytesType = {
 	compare,
 	concat,
 	equals,
+	equalsConstantTime,
 	from,
 	fromBigInt,
 	fromHex,
