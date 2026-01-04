@@ -161,15 +161,15 @@ describe("TransactionEIP2930.serialize", () => {
 			Buffer.from(deserialized.accessList[0]?.address ?? new Uint8Array()),
 		).toEqual(Buffer.from(accessList[0]?.address ?? new Uint8Array()));
 		expect(deserialized.accessList[0]?.storageKeys.length).toBe(3);
-		expect(Buffer.from(deserialized.accessList[0]?.storageKeys[0] ?? [])).toEqual(
-			Buffer.from(accessList[0]?.storageKeys[0] ?? []),
-		);
-		expect(Buffer.from(deserialized.accessList[0]?.storageKeys[1] ?? [])).toEqual(
-			Buffer.from(accessList[0]?.storageKeys[1] ?? []),
-		);
-		expect(Buffer.from(deserialized.accessList[0]?.storageKeys[2] ?? [])).toEqual(
-			Buffer.from(accessList[0]?.storageKeys[2] ?? []),
-		);
+		expect(
+			Buffer.from(deserialized.accessList[0]?.storageKeys[0] ?? []),
+		).toEqual(Buffer.from(accessList[0]?.storageKeys[0] ?? []));
+		expect(
+			Buffer.from(deserialized.accessList[0]?.storageKeys[1] ?? []),
+		).toEqual(Buffer.from(accessList[0]?.storageKeys[1] ?? []));
+		expect(
+			Buffer.from(deserialized.accessList[0]?.storageKeys[2] ?? []),
+		).toEqual(Buffer.from(accessList[0]?.storageKeys[2] ?? []));
 
 		// Second entry: 1 storage key
 		expect(

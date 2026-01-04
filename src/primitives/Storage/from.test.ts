@@ -31,7 +31,7 @@ describe("Storage.from", () => {
 		});
 
 		it("creates StorageSlot from hex string (32 bytes)", () => {
-			const hex = "0x" + "ab".repeat(32);
+			const hex = `0x${"ab".repeat(32)}`;
 			const slot = Storage.from(hex);
 			expect(slot.length).toBe(32);
 			expect(slot.every((b) => b === 0xab)).toBe(true);
@@ -71,7 +71,7 @@ describe("Storage.from", () => {
 		});
 
 		it("throws on hex string with wrong length", () => {
-			const hex = "0x" + "ab".repeat(16); // 16 bytes
+			const hex = `0x${"ab".repeat(16)}`; // 16 bytes
 			expect(() => Storage.from(hex)).toThrow(
 				"StorageSlot must be exactly 32 bytes",
 			);
@@ -88,15 +88,11 @@ describe("Storage.from", () => {
 		});
 
 		it("throws on negative number", () => {
-			expect(() => Storage.from(-1)).toThrow(
-				"must be a non-negative integer",
-			);
+			expect(() => Storage.from(-1)).toThrow("must be a non-negative integer");
 		});
 
 		it("throws on non-integer number", () => {
-			expect(() => Storage.from(1.5)).toThrow(
-				"must be a non-negative integer",
-			);
+			expect(() => Storage.from(1.5)).toThrow("must be a non-negative integer");
 		});
 
 		it("throws on unsupported type", () => {

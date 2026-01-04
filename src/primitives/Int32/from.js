@@ -36,11 +36,14 @@ export function from(value) {
 			});
 		}
 		if (value < INT32_MIN) {
-			throw new IntegerUnderflowError(`Int32 value is below minimum: ${value}`, {
-				value,
-				min: INT32_MIN,
-				type: "int32",
-			});
+			throw new IntegerUnderflowError(
+				`Int32 value is below minimum: ${value}`,
+				{
+					value,
+					min: INT32_MIN,
+					type: "int32",
+				},
+			);
 		}
 		num = value;
 	} else if (typeof value === "bigint") {
@@ -80,11 +83,14 @@ export function from(value) {
 			});
 		}
 		if (parsed < INT32_MIN) {
-			throw new IntegerUnderflowError(`Int32 value is below minimum: ${parsed}`, {
-				value: parsed,
-				min: INT32_MIN,
-				type: "int32",
-			});
+			throw new IntegerUnderflowError(
+				`Int32 value is below minimum: ${parsed}`,
+				{
+					value: parsed,
+					min: INT32_MIN,
+					type: "int32",
+				},
+			);
 		}
 		num = parsed;
 	} else {

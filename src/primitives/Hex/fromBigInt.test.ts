@@ -67,8 +67,14 @@ describe("fromBigInt", () => {
 	});
 
 	it("throws for negative bigints", () => {
-		expect(() => fromBigInt(-1n)).toThrow("Cannot convert negative bigint to hex: -1");
-		expect(() => fromBigInt(-255n)).toThrow("Cannot convert negative bigint to hex: -255");
-		expect(() => fromBigInt(-1000000000000000000n)).toThrow("Cannot convert negative bigint to hex");
+		expect(() => fromBigInt(-1n)).toThrow(
+			"Cannot convert negative bigint to hex: -1",
+		);
+		expect(() => fromBigInt(-255n)).toThrow(
+			"Cannot convert negative bigint to hex: -255",
+		);
+		expect(() => fromBigInt(-1000000000000000000n)).toThrow(
+			"Cannot convert negative bigint to hex",
+		);
 	});
 });

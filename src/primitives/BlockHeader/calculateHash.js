@@ -1,7 +1,7 @@
-import { fromBigInt as bytesFromBigInt } from "../Bytes/fromBigInt.js";
-import { fromBytes as blockHashFromBytes } from "../BlockHash/fromBytes.js";
-import { encode as rlpEncode } from "../Rlp/encode.js";
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
+import { fromBytes as blockHashFromBytes } from "../BlockHash/fromBytes.js";
+import { fromBigInt as bytesFromBigInt } from "../Bytes/fromBigInt.js";
+import { encode as rlpEncode } from "../Rlp/encode.js";
 
 /**
  * Calculate the block hash for a block header (keccak256 of RLP-encoded header)

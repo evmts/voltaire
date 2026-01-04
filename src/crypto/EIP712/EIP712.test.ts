@@ -157,9 +157,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			expect(() => EIP712.Domain.hash(domain)).toThrow(
 				Eip712InvalidDomainError,
 			);
-			expect(() => EIP712.Domain.hash(domain)).toThrow(
-				"must be 20 bytes",
-			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow("must be 20 bytes");
 		});
 
 		it("should accept valid 20-byte verifyingContract", () => {
@@ -177,7 +175,9 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			expect(() => EIP712.Domain.hash(domain)).toThrow(
 				Eip712InvalidDomainError,
 			);
-			expect(() => EIP712.Domain.hash(domain)).toThrow("'salt' must be bytes32");
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				"'salt' must be bytes32",
+			);
 		});
 
 		it("should reject wrong length salt", () => {
@@ -443,7 +443,9 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 		});
 
 		it("should encode fixed-size bytes32 array (bytes32[10])", () => {
-			const arr = Array.from({ length: 10 }, () => new Uint8Array(32).fill(0xaa));
+			const arr = Array.from({ length: 10 }, () =>
+				new Uint8Array(32).fill(0xaa),
+			);
 			const encoded = EIP712.encodeValue("bytes32[10]", arr, types);
 
 			expect(encoded.length).toBe(32);
@@ -1377,9 +1379,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const typedData: TypedData = {
 				domain: { name: "TestApp", chainId: 1n },
 				types: {
-					Point: [
-						{ name: "coordinates", type: "uint256[3]" },
-					],
+					Point: [{ name: "coordinates", type: "uint256[3]" }],
 				},
 				primaryType: "Point",
 				message: {
@@ -1395,9 +1395,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const typedData: TypedData = {
 				domain: { name: "TestApp", chainId: 1n },
 				types: {
-					Merkle: [
-						{ name: "proof", type: "bytes32[5]" },
-					],
+					Merkle: [{ name: "proof", type: "bytes32[5]" }],
 				},
 				primaryType: "Merkle",
 				message: {

@@ -1,6 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { from } from "./from.js";
-import { isKnownChain } from "./isKnownChain.js";
 import {
 	ARBITRUM,
 	BASE,
@@ -11,6 +9,8 @@ import {
 	POLYGON,
 	SEPOLIA,
 } from "./constants.js";
+import { from } from "./from.js";
+import { isKnownChain } from "./isKnownChain.js";
 
 describe("ChainId.isKnownChain", () => {
 	describe("returns true for known chains", () => {

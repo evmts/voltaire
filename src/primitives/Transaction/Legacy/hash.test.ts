@@ -1,6 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { keccak256, serializeTransaction } from "viem";
-import * as Hex from "../../Hex/index.js";
+import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
 import * as Hex from "../../Hex/index.js";
 import { Type } from "../types.js";

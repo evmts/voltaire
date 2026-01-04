@@ -43,7 +43,8 @@ export function CalculateCreate2Address({ keccak256 }) {
 				value: salt,
 				expected: "32 bytes",
 				context: { length: salt.length },
-				docsPath: "/primitives/address/calculate-create2-address#error-handling",
+				docsPath:
+					"/primitives/address/calculate-create2-address#error-handling",
 			});
 		}
 

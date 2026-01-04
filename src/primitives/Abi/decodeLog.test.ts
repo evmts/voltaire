@@ -427,7 +427,9 @@ describe("decodeLog", () => {
 
 		const log = { topics: [topic], data: new Uint8Array(0) };
 
-		expect(() => decodeLog(abiWithAmbiguous, log)).toThrow(AbiItemNotFoundError);
+		expect(() => decodeLog(abiWithAmbiguous, log)).toThrow(
+			AbiItemNotFoundError,
+		);
 		expect(() => decodeLog(abiWithAmbiguous, log)).toThrow(
 			/Multiple anonymous events/,
 		);

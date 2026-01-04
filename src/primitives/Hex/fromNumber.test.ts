@@ -55,7 +55,9 @@ describe("fromNumber", () => {
 
 	it("throws for numbers exceeding MAX_SAFE_INTEGER", () => {
 		// 2^53 (first unsafe integer)
-		expect(() => fromNumber(9007199254740992)).toThrow(/exceeds MAX_SAFE_INTEGER/);
+		expect(() => fromNumber(9007199254740992)).toThrow(
+			/exceeds MAX_SAFE_INTEGER/,
+		);
 
 		// Larger values
 		expect(() => fromNumber(Number.MAX_SAFE_INTEGER + 1)).toThrow(

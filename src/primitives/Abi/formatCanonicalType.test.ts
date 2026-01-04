@@ -21,7 +21,9 @@ describe("formatCanonicalType", () => {
 			expect(formatCanonicalType({ type: "string", name: "text" })).toBe(
 				"string",
 			);
-			expect(formatCanonicalType({ type: "bytes", name: "data" })).toBe("bytes");
+			expect(formatCanonicalType({ type: "bytes", name: "data" })).toBe(
+				"bytes",
+			);
 		});
 
 		it("returns array types as-is", () => {

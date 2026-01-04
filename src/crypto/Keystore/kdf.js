@@ -2,10 +2,7 @@
 import { pbkdf2 } from "@noble/hashes/pbkdf2.js";
 import { scrypt } from "@noble/hashes/scrypt.js";
 import { sha256 } from "@noble/hashes/sha2.js";
-import {
-	InvalidPbkdf2IterationsError,
-	InvalidScryptNError,
-} from "./errors.js";
+import { InvalidPbkdf2IterationsError, InvalidScryptNError } from "./errors.js";
 
 /**
  * Check if a number is a power of 2

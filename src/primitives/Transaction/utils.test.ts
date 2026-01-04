@@ -484,11 +484,15 @@ describe("Transaction Utilities", () => {
 				s: new Uint8Array(32),
 			};
 			// 10% bump: 1000 * 110 / 100 = 1100
-			const newTx10 = Transaction.replaceWith(tx, { bumpPercentage: 10 }) as Legacy;
+			const newTx10 = Transaction.replaceWith(tx, {
+				bumpPercentage: 10,
+			}) as Legacy;
 			expect(newTx10.gasPrice).toBe(1100n);
 
 			// 50% bump: 1000 * 150 / 100 = 1500
-			const newTx50 = Transaction.replaceWith(tx, { bumpPercentage: 50 }) as Legacy;
+			const newTx50 = Transaction.replaceWith(tx, {
+				bumpPercentage: 50,
+			}) as Legacy;
 			expect(newTx50.gasPrice).toBe(1500n);
 		});
 
@@ -553,12 +557,16 @@ describe("Transaction Utilities", () => {
 				s: new Uint8Array(32),
 			};
 			// 10% bump
-			const newTx10 = Transaction.replaceWith(tx, { bumpPercentage: 10 }) as EIP1559;
+			const newTx10 = Transaction.replaceWith(tx, {
+				bumpPercentage: 10,
+			}) as EIP1559;
 			expect(newTx10.maxFeePerGas).toBe(2200n); // 2000 * 110 / 100
 			expect(newTx10.maxPriorityFeePerGas).toBe(1100n); // 1000 * 110 / 100
 
 			// 50% bump
-			const newTx50 = Transaction.replaceWith(tx, { bumpPercentage: 50 }) as EIP1559;
+			const newTx50 = Transaction.replaceWith(tx, {
+				bumpPercentage: 50,
+			}) as EIP1559;
 			expect(newTx50.maxFeePerGas).toBe(3000n); // 2000 * 150 / 100
 			expect(newTx50.maxPriorityFeePerGas).toBe(1500n); // 1000 * 150 / 100
 		});

@@ -24,8 +24,8 @@ export * as BrandedAccessList from "./AccessList/index.js";
 export { AccessList } from "./AccessList/index.js";
 // Core primitives
 export { Address } from "./Address/index.js";
-export { isAddress } from "./Address/isAddress.js";
 export * as BrandedAddress from "./Address/internal-index.js";
+export { isAddress } from "./Address/isAddress.js";
 export * as Authorization from "./Authorization/index.js";
 export * as BrandedAuthorization from "./Authorization/index.js"; // Re-exported for backward compatibility
 export * as BrandedBase64 from "./Base64/Base64.js";
@@ -53,7 +53,6 @@ export { Bytecode } from "./Bytecode/index.js";
 export * as BrandedBytes from "./Bytes/Bytes.index.js";
 // Utilities - Bytes types
 export { Bytes } from "./Bytes/Bytes.js";
-export { isBytes } from "./Bytes/isBytes.js";
 export * as BrandedBytes1 from "./Bytes/Bytes1/index.js";
 export { Bytes1 } from "./Bytes/Bytes1/index.js";
 export { Bytes2 } from "./Bytes/Bytes2/Bytes2.js";
@@ -76,6 +75,7 @@ export * as BrandedBytes32 from "./Bytes/Bytes32/index.js";
 export { Bytes32 } from "./Bytes/Bytes32/index.js";
 export * as BrandedBytes64 from "./Bytes/Bytes64/index.js";
 export { Bytes64 } from "./Bytes/Bytes64/index.js";
+export { isBytes } from "./Bytes/isBytes.js";
 export * as CallTrace from "./CallTrace/index.js";
 export * as BrandedChain from "./Chain/index.js";
 export { Chain } from "./Chain/index.js";
@@ -122,8 +122,8 @@ export * as BrandedHash from "./Hash/index.js";
 export { Hash } from "./Hash/index.js";
 export { isHash } from "./Hash/isHash.js";
 export { Hex } from "./Hex/index.js";
-export { isHex } from "./Hex/isHex.js";
 export * as BrandedHex from "./Hex/internal-index.js";
+export { isHex } from "./Hex/isHex.js";
 export * as InitCode from "./InitCode/index.js";
 // Numeric types - Signed integers
 export { Int8 } from "./Int8/Int8.js";

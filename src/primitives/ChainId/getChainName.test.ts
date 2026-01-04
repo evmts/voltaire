@@ -1,6 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { from } from "./from.js";
-import { getChainName } from "./getChainName.js";
 import {
 	ARBITRUM,
 	BASE,
@@ -11,6 +9,8 @@ import {
 	POLYGON,
 	SEPOLIA,
 } from "./constants.js";
+import { from } from "./from.js";
+import { getChainName } from "./getChainName.js";
 
 describe("ChainId.getChainName", () => {
 	describe("returns name for known chains", () => {

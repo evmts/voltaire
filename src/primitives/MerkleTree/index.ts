@@ -1,10 +1,4 @@
 // Export types
-export type {
-	MerkleProofLike,
-	MerkleProofType,
-	MerkleTreeLike,
-	MerkleTreeType,
-} from "./MerkleTreeType.js";
 
 // Export errors
 export {
@@ -12,15 +6,20 @@ export {
 	InvalidProofLengthError,
 	LeafIndexOutOfBoundsError,
 } from "./errors.js";
+export type {
+	MerkleProofLike,
+	MerkleProofType,
+	MerkleTreeLike,
+	MerkleTreeType,
+} from "./MerkleTreeType.js";
 
 // Import crypto dependency
 import { hash as keccak256Impl } from "../../crypto/Keccak256/hash.js";
 import type { HashType } from "../Hash/HashType.js";
-import type { MerkleProofType, MerkleTreeType } from "./MerkleTreeType.js";
-
 // Import factories
 import { From as _FromFactory } from "./from.js";
 import { GetProof as _GetProofFactory } from "./getProof.js";
+import type { MerkleProofType, MerkleTreeType } from "./MerkleTreeType.js";
 import { Verify as _VerifyFactory } from "./verify.js";
 
 // Export factories for custom crypto injection

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { from } from "./from.js";
 import { InvalidCharacterError, InvalidFormatError } from "./errors.js";
+import { from } from "./from.js";
 
 describe("from", () => {
 	it("accepts hex string", () => {

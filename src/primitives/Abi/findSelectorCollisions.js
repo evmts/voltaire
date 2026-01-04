@@ -45,9 +45,8 @@ export function findSelectorCollisions(abi) {
 	for (const item of abi) {
 		if (item.type !== "function") continue;
 
-		const fn = /** @type {import('./function/FunctionType.js').FunctionType} */ (
-			item
-		);
+		const fn =
+			/** @type {import('./function/FunctionType.js').FunctionType} */ (item);
 		const selectorBytes = Function.getSelector(fn);
 		const selectorHex = Hex.fromBytes(selectorBytes);
 

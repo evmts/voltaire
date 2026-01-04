@@ -199,8 +199,7 @@ export class InvalidAbiEncodedPaddingError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(
-			message ||
-				"ABI-encoded address has non-zero padding in first 12 bytes",
+			message || "ABI-encoded address has non-zero padding in first 12 bytes",
 			{
 				code: options?.code || "INVALID_ABI_ENCODED_PADDING",
 				value: options?.value,

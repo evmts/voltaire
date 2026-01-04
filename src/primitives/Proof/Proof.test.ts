@@ -149,10 +149,7 @@ describe("Proof", () => {
 		it("validates correctly formatted proof", () => {
 			const proof = Proof.from({
 				value: new Uint8Array([1, 2, 3, 4]),
-				proof: [
-					new Uint8Array(32).fill(0xaa),
-					new Uint8Array(32).fill(0xbb),
-				],
+				proof: [new Uint8Array(32).fill(0xaa), new Uint8Array(32).fill(0xbb)],
 			});
 
 			const result = Proof.verify(proof);

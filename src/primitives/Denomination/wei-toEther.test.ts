@@ -60,9 +60,10 @@ describe("toEther", () => {
 
 	it("preserves precision for max uint256 range values", () => {
 		// A very large wei value (but valid for Ethereum)
-		const largeWei = from(
-			115792089237316195423570985008687907853269984665640564039457584007913129639935n,
-		);
+		const largeWei =
+			from(
+				115792089237316195423570985008687907853269984665640564039457584007913129639935n,
+			);
 		const ether = toEther(largeWei);
 		expect(ether).toBe(
 			"115792089237316195423570985008687907853269984665640564039457.584007913129639935",

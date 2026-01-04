@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as BlockHeader from "./index.js";
 import * as Hex from "../Hex/index.js";
+import * as BlockHeader from "./index.js";
 
 describe("BlockHeader.calculateHash", () => {
 	// Ethereum Mainnet Block 1 header - test data matching Zig implementation

@@ -1,4 +1,3 @@
-import * as Bytes32 from "../Bytes32/index.js";
 import * as Hex from "../Hex/index.js";
 
 /**

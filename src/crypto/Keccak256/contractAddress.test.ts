@@ -46,9 +46,7 @@ describe("Keccak256.contractAddress", () => {
 		});
 
 		it("should match viem for Vitalik address at nonce 0", () => {
-			const sender = hexToBytes(
-				"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-			);
+			const sender = hexToBytes("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
 			const result = contractAddress(sender, 0n);
 			expect(bytesToHex(result).toLowerCase()).toBe(
 				"0x3e4ea2156166390f880071d94458efb098473311",
@@ -56,9 +54,7 @@ describe("Keccak256.contractAddress", () => {
 		});
 
 		it("should match viem for Vitalik address at nonce 1", () => {
-			const sender = hexToBytes(
-				"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-			);
+			const sender = hexToBytes("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
 			const result = contractAddress(sender, 1n);
 			expect(bytesToHex(result).toLowerCase()).toBe(
 				"0xdef77ece435de6ff473575472a8a87f9fd68da6f",
@@ -66,9 +62,7 @@ describe("Keccak256.contractAddress", () => {
 		});
 
 		it("should match viem with nonce 127 (single byte RLP)", () => {
-			const sender = hexToBytes(
-				"0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-			);
+			const sender = hexToBytes("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
 			const result = contractAddress(sender, 127n);
 			expect(bytesToHex(result).toLowerCase()).toBe(
 				"0xbf3c56b436fb63ba4b444de19f0de9271d59d670",
@@ -76,9 +70,7 @@ describe("Keccak256.contractAddress", () => {
 		});
 
 		it("should match viem with nonce 128 (2-byte RLP)", () => {
-			const sender = hexToBytes(
-				"0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-			);
+			const sender = hexToBytes("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
 			const result = contractAddress(sender, 128n);
 			expect(bytesToHex(result).toLowerCase()).toBe(
 				"0x81a9abccc2b91d702fac5e62c9faebaf000ec0c8",

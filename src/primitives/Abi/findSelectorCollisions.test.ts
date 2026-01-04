@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { findSelectorCollisions, hasSelectorCollisions } from "./findSelectorCollisions.js";
+import {
+	findSelectorCollisions,
+	hasSelectorCollisions,
+} from "./findSelectorCollisions.js";
 
 describe("findSelectorCollisions", () => {
 	it("returns empty array for ABI with no collisions", () => {

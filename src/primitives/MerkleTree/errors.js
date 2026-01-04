@@ -35,7 +35,9 @@ export class LeafIndexOutOfBoundsError extends Error {
 	 * @param {number} leafCount - Number of leaves in tree
 	 */
 	constructor(index, leafCount) {
-		super(`Leaf index ${index} out of bounds for tree with ${leafCount} leaves`);
+		super(
+			`Leaf index ${index} out of bounds for tree with ${leafCount} leaves`,
+		);
 		this.name = "LeafIndexOutOfBoundsError";
 		this.index = index;
 		this.leafCount = leafCount;

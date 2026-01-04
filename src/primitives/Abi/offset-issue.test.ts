@@ -12,20 +12,34 @@ import * as Abi from "./index.js";
 describe("Issue #104: ABI offset handling for dynamic types", () => {
 	// Test 1: Multiple bytes parameters
 	it("decodes multiple bytes parameters correctly", () => {
-		const params = [{ type: "bytes" }, { type: "bytes" }, { type: "bytes" }] as const;
+		const params = [
+			{ type: "bytes" },
+			{ type: "bytes" },
+			{ type: "bytes" },
+		] as const;
 		const values = ["0x1234", "0x5678", "0x9abcdef0"];
 
 		const encoded = Abi.encodeParameters(params, values);
 		const decoded = Abi.decodeParameters(params, encoded);
 
-		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(values[0].toLowerCase());
-		expect(Hex.fromBytes(decoded[1] as Uint8Array).toLowerCase()).toBe(values[1].toLowerCase());
-		expect(Hex.fromBytes(decoded[2] as Uint8Array).toLowerCase()).toBe(values[2].toLowerCase());
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(
+			values[0].toLowerCase(),
+		);
+		expect(Hex.fromBytes(decoded[1] as Uint8Array).toLowerCase()).toBe(
+			values[1].toLowerCase(),
+		);
+		expect(Hex.fromBytes(decoded[2] as Uint8Array).toLowerCase()).toBe(
+			values[2].toLowerCase(),
+		);
 	});
 
 	// Test 2: Multiple string parameters
 	it("decodes multiple string parameters correctly", () => {
-		const params = [{ type: "string" }, { type: "string" }, { type: "string" }] as const;
+		const params = [
+			{ type: "string" },
+			{ type: "string" },
+			{ type: "string" },
+		] as const;
 		const values = ["hello", "world", "foo bar baz"];
 
 		const encoded = Abi.encodeParameters(params, values);
@@ -38,15 +52,23 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 
 	// Test 3: Mixed bytes and string
 	it("decodes mixed bytes and string parameters", () => {
-		const params = [{ type: "bytes" }, { type: "string" }, { type: "bytes" }] as const;
+		const params = [
+			{ type: "bytes" },
+			{ type: "string" },
+			{ type: "bytes" },
+		] as const;
 		const values = ["0x1234", "hello", "0x5678"];
 
 		const encoded = Abi.encodeParameters(params, values);
 		const decoded = Abi.decodeParameters(params, encoded);
 
-		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(values[0].toLowerCase());
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(
+			values[0].toLowerCase(),
+		);
 		expect(decoded[1]).toBe(values[1]);
-		expect(Hex.fromBytes(decoded[2] as Uint8Array).toLowerCase()).toBe(values[2].toLowerCase());
+		expect(Hex.fromBytes(decoded[2] as Uint8Array).toLowerCase()).toBe(
+			values[2].toLowerCase(),
+		);
 	});
 
 	// Test 4: Static and dynamic mixed
@@ -70,7 +92,9 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 		const decoded = Abi.decodeParameters(params, encoded);
 
 		expect(decoded[0]).toBe(42n);
-		expect(Hex.fromBytes(decoded[1] as Uint8Array).toLowerCase()).toBe("0xdeadbeef");
+		expect(Hex.fromBytes(decoded[1] as Uint8Array).toLowerCase()).toBe(
+			"0xdeadbeef",
+		);
 		expect(String(decoded[2]).toLowerCase()).toBe(values[2].toLowerCase());
 		expect(decoded[3]).toBe("test string");
 		expect(decoded[4]).toBe(true);
@@ -85,7 +109,9 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 		const encoded = Abi.encodeParameters(params, [longBytes, longString]);
 		const decoded = Abi.decodeParameters(params, encoded);
 
-		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(longBytes.toLowerCase());
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(
+			longBytes.toLowerCase(),
+		);
 		expect(decoded[1]).toBe(longString);
 	});
 
@@ -144,12 +170,12 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 
 	// Test 9: Multiple dynamic arrays
 	it("decodes multiple dynamic arrays", () => {
-		const params = [{ type: "uint256[]" }, { type: "string" }, { type: "bytes[]" }] as const;
-		const values = [
-			[1n, 2n, 3n],
-			"separator",
-			["0x11", "0x22"],
-		];
+		const params = [
+			{ type: "uint256[]" },
+			{ type: "string" },
+			{ type: "bytes[]" },
+		] as const;
+		const values = [[1n, 2n, 3n], "separator", ["0x11", "0x22"]];
 
 		const encoded = Abi.encodeParameters(params, values as any);
 		const decoded = Abi.decodeParameters(params, encoded);
@@ -163,7 +189,11 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 
 	// Test 10: Empty dynamic types
 	it("decodes empty bytes and strings", () => {
-		const params = [{ type: "bytes" }, { type: "string" }, { type: "bytes" }] as const;
+		const params = [
+			{ type: "bytes" },
+			{ type: "string" },
+			{ type: "bytes" },
+		] as const;
 		const values = ["0x", "", "0xdeadbeef"];
 
 		const encoded = Abi.encodeParameters(params, values);
@@ -171,7 +201,9 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 
 		expect(Hex.fromBytes(decoded[0] as Uint8Array)).toBe("0x");
 		expect(decoded[1]).toBe("");
-		expect(Hex.fromBytes(decoded[2] as Uint8Array).toLowerCase()).toBe("0xdeadbeef");
+		expect(Hex.fromBytes(decoded[2] as Uint8Array).toLowerCase()).toBe(
+			"0xdeadbeef",
+		);
 	});
 
 	// Test 11: Complex nested structure
@@ -184,10 +216,7 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 					{ type: "bytes" },
 					{
 						type: "tuple",
-						components: [
-							{ type: "string" },
-							{ type: "uint256" },
-						],
+						components: [{ type: "string" }, { type: "uint256" }],
 					},
 				],
 			},

@@ -134,18 +134,15 @@ function validateDomainField(field, value) {
 			}
 			break;
 		default:
-			throw new Eip712InvalidDomainError(
-				`Unknown domain field: '${field}'`,
-				{
-					code: "EIP712_INVALID_DOMAIN",
-					context: {
-						field,
-						value,
-						validFields: Object.keys(DOMAIN_FIELD_TYPES),
-					},
-					docsPath: "/crypto/eip712/domain#error-handling",
+			throw new Eip712InvalidDomainError(`Unknown domain field: '${field}'`, {
+				code: "EIP712_INVALID_DOMAIN",
+				context: {
+					field,
+					value,
+					validFields: Object.keys(DOMAIN_FIELD_TYPES),
 				},
-			);
+				docsPath: "/crypto/eip712/domain#error-handling",
+			});
 	}
 }
 

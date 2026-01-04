@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
-import { Hex } from "../../Hex/index.js";
 import { Hash } from "../../Hash/index.js";
+import { Hex } from "../../Hex/index.js";
 import { Type } from "../types.js";
-import { TransactionEIP2930, serialize, deserialize } from "./index.js";
+import { deserialize, serialize, TransactionEIP2930 } from "./index.js";
 
 describe("TransactionEIP2930 access list serialization", () => {
 	it("serializes access list correctly and round-trips", () => {
@@ -43,12 +43,12 @@ describe("TransactionEIP2930 access list serialization", () => {
 		const deserialized = deserialize(serialized);
 		expect(deserialized.accessList.length).toBe(1);
 		expect(deserialized.accessList[0]?.storageKeys.length).toBe(2);
-		expect(Array.from(deserialized.accessList[0]?.storageKeys[0] ?? [])).toEqual(
-			new Array(32).fill(1),
-		);
-		expect(Array.from(deserialized.accessList[0]?.storageKeys[1] ?? [])).toEqual(
-			new Array(32).fill(2),
-		);
+		expect(
+			Array.from(deserialized.accessList[0]?.storageKeys[0] ?? []),
+		).toEqual(new Array(32).fill(1));
+		expect(
+			Array.from(deserialized.accessList[0]?.storageKeys[1] ?? []),
+		).toEqual(new Array(32).fill(2));
 	});
 
 	it("serializes multiple access list entries", () => {

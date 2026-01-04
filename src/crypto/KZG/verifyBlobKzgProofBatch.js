@@ -60,7 +60,9 @@ export function VerifyBlobKzgProofBatch({
 									? "Uint8Array"
 									: typeof commitment,
 							commitmentLength:
-								commitment instanceof Uint8Array ? commitment.length : undefined,
+								commitment instanceof Uint8Array
+									? commitment.length
+									: undefined,
 							expected: BYTES_PER_COMMITMENT,
 						},
 						docsPath: "/crypto/kzg/verify-blob-kzg-proof-batch#error-handling",

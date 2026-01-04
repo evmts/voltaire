@@ -493,15 +493,11 @@ describe("Abi.decodeParameters - multiple dynamic types offset handling", () => 
 		const encoded = Abi.encodeParameters(params, values);
 		const decoded = Abi.decodeParameters(params, encoded);
 
-		expect(decoded[0]).toBe(
-			"0x0000000000000000000000000000000000000001",
-		);
+		expect(decoded[0]).toBe("0x0000000000000000000000000000000000000001");
 		expect(Hex.fromBytes(decoded[1] as Uint8Array).toLowerCase()).toBe(
 			"0xabcdef",
 		);
-		expect(decoded[2]).toBe(
-			"0x0000000000000000000000000000000000000002",
-		);
+		expect(decoded[2]).toBe("0x0000000000000000000000000000000000000002");
 		expect(decoded[3]).toBe("last param");
 	});
 

@@ -72,7 +72,6 @@ import { gcd } from "./gcd.js";
 import { greaterThan } from "./greaterThan.js";
 import { greaterThanOrEqual } from "./greaterThanOrEqual.js";
 import { isPowerOf2 } from "./isPowerOf2.js";
-import { isUint256 } from "./isUint256.js";
 import { isValid } from "./isValid.js";
 import { isZero } from "./isZero.js";
 import { lcm } from "./lcm.js";

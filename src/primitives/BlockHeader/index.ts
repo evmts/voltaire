@@ -1,10 +1,10 @@
 // Export type
 export type { BlockHeaderType } from "./BlockHeaderType.js";
 
+import { calculateHash as _calculateHash } from "./calculateHash.js";
 // Import internal functions
 import { from as _from } from "./from.js";
 import { fromRpc as _fromRpc } from "./fromRpc.js";
-import { calculateHash as _calculateHash } from "./calculateHash.js";
 
 // Export internal functions (tree-shakeable)
 export { _from, _fromRpc, _calculateHash };

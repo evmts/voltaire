@@ -324,10 +324,7 @@ describe("TransactionEIP4844.deserialize", () => {
 		const serialized = serialize(original);
 		const corruptedData = new Uint8Array(serialized);
 		for (let i = 0; i < corruptedData.length - 31; i++) {
-			if (
-				corruptedData[i] === 0x01 &&
-				corruptedData[i + 31] === 0x01
-			) {
+			if (corruptedData[i] === 0x01 && corruptedData[i + 31] === 0x01) {
 				corruptedData[i] = 0x00;
 				break;
 			}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { equalsConstantTime } from "./equalsConstantTime.js";
 import type { BytesType } from "./BytesType.js";
+import { equalsConstantTime } from "./equalsConstantTime.js";
 
 describe("equalsConstantTime", () => {
 	describe("basic equality", () => {

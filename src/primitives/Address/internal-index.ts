@@ -12,9 +12,9 @@ export { Checksummed };
 
 export { CalculateCreate2Address } from "./calculateCreate2Address.js";
 export { CalculateCreateAddress } from "./calculateCreateAddress.js";
-export { IsContract } from "./isContract.js";
 export { FromPrivateKey } from "./fromPrivateKey.js";
 export { FromPublicKey } from "./fromPublicKey.js";
+export { IsContract } from "./isContract.js";
 export { IsValidChecksum } from "./isValidChecksum.js";
 // Export factory functions from wrappers
 export { ToChecksummed } from "./toChecksummed.js";

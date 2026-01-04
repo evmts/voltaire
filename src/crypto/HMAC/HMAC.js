@@ -1,23 +1,17 @@
 // @ts-nocheck
 export { EmptyKeyError } from "./errors.js";
 export {
-	sha256Hmac as sha256,
 	OUTPUT_SIZE as SHA256_OUTPUT_SIZE,
+	sha256Hmac as sha256,
 } from "./sha256.js";
 export {
-	sha512Hmac as sha512,
 	OUTPUT_SIZE as SHA512_OUTPUT_SIZE,
+	sha512Hmac as sha512,
 } from "./sha512.js";
 
 import { EmptyKeyError } from "./errors.js";
-import {
-	sha256Hmac,
-	OUTPUT_SIZE as SHA256_OUTPUT_SIZE,
-} from "./sha256.js";
-import {
-	sha512Hmac,
-	OUTPUT_SIZE as SHA512_OUTPUT_SIZE,
-} from "./sha512.js";
+import { OUTPUT_SIZE as SHA256_OUTPUT_SIZE, sha256Hmac } from "./sha256.js";
+import { OUTPUT_SIZE as SHA512_OUTPUT_SIZE, sha512Hmac } from "./sha512.js";
 
 /**
  * HMAC - Hash-based Message Authentication Code

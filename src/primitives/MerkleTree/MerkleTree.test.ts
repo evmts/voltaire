@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import * as Hash from "../Hash/index.js";
 import {
 	EmptyTreeError,
+	from,
+	getProof,
 	InvalidProofLengthError,
 	LeafIndexOutOfBoundsError,
 	MerkleTree,
-	from,
-	getProof,
 	verify,
 } from "./index.js";
 

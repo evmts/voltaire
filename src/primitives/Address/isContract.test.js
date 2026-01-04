@@ -16,9 +16,7 @@ describe("Address.IsContract", () => {
 			const mockGetCode = vi.fn().mockResolvedValue("0x");
 			const isContract = IsContract({ eth_getCode: mockGetCode });
 
-			const address = from(
-				"0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
-			);
+			const address = from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 			await isContract(address);
 
 			expect(mockGetCode).toHaveBeenCalledWith(
@@ -34,9 +32,7 @@ describe("Address.IsContract", () => {
 					"0x608060405234801561001057600080fd5b50600436106100415760003560e01c",
 			});
 
-			const address = from(
-				"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-			);
+			const address = from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 			const result = await isContract(address);
 
 			expect(result).toBe(true);
@@ -47,9 +43,7 @@ describe("Address.IsContract", () => {
 				eth_getCode: async () => "0x00",
 			});
 
-			const address = from(
-				"0x1234567890123456789012345678901234567890",
-			);
+			const address = from("0x1234567890123456789012345678901234567890");
 			const result = await isContract(address);
 
 			expect(result).toBe(true);
@@ -57,14 +51,12 @@ describe("Address.IsContract", () => {
 
 		it("returns true for large contract bytecode", async () => {
 			// Simulate a large contract with lots of bytecode
-			const largeBytecode = "0x" + "60".repeat(24576); // 24KB contract
+			const largeBytecode = `0x${"60".repeat(24576)}`; // 24KB contract
 			const isContract = IsContract({
 				eth_getCode: async () => largeBytecode,
 			});
 
-			const address = from(
-				"0x1234567890123456789012345678901234567890",
-			);
+			const address = from("0x1234567890123456789012345678901234567890");
 			const result = await isContract(address);
 
 			expect(result).toBe(true);
@@ -77,9 +69,7 @@ describe("Address.IsContract", () => {
 				eth_getCode: async () => "0x",
 			});
 
-			const address = from(
-				"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-			);
+			const address = from("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
 			const result = await isContract(address);
 
 			expect(result).toBe(false);
@@ -90,9 +80,7 @@ describe("Address.IsContract", () => {
 				eth_getCode: async () => "",
 			});
 
-			const address = from(
-				"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-			);
+			const address = from("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
 			const result = await isContract(address);
 
 			expect(result).toBe(false);
@@ -103,9 +91,7 @@ describe("Address.IsContract", () => {
 				eth_getCode: async () => "0x0",
 			});
 
-			const address = from(
-				"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-			);
+			const address = from("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
 			const result = await isContract(address);
 
 			expect(result).toBe(false);
@@ -118,9 +104,7 @@ describe("Address.IsContract", () => {
 				eth_getCode: async () => "0x",
 			});
 
-			const address = from(
-				"0x0000000000000000000000000000000000000000",
-			);
+			const address = from("0x0000000000000000000000000000000000000000");
 			const result = await isContract(address);
 
 			expect(result).toBe(false);
@@ -135,9 +119,7 @@ describe("Address.IsContract", () => {
 			});
 
 			// ecrecover precompile
-			const precompile = from(
-				"0x0000000000000000000000000000000000000001",
-			);
+			const precompile = from("0x0000000000000000000000000000000000000001");
 			const result = await isContract(precompile);
 
 			// Returns false because eth_getCode returns 0x for precompiles
@@ -151,9 +133,7 @@ describe("Address.IsContract", () => {
 				eth_getCode: async () => "0x",
 			});
 
-			const address = from(
-				"0x1234567890123456789012345678901234567890",
-			);
+			const address = from("0x1234567890123456789012345678901234567890");
 			const result = isContract(address);
 
 			expect(result).toBeInstanceOf(Promise);
@@ -166,9 +146,7 @@ describe("Address.IsContract", () => {
 				},
 			});
 
-			const address = from(
-				"0x1234567890123456789012345678901234567890",
-			);
+			const address = from("0x1234567890123456789012345678901234567890");
 
 			await expect(isContract(address)).rejects.toThrow(
 				"RPC error: rate limited",
@@ -183,9 +161,7 @@ describe("Address.IsContract", () => {
 				},
 			});
 
-			const address = from(
-				"0x1234567890123456789012345678901234567890",
-			);
+			const address = from("0x1234567890123456789012345678901234567890");
 			const result = await isContract(address);
 
 			expect(result).toBe(true);
@@ -198,8 +174,7 @@ describe("Address.IsContract", () => {
 			const isContract = IsContract({
 				eth_getCode: async (addr) => {
 					if (
-						addr.toLowerCase() ===
-						"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+						addr.toLowerCase() === "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 					) {
 						return "0x60806040"; // Simulated bytecode
 					}
@@ -217,8 +192,7 @@ describe("Address.IsContract", () => {
 			const isContract = IsContract({
 				eth_getCode: async (addr) => {
 					if (
-						addr.toLowerCase() ===
-						"0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
+						addr.toLowerCase() === "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
 					) {
 						return "0x"; // EOA has no code
 					}
@@ -238,9 +212,7 @@ describe("Address.IsContract", () => {
 			const mockGetCode = vi.fn().mockResolvedValue("0x6080");
 			const isContract = IsContract({ eth_getCode: mockGetCode });
 
-			const address = from(
-				"0x1234567890123456789012345678901234567890",
-			);
+			const address = from("0x1234567890123456789012345678901234567890");
 			const result = await isContract(address);
 
 			expect(result).toBe(true);

@@ -36,10 +36,7 @@ describe("Rlp.decodeValue", () => {
 			const input = new Uint8Array([0xc2, 0x01, 0x02]);
 			const result = decodeValue(input);
 			expect(Array.isArray(result)).toBe(true);
-			expect(result).toEqual([
-				new Uint8Array([0x01]),
-				new Uint8Array([0x02]),
-			]);
+			expect(result).toEqual([new Uint8Array([0x01]), new Uint8Array([0x02])]);
 		});
 
 		it("decodes empty list to empty array", () => {
