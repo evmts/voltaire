@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HEX_SIZE, SIZE } from "./constants.js";
+import { HEX_SIZE, SIZE, ZERO_ADDRESS } from "./constants.js";
 
 describe("constants", () => {
 	describe("SIZE", () => {
@@ -24,6 +24,24 @@ describe("constants", () => {
 
 		it("equals SIZE * 2 + 2 for 0x prefix", () => {
 			expect(HEX_SIZE).toBe(SIZE * 2 + 2);
+		});
+	});
+
+	describe("ZERO_ADDRESS", () => {
+		it("is a valid hex string of 42 characters", () => {
+			expect(ZERO_ADDRESS.length).toBe(HEX_SIZE);
+		});
+
+		it("starts with 0x prefix", () => {
+			expect(ZERO_ADDRESS.startsWith("0x")).toBe(true);
+		});
+
+		it("contains only zeros after prefix", () => {
+			expect(ZERO_ADDRESS).toBe("0x0000000000000000000000000000000000000000");
+		});
+
+		it("is lowercase", () => {
+			expect(ZERO_ADDRESS).toBe(ZERO_ADDRESS.toLowerCase());
 		});
 	});
 });

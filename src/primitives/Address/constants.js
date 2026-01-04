@@ -18,3 +18,10 @@ export const HEX_SIZE = 42;
  */
 export const NATIVE_ASSET_ADDRESS =
 	"0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+
+/**
+ * Zero address constant (0x0000...0000)
+ * Commonly used for null/empty address checks and burn operations
+ * @type {string}
+ */
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
