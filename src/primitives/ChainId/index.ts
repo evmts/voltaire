@@ -7,6 +7,7 @@ export {
 	BASE,
 	GOERLI,
 	HOLESKY,
+	KNOWN_CHAINS,
 	MAINNET,
 	OPTIMISM,
 	POLYGON,
@@ -16,6 +17,8 @@ export {
 import { equals as _equals } from "./equals.js";
 // Import all functions
 import { from } from "./from.js";
+import { getChainName as _getChainName } from "./getChainName.js";
+import { isKnownChain as _isKnownChain } from "./isKnownChain.js";
 import { isMainnet as _isMainnet } from "./isMainnet.js";
 import { toNumber as _toNumber } from "./toNumber.js";
 
@@ -35,8 +38,16 @@ export function isMainnet(chainId: number): boolean {
 	return _isMainnet.call(from(chainId));
 }
 
+export function isKnownChain(chainId: number): boolean {
+	return _isKnownChain(from(chainId));
+}
+
+export function getChainName(chainId: number): string | undefined {
+	return _getChainName(from(chainId));
+}
+
 // Export internal functions (tree-shakeable)
-export { _toNumber, _equals, _isMainnet };
+export { _toNumber, _equals, _isMainnet, _isKnownChain, _getChainName };
 
 // Export as namespace (convenience)
 export const ChainId = {
@@ -44,4 +55,6 @@ export const ChainId = {
 	toNumber,
 	equals,
 	isMainnet,
+	isKnownChain,
+	getChainName,
 };
