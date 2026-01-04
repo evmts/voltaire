@@ -600,6 +600,48 @@ describe("AesGcm", () => {
 			expect(decrypted).toEqual(plaintext);
 		});
 
+		/**
+		 * SECURITY DOCUMENTATION TEST: Nonce reuse vulnerability
+		 *
+		 * This test documents the CATASTROPHIC security failure that occurs
+		 * when nonces are reused with the same key in AES-GCM.
+		 *
+		 * When nonces are reused, an attacker can:
+		 * 1. XOR ciphertexts to get XOR of plaintexts: ct1 ⊕ ct2 = pt1 ⊕ pt2
+		 * 2. Recover the authentication key H
+		 * 3. Forge arbitrary valid ciphertexts
+		 *
+		 * NEVER reuse nonces. Always use generateNonce() for each encryption.
+		 */
+		it("SECURITY: nonce reuse allows XOR of plaintexts to be recovered", async () => {
+			const key = await AesGcm.generateKey(256);
+			const reusedNonce = new Uint8Array(12).fill(42); // BAD: reused nonce
+
+			const plaintext1 = new TextEncoder().encode("Secret message A");
+			const plaintext2 = new TextEncoder().encode("Secret message B");
+
+			const ciphertext1 = await AesGcm.encrypt(plaintext1, key, reusedNonce);
+			const ciphertext2 = await AesGcm.encrypt(plaintext2, key, reusedNonce);
+
+			// XOR the ciphertexts (excluding the 16-byte auth tag)
+			const ct1Body = ciphertext1.slice(0, -16);
+			const ct2Body = ciphertext2.slice(0, -16);
+			const xorResult = new Uint8Array(ct1Body.length);
+			for (let i = 0; i < ct1Body.length; i++) {
+				xorResult[i] = (ct1Body[i] ?? 0) ^ (ct2Body[i] ?? 0);
+			}
+
+			// XOR of plaintexts
+			const ptXor = new Uint8Array(plaintext1.length);
+			for (let i = 0; i < plaintext1.length; i++) {
+				ptXor[i] = (plaintext1[i] ?? 0) ^ (plaintext2[i] ?? 0);
+			}
+
+			// With nonce reuse, XOR of ciphertexts equals XOR of plaintexts
+			// This is a COMPLETE SECURITY FAILURE
+			expect(xorResult).toEqual(ptXor);
+		});
+
 		it("nonce reuse produces different ciphertext for different plaintext", async () => {
 			const key = await AesGcm.generateKey(256);
 			const nonce = AesGcm.generateNonce();
