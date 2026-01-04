@@ -84,6 +84,7 @@ export { validateGasLimit as validateGasLimit_internal } from "./validateGasLimi
 export { validateGasPrice as validateGasPrice_internal } from "./validateGasPrice.js";
 export { validateNonce as validateNonce_internal } from "./validateNonce.js";
 export { validateValue as validateValue_internal } from "./validateValue.js";
+export { validateYParity as validateYParity_internal } from "./validateYParity.js";
 export { verifySignature as verifySignature_internal } from "./verifySignature.js";
 export { withData as withData_internal } from "./withData.js";
 export { withGasLimit as withGasLimit_internal } from "./withGasLimit.js";
@@ -128,6 +129,7 @@ import { validateGasLimit as _validateGasLimit } from "./validateGasLimit.js";
 import { validateGasPrice as _validateGasPrice } from "./validateGasPrice.js";
 import { validateNonce as _validateNonce } from "./validateNonce.js";
 import { validateValue as _validateValue } from "./validateValue.js";
+import { validateYParity as _validateYParity } from "./validateYParity.js";
 import { verifySignature as _verifySignature } from "./verifySignature.js";
 import { withData as _withData } from "./withData.js";
 import { withGasLimit as _withGasLimit } from "./withGasLimit.js";
@@ -295,6 +297,15 @@ export function validateValue(tx: Any): void {
 export function validateChainId(tx: Any): void {
 	if ("chainId" in tx) {
 		_validateChainId.call(tx);
+	}
+}
+
+/**
+ * Validate yParity is 0 or 1 (for EIP-2930+ transactions)
+ */
+export function validateYParity(tx: Any): void {
+	if ("yParity" in tx) {
+		_validateYParity.call(tx);
 	}
 }
 
