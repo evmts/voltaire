@@ -93,6 +93,26 @@ describe("Receipt", () => {
 			expect(receipt.type).toBe("eip4844");
 			expect(receipt.blobGasUsed).toBe(131072n);
 		});
+
+		it("accepts failed transaction (status=failed)", () => {
+			const failedReceipt = {
+				...mockReceipt,
+				status: TransactionStatus.failed("execution reverted"),
+			};
+			const receipt = Receipt.from(failedReceipt);
+			expect(receipt.status.type).toBe("failed");
+		});
+
+		it("accepts gasUsed=0 and cumulativeGasUsed=0", () => {
+			const zeroGasReceipt = {
+				...mockReceipt,
+				gasUsed: 0n as Uint256Type,
+				cumulativeGasUsed: 0n as Uint256Type,
+			};
+			const receipt = Receipt.from(zeroGasReceipt);
+			expect(receipt.gasUsed).toBe(0n);
+			expect(receipt.cumulativeGasUsed).toBe(0n);
+		});
 	});
 
 	describe("error types", () => {

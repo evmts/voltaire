@@ -313,7 +313,7 @@ describe("Uint16", () => {
 
 		it("should throw on division by zero", () => {
 			expect(() => Uint16.modulo(Uint16.from(100), Uint16.from(0))).toThrow(
-				"Division by zero",
+				"Modulo by zero",
 			);
 		});
 	});

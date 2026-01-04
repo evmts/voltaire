@@ -57,7 +57,9 @@ describe("validate", () => {
 			expect.fail("Expected InvalidCharacterError");
 		} catch (e) {
 			expect(e).toBeInstanceOf(InvalidCharacterError);
-			expect((e as InvalidCharacterError).name).toBe("InvalidHexCharacterError");
+			expect((e as InvalidCharacterError).name).toBe(
+				"InvalidHexCharacterError",
+			);
 		}
 		expect(() => validate("0x123g")).toThrow(InvalidCharacterError);
 		expect(() => validate("0xGHIJ")).toThrow(InvalidCharacterError);
