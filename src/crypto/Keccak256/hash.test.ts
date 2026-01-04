@@ -325,6 +325,96 @@ describe("Keccak256.hash", () => {
 		});
 	});
 
+	describe("copy behavior (not reference)", () => {
+		it("should return a new copy, not a reference to internal state", () => {
+			const input = new Uint8Array([1, 2, 3, 4, 5]);
+
+			const hash1 = hash(input);
+			const hash2 = hash(input);
+
+			// Should be equal values
+			expect(hash1).toEqual(hash2);
+
+			// But should be different objects (copies, not same reference)
+			expect(hash1).not.toBe(hash2);
+		});
+
+		it("should not be affected by mutating the returned hash", () => {
+			const input = new Uint8Array([1, 2, 3, 4, 5]);
+
+			const hash1 = hash(input);
+			const hash1Copy = new Uint8Array(hash1);
+
+			// Mutate the returned hash
+			hash1[0] = 0xff;
+			hash1[1] = 0xff;
+
+			// Hash again
+			const hash2 = hash(input);
+
+			// The new hash should match the original (unmutated) value
+			expect(hash2).toEqual(hash1Copy);
+			// And should not be affected by the mutation
+			expect(hash2[0]).not.toBe(0xff);
+		});
+
+		it("should not share internal state between calls", () => {
+			const input1 = new Uint8Array([1, 2, 3]);
+			const input2 = new Uint8Array([4, 5, 6]);
+
+			const hash1 = hash(input1);
+			const hash1Original = new Uint8Array(hash1);
+
+			// Hash different input
+			const hash2 = hash(input2);
+
+			// First hash should be unchanged
+			expect(hash1).toEqual(hash1Original);
+
+			// Second hash should be different
+			expect(hash2).not.toEqual(hash1);
+		});
+
+		it("should be safe to mutate input after hashing", () => {
+			const input = new Uint8Array([1, 2, 3, 4, 5]);
+
+			const result = hash(input);
+			const resultCopy = new Uint8Array(result);
+
+			// Mutate the input
+			input[0] = 0xff;
+
+			// Result should be unchanged
+			expect(result).toEqual(resultCopy);
+		});
+
+		it("should return independent copies in concurrent-like scenario", () => {
+			const inputs = [
+				new Uint8Array([1]),
+				new Uint8Array([2]),
+				new Uint8Array([3]),
+			];
+
+			// Hash all inputs
+			const hashes = inputs.map((input) => hash(input));
+
+			// Verify all hashes are different objects
+			for (let i = 0; i < hashes.length; i++) {
+				for (let j = i + 1; j < hashes.length; j++) {
+					expect(hashes[i]).not.toBe(hashes[j]);
+				}
+			}
+
+			// Mutate first hash
+			const firstHashOriginal = new Uint8Array(hashes[0]!);
+			hashes[0]![0] = 0xff;
+
+			// Re-hash first input - should match original
+			const rehashedFirst = hash(inputs[0]!);
+			expect(rehashedFirst).toEqual(firstHashOriginal);
+		});
+	});
+
 	describe("collision resistance properties", () => {
 		it("should produce unique hashes for sequential inputs", () => {
 			const hashes = new Set();
