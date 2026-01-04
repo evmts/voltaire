@@ -25,23 +25,24 @@ export function fromNumber(value) {
 		});
 	}
 
-	// Truncate to 32-bit signed integer
-	const num = value | 0;
-
-	if (num > INT32_MAX) {
-		throw new IntegerOverflowError(`Int32 value exceeds maximum: ${num}`, {
-			value: num,
+	// Check bounds BEFORE truncation to detect overflow
+	if (value > INT32_MAX) {
+		throw new IntegerOverflowError(`Int32 value exceeds maximum: ${value}`, {
+			value,
 			max: INT32_MAX,
 			type: "int32",
 		});
 	}
-	if (num < INT32_MIN) {
-		throw new IntegerUnderflowError(`Int32 value is below minimum: ${num}`, {
-			value: num,
+	if (value < INT32_MIN) {
+		throw new IntegerUnderflowError(`Int32 value is below minimum: ${value}`, {
+			value,
 			min: INT32_MIN,
 			type: "int32",
 		});
 	}
+
+	// Truncate to 32-bit signed integer (bounds already checked above)
+	const num = value | 0;
 
 	return /** @type {import('./Int32Type.js').BrandedInt32} */ (num);
 }
