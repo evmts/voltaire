@@ -1,6 +1,14 @@
 /**
  * Check if two Bytes are equal
  *
+ * WARNING: This function is NOT constant-time. It returns early on the first
+ * byte mismatch, which can leak timing information. Do NOT use for comparing:
+ * - Cryptographic hashes
+ * - MACs or signatures
+ * - Passwords or secret tokens
+ *
+ * For security-sensitive comparisons, use `equalsConstantTime()` instead.
+ *
  * @param {import('./BytesType.js').BytesType} a - First Bytes
  * @param {import('./BytesType.js').BytesType} b - Second Bytes
  * @returns {boolean} True if equal
