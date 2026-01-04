@@ -2,7 +2,10 @@
 import { pbkdf2 } from "@noble/hashes/pbkdf2.js";
 import { scrypt } from "@noble/hashes/scrypt.js";
 import { sha256 } from "@noble/hashes/sha2.js";
-import { InvalidScryptNError } from "./errors.js";
+import {
+	InvalidPbkdf2IterationsError,
+	InvalidScryptNError,
+} from "./errors.js";
 
 /**
  * Check if a number is a power of 2
@@ -47,6 +50,16 @@ export function deriveScrypt(
 }
 
 /**
+ * Check if a number is a valid PBKDF2 iteration count
+ *
+ * @param {number} c - Iteration count to check
+ * @returns {boolean} True if c is a valid positive integer
+ */
+export function isValidIterationCount(c) {
+	return Number.isInteger(c) && c >= 1;
+}
+
+/**
  * Derive key using PBKDF2-HMAC-SHA256
  *
  * @param {string | Uint8Array} password - Password
@@ -54,8 +67,13 @@ export function deriveScrypt(
  * @param {number} c - Iteration count (default: 262144)
  * @param {number} dklen - Derived key length (default: 32)
  * @returns {Uint8Array} Derived key
+ * @throws {InvalidPbkdf2IterationsError} If c is not a positive integer
  */
 export function derivePbkdf2(password, salt, c = 262144, dklen = 32) {
+	if (!isValidIterationCount(c)) {
+		throw new InvalidPbkdf2IterationsError(c);
+	}
+
 	const passwordBytes =
 		typeof password === "string"
 			? new TextEncoder().encode(password)
