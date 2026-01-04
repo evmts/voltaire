@@ -1,3 +1,4 @@
+import { COMMITMENT_VERSION_KZG } from "../../Blob/constants.js";
 import { DecodingError } from "../../errors/index.js";
 import { decode } from "../../Rlp/decode.js";
 import { Type } from "../types.js";
@@ -103,7 +104,7 @@ export function deserialize(data) {
 		});
 	}
 	const blobVersionedHashes = blobHashesData.value.map(
-		(/** @type {any} */ hashData) => {
+		(/** @type {any} */ hashData, /** @type {number} */ index) => {
 			if (hashData.type !== "bytes" || hashData.value.length !== 32) {
 				throw new DecodingError("Invalid blob versioned hash", {
 					code: "INVALID_BLOB_HASH",
@@ -111,6 +112,22 @@ export function deserialize(data) {
 					docsPath:
 						"/primitives/transaction/eip4844/deserialize#error-handling",
 				});
+			}
+			// EIP-4844: Version byte must be COMMITMENT_VERSION_KZG (0x01)
+			if (hashData.value[0] !== COMMITMENT_VERSION_KZG) {
+				throw new DecodingError(
+					`Invalid blob versioned hash version byte at index ${index}: expected 0x01, got 0x${hashData.value[0].toString(16).padStart(2, "0")}`,
+					{
+						code: "INVALID_BLOB_HASH_VERSION",
+						context: {
+							index,
+							versionByte: hashData.value[0],
+							expected: COMMITMENT_VERSION_KZG,
+						},
+						docsPath:
+							"/primitives/transaction/eip4844/deserialize#error-handling",
+					},
+				);
 			}
 			return /** @type {import('../../Hash/index.js').HashType} */ (
 				hashData.value
