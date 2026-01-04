@@ -1,3 +1,4 @@
+import { BYTES_PER_COMMITMENT, BYTES_PER_PROOF } from "./constants.js";
 import { KzgError, KzgNotInitializedError } from "./errors.js";
 import { getInitialized } from "./loadTrustedSetup.js";
 import { validateBlob } from "./validateBlob.js";
@@ -41,6 +42,51 @@ export function VerifyBlobKzgProofBatch({
 		}
 		for (const blob of blobs) {
 			validateBlob(blob);
+		}
+		for (let i = 0; i < commitments.length; i++) {
+			const commitment = commitments[i];
+			if (
+				!(commitment instanceof Uint8Array) ||
+				commitment.length !== BYTES_PER_COMMITMENT
+			) {
+				throw new KzgError(
+					`Commitment at index ${i} must be ${BYTES_PER_COMMITMENT} bytes, got ${commitment instanceof Uint8Array ? commitment.length : "not Uint8Array"}`,
+					{
+						code: "KZG_INVALID_COMMITMENT",
+						context: {
+							index: i,
+							commitmentType:
+								commitment instanceof Uint8Array
+									? "Uint8Array"
+									: typeof commitment,
+							commitmentLength:
+								commitment instanceof Uint8Array ? commitment.length : undefined,
+							expected: BYTES_PER_COMMITMENT,
+						},
+						docsPath: "/crypto/kzg/verify-blob-kzg-proof-batch#error-handling",
+					},
+				);
+			}
+		}
+		for (let i = 0; i < proofs.length; i++) {
+			const proof = proofs[i];
+			if (!(proof instanceof Uint8Array) || proof.length !== BYTES_PER_PROOF) {
+				throw new KzgError(
+					`Proof at index ${i} must be ${BYTES_PER_PROOF} bytes, got ${proof instanceof Uint8Array ? proof.length : "not Uint8Array"}`,
+					{
+						code: "KZG_INVALID_PROOF",
+						context: {
+							index: i,
+							proofType:
+								proof instanceof Uint8Array ? "Uint8Array" : typeof proof,
+							proofLength:
+								proof instanceof Uint8Array ? proof.length : undefined,
+							expected: BYTES_PER_PROOF,
+						},
+						docsPath: "/crypto/kzg/verify-blob-kzg-proof-batch#error-handling",
+					},
+				);
+			}
 		}
 		try {
 			return ckzgVerifyBlobKzgProofBatch(blobs, commitments, proofs);

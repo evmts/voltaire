@@ -423,6 +423,65 @@ describe.skipIf(!hasNativeKzg)("KZG Validation - Edge Cases", () => {
 				KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs),
 			).toThrow(KzgInvalidBlobError);
 		});
+
+		it("should reject batch with invalid proof size (not 48 bytes)", () => {
+			const blobs = [KZG.generateRandomBlob(), KZG.generateRandomBlob()];
+			const commitments = blobs.map((b) => KZG.Commitment(b));
+			const proofs = [
+				new Uint8Array(BYTES_PER_PROOF),
+				new Uint8Array(32), // Wrong size - should be 48
+			];
+
+			expect(() =>
+				KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs),
+			).toThrow(KzgError);
+		});
+
+		it("should reject batch with zero-length proof", () => {
+			const blobs = [KZG.generateRandomBlob()];
+			const commitments = blobs.map((b) => KZG.Commitment(b));
+			const proofs = [new Uint8Array(0)]; // Empty proof
+
+			expect(() =>
+				KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs),
+			).toThrow(KzgError);
+		});
+
+		it("should reject batch with invalid commitment size (not 48 bytes)", () => {
+			const blobs = [KZG.generateRandomBlob(), KZG.generateRandomBlob()];
+			const commitments = [
+				new Uint8Array(BYTES_PER_COMMITMENT),
+				new Uint8Array(32), // Wrong size - should be 48
+			];
+			const proofs = [
+				new Uint8Array(BYTES_PER_PROOF),
+				new Uint8Array(BYTES_PER_PROOF),
+			];
+
+			expect(() =>
+				KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs),
+			).toThrow(KzgError);
+		});
+
+		it("should reject batch with non-Uint8Array proof", () => {
+			const blobs = [KZG.generateRandomBlob()];
+			const commitments = blobs.map((b) => KZG.Commitment(b));
+			const proofs = ["not-a-uint8array" as unknown as Uint8Array];
+
+			expect(() =>
+				KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs),
+			).toThrow(KzgError);
+		});
+
+		it("should reject batch with non-Uint8Array commitment", () => {
+			const blobs = [KZG.generateRandomBlob()];
+			const commitments = [null as unknown as Uint8Array];
+			const proofs = [new Uint8Array(BYTES_PER_PROOF)];
+
+			expect(() =>
+				KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs),
+			).toThrow(KzgError);
+		});
 	});
 
 	describe("Trusted Setup", () => {
