@@ -224,3 +224,39 @@ export class InvalidScryptNError extends KeystoreError {
 		this.n = n;
 	}
 }
+
+/**
+ * Error thrown when PBKDF2 iteration count is invalid
+ *
+ * PBKDF2 iteration count must be a positive integer. For security,
+ * a minimum of 1000 iterations is recommended.
+ *
+ * @see https://voltaire.tevm.sh/crypto/keystore
+ * @since 0.1.42
+ */
+export class InvalidPbkdf2IterationsError extends KeystoreError {
+	/** @type {number} */
+	iterations;
+
+	/**
+	 * @param {number} iterations
+	 * @param {object} [options]
+	 * @param {string} [options.code]
+	 * @param {Record<string, unknown>} [options.context]
+	 * @param {string} [options.docsPath]
+	 * @param {Error} [options.cause]
+	 */
+	constructor(iterations, options) {
+		super(
+			`Invalid PBKDF2 iteration count: ${iterations}. Iterations must be a positive integer (minimum 1).`,
+			{
+				code: options?.code || "INVALID_PBKDF2_ITERATIONS",
+				context: { iterations, ...options?.context },
+				docsPath: options?.docsPath || "/crypto/keystore#error-handling",
+				cause: options?.cause,
+			},
+		);
+		this.name = "InvalidPbkdf2IterationsError";
+		this.iterations = iterations;
+	}
+}

@@ -306,6 +306,88 @@ describe("Keystore", () => {
 			);
 		});
 
+		it("throws on invalid PBKDF2 iterations (zero) during encrypt", async () => {
+			const privateKey = PrivateKey.from(
+				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			);
+
+			await expect(
+				Keystore.encrypt(privateKey, "password", { kdf: "pbkdf2", pbkdf2C: 0 }),
+			).rejects.toThrow(Keystore.InvalidPbkdf2IterationsError);
+		});
+
+		it("throws on invalid PBKDF2 iterations (negative) during encrypt", async () => {
+			const privateKey = PrivateKey.from(
+				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			);
+
+			await expect(
+				Keystore.encrypt(privateKey, "password", {
+					kdf: "pbkdf2",
+					pbkdf2C: -1,
+				}),
+			).rejects.toThrow(Keystore.InvalidPbkdf2IterationsError);
+		});
+
+		it("throws on invalid PBKDF2 iterations (non-integer) during encrypt", async () => {
+			const privateKey = PrivateKey.from(
+				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			);
+
+			await expect(
+				Keystore.encrypt(privateKey, "password", {
+					kdf: "pbkdf2",
+					pbkdf2C: 1.5,
+				}),
+			).rejects.toThrow(Keystore.InvalidPbkdf2IterationsError);
+		});
+
+		it("throws on invalid PBKDF2 iterations during decrypt", async () => {
+			// Craft a keystore with invalid iteration count
+			const invalidKeystore: Keystore.KeystoreV3 = {
+				version: 3,
+				id: "test-id",
+				crypto: {
+					cipher: "aes-128-ctr",
+					ciphertext:
+						"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					cipherparams: {
+						iv: "0123456789abcdef0123456789abcdef",
+					},
+					kdf: "pbkdf2",
+					kdfparams: {
+						c: 0, // Invalid: must be positive
+						dklen: 32,
+						prf: "hmac-sha256",
+						salt: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					},
+					mac: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+				},
+			};
+
+			expect(() => Keystore.decrypt(invalidKeystore, "password")).toThrow(
+				Keystore.InvalidPbkdf2IterationsError,
+			);
+		});
+
+		it("accepts valid PBKDF2 iteration counts", async () => {
+			const privateKey = PrivateKey.from(
+				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			);
+
+			// Test various valid iteration counts
+			const validCValues = [1, 100, 1000, 10000, 100000];
+
+			for (const c of validCValues) {
+				const keystore = await Keystore.encrypt(privateKey, "password", {
+					kdf: "pbkdf2",
+					pbkdf2C: c,
+				});
+				const params = keystore.crypto.kdfparams as Keystore.Pbkdf2Params;
+				expect(params.c).toBe(c);
+			}
+		});
+
 		it("accepts valid power of 2 scrypt N values", async () => {
 			const privateKey = PrivateKey.from(
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
