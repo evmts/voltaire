@@ -29,8 +29,10 @@ export function EncodeValue({ keccak256, hashStruct }) {
 		const result = new Uint8Array(32);
 
 		// array types (hash the array encoding) - CHECK BEFORE uint/int to avoid matching "uint256[]"
-		if (type.endsWith("[]")) {
-			const baseType = type.slice(0, -2);
+		// Handle both dynamic arrays (uint256[]) and fixed-size arrays (uint256[3])
+		const arrayMatch = type.match(/^(.+)\[(\d*)\]$/);
+		if (arrayMatch) {
+			const baseType = /** @type {string} */ (arrayMatch[1]);
 			const arr = /** @type {import('./EIP712Type.js').MessageValue[]} */ (
 				value
 			);

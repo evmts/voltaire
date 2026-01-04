@@ -26,9 +26,10 @@ export function encodeValue(type, value, types, crypto) {
 		return encodeStringOrBytes(type, value, crypto);
 	}
 
-	// Handle array types
-	if (type.endsWith("[]")) {
-		const baseType = type.slice(0, -2);
+	// Handle array types - both dynamic (uint256[]) and fixed-size (uint256[3])
+	const arrayMatch = type.match(/^(.+)\[(\d*)\]$/);
+	if (arrayMatch) {
+		const baseType = /** @type {string} */ (arrayMatch[1]);
 		if (!Array.isArray(value)) {
 			throw new InvalidEIP712ValueError(`Expected array for type ${type}`, {
 				value,
