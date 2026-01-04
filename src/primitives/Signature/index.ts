@@ -27,6 +27,7 @@ import { getS } from "./getS.js";
 import { getV } from "./getV.js";
 import { is } from "./is.js";
 import { isCanonical } from "./isCanonical.js";
+import { isSignature } from "./isSignature.js";
 import { normalize } from "./normalize.js";
 import { toBytes } from "./toBytes.js";
 import { toCompact } from "./toCompact.js";
@@ -62,6 +63,7 @@ export {
 	normalize,
 	verify,
 	is,
+	isSignature,
 	equals,
 };
 
@@ -91,6 +93,7 @@ const Signature = {
 	normalize,
 	verify,
 	is,
+	isSignature,
 	equals,
 };
 
