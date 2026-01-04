@@ -158,6 +158,61 @@ describe("SSZ Basic Types", () => {
 			expect(() => Ssz.encodeBasic(42, "invalid")).toThrow("Unsupported type");
 		});
 	});
+
+	describe("range validation", () => {
+		// uint8 range: 0-255
+		it("throws on uint8 value > 255", () => {
+			expect(() => Ssz.encodeBasic(256, "uint8")).toThrow(RangeError);
+		});
+
+		it("throws on negative uint8 value", () => {
+			expect(() => Ssz.encodeBasic(-1, "uint8")).toThrow(RangeError);
+		});
+
+		it("throws on non-integer uint8 value", () => {
+			expect(() => Ssz.encodeBasic(1.5, "uint8")).toThrow(RangeError);
+		});
+
+		it("accepts max uint8 value (255)", () => {
+			expect(Ssz.encodeBasic(255, "uint8")).toEqual(new Uint8Array([255]));
+		});
+
+		// uint16 range: 0-65535
+		it("throws on uint16 value > 65535", () => {
+			expect(() => Ssz.encodeBasic(65536, "uint16")).toThrow(RangeError);
+		});
+
+		it("throws on negative uint16 value", () => {
+			expect(() => Ssz.encodeBasic(-1, "uint16")).toThrow(RangeError);
+		});
+
+		it("throws on non-integer uint16 value", () => {
+			expect(() => Ssz.encodeBasic(1.5, "uint16")).toThrow(RangeError);
+		});
+
+		it("accepts max uint16 value (65535)", () => {
+			const encoded = Ssz.encodeBasic(65535, "uint16");
+			expect(encoded).toEqual(new Uint8Array([0xff, 0xff]));
+		});
+
+		// uint32 range: 0-4294967295
+		it("throws on uint32 value > 4294967295", () => {
+			expect(() => Ssz.encodeBasic(4294967296, "uint32")).toThrow(RangeError);
+		});
+
+		it("throws on negative uint32 value", () => {
+			expect(() => Ssz.encodeBasic(-1, "uint32")).toThrow(RangeError);
+		});
+
+		it("throws on non-integer uint32 value", () => {
+			expect(() => Ssz.encodeBasic(1.5, "uint32")).toThrow(RangeError);
+		});
+
+		it("accepts max uint32 value (4294967295)", () => {
+			const encoded = Ssz.encodeBasic(4294967295, "uint32");
+			expect(encoded).toEqual(new Uint8Array([0xff, 0xff, 0xff, 0xff]));
+		});
+	});
 });
 
 describe("SSZ Hash Tree Root", () => {
