@@ -4,9 +4,10 @@ export type { BlockType } from "./BlockType.js";
 // Import internal functions
 import { from as _from } from "./from.js";
 import { fromRpc as _fromRpc } from "./fromRpc.js";
+import { calculateHash as _calculateHash } from "./calculateHash.js";
 
 // Export internal functions (tree-shakeable)
-export { _from, _fromRpc };
+export { _from, _fromRpc, _calculateHash };
 
 // Re-export RPC types from dependencies
 export type { RpcBlockHeader } from "../BlockHeader/index.js";
@@ -43,8 +44,16 @@ export function fromRpc(rpc: RpcBlock) {
 	return _fromRpc(rpc);
 }
 
+// Public wrapper for calculateHash
+export function calculateHash(
+	block: import("./BlockType.js").BlockType,
+): import("../BlockHash/BlockHashType.js").BlockHashType {
+	return _calculateHash(block);
+}
+
 // Namespace export
 export const Block = {
 	from,
 	fromRpc,
+	calculateHash,
 };
