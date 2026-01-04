@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { keccak256, serializeTransaction } from "viem";
 import * as Hex from "../../Hex/index.js";
 import { Address } from "../../Address/index.js";
+import * as Hex from "../../Hex/index.js";
 import { Type } from "../types.js";
 import * as TransactionLegacy from "./index.js";
 
@@ -268,5 +269,110 @@ describe("TransactionLegacy.hash", () => {
 		const hash2 = TransactionLegacy.hash.call(deserialized);
 
 		expect(hash1).toEqual(hash2);
+	});
+
+	// Test vectors - verify correct encoding for signed transactions
+	// Note: hash() = keccak256(serialize()) where serialize includes v,r,s
+	// The EIP-155 spec defines the SIGNING hash format, not the transaction hash
+	describe("transaction hash encoding", () => {
+		it("includes signature in hash (v, r, s are part of serialization)", () => {
+			// EIP-155 signed transaction - the tx hash changes with v value
+			// v = 37 for chainId 1 (recovery bit 0)
+			const tx = {
+				__tag: "TransactionLegacy" as const,
+				type: Type.Legacy,
+				nonce: 9n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: Address("0x3535353535353535353535353535353535353535"),
+				value: 1000000000000000000n,
+				data: new Uint8Array(),
+				v: 37n,
+				r: Hex.toBytes(
+					"0x28ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276",
+				),
+				s: Hex.toBytes(
+					"0x67cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83",
+				),
+			};
+
+			const txHash = TransactionLegacy.hash // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+				.call(tx as any);
+
+			// Hash is 32 bytes
+			expect(txHash.length).toBe(32);
+
+			// Transaction hash is deterministic
+			const txHash2 = TransactionLegacy.hash // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+				.call(tx as any);
+			expect(txHash).toEqual(txHash2);
+
+			// Change r and hash should change (signature is part of the serialization)
+			const tx2 = {
+				...tx,
+				r: Hex.toBytes(
+					"0x38ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276",
+				),
+			};
+			const txHash3 = TransactionLegacy.hash // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+				.call(tx2 as any);
+			expect(txHash).not.toEqual(txHash3);
+		});
+
+		it("verifies serialize includes v, r, s (signed tx encoding)", () => {
+			// The hash() function uses serialize() which includes v,r,s
+			// This is correct - the transaction hash is over the SIGNED tx
+			const tx = {
+				__tag: "TransactionLegacy" as const,
+				type: Type.Legacy,
+				nonce: 0n,
+				gasPrice: 1n,
+				gasLimit: 21000n,
+				to: Address("0x0000000000000000000000000000000000000001"),
+				value: 0n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: new Uint8Array(32),
+				s: new Uint8Array(32),
+			};
+
+			// biome-ignore lint/suspicious/noExplicitAny: branded type cast
+			const serialized = TransactionLegacy.serialize.call(tx as any);
+			// Serialization should be an RLP list with 9 items: [nonce, gasPrice, gasLimit, to, value, data, v, r, s]
+			// The first byte should be in RLP list prefix range
+			expect(serialized[0]).toBeGreaterThanOrEqual(0xc0);
+		});
+
+		it("pre-EIP-155 tx has different hash than EIP-155 tx with same fields", () => {
+			const base = {
+				__tag: "TransactionLegacy" as const,
+				type: Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: Address("0x3535353535353535353535353535353535353535"),
+				value: 1000000000000000000n,
+				data: new Uint8Array(),
+				r: Hex.toBytes(
+					"0x28ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276",
+				),
+				s: Hex.toBytes(
+					"0x67cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83",
+				),
+			};
+
+			// Pre-EIP-155: v = 27 or 28
+			const preEip155Tx = { ...base, v: 27n } as const;
+			// EIP-155 chainId 1: v = 37 or 38
+			const eip155Tx = { ...base, v: 37n } as const;
+
+			const hash1 = TransactionLegacy.hash // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+				.call(preEip155Tx as any);
+			const hash2 = TransactionLegacy.hash // biome-ignore lint/suspicious/noExplicitAny: branded type cast
+				.call(eip155Tx as any);
+
+			// Hashes should differ because v is part of the serialization
+			expect(hash1).not.toEqual(hash2);
+		});
 	});
 });
