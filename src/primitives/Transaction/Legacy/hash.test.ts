@@ -1,9 +1,103 @@
 import { describe, expect, it } from "vitest";
+import { keccak256, serializeTransaction } from "viem";
+import * as Hex from "../../Hex/index.js";
 import { Address } from "../../Address/index.js";
 import { Type } from "../types.js";
 import * as TransactionLegacy from "./index.js";
 
 describe("TransactionLegacy.hash", () => {
+	describe("cross-validation with viem", () => {
+		it("matches viem for pre-EIP-155 transaction (v=27)", () => {
+			const tx = {
+				__tag: "TransactionLegacy" as const,
+				type: Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+				value: 1000000000000000000n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(2),
+			};
+
+			// biome-ignore lint/suspicious/noExplicitAny: branded type cast
+			const hash = TransactionLegacy.hash.call(tx as any);
+			const hashHex = Hex.fromBytes(hash);
+
+			// Expected hash from viem
+			expect(hashHex).toBe(
+				"0x822ea70c916e490db54858649be030ca9cf5727bf24d0024e6cd424636d98b2b",
+			);
+		});
+
+		it("matches viem for EIP-155 transaction (v=37, chainId=1)", () => {
+			const tx = {
+				__tag: "TransactionLegacy" as const,
+				type: Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+				value: 1000000000000000000n,
+				data: new Uint8Array(),
+				v: 37n, // chainId 1: v = 1 * 2 + 35 = 37
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(2),
+			};
+
+			// biome-ignore lint/suspicious/noExplicitAny: branded type cast
+			const hash = TransactionLegacy.hash.call(tx as any);
+			const hashHex = Hex.fromBytes(hash);
+
+			// Expected hash from viem
+			expect(hashHex).toBe(
+				"0x9354317a6de6e196cbbf1e6b734b647bb4ad2cd373bad3c5129b9674520cdd76",
+			);
+		});
+
+		it("hash equals keccak256(serialize) matching viem behavior", () => {
+			const tx = {
+				__tag: "TransactionLegacy" as const,
+				type: Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+				value: 1000000000000000000n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(2),
+			};
+
+			// Compute hash using our implementation
+			// biome-ignore lint/suspicious/noExplicitAny: branded type cast
+			const hash = TransactionLegacy.hash.call(tx as any);
+
+			// Compute hash using viem for comparison
+			const viemTx = {
+				type: "legacy" as const,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gas: 21000n,
+				to: "0x742d35cc6634c0532925a3b844bc9e7595f0beb0" as `0x${string}`,
+				value: 1000000000000000000n,
+				data: "0x" as const,
+			};
+			const viemSig = {
+				r: "0x0101010101010101010101010101010101010101010101010101010101010101" as `0x${string}`,
+				s: "0x0202020202020202020202020202020202020202020202020202020202020202" as `0x${string}`,
+				v: 27n,
+			};
+			const viemSerialized = serializeTransaction(viemTx, viemSig);
+			const viemHash = keccak256(viemSerialized);
+
+			expect(Hex.fromBytes(hash)).toBe(viemHash);
+		});
+	});
+
 	it("computes transaction hash", () => {
 		const tx = {
 			__tag: "TransactionLegacy" as const,
