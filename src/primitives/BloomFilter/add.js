@@ -1,7 +1,11 @@
-import { hash } from "./hash.js";
+import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
+import { hashFromKeccak } from "./hash.js";
 
 /**
  * Add an item to the bloom filter
+ *
+ * Uses Ethereum's bloom filter algorithm per Yellow Paper:
+ * m(x, i) = KEC(x)[i, i + 1] mod 2048 for i in {0, 1, 2}
  *
  * @see https://voltaire.tevm.sh/primitives/bloomfilter for BloomFilter documentation
  * @since 0.0.0
@@ -18,8 +22,11 @@ import { hash } from "./hash.js";
  * ```
  */
 export function add(filter, item) {
+	// Compute keccak256 once for efficiency
+	const keccakHash = keccak256(item);
+
 	for (let i = 0; i < filter.k; i++) {
-		const h = hash(item, i, filter.m);
+		const h = hashFromKeccak(keccakHash, i, filter.m);
 		const idx = Math.floor(h / 8);
 		const bit = h % 8;
 		const byte = filter[idx];
