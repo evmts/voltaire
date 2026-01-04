@@ -1,3 +1,10 @@
+/** @type {number} */
+const UINT8_MAX = 0xff;
+/** @type {number} */
+const UINT16_MAX = 0xffff;
+/** @type {number} */
+const UINT32_MAX = 0xffffffff;
+
 /**
  * @description Encodes basic types using SSZ serialization
  * @param {number | bigint | boolean} value - Value to encode
@@ -7,20 +14,38 @@
 export function encodeBasic(value, type) {
 	switch (type) {
 		case "uint8": {
+			const n = Number(value);
+			if (n < 0 || n > UINT8_MAX || !Number.isInteger(n)) {
+				throw new RangeError(
+					`Value ${value} out of range for uint8 (0-${UINT8_MAX})`,
+				);
+			}
 			const buf = new Uint8Array(1);
-			buf[0] = Number(value);
+			buf[0] = n;
 			return buf;
 		}
 		case "uint16": {
+			const n = Number(value);
+			if (n < 0 || n > UINT16_MAX || !Number.isInteger(n)) {
+				throw new RangeError(
+					`Value ${value} out of range for uint16 (0-${UINT16_MAX})`,
+				);
+			}
 			const buf = new Uint8Array(2);
 			const view = new DataView(buf.buffer);
-			view.setUint16(0, Number(value), true); // little-endian
+			view.setUint16(0, n, true); // little-endian
 			return buf;
 		}
 		case "uint32": {
+			const n = Number(value);
+			if (n < 0 || n > UINT32_MAX || !Number.isInteger(n)) {
+				throw new RangeError(
+					`Value ${value} out of range for uint32 (0-${UINT32_MAX})`,
+				);
+			}
 			const buf = new Uint8Array(4);
 			const view = new DataView(buf.buffer);
-			view.setUint32(0, Number(value), true); // little-endian
+			view.setUint32(0, n, true); // little-endian
 			return buf;
 		}
 		case "uint64": {
