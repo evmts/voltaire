@@ -139,6 +139,63 @@ describe("FeeMarket.BaseFee", () => {
 		);
 		expect(baseFee).toBe(112_500_000_000n);
 	});
+
+	// Issue #132: Verify bigint prevents overflow in base fee calculation
+	it("handles extreme values without overflow (bigint safety)", () => {
+		// Values that would overflow u64 intermediate calculations
+		const extremeBaseFee = 2n ** 64n; // Beyond u64 max
+		const baseFee = FeeMarket.BaseFee(
+			30_000_000n, // Full block
+			30_000_000n,
+			extremeBaseFee,
+		);
+		// Should increase by 12.5% without overflow
+		const expected = extremeBaseFee + extremeBaseFee / 8n;
+		expect(baseFee).toBe(expected);
+	});
+
+	it("handles u64 max intermediate multiplication without overflow", () => {
+		// Test case: parentBaseFee * gasUsedDelta would overflow u64
+		const largeBaseFee = 2n ** 63n;
+		const baseFee = FeeMarket.BaseFee(
+			30_000_000n, // Full block (double target)
+			30_000_000n,
+			largeBaseFee,
+		);
+		// Should calculate correctly with bigint
+		expect(baseFee).toBeGreaterThan(largeBaseFee);
+		// Verify 12.5% increase
+		expect(baseFee).toBe(largeBaseFee + largeBaseFee / 8n);
+	});
+
+	it("handles extremely large values in decrease calculation", () => {
+		const extremeBaseFee = 2n ** 100n;
+		const baseFee = FeeMarket.BaseFee(
+			7_500_000n, // 25% full (50% below target)
+			30_000_000n,
+			extremeBaseFee,
+		);
+		// Should decrease by 6.25%
+		const expected = extremeBaseFee - extremeBaseFee / 16n;
+		expect(baseFee).toBe(expected);
+	});
+
+	it("handles realistic mainnet stress scenario", () => {
+		// Simulates sustained high gas prices with maximum throughput
+		let baseFee = 500_000_000_000n; // 500 gwei
+		const gasLimit = 30_000_000n;
+
+		// 100 consecutive full blocks
+		for (let i = 0; i < 100; i++) {
+			baseFee = FeeMarket.BaseFee(gasLimit, gasLimit, baseFee);
+		}
+
+		// Should compound ~12.5% per block without overflow
+		// After 100 blocks: 500 * 1.125^100 ≈ massive value
+		expect(baseFee).toBeGreaterThan(500_000_000_000n);
+		// Verify it's a reasonable calculation (not corrupted by overflow)
+		expect(baseFee.toString().length).toBeGreaterThan(10);
+	});
 });
 
 // ============================================================================
