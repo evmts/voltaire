@@ -66,6 +66,36 @@ describe("Uint256.toBytes", () => {
 		});
 	});
 
+	describe("ethereum compatibility (big-endian)", () => {
+		it("produces correct big-endian bytes for EVM word encoding", () => {
+			// Ethereum uses big-endian for uint256 in ABI encoding and storage
+			// Value 0x1234 should be [0, 0, ..., 0x12, 0x34] (MSB first)
+			const value = from(0x1234n);
+			const bytes = toBytes(value);
+			expect(bytes[30]).toBe(0x12);
+			expect(bytes[31]).toBe(0x34);
+		});
+
+		it("matches expected RLP encoding format", () => {
+			// RLP encodes integers in big-endian with no leading zeros
+			// toBytes produces fixed 32-byte big-endian (padded on left)
+			const value = from(0xdeadbeefn);
+			const bytes = toBytes(value);
+			expect(bytes[28]).toBe(0xde);
+			expect(bytes[29]).toBe(0xad);
+			expect(bytes[30]).toBe(0xbe);
+			expect(bytes[31]).toBe(0xef);
+		});
+
+		it("MSB at index 0, LSB at index 31", () => {
+			// Explicit verification: most significant byte at lowest index
+			const value = from((0x80n << 248n) | 0x01n); // MSB=0x80, LSB=0x01
+			const bytes = toBytes(value);
+			expect(bytes[0]).toBe(0x80); // MSB at index 0
+			expect(bytes[31]).toBe(0x01); // LSB at index 31
+		});
+	});
+
 	describe("round-trip", () => {
 		it("fromBytes(toBytes(x)) = x", () => {
 			const values = [ZERO, ONE, from(255n), from(256n), from(1n << 128n), MAX];
