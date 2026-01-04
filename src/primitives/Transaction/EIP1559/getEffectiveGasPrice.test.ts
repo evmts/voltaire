@@ -221,4 +221,68 @@ describe("TransactionEIP1559.getEffectiveGasPrice", () => {
 
 		expect(effectivePrice).toBe(0n);
 	});
+
+	it("returns baseFee when baseFee exceeds maxFee (tx ineligible for block)", () => {
+		// Per EIP-1559: tx with maxFee < baseFee is ineligible for inclusion
+		// Function returns baseFee (clamped effectivePriorityFee to 0)
+		const tx: TransactionEIP1559Type = {
+			__brand: "TransactionEIP1559",
+			type: Type.EIP1559,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 5000000000n,
+			maxFeePerGas: 10000000000n,
+			gasLimit: 21000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 1000000000000000000n,
+			data: new Uint8Array(),
+			accessList: [],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		};
+
+		const baseFee = 100000000000n; // 100 gwei, way above maxFee of 10 gwei
+		const effectivePrice = TransactionEIP1559.getEffectiveGasPrice(tx, baseFee);
+
+		// Clamped: returns baseFee + 0 = baseFee
+		expect(effectivePrice).toBe(baseFee);
+	});
+
+	it("never returns negative values even with edge case inputs", () => {
+		// This documents the fix for GitHub issue #78
+		const tx: TransactionEIP1559Type = {
+			__brand: "TransactionEIP1559",
+			type: Type.EIP1559,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 2000000000n,
+			maxFeePerGas: 5000000000n,
+			gasLimit: 21000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 1000000000000000000n,
+			data: new Uint8Array(),
+			accessList: [],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		};
+
+		// Test various baseFee values that exceed maxFee
+		const testCases = [
+			6000000000n, // slightly above maxFee
+			100000000000n, // 10x maxFee
+			1000000000000n, // 100x maxFee
+		];
+
+		for (const baseFee of testCases) {
+			const effectivePrice = TransactionEIP1559.getEffectiveGasPrice(
+				tx,
+				baseFee,
+			);
+			expect(effectivePrice).toBeGreaterThanOrEqual(0n);
+			// When baseFee > maxFee, result should be baseFee (priority fee clamped to 0)
+			expect(effectivePrice).toBe(baseFee);
+		}
+	});
 });
