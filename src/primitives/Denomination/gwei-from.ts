@@ -20,11 +20,17 @@ import type { GweiType as BrandedGwei } from "./GweiType.js";
  */
 export function from(value: bigint | number | string): BrandedGwei {
 	if (typeof value === "bigint") {
+		if (value < 0n) {
+			throw new Error(`Gwei value cannot be negative: ${value}`);
+		}
 		return value.toString() as BrandedGwei;
 	}
 	if (typeof value === "number") {
 		if (!Number.isFinite(value)) {
 			throw new Error(`Invalid Gwei value: ${value}`);
+		}
+		if (value < 0) {
+			throw new Error(`Gwei value cannot be negative: ${value}`);
 		}
 		return value.toString() as BrandedGwei;
 	}
@@ -32,6 +38,9 @@ export function from(value: bigint | number | string): BrandedGwei {
 	const trimmed = value.trim();
 	if (trimmed === "" || Number.isNaN(Number(trimmed))) {
 		throw new Error(`Invalid Gwei value: ${value}`);
+	}
+	if (Number(trimmed) < 0) {
+		throw new Error(`Gwei value cannot be negative: ${value}`);
 	}
 	return trimmed as BrandedGwei;
 }

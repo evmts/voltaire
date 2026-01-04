@@ -17,6 +17,18 @@ describe("Wei", () => {
 		expect(wei).toBe(1000n);
 	});
 
+	it("rejects negative bigint", () => {
+		expect(() => Wei(-1n)).toThrow("cannot be negative");
+	});
+
+	it("rejects negative number", () => {
+		expect(() => Wei(-1)).toThrow("cannot be negative");
+	});
+
+	it("rejects negative string", () => {
+		expect(() => Wei("-1")).toThrow("cannot be negative");
+	});
+
 	it("converts Wei to Gwei", () => {
 		const wei = Wei(1_000_000_000n);
 		const gwei = Wei.toGwei(wei);

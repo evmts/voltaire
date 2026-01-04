@@ -64,4 +64,26 @@ describe("from", () => {
 			expect(gwei).toBe(large.toString());
 		});
 	});
+
+	describe("negative value rejection", () => {
+		it("rejects negative bigint", () => {
+			expect(() => from(-1n)).toThrow("cannot be negative");
+		});
+
+		it("rejects negative number", () => {
+			expect(() => from(-1)).toThrow("cannot be negative");
+		});
+
+		it("rejects negative string", () => {
+			expect(() => from("-1")).toThrow("cannot be negative");
+		});
+
+		it("rejects negative decimal number", () => {
+			expect(() => from(-1.5)).toThrow("cannot be negative");
+		});
+
+		it("rejects negative decimal string", () => {
+			expect(() => from("-0.001")).toThrow("cannot be negative");
+		});
+	});
 });
