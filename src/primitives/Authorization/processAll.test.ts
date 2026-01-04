@@ -61,16 +61,16 @@ describe("Authorization.processAll - single authorization", () => {
 		expect(result[0].delegatedAddress).toBe(auth.address);
 	});
 
-	it("throws for single invalid authorization", () => {
+	it("throws for single invalid authorization with zero r", () => {
 		const auth: AuthorizationType = {
-			chainId: 0n,
+			chainId: 1n,
 			address: createAddress(1),
 			nonce: 0n,
 			yParity: 0,
-			r: 0x123n,
+			r: 0n,
 			s: 0x456n,
 		};
-		expect(() => processAll([auth])).toThrow("Chain ID must be non-zero");
+		expect(() => processAll([auth])).toThrow("Signature r cannot be zero");
 	});
 });
 
@@ -148,7 +148,7 @@ describe("Authorization.processAll - mix of valid and invalid", () => {
 	const privateKey = new Uint8Array(32);
 	privateKey.fill(1);
 
-	it("throws on first invalid authorization", () => {
+	it("throws on first invalid authorization with zero r", () => {
 		const validAuth = sign(
 			{
 				chainId: 1n,
@@ -159,16 +159,16 @@ describe("Authorization.processAll - mix of valid and invalid", () => {
 		);
 
 		const invalidAuth: AuthorizationType = {
-			chainId: 0n,
+			chainId: 1n,
 			address: createAddress(2),
 			nonce: 0n,
 			yParity: 0,
-			r: 0x123n,
+			r: 0n,
 			s: 0x456n,
 		};
 
 		expect(() => processAll([validAuth, invalidAuth])).toThrow(
-			"Chain ID must be non-zero",
+			"Signature r cannot be zero",
 		);
 	});
 
