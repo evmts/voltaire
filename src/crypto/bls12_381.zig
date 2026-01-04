@@ -1102,3 +1102,78 @@ test "BLS signature test vector - Ethereum style" {
 
     try testing.expect(valid);
 }
+
+test "signature aggregation is commutative" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    // BLS signature aggregation uses elliptic curve point addition,
+    // which is commutative: sig1 + sig2 + sig3 == sig3 + sig1 + sig2
+    const message = "Test message for commutativity";
+    const dst = DST.ETH2_SIGNATURE;
+
+    // Generate 3 key pairs and signatures
+    const sk1 = try SecretKey.generate();
+    const sk2 = try SecretKey.generate();
+    const sk3 = try SecretKey.generate();
+
+    const sig1 = try sign(&sk1, message, dst);
+    const sig2 = try sign(&sk2, message, dst);
+    const sig3 = try sign(&sk3, message, dst);
+
+    // Aggregate in order: 1, 2, 3
+    const order_123 = [_]*const Signature{ &sig1, &sig2, &sig3 };
+    const agg_123 = try aggregateSignatures(&order_123);
+
+    // Aggregate in order: 3, 1, 2
+    const order_312 = [_]*const Signature{ &sig3, &sig1, &sig2 };
+    const agg_312 = try aggregateSignatures(&order_312);
+
+    // Aggregate in order: 2, 3, 1
+    const order_231 = [_]*const Signature{ &sig2, &sig3, &sig1 };
+    const agg_231 = try aggregateSignatures(&order_231);
+
+    // All orderings should produce the same aggregated signature
+    try testing.expect(agg_123.isEqual(&agg_312));
+    try testing.expect(agg_123.isEqual(&agg_231));
+    try testing.expect(agg_312.isEqual(&agg_231));
+
+    // Verify all produce valid aggregated signatures
+    const pk1 = sk1.toPublicKey();
+    const pk2 = sk2.toPublicKey();
+    const pk3 = sk3.toPublicKey();
+    const pks = [_]*const PublicKey{ &pk1, &pk2, &pk3 };
+
+    const valid = try verifyAggregate(&agg_123, &pks, message, dst);
+    try testing.expect(valid);
+}
+
+test "public key aggregation is commutative" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    // BLS public key aggregation uses elliptic curve point addition,
+    // which is commutative: pk1 + pk2 + pk3 == pk3 + pk1 + pk2
+    const sk1 = try SecretKey.generate();
+    const sk2 = try SecretKey.generate();
+    const sk3 = try SecretKey.generate();
+
+    const pk1 = sk1.toPublicKey();
+    const pk2 = sk2.toPublicKey();
+    const pk3 = sk3.toPublicKey();
+
+    // Aggregate in order: 1, 2, 3
+    const order_123 = [_]*const PublicKey{ &pk1, &pk2, &pk3 };
+    const agg_123 = try aggregatePublicKeys(&order_123);
+
+    // Aggregate in order: 3, 1, 2
+    const order_312 = [_]*const PublicKey{ &pk3, &pk1, &pk2 };
+    const agg_312 = try aggregatePublicKeys(&order_312);
+
+    // Aggregate in order: 2, 3, 1
+    const order_231 = [_]*const PublicKey{ &pk2, &pk3, &pk1 };
+    const agg_231 = try aggregatePublicKeys(&order_231);
+
+    // All orderings should produce the same aggregated public key
+    try testing.expect(agg_123.isEqual(&agg_312));
+    try testing.expect(agg_123.isEqual(&agg_231));
+    try testing.expect(agg_312.isEqual(&agg_231));
+}
