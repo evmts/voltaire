@@ -140,6 +140,46 @@ test "RIPEMD160 hashFixed function" {
     try std.testing.expectEqual(expected, result);
 }
 
+test "RIPEMD160 rejects undersized output buffer" {
+    const test_input = "abc";
+
+    // Buffer too small (19 bytes instead of 20)
+    var small_output: [19]u8 = undefined;
+    const result = RIPEMD160.hash(test_input, &small_output);
+    try std.testing.expectError(HashError.OutputBufferTooSmall, result);
+
+    // Zero-length buffer
+    var empty_output: [0]u8 = undefined;
+    const result2 = RIPEMD160.hash(test_input, &empty_output);
+    try std.testing.expectError(HashError.OutputBufferTooSmall, result2);
+
+    // Buffer exactly 20 bytes should succeed
+    var correct_output: [20]u8 = undefined;
+    try RIPEMD160.hash(test_input, &correct_output);
+
+    // Buffer larger than 20 bytes should also succeed
+    var large_output: [32]u8 = undefined;
+    try RIPEMD160.hash(test_input, &large_output);
+}
+
+test "SHA256 rejects undersized output buffer" {
+    const test_input = "hello";
+
+    // Buffer too small (31 bytes instead of 32)
+    var small_output: [31]u8 = undefined;
+    const result = SHA256.hash(test_input, &small_output);
+    try std.testing.expectError(HashError.OutputBufferTooSmall, result);
+
+    // Zero-length buffer
+    var empty_output: [0]u8 = undefined;
+    const result2 = SHA256.hash(test_input, &empty_output);
+    try std.testing.expectError(HashError.OutputBufferTooSmall, result2);
+
+    // Buffer exactly 32 bytes should succeed
+    var correct_output: [32]u8 = undefined;
+    try SHA256.hash(test_input, &correct_output);
+}
+
 /// BLAKE2F compression function
 /// EIP-152 compatible compression function for BLAKE2b
 pub const BLAKE2F = struct {
