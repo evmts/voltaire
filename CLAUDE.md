@@ -44,6 +44,14 @@ Never make time or work estimates of how long work will take it is not useful co
 - Run `pnpm typecheck` or `tsc --noEmit` to verify before considering work complete
 - Zero type errors is the only acceptable state
 
+### Console Policy
+
+**NO console.log/warn/error in library code.** This is a library - users control their own logging.
+
+- Never use `console.*` in src/ (except tests)
+- Throw errors instead of logging warnings
+- If something is worth warning about, it's worth throwing for
+
 **Status**: Alpha release. Expect frequent refactors/renames. Coordinate changes that affect published exports.
 
 ### Workflow

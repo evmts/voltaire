@@ -34,13 +34,14 @@ export function fromAbiEncoded(bytes) {
 	}
 	// Validate first 12 bytes are zeros per ABI spec
 	for (let i = 0; i < 12; i++) {
-		if (bytes[i] !== 0) {
+		const byte = /** @type {number} */ (bytes[i]);
+		if (byte !== 0) {
 			throw new InvalidAbiEncodedPaddingError(
-				`ABI-encoded address has non-zero byte at position ${i}: 0x${bytes[i].toString(16).padStart(2, "0")}`,
+				`ABI-encoded address has non-zero byte at position ${i}: 0x${byte.toString(16).padStart(2, "0")}`,
 				{
 					value: bytes,
 					expected: "First 12 bytes must be zero",
-					context: { position: i, byte: bytes[i] },
+					context: { position: i, byte },
 				},
 			);
 		}
