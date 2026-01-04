@@ -22,6 +22,7 @@ import * as Uint from "../Uint/index.js";
 
 const WEI_PER_GWEI = 1_000_000_000n;
 const GWEI_PER_ETHER = 1_000_000_000n;
+const GWEI_DECIMALS = 9;
 
 /**
  * Creates a Gwei value from bigint, number, or string
@@ -49,15 +50,30 @@ export function fromWei(wei) {
 
 /**
  * Creates Gwei from Ether value
+ * Supports decimal strings like "1.5" or "0.001"
  *
  * @param {Ether} ether
  * @returns {Gwei}
  */
 export function fromEther(ether) {
-	const gwei = Uint.times(
-		/** @type {Uint.Type} */ (/** @type {unknown} */ (ether)),
-		Uint.from(GWEI_PER_ETHER),
-	);
+	const str = String(ether);
+	const [intPart, decPart = ""] = str.split(".");
+
+	if (decPart.length > GWEI_DECIMALS) {
+		throw new Error(
+			`Ether value has too many decimal places for Gwei conversion (max ${GWEI_DECIMALS}): ${ether}`,
+		);
+	}
+
+	// Pad decimal part to 9 digits (gwei has 9 decimal places relative to ether)
+	const paddedDec = decPart.padEnd(GWEI_DECIMALS, "0");
+
+	// Combine integer and decimal parts
+	const combined = intPart + paddedDec;
+
+	// Remove leading zeros and convert to bigint
+	const gwei = BigInt(combined.replace(/^0+/, "") || "0");
+
 	return /** @type {Gwei} */ (/** @type {unknown} */ (gwei));
 }
 
@@ -77,16 +93,25 @@ export function toWei(gwei) {
 
 /**
  * Converts Gwei to Ether
+ * Returns a string with proper decimal representation
  *
  * @param {Gwei} gwei
  * @returns {Ether}
  */
 export function toEther(gwei) {
-	const ether = Uint.dividedBy(
-		/** @type {Uint.Type} */ (/** @type {unknown} */ (gwei)),
-		Uint.from(GWEI_PER_ETHER),
-	);
-	return /** @type {Ether} */ (/** @type {unknown} */ (ether));
+	const gweiValue = BigInt(gwei);
+	const intPart = gweiValue / GWEI_PER_ETHER;
+	const decPart = gweiValue % GWEI_PER_ETHER;
+
+	if (decPart === 0n) {
+		return /** @type {Ether} */ (intPart.toString());
+	}
+
+	// Convert decimal part to string with leading zeros
+	const decStr = decPart.toString().padStart(GWEI_DECIMALS, "0");
+	// Remove trailing zeros
+	const trimmedDec = decStr.replace(/0+$/, "");
+	return /** @type {Ether} */ (`${intPart}.${trimmedDec}`);
 }
 
 /**

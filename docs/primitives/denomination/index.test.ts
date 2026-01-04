@@ -66,7 +66,7 @@ describe("Denomination Documentation - index.mdx", () => {
 
 			const wei = Wei(1_000_000_000_000_000_000n); // 1 ETH in Wei
 			const ether = Wei.toEther(wei);
-			expect(ether).toBe(1n);
+			expect(ether).toBe("1"); // Ether is a string type to support decimals
 		});
 
 		it("should convert Ether to Wei", async () => {
@@ -88,7 +88,7 @@ describe("Denomination Documentation - index.mdx", () => {
 
 			const gwei = Gwei(1_000_000_000n); // 1 ETH in Gwei
 			const ether = Gwei.toEther(gwei);
-			expect(ether).toBe(1n);
+			expect(ether).toBe("1"); // Ether is a string type to support decimals
 		});
 
 		it("should convert Ether to Gwei", async () => {
@@ -254,7 +254,7 @@ describe("Denomination Documentation - index.mdx", () => {
 
 			const wei = Wei(1_000_000_000_000_000_000n);
 			const ether = Wei.toEther(wei);
-			expect(ether).toBe(1n);
+			expect(ether).toBe("1"); // Ether is a string type to support decimals
 		});
 	});
 
@@ -305,7 +305,7 @@ describe("Denomination Documentation - index.mdx", () => {
 
 			const gwei = Gwei(1_000_000_000n);
 			const ether = Gwei.toEther(gwei);
-			expect(ether).toBe(1n);
+			expect(ether).toBe("1"); // Ether is a string type to support decimals
 		});
 	});
 
@@ -316,7 +316,7 @@ describe("Denomination Documentation - index.mdx", () => {
 			);
 
 			const ether = Ether.from(1n);
-			expect(ether).toBe(1n);
+			expect(ether).toBe("1"); // Ether is a string type to support decimals
 		});
 
 		it("should have fromWei() method", async () => {
@@ -326,7 +326,7 @@ describe("Denomination Documentation - index.mdx", () => {
 
 			const wei = Wei(1_000_000_000_000_000_000n);
 			const ether = Ether.fromWei(wei);
-			expect(ether).toBe(1n);
+			expect(ether).toBe("1"); // Ether is a string type to support decimals
 		});
 
 		it("should have fromGwei() method", async () => {
@@ -336,7 +336,7 @@ describe("Denomination Documentation - index.mdx", () => {
 
 			const gwei = Gwei(1_000_000_000n);
 			const ether = Ether.fromGwei(gwei);
-			expect(ether).toBe(1n);
+			expect(ether).toBe("1"); // Ether is a string type to support decimals
 		});
 
 		it("should have toWei() method", async () => {
