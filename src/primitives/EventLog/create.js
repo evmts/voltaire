@@ -4,6 +4,9 @@
  * @typedef {import('./EventLogType.js').EventLogType} BrandedEventLog
  */
 
+import { InvalidLengthError } from "../errors/index.js";
+import { isHash } from "../Hash/isHash.js";
+
 /**
  * Create event log
  *
@@ -20,7 +23,7 @@
  * @param {number} [params.logIndex] - Log index
  * @param {boolean} [params.removed] - Whether log was removed
  * @returns {BrandedEventLog} EventLog object
- * @throws {never}
+ * @throws {InvalidLengthError} If any topic is not exactly 32 bytes
  * @example
  * ```javascript
  * import * as EventLog from './primitives/EventLog/index.js';
@@ -34,6 +37,26 @@
  * ```
  */
 export function create(params) {
+	// Validate topics are 32-byte hashes
+	for (let i = 0; i < params.topics.length; i++) {
+		const topic = params.topics[i];
+		if (!isHash(topic)) {
+			/** @type {unknown} */
+			const t = topic;
+			const length = t instanceof Uint8Array ? t.length : "unknown";
+			throw new InvalidLengthError(
+				`Topic at index ${i} is not a valid 32-byte hash`,
+				{
+					code: "EVENTLOG_INVALID_TOPIC_LENGTH",
+					value: topic,
+					expected: "32-byte Uint8Array (Hash)",
+					context: { index: i, actualLength: length },
+					docsPath: "/primitives/eventlog",
+				},
+			);
+		}
+	}
+
 	/** @type {any} */
 	const result = {
 		address: params.address,
