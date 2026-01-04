@@ -467,4 +467,55 @@ describe("Ripemd160 hash function", () => {
 			expect(hash(input)).toEqual(ripemd160(input));
 		});
 	});
+
+	// GitHub Issue #135: Output length validation
+	describe("output length validation (Issue #135)", () => {
+		it("should always return exactly 20 bytes", () => {
+			// The output is always 20 bytes regardless of input size
+			const testCases = [
+				new Uint8Array(0),
+				new Uint8Array(1),
+				new Uint8Array(20),
+				new Uint8Array(32),
+				new Uint8Array(64),
+				new Uint8Array(1000),
+				new Uint8Array(10000),
+			];
+
+			for (const input of testCases) {
+				const result = hash(input);
+				expect(result.length).toBe(20);
+			}
+		});
+
+		it("should return 20 bytes for empty input", () => {
+			const result = hash(new Uint8Array(0));
+			expect(result.length).toBe(20);
+		});
+
+		it("should return 20 bytes for string input", () => {
+			const result = hash("test");
+			expect(result.length).toBe(20);
+		});
+
+		it("should return 20 bytes for empty string", () => {
+			const result = hash("");
+			expect(result.length).toBe(20);
+		});
+
+		it("should return 20 bytes for very long input", () => {
+			const input = new Uint8Array(1024 * 1024); // 1MB
+			for (let i = 0; i < input.length; i++) {
+				input[i] = i & 0xff;
+			}
+			const result = hash(input);
+			expect(result.length).toBe(20);
+		});
+
+		it("should return Uint8Array instance", () => {
+			const result = hash("test");
+			expect(result).toBeInstanceOf(Uint8Array);
+			expect(result.length).toBe(20);
+		});
+	});
 });
