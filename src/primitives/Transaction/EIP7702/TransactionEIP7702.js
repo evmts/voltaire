@@ -7,6 +7,7 @@ import {
 	recoverPublicKey as secp256k1RecoverPublicKey,
 	verify as secp256k1Verify,
 } from "../../../crypto/Secp256k1/index.js";
+import { InvalidRangeError } from "../../errors/index.js";
 import { encode as rlpEncode } from "../../Rlp/encode.js";
 import { Type } from "../types.js";
 import { deserialize } from "./deserialize.js";
@@ -52,6 +53,22 @@ export {
  * @type {TransactionEIP7702Constructor}
  */
 export function TransactionEIP7702(tx) {
+	// Validate maxPriorityFeePerGas <= maxFeePerGas
+	if (tx.maxPriorityFeePerGas > tx.maxFeePerGas) {
+		throw new InvalidRangeError(
+			"Max priority fee per gas cannot exceed max fee per gas",
+			{
+				code: "MAX_PRIORITY_FEE_TOO_HIGH",
+				value: tx.maxPriorityFeePerGas,
+				expected: `Max priority fee <= ${tx.maxFeePerGas}`,
+				context: {
+					maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
+					maxFeePerGas: tx.maxFeePerGas,
+				},
+				docsPath: "/primitives/transaction/validate-gas-price#error-handling",
+			},
+		);
+	}
 	return /** @type {TransactionEIP7702Type} */ ({
 		type: Type.EIP7702,
 		chainId: tx.chainId,
