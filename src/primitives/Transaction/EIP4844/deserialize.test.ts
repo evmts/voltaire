@@ -169,4 +169,177 @@ describe("TransactionEIP4844.deserialize", () => {
 		const invalidData = new Uint8Array([0x02, 0xc0]); // Wrong type
 		expect(() => deserialize(invalidData)).toThrow();
 	});
+
+	it("throws for invalid blob versioned hash version byte (0x00)", () => {
+		const original = TransactionEIP4844({
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 2000000000n,
+			blobVersionedHashes: [
+				// Valid version byte 0x01
+				Hash(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		});
+
+		const serialized = serialize(original);
+		// Corrupt the version byte of the blob hash (find 0x01 at start of hash)
+		// The hash is 32 bytes, version byte is first byte
+		// Find the blob hash in serialized data and change version byte to 0x00
+		const corruptedData = new Uint8Array(serialized);
+		// Find the blob versioned hash in the serialized RLP
+		// It starts with 0x01 and is 32 bytes
+		for (let i = 0; i < corruptedData.length - 31; i++) {
+			if (
+				corruptedData[i] === 0x01 &&
+				corruptedData[i + 31] === 0x01 // Last byte of our test hash
+			) {
+				corruptedData[i] = 0x00; // Change version byte to invalid 0x00
+				break;
+			}
+		}
+
+		expect(() => deserialize(corruptedData)).toThrow(
+			"Invalid blob versioned hash version byte",
+		);
+	});
+
+	it("throws for invalid blob versioned hash version byte (0x02)", () => {
+		const original = TransactionEIP4844({
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 2000000000n,
+			blobVersionedHashes: [
+				Hash(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		});
+
+		const serialized = serialize(original);
+		const corruptedData = new Uint8Array(serialized);
+		// Find and corrupt the version byte to 0x02
+		for (let i = 0; i < corruptedData.length - 31; i++) {
+			if (
+				corruptedData[i] === 0x01 &&
+				corruptedData[i + 31] === 0x01 // Last byte of our test hash
+			) {
+				corruptedData[i] = 0x02; // Change version byte to invalid 0x02
+				break;
+			}
+		}
+
+		expect(() => deserialize(corruptedData)).toThrow(
+			"Invalid blob versioned hash version byte",
+		);
+	});
+
+	it("throws for invalid blob versioned hash version byte (0xff)", () => {
+		const original = TransactionEIP4844({
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 2000000000n,
+			blobVersionedHashes: [
+				Hash(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		});
+
+		const serialized = serialize(original);
+		const corruptedData = new Uint8Array(serialized);
+		// Find and corrupt the version byte to 0xff
+		for (let i = 0; i < corruptedData.length - 31; i++) {
+			if (
+				corruptedData[i] === 0x01 &&
+				corruptedData[i + 31] === 0x01 // Last byte of our test hash
+			) {
+				corruptedData[i] = 0xff; // Change version byte to invalid 0xff
+				break;
+			}
+		}
+
+		expect(() => deserialize(corruptedData)).toThrow(
+			"Invalid blob versioned hash version byte",
+		);
+	});
+
+	it("includes error code INVALID_BLOB_HASH_VERSION for invalid version byte", () => {
+		const original = TransactionEIP4844({
+			type: Type.EIP4844,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 2000000000n,
+			blobVersionedHashes: [
+				Hash(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		});
+
+		const serialized = serialize(original);
+		const corruptedData = new Uint8Array(serialized);
+		for (let i = 0; i < corruptedData.length - 31; i++) {
+			if (
+				corruptedData[i] === 0x01 &&
+				corruptedData[i + 31] === 0x01
+			) {
+				corruptedData[i] = 0x00;
+				break;
+			}
+		}
+
+		try {
+			deserialize(corruptedData);
+			expect.fail("Should have thrown");
+		} catch (e) {
+			expect((e as Error & { code?: string }).code).toBe(
+				"INVALID_BLOB_HASH_VERSION",
+			);
+		}
+	});
 });
