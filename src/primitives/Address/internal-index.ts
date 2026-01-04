@@ -12,6 +12,7 @@ export { Checksummed };
 
 export { CalculateCreate2Address } from "./calculateCreate2Address.js";
 export { CalculateCreateAddress } from "./calculateCreateAddress.js";
+export { IsContract } from "./isContract.js";
 export { FromPrivateKey } from "./fromPrivateKey.js";
 export { FromPublicKey } from "./fromPublicKey.js";
 export { IsValidChecksum } from "./isValidChecksum.js";
@@ -26,6 +27,7 @@ import { CalculateCreate2Address as CalculateCreate2AddressFactory } from "./cal
 import { CalculateCreateAddress as CalculateCreateAddressFactory } from "./calculateCreateAddress.js";
 import { FromPrivateKey as FromPrivateKeyFactory } from "./fromPrivateKey.js";
 import { FromPublicKey as FromPublicKeyFactory } from "./fromPublicKey.js";
+import { IsContract } from "./isContract.js";
 import { IsValidChecksum as IsValidChecksumFactory } from "./isValidChecksum.js";
 import { ToChecksummed as ToChecksummedFactory } from "./toChecksummed.js";
 
@@ -185,6 +187,7 @@ export const BrandedAddress = {
 	CalculateCreateAddress: CalculateCreateAddressFactory,
 	calculateCreate2Address,
 	CalculateCreate2Address: CalculateCreate2AddressFactory,
+	IsContract,
 	compare,
 	lessThan,
 	greaterThan,
