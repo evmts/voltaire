@@ -218,6 +218,28 @@ describe("BytesType", () => {
 			const b = new Uint8Array([0x01]) as Bytes.BytesType;
 			expect(Bytes.compare(a, b)).toBe(1);
 		});
+
+		it("should be compatible with Array.sort", () => {
+			const a = new Uint8Array([0x03]) as Bytes.BytesType;
+			const b = new Uint8Array([0x01]) as Bytes.BytesType;
+			const c = new Uint8Array([0x02]) as Bytes.BytesType;
+			const sorted = [a, b, c].sort(Bytes.compare);
+			expect(sorted[0]).toEqual(new Uint8Array([0x01]));
+			expect(sorted[1]).toEqual(new Uint8Array([0x02]));
+			expect(sorted[2]).toEqual(new Uint8Array([0x03]));
+		});
+
+		it("should compare empty bytes as equal", () => {
+			const a = new Uint8Array([]) as Bytes.BytesType;
+			const b = new Uint8Array([]) as Bytes.BytesType;
+			expect(Bytes.compare(a, b)).toBe(0);
+		});
+
+		it("should return -1 when first is empty and second is not", () => {
+			const a = new Uint8Array([]) as Bytes.BytesType;
+			const b = new Uint8Array([0x01]) as Bytes.BytesType;
+			expect(Bytes.compare(a, b)).toBe(-1);
+		});
 	});
 
 	describe("size", () => {
