@@ -126,7 +126,10 @@ export function Address(
 	return result;
 }
 
-// Alias for Address()
+/**
+ * Alias for Address() constructor
+ * @deprecated Use Address() directly instead
+ */
 Address.from = (value: number | bigint | string | Uint8Array): AddressType => {
 	const result = BrandedAddress.from(value);
 	Object.setPrototypeOf(result, Address.prototype);
@@ -134,6 +137,12 @@ Address.from = (value: number | bigint | string | Uint8Array): AddressType => {
 };
 Address.from.prototype = Address.prototype;
 
+/**
+ * Create Address from base64 encoded string
+ * @param value - Base64 encoded address (must decode to 20 bytes)
+ * @returns Address instance
+ * @throws {InvalidAddressLengthError} If decoded length is not 20 bytes
+ */
 Address.fromBase64 = (value: string): AddressType => {
 	const result = BrandedAddress.fromBase64(value);
 	Object.setPrototypeOf(result, Address.prototype);
@@ -141,6 +150,18 @@ Address.fromBase64 = (value: string): AddressType => {
 };
 Address.fromBase64.prototype = Address.prototype;
 
+/**
+ * Create Address from hex string
+ * @param value - Hex string with 0x prefix (40 hex chars = 20 bytes)
+ * @param crypto - Optional crypto dependencies for checksummed operations
+ * @returns Address instance
+ * @throws {InvalidHexFormatError} If hex format is invalid
+ * @throws {InvalidAddressLengthError} If length is not 20 bytes
+ * @example
+ * ```ts
+ * Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3');
+ * ```
+ */
 Address.fromHex = (value: string, crypto?: AddressCrypto): AddressType => {
 	const result = BrandedAddress.fromHex(value);
 	Object.setPrototypeOf(result, Address.prototype);
@@ -156,6 +177,12 @@ Address.fromHex = (value: string, crypto?: AddressCrypto): AddressType => {
 };
 Address.fromHex.prototype = Address.prototype;
 
+/**
+ * Create Address from bytes
+ * @param value - 20-byte Uint8Array
+ * @returns Address instance
+ * @throws {InvalidAddressLengthError} If not exactly 20 bytes
+ */
 Address.fromBytes = (value: Uint8Array): AddressType => {
 	const result = BrandedAddress.fromBytes(value);
 	Object.setPrototypeOf(result, Address.prototype);
@@ -163,6 +190,15 @@ Address.fromBytes = (value: Uint8Array): AddressType => {
 };
 Address.fromBytes.prototype = Address.prototype;
 
+/**
+ * Create Address from number or bigint
+ * @param value - Number or bigint to convert (will be left-padded to 20 bytes)
+ * @returns Address instance
+ * @example
+ * ```ts
+ * Address.fromNumber(1); // 0x0000...0001
+ * ```
+ */
 Address.fromNumber = (value: number | bigint): AddressType => {
 	const result = BrandedAddress.fromNumber(value);
 	Object.setPrototypeOf(result, Address.prototype);
@@ -170,6 +206,22 @@ Address.fromNumber = (value: number | bigint): AddressType => {
 };
 Address.fromNumber.prototype = Address.prototype;
 
+/**
+ * Create Address from secp256k1 public key
+ * Derives Ethereum address: keccak256(pubkey)[12:32]
+ * @param xOrPublicKey - Either x coordinate (bigint) or 64-byte uncompressed public key
+ * @param y - y coordinate (required when first param is bigint)
+ * @returns Address instance
+ * @throws {InvalidAddressLengthError} If public key is not 64 bytes
+ * @throws {InvalidValueError} If x is bigint but y is not provided
+ * @example
+ * ```ts
+ * // From 64-byte public key
+ * Address.fromPublicKey(publicKeyBytes);
+ * // From coordinates
+ * Address.fromPublicKey(xCoord, yCoord);
+ * ```
+ */
 Address.fromPublicKey = ((
 	xOrPublicKey: bigint | Uint8Array,
 	y?: bigint,
@@ -185,6 +237,13 @@ Address.fromPublicKey.prototype = Address.prototype;
 
 export const fromPublicKey = Address.fromPublicKey;
 
+/**
+ * Create Address from secp256k1 private key
+ * Derives public key then Ethereum address
+ * @param value - 32-byte private key
+ * @returns Address instance
+ * @throws {InvalidValueError} If private key is invalid
+ */
 Address.fromPrivateKey = (value: Uint8Array): AddressType => {
 	const result = BrandedAddress.fromPrivateKey(value);
 	Object.setPrototypeOf(result, Address.prototype);
@@ -192,6 +251,11 @@ Address.fromPrivateKey = (value: Uint8Array): AddressType => {
 };
 Address.fromPrivateKey.prototype = Address.prototype;
 
+/**
+ * Create Address from ABI-encoded bytes (32 bytes, left-padded)
+ * @param value - 32-byte ABI-encoded address
+ * @returns Address instance (extracts last 20 bytes)
+ */
 Address.fromAbiEncoded = (value: Uint8Array): AddressType => {
 	const result = BrandedAddress.fromAbiEncoded(value);
 	Object.setPrototypeOf(result, Address.prototype);
@@ -199,27 +263,124 @@ Address.fromAbiEncoded = (value: Uint8Array): AddressType => {
 };
 Address.fromAbiEncoded.prototype = Address.prototype;
 
+// ============================================================================
 // Static utility methods (don't return Address instances)
+// ============================================================================
+
+/**
+ * Convert Address to lowercase hex string
+ * @param address - Address to convert
+ * @returns Lowercase hex with 0x prefix
+ */
 Address.toHex = BrandedAddress.toHex;
+
+/**
+ * Get raw bytes of Address
+ * @param address - Address to convert
+ * @returns 20-byte Uint8Array
+ */
 Address.toBytes = BrandedAddress.toBytes;
+
+/**
+ * Convert Address to EIP-55 checksummed hex string
+ * @param address - Address to convert
+ * @returns Checksummed hex string
+ */
 Address.toChecksummed = BrandedAddress.toChecksummed;
+
+/**
+ * Convert Address to lowercase hex string
+ * @param address - Address to convert
+ * @returns Lowercase hex with 0x prefix
+ */
 Address.toLowercase = BrandedAddress.toLowercase;
+
+/**
+ * Convert Address to uppercase hex string
+ * @param address - Address to convert
+ * @returns Uppercase hex with 0x prefix
+ */
 Address.toUppercase = BrandedAddress.toUppercase;
+
+/**
+ * Convert Address to uint256 (bigint)
+ * @param address - Address to convert
+ * @returns BigInt representation
+ */
 Address.toU256 = BrandedAddress.toU256;
+
+/**
+ * Encode Address for ABI (left-pad to 32 bytes)
+ * @param address - Address to encode
+ * @returns 32-byte ABI-encoded address
+ */
 Address.toAbiEncoded = BrandedAddress.toAbiEncoded;
+
+/**
+ * Convert Address to shortened hex (e.g., 0x1234...5678)
+ * @param address - Address to shorten
+ * @param startLength - Chars to show at start (default: 6)
+ * @param endLength - Chars to show at end (default: 4)
+ * @returns Shortened hex string
+ */
 Address.toShortHex = BrandedAddress.toShortHex;
+
+/**
+ * Check if Address is zero address (0x0000...0000)
+ * @param address - Address to check
+ * @returns True if all bytes are zero
+ */
 Address.isZero = BrandedAddress.isZero;
+
+/**
+ * Check if two Addresses are equal (byte comparison)
+ * @param a - First address
+ * @param b - Second address
+ * @returns True if equal
+ */
 Address.equals = BrandedAddress.equals;
+
+/**
+ * Check if value is a valid Ethereum address format
+ * @param value - String or bytes to validate
+ * @returns True if valid address format
+ */
 Address.isValid = BrandedAddress.isValid;
+
+/**
+ * Check if hex string has valid EIP-55 checksum
+ * @param value - Hex string to validate
+ * @returns True if checksum is valid
+ */
 Address.isValidChecksum = BrandedAddress.isValidChecksum;
+
+/**
+ * Type guard: check if value is an Address instance
+ * @param value - Value to check
+ * @returns True if value is Address
+ */
 Address.is = BrandedAddress.is;
 
+/**
+ * Create zero address (0x0000...0000)
+ * @returns Zero address instance
+ */
 Address.zero = (): AddressType => {
 	const result = BrandedAddress.zero();
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
 
+/**
+ * Create Address from individual bytes
+ * @param items - 20 byte values (0-255)
+ * @returns Address instance
+ * @throws {InvalidAddressLengthError} If not exactly 20 items
+ * @example
+ * ```ts
+ * Address.of(0x74, 0x2d, 0x35, ...); // 20 bytes
+ * ```
+ */
 Address.of = (...items: number[]): AddressType => {
 	const result = Uint8Array.of(...items);
 	if (result.length !== BrandedAddress.SIZE) {
@@ -236,11 +397,37 @@ Address.of = (...items: number[]): AddressType => {
 	return result as AddressType;
 };
 
+/**
+ * Compare two addresses lexicographically
+ * @param a - First address
+ * @param b - Second address
+ * @returns -1 if a < b, 0 if equal, 1 if a > b
+ */
 Address.compare = BrandedAddress.compare;
+
+/**
+ * Check if first address is less than second
+ * @param a - First address
+ * @param b - Second address
+ * @returns True if a < b
+ */
 Address.lessThan = BrandedAddress.lessThan;
+
+/**
+ * Check if first address is greater than second
+ * @param a - First address
+ * @param b - Second address
+ * @returns True if a > b
+ */
 Address.greaterThan = BrandedAddress.greaterThan;
 
 // Export standalone helper functions
+
+/**
+ * Sort array of addresses lexicographically
+ * @param addresses - Array to sort
+ * @returns New sorted array
+ */
 export const sortAddresses = (addresses: AddressType[]): AddressType[] => {
 	return BrandedAddress.sortAddresses(addresses).map((addr) => {
 		Object.setPrototypeOf(addr, Address.prototype);
@@ -248,6 +435,11 @@ export const sortAddresses = (addresses: AddressType[]): AddressType[] => {
 	});
 };
 
+/**
+ * Remove duplicate addresses from array
+ * @param addresses - Array with potential duplicates
+ * @returns New array with duplicates removed
+ */
 export const deduplicateAddresses = (
 	addresses: AddressType[],
 ): AddressType[] => {
@@ -261,6 +453,11 @@ export const toHex = BrandedAddress.toHex;
 export const fromHex = Address.fromHex;
 export const equals = Address.equals;
 
+/**
+ * Sort array of addresses lexicographically
+ * @param addresses - Array to sort
+ * @returns New sorted array
+ */
 Address.sortAddresses = (addresses: AddressType[]): AddressType[] => {
 	return BrandedAddress.sortAddresses(addresses).map((addr) => {
 		Object.setPrototypeOf(addr, Address.prototype);
@@ -268,6 +465,11 @@ Address.sortAddresses = (addresses: AddressType[]): AddressType[] => {
 	});
 };
 
+/**
+ * Remove duplicate addresses from array
+ * @param addresses - Array with potential duplicates
+ * @returns New array with duplicates removed
+ */
 Address.deduplicateAddresses = (addresses: AddressType[]): AddressType[] => {
 	return BrandedAddress.deduplicateAddresses(addresses).map((addr) => {
 		Object.setPrototypeOf(addr, Address.prototype);
@@ -275,12 +477,25 @@ Address.deduplicateAddresses = (addresses: AddressType[]): AddressType[] => {
 	});
 };
 
+/**
+ * Create a copy of an Address
+ * @param address - Address to clone
+ * @returns New Address instance with same bytes
+ */
 Address.clone = (address: AddressType): AddressType => {
 	const result = BrandedAddress.clone(address);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
 
+/**
+ * Calculate CREATE contract deployment address
+ * Formula: keccak256(rlp([sender, nonce]))[12:32]
+ * @param address - Deployer address
+ * @param nonce - Transaction nonce
+ * @returns Contract address that would be created
+ * @throws {InvalidValueError} If nonce is negative
+ */
 Address.calculateCreateAddress = (
 	address: AddressType,
 	nonce: bigint,
@@ -290,6 +505,14 @@ Address.calculateCreateAddress = (
 	return result;
 };
 
+/**
+ * Calculate CREATE2 contract deployment address
+ * Formula: keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:32]
+ * @param address - Deployer address
+ * @param salt - 32-byte salt value
+ * @param initCode - Contract initialization bytecode
+ * @returns Contract address that would be created
+ */
 Address.calculateCreate2Address = (
 	address: AddressType,
 	salt: HashType,
@@ -304,8 +527,20 @@ Address.calculateCreate2Address = (
 	return result;
 };
 
+/** Address size in bytes (20) */
 Address.SIZE = BrandedAddress.SIZE;
+
+/**
+ * Assert value is valid address, throws if invalid
+ * @param value - Value to validate
+ * @param options - Validation options (strict: validate checksum)
+ * @throws {InvalidAddressError} If not valid address
+ */
 Address.assert = BrandedAddress.assert;
+
+/**
+ * Factory for assert with custom crypto dependencies
+ */
 Address.Assert = BrandedAddress.Assert;
 
 // Set up Address.prototype to inherit from Uint8Array.prototype
