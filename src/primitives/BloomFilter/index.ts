@@ -7,7 +7,7 @@ import { create as _create } from "./create.js";
 import { density as _density } from "./density.js";
 import { expectedFalsePositiveRate as _expectedFalsePositiveRate } from "./expectedFalsePositiveRate.js";
 import { fromHex as _fromHex } from "./fromHex.js";
-import { hash as _hash } from "./hash.js";
+import { hash as _hash, hashFromKeccak as _hashFromKeccak } from "./hash.js";
 import { isEmpty as _isEmpty } from "./isEmpty.js";
 import { merge as _merge } from "./merge.js";
 import { toHex as _toHex } from "./toHex.js";
@@ -51,6 +51,14 @@ export function fromHex(hex: string, m: number, k: number): BloomFilterType {
 
 export function hash(item: Uint8Array, seed: number, m: number): number {
 	return _hash(item, seed, m);
+}
+
+export function hashFromKeccak(
+	keccakHash: Uint8Array,
+	seed: number,
+	m: number,
+): number {
+	return _hashFromKeccak(keccakHash, seed, m);
 }
 
 export function isEmpty(filter: BloomFilterType): boolean {
