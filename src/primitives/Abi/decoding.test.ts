@@ -383,6 +383,153 @@ describe("Abi.decodeParameters - string", () => {
 	});
 });
 
+// ============================================================================
+// Multiple Dynamic Parameters - Offset Handling Tests (Issue #104)
+// ============================================================================
+
+describe("Abi.decodeParameters - multiple dynamic types offset handling", () => {
+	it("decodes bytes, string, bytes (3 dynamic params)", () => {
+		const params = [
+			{ type: "bytes" as const },
+			{ type: "string" as const },
+			{ type: "bytes" as const },
+		];
+		const values = ["0x1234", "hello world", "0x5678"] as [
+			string,
+			string,
+			string,
+		];
+
+		const encoded = Abi.encodeParameters(params, values);
+		const decoded = Abi.decodeParameters(params, encoded);
+
+		expect(Hex.fromBytes(decoded[0] as Uint8Array).toLowerCase()).toBe(
+			"0x1234",
+		);
+		expect(decoded[1]).toBe("hello world");
+		expect(Hex.fromBytes(decoded[2] as Uint8Array).toLowerCase()).toBe(
+			"0x5678",
+		);
+	});
+
+	it("decodes string, string, string (multiple strings)", () => {
+		const params = [
+			{ type: "string" as const },
+			{ type: "string" as const },
+			{ type: "string" as const },
+		];
+		const values = ["first", "second", "third"] as [string, string, string];
+
+		const encoded = Abi.encodeParameters(params, values);
+		const decoded = Abi.decodeParameters(params, encoded);
+
+		expect(decoded).toEqual(["first", "second", "third"]);
+	});
+
+	it("decodes uint256, bytes, uint256, string, uint256 (mixed)", () => {
+		const params = [
+			{ type: "uint256" as const },
+			{ type: "bytes" as const },
+			{ type: "uint256" as const },
+			{ type: "string" as const },
+			{ type: "uint256" as const },
+		];
+		const values = [100n, "0xdeadbeef", 200n, "test string", 300n] as [
+			bigint,
+			string,
+			bigint,
+			string,
+			bigint,
+		];
+
+		const encoded = Abi.encodeParameters(params, values);
+		const decoded = Abi.decodeParameters(params, encoded);
+
+		expect(decoded[0]).toBe(100n);
+		expect(Hex.fromBytes(decoded[1] as Uint8Array).toLowerCase()).toBe(
+			"0xdeadbeef",
+		);
+		expect(decoded[2]).toBe(200n);
+		expect(decoded[3]).toBe("test string");
+		expect(decoded[4]).toBe(300n);
+	});
+
+	it("decodes bytes[], string, bytes (nested dynamic)", () => {
+		const params = [
+			{ type: "bytes[]" as const },
+			{ type: "string" as const },
+			{ type: "bytes" as const },
+		];
+		const values = [["0x11", "0x22"], "middle", "0x33"] as [
+			string[],
+			string,
+			string,
+		];
+
+		const encoded = Abi.encodeParameters(params, values);
+		const decoded = Abi.decodeParameters(params, encoded);
+
+		const bytesArr = decoded[0] as Uint8Array[];
+		expect(Hex.fromBytes(bytesArr[0]).toLowerCase()).toBe("0x11");
+		expect(Hex.fromBytes(bytesArr[1]).toLowerCase()).toBe("0x22");
+		expect(decoded[1]).toBe("middle");
+		expect(Hex.fromBytes(decoded[2] as Uint8Array).toLowerCase()).toBe("0x33");
+	});
+
+	it("decodes address, bytes, address, string (alternating)", () => {
+		const params = [
+			{ type: "address" as const },
+			{ type: "bytes" as const },
+			{ type: "address" as const },
+			{ type: "string" as const },
+		];
+		const values = [
+			"0x0000000000000000000000000000000000000001" as Address,
+			"0xabcdef",
+			"0x0000000000000000000000000000000000000002" as Address,
+			"last param",
+		] as [Address, string, Address, string];
+
+		const encoded = Abi.encodeParameters(params, values);
+		const decoded = Abi.decodeParameters(params, encoded);
+
+		expect(decoded[0]).toBe(
+			"0x0000000000000000000000000000000000000001",
+		);
+		expect(Hex.fromBytes(decoded[1] as Uint8Array).toLowerCase()).toBe(
+			"0xabcdef",
+		);
+		expect(decoded[2]).toBe(
+			"0x0000000000000000000000000000000000000002",
+		);
+		expect(decoded[3]).toBe("last param");
+	});
+
+	it("decodes tuple with multiple dynamic fields", () => {
+		const params = [
+			{
+				type: "tuple" as const,
+				components: [
+					{ type: "string" as const },
+					{ type: "bytes" as const },
+					{ type: "string" as const },
+				],
+			},
+		];
+		const values = [["first string", "0xaabb", "second string"]] as [
+			[string, string, string],
+		];
+
+		const encoded = Abi.encodeParameters(params, values);
+		const decoded = Abi.decodeParameters(params, encoded);
+
+		const tuple = decoded[0] as [string, Uint8Array, string];
+		expect(tuple[0]).toBe("first string");
+		expect(Hex.fromBytes(tuple[1]).toLowerCase()).toBe("0xaabb");
+		expect(tuple[2]).toBe("second string");
+	});
+});
+
 describe("Abi.decodeParameters - arrays", () => {
 	it("decodes empty uint256[]", () => {
 		const encoded = Abi.encodeParameters([{ type: "uint256[]" }], [[]]);
