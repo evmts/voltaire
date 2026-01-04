@@ -13,8 +13,12 @@ describe("Bytes.trimLeft", () => {
 		expect(trimLeft(bytes)).toBe(bytes);
 	});
 
-	it("handles all zeros", () => {
-		expect(trimLeft(new Uint8Array([0, 0, 0]))).toEqual(new Uint8Array([]));
+	it("preserves one zero byte for all-zero arrays", () => {
+		expect(trimLeft(new Uint8Array([0, 0, 0]))).toEqual(new Uint8Array([0]));
+	});
+
+	it("preserves single zero byte", () => {
+		expect(trimLeft(new Uint8Array([0]))).toEqual(new Uint8Array([0]));
 	});
 
 	it("handles empty bytes", () => {

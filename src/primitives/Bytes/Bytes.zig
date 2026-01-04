@@ -494,18 +494,25 @@ test "padRight - basic" {
 }
 
 /// Trim leading zeros (no allocation, returns slice)
+/// Preserves at least one byte for all-zero arrays (represents zero value)
 pub fn trimLeft(bytes: []const u8) []const u8 {
     var start: usize = 0;
     while (start < bytes.len and bytes[start] == 0) {
         start += 1;
+    }
+    // Preserve at least one byte for all-zero arrays (represents zero value)
+    if (start == bytes.len and bytes.len > 0) {
+        return bytes[bytes.len - 1 ..];
     }
     return bytes[start..];
 }
 
 test "trimLeft - basic" {
     try std.testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x34 }, trimLeft(&[_]u8{ 0, 0, 0x12, 0x34 }));
-    try std.testing.expectEqualSlices(u8, &[_]u8{}, trimLeft(&[_]u8{ 0, 0, 0 }));
+    try std.testing.expectEqualSlices(u8, &[_]u8{0}, trimLeft(&[_]u8{ 0, 0, 0 }));
     try std.testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0, 0x34 }, trimLeft(&[_]u8{ 0, 0x12, 0, 0x34 }));
+    try std.testing.expectEqualSlices(u8, &[_]u8{0}, trimLeft(&[_]u8{0}));
+    try std.testing.expectEqualSlices(u8, &[_]u8{}, trimLeft(&[_]u8{}));
 }
 
 /// Trim trailing zeros (no allocation, returns slice)
