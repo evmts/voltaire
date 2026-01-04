@@ -16,7 +16,10 @@
 export function getEffectiveGasPrice(tx, baseFee) {
 	const maxPriorityFee = tx.maxPriorityFeePerGas;
 	const maxFee = tx.maxFeePerGas;
-	const effectivePriorityFee =
+	// effectivePriorityFee = min(maxPriorityFee, maxFee - baseFee)
+	// Clamp to 0n to prevent negative values when baseFee > maxFee or invalid inputs
+	const unclamped =
 		maxFee - baseFee < maxPriorityFee ? maxFee - baseFee : maxPriorityFee;
+	const effectivePriorityFee = unclamped < 0n ? 0n : unclamped;
 	return baseFee + effectivePriorityFee;
 }
