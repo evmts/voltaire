@@ -100,6 +100,62 @@ describe("Uint256.dividedBy", () => {
 		});
 	});
 
+	// Issue #108: Large divisor handling
+	describe("large divisors", () => {
+		it("MAX / (MAX - 1) = 1", () => {
+			const result = dividedBy(MAX, from(MAX - 1n));
+			expect(result).toBe(1n);
+		});
+
+		it("(MAX - 1) / MAX = 0", () => {
+			const result = dividedBy(from(MAX - 1n), MAX);
+			expect(result).toBe(0n);
+		});
+
+		it("MAX / (2^255) = 1", () => {
+			const divisor = from(1n << 255n);
+			const result = dividedBy(MAX, divisor);
+			expect(result).toBe(1n);
+		});
+
+		it("(2^255) / (2^255) = 1", () => {
+			const val = from(1n << 255n);
+			const result = dividedBy(val, val);
+			expect(result).toBe(1n);
+		});
+
+		it("(2^255) / (2^254) = 2", () => {
+			const a = from(1n << 255n);
+			const b = from(1n << 254n);
+			const result = dividedBy(a, b);
+			expect(result).toBe(2n);
+		});
+
+		it("small / MAX = 0", () => {
+			const result = dividedBy(from(100n), MAX);
+			expect(result).toBe(0n);
+		});
+
+		it("MAX / (2^200) produces correct result", () => {
+			const divisor = from(1n << 200n);
+			const result = dividedBy(MAX, divisor);
+			expect(result).toBe(MAX / (1n << 200n));
+		});
+
+		it("handles near-MAX divisor correctly", () => {
+			const nearMax = from(MAX - 100n);
+			const result = dividedBy(MAX, nearMax);
+			expect(result).toBe(1n);
+		});
+
+		it("large / large with non-trivial quotient", () => {
+			const a = from(1n << 250n);
+			const b = from(1n << 125n);
+			const result = dividedBy(a, b);
+			expect(result).toBe(1n << 125n);
+		});
+	});
+
 	describe("properties", () => {
 		it("identity: a / 1 = a", () => {
 			const a = from(42n);
