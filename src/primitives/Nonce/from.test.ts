@@ -24,4 +24,17 @@ describe("Nonce.from", () => {
 		const nonce = from(0);
 		expect(nonce).toBe(0n);
 	});
+
+	it("throws on negative number", () => {
+		expect(() => from(-1)).toThrow();
+	});
+
+	it("throws on negative bigint", () => {
+		expect(() => from(-1n)).toThrow();
+	});
+
+	it("throws on negative hex string", () => {
+		// BigInt("-0x1") = -1n
+		expect(() => from("-0x1")).toThrow();
+	});
 });
