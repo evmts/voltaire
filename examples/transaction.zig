@@ -165,7 +165,7 @@ pub fn main() !void {
         .value = 500_000_000_000_000_000, // 0.5 ETH
         .data = &[_]u8{}, // No calldata
         .access_list = &access_list,
-        .v = 0, // Unsigned
+        .y_parity = 0, // Unsigned
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };

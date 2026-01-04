@@ -338,13 +338,14 @@ pub fn encodeEip1559ForSigning(allocator: Allocator, tx: Eip1559Transaction) ![]
     // Encode access list
     try encodeAccessListInternal(allocator, tx.access_list, &list);
 
-    // For unsigned transaction
-    if (tx.v == 0) {
+    // For unsigned transaction (check y_parity and empty r,s)
+    const empty_sig = [_]u8{0} ** 32;
+    if (tx.y_parity == 0 and std.mem.eql(u8, &tx.r, &empty_sig) and std.mem.eql(u8, &tx.s, &empty_sig)) {
         // No signature fields for unsigned
     } else {
         // For signed transaction
         {
-            const enc_v = try rlp.encode(allocator, tx.v);
+            const enc_v = try rlp.encode(allocator, tx.y_parity);
             defer allocator.free(enc_v);
             try list.appendSlice(enc_v);
         }
