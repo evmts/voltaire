@@ -103,6 +103,7 @@ import { fromHex } from "./fromHex.js";
 import { fromNumber } from "./fromNumber.js";
 import { greaterThan } from "./greaterThan.js";
 import { is } from "./is.js";
+import { isAddress } from "./isAddress.js";
 import { isValid } from "./isValid.js";
 import { isZero } from "./isZero.js";
 import { lessThan } from "./lessThan.js";
@@ -143,6 +144,7 @@ export {
 	equals,
 	isValid,
 	is,
+	isAddress,
 	zero,
 	clone,
 	compare,
@@ -181,6 +183,7 @@ export const BrandedAddress = {
 	isValidChecksum,
 	IsValidChecksum: IsValidChecksumFactory,
 	is,
+	isAddress,
 	zero,
 	clone,
 	calculateCreateAddress,

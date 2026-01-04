@@ -24,6 +24,7 @@ export * as BrandedAccessList from "./AccessList/index.js";
 export { AccessList } from "./AccessList/index.js";
 // Core primitives
 export { Address } from "./Address/index.js";
+export { isAddress } from "./Address/isAddress.js";
 export * as BrandedAddress from "./Address/internal-index.js";
 export * as Authorization from "./Authorization/index.js";
 export * as BrandedAuthorization from "./Authorization/index.js"; // Re-exported for backward compatibility
@@ -52,6 +53,7 @@ export { Bytecode } from "./Bytecode/index.js";
 export * as BrandedBytes from "./Bytes/Bytes.index.js";
 // Utilities - Bytes types
 export { Bytes } from "./Bytes/Bytes.js";
+export { isBytes } from "./Bytes/isBytes.js";
 export * as BrandedBytes1 from "./Bytes/Bytes1/index.js";
 export { Bytes1 } from "./Bytes/Bytes1/index.js";
 export { Bytes2 } from "./Bytes/Bytes2/Bytes2.js";
@@ -118,7 +120,9 @@ export * as Hardfork from "./Hardfork/index.js";
 export * as HashType from "./Hash/HashType.js";
 export * as BrandedHash from "./Hash/index.js";
 export { Hash } from "./Hash/index.js";
+export { isHash } from "./Hash/isHash.js";
 export { Hex } from "./Hex/index.js";
+export { isHex } from "./Hex/isHex.js";
 export * as BrandedHex from "./Hex/internal-index.js";
 export * as InitCode from "./InitCode/index.js";
 // Numeric types - Signed integers
@@ -162,6 +166,8 @@ export * as RuntimeCode from "./RuntimeCode/index.js";
 // Function & Event Selectors
 export * as Selector from "./Selector/index.js";
 // Signatures (EIP-191, EIP-1271)
+export * as Signature from "./Signature/index.js";
+export { isSignature } from "./Signature/isSignature.js";
 export * as SignedData from "./SignedData/index.js";
 export * as BrandedSiwe from "./Siwe/index.js";
 // Standards
@@ -194,6 +200,7 @@ export * as TransactionUrl from "./TransactionUrl/index.js";
 export * as TypedData from "./TypedData/index.js";
 export * as BrandedUint from "./Uint/index.js";
 export * as Uint256 from "./Uint/index.js"; // Alias for backward compatibility
+export { isUint256 } from "./Uint/isUint256.js";
 // Numeric types - Unsigned integers
 export { Uint } from "./Uint/Uint.js";
 export * as BrandedUint8 from "./Uint8/index.js";
