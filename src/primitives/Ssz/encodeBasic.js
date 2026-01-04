@@ -97,7 +97,10 @@ export function decodeBasic(bytes, type) {
 		}
 		case "bool": {
 			if (bytes.length !== 1) throw new Error("Invalid length for bool");
-			return bytes[0] !== 0;
+			const val = bytes[0];
+			if (val === 0) return false;
+			if (val === 1) return true;
+			throw new Error("Invalid boolean value: must be 0 or 1");
 		}
 		default:
 			throw new Error(`Unsupported type: ${type}`);

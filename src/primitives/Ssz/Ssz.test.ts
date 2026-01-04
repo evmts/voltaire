@@ -141,9 +141,16 @@ describe("SSZ Basic Types", () => {
 			expect(decoded).toBe(false);
 		});
 
-		it("decodes non-zero as true", () => {
-			const decoded = Ssz.decodeBasic(new Uint8Array([42]), "bool");
-			expect(decoded).toBe(true);
+		it("rejects invalid boolean values > 1", () => {
+			expect(() => Ssz.decodeBasic(new Uint8Array([2]), "bool")).toThrow(
+				"Invalid boolean value",
+			);
+			expect(() => Ssz.decodeBasic(new Uint8Array([42]), "bool")).toThrow(
+				"Invalid boolean value",
+			);
+			expect(() => Ssz.decodeBasic(new Uint8Array([255]), "bool")).toThrow(
+				"Invalid boolean value",
+			);
 		});
 	});
 
