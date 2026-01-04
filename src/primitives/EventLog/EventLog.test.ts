@@ -3,6 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { InvalidLengthError } from "../errors/index.js";
+import * as Hash from "../Hash/index.js";
 import {
 	clone,
 	copy,
@@ -49,24 +51,24 @@ const EventLog = {
 const addr1 = "0x0000000000000000000000000000000000000001" as any;
 // biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
 const addr2 = "0x0000000000000000000000000000000000000002" as any;
-const topic0 =
-	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-	"0x0000000000000000000000000000000000000000000000000000000000000010" as any;
-const topic1 =
-	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-	"0x0000000000000000000000000000000000000000000000000000000000000011" as any;
-const topic2 =
-	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-	"0x0000000000000000000000000000000000000000000000000000000000000012" as any;
-const topic3 =
-	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-	"0x0000000000000000000000000000000000000000000000000000000000000013" as any;
-const blockHash =
-	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-	"0x0000000000000000000000000000000000000000000000000000000000000100" as any;
-const txHash =
-	// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-	"0x0000000000000000000000000000000000000000000000000000000000000200" as any;
+const topic0 = Hash.from(
+	"0x0000000000000000000000000000000000000000000000000000000000000010",
+);
+const topic1 = Hash.from(
+	"0x0000000000000000000000000000000000000000000000000000000000000011",
+);
+const topic2 = Hash.from(
+	"0x0000000000000000000000000000000000000000000000000000000000000012",
+);
+const topic3 = Hash.from(
+	"0x0000000000000000000000000000000000000000000000000000000000000013",
+);
+const blockHash = Hash.from(
+	"0x0000000000000000000000000000000000000000000000000000000000000100",
+);
+const txHash = Hash.from(
+	"0x0000000000000000000000000000000000000000000000000000000000000200",
+);
 
 // ============================================================================
 // Log Creation Tests
@@ -993,5 +995,122 @@ describe("EventLog edge cases", () => {
 		});
 
 		expect(log.topics).toEqual([topic0, topic1]);
+	});
+});
+
+// ============================================================================
+// Topic Validation Tests (Issue #91)
+// ============================================================================
+
+describe("EventLog topic validation", () => {
+	it("accepts valid 32-byte topics", () => {
+		const log = EventLog.create({
+			address: addr1,
+			topics: [topic0, topic1, topic2],
+			data: new Uint8Array([]),
+		});
+
+		expect(log.topics).toHaveLength(3);
+	});
+
+	it("accepts empty topics array", () => {
+		const log = EventLog.create({
+			address: addr1,
+			topics: [],
+			data: new Uint8Array([]),
+		});
+
+		expect(log.topics).toHaveLength(0);
+	});
+
+	it("throws InvalidLengthError for topic with wrong length (too short)", () => {
+		const shortTopic = new Uint8Array(20); // 20 bytes instead of 32
+
+		expect(() =>
+			EventLog.create({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+				topics: [shortTopic as any],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidLengthError);
+	});
+
+	it("throws InvalidLengthError for topic with wrong length (too long)", () => {
+		const longTopic = new Uint8Array(64); // 64 bytes instead of 32
+
+		expect(() =>
+			EventLog.create({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+				topics: [longTopic as any],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidLengthError);
+	});
+
+	it("throws InvalidLengthError with correct error details", () => {
+		const shortTopic = new Uint8Array(16);
+
+		try {
+			EventLog.create({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+				topics: [shortTopic as any],
+				data: new Uint8Array([]),
+			});
+			expect.fail("Should have thrown");
+		} catch (e) {
+			expect(e).toBeInstanceOf(InvalidLengthError);
+			const err = e as InvalidLengthError;
+			expect(err.message).toContain("Topic at index 0");
+			expect(err.message).toContain("32-byte hash");
+			expect(err.expected).toBe("32-byte Uint8Array (Hash)");
+		}
+	});
+
+	it("reports correct index for invalid topic in middle of array", () => {
+		const invalidTopic = new Uint8Array(10);
+
+		try {
+			EventLog.create({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+				topics: [topic0, topic1, invalidTopic as any, topic3],
+				data: new Uint8Array([]),
+			});
+			expect.fail("Should have thrown");
+		} catch (e) {
+			expect(e).toBeInstanceOf(InvalidLengthError);
+			const err = e as InvalidLengthError;
+			expect(err.message).toContain("Topic at index 2");
+		}
+	});
+
+	it("throws InvalidLengthError for non-Uint8Array topic", () => {
+		expect(() =>
+			EventLog.create({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+				topics: ["0x1234" as any],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidLengthError);
+	});
+
+	it("validates all topics, not just the first", () => {
+		const validTopic = Hash.from(
+			"0x0000000000000000000000000000000000000000000000000000000000000001",
+		);
+		const invalidTopic = new Uint8Array(5);
+
+		expect(() =>
+			EventLog.create({
+				address: addr1,
+				// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+				topics: [validTopic, validTopic, invalidTopic as any],
+				data: new Uint8Array([]),
+			}),
+		).toThrow(InvalidLengthError);
 	});
 });
