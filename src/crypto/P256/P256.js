@@ -40,6 +40,7 @@ import {
 } from "./constants.js";
 import { derivePublicKey } from "./derivePublicKey.js";
 import { ecdh } from "./ecdh.js";
+import { randomPrivateKey } from "./randomPrivateKey.js";
 import { sign } from "./sign.js";
 import { validatePrivateKey } from "./validatePrivateKey.js";
 import { validatePublicKey } from "./validatePublicKey.js";
@@ -51,6 +52,7 @@ export {
 	verify,
 	derivePublicKey,
 	ecdh,
+	randomPrivateKey,
 	validatePrivateKey,
 	validatePublicKey,
 };
@@ -69,6 +71,7 @@ export const P256 = {
 	verify,
 	derivePublicKey,
 	ecdh,
+	randomPrivateKey,
 	validatePrivateKey,
 	validatePublicKey,
 	CURVE_ORDER,
