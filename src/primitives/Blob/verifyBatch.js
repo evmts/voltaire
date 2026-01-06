@@ -1,4 +1,4 @@
-import { InvalidLengthError, PrimitiveError } from "../errors/index.js";
+import { InvalidLengthError } from "../errors/index.js";
 import { MAX_PER_TRANSACTION, SIZE } from "./constants.js";
 
 /**
@@ -11,7 +11,6 @@ import { MAX_PER_TRANSACTION, SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/blob for Blob documentation
  * @since 0.0.0
  * @throws {InvalidLengthError} If arrays have different lengths or too many blobs
- * @throws {PrimitiveError} If batch verification fails
  * @example
  * ```javascript
  * import { VerifyBatch } from './primitives/Blob/index.js';
@@ -94,15 +93,10 @@ export function VerifyBatch({ verifyBlobKzgProofBatch }) {
 				/** @type {Uint8Array[]} */ ([...commitments]),
 				/** @type {Uint8Array[]} */ ([...proofs]),
 			);
-		} catch (error) {
-			throw new PrimitiveError(
-				`Failed to verify KZG proofs batch: ${error instanceof Error ? error.message : String(error)}`,
-				{
-					code: "BLOB_KZG_BATCH_VERIFICATION_FAILED",
-					docsPath: "/primitives/blob/verify-batch#error-handling",
-					cause: error instanceof Error ? error : undefined,
-				},
-			);
+		} catch (_error) {
+			// c-kzg throws on invalid proofs rather than returning false
+			// Return false for verification failures to match boolean return type
+			return false;
 		}
 	};
 }
