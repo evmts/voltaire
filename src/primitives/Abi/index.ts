@@ -14,6 +14,7 @@ export {
 } from "./Encoding.js";
 // Re-export encoding/decoding methods
 export { encode } from "./encode.js";
+export { encodePacked } from "./encodePacked.js";
 export * as Error from "./error/index.js";
 export * from "./error/standards/index.js";
 export * from "./error/wrapped/index.js";
