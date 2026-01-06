@@ -653,10 +653,13 @@ pub fn build(b: *std.Build) void {
     // Circular dep: crypto needs primitives
     wasm_crypto_mod.addImport("primitives", wasm_primitives_mod);
 
-    addTypeScriptWasmBuild(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, rust_crypto_lib_path, cargo_build_step);
+    // Get WASM-specific Rust library path (built with portable features)
+    const wasm_rust_crypto_lib_path = lib_build.Bn254Lib.getRustLibraryPath(b, wasm_target);
+
+    addTypeScriptWasmBuild(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto_lib_path, cargo_build_step);
 
     // Individual crypto WASM modules for treeshaking
-    addCryptoWasmBuilds(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, rust_crypto_lib_path, cargo_build_step);
+    addCryptoWasmBuilds(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto_lib_path, cargo_build_step);
 
     // Go build and test steps (optional, requires Go toolchain)
     if (!is_wasm) {
