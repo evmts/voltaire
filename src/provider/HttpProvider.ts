@@ -149,12 +149,13 @@ export class HttpProvider implements Provider {
 	 * Submits JSON-RPC request and returns result or throws RpcError
 	 */
 	async request(args: RequestArguments): Promise<unknown> {
-		const { method, params = [] } = args;
+		const { method, params } = args;
+		const paramsValue = params ?? [];
 		const body = JSON.stringify({
 			jsonrpc: "2.0",
 			id: ++this.requestIdCounter,
 			method,
-			params: Array.isArray(params) ? params : [params],
+			params: paramsValue,
 		});
 
 		let lastError: Error | null = null;
