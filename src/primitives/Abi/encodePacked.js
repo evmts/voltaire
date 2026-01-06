@@ -63,18 +63,20 @@ export function encodePacked(types, values) {
  *
  * @param {string} type - Solidity type
  * @param {unknown} value - Value to encode
- * @returns {Uint8Array} Encoded bytes (no padding)
+ * @param {boolean} [isArrayElement=false] - Whether this is an array element (elements are padded)
+ * @returns {Uint8Array} Encoded bytes (no padding for non-array top-level values)
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex type handling is necessary
-function encodePackedValue(type, value) {
+function encodePackedValue(type, value, isArrayElement = false) {
 	// Arrays - check this FIRST before other type checks
 	// because "uint256[]" starts with "uint" but should be handled as array
+	// Per Solidity spec: array elements ARE padded to 32 bytes
 	if (type.endsWith("[]")) {
 		const elementType = type.slice(0, -2);
 		const array = /** @type {unknown[]} */ (value);
 		const parts = [];
 		for (const item of array) {
-			parts.push(encodePackedValue(elementType, item));
+			parts.push(encodePackedValue(elementType, item, true)); // Array elements are padded
 		}
 		const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
 		const result = new Uint8Array(totalLength);
@@ -107,7 +109,7 @@ function encodePackedValue(type, value) {
 		}
 		const parts = [];
 		for (const item of array) {
-			parts.push(encodePackedValue(elementType, item));
+			parts.push(encodePackedValue(elementType, item, true)); // Array elements are padded
 		}
 		const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
 		const result = new Uint8Array(totalLength);
@@ -119,14 +121,25 @@ function encodePackedValue(type, value) {
 		return result;
 	}
 
-	// Address - 20 bytes, no padding
+	// Address - 20 bytes normally, 32 bytes when array element
 	if (type === "address") {
 		const addr = typeof value === "string" ? Address.fromHex(value) : value;
+		if (isArrayElement) {
+			// Pad to 32 bytes (left-padded with zeros)
+			const padded = new Uint8Array(32);
+			padded.set(/** @type {Uint8Array} */ (addr), 12);
+			return padded;
+		}
 		return /** @type {Uint8Array} */ (addr);
 	}
 
-	// Bool - 1 byte
+	// Bool - 1 byte normally, 32 bytes when array element
 	if (type === "bool") {
+		if (isArrayElement) {
+			const padded = new Uint8Array(32);
+			padded[31] = value ? 1 : 0;
+			return padded;
+		}
 		return new Uint8Array([value ? 1 : 0]);
 	}
 
@@ -163,10 +176,10 @@ function encodePackedValue(type, value) {
 		}
 	}
 
-	// Uint - minimal bytes needed
+	// Uint - minimal bytes needed normally, 32 bytes when array element
 	if (type.startsWith("uint")) {
 		const bits = type === "uint" ? 256 : Number.parseInt(type.slice(4), 10);
-		const bytes = bits / 8;
+		const bytes = isArrayElement ? 32 : bits / 8;
 		let bigintValue;
 		if (typeof value === "number") {
 			bigintValue = BigInt(value);
@@ -177,7 +190,7 @@ function encodePackedValue(type, value) {
 			bigintValue = BigInt(value);
 		}
 
-		// Convert to bytes (big-endian)
+		// Convert to bytes (big-endian, right-aligned for padding)
 		const result = new Uint8Array(bytes);
 		let v = bigintValue;
 		for (let i = bytes - 1; i >= 0; i--) {
@@ -187,10 +200,10 @@ function encodePackedValue(type, value) {
 		return result;
 	}
 
-	// Int - minimal bytes needed (two's complement)
+	// Int - minimal bytes needed normally, 32 bytes when array element (two's complement)
 	if (type.startsWith("int")) {
 		const bits = type === "int" ? 256 : Number.parseInt(type.slice(3), 10);
-		const bytes = bits / 8;
+		const targetBytes = isArrayElement ? 32 : bits / 8;
 		let bigintValue;
 		if (typeof value === "number") {
 			bigintValue = BigInt(value);
@@ -202,13 +215,15 @@ function encodePackedValue(type, value) {
 		}
 
 		// Convert to two's complement if negative
+		// For array elements, use 256 bits; otherwise use the type's bit size
+		const signBits = isArrayElement ? 256 : bits;
 		const unsigned =
-			bigintValue < 0n ? (1n << BigInt(bits)) + bigintValue : bigintValue;
+			bigintValue < 0n ? (1n << BigInt(signBits)) + bigintValue : bigintValue;
 
 		// Convert to bytes (big-endian)
-		const result = new Uint8Array(bytes);
+		const result = new Uint8Array(targetBytes);
 		let v = unsigned;
-		for (let i = bytes - 1; i >= 0; i--) {
+		for (let i = targetBytes - 1; i >= 0; i--) {
 			result[i] = Number(v & 0xffn);
 			v >>= 8n;
 		}
