@@ -309,6 +309,101 @@ describe("Secp256k1.sign", () => {
 		});
 	});
 
+	describe("extraEntropy option", () => {
+		it("should produce different signatures with extraEntropy: true", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const message = Hash.fromBytes(
+				sha256(new TextEncoder().encode("hello world")),
+			);
+
+			// Sign with extraEntropy: true (random entropy)
+			const sig1 = sign(message, privateKey, { extraEntropy: true });
+			const sig2 = sign(message, privateKey, { extraEntropy: true });
+
+			// Same message + key with random entropy = different signatures
+			// Note: there's an extremely small chance these could be equal by coincidence
+			expect(
+				!sig1.r.every((b, i) => b === sig2.r[i]) ||
+					!sig1.s.every((b, i) => b === sig2.s[i]),
+			).toBe(true);
+		});
+
+		it("should produce deterministic signatures with custom extraEntropy bytes", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const message = Hash.fromBytes(
+				sha256(new TextEncoder().encode("hello world")),
+			);
+			const customEntropy = new Uint8Array(32).fill(42);
+
+			const sig1 = sign(message, privateKey, { extraEntropy: customEntropy });
+			const sig2 = sign(message, privateKey, { extraEntropy: customEntropy });
+
+			// Same entropy = same signature
+			expect(sig1.r).toEqual(sig2.r);
+			expect(sig1.s).toEqual(sig2.s);
+			expect(sig1.v).toEqual(sig2.v);
+		});
+
+		it("should produce different signatures with different extraEntropy bytes", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const message = Hash.fromBytes(
+				sha256(new TextEncoder().encode("hello world")),
+			);
+			const entropy1 = new Uint8Array(32).fill(1);
+			const entropy2 = new Uint8Array(32).fill(2);
+
+			const sig1 = sign(message, privateKey, { extraEntropy: entropy1 });
+			const sig2 = sign(message, privateKey, { extraEntropy: entropy2 });
+
+			// Different entropy = different signatures
+			expect(sig1.r).not.toEqual(sig2.r);
+		});
+
+		it("should produce different signature with and without extraEntropy", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes[31] = 1;
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const message = Hash.fromBytes(
+				sha256(new TextEncoder().encode("hello world")),
+			);
+			const customEntropy = new Uint8Array(32).fill(99);
+
+			const sigWithout = sign(message, privateKey);
+			const sigWith = sign(message, privateKey, { extraEntropy: customEntropy });
+
+			// With entropy vs without = different signatures
+			expect(sigWithout.r).not.toEqual(sigWith.r);
+		});
+
+		it("should produce verifiable signatures with extraEntropy", () => {
+			const privateKeyBytes = new Uint8Array(32);
+			for (let i = 0; i < 32; i++) {
+				privateKeyBytes[i] = i + 1;
+			}
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
+			const message = Hash.fromBytes(
+				sha256(new TextEncoder().encode("extraEntropy verification test")),
+			);
+
+			const sig = sign(message, privateKey, { extraEntropy: true });
+
+			// Verify with @noble
+			const publicKey = secp256k1.getPublicKey(privateKey, false);
+			const compact = new Uint8Array([...sig.r, ...sig.s]);
+			const valid = secp256k1.verify(compact, message, publicKey, {
+				prehash: false,
+			});
+
+			expect(valid).toBe(true);
+		});
+	});
+
 	describe("low-s enforcement", () => {
 		it("should produce low-s signatures (s <= n/2)", () => {
 			const privateKeyBytes = new Uint8Array(32);
