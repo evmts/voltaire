@@ -90,6 +90,16 @@ export function deserialize(data) {
 	).value;
 	const yParity =
 		yParityBytes.length > 0 ? /** @type {number} */ (yParityBytes[0]) : 0;
+	if (yParity !== 0 && yParity !== 1) {
+		throw new DecodingError(
+			`Invalid yParity: expected 0 or 1, got ${yParity}`,
+			{
+				code: "INVALID_Y_PARITY",
+				context: { yParity },
+				docsPath: "/primitives/transaction/eip7702/deserialize#error-handling",
+			},
+		);
+	}
 	const r = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[11])
 		.value;
 	const s = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[12])
