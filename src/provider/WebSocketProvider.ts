@@ -72,6 +72,14 @@ export class WebSocketProvider implements Provider {
 		new Map();
 
 	constructor(options: WebSocketProviderOptions | string) {
+		// Check for WebSocket availability before proceeding
+		if (typeof globalThis.WebSocket === "undefined") {
+			throw new Error(
+				"WebSocket is not available in this environment. " +
+					"For Node.js, install a WebSocket polyfill like 'ws' or 'isomorphic-ws' and assign it to globalThis.WebSocket.",
+			);
+		}
+
 		if (typeof options === "string") {
 			this.url = options;
 			this.reconnect = true;
