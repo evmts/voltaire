@@ -1,6 +1,7 @@
 import { QuickStep } from "../../primitives/GasConstants/constants.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
+import { CANCUN, isAtLeast } from "../../primitives/Hardfork/index.js";
 
 /**
  * BLOBBASEFEE opcode (0x4a) - Get blob base fee (EIP-7516, Cancun+)
@@ -13,6 +14,9 @@ import { pushStack } from "../Frame/pushStack.js";
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handler_0x4a_BLOBBASEFEE(frame) {
+	if (frame.hardfork && !isAtLeast(frame.hardfork, CANCUN)) {
+		return { type: "InvalidOpcode" };
+	}
 	const gasErr = consumeGas(frame, QuickStep);
 	if (gasErr) return gasErr;
 

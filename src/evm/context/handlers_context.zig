@@ -334,18 +334,17 @@ pub fn Handlers(FrameType: type) type {
                 @as(u64, 400);
             try frame.consumeGas(access_cost);
 
-            // Get the code from the external address
-            const code = if (evm.host) |h| h.getCode(ext_addr) else evm.code.get(ext_addr) orelse &[_]u8{};
+            const code = evm.get_code(ext_addr);
+            const has_balance = evm.get_balance(ext_addr) != 0;
+            const has_nonce = evm.getNonce(ext_addr) != 0;
+            const exists = has_balance or has_nonce or code.len != 0;
 
-            if (code.len == 0) {
-                // Return 0 for empty accounts (no code)
+            if (!exists) {
                 try frame.pushStack(0);
             } else {
-                // Compute keccak256 hash of the code
                 var hash: [32]u8 = undefined;
                 std.crypto.hash.sha3.Keccak256.hash(code, &hash, .{});
 
-                // Convert hash bytes to u256 (big-endian)
                 var hash_u256: u256 = 0;
                 for (hash) |byte| {
                     hash_u256 = (hash_u256 << 8) | byte;

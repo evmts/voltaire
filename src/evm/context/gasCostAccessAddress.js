@@ -3,6 +3,13 @@ import {
 	ColdAccountAccess,
 	WarmStorageRead,
 } from "../../primitives/GasConstants/constants.js";
+import {
+	BERLIN,
+	CONSTANTINOPLE,
+	ISTANBUL,
+	TANGERINE_WHISTLE,
+	isAtLeast,
+} from "../../primitives/Hardfork/index.js";
 
 /**
  * Calculate gas cost for account access with warm/cold distinction (EIP-2929)
@@ -27,7 +34,7 @@ export function gasCostAccessAddress(frame, address) {
 	const hardfork = frame.hardfork;
 
 	// Berlin+: EIP-2929 warm/cold tracking
-	if (hardfork >= "berlin") {
+	if (isAtLeast(hardfork, BERLIN)) {
 		const addrHex = toHex(address);
 		const isWarm = frame.accessedAddresses?.has(addrHex) ?? false;
 
@@ -41,12 +48,12 @@ export function gasCostAccessAddress(frame, address) {
 	}
 
 	// Istanbul-Berlin: 700 gas (EIP-1884)
-	if (hardfork >= "istanbul") {
+	if (isAtLeast(hardfork, ISTANBUL)) {
 		return 700n;
 	}
 
 	// Tangerine Whistle-Istanbul: 400 gas (EIP-150)
-	if (hardfork >= "byzantium") {
+	if (isAtLeast(hardfork, TANGERINE_WHISTLE)) {
 		return 400n;
 	}
 
@@ -66,5 +73,5 @@ export function supportsConstantinople(frame) {
 	if (!frame.hardfork) return true; // Default to supporting if not specified
 
 	const hardfork = frame.hardfork;
-	return hardfork === "constantinople" || hardfork >= "constantinople";
+	return isAtLeast(hardfork, CONSTANTINOPLE);
 }

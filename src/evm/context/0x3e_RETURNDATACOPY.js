@@ -2,6 +2,7 @@ import { consumeGas } from "../Frame/consumeGas.js";
 import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
 import { popStack } from "../Frame/popStack.js";
 import { writeMemory } from "../Frame/writeMemory.js";
+import { BYZANTIUM, isAtLeast } from "../../primitives/Hardfork/index.js";
 
 /**
  * Add two u32 values with overflow checking
@@ -51,7 +52,9 @@ function wordAlignedSize(bytes) {
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function returndatacopy(frame) {
-	// Note: Add hardfork validation for Byzantium+
+	if (frame.hardfork && !isAtLeast(frame.hardfork, BYZANTIUM)) {
+		return { type: "InvalidOpcode" };
+	}
 
 	const destOffsetResult = popStack(frame);
 	if (destOffsetResult.error) return destOffsetResult.error;

@@ -1,5 +1,6 @@
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
+import { BYZANTIUM, isAtLeast } from "../../primitives/Hardfork/index.js";
 
 /**
  * RETURNDATASIZE opcode (0x3d) - Get size of output data from the previous call
@@ -13,7 +14,9 @@ import { pushStack } from "../Frame/pushStack.js";
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if any
  */
 export function returndatasize(frame) {
-	// Note: Add hardfork validation for Byzantium+
+	if (frame.hardfork && !isAtLeast(frame.hardfork, BYZANTIUM)) {
+		return { type: "InvalidOpcode" };
+	}
 	const gasErr = consumeGas(frame, 2n);
 	if (gasErr) return gasErr;
 

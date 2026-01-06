@@ -2,6 +2,7 @@ import { FastestStep } from "../../primitives/GasConstants/constants.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { popStack } from "../Frame/popStack.js";
 import { pushStack } from "../Frame/pushStack.js";
+import { CANCUN, isAtLeast } from "../../primitives/Hardfork/index.js";
 
 /**
  * BLOBHASH opcode (0x49) - Get versioned blob hash (EIP-4844, Cancun+)
@@ -13,6 +14,9 @@ import { pushStack } from "../Frame/pushStack.js";
  * @returns {import("../Frame/FrameType.js").EvmError | null} Error if operation fails
  */
 export function handler_0x49_BLOBHASH(frame) {
+	if (frame.hardfork && !isAtLeast(frame.hardfork, CANCUN)) {
+		return { type: "InvalidOpcode" };
+	}
 	const gasErr = consumeGas(frame, FastestStep);
 	if (gasErr) return gasErr;
 

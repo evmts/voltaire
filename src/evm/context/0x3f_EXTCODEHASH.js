@@ -48,17 +48,15 @@ export function extcodehash(frame, host) {
 
 	// Get the code from the external address
 	const code = host.getCode(addr);
+	const hasBalance = host.getBalance(addr) !== 0n;
+	const hasNonce = host.getNonce(addr) !== 0n;
+	const exists = hasBalance || hasNonce || code.length !== 0;
 
-	if (code.length === 0) {
-		// Return 0 for empty accounts (no code)
-		// Per EIP-1052: distinguishes empty accounts from code-having accounts
+	if (!exists) {
 		const pushErr = pushStack(frame, 0n);
 		if (pushErr) return pushErr;
 	} else {
-		// Compute keccak256 hash of the code
 		const hash = Keccak256.hash(code);
-
-		// Convert hash bytes to u256 (big-endian)
 		let hashU256 = 0n;
 		for (let i = 0; i < hash.length; i++) {
 			hashU256 = (hashU256 << 8n) | BigInt(/** @type {number} */ (hash[i]));
