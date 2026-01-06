@@ -32,10 +32,10 @@ export function matchesAddressWasm(
 	logAddress: BrandedAddress,
 	filterAddresses: BrandedAddress[],
 ): boolean {
-	const { Hex } = require("./hex.js");
+	// BrandedAddress is already Uint8Array, no conversion needed
 	return loader.eventLogMatchesAddress(
-		Hex.toBytes(logAddress),
-		filterAddresses.map((a) => Hex.toBytes(a)),
+		logAddress,
+		filterAddresses,
 	);
 }
 

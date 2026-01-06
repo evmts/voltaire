@@ -13,6 +13,9 @@ import type { PrivateKeyType } from "../primitives/PrivateKey/PrivateKeyType.js"
 import type { WasiImports, WasmExports } from "./types.js";
 import { ErrorCode } from "./types.js";
 
+// Cache for Node.js crypto module (loaded lazily)
+let nodeCryptoModule: typeof import("node:crypto") | null = null;
+
 let wasmInstance: WebAssembly.Instance | null = null;
 let wasmMemory: WebAssembly.Memory | null = null;
 let wasmExports: WasmExports | null = null;
@@ -176,15 +179,21 @@ export async function loadWasm(
 			) {
 				globalThis.crypto.getRandomValues(view);
 			} else {
-				// Fallback for Node.js without global crypto
+				// Fallback for Node.js without global crypto (Node < 18)
 				try {
-					// Dynamic import to avoid bundler issues
-					const nodeCrypto = require("node:crypto");
-					nodeCrypto.randomFillSync(view);
+					// Use cached module or attempt to load synchronously
+					// Note: In ESM, top-level await can be used to pre-load this module
+					// For now, we throw a helpful error since Node 18+ has globalThis.crypto
+					if (!nodeCryptoModule) {
+						throw new Error("Node.js crypto not available");
+					}
+					nodeCryptoModule.randomFillSync(view);
 				} catch {
 					// Last resort: throw error rather than return predictable zeros
 					throw new Error(
-						"No secure random source available for WASI random_get",
+						"No secure random source available for WASI random_get. " +
+							"This should not happen on Node.js 18+ or browsers. " +
+							"If using an older Node.js version, consider upgrading.",
 					);
 				}
 			}

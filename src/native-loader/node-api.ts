@@ -112,7 +112,9 @@ export function loadNodeNative(): NativeModule {
 	try {
 		const libPath = getNativeLibPath();
 
-		// Use dynamic require to load native addon
+		// Use dynamic require to load native .node addon
+		// Note: Native Node.js addons (.node files) must be loaded with require(),
+		// not import(). This is a Node.js limitation, not an ESM compatibility issue.
 		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		nativeModule = require(libPath) as NativeModule;
 

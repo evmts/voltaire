@@ -12,6 +12,7 @@ export {
 } from "./platform.js";
 export type { NativeErrorCode as NativeErrorCodeType } from "./types.js";
 export { getNativeErrorMessage, NativeErrorCode } from "./types.js";
+import { getNativeErrorMessage as _getNativeErrorMessage } from "./types.js";
 
 /**
  * Runtime environment detection
@@ -52,8 +53,7 @@ export async function loadNative() {
  */
 export function checkError(code: number, operation: string): void {
 	if (code !== 0) {
-		const { getNativeErrorMessage } = require("./types.js");
-		const message = getNativeErrorMessage(code);
+		const message = _getNativeErrorMessage(code);
 		throw new Error(`Native ${operation} failed: ${message}`);
 	}
 }
