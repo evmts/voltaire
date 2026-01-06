@@ -308,13 +308,24 @@ describe("Signature", () => {
 	});
 
 	describe("verify", () => {
-		it("should throw (not implemented)", () => {
+		it("should return false for invalid signature", () => {
 			const sig = Signature.fromSecp256k1(
 				new Uint8Array(32),
 				new Uint8Array(32),
 			);
+			// Invalid signature with zero r,s should return false (not throw)
+			const isValid = Signature.verify(
+				sig,
+				new Uint8Array(32),
+				new Uint8Array(64),
+			);
+			expect(isValid).toBe(false);
+		});
+
+		it("should throw for ed25519 (not yet implemented)", () => {
+			const sig = Signature.fromEd25519(new Uint8Array(64));
 			expect(() =>
-				Signature.verify(sig, new Uint8Array(32), new Uint8Array(64)),
+				Signature.verify(sig, new Uint8Array(32), new Uint8Array(32)),
 			).toThrow(Signature.InvalidAlgorithmError);
 		});
 	});
