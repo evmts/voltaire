@@ -114,9 +114,10 @@ export function EncodeValue({ keccak256, hashStruct }) {
 						},
 					);
 				}
-				// Convert negative to two's complement for encoding
+				// Convert negative to two's complement for the declared bit width
+				// Then zero-extend to 256 bits for proper encoding
 				if (num < 0n) {
-					num = (1n << 256n) + num;
+					num = (1n << BigInt(bits)) + num;
 				}
 			}
 
