@@ -98,6 +98,11 @@
 			"import": "./dist/primitives/Bytecode/index.js",
 			"require": "./dist/primitives/Bytecode/index.cjs"
 		},
+		"./Bytes": {
+			"types": "./types/primitives/Bytes/index.d.ts",
+			"import": "./dist/primitives/Bytes/index.js",
+			"require": "./dist/primitives/Bytes/index.cjs"
+		},
 		"./Chain": {
 			"types": "./types/primitives/Chain/index.d.ts",
 			"import": "./dist/primitives/Chain/index.js",

@@ -166,7 +166,8 @@ export * as RuntimeCode from "./RuntimeCode/index.js";
 // Function & Event Selectors
 export * as Selector from "./Selector/index.js";
 // Signatures (EIP-191, EIP-1271)
-export * as Signature from "./Signature/index.js";
+export * as BrandedSignature from "./Signature/index.js";
+export { Signature } from "./Signature/index.js";
 export { isSignature } from "./Signature/isSignature.js";
 export * as SignedData from "./SignedData/index.js";
 export * as BrandedSiwe from "./Siwe/index.js";
