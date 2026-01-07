@@ -37,7 +37,17 @@ export function encodeParameters(params, values) {
 		encodings.push(encodeValue(param.type, value, param.components));
 	}
 
-	let dynamicOffset = params.length * 32;
+	// Calculate total static section size:
+	// - Dynamic types: 32 bytes for offset pointer
+	// - Static types: actual encoded size (tuples expand inline)
+	let dynamicOffset = 0;
+	for (const { encoded, isDynamic } of encodings) {
+		if (isDynamic) {
+			dynamicOffset += 32; // Offset pointer
+		} else {
+			dynamicOffset += encoded.length; // Static data encoded inline
+		}
+	}
 
 	for (const { encoded, isDynamic } of encodings) {
 		if (isDynamic) {
