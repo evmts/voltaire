@@ -1,392 +1,203 @@
 ---
-title: "Ethers-style Contract"
-description: "Reference implementation of ethers v6 Contract patterns using Voltaire primitives"
+title: "Building an Ethers-style Contract"
+description: "A guide to building a reference implementation of ethers v6 Contract patterns using Voltaire primitives"
 ---
 
 <Info>
-**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+**Skill Guide** — This guide walks you through building a copyable reference implementation. For the final, production-ready code, see the [full implementation](#full-reference-implementation). Also see the [Skills Philosophy](/concepts/skills).
 </Info>
 
-# Ethers-style Contract
+# Building an Ethers-style Contract
 
-A copyable reference implementation that follows [ethers v6](https://docs.ethers.org/v6/) Contract patterns, built on Voltaire primitives.
+This guide demonstrates how to build a type-safe, ethers-v6-compatible `Contract` abstraction using low-level `@tevm/voltaire` primitives. This approach gives you a powerful, fully-customizable contract wrapper that you own and control.
 
-## Overview
+## Philosophy
 
-This Skill provides:
+Instead of providing a rigid, one-size-fits-all `Contract` object, Voltaire gives you the tools to build your own. You get an ethers-compatible API without the dependency, allowing you to tailor it to your specific needs.
 
-- **EthersContract**: Main contract abstraction with ethers v6 API
-- **ContractFactory**: Deploy new contracts
-- **Type-safe**: Full TypeScript inference from ABI
-- **Ethers-compatible**: Familiar API for ethers users
+## Core Primitives
 
-## Quick Start
+We'll use a few key Voltaire primitives to build our contract:
 
-```typescript
-import { EthersContract, ContractFactory } from './ethers-contract';
+-   [`Abi`](/docs/primitives/abi): For encoding and decoding ABI data.
+-   [`Hex`](/docs/primitives/hex): For working with hexadecimal strings.
+-   A JSON-RPC `runner` (like a provider or signer) that can make `request()` calls.
 
-// ERC20 ABI (as const for type inference)
-const erc20Abi = [
-  {
-    type: 'function',
-    name: 'balanceOf',
-    stateMutability: 'view',
-    inputs: [{ name: 'account', type: 'address' }],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    name: 'transfer',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'to', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-  },
-  {
-    type: 'event',
-    name: 'Transfer',
-    inputs: [
-      { name: 'from', type: 'address', indexed: true },
-      { name: 'to', type: 'address', indexed: true },
-      { name: 'value', type: 'uint256', indexed: false },
-    ],
-  },
-] as const;
+## Building `EthersContract`
 
-// Create contract instance
-const usdc = EthersContract({
-  target: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-  abi: erc20Abi,
-  runner: provider,
-});
+Let's start with a simplified `EthersContract` implementation. Our goal is a function that takes a contract `target`, `abi`, and a `runner`, and returns an object that lets us call contract methods.
 
-// Call view function (uses staticCall by default)
-const balance = await usdc.balanceOf(address);
-
-// Send transaction (uses send by default for nonpayable)
-const tx = await usdc.transfer(recipient, 1000n);
-await tx.wait();
-```
-
-## API Reference
-
-### EthersContract
-
-Create a contract instance for interacting with deployed contracts.
+We can achieve this using a `Proxy`, which intercepts calls to methods that don't exist on our object and interprets them as contract calls.
 
 ```typescript
-const contract = EthersContract({
-  target: string,      // Address or ENS name
-  abi: readonly Item[], // Contract ABI
-  runner?: ContractRunner, // Provider or Signer
-});
-```
+import { Abi, Hex } from '@tevm/voltaire';
 
-### Properties
+/**
+ * @typedef {import('./EthersContractTypes.js').ContractRunner} ContractRunner
+ * @typedef {import('@tevm/voltaire').Item} Item
+ */
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `target` | `string` | Original target (address/ENS) |
-| `interface` | `Abi` | Parsed ABI interface |
-| `runner` | `ContractRunner \| null` | Connected provider/signer |
-| `filters` | `ContractFilters` | Event filter factory |
+/**
+ * A simplified EthersContract implementation
+ * @param {{ target: string, abi: readonly Item[], runner: ContractRunner }} options
+ */
+export function SimpleEthersContract({ target, abi, runner }) {
+  const abiInterface = Abi(abi);
 
-### Core Methods
+  return new Proxy({}, {
+    get(_target, prop, receiver) {
+      if (typeof prop !== 'string') {
+        return Reflect.get(_target, prop, receiver);
+      }
 
-#### `getAddress(): Promise<string>`
+      // Check if the property is a function in the ABI
+      const fragment = abiInterface.getFunction(prop);
 
-Resolve and return the contract address.
+      if (!fragment) {
+        // Not a contract method, return undefined or throw
+        return undefined;
+      }
 
-```typescript
-const address = await contract.getAddress();
-```
+      // This is a contract method, return an async function to call it
+      return async (...args) => {
+        // 1. Encode the function call data
+        const data = Hex.fromBytes(abiInterface.encode(prop, args));
 
-#### `connect(runner): EthersContract`
+        if (fragment.stateMutability === 'view' || fragment.stateMutability === 'pure') {
+          // 2a. For read-only calls, use `eth_call`
+          const resultHex = await runner.request({
+            method: 'eth_call',
+            params: [{ to: target, data }, 'latest']
+          });
 
-Return new instance with different runner.
+          // 3a. Decode the result
+          const decoded = abiInterface.decode(prop, Hex.toBytes(resultHex));
+          return decoded.length === 1 ? decoded[0] : decoded;
 
-```typescript
-const withSigner = contract.connect(signer);
-```
-
-#### `attach(target): EthersContract`
-
-Return new instance with different address.
-
-```typescript
-const otherToken = contract.attach('0x...');
-```
-
-#### `getDeployedCode(): Promise<string | null>`
-
-Get deployed bytecode (or null if not deployed).
-
-```typescript
-const code = await contract.getDeployedCode();
-```
-
-#### `waitForDeployment(): Promise<EthersContract>`
-
-Wait until contract is deployed.
-
-```typescript
-const deployed = await factory.deploy(...args);
-await deployed.waitForDeployment();
-```
-
-### Function Methods
-
-Each ABI function becomes a callable with additional methods:
-
-```typescript
-// Default behavior based on stateMutability
-await contract.functionName(...args);
-
-// Explicit variants
-await contract.functionName.staticCall(...args);  // eth_call
-await contract.functionName.send(...args);        // eth_sendTransaction
-await contract.functionName.estimateGas(...args); // eth_estimateGas
-await contract.functionName.populateTransaction(...args); // Build tx
-```
-
-#### Default Behavior
-
-| stateMutability | Default Method |
-|-----------------|---------------|
-| `view`, `pure` | `staticCall` |
-| `nonpayable`, `payable` | `send` |
-
-#### Transaction Overrides
-
-Pass overrides as the last argument:
-
-```typescript
-const tx = await contract.transfer(to, amount, {
-  gasLimit: 100000n,
-  maxFeePerGas: 50_000_000_000n,
-});
-```
-
-### Event Methods
-
-#### `filters.EventName(...args)`
-
-Create event filter for subscriptions/queries.
-
-```typescript
-// All Transfer events
-const allTransfers = contract.filters.Transfer();
-
-// Filtered by indexed params
-const fromMe = contract.filters.Transfer({ from: myAddress });
-```
-
-#### `queryFilter(event, fromBlock?, toBlock?)`
-
-Query historical logs.
-
-```typescript
-const logs = await contract.queryFilter(
-  contract.filters.Transfer({ from: myAddress }),
-  fromBlock,
-  toBlock
-);
-
-for (const log of logs) {
-  console.log(log.eventName, log.args);
+        } else {
+          // 2b. For state-changing calls, use `eth_sendTransaction`
+          const txHash = await runner.request({
+            method: 'eth_sendTransaction',
+            params: [{ to: target, data }]
+          });
+          // For simplicity, we return the hash. A full implementation
+          // would return a transaction response object.
+          return txHash;
+        }
+      };
+    }
+  });
 }
 ```
 
-#### Event Subscriptions
+This simplified version demonstrates the core logic:
+1.  **ABI Parsing**: `Abi(abi)` creates a reusable interface for encoding/decoding.
+2.  **Proxy Interception**: The `Proxy` catches calls like `usdc.balanceOf(...)`.
+3.  **Encoding**: `abiInterface.encode()` creates the `data` payload for the JSON-RPC request.
+4.  **RPC Calls**: It uses the `runner` to send either `eth_call` or `eth_sendTransaction`.
+5.  **Decoding**: `abiInterface.decode()` parses the `eth_call` result.
+
+## Building a `ContractFactory`
+
+To deploy contracts, we need a `ContractFactory`. It takes the ABI and bytecode, and its `deploy` method encodes constructor arguments and sends a transaction with the combined bytecode.
+
+Here's a simplified example:
 
 ```typescript
-// Subscribe
-await contract.on('Transfer', (from, to, value, event) => {
-  console.log(`${from} -> ${to}: ${value}`);
-});
+import { Abi, Hex } from '@tevm/voltaire';
 
-// Subscribe once
-await contract.once('Transfer', listener);
+/**
+ * A simplified ContractFactory implementation
+ * @param {{ abi: readonly Item[], bytecode: string, runner: ContractRunner }} options
+ */
+export function SimpleContractFactory({ abi, bytecode, runner }) {
+  const abiInterface = Abi(abi);
 
-// Unsubscribe
-await contract.off('Transfer', listener);
+  return {
+    async deploy(...args) {
+      const constructorFragment = abiInterface.getConstructor();
+      let data = bytecode;
 
-// Remove all listeners
-await contract.removeAllListeners('Transfer');
-await contract.removeAllListeners(); // All events
+      if (constructorFragment && args.length > 0) {
+        // Encode constructor arguments and append to bytecode
+        const encodedArgs = abiInterface.encode(constructorFragment, args);
+        data += Hex.fromBytes(encodedArgs).slice(2);
+      }
 
-// List listeners
-const count = await contract.listenerCount('Transfer');
-const listeners = await contract.listeners('Transfer');
-```
+      const txHash = await runner.request({
+        method: 'eth_sendTransaction',
+        params: [{ data }] // from is implicitly from the runner/signer
+      });
 
-## ContractFactory
-
-Deploy new contracts.
-
-```typescript
-const factory = ContractFactory({
-  abi: myTokenAbi,
-  bytecode: '0x608060405234801561001057600080fd5b50...',
-  runner: signer,
-});
-
-// Deploy with constructor args
-const contract = await factory.deploy('MyToken', 'MTK', 18);
-await contract.waitForDeployment();
-
-console.log('Deployed at:', await contract.getAddress());
-```
-
-### Factory Methods
-
-#### `getDeployTransaction(...args)`
-
-Build deployment transaction without sending.
-
-```typescript
-const tx = await factory.getDeployTransaction('MyToken', 'MTK', 18);
-console.log(tx.data); // bytecode + encoded constructor args
-```
-
-#### `deploy(...args)`
-
-Deploy contract and return instance.
-
-```typescript
-const contract = await factory.deploy('MyToken', 'MTK', 18);
-```
-
-#### `attach(target)`
-
-Create contract instance at existing address.
-
-```typescript
-const existing = factory.attach('0x...');
-```
-
-#### `connect(runner)`
-
-Return new factory with different runner.
-
-```typescript
-const withSigner = factory.connect(newSigner);
-```
-
-### Static Methods
-
-#### `ContractFactory.fromSolidity(output, runner?)`
-
-Create from Solidity compiler output.
-
-```typescript
-import artifact from './MyToken.json';
-
-const factory = ContractFactory.fromSolidity(artifact, signer);
-```
-
-## Error Handling
-
-### Error Types
-
-```typescript
-import {
-  UnsupportedOperationError,  // Runner lacks capability
-  CallExceptionError,         // Contract reverted
-  InvalidArgumentError,       // Bad input
-  FunctionNotFoundError,      // Function not in ABI
-  EventNotFoundError,         // Event not in ABI
-} from './ethers-contract';
-```
-
-### Revert Decoding
-
-```typescript
-import { decodeRevertReason, PanicReasons } from './ethers-contract';
-
-try {
-  await contract.transfer(to, amount);
-} catch (error) {
-  if (error instanceof CallExceptionError) {
-    console.log('Revert reason:', error.revert?.name);
-  }
+      // A full implementation would calculate the deployed address
+      // and return an EthersContract instance.
+      return txHash;
+    }
+  };
 }
 ```
 
 ## Type Safety
 
-The implementation provides full type inference from ABI:
+You can get full TypeScript inference by using `as const` on your ABI. The full reference implementation includes comprehensive types that provide autocomplete and type-checking for function arguments and return values.
 
 ```typescript
-const abi = [
+const erc20Abi = [
   {
     type: 'function',
     name: 'balanceOf',
-    stateMutability: 'view',
-    inputs: [{ name: 'account', type: 'address' }],
-    outputs: [{ name: '', type: 'uint256' }],
+    // ...
   },
-] as const;
+] as const; // <-- This is key!
 
-const contract = EthersContract({ target: '0x...', abi, runner: provider });
+const usdc = EthersContract({
+  target: '0x...',
+  abi: erc20Abi,
+  runner: provider,
+});
 
-// TypeScript knows:
-// - balanceOf takes 1 address argument
-// - balanceOf returns bigint
-const balance = await contract.balanceOf('0x...');
-//    ^? Promise<bigint>
+// TypeScript knows `balanceOf` takes an address and returns a Promise<bigint>
+const balance = await usdc.balanceOf('0x...');
 ```
 
-## Differences from ethers v6
+## Full Reference Implementation
 
-| Feature | ethers v6 | This Implementation |
-|---------|-----------|---------------------|
-| Constructor | `new Contract(...)` | `EthersContract({...})` |
-| ENS Resolution | Built-in | Simplified (address only) |
-| Multicall | Not built-in | Not included |
-| Provider Events | Full support | Basic polling |
-| Error Decoding | Full custom errors | Basic + Panic |
+The simplified examples above illustrate the core concepts. The full implementation in `examples/ethers-contract/` is production-ready and includes many more features:
 
-## Migration from ethers
+-   Explicit `staticCall`, `send`, `estimateGas`, and `populateTransaction` methods.
+-   Event filtering and querying (`queryFilter`).
+-   Event subscriptions (`on`, `once`, `off`).
+-   Robust error handling and revert reason decoding.
+-   Deployment address calculation.
+-   Comprehensive TypeScript types.
 
-```typescript
-// ethers v6
-import { Contract } from 'ethers';
-const contract = new Contract(address, abi, provider);
+### Installation
 
-// Voltaire ethers-contract
-import { EthersContract } from './ethers-contract';
-const contract = EthersContract({ target: address, abi, runner: provider });
-
-// API is otherwise identical
-const balance = await contract.balanceOf(address);
-const tx = await contract.transfer(to, amount);
-```
-
-## Installation
-
-Copy the `examples/ethers-contract/` directory into your project:
+To use the full implementation, copy the `examples/ethers-contract/` directory into your project:
 
 ```
 your-project/
-  contracts/
-    EthersContract.js
-    ContractFactory.js
-    EthersContractTypes.ts
-    errors.ts
-    index.ts
+  lib/
+    ethers-contract/
+      EthersContract.js
+      ContractFactory.js
+      EthersContractTypes.ts
+      errors.ts
+      index.ts
 ```
 
-Then import and use:
+You can then import it into your application code:
 
 ```typescript
-import { EthersContract, ContractFactory } from './contracts';
+import { EthersContract } from './lib/ethers-contract';
+
+const contract = EthersContract({ ... });
 ```
+
+This gives you a fully-featured, ethers-compatible contract API that you can modify and extend to fit your exact needs.
 
 ## See Also
 
-- [Contract (Voltaire native)](/docs/contract) - Voltaire's native contract abstraction
-- [EventStream](/docs/contract/events) - Robust event streaming
-- [Abi](/docs/primitives/abi) - ABI encoding/decoding primitives
+- [Abi Primitive](/docs/primitives/abi)
+- [Hex Primitive](/docs/primitives/hex)
+- [JSON-RPC Transport](/docs/jsonrpc)

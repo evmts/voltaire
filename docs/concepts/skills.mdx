@@ -84,33 +84,22 @@ Use the [Voltaire MCP Server](/model-context-protocol) with your AI coding assis
 
 APIs are imported from `@tevm/voltaire`. Skills are copied into your codebase.
 
-## Available Skills
+## Available Skill Guides
 
-### Provider Skills
-- [ethers-provider](/skills/ethers-provider) — ethers v6 compatible JsonRpcProvider
-- [viem-publicclient](/skills/viem-publicclient) — viem compatible PublicClient
-- [viem-walletclient](/skills/viem-walletclient) — viem compatible WalletClient
-- [batched-provider](/skills/batched-provider) — JSON-RPC request batching
+Our skill guides walk you through building common Ethereum patterns using Voltaire's low-level primitives. Each guide provides a full, copyable reference implementation that you can use as-is or customize.
+
+### Provider & Signer Skills
+Learn how to build abstractions compatible with popular libraries like ethers and viem. These guides cover creating `JsonRpcProvider`, `PublicClient`, `WalletClient`, and `Signer` wrappers around Voltaire's JSON-RPC interface. You can also learn patterns for request batching and fallback providers.
 
 ### Contract Skills
-- [ethers-contract](/skills/ethers-contract) — ethers v6 compatible Contract
-- [viem-contract](/skills/viem-contract) — viem compatible contract interactions
+Discover how to build powerful, type-safe contract interaction wrappers. Guides cover creating ethers- and viem-compatible `Contract` objects, enabling familiar APIs for your project without adding external dependencies.
 
-### Wallet Skills
-- [ethers-signer](/skills/ethers-signer) — ethers v6 compatible Signer
-- [ethers-hdwallet](/skills/ethers-hdwallet) — HD wallet derivation
-- [viem-account](/skills/viem-account) — viem compatible Account
+### Wallet & Account Skills
+Build your own wallet and account management logic, from HD wallet derivation to transaction nonce management, compatible with both ethers and viem patterns.
 
-### React Skills
-- [react-query](/skills/react-query) — Use Voltaire with TanStack Query (wagmi alternative)
+### Utility & Pattern Skills
+Explore guides for implementing common patterns like `multicall` for batching contract reads, or how to integrate Voltaire with libraries like TanStack Query for building custom React hooks.
 
-<Note>
-We don't provide a wagmi-like library. Instead, the react-query Skill shows how to build React hooks using TanStack Query directly. Copy it, customize it for your contracts.
-</Note>
-
-### Utility Skills
-- [multicall](/skills/multicall) — Batch multiple calls in one request
-- [nonce-manager](/skills/nonce-manager) — Transaction nonce tracking
 
 ## Learn More
 
