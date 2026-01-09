@@ -1,1 +1,118 @@
-../../../src/primitives/Abi/encoding.mdx
+---
+title: ABI Encoding & Decoding
+description: Understanding Ethereum ABI encoding and decoding mechanics
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/abi.ts">
+  Run ABI examples in the interactive playground
+</Card>
+
+
+## Overview
+
+ABI encoding serializes typed data into byte sequences for EVM consumption. Solidity ABI specification defines encoding rules for all Ethereum types.
+
+## Encoding Rules
+
+**Static types** (fixed size):
+- `uint<N>`, `int<N>`, `address`, `bool`, `bytes<N>` (N ≤ 32)
+- Encoded in-place as 32-byte words
+
+**Dynamic types** (variable size):
+- `bytes`, `string`, arrays (`T[]`, `T[k]`)
+- Encoded with offset pointer + length + data
+
+## Function Encoding
+
+Function calls encode as: `selector (4 bytes) + params (ABI-encoded)`
+
+```typescript
+// transfer(address,uint256)
+// Selector: 0xa9059cbb
+// Params: [recipient, amount]
+const data = Abi.Function.encodeParams(fn, [recipient, amount]);
+```
+
+## Event Encoding
+
+Events encode indexed parameters as topics, non-indexed as data.
+
+```typescript
+// Transfer(address indexed from, address indexed to, uint256 value)
+// topic0: event selector
+// topic1: from address
+// topic2: to address
+// data: ABI-encoded value
+const topics = Abi.Event.encodeTopics(event, { from, to });
+```
+
+**Topic limits**: Max 3 indexed parameters (topic0 is selector)
+
+## Error Encoding
+
+Errors encode like functions: `selector (4 bytes) + params`
+
+```typescript
+// InsufficientBalance(uint256 requested, uint256 available)
+const data = Abi.Error.encodeParams(error, [requested, available]);
+```
+
+## Constructor Encoding
+
+Constructor parameters append to contract bytecode during deployment.
+
+```typescript
+// constructor(string name, uint8 decimals)
+const params = Abi.Constructor.encodeParams(ctor, [name, decimals]);
+// Deploy: bytecode + params
+```
+
+## Tuple Encoding
+
+Tuples (structs) encode components sequentially.
+
+```typescript
+// struct Point { uint256 x; uint256 y; }
+// Encodes as: [x, y] (two 32-byte words)
+```
+
+## Array Encoding
+
+**Fixed-size arrays**: Encode elements sequentially
+**Dynamic arrays**: Encode length + elements
+
+```typescript
+// uint256[3] - Fixed (3 * 32 = 96 bytes)
+// uint256[] - Dynamic (32-byte length + N * 32 bytes)
+```
+
+## Packed Encoding
+
+Standard ABI uses 32-byte words. Packed encoding removes padding (used in `abi.encodePacked` for signatures/hashing).
+
+Tevm uses standard ABI encoding. For packed encoding, use manual byte manipulation.
+
+## Decoding
+
+Decoding reverses encoding process, extracting typed values from byte sequences.
+
+```typescript
+// Decode function parameters
+const params = Abi.Function.decodeParams(fn, data);
+
+// Decode function results
+const result = Abi.Function.decodeResult(fn, returnData);
+
+// Decode event log
+const values = Abi.Event.decodeLog(event, log.data, log.topics);
+```
+
+## Specification
+
+Full encoding rules: [Solidity ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html)
+
+## See Also
+
+- [Function encoding](/primitives/abi/function-encode-params) - Encode function parameters
+- [Event encoding](/primitives/abi/event-encode-topics) - Encode event topics
+- [Selectors](/primitives/abi/selectors) - Selector generation

@@ -1,1 +1,32 @@
-../../../src/primitives/EventLog/create.mdx
+---
+title: EventLog.create
+description: Explicit constructor (alias)
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/event-log.ts">
+  Run EventLog examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+</Tabs>
+
+## Usage Notes
+
+`create()` is functionally identical to `EventLog()` and `EventLog.from()`. Use whichever name is clearest:
+
+```typescript
+// All equivalent
+const log1 = EventLog(params);       // Primary (recommended)
+const log2 = EventLog(params);  // Alias
+const log3 = EventLog.create(params); // Alias
+```
+
+Most code uses `EventLog()` as the primary constructor. Use `create()` when explicit construction intent improves readability.
+
+## See Also
+
+- [EventLog()](/primitives/eventlog/from) - Primary constructor
+- [from](/primitives/eventlog/from) - Alias for EventLog() constructor
+- [clone](/primitives/eventlog/clone) - Deep clone existing log

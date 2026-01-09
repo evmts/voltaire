@@ -1,1 +1,140 @@
-../../../src/primitives/Blob/isValidVersion.mdx
+---
+title: Blob.isValidVersion
+description: Validate versioned hash format and version byte
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/blob.ts">
+  Run Blob examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+</Tabs>
+
+## Validation Rules
+
+A valid versioned hash must:
+1. Be exactly 32 bytes
+2. Have version byte 0x01 (KZG commitment version)
+
+```typescript
+import { Blob } from 'tevm';
+
+function isValidVersionedHash(hash: Uint8Array): boolean {
+  // Check length
+  if (hash.length !== 32) {
+    return false;
+  }
+
+  // Check version byte
+  if (hash[0] !== 0x01) {
+    return false;
+  }
+
+  return true;
+}
+
+// Equivalent to Blob.isValidVersion()
+```
+
+## Version Byte
+
+Current supported version:
+
+```typescript
+import { Blob } from 'tevm';
+
+console.log(Blob.COMMITMENT_VERSION_KZG); // 0x01
+
+const hash = blob.toVersionedHash();
+console.log(hash[0]); // 0x01
+
+// Future versions (not yet supported)
+// 0x02 = Future commitment scheme
+// 0x03 = Another scheme
+```
+
+## VersionedHash Utilities
+
+```typescript
+import { Blob } from 'tevm';
+
+const versionedHash = blob.toVersionedHash();
+
+// Validate format
+console.log(Blob.isValidVersion(versionedHash)); // true
+
+// Check specific validation using VersionedHash namespace
+console.log(Blob.VersionedHash.isValid(versionedHash)); // true
+
+// Get version byte
+const version = Blob.VersionedHash.getVersion(versionedHash);
+console.log(version); // 1
+
+// Alternative: version() method
+console.log(Blob.VersionedHash.version(versionedHash)); // 1
+```
+
+## Transaction Validation
+
+```typescript
+import { Blob } from 'tevm';
+
+function validateBlobVersionedHashes(
+  hashes: Uint8Array[],
+  maxBlobs: number = Blob.MAX_PER_TRANSACTION
+): boolean {
+  // Check count
+  if (hashes.length === 0 || hashes.length > maxBlobs) {
+    return false;
+  }
+
+  // Validate each hash
+  for (const hash of hashes) {
+    if (!Blob.isValidVersion(hash)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// Usage
+const tx = { blobVersionedHashes: [hash1, hash2, hash3] };
+if (!validateBlobVersionedHashes(tx.blobVersionedHashes)) {
+  throw new Error('Invalid versioned hashes');
+}
+```
+
+## Error Cases
+
+```typescript
+import { Blob } from 'tevm';
+
+// Wrong length
+const tooShort = Bytes16();
+console.log(Blob.isValidVersion(tooShort)); // false
+
+const tooLong = Bytes64();
+console.log(Blob.isValidVersion(tooLong)); // false
+
+// Wrong version
+const wrongVersion = Bytes32();
+wrongVersion[0] = 0x02; // Unsupported
+console.log(Blob.isValidVersion(wrongVersion)); // false
+
+wrongVersion[0] = 0x00; // Invalid
+console.log(Blob.isValidVersion(wrongVersion)); // false
+
+// Correct
+const correct = Bytes32();
+correct[0] = 0x01; // KZG version
+console.log(Blob.isValidVersion(correct)); // true
+```
+
+## See Also
+
+- [toVersionedHash](./toVersionedHash) - Compute versioned hash
+- [versioned-hash](./versioned-hash) - VersionedHash namespace utilities
+- [EIP-4844](/primitives/blob/eip4844) - Versioned hash specification

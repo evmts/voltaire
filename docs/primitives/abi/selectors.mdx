@@ -1,1 +1,142 @@
-../../../src/primitives/Abi/selectors.mdx
+---
+title: Selectors & Signatures
+description: Function selectors, event topic hashes, and signature generation
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/abi.ts">
+  Run ABI examples in the interactive playground
+</Card>
+
+
+## Overview
+
+Selectors identify functions, events, and errors in Ethereum. Generated from human-readable signatures using keccak256 hashing.
+
+## Function Selectors
+
+Function selector: First 4 bytes of `keccak256(signature)`
+
+```typescript
+// transfer(address,uint256)
+// Signature: "transfer(address,uint256)"
+// Hash: keccak256("transfer(address,uint256)")
+// Selector: 0xa9059cbb (first 4 bytes)
+
+const selector = Abi.Function.getSelector(fn);
+```
+
+**Canonical form**: No spaces, canonical type names (e.g., `uint256` not `uint`)
+
+## Event Selectors
+
+Event selector: Full 32 bytes of `keccak256(signature)` (topic0)
+
+```typescript
+// Transfer(address,address,uint256)
+// Signature: "Transfer(address,address,uint256)"
+// Hash: keccak256("Transfer(address,address,uint256)")
+// Selector: 0xddf252ad... (full 32 bytes)
+
+const selector = Abi.Event.getSelector(event);
+```
+
+**Anonymous events**: No topic0 (no selector), all parameters become topics
+
+## Error Selectors
+
+Error selector: First 4 bytes of `keccak256(signature)` (same as functions)
+
+```typescript
+// InsufficientBalance(uint256,uint256)
+// Selector: First 4 bytes of keccak256(signature)
+
+const selector = Abi.Error.getSelector(error);
+```
+
+## Signature Generation
+
+Signatures represent function/event/error in canonical form.
+
+```typescript
+// Function: name(param1Type,param2Type)returns(returnType)
+const sig = Abi.Function.getSignature(fn);
+// "transfer(address,uint256)"
+
+// Event: name(param1Type,param2Type)
+const sig = Abi.Event.getSignature(event);
+// "Transfer(address,address,uint256)"
+
+// Error: name(param1Type,param2Type)
+const sig = Abi.Error.getSignature(error);
+// "InsufficientBalance(uint256,uint256)"
+```
+
+## Canonical Type Names
+
+Types must use canonical names for correct selectors:
+
+- ✅ `uint256`, `int256` (explicit size)
+- ❌ `uint`, `int` (implicit size - invalid)
+- ✅ `bytes32` (fixed-size bytes)
+- ✅ `bytes` (dynamic bytes)
+- ✅ `address` (20 bytes)
+- ✅ `bool` (1 byte)
+
+## Tuple Signatures
+
+Tuples (structs) expand into signature:
+
+```typescript
+// struct Point { uint256 x; uint256 y; }
+// function plot(Point p)
+// Signature: "plot((uint256,uint256))"
+```
+
+## Array Signatures
+
+Arrays include brackets in signature:
+
+```typescript
+// function batch(address[] recipients)
+// Signature: "batch(address[])"
+
+// function fixed(uint256[3] values)
+// Signature: "fixed(uint256[3])"
+```
+
+## Selector Collisions
+
+4-byte function selectors can collide (birthday paradox). ~77,000 functions → 50% collision chance.
+
+Event selectors (32 bytes) have negligible collision risk.
+
+## Standard Selectors
+
+Common function selectors:
+
+- `0xa9059cbb` - `transfer(address,uint256)`
+- `0x23b872dd` - `transferFrom(address,address,uint256)`
+- `0x095ea7b3` - `approve(address,uint256)`
+- `0x70a08231` - `balanceOf(address)`
+
+Common event selectors:
+
+- `0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef` - `Transfer(address,address,uint256)`
+- `0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925` - `Approval(address,address,uint256)`
+
+## Custom Hash Functions
+
+Use factories for custom keccak256 implementations:
+
+```typescript
+import { GetSelector } from 'tevm/Abi/Function';
+
+const getSelector = GetSelector(customKeccak256);
+const selector = getSelector(fn);
+```
+
+## See Also
+
+- [Function getSelector](/primitives/abi/function-get-selector) - Get function selector
+- [Event getSelector](/primitives/abi/event-get-selector) - Get event selector
+- [Encoding](/primitives/abi/encoding) - ABI encoding mechanics

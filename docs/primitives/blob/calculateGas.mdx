@@ -1,1 +1,90 @@
-../../../src/primitives/Blob/calculateGas.mdx
+---
+title: Blob.calculateGas
+description: Calculate blob gas cost for number of blobs
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/blob.ts">
+  Run Blob examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+</Tabs>
+
+## Gas Constants
+
+```typescript
+import { Blob } from 'tevm';
+
+console.log(Blob.GAS_PER_BLOB);        // 131,072 (2^17)
+console.log(Blob.TARGET_GAS_PER_BLOCK); // 393,216 (3 blobs)
+console.log(Blob.MAX_PER_TRANSACTION);  // 6 blobs
+
+// Maximum gas per transaction
+const maxGas = Blob.GAS_PER_BLOB * Blob.MAX_PER_TRANSACTION;
+console.log(maxGas); // 786,432
+```
+
+## Fee Market
+
+Blob base fee adjusts based on block usage:
+
+```typescript
+import { Blob } from 'tevm';
+
+// Target: 3 blobs per block
+const target = Blob.TARGET_GAS_PER_BLOCK;
+console.log(`Target: ${target} gas`); // 393,216
+
+// If usage > target, fee increases
+// If usage < target, fee decreases
+```
+
+### Example: Fee Adjustment
+
+```typescript
+// Block used 2 blobs (below target)
+const usedGas = Blob.calculateGas(2);
+const targetGas = Blob.TARGET_GAS_PER_BLOCK;
+
+if (usedGas < targetGas) {
+  console.log('Fee will decrease next block');
+}
+
+// Block used 5 blobs (above target)
+const highUsage = Blob.calculateGas(5);
+
+if (highUsage > targetGas) {
+  console.log('Fee will increase next block');
+}
+```
+
+## Complete Transaction Cost
+
+```typescript
+import { Blob } from 'tevm';
+
+// Transaction costs
+const executionGas = 21000n; // Base transaction
+const executionBaseFee = 30_000_000_000n; // 30 gwei
+const executionCost = executionGas * executionBaseFee;
+
+// Blob costs
+const blobCount = 2;
+const blobBaseFee = 50_000_000n; // 50 gwei
+const blobCost = Blob.calculateGas(blobCount, blobBaseFee);
+
+// Total
+const totalCost = executionCost + blobCost;
+
+console.log(`Execution: ${executionCost / 10n**9n} gwei`);
+console.log(`Blobs: ${blobCost / 10n**9n} gwei`);
+console.log(`Total: ${totalCost / 10n**9n} gwei`);
+```
+
+## See Also
+
+- [estimateBlobCount](./estimateBlobCount) - Estimate blobs needed
+- [splitData](./splitData) - Split data into blobs
+- [EIP-4844](/primitives/blob/eip4844) - Blob gas market details

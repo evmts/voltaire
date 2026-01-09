@@ -1,1 +1,408 @@
-../../../src/primitives/Bytes/index.mdx
+---
+title: "Bytes"
+description: "Variable-length and fixed-size byte array primitives for Ethereum data"
+---
+
+## Overview
+
+Bytes provides variable-length and fixed-size byte array types used throughout Ethereum. The module includes:
+
+- **Bytes** - Variable-length byte arrays
+- **Bytes1-Bytes8** - Small fixed-size types (1-8 bytes)
+- **Bytes16** - 16-byte fixed type (UUIDs, nonces)
+- **Bytes32** - 32-byte fixed type (storage, hashes)
+- **Bytes64** - 64-byte fixed type (signatures, public keys)
+
+All types are branded `Uint8Array` values with zero runtime overhead.
+
+<Tabs>
+<Tab title="Type Definition">
+
+```typescript
+import type { brand } from './brand.js'
+
+// Variable-length bytes
+export type BytesType = Uint8Array & {
+  readonly [brand]: "Bytes"
+}
+
+// Fixed-size bytes (example: Bytes32)
+export type Bytes32Type = Uint8Array & {
+  readonly [brand]: "Bytes32"
+}
+```
+
+Bytes types are branded `Uint8Array` values. TypeScript enforces type safety through a unique Symbol brand, preventing accidental mixing with other Uint8Arrays.
+
+</Tab>
+</Tabs>
+
+## Quick Start
+
+<Tabs>
+<Tab title="Variable-Length Bytes">
+
+```typescript
+import { Bytes } from '@tevm/voltaire/Bytes';
+
+// Create from various inputs
+const b1 = Bytes([0x01, 0x02, 0x03]);
+const b2 = Bytes(new Uint8Array([0x01, 0x02]));
+const b3 = Bytes("0x1234");
+const b4 = Bytes("hello");  // UTF-8 string
+
+// Convert to hex
+console.log(Bytes.toHex(b1));
+// "0x010203"
+
+// Concatenate
+const combined = Bytes.concat(b1, b2, b3);
+
+// Slice
+const slice = Bytes.slice(combined, 0, 4);
+```
+
+</Tab>
+<Tab title="Fixed-Size Bytes">
+
+```typescript
+import { Bytes32, Bytes16, Bytes4 } from '@tevm/voltaire/Bytes';
+
+// Bytes32 - storage values, hashes
+const value = Bytes32("0x" + "ab".repeat(32));
+console.log(Bytes32.toHex(value));
+
+// Bytes32 from number
+const numValue = Bytes32.fromNumber(42);
+const bigValue = Bytes32.fromBigint(12345678901234567890n);
+
+// Bytes16 - UUIDs, nonces
+const uuid = Bytes16.random();
+console.log(Bytes16.toHex(uuid));
+
+// Bytes4 - function selectors
+const selector = Bytes4("0xdeadbeef");
+console.log(Bytes4.toHex(selector));
+```
+
+</Tab>
+<Tab title="Comparisons">
+
+```typescript
+import { Bytes, Bytes32 } from '@tevm/voltaire/Bytes';
+
+// Equality check
+const a = Bytes("0x1234");
+const b = Bytes("0x1234");
+console.log(Bytes.equals(a, b)); // true
+
+// Lexicographic comparison
+const cmp = Bytes.compare(a, b);
+// -1 if a < b, 0 if equal, 1 if a > b
+
+// Fixed-size comparison
+const x = Bytes32("0x" + "00".repeat(31) + "01");
+const y = Bytes32("0x" + "00".repeat(31) + "02");
+console.log(Bytes32.compare(x, y)); // -1
+```
+
+</Tab>
+</Tabs>
+
+## Variable-Length Bytes API
+
+### Constructors
+
+```typescript
+import { Bytes } from '@tevm/voltaire/Bytes';
+
+// Universal constructor
+const b1 = Bytes([0x01, 0x02, 0x03]);
+const b2 = Bytes(new Uint8Array([0x01, 0x02]));
+const b3 = Bytes("0x1234");      // Hex string
+const b4 = Bytes("hello");       // UTF-8 string
+
+// Specific constructors
+const fromHex = Bytes.fromHex("0x1234");
+const fromNum = Bytes.fromNumber(255);
+const fromBig = Bytes.fromBigInt(12345678901234567890n);
+const fromStr = Bytes.fromString("hello");
+
+// Factory methods
+const zeros = Bytes.zero(32);     // 32 zero bytes
+const rand = Bytes.random(32);    // 32 random bytes
+```
+
+### Conversions
+
+```typescript
+// To hex string
+const hex = Bytes.toHex(bytes);
+// "0x1234"
+
+// To number (for small values)
+const num = Bytes.toNumber(bytes);
+
+// To bigint (for large values)
+const big = Bytes.toBigInt(bytes);
+
+// To string (UTF-8 decode)
+const str = Bytes.toString(bytes);
+```
+
+### Manipulation
+
+```typescript
+// Concatenate multiple byte arrays
+const combined = Bytes.concat(bytes1, bytes2, bytes3);
+
+// Slice (like Array.slice)
+const slice = Bytes.slice(bytes, start, end);
+
+// Pad to target size
+const padded = Bytes.padLeft(bytes, 32);  // Pad with zeros on left
+const padR = Bytes.padRight(bytes, 32);   // Pad with zeros on right
+
+// Trim zeros
+const trimL = Bytes.trimLeft(bytes);   // Remove leading zeros
+const trimR = Bytes.trimRight(bytes);  // Remove trailing zeros
+
+// Clone (independent copy)
+const copy = Bytes.clone(bytes);
+```
+
+### Comparisons
+
+```typescript
+// Equality
+const equal = Bytes.equals(a, b);
+
+// Lexicographic comparison (-1, 0, 1)
+const cmp = Bytes.compare(a, b);
+
+// Check if empty
+const empty = Bytes.isEmpty(bytes);
+
+// Get size
+const len = Bytes.size(bytes);
+```
+
+### Validation
+
+```typescript
+// Type check
+if (Bytes.isBytes(value)) {
+  // value is BytesType
+}
+
+// Assert (throws if invalid)
+Bytes.assert(value);
+```
+
+## Fixed-Size Types
+
+### Bytes32
+
+32-byte fixed type for storage values, numeric representations, and general-purpose 32-byte data.
+
+```typescript
+import { Bytes32 } from '@tevm/voltaire/Bytes';
+
+// Create
+const b = Bytes32("0x" + "ab".repeat(32));
+const fromNum = Bytes32.fromNumber(42);
+const fromBig = Bytes32.fromBigint(12345n);
+const zero = Bytes32.zero();
+
+// Convert
+const hex = Bytes32.toHex(b);
+const num = Bytes32.toBigint(b);
+const addr = Bytes32.toAddress(b);  // Extract last 20 bytes
+const hash = Bytes32.toHash(b);     // Semantic conversion
+
+// Compare
+Bytes32.equals(a, b);
+Bytes32.compare(a, b);
+Bytes32.isZero(b);
+
+// Constants
+Bytes32.SIZE;  // 32
+Bytes32.ZERO;  // All zeros
+```
+
+### Bytes64
+
+64-byte fixed type for signatures and uncompressed public keys.
+
+```typescript
+import { Bytes64 } from '@tevm/voltaire/Bytes';
+
+// Create
+const sig = Bytes64("0x" + "ab".repeat(64));
+const zero = Bytes64.zero();
+
+// Convert
+const hex = Bytes64.toHex(sig);
+const arr = Bytes64.toUint8Array(sig);
+
+// Compare
+Bytes64.equals(a, b);
+Bytes64.isZero(sig);
+
+// Constants
+Bytes64.SIZE;  // 64
+Bytes64.ZERO;  // All zeros
+```
+
+### Bytes16
+
+16-byte fixed type for UUIDs and nonces.
+
+```typescript
+import { Bytes16 } from '@tevm/voltaire/Bytes';
+
+// Create
+const uuid = Bytes16("0x" + "ab".repeat(16));
+const rand = Bytes16.random();
+const zero = Bytes16.zero();
+
+// Convert
+const hex = Bytes16.toHex(uuid);
+
+// Compare
+Bytes16.equals(a, b);
+Bytes16.isZero(uuid);
+```
+
+### Bytes1-Bytes8
+
+Small fixed-size types for packed data.
+
+```typescript
+import { Bytes4, Bytes1 } from '@tevm/voltaire/Bytes';
+
+// Bytes4 - function selectors
+const selector = Bytes4("0xdeadbeef");
+console.log(Bytes4.toHex(selector));
+
+// Bytes1 - single byte
+const b = Bytes1.fromNumber(255);
+console.log(Bytes1.toNumber(b));  // 255
+```
+
+## Error Types
+
+```typescript
+import {
+  InvalidBytesLengthError,
+  InvalidBytesFormatError,
+  InvalidValueError
+} from '@tevm/voltaire/Bytes';
+
+try {
+  Bytes.fromHex("invalid");
+} catch (e) {
+  if (e instanceof InvalidBytesFormatError) {
+    console.log(e.message);  // "Hex string must start with 0x"
+  }
+}
+```
+
+| Error | Cause |
+|-------|-------|
+| `InvalidBytesLengthError` | Wrong byte length for fixed-size type |
+| `InvalidBytesFormatError` | Invalid hex format (missing 0x, odd length, bad chars) |
+| `InvalidValueError` | Unsupported input type |
+
+## Usage Patterns
+
+### Working with Storage Values
+
+```typescript
+import { Bytes32 } from '@tevm/voltaire/Bytes';
+
+// Storage slot value
+const storageValue = Bytes32.fromBigint(1000000n);
+
+// Pack address into Bytes32 (left-pad with zeros)
+const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
+const paddedAddress = Bytes32.fromHex(
+  "0x" + "00".repeat(12) + address.slice(2)
+);
+
+// Extract address from Bytes32
+const extractedAddr = Bytes32.toAddress(paddedAddress);
+```
+
+### Building Calldata
+
+```typescript
+import { Bytes, Bytes4, Bytes32 } from '@tevm/voltaire/Bytes';
+
+// Function selector
+const selector = Bytes4("0xa9059cbb");
+
+// Encode parameters as Bytes32
+const recipient = Bytes32.fromHex("0x" + "00".repeat(12) + recipientAddr.slice(2));
+const amount = Bytes32.fromBigint(1000000n);
+
+// Build calldata
+const calldata = Bytes.concat(
+  Bytes4.toBytes(selector),
+  recipient,
+  amount
+);
+```
+
+### Random Data Generation
+
+```typescript
+import { Bytes, Bytes16 } from '@tevm/voltaire/Bytes';
+
+// Random salt for CREATE2
+const salt = Bytes.random(32);
+
+// Random UUID (Bytes16)
+const uuid = Bytes16.random();
+
+// Random nonce
+const nonce = Bytes.random(8);
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific functions
+import { fromHex, toHex, concat } from '@tevm/voltaire/Bytes';
+
+const bytes = fromHex("0x1234");
+const hex = toHex(bytes);
+const combined = concat(bytes, bytes);
+
+// Only these 3 functions included in bundle
+```
+
+## Constants
+
+```typescript
+// Bytes32
+Bytes32.SIZE   // 32
+Bytes32.ZERO   // Uint8Array of 32 zeros
+
+// Bytes64
+Bytes64.SIZE   // 64
+Bytes64.ZERO   // Uint8Array of 64 zeros
+
+// Bytes16
+Bytes16.SIZE   // 16
+Bytes16.ZERO   // Uint8Array of 16 zeros
+```
+
+## Related
+
+- [Hex](/primitives/hex.mdx) - Hex string encoding/decoding
+- [Address](/primitives/address) - 20-byte Ethereum addresses
+- [Hash](/primitives/hash) - Cryptographic hash types
+- [Uint](/primitives/uint) - Unsigned integer types

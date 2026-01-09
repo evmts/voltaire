@@ -1,1 +1,47 @@
-../../../src/primitives/Rlp/branded-rlp.mdx
+---
+title: BrandedRlp Type
+description: RLP data structure type definition and usage
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/rlp.ts">
+  Run RLP examples in the interactive playground
+</Card>
+
+
+# BrandedRlp Type
+
+`BrandedRlp` is the underlying branded type for RLP data structures used throughout Tevm's RLP module.
+
+## Type Definition
+
+```typescript
+export type BrandedRlp =
+  | { type: "bytes"; value: Uint8Array }
+  | { type: "list"; value: BrandedRlp[] };
+```
+
+Union type representing either:
+- **BytesData:** Leaf node containing raw bytes
+- **ListData:** Nested array of RLP data
+
+## Usage
+
+Use through the `Rlp` class or imported functions:
+
+```typescript
+import { Rlp } from 'tevm'
+
+// Create RLP data
+const bytes = Rlp(new Uint8Array([1, 2, 3]))
+const list = Rlp([new Uint8Array([1]), new Uint8Array([2])])
+
+// Check type
+const isBytes = bytes.type === 'bytes'
+const isList = list.type === 'list'
+```
+
+## See Also
+
+- [Encoding](/primitives/rlp/encoding) - Encode RLP structures
+- [Decoding](/primitives/rlp/decoding) - Decode RLP bytes
+- [Branded Types](/getting-started/branded-types) - Type branding pattern

@@ -1,1 +1,149 @@
-../../../src/primitives/Hardfork/compare.mdx
+---
+title: Hardfork.compare
+description: Three-way comparison of hardforks returning -1, 0, or 1
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/hardfork.ts">
+  Run Hardfork examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+</Tabs>
+
+## Return Values
+
+```typescript
+-1  // a < b (a is before b chronologically)
+ 0  // a === b (same hardfork)
+ 1  // a > b (a is after b chronologically)
+```
+
+## Usage Patterns
+
+### Sorting
+
+Sort hardforks chronologically:
+
+```typescript
+import { Hardfork, CANCUN, BERLIN, SHANGHAI, LONDON, MERGE } from 'tevm'
+
+const forks = [CANCUN, BERLIN, SHANGHAI, LONDON, MERGE]
+
+// Sort chronologically (oldest first)
+forks.sort(Hardfork.compare)
+// [BERLIN, LONDON, MERGE, SHANGHAI, CANCUN]
+
+// Sort reverse chronological (newest first)
+forks.sort((a, b) => -Hardfork.compare(a, b))
+// [CANCUN, SHANGHAI, MERGE, LONDON, BERLIN]
+```
+
+### Network Configuration
+
+Sort supported versions:
+
+```typescript
+import { Hardfork } from 'tevm'
+
+function getSortedSupportedVersions(config: NetworkConfig): BrandedHardfork[] {
+  return config.supportedHardforks
+    .slice()
+    .sort(Hardfork.compare)
+}
+```
+
+### Binary Search
+
+Use in binary search algorithms:
+
+```typescript
+import { Hardfork } from 'tevm'
+
+function binarySearchHardfork(
+  sorted: BrandedHardfork[],
+  target: BrandedHardfork
+): number {
+  let left = 0
+  let right = sorted.length - 1
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2)
+    const cmp = Hardfork.compare(sorted[mid], target)
+
+    if (cmp === 0) return mid
+    if (cmp < 0) left = mid + 1
+    else right = mid - 1
+  }
+
+  return -1
+}
+```
+
+### Range Checks
+
+Implement range validation:
+
+```typescript
+import { Hardfork } from 'tevm'
+
+function isInRange(
+  fork: BrandedHardfork,
+  min: BrandedHardfork,
+  max: BrandedHardfork
+): boolean {
+  return Hardfork.compare(fork, min) >= 0 &&
+         Hardfork.compare(fork, max) <= 0
+}
+
+// Check if fork is between Berlin and Shanghai (inclusive)
+isInRange(LONDON, BERLIN, SHANGHAI)  // true
+```
+
+## Chronological Ordering
+
+Uses deployment date order:
+
+```
+FRONTIER (0) < HOMESTEAD (1) < ... < CANCUN (16) < PRAGUE (17)
+```
+
+Comparison algorithm:
+
+```javascript
+function compare(a, b) {
+  const indexA = HARDFORK_ORDER.indexOf(a)
+  const indexB = HARDFORK_ORDER.indexOf(b)
+
+  if (indexA < indexB) return -1
+  if (indexA > indexB) return 1
+  return 0
+}
+```
+
+## Alias Handling
+
+Correctly handles aliases:
+
+```typescript
+import { Hardfork } from 'tevm'
+
+const merge = Hardfork("merge")
+const paris = Hardfork("paris")
+
+Hardfork.compare(merge, paris)  // 0 (same hardfork)
+```
+
+## Performance
+
+**Time Complexity:** O(1) - Array index comparison
+
+**Typical Time:** ~10-20ns per call
+
+## See Also
+
+- [isAtLeast](/primitives/hardfork/is-at-least) - Check if >= target
+- [isBefore](/primitives/hardfork/is-before) - Check if < target
+- [isAfter](/primitives/hardfork/is-after) - Check if > target
+- [equals](/primitives/hardfork/equals) - Check equality

@@ -1,1 +1,48 @@
-../../../src/primitives/Abi/get-item.mdx
+---
+title: Abi.getItem
+description: Find ABI item by name and type from ABI array
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/abi.ts">
+  Run ABI examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+</Tabs>
+
+## Usage Examples
+
+### Find and Use Function
+
+```typescript
+import * as Abi from 'tevm/Abi'
+
+const abi = [...] // Full contract ABI
+
+const transferFn = Abi.getItem(abi, "transfer", "function")
+
+if (transferFn && transferFn.type === "function") {
+  const calldata = Abi.Function.encodeParams(transferFn, [to, amount])
+  await provider.call({ to: contractAddress, data: calldata })
+}
+```
+
+### Error Handling
+
+```typescript
+import * as Abi from 'tevm/Abi'
+
+const abi = [...]
+
+const item = Abi.getItem(abi, "nonExistent", "function")
+if (!item) {
+  throw new Error("Function not found in ABI")
+}
+```
+
+## See Also
+
+- [encode](/primitives/abi/encode) - Encode using ABI item
+- [decode](/primitives/abi/decode) - Decode using ABI item

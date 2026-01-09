@@ -1,1 +1,38 @@
-../../../src/primitives/Bytecode/size.mdx
+---
+title: Bytecode.size
+description: Get bytecode size in bytes
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/bytecode.ts">
+  Run Bytecode examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+<Tab title="C">
+
+## `bytecode_len(bytecode_t bytecode) size_t`
+
+Get bytecode size in bytes.
+
+**Parameters:**
+- `bytecode`: Bytecode to measure
+
+**Returns:** `size_t` - Size in bytes
+
+**Example:**
+
+```c
+#include "primitives.h"
+
+bytecode_t code = bytecode_from_hex("0x6001");
+size_t length = bytecode_len(code);
+printf("Size: %zu\n", length); // 2
+bytecode_free(code);
+```
+
+**Defined in:** [primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
+
+</Tab>
+</Tabs>

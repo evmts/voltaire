@@ -1,1 +1,46 @@
-../../../src/primitives/Opcode/swap-position.mdx
+---
+title: swapPosition()
+description: Get stack position swapped by SWAP opcode
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/opcode.ts">
+  Run Opcode examples in the interactive playground
+</Card>
+
+
+## Opcode.swapPosition()
+
+Get stack position swapped by SWAP opcode (1-16).
+
+<Tabs>
+
+<Tab title="Functional API">
+```typescript
+import { swapPosition, SWAP1, SWAP16 } from 'tevm/Opcode'
+
+swapPosition(SWAP1)   // 1
+swapPosition(SWAP16)  // 16
+```
+</Tab>
+
+</Tabs>
+
+## Parameters
+
+- `opcode: BrandedOpcode` - Opcode to check
+
+## Returns
+
+`number | undefined` - Position (1-16) or undefined if not SWAP
+
+## Stack Semantics
+
+```
+SWAP1:  [..., b, a] → [..., a, b]              (swap top 2)
+SWAP2:  [..., c, b, a] → [..., a, b, c]        (swap top with 3rd)
+SWAP16: [..., q, ..., a] → [..., a, ..., q]    (swap top with 17th)
+```
+
+## Related
+
+- [isSwap()](/primitives/opcode/is-swap) - Check if SWAP opcode

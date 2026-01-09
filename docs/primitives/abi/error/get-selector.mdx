@@ -1,1 +1,42 @@
-/Users/williamcory/voltaire/src/primitives/Abi/error/get-selector.mdx
+---
+title: Error.getSelector
+description: Get 4-byte error selector for custom errors
+---
+
+<Tabs>
+
+</Tabs>
+
+## Usage Examples
+
+### Matching Error Selectors
+
+```typescript
+import { AbiError } from 'tevm'
+
+const insufficientBalance = new AbiError({
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+})
+
+try {
+  await contract.call()
+} catch (error) {
+  const errorSelector = error.data.slice(0, 10)
+  if (errorSelector === insufficientBalance.getSelector()) {
+    // Decode error parameters
+    const params = insufficientBalance.decodeParams(error.data)
+    console.log(`Balance: ${params[0]}, Required: ${params[1]}`)
+  }
+}
+```
+
+## See Also
+
+- [getSignature](/primitives/abi/error/get-signature) - Get error signature string
+- [encodeParams](/primitives/abi/error/encode-params) - Encode error data
+- [decodeParams](/primitives/abi/error/decode-params) - Decode error data

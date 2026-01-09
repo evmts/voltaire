@@ -1,1 +1,333 @@
-../../../src/primitives/Address/lowercase.mdx
+---
+title: Lowercase Address
+description: Branded lowercase hex string type for canonical address storage
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/address.ts">
+  Run Address examples in the interactive playground
+</Card>
+
+
+# Lowercase Address
+
+Branded hex string type representing lowercase addresses for canonical storage and case-insensitive comparison.
+
+## Overview
+
+`Lowercase` is a branded string type that guarantees all hexadecimal letters are lowercase. Unlike `Checksummed` addresses, lowercase addresses:
+- Require **no keccak256 computation** (better performance)
+- Provide **canonical representation** for storage
+- Enable **case-insensitive comparison** via normalization
+- Have **zero cryptographic dependencies** (smaller bundle size)
+
+Type definition:
+```typescript
+import type { Hex } from 'tevm'
+
+type Lowercase = Hex.Sized<20> & {
+  readonly __variant: 'Address'
+  readonly __lowercase: true
+}
+```
+
+The `Lowercase` type is a **branded string** extending `Hex.Sized<20>`, not a `Uint8Array` like `AddressType`.
+
+## LowercaseAddress.from()
+
+Create lowercase hex string from Address.
+
+<Tabs>
+
+</Tabs>
+
+**Parameters:**
+- `addr: AddressType` - Address to convert
+
+**Returns:** `Lowercase` - Branded lowercase hex string (42 characters)
+
+**Format:** `0x` + 40 lowercase hexadecimal characters
+
+Defined in: [primitives/Address/AddressType/LowercaseAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/AddressType/LowercaseAddress.js#L20)
+
+## When to Use
+
+### Database Storage
+
+Use lowercase addresses for consistent storage and indexing:
+
+```typescript
+import * as LowercaseAddress from 'tevm/Address/LowercaseAddress'
+import { Address } from 'tevm'
+
+interface AccountRecord {
+  address: string  // Always lowercase
+  balance: bigint
+  nonce: number
+}
+
+function saveAccount(address: Address, balance: bigint, nonce: number) {
+  const record: AccountRecord = {
+    address: LowercaseAddress(address),  // Canonical format
+    balance,
+    nonce
+  }
+
+  db.insert('accounts', record)
+}
+
+// Queries use lowercase for consistency
+function getAccount(address: Address): AccountRecord {
+  return db.query(
+    'SELECT * FROM accounts WHERE address = ?',
+    [LowercaseAddress(address)]
+  )
+}
+```
+
+### Case-Insensitive Comparison
+
+Normalize addresses before string comparison:
+
+```typescript
+import * as LowercaseAddress from 'tevm/Address/LowercaseAddress'
+import { Address } from 'tevm'
+
+function isSameAddress(a: Address, b: Address): boolean {
+  return LowercaseAddress(a) === LowercaseAddress(b)
+}
+
+// Usage
+const addr1 = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+const addr2 = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+
+isSameAddress(addr1, addr2)  // true
+```
+
+<Note>
+For `AddressType` instances, use `Address.equals()` instead - more efficient than string comparison.
+</Note>
+
+### Map/Set Keys
+
+Use lowercase for consistent Map/Set keys:
+
+```typescript
+import * as LowercaseAddress from 'tevm/Address/LowercaseAddress'
+import { Address } from 'tevm'
+
+const balances = new Map<string, bigint>()
+
+function setBalance(address: Address, balance: bigint) {
+  balances.set(LowercaseAddress(address), balance)
+}
+
+function getBalance(address: Address): bigint {
+  return balances.get(LowercaseAddress(address)) ?? 0n
+}
+
+// Works regardless of input case
+const addr1 = Address("0x742D35CC...")
+const addr2 = Address("0x742d35cc...")
+
+setBalance(addr1, 1000n)
+getBalance(addr2)  // 1000n - same key
+```
+
+### JSON Serialization
+
+Lowercase for consistent JSON output:
+
+```typescript
+import * as LowercaseAddress from 'tevm/Address/LowercaseAddress'
+import { Address } from 'tevm'
+
+interface Transaction {
+  from: string
+  to: string
+  value: string
+}
+
+function serializeTransaction(from: Address, to: Address, value: bigint): string {
+  const tx: Transaction = {
+    from: LowercaseAddress(from),
+    to: LowercaseAddress(to),
+    value: value.toString()
+  }
+
+  return JSON.stringify(tx)
+}
+```
+
+## Differences from Other Formats
+
+### Lowercase vs Checksummed
+
+| Feature | Lowercase | Checksummed |
+|---------|-----------|-------------|
+| **Casing** | All lowercase | Mixed case (EIP-55) |
+| **Validation** | No integrity check | Detects typos |
+| **Performance** | Fast (string conversion only) | Slower (keccak256 hash) |
+| **Crypto dependency** | None | keccak256 required |
+| **Bundle size** | Minimal | +5-10 KB |
+| **Use case** | Storage, comparison | Display, verification |
+
+```typescript
+import { Address } from 'tevm'
+
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+
+// Lowercase
+Address.Lowercase(addr)
+// "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+
+// Checksummed (EIP-55)
+Address.Checksummed(addr)
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+```
+
+### Lowercase vs toHex()
+
+**Functionally identical** - Both return lowercase hex strings:
+
+```typescript
+import * as LowercaseAddress from 'tevm/Address/LowercaseAddress'
+import { Address } from 'tevm'
+
+const addr = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+
+const lowercase = LowercaseAddress(addr)
+const hex = Address.toHex(addr)
+
+lowercase === hex  // true
+// Both: "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+```
+
+**Type difference:**
+- `LowercaseAddress.from()` returns branded `Lowercase` type with `__lowercase: true` tag
+- `Address.toHex()` returns generic hex string
+- Type tags only exist at compile time - runtime behavior identical
+
+**Use `Lowercase` when:**
+- You want explicit type safety for lowercase addresses
+- API requires specifically lowercase addresses
+- Building type-safe address formatting logic
+
+**Use `toHex()` when:**
+- Generic hex string is sufficient
+- Interfacing with standard libraries
+- Performance matters (no additional type branding)
+
+## Performance Benefits
+
+No keccak256 computation required:
+
+```typescript
+import * as ChecksumAddress from 'tevm/Address/ChecksumAddress'
+import * as LowercaseAddress from 'tevm/Address/LowercaseAddress'
+import { Address } from 'tevm'
+
+const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+
+// Fast: string.toLowerCase() only
+const lowercase = LowercaseAddress(addr)
+
+// Slower: keccak256 hash computation
+const checksummed = ChecksumAddress(addr)
+```
+
+**Time complexity:** O(n) where n = 40 characters (constant)
+
+**Implementation:** Calls `toHex()` then `toLowerCase()` on result string
+
+For repeated conversions, cache the result:
+
+```typescript
+import * as LowercaseAddress from 'tevm/Address/LowercaseAddress'
+import type { AddressType, Lowercase } from 'tevm/Address'
+
+class CachedAddress {
+  private _lowercaseCache?: Lowercase
+
+  constructor(private address: AddressType) {}
+
+  toLowercase(): Lowercase {
+    if (!this._lowercaseCache) {
+      this._lowercaseCache = LowercaseAddress(this.address)
+    }
+    return this._lowercaseCache
+  }
+}
+```
+
+## Type Safety
+
+The `Lowercase` branded type provides compile-time guarantees:
+
+```typescript
+import type { Lowercase } from 'tevm/Address/LowercaseAddress'
+
+// Function accepts only lowercase addresses
+function processLowercase(addr: Lowercase) {
+  console.log(`Processing: ${addr}`)
+}
+
+const lowercase: Lowercase = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Lowercase
+
+processLowercase(lowercase)  // ✅ Type safe
+
+// Type error with generic string
+const hex: string = "0x742D35CC..."
+processLowercase(hex)  // ❌ Type error
+```
+
+**Runtime behavior:** No difference from regular strings. Type tags only exist at compile time.
+
+## Validation
+
+Output always matches lowercase hex pattern:
+
+```typescript
+import * as LowercaseAddress from 'tevm/Address/LowercaseAddress'
+import { Address } from 'tevm'
+
+const addr = Address("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+const lowercase = LowercaseAddress(addr)
+
+// Validate format
+/^0x[0-9a-f]{40}$/.test(lowercase)  // true
+lowercase.length === 42  // true
+/[A-F]/.test(lowercase)  // false - no uppercase letters
+```
+
+## Idempotency
+
+Multiple conversions produce same result:
+
+```typescript
+import * as LowercaseAddress from 'tevm/Address/LowercaseAddress'
+import { Address } from 'tevm'
+
+const addr = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
+
+const lower1 = LowercaseAddress(addr)
+const addr2 = Address(lower1)
+const lower2 = LowercaseAddress(addr2)
+
+lower1 === lower2  // true
+// "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+```
+
+## Related Types
+
+See [Address Variants](/primitives/address/variants) for comparison of all address string types:
+- **Checksummed** - EIP-55 mixed-case format for display and verification
+- **Lowercase** - All lowercase for canonical storage (this page)
+- **Uppercase** - All uppercase for specific protocols
+
+## See Also
+
+- [Address Variants](/primitives/address/variants) - Overview of Checksummed, Lowercase, Uppercase
+- [toLowercase](/primitives/address/to-lowercase) - Convert AddressType to lowercase string
+- [toChecksummed](/primitives/address/to-checksummed) - Convert to EIP-55 checksummed hex
+- [AddressType](/primitives/address/branded-address) - Tree-shakeable address API
+- [equals](/primitives/address/equals) - Case-insensitive equality comparison

@@ -1,1 +1,63 @@
-../../../src/primitives/Abi/parse-logs.mdx
+---
+title: Abi.parseLogs
+description: Parse multiple event logs using full ABI
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/abi.ts">
+  Run ABI examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+</Tabs>
+
+## Usage Examples
+
+### Parse All Contract Events
+
+```typescript
+import * as Abi from 'tevm/Abi'
+
+const abi = [...] // Full ERC20 ABI
+
+const logs = await provider.getLogs({
+  address: tokenAddress,
+  fromBlock: startBlock,
+  toBlock: endBlock
+})
+
+const decoded = Abi.parseLogs(abi, logs)
+
+// Process decoded events
+for (const log of decoded) {
+  if (log.eventName === "Transfer") {
+    console.log(`Transfer: ${log.args.value} from ${log.args.from} to ${log.args.to}`)
+  } else if (log.eventName === "Approval") {
+    console.log(`Approval: ${log.args.value} from ${log.args.owner} to ${log.args.spender}`)
+  }
+}
+```
+
+### Filter Specific Event Type
+
+```typescript
+import * as Abi from 'tevm/Abi'
+
+const abi = [...]
+const logs = await provider.getLogs({ address: contractAddress })
+
+const decoded = Abi.parseLogs(abi, logs)
+
+// Get only Transfer events
+const transfers = decoded.filter(log => log.eventName === "Transfer")
+
+for (const transfer of transfers) {
+  console.log(transfer.args)
+}
+```
+
+## See Also
+
+- [Event.decodeLog](/primitives/abi/event/decode-log) - Decode single log with event definition
+- [getItem](/primitives/abi/get-item) - Find specific event in ABI

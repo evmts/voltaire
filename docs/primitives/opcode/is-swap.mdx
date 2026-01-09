@@ -1,1 +1,45 @@
-../../../src/primitives/Opcode/is-swap.mdx
+---
+title: isSwap()
+description: Check if opcode is SWAP1-SWAP16
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/opcode.ts">
+  Run Opcode examples in the interactive playground
+</Card>
+
+
+## Opcode.isSwap()
+
+Check if opcode is SWAP1-SWAP16.
+
+<Tabs>
+
+<Tab title="Functional API">
+```typescript
+import { isSwap, SWAP1, SWAP16 } from 'tevm/Opcode'
+
+isSwap(SWAP1)   // true
+isSwap(SWAP16)  // true
+```
+</Tab>
+
+</Tabs>
+
+## Parameters
+
+- `opcode: BrandedOpcode` - Opcode to check
+
+## Returns
+
+`boolean` - True if SWAP1-SWAP16 (0x90-0x9F)
+
+## SWAP Operations
+
+Exchange top with item at depth 1-16:
+- **SWAP1** (0x90): Swap top with 2nd
+- **SWAP2** (0x91): Swap top with 3rd
+- **SWAP16** (0x9F): Swap top with 17th
+
+## Related
+
+- [swapPosition()](/primitives/opcode/swap-position) - Get SWAP stack position

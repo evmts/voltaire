@@ -1,1 +1,85 @@
-../../../src/primitives/Hardfork/gt.mdx
+---
+title: Hardfork.gt
+description: Check if hardfork is strictly greater than target (alias for isAfter)
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/hardfork.ts">
+  Run Hardfork examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+</Tabs>
+
+## Operator-Style API
+
+`gt` mimics the `>` operator for clearer code:
+
+```typescript
+import { CANCUN, LONDON } from 'tevm'
+
+// Operator-style (reads like > operator)
+if (CANCUN.gt(LONDON)) {
+  // ...
+}
+
+// Equivalent semantic form
+if (CANCUN.isAfter(LONDON)) {
+  // ...
+}
+```
+
+## Usage Patterns
+
+### Version Detection
+
+```typescript
+import { Hardfork, CANCUN } from 'tevm'
+
+const fork = Hardfork(config.hardfork)
+
+if (fork.gt(CANCUN)) {
+  console.warn("Running unknown post-Cancun hardfork")
+}
+```
+
+### Network Configuration
+
+```typescript
+import { Hardfork, PRAGUE } from 'tevm'
+
+function isExperimental(fork: BrandedHardfork): boolean {
+  return fork.gt(PRAGUE)
+}
+```
+
+## Chronological Ordering
+
+Uses chronological deployment order:
+
+```
+LONDON (11) < MERGE (14) < SHANGHAI (15) < CANCUN (16) < PRAGUE (17)
+```
+
+## Strict Inequality
+
+Returns false when versions are equal:
+
+```typescript
+import { CANCUN } from 'tevm'
+
+CANCUN.gt(CANCUN)  // false - not strictly greater
+```
+
+## Performance
+
+**Time Complexity:** O(1) - Array index comparison
+
+**Typical Time:** ~10-20ns per call
+
+## See Also
+
+- [isAfter](/primitives/hardfork/is-after) - Semantic equivalent
+- [gte](/primitives/hardfork/gte) - Greater than or equal
+- [lt](/primitives/hardfork/lt) - Strictly less than
