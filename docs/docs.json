@@ -243,7 +243,6 @@
                       "primitives/abi/fundamentals",
                       "primitives/abi/encode",
                       "primitives/abi/decode",
-                      "primitives/abi/encodePacked",
                       "primitives/abi/usage-patterns"
                     ]
                   },
@@ -656,8 +655,6 @@
                 "pages": [
                   "primitives/state/index",
                   "primitives/state/fundamentals",
-                  "primitives/state/account",
-                  "primitives/state/storage",
                   "primitives/state/usage-patterns"
                 ]
               },
@@ -680,11 +677,7 @@
                   "style": "solid"
                 },
                 "pages": [
-                  "primitives/receipt/index",
-                  "primitives/receipt/fundamentals",
-                  "primitives/receipt/from",
-                  "primitives/receipt/decode",
-                  "primitives/receipt/usage-patterns"
+                  "primitives/receipt/index"
                 ]
               },
               {
@@ -709,10 +702,6 @@
                   "primitives/uint/index",
                   "primitives/uint256/index",
                   "primitives/uint256/fundamentals",
-                  "primitives/uint256/arithmetic",
-                  "primitives/uint256/comparison",
-                  "primitives/uint256/bitwise",
-                  "primitives/uint256/conversions",
                   "primitives/uint32/index",
                   "primitives/uint64/index",
                   "primitives/uint128/index",
@@ -837,8 +826,6 @@
                   "primitives/eventlog/index",
                   "primitives/eventlog/fundamentals",
                   "primitives/eventlog/from",
-                  "primitives/eventlog/decode",
-                  "primitives/eventlog/filter",
                   "primitives/eventlog/usage-patterns"
                 ]
               },
@@ -940,9 +927,6 @@
                 "pages": [
                   "primitives/ens/index",
                   "primitives/ens/fundamentals",
-                  "primitives/ens/resolve",
-                  "primitives/ens/reverse",
-                  "primitives/ens/validate",
                   "primitives/ens/usage-patterns"
                 ]
               },
@@ -1617,17 +1601,6 @@
             "group": "Guides",
             "icon": "book-open",
             "pages": [
-              "guides/index",
-              "guides/wallet-generation",
-              "guides/ens-resolution",
-              "guides/transaction-simulation",
-              "guides/gas-estimation",
-              "guides/sign-verify-messages",
-              "guides/siwe-authentication",
-              "guides/eip712-typed-data",
-              "guides/contract-interaction",
-              "guides/event-listening",
-              "guides/send-eth-tokens",
               {
                 "group": "Integrations",
                 "pages": [
