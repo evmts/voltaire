@@ -27,7 +27,8 @@ export { BN254 } from "./bn254/BN254.js";
 export { ChaCha20Poly1305 } from "./ChaCha20Poly1305/ChaCha20Poly1305.js";
 export { Ed25519 } from "./Ed25519/index.js";
 export { EIP712 } from "./EIP712/index.js";
-export * as HDWallet from "./HDWallet/index.js";
+// HDWallet uses native FFI modules - import from @tevm/voltaire/native instead
+// export * as HDWallet from "./HDWallet/index.js";
 export { Keccak256 } from "./Keccak256/index.js";
 export type {
 	Keccak256Hash,

@@ -179,13 +179,6 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: {
-			// Stub native-only modules for browser
-			"c-kzg": resolve(__dirname, "src/runtime/browser-stubs.ts"),
-			bindings: resolve(__dirname, "src/runtime/browser-stubs.ts"),
-			// Stub FFI modules (HDWallet native deps)
-			"ffi-napi": resolve(__dirname, "src/runtime/ffi-stubs.ts"),
-			"ref-napi": resolve(__dirname, "src/runtime/ffi-stubs.ts"),
-			"../../lib-path.js": resolve(__dirname, "src/runtime/ffi-stubs.ts"),
 			// Force esbuild-wasm to use ESM browser version (rolldown-vite doesn't respect browser field)
 			"esbuild-wasm": resolve(
 				__dirname,

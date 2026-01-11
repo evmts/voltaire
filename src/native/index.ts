@@ -258,12 +258,14 @@ export {
 	AesGcm,
 	ChaCha20Poly1305,
 	Bip39,
-	HDWallet,
 	Keystore,
 	P256,
 	X25519,
 	ModExp,
 } from "../crypto/index.js";
+
+// HDWallet uses native FFI - only available in native entry point
+export * as HDWallet from "../crypto/HDWallet/index.js";
 
 // Re-export crypto types
 export type { Keccak256Hash } from "../crypto/Keccak256/Keccak256HashType.js";

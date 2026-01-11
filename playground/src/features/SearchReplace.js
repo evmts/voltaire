@@ -1,4 +1,13 @@
 export class SearchReplace {
+	/** @type {any} */
+	#monaco;
+	/** @type {any} */
+	#editor;
+	/** @type {any} */
+	#tabs;
+	/** @type {HTMLElement} */
+	#panel;
+
 	/**
 	 * @param {any} monaco
 	 * @param {any} editor

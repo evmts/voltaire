@@ -255,7 +255,8 @@ export const KZG = KZGJS;
 export const ModExp = ModExpJS;
 
 // Additional crypto namespaces present in JS/native
-export { AesGcm, ChaCha20Poly1305, Bip39, HDWallet, Keystore } from "../crypto/index.js";
+// Note: HDWallet uses native FFI modules - import from @tevm/voltaire/native instead
+export { AesGcm, ChaCha20Poly1305, Bip39, Keystore } from "../crypto/index.js";
 
 // ============================================================================
 // Type assertion: ensure WASM exports match JS API
