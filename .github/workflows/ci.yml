@@ -114,6 +114,8 @@ jobs:
           version: 0.15.1
       - name: Build Zig library (required for FFI tests)
         run: zig build -Doptimize=ReleaseFast -Dwith-c-api=false
+      - name: Install Rust wasm32 target
+        run: rustup target add wasm32-unknown-unknown
       - name: Build WASM for TypeScript tests
         run: |
           zig build build-ts-wasm

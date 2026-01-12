@@ -33,6 +33,9 @@ jobs:
           zig build -Doptimize=ReleaseFast
           zig build test -Doptimize=ReleaseFast
 
+      - name: Install Rust wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
       - name: Build WASM
         run: zig build build-ts-wasm
 
@@ -76,6 +79,9 @@ jobs:
 
       - name: Run format check
         run: pnpm run format:check
+
+      - name: Install Rust wasm32 target
+        run: rustup target add wasm32-unknown-unknown
 
       - name: Build WASM for tests
         run: |
@@ -129,6 +135,9 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.15.1
+
+      - name: Install Rust wasm32 target
+        run: rustup target add wasm32-unknown-unknown
 
       - name: Build Zig library and WASM
         run: |
