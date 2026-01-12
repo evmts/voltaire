@@ -14,7 +14,7 @@ import type { WasiImports, WasmExports } from "./types.js";
 import { ErrorCode } from "./types.js";
 
 // Cache for Node.js crypto module (loaded lazily)
-let nodeCryptoModule: typeof import("node:crypto") | null = null;
+const nodeCryptoModule: typeof import("node:crypto") | null = null;
 
 let wasmInstance: WebAssembly.Instance | null = null;
 let wasmMemory: WebAssembly.Memory | null = null;

@@ -33,10 +33,7 @@ export function matchesAddressWasm(
 	filterAddresses: BrandedAddress[],
 ): boolean {
 	// BrandedAddress is already Uint8Array, no conversion needed
-	return loader.eventLogMatchesAddress(
-		logAddress,
-		filterAddresses,
-	);
+	return loader.eventLogMatchesAddress(logAddress, filterAddresses);
 }
 
 /**

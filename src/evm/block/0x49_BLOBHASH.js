@@ -1,8 +1,8 @@
 import { FastestStep } from "../../primitives/GasConstants/constants.js";
+import { CANCUN, isAtLeast } from "../../primitives/Hardfork/index.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { popStack } from "../Frame/popStack.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { CANCUN, isAtLeast } from "../../primitives/Hardfork/index.js";
 
 /**
  * BLOBHASH opcode (0x49) - Get versioned blob hash (EIP-4844, Cancun+)

@@ -1,7 +1,7 @@
 import { QuickStep } from "../../primitives/GasConstants/constants.js";
+import { ISTANBUL, isAtLeast } from "../../primitives/Hardfork/index.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { ISTANBUL, isAtLeast } from "../../primitives/Hardfork/index.js";
 
 /**
  * CHAINID opcode (0x46) - Get chain ID (EIP-1344, Istanbul+)

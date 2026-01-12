@@ -1,13 +1,12 @@
-import { describe, expect, it } from "vitest";
 import { sha256 } from "@noble/hashes/sha2.js";
-import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { verify } from "./verify.js";
-import { from } from "./from.js";
-import { sign } from "../../crypto/Secp256k1/sign.js";
+import { describe, expect, it } from "vitest";
 import { derivePublicKey } from "../../crypto/Secp256k1/derivePublicKey.js";
+import { sign } from "../../crypto/Secp256k1/sign.js";
 import { Hash } from "../Hash/index.js";
 import { PrivateKey } from "../PrivateKey/index.js";
 import { InvalidAlgorithmError } from "./errors.js";
+import { from } from "./from.js";
+import { verify } from "./verify.js";
 
 describe("Signature.verify", () => {
 	describe("secp256k1 verification", () => {

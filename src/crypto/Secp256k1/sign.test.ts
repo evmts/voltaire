@@ -375,7 +375,9 @@ describe("Secp256k1.sign", () => {
 			const customEntropy = new Uint8Array(32).fill(99);
 
 			const sigWithout = sign(message, privateKey);
-			const sigWith = sign(message, privateKey, { extraEntropy: customEntropy });
+			const sigWith = sign(message, privateKey, {
+				extraEntropy: customEntropy,
+			});
 
 			// With entropy vs without = different signatures
 			expect(sigWithout.r).not.toEqual(sigWith.r);

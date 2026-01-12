@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { verify as secp256k1Verify } from "../../crypto/Secp256k1/verify.js";
+
 import { verify as p256Verify } from "../../crypto/P256/verify.js";
+import { verify as secp256k1Verify } from "../../crypto/Secp256k1/verify.js";
 import { Hash } from "../Hash/index.js";
 import { InvalidAlgorithmError } from "./errors.js";
 
@@ -48,12 +49,9 @@ export function verify(signature, messageHash, publicKey) {
 		);
 	}
 
-	throw new InvalidAlgorithmError(
-		`Unknown signature algorithm: ${algorithm}`,
-		{
-			value: algorithm,
-			expected: "secp256k1, p256, or ed25519",
-			docsPath: "/primitives/signature/verify#error-handling",
-		},
-	);
+	throw new InvalidAlgorithmError(`Unknown signature algorithm: ${algorithm}`, {
+		value: algorithm,
+		expected: "secp256k1, p256, or ed25519",
+		docsPath: "/primitives/signature/verify#error-handling",
+	});
 }

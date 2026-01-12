@@ -1,7 +1,7 @@
 import { QuickStep } from "../../primitives/GasConstants/constants.js";
+import { CANCUN, isAtLeast } from "../../primitives/Hardfork/index.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { CANCUN, isAtLeast } from "../../primitives/Hardfork/index.js";
 
 /**
  * BLOBBASEFEE opcode (0x4a) - Get blob base fee (EIP-7516, Cancun+)

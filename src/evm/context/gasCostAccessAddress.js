@@ -7,8 +7,8 @@ import {
 	BERLIN,
 	CONSTANTINOPLE,
 	ISTANBUL,
-	TANGERINE_WHISTLE,
 	isAtLeast,
+	TANGERINE_WHISTLE,
 } from "../../primitives/Hardfork/index.js";
 
 /**

@@ -1,8 +1,8 @@
+import { BYZANTIUM, isAtLeast } from "../../primitives/Hardfork/index.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { memoryExpansionCost } from "../Frame/memoryExpansionCost.js";
 import { popStack } from "../Frame/popStack.js";
 import { writeMemory } from "../Frame/writeMemory.js";
-import { BYZANTIUM, isAtLeast } from "../../primitives/Hardfork/index.js";
 
 /**
  * Add two u32 values with overflow checking

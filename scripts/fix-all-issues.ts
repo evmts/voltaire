@@ -25,13 +25,14 @@ interface IssueAnalysis {
 const SKIP_LABELS = ["wontfix", "duplicate", "invalid", "question"];
 
 async function getOpenIssues(): Promise<Issue[]> {
-	const result = await $`gh issue list --state open --limit 100 --json number,title,body,labels`.text();
+	const result =
+		await $`gh issue list --state open --limit 100 --json number,title,body,labels`.text();
 	return JSON.parse(result);
 }
 
 function analyzeIssue(issue: Issue): IssueAnalysis {
 	const title = issue.title.toLowerCase();
-	const body = issue.body?.toLowerCase() || "";
+	const _body = issue.body?.toLowerCase() || "";
 
 	// Check skip labels
 	for (const label of issue.labels) {
@@ -50,9 +51,16 @@ function analyzeIssue(issue: Issue): IssueAnalysis {
 	// Categorize
 	let category: IssueAnalysis["category"] = "unknown";
 	if (title.includes("bug:") || title.includes("bug")) category = "bug";
-	else if (title.includes("add") || title.includes("implement") || title.includes("missing")) category = "feature";
-	else if (title.includes("improve") || title.includes("enhancement")) category = "enhancement";
-	else if (title.includes("cleanup") || title.includes("refactor")) category = "refactor";
+	else if (
+		title.includes("add") ||
+		title.includes("implement") ||
+		title.includes("missing")
+	)
+		category = "feature";
+	else if (title.includes("improve") || title.includes("enhancement"))
+		category = "enhancement";
+	else if (title.includes("cleanup") || title.includes("refactor"))
+		category = "refactor";
 
 	// Estimate complexity
 	let complexity: IssueAnalysis["complexity"] = "moderate";
@@ -60,7 +68,10 @@ function analyzeIssue(issue: Issue): IssueAnalysis {
 	let recommendation = "";
 
 	// Complex: requires new modules
-	if (title.includes("missing") && (title.includes("module") || title.includes("support"))) {
+	if (
+		title.includes("missing") &&
+		(title.includes("module") || title.includes("support"))
+	) {
 		complexity = "complex";
 		autoFixable = false;
 		recommendation = "Requires implementing new module - needs design first";
@@ -90,7 +101,11 @@ function analyzeIssue(issue: Issue): IssueAnalysis {
 		recommendation = "Add validation logic";
 	}
 	// Trivial: typos, docs, comments
-	else if (title.includes("typo") || title.includes("comment") || title.includes("jsdoc")) {
+	else if (
+		title.includes("typo") ||
+		title.includes("comment") ||
+		title.includes("jsdoc")
+	) {
 		complexity = "trivial";
 		autoFixable = true;
 		recommendation = "Quick fix - documentation or typo";
@@ -106,10 +121,18 @@ async function main() {
 	const analyses = issues.map(analyzeIssue);
 
 	// Group by complexity for easier processing
-	const trivial = analyses.filter((a) => a.complexity === "trivial" && a.autoFixable);
-	const simple = analyses.filter((a) => a.complexity === "simple" && a.autoFixable);
-	const moderate = analyses.filter((a) => a.complexity === "moderate" && a.autoFixable);
-	const complex = analyses.filter((a) => a.complexity === "complex" || !a.autoFixable);
+	const trivial = analyses.filter(
+		(a) => a.complexity === "trivial" && a.autoFixable,
+	);
+	const simple = analyses.filter(
+		(a) => a.complexity === "simple" && a.autoFixable,
+	);
+	const moderate = analyses.filter(
+		(a) => a.complexity === "moderate" && a.autoFixable,
+	);
+	const complex = analyses.filter(
+		(a) => a.complexity === "complex" || !a.autoFixable,
+	);
 
 	console.log("=".repeat(60));
 	console.log("OPEN ISSUES ANALYSIS");
@@ -146,7 +169,10 @@ async function main() {
 	}
 
 	// Write full analysis to file
-	await Bun.write("/tmp/issue-analysis.json", JSON.stringify(analyses, null, 2));
+	await Bun.write(
+		"/tmp/issue-analysis.json",
+		JSON.stringify(analyses, null, 2),
+	);
 	console.log("\nFull analysis written to /tmp/issue-analysis.json");
 }
 

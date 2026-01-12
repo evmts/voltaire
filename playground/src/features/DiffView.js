@@ -3,12 +3,6 @@ export class DiffView {
 	#originals = new Map();
 	/** @type {boolean} */
 	#diffMode = false;
-	/** @type {any} */
-	#monaco;
-	/** @type {HTMLElement} */
-	#container;
-	/** @type {any} */
-	#editor;
 
 	/**
 	 * @param {any} monaco

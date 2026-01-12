@@ -1,6 +1,6 @@
+import { BYZANTIUM, isAtLeast } from "../../primitives/Hardfork/index.js";
 import { consumeGas } from "../Frame/consumeGas.js";
 import { pushStack } from "../Frame/pushStack.js";
-import { BYZANTIUM, isAtLeast } from "../../primitives/Hardfork/index.js";
 
 /**
  * RETURNDATASIZE opcode (0x3d) - Get size of output data from the previous call
