@@ -617,6 +617,9 @@ pub fn build(b: *std.Build) void {
         .os_tag = .wasi,
     });
 
+    // Create WASM-specific cargo build step (needs --target wasm32-unknown-unknown)
+    const wasm_cargo_build_step = lib_build.createCargoBuildStep(b, .ReleaseSmall, wasm_target);
+
     // Build WASM-targeted versions of crypto libraries (native libs won't link to WASM)
     const wasm_blst_lib = lib_build.BlstLib.createBlstLibrary(b, wasm_target, .ReleaseSmall);
     const wasm_c_kzg_lib = lib_build.CKzgLib.createCKzgLibrary(b, wasm_target, .ReleaseSmall, wasm_blst_lib);
@@ -656,10 +659,10 @@ pub fn build(b: *std.Build) void {
     // Get WASM-specific Rust library path (built with portable features)
     const wasm_rust_crypto_lib_path = lib_build.Bn254Lib.getRustLibraryPath(b, wasm_target);
 
-    addTypeScriptWasmBuild(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto_lib_path, cargo_build_step);
+    addTypeScriptWasmBuild(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto_lib_path, wasm_cargo_build_step);
 
     // Individual crypto WASM modules for treeshaking
-    addCryptoWasmBuilds(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto_lib_path, cargo_build_step);
+    addCryptoWasmBuilds(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto_lib_path, wasm_cargo_build_step);
 
     // Go build and test steps (optional, requires Go toolchain)
     if (!is_wasm) {
