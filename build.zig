@@ -76,6 +76,21 @@ pub fn build(b: *std.Build) void {
     // Now add primitives to crypto (circular dependency resolved by Zig's lazy evaluation)
     crypto_mod.addImport("primitives", primitives_mod);
 
+    // State manager module
+    const state_manager_mod = b.addModule("state-manager", .{
+        .root_source_file = b.path("src/state-manager/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    state_manager_mod.addImport("primitives", primitives_mod);
+    state_manager_mod.addImport("crypto", crypto_mod);
+
+    // State manager tests
+    const state_manager_tests = b.addTest(.{
+        .name = "state-manager-tests",
+        .root_module = state_manager_mod,
+    });
+
     // Primitives tests
     const primitives_tests = b.addTest(.{
         .name = "primitives-tests",
@@ -128,6 +143,9 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_primitives_tests.step);
     test_step.dependOn(&run_crypto_tests.step);
     test_step.dependOn(&run_precompiles_tests.step);
+
+    const run_state_manager_tests = b.addRunArtifact(state_manager_tests);
+    test_step.dependOn(&run_state_manager_tests.step);
 
     // Extra primitives boundary tests (separate test runner that imports primitives)
     const primitives_extra_mod = b.createModule(.{
