@@ -210,15 +210,29 @@ pub const ForkBackend = struct {
 
     /// Fetch account from remote, cache result
     pub fn fetchAccount(self: *ForkBackend, address: Address.Address) !StateCache.AccountState {
+        std.debug.print("DEBUG: ForkBackend.fetchAccount called\n", .{});
+        std.debug.print("DEBUG: self={*}\n", .{self});
+        std.debug.print("DEBUG: address bytes[0..4]={any}\n", .{address.bytes[0..4]});
+
         // Check cache first
+        std.debug.print("DEBUG: checking cache...\n", .{});
         if (self.account_cache.get(address)) |cached| {
+            std.debug.print("DEBUG: found in cache\n", .{});
             try self.updateAccountAccessOrder(address);
             return cached;
         }
 
+        std.debug.print("DEBUG: not in cache, calling RPC...\n", .{});
+        std.debug.print("DEBUG: rpc_client.ptr={*}\n", .{self.rpc_client.ptr});
+        std.debug.print("DEBUG: rpc_client.vtable={*}\n", .{self.rpc_client.vtable});
+        std.debug.print("DEBUG: rpc_client.vtable.getProof={*}\n", .{self.rpc_client.vtable.getProof});
+        std.debug.print("DEBUG: block_tag={s}\n", .{self.block_tag});
+
         // Fetch from RPC
         const slots: []const u256 = &[_]u256{}; // Empty for account-only proof
+        std.debug.print("DEBUG: about to call rpc_client.getProof...\n", .{});
         const proof = try self.rpc_client.getProof(address, slots, self.block_tag);
+        std.debug.print("DEBUG: RPC call completed\n", .{});
 
         const account = StateCache.AccountState{
             .nonce = proof.nonce,
@@ -234,6 +248,7 @@ pub const ForkBackend = struct {
 
         // Cache and return
         try self.account_cache.put(self.allocator, address, account);
+        std.debug.print("DEBUG: returning account\n", .{});
         return account;
     }
 

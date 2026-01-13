@@ -77,20 +77,30 @@ pub const JournaledState = struct {
 
     /// Get account (normal cache → fork backend → default)
     pub fn getAccount(self: *JournaledState, address: Address) !StateCache.AccountState {
+        std.debug.print("DEBUG: JournaledState.getAccount called\n", .{});
+        std.debug.print("DEBUG: address bytes[0..4]={any}\n", .{address.bytes[0..4]});
+
         // Check normal cache first
+        std.debug.print("DEBUG: checking normal cache...\n", .{});
         if (self.account_cache.get(address)) |account| {
+            std.debug.print("DEBUG: found in normal cache\n", .{});
             return account;
         }
 
         // Check fork backend
+        std.debug.print("DEBUG: checking fork_backend...\n", .{});
         if (self.fork_backend) |fork| {
+            std.debug.print("DEBUG: fork_backend exists, calling fork.fetchAccount\n", .{});
+            std.debug.print("DEBUG: fork={*}\n", .{fork});
             const account = try fork.fetchAccount(address);
+            std.debug.print("DEBUG: fork.fetchAccount returned\n", .{});
             // Cache in normal cache for future reads
             try self.account_cache.put(address, account);
             return account;
         }
 
         // Return empty account if no fork
+        std.debug.print("DEBUG: no fork backend, returning empty account\n", .{});
         return StateCache.AccountState.init();
     }
 
