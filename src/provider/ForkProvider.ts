@@ -13,7 +13,7 @@ import { Address } from "../primitives/Address/index.js";
 import type { Hex } from "../primitives/Hex/HexType.js";
 import * as HexUtils from "../primitives/Hex/index.js";
 import { Blockchain } from "../blockchain/Blockchain/index.js";
-import type { BlockchainFFIExports } from "../blockchain/Blockchain/index.js";
+import type { BlockchainFFIExports, RpcClient as BlockchainRpcClient } from "../blockchain/Blockchain/index.js";
 import { loadNative } from "../native-loader/index.js";
 import { StateManager } from "../state-manager/StateManager/index.js";
 import type { StateManagerFFIExports } from "../state-manager/StateManager/index.js";
@@ -141,7 +141,7 @@ export class ForkProvider implements Provider {
 
 		// Initialize Blockchain
 		this.blockchain = new Blockchain({
-			rpcClient: rpcAdapter,
+			rpcClient: rpcAdapter as unknown as BlockchainRpcClient,
 			forkBlockNumber: this.forkBlockNumber,
 			ffi: ffi as unknown as BlockchainFFIExports,
 		});

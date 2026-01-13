@@ -215,21 +215,32 @@ let nativeModule: NativeModule | null = null;
 export function loadNodeNative(): NativeModule {
 	if (nativeModule) return nativeModule;
 
-	try {
-		const libPath = getNativeLibPath();
+	// Try multiple possible paths for the native library
+	const pathsToTry = [
+		getNativeLibPath("voltaire_native"), // Standard build output path
+		"./zig-out/native/libprimitives_ts_native.dylib", // macOS current build output
+	];
 
-		// Use dynamic require to load native .node addon
-		// Note: Native Node.js addons (.node files) must be loaded with require(),
-		// not import(). This is a Node.js limitation, not an ESM compatibility issue.
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
-		nativeModule = require(libPath) as NativeModule;
+	let lastError: Error | null = null;
 
-		return nativeModule;
-	} catch (error) {
-		throw new Error(
-			`Failed to load native library with Node-API: ${error instanceof Error ? error.message : String(error)}. Node.js native FFI is not shipped yet — use the regular TypeScript API or WASM modules in Node.`,
-		);
+	for (const libPath of pathsToTry) {
+		try {
+			// Use dynamic require to load native .node addon
+			// Note: Native Node.js addons (.node files) must be loaded with require(),
+			// not import(). This is a Node.js limitation, not an ESM compatibility issue.
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			nativeModule = require(libPath) as NativeModule;
+
+			return nativeModule;
+		} catch (error) {
+			lastError = error instanceof Error ? error : new Error(String(error));
+			// Continue trying next path
+		}
 	}
+
+	throw new Error(
+		`Failed to load native library with Node-API: ${lastError?.message || "Unknown error"}. Node.js native FFI is not shipped yet — use the regular TypeScript API or WASM modules in Node.`,
+	);
 }
 
 /**

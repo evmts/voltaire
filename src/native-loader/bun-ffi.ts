@@ -282,17 +282,27 @@ const symbols = {
 export function loadBunNative() {
 	if (nativeLib) return nativeLib.symbols;
 
-	try {
-		const libPath = getNativeLibPath();
+	// Try multiple possible paths for the native library
+	const pathsToTry = [
+		getNativeLibPath("voltaire_native"), // Standard build output path
+		"./zig-out/native/libprimitives_ts_native.dylib", // macOS current build output
+	];
 
-		nativeLib = dlopen(libPath, symbols);
+	let lastError: Error | null = null;
 
-		return nativeLib.symbols;
-	} catch (error) {
-		throw new Error(
-			`Failed to load native library with Bun FFI: ${error instanceof Error ? error.message : String(error)}`,
-		);
+	for (const libPath of pathsToTry) {
+		try {
+			nativeLib = dlopen(libPath, symbols);
+			return nativeLib.symbols;
+		} catch (error) {
+			lastError = error instanceof Error ? error : new Error(String(error));
+			// Continue trying next path
+		}
 	}
+
+	throw new Error(
+		`Failed to load native library with Bun FFI: ${lastError?.message || "Unknown error"}`,
+	);
 }
 
 /**
