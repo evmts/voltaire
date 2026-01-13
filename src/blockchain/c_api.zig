@@ -171,10 +171,56 @@ export fn blockchain_get_block_by_number(
     number: u64,
     out_block: [*]u8,
 ) callconv(.c) c_int {
-    _ = handle;
-    _ = number;
-    _ = out_block;
-    return BLOCKCHAIN_ERROR_NOT_IMPLEMENTED;
+    if (@intFromPtr(handle) == 0) {
+        return BLOCKCHAIN_ERROR_INVALID_INPUT;
+    }
+    if (@intFromPtr(out_block) == 0) {
+        return BLOCKCHAIN_ERROR_INVALID_INPUT;
+    }
+
+    const chain: *Blockchain = @ptrCast(@alignCast(handle));
+    const block = chain.getBlockByNumber(number) orelse return BLOCKCHAIN_ERROR_BLOCK_NOT_FOUND;
+
+    // Serialize to JSON (minimal fields for MVP)
+    const allocator = getAllocator();
+
+    // Convert hash to hex string manually
+    const hex_chars = "0123456789abcdef";
+    var hash_hex: [64]u8 = undefined;
+    for (block.hash, 0..) |byte, i| {
+        hash_hex[i * 2] = hex_chars[byte >> 4];
+        hash_hex[i * 2 + 1] = hex_chars[byte & 0xF];
+    }
+
+    var parent_hex: [64]u8 = undefined;
+    for (block.header.parent_hash, 0..) |byte, i| {
+        parent_hex[i * 2] = hex_chars[byte >> 4];
+        parent_hex[i * 2 + 1] = hex_chars[byte & 0xF];
+    }
+
+    const json = std.fmt.allocPrint(allocator,
+        \\{{"hash":"0x{s}","parentHash":"0x{s}","ommersHash":"0x00","beneficiary":"0x00","stateRoot":"0x00","transactionsRoot":"0x00","receiptsRoot":"0x00","logsBloom":"0x00","difficulty":"{any}","number":"{any}","gasLimit":"{any}","gasUsed":"{any}","timestamp":"{any}","extraData":"0x","mixHash":"0x00","nonce":"{any}","baseFeePerGas":{any},"withdrawalsRoot":null,"blobGasUsed":0,"excessBlobGas":0,"parentBeaconBlockRoot":null,"transactions":"0x","ommers":"0x","withdrawals":"0x","size":"{any}","totalDifficulty":{any}}}
+    , .{
+        hash_hex,
+        parent_hex,
+        block.header.difficulty,
+        block.header.number,
+        block.header.gas_limit,
+        block.header.gas_used,
+        block.header.timestamp,
+        block.header.nonce,
+        if (block.header.base_fee_per_gas) |fee| fee else @as(u64, 0),
+        block.size,
+        if (block.total_difficulty) |td| td else @as(u256, 0),
+    }) catch return BLOCKCHAIN_ERROR_OUT_OF_MEMORY;
+    defer allocator.free(json);
+
+    // Copy to output buffer (assume 1024 bytes available)
+    if (json.len >= 1024) return BLOCKCHAIN_ERROR_OUT_OF_MEMORY;
+    @memcpy(out_block[0..json.len], json);
+    out_block[json.len] = 0; // Null terminate
+
+    return BLOCKCHAIN_SUCCESS;
 }
 
 /// Get block by hash (stub - returns not implemented)
@@ -244,8 +290,8 @@ export fn blockchain_get_head_block_number(
     }
 
     const chain: *Blockchain = @ptrCast(@alignCast(handle));
-    const head = chain.getHead() orelse return BLOCKCHAIN_ERROR_BLOCK_NOT_FOUND;
-    out_number.* = head.number;
+    const head_number = chain.getHeadBlockNumber() orelse return BLOCKCHAIN_ERROR_BLOCK_NOT_FOUND;
+    out_number.* = head_number;
     return BLOCKCHAIN_SUCCESS;
 }
 
