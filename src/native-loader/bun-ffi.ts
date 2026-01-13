@@ -144,7 +144,13 @@ const symbols = {
 		returns: FFIType.i32,
 	},
 	state_manager_get_storage_sync: {
-		args: [FFIType.ptr, FFIType.cstring, FFIType.cstring, FFIType.ptr, FFIType.u64],
+		args: [
+			FFIType.ptr,
+			FFIType.cstring,
+			FFIType.cstring,
+			FFIType.ptr,
+			FFIType.u64,
+		],
 		returns: FFIType.i32,
 	},
 	state_manager_set_balance: {

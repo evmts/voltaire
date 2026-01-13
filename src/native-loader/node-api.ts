@@ -137,7 +137,11 @@ export interface NativeModule {
 		addressHex: string,
 		balanceHex: string,
 	): number;
-	state_manager_set_nonce(handle: number, addressHex: string, nonce: number): number;
+	state_manager_set_nonce(
+		handle: number,
+		addressHex: string,
+		nonce: number,
+	): number;
 	state_manager_set_code(
 		handle: number,
 		addressHex: string,
@@ -187,9 +191,15 @@ export interface NativeModule {
 		number: number,
 		outHash: Uint8Array,
 	): number;
-	blockchain_get_head_block_number(handle: number, outNumber: Uint8Array): number;
+	blockchain_get_head_block_number(
+		handle: number,
+		outNumber: Uint8Array,
+	): number;
 	blockchain_put_block(handle: number, blockData: Uint8Array): number;
-	blockchain_set_canonical_head(handle: number, blockHashPtr: Uint8Array): number;
+	blockchain_set_canonical_head(
+		handle: number,
+		blockHashPtr: Uint8Array,
+	): number;
 	blockchain_has_block(handle: number, blockHashPtr: Uint8Array): boolean;
 	blockchain_local_block_count(handle: number): number;
 	blockchain_orphan_count(handle: number): number;
