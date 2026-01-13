@@ -129,6 +129,35 @@ export fn state_manager_destroy(handle: StateManagerHandle) callconv(.c) void {
 /// rpc_vtable: Pointer to RPC vtable functions
 /// block_tag: "latest", "0x123...", etc.
 /// max_cache_size: LRU cache limit
+/// Mock vtable functions for MVP (when TypeScript vtable is null)
+fn mockGetProof(ptr: *anyopaque, address: Address.Address, slots: []const u256, block_tag: []const u8) anyerror!RpcClient.EthProof {
+    _ = ptr;
+    _ = address;
+    _ = slots;
+    _ = block_tag;
+    // Return empty proof (MVP: no remote state fetching)
+    return RpcClient.EthProof{
+        .nonce = 0,
+        .balance = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+        .storage_proof = &.{},
+    };
+}
+
+fn mockGetCode(ptr: *anyopaque, address: Address.Address, block_tag: []const u8) anyerror![]const u8 {
+    _ = ptr;
+    _ = address;
+    _ = block_tag;
+    // Return empty code (MVP: no remote code fetching)
+    return &.{};
+}
+
+const mock_vtable = RpcClient.VTable{
+    .getProof = mockGetProof,
+    .getCode = mockGetCode,
+};
+
 export fn fork_backend_create(
     rpc_client_ptr: *anyopaque,
     rpc_vtable: *const RpcClient.VTable,
@@ -139,9 +168,13 @@ export fn fork_backend_create(
     const backend = allocator.create(ForkBackend) catch return null;
 
     const block_tag_slice = std.mem.span(block_tag);
+
+    // Use mock vtable if TypeScript passed null (MVP workaround)
+    const vtable_to_use = if (@intFromPtr(rpc_vtable) == 0) &mock_vtable else rpc_vtable;
+
     const rpc_client = RpcClient{
         .ptr = rpc_client_ptr,
-        .vtable = rpc_vtable,
+        .vtable = vtable_to_use,
     };
 
     backend.* = ForkBackend.init(
