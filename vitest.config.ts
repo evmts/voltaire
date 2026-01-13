@@ -16,6 +16,7 @@ export default defineConfig({
 			"src/**/*.{test,test-d,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
 			"examples/**/*.test.ts",
 			"docs/**/*.test.ts",
+			"tests/**/*.test.ts",
 		],
 		exclude: [
 			"src/mcp-evals/**",

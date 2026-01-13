@@ -85,11 +85,31 @@ pub fn build(b: *std.Build) void {
     state_manager_mod.addImport("primitives", primitives_mod);
     state_manager_mod.addImport("crypto", crypto_mod);
 
+    // Blockchain module
+    const blockchain_mod = b.addModule("blockchain", .{
+        .root_source_file = b.path("src/blockchain/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    blockchain_mod.addImport("primitives", primitives_mod);
+
     // State manager tests
     const state_manager_tests = b.addTest(.{
         .name = "state-manager-tests",
         .root_module = state_manager_mod,
     });
+
+    // Blockchain tests
+    const blockchain_tests = b.addTest(.{
+        .name = "blockchain-tests",
+        .root_module = blockchain_mod,
+    });
+    blockchain_tests.linkLibrary(c_kzg_lib);
+    blockchain_tests.linkLibrary(blst_lib);
+    blockchain_tests.addObjectFile(rust_crypto_lib_path);
+    blockchain_tests.addIncludePath(b.path("lib")); // For Rust FFI headers
+    blockchain_tests.step.dependOn(cargo_build_step);
+    blockchain_tests.linkLibC();
 
     // Primitives tests
     const primitives_tests = b.addTest(.{
@@ -139,13 +159,16 @@ pub fn build(b: *std.Build) void {
     const run_crypto_tests = b.addRunArtifact(crypto_tests);
     const run_precompiles_tests = b.addRunArtifact(precompiles_tests);
 
-    const test_step = b.step("test", "Run all tests (primitives + crypto + precompiles)");
+    const test_step = b.step("test", "Run all tests (primitives + crypto + precompiles + state-manager + blockchain)");
     test_step.dependOn(&run_primitives_tests.step);
     test_step.dependOn(&run_crypto_tests.step);
     test_step.dependOn(&run_precompiles_tests.step);
 
     const run_state_manager_tests = b.addRunArtifact(state_manager_tests);
     test_step.dependOn(&run_state_manager_tests.step);
+
+    const run_blockchain_tests = b.addRunArtifact(blockchain_tests);
+    test_step.dependOn(&run_blockchain_tests.step);
 
     // Extra primitives boundary tests (separate test runner that imports primitives)
     const primitives_extra_mod = b.createModule(.{
@@ -610,6 +633,53 @@ pub fn build(b: *std.Build) void {
         c_example_step.dependOn(&run_c_example.step);
     }
 
+    // State Manager FFI library (shared library for TypeScript/Bun native-loader)
+    if (!is_wasm) {
+        const state_manager_lib = b.addLibrary(.{
+            .name = "voltaire_state_manager",
+            .linkage = .dynamic,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/state-manager/c_api.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+        state_manager_lib.root_module.addImport("primitives", primitives_mod);
+        state_manager_lib.root_module.addImport("crypto", crypto_mod);
+        state_manager_lib.root_module.addImport("state-manager", state_manager_mod);
+        state_manager_lib.linkLibrary(c_kzg_lib);
+        state_manager_lib.linkLibrary(blst_lib);
+        state_manager_lib.addObjectFile(rust_crypto_lib_path);
+        state_manager_lib.addIncludePath(b.path("lib"));
+        state_manager_lib.step.dependOn(cargo_build_step);
+        state_manager_lib.linkLibC();
+
+        b.installArtifact(state_manager_lib);
+    }
+
+    // Blockchain FFI library (shared library for TypeScript/Bun native-loader)
+    if (!is_wasm) {
+        const blockchain_lib = b.addLibrary(.{
+            .name = "voltaire_blockchain",
+            .linkage = .dynamic,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/blockchain/c_api.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+        blockchain_lib.root_module.addImport("primitives", primitives_mod);
+        blockchain_lib.root_module.addImport("blockchain", blockchain_mod);
+        blockchain_lib.linkLibrary(c_kzg_lib);
+        blockchain_lib.linkLibrary(blst_lib);
+        blockchain_lib.addObjectFile(rust_crypto_lib_path);
+        blockchain_lib.addIncludePath(b.path("lib"));
+        blockchain_lib.step.dependOn(cargo_build_step);
+        blockchain_lib.linkLibC();
+
+        b.installArtifact(blockchain_lib);
+    }
+
     // NOTE: WASM builds are supported with all features!
     // - Rust crypto_wrappers: built with portable features (tiny-keccak + arkworks pure Rust)
     // - blst: built with __BLST_PORTABLE__ and __BLST_NO_ASM__ (C-only, no assembly)
@@ -622,7 +692,7 @@ pub fn build(b: *std.Build) void {
     if (!is_wasm) {
         // Native TypeScript bindings - ReleaseFast for maximum performance
         const ts_native_target = b.resolveTargetQuery(.{});
-        addTypeScriptNativeBuild(b, ts_native_target, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+        addTypeScriptNativeBuild(b, ts_native_target, primitives_mod, crypto_mod, state_manager_mod, blockchain_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
 
         // Cross-platform native builds for distribution
         addCrossPlatformNativeBuilds(b, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
@@ -871,6 +941,8 @@ fn addTypeScriptNativeBuild(
     ts_target: std.Build.ResolvedTarget,
     primitives_mod: *std.Build.Module,
     crypto_mod: *std.Build.Module,
+    state_manager_mod: *std.Build.Module,
+    blockchain_mod: *std.Build.Module,
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
     rust_crypto_lib_path: std.Build.LazyPath,
@@ -888,6 +960,8 @@ fn addTypeScriptNativeBuild(
     });
     ts_native_lib.root_module.addImport("primitives", primitives_mod);
     ts_native_lib.root_module.addImport("crypto", crypto_mod);
+    ts_native_lib.root_module.addImport("state-manager", state_manager_mod);
+    ts_native_lib.root_module.addImport("blockchain", blockchain_mod);
     ts_native_lib.linkLibrary(c_kzg_lib);
     ts_native_lib.linkLibrary(blst_lib);
     ts_native_lib.addObjectFile(rust_crypto_lib_path);
