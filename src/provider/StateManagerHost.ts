@@ -122,6 +122,14 @@ export function clearTransientStorage(host: BrandedHost): void {
 // These bypass the async StateManager methods and use sync FFI calls directly
 
 /**
+ * Encode string as null-terminated buffer for FFI
+ * Workaround for Bun FFI cstring bug in 1.2.20
+ */
+function encodeCString(str: string): Uint8Array {
+	return new TextEncoder().encode(str + "\0");
+}
+
+/**
  * Get balance synchronously using FFI
  */
 function getBalanceSync(
@@ -136,7 +144,7 @@ function getBalanceSync(
 
 	const result = sm.ffi.state_manager_get_balance_sync(
 		sm.handle,
-		addressHex,
+		encodeCString(addressHex) as unknown as string,
 		buffer,
 		buffer.length,
 	);
@@ -164,8 +172,8 @@ function setBalanceSync(
 
 	const result = sm.ffi.state_manager_set_balance(
 		sm.handle,
-		addressHex,
-		balanceHex,
+		encodeCString(addressHex) as unknown as string,
+		encodeCString(balanceHex) as unknown as string,
 	);
 
 	if (result !== 0) {
@@ -186,7 +194,7 @@ function getNonceSync(
 
 	const result = sm.ffi.state_manager_get_nonce_sync(
 		sm.handle,
-		addressHex,
+		encodeCString(addressHex) as unknown as string,
 		outBuffer,
 	);
 
@@ -212,7 +220,7 @@ function setNonceSync(
 	const sm = stateManager as any;
 	const addressHex = Address.toHex(address);
 
-	const result = sm.ffi.state_manager_set_nonce(sm.handle, addressHex, nonce);
+	const result = sm.ffi.state_manager_set_nonce(sm.handle, encodeCString(addressHex) as unknown as string, nonce);
 
 	if (result !== 0) {
 		throw new Error(`Failed to set nonce: error ${result}`);
@@ -234,8 +242,8 @@ function getStorageSync(
 
 	const result = sm.ffi.state_manager_get_storage_sync(
 		sm.handle,
-		addressHex,
-		slotHex,
+		encodeCString(addressHex) as unknown as string,
+		encodeCString(slotHex) as unknown as string,
 		buffer,
 		buffer.length,
 	);
@@ -265,9 +273,9 @@ function setStorageSync(
 
 	const result = sm.ffi.state_manager_set_storage(
 		sm.handle,
-		addressHex,
-		slotHex,
-		valueHex,
+		encodeCString(addressHex) as unknown as string,
+		encodeCString(slotHex) as unknown as string,
+		encodeCString(valueHex) as unknown as string,
 	);
 
 	if (result !== 0) {
@@ -289,7 +297,7 @@ function getCodeSync(
 	const lenBuffer = new BigUint64Array(1);
 	const lenResult = sm.ffi.state_manager_get_code_len_sync(
 		sm.handle,
-		addressHex,
+		encodeCString(addressHex) as unknown as string,
 		lenBuffer,
 	);
 
@@ -306,7 +314,7 @@ function getCodeSync(
 	const codeBuffer = new Uint8Array(codeLen);
 	const codeResult = sm.ffi.state_manager_get_code_sync(
 		sm.handle,
-		addressHex,
+		encodeCString(addressHex) as unknown as string,
 		codeBuffer,
 		codeLen,
 	);
@@ -331,7 +339,7 @@ function setCodeSync(
 
 	const result = sm.ffi.state_manager_set_code(
 		sm.handle,
-		addressHex,
+		encodeCString(addressHex) as unknown as string,
 		code,
 		code.length,
 	);

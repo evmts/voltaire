@@ -217,7 +217,7 @@ export class StateManager {
 			this.forkBackendHandle = this.ffi.fork_backend_create(
 				0n, // rpcClientPtr (vtable is enough)
 				vtable,
-				blockTag,
+				this.encodeCString(blockTag) as unknown as string,
 				maxCacheSize,
 			);
 
@@ -252,6 +252,14 @@ export class StateManager {
 		if (this.forkBackendHandle) {
 			this.ffi.fork_backend_destroy(this.forkBackendHandle);
 		}
+	}
+
+	/**
+	 * Encode string as null-terminated buffer for FFI
+	 * Workaround for Bun FFI cstring bug in 1.2.20
+	 */
+	private encodeCString(str: string): Uint8Array {
+		return new TextEncoder().encode(str + "\0");
 	}
 
 	/**
