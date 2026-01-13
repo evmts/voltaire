@@ -400,4 +400,13 @@ export {
 	compressPublicKey,
 };
 
+// ============================================================================
+// Streaming primitives (pure JS - same as main entrypoint)
+// ============================================================================
+
+export * as block from "../block/index.js";
+export * as contract from "../contract/index.js";
+export * as transaction from "../transaction/index.js";
+export * as stream from "../stream/index.js";
+
 // Note: No default export to stay consistent with JS/native entrypoints

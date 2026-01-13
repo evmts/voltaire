@@ -415,3 +415,12 @@ const _nativeAPI = {
 
 // Export the API object for programmatic access (with JS Keccak256 for sync API)
 export { _nativeAPI as nativeAPI };
+
+// ============================================================================
+// Streaming primitives (pure JS - same as main entrypoint)
+// ============================================================================
+
+export * as block from "../block/index.js";
+export * as contract from "../contract/index.js";
+export * as transaction from "../transaction/index.js";
+export * as stream from "../stream/index.js";

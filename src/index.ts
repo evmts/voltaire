@@ -15,3 +15,10 @@ export * from "./primitives/index.js";
 export * from "./standards/index.js";
 // WASM primitives (high-performance WebAssembly bindings)
 export * as wasm from "./wasm/index.js";
+// Streaming primitives - BlockStream, EventStream, TransactionStream
+export * as block from "./block/index.js";
+export * as contract from "./contract/index.js";
+export * as transaction from "./transaction/index.js";
+export * as stream from "./stream/index.js";
+// Wallet utilities
+export * as wallet from "./wallet/index.js";

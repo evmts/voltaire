@@ -53,3 +53,4 @@ export type {
 	SHA256Hash as SHA256HashType,
 } from "./SHA256/SHA256HashType.js";
 export { X25519 } from "./X25519/X25519.js";
+export { HMAC } from "./HMAC/index.js";

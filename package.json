@@ -357,6 +357,71 @@
 			"types": "./types/primitives/State/effect.d.ts",
 			"import": "./dist/primitives/State/effect.js",
 			"require": "./dist/primitives/State/effect.cjs"
+		},
+		"./block": {
+			"types": "./types/block/index.d.ts",
+			"import": "./dist/block/index.js",
+			"require": "./dist/block/index.cjs"
+		},
+		"./contract": {
+			"types": "./types/contract/index.d.ts",
+			"import": "./dist/contract/index.js",
+			"require": "./dist/contract/index.cjs"
+		},
+		"./transaction": {
+			"types": "./types/transaction/index.d.ts",
+			"import": "./dist/transaction/index.js",
+			"require": "./dist/transaction/index.cjs"
+		},
+		"./stream": {
+			"types": "./types/stream/index.d.ts",
+			"import": "./dist/stream/index.js",
+			"require": "./dist/stream/index.cjs"
+		},
+		"./wallet": {
+			"types": "./types/wallet/index.d.ts",
+			"import": "./dist/wallet/index.js",
+			"require": "./dist/wallet/index.cjs"
+		},
+		"./wallet/hardware": {
+			"types": "./types/wallet/hardware/index.d.ts",
+			"import": "./dist/wallet/hardware/index.js",
+			"require": "./dist/wallet/hardware/index.cjs"
+		},
+		"./AesGcm": {
+			"types": "./types/crypto/AesGcm/index.d.ts",
+			"import": "./dist/crypto/AesGcm/index.js",
+			"require": "./dist/crypto/AesGcm/index.cjs"
+		},
+		"./Bls12381": {
+			"types": "./types/crypto/Bls12381/index.d.ts",
+			"import": "./dist/crypto/Bls12381/index.js",
+			"require": "./dist/crypto/Bls12381/index.cjs"
+		},
+		"./BN254": {
+			"types": "./types/crypto/bn254/index.d.ts",
+			"import": "./dist/crypto/bn254/index.js",
+			"require": "./dist/crypto/bn254/index.cjs"
+		},
+		"./HMAC": {
+			"types": "./types/crypto/HMAC/index.d.ts",
+			"import": "./dist/crypto/HMAC/index.js",
+			"require": "./dist/crypto/HMAC/index.cjs"
+		},
+		"./Keystore": {
+			"types": "./types/crypto/Keystore/index.d.ts",
+			"import": "./dist/crypto/Keystore/index.js",
+			"require": "./dist/crypto/Keystore/index.cjs"
+		},
+		"./ModExp": {
+			"types": "./types/crypto/ModExp/index.d.ts",
+			"import": "./dist/crypto/ModExp/index.js",
+			"require": "./dist/crypto/ModExp/index.cjs"
+		},
+		"./X25519": {
+			"types": "./types/crypto/X25519/index.d.ts",
+			"import": "./dist/crypto/X25519/index.js",
+			"require": "./dist/crypto/X25519/index.cjs"
 		}
 	},
 	"main": "dist/index.cjs",

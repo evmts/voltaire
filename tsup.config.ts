@@ -88,5 +88,21 @@ export default createTsUpOptions({
 		"src/wasm/index.ts",
 		// Functional API entrypoint
 		"src/functional.ts",
+		// Streaming primitives
+		"src/block/index.ts",
+		"src/contract/index.ts",
+		"src/transaction/index.ts",
+		"src/stream/index.ts",
+		// Wallet
+		"src/wallet/index.ts",
+		"src/wallet/hardware/index.ts",
+		// Additional crypto modules
+		"src/crypto/AesGcm/index.ts",
+		"src/crypto/Bls12381/index.ts",
+		"src/crypto/bn254/index.ts",
+		"src/crypto/HMAC/index.ts",
+		"src/crypto/Keystore/index.ts",
+		"src/crypto/ModExp/index.ts",
+		"src/crypto/X25519/index.ts",
 	],
 });
