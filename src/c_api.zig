@@ -3,6 +3,17 @@ const primitives = @import("primitives");
 const crypto = @import("crypto");
 const builtin = @import("builtin");
 
+// Import state-manager and blockchain modules to include their exports
+const state_manager_c_api = @import("state-manager/c_api.zig");
+const blockchain_c_api = @import("blockchain/c_api.zig");
+
+// Force the compiler to include these modules' exports by referencing them
+comptime {
+    // This ensures the exports from these modules are included in the final library
+    _ = state_manager_c_api;
+    _ = blockchain_c_api;
+}
+
 // Error codes for C API
 pub const PRIMITIVES_SUCCESS: c_int = 0;
 pub const PRIMITIVES_ERROR_INVALID_HEX: c_int = -1;
