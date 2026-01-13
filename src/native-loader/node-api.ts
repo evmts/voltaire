@@ -98,6 +98,112 @@ export interface NativeModule {
 		signature: string,
 		output: Uint8Array,
 	): number;
+
+	// StateManager operations
+	state_manager_create(): number | null;
+	state_manager_create_with_fork(forkBackend: number): number | null;
+	state_manager_destroy(handle: number): void;
+	state_manager_get_balance_sync(
+		handle: number,
+		addressHex: string,
+		outBuffer: Uint8Array,
+		bufferLen: number,
+	): number;
+	state_manager_get_nonce_sync(
+		handle: number,
+		addressHex: string,
+		outNonce: Uint8Array,
+	): number;
+	state_manager_get_code_len_sync(
+		handle: number,
+		addressHex: string,
+		outLen: Uint8Array,
+	): number;
+	state_manager_get_code_sync(
+		handle: number,
+		addressHex: string,
+		outBuffer: Uint8Array,
+		bufferLen: number,
+	): number;
+	state_manager_get_storage_sync(
+		handle: number,
+		addressHex: string,
+		slotHex: string,
+		outBuffer: Uint8Array,
+		bufferLen: number,
+	): number;
+	state_manager_set_balance(
+		handle: number,
+		addressHex: string,
+		balanceHex: string,
+	): number;
+	state_manager_set_nonce(handle: number, addressHex: string, nonce: number): number;
+	state_manager_set_code(
+		handle: number,
+		addressHex: string,
+		codePtr: Uint8Array,
+		codeLen: number,
+	): number;
+	state_manager_set_storage(
+		handle: number,
+		addressHex: string,
+		slotHex: string,
+		valueHex: string,
+	): number;
+	state_manager_checkpoint(handle: number): number;
+	state_manager_revert(handle: number): void;
+	state_manager_commit(handle: number): void;
+	state_manager_snapshot(handle: number, outSnapshotId: Uint8Array): number;
+	state_manager_revert_to_snapshot(handle: number, snapshotId: number): number;
+	state_manager_clear_caches(handle: number): void;
+	state_manager_clear_fork_cache(handle: number): void;
+
+	// ForkBackend operations
+	fork_backend_create(
+		rpcClientPtr: number,
+		rpcVtable: number,
+		blockTag: string,
+		maxCacheSize: number,
+	): number | null;
+	fork_backend_destroy(handle: number): void;
+	fork_backend_clear_cache(handle: number): void;
+
+	// Blockchain operations
+	blockchain_create(): number | null;
+	blockchain_create_with_fork(forkCache: number): number | null;
+	blockchain_destroy(handle: number): void;
+	blockchain_get_block_by_hash(
+		handle: number,
+		blockHashPtr: Uint8Array,
+		outBlockData: Uint8Array,
+	): number;
+	blockchain_get_block_by_number(
+		handle: number,
+		number: number,
+		outBlockData: Uint8Array,
+	): number;
+	blockchain_get_canonical_hash(
+		handle: number,
+		number: number,
+		outHash: Uint8Array,
+	): number;
+	blockchain_get_head_block_number(handle: number, outNumber: Uint8Array): number;
+	blockchain_put_block(handle: number, blockData: Uint8Array): number;
+	blockchain_set_canonical_head(handle: number, blockHashPtr: Uint8Array): number;
+	blockchain_has_block(handle: number, blockHashPtr: Uint8Array): boolean;
+	blockchain_local_block_count(handle: number): number;
+	blockchain_orphan_count(handle: number): number;
+	blockchain_canonical_chain_length(handle: number): number;
+	blockchain_is_fork_block(handle: number, number: number): boolean;
+
+	// ForkBlockCache operations
+	fork_block_cache_create(
+		rpcContext: number,
+		vtableFetchByNumber: number,
+		vtableFetchByHash: number,
+		forkBlockNumber: number,
+	): number | null;
+	fork_block_cache_destroy(handle: number): void;
 }
 
 let nativeModule: NativeModule | null = null;

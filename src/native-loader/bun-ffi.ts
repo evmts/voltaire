@@ -113,6 +113,166 @@ const symbols = {
 		args: [FFIType.cstring, FFIType.ptr],
 		returns: FFIType.i32,
 	},
+
+	// StateManager operations
+	state_manager_create: {
+		args: [],
+		returns: FFIType.ptr,
+	},
+	state_manager_create_with_fork: {
+		args: [FFIType.ptr],
+		returns: FFIType.ptr,
+	},
+	state_manager_destroy: {
+		args: [FFIType.ptr],
+		returns: FFIType.void,
+	},
+	state_manager_get_balance_sync: {
+		args: [FFIType.ptr, FFIType.cstring, FFIType.ptr, FFIType.u64],
+		returns: FFIType.i32,
+	},
+	state_manager_get_nonce_sync: {
+		args: [FFIType.ptr, FFIType.cstring, FFIType.ptr],
+		returns: FFIType.i32,
+	},
+	state_manager_get_code_len_sync: {
+		args: [FFIType.ptr, FFIType.cstring, FFIType.ptr],
+		returns: FFIType.i32,
+	},
+	state_manager_get_code_sync: {
+		args: [FFIType.ptr, FFIType.cstring, FFIType.ptr, FFIType.u64],
+		returns: FFIType.i32,
+	},
+	state_manager_get_storage_sync: {
+		args: [FFIType.ptr, FFIType.cstring, FFIType.cstring, FFIType.ptr, FFIType.u64],
+		returns: FFIType.i32,
+	},
+	state_manager_set_balance: {
+		args: [FFIType.ptr, FFIType.cstring, FFIType.cstring],
+		returns: FFIType.i32,
+	},
+	state_manager_set_nonce: {
+		args: [FFIType.ptr, FFIType.cstring, FFIType.u64],
+		returns: FFIType.i32,
+	},
+	state_manager_set_code: {
+		args: [FFIType.ptr, FFIType.cstring, FFIType.ptr, FFIType.u64],
+		returns: FFIType.i32,
+	},
+	state_manager_set_storage: {
+		args: [FFIType.ptr, FFIType.cstring, FFIType.cstring, FFIType.cstring],
+		returns: FFIType.i32,
+	},
+	state_manager_checkpoint: {
+		args: [FFIType.ptr],
+		returns: FFIType.i32,
+	},
+	state_manager_revert: {
+		args: [FFIType.ptr],
+		returns: FFIType.void,
+	},
+	state_manager_commit: {
+		args: [FFIType.ptr],
+		returns: FFIType.void,
+	},
+	state_manager_snapshot: {
+		args: [FFIType.ptr, FFIType.ptr],
+		returns: FFIType.i32,
+	},
+	state_manager_revert_to_snapshot: {
+		args: [FFIType.ptr, FFIType.u64],
+		returns: FFIType.i32,
+	},
+	state_manager_clear_caches: {
+		args: [FFIType.ptr],
+		returns: FFIType.void,
+	},
+	state_manager_clear_fork_cache: {
+		args: [FFIType.ptr],
+		returns: FFIType.void,
+	},
+
+	// ForkBackend operations
+	fork_backend_create: {
+		args: [FFIType.ptr, FFIType.ptr, FFIType.cstring, FFIType.u64],
+		returns: FFIType.ptr,
+	},
+	fork_backend_destroy: {
+		args: [FFIType.ptr],
+		returns: FFIType.void,
+	},
+	fork_backend_clear_cache: {
+		args: [FFIType.ptr],
+		returns: FFIType.void,
+	},
+
+	// Blockchain operations
+	blockchain_create: {
+		args: [],
+		returns: FFIType.ptr,
+	},
+	blockchain_create_with_fork: {
+		args: [FFIType.ptr],
+		returns: FFIType.ptr,
+	},
+	blockchain_destroy: {
+		args: [FFIType.ptr],
+		returns: FFIType.void,
+	},
+	blockchain_get_block_by_hash: {
+		args: [FFIType.ptr, FFIType.ptr, FFIType.ptr],
+		returns: FFIType.i32,
+	},
+	blockchain_get_block_by_number: {
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr],
+		returns: FFIType.i32,
+	},
+	blockchain_get_canonical_hash: {
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr],
+		returns: FFIType.i32,
+	},
+	blockchain_get_head_block_number: {
+		args: [FFIType.ptr, FFIType.ptr],
+		returns: FFIType.i32,
+	},
+	blockchain_put_block: {
+		args: [FFIType.ptr, FFIType.ptr],
+		returns: FFIType.i32,
+	},
+	blockchain_set_canonical_head: {
+		args: [FFIType.ptr, FFIType.ptr],
+		returns: FFIType.i32,
+	},
+	blockchain_has_block: {
+		args: [FFIType.ptr, FFIType.ptr],
+		returns: FFIType.bool,
+	},
+	blockchain_local_block_count: {
+		args: [FFIType.ptr],
+		returns: FFIType.u64,
+	},
+	blockchain_orphan_count: {
+		args: [FFIType.ptr],
+		returns: FFIType.u64,
+	},
+	blockchain_canonical_chain_length: {
+		args: [FFIType.ptr],
+		returns: FFIType.u64,
+	},
+	blockchain_is_fork_block: {
+		args: [FFIType.ptr, FFIType.u64],
+		returns: FFIType.bool,
+	},
+
+	// ForkBlockCache operations
+	fork_block_cache_create: {
+		args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.u64],
+		returns: FFIType.ptr,
+	},
+	fork_block_cache_destroy: {
+		args: [FFIType.ptr],
+		returns: FFIType.void,
+	},
 } as const;
 
 /**
