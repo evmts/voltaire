@@ -45,7 +45,7 @@ export function recordMockData(mockRpc: MockRpcClient): RecordedData {
 
 	const accounts: RecordedAccount[] = [];
 	for (const [address, state] of rpc.accounts.entries()) {
-		const storageSlots = Array.from(state.storage.entries()).map(([slot, value]) => ({
+		const storageSlots = Array.from(state.storage.entries() as IterableIterator<[bigint, bigint]>).map(([slot, value]) => ({
 			slot,
 			value,
 		}));
