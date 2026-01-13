@@ -51,15 +51,15 @@ pub const AccountState = struct {
         return .{
             .nonce = 0,
             .balance = 0,
-            .code_hash = Hash.EMPTY_HASH,
-            .storage_root = Hash.EMPTY_HASH,
+            .code_hash = Hash.ZERO,
+            .storage_root = Hash.ZERO,
         };
     }
 };
 
 /// Storage key (address + slot)
 pub const StorageKey = struct {
-    address: Address.Address,
+    address: Address,
     slot: u256,
 
     pub fn hash(self: StorageKey) u64 {
@@ -78,14 +78,14 @@ pub const StorageKey = struct {
 /// Account cache with checkpointing
 pub const AccountCache = struct {
     allocator: std.mem.Allocator,
-    cache: std.AutoHashMap(Address.Address, AccountState),
-    checkpoints: std.ArrayList(std.AutoHashMap(Address.Address, AccountState)),
+    cache: std.AutoHashMap(Address, AccountState),
+    checkpoints: std.ArrayList(std.AutoHashMap(Address, AccountState)),
 
     pub fn init(allocator: std.mem.Allocator) !AccountCache {
         return .{
             .allocator = allocator,
-            .cache = std.AutoHashMap(Address.Address, AccountState).init(allocator),
-            .checkpoints = std.ArrayList(std.AutoHashMap(Address.Address, AccountState)){},
+            .cache = std.AutoHashMap(Address, AccountState).init(allocator),
+            .checkpoints = .{},
         };
     }
 
@@ -94,22 +94,22 @@ pub const AccountCache = struct {
         for (self.checkpoints.items) |*ckpt_item| {
             ckpt_item.deinit();
         }
-        self.checkpoints.deinit();
+        self.checkpoints.deinit(self.allocator);
     }
 
-    pub fn get(self: *AccountCache, address: Address.Address) ?AccountState {
+    pub fn get(self: *AccountCache, address: Address) ?AccountState {
         return self.cache.get(address);
     }
 
-    pub fn put(self: *AccountCache, address: Address.Address, account: AccountState) !void {
+    pub fn put(self: *AccountCache, address: Address, account: AccountState) !void {
         try self.cache.put(address, account);
     }
 
-    pub fn has(self: *AccountCache, address: Address.Address) bool {
+    pub fn has(self: *AccountCache, address: Address) bool {
         return self.cache.contains(address);
     }
 
-    pub fn delete(self: *AccountCache, address: Address.Address) bool {
+    pub fn delete(self: *AccountCache, address: Address) bool {
         return self.cache.remove(address);
     }
 
@@ -119,19 +119,19 @@ pub const AccountCache = struct {
 
     pub fn checkpoint(self: *AccountCache) !void {
         // Clone current cache state
-        var snapshot = std.AutoHashMap(Address.Address, AccountState).init(self.allocator);
+        var snapshot = std.AutoHashMap(Address, AccountState).init(self.allocator);
         var it = self.cache.iterator();
         while (it.next()) |entry| {
             try snapshot.put(entry.key_ptr.*, entry.value_ptr.*);
         }
-        try self.checkpoints.append(snapshot);
+        try self.checkpoints.append(self.allocator, snapshot);
     }
 
     pub fn revert(self: *AccountCache) void {
         if (self.checkpoints.items.len == 0) return;
 
         // Pop checkpoint and restore
-        const snapshot = self.checkpoints.pop();
+        const snapshot = self.checkpoints.pop() orelse return;
         self.cache.deinit();
         self.cache = snapshot;
     }
@@ -140,7 +140,7 @@ pub const AccountCache = struct {
         if (self.checkpoints.items.len == 0) return;
 
         // Pop checkpoint but keep current state
-        var snapshot = self.checkpoints.pop();
+        var snapshot = self.checkpoints.pop() orelse return;
         snapshot.deinit();
     }
 
@@ -152,14 +152,14 @@ pub const AccountCache = struct {
 /// Storage cache with checkpointing (address -> slot -> value)
 pub const StorageCache = struct {
     allocator: std.mem.Allocator,
-    cache: std.AutoHashMap(Address.Address, std.AutoHashMap(u256, u256)),
-    checkpoints: std.ArrayList(std.AutoHashMap(Address.Address, std.AutoHashMap(u256, u256))),
+    cache: std.AutoHashMap(Address, std.AutoHashMap(u256, u256)),
+    checkpoints: std.ArrayList(std.AutoHashMap(Address, std.AutoHashMap(u256, u256))),
 
     pub fn init(allocator: std.mem.Allocator) !StorageCache {
         return .{
             .allocator = allocator,
-            .cache = std.AutoHashMap(Address.Address, std.AutoHashMap(u256, u256)).init(allocator),
-            .checkpoints = std.ArrayList(std.AutoHashMap(Address.Address, std.AutoHashMap(u256, u256))){},
+            .cache = std.AutoHashMap(Address, std.AutoHashMap(u256, u256)).init(allocator),
+            .checkpoints = std.ArrayList(std.AutoHashMap(Address, std.AutoHashMap(u256, u256))){},
         };
     }
 
@@ -171,21 +171,21 @@ pub const StorageCache = struct {
         self.cache.deinit();
 
         for (self.checkpoints.items) |*ckpt_item| {
-            var checkpoint_it = checkpoint.valueIterator();
+            var checkpoint_it = ckpt_item.valueIterator();
             while (checkpoint_it.next()) |slots| {
                 slots.deinit();
             }
-            checkpoint.deinit();
+            ckpt_item.deinit();
         }
-        self.checkpoints.deinit();
+        self.checkpoints.deinit(self.allocator);
     }
 
-    pub fn get(self: *StorageCache, address: Address.Address, slot: u256) ?u256 {
+    pub fn get(self: *StorageCache, address: Address, slot: u256) ?u256 {
         const slots = self.cache.get(address) orelse return null;
         return slots.get(slot);
     }
 
-    pub fn put(self: *StorageCache, address: Address.Address, slot: u256, value: u256) !void {
+    pub fn put(self: *StorageCache, address: Address, slot: u256, value: u256) !void {
         const result = try self.cache.getOrPut(address);
         if (!result.found_existing) {
             result.value_ptr.* = std.AutoHashMap(u256, u256).init(self.allocator);
@@ -193,12 +193,12 @@ pub const StorageCache = struct {
         try result.value_ptr.put(slot, value);
     }
 
-    pub fn has(self: *StorageCache, address: Address.Address, slot: u256) bool {
+    pub fn has(self: *StorageCache, address: Address, slot: u256) bool {
         const slots = self.cache.get(address) orelse return false;
         return slots.contains(slot);
     }
 
-    pub fn delete(self: *StorageCache, address: Address.Address, slot: u256) bool {
+    pub fn delete(self: *StorageCache, address: Address, slot: u256) bool {
         var slots = self.cache.getPtr(address) orelse return false;
         return slots.remove(slot);
     }
@@ -213,7 +213,7 @@ pub const StorageCache = struct {
 
     pub fn checkpoint(self: *StorageCache) !void {
         // Clone current cache state (deep copy including nested maps)
-        var snapshot = std.AutoHashMap(Address.Address, std.AutoHashMap(u256, u256)).init(self.allocator);
+        var snapshot = std.AutoHashMap(Address, std.AutoHashMap(u256, u256)).init(self.allocator);
         var it = self.cache.iterator();
         while (it.next()) |entry| {
             var slots_clone = std.AutoHashMap(u256, u256).init(self.allocator);
@@ -223,7 +223,7 @@ pub const StorageCache = struct {
             }
             try snapshot.put(entry.key_ptr.*, slots_clone);
         }
-        try self.checkpoints.append(snapshot);
+        try self.checkpoints.append(self.allocator, snapshot);
     }
 
     pub fn revert(self: *StorageCache) void {
@@ -237,14 +237,14 @@ pub const StorageCache = struct {
         self.cache.deinit();
 
         // Restore checkpoint
-        self.cache = self.checkpoints.pop();
+        self.cache = self.checkpoints.pop() orelse return;
     }
 
     pub fn commit(self: *StorageCache) void {
         if (self.checkpoints.items.len == 0) return;
 
         // Pop checkpoint and cleanup
-        var snapshot = self.checkpoints.pop();
+        var snapshot = self.checkpoints.pop() orelse return;
         var it = snapshot.valueIterator();
         while (it.next()) |slots| {
             slots.deinit();
@@ -265,14 +265,14 @@ pub const StorageCache = struct {
 /// Contract code cache with checkpointing
 pub const ContractCache = struct {
     allocator: std.mem.Allocator,
-    cache: std.AutoHashMap(Address.Address, []const u8),
-    checkpoints: std.ArrayList(std.AutoHashMap(Address.Address, []const u8)),
+    cache: std.AutoHashMap(Address, []const u8),
+    checkpoints: std.ArrayList(std.AutoHashMap(Address, []const u8)),
 
     pub fn init(allocator: std.mem.Allocator) !ContractCache {
         return .{
             .allocator = allocator,
-            .cache = std.AutoHashMap(Address.Address, []const u8).init(allocator),
-            .checkpoints = std.ArrayList(std.AutoHashMap(Address.Address, []const u8)){},
+            .cache = std.AutoHashMap(Address, []const u8).init(allocator),
+            .checkpoints = std.ArrayList(std.AutoHashMap(Address, []const u8)){},
         };
     }
 
@@ -286,20 +286,20 @@ pub const ContractCache = struct {
 
         // Free checkpoint buffers
         for (self.checkpoints.items) |*ckpt_item| {
-            var checkpoint_it = checkpoint.valueIterator();
+            var checkpoint_it = ckpt_item.valueIterator();
             while (checkpoint_it.next()) |code| {
                 self.allocator.free(code.*);
             }
-            checkpoint.deinit();
+            ckpt_item.deinit();
         }
-        self.checkpoints.deinit();
+        self.checkpoints.deinit(self.allocator);
     }
 
-    pub fn get(self: *ContractCache, address: Address.Address) ?[]const u8 {
+    pub fn get(self: *ContractCache, address: Address) ?[]const u8 {
         return self.cache.get(address);
     }
 
-    pub fn put(self: *ContractCache, address: Address.Address, code: []const u8) !void {
+    pub fn put(self: *ContractCache, address: Address, code: []const u8) !void {
         // Make owned copy
         const code_copy = try self.allocator.dupe(u8, code);
         errdefer self.allocator.free(code_copy);
@@ -312,11 +312,11 @@ pub const ContractCache = struct {
         try self.cache.put(address, code_copy);
     }
 
-    pub fn has(self: *ContractCache, address: Address.Address) bool {
+    pub fn has(self: *ContractCache, address: Address) bool {
         return self.cache.contains(address);
     }
 
-    pub fn delete(self: *ContractCache, address: Address.Address) bool {
+    pub fn delete(self: *ContractCache, address: Address) bool {
         if (self.cache.fetchRemove(address)) |entry| {
             self.allocator.free(entry.value);
             return true;
@@ -334,13 +334,13 @@ pub const ContractCache = struct {
 
     pub fn checkpoint(self: *ContractCache) !void {
         // Clone current cache state (with owned copies of code)
-        var snapshot = std.AutoHashMap(Address.Address, []const u8).init(self.allocator);
+        var snapshot = std.AutoHashMap(Address, []const u8).init(self.allocator);
         var it = self.cache.iterator();
         while (it.next()) |entry| {
             const code_copy = try self.allocator.dupe(u8, entry.value_ptr.*);
             try snapshot.put(entry.key_ptr.*, code_copy);
         }
-        try self.checkpoints.append(snapshot);
+        try self.checkpoints.append(self.allocator, snapshot);
     }
 
     pub fn revert(self: *ContractCache) void {
@@ -354,14 +354,14 @@ pub const ContractCache = struct {
         self.cache.deinit();
 
         // Restore checkpoint
-        self.cache = self.checkpoints.pop();
+        self.cache = self.checkpoints.pop() orelse return;
     }
 
     pub fn commit(self: *ContractCache) void {
         if (self.checkpoints.items.len == 0) return;
 
         // Pop checkpoint and cleanup
-        var snapshot = self.checkpoints.pop();
+        var snapshot = self.checkpoints.pop() orelse return;
         var it = snapshot.valueIterator();
         while (it.next()) |code| {
             self.allocator.free(code.*);
@@ -380,12 +380,12 @@ test "AccountCache - basic operations" {
     var cache = try AccountCache.init(allocator);
     defer cache.deinit();
 
-    const addr = [_]u8{0x11} ++ [_]u8{0} ** 19;
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
     const account = AccountState{
         .nonce = 5,
         .balance = 1000,
-        .code_hash = Hash.EMPTY_HASH,
-        .storage_root = Hash.EMPTY_HASH,
+        .code_hash = Hash.ZERO,
+        .storage_root = Hash.ZERO,
     };
 
     try cache.put(addr, account);
@@ -401,14 +401,14 @@ test "AccountCache - checkpoint and revert" {
     var cache = try AccountCache.init(allocator);
     defer cache.deinit();
 
-    const addr = [_]u8{0x11} ++ [_]u8{0} ** 19;
-    const account1 = AccountState{ .nonce = 5, .balance = 1000, .code_hash = Hash.EMPTY_HASH, .storage_root = Hash.EMPTY_HASH };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const account1 = AccountState{ .nonce = 5, .balance = 1000, .code_hash = Hash.ZERO, .storage_root = Hash.ZERO };
 
     try cache.put(addr, account1);
     try cache.checkpoint();
 
     // Modify after checkpoint
-    const account2 = AccountState{ .nonce = 10, .balance = 2000, .code_hash = Hash.EMPTY_HASH, .storage_root = Hash.EMPTY_HASH };
+    const account2 = AccountState{ .nonce = 10, .balance = 2000, .code_hash = Hash.ZERO, .storage_root = Hash.ZERO };
     try cache.put(addr, account2);
 
     const modified = cache.get(addr).?;
@@ -427,14 +427,14 @@ test "AccountCache - checkpoint and commit" {
     var cache = try AccountCache.init(allocator);
     defer cache.deinit();
 
-    const addr = [_]u8{0x11} ++ [_]u8{0} ** 19;
-    const account1 = AccountState{ .nonce = 5, .balance = 1000, .code_hash = Hash.EMPTY_HASH, .storage_root = Hash.EMPTY_HASH };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const account1 = AccountState{ .nonce = 5, .balance = 1000, .code_hash = Hash.ZERO, .storage_root = Hash.ZERO };
 
     try cache.put(addr, account1);
     try cache.checkpoint();
 
     // Modify
-    const account2 = AccountState{ .nonce = 10, .balance = 2000, .code_hash = Hash.EMPTY_HASH, .storage_root = Hash.EMPTY_HASH };
+    const account2 = AccountState{ .nonce = 10, .balance = 2000, .code_hash = Hash.ZERO, .storage_root = Hash.ZERO };
     try cache.put(addr, account2);
 
     // Commit
@@ -451,7 +451,7 @@ test "StorageCache - basic operations" {
     var cache = try StorageCache.init(allocator);
     defer cache.deinit();
 
-    const addr = [_]u8{0x11} ++ [_]u8{0} ** 19;
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
     const slot: u256 = 42;
     const value: u256 = 9999;
 
@@ -467,7 +467,7 @@ test "StorageCache - checkpoint and revert" {
     var cache = try StorageCache.init(allocator);
     defer cache.deinit();
 
-    const addr = [_]u8{0x11} ++ [_]u8{0} ** 19;
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
     const slot: u256 = 42;
 
     try cache.put(addr, slot, 100);
@@ -487,7 +487,7 @@ test "ContractCache - basic operations" {
     var cache = try ContractCache.init(allocator);
     defer cache.deinit();
 
-    const addr = [_]u8{0x11} ++ [_]u8{0} ** 19;
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
     const code = [_]u8{ 0x60, 0x60, 0x60, 0x40 };
 
     try cache.put(addr, &code);
@@ -502,7 +502,7 @@ test "ContractCache - checkpoint and revert" {
     var cache = try ContractCache.init(allocator);
     defer cache.deinit();
 
-    const addr = [_]u8{0x11} ++ [_]u8{0} ** 19;
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
     const code1 = [_]u8{ 0x60, 0x60 };
     const code2 = [_]u8{ 0x60, 0x60, 0x60, 0x40 };
 

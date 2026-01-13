@@ -29,6 +29,9 @@
 //! ```
 
 const StateCache = @import("StateCache.zig");
+const ForkBackendMod = @import("ForkBackend.zig");
+const JournaledStateMod = @import("JournaledState.zig");
+const StateManagerMod = @import("StateManager.zig");
 
 // Re-export StateCache types
 pub const AccountCache = StateCache.AccountCache;
@@ -37,12 +40,22 @@ pub const ContractCache = StateCache.ContractCache;
 pub const AccountState = StateCache.AccountState;
 pub const StorageKey = StateCache.StorageKey;
 
-// TODO: Add when implemented
-// pub const ForkBackend = @import("ForkBackend.zig");
-// pub const JournaledState = @import("JournaledState.zig");
-// pub const StateManager = @import("StateManager.zig");
+// Re-export ForkBackend
+pub const ForkBackend = ForkBackendMod.ForkBackend;
+pub const CacheConfig = ForkBackendMod.CacheConfig;
+pub const Transport = ForkBackendMod.Transport;
+pub const RpcClient = ForkBackendMod.RpcClient;
+
+// Re-export JournaledState
+pub const JournaledState = JournaledStateMod.JournaledState;
+
+// Re-export StateManager
+pub const StateManager = StateManagerMod.StateManager;
 
 test {
     // Run all tests in submodules
     _ = StateCache;
+    _ = ForkBackendMod;
+    _ = JournaledStateMod;
+    _ = StateManagerMod;
 }
