@@ -3,9 +3,20 @@
  * @see /docs/guides/wallet-generation.mdx
  *
  * Note: The guide references @voltaire/crypto/Bip39 and @voltaire/crypto/HDWallet
- * These are available as Bip39 and HDWallet in src/crypto/
+ * - Bip39 is available from src/crypto/index.js (works everywhere)
+ * - HDWallet requires native FFI and must be imported from src/native/index.js
  */
 import { describe, expect, it } from "vitest";
+
+// Check if native HDWallet is available
+const hasNativeHDWallet = await (async () => {
+	try {
+		const mod = await import("../../src/native/index.js");
+		return mod.HDWallet !== undefined && typeof mod.HDWallet.fromSeed === "function";
+	} catch {
+		return false;
+	}
+})();
 
 describe("Wallet Generation Guide", () => {
 	it("should generate 12-word mnemonic (128 bits)", async () => {
@@ -71,8 +82,9 @@ describe("Wallet Generation Guide", () => {
 		expect(seedNoPass).not.toEqual(seedWithPass);
 	});
 
-	it("should create HD wallet from seed", async () => {
-		const { Bip39, HDWallet } = await import("../../src/crypto/index.js");
+	it.skipIf(!hasNativeHDWallet)("should create HD wallet from seed", async () => {
+		const { Bip39 } = await import("../../src/crypto/index.js");
+		const { HDWallet } = await import("../../src/native/index.js");
 
 		const mnemonic =
 			"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -82,8 +94,9 @@ describe("Wallet Generation Guide", () => {
 		expect(root).toBeDefined();
 	});
 
-	it("should derive Ethereum account", async () => {
-		const { Bip39, HDWallet } = await import("../../src/crypto/index.js");
+	it.skipIf(!hasNativeHDWallet)("should derive Ethereum account", async () => {
+		const { Bip39 } = await import("../../src/crypto/index.js");
+		const { HDWallet } = await import("../../src/native/index.js");
 
 		const mnemonic =
 			"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -100,8 +113,9 @@ describe("Wallet Generation Guide", () => {
 		expect(privateKey?.length).toBe(32);
 	});
 
-	it("should derive multiple addresses from same account", async () => {
-		const { Bip39, HDWallet } = await import("../../src/crypto/index.js");
+	it.skipIf(!hasNativeHDWallet)("should derive multiple addresses from same account", async () => {
+		const { Bip39 } = await import("../../src/crypto/index.js");
+		const { HDWallet } = await import("../../src/native/index.js");
 
 		const mnemonic =
 			"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -124,10 +138,9 @@ describe("Wallet Generation Guide", () => {
 		}
 	});
 
-	it("should derive Ethereum address from private key", async () => {
-		const { Bip39, HDWallet, Secp256k1 } = await import(
-			"../../src/crypto/index.js"
-		);
+	it.skipIf(!hasNativeHDWallet)("should derive Ethereum address from private key", async () => {
+		const { Bip39, Secp256k1 } = await import("../../src/crypto/index.js");
+		const { HDWallet } = await import("../../src/native/index.js");
 		const { Address } = await import("../../src/primitives/Address/index.js");
 
 		const mnemonic =
@@ -147,8 +160,9 @@ describe("Wallet Generation Guide", () => {
 		expect(hex).toMatch(/^0x[a-fA-F0-9]{40}$/);
 	});
 
-	it("should export extended keys", async () => {
-		const { Bip39, HDWallet } = await import("../../src/crypto/index.js");
+	it.skipIf(!hasNativeHDWallet)("should export extended keys", async () => {
+		const { Bip39 } = await import("../../src/crypto/index.js");
+		const { HDWallet } = await import("../../src/native/index.js");
 
 		const mnemonic =
 			"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -162,8 +176,9 @@ describe("Wallet Generation Guide", () => {
 		expect(xpub).toMatch(/^xpub/);
 	});
 
-	it("should restore from extended private key", async () => {
-		const { Bip39, HDWallet } = await import("../../src/crypto/index.js");
+	it.skipIf(!hasNativeHDWallet)("should restore from extended private key", async () => {
+		const { Bip39 } = await import("../../src/crypto/index.js");
+		const { HDWallet } = await import("../../src/native/index.js");
 
 		const mnemonic =
 			"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -184,8 +199,9 @@ describe("Wallet Generation Guide", () => {
 		);
 	});
 
-	it("should derive using custom BIP-32 path", async () => {
-		const { Bip39, HDWallet } = await import("../../src/crypto/index.js");
+	it.skipIf(!hasNativeHDWallet)("should derive using custom BIP-32 path", async () => {
+		const { Bip39 } = await import("../../src/crypto/index.js");
+		const { HDWallet } = await import("../../src/native/index.js");
 
 		const mnemonic =
 			"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -198,8 +214,8 @@ describe("Wallet Generation Guide", () => {
 		expect(HDWallet.getPrivateKey(eth)).toBeInstanceOf(Uint8Array);
 	});
 
-	it("should validate derivation paths", async () => {
-		const { HDWallet } = await import("../../src/crypto/index.js");
+	it.skipIf(!hasNativeHDWallet)("should validate derivation paths", async () => {
+		const { HDWallet } = await import("../../src/native/index.js");
 
 		expect(HDWallet.isValidPath("m/44'/60'/0'/0/0")).toBe(true);
 		expect(HDWallet.isValidPath("invalid/path")).toBe(false);
