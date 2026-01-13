@@ -42,21 +42,30 @@ export function createRpcHandler(deps: HandlerDependencies): RpcHandler {
 				// ================================================================
 
 				case "eth_getBalance": {
-					const [addressHex, _blockTag = "latest"] = params as [string, string?];
+					const [addressHex, _blockTag = "latest"] = params as [
+						string,
+						string?,
+					];
 					const address = Address(addressHex) as AddressType;
 					const balance = await deps.getBalance(address);
 					return `0x${balance.toString(16)}`;
 				}
 
 				case "eth_getTransactionCount": {
-					const [addressHex, _blockTag = "latest"] = params as [string, string?];
+					const [addressHex, _blockTag = "latest"] = params as [
+						string,
+						string?,
+					];
 					const address = Address(addressHex) as AddressType;
 					const nonce = await deps.getNonce(address);
 					return `0x${nonce.toString(16)}`;
 				}
 
 				case "eth_getCode": {
-					const [addressHex, _blockTag = "latest"] = params as [string, string?];
+					const [addressHex, _blockTag = "latest"] = params as [
+						string,
+						string?,
+					];
 					const address = Address(addressHex) as AddressType;
 					const code = await deps.getCode(address);
 					return `0x${Array.from(code)
@@ -86,10 +95,7 @@ export function createRpcHandler(deps: HandlerDependencies): RpcHandler {
 				}
 
 				case "eth_getBlockByNumber": {
-					const [blockNumberHex, fullTx = false] = params as [
-						string,
-						boolean?,
-					];
+					const [blockNumberHex, fullTx = false] = params as [string, boolean?];
 
 					// Resolve block tag
 					let blockNumber: bigint;

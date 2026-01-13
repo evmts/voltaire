@@ -149,10 +149,7 @@ async function handleRequest(
 
 	// Handle method
 	try {
-		const result = await handler.handle(
-			request.method,
-			request.params ?? [],
-		);
+		const result = await handler.handle(request.method, request.params ?? []);
 		return createSuccessResponse(request.id, result);
 	} catch (error) {
 		return createErrorResponse(request.id, {
