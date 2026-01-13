@@ -289,7 +289,7 @@ export class StateManager {
 
 		const result = this.ffi.state_manager_get_balance_sync(
 			this.handle,
-			addressHex,
+			this.encodeCString(addressHex) as unknown as string,
 			buffer,
 			buffer.length,
 		);
@@ -314,8 +314,8 @@ export class StateManager {
 
 		const result = this.ffi.state_manager_set_balance(
 			this.handle,
-			addressHex,
-			balanceHex,
+			this.encodeCString(addressHex) as unknown as string,
+			this.encodeCString(balanceHex) as unknown as string,
 		);
 
 		if (result !== STATE_MANAGER_SUCCESS) {
@@ -332,7 +332,7 @@ export class StateManager {
 
 		const result = this.ffi.state_manager_get_nonce_sync(
 			this.handle,
-			addressHex,
+			this.encodeCString(addressHex) as unknown as string,
 			outBuffer,
 		);
 
@@ -355,7 +355,7 @@ export class StateManager {
 
 		const result = this.ffi.state_manager_set_nonce(
 			this.handle,
-			addressHex,
+			this.encodeCString(addressHex) as unknown as string,
 			nonce,
 		);
 
@@ -373,8 +373,8 @@ export class StateManager {
 
 		const result = this.ffi.state_manager_get_storage_sync(
 			this.handle,
-			addressHex,
-			slot,
+			this.encodeCString(addressHex) as unknown as string,
+			this.encodeCString(slot) as unknown as string,
 			buffer,
 			buffer.length,
 		);
@@ -395,9 +395,9 @@ export class StateManager {
 
 		const result = this.ffi.state_manager_set_storage(
 			this.handle,
-			addressHex,
-			slot,
-			value,
+			this.encodeCString(addressHex) as unknown as string,
+			this.encodeCString(slot) as unknown as string,
+			this.encodeCString(value) as unknown as string,
 		);
 
 		if (result !== STATE_MANAGER_SUCCESS) {
@@ -415,7 +415,7 @@ export class StateManager {
 		const lenBuffer = new BigUint64Array(1);
 		const lenResult = this.ffi.state_manager_get_code_len_sync(
 			this.handle,
-			addressHex,
+			this.encodeCString(addressHex) as unknown as string,
 			lenBuffer,
 		);
 
@@ -432,7 +432,7 @@ export class StateManager {
 		const codeBuffer = new Uint8Array(codeLen);
 		const codeResult = this.ffi.state_manager_get_code_sync(
 			this.handle,
-			addressHex,
+			this.encodeCString(addressHex) as unknown as string,
 			codeBuffer,
 			codeLen,
 		);
@@ -453,7 +453,7 @@ export class StateManager {
 
 		const result = this.ffi.state_manager_set_code(
 			this.handle,
-			addressHex,
+			this.encodeCString(addressHex) as unknown as string,
 			codeBytes,
 			codeBytes.length,
 		);

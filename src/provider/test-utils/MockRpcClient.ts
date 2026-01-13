@@ -127,8 +127,12 @@ export class MockRpcClient implements Provider {
 					address: addr,
 					balance: `0x${account.balance.toString(16)}`,
 					nonce: `0x${account.nonce.toString(16)}`,
-					codeHash: "0x" + "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-					storageHash: "0x" + "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+					codeHash:
+						"0x" +
+						"c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+					storageHash:
+						"0x" +
+						"56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 					storageProof: slots.map((slot) => {
 						const slotBig = BigInt(slot);
 						const value = account.storage.get(slotBig) || 0n;
@@ -181,11 +185,19 @@ export class MockRpcClient implements Provider {
 			size: "0x3e8",
 			nonce: "0x0000000000000000",
 			mixHash: "0x" + "0".repeat(64),
-			sha3Uncles: "0x" + "1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+			sha3Uncles:
+				"0x" +
+				"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
 			logsBloom: "0x" + "0".repeat(512),
-			transactionsRoot: "0x" + "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-			stateRoot: "0x" + "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-			receiptsRoot: "0x" + "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+			transactionsRoot:
+				"0x" +
+				"56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+			stateRoot:
+				"0x" +
+				"56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+			receiptsRoot:
+				"0x" +
+				"56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 			transactions: block.transactions,
 			uncles: [],
 		};

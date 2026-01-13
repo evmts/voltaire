@@ -220,7 +220,11 @@ function setNonceSync(
 	const sm = stateManager as any;
 	const addressHex = Address.toHex(address);
 
-	const result = sm.ffi.state_manager_set_nonce(sm.handle, encodeCString(addressHex) as unknown as string, nonce);
+	const result = sm.ffi.state_manager_set_nonce(
+		sm.handle,
+		encodeCString(addressHex) as unknown as string,
+		nonce,
+	);
 
 	if (result !== 0) {
 		throw new Error(`Failed to set nonce: error ${result}`);

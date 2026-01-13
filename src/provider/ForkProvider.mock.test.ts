@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { MockRpcClient } from "./test-utils/MockRpcClient.js";
 import { ForkProvider } from "./ForkProvider.js";
+import { recordMockData, serializeMockData } from "../state-manager/MockDataRecorder.js";
 
 describe("ForkProvider (Mock RPC)", () => {
 	let mockRpc: MockRpcClient;
@@ -40,8 +41,29 @@ describe("ForkProvider (Mock RPC)", () => {
 			]),
 		});
 
-		// NOTE: FFI initialization currently throws
-		// For MVP testing, we'll skip FFI and test handler logic only
+		// Record mock data and load into Zig
+		const recorded = recordMockData(mockRpc);
+		const serialized = serializeMockData(recorded);
+
+		// Skip header (16 bytes: num_accounts + num_blocks + fork_block_number)
+		const dataOnly = serialized.subarray(16);
+
+		// Load into native FFI
+		const { dlopen, FFIType, suffix } = require("bun:ffi");
+		const lib = dlopen(`zig-out/native/libprimitives_ts_native.${suffix}`, {
+			mock_data_load: {
+				args: [FFIType.u32, FFIType.u32, FFIType.u64, FFIType.ptr, FFIType.usize],
+				returns: FFIType.void,
+			},
+		});
+
+		lib.symbols.mock_data_load(
+			recorded.accounts.length,
+			recorded.blocks.length,
+			recorded.forkBlockNumber,
+			dataOnly,
+			dataOnly.length,
+		);
 	});
 
 	it("should initialize with fork configuration", () => {
@@ -105,11 +127,7 @@ describe("ForkProvider (Mock RPC)", () => {
 
 		const storage = await provider.request({
 			method: "eth_getStorageAt",
-			params: [
-				"0x1234567890123456789012345678901234567890",
-				"0x0",
-				"latest",
-			],
+			params: ["0x1234567890123456789012345678901234567890", "0x0", "latest"],
 		});
 
 		expect(storage).toBe(
