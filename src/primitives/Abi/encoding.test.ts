@@ -560,7 +560,14 @@ describe("Abi.encodeParameters - tuple with dynamic type offset calculation", ()
 			params,
 			// biome-ignore lint/suspicious/noExplicitAny: test flexibility
 			[
-				[1n, "0x0000000000000000000000000000000000000000", 0n, 0, 27234983749287394872n, 8738927498274982n],
+				[
+					1n,
+					"0x0000000000000000000000000000000000000000",
+					0n,
+					0,
+					27234983749287394872n,
+					8738927498274982n,
+				],
 				"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
 				"0xdeadbeef",
 			] as any,
