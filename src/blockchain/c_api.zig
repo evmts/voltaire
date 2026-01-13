@@ -236,9 +236,17 @@ export fn blockchain_get_head_block_number(
     handle: BlockchainHandle,
     out_number: *u64,
 ) callconv(.c) c_int {
-    _ = handle;
-    _ = out_number;
-    return BLOCKCHAIN_ERROR_NOT_IMPLEMENTED;
+    if (@intFromPtr(handle) == 0) {
+        return BLOCKCHAIN_ERROR_INVALID_INPUT;
+    }
+    if (@intFromPtr(out_number) == 0) {
+        return BLOCKCHAIN_ERROR_INVALID_INPUT;
+    }
+
+    const chain: *Blockchain = @ptrCast(@alignCast(handle));
+    const head = chain.getHead() orelse return BLOCKCHAIN_ERROR_BLOCK_NOT_FOUND;
+    out_number.* = head.number;
+    return BLOCKCHAIN_SUCCESS;
 }
 
 /// Orphan count
