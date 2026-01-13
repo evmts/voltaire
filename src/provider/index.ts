@@ -35,7 +35,8 @@
  *
  * - **HttpProvider** - HTTP transport with EventEmitter
  * - **WebSocketProvider** - WebSocket transport with native pub/sub
- * - **InMemoryProvider** - Local EVM execution (coming with EVM docs)
+ * - **InMemoryProvider** - Local EVM execution for testing
+ * - **ForkProvider** - Fork from upstream RPC with local state (StateManager + Blockchain FFI)
  *
  * @see https://voltaire.tevm.sh/provider for full documentation
  * @module provider
@@ -58,11 +59,14 @@ export {
 } from "./events/index.js";
 // Factory to create provider from a supplied Host/EVM
 export { fromEvm } from "./fromEvm.js";
-export type { HttpProviderOptions } from "./HttpProvider.js";
+export type { ForkConfig, ForkProviderOptions } from "./ForkProviderOptions.js";
 // Provider implementations
+export { ForkProvider } from "./ForkProvider.js";
+export type { HttpProviderOptions } from "./HttpProvider.js";
 export { HttpProvider } from "./HttpProvider.js";
 export type { InMemoryProviderOptions } from "./InMemoryProvider.js";
 export { InMemoryProvider } from "./InMemoryProvider.js";
+export { StateManagerHost } from "./StateManagerHost.js";
 // Core types and interfaces (legacy)
 export type { Provider } from "./Provider.js";
 // RPC Schema system
