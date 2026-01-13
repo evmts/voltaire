@@ -25,7 +25,9 @@ const ALCHEMY_RPC =
 	process.env.ALCHEMY_RPC ||
 	process.env.ETHEREUM_RPC_URL ||
 	process.env.TEVM_RPC_URLS_MAINNET ||
-	(process.env.TEVM_TEST_ALCHEMY_KEY ? `https://eth-mainnet.g.alchemy.com/v2/${process.env.TEVM_TEST_ALCHEMY_KEY}` : undefined);
+	(process.env.TEVM_TEST_ALCHEMY_KEY
+		? `https://eth-mainnet.g.alchemy.com/v2/${process.env.TEVM_TEST_ALCHEMY_KEY}`
+		: undefined);
 
 describe("Fork Read Integration", () => {
 	let provider: HttpProvider;
