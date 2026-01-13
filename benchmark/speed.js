@@ -1,4 +1,4 @@
-import { bench, group, run, summary } from "mitata";
+import { run, bench, group, summary } from "mitata";
 import { keccak256 as viemKeccak256 } from "viem";
 import {
 	loadKeccak256Wasm,

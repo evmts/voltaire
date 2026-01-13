@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { execSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
-import { gzipSync } from "node:zlib";
 import * as esbuild from "esbuild";
+import { existsSync, mkdirSync, statSync, readFileSync, cpSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 
 console.log("=".repeat(60));
 console.log("  KECCAK256 BENCHMARK: VIEM vs VOLTAIRE (treeshakable WASM)");
