@@ -44,7 +44,7 @@ describe("ForkProvider (Mock RPC)", () => {
 		// For MVP testing, we'll skip FFI and test handler logic only
 	});
 
-	it.skip("should initialize with fork configuration", () => {
+	it("should initialize with fork configuration", () => {
 		provider = new ForkProvider({
 			fork: {
 				forkUrl: "http://localhost:8545",
@@ -57,7 +57,7 @@ describe("ForkProvider (Mock RPC)", () => {
 		expect(provider).toBeDefined();
 	});
 
-	it.skip("Criterion 1: eth_getBalance works in fork mode", async () => {
+	it("Criterion 1: eth_getBalance works in fork mode", async () => {
 		provider = new ForkProvider({
 			fork: {
 				forkUrl: "http://localhost:8545",
@@ -75,7 +75,7 @@ describe("ForkProvider (Mock RPC)", () => {
 		expect(balance).toBe("0xde0b6b3a7640000"); // 1 ETH in hex
 	});
 
-	it.skip("Criterion 2: eth_getCode works in fork mode", async () => {
+	it("Criterion 2: eth_getCode works in fork mode", async () => {
 		provider = new ForkProvider({
 			fork: {
 				forkUrl: "http://localhost:8545",
@@ -93,7 +93,7 @@ describe("ForkProvider (Mock RPC)", () => {
 		expect(code).toBe("0x6080604052");
 	});
 
-	it.skip("Criterion 3: eth_getStorageAt works in fork mode", async () => {
+	it("Criterion 3: eth_getStorageAt works in fork mode", async () => {
 		provider = new ForkProvider({
 			fork: {
 				forkUrl: "http://localhost:8545",
@@ -117,7 +117,7 @@ describe("ForkProvider (Mock RPC)", () => {
 		); // 42 in hex
 	});
 
-	it.skip("Criterion 4: eth_blockNumber returns fork head", async () => {
+	it("Criterion 4: eth_blockNumber returns fork head", async () => {
 		provider = new ForkProvider({
 			fork: {
 				forkUrl: "http://localhost:8545",
@@ -135,7 +135,7 @@ describe("ForkProvider (Mock RPC)", () => {
 		expect(blockNumber).toBe("0x3e8"); // 1000 in hex
 	});
 
-	it.skip("Criterion 5: eth_getBlockByNumber fetches fork blocks", async () => {
+	it("Criterion 5: eth_getBlockByNumber fetches fork blocks", async () => {
 		provider = new ForkProvider({
 			fork: {
 				forkUrl: "http://localhost:8545",
