@@ -52,43 +52,6 @@ export interface Block {
  * BlockData struct matching c_api.zig extern struct
  * Used for FFI transfer (binary format)
  */
-interface BlockData {
-	// Header fields
-	blockHash: Uint8Array; // [32]u8
-	parentHash: Uint8Array; // [32]u8
-	ommersHash: Uint8Array; // [32]u8
-	beneficiary: Uint8Array; // [20]u8
-	stateRoot: Uint8Array; // [32]u8
-	transactionsRoot: Uint8Array; // [32]u8
-	receiptsRoot: Uint8Array; // [32]u8
-	logsBloom: Uint8Array; // [256]u8
-	difficulty: bigint; // u256
-	number: bigint; // u64
-	gasLimit: bigint; // u64
-	gasUsed: bigint; // u64
-	timestamp: bigint; // u64
-	extraDataPtr: Uint8Array;
-	extraDataLen: number;
-	mixHash: Uint8Array; // [32]u8
-	nonce: bigint; // u64
-	baseFeePerGas: bigint; // u64 (0 if null)
-	withdrawalsRoot: Uint8Array; // [32]u8 (zeros if null)
-	blobGasUsed: bigint; // u64 (0 if null)
-	excessBlobGas: bigint; // u64 (0 if null)
-	parentBeaconBlockRoot: Uint8Array; // [32]u8 (zeros if null)
-
-	// Body fields (RLP-encoded)
-	transactionsRlpPtr: Uint8Array;
-	transactionsRlpLen: number;
-	ommersRlpPtr: Uint8Array;
-	ommersRlpLen: number;
-	withdrawalsRlpPtr: Uint8Array;
-	withdrawalsRlpLen: number;
-
-	// Metadata
-	size: bigint; // u64
-	totalDifficulty: bigint; // u256 (0 if null)
-}
 
 /**
  * FFI library exports (loaded from native or WASM)
@@ -297,65 +260,20 @@ export class Blockchain {
 
 		const decoder = new TextDecoder();
 		for (let i = 0; i < 1000; i++) {
-			let methodBuf = new Uint8Array(64);
-			let paramsBuf = new Uint8Array(8192);
-			const methodLen = new BigUint64Array(1);
-			const paramsLen = new BigUint64Array(1);
-			const requestId = new BigUint64Array(1);
-
-			let result = this.ffi.fork_block_cache_next_request(
-				this.forkCacheHandle,
-				requestId,
-				methodBuf,
-				methodBuf.length,
-				methodLen,
-				paramsBuf,
-				paramsBuf.length,
-				paramsLen,
-			);
-
-			if (result === BLOCKCHAIN_ERROR_NO_PENDING_REQUEST) {
+			const request = this.readForkRequest(decoder);
+			if (!request) {
 				return;
 			}
 
-			if (result === BLOCKCHAIN_ERROR_OUTPUT_TOO_SMALL) {
-				const neededMethod = Number(methodLen[0]);
-				const neededParams = Number(paramsLen[0]);
-				if (neededMethod > methodBuf.length) {
-					methodBuf = new Uint8Array(neededMethod);
-				}
-				if (neededParams > paramsBuf.length) {
-					paramsBuf = new Uint8Array(neededParams);
-				}
-				result = this.ffi.fork_block_cache_next_request(
-					this.forkCacheHandle,
-					requestId,
-					methodBuf,
-					methodBuf.length,
-					methodLen,
-					paramsBuf,
-					paramsBuf.length,
-					paramsLen,
-				);
-			}
-
-			if (result !== BLOCKCHAIN_SUCCESS) {
-				throw new Error(`fork_block_cache_next_request failed: ${result}`);
-			}
-
-			const method = decoder.decode(
-				methodBuf.subarray(0, Number(methodLen[0])),
+			const response = await this.executeForkRequest(
+				request.method,
+				request.params,
 			);
-			const params = JSON.parse(
-				decoder.decode(paramsBuf.subarray(0, Number(paramsLen[0]))),
-			) as unknown[];
-
-			const response = await this.executeForkRequest(method, params);
 			const responseBytes = new TextEncoder().encode(JSON.stringify(response));
 
 			const continueResult = this.ffi.fork_block_cache_continue(
 				this.forkCacheHandle,
-				requestId[0] ?? 0n,
+				request.requestId,
 				responseBytes,
 				responseBytes.length,
 			);
@@ -366,6 +284,71 @@ export class Blockchain {
 		}
 
 		throw new Error("Exceeded fork block request processing limit");
+	}
+
+	private readForkRequest(
+		decoder: TextDecoder,
+	): { requestId: bigint; method: string; params: unknown[] } | null {
+		if (!this.forkCacheHandle) return null;
+
+		let methodBuf = new Uint8Array(64);
+		let paramsBuf = new Uint8Array(8192);
+		const methodLen = new BigUint64Array(1);
+		const paramsLen = new BigUint64Array(1);
+		const requestId = new BigUint64Array(1);
+
+		let result = this.ffi.fork_block_cache_next_request(
+			this.forkCacheHandle,
+			requestId,
+			methodBuf,
+			methodBuf.length,
+			methodLen,
+			paramsBuf,
+			paramsBuf.length,
+			paramsLen,
+		);
+
+		if (result === BLOCKCHAIN_ERROR_NO_PENDING_REQUEST) {
+			return null;
+		}
+
+		if (result === BLOCKCHAIN_ERROR_OUTPUT_TOO_SMALL) {
+			const neededMethod = Number(methodLen[0]);
+			const neededParams = Number(paramsLen[0]);
+			if (neededMethod > methodBuf.length) {
+				methodBuf = new Uint8Array(neededMethod);
+			}
+			if (neededParams > paramsBuf.length) {
+				paramsBuf = new Uint8Array(neededParams);
+			}
+			result = this.ffi.fork_block_cache_next_request(
+				this.forkCacheHandle,
+				requestId,
+				methodBuf,
+				methodBuf.length,
+				methodLen,
+				paramsBuf,
+				paramsBuf.length,
+				paramsLen,
+			);
+		}
+
+		if (result !== BLOCKCHAIN_SUCCESS) {
+			throw new Error(`fork_block_cache_next_request failed: ${result}`);
+		}
+
+		const method = decoder.decode(
+			methodBuf.subarray(0, Number(methodLen[0])),
+		);
+		const params = JSON.parse(
+			decoder.decode(paramsBuf.subarray(0, Number(paramsLen[0]))),
+		) as unknown[];
+
+		return {
+			requestId: requestId[0] ?? 0n,
+			method,
+			params,
+		};
 	}
 
 	private async executeForkRequest(

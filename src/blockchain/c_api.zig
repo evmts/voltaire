@@ -14,6 +14,9 @@ const Hash = primitives.Hash;
 const Hex = primitives.Hex;
 const Address = primitives.Address;
 
+// Provide a no-op entry to satisfy WASI libc linkage for reactor-style WASM builds.
+pub fn main() callconv(.c) void {}
+
 // ============================================================================
 // Error Codes
 // ============================================================================

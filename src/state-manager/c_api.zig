@@ -23,6 +23,9 @@ const StateManager = state_manager_mod.StateManager;
 const ForkBackend = state_manager_mod.ForkBackend;
 const RpcClient = state_manager_mod.RpcClient;
 
+// Provide a no-op entry to satisfy WASI libc linkage for reactor-style WASM builds.
+pub fn main() callconv(.c) void {}
+
 // ============================================================================
 // Error Codes
 // ============================================================================

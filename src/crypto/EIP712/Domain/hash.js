@@ -12,6 +12,121 @@ const DOMAIN_FIELD_TYPES = {
 	salt: { name: "salt", type: "bytes32" },
 };
 
+const DOMAIN_DOCS_PATH = "/crypto/eip712/domain#error-handling";
+
+const throwInvalidDomain = (message, context) => {
+	throw new Eip712InvalidDomainError(message, {
+		code: "EIP712_INVALID_DOMAIN",
+		context,
+		docsPath: DOMAIN_DOCS_PATH,
+	});
+};
+
+const isByteLike = (value) =>
+	value instanceof Uint8Array ||
+	typeof value === "string" ||
+	(typeof value === "object" && value !== null && "length" in value);
+
+const isChainIdType = (value) =>
+	typeof value === "bigint" ||
+	typeof value === "number" ||
+	value instanceof Uint8Array;
+
+const validateName = (value) => {
+	if (typeof value !== "string") {
+		throwInvalidDomain(
+			`Invalid domain field: 'name' must be a string, got ${typeof value}`,
+			{
+				field: "name",
+				value,
+				expectedType: "string",
+			},
+		);
+	}
+};
+
+const validateVersion = (value) => {
+	if (typeof value !== "string") {
+		throwInvalidDomain(
+			`Invalid domain field: 'version' must be a string, got ${typeof value}`,
+			{
+				field: "version",
+				value,
+				expectedType: "string",
+			},
+		);
+	}
+};
+
+const validateChainId = (value) => {
+	if (!isChainIdType(value)) {
+		throwInvalidDomain(
+			`Invalid domain field: 'chainId' must be a bigint, number, or Uint8Array, got ${typeof value}`,
+			{
+				field: "chainId",
+				value,
+				expectedType: "bigint | number | Uint8Array",
+			},
+		);
+	}
+};
+
+const validateVerifyingContract = (value) => {
+	if (!isByteLike(value)) {
+		throwInvalidDomain(
+			`Invalid domain field: 'verifyingContract' must be an address (Uint8Array or hex string), got ${typeof value}`,
+			{
+				field: "verifyingContract",
+				value,
+				expectedType: "address",
+			},
+		);
+	}
+	if (value instanceof Uint8Array && value.length !== 20) {
+		throwInvalidDomain(
+			`Invalid domain field: 'verifyingContract' must be 20 bytes, got ${value.length} bytes`,
+			{
+				field: "verifyingContract",
+				value,
+				expectedLength: 20,
+				actualLength: value.length,
+			},
+		);
+	}
+};
+
+const validateSalt = (value) => {
+	if (!isByteLike(value)) {
+		throwInvalidDomain(
+			`Invalid domain field: 'salt' must be bytes32 (Uint8Array or hex string), got ${typeof value}`,
+			{
+				field: "salt",
+				value,
+				expectedType: "bytes32",
+			},
+		);
+	}
+	if (value instanceof Uint8Array && value.length !== 32) {
+		throwInvalidDomain(
+			`Invalid domain field: 'salt' must be 32 bytes, got ${value.length} bytes`,
+			{
+				field: "salt",
+				value,
+				expectedLength: 32,
+				actualLength: value.length,
+			},
+		);
+	}
+};
+
+const DOMAIN_FIELD_VALIDATORS = {
+	name: validateName,
+	version: validateVersion,
+	chainId: validateChainId,
+	verifyingContract: validateVerifyingContract,
+	salt: validateSalt,
+};
+
 /**
  * Validate EIP712Domain field values.
  *
@@ -20,130 +135,15 @@ const DOMAIN_FIELD_TYPES = {
  * @throws {Eip712InvalidDomainError} If field value is invalid
  */
 function validateDomainField(field, value) {
-	switch (field) {
-		case "name":
-			if (typeof value !== "string") {
-				throw new Eip712InvalidDomainError(
-					`Invalid domain field: 'name' must be a string, got ${typeof value}`,
-					{
-						code: "EIP712_INVALID_DOMAIN",
-						context: { field: "name", value, expectedType: "string" },
-						docsPath: "/crypto/eip712/domain#error-handling",
-					},
-				);
-			}
-			break;
-		case "version":
-			if (typeof value !== "string") {
-				throw new Eip712InvalidDomainError(
-					`Invalid domain field: 'version' must be a string, got ${typeof value}`,
-					{
-						code: "EIP712_INVALID_DOMAIN",
-						context: { field: "version", value, expectedType: "string" },
-						docsPath: "/crypto/eip712/domain#error-handling",
-					},
-				);
-			}
-			break;
-		case "chainId":
-			if (
-				typeof value !== "bigint" &&
-				typeof value !== "number" &&
-				!(value instanceof Uint8Array)
-			) {
-				throw new Eip712InvalidDomainError(
-					`Invalid domain field: 'chainId' must be a bigint, number, or Uint8Array, got ${typeof value}`,
-					{
-						code: "EIP712_INVALID_DOMAIN",
-						context: {
-							field: "chainId",
-							value,
-							expectedType: "bigint | number | Uint8Array",
-						},
-						docsPath: "/crypto/eip712/domain#error-handling",
-					},
-				);
-			}
-			break;
-		case "verifyingContract":
-			if (
-				!(value instanceof Uint8Array) &&
-				typeof value !== "string" &&
-				!(typeof value === "object" && value !== null && "length" in value)
-			) {
-				throw new Eip712InvalidDomainError(
-					`Invalid domain field: 'verifyingContract' must be an address (Uint8Array or hex string), got ${typeof value}`,
-					{
-						code: "EIP712_INVALID_DOMAIN",
-						context: {
-							field: "verifyingContract",
-							value,
-							expectedType: "address",
-						},
-						docsPath: "/crypto/eip712/domain#error-handling",
-					},
-				);
-			}
-			// Check address length if Uint8Array
-			if (value instanceof Uint8Array && value.length !== 20) {
-				throw new Eip712InvalidDomainError(
-					`Invalid domain field: 'verifyingContract' must be 20 bytes, got ${value.length} bytes`,
-					{
-						code: "EIP712_INVALID_DOMAIN",
-						context: {
-							field: "verifyingContract",
-							value,
-							expectedLength: 20,
-							actualLength: value.length,
-						},
-						docsPath: "/crypto/eip712/domain#error-handling",
-					},
-				);
-			}
-			break;
-		case "salt":
-			if (
-				!(value instanceof Uint8Array) &&
-				typeof value !== "string" &&
-				!(typeof value === "object" && value !== null && "length" in value)
-			) {
-				throw new Eip712InvalidDomainError(
-					`Invalid domain field: 'salt' must be bytes32 (Uint8Array or hex string), got ${typeof value}`,
-					{
-						code: "EIP712_INVALID_DOMAIN",
-						context: { field: "salt", value, expectedType: "bytes32" },
-						docsPath: "/crypto/eip712/domain#error-handling",
-					},
-				);
-			}
-			// Check salt length if Uint8Array
-			if (value instanceof Uint8Array && value.length !== 32) {
-				throw new Eip712InvalidDomainError(
-					`Invalid domain field: 'salt' must be 32 bytes, got ${value.length} bytes`,
-					{
-						code: "EIP712_INVALID_DOMAIN",
-						context: {
-							field: "salt",
-							value,
-							expectedLength: 32,
-							actualLength: value.length,
-						},
-						docsPath: "/crypto/eip712/domain#error-handling",
-					},
-				);
-			}
-			break;
-		default:
-			throw new Eip712InvalidDomainError(`Unknown domain field: '${field}'`, {
-				code: "EIP712_INVALID_DOMAIN",
-				context: {
-					field,
-					value,
-					validFields: Object.keys(DOMAIN_FIELD_TYPES),
-				},
-				docsPath: "/crypto/eip712/domain#error-handling",
-			});
+	const validator = DOMAIN_FIELD_VALIDATORS[field];
+	if (!validator) {
+		throwInvalidDomain(`Unknown domain field: '${field}'`, {
+			field,
+			value,
+			validFields: Object.keys(DOMAIN_FIELD_TYPES),
+		});
 	}
+	validator(value);
 }
 
 /**

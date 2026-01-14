@@ -327,7 +327,7 @@ describe.skipIf(!hasNativeKzg)("KZG Validation - Edge Cases", () => {
 			const blob = KZG.generateRandomBlob();
 			const commitment = KZG.Commitment(blob);
 			const z = createFieldElement(0x11);
-			const { proof, y } = KZG.Proof(blob, z);
+			const { proof } = KZG.Proof(blob, z);
 
 			const wrongY = createFieldElement(0x22);
 			const isValid = KZG.verifyKzgProof(commitment, z, wrongY, proof);
