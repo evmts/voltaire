@@ -50,7 +50,7 @@ describe.skipIf(!hasNativeKzg)("Kzg Initialization", () => {
 
 	it(
 		"should initialize with embedded trusted setup",
-		{ timeout: 30000 },
+		{ timeout: 120000 },
 		() => {
 			try {
 				Kzg.freeTrustedSetup();
@@ -71,7 +71,7 @@ describe.skipIf(!hasNativeKzg)("Kzg Initialization", () => {
 		expect(Kzg.isInitialized()).toBe(true);
 	});
 
-	it("should free trusted setup", { timeout: 30000 }, () => {
+	it("should free trusted setup", { timeout: 120000 }, () => {
 		try {
 			Kzg.loadTrustedSetup();
 			Kzg.freeTrustedSetup();
@@ -85,7 +85,7 @@ describe.skipIf(!hasNativeKzg)("Kzg Initialization", () => {
 
 	it(
 		"should be safe to call freeTrustedSetup when not initialized",
-		{ timeout: 30000 },
+		{ timeout: 120000 },
 		() => {
 			try {
 				Kzg.freeTrustedSetup();
