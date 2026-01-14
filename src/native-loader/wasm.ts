@@ -42,7 +42,7 @@ type WasmStateManagerExports = {
 	) => number;
 	fork_backend_continue: (
 		handle: number,
-		requestId: number,
+		requestId: bigint,
 		responsePtr: number,
 		responseLen: number,
 	) => number;
@@ -132,7 +132,7 @@ type WasmBlockchainExports = {
 	) => number;
 	fork_block_cache_continue: (
 		handle: number,
-		requestId: number,
+		requestId: bigint,
 		responsePtr: number,
 		responseLen: number,
 	) => number;
@@ -143,22 +143,22 @@ type WasmBlockchainExports = {
 	) => number;
 	blockchain_get_block_by_number: (
 		handle: number,
-		blockNumber: number,
+		blockNumber: bigint,
 		outPtr: number,
 	) => number;
 	blockchain_get_canonical_hash: (
 		handle: number,
-		blockNumber: number,
+		blockNumber: bigint,
 		outPtr: number,
 	) => number;
 	blockchain_get_head_block_number: (handle: number, outPtr: number) => number;
-	blockchain_put_block: (handle: number, blockPtr: number, blockLen: number) => number;
+	blockchain_put_block: (handle: number, blockPtr: number) => number;
 	blockchain_set_canonical_head: (handle: number, hashPtr: number) => number;
 	blockchain_has_block: (handle: number, hashPtr: number) => number;
 	blockchain_local_block_count: (handle: number) => number;
 	blockchain_orphan_count: (handle: number) => number;
 	blockchain_canonical_chain_length: (handle: number) => number;
-	blockchain_is_fork_block: (handle: number, blockNumber: number) => number;
+	blockchain_is_fork_block: (handle: number, blockNumber: bigint) => number;
 };
 
 const DEFAULT_STATE_MANAGER_WASM = new URL(
@@ -786,7 +786,7 @@ function createBlockchainExports(module: WasmModule): BlockchainFFIExports {
 		blockchain_has_block: (handle: bigint, blockHashPtr: Uint8Array) => {
 			module.reset();
 			const hashPtr = module.writeBytes(blockHashPtr);
-			return exp.blockchain_has_block(Number(handle), hashPtr);
+			return exp.blockchain_has_block(Number(handle), hashPtr) !== 0;
 		},
 		blockchain_local_block_count: (handle: bigint) => {
 			module.reset();
@@ -802,7 +802,7 @@ function createBlockchainExports(module: WasmModule): BlockchainFFIExports {
 		},
 		blockchain_is_fork_block: (handle: bigint, number: bigint) => {
 			module.reset();
-			return exp.blockchain_is_fork_block(Number(handle), BigInt(number));
+			return exp.blockchain_is_fork_block(Number(handle), BigInt(number)) !== 0;
 		},
 	};
 }
