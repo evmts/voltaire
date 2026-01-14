@@ -8,8 +8,6 @@
  */
 
 import { Frame } from "../evm/Frame/index.js";
-import type { BrandedHost } from "../evm/Host/HostType.js";
-import { Host } from "../evm/Host/index.js";
 import type { AddressType } from "../primitives/Address/AddressType.js";
 import { Address } from "../primitives/Address/index.js";
 import * as Hex from "../primitives/Hex/index.js";
@@ -176,8 +174,6 @@ export class InMemoryProvider implements Provider {
 	private eventListeners: Map<ProviderEvent, Set<ProviderEventListener>> =
 		new Map();
 
-	private host: BrandedHost | null = null;
-
 	constructor(options: InMemoryProviderOptions = {}) {
 		this.chainId = options.chainId ?? 1;
 		this.miningMode = options.mining ?? "auto";
@@ -203,87 +199,10 @@ export class InMemoryProvider implements Provider {
 		// Create genesis block
 		this.createBlock();
 
-		// Setup host interface
-		this.host = this.createHost();
-
 		// Start interval mining if configured
 		if (this.miningMode === "interval") {
 			this.startIntervalMining();
 		}
-	}
-
-	/**
-	 * Create Host implementation backed by in-memory state
-	 */
-	private createHost(): BrandedHost {
-		return Host({
-			getBalance: (address: AddressType): bigint => {
-				const addr = this.addressToKey(address);
-				return this.accounts.get(addr)?.balance ?? 0n;
-			},
-
-			setBalance: (address: AddressType, balance: bigint): void => {
-				const addr = this.addressToKey(address);
-				const account = this.getOrCreateAccount(addr);
-				account.balance = balance;
-			},
-
-			getCode: (address: AddressType): Uint8Array => {
-				const addr = this.addressToKey(address);
-				return this.accounts.get(addr)?.code ?? new Uint8Array(0);
-			},
-
-			setCode: (address: AddressType, code: Uint8Array): void => {
-				const addr = this.addressToKey(address);
-				const account = this.getOrCreateAccount(addr);
-				account.code = code;
-			},
-
-			getStorage: (address: AddressType, slot: bigint): bigint => {
-				const addr = this.addressToKey(address);
-				const account = this.accounts.get(addr);
-				if (!account) return 0n;
-				return account.storage.get(slot.toString(16)) ?? 0n;
-			},
-
-			setStorage: (address: AddressType, slot: bigint, value: bigint): void => {
-				const addr = this.addressToKey(address);
-				const account = this.getOrCreateAccount(addr);
-				account.storage.set(slot.toString(16), value);
-			},
-
-			getNonce: (address: AddressType): bigint => {
-				const addr = this.addressToKey(address);
-				return this.accounts.get(addr)?.nonce ?? 0n;
-			},
-
-			setNonce: (address: AddressType, nonce: bigint): void => {
-				const addr = this.addressToKey(address);
-				const account = this.getOrCreateAccount(addr);
-				account.nonce = nonce;
-			},
-
-			getTransientStorage: (address: AddressType, slot: bigint): bigint => {
-				const addr = this.addressToKey(address);
-				const addrStorage = this.transientStorage.get(addr);
-				if (!addrStorage) return 0n;
-				return addrStorage.get(slot.toString(16)) ?? 0n;
-			},
-
-			setTransientStorage: (
-				address: AddressType,
-				slot: bigint,
-				value: bigint,
-			): void => {
-				const addr = this.addressToKey(address);
-				let addrStorage = this.transientStorage.get(addr);
-				if (!addrStorage) {
-					addrStorage = new Map();
-					this.transientStorage.set(addr, addrStorage);
-				}
-				addrStorage.set(slot.toString(16), value);
-			},
-		});
 	}
 
 	/**

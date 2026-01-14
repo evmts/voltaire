@@ -14,6 +14,72 @@ function countIndexedParams(event) {
 }
 
 /**
+ * @param {Uint8Array} topic0
+ * @param {Uint8Array} eventSelector
+ * @returns {boolean}
+ */
+function selectorMatches(topic0, eventSelector) {
+	for (let i = 0; i < 32; i++) {
+		if (topic0[i] !== eventSelector[i]) return false;
+	}
+	return true;
+}
+
+/**
+ * @param {import('./AbiType.js').Item[]} abiItems
+ * @param {Uint8Array} topic0
+ * @returns {import('./event/index.js').Event | null}
+ */
+function findNonAnonymousEvent(abiItems, topic0) {
+	for (const item of abiItems) {
+		if (item.type !== "event") continue;
+		const evt = /** @type {import('./event/index.js').Event} */ (item);
+		if (evt.anonymous) continue;
+		const eventSelector = Event.getSelector(evt);
+		if (selectorMatches(topic0, eventSelector)) {
+			return evt;
+		}
+	}
+	return null;
+}
+
+/**
+ * @param {import('./AbiType.js').Item[]} abiItems
+ * @param {number} indexedCount
+ * @returns {import('./event/index.js').Event | null}
+ */
+function findAnonymousEvent(abiItems, indexedCount) {
+	const matches = [];
+	for (const item of abiItems) {
+		if (item.type !== "event") continue;
+		const evt = /** @type {import('./event/index.js').Event} */ (item);
+		if (!evt.anonymous) continue;
+		if (countIndexedParams(evt) !== indexedCount) continue;
+		matches.push(evt);
+	}
+
+	if (matches.length === 1) {
+		return matches[0] ?? null;
+	}
+
+	if (matches.length > 1) {
+		throw new AbiItemNotFoundError(
+			`Multiple anonymous events match ${indexedCount} indexed parameters: ${matches.map((evt) => evt.name).join(", ")}`,
+			{
+				value: indexedCount,
+				expected: "unique anonymous event match",
+				context: {
+					matchingEvents: matches.map((evt) => evt.name),
+					topicsLength: indexedCount,
+				},
+			},
+		);
+	}
+
+	return null;
+}
+
+/**
  * Decode event log data using ABI
  * Looks up event by topic0 (event signature hash) for non-anonymous events,
  * or by indexed parameter count for anonymous events.
@@ -65,23 +131,8 @@ export function decodeLog(abi, log) {
 	if (topicBytes.length > 0) {
 		const topic0 = topicBytes[0];
 		if (topic0) {
-			// Find non-anonymous event by selector
-			const item = abiItems.find(
-				(/** @type {import('./AbiType.js').Item} */ item) => {
-					if (item.type !== "event") return false;
-					const evt = /** @type {import('./event/index.js').Event} */ (item);
-					if (evt.anonymous) return false;
-
-					const eventSelector = Event.getSelector(evt);
-					for (let i = 0; i < 32; i++) {
-						if (topic0[i] !== eventSelector[i]) return false;
-					}
-					return true;
-				},
-			);
-
-			if (item && item.type === "event") {
-				const evt = /** @type {import('./event/index.js').Event} */ (item);
+			const evt = findNonAnonymousEvent(abiItems, topic0);
+			if (evt) {
 				const params = Event.decodeLog(
 					evt,
 					dataBytes,
@@ -95,40 +146,14 @@ export function decodeLog(abi, log) {
 	// Try to find anonymous event by indexed parameter count
 	// For anonymous events, all topics are indexed parameters (no selector)
 	const indexedCount = topicBytes.length;
-	const anonymousEvents = abiItems.filter(
-		(/** @type {import('./AbiType.js').Item} */ item) => {
-			if (item.type !== "event") return false;
-			const evt = /** @type {import('./event/index.js').Event} */ (item);
-			return evt.anonymous && countIndexedParams(evt) === indexedCount;
-		},
-	);
-
-	if (anonymousEvents.length === 1) {
-		const evt = /** @type {import('./event/index.js').Event} */ (
-			anonymousEvents[0]
-		);
+	const anonymousEvent = findAnonymousEvent(abiItems, indexedCount);
+	if (anonymousEvent) {
 		const params = Event.decodeLog(
-			evt,
+			anonymousEvent,
 			dataBytes,
 			/** @type {any} */ (topicBytes),
 		);
-		return { event: evt.name, params };
-	}
-
-	if (anonymousEvents.length > 1) {
-		throw new AbiItemNotFoundError(
-			`Multiple anonymous events match ${indexedCount} indexed parameters: ${anonymousEvents.map((e) => /** @type {import('./event/index.js').Event} */ (e).name).join(", ")}`,
-			{
-				value: indexedCount,
-				expected: "unique anonymous event match",
-				context: {
-					matchingEvents: anonymousEvents.map(
-						(e) => /** @type {import('./event/index.js').Event} */ (e).name,
-					),
-					topicsLength: topicBytes.length,
-				},
-			},
-		);
+		return { event: anonymousEvent.name, params };
 	}
 
 	// No match found

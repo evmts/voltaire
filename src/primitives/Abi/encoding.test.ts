@@ -480,8 +480,10 @@ describe("Abi.encodeParameters - edge cases", () => {
 			{ type: "uint256" },
 		];
 		const values = [0n, 0n, 0n, 0n, 0n, 0n];
-		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-		const encoded = Abi.encodeParameters(types, values as any);
+		const encoded = Abi.encodeParameters(
+			types,
+			values as unknown as readonly unknown[],
+		);
 		expect(encoded.length).toBe(192);
 		expect(encoded.every((b) => b === 0)).toBe(true);
 	});
@@ -503,8 +505,7 @@ describe("Abi.encodeParameters - edge cases", () => {
 				18446744073709551615n,
 				340282366920938463463374607431768211455n,
 				115792089237316195423570985008687907853269984665640564039457584007913129639935n,
-				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-			] as any,
+			] as unknown as readonly unknown[],
 		);
 		expect(encoded.length).toBe(192);
 	});
@@ -522,8 +523,7 @@ describe("Abi.encodeParameters - edge cases", () => {
 				127n,
 				-57896044618658097711785492504343953926634992332820282019728792003956564819968n, // min int256
 				57896044618658097711785492504343953926634992332820282019728792003956564819967n, // max int256
-				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-			] as any,
+			] as unknown as readonly unknown[],
 		);
 		expect(encoded.length).toBe(128);
 	});
@@ -558,7 +558,6 @@ describe("Abi.encodeParameters - tuple with dynamic type offset calculation", ()
 
 		const encoded = Abi.encodeParameters(
 			params,
-			// biome-ignore lint/suspicious/noExplicitAny: test flexibility
 			[
 				[
 					1n,
@@ -570,7 +569,7 @@ describe("Abi.encodeParameters - tuple with dynamic type offset calculation", ()
 				],
 				"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
 				"0xdeadbeef",
-			] as any,
+			] as unknown as readonly unknown[],
 		);
 
 		// The offset for bytes should be at position 224 (after tuple 192 + address 32)
@@ -611,7 +610,6 @@ describe("Abi.encodeParameters - tuple with dynamic type offset calculation", ()
 
 		const encoded = Abi.encodeParameters(
 			params,
-			// biome-ignore lint/suspicious/noExplicitAny: test flexibility
 			[
 				[
 					["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", 69420n, true],
@@ -619,7 +617,7 @@ describe("Abi.encodeParameters - tuple with dynamic type offset calculation", ()
 					69,
 				],
 				"wagmi",
-			] as any,
+			] as unknown as readonly unknown[],
 		);
 
 		// The offset for string should be at position 160 (after outer tuple)
