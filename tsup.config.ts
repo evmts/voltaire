@@ -1,6 +1,6 @@
 import { createTsUpOptions } from "@tevm/tsupconfig";
 
-export default createTsUpOptions({
+const baseConfig = createTsUpOptions({
 	target: "js",
 	entry: [
 		"src/index.ts",
@@ -106,3 +106,15 @@ export default createTsUpOptions({
 		"src/crypto/X25519/index.ts",
 	],
 });
+
+// Mark native FFI modules as external to prevent bundling in WASM/browser contexts
+const config = Array.isArray(baseConfig) ? baseConfig : [baseConfig];
+export default config.map((c) => ({
+	...c,
+	external: [
+		...(c.external || []),
+		"ffi-napi",
+		"ref-napi",
+		"ref-struct-di",
+	],
+}));

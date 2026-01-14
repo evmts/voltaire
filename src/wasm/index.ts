@@ -256,7 +256,11 @@ export const ModExp = ModExpJS;
 
 // Additional crypto namespaces present in JS/native
 // Note: HDWallet uses native FFI modules - import from @tevm/voltaire/native instead
-export { AesGcm, ChaCha20Poly1305, Bip39, Keystore } from "../crypto/index.js";
+// Import specific modules to avoid pulling in HDWallet via crypto/index.js
+export { AesGcm } from "../crypto/AesGcm/AesGcm.js";
+export { ChaCha20Poly1305 } from "../crypto/ChaCha20Poly1305/ChaCha20Poly1305.js";
+export { Bip39 } from "../crypto/Bip39/index.js";
+export * as Keystore from "../crypto/Keystore/index.js";
 
 // ============================================================================
 // Type assertion: ensure WASM exports match JS API
