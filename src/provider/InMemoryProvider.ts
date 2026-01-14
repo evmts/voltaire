@@ -206,13 +206,6 @@ export class InMemoryProvider implements Provider {
 	}
 
 	/**
-	 * Convert address to lowercase hex key
-	 */
-	private addressToKey(address: AddressType | Uint8Array): string {
-		return Hex.fromBytes(address as Uint8Array).toLowerCase();
-	}
-
-	/**
 	 * Get or create account state
 	 */
 	private getOrCreateAccount(addr: string): AccountState {

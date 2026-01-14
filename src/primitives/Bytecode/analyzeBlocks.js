@@ -31,6 +31,7 @@ export function analyzeBlocks(bytecode, options = {}) {
 		includeUnreachable = true,
 		validate = false,
 	} = options;
+	void validate;
 
 	if (bytecode.length === 0) {
 		return [];

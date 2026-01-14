@@ -2,6 +2,24 @@ import { describe, expect, it } from "vitest";
 import { hash } from "../../crypto/Keccak256/hash.js";
 import { IsValidChecksum } from "./isValidChecksum.js";
 
+const checksumEncoder = new TextEncoder();
+
+function toChecksummed(address: string): string {
+	const lowerAddr = address.toLowerCase();
+	const hashInput = lowerAddr.startsWith("0x") ? lowerAddr.slice(2) : lowerAddr;
+	const hashResult = hash(checksumEncoder.encode(hashInput));
+
+	let checksummed = "0x";
+	for (let i = 0; i < hashInput.length; i++) {
+		const char = hashInput[i];
+		const hashByte = hashResult[i >> 1] ?? 0;
+		const nibble = i % 2 === 0 ? hashByte >> 4 : hashByte & 0x0f;
+		checksummed += nibble >= 8 ? char.toUpperCase() : char;
+	}
+
+	return checksummed;
+}
+
 describe("isValidChecksum", () => {
 	describe("valid checksummed addresses", () => {
 		it("validates EIP-55 test vector 1 (normal)", () => {
@@ -281,23 +299,7 @@ describe("isValidChecksum", () => {
 			];
 
 			for (const addr of testAddresses) {
-				// Generate checksum from raw lowercase
-				const lowerAddr = addr.toLowerCase();
-				const encoder = new TextEncoder();
-				const hashInput = lowerAddr.slice(2);
-				const hashResult = hash(encoder.encode(hashInput));
-
-				let checksummed = "0x";
-				for (let i = 0; i < 40; i++) {
-					const char = hashInput[i];
-					if (char === undefined) break;
-					const hashByte = hashResult[Math.floor(i / 2)];
-					if (hashByte === undefined) break;
-					const nibble = i % 2 === 0 ? hashByte >> 4 : hashByte & 0x0f;
-					checksummed += nibble >= 8 ? char.toUpperCase() : char;
-				}
-
-				expect(isValidChecksum(checksummed)).toBe(true);
+				expect(isValidChecksum(toChecksummed(addr))).toBe(true);
 			}
 		});
 	});

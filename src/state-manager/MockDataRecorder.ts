@@ -8,7 +8,11 @@
  * 4. Zig mock vtable reads from buffers instead of making real RPC calls
  */
 
-import type { MockRpcClient } from "../provider/test-utils/MockRpcClient.js";
+import type {
+	MockAccountState,
+	MockBlock,
+	MockRpcClient,
+} from "../provider/test-utils/MockRpcClient.js";
 
 export interface RecordedAccount {
 	address: string;
@@ -40,8 +44,14 @@ export interface RecordedData {
  * Extract all mock data from MockRpcClient
  */
 export function recordMockData(mockRpc: MockRpcClient): RecordedData {
+	type MockRpcClientInternal = {
+		accounts: Map<string, MockAccountState>;
+		blocksByNumber: Map<bigint, MockBlock>;
+		currentBlockNumber: bigint;
+	};
+
 	// Access private fields via type assertion
-	const rpc = mockRpc as any;
+	const rpc = mockRpc as unknown as MockRpcClientInternal;
 
 	const accounts: RecordedAccount[] = [];
 	for (const [address, state] of rpc.accounts.entries()) {

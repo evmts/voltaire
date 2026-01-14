@@ -1,5 +1,5 @@
 import { AbiItemNotFoundError } from "./Errors.js";
-import * as Function from "./function/index.js";
+import * as AbiFunction from "./function/index.js";
 
 /**
  * Decode function return values (branded ABI method)
@@ -34,5 +34,5 @@ export function decode(functionName, data) {
 		);
 	}
 
-	return Function.decodeResult(item, data);
+	return AbiFunction.decodeResult(item, data);
 }

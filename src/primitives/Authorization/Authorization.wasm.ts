@@ -25,6 +25,40 @@ function bytesToBigInt(bytes: Uint8Array): bigint {
 	return result;
 }
 
+function mapAuthorizationError(
+	auth: AuthorizationType,
+	message: string,
+): Error | null {
+	const lower = message.toLowerCase();
+
+	if (lower.includes("chain")) {
+		return new InvalidChainIdError(auth.chainId);
+	}
+	if (lower.includes("address")) {
+		return new InvalidAddressError(auth.address);
+	}
+	if (lower.includes("yparity") || lower.includes("parity")) {
+		return new InvalidYParityError(auth.yParity);
+	}
+	if (lower.includes("malleable")) {
+		const sBigInt = bytesToBigInt(auth.s);
+		return new MalleableSignatureError(sBigInt, 0n);
+	}
+	if (lower.includes("signature")) {
+		const rBigInt = bytesToBigInt(auth.r);
+		const sBigInt = bytesToBigInt(auth.s);
+		if (rBigInt === 0n) {
+			return new InvalidSignatureComponentError("r", rBigInt);
+		}
+		if (sBigInt === 0n) {
+			return new InvalidSignatureComponentError("s", sBigInt);
+		}
+		return new InvalidSignatureRangeError(rBigInt, 0n);
+	}
+
+	return null;
+}
+
 /**
  * Validate authorization structure using WASM
  *
@@ -47,33 +81,11 @@ export function validateWasm(auth: AuthorizationType): void {
 			s: bytesToBigInt(auth.s),
 		});
 	} catch (e) {
-		// Convert WASM error to typed error
 		const msg = e instanceof Error ? e.message : String(e);
-		if (msg.includes("chain") || msg.includes("Chain")) {
-			throw new InvalidChainIdError(auth.chainId);
+		const mapped = mapAuthorizationError(auth, msg);
+		if (mapped) {
+			throw mapped;
 		}
-		if (msg.includes("address") || msg.includes("Address")) {
-			throw new InvalidAddressError(auth.address);
-		}
-		if (msg.includes("yParity") || msg.includes("parity")) {
-			throw new InvalidYParityError(auth.yParity);
-		}
-		if (msg.includes("malleable") || msg.includes("Malleable")) {
-			const sBigInt = bytesToBigInt(auth.s);
-			throw new MalleableSignatureError(sBigInt, 0n);
-		}
-		if (msg.includes("signature") || msg.includes("Signature")) {
-			const rBigInt = bytesToBigInt(auth.r);
-			const sBigInt = bytesToBigInt(auth.s);
-			if (rBigInt === 0n) {
-				throw new InvalidSignatureComponentError("r", rBigInt);
-			}
-			if (sBigInt === 0n) {
-				throw new InvalidSignatureComponentError("s", sBigInt);
-			}
-			throw new InvalidSignatureRangeError(rBigInt, 0n);
-		}
-		// Re-throw unknown errors
 		throw e;
 	}
 }

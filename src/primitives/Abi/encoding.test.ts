@@ -556,21 +556,18 @@ describe("Abi.encodeParameters - tuple with dynamic type offset calculation", ()
 			{ name: "data", type: "bytes" as const },
 		] as const;
 
-		const encoded = Abi.encodeParameters(
-			params,
+		const encoded = Abi.encodeParameters(params, [
 			[
-				[
-					1n,
-					"0x0000000000000000000000000000000000000000",
-					0n,
-					0,
-					27234983749287394872n,
-					8738927498274982n,
-				],
-				"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
-				"0xdeadbeef",
-			] as unknown as readonly unknown[],
-		);
+				1n,
+				"0x0000000000000000000000000000000000000000",
+				0n,
+				0,
+				27234983749287394872n,
+				8738927498274982n,
+			],
+			"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+			"0xdeadbeef",
+		] as unknown as readonly unknown[]);
 
 		// The offset for bytes should be at position 224 (after tuple 192 + address 32)
 		// It should be 0x100 (256) = total static section size
@@ -608,17 +605,14 @@ describe("Abi.encodeParameters - tuple with dynamic type offset calculation", ()
 			{ name: "bob", type: "string" as const },
 		] as const;
 
-		const encoded = Abi.encodeParameters(
-			params,
+		const encoded = Abi.encodeParameters(params, [
 			[
-				[
-					["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", 69420n, true],
-					"0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-					69,
-				],
-				"wagmi",
-			] as unknown as readonly unknown[],
-		);
+				["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", 69420n, true],
+				"0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+				69,
+			],
+			"wagmi",
+		] as unknown as readonly unknown[]);
 
 		// The offset for string should be at position 160 (after outer tuple)
 		// It should be 0xc0 (192) = total static section size

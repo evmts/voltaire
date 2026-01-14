@@ -8,6 +8,7 @@
 import { describe, expect, it } from "vitest";
 import * as Hex from "../Hex/index.js";
 import * as Abi from "./index.js";
+import type { ParametersToPrimitiveTypes } from "./Parameter.js";
 
 describe("Issue #104: ABI offset handling for dynamic types", () => {
 	// Test 1: Multiple bytes parameters
@@ -86,9 +87,9 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 			"0x0000000000000000000000000000000000000001",
 			"test string",
 			true,
-		];
+		] satisfies ParametersToPrimitiveTypes<typeof params>;
 
-		const encoded = Abi.encodeParameters(params, values as any);
+		const encoded = Abi.encodeParameters(params, values);
 		const decoded = Abi.decodeParameters(params, encoded);
 
 		expect(decoded[0]).toBe(42n);
@@ -128,8 +129,9 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 			},
 		] as const;
 		const value = ["0x1234", "hello", 42n];
+		const values = [value] satisfies ParametersToPrimitiveTypes<typeof params>;
 
-		const encoded = Abi.encodeParameters(params, [value] as any);
+		const encoded = Abi.encodeParameters(params, values);
 		const decoded = Abi.decodeParameters(params, encoded);
 
 		const tuple = decoded[0] as unknown[];
@@ -141,9 +143,11 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 	// Test 7: Dynamic arrays with dynamic elements
 	it("decodes dynamic array of bytes", () => {
 		const params = [{ type: "bytes[]" }] as const;
-		const values = [["0x1234", "0x5678", "0xabcd"]];
+		const values = [
+			["0x1234", "0x5678", "0xabcd"],
+		] satisfies ParametersToPrimitiveTypes<typeof params>;
 
-		const encoded = Abi.encodeParameters(params, values as any);
+		const encoded = Abi.encodeParameters(params, values);
 		const decoded = Abi.decodeParameters(params, encoded);
 
 		const arr = decoded[0] as Uint8Array[];
@@ -156,9 +160,11 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 	// Test 8: Dynamic array of strings
 	it("decodes dynamic array of strings", () => {
 		const params = [{ type: "string[]" }] as const;
-		const values = [["hello", "world", "foo"]];
+		const values = [
+			["hello", "world", "foo"],
+		] satisfies ParametersToPrimitiveTypes<typeof params>;
 
-		const encoded = Abi.encodeParameters(params, values as any);
+		const encoded = Abi.encodeParameters(params, values);
 		const decoded = Abi.decodeParameters(params, encoded);
 
 		const arr = decoded[0] as string[];
@@ -175,9 +181,13 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 			{ type: "string" },
 			{ type: "bytes[]" },
 		] as const;
-		const values = [[1n, 2n, 3n], "separator", ["0x11", "0x22"]];
+		const values = [
+			[1n, 2n, 3n],
+			"separator",
+			["0x11", "0x22"],
+		] satisfies ParametersToPrimitiveTypes<typeof params>;
 
-		const encoded = Abi.encodeParameters(params, values as any);
+		const encoded = Abi.encodeParameters(params, values);
 		const decoded = Abi.decodeParameters(params, encoded);
 
 		expect(decoded[0]).toEqual([1n, 2n, 3n]);
@@ -227,7 +237,8 @@ describe("Issue #104: ABI offset handling for dynamic types", () => {
 			["nested string", 999n],
 		];
 
-		const encoded = Abi.encodeParameters(params, [value] as any);
+		const values = [value] satisfies ParametersToPrimitiveTypes<typeof params>;
+		const encoded = Abi.encodeParameters(params, values);
 		const decoded = Abi.decodeParameters(params, encoded);
 
 		const tuple = decoded[0] as unknown[];

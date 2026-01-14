@@ -190,6 +190,20 @@ export interface StateManagerOptions {
 	ffi: StateManagerFFIExports;
 }
 
+type ForkRequestBuffers = {
+	method: Uint8Array;
+	params: Uint8Array;
+	methodLen: BigUint64Array;
+	paramsLen: BigUint64Array;
+	requestId: BigUint64Array;
+};
+
+type ForkRequest = {
+	requestId: bigint;
+	method: string;
+	params: unknown[];
+};
+
 /**
  * StateManager TypeScript wrapper
  *
@@ -289,66 +303,22 @@ export class StateManager {
 		if (!this.forkBackendHandle) return;
 
 		const decoder = new TextDecoder();
+		const encoder = new TextEncoder();
+		const buffers = this.createForkRequestBuffers();
+
 		for (let i = 0; i < 1000; i++) {
-			let methodBuf = new Uint8Array(64);
-			let paramsBuf = new Uint8Array(4096);
-			const methodLen = new BigUint64Array(1);
-			const paramsLen = new BigUint64Array(1);
-			const requestId = new BigUint64Array(1);
+			const request = this.readForkRequest(decoder, buffers);
+			if (!request) return;
 
-			let result = this.ffi.fork_backend_next_request(
-				this.forkBackendHandle,
-				requestId,
-				methodBuf,
-				methodBuf.length,
-				methodLen,
-				paramsBuf,
-				paramsBuf.length,
-				paramsLen,
+			const response = await this.executeForkRequest(
+				request.method,
+				request.params,
 			);
-
-			if (result === STATE_MANAGER_ERROR_NO_PENDING_REQUEST) {
-				return;
-			}
-
-			if (result === STATE_MANAGER_ERROR_OUTPUT_TOO_SMALL) {
-				const neededMethod = Number(methodLen[0]);
-				const neededParams = Number(paramsLen[0]);
-				if (neededMethod > methodBuf.length) {
-					methodBuf = new Uint8Array(neededMethod);
-				}
-				if (neededParams > paramsBuf.length) {
-					paramsBuf = new Uint8Array(neededParams);
-				}
-				result = this.ffi.fork_backend_next_request(
-					this.forkBackendHandle,
-					requestId,
-					methodBuf,
-					methodBuf.length,
-					methodLen,
-					paramsBuf,
-					paramsBuf.length,
-					paramsLen,
-				);
-			}
-
-			if (result !== STATE_MANAGER_SUCCESS) {
-				throw new Error(`fork_backend_next_request failed: ${result}`);
-			}
-
-			const method = decoder.decode(
-				methodBuf.subarray(0, Number(methodLen[0])),
-			);
-			const params = JSON.parse(
-				decoder.decode(paramsBuf.subarray(0, Number(paramsLen[0]))),
-			) as unknown[];
-
-			const response = await this.executeForkRequest(method, params);
-			const responseBytes = new TextEncoder().encode(JSON.stringify(response));
+			const responseBytes = encoder.encode(JSON.stringify(response));
 
 			const continueResult = this.ffi.fork_backend_continue(
 				this.forkBackendHandle,
-				requestId[0] ?? 0n,
+				request.requestId,
 				responseBytes,
 				responseBytes.length,
 			);
@@ -359,6 +329,76 @@ export class StateManager {
 		}
 
 		throw new Error("Exceeded fork request processing limit");
+	}
+
+	private createForkRequestBuffers(): ForkRequestBuffers {
+		return {
+			method: new Uint8Array(64),
+			params: new Uint8Array(4096),
+			methodLen: new BigUint64Array(1),
+			paramsLen: new BigUint64Array(1),
+			requestId: new BigUint64Array(1),
+		};
+	}
+
+	private readForkRequest(
+		decoder: TextDecoder,
+		buffers: ForkRequestBuffers,
+	): ForkRequest | null {
+		if (!this.forkBackendHandle) return null;
+
+		let result = this.ffi.fork_backend_next_request(
+			this.forkBackendHandle,
+			buffers.requestId,
+			buffers.method,
+			buffers.method.length,
+			buffers.methodLen,
+			buffers.params,
+			buffers.params.length,
+			buffers.paramsLen,
+		);
+
+		if (result === STATE_MANAGER_ERROR_NO_PENDING_REQUEST) {
+			return null;
+		}
+
+		if (result === STATE_MANAGER_ERROR_OUTPUT_TOO_SMALL) {
+			const neededMethod = Number(buffers.methodLen[0]);
+			const neededParams = Number(buffers.paramsLen[0]);
+			if (neededMethod > buffers.method.length) {
+				buffers.method = new Uint8Array(neededMethod);
+			}
+			if (neededParams > buffers.params.length) {
+				buffers.params = new Uint8Array(neededParams);
+			}
+			result = this.ffi.fork_backend_next_request(
+				this.forkBackendHandle,
+				buffers.requestId,
+				buffers.method,
+				buffers.method.length,
+				buffers.methodLen,
+				buffers.params,
+				buffers.params.length,
+				buffers.paramsLen,
+			);
+		}
+
+		if (result !== STATE_MANAGER_SUCCESS) {
+			throw new Error(`fork_backend_next_request failed: ${result}`);
+		}
+
+		const method = decoder.decode(
+			buffers.method.subarray(0, Number(buffers.methodLen[0])),
+		);
+		const params = JSON.parse(
+			decoder.decode(buffers.params.subarray(0, Number(buffers.paramsLen[0]))),
+		) as unknown[];
+
+		return {
+			requestId: buffers.requestId[0] ?? 0n,
+			method,
+			params,
+		};
 	}
 
 	private async executeForkRequest(
@@ -374,11 +414,7 @@ export class StateManager {
 		}
 
 		if (method === "eth_getProof") {
-			const [addressHex, slots, blockTag] = params as [
-				string,
-				Hex[],
-				string,
-			];
+			const [addressHex, slots, blockTag] = params as [string, Hex[], string];
 			const proof = await this.rpcClient.getProof(
 				Address.Address(addressHex) as AddressType,
 				slots,
@@ -525,9 +561,7 @@ export class StateManager {
 
 			if (result === STATE_MANAGER_SUCCESS) {
 				const nullIndex = buffer.indexOf(0);
-				return new TextDecoder().decode(
-					buffer.subarray(0, nullIndex),
-				) as Hex;
+				return new TextDecoder().decode(buffer.subarray(0, nullIndex)) as Hex;
 			}
 
 			if (result === STATE_MANAGER_ERROR_RPC_PENDING) {

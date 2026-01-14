@@ -1,6 +1,6 @@
 import * as Hex from "../Hex/index.js";
 import { AbiInvalidSelectorError, AbiItemNotFoundError } from "./Errors.js";
-import * as Function from "./function/index.js";
+import * as AbiFunction from "./function/index.js";
 
 /**
  * Decode function call data using ABI
@@ -46,7 +46,7 @@ export function decodeFunction(abi, data) {
 	).find((/** @type {import('./AbiType.js').Item} */ item) => {
 		if (item.type !== "function") return false;
 		const fn = /** @type {import('./function/index.js').FunctionType} */ (item);
-		const itemSelector = Function.getSelector(fn);
+		const itemSelector = AbiFunction.getSelector(fn);
 		// Compare bytes
 		for (let i = 0; i < 4; i++) {
 			if (selector[i] !== itemSelector[i]) return false;
@@ -67,7 +67,7 @@ export function decodeFunction(abi, data) {
 
 	// Type assertion after guard
 	const fn = /** @type {import('./function/index.js').FunctionType} */ (item);
-	const params = Function.decodeParams(fn, bytes);
+	const params = AbiFunction.decodeParams(fn, bytes);
 
 	return {
 		name: fn.name,

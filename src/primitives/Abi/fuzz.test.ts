@@ -285,7 +285,7 @@ describe("ABI Fuzz Tests", () => {
 				},
 			];
 
-			for (const { params, values, description } of testCases) {
+			for (const { params, values } of testCases) {
 				try {
 					Abi.encodeParameters(params, values);
 					// Some type mismatches might be coerced successfully

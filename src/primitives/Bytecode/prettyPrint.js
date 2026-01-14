@@ -46,6 +46,8 @@ export function prettyPrint(bytecode, options = {}) {
 		maxWidth = 80,
 		compact = false,
 	} = options;
+	void showJumpArrows;
+	void showFusions;
 
 	const c = colors ? getColors() : noColors();
 	const lines = [];

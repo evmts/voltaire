@@ -9,7 +9,12 @@
 
 import type { BlockchainFFIExports } from "../blockchain/Blockchain/index.js";
 import { Blockchain } from "../blockchain/Blockchain/index.js";
-import { isBun, isNode, loadForkWasm, loadNative } from "../native-loader/index.js";
+import {
+	isBun,
+	isNode,
+	loadForkWasm,
+	loadNative,
+} from "../native-loader/index.js";
 import type { AddressType } from "../primitives/Address/AddressType.js";
 import { Address } from "../primitives/Address/index.js";
 import type { Hex } from "../primitives/Hex/HexType.js";
@@ -130,8 +135,7 @@ export class ForkProvider implements Provider {
 			stateManagerFFI = this._ffiOptions.ffi.stateManager;
 			blockchainFFI = this._ffiOptions.ffi.blockchain;
 		} else {
-			const useWasm =
-				this._ffiOptions.useWasm ?? (!isBun() && !isNode());
+			const useWasm = this._ffiOptions.useWasm ?? (!isBun() && !isNode());
 
 			if (useWasm) {
 				const wasm = await loadForkWasm(this._ffiOptions.wasm);

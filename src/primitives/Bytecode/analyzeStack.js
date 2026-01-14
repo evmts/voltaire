@@ -21,6 +21,7 @@ export function analyzeStack(bytecode, options = {}) {
 		maxPaths = 100,
 		failFast = false,
 	} = options;
+	void maxPaths;
 
 	/** @type {import('./BytecodeType.js').StackIssue[]} */
 	const issues = [];

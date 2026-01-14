@@ -61,7 +61,7 @@ describe("BrandedError", () => {
 		} as const;
 
 		type Test =
-			typeof error extends ErrorType<infer N, infer I>
+			typeof error extends ErrorType<infer N, infer _I>
 				? N extends "Unauthorized"
 					? true
 					: false

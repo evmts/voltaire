@@ -81,10 +81,6 @@ const from: (value: string | Uint8Array) => BrandedBytecode = _from;
 const fromHex: (hex: string) => BrandedBytecode = _fromHex;
 const getBlock: (code: BrandedBytecode, pc: number) => BasicBlock | undefined =
 	_getBlock;
-const getNextPc: (
-	code: BrandedBytecode,
-	currentPc: number,
-) => number | undefined = _getNextPc;
 const getPushSize: (opcode: number) => number = _getPushSize;
 const hasMetadata: (code: BrandedBytecode) => boolean = _hasMetadata;
 const isPush: (opcode: number) => boolean = _isPush;

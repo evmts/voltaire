@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { decode } from "./decode.js";
 import { AbiItemNotFoundError } from "./Errors.js";
-import * as Function from "./function/index.js";
+import * as AbiFunction from "./function/index.js";
 
 describe("decode", () => {
 	/** @type {import('./Item/ItemType.js').ItemType[]} */
@@ -35,21 +35,21 @@ describe("decode", () => {
 	describe("single return value", () => {
 		it("decodes uint256 return value", () => {
 			const func = /** @type {*} */ (testAbi[0]);
-			const returnData = Function.encodeResult(func, [1000n]);
+			const returnData = AbiFunction.encodeResult(func, [1000n]);
 			const decoded = decode.call(testAbi, "balanceOf", returnData);
 			expect(decoded).toEqual([1000n]);
 		});
 
 		it("decodes bool return value", () => {
 			const func = /** @type {*} */ (testAbi[1]);
-			const returnData = Function.encodeResult(func, [true]);
+			const returnData = AbiFunction.encodeResult(func, [true]);
 			const decoded = decode.call(testAbi, "transfer", returnData);
 			expect(decoded).toEqual([true]);
 		});
 
 		it("decodes zero value", () => {
 			const func = /** @type {*} */ (testAbi[0]);
-			const returnData = Function.encodeResult(func, [0n]);
+			const returnData = AbiFunction.encodeResult(func, [0n]);
 			const decoded = decode.call(testAbi, "balanceOf", returnData);
 			expect(decoded).toEqual([0n]);
 		});
@@ -58,14 +58,14 @@ describe("decode", () => {
 	describe("multiple return values", () => {
 		it("decodes multiple types", () => {
 			const func = /** @type {*} */ (testAbi[2]);
-			const returnData = Function.encodeResult(func, [42n, "test", true]);
+			const returnData = AbiFunction.encodeResult(func, [42n, "test", true]);
 			const decoded = decode.call(testAbi, "getData", returnData);
 			expect(decoded).toEqual([42n, "test", true]);
 		});
 
 		it("decodes with empty string", () => {
 			const func = /** @type {*} */ (testAbi[2]);
-			const returnData = Function.encodeResult(func, [0n, "", false]);
+			const returnData = AbiFunction.encodeResult(func, [0n, "", false]);
 			const decoded = decode.call(testAbi, "getData", returnData);
 			expect(decoded).toEqual([0n, "", false]);
 		});
@@ -84,7 +84,7 @@ describe("decode", () => {
 				},
 			];
 			const func = /** @type {*} */ (abi[0]);
-			const returnData = Function.encodeResult(func, []);
+			const returnData = AbiFunction.encodeResult(func, []);
 			const decoded = decode.call(abi, "doSomething", returnData);
 			expect(decoded).toEqual([]);
 		});
@@ -123,14 +123,14 @@ describe("decode", () => {
 			const func = /** @type {*} */ (testAbi[0]);
 			const maxUint256 =
 				0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
-			const returnData = Function.encodeResult(func, [maxUint256]);
+			const returnData = AbiFunction.encodeResult(func, [maxUint256]);
 			const decoded = decode.call(testAbi, "balanceOf", returnData);
 			expect(decoded).toEqual([maxUint256]);
 		});
 
 		it("decodes zero uint256", () => {
 			const func = /** @type {*} */ (testAbi[0]);
-			const returnData = Function.encodeResult(func, [0n]);
+			const returnData = AbiFunction.encodeResult(func, [0n]);
 			const decoded = decode.call(testAbi, "balanceOf", returnData);
 			expect(decoded).toEqual([0n]);
 		});
@@ -149,7 +149,7 @@ describe("decode", () => {
 				},
 			];
 			const func = /** @type {*} */ (abi[0]);
-			const returnData = Function.encodeResult(func, [[1n, 2n, 3n]]);
+			const returnData = AbiFunction.encodeResult(func, [[1n, 2n, 3n]]);
 			const decoded = decode.call(abi, "getArray", returnData);
 			expect(decoded).toEqual([[1n, 2n, 3n]]);
 		});
@@ -167,7 +167,7 @@ describe("decode", () => {
 			];
 			const func = /** @type {*} */ (abi[0]);
 			const addr = "0x742d35cc6634c0532925a3b844bc9e7595f251e3";
-			const returnData = Function.encodeResult(func, [addr]);
+			const returnData = AbiFunction.encodeResult(func, [addr]);
 			const decoded = decode.call(abi, "getAddress", returnData);
 			expect(decoded).toEqual([addr]);
 		});
@@ -185,7 +185,7 @@ describe("decode", () => {
 			];
 			const func = /** @type {*} */ (abi[0]);
 			const bytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
-			const returnData = Function.encodeResult(func, [bytes]);
+			const returnData = AbiFunction.encodeResult(func, [bytes]);
 			const decoded = decode.call(abi, "getBytes", returnData);
 			expect(decoded[0]).toEqual(bytes);
 		});
@@ -204,7 +204,7 @@ describe("decode", () => {
 				},
 			];
 			const func = /** @type {*} */ (abi[0]);
-			const returnData = Function.encodeResult(func, [true]);
+			const returnData = AbiFunction.encodeResult(func, [true]);
 			const decoded = decode.call(abi, "test", returnData);
 			expect(decoded).toEqual([true]);
 		});
@@ -230,7 +230,7 @@ describe("decode", () => {
 				},
 			];
 			const func = /** @type {*} */ (abi[0]);
-			const returnData = Function.encodeResult(func, [true]);
+			const returnData = AbiFunction.encodeResult(func, [true]);
 			const decoded = decode.call(abi, "process", returnData);
 			expect(decoded).toEqual([true]);
 		});

@@ -24,6 +24,8 @@ export function analyzeGas(bytecode, options = {}) {
 		includeDynamic = false,
 		context,
 	} = options;
+	void includeDynamic;
+	void context;
 
 	// Parse instructions
 	const instructions = parseInstructions(bytecode);

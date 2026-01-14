@@ -181,9 +181,7 @@ async function loadWasmBytes(
 	}
 
 	const path =
-		wasmPath instanceof URL
-			? wasmPath
-			: new URL(wasmPath, import.meta.url);
+		wasmPath instanceof URL ? wasmPath : new URL(wasmPath, import.meta.url);
 
 	if (path.protocol === "file:") {
 		try {
@@ -202,9 +200,7 @@ async function loadWasmBytes(
 	return await response.arrayBuffer();
 }
 
-function createWasmModule(
-	instance: WebAssembly.Instance,
-): WasmModule {
+function createWasmModule(instance: WebAssembly.Instance): WasmModule {
 	const exports = instance.exports as Record<string, unknown>;
 	const memory = exports.memory as WebAssembly.Memory;
 	let offset = 0x10000;
@@ -285,7 +281,12 @@ async function instantiateWasm(
 			mem.setUint32(bufSizePtr, 0, true);
 			return 0;
 		},
-		fd_write: (_fd: number, iovs: number, iovsLen: number, nwritten: number) => {
+		fd_write: (
+			_fd: number,
+			iovs: number,
+			iovsLen: number,
+			nwritten: number,
+		) => {
 			if (!wasmMemory) return -1;
 			const memU32 = new Uint32Array(wasmMemory.buffer);
 			let bytes = 0;
@@ -344,7 +345,9 @@ async function instantiateWasm(
 function createStateManagerExports(module: WasmModule): StateManagerFFIExports {
 	const exp = module.exports as unknown as WasmStateManagerExports;
 	const writeCStringArg = (value: string | Uint8Array) =>
-		value instanceof Uint8Array ? module.writeBytes(value) : module.writeCString(value);
+		value instanceof Uint8Array
+			? module.writeBytes(value)
+			: module.writeCString(value);
 
 	return {
 		state_manager_create: () => {
@@ -422,10 +425,14 @@ function createStateManagerExports(module: WasmModule): StateManagerFFIExports {
 			outRequestId[0] = requestId;
 
 			if (methodLen > 0) {
-				outMethod.set(module.readBytes(methodPtr, methodLen).subarray(0, methodBufLen));
+				outMethod.set(
+					module.readBytes(methodPtr, methodLen).subarray(0, methodBufLen),
+				);
 			}
 			if (paramsLen > 0) {
-				outParams.set(module.readBytes(paramsPtr, paramsLen).subarray(0, paramsBufLen));
+				outParams.set(
+					module.readBytes(paramsPtr, paramsLen).subarray(0, paramsBufLen),
+				);
 			}
 
 			return result;
@@ -496,7 +503,11 @@ function createStateManagerExports(module: WasmModule): StateManagerFFIExports {
 		) => {
 			module.reset();
 			const addrPtr = writeCStringArg(addressHex);
-			return exp.state_manager_set_nonce(Number(handle), addrPtr, BigInt(nonce));
+			return exp.state_manager_set_nonce(
+				Number(handle),
+				addrPtr,
+				BigInt(nonce),
+			);
 		},
 		state_manager_get_storage_sync: (
 			handle: bigint,
@@ -607,7 +618,10 @@ function createStateManagerExports(module: WasmModule): StateManagerFFIExports {
 		},
 		state_manager_revert_to_snapshot: (handle: bigint, snapshotId: bigint) => {
 			module.reset();
-			return exp.state_manager_revert_to_snapshot(Number(handle), BigInt(snapshotId));
+			return exp.state_manager_revert_to_snapshot(
+				Number(handle),
+				BigInt(snapshotId),
+			);
 		},
 		state_manager_clear_caches: (handle: bigint) => {
 			module.reset();
@@ -694,10 +708,14 @@ function createBlockchainExports(module: WasmModule): BlockchainFFIExports {
 			outRequestId[0] = requestId;
 
 			if (methodLen > 0) {
-				outMethod.set(module.readBytes(methodPtr, methodLen).subarray(0, methodBufLen));
+				outMethod.set(
+					module.readBytes(methodPtr, methodLen).subarray(0, methodBufLen),
+				);
 			}
 			if (paramsLen > 0) {
-				outParams.set(module.readBytes(paramsPtr, paramsLen).subarray(0, paramsBufLen));
+				outParams.set(
+					module.readBytes(paramsPtr, paramsLen).subarray(0, paramsBufLen),
+				);
 			}
 
 			return result;
@@ -769,7 +787,10 @@ function createBlockchainExports(module: WasmModule): BlockchainFFIExports {
 		) => {
 			module.reset();
 			const outPtr = module.alloc(8);
-			const result = exp.blockchain_get_head_block_number(Number(handle), outPtr);
+			const result = exp.blockchain_get_head_block_number(
+				Number(handle),
+				outPtr,
+			);
 			outNumber[0] = module.readU64(outPtr);
 			return result;
 		},
@@ -778,7 +799,10 @@ function createBlockchainExports(module: WasmModule): BlockchainFFIExports {
 			const dataPtr = module.writeBytes(blockData);
 			return exp.blockchain_put_block(Number(handle), dataPtr);
 		},
-		blockchain_set_canonical_head: (handle: bigint, blockHashPtr: Uint8Array) => {
+		blockchain_set_canonical_head: (
+			handle: bigint,
+			blockHashPtr: Uint8Array,
+		) => {
 			module.reset();
 			const hashPtr = module.writeBytes(blockHashPtr);
 			return exp.blockchain_set_canonical_head(Number(handle), hashPtr);

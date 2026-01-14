@@ -337,9 +337,7 @@ export class Blockchain {
 			throw new Error(`fork_block_cache_next_request failed: ${result}`);
 		}
 
-		const method = decoder.decode(
-			methodBuf.subarray(0, Number(methodLen[0])),
-		);
+		const method = decoder.decode(methodBuf.subarray(0, Number(methodLen[0])));
 		const params = JSON.parse(
 			decoder.decode(paramsBuf.subarray(0, Number(paramsLen[0]))),
 		) as unknown[];
@@ -367,7 +365,7 @@ export class Blockchain {
 			const [blockTag, fullTx] = params as [string, boolean];
 			const number =
 				blockTag === "latest" || blockTag === "pending"
-					? this.forkBlockNumber ?? 0n
+					? (this.forkBlockNumber ?? 0n)
 					: BigInt(blockTag);
 			const result = await this.rpcClient.getBlockByNumber(number);
 			if (fullTx) return result;
@@ -659,7 +657,9 @@ export class Blockchain {
 			mixHash: obj.mixHash as Hex,
 			nonce: BigInt(obj.nonce),
 			baseFeePerGas: obj.baseFeePerGas ? BigInt(obj.baseFeePerGas) : undefined,
-			withdrawalsRoot: obj.withdrawalsRoot ? (obj.withdrawalsRoot as Hex) : undefined,
+			withdrawalsRoot: obj.withdrawalsRoot
+				? (obj.withdrawalsRoot as Hex)
+				: undefined,
 			blobGasUsed: obj.blobGasUsed ? BigInt(obj.blobGasUsed) : undefined,
 			excessBlobGas: obj.excessBlobGas ? BigInt(obj.excessBlobGas) : undefined,
 			parentBeaconBlockRoot: obj.parentBeaconBlockRoot
