@@ -7,7 +7,7 @@ import type { BlockchainFFIExports } from "../blockchain/Blockchain/index.js";
 import type { StateManagerFFIExports } from "../state-manager/StateManager/index.js";
 
 type WasmModule = {
-	exports: WebAssembly.Exports;
+	exports: Record<string, unknown>;
 	memory: WebAssembly.Memory;
 	reset: () => void;
 	alloc: (size: number) => number;
@@ -62,7 +62,7 @@ async function loadWasmBytes(
 function createWasmModule(
 	instance: WebAssembly.Instance,
 ): WasmModule {
-	const exports = instance.exports as WebAssembly.Exports;
+	const exports = instance.exports as Record<string, unknown>;
 	const memory = exports.memory as WebAssembly.Memory;
 	let offset = 0x10000;
 
