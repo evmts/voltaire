@@ -4,14 +4,18 @@ const crypto = @import("crypto");
 const builtin = @import("builtin");
 
 // Import state-manager and blockchain modules to include their exports
-const state_manager_c_api = @import("state-manager/c_api.zig");
-const blockchain_c_api = @import("blockchain/c_api.zig");
+// Note: These are only available for native builds, not WASM (they require FFI features not supported in WASM)
+const state_manager_c_api = if (builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64) void else @import("state-manager/c_api.zig");
+const blockchain_c_api = if (builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64) void else @import("blockchain/c_api.zig");
 
 // Force the compiler to include these modules' exports by referencing them
 comptime {
-    // This ensures the exports from these modules are included in the final library
-    _ = state_manager_c_api;
-    _ = blockchain_c_api;
+    // This ensures the exports from these modules are included in the final library (native only)
+    const exclude_native_modules = builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64;
+    if (!exclude_native_modules) {
+        _ = state_manager_c_api;
+        _ = blockchain_c_api;
+    }
 }
 
 // Error codes for C API
