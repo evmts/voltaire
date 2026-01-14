@@ -38,6 +38,7 @@ const baseConfig = createTsUpOptions({
 		"src/primitives/Blob/index.ts",
 		"src/primitives/BloomFilter/index.ts",
 		"src/primitives/Bytecode/index.ts",
+		"src/primitives/Bytes/index.ts",
 		"src/primitives/Chain/index.js",
 		"src/primitives/Denomination/index.js",
 		"src/primitives/Ens/index.ts",

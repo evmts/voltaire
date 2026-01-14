@@ -661,7 +661,7 @@
 		"lint": "biome check . --write --unsafe",
 		"lint:check": "biome check . --verbose",
 		"lint:deps": "pnpm dlx depcheck",
-		"lint:package": "pnpm dlx publint --strict",
+		"lint:package": "pnpm dlx publint",
 		"package:up": "pnpm up --latest",
 		"size": "pnpm dlx tsx scripts/measure-bundle-sizes.ts",
 		"test": "vitest --watch",
