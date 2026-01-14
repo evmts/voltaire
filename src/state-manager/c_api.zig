@@ -1,20 +1,18 @@
 //! State Manager C API
 //!
-//! FFI exports for StateManager operations with async RPC callback support.
+//! FFI exports for StateManager operations with async request/continue support.
 //! Provides create/destroy, state access, checkpoint, and snapshot operations.
 //!
 //! ## Memory Model
 //! - Zig allocates StateManager instances (opaque pointers to TypeScript)
 //! - TypeScript owns string buffers (passed as [*:0]const u8)
-//! - RPC callbacks: TypeScript → Zig vtable → TypeScript callback
-//! - Request IDs: TypeScript UUID strings for async continuation
+//! - Async RPC is driven by fork_backend_next_request / fork_backend_continue
 //!
 //! ## Async Pattern
-//! 1. TS calls state_manager_get_balance(manager, request_id, address, callback)
-//! 2. Zig stores callback + request_id
-//! 3. Zig calls RPC client vtable (injected from TS)
-//! 4. RPC completes → Zig invokes callback(request_id, result, error)
-//! 5. TS resolves/rejects pending promise by request_id
+//! 1. TS calls a sync getter (balance/code/storage); Zig returns RPC_PENDING on cache miss
+//! 2. TS calls fork_backend_next_request() to get method + params + request_id
+//! 3. TS performs RPC, then calls fork_backend_continue(request_id, response_bytes)
+//! 4. TS retries the original getter, now served from cache
 
 const std = @import("std");
 const primitives = @import("primitives");
@@ -35,6 +33,10 @@ pub const STATE_MANAGER_ERROR_OUT_OF_MEMORY: c_int = -2;
 pub const STATE_MANAGER_ERROR_INVALID_SNAPSHOT: c_int = -3;
 pub const STATE_MANAGER_ERROR_RPC_FAILED: c_int = -4;
 pub const STATE_MANAGER_ERROR_INVALID_HEX: c_int = -5;
+pub const STATE_MANAGER_ERROR_RPC_PENDING: c_int = -6;
+pub const STATE_MANAGER_ERROR_NO_PENDING_REQUEST: c_int = -7;
+pub const STATE_MANAGER_ERROR_OUTPUT_TOO_SMALL: c_int = -8;
+pub const STATE_MANAGER_ERROR_INVALID_REQUEST: c_int = -9;
 
 // ============================================================================
 // Opaque Handle Types
@@ -102,36 +104,23 @@ export fn state_manager_create() callconv(.c) ?StateManagerHandle {
 export fn state_manager_create_with_fork(
     fork_backend: ForkBackendHandle,
 ) callconv(.c) ?StateManagerHandle {
-    std.debug.print("DEBUG: state_manager_create_with_fork called\n", .{});
-    std.debug.print("DEBUG: fork_backend={*}\n", .{fork_backend});
 
     if (@intFromPtr(fork_backend) == 0) {
-        std.debug.print("ERROR: state_manager_create_with_fork: fork_backend is null\n", .{});
         return null;
     }
 
-    std.debug.print("DEBUG: getting allocator...\n", .{});
     const allocator = getAllocator();
-    std.debug.print("DEBUG: allocator obtained\n", .{});
 
-    std.debug.print("DEBUG: allocating StateManager...\n", .{});
     const manager = allocator.create(StateManager) catch {
-        std.debug.print("ERROR: allocator.create(StateManager) failed\n", .{});
         return null;
     };
-    std.debug.print("DEBUG: manager allocated at {*}\n", .{manager});
 
-    std.debug.print("DEBUG: casting fork_backend to *ForkBackend...\n", .{});
     const fork: *ForkBackend = @ptrCast(@alignCast(fork_backend));
-    std.debug.print("DEBUG: fork cast successful at {*}\n", .{fork});
 
-    std.debug.print("DEBUG: calling StateManager.init...\n", .{});
-    manager.* = StateManager.init(allocator, fork) catch |err| {
-        std.debug.print("ERROR: StateManager.init failed: {}\n", .{err});
+    manager.* = StateManager.init(allocator, fork) catch {
         allocator.destroy(manager);
         return null;
     };
-    std.debug.print("DEBUG: StateManager created successfully, handle={*}\n", .{manager});
 
     return @ptrCast(manager);
 }
@@ -139,7 +128,6 @@ export fn state_manager_create_with_fork(
 /// Destroy StateManager and free resources
 export fn state_manager_destroy(handle: StateManagerHandle) callconv(.c) void {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_destroy: handle is null\n", .{});
         return;
     }
     const allocator = getAllocator();
@@ -152,9 +140,8 @@ export fn state_manager_destroy(handle: StateManagerHandle) callconv(.c) void {
 // ForkBackend Lifecycle
 // ============================================================================
 
-/// Create ForkBackend with RPC client vtable
-/// rpc_client_ptr: Opaque pointer to TypeScript RPC client wrapper
-/// rpc_vtable: Pointer to RPC vtable functions
+/// Create ForkBackend (async request/continue)
+/// rpc_client_ptr/rpc_vtable are ignored (kept for ABI compatibility)
 /// block_tag: "latest", "0x123...", etc.
 /// max_cache_size: LRU cache limit
 /// Recorded mock data (set via mock_data_load FFI)
@@ -185,11 +172,6 @@ export fn mock_data_load(
         .data_len = data_len,
     };
     recorded_mock_data = data;
-    std.debug.print("DEBUG: Loaded mock data: {} accounts, {} blocks, fork at block {}\n", .{
-        num_accounts,
-        num_blocks,
-        fork_block_number,
-    });
 }
 
 /// Clear recorded mock data
@@ -205,15 +187,7 @@ fn mockGetProof(ptr: *anyopaque, address: Address.Address, slots: []const u256, 
     _ = ptr;
     _ = block_tag;
 
-    std.debug.print("DEBUG: mockGetProof called for address bytes[0..4]={{ {}, {}, {}, {} }}\n", .{
-        address.bytes[0],
-        address.bytes[1],
-        address.bytes[2],
-        address.bytes[3],
-    });
-
     if (recorded_mock_data) |data| {
-        std.debug.print("DEBUG: recorded_mock_data exists, num_accounts={}\n", .{data.num_accounts});
         // Parse recorded data to find matching account
         var offset: usize = 0;
         const buffer = data.data_ptr[0..data.data_len];
@@ -222,18 +196,10 @@ fn mockGetProof(ptr: *anyopaque, address: Address.Address, slots: []const u256, 
         while (i < data.num_accounts) : (i += 1) {
             // Read address (20 bytes)
             const addr_bytes = buffer[offset .. offset + 20];
-            std.debug.print("DEBUG: Account {}: addr_bytes[0..4]={{ {}, {}, {}, {} }}\n", .{
-                i,
-                addr_bytes[0],
-                addr_bytes[1],
-                addr_bytes[2],
-                addr_bytes[3],
-            });
             offset += 20;
 
             // Check if matches requested address
             const matches = std.mem.eql(u8, &address.bytes, addr_bytes);
-            std.debug.print("DEBUG: matches={}\n", .{matches});
 
             // Read balance (32 bytes, big-endian u256)
             const balance_bytes = buffer[offset .. offset + 32];
@@ -384,75 +350,38 @@ fn mockGetCode(ptr: *anyopaque, address: Address.Address, block_tag: []const u8)
     return &.{};
 }
 
-const mock_vtable = RpcClient.VTable{
-    .getProof = mockGetProof,
-    .getCode = mockGetCode,
-};
-
 export fn fork_backend_create(
     rpc_client_ptr: *anyopaque,
     rpc_vtable: *const RpcClient.VTable,
     block_tag: [*:0]const u8,
     max_cache_size: usize,
 ) callconv(.c) ?ForkBackendHandle {
-    std.debug.print("DEBUG: fork_backend_create called\n", .{});
-    std.debug.print("DEBUG: rpc_client_ptr={*} rpc_vtable={*} max_cache_size={}\n", .{ rpc_client_ptr, rpc_vtable, max_cache_size });
+    _ = rpc_client_ptr;
+    _ = rpc_vtable;
 
-    const rpc_ptr_int = @intFromPtr(rpc_client_ptr);
-    const vtable_ptr_int = @intFromPtr(rpc_vtable);
-    std.debug.print("DEBUG: rpc_ptr_int={} (type={s}) vtable_ptr_int={} (type={s})\n", .{
-        rpc_ptr_int,
-        @typeName(@TypeOf(rpc_ptr_int)),
-        vtable_ptr_int,
-        @typeName(@TypeOf(vtable_ptr_int)),
-    });
-
-    // MVP: Allow null pointers, will use mock vtable
+    // MVP: Allow null pointers for async request/continue path
     // if (rpc_ptr_int == 0) {
-    //     std.debug.print("ERROR: fork_backend_create: rpc_client_ptr is null\n", .{});
     //     return null;
     // }
     if (@intFromPtr(block_tag) == 0) {
-        std.debug.print("ERROR: fork_backend_create: block_tag is null\n", .{});
         return null;
     }
 
-    std.debug.print("DEBUG: getting allocator...\n", .{});
     const allocator = getAllocator();
-    std.debug.print("DEBUG: allocator obtained\n", .{});
-
-    std.debug.print("DEBUG: allocating ForkBackend...\n", .{});
     const backend = allocator.create(ForkBackend) catch {
-        std.debug.print("ERROR: allocator.create(ForkBackend) failed\n", .{});
         return null;
     };
-    std.debug.print("DEBUG: backend allocated at {*}\n", .{backend});
 
     const block_tag_slice = std.mem.span(block_tag);
-    std.debug.print("DEBUG: block_tag={s}\n", .{block_tag_slice});
 
-    // MVP: Always use mock vtable (TypeScript vtable not implemented yet)
-    const vtable_to_use = &mock_vtable;
-    std.debug.print("DEBUG: Using mock vtable at {*}\n", .{vtable_to_use});
-
-    const rpc_client = RpcClient{
-        .ptr = rpc_client_ptr,
-        .vtable = vtable_to_use,
-    };
-    std.debug.print("DEBUG: rpc_client initialized\n", .{});
-
-    std.debug.print("DEBUG: calling ForkBackend.init...\n", .{});
     backend.* = ForkBackend.init(
         allocator,
-        rpc_client,
         block_tag_slice,
         .{ .max_size = max_cache_size },
-    ) catch |err| {
-        std.debug.print("ERROR: ForkBackend.init failed: {}\n", .{err});
+    ) catch {
         allocator.destroy(backend);
         return null;
     };
-    std.debug.print("DEBUG: ForkBackend created successfully\n", .{});
 
     return @ptrCast(backend);
 }
@@ -460,7 +389,6 @@ export fn fork_backend_create(
 /// Destroy ForkBackend
 export fn fork_backend_destroy(handle: ForkBackendHandle) callconv(.c) void {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: fork_backend_destroy: handle is null\n", .{});
         return;
     }
     const allocator = getAllocator();
@@ -472,11 +400,74 @@ export fn fork_backend_destroy(handle: ForkBackendHandle) callconv(.c) void {
 /// Clear fork backend caches
 export fn fork_backend_clear_cache(handle: ForkBackendHandle) callconv(.c) void {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: fork_backend_clear_cache: handle is null\n", .{});
         return;
     }
     const backend: *ForkBackend = @ptrCast(@alignCast(handle));
     backend.clearCaches();
+}
+
+/// Get next pending fork backend RPC request (method + params)
+/// Returns STATE_MANAGER_SUCCESS when a request is available.
+export fn fork_backend_next_request(
+    handle: ForkBackendHandle,
+    out_request_id: *u64,
+    out_method: [*]u8,
+    method_buf_len: usize,
+    out_method_len: *usize,
+    out_params: [*]u8,
+    params_buf_len: usize,
+    out_params_len: *usize,
+) callconv(.c) c_int {
+    if (@intFromPtr(handle) == 0) return STATE_MANAGER_ERROR_INVALID_INPUT;
+    if (@intFromPtr(out_request_id) == 0) return STATE_MANAGER_ERROR_INVALID_INPUT;
+    if (@intFromPtr(out_method) == 0) return STATE_MANAGER_ERROR_INVALID_INPUT;
+    if (@intFromPtr(out_method_len) == 0) return STATE_MANAGER_ERROR_INVALID_INPUT;
+    if (@intFromPtr(out_params) == 0) return STATE_MANAGER_ERROR_INVALID_INPUT;
+    if (@intFromPtr(out_params_len) == 0) return STATE_MANAGER_ERROR_INVALID_INPUT;
+
+    const backend: *ForkBackend = @ptrCast(@alignCast(handle));
+    const request = backend.peekNextRequest() orelse return STATE_MANAGER_ERROR_NO_PENDING_REQUEST;
+
+    const method = switch (request.kind) {
+        .account_proof, .storage_proof => "eth_getProof",
+        .code => "eth_getCode",
+    };
+
+    out_method_len.* = method.len;
+    out_params_len.* = request.params_json.len;
+
+    if (method_buf_len < method.len) return STATE_MANAGER_ERROR_OUTPUT_TOO_SMALL;
+    if (params_buf_len < request.params_json.len) return STATE_MANAGER_ERROR_OUTPUT_TOO_SMALL;
+
+    _ = backend.nextRequest(); // dequeue now that buffers are sufficient
+
+    @memcpy(out_method[0..method.len], method);
+    @memcpy(out_params[0..request.params_json.len], request.params_json);
+    out_request_id.* = request.id;
+
+    return STATE_MANAGER_SUCCESS;
+}
+
+/// Continue an async fork backend request with JSON response bytes.
+export fn fork_backend_continue(
+    handle: ForkBackendHandle,
+    request_id: u64,
+    response_ptr: [*]const u8,
+    response_len: usize,
+) callconv(.c) c_int {
+    if (@intFromPtr(handle) == 0) return STATE_MANAGER_ERROR_INVALID_INPUT;
+    if (@intFromPtr(response_ptr) == 0) return STATE_MANAGER_ERROR_INVALID_INPUT;
+
+    const backend: *ForkBackend = @ptrCast(@alignCast(handle));
+    const response = response_ptr[0..response_len];
+    backend.continueRequest(request_id, response) catch |err| {
+        return switch (err) {
+            error.InvalidRequest => STATE_MANAGER_ERROR_INVALID_REQUEST,
+            else => STATE_MANAGER_ERROR_RPC_FAILED,
+        };
+    };
+
+    return STATE_MANAGER_SUCCESS;
 }
 
 // ============================================================================
@@ -491,59 +482,43 @@ export fn state_manager_get_balance_sync(
     out_buffer: [*]u8,
     buffer_len: usize,
 ) callconv(.c) c_int {
-    std.debug.print("DEBUG: get_balance_sync called\n", .{});
-    std.debug.print("DEBUG: handle={*} buffer_len={}\n", .{ handle, buffer_len });
 
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_get_balance_sync: handle is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(address_hex) == 0) {
-        std.debug.print("ERROR: state_manager_get_balance_sync: address_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(out_buffer) == 0) {
-        std.debug.print("ERROR: state_manager_get_balance_sync: out_buffer is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (buffer_len < 67) {
-        std.debug.print("ERROR: state_manager_get_balance_sync: buffer_len ({d}) < 67\n", .{buffer_len});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
 
-    std.debug.print("DEBUG: casting handle to StateManager...\n", .{});
     const manager: *StateManager = @ptrCast(@alignCast(handle));
-    std.debug.print("DEBUG: manager cast successful at {*}\n", .{manager});
 
     const allocator = getAllocator();
 
     // Parse address
     const addr_slice = std.mem.span(address_hex);
-    std.debug.print("DEBUG: address_hex={s}\n", .{addr_slice});
 
-    std.debug.print("DEBUG: parsing address from hex...\n", .{});
-    const addr = Address.fromHex(addr_slice) catch |err| {
-        std.debug.print("ERROR: Address.fromHex failed: {}\n", .{err});
+    const addr = Address.fromHex(addr_slice) catch {
         return STATE_MANAGER_ERROR_INVALID_HEX;
     };
-    std.debug.print("DEBUG: address parsed successfully\n", .{});
 
     // Get balance
-    std.debug.print("DEBUG: calling manager.getBalance...\n", .{});
     const balance = manager.getBalance(addr) catch |err| {
-        std.debug.print("ERROR: manager.getBalance failed: {}\n", .{err});
+        if (err == error.RpcPending) return STATE_MANAGER_ERROR_RPC_PENDING;
         return STATE_MANAGER_ERROR_RPC_FAILED;
     };
-    std.debug.print("DEBUG: balance retrieved: {}\n", .{balance});
 
     // Convert to hex
     var hex_buffer: [66]u8 = undefined; // "0x" + 64 hex digits
     const hex_str = std.fmt.bufPrint(&hex_buffer, "0x{x:0>64}", .{balance}) catch unreachable;
-    std.debug.print("DEBUG: hex_str={s}\n", .{hex_str});
 
     @memcpy(out_buffer[0..hex_str.len], hex_str);
     out_buffer[hex_str.len] = 0; // Null terminator
-    std.debug.print("DEBUG: get_balance_sync completed successfully\n", .{});
 
     _ = allocator;
     return STATE_MANAGER_SUCCESS;
@@ -556,15 +531,12 @@ export fn state_manager_set_balance(
     balance_hex: [*:0]const u8,
 ) callconv(.c) c_int {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_set_balance: handle is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(address_hex) == 0) {
-        std.debug.print("ERROR: state_manager_set_balance: address_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(balance_hex) == 0) {
-        std.debug.print("ERROR: state_manager_set_balance: balance_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
 
@@ -591,15 +563,12 @@ export fn state_manager_get_nonce_sync(
     out_nonce: *u64,
 ) callconv(.c) c_int {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_get_nonce_sync: handle is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(address_hex) == 0) {
-        std.debug.print("ERROR: state_manager_get_nonce_sync: address_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(out_nonce) == 0) {
-        std.debug.print("ERROR: state_manager_get_nonce_sync: out_nonce is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
 
@@ -610,7 +579,10 @@ export fn state_manager_get_nonce_sync(
     const addr = Address.fromHex(addr_slice) catch return STATE_MANAGER_ERROR_INVALID_HEX;
 
     // Get nonce
-    const nonce = manager.getNonce(addr) catch return STATE_MANAGER_ERROR_RPC_FAILED;
+    const nonce = manager.getNonce(addr) catch |err| {
+        if (err == error.RpcPending) return STATE_MANAGER_ERROR_RPC_PENDING;
+        return STATE_MANAGER_ERROR_RPC_FAILED;
+    };
     out_nonce.* = nonce;
 
     return STATE_MANAGER_SUCCESS;
@@ -623,11 +595,9 @@ export fn state_manager_set_nonce(
     nonce: u64,
 ) callconv(.c) c_int {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_set_nonce: handle is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(address_hex) == 0) {
-        std.debug.print("ERROR: state_manager_set_nonce: address_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
 
@@ -652,23 +622,18 @@ export fn state_manager_get_storage_sync(
     buffer_len: usize,
 ) callconv(.c) c_int {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_get_storage_sync: handle is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(address_hex) == 0) {
-        std.debug.print("ERROR: state_manager_get_storage_sync: address_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(slot_hex) == 0) {
-        std.debug.print("ERROR: state_manager_get_storage_sync: slot_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(out_buffer) == 0) {
-        std.debug.print("ERROR: state_manager_get_storage_sync: out_buffer is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (buffer_len < 67) {
-        std.debug.print("ERROR: state_manager_get_storage_sync: buffer_len ({d}) < 67\n", .{buffer_len});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
 
@@ -683,7 +648,10 @@ export fn state_manager_get_storage_sync(
     const slot = std.fmt.parseInt(u256, slot_slice, 0) catch return STATE_MANAGER_ERROR_INVALID_HEX;
 
     // Get storage
-    const value = manager.getStorage(addr, slot) catch return STATE_MANAGER_ERROR_RPC_FAILED;
+    const value = manager.getStorage(addr, slot) catch |err| {
+        if (err == error.RpcPending) return STATE_MANAGER_ERROR_RPC_PENDING;
+        return STATE_MANAGER_ERROR_RPC_FAILED;
+    };
 
     // Convert to hex
     var hex_buffer: [66]u8 = undefined;
@@ -703,19 +671,15 @@ export fn state_manager_set_storage(
     value_hex: [*:0]const u8,
 ) callconv(.c) c_int {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_set_storage: handle is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(address_hex) == 0) {
-        std.debug.print("ERROR: state_manager_set_storage: address_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(slot_hex) == 0) {
-        std.debug.print("ERROR: state_manager_set_storage: slot_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(value_hex) == 0) {
-        std.debug.print("ERROR: state_manager_set_storage: value_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
 
@@ -746,15 +710,12 @@ export fn state_manager_get_code_len_sync(
     out_len: *usize,
 ) callconv(.c) c_int {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_get_code_len_sync: handle is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(address_hex) == 0) {
-        std.debug.print("ERROR: state_manager_get_code_len_sync: address_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(out_len) == 0) {
-        std.debug.print("ERROR: state_manager_get_code_len_sync: out_len is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
 
@@ -765,7 +726,8 @@ export fn state_manager_get_code_len_sync(
     const addr = Address.fromHex(addr_slice) catch return STATE_MANAGER_ERROR_INVALID_HEX;
 
     // Get code
-    const code = manager.getCode(addr) catch {
+    const code = manager.getCode(addr) catch |err| {
+        if (err == error.RpcPending) return STATE_MANAGER_ERROR_RPC_PENDING;
         out_len.* = 0;
         return STATE_MANAGER_ERROR_RPC_FAILED;
     };
@@ -782,15 +744,12 @@ export fn state_manager_get_code_sync(
     buffer_len: usize,
 ) callconv(.c) c_int {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_get_code_sync: handle is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(address_hex) == 0) {
-        std.debug.print("ERROR: state_manager_get_code_sync: address_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(out_buffer) == 0) {
-        std.debug.print("ERROR: state_manager_get_code_sync: out_buffer is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
 
@@ -801,7 +760,10 @@ export fn state_manager_get_code_sync(
     const addr = Address.fromHex(addr_slice) catch return STATE_MANAGER_ERROR_INVALID_HEX;
 
     // Get code
-    const code = manager.getCode(addr) catch return STATE_MANAGER_ERROR_RPC_FAILED;
+    const code = manager.getCode(addr) catch |err| {
+        if (err == error.RpcPending) return STATE_MANAGER_ERROR_RPC_PENDING;
+        return STATE_MANAGER_ERROR_RPC_FAILED;
+    };
 
     if (code.len > buffer_len) return STATE_MANAGER_ERROR_INVALID_INPUT;
 
@@ -818,15 +780,12 @@ export fn state_manager_set_code(
     code_len: usize,
 ) callconv(.c) c_int {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_set_code: handle is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(address_hex) == 0) {
-        std.debug.print("ERROR: state_manager_set_code: address_hex is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(code_ptr) == 0) {
-        std.debug.print("ERROR: state_manager_set_code: code_ptr is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
 
@@ -850,7 +809,6 @@ export fn state_manager_set_code(
 /// Create checkpoint (for revert/commit)
 export fn state_manager_checkpoint(handle: StateManagerHandle) callconv(.c) c_int {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_checkpoint: handle is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     const manager: *StateManager = @ptrCast(@alignCast(handle));
@@ -861,7 +819,6 @@ export fn state_manager_checkpoint(handle: StateManagerHandle) callconv(.c) c_in
 /// Revert to last checkpoint
 export fn state_manager_revert(handle: StateManagerHandle) callconv(.c) void {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_revert: handle is null\n", .{});
         return;
     }
     const manager: *StateManager = @ptrCast(@alignCast(handle));
@@ -871,7 +828,6 @@ export fn state_manager_revert(handle: StateManagerHandle) callconv(.c) void {
 /// Commit last checkpoint (merge into parent)
 export fn state_manager_commit(handle: StateManagerHandle) callconv(.c) void {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_commit: handle is null\n", .{});
         return;
     }
     const manager: *StateManager = @ptrCast(@alignCast(handle));
@@ -888,11 +844,9 @@ export fn state_manager_snapshot(
     out_snapshot_id: *u64,
 ) callconv(.c) c_int {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_snapshot: handle is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     if (@intFromPtr(out_snapshot_id) == 0) {
-        std.debug.print("ERROR: state_manager_snapshot: out_snapshot_id is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     const manager: *StateManager = @ptrCast(@alignCast(handle));
@@ -907,7 +861,6 @@ export fn state_manager_revert_to_snapshot(
     snapshot_id: u64,
 ) callconv(.c) c_int {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_revert_to_snapshot: handle is null\n", .{});
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }
     const manager: *StateManager = @ptrCast(@alignCast(handle));
@@ -922,7 +875,6 @@ export fn state_manager_revert_to_snapshot(
 /// Clear all caches (normal + fork)
 export fn state_manager_clear_caches(handle: StateManagerHandle) callconv(.c) void {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_clear_caches: handle is null\n", .{});
         return;
     }
     const manager: *StateManager = @ptrCast(@alignCast(handle));
@@ -932,7 +884,6 @@ export fn state_manager_clear_caches(handle: StateManagerHandle) callconv(.c) vo
 /// Clear only fork cache
 export fn state_manager_clear_fork_cache(handle: StateManagerHandle) callconv(.c) void {
     if (@intFromPtr(handle) == 0) {
-        std.debug.print("ERROR: state_manager_clear_fork_cache: handle is null\n", .{});
         return;
     }
     const manager: *StateManager = @ptrCast(@alignCast(handle));

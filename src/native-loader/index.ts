@@ -12,6 +12,7 @@ export {
 } from "./platform.js";
 export type { NativeErrorCode as NativeErrorCodeType } from "./types.js";
 export { getNativeErrorMessage, NativeErrorCode } from "./types.js";
+export { loadForkWasm } from "./wasm.js";
 
 import { getNativeErrorMessage as _getNativeErrorMessage } from "./types.js";
 

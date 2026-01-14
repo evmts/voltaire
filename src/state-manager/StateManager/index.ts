@@ -11,6 +11,7 @@ import type { AddressType } from "../../primitives/Address/AddressType.js";
 import * as Address from "../../primitives/Address/index.js";
 import type { Hex } from "../../primitives/Hex/HexType.js";
 import * as HexUtils from "../../primitives/Hex/index.js";
+import type { Provider } from "../../provider/Provider.js";
 
 /**
  * FFI library exports (loaded from native or WASM)
@@ -29,6 +30,22 @@ export interface StateManagerFFIExports {
 	): bigint | null;
 	fork_backend_destroy(handle: bigint): void;
 	fork_backend_clear_cache(handle: bigint): void;
+	fork_backend_next_request(
+		handle: bigint,
+		outRequestId: BigUint64Array,
+		outMethod: Uint8Array,
+		methodBufLen: number,
+		outMethodLen: BigUint64Array,
+		outParams: Uint8Array,
+		paramsBufLen: number,
+		outParamsLen: BigUint64Array,
+	): number;
+	fork_backend_continue(
+		handle: bigint,
+		requestId: bigint,
+		responsePtr: Uint8Array,
+		responseLen: number,
+	): number;
 
 	// Sync state operations
 	state_manager_get_balance_sync(
@@ -109,6 +126,10 @@ export const STATE_MANAGER_ERROR_OUT_OF_MEMORY = -2;
 export const STATE_MANAGER_ERROR_INVALID_SNAPSHOT = -3;
 export const STATE_MANAGER_ERROR_RPC_FAILED = -4;
 export const STATE_MANAGER_ERROR_INVALID_HEX = -5;
+export const STATE_MANAGER_ERROR_RPC_PENDING = -6;
+export const STATE_MANAGER_ERROR_NO_PENDING_REQUEST = -7;
+export const STATE_MANAGER_ERROR_OUTPUT_TOO_SMALL = -8;
+export const STATE_MANAGER_ERROR_INVALID_REQUEST = -9;
 
 /**
  * RPC Client interface (must be implemented by adapter)
@@ -151,7 +172,7 @@ export interface StateManagerOptions {
 	/**
 	 * Optional RPC client for fork mode
 	 */
-	rpcClient?: RpcClient;
+	rpcClient?: RpcClient | Provider;
 
 	/**
 	 * Block tag for fork (e.g., "latest", "0x123...")
@@ -198,23 +219,29 @@ export class StateManager {
 	private handle: bigint;
 	private forkBackendHandle: bigint | null = null;
 	private ffi: StateManagerFFIExports;
+	private rpcClient: RpcClient | null = null;
+	private rpcProvider: Provider | null = null;
+	private forkBlockTag: string;
+	private maxCacheSize: number;
 
 	constructor(options: StateManagerOptions) {
 		this.ffi = options.ffi;
+		this.forkBlockTag = options.forkBlockTag ?? "latest";
+		this.maxCacheSize = options.maxCacheSize ?? 10000;
+
+		if (options.rpcClient && "request" in options.rpcClient) {
+			this.rpcProvider = options.rpcClient as Provider;
+		} else if (options.rpcClient) {
+			this.rpcClient = options.rpcClient as RpcClient;
+		}
 
 		// Create fork backend if RPC client provided
 		if (options.rpcClient) {
-			const blockTag = options.forkBlockTag ?? "latest";
-			const maxCacheSize = options.maxCacheSize ?? 10000;
-
-			// Create RPC vtable (TypeScript functions wrapped for Zig callback)
-			const vtable = this.createRpcVtable(options.rpcClient);
-
 			this.forkBackendHandle = this.ffi.fork_backend_create(
-				0n, // rpcClientPtr (vtable is enough)
-				vtable,
-				this.encodeCString(blockTag) as unknown as string,
-				maxCacheSize,
+				0n, // rpcClientPtr unused (async request/continue handles RPC)
+				0n,
+				this.encodeCString(this.forkBlockTag) as unknown as string,
+				this.maxCacheSize,
 			);
 
 			if (!this.forkBackendHandle) {
@@ -258,18 +285,123 @@ export class StateManager {
 		return new TextEncoder().encode(`${str}\0`);
 	}
 
-	/**
-	 * Create RPC vtable for Zig callbacks
-	 * In real implementation, this would use FFI to create function pointers
-	 * For now, we store the client and call it synchronously
-	 */
-	private createRpcVtable(_rpcClient: RpcClient): bigint {
-		// TODO: Implement actual vtable creation with FFI function pointers
-		// This is a placeholder - real implementation needs:
-		// 1. Create C function pointers for getProof/getCode
-		// 2. Store callbacks in global registry
-		// 3. Return vtable pointer as bigint
-		return 0n;
+	private async processForkRequests(): Promise<void> {
+		if (!this.forkBackendHandle) return;
+
+		const decoder = new TextDecoder();
+		for (let i = 0; i < 1000; i++) {
+			let methodBuf = new Uint8Array(64);
+			let paramsBuf = new Uint8Array(4096);
+			const methodLen = new BigUint64Array(1);
+			const paramsLen = new BigUint64Array(1);
+			const requestId = new BigUint64Array(1);
+
+			let result = this.ffi.fork_backend_next_request(
+				this.forkBackendHandle,
+				requestId,
+				methodBuf,
+				methodBuf.length,
+				methodLen,
+				paramsBuf,
+				paramsBuf.length,
+				paramsLen,
+			);
+
+			if (result === STATE_MANAGER_ERROR_NO_PENDING_REQUEST) {
+				return;
+			}
+
+			if (result === STATE_MANAGER_ERROR_OUTPUT_TOO_SMALL) {
+				const neededMethod = Number(methodLen[0]);
+				const neededParams = Number(paramsLen[0]);
+				if (neededMethod > methodBuf.length) {
+					methodBuf = new Uint8Array(neededMethod);
+				}
+				if (neededParams > paramsBuf.length) {
+					paramsBuf = new Uint8Array(neededParams);
+				}
+				result = this.ffi.fork_backend_next_request(
+					this.forkBackendHandle,
+					requestId,
+					methodBuf,
+					methodBuf.length,
+					methodLen,
+					paramsBuf,
+					paramsBuf.length,
+					paramsLen,
+				);
+			}
+
+			if (result !== STATE_MANAGER_SUCCESS) {
+				throw new Error(`fork_backend_next_request failed: ${result}`);
+			}
+
+			const method = decoder.decode(
+				methodBuf.subarray(0, Number(methodLen[0])),
+			);
+			const params = JSON.parse(
+				decoder.decode(paramsBuf.subarray(0, Number(paramsLen[0]))),
+			) as unknown[];
+
+			const response = await this.executeForkRequest(method, params);
+			const responseBytes = new TextEncoder().encode(JSON.stringify(response));
+
+			const continueResult = this.ffi.fork_backend_continue(
+				this.forkBackendHandle,
+				requestId[0] ?? 0n,
+				responseBytes,
+				responseBytes.length,
+			);
+
+			if (continueResult !== STATE_MANAGER_SUCCESS) {
+				throw new Error(`fork_backend_continue failed: ${continueResult}`);
+			}
+		}
+
+		throw new Error("Exceeded fork request processing limit");
+	}
+
+	private async executeForkRequest(
+		method: string,
+		params: unknown[],
+	): Promise<unknown> {
+		if (this.rpcProvider) {
+			return this.rpcProvider.request({ method, params });
+		}
+
+		if (!this.rpcClient) {
+			throw new Error("Fork RPC client not configured");
+		}
+
+		if (method === "eth_getProof") {
+			const [addressHex, slots, blockTag] = params as [
+				string,
+				Hex[],
+				string,
+			];
+			const proof = await this.rpcClient.getProof(
+				Address(addressHex) as AddressType,
+				slots,
+				blockTag,
+			);
+			return {
+				nonce: `0x${proof.nonce.toString(16)}`,
+				balance: `0x${proof.balance.toString(16)}`,
+				codeHash: proof.codeHash,
+				storageHash: proof.storageRoot,
+				storageProof: proof.storageProof,
+			};
+		}
+
+		if (method === "eth_getCode") {
+			const [addressHex, blockTag] = params as [string, string];
+			return this.rpcClient.getCode(
+				Address(addressHex) as AddressType,
+				blockTag,
+			);
+		}
+
+		throw new Error(`Unsupported fork method: ${method}`);
 	}
 
 	// ========================================================================
@@ -282,23 +414,31 @@ export class StateManager {
 	async getBalance(address: AddressType): Promise<bigint> {
 		const addressHex = Address.toHex(address);
 		const buffer = new Uint8Array(67); // "0x" + 64 hex + null
+		for (let attempt = 0; attempt < 10; attempt++) {
+			const result = this.ffi.state_manager_get_balance_sync(
+				this.handle,
+				this.encodeCString(addressHex) as unknown as string,
+				buffer,
+				buffer.length,
+			);
 
-		const result = this.ffi.state_manager_get_balance_sync(
-			this.handle,
-			this.encodeCString(addressHex) as unknown as string,
-			buffer,
-			buffer.length,
-		);
+			if (result === STATE_MANAGER_SUCCESS) {
+				const nullIndex = buffer.indexOf(0);
+				const hexString = new TextDecoder().decode(
+					buffer.subarray(0, nullIndex),
+				);
+				return BigInt(hexString);
+			}
 
-		if (result !== STATE_MANAGER_SUCCESS) {
+			if (result === STATE_MANAGER_ERROR_RPC_PENDING) {
+				await this.processForkRequests();
+				continue;
+			}
+
 			throw new Error(`Failed to get balance: error ${result}`);
 		}
 
-		// Convert null-terminated C string to JS string
-		const nullIndex = buffer.indexOf(0);
-		const hexString = new TextDecoder().decode(buffer.subarray(0, nullIndex));
-
-		return BigInt(hexString);
+		throw new Error("Failed to resolve forked balance");
 	}
 
 	/**
@@ -325,22 +465,30 @@ export class StateManager {
 	async getNonce(address: AddressType): Promise<bigint> {
 		const addressHex = Address.toHex(address);
 		const outBuffer = new BigUint64Array(1);
+		for (let attempt = 0; attempt < 10; attempt++) {
+			const result = this.ffi.state_manager_get_nonce_sync(
+				this.handle,
+				this.encodeCString(addressHex) as unknown as string,
+				outBuffer,
+			);
 
-		const result = this.ffi.state_manager_get_nonce_sync(
-			this.handle,
-			this.encodeCString(addressHex) as unknown as string,
-			outBuffer,
-		);
+			if (result === STATE_MANAGER_SUCCESS) {
+				const nonce = outBuffer[0];
+				if (nonce === undefined) {
+					throw new Error("Failed to read nonce from buffer");
+				}
+				return nonce;
+			}
 
-		if (result !== STATE_MANAGER_SUCCESS) {
+			if (result === STATE_MANAGER_ERROR_RPC_PENDING) {
+				await this.processForkRequests();
+				continue;
+			}
+
 			throw new Error(`Failed to get nonce: error ${result}`);
 		}
 
-		const nonce = outBuffer[0];
-		if (nonce === undefined) {
-			throw new Error("Failed to read nonce from buffer");
-		}
-		return nonce;
+		throw new Error("Failed to resolve forked nonce");
 	}
 
 	/**
@@ -366,21 +514,31 @@ export class StateManager {
 	async getStorage(address: AddressType, slot: Hex): Promise<Hex> {
 		const addressHex = Address.toHex(address);
 		const buffer = new Uint8Array(67);
+		for (let attempt = 0; attempt < 10; attempt++) {
+			const result = this.ffi.state_manager_get_storage_sync(
+				this.handle,
+				this.encodeCString(addressHex) as unknown as string,
+				this.encodeCString(slot) as unknown as string,
+				buffer,
+				buffer.length,
+			);
 
-		const result = this.ffi.state_manager_get_storage_sync(
-			this.handle,
-			this.encodeCString(addressHex) as unknown as string,
-			this.encodeCString(slot) as unknown as string,
-			buffer,
-			buffer.length,
-		);
+			if (result === STATE_MANAGER_SUCCESS) {
+				const nullIndex = buffer.indexOf(0);
+				return new TextDecoder().decode(
+					buffer.subarray(0, nullIndex),
+				) as Hex;
+			}
 
-		if (result !== STATE_MANAGER_SUCCESS) {
+			if (result === STATE_MANAGER_ERROR_RPC_PENDING) {
+				await this.processForkRequests();
+				continue;
+			}
+
 			throw new Error(`Failed to get storage: error ${result}`);
 		}
 
-		const nullIndex = buffer.indexOf(0);
-		return new TextDecoder().decode(buffer.subarray(0, nullIndex)) as Hex;
+		throw new Error("Failed to resolve forked storage");
 	}
 
 	/**
@@ -406,38 +564,51 @@ export class StateManager {
 	 */
 	async getCode(address: AddressType): Promise<Hex> {
 		const addressHex = Address.toHex(address);
+		for (let attempt = 0; attempt < 10; attempt++) {
+			// Get code length first
+			const lenBuffer = new BigUint64Array(1);
+			const lenResult = this.ffi.state_manager_get_code_len_sync(
+				this.handle,
+				this.encodeCString(addressHex) as unknown as string,
+				lenBuffer,
+			);
 
-		// Get code length first
-		const lenBuffer = new BigUint64Array(1);
-		const lenResult = this.ffi.state_manager_get_code_len_sync(
-			this.handle,
-			this.encodeCString(addressHex) as unknown as string,
-			lenBuffer,
-		);
+			if (lenResult === STATE_MANAGER_ERROR_RPC_PENDING) {
+				await this.processForkRequests();
+				continue;
+			}
 
-		if (lenResult !== STATE_MANAGER_SUCCESS) {
-			throw new Error(`Failed to get code length: error ${lenResult}`);
+			if (lenResult !== STATE_MANAGER_SUCCESS) {
+				throw new Error(`Failed to get code length: error ${lenResult}`);
+			}
+
+			const codeLen = Number(lenBuffer[0]);
+			if (codeLen === 0) {
+				return "0x" as Hex;
+			}
+
+			// Get code bytes
+			const codeBuffer = new Uint8Array(codeLen);
+			const codeResult = this.ffi.state_manager_get_code_sync(
+				this.handle,
+				this.encodeCString(addressHex) as unknown as string,
+				codeBuffer,
+				codeLen,
+			);
+
+			if (codeResult === STATE_MANAGER_ERROR_RPC_PENDING) {
+				await this.processForkRequests();
+				continue;
+			}
+
+			if (codeResult !== STATE_MANAGER_SUCCESS) {
+				throw new Error(`Failed to get code: error ${codeResult}`);
+			}
+
+			return HexUtils.fromBytes(codeBuffer);
 		}
 
-		const codeLen = Number(lenBuffer[0]);
-		if (codeLen === 0) {
-			return "0x" as Hex;
-		}
-
-		// Get code bytes
-		const codeBuffer = new Uint8Array(codeLen);
-		const codeResult = this.ffi.state_manager_get_code_sync(
-			this.handle,
-			this.encodeCString(addressHex) as unknown as string,
-			codeBuffer,
-			codeLen,
-		);
-
-		if (codeResult !== STATE_MANAGER_SUCCESS) {
-			throw new Error(`Failed to get code: error ${codeResult}`);
-		}
-
-		return HexUtils.fromBytes(codeBuffer);
+		throw new Error("Failed to resolve forked code");
 	}
 
 	/**

@@ -310,6 +310,7 @@ export * as precompiles from "../evm/precompiles/precompiles.js";
 // ============================================================================
 export {
 	loadNative,
+	loadForkWasm,
 	isBun,
 	isNode,
 	checkError,

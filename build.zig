@@ -744,10 +744,25 @@ pub fn build(b: *std.Build) void {
     // Circular dep: crypto needs primitives
     wasm_crypto_mod.addImport("primitives", wasm_primitives_mod);
 
+    const wasm_state_manager_mod = b.addModule("state_manager_wasm", .{
+        .root_source_file = b.path("src/state-manager/root.zig"),
+        .target = wasm_target,
+        .optimize = .ReleaseSmall,
+    });
+    wasm_state_manager_mod.addImport("primitives", wasm_primitives_mod);
+    wasm_state_manager_mod.addImport("crypto", wasm_crypto_mod);
+
+    const wasm_blockchain_mod = b.addModule("blockchain_wasm", .{
+        .root_source_file = b.path("src/blockchain/root.zig"),
+        .target = wasm_target,
+        .optimize = .ReleaseSmall,
+    });
+    wasm_blockchain_mod.addImport("primitives", wasm_primitives_mod);
+
     // Get WASM-specific Rust library path (built with portable features)
     const wasm_rust_crypto_lib_path = lib_build.Bn254Lib.getRustLibraryPath(b, wasm_target);
 
-    addTypeScriptWasmBuild(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto_lib_path, wasm_cargo_build_step);
+    addTypeScriptWasmBuild(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_state_manager_mod, wasm_blockchain_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto_lib_path, wasm_cargo_build_step);
 
     // Individual crypto WASM modules for treeshaking
     addCryptoWasmBuilds(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto_lib_path, wasm_cargo_build_step);
@@ -985,6 +1000,8 @@ fn addTypeScriptWasmBuild(
     wasm_target: std.Build.ResolvedTarget,
     primitives_mod: *std.Build.Module,
     crypto_mod: *std.Build.Module,
+    state_manager_mod: *std.Build.Module,
+    blockchain_mod: *std.Build.Module,
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
     rust_crypto_lib_path: std.Build.LazyPath,
@@ -1028,6 +1045,65 @@ fn addTypeScriptWasmBuild(
     });
     copy_wasm.step.dependOn(&install_wasm.step);
     build_ts_wasm_step.dependOn(&copy_wasm.step);
+
+    const state_manager_wasm_exe = b.addExecutable(.{
+        .name = "state_manager_wasm",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/state-manager/c_api.zig"),
+            .target = wasm_target,
+            .optimize = .ReleaseSmall,
+        }),
+    });
+    state_manager_wasm_exe.root_module.addImport("primitives", primitives_mod);
+    state_manager_wasm_exe.root_module.addImport("crypto", crypto_mod);
+    state_manager_wasm_exe.root_module.addImport("state-manager", state_manager_mod);
+    state_manager_wasm_exe.linkLibrary(c_kzg_lib);
+    state_manager_wasm_exe.linkLibrary(blst_lib);
+    state_manager_wasm_exe.addObjectFile(rust_crypto_lib_path);
+    state_manager_wasm_exe.addIncludePath(b.path("lib"));
+    state_manager_wasm_exe.step.dependOn(cargo_build_step);
+    state_manager_wasm_exe.rdynamic = true;
+
+    const install_state_manager_wasm = b.addInstallArtifact(state_manager_wasm_exe, .{
+        .dest_dir = .{ .override = .{ .custom = "wasm" } },
+    });
+
+    const copy_state_manager_wasm = b.addSystemCommand(&[_][]const u8{
+        "sh",
+        "-c",
+        "set -eu; src=$(ls zig-out/wasm/state_manager_wasm* 2>/dev/null | head -n1); mkdir -p wasm; cp \"$src\" wasm/state-manager.wasm",
+    });
+    copy_state_manager_wasm.step.dependOn(&install_state_manager_wasm.step);
+    build_ts_wasm_step.dependOn(&copy_state_manager_wasm.step);
+
+    const blockchain_wasm_exe = b.addExecutable(.{
+        .name = "blockchain_wasm",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/blockchain/c_api.zig"),
+            .target = wasm_target,
+            .optimize = .ReleaseSmall,
+        }),
+    });
+    blockchain_wasm_exe.root_module.addImport("primitives", primitives_mod);
+    blockchain_wasm_exe.root_module.addImport("blockchain", blockchain_mod);
+    blockchain_wasm_exe.linkLibrary(c_kzg_lib);
+    blockchain_wasm_exe.linkLibrary(blst_lib);
+    blockchain_wasm_exe.addObjectFile(rust_crypto_lib_path);
+    blockchain_wasm_exe.addIncludePath(b.path("lib"));
+    blockchain_wasm_exe.step.dependOn(cargo_build_step);
+    blockchain_wasm_exe.rdynamic = true;
+
+    const install_blockchain_wasm = b.addInstallArtifact(blockchain_wasm_exe, .{
+        .dest_dir = .{ .override = .{ .custom = "wasm" } },
+    });
+
+    const copy_blockchain_wasm = b.addSystemCommand(&[_][]const u8{
+        "sh",
+        "-c",
+        "set -eu; src=$(ls zig-out/wasm/blockchain_wasm* 2>/dev/null | head -n1); mkdir -p wasm; cp \"$src\" wasm/blockchain.wasm",
+    });
+    copy_blockchain_wasm.step.dependOn(&install_blockchain_wasm.step);
+    build_ts_wasm_step.dependOn(&copy_blockchain_wasm.step);
 
     // Build WASM with ReleaseFast optimization for performance benchmarking
     const ts_wasm_fast_exe = b.addExecutable(.{

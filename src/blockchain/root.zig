@@ -23,14 +23,8 @@
 //!
 //! ## Fork Mode
 //! ```zig
-//! // Setup fork cache with RPC
-//! const vtable = blockchain.ForkBlockCache.RpcVTable{
-//!     .context = rpc_client,
-//!     .fetch_block_by_number = fetchByNumber,
-//!     .fetch_block_by_hash = fetchByHash,
-//! };
-//!
-//! var fork_cache = try blockchain.ForkBlockCache.init(allocator, vtable, fork_block);
+//! // Setup fork cache with async request/continue bridge
+//! var fork_cache = try blockchain.ForkBlockCache.init(allocator, fork_block);
 //! defer fork_cache.deinit();
 //!
 //! // Create blockchain with fork
@@ -46,9 +40,6 @@ const ForkBlockCacheModule = @import("ForkBlockCache.zig");
 pub const BlockStore = @import("BlockStore.zig").BlockStore;
 pub const ForkBlockCache = ForkBlockCacheModule.ForkBlockCache;
 pub const Blockchain = @import("Blockchain.zig").Blockchain;
-
-// Re-export RpcVTable for convenience
-pub const RpcVTable = ForkBlockCacheModule.RpcVTable;
 
 test {
     @import("std").testing.refAllDecls(@This());

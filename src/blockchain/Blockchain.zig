@@ -61,7 +61,7 @@ pub const Blockchain = struct {
     // ========================================================================
 
     /// Get block by hash (tries local first, then fork cache)
-    pub fn getBlockByHash(self: *Blockchain, hash: Hash.Hash) ?Block.Block {
+    pub fn getBlockByHash(self: *Blockchain, hash: Hash.Hash) !?Block.Block {
         // Try local store first
         if (self.block_store.getBlock(hash)) |block| {
             return block;
@@ -69,14 +69,14 @@ pub const Blockchain = struct {
 
         // Try fork cache (if available)
         if (self.fork_cache) |cache| {
-            return cache.getBlockByHash(hash);
+            return try cache.getBlockByHash(hash);
         }
 
         return null;
     }
 
     /// Get block by number (tries local canonical first, then fork cache)
-    pub fn getBlockByNumber(self: *Blockchain, number: u64) ?Block.Block {
+    pub fn getBlockByNumber(self: *Blockchain, number: u64) !?Block.Block {
         // Try local canonical chain first
         if (self.block_store.getBlockByNumber(number)) |block| {
             return block;
@@ -84,7 +84,7 @@ pub const Blockchain = struct {
 
         // Try fork cache (if available)
         if (self.fork_cache) |cache| {
-            return cache.getBlockByNumber(number);
+            return try cache.getBlockByNumber(number);
         }
 
         return null;
@@ -181,7 +181,7 @@ test "Blockchain - put and get block (local only)" {
 
     try blockchain.putBlock(genesis);
 
-    const retrieved = blockchain.getBlockByHash(genesis_hash);
+    const retrieved = try blockchain.getBlockByHash(genesis_hash);
     try std.testing.expect(retrieved != null);
     try std.testing.expectEqual(@as(u64, 0), retrieved.?.header.number);
 }
@@ -195,7 +195,7 @@ test "Blockchain - get by number (local canonical)" {
     try blockchain.putBlock(genesis);
     try blockchain.setCanonicalHead(genesis.hash);
 
-    const retrieved = blockchain.getBlockByNumber(0);
+    const retrieved = try blockchain.getBlockByNumber(0);
     try std.testing.expect(retrieved != null);
     try std.testing.expectEqual(@as(u64, 0), retrieved.?.header.number);
 }
@@ -217,28 +217,24 @@ test "Blockchain - set canonical head" {
 test "Blockchain - read flow with fork cache" {
     const allocator = std.testing.allocator;
 
-    // Setup mock RPC
-    const MockRpcContext = @import("ForkBlockCache.zig").MockRpcContext;
-    var mock_ctx = MockRpcContext.init(allocator);
-    defer mock_ctx.deinit();
-
-    const fork_genesis = try Block.genesis(1, allocator);
-    try mock_ctx.addBlock(fork_genesis);
-
-    const vtable = @import("ForkBlockCache.zig").RpcVTable{
-        .context = @ptrCast(&mock_ctx),
-        .fetch_block_by_number = @import("ForkBlockCache.zig").mockFetchByNumber,
-        .fetch_block_by_hash = @import("ForkBlockCache.zig").mockFetchByHash,
-    };
-
-    var fork_cache = try ForkBlockCache.init(allocator, vtable, 1000);
+    var fork_cache = try ForkBlockCache.init(allocator, 1000);
     defer fork_cache.deinit();
 
     var blockchain = try Blockchain.init(allocator, &fork_cache);
     defer blockchain.deinit();
 
-    // Fetch from fork cache (not in local)
-    const block = blockchain.getBlockByNumber(0);
+    try std.testing.expectError(error.RpcPending, blockchain.getBlockByNumber(0));
+
+    const request = fork_cache.nextRequest() orelse {
+        try std.testing.expect(false);
+        return;
+    };
+    const hash_hex = "0x" ++ ("11" ** 32);
+    const response = try std.fmt.allocPrint(allocator, "{{\"hash\":\"{s}\",\"number\":\"0x0\"}}", .{hash_hex});
+    defer allocator.free(response);
+    try fork_cache.continueRequest(request.id, response);
+
+    const block = try blockchain.getBlockByNumber(0);
     try std.testing.expect(block != null);
     try std.testing.expectEqual(@as(u64, 0), block.?.header.number);
 }
@@ -246,21 +242,7 @@ test "Blockchain - read flow with fork cache" {
 test "Blockchain - local takes precedence over fork cache" {
     const allocator = std.testing.allocator;
 
-    // Setup mock RPC
-    const MockRpcContext = @import("ForkBlockCache.zig").MockRpcContext;
-    var mock_ctx = MockRpcContext.init(allocator);
-    defer mock_ctx.deinit();
-
-    const fork_genesis = try Block.genesis(1, allocator);
-    try mock_ctx.addBlock(fork_genesis);
-
-    const vtable = @import("ForkBlockCache.zig").RpcVTable{
-        .context = @ptrCast(&mock_ctx),
-        .fetch_block_by_number = @import("ForkBlockCache.zig").mockFetchByNumber,
-        .fetch_block_by_hash = @import("ForkBlockCache.zig").mockFetchByHash,
-    };
-
-    var fork_cache = try ForkBlockCache.init(allocator, vtable, 1000);
+    var fork_cache = try ForkBlockCache.init(allocator, 1000);
     defer fork_cache.deinit();
 
     var blockchain = try Blockchain.init(allocator, &fork_cache);
@@ -272,7 +254,7 @@ test "Blockchain - local takes precedence over fork cache" {
     try blockchain.setCanonicalHead(local_genesis.hash);
 
     // Fetch should return local (not fork cache)
-    const block = blockchain.getBlockByNumber(0);
+    const block = try blockchain.getBlockByNumber(0);
     try std.testing.expect(block != null);
     try std.testing.expectEqual(@as(u64, 0), block.?.header.number);
 

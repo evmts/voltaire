@@ -211,6 +211,23 @@ const symbols = {
 		args: [FFIType.ptr],
 		returns: FFIType.void,
 	},
+	fork_backend_next_request: {
+		args: [
+			FFIType.ptr,
+			FFIType.ptr,
+			FFIType.ptr,
+			FFIType.u64,
+			FFIType.ptr,
+			FFIType.ptr,
+			FFIType.u64,
+			FFIType.ptr,
+		],
+		returns: FFIType.i32,
+	},
+	fork_backend_continue: {
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.u64],
+		returns: FFIType.i32,
+	},
 
 	// Blockchain operations
 	blockchain_create: {
@@ -278,6 +295,23 @@ const symbols = {
 	fork_block_cache_destroy: {
 		args: [FFIType.ptr],
 		returns: FFIType.void,
+	},
+	fork_block_cache_next_request: {
+		args: [
+			FFIType.ptr,
+			FFIType.ptr,
+			FFIType.ptr,
+			FFIType.u64,
+			FFIType.ptr,
+			FFIType.ptr,
+			FFIType.u64,
+			FFIType.ptr,
+		],
+		returns: FFIType.i32,
+	},
+	fork_block_cache_continue: {
+		args: [FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.u64],
+		returns: FFIType.i32,
 	},
 } as const;
 

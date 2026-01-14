@@ -171,6 +171,22 @@ export interface NativeModule {
 	): number | null;
 	fork_backend_destroy(handle: number): void;
 	fork_backend_clear_cache(handle: number): void;
+	fork_backend_next_request(
+		handle: number,
+		outRequestId: Uint8Array,
+		outMethod: Uint8Array,
+		methodBufLen: number,
+		outMethodLen: Uint8Array,
+		outParams: Uint8Array,
+		paramsBufLen: number,
+		outParamsLen: Uint8Array,
+	): number;
+	fork_backend_continue(
+		handle: number,
+		requestId: number,
+		responsePtr: Uint8Array,
+		responseLen: number,
+	): number;
 
 	// Blockchain operations
 	blockchain_create(): number | null;
@@ -214,6 +230,22 @@ export interface NativeModule {
 		forkBlockNumber: number,
 	): number | null;
 	fork_block_cache_destroy(handle: number): void;
+	fork_block_cache_next_request(
+		handle: number,
+		outRequestId: Uint8Array,
+		outMethod: Uint8Array,
+		methodBufLen: number,
+		outMethodLen: Uint8Array,
+		outParams: Uint8Array,
+		paramsBufLen: number,
+		outParamsLen: Uint8Array,
+	): number;
+	fork_block_cache_continue(
+		handle: number,
+		requestId: number,
+		responsePtr: Uint8Array,
+		responseLen: number,
+	): number;
 }
 
 let nativeModule: NativeModule | null = null;

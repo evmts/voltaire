@@ -1,7 +1,7 @@
 /**
  * Blockchain TypeScript FFI Bindings
  *
- * Wraps Zig Blockchain implementation with RPC vtable support.
+ * Wraps Zig Blockchain implementation with async request/continue support.
  * Manages block storage, fork cache, and canonical chain.
  *
  * @module blockchain/Blockchain
@@ -9,6 +9,7 @@
 
 import type { Hex } from "../../primitives/Hex/HexType.js";
 import * as HexUtils from "../../primitives/Hex/index.js";
+import type { Provider } from "../../provider/Provider.js";
 
 /**
  * Block structure (simplified TypeScript representation)
@@ -105,6 +106,22 @@ export interface BlockchainFFIExports {
 		forkBlockNumber: bigint,
 	): bigint | null;
 	fork_block_cache_destroy(handle: bigint): void;
+	fork_block_cache_next_request(
+		handle: bigint,
+		outRequestId: BigUint64Array,
+		outMethod: Uint8Array,
+		methodBufLen: number,
+		outMethodLen: BigUint64Array,
+		outParams: Uint8Array,
+		paramsBufLen: number,
+		outParamsLen: BigUint64Array,
+	): number;
+	fork_block_cache_continue(
+		handle: bigint,
+		requestId: bigint,
+		responsePtr: Uint8Array,
+		responseLen: number,
+	): number;
 
 	// Block operations
 	blockchain_get_block_by_hash(
@@ -150,6 +167,10 @@ export const BLOCKCHAIN_ERROR_BLOCK_NOT_FOUND = -3;
 export const BLOCKCHAIN_ERROR_INVALID_PARENT = -4;
 export const BLOCKCHAIN_ERROR_ORPHAN_HEAD = -5;
 export const BLOCKCHAIN_ERROR_INVALID_HASH = -6;
+export const BLOCKCHAIN_ERROR_RPC_PENDING = -7;
+export const BLOCKCHAIN_ERROR_NO_PENDING_REQUEST = -8;
+export const BLOCKCHAIN_ERROR_OUTPUT_TOO_SMALL = -9;
+export const BLOCKCHAIN_ERROR_INVALID_REQUEST = -10;
 
 /**
  * RPC Client interface for fork mode
@@ -173,7 +194,7 @@ export interface BlockchainOptions {
 	/**
 	 * Optional RPC client for fork mode
 	 */
-	rpcClient?: RpcClient;
+	rpcClient?: RpcClient | Provider;
 
 	/**
 	 * Fork block number (blocks ≤ this from remote)
@@ -216,19 +237,27 @@ export class Blockchain {
 	private handle: bigint;
 	private forkCacheHandle: bigint | null = null;
 	private ffi: BlockchainFFIExports;
+	private rpcClient: RpcClient | null = null;
+	private rpcProvider: Provider | null = null;
+	private forkBlockNumber: bigint | null = null;
 
 	constructor(options: BlockchainOptions) {
 		this.ffi = options.ffi;
+		this.forkBlockNumber =
+			options.forkBlockNumber !== undefined ? options.forkBlockNumber : null;
+
+		if (options.rpcClient && "request" in options.rpcClient) {
+			this.rpcProvider = options.rpcClient as Provider;
+		} else if (options.rpcClient) {
+			this.rpcClient = options.rpcClient as RpcClient;
+		}
 
 		// Create fork cache if RPC client provided
 		if (options.rpcClient && options.forkBlockNumber !== undefined) {
-			// Create RPC vtable (function pointers for Zig callbacks)
-			const vtable = this.createRpcVtable(options.rpcClient);
-
 			this.forkCacheHandle = this.ffi.fork_block_cache_create(
-				0n, // rpcContext (vtable functions have closure)
-				vtable.fetchByNumber,
-				vtable.fetchByHash,
+				0n, // rpcContext unused (async request/continue handles RPC)
+				0n,
+				0n,
 				options.forkBlockNumber,
 			);
 
@@ -263,25 +292,111 @@ export class Blockchain {
 		}
 	}
 
-	/**
-	 * Create RPC vtable for Zig callbacks
-	 * Returns function pointer handles (as bigint)
-	 */
-	private createRpcVtable(_rpcClient: RpcClient): {
-		fetchByNumber: bigint;
-		fetchByHash: bigint;
-	} {
-		// TODO: Implement actual vtable creation with FFI function pointers
-		// This requires:
-		// 1. Create C function wrappers for RPC methods
-		// 2. Store callbacks in global registry
-		// 3. Return function pointer addresses as bigint
-		//
-		// For now, return placeholders
-		return {
-			fetchByNumber: 0n,
-			fetchByHash: 0n,
-		};
+	private async processForkRequests(): Promise<void> {
+		if (!this.forkCacheHandle) return;
+
+		const decoder = new TextDecoder();
+		for (let i = 0; i < 1000; i++) {
+			let methodBuf = new Uint8Array(64);
+			let paramsBuf = new Uint8Array(8192);
+			const methodLen = new BigUint64Array(1);
+			const paramsLen = new BigUint64Array(1);
+			const requestId = new BigUint64Array(1);
+
+			let result = this.ffi.fork_block_cache_next_request(
+				this.forkCacheHandle,
+				requestId,
+				methodBuf,
+				methodBuf.length,
+				methodLen,
+				paramsBuf,
+				paramsBuf.length,
+				paramsLen,
+			);
+
+			if (result === BLOCKCHAIN_ERROR_NO_PENDING_REQUEST) {
+				return;
+			}
+
+			if (result === BLOCKCHAIN_ERROR_OUTPUT_TOO_SMALL) {
+				const neededMethod = Number(methodLen[0]);
+				const neededParams = Number(paramsLen[0]);
+				if (neededMethod > methodBuf.length) {
+					methodBuf = new Uint8Array(neededMethod);
+				}
+				if (neededParams > paramsBuf.length) {
+					paramsBuf = new Uint8Array(neededParams);
+				}
+				result = this.ffi.fork_block_cache_next_request(
+					this.forkCacheHandle,
+					requestId,
+					methodBuf,
+					methodBuf.length,
+					methodLen,
+					paramsBuf,
+					paramsBuf.length,
+					paramsLen,
+				);
+			}
+
+			if (result !== BLOCKCHAIN_SUCCESS) {
+				throw new Error(`fork_block_cache_next_request failed: ${result}`);
+			}
+
+			const method = decoder.decode(
+				methodBuf.subarray(0, Number(methodLen[0])),
+			);
+			const params = JSON.parse(
+				decoder.decode(paramsBuf.subarray(0, Number(paramsLen[0]))),
+			) as unknown[];
+
+			const response = await this.executeForkRequest(method, params);
+			const responseBytes = new TextEncoder().encode(JSON.stringify(response));
+
+			const continueResult = this.ffi.fork_block_cache_continue(
+				this.forkCacheHandle,
+				requestId[0] ?? 0n,
+				responseBytes,
+				responseBytes.length,
+			);
+
+			if (continueResult !== BLOCKCHAIN_SUCCESS) {
+				throw new Error(`fork_block_cache_continue failed: ${continueResult}`);
+			}
+		}
+
+		throw new Error("Exceeded fork block request processing limit");
+	}
+
+	private async executeForkRequest(
+		method: string,
+		params: unknown[],
+	): Promise<unknown> {
+		if (this.rpcProvider) {
+			return this.rpcProvider.request({ method, params });
+		}
+
+		if (!this.rpcClient) {
+			throw new Error("Fork RPC client not configured");
+		}
+
+		if (method === "eth_getBlockByNumber") {
+			const [blockTag, fullTx] = params as [string, boolean];
+			const number =
+				blockTag === "latest" || blockTag === "pending"
+					? this.forkBlockNumber ?? 0n
+					: BigInt(blockTag);
+			const result = await this.rpcClient.getBlockByNumber(number);
+			if (fullTx) return result;
+			return result;
+		}
+
+		if (method === "eth_getBlockByHash") {
+			const [hash] = params as [Hex];
+			return this.rpcClient.getBlockByHash(hash);
+		}
+
+		throw new Error(`Unsupported fork method: ${method}`);
 	}
 
 	// ========================================================================
@@ -296,26 +411,32 @@ export class Blockchain {
 		if (hashBytes.length !== 32) {
 			throw new Error("Invalid block hash length");
 		}
+		const blockDataBuffer = new Uint8Array(4096);
 
-		// Allocate BlockData buffer (approximate size)
-		const blockDataBuffer = new Uint8Array(1024); // Adjust size as needed
+		for (let attempt = 0; attempt < 10; attempt++) {
+			const result = this.ffi.blockchain_get_block_by_hash(
+				this.handle,
+				hashBytes,
+				blockDataBuffer,
+			);
 
-		const result = this.ffi.blockchain_get_block_by_hash(
-			this.handle,
-			hashBytes,
-			blockDataBuffer,
-		);
+			if (result === BLOCKCHAIN_SUCCESS) {
+				return this.deserializeBlock(blockDataBuffer);
+			}
 
-		if (result === BLOCKCHAIN_ERROR_BLOCK_NOT_FOUND) {
-			return null;
-		}
+			if (result === BLOCKCHAIN_ERROR_RPC_PENDING) {
+				await this.processForkRequests();
+				continue;
+			}
 
-		if (result !== BLOCKCHAIN_SUCCESS) {
+			if (result === BLOCKCHAIN_ERROR_BLOCK_NOT_FOUND) {
+				return null;
+			}
+
 			throw new Error(`Failed to get block by hash: error ${result}`);
 		}
 
-		// Deserialize BlockData to Block
-		return this.deserializeBlock(blockDataBuffer);
+		throw new Error("Failed to resolve forked block by hash");
 	}
 
 	/**
@@ -323,23 +444,32 @@ export class Blockchain {
 	 */
 	async getBlockByNumber(number: bigint): Promise<Block | null> {
 		// Allocate BlockData buffer
-		const blockDataBuffer = new Uint8Array(1024);
+		const blockDataBuffer = new Uint8Array(4096);
 
-		const result = this.ffi.blockchain_get_block_by_number(
-			this.handle,
-			number,
-			blockDataBuffer,
-		);
+		for (let attempt = 0; attempt < 10; attempt++) {
+			const result = this.ffi.blockchain_get_block_by_number(
+				this.handle,
+				number,
+				blockDataBuffer,
+			);
 
-		if (result === BLOCKCHAIN_ERROR_BLOCK_NOT_FOUND) {
-			return null;
-		}
+			if (result === BLOCKCHAIN_SUCCESS) {
+				return this.deserializeBlock(blockDataBuffer);
+			}
 
-		if (result !== BLOCKCHAIN_SUCCESS) {
+			if (result === BLOCKCHAIN_ERROR_RPC_PENDING) {
+				await this.processForkRequests();
+				continue;
+			}
+
+			if (result === BLOCKCHAIN_ERROR_BLOCK_NOT_FOUND) {
+				return null;
+			}
+
 			throw new Error(`Failed to get block by number: error ${result}`);
 		}
 
-		return this.deserializeBlock(blockDataBuffer);
+		throw new Error("Failed to resolve forked block by number");
 	}
 
 	/**
@@ -523,7 +653,9 @@ export class Blockchain {
 	private deserializeBlock(buffer: Uint8Array): Block {
 		// For now, use JSON deserialization as placeholder
 		// Real implementation should read binary struct layout matching c_api.zig BlockData
-		const json = new TextDecoder().decode(buffer);
+		const nullIndex = buffer.indexOf(0);
+		const slice = nullIndex === -1 ? buffer : buffer.subarray(0, nullIndex);
+		const json = new TextDecoder().decode(slice);
 		const obj = JSON.parse(json);
 
 		return {
@@ -544,10 +676,12 @@ export class Blockchain {
 			mixHash: obj.mixHash as Hex,
 			nonce: BigInt(obj.nonce),
 			baseFeePerGas: obj.baseFeePerGas ? BigInt(obj.baseFeePerGas) : undefined,
-			withdrawalsRoot: obj.withdrawalsRoot as Hex | undefined,
+			withdrawalsRoot: obj.withdrawalsRoot ? (obj.withdrawalsRoot as Hex) : undefined,
 			blobGasUsed: obj.blobGasUsed ? BigInt(obj.blobGasUsed) : undefined,
 			excessBlobGas: obj.excessBlobGas ? BigInt(obj.excessBlobGas) : undefined,
-			parentBeaconBlockRoot: obj.parentBeaconBlockRoot as Hex | undefined,
+			parentBeaconBlockRoot: obj.parentBeaconBlockRoot
+				? (obj.parentBeaconBlockRoot as Hex)
+				: undefined,
 			transactions: obj.transactions as Hex,
 			ommers: obj.ommers as Hex,
 			withdrawals: obj.withdrawals as Hex,

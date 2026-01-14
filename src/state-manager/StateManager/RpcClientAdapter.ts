@@ -150,12 +150,16 @@ export class RpcClientAdapter implements RpcClient {
 	 * @returns Block data
 	 */
 	async getBlockByNumber(
-		blockTag: string,
+		blockTag: string | bigint,
 		fullTransactions = false,
 	): Promise<unknown> {
+		const tag =
+			typeof blockTag === "bigint"
+				? `0x${blockTag.toString(16)}`
+				: blockTag;
 		return await this.provider.request({
 			method: "eth_getBlockByNumber",
-			params: [blockTag, fullTransactions],
+			params: [tag, fullTransactions],
 		});
 	}
 

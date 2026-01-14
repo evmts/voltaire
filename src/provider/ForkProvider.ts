@@ -7,24 +7,18 @@
  * @module provider/ForkProvider
  */
 
-import type {
-	BlockchainFFIExports,
-	RpcClient as BlockchainRpcClient,
-} from "../blockchain/Blockchain/index.js";
+import type { BlockchainFFIExports } from "../blockchain/Blockchain/index.js";
 import { Blockchain } from "../blockchain/Blockchain/index.js";
-import type { BrandedHost } from "../evm/Host/HostType.js";
-import { loadNative } from "../native-loader/index.js";
+import { isBun, isNode, loadForkWasm, loadNative } from "../native-loader/index.js";
 import type { AddressType } from "../primitives/Address/AddressType.js";
 import { Address } from "../primitives/Address/index.js";
 import type { Hex } from "../primitives/Hex/HexType.js";
 import * as HexUtils from "../primitives/Hex/index.js";
 import type { StateManagerFFIExports } from "../state-manager/StateManager/index.js";
 import { StateManager } from "../state-manager/StateManager/index.js";
-import { RpcClientAdapter } from "../state-manager/StateManager/RpcClientAdapter.js";
 import type { ForkProviderOptions } from "./ForkProviderOptions.js";
 import { HttpProvider } from "./HttpProvider.js";
 import type { Provider } from "./Provider.js";
-import { StateManagerHost } from "./StateManagerHost.js";
 import type {
 	BlockTag,
 	ProviderEvent,
@@ -80,7 +74,6 @@ export class ForkProvider implements Provider {
 	// FFI layer
 	private stateManager!: StateManager;
 	private blockchain!: Blockchain;
-	private host!: BrandedHost;
 
 	// RPC client for upstream
 	private rpcClient: Provider;
@@ -126,31 +119,43 @@ export class ForkProvider implements Provider {
 	private async ensureFFILoaded(): Promise<void> {
 		if (this._ffiInitialized) return;
 
-		// Load native FFI exports
-		const ffi = await loadNative();
+		if (!this._ffiOptions) {
+			throw new Error("ForkProvider options not initialized");
+		}
 
-		// Create RPC adapter for StateManager and Blockchain
-		const rpcAdapter = new RpcClientAdapter({
-			provider: this.rpcClient,
-		});
+		let stateManagerFFI: StateManagerFFIExports;
+		let blockchainFFI: BlockchainFFIExports;
 
-		// Initialize StateManager with fork backend
+		if (this._ffiOptions.ffi) {
+			stateManagerFFI = this._ffiOptions.ffi.stateManager;
+			blockchainFFI = this._ffiOptions.ffi.blockchain;
+		} else {
+			const useWasm =
+				this._ffiOptions.useWasm ?? (!isBun() && !isNode());
+
+			if (useWasm) {
+				const wasm = await loadForkWasm(this._ffiOptions.wasm);
+				stateManagerFFI = wasm.stateManager;
+				blockchainFFI = wasm.blockchain;
+			} else {
+				const native = await loadNative();
+				stateManagerFFI = native as unknown as StateManagerFFIExports;
+				blockchainFFI = native as unknown as BlockchainFFIExports;
+			}
+		}
+
 		this.stateManager = new StateManager({
-			rpcClient: rpcAdapter,
+			rpcClient: this.rpcClient,
 			forkBlockTag: `0x${this.forkBlockNumber.toString(16)}`,
-			maxCacheSize: this._ffiOptions?.fork.maxCacheSize ?? 10000,
-			ffi: ffi as unknown as StateManagerFFIExports,
+			maxCacheSize: this._ffiOptions.fork.maxCacheSize ?? 10000,
+			ffi: stateManagerFFI,
 		});
 
-		// Initialize Blockchain
 		this.blockchain = new Blockchain({
-			rpcClient: rpcAdapter as unknown as BlockchainRpcClient,
+			rpcClient: this.rpcClient,
 			forkBlockNumber: this.forkBlockNumber,
-			ffi: ffi as unknown as BlockchainFFIExports,
+			ffi: blockchainFFI,
 		});
-
-		// Create Host interface (wraps StateManager)
-		this.host = StateManagerHost(this.stateManager);
 
 		this._ffiInitialized = true;
 	}
@@ -233,8 +238,7 @@ export class ForkProvider implements Provider {
 				const _blockTag = p[1] as BlockTag;
 
 				const address = Address(addr) as AddressType;
-				const balance = this.host.getBalance(address);
-
+				const balance = await this.stateManager.getBalance(address);
 				return `0x${balance.toString(16)}`;
 			}
 
@@ -243,8 +247,7 @@ export class ForkProvider implements Provider {
 				const _blockTag = p[1] as BlockTag;
 
 				const address = Address(addr) as AddressType;
-				const nonce = this.host.getNonce(address);
-
+				const nonce = await this.stateManager.getNonce(address);
 				return `0x${nonce.toString(16)}`;
 			}
 
@@ -253,9 +256,7 @@ export class ForkProvider implements Provider {
 				const _blockTag = p[1] as BlockTag;
 
 				const address = Address(addr) as AddressType;
-				const code = this.host.getCode(address);
-
-				return HexUtils.fromBytes(code);
+				return this.stateManager.getCode(address);
 			}
 
 			case "eth_getStorageAt": {
@@ -264,10 +265,11 @@ export class ForkProvider implements Provider {
 				const _blockTag = p[2] as BlockTag;
 
 				const address = Address(addr) as AddressType;
-				const slot = BigInt(slotHex);
-				const value = this.host.getStorage(address, slot);
-
-				return `0x${value.toString(16).padStart(64, "0")}`;
+				const value = await this.stateManager.getStorage(
+					address,
+					slotHex as Hex,
+				);
+				return value;
 			}
 
 			// ====================================================================
@@ -338,7 +340,7 @@ export class ForkProvider implements Provider {
 				const addr = (p[0] as string).toLowerCase();
 				const balance = BigInt(p[1] as string);
 				const address = Address(addr) as AddressType;
-				this.host.setBalance(address, balance);
+				await this.stateManager.setBalance(address, balance);
 				return true;
 			}
 
@@ -347,7 +349,7 @@ export class ForkProvider implements Provider {
 				const addr = (p[0] as string).toLowerCase();
 				const code = HexUtils.toBytes(p[1] as `0x${string}`);
 				const address = Address(addr) as AddressType;
-				this.host.setCode(address, code);
+				await this.stateManager.setCode(address, HexUtils.fromBytes(code));
 				return true;
 			}
 
@@ -356,7 +358,7 @@ export class ForkProvider implements Provider {
 				const addr = (p[0] as string).toLowerCase();
 				const nonce = BigInt(p[1] as string);
 				const address = Address(addr) as AddressType;
-				this.host.setNonce(address, nonce);
+				await this.stateManager.setNonce(address, nonce);
 				return true;
 			}
 
@@ -366,7 +368,11 @@ export class ForkProvider implements Provider {
 				const slot = BigInt(p[1] as string);
 				const value = BigInt(p[2] as string);
 				const address = Address(addr) as AddressType;
-				this.host.setStorage(address, slot, value);
+				await this.stateManager.setStorage(
+					address,
+					`0x${slot.toString(16)}` as Hex,
+					`0x${value.toString(16)}` as Hex,
+				);
 				return true;
 			}
 

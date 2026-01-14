@@ -8,7 +8,7 @@
 //!
 //! ## Components
 //! - StateCache: Per-type caching (accounts, storage, contracts) with journaling
-//! - ForkBackend: Remote state fetcher with RPC client vtable
+//! - ForkBackend: Remote state fetcher with async request/continue bridge
 //! - JournaledState: Dual-cache orchestrator
 //! - StateManager: Main public API
 //!
