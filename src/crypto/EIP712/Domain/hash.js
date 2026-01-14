@@ -170,6 +170,7 @@ function validateDomainField(field, value) {
 			value,
 			validFields: Object.keys(DOMAIN_FIELD_TYPES),
 		});
+		return;
 	}
 	validator(value);
 }
