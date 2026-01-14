@@ -1,7 +1,10 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { StateManager } from "../state-manager/StateManager/index.js";
 
-describe("StateManager isolation (no fork)", () => {
+// Skip these tests when not running in Bun (requires bun:ffi for native FFI)
+const isBun = typeof globalThis.Bun !== "undefined";
+
+describe.skipIf(!isBun)("StateManager isolation (no fork)", () => {
 	test("should create StateManager without fork backend", () => {
 		const sm = new StateManager({
 			rpcClient: null, // No fork backend

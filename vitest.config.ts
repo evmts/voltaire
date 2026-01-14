@@ -20,6 +20,7 @@ export default defineConfig({
 		],
 		exclude: [
 			"src/mcp-evals/**",
+			"tests/mcp-evals/**",
 			"node_modules/**",
 			// Hardware wallet tests require optional peer dependencies (@ledgerhq/*, @trezor/*)
 			"src/wallet/hardware/**",

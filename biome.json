@@ -27,14 +27,13 @@
 			"!**/*.dll",
 			"!**/*.dylib",
 			"!**/lib",
-			"!**/scripts/dist-address-wasm",
-			"!**/scripts/dist-wasm",
-			"!**/scripts/dist-noble",
-			"!**/scripts/migrate-crypto-docs.ts",
-			"!**/scripts/inspect-ox-api.ts",
+			"!**/scripts",
+			"!**/playground",
+			"!**/benchmark",
 			"!**/docs",
 			"!**/vendor",
-			"!**/worktrees"
+			"!**/worktrees",
+			"!**/tests/mcp-evals"
 		]
 	},
 	"formatter": {

@@ -4,7 +4,7 @@
  * Provides HTTP interface for state-manager and blockchain operations
  */
 
-import type { IncomingMessage, ServerResponse } from "node:http";
+import type { IncomingMessage } from "node:http";
 import { createServer } from "node:http";
 import type {
 	JsonRpcError,
@@ -132,7 +132,7 @@ async function handleRequest(
 	// Parse request
 	try {
 		request = JSON.parse(body);
-	} catch (error) {
+	} catch (_error) {
 		return createErrorResponse(null, {
 			code: JsonRpcErrorCode.PARSE_ERROR,
 			message: "Invalid JSON",

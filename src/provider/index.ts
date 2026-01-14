@@ -57,16 +57,15 @@ export {
 	JsonRpcErrorCode,
 	ProviderRpcError,
 } from "./events/index.js";
-// Factory to create provider from a supplied Host/EVM
-export { fromEvm } from "./fromEvm.js";
-export type { ForkConfig, ForkProviderOptions } from "./ForkProviderOptions.js";
 // Provider implementations
 export { ForkProvider } from "./ForkProvider.js";
+export type { ForkConfig, ForkProviderOptions } from "./ForkProviderOptions.js";
+// Factory to create provider from a supplied Host/EVM
+export { fromEvm } from "./fromEvm.js";
 export type { HttpProviderOptions } from "./HttpProvider.js";
 export { HttpProvider } from "./HttpProvider.js";
 export type { InMemoryProviderOptions } from "./InMemoryProvider.js";
 export { InMemoryProvider } from "./InMemoryProvider.js";
-export { StateManagerHost } from "./StateManagerHost.js";
 // Core types and interfaces (legacy)
 export type { Provider } from "./Provider.js";
 // RPC Schema system
@@ -82,6 +81,7 @@ export type {
 	EIP1193RequestOptions,
 	RequestArguments,
 } from "./request/index.js";
+export { StateManagerHost } from "./StateManagerHost.js";
 // Schemas
 export type {
 	DerivedRpcSchema,

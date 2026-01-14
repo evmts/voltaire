@@ -10,8 +10,8 @@
 import type { BrandedHost } from "../evm/Host/HostType.js";
 import { Host } from "../evm/Host/index.js";
 import type { AddressType } from "../primitives/Address/AddressType.js";
-import type { Hex } from "../primitives/Hex/HexType.js";
 import * as Address from "../primitives/Address/index.js";
+import type { Hex } from "../primitives/Hex/HexType.js";
 import * as HexUtils from "../primitives/Hex/index.js";
 import type { StateManager } from "../state-manager/StateManager/index.js";
 
@@ -111,7 +111,7 @@ export function StateManagerHost(stateManager: StateManager): BrandedHost {
 /**
  * Clear transient storage (call at end of transaction)
  */
-export function clearTransientStorage(host: BrandedHost): void {
+export function clearTransientStorage(_host: BrandedHost): void {
 	// Access internal transient storage if possible
 	// For now, this is a no-op - caller must manage transaction boundaries
 }
@@ -126,7 +126,7 @@ export function clearTransientStorage(host: BrandedHost): void {
  * Workaround for Bun FFI cstring bug in 1.2.20
  */
 function encodeCString(str: string): Uint8Array {
-	return new TextEncoder().encode(str + "\0");
+	return new TextEncoder().encode(`${str}\0`);
 }
 
 /**

@@ -7,31 +7,31 @@
  * @module provider/ForkProvider
  */
 
-import type { BrandedHost } from "../evm/Host/HostType.js";
-import type { AddressType } from "../primitives/Address/AddressType.js";
-import { Address } from "../primitives/Address/index.js";
-import type { Hex } from "../primitives/Hex/HexType.js";
-import * as HexUtils from "../primitives/Hex/index.js";
-import { Blockchain } from "../blockchain/Blockchain/index.js";
 import type {
 	BlockchainFFIExports,
 	RpcClient as BlockchainRpcClient,
 } from "../blockchain/Blockchain/index.js";
+import { Blockchain } from "../blockchain/Blockchain/index.js";
+import type { BrandedHost } from "../evm/Host/HostType.js";
 import { loadNative } from "../native-loader/index.js";
-import { StateManager } from "../state-manager/StateManager/index.js";
+import type { AddressType } from "../primitives/Address/AddressType.js";
+import { Address } from "../primitives/Address/index.js";
+import type { Hex } from "../primitives/Hex/HexType.js";
+import * as HexUtils from "../primitives/Hex/index.js";
 import type { StateManagerFFIExports } from "../state-manager/StateManager/index.js";
+import { StateManager } from "../state-manager/StateManager/index.js";
 import { RpcClientAdapter } from "../state-manager/StateManager/RpcClientAdapter.js";
+import type { ForkProviderOptions } from "./ForkProviderOptions.js";
+import { HttpProvider } from "./HttpProvider.js";
 import type { Provider } from "./Provider.js";
+import { StateManagerHost } from "./StateManagerHost.js";
 import type {
+	BlockTag,
 	ProviderEvent,
 	ProviderEventListener,
 	ProviderEventMap,
 	RequestArguments,
-	BlockTag,
 } from "./types.js";
-import type { ForkProviderOptions } from "./ForkProviderOptions.js";
-import { HttpProvider } from "./HttpProvider.js";
-import { StateManagerHost } from "./StateManagerHost.js";
 
 /**
  * Fork Provider implementation
@@ -520,21 +520,6 @@ export class ForkProvider implements Provider {
 	): this {
 		this.eventListeners.get(event)?.delete(listener as ProviderEventListener);
 		return this;
-	}
-
-	/**
-	 * Emit event to all listeners
-	 */
-	private emit<E extends ProviderEvent>(
-		event: E,
-		...args: ProviderEventMap[E]
-	): void {
-		const listeners = this.eventListeners.get(event);
-		if (listeners) {
-			listeners.forEach((listener) => {
-				listener(...args);
-			});
-		}
 	}
 
 	/**

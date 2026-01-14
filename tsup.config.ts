@@ -111,10 +111,5 @@ const baseConfig = createTsUpOptions({
 const config = Array.isArray(baseConfig) ? baseConfig : [baseConfig];
 export default config.map((c) => ({
 	...c,
-	external: [
-		...(c.external || []),
-		"ffi-napi",
-		"ref-napi",
-		"ref-struct-di",
-	],
+	external: [...(c.external || []), "ffi-napi", "ref-napi", "ref-struct-di"],
 }));

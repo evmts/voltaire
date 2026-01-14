@@ -161,7 +161,6 @@ export class InMemoryProvider implements Provider {
 	private filters: Map<string, any> = new Map();
 	private filterIdCounter = 0;
 	private coinbase = "0x0000000000000000000000000000000000000000";
-	private host!: BrandedHost;
 
 	// Snapshots for revert functionality
 	private snapshots: Map<
@@ -176,6 +175,8 @@ export class InMemoryProvider implements Provider {
 
 	private eventListeners: Map<ProviderEvent, Set<ProviderEventListener>> =
 		new Map();
+
+	private host: BrandedHost | null = null;
 
 	constructor(options: InMemoryProviderOptions = {}) {
 		this.chainId = options.chainId ?? 1;

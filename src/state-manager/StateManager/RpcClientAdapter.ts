@@ -7,11 +7,11 @@
  * @module state-manager/StateManager/RpcClientAdapter
  */
 
-import type { Provider } from "../../provider/Provider.js";
 import type { AddressType } from "../../primitives/Address/AddressType.js";
-import type { Hex } from "../../primitives/Hex/HexType.js";
-import type { RpcClient, EthProof } from "./index.js";
 import * as Address from "../../primitives/Address/index.js";
+import type { Hex } from "../../primitives/Hex/HexType.js";
+import type { Provider } from "../../provider/Provider.js";
+import type { EthProof, RpcClient } from "./index.js";
 
 /**
  * RPC Client Adapter Options
@@ -192,48 +192,5 @@ export class RpcClientAdapter implements RpcClient {
 		}
 
 		return result as Hex;
-	}
-
-	/**
-	 * Execute request with retry logic
-	 *
-	 * @param fn - Function to execute
-	 * @returns Result from function
-	 */
-	private async withRetry<T>(fn: () => Promise<T>): Promise<T> {
-		let lastError: Error | null = null;
-
-		for (let attempt = 0; attempt < this.retries; attempt++) {
-			try {
-				return await Promise.race([
-					fn(),
-					new Promise<never>((_, reject) =>
-						setTimeout(
-							() => reject(new Error("Request timeout")),
-							this.timeout,
-						),
-					),
-				]);
-			} catch (error) {
-				lastError = error instanceof Error ? error : new Error(String(error));
-
-				// Don't retry on certain errors
-				if (
-					lastError.message.includes("Invalid") ||
-					lastError.message.includes("not found")
-				) {
-					throw lastError;
-				}
-
-				// Wait before retry (exponential backoff)
-				if (attempt < this.retries - 1) {
-					await new Promise((resolve) =>
-						setTimeout(resolve, Math.pow(2, attempt) * 1000),
-					);
-				}
-			}
-		}
-
-		throw lastError ?? new Error("Request failed after retries");
 	}
 }

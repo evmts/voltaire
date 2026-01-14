@@ -8,8 +8,8 @@
  */
 
 import type { AddressType } from "../../primitives/Address/AddressType.js";
-import type { Hex } from "../../primitives/Hex/HexType.js";
 import * as Address from "../../primitives/Address/index.js";
+import type { Hex } from "../../primitives/Hex/HexType.js";
 import * as HexUtils from "../../primitives/Hex/index.js";
 
 /**
@@ -198,10 +198,6 @@ export class StateManager {
 	private handle: bigint;
 	private forkBackendHandle: bigint | null = null;
 	private ffi: StateManagerFFIExports;
-	private pendingRequests = new Map<
-		string,
-		{ resolve: (value: unknown) => void; reject: (error: Error) => void }
-	>();
 
 	constructor(options: StateManagerOptions) {
 		this.ffi = options.ffi;
@@ -259,7 +255,7 @@ export class StateManager {
 	 * Workaround for Bun FFI cstring bug in 1.2.20
 	 */
 	private encodeCString(str: string): Uint8Array {
-		return new TextEncoder().encode(str + "\0");
+		return new TextEncoder().encode(`${str}\0`);
 	}
 
 	/**

@@ -5,12 +5,18 @@
  * Validates all 5 Milestone 1 acceptance criteria with mocked state.
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
-import { MockRpcClient } from "./test-utils/MockRpcClient.js";
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+	recordMockData,
+	serializeMockData,
+} from "../state-manager/MockDataRecorder.js";
 import { ForkProvider } from "./ForkProvider.js";
-import { recordMockData, serializeMockData } from "../state-manager/MockDataRecorder.js";
+import { MockRpcClient } from "./test-utils/MockRpcClient.js";
 
-describe("ForkProvider (Mock RPC)", () => {
+// Skip these tests when not running in Bun (requires bun:ffi)
+const isBun = typeof globalThis.Bun !== "undefined";
+
+describe.skipIf(!isBun)("ForkProvider (Mock RPC)", () => {
 	let mockRpc: MockRpcClient;
 	let provider: ForkProvider;
 
@@ -20,8 +26,8 @@ describe("ForkProvider (Mock RPC)", () => {
 		// Set up mock fork state at block 1000
 		mockRpc.setBlock({
 			number: 1000n,
-			hash: "0xa" + "0".repeat(63),
-			parentHash: "0xb" + "0".repeat(63),
+			hash: `0xa${"0".repeat(63)}`,
+			parentHash: `0xb${"0".repeat(63)}`,
 			timestamp: 1700000000n,
 			gasLimit: 30000000n,
 			gasUsed: 0n,
@@ -52,7 +58,13 @@ describe("ForkProvider (Mock RPC)", () => {
 		const { dlopen, FFIType, suffix } = require("bun:ffi");
 		const lib = dlopen(`zig-out/native/libprimitives_ts_native.${suffix}`, {
 			mock_data_load: {
-				args: [FFIType.u32, FFIType.u32, FFIType.u64, FFIType.ptr, FFIType.usize],
+				args: [
+					FFIType.u32,
+					FFIType.u32,
+					FFIType.u64,
+					FFIType.ptr,
+					FFIType.usize,
+				],
 				returns: FFIType.void,
 			},
 		});

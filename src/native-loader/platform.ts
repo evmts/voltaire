@@ -100,7 +100,7 @@ export function getNativeLibPath(
 
 		// If platform-specific path doesn't exist, try non-platform-specific build output
 		// (which is created by the standard build system)
-		const fallbackPath = `./zig-out/native/lib${moduleName === "voltaire_native" ? "primitives_ts_native" : moduleName}.${ext}`;
+		const _fallbackPath = `./zig-out/native/lib${moduleName === "voltaire_native" ? "primitives_ts_native" : moduleName}.${ext}`;
 
 		// Return platform-specific path first (for distribution packages)
 		// The loader will handle both paths

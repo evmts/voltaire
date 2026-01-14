@@ -45,7 +45,9 @@ export function recordMockData(mockRpc: MockRpcClient): RecordedData {
 
 	const accounts: RecordedAccount[] = [];
 	for (const [address, state] of rpc.accounts.entries()) {
-		const storageSlots = Array.from(state.storage.entries() as IterableIterator<[bigint, bigint]>).map(([slot, value]) => ({
+		const storageSlots = Array.from(
+			state.storage.entries() as IterableIterator<[bigint, bigint]>,
+		).map(([slot, value]) => ({
 			slot,
 			value,
 		}));
@@ -98,7 +100,7 @@ export function serializeMockData(data: RecordedData): Uint8Array {
 	for (const account of data.accounts) {
 		size += 20; // address
 		size += 32; // balance
-		size += 8;  // nonce
+		size += 8; // nonce
 		const codeBytes = encoder.encode(account.code);
 		size += 4 + codeBytes.length; // code_len + code
 		size += 4; // storage_count
@@ -123,55 +125,68 @@ export function serializeMockData(data: RecordedData): Uint8Array {
 	let offset = 0;
 
 	// Write header
-	view.setUint32(offset, data.accounts.length, true); offset += 4;
-	view.setUint32(offset, data.blocks.length, true); offset += 4;
-	view.setBigUint64(offset, data.forkBlockNumber, true); offset += 8;
+	view.setUint32(offset, data.accounts.length, true);
+	offset += 4;
+	view.setUint32(offset, data.blocks.length, true);
+	offset += 4;
+	view.setBigUint64(offset, data.forkBlockNumber, true);
+	offset += 8;
 
 	// Write accounts
 	for (const account of data.accounts) {
 		// Address (20 bytes)
 		const addrBytes = hexToBytes(account.address);
-		buffer.set(addrBytes, offset); offset += 20;
+		buffer.set(addrBytes, offset);
+		offset += 20;
 
 		// Balance (32 bytes, big-endian u256)
-		const balanceHex = account.balance.toString(16).padStart(64, '0');
-		const balanceBytes = hexToBytes('0x' + balanceHex);
-		buffer.set(balanceBytes, offset); offset += 32;
+		const balanceHex = account.balance.toString(16).padStart(64, "0");
+		const balanceBytes = hexToBytes(`0x${balanceHex}`);
+		buffer.set(balanceBytes, offset);
+		offset += 32;
 
 		// Nonce (8 bytes, little-endian u64)
-		view.setBigUint64(offset, account.nonce, true); offset += 8;
+		view.setBigUint64(offset, account.nonce, true);
+		offset += 8;
 
 		// Code
 		const codeBytes = encoder.encode(account.code);
-		view.setUint32(offset, codeBytes.length, true); offset += 4;
-		buffer.set(codeBytes, offset); offset += codeBytes.length;
+		view.setUint32(offset, codeBytes.length, true);
+		offset += 4;
+		buffer.set(codeBytes, offset);
+		offset += codeBytes.length;
 
 		// Storage
-		view.setUint32(offset, account.storageSlots.length, true); offset += 4;
+		view.setUint32(offset, account.storageSlots.length, true);
+		offset += 4;
 		for (const { slot, value } of account.storageSlots) {
-			const slotHex = slot.toString(16).padStart(64, '0');
-			const slotBytes = hexToBytes('0x' + slotHex);
-			buffer.set(slotBytes, offset); offset += 32;
+			const slotHex = slot.toString(16).padStart(64, "0");
+			const slotBytes = hexToBytes(`0x${slotHex}`);
+			buffer.set(slotBytes, offset);
+			offset += 32;
 
-			const valueHex = value.toString(16).padStart(64, '0');
-			const valueBytes = hexToBytes('0x' + valueHex);
-			buffer.set(valueBytes, offset); offset += 32;
+			const valueHex = value.toString(16).padStart(64, "0");
+			const valueBytes = hexToBytes(`0x${valueHex}`);
+			buffer.set(valueBytes, offset);
+			offset += 32;
 		}
 	}
 
 	// Write blocks (simplified for now - just number and hash)
 	for (const block of data.blocks) {
-		view.setBigUint64(offset, block.number, true); offset += 8;
+		view.setBigUint64(offset, block.number, true);
+		offset += 8;
 
-		const hashBytes = encoder.encode(block.hash + '\0');
-		buffer.set(hashBytes, offset); offset += hashBytes.length;
+		const hashBytes = encoder.encode(`${block.hash}\0`);
+		buffer.set(hashBytes, offset);
+		offset += hashBytes.length;
 	}
 
 	return buffer;
 }
 
 function hexToBytes(hex: string): Uint8Array {
-	const clean = hex.startsWith('0x') ? hex.slice(2) : hex;
+	const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
 	const bytes = new Uint8Array(clean.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
 		bytes[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
