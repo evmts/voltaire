@@ -298,7 +298,37 @@ async function instantiateWasm(
 			mem.setUint32(nwritten, bytes, true);
 			return 0;
 		},
+		fd_pwrite: (
+			_fd: number,
+			iovs: number,
+			iovsLen: number,
+			_offset: bigint | number,
+			nwritten: number,
+		) => {
+			if (!wasmMemory) return -1;
+			const memU32 = new Uint32Array(wasmMemory.buffer);
+			let bytes = 0;
+			for (let i = 0; i < iovsLen; i++) {
+				const len = memU32[(iovs >> 2) + i * 2 + 1] ?? 0;
+				bytes += len;
+			}
+			const mem = new DataView(wasmMemory.buffer);
+			mem.setUint32(nwritten, bytes, true);
+			return 0;
+		},
 		fd_read: (_fd: number, _iovs: number, _iovsLen: number, nread: number) => {
+			if (!wasmMemory) return -1;
+			const mem = new DataView(wasmMemory.buffer);
+			mem.setUint32(nread, 0, true);
+			return 0;
+		},
+		fd_pread: (
+			_fd: number,
+			_iovs: number,
+			_iovsLen: number,
+			_offset: bigint | number,
+			nread: number,
+		) => {
 			if (!wasmMemory) return -1;
 			const mem = new DataView(wasmMemory.buffer);
 			mem.setUint32(nread, 0, true);
@@ -554,13 +584,13 @@ function createStateManagerExports(module: WasmModule): StateManagerFFIExports {
 		) => {
 			module.reset();
 			const addrPtr = writeCStringArg(addressHex);
-			const outPtr = module.alloc(8);
+			const outPtr = module.alloc(4);
 			const result = exp.state_manager_get_code_len_sync(
 				Number(handle),
 				addrPtr,
 				outPtr,
 			);
-			outLen[0] = module.readU64(outPtr);
+			outLen[0] = BigInt(module.readU32(outPtr));
 			return result;
 		},
 		state_manager_get_code_sync: (
