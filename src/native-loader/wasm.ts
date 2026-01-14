@@ -45,7 +45,11 @@ async function loadWasmBytes(
 	if (path.protocol === "file:") {
 		try {
 			const { readFile } = await import("node:fs/promises");
-			return (await readFile(path)) as ArrayBuffer;
+			const fileBuffer = await readFile(path);
+			return fileBuffer.buffer.slice(
+				fileBuffer.byteOffset,
+				fileBuffer.byteOffset + fileBuffer.byteLength,
+			);
 		} catch {
 			// Fall through to fetch for non-node environments.
 		}

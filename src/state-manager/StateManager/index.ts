@@ -380,7 +380,7 @@ export class StateManager {
 				string,
 			];
 			const proof = await this.rpcClient.getProof(
-				Address(addressHex) as AddressType,
+				Address.Address(addressHex) as AddressType,
 				slots,
 				blockTag,
 			);
@@ -396,7 +396,7 @@ export class StateManager {
 		if (method === "eth_getCode") {
 			const [addressHex, blockTag] = params as [string, string];
 			return this.rpcClient.getCode(
-				Address(addressHex) as AddressType,
+				Address.Address(addressHex) as AddressType,
 				blockTag,
 			);
 		}

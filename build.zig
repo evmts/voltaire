@@ -1024,8 +1024,8 @@ fn addTypeScriptWasmBuild(
     ts_wasm_exe.addObjectFile(rust_crypto_lib_path);
     ts_wasm_exe.addIncludePath(b.path("lib"));
     ts_wasm_exe.step.dependOn(cargo_build_step);
+    ts_wasm_exe.entry = .disabled; // WASM reactor (no main)
     ts_wasm_exe.rdynamic = true; // Export all symbols
-    // Note: WASM reactor pattern - main() exists but not used
 
     // Install to wasm/ directory with .wasm extension
     const install_wasm = b.addInstallArtifact(ts_wasm_exe, .{
@@ -1062,6 +1062,7 @@ fn addTypeScriptWasmBuild(
     state_manager_wasm_exe.addObjectFile(rust_crypto_lib_path);
     state_manager_wasm_exe.addIncludePath(b.path("lib"));
     state_manager_wasm_exe.step.dependOn(cargo_build_step);
+    state_manager_wasm_exe.entry = .disabled; // WASM reactor (no main)
     state_manager_wasm_exe.rdynamic = true;
 
     const install_state_manager_wasm = b.addInstallArtifact(state_manager_wasm_exe, .{
@@ -1091,6 +1092,7 @@ fn addTypeScriptWasmBuild(
     blockchain_wasm_exe.addObjectFile(rust_crypto_lib_path);
     blockchain_wasm_exe.addIncludePath(b.path("lib"));
     blockchain_wasm_exe.step.dependOn(cargo_build_step);
+    blockchain_wasm_exe.entry = .disabled; // WASM reactor (no main)
     blockchain_wasm_exe.rdynamic = true;
 
     const install_blockchain_wasm = b.addInstallArtifact(blockchain_wasm_exe, .{
@@ -1121,6 +1123,7 @@ fn addTypeScriptWasmBuild(
     ts_wasm_fast_exe.addObjectFile(rust_crypto_lib_path);
     ts_wasm_fast_exe.addIncludePath(b.path("lib"));
     ts_wasm_fast_exe.step.dependOn(cargo_build_step);
+    ts_wasm_fast_exe.entry = .disabled; // WASM reactor (no main)
     ts_wasm_fast_exe.rdynamic = true;
 
     const install_wasm_fast = b.addInstallArtifact(ts_wasm_fast_exe, .{
