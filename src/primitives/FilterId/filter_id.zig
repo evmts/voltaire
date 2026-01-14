@@ -258,7 +258,7 @@ test "toBytes - returns correct slice" {
 /// Convert FilterId to hex string with 0x prefix
 pub fn toHex(id: *const FilterId, allocator: std.mem.Allocator) ![]const u8 {
     const bytes = toBytes(id);
-    return try Hex.fromBytes(bytes, allocator);
+    return try Hex.toHex(allocator, bytes);
 }
 
 test "toHex - with prefix" {

@@ -215,7 +215,7 @@ test "toBytes - returns correct slice" {
 
 /// Convert StorageValue to hex string with 0x prefix
 pub fn toHex(value: *const StorageValue, allocator: std.mem.Allocator) ![]const u8 {
-    return try Hex.fromBytes(value[0..], allocator);
+    return try Hex.toHex(allocator, value[0..]);
 }
 
 test "toHex - with 0x prefix" {

@@ -15,8 +15,8 @@
 const std = @import("std");
 const primitives = @import("primitives");
 const Block = primitives.Block;
-const BlockBody = primitives.BlockBody.BlockBody;
-const BlockHeader = primitives.BlockHeader.BlockHeader;
+const BlockBody = primitives.BlockBody;
+const BlockHeader = primitives.BlockHeader;
 const Address = primitives.Address;
 const Hash = primitives.Hash;
 const Hex = primitives.Hex;
@@ -373,10 +373,9 @@ pub const ForkBlockCache = struct {
         }
     }
 
-    fn freeBlock(self: *ForkBlockCache, block: *Block.Block) void {
+    fn freeBlock(self: *ForkBlockCache, block: *const Block.Block) void {
         if (block.header.extra_data.len != 0) {
             self.allocator.free(block.header.extra_data);
-            block.header.extra_data = &[_]u8{};
         }
     }
 

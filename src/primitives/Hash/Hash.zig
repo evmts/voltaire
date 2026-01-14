@@ -162,7 +162,7 @@ test "toBytes - returns correct slice" {
 
 /// Convert Hash to hex string with 0x prefix
 pub fn toHex(hash: *const Hash, allocator: std.mem.Allocator) ![]const u8 {
-    return try Hex.fromBytes(hash[0..], allocator);
+    return try Hex.toHex(allocator, hash[0..]);
 }
 
 test "toHex - with 0x prefix" {

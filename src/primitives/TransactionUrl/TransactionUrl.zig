@@ -279,7 +279,7 @@ pub fn format(allocator: std.mem.Allocator, url: ParsedTransactionUrl) ![]u8 {
         try result.append(if (has_params) '&' else '?');
         // has_params = true; // Not needed as last param
         try result.appendSlice(allocator, "data=");
-        const hex = try Hex.fromBytes(data, allocator);
+        const hex = try Hex.toHex(allocator, data);
         defer allocator.free(hex);
         try result.appendSlice(allocator, hex);
     }

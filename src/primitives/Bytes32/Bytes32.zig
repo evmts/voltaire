@@ -249,7 +249,7 @@ test "toUint8Array - same as toBytes" {
 
 /// Convert Bytes32 to hex string with 0x prefix
 pub fn toHex(b32: *const Bytes32, allocator: std.mem.Allocator) ![]const u8 {
-    return try Hex.fromBytes(b32[0..], allocator);
+    return try Hex.toHex(allocator, b32[0..]);
 }
 
 test "toHex - with 0x prefix" {
