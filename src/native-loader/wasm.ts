@@ -18,6 +18,149 @@ type WasmModule = {
 	readU64: (ptr: number) => bigint;
 };
 
+type WasmStateManagerExports = {
+	state_manager_create: () => number;
+	state_manager_create_with_fork: (forkBackend: number) => number;
+	state_manager_destroy: (handle: number) => void;
+	fork_backend_create: (
+		rpcClientPtr: number,
+		vtablePtr: number,
+		blockTagPtr: number,
+		maxCacheSize: number,
+	) => number;
+	fork_backend_destroy: (handle: number) => void;
+	fork_backend_clear_cache: (handle: number) => void;
+	fork_backend_next_request: (
+		handle: number,
+		outRequestId: number,
+		outMethod: number,
+		methodBufLen: number,
+		outMethodLen: number,
+		outParams: number,
+		paramsBufLen: number,
+		outParamsLen: number,
+	) => number;
+	fork_backend_continue: (
+		handle: number,
+		requestId: number,
+		responsePtr: number,
+		responseLen: number,
+	) => number;
+	state_manager_get_balance_sync: (
+		handle: number,
+		addressPtr: number,
+		outPtr: number,
+		bufferLen: number,
+	) => number;
+	state_manager_set_balance: (
+		handle: number,
+		addressPtr: number,
+		balancePtr: number,
+	) => number;
+	state_manager_get_nonce_sync: (
+		handle: number,
+		addressPtr: number,
+		outNoncePtr: number,
+	) => number;
+	state_manager_set_nonce: (
+		handle: number,
+		addressPtr: number,
+		nonce: bigint,
+	) => number;
+	state_manager_get_storage_sync: (
+		handle: number,
+		addressPtr: number,
+		slotPtr: number,
+		outPtr: number,
+		bufferLen: number,
+	) => number;
+	state_manager_set_storage: (
+		handle: number,
+		addressPtr: number,
+		slotPtr: number,
+		valuePtr: number,
+	) => number;
+	state_manager_get_code_len_sync: (
+		handle: number,
+		addressPtr: number,
+		outLenPtr: number,
+	) => number;
+	state_manager_get_code_sync: (
+		handle: number,
+		addressPtr: number,
+		outPtr: number,
+		bufferLen: number,
+	) => number;
+	state_manager_set_code: (
+		handle: number,
+		addressPtr: number,
+		codePtr: number,
+		codeLen: number,
+	) => number;
+	state_manager_checkpoint: (handle: number) => number;
+	state_manager_revert: (handle: number) => void;
+	state_manager_commit: (handle: number) => void;
+	state_manager_snapshot: (handle: number, outSnapshotId: number) => number;
+	state_manager_revert_to_snapshot: (
+		handle: number,
+		snapshotId: bigint,
+	) => number;
+	state_manager_clear_caches: (handle: number) => void;
+	state_manager_clear_fork_cache: (handle: number) => void;
+};
+
+type WasmBlockchainExports = {
+	blockchain_create: () => number;
+	blockchain_create_with_fork: (forkCache: number) => number;
+	blockchain_destroy: (handle: number) => void;
+	fork_block_cache_create: (
+		rpcContext: number,
+		vtableFetchByNumber: number,
+		vtableFetchByHash: number,
+		forkBlockNumber: bigint,
+	) => number;
+	fork_block_cache_destroy: (handle: number) => void;
+	fork_block_cache_next_request: (
+		handle: number,
+		outRequestId: number,
+		outMethod: number,
+		methodBufLen: number,
+		outMethodLen: number,
+		outParams: number,
+		paramsBufLen: number,
+		outParamsLen: number,
+	) => number;
+	fork_block_cache_continue: (
+		handle: number,
+		requestId: number,
+		responsePtr: number,
+		responseLen: number,
+	) => number;
+	blockchain_get_block_by_hash: (
+		handle: number,
+		hashPtr: number,
+		outPtr: number,
+	) => number;
+	blockchain_get_block_by_number: (
+		handle: number,
+		blockNumber: number,
+		outPtr: number,
+	) => number;
+	blockchain_get_canonical_hash: (
+		handle: number,
+		blockNumber: number,
+		outPtr: number,
+	) => number;
+	blockchain_get_head_block_number: (handle: number, outPtr: number) => number;
+	blockchain_put_block: (handle: number, blockPtr: number, blockLen: number) => number;
+	blockchain_set_canonical_head: (handle: number, hashPtr: number) => number;
+	blockchain_has_block: (handle: number, hashPtr: number) => number;
+	blockchain_local_block_count: (handle: number) => number;
+	blockchain_orphan_count: (handle: number) => number;
+	blockchain_canonical_chain_length: (handle: number) => number;
+	blockchain_is_fork_block: (handle: number, blockNumber: number) => number;
+};
+
 const DEFAULT_STATE_MANAGER_WASM = new URL(
 	"../../wasm/state-manager.wasm",
 	import.meta.url,
@@ -199,7 +342,7 @@ async function instantiateWasm(
 }
 
 function createStateManagerExports(module: WasmModule): StateManagerFFIExports {
-	const exp = module.exports;
+	const exp = module.exports as unknown as WasmStateManagerExports;
 	const writeCStringArg = (value: string | Uint8Array) =>
 		value instanceof Uint8Array ? module.writeBytes(value) : module.writeCString(value);
 
@@ -478,7 +621,7 @@ function createStateManagerExports(module: WasmModule): StateManagerFFIExports {
 }
 
 function createBlockchainExports(module: WasmModule): BlockchainFFIExports {
-	const exp = module.exports;
+	const exp = module.exports as unknown as WasmBlockchainExports;
 
 	return {
 		blockchain_create: () => {

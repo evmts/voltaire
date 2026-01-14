@@ -77,6 +77,16 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode, t
     // Set working directory to the primitives package root (where Cargo.toml lives)
     cargo_build.setCwd(b.path("."));
 
+    if (is_wasm) {
+        const filter_wasm_archive = b.addSystemCommand(&[_][]const u8{
+            "python3",
+            "scripts/filter-wasm-archive.py",
+            "target/wasm32-unknown-unknown/release/libcrypto_wrappers.a",
+        });
+        filter_wasm_archive.step.dependOn(&cargo_build.step);
+        return &filter_wasm_archive.step;
+    }
+
     return &cargo_build.step;
 }
 
