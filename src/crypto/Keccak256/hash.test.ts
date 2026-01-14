@@ -406,11 +406,16 @@ describe("Keccak256.hash", () => {
 			}
 
 			// Mutate first hash
-			const firstHashOriginal = new Uint8Array(hashes[0]!);
-			hashes[0]![0] = 0xff;
+			const firstHash = hashes[0];
+			const firstInput = inputs[0];
+			if (!firstHash || !firstInput) {
+				throw new Error("Expected non-empty hashes and inputs");
+			}
+			const firstHashOriginal = new Uint8Array(firstHash);
+			firstHash[0] = 0xff;
 
 			// Re-hash first input - should match original
-			const rehashedFirst = hash(inputs[0]!);
+			const rehashedFirst = hash(firstInput);
 			expect(rehashedFirst).toEqual(firstHashOriginal);
 		});
 	});

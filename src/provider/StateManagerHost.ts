@@ -13,7 +13,15 @@ import type { AddressType } from "../primitives/Address/AddressType.js";
 import * as Address from "../primitives/Address/index.js";
 import type { Hex } from "../primitives/Hex/HexType.js";
 import * as HexUtils from "../primitives/Hex/index.js";
-import type { StateManager } from "../state-manager/StateManager/index.js";
+import type {
+	StateManager,
+	StateManagerFFIExports,
+} from "../state-manager/StateManager/index.js";
+
+type StateManagerFFIHandle = {
+	ffi: StateManagerFFIExports;
+	handle: bigint;
+};
 
 /**
  * StateManagerHost - Host implementation backed by StateManager FFI
@@ -129,6 +137,10 @@ function encodeCString(str: string): Uint8Array {
 	return new TextEncoder().encode(`${str}\0`);
 }
 
+function asFFIHandle(stateManager: StateManager): StateManagerFFIHandle {
+	return stateManager as unknown as StateManagerFFIHandle;
+}
+
 /**
  * Get balance synchronously using FFI
  */
@@ -136,9 +148,9 @@ function getBalanceSync(
 	stateManager: StateManager,
 	address: AddressType,
 ): bigint {
-	// HACK: Cast to any to access private ffi and handle
-	// Production should expose sync methods or use different architecture
-	const sm = stateManager as any;
+	// HACK: Cast to internal FFI handle to access private fields.
+	// Production should expose sync methods or use different architecture.
+	const sm = asFFIHandle(stateManager);
 	const addressHex = Address.toHex(address);
 	const buffer = new Uint8Array(67);
 
@@ -166,7 +178,7 @@ function setBalanceSync(
 	address: AddressType,
 	balance: bigint,
 ): void {
-	const sm = stateManager as any;
+	const sm = asFFIHandle(stateManager);
 	const addressHex = Address.toHex(address);
 	const balanceHex = `0x${balance.toString(16)}`;
 
@@ -188,7 +200,7 @@ function getNonceSync(
 	stateManager: StateManager,
 	address: AddressType,
 ): bigint {
-	const sm = stateManager as any;
+	const sm = asFFIHandle(stateManager);
 	const addressHex = Address.toHex(address);
 	const outBuffer = new BigUint64Array(1);
 
@@ -217,7 +229,7 @@ function setNonceSync(
 	address: AddressType,
 	nonce: bigint,
 ): void {
-	const sm = stateManager as any;
+	const sm = asFFIHandle(stateManager);
 	const addressHex = Address.toHex(address);
 
 	const result = sm.ffi.state_manager_set_nonce(
@@ -239,7 +251,7 @@ function getStorageSync(
 	address: AddressType,
 	slot: bigint,
 ): bigint {
-	const sm = stateManager as any;
+	const sm = asFFIHandle(stateManager);
 	const addressHex = Address.toHex(address);
 	const slotHex = `0x${slot.toString(16).padStart(64, "0")}` as Hex;
 	const buffer = new Uint8Array(67);
@@ -270,7 +282,7 @@ function setStorageSync(
 	slot: bigint,
 	value: bigint,
 ): void {
-	const sm = stateManager as any;
+	const sm = asFFIHandle(stateManager);
 	const addressHex = Address.toHex(address);
 	const slotHex = `0x${slot.toString(16).padStart(64, "0")}` as Hex;
 	const valueHex = `0x${value.toString(16).padStart(64, "0")}` as Hex;
@@ -294,7 +306,7 @@ function getCodeSync(
 	stateManager: StateManager,
 	address: AddressType,
 ): Uint8Array {
-	const sm = stateManager as any;
+	const sm = asFFIHandle(stateManager);
 	const addressHex = Address.toHex(address);
 
 	// Get code length first
@@ -338,7 +350,7 @@ function setCodeSync(
 	address: AddressType,
 	code: Uint8Array,
 ): void {
-	const sm = stateManager as any;
+	const sm = asFFIHandle(stateManager);
 	const addressHex = Address.toHex(address);
 
 	const result = sm.ffi.state_manager_set_code(

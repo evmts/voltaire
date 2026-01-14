@@ -41,6 +41,7 @@ export async function encrypt(privateKey, password, options = {}) {
 			pbkdf2C = 262144,
 			includeAddress = false,
 		} = options;
+		void includeAddress;
 
 		// Derive key from password using selected KDF
 		const derivedKey =

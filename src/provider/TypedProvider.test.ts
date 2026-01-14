@@ -15,6 +15,7 @@ describe("TypedProvider", () => {
 		// Create a mock typed provider
 		const provider: TypedProvider<VoltaireRpcSchema, EIP1193EventMap> = {
 			request: async ({ method, params }) => {
+				void params;
 				if (method === "eth_blockNumber") {
 					return "0x1234";
 				}
@@ -55,6 +56,7 @@ describe("TypedProvider", () => {
 	it("validates parameters at compile time", async () => {
 		const provider: TypedProvider<VoltaireRpcSchema, EIP1193EventMap> = {
 			request: async ({ method, params }) => {
+				void params;
 				if (method === "eth_getBalance") {
 					return "0x1234567890abcdef";
 				}
