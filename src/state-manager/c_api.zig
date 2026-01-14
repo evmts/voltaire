@@ -107,7 +107,6 @@ export fn state_manager_create() callconv(.c) ?StateManagerHandle {
 export fn state_manager_create_with_fork(
     fork_backend: ForkBackendHandle,
 ) callconv(.c) ?StateManagerHandle {
-
     if (@intFromPtr(fork_backend) == 0) {
         return null;
     }
@@ -485,7 +484,6 @@ export fn state_manager_get_balance_sync(
     out_buffer: [*]u8,
     buffer_len: usize,
 ) callconv(.c) c_int {
-
     if (@intFromPtr(handle) == 0) {
         return STATE_MANAGER_ERROR_INVALID_INPUT;
     }

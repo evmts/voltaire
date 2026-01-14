@@ -14,6 +14,10 @@ const DOMAIN_FIELD_TYPES = {
 
 const DOMAIN_DOCS_PATH = "/crypto/eip712/domain#error-handling";
 
+/**
+ * @param {string} message
+ * @param {Record<string, unknown>} context
+ */
 const throwInvalidDomain = (message, context) => {
 	throw new Eip712InvalidDomainError(message, {
 		code: "EIP712_INVALID_DOMAIN",
@@ -22,16 +26,27 @@ const throwInvalidDomain = (message, context) => {
 	});
 };
 
+/**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
 const isByteLike = (value) =>
 	value instanceof Uint8Array ||
 	typeof value === "string" ||
 	(typeof value === "object" && value !== null && "length" in value);
 
+/**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
 const isChainIdType = (value) =>
 	typeof value === "bigint" ||
 	typeof value === "number" ||
 	value instanceof Uint8Array;
 
+/**
+ * @param {unknown} value
+ */
 const validateName = (value) => {
 	if (typeof value !== "string") {
 		throwInvalidDomain(
@@ -45,6 +60,9 @@ const validateName = (value) => {
 	}
 };
 
+/**
+ * @param {unknown} value
+ */
 const validateVersion = (value) => {
 	if (typeof value !== "string") {
 		throwInvalidDomain(
@@ -58,6 +76,9 @@ const validateVersion = (value) => {
 	}
 };
 
+/**
+ * @param {unknown} value
+ */
 const validateChainId = (value) => {
 	if (!isChainIdType(value)) {
 		throwInvalidDomain(
@@ -71,6 +92,9 @@ const validateChainId = (value) => {
 	}
 };
 
+/**
+ * @param {unknown} value
+ */
 const validateVerifyingContract = (value) => {
 	if (!isByteLike(value)) {
 		throwInvalidDomain(
@@ -95,6 +119,9 @@ const validateVerifyingContract = (value) => {
 	}
 };
 
+/**
+ * @param {unknown} value
+ */
 const validateSalt = (value) => {
 	if (!isByteLike(value)) {
 		throwInvalidDomain(
@@ -119,6 +146,7 @@ const validateSalt = (value) => {
 	}
 };
 
+/** @type {Record<string, (value: unknown) => void>} */
 const DOMAIN_FIELD_VALIDATORS = {
 	name: validateName,
 	version: validateVersion,

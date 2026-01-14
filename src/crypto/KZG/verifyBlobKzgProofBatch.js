@@ -9,6 +9,11 @@ const assertInitialized = () => {
 	}
 };
 
+/**
+ * @param {Uint8Array[]} blobs
+ * @param {Uint8Array[]} commitments
+ * @param {Uint8Array[]} proofs
+ */
 const assertEqualLengths = (blobs, commitments, proofs) => {
 	if (blobs.length === commitments.length && blobs.length === proofs.length) {
 		return;
@@ -27,6 +32,9 @@ const assertEqualLengths = (blobs, commitments, proofs) => {
 	);
 };
 
+/**
+ * @param {Uint8Array[]} commitments
+ */
 const assertValidCommitments = (commitments) => {
 	for (let i = 0; i < commitments.length; i++) {
 		const commitment = commitments[i];
@@ -50,6 +58,9 @@ const assertValidCommitments = (commitments) => {
 	}
 };
 
+/**
+ * @param {Uint8Array[]} proofs
+ */
 const assertValidProofs = (proofs) => {
 	for (let i = 0; i < proofs.length; i++) {
 		const proof = proofs[i];
