@@ -21,7 +21,7 @@
  * @module NonceManager
  */
 
-import * as Address from "../../src/primitives/Address/index.js";
+import { Address } from "@tevm/voltaire";
 import { NonceStateError } from "./errors.js";
 
 /**

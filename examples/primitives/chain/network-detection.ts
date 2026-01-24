@@ -8,7 +8,7 @@
  * - Network type classification
  */
 
-import { Chain } from "../../../src/primitives/Chain/Chain.js";
+import { Chain } from "@tevm/voltaire";
 
 type NetworkType = "mainnet" | "testnet" | "devnet" | "unknown";
 

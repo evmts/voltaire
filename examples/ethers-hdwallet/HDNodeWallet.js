@@ -16,10 +16,7 @@
  */
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { HDWallet } from "../../src/crypto/HDWallet/HDWallet.js";
-import { Keccak256 } from "../../src/crypto/Keccak256/index.js";
-import { Address } from "../../src/primitives/Address/index.js";
-import * as BrandedAddress from "../../src/primitives/Address/internal-index.js";
+import { HDWallet, Keccak256, Address } from "@tevm/voltaire";
 import { Mnemonic } from "./Mnemonic.js";
 import {
 	InvalidExtendedKeyError,
@@ -98,7 +95,7 @@ export class HDNodeWallet {
 		const hash = Keccak256.hash(uncompressed.slice(1)); // Remove 0x04 prefix
 		const addressBytes = hash.slice(-20);
 		const addr = Address.fromBytes(addressBytes);
-		return BrandedAddress.toChecksummed(addr);
+		return Address.toChecksummed(addr);
 	}
 
 	/** @returns {HexString} 4-byte fingerprint */
@@ -291,9 +288,7 @@ export class HDNodeWallet {
 	 * @returns {Promise<any>} Signed transaction
 	 */
 	async signTransaction(transaction) {
-		const Transaction = await import(
-			"../../src/primitives/Transaction/index.js"
-		);
+		const { Transaction } = await import("@tevm/voltaire");
 		const signingHash = Transaction.getSigningHash(transaction);
 
 		const sig = secp256k1.sign(signingHash, this.#key.privateKey);
@@ -322,7 +317,7 @@ export class HDNodeWallet {
 	 * @returns {Promise<HexString>} Signature
 	 */
 	async signTypedData(typedData) {
-		const { EIP712 } = await import("../../src/crypto/EIP712/EIP712.js");
+		const { EIP712 } = await import("@tevm/voltaire");
 		const hash = EIP712.hashTypedData(typedData);
 
 		const sig = secp256k1.sign(hash, this.#key.privateKey);
@@ -651,7 +646,7 @@ function computeAddressFromPublicKey(publicKey) {
 	const hash = Keccak256.hash(uncompressed.slice(1));
 	const addressBytes = hash.slice(-20);
 	const addr = Address.fromBytes(addressBytes);
-	return BrandedAddress.toChecksummed(addr);
+	return Address.toChecksummed(addr);
 }
 
 export default HDNodeWallet;

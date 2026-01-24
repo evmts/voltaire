@@ -11,11 +11,7 @@
  * - Gas cost variations
  */
 
-import {
-	PrecompileAddress,
-	execute,
-} from "../../../src/precompiles/precompiles.js";
-import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
+import { execute, Hardfork, PrecompileAddress } from "@tevm/voltaire";
 
 // Helper to create ModExp input
 function createModExpInput(

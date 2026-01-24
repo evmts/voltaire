@@ -7,8 +7,7 @@
  * @module examples/viem-contract/readContract
  */
 
-import * as Abi from "../../src/primitives/Abi/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Abi, Hex } from "@tevm/voltaire";
 import { ContractReadError } from "./errors.js";
 
 /**
@@ -23,7 +22,7 @@ import { ContractReadError } from "./errors.js";
  * and cannot make any changes to it. Since read-only methods do not change the
  * state of the contract, they do not require any gas to be executed.
  *
- * @template {readonly import('../../src/primitives/Abi/AbiType.js').Item[]} TAbi
+ * @template {readonly import('@tevm/voltaire').Item[]} TAbi
  * @template {string} TFunctionName
  * @param {import('./ViemContractTypes.js').Client} client - Provider/client to use
  * @param {import('./ViemContractTypes.js').ReadContractParameters<TAbi, TFunctionName>} parameters

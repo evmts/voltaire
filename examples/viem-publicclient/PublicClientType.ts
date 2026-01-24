@@ -6,8 +6,7 @@
  * @module examples/viem-publicclient
  */
 
-import type { AddressType } from "../../src/primitives/Address/AddressType.js";
-import type { HexType } from "../../src/primitives/Hex/HexType.js";
+import type { AddressType, HexType } from "@tevm/voltaire";
 
 // ============================================================================
 // Block Tag Types

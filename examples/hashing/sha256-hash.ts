@@ -2,8 +2,7 @@
 // @description Hash a UTF-8 string using SHA-256 cryptographic hash function
 
 // SNIPPET:START
-import { SHA256 } from "../../src/crypto/SHA256/index.js";
-import { Hex } from "../../src/primitives/Hex/index.js";
+import { Hex, SHA256 } from "@tevm/voltaire";
 
 // Hash a simple string
 const message = "Hello, World!";

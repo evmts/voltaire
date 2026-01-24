@@ -8,8 +8,7 @@
  * - State verification with root hashes
  */
 
-import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { BinaryTree, Hash } from "@tevm/voltaire";
 
 // Helper to create test data
 function createTestData(accountNumber: number): Uint8Array {

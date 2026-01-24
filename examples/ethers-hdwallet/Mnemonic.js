@@ -16,7 +16,7 @@
  * ```
  */
 
-import { Bip39 } from "../../src/crypto/Bip39/Bip39.js";
+import { Bip39 } from "@tevm/voltaire";
 import { InvalidEntropyError, InvalidMnemonicError } from "./errors.js";
 import { LangEn } from "./wordlists/LangEn.js";
 

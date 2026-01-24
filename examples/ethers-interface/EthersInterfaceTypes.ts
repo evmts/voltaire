@@ -2,7 +2,7 @@
  * TypeScript type definitions for ethers Interface abstraction
  */
 
-import type { Parameter } from "../../src/primitives/Abi/Parameter.js";
+import type { Parameter } from "@tevm/voltaire";
 
 // =============================================================================
 // Format Types

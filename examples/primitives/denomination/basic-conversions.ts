@@ -8,9 +8,7 @@
  * - Round-trip conversions
  */
 
-import * as Ether from "../../../src/primitives/Denomination/Ether.js";
-import * as Gwei from "../../../src/primitives/Denomination/Gwei.js";
-import * as Wei from "../../../src/primitives/Denomination/Wei.js";
+import { Ether, Gwei, Wei } from "@tevm/voltaire";
 
 const oneEther = Ether.from(1n);
 const weiFromEther = Ether.toWei(oneEther);

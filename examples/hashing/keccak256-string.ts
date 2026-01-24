@@ -2,8 +2,7 @@
 // @description Hash a UTF-8 string using Keccak256 and get the result as hex
 
 // SNIPPET:START
-import { Keccak256 } from "../../src/crypto/Keccak256/index.js";
-import { Hex } from "../../src/primitives/Hex/index.js";
+import { Hex, Keccak256 } from "@tevm/voltaire";
 
 // Hash a simple string
 const message = "Hello, World!";

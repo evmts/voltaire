@@ -8,7 +8,7 @@
  * - Validation edge cases
  */
 
-import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
+import { Bytecode } from "@tevm/voltaire";
 
 // Valid bytecode - all PUSH instructions complete
 const validCode = Bytecode.fromHex("0x60016002015b00");

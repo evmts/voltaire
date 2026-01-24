@@ -1,8 +1,4 @@
-import {
-	PrecompileAddress,
-	execute,
-} from "../../../src/evm/precompiles/precompiles.js";
-import { Hardfork } from "../../../src/primitives/Hardfork/index.js";
+import { execute, Hardfork, PrecompileAddress } from "@tevm/voltaire";
 
 const FIELD_ELEMENTS_PER_BLOB = 4096;
 const BYTES_PER_FIELD_ELEMENT = 32;

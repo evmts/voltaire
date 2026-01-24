@@ -9,11 +9,14 @@
  * - Address recovery
  */
 
-import * as EIP712 from "../../../src/crypto/Eip712/index.js";
-import * as Address from "../../../src/primitives/Address/index.js";
-import { Bytes, Bytes32 } from "../../../src/primitives/Bytes/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
-import * as PrivateKey from "../../../src/primitives/PrivateKey/index.js";
+import {
+	Address,
+	Bytes,
+	Bytes32,
+	EIP712,
+	Hex,
+	BrandedPrivateKey as PrivateKey,
+} from "@tevm/voltaire";
 
 // Generate private key for examples
 const privateKey = PrivateKey.toHex(PrivateKey.random());

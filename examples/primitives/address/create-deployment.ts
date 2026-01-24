@@ -8,9 +8,7 @@
  * - Multi-contract deployment scenarios
  */
 
-import * as Keccak256Hash from "../../../src/crypto/Keccak256/index.js";
-import { Address } from "../../../src/primitives/Address/index.js";
-import { Rlp } from "../../../src/primitives/Rlp/index.js";
+import { Address, Keccak256 as Keccak256Hash, Rlp } from "@tevm/voltaire";
 
 const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", {
 	keccak256: Keccak256Hash.hash,

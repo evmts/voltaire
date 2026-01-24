@@ -1,5 +1,4 @@
-import { Blake2 } from "../../../src/crypto/Blake2/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Blake2, Hex } from "@tevm/voltaire";
 
 // Zcash uses Blake2b with 32-byte output in Equihash PoW
 const zcashHeader = new Uint8Array(140); // Zcash block header

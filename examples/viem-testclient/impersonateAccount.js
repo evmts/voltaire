@@ -4,7 +4,7 @@
  * @module examples/viem-testclient/impersonateAccount
  */
 
-import { Address } from "../../src/primitives/Address/index.js";
+import { Address } from "@tevm/voltaire";
 
 /**
  * @typedef {import('./TestClientTypes.js').ImpersonateAccountParameters} ImpersonateAccountParameters

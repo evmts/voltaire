@@ -11,10 +11,7 @@
 
 import { hkdf } from "@noble/hashes/hkdf.js";
 import { sha256 } from "@noble/hashes/sha2.js";
-import * as AesGcm from "../../../src/crypto/AesGcm/index.js";
-import * as X25519 from "../../../src/crypto/X25519/index.js";
-import { Bytes } from "../../../src/primitives/Bytes/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { AesGcm, Bytes, Hex, X25519 } from "@tevm/voltaire";
 
 // Message encryption using X25519 + HKDF + AES-GCM
 async function encryptMessage(

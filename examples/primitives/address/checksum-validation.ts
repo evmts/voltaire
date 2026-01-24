@@ -8,8 +8,7 @@
  * - Safe parsing with checksum requirements
  */
 
-import * as Keccak256Hash from "../../../src/crypto/Keccak256/index.js";
-import { Address } from "../../../src/primitives/Address/index.js";
+import { Address, Keccak256 as Keccak256Hash } from "@tevm/voltaire";
 
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e", {
 	keccak256: Keccak256Hash.hash,

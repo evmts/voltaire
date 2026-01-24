@@ -8,12 +8,10 @@
  * in Zig only and not yet exposed to TypeScript through FFI bindings.
  */
 
-import type { AddressType } from "../../../src/primitives/Address/AddressType.js";
-import { Address } from "../../../src/primitives/Address/index.js";
-import * as Bytes from "../../../src/primitives/Bytes/Bytes.index.js";
-import type { BytesType } from "../../../src/primitives/Bytes/BytesType.js";
-import type { HashType } from "../../../src/primitives/Hash/HashType.js";
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Address, Bytes, Hash } from "@tevm/voltaire";
+import type { AddressType } from "@tevm/voltaire/Address";
+import type { BytesType } from "@tevm/voltaire/Bytes";
+import type { HashType } from "@tevm/voltaire/Hash";
 
 // Conceptual Trie implementation for demonstration
 class Trie {

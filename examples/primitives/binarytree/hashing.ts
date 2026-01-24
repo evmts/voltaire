@@ -8,8 +8,7 @@
  * - Deterministic hashing
  */
 
-import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { BinaryTree, Hash } from "@tevm/voltaire";
 
 const emptyTree = BinaryTree.init();
 const emptyHash = BinaryTree.rootHash(emptyTree);

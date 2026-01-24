@@ -8,13 +8,15 @@
  * 4. Profile gas usage across operations
  */
 
-import * as Address from "../src/primitives/Address/index.js";
-import { Bytes } from "../src/primitives/Bytes/index.js";
-import * as CallTrace from "../src/primitives/CallTrace/index.js";
-import * as StructLog from "../src/primitives/StructLog/index.js";
-import * as TraceConfig from "../src/primitives/TraceConfig/index.js";
-import * as TraceResult from "../src/primitives/TraceResult/index.js";
-import * as Uint256 from "../src/primitives/Uint/index.js";
+import {
+	Address,
+	Bytes,
+	CallTrace,
+	StructLog,
+	TraceConfig,
+	TraceResult,
+	Uint256,
+} from "@tevm/voltaire";
 
 const revertConfig = TraceConfig.from({
 	disableStorage: true,

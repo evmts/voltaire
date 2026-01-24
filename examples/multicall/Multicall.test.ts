@@ -7,9 +7,8 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Abi } from "../../src/primitives/Abi/Abi.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
-import type { TypedProvider } from "../../src/provider/TypedProvider.js";
+import { Abi, Hex } from "@tevm/voltaire";
+import type { TypedProvider } from "@tevm/voltaire";
 import { aggregate3Abi } from "./Multicall3Abi.js";
 import {
 	MULTICALL3_ADDRESS,

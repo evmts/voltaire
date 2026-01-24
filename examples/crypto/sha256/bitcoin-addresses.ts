@@ -8,9 +8,7 @@
  * - Double SHA-256 for checksum
  */
 
-import { Ripemd160 } from "../../../src/crypto/Ripemd160/Ripemd160.js";
-import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
-import { Bytes } from "../../../src/primitives/Bytes/index.js";
+import { Bytes, Ripemd160, SHA256 } from "@tevm/voltaire";
 
 // Helper: Double SHA-256 (used in Bitcoin)
 function doubleSha256(data: Uint8Array): Uint8Array {

@@ -8,7 +8,7 @@
  * - Analyzing bytecode with formatted output
  */
 
-import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
+import { Bytecode } from "@tevm/voltaire";
 
 const simpleCode = Bytecode.fromHex("0x60016002015b00");
 

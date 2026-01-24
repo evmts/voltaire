@@ -2,8 +2,7 @@
 // @description Convert between hex strings and byte arrays using Voltaire's Hex primitive
 
 // SNIPPET:START
-import { Bytes } from "../../src/primitives/Bytes/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Bytes, Hex } from "@tevm/voltaire";
 
 // Encode bytes to hex string
 const bytes = Bytes.from([72, 101, 108, 108, 111]); // "Hello" in bytes

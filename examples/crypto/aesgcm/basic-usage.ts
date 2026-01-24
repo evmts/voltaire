@@ -9,8 +9,7 @@
  * - Deterministic behavior
  */
 
-import * as AesGcm from "../../../src/crypto/AesGcm/index.js";
-import { Bytes } from "../../../src/primitives/Bytes/index.js";
+import { AesGcm, Bytes } from "@tevm/voltaire";
 
 const key256 = await AesGcm.generateKey(256);
 
@@ -66,7 +65,7 @@ const ct1 = await AesGcm.encrypt(testMsg, testKey, testNonce);
 const ct2 = await AesGcm.encrypt(testMsg, testKey, testNonce);
 const ct3 = await AesGcm.encrypt(testMsg, testKey, testNonce);
 
-import * as Hex from "../../../src/primitives/Hex/index.js";
+import { BrandedHex as Hex } from "@tevm/voltaire";
 const allMatch =
 	Hex.fromBytes(ct1) === Hex.fromBytes(ct2) &&
 	Hex.fromBytes(ct2) === Hex.fromBytes(ct3);

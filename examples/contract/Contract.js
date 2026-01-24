@@ -7,12 +7,14 @@
  * @module examples/contract/Contract
  */
 
-import { EventStream } from "../../src/contract/EventStream.js";
-import { Abi } from "../../src/primitives/Abi/Abi.js";
-import * as Event from "../../src/primitives/Abi/event/index.js";
-import { Address } from "../../src/primitives/Address/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
-import * as TransactionHash from "../../src/primitives/TransactionHash/index.js";
+import {
+	Abi,
+	Address,
+	Event,
+	EventStream,
+	Hex,
+	TransactionHash,
+} from "@tevm/voltaire";
 import {
 	ContractEventNotFoundError,
 	ContractFunctionNotFoundError,
@@ -23,7 +25,7 @@ import {
 /**
  * @typedef {import('./ContractType.js').ContractInstance} ContractInstance
  * @typedef {import('./ContractType.js').ContractOptions} ContractOptions
- * @typedef {import('../../src/primitives/Abi/AbiType.js').Item} Item
+ * @typedef {import('@tevm/voltaire').AbiItem} Item
  */
 
 /**

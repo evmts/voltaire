@@ -8,15 +8,15 @@
  * - Handling signature malleability (EIP-2)
  */
 
-import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
-import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
 import {
-	PrecompileAddress,
+	BrandedPrivateKey as PrivateKey,
+	Bytes,
 	execute,
-} from "../../../src/evm/precompiles/precompiles.js";
-import { Bytes } from "../../../src/primitives/Bytes/index.js";
-import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
-import * as PrivateKey from "../../../src/primitives/PrivateKey/index.js";
+	Hardfork,
+	Keccak256,
+	PrecompileAddress,
+	Secp256k1,
+} from "@tevm/voltaire";
 
 // Simulate a signed message scenario
 const signerKey = PrivateKey.random();

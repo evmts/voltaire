@@ -8,8 +8,7 @@
  * @module examples/viem-contract/simulateContract
  */
 
-import * as Abi from "../../src/primitives/Abi/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Abi, Hex } from "@tevm/voltaire";
 import { ContractSimulateError } from "./errors.js";
 
 /**
@@ -27,7 +26,7 @@ import { ContractSimulateError } from "./errors.js";
  * It is almost identical to `readContract`, but also supports contract write
  * functions and returns a `request` object that can be passed to `writeContract`.
  *
- * @template {readonly import('../../src/primitives/Abi/AbiType.js').Item[]} TAbi
+ * @template {readonly import('@tevm/voltaire').Item[]} TAbi
  * @template {string} TFunctionName
  * @param {import('./ViemContractTypes.js').Client} client - Public client to use
  * @param {import('./ViemContractTypes.js').SimulateContractParameters<TAbi, TFunctionName>} parameters

@@ -9,7 +9,7 @@
  * - Working with address collections
  */
 
-import { Address } from "../../../src/primitives/Address/index.js";
+import { Address } from "@tevm/voltaire";
 
 const unsorted = [
 	Address.fromHex("0xffffffffffffffffffffffffffffffffffffffff"),

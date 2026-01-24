@@ -8,7 +8,7 @@
  * - Working with common ERC standards
  */
 
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Hash } from "@tevm/voltaire";
 
 // Event signatures are keccak256(eventName(param1Type,param2Type,...))
 // The hash becomes topic0 in event logs

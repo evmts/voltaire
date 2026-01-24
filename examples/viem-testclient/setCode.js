@@ -4,8 +4,7 @@
  * @module examples/viem-testclient/setCode
  */
 
-import { Address } from "../../src/primitives/Address/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Address, Hex } from "@tevm/voltaire";
 
 /**
  * @typedef {import('./TestClientTypes.js').SetCodeParameters} SetCodeParameters

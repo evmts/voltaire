@@ -4,10 +4,10 @@
  * Wraps Voltaire ABI primitives with ethers-compatible API
  */
 
-/** @import { Parameter } from "../../src/primitives/Abi/Parameter.js" */
+/** @import { Parameter } from "@tevm/voltaire" */
 
-import { hash, hashString } from "../../src/crypto/Keccak256/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Keccak256, Hex } from "@tevm/voltaire";
+const { hash, hashString } = Keccak256;
 import { InvalidFragmentError } from "./errors.js";
 
 /**

@@ -1,5 +1,4 @@
-import { Ripemd160 } from "../../../src/crypto/Ripemd160/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Hex, Ripemd160 } from "@tevm/voltaire";
 
 const data = Hex("0x0102030405");
 const hash = Ripemd160.hashHex(data);

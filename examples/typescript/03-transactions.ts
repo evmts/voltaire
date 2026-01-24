@@ -6,7 +6,7 @@
  * - Transaction type enums
  */
 
-import * as Transaction from "../../src/primitives/Transaction/index.js";
+import { Transaction } from "@tevm/voltaire";
 
 // Example transaction types - for full usage see Transaction module documentation
 

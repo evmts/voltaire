@@ -2,8 +2,7 @@
 // @description Your first Voltaire example - hashing a simple string with Keccak256
 
 // SNIPPET:START
-import { Keccak256 } from "../../src/crypto/Keccak256/index.js";
-import { Hex } from "../../src/primitives/Hex/index.js";
+import { Hex, Keccak256 } from "@tevm/voltaire";
 
 // Hash a string using Keccak256
 const hash = Keccak256("Hello, Voltaire!");

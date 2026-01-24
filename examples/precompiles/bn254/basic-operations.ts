@@ -1,8 +1,4 @@
-import {
-	PrecompileAddress,
-	execute,
-} from "../../../src/evm/precompiles/precompiles.js";
-import { Hardfork } from "../../../src/primitives/Hardfork/index.js";
+import { execute, Hardfork, PrecompileAddress } from "@tevm/voltaire";
 
 // BN254 curve parameters
 const FIELD_MODULUS =

@@ -9,12 +9,13 @@
  * - Security best practices
  */
 
-import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
 import {
+	BrandedHash as Hash,
+	BrandedHex as Hex,
+	Secp256k1,
 	type HashType,
-	keccak256,
-} from "../../../src/primitives/Hash/index.js";
-import * as Hex from "../../../src/primitives/Hex/index.js";
+} from "@tevm/voltaire";
+const { keccak256 } = Hash;
 
 // Generate test keypair
 const privateKey = new Uint8Array(32);

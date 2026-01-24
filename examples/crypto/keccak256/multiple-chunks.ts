@@ -1,5 +1,4 @@
-import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
-import { Hex } from "../../../src/primitives/Hex/Hex.js";
+import { Hex, Keccak256 } from "@tevm/voltaire";
 
 const chunk1 = Hex("0x010203");
 const chunk2 = Hex("0x040506");

@@ -8,7 +8,7 @@
  * - Chaining operations
  */
 
-import * as Uint from "../../../src/primitives/Uint/index.js";
+import { Uint256 as Uint } from "@tevm/voltaire";
 
 const a = Uint.from(100n);
 const b = Uint.from(50n);

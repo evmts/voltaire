@@ -7,19 +7,17 @@
  * @module examples/viem-contract/ViemContractTypes
  */
 
-import type { Abi } from "../../src/primitives/Abi/AbiConstructor.js";
-import type { Item } from "../../src/primitives/Abi/AbiType.js";
 import type {
+	Abi,
+	Item,
 	Parameter,
 	ParametersToObject,
 	ParametersToPrimitiveTypes,
-} from "../../src/primitives/Abi/Parameter.js";
-import type {
 	EncodeTopicsArgs,
 	EventType,
-} from "../../src/primitives/Abi/event/EventType.js";
-import type { FunctionType } from "../../src/primitives/Abi/function/FunctionType.js";
-import type { AddressType } from "../../src/primitives/Address/AddressType.js";
+	FunctionType,
+	AddressType,
+} from "@tevm/voltaire";
 
 // =============================================================================
 // Client Types

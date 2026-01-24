@@ -1,8 +1,4 @@
-import {
-	PrecompileAddress,
-	execute,
-} from "../../../src/precompiles/precompiles.js";
-import { Hardfork } from "../../../src/primitives/Hardfork/index.js";
+import { execute, Hardfork, PrecompileAddress } from "@tevm/voltaire";
 
 // Blake2b IV constants
 const BLAKE2B_IV = [

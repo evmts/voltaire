@@ -8,7 +8,7 @@
  * @module examples/viem-contract/getContract
  */
 
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Hex } from "@tevm/voltaire";
 import { estimateContractGas } from "./estimateContractGas.js";
 import { readContract } from "./readContract.js";
 import { simulateContract } from "./simulateContract.js";
@@ -48,7 +48,7 @@ export function getFunctionParameters(values) {
  * - `(options?)` when event has no indexed inputs
  *
  * @param {unknown[]} values - The parameters passed to the method
- * @param {import('../../src/primitives/Abi/AbiType.js').Item | undefined} abiEvent - The ABI event definition
+ * @param {import('@tevm/voltaire').Item | undefined} abiEvent - The ABI event definition
  * @returns {{ args: unknown, options: Record<string, unknown> }}
  */
 export function getEventParameters(values, abiEvent) {
@@ -95,7 +95,7 @@ export function getEventParameters(values, abiEvent) {
  * Using Contract Instances can make it easier to work with contracts if you don't want
  * to pass the `abi` and `address` properties every time you perform contract actions.
  *
- * @template {readonly import('../../src/primitives/Abi/AbiType.js').Item[]} TAbi
+ * @template {readonly import('@tevm/voltaire').Item[]} TAbi
  * @param {import('./ViemContractTypes.js').GetContractParameters<TAbi>} params
  * @returns {import('./ViemContractTypes.js').GetContractReturnType<TAbi>}
  *

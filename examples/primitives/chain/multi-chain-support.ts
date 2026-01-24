@@ -8,7 +8,7 @@
  * - Network switching logic
  */
 
-import { Chain } from "../../../src/primitives/Chain/Chain.js";
+import { Chain } from "@tevm/voltaire";
 
 const SUPPORTED_CHAIN_IDS = [1, 10, 42161, 8453, 137] as const;
 

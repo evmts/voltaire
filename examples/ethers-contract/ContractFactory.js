@@ -7,10 +7,7 @@
  * @module examples/ethers-contract/ContractFactory
  */
 
-import { Abi } from "../../src/primitives/Abi/Abi.js";
-import * as Constructor from "../../src/primitives/Abi/constructor/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
-import * as TransactionHash from "../../src/primitives/TransactionHash/index.js";
+import { Abi, Constructor, Hex, TransactionHash } from "@tevm/voltaire";
 import { EthersContract } from "./EthersContract.js";
 import { InvalidArgumentError, UnsupportedOperationError } from "./errors.js";
 
@@ -18,7 +15,7 @@ import { InvalidArgumentError, UnsupportedOperationError } from "./errors.js";
  * @typedef {import('./EthersContractTypes.js').ContractRunner} ContractRunner
  * @typedef {import('./EthersContractTypes.js').ContractTransactionRequest} ContractTransactionRequest
  * @typedef {import('./EthersContractTypes.js').ContractFactoryInterface} ContractFactoryInterface
- * @typedef {import('../../src/primitives/Abi/AbiType.js').Item} Item
+ * @typedef {import('@tevm/voltaire').AbiItem} Item
  */
 
 // Symbol for internal factory state

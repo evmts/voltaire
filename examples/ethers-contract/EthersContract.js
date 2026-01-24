@@ -16,13 +16,15 @@
  * @module examples/ethers-contract/EthersContract
  */
 
-import { Abi } from "../../src/primitives/Abi/Abi.js";
-import * as Event from "../../src/primitives/Abi/event/index.js";
-import { Address } from "../../src/primitives/Address/index.js";
-import * as BlockNumber from "../../src/primitives/BlockNumber/index.js";
-import * as Hash from "../../src/primitives/Hash/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
-import * as TransactionHash from "../../src/primitives/TransactionHash/index.js";
+import {
+	Abi,
+	Address,
+	BlockNumber,
+	Event,
+	Hash,
+	Hex,
+	TransactionHash,
+} from "@tevm/voltaire";
 import {
 	AmbiguousMatchError,
 	CallExceptionError,
@@ -39,7 +41,7 @@ import {
  * @typedef {import('./EthersContractTypes.js').ContractTransactionResponse} ContractTransactionResponse
  * @typedef {import('./EthersContractTypes.js').DecodedEventLog} DecodedEventLog
  * @typedef {import('./EthersContractTypes.js').PreparedTopicFilter} PreparedTopicFilter
- * @typedef {import('../../src/primitives/Abi/AbiType.js').Item} Item
+ * @typedef {import('@tevm/voltaire').AbiItem} Item
  */
 
 // Symbol for internal state (follows ethers pattern)

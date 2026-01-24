@@ -8,8 +8,8 @@
  * - Load balancing across endpoints
  */
 
-import { Chain } from "../../../src/primitives/Chain/Chain.js";
-import type { Chain as ChainType } from "../../../src/primitives/Chain/ChainType.js";
+import { Chain, BrandedChain } from "@tevm/voltaire";
+import type { Chain as ChainType } from "@tevm/voltaire/Chain";
 
 function getPrimaryRpc(chainId: number): string | null {
 	const chain = Chain.fromId(chainId);

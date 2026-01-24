@@ -7,8 +7,7 @@
  * @module examples/multicall/multicall
  */
 
-import { Abi } from "../../src/primitives/Abi/Abi.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Abi, Hex } from "@tevm/voltaire";
 import { aggregate3Abi } from "./Multicall3Abi.js";
 import { MULTICALL3_ADDRESS, MULTICALL3_BYTECODE } from "./contracts.js";
 import {
@@ -26,7 +25,7 @@ import {
  * @typedef {import('./MulticallTypes.js').MulticallParameters} MulticallParameters
  * @typedef {import('./MulticallTypes.js').Aggregate3Call} Aggregate3Call
  * @typedef {import('./MulticallTypes.js').Aggregate3Result} Aggregate3Result
- * @typedef {import('../../src/provider/TypedProvider.js').TypedProvider} TypedProvider
+ * @typedef {import('@tevm/voltaire').TypedProvider} TypedProvider
  */
 
 /**

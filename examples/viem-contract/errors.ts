@@ -7,7 +7,7 @@
  * @module examples/viem-contract/errors
  */
 
-import type { Item } from "../../src/primitives/Abi/AbiType.js";
+import type { Item } from "@tevm/voltaire";
 
 /**
  * Base error for all contract-related errors

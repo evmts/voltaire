@@ -8,7 +8,7 @@
  * - Constants usage
  */
 
-import * as Uint from "../../../src/primitives/Uint/index.js";
+import { Uint256 as Uint } from "@tevm/voltaire";
 
 // From bigint
 const fromBigInt = Uint.from(100n);

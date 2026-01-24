@@ -8,8 +8,7 @@
  * - Complete file encryption/decryption workflow
  */
 
-import * as AesGcm from "../../../src/crypto/AesGcm/index.js";
-import { Bytes, Bytes16 } from "../../../src/primitives/Bytes/index.js";
+import { AesGcm, Bytes, Bytes16 } from "@tevm/voltaire";
 
 // Complete file encryption with password
 async function encryptFile(

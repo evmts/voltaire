@@ -3,7 +3,7 @@ import {
 	BITS,
 	BloomFilter,
 	DEFAULT_HASH_COUNT,
-} from "../../../src/primitives/BloomFilter/index.js";
+} from "@tevm/voltaire";
 
 // Create filters for simulated "blocks"
 const encoder = new TextEncoder();

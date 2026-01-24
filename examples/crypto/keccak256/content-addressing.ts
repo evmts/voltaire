@@ -1,6 +1,4 @@
-import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
-import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
-import { Hex } from "../../../src/primitives/Hex/Hex.js";
+import { Bytecode, Hex, Keccak256 } from "@tevm/voltaire";
 
 const content1 = "Hello, World!";
 const content2 = "Hello, World!";

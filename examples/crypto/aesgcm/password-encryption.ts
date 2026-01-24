@@ -9,8 +9,7 @@
  * - Secure password handling
  */
 
-import * as AesGcm from "../../../src/crypto/AesGcm/index.js";
-import { Bytes, Bytes16 } from "../../../src/primitives/Bytes/index.js";
+import { AesGcm, Bytes, Bytes16 } from "@tevm/voltaire";
 
 // Helper functions for complete encrypt/decrypt workflow
 async function encryptWithPassword(

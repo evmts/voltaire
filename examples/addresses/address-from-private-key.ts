@@ -2,8 +2,7 @@
 // @description Generate an Ethereum address from a private key using public key derivation
 
 // SNIPPET:START
-import { Address } from "../../src/primitives/Address/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Address, Hex } from "@tevm/voltaire";
 
 // Example private key (32 bytes)
 const privateKey = Hex.toBytes(

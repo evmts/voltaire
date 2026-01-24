@@ -6,8 +6,9 @@
  * @see https://eips.ethereum.org/EIPS/eip-712
  */
 
-import { hashTypedData } from "../../src/crypto/EIP712/EIP712.js";
-import { sign as secp256k1Sign } from "../../src/crypto/Secp256k1/sign.js";
+import { EIP712, Secp256k1 } from "@tevm/voltaire";
+const { hashTypedData } = EIP712;
+const secp256k1Sign = Secp256k1.sign;
 
 /**
  * Serialize signature to 65-byte hex string

@@ -8,10 +8,13 @@
  * - RFC 6979 deterministic signatures
  */
 
-import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
-import { Bytes64 } from "../../../src/primitives/Bytes/index.js";
-import { keccak256 } from "../../../src/primitives/Hash/index.js";
-import * as PrivateKey from "../../../src/primitives/PrivateKey/index.js";
+import {
+	BrandedHash as Hash,
+	BrandedPrivateKey as PrivateKey,
+	Bytes64,
+	Secp256k1,
+} from "@tevm/voltaire";
+const { keccak256 } = Hash;
 
 // Generate random private key (in production, use secure key management)
 const privateKey = PrivateKey.random();

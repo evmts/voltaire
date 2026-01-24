@@ -4,7 +4,7 @@
  * Demonstrates estimating gas for contract transactions.
  */
 
-import type { TypedProvider } from "../../src/provider/TypedProvider.js";
+import type { TypedProvider } from "@tevm/voltaire";
 import { Contract } from "./Contract.js";
 
 const erc20Abi = [

@@ -9,11 +9,9 @@
  * - Mnemonic phrase formatting
  */
 
-import * as Bip39 from "../../../src/crypto/Bip39/index.js";
+import { Address, Bip39, BrandedHex as Hex, Secp256k1 } from "@tevm/voltaire";
+// Note: HDWallet uses native FFI - import from @tevm/voltaire/native
 import * as HDWallet from "../../../src/crypto/HDWallet/index.js";
-import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
-import * as Address from "../../../src/primitives/Address/index.js";
-import * as Hex from "../../../src/primitives/Hex/index.js";
 
 // Generate 24-word mnemonic (recommended for production)
 const mnemonic = Bip39.generateMnemonic(256);

@@ -1,5 +1,4 @@
-import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
-import { Hex } from "../../../src/primitives/Hex/Hex.js";
+import { Hex, Keccak256 } from "@tevm/voltaire";
 
 // Alice commits to her choice
 const aliceChoice = "rock";

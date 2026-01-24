@@ -1,9 +1,10 @@
 import {
-	PrecompileAddress,
+	Bytes,
+	Bytes64,
 	execute,
-} from "../../../src/evm/precompiles/precompiles.js";
-import { Bytes, Bytes64 } from "../../../src/primitives/Bytes/index.js";
-import { Hardfork } from "../../../src/primitives/Hardfork/index.js";
+	Hardfork,
+	PrecompileAddress,
+} from "@tevm/voltaire";
 
 /**
  * Convert bigint to bytes (big-endian, padded to length)

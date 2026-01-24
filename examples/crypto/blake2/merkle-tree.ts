@@ -1,5 +1,4 @@
-import { Blake2 } from "../../../src/crypto/Blake2/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Blake2, Hex } from "@tevm/voltaire";
 
 const data = [
 	"Transaction 1: Alice sends 10 ETH to Bob",

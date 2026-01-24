@@ -11,12 +11,7 @@
  * - NIST test vectors
  */
 
-import {
-	PrecompileAddress,
-	execute,
-} from "../../../src/evm/precompiles/precompiles.js";
-import { Bytes } from "../../../src/primitives/Bytes/index.js";
-import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
+import { Bytes, execute, Hardfork, PrecompileAddress } from "@tevm/voltaire";
 
 const message = "Hello, Ethereum!";
 const messageBytes = new TextEncoder().encode(message);
@@ -47,7 +42,7 @@ const emptyResult = execute(
 
 const expectedEmpty =
 	"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-import * as Hex from "../../../src/primitives/Hex/index.js";
+import { BrandedHex as Hex } from "@tevm/voltaire";
 const emptyHash = Hex.fromBytes(emptyResult.output).slice(2);
 
 // Test vector 2: "abc"

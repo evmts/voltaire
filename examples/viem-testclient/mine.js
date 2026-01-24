@@ -4,7 +4,7 @@
  * @module examples/viem-testclient/mine
  */
 
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Hex } from "@tevm/voltaire";
 
 /**
  * @typedef {import('./TestClientTypes.js').MineParameters} MineParameters

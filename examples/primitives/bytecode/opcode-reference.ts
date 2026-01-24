@@ -9,8 +9,7 @@
  * - Opcode quick reference
  */
 
-import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
-import { Bytes } from "../../../src/primitives/Bytes/index.js";
+import { Bytecode, Bytes } from "@tevm/voltaire";
 for (let i = 1; i <= 32; i++) {
 	const opcode = 0x5f + i; // PUSH1 = 0x60, PUSH2 = 0x61, etc.
 	const isPush = Bytecode.isPush(opcode);

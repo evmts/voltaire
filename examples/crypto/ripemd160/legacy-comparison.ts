@@ -1,7 +1,4 @@
-import { Blake2 } from "../../../src/crypto/Blake2/index.js";
-import { Ripemd160 } from "../../../src/crypto/Ripemd160/index.js";
-import { SHA256 } from "../../../src/crypto/SHA256/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Blake2, Hex, Ripemd160, SHA256 } from "@tevm/voltaire";
 
 const testData = new TextEncoder().encode("Test data for hashing");
 

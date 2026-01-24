@@ -8,8 +8,7 @@
  * - Basic validation
  */
 
-import { KZG } from "../../../src/crypto/KZG/KZG.js";
-import * as Hex from "../../../src/primitives/Hex/index.js";
+import { BrandedHex as Hex, KZG } from "@tevm/voltaire";
 KZG.loadTrustedSetup();
 
 // Create empty blob

@@ -8,9 +8,7 @@
  * - Size and equality operations
  */
 
-import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
-import { Bytes } from "../../../src/primitives/Bytes/index.js";
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Bytecode, Bytes, Hash } from "@tevm/voltaire";
 
 // From hex string (most common)
 const code1 = Bytecode.fromHex("0x60016002015b00");

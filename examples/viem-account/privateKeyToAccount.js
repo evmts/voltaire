@@ -7,9 +7,10 @@
  */
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { hashTypedData } from "../../src/crypto/EIP712/EIP712.js";
-import { hash as keccak256 } from "../../src/crypto/Keccak256/hash.js";
-import { sign as secp256k1Sign } from "../../src/crypto/Secp256k1/sign.js";
+import { EIP712, Keccak256, Secp256k1 } from "@tevm/voltaire";
+const { hashTypedData } = EIP712;
+const keccak256 = Keccak256.hash;
+const secp256k1Sign = Secp256k1.sign;
 import { InvalidAddressError, InvalidPrivateKeyError } from "./errors.js";
 import { signMessage as _signMessage, hashMessage } from "./signMessage.js";
 import { signTransaction as _signTransaction } from "./signTransaction.js";

@@ -4,7 +4,7 @@
  * @module NonceManagerType
  */
 
-import type { AddressType } from "../../src/primitives/Address/AddressType.js";
+import type { AddressType } from "@tevm/voltaire";
 
 /**
  * Address input that can be a branded AddressType or hex string

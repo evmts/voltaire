@@ -1,5 +1,4 @@
-import * as Ed25519 from "../../../src/crypto/Ed25519/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Ed25519, Hex } from "@tevm/voltaire";
 
 // Alice's identity key (long-term)
 const aliceSeed = new Uint8Array(32);

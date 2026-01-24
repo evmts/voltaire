@@ -1,6 +1,4 @@
-import * as Ed25519 from "../../../src/crypto/Ed25519/index.js";
-import { Bytes, Bytes32 } from "../../../src/primitives/Bytes/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Bytes, Bytes32, Ed25519, Hex } from "@tevm/voltaire";
 
 // Generate 32-byte seed (in production, use crypto.getRandomValues())
 const seedBytes = Bytes32.random();

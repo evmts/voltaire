@@ -7,9 +7,8 @@
  * @module examples/viem-contract/watchContractEvent
  */
 
-import * as Event from "../../src/primitives/Abi/event/index.js";
-import * as Abi from "../../src/primitives/Abi/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Abi, Hex } from "@tevm/voltaire";
+const Event = Abi.Event;
 import { ContractEventWatchError } from "./errors.js";
 
 /**
@@ -30,7 +29,7 @@ const DEFAULT_POLLING_INTERVAL = 1000;
  *
  * Uses polling with `eth_getLogs` to watch for events.
  *
- * @template {readonly import('../../src/primitives/Abi/AbiType.js').Item[]} TAbi
+ * @template {readonly import('@tevm/voltaire').Item[]} TAbi
  * @template {string | undefined} TEventName
  * @param {import('./ViemContractTypes.js').Client} client - Client to use
  * @param {import('./ViemContractTypes.js').WatchContractEventParameters<TAbi, TEventName>} parameters
@@ -80,7 +79,7 @@ export function watchContractEvent(client, parameters) {
 	let topicsHex = [];
 	if (abiEvent && abiEvent.type === "event") {
 		const topics = Event.encodeTopics(
-			/** @type {import('../../src/primitives/Abi/event/EventType.js').EventType} */ (
+			/** @type {import('@tevm/voltaire').EventType} */ (
 				abiEvent
 			),
 			args || {},
@@ -116,7 +115,7 @@ export function watchContractEvent(client, parameters) {
 			if (item.type !== "event") return false;
 			// Match by topic0 (event signature)
 			const eventTopics = Event.encodeTopics(
-				/** @type {import('../../src/primitives/Abi/event/EventType.js').EventType} */ (
+				/** @type {import('@tevm/voltaire').EventType} */ (
 					item
 				),
 				{},
@@ -145,7 +144,7 @@ export function watchContractEvent(client, parameters) {
 				Hex.toBytes(t),
 			);
 			const decodedArgs = Event.decodeLog(
-				/** @type {import('../../src/primitives/Abi/event/EventType.js').EventType} */ (
+				/** @type {import('@tevm/voltaire').EventType} */ (
 					matchingEvent
 				),
 				dataBytes,

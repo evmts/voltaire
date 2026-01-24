@@ -8,8 +8,7 @@
  * - Large messages (1 million 'a' characters)
  */
 
-import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
-import { Bytes, Bytes32 } from "../../../src/primitives/Bytes/index.js";
+import { Bytes, Bytes32, SHA256 } from "@tevm/voltaire";
 
 interface TestVector {
 	name: string;

@@ -8,8 +8,7 @@
  * - Basic comparisons
  */
 
-import { Bytes32 } from "../../../src/primitives/Bytes/index.js";
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Bytes32, Hash } from "@tevm/voltaire";
 
 // From hex string (most common)
 const hash1 = Hash(

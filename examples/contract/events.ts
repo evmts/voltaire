@@ -4,7 +4,7 @@
  * Demonstrates streaming contract events with async generators.
  */
 
-import type { TypedProvider } from "../../src/provider/TypedProvider.js";
+import type { TypedProvider } from "@tevm/voltaire";
 import { Contract } from "./Contract.js";
 
 const erc20Abi = [

@@ -1,8 +1,4 @@
-import {
-	PrecompileAddress,
-	execute,
-} from "../../../src/precompiles/precompiles.js";
-import { Hardfork } from "../../../src/primitives/Hardfork/index.js";
+import { execute, Hardfork, PrecompileAddress } from "@tevm/voltaire";
 
 // Blake2b IV (initialization vector) for Blake2b-512
 // These are the first 64 bits of the fractional parts of the square roots of the first 8 primes

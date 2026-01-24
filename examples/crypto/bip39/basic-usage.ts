@@ -9,9 +9,7 @@
  * - Checksum verification
  */
 
-import * as Bip39 from "../../../src/crypto/Bip39/index.js";
-import { Bytes32 } from "../../../src/primitives/Bytes/index.js";
-import * as Hex from "../../../src/primitives/Hex/index.js";
+import { Bip39, BrandedHex as Hex, Bytes32 } from "@tevm/voltaire";
 
 const mnemonic12 = Bip39.generateMnemonic(128); // 12 words
 const mnemonic15 = Bip39.generateMnemonic(160); // 15 words

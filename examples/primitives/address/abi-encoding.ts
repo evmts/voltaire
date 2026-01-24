@@ -9,8 +9,7 @@
  * - Building function call payloads
  */
 
-import { Address } from "../../../src/primitives/Address/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Address, Hex } from "@tevm/voltaire";
 
 const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 

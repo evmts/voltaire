@@ -8,7 +8,7 @@
  * - Common Ethereum function selectors
  */
 
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Hash } from "@tevm/voltaire";
 
 // Function selector = first 4 bytes of keccak256(signature)
 function getFunctionSelector(signature: string): Uint8Array {

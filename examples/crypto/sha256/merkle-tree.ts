@@ -8,8 +8,7 @@
  * - Bitcoin-style double hashing
  */
 
-import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
-import { Bytes, Bytes64 } from "../../../src/primitives/Bytes/index.js";
+import { Bytes, Bytes64, SHA256 } from "@tevm/voltaire";
 
 // Helper: Double SHA-256 (Bitcoin style)
 function doubleSha256(data: Uint8Array): Uint8Array {

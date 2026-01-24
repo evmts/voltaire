@@ -8,7 +8,7 @@
  * - Transaction cost calculations
  */
 
-import * as Uint from "../../../src/primitives/Uint/index.js";
+import { Uint256 as Uint } from "@tevm/voltaire";
 
 // Constants for Ethereum denominations
 const WEI_PER_GWEI = Uint.from(10n ** 9n); // 1 gwei = 10^9 wei

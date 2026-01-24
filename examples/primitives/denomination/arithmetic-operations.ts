@@ -8,10 +8,7 @@
  * - Working with multiple denominations safely
  */
 
-import * as Ether from "../../../src/primitives/Denomination/Ether.js";
-import * as Gwei from "../../../src/primitives/Denomination/Gwei.js";
-import * as Wei from "../../../src/primitives/Denomination/Wei.js";
-import * as Uint from "../../../src/primitives/Uint/index.js";
+import { Ether, Gwei, Wei, Uint256 as Uint } from "@tevm/voltaire";
 
 function addWei(...amounts: Wei.Type[]): Wei.Type {
 	let total = 0n;

@@ -2,7 +2,7 @@
 // @description Convert addresses to EIP-55 checksummed format for safer usage
 
 // SNIPPET:START
-import { Address } from "../../src/primitives/Address/index.js";
+import { Address } from "@tevm/voltaire";
 
 // Lowercase address (no checksum)
 const lowercaseAddr = "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed";

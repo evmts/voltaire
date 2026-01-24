@@ -1,12 +1,11 @@
-import { Keccak256 } from "../../../src/crypto/Keccak256/index.js";
-import { Address } from "../../../src/primitives/Address/index.js";
-// Simulate Ethereum log filtering with bloom filters
 import {
+	Keccak256,
+	Address,
 	BITS,
 	BloomFilter,
 	DEFAULT_HASH_COUNT,
-} from "../../../src/primitives/BloomFilter/index.js";
-import type { Hash } from "../../../src/primitives/Hash/index.js";
+} from "@tevm/voltaire";
+import type { Hash } from "@tevm/voltaire";
 
 // Create realistic Ethereum addresses
 function createAddress(hexSuffix: string): ReturnType<typeof Address.from> {

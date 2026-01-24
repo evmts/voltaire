@@ -9,9 +9,7 @@
  * - Secure key derivation
  */
 
-import * as X25519 from "../../../src/crypto/X25519/index.js";
-import { Bytes32 } from "../../../src/primitives/Bytes/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Bytes32, Hex, X25519 } from "@tevm/voltaire";
 
 const aliceKeypair = X25519.generateKeypair();
 const bobKeypair = X25519.generateKeypair();

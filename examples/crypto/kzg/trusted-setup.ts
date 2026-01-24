@@ -8,11 +8,10 @@
  * - Security considerations
  */
 
-import { KZG } from "../../../src/crypto/KZG/KZG.js";
-import {
-	BYTES_PER_BLOB,
-	FIELD_ELEMENTS_PER_BLOB,
-} from "../../../src/crypto/KZG/constants.js";
+import { KZG } from "@tevm/voltaire";
+// Note: KZG constants are internal - use the values directly
+const BYTES_PER_BLOB = 131072; // 4096 * 32
+const FIELD_ELEMENTS_PER_BLOB = 4096;
 KZG.loadTrustedSetup();
 KZG.loadTrustedSetup(); // Should be no-op if already loaded
 

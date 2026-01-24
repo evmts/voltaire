@@ -8,7 +8,7 @@
  * - Gas optimization patterns
  */
 
-import * as Uint from "../../../src/primitives/Uint/index.js";
+import { Uint256 as Uint } from "@tevm/voltaire";
 
 // Gas constants
 const TX_BASE_COST = Uint.from(21000n); // Base transaction cost

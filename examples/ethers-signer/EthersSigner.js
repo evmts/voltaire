@@ -5,14 +5,15 @@
  * @module EthersSigner
  */
 
-import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { EIP712 } from "../../src/crypto/EIP712/EIP712.js";
-import { hash as keccak256 } from "../../src/crypto/Keccak256/hash.js";
-import { sign as secp256k1Sign } from "../../src/crypto/Secp256k1/sign.js";
-import { Address } from "../../src/primitives/Address/index.js";
-import * as BrandedAddress from "../../src/primitives/Address/internal-index.js";
-import { fromBytes as privateKeyFromBytes } from "../../src/primitives/PrivateKey/fromBytes.js";
-import { Hash as SignedDataHash } from "../../src/primitives/SignedData/hash.js";
+import { secp256k1 } from "@noble/curves/secp256k1";
+import {
+	Address,
+	EIP712,
+	Keccak256,
+	PrivateKey,
+	Secp256k1,
+	SignedData,
+} from "@tevm/voltaire";
 
 import {
 	AddressMismatchError,
@@ -37,7 +38,7 @@ import {
  */
 
 // Create message hasher with keccak256
-const hashMessage = SignedDataHash({ keccak256 });
+const hashMessage = SignedData.Hash({ keccak256: Keccak256.hash });
 
 /**
  * Converts hex string to Uint8Array
@@ -71,7 +72,7 @@ function bytesToHex(bytes) {
  */
 function normalizeAddress(address) {
 	const addr = Address.fromHex(address);
-	return BrandedAddress.toChecksummed(addr);
+	return Address.toChecksummed(addr);
 }
 
 /**
@@ -126,10 +127,10 @@ export class EthersSigner {
 
 		// Derive address from private key
 		const publicKey = secp256k1.getPublicKey(privateKeyBytes, false);
-		const pubkeyHash = keccak256(publicKey.slice(1));
+		const pubkeyHash = Keccak256.hash(publicKey.slice(1));
 		const addressBytes = pubkeyHash.slice(-20);
 		const addressObj = Address.fromBytes(addressBytes);
-		this.#address = BrandedAddress.toChecksummed(addressObj);
+		this.#address = Address.toChecksummed(addressObj);
 	}
 
 	/**
@@ -204,8 +205,8 @@ export class EthersSigner {
 	 * @returns {{ r: Uint8Array, s: Uint8Array, v: number }}
 	 */
 	#signHash(hash) {
-		const privateKey = privateKeyFromBytes(this.#privateKeyBytes);
-		const sig = secp256k1Sign(/** @type {any} */ (hash), privateKey);
+		const privateKey = PrivateKey.fromBytes(this.#privateKeyBytes);
+		const sig = Secp256k1.sign(/** @type {any} */ (hash), privateKey);
 		return {
 			r: sig.r,
 			s: sig.s,
@@ -520,12 +521,7 @@ export class EthersSigner {
 		const { from: _from, ...txWithoutFrom } = pop;
 
 		// Import transaction serialization
-		const { TransactionEIP1559 } = await import(
-			"../../src/primitives/Transaction/EIP1559/index.js"
-		);
-		const { default: TransactionModule } = await import(
-			"../../src/primitives/Transaction/index.js"
-		);
+		const { TransactionEIP1559 } = await import("@tevm/voltaire");
 
 		let signingHash;
 		let signedTx;
@@ -565,9 +561,7 @@ export class EthersSigner {
 		}
 
 		// Legacy transaction
-		const { default: LegacyTx } = await import(
-			"../../src/primitives/Transaction/Legacy/index.js"
-		);
+		const { TransactionLegacy: LegacyTx } = await import("@tevm/voltaire");
 
 		const unsignedTx = {
 			type: 0,
@@ -636,7 +630,7 @@ export class EthersSigner {
 		offset += 20;
 		data.set(nonceBytes, offset);
 
-		const hash = keccak256(data);
+		const hash = Keccak256.hash(data);
 		const sig = this.#signHash(hash);
 
 		return {

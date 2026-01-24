@@ -8,7 +8,7 @@
  * - Registry statistics and analysis
  */
 
-import { Chain } from "../../../src/primitives/Chain/Chain.js";
+import { Chain } from "@tevm/voltaire";
 
 function getRegistryStats(): {
 	totalChains: number;

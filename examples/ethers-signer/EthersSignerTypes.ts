@@ -1,6 +1,4 @@
-import type { AddressType } from "../../src/primitives/Address/AddressType.js";
-import type { HashType } from "../../src/primitives/Hash/HashType.js";
-import type { PrivateKeyType } from "../../src/primitives/PrivateKey/PrivateKeyType.js";
+import type { AddressType, HashType, PrivateKeyType } from "@tevm/voltaire";
 
 /**
  * Block tag for provider queries

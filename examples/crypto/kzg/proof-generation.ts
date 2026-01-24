@@ -8,8 +8,7 @@
  * - Understanding proof soundness
  */
 
-import { KZG } from "../../../src/crypto/KZG/KZG.js";
-import * as Hex from "../../../src/primitives/Hex/index.js";
+import { BrandedHex as Hex, KZG } from "@tevm/voltaire";
 
 // Initialize KZG
 KZG.loadTrustedSetup();

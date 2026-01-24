@@ -8,8 +8,7 @@
  * - Working with PUSH instructions
  */
 
-import * as Bytecode from "../../src/primitives/Bytecode/index.js";
-import * as Opcode from "../../src/primitives/Opcode/index.js";
+import { Bytecode, Opcode } from "@tevm/voltaire";
 
 // PUSH1 0x05, PUSH1 0x03, ADD, JUMPDEST, STOP
 const simpleBytecode = "0x6005600301" + "5b" + "00";

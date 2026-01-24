@@ -2,7 +2,7 @@
 // @description Compare Ethereum addresses for equality and sorting
 
 // SNIPPET:START
-import { Address } from "../../src/primitives/Address/index.js";
+import { Address } from "@tevm/voltaire";
 
 // Create some addresses
 const addr1 = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");

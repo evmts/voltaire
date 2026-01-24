@@ -8,7 +8,7 @@
  * - Statistical functions
  */
 
-import * as Uint from "../../../src/primitives/Uint/index.js";
+import { Uint256 as Uint } from "@tevm/voltaire";
 
 const values = [
 	Uint.ZERO,

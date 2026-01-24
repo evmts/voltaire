@@ -7,9 +7,7 @@
  * - Working with gas values
  */
 
-import { Bytes } from "../../src/primitives/Bytes/index.js";
-import * as Gas from "../../src/primitives/Gas/index.js";
-import * as GasConstants from "../../src/primitives/GasConstants/index.js";
+import { Bytes, Gas, GasConstants } from "@tevm/voltaire";
 
 // Gas limit examples
 const simpleTransferLimit = Gas.GasLimit.from(21000); // Standard ETH transfer

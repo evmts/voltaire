@@ -8,8 +8,7 @@
  * - Verifying address ownership
  */
 
-import { Address } from "../../../src/primitives/Address/index.js";
-import { Bytes } from "../../../src/primitives/Bytes/index.js";
+import { Address, Bytes } from "@tevm/voltaire";
 
 // secp256k1 public key coordinates (256 bits each)
 const publicKeyX =

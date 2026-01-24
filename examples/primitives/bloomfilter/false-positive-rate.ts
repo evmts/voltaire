@@ -1,5 +1,5 @@
 // Demonstrate false positive rates and parameter selection
-import { BloomFilter } from "../../../src/primitives/BloomFilter/index.js";
+import { BloomFilter } from "@tevm/voltaire";
 
 // Test false positive rate with different parameters
 function testFalsePositiveRate(

@@ -9,7 +9,7 @@
  * - Real-world use cases (airdrop eligibility, transaction inclusion)
  */
 
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Hash } from "@tevm/voltaire";
 
 // Hash pair of nodes together
 function hashPair(left: Hash, right: Hash): Hash {

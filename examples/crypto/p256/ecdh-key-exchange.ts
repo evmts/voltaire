@@ -1,6 +1,4 @@
-import * as P256 from "../../../src/crypto/P256/index.js";
-import { SHA256 } from "../../../src/crypto/SHA256/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Hex, P256, SHA256 } from "@tevm/voltaire";
 
 // Alice generates keypair
 const alicePrivate = new Uint8Array(32);

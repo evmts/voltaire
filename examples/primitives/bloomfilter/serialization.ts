@@ -6,7 +6,7 @@ import {
 	contains,
 	fromHex,
 	toHex,
-} from "../../../src/primitives/BloomFilter/index.js";
+} from "@tevm/voltaire";
 
 // Create and populate a filter
 const original = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);

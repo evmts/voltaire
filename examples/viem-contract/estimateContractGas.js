@@ -7,8 +7,7 @@
  * @module examples/viem-contract/estimateContractGas
  */
 
-import * as Abi from "../../src/primitives/Abi/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Abi, Hex } from "@tevm/voltaire";
 import { ContractGasEstimationError } from "./errors.js";
 
 /**
@@ -18,7 +17,7 @@ import { ContractGasEstimationError } from "./errors.js";
 /**
  * Estimates the gas required to successfully execute a contract write function call.
  *
- * @template {readonly import('../../src/primitives/Abi/AbiType.js').Item[]} TAbi
+ * @template {readonly import('@tevm/voltaire').Item[]} TAbi
  * @template {string} TFunctionName
  * @param {import('./ViemContractTypes.js').Client} client - Client to use
  * @param {import('./ViemContractTypes.js').EstimateContractGasParameters<TAbi, TFunctionName>} parameters

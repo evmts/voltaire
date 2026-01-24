@@ -8,10 +8,7 @@
  * - Transaction fee budgeting
  */
 
-import * as Ether from "../../../src/primitives/Denomination/Ether.js";
-import * as Gwei from "../../../src/primitives/Denomination/Gwei.js";
-import * as Wei from "../../../src/primitives/Denomination/Wei.js";
-import * as Uint from "../../../src/primitives/Uint/index.js";
+import { Ether, Gwei, Wei, Uint256 as Uint } from "@tevm/voltaire";
 
 interface EIP1559Params {
 	baseFeePerGas: Gwei.Type;

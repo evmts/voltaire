@@ -9,10 +9,12 @@
  * - Deadline handling
  */
 
-import * as EIP712 from "../../../src/crypto/Eip712/index.js";
-import * as Address from "../../../src/primitives/Address/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
-import * as PrivateKey from "../../../src/primitives/PrivateKey/index.js";
+import {
+	Address,
+	EIP712,
+	Hex,
+	BrandedPrivateKey as PrivateKey,
+} from "@tevm/voltaire";
 
 // Simulate token contract
 const USDC_ADDRESS = Address.fromHex(

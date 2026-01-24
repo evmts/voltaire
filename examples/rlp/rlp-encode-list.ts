@@ -1,9 +1,8 @@
 // @title RLP Encode List
 // @description Encode a list of values using Recursive Length Prefix (RLP) encoding
 
-import { Hex } from "../../src/primitives/Hex/index.js";
 // SNIPPET:START
-import { Rlp } from "../../src/primitives/Rlp/index.js";
+import { Hex, Rlp } from "@tevm/voltaire";
 
 // Encode a simple list of strings
 const list = ["dog", "cat", "bird"];

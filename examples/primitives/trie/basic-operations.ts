@@ -7,10 +7,9 @@
  * in Zig only and not yet exposed to TypeScript through FFI bindings.
  */
 
-import * as Bytes from "../../../src/primitives/Bytes/Bytes.index.js";
-import type { BytesType } from "../../../src/primitives/Bytes/BytesType.js";
-import type { HashType } from "../../../src/primitives/Hash/HashType.js";
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Bytes, Hash } from "@tevm/voltaire";
+import type { BytesType } from "@tevm/voltaire/Bytes";
+import type { HashType } from "@tevm/voltaire/Hash";
 
 // Conceptual implementation for demonstration
 class Trie {

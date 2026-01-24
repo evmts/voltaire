@@ -7,9 +7,7 @@
  * - Working with nested structures
  */
 
-import { Bytes } from "../../src/primitives/Bytes/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
-import * as Rlp from "../../src/primitives/Rlp/index.js";
+import { Bytes, Hex, Rlp } from "@tevm/voltaire";
 
 // RLP works with Uint8Arrays and nested arrays
 

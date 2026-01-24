@@ -9,7 +9,7 @@
  * - Extracting metadata sections
  */
 
-import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
+import { Bytecode } from "@tevm/voltaire";
 
 // Simulated deployed contract bytecode with metadata
 // Real Solidity bytecode ends with metadata marker: 0xa2 0x64 'i' 'p' 'f' 's' ...

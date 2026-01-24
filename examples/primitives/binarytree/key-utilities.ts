@@ -8,9 +8,7 @@
  * - Understanding key structure
  */
 
-import { Address } from "../../../src/primitives/Address/index.js";
-import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Address, BinaryTree, Hash } from "@tevm/voltaire";
 
 const address = Address.from("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
 

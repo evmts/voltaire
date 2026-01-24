@@ -1,6 +1,4 @@
-import { Ripemd160 } from "../../../src/crypto/Ripemd160/index.js";
-import { SHA256 } from "../../../src/crypto/SHA256/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Hex, Ripemd160, SHA256 } from "@tevm/voltaire";
 
 // Simulate a Bitcoin public key (33 bytes compressed or 65 bytes uncompressed)
 const publicKey = new Uint8Array(65);

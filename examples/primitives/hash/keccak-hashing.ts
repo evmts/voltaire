@@ -9,7 +9,7 @@
  * - Hash chaining and composition
  */
 
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Hash } from "@tevm/voltaire";
 
 // Hash raw bytes
 const data = new Uint8Array([1, 2, 3, 4, 5]);

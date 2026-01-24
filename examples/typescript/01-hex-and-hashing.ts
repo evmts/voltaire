@@ -7,8 +7,7 @@
  * - Working with hex data
  */
 
-import * as Keccak256 from "../../src/crypto/Keccak256/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Hex, Keccak256 } from "@tevm/voltaire";
 
 const hexString = "0x48656c6c6f20576f726c64"; // "Hello World" in hex
 const bytes = Hex.toBytes(hexString);

@@ -8,11 +8,7 @@
  * - Gas cost analysis for cross-chain operations
  */
 
-import {
-	PrecompileAddress,
-	execute,
-} from "../../../src/evm/precompiles/precompiles.js";
-import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
+import { execute, Hardfork, PrecompileAddress } from "@tevm/voltaire";
 
 // Simulate a Bitcoin block header (80 bytes)
 const blockHeader = new Uint8Array(80);

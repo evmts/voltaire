@@ -1,4 +1,4 @@
-import { BN254 } from "../../../src/crypto/bn254/BN254.js";
+import { BN254 } from "@tevm/voltaire";
 
 // Get G1 generator
 const g1Gen = BN254.G1.generator();

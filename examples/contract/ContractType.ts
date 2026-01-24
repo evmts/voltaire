@@ -7,24 +7,22 @@
  * @module examples/contract/ContractType
  */
 
-import type { EventStream } from "../../src/contract/EventStreamType.js";
-import type { Abi } from "../../src/primitives/Abi/AbiConstructor.js";
-import type { Item } from "../../src/primitives/Abi/AbiType.js";
 import type {
+	Abi,
+	AbiItem as Item,
+	AddressType,
+	BlockNumberType,
+	EncodeTopicsArgs,
+	EventStream,
+	EventType,
+	FunctionType,
+	HashType,
 	Parameter,
 	ParametersToObject,
 	ParametersToPrimitiveTypes,
-} from "../../src/primitives/Abi/Parameter.js";
-import type {
-	EncodeTopicsArgs,
-	EventType,
-} from "../../src/primitives/Abi/event/EventType.js";
-import type { FunctionType } from "../../src/primitives/Abi/function/FunctionType.js";
-import type { AddressType } from "../../src/primitives/Address/AddressType.js";
-import type { BlockNumberType } from "../../src/primitives/BlockNumber/BlockNumberType.js";
-import type { HashType } from "../../src/primitives/Hash/HashType.js";
-import type { TransactionHashType } from "../../src/primitives/TransactionHash/TransactionHashType.js";
-import type { TypedProvider } from "../../src/provider/TypedProvider.js";
+	TransactionHashType,
+	TypedProvider,
+} from "@tevm/voltaire";
 
 /**
  * Extract view/pure functions from ABI

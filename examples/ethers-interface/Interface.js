@@ -5,7 +5,7 @@
  */
 
 /** @import { AbiItem, InterfaceAbi, Log, TransactionLike } from "./EthersInterfaceTypes.js" */
-/** @import { Parameter } from "../../src/primitives/Abi/Parameter.js" */
+/** @import { Parameter } from "@tevm/voltaire" */
 
 import {
 	ConstructorFragment,
@@ -29,15 +29,9 @@ import {
 	getPanicReason,
 } from "./errors.js";
 
-import {
-	hashString,
-	hash as keccak256,
-} from "../../src/crypto/Keccak256/index.js";
-import {
-	decodeParameters,
-	encodeParameters,
-} from "../../src/primitives/Abi/Encoding.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Keccak256, Abi, Hex } from "@tevm/voltaire";
+const { hashString, hash: keccak256 } = Keccak256;
+const { decodeParameters, encodeParameters } = Abi;
 
 /**
  * Built-in error definitions

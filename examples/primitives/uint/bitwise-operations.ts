@@ -8,7 +8,7 @@
  * - Flags and masking
  */
 
-import * as Uint from "../../../src/primitives/Uint/index.js";
+import { Uint256 as Uint } from "@tevm/voltaire";
 
 const a = Uint.from(0b11110000n); // 240
 const b = Uint.from(0b10101010n); // 170

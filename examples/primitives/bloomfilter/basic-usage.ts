@@ -4,7 +4,7 @@ import {
 	BloomFilter,
 	DEFAULT_HASH_COUNT,
 	fromHex,
-} from "../../../src/primitives/BloomFilter/index.js";
+} from "@tevm/voltaire";
 
 // Create a standard Ethereum bloom filter (2048 bits, 3 hash functions)
 const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);

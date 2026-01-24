@@ -3,7 +3,7 @@ import {
 	BITS,
 	BloomFilter,
 	DEFAULT_HASH_COUNT,
-} from "../../../src/primitives/BloomFilter/index.js";
+} from "@tevm/voltaire";
 
 // Batch add multiple items
 function batchAdd(filter: typeof BloomFilter.prototype, items: string[]): void {

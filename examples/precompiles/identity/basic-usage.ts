@@ -11,12 +11,7 @@
  * - Output equals input (unchanged)
  */
 
-import {
-	PrecompileAddress,
-	execute,
-} from "../../../src/precompiles/precompiles.js";
-import { Bytes } from "../../../src/primitives/Bytes/index.js";
-import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
+import { Bytes, execute, Hardfork, PrecompileAddress } from "@tevm/voltaire";
 
 const data = Bytes.from([1, 2, 3, 4, 5, 6, 7, 8]);
 

@@ -1,10 +1,8 @@
 // @title Personal Sign Message
 // @description Sign a message using Ethereum personal_sign (EIP-191) format
 
-import { Keccak256 } from "../../src/crypto/Keccak256/index.js";
 // SNIPPET:START
-import { Secp256k1 } from "../../src/crypto/Secp256k1/index.js";
-import { Hex } from "../../src/primitives/Hex/index.js";
+import { Hex, Keccak256, Secp256k1 } from "@tevm/voltaire";
 
 // Create a private key (32 bytes)
 const privateKey = Hex.toBytes(

@@ -6,7 +6,7 @@
  * @module batched-provider/BatchedProviderTypes
  */
 
-import type { Hex } from "../../src/primitives/Hex/index.js";
+import type { Hex } from "@tevm/voltaire";
 
 /**
  * EIP-1193 request arguments

@@ -8,10 +8,7 @@
  * - Cost comparison with calldata
  */
 
-import { Address } from "../../../src/primitives/Address/index.js";
-import { Hash } from "../../../src/primitives/Hash/index.js";
-import * as Hex from "../../../src/primitives/Hex/index.js";
-import * as Transaction from "../../../src/primitives/Transaction/index.js";
+import { Address, Hash, Hex, Transaction } from "@tevm/voltaire";
 
 // Create blob versioned hashes (KZG commitments)
 const blobHash1 = Hash.from(

@@ -9,7 +9,7 @@
  * - Extracting PUSH values
  */
 
-import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
+import { Bytecode } from "@tevm/voltaire";
 
 const code = Bytecode.fromHex("0x60016002015b60ff5b00");
 

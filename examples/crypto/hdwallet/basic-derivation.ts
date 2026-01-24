@@ -9,11 +9,9 @@
  * - Extended keys (xprv/xpub)
  */
 
-import * as Bip39 from "../../../src/crypto/Bip39/index.js";
+import { Address, Bip39, Hex, Secp256k1 } from "@tevm/voltaire";
+// Note: HDWallet uses native FFI - import from @tevm/voltaire/native
 import * as HDWallet from "../../../src/crypto/HDWallet/index.js";
-import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
-import * as Address from "../../../src/primitives/Address/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
 
 const mnemonic = Bip39.generateMnemonic(256);
 const seed = await Bip39.mnemonicToSeed(mnemonic);

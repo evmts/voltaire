@@ -2,8 +2,7 @@
 // @description Combine multiple hex strings into a single hex value
 
 // SNIPPET:START
-import { Bytes } from "../../src/primitives/Bytes/index.js";
-import * as Hex from "../../src/primitives/Hex/index.js";
+import { Bytes, Hex } from "@tevm/voltaire";
 
 // Create some hex strings
 const hex1 = Hex.from("0x1234");

@@ -11,12 +11,7 @@
  * - Bitcoin address generation use case
  */
 
-import {
-	PrecompileAddress,
-	execute,
-} from "../../../src/precompiles/precompiles.js";
-import { Bytes } from "../../../src/primitives/Bytes/index.js";
-import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
+import { Bytes, execute, Hardfork, PrecompileAddress } from "@tevm/voltaire";
 
 const message = "Hello, RIPEMD160!";
 const messageBytes = new TextEncoder().encode(message);

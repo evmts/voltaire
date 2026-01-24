@@ -8,8 +8,8 @@
  * - Production-ready validation patterns
  */
 
-import { Chain } from "../../../src/primitives/Chain/Chain.js";
-import type { Chain as ChainType } from "../../../src/primitives/Chain/ChainType.js";
+import { Chain } from "@tevm/voltaire";
+import type { Chain as ChainType } from "@tevm/voltaire/Chain";
 
 function isValidChainId(chainId: number): boolean {
 	return Chain.fromId(chainId) !== undefined;

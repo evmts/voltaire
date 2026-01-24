@@ -9,8 +9,8 @@
  * - One-way nature of derivation
  */
 
-import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
-import { keccak256 } from "../../../src/primitives/Hash/index.js";
+import { BrandedHash as Hash, Secp256k1 } from "@tevm/voltaire";
+const { keccak256 } = Hash;
 const privateKey = new Uint8Array(32);
 crypto.getRandomValues(privateKey); // Cryptographically secure random
 
@@ -26,7 +26,7 @@ const publicKeyHash = keccak256(publicKey);
 
 // Take last 20 bytes as address
 const addressBytes = publicKeyHash.slice(12);
-import * as Hex from "../../../src/primitives/Hex/index.js";
+import { BrandedHex as Hex } from "@tevm/voltaire";
 const addressHex = Hex.fromBytes(addressBytes);
 const publicKey2 = Secp256k1.derivePublicKey(privateKey);
 const keysMatch = publicKey.every((byte, i) => byte === publicKey2[i]);

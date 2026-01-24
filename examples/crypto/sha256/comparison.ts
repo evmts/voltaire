@@ -8,9 +8,7 @@
  * - Cross-validation with known values
  */
 
-import { Keccak256 } from "../../../src/crypto/Keccak256/Keccak256.js";
-import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
-import { Bytes, Bytes64 } from "../../../src/primitives/Bytes/index.js";
+import { Bytes, Bytes64, Keccak256, SHA256 } from "@tevm/voltaire";
 
 const data = new TextEncoder().encode("Hello, World!");
 

@@ -1,5 +1,4 @@
-import { Blake2 } from "../../../src/crypto/Blake2/index.js";
-import { Hex } from "../../../src/primitives/Hex/index.js";
+import { Blake2, Hex } from "@tevm/voltaire";
 
 const data = Hex("0x0102030405");
 const hash64 = Blake2.hash(data);

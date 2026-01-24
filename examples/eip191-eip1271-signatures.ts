@@ -7,13 +7,18 @@
  * - Unified EOA + contract signature verification
  */
 
-import { hash as keccak256 } from "../src/crypto/Keccak256/hash.js";
-import { recoverPublicKey } from "../src/crypto/Secp256k1/recoverPublicKey.js";
-import { fromPublicKey } from "../src/primitives/Address/fromPublicKey.js";
-import * as Address from "../src/primitives/Address/index.js";
-import { Bytes } from "../src/primitives/Bytes/index.js";
-import * as ContractSignature from "../src/primitives/ContractSignature/index.js";
-import * as SignedData from "../src/primitives/SignedData/index.js";
+import {
+	Address,
+	Bytes,
+	ContractSignature,
+	Keccak256,
+	Secp256k1,
+	SignedData,
+} from "@tevm/voltaire";
+
+const keccak256 = Keccak256.hash;
+const recoverPublicKey = Secp256k1.recoverPublicKey;
+const fromPublicKey = Address.fromPublicKey;
 
 const hash = SignedData.Hash({ keccak256 });
 const message = "Hello, Ethereum!";

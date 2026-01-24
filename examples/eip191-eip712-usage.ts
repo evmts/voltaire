@@ -16,7 +16,7 @@ import {
 	hashDomain,
 	hashMessage,
 	hashTypedData,
-} from "../src/crypto/index.ts";
+} from "@tevm/voltaire";
 
 // Example 1: Hash a simple text message
 const message1 = "Hello, Ethereum!";

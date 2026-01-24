@@ -3,7 +3,7 @@ import {
 	BITS,
 	BloomFilter,
 	DEFAULT_HASH_COUNT,
-} from "../../../src/primitives/BloomFilter/index.js";
+} from "@tevm/voltaire";
 
 // Simulate event types
 type EventType = "Transfer" | "Approval" | "Swap" | "Mint" | "Burn" | "Sync";

@@ -6,13 +6,13 @@
  * @module examples/multicall/MulticallTypes
  */
 
-import type { Item } from "../../src/primitives/Abi/AbiType.js";
 import type {
+	Item,
 	Parameter,
 	ParametersToPrimitiveTypes,
-} from "../../src/primitives/Abi/Parameter.js";
-import type { FunctionType } from "../../src/primitives/Abi/function/FunctionType.js";
-import type { TypedProvider } from "../../src/provider/TypedProvider.js";
+	FunctionType,
+	TypedProvider,
+} from "@tevm/voltaire";
 
 /**
  * Block tag types

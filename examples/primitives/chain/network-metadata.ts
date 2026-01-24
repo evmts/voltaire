@@ -8,7 +8,7 @@
  * - Using RPC endpoints with fallbacks
  */
 
-import { Chain } from "../../../src/primitives/Chain/Chain.js";
+import { Chain } from "@tevm/voltaire";
 
 const quai = Chain.fromId(9);
 if (quai) {

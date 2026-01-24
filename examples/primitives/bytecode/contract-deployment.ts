@@ -9,7 +9,7 @@
  * - Verifying deployed contracts
  */
 
-import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
+import { Bytecode } from "@tevm/voltaire";
 
 // Example: Simple storage contract (pseudo-code)
 // contract Storage {

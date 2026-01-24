@@ -8,9 +8,7 @@
  * - Immutable state transitions
  */
 
-import { Address } from "../../../src/primitives/Address/index.js";
-import { BinaryTree } from "../../../src/primitives/BinaryTree/index.js";
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Address, BinaryTree, Hash } from "@tevm/voltaire";
 
 // Helper types
 interface AccountState {

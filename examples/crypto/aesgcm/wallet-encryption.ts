@@ -8,12 +8,14 @@
  * - Password-protected wallet operations
  */
 
-import * as AesGcm from "../../../src/crypto/AesGcm/index.js";
-import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
-import * as Address from "../../../src/primitives/Address/index.js";
-import { Bytes32 } from "../../../src/primitives/Bytes/index.js";
-import * as Hex from "../../../src/primitives/Hex/index.js";
-import * as PrivateKey from "../../../src/primitives/PrivateKey/index.js";
+import {
+	Address,
+	AesGcm,
+	BrandedHex as Hex,
+	BrandedPrivateKey as PrivateKey,
+	Bytes32,
+	Secp256k1,
+} from "@tevm/voltaire";
 
 // Wallet encryption format
 interface EncryptedWallet {

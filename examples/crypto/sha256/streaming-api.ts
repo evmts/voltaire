@@ -8,8 +8,7 @@
  * - Progress tracking
  */
 
-import { SHA256 } from "../../../src/crypto/SHA256/SHA256.js";
-import { Bytes } from "../../../src/primitives/Bytes/index.js";
+import { Bytes, SHA256 } from "@tevm/voltaire";
 
 const data = Bytes.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 

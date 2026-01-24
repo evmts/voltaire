@@ -9,7 +9,7 @@
  * - Form input validation
  */
 
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Hash } from "@tevm/voltaire";
 
 const testCases = [
 	{

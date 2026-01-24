@@ -8,10 +8,12 @@
  * - Future versioning considerations
  */
 
-import { KZG } from "../../../src/crypto/KZG/KZG.js";
-import { SHA256 } from "../../../src/crypto/SHA256/index.js";
-import * as Hash from "../../../src/primitives/Hash/index.js";
-import * as Hex from "../../../src/primitives/Hex/index.js";
+import {
+	BrandedHash as Hash,
+	BrandedHex as Hex,
+	KZG,
+	SHA256,
+} from "@tevm/voltaire";
 
 // Initialize KZG
 KZG.loadTrustedSetup();

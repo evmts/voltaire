@@ -2,7 +2,7 @@
 // @description Check if a string is a valid Ethereum address with EIP-55 checksum validation
 
 // SNIPPET:START
-import { Address } from "../../src/primitives/Address/index.js";
+import { Address } from "@tevm/voltaire";
 
 // Valid checksummed address
 const validAddr = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";

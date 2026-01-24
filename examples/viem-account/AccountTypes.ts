@@ -4,7 +4,7 @@
  * Type definitions matching viem's account interface for drop-in compatibility.
  */
 
-import type { AddressType } from "../../src/primitives/Address/AddressType.js";
+import type { AddressType } from "@tevm/voltaire";
 
 /**
  * Hex string type (0x-prefixed)

@@ -8,8 +8,7 @@
  * - Working with hash as Uint8Array
  */
 
-import { Bytes, Bytes64 } from "../../../src/primitives/Bytes/index.js";
-import { Hash } from "../../../src/primitives/Hash/index.js";
+import { Bytes, Bytes64, Hash } from "@tevm/voltaire";
 
 // From hex string
 const hashFromHex = Hash.fromHex(
@@ -131,7 +130,7 @@ const upperHex = `0x${Array.from(dataHash)
 	.map((b) => b.toString(16).padStart(2, "0").toUpperCase())
 	.join("")}`;
 
-import * as Base64 from "../../../src/primitives/Base64/index.js";
+import { Base64 } from "@tevm/voltaire";
 // Base64 (using Base64 primitive)
 const base64 = Base64.encode(dataHash);
 
