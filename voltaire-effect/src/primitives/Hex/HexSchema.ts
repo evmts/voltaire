@@ -5,9 +5,9 @@
  * @since 0.0.1
  */
 
-import { Hex as VoltaireHex, type HexType } from '@tevm/voltaire/Hex'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { type HexType, Hex as VoltaireHex } from "@tevm/voltaire/Hex";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Internal schema for validating Hex strings.
@@ -19,17 +19,17 @@ import * as ParseResult from 'effect/ParseResult'
  * @internal
  */
 const HexTypeSchema = S.declare<HexType>(
-  (u): u is HexType => {
-    if (typeof u !== 'string') return false
-    try {
-      VoltaireHex(u)
-      return true
-    } catch {
-      return false
-    }
-  },
-  { identifier: 'Hex' }
-)
+	(u): u is HexType => {
+		if (typeof u !== "string") return false;
+		try {
+			VoltaireHex(u);
+			return true;
+		} catch {
+			return false;
+		}
+	},
+	{ identifier: "Hex" },
+);
 
 /**
  * Effect Schema for validating and transforming hex strings.
@@ -85,17 +85,19 @@ const HexTypeSchema = S.declare<HexType>(
  * @since 0.0.1
  */
 export const Schema: S.Schema<HexType, string> = S.transformOrFail(
-  S.String,
-  HexTypeSchema,
-  {
-    strict: true,
-    decode: (s, _options, ast) => {
-      try {
-        return ParseResult.succeed(VoltaireHex(s))
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, s, (e as Error).message))
-      }
-    },
-    encode: (h) => ParseResult.succeed(h)
-  }
-).annotations({ identifier: 'HexSchema' })
+	S.String,
+	HexTypeSchema,
+	{
+		strict: true,
+		decode: (s, _options, ast) => {
+			try {
+				return ParseResult.succeed(VoltaireHex(s));
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, s, (e as Error).message),
+				);
+			}
+		},
+		encode: (h) => ParseResult.succeed(h),
+	},
+).annotations({ identifier: "HexSchema" });

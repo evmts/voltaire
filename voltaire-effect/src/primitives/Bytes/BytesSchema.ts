@@ -5,9 +5,9 @@
  * @since 0.0.1
  */
 
-import { Bytes as VoltaireBytes, type BytesType } from '@tevm/voltaire/Bytes'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { type BytesType, Bytes as VoltaireBytes } from "@tevm/voltaire/Bytes";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Internal schema for validating Bytes.
@@ -19,9 +19,9 @@ import * as ParseResult from 'effect/ParseResult'
  * @internal
  */
 const BytesTypeSchema = S.declare<BytesType>(
-  (u): u is BytesType => u instanceof Uint8Array,
-  { identifier: 'BytesType' }
-)
+	(u): u is BytesType => u instanceof Uint8Array,
+	{ identifier: "BytesType" },
+);
 
 /**
  * Effect Schema for validating and parsing arbitrary bytes.
@@ -82,18 +82,25 @@ const BytesTypeSchema = S.declare<BytesType>(
  *
  * @since 0.0.1
  */
-export const Schema: S.Schema<BytesType, Uint8Array | string | readonly number[]> = S.transformOrFail(
-  S.Union(S.Uint8ArrayFromSelf, S.String, S.Array(S.Number)),
-  BytesTypeSchema,
-  {
-    strict: true,
-    decode: (s, _options, ast) => {
-      try {
-        return ParseResult.succeed(VoltaireBytes(s as Uint8Array | string | number[]))
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, s, (e as Error).message))
-      }
-    },
-    encode: (b) => ParseResult.succeed(b as Uint8Array)
-  }
-).annotations({ identifier: "BytesSchema" })
+export const Schema: S.Schema<
+	BytesType,
+	Uint8Array | string | readonly number[]
+> = S.transformOrFail(
+	S.Union(S.Uint8ArrayFromSelf, S.String, S.Array(S.Number)),
+	BytesTypeSchema,
+	{
+		strict: true,
+		decode: (s, _options, ast) => {
+			try {
+				return ParseResult.succeed(
+					VoltaireBytes(s as Uint8Array | string | number[]),
+				);
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, s, (e as Error).message),
+				);
+			}
+		},
+		encode: (b) => ParseResult.succeed(b as Uint8Array),
+	},
+).annotations({ identifier: "BytesSchema" });

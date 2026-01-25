@@ -5,8 +5,8 @@
  * @since 0.0.1
  */
 
-import { Hex as VoltaireHex, type HexType } from '@tevm/voltaire/Hex'
-import * as Effect from 'effect/Effect'
+import { type HexType, Hex as VoltaireHex } from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
 
 /**
  * Check if a hex string has a specific byte size.
@@ -31,7 +31,7 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const isSized = <TSize extends number>(
-  hex: HexType,
-  targetSize: TSize
+	hex: HexType,
+	targetSize: TSize,
 ): Effect.Effect<boolean, never> =>
-  Effect.succeed(VoltaireHex.isSized(hex, targetSize))
+	Effect.succeed(VoltaireHex.isSized(hex, targetSize));

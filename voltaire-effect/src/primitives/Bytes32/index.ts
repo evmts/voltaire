@@ -1,52 +1,51 @@
 /**
- * @fileoverview Bytes32 module for Effect-based 32-byte fixed-size data handling.
+ * @module Bytes32
+ * @description Effect Schemas for 32-byte fixed-size data.
  *
- * @description
- * Provides Effect-wrapped functions and schemas for working with 32-byte
- * (256-bit) fixed-size data. All functions return Effects instead of throwing,
- * enabling composable error handling and railway-oriented programming.
+ * ## Schemas
  *
- * 32-byte values are ubiquitous in Ethereum:
- * - Keccak256 hashes (e.g., transaction hashes, block hashes)
- * - Storage slot keys and values
- * - Private keys
- * - Merkle tree nodes
- * - EIP-712 typed data hashes
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `Bytes32.Hex` | string | Bytes32Type |
+ * | `Bytes32.Bytes` | Uint8Array | Bytes32Type |
  *
- * Unlike {@link Bytes} which handles arbitrary-length byte arrays, this module
- * enforces exactly 32 bytes.
+ * ## Usage
  *
- * This module provides:
- * - {@link from} - Create Bytes32 from various inputs (fallible)
- * - {@link Schema} - Effect Schema for validation/parsing
- *
- * @example
  * ```typescript
  * import * as Bytes32 from 'voltaire-effect/primitives/Bytes32'
- * import * as Effect from 'effect/Effect'
- *
- * // Create from 64-char hex string
- * const hash = await Effect.runPromise(
- *   Bytes32.from('0x' + 'ab'.repeat(32))
- * )
- *
- * // Create from bigint (left-padded)
- * const slot = await Effect.runPromise(Bytes32.from(1n))
- * // 0x0000...0001
- *
- * // Use Schema for validation
  * import * as S from 'effect/Schema'
- * const validated = S.decodeSync(Bytes32.Schema)('0x' + 'ff'.repeat(32))
+ *
+ * // Decode from hex string (must be 66 chars: 0x + 64 hex chars)
+ * const b32 = S.decodeSync(Bytes32.Hex)('0x' + 'ab'.repeat(32))
+ *
+ * // Encode to hex string
+ * const hex = S.encodeSync(Bytes32.Hex)(b32)
+ *
+ * // Decode from Uint8Array (must be exactly 32 bytes)
+ * const b32FromBytes = S.decodeSync(Bytes32.Bytes)(new Uint8Array(32))
  * ```
  *
- * @module voltaire-effect/primitives/Bytes32
- * @since 0.0.1
+ * ## Common Uses
+ *
+ * - Keccak256 hashes
+ * - Storage slot keys
+ * - Private keys
+ * - Block and transaction hashes
+ * - EIP-712 typed data hashes
+ *
+ * @since 0.1.0
  */
 
-import type { Bytes32Type as _Bytes32Type } from '@tevm/voltaire/Bytes'
+import type { Bytes32Type as _Bytes32Type } from "@tevm/voltaire/Bytes";
 
-export { Schema } from './Bytes32Schema.js'
-export { from } from './from.js'
+// Schemas
+export { Hex } from "./Hex.js";
+export { Bytes } from "./Bytes.js";
+/** @deprecated Use Bytes32.Hex or Bytes32.Bytes instead */
+export { Schema } from "./Bytes32Schema.js";
+
+// Deprecated - use S.decodeSync(Bytes32.Hex) instead
+/** @deprecated Use S.decodeSync(Bytes32.Hex) or S.decodeSync(Bytes32.Bytes) instead */
 
 /**
  * Type for 32-byte data as branded Uint8Array.
@@ -56,16 +55,9 @@ export { from } from './from.js'
  * 32 bytes. The branding ensures type safety when working with
  * Ethereum primitives that require 32-byte data.
  *
- * Common uses:
- * - Keccak256 hash outputs
- * - Storage slot keys
- * - Private keys
- * - Block and transaction hashes
- *
- * @see {@link from} - Create Bytes32Type values
  * @since 0.0.1
  */
-export type Bytes32Type = _Bytes32Type
+export type Bytes32Type = _Bytes32Type;
 
 /**
  * Input types accepted for Bytes32 construction.
@@ -78,7 +70,6 @@ export type Bytes32Type = _Bytes32Type
  * - `bigint`: Will be left-padded to 32 bytes
  * - `number`: Will be left-padded to 32 bytes
  *
- * @see {@link from} - Function that accepts Bytes32Like
  * @since 0.0.1
  */
-export type Bytes32Like = Bytes32Type | string | Uint8Array | bigint | number
+export type Bytes32Like = Bytes32Type | string | Uint8Array | bigint | number;

@@ -4,8 +4,8 @@
  * @since 0.0.1
  */
 
-import { Bytes as VoltaireBytes, type BytesType } from '@tevm/voltaire/Bytes'
-import * as Effect from 'effect/Effect'
+import { type BytesType, Bytes as VoltaireBytes } from "@tevm/voltaire/Bytes";
+import * as Effect from "effect/Effect";
 
 /**
  * Converts Bytes to UTF-8 string.
@@ -23,4 +23,4 @@ import * as Effect from 'effect/Effect'
  */
 // biome-ignore lint/suspicious/noShadowRestrictedNames: intentional API name
 export const toString = (bytes: BytesType): Effect.Effect<string> =>
-  Effect.sync(() => VoltaireBytes.toString(bytes))
+	Effect.sync(() => VoltaireBytes.toString(bytes));

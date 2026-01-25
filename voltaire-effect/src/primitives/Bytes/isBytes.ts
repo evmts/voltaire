@@ -4,8 +4,8 @@
  * @since 0.0.1
  */
 
-import { Bytes as VoltaireBytes, type BytesType } from '@tevm/voltaire/Bytes'
-import * as Effect from 'effect/Effect'
+import { Bytes as VoltaireBytes } from "@tevm/voltaire/Bytes";
+import * as Effect from "effect/Effect";
 
 /**
  * Checks if value is a valid Bytes (Uint8Array).
@@ -21,4 +21,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const isBytes = (value: unknown): Effect.Effect<boolean> =>
-  Effect.sync(() => VoltaireBytes.isBytes(value))
+	Effect.sync(() => VoltaireBytes.isBytes(value));

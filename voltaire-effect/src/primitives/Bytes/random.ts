@@ -4,8 +4,8 @@
  * @since 0.0.1
  */
 
-import { Bytes as VoltaireBytes, type BytesType } from '@tevm/voltaire/Bytes'
-import * as Effect from 'effect/Effect'
+import { type BytesType, Bytes as VoltaireBytes } from "@tevm/voltaire/Bytes";
+import * as Effect from "effect/Effect";
 
 /**
  * Generates random Bytes of specified size.
@@ -21,4 +21,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const random = (size: number): Effect.Effect<BytesType> =>
-  Effect.sync(() => VoltaireBytes.random(size))
+	Effect.sync(() => VoltaireBytes.random(size));

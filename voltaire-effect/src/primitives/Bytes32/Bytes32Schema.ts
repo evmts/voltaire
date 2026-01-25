@@ -5,9 +5,9 @@
  * @since 0.0.1
  */
 
-import { Bytes32, type Bytes32Type } from '@tevm/voltaire/Bytes'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { Bytes32, type Bytes32Type } from "@tevm/voltaire/Bytes";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Internal schema for validating Bytes32.
@@ -20,12 +20,12 @@ import * as ParseResult from 'effect/ParseResult'
  * @internal
  */
 const Bytes32TypeSchema = S.declare<Bytes32Type>(
-  (u): u is Bytes32Type => {
-    if (!(u instanceof Uint8Array)) return false
-    return u.length === 32
-  },
-  { identifier: 'Bytes32' }
-)
+	(u): u is Bytes32Type => {
+		if (!(u instanceof Uint8Array)) return false;
+		return u.length === 32;
+	},
+	{ identifier: "Bytes32" },
+);
 
 /**
  * Effect Schema for validating and parsing 32-byte data.
@@ -101,24 +101,33 @@ const Bytes32TypeSchema = S.declare<Bytes32Type>(
  *
  * @since 0.0.1
  */
-export const Schema: S.Schema<Bytes32Type, string | Uint8Array | bigint | number> = S.transformOrFail(
-  S.Union(S.String, S.Uint8ArrayFromSelf, S.BigIntFromSelf, S.Number),
-  Bytes32TypeSchema,
-  {
-    strict: true,
-    decode: (s, _options, ast) => {
-      try {
-        return ParseResult.succeed(Bytes32.Bytes32(s as string | Uint8Array | bigint | number))
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, s, (e as Error).message))
-      }
-    },
-    encode: (b, _options, ast) => {
-      try {
-        return ParseResult.succeed(b)
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, b, (e as Error).message))
-      }
-    }
-  }
-).annotations({ identifier: 'Bytes32Schema' })
+export const Schema: S.Schema<
+	Bytes32Type,
+	string | Uint8Array | bigint | number
+> = S.transformOrFail(
+	S.Union(S.String, S.Uint8ArrayFromSelf, S.BigIntFromSelf, S.Number),
+	Bytes32TypeSchema,
+	{
+		strict: true,
+		decode: (s, _options, ast) => {
+			try {
+				return ParseResult.succeed(
+					Bytes32.Bytes32(s as string | Uint8Array | bigint | number),
+				);
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, s, (e as Error).message),
+				);
+			}
+		},
+		encode: (b, _options, ast) => {
+			try {
+				return ParseResult.succeed(b);
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, b, (e as Error).message),
+				);
+			}
+		},
+	},
+).annotations({ identifier: "Bytes32Schema" });

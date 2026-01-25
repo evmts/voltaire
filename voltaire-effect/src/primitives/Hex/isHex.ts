@@ -5,8 +5,8 @@
  * @since 0.0.1
  */
 
-import { Hex as VoltaireHex, type HexType } from '@tevm/voltaire/Hex'
-import * as Effect from 'effect/Effect'
+import { Hex as VoltaireHex } from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
 
 /**
  * Check if a string is a valid hex format.
@@ -32,4 +32,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const isHex = (value: string): Effect.Effect<boolean, never> =>
-  Effect.succeed(VoltaireHex.isHex(value))
+	Effect.succeed(VoltaireHex.isHex(value));

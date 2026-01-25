@@ -5,8 +5,8 @@
  * @since 0.0.1
  */
 
-import { Hex as VoltaireHex, type HexType } from '@tevm/voltaire/Hex'
-import * as Effect from 'effect/Effect'
+import { type HexType, Hex as VoltaireHex } from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
 
 /**
  * Check if two hex strings are equal (case-insensitive).
@@ -30,5 +30,8 @@ import * as Effect from 'effect/Effect'
  *
  * @since 0.0.1
  */
-export const equals = (hex: HexType, other: HexType): Effect.Effect<boolean, never> =>
-  Effect.succeed(VoltaireHex.equals(hex, other))
+export const equals = (
+	hex: HexType,
+	other: HexType,
+): Effect.Effect<boolean, never> =>
+	Effect.succeed(VoltaireHex.equals(hex, other));

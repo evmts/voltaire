@@ -4,8 +4,8 @@
  * @since 0.0.1
  */
 
-import { Bytes as VoltaireBytes, type BytesType } from '@tevm/voltaire/Bytes'
-import * as Effect from 'effect/Effect'
+import { type BytesType, Bytes as VoltaireBytes } from "@tevm/voltaire/Bytes";
+import * as Effect from "effect/Effect";
 
 /**
  * Checks if two Bytes are equal.
@@ -24,4 +24,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const equals = (a: BytesType, b: BytesType): Effect.Effect<boolean> =>
-  Effect.sync(() => VoltaireBytes.equals(a, b))
+	Effect.sync(() => VoltaireBytes.equals(a, b));

@@ -5,8 +5,8 @@
  * @since 0.0.1
  */
 
-import { Hex as VoltaireHex, type HexType } from '@tevm/voltaire/Hex'
-import * as Effect from 'effect/Effect'
+import { type HexType, Hex as VoltaireHex } from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
 
 /**
  * Generate a random hex string of specified byte size.
@@ -31,4 +31,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const random = (size: number): Effect.Effect<HexType, never> =>
-  Effect.succeed(VoltaireHex.random(size))
+	Effect.succeed(VoltaireHex.random(size));

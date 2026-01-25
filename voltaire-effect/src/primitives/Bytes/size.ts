@@ -4,8 +4,8 @@
  * @since 0.0.1
  */
 
-import { Bytes as VoltaireBytes, type BytesType } from '@tevm/voltaire/Bytes'
-import * as Effect from 'effect/Effect'
+import { type BytesType, Bytes as VoltaireBytes } from "@tevm/voltaire/Bytes";
+import * as Effect from "effect/Effect";
 
 /**
  * Gets the size of Bytes.
@@ -21,4 +21,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const size = (bytes: BytesType): Effect.Effect<number> =>
-  Effect.sync(() => VoltaireBytes.size(bytes))
+	Effect.sync(() => VoltaireBytes.size(bytes));
