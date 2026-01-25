@@ -29,3 +29,7 @@ export * as Item from "./Item/index.js";
 // Re-export ERC standards
 export { Interface } from "./interface/index.js";
 export { parseLogs } from "./parseLogs.js";
+export { encodeFunction } from "./encodeFunction.js";
+export { decodeFunction } from "./decodeFunction.js";
+export { decodeLog } from "./decodeLog.js";
+export * from "./Errors.js";
