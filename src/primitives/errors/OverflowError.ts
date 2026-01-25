@@ -16,6 +16,7 @@ import { InvalidRangeError } from "./ValidationError.js";
  * ```
  */
 export class IntegerOverflowError extends InvalidRangeError {
+	override readonly _tag: string = "IntegerOverflowError";
 	/** Maximum allowed value */
 	max: bigint | number;
 	/** Integer type (e.g., 'uint8', 'uint256') */
@@ -24,7 +25,7 @@ export class IntegerOverflowError extends InvalidRangeError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: bigint | number;
 			max: bigint | number;
 			type: string;
@@ -34,7 +35,7 @@ export class IntegerOverflowError extends InvalidRangeError {
 		},
 	) {
 		super(message, {
-			code: options.code || "INTEGER_OVERFLOW",
+			code: options.code,
 			value: options.value,
 			expected: `value <= ${options.max}`,
 			context: {
@@ -68,6 +69,7 @@ export class IntegerOverflowError extends InvalidRangeError {
  * ```
  */
 export class IntegerUnderflowError extends InvalidRangeError {
+	override readonly _tag: string = "IntegerUnderflowError";
 	/** Minimum allowed value */
 	min: bigint | number;
 	/** Integer type (e.g., 'uint8', 'int256') */
@@ -76,7 +78,7 @@ export class IntegerUnderflowError extends InvalidRangeError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: bigint | number;
 			min: bigint | number;
 			type: string;
@@ -86,7 +88,7 @@ export class IntegerUnderflowError extends InvalidRangeError {
 		},
 	) {
 		super(message, {
-			code: options.code || "INTEGER_UNDERFLOW",
+			code: options.code,
 			value: options.value,
 			expected: `value >= ${options.min}`,
 			context: {
@@ -120,6 +122,7 @@ export class IntegerUnderflowError extends InvalidRangeError {
  * ```
  */
 export class InvalidSizeError extends InvalidRangeError {
+	override readonly _tag: string = "InvalidSizeError";
 	/** Actual size in bytes */
 	actualSize: number;
 	/** Expected size in bytes */
@@ -128,7 +131,7 @@ export class InvalidSizeError extends InvalidRangeError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			actualSize: number;
 			expectedSize: number;
@@ -138,7 +141,7 @@ export class InvalidSizeError extends InvalidRangeError {
 		},
 	) {
 		super(message, {
-			code: options.code || "INVALID_SIZE",
+			code: options.code,
 			value: options.value,
 			expected: `${options.expectedSize} bytes`,
 			context: {

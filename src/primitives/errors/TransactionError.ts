@@ -14,17 +14,18 @@ import { PrimitiveError } from "./PrimitiveError.js";
  * ```
  */
 export class TransactionError extends PrimitiveError {
+	override readonly _tag: string = "TransactionError";
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "TRANSACTION_ERROR",
+			code: options?.code,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -39,17 +40,18 @@ export class TransactionError extends PrimitiveError {
  * @throws {InvalidTransactionTypeError}
  */
 export class InvalidTransactionTypeError extends TransactionError {
+	override readonly _tag: string = "InvalidTransactionTypeError";
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "INVALID_TRANSACTION_TYPE",
+			code: options?.code,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -64,17 +66,18 @@ export class InvalidTransactionTypeError extends TransactionError {
  * @throws {InvalidSignerError}
  */
 export class InvalidSignerError extends TransactionError {
+	override readonly _tag: string = "InvalidSignerError";
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "INVALID_SIGNER",
+			code: options?.code,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

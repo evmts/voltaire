@@ -14,17 +14,18 @@ import { PrimitiveError } from "./PrimitiveError.js";
  * ```
  */
 export class SerializationError extends PrimitiveError {
+	override readonly _tag: string = "SerializationError";
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "SERIALIZATION_ERROR",
+			code: options?.code,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -39,17 +40,18 @@ export class SerializationError extends PrimitiveError {
  * @throws {EncodingError}
  */
 export class EncodingError extends SerializationError {
+	override readonly _tag: string = "EncodingError";
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "ENCODING_ERROR",
+			code: options?.code,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -64,17 +66,18 @@ export class EncodingError extends SerializationError {
  * @throws {DecodingError}
  */
 export class DecodingError extends SerializationError {
+	override readonly _tag: string = "DecodingError";
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "DECODING_ERROR",
+			code: options?.code,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

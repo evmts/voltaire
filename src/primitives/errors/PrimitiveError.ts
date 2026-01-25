@@ -13,17 +13,18 @@ import { AbstractError } from "./AbstractError.js";
  * ```
  */
 export class PrimitiveError extends AbstractError {
+	override readonly _tag: string = "PrimitiveError";
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "PRIMITIVE_ERROR",
+			code: options?.code,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

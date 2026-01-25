@@ -2,26 +2,31 @@
  * Abstract base error for all Voltaire errors
  *
  * Provides standardized error handling with:
+ * - Effect-compatible _tag for discriminated unions (catchTag)
+ * - JSON-RPC style error codes
  * - Error cause chain for debugging
- * - Error codes for programmatic handling
  * - Context object for additional metadata
  * - Documentation links for user guidance
  *
  * @example
  * ```typescript
  * class InvalidAddressError extends AbstractError {
+ *   readonly _tag = "InvalidAddressError" as const
  *   constructor(address: string, options?: ErrorOptions) {
  *     super(
  *       `Invalid address format: ${address}`,
  *       {
  *         ...options,
- *         code: options?.code || 'INVALID_ADDRESS',
+ *         code: options?.code ?? -32602,
  *         docsPath: '/primitives/address/from-hex#error-handling'
  *       }
  *     )
  *     this.name = 'InvalidAddressError'
  *   }
  * }
+ *
+ * // Usage with Effect catchTag
+ * Effect.catchTag("InvalidAddressError", (e) => ...)
  *
  * // Usage with cause chain
  * try {
@@ -33,10 +38,18 @@
  */
 export abstract class AbstractError extends Error {
 	/**
-	 * Machine-readable error code for programmatic handling
-	 * @example 'INVALID_FORMAT', 'INVALID_LENGTH'
+	 * Effect-compatible discriminant for catchTag
+	 * Overridden by subclasses with a literal type
+	 * @example readonly _tag = "InvalidFormatError" as const
 	 */
-	code: string;
+	declare readonly _tag: string;
+
+	/**
+	 * JSON-RPC style error code for programmatic handling
+	 * @see https://www.jsonrpc.org/specification#error_object
+	 * @example -32600 (Invalid Request), -32602 (Invalid params)
+	 */
+	code: number;
 
 	/**
 	 * Additional context metadata for debugging
@@ -58,7 +71,7 @@ export abstract class AbstractError extends Error {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
@@ -77,7 +90,7 @@ export abstract class AbstractError extends Error {
 
 		super(enhancedMessage, { cause: options?.cause });
 
-		this.code = options?.code || "UNKNOWN_ERROR";
+		this.code = options?.code ?? -32000;
 		this.context = options?.context;
 		this.docsPath = options?.docsPath;
 		this.cause = options?.cause;

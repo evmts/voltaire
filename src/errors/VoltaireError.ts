@@ -17,16 +17,16 @@
  * ```
  */
 export class VoltaireError extends Error {
-  readonly _tag: string
+	readonly _tag: string;
 
-  constructor(
-    public readonly input: unknown,
-    message?: string,
-    cause?: Error
-  ) {
-    const finalMessage = message ?? cause?.message ?? `Error: ${input}`
-    super(finalMessage, cause ? { cause } : undefined)
-    this._tag = this.constructor.name
-    this.name = this.constructor.name
-  }
+	constructor(
+		public readonly input: unknown,
+		message?: string,
+		cause?: Error,
+	) {
+		const finalMessage = message ?? cause?.message ?? `Error: ${input}`;
+		super(finalMessage, cause ? { cause } : undefined);
+		this._tag = this.constructor.name;
+		this.name = this.constructor.name;
+	}
 }

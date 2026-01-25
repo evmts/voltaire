@@ -15,13 +15,14 @@ import { PrimitiveError } from "./PrimitiveError.js";
  * ```
  */
 export class ValidationError extends PrimitiveError {
+	override readonly _tag: string = "ValidationError";
 	value: unknown;
 	expected: string;
 
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			expected: string;
 			context?: Record<string, unknown>;
@@ -30,7 +31,7 @@ export class ValidationError extends PrimitiveError {
 		},
 	) {
 		super(message, {
-			code: options.code || "VALIDATION_ERROR",
+			code: options.code,
 			context: options.context,
 			docsPath: options.docsPath,
 			cause: options.cause,
@@ -47,10 +48,11 @@ export class ValidationError extends PrimitiveError {
  * @throws {InvalidFormatError}
  */
 export class InvalidFormatError extends ValidationError {
+	override readonly _tag: string = "InvalidFormatError";
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			expected: string;
 			context?: Record<string, unknown>;
@@ -58,7 +60,7 @@ export class InvalidFormatError extends ValidationError {
 			cause?: Error;
 		},
 	) {
-		super(message, { ...options, code: options.code || "INVALID_FORMAT" });
+		super(message, { ...options, code: options.code });
 		this.name = "InvalidFormatError";
 	}
 }
@@ -69,10 +71,11 @@ export class InvalidFormatError extends ValidationError {
  * @throws {InvalidLengthError}
  */
 export class InvalidLengthError extends ValidationError {
+	override readonly _tag: string = "InvalidLengthError";
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			expected: string;
 			context?: Record<string, unknown>;
@@ -80,7 +83,7 @@ export class InvalidLengthError extends ValidationError {
 			cause?: Error;
 		},
 	) {
-		super(message, { ...options, code: options.code || "INVALID_LENGTH" });
+		super(message, { ...options, code: options.code });
 		this.name = "InvalidLengthError";
 	}
 }
@@ -91,10 +94,11 @@ export class InvalidLengthError extends ValidationError {
  * @throws {InvalidRangeError}
  */
 export class InvalidRangeError extends ValidationError {
+	override readonly _tag: string = "InvalidRangeError";
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			expected: string;
 			context?: Record<string, unknown>;
@@ -102,7 +106,7 @@ export class InvalidRangeError extends ValidationError {
 			cause?: Error;
 		},
 	) {
-		super(message, { ...options, code: options.code || "INVALID_RANGE" });
+		super(message, { ...options, code: options.code });
 		this.name = "InvalidRangeError";
 	}
 }
@@ -113,10 +117,11 @@ export class InvalidRangeError extends ValidationError {
  * @throws {InvalidChecksumError}
  */
 export class InvalidChecksumError extends ValidationError {
+	override readonly _tag: string = "InvalidChecksumError";
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			expected: string;
 			context?: Record<string, unknown>;
@@ -124,7 +129,7 @@ export class InvalidChecksumError extends ValidationError {
 			cause?: Error;
 		},
 	) {
-		super(message, { ...options, code: options.code || "INVALID_CHECKSUM" });
+		super(message, { ...options, code: options.code });
 		this.name = "InvalidChecksumError";
 	}
 }
