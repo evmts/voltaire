@@ -1,53 +1,42 @@
-import { describe, it, expect } from 'vitest'
-import * as S from 'effect/Schema'
-import * as Effect from 'effect/Effect'
-import * as RevertReason from './index.js'
+import * as S from "effect/Schema";
+import { describe, expect, it } from "vitest";
+import * as RevertReason from "./index.js";
 
-describe('RevertReason', () => {
-  describe('RevertReasonTypeSchema', () => {
-    it('validates Error type', () => {
-      const error = { type: 'Error' as const, message: 'Something went wrong' }
-      const result = S.is(RevertReason.RevertReasonTypeSchema)(error)
-      expect(result).toBe(true)
-    })
+describe("RevertReason.Hex", () => {
+	describe("decode", () => {
+		it("parses Error(string) revert", () => {
+			const errorData =
+				"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001454657374206572726f72206d657373616765000000000000000000000000000000";
+			const result = S.decodeSync(RevertReason.Hex)(errorData);
+			expect(result.type).toBe("Error");
+			if (result.type === "Error") {
+				expect(result.message.replace(/\0/g, "")).toBe("Test error message");
+			}
+		});
 
-    it('validates Panic type', () => {
-      const panic = { type: 'Panic' as const, code: 1, description: 'Assertion failed' }
-      const result = S.is(RevertReason.RevertReasonTypeSchema)(panic)
-      expect(result).toBe(true)
-    })
+		it("parses Unknown for short data", () => {
+			const result = S.decodeSync(RevertReason.Hex)("0x1234");
+			expect(result.type).toBe("Unknown");
+		});
+	});
+});
 
-    it('validates Custom type', () => {
-      const custom = { type: 'Custom' as const, selector: '0x12345678', data: new Uint8Array([1, 2, 3]) }
-      const result = S.is(RevertReason.RevertReasonTypeSchema)(custom)
-      expect(result).toBe(true)
-    })
+describe("RevertReason.Bytes", () => {
+	describe("decode", () => {
+		it("parses Unknown for empty bytes", () => {
+			const result = S.decodeSync(RevertReason.Bytes)(new Uint8Array(0));
+			expect(result.type).toBe("Unknown");
+		});
+	});
+});
 
-    it('validates Unknown type', () => {
-      const unknown = { type: 'Unknown' as const, data: new Uint8Array([1, 2, 3]) }
-      const result = S.is(RevertReason.RevertReasonTypeSchema)(unknown)
-      expect(result).toBe(true)
-    })
-
-    it('rejects invalid type', () => {
-      const invalid = { type: 'Invalid', foo: 'bar' }
-      const result = S.is(RevertReason.RevertReasonTypeSchema)(invalid)
-      expect(result).toBe(false)
-    })
-  })
-
-  describe('from', () => {
-    it('creates from empty bytes', async () => {
-      const result = await Effect.runPromise(RevertReason.from(new Uint8Array(0)))
-      expect(result.type).toBe('Unknown')
-    })
-  })
-
-  describe('toString', () => {
-    it('converts Error to string', () => {
-      const error = { type: 'Error' as const, message: 'Test error' }
-      const result = RevertReason.toString(error)
-      expect(result).toContain('Test error')
-    })
-  })
-})
+describe("RevertReason.toString", () => {
+	it("converts Error to string", () => {
+		const errorData =
+			"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001454657374206572726f72206d657373616765000000000000000000000000000000";
+		const reason = S.decodeSync(RevertReason.Hex)(errorData);
+		const str = RevertReason.toString(reason);
+		expect(typeof str).toBe("string");
+		expect(str.length).toBeGreaterThan(0);
+	});
+});

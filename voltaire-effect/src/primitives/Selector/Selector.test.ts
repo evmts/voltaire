@@ -1,95 +1,93 @@
-import { describe, it, expect } from 'vitest'
-import * as Selector from './index.js'
-import * as Schema from 'effect/Schema'
-import * as Effect from 'effect/Effect'
+import * as S from "effect/Schema";
+import { describe, expect, it } from "vitest";
+import * as Selector from "./index.js";
 
-describe('SelectorSchema', () => {
-  it('decodes valid hex string', () => {
-    const result = Schema.decodeSync(Selector.SelectorSchema)('0xa9059cbb')
-    expect(result.length).toBe(4)
-  })
+describe("Selector.Hex", () => {
+	describe("decode", () => {
+		it("parses valid hex string", () => {
+			const result = S.decodeSync(Selector.Hex)("0xa9059cbb");
+			expect(result.length).toBe(4);
+		});
 
-  it('decodes 4-byte Uint8Array', () => {
-    const input = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb])
-    const result = Schema.decodeSync(Selector.SelectorSchema)(input)
-    expect(result).toEqual(input)
-  })
+		it("parses uppercase hex", () => {
+			const result = S.decodeSync(Selector.Hex)("0xA9059CBB");
+			expect(result.length).toBe(4);
+		});
 
-  it('fails on wrong size', () => {
-    expect(() => Schema.decodeSync(Selector.SelectorSchema)('0x1234')).toThrow()
-  })
+		it("fails on wrong size", () => {
+			expect(() => S.decodeSync(Selector.Hex)("0x1234")).toThrow();
+		});
+	});
 
-  it('fails on wrong length bytes', () => {
-    const input = new Uint8Array([0xa9, 0x05])
-    expect(() => Schema.decodeSync(Selector.SelectorSchema)(input)).toThrow()
-  })
-})
+	describe("encode", () => {
+		it("encodes to hex with prefix", () => {
+			const selector = S.decodeSync(Selector.Hex)("0xa9059cbb");
+			const hex = S.encodeSync(Selector.Hex)(selector);
+			expect(hex).toBe("0xa9059cbb");
+		});
+	});
+});
 
-describe('Selector.from', () => {
-  it('creates selector from hex', async () => {
-    const result = await Effect.runPromise(Selector.from('0xa9059cbb'))
-    expect(result.length).toBe(4)
-  })
+describe("Selector.Bytes", () => {
+	describe("decode", () => {
+		it("parses 4-byte Uint8Array", () => {
+			const input = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
+			const result = S.decodeSync(Selector.Bytes)(input);
+			expect(result.length).toBe(4);
+			expect([...result]).toEqual([...input]);
+		});
 
-  it('creates selector from Uint8Array', async () => {
-    const input = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb])
-    const result = await Effect.runPromise(Selector.from(input))
-    expect(result).toEqual(input)
-  })
+		it("fails on wrong length bytes", () => {
+			const input = new Uint8Array([0xa9, 0x05]);
+			expect(() => S.decodeSync(Selector.Bytes)(input)).toThrow();
+		});
+	});
 
-  it('fails on wrong length', async () => {
-    const result = await Effect.runPromiseExit(Selector.from('0x1234'))
-    expect(result._tag).toBe('Failure')
-  })
-})
+	describe("encode", () => {
+		it("encodes to Uint8Array", () => {
+			const selector = S.decodeSync(Selector.Hex)("0xa9059cbb");
+			const bytes = S.encodeSync(Selector.Bytes)(selector);
+			expect(bytes).toBeInstanceOf(Uint8Array);
+			expect(bytes.length).toBe(4);
+		});
+	});
+});
 
-describe('Selector.fromHex', () => {
-  it('creates selector from hex string', async () => {
-    const result = await Effect.runPromise(Selector.fromHex('0xa9059cbb'))
-    expect(result.length).toBe(4)
-  })
+describe("Selector.Signature", () => {
+	describe("decode", () => {
+		it("computes selector from function signature", () => {
+			const result = S.decodeSync(Selector.Signature)(
+				"transfer(address,uint256)",
+			);
+			expect(result.length).toBe(4);
+			const hex = S.encodeSync(Selector.Hex)(result);
+			expect(hex).toBe("0xa9059cbb");
+		});
 
-  it('fails on invalid hex', async () => {
-    const result = await Effect.runPromiseExit(Selector.fromHex('0x12'))
-    expect(result._tag).toBe('Failure')
-  })
-})
+		it("computes selector for balanceOf", () => {
+			const result = S.decodeSync(Selector.Signature)("balanceOf(address)");
+			const hex = S.encodeSync(Selector.Hex)(result);
+			expect(hex).toBe("0x70a08231");
+		});
+	});
+});
 
-describe('Selector.fromSignature', () => {
-  it('computes selector from function signature', async () => {
-    const result = await Effect.runPromise(Selector.fromSignature('transfer(address,uint256)'))
-    expect(result.length).toBe(4)
-    const hex = await Effect.runPromise(Selector.toHex(result))
-    expect(hex).toBe('0xa9059cbb')
-  })
+describe("pure functions", () => {
+	it("equals returns true for equal selectors", () => {
+		const a = S.decodeSync(Selector.Hex)("0xa9059cbb");
+		const b = S.decodeSync(Selector.Hex)("0xa9059cbb");
+		expect(Selector.equals(a, b)).toBe(true);
+	});
 
-  it('computes selector for balanceOf', async () => {
-    const result = await Effect.runPromise(Selector.fromSignature('balanceOf(address)'))
-    const hex = await Effect.runPromise(Selector.toHex(result))
-    expect(hex).toBe('0x70a08231')
-  })
-})
+	it("equals returns false for different selectors", () => {
+		const a = S.decodeSync(Selector.Hex)("0xa9059cbb");
+		const b = S.decodeSync(Selector.Hex)("0x70a08231");
+		expect(Selector.equals(a, b)).toBe(false);
+	});
 
-describe('Selector.toHex', () => {
-  it('converts selector to hex', async () => {
-    const selector = await Effect.runPromise(Selector.from('0xa9059cbb'))
-    const hex = await Effect.runPromise(Selector.toHex(selector))
-    expect(hex).toBe('0xa9059cbb')
-  })
-})
-
-describe('Selector.equals', () => {
-  it('returns true for equal selectors', async () => {
-    const a = await Effect.runPromise(Selector.from('0xa9059cbb'))
-    const b = await Effect.runPromise(Selector.from('0xa9059cbb'))
-    const result = await Effect.runPromise(Selector.equals(a, b))
-    expect(result).toBe(true)
-  })
-
-  it('returns false for different selectors', async () => {
-    const a = await Effect.runPromise(Selector.from('0xa9059cbb'))
-    const b = await Effect.runPromise(Selector.from('0x70a08231'))
-    const result = await Effect.runPromise(Selector.equals(a, b))
-    expect(result).toBe(false)
-  })
-})
+	it("equals works with Signature-decoded selectors", () => {
+		const a = S.decodeSync(Selector.Hex)("0xa9059cbb");
+		const b = S.decodeSync(Selector.Signature)("transfer(address,uint256)");
+		expect(Selector.equals(a, b)).toBe(true);
+	});
+});

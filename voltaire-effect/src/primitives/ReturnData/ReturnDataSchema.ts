@@ -1,17 +1,17 @@
-import { ReturnData } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { ReturnData } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Type representing data returned from EVM execution.
  * @since 0.0.1
  */
-export type ReturnDataType = ReturnData.ReturnDataType
+export type ReturnDataType = ReturnData.ReturnDataType;
 
 const ReturnDataTypeSchema = S.declare<ReturnDataType>(
-  (u): u is ReturnDataType => u instanceof Uint8Array,
-  { identifier: 'ReturnData' }
-)
+	(u): u is ReturnDataType => u instanceof Uint8Array,
+	{ identifier: "ReturnData" },
+);
 
 /**
  * Effect Schema for validating and transforming return data.
@@ -30,18 +30,21 @@ const ReturnDataTypeSchema = S.declare<ReturnDataType>(
  *
  * @since 0.0.1
  */
-export const Schema: S.Schema<ReturnDataType, string | Uint8Array> = S.transformOrFail(
-  S.Union(S.String, S.Uint8ArrayFromSelf),
-  ReturnDataTypeSchema,
-  {
-    strict: true,
-    decode: (value, _options, ast) => {
-      try {
-        return ParseResult.succeed(ReturnData.from(value))
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, value, (e as Error).message))
-      }
-    },
-    encode: (rd) => ParseResult.succeed(ReturnData.toHex(rd))
-  }
-).annotations({ identifier: 'ReturnDataSchema' })
+export const Schema: S.Schema<ReturnDataType, string | Uint8Array> =
+	S.transformOrFail(
+		S.Union(S.String, S.Uint8ArrayFromSelf),
+		ReturnDataTypeSchema,
+		{
+			strict: true,
+			decode: (value, _options, ast) => {
+				try {
+					return ParseResult.succeed(ReturnData.from(value));
+				} catch (e) {
+					return ParseResult.fail(
+						new ParseResult.Type(ast, value, (e as Error).message),
+					);
+				}
+			},
+			encode: (rd) => ParseResult.succeed(ReturnData.toHex(rd)),
+		},
+	).annotations({ identifier: "ReturnDataSchema" });

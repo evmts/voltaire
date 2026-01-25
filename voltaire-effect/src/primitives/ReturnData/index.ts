@@ -1,25 +1,35 @@
 /**
- * ReturnData module for Effect-based EVM return data handling.
+ * @module ReturnData
+ * @description Effect Schemas for EVM return data.
  *
- * Provides Effect-wrapped operations for working with data returned from
- * EVM contract calls and transactions.
+ * Return data is the output from EVM contract calls and transactions.
  *
- * @example
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `ReturnData.Hex` | hex string | ReturnDataType |
+ * | `ReturnData.Bytes` | Uint8Array | ReturnDataType |
+ *
+ * ## Usage
+ *
  * ```typescript
  * import * as ReturnData from 'voltaire-effect/primitives/ReturnData'
- * import * as Effect from 'effect/Effect'
+ * import * as S from 'effect/Schema'
  *
  * // From hex string
- * const data1 = ReturnData.fromHex('0xabcd1234')
+ * const data = S.decodeSync(ReturnData.Hex)('0xabcd1234')
  *
  * // From bytes
- * const data2 = ReturnData.fromBytes(new Uint8Array([0xab, 0xcd]))
+ * const data2 = S.decodeSync(ReturnData.Bytes)(bytes)
  *
- * Effect.runSync(data1)
+ * // Encode back to hex
+ * const hex = S.encodeSync(ReturnData.Hex)(data)
  * ```
  *
- * @module
- * @since 0.0.1
+ * @since 0.1.0
  */
-export { Schema, type ReturnDataType } from './ReturnDataSchema.js'
-export { from, fromHex, fromBytes, ReturnDataError } from './from.js'
+
+export { Bytes } from "./Bytes.js";
+export { Hex } from "./Hex.js";
+export { type ReturnDataType } from "./ReturnDataSchema.js";

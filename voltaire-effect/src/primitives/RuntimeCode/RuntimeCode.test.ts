@@ -1,44 +1,43 @@
-import { describe, it, expect } from 'vitest'
-import * as Schema from 'effect/Schema'
-import * as Effect from 'effect/Effect'
-import * as RuntimeCode from './index.js'
+import * as S from "effect/Schema";
+import { describe, expect, it } from "vitest";
+import * as RuntimeCode from "./index.js";
 
-describe('RuntimeCode', () => {
-  describe('Schema', () => {
-    it('decodes hex string', () => {
-      const result = Schema.decodeSync(RuntimeCode.Schema)('0x6001600155')
-      expect(result).toBeInstanceOf(Uint8Array)
-    })
+describe("RuntimeCode.Hex", () => {
+	describe("decode", () => {
+		it("decodes hex string", () => {
+			const result = S.decodeSync(RuntimeCode.Hex)("0x6080604052");
+			expect(result).toBeInstanceOf(Uint8Array);
+		});
 
-    it('decodes Uint8Array', () => {
-      const input = new Uint8Array([0x60, 0x01])
-      const result = Schema.decodeSync(RuntimeCode.Schema)(input)
-      expect(result).toBeInstanceOf(Uint8Array)
-    })
+		it("handles empty hex string", () => {
+			const result = S.decodeSync(RuntimeCode.Hex)("0x");
+			expect(result.length).toBe(0);
+		});
+	});
 
-    it('encodes back to hex', () => {
-      const decoded = Schema.decodeSync(RuntimeCode.Schema)('0xabcd')
-      const encoded = Schema.encodeSync(RuntimeCode.Schema)(decoded)
-      expect(encoded).toBe('0xabcd')
-    })
-  })
+	describe("encode", () => {
+		it("encodes to hex string", () => {
+			const code = S.decodeSync(RuntimeCode.Hex)("0x6080604052");
+			const hex = S.encodeSync(RuntimeCode.Hex)(code);
+			expect(hex).toBe("0x6080604052");
+		});
+	});
+});
 
-  describe('from', () => {
-    it('creates from hex string', async () => {
-      const result = await Effect.runPromise(RuntimeCode.from('0x6001'))
-      expect(result).toBeInstanceOf(Uint8Array)
-    })
+describe("RuntimeCode.Bytes", () => {
+	describe("decode", () => {
+		it("decodes Uint8Array", () => {
+			const input = new Uint8Array([0x60, 0x80, 0x60, 0x40]);
+			const result = S.decodeSync(RuntimeCode.Bytes)(input);
+			expect([...result]).toEqual([...input]);
+		});
+	});
 
-    it('creates from Uint8Array', async () => {
-      const result = await Effect.runPromise(RuntimeCode.from(new Uint8Array([0x60, 0x01])))
-      expect(result).toBeInstanceOf(Uint8Array)
-    })
-  })
-
-  describe('fromHex', () => {
-    it('creates from hex string', async () => {
-      const result = await Effect.runPromise(RuntimeCode.fromHex('0x6001'))
-      expect(result).toBeInstanceOf(Uint8Array)
-    })
-  })
-})
+	describe("encode", () => {
+		it("encodes to Uint8Array", () => {
+			const code = S.decodeSync(RuntimeCode.Hex)("0x6001");
+			const bytes = S.encodeSync(RuntimeCode.Bytes)(code);
+			expect(bytes).toBeInstanceOf(Uint8Array);
+		});
+	});
+});

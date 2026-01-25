@@ -1,36 +1,33 @@
 /**
- * @fileoverview Effect-based Selector equality check.
- * @module equals
- * @since 0.0.1
+ * @fileoverview Pure function for Selector equality check.
+ * @module Selector/equals
+ * @since 0.1.0
  */
 
-import { Selector } from '@tevm/voltaire'
-import type { SelectorType } from './SelectorSchema.js'
-import * as Effect from 'effect/Effect'
+import { Selector } from "@tevm/voltaire";
+import type { SelectorType } from "./SelectorSchema.js";
 
 /**
  * Compares two Selectors for equality.
  *
  * @param a - First selector
  * @param b - Second selector
- * @returns Effect containing true if selectors are equal
+ * @returns true if selectors are equal
  *
  * @example
  * ```typescript
  * import * as Selector from 'voltaire-effect/primitives/Selector'
- * import { Effect } from 'effect'
+ * import * as S from 'effect/Schema'
  *
- * const program = Effect.gen(function* () {
- *   const a = yield* Selector.from('0xa9059cbb')
- *   const b = yield* Selector.fromSignature('transfer(address,uint256)')
- *   return yield* Selector.equals(a, b) // true
- * })
+ * const a = S.decodeSync(Selector.Hex)('0xa9059cbb')
+ * const b = S.decodeSync(Selector.Signature)('transfer(address,uint256)')
+ * Selector.equals(a, b) // true
  * ```
  *
- * @since 0.0.1
+ * @since 0.1.0
  */
-export const equals = (a: SelectorType, b: SelectorType): Effect.Effect<boolean> =>
-  Effect.sync(() => Selector.equals(
-    a as unknown as Parameters<typeof Selector.equals>[0],
-    b as unknown as Parameters<typeof Selector.equals>[0]
-  ))
+export const equals = (a: SelectorType, b: SelectorType): boolean =>
+	Selector.equals(
+		a as unknown as Parameters<typeof Selector.equals>[0],
+		b as unknown as Parameters<typeof Selector.equals>[0],
+	);

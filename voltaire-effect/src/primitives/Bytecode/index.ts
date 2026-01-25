@@ -1,18 +1,35 @@
 /**
- * Bytecode module for EVM contract bytecode.
- * Provides Effect-based schemas and functions for bytecode handling.
- * 
- * @example
+ * @module Bytecode
+ * @description Effect Schemas for EVM contract bytecode.
+ *
+ * Bytecode is the compiled machine code executed by the EVM.
+ *
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `Bytecode.Hex` | hex string | BytecodeType |
+ * | `Bytecode.Bytes` | Uint8Array | BytecodeType |
+ *
+ * ## Usage
+ *
  * ```typescript
  * import * as Bytecode from 'voltaire-effect/primitives/Bytecode'
- * import * as Effect from 'effect/Effect'
- * 
- * const code = await Effect.runPromise(Bytecode.from('0x6080...'))
+ * import * as S from 'effect/Schema'
+ *
+ * // From hex string
+ * const code = S.decodeSync(Bytecode.Hex)('0x6080604052...')
+ *
+ * // From bytes
+ * const code2 = S.decodeSync(Bytecode.Bytes)(bytes)
+ *
+ * // Encode back to hex
+ * const hex = S.encodeSync(Bytecode.Hex)(code)
  * ```
- * 
- * @since 0.0.1
- * @module
+ *
+ * @since 0.1.0
  */
 
-export { Schema, type BytecodeType } from './BytecodeSchema.js'
-export { from } from './from.js'
+export { Bytes } from "./Bytes.js";
+export { type BytecodeType } from "./BytecodeSchema.js";
+export { Hex } from "./Hex.js";

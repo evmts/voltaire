@@ -1,30 +1,36 @@
 /**
- * InitCode module for working with contract initialization bytecode in Effect.
- * Init code is the bytecode used during contract deployment, containing constructor
- * logic and the runtime bytecode to be stored on-chain.
+ * @module InitCode
+ * @description Effect Schemas for contract initialization bytecode.
  *
- * @example
+ * Init code is the bytecode used during contract deployment, containing
+ * constructor logic and the runtime bytecode to be stored on-chain.
+ *
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `InitCode.Hex` | hex string | InitCodeType |
+ * | `InitCode.Bytes` | Uint8Array | InitCodeType |
+ *
+ * ## Usage
+ *
  * ```typescript
- * import * as InitCode from 'voltaire-effect/InitCode'
- * import * as Effect from 'effect/Effect'
+ * import * as InitCode from 'voltaire-effect/primitives/InitCode'
  * import * as S from 'effect/Schema'
  *
- * // Using the Effect-based constructor
- * const effect = InitCode.from('0x608060405234801561001057600080fd5b50')
- * const initCode = Effect.runSync(effect)
+ * // From hex string
+ * const code = S.decodeSync(InitCode.Hex)('0x608060405234801561001057600080fd5b50')
  *
- * // Using the Schema for validation
- * const parsed = S.decodeSync(InitCode.Schema)('0x6080604052')
+ * // From bytes
+ * const code2 = S.decodeSync(InitCode.Bytes)(bytes)
+ *
+ * // Encode back to hex
+ * const hex = S.encodeSync(InitCode.Hex)(code)
  * ```
  *
- * @since 0.0.1
- * @module
+ * @since 0.1.0
  */
-export { Schema } from './InitCodeSchema.js'
-export { from } from './from.js'
 
-/**
- * The branded type representing validated initialization code.
- * @since 0.0.1
- */
-export type { InitCodeType } from '@tevm/voltaire/InitCode'
+export type { InitCodeType } from "@tevm/voltaire/InitCode";
+export { Bytes } from "./Bytes.js";
+export { Hex } from "./Hex.js";

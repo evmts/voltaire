@@ -1,30 +1,45 @@
 /**
- * @fileoverview Effect-based module for working with EVM function selectors.
  * @module Selector
- * @since 0.0.1
+ * @description Effect Schemas for EVM function selectors (4-byte identifiers).
  *
- * @description
- * Selectors are 4-byte identifiers derived from function signatures using keccak256.
- * They are used in EVM call data to identify which function to invoke on a contract.
+ * Selectors are the first 4 bytes of keccak256(signature), used to identify
+ * which function to invoke in EVM call data.
  *
- * @example
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `Selector.Hex` | hex string | SelectorType |
+ * | `Selector.Bytes` | Uint8Array | SelectorType |
+ * | `Selector.Signature` | function signature | SelectorType |
+ *
+ * ## Usage
+ *
  * ```typescript
  * import * as Selector from 'voltaire-effect/primitives/Selector'
- * import { Effect } from 'effect'
+ * import * as S from 'effect/Schema'
  *
- * const program = Effect.gen(function* () {
- *   const selector = yield* Selector.fromSignature('transfer(address,uint256)')
- *   const hex = yield* Selector.toHex(selector)
- *   console.log(hex) // '0xa9059cbb'
- * })
+ * // From hex string
+ * const selector = S.decodeSync(Selector.Hex)('0xa9059cbb')
+ *
+ * // From function signature
+ * const transfer = S.decodeSync(Selector.Signature)('transfer(address,uint256)')
+ *
+ * // Encode back to hex
+ * const hex = S.encodeSync(Selector.Hex)(selector)
  * ```
+ *
+ * ## Pure Functions
+ *
+ * ```typescript
+ * Selector.equals(a, b)  // boolean
+ * ```
+ *
+ * @since 0.1.0
  */
 
-export { SelectorSchema, type SelectorType } from './SelectorSchema.js'
-export { SelectorError } from './SelectorError.js'
-export { from, type SelectorLike } from './from.js'
-export { fromHex } from './fromHex.js'
-export { fromSignature } from './fromSignature.js'
-export { toHex } from './toHex.js'
-export { toBytes } from './toBytes.js'
-export { equals } from './equals.js'
+export { Bytes } from "./Bytes.js";
+export { equals } from "./equals.js";
+export { Hex } from "./Hex.js";
+export { type SelectorType } from "./SelectorSchema.js";
+export { Signature } from "./Signature.js";

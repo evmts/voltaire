@@ -1,14 +1,35 @@
 /**
- * ContractCode module for working with smart contract bytecode.
- * Provides Effect-based operations for creating and validating contract code.
- * @module
- * @since 0.0.1
+ * @module ContractCode
+ * @description Effect Schemas for smart contract bytecode.
+ *
+ * Contract code is compiled bytecode ready for deployment or execution.
+ *
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `ContractCode.Hex` | hex string | ContractCodeType |
+ * | `ContractCode.Bytes` | Uint8Array | ContractCodeType |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as ContractCode from 'voltaire-effect/primitives/ContractCode'
+ * import * as S from 'effect/Schema'
+ *
+ * // From hex string
+ * const code = S.decodeSync(ContractCode.Hex)('0x608060405234801561001057600080fd5b50...')
+ *
+ * // From bytes
+ * const code2 = S.decodeSync(ContractCode.Bytes)(bytes)
+ *
+ * // Encode back to hex
+ * const hex = S.encodeSync(ContractCode.Hex)(code)
+ * ```
+ *
+ * @since 0.1.0
  */
-export { Schema } from './ContractCodeSchema.js'
-export { from } from './from.js'
 
-/**
- * Type representing compiled contract bytecode.
- * @since 0.0.1
- */
-export type { ContractCodeType } from '@tevm/voltaire/ContractCode'
+export { Bytes } from "./Bytes.js";
+export type { ContractCodeType } from "@tevm/voltaire/ContractCode";
+export { Hex } from "./Hex.js";

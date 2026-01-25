@@ -1,44 +1,43 @@
-import { describe, it, expect } from 'vitest'
-import * as Schema from 'effect/Schema'
-import * as Effect from 'effect/Effect'
-import * as ReturnData from './index.js'
+import * as S from "effect/Schema";
+import { describe, expect, it } from "vitest";
+import * as ReturnData from "./index.js";
 
-describe('ReturnData', () => {
-  describe('Schema', () => {
-    it('decodes hex string', () => {
-      const result = Schema.decodeSync(ReturnData.Schema)('0x1234')
-      expect(result).toBeInstanceOf(Uint8Array)
-    })
+describe("ReturnData.Hex", () => {
+	describe("decode", () => {
+		it("decodes hex string", () => {
+			const result = S.decodeSync(ReturnData.Hex)("0xabcd1234");
+			expect(result).toBeInstanceOf(Uint8Array);
+		});
 
-    it('decodes Uint8Array', () => {
-      const input = new Uint8Array([1, 2, 3])
-      const result = Schema.decodeSync(ReturnData.Schema)(input)
-      expect(result).toBeInstanceOf(Uint8Array)
-    })
+		it("handles empty hex string", () => {
+			const result = S.decodeSync(ReturnData.Hex)("0x");
+			expect(result.length).toBe(0);
+		});
+	});
 
-    it('encodes back to hex', () => {
-      const decoded = Schema.decodeSync(ReturnData.Schema)('0xabcd')
-      const encoded = Schema.encodeSync(ReturnData.Schema)(decoded)
-      expect(encoded).toBe('0xabcd')
-    })
-  })
+	describe("encode", () => {
+		it("encodes to hex string", () => {
+			const data = S.decodeSync(ReturnData.Hex)("0xabcd1234");
+			const hex = S.encodeSync(ReturnData.Hex)(data);
+			expect(hex).toBe("0xabcd1234");
+		});
+	});
+});
 
-  describe('from', () => {
-    it('creates from hex string', async () => {
-      const result = await Effect.runPromise(ReturnData.from('0x1234'))
-      expect(result).toBeInstanceOf(Uint8Array)
-    })
+describe("ReturnData.Bytes", () => {
+	describe("decode", () => {
+		it("decodes Uint8Array", () => {
+			const input = new Uint8Array([0xab, 0xcd, 0x12, 0x34]);
+			const result = S.decodeSync(ReturnData.Bytes)(input);
+			expect([...result]).toEqual([...input]);
+		});
+	});
 
-    it('creates from Uint8Array', async () => {
-      const result = await Effect.runPromise(ReturnData.from(new Uint8Array([1, 2])))
-      expect(result).toBeInstanceOf(Uint8Array)
-    })
-  })
-
-  describe('fromHex', () => {
-    it('creates from hex string', async () => {
-      const result = await Effect.runPromise(ReturnData.fromHex('0xaabb'))
-      expect(result).toBeInstanceOf(Uint8Array)
-    })
-  })
-})
+	describe("encode", () => {
+		it("encodes to Uint8Array", () => {
+			const data = S.decodeSync(ReturnData.Hex)("0xabcd");
+			const bytes = S.encodeSync(ReturnData.Bytes)(data);
+			expect(bytes).toBeInstanceOf(Uint8Array);
+		});
+	});
+});

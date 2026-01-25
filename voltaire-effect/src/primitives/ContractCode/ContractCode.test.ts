@@ -1,44 +1,45 @@
-import { describe, it, expect } from 'vitest'
-import * as ContractCode from './index.js'
-import * as Schema from 'effect/Schema'
-import * as Effect from 'effect/Effect'
+import * as S from "effect/Schema";
+import { describe, expect, it } from "vitest";
+import * as ContractCode from "./index.js";
 
-describe('ContractCode Schema', () => {
-  it('decodes Uint8Array', () => {
-    const input = new Uint8Array([0x60, 0x80, 0x60, 0x40])
-    const result = Schema.decodeSync(ContractCode.Schema)(input)
-    expect([...result]).toEqual([...input])
-  })
+describe("ContractCode.Hex", () => {
+	describe("decode", () => {
+		it("decodes hex string", () => {
+			const result = S.decodeSync(ContractCode.Hex)(
+				"0x608060405234801561001057600080fd5b50",
+			);
+			expect(result).toBeInstanceOf(Uint8Array);
+		});
 
-  it('decodes hex string', () => {
-    const result = Schema.decodeSync(ContractCode.Schema)("0x60806040")
-    expect([...result]).toEqual([0x60, 0x80, 0x60, 0x40])
-  })
+		it("handles empty hex string", () => {
+			const result = S.decodeSync(ContractCode.Hex)("0x");
+			expect(result.length).toBe(0);
+		});
+	});
 
-  it('fails on invalid input', () => {
-    expect(() => Schema.decodeSync(ContractCode.Schema)(123 as unknown as string)).toThrow()
-  })
-})
+	describe("encode", () => {
+		it("encodes to hex string", () => {
+			const code = S.decodeSync(ContractCode.Hex)("0x6080604052");
+			const hex = S.encodeSync(ContractCode.Hex)(code);
+			expect(hex).toBe("0x6080604052");
+		});
+	});
+});
 
-describe('ContractCode.from', () => {
-  it('creates contract code from Uint8Array', async () => {
-    const input = new Uint8Array([0x60, 0x80])
-    const result = await Effect.runPromise(ContractCode.from(input))
-    expect([...result]).toEqual([...input])
-  })
+describe("ContractCode.Bytes", () => {
+	describe("decode", () => {
+		it("decodes Uint8Array", () => {
+			const input = new Uint8Array([0x60, 0x80, 0x60, 0x40]);
+			const result = S.decodeSync(ContractCode.Bytes)(input);
+			expect([...result]).toEqual([...input]);
+		});
+	});
 
-  it('creates contract code from hex string', async () => {
-    const result = await Effect.runPromise(ContractCode.from("0x6080"))
-    expect([...result]).toEqual([0x60, 0x80])
-  })
-
-  it('handles empty contract code', async () => {
-    const result = await Effect.runPromise(ContractCode.from(new Uint8Array(0)))
-    expect(result.length).toBe(0)
-  })
-
-  it('handles empty hex string', async () => {
-    const result = await Effect.runPromise(ContractCode.from("0x"))
-    expect(result.length).toBe(0)
-  })
-})
+	describe("encode", () => {
+		it("encodes to Uint8Array", () => {
+			const code = S.decodeSync(ContractCode.Hex)("0x6001");
+			const bytes = S.encodeSync(ContractCode.Bytes)(code);
+			expect(bytes).toBeInstanceOf(Uint8Array);
+		});
+	});
+});

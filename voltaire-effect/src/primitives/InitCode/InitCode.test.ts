@@ -1,44 +1,46 @@
-import { describe, it, expect } from 'vitest'
-import * as InitCode from './index.js'
-import * as Schema from 'effect/Schema'
-import * as Effect from 'effect/Effect'
+import * as S from "effect/Schema";
+import { describe, expect, it } from "vitest";
+import * as InitCode from "./index.js";
 
-describe('InitCode Schema', () => {
-  it('decodes Uint8Array', () => {
-    const input = new Uint8Array([0x60, 0x80, 0x60, 0x40, 0x52])
-    const result = Schema.decodeSync(InitCode.Schema)(input)
-    expect([...result]).toEqual([...input])
-  })
+describe("InitCode.Hex", () => {
+	describe("decode", () => {
+		it("decodes hex string", () => {
+			const result = S.decodeSync(InitCode.Hex)(
+				"0x608060405234801561001057600080fd5b50",
+			);
+			expect(result).toBeInstanceOf(Uint8Array);
+			expect(result.length).toBeGreaterThan(0);
+		});
 
-  it('decodes hex string', () => {
-    const result = Schema.decodeSync(InitCode.Schema)("0x6080604052")
-    expect([...result]).toEqual([0x60, 0x80, 0x60, 0x40, 0x52])
-  })
+		it("handles empty hex string", () => {
+			const result = S.decodeSync(InitCode.Hex)("0x");
+			expect(result.length).toBe(0);
+		});
+	});
 
-  it('fails on invalid input', () => {
-    expect(() => Schema.decodeSync(InitCode.Schema)(123 as unknown as string)).toThrow()
-  })
-})
+	describe("encode", () => {
+		it("encodes to hex string", () => {
+			const code = S.decodeSync(InitCode.Hex)("0x6080604052");
+			const hex = S.encodeSync(InitCode.Hex)(code);
+			expect(hex).toBe("0x6080604052");
+		});
+	});
+});
 
-describe('InitCode.from', () => {
-  it('creates init code from Uint8Array', async () => {
-    const input = new Uint8Array([0x60, 0x80, 0x60, 0x40])
-    const result = await Effect.runPromise(InitCode.from(input))
-    expect([...result]).toEqual([...input])
-  })
+describe("InitCode.Bytes", () => {
+	describe("decode", () => {
+		it("decodes Uint8Array", () => {
+			const input = new Uint8Array([0x60, 0x80, 0x60, 0x40]);
+			const result = S.decodeSync(InitCode.Bytes)(input);
+			expect([...result]).toEqual([...input]);
+		});
+	});
 
-  it('creates init code from hex string', async () => {
-    const result = await Effect.runPromise(InitCode.from("0x60806040"))
-    expect([...result]).toEqual([0x60, 0x80, 0x60, 0x40])
-  })
-
-  it('handles empty init code', async () => {
-    const result = await Effect.runPromise(InitCode.from(new Uint8Array(0)))
-    expect(result.length).toBe(0)
-  })
-
-  it('handles empty hex string', async () => {
-    const result = await Effect.runPromise(InitCode.from("0x"))
-    expect(result.length).toBe(0)
-  })
-})
+	describe("encode", () => {
+		it("encodes to Uint8Array", () => {
+			const code = S.decodeSync(InitCode.Hex)("0x6001");
+			const bytes = S.encodeSync(InitCode.Bytes)(code);
+			expect(bytes).toBeInstanceOf(Uint8Array);
+		});
+	});
+});

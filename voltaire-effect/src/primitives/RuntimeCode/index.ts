@@ -1,25 +1,36 @@
 /**
- * RuntimeCode module for Effect-based contract bytecode handling.
+ * @module RuntimeCode
+ * @description Effect Schemas for deployed contract runtime bytecode.
  *
- * Provides Effect-wrapped operations for working with deployed contract
- * runtime bytecode (code stored at contract addresses).
+ * Runtime code is the bytecode stored at a contract address after deployment.
+ * This is what gets executed when the contract is called.
  *
- * @example
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `RuntimeCode.Hex` | hex string | RuntimeCodeType |
+ * | `RuntimeCode.Bytes` | Uint8Array | RuntimeCodeType |
+ *
+ * ## Usage
+ *
  * ```typescript
  * import * as RuntimeCode from 'voltaire-effect/primitives/RuntimeCode'
- * import * as Effect from 'effect/Effect'
+ * import * as S from 'effect/Schema'
  *
  * // From hex string
- * const code1 = RuntimeCode.fromHex('0x6080604052...')
+ * const code = S.decodeSync(RuntimeCode.Hex)('0x6080604052...')
  *
  * // From bytes
- * const code2 = RuntimeCode.from(bytecodeBytes)
+ * const code2 = S.decodeSync(RuntimeCode.Bytes)(bytes)
  *
- * Effect.runSync(code1)
+ * // Encode back to hex
+ * const hex = S.encodeSync(RuntimeCode.Hex)(code)
  * ```
  *
- * @module
- * @since 0.0.1
+ * @since 0.1.0
  */
-export { Schema, type RuntimeCodeType } from './RuntimeCodeSchema.js'
-export { from, fromHex, RuntimeCodeError } from './from.js'
+
+export { Bytes } from "./Bytes.js";
+export { Hex } from "./Hex.js";
+export { type RuntimeCodeType } from "./RuntimeCodeSchema.js";

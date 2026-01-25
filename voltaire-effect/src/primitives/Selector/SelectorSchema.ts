@@ -5,9 +5,9 @@
  * @since 0.0.1
  */
 
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
-import { Selector } from '@tevm/voltaire'
+import { Selector } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Branded type representing a 4-byte EVM function selector.
@@ -30,7 +30,10 @@ import { Selector } from '@tevm/voltaire'
  * @see {@link from} for creating selectors from various inputs
  * @since 0.0.1
  */
-export type SelectorType = Uint8Array & { readonly __tag: 'Selector'; readonly length: 4 }
+export type SelectorType = Uint8Array & {
+	readonly __tag: "Selector";
+	readonly length: 4;
+};
 
 /**
  * Internal schema declaration for SelectorType validation.
@@ -38,9 +41,9 @@ export type SelectorType = Uint8Array & { readonly __tag: 'Selector'; readonly l
  * @internal
  */
 const SelectorTypeSchema = S.declare<SelectorType>(
-  (u): u is SelectorType => u instanceof Uint8Array && u.length === 4,
-  { identifier: 'Selector' }
-)
+	(u): u is SelectorType => u instanceof Uint8Array && u.length === 4,
+	{ identifier: "Selector" },
+);
 
 /**
  * Effect Schema for validating and parsing EVM function selectors.
@@ -70,18 +73,23 @@ const SelectorTypeSchema = S.declare<SelectorType>(
  * @see {@link from} for Effect-based creation
  * @since 0.0.1
  */
-export const SelectorSchema: S.Schema<SelectorType, string | Uint8Array> = S.transformOrFail(
-  S.Union(S.String, S.Uint8ArrayFromSelf),
-  SelectorTypeSchema,
-  {
-    strict: true,
-    decode: (value, _options, ast) => {
-      try {
-        return ParseResult.succeed(Selector.from(value) as unknown as SelectorType)
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, value, (e as Error).message))
-      }
-    },
-    encode: (selector) => ParseResult.succeed(selector)
-  }
-).annotations({ identifier: 'SelectorSchema' })
+export const SelectorSchema: S.Schema<SelectorType, string | Uint8Array> =
+	S.transformOrFail(
+		S.Union(S.String, S.Uint8ArrayFromSelf),
+		SelectorTypeSchema,
+		{
+			strict: true,
+			decode: (value, _options, ast) => {
+				try {
+					return ParseResult.succeed(
+						Selector.from(value) as unknown as SelectorType,
+					);
+				} catch (e) {
+					return ParseResult.fail(
+						new ParseResult.Type(ast, value, (e as Error).message),
+					);
+				}
+			},
+			encode: (selector) => ParseResult.succeed(selector),
+		},
+	).annotations({ identifier: "SelectorSchema" });
