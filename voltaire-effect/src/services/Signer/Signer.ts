@@ -19,12 +19,23 @@
  * @see {@link TransportService} - Required for broadcast
  */
 
-import { Address, type BrandedAddress, type BrandedHex } from "@tevm/voltaire";
+import {
+	Address,
+	type BrandedAddress,
+	type BrandedHex,
+	type BrandedSignature,
+	Hex,
+	Signature,
+} from "@tevm/voltaire";
+import * as Hash from "@tevm/voltaire/Hash";
+import type { HashType } from "@tevm/voltaire/Hash";
+import * as VoltaireTransaction from "@tevm/voltaire/Transaction";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 
 type AddressType = BrandedAddress.AddressType;
 type HexType = BrandedHex.HexType;
+type SignatureType = BrandedSignature.SignatureType;
 
 import { AccountService, LocalAccount } from "../Account/index.js";
 import { ProviderService } from "../Provider/index.js";
@@ -44,22 +55,80 @@ import {
  * signed transaction ready for eth_sendRawTransaction.
  *
  * @param tx - The transaction with required fields populated
- * @param _signature - The transaction signature (r, s, v)
+ * @param signature - The transaction signature (r, s, v)
  * @returns Hex-encoded signed transaction
  *
  * @internal
  */
 const serializeTransaction = (
-	tx: TransactionRequest & { nonce: bigint; gasLimit: bigint; chainId: bigint },
-	_signature: unknown,
+	tx: TransactionRequest & {
+		nonce: bigint;
+		gasLimit: bigint;
+		chainId: bigint;
+		maxFeePerGas?: bigint;
+		maxPriorityFeePerGas?: bigint;
+		gasPrice?: bigint;
+	},
+	signature: SignatureType,
 ): HexType => {
-	const parts = [
-		tx.nonce.toString(16).padStart(2, "0"),
-		tx.gasLimit.toString(16).padStart(2, "0"),
-		tx.chainId.toString(16).padStart(2, "0"),
-		tx.value?.toString(16) ?? "0",
-	];
-	return `0x${parts.join("")}` as HexType;
+	const [yParity, rBytes, sBytes] = Signature.toTuple(signature);
+	const r = rBytes;
+	const s = sBytes;
+
+	const toAddress = tx.to ? (tx.to as AddressType) : null;
+	const data = tx.data ? Hex.toBytes(tx.data) : new Uint8Array(0);
+
+	const isEIP1559 =
+		tx.maxFeePerGas !== undefined || tx.maxPriorityFeePerGas !== undefined;
+
+	// Convert accessList: address to AddressType, storageKeys to HashType
+	const accessList: VoltaireTransaction.AccessList = (tx.accessList ?? []).map(
+		(item): VoltaireTransaction.AccessListItem => ({
+			address:
+				typeof item.address === "string"
+					? Address.fromHex(item.address)
+					: (item.address as AddressType),
+			storageKeys: item.storageKeys.map((key) => Hash.fromHex(key)),
+		}),
+	);
+
+	let fullTx: VoltaireTransaction.Any;
+
+	if (isEIP1559) {
+		fullTx = {
+			type: VoltaireTransaction.Type.EIP1559,
+			chainId: tx.chainId,
+			nonce: tx.nonce,
+			maxPriorityFeePerGas: tx.maxPriorityFeePerGas ?? 0n,
+			maxFeePerGas: tx.maxFeePerGas ?? 0n,
+			gasLimit: tx.gasLimit,
+			to: toAddress,
+			value: tx.value ?? 0n,
+			data,
+			accessList,
+			yParity,
+			r,
+			s,
+		};
+	} else {
+		const vValue = tx.chainId * 2n + 35n + BigInt(yParity);
+
+		fullTx = {
+			type: VoltaireTransaction.Type.Legacy,
+			nonce: tx.nonce,
+			gasPrice: tx.gasPrice ?? 0n,
+			gasLimit: tx.gasLimit,
+			to: toAddress,
+			value: tx.value ?? 0n,
+			data,
+			v: vValue,
+			r,
+			s,
+		};
+	}
+
+	const serialized = VoltaireTransaction.serialize(fullTx);
+	return Hex.fromBytes(serialized) as HexType;
 };
 
 /**
@@ -111,13 +180,43 @@ const SignerLive: Layer.Layer<
 				const gasLimit =
 					tx.gasLimit ?? (yield* provider.estimateGas(txForEstimate));
 
-				const gasParams =
-					tx.maxFeePerGas !== undefined
-						? {
-								maxFeePerGas: tx.maxFeePerGas,
-								maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
-							}
-						: { gasPrice: tx.gasPrice ?? (yield* provider.getGasPrice()) };
+				const getBaseFeePerGas = Effect.gen(function* () {
+					const block = yield* provider.getBlock({ blockTag: "latest" });
+					if (block.baseFeePerGas) {
+						return BigInt(block.baseFeePerGas);
+					}
+					return yield* provider.getGasPrice();
+				});
+
+				const supportsEIP1559 = Effect.gen(function* () {
+					const block = yield* provider.getBlock({ blockTag: "latest" });
+					return block.baseFeePerGas !== undefined;
+				});
+
+				const useEIP1559 =
+					tx.maxFeePerGas !== undefined ||
+					tx.maxPriorityFeePerGas !== undefined ||
+					(tx.gasPrice === undefined && (yield* supportsEIP1559));
+
+				let gasParams: {
+					gasPrice?: bigint;
+					maxFeePerGas?: bigint;
+					maxPriorityFeePerGas?: bigint;
+				};
+
+				if (useEIP1559) {
+					const maxPriorityFeePerGas =
+						tx.maxPriorityFeePerGas ??
+						(yield* provider.getMaxPriorityFeePerGas());
+					const baseFeePerGas = yield* getBaseFeePerGas;
+					const multiplier = 2n;
+					const maxFeePerGas =
+						tx.maxFeePerGas ?? baseFeePerGas * multiplier + maxPriorityFeePerGas;
+					gasParams = { maxFeePerGas, maxPriorityFeePerGas };
+				} else {
+					const gasPrice = tx.gasPrice ?? (yield* provider.getGasPrice());
+					gasParams = { gasPrice };
+				}
 
 				const fullTx = {
 					...tx,
@@ -130,14 +229,17 @@ const SignerLive: Layer.Layer<
 				const signature = yield* account.signTransaction(fullTx);
 				return serializeTransaction(fullTx, signature);
 			}).pipe(
-				Effect.mapError(
-					(e) =>
-						new SignerError(
-							tx,
-							`Failed to sign transaction: ${e instanceof Error ? e.message : String(e)}`,
-							{ cause: e instanceof Error ? e : undefined },
-						),
-				),
+				Effect.mapError((e) => {
+					const code =
+						e instanceof Error && "code" in e && typeof e.code === "number"
+							? e.code
+							: undefined;
+					return new SignerError(
+						tx,
+						`Failed to sign transaction: ${e instanceof Error ? e.message : String(e)}`,
+						{ cause: e instanceof Error ? e : undefined, code },
+					);
+				}),
 			);
 
 		const signer: SignerShape = {
@@ -175,14 +277,15 @@ const SignerLive: Layer.Layer<
 				Effect.gen(function* () {
 					const signed = yield* signTransaction(tx);
 					return yield* transport
-						.request<HexType>("eth_sendRawTransaction", [signed])
+						.request<string>("eth_sendRawTransaction", [signed])
 						.pipe(
+							Effect.map((hash) => Hash.fromHex(hash)),
 							Effect.mapError(
 								(e) =>
 									new SignerError(
 										tx,
 										`Failed to send transaction: ${e.message}`,
-										{ cause: e },
+										{ cause: e, code: e.code },
 									),
 							),
 						);
@@ -190,28 +293,32 @@ const SignerLive: Layer.Layer<
 
 			sendRawTransaction: (signedTx) =>
 				transport
-					.request<HexType>("eth_sendRawTransaction", [signedTx])
+					.request<string>("eth_sendRawTransaction", [signedTx])
 					.pipe(
+						Effect.map((hash) => Hash.fromHex(hash)),
 						Effect.mapError(
 							(e) =>
 								new SignerError(
 									{ action: "sendRawTransaction", signedTx },
 									`Failed to send raw transaction: ${e.message}`,
-									{ cause: e },
+									{ cause: e, code: e.code },
 								),
 						),
 					),
 
 			requestAddresses: () =>
 				transport
-					.request<AddressType[]>("eth_requestAccounts")
+					.request<string[]>("eth_requestAccounts")
 					.pipe(
+						Effect.map((addresses) =>
+							addresses.map((addr) => Address(addr) as AddressType),
+						),
 						Effect.mapError(
 							(e) =>
 								new SignerError(
 									{ action: "requestAddresses" },
 									`Failed to request addresses: ${e.message}`,
-									{ cause: e },
+									{ cause: e, code: e.code },
 								),
 						),
 					),
@@ -227,7 +334,7 @@ const SignerLive: Layer.Layer<
 								new SignerError(
 									{ action: "switchChain", chainId },
 									`Failed to switch chain: ${e.message}`,
-									{ cause: e },
+									{ cause: e, code: e.code },
 								),
 						),
 					),
@@ -249,7 +356,7 @@ const SignerLive: Layer.Layer<
  * @example Basic usage with separate layers
  * ```typescript
  * import { Effect } from 'effect'
- * import { Signer, SignerService, LocalAccount, PublicClient, HttpTransport } from 'voltaire-effect/services'
+ * import { Signer, SignerService, LocalAccount, Provider, HttpTransport } from 'voltaire-effect/services'
  *
  * const program = Effect.gen(function* () {
  *   const signer = yield* SignerService
@@ -257,7 +364,7 @@ const SignerLive: Layer.Layer<
  * }).pipe(
  *   Effect.provide(Signer.Live),
  *   Effect.provide(LocalAccount(privateKey)),
- *   Effect.provide(PublicClient),
+ *   Effect.provide(Provider),
  *   Effect.provide(HttpTransport('https://...'))
  * )
  * ```
@@ -265,10 +372,10 @@ const SignerLive: Layer.Layer<
  * @example Using fromProvider for composed layers
  * ```typescript
  * import { Effect } from 'effect'
- * import { Signer, SignerService, LocalAccount, PublicClient, HttpTransport } from 'voltaire-effect/services'
+ * import { Signer, SignerService, LocalAccount, Provider, HttpTransport } from 'voltaire-effect/services'
  *
  * const transport = HttpTransport('https://...')
- * const signerLayer = Signer.fromProvider(PublicClient, LocalAccount(privateKey))
+ * const signerLayer = Signer.fromProvider(Provider, LocalAccount(privateKey))
  *
  * const program = Effect.gen(function* () {
  *   const signer = yield* SignerService
@@ -282,10 +389,10 @@ const SignerLive: Layer.Layer<
  * @example Using fromPrivateKey for quick setup
  * ```typescript
  * import { Effect } from 'effect'
- * import { Signer, SignerService, PublicClient, HttpTransport } from 'voltaire-effect/services'
+ * import { Signer, SignerService, Provider, HttpTransport } from 'voltaire-effect/services'
  *
  * const transport = HttpTransport('https://...')
- * const signerLayer = Signer.fromPrivateKey(privateKey, PublicClient)
+ * const signerLayer = Signer.fromPrivateKey(privateKey, Provider)
  *
  * const program = Effect.gen(function* () {
  *   const signer = yield* SignerService
