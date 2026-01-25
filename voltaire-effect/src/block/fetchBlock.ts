@@ -10,7 +10,9 @@ import type {
 	RetryOptions,
 	StreamBlock,
 } from "@tevm/voltaire/block";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
+import * as Schedule from "effect/Schedule";
 import { TransportService } from "../services/Transport/TransportService.js";
 import { BlockError, BlockNotFoundError } from "./BlockError.js";
 import { createFetchBlockReceipts } from "./fetchBlockReceipts.js";

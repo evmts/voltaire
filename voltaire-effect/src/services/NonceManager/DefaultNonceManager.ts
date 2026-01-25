@@ -15,6 +15,7 @@
 
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as SynchronizedRef from "effect/SynchronizedRef";
 import { ProviderService } from "../Provider/index.js";
 import { NonceError, NonceManagerService } from "./NonceManagerService.js";
 
