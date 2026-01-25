@@ -38,6 +38,8 @@ const pureJsEntries = [
 	"src/primitives/Bytecode/index.ts",
 	"src/primitives/Bytes/index.ts",
 	"src/primitives/Chain/index.js",
+	"src/primitives/ContractCode/index.ts",
+	"src/primitives/InitCode/index.ts",
 	"src/primitives/Denomination/index.js",
 	"src/primitives/Ens/index.ts",
 	"src/primitives/EventLog/index.ts",
@@ -47,6 +49,7 @@ const pureJsEntries = [
 	"src/primitives/Hardfork/index.ts",
 	"src/primitives/Hash/index.ts",
 	"src/primitives/Hex/index.ts",
+	"src/primitives/LogFilter/index.ts",
 	// Effect Schema entrypoints
 	"src/primitives/Hash/effect.ts",
 	"src/primitives/Hex/effect.ts",
@@ -65,6 +68,8 @@ const pureJsEntries = [
 	"src/primitives/State/effect.ts",
 	"src/primitives/Rlp/index.ts",
 	"src/primitives/Signature/index.ts",
+	"src/primitives/PrivateKey/index.ts",
+	"src/primitives/PublicKey/index.ts",
 	"src/primitives/Siwe/index.ts",
 	"src/primitives/State/index.ts",
 	"src/primitives/Transaction/index.ts",
@@ -101,6 +106,7 @@ const pureJsEntries = [
 	"src/crypto/Keystore/index.ts",
 	"src/crypto/ModExp/index.ts",
 	"src/crypto/X25519/index.ts",
+	"src/crypto/signers/index.ts",
 ];
 
 // Native FFI entry points - require ffi-napi/ref-napi
