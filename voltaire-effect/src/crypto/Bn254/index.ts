@@ -36,6 +36,7 @@
 
 export type { BN254G1PointType, BN254G2PointType } from "@tevm/voltaire";
 export {
+	Bn254Error,
 	Bn254Live,
 	Bn254Service,
 	type Bn254ServiceShape,

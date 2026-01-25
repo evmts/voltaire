@@ -63,47 +63,47 @@ export interface KZGServiceShape {
 	/**
 	 * Computes a KZG commitment for a blob.
 	 * @param blob - The 128KB blob data
-	 * @returns Effect containing the 48-byte commitment
+	 * @returns Effect containing the 48-byte commitment, or KZGError if operation fails
 	 */
 	readonly blobToKzgCommitment: (
 		blob: KzgBlobType,
-	) => Effect.Effect<KzgCommitmentType>;
+	) => Effect.Effect<KzgCommitmentType, KZGError>;
 
 	/**
 	 * Computes a KZG proof for a blob and commitment.
 	 * @param blob - The 128KB blob data
 	 * @param commitment - The 48-byte commitment
-	 * @returns Effect containing the 48-byte proof
+	 * @returns Effect containing the 48-byte proof, or KZGError if operation fails
 	 */
 	readonly computeBlobKzgProof: (
 		blob: KzgBlobType,
 		commitment: KzgCommitmentType,
-	) => Effect.Effect<KzgProofType>;
+	) => Effect.Effect<KzgProofType, KZGError>;
 
 	/**
 	 * Verifies a KZG proof against a blob and commitment.
 	 * @param blob - The 128KB blob data
 	 * @param commitment - The 48-byte commitment
 	 * @param proof - The 48-byte proof
-	 * @returns Effect containing true if proof is valid
+	 * @returns Effect containing true if proof is valid, or KZGError if operation fails
 	 */
 	readonly verifyBlobKzgProof: (
 		blob: KzgBlobType,
 		commitment: KzgCommitmentType,
 		proof: KzgProofType,
-	) => Effect.Effect<boolean>;
+	) => Effect.Effect<boolean, KZGError>;
 
 	/**
 	 * Loads the trusted setup for KZG operations.
-	 * @returns Effect that completes when setup is loaded
+	 * @returns Effect that completes when setup is loaded, or KZGError if loading fails
 	 */
-	readonly loadTrustedSetup: () => Effect.Effect<void>;
+	readonly loadTrustedSetup: () => Effect.Effect<void, KZGError>;
 
 	/**
 	 * Checks if the trusted setup has been initialized.
-	 * @returns Effect containing true if initialized
+	 * @returns Effect containing true if initialized, or KZGError if check fails
 	 */
-	readonly isInitialized: () => Effect.Effect<boolean>;
+	readonly isInitialized: () => Effect.Effect<boolean, KZGError>;
 }
 
 /**
@@ -155,15 +155,60 @@ export class KZGService extends Context.Tag("KZGService")<
  */
 export const KZGLive = Layer.succeed(KZGService, {
 	blobToKzgCommitment: (blob) =>
-		Effect.sync(() => KZG.blobToKzgCommitment(blob) as KzgCommitmentType),
+		Effect.try({
+			try: () => KZG.blobToKzgCommitment(blob) as KzgCommitmentType,
+			catch: (e) =>
+				new KZGError({
+					code: "INVALID_BLOB",
+					operation: "blobToKzgCommitment",
+					message: `Failed to compute KZG commitment: ${e}`,
+					cause: e,
+				}),
+		}),
 	computeBlobKzgProof: (blob, commitment) =>
-		Effect.sync(
-			() => KZG.computeBlobKzgProof(blob, commitment) as KzgProofType,
-		),
+		Effect.try({
+			try: () => KZG.computeBlobKzgProof(blob, commitment) as KzgProofType,
+			catch: (e) =>
+				new KZGError({
+					code: "OPERATION_FAILED",
+					operation: "computeBlobKzgProof",
+					message: `Failed to compute KZG proof: ${e}`,
+					cause: e,
+				}),
+		}),
 	verifyBlobKzgProof: (blob, commitment, proof) =>
-		Effect.sync(() => KZG.verifyBlobKzgProof(blob, commitment, proof)),
-	loadTrustedSetup: () => Effect.sync(() => KZG.loadTrustedSetup()),
-	isInitialized: () => Effect.sync(() => KZG.isInitialized()),
+		Effect.try({
+			try: () => KZG.verifyBlobKzgProof(blob, commitment, proof),
+			catch: (e) =>
+				new KZGError({
+					code: "OPERATION_FAILED",
+					operation: "verifyBlobKzgProof",
+					message: `Failed to verify KZG proof: ${e}`,
+					cause: e,
+				}),
+		}),
+	loadTrustedSetup: () =>
+		Effect.try({
+			try: () => KZG.loadTrustedSetup(),
+			catch: (e) =>
+				new KZGError({
+					code: "SETUP_NOT_LOADED",
+					operation: "loadTrustedSetup",
+					message: `Failed to load trusted setup: ${e}`,
+					cause: e,
+				}),
+		}),
+	isInitialized: () =>
+		Effect.try({
+			try: () => KZG.isInitialized(),
+			catch: (e) =>
+				new KZGError({
+					code: "OPERATION_FAILED",
+					operation: "isInitialized",
+					message: `Failed to check initialization status: ${e}`,
+					cause: e,
+				}),
+		}),
 });
 
 /**

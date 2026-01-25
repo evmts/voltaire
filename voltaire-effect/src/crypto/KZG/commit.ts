@@ -5,7 +5,7 @@
  */
 import type { KzgBlobType, KzgCommitmentType } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { KZGService } from "./KZGService.js";
+import { type KZGError, KZGService } from "./KZGService.js";
 
 /**
  * Computes a KZG commitment for a blob.
@@ -16,7 +16,7 @@ import { KZGService } from "./KZGService.js";
  * Used in EIP-4844 for blob transaction data availability.
  *
  * @param blob - The 128KB blob data (4096 field elements × 32 bytes)
- * @returns Effect containing the 48-byte commitment, requiring KZGService
+ * @returns Effect containing the 48-byte commitment or KZGError, requiring KZGService
  *
  * @example
  * ```typescript
@@ -27,14 +27,13 @@ import { KZGService } from "./KZGService.js";
  * // Returns: KzgCommitmentType (48 bytes)
  * ```
  *
- * @throws Never fails if blob is valid
  * @see {@link computeBlobKzgProof} to generate proof
  * @see {@link https://eips.ethereum.org/EIPS/eip-4844 | EIP-4844}
  * @since 0.0.1
  */
 export const blobToKzgCommitment = (
 	blob: KzgBlobType,
-): Effect.Effect<KzgCommitmentType, never, KZGService> =>
+): Effect.Effect<KzgCommitmentType, KZGError, KZGService> =>
 	Effect.gen(function* () {
 		const kzg = yield* KZGService;
 		return yield* kzg.blobToKzgCommitment(blob);
@@ -50,7 +49,7 @@ export const blobToKzgCommitment = (
  *
  * @param blob - The 128KB blob data (4096 field elements × 32 bytes)
  * @param commitment - The 48-byte commitment from blobToKzgCommitment
- * @returns Effect containing the 48-byte proof, requiring KZGService
+ * @returns Effect containing the 48-byte proof or KZGError, requiring KZGService
  *
  * @example
  * ```typescript
@@ -63,7 +62,6 @@ export const blobToKzgCommitment = (
  * }).pipe(Effect.provide(KZGLive))
  * ```
  *
- * @throws Never fails if inputs are valid
  * @see {@link blobToKzgCommitment} to generate commitment
  * @see {@link verifyBlobKzgProof} to verify the proof
  * @since 0.0.1
@@ -71,7 +69,7 @@ export const blobToKzgCommitment = (
 export const computeBlobKzgProof = (
 	blob: KzgBlobType,
 	commitment: KzgCommitmentType,
-): Effect.Effect<import("@tevm/voltaire").KzgProofType, never, KZGService> =>
+): Effect.Effect<import("@tevm/voltaire").KzgProofType, KZGError, KZGService> =>
 	Effect.gen(function* () {
 		const kzg = yield* KZGService;
 		return yield* kzg.computeBlobKzgProof(blob, commitment);

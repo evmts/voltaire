@@ -6,7 +6,7 @@
 
 import type { BN254G1PointType, BN254G2PointType } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { Bn254Service } from "./Bn254Service.js";
+import { type Bn254Error, Bn254Service } from "./Bn254Service.js";
 
 /**
  * Adds two G1 points on the BN254 curve.
@@ -17,7 +17,7 @@ import { Bn254Service } from "./Bn254Service.js";
  *
  * @param a - First G1 point
  * @param b - Second G1 point
- * @returns Effect containing the sum point, requiring Bn254Service
+ * @returns Effect containing the sum point or Bn254Error, requiring Bn254Service
  *
  * @example
  * ```typescript
@@ -31,7 +31,6 @@ import { Bn254Service } from "./Bn254Service.js";
  * }).pipe(Effect.provide(Bn254Live))
  * ```
  *
- * @throws Never - This operation is infallible for valid points
  * @see {@link g1Mul} - Scalar multiplication
  * @see {@link Bn254Service} - Full service interface
  * @since 0.0.1
@@ -39,7 +38,7 @@ import { Bn254Service } from "./Bn254Service.js";
 export const g1Add = (
 	a: BN254G1PointType,
 	b: BN254G1PointType,
-): Effect.Effect<BN254G1PointType, never, Bn254Service> =>
+): Effect.Effect<BN254G1PointType, Bn254Error, Bn254Service> =>
 	Effect.gen(function* () {
 		const bn254 = yield* Bn254Service;
 		return yield* bn254.g1Add(a, b);
@@ -54,7 +53,7 @@ export const g1Add = (
  *
  * @param point - The G1 point
  * @param scalar - The scalar multiplier (bigint)
- * @returns Effect containing the product point, requiring Bn254Service
+ * @returns Effect containing the product point or Bn254Error, requiring Bn254Service
  *
  * @example
  * ```typescript
@@ -68,7 +67,6 @@ export const g1Add = (
  * }).pipe(Effect.provide(Bn254Live))
  * ```
  *
- * @throws Never - This operation is infallible for valid inputs
  * @see {@link g1Add} - Point addition
  * @see {@link Bn254Service} - Full service interface
  * @since 0.0.1
@@ -76,7 +74,7 @@ export const g1Add = (
 export const g1Mul = (
 	point: BN254G1PointType,
 	scalar: bigint,
-): Effect.Effect<BN254G1PointType, never, Bn254Service> =>
+): Effect.Effect<BN254G1PointType, Bn254Error, Bn254Service> =>
 	Effect.gen(function* () {
 		const bn254 = yield* Bn254Service;
 		return yield* bn254.g1Mul(point, scalar);
@@ -89,7 +87,7 @@ export const g1Mul = (
  * Returns the standard generator point for the G1 group of BN254.
  * All other G1 points can be derived from this via scalar multiplication.
  *
- * @returns Effect containing the G1 generator point, requiring Bn254Service
+ * @returns Effect containing the G1 generator point or Bn254Error, requiring Bn254Service
  *
  * @example
  * ```typescript
@@ -101,13 +99,12 @@ export const g1Mul = (
  * )
  * ```
  *
- * @throws Never - This operation is infallible
  * @see {@link g1Mul} - Use generator with scalar multiplication
  * @since 0.0.1
  */
 export const g1Generator = (): Effect.Effect<
 	BN254G1PointType,
-	never,
+	Bn254Error,
 	Bn254Service
 > =>
 	Effect.gen(function* () {
@@ -123,7 +120,7 @@ export const g1Generator = (): Effect.Effect<
  *
  * @param a - First G2 point
  * @param b - Second G2 point
- * @returns Effect containing the sum point, requiring Bn254Service
+ * @returns Effect containing the sum point or Bn254Error, requiring Bn254Service
  *
  * @example
  * ```typescript
@@ -137,14 +134,13 @@ export const g1Generator = (): Effect.Effect<
  * }).pipe(Effect.provide(Bn254Live))
  * ```
  *
- * @throws Never - This operation is infallible for valid points
  * @see {@link g2Mul} - Scalar multiplication on G2
  * @since 0.0.1
  */
 export const g2Add = (
 	a: BN254G2PointType,
 	b: BN254G2PointType,
-): Effect.Effect<BN254G2PointType, never, Bn254Service> =>
+): Effect.Effect<BN254G2PointType, Bn254Error, Bn254Service> =>
 	Effect.gen(function* () {
 		const bn254 = yield* Bn254Service;
 		return yield* bn254.g2Add(a, b);
@@ -158,7 +154,7 @@ export const g2Add = (
  *
  * @param point - The G2 point
  * @param scalar - The scalar multiplier (bigint)
- * @returns Effect containing the product point, requiring Bn254Service
+ * @returns Effect containing the product point or Bn254Error, requiring Bn254Service
  *
  * @example
  * ```typescript
@@ -172,14 +168,13 @@ export const g2Add = (
  * }).pipe(Effect.provide(Bn254Live))
  * ```
  *
- * @throws Never - This operation is infallible for valid inputs
  * @see {@link g2Add} - Point addition on G2
  * @since 0.0.1
  */
 export const g2Mul = (
 	point: BN254G2PointType,
 	scalar: bigint,
-): Effect.Effect<BN254G2PointType, never, Bn254Service> =>
+): Effect.Effect<BN254G2PointType, Bn254Error, Bn254Service> =>
 	Effect.gen(function* () {
 		const bn254 = yield* Bn254Service;
 		return yield* bn254.g2Mul(point, scalar);
@@ -191,7 +186,7 @@ export const g2Mul = (
  * @description
  * Returns the standard generator point for the G2 group of BN254.
  *
- * @returns Effect containing the G2 generator point, requiring Bn254Service
+ * @returns Effect containing the G2 generator point or Bn254Error, requiring Bn254Service
  *
  * @example
  * ```typescript
@@ -203,13 +198,12 @@ export const g2Mul = (
  * )
  * ```
  *
- * @throws Never - This operation is infallible
  * @see {@link g2Mul} - Use generator with scalar multiplication
  * @since 0.0.1
  */
 export const g2Generator = (): Effect.Effect<
 	BN254G2PointType,
-	never,
+	Bn254Error,
 	Bn254Service
 > =>
 	Effect.gen(function* () {
@@ -228,7 +222,7 @@ export const g2Generator = (): Effect.Effect<
  * to EVM precompile at address 0x08 (ecPairing).
  *
  * @param pairs - Array of [G1, G2] point pairs
- * @returns Effect containing true if pairing check passes, requiring Bn254Service
+ * @returns Effect containing true if pairing check passes or Bn254Error, requiring Bn254Service
  *
  * @example
  * ```typescript
@@ -248,14 +242,13 @@ export const g2Generator = (): Effect.Effect<
  * }).pipe(Effect.provide(Bn254Live))
  * ```
  *
- * @throws Never - This operation is infallible for valid points
  * @see {@link g1Generator}, {@link g2Generator} - Get generator points
  * @see {@link Bn254Service} - Full service interface
  * @since 0.0.1
  */
 export const pairingCheck = (
 	pairs: ReadonlyArray<readonly [BN254G1PointType, BN254G2PointType]>,
-): Effect.Effect<boolean, never, Bn254Service> =>
+): Effect.Effect<boolean, Bn254Error, Bn254Service> =>
 	Effect.gen(function* () {
 		const bn254 = yield* Bn254Service;
 		return yield* bn254.pairingCheck(pairs);

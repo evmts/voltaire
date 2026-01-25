@@ -63,6 +63,7 @@ export {
 	verify as bls12381Verify,
 } from "./Bls12381/index.js";
 export {
+	Bn254Error,
 	Bn254Live,
 	Bn254Service,
 	type Bn254ServiceShape,
@@ -148,6 +149,7 @@ export {
 export {
 	blobToKzgCommitment,
 	computeBlobKzgProof,
+	KZGError,
 	KZGLive,
 	KZGService,
 	type KZGServiceShape,

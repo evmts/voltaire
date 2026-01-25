@@ -33,6 +33,7 @@
 
 export { blobToKzgCommitment, computeBlobKzgProof } from "./commit.js";
 export {
+	KZGError,
 	KZGLive,
 	KZGService,
 	type KZGServiceShape,
