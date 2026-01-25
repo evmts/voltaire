@@ -108,6 +108,11 @@
 			"import": "./dist/primitives/Chain/index.js",
 			"require": "./dist/primitives/Chain/index.cjs"
 		},
+		"./ContractCode": {
+			"types": "./types/primitives/ContractCode/index.d.ts",
+			"import": "./dist/primitives/ContractCode/index.js",
+			"require": "./dist/primitives/ContractCode/index.cjs"
+		},
 		"./Denomination": {
 			"types": "./types/primitives/Denomination/index.d.ts",
 			"import": "./dist/primitives/Denomination/index.js",
@@ -153,6 +158,16 @@
 			"import": "./dist/primitives/Hex/index.js",
 			"require": "./dist/primitives/Hex/index.cjs"
 		},
+		"./InitCode": {
+			"types": "./types/primitives/InitCode/index.d.ts",
+			"import": "./dist/primitives/InitCode/index.js",
+			"require": "./dist/primitives/InitCode/index.cjs"
+		},
+		"./LogFilter": {
+			"types": "./types/primitives/LogFilter/index.d.ts",
+			"import": "./dist/primitives/LogFilter/index.js",
+			"require": "./dist/primitives/LogFilter/index.cjs"
+		},
 		"./Opcode": {
 			"types": "./types/primitives/Opcode/index.d.ts",
 			"import": "./dist/primitives/Opcode/index.js",
@@ -162,6 +177,16 @@
 			"types": "./types/primitives/Rlp/index.d.ts",
 			"import": "./dist/primitives/Rlp/index.js",
 			"require": "./dist/primitives/Rlp/index.cjs"
+		},
+		"./PrivateKey": {
+			"types": "./types/primitives/PrivateKey/index.d.ts",
+			"import": "./dist/primitives/PrivateKey/index.js",
+			"require": "./dist/primitives/PrivateKey/index.cjs"
+		},
+		"./PublicKey": {
+			"types": "./types/primitives/PublicKey/index.d.ts",
+			"import": "./dist/primitives/PublicKey/index.js",
+			"require": "./dist/primitives/PublicKey/index.cjs"
 		},
 		"./Signature": {
 			"types": "./types/primitives/Signature/index.d.ts",
@@ -312,6 +337,11 @@
 			"types": "./types/crypto/SHA256/index.d.ts",
 			"import": "./dist/crypto/SHA256/index.js",
 			"require": "./dist/crypto/SHA256/index.cjs"
+		},
+		"./signers": {
+			"types": "./types/crypto/signers/index.d.ts",
+			"import": "./dist/crypto/signers/index.js",
+			"require": "./dist/crypto/signers/index.cjs"
 		},
 		"./jsonrpc": {
 			"types": "./dist/jsonrpc/index.d.ts",
@@ -744,5 +774,6 @@
 		"@tevm/chains": "^0.0.1",
 		"@trezor/connect-web": "^9.7.1",
 		"modern-monaco": "^0.3.6"
-	}
+	},
+	"packageManager": "pnpm@10.26.2+sha512.0e308ff2005fc7410366f154f625f6631ab2b16b1d2e70238444dd6ae9d630a8482d92a451144debc492416896ed16f7b114a86ec68b8404b2443869e68ffda6"
 }

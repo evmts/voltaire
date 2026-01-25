@@ -1,2 +1,3 @@
 packages:
+  - 'voltaire-effect'
   - playground
