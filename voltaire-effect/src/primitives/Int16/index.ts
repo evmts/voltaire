@@ -1,63 +1,73 @@
 /**
- * @fileoverview Int16 module for working with signed 16-bit integers in Effect.
+ * @module Int16
+ * @description Effect Schemas for signed 16-bit integers (-32768 to 32767).
  *
- * @description
- * Provides type-safe arithmetic operations with overflow checking for signed
- * 16-bit integers. Values are constrained to the range -32768 to 32767 (inclusive).
+ * ## Schemas
  *
- * Key features:
- * - Type-safe branded Int16 values
- * - Effect-based error handling for overflow/underflow
- * - Schema validation for parsing from various input types
- * - Arithmetic operations: plus, minus, times
- * - Conversion utilities: toNumber, toHex
+ * | Schema | Input | Output | Description |
+ * |--------|-------|--------|-------------|
+ * | `Int16.String` | string | Int16Type | Decimal string encoding |
+ * | `Int16.Number` | number | Int16Type | Number encoding |
+ * | `Int16.BigInt` | bigint | Int16Type | BigInt encoding |
  *
- * @example
+ * ## Usage
+ *
  * ```typescript
- * import * as Int16 from 'voltaire-effect/Int16'
- * import * as Effect from 'effect/Effect'
+ * import * as Int16 from 'voltaire-effect/primitives/Int16'
+ * import * as S from 'effect/Schema'
  *
- * // Create Int16 values
- * const a = Effect.runSync(Int16.from(1000))
- * const b = Effect.runSync(Int16.from(500))
+ * // Decode from string
+ * const value = S.decodeSync(Int16.String)('-1000')
  *
- * // Arithmetic operations
- * const sum = Effect.runSync(Int16.plus(a, b))   // 1500
- * const diff = Effect.runSync(Int16.minus(a, b)) // 500
+ * // Decode from number
+ * const value2 = S.decodeSync(Int16.Number)(-1000)
  *
- * // Constants
- * console.log(Int16.INT16_MIN) // -32768
- * console.log(Int16.INT16_MAX) // 32767
+ * // Encode back
+ * const str = S.encodeSync(Int16.String)(value)
  * ```
  *
- * @since 0.0.1
- * @module Int16
- * @see {@link Int8} for 8-bit signed integers
- * @see {@link Int32} for 32-bit signed integers
- * @see {@link Int64} for 64-bit signed integers
+ * ## Pure Functions
+ *
+ * ```typescript
+ * Int16.add(a, b)      // Int16Type
+ * Int16.sub(a, b)      // Int16Type
+ * Int16.mul(a, b)      // Int16Type
+ * Int16.div(a, b)      // Int16Type
+ * Int16.negate(a)      // Int16Type
+ * Int16.abs(a)         // Int16Type
+ * Int16.equals(a, b)   // boolean
+ * Int16.compare(a, b)  // -1 | 0 | 1
+ * Int16.isZero(a)      // boolean
+ * Int16.isNegative(a)  // boolean
+ * ```
+ *
+ * ## Constants
+ *
+ * ```typescript
+ * Int16.INT16_MIN  // -32768
+ * Int16.INT16_MAX  // 32767
+ * ```
+ *
+ * @since 0.1.0
  */
-export { Schema, type Int16Type } from './Int16Schema.js'
-export {
-  from,
-  fromHex,
-  fromBytes,
-  plus,
-  add,
-  minus,
-  sub,
-  times,
-  mul,
-  div,
-  neg,
-  abs,
-  toNumber,
-  toHex,
-  toBytes,
-  equals,
-  compare,
-  isNegative,
-  isZero,
-  Int16Error,
-  INT16_MIN,
-  INT16_MAX
-} from './from.js'
+
+// Schemas
+export { String } from "./String.js";
+export { Number } from "./Number.js";
+export { BigInt } from "./BigInt.js";
+
+// Pure functions
+export { sub } from "./sub.js";
+export { mul } from "./mul.js";
+export { div } from "./div.js";
+export { negate } from "./negate.js";
+export { abs } from "./abs.js";
+export { compare } from "./compare.js";
+export { isZero } from "./isZero.js";
+export { isNegative } from "./isNegative.js";
+
+// Constants
+export { INT16_MIN, INT16_MAX } from "./constants.js";
+
+// Type
+export type { Int16Type } from "./Int16Schema.js";

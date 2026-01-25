@@ -1,64 +1,73 @@
 /**
- * @fileoverview Int32 module for working with signed 32-bit integers in Effect.
+ * @module Int32
+ * @description Effect Schemas for signed 32-bit integers (-2147483648 to 2147483647).
  *
- * @description
- * Provides type-safe arithmetic operations with overflow checking for signed
- * 32-bit integers. Values are constrained to the range -2147483648 to 2147483647 (inclusive).
+ * ## Schemas
  *
- * Key features:
- * - Type-safe branded Int32 values
- * - Effect-based error handling for overflow/underflow
- * - Schema validation for parsing from various input types
- * - Arithmetic operations: plus, minus, times
- * - Conversion utilities: toNumber, toBigInt, toHex
+ * | Schema | Input | Output | Description |
+ * |--------|-------|--------|-------------|
+ * | `Int32.String` | string | Int32Type | Decimal string encoding |
+ * | `Int32.Number` | number | Int32Type | Number encoding |
+ * | `Int32.BigInt` | bigint | Int32Type | BigInt encoding |
  *
- * @example
+ * ## Usage
+ *
  * ```typescript
- * import * as Int32 from 'voltaire-effect/Int32'
- * import * as Effect from 'effect/Effect'
+ * import * as Int32 from 'voltaire-effect/primitives/Int32'
+ * import * as S from 'effect/Schema'
  *
- * // Create Int32 values
- * const a = Effect.runSync(Int32.from(1000000))
- * const b = Effect.runSync(Int32.from(500000))
+ * // Decode from string
+ * const value = S.decodeSync(Int32.String)('-1000000')
  *
- * // Arithmetic operations
- * const sum = Effect.runSync(Int32.plus(a, b))   // 1500000
- * const diff = Effect.runSync(Int32.minus(a, b)) // 500000
+ * // Decode from number
+ * const value2 = S.decodeSync(Int32.Number)(-1000000)
  *
- * // Constants
- * console.log(Int32.INT32_MIN) // -2147483648
- * console.log(Int32.INT32_MAX) // 2147483647
+ * // Encode back
+ * const str = S.encodeSync(Int32.String)(value)
  * ```
  *
- * @since 0.0.1
- * @module Int32
- * @see {@link Int16} for 16-bit signed integers
- * @see {@link Int64} for 64-bit signed integers
- * @see {@link Int128} for 128-bit signed integers
+ * ## Pure Functions
+ *
+ * ```typescript
+ * Int32.add(a, b)      // Int32Type
+ * Int32.sub(a, b)      // Int32Type
+ * Int32.mul(a, b)      // Int32Type
+ * Int32.div(a, b)      // Int32Type
+ * Int32.negate(a)      // Int32Type
+ * Int32.abs(a)         // Int32Type
+ * Int32.equals(a, b)   // boolean
+ * Int32.compare(a, b)  // -1 | 0 | 1
+ * Int32.isZero(a)      // boolean
+ * Int32.isNegative(a)  // boolean
+ * ```
+ *
+ * ## Constants
+ *
+ * ```typescript
+ * Int32.INT32_MIN  // -2147483648
+ * Int32.INT32_MAX  // 2147483647
+ * ```
+ *
+ * @since 0.1.0
  */
-export { Schema, type Int32Type } from './Int32Schema.js'
-export {
-  from,
-  fromHex,
-  fromBytes,
-  plus,
-  add,
-  minus,
-  sub,
-  times,
-  mul,
-  div,
-  neg,
-  abs,
-  toNumber,
-  toBigInt,
-  toHex,
-  toBytes,
-  equals,
-  compare,
-  isNegative,
-  isZero,
-  Int32Error,
-  INT32_MIN,
-  INT32_MAX
-} from './from.js'
+
+// Schemas
+export { String } from "./String.js";
+export { Number } from "./Number.js";
+export { BigInt } from "./BigInt.js";
+
+// Pure functions
+export { sub } from "./sub.js";
+export { mul } from "./mul.js";
+export { div } from "./div.js";
+export { negate } from "./negate.js";
+export { abs } from "./abs.js";
+export { compare } from "./compare.js";
+export { isZero } from "./isZero.js";
+export { isNegative } from "./isNegative.js";
+
+// Constants
+export { INT32_MIN, INT32_MAX } from "./constants.js";
+
+// Type
+export type { Int32Type } from "./Int32Schema.js";

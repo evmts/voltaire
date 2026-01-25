@@ -1,65 +1,78 @@
 /**
- * @fileoverview Int256 module for working with signed 256-bit integers in Effect.
+ * @module Int256
+ * @description Effect Schemas for signed 256-bit integers (-2^255 to 2^255-1).
  *
- * @description
- * Provides type-safe operations for Solidity's int256 type. This is the native
- * signed integer type used in Ethereum smart contracts.
+ * This is the native signed integer type used in Solidity smart contracts (int256).
  *
- * Range: -2^255 to 2^255-1 (the full range of Solidity's int256)
+ * ## Schemas
  *
- * Key features:
- * - Type-safe branded Int256 values (backed by BigInt)
- * - Effect-based error handling for invalid inputs
- * - Schema validation for parsing from various input types
- * - Hex string parsing for EVM-encoded data
+ * | Schema | Input | Output | Description |
+ * |--------|-------|--------|-------------|
+ * | `Int256.String` | string | Int256Type | Decimal string encoding |
+ * | `Int256.Number` | number | Int256Type | Number encoding (may lose precision) |
+ * | `Int256.BigInt` | bigint | Int256Type | BigInt encoding (lossless) |
  *
- * @example
+ * ## Usage
+ *
  * ```typescript
- * import * as Int256 from 'voltaire-effect/Int256'
- * import * as Effect from 'effect/Effect'
+ * import * as Int256 from 'voltaire-effect/primitives/Int256'
+ * import * as S from 'effect/Schema'
  *
- * // Create Int256 values
- * const value = Effect.runSync(Int256.from(12345678901234567890123456789n))
+ * // Decode from string
+ * const value = S.decodeSync(Int256.String)('-12345678901234567890123456789')
  *
- * // From hex string (EVM-encoded)
- * const fromHex = Effect.runSync(Int256.fromHex('0x7fffffff'))
+ * // Decode from bigint (preferred for large values)
+ * const value2 = S.decodeSync(Int256.BigInt)(-12345678901234567890123456789n)
  *
- * // Negative values (two's complement)
- * const negative = Effect.runSync(Int256.from(-1n))
+ * // Encode back
+ * const str = S.encodeSync(Int256.String)(value)
  * ```
  *
- * @since 0.0.1
- * @module Int256
- * @see {@link Int128} for 128-bit signed integers
- * @see {@link Uint256} for unsigned 256-bit integers
+ * ## Pure Functions
+ *
+ * ```typescript
+ * Int256.add(a, b)      // Int256Type
+ * Int256.sub(a, b)      // Int256Type
+ * Int256.mul(a, b)      // Int256Type
+ * Int256.div(a, b)      // Int256Type
+ * Int256.negate(a)      // Int256Type
+ * Int256.abs(a)         // Int256Type
+ * Int256.equals(a, b)   // boolean
+ * Int256.compare(a, b)  // -1 | 0 | 1
+ * Int256.isZero(a)      // boolean
+ * Int256.isNegative(a)  // boolean
+ * ```
+ *
+ * ## Constants
+ *
+ * ```typescript
+ * Int256.MIN      // -2^255
+ * Int256.MAX      // 2^255-1
+ * Int256.ZERO     // 0n
+ * Int256.ONE      // 1n
+ * Int256.NEG_ONE  // -1n
+ * ```
+ *
+ * @since 0.1.0
  */
-export { Int256Schema, Int256FromHexSchema, type Int256Type } from './Int256Schema.js'
-export {
-  from,
-  fromHex,
-  fromBigInt,
-  fromBytes,
-  plus,
-  add,
-  minus,
-  sub,
-  times,
-  mul,
-  div,
-  neg,
-  abs,
-  toNumber,
-  toBigInt,
-  toHex,
-  toBytes,
-  equals,
-  compare,
-  isNegative,
-  isZero,
-  Int256Error,
-  MAX,
-  MIN,
-  ZERO,
-  ONE,
-  NEG_ONE
-} from './from.js'
+
+// Schemas
+export { String } from "./String.js";
+export { Number } from "./Number.js";
+export { BigInt } from "./BigInt.js";
+
+// Pure functions
+export { sub } from "./sub.js";
+export { mul } from "./mul.js";
+export { div } from "./div.js";
+export { negate } from "./negate.js";
+export { abs } from "./abs.js";
+export { compare } from "./compare.js";
+export { isZero } from "./isZero.js";
+export { isNegative } from "./isNegative.js";
+
+// Constants
+export { MIN, MAX, ZERO, ONE, NEG_ONE } from "./constants.js";
+
+// Type
+export type { Int256Type } from "./Int256Schema.js";

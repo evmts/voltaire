@@ -1,63 +1,73 @@
 /**
- * @fileoverview Int8 module for working with signed 8-bit integers in Effect.
+ * @module Int8
+ * @description Effect Schemas for signed 8-bit integers (-128 to 127).
  *
- * @description
- * Provides type-safe arithmetic operations with overflow checking for signed
- * 8-bit integers. Values are constrained to the range -128 to 127 (inclusive).
+ * ## Schemas
  *
- * Key features:
- * - Type-safe branded Int8 values
- * - Effect-based error handling for overflow/underflow
- * - Schema validation for parsing from various input types
- * - Arithmetic operations: plus, minus, times
- * - Conversion utilities: toNumber, toHex
+ * | Schema | Input | Output | Description |
+ * |--------|-------|--------|-------------|
+ * | `Int8.String` | string | Int8Type | Decimal string encoding |
+ * | `Int8.Number` | number | Int8Type | Number encoding |
+ * | `Int8.BigInt` | bigint | Int8Type | BigInt encoding |
  *
- * @example
+ * ## Usage
+ *
  * ```typescript
- * import * as Int8 from 'voltaire-effect/Int8'
- * import * as Effect from 'effect/Effect'
+ * import * as Int8 from 'voltaire-effect/primitives/Int8'
+ * import * as S from 'effect/Schema'
  *
- * // Create Int8 values
- * const a = Effect.runSync(Int8.from(42))
- * const b = Effect.runSync(Int8.from(10))
+ * // Decode from string
+ * const value = S.decodeSync(Int8.String)('-42')
  *
- * // Arithmetic operations
- * const sum = Effect.runSync(Int8.plus(a, b))   // 52
- * const diff = Effect.runSync(Int8.minus(a, b)) // 32
+ * // Decode from number
+ * const value2 = S.decodeSync(Int8.Number)(-42)
  *
- * // Constants
- * console.log(Int8.INT8_MIN) // -128
- * console.log(Int8.INT8_MAX) // 127
+ * // Encode back
+ * const str = S.encodeSync(Int8.String)(value)
  * ```
  *
- * @since 0.0.1
- * @module Int8
- * @see {@link Int16} for 16-bit signed integers
- * @see {@link Int32} for 32-bit signed integers
- * @see {@link Int64} for 64-bit signed integers
+ * ## Pure Functions
+ *
+ * ```typescript
+ * Int8.add(a, b)      // Int8Type
+ * Int8.sub(a, b)      // Int8Type
+ * Int8.mul(a, b)      // Int8Type
+ * Int8.div(a, b)      // Int8Type
+ * Int8.negate(a)      // Int8Type
+ * Int8.abs(a)         // Int8Type
+ * Int8.equals(a, b)   // boolean
+ * Int8.compare(a, b)  // -1 | 0 | 1
+ * Int8.isZero(a)      // boolean
+ * Int8.isNegative(a)  // boolean
+ * ```
+ *
+ * ## Constants
+ *
+ * ```typescript
+ * Int8.INT8_MIN  // -128
+ * Int8.INT8_MAX  // 127
+ * ```
+ *
+ * @since 0.1.0
  */
-export { Schema, type Int8Type } from './Int8Schema.js'
-export {
-  from,
-  fromHex,
-  fromBytes,
-  plus,
-  add,
-  minus,
-  sub,
-  times,
-  mul,
-  div,
-  neg,
-  abs,
-  toNumber,
-  toHex,
-  toBytes,
-  equals,
-  compare,
-  isNegative,
-  isZero,
-  Int8Error,
-  INT8_MIN,
-  INT8_MAX
-} from './from.js'
+
+// Schemas
+export { String } from "./String.js";
+export { Number } from "./Number.js";
+export { BigInt } from "./BigInt.js";
+
+// Pure functions
+export { sub } from "./sub.js";
+export { mul } from "./mul.js";
+export { div } from "./div.js";
+export { negate } from "./negate.js";
+export { abs } from "./abs.js";
+export { compare } from "./compare.js";
+export { isZero } from "./isZero.js";
+export { isNegative } from "./isNegative.js";
+
+// Constants
+export { INT8_MIN, INT8_MAX } from "./constants.js";
+
+// Type
+export type { Int8Type } from "./Int8Schema.js";

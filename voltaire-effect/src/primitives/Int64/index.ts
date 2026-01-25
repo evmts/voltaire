@@ -1,65 +1,73 @@
 /**
- * @fileoverview Int64 module for working with signed 64-bit integers in Effect.
+ * @module Int64
+ * @description Effect Schemas for signed 64-bit integers (-2^63 to 2^63-1).
  *
- * @description
- * Provides type-safe arithmetic operations with overflow checking for signed
- * 64-bit integers. Values are constrained to the range -9223372036854775808 to
- * 9223372036854775807 (inclusive).
+ * ## Schemas
  *
- * Key features:
- * - Type-safe branded Int64 values (backed by BigInt)
- * - Effect-based error handling for overflow/underflow
- * - Schema validation for parsing from various input types
- * - Arithmetic operations: plus, minus, times
- * - Conversion utilities: toNumber, toBigInt, toHex
+ * | Schema | Input | Output | Description |
+ * |--------|-------|--------|-------------|
+ * | `Int64.String` | string | Int64Type | Decimal string encoding |
+ * | `Int64.Number` | number | Int64Type | Number encoding (may lose precision) |
+ * | `Int64.BigInt` | bigint | Int64Type | BigInt encoding (lossless) |
  *
- * @example
+ * ## Usage
+ *
  * ```typescript
- * import * as Int64 from 'voltaire-effect/Int64'
- * import * as Effect from 'effect/Effect'
+ * import * as Int64 from 'voltaire-effect/primitives/Int64'
+ * import * as S from 'effect/Schema'
  *
- * // Create Int64 values
- * const a = Effect.runSync(Int64.from(1000000000000n))
- * const b = Effect.runSync(Int64.from(500000000000n))
+ * // Decode from string
+ * const value = S.decodeSync(Int64.String)('-9223372036854775808')
  *
- * // Arithmetic operations
- * const sum = Effect.runSync(Int64.plus(a, b))   // 1500000000000n
- * const diff = Effect.runSync(Int64.minus(a, b)) // 500000000000n
+ * // Decode from bigint (preferred for large values)
+ * const value2 = S.decodeSync(Int64.BigInt)(-9223372036854775808n)
  *
- * // Constants
- * console.log(Int64.INT64_MIN) // -9223372036854775808n
- * console.log(Int64.INT64_MAX) // 9223372036854775807n
+ * // Encode back
+ * const str = S.encodeSync(Int64.String)(value)
  * ```
  *
- * @since 0.0.1
- * @module Int64
- * @see {@link Int32} for 32-bit signed integers
- * @see {@link Int128} for 128-bit signed integers
- * @see {@link Int256} for 256-bit signed integers
+ * ## Pure Functions
+ *
+ * ```typescript
+ * Int64.add(a, b)      // Int64Type
+ * Int64.sub(a, b)      // Int64Type
+ * Int64.mul(a, b)      // Int64Type
+ * Int64.div(a, b)      // Int64Type
+ * Int64.negate(a)      // Int64Type
+ * Int64.abs(a)         // Int64Type
+ * Int64.equals(a, b)   // boolean
+ * Int64.compare(a, b)  // -1 | 0 | 1
+ * Int64.isZero(a)      // boolean
+ * Int64.isNegative(a)  // boolean
+ * ```
+ *
+ * ## Constants
+ *
+ * ```typescript
+ * Int64.INT64_MIN  // -9223372036854775808n
+ * Int64.INT64_MAX  // 9223372036854775807n
+ * ```
+ *
+ * @since 0.1.0
  */
-export { Schema, type Int64Type } from './Int64Schema.js'
-export {
-  from,
-  fromHex,
-  fromBytes,
-  plus,
-  add,
-  minus,
-  sub,
-  times,
-  mul,
-  div,
-  neg,
-  abs,
-  toNumber,
-  toBigInt,
-  toHex,
-  toBytes,
-  equals,
-  compare,
-  isNegative,
-  isZero,
-  Int64Error,
-  INT64_MIN,
-  INT64_MAX
-} from './from.js'
+
+// Schemas
+export { String } from "./String.js";
+export { Number } from "./Number.js";
+export { BigInt } from "./BigInt.js";
+
+// Pure functions
+export { sub } from "./sub.js";
+export { mul } from "./mul.js";
+export { div } from "./div.js";
+export { negate } from "./negate.js";
+export { abs } from "./abs.js";
+export { compare } from "./compare.js";
+export { isZero } from "./isZero.js";
+export { isNegative } from "./isNegative.js";
+
+// Constants
+export { INT64_MIN, INT64_MAX } from "./constants.js";
+
+// Type
+export type { Int64Type } from "./Int64Schema.js";
