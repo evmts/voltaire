@@ -2,7 +2,7 @@
 
 **Date:** 2025-01-25  
 **Reviewer:** Automated Multi-Agent Review  
-**Reviews Generated:** 074-089 (16 new reviews)
+**Reviews Generated:** 074-105 (32 new reviews)
 
 ---
 
@@ -161,6 +161,8 @@ Modules with **zero** test files:
 
 ## Reviews Index
 
+### Round 1: Module Reviews (074-089)
+
 | # | File | Focus |
 |---|------|-------|
 | 074 | crypto-signatures-review.md | Secp256k1, Ed25519, Bls12381 |
@@ -179,3 +181,61 @@ Modules with **zero** test files:
 | 087 | bn254-kzg-review.md | Bn254, KZG, ModExp |
 | 088 | fee-formatter-multicall-review.md | FeeEstimator, Formatter, Multicall |
 | 089 | numeric-primitives-review.md | Uint, Int256 |
+
+### Round 2: Deep-Dive Reviews (090-105)
+
+| # | File | Focus |
+|---|------|-------|
+| 090 | crypto-test-quality-review.md | Crypto test vectors and edge cases |
+| 091 | services-test-quality-review.md | Service test coverage and quality |
+| 092 | hash-primitive-deep-review.md | Hash module deep dive |
+| 093 | receipt-eventlog-review.md | Receipt, EventLog, LogFilter |
+| 094 | block-primitives-review.md | Block, BlockHeader, BlockBody |
+| 095 | api-consistency-review.md | API patterns across modules |
+| 096 | layer-composition-review.md | Effect Layer patterns |
+| 097 | error-types-review.md | Error handling patterns |
+| 098 | x25519-p256-review.md | X25519, P256 crypto |
+| 099 | eip712-typeddata-review.md | EIP-712 typed data signing |
+| 100 | siwe-ens-review.md | SIWE and ENS primitives |
+| 101 | chain-network-review.md | Chain configurations |
+| 102 | gas-fee-primitives-review.md | Gas and fee calculations |
+| 103 | accesslist-authorization-review.md | EIP-2930, EIP-7702 |
+| 104 | blob-kzg-primitives-review.md | EIP-4844 blobs |
+| 105 | exports-structure-review.md | Import/export structure |
+
+---
+
+## New Findings from Round 2
+
+### Critical (P0)
+
+| Issue | Location | Review |
+|-------|----------|--------|
+| jsonrpc not in tsup entry points | tsup.config.ts | 105 |
+| Receipt schema missing 5 required fields | Receipt/ReceiptSchema.ts | 093 |
+| Block RPC encode unimplemented | Block/Rpc.ts | 094 |
+| AesGcm no error/failure tests | AesGcm.test.ts | 090 |
+| Hash missing 5 exports from index | Hash/index.ts | 092 |
+| Zero tests for 10+ gas primitives | Gas/*, BaseFeePerGas/*, etc. | 102 |
+
+### High (P1)
+
+| Issue | Location | Review |
+|-------|----------|--------|
+| CryptoTest missing Bls12381Test, P256Test | CryptoTest.ts | 096 |
+| P256Test layer referenced but doesn't exist | P256/ | 098 |
+| No branded types for X25519/P256 keys | X25519/, P256/ | 098 |
+| BlockStream tests only 60 lines | BlockStream.test.ts | 091 |
+| API inconsistency: Effect vs pure returns | Multiple | 095 |
+| Error exports missing | BlockError, AbiParseError | 097 |
+
+### Medium (P2)
+
+| Issue | Location | Review |
+|-------|----------|--------|
+| SHA256 test only checks 2 bytes | SHA256.test.ts | 090 |
+| No concurrency tests anywhere | All test files | 091 |
+| Topics array missing max(4) validation | LogFilter | 093 |
+| Bytes index.ts JSDoc lies about exports | Bytes/index.ts | 095 |
+| hexToBytes silently accepts invalid | AccessList/Rpc.ts | 103 |
+| yParity accepts any number | Authorization/Rpc.ts | 103 |
