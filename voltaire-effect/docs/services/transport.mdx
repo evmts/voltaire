@@ -92,6 +92,22 @@ program.pipe(
 
 Error codes: `-32700` parse, `-32600` invalid request, `-32601` method not found, `-32602` invalid params, `-32603` internal, `-32000` to `-32099` server errors.
 
+## Thread Safety
+
+All transport implementations are fiber-safe:
+- **HttpTransport**: Stateless per request, safe for concurrent use
+- **WebSocketTransport**: Uses atomic `Ref.update` for pending request map, safe for concurrent use
+- **BrowserTransport**: Delegates to `window.ethereum`, concurrent safety depends on wallet
+
+Fire many requests in parallel without coordination:
+
+```typescript
+const requests = Array.from({ length: 100 }, () =>
+  transport.request<string>('eth_blockNumber', [])
+)
+const results = yield* Effect.all(requests, { concurrency: 'unbounded' })
+```
+
 ## Service Interface
 
 ```typescript
