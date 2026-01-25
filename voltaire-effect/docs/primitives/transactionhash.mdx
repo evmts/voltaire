@@ -1,0 +1,32 @@
+---
+title: TransactionHash
+description: 32-byte Keccak-256 hash of RLP-encoded signed transactions
+---
+
+Uniquely identifies transactions on Ethereum. Branded `Uint8Array`.
+
+## Schema
+
+```typescript
+import * as TransactionHash from 'voltaire-effect/primitives/TransactionHash'
+import * as Schema from 'effect/Schema'
+
+const hash = Schema.decodeSync(TransactionHash.TransactionHashSchema)(
+  '0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b'
+)
+```
+
+## Effect
+
+```typescript
+import * as TransactionHash from 'voltaire-effect/primitives/TransactionHash'
+import { Effect } from 'effect'
+
+const program = TransactionHash.from(
+  '0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b'
+)
+// Effect.Effect<TransactionHashType, TransactionHashError>
+
+const hash = await Effect.runPromise(program)
+const hex = TransactionHash.toHex(hash)
+```

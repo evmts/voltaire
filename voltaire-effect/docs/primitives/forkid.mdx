@@ -1,0 +1,44 @@
+---
+title: ForkId
+description: Network fork identifier (EIP-2124)
+---
+
+4-byte hash of prior forks + next fork block. Used for peer compatibility.
+
+```typescript
+import * as ForkId from 'voltaire-effect/primitives/ForkId'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema validation
+const forkId = Schema.decodeSync(ForkId.Schema)({
+  hash: new Uint8Array([0xfc, 0x64, 0xec, 0x04]),
+  next: 1150000n
+})
+
+// Effect constructor
+const program = ForkId.from({
+  hash: new Uint8Array([0xfc, 0x64, 0xec, 0x04]),
+  next: 1150000n
+})
+const result = Effect.runSync(program)
+console.log(result.hash, result.next)
+```
+
+## Input Type
+
+```typescript
+type ForkIdInput = {
+  hash: Uint8Array  // 4 bytes
+  next: bigint | number
+}
+```
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(
+  ForkId.from({ hash: new Uint8Array([]), next: -1n })
+)
+// result._tag === 'Failure' → ForkIdError
+```

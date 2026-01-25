@@ -1,0 +1,45 @@
+---
+title: HMAC
+description: Hash-based message authentication codes
+---
+
+HMAC-SHA256 and HMAC-SHA512 for data integrity and authenticity.
+
+```typescript
+import { HMACService, HMACLive } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const mac = await Effect.runPromise(
+  Effect.gen(function* () {
+    const hmac = yield* HMACService
+    return yield* hmac.sha256(key, message)
+  }).pipe(Effect.provide(HMACLive))
+)
+// 32 bytes for SHA256, 64 bytes for SHA512
+```
+
+## Standalone Functions
+
+```typescript
+import { hmacSha256, hmacSha512, HMACLive } from 'voltaire-effect/crypto'
+
+const mac256 = await Effect.runPromise(hmacSha256(key, message).pipe(Effect.provide(HMACLive)))
+const mac512 = await Effect.runPromise(hmacSha512(key, message).pipe(Effect.provide(HMACLive)))
+```
+
+## Testing
+
+```typescript
+import { HMACTest } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(HMACTest))
+// Returns zero-filled arrays
+```
+
+## Interface
+
+```typescript
+interface HMACServiceShape {
+  readonly sha256: (key: Uint8Array, message: Uint8Array) => Effect.Effect<HMACType>
+  readonly sha512: (key: Uint8Array, message: Uint8Array) => Effect.Effect<HMACType>
+}
+```

@@ -1,0 +1,48 @@
+---
+title: Rlp
+description: Effect-based RLP encoding and decoding for Ethereum serialization
+---
+
+```typescript
+import * as Rlp from 'voltaire-effect/primitives/Rlp'
+import { Effect } from 'effect'
+
+const encoded = Effect.runSync(Rlp.encode(new Uint8Array([1, 2, 3])))
+```
+
+## Schema
+
+**Schema** — Validates RLP-encoded data.
+
+## Functions
+
+**encode(data)** — RLP-encodes bytes or nested arrays.
+
+```typescript
+Rlp.encode(new Uint8Array([1, 2, 3]))
+Rlp.encode([
+  new Uint8Array([1]),
+  [new Uint8Array([2]), new Uint8Array([3])]
+])
+```
+
+**decode(bytes, stream?)** — RLP-decodes bytes. Returns `{ data, remainder }`.
+
+```typescript
+const { data, remainder } = Effect.runSync(Rlp.decode(rlpBytes))
+
+// Stream mode for multiple items
+const result = Effect.runSync(Rlp.decode(rlpBytes, true))
+```
+
+## Types
+
+```typescript
+type BrandedRlp = Rlp.BrandedRlp
+interface Decoded { data: BrandedRlp; remainder: Uint8Array }
+```
+
+## Errors
+
+- `RlpEncodingError` — Encoding failed
+- `RlpDecodingError` — Invalid prefix, insufficient bytes, non-canonical encoding

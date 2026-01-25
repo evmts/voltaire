@@ -1,0 +1,46 @@
+---
+title: ErrorSignature
+description: 4-byte Solidity error selectors
+---
+
+```typescript
+import * as ErrorSignature from 'voltaire-effect/ErrorSignature'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// From hex (Error(string) = 0x08c379a0)
+const sig = Effect.runSync(ErrorSignature.from('0x08c379a0'))
+
+// From signature string (computes keccak256, takes first 4 bytes)
+const panic = Effect.runSync(ErrorSignature.fromSignature('Panic(uint256)'))
+const error = Effect.runSync(ErrorSignature.fromSignature('Error(string)'))
+
+// Compare
+const isEqual = Effect.runSync(ErrorSignature.equals(sig, error)) // true
+
+// To hex
+const hex = Effect.runSync(ErrorSignature.toHex(sig)) // '0x08c379a0'
+```
+
+## API
+
+| Function | Type |
+|----------|------|
+| `Schema` | `Schema<ErrorSignatureType, string \| Uint8Array>` |
+| `from` | `(input: string \| Uint8Array) => Effect<ErrorSignatureType, ErrorSignatureError>` |
+| `fromHex` | `(hex: string) => Effect<ErrorSignatureType, ErrorSignatureError>` |
+| `fromSignature` | `(sig: string) => Effect<ErrorSignatureType, ErrorSignatureError>` |
+| `toHex` | `(sig: ErrorSignatureType) => Effect<string>` |
+| `equals` | `(a, b) => Effect<boolean>` |
+
+## Example: Match Revert Selector
+
+```typescript
+const matchError = (revertData: Uint8Array) =>
+  Effect.gen(function* () {
+    const selector = yield* ErrorSignature.from(revertData.slice(0, 4))
+    const panic = yield* ErrorSignature.fromSignature('Panic(uint256)')
+    if (yield* ErrorSignature.equals(selector, panic)) return 'panic'
+    return 'custom'
+  })
+```

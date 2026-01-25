@@ -1,0 +1,38 @@
+---
+title: Hardfork
+description: Ethereum hardfork identifiers and feature detection
+---
+
+```typescript
+import * as Hardfork from 'voltaire-effect/primitives/Hardfork'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema validation
+const fork = Schema.decodeSync(Hardfork.Schema)('london')
+
+// Effect constructor
+const program = Hardfork.fromString('cancun')
+Effect.runSync(program)
+
+// Comparison
+Hardfork.isAtLeast(Hardfork.LONDON, Hardfork.BERLIN) // true
+Hardfork.isBefore(Hardfork.BERLIN, Hardfork.LONDON)  // true
+Hardfork.isAfter(Hardfork.LONDON, Hardfork.BERLIN)   // true
+
+// Feature detection
+Hardfork.hasEIP1559(Hardfork.LONDON)   // true (dynamic fees)
+Hardfork.hasEIP4844(Hardfork.CANCUN)   // true (blobs)
+Hardfork.isPostMerge(Hardfork.SHANGHAI) // true (PoS)
+```
+
+## Constants
+
+`FRONTIER`, `HOMESTEAD`, `TANGERINE_WHISTLE`, `SPURIOUS_DRAGON`, `BYZANTIUM`, `CONSTANTINOPLE`, `PETERSBURG`, `ISTANBUL`, `MUIR_GLACIER`, `BERLIN`, `LONDON`, `ARROW_GLACIER`, `GRAY_GLACIER`, `SHANGHAI`, `CANCUN`, `PRAGUE`
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(Hardfork.fromString('invalid'))
+// result._tag === 'Failure' → HardforkError
+```

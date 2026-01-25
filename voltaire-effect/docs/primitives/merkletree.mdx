@@ -1,0 +1,39 @@
+---
+title: MerkleTree
+description: Merkle tree construction and proof verification
+---
+
+```typescript
+import * as MerkleTree from 'voltaire-effect/MerkleTree'
+import { Effect } from 'effect'
+
+const program = Effect.gen(function* () {
+  // Build tree from leaves
+  const tree = yield* MerkleTree.from([hash1, hash2, hash3, hash4])
+  
+  // Generate inclusion proof for leaf at index 2
+  const proof = yield* MerkleTree.getProof(tree.leaves, 2)
+  
+  // Verify proof against root
+  const valid = yield* MerkleTree.verify(proof, tree.root)
+  
+  return { root: tree.root, valid }
+})
+```
+
+## Types
+
+```typescript
+// Tree: { root, leafCount, depth, leaves }
+// Proof: { leaf, siblings, leafIndex, treeDepth }
+```
+
+## API
+
+| Function | Signature |
+|----------|-----------|
+| `from` | `(leaves: Hash[]) => Effect<MerkleTreeType, Error>` |
+| `getProof` | `(leaves, index) => Effect<MerkleProofType, Error>` |
+| `verify` | `(proof, root) => Effect<boolean, Error>` |
+| `Schema` | Tree schema |
+| `ProofSchema` | Proof schema |

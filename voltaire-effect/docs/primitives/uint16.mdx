@@ -1,0 +1,34 @@
+---
+title: Uint16
+description: 16-bit unsigned integer (0-65535)
+---
+
+16-bit unsigned integer with overflow checking.
+
+```typescript
+import * as Uint16 from 'voltaire-effect/Uint16'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const value = Schema.decodeSync(Uint16.Schema)(65535)
+
+// Effect with arithmetic
+const program = Effect.gen(function* () {
+  const a = yield* Uint16.from(30000)
+  const b = yield* Uint16.from(20000)
+  return yield* Uint16.plus(a, b) // 50000
+})
+```
+
+## API
+
+| Function | Returns |
+|----------|---------|
+| `toNumber(v)` | number |
+| `toHex(v)` | `'0xffff'` |
+| `equals(a, b)` | boolean |
+
+## Constants
+
+`MAX = 65535`, `MIN = 0`, `ZERO`, `ONE`

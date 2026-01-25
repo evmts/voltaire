@@ -1,0 +1,90 @@
+---
+title: Account Service
+description: Cryptographic signing operations with Effect.ts
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { AccountService, LocalAccount, Secp256k1Live, KeccakLive } from 'voltaire-effect/services'
+import { Hex } from '@tevm/voltaire'
+
+const privateKey = Hex.fromHex('0xac0974bec...')
+
+const program = Effect.gen(function* () {
+  const account = yield* AccountService
+  const signature = yield* account.signMessage(Hex.fromString('Hello!'))
+  return signature
+}).pipe(
+  Effect.provide(LocalAccount(privateKey)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive)
+)
+```
+
+## Browser Wallet
+
+```typescript
+import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const account = yield* AccountService
+  const signature = yield* account.signMessage(messageHex) // triggers popup
+  return signature
+}).pipe(
+  Effect.provide(JsonRpcAccount(userAddress)),
+  Effect.provide(BrowserTransport)
+)
+```
+
+## Methods
+
+**signMessage** — EIP-191 personal_sign
+```typescript
+const signature = yield* account.signMessage(Hex.fromString('Hello!'))
+```
+
+**signTransaction** — Sign unsigned tx (all fields required)
+```typescript
+const signature = yield* account.signTransaction({
+  to: recipientAddress,
+  value: 1000000000000000000n,
+  nonce: 5n,
+  gasLimit: 21000n,
+  gasPrice: 20000000000n,
+  chainId: 1n
+})
+```
+
+**signTypedData** — EIP-712 structured data
+```typescript
+const signature = yield* account.signTypedData({
+  domain: { name: 'App', version: '1', chainId: 1n, verifyingContract },
+  primaryType: 'Mail',
+  types: { Mail: [{ name: 'to', type: 'address' }, { name: 'contents', type: 'string' }] },
+  message: { to: recipient, contents: 'Hello!' }
+})
+```
+
+## Error Handling
+
+```typescript
+import { AccountError } from 'voltaire-effect/services'
+
+program.pipe(
+  Effect.catchTag('AccountError', (e) => Effect.succeed({ error: e.message }))
+)
+```
+
+## Service Interface
+
+```typescript
+type AccountShape = {
+  readonly address: AddressType
+  readonly type: 'local' | 'json-rpc' | 'hardware'
+  readonly signMessage: (message: HexType) => Effect.Effect<SignatureType, AccountError>
+  readonly signTransaction: (tx: UnsignedTransaction) => Effect.Effect<SignatureType, AccountError>
+  readonly signTypedData: (typedData: TypedDataType) => Effect.Effect<SignatureType, AccountError>
+}
+```

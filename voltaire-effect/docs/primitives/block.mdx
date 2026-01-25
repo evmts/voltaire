@@ -3,144 +3,56 @@ title: Block
 description: Effect-based block schemas for Ethereum block data, numbers, and hashes
 ---
 
-Effect-based schemas for Ethereum blocks, block numbers, and block hashes.
-
-## Overview
-
-The Block module provides Effect Schema wrappers for Voltaire's block types, including full block data, block numbers, and block hashes.
-
-## Installation
-
 ```typescript
 import { Block, BlockNumber, BlockHash } from 'voltaire-effect'
-import * as Effect from 'effect/Effect'
-import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+const blockNum = Effect.runSync(BlockNumber.from(19000000n))
 ```
 
-## Block Schema
+## Block
 
-### BlockSchema
-
-Schema for full Ethereum block data including header, body, hash, and size.
+**BlockSchema** — Full block data including header, body, hash, and size.
 
 ```typescript
 import { Block } from 'voltaire-effect'
 import * as Schema from 'effect/Schema'
 
-// Validates block structure
 const block = Schema.decodeSync(Block.Schema)(blockData)
-
-// Block must have:
-// - header: BlockHeader
-// - body: BlockBody (transactions, uncles)
-// - hash: Uint8Array (32 bytes)
-// - size: bigint
 ```
 
 ## BlockNumber
 
-### BlockNumberSchema
+**BlockNumberSchema** — Non-negative bigint.
 
-Schema for block numbers (non-negative bigint).
-
-```typescript
-import { BlockNumber } from 'voltaire-effect'
-import * as Schema from 'effect/Schema'
-
-const blockNum = Schema.decodeSync(BlockNumber.Schema)(19000000n)
-```
-
-### BlockNumber.from
-
-Create block number with Effect error handling.
+**from(n)** — Creates block number with validation.
 
 ```typescript
 import { BlockNumber } from 'voltaire-effect'
-import * as Effect from 'effect/Effect'
 
 const program = BlockNumber.from(19000000n)
-// Effect.Effect<BlockNumberType, Error>
-
-const blockNum = Effect.runSync(program)
+// Effect<BlockNumberType, Error>
 ```
 
 ## BlockHash
 
-### BlockHashSchema
+**BlockHashSchema** — 32-byte branded type.
 
-Schema for block hashes (32-byte branded type).
+**from(input)** — Creates from hex string or bytes.
 
-```typescript
-import { BlockHash } from 'voltaire-effect'
-import * as Schema from 'effect/Schema'
-
-const hash = Schema.decodeSync(BlockHash.Schema)(
-  '0x...' // 32-byte hex block hash
-)
-```
-
-### BlockHash Effect Functions
+**toHex(hash)** — Converts to hex string.
 
 ```typescript
 import { BlockHash } from 'voltaire-effect'
-import * as Effect from 'effect/Effect'
 
-// Create from various inputs
-const program = BlockHash.from(
-  '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
+const hash = await Effect.runPromise(
+  BlockHash.from('0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6')
 )
-
-// Convert to hex string
-const hexProgram = BlockHash.toHex(blockHash)
 ```
 
-## Usage Examples
+## See Also
 
-### Fetching and Validating Block Data
-
-```typescript
-import { Block, BlockNumber, BlockHash } from 'voltaire-effect'
-import * as Effect from 'effect/Effect'
-
-const processBlock = (rawBlock: unknown) =>
-  Effect.gen(function* () {
-    const block = yield* Effect.try(() =>
-      Schema.decodeSync(Block.Schema)(rawBlock)
-    )
-
-    console.log('Block number:', block.header.number)
-    console.log('Block hash:', BlockHash.toHex(block.hash))
-
-    return block
-  })
-```
-
-### Block Range Operations
-
-```typescript
-import { BlockNumber } from 'voltaire-effect'
-import * as Effect from 'effect/Effect'
-
-const getBlockRange = (start: bigint, end: bigint) =>
-  Effect.gen(function* () {
-    const startBlock = yield* BlockNumber.from(start)
-    const endBlock = yield* BlockNumber.from(end)
-
-    // Process range...
-    return { start: startBlock, end: endBlock }
-  })
-```
-
-## Error Handling
-
-```typescript
-import { BlockNumber } from 'voltaire-effect'
-import * as Effect from 'effect/Effect'
-
-const result = await Effect.runPromiseExit(
-  BlockNumber.from(-1n) // Invalid: negative block number
-)
-if (result._tag === 'Failure') {
-  console.error(result.cause)
-}
-```
+- [BlockHeader](/primitives/blockheader) - Block header structure
+- [BlockBody](/primitives/blockbody) - Block transactions and uncles
+- [BlockHash](/primitives/blockhash) - Block hash type
+- [BlockNumber](/primitives/blocknumber) - Block number type

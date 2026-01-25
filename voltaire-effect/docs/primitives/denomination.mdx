@@ -1,0 +1,47 @@
+---
+title: Denomination
+description: Wei, Gwei, Ether conversion with branded types
+---
+
+```typescript
+import * as Denomination from 'voltaire-effect/Denomination'
+import { Effect } from 'effect'
+import * as Schema from 'effect/Schema'
+
+// Decode with schemas
+const wei = Schema.decodeSync(Denomination.WeiSchema)(1000000000000000000n)
+const gwei = Schema.decodeSync(Denomination.GweiSchema)(30n)
+const ether = Schema.decodeSync(Denomination.EtherSchema)(1n)
+
+// Create with Effect
+const w = Effect.runSync(Denomination.fromWei(1000000000000000000n))
+const g = Effect.runSync(Denomination.fromGwei(30n))
+const e = Effect.runSync(Denomination.fromEther(1n))
+
+// Convert between units
+Effect.runSync(Denomination.weiToGwei(w))   // Wei → Gwei
+Effect.runSync(Denomination.weiToEther(w))  // Wei → Ether
+Effect.runSync(Denomination.gweiToWei(g))   // Gwei → Wei
+Effect.runSync(Denomination.gweiToEther(g)) // Gwei → Ether
+Effect.runSync(Denomination.etherToWei(e))  // Ether → Wei
+Effect.runSync(Denomination.etherToGwei(e)) // Ether → Gwei
+```
+
+## Types
+
+```typescript
+import type { WeiType, GweiType, EtherType } from 'voltaire-effect/Denomination'
+```
+
+Branded types prevent mixing denominations at compile time.
+
+## Gas Cost Example
+
+```typescript
+const gasCost = Effect.gen(function* () {
+  const gasPrice = yield* Denomination.fromGwei(30n)
+  const priceWei = yield* Denomination.gweiToWei(gasPrice)
+  const totalWei = yield* Denomination.fromWei(BigInt(priceWei) * 21000n)
+  return yield* Denomination.weiToEther(totalWei)
+})
+```

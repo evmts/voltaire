@@ -1,0 +1,36 @@
+---
+title: BlockBody
+description: Block body with transactions, ommers, withdrawals
+---
+
+Block body containing transactions, ommers (uncles), and withdrawals.
+
+```typescript
+import * as BlockBody from 'voltaire-effect/primitives/BlockBody'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const body = Schema.decodeSync(BlockBody.Schema)(bodyData)
+
+// Effect: from parameters
+const program = BlockBody.from({
+  transactions: [...],
+  ommers: [...],
+  withdrawals: [...] // optional
+})
+
+// From RPC response
+const fromRpc = BlockBody.fromRpc(rpcResponse)
+```
+
+## Usage
+
+```typescript
+const parseBlockBody = (rpcBlock: unknown) =>
+  Effect.gen(function* () {
+    const body = yield* BlockBody.fromRpc(rpcBlock as RpcBlockBody)
+    console.log('Tx count:', body.transactions.length)
+    return body
+  })
+```

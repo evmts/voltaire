@@ -1,0 +1,49 @@
+---
+title: ModExp
+description: Modular exponentiation for EVM precompile 0x05
+---
+
+Compute `base^exp mod modulus` for arbitrary-precision integers. EIP-198/EIP-2565.
+
+```typescript
+import { ModExpService, ModExpLive } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const modexp = yield* ModExpService
+    return yield* modexp.modexp(2n, 10n, 1000n)
+  }).pipe(Effect.provide(ModExpLive))
+)
+// 24n (2^10 mod 1000)
+```
+
+## Byte Array Version
+
+```typescript
+const resultBytes = yield* modexp.modexpBytes(baseBytes, expBytes, modBytes)
+```
+
+## Gas Calculation
+
+```typescript
+const gas = yield* modexp.calculateGas(baseLen, expLen, modLen, expHead)
+```
+
+## Testing
+
+```typescript
+import { ModExpTest } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(ModExpTest))
+// modexp returns 0n, calculateGas returns 200n
+```
+
+## Interface
+
+```typescript
+interface ModExpServiceShape {
+  readonly modexp: (base: bigint, exp: bigint, modulus: bigint) => Effect.Effect<bigint>
+  readonly modexpBytes: (baseBytes: Uint8Array, expBytes: Uint8Array, modBytes: Uint8Array) => Effect.Effect<Uint8Array>
+  readonly calculateGas: (baseLen: bigint, expLen: bigint, modLen: bigint, expHead: bigint) => Effect.Effect<bigint>
+}
+```

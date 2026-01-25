@@ -1,0 +1,146 @@
+---
+title: Schema Validation
+description: Parse and validate Ethereum data
+---
+
+## Validate Address
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as Schema from 'effect/Schema'
+
+const addr = Schema.decodeSync(Address.AddressSchema)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+```
+
+## Parse with Error Handling
+
+```typescript
+import { Either } from 'effect'
+
+const result = Schema.decodeEither(Address.AddressSchema)('invalid-address')
+
+Either.match(result, {
+  onLeft: (error) => console.error('Invalid:', error),
+  onRight: (addr) => console.log('Valid:', addr)
+})
+```
+
+## Effect-Based Parsing
+
+```typescript
+import { Effect } from 'effect'
+
+const program = Effect.gen(function* () {
+  const addr1 = yield* Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+  const addr2 = yield* Address.from(new Uint8Array(20).fill(1))
+  return [addr1, addr2]
+})
+```
+
+## Checksum Validation
+
+```typescript
+import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const program = Effect.gen(function* () {
+  const addr = yield* Address.from('0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed')
+  return yield* Address.toChecksummed(addr)
+}).pipe(Effect.provide(KeccakLive))
+// "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+```
+
+## Round-Trip Conversion
+
+```typescript
+const program = Effect.gen(function* () {
+  const addr = yield* Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+  const bytes = Address.toBytes(addr)
+  return yield* Address.fromBytes(bytes)
+})
+```
+
+## Hex Validation
+
+```typescript
+import { Hex } from 'voltaire-effect'
+
+const hex = Schema.decodeSync(Hex.Schema)('0x1234abcd')
+
+const program = Effect.gen(function* () {
+  const hex1 = yield* Hex.from('0xdeadbeef')
+  const hex2 = yield* Hex.from(new Uint8Array([1, 2, 3, 4]))
+  return [hex1, hex2]
+})
+```
+
+## Uint256 Validation
+
+```typescript
+import { Uint } from 'voltaire-effect'
+
+const value = Schema.decodeSync(Uint.Uint256Schema)('1000000000000000000')
+const overflow = Schema.decodeEither(Uint.Uint256Schema)((2n ** 256n).toString()) // Left (error)
+```
+
+## Transaction Validation
+
+```typescript
+import { Transaction } from 'voltaire-effect'
+
+const tx = Schema.decodeSync(Transaction.EIP1559Schema)({
+  type: 2,
+  chainId: 1n,
+  nonce: 0n,
+  to: '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
+  value: 1000000000000000000n,
+  maxFeePerGas: 50000000000n,
+  maxPriorityFeePerGas: 2000000000n,
+  gasLimit: 21000n,
+  data: '0x'
+})
+```
+
+## Block Number Validation
+
+```typescript
+import { Block } from 'voltaire-effect'
+
+const blockNum = Schema.decodeSync(Block.BlockNumberSchema)('0x1234') // 4660n
+const latest = Schema.decodeSync(Block.BlockTagSchema)('latest')
+```
+
+## Batch Validation
+
+```typescript
+const addresses = ['0x742d35...', '0xd8dA6B...', 'invalid', '0xBE0eB5...']
+
+const program = Effect.gen(function* () {
+  return yield* Effect.all(
+    addresses.map(addr =>
+      Address.from(addr).pipe(
+        Effect.map(a => ({ address: addr, valid: true, parsed: a })),
+        Effect.catchAll(() => Effect.succeed({ address: addr, valid: false, parsed: null }))
+      )
+    )
+  )
+})
+```
+
+## Custom Schema Composition
+
+```typescript
+import { Uint } from 'voltaire-effect'
+
+const TransferRequestSchema = Schema.Struct({
+  from: Address.AddressSchema,
+  to: Address.AddressSchema,
+  amount: Uint.Uint256Schema,
+  memo: Schema.optional(Schema.String)
+})
+
+const request = Schema.decodeSync(TransferRequestSchema)({
+  from: '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
+  to: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+  amount: '1000000000000000000'
+})
+```

@@ -1,0 +1,50 @@
+---
+title: Abi
+description: Effect-based ABI encoding and decoding for Ethereum contract interactions
+---
+
+```typescript
+import * as Abi from 'voltaire-effect/primitives/Abi'
+import { Effect } from 'effect'
+
+const calldata = await Effect.runPromise(
+  Abi.encodeFunctionData(abi, 'transfer', [to, amount])
+)
+```
+
+## Functions
+
+**encodeFunctionData(abi, name, args)** — Encodes function call.
+Returns `Effect<HexType, AbiItemNotFoundError | AbiEncodingError>`.
+
+**decodeFunctionData(abi, data)** — Decodes calldata to `{ name, params }`.
+
+**decodeFunctionResult(abi, name, data)** — Decodes return data.
+
+**decodeEventLog(abi, log)** — Decodes event log to `{ event, params }`.
+
+**getFunction(abi, name)** — Retrieves function definition.
+
+**getEvent(abi, name)** — Retrieves event definition.
+
+```typescript
+const abi = [{
+  type: 'function',
+  name: 'transfer',
+  inputs: [
+    { name: 'to', type: 'address' },
+    { name: 'amount', type: 'uint256' }
+  ]
+}]
+
+const { name, params } = await Effect.runPromise(
+  Abi.decodeFunctionData(abi, '0xa9059cbb...')
+)
+```
+
+## Errors
+
+- `AbiItemNotFoundError` — Function/event not in ABI
+- `AbiEncodingError` — Encoding failed
+- `AbiDecodingError` — Decoding failed
+- `AbiInvalidSelectorError` — Selector mismatch

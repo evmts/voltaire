@@ -1,0 +1,40 @@
+---
+title: TopicFilter
+description: Filter events by indexed parameters
+---
+
+```typescript
+import * as TopicFilter from 'voltaire-effect/primitives/TopicFilter'
+import { Effect } from 'effect'
+
+const filter = yield* TopicFilter.from([
+  transferEventSignature,  // topic[0]: event sig
+  senderAddress,           // topic[1]: from
+  null                     // topic[2]: any (wildcard)
+])
+```
+
+## OR Conditions
+
+```typescript
+// Match transfers from sender1 OR sender2
+const filter = yield* TopicFilter.from([
+  transferEventSignature,
+  [sender1, sender2],  // OR
+  null
+])
+```
+
+## Schema
+
+```typescript
+import * as Schema from 'effect/Schema'
+
+const filter = Schema.decodeSync(TopicFilter.TopicFilterSchema)([
+  transferEventSignature,
+  senderAddress,
+  null
+])
+```
+
+Up to 4 topics. Each position: specific value, array (OR), or null (wildcard).

@@ -1,0 +1,39 @@
+---
+title: TransactionStatus
+description: Transaction execution state - pending, success, or failed
+---
+
+Discriminated union for transaction lifecycle states.
+
+## Schema
+
+```typescript
+import * as TransactionStatus from 'voltaire-effect/TransactionStatus'
+import * as Schema from 'effect/Schema'
+
+const status = Schema.decodeSync(TransactionStatus.Schema)({
+  type: 'success',
+  gasUsed: 21000n
+})
+```
+
+## Constructors
+
+```typescript
+import * as TransactionStatus from 'voltaire-effect/TransactionStatus'
+
+TransactionStatus.pending()              // { type: 'pending' }
+TransactionStatus.success(21000n)        // { type: 'success', gasUsed: 21000n }
+TransactionStatus.failed('Out of gas')   // { type: 'failed', revertReason: '...' }
+```
+
+## Type Guards
+
+```typescript
+if (TransactionStatus.isSuccess(status)) {
+  console.log(status.gasUsed)
+}
+if (TransactionStatus.isFailed(status)) {
+  console.log(status.revertReason)
+}
+```

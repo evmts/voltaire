@@ -1,0 +1,153 @@
+---
+title: Error Handling
+description: Composable error handling patterns
+---
+
+## Catch Specific Errors
+
+```typescript
+import { Effect } from 'effect'
+import { PublicClientService, PublicClient, HttpTransport } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const client = yield* PublicClientService
+  return yield* client.getBalance('0x...', 'latest')
+}).pipe(
+  Effect.catchTag('PublicClientError', () => Effect.succeed(0n)),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Handle Multiple Error Types
+
+```typescript
+import { Contract, ContractCallError, ContractWriteError, WalletClientLive, LocalAccount } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const token = yield* Contract(tokenAddress, erc20Abi)
+  const balance = yield* token.read.balanceOf(userAddress)
+  const txHash = yield* token.write.transfer(recipient, amount)
+  return { balance, txHash }
+}).pipe(
+  Effect.catchTags({
+    ContractCallError: () => Effect.fail(new Error('Read failed')),
+    ContractWriteError: () => Effect.fail(new Error('Write failed'))
+  }),
+  Effect.provide(WalletClientLive),
+  Effect.provide(LocalAccount(privateKey)),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://...'))
+)
+```
+
+## Retry with Backoff
+
+```typescript
+import { Effect, Schedule } from 'effect'
+
+const program = Effect.gen(function* () {
+  const client = yield* PublicClientService
+  return yield* client.getBlockNumber()
+}).pipe(
+  Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.compose(Schedule.recurs(3)))),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Timeout
+
+```typescript
+import { Effect, Duration } from 'effect'
+
+const program = Effect.gen(function* () {
+  const client = yield* PublicClientService
+  return yield* client.getBlock({ blockTag: 'latest', includeTransactions: true })
+}).pipe(
+  Effect.timeout(Duration.seconds(10)),
+  Effect.catchTag('TimeoutException', () => Effect.succeed(null)),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Fallback RPC
+
+```typescript
+const primary = Effect.gen(function* () {
+  const client = yield* PublicClientService
+  return yield* client.getBlockNumber()
+}).pipe(
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+
+const backup = Effect.gen(function* () {
+  const client = yield* PublicClientService
+  return yield* client.getBlockNumber()
+}).pipe(
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const program = primary.pipe(Effect.orElse(() => backup))
+```
+
+## Graceful Degradation
+
+```typescript
+import { Effect, Option } from 'effect'
+
+const program = Effect.gen(function* () {
+  const client = yield* PublicClientService
+  
+  const balance = yield* client.getBalance(address, 'latest').pipe(
+    Effect.map(Option.some),
+    Effect.catchAll(() => Effect.succeed(Option.none()))
+  )
+  
+  return { address, balance: Option.getOrElse(balance, () => 0n) }
+}).pipe(
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Custom Error Types
+
+```typescript
+import { Effect, Data } from 'effect'
+
+class InsufficientBalance extends Data.TaggedError('InsufficientBalance')<{
+  readonly required: bigint
+  readonly available: bigint
+}> {}
+
+const program = Effect.gen(function* () {
+  const client = yield* PublicClientService
+  const balance = yield* client.getBalance(address, 'latest')
+  
+  if (balance < requiredAmount) {
+    return yield* Effect.fail(new InsufficientBalance({ required: requiredAmount, available: balance }))
+  }
+  return balance
+}).pipe(
+  Effect.catchTag('InsufficientBalance', (e) => Effect.succeed(e.available)),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Inspect Exit
+
+```typescript
+import { Effect, Exit } from 'effect'
+
+const exit = await Effect.runPromiseExit(program)
+
+Exit.match(exit, {
+  onSuccess: (balance) => console.log('Balance:', balance),
+  onFailure: (cause) => console.error('Error:', cause)
+})
+```

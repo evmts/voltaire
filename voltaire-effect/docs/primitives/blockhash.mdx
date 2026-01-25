@@ -1,0 +1,36 @@
+---
+title: BlockHash
+description: 32-byte Keccak-256 hash identifying Ethereum blocks
+---
+
+Uniquely identifies blocks on Ethereum. Branded `Uint8Array`.
+
+## Schema
+
+```typescript
+import * as BlockHash from 'voltaire-effect/primitives/BlockHash'
+import * as Schema from 'effect/Schema'
+
+const hash = Schema.decodeSync(BlockHash.BlockHashSchema)(
+  '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3'
+)
+```
+
+## Effect
+
+```typescript
+import * as BlockHash from 'voltaire-effect/primitives/BlockHash'
+import { Effect } from 'effect'
+
+const program = BlockHash.from(
+  '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3'
+)
+// Effect.Effect<BlockHashType, BlockHashError>
+
+const hash = await Effect.runPromise(program)
+const hex = BlockHash.toHex(hash)
+```
+
+## Errors
+
+**BlockHashError** — Invalid length or format. Extends `Data.TaggedError`.

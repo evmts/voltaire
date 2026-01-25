@@ -1,100 +1,55 @@
 ---
 title: Transport
-description: Effect-based JSON-RPC transport abstraction for Ethereum
+description: Effect-based JSON-RPC transport for Ethereum
 ---
 
-The Transport service provides an Effect-based abstraction for JSON-RPC communication with Ethereum nodes. It wraps the low-level transport layer (HTTP, WebSocket, browser wallet) and provides a consistent interface.
-
-## TransportService
-
-The core service interface for making JSON-RPC requests.
+## Quick Start
 
 ```typescript
-import { TransportService } from 'voltaire-effect/services'
-import * as Effect from 'effect/Effect'
+import { TransportService, HttpTransport } from 'voltaire-effect/services'
+import { Effect } from 'effect'
 
 const program = Effect.gen(function* () {
   const transport = yield* TransportService
   const blockNumber = yield* transport.request<string>('eth_blockNumber', [])
   return BigInt(blockNumber)
-})
-```
-
-### Interface
-
-```typescript
-class TransportService extends Context.Tag("TransportService")<
-  TransportService,
-  {
-    readonly request: <T>(method: string, params?: unknown[]) => Effect.Effect<T, TransportError>
-  }
->() {}
-```
-
-## Transport Layers
-
-### HttpTransport
-
-HTTP-based JSON-RPC transport using fetch API.
-
-```typescript
-import { HttpTransport } from 'voltaire-effect/services'
-import * as Effect from 'effect/Effect'
-
-const program = Effect.gen(function* () {
-  const transport = yield* TransportService
-  return yield* transport.request<string>('eth_blockNumber', [])
 }).pipe(
-  Effect.provide(HttpTransport('https://eth.example.com'))
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
-#### Options
+## HttpTransport
 
 ```typescript
-interface HttpTransportConfig {
-  url: string
-  headers?: Record<string, string>
-  timeout?: number       // default: 30000ms
-  retries?: number       // default: 3
-  retryDelay?: number    // default: 1000ms
-}
-
-// String shorthand
+// Simple
 HttpTransport('https://eth.example.com')
 
-// Full config
+// With options
 HttpTransport({
   url: 'https://eth.example.com',
   headers: { 'X-Api-Key': 'secret' },
-  timeout: 60000,
-  retries: 5,
+  timeout: 60000,      // default: 30000ms
+  retries: 5,          // default: 3
+  retryDelay: 1000     // default: 1000ms
 })
 ```
 
-### WebSocketTransport
-
-WebSocket-based JSON-RPC transport for real-time subscriptions.
+## WebSocketTransport
 
 ```typescript
 import { WebSocketTransport } from 'voltaire-effect/services'
-import * as Effect from 'effect/Effect'
 
-const program = Effect.gen(function* () {
-  const transport = yield* TransportService
-  return yield* transport.request<string>('eth_chainId', [])
-}).pipe(
+program.pipe(
   Effect.provide(WebSocketTransport('wss://eth.example.com'))
 )
 ```
 
-### BrowserTransport
+## BrowserTransport
 
-Browser wallet transport using window.ethereum (EIP-1193).
+Uses `window.ethereum` (EIP-1193).
 
 ```typescript
 import { BrowserTransport } from 'voltaire-effect/services'
-import * as Effect from 'effect/Effect'
 
 const program = Effect.gen(function* () {
   const transport = yield* TransportService
@@ -105,64 +60,52 @@ const program = Effect.gen(function* () {
 )
 ```
 
-## Error Handling
-
-All transport methods return `Effect.Effect<T, TransportError>` where `TransportError` contains:
-
-```typescript
-class TransportError extends Error {
-  readonly _tag = "TransportError"
-  readonly name = "TransportError"
-  readonly code: number
-  readonly message: string
-  readonly data?: unknown
-}
-```
-
-### Error Codes
-
-- `-32700`: Parse error
-- `-32600`: Invalid request
-- `-32601`: Method not found
-- `-32602`: Invalid params
-- `-32603`: Internal error
-- `-32000` to `-32099`: Server errors
-
-### Handling Errors
-
-```typescript
-import { TransportService, TransportError } from 'voltaire-effect/services'
-import * as Effect from 'effect/Effect'
-
-const program = Effect.gen(function* () {
-  const transport = yield* TransportService
-  return yield* transport.request<string>('eth_blockNumber', [])
-}).pipe(
-  Effect.catchTag("TransportError", (e) => 
-    Effect.succeed(`Error: ${e.message}`)
-  )
-)
-```
-
 ## Testing
 
-Use the provided test transport for unit testing:
-
 ```typescript
-import { TestTransport, TransportService, TransportError } from 'voltaire-effect/services'
-import * as Effect from 'effect/Effect'
+import { TestTransport, TransportError } from 'voltaire-effect/services'
 
 const mockResponses = new Map([
   ['eth_blockNumber', '0x1234'],
   ['eth_chainId', '0x1'],
 ])
 
-const program = myProgram.pipe(
-  Effect.provide(TestTransport(mockResponses))
-)
+program.pipe(Effect.provide(TestTransport(mockResponses)))
 
-// Can also mock errors
+// Mock errors
 const errorResponses = new Map([
   ['eth_call', new TransportError({ code: -32000, message: 'execution reverted' })],
 ])
+```
+
+## Error Handling
+
+```typescript
+import { TransportError } from 'voltaire-effect/services'
+
+program.pipe(
+  Effect.catchTag("TransportError", (e) => 
+    Effect.succeed(`Error ${e.code}: ${e.message}`)
+  )
+)
+```
+
+Error codes: `-32700` parse, `-32600` invalid request, `-32601` method not found, `-32602` invalid params, `-32603` internal, `-32000` to `-32099` server errors.
+
+## Service Interface
+
+```typescript
+class TransportService extends Context.Tag("TransportService")<
+  TransportService,
+  {
+    readonly request: <T>(method: string, params?: unknown[]) => Effect.Effect<T, TransportError>
+  }
+>() {}
+
+class TransportError extends Error {
+  readonly _tag = "TransportError"
+  readonly code: number
+  readonly message: string
+  readonly data?: unknown
+}
 ```

@@ -1,0 +1,54 @@
+---
+title: EventLog
+description: EVM event log schema
+---
+
+```typescript
+import * as EventLog from 'voltaire-effect/EventLog'
+import * as Schema from 'effect/Schema'
+
+const log = Schema.decodeSync(EventLog.Schema)({
+  address: contractAddress,
+  topics: [eventTopic],
+  data: eventData,
+  blockNumber: 19000000n,       // optional
+  transactionHash: txHash,      // optional
+  logIndex: 0,                  // optional
+})
+```
+
+## Type
+
+```typescript
+type EventLogType = {
+  address: AddressType
+  topics: HashType[]
+  data: Uint8Array
+  blockNumber?: bigint
+  transactionHash?: HashType
+  transactionIndex?: number
+  blockHash?: HashType
+  logIndex?: number
+  removed?: boolean
+}
+```
+
+## Filtering by Event
+
+```typescript
+import * as EventSignature from 'voltaire-effect/EventSignature'
+
+const transferSig = yield* EventSignature.fromSignature('Transfer(address,address,uint256)')
+const transfers = logs.filter(log => 
+  log.topics[0] && EventSignature.equals(log.topics[0], transferSig)
+)
+```
+
+## Parsing Indexed Params
+
+```typescript
+// Transfer: topics[1]=from, topics[2]=to, data=value
+const from = yield* Address.from(log.topics[1].slice(12))
+const to = yield* Address.from(log.topics[2].slice(12))
+const value = BigInt('0x' + Buffer.from(log.data).toString('hex'))
+```

@@ -1,0 +1,25 @@
+---
+title: License
+description: SPDX license identifiers
+---
+
+```typescript
+import * as License from 'voltaire-effect/License'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const mit = Schema.decodeSync(License.Schema)('MIT')
+Schema.decodeSync(License.Schema)('Apache-2.0')
+Schema.decodeSync(License.Schema)('GPL-3.0')
+
+// Effect constructor
+const license = Effect.runSync(License.from('MIT'))
+```
+
+## Error Handling
+
+```typescript
+const result = Effect.runSync(Effect.either(License.from('')))
+// Left(LicenseError)
+```

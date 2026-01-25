@@ -1,0 +1,40 @@
+---
+title: StealthAddress
+description: EIP-5564 stealth addresses for transaction privacy
+---
+
+```typescript
+import { StealthAddress } from 'voltaire-effect'
+import { Effect } from 'effect'
+import * as Schema from 'effect/Schema'
+
+// Schema validation (66-byte meta-address)
+const parse = Schema.decodeSync(StealthAddress.StealthMetaAddressSchema)
+const metaAddress = parse(new Uint8Array(66))
+
+// Generate meta-address from key pair
+const meta = Effect.runSync(
+  StealthAddress.generateMetaAddress(spendingPubKey, viewingPubKey)
+)
+
+// Parse meta-address to extract keys
+const { spendingPubKey, viewingPubKey } = Effect.runSync(
+  StealthAddress.parseMetaAddress(metaAddress)
+)
+```
+
+## Practical Example
+
+```typescript
+const createStealthAddress = (recipientMeta: Uint8Array) =>
+  Effect.gen(function* () {
+    const { spendingPubKey, viewingPubKey } = 
+      yield* StealthAddress.parseMetaAddress(recipientMeta)
+    return { spendingPubKey, viewingPubKey }
+  })
+
+const result = await Effect.runPromiseExit(
+  StealthAddress.parseMetaAddress(new Uint8Array(10)) // wrong length
+)
+if (result._tag === 'Failure') console.error(result.cause) // StealthAddressError
+```

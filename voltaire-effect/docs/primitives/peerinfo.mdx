@@ -1,0 +1,44 @@
+---
+title: PeerInfo
+description: P2P peer metadata (ID, client, capabilities, protocols)
+---
+
+```typescript
+import * as PeerInfo from 'voltaire-effect/primitives/PeerInfo'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema validation
+const peer = Schema.decodeSync(PeerInfo.Schema)({
+  id: 'QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wU2s7tVqYoC9z',
+  name: 'Geth/v1.10.0-stable/linux-amd64/go1.16',
+  caps: ['eth/66', 'eth/67', 'snap/1'],
+  network: { localAddress: '127.0.0.1:30303' },
+  protocols: { eth: { version: 67 } }
+})
+
+// Effect constructor
+const program = PeerInfo.from({
+  id: 'QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wU2s7tVqYoC9z',
+  name: 'Geth/v1.10.0',
+  caps: ['eth/66'],
+  network: {},
+  protocols: {}
+})
+Effect.runSync(program)
+```
+
+## Fields
+
+- `id` — Peer identifier
+- `name` — Client name/version
+- `caps` — Protocol capabilities
+- `network` — Connection info
+- `protocols` — Supported protocols
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(PeerInfo.from({ id: 'x' }))
+// result._tag === 'Failure' → PeerInfoError
+```

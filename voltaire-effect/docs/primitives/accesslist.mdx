@@ -1,0 +1,37 @@
+---
+title: AccessList
+description: EIP-2930 access lists for gas-optimized storage access
+---
+
+Specifies addresses and storage keys a transaction will access.
+
+## Schema
+
+```typescript
+import { AccessListSchema } from 'voltaire-effect/primitives/AccessList'
+import * as Schema from 'effect/Schema'
+
+const accessList = Schema.decodeSync(AccessListSchema)([
+  {
+    address: '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
+    storageKeys: [
+      '0x0000000000000000000000000000000000000000000000000000000000000001'
+    ]
+  }
+])
+```
+
+## Effect
+
+```typescript
+import * as AccessList from 'voltaire-effect/primitives/AccessList'
+import { Effect } from 'effect'
+
+const program = AccessList.from([
+  { address: addressBytes, storageKeys: [key1, key2] }
+])
+// Effect.Effect<BrandedAccessList, AccessListError>
+
+const list = await Effect.runPromise(program)
+const empty = AccessList.create()
+```

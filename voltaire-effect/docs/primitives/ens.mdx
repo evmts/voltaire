@@ -1,0 +1,43 @@
+---
+title: Ens
+description: ENS name validation, normalization, and hashing
+---
+
+```typescript
+import * as Ens from 'voltaire-effect/Ens'
+import { Effect } from 'effect'
+import * as Schema from 'effect/Schema'
+
+// Schema validation
+const name = Schema.decodeSync(Ens.EnsSchema)('vitalik.eth')
+
+// Normalize (ENSIP-15)
+const normalized = Effect.runSync(Ens.normalize('Vitalik.ETH')) // 'vitalik.eth'
+
+// Namehash (32-byte hash for contracts)
+const hash = Effect.runSync(Ens.namehash('vitalik.eth'))
+
+// Labelhash (single label)
+const label = Effect.runSync(Ens.labelhash('vitalik'))
+
+// Beautify for display
+const display = Effect.runSync(Ens.beautify('vitalik.eth'))
+
+// Validation
+const isValid = Effect.runSync(Ens.isValid('vitalik.eth')) // true
+```
+
+## Practical Example
+
+```typescript
+const resolveEns = (input: string) =>
+  Effect.gen(function* () {
+    yield* Ens.validate(input)
+    const normalized = yield* Ens.normalize(input)
+    const hash = yield* Ens.namehash(input)
+    return { name: normalized, hash }
+  })
+
+const result = await Effect.runPromiseExit(resolveEns('invalid..eth'))
+if (result._tag === 'Failure') console.error(result.cause) // EnsError
+```

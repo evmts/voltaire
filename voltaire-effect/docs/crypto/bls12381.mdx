@@ -1,139 +1,47 @@
 ---
-title: BLS12-381 Service
-description: Effect-based BLS signatures for Ethereum 2.0
+title: BLS12-381
+description: BLS signatures for Ethereum 2.0 consensus
 ---
 
-Effect-wrapped BLS12-381 signature operations for Ethereum 2.0 consensus, beacon chain attestations, and aggregate signatures.
-
-## Bls12381Service
-
-```typescript
-import { Bls12381Service } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
-
-const program = Effect.gen(function* () {
-  const bls = yield* Bls12381Service
-  
-  // Sign a message
-  const signature = yield* bls.sign(message, privateKey)
-  
-  // Verify signature
-  const isValid = yield* bls.verify(signature, message, publicKey)
-  
-  // Aggregate multiple signatures
-  const aggregated = yield* bls.aggregate([sig1, sig2, sig3])
-  
-  return { signature, isValid, aggregated }
-})
-```
-
-### Interface
-
-```typescript
-interface Bls12381ServiceShape {
-  readonly sign: (
-    message: Uint8Array,
-    privateKey: Uint8Array
-  ) => Effect.Effect<Uint8Array, InvalidScalarError | SignatureError>
-
-  readonly verify: (
-    signature: Uint8Array,
-    message: Uint8Array,
-    publicKey: Uint8Array
-  ) => Effect.Effect<boolean, SignatureError>
-
-  readonly aggregate: (
-    signatures: Uint8Array[]
-  ) => Effect.Effect<Uint8Array, SignatureError>
-}
-```
-
-## Providing the Layer
+Sign, verify, and aggregate signatures for beacon chain attestations.
 
 ```typescript
 import { Bls12381Service, Bls12381Live } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
-
-const program = Effect.gen(function* () {
-  const bls = yield* Bls12381Service
-  return yield* bls.sign(message, privateKey)
-})
+import { Effect } from 'effect'
 
 const result = await Effect.runPromise(
-  program.pipe(Effect.provide(Bls12381Live))
+  Effect.gen(function* () {
+    const bls = yield* Bls12381Service
+    const signature = yield* bls.sign(message, privateKey)
+    const isValid = yield* bls.verify(signature, message, publicKey)
+    const aggregated = yield* bls.aggregate([sig1, sig2, sig3])
+    return { signature, isValid, aggregated }
+  }).pipe(Effect.provide(Bls12381Live))
 )
 ```
 
 ## Error Handling
 
 ```typescript
-import { Bls12381Service, Bls12381Live } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
-
-const program = Effect.gen(function* () {
-  const bls = yield* Bls12381Service
-  return yield* bls.sign(message, privateKey)
-}).pipe(
-  Effect.catchTag('InvalidScalarError', (e) =>
-    Effect.fail(new Error(`Invalid key: ${e.message}`))
-  ),
-  Effect.catchTag('SignatureError', (e) =>
-    Effect.fail(new Error(`BLS failed: ${e.message}`))
-  )
+program.pipe(
+  Effect.catchTag('InvalidScalarError', (e) => ...),
+  Effect.catchTag('SignatureError', (e) => ...)
 )
 ```
 
-## Signature Aggregation
-
-BLS supports efficient signature aggregation:
+## Testing
 
 ```typescript
-const aggregateSignatures = (signatures: Uint8Array[]) =>
-  Effect.gen(function* () {
-    const bls = yield* Bls12381Service
-    return yield* bls.aggregate(signatures)
-  })
-
-// Aggregate 1000 validator signatures into one
-const aggregated = await Effect.runPromise(
-  aggregateSignatures(validatorSignatures).pipe(Effect.provide(Bls12381Live))
-)
+import { Bls12381Test } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(Bls12381Test))
 ```
 
-## Full Example
+## Interface
 
 ```typescript
-import { Bls12381Service, CryptoLive } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
-
-const attestationWorkflow = (
-  message: Uint8Array,
-  validatorKeys: { privateKey: Uint8Array; publicKey: Uint8Array }[]
-) =>
-  Effect.gen(function* () {
-    const bls = yield* Bls12381Service
-    
-    // Each validator signs the message
-    const signatures = yield* Effect.all(
-      validatorKeys.map(({ privateKey }) =>
-        bls.sign(message, privateKey)
-      )
-    )
-    
-    // Aggregate all signatures
-    const aggregatedSig = yield* bls.aggregate(signatures)
-    
-    // Verify individual signature (for debugging)
-    const isFirstValid = yield* bls.verify(
-      signatures[0],
-      message,
-      validatorKeys[0].publicKey
-    )
-    
-    return { aggregatedSig, isFirstValid }
-  })
-
-const result = await Effect.runPromise(
-  attestationWorkflow(message, validators).pipe(Effect.provide(CryptoLive))
-)
+interface Bls12381ServiceShape {
+  readonly sign: (message: Uint8Array, privateKey: Uint8Array) => Effect.Effect<Uint8Array, InvalidScalarError | SignatureError>
+  readonly verify: (signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array) => Effect.Effect<boolean, SignatureError>
+  readonly aggregate: (signatures: Uint8Array[]) => Effect.Effect<Uint8Array, SignatureError>
+}
 ```

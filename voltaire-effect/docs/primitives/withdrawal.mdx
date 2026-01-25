@@ -1,0 +1,36 @@
+---
+title: Withdrawal
+description: EIP-4895 beacon chain withdrawal
+---
+
+```typescript
+import * as Withdrawal from 'voltaire-effect/primitives/Withdrawal'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema validation
+const w = Schema.decodeSync(Withdrawal.Schema)({
+  index: 0n,
+  validatorIndex: 12345,
+  address: '0x742d35Cc6634C0532925a3b844Bc9e7595f2bD8e',
+  amount: 32000000000n, // Gwei
+})
+
+// Effect constructor
+const result = await Effect.runPromise(Withdrawal.from({
+  index: 0n,
+  validatorIndex: 12345,
+  address: '0x742d35Cc6634C0532925a3b844Bc9e7595f2bD8e',
+  amount: 32000000000n,
+}))
+
+// Comparison
+Withdrawal.equals(a, b)
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| index | bigint | Sequential withdrawal index |
+| validatorIndex | number | Beacon chain validator index |
+| address | Address | Recipient address |
+| amount | bigint | Amount in Gwei |

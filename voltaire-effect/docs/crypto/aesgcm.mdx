@@ -1,0 +1,48 @@
+---
+title: AES-GCM
+description: Authenticated symmetric encryption
+---
+
+AES-GCM encryption with integrity verification and optional AAD.
+
+```typescript
+import { AesGcmService, AesGcmLive } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const aes = yield* AesGcmService
+    const key = yield* aes.generateKey(256)
+    const nonce = yield* aes.generateNonce()
+    const ciphertext = yield* aes.encrypt(key, plaintext, nonce)
+    const decrypted = yield* aes.decrypt(key, ciphertext, nonce)
+    return decrypted
+  }).pipe(Effect.provide(AesGcmLive))
+)
+```
+
+## Additional Authenticated Data
+
+```typescript
+const aad = new TextEncoder().encode('metadata')
+const ciphertext = yield* aes.encrypt(key, plaintext, nonce, aad)
+const decrypted = yield* aes.decrypt(key, ciphertext, nonce, aad)
+```
+
+## Testing
+
+```typescript
+import { AesGcmTest } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(AesGcmTest))
+```
+
+## Interface
+
+```typescript
+interface AesGcmServiceShape {
+  readonly encrypt: (key: Uint8Array, plaintext: Uint8Array, nonce: Uint8Array, aad?: Uint8Array) => Effect.Effect<Uint8Array, Error>
+  readonly decrypt: (key: Uint8Array, ciphertext: Uint8Array, nonce: Uint8Array, aad?: Uint8Array) => Effect.Effect<Uint8Array, Error>
+  readonly generateKey: (bits?: 128 | 256) => Effect.Effect<Uint8Array, Error>
+  readonly generateNonce: () => Effect.Effect<Uint8Array, Error>
+}
+```

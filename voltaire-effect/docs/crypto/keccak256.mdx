@@ -1,94 +1,36 @@
 ---
-title: Keccak256 Service
-description: Effect-based Keccak256 hashing for Ethereum
+title: Keccak256
+description: Ethereum's core hash function
 ---
 
-Effect-wrapped Keccak256 hashing, the core hash function used throughout Ethereum for addresses, transactions, and state.
-
-## KeccakService
-
-```typescript
-import { KeccakService } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
-
-const program = Effect.gen(function* () {
-  const keccak = yield* KeccakService
-  const hash = yield* keccak.hash(new Uint8Array([1, 2, 3]))
-  return hash // Keccak256Hash (32 bytes)
-})
-```
-
-### Interface
-
-```typescript
-class KeccakService extends Context.Tag("KeccakService")<
-  KeccakService,
-  {
-    readonly hash: (data: Uint8Array) => Effect.Effect<Keccak256Hash>
-  }
->() {}
-```
-
-## Providing the Layer
+Keccak256 hashing—used for addresses, transactions, and state roots.
 
 ```typescript
 import { KeccakService, KeccakLive } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
+import { Effect } from 'effect'
 
-const program = Effect.gen(function* () {
-  const keccak = yield* KeccakService
-  return yield* keccak.hash(data)
-})
-
-const result = await Effect.runPromise(
-  program.pipe(Effect.provide(KeccakLive))
+const hash = await Effect.runPromise(
+  Effect.gen(function* () {
+    const keccak = yield* KeccakService
+    return yield* keccak.hash(new Uint8Array([1, 2, 3]))
+  }).pipe(Effect.provide(KeccakLive))
 )
-```
-
-## Using CryptoLive
-
-For convenience, `CryptoLive` provides all crypto services at once:
-
-```typescript
-import { KeccakService, CryptoLive } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
-
-const program = Effect.gen(function* () {
-  const keccak = yield* KeccakService
-  return yield* keccak.hash(data)
-}).pipe(Effect.provide(CryptoLive))
+// Keccak256Hash (32 bytes)
 ```
 
 ## Testing
 
-Use `KeccakTest` for unit tests:
-
 ```typescript
-import { KeccakService, KeccakTest } from 'voltaire-effect/crypto'
+import { KeccakTest } from 'voltaire-effect/crypto'
 
-const testProgram = myProgram.pipe(
-  Effect.provide(KeccakTest)
-)
+myProgram.pipe(Effect.provide(KeccakTest))
 // Returns zero-filled 32-byte hash
 ```
 
-## Full Example
+## Interface
 
 ```typescript
-import { KeccakService, KeccakLive } from 'voltaire-effect/crypto'
-import * as Hex from '@tevm/voltaire/Hex'
-import * as Effect from 'effect/Effect'
-
-const hashMessage = (message: string) =>
-  Effect.gen(function* () {
-    const keccak = yield* KeccakService
-    const data = new TextEncoder().encode(message)
-    const hash = yield* keccak.hash(data)
-    return Hex.fromBytes(hash)
-  })
-
-const result = await Effect.runPromise(
-  hashMessage('hello').pipe(Effect.provide(KeccakLive))
-)
-// 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
+interface KeccakServiceShape {
+  readonly hash: (data: Uint8Array) => Effect.Effect<Keccak256Hash>
+}
 ```

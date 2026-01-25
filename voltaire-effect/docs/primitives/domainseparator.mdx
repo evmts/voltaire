@@ -1,0 +1,41 @@
+---
+title: DomainSeparator
+description: EIP-712 domain separator hash operations
+---
+
+```typescript
+import * as DomainSeparator from 'voltaire-effect/DomainSeparator'
+import { Effect } from 'effect'
+import * as S from 'effect/Schema'
+
+// From hex (32 bytes)
+const sep = S.decodeSync(DomainSeparator.DomainSeparatorSchema)('0x1234...')
+
+// From bytes
+const sep2 = S.decodeSync(DomainSeparator.DomainSeparatorFromBytesSchema)(
+  new Uint8Array(32)
+)
+```
+
+## Effect API
+
+```typescript
+// Create
+const sep = Effect.runSync(DomainSeparator.from('0x...'))
+const sep2 = Effect.runSync(DomainSeparator.fromBytes(new Uint8Array(32)))
+const sep3 = Effect.runSync(DomainSeparator.fromHex('0x1234...'))
+
+// Convert
+const hex = Effect.runSync(DomainSeparator.toHex(sep))
+
+// Compare
+const equal = Effect.runSync(DomainSeparator.equals(sep, sep2))
+```
+
+## Errors
+
+```typescript
+const result = await Effect.runPromiseExit(
+  DomainSeparator.fromBytes(new Uint8Array(16)) // Must be 32 bytes
+)
+```

@@ -1,0 +1,41 @@
+---
+title: Hash
+description: Effect-based schemas for 32-byte Ethereum hash values
+---
+
+```typescript
+import * as Hash from 'voltaire-effect/primitives/Hash'
+import { Effect } from 'effect'
+
+const hash = await Effect.runPromise(
+  Hash.fromHex('0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b')
+)
+```
+
+## Schema
+
+**HashSchema** — Validates 32-byte hash (66-char hex with `0x` prefix).
+
+```typescript
+import * as Hash from 'voltaire-effect/primitives/Hash'
+import * as S from 'effect/Schema'
+
+const hash = S.decodeSync(Hash.Schema)(
+  '0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b'
+)
+```
+
+## Functions
+
+**fromHex(hex)** — Creates hash from 66-char hex string.
+
+**fromBytes(bytes)** — Creates hash from 32-byte Uint8Array.
+
+**toHex(hash)** — Pure sync. Returns hex string.
+
+**toBytes(hash)** — Pure sync. Returns Uint8Array(32).
+
+```typescript
+const bytes = Hash.toBytes(hash)
+const hex = Hash.toHex(hash)
+```

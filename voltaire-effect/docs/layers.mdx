@@ -1,83 +1,63 @@
 ---
 title: Layers
-description: Understanding voltaire-effect's three-layer architecture
+description: Schema, Effect, and Service layers
 ---
 
-voltaire-effect provides three integration layers, each building on the previous.
+| Layer | Purpose | Use When |
+|-------|---------|----------|
+| **Schema** | Validation, type coercion | Parsing user input, API responses |
+| **Effect** | Composable operations | Chaining transformations, error handling |
+| **Services** | Stateful resources | Provider calls, wallet signing |
 
-## Layer 1: Schema
+## Schema
 
-Effect Schema wrappers for Voltaire branded types. Use for validation and type coercion.
-
-```typescript
-import { Address } from 'voltaire-effect'
-import * as Schema from 'effect/Schema'
-
-// Decode to Voltaire's AddressType
-const addr = Schema.decodeSync(Address.Schema)("0x742d35Cc...")
-
-// Multiple input formats
-const fromBytes = Schema.decodeSync(Address.FromBytesSchema)(bytes)
-const fromChecksummed = Schema.decodeSync(Address.ChecksummedSchema)(str)
-```
-
-### Schema Output
-
-Schemas decode to **actual Voltaire branded types**, not wrappers:
-
-```typescript
-const hex: HexType = Schema.decodeSync(Hex.Schema)("0x1234")
-// hex works directly with Voltaire functions
-Hex.toBytes(hex)
-```
-
-## Layer 2: Effect
-
-Effect-wrapped operations for primitives. Use for composable, typed error handling.
+[Effect Schema](https://effect.website/docs/schema/introduction/) wrappers. Decodes to actual Voltaire branded types.
 
 ```typescript
 import { Address, Hex } from 'voltaire-effect'
-import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
 
-// Effect operations return Effect<A, E>
+const addr = Schema.decodeSync(Address.Schema)("0x742d35Cc...")
+const fromBytes = Schema.decodeSync(Address.FromBytesSchema)(bytes)
+
+// Works directly with Voltaire
+Hex.toBytes(Schema.decodeSync(Hex.Schema)("0x1234"))
+```
+
+## Effect
+
+[Effect](https://effect.website/docs/getting-started/the-effect-type/)-wrapped operations. Typed errors with `_tag` for [catchTag](https://effect.website/docs/error-management/expected-errors/#catchtag).
+
+```typescript
+import { Address, Hex } from 'voltaire-effect'
+import { Effect } from 'effect'
+
 const program = Effect.gen(function* () {
   const addr = yield* Address.fromString("0x...")
   const bytes = yield* Hex.toBytes("0x1234")
   return { addr, bytes }
 })
-```
 
-### Error Types
-
-Voltaire errors have `_tag` for discrimination:
-
-```typescript
+// Error handling
 Effect.catchTag("InvalidAddress", (e) => ...)
-Effect.catchTag("InvalidHex", (e) => ...)
 ```
 
-## Layer 3: Services
+## Services
 
-Effect Services for stateful resources. Use for Provider, Wallet, Eip1193.
+[Effect Services](https://effect.website/docs/requirements-management/services/) for stateful resources.
 
 ```typescript
 import { Provider } from 'voltaire-effect/services'
-import * as Effect from 'effect/Effect'
+import { Effect } from 'effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* Provider.Provider
-  const block = yield* provider.getBlock("latest")
-  return block
+  return yield* provider.getBlock("latest")
 })
 
-// Run with live provider
 program.pipe(
   Effect.provide(Provider.live("https://eth.llamarpc.com"))
 )
 ```
 
-### Available Services
-
-- **Provider** - JSON-RPC provider
-- **Wallet** - Private key signing
-- **Eip1193** - Browser wallet integration
+**Available**: Provider (JSON-RPC), Wallet (signing), Eip1193 (browser wallets)

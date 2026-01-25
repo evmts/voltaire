@@ -1,0 +1,76 @@
+---
+title: Why voltaire-effect?
+description: Typed errors, composable workflows, and testable Ethereum code
+---
+
+Voltaire gives you branded types and high-performance crypto. voltaire-effect adds Effect.ts: typed errors, composable pipelines, and dependency injection.
+
+## Typed Errors
+
+Exceptions are invisible. Effect's error channel makes failures explicit in the type signature.
+
+```typescript
+// Throws somewhere, who knows what
+const addr = Address.from(input)
+
+// Error is in the type: Effect<Address, AddressError>
+const addr = Address.fromHex(input)
+```
+
+## Composability
+
+Chain operations with `pipe`, use `Effect.gen` for async/await-like syntax, run operations in parallel with `Effect.all`.
+
+```typescript
+const program = Effect.gen(function* () {
+  const addr = yield* Address.fromHex(input)
+  const balance = yield* Provider.getBalance(addr)
+  return { addr, balance }
+})
+```
+
+## Testability
+
+Services are injected, not imported. Swap `ProviderLive` for `ProviderTest` without touching business logic.
+
+```typescript
+// Production
+Effect.runPromise(program.pipe(Effect.provide(ProviderLive)))
+
+// Test
+Effect.runPromise(program.pipe(Effect.provide(ProviderTest)))
+```
+
+## Schema Validation
+
+Decode at boundaries, trust internally. Schema decodes directly to Voltaire's branded types.
+
+```typescript
+const UserInput = Schema.Struct({
+  to: Address.Schema,
+  value: Uint256.Schema,
+})
+// Decoding validates AND returns branded Voltaire types
+```
+
+## Before/After
+
+```typescript
+// Without Effect: exceptions, untyped errors, hard to test
+try {
+  const addr = Address.from(input)
+  const balance = await provider.getBalance(addr)
+  return { addr, balance }
+} catch (e) {
+  // What type is e? Could be anything.
+}
+
+// With Effect: typed errors, composable, testable
+const program = Effect.gen(function* () {
+  const addr = yield* Address.fromHex(input)
+  const balance = yield* Provider.getBalance(addr)
+  return { addr, balance }
+}).pipe(
+  Effect.catchTag("AddressError", () => Effect.succeed(fallback))
+)
+```

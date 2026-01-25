@@ -1,0 +1,50 @@
+---
+title: FunctionSignature
+description: Parse Solidity function signatures to 4-byte selectors
+---
+
+```typescript
+import * as FunctionSignature from 'voltaire-effect/primitives/FunctionSignature'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Parse signature → selector + name
+const sig = Effect.runSync(FunctionSignature.from('transfer(address,uint256)'))
+console.log(sig.name)      // 'transfer'
+console.log(sig.selector)  // Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
+console.log(sig.signature) // 'transfer(address,uint256)'
+
+// Schema
+const parsed = Schema.decodeSync(FunctionSignature.Schema)('balanceOf(address)')
+```
+
+## Type
+
+```typescript
+type FunctionSignatureType = {
+  selector: Uint8Array  // 4-byte keccak256 prefix
+  signature: string     // original signature
+  name: string          // function name
+}
+```
+
+## API
+
+| Function | Type |
+|----------|------|
+| `Schema` | `Schema<FunctionSignatureType, string>` |
+| `from` | `(sig: string) => Effect<FunctionSignatureType, FunctionSignatureError>` |
+| `fromSignature` | alias for `from` |
+
+## Example: Build Calldata
+
+```typescript
+const buildCalldata = (signature: string, args: Uint8Array) =>
+  Effect.gen(function* () {
+    const sig = yield* FunctionSignature.from(signature)
+    const calldata = new Uint8Array(4 + args.length)
+    calldata.set(sig.selector, 0)
+    calldata.set(args, 4)
+    return calldata
+  })
+```

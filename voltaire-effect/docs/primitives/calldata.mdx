@@ -1,0 +1,30 @@
+---
+title: CallData
+description: EVM transaction input data (function selector + encoded args)
+---
+
+Data sent to smart contracts. Typically 4-byte selector + ABI-encoded arguments.
+
+## Schema
+
+```typescript
+import * as CallData from 'voltaire-effect/primitives/CallData'
+import * as Schema from 'effect/Schema'
+
+const data = Schema.decodeSync(CallData.CallDataSchema)(
+  '0xa9059cbb000000000000000000000000...'
+)
+```
+
+## Effect
+
+```typescript
+import * as CallData from 'voltaire-effect/primitives/CallData'
+import { Effect } from 'effect'
+
+const program = CallData.from('0xa9059cbb...')
+// Effect.Effect<CallDataType, Error>
+
+const callData = Effect.runSync(program)
+const empty = CallData.empty() // '0x' for ETH transfers
+```

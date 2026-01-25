@@ -1,0 +1,51 @@
+---
+title: BIP-39
+description: Mnemonic phrase generation and validation
+---
+
+Generate, validate, and convert mnemonic phrases to seeds.
+
+```typescript
+import { Bip39Service, Bip39Live } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const bip39 = yield* Bip39Service
+    const mnemonic = yield* bip39.generateMnemonic(256)  // 24 words
+    const isValid = yield* bip39.validateMnemonic(mnemonic)
+    const seed = yield* bip39.mnemonicToSeed(mnemonic, 'passphrase')
+    return { mnemonic, isValid, seed }
+  }).pipe(Effect.provide(Bip39Live))
+)
+```
+
+## Entropy Strengths
+
+| Bits | Words |
+|------|-------|
+| 128 | 12 |
+| 160 | 15 |
+| 192 | 18 |
+| 224 | 21 |
+| 256 | 24 |
+
+## Testing
+
+```typescript
+import { Bip39Test } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(Bip39Test))
+// Returns 'abandon abandon abandon ... about'
+```
+
+## Interface
+
+```typescript
+interface Bip39ServiceShape {
+  readonly generateMnemonic: (strength?: 128 | 160 | 192 | 224 | 256) => Effect.Effect<string>
+  readonly validateMnemonic: (mnemonic: string) => Effect.Effect<boolean>
+  readonly mnemonicToSeed: (mnemonic: string, passphrase?: string) => Effect.Effect<Uint8Array>
+  readonly mnemonicToSeedSync: (mnemonic: string, passphrase?: string) => Effect.Effect<Uint8Array>
+  readonly getWordCount: (entropyBits: 128 | 160 | 192 | 224 | 256) => Effect.Effect<number>
+}
+```

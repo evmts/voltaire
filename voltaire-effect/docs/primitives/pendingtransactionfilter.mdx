@@ -1,0 +1,29 @@
+---
+title: PendingTransactionFilter
+description: Filter for pending transaction notifications
+---
+
+```typescript
+import * as PendingTransactionFilter from 'voltaire-effect/primitives/PendingTransactionFilter'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema validation
+const filter = Schema.decodeSync(PendingTransactionFilter.Schema)('0x1')
+// { filterId: '0x1', type: 'pendingTransaction' }
+
+// Effect constructor
+const program = PendingTransactionFilter.from('0x1')
+const result = Effect.runSync(program)
+console.log(result.type)     // 'pendingTransaction'
+console.log(result.filterId) // '0x1'
+```
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(
+  PendingTransactionFilter.from('invalid')
+)
+// result._tag === 'Failure' → PendingTransactionFilterError
+```

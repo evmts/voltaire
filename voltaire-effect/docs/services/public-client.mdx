@@ -1,0 +1,121 @@
+---
+title: PublicClient Service
+description: Read-only blockchain operations with Effect.ts
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { PublicClientService, PublicClient, HttpTransport } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const client = yield* PublicClientService
+  const blockNum = yield* client.getBlockNumber()
+  const balance = yield* client.getBalance('0x1234...')
+  return { blockNum, balance }
+}).pipe(
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Block Queries
+
+```typescript
+const client = yield* PublicClientService
+
+const blockNum = yield* client.getBlockNumber()
+const block = yield* client.getBlock({ blockTag: 'latest', includeTransactions: true })
+const blockByHash = yield* client.getBlock({ blockHash: '0x...' })
+```
+
+## Account State
+
+```typescript
+const balance = yield* client.getBalance('0x1234...', 'latest')
+const nonce = yield* client.getTransactionCount('0x1234...')
+const code = yield* client.getCode('0x1234...')
+const slot = yield* client.getStorageAt('0x1234...', '0x0')
+```
+
+## Transactions
+
+```typescript
+const tx = yield* client.getTransaction('0x...')
+const receipt = yield* client.getTransactionReceipt('0x...')
+const confirmed = yield* client.waitForTransactionReceipt('0x...', {
+  confirmations: 3,
+  timeout: 60000
+})
+```
+
+## Call & Estimate
+
+```typescript
+const result = yield* client.call({
+  to: '0x1234...',
+  data: '0x...'
+})
+
+const gas = yield* client.estimateGas({
+  to: '0x1234...',
+  data: '0x...',
+  value: 1000000000000000000n
+})
+```
+
+## Event Logs
+
+```typescript
+const logs = yield* client.getLogs({
+  address: '0x1234...',
+  topics: ['0xddf252ad...'],
+  fromBlock: '0x100000',
+  toBlock: 'latest'
+})
+```
+
+## Gas Pricing
+
+```typescript
+const gasPrice = yield* client.getGasPrice()
+const priorityFee = yield* client.getMaxPriorityFeePerGas()
+const feeHistory = yield* client.getFeeHistory(10, 'latest', [25, 50, 75])
+```
+
+## Error Handling
+
+```typescript
+import { PublicClientError } from 'voltaire-effect/services'
+
+program.pipe(
+  Effect.catchTag('PublicClientError', (e) => {
+    console.error('RPC failed:', e.message)
+    return Effect.succeed(0n)
+  })
+)
+```
+
+## Service Interface
+
+```typescript
+type PublicClientShape = {
+  readonly getBlockNumber: () => Effect.Effect<bigint, PublicClientError>
+  readonly getBlock: (args?: { blockTag?: BlockTag; blockHash?: string; includeTransactions?: boolean }) => Effect.Effect<BlockType, PublicClientError>
+  readonly getBalance: (address: string, blockTag?: BlockTag) => Effect.Effect<bigint, PublicClientError>
+  readonly getTransactionCount: (address: string, blockTag?: BlockTag) => Effect.Effect<number, PublicClientError>
+  readonly getCode: (address: string, blockTag?: BlockTag) => Effect.Effect<string, PublicClientError>
+  readonly getStorageAt: (address: string, slot: string, blockTag?: BlockTag) => Effect.Effect<string, PublicClientError>
+  readonly getTransaction: (hash: string) => Effect.Effect<TransactionType, PublicClientError>
+  readonly getTransactionReceipt: (hash: string) => Effect.Effect<ReceiptType, PublicClientError>
+  readonly waitForTransactionReceipt: (hash: string, opts?: { confirmations?: number; timeout?: number }) => Effect.Effect<ReceiptType, PublicClientError>
+  readonly call: (tx: CallRequest, blockTag?: BlockTag) => Effect.Effect<string, PublicClientError>
+  readonly estimateGas: (tx: CallRequest) => Effect.Effect<bigint, PublicClientError>
+  readonly getLogs: (filter: LogFilter) => Effect.Effect<LogType[], PublicClientError>
+  readonly getChainId: () => Effect.Effect<number, PublicClientError>
+  readonly getGasPrice: () => Effect.Effect<bigint, PublicClientError>
+  readonly getMaxPriorityFeePerGas: () => Effect.Effect<bigint, PublicClientError>
+  readonly getFeeHistory: (blockCount: number, newestBlock: BlockTag, rewardPercentiles: number[]) => Effect.Effect<FeeHistoryType, PublicClientError>
+}
+```

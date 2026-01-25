@@ -19,8 +19,10 @@
             "icon": "rocket",
             "pages": [
               "index",
+              "why",
               "getting-started",
-              "layers"
+              "layers",
+              "changelog"
             ]
           },
           {
@@ -28,32 +30,308 @@
             "icon": "server",
             "pages": [
               "services/transport",
-              "services/contract"
+              "services/contract",
+              "services/account",
+              "services/public-client",
+              "services/wallet-client"
             ]
           },
           {
             "group": "Primitives",
             "icon": "cubes",
             "pages": [
-              "primitives/block",
-              "primitives/uint",
-              "primitives/signature",
-              "primitives/gas",
-              "primitives/transaction",
-              "primitives/bytes"
+              {
+                "group": "Core Types",
+                "pages": [
+                  "primitives/address",
+                  "primitives/hash",
+                  "primitives/hex",
+                  "primitives/bytes",
+                  "primitives/bytes32",
+                  "primitives/signature",
+                  "primitives/privatekey",
+                  "primitives/publickey"
+                ]
+              },
+              {
+                "group": "Numeric",
+                "pages": [
+                  "primitives/uint",
+                  "primitives/u256",
+                  "primitives/uint8",
+                  "primitives/uint16",
+                  "primitives/uint32",
+                  "primitives/uint64",
+                  "primitives/uint128",
+                  "primitives/int8",
+                  "primitives/int16",
+                  "primitives/int32",
+                  "primitives/int64",
+                  "primitives/int128",
+                  "primitives/int256"
+                ]
+              },
+              {
+                "group": "Blocks",
+                "pages": [
+                  "primitives/block",
+                  "primitives/blockheader",
+                  "primitives/blockbody",
+                  "primitives/blockhash",
+                  "primitives/blocknumber",
+                  "primitives/blockfilter",
+                  "primitives/uncle"
+                ]
+              },
+              {
+                "group": "Transactions",
+                "pages": [
+                  "primitives/transaction",
+                  "primitives/transactionhash",
+                  "primitives/transactionindex",
+                  "primitives/transactionstatus",
+                  "primitives/transactionurl",
+                  "primitives/receipt",
+                  "primitives/nonce",
+                  "primitives/accesslist",
+                  "primitives/authorization"
+                ]
+              },
+              {
+                "group": "Gas & Fees",
+                "pages": [
+                  "primitives/gas",
+                  "primitives/gasprice",
+                  "primitives/gasestimate",
+                  "primitives/gasused",
+                  "primitives/gasrefund",
+                  "primitives/gasconstants",
+                  "primitives/gascosts",
+                  "primitives/feemarket",
+                  "primitives/feeoracle",
+                  "primitives/basefeepergas",
+                  "primitives/maxfeepergas",
+                  "primitives/maxpriorityfeepergas",
+                  "primitives/effectivegasprice"
+                ]
+              },
+              {
+                "group": "ABI & Encoding",
+                "pages": [
+                  "primitives/abi",
+                  "primitives/selector",
+                  "primitives/functionsignature",
+                  "primitives/eventsignature",
+                  "primitives/errorsignature",
+                  "primitives/encodeddata",
+                  "primitives/decodeddata",
+                  "primitives/calldata",
+                  "primitives/returndata",
+                  "primitives/rlp",
+                  "primitives/ssz"
+                ]
+              },
+              {
+                "group": "Contracts",
+                "pages": [
+                  "primitives/bytecode",
+                  "primitives/runtimecode",
+                  "primitives/initcode",
+                  "primitives/contractcode",
+                  "primitives/contractresult",
+                  "primitives/contractsignature",
+                  "primitives/revertreason",
+                  "primitives/opcode",
+                  "primitives/sourcemap",
+                  "primitives/metadata",
+                  "primitives/compilerversion",
+                  "primitives/license"
+                ]
+              },
+              {
+                "group": "Events & Logs",
+                "pages": [
+                  "primitives/eventlog",
+                  "primitives/logfilter",
+                  "primitives/logindex",
+                  "primitives/topicfilter",
+                  "primitives/filterid",
+                  "primitives/bloomfilter"
+                ]
+              },
+              {
+                "group": "State & Storage",
+                "pages": [
+                  "primitives/accountstate",
+                  "primitives/state",
+                  "primitives/statediff",
+                  "primitives/stateroot",
+                  "primitives/stateproof",
+                  "primitives/storage",
+                  "primitives/storagediff",
+                  "primitives/storagevalue",
+                  "primitives/storageproof",
+                  "primitives/slot",
+                  "primitives/balance"
+                ]
+              },
+              {
+                "group": "Tracing & Debug",
+                "pages": [
+                  "primitives/calltrace",
+                  "primitives/structlog",
+                  "primitives/opstep",
+                  "primitives/traceconfig",
+                  "primitives/traceresult",
+                  "primitives/memorydump"
+                ]
+              },
+              {
+                "group": "Proofs & Trees",
+                "pages": [
+                  "primitives/proof",
+                  "primitives/merkletree",
+                  "primitives/binarytree"
+                ]
+              },
+              {
+                "group": "Chain & Network",
+                "pages": [
+                  "primitives/chain",
+                  "primitives/chainid",
+                  "primitives/chainhead",
+                  "primitives/networkid",
+                  "primitives/hardfork",
+                  "primitives/forkid",
+                  "primitives/syncstatus",
+                  "primitives/protocolversion",
+                  "primitives/nodeinfo",
+                  "primitives/peerid",
+                  "primitives/peerinfo"
+                ]
+              },
+              {
+                "group": "EIP-712 & Signing",
+                "pages": [
+                  "primitives/typeddata",
+                  "primitives/domain",
+                  "primitives/domainseparator",
+                  "primitives/signeddata",
+                  "primitives/siwe",
+                  "primitives/permit"
+                ]
+              },
+              {
+                "group": "Account Abstraction",
+                "pages": [
+                  "primitives/user-operation",
+                  "primitives/packeduseroperation",
+                  "primitives/entrypoint",
+                  "primitives/paymaster",
+                  "primitives/bundler",
+                  "primitives/bundle",
+                  "primitives/bundlehash"
+                ]
+              },
+              {
+                "group": "Beacon Chain",
+                "pages": [
+                  "primitives/beaconblockroot",
+                  "primitives/epoch",
+                  "primitives/validator-index",
+                  "primitives/withdrawal",
+                  "primitives/withdrawal-index"
+                ]
+              },
+              {
+                "group": "Tokens",
+                "pages": [
+                  "primitives/tokenid",
+                  "primitives/multitokenid",
+                  "primitives/tokenbalance"
+                ]
+              },
+              {
+                "group": "Meta-Transactions",
+                "pages": [
+                  "primitives/forwardrequest",
+                  "primitives/relaydata"
+                ]
+              },
+              {
+                "group": "Other",
+                "pages": [
+                  "primitives/builderbid",
+                  "primitives/blob",
+                  "primitives/ens",
+                  "primitives/denomination",
+                  "primitives/proxy",
+                  "primitives/stealthaddress",
+                  "primitives/pendingtransactionfilter",
+                  "primitives/base64"
+                ]
+              }
             ]
           },
           {
             "group": "Crypto",
             "icon": "shield-halved",
             "pages": [
-              "crypto/keccak256",
-              "crypto/secp256k1",
-              "crypto/hdwallet",
-              "crypto/bls12381",
-              "crypto/sha256",
-              "crypto/kzg",
-              "crypto/blake2"
+              {
+                "group": "Hashing",
+                "pages": [
+                  "crypto/keccak256",
+                  "crypto/sha256",
+                  "crypto/blake2",
+                  "crypto/ripemd160"
+                ]
+              },
+              {
+                "group": "Signatures",
+                "pages": [
+                  "crypto/secp256k1",
+                  "crypto/ed25519",
+                  "crypto/p256",
+                  "crypto/bls12381",
+                  "crypto/signers"
+                ]
+              },
+              {
+                "group": "Encryption",
+                "pages": [
+                  "crypto/aesgcm",
+                  "crypto/chacha20poly1305",
+                  "crypto/x25519"
+                ]
+              },
+              {
+                "group": "Key Derivation",
+                "pages": [
+                  "crypto/hdwallet",
+                  "crypto/bip39",
+                  "crypto/keystore",
+                  "crypto/hmac"
+                ]
+              },
+              {
+                "group": "Zero Knowledge",
+                "pages": [
+                  "crypto/bn254",
+                  "crypto/kzg"
+                ]
+              },
+              {
+                "group": "EVM Precompiles",
+                "pages": [
+                  "crypto/modexp"
+                ]
+              },
+              {
+                "group": "Typed Data",
+                "pages": [
+                  "crypto/eip712"
+                ]
+              }
             ]
           }
         ]
@@ -83,5 +361,9 @@
   },
   "feedback": {
     "thumbsRating": true
-  }
+  },
+  "codeBlock": {
+    "copy": true
+  },
+  "versions": ["v0.0.1"]
 }

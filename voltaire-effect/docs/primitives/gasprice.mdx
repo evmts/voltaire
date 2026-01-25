@@ -1,0 +1,35 @@
+---
+title: GasPrice
+description: Gas price in wei with gwei conversion
+---
+
+Gas price validation with wei/gwei conversion.
+
+```typescript
+import * as GasPrice from 'voltaire-effect/primitives/GasPrice'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema (wei)
+const price = Schema.decodeSync(GasPrice.Schema)(1000000000n) // 1 gwei
+
+// Schema (gwei → wei)
+const fromGwei = Schema.decodeSync(GasPrice.FromGweiSchema)(20)
+// → 20000000000n wei
+
+// Effect
+const program = GasPrice.fromGwei(20)
+// Effect.Effect<GasPriceType, GasPriceError>
+```
+
+## Usage
+
+```typescript
+const calculateCost = (gasUsed: bigint, gweiPrice: number) =>
+  Effect.gen(function* () {
+    const price = yield* GasPrice.fromGwei(gweiPrice)
+    return gasUsed * price // cost in wei
+  })
+```
+
+Fails on negative values.

@@ -1,0 +1,147 @@
+---
+title: Send Transactions
+description: Sign and broadcast transactions
+---
+
+## Simple ETH Transfer
+
+```typescript
+import { Effect } from 'effect'
+import { WalletClientService, WalletClientLive, LocalAccount, PublicClient, HttpTransport } from 'voltaire-effect/services'
+import { Hex, Address } from '@tevm/voltaire'
+
+const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
+
+const program = Effect.gen(function* () {
+  const wallet = yield* WalletClientService
+  return yield* wallet.sendTransaction({
+    to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+    value: 1000000000000000000n
+  })
+}).pipe(
+  Effect.provide(WalletClientLive),
+  Effect.provide(LocalAccount(privateKey)),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## EIP-1559 Transaction
+
+```typescript
+const program = Effect.gen(function* () {
+  const wallet = yield* WalletClientService
+  return yield* wallet.sendTransaction({
+    to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+    value: 1000000000000000000n,
+    maxFeePerGas: 50000000000n,
+    maxPriorityFeePerGas: 2000000000n
+  })
+}).pipe(
+  Effect.provide(WalletClientLive),
+  Effect.provide(LocalAccount(privateKey)),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Sign Message (EIP-191)
+
+```typescript
+const program = Effect.gen(function* () {
+  const wallet = yield* WalletClientService
+  return yield* wallet.signMessage(Hex.fromString('Hello, Ethereum!'))
+}).pipe(
+  Effect.provide(WalletClientLive),
+  Effect.provide(LocalAccount(privateKey)),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Sign EIP-712 Typed Data
+
+```typescript
+const typedData = {
+  types: {
+    EIP712Domain: [
+      { name: 'name', type: 'string' },
+      { name: 'version', type: 'string' },
+      { name: 'chainId', type: 'uint256' },
+      { name: 'verifyingContract', type: 'address' }
+    ],
+    Permit: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+      { name: 'value', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'deadline', type: 'uint256' }
+    ]
+  },
+  primaryType: 'Permit',
+  domain: { name: 'MyToken', version: '1', chainId: 1n, verifyingContract: '0x...' },
+  message: { owner: '0x...', spender: '0x...', value: 1000000n, nonce: 0n, deadline: 1700000000n }
+}
+
+const program = Effect.gen(function* () {
+  const wallet = yield* WalletClientService
+  return yield* wallet.signTypedData(typedData)
+}).pipe(
+  Effect.provide(WalletClientLive),
+  Effect.provide(LocalAccount(privateKey)),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Browser Wallet (MetaMask)
+
+```typescript
+import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const wallet = yield* WalletClientService
+  const accounts = yield* wallet.requestAddresses()
+  return yield* wallet.sendTransaction({ to: '0x...', value: 1000000000000000000n })
+}).pipe(
+  Effect.provide(WalletClientLive),
+  Effect.provide(JsonRpcAccount(userAddress)),
+  Effect.provide(PublicClient),
+  Effect.provide(BrowserTransport)
+)
+```
+
+## Send and Wait
+
+```typescript
+import { PublicClientService } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const wallet = yield* WalletClientService
+  const client = yield* PublicClientService
+  
+  const txHash = yield* wallet.sendTransaction({ to: '0x...', value: 1000000000000000000n })
+  const receipt = yield* client.waitForTransactionReceipt(txHash, { confirmations: 3 })
+  
+  return { hash: txHash, status: receipt.status, blockNumber: receipt.blockNumber }
+}).pipe(
+  Effect.provide(WalletClientLive),
+  Effect.provide(LocalAccount(privateKey)),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Switch Chain
+
+```typescript
+const program = Effect.gen(function* () {
+  const wallet = yield* WalletClientService
+  yield* wallet.switchChain(10) // Optimism
+}).pipe(
+  Effect.provide(WalletClientLive),
+  Effect.provide(JsonRpcAccount(userAddress)),
+  Effect.provide(PublicClient),
+  Effect.provide(BrowserTransport)
+)
+```

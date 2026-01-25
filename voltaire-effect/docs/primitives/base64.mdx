@@ -1,0 +1,37 @@
+---
+title: Base64
+description: Effect schemas for Base64 encoding and decoding
+---
+
+```typescript
+import * as Base64 from 'voltaire-effect/primitives/Base64'
+import * as S from 'effect/Schema'
+
+const encoded = S.decodeSync(Base64.Schema)('SGVsbG8gV29ybGQ=')
+```
+
+## Schemas
+
+**Schema** — Standard Base64 validation and parsing.
+
+```typescript
+S.decodeSync(Base64.Schema)('SGVsbG8gV29ybGQ=')
+S.decodeSync(Base64.Schema)(new Uint8Array([72, 101, 108, 108, 111]))
+```
+
+**UrlSchema** — URL-safe Base64 (uses `-` and `_` instead of `+` and `/`).
+
+```typescript
+S.decodeSync(Base64.UrlSchema)('SGVsbG8tV29ybGQ_')
+```
+
+## Types
+
+```typescript
+type BrandedBase64 = Base64.BrandedBase64
+type BrandedBase64Url = Base64.BrandedBase64Url
+```
+
+## Errors
+
+Throws `ParseError` on invalid Base64 input.

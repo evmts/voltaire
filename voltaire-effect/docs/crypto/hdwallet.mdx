@@ -1,154 +1,48 @@
 ---
-title: HDWallet Service
-description: Effect-based hierarchical deterministic wallet derivation
+title: HDWallet
+description: BIP-32/39 hierarchical deterministic wallets
 ---
 
-Effect-wrapped BIP-32/BIP-39 hierarchical deterministic wallet operations for mnemonic generation, seed derivation, and key management.
-
-## HDWalletService
-
-```typescript
-import { HDWalletService } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
-
-const program = Effect.gen(function* () {
-  const hdwallet = yield* HDWalletService
-  
-  // Generate mnemonic (12 or 24 words)
-  const mnemonic = yield* hdwallet.generateMnemonic(128) // 12 words
-  
-  // Convert to seed
-  const seed = yield* hdwallet.mnemonicToSeed(mnemonic)
-  
-  // Create root node
-  const root = yield* hdwallet.fromSeed(seed)
-  
-  // Derive Ethereum account (m/44'/60'/0'/0/0)
-  const account = yield* hdwallet.derive(root, "m/44'/60'/0'/0/0")
-  
-  // Get keys
-  const privateKey = yield* hdwallet.getPrivateKey(account)
-  const publicKey = yield* hdwallet.getPublicKey(account)
-  
-  return { mnemonic, privateKey, publicKey }
-})
-```
-
-### Interface
-
-```typescript
-interface HDWalletServiceShape {
-  readonly derive: (node: HDNode, path: string | HDPath) => Effect.Effect<HDNode>
-  readonly generateMnemonic: (strength?: 128 | 256) => Effect.Effect<string[]>
-  readonly fromSeed: (seed: Uint8Array) => Effect.Effect<HDNode>
-  readonly mnemonicToSeed: (mnemonic: string[]) => Effect.Effect<Uint8Array>
-  readonly getPrivateKey: (node: HDNode) => Effect.Effect<Uint8Array | null>
-  readonly getPublicKey: (node: HDNode) => Effect.Effect<Uint8Array | null>
-}
-```
-
-## Providing the Layer
+Generate mnemonics, derive seeds, and create hierarchical key trees.
 
 ```typescript
 import { HDWalletService, HDWalletLive } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
+import { Effect } from 'effect'
 
-const program = Effect.gen(function* () {
-  const hdwallet = yield* HDWalletService
-  const mnemonic = yield* hdwallet.generateMnemonic()
-  return mnemonic
-})
-
-const result = await Effect.runPromise(
-  program.pipe(Effect.provide(HDWalletLive))
+const wallet = await Effect.runPromise(
+  Effect.gen(function* () {
+    const hdwallet = yield* HDWalletService
+    const mnemonic = yield* hdwallet.generateMnemonic(256)  // 24 words
+    const seed = yield* hdwallet.mnemonicToSeed(mnemonic)
+    const root = yield* hdwallet.fromSeed(seed)
+    const account = yield* hdwallet.derive(root, "m/44'/60'/0'/0/0")
+    const privateKey = yield* hdwallet.getPrivateKey(account)
+    return { mnemonic, privateKey }
+  }).pipe(Effect.provide(HDWalletLive))
 )
 ```
 
 ## Derivation Paths
 
-Standard Ethereum path: `m/44'/60'/0'/0/index`
-
-```typescript
-const deriveEthAccounts = (seed: Uint8Array, count: number) =>
-  Effect.gen(function* () {
-    const hdwallet = yield* HDWalletService
-    const root = yield* hdwallet.fromSeed(seed)
-    
-    const accounts = yield* Effect.all(
-      Array.from({ length: count }, (_, i) =>
-        Effect.gen(function* () {
-          const node = yield* hdwallet.derive(root, `m/44'/60'/0'/0/${i}`)
-          const privateKey = yield* hdwallet.getPrivateKey(node)
-          return privateKey
-        })
-      )
-    )
-    
-    return accounts
-  })
-```
+Standard Ethereum: `m/44'/60'/0'/0/{index}`
 
 ## Testing
 
-Use `HDWalletTest` for unit tests:
-
 ```typescript
-import { HDWalletService, HDWalletTest } from 'voltaire-effect/crypto'
-
-const testProgram = myProgram.pipe(
-  Effect.provide(HDWalletTest)
-)
-// Returns deterministic test mnemonic: 'abandon abandon ... about'
+import { HDWalletTest } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(HDWalletTest))
+// Returns deterministic 'abandon abandon ... about' mnemonic
 ```
 
-## Full Example
+## Interface
 
 ```typescript
-import { HDWalletService, Secp256k1Service, KeccakService, CryptoLive } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
-
-const createWallet = () =>
-  Effect.gen(function* () {
-    const hdwallet = yield* HDWalletService
-    const keccak = yield* KeccakService
-    
-    // Generate fresh wallet
-    const mnemonic = yield* hdwallet.generateMnemonic(256) // 24 words
-    const seed = yield* hdwallet.mnemonicToSeed(mnemonic)
-    const root = yield* hdwallet.fromSeed(seed)
-    
-    // Derive first account
-    const account = yield* hdwallet.derive(root, "m/44'/60'/0'/0/0")
-    const privateKey = yield* hdwallet.getPrivateKey(account)
-    const publicKey = yield* hdwallet.getPublicKey(account)
-    
-    if (!privateKey || !publicKey) {
-      return yield* Effect.fail(new Error('Key derivation failed'))
-    }
-    
-    // Derive address from public key
-    const pubKeyHash = yield* keccak.hash(publicKey.slice(1)) // Remove prefix
-    const address = pubKeyHash.slice(-20)
-    
-    return {
-      mnemonic: mnemonic.join(' '),
-      privateKey,
-      publicKey,
-      address
-    }
-  })
-
-const wallet = await Effect.runPromise(
-  createWallet().pipe(Effect.provide(CryptoLive))
-)
-
-console.log('Mnemonic:', wallet.mnemonic)
-console.log('Address:', Hex.fromBytes(wallet.address))
+interface HDWalletServiceShape {
+  readonly generateMnemonic: (strength?: 128 | 256) => Effect.Effect<string[]>
+  readonly mnemonicToSeed: (mnemonic: string[]) => Effect.Effect<Uint8Array>
+  readonly fromSeed: (seed: Uint8Array) => Effect.Effect<HDNode>
+  readonly derive: (node: HDNode, path: string | HDPath) => Effect.Effect<HDNode>
+  readonly getPrivateKey: (node: HDNode) => Effect.Effect<Uint8Array | null>
+  readonly getPublicKey: (node: HDNode) => Effect.Effect<Uint8Array | null>
+}
 ```
-
-## Security Notes
-
-- Never log or expose mnemonics
-- Store mnemonics encrypted at rest
-- Use 24-word mnemonics (256-bit) for high-value wallets
-- Clear memory after use when possible

@@ -1,0 +1,40 @@
+---
+title: Examples
+description: Practical examples for common voltaire-effect tasks
+---
+
+<CardGroup cols={2}>
+  <Card title="Read Blockchain Data" icon="database" href="/examples/read-blockchain">
+    Query blocks, balances, transactions
+  </Card>
+  <Card title="Send Transactions" icon="paper-plane" href="/examples/send-transactions">
+    Sign and broadcast transactions
+  </Card>
+  <Card title="Contract Interactions" icon="file-contract" href="/examples/contract-interactions">
+    Read and write to smart contracts
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/examples/error-handling">
+    Composable error patterns
+  </Card>
+  <Card title="Schema Validation" icon="shield-check" href="/examples/schema-validation">
+    Parse and validate Ethereum data
+  </Card>
+  <Card title="Testing" icon="flask" href="/examples/testing">
+    Mock services for unit tests
+  </Card>
+</CardGroup>
+
+## Setup
+
+```typescript
+import { Effect } from 'effect'
+import { PublicClientService, PublicClient, HttpTransport } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const client = yield* PublicClientService
+  return yield* client.getBlockNumber()
+}).pipe(
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```

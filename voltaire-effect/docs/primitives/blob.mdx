@@ -1,0 +1,33 @@
+---
+title: Blob
+description: EIP-4844 blob (128KB)
+---
+
+```typescript
+import * as Blob from 'voltaire-effect/primitives/Blob'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Constants
+Blob.SIZE                    // 131072 (128KB)
+Blob.FIELD_ELEMENTS_PER_BLOB // 4096
+Blob.BYTES_PER_FIELD_ELEMENT // 32
+Blob.MAX_PER_TRANSACTION     // 6
+
+// From raw 131072 bytes
+const blob = await Effect.runPromise(Blob.from(blobBytes))
+
+// From arbitrary data (pads to 128KB)
+const padded = await Effect.runPromise(Blob.fromData(myData))
+
+// Extract original data
+const original = Blob.toData(blob)
+
+// Validate size
+if (Blob.isValid(data)) { /* exactly 128KB */ }
+
+// Schema
+Schema.decodeSync(Blob.Schema)(blobBytes)
+```
+
+128KB data blobs for rollup data availability.

@@ -1,0 +1,47 @@
+---
+title: Ed25519
+description: High-performance digital signatures
+---
+
+Sign, verify, and derive public keys. Used in Solana, Cardano, SSH.
+
+```typescript
+import { Ed25519Service, Ed25519Live } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const ed = yield* Ed25519Service
+    const publicKey = yield* ed.getPublicKey(secretKey)
+    const signature = yield* ed.sign(message, secretKey)
+    const isValid = yield* ed.verify(signature, message, publicKey)
+    return { publicKey, signature, isValid }
+  }).pipe(Effect.provide(Ed25519Live))
+)
+```
+
+## Key Sizes
+
+| Component | Size |
+|-----------|------|
+| Secret key | 32 bytes |
+| Public key | 32 bytes |
+| Signature | 64 bytes |
+
+## Testing
+
+```typescript
+import { Ed25519Test } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(Ed25519Test))
+// Zero-filled signatures, verify always true
+```
+
+## Interface
+
+```typescript
+interface Ed25519ServiceShape {
+  readonly sign: (message: Uint8Array, secretKey: Uint8Array) => Effect.Effect<Uint8Array, InvalidSecretKeyError | Ed25519Error>
+  readonly verify: (signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array) => Effect.Effect<boolean, InvalidSignatureError | InvalidPublicKeyError>
+  readonly getPublicKey: (secretKey: Uint8Array) => Effect.Effect<Uint8Array, InvalidSecretKeyError>
+}
+```

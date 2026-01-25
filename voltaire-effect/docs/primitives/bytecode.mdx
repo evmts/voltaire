@@ -1,0 +1,33 @@
+---
+title: Bytecode
+description: EVM bytecode with Effect Schema validation
+---
+
+```typescript
+import * as Bytecode from 'voltaire-effect/primitives/Bytecode'
+import * as S from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema: hex string → Uint8Array
+const code = S.decodeSync(Bytecode.Schema)('0x6080604052...')
+
+// Effect constructor
+const program = Bytecode.from('0x6080604052348015600f57600080fd5b50...')
+const bytecode = Effect.runSync(program)
+
+console.log(bytecode.length) // bytes
+```
+
+## API
+
+| Function | Type |
+|----------|------|
+| `Schema` | `Schema<BytecodeType, string \| Uint8Array>` |
+| `from` | `(hex: string \| Uint8Array) => Effect<BytecodeType, Error>` |
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(Bytecode.from('invalid'))
+if (result._tag === 'Failure') console.error(result.cause)
+```

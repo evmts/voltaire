@@ -1,0 +1,48 @@
+---
+title: SyncStatus
+description: Node sync status from eth_syncing
+---
+
+```typescript
+import { SyncStatus } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+const parse = Schema.decodeSync(SyncStatus.Schema)
+
+// Synced
+const synced = parse(false)
+
+// Syncing
+const syncing = parse({
+  startingBlock: 0n,
+  currentBlock: 1000n,
+  highestBlock: 2000n
+})
+
+// Effect constructor (accepts number | string | bigint)
+const program = Effect.gen(function* () {
+  const status = yield* SyncStatus.from({
+    startingBlock: 0,
+    currentBlock: '1000',
+    highestBlock: 2000n
+  })
+  if (status === false) return 100
+  return Number(status.currentBlock * 100n / status.highestBlock)
+})
+```
+
+## SyncProgress Fields
+
+- `startingBlock` — Block when sync started
+- `currentBlock` — Current block
+- `highestBlock` — Target block
+- `pulledStates?` — Downloaded state entries
+- `knownStates?` — Known state entries
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(SyncStatus.from({ currentBlock: -1n }))
+// result._tag === 'Failure' → SyncStatusError
+```

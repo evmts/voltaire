@@ -1,0 +1,27 @@
+---
+title: Int256
+description: Signed 256-bit integer (Solidity int256)
+---
+
+Signed 256-bit integer. The native signed type in Solidity.
+
+```typescript
+import * as Int256 from 'voltaire-effect/Int256'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const value = Schema.decodeSync(Int256.Schema)(12345678901234567890123456789n)
+const fromString = Schema.decodeSync(Int256.Schema)('-999999999999999999999999999')
+
+// From hex
+const fromHex = Schema.decodeSync(Int256.FromHexSchema)(
+  '0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+)
+
+// Effect
+const program = Int256.from(12345678901234567890123456789n)
+// Effect.Effect<Int256Type, Int256Error>
+```
+
+Range: -2²⁵⁵ to 2²⁵⁵-1

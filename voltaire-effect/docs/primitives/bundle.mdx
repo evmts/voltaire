@@ -1,0 +1,38 @@
+---
+title: Bundle
+description: ERC-4337 UserOperation bundle for batch submission
+---
+
+```typescript
+import * as Bundle from 'voltaire-effect/primitives/Bundle'
+import { Effect } from 'effect'
+
+// Create bundle
+const bundle = await Effect.runPromise(Bundle.from({
+  userOperations: [userOp1, userOp2],
+  beneficiary: '0x...',
+  entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
+}))
+
+// Validate (non-empty, valid senders)
+await Effect.runPromise(Bundle.validate(bundle))
+
+// Query
+const count = await Effect.runPromise(Bundle.size(bundle))
+const empty = await Effect.runPromise(Bundle.isEmpty(bundle))
+const gas = await Effect.runPromise(Bundle.totalGas(bundle))
+
+// Modify (immutable)
+const withOp = await Effect.runPromise(Bundle.add(bundle, newOp))
+const without = await Effect.runPromise(Bundle.remove(bundle, 0))
+```
+
+## Type
+
+```typescript
+type BundleType = {
+  readonly userOperations: readonly UserOperationType[]
+  readonly beneficiary: AddressType
+  readonly entryPoint: AddressType
+}
+```

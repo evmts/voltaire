@@ -1,0 +1,47 @@
+---
+title: RIPEMD-160
+description: 160-bit hash for Bitcoin addresses
+---
+
+RIPEMD-160 producing 20-byte output. Used in Bitcoin's HASH160 = RIPEMD160(SHA256(data)).
+
+```typescript
+import { Ripemd160Service, Ripemd160Live } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const hash = await Effect.runPromise(
+  Effect.gen(function* () {
+    const ripemd = yield* Ripemd160Service
+    return yield* ripemd.hash(new Uint8Array([1, 2, 3]))
+  }).pipe(Effect.provide(Ripemd160Live))
+)
+// 20 bytes
+```
+
+## Bitcoin HASH160
+
+```typescript
+import { Ripemd160Service, SHA256Service, CryptoLive } from 'voltaire-effect/crypto'
+
+const hash160 = Effect.gen(function* () {
+  const sha256 = yield* SHA256Service
+  const ripemd = yield* Ripemd160Service
+  return yield* ripemd.hash(yield* sha256.hash(publicKeyBytes))
+})
+```
+
+## Testing
+
+```typescript
+import { Ripemd160Test } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(Ripemd160Test))
+// Returns zero-filled 20-byte hash
+```
+
+## Interface
+
+```typescript
+interface Ripemd160ServiceShape {
+  readonly hash: (data: Uint8Array) => Effect.Effect<Ripemd160Hash>
+}
+```

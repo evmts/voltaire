@@ -1,0 +1,186 @@
+---
+title: Testing
+description: Mock services for unit tests
+---
+
+## Mock Transport
+
+```typescript
+import { Effect } from 'effect'
+import { PublicClientService, PublicClient, TestTransport } from 'voltaire-effect/services'
+import { describe, it, expect } from 'vitest'
+
+describe('PublicClient', () => {
+  it('returns mocked block number', async () => {
+    const program = Effect.gen(function* () {
+      const client = yield* PublicClientService
+      return yield* client.getBlockNumber()
+    }).pipe(
+      Effect.provide(PublicClient),
+      Effect.provide(TestTransport({ eth_blockNumber: () => '0x1234' }))
+    )
+    
+    expect(await Effect.runPromise(program)).toBe(4660n)
+  })
+})
+```
+
+## Mock Multiple Methods
+
+```typescript
+const mockTransport = TestTransport({
+  eth_blockNumber: () => '0x1234',
+  eth_getBalance: (params) => params[0] === '0xRich...' ? '0xde0b6b3a7640000' : '0x0',
+  eth_getBlock: () => ({ number: '0x1234', hash: '0x...', transactions: [] }),
+  eth_call: (params) => params[0]?.data?.startsWith('0x70a08231')
+    ? '0x0000000000000000000000000000000000000000000000000000000005f5e100'
+    : '0x'
+})
+
+const program = Effect.gen(function* () {
+  const client = yield* PublicClientService
+  return yield* Effect.all([
+    client.getBlockNumber(),
+    client.getBalance('0xRich...', 'latest'),
+    client.getBlock({ blockTag: 'latest' })
+  ])
+}).pipe(Effect.provide(PublicClient), Effect.provide(mockTransport))
+```
+
+## Test Contract Reads
+
+```typescript
+import { Contract } from 'voltaire-effect/services'
+
+const erc20Abi = [
+  { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }
+] as const
+
+it('reads balance', async () => {
+  const program = Effect.gen(function* () {
+    const token = yield* Contract('0xToken...', erc20Abi)
+    return yield* token.read.balanceOf('0xUser...')
+  }).pipe(
+    Effect.provide(PublicClient),
+    Effect.provide(TestTransport({
+      eth_call: () => '0x0000000000000000000000000000000000000000000000056bc75e2d63100000'
+    }))
+  )
+  
+  expect(await Effect.runPromise(program)).toBe(100000000000000000000n)
+})
+```
+
+## Test Error Handling
+
+```typescript
+import { Exit } from 'effect'
+
+it('handles RPC errors', async () => {
+  const program = Effect.gen(function* () {
+    const client = yield* PublicClientService
+    return yield* client.getBalance('0x...', 'latest')
+  }).pipe(
+    Effect.provide(PublicClient),
+    Effect.provide(TestTransport({ eth_getBalance: () => { throw new Error('Rate limited') } }))
+  )
+  
+  const exit = await Effect.runPromiseExit(program)
+  expect(Exit.isFailure(exit)).toBe(true)
+})
+
+it('recovers from errors', async () => {
+  const program = Effect.gen(function* () {
+    const client = yield* PublicClientService
+    return yield* client.getBalance('0x...', 'latest')
+  }).pipe(
+    Effect.catchTag('PublicClientError', () => Effect.succeed(0n)),
+    Effect.provide(PublicClient),
+    Effect.provide(TestTransport({ eth_getBalance: () => { throw new Error('Failed') } }))
+  )
+  
+  expect(await Effect.runPromise(program)).toBe(0n)
+})
+```
+
+## Test Crypto
+
+```typescript
+import { hash, KeccakTest } from 'voltaire-effect/crypto/Keccak256'
+
+it('hashes data', async () => {
+  const result = await Effect.runPromise(
+    hash(new Uint8Array([1, 2, 3])).pipe(Effect.provide(KeccakTest))
+  )
+  expect(result).toBeInstanceOf(Uint8Array)
+  expect(result.length).toBe(32)
+})
+```
+
+## Integration Test (Anvil)
+
+```typescript
+import { Layer } from 'effect'
+import { WalletClientService, WalletClientLive, LocalAccount, HttpTransport } from 'voltaire-effect/services'
+import { Hex } from '@tevm/voltaire'
+
+const TestLayer = Layer.mergeAll(
+  PublicClient,
+  WalletClientLive,
+  LocalAccount(Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')),
+  HttpTransport('http://localhost:8545')
+)
+
+it('sends transaction', async () => {
+  const program = Effect.gen(function* () {
+    const wallet = yield* WalletClientService
+    const client = yield* PublicClientService
+    
+    const before = yield* client.getBalance('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 'latest')
+    const txHash = yield* wallet.sendTransaction({ to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', value: 1000000000000000000n })
+    yield* client.waitForTransactionReceipt(txHash, { confirmations: 1 })
+    const after = yield* client.getBalance('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 'latest')
+    
+    return after - before
+  }).pipe(Effect.provide(TestLayer))
+  
+  expect(await Effect.runPromise(program)).toBe(1000000000000000000n)
+})
+```
+
+## Snapshot Testing
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+it('checksums correctly', async () => {
+  const program = Effect.gen(function* () {
+    const addr = yield* Address.from('0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed')
+    return yield* Address.toChecksummed(addr)
+  }).pipe(Effect.provide(KeccakLive))
+  
+  expect(await Effect.runPromise(program)).toMatchInlineSnapshot('"0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"')
+})
+```
+
+## Property-Based Testing
+
+```typescript
+import * as fc from 'fast-check'
+
+it('round-trips through bytes', async () => {
+  await fc.assert(fc.asyncProperty(
+    fc.hexaString({ minLength: 40, maxLength: 40 }),
+    async (hex) => {
+      const program = Effect.gen(function* () {
+        const addr = yield* Address.from(`0x${hex}`)
+        const bytes = Address.toBytes(addr)
+        return yield* Address.fromBytes(bytes)
+      })
+      const result = await Effect.runPromise(program)
+      expect(result).toBeDefined()
+    }
+  ))
+})
+```

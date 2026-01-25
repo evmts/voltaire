@@ -1,0 +1,37 @@
+---
+title: MemoryDump
+description: EVM memory state capture
+---
+
+```typescript
+import * as MemoryDump from 'voltaire-effect/MemoryDump'
+import { Effect } from 'effect'
+
+// From Uint8Array
+const dump = Effect.runSync(MemoryDump.from(new Uint8Array([0, 1, 2, 3])))
+
+// From object with explicit length
+const dump2 = Effect.runSync(MemoryDump.from({
+  data: new Uint8Array([0, 1, 2, 3]),
+  length: 4
+}))
+
+console.log(dump.length) // 4
+console.log(dump.data)   // Uint8Array
+```
+
+## Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `data` | `Uint8Array` | Raw memory bytes |
+| `length` | `number` | Memory length |
+
+## Error Handling
+
+```typescript
+const result = Effect.runSync(Effect.either(
+  MemoryDump.from({ data: 'invalid' as any })
+))
+// Left(MemoryDumpError)
+```

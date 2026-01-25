@@ -1,0 +1,59 @@
+---
+title: Siwe
+description: Sign-In with Ethereum (EIP-4361)
+---
+
+Authenticate users with Ethereum accounts.
+
+```typescript
+import { Siwe } from 'voltaire-effect/primitives'
+import { Effect } from 'effect'
+
+// Create
+const message = await Effect.runPromise(
+  Siwe.create({
+    domain: 'example.com',
+    address: '0x1234567890123456789012345678901234567890',
+    uri: 'https://example.com',
+    chainId: 1,
+    statement: 'Sign in to Example'
+  })
+)
+
+// Format to string
+const text = Siwe.format(message)
+
+// Parse from string
+const parsed = Siwe.parse(text)
+
+// Validate (expiration, etc.)
+const result = Siwe.validate(parsed)
+
+// Generate nonce
+const nonce = Siwe.generateNonce()  // 16 chars default
+```
+
+## Schema
+
+```typescript
+import { Siwe } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+// Parse SIWE string
+const message = Schema.decodeSync(Siwe.Schema)(`example.com wants you to sign in...`)
+
+// Validate structure
+const isValid = Schema.is(Siwe.SiweMessageSchema)({
+  domain: 'example.com',
+  address: new Uint8Array(20),
+  uri: 'https://example.com',
+  version: '1',
+  chainId: 1,
+  nonce: 'abc123',
+  issuedAt: new Date().toISOString()
+})
+```
+
+## Errors
+
+Returns `SiweError` on parse failures or validation issues.

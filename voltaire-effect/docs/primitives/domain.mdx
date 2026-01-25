@@ -1,0 +1,56 @@
+---
+title: Domain
+description: EIP-712 typed data domain operations
+---
+
+```typescript
+import * as Domain from 'voltaire-effect/Domain'
+import { Effect } from 'effect'
+import * as S from 'effect/Schema'
+
+// Create domain
+const domain = S.decodeSync(Domain.DomainSchema)({
+  name: 'MyApp',
+  version: '1',
+  chainId: 1n,
+  verifyingContract: '0x1234567890123456789012345678901234567890'
+})
+```
+
+## Effect API
+
+```typescript
+import { Keccak } from 'voltaire'
+
+// Create
+const domain = Effect.runSync(Domain.from({
+  name: 'USDC',
+  version: '1',
+  chainId: 1n,
+  verifyingContract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+}))
+
+// Hash (domain separator)
+const crypto = { keccak256: Keccak.keccak256 }
+const separator = Effect.runSync(Domain.toHash(domain, crypto))
+
+// Encode type string
+const types = { Person: [{ name: 'name', type: 'string' }] }
+const encoded = Effect.runSync(Domain.encodeType('Person', types))
+// "Person(string name)"
+
+// ERC-5267 response
+const erc5267 = Effect.runSync(Domain.toErc5267Response(domain))
+```
+
+## Input Type
+
+```typescript
+type DomainInput = {
+  name?: string
+  version?: string
+  chainId?: bigint | number
+  verifyingContract?: string | Uint8Array
+  salt?: string | Uint8Array
+}
+```

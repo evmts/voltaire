@@ -1,128 +1,46 @@
 ---
-title: KZG Service
-description: Effect-based KZG commitments for EIP-4844 blobs
+title: KZG
+description: Polynomial commitments for EIP-4844 blobs
 ---
 
-Effect-wrapped KZG polynomial commitments for EIP-4844 blob transactions. Used for data availability in Ethereum's Proto-Danksharding.
-
-## KZGService
-
-```typescript
-import { KZGService } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
-
-const program = Effect.gen(function* () {
-  const kzg = yield* KZGService
-  
-  // Ensure trusted setup is loaded
-  yield* kzg.loadTrustedSetup()
-  
-  // Create commitment from blob
-  const commitment = yield* kzg.blobToKzgCommitment(blob)
-  
-  // Compute proof
-  const proof = yield* kzg.computeBlobKzgProof(blob, commitment)
-  
-  // Verify
-  const isValid = yield* kzg.verifyBlobKzgProof(blob, commitment, proof)
-  
-  return { commitment, proof, isValid }
-})
-```
-
-### Interface
-
-```typescript
-interface KZGServiceShape {
-  readonly blobToKzgCommitment: (blob: KzgBlobType) => Effect.Effect<KzgCommitmentType>
-  readonly computeBlobKzgProof: (blob: KzgBlobType, commitment: KzgCommitmentType) => Effect.Effect<KzgProofType>
-  readonly verifyBlobKzgProof: (blob: KzgBlobType, commitment: KzgCommitmentType, proof: KzgProofType) => Effect.Effect<boolean>
-  readonly loadTrustedSetup: () => Effect.Effect<void>
-  readonly isInitialized: () => Effect.Effect<boolean>
-}
-```
-
-## Providing the Layer
+Create and verify KZG proofs for blob transactions (Proto-Danksharding).
 
 ```typescript
 import { KZGService, KZGLive } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
-
-const program = Effect.gen(function* () {
-  const kzg = yield* KZGService
-  yield* kzg.loadTrustedSetup()
-  return yield* kzg.blobToKzgCommitment(blob)
-})
+import { Effect } from 'effect'
 
 const result = await Effect.runPromise(
-  program.pipe(Effect.provide(KZGLive))
+  Effect.gen(function* () {
+    const kzg = yield* KZGService
+    yield* kzg.loadTrustedSetup()
+    const commitment = yield* kzg.blobToKzgCommitment(blob)
+    const proof = yield* kzg.computeBlobKzgProof(blob, commitment)
+    const isValid = yield* kzg.verifyBlobKzgProof(blob, commitment, proof)
+    return { commitment, proof, isValid }
+  }).pipe(Effect.provide(KZGLive))
 )
 ```
 
 ## Trusted Setup
 
-KZG requires a trusted setup ceremony. Initialize before use:
-
-```typescript
-const initKzg = Effect.gen(function* () {
-  const kzg = yield* KZGService
-  
-  const initialized = yield* kzg.isInitialized()
-  if (!initialized) {
-    yield* kzg.loadTrustedSetup()
-  }
-})
-```
+Call `loadTrustedSetup()` before use. Check with `isInitialized()`.
 
 ## Testing
 
-Use `KZGTest` for unit tests (no trusted setup required):
-
 ```typescript
-import { KZGService, KZGTest } from 'voltaire-effect/crypto'
-
-const testProgram = myProgram.pipe(
-  Effect.provide(KZGTest)
-)
-// Returns mock 48-byte commitment/proof, always verifies true
+import { KZGTest } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(KZGTest))
+// Mock 48-byte commitment/proof, always verifies true
 ```
 
-## Full Example
+## Interface
 
 ```typescript
-import { KZGService, CryptoLive } from 'voltaire-effect/crypto'
-import * as Effect from 'effect/Effect'
-
-const createBlobTransaction = (blobData: Uint8Array) =>
-  Effect.gen(function* () {
-    const kzg = yield* KZGService
-    
-    // Ensure setup
-    yield* kzg.loadTrustedSetup()
-    
-    // Pad data to blob size (128KB)
-    const blob = padToBlob(blobData)
-    
-    // Create commitment and proof
-    const commitment = yield* kzg.blobToKzgCommitment(blob)
-    const proof = yield* kzg.computeBlobKzgProof(blob, commitment)
-    
-    // Self-verify before sending
-    const valid = yield* kzg.verifyBlobKzgProof(blob, commitment, proof)
-    if (!valid) {
-      return yield* Effect.fail(new Error('KZG proof verification failed'))
-    }
-    
-    return {
-      blob,
-      commitment,
-      proof,
-      // versionedHash for transaction
-      versionedHash: computeVersionedHash(commitment)
-    }
-  })
-
-const blobTx = await Effect.runPromise(
-  createBlobTransaction(data).pipe(Effect.provide(CryptoLive))
-)
+interface KZGServiceShape {
+  readonly loadTrustedSetup: () => Effect.Effect<void>
+  readonly isInitialized: () => Effect.Effect<boolean>
+  readonly blobToKzgCommitment: (blob: KzgBlobType) => Effect.Effect<KzgCommitmentType>
+  readonly computeBlobKzgProof: (blob: KzgBlobType, commitment: KzgCommitmentType) => Effect.Effect<KzgProofType>
+  readonly verifyBlobKzgProof: (blob: KzgBlobType, commitment: KzgCommitmentType, proof: KzgProofType) => Effect.Effect<boolean>
+}
 ```

@@ -1,0 +1,69 @@
+---
+title: Signers
+description: Ethereum message and transaction signing
+---
+
+Create signers from private keys to sign messages, transactions, and EIP-712 typed data.
+
+```typescript
+import { SignersService, SignersLive } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const signers = yield* SignersService
+    const signer = yield* signers.fromPrivateKey(privateKey)
+    const signature = yield* signer.signMessage('Hello Ethereum')
+    return { address: signer.address, signature }
+  }).pipe(Effect.provide(SignersLive))
+)
+```
+
+## Transaction Signing
+
+```typescript
+const signedTx = yield* signer.signTransaction({
+  to: '0x...',
+  value: 1000000000000000000n,
+  gasLimit: 21000n,
+  maxFeePerGas: 20000000000n,
+  nonce: 0n
+})
+```
+
+## EIP-712 Typed Data
+
+```typescript
+const signature = yield* signer.signTypedData({
+  types: { Person: [{ name: 'name', type: 'string' }] },
+  primaryType: 'Person',
+  domain: { name: 'App', version: '1' },
+  message: { name: 'Alice' }
+})
+```
+
+## Testing
+
+```typescript
+import { SignersTest } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(SignersTest))
+// Returns mock signer with deterministic values
+```
+
+## Interface
+
+```typescript
+interface Signer {
+  readonly address: string
+  readonly publicKey: Uint8Array
+  readonly signMessage: (message: string | Uint8Array) => Effect.Effect<string, CryptoError>
+  readonly signTransaction: (transaction: unknown) => Effect.Effect<unknown, CryptoError>
+  readonly signTypedData: (typedData: unknown) => Effect.Effect<string, CryptoError>
+}
+
+interface SignersServiceShape {
+  readonly fromPrivateKey: (privateKey: string | Uint8Array) => Effect.Effect<Signer, InvalidPrivateKeyError>
+  readonly getAddress: (signer: Signer) => Effect.Effect<string>
+  readonly recoverTransactionAddress: (transaction: unknown) => Effect.Effect<string, CryptoError>
+}
+```

@@ -1,0 +1,45 @@
+---
+title: X25519
+description: ECDH key exchange
+---
+
+Generate keypairs and compute shared secrets. Used in Signal, Matrix, TLS 1.3.
+
+```typescript
+import { X25519Service, X25519Live } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const x = yield* X25519Service
+    const alice = yield* x.generateKeyPair()
+    const bob = yield* x.generateKeyPair()
+    const sharedSecret = yield* x.computeSecret(alice.secretKey, bob.publicKey)
+    return sharedSecret  // 32 bytes
+  }).pipe(Effect.provide(X25519Live))
+)
+```
+
+## Derive Public Key
+
+```typescript
+const publicKey = yield* x.getPublicKey(secretKey)
+```
+
+## Testing
+
+```typescript
+import { X25519Test } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(X25519Test))
+// Deterministic keypairs and shared secrets
+```
+
+## Interface
+
+```typescript
+interface X25519ServiceShape {
+  readonly generateKeyPair: () => Effect.Effect<{ secretKey: Uint8Array; publicKey: Uint8Array }>
+  readonly getPublicKey: (secretKey: Uint8Array) => Effect.Effect<Uint8Array, InvalidSecretKeyError>
+  readonly computeSecret: (secretKey: Uint8Array, publicKey: Uint8Array) => Effect.Effect<Uint8Array, InvalidSecretKeyError | InvalidPublicKeyError | X25519Error>
+}
+```

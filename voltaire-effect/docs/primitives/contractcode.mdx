@@ -1,0 +1,44 @@
+---
+title: ContractCode
+description: Compiled smart contract bytecode with Effect Schema
+---
+
+```typescript
+import * as ContractCode from 'voltaire-effect/ContractCode'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// From hex string
+const code = Schema.decodeSync(ContractCode.Schema)(
+  '0x608060405234801561001057600080fd5b50...'
+)
+
+// From bytes
+const bytes = Schema.decodeSync(ContractCode.Schema)(
+  new Uint8Array([0x60, 0x80, 0x60, 0x40, 0x52])
+)
+
+// Effect constructor
+const program = ContractCode.from('0x608060405234801561001057600080fd5b50...')
+const validated = Effect.runSync(program)
+```
+
+## Type
+
+```typescript
+type ContractCodeType = Uint8Array & { readonly __tag: 'ContractCode' }
+```
+
+## API
+
+| Function | Type |
+|----------|------|
+| `Schema` | `Schema<ContractCodeType, string \| Uint8Array>` |
+| `from` | `(input: string \| Uint8Array) => Effect<ContractCodeType, Error>` |
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(ContractCode.from('invalid'))
+if (result._tag === 'Failure') console.error(result.cause)
+```

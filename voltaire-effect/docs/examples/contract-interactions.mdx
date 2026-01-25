@@ -1,0 +1,134 @@
+---
+title: Contract Interactions
+description: Type-safe smart contract reads, writes, and events
+---
+
+## Read Contract
+
+```typescript
+import { Effect } from 'effect'
+import { Contract, PublicClient, HttpTransport } from 'voltaire-effect/services'
+
+const erc20Abi = [
+  { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  { type: 'function', name: 'symbol', inputs: [], outputs: [{ type: 'string' }], stateMutability: 'view' },
+  { type: 'function', name: 'decimals', inputs: [], outputs: [{ type: 'uint8' }], stateMutability: 'view' }
+] as const
+
+const program = Effect.gen(function* () {
+  const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
+  return yield* Effect.all([
+    token.read.symbol(),
+    token.read.decimals(),
+    token.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+  ])
+}).pipe(
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Write Contract
+
+```typescript
+import { WalletClientLive, LocalAccount } from 'voltaire-effect/services'
+import { Hex } from '@tevm/voltaire'
+
+const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
+
+const program = Effect.gen(function* () {
+  const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
+  return yield* token.write.transfer('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 100_000_000n)
+}).pipe(
+  Effect.provide(WalletClientLive),
+  Effect.provide(LocalAccount(privateKey)),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Simulate (Dry Run)
+
+```typescript
+const program = Effect.gen(function* () {
+  const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
+  return yield* token.simulate.transfer('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 100_000_000n)
+}).pipe(
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Query Events
+
+```typescript
+const eventAbi = [
+  { type: 'event', name: 'Transfer', inputs: [
+    { name: 'from', type: 'address', indexed: true },
+    { name: 'to', type: 'address', indexed: true },
+    { name: 'value', type: 'uint256', indexed: false }
+  ]}
+] as const
+
+const program = Effect.gen(function* () {
+  const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', eventAbi)
+  return yield* token.getEvents('Transfer', { fromBlock: 'latest', toBlock: 'latest' })
+}).pipe(
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Complete ERC20 Workflow
+
+```typescript
+import { PublicClientService } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
+  const client = yield* PublicClientService
+  
+  const [symbol, decimals] = yield* Effect.all([token.read.symbol(), token.read.decimals()])
+  const balanceBefore = yield* token.read.balanceOf('0x70997970C51812dc3A010C7d01b50e0d17dc79C8')
+  const txHash = yield* token.write.transfer('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 100_000_000n)
+  yield* client.waitForTransactionReceipt(txHash, { confirmations: 1 })
+  const balanceAfter = yield* token.read.balanceOf('0x70997970C51812dc3A010C7d01b50e0d17dc79C8')
+  
+  return { symbol, decimals, txHash, transferred: balanceAfter - balanceBefore }
+}).pipe(
+  Effect.provide(WalletClientLive),
+  Effect.provide(LocalAccount(privateKey)),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```
+
+## Uniswap V2 Swap
+
+```typescript
+const routerAbi = [
+  { type: 'function', name: 'swapExactTokensForTokens', inputs: [
+    { name: 'amountIn', type: 'uint256' }, { name: 'amountOutMin', type: 'uint256' },
+    { name: 'path', type: 'address[]' }, { name: 'to', type: 'address' }, { name: 'deadline', type: 'uint256' }
+  ], outputs: [{ type: 'uint256[]' }], stateMutability: 'nonpayable' },
+  { type: 'function', name: 'getAmountsOut', inputs: [
+    { name: 'amountIn', type: 'uint256' }, { name: 'path', type: 'address[]' }
+  ], outputs: [{ type: 'uint256[]' }], stateMutability: 'view' }
+] as const
+
+const program = Effect.gen(function* () {
+  const router = yield* Contract('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D', routerAbi)
+  const path = ['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2']
+  
+  const amounts = yield* router.read.getAmountsOut(1000_000_000n, path)
+  const amountOutMin = (amounts[1] * 95n) / 100n
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200)
+  
+  return yield* router.write.swapExactTokensForTokens(1000_000_000n, amountOutMin, path, myAddress, deadline)
+}).pipe(
+  Effect.provide(WalletClientLive),
+  Effect.provide(LocalAccount(privateKey)),
+  Effect.provide(PublicClient),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```

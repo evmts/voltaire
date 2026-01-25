@@ -1,0 +1,25 @@
+---
+title: Bundler
+description: ERC-4337 bundler address
+---
+
+```typescript
+import * as Bundler from 'voltaire-effect/primitives/Bundler'
+import { Effect } from 'effect'
+
+// Create from address
+const bundler = await Effect.runPromise(
+  Bundler.from('0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789')
+)
+
+// Convert to hex
+const hex = await Effect.runPromise(Bundler.toHex(bundler))
+
+// Compare
+const same = await Effect.runPromise(Bundler.equals(bundlerA, bundlerB))
+
+// Check zero address
+const isZero = await Effect.runPromise(Bundler.isZero(bundler))
+```
+
+20-byte Ethereum address branded as `BundlerType`.

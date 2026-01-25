@@ -1,0 +1,32 @@
+---
+title: Nonce
+description: Ethereum account transaction nonce
+---
+
+Counter tracking transactions sent from an account. Used for ordering and replay protection.
+
+```typescript
+import * as Nonce from 'voltaire-effect/Nonce'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema: bigint, number, or string
+const nonce = Schema.decodeSync(Nonce.Schema)(42n)
+const fromNumber = Schema.decodeSync(Nonce.Schema)(0)
+
+// Effect
+const program = Nonce.from(42n)
+// Effect.Effect<NonceType, UintError>
+```
+
+## Usage
+
+```typescript
+const buildTransaction = (currentNonce: bigint) =>
+  Effect.gen(function* () {
+    const nonce = yield* Nonce.from(currentNonce)
+    return { nonce, /* ... */ }
+  })
+```
+
+Fails on negative values.
