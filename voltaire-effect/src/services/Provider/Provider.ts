@@ -17,10 +17,18 @@
  * @see {@link HttpTransport} - Common transport for RPC calls
  */
 
+import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Schedule from "effect/Schedule";
 import { TransportService } from "../Transport/TransportService.js";
+
+/**
+ * Internal error codes for retry logic.
+ * Using codes outside typical JSON-RPC ranges (-32000 to -32099) to avoid conflicts.
+ */
+const INTERNAL_CODE_PENDING = -40001;
+const INTERNAL_CODE_WAITING_CONFIRMATIONS = -40002;
 import {
 	type AccessListType,
 	type AddressInput,
@@ -283,121 +291,127 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					),
 
 				waitForTransactionReceipt: (
-					hash: HashInput,
-					opts?: { confirmations?: number; timeout?: number },
-				) =>
-					Effect.gen(function* () {
-						const confirmations = opts?.confirmations ?? 1;
-						if (confirmations < 1) {
-							return yield* Effect.fail(
-								new ProviderError(
-									{ hash, confirmations },
-									"Confirmations must be at least 1",
-								),
-							);
-						}
-
-						const timeout = opts?.timeout ?? 60000;
-						const deadline = Date.now() + timeout;
-						const hashHex = toHashHex(hash);
-
-						const remainingTime = () => Math.max(0, deadline - Date.now());
-
-						const pollReceipt = request<ReceiptType | null>(
-							"eth_getTransactionReceipt",
-							[hashHex],
-						).pipe(
-							Effect.flatMap((receipt) =>
-								receipt
-									? Effect.succeed(receipt)
-									: Effect.fail(
-											new ProviderError({ hash }, "Transaction pending", {
-												code: -32001,
-											}),
-										),
+				hash: HashInput,
+				opts?: { confirmations?: number; timeout?: number },
+			) =>
+				Effect.gen(function* () {
+					const confirmations = opts?.confirmations ?? 1;
+					if (confirmations < 1) {
+						return yield* Effect.fail(
+							new ProviderError(
+								{ hash, confirmations },
+								"Confirmations must be at least 1",
 							),
 						);
+					}
 
-						const remaining1 = remainingTime();
-						if (remaining1 <= 0) {
-							return yield* Effect.fail(
+					const timeout = opts?.timeout ?? 60000;
+					const startTime = yield* Clock.currentTimeMillis;
+					const deadline = startTime + timeout;
+					const hashHex = toHashHex(hash);
+
+					const remainingTime = Effect.gen(function* () {
+						const now = yield* Clock.currentTimeMillis;
+						return Math.max(0, Number(deadline - now));
+					});
+
+					const pollReceipt = request<ReceiptType | null>(
+						"eth_getTransactionReceipt",
+						[hashHex],
+					).pipe(
+						Effect.flatMap((receipt) =>
+							receipt
+								? Effect.succeed(receipt)
+								: Effect.fail(
+										new ProviderError({ hash }, "Transaction pending", {
+											code: INTERNAL_CODE_PENDING,
+										}),
+									),
+						),
+					);
+
+					const remaining1 = yield* remainingTime;
+					if (remaining1 <= 0) {
+						return yield* Effect.fail(
+							new ProviderError(
+								{ hash, timeout },
+								"Timeout waiting for transaction receipt",
+							),
+						);
+					}
+
+					const receipt = yield* pollReceipt.pipe(
+						Effect.retry({
+							schedule: Schedule.spaced(1000),
+							while: (e) =>
+								e instanceof ProviderError &&
+								e.code === INTERNAL_CODE_PENDING,
+							until: () =>
+								remainingTime.pipe(Effect.map((remaining) => remaining <= 0)),
+						}),
+						Effect.timeout(remaining1),
+						Effect.catchTag("TimeoutException", () =>
+							Effect.fail(
 								new ProviderError(
 									{ hash, timeout },
 									"Timeout waiting for transaction receipt",
 								),
-							);
-						}
-
-						const receipt = yield* pollReceipt.pipe(
-							Effect.retry({
-								schedule: Schedule.spaced(1000),
-								while: (e) =>
-									e instanceof ProviderError &&
-									e.code === -32001 &&
-									remainingTime() > 0,
-							}),
-							Effect.timeout(remaining1),
-							Effect.catchTag("TimeoutException", () =>
-								Effect.fail(
-									new ProviderError(
-										{ hash, timeout },
-										"Timeout waiting for transaction receipt",
-									),
-								),
 							),
-						);
+						),
+					);
 
-						if (confirmations <= 1) {
+					if (confirmations <= 1) {
+						return receipt;
+					}
+
+					const receiptBlockNumber = BigInt(receipt.blockNumber);
+					const targetBlock = receiptBlockNumber + BigInt(confirmations - 1);
+
+					const pollConfirmations = Effect.gen(function* () {
+						const currentBlockHex = yield* request<string>("eth_blockNumber");
+						const currentBlock = BigInt(currentBlockHex);
+						if (currentBlock >= targetBlock) {
 							return receipt;
 						}
+						return yield* Effect.fail(
+							new ProviderError(
+								{ hash, currentBlock, targetBlock },
+								"Waiting for confirmations",
+								{ code: INTERNAL_CODE_WAITING_CONFIRMATIONS },
+							),
+						);
+					});
 
-						const receiptBlockNumber = BigInt(receipt.blockNumber);
-						const targetBlock = receiptBlockNumber + BigInt(confirmations - 1);
+					const remaining2 = yield* remainingTime;
+					if (remaining2 <= 0) {
+						return yield* Effect.fail(
+							new ProviderError(
+								{ hash, timeout },
+								"Timeout waiting for confirmations",
+							),
+						);
+					}
 
-						const pollConfirmations = Effect.gen(function* () {
-							const currentBlockHex = yield* request<string>("eth_blockNumber");
-							const currentBlock = BigInt(currentBlockHex);
-							if (currentBlock >= targetBlock) {
-								return receipt;
-							}
-							return yield* Effect.fail(
-								new ProviderError(
-									{ hash, currentBlock, targetBlock },
-									"Waiting for confirmations",
-									{ code: -32002 },
-								),
-							);
-						});
-
-						const remaining2 = remainingTime();
-						if (remaining2 <= 0) {
-							return yield* Effect.fail(
+					return yield* pollConfirmations.pipe(
+						Effect.retry({
+							schedule: Schedule.spaced(1000),
+							while: (e) =>
+								e instanceof ProviderError &&
+								e.code === INTERNAL_CODE_WAITING_CONFIRMATIONS,
+							until: () =>
+								remainingTime.pipe(Effect.map((remaining) => remaining <= 0)),
+						}),
+						Effect.timeout(remaining2),
+						Effect.catchTag("TimeoutException", () =>
+							Effect.fail(
 								new ProviderError(
 									{ hash, timeout },
 									"Timeout waiting for confirmations",
 								),
-							);
-						}
-
-						return yield* pollConfirmations.pipe(
-							Effect.retry({
-								schedule: Schedule.spaced(1000),
-								while: (e) =>
-									e instanceof ProviderError &&
-									e.code === -32002 &&
-									remainingTime() > 0,
-							}),
-							Effect.timeout(remaining2),
-							Effect.catchTag("TimeoutException", () =>
-								Effect.fail(
-									new ProviderError(
-										{ hash, timeout },
-										"Timeout waiting for confirmations",
-									),
-								),
 							),
-						);
-					}),
+						),
+					);
+				}),
 
 				call: (tx: CallRequest, blockTag: BlockTag = "latest") =>
 					request<`0x${string}`>("eth_call", [formatCallRequest(tx), blockTag]),
