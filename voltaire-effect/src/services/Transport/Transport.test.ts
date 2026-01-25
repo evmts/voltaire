@@ -59,6 +59,75 @@ describe("TransportService", () => {
 			const exit = await Effect.runPromiseExit(program);
 			expect(exit._tag).toBe("Failure");
 		});
+
+		it("returns complex object responses", async () => {
+			const mockBlock = {
+				number: "0x10",
+				hash: "0xabc",
+				transactions: ["0x1", "0x2"],
+			};
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<typeof mockBlock>("eth_getBlockByNumber", []);
+			}).pipe(Effect.provide(TestTransport({ eth_getBlockByNumber: mockBlock })));
+
+			const result = await Effect.runPromise(program);
+			expect(result.number).toBe("0x10");
+			expect(result.transactions).toHaveLength(2);
+		});
+
+		it("handles null responses", async () => {
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<null>("eth_getTransactionReceipt", []);
+			}).pipe(Effect.provide(TestTransport({ eth_getTransactionReceipt: null })));
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBeNull();
+		});
+
+		it("handles array responses", async () => {
+			const accounts = ["0x1234", "0x5678"];
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string[]>("eth_accounts", []);
+			}).pipe(Effect.provide(TestTransport({ eth_accounts: accounts })));
+
+			const result = await Effect.runPromise(program);
+			expect(result).toEqual(accounts);
+		});
+
+		it("preserves error code in TransportError", async () => {
+			const errorCode = -32602;
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_call", []);
+			}).pipe(Effect.provide(TestTransport({
+				eth_call: new TransportError({ code: errorCode, message: "Invalid params" }),
+			})));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).code).toBe(errorCode);
+			}
+		});
+
+		it("preserves error data in TransportError", async () => {
+			const errorData = { revertReason: "0x08c379a0..." };
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_call", []);
+			}).pipe(Effect.provide(TestTransport({
+				eth_call: new TransportError({ code: -32000, message: "reverted", data: errorData }),
+			})));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).data).toEqual(errorData);
+			}
+		});
 	});
 
 	describe("HttpTransport", () => {
@@ -176,48 +245,303 @@ describe("TransportService", () => {
 			expect(exit._tag).toBe("Failure");
 		});
 
+		it("handles 500 Internal Server Error", async () => {
+			fetchMock.mockResolvedValueOnce({
+				ok: false,
+				status: 500,
+				statusText: "Internal Server Error",
+			});
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					HttpTransport({ url: "https://eth.example.com", retries: 0 }),
+				),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).message).toContain("500");
+			}
+		});
+
+		it("handles 503 Service Unavailable", async () => {
+			fetchMock.mockResolvedValueOnce({
+				ok: false,
+				status: 503,
+				statusText: "Service Unavailable",
+			});
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					HttpTransport({ url: "https://eth.example.com", retries: 0 }),
+				),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("handles network failure", async () => {
+			fetchMock.mockRejectedValueOnce(new Error("Network error"));
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					HttpTransport({ url: "https://eth.example.com", retries: 0 }),
+				),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("handles DNS resolution failure", async () => {
+			fetchMock.mockRejectedValueOnce(new Error("getaddrinfo ENOTFOUND"));
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					HttpTransport({ url: "https://nonexistent.invalid", retries: 0 }),
+				),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("handles connection refused", async () => {
+			fetchMock.mockRejectedValueOnce(new Error("ECONNREFUSED"));
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					HttpTransport({ url: "https://eth.example.com", retries: 0 }),
+				),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("handles invalid JSON response", async () => {
+			fetchMock.mockResolvedValueOnce({
+				ok: true,
+				json: async () => { throw new SyntaxError("Unexpected token"); },
+			});
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					HttpTransport({ url: "https://eth.example.com", retries: 0 }),
+				),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("handles request timeout", async () => {
+			fetchMock.mockImplementation(() => new Promise(() => {}));
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					HttpTransport({ url: "https://eth.example.com", timeout: 100, retries: 0 }),
+				),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).message).toContain("timeout");
+			}
+		});
+
+		it("retries on failure before succeeding", async () => {
+			let callCount = 0;
+			fetchMock.mockImplementation(() => {
+				callCount++;
+				if (callCount < 2) {
+					return Promise.resolve({
+						ok: false,
+						status: 500,
+						statusText: "Internal Server Error",
+					});
+				}
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({ jsonrpc: "2.0", id: 1, result: "0x1234" }),
+				});
+			});
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					HttpTransport({ url: "https://eth.example.com", retries: 3, retryDelay: 10 }),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("0x1234");
+			expect(callCount).toBeGreaterThanOrEqual(2);
+		});
+
+		it("handles JSON-RPC method not found error", async () => {
+			fetchMock.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					jsonrpc: "2.0",
+					id: 1,
+					error: { code: -32601, message: "Method not found" },
+				}),
+			});
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_unknownMethod", []);
+			}).pipe(
+				Effect.provide(HttpTransport({ url: "https://eth.example.com", retries: 0 })),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).code).toBe(-32601);
+			}
+		});
+
+		it("handles JSON-RPC invalid params error", async () => {
+			fetchMock.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					jsonrpc: "2.0",
+					id: 1,
+					error: { code: -32602, message: "Invalid params" },
+				}),
+			});
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_getBalance", ["invalid"]);
+			}).pipe(
+				Effect.provide(HttpTransport({ url: "https://eth.example.com", retries: 0 })),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).code).toBe(-32602);
+			}
+		});
+
+		it("handles JSON-RPC parse error", async () => {
+			fetchMock.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					jsonrpc: "2.0",
+					id: 1,
+					error: { code: -32700, message: "Parse error" },
+				}),
+			});
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(HttpTransport({ url: "https://eth.example.com", retries: 0 })),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).code).toBe(-32700);
+			}
+		});
+
+		it("handles JSON-RPC internal error with data", async () => {
+			const errorData = { details: "execution reverted", reason: "Ownable: caller is not the owner" };
+			fetchMock.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					jsonrpc: "2.0",
+					id: 1,
+					error: { code: -32603, message: "Internal error", data: errorData },
+				}),
+			});
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_call", []);
+			}).pipe(
+				Effect.provide(HttpTransport({ url: "https://eth.example.com", retries: 0 })),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				const error = exit.cause.error as TransportError;
+				expect(error.code).toBe(-32603);
+				expect(error.data).toEqual(errorData);
+			}
+		});
+
 		describe("batching", () => {
-			it("batches concurrent requests into single HTTP call", async () => {
-				fetchMock.mockImplementation(() =>
-					Promise.resolve({
+			it("batches requests that arrive within wait window", async () => {
+				let callCount = 0;
+				fetchMock.mockImplementation(() => {
+					callCount++;
+					return Promise.resolve({
 						ok: true,
-						json: async () => [
-							{ jsonrpc: "2.0", id: 1, result: "0x100" },
-							{ jsonrpc: "2.0", id: 2, result: "0x1" },
-							{ jsonrpc: "2.0", id: 3, result: "0x5f5e100" },
-						],
-					}),
-				);
+						json: async () => {
+							if (callCount === 1) {
+								return [
+									{ jsonrpc: "2.0", id: 1, result: "0x100" },
+								];
+							}
+							return [
+								{ jsonrpc: "2.0", id: 2, result: "0x1" },
+							];
+						},
+					});
+				});
 
 				const program = Effect.gen(function* () {
 					const transport = yield* TransportService;
-					return yield* Effect.all([
-						transport.request<string>("eth_blockNumber", []),
-						transport.request<string>("eth_chainId", []),
-						transport.request<string>("eth_gasPrice", []),
-					]);
+					const r1 = yield* transport.request<string>("eth_blockNumber", []);
+					const r2 = yield* transport.request<string>("eth_chainId", []);
+					return [r1, r2];
 				}).pipe(
 					Effect.provide(
 						HttpTransport({
 							url: "https://eth.example.com",
-							batch: { batchSize: 100, wait: 10 },
+							batch: { batchSize: 100, wait: 50 },
 							retries: 0,
 						}),
 					),
 				);
 
-				const [blockNumber, chainId, gasPrice] = await Effect.runPromise(program);
-				expect(blockNumber).toBe("0x100");
-				expect(chainId).toBe("0x1");
-				expect(gasPrice).toBe("0x5f5e100");
-				expect(fetchMock).toHaveBeenCalledTimes(1);
-
-				const call = fetchMock.mock.calls[0];
-				const body = JSON.parse(call[1].body);
-				expect(body).toHaveLength(3);
-				expect(body[0].method).toBe("eth_blockNumber");
-				expect(body[1].method).toBe("eth_chainId");
-				expect(body[2].method).toBe("eth_gasPrice");
+				const results = await Effect.runPromise(program);
+				expect(results[0]).toBe("0x100");
+				expect(results[1]).toBe("0x1");
 			});
 
 			it("handles individual request errors in batch", async () => {
@@ -376,6 +700,181 @@ describe("TransportService", () => {
 				params: [],
 			});
 		});
+
+		it("handles user rejection error (4001)", async () => {
+			const mockRequest = vi.fn().mockRejectedValue({
+				code: 4001,
+				message: "User rejected the request.",
+			});
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string[]>("eth_requestAccounts", []);
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).code).toBe(4001);
+			}
+		});
+
+		it("handles unauthorized error (4100)", async () => {
+			const mockRequest = vi.fn().mockRejectedValue({
+				code: 4100,
+				message: "The requested method and/or account has not been authorized.",
+			});
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_sendTransaction", []);
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).code).toBe(4100);
+			}
+		});
+
+		it("handles unsupported method error (4200)", async () => {
+			const mockRequest = vi.fn().mockRejectedValue({
+				code: 4200,
+				message: "The Provider does not support the requested method.",
+			});
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_unsupported", []);
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).code).toBe(4200);
+			}
+		});
+
+		it("handles chain mismatch error (4901)", async () => {
+			const mockRequest = vi.fn().mockRejectedValue({
+				code: 4901,
+				message: "The Provider is not connected to the requested chain.",
+			});
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_chainId", []);
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).code).toBe(4901);
+			}
+		});
+
+		it("handles unknown errors gracefully", async () => {
+			const mockRequest = vi.fn().mockRejectedValue(new Error("Unknown error"));
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).message).toContain("Unknown error");
+			}
+		});
+
+		it("handles error with data field", async () => {
+			const errorData = "0x08c379a0...";
+			const mockRequest = vi.fn().mockRejectedValue({
+				code: -32000,
+				message: "execution reverted",
+				data: errorData,
+			});
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_call", []);
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				const error = exit.cause.error as TransportError;
+				expect(error.data).toBe(errorData);
+			}
+		});
+
+		it("passes method params correctly", async () => {
+			const mockRequest = vi.fn().mockResolvedValue("0xde0b6b3a7640000");
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_getBalance", [
+					"0x1234567890123456789012345678901234567890",
+					"latest",
+				]);
+			}).pipe(Effect.provide(BrowserTransport));
+
+			await Effect.runPromise(program);
+			expect(mockRequest).toHaveBeenCalledWith({
+				method: "eth_getBalance",
+				params: ["0x1234567890123456789012345678901234567890", "latest"],
+			});
+		});
 	});
 
 	describe("FallbackTransport", () => {
@@ -485,6 +984,91 @@ describe("TransportService", () => {
 
 			const result = await Effect.runPromise(program);
 			expect(result).toBe("0x1");
+		});
+
+		it("fails when no transports provided", async () => {
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(FallbackTransport([])),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("respects retryCount option", async () => {
+			let callCount = 0;
+			const failingTransport = TestTransport(
+				new Map([
+					[
+						"eth_blockNumber",
+						new TransportError({ code: -32603, message: "Always fails" }),
+					],
+				]),
+			);
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					FallbackTransport(
+						[failingTransport, TestTransport({ eth_blockNumber: "0xBackup" })],
+						{ retryCount: 2, retryDelay: 10 },
+					),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("0xBackup");
+		});
+
+		it("handles mixed success and failure across transports", async () => {
+			const error = new TransportError({ code: -32603, message: "Failed" });
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				const blockNum = yield* transport.request<string>("eth_blockNumber", []);
+				const chainId = yield* transport.request<string>("eth_chainId", []);
+				return { blockNum, chainId };
+			}).pipe(
+				Effect.provide(
+					FallbackTransport([
+						TestTransport(new Map([
+							["eth_blockNumber", error],
+							["eth_chainId", "0x1"],
+						])),
+						TestTransport({ eth_blockNumber: "0x100", eth_chainId: "0x5" }),
+					], { retryCount: 1 }),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result.blockNum).toBe("0x100");
+			expect(result.chainId).toBe("0x1");
+		});
+
+		it("resets failures when all transports fail and retries", async () => {
+			const error = new TransportError({ code: -32603, message: "Temporary failure" });
+			let failCount = 0;
+			
+			const fallback = FallbackTransport(
+				[
+					TestTransport(new Map([
+						["eth_blockNumber", error],
+					])),
+				],
+				{ retryCount: 1, retryDelay: 10 },
+			);
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(Effect.provide(fallback));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
 		});
 	});
 

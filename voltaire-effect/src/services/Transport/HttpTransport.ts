@@ -183,17 +183,21 @@ export const HttpTransport = (
 					batch: options.batch,
 				};
 
-	const toTransportError = (e: unknown): TransportError => {
+	const toTransportError = (e: unknown, context?: string): TransportError => {
 		if (e instanceof TransportError) return e;
-		return new TransportError({
-			code: -32603,
-			message: e instanceof Error ? e.message : "Network error",
-		});
+		const message = e instanceof Error ? e.message : "Network error";
+		const fullMessage = context ? `${context}: ${message}` : message;
+		return new TransportError(
+			{ code: -32603, message: fullMessage },
+			fullMessage,
+			{ cause: e instanceof Error ? e : undefined },
+		);
 	};
 
 	const doFetch = <T>(
 		body: string,
 		headers: Record<string, string>,
+		rpcMethod?: string,
 	): Effect.Effect<T, TransportError> =>
 		Effect.acquireRelease(
 			Effect.sync(() => new AbortController()),
@@ -208,19 +212,19 @@ export const HttpTransport = (
 							body,
 							signal: controller.signal,
 						}),
-					catch: toTransportError,
+					catch: (e) => toTransportError(e, `Request to ${config.url}${rpcMethod ? ` (${rpcMethod})` : ""} failed`),
 				}),
 			),
 			Effect.flatMap((response) =>
 				response.ok
 					? Effect.tryPromise({
 							try: () => response.json() as Promise<JsonRpcResponse<T>>,
-							catch: toTransportError,
+							catch: (e) => toTransportError(e, `Failed to parse response from ${config.url}${rpcMethod ? ` (${rpcMethod})` : ""}`),
 						})
 					: Effect.fail(
 							new TransportError({
 								code: -32603,
-								message: `HTTP ${response.status}: ${response.statusText}`,
+								message: `HTTP ${response.status}: ${response.statusText} (url: ${config.url}${rpcMethod ? `, method: ${rpcMethod}` : ""})`,
 							}),
 						),
 			),
@@ -240,7 +244,7 @@ export const HttpTransport = (
 				onTimeout: () =>
 					new TransportError({
 						code: -32603,
-						message: `Request timeout after ${config.timeout}ms`,
+						message: `Request timeout after ${config.timeout}ms (url: ${config.url}${rpcMethod ? `, method: ${rpcMethod}` : ""})`,
 					}),
 			}),
 			Effect.scoped,
@@ -258,7 +262,7 @@ export const HttpTransport = (
 
 	const sendBatch = (
 		requests: Array<{ id: number; method: string; params?: unknown[] }>,
-	): Effect.Effect<JsonRpcBatchResponse[], Error> => {
+	): Effect.Effect<JsonRpcBatchResponse[], TransportError> => {
 		const body = JSON.stringify(
 			requests.map((r) => ({
 				jsonrpc: "2.0",
@@ -271,6 +275,7 @@ export const HttpTransport = (
 			"Content-Type": "application/json",
 			...config.headers,
 		};
+		const methods = requests.map((r) => r.method).join(", ");
 
 		return Effect.acquireRelease(
 			Effect.sync(() => new AbortController()),
@@ -285,20 +290,29 @@ export const HttpTransport = (
 							body,
 							signal: controller.signal,
 						}),
-					catch: (e) => new Error(e instanceof Error ? e.message : "Network error"),
+					catch: (e) => toTransportError(e, `Batch request to ${config.url} failed [${methods}]`),
 				}),
 			),
 			Effect.flatMap((response) =>
 				response.ok
 					? Effect.tryPromise({
 							try: () => response.json() as Promise<JsonRpcBatchResponse[]>,
-							catch: (e) => new Error(e instanceof Error ? e.message : "Parse error"),
+							catch: (e) => toTransportError(e, `Failed to parse batch response from ${config.url}`),
 						})
-					: Effect.fail(new Error(`HTTP ${response.status}: ${response.statusText}`)),
+					: Effect.fail(
+							new TransportError({
+								code: -32603,
+								message: `HTTP ${response.status}: ${response.statusText} (url: ${config.url}, methods: [${methods}])`,
+							}),
+						),
 			),
 			Effect.timeoutFail({
 				duration: Duration.millis(config.timeout),
-				onTimeout: () => new Error(`Request timeout after ${config.timeout}ms`),
+				onTimeout: () =>
+					new TransportError({
+						code: -32603,
+						message: `Batch request timeout after ${config.timeout}ms (url: ${config.url}, methods: [${methods}])`,
+					}),
 			}),
 			Effect.retry(retrySchedule),
 			Effect.scoped,
@@ -314,12 +328,14 @@ export const HttpTransport = (
 				params: unknown[] = [],
 			): Effect.Effect<T, TransportError> =>
 				scheduler.schedule<T>(method, params).pipe(
-					Effect.mapError((e) =>
-						new TransportError({
-							code: -32603,
-							message: e.message,
-						}),
-					),
+					Effect.mapError((e) => {
+						if (e instanceof TransportError) return e;
+						return new TransportError(
+							{ code: -32603, message: `${method} failed: ${e.message}` },
+							`${method} failed: ${e.message}`,
+							{ cause: e },
+						);
+					}),
 				),
 		});
 	}
@@ -343,7 +359,7 @@ export const HttpTransport = (
 								"Content-Type": "application/json",
 								...config.headers,
 							};
-							return doFetch<T>(body, headers);
+							return doFetch<T>(body, headers, method);
 						}),
 						Effect.retry(retrySchedule),
 					),

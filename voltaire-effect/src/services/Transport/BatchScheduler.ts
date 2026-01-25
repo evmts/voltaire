@@ -72,10 +72,10 @@ interface PendingRequest {
  * const result = await Effect.runPromise(scheduler.schedule('eth_blockNumber'));
  * ```
  */
-export const createBatchScheduler = (
+export const createBatchScheduler = <E extends Error>(
 	send: (
 		requests: JsonRpcRequest[],
-	) => Effect.Effect<JsonRpcBatchResponse[], Error>,
+	) => Effect.Effect<JsonRpcBatchResponse[], E>,
 	options: BatchOptions = {},
 ) => {
 	const batchSize = options.batchSize ?? 100;
