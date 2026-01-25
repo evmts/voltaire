@@ -1,39 +1,38 @@
 /**
- * @fileoverview Authorization module for EIP-7702 authorization tuples.
- * 
- * EIP-7702 introduces authorization tuples that allow EOAs (Externally Owned Accounts)
- * to delegate execution to smart contracts. This enables EOAs to temporarily act
- * as smart contract accounts, bringing account abstraction features to existing EOAs.
- * 
- * This module provides Effect-based schemas and functions for creating, signing,
- * and validating authorization tuples.
- * 
- * @example
+ * @module Authorization
+ * @description Effect Schemas for EIP-7702 authorization tuples.
+ *
+ * EIP-7702 enables EOAs to delegate execution to smart contracts,
+ * bringing account abstraction features to existing EOAs.
+ *
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `Authorization.Rpc` | JSON-RPC format | AuthorizationType |
+ *
+ * ## Usage
+ *
  * ```typescript
  * import * as Authorization from 'voltaire-effect/primitives/Authorization'
- * import * as Effect from 'effect/Effect'
- * 
- * const program = Effect.gen(function* () {
- *   // Sign an authorization
- *   const signed = yield* Authorization.sign(
- *     { chainId: 1n, address: contractAddr, nonce: 0n },
- *     privateKey
- *   )
- *   
- *   // Validate the authorization
- *   yield* Authorization.validate(signed)
- *   
- *   return signed
+ * import * as S from 'effect/Schema'
+ *
+ * // Decode from JSON-RPC format
+ * const auth = S.decodeSync(Authorization.Rpc)({
+ *   chainId: '1',
+ *   address: '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
+ *   nonce: '0',
+ *   yParity: 0,
+ *   r: '0x...',
+ *   s: '0x...'
  * })
+ *
+ * // Encode back to JSON-RPC format
+ * const json = S.encodeSync(Authorization.Rpc)(auth)
  * ```
- * 
+ *
  * @see https://eips.ethereum.org/EIPS/eip-7702
- * @module Authorization
- * @since 0.0.1
+ * @since 0.1.0
  */
 
-/** Schema and types for Authorization */
-export { AuthorizationSchema, type AuthorizationInput } from './AuthorizationSchema.js'
-
-/** Functions for signing and validating authorizations */
-export { sign, validate, AuthorizationError, type UnsignedAuthorization } from './from.js'
+export { type AuthorizationInput, Rpc } from "./Rpc.js";
