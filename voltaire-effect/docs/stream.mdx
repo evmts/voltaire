@@ -1,0 +1,118 @@
+---
+title: Stream Errors
+description: Effect-wrapped stream error types for EventStream and BlockStream operations
+---
+
+# Stream Errors
+
+The `Stream` module provides Effect-wrapped error types for streaming operations in voltaire-effect. These errors are used by both EventStream and BlockStream for consistent error handling across all streaming infrastructure.
+
+## Overview
+
+Stream errors represent failures that can occur during streaming operations:
+
+- **Abort errors**: When streams are cancelled via AbortSignal
+- **Range errors**: When RPC providers reject block range requests
+- **Reorg errors**: When chain reorganizations exceed tracked history
+
+All errors extend voltaire's base error classes and are compatible with Effect's error channel.
+
+## Error Types
+
+### StreamAbortedError
+
+Base class for stream abort errors. Thrown when an AbortSignal is triggered during stream operations.
+
+```typescript
+import { Effect } from 'effect';
+import * as Stream from 'voltaire-effect/stream';
+
+const aborted = new Stream.StreamAbortedError("Custom abort message");
+// aborted.name === "StreamAbortedError"
+```
+
+### EventStreamAbortedError
+
+Thrown when an EventStream operation is aborted.
+
+```typescript
+import * as Stream from 'voltaire-effect/stream';
+
+const error = new Stream.EventStreamAbortedError();
+// error.message === "Event stream was aborted"
+```
+
+### BlockStreamAbortedError
+
+Thrown when a BlockStream operation is aborted.
+
+```typescript
+import * as Stream from 'voltaire-effect/stream';
+
+const error = new Stream.BlockStreamAbortedError();
+// error.message === "Block stream was aborted"
+```
+
+### BlockRangeTooLargeError
+
+Thrown when an RPC provider rejects a request because the block range is too large.
+
+```typescript
+import * as Stream from 'voltaire-effect/stream';
+
+const error = new Stream.BlockRangeTooLargeError(18000000n, 19000000n);
+// error.message === "Block range too large: 18000000 to 19000000"
+// error.fromBlock === 18000000n
+// error.toBlock === 19000000n
+```
+
+### UnrecoverableReorgError
+
+Thrown when a chain reorganization extends beyond tracked block history. This indicates a "deep reorg" where recovery is not possible without resyncing.
+
+```typescript
+import * as Stream from 'voltaire-effect/stream';
+
+const error = new Stream.UnrecoverableReorgError(100n, 50n);
+// error.message === "Unrecoverable reorg: depth 100 exceeds tracked history of 50 blocks"
+// error.reorgDepth === 100n
+// error.trackedDepth === 50n
+```
+
+## Effect Integration
+
+Stream errors work seamlessly with Effect's error handling:
+
+```typescript
+import { Effect, pipe } from 'effect';
+import * as Stream from 'voltaire-effect/stream';
+
+const handleStreamError = (error: Stream.StreamError) =>
+  Effect.gen(function* () {
+    if (error instanceof Stream.BlockRangeTooLargeError) {
+      yield* Effect.logWarning(`Range too large: ${error.fromBlock} to ${error.toBlock}`);
+      return yield* Effect.fail(error);
+    }
+    if (error instanceof Stream.UnrecoverableReorgError) {
+      yield* Effect.logError(`Deep reorg detected, resync required`);
+      return yield* Effect.fail(error);
+    }
+    if (error instanceof Stream.StreamAbortedError) {
+      yield* Effect.log("Stream was cancelled");
+      return yield* Effect.succeed(undefined);
+    }
+    return yield* Effect.fail(error);
+  });
+```
+
+## Type Union
+
+The `StreamError` type is a union of all stream error types for exhaustive pattern matching:
+
+```typescript
+import * as Stream from 'voltaire-effect/stream';
+
+type StreamError = Stream.StreamError;
+// = StreamAbortedError | EventStreamAbortedError | BlockStreamAbortedError 
+//   | BlockRangeTooLargeError | UnrecoverableReorgError
+```

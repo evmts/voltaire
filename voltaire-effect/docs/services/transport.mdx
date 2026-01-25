@@ -34,6 +34,41 @@ HttpTransport({
 })
 ```
 
+## Request Batching
+
+Combine multiple JSON-RPC requests into a single HTTP call for better performance.
+
+```typescript
+import { HttpTransport, TransportService } from 'voltaire-effect/services'
+import { Effect } from 'effect'
+
+const transport = HttpTransport({
+  url: 'https://eth.example.com',
+  batch: {
+    batchSize: 50,    // Max requests per batch (default: 100)
+    wait: 10          // Wait time in ms before flushing (default: 0)
+  }
+})
+
+// Requests made concurrently are automatically batched
+const program = Effect.gen(function* () {
+  const t = yield* TransportService
+  const [blockNumber, chainId, gasPrice] = yield* Effect.all([
+    t.request<string>('eth_blockNumber'),
+    t.request<string>('eth_chainId'),
+    t.request<string>('eth_gasPrice')
+  ])
+  return { blockNumber, chainId, gasPrice }
+}).pipe(Effect.provide(transport))
+```
+
+### How Batching Works
+
+- Requests are queued and sent together when `batchSize` is reached or after `wait` ms
+- Each request in the batch is matched to its response by ID
+- If one request fails, only that request fails (others still succeed)
+- Network/HTTP errors fail the entire batch
+
 ## WebSocketTransport
 
 ```typescript

@@ -39,6 +39,13 @@
             ]
           },
           {
+            "group": "Guides",
+            "icon": "book",
+            "pages": [
+              "guides/hd-wallet"
+            ]
+          },
+          {
             "group": "Services",
             "icon": "server",
             "pages": [
@@ -46,7 +53,18 @@
               "services/provider",
               "services/signer",
               "services/account",
-              "services/contract"
+              "services/contract",
+              "services/block-stream",
+              "stream",
+              "block",
+              "blockchain"
+            ]
+          },
+          {
+            "group": "ERC Standards",
+            "icon": "file-contract",
+            "pages": [
+              "standards"
             ]
           },
           {

@@ -1,0 +1,224 @@
+---
+title: Blockchain Service
+description: Effect-wrapped blockchain storage and fork management
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { BlockchainService, InMemoryBlockchain } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const blockchain = yield* BlockchainService
+  
+  // Get block by number
+  const block = yield* blockchain.getBlockByNumber(12345n)
+  
+  // Get head block number
+  const head = yield* blockchain.getHeadBlockNumber()
+  
+  return { block, head }
+}).pipe(
+  Effect.provide(InMemoryBlockchain)
+)
+```
+
+## Layer Composition
+
+`InMemoryBlockchain` provides a local in-memory blockchain:
+
+```typescript
+import * as Layer from 'effect/Layer'
+import { BlockchainService, InMemoryBlockchain, ForkBlockchain } from 'voltaire-effect/services'
+
+// In-memory only (no fork)
+const program1 = myEffect.pipe(Effect.provide(InMemoryBlockchain))
+
+// With fork support (fetches blocks from remote RPC)
+const forkLayer = ForkBlockchain({
+  forkBlockNumber: 18000000n,
+  rpcUrl: 'https://eth.llamarpc.com'
+})
+const program2 = myEffect.pipe(Effect.provide(forkLayer))
+```
+
+## Block Operations
+
+### Get Block by Hash
+
+```typescript
+const blockchain = yield* BlockchainService
+
+const block = yield* blockchain.getBlockByHash(
+  '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+)
+```
+
+### Get Block by Number
+
+```typescript
+const block = yield* blockchain.getBlockByNumber(12345n)
+```
+
+### Get Canonical Hash
+
+```typescript
+const hash = yield* blockchain.getCanonicalHash(12345n)
+```
+
+### Get Head Block Number
+
+```typescript
+const head = yield* blockchain.getHeadBlockNumber()
+// Returns Option<bigint> - None if no blocks
+```
+
+## Block Storage
+
+### Put Block
+
+```typescript
+yield* blockchain.putBlock({
+  hash: '0x...',
+  parentHash: '0x...',
+  number: 12345n,
+  // ... other block fields
+})
+```
+
+### Set Canonical Head
+
+```typescript
+yield* blockchain.setCanonicalHead(
+  '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+)
+```
+
+### Check Block Existence
+
+```typescript
+const exists = yield* blockchain.hasBlock(
+  '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+)
+```
+
+## Statistics
+
+```typescript
+const blockchain = yield* BlockchainService
+
+const localCount = yield* blockchain.localBlockCount()
+const orphanCount = yield* blockchain.orphanCount()
+const chainLength = yield* blockchain.canonicalChainLength()
+const isFork = yield* blockchain.isForkBlock(12345n)
+```
+
+## Error Handling
+
+```typescript
+import { BlockchainError } from 'voltaire-effect/services'
+
+program.pipe(
+  Effect.catchTag('BlockchainError', (e) => {
+    console.error('Blockchain operation failed:', e.message)
+    return Effect.succeed(null)
+  })
+)
+```
+
+## Block Type
+
+```typescript
+interface Block {
+  // Header
+  hash: Hex
+  parentHash: Hex
+  ommersHash: Hex
+  beneficiary: Hex
+  stateRoot: Hex
+  transactionsRoot: Hex
+  receiptsRoot: Hex
+  logsBloom: Hex
+  difficulty: bigint
+  number: bigint
+  gasLimit: bigint
+  gasUsed: bigint
+  timestamp: bigint
+  extraData: Hex
+  mixHash: Hex
+  nonce: bigint
+  baseFeePerGas?: bigint
+  withdrawalsRoot?: Hex
+  blobGasUsed?: bigint
+  excessBlobGas?: bigint
+  parentBeaconBlockRoot?: Hex
+
+  // Body (RLP-encoded)
+  transactions: Hex
+  ommers: Hex
+  withdrawals: Hex
+
+  // Metadata
+  size: bigint
+  totalDifficulty?: bigint
+}
+```
+
+## Service Interface
+
+```typescript
+type BlockchainShape = {
+  readonly getBlockByHash: (hash: Hex) => Effect.Effect<Block | null, BlockchainError>
+  readonly getBlockByNumber: (number: bigint) => Effect.Effect<Block | null, BlockchainError>
+  readonly getCanonicalHash: (number: bigint) => Effect.Effect<Hex | null, BlockchainError>
+  readonly getHeadBlockNumber: () => Effect.Effect<bigint | null, BlockchainError>
+  readonly putBlock: (block: Block) => Effect.Effect<void, BlockchainError>
+  readonly setCanonicalHead: (hash: Hex) => Effect.Effect<void, BlockchainError>
+  readonly hasBlock: (hash: Hex) => Effect.Effect<boolean, BlockchainError>
+  readonly localBlockCount: () => Effect.Effect<number, BlockchainError>
+  readonly orphanCount: () => Effect.Effect<number, BlockchainError>
+  readonly canonicalChainLength: () => Effect.Effect<number, BlockchainError>
+  readonly isForkBlock: (number: bigint) => Effect.Effect<boolean, BlockchainError>
+  readonly destroy: () => Effect.Effect<void, never>
+}
+```
+
+## Fork Mode
+
+Fork mode fetches blocks from a remote RPC for blocks at or below the fork block number:
+
+```typescript
+import { ForkBlockchain } from 'voltaire-effect/services'
+
+const forkLayer = ForkBlockchain({
+  forkBlockNumber: 18000000n,
+  rpcUrl: 'https://eth.llamarpc.com'
+})
+
+const program = Effect.gen(function* () {
+  const blockchain = yield* BlockchainService
+  
+  // This fetches from RPC (block <= forkBlockNumber)
+  const oldBlock = yield* blockchain.getBlockByNumber(17999999n)
+  
+  // Local blocks can be added
+  yield* blockchain.putBlock(newBlock)
+}).pipe(Effect.provide(forkLayer))
+```
+
+## Resource Management
+
+The blockchain service manages native FFI resources. Use `Effect.scoped` or `Layer.scoped` to ensure cleanup:
+
+```typescript
+import * as Effect from 'effect/Effect'
+
+const program = Effect.scoped(
+  Effect.gen(function* () {
+    const blockchain = yield* BlockchainService
+    // ... use blockchain
+    // Resources cleaned up automatically
+  })
+).pipe(Effect.provide(InMemoryBlockchain))
+```

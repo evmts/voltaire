@@ -1,0 +1,129 @@
+---
+title: Raw Provider Service
+description: Direct EIP-1193 provider access with Effect
+---
+
+## Overview
+
+The `RawProviderService` provides direct access to EIP-1193 provider `request` method for advanced operations not covered by the standard `ProviderService`.
+
+## RawProviderService
+
+Direct access to the underlying transport for EIP-1193 requests:
+
+```typescript
+import { Effect } from 'effect'
+import { RawProviderService, RawProviderTransport, HttpTransport } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const raw = yield* RawProviderService
+  
+  // Direct EIP-1193 request
+  const result = yield* raw.request({ method: 'eth_blockNumber', params: [] })
+  
+  return result
+}).pipe(
+  Effect.provide(RawProviderTransport),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Use Cases
+
+### Testing methods (evm_snapshot, evm_revert)
+
+```typescript
+const program = Effect.gen(function* () {
+  const raw = yield* RawProviderService
+  
+  // Take snapshot
+  const snapshotId = yield* raw.request({ 
+    method: 'evm_snapshot', 
+    params: [] 
+  })
+  
+  // ... make changes ...
+  
+  // Revert to snapshot
+  yield* raw.request({ 
+    method: 'evm_revert', 
+    params: [snapshotId] 
+  })
+})
+```
+
+### Custom RPC methods
+
+```typescript
+const program = Effect.gen(function* () {
+  const raw = yield* RawProviderService
+  
+  // Call a custom method not in ProviderService
+  const traces = yield* raw.request({ 
+    method: 'debug_traceTransaction',
+    params: ['0x...', { tracer: 'callTracer' }]
+  })
+  
+  return traces
+})
+```
+
+## Error Handling
+
+All requests produce `TransportError` on failure:
+
+```typescript
+import { TransportError } from 'voltaire-effect/services'
+
+program.pipe(
+  Effect.catchTag('TransportError', (e) => {
+    console.error(`RPC failed [${e.code}]: ${e.message}`)
+    return Effect.succeed(null)
+  })
+)
+```
+
+## Layer Composition
+
+`RawProviderTransport` requires `TransportService`:
+
+```typescript
+import * as Layer from 'effect/Layer'
+import { RawProviderTransport, HttpTransport } from 'voltaire-effect/services'
+
+const RawLayer = RawProviderTransport.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Service Interface
+
+```typescript
+type RequestArguments = {
+  readonly method: string
+  readonly params?: readonly unknown[] | object
+}
+
+type RawProviderShape = {
+  readonly request: (args: RequestArguments) => Effect.Effect<unknown, TransportError>
+}
+
+class RawProviderService extends Context.Tag("RawProviderService")<
+  RawProviderService,
+  RawProviderShape
+>() {}
+```
+
+## Native Provider Transports (Bun only)
+
+When using Bun, you can import native provider transports that wrap voltaire's provider classes:
+
+```typescript
+// Available only with Bun runtime
+import { HttpProviderTransport } from 'voltaire-effect/services/RawProvider/HttpProviderTransport.js'
+import { WebSocketProviderTransport } from 'voltaire-effect/services/RawProvider/WebSocketProviderTransport.js'
+import { ForkProviderTransport } from 'voltaire-effect/services/RawProvider/ForkProviderTransport.js'
+import { InMemoryProviderTransport } from 'voltaire-effect/services/RawProvider/InMemoryProviderTransport.js'
+```
+
+These transports wrap voltaire's native EIP-1193 provider implementations.

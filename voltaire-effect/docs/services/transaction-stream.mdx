@@ -1,0 +1,164 @@
+---
+title: TransactionStream
+description: Effect-based transaction streaming and tracking
+---
+
+## Quick Start
+
+```typescript
+import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect/services'
+import { Effect, Stream } from 'effect'
+
+const program = Effect.gen(function* () {
+  const txStream = yield* TransactionStreamService
+  
+  yield* Stream.runForEach(
+    txStream.watchConfirmed({ confirmations: 3 }),
+    (event) => Effect.log(`Confirmed: ${event.transaction.hash}`)
+  )
+}).pipe(
+  Effect.provide(TransactionStream),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Watching Pending Transactions
+
+Stream pending transactions from the mempool:
+
+```typescript
+const program = Effect.gen(function* () {
+  const txStream = yield* TransactionStreamService
+  
+  yield* Stream.runForEach(
+    txStream.watchPending({
+      filter: { to: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' }
+    }),
+    (event) => Effect.log(`Pending tx to USDC: ${event.transaction.value}`)
+  )
+})
+```
+
+## Watching Confirmed Transactions
+
+Stream confirmed transactions with configurable confirmations:
+
+```typescript
+const program = Effect.gen(function* () {
+  const txStream = yield* TransactionStreamService
+  
+  yield* Stream.runForEach(
+    txStream.watchConfirmed({
+      filter: { from: myAddress },
+      confirmations: 6,
+      fromBlock: 18000000n
+    }),
+    (event) => {
+      const { transaction } = event
+      return Effect.log(`Block ${transaction.blockNumber}: ${transaction.receipt.status}`)
+    }
+  )
+})
+```
+
+## Tracking a Transaction
+
+Track a specific transaction through its lifecycle:
+
+```typescript
+const program = Effect.gen(function* () {
+  const txStream = yield* TransactionStreamService
+  
+  yield* Stream.runForEach(
+    txStream.track('0x1234...', { confirmations: 3, timeout: 60000 }),
+    (event) => {
+      switch (event.type) {
+        case 'pending':
+          return Effect.log('Transaction in mempool')
+        case 'confirmed':
+          return Effect.log(`Confirmed in block ${event.transaction.blockNumber}`)
+        case 'dropped':
+          return Effect.log(`Dropped: ${event.reason}`)
+      }
+    }
+  )
+})
+```
+
+## Filtering
+
+Filter transactions by sender, recipient, method, or value:
+
+```typescript
+const filter = {
+  from: '0x1234...',           // Filter by sender
+  to: '0xA0b8...',             // Filter by recipient
+  methodId: '0xa9059cbb',      // ERC20 transfer
+  minValue: 1000000000000000n, // Min 0.001 ETH
+  maxValue: 1000000000000000000n // Max 1 ETH
+}
+
+txStream.watchPending({ filter })
+```
+
+## Error Handling
+
+```typescript
+import { TransactionStreamError } from 'voltaire-effect/services'
+
+program.pipe(
+  Effect.catchTag("TransactionStreamError", (e) =>
+    Effect.log(`Stream error: ${e.message}`)
+  )
+)
+```
+
+## Service Interface
+
+```typescript
+class TransactionStreamService extends Context.Tag("TransactionStreamService")<
+  TransactionStreamService,
+  {
+    readonly watchPending: (
+      options?: WatchPendingOptions
+    ) => Stream.Stream<PendingTransactionEvent, TransactionStreamError>
+    
+    readonly watchConfirmed: (
+      options?: WatchConfirmedOptions
+    ) => Stream.Stream<ConfirmedTransactionEvent, TransactionStreamError>
+    
+    readonly track: (
+      txHash: string | Uint8Array,
+      options?: TrackOptions
+    ) => Stream.Stream<TransactionStreamEvent, TransactionStreamError>
+  }
+>() {}
+```
+
+## Types
+
+```typescript
+interface PendingTransactionEvent {
+  type: 'pending'
+  transaction: PendingTransaction
+  metadata: { chainHead: bigint; timestamp: number }
+}
+
+interface ConfirmedTransactionEvent {
+  type: 'confirmed'
+  transaction: ConfirmedTransaction
+  metadata: { chainHead: bigint; timestamp: number }
+}
+
+interface DroppedTransactionEvent {
+  type: 'dropped'
+  hash: Uint8Array
+  reason: 'replaced' | 'timeout' | 'underpriced' | 'unknown'
+  metadata: { chainHead: bigint; timestamp: number }
+}
+
+type TransactionStreamEvent = 
+  | PendingTransactionEvent 
+  | ConfirmedTransactionEvent 
+  | DroppedTransactionEvent
+```

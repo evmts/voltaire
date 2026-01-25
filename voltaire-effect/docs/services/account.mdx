@@ -7,7 +7,8 @@ description: Cryptographic signing operations with Effect.ts
 
 ```typescript
 import { Effect } from 'effect'
-import { AccountService, LocalAccount, Secp256k1Live, KeccakLive } from 'voltaire-effect/services'
+import { AccountService, LocalAccount } from 'voltaire-effect/services'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec...')
@@ -122,6 +123,27 @@ const typedData = {
   }
 }
 ```
+
+## HD Wallet / Mnemonic
+
+Create accounts from BIP-39 mnemonics using `MnemonicAccount`:
+
+```typescript
+import { MnemonicAccount } from 'voltaire-effect/services'
+
+const mnemonic = "test test test test test test test test test test test junk"
+
+const program = Effect.gen(function* () {
+  const account = yield* AccountService
+  return account.address
+}).pipe(
+  Effect.provide(MnemonicAccount(mnemonic)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive)
+)
+```
+
+See the [HD Wallet Guide](/guides/hd-wallet) for derivation paths, passphrases, and manual usage.
 
 ## Error Handling
 

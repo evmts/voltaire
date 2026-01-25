@@ -1,0 +1,200 @@
+---
+title: BlockStream
+description: Effect-native block streaming with reorg support
+---
+
+## Quick Start
+
+```typescript
+import { BlockStreamService, BlockStream, HttpTransport } from 'voltaire-effect/services'
+import { Effect, Stream } from 'effect'
+
+const program = Effect.gen(function* () {
+  const blockStream = yield* BlockStreamService
+  
+  yield* Stream.runForEach(
+    blockStream.watch({ include: 'transactions' }),
+    (event) => {
+      if (event.type === 'reorg') {
+        return Effect.log(`Reorg: ${event.removed.length} blocks removed`)
+      }
+      return Effect.log(`Block ${event.blocks[0]?.header.number}`)
+    }
+  )
+}).pipe(
+  Effect.provide(BlockStream),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Backfill Historical Blocks
+
+Fetch blocks in a range with dynamic chunking:
+
+```typescript
+const program = Effect.gen(function* () {
+  const blockStream = yield* BlockStreamService
+  
+  yield* Stream.runForEach(
+    blockStream.backfill({
+      fromBlock: 18000000n,
+      toBlock: 18000100n,
+      include: 'receipts'  // 'header' | 'transactions' | 'receipts'
+    }),
+    (event) => Effect.log(`Got ${event.blocks.length} blocks`)
+  )
+})
+```
+
+**Include levels:**
+- `header` - Block header only (minimal data)
+- `transactions` - Header + full transaction objects  
+- `receipts` - Header + transactions + transaction receipts
+
+## Watch New Blocks
+
+Poll for new blocks with reorg detection:
+
+```typescript
+const program = Effect.gen(function* () {
+  const blockStream = yield* BlockStreamService
+  
+  yield* Stream.runForEach(
+    blockStream.watch({ include: 'transactions' }),
+    (event) => {
+      if (event.type === 'reorg') {
+        // Handle chain reorganization
+        for (const removed of event.removed) {
+          console.log('Rollback block:', removed.number)
+        }
+        for (const added of event.added) {
+          console.log('Apply new block:', added.header.number)
+        }
+        return Effect.void
+      }
+      
+      // Normal new blocks
+      for (const block of event.blocks) {
+        console.log('New block:', block.header.number)
+      }
+      return Effect.void
+    }
+  )
+})
+```
+
+## Reorg Handling
+
+BlockStream detects chain reorganizations automatically:
+
+```typescript
+type BlockStreamEvent<T> = BlocksEvent<T> | ReorgEvent<T>
+
+interface ReorgEvent<T> {
+  type: 'reorg'
+  removed: LightBlock[]       // Blocks removed (newest first)
+  added: StreamBlock<T>[]     // Blocks added (oldest first)
+  commonAncestor: LightBlock  // Last block before divergence
+  metadata: { chainHead: bigint }
+}
+
+interface BlocksEvent<T> {
+  type: 'blocks'
+  blocks: StreamBlock<T>[]
+  metadata: { chainHead: bigint }
+}
+```
+
+**Reorg handling pattern:**
+1. Undo state for `removed` blocks (newest to oldest)
+2. Apply state for `added` blocks (oldest to newest)
+
+## Cancellation
+
+Use Effect Scope for clean cancellation:
+
+```typescript
+import { Scope } from 'effect'
+
+const program = Effect.gen(function* () {
+  const blockStream = yield* BlockStreamService
+  
+  // Take first 10 blocks then stop
+  yield* Stream.take(10)(
+    blockStream.watch()
+  ).pipe(Stream.runCollect)
+})
+
+// Or with manual scope
+const program = Effect.gen(function* () {
+  const blockStream = yield* BlockStreamService
+  const scope = yield* Scope.make()
+  
+  // Stream will stop when scope closes
+  yield* Effect.addFinalizer(scope, () => Effect.log('Stopped watching'))
+})
+```
+
+## Configuration Options
+
+```typescript
+interface WatchOptions<T extends BlockInclude> {
+  include?: T                    // Content level (default: 'header')
+  fromBlock?: bigint             // Start from block (default: current)
+  pollingInterval?: number       // Poll interval ms (default: 1000)
+  maxQueuedBlocks?: number       // Max blocks when catching up (default: 50)
+}
+
+interface BackfillOptions<T extends BlockInclude> {
+  fromBlock: bigint              // Start block (required)
+  toBlock: bigint                // End block (required)
+  include?: T                    // Content level (default: 'header')
+  chunkSize?: number             // Initial chunk size (default: 100)
+  minChunkSize?: number          // Min chunk after reduction (default: 10)
+}
+```
+
+## Error Handling
+
+```typescript
+import { BlockStreamError } from 'voltaire-effect/services'
+
+program.pipe(
+  Effect.catchTag("BlockStreamError", (e) =>
+    Effect.log(`Stream error: ${e.message}`)
+  )
+)
+```
+
+## Service Interface
+
+```typescript
+class BlockStreamService extends Context.Tag("BlockStreamService")<
+  BlockStreamService,
+  {
+    readonly backfill: <T extends BlockInclude>(
+      options: BackfillOptions<T>
+    ) => Stream.Stream<BlocksEvent<T>, BlockStreamError>
+    
+    readonly watch: <T extends BlockInclude>(
+      options?: WatchOptions<T>
+    ) => Stream.Stream<BlockStreamEvent<T>, BlockStreamError>
+  }
+>() {}
+```
+
+## Layer Dependencies
+
+```
+BlockStream ─── requires ──→ TransportService
+```
+
+```typescript
+// Compose layers
+const AppLayer = BlockStream.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+// Use with program
+Effect.runPromise(program.pipe(Effect.provide(AppLayer)))
+```

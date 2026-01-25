@@ -163,31 +163,65 @@ yield* signer.switchChain(137) // Polygon
 ## TransactionRequest
 
 ```typescript
+// AddressInput accepts both branded AddressType and hex strings (matches Provider API)
+type AddressInput = AddressType | `0x${string}`
+
 type TransactionRequest = {
-  readonly to?: AddressType | null     // null = contract deploy
+  readonly to?: AddressInput | null    // null = contract deploy
   readonly value?: bigint
   readonly data?: HexType
   readonly nonce?: bigint              // auto-filled from getTransactionCount('pending')
   readonly gasLimit?: bigint           // auto-estimated via estimateGas
-  readonly gasPrice?: bigint           // legacy (type 0) - forces legacy tx
-  readonly maxFeePerGas?: bigint       // EIP-1559 (type 2)
+  readonly gasPrice?: bigint           // legacy (type 0/1)
+  readonly maxFeePerGas?: bigint       // EIP-1559+ (type 2/3/4)
   readonly maxPriorityFeePerGas?: bigint
   readonly chainId?: bigint            // auto-detected from eth_chainId
-  readonly accessList?: Array<{        // included in EIP-1559 txs
-    address: AddressType | `0x${string}`
+  readonly accessList?: Array<{        // EIP-2930+ access list
+    address: AddressInput
     storageKeys: Array<`0x${string}`>
   }>
+  
+  // Explicit transaction type (auto-detected if not provided)
+  readonly type?: 0 | 1 | 2 | 3 | 4
+  
+  // EIP-4844 blob transaction fields
+  readonly blobVersionedHashes?: readonly `0x${string}`[]
+  readonly maxFeePerBlobGas?: bigint
+  
+  // EIP-7702 set code authorization
+  readonly authorizationList?: readonly {
+    chainId: bigint
+    address: `0x${string}`
+    nonce: bigint
+    yParity: number
+    r: `0x${string}`
+    s: `0x${string}`
+  }[]
 }
 ```
 
+### Transaction Types
+
+| Type | EIP | Description | Key Fields |
+|------|-----|-------------|------------|
+| 0 | Legacy | Original Ethereum tx | `gasPrice` |
+| 1 | EIP-2930 | Access list tx | `gasPrice` + `accessList` |
+| 2 | EIP-1559 | Priority fee tx | `maxFeePerGas` + `maxPriorityFeePerGas` |
+| 3 | EIP-4844 | Blob tx (L2 data) | `blobVersionedHashes` + `maxFeePerBlobGas` |
+| 4 | EIP-7702 | Set code tx | `authorizationList` |
+
 ### Transaction Type Detection
 
-The signer automatically detects which transaction type to use:
+The signer automatically detects which transaction type to use based on provided fields:
 
-1. **If `maxFeePerGas` or `maxPriorityFeePerGas` provided** → EIP-1559 (type 2)
-2. **If `gasPrice` provided** → Legacy (type 0)
-3. **If neither provided AND network supports EIP-1559** → EIP-1559 (type 2)
-4. **If neither provided AND network doesn't support EIP-1559** → Legacy (type 0)
+1. **If `type` is explicitly provided** → Use that type
+2. **If `authorizationList` provided** → EIP-7702 (type 4)
+3. **If `blobVersionedHashes` provided** → EIP-4844 (type 3)
+4. **If `maxFeePerGas` or `maxPriorityFeePerGas` provided** → EIP-1559 (type 2)
+5. **If `accessList` provided with `gasPrice`** → EIP-2930 (type 1)
+6. **If `gasPrice` provided (no accessList)** → Legacy (type 0)
+7. **If neither provided AND network supports EIP-1559** → EIP-1559 (type 2)
+8. **If neither provided AND network doesn't support EIP-1559** → Legacy (type 0)
 
 On EIP-1559 networks (post-London), if you don't specify any gas fields, the signer defaults to EIP-1559 transactions.
 
@@ -206,9 +240,7 @@ The 1.2x multiplier (20% buffer) on base fee provides headroom for fee volatilit
 
 Since bigint doesn't support decimals, the implementation uses: `(baseFee * 12n) / 10n + maxPriorityFeePerGas`
 
-### EIP-2930 Note
 
-EIP-2930 (type 1) transactions are NOT currently supported. If you provide `accessList` with `gasPrice`, the accessList will be ignored and a legacy transaction will be produced. Use EIP-1559 fee fields to include access lists.
 
 ### Nonce Management
 
