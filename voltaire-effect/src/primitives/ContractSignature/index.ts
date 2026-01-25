@@ -59,3 +59,10 @@ export {
 	ERC1271_MAGIC_VALUE,
 	Struct,
 } from "./Struct.js";
+
+export {
+	verifySignature,
+	SignatureVerificationError,
+	InvalidSignatureFormatError,
+	type SignatureInput,
+} from "./verifySignature.js";

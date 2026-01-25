@@ -1,5 +1,8 @@
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { ProviderService } from "../../services/Provider/index.js";
 import * as ContractSignature from "./index.js";
 
 describe("ContractSignature.Struct", () => {
@@ -36,5 +39,70 @@ describe("checkReturnData", () => {
 	it("returns false for short data", () => {
 		const shortData = new Uint8Array([0x16, 0x26]);
 		expect(ContractSignature.checkReturnData(shortData)).toBe(false);
+	});
+});
+
+describe("verifySignature", () => {
+	const mockProvider = {
+		call: vi.fn(),
+		getLogs: vi.fn(),
+		getBlockNumber: vi.fn(),
+		getBalance: vi.fn(),
+		getBlock: vi.fn(),
+		getTransaction: vi.fn(),
+		getTransactionReceipt: vi.fn(),
+		getTransactionCount: vi.fn(),
+		getCode: vi.fn(),
+		getStorageAt: vi.fn(),
+		estimateGas: vi.fn(),
+		getChainId: vi.fn(),
+		getGasPrice: vi.fn(),
+	};
+
+	const MockProviderLayer = Layer.succeed(ProviderService, mockProvider as any);
+
+	it("exports verifySignature function", () => {
+		expect(typeof ContractSignature.verifySignature).toBe("function");
+	});
+
+	it("exports SignatureVerificationError", () => {
+		expect(ContractSignature.SignatureVerificationError).toBeDefined();
+	});
+
+	it("exports InvalidSignatureFormatError", () => {
+		expect(ContractSignature.InvalidSignatureFormatError).toBeDefined();
+	});
+
+	it("SignatureVerificationError is catchable with Effect.catchTag", async () => {
+		const error = new ContractSignature.SignatureVerificationError(
+			{ address: "0x123", hash: new Uint8Array(32) },
+			"test error",
+		);
+
+		const program = Effect.fail(error).pipe(
+			Effect.catchTag("SignatureVerificationError", (e) =>
+				Effect.succeed(`caught: ${e.message}`),
+			),
+		);
+
+		const result = await Effect.runPromise(program);
+		expect(result).toBe("caught: test error");
+	});
+
+	it("InvalidSignatureFormatError has correct _tag", () => {
+		const error = new ContractSignature.InvalidSignatureFormatError(
+			"bad format",
+		);
+		expect(error._tag).toBe("InvalidSignatureFormatError");
+		expect(error.name).toBe("InvalidSignatureFormatError");
+	});
+
+	it("SignatureVerificationError has correct _tag", () => {
+		const error = new ContractSignature.SignatureVerificationError(
+			{ address: "0x123", hash: new Uint8Array(32) },
+			"verification failed",
+		);
+		expect(error._tag).toBe("SignatureVerificationError");
+		expect(error.name).toBe("SignatureVerificationError");
 	});
 });
