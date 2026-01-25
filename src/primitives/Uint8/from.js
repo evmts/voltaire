@@ -34,7 +34,7 @@ export function from(value) {
 		}
 		if (Number.isNaN(numValue)) {
 			throw new InvalidFormatError(`Invalid Uint8 string: ${value}`, {
-				code: "UINT8_INVALID_STRING",
+				code: -32602,
 				value,
 				expected: "decimal or 0x-prefixed hex string",
 				docsPath: "/primitives/uint8#error-handling",
@@ -48,7 +48,7 @@ export function from(value) {
 		throw new InvalidFormatError(
 			`Uint8 value must be an integer: ${numValue}`,
 			{
-				code: "UINT8_NOT_INTEGER",
+				code: -32602,
 				value: numValue,
 				expected: "integer value",
 				docsPath: "/primitives/uint8#error-handling",

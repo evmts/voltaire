@@ -11,17 +11,18 @@ import { CryptoError } from "../../primitives/errors/index.js";
  * @since 0.0.0
  */
 export class KzgError extends CryptoError {
+	override readonly _tag: string = "KzgError";
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "KZG_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/crypto/kzg#error-handling",
 			cause: options?.cause,
@@ -39,17 +40,18 @@ export class KzgError extends CryptoError {
  * @since 0.0.0
  */
 export class KzgNotInitializedError extends KzgError {
+	override readonly _tag = "KzgNotInitializedError" as const;
 	constructor(
 		message = "KZG trusted setup not initialized",
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "KZG_NOT_INITIALIZED",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath:
 				options?.docsPath || "/crypto/kzg/load-trusted-setup#error-handling",
@@ -68,17 +70,18 @@ export class KzgNotInitializedError extends KzgError {
  * @since 0.0.0
  */
 export class KzgInvalidBlobError extends KzgError {
+	override readonly _tag = "KzgInvalidBlobError" as const;
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "KZG_INVALID_BLOB",
+			code: options?.code ?? -32602,
 			context: options?.context,
 			docsPath: options?.docsPath || "/crypto/kzg/validate-blob#error-handling",
 			cause: options?.cause,
@@ -96,17 +99,18 @@ export class KzgInvalidBlobError extends KzgError {
  * @since 0.0.0
  */
 export class KzgVerificationError extends KzgError {
+	override readonly _tag = "KzgVerificationError" as const;
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "KZG_VERIFICATION_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath:
 				options?.docsPath || "/crypto/kzg/verify-blob-kzg-proof#error-handling",

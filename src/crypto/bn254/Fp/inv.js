@@ -19,7 +19,7 @@ import { pow } from "./pow.js";
 export function inv(a) {
 	if (a === 0n) {
 		throw new Bn254Error("Division by zero in Fp field", {
-			code: "DIVISION_BY_ZERO",
+			code: -32000,
 			context: { field: "Fp", value: a },
 			docsPath: "/crypto/bn254#field-operations",
 		});

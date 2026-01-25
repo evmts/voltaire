@@ -20,7 +20,7 @@ export class InvalidAddressLengthError extends InvalidLengthError {
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -29,7 +29,7 @@ export class InvalidAddressLengthError extends InvalidLengthError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid address length", {
-			code: options?.code || "BINARY_TREE_INVALID_ADDRESS_LENGTH",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "20 bytes",
 			context: options?.context,
@@ -62,7 +62,7 @@ export class InvalidKeyLengthError extends InvalidLengthError {
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -71,7 +71,7 @@ export class InvalidKeyLengthError extends InvalidLengthError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid key length", {
-			code: options?.code || "BINARY_TREE_INVALID_KEY_LENGTH",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "32 bytes",
 			context: options?.context,
@@ -103,7 +103,7 @@ export class InvalidTreeStateError extends ValidationError {
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -112,7 +112,7 @@ export class InvalidTreeStateError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid tree state", {
-			code: options?.code || "BINARY_TREE_INVALID_STATE",
+			code: options?.code ?? -32000,
 			value: options?.value,
 			expected: options?.expected || "valid tree state",
 			context: options?.context,

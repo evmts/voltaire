@@ -21,7 +21,7 @@ export function random() {
 		return /** @type {import('./HashType.js').HashType} */ (bytes);
 	}
 	throw new ValidationError("crypto.getRandomValues not available", {
-		code: "HASH_CRYPTO_UNAVAILABLE",
+		code: -32000,
 		value: typeof crypto,
 		expected: "Web Crypto API",
 		docsPath: "/primitives/hash",

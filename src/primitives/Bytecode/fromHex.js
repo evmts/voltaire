@@ -19,7 +19,7 @@ export function fromHex(hex) {
 		throw new InvalidFormatError("Invalid hex string: odd length", {
 			value: hex,
 			expected: "Even-length hex string",
-			code: "BYTECODE_ODD_LENGTH",
+			code: -32602,
 			docsPath: "/primitives/bytecode/from-hex#error-handling",
 		});
 	}

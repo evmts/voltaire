@@ -26,7 +26,7 @@ export function from(input) {
 		const hexStr = input.startsWith("0x") ? input.slice(2) : input;
 		if (!/^[0-9a-fA-F]+$/.test(hexStr)) {
 			throw new InvalidPublicKeyError(`Invalid hex string: ${input}`, {
-				code: "SECP256K1_INVALID_HEX_STRING",
+				code: -32602,
 				context: { input },
 				docsPath: "/crypto/secp256k1/public-key#error-handling",
 			});
@@ -35,7 +35,7 @@ export function from(input) {
 			throw new InvalidPublicKeyError(
 				`Invalid public key hex length: expected 128 characters (64 bytes), got ${hexStr.length}`,
 				{
-					code: "SECP256K1_INVALID_PUBLIC_KEY_HEX_LENGTH",
+					code: -32602,
 					context: { length: hexStr.length, expected: 128 },
 					docsPath: "/crypto/secp256k1/public-key#error-handling",
 				},

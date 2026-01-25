@@ -15,7 +15,7 @@ export class InvalidDomainSeparatorLengthError extends InvalidLengthError {
 	 */
 	constructor(message, context) {
 		super(message, {
-			code: "INVALID_DOMAIN_SEPARATOR_LENGTH",
+			code: -32602,
 			value: context.value,
 			expected: context.expected,
 			docsPath: "/primitives/domain-separator#error-handling",

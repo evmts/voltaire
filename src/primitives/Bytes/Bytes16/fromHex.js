@@ -22,7 +22,7 @@ export function fromHex(hex) {
 		throw new InvalidLengthError(
 			`Bytes16 hex must be ${SIZE * 2} characters, got ${normalized.length}`,
 			{
-				code: "BYTES16_INVALID_HEX_LENGTH",
+				code: -32602,
 				value: hex,
 				expected: `${SIZE * 2} characters`,
 				context: { actualLength: normalized.length },
@@ -32,7 +32,7 @@ export function fromHex(hex) {
 	}
 	if (!/^[0-9a-fA-F]+$/.test(normalized)) {
 		throw new InvalidFormatError("Invalid hex string", {
-			code: "BYTES16_INVALID_HEX_FORMAT",
+			code: -32602,
 			value: hex,
 			expected: "hexadecimal string",
 			docsPath: "/primitives/bytes/bytes16",

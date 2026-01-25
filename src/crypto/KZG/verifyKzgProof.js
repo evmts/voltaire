@@ -35,7 +35,7 @@ export function VerifyKzgProof({ verifyKzgProof: ckzgVerifyKzgProof }) {
 			throw new KzgError(
 				`Commitment must be ${BYTES_PER_COMMITMENT} bytes, got ${commitment instanceof Uint8Array ? commitment.length : "not Uint8Array"}`,
 				{
-					code: "KZG_INVALID_COMMITMENT",
+					code: -32602,
 					context: {
 						commitmentType:
 							commitment instanceof Uint8Array
@@ -53,7 +53,7 @@ export function VerifyKzgProof({ verifyKzgProof: ckzgVerifyKzgProof }) {
 			throw new KzgError(
 				`Evaluation point must be ${BYTES_PER_FIELD_ELEMENT} bytes, got ${z instanceof Uint8Array ? z.length : "not Uint8Array"}`,
 				{
-					code: "KZG_INVALID_EVALUATION_POINT",
+					code: -32602,
 					context: {
 						zType: z instanceof Uint8Array ? "Uint8Array" : typeof z,
 						zLength: z instanceof Uint8Array ? z.length : undefined,
@@ -67,7 +67,7 @@ export function VerifyKzgProof({ verifyKzgProof: ckzgVerifyKzgProof }) {
 			throw new KzgError(
 				`Evaluation result must be ${BYTES_PER_FIELD_ELEMENT} bytes, got ${y instanceof Uint8Array ? y.length : "not Uint8Array"}`,
 				{
-					code: "KZG_INVALID_EVALUATION_RESULT",
+					code: -32602,
 					context: {
 						yType: y instanceof Uint8Array ? "Uint8Array" : typeof y,
 						yLength: y instanceof Uint8Array ? y.length : undefined,
@@ -81,7 +81,7 @@ export function VerifyKzgProof({ verifyKzgProof: ckzgVerifyKzgProof }) {
 			throw new KzgError(
 				`Proof must be ${BYTES_PER_PROOF} bytes, got ${proof instanceof Uint8Array ? proof.length : "not Uint8Array"}`,
 				{
-					code: "KZG_INVALID_PROOF",
+					code: -32602,
 					context: {
 						proofType:
 							proof instanceof Uint8Array ? "Uint8Array" : typeof proof,

@@ -25,7 +25,7 @@ export function entropyToMnemonic(entropy, wl = wordlist) {
 		throw new InvalidEntropyError(
 			`Entropy must be 16, 20, 24, 28, or 32 bytes, got ${entropy.length}`,
 			{
-				code: "BIP39_INVALID_ENTROPY_SIZE",
+				code: -32602,
 				context: { length: entropy.length, expected: "16, 20, 24, 28, or 32" },
 				docsPath: "/crypto/bip39/entropy-to-mnemonic#error-handling",
 			},
@@ -38,7 +38,7 @@ export function entropyToMnemonic(entropy, wl = wordlist) {
 		);
 	} catch (error) {
 		throw new Bip39Error(`Entropy to mnemonic conversion failed: ${error}`, {
-			code: "BIP39_CONVERSION_FAILED",
+			code: -32000,
 			context: { entropyLength: entropy.length },
 			docsPath: "/crypto/bip39/entropy-to-mnemonic#error-handling",
 			cause: /** @type {Error} */ (error),

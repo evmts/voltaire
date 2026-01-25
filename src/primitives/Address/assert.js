@@ -56,7 +56,7 @@ export function assert(value, options = {}) {
 					{
 						value,
 						expected: "keccak256 hash function in options",
-						code: "MISSING_KECCAK256",
+						code: -32602,
 					},
 				);
 			}

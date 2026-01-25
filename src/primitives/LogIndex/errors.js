@@ -16,7 +16,7 @@ export class InvalidLogIndexError extends InvalidRangeError {
 	/**
 	 * @param {string} message - Error message
 	 * @param {object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected value description
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -25,7 +25,7 @@ export class InvalidLogIndexError extends InvalidRangeError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "INVALID_LOG_INDEX",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "valid log index",
 			context: options?.context,

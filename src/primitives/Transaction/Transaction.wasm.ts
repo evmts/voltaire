@@ -36,7 +36,7 @@ export function detectTransactionType(data: Uint8Array): TransactionType {
 		throw new InvalidTransactionTypeError(
 			`Invalid transaction type: ${txType}`,
 			{
-				code: "INVALID_TRANSACTION_TYPE",
+				code: -32602,
 				context: { txType },
 				docsPath: "/primitives/transaction/wasm#error-handling",
 			},

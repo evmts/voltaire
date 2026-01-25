@@ -20,7 +20,7 @@ export function fromBytes(bytes) {
 		throw new InvalidLengthError(
 			`Bytes64 must be ${SIZE} bytes, got ${bytes.length}`,
 			{
-				code: "BYTES64_INVALID_LENGTH",
+				code: -32602,
 				value: bytes,
 				expected: `${SIZE} bytes`,
 				context: { actualLength: bytes.length },

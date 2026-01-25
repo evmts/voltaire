@@ -35,6 +35,7 @@ export namespace Ed25519Wasm {
 	// ==========================================================================
 
 	export class Ed25519Error extends Error {
+		readonly _tag: string = "Ed25519Error";
 		constructor(message: string) {
 			super(message);
 			this.name = "Ed25519Error";
@@ -42,6 +43,7 @@ export namespace Ed25519Wasm {
 	}
 
 	export class InvalidSignatureError extends Ed25519Error {
+		override readonly _tag = "InvalidSignatureError" as const;
 		constructor(message: string) {
 			super(message);
 			this.name = "InvalidSignatureError";
@@ -49,6 +51,7 @@ export namespace Ed25519Wasm {
 	}
 
 	export class InvalidPublicKeyError extends Ed25519Error {
+		override readonly _tag = "InvalidPublicKeyError" as const;
 		constructor(message: string) {
 			super(message);
 			this.name = "InvalidPublicKeyError";
@@ -56,6 +59,7 @@ export namespace Ed25519Wasm {
 	}
 
 	export class InvalidSecretKeyError extends Ed25519Error {
+		override readonly _tag = "InvalidSecretKeyError" as const;
 		constructor(message: string) {
 			super(message);
 			this.name = "InvalidSecretKeyError";
@@ -63,6 +67,7 @@ export namespace Ed25519Wasm {
 	}
 
 	export class InvalidSeedError extends Ed25519Error {
+		override readonly _tag = "InvalidSeedError" as const;
 		constructor(message: string) {
 			super(message);
 			this.name = "InvalidSeedError";

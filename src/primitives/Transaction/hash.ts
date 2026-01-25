@@ -42,7 +42,7 @@ export function hash(this: Any): HashType {
 				// biome-ignore lint/suspicious/noExplicitAny: error message for unknown type
 				`Unknown transaction type: ${(this as any).type}`,
 				{
-					code: "UNKNOWN_TRANSACTION_TYPE",
+					code: -32602,
 					// biome-ignore lint/suspicious/noExplicitAny: error context for unknown type
 					context: { type: (this as any).type },
 					docsPath: "/primitives/transaction/hash#error-handling",

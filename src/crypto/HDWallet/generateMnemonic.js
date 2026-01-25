@@ -10,7 +10,7 @@ import { InvalidMnemonicError } from "./errors.js";
 export async function generateMnemonic(strength = 128) {
 	if (strength !== 128 && strength !== 256) {
 		throw new InvalidMnemonicError("Strength must be 128 or 256", {
-			code: "INVALID_MNEMONIC_STRENGTH",
+			code: -32602,
 			context: { strength, validValues: [128, 256] },
 			docsPath: "/crypto/hdwallet/generate-mnemonic#error-handling",
 		});
@@ -47,7 +47,7 @@ export async function generateMnemonic(strength = 128) {
 
 	if (result < 0) {
 		throw new InvalidMnemonicError("Failed to generate mnemonic", {
-			code: "MNEMONIC_GENERATION_FAILED",
+			code: -32000,
 			context: { strength, result },
 			docsPath: "/crypto/hdwallet/generate-mnemonic#error-handling",
 		});

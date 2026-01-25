@@ -21,7 +21,7 @@ const assertEqualLengths = (blobs, commitments, proofs) => {
 	throw new KzgError(
 		"Blobs, commitments, and proofs arrays must have same length",
 		{
-			code: "KZG_BATCH_LENGTH_MISMATCH",
+			code: -32602,
 			context: {
 				blobsLength: blobs.length,
 				commitmentsLength: commitments.length,
@@ -45,7 +45,7 @@ const assertValidCommitments = (commitments) => {
 		throw new KzgError(
 			`Commitment at index ${i} must be ${BYTES_PER_COMMITMENT} bytes, got ${isUint8 ? commitment.length : "not Uint8Array"}`,
 			{
-				code: "KZG_INVALID_COMMITMENT",
+				code: -32602,
 				context: {
 					index: i,
 					commitmentType: isUint8 ? "Uint8Array" : typeof commitment,
@@ -71,7 +71,7 @@ const assertValidProofs = (proofs) => {
 		throw new KzgError(
 			`Proof at index ${i} must be ${BYTES_PER_PROOF} bytes, got ${isUint8 ? proof.length : "not Uint8Array"}`,
 			{
-				code: "KZG_INVALID_PROOF",
+				code: -32602,
 				context: {
 					index: i,
 					proofType: isUint8 ? "Uint8Array" : typeof proof,
@@ -117,7 +117,7 @@ export function VerifyBlobKzgProofBatch({
 			throw new KzgError(
 				`Failed to verify batch: ${error instanceof Error ? error.message : String(error)}`,
 				{
-					code: "KZG_BATCH_VERIFICATION_FAILED",
+					code: -32000,
 					context: { count: blobs.length },
 					docsPath: "/crypto/kzg/verify-blob-kzg-proof-batch#error-handling",
 					cause: error instanceof Error ? error : undefined,

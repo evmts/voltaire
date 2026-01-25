@@ -20,7 +20,7 @@ export function assertSigned(this: Any): void {
 
 	if (isZeroR || isZeroS) {
 		throw new TransactionError("Transaction is not signed", {
-			code: "TRANSACTION_NOT_SIGNED",
+			code: -32000,
 			context: { hasR: !isZeroR, hasS: !isZeroS },
 			docsPath: "/primitives/transaction/assert-signed#error-handling",
 		});

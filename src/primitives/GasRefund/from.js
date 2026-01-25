@@ -22,7 +22,7 @@ export function from(value) {
 			{
 				value,
 				expected: "Non-negative bigint",
-				code: "GAS_REFUND_INVALID_FORMAT",
+				code: -32602,
 				docsPath: "/primitives/gas-refund/from#error-handling",
 			},
 		);

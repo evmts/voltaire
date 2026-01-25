@@ -11,9 +11,9 @@
  * If these tests fail, you've accidentally pulled FFI dependencies into the wrong exports.
  */
 
-import { describe, expect, it } from "vitest";
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { describe, expect, it } from "vitest";
 
 const DIST_DIR = join(import.meta.dirname, "..", "dist");
 
@@ -28,7 +28,11 @@ function bundleContainsFFI(bundlePath: string): {
 	const errors: string[] = [];
 
 	if (!existsSync(bundlePath)) {
-		return { hasFfiNapi: false, hasRefNapi: false, errors: [`Bundle not found: ${bundlePath}`] };
+		return {
+			hasFfiNapi: false,
+			hasRefNapi: false,
+			errors: [`Bundle not found: ${bundlePath}`],
+		};
 	}
 
 	const content = readFileSync(bundlePath, "utf-8");
@@ -83,24 +87,42 @@ describe("Export Separation", () => {
 
 		it("ESM bundle must NOT contain ffi-napi or ref-napi", () => {
 			const result = bundleContainsFFI(mainEsm);
-			expect(result.hasFfiNapi, `Main ESM bundle must not import ffi-napi. ${result.errors.join(", ")}`).toBe(false);
-			expect(result.hasRefNapi, `Main ESM bundle must not import ref-napi. ${result.errors.join(", ")}`).toBe(false);
+			expect(
+				result.hasFfiNapi,
+				`Main ESM bundle must not import ffi-napi. ${result.errors.join(", ")}`,
+			).toBe(false);
+			expect(
+				result.hasRefNapi,
+				`Main ESM bundle must not import ref-napi. ${result.errors.join(", ")}`,
+			).toBe(false);
 		});
 
 		it("CJS bundle must NOT contain ffi-napi or ref-napi", () => {
 			const result = bundleContainsFFI(mainCjs);
-			expect(result.hasFfiNapi, `Main CJS bundle must not import ffi-napi. ${result.errors.join(", ")}`).toBe(false);
-			expect(result.hasRefNapi, `Main CJS bundle must not import ref-napi. ${result.errors.join(", ")}`).toBe(false);
+			expect(
+				result.hasFfiNapi,
+				`Main CJS bundle must not import ffi-napi. ${result.errors.join(", ")}`,
+			).toBe(false);
+			expect(
+				result.hasRefNapi,
+				`Main CJS bundle must not import ref-napi. ${result.errors.join(", ")}`,
+			).toBe(false);
 		});
 
 		it("ESM bundle must NOT contain HDWallet FFI code", () => {
 			const hasHDWallet = bundleContainsHDWallet(mainEsm);
-			expect(hasHDWallet, "Main ESM bundle must not contain HDWallet FFI code").toBe(false);
+			expect(
+				hasHDWallet,
+				"Main ESM bundle must not contain HDWallet FFI code",
+			).toBe(false);
 		});
 
 		it("CJS bundle must NOT contain HDWallet FFI code", () => {
 			const hasHDWallet = bundleContainsHDWallet(mainCjs);
-			expect(hasHDWallet, "Main CJS bundle must not contain HDWallet FFI code").toBe(false);
+			expect(
+				hasHDWallet,
+				"Main CJS bundle must not contain HDWallet FFI code",
+			).toBe(false);
 		});
 	});
 
@@ -110,24 +132,42 @@ describe("Export Separation", () => {
 
 		it("ESM bundle must NOT contain ffi-napi or ref-napi", () => {
 			const result = bundleContainsFFI(wasmEsm);
-			expect(result.hasFfiNapi, `WASM ESM bundle must not import ffi-napi. ${result.errors.join(", ")}`).toBe(false);
-			expect(result.hasRefNapi, `WASM ESM bundle must not import ref-napi. ${result.errors.join(", ")}`).toBe(false);
+			expect(
+				result.hasFfiNapi,
+				`WASM ESM bundle must not import ffi-napi. ${result.errors.join(", ")}`,
+			).toBe(false);
+			expect(
+				result.hasRefNapi,
+				`WASM ESM bundle must not import ref-napi. ${result.errors.join(", ")}`,
+			).toBe(false);
 		});
 
 		it("CJS bundle must NOT contain ffi-napi or ref-napi", () => {
 			const result = bundleContainsFFI(wasmCjs);
-			expect(result.hasFfiNapi, `WASM CJS bundle must not import ffi-napi. ${result.errors.join(", ")}`).toBe(false);
-			expect(result.hasRefNapi, `WASM CJS bundle must not import ref-napi. ${result.errors.join(", ")}`).toBe(false);
+			expect(
+				result.hasFfiNapi,
+				`WASM CJS bundle must not import ffi-napi. ${result.errors.join(", ")}`,
+			).toBe(false);
+			expect(
+				result.hasRefNapi,
+				`WASM CJS bundle must not import ref-napi. ${result.errors.join(", ")}`,
+			).toBe(false);
 		});
 
 		it("ESM bundle must NOT contain HDWallet FFI code", () => {
 			const hasHDWallet = bundleContainsHDWallet(wasmEsm);
-			expect(hasHDWallet, "WASM ESM bundle must not contain HDWallet FFI code").toBe(false);
+			expect(
+				hasHDWallet,
+				"WASM ESM bundle must not contain HDWallet FFI code",
+			).toBe(false);
 		});
 
 		it("CJS bundle must NOT contain HDWallet FFI code", () => {
 			const hasHDWallet = bundleContainsHDWallet(wasmCjs);
-			expect(hasHDWallet, "WASM CJS bundle must not contain HDWallet FFI code").toBe(false);
+			expect(
+				hasHDWallet,
+				"WASM CJS bundle must not contain HDWallet FFI code",
+			).toBe(false);
 		});
 	});
 
@@ -140,7 +180,7 @@ describe("Export Separation", () => {
 			// Native bundle should have FFI imports (marked as external)
 			expect(
 				result.hasFfiNapi || result.hasRefNapi,
-				"Native ESM bundle should reference FFI packages (as external imports)"
+				"Native ESM bundle should reference FFI packages (as external imports)",
 			).toBe(true);
 		});
 
@@ -149,18 +189,22 @@ describe("Export Separation", () => {
 			// Native bundle should have FFI imports (marked as external)
 			expect(
 				result.hasFfiNapi || result.hasRefNapi,
-				"Native CJS bundle should reference FFI packages (as external imports)"
+				"Native CJS bundle should reference FFI packages (as external imports)",
 			).toBe(true);
 		});
 
 		it("ESM bundle MUST contain HDWallet", () => {
 			const hasHDWallet = bundleContainsHDWallet(nativeEsm);
-			expect(hasHDWallet, "Native ESM bundle should contain HDWallet").toBe(true);
+			expect(hasHDWallet, "Native ESM bundle should contain HDWallet").toBe(
+				true,
+			);
 		});
 
 		it("CJS bundle MUST contain HDWallet", () => {
 			const hasHDWallet = bundleContainsHDWallet(nativeCjs);
-			expect(hasHDWallet, "Native CJS bundle should contain HDWallet").toBe(true);
+			expect(hasHDWallet, "Native CJS bundle should contain HDWallet").toBe(
+				true,
+			);
 		});
 	});
 });
@@ -186,7 +230,7 @@ describe("Import Validation", () => {
 
 		expect(
 			topLevelFfiImport,
-			"Main export must not have top-level ffi-napi imports that would fail on load"
+			"Main export must not have top-level ffi-napi imports that would fail on load",
 		).toBe(false);
 	});
 
@@ -206,7 +250,7 @@ describe("Import Validation", () => {
 
 		expect(
 			topLevelFfiImport,
-			"WASM export must not have top-level ffi-napi imports that would fail on load"
+			"WASM export must not have top-level ffi-napi imports that would fail on load",
 		).toBe(false);
 	});
 });

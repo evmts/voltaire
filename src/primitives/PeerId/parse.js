@@ -26,7 +26,7 @@ export function parse() {
 			{
 				value: this,
 				expected: "enode:// prefix",
-				code: "PEER_ID_INVALID_ENODE_PREFIX",
+				code: -32602,
 				docsPath: "/primitives/peer-id/parse#error-handling",
 			},
 		);
@@ -41,7 +41,7 @@ export function parse() {
 		throw new InvalidFormatError("Enode URL must contain '@' separator", {
 			value: this,
 			expected: "enode://PUBKEY@IP:PORT format",
-			code: "PEER_ID_MISSING_AT_SEPARATOR",
+			code: -32602,
 			docsPath: "/primitives/peer-id/parse#error-handling",
 		});
 	}
@@ -56,7 +56,7 @@ export function parse() {
 			{
 				value: publicKey,
 				expected: "128 hex characters",
-				code: "PEER_ID_INVALID_PUBKEY",
+				code: -32602,
 				docsPath: "/primitives/peer-id/parse#error-handling",
 			},
 		);
@@ -79,7 +79,7 @@ export function parse() {
 			throw new InvalidFormatError("Invalid IPv6 format in enode URL", {
 				value: ipPortPart,
 				expected: "[IPv6]:PORT format",
-				code: "PEER_ID_INVALID_IPV6",
+				code: -32602,
 				docsPath: "/primitives/peer-id/parse#error-handling",
 			});
 		}
@@ -93,7 +93,7 @@ export function parse() {
 			throw new InvalidFormatError("Enode URL must contain port number", {
 				value: ipPortPart,
 				expected: "IP:PORT format",
-				code: "PEER_ID_MISSING_PORT",
+				code: -32602,
 				docsPath: "/primitives/peer-id/parse#error-handling",
 			});
 		}
@@ -106,7 +106,7 @@ export function parse() {
 		throw new InvalidFormatError("Invalid port number in enode URL", {
 			value: port,
 			expected: "Port between 0 and 65535",
-			code: "PEER_ID_INVALID_PORT",
+			code: -32602,
 			docsPath: "/primitives/peer-id/parse#error-handling",
 		});
 	}
@@ -128,7 +128,7 @@ export function parse() {
 					{
 						value: discoveryPort,
 						expected: "Port between 0 and 65535",
-						code: "PEER_ID_INVALID_DISCPORT",
+						code: -32602,
 						docsPath: "/primitives/peer-id/parse#error-handling",
 					},
 				);

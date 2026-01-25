@@ -16,7 +16,7 @@ export class InvalidBlockNumberError extends InvalidRangeError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid BlockNumber", {
-			code: "INVALID_BLOCK_NUMBER",
+			code: -32602,
 			value: options?.value,
 			expected: options?.expected || "non-negative integer",
 			context: options?.context,

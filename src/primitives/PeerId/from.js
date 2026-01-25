@@ -20,7 +20,7 @@ export function from(value) {
 			{
 				value,
 				expected: "String (enode URL or node ID)",
-				code: "PEER_ID_INVALID_TYPE",
+				code: -32602,
 				docsPath: "/primitives/peer-id/from#error-handling",
 			},
 		);
@@ -30,7 +30,7 @@ export function from(value) {
 		throw new InvalidFormatError("Peer ID cannot be empty", {
 			value,
 			expected: "Non-empty string",
-			code: "PEER_ID_EMPTY",
+			code: -32602,
 			docsPath: "/primitives/peer-id/from#error-handling",
 		});
 	}

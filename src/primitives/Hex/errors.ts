@@ -5,7 +5,7 @@ import {
 } from "../errors/index.js";
 
 interface ErrorOptions {
-	code?: string;
+	code?: number;
 	value?: unknown;
 	expected?: string;
 	context?: Record<string, unknown>;
@@ -22,7 +22,7 @@ export class InvalidFormatError extends BaseInvalidFormatError {
 		options: ErrorOptions = {},
 	) {
 		super(message, {
-			code: options.code || "HEX_INVALID_FORMAT",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "0x-prefixed hex string",
 			context: options.context,
@@ -39,7 +39,7 @@ export class InvalidFormatError extends BaseInvalidFormatError {
 export class InvalidLengthError extends BaseInvalidLengthError {
 	constructor(message = "Invalid hex length", options: ErrorOptions = {}) {
 		super(message, {
-			code: options.code || "HEX_INVALID_LENGTH",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "even-length hex string",
 			context: options.context,
@@ -56,7 +56,7 @@ export class InvalidLengthError extends BaseInvalidLengthError {
 export class InvalidCharacterError extends BaseInvalidFormatError {
 	constructor(message = "Invalid hex character", options: ErrorOptions = {}) {
 		super(message, {
-			code: options.code || "HEX_INVALID_CHARACTER",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "valid hex characters (0-9, a-f, A-F)",
 			context: options.context,
@@ -73,7 +73,7 @@ export class InvalidCharacterError extends BaseInvalidFormatError {
 export class OddLengthError extends BaseInvalidLengthError {
 	constructor(message = "Odd length hex string", options: ErrorOptions = {}) {
 		super(message, {
-			code: options.code || "HEX_ODD_LENGTH",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "even number of hex characters",
 			context: options.context,
@@ -93,7 +93,7 @@ export class SizeExceededError extends BaseInvalidLengthError {
 		options: ErrorOptions = {},
 	) {
 		super(message, {
-			code: options.code || "HEX_SIZE_EXCEEDED",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "hex that fits within target size",
 			context: options.context,
@@ -113,7 +113,7 @@ export class InvalidBooleanHexError extends BaseInvalidRangeError {
 		options: ErrorOptions = {},
 	) {
 		super(message, {
-			code: options.code || "HEX_INVALID_BOOLEAN",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "0x0/0x00 or 0x1/0x01",
 			context: options.context,
@@ -133,7 +133,7 @@ export class NegativeNumberError extends BaseInvalidRangeError {
 		options: ErrorOptions = {},
 	) {
 		super(message, {
-			code: options.code || "HEX_NEGATIVE_NUMBER",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "non-negative number",
 			context: options.context,
@@ -153,7 +153,7 @@ export class UnsafeIntegerError extends BaseInvalidRangeError {
 		options: ErrorOptions = {},
 	) {
 		super(message, {
-			code: options.code || "HEX_UNSAFE_INTEGER",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || `number <= ${Number.MAX_SAFE_INTEGER}`,
 			context: options.context,
@@ -173,7 +173,7 @@ export class NonIntegerError extends BaseInvalidRangeError {
 		options: ErrorOptions = {},
 	) {
 		super(message, {
-			code: options.code || "HEX_NON_INTEGER",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "integer value",
 			context: options.context,
@@ -190,7 +190,7 @@ export class NonIntegerError extends BaseInvalidRangeError {
 export class InvalidSizeError extends BaseInvalidRangeError {
 	constructor(message = "Invalid size parameter", options: ErrorOptions = {}) {
 		super(message, {
-			code: options.code || "HEX_INVALID_SIZE",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "non-negative integer",
 			context: options.context,

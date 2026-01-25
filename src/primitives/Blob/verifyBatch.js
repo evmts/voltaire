@@ -27,7 +27,7 @@ export function VerifyBatch({ verifyBlobKzgProofBatch }) {
 			throw new InvalidLengthError("Arrays must have same length", {
 				value: `blobs: ${blobs.length}, commitments: ${commitments.length}, proofs: ${proofs.length}`,
 				expected: "same length",
-				code: "BLOB_BATCH_LENGTH_MISMATCH",
+				code: -32602,
 				docsPath: "/primitives/blob/verify-batch#error-handling",
 			});
 		}
@@ -37,7 +37,7 @@ export function VerifyBatch({ verifyBlobKzgProofBatch }) {
 				{
 					value: blobs.length,
 					expected: `<= ${MAX_PER_TRANSACTION}`,
-					code: "BLOB_BATCH_TOO_MANY",
+					code: -32602,
 					docsPath: "/primitives/blob/verify-batch#error-handling",
 				},
 			);
@@ -51,7 +51,7 @@ export function VerifyBatch({ verifyBlobKzgProofBatch }) {
 					{
 						value: blob.length,
 						expected: `${SIZE} bytes`,
-						code: "BLOB_INVALID_SIZE",
+						code: -32602,
 						docsPath: "/primitives/blob/verify-batch#error-handling",
 					},
 				);
@@ -66,7 +66,7 @@ export function VerifyBatch({ verifyBlobKzgProofBatch }) {
 					{
 						value: commitment.length,
 						expected: "48 bytes",
-						code: "BLOB_INVALID_COMMITMENT_SIZE",
+						code: -32602,
 						docsPath: "/primitives/blob/verify-batch#error-handling",
 					},
 				);
@@ -81,7 +81,7 @@ export function VerifyBatch({ verifyBlobKzgProofBatch }) {
 					{
 						value: proof.length,
 						expected: "48 bytes",
-						code: "BLOB_INVALID_PROOF_SIZE",
+						code: -32602,
 						docsPath: "/primitives/blob/verify-batch#error-handling",
 					},
 				);

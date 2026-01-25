@@ -20,7 +20,7 @@ export function min(forks) {
 		throw new ValidationError("Cannot get min of empty array", {
 			value: forks,
 			expected: "Non-empty array",
-			code: "HARDFORK_EMPTY_ARRAY",
+			code: -32602,
 			docsPath: "/primitives/hardfork/min#error-handling",
 		});
 	}

@@ -31,7 +31,7 @@ export function fromAffine(x, y) {
 
 	if (!isOnCurve(point)) {
 		throw new Bn254InvalidPointError("Point not on bn254 G2 curve", {
-			code: "INVALID_CURVE_POINT",
+			code: -32602,
 			context: {
 				x: { c0: x.c0.toString(16), c1: x.c1.toString(16) },
 				y: { c0: y.c0.toString(16), c1: y.c1.toString(16) },
@@ -42,7 +42,7 @@ export function fromAffine(x, y) {
 	}
 	if (!isInSubgroup(point)) {
 		throw new Bn254SubgroupCheckError("Point not in bn254 G2 subgroup", {
-			code: "INVALID_SUBGROUP",
+			code: -32602,
 			context: {
 				x: { c0: x.c0.toString(16), c1: x.c1.toString(16) },
 				y: { c0: y.c0.toString(16), c1: y.c1.toString(16) },

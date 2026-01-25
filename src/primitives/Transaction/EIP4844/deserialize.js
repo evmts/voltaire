@@ -23,7 +23,7 @@ export function deserialize(data) {
 		throw new DecodingError(
 			"Invalid EIP-4844 transaction: missing or wrong type byte",
 			{
-				code: "INVALID_EIP4844_TYPE_BYTE",
+				code: -32602,
 				context: { typeByte: data[0] },
 				docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
 			},
@@ -35,7 +35,7 @@ export function deserialize(data) {
 
 	if (decoded.data.type !== "list") {
 		throw new DecodingError("Invalid EIP-4844 transaction: expected list", {
-			code: "INVALID_EIP4844_FORMAT",
+			code: -32602,
 			context: { type: decoded.data.type },
 			docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
 		});
@@ -46,7 +46,7 @@ export function deserialize(data) {
 		throw new DecodingError(
 			`Invalid EIP-4844 transaction: expected 14 fields, got ${fields.length}`,
 			{
-				code: "INVALID_EIP4844_FIELD_COUNT",
+				code: -32602,
 				context: { expected: 14, actual: fields.length },
 				docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
 			},
@@ -75,7 +75,7 @@ export function deserialize(data) {
 		throw new DecodingError(
 			"EIP-4844 transaction to address must be 20 bytes (cannot be null)",
 			{
-				code: "INVALID_EIP4844_TO_ADDRESS",
+				code: -32602,
 				context: { length: toBytes.length },
 				docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
 			},
@@ -98,7 +98,7 @@ export function deserialize(data) {
 	const blobHashesData = /** @type {any} */ (fields[10]);
 	if (blobHashesData.type !== "list") {
 		throw new DecodingError("Invalid blob versioned hashes", {
-			code: "INVALID_BLOB_HASHES_FORMAT",
+			code: -32602,
 			context: { type: blobHashesData.type },
 			docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
 		});
@@ -107,7 +107,7 @@ export function deserialize(data) {
 		(/** @type {any} */ hashData, /** @type {number} */ index) => {
 			if (hashData.type !== "bytes" || hashData.value.length !== 32) {
 				throw new DecodingError("Invalid blob versioned hash", {
-					code: "INVALID_BLOB_HASH",
+					code: -32602,
 					context: { type: hashData.type, length: hashData.value?.length },
 					docsPath:
 						"/primitives/transaction/eip4844/deserialize#error-handling",
@@ -118,7 +118,7 @@ export function deserialize(data) {
 				throw new DecodingError(
 					`Invalid blob versioned hash version byte at index ${index}: expected 0x01, got 0x${hashData.value[0].toString(16).padStart(2, "0")}`,
 					{
-						code: "INVALID_BLOB_HASH_VERSION",
+						code: -32602,
 						context: {
 							index,
 							versionByte: hashData.value[0],
@@ -144,7 +144,7 @@ export function deserialize(data) {
 		throw new DecodingError(
 			`Invalid yParity: expected 0 or 1, got ${yParity}`,
 			{
-				code: "INVALID_Y_PARITY",
+				code: -32602,
 				context: { yParity },
 				docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
 			},

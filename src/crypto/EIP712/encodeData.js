@@ -32,7 +32,7 @@ export function EncodeData({ hashType, encodeValue }) {
 		const typeProps = types[primaryType];
 		if (!typeProps) {
 			throw new Eip712TypeNotFoundError(`Type '${primaryType}' not found`, {
-				code: "EIP712_TYPE_NOT_FOUND",
+				code: -32602,
 				context: { primaryType, availableTypes: Object.keys(types) },
 				docsPath: "/crypto/eip712/encode-data#error-handling",
 			});
@@ -49,7 +49,7 @@ export function EncodeData({ hashType, encodeValue }) {
 				throw new Eip712InvalidMessageError(
 					`Missing field '${prop.name}' in message`,
 					{
-						code: "EIP712_MISSING_FIELD",
+						code: -32602,
 						context: { field: prop.name, type: primaryType, data },
 						docsPath: "/crypto/eip712/encode-data#error-handling",
 					},

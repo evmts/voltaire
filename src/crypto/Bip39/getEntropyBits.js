@@ -18,7 +18,7 @@ import { Bip39Error } from "./errors.js";
 export function getEntropyBits(wordCount) {
 	if (![12, 15, 18, 21, 24].includes(wordCount)) {
 		throw new Bip39Error("Word count must be 12, 15, 18, 21, or 24", {
-			code: "BIP39_INVALID_WORD_COUNT",
+			code: -32602,
 			context: { wordCount, expected: "12, 15, 18, 21, or 24" },
 			docsPath: "/crypto/bip39/get-entropy-bits#error-handling",
 		});

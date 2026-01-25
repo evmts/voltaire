@@ -66,7 +66,7 @@ export function EncodeValue({ keccak256, hashStruct }) {
 				throw new Eip712EncodingError(
 					`Cannot encode value of type ${typeof value} as ${type}`,
 					{
-						code: "EIP712_INVALID_VALUE_TYPE",
+						code: -32602,
 						context: { type, valueType: typeof value, value },
 						docsPath: "/crypto/eip712/encode-value#error-handling",
 					},
@@ -82,7 +82,7 @@ export function EncodeValue({ keccak256, hashStruct }) {
 				throw new Eip712EncodingError(
 					`Invalid ${isUnsigned ? "uint" : "int"} size: ${bits}`,
 					{
-						code: "EIP712_INVALID_INTEGER_SIZE",
+						code: -32602,
 						context: { type, bits },
 						docsPath: "/crypto/eip712/encode-value#error-handling",
 					},
@@ -95,7 +95,7 @@ export function EncodeValue({ keccak256, hashStruct }) {
 					throw new Eip712EncodingError(
 						`Value ${num} out of range for ${type} (0 to ${max})`,
 						{
-							code: "EIP712_INTEGER_OUT_OF_RANGE",
+							code: -32602,
 							context: { type, value: num, min: 0n, max },
 							docsPath: "/crypto/eip712/encode-value#error-handling",
 						},
@@ -108,7 +108,7 @@ export function EncodeValue({ keccak256, hashStruct }) {
 					throw new Eip712EncodingError(
 						`Value ${num} out of range for ${type} (${min} to ${max})`,
 						{
-							code: "EIP712_INTEGER_OUT_OF_RANGE",
+							code: -32602,
 							context: { type, value: num, min, max },
 							docsPath: "/crypto/eip712/encode-value#error-handling",
 						},
@@ -171,7 +171,7 @@ export function EncodeValue({ keccak256, hashStruct }) {
 					throw new Eip712EncodingError(
 						`${type} must be ${size} bytes, got ${bytes.length}`,
 						{
-							code: "EIP712_INVALID_BYTES_LENGTH",
+							code: -32602,
 							context: { type, length: bytes.length, expected: size },
 							docsPath: "/crypto/eip712/encode-value#error-handling",
 						},
@@ -190,7 +190,7 @@ export function EncodeValue({ keccak256, hashStruct }) {
 		}
 
 		throw new Eip712EncodingError(`Unsupported type: ${type}`, {
-			code: "EIP712_UNSUPPORTED_TYPE",
+			code: -32602,
 			context: { type, availableTypes: Object.keys(types) },
 			docsPath: "/crypto/eip712/encode-value#error-handling",
 		});

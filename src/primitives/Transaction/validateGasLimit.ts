@@ -8,7 +8,7 @@ import { InvalidRangeError } from "../errors/index.js";
 export function validateGasLimit(this: { gasLimit: bigint }): void {
 	if (this.gasLimit <= 0n) {
 		throw new InvalidRangeError("Gas limit must be positive", {
-			code: "INVALID_GAS_LIMIT",
+			code: -32602,
 			value: this.gasLimit,
 			expected: "Positive gas limit value",
 			docsPath: "/primitives/transaction/validate-gas-limit#error-handling",
@@ -20,7 +20,7 @@ export function validateGasLimit(this: { gasLimit: bigint }): void {
 		throw new InvalidRangeError(
 			`Gas limit exceeds maximum of ${MAX_GAS_LIMIT}`,
 			{
-				code: "GAS_LIMIT_TOO_HIGH",
+				code: -32602,
 				value: this.gasLimit,
 				expected: `Gas limit <= ${MAX_GAS_LIMIT}`,
 				docsPath: "/primitives/transaction/validate-gas-limit#error-handling",

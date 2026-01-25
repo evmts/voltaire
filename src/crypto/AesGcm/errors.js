@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { CryptoError } from "../../primitives/errors/CryptoError.js";
 
 /**
@@ -11,7 +10,7 @@ import { CryptoError } from "../../primitives/errors/CryptoError.js";
  * ```javascript
  * import { AesGcmError } from './crypto/AesGcm/index.js';
  * throw new AesGcmError('Operation failed', {
- *   code: 'AES_GCM_ERROR',
+ *   code: -32020,
  *   context: { operation: 'encrypt' },
  *   docsPath: '/crypto/aes-gcm#error-handling',
  *   cause: originalError
@@ -19,13 +18,15 @@ import { CryptoError } from "../../primitives/errors/CryptoError.js";
  * ```
  */
 export class AesGcmError extends CryptoError {
+	/** @override @readonly @type {string} */
+	_tag = "AesGcmError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "AES_GCM_ERROR",
+			code: options?.code ?? -32020,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -44,20 +45,22 @@ export class AesGcmError extends CryptoError {
  * ```javascript
  * import { InvalidKeyError } from './crypto/AesGcm/index.js';
  * throw new InvalidKeyError('Invalid key size', {
- *   code: 'AES_GCM_INVALID_KEY_SIZE',
+ *   code: -32021,
  *   context: { size: 16, expected: '16, 24, or 32 bytes' },
  *   docsPath: '/crypto/aes-gcm/import-key#error-handling'
  * });
  * ```
  */
 export class InvalidKeyError extends AesGcmError {
+	/** @override @readonly @type {string} */
+	_tag = "InvalidKeyError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "AES_GCM_INVALID_KEY",
+			code: options?.code ?? -32021,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -76,20 +79,22 @@ export class InvalidKeyError extends AesGcmError {
  * ```javascript
  * import { InvalidNonceError } from './crypto/AesGcm/index.js';
  * throw new InvalidNonceError('Nonce must be 12 bytes', {
- *   code: 'AES_GCM_INVALID_NONCE_LENGTH',
+ *   code: -32022,
  *   context: { length: 8, expected: 12 },
  *   docsPath: '/crypto/aes-gcm/encrypt#error-handling'
  * });
  * ```
  */
 export class InvalidNonceError extends AesGcmError {
+	/** @override @readonly @type {string} */
+	_tag = "InvalidNonceError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "AES_GCM_INVALID_NONCE",
+			code: options?.code ?? -32022,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -108,7 +113,7 @@ export class InvalidNonceError extends AesGcmError {
  * ```javascript
  * import { DecryptionError } from './crypto/AesGcm/index.js';
  * throw new DecryptionError('Authentication failed', {
- *   code: 'AES_GCM_DECRYPTION_FAILED',
+ *   code: -32023,
  *   context: { operation: 'decrypt' },
  *   docsPath: '/crypto/aes-gcm/decrypt#error-handling',
  *   cause: originalError
@@ -116,13 +121,15 @@ export class InvalidNonceError extends AesGcmError {
  * ```
  */
 export class DecryptionError extends AesGcmError {
+	/** @override @readonly @type {string} */
+	_tag = "DecryptionError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "AES_GCM_DECRYPTION_FAILED",
+			code: options?.code ?? -32023,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

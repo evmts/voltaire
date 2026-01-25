@@ -8,7 +8,7 @@ import { InvalidRangeError } from "../errors/index.js";
 export function validateNonce(this: { nonce: bigint }): void {
 	if (this.nonce < 0n) {
 		throw new InvalidRangeError("Nonce cannot be negative", {
-			code: "INVALID_NONCE",
+			code: -32602,
 			value: this.nonce,
 			expected: "Non-negative nonce value",
 			docsPath: "/primitives/transaction/validate-nonce#error-handling",

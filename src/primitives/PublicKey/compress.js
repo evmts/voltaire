@@ -24,7 +24,7 @@ export function compress(publicKey) {
 			{
 				value: publicKey.length,
 				expected: "64 bytes (uncompressed public key without 0x04 prefix)",
-				code: "PUBLIC_KEY_INVALID_LENGTH",
+				code: -32602,
 				docsPath: "/primitives/public-key/compress#error-handling",
 			},
 		);

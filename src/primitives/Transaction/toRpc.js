@@ -131,7 +131,7 @@ export function toRpc(tx) {
 			throw new InvalidTransactionTypeError(
 				`Unknown transaction type: ${/** @type {any} */ (_exhaustive).type}`,
 				{
-					code: "UNKNOWN_TRANSACTION_TYPE",
+					code: -32602,
 					context: { type: /** @type {any} */ (_exhaustive).type },
 					docsPath: "/primitives/transaction/to-rpc#error-handling",
 				},

@@ -20,7 +20,7 @@ export class InvalidBloomFilterParameterError extends InvalidRangeError {
 	/**
 	 * @param {string} message
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -29,7 +29,7 @@ export class InvalidBloomFilterParameterError extends InvalidRangeError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "BLOOM_FILTER_INVALID_PARAMETER",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "valid bloom filter parameters",
 			context: options?.context,
@@ -60,7 +60,7 @@ export class InvalidBloomFilterLengthError extends InvalidLengthError {
 	/**
 	 * @param {string} message
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -69,7 +69,7 @@ export class InvalidBloomFilterLengthError extends InvalidLengthError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "BLOOM_FILTER_INVALID_LENGTH",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "valid bloom filter length",
 			context: options?.context,

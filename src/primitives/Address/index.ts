@@ -565,7 +565,7 @@ Address.prototype.toChecksummed = function () {
 			{
 				value: undefined,
 				expected: "keccak256 hash function",
-				code: "MISSING_KECCAK256",
+				code: -32602,
 			},
 		);
 	}
@@ -631,7 +631,7 @@ Address.prototype.calculateCreateAddress = function (
 			{
 				value: undefined,
 				expected: "keccak256 hash function",
-				code: "MISSING_KECCAK256",
+				code: -32602,
 			},
 		);
 	}
@@ -641,7 +641,7 @@ Address.prototype.calculateCreateAddress = function (
 			{
 				value: undefined,
 				expected: "rlpEncode function",
-				code: "MISSING_RLP_ENCODE",
+				code: -32602,
 			},
 		);
 	}
@@ -650,7 +650,7 @@ Address.prototype.calculateCreateAddress = function (
 		throw new InvalidValueError("Nonce cannot be negative", {
 			value: nonce,
 			expected: "non-negative bigint",
-			code: "INVALID_NONCE",
+			code: -32602,
 		});
 	}
 
@@ -697,7 +697,7 @@ Address.prototype.calculateCreate2Address = function (
 			{
 				value: undefined,
 				expected: "keccak256 hash function",
-				code: "MISSING_KECCAK256",
+				code: -32602,
 			},
 		);
 	}

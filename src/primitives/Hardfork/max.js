@@ -20,7 +20,7 @@ export function max(forks) {
 		throw new ValidationError("Cannot get max of empty array", {
 			value: forks,
 			expected: "Non-empty array",
-			code: "HARDFORK_EMPTY_ARRAY",
+			code: -32602,
 			docsPath: "/primitives/hardfork/max#error-handling",
 		});
 	}

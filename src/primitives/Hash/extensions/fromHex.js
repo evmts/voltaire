@@ -23,7 +23,7 @@ export function fromHex(hex) {
 		throw new InvalidLengthError(
 			`Hash hex must be ${SIZE * 2} characters, got ${normalized.length}`,
 			{
-				code: "HASH_INVALID_HEX_LENGTH",
+				code: -32602,
 				value: hex,
 				expected: `${SIZE * 2} characters`,
 				context: { actualLength: normalized.length },
@@ -33,7 +33,7 @@ export function fromHex(hex) {
 	}
 	if (!/^[0-9a-fA-F]+$/.test(normalized)) {
 		throw new InvalidFormatError("Invalid hex string", {
-			code: "HASH_INVALID_HEX_FORMAT",
+			code: -32602,
 			value: hex,
 			expected: "hexadecimal string",
 			docsPath: "/primitives/hash",

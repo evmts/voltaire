@@ -21,7 +21,7 @@ export function deserialize(data) {
 	const decoded = decode(data);
 	if (decoded.data.type !== "list") {
 		throw new DecodingError("Invalid legacy transaction: expected list", {
-			code: "INVALID_LEGACY_TRANSACTION_FORMAT",
+			code: -32602,
 			context: { type: decoded.data.type },
 			docsPath: "/primitives/transaction/legacy/deserialize#error-handling",
 		});
@@ -32,7 +32,7 @@ export function deserialize(data) {
 		throw new DecodingError(
 			`Invalid legacy transaction: expected 9 fields, got ${fields.length}`,
 			{
-				code: "INVALID_LEGACY_TRANSACTION_FIELD_COUNT",
+				code: -32602,
 				context: { expected: 9, actual: fields.length },
 				docsPath: "/primitives/transaction/legacy/deserialize#error-handling",
 			},
@@ -45,7 +45,7 @@ export function deserialize(data) {
 			throw new DecodingError(
 				`Invalid legacy transaction: field ${i} must be bytes`,
 				{
-					code: "INVALID_LEGACY_TRANSACTION_FIELD_TYPE",
+					code: -32602,
 					context: { fieldIndex: i, type: fields[i]?.type },
 					docsPath: "/primitives/transaction/legacy/deserialize#error-handling",
 				},

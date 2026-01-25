@@ -11,7 +11,7 @@ export class InvalidBytes32HexError extends InvalidFormatError {
 	/**
 	 * @param {string} [message] - Error message
 	 * @param {object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected format
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -20,7 +20,7 @@ export class InvalidBytes32HexError extends InvalidFormatError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid hex format for Bytes32", {
-			code: options?.code || "INVALID_BYTES32_HEX",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "0x-prefixed hex string (64 chars)",
 			context: options?.context,
@@ -38,7 +38,7 @@ export class InvalidBytes32LengthError extends InvalidLengthError {
 	/**
 	 * @param {string} [message] - Error message
 	 * @param {object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected length
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -47,7 +47,7 @@ export class InvalidBytes32LengthError extends InvalidLengthError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid Bytes32 length", {
-			code: options?.code || "INVALID_BYTES32_LENGTH",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "32 bytes",
 			context: options?.context,
@@ -65,7 +65,7 @@ export class InvalidBytes32ValueError extends ValidationError {
 	/**
 	 * @param {string} message - Error message
 	 * @param {object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected value
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -74,7 +74,7 @@ export class InvalidBytes32ValueError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "INVALID_BYTES32_VALUE",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "Valid Bytes32 value",
 			context: options?.context,

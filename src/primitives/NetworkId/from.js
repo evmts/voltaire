@@ -21,7 +21,7 @@ export function from(value) {
 			{
 				value,
 				expected: "Non-negative integer",
-				code: "NETWORK_ID_INVALID_FORMAT",
+				code: -32602,
 				docsPath: "/primitives/network-id/from#error-handling",
 			},
 		);

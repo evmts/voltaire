@@ -17,7 +17,7 @@ export class InvalidChainIdError extends InvalidFormatError {
 	 */
 	constructor(chainId, options) {
 		super("Chain ID must be non-zero", {
-			code: "AUTHORIZATION_INVALID_CHAIN_ID",
+			code: -32602,
 			value: chainId,
 			expected: "non-zero bigint",
 			docsPath: "/primitives/authorization/validate#error-handling",
@@ -40,7 +40,7 @@ export class InvalidAddressError extends InvalidFormatError {
 	 */
 	constructor(address, options) {
 		super("Address cannot be zero address", {
-			code: "AUTHORIZATION_INVALID_ADDRESS",
+			code: -32602,
 			value: address,
 			expected: "non-zero address",
 			docsPath: "/primitives/authorization/validate#error-handling",
@@ -63,7 +63,7 @@ export class InvalidYParityError extends InvalidRangeError {
 	 */
 	constructor(yParity, options) {
 		super("yParity must be 0 or 1", {
-			code: "AUTHORIZATION_INVALID_YPARITY",
+			code: -32602,
 			value: yParity,
 			expected: "0 or 1",
 			docsPath: "/primitives/authorization/validate#error-handling",
@@ -87,7 +87,7 @@ export class InvalidSignatureComponentError extends InvalidSignatureError {
 	 */
 	constructor(component, value, options) {
 		super(`Signature ${component} cannot be zero`, {
-			code: `AUTHORIZATION_INVALID_SIGNATURE_${component.toUpperCase()}`,
+			code: -32602,
 			context: { component, value },
 			docsPath: "/primitives/authorization/validate#error-handling",
 			cause: options?.cause,
@@ -110,7 +110,7 @@ export class InvalidSignatureRangeError extends InvalidRangeError {
 	 */
 	constructor(value, max, options) {
 		super("Signature r must be less than curve order", {
-			code: "AUTHORIZATION_INVALID_SIGNATURE_RANGE",
+			code: -32602,
 			value,
 			expected: `< ${max}`,
 			docsPath: "/primitives/authorization/validate#error-handling",
@@ -134,7 +134,7 @@ export class MalleableSignatureError extends InvalidSignatureError {
 	 */
 	constructor(s, max, options) {
 		super("Signature s too high (malleable signature)", {
-			code: "AUTHORIZATION_MALLEABLE_SIGNATURE",
+			code: -32602,
 			context: { s, max },
 			docsPath: "/primitives/authorization/validate#error-handling",
 			cause: options?.cause,

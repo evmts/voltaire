@@ -23,7 +23,7 @@ export class AbiEncodingError extends EncodingError {
 	/**
 	 * @param {string} message
 	 * @param {{
-	 *   code?: string;
+	 *   code?: number;
 	 *   context?: Record<string, unknown>;
 	 *   docsPath?: string;
 	 *   cause?: Error;
@@ -31,7 +31,7 @@ export class AbiEncodingError extends EncodingError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "ABI_ENCODING_ERROR",
+			code: options?.code ?? -32602,
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/abi",
 			cause: options?.cause,
@@ -56,7 +56,7 @@ export class AbiDecodingError extends DecodingError {
 	/**
 	 * @param {string} message
 	 * @param {{
-	 *   code?: string;
+	 *   code?: number;
 	 *   context?: Record<string, unknown>;
 	 *   docsPath?: string;
 	 *   cause?: Error;
@@ -64,7 +64,7 @@ export class AbiDecodingError extends DecodingError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "ABI_DECODING_ERROR",
+			code: options?.code ?? -32602,
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/abi",
 			cause: options?.cause,
@@ -89,7 +89,7 @@ export class AbiParameterMismatchError extends InvalidLengthError {
 	/**
 	 * @param {string} message
 	 * @param {{
-	 *   code?: string;
+	 *   code?: number;
 	 *   value: unknown;
 	 *   expected: string;
 	 *   context?: Record<string, unknown>;
@@ -99,7 +99,7 @@ export class AbiParameterMismatchError extends InvalidLengthError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options.code || "ABI_PARAMETER_MISMATCH",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected,
 			context: options.context,
@@ -126,7 +126,7 @@ export class AbiItemNotFoundError extends InvalidFormatError {
 	/**
 	 * @param {string} message
 	 * @param {{
-	 *   code?: string;
+	 *   code?: number;
 	 *   value: unknown;
 	 *   expected: string;
 	 *   context?: Record<string, unknown>;
@@ -136,7 +136,7 @@ export class AbiItemNotFoundError extends InvalidFormatError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options.code || "ABI_ITEM_NOT_FOUND",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected,
 			context: options.context,
@@ -163,7 +163,7 @@ export class AbiInvalidSelectorError extends InvalidFormatError {
 	/**
 	 * @param {string} message
 	 * @param {{
-	 *   code?: string;
+	 *   code?: number;
 	 *   value: unknown;
 	 *   expected: string;
 	 *   context?: Record<string, unknown>;
@@ -173,7 +173,7 @@ export class AbiInvalidSelectorError extends InvalidFormatError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options.code || "ABI_INVALID_SELECTOR",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected,
 			context: options.context,

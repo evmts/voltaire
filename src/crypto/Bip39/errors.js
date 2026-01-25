@@ -11,7 +11,7 @@ import { InvalidFormatError } from "../../primitives/errors/ValidationError.js";
  * ```javascript
  * import { Bip39Error } from './crypto/Bip39/index.js';
  * throw new Bip39Error('BIP-39 operation failed', {
- *   code: 'BIP39_ERROR',
+ *   code: -32000,
  *   context: { operation: 'generate' },
  *   docsPath: '/crypto/bip39#error-handling',
  *   cause: originalError
@@ -19,13 +19,15 @@ import { InvalidFormatError } from "../../primitives/errors/ValidationError.js";
  * ```
  */
 export class Bip39Error extends CryptoError {
+	/** @override @readonly @type {string} */
+	_tag = "Bip39Error";
 	/**
 	 * @param {string} [message]
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message || "BIP-39 error", {
-			code: options?.code || "BIP39_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -44,20 +46,22 @@ export class Bip39Error extends CryptoError {
  * ```javascript
  * import { InvalidMnemonicError } from './crypto/Bip39/index.js';
  * throw new InvalidMnemonicError('Invalid BIP-39 mnemonic phrase', {
- *   code: 'BIP39_INVALID_MNEMONIC',
+ *   code: -32001,
  *   context: { wordCount: 11 },
  *   docsPath: '/crypto/bip39/validate-mnemonic#error-handling'
  * });
  * ```
  */
 export class InvalidMnemonicError extends InvalidFormatError {
+	/** @override @readonly */
+	_tag = "InvalidMnemonicError";
 	/**
 	 * @param {string} [message]
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message || "Invalid mnemonic", {
-			code: options?.code || "BIP39_INVALID_MNEMONIC",
+			code: options?.code ?? -32001,
 			value: options?.context?.mnemonic || "",
 			expected: "Valid BIP-39 mnemonic (12, 15, 18, 21, or 24 words)",
 			context: options?.context,
@@ -78,20 +82,22 @@ export class InvalidMnemonicError extends InvalidFormatError {
  * ```javascript
  * import { InvalidEntropyError } from './crypto/Bip39/index.js';
  * throw new InvalidEntropyError('Invalid entropy size', {
- *   code: 'BIP39_INVALID_ENTROPY_SIZE',
+ *   code: -32002,
  *   context: { size: 15, expected: '16, 20, 24, 28, or 32 bytes' },
  *   docsPath: '/crypto/bip39/entropy-to-mnemonic#error-handling'
  * });
  * ```
  */
 export class InvalidEntropyError extends Bip39Error {
+	/** @override @readonly */
+	_tag = "InvalidEntropyError";
 	/**
 	 * @param {string} [message]
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "BIP39_INVALID_ENTROPY",
+			code: options?.code ?? -32002,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

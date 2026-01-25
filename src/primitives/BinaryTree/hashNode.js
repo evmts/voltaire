@@ -42,7 +42,7 @@ export function HashNode({ blake3 }) {
 				throw new InvalidTreeStateError(`Unknown node type: ${_exhaustive}`, {
 					value: _exhaustive,
 					expected: "empty, internal, stem, or leaf",
-					code: "BINARY_TREE_UNKNOWN_NODE_TYPE",
+					code: -32000,
 				});
 			}
 		}

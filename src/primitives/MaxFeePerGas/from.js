@@ -25,7 +25,7 @@ export function from(value) {
 				{
 					value,
 					expected: "Integer",
-					code: "MAX_FEE_INVALID_FORMAT",
+					code: -32602,
 					docsPath: "/primitives/max-fee-per-gas/from#error-handling",
 				},
 			);
@@ -40,7 +40,7 @@ export function from(value) {
 				{
 					value,
 					expected: "Hex string with 0x prefix",
-					code: "MAX_FEE_INVALID_FORMAT",
+					code: -32602,
 					docsPath: "/primitives/max-fee-per-gas/from#error-handling",
 				},
 			);
@@ -51,7 +51,7 @@ export function from(value) {
 			{
 				value,
 				expected: "bigint | number | string",
-				code: "MAX_FEE_INVALID_FORMAT",
+				code: -32602,
 				docsPath: "/primitives/max-fee-per-gas/from#error-handling",
 			},
 		);
@@ -63,7 +63,7 @@ export function from(value) {
 			{
 				value: result,
 				expected: "Non-negative value",
-				code: "MAX_FEE_NEGATIVE",
+				code: -32602,
 				docsPath: "/primitives/max-fee-per-gas/from#error-handling",
 			},
 		);

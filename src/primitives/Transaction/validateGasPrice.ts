@@ -12,7 +12,7 @@ export function validateGasPrice(
 	if ("gasPrice" in this) {
 		if (this.gasPrice < 0n) {
 			throw new InvalidRangeError("Gas price cannot be negative", {
-				code: "INVALID_GAS_PRICE",
+				code: -32602,
 				value: this.gasPrice,
 				expected: "Non-negative gas price",
 				docsPath: "/primitives/transaction/validate-gas-price#error-handling",
@@ -21,7 +21,7 @@ export function validateGasPrice(
 	} else if ("maxFeePerGas" in this) {
 		if (this.maxFeePerGas < 0n) {
 			throw new InvalidRangeError("Max fee per gas cannot be negative", {
-				code: "INVALID_MAX_FEE_PER_GAS",
+				code: -32602,
 				value: this.maxFeePerGas,
 				expected: "Non-negative max fee per gas",
 				docsPath: "/primitives/transaction/validate-gas-price#error-handling",
@@ -31,7 +31,7 @@ export function validateGasPrice(
 			throw new InvalidRangeError(
 				"Max priority fee per gas cannot be negative",
 				{
-					code: "INVALID_MAX_PRIORITY_FEE_PER_GAS",
+					code: -32602,
 					value: this.maxPriorityFeePerGas,
 					expected: "Non-negative max priority fee per gas",
 					docsPath: "/primitives/transaction/validate-gas-price#error-handling",
@@ -42,7 +42,7 @@ export function validateGasPrice(
 			throw new InvalidRangeError(
 				"Max priority fee per gas cannot exceed max fee per gas",
 				{
-					code: "MAX_PRIORITY_FEE_TOO_HIGH",
+					code: -32602,
 					value: this.maxPriorityFeePerGas,
 					expected: `Max priority fee <= ${this.maxFeePerGas}`,
 					context: {

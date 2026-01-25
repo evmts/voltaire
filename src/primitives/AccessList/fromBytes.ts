@@ -27,7 +27,7 @@ export function fromBytes(bytes: Uint8Array): BrandedAccessList {
 
 	if (decoded.data.type !== "list") {
 		throw new InvalidFormatError("Invalid access list: expected list", {
-			code: "ACCESS_LIST_NOT_LIST",
+			code: -32602,
 			value: decoded.data.type,
 			expected: "list",
 			docsPath: "/primitives/access-list",
@@ -41,7 +41,7 @@ export function fromBytes(bytes: Uint8Array): BrandedAccessList {
 			throw new InvalidFormatError(
 				"Invalid access list item: expected [address, keys]",
 				{
-					code: "ACCESS_LIST_INVALID_ITEM_FORMAT",
+					code: -32602,
 					value: itemData,
 					expected: "[address, storageKeys]",
 					docsPath: "/primitives/access-list",
@@ -54,7 +54,7 @@ export function fromBytes(bytes: Uint8Array): BrandedAccessList {
 
 		if (addressData?.type !== "bytes" || addressData.value.length !== 20) {
 			throw new InvalidLengthError("Invalid access list address", {
-				code: "ACCESS_LIST_INVALID_ADDRESS_LENGTH",
+				code: -32602,
 				value: addressData?.value,
 				expected: "20 bytes",
 				context: {
@@ -67,7 +67,7 @@ export function fromBytes(bytes: Uint8Array): BrandedAccessList {
 
 		if (keysData?.type !== "list") {
 			throw new InvalidFormatError("Invalid access list storage keys", {
-				code: "ACCESS_LIST_KEYS_NOT_LIST",
+				code: -32602,
 				value: keysData?.type,
 				expected: "list",
 				docsPath: "/primitives/access-list",
@@ -80,7 +80,7 @@ export function fromBytes(bytes: Uint8Array): BrandedAccessList {
 		for (const keyData of keysData.value) {
 			if (keyData.type !== "bytes" || keyData.value.length !== 32) {
 				throw new InvalidLengthError("Invalid storage key", {
-					code: "ACCESS_LIST_INVALID_STORAGE_KEY_LENGTH",
+					code: -32602,
 					value: keyData.value,
 					expected: "32 bytes",
 					context: {

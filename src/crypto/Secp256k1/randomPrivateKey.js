@@ -35,7 +35,7 @@ export function randomPrivateKey() {
 		throw new Secp256k1Error(
 			"Failed to generate valid private key after 100 attempts",
 			{
-				code: "SECP256K1_KEY_GENERATION_EXHAUSTED",
+				code: -32000,
 				context: { attempts: 100 },
 				docsPath: "/crypto/secp256k1/random-private-key#error-handling",
 			},
@@ -45,7 +45,7 @@ export function randomPrivateKey() {
 	throw new Secp256k1Error(
 		"crypto.getRandomValues not available - cannot generate secure private key",
 		{
-			code: "SECP256K1_NO_CRYPTO",
+			code: -32000,
 			docsPath: "/crypto/secp256k1/random-private-key#error-handling",
 		},
 	);

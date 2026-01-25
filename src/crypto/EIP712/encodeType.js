@@ -33,7 +33,7 @@ export function encodeType(primaryType, types) {
 		const typeProps = types[typeName];
 		if (!typeProps) {
 			throw new Eip712TypeNotFoundError(`Type '${typeName}' not found`, {
-				code: "EIP712_TYPE_NOT_FOUND",
+				code: -32602,
 				context: { typeName, availableTypes: Object.keys(types) },
 				docsPath: "/crypto/eip712/encode-type#error-handling",
 			});

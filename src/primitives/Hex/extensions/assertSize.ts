@@ -23,7 +23,7 @@ export function assertSize(value: HexType, size: number): void {
 		throw new InvalidLengthError(
 			`Expected ${size} bytes, got ${actualSize} bytes`,
 			{
-				code: "HEX_SIZE_MISMATCH",
+				code: -32602,
 				value,
 				expected: `${size} bytes`,
 				context: { actualSize, targetSize: size },

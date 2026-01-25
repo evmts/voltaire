@@ -35,7 +35,7 @@ export function randomPrivateKey() {
 		throw new P256Error(
 			"Failed to generate valid private key after 100 attempts",
 			{
-				code: "P256_KEY_GENERATION_EXHAUSTED",
+				code: -32000,
 				context: { attempts: 100 },
 				docsPath: "/crypto/p256/random-private-key#error-handling",
 			},
@@ -45,7 +45,7 @@ export function randomPrivateKey() {
 	throw new P256Error(
 		"crypto.getRandomValues not available - cannot generate secure private key",
 		{
-			code: "P256_NO_CRYPTO",
+			code: -32000,
 			docsPath: "/crypto/p256/random-private-key#error-handling",
 		},
 	);

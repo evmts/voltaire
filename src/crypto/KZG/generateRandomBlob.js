@@ -39,7 +39,7 @@ export function generateRandomBlob(seed) {
 			}
 		} else {
 			throw new KzgError("crypto.getRandomValues not available", {
-				code: "KZG_NO_CRYPTO_API",
+				code: -32000,
 				docsPath: "/crypto/kzg/generate-random-blob#error-handling",
 			});
 		}

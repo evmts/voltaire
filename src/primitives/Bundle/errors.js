@@ -16,7 +16,7 @@ export class InvalidBundleError extends ValidationError {
 	/**
 	 * @param {string} message - Error message
 	 * @param {object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected value description
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -25,7 +25,7 @@ export class InvalidBundleError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "INVALID_BUNDLE",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "valid bundle",
 			context: options?.context,
@@ -43,7 +43,7 @@ export class MissingCryptoDependencyError extends ValidationError {
 	/**
 	 * @param {string} message - Error message
 	 * @param {object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected value description
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -52,7 +52,7 @@ export class MissingCryptoDependencyError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "MISSING_CRYPTO_DEPENDENCY",
+			code: options?.code ?? -32000,
 			value: options?.value,
 			expected: options?.expected || "crypto function",
 			context: options?.context,

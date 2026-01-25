@@ -27,7 +27,7 @@ export function from(value) {
 			{
 				value,
 				expected: "Object with node information",
-				code: "NODE_INFO_INVALID_TYPE",
+				code: -32602,
 				docsPath: "/primitives/node-info/from#error-handling",
 			},
 		);
@@ -38,7 +38,7 @@ export function from(value) {
 		throw new InvalidFormatError("Node info must have 'enode' string field", {
 			value,
 			expected: "enode field",
-			code: "NODE_INFO_MISSING_ENODE",
+			code: -32602,
 			docsPath: "/primitives/node-info/from#error-handling",
 		});
 	}
@@ -47,7 +47,7 @@ export function from(value) {
 		throw new InvalidFormatError("Node info must have 'id' string field", {
 			value,
 			expected: "id field",
-			code: "NODE_INFO_MISSING_ID",
+			code: -32602,
 			docsPath: "/primitives/node-info/from#error-handling",
 		});
 	}
@@ -56,7 +56,7 @@ export function from(value) {
 		throw new InvalidFormatError("Node info must have 'ip' string field", {
 			value,
 			expected: "ip field",
-			code: "NODE_INFO_MISSING_IP",
+			code: -32602,
 			docsPath: "/primitives/node-info/from#error-handling",
 		});
 	}
@@ -67,7 +67,7 @@ export function from(value) {
 			{
 				value,
 				expected: "listenAddr field",
-				code: "NODE_INFO_MISSING_LISTEN_ADDR",
+				code: -32602,
 				docsPath: "/primitives/node-info/from#error-handling",
 			},
 		);
@@ -77,7 +77,7 @@ export function from(value) {
 		throw new InvalidFormatError("Node info must have 'name' string field", {
 			value,
 			expected: "name field",
-			code: "NODE_INFO_MISSING_NAME",
+			code: -32602,
 			docsPath: "/primitives/node-info/from#error-handling",
 		});
 	}
@@ -86,7 +86,7 @@ export function from(value) {
 		throw new InvalidFormatError("Node info must have 'ports' object field", {
 			value,
 			expected: "ports object",
-			code: "NODE_INFO_MISSING_PORTS",
+			code: -32602,
 			docsPath: "/primitives/node-info/from#error-handling",
 		});
 	}
@@ -100,7 +100,7 @@ export function from(value) {
 			{
 				value: value.ports,
 				expected: "discovery and listener number fields",
-				code: "NODE_INFO_INVALID_PORTS",
+				code: -32602,
 				docsPath: "/primitives/node-info/from#error-handling",
 			},
 		);
@@ -112,7 +112,7 @@ export function from(value) {
 			{
 				value,
 				expected: "protocols object",
-				code: "NODE_INFO_MISSING_PROTOCOLS",
+				code: -32602,
 				docsPath: "/primitives/node-info/from#error-handling",
 			},
 		);
@@ -129,7 +129,7 @@ export function from(value) {
 			throw new InvalidFormatError("Node info eth protocol must be an object", {
 				value: eth,
 				expected: "eth protocol object",
-				code: "NODE_INFO_INVALID_ETH_PROTOCOL",
+				code: -32602,
 				docsPath: "/primitives/node-info/from#error-handling",
 			});
 		}

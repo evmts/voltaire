@@ -25,7 +25,7 @@ export function xor(hex: HexType, other: HexType): HexType {
 	// Convert hex to bytes
 	if (!hex.startsWith("0x"))
 		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
-			code: "HEX_MISSING_PREFIX",
+			code: -32602,
 			value: hex,
 			expected: "0x-prefixed hex string",
 			docsPath: "/primitives/hex#error-handling",
@@ -34,7 +34,7 @@ export function xor(hex: HexType, other: HexType): HexType {
 	const hexDigitsA = hex.slice(2);
 	if (hexDigitsA.length % 2 !== 0)
 		throw new InvalidLengthError("Invalid hex length: odd number of digits", {
-			code: "HEX_ODD_LENGTH",
+			code: -32602,
 			value: hex,
 			expected: "even number of hex digits",
 			docsPath: "/primitives/hex#error-handling",
@@ -50,7 +50,7 @@ export function xor(hex: HexType, other: HexType): HexType {
 			throw new InvalidFormatError(
 				`Invalid hex character at position ${i + 2}: '${charHigh ?? ""}${charLow ?? ""}'`,
 				{
-					code: "HEX_INVALID_CHARACTER",
+					code: -32602,
 					value: hex,
 					expected: "valid hex characters (0-9, a-f, A-F)",
 					context: {
@@ -66,7 +66,7 @@ export function xor(hex: HexType, other: HexType): HexType {
 	// Convert other to bytes
 	if (!other.startsWith("0x"))
 		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
-			code: "HEX_MISSING_PREFIX",
+			code: -32602,
 			value: other,
 			expected: "0x-prefixed hex string",
 			docsPath: "/primitives/hex#error-handling",
@@ -75,7 +75,7 @@ export function xor(hex: HexType, other: HexType): HexType {
 	const hexDigitsB = other.slice(2);
 	if (hexDigitsB.length % 2 !== 0)
 		throw new InvalidLengthError("Invalid hex length: odd number of digits", {
-			code: "HEX_ODD_LENGTH",
+			code: -32602,
 			value: other,
 			expected: "even number of hex digits",
 			docsPath: "/primitives/hex#error-handling",
@@ -91,7 +91,7 @@ export function xor(hex: HexType, other: HexType): HexType {
 			throw new InvalidFormatError(
 				`Invalid hex character at position ${i + 2}: '${charHigh ?? ""}${charLow ?? ""}'`,
 				{
-					code: "HEX_INVALID_CHARACTER",
+					code: -32602,
 					value: other,
 					expected: "valid hex characters (0-9, a-f, A-F)",
 					context: {
@@ -106,7 +106,7 @@ export function xor(hex: HexType, other: HexType): HexType {
 
 	if (bytesA.length !== bytesB.length) {
 		throw new InvalidLengthError("Hex strings must have same length for XOR", {
-			code: "HEX_LENGTH_MISMATCH",
+			code: -32602,
 			value: hex,
 			expected: `${bytesB.length} bytes`,
 			context: { hexLength: bytesA.length, otherLength: bytesB.length },

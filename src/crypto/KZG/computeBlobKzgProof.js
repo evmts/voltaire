@@ -41,7 +41,7 @@ export function ComputeBlobKzgProof({
 			throw new KzgError(
 				`Commitment must be ${BYTES_PER_COMMITMENT} bytes, got ${commitment instanceof Uint8Array ? commitment.length : "not Uint8Array"}`,
 				{
-					code: "KZG_INVALID_COMMITMENT",
+					code: -32602,
 					context: {
 						commitmentType:
 							commitment instanceof Uint8Array
@@ -61,7 +61,7 @@ export function ComputeBlobKzgProof({
 			throw new KzgError(
 				`Failed to compute blob proof: ${error instanceof Error ? error.message : String(error)}`,
 				{
-					code: "KZG_BLOB_PROOF_COMPUTATION_FAILED",
+					code: -32000,
 					context: {
 						blobLength: blob.length,
 						commitmentLength: commitment.length,

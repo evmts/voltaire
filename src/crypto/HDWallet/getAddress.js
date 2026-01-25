@@ -15,7 +15,7 @@ export async function getAddress(node) {
 
 	if (result !== 0) {
 		throw new HDWalletError("Failed to get address", {
-			code: "ADDRESS_DERIVATION_FAILED",
+			code: -32000,
 			context: { result },
 			docsPath: "/crypto/hdwallet/get-address#error-handling",
 		});

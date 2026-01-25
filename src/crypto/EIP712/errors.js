@@ -6,7 +6,7 @@ import { CryptoError } from "../../primitives/errors/CryptoError.js";
  * @example
  * ```javascript
  * throw new Eip712Error('EIP-712 operation failed', {
- *   code: 'EIP712_ERROR',
+ *   code: -32000,
  *   context: { operation: 'sign' },
  *   docsPath: '/crypto/eip712#error-handling',
  *   cause: originalError
@@ -15,12 +15,18 @@ import { CryptoError } from "../../primitives/errors/CryptoError.js";
  */
 export class Eip712Error extends CryptoError {
 	/**
+	 * @override
+	 * @readonly
+	 * @type {string}
+	 */
+	_tag = "Eip712Error";
+	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "EIP712_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -35,7 +41,7 @@ export class Eip712Error extends CryptoError {
  * @example
  * ```javascript
  * throw new Eip712EncodingError('Failed to encode value', {
- *   code: 'EIP712_ENCODING_ERROR',
+ *   code: -32001,
  *   context: { type: 'address', value: '0x...' },
  *   docsPath: '/crypto/eip712/encode-value#error-handling',
  *   cause: originalError
@@ -43,13 +49,15 @@ export class Eip712Error extends CryptoError {
  * ```
  */
 export class Eip712EncodingError extends Eip712Error {
+	/** @override @readonly */
+	_tag = "Eip712EncodingError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "EIP712_ENCODING_ERROR",
+			code: options?.code ?? -32001,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -64,7 +72,7 @@ export class Eip712EncodingError extends Eip712Error {
  * @example
  * ```javascript
  * throw new Eip712TypeNotFoundError('Type Person not found', {
- *   code: 'EIP712_TYPE_NOT_FOUND',
+ *   code: -32002,
  *   context: { type: 'Person' },
  *   docsPath: '/crypto/eip712/encode-type#error-handling',
  *   cause: originalError
@@ -72,13 +80,15 @@ export class Eip712EncodingError extends Eip712Error {
  * ```
  */
 export class Eip712TypeNotFoundError extends Eip712Error {
+	/** @override @readonly */
+	_tag = "Eip712TypeNotFoundError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "EIP712_TYPE_NOT_FOUND",
+			code: options?.code ?? -32002,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -93,7 +103,7 @@ export class Eip712TypeNotFoundError extends Eip712Error {
  * @example
  * ```javascript
  * throw new Eip712InvalidMessageError('Missing required field', {
- *   code: 'EIP712_INVALID_MESSAGE',
+ *   code: -32003,
  *   context: { field: 'name' },
  *   docsPath: '/crypto/eip712/encode-data#error-handling',
  *   cause: originalError
@@ -101,13 +111,15 @@ export class Eip712TypeNotFoundError extends Eip712Error {
  * ```
  */
 export class Eip712InvalidMessageError extends Eip712Error {
+	/** @override @readonly */
+	_tag = "Eip712InvalidMessageError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "EIP712_INVALID_MESSAGE",
+			code: options?.code ?? -32003,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -124,20 +136,22 @@ export class Eip712InvalidMessageError extends Eip712Error {
  * @example
  * ```javascript
  * throw new Eip712InvalidDomainError('Invalid domain field: name must be a string', {
- *   code: 'EIP712_INVALID_DOMAIN',
+ *   code: -32004,
  *   context: { field: 'name', value: 123 },
  *   docsPath: '/crypto/eip712/domain#error-handling',
  * })
  * ```
  */
 export class Eip712InvalidDomainError extends Eip712Error {
+	/** @override @readonly */
+	_tag = "Eip712InvalidDomainError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "EIP712_INVALID_DOMAIN",
+			code: options?.code ?? -32004,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

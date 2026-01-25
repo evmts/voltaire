@@ -17,16 +17,22 @@ import { CryptoError } from "../../primitives/errors/index.js";
  */
 export class KeystoreError extends CryptoError {
 	/**
+	 * @override
+	 * @readonly
+	 * @type {string}
+	 */
+	_tag = "KeystoreError";
+	/**
 	 * @param {string} message
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
 	 */
 	constructor(message, options) {
 		super(message || "Keystore operation failed", {
-			code: options?.code || "KEYSTORE_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/crypto/keystore#error-handling",
 			cause: options?.cause,
@@ -44,10 +50,12 @@ export class KeystoreError extends CryptoError {
  * @since 0.0.0
  */
 export class InvalidMacError extends KeystoreError {
+	/** @override @readonly */
+	_tag = "InvalidMacError";
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
@@ -57,7 +65,7 @@ export class InvalidMacError extends KeystoreError {
 		options,
 	) {
 		super(message, {
-			code: options?.code || "INVALID_MAC",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/crypto/keystore/decrypt#error-handling",
 			cause: options?.cause,
@@ -75,13 +83,15 @@ export class InvalidMacError extends KeystoreError {
  * @since 0.0.0
  */
 export class UnsupportedVersionError extends KeystoreError {
+	/** @override @readonly */
+	_tag = "UnsupportedVersionError";
 	/** @type {unknown} */
 	version;
 
 	/**
 	 * @param {unknown} version
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
@@ -90,7 +100,7 @@ export class UnsupportedVersionError extends KeystoreError {
 		super(
 			`Unsupported keystore version: ${version}. Only version 3 is supported.`,
 			{
-				code: options?.code || "UNSUPPORTED_VERSION",
+				code: options?.code ?? -32602,
 				context: { version, ...options?.context },
 				docsPath:
 					options?.docsPath || "/crypto/keystore/decrypt#error-handling",
@@ -111,13 +121,15 @@ export class UnsupportedVersionError extends KeystoreError {
  * @since 0.0.0
  */
 export class UnsupportedKdfError extends KeystoreError {
+	/** @override @readonly */
+	_tag = "UnsupportedKdfError";
 	/** @type {unknown} */
 	kdf;
 
 	/**
 	 * @param {unknown} kdf
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
@@ -126,7 +138,7 @@ export class UnsupportedKdfError extends KeystoreError {
 		super(
 			`Unsupported KDF: ${kdf}. Only 'scrypt' and 'pbkdf2' are supported.`,
 			{
-				code: options?.code || "UNSUPPORTED_KDF",
+				code: options?.code ?? -32602,
 				context: { kdf, ...options?.context },
 				docsPath:
 					options?.docsPath || "/crypto/keystore/decrypt#error-handling",
@@ -145,17 +157,19 @@ export class UnsupportedKdfError extends KeystoreError {
  * @since 0.0.0
  */
 export class DecryptionError extends KeystoreError {
+	/** @override @readonly */
+	_tag = "DecryptionError";
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
 	 */
 	constructor(message = "Decryption failed", options) {
 		super(message, {
-			code: options?.code || "DECRYPTION_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/crypto/keystore/decrypt#error-handling",
 			cause: options?.cause,
@@ -171,17 +185,19 @@ export class DecryptionError extends KeystoreError {
  * @since 0.0.0
  */
 export class EncryptionError extends KeystoreError {
+	/** @override @readonly */
+	_tag = "EncryptionError";
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
 	 */
 	constructor(message = "Encryption failed", options) {
 		super(message, {
-			code: options?.code || "ENCRYPTION_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/crypto/keystore/encrypt#error-handling",
 			cause: options?.cause,
@@ -199,13 +215,15 @@ export class EncryptionError extends KeystoreError {
  * @since 0.1.42
  */
 export class InvalidScryptNError extends KeystoreError {
+	/** @override @readonly */
+	_tag = "InvalidScryptNError";
 	/** @type {number} */
 	n;
 
 	/**
 	 * @param {number} n
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
@@ -214,7 +232,7 @@ export class InvalidScryptNError extends KeystoreError {
 		super(
 			`Invalid scrypt N parameter: ${n}. N must be a power of 2 (e.g., 1024, 2048, 4096, 16384, 262144).`,
 			{
-				code: options?.code || "INVALID_SCRYPT_N",
+				code: options?.code ?? -32602,
 				context: { n, ...options?.context },
 				docsPath: options?.docsPath || "/crypto/keystore#error-handling",
 				cause: options?.cause,
@@ -235,13 +253,15 @@ export class InvalidScryptNError extends KeystoreError {
  * @since 0.1.42
  */
 export class InvalidPbkdf2IterationsError extends KeystoreError {
+	/** @override @readonly */
+	_tag = "InvalidPbkdf2IterationsError";
 	/** @type {number} */
 	iterations;
 
 	/**
 	 * @param {number} iterations
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
@@ -250,7 +270,7 @@ export class InvalidPbkdf2IterationsError extends KeystoreError {
 		super(
 			`Invalid PBKDF2 iteration count: ${iterations}. Iterations must be a positive integer (minimum 1).`,
 			{
-				code: options?.code || "INVALID_PBKDF2_ITERATIONS",
+				code: options?.code ?? -32602,
 				context: { iterations, ...options?.context },
 				docsPath: options?.docsPath || "/crypto/keystore#error-handling",
 				cause: options?.cause,

@@ -14,20 +14,22 @@ import {
  * ```javascript
  * import { X25519Error } from './crypto/X25519/index.js';
  * throw new X25519Error('Invalid operation', {
- *   code: 'X25519_ERROR',
+ *   code: -32000,
  *   context: { operation: 'scalarmult' },
  *   docsPath: '/crypto/x25519#error-handling'
  * });
  * ```
  */
 export class X25519Error extends CryptoError {
+	/** @override @readonly */
+	_tag = "X25519Error";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "X25519_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -46,20 +48,22 @@ export class X25519Error extends CryptoError {
  * ```javascript
  * import { InvalidSecretKeyError } from './crypto/X25519/index.js';
  * throw new InvalidSecretKeyError('Invalid secret key', {
- *   code: 'X25519_INVALID_SECRET_KEY_LENGTH',
+ *   code: -32003,
  *   context: { length: 16, expected: 32 },
  *   docsPath: '/crypto/x25519/scalarmult#error-handling'
  * });
  * ```
  */
 export class InvalidSecretKeyError extends InvalidPrivateKeyError {
+	/** @override @readonly */
+	_tag = "InvalidSecretKeyError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "X25519_INVALID_SECRET_KEY",
+			code: options?.code ?? -32003,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -78,20 +82,22 @@ export class InvalidSecretKeyError extends InvalidPrivateKeyError {
  * ```javascript
  * import { InvalidPublicKeyError } from './crypto/X25519/index.js';
  * throw new InvalidPublicKeyError('Invalid public key', {
- *   code: 'X25519_INVALID_PUBLIC_KEY_LENGTH',
+ *   code: -32002,
  *   context: { length: 16, expected: 32 },
  *   docsPath: '/crypto/x25519/scalarmult#error-handling'
  * });
  * ```
  */
 export class InvalidPublicKeyError extends BaseInvalidPublicKeyError {
+	/** @override @readonly */
+	_tag = "InvalidPublicKeyError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "X25519_INVALID_PUBLIC_KEY",
+			code: options?.code ?? -32002,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

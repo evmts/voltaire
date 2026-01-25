@@ -22,7 +22,7 @@ export function from(value) {
 			{
 				value,
 				expected: "Non-negative bigint",
-				code: "GAS_ESTIMATE_INVALID_FORMAT",
+				code: -32602,
 				docsPath: "/primitives/gas-estimate/from#error-handling",
 			},
 		);

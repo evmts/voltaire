@@ -19,7 +19,7 @@ import { isHash } from "./isHash.js";
 export function assert(value, message) {
 	if (!isHash(value)) {
 		throw new InvalidFormatError(message ?? "Value is not a Hash", {
-			code: "HASH_INVALID_TYPE",
+			code: -32602,
 			value,
 			expected: "32-byte Uint8Array",
 			docsPath: "/primitives/hash",

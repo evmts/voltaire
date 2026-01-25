@@ -20,7 +20,7 @@ import { isZero } from "./isZero.js";
 export function inv(a) {
 	if (isZero(a)) {
 		throw new Bn254Error("Division by zero in Fp2 field", {
-			code: "DIVISION_BY_ZERO",
+			code: -32000,
 			context: { field: "Fp2", value: a },
 			docsPath: "/crypto/bn254#extension-field",
 		});

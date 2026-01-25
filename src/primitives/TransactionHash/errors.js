@@ -20,7 +20,7 @@ export class InvalidTransactionHashLengthError extends InvalidLengthError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid TransactionHash length", {
-			code: "INVALID_TRANSACTION_HASH_LENGTH",
+			code: -32602,
 			value: options?.value,
 			expected: options?.expected || "32 bytes",
 			context: options?.context,
@@ -43,7 +43,7 @@ export class InvalidTransactionHashFormatError extends InvalidFormatError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid TransactionHash format", {
-			code: "INVALID_TRANSACTION_HASH_FORMAT",
+			code: -32602,
 			value: options?.value,
 			expected: options?.expected || "valid hex string",
 			context: options?.context,

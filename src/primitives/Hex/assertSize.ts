@@ -26,7 +26,7 @@ export function assertSize<TSize extends number>(
 		throw new InvalidLengthError(
 			`Expected ${targetSize} bytes, got ${actualSize}`,
 			{
-				code: "HEX_SIZE_MISMATCH",
+				code: -32602,
 				value: hex,
 				expected: `${targetSize} bytes`,
 				context: { actualSize, targetSize },

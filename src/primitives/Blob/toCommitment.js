@@ -27,7 +27,7 @@ export function ToCommitment({ blobToKzgCommitment }) {
 			throw new InvalidLengthError(`Invalid blob size: ${blob.length}`, {
 				value: blob.length,
 				expected: `${SIZE} bytes`,
-				code: "BLOB_INVALID_SIZE",
+				code: -32602,
 				docsPath: "/primitives/blob/to-commitment#error-handling",
 			});
 		}
@@ -38,7 +38,7 @@ export function ToCommitment({ blobToKzgCommitment }) {
 			throw new PrimitiveError(
 				`Failed to compute KZG commitment: ${error instanceof Error ? error.message : String(error)}`,
 				{
-					code: "BLOB_KZG_COMMITMENT_FAILED",
+					code: -32000,
 					docsPath: "/primitives/blob/to-commitment#error-handling",
 					cause: error instanceof Error ? error : undefined,
 				},

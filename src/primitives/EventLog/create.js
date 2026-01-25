@@ -47,7 +47,7 @@ export function create(params) {
 			throw new InvalidLengthError(
 				`Topic at index ${i} is not a valid 32-byte hash`,
 				{
-					code: "EVENTLOG_INVALID_TOPIC_LENGTH",
+					code: -32602,
 					value: topic,
 					expected: "32-byte Uint8Array (Hash)",
 					context: { index: i, actualLength: length },

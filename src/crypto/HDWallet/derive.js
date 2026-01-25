@@ -31,7 +31,7 @@ export async function derive(node, path) {
 
 	if (handle === 0) {
 		throw new DerivationError("Failed to derive child key", {
-			code: "DERIVATION_FAILED",
+			code: -32000,
 			context: { path: typeof path === "string" ? path : pathArray },
 			docsPath: "/crypto/hdwallet/derive#error-handling",
 		});

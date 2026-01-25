@@ -24,7 +24,7 @@ export async function importKey(keyMaterial) {
 		throw new InvalidKeyError(
 			`Key must be ${AES128_KEY_SIZE} or ${AES256_KEY_SIZE} bytes, got ${keyMaterial.length}`,
 			{
-				code: "AES_GCM_INVALID_KEY_SIZE",
+				code: -32602,
 				context: {
 					length: keyMaterial.length,
 					expected: `${AES128_KEY_SIZE} or ${AES256_KEY_SIZE}`,
@@ -44,7 +44,7 @@ export async function importKey(keyMaterial) {
 		);
 	} catch (error) {
 		throw new InvalidKeyError(`Key import failed: ${error}`, {
-			code: "AES_GCM_KEY_IMPORT_FAILED",
+			code: -32000,
 			context: { keyLength: keyMaterial.length },
 			docsPath: "/crypto/aes-gcm/import-key#error-handling",
 			cause: /** @type {Error} */ (error),

@@ -22,7 +22,7 @@ export function deserialize(data) {
 		throw new DecodingError(
 			"Invalid EIP-1559 transaction: missing or wrong type byte",
 			{
-				code: "INVALID_EIP1559_TYPE_BYTE",
+				code: -32602,
 				context: { typeByte: data[0] },
 				docsPath: "/primitives/transaction/eip1559/deserialize#error-handling",
 			},
@@ -34,7 +34,7 @@ export function deserialize(data) {
 
 	if (decoded.data.type !== "list") {
 		throw new DecodingError("Invalid EIP-1559 transaction: expected list", {
-			code: "INVALID_EIP1559_FORMAT",
+			code: -32602,
 			context: { type: decoded.data.type },
 			docsPath: "/primitives/transaction/eip1559/deserialize#error-handling",
 		});
@@ -45,7 +45,7 @@ export function deserialize(data) {
 		throw new DecodingError(
 			`Invalid EIP-1559 transaction: expected 12 fields, got ${fields.length}`,
 			{
-				code: "INVALID_EIP1559_FIELD_COUNT",
+				code: -32602,
 				context: { expected: 12, actual: fields.length },
 				docsPath: "/primitives/transaction/eip1559/deserialize#error-handling",
 			},
@@ -86,7 +86,7 @@ export function deserialize(data) {
 		throw new DecodingError(
 			`Invalid yParity: expected 0 or 1, got ${yParity}`,
 			{
-				code: "INVALID_Y_PARITY",
+				code: -32602,
 				context: { yParity },
 				docsPath: "/primitives/transaction/eip1559/deserialize#error-handling",
 			},

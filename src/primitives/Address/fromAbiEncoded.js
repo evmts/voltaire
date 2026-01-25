@@ -28,7 +28,7 @@ export function fromAbiEncoded(bytes) {
 			{
 				value: bytes.length,
 				expected: "32 bytes",
-				code: "INVALID_ABI_ENCODED_LENGTH",
+				code: -32602,
 			},
 		);
 	}

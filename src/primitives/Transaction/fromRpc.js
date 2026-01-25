@@ -42,7 +42,7 @@ function hexToAddress(hex) {
 		throw new InvalidLengthError(
 			`Invalid address length: ${bytes.length}, expected 20`,
 			{
-				code: "INVALID_ADDRESS_LENGTH",
+				code: -32602,
 				value: bytes,
 				expected: "20 bytes",
 				context: { actualLength: bytes.length },
@@ -65,7 +65,7 @@ function hexToAddressRequired(hex) {
 		throw new InvalidLengthError(
 			`Invalid address length: ${bytes.length}, expected 20`,
 			{
-				code: "INVALID_ADDRESS_LENGTH",
+				code: -32602,
 				value: bytes,
 				expected: "20 bytes",
 				context: { actualLength: bytes.length },
@@ -88,7 +88,7 @@ function hexToHash(hex) {
 		throw new InvalidLengthError(
 			`Invalid hash length: ${bytes.length}, expected 32`,
 			{
-				code: "INVALID_HASH_LENGTH",
+				code: -32602,
 				value: bytes,
 				expected: "32 bytes",
 				context: { actualLength: bytes.length },
@@ -276,7 +276,7 @@ export function fromRpc(rpc) {
 			throw new InvalidTransactionTypeError(
 				`Unknown transaction type: ${type}`,
 				{
-					code: "UNKNOWN_TRANSACTION_TYPE",
+					code: -32602,
 					context: { type },
 					docsPath: "/primitives/transaction/from-rpc#error-handling",
 				},

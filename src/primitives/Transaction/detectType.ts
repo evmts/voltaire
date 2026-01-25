@@ -13,7 +13,7 @@ import { Type } from "./types.js";
 export function detectType(data: Uint8Array): Type {
 	if (data.length === 0) {
 		throw new InvalidFormatError("Empty transaction data", {
-			code: "EMPTY_TRANSACTION_DATA",
+			code: -32602,
 			value: data,
 			expected: "Non-empty transaction data",
 			docsPath: "/primitives/transaction/detect-type#error-handling",
@@ -42,7 +42,7 @@ export function detectType(data: Uint8Array): Type {
 			throw new InvalidTransactionTypeError(
 				`Unknown transaction type: 0x${firstByte.toString(16)}`,
 				{
-					code: "UNKNOWN_TRANSACTION_TYPE",
+					code: -32602,
 					context: { typeByte: `0x${firstByte.toString(16)}` },
 					docsPath: "/primitives/transaction/detect-type#error-handling",
 				},

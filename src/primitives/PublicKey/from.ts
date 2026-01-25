@@ -25,7 +25,7 @@ export function from(hex: string): PublicKeyType {
 		throw new InvalidFormatError("Invalid hex string", {
 			value: hex,
 			expected: "Valid hex string",
-			code: "PUBLIC_KEY_INVALID_HEX",
+			code: -32602,
 			docsPath: "/primitives/public-key/from#error-handling",
 		});
 	}
@@ -35,7 +35,7 @@ export function from(hex: string): PublicKeyType {
 			{
 				value: hexStr.length,
 				expected: "128 hex characters (64 bytes)",
-				code: "PUBLIC_KEY_INVALID_LENGTH",
+				code: -32602,
 				docsPath: "/primitives/public-key/from#error-handling",
 			},
 		);

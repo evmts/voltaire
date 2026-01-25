@@ -27,7 +27,7 @@ export function calculateCreateCost(initcodeSize, deployedSize) {
 			{
 				value: initcodeSize,
 				expected: `<= ${MaxInitcodeSize}`,
-				code: "GAS_INITCODE_SIZE_EXCEEDED",
+				code: -32602,
 				docsPath:
 					"/primitives/gas-constants/calculate-create-cost#error-handling",
 			},

@@ -38,7 +38,7 @@ export function deserialize(data: Uint8Array): Any {
 			throw new InvalidTransactionTypeError(
 				`Unknown transaction type: ${type}`,
 				{
-					code: "UNKNOWN_TRANSACTION_TYPE",
+					code: -32602,
 					context: { type },
 					docsPath: "/primitives/transaction/deserialize#error-handling",
 				},

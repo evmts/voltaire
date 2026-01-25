@@ -23,16 +23,22 @@ import { CryptoError } from "../../primitives/errors/CryptoError.js";
  */
 export class Keccak256Error extends CryptoError {
 	/**
+	 * @override
+	 * @readonly
+	 * @type {string}
+	 */
+	_tag = "Keccak256Error";
+	/**
 	 * @param {string} message - Error message
 	 * @param {Object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Underlying error
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "KECCAK256_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/crypto/keccak256#error-handling",
 			cause: options?.cause,
@@ -55,10 +61,12 @@ export class Keccak256Error extends CryptoError {
  * ```
  */
 export class Keccak256NativeNotLoadedError extends Keccak256Error {
+	/** @override @readonly */
+	_tag = "Keccak256NativeNotLoadedError";
 	/**
 	 * @param {string} [message] - Error message
 	 * @param {Object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Underlying error
@@ -68,7 +76,7 @@ export class Keccak256NativeNotLoadedError extends Keccak256Error {
 			message ||
 				"Native library not loaded. Use await hash() or call await ensureLoaded() first.",
 			{
-				code: options?.code || "NATIVE_NOT_LOADED",
+				code: options?.code ?? -32000,
 				context: options?.context,
 				docsPath: options?.docsPath || "/crypto/keccak256#native-loading",
 				cause: options?.cause,

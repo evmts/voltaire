@@ -32,7 +32,7 @@ export function loadTrustedSetup(_filePath) {
 		throw new KzgError(
 			`Failed to load KZG trusted setup: ${error instanceof Error ? error.message : String(error)}`,
 			{
-				code: "KZG_SETUP_FAILED",
+				code: -32000,
 				context: { environment: "wasm" },
 				docsPath: "/crypto/kzg#error-handling",
 				cause: error instanceof Error ? error : undefined,

@@ -19,7 +19,7 @@ export function fromBytes(bytes) {
 		throw new InvalidLengthError(
 			`Private key must be 32 bytes, got ${bytes.length}`,
 			{
-				code: "PRIVATE_KEY_INVALID_LENGTH",
+				code: -32602,
 				value: bytes,
 				expected: "32 bytes",
 				context: { actualLength: bytes.length },

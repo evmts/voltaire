@@ -27,7 +27,7 @@ export function fromAffine(x, y) {
 
 	if (y2 !== rhs) {
 		throw new Bn254InvalidPointError("Point not on bn254 G1 curve", {
-			code: "INVALID_CURVE_POINT",
+			code: -32602,
 			context: { x: x_mod.toString(16), y: y_mod.toString(16), curve: "G1" },
 			docsPath: "/crypto/bn254#g1-operations",
 		});

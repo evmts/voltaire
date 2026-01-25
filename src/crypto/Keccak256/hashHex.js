@@ -19,7 +19,7 @@ export function hashHex(hex) {
 	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (!/^[0-9a-fA-F]*$/.test(normalized)) {
 		throw new InvalidFormatError("Invalid hex string", {
-			code: "KECCAK256_INVALID_HEX",
+			code: -32602,
 			value: hex,
 			expected: "Hex string (0-9, a-f, A-F)",
 			docsPath: "/crypto/keccak256/hash-hex#error-handling",
@@ -27,7 +27,7 @@ export function hashHex(hex) {
 	}
 	if (normalized.length % 2 !== 0) {
 		throw new InvalidFormatError("Hex string must have even length", {
-			code: "KECCAK256_ODD_HEX_LENGTH",
+			code: -32602,
 			value: hex,
 			expected: "Even number of hex characters",
 			docsPath: "/crypto/keccak256/hash-hex#error-handling",

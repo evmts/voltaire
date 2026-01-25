@@ -4,14 +4,14 @@ export class TokenBalanceError extends PrimitiveError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "TOKEN_BALANCE_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/token-balance",
 			cause: options?.cause,
@@ -24,7 +24,7 @@ export class InvalidTokenBalanceError extends ValidationError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -33,7 +33,7 @@ export class InvalidTokenBalanceError extends ValidationError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "INVALID_TOKEN_BALANCE",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected ?? "valid token balance",
 			context: options?.context,
@@ -48,7 +48,7 @@ export class TokenBalanceOverflowError extends ValidationError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -57,7 +57,7 @@ export class TokenBalanceOverflowError extends ValidationError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "TOKEN_BALANCE_OVERFLOW",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected ?? "value within uint256 range",
 			context: options?.context,

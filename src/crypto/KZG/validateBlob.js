@@ -22,7 +22,7 @@ import { KzgInvalidBlobError } from "./errors.js";
 export function validateBlob(blob) {
 	if (!(blob instanceof Uint8Array)) {
 		throw new KzgInvalidBlobError("Blob must be Uint8Array", {
-			code: "KZG_BLOB_NOT_UINT8ARRAY",
+			code: -32602,
 			context: { blobType: typeof blob },
 			docsPath: "/crypto/kzg/validate-blob#error-handling",
 		});
@@ -31,7 +31,7 @@ export function validateBlob(blob) {
 		throw new KzgInvalidBlobError(
 			`Blob must be ${BYTES_PER_BLOB} bytes, got ${blob.length}`,
 			{
-				code: "KZG_BLOB_INVALID_LENGTH",
+				code: -32602,
 				context: { actual: blob.length, expected: BYTES_PER_BLOB },
 				docsPath: "/crypto/kzg/validate-blob#error-handling",
 			},
@@ -44,7 +44,7 @@ export function validateBlob(blob) {
 			throw new KzgInvalidBlobError(
 				`Invalid field element at index ${i}: top byte must be 0`,
 				{
-					code: "KZG_BLOB_INVALID_FIELD_ELEMENT",
+					code: -32602,
 					context: { index: i, offset, topByte: blob[offset] },
 					docsPath: "/crypto/kzg/validate-blob#error-handling",
 				},

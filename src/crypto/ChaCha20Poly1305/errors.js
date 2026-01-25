@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { CryptoError } from "../../primitives/errors/CryptoError.js";
 
 /**
@@ -11,7 +10,7 @@ import { CryptoError } from "../../primitives/errors/CryptoError.js";
  * ```javascript
  * import { ChaCha20Poly1305Error } from './crypto/ChaCha20Poly1305/index.js';
  * throw new ChaCha20Poly1305Error('Operation failed', {
- *   code: 'CHACHA20_POLY1305_ERROR',
+ *   code: -32010,
  *   context: { operation: 'encrypt' },
  *   docsPath: '/crypto/chacha20poly1305#error-handling',
  *   cause: originalError
@@ -19,13 +18,15 @@ import { CryptoError } from "../../primitives/errors/CryptoError.js";
  * ```
  */
 export class ChaCha20Poly1305Error extends CryptoError {
+	/** @override @readonly @type {string} */
+	_tag = "ChaCha20Poly1305Error";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "CHACHA20_POLY1305_ERROR",
+			code: options?.code ?? -32010,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -44,20 +45,22 @@ export class ChaCha20Poly1305Error extends CryptoError {
  * ```javascript
  * import { InvalidKeyError } from './crypto/ChaCha20Poly1305/index.js';
  * throw new InvalidKeyError('Invalid key size', {
- *   code: 'CHACHA20_POLY1305_INVALID_KEY_SIZE',
+ *   code: -32011,
  *   context: { size: 16, expected: 32 },
  *   docsPath: '/crypto/chacha20poly1305#error-handling'
  * });
  * ```
  */
 export class InvalidKeyError extends ChaCha20Poly1305Error {
+	/** @override @readonly @type {string} */
+	_tag = "InvalidKeyError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "CHACHA20_POLY1305_INVALID_KEY",
+			code: options?.code ?? -32011,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -76,20 +79,22 @@ export class InvalidKeyError extends ChaCha20Poly1305Error {
  * ```javascript
  * import { InvalidNonceError } from './crypto/ChaCha20Poly1305/index.js';
  * throw new InvalidNonceError('Nonce must be 12 bytes', {
- *   code: 'CHACHA20_POLY1305_INVALID_NONCE_LENGTH',
+ *   code: -32012,
  *   context: { length: 8, expected: 12 },
  *   docsPath: '/crypto/chacha20poly1305#error-handling'
  * });
  * ```
  */
 export class InvalidNonceError extends ChaCha20Poly1305Error {
+	/** @override @readonly @type {string} */
+	_tag = "InvalidNonceError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "CHACHA20_POLY1305_INVALID_NONCE",
+			code: options?.code ?? -32012,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -108,7 +113,7 @@ export class InvalidNonceError extends ChaCha20Poly1305Error {
  * ```javascript
  * import { DecryptionError } from './crypto/ChaCha20Poly1305/index.js';
  * throw new DecryptionError('Authentication failed', {
- *   code: 'CHACHA20_POLY1305_DECRYPTION_FAILED',
+ *   code: -32013,
  *   context: { operation: 'decrypt' },
  *   docsPath: '/crypto/chacha20poly1305#error-handling',
  *   cause: originalError
@@ -116,13 +121,15 @@ export class InvalidNonceError extends ChaCha20Poly1305Error {
  * ```
  */
 export class DecryptionError extends ChaCha20Poly1305Error {
+	/** @override @readonly @type {string} */
+	_tag = "DecryptionError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "CHACHA20_POLY1305_DECRYPTION_FAILED",
+			code: options?.code ?? -32013,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

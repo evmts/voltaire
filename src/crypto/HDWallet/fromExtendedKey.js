@@ -24,7 +24,7 @@ export function fromExtendedKey(xprv) {
 		);
 	} catch (error) {
 		throw new HDWalletError(`Invalid extended key: ${error}`, {
-			code: "INVALID_EXTENDED_KEY",
+			code: -32602,
 			context: { xprv },
 			docsPath: "/crypto/hdwallet/from-extended-key#error-handling",
 			cause: error instanceof Error ? error : undefined,

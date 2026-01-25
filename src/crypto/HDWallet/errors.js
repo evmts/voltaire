@@ -11,16 +11,22 @@ import {
  */
 export class HDWalletError extends CryptoError {
 	/**
+	 * @override
+	 * @readonly
+	 * @type {string}
+	 */
+	_tag = "HDWalletError";
+	/**
 	 * @param {string} message
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "HD_WALLET_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/crypto/hdwallet#error-handling",
 			cause: options?.cause,
@@ -38,17 +44,19 @@ export class HDWalletError extends CryptoError {
  * @since 0.0.0
  */
 export class InvalidPathError extends HDWalletError {
+	/** @override @readonly */
+	_tag = "InvalidPathError";
 	/**
 	 * @param {string} message
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "INVALID_PATH",
+			code: options?.code ?? -32001,
 			context: options?.context,
 			docsPath:
 				options?.docsPath || "/crypto/hdwallet/parse-path#error-handling",
@@ -67,17 +75,19 @@ export class InvalidPathError extends HDWalletError {
  * @since 0.0.0
  */
 export class InvalidSeedError extends HDWalletError {
+	/** @override @readonly */
+	_tag = "InvalidSeedError";
 	/**
 	 * @param {string} message
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "INVALID_SEED",
+			code: options?.code ?? -32002,
 			context: options?.context,
 			docsPath:
 				options?.docsPath || "/crypto/hdwallet/from-seed#error-handling",
@@ -96,17 +106,19 @@ export class InvalidSeedError extends HDWalletError {
  * @since 0.0.0
  */
 export class InvalidMnemonicError extends HDWalletError {
+	/** @override @readonly */
+	_tag = "InvalidMnemonicError";
 	/**
 	 * @param {string} message
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "INVALID_MNEMONIC",
+			code: options?.code ?? -32003,
 			context: options?.context,
 			docsPath:
 				options?.docsPath ||
@@ -126,17 +138,19 @@ export class InvalidMnemonicError extends HDWalletError {
  * @since 0.0.0
  */
 export class DerivationError extends HDWalletError {
+	/** @override @readonly */
+	_tag = "DerivationError";
 	/**
 	 * @param {string} message
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {Record<string, unknown>} [options.context]
 	 * @param {string} [options.docsPath]
 	 * @param {Error} [options.cause]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "DERIVATION_ERROR",
+			code: options?.code ?? -32004,
 			context: options?.context,
 			docsPath: options?.docsPath || "/crypto/hdwallet/derive#error-handling",
 			cause: options?.cause,

@@ -25,7 +25,7 @@ export function parseIndex(indexStr) {
 
 	if (Number.isNaN(index) || index < 0) {
 		throw new InvalidPathError(`Invalid index: ${indexStr}`, {
-			code: "INVALID_INDEX",
+			code: -32602,
 			context: { indexStr, parsed: index },
 			docsPath: "/crypto/hdwallet/parse-index#error-handling",
 		});

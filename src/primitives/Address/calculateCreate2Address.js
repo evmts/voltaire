@@ -39,7 +39,7 @@ export function CalculateCreate2Address({ keccak256 }) {
 		// Validate salt is exactly 32 bytes
 		if (salt.length !== 32) {
 			throw new InvalidLengthError("Salt must be exactly 32 bytes", {
-				code: "CREATE2_INVALID_SALT_LENGTH",
+				code: -32602,
 				value: salt,
 				expected: "32 bytes",
 				context: { length: salt.length },

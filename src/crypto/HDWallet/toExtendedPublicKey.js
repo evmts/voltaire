@@ -20,7 +20,7 @@ import { HDWalletError } from "./errors.js";
 export function toExtendedPublicKey(key) {
 	if (!key.publicKey) {
 		throw new HDWalletError("Key does not have a public key", {
-			code: "MISSING_PUBLIC_KEY",
+			code: -32602,
 			docsPath: "/crypto/hdwallet/to-extended-public-key#error-handling",
 		});
 	}

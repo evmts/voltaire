@@ -16,7 +16,7 @@ export class InvalidTypedDataError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: "INVALID_TYPED_DATA",
+			code: -32602,
 			value: options?.value,
 			expected: options?.expected || "valid EIP-712 typed data",
 			context: options?.context,

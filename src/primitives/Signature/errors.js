@@ -33,7 +33,7 @@ export class InvalidSignatureLengthError extends InvalidLengthError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "SIGNATURE_INVALID_LENGTH",
+			code: -32602,
 			value: options?.value,
 			expected: options?.expected || "valid signature length",
 			context: options?.context,
@@ -73,7 +73,7 @@ export class InvalidSignatureFormatError extends InvalidFormatError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "SIGNATURE_INVALID_FORMAT",
+			code: -32602,
 			value: options?.value,
 			expected: options?.expected || "valid signature format",
 			context: options?.context,
@@ -113,7 +113,7 @@ export class InvalidAlgorithmError extends InvalidSignatureError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "SIGNATURE_INVALID_ALGORITHM",
+			code: -32602,
 			context: {
 				...options?.context,
 				value: options?.value,
@@ -155,7 +155,7 @@ export class NonCanonicalSignatureError extends InvalidSignatureError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "SIGNATURE_NON_CANONICAL",
+			code: -32602,
 			context: {
 				...options?.context,
 				value: options?.value,
@@ -197,7 +197,7 @@ export class InvalidDERError extends InvalidFormatError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "SIGNATURE_INVALID_DER",
+			code: -32602,
 			value: options?.value,
 			expected: options?.expected || "valid DER encoding",
 			context: options?.context,

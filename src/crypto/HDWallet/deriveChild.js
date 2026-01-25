@@ -29,7 +29,7 @@ export function deriveChild(key, index) {
 		throw new HDWalletError(
 			`Failed to derive child at index ${index}: ${error}`,
 			{
-				code: "DERIVE_CHILD_FAILED",
+				code: -32000,
 				context: { index },
 				docsPath: "/crypto/hdwallet/derive-child#error-handling",
 				cause: error instanceof Error ? error : undefined,

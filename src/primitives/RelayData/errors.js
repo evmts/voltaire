@@ -24,7 +24,7 @@ export class InvalidRelayDataError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "INVALID_RELAY_DATA",
+			code: -32602,
 			value: options?.value,
 			expected: options?.expected || "valid relay data",
 			context: options?.context,

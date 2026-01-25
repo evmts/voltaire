@@ -16,7 +16,7 @@ export class InvalidDomainError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: "INVALID_DOMAIN",
+			code: -32602,
 			value: options?.value,
 			expected: options?.expected || "valid EIP-712 domain",
 			context: options?.context,
@@ -41,7 +41,7 @@ export class InvalidDomainTypeError extends ValidationError {
 	 */
 	constructor(typeName, options) {
 		super(`Type ${typeName} not found in types`, {
-			code: "INVALID_DOMAIN_TYPE",
+			code: -32602,
 			value: options?.value ?? typeName,
 			expected: "type defined in types object",
 			docsPath: "/primitives/domain#error-handling",
@@ -67,7 +67,7 @@ export class InvalidEIP712ValueError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: "INVALID_EIP712_VALUE",
+			code: -32602,
 			value: options?.value,
 			expected: options?.expected || "valid EIP-712 value",
 			context: options?.type ? { type: options.type } : undefined,

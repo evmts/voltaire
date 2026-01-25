@@ -42,7 +42,7 @@ export function RecoverAddress({ keccak256, recoverPublicKey, hashTypedData }) {
 		// Validate public key length
 		if (uncompressedPubKey.length !== 64) {
 			throw new Eip712Error("Invalid recovered public key format", {
-				code: "EIP712_INVALID_PUBLIC_KEY_FORMAT",
+				code: -32000,
 				context: { length: uncompressedPubKey.length, expected: 64 },
 				docsPath: "/crypto/eip712/recover-address#error-handling",
 			});

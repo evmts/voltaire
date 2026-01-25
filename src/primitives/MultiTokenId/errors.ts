@@ -4,14 +4,14 @@ export class MultiTokenIdError extends PrimitiveError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "MULTI_TOKEN_ID_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/multi-token-id",
 			cause: options?.cause,
@@ -24,7 +24,7 @@ export class InvalidMultiTokenIdError extends ValidationError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -33,7 +33,7 @@ export class InvalidMultiTokenIdError extends ValidationError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "INVALID_MULTI_TOKEN_ID",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected ?? "valid MultiTokenId",
 			context: options?.context,

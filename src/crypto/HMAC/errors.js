@@ -8,6 +8,8 @@
  * Error thrown when HMAC key is empty
  */
 export class EmptyKeyError extends Error {
+	/** @readonly */
+	_tag = "EmptyKeyError";
 	/**
 	 * @param {string} [message]
 	 */

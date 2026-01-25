@@ -41,6 +41,7 @@ export namespace P256Wasm {
 	// ==========================================================================
 
 	export class P256Error extends Error {
+		readonly _tag: string = "P256Error";
 		constructor(message: string) {
 			super(message);
 			this.name = "P256Error";
@@ -48,6 +49,7 @@ export namespace P256Wasm {
 	}
 
 	export class InvalidSignatureError extends P256Error {
+		override readonly _tag = "InvalidSignatureError" as const;
 		constructor(message: string) {
 			super(message);
 			this.name = "InvalidSignatureError";
@@ -55,6 +57,7 @@ export namespace P256Wasm {
 	}
 
 	export class InvalidPublicKeyError extends P256Error {
+		override readonly _tag = "InvalidPublicKeyError" as const;
 		constructor(message: string) {
 			super(message);
 			this.name = "InvalidPublicKeyError";
@@ -62,6 +65,7 @@ export namespace P256Wasm {
 	}
 
 	export class InvalidPrivateKeyError extends P256Error {
+		override readonly _tag = "InvalidPrivateKeyError" as const;
 		constructor(message: string) {
 			super(message);
 			this.name = "InvalidPrivateKeyError";

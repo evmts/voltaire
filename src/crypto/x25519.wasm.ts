@@ -33,6 +33,7 @@ export namespace X25519Wasm {
 	// ==========================================================================
 
 	export class X25519Error extends Error {
+		readonly _tag: string = "X25519Error";
 		constructor(message: string) {
 			super(message);
 			this.name = "X25519Error";
@@ -40,6 +41,7 @@ export namespace X25519Wasm {
 	}
 
 	export class InvalidSecretKeyError extends X25519Error {
+		override readonly _tag = "InvalidSecretKeyError" as const;
 		constructor(message: string) {
 			super(message);
 			this.name = "InvalidSecretKeyError";
@@ -47,6 +49,7 @@ export namespace X25519Wasm {
 	}
 
 	export class InvalidPublicKeyError extends X25519Error {
+		override readonly _tag = "InvalidPublicKeyError" as const;
 		constructor(message: string) {
 			super(message);
 			this.name = "InvalidPublicKeyError";

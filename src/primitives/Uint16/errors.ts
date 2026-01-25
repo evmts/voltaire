@@ -16,7 +16,7 @@ export class Uint16NegativeError extends IntegerUnderflowError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: bigint | number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -24,7 +24,7 @@ export class Uint16NegativeError extends IntegerUnderflowError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT16_NEGATIVE",
+			code: options.code ?? -32602,
 			value: options.value,
 			min: 0,
 			type: TYPE_NAME,
@@ -43,7 +43,7 @@ export class Uint16OverflowError extends IntegerOverflowError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: bigint | number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -51,7 +51,7 @@ export class Uint16OverflowError extends IntegerOverflowError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT16_OVERFLOW",
+			code: options.code ?? -32602,
 			value: options.value,
 			max: MAX,
 			type: TYPE_NAME,
@@ -70,7 +70,7 @@ export class Uint16UnderflowError extends IntegerUnderflowError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			a: number;
 			b: number;
 			context?: Record<string, unknown>;
@@ -79,7 +79,7 @@ export class Uint16UnderflowError extends IntegerUnderflowError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT16_UNDERFLOW",
+			code: options.code ?? -32602,
 			value: options.a - options.b,
 			min: 0,
 			type: TYPE_NAME,
@@ -98,7 +98,7 @@ export class Uint16InvalidLengthError extends InvalidLengthError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			expected: string;
 			actualLength?: number;
@@ -108,7 +108,7 @@ export class Uint16InvalidLengthError extends InvalidLengthError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT16_INVALID_LENGTH",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected,
 			context: { ...options.context, actualLength: options.actualLength },
@@ -126,7 +126,7 @@ export class Uint16DivisionByZeroError extends InvalidRangeError {
 	constructor(
 		message?: string,
 		options?: {
-			code?: string;
+			code?: number;
 			dividend?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -134,7 +134,7 @@ export class Uint16DivisionByZeroError extends InvalidRangeError {
 		},
 	) {
 		super(message || "Division by zero", {
-			code: options?.code || "UINT16_DIVISION_BY_ZERO",
+			code: options?.code ?? -32000,
 			value: options?.dividend ?? 0,
 			expected: "Non-zero divisor",
 			context: options?.context,
@@ -152,7 +152,7 @@ export class Uint16NotIntegerError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -160,7 +160,7 @@ export class Uint16NotIntegerError extends InvalidFormatError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT16_NOT_INTEGER",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: "Integer value",
 			context: options.context,
@@ -178,7 +178,7 @@ export class Uint16InvalidHexError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -186,7 +186,7 @@ export class Uint16InvalidHexError extends InvalidFormatError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT16_INVALID_HEX",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: "Valid hex string (0x...)",
 			context: options.context,

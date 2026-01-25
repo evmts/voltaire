@@ -19,7 +19,7 @@ export class InvalidCallDataLengthError extends InvalidLengthError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -28,7 +28,7 @@ export class InvalidCallDataLengthError extends InvalidLengthError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "INVALID_CALLDATA_LENGTH",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected ?? "at least 4 bytes",
 			context: options?.context,
@@ -54,7 +54,7 @@ export class InvalidHexFormatError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -63,7 +63,7 @@ export class InvalidHexFormatError extends InvalidFormatError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "INVALID_HEX_FORMAT",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected ?? "valid hex string",
 			context: options?.context,
@@ -89,7 +89,7 @@ export class InvalidValueError extends ValidationError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -98,7 +98,7 @@ export class InvalidValueError extends ValidationError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "INVALID_VALUE",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected ?? "valid value",
 			context: options?.context,
@@ -124,7 +124,7 @@ export class AbiItemNotFoundError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -133,7 +133,7 @@ export class AbiItemNotFoundError extends InvalidFormatError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "ABI_ITEM_NOT_FOUND",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected ?? "function in ABI",
 			context: options?.context,
@@ -159,7 +159,7 @@ export class InvalidSignatureError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -168,7 +168,7 @@ export class InvalidSignatureError extends InvalidFormatError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "INVALID_SIGNATURE",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected ?? "valid function signature",
 			context: options?.context,
@@ -194,7 +194,7 @@ export class ParameterCountMismatchError extends InvalidLengthError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -203,7 +203,7 @@ export class ParameterCountMismatchError extends InvalidLengthError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "PARAMETER_COUNT_MISMATCH",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected ?? "matching parameter count",
 			context: options?.context,

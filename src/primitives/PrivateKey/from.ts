@@ -25,7 +25,7 @@ export function from(hex: string): PrivateKeyType {
 		throw new InvalidFormatError("Invalid hex string", {
 			value: hex,
 			expected: "Valid hex string",
-			code: "PRIVATE_KEY_INVALID_HEX",
+			code: -32602,
 			docsPath: "/primitives/private-key/from#error-handling",
 		});
 	}
@@ -35,7 +35,7 @@ export function from(hex: string): PrivateKeyType {
 			{
 				value: hexStr.length,
 				expected: "64 hex characters (32 bytes)",
-				code: "PRIVATE_KEY_INVALID_LENGTH",
+				code: -32602,
 				docsPath: "/primitives/private-key/from#error-handling",
 			},
 		);

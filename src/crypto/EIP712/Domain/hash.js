@@ -20,7 +20,7 @@ const DOMAIN_DOCS_PATH = "/crypto/eip712/domain#error-handling";
  */
 const throwInvalidDomain = (message, context) => {
 	throw new Eip712InvalidDomainError(message, {
-		code: "EIP712_INVALID_DOMAIN",
+		code: -32602,
 		context,
 		docsPath: DOMAIN_DOCS_PATH,
 	});

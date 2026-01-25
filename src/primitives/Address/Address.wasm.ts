@@ -369,7 +369,7 @@ export function fromAbiEncoded(encoded: Uint8Array): BrandedAddress {
 			{
 				value: encoded.length,
 				expected: "32 bytes",
-				code: "INVALID_ABI_ENCODED_LENGTH",
+				code: -32602,
 			},
 		);
 	}

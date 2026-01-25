@@ -11,7 +11,7 @@ export function validateChainId(
 ): void {
 	if (this.chainId < 0n) {
 		throw new InvalidRangeError("Chain ID cannot be negative", {
-			code: "INVALID_CHAIN_ID",
+			code: -32602,
 			value: this.chainId,
 			expected: "Non-negative chain ID",
 			docsPath: "/primitives/transaction/validate-chain-id#error-handling",
@@ -21,7 +21,7 @@ export function validateChainId(
 		throw new InvalidRangeError(
 			"Chain ID must be specified for EIP transactions",
 			{
-				code: "MISSING_CHAIN_ID",
+				code: -32602,
 				value: this.chainId,
 				expected: "Non-zero chain ID for EIP transactions",
 				docsPath: "/primitives/transaction/validate-chain-id#error-handling",

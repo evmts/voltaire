@@ -33,7 +33,7 @@ export function FromPublicKey({ keccak256 }) {
 					{
 						value: xOrPublicKey.length,
 						expected: "64 bytes",
-						code: "INVALID_PUBLIC_KEY_LENGTH",
+						code: -32602,
 					},
 				);
 			}
@@ -46,7 +46,7 @@ export function FromPublicKey({ keccak256 }) {
 					{
 						value: typeof y,
 						expected: "bigint",
-						code: "MISSING_Y_COORDINATE",
+						code: -32602,
 					},
 				);
 			}

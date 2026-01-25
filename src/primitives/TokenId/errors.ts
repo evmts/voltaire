@@ -4,14 +4,14 @@ export class TokenIdError extends PrimitiveError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code || "TOKEN_ID_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/token-id",
 			cause: options?.cause,
@@ -24,7 +24,7 @@ export class InvalidTokenIdError extends ValidationError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -33,7 +33,7 @@ export class InvalidTokenIdError extends ValidationError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "INVALID_TOKEN_ID",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected ?? "valid TokenId",
 			context: options?.context,

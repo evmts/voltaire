@@ -11,7 +11,7 @@ import {
  * @example
  * ```javascript
  * throw new Ed25519Error('Ed25519 operation failed', {
- *   code: 'ED25519_ERROR',
+ *   code: -32000,
  *   context: { operation: 'sign' },
  *   docsPath: '/crypto/ed25519#error-handling',
  *   cause: originalError
@@ -20,12 +20,18 @@ import {
  */
 export class Ed25519Error extends CryptoError {
 	/**
+	 * @override
+	 * @readonly
+	 * @type {string}
+	 */
+	_tag = "Ed25519Error";
+	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "ED25519_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -40,20 +46,22 @@ export class Ed25519Error extends CryptoError {
  * @example
  * ```javascript
  * throw new InvalidSignatureError('Ed25519 signature must be 64 bytes', {
- *   code: 'ED25519_INVALID_SIGNATURE_LENGTH',
+ *   code: -32001,
  *   context: { length: 32, expected: 64 },
  *   docsPath: '/crypto/ed25519/verify#error-handling'
  * })
  * ```
  */
 export class InvalidSignatureError extends BaseInvalidSignatureError {
+	/** @override @readonly */
+	_tag = "InvalidSignatureError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "ED25519_INVALID_SIGNATURE",
+			code: options?.code ?? -32001,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -68,20 +76,22 @@ export class InvalidSignatureError extends BaseInvalidSignatureError {
  * @example
  * ```javascript
  * throw new InvalidPublicKeyError('Ed25519 public key must be 32 bytes', {
- *   code: 'ED25519_INVALID_PUBLIC_KEY_LENGTH',
+ *   code: -32002,
  *   context: { length: 64, expected: 32 },
  *   docsPath: '/crypto/ed25519/verify#error-handling'
  * })
  * ```
  */
 export class InvalidPublicKeyError extends BaseInvalidPublicKeyError {
+	/** @override @readonly */
+	_tag = "InvalidPublicKeyError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "ED25519_INVALID_PUBLIC_KEY",
+			code: options?.code ?? -32002,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -96,20 +106,22 @@ export class InvalidPublicKeyError extends BaseInvalidPublicKeyError {
  * @example
  * ```javascript
  * throw new InvalidSecretKeyError('Ed25519 secret key must be 32 bytes', {
- *   code: 'ED25519_INVALID_SECRET_KEY_LENGTH',
+ *   code: -32003,
  *   context: { length: 64, expected: 32 },
  *   docsPath: '/crypto/ed25519/sign#error-handling'
  * })
  * ```
  */
 export class InvalidSecretKeyError extends InvalidPrivateKeyError {
+	/** @override @readonly */
+	_tag = "InvalidSecretKeyError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "ED25519_INVALID_SECRET_KEY",
+			code: options?.code ?? -32003,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -124,20 +136,22 @@ export class InvalidSecretKeyError extends InvalidPrivateKeyError {
  * @example
  * ```javascript
  * throw new InvalidSeedError('Ed25519 seed must be 32 bytes', {
- *   code: 'ED25519_INVALID_SEED_LENGTH',
+ *   code: -32004,
  *   context: { length: 16, expected: 32 },
  *   docsPath: '/crypto/ed25519/keypair-from-seed#error-handling'
  * })
  * ```
  */
 export class InvalidSeedError extends Ed25519Error {
+	/** @override @readonly */
+	_tag = "InvalidSeedError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "ED25519_INVALID_SEED",
+			code: options?.code ?? -32004,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

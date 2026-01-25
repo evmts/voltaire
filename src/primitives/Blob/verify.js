@@ -34,7 +34,7 @@ export function Verify(
 			throw new InvalidLengthError(`Invalid blob size: ${blob.length}`, {
 				value: blob.length,
 				expected: `${SIZE} bytes`,
-				code: "BLOB_INVALID_SIZE",
+				code: -32602,
 				docsPath: "/primitives/blob/verify#error-handling",
 			});
 		}
@@ -44,7 +44,7 @@ export function Verify(
 				{
 					value: commitment.length,
 					expected: "48 bytes",
-					code: "BLOB_INVALID_COMMITMENT_SIZE",
+					code: -32602,
 					docsPath: "/primitives/blob/verify#error-handling",
 				},
 			);
@@ -53,7 +53,7 @@ export function Verify(
 			throw new InvalidLengthError(`Invalid proof size: ${proof.length}`, {
 				value: proof.length,
 				expected: "48 bytes",
-				code: "BLOB_INVALID_PROOF_SIZE",
+				code: -32602,
 				docsPath: "/primitives/blob/verify#error-handling",
 			});
 		}
@@ -63,7 +63,7 @@ export function Verify(
 			throw new PrimitiveError(
 				`Failed to verify KZG proof: ${error instanceof Error ? error.message : String(error)}`,
 				{
-					code: "BLOB_KZG_VERIFICATION_FAILED",
+					code: -32000,
 					docsPath: "/primitives/blob/verify#error-handling",
 					cause: error instanceof Error ? error : undefined,
 				},

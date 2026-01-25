@@ -25,7 +25,7 @@ export function range(start, end) {
 		throw new InvalidFormatError("Invalid hardfork in range", {
 			value: startIdx === -1 ? start : end,
 			expected: "Valid hardfork ID",
-			code: "HARDFORK_INVALID_RANGE",
+			code: -32602,
 			docsPath: "/primitives/hardfork/range#error-handling",
 		});
 	}

@@ -12,13 +12,15 @@ import {
  * @since 0.0.0
  */
 export class P256Error extends CryptoError {
+	/** @override @readonly */
+	_tag = "P256Error";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "P256_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -34,13 +36,15 @@ export class P256Error extends CryptoError {
  * @since 0.0.0
  */
 export class InvalidSignatureError extends BaseInvalidSignatureError {
+	/** @override @readonly */
+	_tag = "InvalidSignatureError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "P256_INVALID_SIGNATURE",
+			code: options?.code ?? -32001,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -56,13 +60,15 @@ export class InvalidSignatureError extends BaseInvalidSignatureError {
  * @since 0.0.0
  */
 export class InvalidPublicKeyError extends BaseInvalidPublicKeyError {
+	/** @override @readonly */
+	_tag = "InvalidPublicKeyError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "P256_INVALID_PUBLIC_KEY",
+			code: options?.code ?? -32002,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -78,13 +84,15 @@ export class InvalidPublicKeyError extends BaseInvalidPublicKeyError {
  * @since 0.0.0
  */
 export class InvalidPrivateKeyError extends BaseInvalidPrivateKeyError {
+	/** @override @readonly */
+	_tag = "InvalidPrivateKeyError";
 	/**
 	 * @param {string} message
-	 * @param {{code?: string, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+	 * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "P256_INVALID_PRIVATE_KEY",
+			code: options?.code ?? -32003,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

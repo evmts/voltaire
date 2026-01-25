@@ -27,7 +27,7 @@ import { hash } from "./hash.js";
 export function create2Address(sender, salt, initCodeHash) {
 	if (sender.length !== 20) {
 		throw new InvalidLengthError("Sender must be 20 bytes", {
-			code: "KECCAK256_INVALID_SENDER_LENGTH",
+			code: -32602,
 			value: sender,
 			expected: "20 bytes",
 			context: { length: sender.length },
@@ -36,7 +36,7 @@ export function create2Address(sender, salt, initCodeHash) {
 	}
 	if (salt.length !== 32) {
 		throw new InvalidLengthError("Salt must be 32 bytes", {
-			code: "KECCAK256_INVALID_SALT_LENGTH",
+			code: -32602,
 			value: salt,
 			expected: "32 bytes",
 			context: { length: salt.length },
@@ -45,7 +45,7 @@ export function create2Address(sender, salt, initCodeHash) {
 	}
 	if (initCodeHash.length !== 32) {
 		throw new InvalidLengthError("Init code hash must be 32 bytes", {
-			code: "KECCAK256_INVALID_INIT_CODE_HASH_LENGTH",
+			code: -32602,
 			value: initCodeHash,
 			expected: "32 bytes",
 			context: { length: initCodeHash.length },

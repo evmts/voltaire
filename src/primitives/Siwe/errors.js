@@ -18,7 +18,7 @@ export class InvalidSiweMessageError extends InvalidFormatError {
 	 */
 	constructor(message, options) {
 		super(`Invalid SIWE message: ${message}`, {
-			code: "SIWE_INVALID_MESSAGE",
+			code: -32602,
 			value: options?.value,
 			expected: "valid SIWE message format",
 			docsPath: "/primitives/siwe/parse#error-handling",
@@ -41,7 +41,7 @@ export class MissingFieldError extends InvalidFormatError {
 	 */
 	constructor(field, options) {
 		super(`Missing required field: ${field}`, {
-			code: "SIWE_MISSING_FIELD",
+			code: -32602,
 			value: field,
 			expected: `SIWE message with ${field} field`,
 			docsPath: "/primitives/siwe/parse#error-handling",
@@ -66,7 +66,7 @@ export class InvalidFieldError extends InvalidFormatError {
 	 */
 	constructor(field, reason, options) {
 		super(`Invalid ${field}: ${reason}`, {
-			code: `SIWE_INVALID_${field.toUpperCase().replace(/\s+/g, "_")}`,
+			code: -32602,
 			value: options?.value,
 			expected: reason,
 			docsPath: "/primitives/siwe/parse#error-handling",
@@ -89,7 +89,7 @@ export class InvalidNonceLengthError extends InvalidLengthError {
 	 */
 	constructor(length, options) {
 		super("Nonce length must be at least 8 characters", {
-			code: "SIWE_INVALID_NONCE_LENGTH",
+			code: -32602,
 			value: length,
 			expected: ">= 8 characters",
 			docsPath: "/primitives/siwe/generate-nonce#error-handling",
@@ -113,7 +113,7 @@ export class SiweParseError extends DecodingError {
 	 */
 	constructor(message, options) {
 		super(`Failed to parse SIWE message: ${message}`, {
-			code: "SIWE_PARSE_ERROR",
+			code: -32000,
 			context: { value: options?.value },
 			docsPath: "/primitives/siwe/parse#error-handling",
 			cause: options?.cause,

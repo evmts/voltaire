@@ -47,7 +47,7 @@ export async function deriveKey(password, salt, iterations, bits) {
 		);
 	} catch (error) {
 		throw new AesGcmError(`Key derivation failed: ${error}`, {
-			code: "AES_GCM_KEY_DERIVATION_FAILED",
+			code: -32000,
 			context: { iterations, bits, saltLength: salt.length },
 			docsPath: "/crypto/aes-gcm/derive-key#error-handling",
 			cause: /** @type {Error} */ (error),

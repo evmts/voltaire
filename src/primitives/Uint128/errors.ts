@@ -17,7 +17,7 @@ export class Uint128NegativeError extends IntegerUnderflowError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: bigint | number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -25,7 +25,7 @@ export class Uint128NegativeError extends IntegerUnderflowError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT128_NEGATIVE",
+			code: options.code ?? -32602,
 			value: options.value,
 			min: 0n,
 			type: TYPE_NAME,
@@ -44,7 +44,7 @@ export class Uint128OverflowError extends IntegerOverflowError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: bigint | number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -52,7 +52,7 @@ export class Uint128OverflowError extends IntegerOverflowError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT128_OVERFLOW",
+			code: options.code ?? -32602,
 			value: options.value,
 			max: MAX,
 			type: TYPE_NAME,
@@ -71,7 +71,7 @@ export class Uint128InvalidLengthError extends InvalidLengthError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			expected: string;
 			actualLength?: number;
@@ -81,7 +81,7 @@ export class Uint128InvalidLengthError extends InvalidLengthError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT128_INVALID_LENGTH",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected,
 			context: { ...options.context, actualLength: options.actualLength },
@@ -99,7 +99,7 @@ export class Uint128DivisionByZeroError extends InvalidRangeError {
 	constructor(
 		message?: string,
 		options?: {
-			code?: string;
+			code?: number;
 			dividend?: bigint;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -107,7 +107,7 @@ export class Uint128DivisionByZeroError extends InvalidRangeError {
 		},
 	) {
 		super(message || "Division by zero", {
-			code: options?.code || "UINT128_DIVISION_BY_ZERO",
+			code: options?.code ?? -32000,
 			value: options?.dividend ?? 0n,
 			expected: "Non-zero divisor",
 			context: options?.context,
@@ -125,7 +125,7 @@ export class Uint128NotIntegerError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -133,7 +133,7 @@ export class Uint128NotIntegerError extends InvalidFormatError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT128_NOT_INTEGER",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: "Integer value",
 			context: options.context,
@@ -151,7 +151,7 @@ export class Uint128SafeIntegerOverflowError extends IntegerOverflowError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: bigint | number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -159,7 +159,7 @@ export class Uint128SafeIntegerOverflowError extends IntegerOverflowError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT128_SAFE_INTEGER_OVERFLOW",
+			code: options.code ?? -32602,
 			value: options.value,
 			max: Number.MAX_SAFE_INTEGER,
 			type: "safe integer",
@@ -178,7 +178,7 @@ export class Uint128EmptyInputError extends ValidationError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -187,7 +187,7 @@ export class Uint128EmptyInputError extends ValidationError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "UINT128_EMPTY_INPUT",
+			code: options?.code ?? -32602,
 			value: options?.value ?? [],
 			expected: options?.expected || "At least one value",
 			context: options?.context,

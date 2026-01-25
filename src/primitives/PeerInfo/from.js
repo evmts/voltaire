@@ -29,7 +29,7 @@ export function from(value) {
 			{
 				value,
 				expected: "Object with peer information",
-				code: "PEER_INFO_INVALID_TYPE",
+				code: -32602,
 				docsPath: "/primitives/peer-info/from#error-handling",
 			},
 		);
@@ -40,7 +40,7 @@ export function from(value) {
 		throw new InvalidFormatError("Peer info must have 'id' string field", {
 			value,
 			expected: "id field",
-			code: "PEER_INFO_MISSING_ID",
+			code: -32602,
 			docsPath: "/primitives/peer-info/from#error-handling",
 		});
 	}
@@ -49,7 +49,7 @@ export function from(value) {
 		throw new InvalidFormatError("Peer info must have 'name' string field", {
 			value,
 			expected: "name field",
-			code: "PEER_INFO_MISSING_NAME",
+			code: -32602,
 			docsPath: "/primitives/peer-info/from#error-handling",
 		});
 	}
@@ -58,7 +58,7 @@ export function from(value) {
 		throw new InvalidFormatError("Peer info must have 'caps' array field", {
 			value,
 			expected: "caps array",
-			code: "PEER_INFO_MISSING_CAPS",
+			code: -32602,
 			docsPath: "/primitives/peer-info/from#error-handling",
 		});
 	}
@@ -67,7 +67,7 @@ export function from(value) {
 		throw new InvalidFormatError("Peer info must have 'network' object field", {
 			value,
 			expected: "network object",
-			code: "PEER_INFO_MISSING_NETWORK",
+			code: -32602,
 			docsPath: "/primitives/peer-info/from#error-handling",
 		});
 	}
@@ -86,7 +86,7 @@ export function from(value) {
 				value: network,
 				expected:
 					"localAddress, remoteAddress (string), inbound, trusted, static (boolean)",
-				code: "PEER_INFO_INVALID_NETWORK",
+				code: -32602,
 				docsPath: "/primitives/peer-info/from#error-handling",
 			},
 		);
@@ -98,7 +98,7 @@ export function from(value) {
 			{
 				value,
 				expected: "protocols object",
-				code: "PEER_INFO_MISSING_PROTOCOLS",
+				code: -32602,
 				docsPath: "/primitives/peer-info/from#error-handling",
 			},
 		);
@@ -115,7 +115,7 @@ export function from(value) {
 			throw new InvalidFormatError("Peer info eth protocol must be an object", {
 				value: eth,
 				expected: "eth protocol object",
-				code: "PEER_INFO_INVALID_ETH_PROTOCOL",
+				code: -32602,
 				docsPath: "/primitives/peer-info/from#error-handling",
 			});
 		}

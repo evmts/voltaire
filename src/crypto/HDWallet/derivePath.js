@@ -25,7 +25,7 @@ export function derivePath(key, path) {
 		);
 	} catch (error) {
 		throw new InvalidPathError(`Invalid derivation path "${path}": ${error}`, {
-			code: "DERIVATION_PATH_INVALID",
+			code: -32602,
 			context: { path },
 			docsPath: "/crypto/hdwallet/derive-path#error-handling",
 			cause: error instanceof Error ? error : undefined,

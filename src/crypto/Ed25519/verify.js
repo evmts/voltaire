@@ -27,7 +27,7 @@ export function verify(signature, message, publicKey) {
 		throw new InvalidPublicKeyError(
 			`Public key must be ${PUBLIC_KEY_SIZE} bytes, got ${publicKey.length}`,
 			{
-				code: "ED25519_INVALID_PUBLIC_KEY_LENGTH",
+				code: -32602,
 				context: { length: publicKey.length, expected: PUBLIC_KEY_SIZE },
 				docsPath: "/crypto/ed25519/verify#error-handling",
 			},
@@ -38,7 +38,7 @@ export function verify(signature, message, publicKey) {
 		throw new InvalidSignatureError(
 			`Signature must be ${SIGNATURE_SIZE} bytes, got ${signature.length}`,
 			{
-				code: "ED25519_INVALID_SIGNATURE_LENGTH",
+				code: -32602,
 				context: { length: signature.length, expected: SIGNATURE_SIZE },
 				docsPath: "/crypto/ed25519/verify#error-handling",
 			},

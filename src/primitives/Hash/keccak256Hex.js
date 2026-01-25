@@ -30,7 +30,7 @@ export function Keccak256Hex({ keccak256 }) {
 		const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 		if (normalized.length % 2 !== 0) {
 			throw new InvalidFormatError("Hex string must have even length", {
-				code: "HASH_ODD_HEX_LENGTH",
+				code: -32602,
 				value: hex,
 				expected: "even-length hex string",
 				context: { length: normalized.length },

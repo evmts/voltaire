@@ -19,7 +19,7 @@ import { hexCharToValue } from "./utils.js";
 export function validate(value: string): HexType {
 	if (value.length < 2 || !value.startsWith("0x"))
 		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
-			code: "HEX_MISSING_PREFIX",
+			code: -32602,
 			value,
 			expected: "0x-prefixed hex string",
 			docsPath: "/primitives/hex#error-handling",
@@ -30,7 +30,7 @@ export function validate(value: string): HexType {
 			throw new InvalidFormatError(
 				`Invalid hex character at position ${i}: '${value[i]}'`,
 				{
-					code: "HEX_INVALID_CHARACTER",
+					code: -32602,
 					value,
 					expected: "valid hex characters (0-9, a-f, A-F)",
 					context: { position: i, character: value[i] },

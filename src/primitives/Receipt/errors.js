@@ -15,7 +15,7 @@ export class InvalidReceiptError extends InvalidFormatError {
 	 */
 	constructor(message, details) {
 		super(`Invalid receipt: ${message}`, {
-			code: "RECEIPT_INVALID",
+			code: -32602,
 			value: details?.value,
 			expected: details?.expected || "valid receipt format",
 			context: details?.context,
@@ -41,7 +41,7 @@ export class InvalidReceiptLengthError extends InvalidLengthError {
 	 */
 	constructor(field, expected, actual) {
 		super(`${field} must be ${expected} bytes`, {
-			code: "RECEIPT_INVALID_LENGTH",
+			code: -32602,
 			value: actual,
 			expected: `${expected} bytes`,
 			context: { field, actualLength: actual },

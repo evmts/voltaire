@@ -12,7 +12,7 @@ export class InvalidBytesLengthError extends BaseInvalidLengthError {
 	/**
 	 * @param {string} [message]
 	 * @param {Object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -21,7 +21,7 @@ export class InvalidBytesLengthError extends BaseInvalidLengthError {
 	 */
 	constructor(message = "Invalid bytes length", options = {}) {
 		super(message, {
-			code: options.code || "BYTES_INVALID_LENGTH",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "valid byte length",
 			context: options.context,
@@ -40,7 +40,7 @@ export class InvalidBytesFormatError extends BaseInvalidFormatError {
 	/**
 	 * @param {string} [message]
 	 * @param {Object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -49,7 +49,7 @@ export class InvalidBytesFormatError extends BaseInvalidFormatError {
 	 */
 	constructor(message = "Invalid bytes format", options = {}) {
 		super(message, {
-			code: options.code || "BYTES_INVALID_FORMAT",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "Uint8Array",
 			context: options.context,
@@ -68,7 +68,7 @@ export class InvalidValueError extends BaseInvalidRangeError {
 	/**
 	 * @param {string} [message]
 	 * @param {Object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -77,7 +77,7 @@ export class InvalidValueError extends BaseInvalidRangeError {
 	 */
 	constructor(message = "Invalid value", options = {}) {
 		super(message, {
-			code: options.code || "BYTES_INVALID_VALUE",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "valid value",
 			context: options.context,
@@ -96,7 +96,7 @@ export class SizeExceededError extends BaseInvalidLengthError {
 	/**
 	 * @param {string} [message]
 	 * @param {Object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -105,7 +105,7 @@ export class SizeExceededError extends BaseInvalidLengthError {
 	 */
 	constructor(message = "Bytes size exceeds target size", options = {}) {
 		super(message, {
-			code: options.code || "BYTES_SIZE_EXCEEDED",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "bytes that fit within target size",
 			context: options.context,
@@ -124,7 +124,7 @@ export class NegativeNumberError extends BaseInvalidRangeError {
 	/**
 	 * @param {string} [message]
 	 * @param {Object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -133,7 +133,7 @@ export class NegativeNumberError extends BaseInvalidRangeError {
 	 */
 	constructor(message = "Number must be non-negative", options = {}) {
 		super(message, {
-			code: options.code || "BYTES_NEGATIVE_NUMBER",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "non-negative number",
 			context: options.context,
@@ -152,7 +152,7 @@ export class UnsafeIntegerError extends BaseInvalidRangeError {
 	/**
 	 * @param {string} [message]
 	 * @param {Object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -161,7 +161,7 @@ export class UnsafeIntegerError extends BaseInvalidRangeError {
 	 */
 	constructor(message = "Number exceeds MAX_SAFE_INTEGER", options = {}) {
 		super(message, {
-			code: options.code || "BYTES_UNSAFE_INTEGER",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || `number <= ${Number.MAX_SAFE_INTEGER}`,
 			context: options.context,
@@ -180,7 +180,7 @@ export class NonIntegerError extends BaseInvalidRangeError {
 	/**
 	 * @param {string} [message]
 	 * @param {Object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -189,7 +189,7 @@ export class NonIntegerError extends BaseInvalidRangeError {
 	 */
 	constructor(message = "Number must be an integer", options = {}) {
 		super(message, {
-			code: options.code || "BYTES_NON_INTEGER",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "integer value",
 			context: options.context,
@@ -208,7 +208,7 @@ export class BytesTooLargeError extends BaseInvalidRangeError {
 	/**
 	 * @param {string} [message]
 	 * @param {Object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -220,7 +220,7 @@ export class BytesTooLargeError extends BaseInvalidRangeError {
 		options = {},
 	) {
 		super(message, {
-			code: options.code || "BYTES_TOO_LARGE",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "bytes representable as safe integer",
 			context: options.context,
@@ -239,7 +239,7 @@ export class NegativeBigIntError extends BaseInvalidRangeError {
 	/**
 	 * @param {string} [message]
 	 * @param {Object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -248,7 +248,7 @@ export class NegativeBigIntError extends BaseInvalidRangeError {
 	 */
 	constructor(message = "BigInt must be non-negative", options = {}) {
 		super(message, {
-			code: options.code || "BYTES_NEGATIVE_BIGINT",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected || "non-negative bigint",
 			context: options.context,

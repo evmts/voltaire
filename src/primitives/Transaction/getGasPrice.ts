@@ -36,7 +36,7 @@ export function getGasPrice(this: Any, baseFee?: bigint): bigint {
 
 	if (!baseFee) {
 		throw new InvalidRangeError("baseFee required for EIP-1559+ transactions", {
-			code: "MISSING_BASE_FEE",
+			code: -32602,
 			value: baseFee,
 			expected: "Non-null baseFee value for EIP-1559+ transaction",
 			docsPath: "/primitives/transaction/get-gas-price#error-handling",
@@ -62,7 +62,7 @@ export function getGasPrice(this: Any, baseFee?: bigint): bigint {
 		// biome-ignore lint/suspicious/noExplicitAny: error message for unknown type
 		`Unknown transaction type: ${(this as any).type}`,
 		{
-			code: "UNKNOWN_TRANSACTION_TYPE",
+			code: -32602,
 			// biome-ignore lint/suspicious/noExplicitAny: error context for unknown type
 			context: { type: (this as any).type },
 			docsPath: "/primitives/transaction/get-gas-price#error-handling",

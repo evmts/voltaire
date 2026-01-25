@@ -15,24 +15,26 @@ import { CryptoError } from "../../primitives/errors/CryptoError.js";
  * ```javascript
  * import { Blake2Error } from './crypto/Blake2/errors.js';
  * throw new Blake2Error('Hashing failed', {
- *   code: 'BLAKE2_ERROR',
+ *   code: -32000,
  *   context: { operation: 'hash' },
  *   docsPath: '/crypto/blake2#error-handling'
  * });
  * ```
  */
 export class Blake2Error extends CryptoError {
+	/** @override @readonly @type {string} */
+	_tag = "Blake2Error";
 	/**
 	 * @param {string} message - Error message
 	 * @param {Object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Underlying error
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "BLAKE2_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/crypto/blake2#error-handling",
 			cause: options?.cause,
@@ -55,10 +57,12 @@ export class Blake2Error extends CryptoError {
  * ```
  */
 export class Blake2InvalidOutputLengthError extends Blake2Error {
+	/** @override @readonly */
+	_tag = "Blake2InvalidOutputLengthError";
 	/**
 	 * @param {number} outputLength - The invalid output length
 	 * @param {Object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Underlying error
@@ -67,7 +71,7 @@ export class Blake2InvalidOutputLengthError extends Blake2Error {
 		super(
 			`Invalid output length: ${outputLength}. Must be between 1 and 64 bytes.`,
 			{
-				code: options?.code || "INVALID_OUTPUT_LENGTH",
+				code: options?.code ?? -32001,
 				context: { outputLength, min: 1, max: 64, ...options?.context },
 				docsPath: options?.docsPath || "/crypto/blake2#output-length",
 				cause: options?.cause,
@@ -91,17 +95,19 @@ export class Blake2InvalidOutputLengthError extends Blake2Error {
  * ```
  */
 export class Blake2InvalidInputLengthError extends Blake2Error {
+	/** @override @readonly */
+	_tag = "Blake2InvalidInputLengthError";
 	/**
 	 * @param {number} actualLength - The actual input length
 	 * @param {Object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Underlying error
 	 */
 	constructor(actualLength, options) {
 		super(`Invalid input length: expected 213, got ${actualLength}`, {
-			code: options?.code || "INVALID_INPUT_LENGTH",
+			code: options?.code ?? -32002,
 			context: { actualLength, expected: 213, ...options?.context },
 			docsPath: options?.docsPath || "/evm/precompiles/blake2f#input-format",
 			cause: options?.cause,

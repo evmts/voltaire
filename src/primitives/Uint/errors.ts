@@ -21,7 +21,7 @@ export class UintNegativeError extends IntegerUnderflowError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: bigint | number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -29,7 +29,7 @@ export class UintNegativeError extends IntegerUnderflowError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT_NEGATIVE",
+			code: options.code ?? -32602,
 			value: options.value,
 			min: 0n,
 			type: "uint256",
@@ -57,7 +57,7 @@ export class UintOverflowError extends IntegerOverflowError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: bigint | number;
 			max?: bigint | number;
 			context?: Record<string, unknown>;
@@ -66,7 +66,7 @@ export class UintOverflowError extends IntegerOverflowError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT_OVERFLOW",
+			code: options.code ?? -32602,
 			value: options.value,
 			max: options.max ?? 2n ** 256n - 1n,
 			type: "uint256",
@@ -95,7 +95,7 @@ export class UintInvalidLengthError extends InvalidLengthError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			expected: string;
 			actualLength?: number;
@@ -105,7 +105,7 @@ export class UintInvalidLengthError extends InvalidLengthError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT_INVALID_LENGTH",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected,
 			context: { ...options.context, actualLength: options.actualLength },
@@ -129,7 +129,7 @@ export class UintEmptyInputError extends ValidationError {
 	constructor(
 		message: string,
 		options?: {
-			code?: string;
+			code?: number;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -138,7 +138,7 @@ export class UintEmptyInputError extends ValidationError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "UINT_EMPTY_INPUT",
+			code: options?.code ?? -32602,
 			value: options?.value ?? [],
 			expected: options?.expected || "At least one value",
 			context: options?.context,
@@ -162,7 +162,7 @@ export class UintDivisionByZeroError extends InvalidRangeError {
 	constructor(
 		message?: string,
 		options?: {
-			code?: string;
+			code?: number;
 			dividend?: bigint | number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -170,7 +170,7 @@ export class UintDivisionByZeroError extends InvalidRangeError {
 		},
 	) {
 		super(message || "Division by zero", {
-			code: options?.code || "UINT_DIVISION_BY_ZERO",
+			code: options?.code ?? -32000,
 			value: options?.dividend ?? 0n,
 			expected: "Non-zero divisor",
 			context: options?.context,
@@ -196,7 +196,7 @@ export class UintNotIntegerError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -204,7 +204,7 @@ export class UintNotIntegerError extends InvalidFormatError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT_NOT_INTEGER",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: "Integer value",
 			context: options.context,
@@ -230,7 +230,7 @@ export class UintSafeIntegerOverflowError extends IntegerOverflowError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: bigint | number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -238,7 +238,7 @@ export class UintSafeIntegerOverflowError extends IntegerOverflowError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT_SAFE_INTEGER_OVERFLOW",
+			code: options.code ?? -32602,
 			value: options.value,
 			max: Number.MAX_SAFE_INTEGER,
 			type: "safe integer",
@@ -265,7 +265,7 @@ export class UintInvalidHexError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -273,7 +273,7 @@ export class UintInvalidHexError extends InvalidFormatError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT_INVALID_HEX",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: "Valid hex string (0x...)",
 			context: options.context,

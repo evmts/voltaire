@@ -8,7 +8,7 @@ import { InvalidRangeError } from "../errors/index.js";
 export function validateValue(this: { value: bigint }): void {
 	if (this.value < 0n) {
 		throw new InvalidRangeError("Value cannot be negative", {
-			code: "INVALID_VALUE",
+			code: -32602,
 			value: this.value,
 			expected: "Non-negative value",
 			docsPath: "/primitives/transaction/validate-value#error-handling",

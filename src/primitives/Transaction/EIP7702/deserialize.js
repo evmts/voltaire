@@ -27,7 +27,7 @@ export function deserialize(data) {
 		throw new DecodingError(
 			"Invalid EIP-7702 transaction: missing or wrong type byte",
 			{
-				code: "INVALID_EIP7702_TYPE_BYTE",
+				code: -32602,
 				context: { typeByte: data[0] },
 				docsPath: "/primitives/transaction/eip7702/deserialize#error-handling",
 			},
@@ -39,7 +39,7 @@ export function deserialize(data) {
 
 	if (decoded.data.type !== "list") {
 		throw new DecodingError("Invalid EIP-7702 transaction: expected list", {
-			code: "INVALID_EIP7702_FORMAT",
+			code: -32602,
 			context: { type: decoded.data.type },
 			docsPath: "/primitives/transaction/eip7702/deserialize#error-handling",
 		});
@@ -50,7 +50,7 @@ export function deserialize(data) {
 		throw new DecodingError(
 			`Invalid EIP-7702 transaction: expected 13 fields, got ${fields.length}`,
 			{
-				code: "INVALID_EIP7702_FIELD_COUNT",
+				code: -32602,
 				context: { expected: 13, actual: fields.length },
 				docsPath: "/primitives/transaction/eip7702/deserialize#error-handling",
 			},
@@ -94,7 +94,7 @@ export function deserialize(data) {
 		throw new DecodingError(
 			`Invalid yParity: expected 0 or 1, got ${yParity}`,
 			{
-				code: "INVALID_Y_PARITY",
+				code: -32602,
 				context: { yParity },
 				docsPath: "/primitives/transaction/eip7702/deserialize#error-handling",
 			},

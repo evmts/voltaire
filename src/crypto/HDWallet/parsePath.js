@@ -25,7 +25,7 @@ export function parsePath(path) {
 
 		if (Number.isNaN(index) || index < 0) {
 			throw new InvalidPathError(`Invalid path component: ${part}`, {
-				code: "INVALID_PATH_COMPONENT",
+				code: -32602,
 				context: { path, component: part },
 				docsPath: "/crypto/hdwallet/parse-path#error-handling",
 			});

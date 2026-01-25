@@ -33,7 +33,7 @@ export function ToProof(
 			throw new InvalidLengthError(`Invalid blob size: ${blob.length}`, {
 				value: blob.length,
 				expected: `${SIZE} bytes`,
-				code: "BLOB_INVALID_SIZE",
+				code: -32602,
 				docsPath: "/primitives/blob/to-proof#error-handling",
 			});
 		}
@@ -43,7 +43,7 @@ export function ToProof(
 				{
 					value: commitment.length,
 					expected: "48 bytes",
-					code: "BLOB_INVALID_COMMITMENT_SIZE",
+					code: -32602,
 					docsPath: "/primitives/blob/to-proof#error-handling",
 				},
 			);
@@ -55,7 +55,7 @@ export function ToProof(
 			throw new PrimitiveError(
 				`Failed to compute KZG proof: ${error instanceof Error ? error.message : String(error)}`,
 				{
-					code: "BLOB_KZG_PROOF_FAILED",
+					code: -32000,
 					docsPath: "/primitives/blob/to-proof#error-handling",
 					cause: error instanceof Error ? error : undefined,
 				},

@@ -23,7 +23,7 @@ export async function mnemonicToSeed(mnemonic, password) {
 
 	if (result !== 0) {
 		throw new InvalidMnemonicError("Failed to convert mnemonic to seed", {
-			code: "MNEMONIC_TO_SEED_FAILED",
+			code: -32000,
 			context: { result },
 			docsPath: "/crypto/hdwallet/mnemonic-to-seed#error-handling",
 		});

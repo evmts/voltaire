@@ -24,7 +24,7 @@ export class InvalidBlobSizeError extends InvalidLengthError {
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -33,7 +33,7 @@ export class InvalidBlobSizeError extends InvalidLengthError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid blob size", {
-			code: options?.code || "BLOB_INVALID_SIZE",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "131072 bytes",
 			context: options?.context,
@@ -64,7 +64,7 @@ export class InvalidCommitmentSizeError extends InvalidLengthError {
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -73,7 +73,7 @@ export class InvalidCommitmentSizeError extends InvalidLengthError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid commitment size", {
-			code: options?.code || "BLOB_INVALID_COMMITMENT_SIZE",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "48 bytes",
 			context: options?.context,
@@ -104,7 +104,7 @@ export class InvalidProofSizeError extends InvalidLengthError {
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -113,7 +113,7 @@ export class InvalidProofSizeError extends InvalidLengthError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid proof size", {
-			code: options?.code || "BLOB_INVALID_PROOF_SIZE",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "48 bytes",
 			context: options?.context,
@@ -144,7 +144,7 @@ export class InvalidBlobCountError extends InvalidRangeError {
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -153,7 +153,7 @@ export class InvalidBlobCountError extends InvalidRangeError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid blob count", {
-			code: options?.code || "BLOB_INVALID_COUNT",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "0-6 blobs",
 			context: options?.context,
@@ -184,7 +184,7 @@ export class InvalidBlobDataSizeError extends InvalidRangeError {
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -193,7 +193,7 @@ export class InvalidBlobDataSizeError extends InvalidRangeError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid blob data size", {
-			code: options?.code || "BLOB_INVALID_DATA_SIZE",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "valid data size",
 			context: options?.context,
@@ -224,7 +224,7 @@ export class InvalidBlobLengthPrefixError extends InvalidRangeError {
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -233,7 +233,7 @@ export class InvalidBlobLengthPrefixError extends InvalidRangeError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid length prefix", {
-			code: options?.code || "BLOB_INVALID_LENGTH_PREFIX",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "valid length prefix",
 			context: options?.context,
@@ -264,7 +264,7 @@ export class BlobArrayLengthMismatchError extends ValidationError {
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -273,7 +273,7 @@ export class BlobArrayLengthMismatchError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message || "Arrays must have same length", {
-			code: options?.code || "BLOB_ARRAY_LENGTH_MISMATCH",
+			code: options?.code ?? -32602,
 			value: options?.value,
 			expected: options?.expected || "equal array lengths",
 			context: options?.context,
@@ -304,7 +304,7 @@ export class BlobNotImplementedError extends ValidationError {
 	/**
 	 * @param {string} [message]
 	 * @param {object} [options]
-	 * @param {string} [options.code]
+	 * @param {number} [options.code]
 	 * @param {unknown} [options.value]
 	 * @param {string} [options.expected]
 	 * @param {Record<string, unknown>} [options.context]
@@ -313,7 +313,7 @@ export class BlobNotImplementedError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message || "Not implemented", {
-			code: options?.code || "BLOB_NOT_IMPLEMENTED",
+			code: options?.code ?? -32000,
 			value: options?.value,
 			expected: options?.expected || "implementation",
 			context: options?.context,

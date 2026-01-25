@@ -23,7 +23,7 @@ export class RlpEncodingError extends EncodingError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "RLP_ENCODING_ERROR",
+			code: -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/rlp/encode#error-handling",
 			cause: options?.cause,
@@ -55,7 +55,7 @@ export class RlpDecodingError extends DecodingError {
 		},
 	) {
 		super(message, {
-			code: options?.code || "RLP_DECODING_ERROR",
+			code: -32000,
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/rlp/decode#error-handling",
 			cause: options?.cause,

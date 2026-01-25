@@ -13,7 +13,7 @@ import { pow } from "./pow.js";
 export function inv(a) {
 	if (a === 0n) {
 		throw new InvalidFieldElementError("Cannot invert zero", {
-			code: "BLS12381_DIVISION_BY_ZERO",
+			code: -32000,
 			context: { field: "Fp", value: "0" },
 		});
 	}

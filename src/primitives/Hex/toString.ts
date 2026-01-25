@@ -22,7 +22,7 @@ import { hexCharToValue } from "./utils.js";
 export function toString(hex: HexType): string {
 	if (!hex.startsWith("0x"))
 		throw new InvalidFormatError("Invalid hex format: missing 0x prefix", {
-			code: "HEX_MISSING_PREFIX",
+			code: -32602,
 			value: hex,
 			expected: "0x-prefixed hex string",
 			docsPath: "/primitives/hex#error-handling",
@@ -31,7 +31,7 @@ export function toString(hex: HexType): string {
 	const hexDigits = hex.slice(2);
 	if (hexDigits.length % 2 !== 0)
 		throw new InvalidLengthError("Invalid hex length: odd number of digits", {
-			code: "HEX_ODD_LENGTH",
+			code: -32602,
 			value: hex,
 			expected: "even number of hex digits",
 			docsPath: "/primitives/hex#error-handling",
@@ -47,7 +47,7 @@ export function toString(hex: HexType): string {
 			throw new InvalidFormatError(
 				`Invalid hex character at position ${i + 2}: '${charHigh ?? ""}${charLow ?? ""}'`,
 				{
-					code: "HEX_INVALID_CHARACTER",
+					code: -32602,
 					value: hex,
 					expected: "valid hex characters (0-9, a-f, A-F)",
 					context: {

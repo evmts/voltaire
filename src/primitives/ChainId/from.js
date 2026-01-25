@@ -20,7 +20,7 @@ export function from(value) {
 			{
 				value,
 				expected: "Non-negative integer",
-				code: "CHAIN_ID_INVALID_FORMAT",
+				code: -32602,
 				docsPath: "/primitives/chain-id/from#error-handling",
 			},
 		);

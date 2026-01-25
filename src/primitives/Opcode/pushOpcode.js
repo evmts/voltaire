@@ -22,7 +22,7 @@ export function pushOpcode(bytes) {
 		throw new InvalidRangeError(`Invalid PUSH size: ${bytes} (must be 0-32)`, {
 			value: bytes,
 			expected: "0-32",
-			code: "OPCODE_INVALID_PUSH_SIZE",
+			code: -32602,
 			docsPath: "/primitives/opcode/push-opcode#error-handling",
 		});
 	}

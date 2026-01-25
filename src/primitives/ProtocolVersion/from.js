@@ -21,7 +21,7 @@ export function from(value) {
 			{
 				value,
 				expected: "String in format 'protocol/version'",
-				code: "PROTOCOL_VERSION_INVALID_TYPE",
+				code: -32602,
 				docsPath: "/primitives/protocol-version/from#error-handling",
 			},
 		);
@@ -35,7 +35,7 @@ export function from(value) {
 			{
 				value,
 				expected: "String in format 'protocol/version' (e.g., 'eth/67')",
-				code: "PROTOCOL_VERSION_INVALID_FORMAT",
+				code: -32602,
 				docsPath: "/primitives/protocol-version/from#error-handling",
 			},
 		);
@@ -48,7 +48,7 @@ export function from(value) {
 			{
 				value,
 				expected: "Non-empty protocol and version (e.g., 'eth/67')",
-				code: "PROTOCOL_VERSION_EMPTY_COMPONENT",
+				code: -32602,
 				docsPath: "/primitives/protocol-version/from#error-handling",
 			},
 		);

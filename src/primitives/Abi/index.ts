@@ -6,14 +6,18 @@ export * from "./Abi.js";
 export * as Constructor from "./constructor/index.js";
 export { decode } from "./decode.js";
 export { decodeData } from "./decodeData.js";
+export { decodeFunction } from "./decodeFunction.js";
+export { decodeLog } from "./decodeLog.js";
 export {
 	DecodeParameters,
 	decodeParameters,
 	encodeParameters,
 	Parameters,
 } from "./Encoding.js";
+export * from "./Errors.js";
 // Re-export encoding/decoding methods
 export { encode } from "./encode.js";
+export { encodeFunction } from "./encodeFunction.js";
 export { encodePacked } from "./encodePacked.js";
 export * as Error from "./error/index.js";
 export * from "./error/standards/index.js";
@@ -29,7 +33,3 @@ export * as Item from "./Item/index.js";
 // Re-export ERC standards
 export { Interface } from "./interface/index.js";
 export { parseLogs } from "./parseLogs.js";
-export { encodeFunction } from "./encodeFunction.js";
-export { decodeFunction } from "./decodeFunction.js";
-export { decodeLog } from "./decodeLog.js";
-export * from "./Errors.js";

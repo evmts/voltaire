@@ -15,24 +15,26 @@ import { CryptoError } from "../../primitives/errors/CryptoError.js";
  * ```javascript
  * import { Bn254Error } from './crypto/bn254/errors.js';
  * throw new Bn254Error('Operation failed', {
- *   code: 'BN254_ERROR',
+ *   code: -32000,
  *   context: { operation: 'multiply' },
  *   docsPath: '/crypto/bn254#error-handling'
  * });
  * ```
  */
 export class Bn254Error extends CryptoError {
+	/** @override @readonly @type {string} */
+	_tag = "Bn254Error";
 	/**
 	 * @param {string} message - Error message
 	 * @param {Object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Underlying error
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "BN254_ERROR",
+			code: options?.code ?? -32000,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -55,17 +57,19 @@ export class Bn254Error extends CryptoError {
  * ```
  */
 export class Bn254InvalidPointError extends Bn254Error {
+	/** @override @readonly @type {string} */
+	_tag = "Bn254InvalidPointError";
 	/**
 	 * @param {string} message - Error message
 	 * @param {Object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Underlying error
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "INVALID_CURVE_POINT",
+			code: options?.code ?? -32001,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -88,17 +92,19 @@ export class Bn254InvalidPointError extends Bn254Error {
  * ```
  */
 export class Bn254SubgroupCheckError extends Bn254Error {
+	/** @override @readonly @type {string} */
+	_tag = "Bn254SubgroupCheckError";
 	/**
 	 * @param {string} message - Error message
 	 * @param {Object} [options] - Error options
-	 * @param {string} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Underlying error
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code || "INVALID_SUBGROUP",
+			code: options?.code ?? -32002,
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

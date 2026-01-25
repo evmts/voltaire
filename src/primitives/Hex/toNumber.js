@@ -19,7 +19,7 @@ export function toNumber(hex) {
 	const num = Number.parseInt(hex.slice(2), 16);
 	if (!Number.isSafeInteger(num)) {
 		throw new InvalidRangeError("Hex value exceeds MAX_SAFE_INTEGER", {
-			code: "HEX_VALUE_TOO_LARGE",
+			code: -32602,
 			value: hex,
 			expected: `value <= ${Number.MAX_SAFE_INTEGER}`,
 			context: { parsedValue: num, maxSafeInteger: Number.MAX_SAFE_INTEGER },

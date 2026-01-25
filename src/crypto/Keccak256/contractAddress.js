@@ -41,7 +41,7 @@ function nonceToBytes(nonce) {
 export function contractAddress(sender, nonce) {
 	if (sender.length !== 20) {
 		throw new InvalidLengthError("Sender must be 20 bytes", {
-			code: "KECCAK256_INVALID_SENDER_LENGTH",
+			code: -32602,
 			value: sender,
 			expected: "20 bytes",
 			context: { length: sender.length, nonce },

@@ -61,7 +61,7 @@ export function decodeAddress(bytes: Uint8Array): BrandedAddress | null {
 	}
 	if (bytes.length !== 20) {
 		throw new InvalidLengthError(`Invalid address length: ${bytes.length}`, {
-			code: "INVALID_ADDRESS_LENGTH",
+			code: -32602,
 			value: bytes,
 			expected: "20 bytes",
 			context: { actualLength: bytes.length },
@@ -155,7 +155,7 @@ export function decodeAccessList(
 	return data.map((item) => {
 		if (item.type !== "list" || item.value.length !== 2) {
 			throw new InvalidFormatError("Invalid access list item", {
-				code: "INVALID_ACCESS_LIST_ITEM",
+				code: -32602,
 				value: item,
 				expected: "List with 2 elements [address, storageKeys]",
 				docsPath: "/primitives/transaction/utils#error-handling",
@@ -167,7 +167,7 @@ export function decodeAccessList(
 
 		if (addressData?.type !== "bytes" || addressData.value.length !== 20) {
 			throw new InvalidLengthError("Invalid access list address", {
-				code: "INVALID_ACCESS_LIST_ADDRESS",
+				code: -32602,
 				value: addressData,
 				expected: "20 bytes",
 				context: { actualLength: addressData?.value?.length },
@@ -177,7 +177,7 @@ export function decodeAccessList(
 
 		if (keysData?.type !== "list") {
 			throw new InvalidFormatError("Invalid access list storage keys", {
-				code: "INVALID_ACCESS_LIST_KEYS",
+				code: -32602,
 				value: keysData,
 				expected: "List of storage keys",
 				docsPath: "/primitives/transaction/utils#error-handling",
@@ -189,7 +189,7 @@ export function decodeAccessList(
 		const storageKeys = keysData.value.map((keyData: BrandedRlp) => {
 			if (keyData.type !== "bytes" || keyData.value.length !== 32) {
 				throw new InvalidLengthError("Invalid storage key", {
-					code: "INVALID_STORAGE_KEY",
+					code: -32602,
 					value: keyData,
 					expected: "32 bytes",
 					context: { actualLength: keyData.value?.length },
@@ -253,7 +253,7 @@ export function decodeAuthorizationList(data: BrandedRlp[]): {
 	return data.map((item) => {
 		if (item.type !== "list" || item.value.length !== 6) {
 			throw new InvalidFormatError("Invalid authorization item", {
-				code: "INVALID_AUTHORIZATION_ITEM",
+				code: -32602,
 				value: item,
 				expected:
 					"List with 6 elements [chainId, address, nonce, yParity, r, s]",
@@ -283,7 +283,7 @@ export function decodeAuthorizationList(data: BrandedRlp[]): {
 			sData.value.length !== 32
 		) {
 			throw new InvalidFormatError("Invalid authorization data", {
-				code: "INVALID_AUTHORIZATION_DATA",
+				code: -32602,
 				value: item,
 				expected:
 					"Valid authorization data with correct field types and lengths",

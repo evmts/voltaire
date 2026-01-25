@@ -16,7 +16,7 @@ export class Uint32NegativeError extends IntegerUnderflowError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: bigint | number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -24,7 +24,7 @@ export class Uint32NegativeError extends IntegerUnderflowError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT32_NEGATIVE",
+			code: options.code ?? -32602,
 			value: options.value,
 			min: 0,
 			type: TYPE_NAME,
@@ -43,7 +43,7 @@ export class Uint32OverflowError extends IntegerOverflowError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: bigint | number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -51,7 +51,7 @@ export class Uint32OverflowError extends IntegerOverflowError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT32_OVERFLOW",
+			code: options.code ?? -32602,
 			value: options.value,
 			max: MAX,
 			type: TYPE_NAME,
@@ -70,7 +70,7 @@ export class Uint32InvalidLengthError extends InvalidLengthError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			expected: string;
 			actualLength?: number;
@@ -80,7 +80,7 @@ export class Uint32InvalidLengthError extends InvalidLengthError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT32_INVALID_LENGTH",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: options.expected,
 			context: { ...options.context, actualLength: options.actualLength },
@@ -98,7 +98,7 @@ export class Uint32DivisionByZeroError extends InvalidRangeError {
 	constructor(
 		message?: string,
 		options?: {
-			code?: string;
+			code?: number;
 			dividend?: number;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -106,7 +106,7 @@ export class Uint32DivisionByZeroError extends InvalidRangeError {
 		},
 	) {
 		super(message || "Division by zero", {
-			code: options?.code || "UINT32_DIVISION_BY_ZERO",
+			code: options?.code ?? -32000,
 			value: options?.dividend ?? 0,
 			expected: "Non-zero divisor",
 			context: options?.context,
@@ -124,7 +124,7 @@ export class Uint32NotIntegerError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -132,7 +132,7 @@ export class Uint32NotIntegerError extends InvalidFormatError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT32_NOT_INTEGER",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: "Integer value",
 			context: options.context,
@@ -150,7 +150,7 @@ export class Uint32InvalidHexError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -158,7 +158,7 @@ export class Uint32InvalidHexError extends InvalidFormatError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT32_INVALID_HEX",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: "Valid hex string (0x...)",
 			context: options.context,
@@ -176,7 +176,7 @@ export class Uint32NotSafeIntegerError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options: {
-			code?: string;
+			code?: number;
 			value: unknown;
 			context?: Record<string, unknown>;
 			docsPath?: string;
@@ -184,7 +184,7 @@ export class Uint32NotSafeIntegerError extends InvalidFormatError {
 		},
 	) {
 		super(message, {
-			code: options.code || "UINT32_NOT_SAFE_INTEGER",
+			code: options.code ?? -32602,
 			value: options.value,
 			expected: "Safe integer value",
 			context: options.context,

@@ -17,7 +17,7 @@ export class InvalidTransactionUrlError extends InvalidFormatError {
 	 */
 	constructor(message, details) {
 		super(message || "Invalid transaction URL", {
-			code: "INVALID_TRANSACTION_URL",
+			code: -32602,
 			value: details?.url,
 			expected: "valid ERC-681 transaction URL",
 			context: details,
