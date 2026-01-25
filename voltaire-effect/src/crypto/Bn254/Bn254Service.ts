@@ -11,8 +11,38 @@ import {
 	type BN254G2PointType,
 } from "@tevm/voltaire";
 import * as Context from "effect/Context";
+import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+
+/**
+ * Error thrown when a BN254 curve operation fails.
+ *
+ * @description
+ * Contains the operation that failed, error message, and optional cause.
+ *
+ * Common failure reasons:
+ * - Invalid point (not on curve)
+ * - Invalid scalar value
+ * - Pairing check input validation failure
+ *
+ * @since 0.0.1
+ */
+export class Bn254Error extends Data.TaggedError("Bn254Error")<{
+	/** The BN254 operation that failed */
+	readonly operation:
+		| "g1Add"
+		| "g1Mul"
+		| "g1Generator"
+		| "g2Add"
+		| "g2Mul"
+		| "g2Generator"
+		| "pairingCheck";
+	/** Human-readable error message */
+	readonly message: string;
+	/** Underlying error that caused this failure */
+	readonly cause?: unknown;
+}> {}
 
 /**
  * Shape interface for BN254 (alt_bn128) elliptic curve operations.

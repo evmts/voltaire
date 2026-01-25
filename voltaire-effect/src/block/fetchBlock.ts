@@ -42,59 +42,55 @@ export const fetchBlock = <TInclude extends BlockInclude = "header">(
 	StreamBlock<TInclude>,
 	BlockError | BlockNotFoundError,
 	TransportService
-> =>
-	Effect.gen(function* () {
+> => {
+	const maxRetries = retryOptions?.maxRetries ?? 3;
+	const initialDelay = retryOptions?.initialDelay ?? 1000;
+	const maxDelay = retryOptions?.maxDelay ?? 30000;
+
+	const retrySchedule = Schedule.exponential(Duration.millis(initialDelay)).pipe(
+		Schedule.jittered,
+		Schedule.compose(Schedule.recurs(maxRetries)),
+		Schedule.whileOutput((duration) => Duration.lessThanOrEqualTo(duration, Duration.millis(maxDelay))),
+	);
+
+	const includeTransactions = include !== "header";
+
+	const fetchEffect = Effect.gen(function* () {
 		const transport = yield* TransportService;
 
-		const maxRetries = retryOptions?.maxRetries ?? 3;
-		const initialDelay = retryOptions?.initialDelay ?? 1000;
-		const maxDelay = retryOptions?.maxDelay ?? 30000;
-
-		const includeTransactions = include !== "header";
-		let attempt = 0;
-		let delay = initialDelay;
-
-		while (true) {
-			try {
-				const block = yield* transport
-					.request("eth_getBlockByNumber", [
-						`0x${blockNumber.toString(16)}`,
-						includeTransactions,
-					])
-					.pipe(
-						Effect.mapError(
-							(e) =>
-								new BlockError(`Failed to fetch block ${blockNumber}`, {
-									cause: e,
-								}),
-						),
-					);
-
-				if (!block) {
-					return yield* Effect.fail(new BlockNotFoundError(blockNumber));
-				}
-
-				if (include === "receipts") {
-					const receipts = yield* createFetchBlockReceipts(
-						block as Record<string, unknown>,
-						retryOptions,
-					);
-					return { ...block, receipts } as unknown as StreamBlock<TInclude>;
-				}
-
-				return block as unknown as StreamBlock<TInclude>;
-			} catch (error) {
-				attempt++;
-				if (attempt >= maxRetries) {
-					return yield* Effect.fail(
+		const block = yield* transport
+			.request("eth_getBlockByNumber", [
+				`0x${blockNumber.toString(16)}`,
+				includeTransactions,
+			])
+			.pipe(
+				Effect.mapError(
+					(e) =>
 						new BlockError(`Failed to fetch block ${blockNumber}`, {
-							cause: error instanceof Error ? error : undefined,
+							cause: e,
 						}),
-					);
-				}
+				),
+			);
 
-				yield* Effect.sleep(`${delay} millis`);
-				delay = Math.min(delay * 2, maxDelay);
-			}
+		if (!block) {
+			return yield* Effect.fail(new BlockNotFoundError(blockNumber));
 		}
+
+		if (include === "receipts") {
+			const receipts = yield* createFetchBlockReceipts(
+				block as Record<string, unknown>,
+				retryOptions,
+			);
+			return { ...block, receipts } as unknown as StreamBlock<TInclude>;
+		}
+
+		return block as unknown as StreamBlock<TInclude>;
 	});
+
+	return fetchEffect.pipe(
+		Effect.retry({
+			schedule: retrySchedule,
+			while: (error) => error instanceof BlockError,
+		}),
+	);
+};

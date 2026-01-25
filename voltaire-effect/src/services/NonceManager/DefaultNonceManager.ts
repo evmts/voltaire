@@ -74,72 +74,81 @@ import { NonceError, NonceManagerService } from "./NonceManagerService.js";
  * @see {@link NonceManagerService} - The service interface
  * @see {@link ProviderService} - Required for fetching on-chain nonces
  */
-export const DefaultNonceManager: Layer.Layer<NonceManagerService> = Layer.sync(
-	NonceManagerService,
-	() => {
-		const deltaMap = new Map<string, number>();
+export const DefaultNonceManager: Layer.Layer<NonceManagerService> =
+	Layer.effect(
+		NonceManagerService,
+		Effect.gen(function* () {
+			const deltaRef = yield* SynchronizedRef.make(new Map<string, number>());
 
-		return {
-			get: (address: string) =>
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					const key = address.toLowerCase();
+			return {
+				get: (address: string) =>
+					Effect.gen(function* () {
+						const provider = yield* ProviderService;
+						const key = address.toLowerCase();
 
-					const baseNonce = yield* provider
-						.getTransactionCount(address as `0x${string}`, "pending")
-						.pipe(
-							Effect.mapError(
-								(e) =>
-									new NonceError({
-										address,
-										message: `Failed to get transaction count: ${e.message}`,
-										cause: e,
-									}),
-							),
-						);
+						const baseNonce = yield* provider
+							.getTransactionCount(address as `0x${string}`, "pending")
+							.pipe(
+								Effect.mapError(
+									(e) =>
+										new NonceError({
+											address,
+											message: `Failed to get transaction count: ${e.message}`,
+											cause: e,
+										}),
+								),
+							);
 
-					const delta = deltaMap.get(key) ?? 0;
-					return Number(baseNonce) + delta;
-				}),
+						const deltaMap = yield* SynchronizedRef.get(deltaRef);
+						const delta = deltaMap.get(key) ?? 0;
+						return Number(baseNonce) + delta;
+					}),
 
-			consume: (address: string) =>
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					const key = address.toLowerCase();
+				consume: (address: string) =>
+					SynchronizedRef.modifyEffect(deltaRef, (deltaMap) =>
+						Effect.gen(function* () {
+							const provider = yield* ProviderService;
+							const key = address.toLowerCase();
 
-					const baseNonce = yield* provider
-						.getTransactionCount(address as `0x${string}`, "pending")
-						.pipe(
-							Effect.mapError(
-								(e) =>
-									new NonceError({
-										address,
-										message: `Failed to get transaction count: ${e.message}`,
-										cause: e,
-									}),
-							),
-						);
+							const baseNonce = yield* provider
+								.getTransactionCount(address as `0x${string}`, "pending")
+								.pipe(
+									Effect.mapError(
+										(e) =>
+											new NonceError({
+												address,
+												message: `Failed to get transaction count: ${e.message}`,
+												cause: e,
+											}),
+									),
+								);
 
-					const delta = deltaMap.get(key) ?? 0;
-					const nonce = Number(baseNonce) + delta;
+							const delta = deltaMap.get(key) ?? 0;
+							const nonce = Number(baseNonce) + delta;
 
-					deltaMap.set(key, delta + 1);
+							const newMap = new Map(deltaMap);
+							newMap.set(key, delta + 1);
 
-					return nonce;
-				}),
+							return [nonce, newMap] as const;
+						}),
+					),
 
-			increment: (address: string) =>
-				Effect.sync(() => {
-					const key = address.toLowerCase();
-					const delta = deltaMap.get(key) ?? 0;
-					deltaMap.set(key, delta + 1);
-				}),
+				increment: (address: string) =>
+					SynchronizedRef.update(deltaRef, (deltaMap) => {
+						const key = address.toLowerCase();
+						const delta = deltaMap.get(key) ?? 0;
+						const newMap = new Map(deltaMap);
+						newMap.set(key, delta + 1);
+						return newMap;
+					}),
 
-			reset: (address: string) =>
-				Effect.sync(() => {
-					const key = address.toLowerCase();
-					deltaMap.delete(key);
-				}),
-		};
-	},
-);
+				reset: (address: string) =>
+					SynchronizedRef.update(deltaRef, (deltaMap) => {
+						const key = address.toLowerCase();
+						const newMap = new Map(deltaMap);
+						newMap.delete(key);
+						return newMap;
+					}),
+			};
+		}),
+	);
