@@ -196,10 +196,15 @@ On EIP-1559 networks (post-London), if you don't specify any gas fields, the sig
 When using EIP-1559 and `maxFeePerGas` is not provided, it's calculated as:
 
 ```
-maxFeePerGas = baseFeePerGas * 2 + maxPriorityFeePerGas
+maxFeePerGas = baseFeePerGas * 1.2 + maxPriorityFeePerGas
 ```
 
-The 2x multiplier on base fee provides a buffer for fee volatility (matches viem/ethers defaults).
+The 1.2x multiplier (20% buffer) on base fee provides headroom for fee volatility across 1-2 blocks, matching the viem/ethers standard.
+
+**Example:** With baseFee=30 gwei and priorityFee=2 gwei:
+- `maxFeePerGas = 30 * 1.2 + 2 = 38 gwei`
+
+Since bigint doesn't support decimals, the implementation uses: `(baseFee * 12n) / 10n + maxPriorityFeePerGas`
 
 ### EIP-2930 Note
 
