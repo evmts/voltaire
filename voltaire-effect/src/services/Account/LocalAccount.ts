@@ -173,7 +173,12 @@ function hashStruct(
 	return Effect.gen(function* () {
 		const typeFields = types[primaryType] ?? [];
 		const typeHash = yield* hashType(primaryType, types, keccak256);
-		const encodedData = yield* encodeData(typeFields, message, types, keccak256);
+		const encodedData = yield* encodeData(
+			typeFields,
+			message,
+			types,
+			keccak256,
+		);
 
 		const combined = new Uint8Array(typeHash.length + encodedData.length);
 		combined.set(typeHash);
@@ -188,21 +193,21 @@ function findTypeDependencies(
 	types: Record<string, readonly { name: string; type: string }[]>,
 	result: Set<string> = new Set(),
 ): Set<string> {
-	if (result.has(primaryType)) return result;
-	if (primaryType === "EIP712Domain") return result;
-	
-	const fields = types[primaryType];
+	const match = primaryType.match(/^\w*/u);
+	const baseType = match?.[0] ?? primaryType;
+
+	if (result.has(baseType)) return result;
+	if (baseType === "EIP712Domain") return result;
+
+	const fields = types[baseType];
 	if (!fields) return result;
-	
-	result.add(primaryType);
-	
+
+	result.add(baseType);
+
 	for (const field of fields) {
-		const baseType = field.type.replace(/\[\d*\]$/, "");
-		if (types[baseType] && !result.has(baseType)) {
-			findTypeDependencies(baseType, types, result);
-		}
+		findTypeDependencies(field.type, types, result);
 	}
-	
+
 	return result;
 }
 
@@ -213,7 +218,7 @@ function encodeType(
 	const deps = findTypeDependencies(primaryType, types);
 	const sorted = [...deps].filter((t) => t !== primaryType).sort();
 	const allTypes = [primaryType, ...sorted];
-	
+
 	return allTypes
 		.map((name) => {
 			const fields = types[name] ?? [];
@@ -275,8 +280,9 @@ function encodeValue(
 			const hash = yield* keccak256(value as Uint8Array);
 			return hash;
 		}
-		if (type.endsWith("[]")) {
-			const baseType = type.slice(0, -2);
+		const arrayMatch = type.match(/^(.+?)(\[\d*\])$/);
+		if (arrayMatch) {
+			const baseType = arrayMatch[1];
 			const arr = value as unknown[];
 			const encodedElements: Uint8Array[] = [];
 			for (const element of arr) {

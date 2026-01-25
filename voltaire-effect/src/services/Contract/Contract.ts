@@ -53,6 +53,7 @@ import {
 	ContractWriteError,
 	type DecodedEvent,
 	type EventFilter,
+	type WriteOptions,
 } from "./ContractTypes.js";
 
 /**
@@ -82,73 +83,109 @@ function encodeArgs(
  * @param abi - The contract ABI
  * @param functionName - The function that was called
  * @param data - The raw return data
- * @returns Decoded result (single value or tuple)
+ * @param context - Context for error reporting
+ * @returns Effect that resolves to decoded result (single value or tuple)
  */
-function decodeResult(
+const decodeResultE = (
 	abi: readonly AbiItem[],
 	functionName: string,
 	data: HexType,
-): unknown {
-	const fn = abi.find(
-		(item): item is BrandedAbi.Function.FunctionType =>
-			item.type === "function" && (item as any).name === functionName,
-	) as BrandedAbi.Function.FunctionType | undefined;
-	if (!fn) throw new Error(`Function ${functionName} not found`);
+	context: { address: string; args?: unknown[] },
+): Effect.Effect<unknown, ContractCallError> =>
+	Effect.try({
+		try: () => {
+			const fn = abi.find(
+				(item): item is BrandedAbi.Function.FunctionType =>
+					item.type === "function" && (item as any).name === functionName,
+			) as BrandedAbi.Function.FunctionType | undefined;
+			if (!fn) throw new Error(`Function ${functionName} not found in ABI`);
 
-	const bytes = Hex.toBytes(data);
-	const decoded = BrandedAbi.Function.decodeResult(fn, bytes);
-	if (fn.outputs.length === 1) {
-		return decoded[0];
-	}
-	return decoded;
-}
+			const bytes = Hex.toBytes(data);
+			const decoded = BrandedAbi.Function.decodeResult(fn, bytes);
+			if (fn.outputs.length === 1) {
+				return decoded[0];
+			}
+			return decoded;
+		},
+		catch: (e) =>
+			new ContractCallError(
+				{ address: context.address, method: functionName, args: context.args },
+				e instanceof Error ? e.message : "Decode error",
+				{ cause: e instanceof Error ? e : undefined },
+			),
+	});
 
 /**
  * Gets the event topic (selector) for an event.
  * @param abi - The contract ABI
  * @param eventName - The event name
- * @returns Hex-encoded topic (keccak256 of event signature)
+ * @param address - Contract address for error context
+ * @returns Effect that resolves to hex-encoded topic (keccak256 of event signature)
  */
-function getEventTopic(abi: readonly AbiItem[], eventName: string): string {
-	const event = abi.find(
-		(item) => item.type === "event" && item.name === eventName,
-	) as BrandedAbi.Event.EventType | undefined;
-	if (!event) throw new Error(`Event ${eventName} not found`);
-	const selector = BrandedAbi.Event.getSelector(event);
-	return Hash.toHex(selector) as string;
-}
+const getEventTopicE = (
+	abi: readonly AbiItem[],
+	eventName: string,
+	address: string,
+): Effect.Effect<string, ContractEventError> =>
+	Effect.try({
+		try: () => {
+			const event = abi.find(
+				(item) => item.type === "event" && item.name === eventName,
+			) as BrandedAbi.Event.EventType | undefined;
+			if (!event) throw new Error(`Event ${eventName} not found in ABI`);
+			const selector = BrandedAbi.Event.getSelector(event);
+			return Hash.toHex(selector) as string;
+		},
+		catch: (e) =>
+			new ContractEventError(
+				{ address, event: eventName },
+				e instanceof Error ? e.message : "Event lookup error",
+				{ cause: e instanceof Error ? e : undefined },
+			),
+	});
 
 /**
  * Decodes a raw event log into a structured event.
  * @param abi - The contract ABI
  * @param eventName - The expected event name
  * @param log - The raw log data
- * @returns Decoded event with name, args, and metadata
+ * @param address - Contract address for error context
+ * @returns Effect that resolves to decoded event with name, args, and metadata
  */
-function decodeEventLog(
+const decodeEventLogE = (
 	abi: readonly AbiItem[],
 	eventName: string,
 	log: LogType,
-): DecodedEvent {
-	const event = abi.find(
-		(item) => item.type === "event" && item.name === eventName,
-	) as BrandedAbi.Event.EventType | undefined;
-	if (!event) throw new Error(`Event ${eventName} not found`);
+	address: string,
+): Effect.Effect<DecodedEvent, ContractEventError> =>
+	Effect.try({
+		try: () => {
+			const event = abi.find(
+				(item) => item.type === "event" && item.name === eventName,
+			) as BrandedAbi.Event.EventType | undefined;
+			if (!event) throw new Error(`Event ${eventName} not found in ABI`);
 
-	const dataBytes = Hex.toBytes(log.data as `0x${string}`);
-	const topicBytes = log.topics.map((t) =>
-		Hex.toBytes(t as `0x${string}`),
-	) as unknown as readonly HashType[];
-	const decoded = BrandedAbi.Event.decodeLog(event, dataBytes, topicBytes);
+			const dataBytes = Hex.toBytes(log.data as `0x${string}`);
+			const topicBytes = log.topics.map((t) =>
+				Hex.toBytes(t as `0x${string}`),
+			) as unknown as readonly HashType[];
+			const decoded = BrandedAbi.Event.decodeLog(event, dataBytes, topicBytes);
 
-	return {
-		eventName,
-		args: decoded as Record<string, unknown>,
-		blockNumber: BigInt(log.blockNumber),
-		transactionHash: log.transactionHash as HexType,
-		logIndex: Number.parseInt(log.logIndex, 16),
-	};
-}
+			return {
+				eventName,
+				args: decoded as Record<string, unknown>,
+				blockNumber: BigInt(log.blockNumber),
+				transactionHash: log.transactionHash as HexType,
+				logIndex: Number.parseInt(log.logIndex, 16),
+			};
+		},
+		catch: (e) =>
+			new ContractEventError(
+				{ address, event: eventName },
+				e instanceof Error ? e.message : "Event decode error",
+				{ cause: e instanceof Error ? e : undefined },
+			),
+	});
 
 /**
  * Creates a type-safe contract instance for interacting with a deployed contract.
@@ -235,12 +272,16 @@ export const Contract = <TAbi extends Abi>(
 									),
 							),
 						);
-					return decodeResult(abiItems, fn.name, result as HexType);
+					return yield* decodeResultE(abiItems, fn.name, result as HexType, {
+						address: addressHex,
+						args,
+					});
 				});
 		}
 
 		const write = {} as ContractInstance<TAbi>["write"];
 		for (const fn of writeFunctions) {
+			const inputCount = fn.inputs?.length ?? 0;
 			(
 				write as unknown as Record<
 					string,
@@ -248,14 +289,39 @@ export const Contract = <TAbi extends Abi>(
 						...args: unknown[]
 					) => Effect.Effect<HashType, ContractWriteError, SignerService>
 				>
-			)[fn.name] = (...args: unknown[]) =>
+			)[fn.name] = (...argsAndOptions: unknown[]) =>
 				Effect.gen(function* () {
 					const signer = yield* SignerService;
+
+					const lastArg = argsAndOptions[argsAndOptions.length - 1];
+					const isOptions =
+						lastArg !== null &&
+						typeof lastArg === "object" &&
+						!Array.isArray(lastArg) &&
+						("value" in lastArg ||
+							"gas" in lastArg ||
+							"gasPrice" in lastArg ||
+							"maxFeePerGas" in lastArg ||
+							"maxPriorityFeePerGas" in lastArg ||
+							"nonce" in lastArg);
+
+					const hasOptions = isOptions && argsAndOptions.length > inputCount;
+					const args = hasOptions
+						? argsAndOptions.slice(0, -1)
+						: argsAndOptions;
+					const options = hasOptions ? (lastArg as WriteOptions) : {};
+
 					const data = encodeArgs(abiItems, fn.name, args);
 					const txHash = yield* signer
 						.sendTransaction({
 							to: brandedAddress as unknown as undefined,
 							data: data as unknown as undefined,
+							value: options.value,
+							gasLimit: options.gas,
+							gasPrice: options.gasPrice,
+							maxFeePerGas: options.maxFeePerGas,
+							maxPriorityFeePerGas: options.maxPriorityFeePerGas,
+							nonce: options.nonce,
 						})
 						.pipe(
 							Effect.mapError(
@@ -296,7 +362,10 @@ export const Contract = <TAbi extends Abi>(
 								),
 						),
 					);
-					return decodeResult(abiItems, fn.name, result as HexType);
+					return yield* decodeResultE(abiItems, fn.name, result as HexType, {
+						address: addressHex,
+						args,
+					});
 				});
 		}
 
@@ -305,7 +374,7 @@ export const Contract = <TAbi extends Abi>(
 			filter?: EventFilter,
 		): Effect.Effect<DecodedEvent[], ContractEventError> =>
 			Effect.gen(function* () {
-				const topic = getEventTopic(abiItems, eventName);
+				const topic = yield* getEventTopicE(abiItems, eventName, addressHex);
 
 				const toProviderBlockTag = (
 					tag: import("./ContractTypes.js").BlockTag | undefined,
@@ -335,7 +404,9 @@ export const Contract = <TAbi extends Abi>(
 						),
 					);
 
-				return logs.map((log) => decodeEventLog(abiItems, eventName, log));
+				return yield* Effect.forEach(logs, (log) =>
+					decodeEventLogE(abiItems, eventName, log, addressHex),
+				);
 			});
 
 		return {

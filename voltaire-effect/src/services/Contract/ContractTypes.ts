@@ -275,6 +275,25 @@ type ExtractWriteFunctions<TAbi extends Abi> = Extract<
 	{ type: "function"; stateMutability: "nonpayable" | "payable" }
 >;
 
+/**
+ * Transaction options for write methods.
+ * @since 0.0.1
+ */
+export interface WriteOptions {
+	/** Value in wei to send with the transaction */
+	readonly value?: bigint;
+	/** Gas limit for the transaction */
+	readonly gas?: bigint;
+	/** Gas price for legacy transactions */
+	readonly gasPrice?: bigint;
+	/** Max fee per gas for EIP-1559 transactions */
+	readonly maxFeePerGas?: bigint;
+	/** Max priority fee for EIP-1559 transactions */
+	readonly maxPriorityFeePerGas?: bigint;
+	/** Transaction nonce */
+	readonly nonce?: bigint;
+}
+
 type ExtractEvents<TAbi extends Abi> = Extract<TAbi[number], { type: "event" }>;
 
 type ExtractEventNames<TAbi extends Abi> =
@@ -338,15 +357,17 @@ type ContractReadMethods<TAbi extends Abi> = {
 	>;
 };
 
+type WriteMethodArgs<TInputs> = TInputs extends readonly { type: string }[]
+	? AbiInputsToArgs<TInputs> extends readonly []
+		? [options?: WriteOptions]
+		: [...args: AbiInputsToArgs<TInputs>, options?: WriteOptions]
+	: [options?: WriteOptions];
+
 type ContractWriteMethods<TAbi extends Abi> = {
 	[F in ExtractWriteFunctions<TAbi> as F["name"] extends string
 		? F["name"]
 		: never]: (
-		...args: F extends { inputs: infer I }
-			? I extends readonly { type: string }[]
-				? AbiInputsToArgs<I>
-				: []
-			: []
+		...args: WriteMethodArgs<F extends { inputs: infer I } ? I : []>
 	) => Effect.Effect<HashType, ContractWriteError, SignerService>;
 };
 

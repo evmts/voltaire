@@ -46,6 +46,20 @@ const erc20Abi = [
 		outputs: [{ name: "success", type: "bool" }],
 	},
 	{
+		type: "function",
+		name: "deposit",
+		stateMutability: "payable",
+		inputs: [],
+		outputs: [],
+	},
+	{
+		type: "function",
+		name: "depositTo",
+		stateMutability: "payable",
+		inputs: [{ name: "recipient", type: "address" }],
+		outputs: [],
+	},
+	{
 		type: "event",
 		name: "Transfer",
 		inputs: [
@@ -294,6 +308,169 @@ describe("Contract", () => {
 
 			expect(exit._tag).toBe("Failure");
 		});
+
+		it("sends transaction with value for payable function (no args)", async () => {
+			const txHash =
+				"0xabcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab" as HexType;
+			mockSigner.sendTransaction.mockReturnValue(Effect.succeed(txHash));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				const hash = yield* contract.write.deposit({ value: 1000000000000000000n });
+				return hash;
+			});
+
+			const result = await Effect.runPromise(
+				program.pipe(
+					Effect.provide(MockProviderLayer),
+					Effect.provide(MockSignerLayer),
+				),
+			);
+
+			expect(mockSigner.sendTransaction).toHaveBeenCalled();
+			const txArgs = mockSigner.sendTransaction.mock.calls[0][0];
+			expect(txArgs.value).toBe(1000000000000000000n);
+			expect(result).toBe(txHash);
+		});
+
+		it("sends transaction with value for payable function (with args)", async () => {
+			const txHash =
+				"0xabcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab" as HexType;
+			mockSigner.sendTransaction.mockReturnValue(Effect.succeed(txHash));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				const hash = yield* contract.write.depositTo(
+					Address("0x1234567890123456789012345678901234567890"),
+					{ value: 500000000000000000n },
+				);
+				return hash;
+			});
+
+			const result = await Effect.runPromise(
+				program.pipe(
+					Effect.provide(MockProviderLayer),
+					Effect.provide(MockSignerLayer),
+				),
+			);
+
+			expect(mockSigner.sendTransaction).toHaveBeenCalled();
+			const txArgs = mockSigner.sendTransaction.mock.calls[0][0];
+			expect(txArgs.value).toBe(500000000000000000n);
+			expect(result).toBe(txHash);
+		});
+
+		it("sends transaction with custom gas limit", async () => {
+			const txHash =
+				"0xabcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab" as HexType;
+			mockSigner.sendTransaction.mockReturnValue(Effect.succeed(txHash));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				const hash = yield* contract.write.transfer(
+					Address("0x1234567890123456789012345678901234567890"),
+					1000n,
+					{ gas: 100000n },
+				);
+				return hash;
+			});
+
+			await Effect.runPromise(
+				program.pipe(
+					Effect.provide(MockProviderLayer),
+					Effect.provide(MockSignerLayer),
+				),
+			);
+
+			expect(mockSigner.sendTransaction).toHaveBeenCalled();
+			const txArgs = mockSigner.sendTransaction.mock.calls[0][0];
+			expect(txArgs.gasLimit).toBe(100000n);
+		});
+
+		it("sends transaction with EIP-1559 fee params", async () => {
+			const txHash =
+				"0xabcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab" as HexType;
+			mockSigner.sendTransaction.mockReturnValue(Effect.succeed(txHash));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				const hash = yield* contract.write.transfer(
+					Address("0x1234567890123456789012345678901234567890"),
+					1000n,
+					{
+						maxFeePerGas: 50000000000n,
+						maxPriorityFeePerGas: 2000000000n,
+					},
+				);
+				return hash;
+			});
+
+			await Effect.runPromise(
+				program.pipe(
+					Effect.provide(MockProviderLayer),
+					Effect.provide(MockSignerLayer),
+				),
+			);
+
+			expect(mockSigner.sendTransaction).toHaveBeenCalled();
+			const txArgs = mockSigner.sendTransaction.mock.calls[0][0];
+			expect(txArgs.maxFeePerGas).toBe(50000000000n);
+			expect(txArgs.maxPriorityFeePerGas).toBe(2000000000n);
+		});
+
+		it("sends transaction with custom nonce", async () => {
+			const txHash =
+				"0xabcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab" as HexType;
+			mockSigner.sendTransaction.mockReturnValue(Effect.succeed(txHash));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				const hash = yield* contract.write.transfer(
+					Address("0x1234567890123456789012345678901234567890"),
+					1000n,
+					{ nonce: 42n },
+				);
+				return hash;
+			});
+
+			await Effect.runPromise(
+				program.pipe(
+					Effect.provide(MockProviderLayer),
+					Effect.provide(MockSignerLayer),
+				),
+			);
+
+			expect(mockSigner.sendTransaction).toHaveBeenCalled();
+			const txArgs = mockSigner.sendTransaction.mock.calls[0][0];
+			expect(txArgs.nonce).toBe(42n);
+		});
+
+		it("sends transaction without options (backwards compatible)", async () => {
+			const txHash =
+				"0xabcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab" as HexType;
+			mockSigner.sendTransaction.mockReturnValue(Effect.succeed(txHash));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				const hash = yield* contract.write.transfer(
+					Address("0x1234567890123456789012345678901234567890"),
+					1000n,
+				);
+				return hash;
+			});
+
+			await Effect.runPromise(
+				program.pipe(
+					Effect.provide(MockProviderLayer),
+					Effect.provide(MockSignerLayer),
+				),
+			);
+
+			expect(mockSigner.sendTransaction).toHaveBeenCalled();
+			const txArgs = mockSigner.sendTransaction.mock.calls[0][0];
+			expect(txArgs.value).toBeUndefined();
+			expect(txArgs.gasLimit).toBeUndefined();
+		});
 	});
 
 	describe("simulate methods", () => {
@@ -378,6 +555,84 @@ describe("Contract", () => {
 			expect(mockProvider.getLogs).toHaveBeenCalled();
 			const callArgs = mockProvider.getLogs.mock.calls[0][0];
 			expect(callArgs.address).toBe(Address.toHex(testAddress));
+		});
+
+		it("event not found error is catchable with Effect.catchTag", async () => {
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				return yield* contract.getEvents("NonExistentEvent" as any);
+			}).pipe(
+				Effect.catchTag("ContractEventError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toContain("caught:");
+			expect(result).toContain("NonExistentEvent not found");
+		});
+	});
+
+	describe("error handling", () => {
+		it("decode error from read method is catchable with Effect.catchTag", async () => {
+			mockProvider.call.mockReturnValue(Effect.succeed("0x1234" as HexType));
+
+			const abiWithMissingFn = [
+				{
+					type: "function",
+					name: "unknownMethod",
+					stateMutability: "view",
+					inputs: [],
+					outputs: [{ name: "", type: "uint256" }],
+				},
+			] as const;
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, abiWithMissingFn);
+				return yield* contract.read.unknownMethod();
+			}).pipe(
+				Effect.catchTag("ContractCallError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toContain("caught:");
+		});
+
+		it("decode error from simulate method is catchable with Effect.catchTag", async () => {
+			mockProvider.call.mockReturnValue(Effect.succeed("0x1234" as HexType));
+
+			const abiWithMissingFn = [
+				{
+					type: "function",
+					name: "unknownMethod",
+					stateMutability: "nonpayable",
+					inputs: [],
+					outputs: [{ name: "", type: "uint256" }],
+				},
+			] as const;
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, abiWithMissingFn);
+				return yield* contract.simulate.unknownMethod();
+			}).pipe(
+				Effect.catchTag("ContractCallError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toContain("caught:");
 		});
 	});
 });

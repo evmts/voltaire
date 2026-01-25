@@ -57,4 +57,5 @@ export {
 	ContractWriteError,
 	type DecodedEvent,
 	type EventFilter,
+	type WriteOptions,
 } from "./ContractTypes.js";

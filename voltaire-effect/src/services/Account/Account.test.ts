@@ -204,8 +204,50 @@ describe("AccountService", () => {
 					chainId: 1,
 				},
 				message: {
-					amounts: [1000000000000000000n, 2000000000000000000n, 3000000000000000000n],
+					amounts: [
+						1000000000000000000n,
+						2000000000000000000n,
+						3000000000000000000n,
+					],
 					nonce: 42n,
+				},
+			});
+
+			const program = Effect.gen(function* () {
+				const account = yield* AccountService;
+				return yield* account.signTypedData(typedData);
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			);
+
+			const signature = await Effect.runPromise(program);
+			expect(signature).toBeDefined();
+			expect(signature.length).toBe(65);
+		});
+
+		it("signs typed data with fixed-size array (uint256[3])", async () => {
+			const typedData = TypedData.from({
+				types: {
+					EIP712Domain: [
+						{ name: "name", type: "string" },
+						{ name: "version", type: "string" },
+						{ name: "chainId", type: "uint256" },
+					],
+					Vector: [
+						{ name: "components", type: "uint256[3]" },
+						{ name: "magnitude", type: "uint256" },
+					],
+				},
+				primaryType: "Vector",
+				domain: {
+					name: "Math",
+					version: "1",
+					chainId: 1,
+				},
+				message: {
+					components: [10n, 20n, 30n],
+					magnitude: 37n,
 				},
 			});
 
@@ -277,6 +319,60 @@ describe("AccountService", () => {
 			expect(signature.length).toBe(65);
 		});
 
+		it("signs typed data with deeply nested types", async () => {
+			const typedData = TypedData.from({
+				types: {
+					EIP712Domain: [
+						{ name: "name", type: "string" },
+						{ name: "version", type: "string" },
+						{ name: "chainId", type: "uint256" },
+					],
+					Coordinate: [
+						{ name: "x", type: "int256" },
+						{ name: "y", type: "int256" },
+					],
+					Location: [
+						{ name: "name", type: "string" },
+						{ name: "position", type: "Coordinate" },
+					],
+					Route: [
+						{ name: "start", type: "Location" },
+						{ name: "end", type: "Location" },
+						{ name: "distance", type: "uint256" },
+					],
+				},
+				primaryType: "Route",
+				domain: {
+					name: "Navigation",
+					version: "1",
+					chainId: 1,
+				},
+				message: {
+					start: {
+						name: "Home",
+						position: { x: 100n, y: 200n },
+					},
+					end: {
+						name: "Work",
+						position: { x: 500n, y: 600n },
+					},
+					distance: 1000n,
+				},
+			});
+
+			const program = Effect.gen(function* () {
+				const account = yield* AccountService;
+				return yield* account.signTypedData(typedData);
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			);
+
+			const signature = await Effect.runPromise(program);
+			expect(signature).toBeDefined();
+			expect(signature.length).toBe(65);
+		});
+
 		it("signs EIP-2612 Permit typed data", async () => {
 			const typedData = TypedData.from({
 				types: {
@@ -304,9 +400,7 @@ describe("AccountService", () => {
 					),
 				},
 				message: {
-					owner: Address.fromHex(
-						"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-					),
+					owner: Address.fromHex("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"),
 					spender: Address.fromHex(
 						"0x0000000000000000000000000000000000000001",
 					),
