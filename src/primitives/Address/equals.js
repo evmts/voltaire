@@ -1,5 +1,9 @@
+import { equalsConstantTime } from "../Bytes/equalsConstantTime.js";
+
 /**
- * Check if two addresses are equal
+ * Check if two addresses are equal using constant-time comparison
+ *
+ * Uses constant-time comparison to prevent timing attacks.
  *
  * @param {import('./AddressType.js').AddressType} address - First address
  * @param {import('./AddressType.js').AddressType} other - Address to compare with
@@ -13,9 +17,5 @@
  * ```
  */
 export function equals(address, other) {
-	if (address.length !== other.length) return false;
-	for (let i = 0; i < address.length; i++) {
-		if (address[i] !== other[i]) return false;
-	}
-	return true;
+	return equalsConstantTime(address, other);
 }
