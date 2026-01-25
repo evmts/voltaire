@@ -1,3 +1,8 @@
+/**
+ * @fileoverview ModExpService Effect service definition for modular exponentiation.
+ * @module ModExp/ModExpService
+ * @since 0.0.1
+ */
 import { ModExp } from '@tevm/voltaire'
 import * as Effect from 'effect/Effect'
 import * as Context from 'effect/Context'
@@ -5,6 +10,11 @@ import * as Layer from 'effect/Layer'
 
 /**
  * Service interface for modular exponentiation operations.
+ *
+ * @description
+ * Defines the contract for modular exponentiation implementations.
+ * All methods return Effect types for composable, type-safe error handling.
+ *
  * @since 0.0.1
  */
 export interface ModExpServiceShape {
@@ -60,7 +70,24 @@ export class ModExpService extends Context.Tag("ModExpService")<
 
 /**
  * Production layer for ModExpService using native ModExp implementation.
+ *
+ * @description
+ * Provides real modular exponentiation using JavaScript's BigInt.
+ * Implements EIP-198/EIP-2565 compatible calculations.
+ *
+ * @example
+ * ```typescript
+ * import { ModExpService, ModExpLive } from 'voltaire-effect/crypto/ModExp'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const program = Effect.gen(function* () {
+ *   const svc = yield* ModExpService
+ *   return yield* svc.modexp(2n, 10n, 1000n) // 24n
+ * }).pipe(Effect.provide(ModExpLive))
+ * ```
+ *
  * @since 0.0.1
+ * @see {@link ModExpTest} for unit testing
  */
 export const ModExpLive = Layer.succeed(ModExpService, {
   modexp: (base, exp, modulus) => Effect.sync(() => ModExp.modexp(base, exp, modulus)),
@@ -70,7 +97,21 @@ export const ModExpLive = Layer.succeed(ModExpService, {
 
 /**
  * Test layer for ModExpService returning deterministic results.
- * Use for unit testing without cryptographic overhead.
+ *
+ * @description
+ * Provides mock implementations for unit testing. Returns 0n for modexp,
+ * zero-filled arrays for modexpBytes, and 200n for gas calculations.
+ * Use when testing application logic without computation overhead.
+ *
+ * @example
+ * ```typescript
+ * import { ModExpService, ModExpTest, modexp } from 'voltaire-effect/crypto/ModExp'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const testProgram = modexp(2n, 10n, 1000n).pipe(Effect.provide(ModExpTest))
+ * // Always returns 0n
+ * ```
+ *
  * @since 0.0.1
  */
 export const ModExpTest = Layer.succeed(ModExpService, {

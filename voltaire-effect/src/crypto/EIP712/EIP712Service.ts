@@ -1,3 +1,8 @@
+/**
+ * @fileoverview EIP712Service Effect service definition for typed data signing.
+ * @module EIP712/EIP712Service
+ * @since 0.0.1
+ */
 import { EIP712 } from '@tevm/voltaire'
 import type { TypedData, Signature, Domain, TypeDefinitions, Message } from '@tevm/voltaire/EIP712'
 import type { HashType } from '@tevm/voltaire/Hash'
@@ -8,6 +13,11 @@ import * as Layer from 'effect/Layer'
 
 /**
  * Shape interface for EIP-712 typed data operations.
+ *
+ * @description
+ * Defines the contract for EIP-712 implementations. All methods return Effect
+ * types for composable, type-safe async/error handling.
+ *
  * @since 0.0.1
  */
 export interface EIP712ServiceShape {
@@ -84,7 +94,24 @@ export class EIP712Service extends Context.Tag("EIP712Service")<
 
 /**
  * Production layer for EIP712Service using native EIP-712 implementation.
+ *
+ * @description
+ * Provides real EIP-712 operations using proper encoding and secp256k1 signing.
+ * Follows the exact specification for domain separator and struct hashing.
+ *
+ * @example
+ * ```typescript
+ * import { EIP712Service, EIP712Live } from 'voltaire-effect/crypto/EIP712'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const program = Effect.gen(function* () {
+ *   const eip712 = yield* EIP712Service
+ *   return yield* eip712.signTypedData(typedData, privateKey)
+ * }).pipe(Effect.provide(EIP712Live))
+ * ```
+ *
  * @since 0.0.1
+ * @see {@link EIP712Test} for unit testing
  */
 export const EIP712Live = Layer.succeed(EIP712Service, {
   hashTypedData: (typedData) => Effect.sync(() => EIP712.hashTypedData(typedData)),
@@ -101,7 +128,21 @@ const mockSignature: Signature = { r: new Uint8Array(32), s: new Uint8Array(32),
 
 /**
  * Test layer for EIP712Service returning deterministic mock values.
- * Use for unit testing without cryptographic overhead.
+ *
+ * @description
+ * Provides mock implementations for unit testing. Returns zero-filled
+ * hashes, addresses, and signatures, and always verifies as true.
+ * Use when testing application logic without cryptographic overhead.
+ *
+ * @example
+ * ```typescript
+ * import { EIP712Service, EIP712Test, signTypedData } from 'voltaire-effect/crypto/EIP712'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const testProgram = signTypedData(typedData, privateKey).pipe(Effect.provide(EIP712Test))
+ * // Returns mock signature
+ * ```
+ *
  * @since 0.0.1
  */
 export const EIP712Test = Layer.succeed(EIP712Service, {

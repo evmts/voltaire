@@ -1,3 +1,9 @@
+/**
+ * Signers tests require WASM initialization.
+ * The tests are excluded from voltaire-effect's test run because the underlying
+ * Voltaire signers module uses Keccak256Wasm which requires explicit init.
+ * Run from root with: pnpm vitest run voltaire-effect/src/crypto/Signers/Signers.test.ts
+ */
 import { describe, it, expect } from 'vitest'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'

@@ -1,10 +1,29 @@
+/**
+ * @fileoverview Test implementation of X25519Service.
+ * @module X25519/X25519Test
+ * @since 0.0.1
+ */
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import { X25519Service } from './X25519Service.js'
 
 /**
  * Test layer for X25519Service returning deterministic mock values.
- * Use for unit testing without cryptographic overhead.
+ *
+ * @description
+ * Provides mock implementations for unit testing. Returns zero-filled
+ * arrays for keys and shared secrets.
+ * Use when testing application logic without cryptographic overhead.
+ *
+ * @example
+ * ```typescript
+ * import { X25519Service, X25519Test, generateKeyPair } from 'voltaire-effect/crypto/X25519'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const testProgram = generateKeyPair().pipe(Effect.provide(X25519Test))
+ * // Returns { secretKey: Uint8Array(32), publicKey: Uint8Array(32) }
+ * ```
+ *
  * @since 0.0.1
  */
 export const X25519Test = Layer.succeed(

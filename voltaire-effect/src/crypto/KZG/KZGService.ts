@@ -1,3 +1,8 @@
+/**
+ * @fileoverview KZGService Effect service definition for KZG polynomial commitments.
+ * @module KZG/KZGService
+ * @since 0.0.1
+ */
 import type { KzgBlobType, KzgCommitmentType, KzgProofType } from '@tevm/voltaire'
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
@@ -6,6 +11,11 @@ import { KZG } from '@tevm/voltaire'
 
 /**
  * Shape interface for KZG commitment service operations.
+ *
+ * @description
+ * Defines the contract for KZG implementations. Operations require the trusted
+ * setup to be loaded first via loadTrustedSetup().
+ *
  * @since 0.0.1
  */
 export interface KZGServiceShape {
@@ -72,7 +82,26 @@ export class KZGService extends Context.Tag("KZGService")<
 
 /**
  * Production layer for KZGService using native KZG implementation.
+ *
+ * @description
+ * Provides real KZG operations using the c-kzg-4844 library with Ethereum's
+ * trusted setup. The trusted setup must be loaded before other operations.
+ *
+ * @example
+ * ```typescript
+ * import { KZGService, KZGLive } from 'voltaire-effect/crypto/KZG'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const program = Effect.gen(function* () {
+ *   const kzg = yield* KZGService
+ *   yield* kzg.loadTrustedSetup()
+ *   const commitment = yield* kzg.blobToKzgCommitment(blob)
+ *   return commitment
+ * }).pipe(Effect.provide(KZGLive))
+ * ```
+ *
  * @since 0.0.1
+ * @see {@link KZGTest} for unit testing
  */
 export const KZGLive = Layer.succeed(KZGService, {
   blobToKzgCommitment: (blob) => Effect.sync(() => KZG.blobToKzgCommitment(blob) as KzgCommitmentType),
@@ -84,7 +113,21 @@ export const KZGLive = Layer.succeed(KZGService, {
 
 /**
  * Test layer for KZGService returning deterministic mock values.
- * Use for unit testing without cryptographic overhead.
+ *
+ * @description
+ * Provides mock implementations for unit testing. Returns zero-filled
+ * arrays for commitments/proofs and always verifies as true.
+ * Use when testing application logic without cryptographic overhead.
+ *
+ * @example
+ * ```typescript
+ * import { KZGService, KZGTest, blobToKzgCommitment } from 'voltaire-effect/crypto/KZG'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const testProgram = blobToKzgCommitment(blob).pipe(Effect.provide(KZGTest))
+ * // Returns Uint8Array(48) filled with zeros
+ * ```
+ *
  * @since 0.0.1
  */
 export const KZGTest = Layer.succeed(KZGService, {

@@ -1,21 +1,47 @@
+/**
+ * @fileoverview HDWalletService Effect service definition for hierarchical deterministic wallets.
+ * @module HDWallet/HDWalletService
+ * @since 0.0.1
+ */
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 
 /**
  * Represents a hierarchical deterministic wallet node.
+ *
+ * @description
+ * An HDNode contains the key material (private key, public key, chain code)
+ * at a specific point in the derivation tree. Each node can derive child nodes.
+ *
  * @since 0.0.1
+ * @see {@link https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki | BIP-32}
  */
 export type HDNode = object
 
 /**
  * Represents an HD derivation path as an array of indices.
+ *
+ * @description
+ * Each number represents a child index. Indices >= 0x80000000 (2^31) are hardened.
+ * For example, [44, 60, 0, 0, 0] with hardening on first three is BIP-44 Ethereum.
+ *
+ * @example
+ * ```typescript
+ * const path: HDPath = [44 + 0x80000000, 60 + 0x80000000, 0 + 0x80000000, 0, 0]
+ * ```
+ *
  * @since 0.0.1
  */
 export type HDPath = readonly number[]
 
 /**
  * Shape interface for HD wallet service operations.
+ *
+ * @description
+ * Defines the contract for HD wallet implementations. All methods return Effect
+ * types for composable, type-safe async/error handling.
+ *
  * @since 0.0.1
  */
 export interface HDWalletServiceShape {
@@ -89,7 +115,23 @@ export class HDWalletService extends Context.Tag("HDWalletService")<
 
 /**
  * Test layer for HDWalletService returning deterministic mock values.
- * Use for unit testing without cryptographic overhead.
+ *
+ * @description
+ * Provides mock implementations for unit testing. Returns the standard
+ * BIP-39 test vector mnemonic and empty byte arrays for keys.
+ * Use when testing application logic without cryptographic overhead.
+ *
+ * @example
+ * ```typescript
+ * import { HDWalletService, HDWalletTest, generateMnemonic } from 'voltaire-effect/crypto/HDWallet'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const testProgram = generateMnemonic(128).pipe(
+ *   Effect.provide(HDWalletTest)
+ * )
+ * // Returns: ['abandon', 'abandon', ..., 'about']
+ * ```
+ *
  * @since 0.0.1
  */
 export const HDWalletTest = Layer.succeed(HDWalletService, {

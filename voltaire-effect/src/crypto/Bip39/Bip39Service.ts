@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Bip39Service Effect service definition for BIP-39 mnemonic operations.
+ * @module Bip39/Bip39Service
+ * @since 0.0.1
+ */
 import { Bip39 } from '@tevm/voltaire'
 import * as Effect from 'effect/Effect'
 import * as Context from 'effect/Context'
@@ -5,6 +10,11 @@ import * as Layer from 'effect/Layer'
 
 /**
  * Shape interface for BIP-39 mnemonic operations.
+ *
+ * @description
+ * Defines the contract for BIP-39 implementations. All methods return Effect
+ * types for composable, type-safe async/error handling.
+ *
  * @since 0.0.1
  */
 export interface Bip39ServiceShape {
@@ -71,7 +81,24 @@ export class Bip39Service extends Context.Tag("Bip39Service")<
 
 /**
  * Production layer for Bip39Service using native BIP-39 implementation.
+ *
+ * @description
+ * Provides real cryptographic BIP-39 operations. Uses secure random number
+ * generation and proper PBKDF2-SHA512 for seed derivation.
+ *
+ * @example
+ * ```typescript
+ * import { Bip39Service, Bip39Live } from 'voltaire-effect/crypto/Bip39'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const program = Effect.gen(function* () {
+ *   const bip39 = yield* Bip39Service
+ *   return yield* bip39.generateMnemonic(256)
+ * }).pipe(Effect.provide(Bip39Live))
+ * ```
+ *
  * @since 0.0.1
+ * @see {@link Bip39Test} for unit testing
  */
 export const Bip39Live = Layer.succeed(Bip39Service, {
   generateMnemonic: (strength = 128) => Effect.sync(() => Bip39.generateMnemonic(strength)),
@@ -85,7 +112,21 @@ const TEST_MNEMONIC = 'abandon abandon abandon abandon abandon abandon abandon a
 
 /**
  * Test layer for Bip39Service returning deterministic mock values.
- * Use for unit testing without cryptographic overhead.
+ *
+ * @description
+ * Provides mock implementations for unit testing. Returns the standard
+ * BIP-39 test vector mnemonic and always validates as true.
+ * Use when testing application logic without cryptographic overhead.
+ *
+ * @example
+ * ```typescript
+ * import { Bip39Service, Bip39Test, generateMnemonic } from 'voltaire-effect/crypto/Bip39'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const testProgram = generateMnemonic(128).pipe(Effect.provide(Bip39Test))
+ * // Always returns test vector mnemonic
+ * ```
+ *
  * @since 0.0.1
  */
 export const Bip39Test = Layer.succeed(Bip39Service, {

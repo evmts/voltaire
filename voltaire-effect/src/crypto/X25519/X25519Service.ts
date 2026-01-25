@@ -1,9 +1,19 @@
+/**
+ * @fileoverview X25519Service Effect service definition for key exchange.
+ * @module X25519/X25519Service
+ * @since 0.0.1
+ */
 import * as Context from 'effect/Context'
 import type * as Effect from 'effect/Effect'
 import type { InvalidSecretKeyError, InvalidPublicKeyError, X25519Error } from '@tevm/voltaire/X25519'
 
 /**
  * Shape interface for X25519 key exchange service operations.
+ *
+ * @description
+ * Defines the contract for X25519 implementations. All methods return Effect
+ * types for composable, type-safe async/error handling.
+ *
  * @since 0.0.1
  */
 export interface X25519ServiceShape {
