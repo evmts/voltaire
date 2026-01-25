@@ -4,11 +4,14 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import * as P256 from '@tevm/voltaire/P256'
-import type { HashType } from '@tevm/voltaire/Hash'
-import type { P256SignatureType } from '@tevm/voltaire/P256'
-import type { InvalidPrivateKeyError, P256Error } from '@tevm/voltaire/P256'
+import type { HashType } from "@tevm/voltaire/Hash";
+import type {
+	InvalidPrivateKeyError,
+	P256Error,
+	P256SignatureType,
+} from "@tevm/voltaire/P256";
+import * as P256 from "@tevm/voltaire/P256";
+import * as Effect from "effect/Effect";
 
 /**
  * Signs a message hash using the P-256 (secp256r1) curve.
@@ -54,10 +57,10 @@ import type { InvalidPrivateKeyError, P256Error } from '@tevm/voltaire/P256'
  * @since 0.0.1
  */
 export const sign = (
-  messageHash: HashType | Uint8Array,
-  privateKey: Uint8Array
+	messageHash: HashType | Uint8Array,
+	privateKey: Uint8Array,
 ): Effect.Effect<P256SignatureType, InvalidPrivateKeyError | P256Error> =>
-  Effect.try({
-    try: () => P256.sign(messageHash as any, privateKey as any),
-    catch: (e) => e as InvalidPrivateKeyError | P256Error
-  })
+	Effect.try({
+		try: () => P256.sign(messageHash as any, privateKey as any),
+		catch: (e) => e as InvalidPrivateKeyError | P256Error,
+	});

@@ -26,5 +26,5 @@
  * @module Blake2
  * @since 0.0.1
  */
-export { Blake2Service, Blake2Live, Blake2Test } from './Blake2Service.js'
-export { hash } from './hash.js'
+export { Blake2Live, Blake2Service, Blake2Test } from "./Blake2Service.js";
+export { hash } from "./hash.js";

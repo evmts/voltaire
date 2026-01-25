@@ -31,5 +31,16 @@
  *
  * @see {@link https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki | BIP-39 Specification}
  */
-export { Bip39Service, Bip39Live, Bip39Test, type Bip39ServiceShape } from './Bip39Service.js'
-export { generateMnemonic, validateMnemonic, mnemonicToSeed, mnemonicToSeedSync, getWordCount } from './operations.js'
+export {
+	Bip39Live,
+	Bip39Service,
+	type Bip39ServiceShape,
+	Bip39Test,
+} from "./Bip39Service.js";
+export {
+	generateMnemonic,
+	getWordCount,
+	mnemonicToSeed,
+	mnemonicToSeedSync,
+	validateMnemonic,
+} from "./operations.js";

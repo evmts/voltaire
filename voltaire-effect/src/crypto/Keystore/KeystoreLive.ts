@@ -3,10 +3,10 @@
  * @module Keystore/KeystoreLive
  * @since 0.0.1
  */
-import * as Layer from 'effect/Layer'
-import { KeystoreService } from './KeystoreService.js'
-import { encrypt } from './encrypt.js'
-import { decrypt } from './decrypt.js'
+import * as Layer from "effect/Layer";
+import { decrypt } from "./decrypt.js";
+import { encrypt } from "./encrypt.js";
+import { KeystoreService } from "./KeystoreService.js";
 
 /**
  * Production layer for KeystoreService using native implementation.
@@ -29,10 +29,7 @@ import { decrypt } from './decrypt.js'
  * @since 0.0.1
  * @see {@link KeystoreTest} for unit testing
  */
-export const KeystoreLive = Layer.succeed(
-  KeystoreService,
-  {
-    encrypt,
-    decrypt
-  }
-)
+export const KeystoreLive = Layer.succeed(KeystoreService, {
+	encrypt,
+	decrypt,
+});

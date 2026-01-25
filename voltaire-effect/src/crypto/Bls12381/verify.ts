@@ -4,9 +4,9 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import * as Bls12381 from '@tevm/voltaire/Bls12381'
-import type { SignatureError } from '@tevm/voltaire/Bls12381'
+import type { SignatureError } from "@tevm/voltaire/Bls12381";
+import * as Bls12381 from "@tevm/voltaire/Bls12381";
+import * as Effect from "effect/Effect";
 
 /**
  * Verifies a BLS12-381 signature against a message and public key.
@@ -61,11 +61,11 @@ import type { SignatureError } from '@tevm/voltaire/Bls12381'
  * @since 0.0.1
  */
 export const verify = (
-  signature: Uint8Array,
-  message: Uint8Array,
-  publicKey: Uint8Array
+	signature: Uint8Array,
+	message: Uint8Array,
+	publicKey: Uint8Array,
 ): Effect.Effect<boolean, SignatureError> =>
-  Effect.try({
-    try: () => Bls12381.verify(signature, message, publicKey),
-    catch: (e) => e as SignatureError
-  })
+	Effect.try({
+		try: () => Bls12381.verify(signature, message, publicKey),
+		catch: (e) => e as SignatureError,
+	});

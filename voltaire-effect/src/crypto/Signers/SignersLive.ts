@@ -3,9 +3,13 @@
  * @module Signers/SignersLive
  * @since 0.0.1
  */
-import * as Layer from 'effect/Layer'
-import { SignersService } from './SignersService.js'
-import { fromPrivateKey, getAddress, recoverTransactionAddress } from './operations.js'
+import * as Layer from "effect/Layer";
+import {
+	fromPrivateKey,
+	getAddress,
+	recoverTransactionAddress,
+} from "./operations.js";
+import { SignersService } from "./SignersService.js";
 
 /**
  * Production layer for SignersService using native implementation.
@@ -29,11 +33,8 @@ import { fromPrivateKey, getAddress, recoverTransactionAddress } from './operati
  * @since 0.0.1
  * @see {@link SignersTest} for unit testing
  */
-export const SignersLive = Layer.succeed(
-  SignersService,
-  {
-    fromPrivateKey,
-    getAddress,
-    recoverTransactionAddress
-  }
-)
+export const SignersLive = Layer.succeed(SignersService, {
+	fromPrivateKey,
+	getAddress,
+	recoverTransactionAddress,
+});

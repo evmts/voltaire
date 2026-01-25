@@ -3,8 +3,9 @@
  * @module X25519/generateKeyPair
  * @since 0.0.1
  */
-import * as Effect from 'effect/Effect'
-import * as X25519 from '@tevm/voltaire/X25519'
+
+import * as X25519 from "@tevm/voltaire/X25519";
+import * as Effect from "effect/Effect";
 
 /**
  * Generates a random X25519 keypair.
@@ -31,7 +32,6 @@ import * as X25519 from '@tevm/voltaire/X25519'
  * @since 0.0.1
  */
 export const generateKeyPair = (): Effect.Effect<
-  { secretKey: Uint8Array; publicKey: Uint8Array },
-  never
-> =>
-  Effect.sync(() => X25519.generateKeypair())
+	{ secretKey: Uint8Array; publicKey: Uint8Array },
+	never
+> => Effect.sync(() => X25519.generateKeypair());

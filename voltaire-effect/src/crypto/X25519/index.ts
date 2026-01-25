@@ -32,9 +32,10 @@
  *
  * @see {@link https://datatracker.ietf.org/doc/html/rfc7748 | RFC 7748}
  */
-export { generateKeyPair } from './generateKeyPair.js'
-export { getPublicKey } from './getPublicKey.js'
-export { computeSecret } from './computeSecret.js'
-export { X25519Service, type X25519ServiceShape } from './X25519Service.js'
-export { X25519Live } from './X25519Live.js'
-export { X25519Test } from './X25519Test.js'
+
+export { computeSecret } from "./computeSecret.js";
+export { generateKeyPair } from "./generateKeyPair.js";
+export { getPublicKey } from "./getPublicKey.js";
+export { X25519Live } from "./X25519Live.js";
+export { X25519Service, type X25519ServiceShape } from "./X25519Service.js";
+export { X25519Test } from "./X25519Test.js";

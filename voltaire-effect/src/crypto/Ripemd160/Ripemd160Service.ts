@@ -5,11 +5,11 @@
  * @since 0.0.1
  */
 
-import { Ripemd160 } from '@tevm/voltaire'
-import type { Ripemd160Hash } from '@tevm/voltaire'
-import * as Effect from 'effect/Effect'
-import * as Context from 'effect/Context'
-import * as Layer from 'effect/Layer'
+import type { Ripemd160Hash } from "@tevm/voltaire";
+import { Ripemd160 } from "@tevm/voltaire";
+import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 
 /**
  * RIPEMD-160 hashing service for Effect-based applications.
@@ -47,21 +47,21 @@ import * as Layer from 'effect/Layer'
  * @since 0.0.1
  */
 export class Ripemd160Service extends Context.Tag("Ripemd160Service")<
-  Ripemd160Service,
-  {
-    /**
-     * Computes the RIPEMD-160 hash of input data.
-     *
-     * @description
-     * Produces a fixed 20-byte hash regardless of input size. The hash is
-     * returned as a branded Ripemd160Hash type for type safety.
-     *
-     * @param data - The input bytes to hash
-     * @returns Effect containing the 20-byte hash as Ripemd160Hash
-     * @throws Never - This operation is infallible
-     */
-    readonly hash: (data: Uint8Array) => Effect.Effect<Ripemd160Hash>
-  }
+	Ripemd160Service,
+	{
+		/**
+		 * Computes the RIPEMD-160 hash of input data.
+		 *
+		 * @description
+		 * Produces a fixed 20-byte hash regardless of input size. The hash is
+		 * returned as a branded Ripemd160Hash type for type safety.
+		 *
+		 * @param data - The input bytes to hash
+		 * @returns Effect containing the 20-byte hash as Ripemd160Hash
+		 * @throws Never - This operation is infallible
+		 */
+		readonly hash: (data: Uint8Array) => Effect.Effect<Ripemd160Hash>;
+	}
 >() {}
 
 /**
@@ -86,8 +86,8 @@ export class Ripemd160Service extends Context.Tag("Ripemd160Service")<
  * @since 0.0.1
  */
 export const Ripemd160Live = Layer.succeed(Ripemd160Service, {
-  hash: (data) => Effect.sync(() => Ripemd160.hash(data))
-})
+	hash: (data) => Effect.sync(() => Ripemd160.hash(data)),
+});
 
 /**
  * Test layer for Ripemd160Service returning deterministic zero-filled hashes.
@@ -115,5 +115,5 @@ export const Ripemd160Live = Layer.succeed(Ripemd160Service, {
  * @since 0.0.1
  */
 export const Ripemd160Test = Layer.succeed(Ripemd160Service, {
-  hash: (_data) => Effect.sync(() => new Uint8Array(20) as Ripemd160Hash)
-})
+	hash: (_data) => Effect.sync(() => new Uint8Array(20) as Ripemd160Hash),
+});

@@ -39,5 +39,6 @@
  * @module Keccak256
  * @since 0.0.1
  */
-export { KeccakService, KeccakLive, KeccakTest } from './KeccakService.js'
-export { hash } from './hash.js'
+
+export { hash } from "./hash.js";
+export { KeccakLive, KeccakService, KeccakTest } from "./KeccakService.js";

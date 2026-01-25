@@ -5,11 +5,15 @@
  * @since 0.0.1
  */
 
-import * as Context from 'effect/Context'
-import type * as Effect from 'effect/Effect'
-import type { HashType } from '@tevm/voltaire/Hash'
-import type { P256SignatureType } from '@tevm/voltaire/P256'
-import type { InvalidPrivateKeyError, InvalidPublicKeyError, P256Error } from '@tevm/voltaire/P256'
+import type { HashType } from "@tevm/voltaire/Hash";
+import type {
+	InvalidPrivateKeyError,
+	InvalidPublicKeyError,
+	P256Error,
+	P256SignatureType,
+} from "@tevm/voltaire/P256";
+import * as Context from "effect/Context";
+import type * as Effect from "effect/Effect";
 
 /**
  * Shape interface for P-256 (secp256r1) cryptographic service operations.
@@ -23,42 +27,42 @@ import type { InvalidPrivateKeyError, InvalidPublicKeyError, P256Error } from '@
  * @since 0.0.1
  */
 export interface P256ServiceShape {
-  /**
-   * Signs a message hash using P-256 (NIST curve) ECDSA.
-   *
-   * @description
-   * Creates an ECDSA signature on the secp256r1 curve. The message should
-   * already be hashed (typically with SHA-256) before signing.
-   *
-   * @param messageHash - The 32-byte message hash to sign
-   * @param privateKey - The 32-byte private key
-   * @returns Effect containing the P-256 signature (r, s, v components)
-   * @throws InvalidPrivateKeyError - When the private key is invalid
-   * @throws P256Error - When signing fails
-   */
-  readonly sign: (
-    messageHash: HashType | Uint8Array,
-    privateKey: Uint8Array
-  ) => Effect.Effect<P256SignatureType, InvalidPrivateKeyError | P256Error>
+	/**
+	 * Signs a message hash using P-256 (NIST curve) ECDSA.
+	 *
+	 * @description
+	 * Creates an ECDSA signature on the secp256r1 curve. The message should
+	 * already be hashed (typically with SHA-256) before signing.
+	 *
+	 * @param messageHash - The 32-byte message hash to sign
+	 * @param privateKey - The 32-byte private key
+	 * @returns Effect containing the P-256 signature (r, s, v components)
+	 * @throws InvalidPrivateKeyError - When the private key is invalid
+	 * @throws P256Error - When signing fails
+	 */
+	readonly sign: (
+		messageHash: HashType | Uint8Array,
+		privateKey: Uint8Array,
+	) => Effect.Effect<P256SignatureType, InvalidPrivateKeyError | P256Error>;
 
-  /**
-   * Verifies a P-256 ECDSA signature against a message hash and public key.
-   *
-   * @description
-   * Validates that a signature was created by the holder of the private key
-   * corresponding to the given public key.
-   *
-   * @param signature - The P-256 signature to verify
-   * @param messageHash - The 32-byte message hash
-   * @param publicKey - The 65-byte uncompressed or 33-byte compressed public key
-   * @returns Effect containing true if signature is valid, false otherwise
-   * @throws InvalidPublicKeyError - When the public key is invalid
-   */
-  readonly verify: (
-    signature: P256SignatureType,
-    messageHash: HashType | Uint8Array,
-    publicKey: Uint8Array
-  ) => Effect.Effect<boolean, InvalidPublicKeyError>
+	/**
+	 * Verifies a P-256 ECDSA signature against a message hash and public key.
+	 *
+	 * @description
+	 * Validates that a signature was created by the holder of the private key
+	 * corresponding to the given public key.
+	 *
+	 * @param signature - The P-256 signature to verify
+	 * @param messageHash - The 32-byte message hash
+	 * @param publicKey - The 65-byte uncompressed or 33-byte compressed public key
+	 * @returns Effect containing true if signature is valid, false otherwise
+	 * @throws InvalidPublicKeyError - When the public key is invalid
+	 */
+	readonly verify: (
+		signature: P256SignatureType,
+		messageHash: HashType | Uint8Array,
+		publicKey: Uint8Array,
+	) => Effect.Effect<boolean, InvalidPublicKeyError>;
 }
 
 /**
@@ -105,7 +109,7 @@ export interface P256ServiceShape {
  * @see {@link verify} - Standalone verify function
  * @since 0.0.1
  */
-export class P256Service extends Context.Tag('P256Service')<
-  P256Service,
-  P256ServiceShape
+export class P256Service extends Context.Tag("P256Service")<
+	P256Service,
+	P256ServiceShape
 >() {}

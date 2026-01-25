@@ -26,25 +26,179 @@
  * @module
  * @since 0.0.1
  */
-export { KeccakService, KeccakLive, KeccakTest, hash as keccakHash } from './Keccak256/index.js'
-export * from './Secp256k1/index.js'
-export { SHA256Service, SHA256Live, SHA256Test, hash as sha256Hash } from './SHA256/index.js'
-export { Blake2Service, Blake2Live, Blake2Test, hash as blake2Hash } from './Blake2/index.js'
-export { Ripemd160Service, Ripemd160Live, Ripemd160Test, hash as ripemd160Hash } from './Ripemd160/index.js'
-export { Bls12381Service, Bls12381Live, sign as bls12381Sign, verify as bls12381Verify, aggregate as bls12381Aggregate, type Bls12381ServiceShape } from './Bls12381/index.js'
-export { Ed25519Service, Ed25519Live, Ed25519Test, sign as ed25519Sign, verify as ed25519Verify, getPublicKey as ed25519GetPublicKey, type Ed25519ServiceShape } from './Ed25519/index.js'
-export { P256Service, P256Live, sign as p256Sign, verify as p256Verify, type P256ServiceShape } from './P256/index.js'
-export { KZGService, KZGLive, KZGTest, blobToKzgCommitment, computeBlobKzgProof, verifyBlobKzgProof, type KZGServiceShape } from './KZG/index.js'
-export { HDWalletService, HDWalletLive, HDWalletTest, derive as hdwalletDerive, generateMnemonic, fromSeed, mnemonicToSeed, getPrivateKey as hdwalletGetPrivateKey, getPublicKey as hdwalletGetPublicKey, type HDWalletServiceShape, type HDNode, type HDPath } from './HDWallet/index.js'
-export { Bn254Service, Bn254Live, Bn254Test, g1Add, g1Mul, g1Generator, g2Add, g2Mul, g2Generator, pairingCheck, type Bn254ServiceShape } from './Bn254/index.js'
-export { Bip39Service, Bip39Live, Bip39Test, generateMnemonic as bip39GenerateMnemonic, validateMnemonic, mnemonicToSeed as bip39MnemonicToSeed, mnemonicToSeedSync, getWordCount, type Bip39ServiceShape } from './Bip39/index.js'
-export { HMACService, HMACLive, HMACTest, hmacSha256, hmacSha512, type HMACServiceShape } from './HMAC/index.js'
-export { EIP712Service, EIP712Live, EIP712Test, hashTypedData, signTypedData, verifyTypedData, recoverAddress as eip712RecoverAddress, hashDomain, hashStruct, type EIP712ServiceShape } from './EIP712/index.js'
-export { AesGcmService, AesGcmLive, AesGcmTest, encrypt as aesGcmEncrypt, decrypt as aesGcmDecrypt, generateKey as aesGcmGenerateKey, generateNonce as aesGcmGenerateNonce, type AesGcmServiceShape } from './AesGcm/index.js'
-export { KeystoreService, KeystoreLive, KeystoreTest, encrypt as keystoreEncrypt, decrypt as keystoreDecrypt, type KeystoreServiceShape, type DecryptError as KeystoreDecryptError } from './Keystore/index.js'
-export { ChaCha20Poly1305Service, ChaCha20Poly1305Live, ChaCha20Poly1305Test, encrypt as chaCha20Poly1305Encrypt, decrypt as chaCha20Poly1305Decrypt, generateKey as chaCha20Poly1305GenerateKey, generateNonce as chaCha20Poly1305GenerateNonce, type ChaCha20Poly1305ServiceShape } from './ChaCha20Poly1305/index.js'
-export { X25519Service, X25519Live, X25519Test, generateKeyPair as x25519GenerateKeyPair, getPublicKey as x25519GetPublicKey, computeSecret as x25519ComputeSecret, type X25519ServiceShape } from './X25519/index.js'
-export { ModExpService, ModExpLive, ModExpTest, modexp, modexpBytes, calculateGas as modexpCalculateGas, type ModExpServiceShape } from './ModExp/index.js'
-export { SignersService, SignersLive, SignersTest, fromPrivateKey, getAddress as signersGetAddress, recoverTransactionAddress, type SignersServiceShape, type Signer } from './Signers/index.js'
-export { CryptoLive } from './CryptoLive.js'
-export { CryptoTest } from './CryptoTest.js'
+
+export {
+	AesGcmLive,
+	AesGcmService,
+	type AesGcmServiceShape,
+	AesGcmTest,
+	decrypt as aesGcmDecrypt,
+	encrypt as aesGcmEncrypt,
+	generateKey as aesGcmGenerateKey,
+	generateNonce as aesGcmGenerateNonce,
+} from "./AesGcm/index.js";
+export {
+	Bip39Live,
+	Bip39Service,
+	type Bip39ServiceShape,
+	Bip39Test,
+	generateMnemonic as bip39GenerateMnemonic,
+	getWordCount,
+	mnemonicToSeed as bip39MnemonicToSeed,
+	mnemonicToSeedSync,
+	validateMnemonic,
+} from "./Bip39/index.js";
+export {
+	Blake2Live,
+	Blake2Service,
+	Blake2Test,
+	hash as blake2Hash,
+} from "./Blake2/index.js";
+export {
+	aggregate as bls12381Aggregate,
+	Bls12381Live,
+	Bls12381Service,
+	type Bls12381ServiceShape,
+	sign as bls12381Sign,
+	verify as bls12381Verify,
+} from "./Bls12381/index.js";
+export {
+	Bn254Live,
+	Bn254Service,
+	type Bn254ServiceShape,
+	Bn254Test,
+	g1Add,
+	g1Generator,
+	g1Mul,
+	g2Add,
+	g2Generator,
+	g2Mul,
+	pairingCheck,
+} from "./Bn254/index.js";
+export {
+	ChaCha20Poly1305Live,
+	ChaCha20Poly1305Service,
+	type ChaCha20Poly1305ServiceShape,
+	ChaCha20Poly1305Test,
+	decrypt as chaCha20Poly1305Decrypt,
+	encrypt as chaCha20Poly1305Encrypt,
+	generateKey as chaCha20Poly1305GenerateKey,
+	generateNonce as chaCha20Poly1305GenerateNonce,
+} from "./ChaCha20Poly1305/index.js";
+export { CryptoLive } from "./CryptoLive.js";
+export { CryptoTest } from "./CryptoTest.js";
+export {
+	Ed25519Live,
+	Ed25519Service,
+	type Ed25519ServiceShape,
+	Ed25519Test,
+	getPublicKey as ed25519GetPublicKey,
+	sign as ed25519Sign,
+	verify as ed25519Verify,
+} from "./Ed25519/index.js";
+export {
+	EIP712Live,
+	EIP712Service,
+	type EIP712ServiceShape,
+	EIP712Test,
+	hashDomain,
+	hashStruct,
+	hashTypedData,
+	recoverAddress as eip712RecoverAddress,
+	signTypedData,
+	verifyTypedData,
+} from "./EIP712/index.js";
+export {
+	derive as hdwalletDerive,
+	fromSeed,
+	generateMnemonic,
+	getPrivateKey as hdwalletGetPrivateKey,
+	getPublicKey as hdwalletGetPublicKey,
+	type HDNode,
+	type HDPath,
+	HDWalletLive,
+	HDWalletService,
+	type HDWalletServiceShape,
+	HDWalletTest,
+	mnemonicToSeed,
+} from "./HDWallet/index.js";
+export {
+	HMACLive,
+	HMACService,
+	type HMACServiceShape,
+	HMACTest,
+	hmacSha256,
+	hmacSha512,
+} from "./HMAC/index.js";
+export {
+	hash as keccakHash,
+	KeccakLive,
+	KeccakService,
+	KeccakTest,
+} from "./Keccak256/index.js";
+export {
+	type DecryptError as KeystoreDecryptError,
+	decrypt as keystoreDecrypt,
+	encrypt as keystoreEncrypt,
+	KeystoreLive,
+	KeystoreService,
+	type KeystoreServiceShape,
+	KeystoreTest,
+} from "./Keystore/index.js";
+export {
+	blobToKzgCommitment,
+	computeBlobKzgProof,
+	KZGLive,
+	KZGService,
+	type KZGServiceShape,
+	KZGTest,
+	verifyBlobKzgProof,
+} from "./KZG/index.js";
+export {
+	calculateGas as modexpCalculateGas,
+	ModExpLive,
+	ModExpService,
+	type ModExpServiceShape,
+	ModExpTest,
+	modexp,
+	modexpBytes,
+} from "./ModExp/index.js";
+export {
+	P256Live,
+	P256Service,
+	type P256ServiceShape,
+	sign as p256Sign,
+	verify as p256Verify,
+} from "./P256/index.js";
+export {
+	hash as ripemd160Hash,
+	Ripemd160Live,
+	Ripemd160Service,
+	Ripemd160Test,
+} from "./Ripemd160/index.js";
+export * from "./Secp256k1/index.js";
+export {
+	hash as sha256Hash,
+	SHA256Live,
+	SHA256Service,
+	SHA256Test,
+} from "./SHA256/index.js";
+export {
+	fromPrivateKey,
+	getAddress as signersGetAddress,
+	recoverTransactionAddress,
+	type Signer,
+	SignersLive,
+	SignersService,
+	type SignersServiceShape,
+	SignersTest,
+} from "./Signers/index.js";
+export {
+	computeSecret as x25519ComputeSecret,
+	generateKeyPair as x25519GenerateKeyPair,
+	getPublicKey as x25519GetPublicKey,
+	X25519Live,
+	X25519Service,
+	type X25519ServiceShape,
+	X25519Test,
+} from "./X25519/index.js";

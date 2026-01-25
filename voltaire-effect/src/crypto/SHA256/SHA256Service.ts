@@ -10,11 +10,11 @@
  * @since 0.0.1
  */
 
-import { SHA256 } from '@tevm/voltaire'
-import type { SHA256Hash } from '@tevm/voltaire'
-import * as Effect from 'effect/Effect'
-import * as Context from 'effect/Context'
-import * as Layer from 'effect/Layer'
+import type { SHA256Hash } from "@tevm/voltaire";
+import { SHA256 } from "@tevm/voltaire";
+import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 
 /**
  * Shape interface for the SHA-256 hashing service.
@@ -26,13 +26,13 @@ import * as Layer from 'effect/Layer'
  * @since 0.0.1
  */
 export interface SHA256ServiceShape {
-  /**
-   * Computes the SHA-256 hash of input data.
-   *
-   * @param {Uint8Array} data - The input bytes to hash (any length)
-   * @returns {Effect.Effect<SHA256Hash>} Effect containing the 32-byte hash
-   */
-  readonly hash: (data: Uint8Array) => Effect.Effect<SHA256Hash>
+	/**
+	 * Computes the SHA-256 hash of input data.
+	 *
+	 * @param {Uint8Array} data - The input bytes to hash (any length)
+	 * @returns {Effect.Effect<SHA256Hash>} Effect containing the 32-byte hash
+	 */
+	readonly hash: (data: Uint8Array) => Effect.Effect<SHA256Hash>;
 }
 
 /**
@@ -94,8 +94,8 @@ export interface SHA256ServiceShape {
  * @since 0.0.1
  */
 export class SHA256Service extends Context.Tag("SHA256Service")<
-  SHA256Service,
-  SHA256ServiceShape
+	SHA256Service,
+	SHA256ServiceShape
 >() {}
 
 /**
@@ -135,8 +135,8 @@ export class SHA256Service extends Context.Tag("SHA256Service")<
  * @since 0.0.1
  */
 export const SHA256Live = Layer.succeed(SHA256Service, {
-  hash: (data) => Effect.sync(() => SHA256.hash(data))
-})
+	hash: (data) => Effect.sync(() => SHA256.hash(data)),
+});
 
 /**
  * Test layer for SHA256Service returning deterministic zero-filled hashes.
@@ -175,5 +175,5 @@ export const SHA256Live = Layer.succeed(SHA256Service, {
  * @since 0.0.1
  */
 export const SHA256Test = Layer.succeed(SHA256Service, {
-  hash: (_data) => Effect.sync(() => new Uint8Array(32) as SHA256Hash)
-})
+	hash: (_data) => Effect.sync(() => new Uint8Array(32) as SHA256Hash),
+});

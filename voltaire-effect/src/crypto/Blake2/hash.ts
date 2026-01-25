@@ -4,9 +4,9 @@
  * @since 0.0.1
  */
 
-import type { Blake2Hash } from '@tevm/voltaire'
-import * as Effect from 'effect/Effect'
-import { Blake2Service } from './Blake2Service.js'
+import type { Blake2Hash } from "@tevm/voltaire";
+import * as Effect from "effect/Effect";
+import { Blake2Service } from "./Blake2Service.js";
 
 /**
  * Computes the Blake2b hash of the provided data.
@@ -49,8 +49,11 @@ import { Blake2Service } from './Blake2Service.js'
  * @see {@link Blake2Live} - Production layer
  * @since 0.0.1
  */
-export const hash = (data: Uint8Array, outputLength?: number): Effect.Effect<Blake2Hash, never, Blake2Service> =>
-  Effect.gen(function* () {
-    const blake2 = yield* Blake2Service
-    return yield* blake2.hash(data, outputLength)
-  })
+export const hash = (
+	data: Uint8Array,
+	outputLength?: number,
+): Effect.Effect<Blake2Hash, never, Blake2Service> =>
+	Effect.gen(function* () {
+		const blake2 = yield* Blake2Service;
+		return yield* blake2.hash(data, outputLength);
+	});

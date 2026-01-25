@@ -3,10 +3,15 @@
  * @module Keystore/encrypt
  * @since 0.0.1
  */
-import * as Effect from 'effect/Effect'
-import * as Keystore from '@tevm/voltaire/Keystore'
-import type { PrivateKeyType } from '@tevm/voltaire/PrivateKey'
-import type { KeystoreV3, EncryptOptions, EncryptionError } from '@tevm/voltaire/Keystore'
+
+import type {
+	EncryptionError,
+	EncryptOptions,
+	KeystoreV3,
+} from "@tevm/voltaire/Keystore";
+import * as Keystore from "@tevm/voltaire/Keystore";
+import type { PrivateKeyType } from "@tevm/voltaire/PrivateKey";
+import * as Effect from "effect/Effect";
 
 /**
  * Encrypts a private key with a password to create a keystore.
@@ -36,11 +41,11 @@ import type { KeystoreV3, EncryptOptions, EncryptionError } from '@tevm/voltaire
  * @since 0.0.1
  */
 export const encrypt = (
-  privateKey: PrivateKeyType,
-  password: string,
-  options?: EncryptOptions
+	privateKey: PrivateKeyType,
+	password: string,
+	options?: EncryptOptions,
 ): Effect.Effect<KeystoreV3, EncryptionError> =>
-  Effect.tryPromise({
-    try: () => Keystore.encrypt(privateKey, password, options),
-    catch: (e) => e as EncryptionError
-  })
+	Effect.tryPromise({
+		try: () => Keystore.encrypt(privateKey, password, options),
+		catch: (e) => e as EncryptionError,
+	});

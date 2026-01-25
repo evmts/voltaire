@@ -6,11 +6,11 @@
  * @since 0.0.1
  */
 
-import * as Layer from 'effect/Layer'
-import { Secp256k1Service } from './Secp256k1Service.js'
-import { sign } from './sign.js'
-import { recover } from './recover.js'
-import { verify } from './verify.js'
+import * as Layer from "effect/Layer";
+import { recover } from "./recover.js";
+import { Secp256k1Service } from "./Secp256k1Service.js";
+import { sign } from "./sign.js";
+import { verify } from "./verify.js";
 
 /**
  * Production layer for Secp256k1Service using native secp256k1 implementation.
@@ -64,11 +64,8 @@ import { verify } from './verify.js'
  * @see {@link Secp256k1Test} - Test implementation for unit tests
  * @since 0.0.1
  */
-export const Secp256k1Live = Layer.succeed(
-  Secp256k1Service,
-  {
-    sign,
-    recover,
-    verify
-  }
-)
+export const Secp256k1Live = Layer.succeed(Secp256k1Service, {
+	sign,
+	recover,
+	verify,
+});

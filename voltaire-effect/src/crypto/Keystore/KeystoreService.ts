@@ -3,17 +3,19 @@
  * @module Keystore/KeystoreService
  * @since 0.0.1
  */
-import * as Context from 'effect/Context'
-import type * as Effect from 'effect/Effect'
-import type { PrivateKeyType } from '@tevm/voltaire/PrivateKey'
-import type { KeystoreV3, EncryptOptions } from '@tevm/voltaire/Keystore'
+
 import type {
-  EncryptionError,
-  DecryptionError,
-  InvalidMacError,
-  UnsupportedVersionError,
-  UnsupportedKdfError
-} from '@tevm/voltaire/Keystore'
+	DecryptionError,
+	EncryptionError,
+	EncryptOptions,
+	InvalidMacError,
+	KeystoreV3,
+	UnsupportedKdfError,
+	UnsupportedVersionError,
+} from "@tevm/voltaire/Keystore";
+import type { PrivateKeyType } from "@tevm/voltaire/PrivateKey";
+import * as Context from "effect/Context";
+import type * as Effect from "effect/Effect";
 
 /**
  * Union of all possible decryption errors.
@@ -27,7 +29,11 @@ import type {
  *
  * @since 0.0.1
  */
-export type DecryptError = DecryptionError | InvalidMacError | UnsupportedVersionError | UnsupportedKdfError
+export type DecryptError =
+	| DecryptionError
+	| InvalidMacError
+	| UnsupportedVersionError
+	| UnsupportedKdfError;
 
 /**
  * Shape interface for keystore encryption service operations.
@@ -39,29 +45,29 @@ export type DecryptError = DecryptionError | InvalidMacError | UnsupportedVersio
  * @since 0.0.1
  */
 export interface KeystoreServiceShape {
-  /**
-   * Encrypts a private key with a password.
-   * @param privateKey - The 32-byte private key to encrypt
-   * @param password - Password for key derivation
-   * @param options - Optional encryption parameters (kdf, cipher, etc.)
-   * @returns Effect containing the KeystoreV3 JSON structure
-   */
-  readonly encrypt: (
-    privateKey: PrivateKeyType,
-    password: string,
-    options?: EncryptOptions
-  ) => Effect.Effect<KeystoreV3, EncryptionError>
+	/**
+	 * Encrypts a private key with a password.
+	 * @param privateKey - The 32-byte private key to encrypt
+	 * @param password - Password for key derivation
+	 * @param options - Optional encryption parameters (kdf, cipher, etc.)
+	 * @returns Effect containing the KeystoreV3 JSON structure
+	 */
+	readonly encrypt: (
+		privateKey: PrivateKeyType,
+		password: string,
+		options?: EncryptOptions,
+	) => Effect.Effect<KeystoreV3, EncryptionError>;
 
-  /**
-   * Decrypts a keystore with a password.
-   * @param keystore - The KeystoreV3 JSON structure
-   * @param password - Password used during encryption
-   * @returns Effect containing the decrypted private key
-   */
-  readonly decrypt: (
-    keystore: KeystoreV3,
-    password: string
-  ) => Effect.Effect<PrivateKeyType, DecryptError>
+	/**
+	 * Decrypts a keystore with a password.
+	 * @param keystore - The KeystoreV3 JSON structure
+	 * @param password - Password used during encryption
+	 * @returns Effect containing the decrypted private key
+	 */
+	readonly decrypt: (
+		keystore: KeystoreV3,
+		password: string,
+	) => Effect.Effect<PrivateKeyType, DecryptError>;
 }
 
 /**
@@ -86,7 +92,7 @@ export interface KeystoreServiceShape {
  *
  * @since 0.0.1
  */
-export class KeystoreService extends Context.Tag('KeystoreService')<
-  KeystoreService,
-  KeystoreServiceShape
+export class KeystoreService extends Context.Tag("KeystoreService")<
+	KeystoreService,
+	KeystoreServiceShape
 >() {}

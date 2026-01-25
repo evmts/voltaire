@@ -4,9 +4,9 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import * as Bls12381 from '@tevm/voltaire/Bls12381'
-import type { SignatureError } from '@tevm/voltaire/Bls12381'
+import type { SignatureError } from "@tevm/voltaire/Bls12381";
+import * as Bls12381 from "@tevm/voltaire/Bls12381";
+import * as Effect from "effect/Effect";
 
 /**
  * Aggregates multiple BLS12-381 signatures into a single signature.
@@ -58,9 +58,9 @@ import type { SignatureError } from '@tevm/voltaire/Bls12381'
  * @since 0.0.1
  */
 export const aggregate = (
-  signatures: Uint8Array[]
+	signatures: Uint8Array[],
 ): Effect.Effect<Uint8Array, SignatureError> =>
-  Effect.try({
-    try: () => Bls12381.aggregate(signatures),
-    catch: (e) => e as SignatureError
-  })
+	Effect.try({
+		try: () => Bls12381.aggregate(signatures),
+		catch: (e) => e as SignatureError,
+	});

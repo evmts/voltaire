@@ -3,8 +3,12 @@
  * @module HDWallet/derive
  * @since 0.0.1
  */
-import * as Effect from 'effect/Effect'
-import { HDWalletService, type HDNode, type HDPath } from './HDWalletService.js'
+import * as Effect from "effect/Effect";
+import {
+	type HDNode,
+	type HDPath,
+	HDWalletService,
+} from "./HDWalletService.js";
 
 /**
  * Derives a child HD node from a parent node using the given path.
@@ -33,11 +37,14 @@ import { HDWalletService, type HDNode, type HDPath } from './HDWalletService.js'
  * @see {@link fromSeed} to create the master node
  * @since 0.0.1
  */
-export const derive = (node: HDNode, path: string | HDPath): Effect.Effect<HDNode, never, HDWalletService> =>
-  Effect.gen(function* () {
-    const hdwallet = yield* HDWalletService
-    return yield* hdwallet.derive(node, path)
-  })
+export const derive = (
+	node: HDNode,
+	path: string | HDPath,
+): Effect.Effect<HDNode, never, HDWalletService> =>
+	Effect.gen(function* () {
+		const hdwallet = yield* HDWalletService;
+		return yield* hdwallet.derive(node, path);
+	});
 
 /**
  * Generates a new random BIP-39 mnemonic phrase.
@@ -62,11 +69,13 @@ export const derive = (node: HDNode, path: string | HDPath): Effect.Effect<HDNod
  * @see {@link mnemonicToSeed} to convert mnemonic to seed
  * @since 0.0.1
  */
-export const generateMnemonic = (strength: 128 | 256 = 128): Effect.Effect<string[], never, HDWalletService> =>
-  Effect.gen(function* () {
-    const hdwallet = yield* HDWalletService
-    return yield* hdwallet.generateMnemonic(strength)
-  })
+export const generateMnemonic = (
+	strength: 128 | 256 = 128,
+): Effect.Effect<string[], never, HDWalletService> =>
+	Effect.gen(function* () {
+		const hdwallet = yield* HDWalletService;
+		return yield* hdwallet.generateMnemonic(strength);
+	});
 
 /**
  * Creates a master HD node from a seed.
@@ -94,11 +103,13 @@ export const generateMnemonic = (strength: 128 | 256 = 128): Effect.Effect<strin
  * @see {@link derive} to derive child nodes
  * @since 0.0.1
  */
-export const fromSeed = (seed: Uint8Array): Effect.Effect<HDNode, never, HDWalletService> =>
-  Effect.gen(function* () {
-    const hdwallet = yield* HDWalletService
-    return yield* hdwallet.fromSeed(seed)
-  })
+export const fromSeed = (
+	seed: Uint8Array,
+): Effect.Effect<HDNode, never, HDWalletService> =>
+	Effect.gen(function* () {
+		const hdwallet = yield* HDWalletService;
+		return yield* hdwallet.fromSeed(seed);
+	});
 
 /**
  * Converts a mnemonic phrase to a 64-byte seed.
@@ -126,11 +137,13 @@ export const fromSeed = (seed: Uint8Array): Effect.Effect<HDNode, never, HDWalle
  * @see {@link fromSeed} to create master node from seed
  * @since 0.0.1
  */
-export const mnemonicToSeed = (mnemonic: string[]): Effect.Effect<Uint8Array, never, HDWalletService> =>
-  Effect.gen(function* () {
-    const hdwallet = yield* HDWalletService
-    return yield* hdwallet.mnemonicToSeed(mnemonic)
-  })
+export const mnemonicToSeed = (
+	mnemonic: string[],
+): Effect.Effect<Uint8Array, never, HDWalletService> =>
+	Effect.gen(function* () {
+		const hdwallet = yield* HDWalletService;
+		return yield* hdwallet.mnemonicToSeed(mnemonic);
+	});
 
 /**
  * Extracts the private key from an HD node.
@@ -159,11 +172,13 @@ export const mnemonicToSeed = (mnemonic: string[]): Effect.Effect<Uint8Array, ne
  * @see {@link getPublicKey} to extract the public key
  * @since 0.0.1
  */
-export const getPrivateKey = (node: HDNode): Effect.Effect<Uint8Array | null, never, HDWalletService> =>
-  Effect.gen(function* () {
-    const hdwallet = yield* HDWalletService
-    return yield* hdwallet.getPrivateKey(node)
-  })
+export const getPrivateKey = (
+	node: HDNode,
+): Effect.Effect<Uint8Array | null, never, HDWalletService> =>
+	Effect.gen(function* () {
+		const hdwallet = yield* HDWalletService;
+		return yield* hdwallet.getPrivateKey(node);
+	});
 
 /**
  * Extracts the public key from an HD node.
@@ -192,8 +207,10 @@ export const getPrivateKey = (node: HDNode): Effect.Effect<Uint8Array | null, ne
  * @see {@link getPrivateKey} to extract the private key
  * @since 0.0.1
  */
-export const getPublicKey = (node: HDNode): Effect.Effect<Uint8Array | null, never, HDWalletService> =>
-  Effect.gen(function* () {
-    const hdwallet = yield* HDWalletService
-    return yield* hdwallet.getPublicKey(node)
-  })
+export const getPublicKey = (
+	node: HDNode,
+): Effect.Effect<Uint8Array | null, never, HDWalletService> =>
+	Effect.gen(function* () {
+		const hdwallet = yield* HDWalletService;
+		return yield* hdwallet.getPublicKey(node);
+	});

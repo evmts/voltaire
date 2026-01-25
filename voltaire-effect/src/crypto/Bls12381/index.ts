@@ -32,8 +32,12 @@
  * @module Bls12381
  * @since 0.0.1
  */
-export { sign } from './sign.js'
-export { verify } from './verify.js'
-export { aggregate } from './aggregate.js'
-export { Bls12381Service, type Bls12381ServiceShape } from './Bls12381Service.js'
-export { Bls12381Live } from './Bls12381Live.js'
+
+export { aggregate } from "./aggregate.js";
+export { Bls12381Live } from "./Bls12381Live.js";
+export {
+	Bls12381Service,
+	type Bls12381ServiceShape,
+} from "./Bls12381Service.js";
+export { sign } from "./sign.js";
+export { verify } from "./verify.js";

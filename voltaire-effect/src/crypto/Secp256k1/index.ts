@@ -43,9 +43,14 @@
  * @module Secp256k1
  * @since 0.0.1
  */
-export { sign } from './sign.js'
-export { recover } from './recover.js'
-export { verify } from './verify.js'
-export { Secp256k1Service, type Secp256k1ServiceShape, type SignOptions } from './Secp256k1Service.js'
-export { Secp256k1Live } from './Secp256k1Live.js'
-export { Secp256k1Test } from './Secp256k1Test.js'
+
+export { recover } from "./recover.js";
+export { Secp256k1Live } from "./Secp256k1Live.js";
+export {
+	Secp256k1Service,
+	type Secp256k1ServiceShape,
+	type SignOptions,
+} from "./Secp256k1Service.js";
+export { Secp256k1Test } from "./Secp256k1Test.js";
+export { sign } from "./sign.js";
+export { verify } from "./verify.js";

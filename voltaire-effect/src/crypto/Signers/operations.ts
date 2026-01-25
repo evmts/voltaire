@@ -3,10 +3,11 @@
  * @module Signers/operations
  * @since 0.0.1
  */
-import * as Effect from 'effect/Effect'
-import * as Signers from '@tevm/voltaire/signers'
-import type { InvalidPrivateKeyError, CryptoError } from '@tevm/voltaire'
-import type { Signer } from './SignersService.js'
+
+import type { CryptoError, InvalidPrivateKeyError } from "@tevm/voltaire";
+import * as Signers from "@tevm/voltaire/signers";
+import * as Effect from "effect/Effect";
+import type { Signer } from "./SignersService.js";
 
 /**
  * Creates a signer from a private key.
@@ -35,33 +36,33 @@ import type { Signer } from './SignersService.js'
  * @since 0.0.1
  */
 export const fromPrivateKey = (
-  privateKey: string | Uint8Array
+	privateKey: string | Uint8Array,
 ): Effect.Effect<Signer, InvalidPrivateKeyError> =>
-  Effect.try({
-    try: () => {
-      const impl = Signers.PrivateKeySignerImpl.fromPrivateKey({ privateKey })
-      return {
-        address: impl.address,
-        publicKey: impl.publicKey,
-        signMessage: (message: string | Uint8Array) =>
-          Effect.tryPromise({
-            try: () => impl.signMessage(message),
-            catch: (e) => e as CryptoError
-          }),
-        signTransaction: (transaction: unknown) =>
-          Effect.tryPromise({
-            try: () => impl.signTransaction(transaction),
-            catch: (e) => e as CryptoError
-          }),
-        signTypedData: (typedData: unknown) =>
-          Effect.tryPromise({
-            try: () => impl.signTypedData(typedData),
-            catch: (e) => e as CryptoError
-          })
-      } as Signer
-    },
-    catch: (e) => e as InvalidPrivateKeyError
-  })
+	Effect.try({
+		try: () => {
+			const impl = Signers.PrivateKeySignerImpl.fromPrivateKey({ privateKey });
+			return {
+				address: impl.address,
+				publicKey: impl.publicKey,
+				signMessage: (message: string | Uint8Array) =>
+					Effect.tryPromise({
+						try: () => impl.signMessage(message),
+						catch: (e) => e as CryptoError,
+					}),
+				signTransaction: (transaction: unknown) =>
+					Effect.tryPromise({
+						try: () => impl.signTransaction(transaction),
+						catch: (e) => e as CryptoError,
+					}),
+				signTypedData: (typedData: unknown) =>
+					Effect.tryPromise({
+						try: () => impl.signTypedData(typedData),
+						catch: (e) => e as CryptoError,
+					}),
+			} as Signer;
+		},
+		catch: (e) => e as InvalidPrivateKeyError,
+	});
 
 /**
  * Gets the Ethereum address from a signer.
@@ -88,7 +89,7 @@ export const fromPrivateKey = (
  * @since 0.0.1
  */
 export const getAddress = (signer: Signer): Effect.Effect<string, never> =>
-  Effect.succeed(signer.address)
+	Effect.succeed(signer.address);
 
 /**
  * Recovers the sender address from a signed transaction.
@@ -112,9 +113,9 @@ export const getAddress = (signer: Signer): Effect.Effect<string, never> =>
  * @since 0.0.1
  */
 export const recoverTransactionAddress = (
-  transaction: unknown
+	transaction: unknown,
 ): Effect.Effect<string, CryptoError> =>
-  Effect.tryPromise({
-    try: () => Signers.recoverTransactionAddress(transaction),
-    catch: (e) => e as CryptoError
-  })
+	Effect.tryPromise({
+		try: () => Signers.recoverTransactionAddress(transaction),
+		catch: (e) => e as CryptoError,
+	});

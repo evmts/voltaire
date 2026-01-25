@@ -3,8 +3,9 @@
  * @module AesGcm/operations
  * @since 0.0.1
  */
-import * as Effect from 'effect/Effect'
-import { AesGcm } from '@tevm/voltaire'
+
+import { AesGcm } from "@tevm/voltaire";
+import * as Effect from "effect/Effect";
 
 /**
  * Encrypts plaintext using AES-GCM.
@@ -35,14 +36,19 @@ import { AesGcm } from '@tevm/voltaire'
  * @see {@link decrypt} to decrypt the ciphertext
  * @since 0.0.1
  */
-export const encrypt = (key: Uint8Array, plaintext: Uint8Array, nonce: Uint8Array, aad?: Uint8Array): Effect.Effect<Uint8Array, Error> =>
-  Effect.tryPromise({
-    try: async () => {
-      const cryptoKey = await AesGcm.importKey(key)
-      return AesGcm.encrypt(plaintext, cryptoKey, nonce, aad)
-    },
-    catch: (e) => e as Error
-  })
+export const encrypt = (
+	key: Uint8Array,
+	plaintext: Uint8Array,
+	nonce: Uint8Array,
+	aad?: Uint8Array,
+): Effect.Effect<Uint8Array, Error> =>
+	Effect.tryPromise({
+		try: async () => {
+			const cryptoKey = await AesGcm.importKey(key);
+			return AesGcm.encrypt(plaintext, cryptoKey, nonce, aad);
+		},
+		catch: (e) => e as Error,
+	});
 
 /**
  * Decrypts ciphertext using AES-GCM.
@@ -74,14 +80,19 @@ export const encrypt = (key: Uint8Array, plaintext: Uint8Array, nonce: Uint8Arra
  * @see {@link encrypt} to encrypt data
  * @since 0.0.1
  */
-export const decrypt = (key: Uint8Array, ciphertext: Uint8Array, nonce: Uint8Array, aad?: Uint8Array): Effect.Effect<Uint8Array, Error> =>
-  Effect.tryPromise({
-    try: async () => {
-      const cryptoKey = await AesGcm.importKey(key)
-      return AesGcm.decrypt(ciphertext, cryptoKey, nonce, aad)
-    },
-    catch: (e) => e as Error
-  })
+export const decrypt = (
+	key: Uint8Array,
+	ciphertext: Uint8Array,
+	nonce: Uint8Array,
+	aad?: Uint8Array,
+): Effect.Effect<Uint8Array, Error> =>
+	Effect.tryPromise({
+		try: async () => {
+			const cryptoKey = await AesGcm.importKey(key);
+			return AesGcm.decrypt(ciphertext, cryptoKey, nonce, aad);
+		},
+		catch: (e) => e as Error,
+	});
 
 /**
  * Generates a cryptographically random AES key.
@@ -105,14 +116,16 @@ export const decrypt = (key: Uint8Array, ciphertext: Uint8Array, nonce: Uint8Arr
  * @see {@link generateNonce} to generate a nonce
  * @since 0.0.1
  */
-export const generateKey = (bits: 128 | 256 = 256): Effect.Effect<Uint8Array, Error> =>
-  Effect.tryPromise({
-    try: async () => {
-      const cryptoKey = await AesGcm.generateKey(bits)
-      return AesGcm.exportKey(cryptoKey)
-    },
-    catch: (e) => e as Error
-  })
+export const generateKey = (
+	bits: 128 | 256 = 256,
+): Effect.Effect<Uint8Array, Error> =>
+	Effect.tryPromise({
+		try: async () => {
+			const cryptoKey = await AesGcm.generateKey(bits);
+			return AesGcm.exportKey(cryptoKey);
+		},
+		catch: (e) => e as Error,
+	});
 
 /**
  * Generates a cryptographically random 96-bit nonce.
@@ -136,7 +149,7 @@ export const generateKey = (bits: 128 | 256 = 256): Effect.Effect<Uint8Array, Er
  * @since 0.0.1
  */
 export const generateNonce = (): Effect.Effect<Uint8Array, Error> =>
-  Effect.try({
-    try: () => AesGcm.generateNonce(),
-    catch: (e) => e as Error
-  })
+	Effect.try({
+		try: () => AesGcm.generateNonce(),
+		catch: (e) => e as Error,
+	});

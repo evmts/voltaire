@@ -6,11 +6,14 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import * as Secp256k1 from '@tevm/voltaire/Secp256k1'
-import type { HashType } from '@tevm/voltaire/Hash'
-import type { Secp256k1SignatureType, Secp256k1PublicKeyType } from '@tevm/voltaire/Secp256k1'
-import type { InvalidSignatureError } from '@tevm/voltaire'
+import type { InvalidSignatureError } from "@tevm/voltaire";
+import type { HashType } from "@tevm/voltaire/Hash";
+import type {
+	Secp256k1PublicKeyType,
+	Secp256k1SignatureType,
+} from "@tevm/voltaire/Secp256k1";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
+import * as Effect from "effect/Effect";
 
 /**
  * Recovers the public key from a secp256k1 signature and message hash.
@@ -83,10 +86,10 @@ import type { InvalidSignatureError } from '@tevm/voltaire'
  * @since 0.0.1
  */
 export const recover = (
-  signature: Secp256k1SignatureType,
-  messageHash: HashType
+	signature: Secp256k1SignatureType,
+	messageHash: HashType,
 ): Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError> =>
-  Effect.try({
-    try: () => Secp256k1.recoverPublicKey(signature, messageHash),
-    catch: (e) => e as InvalidSignatureError
-  })
+	Effect.try({
+		try: () => Secp256k1.recoverPublicKey(signature, messageHash),
+		catch: (e) => e as InvalidSignatureError,
+	});

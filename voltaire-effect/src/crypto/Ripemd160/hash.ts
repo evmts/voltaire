@@ -4,9 +4,9 @@
  * @since 0.0.1
  */
 
-import type { Ripemd160Hash } from '@tevm/voltaire'
-import * as Effect from 'effect/Effect'
-import { Ripemd160Service } from './Ripemd160Service.js'
+import type { Ripemd160Hash } from "@tevm/voltaire";
+import * as Effect from "effect/Effect";
+import { Ripemd160Service } from "./Ripemd160Service.js";
 
 /**
  * Computes the RIPEMD-160 hash of the provided data.
@@ -49,8 +49,10 @@ import { Ripemd160Service } from './Ripemd160Service.js'
  * @see {@link Ripemd160Live} - Production layer
  * @since 0.0.1
  */
-export const hash = (data: Uint8Array): Effect.Effect<Ripemd160Hash, never, Ripemd160Service> =>
-  Effect.gen(function* () {
-    const ripemd160 = yield* Ripemd160Service
-    return yield* ripemd160.hash(data)
-  })
+export const hash = (
+	data: Uint8Array,
+): Effect.Effect<Ripemd160Hash, never, Ripemd160Service> =>
+	Effect.gen(function* () {
+		const ripemd160 = yield* Ripemd160Service;
+		return yield* ripemd160.hash(data);
+	});

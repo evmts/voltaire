@@ -30,5 +30,10 @@
  * @see {@link https://eips.ethereum.org/EIPS/eip-198 | EIP-198}
  * @see {@link https://eips.ethereum.org/EIPS/eip-2565 | EIP-2565}
  */
-export { ModExpService, ModExpLive, ModExpTest, type ModExpServiceShape } from './ModExpService.js'
-export { modexp, modexpBytes, calculateGas } from './operations.js'
+export {
+	ModExpLive,
+	ModExpService,
+	type ModExpServiceShape,
+	ModExpTest,
+} from "./ModExpService.js";
+export { calculateGas, modexp, modexpBytes } from "./operations.js";

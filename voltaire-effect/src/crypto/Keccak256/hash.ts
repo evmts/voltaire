@@ -6,9 +6,9 @@
  * @since 0.0.1
  */
 
-import type { Keccak256Hash } from '@tevm/voltaire'
-import * as Effect from 'effect/Effect'
-import { KeccakService } from './KeccakService.js'
+import type { Keccak256Hash } from "@tevm/voltaire";
+import * as Effect from "effect/Effect";
+import { KeccakService } from "./KeccakService.js";
 
 /**
  * Computes the Keccak-256 hash of the provided data.
@@ -67,8 +67,10 @@ import { KeccakService } from './KeccakService.js'
  * @see {@link KeccakTest} - Test implementation layer
  * @since 0.0.1
  */
-export const hash = (data: Uint8Array): Effect.Effect<Keccak256Hash, never, KeccakService> =>
-  Effect.gen(function* () {
-    const keccak = yield* KeccakService
-    return yield* keccak.hash(data)
-  })
+export const hash = (
+	data: Uint8Array,
+): Effect.Effect<Keccak256Hash, never, KeccakService> =>
+	Effect.gen(function* () {
+		const keccak = yield* KeccakService;
+		return yield* keccak.hash(data);
+	});

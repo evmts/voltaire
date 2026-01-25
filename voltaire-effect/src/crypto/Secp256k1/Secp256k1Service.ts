@@ -6,11 +6,18 @@
  * @since 0.0.1
  */
 
-import * as Context from 'effect/Context'
-import type * as Effect from 'effect/Effect'
-import type { HashType } from '@tevm/voltaire/Hash'
-import type { Secp256k1SignatureType, Secp256k1PublicKeyType } from '@tevm/voltaire/Secp256k1'
-import type { InvalidPrivateKeyError, InvalidSignatureError, CryptoError } from '@tevm/voltaire'
+import type {
+	CryptoError,
+	InvalidPrivateKeyError,
+	InvalidSignatureError,
+} from "@tevm/voltaire";
+import type { HashType } from "@tevm/voltaire/Hash";
+import type {
+	Secp256k1PublicKeyType,
+	Secp256k1SignatureType,
+} from "@tevm/voltaire/Secp256k1";
+import * as Context from "effect/Context";
+import type * as Effect from "effect/Effect";
 
 /**
  * Options for secp256k1 signing operations.
@@ -32,16 +39,16 @@ import type { InvalidPrivateKeyError, InvalidSignatureError, CryptoError } from 
  * @since 0.0.1
  */
 export interface SignOptions {
-  /**
-   * Additional entropy for RFC 6979 nonce generation.
-   *
-   * @description
-   * When set to a Uint8Array, it is mixed into the nonce generation for
-   * additional randomness beyond the deterministic RFC 6979 algorithm.
-   * When set to `true`, random entropy is automatically generated.
-   * When undefined or `false`, standard RFC 6979 is used.
-   */
-  readonly extraEntropy?: Uint8Array | boolean
+	/**
+	 * Additional entropy for RFC 6979 nonce generation.
+	 *
+	 * @description
+	 * When set to a Uint8Array, it is mixed into the nonce generation for
+	 * additional randomness beyond the deterministic RFC 6979 algorithm.
+	 * When set to `true`, random entropy is automatically generated.
+	 * When undefined or `false`, standard RFC 6979 is used.
+	 */
+	readonly extraEntropy?: Uint8Array | boolean;
 }
 
 /**
@@ -56,48 +63,51 @@ export interface SignOptions {
  * @since 0.0.1
  */
 export interface Secp256k1ServiceShape {
-  /**
-   * Signs a message hash using secp256k1 ECDSA.
-   *
-   * @param {HashType} messageHash - The 32-byte message hash to sign
-   * @param {Uint8Array} privateKey - The 32-byte private key
-   * @param {SignOptions} [options] - Optional signing options for extra entropy
-   * @returns {Effect.Effect<Secp256k1SignatureType, InvalidPrivateKeyError | CryptoError>}
-   *   Effect containing the 65-byte recoverable signature
-   */
-  readonly sign: (
-    messageHash: HashType,
-    privateKey: Uint8Array,
-    options?: SignOptions
-  ) => Effect.Effect<Secp256k1SignatureType, InvalidPrivateKeyError | CryptoError>
+	/**
+	 * Signs a message hash using secp256k1 ECDSA.
+	 *
+	 * @param {HashType} messageHash - The 32-byte message hash to sign
+	 * @param {Uint8Array} privateKey - The 32-byte private key
+	 * @param {SignOptions} [options] - Optional signing options for extra entropy
+	 * @returns {Effect.Effect<Secp256k1SignatureType, InvalidPrivateKeyError | CryptoError>}
+	 *   Effect containing the 65-byte recoverable signature
+	 */
+	readonly sign: (
+		messageHash: HashType,
+		privateKey: Uint8Array,
+		options?: SignOptions,
+	) => Effect.Effect<
+		Secp256k1SignatureType,
+		InvalidPrivateKeyError | CryptoError
+	>;
 
-  /**
-   * Recovers the public key from a signature and message hash.
-   *
-   * @param {Secp256k1SignatureType} signature - The 65-byte recoverable signature
-   * @param {HashType} messageHash - The 32-byte message hash
-   * @returns {Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError>}
-   *   Effect containing the 65-byte uncompressed public key
-   */
-  readonly recover: (
-    signature: Secp256k1SignatureType,
-    messageHash: HashType
-  ) => Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError>
+	/**
+	 * Recovers the public key from a signature and message hash.
+	 *
+	 * @param {Secp256k1SignatureType} signature - The 65-byte recoverable signature
+	 * @param {HashType} messageHash - The 32-byte message hash
+	 * @returns {Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError>}
+	 *   Effect containing the 65-byte uncompressed public key
+	 */
+	readonly recover: (
+		signature: Secp256k1SignatureType,
+		messageHash: HashType,
+	) => Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError>;
 
-  /**
-   * Verifies a secp256k1 signature against a message hash and public key.
-   *
-   * @param {Secp256k1SignatureType} signature - The 65-byte signature
-   * @param {HashType} messageHash - The 32-byte message hash
-   * @param {Secp256k1PublicKeyType} publicKey - The 65-byte uncompressed public key
-   * @returns {Effect.Effect<boolean, InvalidSignatureError>}
-   *   Effect containing true if signature is valid
-   */
-  readonly verify: (
-    signature: Secp256k1SignatureType,
-    messageHash: HashType,
-    publicKey: Secp256k1PublicKeyType
-  ) => Effect.Effect<boolean, InvalidSignatureError>
+	/**
+	 * Verifies a secp256k1 signature against a message hash and public key.
+	 *
+	 * @param {Secp256k1SignatureType} signature - The 65-byte signature
+	 * @param {HashType} messageHash - The 32-byte message hash
+	 * @param {Secp256k1PublicKeyType} publicKey - The 65-byte uncompressed public key
+	 * @returns {Effect.Effect<boolean, InvalidSignatureError>}
+	 *   Effect containing true if signature is valid
+	 */
+	readonly verify: (
+		signature: Secp256k1SignatureType,
+		messageHash: HashType,
+		publicKey: Secp256k1PublicKeyType,
+	) => Effect.Effect<boolean, InvalidSignatureError>;
 }
 
 /**
@@ -170,7 +180,7 @@ export interface Secp256k1ServiceShape {
  * @see {@link verify} - Standalone verify function
  * @since 0.0.1
  */
-export class Secp256k1Service extends Context.Tag('Secp256k1Service')<
-  Secp256k1Service,
-  Secp256k1ServiceShape
+export class Secp256k1Service extends Context.Tag("Secp256k1Service")<
+	Secp256k1Service,
+	Secp256k1ServiceShape
 >() {}

@@ -31,12 +31,13 @@
  *
  * @see {@link https://csrc.nist.gov/pubs/sp/800/38/d/final | NIST SP 800-38D}
  */
-export { AesGcmService, type AesGcmServiceShape } from './AesGcmService.js'
-export { encrypt, decrypt, generateKey, generateNonce } from './operations.js'
-import * as Layer from 'effect/Layer'
-import * as Effect from 'effect/Effect'
-import { AesGcmService } from './AesGcmService.js'
-import { encrypt, decrypt, generateKey, generateNonce } from './operations.js'
+export { AesGcmService, type AesGcmServiceShape } from "./AesGcmService.js";
+export { decrypt, encrypt, generateKey, generateNonce } from "./operations.js";
+
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import { AesGcmService } from "./AesGcmService.js";
+import { decrypt, encrypt, generateKey, generateNonce } from "./operations.js";
 
 /**
  * Production layer for AesGcmService using Web Crypto API.
@@ -61,11 +62,12 @@ import { encrypt, decrypt, generateKey, generateNonce } from './operations.js'
  * @see {@link AesGcmTest} for unit testing
  */
 export const AesGcmLive = Layer.succeed(AesGcmService, {
-  encrypt: (key, plaintext, nonce, aad) => encrypt(key, plaintext, nonce, aad),
-  decrypt: (key, ciphertext, nonce, aad) => decrypt(key, ciphertext, nonce, aad),
-  generateKey: (bits) => generateKey(bits ?? 256),
-  generateNonce: () => generateNonce(),
-})
+	encrypt: (key, plaintext, nonce, aad) => encrypt(key, plaintext, nonce, aad),
+	decrypt: (key, ciphertext, nonce, aad) =>
+		decrypt(key, ciphertext, nonce, aad),
+	generateKey: (bits) => generateKey(bits ?? 256),
+	generateNonce: () => generateNonce(),
+});
 
 /**
  * Test layer for AesGcmService returning deterministic mock values.
@@ -87,8 +89,8 @@ export const AesGcmLive = Layer.succeed(AesGcmService, {
  * @since 0.0.1
  */
 export const AesGcmTest = Layer.succeed(AesGcmService, {
-  encrypt: () => Effect.succeed(new Uint8Array(32)),
-  decrypt: () => Effect.succeed(new Uint8Array(16)),
-  generateKey: () => Effect.succeed(new Uint8Array(32)),
-  generateNonce: () => Effect.succeed(new Uint8Array(12)),
-})
+	encrypt: () => Effect.succeed(new Uint8Array(32)),
+	decrypt: () => Effect.succeed(new Uint8Array(16)),
+	generateKey: () => Effect.succeed(new Uint8Array(32)),
+	generateNonce: () => Effect.succeed(new Uint8Array(12)),
+});

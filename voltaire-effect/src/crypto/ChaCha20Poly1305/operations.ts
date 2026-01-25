@@ -3,8 +3,8 @@
  * @module ChaCha20Poly1305/operations
  * @since 0.0.1
  */
-import * as Effect from 'effect/Effect'
-import { ChaCha20Poly1305Service } from './ChaCha20Poly1305Service.js'
+import * as Effect from "effect/Effect";
+import { ChaCha20Poly1305Service } from "./ChaCha20Poly1305Service.js";
 
 /**
  * Encrypts plaintext using ChaCha20-Poly1305.
@@ -36,15 +36,15 @@ import { ChaCha20Poly1305Service } from './ChaCha20Poly1305Service.js'
  * @since 0.0.1
  */
 export const encrypt = (
-  plaintext: Uint8Array,
-  key: Uint8Array,
-  nonce: Uint8Array,
-  additionalData?: Uint8Array
+	plaintext: Uint8Array,
+	key: Uint8Array,
+	nonce: Uint8Array,
+	additionalData?: Uint8Array,
 ): Effect.Effect<Uint8Array, never, ChaCha20Poly1305Service> =>
-  Effect.gen(function* () {
-    const service = yield* ChaCha20Poly1305Service
-    return yield* service.encrypt(plaintext, key, nonce, additionalData)
-  })
+	Effect.gen(function* () {
+		const service = yield* ChaCha20Poly1305Service;
+		return yield* service.encrypt(plaintext, key, nonce, additionalData);
+	});
 
 /**
  * Decrypts ciphertext using ChaCha20-Poly1305.
@@ -77,15 +77,15 @@ export const encrypt = (
  * @since 0.0.1
  */
 export const decrypt = (
-  ciphertext: Uint8Array,
-  key: Uint8Array,
-  nonce: Uint8Array,
-  additionalData?: Uint8Array
+	ciphertext: Uint8Array,
+	key: Uint8Array,
+	nonce: Uint8Array,
+	additionalData?: Uint8Array,
 ): Effect.Effect<Uint8Array, never, ChaCha20Poly1305Service> =>
-  Effect.gen(function* () {
-    const service = yield* ChaCha20Poly1305Service
-    return yield* service.decrypt(ciphertext, key, nonce, additionalData)
-  })
+	Effect.gen(function* () {
+		const service = yield* ChaCha20Poly1305Service;
+		return yield* service.decrypt(ciphertext, key, nonce, additionalData);
+	});
 
 /**
  * Generates a cryptographically random 256-bit key.
@@ -109,11 +109,15 @@ export const decrypt = (
  * @see {@link generateNonce} to generate a nonce
  * @since 0.0.1
  */
-export const generateKey = (): Effect.Effect<Uint8Array, never, ChaCha20Poly1305Service> =>
-  Effect.gen(function* () {
-    const service = yield* ChaCha20Poly1305Service
-    return yield* service.generateKey()
-  })
+export const generateKey = (): Effect.Effect<
+	Uint8Array,
+	never,
+	ChaCha20Poly1305Service
+> =>
+	Effect.gen(function* () {
+		const service = yield* ChaCha20Poly1305Service;
+		return yield* service.generateKey();
+	});
 
 /**
  * Generates a cryptographically random 96-bit nonce.
@@ -137,8 +141,12 @@ export const generateKey = (): Effect.Effect<Uint8Array, never, ChaCha20Poly1305
  * @see {@link generateKey} to generate a key
  * @since 0.0.1
  */
-export const generateNonce = (): Effect.Effect<Uint8Array, never, ChaCha20Poly1305Service> =>
-  Effect.gen(function* () {
-    const service = yield* ChaCha20Poly1305Service
-    return yield* service.generateNonce()
-  })
+export const generateNonce = (): Effect.Effect<
+	Uint8Array,
+	never,
+	ChaCha20Poly1305Service
+> =>
+	Effect.gen(function* () {
+		const service = yield* ChaCha20Poly1305Service;
+		return yield* service.generateNonce();
+	});

@@ -29,7 +29,16 @@
  * @see {@link https://eips.ethereum.org/EIPS/eip-191 | EIP-191}
  * @see {@link https://eips.ethereum.org/EIPS/eip-712 | EIP-712}
  */
-export { fromPrivateKey, getAddress, getAddress as getSignerAddress, recoverTransactionAddress } from './operations.js'
-export { SignersService, type SignersServiceShape, type Signer } from './SignersService.js'
-export { SignersLive } from './SignersLive.js'
-export { SignersTest } from './SignersTest.js'
+export {
+	fromPrivateKey,
+	getAddress,
+	getAddress as getSignerAddress,
+	recoverTransactionAddress,
+} from "./operations.js";
+export { SignersLive } from "./SignersLive.js";
+export {
+	type Signer,
+	SignersService,
+	type SignersServiceShape,
+} from "./SignersService.js";
+export { SignersTest } from "./SignersTest.js";

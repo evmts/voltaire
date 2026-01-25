@@ -3,9 +3,14 @@
  * @module X25519/computeSecret
  * @since 0.0.1
  */
-import * as Effect from 'effect/Effect'
-import * as X25519 from '@tevm/voltaire/X25519'
-import type { InvalidSecretKeyError, InvalidPublicKeyError, X25519Error } from '@tevm/voltaire/X25519'
+
+import type {
+	InvalidPublicKeyError,
+	InvalidSecretKeyError,
+	X25519Error,
+} from "@tevm/voltaire/X25519";
+import * as X25519 from "@tevm/voltaire/X25519";
+import * as Effect from "effect/Effect";
 
 /**
  * Computes shared secret from your secret key and their public key (ECDH).
@@ -43,10 +48,14 @@ import type { InvalidSecretKeyError, InvalidPublicKeyError, X25519Error } from '
  * @since 0.0.1
  */
 export const computeSecret = (
-  secretKey: Uint8Array,
-  publicKey: Uint8Array
-): Effect.Effect<Uint8Array, InvalidSecretKeyError | InvalidPublicKeyError | X25519Error> =>
-  Effect.try({
-    try: () => X25519.scalarmult(secretKey as any, publicKey as any),
-    catch: (e) => e as InvalidSecretKeyError | InvalidPublicKeyError | X25519Error
-  })
+	secretKey: Uint8Array,
+	publicKey: Uint8Array,
+): Effect.Effect<
+	Uint8Array,
+	InvalidSecretKeyError | InvalidPublicKeyError | X25519Error
+> =>
+	Effect.try({
+		try: () => X25519.scalarmult(secretKey as any, publicKey as any),
+		catch: (e) =>
+			e as InvalidSecretKeyError | InvalidPublicKeyError | X25519Error,
+	});

@@ -4,9 +4,12 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import * as Ed25519 from '@tevm/voltaire/Ed25519'
-import type { InvalidSignatureError, InvalidPublicKeyError } from '@tevm/voltaire/Ed25519'
+import type {
+	InvalidPublicKeyError,
+	InvalidSignatureError,
+} from "@tevm/voltaire/Ed25519";
+import * as Ed25519 from "@tevm/voltaire/Ed25519";
+import * as Effect from "effect/Effect";
 
 /**
  * Verifies an Ed25519 signature against a message and public key.
@@ -62,11 +65,11 @@ import type { InvalidSignatureError, InvalidPublicKeyError } from '@tevm/voltair
  * @since 0.0.1
  */
 export const verify = (
-  signature: Uint8Array,
-  message: Uint8Array,
-  publicKey: Uint8Array
+	signature: Uint8Array,
+	message: Uint8Array,
+	publicKey: Uint8Array,
 ): Effect.Effect<boolean, InvalidSignatureError | InvalidPublicKeyError> =>
-  Effect.try({
-    try: () => Ed25519.verify(signature as any, message, publicKey as any),
-    catch: (e) => e as InvalidSignatureError | InvalidPublicKeyError
-  })
+	Effect.try({
+		try: () => Ed25519.verify(signature as any, message, publicKey as any),
+		catch: (e) => e as InvalidSignatureError | InvalidPublicKeyError,
+	});

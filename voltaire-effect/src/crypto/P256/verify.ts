@@ -4,11 +4,13 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import * as P256 from '@tevm/voltaire/P256'
-import type { HashType } from '@tevm/voltaire/Hash'
-import type { P256SignatureType } from '@tevm/voltaire/P256'
-import type { InvalidPublicKeyError } from '@tevm/voltaire/P256'
+import type { HashType } from "@tevm/voltaire/Hash";
+import type {
+	InvalidPublicKeyError,
+	P256SignatureType,
+} from "@tevm/voltaire/P256";
+import * as P256 from "@tevm/voltaire/P256";
+import * as Effect from "effect/Effect";
 
 /**
  * Verifies a P-256 signature against a message hash and public key.
@@ -63,11 +65,11 @@ import type { InvalidPublicKeyError } from '@tevm/voltaire/P256'
  * @since 0.0.1
  */
 export const verify = (
-  signature: P256SignatureType,
-  messageHash: HashType | Uint8Array,
-  publicKey: Uint8Array
+	signature: P256SignatureType,
+	messageHash: HashType | Uint8Array,
+	publicKey: Uint8Array,
 ): Effect.Effect<boolean, InvalidPublicKeyError> =>
-  Effect.try({
-    try: () => P256.verify(signature, messageHash as any, publicKey as any),
-    catch: (e) => e as InvalidPublicKeyError
-  })
+	Effect.try({
+		try: () => P256.verify(signature, messageHash as any, publicKey as any),
+		catch: (e) => e as InvalidPublicKeyError,
+	});

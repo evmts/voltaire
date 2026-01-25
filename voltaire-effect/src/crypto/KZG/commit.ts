@@ -3,9 +3,9 @@
  * @module KZG/commit
  * @since 0.0.1
  */
-import type { KzgBlobType, KzgCommitmentType } from '@tevm/voltaire'
-import * as Effect from 'effect/Effect'
-import { KZGService } from './KZGService.js'
+import type { KzgBlobType, KzgCommitmentType } from "@tevm/voltaire";
+import * as Effect from "effect/Effect";
+import { KZGService } from "./KZGService.js";
 
 /**
  * Computes a KZG commitment for a blob.
@@ -32,11 +32,13 @@ import { KZGService } from './KZGService.js'
  * @see {@link https://eips.ethereum.org/EIPS/eip-4844 | EIP-4844}
  * @since 0.0.1
  */
-export const blobToKzgCommitment = (blob: KzgBlobType): Effect.Effect<KzgCommitmentType, never, KZGService> =>
-  Effect.gen(function* () {
-    const kzg = yield* KZGService
-    return yield* kzg.blobToKzgCommitment(blob)
-  })
+export const blobToKzgCommitment = (
+	blob: KzgBlobType,
+): Effect.Effect<KzgCommitmentType, never, KZGService> =>
+	Effect.gen(function* () {
+		const kzg = yield* KZGService;
+		return yield* kzg.blobToKzgCommitment(blob);
+	});
 
 /**
  * Computes a KZG proof for a blob and commitment.
@@ -66,8 +68,11 @@ export const blobToKzgCommitment = (blob: KzgBlobType): Effect.Effect<KzgCommitm
  * @see {@link verifyBlobKzgProof} to verify the proof
  * @since 0.0.1
  */
-export const computeBlobKzgProof = (blob: KzgBlobType, commitment: KzgCommitmentType): Effect.Effect<import('@tevm/voltaire').KzgProofType, never, KZGService> =>
-  Effect.gen(function* () {
-    const kzg = yield* KZGService
-    return yield* kzg.computeBlobKzgProof(blob, commitment)
-  })
+export const computeBlobKzgProof = (
+	blob: KzgBlobType,
+	commitment: KzgCommitmentType,
+): Effect.Effect<import("@tevm/voltaire").KzgProofType, never, KZGService> =>
+	Effect.gen(function* () {
+		const kzg = yield* KZGService;
+		return yield* kzg.computeBlobKzgProof(blob, commitment);
+	});

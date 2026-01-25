@@ -3,11 +3,18 @@
  * @module EIP712/operations
  * @since 0.0.1
  */
-import type { TypedData, Signature, Domain, TypeDefinitions, Message } from '@tevm/voltaire/EIP712'
-import type { HashType } from '@tevm/voltaire/Hash'
-import type { AddressType } from '@tevm/voltaire/Address'
-import * as Effect from 'effect/Effect'
-import { EIP712Service } from './EIP712Service.js'
+
+import type { AddressType } from "@tevm/voltaire/Address";
+import type {
+	Domain,
+	Message,
+	Signature,
+	TypeDefinitions,
+	TypedData,
+} from "@tevm/voltaire/EIP712";
+import type { HashType } from "@tevm/voltaire/Hash";
+import * as Effect from "effect/Effect";
+import { EIP712Service } from "./EIP712Service.js";
 
 /**
  * Hashes typed structured data according to EIP-712.
@@ -31,11 +38,13 @@ import { EIP712Service } from './EIP712Service.js'
  * @see {@link signTypedData} to sign the hash
  * @since 0.0.1
  */
-export const hashTypedData = (typedData: TypedData): Effect.Effect<HashType, never, EIP712Service> =>
-  Effect.gen(function* () {
-    const eip712 = yield* EIP712Service
-    return yield* eip712.hashTypedData(typedData)
-  })
+export const hashTypedData = (
+	typedData: TypedData,
+): Effect.Effect<HashType, never, EIP712Service> =>
+	Effect.gen(function* () {
+		const eip712 = yield* EIP712Service;
+		return yield* eip712.hashTypedData(typedData);
+	});
 
 /**
  * Signs typed structured data according to EIP-712.
@@ -61,11 +70,14 @@ export const hashTypedData = (typedData: TypedData): Effect.Effect<HashType, nev
  * @see {@link recoverAddress} to recover signer address
  * @since 0.0.1
  */
-export const signTypedData = (typedData: TypedData, privateKey: Uint8Array | string): Effect.Effect<Signature, never, EIP712Service> =>
-  Effect.gen(function* () {
-    const eip712 = yield* EIP712Service
-    return yield* eip712.signTypedData(typedData, privateKey)
-  })
+export const signTypedData = (
+	typedData: TypedData,
+	privateKey: Uint8Array | string,
+): Effect.Effect<Signature, never, EIP712Service> =>
+	Effect.gen(function* () {
+		const eip712 = yield* EIP712Service;
+		return yield* eip712.signTypedData(typedData, privateKey);
+	});
 
 /**
  * Verifies an EIP-712 typed data signature.
@@ -94,11 +106,15 @@ export const signTypedData = (typedData: TypedData, privateKey: Uint8Array | str
  * @see {@link signTypedData} to create signatures
  * @since 0.0.1
  */
-export const verifyTypedData = (signature: Signature, typedData: TypedData, address: AddressType): Effect.Effect<boolean, never, EIP712Service> =>
-  Effect.gen(function* () {
-    const eip712 = yield* EIP712Service
-    return yield* eip712.verifyTypedData(signature, typedData, address)
-  })
+export const verifyTypedData = (
+	signature: Signature,
+	typedData: TypedData,
+	address: AddressType,
+): Effect.Effect<boolean, never, EIP712Service> =>
+	Effect.gen(function* () {
+		const eip712 = yield* EIP712Service;
+		return yield* eip712.verifyTypedData(signature, typedData, address);
+	});
 
 /**
  * Recovers the signer address from an EIP-712 signature.
@@ -127,11 +143,14 @@ export const verifyTypedData = (signature: Signature, typedData: TypedData, addr
  * @see {@link verifyTypedData} for simpler verification
  * @since 0.0.1
  */
-export const recoverAddress = (signature: Signature, typedData: TypedData): Effect.Effect<AddressType, never, EIP712Service> =>
-  Effect.gen(function* () {
-    const eip712 = yield* EIP712Service
-    return yield* eip712.recoverAddress(signature, typedData)
-  })
+export const recoverAddress = (
+	signature: Signature,
+	typedData: TypedData,
+): Effect.Effect<AddressType, never, EIP712Service> =>
+	Effect.gen(function* () {
+		const eip712 = yield* EIP712Service;
+		return yield* eip712.recoverAddress(signature, typedData);
+	});
 
 /**
  * Hashes a domain separator according to EIP-712.
@@ -156,11 +175,13 @@ export const recoverAddress = (signature: Signature, typedData: TypedData): Effe
  * @see {@link hashStruct} for arbitrary struct hashing
  * @since 0.0.1
  */
-export const hashDomain = (domain: Domain): Effect.Effect<HashType, never, EIP712Service> =>
-  Effect.gen(function* () {
-    const eip712 = yield* EIP712Service
-    return yield* eip712.hashDomain(domain)
-  })
+export const hashDomain = (
+	domain: Domain,
+): Effect.Effect<HashType, never, EIP712Service> =>
+	Effect.gen(function* () {
+		const eip712 = yield* EIP712Service;
+		return yield* eip712.hashDomain(domain);
+	});
 
 /**
  * Hashes a struct according to EIP-712 encoding.
@@ -188,8 +209,12 @@ export const hashDomain = (domain: Domain): Effect.Effect<HashType, never, EIP71
  * @see {@link hashDomain} for domain separator hashing
  * @since 0.0.1
  */
-export const hashStruct = (primaryType: string, data: Message, types: TypeDefinitions): Effect.Effect<HashType, never, EIP712Service> =>
-  Effect.gen(function* () {
-    const eip712 = yield* EIP712Service
-    return yield* eip712.hashStruct(primaryType, data, types)
-  })
+export const hashStruct = (
+	primaryType: string,
+	data: Message,
+	types: TypeDefinitions,
+): Effect.Effect<HashType, never, EIP712Service> =>
+	Effect.gen(function* () {
+		const eip712 = yield* EIP712Service;
+		return yield* eip712.hashStruct(primaryType, data, types);
+	});

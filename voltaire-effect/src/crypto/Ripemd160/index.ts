@@ -26,5 +26,10 @@
  * @module Ripemd160
  * @since 0.0.1
  */
-export { Ripemd160Service, Ripemd160Live, Ripemd160Test } from './Ripemd160Service.js'
-export { hash } from './hash.js'
+
+export { hash } from "./hash.js";
+export {
+	Ripemd160Live,
+	Ripemd160Service,
+	Ripemd160Test,
+} from "./Ripemd160Service.js";

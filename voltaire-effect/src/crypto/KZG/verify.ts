@@ -3,9 +3,13 @@
  * @module KZG/verify
  * @since 0.0.1
  */
-import type { KzgBlobType, KzgCommitmentType, KzgProofType } from '@tevm/voltaire'
-import * as Effect from 'effect/Effect'
-import { KZGService } from './KZGService.js'
+import type {
+	KzgBlobType,
+	KzgCommitmentType,
+	KzgProofType,
+} from "@tevm/voltaire";
+import * as Effect from "effect/Effect";
+import { KZGService } from "./KZGService.js";
 
 /**
  * Verifies a KZG proof against a blob and commitment.
@@ -39,11 +43,11 @@ import { KZGService } from './KZGService.js'
  * @since 0.0.1
  */
 export const verifyBlobKzgProof = (
-  blob: KzgBlobType,
-  commitment: KzgCommitmentType,
-  proof: KzgProofType
+	blob: KzgBlobType,
+	commitment: KzgCommitmentType,
+	proof: KzgProofType,
 ): Effect.Effect<boolean, never, KZGService> =>
-  Effect.gen(function* () {
-    const kzg = yield* KZGService
-    return yield* kzg.verifyBlobKzgProof(blob, commitment, proof)
-  })
+	Effect.gen(function* () {
+		const kzg = yield* KZGService;
+		return yield* kzg.verifyBlobKzgProof(blob, commitment, proof);
+	});

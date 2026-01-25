@@ -30,5 +30,10 @@
  * @module HMAC
  * @since 0.0.1
  */
-export { HMACService, HMACLive, HMACTest, type HMACServiceShape } from './HMACService.js'
-export { hmacSha256, hmacSha512 } from './operations.js'
+export {
+	HMACLive,
+	HMACService,
+	type HMACServiceShape,
+	HMACTest,
+} from "./HMACService.js";
+export { hmacSha256, hmacSha512 } from "./operations.js";

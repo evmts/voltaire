@@ -3,11 +3,11 @@
  * @module X25519/X25519Live
  * @since 0.0.1
  */
-import * as Layer from 'effect/Layer'
-import { X25519Service } from './X25519Service.js'
-import { generateKeyPair } from './generateKeyPair.js'
-import { getPublicKey } from './getPublicKey.js'
-import { computeSecret } from './computeSecret.js'
+import * as Layer from "effect/Layer";
+import { computeSecret } from "./computeSecret.js";
+import { generateKeyPair } from "./generateKeyPair.js";
+import { getPublicKey } from "./getPublicKey.js";
+import { X25519Service } from "./X25519Service.js";
 
 /**
  * Production layer for X25519Service using native X25519 implementation.
@@ -30,11 +30,8 @@ import { computeSecret } from './computeSecret.js'
  * @since 0.0.1
  * @see {@link X25519Test} for unit testing
  */
-export const X25519Live = Layer.succeed(
-  X25519Service,
-  {
-    generateKeyPair,
-    getPublicKey,
-    computeSecret
-  }
-)
+export const X25519Live = Layer.succeed(X25519Service, {
+	generateKeyPair,
+	getPublicKey,
+	computeSecret,
+});

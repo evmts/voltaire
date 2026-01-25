@@ -43,5 +43,6 @@
  * @module SHA256
  * @since 0.0.1
  */
-export { SHA256Service, SHA256Live, SHA256Test } from './SHA256Service.js'
-export { hash } from './hash.js'
+
+export { hash } from "./hash.js";
+export { SHA256Live, SHA256Service, SHA256Test } from "./SHA256Service.js";

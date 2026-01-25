@@ -6,12 +6,12 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import * as Secp256k1 from '@tevm/voltaire/Secp256k1'
-import type { HashType } from '@tevm/voltaire/Hash'
-import type { Secp256k1SignatureType } from '@tevm/voltaire/Secp256k1'
-import type { InvalidPrivateKeyError, CryptoError } from '@tevm/voltaire'
-import type { SignOptions } from './Secp256k1Service.js'
+import type { CryptoError, InvalidPrivateKeyError } from "@tevm/voltaire";
+import type { HashType } from "@tevm/voltaire/Hash";
+import type { Secp256k1SignatureType } from "@tevm/voltaire/Secp256k1";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
+import * as Effect from "effect/Effect";
+import type { SignOptions } from "./Secp256k1Service.js";
 
 /**
  * Signs a message hash using the secp256k1 elliptic curve.
@@ -82,11 +82,14 @@ import type { SignOptions } from './Secp256k1Service.js'
  * @since 0.0.1
  */
 export const sign = (
-  messageHash: HashType,
-  privateKey: Uint8Array,
-  options?: SignOptions
-): Effect.Effect<Secp256k1SignatureType, InvalidPrivateKeyError | CryptoError> =>
-  Effect.try({
-    try: () => Secp256k1.sign(messageHash, privateKey as any, options),
-    catch: (e) => e as InvalidPrivateKeyError | CryptoError
-  })
+	messageHash: HashType,
+	privateKey: Uint8Array,
+	options?: SignOptions,
+): Effect.Effect<
+	Secp256k1SignatureType,
+	InvalidPrivateKeyError | CryptoError
+> =>
+	Effect.try({
+		try: () => Secp256k1.sign(messageHash, privateKey as any, options),
+		catch: (e) => e as InvalidPrivateKeyError | CryptoError,
+	});

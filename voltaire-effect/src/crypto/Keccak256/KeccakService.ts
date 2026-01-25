@@ -10,11 +10,11 @@
  * @since 0.0.1
  */
 
-import { Keccak256 } from '@tevm/voltaire'
-import type { Keccak256Hash } from '@tevm/voltaire'
-import * as Effect from 'effect/Effect'
-import * as Context from 'effect/Context'
-import * as Layer from 'effect/Layer'
+import type { Keccak256Hash } from "@tevm/voltaire";
+import { Keccak256 } from "@tevm/voltaire";
+import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 
 /**
  * Shape interface for the Keccak-256 hashing service.
@@ -26,13 +26,13 @@ import * as Layer from 'effect/Layer'
  * @since 0.0.1
  */
 export interface KeccakServiceShape {
-  /**
-   * Computes the Keccak-256 hash of input data.
-   *
-   * @param {Uint8Array} data - The input bytes to hash (any length)
-   * @returns {Effect.Effect<Keccak256Hash>} Effect containing the 32-byte hash
-   */
-  readonly hash: (data: Uint8Array) => Effect.Effect<Keccak256Hash>
+	/**
+	 * Computes the Keccak-256 hash of input data.
+	 *
+	 * @param {Uint8Array} data - The input bytes to hash (any length)
+	 * @returns {Effect.Effect<Keccak256Hash>} Effect containing the 32-byte hash
+	 */
+	readonly hash: (data: Uint8Array) => Effect.Effect<Keccak256Hash>;
 }
 
 /**
@@ -92,8 +92,8 @@ export interface KeccakServiceShape {
  * @since 0.0.1
  */
 export class KeccakService extends Context.Tag("KeccakService")<
-  KeccakService,
-  KeccakServiceShape
+	KeccakService,
+	KeccakServiceShape
 >() {}
 
 /**
@@ -133,8 +133,8 @@ export class KeccakService extends Context.Tag("KeccakService")<
  * @since 0.0.1
  */
 export const KeccakLive = Layer.succeed(KeccakService, {
-  hash: (data) => Effect.sync(() => Keccak256.hash(data))
-})
+	hash: (data) => Effect.sync(() => Keccak256.hash(data)),
+});
 
 /**
  * Test layer for KeccakService returning deterministic zero-filled hashes.
@@ -173,5 +173,5 @@ export const KeccakLive = Layer.succeed(KeccakService, {
  * @since 0.0.1
  */
 export const KeccakTest = Layer.succeed(KeccakService, {
-  hash: (_data) => Effect.sync(() => new Uint8Array(32) as Keccak256Hash)
-})
+	hash: (_data) => Effect.sync(() => new Uint8Array(32) as Keccak256Hash),
+});

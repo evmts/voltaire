@@ -5,11 +5,11 @@
  * @since 0.0.1
  */
 
-import { Blake2 } from '@tevm/voltaire'
-import type { Blake2Hash } from '@tevm/voltaire'
-import * as Effect from 'effect/Effect'
-import * as Context from 'effect/Context'
-import * as Layer from 'effect/Layer'
+import type { Blake2Hash } from "@tevm/voltaire";
+import { Blake2 } from "@tevm/voltaire";
+import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 
 /**
  * Blake2 hashing service for Effect-based applications.
@@ -43,22 +43,25 @@ import * as Layer from 'effect/Layer'
  * @since 0.0.1
  */
 export class Blake2Service extends Context.Tag("Blake2Service")<
-  Blake2Service,
-  {
-    /**
-     * Computes the Blake2b hash of input data.
-     *
-     * @description
-     * Hashes arbitrary data using Blake2b algorithm. Output length is configurable
-     * from 1 to 64 bytes, defaulting to 64 bytes for maximum security.
-     *
-     * @param data - The input bytes to hash
-     * @param outputLength - Desired output length in bytes (1-64, default: 64)
-     * @returns Effect containing the hash as a branded Blake2Hash type
-     * @throws Never - This operation is infallible
-     */
-    readonly hash: (data: Uint8Array, outputLength?: number) => Effect.Effect<Blake2Hash>
-  }
+	Blake2Service,
+	{
+		/**
+		 * Computes the Blake2b hash of input data.
+		 *
+		 * @description
+		 * Hashes arbitrary data using Blake2b algorithm. Output length is configurable
+		 * from 1 to 64 bytes, defaulting to 64 bytes for maximum security.
+		 *
+		 * @param data - The input bytes to hash
+		 * @param outputLength - Desired output length in bytes (1-64, default: 64)
+		 * @returns Effect containing the hash as a branded Blake2Hash type
+		 * @throws Never - This operation is infallible
+		 */
+		readonly hash: (
+			data: Uint8Array,
+			outputLength?: number,
+		) => Effect.Effect<Blake2Hash>;
+	}
 >() {}
 
 /**
@@ -83,8 +86,9 @@ export class Blake2Service extends Context.Tag("Blake2Service")<
  * @since 0.0.1
  */
 export const Blake2Live = Layer.succeed(Blake2Service, {
-  hash: (data, outputLength = 64) => Effect.sync(() => Blake2.hash(data, outputLength))
-})
+	hash: (data, outputLength = 64) =>
+		Effect.sync(() => Blake2.hash(data, outputLength)),
+});
 
 /**
  * Test layer for Blake2Service returning deterministic zero-filled hashes.
@@ -112,5 +116,6 @@ export const Blake2Live = Layer.succeed(Blake2Service, {
  * @since 0.0.1
  */
 export const Blake2Test = Layer.succeed(Blake2Service, {
-  hash: (_data, outputLength = 64) => Effect.sync(() => new Uint8Array(outputLength) as Blake2Hash)
-})
+	hash: (_data, outputLength = 64) =>
+		Effect.sync(() => new Uint8Array(outputLength) as Blake2Hash),
+});

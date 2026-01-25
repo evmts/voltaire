@@ -6,32 +6,38 @@
  * @since 0.0.1
  */
 
-import * as Layer from 'effect/Layer'
-import * as Effect from 'effect/Effect'
-import { Secp256k1Service, type Secp256k1ServiceShape } from './Secp256k1Service.js'
-import type { Secp256k1SignatureType, Secp256k1PublicKeyType } from '@tevm/voltaire/Secp256k1'
+import type {
+	Secp256k1PublicKeyType,
+	Secp256k1SignatureType,
+} from "@tevm/voltaire/Secp256k1";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import {
+	Secp256k1Service,
+	type Secp256k1ServiceShape,
+} from "./Secp256k1Service.js";
 
 /**
  * Mock 65-byte signature filled with zeros.
  * @internal
  */
-const mockSignature = new Uint8Array(65) as unknown as Secp256k1SignatureType
+const mockSignature = new Uint8Array(65) as unknown as Secp256k1SignatureType;
 
 /**
  * Mock 65-byte public key filled with zeros.
  * @internal
  */
-const mockPublicKey = new Uint8Array(65) as unknown as Secp256k1PublicKeyType
+const mockPublicKey = new Uint8Array(65) as unknown as Secp256k1PublicKeyType;
 
 /**
  * Test implementation of Secp256k1ServiceShape.
  * @internal
  */
 const testImpl: Secp256k1ServiceShape = {
-  sign: (_messageHash, _privateKey, _options) => Effect.succeed(mockSignature),
-  recover: (_signature, _messageHash) => Effect.succeed(mockPublicKey),
-  verify: (_signature, _messageHash, _publicKey) => Effect.succeed(true)
-}
+	sign: (_messageHash, _privateKey, _options) => Effect.succeed(mockSignature),
+	recover: (_signature, _messageHash) => Effect.succeed(mockPublicKey),
+	verify: (_signature, _messageHash, _publicKey) => Effect.succeed(true),
+};
 
 /**
  * Test layer for Secp256k1Service returning deterministic mock values.
@@ -92,4 +98,4 @@ const testImpl: Secp256k1ServiceShape = {
  * @see {@link Secp256k1Live} - Production implementation
  * @since 0.0.1
  */
-export const Secp256k1Test = Layer.succeed(Secp256k1Service, testImpl)
+export const Secp256k1Test = Layer.succeed(Secp256k1Service, testImpl);

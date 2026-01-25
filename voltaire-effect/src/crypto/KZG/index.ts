@@ -30,6 +30,12 @@
  *
  * @see {@link https://eips.ethereum.org/EIPS/eip-4844 | EIP-4844}
  */
-export { KZGService, KZGLive, KZGTest, type KZGServiceShape } from './KZGService.js'
-export { blobToKzgCommitment, computeBlobKzgProof } from './commit.js'
-export { verifyBlobKzgProof } from './verify.js'
+
+export { blobToKzgCommitment, computeBlobKzgProof } from "./commit.js";
+export {
+	KZGLive,
+	KZGService,
+	type KZGServiceShape,
+	KZGTest,
+} from "./KZGService.js";
+export { verifyBlobKzgProof } from "./verify.js";

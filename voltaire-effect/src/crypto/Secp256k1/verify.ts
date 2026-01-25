@@ -6,11 +6,14 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import * as Secp256k1 from '@tevm/voltaire/Secp256k1'
-import type { HashType } from '@tevm/voltaire/Hash'
-import type { Secp256k1SignatureType, Secp256k1PublicKeyType } from '@tevm/voltaire/Secp256k1'
-import type { InvalidSignatureError } from '@tevm/voltaire'
+import type { InvalidSignatureError } from "@tevm/voltaire";
+import type { HashType } from "@tevm/voltaire/Hash";
+import type {
+	Secp256k1PublicKeyType,
+	Secp256k1SignatureType,
+} from "@tevm/voltaire/Secp256k1";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
+import * as Effect from "effect/Effect";
 
 /**
  * Verifies a secp256k1 signature against a message hash and public key.
@@ -86,11 +89,11 @@ import type { InvalidSignatureError } from '@tevm/voltaire'
  * @since 0.0.1
  */
 export const verify = (
-  signature: Secp256k1SignatureType,
-  messageHash: HashType,
-  publicKey: Secp256k1PublicKeyType
+	signature: Secp256k1SignatureType,
+	messageHash: HashType,
+	publicKey: Secp256k1PublicKeyType,
 ): Effect.Effect<boolean, InvalidSignatureError> =>
-  Effect.try({
-    try: () => Secp256k1.verify(signature, messageHash, publicKey),
-    catch: (e) => e as InvalidSignatureError
-  })
+	Effect.try({
+		try: () => Secp256k1.verify(signature, messageHash, publicKey),
+		catch: (e) => e as InvalidSignatureError,
+	});

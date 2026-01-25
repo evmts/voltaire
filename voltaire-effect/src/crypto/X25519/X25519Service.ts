@@ -3,9 +3,14 @@
  * @module X25519/X25519Service
  * @since 0.0.1
  */
-import * as Context from 'effect/Context'
-import type * as Effect from 'effect/Effect'
-import type { InvalidSecretKeyError, InvalidPublicKeyError, X25519Error } from '@tevm/voltaire/X25519'
+
+import type {
+	InvalidPublicKeyError,
+	InvalidSecretKeyError,
+	X25519Error,
+} from "@tevm/voltaire/X25519";
+import * as Context from "effect/Context";
+import type * as Effect from "effect/Effect";
 
 /**
  * Shape interface for X25519 key exchange service operations.
@@ -17,34 +22,37 @@ import type { InvalidSecretKeyError, InvalidPublicKeyError, X25519Error } from '
  * @since 0.0.1
  */
 export interface X25519ServiceShape {
-  /**
-   * Generates a random X25519 keypair.
-   * @returns Effect containing object with secretKey and publicKey (32 bytes each)
-   */
-  readonly generateKeyPair: () => Effect.Effect<
-    { secretKey: Uint8Array; publicKey: Uint8Array },
-    never
-  >
+	/**
+	 * Generates a random X25519 keypair.
+	 * @returns Effect containing object with secretKey and publicKey (32 bytes each)
+	 */
+	readonly generateKeyPair: () => Effect.Effect<
+		{ secretKey: Uint8Array; publicKey: Uint8Array },
+		never
+	>;
 
-  /**
-   * Derives a public key from a secret key.
-   * @param secretKey - The 32-byte secret key
-   * @returns Effect containing the 32-byte public key
-   */
-  readonly getPublicKey: (
-    secretKey: Uint8Array
-  ) => Effect.Effect<Uint8Array, InvalidSecretKeyError>
+	/**
+	 * Derives a public key from a secret key.
+	 * @param secretKey - The 32-byte secret key
+	 * @returns Effect containing the 32-byte public key
+	 */
+	readonly getPublicKey: (
+		secretKey: Uint8Array,
+	) => Effect.Effect<Uint8Array, InvalidSecretKeyError>;
 
-  /**
-   * Computes shared secret from your secret key and their public key (ECDH).
-   * @param secretKey - Your 32-byte secret key
-   * @param publicKey - Their 32-byte public key
-   * @returns Effect containing the 32-byte shared secret
-   */
-  readonly computeSecret: (
-    secretKey: Uint8Array,
-    publicKey: Uint8Array
-  ) => Effect.Effect<Uint8Array, InvalidSecretKeyError | InvalidPublicKeyError | X25519Error>
+	/**
+	 * Computes shared secret from your secret key and their public key (ECDH).
+	 * @param secretKey - Your 32-byte secret key
+	 * @param publicKey - Their 32-byte public key
+	 * @returns Effect containing the 32-byte shared secret
+	 */
+	readonly computeSecret: (
+		secretKey: Uint8Array,
+		publicKey: Uint8Array,
+	) => Effect.Effect<
+		Uint8Array,
+		InvalidSecretKeyError | InvalidPublicKeyError | X25519Error
+	>;
 }
 
 /**
@@ -67,7 +75,7 @@ export interface X25519ServiceShape {
  * ```
  * @since 0.0.1
  */
-export class X25519Service extends Context.Tag('X25519Service')<
-  X25519Service,
-  X25519ServiceShape
+export class X25519Service extends Context.Tag("X25519Service")<
+	X25519Service,
+	X25519ServiceShape
 >() {}

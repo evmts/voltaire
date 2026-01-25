@@ -3,23 +3,29 @@
  * @module Signers/SignersTest
  * @since 0.0.1
  */
-import * as Layer from 'effect/Layer'
-import * as Effect from 'effect/Effect'
-import { SignersService, type SignersServiceShape, type Signer } from './SignersService.js'
+
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import {
+	type Signer,
+	SignersService,
+	type SignersServiceShape,
+} from "./SignersService.js";
 
 const mockSigner: Signer = {
-  address: '0x0000000000000000000000000000000000000000',
-  publicKey: new Uint8Array(64),
-  signMessage: (_message) => Effect.succeed('0x' + '00'.repeat(65)),
-  signTransaction: (transaction) => Effect.succeed(transaction),
-  signTypedData: (_typedData) => Effect.succeed('0x' + '00'.repeat(65))
-}
+	address: "0x0000000000000000000000000000000000000000",
+	publicKey: new Uint8Array(64),
+	signMessage: (_message) => Effect.succeed(`0x${"00".repeat(65)}`),
+	signTransaction: (transaction) => Effect.succeed(transaction),
+	signTypedData: (_typedData) => Effect.succeed(`0x${"00".repeat(65)}`),
+};
 
 const testImpl: SignersServiceShape = {
-  fromPrivateKey: (_privateKey) => Effect.succeed(mockSigner),
-  getAddress: (signer) => Effect.succeed(signer.address),
-  recoverTransactionAddress: (_transaction) => Effect.succeed('0x0000000000000000000000000000000000000000')
-}
+	fromPrivateKey: (_privateKey) => Effect.succeed(mockSigner),
+	getAddress: (signer) => Effect.succeed(signer.address),
+	recoverTransactionAddress: (_transaction) =>
+		Effect.succeed("0x0000000000000000000000000000000000000000"),
+};
 
 /**
  * Test layer for SignersService returning deterministic mock values.
@@ -40,4 +46,4 @@ const testImpl: SignersServiceShape = {
  *
  * @since 0.0.1
  */
-export const SignersTest = Layer.succeed(SignersService, testImpl)
+export const SignersTest = Layer.succeed(SignersService, testImpl);

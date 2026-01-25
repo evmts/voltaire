@@ -4,11 +4,11 @@
  * @since 0.0.1
  */
 
-import * as Layer from 'effect/Layer'
-import { Bls12381Service } from './Bls12381Service.js'
-import { sign } from './sign.js'
-import { verify } from './verify.js'
-import { aggregate } from './aggregate.js'
+import * as Layer from "effect/Layer";
+import { aggregate } from "./aggregate.js";
+import { Bls12381Service } from "./Bls12381Service.js";
+import { sign } from "./sign.js";
+import { verify } from "./verify.js";
 
 /**
  * Production layer for Bls12381Service using native BLS12-381 implementation.
@@ -36,11 +36,8 @@ import { aggregate } from './aggregate.js'
  * @see {@link Bls12381Service} - The service definition
  * @since 0.0.1
  */
-export const Bls12381Live = Layer.succeed(
-  Bls12381Service,
-  {
-    sign,
-    verify,
-    aggregate
-  }
-)
+export const Bls12381Live = Layer.succeed(Bls12381Service, {
+	sign,
+	verify,
+	aggregate,
+});

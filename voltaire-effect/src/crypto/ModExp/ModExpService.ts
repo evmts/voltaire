@@ -3,10 +3,10 @@
  * @module ModExp/ModExpService
  * @since 0.0.1
  */
-import { ModExp } from '@tevm/voltaire'
-import * as Effect from 'effect/Effect'
-import * as Context from 'effect/Context'
-import * as Layer from 'effect/Layer'
+import { ModExp } from "@tevm/voltaire";
+import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 
 /**
  * Service interface for modular exponentiation operations.
@@ -18,32 +18,45 @@ import * as Layer from 'effect/Layer'
  * @since 0.0.1
  */
 export interface ModExpServiceShape {
-  /**
-   * Computes base^exp mod modulus for arbitrary-precision integers.
-   * @param base - Base value
-   * @param exp - Exponent value
-   * @param modulus - Modulus value (must be > 0)
-   * @returns Effect containing the result
-   */
-  readonly modexp: (base: bigint, exp: bigint, modulus: bigint) => Effect.Effect<bigint>
-  /**
-   * Computes base^exp mod modulus with byte array inputs/outputs.
-   * Output is padded to modulus length per EIP-198 spec.
-   * @param baseBytes - Base as big-endian bytes
-   * @param expBytes - Exponent as big-endian bytes
-   * @param modBytes - Modulus as big-endian bytes
-   * @returns Effect containing the result as big-endian bytes
-   */
-  readonly modexpBytes: (baseBytes: Uint8Array, expBytes: Uint8Array, modBytes: Uint8Array) => Effect.Effect<Uint8Array>
-  /**
-   * Calculate gas cost for MODEXP operation per EIP-2565.
-   * @param baseLen - Length of base in bytes
-   * @param expLen - Length of exponent in bytes
-   * @param modLen - Length of modulus in bytes
-   * @param expHead - First 32 bytes of exponent as BigInt
-   * @returns Effect containing gas cost
-   */
-  readonly calculateGas: (baseLen: bigint, expLen: bigint, modLen: bigint, expHead: bigint) => Effect.Effect<bigint>
+	/**
+	 * Computes base^exp mod modulus for arbitrary-precision integers.
+	 * @param base - Base value
+	 * @param exp - Exponent value
+	 * @param modulus - Modulus value (must be > 0)
+	 * @returns Effect containing the result
+	 */
+	readonly modexp: (
+		base: bigint,
+		exp: bigint,
+		modulus: bigint,
+	) => Effect.Effect<bigint>;
+	/**
+	 * Computes base^exp mod modulus with byte array inputs/outputs.
+	 * Output is padded to modulus length per EIP-198 spec.
+	 * @param baseBytes - Base as big-endian bytes
+	 * @param expBytes - Exponent as big-endian bytes
+	 * @param modBytes - Modulus as big-endian bytes
+	 * @returns Effect containing the result as big-endian bytes
+	 */
+	readonly modexpBytes: (
+		baseBytes: Uint8Array,
+		expBytes: Uint8Array,
+		modBytes: Uint8Array,
+	) => Effect.Effect<Uint8Array>;
+	/**
+	 * Calculate gas cost for MODEXP operation per EIP-2565.
+	 * @param baseLen - Length of base in bytes
+	 * @param expLen - Length of exponent in bytes
+	 * @param modLen - Length of modulus in bytes
+	 * @param expHead - First 32 bytes of exponent as BigInt
+	 * @returns Effect containing gas cost
+	 */
+	readonly calculateGas: (
+		baseLen: bigint,
+		expLen: bigint,
+		modLen: bigint,
+		expHead: bigint,
+	) => Effect.Effect<bigint>;
 }
 
 /**
@@ -64,8 +77,8 @@ export interface ModExpServiceShape {
  * @since 0.0.1
  */
 export class ModExpService extends Context.Tag("ModExpService")<
-  ModExpService,
-  ModExpServiceShape
+	ModExpService,
+	ModExpServiceShape
 >() {}
 
 /**
@@ -90,10 +103,13 @@ export class ModExpService extends Context.Tag("ModExpService")<
  * @see {@link ModExpTest} for unit testing
  */
 export const ModExpLive = Layer.succeed(ModExpService, {
-  modexp: (base, exp, modulus) => Effect.sync(() => ModExp.modexp(base, exp, modulus)),
-  modexpBytes: (baseBytes, expBytes, modBytes) => Effect.sync(() => ModExp.modexpBytes(baseBytes, expBytes, modBytes)),
-  calculateGas: (baseLen, expLen, modLen, expHead) => Effect.sync(() => ModExp.calculateGas(baseLen, expLen, modLen, expHead))
-})
+	modexp: (base, exp, modulus) =>
+		Effect.sync(() => ModExp.modexp(base, exp, modulus)),
+	modexpBytes: (baseBytes, expBytes, modBytes) =>
+		Effect.sync(() => ModExp.modexpBytes(baseBytes, expBytes, modBytes)),
+	calculateGas: (baseLen, expLen, modLen, expHead) =>
+		Effect.sync(() => ModExp.calculateGas(baseLen, expLen, modLen, expHead)),
+});
 
 /**
  * Test layer for ModExpService returning deterministic results.
@@ -115,7 +131,9 @@ export const ModExpLive = Layer.succeed(ModExpService, {
  * @since 0.0.1
  */
 export const ModExpTest = Layer.succeed(ModExpService, {
-  modexp: (_base, _exp, _modulus) => Effect.sync(() => 0n),
-  modexpBytes: (_baseBytes, _expBytes, modBytes) => Effect.sync(() => new Uint8Array(modBytes.length)),
-  calculateGas: (_baseLen, _expLen, _modLen, _expHead) => Effect.sync(() => 200n)
-})
+	modexp: (_base, _exp, _modulus) => Effect.sync(() => 0n),
+	modexpBytes: (_baseBytes, _expBytes, modBytes) =>
+		Effect.sync(() => new Uint8Array(modBytes.length)),
+	calculateGas: (_baseLen, _expLen, _modLen, _expHead) =>
+		Effect.sync(() => 200n),
+});

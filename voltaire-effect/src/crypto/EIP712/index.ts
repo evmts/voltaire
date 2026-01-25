@@ -34,5 +34,17 @@
  *
  * @see {@link https://eips.ethereum.org/EIPS/eip-712 | EIP-712 Specification}
  */
-export { EIP712Service, EIP712Live, EIP712Test, type EIP712ServiceShape } from './EIP712Service.js'
-export { hashTypedData, signTypedData, verifyTypedData, recoverAddress, hashDomain, hashStruct } from './operations.js'
+export {
+	EIP712Live,
+	EIP712Service,
+	type EIP712ServiceShape,
+	EIP712Test,
+} from "./EIP712Service.js";
+export {
+	hashDomain,
+	hashStruct,
+	hashTypedData,
+	recoverAddress,
+	signTypedData,
+	verifyTypedData,
+} from "./operations.js";

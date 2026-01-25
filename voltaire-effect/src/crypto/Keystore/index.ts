@@ -29,8 +29,13 @@
  *
  * @see {@link https://eips.ethereum.org/EIPS/eip-2335 | EIP-2335}
  */
-export { encrypt } from './encrypt.js'
-export { decrypt } from './decrypt.js'
-export { KeystoreService, type KeystoreServiceShape, type DecryptError } from './KeystoreService.js'
-export { KeystoreLive } from './KeystoreLive.js'
-export { KeystoreTest } from './KeystoreTest.js'
+
+export { decrypt } from "./decrypt.js";
+export { encrypt } from "./encrypt.js";
+export { KeystoreLive } from "./KeystoreLive.js";
+export {
+	type DecryptError,
+	KeystoreService,
+	type KeystoreServiceShape,
+} from "./KeystoreService.js";
+export { KeystoreTest } from "./KeystoreTest.js";

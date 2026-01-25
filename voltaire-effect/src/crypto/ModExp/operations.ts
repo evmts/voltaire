@@ -3,8 +3,8 @@
  * @module ModExp/operations
  * @since 0.0.1
  */
-import * as Effect from 'effect/Effect'
-import { ModExpService } from './ModExpService.js'
+import * as Effect from "effect/Effect";
+import { ModExpService } from "./ModExpService.js";
 
 /**
  * Computes base^exp mod modulus for arbitrary-precision integers.
@@ -31,11 +31,15 @@ import { ModExpService } from './ModExpService.js'
  * @see {@link modexpBytes} for byte array interface
  * @since 0.0.1
  */
-export const modexp = (base: bigint, exp: bigint, modulus: bigint): Effect.Effect<bigint, never, ModExpService> =>
-  Effect.gen(function* () {
-    const service = yield* ModExpService
-    return yield* service.modexp(base, exp, modulus)
-  })
+export const modexp = (
+	base: bigint,
+	exp: bigint,
+	modulus: bigint,
+): Effect.Effect<bigint, never, ModExpService> =>
+	Effect.gen(function* () {
+		const service = yield* ModExpService;
+		return yield* service.modexp(base, exp, modulus);
+	});
 
 /**
  * Computes base^exp mod modulus with byte array inputs/outputs.
@@ -67,11 +71,15 @@ export const modexp = (base: bigint, exp: bigint, modulus: bigint): Effect.Effec
  * @see {@link modexp} for BigInt interface
  * @since 0.0.1
  */
-export const modexpBytes = (baseBytes: Uint8Array, expBytes: Uint8Array, modBytes: Uint8Array): Effect.Effect<Uint8Array, never, ModExpService> =>
-  Effect.gen(function* () {
-    const service = yield* ModExpService
-    return yield* service.modexpBytes(baseBytes, expBytes, modBytes)
-  })
+export const modexpBytes = (
+	baseBytes: Uint8Array,
+	expBytes: Uint8Array,
+	modBytes: Uint8Array,
+): Effect.Effect<Uint8Array, never, ModExpService> =>
+	Effect.gen(function* () {
+		const service = yield* ModExpService;
+		return yield* service.modexpBytes(baseBytes, expBytes, modBytes);
+	});
 
 /**
  * Calculate gas cost for MODEXP operation per EIP-2565.
@@ -102,8 +110,13 @@ export const modexpBytes = (baseBytes: Uint8Array, expBytes: Uint8Array, modByte
  * @see {@link https://eips.ethereum.org/EIPS/eip-2565 | EIP-2565}
  * @since 0.0.1
  */
-export const calculateGas = (baseLen: bigint, expLen: bigint, modLen: bigint, expHead: bigint): Effect.Effect<bigint, never, ModExpService> =>
-  Effect.gen(function* () {
-    const service = yield* ModExpService
-    return yield* service.calculateGas(baseLen, expLen, modLen, expHead)
-  })
+export const calculateGas = (
+	baseLen: bigint,
+	expLen: bigint,
+	modLen: bigint,
+	expHead: bigint,
+): Effect.Effect<bigint, never, ModExpService> =>
+	Effect.gen(function* () {
+		const service = yield* ModExpService;
+		return yield* service.calculateGas(baseLen, expLen, modLen, expHead);
+	});

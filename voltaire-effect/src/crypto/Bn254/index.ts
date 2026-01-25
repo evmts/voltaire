@@ -33,6 +33,20 @@
  * @module Bn254
  * @since 0.0.1
  */
-export { Bn254Service, Bn254Live, Bn254Test, type Bn254ServiceShape } from './Bn254Service.js'
-export { g1Add, g1Mul, g1Generator, g2Add, g2Mul, g2Generator, pairingCheck } from './operations.js'
-export type { BN254G1PointType, BN254G2PointType } from '@tevm/voltaire'
+
+export type { BN254G1PointType, BN254G2PointType } from "@tevm/voltaire";
+export {
+	Bn254Live,
+	Bn254Service,
+	type Bn254ServiceShape,
+	Bn254Test,
+} from "./Bn254Service.js";
+export {
+	g1Add,
+	g1Generator,
+	g1Mul,
+	g2Add,
+	g2Generator,
+	g2Mul,
+	pairingCheck,
+} from "./operations.js";

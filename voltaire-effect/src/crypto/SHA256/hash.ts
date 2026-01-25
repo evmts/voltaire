@@ -6,9 +6,9 @@
  * @since 0.0.1
  */
 
-import type { SHA256Hash } from '@tevm/voltaire'
-import * as Effect from 'effect/Effect'
-import { SHA256Service } from './SHA256Service.js'
+import type { SHA256Hash } from "@tevm/voltaire";
+import * as Effect from "effect/Effect";
+import { SHA256Service } from "./SHA256Service.js";
 
 /**
  * Computes the SHA-256 hash of the provided data.
@@ -84,8 +84,10 @@ import { SHA256Service } from './SHA256Service.js'
  * @see {@link SHA256Test} - Test implementation layer
  * @since 0.0.1
  */
-export const hash = (data: Uint8Array): Effect.Effect<SHA256Hash, never, SHA256Service> =>
-  Effect.gen(function* () {
-    const sha256 = yield* SHA256Service
-    return yield* sha256.hash(data)
-  })
+export const hash = (
+	data: Uint8Array,
+): Effect.Effect<SHA256Hash, never, SHA256Service> =>
+	Effect.gen(function* () {
+		const sha256 = yield* SHA256Service;
+		return yield* sha256.hash(data);
+	});

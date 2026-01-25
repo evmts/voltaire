@@ -34,6 +34,20 @@
  * @see {@link https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki | BIP-39 Mnemonic}
  * @see {@link https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki | BIP-44 Multi-Account}
  */
-export { HDWalletService, HDWalletTest, type HDWalletServiceShape, type HDNode, type HDPath } from './HDWalletService.js'
-export { HDWalletLive } from './HDWalletLive.js'
-export { derive, generateMnemonic, fromSeed, mnemonicToSeed, getPrivateKey, getPublicKey } from './derive.js'
+
+export {
+	derive,
+	fromSeed,
+	generateMnemonic,
+	getPrivateKey,
+	getPublicKey,
+	mnemonicToSeed,
+} from "./derive.js";
+export { HDWalletLive } from "./HDWalletLive.js";
+export {
+	type HDNode,
+	type HDPath,
+	HDWalletService,
+	type HDWalletServiceShape,
+	HDWalletTest,
+} from "./HDWalletService.js";

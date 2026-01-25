@@ -5,9 +5,14 @@
  * @since 0.0.1
  */
 
-import * as Context from 'effect/Context'
-import type * as Effect from 'effect/Effect'
-import type { InvalidSecretKeyError, InvalidSignatureError, InvalidPublicKeyError, Ed25519Error } from '@tevm/voltaire/Ed25519'
+import type {
+	Ed25519Error,
+	InvalidPublicKeyError,
+	InvalidSecretKeyError,
+	InvalidSignatureError,
+} from "@tevm/voltaire/Ed25519";
+import * as Context from "effect/Context";
+import type * as Effect from "effect/Effect";
 
 /**
  * Shape interface for Ed25519 cryptographic service operations.
@@ -21,60 +26,60 @@ import type { InvalidSecretKeyError, InvalidSignatureError, InvalidPublicKeyErro
  * @since 0.0.1
  */
 export interface Ed25519ServiceShape {
-  /**
-   * Signs a message using Ed25519 signature scheme.
-   *
-   * @description
-   * Creates a 64-byte EdDSA signature using the Ed25519 curve.
-   * The signature is deterministic - the same message and key always
-   * produce the same signature.
-   *
-   * @param message - The message bytes to sign (any length)
-   * @param secretKey - The 32-byte secret key
-   * @returns Effect containing the 64-byte signature
-   * @throws InvalidSecretKeyError - When the secret key is invalid
-   * @throws Ed25519Error - When signing fails
-   */
-  readonly sign: (
-    message: Uint8Array,
-    secretKey: Uint8Array
-  ) => Effect.Effect<Uint8Array, InvalidSecretKeyError | Ed25519Error>
+	/**
+	 * Signs a message using Ed25519 signature scheme.
+	 *
+	 * @description
+	 * Creates a 64-byte EdDSA signature using the Ed25519 curve.
+	 * The signature is deterministic - the same message and key always
+	 * produce the same signature.
+	 *
+	 * @param message - The message bytes to sign (any length)
+	 * @param secretKey - The 32-byte secret key
+	 * @returns Effect containing the 64-byte signature
+	 * @throws InvalidSecretKeyError - When the secret key is invalid
+	 * @throws Ed25519Error - When signing fails
+	 */
+	readonly sign: (
+		message: Uint8Array,
+		secretKey: Uint8Array,
+	) => Effect.Effect<Uint8Array, InvalidSecretKeyError | Ed25519Error>;
 
-  /**
-   * Verifies an Ed25519 signature against a message and public key.
-   *
-   * @description
-   * Validates that a signature was created by the holder of the private
-   * key corresponding to the given public key for the specified message.
-   *
-   * @param signature - The 64-byte Ed25519 signature
-   * @param message - The original message bytes
-   * @param publicKey - The 32-byte public key
-   * @returns Effect containing true if signature is valid, false otherwise
-   * @throws InvalidSignatureError - When the signature format is invalid
-   * @throws InvalidPublicKeyError - When the public key is invalid
-   */
-  readonly verify: (
-    signature: Uint8Array,
-    message: Uint8Array,
-    publicKey: Uint8Array
-  ) => Effect.Effect<boolean, InvalidSignatureError | InvalidPublicKeyError>
+	/**
+	 * Verifies an Ed25519 signature against a message and public key.
+	 *
+	 * @description
+	 * Validates that a signature was created by the holder of the private
+	 * key corresponding to the given public key for the specified message.
+	 *
+	 * @param signature - The 64-byte Ed25519 signature
+	 * @param message - The original message bytes
+	 * @param publicKey - The 32-byte public key
+	 * @returns Effect containing true if signature is valid, false otherwise
+	 * @throws InvalidSignatureError - When the signature format is invalid
+	 * @throws InvalidPublicKeyError - When the public key is invalid
+	 */
+	readonly verify: (
+		signature: Uint8Array,
+		message: Uint8Array,
+		publicKey: Uint8Array,
+	) => Effect.Effect<boolean, InvalidSignatureError | InvalidPublicKeyError>;
 
-  /**
-   * Derives a public key from a secret key.
-   *
-   * @description
-   * Computes the Ed25519 public key corresponding to a given secret key.
-   * The derivation is one-way - the secret key cannot be recovered from
-   * the public key.
-   *
-   * @param secretKey - The 32-byte secret key
-   * @returns Effect containing the 32-byte public key
-   * @throws InvalidSecretKeyError - When the secret key is invalid
-   */
-  readonly getPublicKey: (
-    secretKey: Uint8Array
-  ) => Effect.Effect<Uint8Array, InvalidSecretKeyError>
+	/**
+	 * Derives a public key from a secret key.
+	 *
+	 * @description
+	 * Computes the Ed25519 public key corresponding to a given secret key.
+	 * The derivation is one-way - the secret key cannot be recovered from
+	 * the public key.
+	 *
+	 * @param secretKey - The 32-byte secret key
+	 * @returns Effect containing the 32-byte public key
+	 * @throws InvalidSecretKeyError - When the secret key is invalid
+	 */
+	readonly getPublicKey: (
+		secretKey: Uint8Array,
+	) => Effect.Effect<Uint8Array, InvalidSecretKeyError>;
 }
 
 /**
@@ -123,7 +128,7 @@ export interface Ed25519ServiceShape {
  * @see {@link getPublicKey} - Standalone key derivation function
  * @since 0.0.1
  */
-export class Ed25519Service extends Context.Tag('Ed25519Service')<
-  Ed25519Service,
-  Ed25519ServiceShape
+export class Ed25519Service extends Context.Tag("Ed25519Service")<
+	Ed25519Service,
+	Ed25519ServiceShape
 >() {}
