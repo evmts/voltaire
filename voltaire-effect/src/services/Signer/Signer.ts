@@ -75,7 +75,11 @@ const serializeTransaction = (
 	const r = rBytes;
 	const s = sBytes;
 
-	const toAddress = tx.to ? (tx.to as AddressType) : null;
+	const toAddress = tx.to
+		? typeof tx.to === "string"
+			? Address.fromHex(tx.to)
+			: (tx.to as AddressType)
+		: null;
 	const data = tx.data ? Hex.toBytes(tx.data) : new Uint8Array(0);
 
 	const isEIP1559 =
@@ -171,8 +175,13 @@ const SignerLive: Layer.Layer<
 					tx.nonce ??
 					(yield* provider.getTransactionCount(addressHex, "pending"));
 				const chainId = tx.chainId ?? BigInt(yield* provider.getChainId());
+				const toHex = tx.to
+					? typeof tx.to === "string"
+						? tx.to
+						: Address.toHex(tx.to as AddressType)
+					: undefined;
 				const txForEstimate = {
-					to: tx.to ? Address.toHex(tx.to as AddressType) : undefined,
+					to: toHex,
 					from: addressHex,
 					data: tx.data as `0x${string}` | undefined,
 					value: tx.value,
