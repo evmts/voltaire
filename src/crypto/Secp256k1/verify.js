@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { equalsConstantTime } from "../../primitives/Bytes/equalsConstantTime.js";
 import { InvalidSignatureError } from "../../primitives/errors/index.js";
 import { PUBLIC_KEY_SIZE, SIGNATURE_COMPONENT_SIZE } from "./constants.js";
 
@@ -103,8 +104,8 @@ export function verify(signature, messageHash, publicKey) {
 		const recovered = sigWithRecovery.recoverPublicKey(messageHash);
 		const recoveredBytes = recovered.toBytes(false);
 
-		// Compare with the provided public key (prefixed with 0x04)
-		return recoveredBytes.every((byte, idx) => byte === prefixedPublicKey[idx]);
+		// Compare with the provided public key (prefixed with 0x04) using constant-time comparison
+		return equalsConstantTime(recoveredBytes, prefixedPublicKey);
 	} catch {
 		return false;
 	}
