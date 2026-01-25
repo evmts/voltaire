@@ -4,8 +4,9 @@
  * @module Hash/toBytes
  * @since 0.0.1
  */
-import * as Hash from '@tevm/voltaire/Hash'
-import type { HashType } from '@tevm/voltaire/Hash'
+
+import type { HashType } from "@tevm/voltaire/Hash";
+import * as Hash from "@tevm/voltaire/Hash";
 
 /**
  * Converts a Hash to its underlying Uint8Array representation.
@@ -39,4 +40,4 @@ import type { HashType } from '@tevm/voltaire/Hash'
  *
  * @since 0.0.1
  */
-export const toBytes = (hash: HashType): Uint8Array => Hash.toBytes(hash)
+export const toBytes = (hash: HashType): Uint8Array => Hash.toBytes(hash);

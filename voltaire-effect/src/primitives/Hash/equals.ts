@@ -4,9 +4,10 @@
  * @module Hash/equals
  * @since 0.0.1
  */
-import * as Hash from '@tevm/voltaire/Hash'
-import type { HashType } from '@tevm/voltaire/Hash'
-import * as Effect from 'effect/Effect'
+
+import type { HashType } from "@tevm/voltaire/Hash";
+import * as Hash from "@tevm/voltaire/Hash";
+import * as Effect from "effect/Effect";
 
 /**
  * Compare two hashes for equality using constant-time comparison.
@@ -28,5 +29,7 @@ import * as Effect from 'effect/Effect'
  *
  * @since 0.0.1
  */
-export const equals = (hash: HashType, other: HashType): Effect.Effect<boolean> =>
-  Effect.sync(() => Hash.equals(hash, other))
+export const equals = (
+	hash: HashType,
+	other: HashType,
+): Effect.Effect<boolean> => Effect.sync(() => Hash.equals(hash, other));

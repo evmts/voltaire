@@ -4,9 +4,10 @@
  * @module Hash/clone
  * @since 0.0.1
  */
-import * as Hash from '@tevm/voltaire/Hash'
-import type { HashType } from '@tevm/voltaire/Hash'
-import * as Effect from 'effect/Effect'
+
+import type { HashType } from "@tevm/voltaire/Hash";
+import * as Hash from "@tevm/voltaire/Hash";
+import * as Effect from "effect/Effect";
 
 /**
  * Clone a hash value.
@@ -28,4 +29,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const clone = (hash: HashType): Effect.Effect<HashType> =>
-  Effect.sync(() => Hash.clone(hash))
+	Effect.sync(() => Hash.clone(hash));

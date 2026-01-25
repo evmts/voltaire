@@ -4,10 +4,11 @@
  * @module Hash/assert
  * @since 0.0.1
  */
-import * as Hash from '@tevm/voltaire/Hash'
-import type { HashType } from '@tevm/voltaire/Hash'
-import { InvalidFormatError } from '@tevm/voltaire/errors'
-import * as Effect from 'effect/Effect'
+
+import type { InvalidFormatError } from "@tevm/voltaire/errors";
+import type { HashType } from "@tevm/voltaire/Hash";
+import * as Hash from "@tevm/voltaire/Hash";
+import * as Effect from "effect/Effect";
 
 /**
  * Assert value is a Hash, fails if not.
@@ -32,11 +33,14 @@ import * as Effect from 'effect/Effect'
  *
  * @since 0.0.1
  */
-export const assert = (value: unknown, message?: string): Effect.Effect<HashType, InvalidFormatError> =>
-  Effect.try({
-    try: () => {
-      Hash.assert(value, message)
-      return value as HashType
-    },
-    catch: (e) => e as InvalidFormatError
-  })
+export const assert = (
+	value: unknown,
+	message?: string,
+): Effect.Effect<HashType, InvalidFormatError> =>
+	Effect.try({
+		try: () => {
+			Hash.assert(value, message);
+			return value as HashType;
+		},
+		catch: (e) => e as InvalidFormatError,
+	});

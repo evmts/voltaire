@@ -4,8 +4,8 @@
  * @module Hash/isValidHex
  * @since 0.0.1
  */
-import * as Hash from '@tevm/voltaire/Hash'
-import * as Effect from 'effect/Effect'
+import * as Hash from "@tevm/voltaire/Hash";
+import * as Effect from "effect/Effect";
 
 /**
  * Validate hex string is valid hash format.
@@ -27,4 +27,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const isValidHex = (hex: string): Effect.Effect<boolean> =>
-  Effect.sync(() => Hash.isValidHex(hex))
+	Effect.sync(() => Hash.isValidHex(hex));

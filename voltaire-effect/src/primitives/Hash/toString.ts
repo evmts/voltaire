@@ -4,9 +4,10 @@
  * @module Hash/toString
  * @since 0.0.1
  */
-import * as Hash from '@tevm/voltaire/Hash'
-import type { HashType } from '@tevm/voltaire/Hash'
-import * as Effect from 'effect/Effect'
+
+import type { HashType } from "@tevm/voltaire/Hash";
+import * as Hash from "@tevm/voltaire/Hash";
+import * as Effect from "effect/Effect";
 
 /**
  * Convert hash to string representation.
@@ -28,4 +29,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const toString = (hash: HashType): Effect.Effect<string> =>
-  Effect.sync(() => Hash.toString(hash))
+	Effect.sync(() => Hash.toString(hash));

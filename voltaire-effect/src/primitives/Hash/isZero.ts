@@ -4,9 +4,10 @@
  * @module Hash/isZero
  * @since 0.0.1
  */
-import * as Hash from '@tevm/voltaire/Hash'
-import type { HashType } from '@tevm/voltaire/Hash'
-import * as Effect from 'effect/Effect'
+
+import type { HashType } from "@tevm/voltaire/Hash";
+import * as Hash from "@tevm/voltaire/Hash";
+import * as Effect from "effect/Effect";
 
 /**
  * Check if hash is the zero hash (all zeros).
@@ -28,4 +29,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const isZero = (hash: HashType): Effect.Effect<boolean> =>
-  Effect.sync(() => Hash.isZero(hash))
+	Effect.sync(() => Hash.isZero(hash));

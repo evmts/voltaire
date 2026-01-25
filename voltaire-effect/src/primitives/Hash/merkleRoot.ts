@@ -4,9 +4,10 @@
  * @module Hash/merkleRoot
  * @since 0.0.1
  */
-import * as Hash from '@tevm/voltaire/Hash'
-import type { HashType } from '@tevm/voltaire/Hash'
-import * as Effect from 'effect/Effect'
+
+import type { HashType } from "@tevm/voltaire/Hash";
+import * as Hash from "@tevm/voltaire/Hash";
+import * as Effect from "effect/Effect";
 
 /**
  * Compute Merkle root of hash leaves.
@@ -28,4 +29,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const merkleRoot = (leaves: HashType[]): Effect.Effect<HashType> =>
-  Effect.sync(() => Hash.merkleRoot(leaves))
+	Effect.sync(() => Hash.merkleRoot(leaves));

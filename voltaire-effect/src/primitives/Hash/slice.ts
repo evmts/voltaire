@@ -4,9 +4,10 @@
  * @module Hash/slice
  * @since 0.0.1
  */
-import * as Hash from '@tevm/voltaire/Hash'
-import type { HashType } from '@tevm/voltaire/Hash'
-import * as Effect from 'effect/Effect'
+
+import type { HashType } from "@tevm/voltaire/Hash";
+import * as Hash from "@tevm/voltaire/Hash";
+import * as Effect from "effect/Effect";
 
 /**
  * Get a slice of hash bytes.
@@ -30,5 +31,8 @@ import * as Effect from 'effect/Effect'
  *
  * @since 0.0.1
  */
-export const slice = (hash: HashType, start?: number, end?: number): Effect.Effect<Uint8Array> =>
-  Effect.sync(() => Hash.slice(hash, start, end))
+export const slice = (
+	hash: HashType,
+	start?: number,
+	end?: number,
+): Effect.Effect<Uint8Array> => Effect.sync(() => Hash.slice(hash, start, end));

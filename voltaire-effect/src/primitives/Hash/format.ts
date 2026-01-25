@@ -4,9 +4,10 @@
  * @module Hash/format
  * @since 0.0.1
  */
-import * as Hash from '@tevm/voltaire/Hash'
-import type { HashType } from '@tevm/voltaire/Hash'
-import * as Effect from 'effect/Effect'
+
+import type { HashType } from "@tevm/voltaire/Hash";
+import * as Hash from "@tevm/voltaire/Hash";
+import * as Effect from "effect/Effect";
 
 /**
  * Format hash for display (truncated).
@@ -29,5 +30,9 @@ import * as Effect from 'effect/Effect'
  *
  * @since 0.0.1
  */
-export const format = (hash: HashType, prefixLength = 6, suffixLength = 4): Effect.Effect<string> =>
-  Effect.sync(() => Hash.format(hash, prefixLength, suffixLength))
+export const format = (
+	hash: HashType,
+	prefixLength = 6,
+	suffixLength = 4,
+): Effect.Effect<string> =>
+	Effect.sync(() => Hash.format(hash, prefixLength, suffixLength));

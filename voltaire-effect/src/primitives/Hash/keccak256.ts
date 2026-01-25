@@ -4,9 +4,10 @@
  * @module Hash/keccak256
  * @since 0.0.1
  */
-import * as Hash from '@tevm/voltaire/Hash'
-import type { HashType } from '@tevm/voltaire/Hash'
-import * as Effect from 'effect/Effect'
+
+import type { HashType } from "@tevm/voltaire/Hash";
+import * as Hash from "@tevm/voltaire/Hash";
+import * as Effect from "effect/Effect";
 
 /**
  * Compute keccak256 hash of bytes.
@@ -28,7 +29,7 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const keccak256 = (data: Uint8Array): Effect.Effect<HashType> =>
-  Effect.sync(() => Hash.keccak256(data))
+	Effect.sync(() => Hash.keccak256(data));
 
 /**
  * Compute keccak256 hash of hex string.
@@ -39,7 +40,7 @@ export const keccak256 = (data: Uint8Array): Effect.Effect<HashType> =>
  * @since 0.0.1
  */
 export const keccak256Hex = (hex: string): Effect.Effect<HashType> =>
-  Effect.sync(() => Hash.keccak256Hex(hex))
+	Effect.sync(() => Hash.keccak256Hex(hex));
 
 /**
  * Compute keccak256 hash of UTF-8 string.
@@ -50,4 +51,4 @@ export const keccak256Hex = (hex: string): Effect.Effect<HashType> =>
  * @since 0.0.1
  */
 export const keccak256String = (str: string): Effect.Effect<HashType> =>
-  Effect.sync(() => Hash.keccak256String(str))
+	Effect.sync(() => Hash.keccak256String(str));
