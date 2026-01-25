@@ -223,12 +223,20 @@ export const WebSocketTransport = (
 					const message = JSON.parse(event.data) as JsonRpcResponse<unknown>;
 					Effect.runSync(
 						Effect.gen(function* () {
-							const pending = yield* Ref.get(pendingRef);
-							const deferred = pending.get(message.id);
-							if (deferred) {
-								pending.delete(message.id);
-								yield* Ref.set(pendingRef, pending);
-								yield* Deferred.succeed(deferred, message);
+							let foundDeferred:
+								| Deferred.Deferred<JsonRpcResponse<unknown>, never>
+								| undefined;
+							yield* Ref.update(pendingRef, (pending) => {
+								foundDeferred = pending.get(message.id);
+								if (foundDeferred) {
+									const newPending = new Map(pending);
+									newPending.delete(message.id);
+									return newPending;
+								}
+								return pending;
+							});
+							if (foundDeferred) {
+								yield* Deferred.succeed(foundDeferred, message);
 							}
 						}),
 					);
@@ -240,7 +248,7 @@ export const WebSocketTransport = (
 			ws.onclose = () => {
 				Effect.runSync(
 					Effect.gen(function* () {
-						const pending = yield* Ref.get(pendingRef);
+						const pending = yield* Ref.getAndSet(pendingRef, new Map());
 						const error = new TransportError({
 							code: -32603,
 							message: "WebSocket closed",
@@ -252,7 +260,6 @@ export const WebSocketTransport = (
 								error: { code: error.code, message: error.message },
 							});
 						}
-						yield* Ref.set(pendingRef, new Map());
 					}),
 				);
 			};
@@ -280,12 +287,14 @@ export const WebSocketTransport = (
 						const id = yield* Ref.updateAndGet(requestIdRef, (n) => n + 1);
 						const deferred = yield* Deferred.make<JsonRpcResponse<T>, never>();
 
-						const pending = yield* Ref.get(pendingRef);
-						pending.set(
-							id,
-							deferred as Deferred.Deferred<JsonRpcResponse<unknown>, never>,
-						);
-						yield* Ref.set(pendingRef, pending);
+						yield* Ref.update(pendingRef, (pending) => {
+							const newPending = new Map(pending);
+							newPending.set(
+								id,
+								deferred as Deferred.Deferred<JsonRpcResponse<unknown>, never>,
+							);
+							return newPending;
+						});
 
 						const request = JSON.stringify({
 							jsonrpc: "2.0",
@@ -300,9 +309,11 @@ export const WebSocketTransport = (
 							Effect.timeout(config.timeout),
 							Effect.catchTag("TimeoutException", () =>
 								Effect.gen(function* () {
-									const p = yield* Ref.get(pendingRef);
-									p.delete(id);
-									yield* Ref.set(pendingRef, p);
+									yield* Ref.update(pendingRef, (p) => {
+										const newPending = new Map(p);
+										newPending.delete(id);
+										return newPending;
+									});
 									return yield* Effect.fail(
 										new TransportError({
 											code: -32603,
