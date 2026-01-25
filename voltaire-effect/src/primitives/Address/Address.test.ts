@@ -226,4 +226,143 @@ describe("pure functions", () => {
 			Address.isValidChecksum("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed"),
 		).toBe(false);
 	});
+
+	it("toU256", () => {
+		const addr = S.decodeSync(Address.Hex)(
+			"0x0000000000000000000000000000000000000001",
+		);
+		expect(Address.toU256(addr)).toBe(1n);
+	});
+
+	it("toU256 for zero address", () => {
+		expect(Address.toU256(addrC)).toBe(0n);
+	});
+
+	it("toU256 for max address", () => {
+		const maxAddr = S.decodeSync(Address.Hex)(
+			"0xffffffffffffffffffffffffffffffffffffffff",
+		);
+		expect(Address.toU256(maxAddr)).toBe(
+			0xffffffffffffffffffffffffffffffffffffffffn,
+		);
+	});
+
+	it("toAbiEncoded", () => {
+		const encoded = Address.toAbiEncoded(addrA);
+		expect(encoded).toBeInstanceOf(Uint8Array);
+		expect(encoded.length).toBe(32);
+		expect(encoded.slice(0, 12).every((b) => b === 0)).toBe(true);
+	});
+
+	it("toAbiEncoded for zero address", () => {
+		const encoded = Address.toAbiEncoded(addrC);
+		expect(encoded.every((b) => b === 0)).toBe(true);
+	});
+
+	it("toUppercase", () => {
+		const upper = Address.toUppercase(addrA);
+		expect(upper).toBe("0x742D35CC6634C0532925A3B844BC9E7595F251E3");
+	});
+});
+
+describe("error cases", () => {
+	it("fails on null", () => {
+		expect(() => S.decodeSync(Address.Hex)(null as unknown as string)).toThrow();
+	});
+
+	it("fails on undefined", () => {
+		expect(() =>
+			S.decodeSync(Address.Hex)(undefined as unknown as string),
+		).toThrow();
+	});
+
+	it("fails on object", () => {
+		expect(() =>
+			S.decodeSync(Address.Hex)({} as unknown as string),
+		).toThrow();
+	});
+
+	it("fails on number", () => {
+		expect(() => S.decodeSync(Address.Hex)(123 as unknown as string)).toThrow();
+	});
+
+	it("fails on partial hex", () => {
+		expect(() => S.decodeSync(Address.Hex)("0x")).toThrow();
+	});
+
+	it("fails on too long address", () => {
+		expect(() =>
+			S.decodeSync(Address.Hex)("0x" + "ab".repeat(21)),
+		).toThrow();
+	});
+
+	describe("Bytes schema errors", () => {
+		it("fails on empty bytes", () => {
+			expect(() => S.decodeSync(Address.Bytes)(new Uint8Array(0))).toThrow();
+		});
+
+		it("fails on 21-byte array", () => {
+			expect(() => S.decodeSync(Address.Bytes)(new Uint8Array(21))).toThrow();
+		});
+	});
+});
+
+describe("edge cases", () => {
+	it("handles max address value", () => {
+		const maxAddr = S.decodeSync(Address.Hex)(
+			"0xffffffffffffffffffffffffffffffffffffffff",
+		);
+		expect(maxAddr.length).toBe(20);
+		expect(maxAddr.every((b) => b === 0xff)).toBe(true);
+	});
+
+	it("compare equal addresses returns 0", () => {
+		const a = S.decodeSync(Address.Hex)(
+			"0xffffffffffffffffffffffffffffffffffffffff",
+		);
+		const b = S.decodeSync(Address.Hex)(
+			"0xffffffffffffffffffffffffffffffffffffffff",
+		);
+		expect(Address.compare(a, b)).toBe(0);
+	});
+
+	it("lessThan with equal addresses", () => {
+		const a = S.decodeSync(Address.Hex)(
+			"0x1111111111111111111111111111111111111111",
+		);
+		const b = S.decodeSync(Address.Hex)(
+			"0x1111111111111111111111111111111111111111",
+		);
+		expect(Address.lessThan(a, b)).toBe(false);
+	});
+
+	it("greaterThan with equal addresses", () => {
+		const a = S.decodeSync(Address.Hex)(
+			"0x1111111111111111111111111111111111111111",
+		);
+		const b = S.decodeSync(Address.Hex)(
+			"0x1111111111111111111111111111111111111111",
+		);
+		expect(Address.greaterThan(a, b)).toBe(false);
+	});
+
+	it("isValid with empty string", () => {
+		expect(Address.isValid("")).toBe(false);
+	});
+
+	it("isValid with just 0x", () => {
+		expect(Address.isValid("0x")).toBe(false);
+	});
+
+	it("isValidChecksum with empty string", () => {
+		expect(Address.isValidChecksum("")).toBe(false);
+	});
+
+	it("toShortHex truncates correctly", () => {
+		const addr = S.decodeSync(Address.Hex)(
+			"0xabcdef1234567890abcdef1234567890abcdef12",
+		);
+		const short = Address.toShortHex(addr);
+		expect(short.includes("...")).toBe(true);
+	});
 });

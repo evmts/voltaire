@@ -303,3 +303,138 @@ describe("edge cases", () => {
 		expect(hex).toBe("0xABCDEF");
 	});
 });
+
+describe("error cases", () => {
+	describe("Hex.String errors", () => {
+		it("fails on null", () => {
+			expect(() =>
+				S.decodeSync(Hex.String)(null as unknown as string),
+			).toThrow();
+		});
+
+		it("fails on undefined", () => {
+			expect(() =>
+				S.decodeSync(Hex.String)(undefined as unknown as string),
+			).toThrow();
+		});
+
+		it("fails on object", () => {
+			expect(() =>
+				S.decodeSync(Hex.String)({} as unknown as string),
+			).toThrow();
+		});
+
+		it("fails on array", () => {
+			expect(() =>
+				S.decodeSync(Hex.String)([] as unknown as string),
+			).toThrow();
+		});
+
+		it("fails on empty string", () => {
+			expect(() => S.decodeSync(Hex.String)("")).toThrow();
+		});
+
+		it("fails on whitespace", () => {
+			expect(() => S.decodeSync(Hex.String)("  ")).toThrow();
+		});
+
+		it("fails on 0x with spaces", () => {
+			expect(() => S.decodeSync(Hex.String)("0x 12")).toThrow();
+		});
+
+		it("fails on special characters", () => {
+			expect(() => S.decodeSync(Hex.String)("0x!@#$")).toThrow();
+		});
+	});
+
+	describe("Hex.Bytes errors", () => {
+		it("fails on null", () => {
+			expect(() =>
+				S.decodeSync(Hex.Bytes)(null as unknown as Uint8Array),
+			).toThrow();
+		});
+
+		it("fails on string input", () => {
+			expect(() =>
+				S.decodeSync(Hex.Bytes)("0xab" as unknown as Uint8Array),
+			).toThrow();
+		});
+	});
+});
+
+describe("additional edge cases", () => {
+	describe("isHex edge cases", () => {
+		it("returns true for single char hex", async () => {
+			const result = await Effect.runPromise(Hex.isHex("0xa"));
+			expect(result).toBe(true);
+		});
+
+		it("returns false for just 0x prefix", async () => {
+			const result = await Effect.runPromise(Hex.isHex("0x"));
+			expect(result).toBe(false);
+		});
+
+		it("returns false for string without prefix", async () => {
+			const result = await Effect.runPromise(Hex.isHex("abcd"));
+			expect(result).toBe(false);
+		});
+	});
+
+	describe("isSized edge cases", () => {
+		it("returns false for odd-length hex size calculation", async () => {
+			const hex = S.decodeSync(Hex.String)("0xabc");
+			const result = await Effect.runPromise(Hex.isSized(hex, 1));
+			expect(result).toBe(false);
+		});
+
+		it("handles large sizes", async () => {
+			const hex = S.decodeSync(Hex.String)("0x" + "ab".repeat(1000));
+			const result = await Effect.runPromise(Hex.isSized(hex, 1000));
+			expect(result).toBe(true);
+		});
+	});
+
+	describe("zero edge cases", () => {
+		it("creates large zero hex", async () => {
+			const result = await Effect.runPromise(Hex.zero(100));
+			expect(result).toBe("0x" + "00".repeat(100));
+		});
+	});
+
+	describe("random edge cases", () => {
+		it("random of size 1 produces valid hex", async () => {
+			const result = await Effect.runPromise(Hex.random(1));
+			expect(result.length).toBe(4);
+			expect(result.startsWith("0x")).toBe(true);
+		});
+
+		it("random produces lowercase hex", async () => {
+			const result = await Effect.runPromise(Hex.random(32));
+			expect(result).toMatch(/^0x[0-9a-f]+$/);
+		});
+	});
+
+	describe("clone edge cases", () => {
+		it("clones very long hex", async () => {
+			const original = S.decodeSync(Hex.String)("0x" + "ab".repeat(1000));
+			const cloned = await Effect.runPromise(Hex.clone(original));
+			expect(cloned).toBe(original);
+		});
+	});
+
+	describe("Bytes schema edge cases", () => {
+		it("decodes from large byte array", () => {
+			const bytes = new Uint8Array(10000).fill(0xab);
+			const hex = S.decodeSync(Hex.Bytes)(bytes);
+			expect(hex.length).toBe(20002);
+		});
+
+		it("encodes to bytes preserves values", () => {
+			const hex = S.decodeSync(Hex.String)("0x000102030405060708090a0b0c0d0e0f");
+			const bytes = S.encodeSync(Hex.Bytes)(hex);
+			for (let i = 0; i < 16; i++) {
+				expect(bytes[i]).toBe(i);
+			}
+		});
+	});
+});

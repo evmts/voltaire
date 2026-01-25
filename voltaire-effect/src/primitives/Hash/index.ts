@@ -54,9 +54,14 @@ export { Hex } from "./Hex.js";
 // Pure functions
 export { assert } from "./assert.js";
 export { clone } from "./clone.js";
+export { concat } from "./concat.js";
+export { equals } from "./equals.js";
 export { format } from "./format.js";
 export { isValidHex } from "./isValidHex.js";
 export { isZero } from "./isZero.js";
 export { keccak256, keccak256Hex, keccak256String } from "./keccak256.js";
 export { merkleRoot } from "./merkleRoot.js";
 export { random } from "./random.js";
+export { slice } from "./slice.js";
+export { toBytes } from "./toBytes.js";
+export { toString } from "./toString.js";

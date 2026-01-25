@@ -266,3 +266,98 @@ describe("pure functions", () => {
 		});
 	});
 });
+
+describe("error cases", () => {
+	describe("Hex schema errors", () => {
+		it("fails on null input", () => {
+			expect(() =>
+				S.decodeSync(Bytes.Hex)(null as unknown as string),
+			).toThrow();
+		});
+
+		it("fails on undefined input", () => {
+			expect(() =>
+				S.decodeSync(Bytes.Hex)(undefined as unknown as string),
+			).toThrow();
+		});
+
+		it("fails on object input", () => {
+			expect(() =>
+				S.decodeSync(Bytes.Hex)({} as unknown as string),
+			).toThrow();
+		});
+
+		it("fails on array input", () => {
+			expect(() =>
+				S.decodeSync(Bytes.Hex)([] as unknown as string),
+			).toThrow();
+		});
+
+		it("fails on boolean input", () => {
+			expect(() =>
+				S.decodeSync(Bytes.Hex)(true as unknown as string),
+			).toThrow();
+		});
+
+		it("fails on invalid hex chars", () => {
+			expect(() => S.decodeSync(Bytes.Hex)("0xZZZZ")).toThrow();
+		});
+
+		it("fails on just prefix with invalid char", () => {
+			expect(() => S.decodeSync(Bytes.Hex)("0xZ")).toThrow();
+		});
+	});
+});
+
+describe("edge cases", () => {
+	it("handles single byte 0x00", () => {
+		const bytes = S.decodeSync(Bytes.Hex)("0x00");
+		expect(bytes.length).toBe(1);
+		expect(bytes[0]).toBe(0);
+	});
+
+	it("handles single byte 0xff", () => {
+		const bytes = S.decodeSync(Bytes.Hex)("0xff");
+		expect(bytes.length).toBe(1);
+		expect(bytes[0]).toBe(255);
+	});
+
+	it("concat preserves byte values", () => {
+		const a = new Uint8Array([0, 0, 0]);
+		const b = new Uint8Array([255, 255, 255]);
+		const result = Effect.runSync(concat(a, b));
+		expect(result[0]).toBe(0);
+		expect(result[3]).toBe(255);
+	});
+
+	it("equals returns false for one empty one non-empty", () => {
+		const empty = S.decodeSync(Bytes.Hex)("0x");
+		const nonEmpty = S.decodeSync(Bytes.Hex)("0xab");
+		expect(Effect.runSync(equals(empty, nonEmpty))).toBe(false);
+	});
+
+	it("size for single byte", () => {
+		const bytes = S.decodeSync(Bytes.Hex)("0xab");
+		expect(Effect.runSync(size(bytes))).toBe(1);
+	});
+
+	it("toString handles null bytes", () => {
+		const bytes = new Uint8Array([0, 0, 0]);
+		const str = Effect.runSync(toString(bytes));
+		expect(str.length).toBe(3);
+	});
+
+	it("random with size 1", () => {
+		const bytes = Effect.runSync(Bytes.random(1));
+		expect(bytes.length).toBe(1);
+	});
+
+	it("isBytes returns false for ArrayBuffer", () => {
+		const buf = new ArrayBuffer(10);
+		expect(Effect.runSync(Bytes.isBytes(buf))).toBe(false);
+	});
+
+	it("isBytes returns true for empty Uint8Array", () => {
+		expect(Effect.runSync(Bytes.isBytes(new Uint8Array(0)))).toBe(true);
+	});
+});
