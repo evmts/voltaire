@@ -33,6 +33,7 @@ import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Ref from "effect/Ref";
+import * as Runtime from "effect/Runtime";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
 
@@ -233,6 +234,7 @@ export const WebSocketTransport = (
 				);
 			}
 
+			const runtime = yield* Effect.runtime<never>();
 			const requestIdRef = yield* Ref.make(0);
 			const pendingRef = yield* Ref.make<
 				Map<number, Deferred.Deferred<JsonRpcResponse<unknown>, never>>
@@ -262,7 +264,7 @@ export const WebSocketTransport = (
 				if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
 				const timer = setInterval(() => {
-					Effect.runSync(
+					Runtime.runFork(runtime)(
 						Effect.gen(function* () {
 							const socket = yield* Ref.get(wsRef);
 							if (socket && socket.readyState === WebSocket.OPEN) {
@@ -320,7 +322,7 @@ export const WebSocketTransport = (
 				const ws = new WebSocket(config.url, config.protocols);
 
 				ws.onopen = () => {
-					Effect.runSync(
+					Runtime.runFork(runtime)(
 						Effect.gen(function* () {
 							yield* Ref.set(attemptCountRef, 0);
 							yield* Ref.set(currentDelayRef, reconnectOpts.delay);
@@ -334,7 +336,7 @@ export const WebSocketTransport = (
 				};
 
 				ws.onerror = () => {
-					Effect.runSync(
+					Runtime.runFork(runtime)(
 						Deferred.fail(
 							connectDeferred,
 							new TransportError({
@@ -350,7 +352,7 @@ export const WebSocketTransport = (
 						const message = JSON.parse(event.data) as JsonRpcResponse<unknown>;
 						if (message.id === "keepalive") return;
 
-						Effect.runSync(
+						Runtime.runFork(runtime)(
 							Effect.gen(function* () {
 								let foundDeferred:
 									| Deferred.Deferred<JsonRpcResponse<unknown>, never>
@@ -375,7 +377,7 @@ export const WebSocketTransport = (
 				};
 
 				ws.onclose = () => {
-					Effect.runSync(
+					Runtime.runFork(runtime)(
 						Effect.gen(function* () {
 							yield* stopKeepAlive;
 							yield* Ref.set(wsRef, null);
