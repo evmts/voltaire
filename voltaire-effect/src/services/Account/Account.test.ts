@@ -129,6 +129,205 @@ describe("AccountService", () => {
 			const signature = await Effect.runPromise(program);
 			expect(signature).toBeDefined();
 		});
+
+		it("signs typed data with nested struct types (Mail containing Person)", async () => {
+			const typedData = TypedData.from({
+				types: {
+					EIP712Domain: [
+						{ name: "name", type: "string" },
+						{ name: "version", type: "string" },
+						{ name: "chainId", type: "uint256" },
+					],
+					Person: [
+						{ name: "name", type: "string" },
+						{ name: "wallet", type: "address" },
+					],
+					Mail: [
+						{ name: "from", type: "Person" },
+						{ name: "to", type: "Person" },
+						{ name: "contents", type: "string" },
+					],
+				},
+				primaryType: "Mail",
+				domain: {
+					name: "Ether Mail",
+					version: "1",
+					chainId: 1,
+				},
+				message: {
+					from: {
+						name: "Alice",
+						wallet: Address.fromHex(
+							"0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
+						),
+					},
+					to: {
+						name: "Bob",
+						wallet: Address.fromHex(
+							"0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
+						),
+					},
+					contents: "Hello, Bob!",
+				},
+			});
+
+			const program = Effect.gen(function* () {
+				const account = yield* AccountService;
+				return yield* account.signTypedData(typedData);
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			);
+
+			const signature = await Effect.runPromise(program);
+			expect(signature).toBeDefined();
+			expect(signature.length).toBe(65);
+		});
+
+		it("signs typed data with array of primitives (uint256[])", async () => {
+			const typedData = TypedData.from({
+				types: {
+					EIP712Domain: [
+						{ name: "name", type: "string" },
+						{ name: "version", type: "string" },
+						{ name: "chainId", type: "uint256" },
+					],
+					Batch: [
+						{ name: "amounts", type: "uint256[]" },
+						{ name: "nonce", type: "uint256" },
+					],
+				},
+				primaryType: "Batch",
+				domain: {
+					name: "BatchApp",
+					version: "1",
+					chainId: 1,
+				},
+				message: {
+					amounts: [1000000000000000000n, 2000000000000000000n, 3000000000000000000n],
+					nonce: 42n,
+				},
+			});
+
+			const program = Effect.gen(function* () {
+				const account = yield* AccountService;
+				return yield* account.signTypedData(typedData);
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			);
+
+			const signature = await Effect.runPromise(program);
+			expect(signature).toBeDefined();
+			expect(signature.length).toBe(65);
+		});
+
+		it("signs typed data with array of structs (Person[])", async () => {
+			const typedData = TypedData.from({
+				types: {
+					EIP712Domain: [
+						{ name: "name", type: "string" },
+						{ name: "version", type: "string" },
+						{ name: "chainId", type: "uint256" },
+					],
+					Person: [
+						{ name: "name", type: "string" },
+						{ name: "wallet", type: "address" },
+					],
+					Group: [
+						{ name: "members", type: "Person[]" },
+						{ name: "name", type: "string" },
+					],
+				},
+				primaryType: "Group",
+				domain: {
+					name: "GroupApp",
+					version: "1",
+					chainId: 1,
+				},
+				message: {
+					members: [
+						{
+							name: "Alice",
+							wallet: Address.fromHex(
+								"0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
+							),
+						},
+						{
+							name: "Bob",
+							wallet: Address.fromHex(
+								"0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
+							),
+						},
+					],
+					name: "Team Alpha",
+				},
+			});
+
+			const program = Effect.gen(function* () {
+				const account = yield* AccountService;
+				return yield* account.signTypedData(typedData);
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			);
+
+			const signature = await Effect.runPromise(program);
+			expect(signature).toBeDefined();
+			expect(signature.length).toBe(65);
+		});
+
+		it("signs EIP-2612 Permit typed data", async () => {
+			const typedData = TypedData.from({
+				types: {
+					EIP712Domain: [
+						{ name: "name", type: "string" },
+						{ name: "version", type: "string" },
+						{ name: "chainId", type: "uint256" },
+						{ name: "verifyingContract", type: "address" },
+					],
+					Permit: [
+						{ name: "owner", type: "address" },
+						{ name: "spender", type: "address" },
+						{ name: "value", type: "uint256" },
+						{ name: "nonce", type: "uint256" },
+						{ name: "deadline", type: "uint256" },
+					],
+				},
+				primaryType: "Permit",
+				domain: {
+					name: "USDC",
+					version: "2",
+					chainId: 1,
+					verifyingContract: Address.fromHex(
+						"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+					),
+				},
+				message: {
+					owner: Address.fromHex(
+						"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+					),
+					spender: Address.fromHex(
+						"0x0000000000000000000000000000000000000001",
+					),
+					value: 1000000n,
+					nonce: 0n,
+					deadline: 1893456000n,
+				},
+			});
+
+			const program = Effect.gen(function* () {
+				const account = yield* AccountService;
+				return yield* account.signTypedData(typedData);
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			);
+
+			const signature = await Effect.runPromise(program);
+			expect(signature).toBeDefined();
+			expect(signature.length).toBe(65);
+		});
 	});
 
 	describe("JsonRpcAccount", () => {
