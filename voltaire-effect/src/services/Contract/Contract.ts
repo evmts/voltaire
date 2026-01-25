@@ -183,7 +183,7 @@ export const Contract = <TAbi extends Abi>(
           Effect.gen(function* () {
             const data = encodeArgs(abiItems, fn.name, args)
             const result = yield* publicClient.call({ to: addressHex, data }).pipe(
-              Effect.mapError((e) => new ContractCallError(e.message, e))
+              Effect.mapError((e) => new ContractCallError({ address: addressHex, method: fn.name, args }, e.message, { cause: e }))
             )
             return decodeResult(abiItems, fn.name, result as HexType)
           })
@@ -197,7 +197,7 @@ export const Contract = <TAbi extends Abi>(
             const walletClient = yield* WalletClientService
             const data = encodeArgs(abiItems, fn.name, args)
             const txHash = yield* walletClient.sendTransaction({ to: brandedAddress as unknown as undefined, data: data as unknown as undefined }).pipe(
-              Effect.mapError((e) => new ContractWriteError(e.message, e))
+              Effect.mapError((e) => new ContractWriteError({ address: addressHex, method: fn.name, args }, e.message, { cause: e }))
             )
             return txHash as HexType
           })
@@ -210,7 +210,7 @@ export const Contract = <TAbi extends Abi>(
           Effect.gen(function* () {
             const data = encodeArgs(abiItems, fn.name, args)
             const result = yield* publicClient.call({ to: addressHex, data }).pipe(
-              Effect.mapError((e) => new ContractCallError(e.message, e))
+              Effect.mapError((e) => new ContractCallError({ address: addressHex, method: fn.name, args, simulate: true }, e.message, { cause: e }))
             )
             return decodeResult(abiItems, fn.name, result as HexType)
           })
@@ -237,7 +237,7 @@ export const Contract = <TAbi extends Abi>(
         }
         
         const logs = yield* publicClient.getLogs(logFilter).pipe(
-          Effect.mapError((e) => new ContractEventError(e.message, e))
+          Effect.mapError((e) => new ContractEventError({ address: addressHex, event: eventName, filter }, e.message, { cause: e }))
         )
         
         return logs.map((log) => decodeEventLog(abiItems, eventName, log))

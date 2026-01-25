@@ -82,6 +82,11 @@ export class TransportError extends Error {
   override readonly name = "TransportError" as const
   
   /**
+   * The original input that caused the error.
+   */
+  readonly input: { code: number; message: string; data?: unknown }
+  
+  /**
    * JSON-RPC error code.
    * 
    * @description
@@ -103,40 +108,48 @@ export class TransportError extends Error {
    * stack traces, or other debugging information.
    */
   readonly data?: unknown
+  
+  /**
+   * The underlying error that caused this failure.
+   */
+  override readonly cause?: Error
 
   /**
    * Creates a new TransportError.
    * 
-   * @param options - Error configuration object
-   * @param options.code - JSON-RPC error code (e.g., -32603 for internal error)
-   * @param options.message - Human-readable error message
-   * @param options.data - Optional additional error data from the provider
+   * @param input - Error input object with JSON-RPC error details
+   * @param input.code - JSON-RPC error code (e.g., -32603 for internal error)
+   * @param input.message - Human-readable error message from RPC
+   * @param input.data - Optional additional error data from the provider
+   * @param message - Human-readable error message (defaults to input.message)
+   * @param options - Optional error options
+   * @param options.cause - Underlying error that caused this failure
    * 
    * @example
    * ```typescript
    * // Network timeout
-   * new TransportError({
-   *   code: -32603,
-   *   message: 'Request timeout after 30000ms'
-   * })
+   * new TransportError(
+   *   { code: -32603, message: 'Internal error' },
+   *   'Request timeout after 30000ms'
+   * )
    * 
-   * // Method not found
-   * new TransportError({
-   *   code: -32601,
-   *   message: 'Method eth_unsupportedMethod not found'
-   * })
-   * 
-   * // Execution reverted with data
-   * new TransportError({
-   *   code: -32000,
-   *   message: 'execution reverted',
-   *   data: '0x08c379a0...' // Revert reason
-   * })
+   * // With cause
+   * new TransportError(
+   *   { code: -32000, message: 'execution reverted', data: '0x08c379a0...' },
+   *   'Contract execution failed',
+   *   { cause: originalError }
+   * )
    * ```
    */
-  constructor(options: { code: number; message: string; data?: unknown }) {
-    super(options.message)
-    this.code = options.code
-    this.data = options.data
+  constructor(
+    input: { code: number; message: string; data?: unknown },
+    message?: string,
+    options?: { cause?: Error }
+  ) {
+    super(message ?? input.message, options?.cause ? { cause: options.cause } : undefined)
+    this.input = input
+    this.code = input.code
+    this.data = input.data
+    this.cause = options?.cause
   }
 }

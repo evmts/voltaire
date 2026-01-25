@@ -21,6 +21,20 @@
 
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
+import type { AddressType } from "@tevm/voltaire/Address";
+import type { HashType } from "@tevm/voltaire/Hash";
+import type { HexType } from "@tevm/voltaire/Hex";
+
+/**
+ * Address input type that accepts both branded AddressType and plain hex strings.
+ * Provides flexibility for API consumers while maintaining type safety.
+ */
+export type AddressInput = AddressType | `0x${string}`;
+
+/**
+ * Hash input type that accepts both branded HashType and plain hex strings.
+ */
+export type HashInput = HashType | `0x${string}`;
 
 /**
  * Error thrown when a public client operation fails.
@@ -77,20 +91,27 @@ export class PublicClientError extends Error {
 	 * Error name for standard JavaScript error handling.
 	 */
 	override readonly name = "PublicClientError" as const;
+	
+	/**
+	 * The underlying error that caused this failure.
+	 */
+	override readonly cause?: Error;
 
 	/**
 	 * Creates a new PublicClientError.
 	 * 
 	 * @param input - The original input that caused the error (method, params, etc.)
 	 * @param message - Human-readable error message (optional, defaults to cause message)
-	 * @param cause - Optional underlying error that caused this failure
+	 * @param options - Optional error options
+	 * @param options.cause - Underlying error that caused this failure
 	 */
 	constructor(
 		public readonly input: unknown,
 		message?: string,
-		cause?: Error,
+		options?: { cause?: Error },
 	) {
-		super(message ?? cause?.message ?? `PublicClient error`, cause ? { cause } : undefined);
+		super(message ?? options?.cause?.message ?? `PublicClient error`, options?.cause ? { cause: options.cause } : undefined);
+		this.cause = options?.cause;
 	}
 }
 
@@ -145,11 +166,11 @@ export type BlockTag = "latest" | "earliest" | "pending" | "safe" | "finalized" 
  */
 export interface CallRequest {
 	/** Target contract address to call */
-	readonly to?: string;
+	readonly to?: AddressInput;
 	/** Sender address (affects msg.sender in call) */
-	readonly from?: string;
+	readonly from?: AddressInput;
 	/** ABI-encoded function call data */
-	readonly data?: string;
+	readonly data?: HexType | `0x${string}`;
 	/** Value in wei to send with the call */
 	readonly value?: bigint;
 	/** Gas limit for the call (defaults to node estimate) */
@@ -178,15 +199,15 @@ export interface CallRequest {
  */
 export interface LogFilter {
 	/** Contract address(es) to filter (single or array) */
-	readonly address?: string | string[];
+	readonly address?: AddressInput | AddressInput[];
 	/** Topic filters by position (null for wildcard at that position) */
-	readonly topics?: (string | string[] | null)[];
+	readonly topics?: (HashInput | HashInput[] | null)[];
 	/** Start block for range query (inclusive) */
 	readonly fromBlock?: BlockTag;
 	/** End block for range query (inclusive) */
 	readonly toBlock?: BlockTag;
 	/** Specific block hash (mutually exclusive with fromBlock/toBlock) */
-	readonly blockHash?: string;
+	readonly blockHash?: HashInput;
 }
 
 /**
@@ -430,11 +451,11 @@ export type PublicClientShape = {
 	/** Gets a block by tag or hash */
 	readonly getBlock: (args?: { blockTag?: BlockTag; blockHash?: string; includeTransactions?: boolean }) => Effect.Effect<BlockType, PublicClientError>;
 	/** Gets the transaction count in a block */
-	readonly getBlockTransactionCount: (args: { blockTag?: BlockTag; blockHash?: string }) => Effect.Effect<number, PublicClientError>;
+	readonly getBlockTransactionCount: (args: { blockTag?: BlockTag; blockHash?: string }) => Effect.Effect<bigint, PublicClientError>;
 	/** Gets the balance of an address */
 	readonly getBalance: (address: string, blockTag?: BlockTag) => Effect.Effect<bigint, PublicClientError>;
 	/** Gets the transaction count (nonce) for an address */
-	readonly getTransactionCount: (address: string, blockTag?: BlockTag) => Effect.Effect<number, PublicClientError>;
+	readonly getTransactionCount: (address: string, blockTag?: BlockTag) => Effect.Effect<bigint, PublicClientError>;
 	/** Gets the bytecode at an address */
 	readonly getCode: (address: string, blockTag?: BlockTag) => Effect.Effect<string, PublicClientError>;
 	/** Gets storage at a specific slot */

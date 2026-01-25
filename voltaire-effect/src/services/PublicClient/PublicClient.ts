@@ -19,6 +19,7 @@
 
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import * as Schedule from 'effect/Schedule'
 import { TransportService } from '../Transport/TransportService.js'
 import {
   PublicClientService,
@@ -143,7 +144,7 @@ export const PublicClient: Layer.Layer<PublicClientService, never, TransportServ
 
     const request = <T>(method: string, params?: unknown[]) =>
       transport.request<T>(method, params).pipe(
-        Effect.mapError((e) => new PublicClientError({ method, params }, e.message))
+        Effect.mapError((e) => new PublicClientError({ method, params }, e.message, { cause: e }))
       )
 
     return {
@@ -164,7 +165,7 @@ export const PublicClient: Layer.Layer<PublicClientService, never, TransportServ
         const method = args.blockHash ? 'eth_getBlockTransactionCountByHash' : 'eth_getBlockTransactionCountByNumber'
         const params = args.blockHash ? [args.blockHash] : [args.blockTag ?? 'latest']
         return request<string>(method, params).pipe(
-          Effect.map((hex) => Number(hex))
+          Effect.map((hex) => BigInt(hex))
         )
       },
 
@@ -175,7 +176,7 @@ export const PublicClient: Layer.Layer<PublicClientService, never, TransportServ
 
       getTransactionCount: (address: string, blockTag: BlockTag = 'latest') =>
         request<string>('eth_getTransactionCount', [address, blockTag]).pipe(
-          Effect.map((hex) => Number(hex))
+          Effect.map((hex) => BigInt(hex))
         ),
 
       getCode: (address: string, blockTag: BlockTag = 'latest') =>
@@ -190,25 +191,30 @@ export const PublicClient: Layer.Layer<PublicClientService, never, TransportServ
       getTransactionReceipt: (hash: string) =>
         request<ReceiptType>('eth_getTransactionReceipt', [hash]),
 
-      waitForTransactionReceipt: (hash: string, opts?: { confirmations?: number; timeout?: number }) =>
-        Effect.gen(function* () {
-          const timeout = opts?.timeout ?? 60000
-          const confirmations = opts?.confirmations ?? 1
-          const startTime = Date.now()
+      waitForTransactionReceipt: (hash: string, opts?: { confirmations?: number; timeout?: number }) => {
+        const confirmations = opts?.confirmations ?? 1
+        const timeoutMs = opts?.timeout ?? 60000
 
-          while (Date.now() - startTime < timeout) {
-            const receipt = yield* request<ReceiptType | null>('eth_getTransactionReceipt', [hash])
-            if (receipt) {
-              const currentBlock = yield* request<string>('eth_blockNumber')
-              const receiptBlock = BigInt(receipt.blockNumber)
-              if (BigInt(currentBlock) - receiptBlock >= BigInt(confirmations - 1)) {
-                return receipt
-              }
-            }
-            yield* Effect.sleep(1000)
+        const checkReceipt = Effect.gen(function* () {
+          const receipt = yield* request<ReceiptType | null>('eth_getTransactionReceipt', [hash])
+          if (!receipt) return yield* Effect.fail('pending' as const)
+
+          const currentBlock = yield* request<string>('eth_blockNumber')
+          const receiptBlock = BigInt(receipt.blockNumber)
+          if (BigInt(currentBlock) - receiptBlock >= BigInt(confirmations - 1)) {
+            return receipt
           }
-          return yield* Effect.fail(new PublicClientError(hash, 'Transaction receipt timeout'))
-        }),
+          return yield* Effect.fail('pending' as const)
+        })
+
+        return checkReceipt.pipe(
+          Effect.retry(Schedule.spaced(1000)),
+          Effect.timeout(timeoutMs),
+          Effect.catchTag('TimeoutException', () =>
+            Effect.fail(new PublicClientError(hash, 'Transaction receipt timeout'))
+          )
+        )
+      },
 
       call: (tx: CallRequest, blockTag: BlockTag = 'latest') =>
         request<string>('eth_call', [formatCallRequest(tx), blockTag]),
@@ -233,7 +239,13 @@ export const PublicClient: Layer.Layer<PublicClientService, never, TransportServ
 
       getChainId: () =>
         request<string>('eth_chainId').pipe(
-          Effect.map((hex) => Number(hex))
+          Effect.flatMap((hex) => {
+            const value = BigInt(hex)
+            if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+              return Effect.fail(new PublicClientError({ method: 'eth_chainId' }, `Chain ID ${value} exceeds safe integer range`))
+            }
+            return Effect.succeed(Number(value))
+          })
         ),
 
       getGasPrice: () =>

@@ -246,7 +246,7 @@ describe("WalletClientService", () => {
 			const failingAccount: AccountShape = {
 				...mockAccount,
 				signMessage: () =>
-					Effect.fail(new WalletClientError("Sign failed") as never),
+					Effect.fail(new WalletClientError({ action: 'signMessage' }, "Sign failed") as never),
 			};
 
 			const failingAccountLayer = Layer.succeed(AccountService, failingAccount);

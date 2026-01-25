@@ -33,7 +33,7 @@ type TypedDataType = TypedData.TypedDataType;
  * Error thrown when an account operation fails.
  * 
  * @description
- * Contains the error message and optional underlying cause.
+ * Contains the original input, error message and optional underlying cause.
  * All AccountService methods may fail with this error type.
  * 
  * Common failure reasons:
@@ -47,10 +47,12 @@ type TypedDataType = TypedData.TypedDataType;
  * @example Creating an AccountError
  * ```typescript
  * const error = new AccountError(
+ *   { action: 'signMessage', message: '0x1234' },
  *   'Failed to sign message',
- *   originalError
+ *   { cause: originalError }
  * )
  * 
+ * console.log(error.input)   // { action: 'signMessage', message: '0x1234' }
  * console.log(error.message) // 'Failed to sign message'
  * console.log(error.cause)   // originalError
  * ```
@@ -82,18 +84,27 @@ export class AccountError extends Error {
 	 * Error name for standard JavaScript error handling.
 	 */
 	override readonly name = "AccountError" as const;
+	
+	/**
+	 * The underlying error that caused this failure.
+	 */
+	override readonly cause?: Error;
 
 	/**
 	 * Creates a new AccountError.
 	 * 
+	 * @param input - The original input that caused the error
 	 * @param message - Human-readable error message
-	 * @param cause - Optional underlying error that caused this failure
+	 * @param options - Optional error options
+	 * @param options.cause - Underlying error that caused this failure
 	 */
 	constructor(
+		public readonly input: unknown,
 		message: string,
-		public readonly cause?: Error,
+		options?: { cause?: Error },
 	) {
-		super(message, cause ? { cause } : undefined);
+		super(message, options?.cause ? { cause: options.cause } : undefined);
+		this.cause = options?.cause;
 	}
 }
 

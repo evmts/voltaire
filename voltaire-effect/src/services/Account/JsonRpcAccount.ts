@@ -120,7 +120,7 @@ export const JsonRpcAccount = (address: AddressType) => Layer.effect(
       signMessage: (message: HexType) =>
         transport.request<HexType>('personal_sign', [message, Address.toHex(address)]).pipe(
           Effect.map((sigHex) => Signature.fromHex(sigHex) as SignatureType),
-          Effect.mapError((e) => new AccountError('Failed to sign message via JSON-RPC', e instanceof Error ? e : undefined))
+          Effect.mapError((e) => new AccountError({ action: 'signMessage', message }, 'Failed to sign message via JSON-RPC', { cause: e instanceof Error ? e : undefined }))
         ),
 
       signTransaction: (tx: UnsignedTransaction) =>
@@ -140,7 +140,7 @@ export const JsonRpcAccount = (address: AddressType) => Layer.effect(
           const sigHex = yield* transport.request<HexType>('eth_signTransaction', [txRequest])
           return Signature.fromHex(sigHex) as SignatureType
         }).pipe(
-          Effect.mapError((e) => new AccountError('Failed to sign transaction via JSON-RPC', e instanceof Error ? e : undefined))
+          Effect.mapError((e) => new AccountError({ action: 'signTransaction', tx }, 'Failed to sign transaction via JSON-RPC', { cause: e instanceof Error ? e : undefined }))
         ),
 
       signTypedData: (typedData: TypedDataType) =>
@@ -149,7 +149,7 @@ export const JsonRpcAccount = (address: AddressType) => Layer.effect(
           JSON.stringify(typedData, (_, v) => typeof v === 'bigint' ? v.toString() : v)
         ]).pipe(
           Effect.map((sigHex) => Signature.fromHex(sigHex) as SignatureType),
-          Effect.mapError((e) => new AccountError('Failed to sign typed data via JSON-RPC', e instanceof Error ? e : undefined))
+          Effect.mapError((e) => new AccountError({ action: 'signTypedData', typedData }, 'Failed to sign typed data via JSON-RPC', { cause: e instanceof Error ? e : undefined }))
         )
     })
   })

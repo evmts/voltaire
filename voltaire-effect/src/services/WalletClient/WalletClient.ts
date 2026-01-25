@@ -195,8 +195,9 @@ export const WalletClientLive: Layer.Layer<
 				Effect.mapError(
 					(e) =>
 						new WalletClientError(
+							tx,
 							`Failed to sign transaction: ${e instanceof Error ? e.message : String(e)}`,
-							e instanceof Error ? e : undefined,
+							{ cause: e instanceof Error ? e : undefined },
 						),
 				),
 			);
@@ -207,8 +208,9 @@ export const WalletClientLive: Layer.Layer<
 					Effect.mapError(
 						(e) =>
 							new WalletClientError(
+								{ action: 'signMessage', message },
 								`Failed to sign message: ${e.message}`,
-								e,
+								{ cause: e },
 							),
 					),
 				),
@@ -220,8 +222,9 @@ export const WalletClientLive: Layer.Layer<
 					Effect.mapError(
 						(e) =>
 							new WalletClientError(
+								{ action: 'signTypedData', typedData },
 								`Failed to sign typed data: ${e.message}`,
-								e,
+								{ cause: e },
 							),
 					),
 				),
@@ -235,8 +238,9 @@ export const WalletClientLive: Layer.Layer<
 							Effect.mapError(
 								(e) =>
 									new WalletClientError(
+										tx,
 										`Failed to send transaction: ${e.message}`,
-										e,
+										{ cause: e },
 									),
 							),
 						);
@@ -249,8 +253,9 @@ export const WalletClientLive: Layer.Layer<
 						Effect.mapError(
 							(e) =>
 								new WalletClientError(
+									{ action: 'sendRawTransaction', signedTx },
 									`Failed to send raw transaction: ${e.message}`,
-									e,
+									{ cause: e },
 								),
 						),
 					),
@@ -260,8 +265,9 @@ export const WalletClientLive: Layer.Layer<
 					Effect.mapError(
 						(e) =>
 							new WalletClientError(
+								{ action: 'requestAddresses' },
 								`Failed to request addresses: ${e.message}`,
-								e,
+								{ cause: e },
 							),
 					),
 				),
@@ -275,8 +281,9 @@ export const WalletClientLive: Layer.Layer<
 						Effect.mapError(
 							(e) =>
 								new WalletClientError(
+									{ action: 'switchChain', chainId },
 									`Failed to switch chain: ${e.message}`,
-									e,
+									{ cause: e },
 								),
 						),
 					),

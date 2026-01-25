@@ -34,7 +34,7 @@ type TypedDataType = TypedData.TypedDataType;
  * Error thrown when a wallet client operation fails.
  * 
  * @description
- * Contains the error message and optional underlying cause.
+ * Contains the original input, error message and optional underlying cause.
  * All WalletClientService methods may fail with this error type.
  * 
  * Common failure reasons:
@@ -49,11 +49,13 @@ type TypedDataType = TypedData.TypedDataType;
  * @example Creating a WalletClientError
  * ```typescript
  * const error = new WalletClientError(
- *   'Failed to sign transaction',
- *   originalError
+ *   { to: '0x123...', value: 1000000000000000000n },
+ *   'Failed to send transaction',
+ *   { cause: originalError }
  * )
  * 
- * console.log(error.message) // 'Failed to sign transaction'
+ * console.log(error.input)   // { to: '0x123...', value: 1000000000000000000n }
+ * console.log(error.message) // 'Failed to send transaction'
  * console.log(error.cause)   // originalError
  * ```
  * 
@@ -86,18 +88,27 @@ export class WalletClientError extends Error {
 	 * Error name for standard JavaScript error handling.
 	 */
 	override readonly name = "WalletClientError" as const;
+	
+	/**
+	 * The underlying error that caused this failure.
+	 */
+	override readonly cause?: Error;
 
 	/**
 	 * Creates a new WalletClientError.
 	 * 
+	 * @param input - The original input that caused the error
 	 * @param message - Human-readable error message
-	 * @param cause - Optional underlying error that caused this failure
+	 * @param options - Optional error options
+	 * @param options.cause - Underlying error that caused this failure
 	 */
 	constructor(
+		public readonly input: unknown,
 		message: string,
-		public readonly cause?: Error,
+		options?: { cause?: Error },
 	) {
-		super(message, cause ? { cause } : undefined);
+		super(message, options?.cause ? { cause: options.cause } : undefined);
+		this.cause = options?.cause;
 	}
 }
 

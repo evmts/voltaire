@@ -229,18 +229,42 @@ function encodeValue(
 
 /**
  * Creates a local account layer from a private key.
+ * 
+ * @description
  * Signs messages and transactions locally using secp256k1.
+ * The private key is kept in memory and used for all signing operations.
+ * The account address is derived from the public key.
+ * 
  * Requires Secp256k1Service and KeccakService for cryptographic operations.
  * 
- * @param privateKeyHex - The private key as a hex string (with 0x prefix)
- * @returns Layer providing AccountService
+ * Security considerations:
+ * - Private key is stored in memory
+ * - Suitable for server-side applications or testing
+ * - For user funds in production, prefer hardware wallets
  * 
- * @example
+ * @param privateKeyHex - The private key as a hex string (with 0x prefix)
+ * @returns Layer providing AccountService (requires Secp256k1Service and KeccakService)
+ * 
+ * @throws {AccountError} When signing operations fail
+ * 
+ * @since 0.0.1
+ * 
+ * @example Basic usage
  * ```typescript
- * const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as HexType
+ * import { Effect } from 'effect'
+ * import { 
+ *   AccountService, 
+ *   LocalAccount,
+ *   Secp256k1Live,
+ *   KeccakLive 
+ * } from 'voltaire-effect/services'
+ * import { Hex } from '@tevm/voltaire'
+ * 
+ * const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
  * 
  * const program = Effect.gen(function* () {
  *   const account = yield* AccountService
+ *   console.log('Address:', account.address)
  *   const signature = yield* account.signMessage(messageHex)
  *   return signature
  * }).pipe(
@@ -248,8 +272,44 @@ function encodeValue(
  *   Effect.provide(Secp256k1Live),
  *   Effect.provide(KeccakLive)
  * )
+ * 
+ * await Effect.runPromise(program)
  * ```
- * @since 0.0.1
+ * 
+ * @example With WalletClient for transactions
+ * ```typescript
+ * import { Effect } from 'effect'
+ * import { 
+ *   WalletClientService,
+ *   WalletClientLive,
+ *   LocalAccount,
+ *   PublicClient,
+ *   HttpTransport,
+ *   Secp256k1Live,
+ *   KeccakLive
+ * } from 'voltaire-effect/services'
+ * 
+ * const program = Effect.gen(function* () {
+ *   const wallet = yield* WalletClientService
+ *   const txHash = yield* wallet.sendTransaction({
+ *     to: recipientAddress,
+ *     value: 1000000000000000000n
+ *   })
+ *   return txHash
+ * }).pipe(
+ *   Effect.provide(WalletClientLive),
+ *   Effect.provide(LocalAccount(privateKey)),
+ *   Effect.provide(Secp256k1Live),
+ *   Effect.provide(KeccakLive),
+ *   Effect.provide(PublicClient),
+ *   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+ * )
+ * ```
+ * 
+ * @see {@link AccountService} - The service interface
+ * @see {@link JsonRpcAccount} - Alternative for remote signing
+ * @see {@link Secp256k1Service} - Required cryptographic dependency
+ * @see {@link KeccakService} - Required cryptographic dependency
  */
 export const LocalAccount = (privateKeyHex: HexType) => Layer.effect(
   AccountService,
@@ -279,7 +339,7 @@ export const LocalAccount = (privateKeyHex: HexType) => Layer.effect(
           const sig = yield* secp256k1.sign(hash as unknown as HashType, privateKeyBytes)
           return sig as unknown as SignatureType
         }).pipe(
-          Effect.mapError((e) => new AccountError('Failed to sign message', e instanceof Error ? e : undefined))
+          Effect.mapError((e) => new AccountError({ action: 'signMessage' }, 'Failed to sign message', { cause: e instanceof Error ? e : undefined }))
         ),
 
       signTransaction: (tx: UnsignedTransaction) =>
@@ -289,7 +349,7 @@ export const LocalAccount = (privateKeyHex: HexType) => Layer.effect(
           const sig = yield* secp256k1.sign(hash as unknown as HashType, privateKeyBytes)
           return sig as unknown as SignatureType
         }).pipe(
-          Effect.mapError((e) => new AccountError('Failed to sign transaction', e instanceof Error ? e : undefined))
+          Effect.mapError((e) => new AccountError({ action: 'signTransaction' }, 'Failed to sign transaction', { cause: e instanceof Error ? e : undefined }))
         ),
 
       signTypedData: (typedData: TypedDataType) =>
@@ -298,7 +358,7 @@ export const LocalAccount = (privateKeyHex: HexType) => Layer.effect(
           const sig = yield* secp256k1.sign(hash as unknown as HashType, privateKeyBytes)
           return sig as unknown as SignatureType
         }).pipe(
-          Effect.mapError((e) => new AccountError('Failed to sign typed data', e instanceof Error ? e : undefined))
+          Effect.mapError((e) => new AccountError({ action: 'signTypedData' }, 'Failed to sign typed data', { cause: e instanceof Error ? e : undefined }))
         )
     })
   })

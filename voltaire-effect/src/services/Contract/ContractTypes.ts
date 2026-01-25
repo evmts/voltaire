@@ -119,13 +119,21 @@ export interface DecodedEvent {
 export class ContractError extends Error {
   readonly _tag: string = 'ContractError'
   override readonly name: string = 'ContractError'
+  override readonly cause?: Error
   /**
    * Creates a new ContractError.
+   * @param input - The original input that caused the error
    * @param message - Human-readable error message
-   * @param cause - Optional underlying error that caused this failure
+   * @param options - Optional error options
+   * @param options.cause - Underlying error that caused this failure
    */
-  constructor(message: string, readonly cause?: Error) {
-    super(message, cause ? { cause } : undefined)
+  constructor(
+    public readonly input: unknown,
+    message: string,
+    options?: { cause?: Error }
+  ) {
+    super(message, options?.cause ? { cause: options.cause } : undefined)
+    this.cause = options?.cause
   }
 }
 
@@ -138,11 +146,13 @@ export class ContractCallError extends ContractError {
   override readonly name = 'ContractCallError'
   /**
    * Creates a new ContractCallError.
+   * @param input - The original input that caused the error
    * @param message - Human-readable error message
-   * @param cause - Optional underlying error that caused this failure
+   * @param options - Optional error options
+   * @param options.cause - Underlying error that caused this failure
    */
-  constructor(message: string, cause?: Error) {
-    super(message, cause)
+  constructor(input: unknown, message: string, options?: { cause?: Error }) {
+    super(input, message, options)
   }
 }
 
@@ -155,11 +165,13 @@ export class ContractWriteError extends ContractError {
   override readonly name = 'ContractWriteError'
   /**
    * Creates a new ContractWriteError.
+   * @param input - The original input that caused the error
    * @param message - Human-readable error message
-   * @param cause - Optional underlying error that caused this failure
+   * @param options - Optional error options
+   * @param options.cause - Underlying error that caused this failure
    */
-  constructor(message: string, cause?: Error) {
-    super(message, cause)
+  constructor(input: unknown, message: string, options?: { cause?: Error }) {
+    super(input, message, options)
   }
 }
 
@@ -172,11 +184,13 @@ export class ContractEventError extends ContractError {
   override readonly name = 'ContractEventError'
   /**
    * Creates a new ContractEventError.
+   * @param input - The original input that caused the error
    * @param message - Human-readable error message
-   * @param cause - Optional underlying error that caused this failure
+   * @param options - Optional error options
+   * @param options.cause - Underlying error that caused this failure
    */
-  constructor(message: string, cause?: Error) {
-    super(message, cause)
+  constructor(input: unknown, message: string, options?: { cause?: Error }) {
+    super(input, message, options)
   }
 }
 

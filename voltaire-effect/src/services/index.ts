@@ -116,3 +116,6 @@ export {
   type Abi as ContractAbi,
   type AbiItem as ContractAbiItem,
 } from "./Contract/index.js";
+
+// Preset exports (layer composition helpers)
+export { MainnetPublicClient, createPublicClient } from "./presets/index.js";

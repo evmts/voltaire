@@ -240,15 +240,16 @@ describe('AccountService', () => {
 
   describe('AccountError', () => {
     it('has correct tag', () => {
-      const error = new AccountError('test message')
+      const error = new AccountError({ action: 'signMessage' }, 'test message')
       expect(error._tag).toBe('AccountError')
       expect(error.name).toBe('AccountError')
       expect(error.message).toBe('test message')
+      expect(error.input).toEqual({ action: 'signMessage' })
     })
 
     it('chains cause', () => {
       const cause = new Error('original')
-      const error = new AccountError('wrapped', cause)
+      const error = new AccountError({ action: 'signTransaction' }, 'wrapped', { cause })
       expect(error.cause).toBe(cause)
     })
   })
