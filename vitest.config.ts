@@ -14,6 +14,7 @@ export default defineConfig({
 		hookTimeout: 30000,
 		include: [
 			"src/**/*.{test,test-d,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
+			"voltaire-effect/**/*.{test,test-d,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
 			"examples/**/*.test.ts",
 			"docs/**/*.test.ts",
 			"tests/**/*.test.ts",
