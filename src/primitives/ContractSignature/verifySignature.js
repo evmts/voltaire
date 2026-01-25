@@ -1,5 +1,19 @@
 import { Address } from "../Address/index.js";
 import { isValidSignature } from "./isValidSignature.js";
+import { ContractSignatureError } from "./errors.js";
+
+/**
+ * Error thrown when signature format is invalid (not a verification failure)
+ */
+export class InvalidSignatureFormatError extends Error {
+	/**
+	 * @param {string} message
+	 */
+	constructor(message) {
+		super(message);
+		this.name = "InvalidSignatureFormatError";
+	}
+}
 
 /**
  * Factory: Create unified signature verification for EOA and contract accounts
@@ -74,9 +88,11 @@ export function VerifySignature({
 				let sigComponents;
 				if (signature instanceof Uint8Array) {
 					// Assume 65-byte signature: r (32) + s (32) + v (1)
-					if (signature.length !== 65) {
-						return false;
-					}
+						if (signature.length !== 65) {
+							throw new InvalidSignatureFormatError(
+								`Invalid signature length: expected 65 bytes, got ${signature.length}`,
+							);
+						}
 					sigComponents = {
 						r: signature.slice(0, 32),
 						s: signature.slice(32, 64),
@@ -107,8 +123,27 @@ export function VerifySignature({
 					? signature
 					: concatSignature(signature);
 			return await isValidSignature(provider, address, hash, signatureBytes);
-		} catch (_error) {
-			// Verification failed
+		} catch (error) {
+			// InvalidSignatureFormatError indicates malformed input - re-throw
+			if (error instanceof InvalidSignatureFormatError) {
+				throw error;
+			}
+			// Network/provider errors should propagate
+			if (
+				error instanceof Error &&
+				(error.message.includes("network") ||
+					error.message.includes("timeout") ||
+					error.message.includes("connection") ||
+					error.name === "FetchError" ||
+					error.name === "NetworkError")
+			) {
+				throw new ContractSignatureError(
+					`Network error during signature verification: ${error.message}`,
+					{ cause: error },
+				);
+			}
+			// Signature validation failures (ecrecover failed, contract returned false, etc.)
+			// are legitimate "invalid signature" results
 			return false;
 		}
 	};
