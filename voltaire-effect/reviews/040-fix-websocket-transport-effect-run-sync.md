@@ -1,92 +1,390 @@
 # Fix WebSocketTransport Effect.runSync in Callbacks
 
-## Problem
+<issue>
+<metadata>
+priority: P0
+files: [src/services/Transport/WebSocketTransport.ts]
+reviews: [073-fix-websocket-effect-runsync-in-callbacks.md, 076-transport-services-review.md]
+related: [041, 042]
+</metadata>
 
-WebSocketTransport uses `Effect.runSync` inside WebSocket event callbacks, which escapes the Effect runtime and can cause issues.
+<problem>
+## Anti-Pattern: Effect.runSync in WebSocket Event Callbacks
 
-**Location**: `src/services/Transport/WebSocketTransport.ts#L353, L378`
+WebSocketTransport uses `Effect.runSync` inside WebSocket event callbacks (`onopen`, `onmessage`, `onclose`, `onerror`), breaking Effect's structured concurrency model.
+
+**Location**: `src/services/Transport/WebSocketTransport.ts#L323, L337, L353, L378`
 
 ```typescript
-ws.onmessage = (event) => {
-  Effect.runSync(handleMessage(event.data));  // ❌ Escapes runtime
+// onopen handler (L322-334)
+ws.onopen = () => {
+  Effect.runSync(  // ❌ Escapes runtime
+    Effect.gen(function* () {
+      yield* Ref.set(attemptCountRef, 0);
+      yield* Ref.set(wsRef, ws);
+      yield* startKeepAlive;  // Starts setInterval inside!
+      yield* flushQueue;
+    }),
+  );
 };
 
-ws.onerror = (event) => {
-  Effect.runSync(handleError(event));  // ❌ Escapes runtime
+// onmessage handler (L348-375)
+ws.onmessage = (event) => {
+  Effect.runSync(  // ❌ Escapes runtime
+    Effect.gen(function* () {
+      yield* Ref.update(pendingRef, (pending) => { ... });
+      yield* Deferred.succeed(foundDeferred, message);
+    }),
+  );
+};
+
+// onclose handler (L377-458)
+ws.onclose = () => {
+  Effect.runSync(  // ❌ Escapes runtime - contains setTimeout inside!
+    Effect.gen(function* () {
+      yield* stopKeepAlive;
+      if (reconnectEnabled) {
+        setTimeout(() => { ... }, delay);  // Double escape!
+      }
+    }),
+  );
 };
 ```
 
-## Why This Matters
+### Why This Matters
 
-- Loses fiber context and tracing
-- Cannot use async effects in handlers
-- Interruption signals don't propagate
-- Error handling becomes synchronous-only
+1. **Loses fiber context**: Tracing, spans, and logging context are lost
+2. **Cannot use async effects**: Any `yield*` that suspends will throw
+3. **Interruption signals don't propagate**: Scope close won't cancel handlers
+4. **Error handling becomes synchronous-only**: No Effect error channel
+5. **No structured concurrency**: Fibers spawned inside are orphaned
+6. **Resource leaks**: Finalizers may not run properly
+</problem>
 
-## Solution
+<solution>
+## Effect Pattern: Runtime.runFork with Captured Runtime
 
-Use a queue-based approach with proper Effect bridging:
+Capture the runtime at layer creation time, then use `Runtime.runFork` in callbacks to spawn fibers that maintain the Effect context.
+
+### Key Concepts
+
+1. **Capture Runtime**: `const runtime = yield* Effect.runtime<never>()`
+2. **Fork in Callbacks**: `Runtime.runFork(runtime)(effect)` spawns a proper fiber
+3. **Queue for Messages**: Use `Queue.unbounded` to bridge async events into Effect
+4. **Fiber for Processing**: Fork a scoped fiber that processes the queue
+
+### viem Reference
+
+viem's `socket.ts` uses similar callback patterns but in plain JS:
+- `onClose()` triggers `attemptReconnect()` 
+- `onOpen()` resets reconnect state
+- `onResponse()` correlates via ID map
+
+The Effect equivalent wraps these in proper fibers.
 
 ```typescript
 import * as Queue from "effect/Queue";
 import * as Runtime from "effect/Runtime";
+import * as Fiber from "effect/Fiber";
 
-const makeWebSocketTransport = (url: string) =>
-  Effect.gen(function* () {
-    const runtime = yield* Effect.runtime<never>();
-    const messageQueue = yield* Queue.unbounded<MessageEvent>();
-    const errorQueue = yield* Queue.unbounded<Event>();
-
-    const ws = new WebSocket(url);
-    
-    ws.onmessage = (event) => {
-      Runtime.runSync(runtime)(Queue.offer(messageQueue, event));
-    };
-    
-    ws.onerror = (event) => {
-      Runtime.runSync(runtime)(Queue.offer(errorQueue, event));
-    };
-
-    // Process messages in Effect context
-    const processMessages = Queue.take(messageQueue).pipe(
-      Effect.flatMap(handleMessage),
-      Effect.forever
-    );
-
-    yield* Effect.forkScoped(processMessages);
-    
-    // ...
-  });
-```
-
-Or simpler - capture runtime at layer creation:
-
-```typescript
-const WebSocketTransport = (url: string): Layer.Layer<TransportService> =>
+const WebSocketTransport = (options: WebSocketTransportConfig | string) =>
   Layer.scoped(
     TransportService,
     Effect.gen(function* () {
+      // Capture runtime for callback use
       const runtime = yield* Effect.runtime<never>();
-      const ws = yield* Effect.acquireRelease(
-        Effect.sync(() => new WebSocket(url)),
-        (ws) => Effect.sync(() => ws.close())
-      );
-
+      
+      // Message queue bridges WebSocket events → Effect fibers
+      const messageQueue = yield* Queue.unbounded<MessageEvent>();
+      const closeQueue = yield* Queue.unbounded<CloseEvent>();
+      
+      // ... refs setup ...
+      
+      const ws = new WebSocket(config.url, config.protocols);
+      
+      // Callbacks enqueue to queues (minimal sync work)
       ws.onmessage = (event) => {
-        Runtime.runPromise(runtime)(handleMessage(event.data));
+        Runtime.runFork(runtime)(Queue.offer(messageQueue, event));
       };
-      // ...
+      
+      ws.onclose = (event) => {
+        Runtime.runFork(runtime)(Queue.offer(closeQueue, event));
+      };
+      
+      ws.onopen = () => {
+        Runtime.runFork(runtime)(
+          Effect.gen(function* () {
+            yield* Ref.set(attemptCountRef, 0);
+            yield* Ref.set(wsRef, ws);
+            yield* Deferred.succeed(connectDeferred, ws);
+            // startKeepAlive now uses Effect.forkScoped (see 042)
+            yield* startKeepAlive;
+            yield* flushQueue;
+          })
+        );
+      };
+      
+      // Process messages in Effect context with full fiber support
+      const processMessages = Queue.take(messageQueue).pipe(
+        Effect.flatMap((event) =>
+          Effect.gen(function* () {
+            const message = JSON.parse(event.data) as JsonRpcResponse<unknown>;
+            if (message.id === "keepalive") return;
+            
+            let foundDeferred: Deferred.Deferred<JsonRpcResponse<unknown>, never> | undefined;
+            yield* Ref.update(pendingRef, (pending) => {
+              foundDeferred = pending.get(message.id as number);
+              if (foundDeferred) {
+                const newPending = new Map(pending);
+                newPending.delete(message.id as number);
+                return newPending;
+              }
+              return pending;
+            });
+            if (foundDeferred) {
+              yield* Deferred.succeed(foundDeferred, message);
+            }
+          })
+        ),
+        Effect.forever,
+        Effect.catchAll(() => Effect.void)
+      );
+      
+      // Fork as scoped - automatically interrupted on scope close
+      yield* Effect.forkScoped(processMessages);
+      
+      // Process close events with reconnection logic
+      const processCloseEvents = Queue.take(closeQueue).pipe(
+        Effect.flatMap(() => handleDisconnect),  // Uses Effect.sleep (see 041)
+        Effect.forever,
+        Effect.catchAll(() => Effect.void)
+      );
+      
+      yield* Effect.forkScoped(processCloseEvents);
+      
+      // ... rest of implementation ...
     })
   );
 ```
+</solution>
 
-## Acceptance Criteria
+<implementation>
+<steps>
+1. **Add Runtime capture at layer creation**:
+   ```typescript
+   const runtime = yield* Effect.runtime<never>();
+   ```
 
-- [ ] Replace `Effect.runSync` with `Runtime.runSync(runtime)` or queue-based approach
-- [ ] Capture runtime via `Effect.runtime<never>()`
-- [ ] Ensure cleanup on scope close
-- [ ] All existing tests pass
+2. **Create message and event queues**:
+   ```typescript
+   const messageQueue = yield* Queue.unbounded<MessageEvent>();
+   const closeQueue = yield* Queue.unbounded<CloseEvent>();
+   const errorQueue = yield* Queue.unbounded<Event>();
+   ```
 
-## Priority
+3. **Replace Effect.runSync with Runtime.runFork**:
+   - `ws.onopen`: `Runtime.runFork(runtime)(handleOpen)`
+   - `ws.onmessage`: `Runtime.runFork(runtime)(Queue.offer(messageQueue, event))`
+   - `ws.onclose`: `Runtime.runFork(runtime)(Queue.offer(closeQueue, event))`
+   - `ws.onerror`: `Runtime.runFork(runtime)(Queue.offer(errorQueue, event))`
 
-**High** - Effect runtime escape
+4. **Fork scoped processors for queues**:
+   ```typescript
+   yield* Effect.forkScoped(processMessages);
+   yield* Effect.forkScoped(processCloseEvents);
+   ```
+
+5. **Update imports**:
+   ```typescript
+   import * as Queue from "effect/Queue";
+   import * as Runtime from "effect/Runtime";
+   ```
+</steps>
+
+<patterns>
+### Runtime.runFork Pattern
+```typescript
+// Capture at effect creation time
+const runtime = yield* Effect.runtime<never>();
+
+// Use in callbacks - returns RuntimeFiber
+callback = (event) => {
+  Runtime.runFork(runtime)(handleEvent(event));
+};
+```
+
+### Queue Bridge Pattern
+```typescript
+// Queue bridges async world → Effect world
+const queue = yield* Queue.unbounded<Event>();
+
+// Callback offers (sync, minimal work)
+callback = (event) => {
+  Runtime.runFork(runtime)(Queue.offer(queue, event));
+};
+
+// Processor takes (full Effect context)
+const processor = Queue.take(queue).pipe(
+  Effect.flatMap(handleEvent),
+  Effect.forever
+);
+yield* Effect.forkScoped(processor);
+```
+
+### Effect.forkScoped Pattern
+```typescript
+// Fiber is automatically interrupted when scope closes
+yield* Effect.forkScoped(longRunningEffect);
+
+// No manual cleanup needed - finalizer handles it
+yield* Effect.addFinalizer(() => 
+  Effect.log("Scope closing, fibers interrupted")
+);
+```
+</patterns>
+
+<cleanup>
+### Resource Cleanup on Scope Close
+
+1. **Scoped fibers**: `Effect.forkScoped` fibers are automatically interrupted
+2. **Queues**: Shutdown via `Queue.shutdown` in finalizer
+3. **WebSocket**: Close via `ws.close()` in finalizer
+4. **Pending requests**: Fail all deferreds with closure error
+
+```typescript
+yield* Effect.addFinalizer(() =>
+  Effect.gen(function* () {
+    yield* Ref.set(isClosedRef, true);
+    yield* Queue.shutdown(messageQueue);
+    yield* Queue.shutdown(closeQueue);
+    const ws = yield* Ref.get(wsRef);
+    if (ws) ws.close();
+    // Pending requests handled by onclose → closeQueue processor
+  })
+);
+```
+</cleanup>
+</implementation>
+
+<tests>
+```typescript
+describe("WebSocketTransport Runtime.runFork", () => {
+  it("should maintain fiber context in message handlers", async () => {
+    const spanId = await Effect.gen(function* () {
+      const t = yield* TransportService;
+      // Verify tracing context is preserved
+      return yield* Effect.currentSpan.pipe(
+        Effect.map((span) => span?.spanId)
+      );
+    }).pipe(
+      Effect.provide(WebSocketTransport("ws://localhost:8545")),
+      Effect.scoped,
+      Effect.withSpan("test-span"),
+      Effect.runPromise
+    );
+    expect(spanId).toBeDefined();
+  });
+
+  it("should interrupt message processor on scope close", async () => {
+    let processorInterrupted = false;
+    
+    await Effect.gen(function* () {
+      const t = yield* TransportService;
+      yield* Effect.addFinalizer(() =>
+        Effect.sync(() => { processorInterrupted = true; })
+      );
+      // Scope closes immediately
+    }).pipe(
+      Effect.provide(WebSocketTransport("ws://localhost:8545")),
+      Effect.scoped,
+      Effect.runPromise
+    );
+    
+    expect(processorInterrupted).toBe(true);
+  });
+
+  it("should properly cleanup queues on interruption", async () => {
+    const fiber = Effect.gen(function* () {
+      const t = yield* TransportService;
+      yield* Effect.never; // Keep running
+    }).pipe(
+      Effect.provide(WebSocketTransport("ws://localhost:8545")),
+      Effect.scoped,
+      Effect.runFork
+    );
+    
+    await Effect.runPromise(
+      Fiber.interrupt(fiber).pipe(Effect.delay("100 millis"))
+    );
+    
+    // Should complete without hanging
+  });
+});
+```
+</tests>
+
+<docs>
+```typescript
+/**
+ * WebSocket transport implementation using Effect patterns.
+ * 
+ * ## Lifecycle Management
+ * 
+ * The transport uses Effect's structured concurrency model:
+ * - Runtime captured at layer creation via `Effect.runtime<never>()`
+ * - WebSocket callbacks use `Runtime.runFork` to spawn fibers
+ * - Message processing runs in scoped fibers (`Effect.forkScoped`)
+ * - All fibers automatically interrupted when scope closes
+ * 
+ * ## Event Flow
+ * 
+ * ```
+ * WebSocket.onmessage → Queue.offer → Processor Fiber → Deferred.succeed
+ *                       ↑                              ↓
+ *              Runtime.runFork                  pendingRef lookup
+ * ```
+ * 
+ * @example
+ * ```typescript
+ * const program = Effect.gen(function* () {
+ *   const t = yield* TransportService;
+ *   return yield* t.request<string>('eth_blockNumber');
+ * }).pipe(
+ *   Effect.provide(WebSocketTransport('wss://eth.example.com')),
+ *   Effect.scoped  // Required - triggers cleanup on exit
+ * );
+ * ```
+ */
+```
+</docs>
+
+<api>
+<before>
+```typescript
+// Effect.runSync escapes runtime
+ws.onmessage = (event) => {
+  Effect.runSync(handleMessage(event.data));
+};
+```
+</before>
+
+<after>
+```typescript
+// Runtime.runFork maintains context
+const runtime = yield* Effect.runtime<never>();
+ws.onmessage = (event) => {
+  Runtime.runFork(runtime)(Queue.offer(messageQueue, event));
+};
+```
+</after>
+</api>
+
+<references>
+- [Effect Runtime Documentation](https://effect.website/docs/runtime)
+- [Effect Queue Documentation](https://effect.website/docs/concurrency/queue)
+- [Effect Scope Documentation](https://effect.website/docs/resource-management/scope)
+- [viem socket.ts](https://github.com/wevm/viem/blob/main/src/utils/rpc/socket.ts) - callback patterns
+- Review 073: WebSocket Effect.runSync analysis
+- Review 076: Transport services comprehensive review
+</references>
+</issue>

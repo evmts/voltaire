@@ -1,50 +1,57 @@
-# API Consistency Review - voltaire-effect Primitives
+# Review 095: API Consistency Review
 
-**Date**: 2026-01-25
-**Modules Reviewed**: Address, Hex, Bytes, Hash, Signature, Uint
+<issue>
+<metadata>
+priority: P2
+files: [
+  "voltaire-effect/src/primitives/Address/index.ts",
+  "voltaire-effect/src/primitives/Hex/index.ts",
+  "voltaire-effect/src/primitives/Bytes/index.ts",
+  "voltaire-effect/src/primitives/Hash/index.ts",
+  "voltaire-effect/src/primitives/Signature/index.ts",
+  "voltaire-effect/src/primitives/Uint/index.ts",
+  "voltaire-effect/src/primitives/*/index.ts"
+]
+reviews: []
+</metadata>
 
----
+<module_overview>
+<purpose>
+Cross-cutting review of API consistency across all 141 primitive namespaces in voltaire-effect. Evaluates naming conventions, return types, schema naming, export patterns, error types, and JSDoc quality for a unified developer experience.
+</purpose>
+<current_status>
+**MEDIUM severity** - Schema naming and export patterns are consistent. However, significant issues exist:
+- Inconsistent `is*` naming (isValid vs isHex vs isBytes vs is)
+- Mixed Effect vs plain returns for same operation types
+- Missing common utilities across modules
+- Error types not exported from some index files
+- Some JSDoc claims exports that don't exist
+</current_status>
+</module_overview>
 
-## Summary
+<findings>
+<critical>
+None - no correctness issues, only consistency concerns.
+</critical>
+<high>
+### 1. Inconsistent `is*` Naming Pattern (P1)
 
-| Category | Status | Issues |
-|----------|--------|--------|
-| Naming Conventions | ⚠️ Mixed | Inconsistent function naming patterns |
-| Return Types | ❌ Inconsistent | Mixed Effect vs plain returns for same operation types |
-| Schema Naming | ✅ Consistent | All use descriptive names (Hex, Bytes, String, etc.) |
-| Export Patterns | ✅ Consistent | All use namespace exports |
-| Error Types | ⚠️ Unknown | Not visible from index files |
-| JSDoc Quality | ✅ Good | All modules have comprehensive JSDoc |
+**Location**: Multiple primitive index.ts files
 
----
+| Module | Function Name | Expected |
+|--------|--------------|----------|
+| Address | `isValid` | ✅ `isAddress` or `isValid` |
+| Hex | `isHex` | ⚠️ Should be `isValid` or `isHex` (not both) |
+| Bytes | `isBytes` | ⚠️ Different from Address pattern |
+| Hash | `isValidHex` | ⚠️ Inconsistent with others |
+| Signature | `is` AND `isSignature` | ❌ Duplicate exports |
+| Uint | (missing) | ❌ No `isUint` or `isValid` |
 
-## 1. Naming Conventions
+**Recommendation**: Standardize on `is{Type}` pattern: `isAddress`, `isHex`, `isBytes`, `isHash`, `isSignature`, `isUint`.
 
-### Inconsistencies Found
+### 2. Effect vs Pure Return Type Inconsistency (P1)
 
-| Pattern | Address | Hex | Bytes | Hash | Signature | Uint |
-|---------|---------|-----|-------|------|-----------|------|
-| `isValid` | ✅ `isValid` | ❌ `isHex` | ❌ `isBytes` | ❌ `isValidHex` | ❌ `is`/`isSignature` | ❌ missing |
-| `isZero` | ✅ | ❌ missing | ❌ missing | ✅ | ❌ missing | ✅ |
-| `equals` | ✅ pure | ⚠️ Effect | ⚠️ Effect | ✅ pure | ✅ pure | ✅ pure |
-| `clone` | ✅ | ✅ Effect | ❌ missing | ✅ | ❌ missing | ✅ |
-| `random` | ❌ missing | ✅ | ✅ | ✅ | ❌ missing | ❌ missing |
-
-**Issues**:
-1. `is*` naming inconsistent: `isValid`, `isHex`, `isBytes`, `isValidHex`, `is`, `isSignature`
-2. Signature has redundant `is` and `isSignature` exports
-3. Missing common utilities across modules (`random`, `isZero`, `clone`)
-
-### Recommendations
-- Standardize on `is{Type}` pattern: `isAddress`, `isHex`, `isBytes`, `isHash`, `isSignature`, `isUint`
-- Add `isValid` as alias for type guards
-- Remove duplicate `is`/`isSignature` - keep only `isSignature`
-
----
-
-## 2. Return Types
-
-### Critical Inconsistency
+**Location**: Hex and Bytes modules
 
 | Module | `equals` Return | `clone` Return |
 |--------|-----------------|----------------|
@@ -57,88 +64,224 @@
 
 **Problem**: Hex and Bytes return `Effect` for infallible operations. Comparing two typed values should never fail.
 
-**Recommendation**: Pure functions should return plain values. Reserve Effect for:
-- Operations requiring services (KeccakService)
-- Operations that can fail (parsing, validation)
-
----
-
-## 3. Schema Naming
-
-✅ **Consistent**: All modules use descriptive schema names:
-- `Hex`, `Bytes`, `String`, `Number`, `BigInt`
-- `Checksummed`, `Compact`, `DER`, `Rpc`, `Tuple`
-
-No `TypeSchema` pattern used - this is correct.
-
----
-
-## 4. Export Patterns
-
-✅ **Consistent**: All modules use namespace-style exports suitable for:
 ```typescript
-import * as Address from 'voltaire-effect/primitives/Address'
+// Hex module - WRONG
+export const equals: (a: HexType, b: HexType) => Effect<boolean>
+
+// Should be pure like Address:
+export const equals: (a: HexType, b: HexType) => boolean
 ```
 
-All modules re-export types from `@tevm/voltaire/*`.
+</high>
+<medium>
+### 3. Missing Exports Claimed in JSDoc (P2)
 
----
+**Location**: `Bytes/index.ts` JSDoc vs actual exports
 
-## 5. Error Types
+JSDoc claims:
+```typescript
+* - `equals` - Compare two Bytes values
+* - `concat` - Concatenate bytes
+* - `slice` - Slice bytes
+* - `size` - Get byte length
+```
 
-⚠️ **Not visible from index files**. Need to audit individual function files.
+Actually exported: only `isBytes`, `random`
 
-Signature module mentions `InvalidAlgorithmError` in JSDoc but doesn't export it from index.
+### 4. Missing Common Utilities Across Modules (P2)
 
-**Action**: Audit each module's error exports and ensure consistent error type naming.
+| Utility | Address | Hex | Bytes | Hash | Signature | Uint |
+|---------|---------|-----|-------|------|-----------|------|
+| `clone` | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
+| `equals` | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
+| `isZero` | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| `random` | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `compare` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
----
+### 5. Signature Has Duplicate `is`/`isSignature` (P2)
 
-## 6. JSDoc Quality
+**Location**: `Signature/index.ts`
 
-✅ **Good**: All modules have:
-- `@module` tag
-- `@description` with usage examples
-- Schema tables
-- Pure function listings
-- `@since 0.1.0`
+Both `is` and `isSignature` are exported, doing the same thing. Remove one.
 
-**Minor issues**:
-- Hex JSDoc shows `equals`, `clone` etc. as `Effect<T>` but this seems wrong for pure operations
-- Bytes claims `equals`, `concat`, `slice`, `size`, `isBytes` return Effect but only exports `isBytes`, `random`
+### 6. Error Types Not Visible from Index Files (P2)
 
----
+**Location**: Various primitive modules
 
-## Action Items
+Signature module JSDoc mentions `InvalidAlgorithmError` but doesn't export it from index.
 
-### High Priority
-1. **Fix Effect vs pure inconsistency**: Hex/Bytes pure operations should not return Effect
-2. **Add missing exports**: Bytes index claims exports not present (`equals`, `concat`, `slice`, `size`)
-3. **Standardize `is*` naming**: Pick one pattern and apply everywhere
+</medium>
+</findings>
 
-### Medium Priority
-4. **Add missing utilities**: 
-   - `random` to Address, Signature, Uint
-   - `clone` to Bytes, Signature
-   - `isZero` to Hex, Bytes
-5. **Remove duplicates**: Signature `is`/`isSignature` → keep one
-6. **Export error types**: Ensure all error types are exported from index
+<effect_improvements>
+### Reserve Effect for Fallible Operations
 
-### Low Priority
-7. **Update JSDoc**: Fix Bytes JSDoc to match actual exports
-8. **Verify Hex JSDoc**: Confirm whether pure functions should return Effect
+```typescript
+// Pure operations - no Effect wrapper
+export const equals = (a: HexType, b: HexType): boolean => 
+  Hex.equals(a, b);
 
----
+export const clone = (value: HexType): HexType => 
+  Hex.clone(value);
 
-## Appendix: Full Export Comparison
+// Fallible operations - use Effect
+export const fromString = (s: string): Effect<HexType, HexParseError> =>
+  Effect.try({
+    try: () => Hex.from(s),
+    catch: (e) => new HexParseError(e)
+  });
+```
 
-| Export | Address | Hex | Bytes | Hash | Signature | Uint |
-|--------|---------|-----|-------|------|-----------|------|
-| Schemas | Bytes, Checksummed, Hex | Bytes, String | Hex | Bytes, Hex | Hex, Bytes, Compact, DER, Rpc, Tuple | BigInt, Bytes, Hex, Number, String |
-| clone | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
-| equals | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
-| compare | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| isZero | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| random | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| toBytes | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| toHex | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+### Standardize Type Guards
+
+```typescript
+// Every primitive module should export:
+export const is{Type} = (u: unknown): u is {Type}Type => 
+  {Type}.is(u);
+
+// Alias for flexibility:
+export const isValid = is{Type};
+```
+</effect_improvements>
+
+<viem_comparison>
+**viem Reference**: Consistent patterns across all modules
+
+viem uses consistent naming:
+- `isAddress(value)` - type guard
+- `isHex(value)` - type guard  
+- `isBytes(value)` - type guard
+- All pure functions return plain values, not wrapped
+
+```typescript
+// viem patterns
+export function isAddress(address: string): address is Address
+export function isHex(value: unknown): value is Hex
+export function isBytes(value: unknown): value is ByteArray
+```
+</viem_comparison>
+
+<implementation>
+<refactoring_steps>
+1. **Standardize `is*` naming** - Use `is{Type}` pattern everywhere
+2. **Fix Hex/Bytes Effect returns** - Make pure operations return plain values
+3. **Add missing Bytes exports** - Implement equals, concat, slice, size
+4. **Remove Signature duplicate** - Keep `isSignature`, remove `is`
+5. **Add missing utilities** - random to Address/Signature/Uint, clone to Bytes/Signature
+6. **Export error types** - Add error exports to all index files
+7. **Fix JSDoc** - Update to match actual exports
+</refactoring_steps>
+<new_patterns>
+```typescript
+// Pattern: Consistent primitive module structure
+// primitives/{Type}/index.ts
+
+// Schemas
+export { Bytes, Hex, String, ... } from "./schemas.js";
+
+// Type
+export type { {Type}Type } from "@tevm/voltaire/{Type}";
+
+// Type guard (standardized naming)
+export { is{Type} } from "./{Type}.js";
+export { is{Type} as isValid } from "./{Type}.js";  // Alias
+
+// Pure utilities
+export { equals } from "./equals.js";
+export { clone } from "./clone.js";
+export { isZero } from "./isZero.js";
+
+// Effect-wrapped utilities (only for fallible ops)
+export { from } from "./from.js";  // Can fail on invalid input
+
+// Errors
+export { {Type}Error, {Type}ParseError } from "./errors.js";
+```
+</new_patterns>
+</implementation>
+
+<tests>
+<missing_coverage>
+- Cross-module API consistency tests
+- Type guard behavior across all primitives
+- Effect vs pure return type verification
+- Error type availability tests
+</missing_coverage>
+<test_code>
+```typescript
+// api-consistency.test.ts
+import { describe, expect, it } from "vitest";
+import * as Address from "./Address/index.js";
+import * as Hex from "./Hex/index.js";
+import * as Bytes from "./Bytes/index.js";
+import * as Hash from "./Hash/index.js";
+import * as Signature from "./Signature/index.js";
+import * as Uint from "./Uint/index.js";
+
+const modules = { Address, Hex, Bytes, Hash, Signature, Uint };
+
+describe("API Consistency", () => {
+  describe("Type guard naming", () => {
+    it("all modules export isValid or is{Type}", () => {
+      for (const [name, mod] of Object.entries(modules)) {
+        const hasIs = `is${name}` in mod || "isValid" in mod;
+        expect(hasIs, `${name} should have type guard`).toBe(true);
+      }
+    });
+  });
+
+  describe("Pure vs Effect returns", () => {
+    it("equals returns boolean, not Effect", () => {
+      if ("equals" in Address) {
+        const result = Address.equals(
+          new Uint8Array(20) as any,
+          new Uint8Array(20) as any
+        );
+        expect(typeof result).toBe("boolean");
+      }
+    });
+  });
+
+  describe("Schema exports", () => {
+    it("all modules export Hex schema", () => {
+      for (const [name, mod] of Object.entries(modules)) {
+        expect("Hex" in mod, `${name} should export Hex schema`).toBe(true);
+      }
+    });
+
+    it("all modules export Bytes schema", () => {
+      for (const [name, mod] of Object.entries(modules)) {
+        expect("Bytes" in mod, `${name} should export Bytes schema`).toBe(true);
+      }
+    });
+  });
+});
+```
+</test_code>
+</tests>
+
+<docs>
+- Create "API Conventions" documentation page
+- Document standard primitive module structure
+- List all utility functions with Effect vs pure designation
+- Add migration guide for Effect return type changes
+</docs>
+
+<api>
+<changes>
+1. Rename type guards to `is{Type}` pattern with `isValid` alias
+2. Change Hex.equals, Hex.clone to return plain values
+3. Change Bytes.equals (when added) to return boolean
+4. Add missing exports: Bytes.equals, Bytes.concat, Bytes.slice, Bytes.size
+5. Remove Signature.is (keep Signature.isSignature)
+6. Add random to Address, Signature, Uint modules
+7. Export all error types from index files
+</changes>
+</api>
+
+<references>
+- [Effect Schema API](https://effect.website/docs/schema)
+- [viem utilities](https://viem.sh/docs/utilities/introduction)
+- [TypeScript type guards](https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates)
+</references>
+</issue>

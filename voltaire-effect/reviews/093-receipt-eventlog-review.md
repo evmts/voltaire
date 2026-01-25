@@ -1,237 +1,383 @@
 # Review 093: Receipt and EventLog Primitives
 
-## Summary
+<issue>
+<metadata>
+priority: P0
+category: deep-review
+files: [
+  voltaire-effect/src/primitives/Receipt/ReceiptSchema.ts,
+  voltaire-effect/src/primitives/Receipt/index.ts,
+  voltaire-effect/src/primitives/EventLog/EventLogSchema.ts,
+  voltaire-effect/src/primitives/EventLog/Rpc.ts,
+  voltaire-effect/src/primitives/LogFilter/Rpc.ts,
+  voltaire-effect/src/primitives/LogIndex/Number.ts
+]
+reviews: [059-fix-receipt-pre-byzantium-status.md]
+</metadata>
 
-Deep review of Receipt, EventLog, LogFilter, and LogIndex Effect schemas. Found **critical schema divergence** from base primitives and **known issue 059 not addressed** in Effect layer.
+<module_overview>
+Effect Schema wrappers for transaction receipts, event logs, log filters, and log indices. These handle parsing RPC responses for `eth_getTransactionReceipt`, `eth_getLogs`, and subscription events.
 
-## Severity: HIGH
+**Severity**: HIGH - Critical schema divergence from base primitives breaks EIP-1559 and EIP-4844 support.
+</module_overview>
 
----
-
-## Files Reviewed
-
-- `voltaire-effect/src/primitives/Receipt/` (2 files)
-- `voltaire-effect/src/primitives/EventLog/` (3 files)
-- `voltaire-effect/src/primitives/LogFilter/` (3 files)
-- `voltaire-effect/src/primitives/LogIndex/` (2 files)
-
----
-
-## Critical Issues
-
-### 1. Receipt Schema Missing Fields (HIGH)
-
-**Location**: `Receipt/ReceiptSchema.ts`
-
-The Effect schema is **missing critical fields** that exist in the base `ReceiptType`:
-
-| Field | Base Type | Effect Schema | Impact |
-|-------|-----------|---------------|--------|
-| `effectiveGasPrice` | Required Uint256 | ❌ MISSING | EIP-1559 broken |
-| `type` | Required ("legacy" \| "eip2930" \| "eip1559" \| "eip4844" \| "eip7702") | ❌ MISSING | Tx type detection broken |
-| `blobGasUsed` | Optional Uint256 | ❌ MISSING | EIP-4844 broken |
-| `blobGasPrice` | Optional Uint256 | ❌ MISSING | EIP-4844 broken |
-| `root` | Optional HashType | ❌ MISSING | Pre-Byzantium broken |
-
+<viem_reference>
+<feature>Transaction Receipt Types</feature>
+<location>viem/src/types/transaction.ts</location>
+<implementation>
 ```typescript
-// Effect schema (incomplete):
-readonly status: 0 | 1;
-
-// Base type (correct):
-readonly status?: TransactionStatusType;  // Optional!
-readonly root?: HashType;                 // Pre-Byzantium alternative
-readonly effectiveGasPrice: Uint256Type;  // Required
-readonly type: "legacy" | "eip2930" | "eip1559" | "eip4844" | "eip7702";
+type TransactionReceipt = {
+  // Required
+  blockHash: Hash
+  blockNumber: bigint
+  contractAddress: Address | null
+  cumulativeGasUsed: bigint
+  effectiveGasPrice: bigint  // ← Required for EIP-1559
+  from: Address
+  gasUsed: bigint
+  logs: Log[]
+  logsBloom: Hex
+  transactionHash: Hash
+  transactionIndex: number
+  type: TransactionType  // ← Required to distinguish tx types
+  
+  // Pre-Byzantium (one of):
+  root?: Hash        // State root (pre-Byzantium)
+  status?: 'success' | 'reverted'  // Status (post-Byzantium)
+  
+  // EIP-4844 (optional)
+  blobGasUsed?: bigint
+  blobGasPrice?: bigint
+}
 ```
+</implementation>
+</viem_reference>
 
-### 2. Pre-Byzantium Handling Not Fixed (HIGH) - Issue 059
-
-**Location**: `Receipt/ReceiptSchema.ts#L174`, `Receipt/ReceiptSchema.ts#L346`
-
-The Effect schema requires `status` to be `0 | 1` (required literal), but pre-Byzantium receipts have `root` instead. Review 059 documents this but the Effect layer was never updated.
-
+<viem_reference>
+<feature>Log Type</feature>
+<location>viem/src/types/log.ts</location>
+<implementation>
 ```typescript
-// Current (broken for pre-Byzantium):
-readonly status: 0 | 1;
-
-// Required:
-readonly status?: 0 | 1;
-readonly root?: HashType;
+type Log = {
+  address: Address
+  blockHash: Hash | null
+  blockNumber: bigint | null
+  data: Hex
+  logIndex: number | null
+  transactionHash: Hash | null
+  transactionIndex: number | null
+  topics: [Hex, ...Hex[]] | []  // Max 4 topics (LOG0-LOG4)
+  removed: boolean
+}
 ```
+</implementation>
+</viem_reference>
 
-**Historical context**: Pre-Byzantium (< block 4,370,000 on mainnet) used `root` for state root instead of `status` for success/failure.
-
-### 3. Effect Schema Type Mismatch (HIGH)
+<findings>
+<critical>
+### 1. Receipt Schema Missing EIP Fields (P0)
 
 **Location**: `Receipt/ReceiptSchema.ts#L117-175`
 
-The `ReceiptType` interface defined in Effect schema diverges from base:
+The Effect schema ReceiptType is missing critical fields from base type:
 
 ```typescript
-// Effect ReceiptSchema.ts (wrong):
-interface ReceiptType {
-  readonly transactionHash: HashType;      // Missing branded TransactionHashType
-  readonly blockNumber: bigint;            // Should be BlockNumberType
-  // ... missing effectiveGasPrice, type, blobGas fields
+// Effect schema (INCOMPLETE):
+export interface ReceiptType {
+  readonly status: 0 | 1;  // ❌ Required, should be optional
+  // ❌ MISSING: effectiveGasPrice
+  // ❌ MISSING: type  
+  // ❌ MISSING: blobGasUsed
+  // ❌ MISSING: blobGasPrice
+  // ❌ MISSING: root
 }
 
-// Base ReceiptType.ts (correct):
+// Base type (CORRECT):
 type ReceiptType = {
-  readonly transactionHash: TransactionHashType;
-  readonly blockNumber: BlockNumberType;
-  readonly effectiveGasPrice: Uint256Type;
-  readonly type: "legacy" | "eip2930" | ...
-  // ... full type
+  readonly status?: TransactionStatusType;  // Optional!
+  readonly root?: HashType;                 // Pre-Byzantium
+  readonly effectiveGasPrice: Uint256Type;  // Required for EIP-1559
+  readonly type: "legacy" | "eip2930" | "eip1559" | "eip4844" | "eip7702";
+  readonly blobGasUsed?: Uint256Type;       // EIP-4844
+  readonly blobGasPrice?: Uint256Type;      // EIP-4844
 }
 ```
 
----
+**Impact**: 
+- EIP-1559 receipts missing `effectiveGasPrice` - cannot calculate actual gas paid
+- EIP-4844 receipts missing blob gas fields
+- Pre-Byzantium receipts rejected (required `status` field)
 
-## Medium Issues
+### 2. Pre-Byzantium Handling Broken (P0)
 
-### 4. EventLog Schema Topics Not Validated Against Max Length (MEDIUM)
+**Location**: `Receipt/ReceiptSchema.ts#L346`
+
+```typescript
+// Current (BROKEN):
+status: S.Literal(0, 1),  // Required!
+
+// Should be union:
+S.Union(
+  S.Struct({ root: HashSchema, status: S.optional(S.Never) }),
+  S.Struct({ status: S.Literal(0, 1), root: S.optional(S.Never) })
+)
+```
+</critical>
+
+<high>
+### 3. Topics Array No Max Length Validation (P1)
 
 **Location**: `EventLog/Rpc.ts#L46`
-
-Topics array accepts unlimited length but EVM only supports 4 topics (LOG0-LOG4).
 
 ```typescript
 // Current:
 topics: S.Array(HashSchema),
 
-// Should validate max 4:
+// EVM limit: LOG0-LOG4 = max 4 topics
+// Should be:
 topics: S.Array(HashSchema).pipe(S.maxItems(4)),
 ```
 
-### 5. LogFilter Schema Missing Topics Type Alignment (MEDIUM)
-
-**Location**: `LogFilter/Rpc.ts#L89-99`
-
-Topics schema doesn't match `TopicFilterType` from base which is a branded tuple:
-
-```typescript
-// Current (generic array):
-const TopicFilterSchema = S.Array(TopicEntrySchema);
-
-// Base TopicFilterType (specific tuple):
-type TopicFilterType = readonly [
-  TopicEntry?, TopicEntry?, TopicEntry?, TopicEntry?
-] & { readonly [brand]: "TopicFilter" };
-```
-
-### 6. LogFilter Mutual Exclusivity Not Validated in Schema (MEDIUM)
+### 4. LogFilter blockhash/fromBlock Mutual Exclusivity (P1)
 
 **Location**: `LogFilter/Rpc.ts#L163-167`
 
-Base `from.js` validates `blockhash` is mutually exclusive with `fromBlock/toBlock`, but the Effect schema doesn't enforce this at parse time.
+JSON-RPC spec requires `blockhash` to be mutually exclusive with `fromBlock/toBlock`. Schema allows both.
 
 ```typescript
-// Base validation (from.js):
-if (params.blockhash) {
-  if (params.fromBlock !== undefined || params.toBlock !== undefined) {
-    throw new InvalidLogFilterError(...)
+// Add refinement:
+const LogFilterRpc = LogFilterRpcBase.pipe(
+  S.filter(
+    (f) => !(f.blockhash && (f.fromBlock !== undefined || f.toBlock !== undefined)),
+    { message: () => "blockhash cannot be used with fromBlock/toBlock" }
+  )
+);
+```
+</high>
+
+<medium>
+### 5. LogIndex Accepts BigInt Unnecessarily (P2)
+
+Log indices are always small integers within a block. Accepting `bigint` is overkill and can cause issues.
+
+### 6. Duplicate Type Definitions (P2)
+
+Both `LogType` and `ReceiptType` are redefined locally instead of importing from base primitives, creating drift risk.
+</medium>
+</findings>
+
+<effect_solution>
+```typescript
+// Correct Receipt Schema with Union for Pre/Post-Byzantium
+
+const CommonReceiptFields = S.Struct({
+  transactionHash: HashSchema,
+  blockNumber: BigIntFromHex,
+  blockHash: HashSchema,
+  transactionIndex: S.Number,
+  from: AddressSchema,
+  to: S.NullOr(AddressSchema),
+  cumulativeGasUsed: BigIntFromHex,
+  gasUsed: BigIntFromHex,
+  effectiveGasPrice: BigIntFromHex,  // Required for EIP-1559+
+  contractAddress: S.NullOr(AddressSchema),
+  logs: S.Array(LogSchema),
+  logsBloom: HexSchema,
+  type: S.Literal('legacy', 'eip2930', 'eip1559', 'eip4844', 'eip7702'),
+  
+  // EIP-4844 optional fields
+  blobGasUsed: S.optional(BigIntFromHex),
+  blobGasPrice: S.optional(BigIntFromHex),
+})
+
+const PreByzantiumReceiptSchema = S.extend(CommonReceiptFields, S.Struct({
+  root: HashSchema,
+}))
+
+const PostByzantiumReceiptSchema = S.extend(CommonReceiptFields, S.Struct({
+  status: S.transform(
+    S.Literal('0x0', '0x1'),
+    S.Literal('reverted', 'success'),
+    { decode: (s) => s === '0x1' ? 'success' : 'reverted', encode: (s) => s === 'success' ? '0x1' : '0x0' }
+  ),
+}))
+
+const ReceiptRpcSchema = S.Union(
+  PreByzantiumReceiptSchema,
+  PostByzantiumReceiptSchema
+)
+
+// Log Schema with max topics validation
+const LogSchema = S.Struct({
+  address: AddressSchema,
+  blockHash: S.NullOr(HashSchema),
+  blockNumber: S.NullOr(BigIntFromHex),
+  data: HexSchema,
+  logIndex: S.NullOr(S.Number),
+  transactionHash: S.NullOr(HashSchema),
+  transactionIndex: S.NullOr(S.Number),
+  topics: S.Array(HashSchema).pipe(S.maxItems(4)),
+  removed: S.Boolean,
+})
+
+// LogFilter with mutual exclusivity
+const LogFilterSchema = S.Struct({
+  address: S.optional(S.Union(AddressSchema, S.Array(AddressSchema))),
+  topics: S.optional(S.Array(S.NullOr(S.Union(HashSchema, S.Array(HashSchema))))),
+  fromBlock: S.optional(BlockTagSchema),
+  toBlock: S.optional(BlockTagSchema),
+  blockhash: S.optional(HashSchema),
+}).pipe(
+  S.filter(
+    (f) => !(f.blockhash && (f.fromBlock !== undefined || f.toBlock !== undefined)),
+    { message: () => "blockhash is mutually exclusive with fromBlock/toBlock" }
+  )
+)
+```
+</effect_solution>
+
+<implementation>
+<refactoring_steps>
+1. **Update ReceiptType interface** - Add all missing fields from base type
+2. **Create Union for Pre/Post-Byzantium** - Handle root vs status correctly
+3. **Add effectiveGasPrice/type** - Required fields for EIP-1559+
+4. **Add EIP-4844 fields** - Optional blobGasUsed/blobGasPrice
+5. **Add topics maxItems(4)** - Enforce EVM limit
+6. **Add LogFilter refinement** - Enforce blockhash mutual exclusivity
+7. **Import types from base** - Remove duplicate definitions
+</refactoring_steps>
+
+<new_files>
+- src/primitives/Receipt/PreByzantiumReceiptSchema.ts
+- src/primitives/Receipt/PostByzantiumReceiptSchema.ts
+</new_files>
+</implementation>
+
+<tests>
+```typescript
+describe('ReceiptSchema', () => {
+  const baseReceipt = {
+    transactionHash: '0x' + 'ab'.repeat(32),
+    blockNumber: '0x1',
+    blockHash: '0x' + 'cd'.repeat(32),
+    transactionIndex: 0,
+    from: '0x' + '11'.repeat(20),
+    to: '0x' + '22'.repeat(20),
+    cumulativeGasUsed: '0x5208',
+    gasUsed: '0x5208',
+    effectiveGasPrice: '0x4a817c800',
+    contractAddress: null,
+    logs: [],
+    logsBloom: '0x' + '00'.repeat(256),
+    type: 'eip1559',
   }
-}
 
-// Effect schema: No validation
+  it('parses post-Byzantium receipt with status', () => {
+    const receipt = S.decodeSync(ReceiptRpcSchema)({
+      ...baseReceipt,
+      status: '0x1',
+    })
+    expect(receipt.status).toBe('success')
+  })
+
+  it('parses pre-Byzantium receipt with root', () => {
+    const receipt = S.decodeSync(ReceiptRpcSchema)({
+      ...baseReceipt,
+      root: '0x' + 'ef'.repeat(32),
+    })
+    expect(receipt.root?.length).toBe(66)
+    expect(receipt.status).toBeUndefined()
+  })
+
+  it('includes EIP-4844 blob gas fields', () => {
+    const receipt = S.decodeSync(ReceiptRpcSchema)({
+      ...baseReceipt,
+      status: '0x1',
+      blobGasUsed: '0x20000',
+      blobGasPrice: '0x3b9aca00',
+    })
+    expect(receipt.blobGasUsed).toBe(131072n)
+    expect(receipt.blobGasPrice).toBe(1000000000n)
+  })
+
+  it('requires effectiveGasPrice', () => {
+    const { effectiveGasPrice, ...noGasPrice } = baseReceipt
+    expect(() =>
+      S.decodeSync(ReceiptRpcSchema)({ ...noGasPrice, status: '0x1' })
+    ).toThrow()
+  })
+})
+
+describe('LogSchema topics validation', () => {
+  it('accepts 0-4 topics', () => {
+    for (let i = 0; i <= 4; i++) {
+      const topics = Array(i).fill('0x' + 'ab'.repeat(32))
+      const log = S.decodeSync(LogSchema)({
+        address: '0x' + '11'.repeat(20),
+        data: '0x',
+        topics,
+        blockHash: null,
+        blockNumber: null,
+        logIndex: null,
+        transactionHash: null,
+        transactionIndex: null,
+        removed: false,
+      })
+      expect(log.topics).toHaveLength(i)
+    }
+  })
+
+  it('rejects more than 4 topics', () => {
+    const topics = Array(5).fill('0x' + 'ab'.repeat(32))
+    expect(() =>
+      S.decodeSync(LogSchema)({
+        address: '0x' + '11'.repeat(20),
+        data: '0x',
+        topics,
+        blockHash: null,
+        blockNumber: null,
+        logIndex: null,
+        transactionHash: null,
+        transactionIndex: null,
+        removed: false,
+      })
+    ).toThrow()
+  })
+})
+
+describe('LogFilter mutual exclusivity', () => {
+  it('allows blockhash alone', () => {
+    const filter = S.decodeSync(LogFilterSchema)({
+      blockhash: '0x' + 'ab'.repeat(32)
+    })
+    expect(filter.blockhash).toBeDefined()
+  })
+
+  it('allows fromBlock/toBlock without blockhash', () => {
+    const filter = S.decodeSync(LogFilterSchema)({
+      fromBlock: '0x1',
+      toBlock: 'latest'
+    })
+    expect(filter.fromBlock).toBe('0x1')
+  })
+
+  it('rejects blockhash with fromBlock', () => {
+    expect(() =>
+      S.decodeSync(LogFilterSchema)({
+        blockhash: '0x' + 'ab'.repeat(32),
+        fromBlock: '0x1'
+      })
+    ).toThrow('mutually exclusive')
+  })
+})
 ```
+</tests>
 
----
-
-## Low Issues
-
-### 7. Duplicate Type Definitions (LOW)
-
-**Location**: `Receipt/ReceiptSchema.ts#L43-84`, `Receipt/ReceiptSchema.ts#L117-175`
-
-Both `LogType` and `ReceiptType` are defined locally instead of importing from base primitives. This creates maintenance burden and drift risk (already manifested).
-
-### 8. LogIndex Schema Accepts BigInt (LOW)
-
-**Location**: `LogIndex/Number.ts#L80-81`
-
-LogIndex accepts `bigint` input but log indices are always small integers. Not a bug but inconsistent with typical usage.
-
-### 9. EventLog Test Coverage Minimal (LOW)
-
-**Location**: `EventLog/EventLog.test.ts`
-
-Only 1 test case. Missing:
-- Edge cases (empty topics, max topics)
-- Invalid inputs
-- `removed: true` scenarios
-- Block metadata handling
-
-### 10. No Receipt Tests (LOW)
-
-No `Receipt.test.ts` file exists in the Effect layer.
-
----
-
-## Recommendations
-
-### Immediate (P0)
-
-1. **Add missing Receipt fields** to match base `ReceiptType`:
-```typescript
-const ReceiptSchemaInternal = S.Struct({
-  // ... existing fields
-  effectiveGasPrice: S.BigIntFromSelf,
-  type: S.Literal("legacy", "eip2930", "eip1559", "eip4844", "eip7702"),
-  blobGasUsed: S.optional(S.BigIntFromSelf),
-  blobGasPrice: S.optional(S.BigIntFromSelf),
-  status: S.optional(S.Literal(0, 1)),  // Make optional
-  root: S.optional(HashTypeSchema),      // Pre-Byzantium
-});
-```
-
-2. **Add refinement for status/root mutual requirement**:
-```typescript
-.pipe(S.filter(
-  (r) => r.status !== undefined || r.root !== undefined,
-  { message: () => "Either status or root is required" }
-))
-```
-
-### Short-term (P1)
-
-3. Add topics array max length validation (4)
-4. Add LogFilter blockhash mutual exclusivity refinement
-5. Import types from base primitives instead of redefining
-
-### Medium-term (P2)
-
-6. Add comprehensive Receipt tests
-7. Add EventLog edge case tests
-8. Align TopicFilterSchema with branded tuple type
-
----
-
-## Test Coverage Gaps
-
-| Module | Tests | Coverage |
-|--------|-------|----------|
-| Receipt | 0 | None |
-| EventLog | 1 | Minimal |
-| LogFilter | 3 | Basic |
-| LogIndex | 0 | None (implicit via schema) |
-
----
-
-## Related Issues
-
-- **059-fix-receipt-pre-byzantium-status.md**: Documents base layer fix but Effect layer unchanged
-- Base `Receipt/from.js#L59-61` also needs fixing (currently rejects pre-Byzantium)
-
----
-
-## Acceptance Criteria
-
-- [ ] Receipt schema includes all fields from base `ReceiptType`
-- [ ] Pre-Byzantium receipts (with `root`) parse successfully
-- [ ] Post-Byzantium receipts (with `status`) parse successfully
-- [ ] Topics arrays validated to max 4 entries
-- [ ] LogFilter blockhash/fromBlock mutual exclusivity enforced
-- [ ] Receipt test file added with comprehensive cases
-- [ ] EventLog test coverage expanded
-- [ ] Types imported from base primitives, not redefined
+<references>
+- [EIP-658: Embedding transaction status code in receipts](https://eips.ethereum.org/EIPS/eip-658)
+- [EIP-1559: Fee market change](https://eips.ethereum.org/EIPS/eip-1559)
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)
+- [Effect Schema docs](https://effect.website/docs/schema)
+- [viem TransactionReceipt type](https://github.com/wevm/viem/blob/main/src/types/transaction.ts)
+</references>
+</issue>

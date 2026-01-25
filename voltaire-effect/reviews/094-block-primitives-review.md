@@ -1,18 +1,43 @@
 # Review 094: Block and BlockHeader Primitives
 
-**Modules**: `Block`, `BlockHeader`, `BlockBody`, `BlockHash`, `BlockNumber`  
-**Severity**: Medium  
-**Status**: Open
+<issue>
+<metadata>
+priority: P1-P2
+files: [
+  "voltaire-effect/src/primitives/Block/BlockSchema.ts",
+  "voltaire-effect/src/primitives/Block/Rpc.ts",
+  "voltaire-effect/src/primitives/Block/index.ts",
+  "voltaire-effect/src/primitives/BlockHeader/BlockHeaderSchema.ts",
+  "voltaire-effect/src/primitives/BlockHeader/Rpc.ts",
+  "voltaire-effect/src/primitives/BlockHeader/calculateHash.ts",
+  "voltaire-effect/src/primitives/BlockBody/BlockBodySchema.ts",
+  "voltaire-effect/src/primitives/BlockBody/Rpc.ts",
+  "voltaire-effect/src/primitives/BlockHash/Bytes.ts",
+  "voltaire-effect/src/primitives/BlockHash/Hex.ts",
+  "voltaire-effect/src/primitives/BlockNumber/BigInt.ts",
+  "voltaire-effect/src/primitives/BlockNumber/Number.ts"
+]
+reviews: []
+</metadata>
 
-## Summary
+<module_overview>
+<purpose>
+Effect Schema wrappers for Block, BlockHeader, BlockBody, BlockHash, and BlockNumber primitives. These handle parsing RPC responses from `eth_getBlockByNumber`, `eth_getBlockByHash`, and block subscription events. Supports all hardforks: Legacy, London (EIP-1559), Shanghai (EIP-4895), Cancun (EIP-4844).
+</purpose>
+<current_status>
+**MEDIUM severity** - The underlying voltaire implementation is solid with proper EIP support. However, the Effect wrappers have:
+- RPC encode not implemented (breaks bidirectional Schema usage)
+- Shallow validation (only checks 3 of 17+ required BlockHeader fields)
+- Zero test coverage for primitive schemas
+- Duplicate schema declarations across files
+</current_status>
+</module_overview>
 
-The Block primitives in voltaire-effect provide Effect-TS Schema wrappers around the core voltaire Block types. The underlying voltaire implementation is solid with proper EIP support, but the Effect wrappers have gaps in validation depth, encoding support, and test coverage.
+<findings>
+<critical>
+### 1. RPC Encode Not Implemented (P0)
 
-## Critical Issues
-
-### 1. RPC Encode Not Implemented
-
-**Location**: [Block/Rpc.ts#L122-130](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/Block/Rpc.ts#L122-L130), [BlockHeader/Rpc.ts#L99-107](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHeader/Rpc.ts#L99-L107), [BlockBody/Rpc.ts#L91-99](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockBody/Rpc.ts#L91-L99)
+**Location**: `Block/Rpc.ts#L122-130`, `BlockHeader/Rpc.ts#L99-107`, `BlockBody/Rpc.ts#L91-99`
 
 All three RPC schemas fail on encode:
 
@@ -28,26 +53,17 @@ encode: (_block, _options, ast) => {
 },
 ```
 
-This breaks bidirectional Schema usage. Users cannot:
-- Round-trip block data
-- Use `Schema.encode()` for API responses
-- Serialize blocks back to RPC format
+**Impact**:
+- Cannot round-trip block data through Schema
+- Cannot use `Schema.encode()` for API responses
+- Cannot serialize blocks back to RPC format
 
-**Fix**: Implement `toRpc()` functions in voltaire and wire them up:
-```typescript
-encode: (block, _options, _ast) => {
-  return ParseResult.succeed(Block.toRpc(block));
-},
-```
+### 2. BlockSchema Validation Too Shallow (P0)
 
-### 2. BlockSchema Validation Too Shallow
-
-**Location**: [Block/BlockSchema.ts#L76-87](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/Block/BlockSchema.ts#L76-L87)
-
-The schema only checks field existence, not field types:
+**Location**: `Block/BlockSchema.ts#L76-87`
 
 ```typescript
-export const BlockSchema: Schema.Schema<BlockType> = Schema.declare(
+const BlockSchema = Schema.declare(
   (input: unknown): input is BlockType => {
     if (typeof input !== "object" || input === null) return false;
     const block = input as Record<string, unknown>;
@@ -68,13 +84,11 @@ Accepts invalid data like:
 { header: "garbage", body: null, hash: new Uint8Array(32), size: 0n }
 ```
 
-**Fix**: Either:
-1. Deep validate with nested Schema composition
-2. Or call voltaire validation functions
+</critical>
+<high>
+### 3. BlockHeaderSchema Only Validates 3 of 17+ Fields (P1)
 
-### 3. BlockHeaderSchema Only Checks 3 Fields
-
-**Location**: [BlockHeader/BlockHeaderSchema.ts#L7-13](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHeader/BlockHeaderSchema.ts#L7-L13)
+**Location**: `BlockHeader/BlockHeaderSchema.ts#L7-13`
 
 ```typescript
 const BlockHeaderTypeSchema = Schema.declare<BlockHeaderType>(
@@ -85,203 +99,25 @@ const BlockHeaderTypeSchema = Schema.declare<BlockHeaderType>(
 );
 ```
 
-BlockHeaderType has 17+ required fields (parentHash, ommersHash, beneficiary, stateRoot, transactionsRoot, receiptsRoot, logsBloom, difficulty, number, gasLimit, gasUsed, timestamp, extraData, mixHash, nonce) plus 5 optional EIP fields.
+Missing validation for: ommersHash, beneficiary, transactionsRoot, receiptsRoot, logsBloom, difficulty, gasLimit, gasUsed, timestamp, extraData, mixHash, nonce (all required), plus 5 optional EIP fields.
 
-Schema only validates 3 fields exist.
+### 4. BlockBodySchema Missing Withdrawals Check (P1)
 
-**Fix**: Validate all required fields or use deeper Schema composition.
-
-### 4. BlockBodySchema Missing withdrawals Check
-
-**Location**: [BlockBody/BlockBodySchema.ts#L7-13](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockBody/BlockBodySchema.ts#L7-L13)
+**Location**: `BlockBody/BlockBodySchema.ts#L7-13`
 
 ```typescript
-const BlockBodyTypeSchema = Schema.declare<BlockBodyType>(
-  (u): u is BlockBodyType => {
-    if (typeof u !== "object" || u === null) return false;
-    return "transactions" in u && "ommers" in u;
-  },
-);
+(u): u is BlockBodyType => {
+  if (typeof u !== "object" || u === null) return false;
+  return "transactions" in u && "ommers" in u;
+  // Missing: withdrawals for post-Shanghai
+}
 ```
 
-Post-Shanghai blocks have `withdrawals`. Schema doesn't distinguish pre/post-Shanghai and doesn't validate withdrawal structure when present.
-
-## Medium Issues
-
-### 5. No Tests for Block Primitive Schemas
+### 5. No Tests for Block Primitive Schemas (P1)
 
 **Location**: `voltaire-effect/src/primitives/Block*/`
 
-Zero test files in:
-- Block/
-- BlockHeader/
-- BlockBody/
-- BlockHash/
-- BlockNumber/
-
-The `block.test.ts` in `voltaire-effect/src/block/` tests service-level functions (fetchBlock, fetchBlockByHash), not the Schema primitives.
-
-Missing test coverage:
-- Schema.decode() success/failure cases
-- Schema.encode() (currently fails)
-- Edge cases (pre-London, post-Shanghai, EIP-4844)
-- Error message quality
-
-**Fix**: Create test files for each primitive:
-- `Block/Block.test.ts`
-- `BlockHeader/BlockHeader.test.ts`
-- `BlockBody/BlockBody.test.ts`
-- `BlockHash/BlockHash.test.ts`
-- `BlockNumber/BlockNumber.test.ts`
-
-### 6. BlockNumber.Number Has Precision Warning but No Runtime Check
-
-**Location**: [BlockNumber/Number.ts#L20-23](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockNumber/Number.ts#L20-L23)
-
-```typescript
-/**
- * Warning: Block numbers larger than Number.MAX_SAFE_INTEGER (2^53-1) may lose precision.
- * Use BigInt schema for large block numbers.
- */
-```
-
-No runtime check for unsafe integers. Silently loses precision:
-```typescript
-S.decodeSync(BlockNumber.Number)(Number.MAX_SAFE_INTEGER + 10)
-// Silently rounds, no error
-```
-
-**Fix**: Add runtime check in decode:
-```typescript
-if (!Number.isSafeInteger(n)) {
-  return ParseResult.fail(new ParseResult.Type(ast, n, 
-    `Block number ${n} exceeds MAX_SAFE_INTEGER, use BlockNumber.BigInt`));
-}
-```
-
-### 7. Duplicate Schema Declarations
-
-**Location**: Multiple files
-
-`BlockHashTypeSchema` declared in both:
-- [BlockHash/Bytes.ts#L13-16](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHash/Bytes.ts#L13-L16)
-- [BlockHash/Hex.ts#L13-16](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHash/Hex.ts#L13-L16)
-
-`BlockNumberTypeSchema` declared in:
-- [BlockNumber/BigInt.ts#L13-16](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockNumber/BigInt.ts#L13-L16)
-- [BlockNumber/Hex.ts#L13-16](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockNumber/Hex.ts#L13-L16)
-- [BlockNumber/Number.ts#L13-16](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockNumber/Number.ts#L13-L16)
-
-**Fix**: Extract to shared `BlockHashTypeSchema.ts` / `BlockNumberTypeSchema.ts` and import.
-
-## Schema Completeness Assessment
-
-### EIP-1559 (London) Fields ✅ Present
-
-**Location**: [BlockHeader/Rpc.ts#L52](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHeader/Rpc.ts#L52)
-
-```typescript
-baseFeePerGas: S.optional(S.String),
-```
-
-Properly optional for pre-London blocks.
-
-### EIP-4895 (Shanghai) Withdrawal Fields ✅ Present
-
-**Location**: [BlockHeader/Rpc.ts#L53](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHeader/Rpc.ts#L53), [Block/Rpc.ts#L84](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/Block/Rpc.ts#L84)
-
-```typescript
-withdrawalsRoot: S.optional(S.String),  // Header
-withdrawals: S.optional(S.Array(RpcWithdrawalSchema)),  // Body
-```
-
-RpcWithdrawalSchema properly validates:
-```typescript
-const RpcWithdrawalSchema = S.Struct({
-  index: S.String,
-  validatorIndex: S.String,
-  address: S.String,
-  amount: S.String,
-});
-```
-
-### EIP-4844 (Cancun) Blob Fields ✅ Present
-
-**Location**: [BlockHeader/Rpc.ts#L54-56](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHeader/Rpc.ts#L54-L56)
-
-```typescript
-blobGasUsed: S.optional(S.String),
-excessBlobGas: S.optional(S.String),
-parentBeaconBlockRoot: S.optional(S.String),
-```
-
-All three EIP-4844 fields present and optional.
-
-### EIP-4788 Beacon Root ✅ Present
-
-`parentBeaconBlockRoot` included above.
-
-## Header Hash Calculation ✅ Correct
-
-**Location**: [BlockHeader/calculateHash.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHeader/calculateHash.ts)
-
-Effect wrapper correctly delegates to voltaire:
-```typescript
-export const calculateHash = (header: BlockHeaderType): BlockHashType =>
-  BlockHeader.calculateHash(header);
-```
-
-Underlying implementation in [voltaire/src/primitives/BlockHeader/calculateHash.js](file:///Users/williamcory/voltaire/src/primitives/BlockHeader/calculateHash.js):
-- Proper canonical field ordering (15 base + optional EIP fields)
-- Correct RLP encoding
-- Keccak256 hash
-- Handles all hardforks (Legacy, London, Shanghai, Cancun)
-
-The RLP encoding correctly uses minimal bytes for integers:
-```javascript
-function bigintToMinimalBytes(value) {
-  if (value === 0n) return new Uint8Array(0);
-  return bytesFromBigInt(value);
-}
-```
-
-## Minor Issues
-
-### 8. Missing toRpc Export in Pure Functions
-
-**Location**: [BlockHash/index.ts#L47-51](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHash/index.ts#L47-L51)
-
-BlockHash exports `toHex` and `equals` but not all useful utilities. Consider adding common conversions.
-
-### 9. Inconsistent Error Message Formatting
-
-**Location**: Multiple Rpc.ts files
-
-Error messages use `(e as Error).message` which may lose stack traces:
-
-```typescript
-catch (e) {
-  return ParseResult.fail(
-    new ParseResult.Type(ast, rpc, (e as Error).message),
-  );
-}
-```
-
-Consider wrapping the original error as cause for debugging.
-
-## Test Coverage Assessment
-
-### voltaire Core ✅ Tested
-
-- [Block/Block.test.ts](file:///Users/williamcory/voltaire/src/primitives/Block/Block.test.ts) - from(), hash conversion
-- [Block/rpc.test.ts](file:///Users/williamcory/voltaire/src/primitives/Block/rpc.test.ts) - RPC parsing
-- [BlockHeader/BlockHeader.test.ts](file:///Users/williamcory/voltaire/src/primitives/BlockHeader/BlockHeader.test.ts) - All EIP fields
-- [BlockHeader/calculateHash.test.ts](file:///Users/williamcory/voltaire/src/primitives/BlockHeader/calculateHash.test.ts) - Hash calculation
-- [BlockBody/BlockBody.test.ts](file:///Users/williamcory/voltaire/src/primitives/BlockBody/BlockBody.test.ts)
-
-### voltaire-effect ❌ No Tests
-
-Zero test coverage for Schema primitives:
+Zero test files exist for:
 - Block/
 - BlockHeader/
 - BlockBody/
@@ -290,52 +126,245 @@ Zero test coverage for Schema primitives:
 
 Only service-level tests exist in `src/block/block.test.ts`.
 
-## Recommendations
+</high>
+<medium>
+### 6. BlockNumber.Number Has Precision Warning but No Runtime Check (P2)
 
-### P0 (Critical)
+**Location**: `BlockNumber/Number.ts#L20-23`
 
-1. **Implement RPC encode** - Add `Block.toRpc()`, `BlockHeader.toRpc()`, `BlockBody.toRpc()` to voltaire and wire up in Rpc.ts encode functions
-2. **Deepen Schema validation** - Validate all required fields, not just 3
-3. **Add primitive tests** - Create test files for each Block* primitive
+```typescript
+/**
+ * Warning: Block numbers larger than Number.MAX_SAFE_INTEGER may lose precision.
+ */
+// No runtime check!
+```
 
-### P1 (High)
+Should fail decode for unsafe integers:
+```typescript
+if (!Number.isSafeInteger(n)) {
+  return ParseResult.fail(new ParseResult.Type(ast, n, 
+    `Block number ${n} exceeds MAX_SAFE_INTEGER`));
+}
+```
 
-4. **Add Number overflow check** - Fail decode for unsafe integers
-5. **Extract shared schemas** - Deduplicate type guard declarations
+### 7. Duplicate Schema Declarations (P2)
 
-### P2 (Medium)
+`BlockHashTypeSchema` declared in both `BlockHash/Bytes.ts` and `BlockHash/Hex.ts`.
+`BlockNumberTypeSchema` declared in `BlockNumber/BigInt.ts`, `Hex.ts`, and `Number.ts`.
 
-6. **Improve error wrapping** - Preserve original error as cause
-7. **Document hardfork field requirements** - Which fields required for which hardfork
+### 8. Error Messages Lose Stack Context (P2)
 
-### P3 (Low)
+**Location**: Multiple Rpc.ts files
 
-8. **Add Schema.is() convenience** - Export type guards for runtime checks
-9. **Consider Schema.brand()** - For additional type safety
+```typescript
+catch (e) {
+  return ParseResult.fail(
+    new ParseResult.Type(ast, rpc, (e as Error).message),  // Loses stack
+  );
+}
+```
 
-## Files Reviewed
+</medium>
+</findings>
 
-- [Block/BlockSchema.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/Block/BlockSchema.ts)
-- [Block/index.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/Block/index.ts)
-- [Block/Rpc.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/Block/Rpc.ts)
-- [BlockHeader/BlockHeaderSchema.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHeader/BlockHeaderSchema.ts)
-- [BlockHeader/calculateHash.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHeader/calculateHash.ts)
-- [BlockHeader/index.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHeader/index.ts)
-- [BlockHeader/Rpc.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHeader/Rpc.ts)
-- [BlockBody/BlockBodySchema.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockBody/BlockBodySchema.ts)
-- [BlockBody/index.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockBody/index.ts)
-- [BlockBody/Rpc.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockBody/Rpc.ts)
-- [BlockHash/Bytes.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHash/Bytes.ts)
-- [BlockHash/Hex.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHash/Hex.ts)
-- [BlockHash/index.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockHash/index.ts)
-- [BlockNumber/BigInt.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockNumber/BigInt.ts)
-- [BlockNumber/Hex.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockNumber/Hex.ts)
-- [BlockNumber/index.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockNumber/index.ts)
-- [BlockNumber/Number.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/primitives/BlockNumber/Number.ts)
-- [voltaire/BlockType.ts](file:///Users/williamcory/voltaire/src/primitives/Block/BlockType.ts)
-- [voltaire/BlockHeaderType.ts](file:///Users/williamcory/voltaire/src/primitives/BlockHeader/BlockHeaderType.ts)
-- [voltaire/BlockBodyType.ts](file:///Users/williamcory/voltaire/src/primitives/BlockBody/BlockBodyType.ts)
-- [voltaire/calculateHash.js](file:///Users/williamcory/voltaire/src/primitives/BlockHeader/calculateHash.js)
-- [voltaire/fromRpc.js](file:///Users/williamcory/voltaire/src/primitives/Block/fromRpc.js)
-- [voltaire/BlockHeader/fromRpc.js](file:///Users/williamcory/voltaire/src/primitives/BlockHeader/fromRpc.js)
-- [voltaire/BlockBody/fromRpc.js](file:///Users/williamcory/voltaire/src/primitives/BlockBody/fromRpc.js)
+<effect_improvements>
+### Use Schema Composition for Deep Validation
+
+```typescript
+import { BlockHeader } from "@tevm/voltaire";
+
+// Compose with nested schemas
+const BlockSchema = S.Struct({
+  header: BlockHeaderSchema,
+  body: BlockBodySchema,
+  hash: BlockHashSchema,
+  size: S.BigIntFromSelf,
+});
+```
+
+### Implement RPC Encode via Voltaire Helpers
+
+```typescript
+encode: (block, _options, _ast) => {
+  // Add toRpc to voltaire, then:
+  return ParseResult.succeed(Block.toRpc(block));
+},
+```
+
+### Add Schema.brand for Type Safety
+
+```typescript
+const BlockHashSchema = S.Uint8ArrayFromSelf.pipe(
+  S.filter((a) => a.length === 32),
+  S.brand("BlockHash")
+);
+```
+</effect_improvements>
+
+<viem_comparison>
+**viem Reference**: `src/types/block.ts`
+
+viem uses strict typing per hardfork:
+```typescript
+type Block<TIncludeTransactions, TBlockTag, TTransaction> = {
+  baseFeePerGas: bigint | null // EIP-1559
+  blobGasUsed?: bigint // EIP-4844
+  excessBlobGas?: bigint // EIP-4844
+  withdrawals?: Withdrawal[] // EIP-4895
+  // ...17 other required fields
+}
+```
+
+viem validates all fields and uses discriminated unions for hardfork-specific shapes.
+</viem_comparison>
+
+<implementation>
+<refactoring_steps>
+1. **Implement toRpc in voltaire** - Add `Block.toRpc()`, `BlockHeader.toRpc()`, `BlockBody.toRpc()`
+2. **Wire up RPC encode** - Call toRpc in Schema encode functions
+3. **Deepen BlockSchema validation** - Validate header/body are proper objects
+4. **Validate all BlockHeader fields** - Check all 17+ required fields
+5. **Add post-Shanghai withdrawals check** - Validate when present
+6. **Add Number overflow check** - Fail decode for unsafe integers
+7. **Extract shared schemas** - Create `BlockHashTypeSchema.ts`, `BlockNumberTypeSchema.ts`
+8. **Preserve error causes** - Wrap errors with `{ cause: e }`
+</refactoring_steps>
+<new_patterns>
+```typescript
+// Pattern: Hardfork-aware block parsing
+const BlockRpc = S.Union(
+  PreLondonBlockRpc,
+  LondonBlockRpc,      // + baseFeePerGas
+  ShanghaiBlockRpc,    // + withdrawals
+  CancunBlockRpc,      // + blobGasUsed, excessBlobGas
+);
+
+// Pattern: Safe integer validation
+const BlockNumberFromNumber = S.Number.pipe(
+  S.filter(Number.isSafeInteger, {
+    message: () => "Block number exceeds safe integer range"
+  }),
+  S.transform(S.BigIntFromSelf, {
+    decode: (n) => BigInt(n),
+    encode: (b) => Number(b),
+  })
+);
+```
+</new_patterns>
+</implementation>
+
+<tests>
+<missing_coverage>
+- BlockSchema decode success/failure cases
+- BlockSchema encode (currently fails)
+- BlockHeaderSchema all 17 fields validation
+- BlockBodySchema with/without withdrawals
+- BlockHash 32-byte validation
+- BlockNumber safe integer bounds
+- Edge cases: pre-London, post-Shanghai, EIP-4844 blocks
+- Error message quality
+</missing_coverage>
+<test_code>
+```typescript
+// Block/Block.test.ts
+import * as S from "effect/Schema";
+import { describe, expect, it } from "vitest";
+import { BlockSchema, BlockTypeSchema } from "./BlockSchema.js";
+import { BlockRpc } from "./Rpc.js";
+
+describe("BlockSchema", () => {
+  const validBlock = {
+    header: createValidHeader(),
+    body: { transactions: [], ommers: [] },
+    hash: new Uint8Array(32).fill(1),
+    size: 1000n,
+  };
+
+  it("validates complete block", () => {
+    const result = S.decodeSync(BlockTypeSchema)(validBlock);
+    expect(result.hash.length).toBe(32);
+  });
+
+  it("rejects block with invalid header", () => {
+    expect(() =>
+      S.decodeSync(BlockTypeSchema)({ ...validBlock, header: "garbage" })
+    ).toThrow();
+  });
+
+  it("rejects block with wrong hash length", () => {
+    expect(() =>
+      S.decodeSync(BlockTypeSchema)({
+        ...validBlock,
+        hash: new Uint8Array(16),
+      })
+    ).toThrow();
+  });
+});
+
+describe("BlockRpc", () => {
+  it("decodes mainnet block JSON", () => {
+    const rpcBlock = {
+      number: "0x10d4f",
+      hash: "0x" + "ab".repeat(32),
+      parentHash: "0x" + "cd".repeat(32),
+      // ... all fields
+    };
+    const block = S.decodeSync(BlockRpc)(rpcBlock);
+    expect(block.header.number).toBe(68943n);
+  });
+
+  it("decodes post-Shanghai block with withdrawals", () => {
+    const rpcBlock = {
+      // ... base fields
+      withdrawals: [
+        { index: "0x0", validatorIndex: "0x1", address: "0x...", amount: "0x..." }
+      ],
+      withdrawalsRoot: "0x" + "ef".repeat(32),
+    };
+    const block = S.decodeSync(BlockRpc)(rpcBlock);
+    expect(block.body.withdrawals?.length).toBe(1);
+  });
+});
+
+describe("BlockNumber.Number", () => {
+  it("decodes safe integers", () => {
+    const result = S.decodeSync(BlockNumber.Number)(12345);
+    expect(result).toBe(12345n);
+  });
+
+  it("rejects unsafe integers", () => {
+    expect(() =>
+      S.decodeSync(BlockNumber.Number)(Number.MAX_SAFE_INTEGER + 10)
+    ).toThrow("exceeds");
+  });
+});
+```
+</test_code>
+</tests>
+
+<docs>
+- Add JSDoc documenting hardfork field requirements
+- Document which fields are required for which hardfork
+- Add examples for parsing mainnet blocks at different eras
+- Document BlockNumber precision limits
+</docs>
+
+<api>
+<changes>
+1. Add `Block.toRpc()`, `BlockHeader.toRpc()`, `BlockBody.toRpc()` to voltaire
+2. Implement RPC encode in all Rpc.ts schemas
+3. Add `BlockHashTypeSchema.ts` shared module
+4. Add `BlockNumberTypeSchema.ts` shared module
+5. Export hardfork-specific block schemas
+6. Add `Schema.is()` convenience type guards
+</changes>
+</api>
+
+<references>
+- [EIP-1559: Fee market change](https://eips.ethereum.org/EIPS/eip-1559)
+- [EIP-4895: Beacon chain withdrawals](https://eips.ethereum.org/EIPS/eip-4895)
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)
+- [Ethereum Yellow Paper - Block Structure](https://ethereum.github.io/yellowpaper/paper.pdf)
+- [Effect Schema docs](https://effect.website/docs/schema)
+</references>
+</issue>

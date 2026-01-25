@@ -5,6 +5,7 @@
 
 ## Related Reviews
 
+### Core Services
 - [078-viem-walletclient-analysis.md](./078-viem-walletclient-analysis.md) - WalletClient configuration
 - [079-viem-account-analysis.md](./079-viem-account-analysis.md) - Account types and capabilities
 - [080-provider-signer-gaps.md](./080-provider-signer-gaps.md) - Missing RPC methods and actions
@@ -13,6 +14,15 @@
 - [083-nonce-manager-gaps.md](./083-nonce-manager-gaps.md) - Nonce management
 - [084-eip-compliance-gaps.md](./084-eip-compliance-gaps.md) - EIP support
 - [085-effect-patterns-improvements.md](./085-effect-patterns-improvements.md) - Effect idioms
+
+### Advanced Features (Round 2)
+- [086-simulation-and-debugging-gaps.md](./086-simulation-and-debugging-gaps.md) - State overrides, simulateCalls, asset changes
+- [087-signature-utilities-gaps.md](./087-signature-utilities-gaps.md) - Recovery, verification, ERC-6492
+- [088-blob-and-kzg-gaps.md](./088-blob-and-kzg-gaps.md) - EIP-4844 blob utilities
+- [089-siwe-and-auth-gaps.md](./089-siwe-and-auth-gaps.md) - Sign-In with Ethereum, permissions
+- [090-unit-conversion-and-formatting-gaps.md](./090-unit-conversion-and-formatting-gaps.md) - parseEther, formatUnits, etc.
+- [091-contract-interaction-gaps.md](./091-contract-interaction-gaps.md) - Contract helpers, estimateGas, deploy
+- [092-event-subscription-gaps.md](./092-event-subscription-gaps.md) - watchEvent, filters, subscriptions
 
 ## Executive Summary
 
@@ -24,10 +34,12 @@ voltaire-effect provides a solid foundation with Effect-based APIs, but has sign
 |-----|--------|-------|
 | No EIP-7702 `signAuthorization` | Can't create code delegations | Signer, Account |
 | No `stateOverride` in call | Can't simulate accurately | Provider |
+| No `simulateCalls` with asset changes | Can't show "what will happen" | Provider |
 | No `fetchOptions` in HttpTransport | Can't add auth headers | Transport |
 | No chainId in NonceManager | Multi-chain nonce collision | NonceManager |
 | No `addChain` wallet action | Can't add chains to wallet | Signer |
 | No chain formatters | L2 transactions miss fields | Chain |
+| No signature verification | Can't verify who signed | Crypto utilities |
 
 ### 🟡 Important Gaps
 
@@ -40,6 +52,11 @@ voltaire-effect provides a solid foundation with Effect-based APIs, but has sign
 | No ENS methods | No name resolution | Provider |
 | No multicall batching | Inefficient batch reads | Provider |
 | No `watchAsset`, permissions | Missing wallet UX | Signer |
+| No `watchEvent` / `watchContractEvent` | Can't stream events | Provider, Contract |
+| No `deployContract` helper | Manual bytecode handling | Signer |
+| No SIWE support | Manual auth implementation | Auth |
+| No `getBlobBaseFee` | Can't estimate blob costs | Provider |
+| No Contract.estimateGas | Must encode + call manually | Contract |
 
 ### 🟢 Good Coverage
 
@@ -64,44 +81,58 @@ voltaire-effect provides a solid foundation with Effect-based APIs, but has sign
 2. **State Override** - Simulation accuracy
    - `ProviderService.call({ stateOverride })`
    - `ProviderService.estimateGas({ stateOverride })`
+   - `blockOverrides` support
 
 3. **HttpTransport fetchOptions** - Required for production
    - Headers, credentials, custom fetch
 
-### Phase 2: Multi-Chain (Week 2-3)
+4. **Signature Verification** - Essential for auth
+   - `verifyMessage`, `verifyTypedData`, `verifyHash`
+   - `recoverAddress`, `recoverMessageAddress`
 
-4. **NonceManager with chainId** - Multi-chain safety
-5. **Chain formatters** - L2 field support
-6. **Multiple RPC URLs** - Fallback support
-7. **Fallback transport ranking** - Better reliability
+### Phase 2: Simulation & UX (Week 2-3)
 
-### Phase 3: Wallet UX (Week 3-4)
+5. **simulateCalls with asset changes** - "What will happen" UX
+6. **Contract.estimateGas** - Per-method gas estimation
+7. **NonceManager with chainId** - Multi-chain safety
+8. **Chain formatters** - L2 field support
 
-8. **addChain** - EIP-3085
-9. **watchAsset** - EIP-747
-10. **getPermissions/requestPermissions** - EIP-2255
-11. **getAddresses** (non-prompting)
+### Phase 3: Wallet Actions (Week 3-4)
 
-### Phase 4: Account Features (Week 4-5)
+9. **addChain** - EIP-3085
+10. **watchAsset** - EIP-747
+11. **getPermissions/requestPermissions** - EIP-2255
+12. **getAddresses** (non-prompting)
+13. **deployContract** helper
 
-12. **Account.sign({ hash })** - Raw hash signing
-13. **Account.publicKey property** - Signature verification
-14. **HD derivation options** - Child account derivation
-15. **toAccount factory** - Custom signing implementations
+### Phase 4: Account & Signing (Week 4-5)
 
-### Phase 5: Provider Completeness (Week 5-6)
+14. **Account.sign({ hash })** - Raw hash signing
+15. **Account.publicKey property** - Signature verification
+16. **HD derivation options** - Child account derivation
+17. **toAccount factory** - Custom signing implementations
+18. **ERC-6492 signature support** - Smart account counterfactual
 
-16. **Filter methods** - eth_newFilter, getFilterChanges
-17. **ENS methods** - getEnsAddress, etc.
-18. **Multicall batching** - Automatic call aggregation
-19. **getBlobBaseFee** - EIP-4844
+### Phase 5: Subscriptions & Events (Week 5-6)
 
-### Phase 6: Effect Polish (Ongoing)
+19. **watchEvent / watchContractEvent** - Event streaming
+20. **Filter methods** - eth_newFilter, getFilterChanges
+21. **watchPendingTransactions** - Mempool watching
+22. **Fallback transport ranking** - Better reliability
 
-20. **Effect.Schema for types**
-21. **Effect.Request for batching**
-22. **Effect.Config for configuration**
-23. **Better resource management**
+### Phase 6: Provider Completeness (Week 6-7)
+
+23. **ENS methods** - getEnsAddress, etc.
+24. **Multicall batching** - Automatic call aggregation
+25. **getBlobBaseFee** - EIP-4844
+26. **SIWE support** - Sign-In with Ethereum
+
+### Phase 7: Effect Polish (Ongoing)
+
+27. **Effect.Schema for types**
+28. **Effect.Request for batching**
+29. **Effect.Config for configuration**
+30. **Better resource management**
 
 ## Architecture Recommendations
 
@@ -135,6 +166,9 @@ voltaire-effect should NOT be a 1:1 port of viem. Instead:
 3. Add `publicKey` property to LocalAccount
 4. Add `chainId` parameter to NonceManager
 5. Add `fetchOptions` to HttpTransport config
+6. Add `getBlobBaseFee` to ProviderService
+7. Add `getTransactionConfirmations` to ProviderService
+8. Export `hashMessage`, `hashTypedData` utilities
 
 ## Metric Tracking
 
@@ -142,14 +176,19 @@ voltaire-effect should NOT be a 1:1 port of viem. Instead:
 
 | Category | Current | Target |
 |----------|---------|--------|
-| EIP compliance | ~65% | 90% |
-| RPC methods | ~70% | 95% |
+| EIP compliance | ~60% | 90% |
+| RPC methods | ~65% | 95% |
 | Wallet actions | ~50% | 90% |
 | L2 support | ~30% | 80% |
 | Account types | ~40% | 80% |
+| Signature utilities | ~20% | 90% |
+| Simulation | ~10% | 80% |
+| Event subscriptions | ~30% | 80% |
 
 ### Test Coverage Needs
 
 - Add integration tests for each new action
 - Add compatibility tests with viem expected behavior
 - Add L2-specific tests (Optimism, Arbitrum formatting)
+- Add signature verification tests
+- Add simulation accuracy tests

@@ -1,234 +1,258 @@
 # EIP Compliance Gaps
 
-**Date**: 2026-01-25
-**Priority**: High
-**Category**: Protocol Compliance
-
-## Overview
-
-This document identifies EIPs that viem supports but voltaire-effect does not (or only partially supports).
-
-## Wallet EIPs
-
-### EIP-191: Signed Data Standard ✅
-
-**viem**: Full support
-**voltaire-effect**: ✅ Supported via `signMessage`
-
-### EIP-712: Typed Structured Data ✅
-
-**viem**: Full support
-**voltaire-effect**: ✅ Supported via `signTypedData`
-
-### EIP-747: wallet_watchAsset ❌
-
-**viem**: `watchAsset({ type: 'ERC20', options: { address, decimals, symbol } })`
-**voltaire-effect**: Not implemented
-
-**Impact**: Can't prompt users to add tokens to their wallet.
-
-### EIP-2255: wallet_requestPermissions / wallet_getPermissions ❌
-
-**viem**: `requestPermissions()`, `getPermissions()`
-**voltaire-effect**: Not implemented
-
-**Impact**: Can't manage wallet permissions programmatically.
-
-### EIP-3085: wallet_addEthereumChain ❌
-
-**viem**: `addChain({ chain })`
-**voltaire-effect**: Not implemented
-
-**Impact**: Can't add custom chains to user's wallet.
-
-### EIP-3326: wallet_switchEthereumChain ✅
-
-**viem**: `switchChain({ id })`
-**voltaire-effect**: ✅ Supported
-
-### EIP-5267: EIP-712 Domain Retrieval ❌
-
-**viem**: `getEip712Domain({ address })`
-**voltaire-effect**: Not implemented
-
-**Impact**: Can't discover a contract's EIP-712 domain for signing.
-
-### EIP-5792: Wallet Call API ⚠️ Partial
-
-| Method | viem | voltaire-effect |
-|--------|------|-----------------|
-| `wallet_getCapabilities` | ✅ | ✅ |
-| `wallet_sendCalls` | ✅ | ✅ |
-| `wallet_getCallsStatus` | ✅ | ✅ |
-| `wallet_showCallsStatus` | ✅ | ❌ |
-
-**Impact**: Can't open wallet UI for bundle status.
-
-### EIP-6492: Signature Validation for Pre-deployed Contracts ❌
-
-**viem**: Uses `erc6492Verifier` contract
-**voltaire-effect**: Not supported
-
-**Impact**: Can't verify signatures from counterfactual smart accounts.
-
-## Transaction EIPs
-
-### EIP-2718: Typed Transaction Envelope ✅
-
-**viem**: Types 0, 1, 2, 3, 4
-**voltaire-effect**: ✅ Types 0, 1, 2, 3, 4
-
-### EIP-2930: Access List (Type 1) ✅
-
-**viem**: Full support
-**voltaire-effect**: ✅ Supported
-
-### EIP-1559: Fee Market (Type 2) ✅
-
-**viem**: Full support
-**voltaire-effect**: ✅ Supported
-
-### EIP-4844: Blob Transactions (Type 3) ⚠️ Partial
-
-| Feature | viem | voltaire-effect |
-|---------|------|-----------------|
-| Tx type 3 | ✅ | ✅ |
-| `blobVersionedHashes` | ✅ | ✅ |
-| `maxFeePerBlobGas` | ✅ | ✅ |
-| `getBlobBaseFee` | ✅ | ❌ |
-| Blob sidecar handling | ✅ | ❌ |
-| KZG commitment | Via chain config | ❌ |
-
-**Impact**: Can send blob txs but can't estimate blob fees or handle sidecars.
-
-### EIP-7702: Set Code (Type 4) ⚠️ Partial
-
-| Feature | viem | voltaire-effect |
-|---------|------|-----------------|
-| Tx type 4 | ✅ | ✅ |
-| `authorizationList` | ✅ | ✅ |
-| `signAuthorization` | ✅ | ❌ |
-| `prepareAuthorization` | ✅ | ❌ |
-| Account `signAuthorization` | ✅ | ❌ |
-
-**Impact**: Can include signed authorizations but can't create them.
-
-## RPC EIPs
-
-### EIP-1474: Standard JSON-RPC Methods ⚠️ Partial
-
-| Method | viem | voltaire-effect |
-|--------|------|-----------------|
-| `eth_accounts` | ✅ `getAddresses` | ❌ |
-| `eth_blockNumber` | ✅ | ✅ |
-| `eth_call` | ✅ | ✅ |
-| `eth_chainId` | ✅ | ✅ |
-| `eth_coinbase` | ❌ | ❌ |
-| `eth_createAccessList` | ✅ | ✅ |
-| `eth_estimateGas` | ✅ | ✅ |
-| `eth_feeHistory` | ✅ | ✅ |
-| `eth_fillTransaction` | ✅ | ❌ |
-| `eth_gasPrice` | ✅ | ✅ |
-| `eth_getBalance` | ✅ | ✅ |
-| `eth_getBlockByHash` | ✅ | ✅ |
-| `eth_getBlockByNumber` | ✅ | ✅ |
-| `eth_getBlockTransactionCountByHash` | ✅ | ✅ |
-| `eth_getBlockTransactionCountByNumber` | ✅ | ✅ |
-| `eth_getCode` | ✅ | ✅ |
-| `eth_getFilterChanges` | ✅ | ❌ |
-| `eth_getFilterLogs` | ✅ | ❌ |
-| `eth_getLogs` | ✅ | ✅ |
-| `eth_getProof` | ✅ | ❌ |
-| `eth_getStorageAt` | ✅ | ✅ |
-| `eth_getTransactionByBlockHashAndIndex` | ❌ | ❌ |
-| `eth_getTransactionByBlockNumberAndIndex` | ❌ | ❌ |
-| `eth_getTransactionByHash` | ✅ | ✅ |
-| `eth_getTransactionCount` | ✅ | ✅ |
-| `eth_getTransactionReceipt` | ✅ | ✅ |
-| `eth_getUncleByBlockHashAndIndex` | ❌ | ❌ |
-| `eth_getUncleByBlockNumberAndIndex` | ❌ | ❌ |
-| `eth_getUncleCountByBlockHash` | ❌ | ❌ |
-| `eth_getUncleCountByBlockNumber` | ❌ | ❌ |
-| `eth_maxPriorityFeePerGas` | ✅ | ✅ |
-| `eth_newBlockFilter` | ✅ | ❌ |
-| `eth_newFilter` | ✅ | ❌ |
-| `eth_newPendingTransactionFilter` | ✅ | ❌ |
-| `eth_sendRawTransaction` | ✅ | ✅ |
-| `eth_sendTransaction` | ✅ | ✅ |
-| `eth_sign` | Deprecated | Deprecated |
-| `eth_signTransaction` | ✅ | ✅ |
-| `eth_signTypedData_v4` | ✅ | ✅ |
-| `eth_subscribe` | ✅ | ⚠️ Partial |
-| `eth_syncing` | ❌ | ❌ |
-| `eth_uninstallFilter` | ✅ | ❌ |
-| `eth_unsubscribe` | ✅ | ⚠️ Partial |
-
-### EIP-3668: CCIP Read (OffchainLookup) ⚠️ Partial
-
-**viem**: Full support via `ccipRead` config
-**voltaire-effect**: CcipService exists but not wired to Provider
-
-**Impact**: CCIP-enabled calls may not resolve correctly.
-
-## ENS EIPs
-
-### EIP-137/181: ENS Registry and Resolver ❌
-
-**viem**: Full ENS support
-**voltaire-effect**: Not implemented
-
-| Method | viem | voltaire-effect |
-|--------|------|-----------------|
-| `getEnsAddress` | ✅ | ❌ |
-| `getEnsAvatar` | ✅ | ❌ |
-| `getEnsName` | ✅ | ❌ |
-| `getEnsResolver` | ✅ | ❌ |
-| `getEnsText` | ✅ | ❌ |
-
-## Account Abstraction EIPs
-
-### EIP-4337: Account Abstraction ❌
-
-**viem**: Full support via `viem/account-abstraction`
-**voltaire-effect**: Not implemented
-
-| Feature | viem | voltaire-effect |
-|---------|------|-----------------|
-| SmartAccount type | ✅ | ❌ |
-| UserOperation | ✅ | ❌ |
-| Bundler integration | ✅ | ❌ |
-| Paymaster | ✅ | ❌ |
-| EntryPoint support | ✅ | ❌ |
-| `signUserOperation` | ✅ | ❌ |
-
-## Recommendations
-
-### Critical (Protocol Support)
-
-1. **Complete EIP-7702 support**
-   - `signAuthorization`
-   - `prepareAuthorization`
-
-2. **Add EIP-4844 blob fee estimation**
-   - `getBlobBaseFee`
-
-3. **Add filter methods**
-   - `createBlockFilter`, `createEventFilter`
-   - `getFilterChanges`, `getFilterLogs`
-   - `uninstallFilter`
-
-4. **Wire CCIP to Provider**
-   - Enable EIP-3668 offchain lookups
-
-### Important (Wallet UX)
-
-5. **Add EIP-747 `watchAsset`**
-6. **Add EIP-2255 permissions**
-7. **Add EIP-3085 `addChain`**
-8. **Add EIP-5792 `showCallsStatus`**
-
-### Nice to Have
-
-9. **Add ENS support**
-10. **Add EIP-4337 account abstraction**
-11. **Add EIP-6492 signature verification**
+<issue>
+<metadata>
+priority: P1
+category: viem-parity
+files: [src/services/Provider/, src/services/Signer/, src/jsonrpc/]
+reviews: [078-viem-walletclient-analysis, 082-chain-configuration-gaps, 104-blob-kzg-primitives-review]
+</metadata>
+
+<gap_analysis>
+Viem provides comprehensive EIP compliance across wallet, transaction, RPC, ENS, and account abstraction domains. Voltaire-effect has significant gaps.
+
+<status_matrix>
+| EIP | Feature | Viem | Voltaire | Priority |
+|-----|---------|------|----------|----------|
+| EIP-191/712 | signMessage, signTypedData | ✅ | ✅ | - |
+| EIP-2718/2930/1559 | Transaction types 0-2 | ✅ | ✅ | - |
+| EIP-4844 | Blob transactions | ✅ Full | ⚠️ Partial | P0 |
+| EIP-7702 | Authorization signing | ✅ | ⚠️ Partial | P0 |
+| EIP-747 | wallet_watchAsset | ✅ | ❌ | P1 |
+| EIP-2255 | wallet_requestPermissions | ✅ | ❌ | P1 |
+| EIP-3085 | wallet_addEthereumChain | ✅ | ❌ | P1 |
+| EIP-5792 | wallet_sendCalls | ✅ Full | ⚠️ Missing showCallsStatus | P1 |
+| EIP-1474 | Filter methods | ✅ | ❌ | P1 |
+| EIP-3668 | CCIP Read | ✅ Integrated | ⚠️ Service exists, not wired | P1 |
+| EIP-137/181 | ENS | ✅ | ❌ | P2 |
+| EIP-4337 | Account Abstraction | ✅ | ❌ | P3 |
+| EIP-6492 | Counterfactual signatures | ✅ | ❌ | P2 |
+</status_matrix>
+</gap_analysis>
+
+<viem_reference>
+<feature>EIP-747 Wallet Watch Asset</feature>
+<location>viem/src/actions/wallet/watchAsset.ts</location>
+<implementation>
+```typescript
+export async function watchAsset(
+  client: Client<Transport, Chain | undefined, Account>,
+  params: WatchAssetParameters
+): Promise<boolean> {
+  return client.request({
+    method: 'wallet_watchAsset',
+    params: {
+      type: params.type,
+      options: {
+        address: params.options.address,
+        decimals: params.options.decimals,
+        image: params.options.image,
+        symbol: params.options.symbol,
+        tokenId: params.options.tokenId,
+      }
+    }
+  })
+}
+```
+</implementation>
+</viem_reference>
+
+<viem_reference>
+<feature>EIP-7702 Sign Authorization</feature>
+<location>viem/src/actions/wallet/signAuthorization.ts</location>
+<implementation>
+```typescript
+export async function signAuthorization(
+  client: Client<Transport, Chain | undefined, Account>,
+  parameters: SignAuthorizationParameters
+): Promise<SignedAuthorization> {
+  const { account, authorization } = parameters
+  
+  const signature = await account.signAuthorization({
+    address: authorization.address,
+    chainId: authorization.chainId,
+    nonce: authorization.nonce
+  })
+  
+  return { ...authorization, ...signature }
+}
+```
+</implementation>
+</viem_reference>
+
+<viem_reference>
+<feature>EIP-4844 Get Blob Base Fee</feature>
+<location>viem/src/actions/public/getBlobBaseFee.ts</location>
+<implementation>
+```typescript
+export async function getBlobBaseFee(
+  client: Client<Transport, Chain | undefined>
+): Promise<bigint> {
+  const baseFee = await client.request({ method: 'eth_blobBaseFee' })
+  return hexToBigInt(baseFee)
+}
+```
+</implementation>
+</viem_reference>
+
+<viem_reference>
+<feature>EIP-1474 Filter Methods</feature>
+<location>viem/src/actions/public/createEventFilter.ts</location>
+<implementation>
+```typescript
+export async function createEventFilter(client, params) {
+  const filter = await client.request({
+    method: 'eth_newFilter',
+    params: [{ 
+      address: params.address,
+      topics: params.topics,
+      fromBlock: params.fromBlock,
+      toBlock: params.toBlock 
+    }]
+  })
+  return { id: filter, type: 'event' }
+}
+```
+</implementation>
+</viem_reference>
+
+<effect_solution>
+```typescript
+// WalletActionsService for EIP-747, EIP-2255, EIP-3085
+interface WalletActionsShape {
+  readonly watchAsset: (params: WatchAssetParams) => Effect<boolean, WalletError>
+  readonly requestPermissions: (perms: RequestPermissionsParams) => Effect<WalletPermission[], WalletError>
+  readonly getPermissions: () => Effect<WalletPermission[], WalletError>
+  readonly addChain: (chain: AddChainParams) => Effect<void, WalletError>
+  readonly showCallsStatus: (id: Hex) => Effect<void, WalletError>
+}
+
+class WalletActionsService extends Context.Tag('WalletActionsService')<
+  WalletActionsService,
+  WalletActionsShape
+>() {}
+
+// EIP-7702 authorization with Effect
+interface Authorization {
+  readonly address: Address
+  readonly chainId: number
+  readonly nonce: bigint
+}
+
+interface SignedAuthorization extends Authorization {
+  readonly r: Hex
+  readonly s: Hex
+  readonly v: bigint
+  readonly yParity: 0 | 1
+}
+
+const signAuthorization = (auth: Authorization): Effect<SignedAuthorization, SignerError, AccountService> =>
+  Effect.gen(function* () {
+    const account = yield* AccountService
+    const message = hashAuthorization(auth)
+    const signature = yield* account.signMessage({ raw: message })
+    const { r, s, v } = parseSignature(signature)
+    return { ...auth, r, s, v, yParity: v === 27n ? 0 : 1 }
+  })
+
+// EIP-1474 Filters with Effect resource management
+const withEventFilter = (params: EventFilterParams) =>
+  Effect.acquireRelease(
+    provider.createEventFilter(params),
+    (filterId) => provider.uninstallFilter(filterId).pipe(Effect.orDie)
+  )
+
+// EIP-4844 Blob fee
+const getBlobBaseFee = (): Effect<bigint, ProviderError, ProviderService> =>
+  Effect.gen(function* () {
+    const provider = yield* ProviderService
+    return yield* provider.request({ method: 'eth_blobBaseFee' }).pipe(
+      Effect.map(hexToBigInt)
+    )
+  })
+```
+</effect_solution>
+
+<implementation>
+<new_files>
+- src/services/WalletActions/WalletActionsService.ts
+- src/services/WalletActions/watchAsset.ts
+- src/services/WalletActions/requestPermissions.ts
+- src/services/WalletActions/addChain.ts
+- src/services/Provider/getBlobBaseFee.ts
+- src/services/Provider/createFilter.ts
+- src/services/Provider/getFilterChanges.ts
+- src/services/Signer/signAuthorization.ts
+- src/services/Ens/EnsService.ts
+</new_files>
+
+<phases>
+1. **Phase 1 - EIP-7702 Completion** (P0)
+   - Add `signAuthorization` to AccountService and Signer
+   - Add `prepareAuthorization` with nonce lookup
+   - Add `hashAuthorization` utility
+
+2. **Phase 2 - EIP-4844 Completion** (P0)
+   - Add `getBlobBaseFee` RPC method
+   - Parse `blobGasUsed` and `blobGasPrice` from receipts
+
+3. **Phase 3 - EIP-1474 Filters** (P1)
+   - Add filter creation methods to Provider
+   - Use Effect.acquireRelease for filter lifecycle
+
+4. **Phase 4 - Wallet Actions** (P1)
+   - Add WalletActionsService
+   - Implement watchAsset, permissions, addChain
+
+5. **Phase 5 - Wire CCIP** (P1)
+   - Connect CcipService to Provider.call()
+
+6. **Phase 6 - ENS** (P2)
+   - Add EnsService with resolver lookups
+
+7. **Phase 7 - EIP-4337** (P3)
+   - Add SmartAccount type and bundler integration
+</phases>
+</implementation>
+
+<tests>
+```typescript
+describe('EIP-7702 Authorization', () => {
+  it('signAuthorization creates valid signed authorization', () =>
+    Effect.gen(function* () {
+      const auth = { address: '0x...', chainId: 1, nonce: 0n }
+      const signed = yield* signAuthorization(auth)
+      expect(signed.r).toMatch(/^0x[0-9a-f]{64}$/)
+      expect(signed.yParity).toBeOneOf([0, 1])
+    }).pipe(Effect.provide(testAccountLayer)))
+})
+
+describe('EIP-4844 Blob Fees', () => {
+  it('getBlobBaseFee returns current blob base fee', () =>
+    Effect.gen(function* () {
+      const fee = yield* Provider.getBlobBaseFee()
+      expect(fee).toBeTypeOf('bigint')
+    }).pipe(Effect.provide(mainnetProviderLayer)))
+})
+
+describe('EIP-1474 Filters', () => {
+  it('createEventFilter and getFilterChanges work together', () =>
+    Effect.gen(function* () {
+      const filterId = yield* Provider.createEventFilter({ address: '0x...' })
+      const changes = yield* Provider.getFilterChanges(filterId)
+      yield* Provider.uninstallFilter(filterId)
+      expect(Array.isArray(changes)).toBe(true)
+    }).pipe(Effect.provide(providerLayer)))
+})
+```
+</tests>
+
+<references>
+- https://viem.sh/docs/actions/wallet/watchAsset
+- https://viem.sh/docs/actions/wallet/signAuthorization
+- https://viem.sh/docs/actions/public/getBlobBaseFee
+- https://eips.ethereum.org/EIPS/eip-747
+- https://eips.ethereum.org/EIPS/eip-7702
+- https://eips.ethereum.org/EIPS/eip-4844
+</references>
+</issue>

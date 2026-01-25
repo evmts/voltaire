@@ -1,13 +1,18 @@
 # Fix BlockStream.ts Effect.runPromise in Async Callback
 
-## Problem
+<issue>
+<metadata>
+priority: P1
+status: COMPLETED
+files: [src/services/BlockStream/BlockStream.ts]
+reviews: [024, 023, 027]
+</metadata>
 
-BlockStream uses `Effect.runPromise` inside an async callback, same issue as Provider.ts.
-
-**Location**: `src/services/BlockStream/BlockStream.ts#L73-L79`
+<problem>
+BlockStream originally used `Effect.runPromise` inside an async callback, same anti-pattern as Provider.ts:
 
 ```typescript
-// Current: escapes Effect runtime
+// Anti-pattern: escapes Effect runtime
 const provider = {
   request: async ({
     method,
@@ -19,18 +24,20 @@ const provider = {
 };
 ```
 
-## Why This Matters
-
-- Loses structured interruption
-- Escapes Effect runtime context
-- Makes testing harder
+Issues:
+- Loses structured interruption when stream is interrupted
+- Creates orphan fibers that continue running after parent is cancelled
+- Escapes Effect runtime context (no access to provided services)
 - Duplicates same anti-pattern from Provider.ts
+- Makes testing harder (can't mock runtime behavior)
+</problem>
 
-## Solution
-
+<solution>
 Capture runtime and use `Runtime.runPromise`:
 
 ```typescript
+import * as Runtime from "effect/Runtime";
+
 export const BlockStream: Layer.Layer<
   BlockStreamService,
   never,
@@ -52,28 +59,30 @@ export const BlockStream: Layer.Layer<
     };
 
     const coreStream = CoreBlockStream({ provider: provider as any });
-
-    return {
-      backfill: <TInclude extends BlockInclude = "header">(
-        options: BackfillOptions<TInclude>,
-      ): Stream.Stream<BlocksEvent<TInclude>, BlockStreamError> =>
-        fromAsyncGenerator(() => coreStream.backfill(options)),
-
-      watch: <TInclude extends BlockInclude = "header">(
-        options?: WatchOptions<TInclude>,
-      ): Stream.Stream<BlockStreamEvent<TInclude>, BlockStreamError> =>
-        fromAsyncGenerator(() => coreStream.watch(options)),
-    };
+    // ...
   }),
 );
 ```
+</solution>
 
-## Note
+<implementation>
+<steps>
+1. [DONE] src/services/BlockStream/BlockStream.ts:81 - Capture runtime with `yield* Effect.runtime<never>()`
+2. [DONE] src/services/BlockStream/BlockStream.ts:88 - Use `Runtime.runPromise(runtime)` instead of bare `Effect.runPromise`
+3. [DONE] Import `Runtime` from effect/Runtime
+</steps>
 
-Consider extracting a shared `makeEip1193Provider` helper used by both Provider.ts and BlockStream.ts to avoid duplication:
+<patterns>
+- `Effect.runtime<R>()` - Capture runtime carrying fiber hierarchy and services
+- `Runtime.runPromise(runtime)` - Curried runner that uses captured runtime
+- Layer construction captures runtime once at layer creation time
+</patterns>
+
+<shared-helper-consideration>
+Consider extracting shared EIP-1193 provider adapter:
 
 ```typescript
-// In a shared module like src/services/shared/eip1193.ts
+// src/services/shared/eip1193.ts
 export const makeEip1193Provider = <R>(
   transport: { request: <T>(method: string, params?: unknown[]) => Effect.Effect<T, any, R> }
 ) =>
@@ -88,13 +97,105 @@ export const makeEip1193Provider = <R>(
   });
 ```
 
-## Acceptance Criteria
+Used by both BlockStream and Provider to avoid duplication.
+</shared-helper-consideration>
+</implementation>
 
-- [ ] Capture runtime via `Effect.runtime<never>()`
-- [ ] Use `Runtime.runPromise(runtime)` instead of bare `Effect.runPromise`
-- [ ] Consider extracting shared helper
-- [ ] All existing tests pass
+<tests>
+```typescript
+import { Effect, Stream, Fiber } from "effect";
 
-## Priority
+describe("BlockStream structured concurrency", () => {
+  it("should cancel in-flight requests when stream interrupted", async () => {
+    let requestsInterrupted = 0;
+    
+    const mockTransport = {
+      request: (method: string, params?: unknown[]) =>
+        Effect.gen(function* () {
+          yield* Effect.sleep("500 millis");
+          return { blockNumber: "0x1" };
+        }).pipe(
+          Effect.onInterrupt(() => {
+            requestsInterrupted++;
+            return Effect.void;
+          })
+        ),
+    };
+    
+    const program = Effect.gen(function* () {
+      const blockStream = yield* BlockStreamService;
+      const fiber = yield* Stream.runCollect(
+        blockStream.watch().pipe(Stream.take(1))
+      ).pipe(Effect.fork);
+      
+      yield* Effect.sleep("50 millis");
+      yield* Fiber.interrupt(fiber);
+    }).pipe(
+      Effect.provide(
+        BlockStream.pipe(
+          Layer.provide(Layer.succeed(TransportService, mockTransport))
+        )
+      )
+    );
+    
+    await Effect.runPromise(program);
+    expect(requestsInterrupted).toBeGreaterThan(0);
+  });
 
-**Medium** - Same issue as Provider.ts, affects structured concurrency
+  it("should propagate runtime context to transport requests", async () => {
+    // Verify transport requests have access to runtime context
+    const TestService = Context.Tag<{ value: string }>("TestService");
+    
+    const mockTransport = {
+      request: (method: string) =>
+        Effect.gen(function* () {
+          // This would fail if runtime not properly captured
+          const test = yield* TestService;
+          return { value: test.value };
+        }),
+    };
+    
+    // Test passes if runtime context propagates correctly
+  });
+});
+```
+</tests>
+
+<docs>
+```typescript
+/**
+ * Live implementation of BlockStreamService.
+ * 
+ * @description
+ * Creates an EIP-1193 provider adapter using captured Effect runtime
+ * to maintain structured concurrency. When the stream is interrupted,
+ * in-flight RPC requests are properly cancelled.
+ * 
+ * @since 0.2.12
+ */
+```
+</docs>
+
+<api>
+<before>
+```typescript
+// Orphan fibers escape Effect runtime
+Effect.runPromise(transport.request(method, params))
+```
+</before>
+<after>
+```typescript
+// Captured runtime maintains fiber hierarchy
+const runtime = yield* Effect.runtime<never>();
+Runtime.runPromise(runtime)(transport.request(method, params))
+```
+</after>
+</api>
+
+<references>
+- [Effect Runtime module](https://effect.website/docs/runtime)
+- [Runtime.runPromise](https://effect-ts.github.io/effect/effect/Runtime.ts.html#runPromise)
+- [Fiber interruption propagation](https://effect.website/docs/guides/concurrency/fibers#interruption)
+- [src/services/BlockStream/BlockStream.ts#L73-L111](file:///Users/williamcory/voltaire/voltaire-effect/src/services/BlockStream/BlockStream.ts#L73-L111)
+</references>
+</issue>
