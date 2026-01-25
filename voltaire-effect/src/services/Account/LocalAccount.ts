@@ -123,34 +123,36 @@ function hashDomain(
 	keccak256: (data: Uint8Array) => Effect.Effect<Uint8Array>,
 ): Effect.Effect<Uint8Array> {
 	return Effect.gen(function* () {
-		const types: Array<{ name: string; type: string }> = [];
+		const domainFields: Array<{ name: string; type: string }> = [];
 		const values: unknown[] = [];
 
 		if (domain.name !== undefined) {
-			types.push({ name: "name", type: "string" });
+			domainFields.push({ name: "name", type: "string" });
 			values.push(domain.name);
 		}
 		if (domain.version !== undefined) {
-			types.push({ name: "version", type: "string" });
+			domainFields.push({ name: "version", type: "string" });
 			values.push(domain.version);
 		}
 		if (domain.chainId !== undefined) {
-			types.push({ name: "chainId", type: "uint256" });
+			domainFields.push({ name: "chainId", type: "uint256" });
 			values.push(domain.chainId);
 		}
 		if (domain.verifyingContract !== undefined) {
-			types.push({ name: "verifyingContract", type: "address" });
+			domainFields.push({ name: "verifyingContract", type: "address" });
 			values.push(domain.verifyingContract);
 		}
 		if (domain.salt !== undefined) {
-			types.push({ name: "salt", type: "bytes32" });
+			domainFields.push({ name: "salt", type: "bytes32" });
 			values.push(domain.salt);
 		}
 
-		const typeHash = yield* hashType("EIP712Domain", types, keccak256);
+		const domainTypes = { EIP712Domain: domainFields };
+		const typeHash = yield* hashType("EIP712Domain", domainTypes, keccak256);
 		const encodedValues = yield* encodeData(
-			types,
-			Object.fromEntries(types.map((t, i) => [t.name, values[i]])),
+			domainFields,
+			Object.fromEntries(domainFields.map((t, i) => [t.name, values[i]])),
+			domainTypes,
 			keccak256,
 		);
 
@@ -233,6 +235,7 @@ function hashType(
 function encodeData(
 	fields: readonly { name: string; type: string }[],
 	data: Record<string, unknown>,
+	types: Record<string, readonly { name: string; type: string }[]>,
 	keccak256: (data: Uint8Array) => Effect.Effect<Uint8Array>,
 ): Effect.Effect<Uint8Array> {
 	return Effect.gen(function* () {
@@ -240,7 +243,7 @@ function encodeData(
 
 		for (const field of fields) {
 			const value = data[field.name];
-			const encoded = yield* encodeValue(field.type, value, keccak256);
+			const encoded = yield* encodeValue(field.type, value, types, keccak256);
 			chunks.push(encoded);
 		}
 
@@ -259,6 +262,7 @@ function encodeData(
 function encodeValue(
 	type: string,
 	value: unknown,
+	types: Record<string, readonly { name: string; type: string }[]>,
 	keccak256: (data: Uint8Array) => Effect.Effect<Uint8Array>,
 ): Effect.Effect<Uint8Array> {
 	return Effect.gen(function* () {
@@ -270,6 +274,31 @@ function encodeValue(
 		if (type === "bytes") {
 			const hash = yield* keccak256(value as Uint8Array);
 			return hash;
+		}
+		if (type.endsWith("[]")) {
+			const baseType = type.slice(0, -2);
+			const arr = value as unknown[];
+			const encodedElements: Uint8Array[] = [];
+			for (const element of arr) {
+				const encoded = yield* encodeValue(baseType, element, types, keccak256);
+				encodedElements.push(encoded);
+			}
+			const totalLen = encodedElements.reduce((s, e) => s + e.length, 0);
+			const concat = new Uint8Array(totalLen);
+			let off = 0;
+			for (const e of encodedElements) {
+				concat.set(e, off);
+				off += e.length;
+			}
+			return yield* keccak256(concat);
+		}
+		if (types[type]) {
+			return yield* hashStruct(
+				type,
+				value as Record<string, unknown>,
+				types,
+				keccak256,
+			);
 		}
 		if (type.startsWith("uint") || type.startsWith("int")) {
 			const bytes = new Uint8Array(32);
