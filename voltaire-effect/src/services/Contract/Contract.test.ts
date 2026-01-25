@@ -91,10 +91,7 @@ const mockSigner = {
 	switchChain: vi.fn(),
 };
 
-const MockProviderLayer = Layer.succeed(
-	ProviderService,
-	mockProvider as any,
-);
+const MockProviderLayer = Layer.succeed(ProviderService, mockProvider as any);
 
 const MockSignerLayer = Layer.succeed(SignerService, mockSigner as any);
 
@@ -376,9 +373,7 @@ describe("Contract", () => {
 				});
 			});
 
-			await Effect.runPromise(
-				program.pipe(Effect.provide(MockProviderLayer)),
-			);
+			await Effect.runPromise(program.pipe(Effect.provide(MockProviderLayer)));
 
 			expect(mockProvider.getLogs).toHaveBeenCalled();
 			const callArgs = mockProvider.getLogs.mock.calls[0][0];

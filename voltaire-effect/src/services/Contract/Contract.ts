@@ -281,23 +281,21 @@ export const Contract = <TAbi extends Abi>(
 			)[fn.name] = (...args: unknown[]) =>
 				Effect.gen(function* () {
 					const data = encodeArgs(abiItems, fn.name, args);
-					const result = yield* provider
-						.call({ to: addressHex, data })
-						.pipe(
-							Effect.mapError(
-								(e) =>
-									new ContractCallError(
-										{
-											address: addressHex,
-											method: fn.name,
-											args,
-											simulate: true,
-										},
-										e.message,
-										{ cause: e },
-									),
-							),
-						);
+					const result = yield* provider.call({ to: addressHex, data }).pipe(
+						Effect.mapError(
+							(e) =>
+								new ContractCallError(
+									{
+										address: addressHex,
+										method: fn.name,
+										args,
+										simulate: true,
+									},
+									e.message,
+									{ cause: e },
+								),
+						),
+					);
 					return decodeResult(abiItems, fn.name, result as HexType);
 				});
 		}
