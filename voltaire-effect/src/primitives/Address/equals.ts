@@ -1,25 +1,29 @@
 /**
- * @fileoverview Effect-based address equality check.
+ * @fileoverview Address equality check.
  * @module equals
- * @since 0.0.1
+ * @since 0.1.0
  */
 
-import { Address, type AddressType } from '@tevm/voltaire/Address'
-import * as Effect from 'effect/Effect'
+import { Address, type AddressType } from "@tevm/voltaire/Address";
 
 /**
  * Checks if two addresses are equal.
- * 
+ *
  * @param a - First address
  * @param b - Second address
- * @returns Effect yielding boolean
- * 
+ * @returns true if addresses are equal
+ *
  * @example
  * ```typescript
- * const areEqual = Effect.runSync(Address.equals(addr1, addr2))
+ * import * as Address from 'voltaire-effect/primitives/Address'
+ * import * as S from 'effect/Schema'
+ *
+ * const a = S.decodeSync(Address.Hex)('0x742d35cc6634c0532925a3b844bc9e7595f251e3')
+ * const b = S.decodeSync(Address.Hex)('0x742d35cc6634c0532925a3b844bc9e7595f251e3')
+ * Address.equals(a, b) // true
  * ```
- * 
- * @since 0.0.1
+ *
+ * @since 0.1.0
  */
-export const equals = (a: AddressType, b: AddressType): Effect.Effect<boolean> =>
-  Effect.sync(() => Address.equals(a, b))
+export const equals = (a: AddressType, b: AddressType): boolean =>
+	Address.equals(a, b);

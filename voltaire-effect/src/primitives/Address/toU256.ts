@@ -1,24 +1,26 @@
 /**
- * @fileoverview Effect-based address to U256 conversion.
+ * @fileoverview Address to U256 conversion.
  * @module toU256
- * @since 0.0.1
+ * @since 0.1.0
  */
 
-import { Address, type AddressType } from '@tevm/voltaire/Address'
-import * as Effect from 'effect/Effect'
+import { Address, type AddressType } from "@tevm/voltaire/Address";
 
 /**
  * Converts an Address to a bigint (U256).
- * 
+ *
  * @param addr - The address to convert
- * @returns Effect yielding bigint representation
- * 
+ * @returns The bigint representation of the address
+ *
  * @example
  * ```typescript
- * const num = Effect.runSync(Address.toU256(addr))
+ * import * as Address from 'voltaire-effect/primitives/Address'
+ * import * as S from 'effect/Schema'
+ *
+ * const addr = S.decodeSync(Address.Hex)('0x0000000000000000000000000000000000000001')
+ * Address.toU256(addr) // 1n
  * ```
- * 
- * @since 0.0.1
+ *
+ * @since 0.1.0
  */
-export const toU256 = (addr: AddressType): Effect.Effect<bigint> =>
-  Effect.sync(() => Address.toU256(addr))
+export const toU256 = (addr: AddressType): bigint => Address.toU256(addr);

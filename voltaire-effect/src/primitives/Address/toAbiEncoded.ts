@@ -1,25 +1,28 @@
 /**
- * @fileoverview Effect-based address to ABI-encoded bytes conversion.
+ * @fileoverview Address to ABI-encoded bytes conversion.
  * @module toAbiEncoded
- * @since 0.0.1
+ * @since 0.1.0
  */
 
-import { Address, type AddressType } from '@tevm/voltaire/Address'
-import * as Effect from 'effect/Effect'
+import { Address, type AddressType } from "@tevm/voltaire/Address";
 
 /**
  * Converts an Address to ABI-encoded bytes (32-byte left-padded).
- * 
+ *
  * @param addr - The address to convert
- * @returns Effect yielding 32-byte Uint8Array
- * 
+ * @returns 32-byte Uint8Array with address in last 20 bytes
+ *
  * @example
  * ```typescript
- * const encoded = Effect.runSync(Address.toAbiEncoded(addr))
- * // Uint8Array(32) with address in last 20 bytes
+ * import * as Address from 'voltaire-effect/primitives/Address'
+ * import * as S from 'effect/Schema'
+ *
+ * const addr = S.decodeSync(Address.Hex)('0x742d35cc6634c0532925a3b844bc9e7595f251e3')
+ * const encoded = Address.toAbiEncoded(addr)
+ * // Uint8Array(32) with 12 zero bytes + 20 address bytes
  * ```
- * 
- * @since 0.0.1
+ *
+ * @since 0.1.0
  */
-export const toAbiEncoded = (addr: AddressType): Effect.Effect<Uint8Array> =>
-  Effect.sync(() => Address.toAbiEncoded(addr))
+export const toAbiEncoded = (addr: AddressType): Uint8Array =>
+	Address.toAbiEncoded(addr);

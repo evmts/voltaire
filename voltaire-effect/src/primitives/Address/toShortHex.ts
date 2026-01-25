@@ -1,25 +1,27 @@
 /**
- * @fileoverview Effect-based address to short hex conversion.
+ * @fileoverview Address to short hex conversion.
  * @module toShortHex
- * @since 0.0.1
+ * @since 0.1.0
  */
 
-import { Address, type AddressType } from '@tevm/voltaire/Address'
-import * as Effect from 'effect/Effect'
+import { Address, type AddressType } from "@tevm/voltaire/Address";
 
 /**
  * Converts an Address to shortened hex format (e.g., "0x742d...51e3").
- * 
+ *
  * @param addr - The address to convert
- * @returns Effect yielding shortened hex string
- * 
+ * @returns Shortened hex string
+ *
  * @example
  * ```typescript
- * const short = Effect.runSync(Address.toShortHex(addr))
- * // "0x742d...51e3"
+ * import * as Address from 'voltaire-effect/primitives/Address'
+ * import * as S from 'effect/Schema'
+ *
+ * const addr = S.decodeSync(Address.Hex)('0x742d35cc6634c0532925a3b844bc9e7595f251e3')
+ * Address.toShortHex(addr) // "0x742d...51e3"
  * ```
- * 
- * @since 0.0.1
+ *
+ * @since 0.1.0
  */
-export const toShortHex = (addr: AddressType): Effect.Effect<string> =>
-  Effect.sync(() => Address.toShortHex(addr))
+export const toShortHex = (addr: AddressType): string =>
+	Address.toShortHex(addr);
