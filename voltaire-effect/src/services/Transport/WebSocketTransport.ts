@@ -119,10 +119,10 @@ interface JsonRpcResponse<T> {
  * )
  * ```
  *
- * @example With configuration and PublicClient
+ * @example With configuration and Provider
  * ```typescript
  * import { Effect } from 'effect'
- * import { WebSocketTransport, PublicClient, PublicClientService } from 'voltaire-effect/services'
+ * import { WebSocketTransport, Provider, ProviderService } from 'voltaire-effect/services'
  *
  * const transport = WebSocketTransport({
  *   url: 'wss://mainnet.infura.io/ws/v3/YOUR_KEY',
@@ -130,11 +130,11 @@ interface JsonRpcResponse<T> {
  * })
  *
  * const program = Effect.gen(function* () {
- *   const client = yield* PublicClientService
+ *   const client = yield* ProviderService
  *   const blockNumber = yield* client.getBlockNumber()
  *   return blockNumber
  * }).pipe(
- *   Effect.provide(PublicClient),
+ *   Effect.provide(Provider),
  *   Effect.provide(transport),
  *   Effect.scoped
  * )

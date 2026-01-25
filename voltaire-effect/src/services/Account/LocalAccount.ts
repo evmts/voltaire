@@ -20,7 +20,7 @@
  *
  * @see {@link AccountService} - The service interface
  * @see {@link JsonRpcAccount} - Alternative for remote signing
- * @see {@link WalletClientService} - Uses AccountService for transactions
+ * @see {@link SignerService} - Uses AccountService for transactions
  */
 
 import {
@@ -316,32 +316,32 @@ function encodeValue(
  * await Effect.runPromise(program)
  * ```
  *
- * @example With WalletClient for transactions
+ * @example With Signer for transactions
  * ```typescript
  * import { Effect } from 'effect'
  * import {
- *   WalletClientService,
- *   WalletClientLive,
+ *   SignerService,
+ *   Signer,
  *   LocalAccount,
- *   PublicClient,
+ *   Provider,
  *   HttpTransport,
  *   Secp256k1Live,
  *   KeccakLive
  * } from 'voltaire-effect/services'
  *
  * const program = Effect.gen(function* () {
- *   const wallet = yield* WalletClientService
- *   const txHash = yield* wallet.sendTransaction({
+ *   const signer = yield* SignerService
+ *   const txHash = yield* signer.sendTransaction({
  *     to: recipientAddress,
  *     value: 1000000000000000000n
  *   })
  *   return txHash
  * }).pipe(
- *   Effect.provide(WalletClientLive),
+ *   Effect.provide(Signer.Live),
  *   Effect.provide(LocalAccount(privateKey)),
  *   Effect.provide(Secp256k1Live),
  *   Effect.provide(KeccakLive),
- *   Effect.provide(PublicClient),
+ *   Effect.provide(Provider),
  *   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
  * )
  * ```

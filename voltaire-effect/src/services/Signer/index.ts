@@ -25,7 +25,7 @@
  *   SignerService,
  *   Signer,
  *   LocalAccount,
- *   PublicClient,
+ *   Provider,
  *   HttpTransport
  * } from 'voltaire-effect/services'
  *
@@ -38,7 +38,7 @@
  * }).pipe(
  *   Effect.provide(Signer.Live),
  *   Effect.provide(LocalAccount(privateKey)),
- *   Effect.provide(PublicClient),
+ *   Effect.provide(Provider),
  *   Effect.provide(HttpTransport('https://...'))
  * )
  * ```
@@ -46,9 +46,9 @@
  * @example Using Signer.fromPrivateKey
  * ```typescript
  * import { Effect } from 'effect'
- * import { SignerService, Signer, PublicClient, HttpTransport } from 'voltaire-effect/services'
+ * import { SignerService, Signer, Provider, HttpTransport } from 'voltaire-effect/services'
  *
- * const signerLayer = Signer.fromPrivateKey(privateKey, PublicClient)
+ * const signerLayer = Signer.fromPrivateKey(privateKey, Provider)
  *
  * const program = Effect.gen(function* () {
  *   const signer = yield* SignerService
@@ -60,7 +60,7 @@
  * ```
  *
  * @see {@link AccountService} - Required for signing operations
- * @see {@link PublicClientService} - Required for gas/nonce
+ * @see {@link ProviderService} - Required for gas/nonce
  * @see {@link TransportService} - Required for transaction broadcast
  */
 

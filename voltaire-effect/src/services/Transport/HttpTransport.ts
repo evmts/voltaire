@@ -117,7 +117,7 @@ interface JsonRpcResponse<T> {
  * @example Full configuration with retries and timeout
  * ```typescript
  * import { Effect } from 'effect'
- * import { HttpTransport, PublicClient, PublicClientService } from 'voltaire-effect/services'
+ * import { HttpTransport, Provider, ProviderService } from 'voltaire-effect/services'
  *
  * const transport = HttpTransport({
  *   url: 'https://mainnet.infura.io/v3/YOUR_KEY',
@@ -131,10 +131,10 @@ interface JsonRpcResponse<T> {
  * })
  *
  * const program = Effect.gen(function* () {
- *   const client = yield* PublicClientService
+ *   const client = yield* ProviderService
  *   return yield* client.getBlockNumber()
  * }).pipe(
- *   Effect.provide(PublicClient),
+ *   Effect.provide(Provider),
  *   Effect.provide(transport)
  * )
  *

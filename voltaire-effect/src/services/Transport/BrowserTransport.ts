@@ -22,7 +22,7 @@
  *
  * @see {@link TransportService} - The service interface this implements
  * @see {@link HttpTransport} - Alternative for server-side or when no wallet
- * @see {@link WalletClientService} - For wallet-specific operations
+ * @see {@link SignerService} - For wallet-specific operations
  */
 
 import * as Effect from "effect/Effect";
@@ -91,20 +91,20 @@ declare global {
  * await Effect.runPromise(program)
  * ```
  *
- * @example With PublicClient for blockchain queries
+ * @example With Provider for blockchain queries
  * ```typescript
  * import { Effect } from 'effect'
- * import { BrowserTransport, PublicClient, PublicClientService } from 'voltaire-effect/services'
+ * import { BrowserTransport, Provider, ProviderService } from 'voltaire-effect/services'
  *
  * const program = Effect.gen(function* () {
- *   const client = yield* PublicClientService
+ *   const client = yield* ProviderService
  *   const [blockNumber, chainId] = yield* Effect.all([
  *     client.getBlockNumber(),
  *     client.getChainId()
  *   ])
  *   return { blockNumber, chainId }
  * }).pipe(
- *   Effect.provide(PublicClient),
+ *   Effect.provide(Provider),
  *   Effect.provide(BrowserTransport)
  * )
  * ```
@@ -155,7 +155,7 @@ declare global {
  *
  * @see {@link TransportService} - The service interface
  * @see {@link TransportError} - Error type thrown on failure
- * @see {@link WalletClientService} - For wallet signing operations
+ * @see {@link SignerService} - For wallet signing operations
  * @see {@link HttpTransport} - For server-side or fallback transport
  */
 export const BrowserTransport: Layer.Layer<TransportService> = Layer.succeed(

@@ -90,11 +90,18 @@ export class ProviderError extends AbstractError {
 	readonly input: unknown;
 
 	/**
+	 * JSON-RPC error code (propagated from transport).
+	 * Override to make explicitly visible on type.
+	 */
+	declare readonly code: number;
+
+	/**
 	 * Creates a new ProviderError.
 	 *
 	 * @param input - The original input that caused the error (method, params, etc.)
 	 * @param message - Human-readable error message (optional, defaults to cause message)
 	 * @param options - Optional error options
+	 * @param options.code - JSON-RPC error code
 	 * @param options.cause - Underlying error that caused this failure
 	 */
 	constructor(
@@ -181,37 +188,77 @@ export interface CallRequest {
 }
 
 /**
- * Filter parameters for eth_getLogs.
+ * Arguments for getBlock - discriminated union to prevent invalid combinations.
+ *
+ * @description
+ * Either query by blockTag OR by blockHash, never both.
+ *
+ * @since 0.0.1
+ */
+export type GetBlockArgs =
+	| {
+			/** Block tag (latest, earliest, pending, safe, finalized, or hex number) */
+			blockTag?: BlockTag;
+			/** Whether to include full transaction objects */
+			includeTransactions?: boolean;
+			blockHash?: never;
+	  }
+	| {
+			/** Block hash to query */
+			blockHash: HashInput;
+			/** Whether to include full transaction objects */
+			includeTransactions?: boolean;
+			blockTag?: never;
+	  };
+
+/**
+ * Filter parameters for eth_getLogs - discriminated union.
  *
  * @description
  * Defines the criteria for querying event logs from contracts.
- * Can filter by address, topics, and block range.
+ * Either use blockHash OR fromBlock/toBlock range, never both.
  *
  * @since 0.0.1
  *
  * @example
  * ```typescript
- * // Get all Transfer events from a token contract
+ * // Get all Transfer events from a token contract by block range
  * const filter: LogFilter = {
  *   address: '0x1234...',
  *   topics: ['0xddf252ad...'], // Transfer event signature
  *   fromBlock: 'latest',
  *   toBlock: 'latest'
  * }
+ *
+ * // Get events by block hash
+ * const filter2: LogFilter = {
+ *   address: '0x1234...',
+ *   blockHash: '0xabc...'
+ * }
  * ```
  */
-export interface LogFilter {
-	/** Contract address(es) to filter (single or array) */
-	readonly address?: AddressInput | AddressInput[];
-	/** Topic filters by position (null for wildcard at that position) */
-	readonly topics?: (HashInput | HashInput[] | null)[];
-	/** Start block for range query (inclusive) */
-	readonly fromBlock?: BlockTag;
-	/** End block for range query (inclusive) */
-	readonly toBlock?: BlockTag;
-	/** Specific block hash (mutually exclusive with fromBlock/toBlock) */
-	readonly blockHash?: HashInput;
-}
+export type LogFilter =
+	| {
+			/** Specific block hash (mutually exclusive with fromBlock/toBlock) */
+			blockHash: HashInput;
+			fromBlock?: never;
+			toBlock?: never;
+			/** Contract address(es) to filter (single or array) */
+			address?: AddressInput | AddressInput[];
+			/** Topic filters by position (null for wildcard at that position) */
+			topics?: (HashInput | HashInput[] | null)[];
+	  }
+	| {
+			blockHash?: never;
+			/** Start block for range query (inclusive) */
+			fromBlock?: BlockTag;
+			/** End block for range query (inclusive) */
+			toBlock?: BlockTag;
+			/** Contract address(es) to filter (single or array) */
+			address?: AddressInput | AddressInput[];
+			/** Topic filters by position (null for wildcard at that position) */
+			topics?: (HashInput | HashInput[] | null)[];
+	  };
 
 /**
  * Ethereum block as returned by JSON-RPC.
@@ -223,10 +270,10 @@ export interface LogFilter {
  * @since 0.0.1
  */
 export interface BlockType {
-	/** Block number (hex-encoded) */
-	number: string;
-	/** Block hash */
-	hash: string;
+	/** Block number (hex-encoded) - null for pending blocks */
+	number: string | null;
+	/** Block hash - null for pending blocks */
+	hash: string | null;
 	/** Parent block hash */
 	parentHash: string;
 	/** Proof-of-work nonce */
@@ -267,6 +314,10 @@ export interface BlockType {
 	withdrawals?: WithdrawalType[];
 	/** Withdrawals root (EIP-4895) */
 	withdrawalsRoot?: string;
+	/** Blob gas used (EIP-4844, hex) */
+	blobGasUsed?: string;
+	/** Excess blob gas (EIP-4844, hex) */
+	excessBlobGas?: string;
 }
 
 /**
@@ -454,11 +505,9 @@ export type ProviderShape = {
 	/** Gets the current block number */
 	readonly getBlockNumber: () => Effect.Effect<bigint, ProviderError>;
 	/** Gets a block by tag or hash */
-	readonly getBlock: (args?: {
-		blockTag?: BlockTag;
-		blockHash?: HashInput;
-		includeTransactions?: boolean;
-	}) => Effect.Effect<BlockType, ProviderError>;
+	readonly getBlock: (
+		args?: GetBlockArgs,
+	) => Effect.Effect<BlockType, ProviderError>;
 	/** Gets the transaction count in a block */
 	readonly getBlockTransactionCount: (args: {
 		blockTag?: BlockTag;

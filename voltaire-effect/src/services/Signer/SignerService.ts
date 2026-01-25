@@ -8,17 +8,17 @@
  * The SignerService provides a high-level interface for wallet operations
  * including signing messages, signing transactions, and sending transactions.
  *
- * Unlike PublicClientService (read-only), SignerService requires an
+ * Unlike ProviderService (read-only), SignerService requires an
  * AccountService for cryptographic signing operations.
  *
  * The service requires:
  * - AccountService - For signing (LocalAccount or JsonRpcAccount)
- * - PublicClientService - For gas estimation and nonce lookup
+ * - ProviderService - For gas estimation and nonce lookup
  * - TransportService - For broadcasting transactions
  *
  * @see {@link Signer} - The live implementation layer and composition helpers
  * @see {@link AccountService} - Required for signing operations
- * @see {@link PublicClientService} - For read operations
+ * @see {@link ProviderService} - For read operations
  */
 
 import type {
@@ -28,6 +28,7 @@ import type {
 	TypedData,
 } from "@tevm/voltaire";
 import { AbstractError } from "@tevm/voltaire/errors";
+import type { HashType } from "@tevm/voltaire/Hash";
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 
@@ -61,11 +62,18 @@ export class SignerError extends AbstractError {
 	readonly input: unknown;
 
 	/**
+	 * JSON-RPC error code (propagated from underlying errors).
+	 * Override to make explicitly visible on type.
+	 */
+	declare readonly code: number;
+
+	/**
 	 * Creates a new SignerError.
 	 *
 	 * @param input - The original input that caused the error
 	 * @param message - Human-readable error message
 	 * @param options - Optional error options
+	 * @param options.code - JSON-RPC error code
 	 * @param options.cause - Underlying error that caused this failure
 	 */
 	constructor(
@@ -117,6 +125,11 @@ export type TransactionRequest = {
 	readonly maxPriorityFeePerGas?: bigint;
 	/** Chain ID for replay protection (auto-detected if not provided) */
 	readonly chainId?: bigint;
+	/** EIP-2930 access list for pre-warming storage slots */
+	readonly accessList?: Array<{
+		address: AddressType | `0x${string}`;
+		storageKeys: Array<`0x${string}`>;
+	}>;
 };
 
 /**
@@ -163,7 +176,7 @@ export type SignerShape = {
 	 */
 	readonly sendTransaction: (
 		tx: TransactionRequest,
-	) => Effect.Effect<HexType, SignerError>;
+	) => Effect.Effect<HashType, SignerError>;
 
 	/**
 	 * Broadcasts an already-signed transaction.
@@ -172,7 +185,7 @@ export type SignerShape = {
 	 */
 	readonly sendRawTransaction: (
 		signedTx: HexType,
-	) => Effect.Effect<HexType, SignerError>;
+	) => Effect.Effect<HashType, SignerError>;
 
 	/**
 	 * Requests wallet addresses (triggers wallet popup in browser).
@@ -204,7 +217,7 @@ export type SignerShape = {
  *
  * Requires:
  * - AccountService - For cryptographic signing
- * - PublicClientService - For gas estimation and nonce
+ * - ProviderService - For gas estimation and nonce
  * - TransportService - For transaction broadcast
  *
  * @since 0.0.1

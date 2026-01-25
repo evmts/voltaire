@@ -70,10 +70,10 @@ import { TransportService } from "./TransportService.js";
  * }).pipe(Effect.provide(transport))
  * ```
  *
- * @example With PublicClient for testing
+ * @example With Provider for testing
  * ```typescript
  * import { Effect } from 'effect'
- * import { TestTransport, PublicClient, PublicClientService } from 'voltaire-effect/services'
+ * import { TestTransport, Provider, ProviderService } from 'voltaire-effect/services'
  *
  * const transport = TestTransport({
  *   'eth_blockNumber': '0x1234',
@@ -82,11 +82,11 @@ import { TransportService } from "./TransportService.js";
  * })
  *
  * const program = Effect.gen(function* () {
- *   const client = yield* PublicClientService
+ *   const client = yield* ProviderService
  *   const blockNumber = yield* client.getBlockNumber()
  *   return blockNumber
  * }).pipe(
- *   Effect.provide(PublicClient),
+ *   Effect.provide(Provider),
  *   Effect.provide(transport)
  * )
  *

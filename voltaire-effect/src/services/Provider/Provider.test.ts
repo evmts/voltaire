@@ -608,6 +608,179 @@ describe("ProviderService", () => {
 		});
 	});
 
+	describe("waitForTransactionReceipt", () => {
+		const mockReceipt = {
+			transactionHash: "0xabc",
+			transactionIndex: "0x0",
+			blockHash: "0xdef",
+			blockNumber: "0x64",
+			from: "0x1111111111111111111111111111111111111111",
+			to: "0x2222222222222222222222222222222222222222",
+			cumulativeGasUsed: "0x5208",
+			gasUsed: "0x5208",
+			contractAddress: null,
+			logs: [],
+			logsBloom: "0x0",
+			status: "0x1",
+		};
+
+		it("returns receipt when transaction is mined", async () => {
+			const transport = mockTransport({
+				eth_getTransactionReceipt: mockReceipt,
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.waitForTransactionReceipt("0xabc");
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result.transactionHash).toBe("0xabc");
+			expect(result.status).toBe("0x1");
+		});
+
+		it("polls until transaction is mined", async () => {
+			let callCount = 0;
+			const transport = mockTransportWithCapture({
+				eth_getTransactionReceipt: () => {
+					callCount++;
+					if (callCount < 3) return null;
+					return mockReceipt;
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.waitForTransactionReceipt("0xabc");
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(callCount).toBe(3);
+			expect(result.transactionHash).toBe("0xabc");
+		});
+
+		it("waits for confirmations", async () => {
+			let blockNumberCalls = 0;
+			const transport = mockTransportWithCapture({
+				eth_getTransactionReceipt: () => mockReceipt,
+				eth_blockNumber: () => {
+					blockNumberCalls++;
+					const blockNum = 100 + blockNumberCalls - 1;
+					return `0x${blockNum.toString(16)}`;
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.waitForTransactionReceipt("0xabc", {
+						confirmations: 3,
+					});
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(blockNumberCalls).toBeGreaterThanOrEqual(2);
+			expect(result.transactionHash).toBe("0xabc");
+		});
+
+		it("times out in receipt phase", async () => {
+			const transport = mockTransportWithCapture({
+				eth_getTransactionReceipt: () => null,
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.waitForTransactionReceipt("0xabc", {
+						timeout: 2000,
+					});
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const cause = exit.cause;
+				expect(cause._tag).toBe("Fail");
+			}
+		});
+
+		it("times out in confirmations phase", async () => {
+			const transport = mockTransportWithCapture({
+				eth_getTransactionReceipt: () => mockReceipt,
+				eth_blockNumber: () => "0x64",
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.waitForTransactionReceipt("0xabc", {
+						confirmations: 5,
+						timeout: 2000,
+					});
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails fast if confirmations < 1", async () => {
+			const transport = mockTransport({
+				eth_getTransactionReceipt: mockReceipt,
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.waitForTransactionReceipt("0xabc", {
+						confirmations: 0,
+					});
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const cause = exit.cause;
+				expect(cause._tag).toBe("Fail");
+			}
+		});
+
+		it("respects single deadline across phases", async () => {
+			let receiptCalls = 0;
+			const transport = mockTransportWithCapture({
+				eth_getTransactionReceipt: () => {
+					receiptCalls++;
+					if (receiptCalls < 2) return null;
+					return mockReceipt;
+				},
+				eth_blockNumber: () => "0x64",
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const start = Date.now();
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.waitForTransactionReceipt("0xabc", {
+						timeout: 3000,
+						confirmations: 5,
+					});
+				}).pipe(Effect.provide(layer)),
+			);
+
+			const elapsed = Date.now() - start;
+			expect(Exit.isFailure(exit)).toBe(true);
+			expect(elapsed).toBeLessThan(4500);
+		});
+	});
+
 	describe("branded type conversion", () => {
 		it("converts AddressType to hex for RPC", async () => {
 			let capturedParams: unknown[] = [];
@@ -666,6 +839,62 @@ describe("ProviderService", () => {
 			expect(capturedParams[1]).toBe(
 				"0x0000000000000000000000000000000000000000000000000000000000000001",
 			);
+		});
+	});
+
+	describe("error code propagation", () => {
+		it("propagates error code from TransportError to ProviderError", async () => {
+			const transport = Layer.succeed(TransportService, {
+				request: <T>(_method: string, _params?: unknown[]) =>
+					Effect.fail(
+						new TransportError({
+							code: -32005,
+							message: "Rate limit exceeded",
+						}),
+					) as Effect.Effect<T, TransportError>,
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getBlockNumber();
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
+				expect(error).not.toBeNull();
+				expect((error as ProviderError).code).toBe(-32005);
+				expect((error as ProviderError).message).toContain("Rate limit exceeded");
+			}
+		});
+
+		it("preserves error code through retry logic", async () => {
+			const transport = Layer.succeed(TransportService, {
+				request: <T>(_method: string, _params?: unknown[]) =>
+					Effect.fail(
+						new TransportError({
+							code: -32000,
+							message: "Server error",
+						}),
+					) as Effect.Effect<T, TransportError>,
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getBalance("0x1234567890123456789012345678901234567890");
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
+				expect((error as ProviderError).code).toBe(-32000);
+			}
 		});
 	});
 });

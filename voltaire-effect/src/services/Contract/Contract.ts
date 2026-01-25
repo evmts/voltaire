@@ -173,7 +173,7 @@ function decodeEventLog(
  *   const events = yield* token.getEvents('Transfer', { fromBlock: 'latest' })
  *   return { balance, txHash, events }
  * }).pipe(
- *   Effect.provide(PublicClient),
+ *   Effect.provide(Provider),
  *   Effect.provide(Signer.Live),
  *   Effect.provide(HttpTransport('https://...'))
  * )
@@ -246,7 +246,7 @@ export const Contract = <TAbi extends Abi>(
 					string,
 					(
 						...args: unknown[]
-					) => Effect.Effect<HexType, ContractWriteError, SignerService>
+					) => Effect.Effect<HashType, ContractWriteError, SignerService>
 				>
 			)[fn.name] = (...args: unknown[]) =>
 				Effect.gen(function* () {
@@ -267,7 +267,7 @@ export const Contract = <TAbi extends Abi>(
 									),
 							),
 						);
-					return txHash as HexType;
+					return txHash;
 				});
 		}
 

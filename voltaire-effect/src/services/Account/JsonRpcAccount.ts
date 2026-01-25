@@ -89,29 +89,29 @@ function bigintToHex(value: bigint): HexType {
  * )
  * ```
  *
- * @example In WalletClient for browser dApps
+ * @example With Signer for browser dApps
  * ```typescript
  * import { Effect } from 'effect'
  * import {
- *   WalletClientService,
- *   WalletClientLive,
+ *   SignerService,
+ *   Signer,
  *   JsonRpcAccount,
- *   PublicClient,
+ *   Provider,
  *   BrowserTransport
  * } from 'voltaire-effect/services'
  *
  * const program = Effect.gen(function* () {
- *   const wallet = yield* WalletClientService
+ *   const signer = yield* SignerService
  *   // Will trigger MetaMask popup for signing
- *   const txHash = yield* wallet.sendTransaction({
+ *   const txHash = yield* signer.sendTransaction({
  *     to: recipient,
  *     value: 1000000000000000000n
  *   })
  *   return txHash
  * }).pipe(
- *   Effect.provide(WalletClientLive),
+ *   Effect.provide(Signer.Live),
  *   Effect.provide(JsonRpcAccount(userAddress)),
- *   Effect.provide(PublicClient),
+ *   Effect.provide(Provider),
  *   Effect.provide(BrowserTransport)
  * )
  * ```

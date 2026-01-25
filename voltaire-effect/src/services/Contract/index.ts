@@ -27,7 +27,7 @@
  * @example Creating a contract instance
  * ```typescript
  * import { Effect } from 'effect'
- * import { Contract, PublicClient, HttpTransport } from 'voltaire-effect/services'
+ * import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
  *
  * const erc20Abi = [...] as const
  *
@@ -36,13 +36,13 @@
  *   const balance = yield* token.read.balanceOf(userAddress)
  *   return balance
  * }).pipe(
- *   Effect.provide(PublicClient),
+ *   Effect.provide(Provider),
  *   Effect.provide(HttpTransport('https://...'))
  * )
  * ```
  *
- * @see {@link PublicClientService} - Required for contract operations
- * @see {@link WalletClientService} - Required for write operations
+ * @see {@link ProviderService} - Required for contract operations
+ * @see {@link SignerService} - Required for write operations
  */
 
 export { Contract } from "./Contract.js";

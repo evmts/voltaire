@@ -13,11 +13,11 @@
  * - {@link LocalAccount} - Signs locally with a private key
  * - {@link JsonRpcAccount} - Delegates signing to a JSON-RPC provider
  *
- * The service is used by WalletClientService for transaction signing.
+ * The service is used by SignerService for transaction signing.
  *
  * @see {@link LocalAccount} - Local private key implementation
  * @see {@link JsonRpcAccount} - Remote JSON-RPC implementation
- * @see {@link WalletClientService} - Uses AccountService for signing
+ * @see {@link SignerService} - Uses AccountService for signing
  */
 
 import type {
@@ -116,7 +116,7 @@ export class AccountError extends AbstractError {
  * @description
  * All required fields must be populated before signing.
  * This is different from TransactionRequest which has optional fields
- * that are auto-filled by WalletClientService.
+ * that are auto-filled by SignerService.
  *
  * @since 0.0.1
  *
@@ -206,7 +206,7 @@ export type AccountShape = {
  * This is an Effect Context.Tag that must be provided with a concrete
  * implementation (LocalAccount or JsonRpcAccount) before running.
  *
- * The service is the foundation for WalletClientService signing operations.
+ * The service is the foundation for SignerService signing operations.
  *
  * @since 0.0.1
  *
@@ -255,7 +255,7 @@ export type AccountShape = {
  * @see {@link AccountError} - Error type for failed operations
  * @see {@link LocalAccount} - Local private key implementation
  * @see {@link JsonRpcAccount} - Remote JSON-RPC implementation
- * @see {@link WalletClientService} - Uses AccountService for signing
+ * @see {@link SignerService} - Uses AccountService for signing
  */
 export class AccountService extends Context.Tag("AccountService")<
 	AccountService,

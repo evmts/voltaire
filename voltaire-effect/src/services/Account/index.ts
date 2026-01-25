@@ -46,7 +46,7 @@
  * )
  * ```
  *
- * @see {@link WalletClientService} - Uses AccountService for transaction signing
+ * @see {@link SignerService} - Uses AccountService for transaction signing
  */
 
 export {

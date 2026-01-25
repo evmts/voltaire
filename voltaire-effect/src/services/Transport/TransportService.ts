@@ -10,7 +10,7 @@
  * It provides a simple request/response interface that can be implemented by various
  * transport mechanisms (HTTP, WebSocket, browser provider, etc.).
  *
- * All other services (PublicClient, WalletClient, etc.) depend on TransportService
+ * All other services (Provider, Signer, etc.) depend on TransportService
  * to communicate with Ethereum nodes.
  *
  * @see {@link HttpTransport} - HTTP transport implementation
@@ -69,7 +69,7 @@ export type TransportShape = {
  * that must be provided with a concrete implementation (HttpTransport, WebSocketTransport, etc.)
  * before running any program that depends on it.
  *
- * The service is used internally by PublicClientService, WalletClientService, and other
+ * The service is used internally by ProviderService, SignerService, and other
  * higher-level services. Most users will not interact with TransportService directly,
  * but instead use the higher-level client services.
  *

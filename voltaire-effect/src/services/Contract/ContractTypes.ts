@@ -24,10 +24,11 @@
  * @see {@link Contract} - Factory function using these types
  */
 
-import type { BrandedAddress, BrandedHex } from "@tevm/voltaire";
+import type { BrandedAddress, BrandedHash, BrandedHex } from "@tevm/voltaire";
 import { AbstractError } from "@tevm/voltaire/errors";
 
 type AddressType = BrandedAddress.AddressType;
+type HashType = BrandedHash.HashType;
 type HexType = BrandedHex.HexType;
 
 /**
@@ -346,7 +347,7 @@ type ContractWriteMethods<TAbi extends Abi> = {
 				? AbiInputsToArgs<I>
 				: []
 			: []
-	) => Effect.Effect<HexType, ContractWriteError, SignerService>;
+	) => Effect.Effect<HashType, ContractWriteError, SignerService>;
 };
 
 type ContractSimulateMethods<TAbi extends Abi> = {

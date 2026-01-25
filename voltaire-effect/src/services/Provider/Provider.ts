@@ -28,6 +28,7 @@ import {
 	type BlockType,
 	type CallRequest,
 	type FeeHistoryType,
+	type GetBlockArgs,
 	type HashInput,
 	type LogFilter,
 	type LogType,
@@ -82,7 +83,7 @@ const formatCallRequest = (tx: CallRequest): Record<string, string> => {
 	const formatted: Record<string, string> = {};
 	if (tx.from) formatted.from = toAddressHex(tx.from);
 	if (tx.to) formatted.to = toAddressHex(tx.to);
-	if (tx.data) formatted.data = typeof tx.data === "string" ? tx.data : tx.data;
+	if (tx.data) formatted.data = tx.data as string;
 	if (tx.value !== undefined) formatted.value = `0x${tx.value.toString(16)}`;
 	if (tx.gas !== undefined) formatted.gas = `0x${tx.gas.toString(16)}`;
 	return formatted;
@@ -183,6 +184,7 @@ export const Provider: Layer.Layer<
 					(e) =>
 						new ProviderError({ method, params }, e.message, {
 							cause: e,
+							code: e.code,
 							context: { method, params },
 						}),
 				),
@@ -194,18 +196,22 @@ export const Provider: Layer.Layer<
 					Effect.map((hex) => BigInt(hex)),
 				),
 
-			getBlock: (args?: {
-				blockTag?: BlockTag;
-				blockHash?: HashInput;
-				includeTransactions?: boolean;
-			}) => {
+			getBlock: (args?: GetBlockArgs) => {
 				const method = args?.blockHash
 					? "eth_getBlockByHash"
 					: "eth_getBlockByNumber";
 				const params = args?.blockHash
 					? [toHashHex(args.blockHash), args?.includeTransactions ?? false]
 					: [args?.blockTag ?? "latest", args?.includeTransactions ?? false];
-				return request<BlockType>(method, params);
+				return request<BlockType | null>(method, params).pipe(
+					Effect.flatMap((block) =>
+						block
+							? Effect.succeed(block)
+							: Effect.fail(
+									new ProviderError(args ?? {}, "Block not found"),
+								),
+					),
+				);
 			},
 
 			getBlockTransactionCount: (args: {
@@ -256,53 +262,151 @@ export const Provider: Layer.Layer<
 				]),
 
 			getTransaction: (hash: HashInput) =>
-				request<TransactionType>("eth_getTransactionByHash", [toHashHex(hash)]),
+				request<TransactionType | null>("eth_getTransactionByHash", [
+					toHashHex(hash),
+				]).pipe(
+					Effect.flatMap((tx) =>
+						tx
+							? Effect.succeed(tx)
+							: Effect.fail(
+									new ProviderError({ hash }, "Transaction not found"),
+								),
+					),
+				),
 
 			getTransactionReceipt: (hash: HashInput) =>
-				request<ReceiptType>("eth_getTransactionReceipt", [toHashHex(hash)]),
+				request<ReceiptType | null>("eth_getTransactionReceipt", [
+					toHashHex(hash),
+				]).pipe(
+					Effect.flatMap((receipt) =>
+						receipt
+							? Effect.succeed(receipt)
+							: Effect.fail(
+									new ProviderError(
+										{ hash },
+										"Transaction receipt not found (pending or unknown)",
+									),
+								),
+					),
+				),
 
 			waitForTransactionReceipt: (
 				hash: HashInput,
 				opts?: { confirmations?: number; timeout?: number },
-			) => {
-				const hashHex = toHashHex(hash);
-				const confirmations = opts?.confirmations ?? 1;
-				const timeoutMs = opts?.timeout ?? 60000;
-
-				const checkReceipt: Effect.Effect<ReceiptType, ProviderError> =
-					Effect.gen(function* () {
-						const receipt = yield* request<ReceiptType | null>(
-							"eth_getTransactionReceipt",
-							[hashHex],
+			) =>
+				Effect.gen(function* () {
+					const confirmations = opts?.confirmations ?? 1;
+					if (confirmations < 1) {
+						return yield* Effect.fail(
+							new ProviderError(
+								{ hash, confirmations },
+								"Confirmations must be at least 1",
+							),
 						);
-						if (!receipt)
-							return yield* Effect.fail(
-								new ProviderError(hashHex, "Transaction pending"),
-							);
+					}
 
-						const currentBlock = yield* request<string>("eth_blockNumber");
-						const receiptBlock = BigInt(receipt.blockNumber);
-						if (
-							BigInt(currentBlock) - receiptBlock >=
-							BigInt(confirmations - 1)
-						) {
+					const timeout = opts?.timeout ?? 60000;
+					const deadline = Date.now() + timeout;
+					const hashHex = toHashHex(hash);
+
+					const remainingTime = () => Math.max(0, deadline - Date.now());
+
+					const pollReceipt = request<ReceiptType | null>(
+						"eth_getTransactionReceipt",
+						[hashHex],
+					).pipe(
+						Effect.flatMap((receipt) =>
+							receipt
+								? Effect.succeed(receipt)
+								: Effect.fail(
+										new ProviderError({ hash }, "Transaction pending", {
+											code: -32001,
+										}),
+									),
+						),
+					);
+
+					const remaining1 = remainingTime();
+					if (remaining1 <= 0) {
+						return yield* Effect.fail(
+							new ProviderError(
+								{ hash, timeout },
+								"Timeout waiting for transaction receipt",
+							),
+						);
+					}
+
+					const receipt = yield* pollReceipt.pipe(
+						Effect.retry({
+							schedule: Schedule.spaced(1000),
+							while: (e) =>
+								e instanceof ProviderError &&
+								e.code === -32001 &&
+								remainingTime() > 0,
+						}),
+						Effect.timeout(remaining1),
+						Effect.catchTag("TimeoutException", () =>
+							Effect.fail(
+								new ProviderError(
+									{ hash, timeout },
+									"Timeout waiting for transaction receipt",
+								),
+							),
+						),
+					);
+
+					if (confirmations <= 1) {
+						return receipt;
+					}
+
+					const receiptBlockNumber = BigInt(receipt.blockNumber);
+					const targetBlock = receiptBlockNumber + BigInt(confirmations - 1);
+
+					const pollConfirmations = Effect.gen(function* () {
+						const currentBlockHex =
+							yield* request<string>("eth_blockNumber");
+						const currentBlock = BigInt(currentBlockHex);
+						if (currentBlock >= targetBlock) {
 							return receipt;
 						}
 						return yield* Effect.fail(
-							new ProviderError(hashHex, "Waiting for confirmations"),
+							new ProviderError(
+								{ hash, currentBlock, targetBlock },
+								"Waiting for confirmations",
+								{ code: -32002 },
+							),
 						);
 					});
 
-				return checkReceipt.pipe(
-					Effect.retry(Schedule.spaced(1000)),
-					Effect.timeout(timeoutMs),
-					Effect.catchTag("TimeoutException", () =>
-						Effect.fail(
-							new ProviderError(hash, "Transaction receipt timeout"),
+					const remaining2 = remainingTime();
+					if (remaining2 <= 0) {
+						return yield* Effect.fail(
+							new ProviderError(
+								{ hash, timeout },
+								"Timeout waiting for confirmations",
+							),
+						);
+					}
+
+					return yield* pollConfirmations.pipe(
+						Effect.retry({
+							schedule: Schedule.spaced(1000),
+							while: (e) =>
+								e instanceof ProviderError &&
+								e.code === -32002 &&
+								remainingTime() > 0,
+						}),
+						Effect.timeout(remaining2),
+						Effect.catchTag("TimeoutException", () =>
+							Effect.fail(
+								new ProviderError(
+									{ hash, timeout },
+									"Timeout waiting for confirmations",
+								),
+							),
 						),
-					),
-				);
-			},
+					);
+				}),
 
 			call: (tx: CallRequest, blockTag: BlockTag = "latest") =>
 				request<`0x${string}`>("eth_call", [formatCallRequest(tx), blockTag]),

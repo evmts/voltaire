@@ -65,7 +65,7 @@ const erc20Abi = [
 	},
 ] as const;
 
-const mockPublicClient = {
+const mockProvider = {
 	call: vi.fn(),
 	getLogs: vi.fn(),
 	getBlockNumber: vi.fn(),
@@ -91,9 +91,9 @@ const mockSigner = {
 	switchChain: vi.fn(),
 };
 
-const MockPublicClientLayer = Layer.succeed(
-	PublicClientService,
-	mockPublicClient as any,
+const MockProviderLayer = Layer.succeed(
+	ProviderService,
+	mockProvider as any,
 );
 
 const MockSignerLayer = Layer.succeed(SignerService, mockSigner as any);
@@ -111,7 +111,7 @@ describe("Contract", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(MockPublicClientLayer)),
+				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
 			expect(result.address).toBe(testAddress);
@@ -128,7 +128,7 @@ describe("Contract", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(MockPublicClientLayer)),
+				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
 			expect(result.hasBalanceOf).toBe(true);
@@ -145,7 +145,7 @@ describe("Contract", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(MockPublicClientLayer)),
+				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
 			expect(result.hasTransfer).toBe(true);
@@ -162,7 +162,7 @@ describe("Contract", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(MockPublicClientLayer)),
+				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
 			expect(result.hasTransfer).toBe(true);
@@ -176,7 +176,7 @@ describe("Contract", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(MockPublicClientLayer)),
+				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
 			expect(result).toBe(true);
@@ -186,7 +186,7 @@ describe("Contract", () => {
 	describe("read methods", () => {
 		it("calls eth_call with encoded function data", async () => {
 			const expectedBalance = 1000000000000000000n;
-			mockPublicClient.call.mockReturnValue(
+			mockProvider.call.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType,
 				),
@@ -201,15 +201,15 @@ describe("Contract", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(MockPublicClientLayer)),
+				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockPublicClient.call).toHaveBeenCalled();
+			expect(mockProvider.call).toHaveBeenCalled();
 			expect(result).toBe(expectedBalance);
 		});
 
 		it("handles view function with no args", async () => {
-			mockPublicClient.call.mockReturnValue(
+			mockProvider.call.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType,
 				),
@@ -222,15 +222,15 @@ describe("Contract", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(MockPublicClientLayer)),
+				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockPublicClient.call).toHaveBeenCalled();
+			expect(mockProvider.call).toHaveBeenCalled();
 			expect(typeof result).toBe("bigint");
 		});
 
 		it("returns ContractCallError on failure", async () => {
-			mockPublicClient.call.mockReturnValue(
+			mockProvider.call.mockReturnValue(
 				Effect.fail(new Error("execution reverted")),
 			);
 
@@ -242,7 +242,7 @@ describe("Contract", () => {
 			});
 
 			const exit = await Effect.runPromiseExit(
-				program.pipe(Effect.provide(MockPublicClientLayer)),
+				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
 			expect(exit._tag).toBe("Failure");
@@ -266,7 +266,7 @@ describe("Contract", () => {
 
 			const result = await Effect.runPromise(
 				program.pipe(
-					Effect.provide(MockPublicClientLayer),
+					Effect.provide(MockProviderLayer),
 					Effect.provide(MockSignerLayer),
 				),
 			);
@@ -290,7 +290,7 @@ describe("Contract", () => {
 
 			const exit = await Effect.runPromiseExit(
 				program.pipe(
-					Effect.provide(MockPublicClientLayer),
+					Effect.provide(MockProviderLayer),
 					Effect.provide(MockSignerLayer),
 				),
 			);
@@ -301,7 +301,7 @@ describe("Contract", () => {
 
 	describe("simulate methods", () => {
 		it("calls eth_call without sending transaction", async () => {
-			mockPublicClient.call.mockReturnValue(
+			mockProvider.call.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000000000000000001" as HexType,
 				),
@@ -317,10 +317,10 @@ describe("Contract", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(MockPublicClientLayer)),
+				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockPublicClient.call).toHaveBeenCalled();
+			expect(mockProvider.call).toHaveBeenCalled();
 			expect(mockSigner.sendTransaction).not.toHaveBeenCalled();
 			expect(result).toBe(true);
 		});
@@ -328,7 +328,7 @@ describe("Contract", () => {
 
 	describe("getEvents", () => {
 		it("fetches and decodes events", async () => {
-			mockPublicClient.getLogs.mockReturnValue(
+			mockProvider.getLogs.mockReturnValue(
 				Effect.succeed([
 					{
 						address: testAddress,
@@ -355,16 +355,16 @@ describe("Contract", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(MockPublicClientLayer)),
+				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockPublicClient.getLogs).toHaveBeenCalled();
+			expect(mockProvider.getLogs).toHaveBeenCalled();
 			expect(result.length).toBe(1);
 			expect(result[0].eventName).toBe("Transfer");
 		});
 
 		it("applies event filters", async () => {
-			mockPublicClient.getLogs.mockReturnValue(Effect.succeed([]));
+			mockProvider.getLogs.mockReturnValue(Effect.succeed([]));
 
 			const program = Effect.gen(function* () {
 				const contract = yield* Contract(testAddress, erc20Abi);
@@ -377,11 +377,11 @@ describe("Contract", () => {
 			});
 
 			await Effect.runPromise(
-				program.pipe(Effect.provide(MockPublicClientLayer)),
+				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockPublicClient.getLogs).toHaveBeenCalled();
-			const callArgs = mockPublicClient.getLogs.mock.calls[0][0];
+			expect(mockProvider.getLogs).toHaveBeenCalled();
+			const callArgs = mockProvider.getLogs.mock.calls[0][0];
 			expect(callArgs.address).toBe(Address.toHex(testAddress));
 		});
 	});

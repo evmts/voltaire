@@ -21,15 +21,15 @@
  * import {
  *   TransportService,
  *   HttpTransport,
- *   PublicClient,
- *   PublicClientService
+ *   Provider,
+ *   ProviderService
  * } from 'voltaire-effect/services'
  *
  * const program = Effect.gen(function* () {
- *   const client = yield* PublicClientService
+ *   const client = yield* ProviderService
  *   return yield* client.getBlockNumber()
  * }).pipe(
- *   Effect.provide(PublicClient),
+ *   Effect.provide(Provider),
  *   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
  * )
  * ```
