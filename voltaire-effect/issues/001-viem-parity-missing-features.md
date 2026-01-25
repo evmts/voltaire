@@ -1,608 +1,667 @@
-# Viem Client Parity - Missing Features & Extensibility
+# Viem Parity - Missing Features & Extensibility
 
-**Priority**: High
-**Status**: Open
-**Created**: 2026-01-25
+<issue>
+<metadata>
+priority: P0
+type: planning-document
+scope: full-library
+status: master-planning
+created: 2026-01-25
+updated: 2026-01-25
+</metadata>
 
-## Summary
+<executive_summary>
+Comprehensive gap analysis comparing viem's client architecture against voltaire-effect. This master document consolidates findings from 30+ reviews (078-092, VIEM-COMPARISON-SUMMARY) into actionable implementation categories.
 
-Comprehensive gap analysis comparing viem's client architecture against voltaire-effect's implementation. This document identifies missing customization points, pluggability features, and proposes Effect-idiomatic solutions.
+**Key Stats:**
+- EIP compliance: ~60% → target 90%
+- RPC methods: ~65% → target 95%
+- Wallet actions: ~50% → target 90%
+- L2 support: ~30% → target 80%
+- Signature utilities: ~20% → target 90%
 
-## Naming Convention
+**Naming Convention:** We use ethers-style naming:
+- `ProviderService` / `Provider` = viem's PublicClient (read-only)
+- `SignerService` / `Signer` = viem's WalletClient (signs & sends)
+</executive_summary>
 
-We use **ethers-style naming** rather than viem-style:
+<gap_categories>
 
-| Ours (ethers-style) | Viem equivalent | Purpose |
-|---|---|---|
-| `ProviderService` | `PublicClient` | Read-only chain queries |
-| `SignerService` | `WalletClient` | Signs & sends transactions |
-| `Provider` (layer) | `PublicClient` | Layer implementation |
-| `Signer` (layer) | `WalletClient` | Layer implementation |
-
----
-
-## 1. Chain Configuration Extensibility
-
-### Missing Features
-
-| Viem Feature | Description | Impact |
-|---|---|---|
-| `chain.formatters` | Pluggable block/tx/receipt/txRequest transformers | Cannot support L2-specific fields (Celo, OP Stack) |
-| `chain.serializers` | Custom transaction encoding | Cannot serialize L2 tx types (CIP-42, CIP-64) |
-| `chain.fees` | Custom gas estimation (baseFeeMultiplier, estimateFeesPerGas) | No per-chain gas strategies |
-| `chain.prepareTransactionRequest` | Pre-signing tx modification hooks (beforeFill/afterFill) | Cannot inject chain-specific tx preprocessing |
-
-### Effect-Idiomatic Solution
-
-Use **service composition with Schema transformations**:
-
+<category name="Transport Layer">
+<priority>P0</priority>
+<gaps>
+- No `fetchOptions` in HttpTransport (can't add auth headers)
+- No fallback transport ranking/latency tracking
+- No `ipc()` transport for local nodes
+- No `custom()` transport for EIP-1193 provider wrapping
+- No `onFetchRequest`/`onFetchResponse` hooks
+- No request deduplication
+- No automatic JSON-RPC batching
+- FallbackTransport has mutable state bug (review 075)
+- WebSocketTransport uses Effect.runSync in callbacks (review 073)
+</gaps>
+<viem_ref>
+- `src/clients/transports/http.ts` - fetchOptions, onRequest/Response
+- `src/clients/transports/fallback.ts` - ranking, retryDelay
+- `src/clients/transports/ipc.ts` - IPC support
+- `src/clients/transports/custom.ts` - EIP-1193 wrapper
+</viem_ref>
+<effect_solution>
 ```typescript
-import * as Context from "effect/Context"
-import * as Schema from "effect/Schema"
-import * as Effect from "effect/Effect"
+// HttpTransport with fetchOptions
+const HttpTransport = (url: string, config?: {
+  fetchOptions?: RequestInit
+  onRequest?: (req: RpcRequest) => Effect.Effect<void>
+  onResponse?: (res: RpcResponse) => Effect.Effect<void>
+}): Layer.Layer<TransportService> => ...
 
+// Use FiberRef for request/response interceptors
+const onRequestRef = FiberRef.unsafeMake<(req: RpcRequest) => Effect.Effect<void>>(() => Effect.void)
+
+// Fallback with Ref for mutable state
+const instancesRef = yield* Ref.make(transports.map(...))
+
+// Use Effect.request for automatic batching
+const GetBalanceRequest = Data.TaggedClass("GetBalance")<{...}>
+const resolver = RequestResolver.makeBatched((requests) => ...)
+```
+</effect_solution>
+<implementation_steps>
+1. Add `fetchOptions` to HttpTransport config
+2. Add FiberRef-based interceptors for request/response hooks
+3. Fix FallbackTransport mutable array → use Ref
+4. Fix WebSocketTransport → use Runtime.runFork in callbacks
+5. Add request deduplication via Effect.cached
+6. Add JSON-RPC batching via Effect.request + RequestResolver
+7. Add IpcTransport for local nodes
+8. Add CustomTransport for EIP-1193 providers
+</implementation_steps>
+</category>
+
+<category name="Chain Configuration">
+<priority>P0</priority>
+<gaps>
+- No `chain.formatters` (pluggable block/tx/receipt transformers)
+- No `chain.serializers` (custom transaction encoding)
+- No `chain.fees` (custom gas estimation per chain)
+- No `chain.prepareTransactionRequest` (pre-signing hooks)
+- No L2-specific formatters (OP Stack, Arbitrum, zkSync, Celo)
+</gaps>
+<viem_ref>
+- `src/types/chain.ts` - Chain definition with formatters
+- `src/chains/definitions/*.ts` - Per-chain configs
+- `src/chains/formatters/*.ts` - L2 formatters
+</viem_ref>
+<effect_solution>
+```typescript
 // ChainFormatterService - pluggable data transformers
 class ChainFormatterService extends Context.Tag("ChainFormatterService")<
   ChainFormatterService,
   {
-    readonly formatBlock: <E, R>(raw: RpcBlock) => Effect.Effect<Block, E, R>
-    readonly formatTransaction: <E, R>(raw: RpcTx) => Effect.Effect<Transaction, E, R>
-    readonly formatTransactionReceipt: <E, R>(raw: RpcReceipt) => Effect.Effect<Receipt, E, R>
-    readonly formatTransactionRequest: <E, R>(req: TxRequest) => Effect.Effect<RpcTxRequest, E, R>
+    readonly formatBlock: (raw: RpcBlock) => Effect.Effect<Block, FormatError>
+    readonly formatTransaction: (raw: RpcTx) => Effect.Effect<Transaction, FormatError>
+    readonly formatReceipt: (raw: RpcReceipt) => Effect.Effect<Receipt, FormatError>
+    readonly formatRequest: (req: TxRequest) => Effect.Effect<RpcTxRequest, FormatError>
   }
 >() {}
 
 // ChainSerializerService - pluggable encoding
-class ChainSerializerService extends Context.Tag("ChainSerializerService")<
-  ChainSerializerService,
-  {
-    readonly serializeTransaction: (tx: Transaction, sig?: Signature) => Effect.Effect<Hex>
-  }
->() {}
+class ChainSerializerService extends Context.Tag("ChainSerializerService")<...>() {}
 
 // ChainFeesService - pluggable gas estimation
-class ChainFeesService extends Context.Tag("ChainFeesService")<
-  ChainFeesService,
-  {
-    readonly estimateFeesPerGas: () => Effect.Effect<{ maxFeePerGas: bigint; maxPriorityFeePerGas: bigint }>
-    readonly baseFeeMultiplier: Effect.Effect<number>
-  }
->() {}
+class ChainFeesService extends Context.Tag("ChainFeesService")<...>() {}
 
-// Default implementations via Layer
-const DefaultChainFormatter = Layer.succeed(ChainFormatterService, {
-  formatBlock: (raw) => Effect.succeed(formatBlockDefault(raw)),
-  formatTransaction: (raw) => Effect.succeed(formatTxDefault(raw)),
-  // ...
-})
-
-// Chain-specific overrides (e.g., Celo)
-const CeloChainFormatter = Layer.succeed(ChainFormatterService, {
-  formatBlock: (raw) => Effect.succeed(formatCeloBlock(raw)),
-  formatTransaction: (raw) => Effect.succeed(formatCeloTx(raw)),
-  // ...
-})
+// Swap via Layer.provide per chain
+const CeloProvider = Provider.pipe(Layer.provide(CeloChainFormatter))
 ```
+</effect_solution>
+<implementation_steps>
+1. Create ChainFormatterService with default implementation
+2. Create ChainSerializerService with default implementation
+3. Create ChainFeesService with default implementation
+4. Update Provider to consume formatter service
+5. Create OP Stack formatter/serializer/fees layers
+6. Create Arbitrum formatter/serializer/fees layers
+7. Create Celo formatter (custom fields) layer
+8. Create zkSync formatter/serializer/fees layers
+</implementation_steps>
+</category>
 
-**Key Pattern**: Use `Layer.provide` to swap implementations per-chain.
+<category name="Provider Methods">
+<priority>P0</priority>
+<gaps>
+**Simulation:**
+- No `stateOverride` in call/estimateGas
+- No `simulateCalls` with asset changes
+- No `blockOverrides` support
 
----
+**Contract:**
+- No `simulateContract` (call + ABI decode)
+- No `multicall` (batch via Multicall3)
+- No `Contract.estimateGas` per method
+- No `deployContract` helper
 
-## 2. Client Extension & Composition
+**ENS:**
+- No `getEnsAddress` / `getEnsName` / `getEnsResolver`
+- No `getEnsAvatar` / `getEnsText`
 
-### Missing Features
+**Subscriptions:**
+- No `watchEvent` / `watchContractEvent`
+- No `watchPendingTransactions`
+- No filter-based subscriptions (eth_newFilter)
 
-| Viem Feature | Description | Impact |
-|---|---|---|
-| `client.extend()` | Decorator pattern for adding chain-specific actions | Cannot compose OP Stack, zkSync actions |
-| Protected actions | Immutable core operations (call, estimateGas, etc.) | No safety for core contract ops |
-| Custom RPC schema typing | Type-safe custom RPC methods via generics | No typed custom methods |
-
-### Effect-Idiomatic Solution
-
-Use **Layer merging and service extension**:
-
+**Misc:**
+- No `getProof` (eth_getProof for Merkle proofs)
+- No `getBlobBaseFee` (EIP-4844)
+- No `getTransactionConfirmations`
+</gaps>
+<viem_ref>
+- `src/actions/public/*.ts` - All public actions
+- `src/actions/wallet/*.ts` - All wallet actions
+- `src/contract.ts` - Contract helpers
+</viem_ref>
+<effect_solution>
 ```typescript
-import * as Layer from "effect/Layer"
+// State override in call
+readonly call: (params: {
+  to: Address
+  data?: Hex
+  stateOverride?: StateOverride
+  blockOverrides?: BlockOverrides
+}) => Effect.Effect<Hex, CallError>
 
-// Base Provider (existing)
-const Provider: Layer.Layer<ProviderService, never, TransportService> = ...
+// Multicall via Multicall3
+class MulticallService extends Context.Tag("MulticallService")<...>()
 
-// Extension pattern - create additional action services
-class OpStackActionsService extends Context.Tag("OpStackActionsService")<
-  OpStackActionsService,
-  {
-    readonly getL2Output: (args: L2OutputArgs) => Effect.Effect<L2Output>
-    readonly getWithdrawals: (args: WithdrawalArgs) => Effect.Effect<Withdrawal[]>
-  }
->() {}
+// Event subscriptions via Effect Stream
+readonly watchEvent: <TAbi>(params: {
+  abi: TAbi
+  eventName: string
+}) => Stream.Stream<Log, WatchError>
 
-// OpStack layer that depends on Provider
-const OpStackActions: Layer.Layer<OpStackActionsService, never, ProviderService> = 
-  Layer.effect(OpStackActionsService, Effect.gen(function* () {
-    const provider = yield* ProviderService
-    return {
-      getL2Output: (args) => /* use provider internally */,
-      getWithdrawals: (args) => /* use provider internally */,
-    }
-  }))
-
-// Compose layers for full OP Stack provider
-const OpStackProvider = Layer.merge(Provider, OpStackActions)
-
-// Usage
-const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  const opStack = yield* OpStackActionsService
-  
-  const block = yield* provider.getBlockNumber()
-  const output = yield* opStack.getL2Output({ ... })
-})
-  .pipe(
-    Effect.provide(OpStackProvider),
-    Effect.provide(HttpTransport("..."))
-  )
+// Contract.estimateGas
+Contract.estimateGas(contract, "transfer", [to, amount])
 ```
+</effect_solution>
+<implementation_steps>
+1. Add stateOverride/blockOverrides to call/estimateGas
+2. Implement simulateContract (call + decode)
+3. Implement MulticallService with Multicall3 support
+4. Implement Contract.estimateGas helper
+5. Add deployContract to SignerService
+6. Add ENS resolution methods
+7. Implement watchEvent/watchContractEvent via Stream
+8. Add filter-based subscription methods
+9. Add getProof, getBlobBaseFee, getTransactionConfirmations
+</implementation_steps>
+</category>
 
-**Alternative**: Use `Effect.Service` for cleaner syntax:
+<category name="Signer/Wallet Actions">
+<priority>P1</priority>
+<gaps>
+**EIP-7702:**
+- No `signAuthorization` (code delegation)
+- No `prepareAuthorization`
 
+**Wallet Management:**
+- No `addChain` (EIP-3085)
+- No `switchChain`
+- No `watchAsset` (EIP-747)
+- No `getPermissions` / `requestPermissions` (EIP-2255)
+- No `getAddresses` (non-prompting)
+
+**Contract:**
+- No `writeContract` with simulation
+- No `deployContract` helper
+</gaps>
+<viem_ref>
+- `src/actions/wallet/*.ts` - Wallet actions
+- `src/experimental/eip7702/*.ts` - EIP-7702 support
+</viem_ref>
+<effect_solution>
 ```typescript
-class ExtendedProvider extends Effect.Service<ExtendedProvider>()("ExtendedProvider", {
-  effect: Effect.gen(function* () {
-    const base = yield* ProviderService
-    const opStack = yield* OpStackActionsService
-    return {
-      ...base,
-      ...opStack,
-    }
-  }),
-  dependencies: [Provider, OpStackActions]
-}) {}
+// EIP-7702 authorization
+readonly signAuthorization: (params: {
+  contractAddress: Address
+  chainId: number
+  nonce?: number
+}) => Effect.Effect<SignedAuthorization, SignError>
+
+// Wallet management
+readonly addChain: (chain: Chain) => Effect.Effect<void, WalletError>
+readonly switchChain: (chainId: number) => Effect.Effect<void, WalletError>
+readonly watchAsset: (asset: WatchAssetParams) => Effect.Effect<boolean, WalletError>
 ```
+</effect_solution>
+<implementation_steps>
+1. Implement signAuthorization for EIP-7702
+2. Add addChain (EIP-3085)
+3. Add switchChain
+4. Add watchAsset (EIP-747)
+5. Add getPermissions/requestPermissions (EIP-2255)
+6. Add getAddresses (non-prompting variant)
+7. Add deployContract helper
+</implementation_steps>
+</category>
 
----
-
-## 3. Transport Layer
-
-### Missing Features
-
-| Viem Feature | Description | Impact |
-|---|---|---|
-| `fallback()` transport | Multi-provider failover | No production resilience |
-| `ipc()` transport | IPC for local nodes | Cannot connect to local geth/reth |
-| `custom()` transport | EIP-1193 provider wrapper | Cannot wrap MetaMask directly |
-| `onFetchRequest`/`onFetchResponse` hooks | Request/response interception | No logging/metrics hooks |
-| Custom `fetchFn` | Swap fetch implementation | Cannot use custom HTTP client |
-| Method include/exclude filters | RPC method allow/blocklist | No method restrictions |
-| Request deduplication | Merge identical concurrent requests | Redundant network calls |
-| Batch scheduling | JSON-RPC batching | No automatic batching |
-
-### Effect-Idiomatic Solution
-
-#### Fallback Transport
-
+<category name="Account System">
+<priority>P1</priority>
+<gaps>
+- No `Account.sign({ hash })` for raw hash signing
+- No `Account.publicKey` property
+- No HD derivation options (child account derivation)
+- No `toAccount` factory for custom signing
+- No ERC-6492 signature support (smart account counterfactual)
+- LocalAccount has no memory cleanup for private keys
+</gaps>
+<viem_ref>
+- `src/accounts/types.ts` - Account interface
+- `src/accounts/*.ts` - Account implementations
+</viem_ref>
+<effect_solution>
 ```typescript
-import * as Effect from "effect/Effect"
-import * as Layer from "effect/Layer"
-
-// FallbackTransport - tries multiple transports in order
-const FallbackTransport = (
-  transports: Layer.Layer<TransportService>[]
-): Layer.Layer<TransportService> =>
-  Layer.effect(TransportService, Effect.gen(function* () {
-    // Build a request function that tries each transport
-    return {
-      request: <T>(method: string, params?: unknown[]) =>
-        Effect.gen(function* () {
-          for (const transportLayer of transports) {
-            const result = yield* Effect.provide(
-              TransportService.pipe(Effect.andThen(t => t.request<T>(method, params))),
-              transportLayer
-            ).pipe(Effect.either)
-            
-            if (Either.isRight(result)) return result.right
-          }
-          return yield* Effect.fail(new TransportError({ code: -32603, message: "All transports failed" }))
-        })
-    }
-  }))
-```
-
-#### Request/Response Interceptors
-
-Use **FiberRef** for contextual middleware:
-
-```typescript
-import * as FiberRef from "effect/FiberRef"
-
-// Define interceptor FiberRefs
-const onRequestFiberRef = FiberRef.unsafeMake<(req: RpcRequest) => Effect.Effect<void>>(
-  () => Effect.void
-)
-const onResponseFiberRef = FiberRef.unsafeMake<(res: RpcResponse) => Effect.Effect<void>>(
-  () => Effect.void
-)
-
-// Use in transport
-const HttpTransportWithInterceptors = (url: string): Layer.Layer<TransportService> =>
-  Layer.effect(TransportService, Effect.gen(function* () {
-    return {
-      request: <T>(method: string, params?: unknown[]) =>
-        Effect.gen(function* () {
-          const onRequest = yield* FiberRef.get(onRequestFiberRef)
-          const onResponse = yield* FiberRef.get(onResponseFiberRef)
-          
-          yield* onRequest({ method, params })
-          const result = yield* executeRequest<T>(method, params)
-          yield* onResponse({ result })
-          
-          return result
-        })
-    }
-  }))
-
-// Usage - add logging interceptor
-const withLogging = Effect.locally(onRequestFiberRef, (req) => 
-  Effect.log(`RPC: ${req.method}`)
-)
-
-const program = withLogging(myEffect)
-```
-
-#### Request Batching
-
-Use **Effect's built-in batching system** with `Effect.request`:
-
-```typescript
-import * as Request from "effect/Request"
-import * as RequestResolver from "effect/RequestResolver"
-
-// Define request types
-interface RpcCall extends Request.Request<unknown, TransportError> {
-  readonly _tag: "RpcCall"
-  readonly method: string
-  readonly params: unknown[]
+// Account with publicKey and sign({ hash })
+interface AccountShape {
+  readonly address: AddressType
+  readonly publicKey?: Hex
+  readonly signMessage: (message: Hex) => Effect.Effect<Signature>
+  readonly signTypedData: (typedData: TypedData) => Effect.Effect<Signature>
+  readonly sign: (params: { hash: Hex }) => Effect.Effect<Signature>  // NEW
 }
 
-const RpcCall = Request.tagged<RpcCall>("RpcCall")
-
-// Batched resolver
-const BatchedRpcResolver = (url: string) => 
-  RequestResolver.makeBatched((requests: readonly RpcCall[]) =>
-    Effect.gen(function* () {
-      // Batch all requests into single JSON-RPC call
-      const batch = requests.map((req, id) => ({
-        jsonrpc: "2.0",
-        id,
-        method: req.method,
-        params: req.params
-      }))
-      
-      const responses = yield* fetchBatch(url, batch)
-      
-      // Complete each request with its response
-      yield* Effect.forEach(requests, (request, i) =>
-        Request.completeEffect(request, Effect.succeed(responses[i].result))
-      )
-    })
+// Memory cleanup via Effect.acquireRelease
+const LocalAccount = (privateKey: Hex) => 
+  Effect.acquireRelease(
+    Effect.sync(() => createAccount(privateKey)),
+    (account) => Effect.sync(() => account.clearKey())
   )
-
-// Usage - automatic batching
-const getTodos = Effect.request(RpcCall({ method: "eth_call", params: [...] }), resolver)
 ```
+</effect_solution>
+<implementation_steps>
+1. Add `sign({ hash })` to AccountService interface
+2. Add `publicKey` property to LocalAccount
+3. Add HD derivation support to fromMnemonic
+4. Create toAccount factory for custom signers
+5. Implement ERC-6492 signature wrapping
+6. Add memory cleanup for private keys (acquireRelease)
+</implementation_steps>
+</category>
 
----
-
-## 4. Account Abstraction
-
-### Missing Features
-
-| Viem Feature | Description | Impact |
-|---|---|---|
-| `SmartAccount` | ERC-4337 account abstraction | No bundler/paymaster support |
-| `NonceManager` | Pluggable nonce tracking | Cannot override nonce behavior |
-| `signAuthorization` (EIP-3074) | Auth delegation signing | No EIP-3074 support |
-
-### Effect-Idiomatic Solution
-
+<category name="Signature Utilities">
+<priority>P1</priority>
+<gaps>
+- No `verifyMessage` / `verifyTypedData` / `verifyHash`
+- No `recoverAddress` / `recoverMessageAddress`
+- No `hashMessage` / `hashTypedData` exports
+- Non-constant-time signature verification (security)
+</gaps>
+<viem_ref>
+- `src/utils/signature/*.ts` - Signature utilities
+- `src/utils/hash/*.ts` - Hash utilities
+</viem_ref>
+<effect_solution>
 ```typescript
-// NonceManagerService - pluggable nonce tracking
-class NonceManagerService extends Context.Tag("NonceManagerService")<
-  NonceManagerService,
-  {
-    readonly get: (address: Address) => Effect.Effect<bigint>
-    readonly consume: (address: Address) => Effect.Effect<bigint>
-  }
->() {}
+// Signature verification
+export const verifyMessage = (params: {
+  message: string | Hex
+  signature: Signature
+  address: Address
+}): Effect.Effect<boolean, VerifyError> => ...
 
-// Default implementation - fetches from network
-const DefaultNonceManager: Layer.Layer<NonceManagerService, never, ProviderService> = 
-  Layer.effect(NonceManagerService, Effect.gen(function* () {
-    const provider = yield* ProviderService
-    return {
-      get: (address) => provider.getTransactionCount(address),
-      consume: (address) => provider.getTransactionCount(address),
-    }
-  }))
+export const recoverAddress = (params: {
+  hash: Hex
+  signature: Signature
+}): Effect.Effect<Address, RecoverError> => ...
 
-// Optimistic nonce manager - tracks locally
-const OptimisticNonceManager: Layer.Layer<NonceManagerService, never, ProviderService> = 
-  Layer.effect(NonceManagerService, Effect.gen(function* () {
-    const provider = yield* ProviderService
-    const nonceRef = yield* Ref.make(new Map<string, bigint>())
-    
-    return {
-      get: (address) => Effect.gen(function* () {
-        const cache = yield* Ref.get(nonceRef)
-        return cache.get(address) ?? (yield* client.getTransactionCount(address))
-      }),
-      consume: (address) => Effect.gen(function* () {
-        // ... increment and return
-      }),
-    }
-  }))
+// Constant-time comparison
+const constantTimeEqual = (a: Uint8Array, b: Uint8Array): boolean => {
+  let result = 0
+  for (let i = 0; i < a.length; i++) result |= a[i] ^ b[i]
+  return result === 0
+}
 ```
+</effect_solution>
+<implementation_steps>
+1. Export hashMessage, hashTypedData utilities
+2. Implement verifyMessage, verifyTypedData, verifyHash
+3. Implement recoverAddress, recoverMessageAddress
+4. Add constant-time comparison utilities
+5. Fix timing side-channels in Secp256k1 verify
+</implementation_steps>
+</category>
 
----
-
-## 5. Client Configuration
-
-### Missing Features
-
-| Viem Feature | Description | Impact |
-|---|---|---|
-| `batch.multicall` | Automatic multicall aggregation | No call batching |
-| `cacheTime` | Response caching | Redundant calls |
-| `pollingInterval` | Per-client polling config | Fixed polling |
-
-### Effect-Idiomatic Solution
-
-Use **Config** for client configuration:
-
+<category name="Nonce Management">
+<priority>P0</priority>
+<gaps>
+- Race condition: plain Map causes duplicate nonces (review 080)
+- No chainId in nonce key (multi-chain collision)
+- No atomic increment operation
+</gaps>
+<viem_ref>
+- `src/accounts/utils/nonceManager.ts`
+</viem_ref>
+<effect_solution>
 ```typescript
-import * as Config from "effect/Config"
+// Use SynchronizedRef for atomic operations
+const deltaMapRef = yield* SynchronizedRef.make(
+  HashMap.empty<`${Address}:${ChainId}`, number>()
+)
 
-const ClientConfig = Config.all({
-  batchMulticall: Config.boolean("BATCH_MULTICALL").pipe(Config.withDefault(false)),
-  cacheTime: Config.integer("CACHE_TIME_MS").pipe(Config.withDefault(0)),
-  pollingInterval: Config.integer("POLLING_INTERVAL_MS").pipe(Config.withDefault(4000)),
-})
-
-// Use in client layer
-const ConfigurableProvider = Layer.effect(
-  ProviderService,
+// Atomic consume operation
+readonly consume: (address: Address, chainId: number) => 
   Effect.gen(function* () {
-    const config = yield* ClientConfig
-    const transport = yield* TransportService
+    const key = `${address}:${chainId}` as const
+    const provider = yield* ProviderService
     
-    // Apply caching if enabled
-    const cachedRequest = config.cacheTime > 0
-      ? withCache(transport.request, config.cacheTime)
-      : transport.request
-    
-    // ... build client with config
+    return yield* SynchronizedRef.modifyEffect(deltaMapRef, (map) =>
+      Effect.gen(function* () {
+        const delta = HashMap.get(map, key).pipe(Option.getOrElse(() => 0))
+        const onChainNonce = yield* provider.getTransactionCount(address, "pending")
+        const nonce = onChainNonce + delta
+        const newMap = HashMap.set(map, key, delta + 1)
+        return [nonce, newMap]
+      })
+    )
   })
-)
 ```
+</effect_solution>
+<implementation_steps>
+1. Replace Map with SynchronizedRef<HashMap>
+2. Add chainId to nonce key
+3. Use SynchronizedRef.modifyEffect for atomic operations
+4. Add concurrency tests
+</implementation_steps>
+</category>
 
----
-
-## 6. Formatter/Serializer System
-
-### Missing Features
-
-| Viem Feature | Description | Impact |
-|---|---|---|
-| `defineFormatter()` utility | Composable formatter pattern | Hard-coded transformations |
-| `defineSerializer()` pattern | Composable serializer pattern | No tx encoding flexibility |
-
-### Effect-Idiomatic Solution
-
-Use **Schema composition** for formatters:
-
+<category name="Unit Utilities">
+<priority>P2</priority>
+<gaps>
+- No `parseEther` / `formatEther`
+- No `parseUnits` / `formatUnits`
+- No `parseGwei` / `formatGwei`
+</gaps>
+<viem_ref>
+- `src/utils/unit/*.ts`
+</viem_ref>
+<effect_solution>
 ```typescript
-import * as Schema from "effect/Schema"
+// Pure functions (no Effect wrapper needed)
+export const parseEther = (value: string): bigint =>
+  parseUnits(value, 18)
 
-// Base block schema
-const RpcBlockSchema = Schema.Struct({
-  number: Schema.String,
-  hash: Schema.String,
-  // ... base fields
-})
+export const formatEther = (value: bigint): string =>
+  formatUnits(value, 18)
 
-// Formatter as Schema transformation
-const BlockFormatter = Schema.transform(
-  RpcBlockSchema,
-  BlockSchema,
-  {
-    decode: (rpc) => ({
-      number: BigInt(rpc.number),
-      hash: Hash.fromHex(rpc.hash),
-      // ...
-    }),
-    encode: (block) => ({
-      number: `0x${block.number.toString(16)}`,
-      hash: Hash.toHex(block.hash),
-      // ...
-    })
-  }
-)
-
-// Extend for Celo
-const CeloRpcBlockSchema = Schema.extend(RpcBlockSchema, Schema.Struct({
-  randomness: Schema.optional(Schema.Struct({
-    committed: Schema.String,
-    revealed: Schema.String,
-  }))
-}))
-
-const CeloBlockFormatter = Schema.transform(
-  CeloRpcBlockSchema,
-  CeloBlockSchema,
-  {
-    decode: (rpc) => ({
-      ...BlockFormatter.decode(rpc),
-      randomness: rpc.randomness ? { ... } : undefined,
-    }),
-    // ...
-  }
-)
+export const parseUnits = (value: string, decimals: number): bigint => ...
+export const formatUnits = (value: bigint, decimals: number): string => ...
 ```
+</effect_solution>
+<implementation_steps>
+1. Implement parseUnits/formatUnits
+2. Add parseEther/formatEther (18 decimals)
+3. Add parseGwei/formatGwei (9 decimals)
+4. Add to exports
+</implementation_steps>
+</category>
 
----
+<category name="Blob/KZG Utilities">
+<priority>P3</priority>
+<gaps>
+- No blob transaction helpers
+- No `getBlobBaseFee`
+- KZG uses Effect.sync for throwing operations (review 087)
+</gaps>
+<viem_ref>
+- `src/utils/blob/*.ts`
+- `src/actions/public/getBlobBaseFee.ts`
+</viem_ref>
+<effect_solution>
+```typescript
+// Fix KZG to use Effect.try
+readonly computeProof: (blob: Blob, z: Bytes32) =>
+  Effect.try({
+    try: () => kzg.computeProof(blob, z),
+    catch: (e) => new KzgError({ message: String(e), cause: e })
+  })
 
-## 7. Missing RPC Methods
+// Add getBlobBaseFee
+readonly getBlobBaseFee: () => Effect.Effect<bigint, RpcError>
+```
+</effect_solution>
+<implementation_steps>
+1. Fix KZG Effect.sync → Effect.try
+2. Add getBlobBaseFee to Provider
+3. Add blob transaction helpers
+</implementation_steps>
+</category>
 
-### Current Coverage
+<category name="SIWE and Auth">
+<priority>P3</priority>
+<gaps>
+- No Sign-In with Ethereum (SIWE) support
+- No message parsing/verification
+</gaps>
+<viem_ref>
+- `src/siwe/*.ts`
+</viem_ref>
+<effect_solution>
+```typescript
+// SIWE message creation and verification
+export const createSiweMessage = (params: SiweParams): string => ...
+export const parseSiweMessage = (message: string): Effect.Effect<SiweMessage, ParseError> => ...
+export const verifySiweMessage = (params: VerifyParams): Effect.Effect<boolean, VerifyError> => ...
+```
+</effect_solution>
+<implementation_steps>
+1. Implement createSiweMessage
+2. Implement parseSiweMessage with Schema validation
+3. Implement verifySiweMessage
+</implementation_steps>
+</category>
 
-ProviderService covers:
-- ✅ Block queries (getBlock, getBlockNumber, getBlockTransactionCount)
-- ✅ Account queries (getBalance, getTransactionCount, getCode, getStorageAt)
-- ✅ Transaction queries (getTransaction, getTransactionReceipt, waitForTransactionReceipt)
-- ✅ Call simulation (call, estimateGas, createAccessList)
-- ✅ Event queries (getLogs)
-- ✅ Network info (getChainId, getGasPrice, getMaxPriorityFeePerGas, getFeeHistory)
+</gap_categories>
 
-### Missing Methods
+<implementation_roadmap>
 
-| Method | Priority | Notes |
-|---|---|---|
-| `simulateContract` | High | Uses `call` + ABI decoding |
-| `multicall` | High | Batch contract calls via Multicall3 |
-| `getEnsAddress` / `getEnsName` / `getEnsResolver` | Medium | ENS resolution |
-| `getProof` | Medium | eth_getProof for Merkle proofs |
-| `watchBlocks` / `watchPendingTransactions` / `watchContractEvent` | Medium | WebSocket subscriptions |
-| `verifyMessage` / `verifyTypedData` | Low | Signature verification |
-| `getContractEvents` | Low | Convenience wrapper |
+<phase number="1" priority="P0" name="Critical Runtime Fixes">
+<timeline>Week 1</timeline>
+<goals>Fix bugs that cause incorrect behavior in production</goals>
+<steps>
+1. NonceManager race condition → SynchronizedRef (review 034, 074, 080)
+2. FallbackTransport mutable array → Ref (review 033, 043, 075)
+3. WebSocketTransport Effect.runSync → Runtime.runFork (review 040, 073)
+4. HttpTransport manual retry → Effect.retry + Schedule (review 017)
+5. HttpTransport mutable requestId → Ref (review 018)
+</steps>
+<files>
+- src/services/NonceManager/DefaultNonceManager.ts
+- src/services/Transport/FallbackTransport.ts
+- src/services/Transport/WebSocketTransport.ts
+- src/services/Transport/HttpTransport.ts
+</files>
+</phase>
 
----
+<phase number="2" priority="P0" name="Transport Enhancements">
+<timeline>Week 1-2</timeline>
+<goals>Production-ready transport layer</goals>
+<steps>
+1. Add fetchOptions to HttpTransport
+2. Add request/response interceptor FiberRefs
+3. Implement request deduplication
+4. Implement JSON-RPC batching via Effect.request
+5. Add IpcTransport for local nodes
+</steps>
+<files>
+- src/services/Transport/HttpTransport.ts
+- src/services/Transport/BatchScheduler.ts (NEW)
+- src/services/Transport/IpcTransport.ts (NEW)
+</files>
+</phase>
 
-## 8. Additional Missing Features (ethers + viem parity)
+<phase number="3" priority="P0" name="Provider Simulation">
+<timeline>Week 2</timeline>
+<goals>Accurate transaction simulation</goals>
+<steps>
+1. Add stateOverride to call/estimateGas
+2. Add blockOverrides support
+3. Implement simulateContract
+4. Add getBlobBaseFee
+</steps>
+<files>
+- src/services/Provider/Provider.ts
+- src/services/Provider/types.ts
+</files>
+</phase>
 
-### Contract Abstraction
+<phase number="4" priority="P1" name="Chain Configuration">
+<timeline>Week 2-3</timeline>
+<goals>L2 chain support</goals>
+<steps>
+1. Create ChainFormatterService
+2. Create ChainSerializerService
+3. Create ChainFeesService
+4. Implement OP Stack layers
+5. Implement Arbitrum layers
+6. Implement Celo layers
+</steps>
+<files>
+- src/services/Chain/ChainFormatterService.ts (NEW)
+- src/services/Chain/ChainSerializerService.ts (NEW)
+- src/services/Chain/ChainFeesService.ts (NEW)
+- src/services/Chain/chains/optimism.ts (NEW)
+- src/services/Chain/chains/arbitrum.ts (NEW)
+</files>
+</phase>
 
-| Feature | Priority | Notes |
-|---|---|---|
-| `Contract.read()` | High | Call view functions with typed returns |
-| `Contract.write()` | High | Send transactions to contract |
-| `Contract.deploy()` | Medium | Deploy contracts with constructor args |
-| `Contract.events` | Medium | Event filtering and watching |
-| `Contract.multicall()` | High | Batch multiple calls via Multicall3 |
+<phase number="5" priority="P1" name="Signature & Auth">
+<timeline>Week 3</timeline>
+<goals>Signature verification and EIP-7702</goals>
+<steps>
+1. Export hashMessage, hashTypedData
+2. Implement verifyMessage, verifyTypedData
+3. Implement recoverAddress
+4. Add constant-time comparison utilities
+5. Implement signAuthorization (EIP-7702)
+</steps>
+<files>
+- src/crypto/Signature/verify.ts (NEW)
+- src/crypto/Signature/recover.ts (NEW)
+- src/primitives/Hash/message.ts (NEW)
+- src/services/Signer/signAuthorization.ts (NEW)
+</files>
+</phase>
 
-### ENS Support
+<phase number="6" priority="P1" name="Account Enhancements">
+<timeline>Week 3-4</timeline>
+<goals>Complete account system</goals>
+<steps>
+1. Add sign({ hash }) to Account
+2. Add publicKey property
+3. Add memory cleanup for private keys
+4. Add HD derivation options
+5. Implement toAccount factory
+</steps>
+<files>
+- src/services/Account/AccountService.ts
+- src/services/Account/LocalAccount.ts
+- src/services/Account/fromMnemonic.ts
+</files>
+</phase>
 
-| Feature | Priority | Notes |
-|---|---|---|
-| `resolveName` (ENS → Address) | Medium | Forward resolution |
-| `lookupAddress` (Address → ENS) | Medium | Reverse resolution |
-| `getResolver` | Low | Get ENS resolver contract |
-| `getAvatar` | Low | Get ENS avatar |
+<phase number="7" priority="P1" name="Wallet Actions">
+<timeline>Week 4</timeline>
+<goals>Full wallet management</goals>
+<steps>
+1. Add addChain (EIP-3085)
+2. Add switchChain
+3. Add watchAsset (EIP-747)
+4. Add getPermissions/requestPermissions
+5. Add deployContract helper
+</steps>
+<files>
+- src/services/Signer/actions/addChain.ts (NEW)
+- src/services/Signer/actions/switchChain.ts (NEW)
+- src/services/Signer/actions/watchAsset.ts (NEW)
+- src/services/Signer/actions/deployContract.ts (NEW)
+</files>
+</phase>
 
-### Subscriptions (WebSocket)
+<phase number="8" priority="P1" name="Contract & Multicall">
+<timeline>Week 4-5</timeline>
+<goals>Contract interaction helpers</goals>
+<steps>
+1. Implement MulticallService
+2. Add Contract.estimateGas
+3. Add Contract.simulate
+4. Improve Contract types (ABI tuple safety)
+</steps>
+<files>
+- src/services/Multicall/MulticallService.ts (NEW)
+- src/services/Multicall/DefaultMulticall.ts (NEW)
+- src/services/Contract/Contract.ts
+</files>
+</phase>
 
-| Feature | Priority | Notes |
-|---|---|---|
-| `watchBlocks` | High | Subscribe to new blocks |
-| `watchPendingTransactions` | Medium | Subscribe to mempool |
-| `watchContractEvent` | High | Subscribe to contract events |
-| `watchBlockNumber` | Medium | Lightweight block polling |
+<phase number="9" priority="P2" name="Subscriptions & Events">
+<timeline>Week 5-6</timeline>
+<goals>Event streaming support</goals>
+<steps>
+1. Implement watchEvent via Stream
+2. Implement watchContractEvent
+3. Add filter-based subscriptions (eth_newFilter)
+4. Add watchPendingTransactions
+</steps>
+<files>
+- src/services/Provider/watchEvent.ts (NEW)
+- src/services/Provider/filters.ts (NEW)
+- src/services/Contract/watchContractEvent.ts (NEW)
+</files>
+</phase>
 
-### Transaction Utilities
+<phase number="10" priority="P2" name="ENS & Utilities">
+<timeline>Week 6</timeline>
+<goals>ENS and unit utilities</goals>
+<steps>
+1. Implement ENS resolution methods
+2. Add parseEther/formatEther
+3. Add parseUnits/formatUnits
+4. Add parseGwei/formatGwei
+</steps>
+<files>
+- src/services/Provider/ens.ts (NEW)
+- src/primitives/Unit/index.ts (NEW)
+</files>
+</phase>
 
-| Feature | Priority | Notes |
-|---|---|---|
-| `prepareTransaction` | High | Fill gas, nonce, chainId automatically |
-| `simulateContract` | High | Simulate before sending |
-| `speedUpTransaction` | Low | Replace with higher gas |
-| `cancelTransaction` | Low | Replace with 0-value self-send |
-| `getTransactionConfirmations` | Medium | Count confirmations |
+<phase number="11" priority="P3" name="Advanced Features">
+<timeline>Week 7+</timeline>
+<goals>Complete feature parity</goals>
+<steps>
+1. SIWE support
+2. ERC-6492 signatures
+3. Blob transaction helpers
+4. Fix remaining KZG/Bn254 issues
+</steps>
+</phase>
 
-### Unit Utilities
+</implementation_roadmap>
 
-| Feature | Priority | Notes |
-|---|---|---|
-| `parseEther` / `formatEther` | High | "1.5" ↔ 1500000000000000000n |
-| `parseUnits` / `formatUnits` | High | Arbitrary decimals |
-| `parseGwei` / `formatGwei` | Medium | Gwei convenience |
+<cross_references>
+<reviews>
+- [078-viem-walletclient-analysis.md](../reviews/078-viem-walletclient-analysis.md)
+- [079-viem-account-analysis.md](../reviews/079-viem-account-analysis.md)
+- [080-provider-signer-gaps.md](../reviews/080-provider-signer-gaps.md)
+- [081-transport-configuration-gaps.md](../reviews/081-transport-configuration-gaps.md)
+- [082-chain-configuration-gaps.md](../reviews/082-chain-configuration-gaps.md)
+- [083-nonce-manager-gaps.md](../reviews/083-nonce-manager-gaps.md)
+- [086-simulation-and-debugging-gaps.md](../reviews/086-simulation-and-debugging-gaps.md)
+- [087-signature-utilities-gaps.md](../reviews/087-signature-utilities-gaps.md)
+- [VIEM-COMPARISON-SUMMARY.md](../reviews/VIEM-COMPARISON-SUMMARY.md)
+</reviews>
+<design_docs>
+- [SERVICES-DESIGN.md](../SERVICES-DESIGN.md)
+- [IMPLEMENTATION-PLAN.md](../IMPLEMENTATION-PLAN.md)
+</design_docs>
+</cross_references>
 
-### Signature Utilities
-
-| Feature | Priority | Notes |
-|---|---|---|
-| `verifyMessage` | Medium | Recover signer from message signature |
-| `verifyTypedData` | Medium | Recover signer from EIP-712 signature |
-| `recoverAddress` | Medium | Low-level recovery |
-| `hashMessage` | Low | EIP-191 message hash |
-
-### Advanced Features
-
-| Feature | Priority | Notes |
-|---|---|---|
-| State overrides in `call` | Medium | Override balances/code for simulation |
-| `getProof` (eth_getProof) | Medium | Merkle proofs for state |
-| Blob transactions (EIP-4844) | Low | Data blobs for L2s |
-| EIP-7702 authorization | Low | Code delegation |
-
-### L2 Chain Extensions
-
-| Chain | Features Needed |
-|---|---|
-| **OP Stack** | getL2Output, getWithdrawals, getL1BaseFee, depositTransaction |
-| **Arbitrum** | getL1BaseFee, sendL2Message, outboxExecute |
-| **zkSync** | estimateFee, getBlockDetails, getAllBalances |
-| **Base/Celo/etc** | Custom formatters, fee currencies |
-
----
-
-## Implementation Roadmap
-
-### Phase 1: Core Extensibility (Week 1-2)
-1. [ ] Implement `ChainFormatterService` with default layer
-2. [ ] Implement `ChainSerializerService` with default layer
-3. [ ] Implement `ChainFeesService` with default layer
-4. [ ] Update `Provider` to use formatter service
-5. [ ] Rename PublicClient → Provider, WalletClient → Signer
-6. [ ] Add `Signer.fromProvider()` / `Signer.fromPrivateKey()` constructors
-
-### Phase 2: Transport Enhancements (Week 2-3)
-1. [ ] Implement `FallbackTransport`
-2. [ ] Add request/response interceptor FiberRefs
-3. [ ] Implement request batching with `Effect.request`
-4. [ ] Add request deduplication
-5. [ ] WebSocket transport with subscription support
-
-### Phase 3: Account & Nonce (Week 3-4)
-1. [ ] Implement `NonceManagerService`
-2. [ ] Add `SmartAccountService` interface
-3. [ ] Implement `signAuthorization` for EIP-3074/7702
-
-### Phase 4: Contract Abstraction (Week 4-5)
-1. [ ] `Contract.read()` - typed view calls
-2. [ ] `Contract.write()` - typed transactions
-3. [ ] `Contract.multicall()` - batched calls via Multicall3
-4. [ ] `Contract.deploy()` - deployment with constructor args
-5. [ ] `Contract.events` - event filtering
-
-### Phase 5: Additional Provider Methods (Week 5-6)
-1. [ ] `simulateContract` / `prepareTransaction`
-2. [ ] ENS methods (resolveName, lookupAddress)
-3. [ ] `getProof` (eth_getProof)
-4. [ ] Subscription methods (watchBlocks, watchContractEvent)
-5. [ ] Unit utilities (parseEther, formatEther, etc.)
-
-### Phase 6: Chain-Specific Extensions (Week 6-7)
-1. [ ] Create OP Stack extension layer
-2. [ ] Create Arbitrum extension layer
-3. [ ] Create zkSync extension layer
-4. [ ] Create Celo extension layer (custom formatters)
-5. [ ] Document extension pattern
-
----
-
-## References
-
-- [Viem Client Architecture](https://github.com/wevm/viem/blob/main/src/clients/createClient.ts)
-- [Effect Batching Docs](https://effect.website/docs/batching)
-- [Effect Layers Docs](https://effect.website/docs/requirements-management/layers)
-- [Effect Configuration Docs](https://effect.website/docs/configuration)
-- [Effect Schema Transformations](https://effect.website/docs/schema/transformations)
+</issue>
