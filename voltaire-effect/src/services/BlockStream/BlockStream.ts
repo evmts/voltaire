@@ -26,18 +26,26 @@ import { BlockStreamError } from "./BlockStreamError.js";
 import { BlockStreamService } from "./BlockStreamService.js";
 
 /**
- * Wraps an AsyncGenerator as an Effect Stream.
+ * Wraps an AsyncGenerator as an Effect Stream with cleanup on interruption.
  */
-const fromAsyncGenerator = <T>(
+const fromAsyncGeneratorWithCleanup = <T>(
 	makeGenerator: () => AsyncGenerator<T>,
+	cleanup: () => void,
 ): Stream.Stream<T, BlockStreamError> =>
-	Stream.fromAsyncIterable(
-		{ [Symbol.asyncIterator]: makeGenerator },
-		(error) =>
-			new BlockStreamError(
-				error instanceof Error ? error.message : "BlockStream error",
-				{ cause: error instanceof Error ? error : undefined },
+	Stream.acquireRelease(
+		Effect.sync(() => makeGenerator()),
+		() => Effect.sync(cleanup),
+	).pipe(
+		Stream.flatMap((generator) =>
+			Stream.fromAsyncIterable(
+				{ [Symbol.asyncIterator]: () => generator },
+				(error) =>
+					new BlockStreamError(
+						error instanceof Error ? error.message : "BlockStream error",
+						{ cause: error instanceof Error ? error : undefined },
+					),
 			),
+		),
 	);
 
 /**
@@ -84,16 +92,20 @@ export const BlockStream: Layer.Layer<
 
 		const coreStream = CoreBlockStream({ provider: provider as any });
 
+		const cleanup = () => {
+			coreStream.destroy?.();
+		};
+
 		return {
 			backfill: <TInclude extends BlockInclude = "header">(
 				options: BackfillOptions<TInclude>,
 			): Stream.Stream<BlocksEvent<TInclude>, BlockStreamError> =>
-				fromAsyncGenerator(() => coreStream.backfill(options)),
+				fromAsyncGeneratorWithCleanup(() => coreStream.backfill(options), cleanup),
 
 			watch: <TInclude extends BlockInclude = "header">(
 				options?: WatchOptions<TInclude>,
 			): Stream.Stream<BlockStreamEvent<TInclude>, BlockStreamError> =>
-				fromAsyncGenerator(() => coreStream.watch(options)),
+				fromAsyncGeneratorWithCleanup(() => coreStream.watch(options), cleanup),
 		};
 	}),
 );

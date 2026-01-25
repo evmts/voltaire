@@ -65,13 +65,12 @@ export interface Bn254ServiceShape {
 	 *
 	 * @param a - First G1 point
 	 * @param b - Second G1 point
-	 * @returns Effect containing the sum point
-	 * @throws Never - This operation is infallible for valid points
+	 * @returns Effect containing the sum point, or Bn254Error if operation fails
 	 */
 	readonly g1Add: (
 		a: BN254G1PointType,
 		b: BN254G1PointType,
-	) => Effect.Effect<BN254G1PointType>;
+	) => Effect.Effect<BN254G1PointType, Bn254Error>;
 
 	/**
 	 * Multiplies a G1 point by a scalar.
@@ -82,13 +81,12 @@ export interface Bn254ServiceShape {
 	 *
 	 * @param point - The G1 point
 	 * @param scalar - The scalar multiplier (bigint)
-	 * @returns Effect containing the product point
-	 * @throws Never - This operation is infallible for valid inputs
+	 * @returns Effect containing the product point, or Bn254Error if operation fails
 	 */
 	readonly g1Mul: (
 		point: BN254G1PointType,
 		scalar: bigint,
-	) => Effect.Effect<BN254G1PointType>;
+	) => Effect.Effect<BN254G1PointType, Bn254Error>;
 
 	/**
 	 * Returns the G1 generator point for BN254.
@@ -96,10 +94,9 @@ export interface Bn254ServiceShape {
 	 * @description
 	 * Returns the standard generator point for the G1 group.
 	 *
-	 * @returns Effect containing the G1 generator point
-	 * @throws Never - This operation is infallible
+	 * @returns Effect containing the G1 generator point, or Bn254Error if operation fails
 	 */
-	readonly g1Generator: () => Effect.Effect<BN254G1PointType>;
+	readonly g1Generator: () => Effect.Effect<BN254G1PointType, Bn254Error>;
 
 	/**
 	 * Adds two G2 points on the BN254 curve.
@@ -109,13 +106,12 @@ export interface Bn254ServiceShape {
 	 *
 	 * @param a - First G2 point
 	 * @param b - Second G2 point
-	 * @returns Effect containing the sum point
-	 * @throws Never - This operation is infallible for valid points
+	 * @returns Effect containing the sum point, or Bn254Error if operation fails
 	 */
 	readonly g2Add: (
 		a: BN254G2PointType,
 		b: BN254G2PointType,
-	) => Effect.Effect<BN254G2PointType>;
+	) => Effect.Effect<BN254G2PointType, Bn254Error>;
 
 	/**
 	 * Multiplies a G2 point by a scalar.
@@ -125,13 +121,12 @@ export interface Bn254ServiceShape {
 	 *
 	 * @param point - The G2 point
 	 * @param scalar - The scalar multiplier (bigint)
-	 * @returns Effect containing the product point
-	 * @throws Never - This operation is infallible for valid inputs
+	 * @returns Effect containing the product point, or Bn254Error if operation fails
 	 */
 	readonly g2Mul: (
 		point: BN254G2PointType,
 		scalar: bigint,
-	) => Effect.Effect<BN254G2PointType>;
+	) => Effect.Effect<BN254G2PointType, Bn254Error>;
 
 	/**
 	 * Returns the G2 generator point for BN254.
@@ -139,10 +134,9 @@ export interface Bn254ServiceShape {
 	 * @description
 	 * Returns the standard generator point for the G2 group.
 	 *
-	 * @returns Effect containing the G2 generator point
-	 * @throws Never - This operation is infallible
+	 * @returns Effect containing the G2 generator point, or Bn254Error if operation fails
 	 */
-	readonly g2Generator: () => Effect.Effect<BN254G2PointType>;
+	readonly g2Generator: () => Effect.Effect<BN254G2PointType, Bn254Error>;
 
 	/**
 	 * Performs a pairing check on pairs of G1 and G2 points.
@@ -153,12 +147,11 @@ export interface Bn254ServiceShape {
 	 * EVM precompile at address 0x08.
 	 *
 	 * @param pairs - Array of [G1, G2] point pairs
-	 * @returns Effect containing true if pairing check passes
-	 * @throws Never - This operation is infallible for valid points
+	 * @returns Effect containing true if pairing check passes, or Bn254Error if operation fails
 	 */
 	readonly pairingCheck: (
 		pairs: ReadonlyArray<readonly [BN254G1PointType, BN254G2PointType]>,
-	) => Effect.Effect<boolean>;
+	) => Effect.Effect<boolean, Bn254Error>;
 }
 
 /**
@@ -237,18 +230,79 @@ export class Bn254Service extends Context.Tag("Bn254Service")<
  * @since 0.0.1
  */
 export const Bn254Live = Layer.succeed(Bn254Service, {
-	g1Add: (a, b) => Effect.sync(() => BN254.G1.add(a, b)),
-	g1Mul: (point, scalar) => Effect.sync(() => BN254.G1.mul(point, scalar)),
-	g1Generator: () => Effect.sync(() => BN254.G1.generator()),
-	g2Add: (a, b) => Effect.sync(() => BN254.G2.add(a, b)),
-	g2Mul: (point, scalar) => Effect.sync(() => BN254.G2.mul(point, scalar)),
-	g2Generator: () => Effect.sync(() => BN254.G2.generator()),
+	g1Add: (a, b) =>
+		Effect.try({
+			try: () => BN254.G1.add(a, b),
+			catch: (e) =>
+				new Bn254Error({
+					operation: "g1Add",
+					message: `G1 point addition failed: ${e}`,
+					cause: e,
+				}),
+		}),
+	g1Mul: (point, scalar) =>
+		Effect.try({
+			try: () => BN254.G1.mul(point, scalar),
+			catch: (e) =>
+				new Bn254Error({
+					operation: "g1Mul",
+					message: `G1 scalar multiplication failed: ${e}`,
+					cause: e,
+				}),
+		}),
+	g1Generator: () =>
+		Effect.try({
+			try: () => BN254.G1.generator(),
+			catch: (e) =>
+				new Bn254Error({
+					operation: "g1Generator",
+					message: `Failed to get G1 generator: ${e}`,
+					cause: e,
+				}),
+		}),
+	g2Add: (a, b) =>
+		Effect.try({
+			try: () => BN254.G2.add(a, b),
+			catch: (e) =>
+				new Bn254Error({
+					operation: "g2Add",
+					message: `G2 point addition failed: ${e}`,
+					cause: e,
+				}),
+		}),
+	g2Mul: (point, scalar) =>
+		Effect.try({
+			try: () => BN254.G2.mul(point, scalar),
+			catch: (e) =>
+				new Bn254Error({
+					operation: "g2Mul",
+					message: `G2 scalar multiplication failed: ${e}`,
+					cause: e,
+				}),
+		}),
+	g2Generator: () =>
+		Effect.try({
+			try: () => BN254.G2.generator(),
+			catch: (e) =>
+				new Bn254Error({
+					operation: "g2Generator",
+					message: `Failed to get G2 generator: ${e}`,
+					cause: e,
+				}),
+		}),
 	pairingCheck: (pairs) =>
-		Effect.sync(() =>
-			BN254.Pairing.pairingCheck(
-				pairs as Array<[BN254G1PointType, BN254G2PointType]>,
-			),
-		),
+		Effect.try({
+			try: () =>
+				BN254.Pairing.pairingCheck(
+					pairs as Array<[BN254G1PointType, BN254G2PointType]>,
+				),
+			catch: (e) =>
+				new Bn254Error({
+					operation: "pairingCheck",
+					message: `Pairing check failed: ${e}`,
+					cause: e,
+				}),
+		}),
 });
 
 const mockG1Point: BN254G1PointType = {

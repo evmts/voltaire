@@ -10,8 +10,45 @@ import type {
 } from "@tevm/voltaire";
 import { KZG } from "@tevm/voltaire";
 import * as Context from "effect/Context";
+import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+
+/**
+ * Error thrown when a KZG operation fails.
+ *
+ * @description
+ * Contains the operation that failed, error code, message, and optional cause.
+ *
+ * Common failure reasons:
+ * - Trusted setup not loaded (SETUP_NOT_LOADED)
+ * - Invalid blob size or format (INVALID_BLOB)
+ * - Invalid commitment format (INVALID_COMMITMENT)
+ * - Invalid proof format (INVALID_PROOF)
+ * - Verification failure
+ *
+ * @since 0.0.1
+ */
+export class KZGError extends Data.TaggedError("KZGError")<{
+	/** Error code for programmatic handling */
+	readonly code:
+		| "SETUP_NOT_LOADED"
+		| "INVALID_BLOB"
+		| "INVALID_COMMITMENT"
+		| "INVALID_PROOF"
+		| "OPERATION_FAILED";
+	/** The KZG operation that failed */
+	readonly operation:
+		| "blobToKzgCommitment"
+		| "computeBlobKzgProof"
+		| "verifyBlobKzgProof"
+		| "loadTrustedSetup"
+		| "isInitialized";
+	/** Human-readable error message */
+	readonly message: string;
+	/** Underlying error that caused this failure */
+	readonly cause?: unknown;
+}> {}
 
 /**
  * Shape interface for KZG commitment service operations.
