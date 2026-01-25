@@ -1,22 +1,37 @@
 /**
- * @fileoverview BaseFeePerGas primitive module for EIP-1559 base fees.
- *
- * @description
- * The base fee is a protocol-determined minimum fee per gas unit, introduced
- * in EIP-1559. It adjusts dynamically based on network congestion:
- * - Increases when blocks are >50% full
- * - Decreases when blocks are <50% full
- * - Maximum change: ±12.5% per block
- *
- * The base fee is burned (not paid to validators), reducing ETH supply.
- *
  * @module BaseFeePerGas
- * @since 0.0.1
- * @see {@link MaxFeePerGas} for maximum fee willing to pay
- * @see {@link MaxPriorityFeePerGas} for validator tip
- * @see {@link EffectiveGasPrice} for actual price paid
- * @see {@link FeeMarket} for fee market state
+ * @description Effect Schemas for EIP-1559 base fee per gas.
+ *
+ * The base fee is a protocol-determined minimum fee per gas unit.
+ * It adjusts dynamically based on network congestion (±12.5% per block).
+ * The base fee is burned, not paid to validators.
+ *
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `BaseFeePerGas.BigInt` | bigint (wei) | BaseFeePerGasType |
+ * | `BaseFeePerGas.Gwei` | number/bigint (gwei) | BaseFeePerGasType |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as BaseFeePerGas from 'voltaire-effect/primitives/BaseFeePerGas'
+ * import * as S from 'effect/Schema'
+ *
+ * // From wei
+ * const baseFee = S.decodeSync(BaseFeePerGas.BigInt)(20000000000n)
+ *
+ * // From gwei (more ergonomic)
+ * const baseFee2 = S.decodeSync(BaseFeePerGas.Gwei)(20)
+ *
+ * // Convert to gwei for display
+ * const gwei = BaseFeePerGas.toGwei(baseFee) // 20n
+ * ```
+ *
+ * @since 0.1.0
  */
 
-export { BaseFeePerGasSchema, BaseFeePerGasFromGweiSchema, type BaseFeePerGasType } from './BaseFeePerGasSchema.js'
-export { from, fromGwei, toGwei } from './from.js'
+export { BigInt, type BaseFeePerGasType } from "./BigInt.js";
+export { Gwei } from "./Gwei.js";
+export { toGwei } from "./toGwei.js";

@@ -1,22 +1,37 @@
 /**
- * @fileoverview MaxFeePerGas primitive module for EIP-1559 maximum fees.
- *
- * @description
- * MaxFeePerGas is the maximum total fee per gas a user is willing to pay
- * in an EIP-1559 transaction. The actual fee paid is:
- *
- * effectiveGasPrice = min(baseFee + priorityFee, maxFeePerGas)
- *
- * Setting maxFeePerGas protects users from sudden base fee spikes.
- * The difference between maxFeePerGas and effectiveGasPrice is refunded.
- *
  * @module MaxFeePerGas
- * @since 0.0.1
- * @see {@link BaseFeePerGas} for protocol-determined base fee
- * @see {@link MaxPriorityFeePerGas} for validator tip
- * @see {@link EffectiveGasPrice} for actual price paid
- * @see {@link FeeMarket} for fee market state
+ * @description Effect Schemas for EIP-1559 maximum fee per gas.
+ *
+ * MaxFeePerGas is the maximum total fee per gas a user is willing to pay.
+ * The actual fee paid is: min(baseFee + priorityFee, maxFeePerGas)
+ * Setting maxFeePerGas protects users from sudden base fee spikes.
+ *
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `MaxFeePerGas.BigInt` | bigint (wei) | MaxFeePerGasType |
+ * | `MaxFeePerGas.Gwei` | number/bigint (gwei) | MaxFeePerGasType |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as MaxFeePerGas from 'voltaire-effect/primitives/MaxFeePerGas'
+ * import * as S from 'effect/Schema'
+ *
+ * // From wei
+ * const maxFee = S.decodeSync(MaxFeePerGas.BigInt)(50000000000n)
+ *
+ * // From gwei (more ergonomic)
+ * const maxFee2 = S.decodeSync(MaxFeePerGas.Gwei)(50)
+ *
+ * // Convert to gwei for display
+ * const gwei = MaxFeePerGas.toGwei(maxFee) // 50n
+ * ```
+ *
+ * @since 0.1.0
  */
 
-export { MaxFeePerGasSchema, MaxFeePerGasFromGweiSchema, type MaxFeePerGasType } from './MaxFeePerGasSchema.js'
-export { from, fromGwei, toGwei } from './from.js'
+export { BigInt, type MaxFeePerGasType } from "./BigInt.js";
+export { Gwei } from "./Gwei.js";
+export { toGwei } from "./toGwei.js";

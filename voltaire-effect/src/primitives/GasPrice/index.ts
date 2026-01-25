@@ -1,24 +1,47 @@
 /**
- * @fileoverview GasPrice primitive module for gas pricing in wei.
+ * @module GasPrice
+ * @description Effect Schemas for gas pricing in wei.
  *
- * @description
- * Gas price represents the cost per unit of gas in wei. In legacy transactions,
- * this is the `gasPrice` field. In EIP-1559 transactions, the effective gas
- * price is calculated from `baseFee + priorityFee` capped by `maxFeePerGas`.
+ * ## Schemas
  *
- * Common units:
+ * | Schema | Input | Output | Description |
+ * |--------|-------|--------|-------------|
+ * | `GasPrice.Number` | number | GasPriceType | Wei value as number |
+ * | `GasPrice.BigInt` | bigint | GasPriceType | Wei value as bigint |
+ * | `GasPrice.Hex` | string | GasPriceType | Hex-encoded wei value |
+ * | `GasPrice.Gwei` | number \| bigint | GasPriceType | Gwei input, stored as wei |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as GasPrice from 'voltaire-effect/primitives/GasPrice'
+ * import * as S from 'effect/Schema'
+ *
+ * // Decode from gwei (most common)
+ * const price = S.decodeSync(GasPrice.Gwei)(20)
+ *
+ * // Decode from wei
+ * const fromWei = S.decodeSync(GasPrice.BigInt)(20000000000n)
+ *
+ * // Decode from hex
+ * const fromHex = S.decodeSync(GasPrice.Hex)('0x3b9aca00')
+ *
+ * // Encode back to gwei
+ * const gwei = S.encodeSync(GasPrice.Gwei)(price)
+ * ```
+ *
+ * ## Common Units
+ *
  * - 1 wei = 1 (smallest unit)
  * - 1 gwei = 1,000,000,000 wei (10^9)
  * - Gas prices are typically expressed in gwei (e.g., "20 gwei")
  *
- * @module GasPrice
- * @since 0.0.1
+ * @since 0.1.0
  * @see {@link Gas} for gas units
- * @see {@link BaseFeePerGas} for EIP-1559 base fee
- * @see {@link MaxFeePerGas} for EIP-1559 max fee
- * @see {@link MaxPriorityFeePerGas} for EIP-1559 priority fee
- * @see {@link EffectiveGasPrice} for calculated effective price
  */
 
-export { GasPriceSchema, GasPriceFromGweiSchema, type GasPriceType } from './GasPriceSchema.js'
-export { from, fromGwei, type GasPriceError } from './from.js'
+// Schemas
+export { Number, type GasPriceType } from "./Number.js";
+export { BigInt } from "./BigInt.js";
+export { Hex } from "./Hex.js";
+export { Gwei } from "./Gwei.js";

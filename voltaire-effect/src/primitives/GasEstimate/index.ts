@@ -1,23 +1,40 @@
 /**
- * @fileoverview GasEstimate primitive module for pre-execution gas estimation.
+ * @module GasEstimate
+ * @description Effect Schemas for pre-execution gas estimation.
  *
- * @description
  * Gas estimates predict the gas required for a transaction before execution.
  * The `eth_estimateGas` RPC call returns this value. Estimates should include
- * a safety buffer (typically 10-20%) to account for state changes between
- * estimation and execution.
+ * a safety buffer (typically 10-20%) to account for state changes.
  *
- * Key concepts:
- * - Estimate: Predicted gas needed (from eth_estimateGas)
- * - Gas Limit: Maximum gas allowed (set in transaction)
- * - Gas Used: Actual gas consumed (after execution)
+ * ## Schemas
  *
- * @module GasEstimate
- * @since 0.0.1
- * @see {@link Gas} for gas units
- * @see {@link GasUsed} for consumed gas
- * @see {@link GasConstants} for operation costs
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `GasEstimate.BigInt` | bigint | GasEstimateType |
+ * | `GasEstimate.Number` | number | GasEstimateType |
+ *
+ * ## Pure Functions
+ *
+ * | Function | Description |
+ * |----------|-------------|
+ * | `withBuffer(estimate, percent)` | Add safety buffer |
+ * | `toGasLimit(estimate)` | Convert to gas limit |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as GasEstimate from 'voltaire-effect/primitives/GasEstimate'
+ * import * as S from 'effect/Schema'
+ *
+ * const estimate = S.decodeSync(GasEstimate.BigInt)(52000n)
+ * const buffered = GasEstimate.withBuffer(estimate, 20) // +20%
+ * const gasLimit = GasEstimate.toGasLimit(buffered)
+ * ```
+ *
+ * @since 0.1.0
  */
 
-export { GasEstimateSchema, type GasEstimateType } from './GasEstimateSchema.js'
-export { from, withBuffer, toGasLimit, type GasEstimateError } from './from.js'
+export { BigInt, type GasEstimateType } from "./BigInt.js";
+export { Number } from "./Number.js";
+export { type GasLimitType, toGasLimit } from "./toGasLimit.js";
+export { withBuffer } from "./withBuffer.js";

@@ -1,37 +1,49 @@
 /**
- * @fileoverview EffectiveGasPrice primitive module for EIP-1559 calculations.
- *
- * @description
- * The effective gas price is the actual price per gas unit paid in an EIP-1559
- * transaction. It's calculated as:
- *
- * effectiveGasPrice = min(baseFee + priorityFee, maxFeePerGas)
- *
- * This value determines:
- * - What the user pays per gas unit
- * - The validator tip (effectiveGasPrice - baseFee)
- * - Total transaction cost (effectiveGasPrice × gasUsed)
- *
  * @module EffectiveGasPrice
- * @since 0.0.1
- * @see {@link BaseFeePerGas} for protocol base fee
- * @see {@link MaxFeePerGas} for user's max fee
- * @see {@link MaxPriorityFeePerGas} for user's tip
- * @see {@link GasUsed} for gas consumption
- * @see {@link FeeMarket} for fee market state
+ * @description Effect Schemas for EIP-1559 effective gas price.
+ *
+ * The effective gas price is what's actually paid per gas unit.
+ * It's calculated as: min(baseFee + priorityFee, maxFeePerGas)
+ * This value appears in transaction receipts.
+ *
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `EffectiveGasPrice.BigInt` | bigint (wei) | EffectiveGasPriceType |
+ * | `EffectiveGasPrice.Gwei` | number/bigint (gwei) | EffectiveGasPriceType |
+ *
+ * ## Pure Functions
+ *
+ * | Function | Description |
+ * |----------|-------------|
+ * | `calculate(baseFee, priorityFee, maxFee)` | Compute effective price |
+ * | `toGwei(price)` | Convert to gwei |
+ * | `equals(a, b)` | Compare for equality |
+ * | `compare(a, b)` | Compare ordering |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as EffectiveGasPrice from 'voltaire-effect/primitives/EffectiveGasPrice'
+ * import * as S from 'effect/Schema'
+ *
+ * // Calculate from EIP-1559 params
+ * const baseFee = 20n * 10n**9n
+ * const priorityFee = 2n * 10n**9n
+ * const maxFee = 30n * 10n**9n
+ * const effective = EffectiveGasPrice.calculate(baseFee, priorityFee, maxFee)
+ *
+ * // From receipt
+ * const price = S.decodeSync(EffectiveGasPrice.BigInt)(22000000000n)
+ * ```
+ *
+ * @since 0.1.0
  */
 
-export { EffectiveGasPriceSchema, type EffectiveGasPriceType } from './EffectiveGasPriceSchema.js'
-export {
-  from,
-  fromGwei,
-  fromWei,
-  calculate,
-  toGwei,
-  toWei,
-  toNumber,
-  toBigInt,
-  equals,
-  compare,
-  EffectiveGasPriceError
-} from './from.js'
+export { BigInt, type EffectiveGasPriceType } from "./BigInt.js";
+export { calculate } from "./calculate.js";
+export { compare } from "./compare.js";
+export { equals } from "./equals.js";
+export { Gwei } from "./Gwei.js";
+export { toGwei } from "./toGwei.js";

@@ -1,21 +1,39 @@
 /**
- * @fileoverview GasRefund primitive module for EVM gas refund tracking.
- *
- * @description
- * Gas refunds are accumulated during EVM execution when storage is cleared
- * (SSTORE to zero). Per EIP-3529, refunds are capped at gasUsed/5 (20%)
- * to prevent refund abuse and gas token exploits.
- *
- * Key facts:
- * - Refunds occur when: SSTORE sets storage to zero, SELFDESTRUCT
- * - Max refund = gasUsed / 5 (post EIP-3529)
- * - Refunds reduce the effective gas cost but cannot create negative cost
- *
  * @module GasRefund
- * @since 0.0.1
- * @see {@link GasUsed} for consumed gas
- * @see {@link GasConstants} for refund values
+ * @description Effect Schemas for EVM gas refund tracking.
+ *
+ * Gas refunds are accumulated during EVM execution when storage is cleared.
+ * Per EIP-3529, refunds are capped at gasUsed/5 (20%) to prevent abuse.
+ *
+ * Refund sources:
+ * - SSTORE: 4,800 gas when clearing a non-zero slot
+ *
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `GasRefund.BigInt` | bigint | GasRefundType |
+ * | `GasRefund.Number` | number | GasRefundType |
+ *
+ * ## Pure Functions
+ *
+ * | Function | Description |
+ * |----------|-------------|
+ * | `cappedRefund(refund, gasUsed)` | Apply EIP-3529 cap |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as GasRefund from 'voltaire-effect/primitives/GasRefund'
+ * import * as S from 'effect/Schema'
+ *
+ * const refund = S.decodeSync(GasRefund.BigInt)(15000n)
+ * const capped = GasRefund.cappedRefund(refund, 100000n)
+ * ```
+ *
+ * @since 0.1.0
  */
 
-export { Schema, type GasRefundType } from './GasRefundSchema.js'
-export { from, cappedRefund, GasRefundError } from './from.js'
+export { BigInt, type GasRefundType } from "./BigInt.js";
+export { cappedRefund } from "./cappedRefund.js";
+export { Number } from "./Number.js";

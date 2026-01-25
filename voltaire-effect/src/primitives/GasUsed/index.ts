@@ -1,20 +1,38 @@
 /**
- * @fileoverview GasUsed primitive module for tracking consumed gas.
+ * @module GasUsed
+ * @description Effect Schemas for tracking consumed gas.
  *
- * @description
  * GasUsed represents the actual amount of gas consumed during transaction
- * execution. This value is included in transaction receipts and is used
- * to calculate the actual transaction fee paid.
+ * execution. This value is included in transaction receipts.
  *
  * Fee calculation: fee = gasUsed × effectiveGasPrice
  *
- * @module GasUsed
- * @since 0.0.1
- * @see {@link Gas} for gas units
- * @see {@link GasEstimate} for pre-execution estimates
- * @see {@link GasRefund} for storage clearing refunds
- * @see {@link EffectiveGasPrice} for price calculation
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `GasUsed.BigInt` | bigint | GasUsedType |
+ * | `GasUsed.Number` | number | GasUsedType |
+ *
+ * ## Pure Functions
+ *
+ * | Function | Description |
+ * |----------|-------------|
+ * | `calculateCost(gasUsed, gasPrice)` | Calculate transaction fee |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as GasUsed from 'voltaire-effect/primitives/GasUsed'
+ * import * as S from 'effect/Schema'
+ *
+ * const used = S.decodeSync(GasUsed.BigInt)(21000n)
+ * const cost = GasUsed.calculateCost(used, 20_000_000_000n)
+ * ```
+ *
+ * @since 0.1.0
  */
 
-export { Schema, type GasUsedType } from './GasUsedSchema.js'
-export { from, calculateCost, GasUsedError } from './from.js'
+export { BigInt, type GasUsedType } from "./BigInt.js";
+export { calculateCost } from "./calculateCost.js";
+export { Number } from "./Number.js";
