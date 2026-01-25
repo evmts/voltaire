@@ -63,3 +63,22 @@ export {
 	type ReceiptType,
 	type TransactionType,
 } from "./ProviderService.js";
+// Re-export block streaming types for convenience
+export type {
+	BackfillOptions,
+	BlockInclude,
+	BlocksEvent,
+	BlockStreamEvent,
+	WatchOptions,
+} from "@tevm/voltaire/block";
+export {
+	readContract,
+	type Abi,
+	type ReadContractParams,
+} from "./actions/readContract.js";
+export {
+	simulateContract,
+	type SimulateContractParams,
+	type SimulateContractResult,
+	type StateOverride,
+} from "./actions/index.js";

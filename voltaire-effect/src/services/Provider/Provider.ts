@@ -17,10 +17,20 @@
  * @see {@link HttpTransport} - Common transport for RPC calls
  */
 
-import * as Clock from "effect/Clock";
+import {
+	BlockStream as CoreBlockStream,
+	type BackfillOptions,
+	type BlockInclude,
+	type BlocksEvent,
+	type BlockStreamEvent,
+	type WatchOptions,
+} from "@tevm/voltaire/block";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Runtime from "effect/Runtime";
 import * as Schedule from "effect/Schedule";
+import * as Stream from "effect/Stream";
 import { TransportService } from "../Transport/TransportService.js";
 
 /**
@@ -76,6 +86,22 @@ const toHashHex = (input: HashInput): string => {
 };
 
 /**
+ * RPC call object for eth_call, eth_estimateGas, etc.
+ * All values are hex-encoded strings per JSON-RPC spec.
+ */
+type RpcCallObject = {
+	from?: `0x${string}`;
+	to?: `0x${string}`;
+	data?: `0x${string}`;
+	value?: `0x${string}`;
+	gas?: `0x${string}`;
+	gasPrice?: `0x${string}`;
+	maxFeePerGas?: `0x${string}`;
+	maxPriorityFeePerGas?: `0x${string}`;
+	nonce?: `0x${string}`;
+};
+
+/**
  * Formats a CallRequest for JSON-RPC submission.
  *
  * @description
@@ -87,11 +113,11 @@ const toHashHex = (input: HashInput): string => {
  *
  * @internal
  */
-const formatCallRequest = (tx: CallRequest): Record<string, string> => {
-	const formatted: Record<string, string> = {};
-	if (tx.from) formatted.from = toAddressHex(tx.from);
-	if (tx.to) formatted.to = toAddressHex(tx.to);
-	if (tx.data) formatted.data = tx.data as string;
+const formatCallRequest = (tx: CallRequest): RpcCallObject => {
+	const formatted: RpcCallObject = {};
+	if (tx.from) formatted.from = toAddressHex(tx.from) as `0x${string}`;
+	if (tx.to) formatted.to = toAddressHex(tx.to) as `0x${string}`;
+	if (tx.data) formatted.data = tx.data;
 	if (tx.value !== undefined) formatted.value = `0x${tx.value.toString(16)}`;
 	if (tx.gas !== undefined) formatted.gas = `0x${tx.gas.toString(16)}`;
 	return formatted;
@@ -291,127 +317,108 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					),
 
 				waitForTransactionReceipt: (
-				hash: HashInput,
-				opts?: { confirmations?: number; timeout?: number },
-			) =>
-				Effect.gen(function* () {
-					const confirmations = opts?.confirmations ?? 1;
-					if (confirmations < 1) {
-						return yield* Effect.fail(
-							new ProviderError(
-								{ hash, confirmations },
-								"Confirmations must be at least 1",
-							),
-						);
-					}
-
-					const timeout = opts?.timeout ?? 60000;
-					const startTime = yield* Clock.currentTimeMillis;
-					const deadline = startTime + timeout;
-					const hashHex = toHashHex(hash);
-
-					const remainingTime = Effect.gen(function* () {
-						const now = yield* Clock.currentTimeMillis;
-						return Math.max(0, Number(deadline - now));
-					});
-
-					const pollReceipt = request<ReceiptType | null>(
-						"eth_getTransactionReceipt",
-						[hashHex],
-					).pipe(
-						Effect.flatMap((receipt) =>
-							receipt
-								? Effect.succeed(receipt)
-								: Effect.fail(
-										new ProviderError({ hash }, "Transaction pending", {
-											code: INTERNAL_CODE_PENDING,
-										}),
-									),
-						),
-					);
-
-					const remaining1 = yield* remainingTime;
-					if (remaining1 <= 0) {
-						return yield* Effect.fail(
-							new ProviderError(
-								{ hash, timeout },
-								"Timeout waiting for transaction receipt",
-							),
-						);
-					}
-
-					const receipt = yield* pollReceipt.pipe(
-						Effect.retry({
-							schedule: Schedule.spaced(1000),
-							while: (e) =>
-								e instanceof ProviderError &&
-								e.code === INTERNAL_CODE_PENDING,
-							until: () =>
-								remainingTime.pipe(Effect.map((remaining) => remaining <= 0)),
-						}),
-						Effect.timeout(remaining1),
-						Effect.catchTag("TimeoutException", () =>
-							Effect.fail(
+					hash: HashInput,
+					opts?: {
+						confirmations?: number;
+						timeout?: number;
+						pollingInterval?: number;
+					},
+				) =>
+					Effect.gen(function* () {
+						const confirmations = opts?.confirmations ?? 1;
+						const pollingInterval = opts?.pollingInterval ?? 1000;
+						if (confirmations < 1) {
+							return yield* Effect.fail(
 								new ProviderError(
-									{ hash, timeout },
-									"Timeout waiting for transaction receipt",
+									{ hash, confirmations },
+									"Confirmations must be at least 1",
+								),
+							);
+						}
+
+						const timeout = opts?.timeout ?? 60000;
+						const hashHex = toHashHex(hash);
+
+						const pollReceipt = request<ReceiptType | null>(
+							"eth_getTransactionReceipt",
+							[hashHex],
+						).pipe(
+							Effect.flatMap((receipt) =>
+								receipt
+									? Effect.succeed(receipt)
+									: Effect.fail(
+											new ProviderError({ hash }, "Transaction pending", {
+												code: INTERNAL_CODE_PENDING,
+											}),
+										),
+							),
+						);
+
+						const receipt = yield* pollReceipt.pipe(
+							Effect.retry(
+								Schedule.spaced(Duration.millis(pollingInterval)).pipe(
+									Schedule.intersect(
+										Schedule.recurUpTo(Duration.millis(timeout)),
+									),
+									Schedule.whileInput(
+										(e: ProviderError) => e.code === INTERNAL_CODE_PENDING,
+									),
 								),
 							),
-						),
-					);
+							Effect.timeoutFail({
+								duration: Duration.millis(timeout),
+								onTimeout: () =>
+									new ProviderError(
+										{ hash, timeout },
+										"Timeout waiting for transaction receipt",
+									),
+							}),
+						);
 
-					if (confirmations <= 1) {
-						return receipt;
-					}
-
-					const receiptBlockNumber = BigInt(receipt.blockNumber);
-					const targetBlock = receiptBlockNumber + BigInt(confirmations - 1);
-
-					const pollConfirmations = Effect.gen(function* () {
-						const currentBlockHex = yield* request<string>("eth_blockNumber");
-						const currentBlock = BigInt(currentBlockHex);
-						if (currentBlock >= targetBlock) {
+						if (confirmations <= 1) {
 							return receipt;
 						}
-						return yield* Effect.fail(
-							new ProviderError(
-								{ hash, currentBlock, targetBlock },
-								"Waiting for confirmations",
-								{ code: INTERNAL_CODE_WAITING_CONFIRMATIONS },
-							),
-						);
-					});
 
-					const remaining2 = yield* remainingTime;
-					if (remaining2 <= 0) {
-						return yield* Effect.fail(
-							new ProviderError(
-								{ hash, timeout },
-								"Timeout waiting for confirmations",
-							),
-						);
-					}
+						const receiptBlockNumber = BigInt(receipt.blockNumber);
+						const targetBlock = receiptBlockNumber + BigInt(confirmations - 1);
 
-					return yield* pollConfirmations.pipe(
-						Effect.retry({
-							schedule: Schedule.spaced(1000),
-							while: (e) =>
-								e instanceof ProviderError &&
-								e.code === INTERNAL_CODE_WAITING_CONFIRMATIONS,
-							until: () =>
-								remainingTime.pipe(Effect.map((remaining) => remaining <= 0)),
-						}),
-						Effect.timeout(remaining2),
-						Effect.catchTag("TimeoutException", () =>
-							Effect.fail(
+						const pollConfirmations = Effect.gen(function* () {
+							const currentBlockHex = yield* request<string>("eth_blockNumber");
+							const currentBlock = BigInt(currentBlockHex);
+							if (currentBlock >= targetBlock) {
+								return receipt;
+							}
+							return yield* Effect.fail(
 								new ProviderError(
-									{ hash, timeout },
-									"Timeout waiting for confirmations",
+									{ hash, currentBlock, targetBlock },
+									"Waiting for confirmations",
+									{ code: INTERNAL_CODE_WAITING_CONFIRMATIONS },
+								),
+							);
+						});
+
+						return yield* pollConfirmations.pipe(
+							Effect.retry(
+								Schedule.spaced(Duration.millis(pollingInterval)).pipe(
+									Schedule.intersect(
+										Schedule.recurUpTo(Duration.millis(timeout)),
+									),
+									Schedule.whileInput(
+										(e: ProviderError) =>
+											e.code === INTERNAL_CODE_WAITING_CONFIRMATIONS,
+									),
 								),
 							),
-						),
-					);
-				}),
+							Effect.timeoutFail({
+								duration: Duration.millis(timeout),
+								onTimeout: () =>
+									new ProviderError(
+										{ hash, timeout },
+										"Timeout waiting for confirmations",
+									),
+							}),
+						);
+					}),
 
 				call: (tx: CallRequest, blockTag: BlockTag = "latest") =>
 					request<`0x${string}`>("eth_call", [formatCallRequest(tx), blockTag]),
@@ -477,11 +484,103 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					newestBlock: BlockTag,
 					rewardPercentiles: number[],
 				) =>
-					request<FeeHistoryType>("eth_feeHistory", [
-						`0x${blockCount.toString(16)}`,
-						newestBlock,
-						rewardPercentiles,
-					]),
+					Effect.gen(function* () {
+						if (!Number.isInteger(blockCount) || blockCount < 1) {
+							return yield* Effect.fail(
+								new ProviderError(
+									{ blockCount },
+									"blockCount must be a positive integer",
+								),
+							);
+						}
+						for (const p of rewardPercentiles) {
+							if (p < 0 || p > 100) {
+								return yield* Effect.fail(
+									new ProviderError(
+										{ rewardPercentiles },
+										"rewardPercentiles values must be between 0 and 100",
+									),
+								);
+							}
+						}
+						for (let i = 1; i < rewardPercentiles.length; i++) {
+							if (rewardPercentiles[i] < rewardPercentiles[i - 1]) {
+								return yield* Effect.fail(
+									new ProviderError(
+										{ rewardPercentiles },
+										"rewardPercentiles should be sorted in ascending order",
+									),
+								);
+							}
+						}
+						return yield* request<FeeHistoryType>("eth_feeHistory", [
+							`0x${blockCount.toString(16)}`,
+							newestBlock,
+							rewardPercentiles,
+						]);
+					}),
+
+				watchBlocks: <TInclude extends BlockInclude = "header">(
+					options?: WatchOptions<TInclude>,
+				): Stream.Stream<BlockStreamEvent<TInclude>, ProviderError> =>
+					Stream.unwrap(
+						Effect.gen(function* () {
+							const runtime = yield* Effect.runtime<never>();
+							const provider = {
+								request: async ({
+									method,
+									params,
+								}: {
+									method: string;
+									params?: unknown[];
+								}) =>
+									Runtime.runPromise(runtime)(transport.request(method, params)),
+								on: () => {},
+								removeListener: () => {},
+							};
+							const coreStream = CoreBlockStream({ provider: provider as any });
+							return Stream.fromAsyncIterable(
+								{ [Symbol.asyncIterator]: () => coreStream.watch(options) },
+								(error) =>
+									new ProviderError(
+										{ method: "watchBlocks", options },
+										error instanceof Error ? error.message : "BlockStream error",
+										{ cause: error instanceof Error ? error : undefined },
+									),
+							);
+						}),
+					),
+
+				backfillBlocks: <TInclude extends BlockInclude = "header">(
+					options: BackfillOptions<TInclude>,
+				): Stream.Stream<BlocksEvent<TInclude>, ProviderError> =>
+					Stream.unwrap(
+						Effect.gen(function* () {
+							const runtime = yield* Effect.runtime<never>();
+							const provider = {
+								request: async ({
+									method,
+									params,
+								}: {
+									method: string;
+									params?: unknown[];
+								}) =>
+									Runtime.runPromise(runtime)(transport.request(method, params)),
+								on: () => {},
+								removeListener: () => {},
+							};
+							const coreStream = CoreBlockStream({ provider: provider as any });
+							return Stream.fromAsyncIterable(
+								{ [Symbol.asyncIterator]: () => coreStream.backfill(options) },
+								(error) =>
+									new ProviderError(
+										{ method: "backfillBlocks", options },
+										error instanceof Error ? error.message : "BlockStream error",
+										{ cause: error instanceof Error ? error : undefined },
+									),
+							);
+						}),
+					),
 			};
 		}),
 	);

@@ -20,11 +20,19 @@
  */
 
 import type { AddressType } from "@tevm/voltaire/Address";
+import type {
+	BackfillOptions,
+	BlockInclude,
+	BlocksEvent,
+	BlockStreamEvent,
+	WatchOptions,
+} from "@tevm/voltaire/block";
 import { AbstractError } from "@tevm/voltaire/errors";
 import type { HashType } from "@tevm/voltaire/Hash";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
+import type * as Stream from "effect/Stream";
 
 /**
  * Address input type that accepts both branded AddressType and plain hex strings.
@@ -338,6 +346,8 @@ export interface BlockType {
 	blobGasUsed?: string;
 	/** Excess blob gas (EIP-4844, hex) */
 	excessBlobGas?: string;
+	/** Parent beacon block root (EIP-4788, hex) */
+	parentBeaconBlockRoot?: string;
 }
 
 /**
@@ -404,6 +414,12 @@ export interface TransactionType {
 	accessList?: Array<{ address: string; storageKeys: string[] }>;
 	/** Chain ID (hex) */
 	chainId?: string;
+	/** Max fee per blob gas (EIP-4844, hex) */
+	maxFeePerBlobGas?: string;
+	/** Blob versioned hashes (EIP-4844) */
+	blobVersionedHashes?: string[];
+	/** y parity for EIP-2930+ (hex) */
+	yParity?: string;
 }
 
 /**
@@ -564,7 +580,11 @@ export type ProviderShape = {
 	/** Waits for a transaction to be confirmed */
 	readonly waitForTransactionReceipt: (
 		hash: HashInput,
-		opts?: { confirmations?: number; timeout?: number },
+		opts?: {
+			confirmations?: number;
+			timeout?: number;
+			pollingInterval?: number;
+		},
 	) => Effect.Effect<ReceiptType, ProviderError>;
 	/** Executes a call without sending a transaction */
 	readonly call: (
@@ -595,6 +615,14 @@ export type ProviderShape = {
 		newestBlock: BlockTag,
 		rewardPercentiles: number[],
 	) => Effect.Effect<FeeHistoryType, ProviderError>;
+	/** Watch for new blocks with reorg detection */
+	readonly watchBlocks: <TInclude extends BlockInclude = "header">(
+		options?: WatchOptions<TInclude>,
+	) => Stream.Stream<BlockStreamEvent<TInclude>, ProviderError>;
+	/** Backfill historical blocks */
+	readonly backfillBlocks: <TInclude extends BlockInclude = "header">(
+		options: BackfillOptions<TInclude>,
+	) => Stream.Stream<BlocksEvent<TInclude>, ProviderError>;
 };
 
 /**

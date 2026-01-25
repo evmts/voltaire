@@ -104,28 +104,29 @@ describe("ProviderService", () => {
 	});
 
 	describe("getBlock", () => {
+		const mockBlock = {
+			number: "0x10",
+			hash: "0xabc",
+			parentHash: "0xdef",
+			nonce: "0x0",
+			sha3Uncles: "0x0",
+			logsBloom: "0x0",
+			transactionsRoot: "0x0",
+			stateRoot: "0x0",
+			receiptsRoot: "0x0",
+			miner: "0x0",
+			difficulty: "0x0",
+			totalDifficulty: "0x0",
+			extraData: "0x",
+			size: "0x0",
+			gasLimit: "0x0",
+			gasUsed: "0x0",
+			timestamp: "0x0",
+			transactions: [],
+			uncles: [],
+		};
+
 		it("returns block by tag", async () => {
-			const mockBlock = {
-				number: "0x10",
-				hash: "0xabc",
-				parentHash: "0xdef",
-				nonce: "0x0",
-				sha3Uncles: "0x0",
-				logsBloom: "0x0",
-				transactionsRoot: "0x0",
-				stateRoot: "0x0",
-				receiptsRoot: "0x0",
-				miner: "0x0",
-				difficulty: "0x0",
-				totalDifficulty: "0x0",
-				extraData: "0x",
-				size: "0x0",
-				gasLimit: "0x0",
-				gasUsed: "0x0",
-				timestamp: "0x0",
-				transactions: [],
-				uncles: [],
-			};
 			const transport = mockTransport({ eth_getBlockByNumber: mockBlock });
 			const layer = Provider.pipe(Layer.provide(transport));
 
@@ -138,6 +139,137 @@ describe("ProviderService", () => {
 
 			expect(result.number).toBe("0x10");
 			expect(result.hash).toBe("0xabc");
+		});
+
+		it("fetches block by hash", async () => {
+			let capturedMethod = "";
+			let capturedParams: unknown[] = [];
+			const transport = mockTransportWithCapture({
+				eth_getBlockByHash: (params: unknown[]) => {
+					capturedMethod = "eth_getBlockByHash";
+					capturedParams = params;
+					return mockBlock;
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const blockHash =
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getBlock({ blockHash });
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(capturedMethod).toBe("eth_getBlockByHash");
+			expect(capturedParams[0]).toBe(blockHash);
+			expect(capturedParams[1]).toBe(false);
+			expect(result.number).toBe("0x10");
+		});
+	});
+
+	describe("getLogs", () => {
+		const mockLogs: unknown[] = [];
+
+		it("formats single topic correctly", async () => {
+			let capturedParams: unknown[] = [];
+			const transport = mockTransportWithCapture({
+				eth_getLogs: (params: unknown[]) => {
+					capturedParams = params;
+					return mockLogs;
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const topic =
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+			await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getLogs({ topics: [topic] });
+				}).pipe(Effect.provide(layer)),
+			);
+
+			const filter = capturedParams[0] as Record<string, unknown>;
+			expect(filter.topics).toEqual([topic]);
+		});
+
+		it("formats array topics (OR condition) correctly", async () => {
+			let capturedParams: unknown[] = [];
+			const transport = mockTransportWithCapture({
+				eth_getLogs: (params: unknown[]) => {
+					capturedParams = params;
+					return mockLogs;
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const topic1 =
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+			const topic2 =
+				"0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c";
+			await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getLogs({ topics: [[topic1, topic2]] });
+				}).pipe(Effect.provide(layer)),
+			);
+
+			const filter = capturedParams[0] as Record<string, unknown>;
+			expect(filter.topics).toEqual([[topic1, topic2]]);
+		});
+
+		it("formats null wildcard topics correctly", async () => {
+			let capturedParams: unknown[] = [];
+			const transport = mockTransportWithCapture({
+				eth_getLogs: (params: unknown[]) => {
+					capturedParams = params;
+					return mockLogs;
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const topic =
+				"0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045";
+			await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getLogs({ topics: [null, topic] });
+				}).pipe(Effect.provide(layer)),
+			);
+
+			const filter = capturedParams[0] as Record<string, unknown>;
+			expect(filter.topics).toEqual([null, topic]);
+		});
+
+		it("formats mixed topics correctly", async () => {
+			let capturedParams: unknown[] = [];
+			const transport = mockTransportWithCapture({
+				eth_getLogs: (params: unknown[]) => {
+					capturedParams = params;
+					return mockLogs;
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const topic1 =
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+			const topic2 =
+				"0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045";
+			const topic3 =
+				"0x0000000000000000000000001234567890123456789012345678901234567890";
+			await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getLogs({
+						topics: [topic1, [topic2, topic3], null],
+					});
+				}).pipe(Effect.provide(layer)),
+			);
+
+			const filter = capturedParams[0] as Record<string, unknown>;
+			expect(filter.topics).toEqual([topic1, [topic2, topic3], null]);
 		});
 	});
 
@@ -848,6 +980,148 @@ describe("ProviderService", () => {
 			expect(capturedParams[1]).toBe(
 				"0x0000000000000000000000000000000000000000000000000000000000000001",
 			);
+		});
+	});
+
+	describe("getFeeHistory validation", () => {
+		it("fails if blockCount is not a positive integer", async () => {
+			const transport = mockTransport({});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getFeeHistory(0, "latest", [25, 50, 75]);
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
+				expect((error as ProviderError).message).toContain(
+					"blockCount must be a positive integer",
+				);
+			}
+		});
+
+		it("fails if blockCount is negative", async () => {
+			const transport = mockTransport({});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getFeeHistory(-1, "latest", [25, 50, 75]);
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
+				expect((error as ProviderError).message).toContain(
+					"blockCount must be a positive integer",
+				);
+			}
+		});
+
+		it("fails if blockCount is not an integer", async () => {
+			const transport = mockTransport({});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getFeeHistory(1.5, "latest", [25, 50, 75]);
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
+				expect((error as ProviderError).message).toContain(
+					"blockCount must be a positive integer",
+				);
+			}
+		});
+
+		it("fails if rewardPercentiles contains value below 0", async () => {
+			const transport = mockTransport({});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getFeeHistory(4, "latest", [-1, 50, 75]);
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
+				expect((error as ProviderError).message).toContain(
+					"rewardPercentiles values must be between 0 and 100",
+				);
+			}
+		});
+
+		it("fails if rewardPercentiles contains value above 100", async () => {
+			const transport = mockTransport({});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getFeeHistory(4, "latest", [25, 50, 101]);
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
+				expect((error as ProviderError).message).toContain(
+					"rewardPercentiles values must be between 0 and 100",
+				);
+			}
+		});
+
+		it("fails if rewardPercentiles are not sorted ascending", async () => {
+			const transport = mockTransport({});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getFeeHistory(4, "latest", [75, 50, 25]);
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
+				expect((error as ProviderError).message).toContain(
+					"rewardPercentiles should be sorted in ascending order",
+				);
+			}
+		});
+
+		it("succeeds with valid inputs", async () => {
+			const mockFeeHistory = {
+				oldestBlock: "0x1",
+				baseFeePerGas: ["0x1", "0x2"],
+				gasUsedRatio: [0.5, 0.6],
+				reward: [["0x1"]],
+			};
+			const transport = mockTransport({ eth_feeHistory: mockFeeHistory });
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getFeeHistory(4, "latest", [25, 50, 75]);
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result.oldestBlock).toBe("0x1");
 		});
 	});
 
