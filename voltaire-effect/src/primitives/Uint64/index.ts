@@ -1,51 +1,64 @@
 /**
- * @fileoverview Uint64 module for 64-bit unsigned integers (0 to 2^64-1).
- * 
- * Provides Effect-based constructors and arithmetic operations with
- * overflow/underflow checking for 64-bit unsigned integers.
- * 
- * @description
- * The Uint64 module provides:
- * - Effect-based constructors that safely handle errors
- * - Checked arithmetic operations (plus, minus, times)
- * - Schema validation for runtime type checking
- * - Conversion utilities (toBigInt, toNumber, toHex)
- * - Useful constants (MIN, MAX, ZERO, ONE)
- * 
- * Range: 0 to 18446744073709551615 (2^64 - 1)
- * 
- * Note: Values exceeding Number.MAX_SAFE_INTEGER (2^53-1) should use
- * toBigInt for lossless conversion.
- * 
- * @example
- * ```typescript
- * import * as Uint64 from '@voltaire-effect/primitives/Uint64'
- * import * as Effect from 'effect/Effect'
- * 
- * // Create values
- * const value = await Effect.runPromise(Uint64.from(10000000000000000000n))
- * 
- * // Arithmetic with overflow checking
- * const sum = await Effect.runPromise(Uint64.plus(value, Uint64.ONE))
- * const diff = await Effect.runPromise(Uint64.minus(value, Uint64.ONE))
- * 
- * // Convert to primitives
- * const bigint = Uint64.toBigInt(value) // 10000000000000000000n
- * const hex = Uint64.toHex(value)       // '0x8ac7230489e80000'
- * 
- * // Use constants
- * console.log(Uint64.toBigInt(Uint64.MAX)) // 18446744073709551615n
- * console.log(Uint64.toBigInt(Uint64.MIN)) // 0n
- * ```
- * 
- * @see {@link ../Uint8/index.ts | Uint8} for 8-bit unsigned integers
- * @see {@link ../Uint16/index.ts | Uint16} for 16-bit unsigned integers
- * @see {@link ../Uint32/index.ts | Uint32} for 32-bit unsigned integers
- * @see {@link ../Uint128/index.ts | Uint128} for 128-bit unsigned integers
- * @see {@link ../Uint/index.ts | Uint} for 256-bit unsigned integers
- * 
  * @module Uint64
- * @since 0.0.1
+ * @description Effect Schemas for 64-bit unsigned integers (0 to 2^64-1).
+ *
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `Uint64.String` | decimal string | Uint64Type |
+ * | `Uint64.Number` | number | Uint64Type |
+ * | `Uint64.BigInt` | bigint | Uint64Type |
+ * | `Uint64.Hex` | hex string | Uint64Type |
+ * | `Uint64.Bytes` | Uint8Array | Uint64Type |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as Uint64 from 'voltaire-effect/primitives/Uint64'
+ * import * as S from 'effect/Schema'
+ *
+ * // Decode (parse input)
+ * const value = S.decodeSync(Uint64.BigInt)(18446744073709551615n)
+ *
+ * // Encode (format output)
+ * const bigint = S.encodeSync(Uint64.BigInt)(value)
+ * const hex = S.encodeSync(Uint64.Hex)(value)
+ * ```
+ *
+ * ## Pure Functions
+ *
+ * - `equals`, `plus`, `minus`, `times`
+ * - `toBigInt`, `toNumber`, `toHex`
+ * - Constants: `MAX`, `MIN`, `ZERO`, `ONE`
+ *
+ * @since 0.1.0
  */
-export { Schema, type Uint64Type } from './Uint64Schema.js'
-export { from, plus, minus, times, toBigInt, toNumber, toHex, equals, Uint64Error, MAX, MIN, ZERO, ONE } from './from.js'
+
+// Schemas
+export { BigInt } from "./BigInt.js";
+export { Bytes } from "./Bytes.js";
+export { Hex } from "./Hex.js";
+export { Number } from "./Number.js";
+export { String } from "./String.js";
+
+// Re-export pure functions from voltaire
+import { Uint64 } from "@tevm/voltaire";
+
+export const equals = Uint64.equals;
+export const plus = Uint64.plus;
+export const minus = Uint64.minus;
+export const times = Uint64.times;
+export const toBigInt = Uint64.toBigInt;
+export const toNumber = Uint64.toNumber;
+export const toHex = Uint64.toHex;
+export const MAX = Uint64.MAX;
+export const MIN = Uint64.MIN;
+export const ZERO = Uint64.ZERO;
+export const ONE = Uint64.ONE;
+
+// Type export
+export type { Uint64Type } from "./Uint64Schema.js";
+
+// Legacy schema export
+export { Schema } from "./Uint64Schema.js";
