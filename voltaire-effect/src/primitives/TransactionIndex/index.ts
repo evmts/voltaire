@@ -1,19 +1,45 @@
 /**
- * TransactionIndex module for representing a transaction's position within a block.
- * 
- * Transaction indices are zero-based positions of transactions in block order.
- * 
- * @example
- * ```typescript
- * import * as TransactionIndex from './index.js'
- * import * as Effect from 'effect/Effect'
- * 
- * const index = await Effect.runPromise(TransactionIndex.from(5))
- * const num = TransactionIndex.toNumber(index)
- * ```
- * 
  * @module TransactionIndex
- * @since 0.0.1
+ * @description Effect Schemas for transaction indices (zero-based position within a block).
+ *
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `TransactionIndex.Number` | number | TransactionIndexType |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as TransactionIndex from 'voltaire-effect/primitives/TransactionIndex'
+ * import * as S from 'effect/Schema'
+ *
+ * // Decode (parse input)
+ * const index = S.decodeSync(TransactionIndex.Number)(5)
+ *
+ * // Encode (format output)
+ * const num = S.encodeSync(TransactionIndex.Number)(index)
+ * ```
+ *
+ * ## Pure Functions
+ *
+ * - `equals(a, b)` - Compare two transaction indices
+ * - `toNumber(idx)` - Convert to number
+ *
+ * @since 0.1.0
  */
-export { Schema, type TransactionIndexType } from './TransactionIndexSchema.js'
-export { from, toNumber, equals, TransactionIndexError } from './from.js'
+
+// Schemas
+export { Number } from "./Number.js";
+
+// Re-export pure functions from voltaire
+import { TransactionIndex } from "@tevm/voltaire";
+
+export const equals = TransactionIndex.equals;
+export const toNumber = TransactionIndex.toNumber;
+
+// Type export
+export type { TransactionIndexType } from "./TransactionIndexSchema.js";
+
+// Legacy schema exports for backward compatibility
+export { Schema } from "./TransactionIndexSchema.js";

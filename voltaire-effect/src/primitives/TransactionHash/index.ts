@@ -1,20 +1,55 @@
 /**
- * TransactionHash module for handling 32-byte Ethereum transaction hashes.
- * 
- * Transaction hashes are the Keccak-256 hash of the RLP-encoded signed transaction.
- * They uniquely identify transactions on the blockchain.
- * 
- * @example
- * ```typescript
- * import * as TransactionHash from './index.js'
- * import * as Effect from 'effect/Effect'
- * 
- * const hash = await Effect.runPromise(TransactionHash.from('0x88df016...'))
- * const hex = TransactionHash.toHex(hash)
- * ```
- * 
  * @module TransactionHash
- * @since 0.0.1
+ * @description Effect Schemas for 32-byte Ethereum transaction hashes.
+ *
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `TransactionHash.Hex` | hex string | TransactionHashType |
+ * | `TransactionHash.Bytes` | Uint8Array | TransactionHashType |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as TransactionHash from 'voltaire-effect/primitives/TransactionHash'
+ * import * as S from 'effect/Schema'
+ *
+ * // Decode (parse input)
+ * const hash = S.decodeSync(TransactionHash.Hex)('0x88df016...')
+ *
+ * // Encode (format output)
+ * const hex = S.encodeSync(TransactionHash.Hex)(hash)
+ * ```
+ *
+ * ## Pure Functions
+ *
+ * - `equals(a, b)` - Compare two transaction hashes
+ * - `toHex(hash)` - Convert to hex string
+ *
+ * @since 0.1.0
  */
-export { TransactionHashSchema, TransactionHashFromBytesSchema } from './TransactionHashSchema.js'
-export { from, fromHex, fromBytes, toHex, TransactionHashError } from './from.js'
+
+// Schemas
+export { Bytes } from "./Bytes.js";
+export { Hex } from "./Hex.js";
+
+// Re-export pure functions from voltaire
+import { TransactionHash } from "@tevm/voltaire";
+
+export const equals = TransactionHash.equals;
+export const toHex = (
+	hash: Uint8Array & { readonly __tag: "TransactionHash" },
+): string => TransactionHash.toHex(hash as any);
+
+// Type export
+export type TransactionHashType = Uint8Array & {
+	readonly __tag: "TransactionHash";
+};
+
+// Legacy schema exports for backward compatibility
+export {
+	TransactionHashSchema,
+	TransactionHashFromBytesSchema,
+	TransactionHashSchema as Schema,
+} from "./TransactionHashSchema.js";
