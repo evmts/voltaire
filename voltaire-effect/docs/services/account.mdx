@@ -67,6 +67,62 @@ const signature = yield* account.signTypedData({
 })
 ```
 
+### Nested Types
+
+EIP-712 supports nested struct types and arrays:
+
+```typescript
+const typedData = {
+  domain: { name: 'MyApp', version: '1', chainId: 1n },
+  types: {
+    Person: [
+      { name: 'name', type: 'string' },
+      { name: 'wallet', type: 'address' }
+    ],
+    Mail: [
+      { name: 'from', type: 'Person' },
+      { name: 'to', type: 'Person' },
+      { name: 'contents', type: 'string' }
+    ]
+  },
+  primaryType: 'Mail',
+  message: {
+    from: { name: 'Alice', wallet: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826' },
+    to: { name: 'Bob', wallet: '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB' },
+    contents: 'Hello, Bob!'
+  }
+}
+const signature = yield* account.signTypedData(typedData)
+```
+
+### Array Types
+
+Arrays of primitives and structs are supported:
+
+```typescript
+const typedData = {
+  domain: { name: 'Batch', version: '1', chainId: 1n },
+  types: {
+    Person: [
+      { name: 'name', type: 'string' },
+      { name: 'wallet', type: 'address' }
+    ],
+    BatchTransfer: [
+      { name: 'recipients', type: 'Person[]' },
+      { name: 'amounts', type: 'uint256[]' }
+    ]
+  },
+  primaryType: 'BatchTransfer',
+  message: {
+    recipients: [
+      { name: 'Alice', wallet: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826' },
+      { name: 'Bob', wallet: '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB' }
+    ],
+    amounts: [1000000000000000000n, 2000000000000000000n]
+  }
+}
+```
+
 ## Error Handling
 
 ```typescript
