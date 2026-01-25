@@ -224,7 +224,17 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 			return {
 				getBlockNumber: () =>
 					request<string>("eth_blockNumber").pipe(
-						Effect.map((hex) => BigInt(hex)),
+						Effect.flatMap((hex) =>
+							Effect.try({
+								try: () => BigInt(hex),
+								catch: (e) =>
+									new ProviderError(
+										{ method: "eth_blockNumber", response: hex },
+										`Invalid hex response from RPC: ${hex}`,
+										{ cause: e instanceof Error ? e : undefined },
+									),
+							}),
+						),
 					),
 
 				getBlock: (args?: GetBlockArgs) => {
@@ -425,7 +435,17 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 
 				estimateGas: (tx: CallRequest) =>
 					request<string>("eth_estimateGas", [formatCallRequest(tx)]).pipe(
-						Effect.map((hex) => BigInt(hex)),
+						Effect.flatMap((hex) =>
+							Effect.try({
+								try: () => BigInt(hex),
+								catch: (e) =>
+									new ProviderError(
+										{ method: "eth_estimateGas", response: hex },
+										`Invalid hex response from RPC: ${hex}`,
+										{ cause: e instanceof Error ? e : undefined },
+									),
+							}),
+						),
 					),
 
 				createAccessList: (tx: CallRequest) =>
@@ -471,12 +491,32 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 
 				getGasPrice: () =>
 					request<string>("eth_gasPrice").pipe(
-						Effect.map((hex) => BigInt(hex)),
+						Effect.flatMap((hex) =>
+							Effect.try({
+								try: () => BigInt(hex),
+								catch: (e) =>
+									new ProviderError(
+										{ method: "eth_gasPrice", response: hex },
+										`Invalid hex response from RPC: ${hex}`,
+										{ cause: e instanceof Error ? e : undefined },
+									),
+							}),
+						),
 					),
 
 				getMaxPriorityFeePerGas: () =>
 					request<string>("eth_maxPriorityFeePerGas").pipe(
-						Effect.map((hex) => BigInt(hex)),
+						Effect.flatMap((hex) =>
+							Effect.try({
+								try: () => BigInt(hex),
+								catch: (e) =>
+									new ProviderError(
+										{ method: "eth_maxPriorityFeePerGas", response: hex },
+										`Invalid hex response from RPC: ${hex}`,
+										{ cause: e instanceof Error ? e : undefined },
+									),
+							}),
+						),
 					),
 
 				getFeeHistory: (

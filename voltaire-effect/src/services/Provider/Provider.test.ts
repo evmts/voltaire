@@ -1184,4 +1184,312 @@ describe("ProviderService", () => {
 			}
 		});
 	});
+
+	describe("sendRawTransaction", () => {
+		it("sends raw transaction and returns hash", async () => {
+			const txHash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+			const transport = mockTransport({ eth_sendRawTransaction: txHash });
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.sendRawTransaction("0xf86c...");
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result).toBe(txHash);
+		});
+
+		it("fails with nonce too low error", async () => {
+			const transport = Layer.succeed(TransportService, {
+				request: <T>(_method: string, _params?: unknown[]) =>
+					Effect.fail(
+						new TransportError({
+							code: -32000,
+							message: "nonce too low",
+						}),
+					) as Effect.Effect<T, TransportError>,
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.sendRawTransaction("0xf86c...");
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with insufficient funds error", async () => {
+			const transport = Layer.succeed(TransportService, {
+				request: <T>(_method: string, _params?: unknown[]) =>
+					Effect.fail(
+						new TransportError({
+							code: -32000,
+							message: "insufficient funds for gas * price + value",
+						}),
+					) as Effect.Effect<T, TransportError>,
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.sendRawTransaction("0xf86c...");
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+	});
+
+	describe("getUncleBlock", () => {
+		it("returns uncle block by number and index", async () => {
+			const mockUncle = {
+				number: "0x10",
+				hash: "0xuncle",
+				parentHash: "0xparent",
+			};
+			const transport = mockTransport({ eth_getUncleByBlockNumberAndIndex: mockUncle });
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getUncle({ blockTag: "latest" }, "0x0");
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result.hash).toBe("0xuncle");
+		});
+	});
+
+	describe("getProof", () => {
+		it("returns account proof", async () => {
+			const mockProof = {
+				address: "0x1234567890123456789012345678901234567890",
+				accountProof: ["0x1", "0x2"],
+				balance: "0xde0b6b3a7640000",
+				codeHash: "0xabc",
+				nonce: "0x1",
+				storageHash: "0xdef",
+				storageProof: [],
+			};
+			const transport = mockTransport({ eth_getProof: mockProof });
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getProof(
+						"0x1234567890123456789012345678901234567890",
+						["0x0"],
+					);
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result.address).toBe("0x1234567890123456789012345678901234567890");
+			expect(result.accountProof).toHaveLength(2);
+		});
+	});
+
+	describe("getBlobBaseFee", () => {
+		it("returns blob base fee as bigint", async () => {
+			const transport = mockTransport({ eth_blobBaseFee: "0x3b9aca00" });
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getBlobBaseFee();
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result).toBe(1000000000n);
+		});
+	});
+
+	describe("concurrent requests", () => {
+		it("handles multiple concurrent getBalance calls", async () => {
+			let callCount = 0;
+			const transport = mockTransportWithCapture({
+				eth_getBalance: (params: unknown[]) => {
+					callCount++;
+					return "0xde0b6b3a7640000";
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const addresses = [
+				"0x1111111111111111111111111111111111111111",
+				"0x2222222222222222222222222222222222222222",
+				"0x3333333333333333333333333333333333333333",
+			];
+
+			const results = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* Effect.all(
+						addresses.map((addr) => provider.getBalance(addr)),
+						{ concurrency: "unbounded" },
+					);
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(results).toHaveLength(3);
+			expect(callCount).toBe(3);
+			for (const result of results) {
+				expect(result).toBe(1000000000000000000n);
+			}
+		});
+	});
+
+	describe("edge cases", () => {
+		it("handles zero balance", async () => {
+			const transport = mockTransport({ eth_getBalance: "0x0" });
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getBalance(
+						"0x1234567890123456789012345678901234567890",
+					);
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result).toBe(0n);
+		});
+
+		it("handles empty code (EOA)", async () => {
+			const transport = mockTransport({ eth_getCode: "0x" });
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getCode(
+						"0x1234567890123456789012345678901234567890",
+					);
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result).toBe("0x");
+		});
+
+		it("handles null transaction receipt (pending)", async () => {
+			const transport = mockTransport({ eth_getTransactionReceipt: null });
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getTransactionReceipt("0xabc");
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result).toBeNull();
+		});
+
+		it("handles empty logs array", async () => {
+			const transport = mockTransport({ eth_getLogs: [] });
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getLogs({
+						address: "0x1234567890123456789012345678901234567890",
+					});
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result).toHaveLength(0);
+		});
+
+		it("handles very large block numbers", async () => {
+			const transport = mockTransport({ eth_blockNumber: "0xffffffffffffff" });
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getBlockNumber();
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result).toBe(0xffffffffffffffn);
+		});
+
+		it("handles very large gas estimates", async () => {
+			const transport = mockTransport({ eth_estimateGas: "0xffffffffffff" });
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.estimateGas({
+						to: "0x1234567890123456789012345678901234567890",
+					});
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result).toBe(0xffffffffffffn);
+		});
+	});
+
+	describe("block identifier formats", () => {
+		it("accepts block number as bigint", async () => {
+			let capturedParams: unknown[] = [];
+			const transport = mockTransportWithCapture({
+				eth_getBlockByNumber: (params: unknown[]) => {
+					capturedParams = params;
+					return {
+						number: "0x10",
+						hash: "0xabc",
+						parentHash: "0xdef",
+						transactions: [],
+					};
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getBlock({ blockNumber: 16n });
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(capturedParams[0]).toBe("0x10");
+		});
+
+		it("accepts block tag as string", async () => {
+			let capturedParams: unknown[] = [];
+			const transport = mockTransportWithCapture({
+				eth_getBlockByNumber: (params: unknown[]) => {
+					capturedParams = params;
+					return {
+						number: "0x10",
+						hash: "0xabc",
+						parentHash: "0xdef",
+						transactions: [],
+					};
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getBlock({ blockTag: "pending" });
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(capturedParams[0]).toBe("pending");
+		});
+	});
 });
