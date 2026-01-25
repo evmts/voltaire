@@ -205,10 +205,10 @@ const SignerLive: Layer.Layer<
 						(yield* provider.getMaxPriorityFeePerGas());
 					// Use baseFeePerGas from block, fallback to getGasPrice if somehow missing
 					const baseFee = baseFeePerGas ?? (yield* provider.getGasPrice());
-					// 2x multiplier on base fee for fee volatility buffer (matches viem/ethers defaults)
-					const multiplier = 2n;
+					// 1.2x multiplier on base fee for fee volatility buffer (matches viem/ethers defaults)
+					// Using (baseFee * 12n) / 10n since bigint doesn't support decimals
 					const maxFeePerGas =
-						tx.maxFeePerGas ?? baseFee * multiplier + maxPriorityFeePerGas;
+						tx.maxFeePerGas ?? (baseFee * 12n) / 10n + maxPriorityFeePerGas;
 					gasParams = { maxFeePerGas, maxPriorityFeePerGas };
 				} else {
 					const gasPrice = tx.gasPrice ?? (yield* provider.getGasPrice());

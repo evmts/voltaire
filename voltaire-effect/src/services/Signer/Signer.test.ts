@@ -440,9 +440,9 @@ describe("SignerService", () => {
 			expect(result.startsWith("0x01")).toBe(false);
 		});
 
-		it("calculates maxFeePerGas with 2x multiplier on baseFee", async () => {
-			const baseFeeGwei = 10n; // 10 gwei
-			const priorityFeeGwei = 1n; // 1 gwei
+		it("calculates maxFeePerGas with 1.2x multiplier on baseFee", async () => {
+			const baseFeeGwei = 30n; // 30 gwei
+			const priorityFeeGwei = 2n; // 2 gwei
 			const baseFeeWei = baseFeeGwei * 1000000000n;
 			const priorityFeeWei = priorityFeeGwei * 1000000000n;
 
@@ -505,8 +505,142 @@ describe("SignerService", () => {
 				maxPriorityFeePerGas?: bigint;
 			};
 			expect(tx.maxPriorityFeePerGas).toBe(priorityFeeWei);
-			// maxFeePerGas = baseFee * 2 + priorityFee
-			const expectedMaxFee = baseFeeWei * 2n + priorityFeeWei;
+			// maxFeePerGas = (baseFee * 12n / 10n) + priorityFee = 36 gwei + 2 gwei = 38 gwei
+			const expectedMaxFee = (baseFeeWei * 12n) / 10n + priorityFeeWei;
+			expect(tx.maxFeePerGas).toBe(expectedMaxFee);
+		});
+
+		it("handles edge case with very low base fee", async () => {
+			const baseFeeWei = 1000000000n; // 1 gwei
+			const priorityFeeWei = 100000000n; // 0.1 gwei
+
+			let capturedSignTx: unknown;
+			const accountWithCapture: AccountShape = {
+				...mockAccount,
+				signTransaction: (tx) => {
+					capturedSignTx = tx;
+					return Effect.succeed(mockSignature);
+				},
+			};
+
+			const providerWithEIP1559: ProviderShape = {
+				...mockProvider,
+				getBlock: () =>
+					Effect.succeed({
+						number: "0x1",
+						hash: "0xabc",
+						parentHash: "0x0",
+						nonce: "0x0",
+						sha3Uncles: "0x0",
+						logsBloom: "0x0",
+						transactionsRoot: "0x0",
+						stateRoot: "0x0",
+						receiptsRoot: "0x0",
+						miner: "0x0",
+						difficulty: "0x0",
+						totalDifficulty: "0x0",
+						extraData: "0x",
+						size: "0x0",
+						gasLimit: "0x0",
+						gasUsed: "0x0",
+						timestamp: "0x0",
+						transactions: [],
+						uncles: [],
+						baseFeePerGas: `0x${baseFeeWei.toString(16)}`,
+					}),
+				getMaxPriorityFeePerGas: () => Effect.succeed(priorityFeeWei),
+			};
+
+			const customLayers = Layer.mergeAll(
+				Layer.succeed(AccountService, accountWithCapture),
+				Layer.succeed(ProviderService, providerWithEIP1559),
+				TestTransportLayer,
+			);
+			const customSignerLayer = Layer.provide(Signer.Live, customLayers);
+
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				return yield* signer.signTransaction({
+					to: mockAddress,
+					value: 1n,
+				});
+			});
+
+			await Effect.runPromise(Effect.provide(program, customSignerLayer));
+
+			const tx = capturedSignTx as {
+				maxFeePerGas?: bigint;
+				maxPriorityFeePerGas?: bigint;
+			};
+			// 1 gwei * 1.2 + 0.1 gwei = 1.2 gwei + 0.1 gwei = 1.3 gwei
+			const expectedMaxFee = (baseFeeWei * 12n) / 10n + priorityFeeWei;
+			expect(tx.maxFeePerGas).toBe(expectedMaxFee);
+		});
+
+		it("handles edge case with very high base fee", async () => {
+			const baseFeeWei = 500000000000n; // 500 gwei (high congestion)
+			const priorityFeeWei = 5000000000n; // 5 gwei
+
+			let capturedSignTx: unknown;
+			const accountWithCapture: AccountShape = {
+				...mockAccount,
+				signTransaction: (tx) => {
+					capturedSignTx = tx;
+					return Effect.succeed(mockSignature);
+				},
+			};
+
+			const providerWithEIP1559: ProviderShape = {
+				...mockProvider,
+				getBlock: () =>
+					Effect.succeed({
+						number: "0x1",
+						hash: "0xabc",
+						parentHash: "0x0",
+						nonce: "0x0",
+						sha3Uncles: "0x0",
+						logsBloom: "0x0",
+						transactionsRoot: "0x0",
+						stateRoot: "0x0",
+						receiptsRoot: "0x0",
+						miner: "0x0",
+						difficulty: "0x0",
+						totalDifficulty: "0x0",
+						extraData: "0x",
+						size: "0x0",
+						gasLimit: "0x0",
+						gasUsed: "0x0",
+						timestamp: "0x0",
+						transactions: [],
+						uncles: [],
+						baseFeePerGas: `0x${baseFeeWei.toString(16)}`,
+					}),
+				getMaxPriorityFeePerGas: () => Effect.succeed(priorityFeeWei),
+			};
+
+			const customLayers = Layer.mergeAll(
+				Layer.succeed(AccountService, accountWithCapture),
+				Layer.succeed(ProviderService, providerWithEIP1559),
+				TestTransportLayer,
+			);
+			const customSignerLayer = Layer.provide(Signer.Live, customLayers);
+
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				return yield* signer.signTransaction({
+					to: mockAddress,
+					value: 1n,
+				});
+			});
+
+			await Effect.runPromise(Effect.provide(program, customSignerLayer));
+
+			const tx = capturedSignTx as {
+				maxFeePerGas?: bigint;
+				maxPriorityFeePerGas?: bigint;
+			};
+			// 500 gwei * 1.2 + 5 gwei = 600 gwei + 5 gwei = 605 gwei
+			const expectedMaxFee = (baseFeeWei * 12n) / 10n + priorityFeeWei;
 			expect(tx.maxFeePerGas).toBe(expectedMaxFee);
 		});
 	});
