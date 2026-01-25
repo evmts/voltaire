@@ -22,5 +22,5 @@
  * @since 0.0.1
  * @module
  */
-export { NodeInfoSchema } from './NodeInfoSchema.js'
-export { from, NodeInfoError } from './from.js'
+
+export { NodeInfoSchema } from "./NodeInfoSchema.js";

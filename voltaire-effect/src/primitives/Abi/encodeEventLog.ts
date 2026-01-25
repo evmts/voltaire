@@ -6,22 +6,26 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Event as AbiEvent, AbiItemNotFoundError, type AbiEncodingError } from '@tevm/voltaire/Abi'
-import * as Hex from '@tevm/voltaire/Hex'
-import type { HexType } from '@tevm/voltaire/Hex'
+import {
+	type AbiEncodingError,
+	Event as AbiEvent,
+	AbiItemNotFoundError,
+} from "@tevm/voltaire/Abi";
+import type { HexType } from "@tevm/voltaire/Hex";
+import * as Hex from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
 
 /**
  * Represents a single ABI item.
  * @internal
  */
-type AbiItem = { type: string; name?: string }
+type AbiItem = { type: string; name?: string };
 
 /**
  * Type alias for ABI input.
  * @internal
  */
-type AbiInput = readonly AbiItem[]
+type AbiInput = readonly AbiItem[];
 
 /**
  * Encodes event log topics.
@@ -49,22 +53,32 @@ type AbiInput = readonly AbiItem[]
  * @since 0.0.1
  */
 export const encodeEventLog = (
-  abi: AbiInput,
-  eventName: string,
-  indexedArgs: readonly unknown[]
+	abi: AbiInput,
+	eventName: string,
+	indexedArgs: readonly unknown[],
 ): Effect.Effect<readonly HexType[], AbiItemNotFoundError | AbiEncodingError> =>
-  Effect.try({
-    try: () => {
-      const evt = abi.find(item => item.type === 'event' && item.name === eventName)
-      if (!evt) {
-        throw new AbiItemNotFoundError(`Event "${eventName}" not found in ABI`, {
-          value: eventName,
-          expected: 'valid event name in ABI',
-          context: { eventName, abi }
-        })
-      }
-      const topics = AbiEvent.encodeTopics(evt as AbiEvent.EventType, indexedArgs as never)
-      return topics.map(t => t ? Hex.fromBytes(t as Uint8Array) : ('0x' as HexType))
-    },
-    catch: (e) => e as AbiItemNotFoundError | AbiEncodingError
-  })
+	Effect.try({
+		try: () => {
+			const evt = abi.find(
+				(item) => item.type === "event" && item.name === eventName,
+			);
+			if (!evt) {
+				throw new AbiItemNotFoundError(
+					`Event "${eventName}" not found in ABI`,
+					{
+						value: eventName,
+						expected: "valid event name in ABI",
+						context: { eventName, abi },
+					},
+				);
+			}
+			const topics = AbiEvent.encodeTopics(
+				evt as AbiEvent.EventType,
+				indexedArgs as never,
+			);
+			return topics.map((t) =>
+				t ? Hex.fromBytes(t as Uint8Array) : ("0x" as HexType),
+			);
+		},
+		catch: (e) => e as AbiItemNotFoundError | AbiEncodingError,
+	});

@@ -5,8 +5,8 @@
  * @since 0.0.1
  */
 
-import { State } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
+import type { State } from "@tevm/voltaire";
+import * as S from "effect/Schema";
 
 /**
  * Branded type representing a storage key (address + slot combination).
@@ -32,7 +32,7 @@ import * as S from 'effect/Schema'
  *
  * @since 0.0.1
  */
-export type StorageKeyType = State.StorageKeyType
+export type StorageKeyType = State.StorageKeyType;
 
 /**
  * Union type for values that can be converted to a StorageKey.
@@ -53,7 +53,7 @@ export type StorageKeyType = State.StorageKeyType
  *
  * @since 0.0.1
  */
-export type StorageKeyLike = State.StorageKeyLike
+export type StorageKeyLike = State.StorageKeyLike;
 
 /**
  * Effect Schema for validating storage key structure.
@@ -85,9 +85,9 @@ export type StorageKeyLike = State.StorageKeyLike
  * @since 0.0.1
  */
 export const StorageKeySchema = S.Struct({
-  address: S.Uint8ArrayFromSelf,
-  slot: S.BigIntFromSelf,
-}).annotations({ identifier: 'StorageKey' })
+	address: S.Uint8ArrayFromSelf,
+	slot: S.BigIntFromSelf,
+}).annotations({ identifier: "StorageKey" });
 
 /**
  * Effect Schema for validating storage keys.
@@ -109,4 +109,4 @@ export const StorageKeySchema = S.Struct({
  *
  * @since 0.0.1
  */
-export const Schema = StorageKeySchema
+export const Schema = StorageKeySchema;

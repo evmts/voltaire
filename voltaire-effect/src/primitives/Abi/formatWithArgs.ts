@@ -6,8 +6,8 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Item } from '@tevm/voltaire/Abi'
+import { Item } from "@tevm/voltaire/Abi";
+import * as Effect from "effect/Effect";
 
 /**
  * Formats an ABI item with argument values.
@@ -37,7 +37,7 @@ import { Item } from '@tevm/voltaire/Abi'
  * @since 0.0.1
  */
 export const formatWithArgs = (
-  item: Parameters<typeof Item.formatWithArgs>[0],
-  args: readonly unknown[]
+	item: Parameters<typeof Item.formatWithArgs>[0],
+	args: readonly unknown[],
 ): Effect.Effect<string, never> =>
-  Effect.sync(() => Item.formatWithArgs(item, args as never))
+	Effect.sync(() => Item.formatWithArgs(item, args as never));

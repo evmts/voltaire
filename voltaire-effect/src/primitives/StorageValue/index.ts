@@ -52,10 +52,12 @@
  *
  * @since 0.0.1
  */
-import type { Bytes32Type } from '@tevm/voltaire/Bytes'
+import type { Bytes32Type } from "@tevm/voltaire/Bytes";
 
-export { StorageValueSchema, type StorageValueType } from './StorageValueSchema.js'
-export { from, zero, fromBigInt } from './from.js'
+export {
+	StorageValueSchema,
+	type StorageValueType,
+} from "./Hex.js";
 
 /**
  * Union type for values that can be converted to a StorageValue.
@@ -70,6 +72,11 @@ export { from, zero, fromBigInt } from './from.js'
  *
  * @since 0.0.1
  */
-export type StorageValueLike = StorageValueType | string | Uint8Array | bigint | number
+export type StorageValueLike =
+	| StorageValueType
+	| string
+	| Uint8Array
+	| bigint
+	| number;
 
-type StorageValueType = Bytes32Type & { readonly __tag: 'StorageValue' }
+type StorageValueType = Bytes32Type & { readonly __tag: "StorageValue" };

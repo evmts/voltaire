@@ -23,5 +23,5 @@
  * @module
  * @since 0.0.1
  */
-export { PeerInfoSchema } from './PeerInfoSchema.js'
-export { from, PeerInfoError } from './from.js'
+
+export { PeerInfoSchema } from "./PeerInfoSchema.js";

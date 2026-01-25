@@ -1,41 +1,46 @@
 /**
- * @fileoverview Nonce module for working with Ethereum account nonces in Effect.
- * A nonce is a counter that tracks the number of transactions sent from an account.
+ * @module Nonce
+ * @description Effect Schemas for Ethereum account nonces.
  *
- * @description
- * This module provides both Effect-wrapped constructors and Effect Schemas for
- * working with Ethereum transaction nonces. Each new transaction from an account
- * must have a nonce one greater than the previous, starting from 0.
+ * ## Schemas
+ *
+ * | Schema | Input | Output | Description |
+ * |--------|-------|--------|-------------|
+ * | `Nonce.Number` | number | NonceType | Non-negative integer nonce |
+ * | `Nonce.BigInt` | bigint | NonceType | Non-negative bigint nonce |
+ * | `Nonce.Hex` | string | NonceType | Hex-encoded nonce |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as Nonce from 'voltaire-effect/primitives/Nonce'
+ * import * as S from 'effect/Schema'
+ *
+ * // Decode from number
+ * const nonce = S.decodeSync(Nonce.Number)(42)
+ *
+ * // Decode from hex
+ * const fromHex = S.decodeSync(Nonce.Hex)('0x2a')
+ *
+ * // Encode back
+ * const num = S.encodeSync(Nonce.Number)(nonce)
+ * ```
+ *
+ * ## About Nonces
+ *
+ * A nonce is a counter that tracks the number of transactions sent from an account.
+ * Each new transaction from an account must have a nonce one greater than the previous,
+ * starting from 0.
  *
  * Nonces serve several purposes:
  * - **Ordering**: Ensure transactions execute in the correct sequence
  * - **Replay protection**: Prevent duplicate transaction execution
  * - **Replacement**: Allow replacing pending transactions with same nonce
  *
- * @example
- * ```typescript
- * import * as Nonce from 'voltaire-effect/primitives/Nonce'
- * import * as Effect from 'effect/Effect'
- * import * as S from 'effect/Schema'
- *
- * // Using Effect-wrapped constructor
- * const nonce = Effect.runSync(Nonce.from(42n))
- *
- * // Using Schema for validation
- * const parsed = S.decodeSync(Nonce.NonceSchema)(0)
- *
- * // In Effect pipeline
- * const program = Effect.gen(function* () {
- *   const currentNonce = yield* Nonce.from(lastNonce)
- *   const nextNonce = yield* Nonce.from(lastNonce + 1n)
- *   return nextNonce
- * })
- * ```
- *
- * @module Nonce
- * @since 0.0.1
- * @see {@link NonceSchema} for schema-based validation
- * @see {@link from} for Effect-wrapped creation
+ * @since 0.1.0
  */
-export { NonceSchema, type NonceType } from './NonceSchema.js'
-export { from } from './from.js'
+
+// Schemas
+export { Number, type NonceType } from "./Number.js";
+export { BigInt } from "./BigInt.js";
+export { Hex } from "./Hex.js";

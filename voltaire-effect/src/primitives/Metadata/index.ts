@@ -20,5 +20,5 @@
  * @since 0.0.1
  * @module
  */
-export { MetadataSchema } from './MetadataSchema.js'
-export { from, MetadataError } from './from.js'
+
+export { MetadataSchema } from "./MetadataSchema.js";

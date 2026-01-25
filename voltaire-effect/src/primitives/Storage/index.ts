@@ -49,5 +49,5 @@
  *
  * @since 0.0.1
  */
-export { StorageSlotSchema } from './StorageSchema.js'
-export { from, StorageError } from './from.js'
+
+export { StorageSlotSchema } from "./StorageSchema.js";

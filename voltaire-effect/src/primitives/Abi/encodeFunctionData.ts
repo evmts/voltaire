@@ -6,15 +6,19 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { encodeFunction, type AbiItemNotFoundError, type AbiEncodingError } from '@tevm/voltaire/Abi'
-import type { HexType } from '@tevm/voltaire/Hex'
+import {
+	type AbiEncodingError,
+	type AbiItemNotFoundError,
+	encodeFunction,
+} from "@tevm/voltaire/Abi";
+import type { HexType } from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
 
 /**
  * Type alias for ABI input accepted by the encoder.
  * @internal
  */
-type AbiInput = Parameters<typeof encodeFunction>[0]
+type AbiInput = Parameters<typeof encodeFunction>[0];
 
 /**
  * Encodes function call data using the provided ABI.
@@ -102,11 +106,11 @@ type AbiInput = Parameters<typeof encodeFunction>[0]
  * @see {@link getFunction} for retrieving function definitions by name
  */
 export const encodeFunctionData = (
-  abi: AbiInput,
-  functionName: string,
-  args: readonly unknown[]
+	abi: AbiInput,
+	functionName: string,
+	args: readonly unknown[],
 ): Effect.Effect<HexType, AbiItemNotFoundError | AbiEncodingError> =>
-  Effect.try({
-    try: () => encodeFunction(abi, functionName, args),
-    catch: (e) => e as AbiItemNotFoundError | AbiEncodingError
-  })
+	Effect.try({
+		try: () => encodeFunction(abi, functionName, args),
+		catch: (e) => e as AbiItemNotFoundError | AbiEncodingError,
+	});

@@ -58,10 +58,7 @@
  * @see {@link BloomFilterSchema} for Effect Schema validation
  */
 
-export { BloomFilterSchema, BloomFilterSchema as Schema } from './BloomFilterSchema.js'
-export { create } from './create.js'
-export { fromHex } from './fromHex.js'
-export { add } from './add.js'
-export { contains } from './contains.js'
-export { toHex } from './toHex.js'
-export { isEmpty } from './isEmpty.js'
+export {
+	BloomFilterSchema,
+	BloomFilterSchema as Schema,
+} from "./BloomFilterSchema.js";

@@ -9,9 +9,9 @@
  * of whether a block might contain relevant logs without scanning all logs.
  */
 
-import { BrandedBloomFilter } from '@tevm/voltaire'
-import * as Schema from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import type { BrandedBloomFilter } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as Schema from "effect/Schema";
 
 /**
  * The BloomFilter type representing a validated bloom filter structure.
@@ -39,20 +39,20 @@ import * as ParseResult from 'effect/ParseResult'
  * @see {@link create} for creating new filters
  * @since 0.0.1
  */
-type BloomFilterType = BrandedBloomFilter.BloomFilterType
+type BloomFilterType = BrandedBloomFilter.BloomFilterType;
 
 /**
  * Internal schema for BloomFilter structure validation.
  * @internal
  */
 const BloomFilterTypeSchema = Schema.declare<BloomFilterType>(
-  (u): u is BloomFilterType => {
-    if (typeof u !== 'object' || u === null) return false
-    if (!(u instanceof Uint8Array)) return false
-    return 'k' in u && 'm' in u
-  },
-  { identifier: 'BloomFilter' }
-)
+	(u): u is BloomFilterType => {
+		if (typeof u !== "object" || u === null) return false;
+		if (!(u instanceof Uint8Array)) return false;
+		return "k" in u && "m" in u;
+	},
+	{ identifier: "BloomFilter" },
+);
 
 /**
  * Effect Schema for validating bloom filter structures.
@@ -85,12 +85,12 @@ const BloomFilterTypeSchema = Schema.declare<BloomFilterType>(
  * @see {@link fromHex} for deserializing from hex
  * @since 0.0.1
  */
-export const BloomFilterSchema: Schema.Schema<BloomFilterType, BloomFilterType, never> = Schema.transformOrFail(
-  BloomFilterTypeSchema,
-  BloomFilterTypeSchema,
-  {
-    strict: true,
-    decode: (t, _options, _ast) => ParseResult.succeed(t),
-    encode: (t) => ParseResult.succeed(t)
-  }
-).annotations({ identifier: 'BloomFilterSchema' })
+export const BloomFilterSchema: Schema.Schema<
+	BloomFilterType,
+	BloomFilterType,
+	never
+> = Schema.transformOrFail(BloomFilterTypeSchema, BloomFilterTypeSchema, {
+	strict: true,
+	decode: (t, _options, _ast) => ParseResult.succeed(t),
+	encode: (t) => ParseResult.succeed(t),
+}).annotations({ identifier: "BloomFilterSchema" });

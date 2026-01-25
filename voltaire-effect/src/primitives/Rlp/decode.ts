@@ -1,15 +1,19 @@
-import { Rlp as VoltaireRlp, type BrandedRlp, RlpDecodingError } from '@tevm/voltaire/Rlp'
-import * as Effect from 'effect/Effect'
+import {
+	type BrandedRlp,
+	type RlpDecodingError,
+	Rlp as VoltaireRlp,
+} from "@tevm/voltaire/Rlp";
+import * as Effect from "effect/Effect";
 
 /**
  * Result of RLP decoding with remaining bytes.
  * @since 0.0.1
  */
 export interface Decoded {
-  /** Decoded RLP data */
-  data: BrandedRlp
-  /** Remaining bytes after decoding */
-  remainder: Uint8Array
+	/** Decoded RLP data */
+	data: BrandedRlp;
+	/** Remaining bytes after decoding */
+	remainder: Uint8Array;
 }
 
 /**
@@ -30,8 +34,11 @@ export interface Decoded {
  *
  * @since 0.0.1
  */
-export const decode = (bytes: Uint8Array, stream?: boolean): Effect.Effect<Decoded, RlpDecodingError> =>
-  Effect.try({
-    try: () => VoltaireRlp.decode(bytes, stream),
-    catch: (e) => e as RlpDecodingError
-  })
+export const decode = (
+	bytes: Uint8Array,
+	stream?: boolean,
+): Effect.Effect<Decoded, RlpDecodingError> =>
+	Effect.try({
+		try: () => VoltaireRlp.decode(bytes, stream),
+		catch: (e) => e as RlpDecodingError,
+	});

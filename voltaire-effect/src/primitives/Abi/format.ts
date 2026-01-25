@@ -6,8 +6,8 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Item } from '@tevm/voltaire/Abi'
+import { Item } from "@tevm/voltaire/Abi";
+import * as Effect from "effect/Effect";
 
 /**
  * Formats an ABI item as a human-readable string.
@@ -35,6 +35,5 @@ import { Item } from '@tevm/voltaire/Abi'
  * @since 0.0.1
  */
 export const format = (
-  item: Parameters<typeof Item.format>[0]
-): Effect.Effect<string, never> =>
-  Effect.sync(() => Item.format(item))
+	item: Parameters<typeof Item.format>[0],
+): Effect.Effect<string, never> => Effect.sync(() => Item.format(item));

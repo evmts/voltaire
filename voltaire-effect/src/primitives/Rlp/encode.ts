@@ -1,11 +1,15 @@
-import { Rlp as VoltaireRlp, type BrandedRlp, RlpEncodingError } from '@tevm/voltaire/Rlp'
-import * as Effect from 'effect/Effect'
+import {
+	type BrandedRlp,
+	type RlpEncodingError,
+	Rlp as VoltaireRlp,
+} from "@tevm/voltaire/Rlp";
+import * as Effect from "effect/Effect";
 
 /**
  * Type representing RLP-encodable data (bytes or nested arrays).
  * @since 0.0.1
  */
-type Encodable = Uint8Array | BrandedRlp | Encodable[]
+type Encodable = Uint8Array | BrandedRlp | Encodable[];
 
 /**
  * RLP-encodes data using Effect for error handling.
@@ -32,8 +36,10 @@ type Encodable = Uint8Array | BrandedRlp | Encodable[]
  *
  * @since 0.0.1
  */
-export const encode = (data: Encodable): Effect.Effect<Uint8Array, RlpEncodingError> =>
-  Effect.try({
-    try: () => VoltaireRlp.encode(data),
-    catch: (e) => e as RlpEncodingError
-  })
+export const encode = (
+	data: Encodable,
+): Effect.Effect<Uint8Array, RlpEncodingError> =>
+	Effect.try({
+		try: () => VoltaireRlp.encode(data),
+		catch: (e) => e as RlpEncodingError,
+	});

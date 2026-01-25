@@ -1,17 +1,17 @@
-import { Opcode } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { Opcode } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Type representing an EVM opcode value (0x00-0xFF).
  * @since 0.0.1
  */
-type OpcodeType = ReturnType<typeof Opcode>
+type OpcodeType = ReturnType<typeof Opcode>;
 
 const OpcodeTypeSchema = S.declare<OpcodeType>(
-  (u): u is OpcodeType => typeof u === 'number' && u >= 0x00 && u <= 0xff,
-  { identifier: 'Opcode' }
-)
+	(u): u is OpcodeType => typeof u === "number" && u >= 0x00 && u <= 0xff,
+	{ identifier: "Opcode" },
+);
 
 /**
  * Effect Schema for validating and transforming EVM opcodes.
@@ -34,20 +34,22 @@ const OpcodeTypeSchema = S.declare<OpcodeType>(
  * @since 0.0.1
  */
 export const OpcodeSchema: S.Schema<OpcodeType, number> = S.transformOrFail(
-  S.Number,
-  OpcodeTypeSchema,
-  {
-    strict: true,
-    decode: (n, _options, ast) => {
-      try {
-        if (n < 0x00 || n > 0xff) {
-          throw new Error(`Opcode must be between 0x00 and 0xFF, got ${n}`)
-        }
-        return ParseResult.succeed(Opcode(n))
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, n, (e as Error).message))
-      }
-    },
-    encode: (opcode) => ParseResult.succeed(opcode as number)
-  }
-).annotations({ identifier: 'OpcodeSchema' })
+	S.Number,
+	OpcodeTypeSchema,
+	{
+		strict: true,
+		decode: (n, _options, ast) => {
+			try {
+				if (n < 0x00 || n > 0xff) {
+					throw new Error(`Opcode must be between 0x00 and 0xFF, got ${n}`);
+				}
+				return ParseResult.succeed(Opcode(n));
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, n, (e as Error).message),
+				);
+			}
+		},
+		encode: (opcode) => ParseResult.succeed(opcode as number),
+	},
+).annotations({ identifier: "OpcodeSchema" });

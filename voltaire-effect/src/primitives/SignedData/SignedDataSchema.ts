@@ -1,12 +1,12 @@
-import { SignedData } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
+import type { SignedData } from "@tevm/voltaire";
+import * as S from "effect/Schema";
 
 /**
  * Branded type representing signed data with version information.
  *
  * @since 0.0.1
  */
-export type SignedDataType = SignedData.SignedDataType
+export type SignedDataType = SignedData.SignedDataType;
 
 /**
  * Version identifier for signed data encoding.
@@ -16,12 +16,12 @@ export type SignedDataType = SignedData.SignedDataType
  *
  * @since 0.0.1
  */
-export type SignedDataVersion = SignedData.SignedDataVersion
+export type SignedDataVersion = SignedData.SignedDataVersion;
 
 const SignedDataTypeSchema = S.declare<SignedDataType>(
-  (u): u is SignedDataType => u instanceof Uint8Array,
-  { identifier: 'SignedData' }
-)
+	(u): u is SignedDataType => u instanceof Uint8Array,
+	{ identifier: "SignedData" },
+);
 
 /**
  * Effect Schema for validating SignedData types.
@@ -37,7 +37,7 @@ const SignedDataTypeSchema = S.declare<SignedDataType>(
  *
  * @since 0.0.1
  */
-export const Schema = SignedDataTypeSchema
+export const Schema = SignedDataTypeSchema;
 
 /**
  * Effect Schema for SignedData version identifiers.
@@ -55,7 +55,7 @@ export const Schema = SignedDataTypeSchema
  * @since 0.0.1
  */
 export const SignedDataVersionSchema = S.Union(
-  S.Literal(0x00),
-  S.Literal(0x01),
-  S.Literal(0x45)
-).annotations({ identifier: 'SignedDataVersion' })
+	S.Literal(0x00),
+	S.Literal(0x01),
+	S.Literal(0x45),
+).annotations({ identifier: "SignedDataVersion" });

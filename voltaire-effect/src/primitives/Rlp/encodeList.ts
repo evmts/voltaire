@@ -1,11 +1,11 @@
-import { Rlp as VoltaireRlp, type BrandedRlp } from '@tevm/voltaire/Rlp'
-import * as Effect from 'effect/Effect'
+import { type BrandedRlp, Rlp as VoltaireRlp } from "@tevm/voltaire/Rlp";
+import * as Effect from "effect/Effect";
 
 /**
  * Type representing RLP list items.
  * @since 0.0.1
  */
-type ListItem = Uint8Array | BrandedRlp | ListItem[]
+type ListItem = Uint8Array | BrandedRlp | ListItem[];
 
 /**
  * RLP-encodes a list of items.
@@ -29,4 +29,4 @@ type ListItem = Uint8Array | BrandedRlp | ListItem[]
  * @since 0.0.1
  */
 export const encodeList = (items: ListItem[]): Effect.Effect<Uint8Array> =>
-  Effect.sync(() => VoltaireRlp.encodeList(items))
+	Effect.sync(() => VoltaireRlp.encodeList(items));

@@ -4,11 +4,8 @@
  * @module
  * @since 0.0.1
  */
-export { EncodedDataSchema, EncodedDataFromBytesSchema, type EncodedDataType } from './EncodedDataSchema.js'
 export {
-  from,
-  fromBytes,
-  toBytes,
-  equals,
-  EncodedDataError
-} from './from.js'
+	EncodedDataFromBytesSchema,
+	EncodedDataSchema,
+	type EncodedDataType,
+} from "./EncodedDataSchema.js";

@@ -1,6 +1,6 @@
-import { CallTrace } from '@tevm/voltaire'
+import { CallTrace } from "@tevm/voltaire";
 
-type CallTraceType = CallTrace.CallTraceType
+type CallTraceType = CallTrace.CallTraceType;
 
 /**
  * Checks if a call trace contains an error.
@@ -18,4 +18,5 @@ type CallTraceType = CallTrace.CallTraceType
  * ```
  * @since 0.0.1
  */
-export const hasError = (trace: CallTraceType): boolean => CallTrace.hasError(trace)
+export const hasError = (trace: CallTraceType): boolean =>
+	CallTrace.hasError(trace);

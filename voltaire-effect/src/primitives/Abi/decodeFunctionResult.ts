@@ -6,22 +6,26 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Function as AbiFunction, AbiItemNotFoundError, type AbiDecodingError } from '@tevm/voltaire/Abi'
-import type { HexType } from '@tevm/voltaire/Hex'
-import * as Hex from '@tevm/voltaire/Hex'
+import {
+	type AbiDecodingError,
+	Function as AbiFunction,
+	AbiItemNotFoundError,
+} from "@tevm/voltaire/Abi";
+import type { HexType } from "@tevm/voltaire/Hex";
+import * as Hex from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
 
 /**
  * Represents a single ABI item with type and optional name.
  * @internal
  */
-type AbiItem = { type: string; name?: string }
+type AbiItem = { type: string; name?: string };
 
 /**
  * Type alias for ABI input accepted by the decoder.
  * @internal
  */
-type AbiInput = readonly AbiItem[]
+type AbiInput = readonly AbiItem[];
 
 /**
  * Decodes the return value of a function call using the provided ABI.
@@ -116,22 +120,27 @@ type AbiInput = readonly AbiItem[]
  * @see {@link encodeFunctionData} for encoding function calls
  */
 export const decodeFunctionResult = (
-  abi: AbiInput,
-  functionName: string,
-  data: HexType | Uint8Array
+	abi: AbiInput,
+	functionName: string,
+	data: HexType | Uint8Array,
 ): Effect.Effect<readonly unknown[], AbiItemNotFoundError | AbiDecodingError> =>
-  Effect.try({
-    try: () => {
-      const bytes = typeof data === 'string' ? Hex.toBytes(data) : data
-      const fn = abi.find(item => item.type === 'function' && item.name === functionName)
-      if (!fn) {
-        throw new AbiItemNotFoundError(`Function "${functionName}" not found in ABI`, {
-          value: functionName,
-          expected: 'valid function name in ABI',
-          context: { functionName, abi }
-        })
-      }
-      return AbiFunction.decodeResult(fn as AbiFunction.FunctionType, bytes)
-    },
-    catch: (e) => e as AbiItemNotFoundError | AbiDecodingError
-  })
+	Effect.try({
+		try: () => {
+			const bytes = typeof data === "string" ? Hex.toBytes(data) : data;
+			const fn = abi.find(
+				(item) => item.type === "function" && item.name === functionName,
+			);
+			if (!fn) {
+				throw new AbiItemNotFoundError(
+					`Function "${functionName}" not found in ABI`,
+					{
+						value: functionName,
+						expected: "valid function name in ABI",
+						context: { functionName, abi },
+					},
+				);
+			}
+			return AbiFunction.decodeResult(fn as AbiFunction.FunctionType, bytes);
+		},
+		catch: (e) => e as AbiItemNotFoundError | AbiDecodingError,
+	});

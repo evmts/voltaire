@@ -5,9 +5,9 @@
  * @since 0.0.1
  */
 
-import { Storage } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { Storage } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Represents an EVM storage slot identifier.
@@ -35,12 +35,12 @@ import * as ParseResult from 'effect/ParseResult'
  *
  * @since 0.0.1
  */
-type StorageSlotType = Uint8Array & { readonly __tag: 'StorageSlot' }
+type StorageSlotType = Uint8Array & { readonly __tag: "StorageSlot" };
 
 const StorageSlotTypeSchema = S.declare<StorageSlotType>(
-  (u): u is StorageSlotType => u instanceof Uint8Array && u.length === 32,
-  { identifier: 'StorageSlot' }
-)
+	(u): u is StorageSlotType => u instanceof Uint8Array && u.length === 32,
+	{ identifier: "StorageSlot" },
+);
 
 /**
  * Effect Schema for validating and parsing storage slot values.
@@ -74,18 +74,27 @@ const StorageSlotTypeSchema = S.declare<StorageSlotType>(
  *
  * @since 0.0.1
  */
-export const StorageSlotSchema: S.Schema<StorageSlotType, bigint | number | string | Uint8Array> = S.transformOrFail(
-  S.Union(S.BigIntFromSelf, S.Number, S.String, S.Uint8ArrayFromSelf),
-  StorageSlotTypeSchema,
-  {
-    strict: true,
-    decode: (value, _options, ast) => {
-      try {
-        return ParseResult.succeed(Storage.from(value as bigint | number | string | Uint8Array) as unknown as StorageSlotType)
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, value, (e as Error).message))
-      }
-    },
-    encode: (slot) => ParseResult.succeed(slot as Uint8Array)
-  }
-).annotations({ identifier: 'StorageSlotSchema' })
+export const StorageSlotSchema: S.Schema<
+	StorageSlotType,
+	bigint | number | string | Uint8Array
+> = S.transformOrFail(
+	S.Union(S.BigIntFromSelf, S.Number, S.String, S.Uint8ArrayFromSelf),
+	StorageSlotTypeSchema,
+	{
+		strict: true,
+		decode: (value, _options, ast) => {
+			try {
+				return ParseResult.succeed(
+					Storage.from(
+						value as bigint | number | string | Uint8Array,
+					) as unknown as StorageSlotType,
+				);
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, value, (e as Error).message),
+				);
+			}
+		},
+		encode: (slot) => ParseResult.succeed(slot as Uint8Array),
+	},
+).annotations({ identifier: "StorageSlotSchema" });

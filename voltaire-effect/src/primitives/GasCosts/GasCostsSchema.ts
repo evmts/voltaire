@@ -11,7 +11,7 @@
  * @see {@link GasConstants} for individual constants
  */
 
-import { GasCosts } from '@tevm/voltaire'
+import { GasCosts } from "@tevm/voltaire";
 
 /**
  * Comprehensive gas cost tables for EVM operations.
@@ -50,7 +50,7 @@ import { GasCosts } from '@tevm/voltaire'
  * @see https://www.evm.codes/ for interactive opcode reference
  * @since 0.0.1
  */
-export const GAS_COSTS = GasCosts.GAS_COSTS
+export const GAS_COSTS = GasCosts.GAS_COSTS;
 
 /**
  * Block gas limits per hardfork.
@@ -76,7 +76,7 @@ export const GAS_COSTS = GasCosts.GAS_COSTS
  *
  * @since 0.0.1
  */
-export const BLOCK_GAS_LIMITS = GasCosts.BLOCK_GAS_LIMITS
+export const BLOCK_GAS_LIMITS = GasCosts.BLOCK_GAS_LIMITS;
 
 /**
  * Transaction-related gas costs (base, data, access lists).
@@ -110,4 +110,4 @@ export const BLOCK_GAS_LIMITS = GasCosts.BLOCK_GAS_LIMITS
  *
  * @since 0.0.1
  */
-export const TRANSACTION_COSTS = GasCosts.TRANSACTION_COSTS
+export const TRANSACTION_COSTS = GasCosts.TRANSACTION_COSTS;

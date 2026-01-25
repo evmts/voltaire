@@ -16,5 +16,5 @@
  * @module
  * @since 0.0.1
  */
-export { Schema, type ProtocolVersionType } from './ProtocolVersionSchema.js'
-export { from, ProtocolVersionError } from './from.js'
+
+export { type ProtocolVersionType, Schema } from "./ProtocolVersionSchema.js";

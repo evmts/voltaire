@@ -5,8 +5,8 @@
  * @since 0.0.1
  */
 
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Ethereum hardfork identifiers.
@@ -19,24 +19,24 @@ import * as ParseResult from 'effect/ParseResult'
  * @since 0.0.1
  */
 export type Hardfork =
-  | 'chainstart'
-  | 'homestead'
-  | 'dao'
-  | 'tangerineWhistle'
-  | 'spuriousDragon'
-  | 'byzantium'
-  | 'constantinople'
-  | 'petersburg'
-  | 'istanbul'
-  | 'muirGlacier'
-  | 'berlin'
-  | 'london'
-  | 'arrowGlacier'
-  | 'grayGlacier'
-  | 'paris'
-  | 'shanghai'
-  | 'cancun'
-  | 'prague'
+	| "chainstart"
+	| "homestead"
+	| "dao"
+	| "tangerineWhistle"
+	| "spuriousDragon"
+	| "byzantium"
+	| "constantinople"
+	| "petersburg"
+	| "istanbul"
+	| "muirGlacier"
+	| "berlin"
+	| "london"
+	| "arrowGlacier"
+	| "grayGlacier"
+	| "paris"
+	| "shanghai"
+	| "cancun"
+	| "prague";
 
 /**
  * Metadata about an Ethereum chain's configuration.
@@ -48,14 +48,14 @@ export type Hardfork =
  * @since 0.0.1
  */
 export interface ChainMetadata {
-  blockTime: number
-  gasLimit: number
-  isTestnet: boolean
-  isL2: boolean
-  l1ChainId?: number
-  latestHardfork: Hardfork
-  hardforks: Partial<Record<Hardfork, number>>
-  websocketUrls?: string[]
+	blockTime: number;
+	gasLimit: number;
+	isTestnet: boolean;
+	isL2: boolean;
+	l1ChainId?: number;
+	latestHardfork: Hardfork;
+	hardforks: Partial<Record<Hardfork, number>>;
+	websocketUrls?: string[];
 }
 
 /**
@@ -68,12 +68,12 @@ export interface ChainMetadata {
  * @since 0.0.1
  */
 export interface NativeCurrency {
-  /** Display name (e.g., "Ether") */
-  name: string
-  /** Symbol (e.g., "ETH") */
-  symbol: string
-  /** Decimal places (typically 18) */
-  decimals: number
+	/** Display name (e.g., "Ether") */
+	name: string;
+	/** Symbol (e.g., "ETH") */
+	symbol: string;
+	/** Decimal places (typically 18) */
+	decimals: number;
 }
 
 /**
@@ -86,10 +86,10 @@ export interface NativeCurrency {
  * @since 0.0.1
  */
 export interface Explorer {
-  /** Display name (e.g., "Etherscan") */
-  name: string
-  /** Base URL (e.g., "https://etherscan.io") */
-  url: string
+	/** Display name (e.g., "Etherscan") */
+	name: string;
+	/** Base URL (e.g., "https://etherscan.io") */
+	url: string;
 }
 
 /**
@@ -102,27 +102,27 @@ export interface Explorer {
  * @since 0.0.1
  */
 export interface ChainType {
-  readonly __tag: 'Chain'
-  id: number
-  name: string
-  nativeCurrency: NativeCurrency
-  rpcUrls?: { default: { http: readonly string[] } }
-  blockExplorers?: { default: Explorer }
+	readonly __tag: "Chain";
+	id: number;
+	name: string;
+	nativeCurrency: NativeCurrency;
+	rpcUrls?: { default: { http: readonly string[] } };
+	blockExplorers?: { default: Explorer };
 }
 
 const ChainTypeSchema = S.declare<ChainType>(
-  (u): u is ChainType => {
-    if (typeof u !== 'object' || u === null) return false
-    const chain = u as Record<string, unknown>
-    return (
-      typeof chain.id === 'number' &&
-      typeof chain.name === 'string' &&
-      typeof chain.nativeCurrency === 'object' &&
-      chain.nativeCurrency !== null
-    )
-  },
-  { identifier: 'Chain' }
-)
+	(u): u is ChainType => {
+		if (typeof u !== "object" || u === null) return false;
+		const chain = u as Record<string, unknown>;
+		return (
+			typeof chain.id === "number" &&
+			typeof chain.name === "string" &&
+			typeof chain.nativeCurrency === "object" &&
+			chain.nativeCurrency !== null
+		);
+	},
+	{ identifier: "Chain" },
+);
 
 /**
  * Input type for creating a Chain.
@@ -135,33 +135,37 @@ const ChainTypeSchema = S.declare<ChainType>(
  * @since 0.0.1
  */
 export interface ChainInput {
-  id: number
-  name: string
-  nativeCurrency: NativeCurrency
-  rpcUrls?: { default: { http: readonly string[] } }
-  blockExplorers?: { default: Explorer }
+	id: number;
+	name: string;
+	nativeCurrency: NativeCurrency;
+	rpcUrls?: { default: { http: readonly string[] } };
+	blockExplorers?: { default: Explorer };
 }
 
 const ChainInputSchema = S.Struct({
-  id: S.Number,
-  name: S.String,
-  nativeCurrency: S.Struct({
-    name: S.String,
-    symbol: S.String,
-    decimals: S.Number
-  }),
-  rpcUrls: S.optional(S.Struct({
-    default: S.Struct({
-      http: S.Array(S.String)
-    })
-  })),
-  blockExplorers: S.optional(S.Struct({
-    default: S.Struct({
-      name: S.String,
-      url: S.String
-    })
-  }))
-})
+	id: S.Number,
+	name: S.String,
+	nativeCurrency: S.Struct({
+		name: S.String,
+		symbol: S.String,
+		decimals: S.Number,
+	}),
+	rpcUrls: S.optional(
+		S.Struct({
+			default: S.Struct({
+				http: S.Array(S.String),
+			}),
+		}),
+	),
+	blockExplorers: S.optional(
+		S.Struct({
+			default: S.Struct({
+				name: S.String,
+				url: S.String,
+			}),
+		}),
+	),
+});
 
 /**
  * Effect Schema for validating Ethereum chain configurations.
@@ -196,25 +200,32 @@ const ChainInputSchema = S.Struct({
  * @since 0.0.1
  */
 export const ChainSchema: S.Schema<ChainType, ChainInput> = S.transformOrFail(
-  ChainInputSchema,
-  ChainTypeSchema,
-  {
-    strict: true,
-    decode: (value, _options, ast) => {
-      if (typeof value.id !== 'number' || value.id <= 0) {
-        return ParseResult.fail(new ParseResult.Type(ast, value, 'Chain ID must be a positive integer'))
-      }
-      return ParseResult.succeed({
-        __tag: 'Chain' as const,
-        ...value
-      } as ChainType)
-    },
-    encode: (chain) => ParseResult.succeed({
-      id: chain.id,
-      name: chain.name,
-      nativeCurrency: chain.nativeCurrency,
-      rpcUrls: chain.rpcUrls,
-      blockExplorers: chain.blockExplorers
-    })
-  }
-).annotations({ identifier: 'ChainSchema' })
+	ChainInputSchema,
+	ChainTypeSchema,
+	{
+		strict: true,
+		decode: (value, _options, ast) => {
+			if (typeof value.id !== "number" || value.id <= 0) {
+				return ParseResult.fail(
+					new ParseResult.Type(
+						ast,
+						value,
+						"Chain ID must be a positive integer",
+					),
+				);
+			}
+			return ParseResult.succeed({
+				__tag: "Chain" as const,
+				...value,
+			} as ChainType);
+		},
+		encode: (chain) =>
+			ParseResult.succeed({
+				id: chain.id,
+				name: chain.name,
+				nativeCurrency: chain.nativeCurrency,
+				rpcUrls: chain.rpcUrls,
+				blockExplorers: chain.blockExplorers,
+			}),
+	},
+).annotations({ identifier: "ChainSchema" });

@@ -34,5 +34,5 @@
  * @see {@link from} for Effect-based creation
  * @see {@link LogIndexError} for error handling
  */
-export { LogIndexSchema } from './LogIndexSchema.js'
-export { from, LogIndexError } from './from.js'
+
+export { LogIndexSchema } from "./Number.js";

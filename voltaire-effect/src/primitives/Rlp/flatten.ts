@@ -1,5 +1,5 @@
-import { Rlp as VoltaireRlp, type BrandedRlp } from '@tevm/voltaire/Rlp'
-import * as Effect from 'effect/Effect'
+import { type BrandedRlp, Rlp as VoltaireRlp } from "@tevm/voltaire/Rlp";
+import * as Effect from "effect/Effect";
 
 /**
  * Flattens nested list Data into array of bytes Data (depth-first).
@@ -32,5 +32,7 @@ import * as Effect from 'effect/Effect'
  *
  * @since 0.0.1
  */
-export const flatten = (data: BrandedRlp): Effect.Effect<Array<BrandedRlp & { type: 'bytes' }>> =>
-  Effect.sync(() => VoltaireRlp.flatten(data))
+export const flatten = (
+	data: BrandedRlp,
+): Effect.Effect<Array<BrandedRlp & { type: "bytes" }>> =>
+	Effect.sync(() => VoltaireRlp.flatten(data));

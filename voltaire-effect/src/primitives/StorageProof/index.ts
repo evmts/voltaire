@@ -53,6 +53,5 @@
  *
  * @since 0.0.1
  */
-export { Schema, type StorageProofType } from './StorageProofSchema.js'
-export { from } from './from.js'
-export { equals } from './equals.js'
+
+export { Schema, type StorageProofType } from "./Struct.js";

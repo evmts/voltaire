@@ -1,29 +1,29 @@
 /**
  * @fileoverview PackedUserOperation unpacking for ERC-4337 v0.7.
- * 
+ *
  * This module converts PackedUserOperations back to the standard UserOperation
  * format by extracting the individual gas values from the packed fields.
- * 
+ *
  * The unpacking extracts:
  * - From `accountGasLimits`: verificationGasLimit (first 16 bytes) + callGasLimit (last 16 bytes)
  * - From `gasFees`: maxPriorityFeePerGas (first 16 bytes) + maxFeePerGas (last 16 bytes)
- * 
+ *
  * @see https://eips.ethereum.org/EIPS/eip-4337
  * @module PackedUserOperation/unpack
  * @since 0.0.1
  */
-import { ValidationError } from '@tevm/voltaire/errors'
-import * as Effect from 'effect/Effect'
-import type { PackedUserOperationType } from './PackedUserOperationSchema.js'
-import type { UserOperationType } from '../UserOperation/UserOperationSchema.js'
+import { ValidationError } from "@tevm/voltaire/errors";
+import * as Effect from "effect/Effect";
+import type { UserOperationType } from "../UserOperation/UserOperationSchema.js";
+import type { PackedUserOperationType } from "./PackedUserOperationSchema.js";
 
 const bytesToUint128 = (bytes: Uint8Array, offset: number): bigint => {
-  let result = 0n
-  for (let i = 0; i < 16; i++) {
-    result = (result << 8n) | BigInt(bytes[offset + i] ?? 0)
-  }
-  return result
-}
+	let result = 0n;
+	for (let i = 0; i < 16; i++) {
+		result = (result << 8n) | BigInt(bytes[offset + i] ?? 0);
+	}
+	return result;
+};
 
 /**
  * Unpacks a PackedUserOperation into a full UserOperation.
@@ -64,34 +64,38 @@ const bytesToUint128 = (bytes: Uint8Array, offset: number): bigint => {
  * @since 0.0.1
  */
 export const unpack = (
-  packedUserOp: PackedUserOperationType
+	packedUserOp: PackedUserOperationType,
 ): Effect.Effect<UserOperationType, ValidationError> =>
-  Effect.try({
-    try: () => {
-      const verificationGasLimit = bytesToUint128(packedUserOp.accountGasLimits, 0)
-      const callGasLimit = bytesToUint128(packedUserOp.accountGasLimits, 16)
-      const maxPriorityFeePerGas = bytesToUint128(packedUserOp.gasFees, 0)
-      const maxFeePerGas = bytesToUint128(packedUserOp.gasFees, 16)
+	Effect.try({
+		try: () => {
+			const verificationGasLimit = bytesToUint128(
+				packedUserOp.accountGasLimits,
+				0,
+			);
+			const callGasLimit = bytesToUint128(packedUserOp.accountGasLimits, 16);
+			const maxPriorityFeePerGas = bytesToUint128(packedUserOp.gasFees, 0);
+			const maxFeePerGas = bytesToUint128(packedUserOp.gasFees, 16);
 
-      return {
-        sender: packedUserOp.sender,
-        nonce: packedUserOp.nonce,
-        initCode: packedUserOp.initCode,
-        callData: packedUserOp.callData,
-        callGasLimit,
-        verificationGasLimit,
-        preVerificationGas: packedUserOp.preVerificationGas,
-        maxFeePerGas,
-        maxPriorityFeePerGas,
-        paymasterAndData: packedUserOp.paymasterAndData,
-        signature: packedUserOp.signature,
-      } as UserOperationType
-    },
-    catch: (e) => {
-      if (e instanceof ValidationError) return e
-      return new ValidationError(
-        e instanceof Error ? e.message : String(e),
-        { value: packedUserOp, expected: 'valid PackedUserOperation', cause: e instanceof Error ? e : undefined }
-      )
-    }
-  })
+			return {
+				sender: packedUserOp.sender,
+				nonce: packedUserOp.nonce,
+				initCode: packedUserOp.initCode,
+				callData: packedUserOp.callData,
+				callGasLimit,
+				verificationGasLimit,
+				preVerificationGas: packedUserOp.preVerificationGas,
+				maxFeePerGas,
+				maxPriorityFeePerGas,
+				paymasterAndData: packedUserOp.paymasterAndData,
+				signature: packedUserOp.signature,
+			} as UserOperationType;
+		},
+		catch: (e) => {
+			if (e instanceof ValidationError) return e;
+			return new ValidationError(e instanceof Error ? e.message : String(e), {
+				value: packedUserOp,
+				expected: "valid PackedUserOperation",
+				cause: e instanceof Error ? e : undefined,
+			});
+		},
+	});

@@ -1,41 +1,63 @@
 /**
- * Rlp module for Effect-based RLP encoding and decoding.
+ * @module Rlp
+ * @description Effect-based RLP (Recursive Length Prefix) encoding and decoding.
  *
- * Provides Effect-wrapped operations for Recursive Length Prefix (RLP)
- * encoding used throughout Ethereum for transaction and state serialization.
+ * RLP is the primary serialization format used in Ethereum for encoding
+ * transactions, blocks, account state, and other structured data.
  *
- * @example
+ * ## Schema
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `Rlp.Schema` | Uint8Array | BrandedRlp |
+ *
+ * ## Effect Functions
+ *
+ * Encoding (can fail on invalid input):
+ * - `encode(data)` - Encode bytes or nested arrays
+ * - `encodeBytes(bytes)` - Encode a single byte array
+ * - `encodeList(items)` - Encode a list of items
+ * - `encodeArray(items)` - Encode array to RLP bytes
+ *
+ * Decoding (can fail on malformed RLP):
+ * - `decode(bytes)` - Decode RLP bytes to data structure
+ * - `decodeArray(bytes)` - Decode RLP bytes to array
+ *
+ * Utilities:
+ * - `flatten(data)` - Flatten nested RLP to array of bytes
+ * - `validate(bytes)` - Check if bytes are valid RLP
+ *
+ * @example Schema usage
+ * ```typescript
+ * import * as Rlp from 'voltaire-effect/primitives/Rlp'
+ * import * as S from 'effect/Schema'
+ *
+ * const rlp = S.decodeSync(Rlp.Schema)(rlpBytes)
+ * ```
+ *
+ * @example Effect usage
  * ```typescript
  * import * as Rlp from 'voltaire-effect/primitives/Rlp'
  * import * as Effect from 'effect/Effect'
  *
  * const program = Effect.gen(function* () {
- *   // Encode data
  *   const encoded = yield* Rlp.encode([
  *     new Uint8Array([1, 2, 3]),
  *     new Uint8Array([4, 5, 6])
  *   ])
- *
- *   // Decode data
  *   const { data, remainder } = yield* Rlp.decode(encoded)
  * })
  * ```
  *
- * @module
- * @since 0.0.1
+ * @since 0.1.0
  */
-export { Schema, RlpDecodingError, RlpEncodingError } from './RlpSchema.js'
-export { encode } from './encode.js'
-export { decode, type Decoded } from './decode.js'
-export { encodeList } from './encodeList.js'
-export { encodeArray } from './encodeArray.js'
-export { encodeBytes } from './encodeBytes.js'
-export { decodeArray } from './decodeArray.js'
-export { validate } from './validate.js'
-export { flatten } from './flatten.js'
 
-/**
- * Re-export of BrandedRlp type from voltaire.
- * @since 0.0.1
- */
-export type { BrandedRlp } from '@tevm/voltaire/Rlp'
+export type { BrandedRlp } from "@tevm/voltaire/Rlp";
+export { type Decoded, decode } from "./decode.js";
+export { decodeArray } from "./decodeArray.js";
+export { encode } from "./encode.js";
+export { encodeArray } from "./encodeArray.js";
+export { encodeBytes } from "./encodeBytes.js";
+export { encodeList } from "./encodeList.js";
+export { flatten } from "./flatten.js";
+export { RlpDecodingError, RlpEncodingError, Schema } from "./RlpSchema.js";

@@ -1,2 +1,10 @@
-export { Schema, FromHexSchema, type MultiTokenIdType } from './MultiTokenIdSchema.js'
-export { from, fromNumber, fromBigInt, fromHex, isValidFungible, isValidNonFungible } from './from.js'
+/**
+ * @module MultiTokenId
+ * @description ERC-1155 multi-token IDs.
+ * @since 0.0.1
+ */
+export {
+	FromHexSchema,
+	type MultiTokenIdType,
+	Schema,
+} from "./MultiTokenIdSchema.js";

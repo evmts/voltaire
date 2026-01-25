@@ -18,5 +18,8 @@
  * @module
  * @since 0.0.1
  */
-export { Schema, type PendingTransactionFilterType } from './PendingTransactionFilterSchema.js'
-export { from, PendingTransactionFilterError } from './from.js'
+
+export {
+	type PendingTransactionFilterType,
+	Schema,
+} from "./Struct.js";

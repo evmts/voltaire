@@ -1,4 +1,29 @@
-export { Schema, ProofSchema, type MerkleTreeType, type MerkleProofType } from './MerkleTreeSchema.js'
-export { from } from './from.js'
-export { getProof } from './getProof.js'
-export { verify } from './verify.js'
+/**
+ * @module MerkleTree
+ * @description Merkle tree and proof structures for cryptographic verification.
+ *
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `Schema` | MerkleTree input | MerkleTreeType |
+ * | `ProofSchema` | MerkleProof input | MerkleProofType |
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * import * as MerkleTree from 'voltaire-effect/primitives/MerkleTree'
+ * import * as S from 'effect/Schema'
+ *
+ * const tree = S.decodeSync(MerkleTree.Schema)(input)
+ * const proof = S.decodeSync(MerkleTree.ProofSchema)(proofInput)
+ * ```
+ *
+ * @since 0.1.0
+ */
+export {
+	type MerkleProofType,
+	type MerkleTreeType,
+	ProofSchema,
+	Schema,
+} from "./MerkleTreeSchema.js";

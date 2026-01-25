@@ -5,9 +5,9 @@
  * @since 0.0.1
  */
 
-import { StorageDiff } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { StorageDiff } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Represents storage slot changes for a specific account.
@@ -33,15 +33,15 @@ import * as ParseResult from 'effect/ParseResult'
  * @since 0.0.1
  */
 type StorageDiffType = {
-  readonly address: Uint8Array
-  readonly changes: ReadonlyMap<any, any>
-}
+	readonly address: Uint8Array;
+	readonly changes: ReadonlyMap<any, any>;
+};
 
 const StorageDiffTypeSchema = S.declare<StorageDiffType>(
-  (u): u is StorageDiffType =>
-    typeof u === 'object' && u !== null && 'address' in u && 'changes' in u,
-  { identifier: 'StorageDiff' }
-)
+	(u): u is StorageDiffType =>
+		typeof u === "object" && u !== null && "address" in u && "changes" in u,
+	{ identifier: "StorageDiff" },
+);
 
 /**
  * Effect Schema for validating and parsing storage diffs.
@@ -83,21 +83,29 @@ const StorageDiffTypeSchema = S.declare<StorageDiffType>(
  *
  * @since 0.0.1
  */
-export const StorageDiffSchema: S.Schema<StorageDiffType, { address: Uint8Array; changes: any }> = S.transformOrFail(
-  S.Struct({
-    address: S.Uint8ArrayFromSelf,
-    changes: S.Any
-  }),
-  StorageDiffTypeSchema,
-  {
-    strict: true,
-    decode: (value, _options, ast) => {
-      try {
-        return ParseResult.succeed(StorageDiff.from(value.address as any, value.changes))
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, value, (e as Error).message))
-      }
-    },
-    encode: (diff) => ParseResult.succeed({ address: diff.address, changes: diff.changes })
-  }
-).annotations({ identifier: 'StorageDiffSchema' })
+export const StorageDiffSchema: S.Schema<
+	StorageDiffType,
+	{ address: Uint8Array; changes: any }
+> = S.transformOrFail(
+	S.Struct({
+		address: S.Uint8ArrayFromSelf,
+		changes: S.Any,
+	}),
+	StorageDiffTypeSchema,
+	{
+		strict: true,
+		decode: (value, _options, ast) => {
+			try {
+				return ParseResult.succeed(
+					StorageDiff.from(value.address as any, value.changes),
+				);
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, value, (e as Error).message),
+				);
+			}
+		},
+		encode: (diff) =>
+			ParseResult.succeed({ address: diff.address, changes: diff.changes }),
+	},
+).annotations({ identifier: "StorageDiffSchema" });

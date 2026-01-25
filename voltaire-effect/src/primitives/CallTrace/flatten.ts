@@ -1,6 +1,6 @@
-import { CallTrace } from '@tevm/voltaire'
+import { CallTrace } from "@tevm/voltaire";
 
-type CallTraceType = CallTrace.CallTraceType
+type CallTraceType = CallTrace.CallTraceType;
 
 /**
  * Flattens a call trace tree into a flat array.
@@ -17,4 +17,5 @@ type CallTraceType = CallTrace.CallTraceType
  * ```
  * @since 0.0.1
  */
-export const flatten = (trace: CallTraceType): CallTraceType[] => CallTrace.flatten(trace)
+export const flatten = (trace: CallTraceType): CallTraceType[] =>
+	CallTrace.flatten(trace);

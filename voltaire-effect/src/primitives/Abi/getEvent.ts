@@ -6,14 +6,18 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Item, AbiItemNotFoundError, Event as AbiEvent } from '@tevm/voltaire/Abi'
+import {
+	type Event as AbiEvent,
+	AbiItemNotFoundError,
+	Item,
+} from "@tevm/voltaire/Abi";
+import * as Effect from "effect/Effect";
 
 /**
  * Type alias for ABI input accepted by the lookup function.
  * @internal
  */
-type AbiInput = Parameters<typeof Item.getItem>[0]
+type AbiInput = Parameters<typeof Item.getItem>[0];
 
 /**
  * Retrieves an event definition from an ABI by name.
@@ -90,21 +94,24 @@ type AbiInput = Parameters<typeof Item.getItem>[0]
  * @see {@link getFunction} for retrieving function definitions
  */
 export const getEvent = (
-  abi: AbiInput,
-  name: string
+	abi: AbiInput,
+	name: string,
 ): Effect.Effect<AbiEvent.EventType, AbiItemNotFoundError> =>
-  Effect.try({
-    try: () => {
-      const item = Item.getItem(abi, name, 'event')
-      if (!item) {
-        const error = new AbiItemNotFoundError(`Event "${name}" not found in ABI`, {
-          value: name,
-          expected: 'valid event name in ABI',
-          context: { name, abi }
-        })
-        throw error
-      }
-      return item as AbiEvent.EventType
-    },
-    catch: (e) => e as AbiItemNotFoundError
-  })
+	Effect.try({
+		try: () => {
+			const item = Item.getItem(abi, name, "event");
+			if (!item) {
+				const error = new AbiItemNotFoundError(
+					`Event "${name}" not found in ABI`,
+					{
+						value: name,
+						expected: "valid event name in ABI",
+						context: { name, abi },
+					},
+				);
+				throw error;
+			}
+			return item as AbiEvent.EventType;
+		},
+		catch: (e) => e as AbiItemNotFoundError,
+	});

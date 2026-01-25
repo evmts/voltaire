@@ -1,25 +1,25 @@
-import { Metadata } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { Metadata } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * The Metadata type representing contract metadata (CBOR-encoded at end of bytecode).
  * @since 0.0.1
  */
-type MetadataType = ReturnType<typeof Metadata.from>
+type MetadataType = ReturnType<typeof Metadata.from>;
 
 /**
  * Internal schema declaration for Metadata type validation.
  * @internal
  */
 const MetadataTypeSchema = S.declare<MetadataType>(
-  (u): u is MetadataType => {
-    if (typeof u !== 'object' || u === null) return false
-    const obj = u as Record<string, unknown>
-    return obj.raw instanceof Uint8Array
-  },
-  { identifier: 'Metadata' }
-)
+	(u): u is MetadataType => {
+		if (typeof u !== "object" || u === null) return false;
+		const obj = u as Record<string, unknown>;
+		return obj.raw instanceof Uint8Array;
+	},
+	{ identifier: "Metadata" },
+);
 
 /**
  * Effect Schema for validating and parsing contract metadata.
@@ -41,18 +41,17 @@ const MetadataTypeSchema = S.declare<MetadataType>(
  *
  * @since 0.0.1
  */
-export const MetadataSchema: S.Schema<MetadataType, Uint8Array> = S.transformOrFail(
-  S.Uint8ArrayFromSelf,
-  MetadataTypeSchema,
-  {
-    strict: true,
-    decode: (raw, _options, ast) => {
-      try {
-        return ParseResult.succeed(Metadata.from(raw))
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, raw, (e as Error).message))
-      }
-    },
-    encode: (metadata) => ParseResult.succeed(metadata.raw)
-  }
-).annotations({ identifier: 'MetadataSchema' })
+export const MetadataSchema: S.Schema<MetadataType, Uint8Array> =
+	S.transformOrFail(S.Uint8ArrayFromSelf, MetadataTypeSchema, {
+		strict: true,
+		decode: (raw, _options, ast) => {
+			try {
+				return ParseResult.succeed(Metadata.from(raw));
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, raw, (e as Error).message),
+				);
+			}
+		},
+		encode: (metadata) => ParseResult.succeed(metadata.raw),
+	}).annotations({ identifier: "MetadataSchema" });

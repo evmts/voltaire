@@ -7,15 +7,15 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { decodeLog, type AbiItemNotFoundError } from '@tevm/voltaire/Abi'
-import type { HexType } from '@tevm/voltaire/Hex'
+import { type AbiItemNotFoundError, decodeLog } from "@tevm/voltaire/Abi";
+import type { HexType } from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
 
 /**
  * Type alias for ABI input accepted by the decoder.
  * @internal
  */
-type AbiInput = Parameters<typeof decodeLog>[0]
+type AbiInput = Parameters<typeof decodeLog>[0];
 
 /**
  * Input structure for decoding event logs.
@@ -41,16 +41,16 @@ type AbiInput = Parameters<typeof decodeLog>[0]
  * ```
  */
 export interface LogInput {
-  /**
-   * The log data as hex string or bytes.
-   * Contains non-indexed event parameters ABI-encoded.
-   */
-  data: HexType | Uint8Array
-  /**
-   * Array of log topics as hex strings or bytes.
-   * First topic is event signature, rest are indexed params.
-   */
-  topics: readonly (HexType | Uint8Array)[]
+	/**
+	 * The log data as hex string or bytes.
+	 * Contains non-indexed event parameters ABI-encoded.
+	 */
+	data: HexType | Uint8Array;
+	/**
+	 * Array of log topics as hex strings or bytes.
+	 * First topic is event signature, rest are indexed params.
+	 */
+	topics: readonly (HexType | Uint8Array)[];
 }
 
 /**
@@ -125,10 +125,13 @@ export interface LogInput {
  * @see {@link getEvent} for retrieving event definitions by name
  */
 export const decodeEventLog = (
-  abi: AbiInput,
-  log: LogInput
-): Effect.Effect<{ event: string; params: Record<string, unknown> }, AbiItemNotFoundError> =>
-  Effect.try({
-    try: () => decodeLog(abi, log),
-    catch: (e) => e as AbiItemNotFoundError
-  })
+	abi: AbiInput,
+	log: LogInput,
+): Effect.Effect<
+	{ event: string; params: Record<string, unknown> },
+	AbiItemNotFoundError
+> =>
+	Effect.try({
+		try: () => decodeLog(abi, log),
+		catch: (e) => e as AbiItemNotFoundError,
+	});

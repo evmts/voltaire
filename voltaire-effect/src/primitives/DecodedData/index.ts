@@ -4,5 +4,8 @@
  * @module
  * @since 0.0.1
  */
-export { DecodedDataSchema, type DecodedDataType, type DecodedDataInput } from './DecodedDataSchema.js'
-export { from, DecodedDataError } from './from.js'
+export {
+	type DecodedDataInput,
+	DecodedDataSchema,
+	type DecodedDataType,
+} from "./DecodedDataSchema.js";

@@ -52,6 +52,5 @@
  *
  * @since 0.0.1
  */
-export { Schema, type StateProofType } from './StateProofSchema.js'
-export { from } from './from.js'
-export { equals } from './equals.js'
+
+export { Schema, type StateProofType } from "./StateProofSchema.js";

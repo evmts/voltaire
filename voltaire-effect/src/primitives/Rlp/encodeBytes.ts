@@ -1,5 +1,5 @@
-import { Rlp as VoltaireRlp } from '@tevm/voltaire/Rlp'
-import * as Effect from 'effect/Effect'
+import { Rlp as VoltaireRlp } from "@tevm/voltaire/Rlp";
+import * as Effect from "effect/Effect";
 
 /**
  * RLP-encodes a byte array according to RLP string rules.
@@ -24,4 +24,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const encodeBytes = (bytes: Uint8Array): Effect.Effect<Uint8Array> =>
-  Effect.sync(() => VoltaireRlp.encodeBytes(bytes))
+	Effect.sync(() => VoltaireRlp.encodeBytes(bytes));

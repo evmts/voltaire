@@ -20,5 +20,5 @@
  * @module
  * @since 0.0.1
  */
-export { OpcodeSchema } from './OpcodeSchema.js'
-export { from, OpcodeError } from './from.js'
+
+export { OpcodeSchema } from "./OpcodeSchema.js";

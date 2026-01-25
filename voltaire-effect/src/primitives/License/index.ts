@@ -18,5 +18,5 @@
  * @since 0.0.1
  * @module
  */
-export { LicenseSchema } from './LicenseSchema.js'
-export { from, LicenseError } from './from.js'
+
+export { LicenseSchema } from "./String.js";

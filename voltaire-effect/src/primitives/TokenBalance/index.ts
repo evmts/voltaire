@@ -1,2 +1,10 @@
-export { Schema, FromHexSchema, type TokenBalanceType } from './TokenBalanceSchema.js'
-export { from, fromNumber, fromBigInt, fromHex, fromBaseUnit, format, toBaseUnit } from './from.js'
+/**
+ * @module TokenBalance
+ * @description Token balance with address and amount.
+ * @since 0.0.1
+ */
+export {
+	Schema,
+	FromHexSchema,
+	type TokenBalanceType,
+} from "./Struct.js";

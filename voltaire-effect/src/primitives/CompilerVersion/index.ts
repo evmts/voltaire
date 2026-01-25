@@ -4,14 +4,7 @@
  * @module
  * @since 0.0.1
  */
-export { CompilerVersionSchema, type CompilerVersionType } from './CompilerVersionSchema.js'
 export {
-  from,
-  parse,
-  compare,
-  getMajor,
-  getMinor,
-  getPatch,
-  isCompatible,
-  CompilerVersionError
-} from './from.js'
+	CompilerVersionSchema,
+	type CompilerVersionType,
+} from "./CompilerVersionSchema.js";

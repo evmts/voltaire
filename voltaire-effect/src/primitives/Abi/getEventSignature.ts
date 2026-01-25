@@ -6,8 +6,8 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Event as AbiEvent, type Event } from '@tevm/voltaire/Abi'
+import { Event as AbiEvent, type Event } from "@tevm/voltaire/Abi";
+import * as Effect from "effect/Effect";
 
 /**
  * Gets the canonical signature of an event.
@@ -35,6 +35,6 @@ import { Event as AbiEvent, type Event } from '@tevm/voltaire/Abi'
  * @since 0.0.1
  */
 export const getEventSignature = (
-  event: Event.EventType
+	event: Event.EventType,
 ): Effect.Effect<string, never> =>
-  Effect.sync(() => AbiEvent.getSignature(event))
+	Effect.sync(() => AbiEvent.getSignature(event));

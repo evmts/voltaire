@@ -22,5 +22,8 @@
  * @see {@link FeeMarket} for fee market state
  */
 
-export { FeeOracleSchema, type FeeOracleType, type FeeOracleInput } from './FeeOracleSchema.js'
-export { from, validate, effectiveGasPrice, withMultiplier, FeeOracleError } from './from.js'
+export {
+	type FeeOracleInput,
+	FeeOracleSchema,
+	type FeeOracleType,
+} from "./Struct.js";

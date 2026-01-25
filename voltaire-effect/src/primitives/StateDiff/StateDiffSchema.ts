@@ -5,8 +5,8 @@
  * @since 0.0.1
  */
 
-import { StateDiff } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
+import type { StateDiff } from "@tevm/voltaire";
+import * as S from "effect/Schema";
 
 /**
  * Type representing a complete state diff across multiple accounts.
@@ -28,7 +28,7 @@ import * as S from 'effect/Schema'
  *
  * @since 0.0.1
  */
-export type StateDiffType = StateDiff.StateDiffType
+export type StateDiffType = StateDiff.StateDiffType;
 
 /**
  * Type representing changes to a single account.
@@ -49,7 +49,7 @@ export type StateDiffType = StateDiff.StateDiffType
  *
  * @since 0.0.1
  */
-export type AccountDiff = StateDiff.AccountDiff
+export type AccountDiff = StateDiff.AccountDiff;
 
 /**
  * Type representing a balance change (from/to values).
@@ -72,7 +72,7 @@ export type AccountDiff = StateDiff.AccountDiff
  *
  * @since 0.0.1
  */
-export type BalanceChange = StateDiff.BalanceChange
+export type BalanceChange = StateDiff.BalanceChange;
 
 /**
  * Type representing a nonce change (from/to values).
@@ -88,7 +88,7 @@ export type BalanceChange = StateDiff.BalanceChange
  *
  * @since 0.0.1
  */
-export type NonceChange = StateDiff.NonceChange
+export type NonceChange = StateDiff.NonceChange;
 
 /**
  * Type representing a code change (from/to bytecode).
@@ -108,7 +108,7 @@ export type NonceChange = StateDiff.NonceChange
  *
  * @since 0.0.1
  */
-export type CodeChange = StateDiff.CodeChange
+export type CodeChange = StateDiff.CodeChange;
 
 /**
  * Effect Schema for validating balance changes.
@@ -133,9 +133,9 @@ export type CodeChange = StateDiff.CodeChange
  * @since 0.0.1
  */
 export const BalanceChangeSchema = S.Struct({
-  from: S.NullOr(S.BigIntFromSelf),
-  to: S.NullOr(S.BigIntFromSelf),
-}).annotations({ identifier: 'BalanceChange' })
+	from: S.NullOr(S.BigIntFromSelf),
+	to: S.NullOr(S.BigIntFromSelf),
+}).annotations({ identifier: "BalanceChange" });
 
 /**
  * Effect Schema for validating nonce changes.
@@ -160,9 +160,9 @@ export const BalanceChangeSchema = S.Struct({
  * @since 0.0.1
  */
 export const NonceChangeSchema = S.Struct({
-  from: S.NullOr(S.BigIntFromSelf),
-  to: S.NullOr(S.BigIntFromSelf),
-}).annotations({ identifier: 'NonceChange' })
+	from: S.NullOr(S.BigIntFromSelf),
+	to: S.NullOr(S.BigIntFromSelf),
+}).annotations({ identifier: "NonceChange" });
 
 /**
  * Effect Schema for validating code changes.
@@ -190,9 +190,9 @@ export const NonceChangeSchema = S.Struct({
  * @since 0.0.1
  */
 export const CodeChangeSchema = S.Struct({
-  from: S.NullOr(S.Uint8ArrayFromSelf),
-  to: S.NullOr(S.Uint8ArrayFromSelf),
-}).annotations({ identifier: 'CodeChange' })
+	from: S.NullOr(S.Uint8ArrayFromSelf),
+	to: S.NullOr(S.Uint8ArrayFromSelf),
+}).annotations({ identifier: "CodeChange" });
 
 /**
  * Effect Schema for validating account diff structure.
@@ -224,10 +224,10 @@ export const CodeChangeSchema = S.Struct({
  * @since 0.0.1
  */
 export const AccountDiffSchema = S.Struct({
-  balance: S.optional(BalanceChangeSchema),
-  nonce: S.optional(NonceChangeSchema),
-  code: S.optional(CodeChangeSchema),
-}).annotations({ identifier: 'AccountDiff' })
+	balance: S.optional(BalanceChangeSchema),
+	nonce: S.optional(NonceChangeSchema),
+	code: S.optional(CodeChangeSchema),
+}).annotations({ identifier: "AccountDiff" });
 
 /**
  * Effect Schema for validating account diffs.
@@ -248,4 +248,4 @@ export const AccountDiffSchema = S.Struct({
  *
  * @since 0.0.1
  */
-export const Schema = AccountDiffSchema
+export const Schema = AccountDiffSchema;

@@ -5,9 +5,9 @@
  * @since 0.0.1
  */
 
-import { Uint } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { Uint } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Branded type representing Ether (10^18 Wei).
@@ -27,7 +27,7 @@ import * as ParseResult from 'effect/ParseResult'
  *
  * @since 0.0.1
  */
-export type EtherType = bigint & { readonly __tag: 'Ether' }
+export type EtherType = bigint & { readonly __tag: "Ether" };
 
 /**
  * Internal schema declaration for validating EtherType instances.
@@ -36,9 +36,9 @@ export type EtherType = bigint & { readonly __tag: 'Ether' }
  * @internal
  */
 const EtherTypeSchema = S.declare<EtherType>(
-  (u): u is EtherType => typeof u === 'bigint' && u >= 0n,
-  { identifier: 'Ether' }
-)
+	(u): u is EtherType => typeof u === "bigint" && u >= 0n,
+	{ identifier: "Ether" },
+);
 
 /**
  * Effect Schema for validating Ether values.
@@ -67,18 +67,21 @@ const EtherTypeSchema = S.declare<EtherType>(
  * @see {@link GweiSchema} for gas price units
  * @since 0.0.1
  */
-export const EtherSchema: S.Schema<EtherType, bigint | number | string> = S.transformOrFail(
-  S.Union(S.BigIntFromSelf, S.Number, S.String),
-  EtherTypeSchema,
-  {
-    strict: true,
-    decode: (value, _options, ast) => {
-      try {
-        return ParseResult.succeed(Uint.from(value) as unknown as EtherType)
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, value, (e as Error).message))
-      }
-    },
-    encode: (ether) => ParseResult.succeed(ether)
-  }
-).annotations({ identifier: 'EtherSchema' })
+export const EtherSchema: S.Schema<EtherType, bigint | number | string> =
+	S.transformOrFail(
+		S.Union(S.BigIntFromSelf, S.Number, S.String),
+		EtherTypeSchema,
+		{
+			strict: true,
+			decode: (value, _options, ast) => {
+				try {
+					return ParseResult.succeed(Uint.from(value) as unknown as EtherType);
+				} catch (e) {
+					return ParseResult.fail(
+						new ParseResult.Type(ast, value, (e as Error).message),
+					);
+				}
+			},
+			encode: (ether) => ParseResult.succeed(ether),
+		},
+	).annotations({ identifier: "EtherSchema" });

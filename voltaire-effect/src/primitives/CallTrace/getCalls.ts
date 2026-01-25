@@ -1,6 +1,6 @@
-import { CallTrace } from '@tevm/voltaire'
+import { CallTrace } from "@tevm/voltaire";
 
-type CallTraceType = CallTrace.CallTraceType
+type CallTraceType = CallTrace.CallTraceType;
 
 /**
  * Gets the immediate child calls from a call trace.
@@ -16,4 +16,5 @@ type CallTraceType = CallTrace.CallTraceType
  * ```
  * @since 0.0.1
  */
-export const getCalls = (trace: CallTraceType): readonly CallTraceType[] => CallTrace.getCalls(trace)
+export const getCalls = (trace: CallTraceType): readonly CallTraceType[] =>
+	CallTrace.getCalls(trace);

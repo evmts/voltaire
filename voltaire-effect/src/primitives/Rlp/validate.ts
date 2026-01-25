@@ -1,5 +1,5 @@
-import { Rlp as VoltaireRlp } from '@tevm/voltaire/Rlp'
-import * as Effect from 'effect/Effect'
+import { Rlp as VoltaireRlp } from "@tevm/voltaire/Rlp";
+import * as Effect from "effect/Effect";
 
 /**
  * Validates if data is valid RLP encoding.
@@ -22,4 +22,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const validate = (data: Uint8Array): Effect.Effect<boolean> =>
-  Effect.sync(() => VoltaireRlp.validate(data))
+	Effect.sync(() => VoltaireRlp.validate(data));

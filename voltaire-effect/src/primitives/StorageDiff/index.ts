@@ -55,5 +55,5 @@
  *
  * @since 0.0.1
  */
-export { StorageDiffSchema } from './StorageDiffSchema.js'
-export { from, StorageDiffError } from './from.js'
+
+export { StorageDiffSchema } from "./StorageDiffSchema.js";

@@ -6,10 +6,14 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Function as AbiFunction, Event as AbiEvent, Error as AbiError, type Event, type Function, type Error } from '@tevm/voltaire/Abi'
-import * as Hex from '@tevm/voltaire/Hex'
-import type { HexType } from '@tevm/voltaire/Hex'
+import {
+	Error as AbiError,
+	Event as AbiEvent,
+	Function as AbiFunction,
+} from "@tevm/voltaire/Abi";
+import type { HexType } from "@tevm/voltaire/Hex";
+import * as Hex from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
 
 /**
  * Gets the selector for a function, event, or error ABI item.
@@ -36,18 +40,20 @@ import type { HexType } from '@tevm/voltaire/Hex'
  *
  * @since 0.0.1
  */
-export const getSelector = (
-  item: { type: string; name?: string; inputs?: readonly unknown[] }
-): Effect.Effect<HexType, never> =>
-  Effect.sync(() => {
-    if (item.type === 'event') {
-      const selector = AbiEvent.getSelector(item as AbiEvent.EventType)
-      return Hex.fromBytes(selector)
-    }
-    if (item.type === 'error') {
-      const selector = AbiError.getSelector(item as AbiError.ErrorType)
-      return Hex.fromBytes(selector)
-    }
-    const selector = AbiFunction.getSelector(item as AbiFunction.FunctionType)
-    return Hex.fromBytes(selector)
-  })
+export const getSelector = (item: {
+	type: string;
+	name?: string;
+	inputs?: readonly unknown[];
+}): Effect.Effect<HexType, never> =>
+	Effect.sync(() => {
+		if (item.type === "event") {
+			const selector = AbiEvent.getSelector(item as AbiEvent.EventType);
+			return Hex.fromBytes(selector);
+		}
+		if (item.type === "error") {
+			const selector = AbiError.getSelector(item as AbiError.ErrorType);
+			return Hex.fromBytes(selector);
+		}
+		const selector = AbiFunction.getSelector(item as AbiFunction.FunctionType);
+		return Hex.fromBytes(selector);
+	});

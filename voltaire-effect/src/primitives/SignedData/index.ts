@@ -17,5 +17,10 @@
  *
  * @since 0.0.1
  */
-export { Schema, SignedDataVersionSchema, type SignedDataType, type SignedDataVersion } from './SignedDataSchema.js'
-export { from, SignedDataError } from './from.js'
+
+export {
+	Schema,
+	type SignedDataType,
+	type SignedDataVersion,
+	SignedDataVersionSchema,
+} from "./SignedDataSchema.js";

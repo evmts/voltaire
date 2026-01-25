@@ -1,52 +1,50 @@
 /**
- * @fileoverview NetworkId module for working with Ethereum network identifiers in Effect.
- * Network IDs are used to identify different Ethereum networks at the P2P layer.
+ * @module NetworkId
+ * @description Effect Schemas for Ethereum network IDs (P2P networking layer).
  *
- * @description
- * This module provides tools for working with Ethereum network IDs, which are
- * used at the networking layer to identify peers on the same network.
+ * ## Schemas
  *
- * **Network ID vs Chain ID:**
- * - Chain ID (EIP-155): Used in transaction signing to prevent replay attacks
- * - Network ID: Used in peer-to-peer networking to identify network peers
+ * | Schema | Input | Output | Description |
+ * |--------|-------|--------|-------------|
+ * | `NetworkId.Number` | number | NetworkIdType | Non-negative integer network ID |
+ * | `NetworkId.BigInt` | bigint | NetworkIdType | Non-negative bigint network ID |
+ * | `NetworkId.Hex` | string | NetworkIdType | Hex-encoded network ID |
  *
- * For most networks these are the same, but they can differ (e.g., some private networks).
+ * ## Usage
  *
- * Predefined constants are provided for common networks:
- * - MAINNET (1)
- * - SEPOLIA (11155111) - recommended testnet
- * - HOLESKY (17000) - staking testnet
- * - GOERLI (5) - deprecated
- *
- * @example
  * ```typescript
  * import * as NetworkId from 'voltaire-effect/primitives/NetworkId'
- * import * as Effect from 'effect/Effect'
+ * import * as S from 'effect/Schema'
  *
- * // Create a network ID
- * const networkId = Effect.runSync(NetworkId.from(1))
+ * // Decode from number
+ * const mainnet = S.decodeSync(NetworkId.Number)(1)
  *
  * // Use predefined constants
  * console.log(NetworkId.MAINNET)  // 1
  * console.log(NetworkId.SEPOLIA)  // 11155111
  *
- * // Using Schema for validation
- * import * as S from 'effect/Schema'
- * const parsed = S.decodeSync(NetworkId.NetworkIdSchema)(137)
+ * // Encode back
+ * const num = S.encodeSync(NetworkId.Number)(mainnet)
  * ```
  *
- * @module NetworkId
- * @since 0.0.1
- * @see {@link NetworkIdSchema} for schema-based validation
- * @see {@link from} for Effect-wrapped creation
+ * ## Network ID vs Chain ID
+ *
+ * - Chain ID (EIP-155): Used in transaction signing to prevent replay attacks
+ * - Network ID: Used in peer-to-peer networking to identify network peers
+ *
+ * For most networks these are the same, but they can differ.
+ *
+ * @since 0.1.0
  */
+
+// Schemas
 export {
-  NetworkIdSchema,
-  NetworkIdSchema as Schema,
-  type NetworkIdType,
-  MAINNET,
-  GOERLI,
-  SEPOLIA,
-  HOLESKY
-} from './NetworkIdSchema.js'
-export { from, InvalidNetworkIdError } from './from.js'
+	Number,
+	type NetworkIdType,
+	MAINNET,
+	GOERLI,
+	SEPOLIA,
+	HOLESKY,
+} from "./Number.js";
+export { BigInt } from "./BigInt.js";
+export { Hex } from "./Hex.js";

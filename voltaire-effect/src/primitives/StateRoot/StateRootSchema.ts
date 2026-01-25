@@ -5,9 +5,9 @@
  * @since 0.0.1
  */
 
-import { Bytes32, type Bytes32Type } from '@tevm/voltaire/Bytes'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { Bytes32, type Bytes32Type } from "@tevm/voltaire/Bytes";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Represents an Ethereum state root hash.
@@ -33,15 +33,15 @@ import * as ParseResult from 'effect/ParseResult'
  *
  * @since 0.0.1
  */
-export type StateRootType = Bytes32Type & { readonly __tag: 'StateRoot' }
+export type StateRootType = Bytes32Type & { readonly __tag: "StateRoot" };
 
 const StateRootTypeSchema = S.declare<StateRootType>(
-  (u): u is StateRootType => {
-    if (!(u instanceof Uint8Array)) return false
-    return u.length === 32
-  },
-  { identifier: 'StateRoot' }
-)
+	(u): u is StateRootType => {
+		if (!(u instanceof Uint8Array)) return false;
+		return u.length === 32;
+	},
+	{ identifier: "StateRoot" },
+);
 
 /**
  * Effect Schema for validating and transforming state root values.
@@ -75,24 +75,35 @@ const StateRootTypeSchema = S.declare<StateRootType>(
  *
  * @since 0.0.1
  */
-export const StateRootSchema: S.Schema<StateRootType, string | Uint8Array | bigint | number> = S.transformOrFail(
-  S.Union(S.String, S.Uint8ArrayFromSelf, S.BigIntFromSelf, S.Number),
-  StateRootTypeSchema,
-  {
-    strict: true,
-    decode: (s, _options, ast) => {
-      try {
-        return ParseResult.succeed(Bytes32.Bytes32(s as string | Uint8Array | bigint | number) as StateRootType)
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, s, (e as Error).message))
-      }
-    },
-    encode: (b, _options, ast) => {
-      try {
-        return ParseResult.succeed(b)
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, b, (e as Error).message))
-      }
-    }
-  }
-).annotations({ identifier: 'StateRootSchema' })
+export const StateRootSchema: S.Schema<
+	StateRootType,
+	string | Uint8Array | bigint | number
+> = S.transformOrFail(
+	S.Union(S.String, S.Uint8ArrayFromSelf, S.BigIntFromSelf, S.Number),
+	StateRootTypeSchema,
+	{
+		strict: true,
+		decode: (s, _options, ast) => {
+			try {
+				return ParseResult.succeed(
+					Bytes32.Bytes32(
+						s as string | Uint8Array | bigint | number,
+					) as StateRootType,
+				);
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, s, (e as Error).message),
+				);
+			}
+		},
+		encode: (b, _options, ast) => {
+			try {
+				return ParseResult.succeed(b);
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, b, (e as Error).message),
+				);
+			}
+		},
+	},
+).annotations({ identifier: "StateRootSchema" });

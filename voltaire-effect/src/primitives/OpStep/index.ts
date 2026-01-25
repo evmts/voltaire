@@ -25,5 +25,5 @@
  * @module
  * @since 0.0.1
  */
-export { OpStepSchema } from './OpStepSchema.js'
-export { from, OpStepError } from './from.js'
+
+export { OpStepSchema } from "./OpStepSchema.js";

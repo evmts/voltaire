@@ -24,5 +24,5 @@
  *
  * @since 0.0.1
  */
-export { StructLogSchema } from './StructLogSchema.js'
-export { from, StructLogError, type StructLogInput } from './from.js'
+
+export { StructLogSchema } from "./Struct.js";

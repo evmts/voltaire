@@ -4,14 +4,14 @@
  * @since 0.0.1
  */
 
-import { StorageProof } from '@tevm/voltaire'
-import * as Effect from 'effect/Effect'
+import { StorageProof } from "@tevm/voltaire";
+import * as Effect from "effect/Effect";
 
 /**
  * Represents a Merkle-Patricia proof for a specific storage slot.
  * @see StorageProofSchema for full documentation
  */
-type StorageProofType = StorageProof.StorageProofType
+type StorageProofType = StorageProof.StorageProofType;
 
 /**
  * Compares two StorageProofs for equality.
@@ -66,5 +66,7 @@ type StorageProofType = StorageProof.StorageProofType
  *
  * @since 0.0.1
  */
-export const equals = (a: StorageProofType, b: StorageProofType): Effect.Effect<boolean, never> =>
-  Effect.succeed(StorageProof.equals(a, b))
+export const equals = (
+	a: StorageProofType,
+	b: StorageProofType,
+): Effect.Effect<boolean, never> => Effect.succeed(StorageProof.equals(a, b));

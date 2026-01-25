@@ -18,5 +18,5 @@
  * @since 0.0.1
  * @module
  */
-export { MemoryDumpSchema } from './MemoryDumpSchema.js'
-export { from, MemoryDumpError } from './from.js'
+
+export { MemoryDumpSchema } from "./MemoryDumpSchema.js";

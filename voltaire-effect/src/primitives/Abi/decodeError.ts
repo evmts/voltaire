@@ -6,22 +6,27 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Error as AbiError, AbiItemNotFoundError, type AbiDecodingError, type AbiInvalidSelectorError } from '@tevm/voltaire/Abi'
-import * as Hex from '@tevm/voltaire/Hex'
-import type { HexType } from '@tevm/voltaire/Hex'
+import {
+	type AbiDecodingError,
+	Error as AbiError,
+	type AbiInvalidSelectorError,
+	AbiItemNotFoundError,
+} from "@tevm/voltaire/Abi";
+import type { HexType } from "@tevm/voltaire/Hex";
+import * as Hex from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
 
 /**
  * Represents a single ABI item.
  * @internal
  */
-type AbiItem = { type: string; name?: string }
+type AbiItem = { type: string; name?: string };
 
 /**
  * Type alias for ABI input.
  * @internal
  */
-type AbiInput = readonly AbiItem[]
+type AbiInput = readonly AbiItem[];
 
 /**
  * Decodes error data using ABI.
@@ -49,22 +54,31 @@ type AbiInput = readonly AbiItem[]
  * @since 0.0.1
  */
 export const decodeError = (
-  abi: AbiInput,
-  errorName: string,
-  data: HexType | Uint8Array
-): Effect.Effect<readonly unknown[], AbiItemNotFoundError | AbiDecodingError | AbiInvalidSelectorError> =>
-  Effect.try({
-    try: () => {
-      const bytes = typeof data === 'string' ? Hex.toBytes(data) : data
-      const err = abi.find(item => item.type === 'error' && item.name === errorName)
-      if (!err) {
-        throw new AbiItemNotFoundError(`Error "${errorName}" not found in ABI`, {
-          value: errorName,
-          expected: 'valid error name in ABI',
-          context: { errorName, abi }
-        })
-      }
-      return AbiError.decodeParams(err as AbiError.ErrorType, bytes)
-    },
-    catch: (e) => e as AbiItemNotFoundError | AbiDecodingError | AbiInvalidSelectorError
-  })
+	abi: AbiInput,
+	errorName: string,
+	data: HexType | Uint8Array,
+): Effect.Effect<
+	readonly unknown[],
+	AbiItemNotFoundError | AbiDecodingError | AbiInvalidSelectorError
+> =>
+	Effect.try({
+		try: () => {
+			const bytes = typeof data === "string" ? Hex.toBytes(data) : data;
+			const err = abi.find(
+				(item) => item.type === "error" && item.name === errorName,
+			);
+			if (!err) {
+				throw new AbiItemNotFoundError(
+					`Error "${errorName}" not found in ABI`,
+					{
+						value: errorName,
+						expected: "valid error name in ABI",
+						context: { errorName, abi },
+					},
+				);
+			}
+			return AbiError.decodeParams(err as AbiError.ErrorType, bytes);
+		},
+		catch: (e) =>
+			e as AbiItemNotFoundError | AbiDecodingError | AbiInvalidSelectorError,
+	});

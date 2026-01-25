@@ -1,25 +1,25 @@
-import { MemoryDump } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { MemoryDump } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * The MemoryDump type representing EVM memory state.
  * @since 0.0.1
  */
-type MemoryDumpType = ReturnType<typeof MemoryDump.from>
+type MemoryDumpType = ReturnType<typeof MemoryDump.from>;
 
 /**
  * Internal schema declaration for MemoryDump type validation.
  * @internal
  */
 const MemoryDumpTypeSchema = S.declare<MemoryDumpType>(
-  (u): u is MemoryDumpType => {
-    if (typeof u !== 'object' || u === null) return false
-    const obj = u as Record<string, unknown>
-    return obj.data instanceof Uint8Array && typeof obj.length === 'number'
-  },
-  { identifier: 'MemoryDump' }
-)
+	(u): u is MemoryDumpType => {
+		if (typeof u !== "object" || u === null) return false;
+		const obj = u as Record<string, unknown>;
+		return obj.data instanceof Uint8Array && typeof obj.length === "number";
+	},
+	{ identifier: "MemoryDump" },
+);
 
 /**
  * Effect Schema for validating and parsing EVM memory dumps.
@@ -45,18 +45,26 @@ const MemoryDumpTypeSchema = S.declare<MemoryDumpType>(
  *
  * @since 0.0.1
  */
-export const MemoryDumpSchema: S.Schema<MemoryDumpType, Uint8Array | { data: Uint8Array; length?: number }> = S.transformOrFail(
-  S.Union(S.Uint8ArrayFromSelf, S.Struct({ data: S.Uint8ArrayFromSelf, length: S.optional(S.Number) })),
-  MemoryDumpTypeSchema,
-  {
-    strict: true,
-    decode: (value, _options, ast) => {
-      try {
-        return ParseResult.succeed(MemoryDump.from(value))
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, value, (e as Error).message))
-      }
-    },
-    encode: (dump) => ParseResult.succeed(dump.data)
-  }
-).annotations({ identifier: 'MemoryDumpSchema' })
+export const MemoryDumpSchema: S.Schema<
+	MemoryDumpType,
+	Uint8Array | { data: Uint8Array; length?: number }
+> = S.transformOrFail(
+	S.Union(
+		S.Uint8ArrayFromSelf,
+		S.Struct({ data: S.Uint8ArrayFromSelf, length: S.optional(S.Number) }),
+	),
+	MemoryDumpTypeSchema,
+	{
+		strict: true,
+		decode: (value, _options, ast) => {
+			try {
+				return ParseResult.succeed(MemoryDump.from(value));
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, value, (e as Error).message),
+				);
+			}
+		},
+		encode: (dump) => ParseResult.succeed(dump.data),
+	},
+).annotations({ identifier: "MemoryDumpSchema" });

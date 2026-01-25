@@ -1,7 +1,10 @@
-import { Proof } from '@tevm/voltaire'
+import { Proof } from "@tevm/voltaire";
 
-type ProofType = Proof.ProofType
-import * as Effect from 'effect/Effect'
+type ProofType = Proof.ProofType;
 
-export const equals = (a: ProofType, b: ProofType): Effect.Effect<boolean, never> =>
-  Effect.succeed(Proof.equals(a, b))
+import * as Effect from "effect/Effect";
+
+export const equals = (
+	a: ProofType,
+	b: ProofType,
+): Effect.Effect<boolean, never> => Effect.succeed(Proof.equals(a, b));

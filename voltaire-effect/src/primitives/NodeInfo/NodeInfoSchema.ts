@@ -1,33 +1,33 @@
-import { NodeInfo } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { NodeInfo } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * The NodeInfo type representing Ethereum node information.
  * Contains details like enode URL, node ID, IP, name, ports, and protocols.
  * @since 0.0.1
  */
-type NodeInfoType = ReturnType<typeof NodeInfo.from>
+type NodeInfoType = ReturnType<typeof NodeInfo.from>;
 
 /**
  * Internal schema declaration for NodeInfo type validation.
  * @internal
  */
 const NodeInfoTypeSchema = S.declare<NodeInfoType>(
-  (u): u is NodeInfoType => {
-    if (typeof u !== 'object' || u === null) return false
-    const obj = u as Record<string, unknown>
-    return (
-      typeof obj.enode === 'string' &&
-      typeof obj.id === 'string' &&
-      typeof obj.ip === 'string' &&
-      typeof obj.name === 'string' &&
-      typeof obj.ports === 'object' &&
-      typeof obj.protocols === 'object'
-    )
-  },
-  { identifier: 'NodeInfo' }
-)
+	(u): u is NodeInfoType => {
+		if (typeof u !== "object" || u === null) return false;
+		const obj = u as Record<string, unknown>;
+		return (
+			typeof obj.enode === "string" &&
+			typeof obj.id === "string" &&
+			typeof obj.ip === "string" &&
+			typeof obj.name === "string" &&
+			typeof obj.ports === "object" &&
+			typeof obj.protocols === "object"
+		);
+	},
+	{ identifier: "NodeInfo" },
+);
 
 /**
  * Effect Schema for validating and parsing Ethereum node information.
@@ -54,18 +54,17 @@ const NodeInfoTypeSchema = S.declare<NodeInfoType>(
  *
  * @since 0.0.1
  */
-export const NodeInfoSchema: S.Schema<NodeInfoType, unknown> = S.transformOrFail(
-  S.Unknown,
-  NodeInfoTypeSchema,
-  {
-    strict: true,
-    decode: (value, _options, ast) => {
-      try {
-        return ParseResult.succeed(NodeInfo.from(value))
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, value, (e as Error).message))
-      }
-    },
-    encode: (nodeInfo) => ParseResult.succeed(nodeInfo as unknown)
-  }
-).annotations({ identifier: 'NodeInfoSchema' })
+export const NodeInfoSchema: S.Schema<NodeInfoType, unknown> =
+	S.transformOrFail(S.Unknown, NodeInfoTypeSchema, {
+		strict: true,
+		decode: (value, _options, ast) => {
+			try {
+				return ParseResult.succeed(NodeInfo.from(value));
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, value, (e as Error).message),
+				);
+			}
+		},
+		encode: (nodeInfo) => ParseResult.succeed(nodeInfo as unknown),
+	}).annotations({ identifier: "NodeInfoSchema" });

@@ -17,4 +17,8 @@
  * @see {@link Gas} for gas values
  */
 
-export { GAS_COSTS, BLOCK_GAS_LIMITS, TRANSACTION_COSTS } from './GasCostsSchema.js'
+export {
+	BLOCK_GAS_LIMITS,
+	GAS_COSTS,
+	TRANSACTION_COSTS,
+} from "./GasCostsSchema.js";

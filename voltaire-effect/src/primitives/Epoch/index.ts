@@ -4,12 +4,4 @@
  * @module
  * @since 0.0.1
  */
-export { EpochSchema, type EpochType } from './EpochSchema.js'
-export {
-  from,
-  toNumber,
-  toBigInt,
-  equals,
-  toSlot,
-  EpochError
-} from './from.js'
+export { EpochSchema, type EpochType } from "./BigInt.js";

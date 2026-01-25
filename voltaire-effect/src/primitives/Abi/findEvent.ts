@@ -6,14 +6,14 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Item, type Event } from '@tevm/voltaire/Abi'
+import { type Event, Item } from "@tevm/voltaire/Abi";
+import * as Effect from "effect/Effect";
 
 /**
  * Type alias for ABI input.
  * @internal
  */
-type AbiInput = Parameters<typeof Item.getItem>[0]
+type AbiInput = Parameters<typeof Item.getItem>[0];
 
 /**
  * Finds an event in an ABI by name.
@@ -43,7 +43,9 @@ type AbiInput = Parameters<typeof Item.getItem>[0]
  * @since 0.0.1
  */
 export const findEvent = (
-  abi: AbiInput,
-  name: string
+	abi: AbiInput,
+	name: string,
 ): Effect.Effect<Event.EventType | undefined, never> =>
-  Effect.sync(() => Item.getItem(abi, name, 'event') as Event.EventType | undefined)
+	Effect.sync(
+		() => Item.getItem(abi, name, "event") as Event.EventType | undefined,
+	);

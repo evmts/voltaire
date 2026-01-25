@@ -6,18 +6,26 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Abi } from '@tevm/voltaire/Abi'
+import { Abi } from "@tevm/voltaire/Abi";
+import { AbstractError } from "@tevm/voltaire/errors";
+import * as Effect from "effect/Effect";
 
 /**
  * Error thrown when JSON parsing fails.
  */
-export class AbiParseError extends Error {
-  readonly _tag = 'AbiParseError'
-  constructor(message: string, public readonly cause?: unknown) {
-    super(message)
-    this.name = 'AbiParseError'
-  }
+export class AbiParseError extends AbstractError {
+	readonly _tag = "AbiParseError" as const;
+	constructor(
+		message: string,
+		options?: {
+			code?: number;
+			context?: Record<string, unknown>;
+			cause?: Error;
+		},
+	) {
+		super(message, options);
+		this.name = "AbiParseError";
+	}
 }
 
 /**
@@ -43,9 +51,13 @@ export class AbiParseError extends Error {
  * @since 0.0.1
  */
 export const parse = (
-  jsonString: string
+	jsonString: string,
 ): Effect.Effect<ReturnType<typeof Abi>, AbiParseError> =>
-  Effect.try({
-    try: () => Abi(JSON.parse(jsonString)),
-    catch: (e) => new AbiParseError(`Failed to parse ABI JSON: ${e instanceof Error ? e.message : String(e)}`, e)
-  })
+	Effect.try({
+		try: () => Abi(JSON.parse(jsonString)),
+		catch: (e) =>
+			new AbiParseError(
+				`Failed to parse ABI JSON: ${e instanceof Error ? e.message : String(e)}`,
+				{ cause: e instanceof Error ? e : undefined },
+			),
+	});

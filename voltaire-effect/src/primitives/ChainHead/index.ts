@@ -36,5 +36,8 @@
  * @see {@link ChainHeadSchema} for schema-based validation
  * @see {@link from} for Effect-wrapped creation
  */
-export { ChainHeadSchema, type ChainHeadType, type ChainHeadInput } from './ChainHeadSchema.js'
-export { from, ChainHeadError } from './from.js'
+export {
+	type ChainHeadInput,
+	ChainHeadSchema,
+	type ChainHeadType,
+} from "./ChainHeadSchema.js";

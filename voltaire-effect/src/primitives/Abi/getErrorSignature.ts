@@ -6,8 +6,8 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Error as AbiError } from '@tevm/voltaire/Abi'
+import { Error as AbiError } from "@tevm/voltaire/Abi";
+import * as Effect from "effect/Effect";
 
 /**
  * Gets the canonical signature of an error.
@@ -35,6 +35,6 @@ import { Error as AbiError } from '@tevm/voltaire/Abi'
  * @since 0.0.1
  */
 export const getErrorSignature = (
-  error: AbiError.ErrorType
+	error: AbiError.ErrorType,
 ): Effect.Effect<string, never> =>
-  Effect.sync(() => AbiError.getSignature(error))
+	Effect.sync(() => AbiError.getSignature(error));

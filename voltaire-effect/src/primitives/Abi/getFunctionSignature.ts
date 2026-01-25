@@ -6,8 +6,8 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Function as AbiFunction } from '@tevm/voltaire/Abi'
+import { Function as AbiFunction } from "@tevm/voltaire/Abi";
+import * as Effect from "effect/Effect";
 
 /**
  * Gets the canonical signature of a function.
@@ -35,6 +35,6 @@ import { Function as AbiFunction } from '@tevm/voltaire/Abi'
  * @since 0.0.1
  */
 export const getFunctionSignature = (
-  fn: AbiFunction.FunctionType
+	fn: AbiFunction.FunctionType,
 ): Effect.Effect<string, never> =>
-  Effect.sync(() => AbiFunction.getSignature(fn))
+	Effect.sync(() => AbiFunction.getSignature(fn));

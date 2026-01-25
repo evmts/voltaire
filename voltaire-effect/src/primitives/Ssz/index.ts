@@ -1,18 +1,29 @@
 /**
  * @module Ssz
+ * @description Effect Schema for SSZ (Simple Serialize) encoded data.
  *
- * Effect-based module for working with SSZ (Simple Serialize) encoded data.
- * SSZ is the serialization format used by Ethereum's consensus layer.
+ * SSZ is the serialization format used by Ethereum's consensus layer
+ * (Beacon chain) for blocks, attestations, and other protocol data.
  *
- * @example
+ * ## Schema
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `Ssz.Schema` | Uint8Array | SszType |
+ *
+ * @example Decoding
  * ```typescript
+ * import * as Ssz from 'voltaire-effect/primitives/Ssz'
  * import * as S from 'effect/Schema'
- * import { Ssz } from 'voltaire-effect/primitives'
  *
- * const parse = S.decodeSync(Ssz.Schema)
- * const sszData = parse(new Uint8Array([1, 2, 3]))
+ * const ssz = S.decodeSync(Ssz.Schema)(new Uint8Array([1, 2, 3]))
  * ```
  *
- * @since 0.0.1
+ * @example Encoding
+ * ```typescript
+ * const bytes = S.encodeSync(Ssz.Schema)(sszData)
+ * ```
+ *
+ * @since 0.1.0
  */
-export { Schema, type SszType } from './SszSchema.js'
+export { Schema, type SszType } from "./SszSchema.js";

@@ -1,5 +1,5 @@
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Branded type representing SSZ (Simple Serialize) encoded data.
@@ -14,12 +14,12 @@ import * as ParseResult from 'effect/ParseResult'
  *
  * @since 0.0.1
  */
-export type SszType = Uint8Array & { readonly __tag: 'Ssz' }
+export type SszType = Uint8Array & { readonly __tag: "Ssz" };
 
 const SszTypeSchema = S.declare<SszType>(
-  (u): u is SszType => u instanceof Uint8Array,
-  { identifier: 'SszType' }
-)
+	(u): u is SszType => u instanceof Uint8Array,
+	{ identifier: "SszType" },
+);
 
 /**
  * Effect Schema for validating SSZ (Simple Serialize) encoded data.
@@ -37,13 +37,13 @@ const SszTypeSchema = S.declare<SszType>(
  * @since 0.0.1
  */
 export const Schema: S.Schema<SszType, Uint8Array> = S.transformOrFail(
-  S.Uint8ArrayFromSelf,
-  SszTypeSchema,
-  {
-    strict: true,
-    decode: (s, _options, _ast) => {
-      return ParseResult.succeed(s as SszType)
-    },
-    encode: (s) => ParseResult.succeed(s as Uint8Array)
-  }
-).annotations({ identifier: 'SszSchema' })
+	S.Uint8ArrayFromSelf,
+	SszTypeSchema,
+	{
+		strict: true,
+		decode: (s, _options, _ast) => {
+			return ParseResult.succeed(s as SszType);
+		},
+		encode: (s) => ParseResult.succeed(s as Uint8Array),
+	},
+).annotations({ identifier: "SszSchema" });

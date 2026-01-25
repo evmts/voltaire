@@ -42,5 +42,4 @@
  * @see {@link from} for Effect-based creation
  * @see {@link FilterIdError} for error handling
  */
-export { Schema, type FilterIdType } from './FilterIdSchema.js'
-export { from, FilterIdError } from './from.js'
+export { type FilterIdType, Schema } from "./Hex.js";

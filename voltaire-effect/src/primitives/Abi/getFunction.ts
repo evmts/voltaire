@@ -6,14 +6,18 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Item, AbiItemNotFoundError, Function as AbiFunction } from '@tevm/voltaire/Abi'
+import {
+	type Function as AbiFunction,
+	AbiItemNotFoundError,
+	Item,
+} from "@tevm/voltaire/Abi";
+import * as Effect from "effect/Effect";
 
 /**
  * Type alias for ABI input accepted by the lookup function.
  * @internal
  */
-type AbiInput = Parameters<typeof Item.getItem>[0]
+type AbiInput = Parameters<typeof Item.getItem>[0];
 
 /**
  * Retrieves a function definition from an ABI by name.
@@ -93,21 +97,24 @@ type AbiInput = Parameters<typeof Item.getItem>[0]
  * @see {@link getEvent} for retrieving event definitions
  */
 export const getFunction = (
-  abi: AbiInput,
-  name: string
+	abi: AbiInput,
+	name: string,
 ): Effect.Effect<AbiFunction.FunctionType, AbiItemNotFoundError> =>
-  Effect.try({
-    try: () => {
-      const item = Item.getItem(abi, name, 'function')
-      if (!item) {
-        const error = new AbiItemNotFoundError(`Function "${name}" not found in ABI`, {
-          value: name,
-          expected: 'valid function name in ABI',
-          context: { name, abi }
-        })
-        throw error
-      }
-      return item as AbiFunction.FunctionType
-    },
-    catch: (e) => e as AbiItemNotFoundError
-  })
+	Effect.try({
+		try: () => {
+			const item = Item.getItem(abi, name, "function");
+			if (!item) {
+				const error = new AbiItemNotFoundError(
+					`Function "${name}" not found in ABI`,
+					{
+						value: name,
+						expected: "valid function name in ABI",
+						context: { name, abi },
+					},
+				);
+				throw error;
+			}
+			return item as AbiFunction.FunctionType;
+		},
+		catch: (e) => e as AbiItemNotFoundError,
+	});

@@ -1,5 +1,5 @@
-import { Rlp as VoltaireRlp, RlpDecodingError } from '@tevm/voltaire/Rlp'
-import * as Effect from 'effect/Effect'
+import { type RlpDecodingError, Rlp as VoltaireRlp } from "@tevm/voltaire/Rlp";
+import * as Effect from "effect/Effect";
 
 /**
  * RLP-decodes bytes to an array.
@@ -23,8 +23,10 @@ import * as Effect from 'effect/Effect'
  *
  * @since 0.0.1
  */
-export const decodeArray = (data: Uint8Array): Effect.Effect<unknown[], RlpDecodingError> =>
-  Effect.try({
-    try: () => VoltaireRlp.decodeArray(data),
-    catch: (e) => e as RlpDecodingError
-  })
+export const decodeArray = (
+	data: Uint8Array,
+): Effect.Effect<unknown[], RlpDecodingError> =>
+	Effect.try({
+		try: () => VoltaireRlp.decodeArray(data),
+		catch: (e) => e as RlpDecodingError,
+	});

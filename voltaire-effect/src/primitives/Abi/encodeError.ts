@@ -6,22 +6,26 @@
  * @since 0.0.1
  */
 
-import * as Effect from 'effect/Effect'
-import { Error as AbiError, AbiItemNotFoundError, type AbiEncodingError } from '@tevm/voltaire/Abi'
-import * as Hex from '@tevm/voltaire/Hex'
-import type { HexType } from '@tevm/voltaire/Hex'
+import {
+	type AbiEncodingError,
+	Error as AbiError,
+	AbiItemNotFoundError,
+} from "@tevm/voltaire/Abi";
+import type { HexType } from "@tevm/voltaire/Hex";
+import * as Hex from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
 
 /**
  * Represents a single ABI item.
  * @internal
  */
-type AbiItem = { type: string; name?: string }
+type AbiItem = { type: string; name?: string };
 
 /**
  * Type alias for ABI input.
  * @internal
  */
-type AbiInput = readonly AbiItem[]
+type AbiInput = readonly AbiItem[];
 
 /**
  * Encodes error data with selector.
@@ -49,22 +53,30 @@ type AbiInput = readonly AbiItem[]
  * @since 0.0.1
  */
 export const encodeError = (
-  abi: AbiInput,
-  errorName: string,
-  args: readonly unknown[]
+	abi: AbiInput,
+	errorName: string,
+	args: readonly unknown[],
 ): Effect.Effect<HexType, AbiItemNotFoundError | AbiEncodingError> =>
-  Effect.try({
-    try: () => {
-      const err = abi.find(item => item.type === 'error' && item.name === errorName)
-      if (!err) {
-        throw new AbiItemNotFoundError(`Error "${errorName}" not found in ABI`, {
-          value: errorName,
-          expected: 'valid error name in ABI',
-          context: { errorName, abi }
-        })
-      }
-      const encoded = AbiError.encodeParams(err as AbiError.ErrorType, args as never)
-      return Hex.fromBytes(encoded)
-    },
-    catch: (e) => e as AbiItemNotFoundError | AbiEncodingError
-  })
+	Effect.try({
+		try: () => {
+			const err = abi.find(
+				(item) => item.type === "error" && item.name === errorName,
+			);
+			if (!err) {
+				throw new AbiItemNotFoundError(
+					`Error "${errorName}" not found in ABI`,
+					{
+						value: errorName,
+						expected: "valid error name in ABI",
+						context: { errorName, abi },
+					},
+				);
+			}
+			const encoded = AbiError.encodeParams(
+				err as AbiError.ErrorType,
+				args as never,
+			);
+			return Hex.fromBytes(encoded);
+		},
+		catch: (e) => e as AbiItemNotFoundError | AbiEncodingError,
+	});

@@ -41,10 +41,9 @@
  *
  * @since 0.0.1
  */
-import type { Bytes32Type } from '@tevm/voltaire/Bytes'
+import type { Bytes32Type } from "@tevm/voltaire/Bytes";
 
-export { StateRootSchema, type StateRootType } from './StateRootSchema.js'
-export { from, empty } from './from.js'
+export { StateRootSchema, type StateRootType } from "./StateRootSchema.js";
 
 /**
  * Union type for values that can be converted to a StateRoot.
@@ -59,6 +58,11 @@ export { from, empty } from './from.js'
  *
  * @since 0.0.1
  */
-export type StateRootLike = StateRootType | string | Uint8Array | bigint | number
+export type StateRootLike =
+	| StateRootType
+	| string
+	| Uint8Array
+	| bigint
+	| number;
 
-type StateRootType = Bytes32Type & { readonly __tag: 'StateRoot' }
+type StateRootType = Bytes32Type & { readonly __tag: "StateRoot" };

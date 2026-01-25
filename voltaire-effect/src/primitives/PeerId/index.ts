@@ -15,5 +15,5 @@
  * @module
  * @since 0.0.1
  */
-export { PeerIdSchema } from './PeerIdSchema.js'
-export { from, PeerIdError } from './from.js'
+
+export { PeerIdSchema } from "./PeerIdSchema.js";

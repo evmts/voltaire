@@ -34,13 +34,12 @@
  * @see {@link from} for Effect-wrapped creation
  */
 export {
-  ChainSchema,
-  ChainSchema as Schema,
-  type ChainType,
-  type ChainInput,
-  type ChainMetadata,
-  type Hardfork,
-  type NativeCurrency,
-  type Explorer
-} from './ChainSchema.js'
-export { from, InvalidChainError } from './from.js'
+	type ChainInput,
+	type ChainMetadata,
+	ChainSchema,
+	ChainSchema as Schema,
+	type ChainType,
+	type Explorer,
+	type Hardfork,
+	type NativeCurrency,
+} from "./ChainSchema.js";

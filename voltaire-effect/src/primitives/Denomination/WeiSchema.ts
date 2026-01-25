@@ -5,9 +5,9 @@
  * @since 0.0.1
  */
 
-import { Uint } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { Uint } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * Branded type representing Wei (smallest Ether unit, 10^-18 ETH).
@@ -27,7 +27,7 @@ import * as ParseResult from 'effect/ParseResult'
  *
  * @since 0.0.1
  */
-export type WeiType = bigint & { readonly __tag: 'Wei' }
+export type WeiType = bigint & { readonly __tag: "Wei" };
 
 /**
  * Internal schema declaration for validating WeiType instances.
@@ -36,9 +36,9 @@ export type WeiType = bigint & { readonly __tag: 'Wei' }
  * @internal
  */
 const WeiTypeSchema = S.declare<WeiType>(
-  (u): u is WeiType => typeof u === 'bigint' && u >= 0n,
-  { identifier: 'Wei' }
-)
+	(u): u is WeiType => typeof u === "bigint" && u >= 0n,
+	{ identifier: "Wei" },
+);
 
 /**
  * Effect Schema for validating Wei values.
@@ -67,18 +67,21 @@ const WeiTypeSchema = S.declare<WeiType>(
  * @see {@link EtherSchema} for human-readable amounts
  * @since 0.0.1
  */
-export const WeiSchema: S.Schema<WeiType, bigint | number | string> = S.transformOrFail(
-  S.Union(S.BigIntFromSelf, S.Number, S.String),
-  WeiTypeSchema,
-  {
-    strict: true,
-    decode: (value, _options, ast) => {
-      try {
-        return ParseResult.succeed(Uint.from(value) as unknown as WeiType)
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, value, (e as Error).message))
-      }
-    },
-    encode: (wei) => ParseResult.succeed(wei)
-  }
-).annotations({ identifier: 'WeiSchema' })
+export const WeiSchema: S.Schema<WeiType, bigint | number | string> =
+	S.transformOrFail(
+		S.Union(S.BigIntFromSelf, S.Number, S.String),
+		WeiTypeSchema,
+		{
+			strict: true,
+			decode: (value, _options, ast) => {
+				try {
+					return ParseResult.succeed(Uint.from(value) as unknown as WeiType);
+				} catch (e) {
+					return ParseResult.fail(
+						new ParseResult.Type(ast, value, (e as Error).message),
+					);
+				}
+			},
+			encode: (wei) => ParseResult.succeed(wei),
+		},
+	).annotations({ identifier: "WeiSchema" });
