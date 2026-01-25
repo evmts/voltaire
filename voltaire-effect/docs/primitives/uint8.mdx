@@ -11,7 +11,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const value = Schema.decodeSync(Uint8.Schema)(255)
+const value = Schema.decodeSync(Uint8.Number)(255)
 
 // Effect
 const a = Effect.runSync(Uint8.from(100))

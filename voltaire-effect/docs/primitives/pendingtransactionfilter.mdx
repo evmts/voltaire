@@ -9,7 +9,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema validation
-const filter = Schema.decodeSync(PendingTransactionFilter.Schema)('0x1')
+const filter = Schema.decodeSync(PendingTransactionFilter.Hex)('0x1')
 // { filterId: '0x1', type: 'pendingTransaction' }
 
 // Effect constructor

@@ -167,14 +167,36 @@ type TransactionRequest = {
   readonly to?: AddressType | null     // null = contract deploy
   readonly value?: bigint
   readonly data?: HexType
-  readonly nonce?: bigint              // auto-filled
-  readonly gasLimit?: bigint           // auto-estimated
-  readonly gasPrice?: bigint           // legacy
-  readonly maxFeePerGas?: bigint       // EIP-1559
+  readonly nonce?: bigint              // auto-filled from getTransactionCount
+  readonly gasLimit?: bigint           // auto-estimated via estimateGas
+  readonly gasPrice?: bigint           // legacy (type 0) - forces legacy tx
+  readonly maxFeePerGas?: bigint       // EIP-1559 (type 2)
   readonly maxPriorityFeePerGas?: bigint
-  readonly chainId?: bigint            // auto-detected
+  readonly chainId?: bigint            // auto-detected from eth_chainId
 }
 ```
+
+### EIP-1559 Auto-Detection
+
+The signer automatically detects which transaction type to use:
+
+1. **If `maxFeePerGas` or `maxPriorityFeePerGas` provided** → EIP-1559 (type 2)
+2. **If `gasPrice` provided** → Legacy (type 0)
+3. **If neither provided** → Legacy with auto-fetched gasPrice
+
+When using EIP-1559, if `maxFeePerGas` is not provided, it's calculated as:
+`baseFee + maxPriorityFeePerGas` (no 2x multiplier currently)
+
+### Concurrency Warning
+
+**⚠️ Signer is NOT safe for concurrent sends without NonceManager.**
+
+Each `sendTransaction` call fetches the current nonce. If you send multiple transactions concurrently, they may get the same nonce and all but one will fail.
+
+For concurrent sends, either:
+- Manage nonces manually via `nonce` field
+- Use a NonceManager layer (coming soon)
+- Send transactions sequentially
 
 ## Error Handling
 
@@ -202,6 +224,9 @@ type SignerShape = {
   readonly requestAddresses: () => Effect.Effect<AddressType[], SignerError>
   readonly switchChain: (chainId: number) => Effect.Effect<void, SignerError>
 }
+
+// HexType is a branded Uint8Array - the return from sendTransaction is the tx hash
+type HexType = Uint8Array & { readonly __tag: "Hex" }
 ```
 
 ## Dependencies

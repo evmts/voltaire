@@ -11,7 +11,7 @@ Encodes transaction parameters as `ethereum:` URLs.
 import * as TransactionUrl from 'voltaire-effect/TransactionUrl'
 import * as Schema from 'effect/Schema'
 
-const url = Schema.decodeSync(TransactionUrl.Schema)(
+const url = Schema.decodeSync(TransactionUrl.String)(
   'ethereum:0x1234567890abcdef1234567890abcdef12345678?value=1e18'
 )
 ```

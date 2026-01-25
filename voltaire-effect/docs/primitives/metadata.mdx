@@ -10,7 +10,7 @@ import { Effect } from 'effect'
 
 // Parse CBOR metadata from bytecode suffix
 const bytes = new Uint8Array([0xa2, 0x64, 0x69, 0x70, 0x66, 0x73])
-const metadata = Schema.decodeSync(Metadata.Schema)(bytes)
+const metadata = Schema.decodeSync(Metadata.Bytes)(bytes)
 
 // Effect constructor
 const program = Metadata.from(bytes)

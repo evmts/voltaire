@@ -9,7 +9,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema decode
-const code = Schema.decodeSync(RuntimeCode.Schema)('0x6080604052...')
+const code = Schema.decodeSync(RuntimeCode.Hex)('0x6080604052...')
 
 // Effect constructors
 const fromHex = RuntimeCode.fromHex('0x6080604052...')

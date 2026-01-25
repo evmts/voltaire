@@ -11,7 +11,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const value = Schema.decodeSync(Uint128.Schema)(1000000000000n)
+const value = Schema.decodeSync(Uint128.BigInt)(1000000000000n)
 
 // Effect with arithmetic
 const program = Effect.gen(function* () {

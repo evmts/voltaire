@@ -7,16 +7,16 @@ description: Effect schemas for Base64 encoding and decoding
 import * as Base64 from 'voltaire-effect/primitives/Base64'
 import * as S from 'effect/Schema'
 
-const encoded = S.decodeSync(Base64.Schema)('SGVsbG8gV29ybGQ=')
+const encoded = S.decodeSync(Base64.String)('SGVsbG8gV29ybGQ=')
 ```
 
 ## Schemas
 
-**Schema** — Standard Base64 validation and parsing.
+**Base64.String** — Standard Base64 validation and parsing.
 
 ```typescript
-S.decodeSync(Base64.Schema)('SGVsbG8gV29ybGQ=')
-S.decodeSync(Base64.Schema)(new Uint8Array([72, 101, 108, 108, 111]))
+S.decodeSync(Base64.String)('SGVsbG8gV29ybGQ=')
+S.decodeSync(Base64.Bytes)(new Uint8Array([72, 101, 108, 108, 111]))
 ```
 
 **UrlSchema** — URL-safe Base64 (uses `-` and `_` instead of `+` and `/`).

@@ -11,7 +11,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema: from string, number, bigint, or hex
-const value = Schema.decodeSync(U256.Schema)('1000000000000000000')
+const value = Schema.decodeSync(U256.String)('1000000000000000000')
 const fromHex = Schema.decodeSync(U256.FromHexSchema)('0xde0b6b3a7640000')
 
 // Effect: validated construction

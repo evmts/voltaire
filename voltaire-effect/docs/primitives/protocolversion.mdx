@@ -9,7 +9,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema validation
-const version = Schema.decodeSync(ProtocolVersion.Schema)('eth/67')
+const version = Schema.decodeSync(ProtocolVersion.String)('eth/67')
 
 // Effect constructor
 const program = ProtocolVersion.from('eth/67')

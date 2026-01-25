@@ -28,13 +28,13 @@ description: Practical examples for common voltaire-effect tasks
 
 ```typescript
 import { Effect } from 'effect'
-import { PublicClientService, PublicClient, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
 
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* client.getBlockNumber()
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```

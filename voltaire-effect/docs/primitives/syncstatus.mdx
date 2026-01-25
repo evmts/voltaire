@@ -8,7 +8,7 @@ import { SyncStatus } from 'voltaire-effect'
 import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
-const parse = Schema.decodeSync(SyncStatus.Schema)
+const parse = Schema.decodeSync(SyncStatus.JSON)
 
 // Synced
 const synced = parse(false)

@@ -11,7 +11,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const selector = Schema.decodeSync(Selector.Schema)('0xa9059cbb')
+const selector = Schema.decodeSync(Selector.Hex)('0xa9059cbb')
 
 // Effect: from hex
 const program = Selector.from('0xa9059cbb')

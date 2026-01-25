@@ -12,23 +12,23 @@ const bytes = Effect.runSync(Bytes.from('0xdeadbeef'))
 
 ## Schemas
 
-**Bytes.Schema** — Decodes from hex, Uint8Array, or number array into branded `BytesType`.
+**Bytes.Hex** — Decodes from hex, Uint8Array, or number array into branded `BytesType`.
 
 ```typescript
 import { Bytes } from 'voltaire-effect'
 import * as Schema from 'effect/Schema'
 
-Schema.decodeSync(Bytes.Schema)('0xdeadbeef')
-Schema.decodeSync(Bytes.Schema)(new Uint8Array([0xde, 0xad]))
-Schema.decodeSync(Bytes.Schema)([222, 173, 190, 239])
+Schema.decodeSync(Bytes.Hex)('0xdeadbeef')
+Schema.decodeSync(Bytes.Hex)(new Uint8Array([0xde, 0xad]))
+Schema.decodeSync(Bytes.Hex)([222, 173, 190, 239])
 ```
 
-**Bytes32.Schema** — Fixed 32-byte schema for hashes and storage slots.
+**Bytes32.Hex** — Fixed 32-byte schema for hashes and storage slots.
 
 ```typescript
 import { Bytes32 } from 'voltaire-effect'
 
-Schema.decodeSync(Bytes32.Schema)(
+Schema.decodeSync(Bytes32.Hex)(
   '0x0000000000000000000000000000000000000000000000000000000000000001'
 )
 ```

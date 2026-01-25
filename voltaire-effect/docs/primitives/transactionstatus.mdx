@@ -11,7 +11,7 @@ Discriminated union for transaction lifecycle states.
 import * as TransactionStatus from 'voltaire-effect/TransactionStatus'
 import * as Schema from 'effect/Schema'
 
-const status = Schema.decodeSync(TransactionStatus.Schema)({
+const status = Schema.decodeSync(TransactionStatus.JSON)({
   type: 'success',
   gasUsed: 21000n
 })

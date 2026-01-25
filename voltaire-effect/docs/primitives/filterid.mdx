@@ -9,7 +9,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema validation
-const filterId = Schema.decodeSync(FilterId.Schema)('0x1')
+const filterId = Schema.decodeSync(FilterId.Hex)('0x1')
 
 // Effect constructor
 const program = FilterId.from('0x1')

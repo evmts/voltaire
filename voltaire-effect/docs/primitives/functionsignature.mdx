@@ -15,7 +15,7 @@ console.log(sig.selector)  // Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
 console.log(sig.signature) // 'transfer(address,uint256)'
 
 // Schema
-const parsed = Schema.decodeSync(FunctionSignature.Schema)('balanceOf(address)')
+const parsed = Schema.decodeSync(FunctionSignature.String)('balanceOf(address)')
 ```
 
 ## Type

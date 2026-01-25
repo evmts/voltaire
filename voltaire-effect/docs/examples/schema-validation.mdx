@@ -73,7 +73,7 @@ const roundTripped = S.decodeSync(Address.Hex)(hex)
 import * as Hex from 'voltaire-effect/primitives/Hex'
 import * as S from 'effect/Schema'
 
-const hex = S.decodeSync(Hex.Schema)('0x1234abcd')
+const hex = S.decodeSync(Hex.String)('0x1234abcd')
 ```
 
 ## Uint256 Validation

@@ -11,7 +11,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const body = Schema.decodeSync(BlockBody.Schema)(bodyData)
+const body = Schema.decodeSync(BlockBody.JSON)(bodyData)
 
 // Effect: from parameters
 const program = BlockBody.from({

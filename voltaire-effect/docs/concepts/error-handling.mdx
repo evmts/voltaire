@@ -1,0 +1,142 @@
+---
+title: Error Handling
+description: Typed errors with Effect Schema and services
+---
+
+voltaire-effect uses Effect's error model: errors are values in the type signature, not invisible exceptions.
+
+## Schema Errors
+
+Schema decode produces `ParseError` on invalid input:
+
+```typescript
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+
+// Sync - throws ParseError
+try {
+  S.decodeSync(Address.Hex)('invalid')
+} catch (e) {
+  // e is ParseError
+}
+
+// Effect - returns Effect<AddressType, ParseError>
+const result = S.decode(Address.Hex)('invalid')
+```
+
+The error type is in the signature. Handle it with `catchTag`:
+
+```typescript
+import * as Effect from 'effect/Effect'
+
+import * as A from '@tevm/voltaire/Address'
+
+S.decode(Address.Hex)(input).pipe(
+  Effect.catchTag("ParseError", (e) => 
+    Effect.succeed(A.zero())
+  )
+)
+```
+
+## Error Details
+
+`ParseError` contains structured information:
+
+```typescript
+import * as Effect from 'effect/Effect'
+import * as S from 'effect/Schema'
+
+S.decode(Address.Hex)('0x123').pipe(
+  Effect.catchTag("ParseError", (e) => {
+    console.log(e.message)  // Human-readable error
+    console.log(e.issue)    // Structured issue tree
+    return Effect.fail(e)
+  })
+)
+```
+
+## Either for Branching
+
+Use `decodeEither` when you want to branch on success/failure:
+
+```typescript
+import * as S from 'effect/Schema'
+import * as Either from 'effect/Either'
+
+const result = S.decodeEither(Address.Hex)(input)
+
+if (Either.isRight(result)) {
+  const addr = result.right
+  // use addr
+} else {
+  const error = result.left
+  // handle error
+}
+```
+
+## Service Errors
+
+Services can define their own error types:
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { ProviderService } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  const block = yield* provider.getBlock("latest")
+  return block
+}).pipe(
+  Effect.catchTag("RpcError", (e) => 
+    Effect.succeed(null)
+  )
+)
+```
+
+## Error Composition
+
+Errors accumulate in the type signature:
+
+```typescript
+// Effect<Address, ParseError, never>
+const addr = S.decode(Address.Hex)(input)
+
+// Effect<Block, ParseError | RpcError, ProviderService>
+const program = Effect.gen(function* () {
+  const a = yield* S.decode(Address.Hex)(input)
+  const provider = yield* ProviderService
+  return yield* provider.getBalance(a)
+})
+```
+
+Handle each error type explicitly or let them propagate.
+
+## Compared to Base Voltaire
+
+Base Voltaire throws exceptions:
+
+```typescript
+// Base Voltaire - throws
+import { Address } from '@tevm/voltaire'
+
+try {
+  Address('invalid')
+} catch (e) {
+  // e is unknown
+}
+```
+
+voltaire-effect makes errors typed and composable:
+
+```typescript
+// voltaire-effect - typed errors
+S.decode(Address.Hex)('invalid').pipe(
+  Effect.catchTag("ParseError", handleParseError),
+  Effect.catchTag("RpcError", handleRpcError)
+)
+```
+
+## See Also
+
+- [Effect Error Handling](https://effect.website/docs/error-management/two-error-types/)
+- [Services](/services/provider)

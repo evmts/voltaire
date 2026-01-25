@@ -11,9 +11,9 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const stop = Schema.decodeSync(Opcode.Schema)(0x00)  // STOP
-const add = Schema.decodeSync(Opcode.Schema)(0x01)   // ADD
-const push1 = Schema.decodeSync(Opcode.Schema)(0x60) // PUSH1
+const stop = Schema.decodeSync(Opcode.Number)(0x00)  // STOP
+const add = Schema.decodeSync(Opcode.Number)(0x01)   // ADD
+const push1 = Schema.decodeSync(Opcode.Number)(0x60) // PUSH1
 
 // Effect
 const program = Opcode.from(0x01) // ADD

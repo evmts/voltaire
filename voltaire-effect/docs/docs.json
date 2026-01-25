@@ -21,8 +21,21 @@
               "index",
               "why",
               "getting-started",
+              "concepts/effect-primer",
               "layers",
+              "testing",
+              "comparisons",
               "changelog"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "icon": "lightbulb",
+            "pages": [
+              "concepts/branded-types",
+              "concepts/data-first-api",
+              "concepts/error-handling",
+              "concepts/dependency-injection"
             ]
           },
           {

@@ -11,8 +11,8 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const value = Schema.decodeSync(Int256.Schema)(12345678901234567890123456789n)
-const fromString = Schema.decodeSync(Int256.Schema)('-999999999999999999999999999')
+const value = Schema.decodeSync(Int256.BigInt)(12345678901234567890123456789n)
+const fromString = Schema.decodeSync(Int256.String)('-999999999999999999999999999')
 
 // From hex
 const fromHex = Schema.decodeSync(Int256.FromHexSchema)(

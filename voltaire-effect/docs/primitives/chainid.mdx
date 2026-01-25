@@ -11,8 +11,8 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const mainnet = Schema.decodeSync(ChainId.Schema)(1)
-const polygon = Schema.decodeSync(ChainId.Schema)(137)
+const mainnet = Schema.decodeSync(ChainId.Number)(1)
+const polygon = Schema.decodeSync(ChainId.Number)(137)
 
 // Effect
 const program = ChainId.from(1)

@@ -9,7 +9,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema validation
-const fork = Schema.decodeSync(Hardfork.Schema)('london')
+const fork = Schema.decodeSync(Hardfork.String)('london')
 
 // Effect constructor
 const program = Hardfork.fromString('cancun')

@@ -27,7 +27,7 @@ const original = Blob.toData(blob)
 if (Blob.isValid(data)) { /* exactly 128KB */ }
 
 // Schema
-Schema.decodeSync(Blob.Schema)(blobBytes)
+Schema.decodeSync(Blob.Bytes)(blobBytes)
 ```
 
 128KB data blobs for rollup data availability.

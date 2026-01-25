@@ -9,7 +9,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema: accepts number, bigint, or string
-const index = Schema.decodeSync(ValidatorIndex.Schema)(12345)
+const index = Schema.decodeSync(ValidatorIndex.Number)(12345)
 
 // Effect constructor
 const result = await Effect.runPromise(ValidatorIndex.from(12345))

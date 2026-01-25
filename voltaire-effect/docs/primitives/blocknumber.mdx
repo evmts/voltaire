@@ -11,8 +11,8 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema: number or bigint
-const blockNum = Schema.decodeSync(BlockNumber.Schema)(19000000)
-const fromBigInt = Schema.decodeSync(BlockNumber.Schema)(19000000n)
+const blockNum = Schema.decodeSync(BlockNumber.Number)(19000000)
+const fromBigInt = Schema.decodeSync(BlockNumber.BigInt)(19000000n)
 
 // Effect
 const program = BlockNumber.from(19000000n)

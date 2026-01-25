@@ -11,7 +11,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const used = Schema.decodeSync(GasUsed.Schema)(21000n)
+const used = Schema.decodeSync(GasUsed.BigInt)(21000n)
 
 // Effect
 const program = GasUsed.from(21000n)

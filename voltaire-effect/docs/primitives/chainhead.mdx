@@ -9,7 +9,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema validation
-const head = Schema.decodeSync(ChainHead.Schema)({
+const head = Schema.decodeSync(ChainHead.JSON)({
   number: 19000000n,
   hash: '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6',
   timestamp: 1700000000n,

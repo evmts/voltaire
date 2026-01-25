@@ -11,8 +11,8 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const value = Schema.decodeSync(Int32.Schema)(1000000)
-const fromBigInt = Schema.decodeSync(Int32.Schema)(2147483647n)
+const value = Schema.decodeSync(Int32.Number)(1000000)
+const fromBigInt = Schema.decodeSync(Int32.BigInt)(2147483647n)
 
 // Arithmetic
 const a = Effect.runSync(Int32.from(1000000))

@@ -11,7 +11,7 @@ Branded `Uint8Array` for EVM execution output.
 import * as ReturnData from 'voltaire-effect/primitives/ReturnData'
 import * as Schema from 'effect/Schema'
 
-const data = Schema.decodeSync(ReturnData.Schema)('0xabcd1234')
+const data = Schema.decodeSync(ReturnData.Hex)('0xabcd1234')
 ```
 
 ## Effect

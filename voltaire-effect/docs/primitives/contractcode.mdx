@@ -9,12 +9,12 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // From hex string
-const code = Schema.decodeSync(ContractCode.Schema)(
+const code = Schema.decodeSync(ContractCode.Hex)(
   '0x608060405234801561001057600080fd5b50...'
 )
 
 // From bytes
-const bytes = Schema.decodeSync(ContractCode.Schema)(
+const bytes = Schema.decodeSync(ContractCode.Bytes)(
   new Uint8Array([0x60, 0x80, 0x60, 0x40, 0x52])
 )
 

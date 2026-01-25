@@ -9,7 +9,7 @@ import * as S from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema: hex or bytes → InitCodeType
-const initCode = S.decodeSync(InitCode.Schema)(
+const initCode = S.decodeSync(InitCode.Hex)(
   '0x608060405234801561001057600080fd5b50'
 )
 

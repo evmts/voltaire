@@ -11,7 +11,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const gas = Schema.decodeSync(Gas.Schema)(21000n)
+const gas = Schema.decodeSync(Gas.BigInt)(21000n)
 
 // Effect
 const program = Gas.from(21000n)
@@ -24,7 +24,7 @@ Gas price in wei with gwei conversion.
 
 ```typescript
 // From wei
-const price = Schema.decodeSync(GasPrice.Schema)(20000000000n)
+const price = Schema.decodeSync(GasPrice.BigInt)(20000000000n)
 
 // From gwei (auto-converts to wei)
 const fromGwei = Schema.decodeSync(GasPrice.FromGweiSchema)(20n)

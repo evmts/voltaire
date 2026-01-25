@@ -9,9 +9,9 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const mit = Schema.decodeSync(License.Schema)('MIT')
-Schema.decodeSync(License.Schema)('Apache-2.0')
-Schema.decodeSync(License.Schema)('GPL-3.0')
+const mit = Schema.decodeSync(License.String)('MIT')
+Schema.decodeSync(License.String)('Apache-2.0')
+Schema.decodeSync(License.String)('GPL-3.0')
 
 // Effect constructor
 const license = Effect.runSync(License.from('MIT'))

@@ -8,16 +8,16 @@ import { Ssz } from 'voltaire-effect/primitives'
 import * as Schema from 'effect/Schema'
 
 // Schema wraps Uint8Array with branded type
-const sszData = Schema.decodeSync(Ssz.Schema)(new Uint8Array([1, 2, 3]))
+const sszData = Schema.decodeSync(Ssz.Bytes)(new Uint8Array([1, 2, 3]))
 
 // Type guard
-Schema.is(Ssz.Schema)(new Uint8Array([1, 2, 3])) // true
-Schema.is(Ssz.Schema)('not bytes')               // false
+Schema.is(Ssz.Bytes)(new Uint8Array([1, 2, 3])) // true
+Schema.is(Ssz.Bytes)('not bytes')               // false
 
 // Compose with other schemas
 const BeaconDataSchema = Schema.Struct({
-  slot: Slot.Schema,
-  body: Ssz.Schema,
+  slot: Slot.Number,
+  body: Ssz.Bytes,
 })
 ```
 

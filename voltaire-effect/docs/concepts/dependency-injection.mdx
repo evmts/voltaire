@@ -1,0 +1,116 @@
+---
+title: Dependency Injection
+description: Services for crypto, providers, and wallets
+---
+
+Base Voltaire requires explicit dependency passing:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+import { keccak256 } from '@tevm/voltaire/Keccak256'
+
+const addr = Address.from('0x742d...', { keccak256 })
+Address.toChecksummed(addr)  // needs keccak256
+```
+
+voltaire-effect uses Effect services instead. Dependencies are declared in the type, provided at the edge.
+
+## Services
+
+A service is a typed interface with an implementation:
+
+```typescript
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+import * as Effect from 'effect/Effect'
+
+// Program declares it needs KeccakService
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  return yield* keccak.hash(data)
+})
+// Effect<Uint8Array, never, KeccakService>
+
+// Provide at the edge
+Effect.runPromise(program.pipe(Effect.provide(KeccakLive)))
+```
+
+The type signature shows what's needed. The implementation is injected.
+
+## Schema with Services
+
+Some schemas require services. `Address.Checksummed` needs `KeccakService`:
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import * as Effect from 'effect/Effect'
+import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const addr = S.decodeSync(Address.Hex)('0x742d35Cc...')
+
+// Encode to checksummed - needs KeccakService
+const checksummed = await Effect.runPromise(
+  S.encode(Address.Checksummed)(addr).pipe(
+    Effect.provide(KeccakLive)
+  )
+)
+```
+
+## Available Services
+
+| Service | Live Implementation | Purpose |
+|---------|---------------------|---------|
+| `KeccakService` | `KeccakLive` | Keccak256 hashing |
+| `Secp256k1Service` | `Secp256k1Live` | ECDSA signing |
+| `ProviderService` | `Provider` | JSON-RPC calls |
+| `SignerService` | `Signer` | Transaction signing |
+| `TransportService` | `HttpTransport` | HTTP/WS transport |
+
+## Composing Layers
+
+Stack multiple services with `Layer.merge`:
+
+```typescript
+import * as Layer from 'effect/Layer'
+import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+import { Secp256k1Live } from 'voltaire-effect/crypto/Secp256k1'
+
+const CryptoLive = Layer.merge(KeccakLive, Secp256k1Live)
+
+Effect.runPromise(program.pipe(Effect.provide(CryptoLive)))
+```
+
+## Testing
+
+Swap implementations for tests:
+
+```typescript
+// Production
+Effect.provide(program, ProviderLive)
+
+// Test - mock provider
+const ProviderTest = Layer.succeed(ProviderService, {
+  getBlock: () => Effect.succeed(mockBlock),
+  getBalance: () => Effect.succeed(0n)
+})
+
+Effect.provide(program, ProviderTest)
+```
+
+Business logic unchanged. Only the provided layer differs.
+
+## Why Services?
+
+**Tree-shaking** - Crypto not imported until provided. If you never use checksums, `KeccakLive` is not in your bundle.
+
+**Testability** - Swap `ProviderLive` for `ProviderTest` without changing code.
+
+**Explicit dependencies** - Type signature shows exactly what a program needs.
+
+**No globals** - No hidden singletons or ambient imports.
+
+## See Also
+
+- [Effect Services](https://effect.website/docs/requirements-management/services/)
+- [Layers](/layers)
+- [Provider Service](/services/provider)

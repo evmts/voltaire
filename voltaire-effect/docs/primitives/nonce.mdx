@@ -11,8 +11,8 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema: bigint, number, or string
-const nonce = Schema.decodeSync(Nonce.Schema)(42n)
-const fromNumber = Schema.decodeSync(Nonce.Schema)(0)
+const nonce = Schema.decodeSync(Nonce.BigInt)(42n)
+const fromNumber = Schema.decodeSync(Nonce.Number)(0)
 
 // Effect
 const program = Nonce.from(42n)

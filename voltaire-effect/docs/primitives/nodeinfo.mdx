@@ -9,7 +9,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema validation
-const info = Schema.decodeSync(NodeInfo.Schema)({
+const info = Schema.decodeSync(NodeInfo.JSON)({
   enode: 'enode://abc123@127.0.0.1:30303',
   id: 'abc123',
   ip: '127.0.0.1',

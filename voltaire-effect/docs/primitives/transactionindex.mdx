@@ -11,8 +11,8 @@ Non-negative integer indicating transaction order in a block.
 import * as TransactionIndex from 'voltaire-effect/primitives/TransactionIndex'
 import * as Schema from 'effect/Schema'
 
-const index = Schema.decodeSync(TransactionIndex.Schema)(5)
-const fromBigInt = Schema.decodeSync(TransactionIndex.Schema)(5n)
+const index = Schema.decodeSync(TransactionIndex.Number)(5)
+const fromBigInt = Schema.decodeSync(TransactionIndex.BigInt)(5n)
 ```
 
 ## Effect

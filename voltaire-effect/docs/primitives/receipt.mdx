@@ -7,7 +7,7 @@ description: Effect-based schemas for Ethereum transaction receipts and event lo
 import * as Receipt from 'voltaire-effect/primitives/Receipt'
 import * as Schema from 'effect/Schema'
 
-const receipt = Schema.decodeSync(Receipt.Schema)(receiptData)
+const receipt = Schema.decodeSync(Receipt.JSON)(receiptData)
 ```
 
 ## Schemas
@@ -15,7 +15,7 @@ const receipt = Schema.decodeSync(Receipt.Schema)(receiptData)
 **ReceiptSchema** — Full receipt: status, gas usage, logs.
 
 ```typescript
-Schema.decodeSync(Receipt.Schema)({
+Schema.decodeSync(Receipt.JSON)({
   transactionHash: txHash,
   blockNumber: 12345n,
   blockHash: blockHash,

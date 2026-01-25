@@ -11,7 +11,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const chain = Schema.decodeSync(Chain.Schema)({
+const chain = Schema.decodeSync(Chain.JSON)({
   id: 1,
   name: 'Ethereum',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }

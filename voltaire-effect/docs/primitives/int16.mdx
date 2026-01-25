@@ -11,8 +11,8 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const value = Schema.decodeSync(Int16.Schema)(1000)
-const negative = Schema.decodeSync(Int16.Schema)('-5000')
+const value = Schema.decodeSync(Int16.Number)(1000)
+const negative = Schema.decodeSync(Int16.String)('-5000')
 
 // Arithmetic
 const program = Effect.gen(function* () {

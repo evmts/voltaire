@@ -14,13 +14,13 @@ const slot = await Effect.runPromise(
 
 ## Schema
 
-**Bytes32.Schema** — Validates exactly 32 bytes (66-char hex with `0x` prefix).
+**Bytes32.Hex** — Validates exactly 32 bytes (66-char hex with `0x` prefix).
 
 ```typescript
 import * as Bytes32 from 'voltaire-effect/primitives/Bytes32'
 import * as S from 'effect/Schema'
 
-S.decodeSync(Bytes32.Schema)(
+S.decodeSync(Bytes32.Hex)(
   '0x0000000000000000000000000000000000000000000000000000000000000001'
 )
 ```

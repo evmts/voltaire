@@ -9,7 +9,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema: validates 32-byte hex
-const root = Schema.decodeSync(BeaconBlockRoot.Schema)(
+const root = Schema.decodeSync(BeaconBlockRoot.Hex)(
   '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
 )
 

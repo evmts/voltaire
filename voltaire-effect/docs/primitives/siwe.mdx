@@ -40,7 +40,7 @@ import { Siwe } from 'voltaire-effect'
 import * as Schema from 'effect/Schema'
 
 // Parse SIWE string
-const message = Schema.decodeSync(Siwe.Schema)(`example.com wants you to sign in...`)
+const message = Schema.decodeSync(Siwe.String)(`example.com wants you to sign in...`)
 
 // Validate structure
 const isValid = Schema.is(Siwe.SiweMessageSchema)({

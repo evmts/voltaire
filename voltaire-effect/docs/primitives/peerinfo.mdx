@@ -9,7 +9,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema validation
-const peer = Schema.decodeSync(PeerInfo.Schema)({
+const peer = Schema.decodeSync(PeerInfo.JSON)({
   id: 'QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wU2s7tVqYoC9z',
   name: 'Geth/v1.10.0-stable/linux-amd64/go1.16',
   caps: ['eth/66', 'eth/67', 'snap/1'],

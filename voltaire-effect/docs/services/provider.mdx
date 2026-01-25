@@ -119,25 +119,33 @@ program.pipe(
 ## Service Interface
 
 ```typescript
+type AddressInput = AddressType | `0x${string}`
+type HashInput = HashType | `0x${string}`
+
 type ProviderShape = {
   readonly getBlockNumber: () => Effect.Effect<bigint, ProviderError>
   readonly getBlock: (args?: { 
     blockTag?: BlockTag
-    blockHash?: string
+    blockHash?: HashInput
     includeTransactions?: boolean 
   }) => Effect.Effect<BlockType, ProviderError>
-  readonly getBalance: (address: string, blockTag?: BlockTag) => Effect.Effect<bigint, ProviderError>
-  readonly getTransactionCount: (address: string, blockTag?: BlockTag) => Effect.Effect<number, ProviderError>
-  readonly getCode: (address: string, blockTag?: BlockTag) => Effect.Effect<string, ProviderError>
-  readonly getStorageAt: (address: string, slot: string, blockTag?: BlockTag) => Effect.Effect<string, ProviderError>
-  readonly getTransaction: (hash: string) => Effect.Effect<TransactionType, ProviderError>
-  readonly getTransactionReceipt: (hash: string) => Effect.Effect<ReceiptType, ProviderError>
-  readonly waitForTransactionReceipt: (hash: string, opts?: { 
+  readonly getBlockTransactionCount: (args: {
+    blockTag?: BlockTag
+    blockHash?: HashInput
+  }) => Effect.Effect<bigint, ProviderError>
+  readonly getBalance: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<bigint, ProviderError>
+  readonly getTransactionCount: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<bigint, ProviderError>
+  readonly getCode: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, ProviderError>
+  readonly getStorageAt: (address: AddressInput, slot: HashInput, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, ProviderError>
+  readonly getTransaction: (hash: HashInput) => Effect.Effect<TransactionType, ProviderError>
+  readonly getTransactionReceipt: (hash: HashInput) => Effect.Effect<ReceiptType, ProviderError>
+  readonly waitForTransactionReceipt: (hash: HashInput, opts?: { 
     confirmations?: number
     timeout?: number 
   }) => Effect.Effect<ReceiptType, ProviderError>
-  readonly call: (tx: CallRequest, blockTag?: BlockTag) => Effect.Effect<string, ProviderError>
+  readonly call: (tx: CallRequest, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, ProviderError>
   readonly estimateGas: (tx: CallRequest) => Effect.Effect<bigint, ProviderError>
+  readonly createAccessList: (tx: CallRequest) => Effect.Effect<AccessListType, ProviderError>
   readonly getLogs: (filter: LogFilter) => Effect.Effect<LogType[], ProviderError>
   readonly getChainId: () => Effect.Effect<number, ProviderError>
   readonly getGasPrice: () => Effect.Effect<bigint, ProviderError>
@@ -147,6 +155,39 @@ type ProviderShape = {
     newestBlock: BlockTag, 
     rewardPercentiles: number[]
   ) => Effect.Effect<FeeHistoryType, ProviderError>
+}
+
+// Block identifier - named tag or hex block number
+type BlockTag = 'latest' | 'earliest' | 'pending' | 'safe' | 'finalized' | `0x${string}`
+
+// Log filter - use blockHash OR fromBlock/toBlock (mutually exclusive)
+interface LogFilter {
+  readonly address?: AddressInput | AddressInput[]
+  readonly topics?: (HashInput | HashInput[] | null)[]
+  readonly fromBlock?: BlockTag
+  readonly toBlock?: BlockTag
+  readonly blockHash?: HashInput  // mutually exclusive with fromBlock/toBlock
+}
+
+// Block type with nullable fields for pending blocks
+interface BlockType {
+  number: string
+  hash: string
+  parentHash: string
+  // ... header fields
+  baseFeePerGas?: string           // EIP-1559 (optional)
+  withdrawals?: WithdrawalType[]   // EIP-4895 (optional)
+  withdrawalsRoot?: string         // EIP-4895 (optional)
+}
+
+// Transaction type with nullable fields for pending txs
+interface TransactionType {
+  hash: string
+  blockHash: string | null        // null if pending
+  blockNumber: string | null      // null if pending
+  transactionIndex: string | null // null if pending
+  to: string | null               // null for contract creation
+  // ... other fields
 }
 ```
 

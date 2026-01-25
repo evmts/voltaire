@@ -12,18 +12,18 @@ const blockNum = Effect.runSync(BlockNumber.from(19000000n))
 
 ## Block
 
-**BlockSchema** — Full block data including header, body, hash, and size.
+**Block.JSON** — Full block data including header, body, hash, and size.
 
 ```typescript
 import { Block } from 'voltaire-effect'
 import * as Schema from 'effect/Schema'
 
-const block = Schema.decodeSync(Block.Schema)(blockData)
+const block = Schema.decodeSync(Block.JSON)(blockData)
 ```
 
 ## BlockNumber
 
-**BlockNumberSchema** — Non-negative bigint.
+**BlockNumber.Number** / **BlockNumber.BigInt** — Non-negative integer.
 
 **from(n)** — Creates block number with validation.
 
@@ -36,7 +36,7 @@ const program = BlockNumber.from(19000000n)
 
 ## BlockHash
 
-**BlockHashSchema** — 32-byte branded type.
+**BlockHash.Hex** — 32-byte branded type.
 
 **from(input)** — Creates from hex string or bytes.
 

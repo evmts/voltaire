@@ -7,7 +7,7 @@ description: EVM event log schema
 import * as EventLog from 'voltaire-effect/primitives/EventLog'
 import * as S from 'effect/Schema'
 
-const log = S.decodeSync(EventLog.Schema)({
+const log = S.decodeSync(EventLog.JSON)({
   address: contractAddress,
   topics: [eventTopic],
   data: eventData,
@@ -39,7 +39,7 @@ type EventLogType = {
 import * as EventSignature from 'voltaire-effect/primitives/EventSignature'
 import * as S from 'effect/Schema'
 
-const transferSig = S.decodeSync(EventSignature.Schema)('Transfer(address,address,uint256)')
+const transferSig = S.decodeSync(EventSignature.String)('Transfer(address,address,uint256)')
 const transfers = logs.filter(log => 
   log.topics[0] && EventSignature.equals(log.topics[0], transferSig)
 )

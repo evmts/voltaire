@@ -6,7 +6,7 @@ description: Type-safe contract interaction with Effect.ts
 ## Quick Start
 
 ```typescript
-import { Contract, PublicClient, HttpTransport } from 'voltaire-effect/services'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
 import { Effect } from 'effect'
 
 const erc20Abi = [
@@ -23,7 +23,7 @@ const program = Effect.gen(function* () {
   const balance = yield* dai.read.balanceOf(userAddress)
   return balance
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
@@ -38,7 +38,7 @@ const balance = yield* contract.read.balanceOf(userAddress)
 
 ## Write
 
-State-changing functions. Requires `WalletClientService`.
+State-changing functions. Requires `SignerService`.
 
 ```typescript
 const txHash = yield* contract.write.transfer(recipientAddress, 1000n)

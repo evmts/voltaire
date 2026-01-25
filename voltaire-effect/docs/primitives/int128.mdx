@@ -11,8 +11,8 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const value = Schema.decodeSync(Int128.Schema)(170141183460469231731687303715884105727n)
-const fromString = Schema.decodeSync(Int128.Schema)('-1000000000000000000000')
+const value = Schema.decodeSync(Int128.BigInt)(170141183460469231731687303715884105727n)
+const fromString = Schema.decodeSync(Int128.String)('-1000000000000000000000')
 
 // Arithmetic
 const program = Effect.gen(function* () {

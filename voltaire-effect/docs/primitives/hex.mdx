@@ -12,13 +12,13 @@ const hex = await Effect.runPromise(Hex.from('0xdeadbeef'))
 
 ## Schema
 
-**HexSchema** — Validates hex strings with or without `0x` prefix.
+**Hex.String** — Validates hex strings with or without `0x` prefix.
 
 ```typescript
 import * as Hex from 'voltaire-effect/primitives/Hex'
 import * as S from 'effect/Schema'
 
-const hex = S.decodeSync(Hex.Schema)('0xdeadbeef')
+const hex = S.decodeSync(Hex.String)('0xdeadbeef')
 ```
 
 ## Functions

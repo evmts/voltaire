@@ -11,7 +11,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const estimate = Schema.decodeSync(GasEstimate.Schema)(21000n)
+const estimate = Schema.decodeSync(GasEstimate.BigInt)(21000n)
 
 // Effect with buffer
 const program = Effect.gen(function* () {

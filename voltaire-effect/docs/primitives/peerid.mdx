@@ -9,7 +9,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema validation
-const peerId = Schema.decodeSync(PeerId.Schema)(
+const peerId = Schema.decodeSync(PeerId.String)(
   'QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wU2s7tVqYoC9z'
 )
 

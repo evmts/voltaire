@@ -9,9 +9,9 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema: bigint, number, or hex string
-const id = Schema.decodeSync(MultiTokenId.Schema)(1n)
-Schema.decodeSync(MultiTokenId.Schema)(42)
-Schema.decodeSync(MultiTokenId.Schema)('0x1')
+const id = Schema.decodeSync(MultiTokenId.BigInt)(1n)
+Schema.decodeSync(MultiTokenId.Number)(42)
+Schema.decodeSync(MultiTokenId.Hex)('0x1')
 
 // From hex
 Schema.decodeSync(MultiTokenId.FromHexSchema)('0x1234')

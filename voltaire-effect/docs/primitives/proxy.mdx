@@ -20,7 +20,7 @@ const bytecode = Effect.runSync(
 )
 
 // Schema for 32-byte EIP-1967 storage slots
-const slot = Schema.decodeSync(Proxy.Schema)(slotBytes)
+const slot = Schema.decodeSync(Proxy.Bytes)(slotBytes)
 ```
 
 ## Practical Example

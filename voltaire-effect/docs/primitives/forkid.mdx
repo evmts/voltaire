@@ -11,7 +11,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema validation
-const forkId = Schema.decodeSync(ForkId.Schema)({
+const forkId = Schema.decodeSync(ForkId.JSON)({
   hash: new Uint8Array([0xfc, 0x64, 0xec, 0x04]),
   next: 1150000n
 })

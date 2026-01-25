@@ -11,8 +11,8 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const value = Schema.decodeSync(Int8.Schema)(42)
-const negative = Schema.decodeSync(Int8.Schema)(-100)
+const value = Schema.decodeSync(Int8.Number)(42)
+const negative = Schema.decodeSync(Int8.Number)(-100)
 
 // Arithmetic
 const a = Effect.runSync(Int8.from(10))

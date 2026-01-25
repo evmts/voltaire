@@ -9,7 +9,7 @@ import * as S from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema: hex string → Uint8Array
-const code = S.decodeSync(Bytecode.Schema)('0x6080604052...')
+const code = S.decodeSync(Bytecode.Hex)('0x6080604052...')
 
 // Effect constructor
 const program = Bytecode.from('0x6080604052348015600f57600080fd5b50...')

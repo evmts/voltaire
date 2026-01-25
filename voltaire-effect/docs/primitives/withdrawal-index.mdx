@@ -9,7 +9,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema: accepts number, bigint, or string (0 to UINT64_MAX)
-const index = Schema.decodeSync(WithdrawalIndex.Schema)(123456n)
+const index = Schema.decodeSync(WithdrawalIndex.BigInt)(123456n)
 
 // Effect constructor
 const result = await Effect.runPromise(WithdrawalIndex.from(123456n))

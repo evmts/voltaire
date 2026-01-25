@@ -11,7 +11,7 @@ import * as Schema from 'effect/Schema'
 import { Effect } from 'effect'
 
 // Schema
-const mainnet = Schema.decodeSync(NetworkId.Schema)(1)
+const mainnet = Schema.decodeSync(NetworkId.Number)(1)
 
 // Effect
 const program = NetworkId.from(1)
