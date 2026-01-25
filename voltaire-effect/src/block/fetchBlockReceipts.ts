@@ -99,35 +99,26 @@ const fetchSingleReceipt = (
 	maxRetries: number,
 	initialDelay: number,
 	maxDelay: number,
-): Effect.Effect<unknown, BlockError, TransportService> =>
-	Effect.gen(function* () {
+): Effect.Effect<unknown, BlockError, TransportService> => {
+	const retrySchedule = Schedule.exponential(Duration.millis(initialDelay)).pipe(
+		Schedule.jittered,
+		Schedule.compose(Schedule.recurs(maxRetries)),
+		Schedule.whileOutput((duration) => Duration.lessThanOrEqualTo(duration, Duration.millis(maxDelay))),
+	);
+
+	const fetchEffect = Effect.gen(function* () {
 		const transport = yield* TransportService;
-		let attempt = 0;
-		let delay = initialDelay;
-
-		while (true) {
-			const result = yield* transport
-				.request("eth_getTransactionReceipt", [txHash])
-				.pipe(
-					Effect.map((receipt) => ({ success: true as const, receipt })),
-					Effect.catchAll((error) => {
-						if (attempt >= maxRetries - 1) {
-							return Effect.fail(
-								new BlockError(`Failed to fetch receipt ${txHash}`, {
-									cause: error instanceof Error ? error : undefined,
-								}),
-							);
-						}
-						return Effect.succeed({ success: false as const, receipt: null });
-					}),
-				);
-
-			if (result.success) {
-				return result.receipt;
-			}
-
-			attempt++;
-			yield* Effect.sleep(`${delay} millis`);
-			delay = Math.min(delay * 2, maxDelay);
-		}
+		return yield* transport
+			.request("eth_getTransactionReceipt", [txHash])
+			.pipe(
+				Effect.mapError(
+					(error) =>
+						new BlockError(`Failed to fetch receipt ${txHash}`, {
+							cause: error instanceof Error ? error : undefined,
+						}),
+				),
+			);
 	});
+
+	return fetchEffect.pipe(Effect.retry(retrySchedule));
+};
