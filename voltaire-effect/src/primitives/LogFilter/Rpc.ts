@@ -9,33 +9,42 @@
  * and topic filters for indexed event parameters.
  */
 
-import * as S from 'effect/Schema'
-import * as LogFilter from '@tevm/voltaire/LogFilter'
-import type { LogFilterType, BlockTag } from '@tevm/voltaire/LogFilter'
-import { AddressSchema } from '../Address/AddressSchema.js'
-import { HashSchema } from '../Hash/HashSchema.js'
+import type { BlockTag, LogFilterType } from "@tevm/voltaire/LogFilter";
+import * as LogFilter from "@tevm/voltaire/LogFilter";
+import * as S from "effect/Schema";
+import { Hex as AddressSchema } from "../Address/Hex.js";
+import { HashSchema } from "../Hash/index.js";
 
 /**
  * Internal schema declaration for LogFilter type validation.
  * @internal
  */
 const LogFilterTypeSchema = S.declare<LogFilterType>(
-  (u): u is LogFilterType => {
-    if (typeof u !== 'object' || u === null) return false
-    const filter = u as Record<string, unknown>
-    if ('address' in filter && filter.address !== undefined) {
-      if (Array.isArray(filter.address)) {
-        if (!filter.address.every(a => a instanceof Uint8Array && a.length === 20)) {
-          return false
-        }
-      } else if (!(filter.address instanceof Uint8Array && (filter.address as Uint8Array).length === 20)) {
-        return false
-      }
-    }
-    return true
-  },
-  { identifier: 'LogFilter' }
-)
+	(u): u is LogFilterType => {
+		if (typeof u !== "object" || u === null) return false;
+		const filter = u as Record<string, unknown>;
+		if ("address" in filter && filter.address !== undefined) {
+			if (Array.isArray(filter.address)) {
+				if (
+					!filter.address.every(
+						(a) => a instanceof Uint8Array && a.length === 20,
+					)
+				) {
+					return false;
+				}
+			} else if (
+				!(
+					filter.address instanceof Uint8Array &&
+					(filter.address as Uint8Array).length === 20
+				)
+			) {
+				return false;
+			}
+		}
+		return true;
+	},
+	{ identifier: "LogFilter" },
+);
 
 /**
  * Schema for block tags used in log filter queries.
@@ -49,10 +58,10 @@ const LogFilterTypeSchema = S.declare<LogFilterType>(
  * @since 0.0.1
  */
 const BlockTagSchema = S.Union(
-  S.Literal('earliest'),
-  S.Literal('latest'),
-  S.Literal('pending')
-)
+	S.Literal("earliest"),
+	S.Literal("latest"),
+	S.Literal("pending"),
+);
 
 /**
  * Schema for block identifiers (block number or tag).
@@ -64,7 +73,7 @@ const BlockTagSchema = S.Union(
  *
  * @since 0.0.1
  */
-const BlockIdentifierSchema = S.Union(S.BigIntFromSelf, BlockTagSchema)
+const BlockIdentifierSchema = S.Union(S.BigIntFromSelf, BlockTagSchema);
 
 /**
  * Schema for topic filter entries (single topic, array of topics, or null).
@@ -77,11 +86,7 @@ const BlockIdentifierSchema = S.Union(S.BigIntFromSelf, BlockTagSchema)
  *
  * @since 0.0.1
  */
-const TopicEntrySchema = S.Union(
-  HashSchema,
-  S.Array(HashSchema),
-  S.Null
-)
+const TopicEntrySchema = S.Union(HashSchema, S.Array(HashSchema), S.Null);
 
 /**
  * Schema for the topics array in a log filter.
@@ -91,19 +96,19 @@ const TopicEntrySchema = S.Union(
  *
  * @since 0.0.1
  */
-const TopicFilterSchema = S.Array(TopicEntrySchema)
+const TopicFilterSchema = S.Array(TopicEntrySchema);
 
 /**
  * Internal schema structure for log filter parameters.
  * @internal
  */
 const LogFilterSchemaInternal = S.Struct({
-  fromBlock: S.optional(BlockIdentifierSchema),
-  toBlock: S.optional(BlockIdentifierSchema),
-  address: S.optional(S.Union(AddressSchema, S.Array(AddressSchema))),
-  topics: S.optional(TopicFilterSchema),
-  blockhash: S.optional(HashSchema),
-})
+	fromBlock: S.optional(BlockIdentifierSchema),
+	toBlock: S.optional(BlockIdentifierSchema),
+	address: S.optional(S.Union(AddressSchema, S.Array(AddressSchema))),
+	topics: S.optional(TopicFilterSchema),
+	blockhash: S.optional(HashSchema),
+});
 
 /**
  * Effect Schema for validating and parsing Ethereum log filter parameters.
@@ -155,17 +160,15 @@ const LogFilterSchemaInternal = S.Struct({
  * @see {@link LogFilterType} for the output type
  * @since 0.0.1
  */
-export const LogFilterSchema = S.transform(
-  LogFilterSchemaInternal,
-  LogFilterTypeSchema,
-  {
-    strict: true,
-    decode: (d) => LogFilter.from(d as Parameters<typeof LogFilter.from>[0]),
-    encode: (e) => e as unknown as S.Schema.Type<typeof LogFilterSchemaInternal>
-  }
-).annotations({ identifier: 'LogFilterSchema' })
+export const Rpc = S.transform(LogFilterSchemaInternal, LogFilterTypeSchema, {
+	strict: true,
+	decode: (d) => LogFilter.from(d as Parameters<typeof LogFilter.from>[0]),
+	encode: (e) => e as unknown as S.Schema.Type<typeof LogFilterSchemaInternal>,
+}).annotations({ identifier: "LogFilter.Rpc" });
 
-export { LogFilterSchema as Schema, LogFilterTypeSchema }
+export { Rpc as LogFilterSchema };
+export { Rpc as Schema };
+export { LogFilterTypeSchema };
 
 /**
  * The LogFilter type representing validated log filter parameters.
@@ -179,7 +182,7 @@ export { LogFilterSchema as Schema, LogFilterTypeSchema }
  * @see {@link LogFilterSchema} for creating instances
  * @since 0.0.1
  */
-export type { LogFilterType }
+export type { LogFilterType };
 
 /**
  * Block tag type for log filter queries.
@@ -192,4 +195,4 @@ export type { LogFilterType }
  *
  * @since 0.0.1
  */
-export type { BlockTag }
+export type { BlockTag };

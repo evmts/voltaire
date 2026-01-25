@@ -9,9 +9,9 @@
  * Topic 0 is always the event signature hash, and topics 1-3 are indexed parameters.
  */
 
-import { TopicFilter } from '@tevm/voltaire'
-import * as S from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { TopicFilter } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as S from "effect/Schema";
 
 /**
  * A single topic entry that can be a 32-byte topic hash, an array of topic hashes (OR condition), or null (wildcard).
@@ -35,7 +35,7 @@ import * as ParseResult from 'effect/ParseResult'
  *
  * @since 0.0.1
  */
-type TopicEntry = Uint8Array | readonly Uint8Array[] | null
+type TopicEntry = Uint8Array | readonly Uint8Array[] | null;
 
 /**
  * Topic filter type representing up to 4 indexed event parameters.
@@ -59,16 +59,21 @@ type TopicEntry = Uint8Array | readonly Uint8Array[] | null
  *
  * @since 0.0.1
  */
-type TopicFilterType = readonly [TopicEntry?, TopicEntry?, TopicEntry?, TopicEntry?]
+type TopicFilterType = readonly [
+	TopicEntry?,
+	TopicEntry?,
+	TopicEntry?,
+	TopicEntry?,
+];
 
 /**
  * Internal schema declaration for TopicFilter type validation.
  * @internal
  */
 const TopicFilterTypeSchema = S.declare<TopicFilterType>(
-  (u): u is TopicFilterType => Array.isArray(u) && u.length <= 4,
-  { identifier: 'TopicFilter' }
-)
+	(u): u is TopicFilterType => Array.isArray(u) && u.length <= 4,
+	{ identifier: "TopicFilter" },
+);
 
 /**
  * Effect Schema for validating and transforming topic filters for event log filtering.
@@ -114,18 +119,24 @@ const TopicFilterTypeSchema = S.declare<TopicFilterType>(
  * @see {@link from} for Effect-based creation
  * @since 0.0.1
  */
-export const TopicFilterSchema: S.Schema<TopicFilterType, readonly any[]> = S.transformOrFail(
-  S.Array(S.Any),
-  TopicFilterTypeSchema,
-  {
-    strict: true,
-    decode: (value, _options, ast) => {
-      try {
-        return ParseResult.succeed(TopicFilter.from(value as any) as TopicFilterType)
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, value, (e as Error).message))
-      }
-    },
-    encode: (filter) => ParseResult.succeed([...filter])
-  }
-).annotations({ identifier: 'TopicFilterSchema' })
+export const Rpc: S.Schema<TopicFilterType, readonly any[]> = S.transformOrFail(
+	S.Array(S.Any),
+	TopicFilterTypeSchema,
+	{
+		strict: true,
+		decode: (value, _options, ast) => {
+			try {
+				return ParseResult.succeed(
+					TopicFilter.from(value as any) as TopicFilterType,
+				);
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, value, (e as Error).message),
+				);
+			}
+		},
+		encode: (filter) => ParseResult.succeed([...filter]),
+	},
+).annotations({ identifier: "TopicFilter.Rpc" });
+
+export { Rpc as TopicFilterSchema };
