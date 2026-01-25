@@ -1,0 +1,57 @@
+name: voltaire-effect CI
+
+on:
+  push:
+    paths:
+      - 'voltaire-effect/**'
+      - '.github/workflows/voltaire-effect-ci.yml'
+  pull_request:
+    paths:
+      - 'voltaire-effect/**'
+      - '.github/workflows/voltaire-effect-ci.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Typecheck
+        run: pnpm --filter voltaire-effect typecheck
+      
+      - name: Lint
+        run: pnpm --filter voltaire-effect lint || true
+      
+      - name: Test
+        run: pnpm --filter voltaire-effect test:run
+      
+      - name: Build
+        run: pnpm --filter voltaire-effect build
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Build docs
+        run: pnpm --filter voltaire-effect docs:build
