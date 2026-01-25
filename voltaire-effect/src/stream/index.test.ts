@@ -14,6 +14,17 @@ describe("Stream module", () => {
 			const error = new Stream.StreamAbortedError("Custom abort");
 			expect(error.message).toBe("Custom abort");
 		});
+
+		it("is instanceof Error", () => {
+			const error = new Stream.StreamAbortedError();
+			expect(error instanceof Error).toBe(true);
+		});
+
+		it("has correct stack trace", () => {
+			const error = new Stream.StreamAbortedError();
+			expect(error.stack).toBeDefined();
+			expect(error.stack).toContain("StreamAbortedError");
+		});
 	});
 
 	describe("EventStreamAbortedError", () => {
@@ -23,6 +34,16 @@ describe("Stream module", () => {
 			expect(error.message).toBe("Event stream was aborted");
 			expect(error).toBeInstanceOf(Stream.StreamAbortedError);
 		});
+
+		it("is instanceof StreamAbortedError", () => {
+			const error = new Stream.EventStreamAbortedError();
+			expect(error instanceof Stream.StreamAbortedError).toBe(true);
+		});
+
+		it("is instanceof Error", () => {
+			const error = new Stream.EventStreamAbortedError();
+			expect(error instanceof Error).toBe(true);
+		});
 	});
 
 	describe("BlockStreamAbortedError", () => {
@@ -31,6 +52,16 @@ describe("Stream module", () => {
 			expect(error.name).toBe("BlockStreamAbortedError");
 			expect(error.message).toBe("Block stream was aborted");
 			expect(error).toBeInstanceOf(Stream.StreamAbortedError);
+		});
+
+		it("is instanceof StreamAbortedError", () => {
+			const error = new Stream.BlockStreamAbortedError();
+			expect(error instanceof Stream.StreamAbortedError).toBe(true);
+		});
+
+		it("is instanceof Error", () => {
+			const error = new Stream.BlockStreamAbortedError();
+			expect(error instanceof Error).toBe(true);
 		});
 	});
 
@@ -48,6 +79,26 @@ describe("Stream module", () => {
 			const error = new Stream.BlockRangeTooLargeError(1n, 1000000n, cause);
 			expect(error.cause).toBe(cause);
 		});
+
+		it("handles large block numbers", () => {
+			const largeFrom = 18_000_000_000n;
+			const largeTo = 18_000_000_001n;
+			const error = new Stream.BlockRangeTooLargeError(largeFrom, largeTo);
+			expect(error.fromBlock).toBe(largeFrom);
+			expect(error.toBlock).toBe(largeTo);
+			expect(error.message).toContain("18000000000");
+		});
+
+		it("handles zero block numbers", () => {
+			const error = new Stream.BlockRangeTooLargeError(0n, 0n);
+			expect(error.fromBlock).toBe(0n);
+			expect(error.toBlock).toBe(0n);
+		});
+
+		it("is instanceof Error", () => {
+			const error = new Stream.BlockRangeTooLargeError(1n, 2n);
+			expect(error instanceof Error).toBe(true);
+		});
 	});
 
 	describe("UnrecoverableReorgError", () => {
@@ -59,6 +110,23 @@ describe("Stream module", () => {
 			);
 			expect(error.reorgDepth).toBe(100n);
 			expect(error.trackedDepth).toBe(50n);
+		});
+
+		it("handles edge case where depths are equal", () => {
+			const error = new Stream.UnrecoverableReorgError(50n, 50n);
+			expect(error.reorgDepth).toBe(50n);
+			expect(error.trackedDepth).toBe(50n);
+		});
+
+		it("handles large reorg depths", () => {
+			const error = new Stream.UnrecoverableReorgError(1000n, 10n);
+			expect(error.reorgDepth).toBe(1000n);
+			expect(error.trackedDepth).toBe(10n);
+		});
+
+		it("is instanceof Error", () => {
+			const error = new Stream.UnrecoverableReorgError(10n, 5n);
+			expect(error instanceof Error).toBe(true);
 		});
 	});
 
@@ -72,6 +140,77 @@ describe("Stream module", () => {
 				new Stream.UnrecoverableReorgError(10n, 5n),
 			];
 			expect(errors).toHaveLength(5);
+		});
+
+		it("can pattern match on error name", () => {
+			const errors: Stream.StreamError[] = [
+				new Stream.StreamAbortedError(),
+				new Stream.BlockRangeTooLargeError(1n, 2n),
+			];
+
+			for (const error of errors) {
+				if (error.name === "StreamAbortedError") {
+					expect(error).toBeInstanceOf(Stream.StreamAbortedError);
+				} else if (error.name === "BlockRangeTooLargeError") {
+					expect((error as Stream.BlockRangeTooLargeError).fromBlock).toBe(1n);
+				}
+			}
+		});
+
+		it("all errors have name property", () => {
+			const errors: Stream.StreamError[] = [
+				new Stream.StreamAbortedError(),
+				new Stream.EventStreamAbortedError(),
+				new Stream.BlockStreamAbortedError(),
+				new Stream.BlockRangeTooLargeError(1n, 2n),
+				new Stream.UnrecoverableReorgError(10n, 5n),
+			];
+
+			for (const error of errors) {
+				expect(error.name).toBeDefined();
+				expect(typeof error.name).toBe("string");
+			}
+		});
+
+		it("all errors have message property", () => {
+			const errors: Stream.StreamError[] = [
+				new Stream.StreamAbortedError(),
+				new Stream.EventStreamAbortedError(),
+				new Stream.BlockStreamAbortedError(),
+				new Stream.BlockRangeTooLargeError(1n, 2n),
+				new Stream.UnrecoverableReorgError(10n, 5n),
+			];
+
+			for (const error of errors) {
+				expect(error.message).toBeDefined();
+				expect(typeof error.message).toBe("string");
+			}
+		});
+	});
+
+	describe("error inheritance hierarchy", () => {
+		it("EventStreamAbortedError extends StreamAbortedError", () => {
+			const error = new Stream.EventStreamAbortedError();
+			expect(error).toBeInstanceOf(Stream.StreamAbortedError);
+		});
+
+		it("BlockStreamAbortedError extends StreamAbortedError", () => {
+			const error = new Stream.BlockStreamAbortedError();
+			expect(error).toBeInstanceOf(Stream.StreamAbortedError);
+		});
+
+		it("can catch specific stream errors", () => {
+			const throwAndCatch = () => {
+				try {
+					throw new Stream.EventStreamAbortedError();
+				} catch (e) {
+					if (e instanceof Stream.StreamAbortedError) {
+						return "caught as StreamAbortedError";
+					}
+					return "not caught";
+				}
+			};
+			expect(throwAndCatch()).toBe("caught as StreamAbortedError");
 		});
 	});
 });
