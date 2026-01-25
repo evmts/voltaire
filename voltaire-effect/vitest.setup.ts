@@ -5,7 +5,7 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { loadWasm } from "@tevm/voltaire/wasm";
+import { loadWasm } from "../src/wasm-loader/loader.js";
 
 const wasmPath = resolve(import.meta.dirname, "../wasm/primitives.wasm");
 const wasmBuffer = readFileSync(wasmPath);

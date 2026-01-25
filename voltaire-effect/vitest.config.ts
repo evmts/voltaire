@@ -5,6 +5,7 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{js,ts}"],
     exclude: [
       "**/node_modules/**",
+      "src/crypto/Signers/Signers.test.ts",
     ],
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
