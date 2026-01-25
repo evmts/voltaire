@@ -449,25 +449,25 @@ export type PublicClientShape = {
 	/** Gets the current block number */
 	readonly getBlockNumber: () => Effect.Effect<bigint, PublicClientError>;
 	/** Gets a block by tag or hash */
-	readonly getBlock: (args?: { blockTag?: BlockTag; blockHash?: string; includeTransactions?: boolean }) => Effect.Effect<BlockType, PublicClientError>;
+	readonly getBlock: (args?: { blockTag?: BlockTag; blockHash?: HashInput; includeTransactions?: boolean }) => Effect.Effect<BlockType, PublicClientError>;
 	/** Gets the transaction count in a block */
-	readonly getBlockTransactionCount: (args: { blockTag?: BlockTag; blockHash?: string }) => Effect.Effect<bigint, PublicClientError>;
+	readonly getBlockTransactionCount: (args: { blockTag?: BlockTag; blockHash?: HashInput }) => Effect.Effect<bigint, PublicClientError>;
 	/** Gets the balance of an address */
-	readonly getBalance: (address: string, blockTag?: BlockTag) => Effect.Effect<bigint, PublicClientError>;
+	readonly getBalance: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<bigint, PublicClientError>;
 	/** Gets the transaction count (nonce) for an address */
-	readonly getTransactionCount: (address: string, blockTag?: BlockTag) => Effect.Effect<bigint, PublicClientError>;
+	readonly getTransactionCount: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<bigint, PublicClientError>;
 	/** Gets the bytecode at an address */
-	readonly getCode: (address: string, blockTag?: BlockTag) => Effect.Effect<string, PublicClientError>;
+	readonly getCode: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, PublicClientError>;
 	/** Gets storage at a specific slot */
-	readonly getStorageAt: (address: string, slot: string, blockTag?: BlockTag) => Effect.Effect<string, PublicClientError>;
+	readonly getStorageAt: (address: AddressInput, slot: HashInput, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, PublicClientError>;
 	/** Gets a transaction by hash */
-	readonly getTransaction: (hash: string) => Effect.Effect<TransactionType, PublicClientError>;
+	readonly getTransaction: (hash: HashInput) => Effect.Effect<TransactionType, PublicClientError>;
 	/** Gets a transaction receipt */
-	readonly getTransactionReceipt: (hash: string) => Effect.Effect<ReceiptType, PublicClientError>;
+	readonly getTransactionReceipt: (hash: HashInput) => Effect.Effect<ReceiptType, PublicClientError>;
 	/** Waits for a transaction to be confirmed */
-	readonly waitForTransactionReceipt: (hash: string, opts?: { confirmations?: number; timeout?: number }) => Effect.Effect<ReceiptType, PublicClientError>;
+	readonly waitForTransactionReceipt: (hash: HashInput, opts?: { confirmations?: number; timeout?: number }) => Effect.Effect<ReceiptType, PublicClientError>;
 	/** Executes a call without sending a transaction */
-	readonly call: (tx: CallRequest, blockTag?: BlockTag) => Effect.Effect<string, PublicClientError>;
+	readonly call: (tx: CallRequest, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, PublicClientError>;
 	/** Estimates gas for a transaction */
 	readonly estimateGas: (tx: CallRequest) => Effect.Effect<bigint, PublicClientError>;
 	/** Creates an access list for a transaction */

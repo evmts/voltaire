@@ -7,7 +7,7 @@
  */
 
 import * as Effect from 'effect/Effect'
-import { Event as AbiEvent, type EventType } from '@tevm/voltaire/Abi'
+import { Event as AbiEvent, type Event } from '@tevm/voltaire/Abi'
 
 /**
  * Gets the canonical signature of an event.
@@ -18,7 +18,7 @@ import { Event as AbiEvent, type EventType } from '@tevm/voltaire/Abi'
  *
  * This is an infallible operation that always succeeds.
  *
- * @param {EventType} event - The event ABI item.
+ * @param {Event.EventType} event - The event ABI item.
  * @returns {Effect.Effect<string, never>}
  *   Effect yielding the event signature string.
  *
@@ -35,6 +35,6 @@ import { Event as AbiEvent, type EventType } from '@tevm/voltaire/Abi'
  * @since 0.0.1
  */
 export const getEventSignature = (
-  event: EventType
+  event: Event.EventType
 ): Effect.Effect<string, never> =>
   Effect.sync(() => AbiEvent.getSignature(event))

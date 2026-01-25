@@ -32,8 +32,38 @@ import {
   type ReceiptType,
   type LogType,
   type AccessListType,
-  type FeeHistoryType
+  type FeeHistoryType,
+  type AddressInput,
+  type HashInput
 } from './PublicClientService.js'
+/**
+ * Converts a Uint8Array to hex string.
+ */
+const bytesToHex = (bytes: Uint8Array): `0x${string}` => {
+  let hex = '0x'
+  for (let i = 0; i < bytes.length; i++) {
+    hex += bytes[i].toString(16).padStart(2, '0')
+  }
+  return hex as `0x${string}`
+}
+
+/**
+ * Converts AddressInput to hex string for RPC calls.
+ * Handles both branded AddressType (Uint8Array) and plain hex strings.
+ */
+const toAddressHex = (input: AddressInput): string => {
+  if (typeof input === 'string') return input
+  return bytesToHex(input)
+}
+
+/**
+ * Converts HashInput to hex string for RPC calls.
+ * Handles both branded HashType (Uint8Array) and plain hex strings.
+ */
+const toHashHex = (input: HashInput): string => {
+  if (typeof input === 'string') return input
+  return bytesToHex(input)
+}
 
 /**
  * Formats a CallRequest for JSON-RPC submission.
@@ -49,9 +79,9 @@ import {
  */
 const formatCallRequest = (tx: CallRequest): Record<string, string> => {
   const formatted: Record<string, string> = {}
-  if (tx.from) formatted.from = tx.from
-  if (tx.to) formatted.to = tx.to
-  if (tx.data) formatted.data = tx.data
+  if (tx.from) formatted.from = toAddressHex(tx.from)
+  if (tx.to) formatted.to = toAddressHex(tx.to)
+  if (tx.data) formatted.data = typeof tx.data === 'string' ? tx.data : tx.data
   if (tx.value !== undefined) formatted.value = `0x${tx.value.toString(16)}`
   if (tx.gas !== undefined) formatted.gas = `0x${tx.gas.toString(16)}`
   return formatted
@@ -153,58 +183,59 @@ export const PublicClient: Layer.Layer<PublicClientService, never, TransportServ
           Effect.map((hex) => BigInt(hex))
         ),
 
-      getBlock: (args?: { blockTag?: BlockTag; blockHash?: string; includeTransactions?: boolean }) => {
+      getBlock: (args?: { blockTag?: BlockTag; blockHash?: HashInput; includeTransactions?: boolean }) => {
         const method = args?.blockHash ? 'eth_getBlockByHash' : 'eth_getBlockByNumber'
         const params = args?.blockHash
-          ? [args.blockHash, args?.includeTransactions ?? false]
+          ? [toHashHex(args.blockHash), args?.includeTransactions ?? false]
           : [args?.blockTag ?? 'latest', args?.includeTransactions ?? false]
         return request<BlockType>(method, params)
       },
 
-      getBlockTransactionCount: (args: { blockTag?: BlockTag; blockHash?: string }) => {
+      getBlockTransactionCount: (args: { blockTag?: BlockTag; blockHash?: HashInput }) => {
         const method = args.blockHash ? 'eth_getBlockTransactionCountByHash' : 'eth_getBlockTransactionCountByNumber'
-        const params = args.blockHash ? [args.blockHash] : [args.blockTag ?? 'latest']
+        const params = args.blockHash ? [toHashHex(args.blockHash)] : [args.blockTag ?? 'latest']
         return request<string>(method, params).pipe(
           Effect.map((hex) => BigInt(hex))
         )
       },
 
-      getBalance: (address: string, blockTag: BlockTag = 'latest') =>
-        request<string>('eth_getBalance', [address, blockTag]).pipe(
+      getBalance: (address: AddressInput, blockTag: BlockTag = 'latest') =>
+        request<string>('eth_getBalance', [toAddressHex(address), blockTag]).pipe(
           Effect.map((hex) => BigInt(hex))
         ),
 
-      getTransactionCount: (address: string, blockTag: BlockTag = 'latest') =>
-        request<string>('eth_getTransactionCount', [address, blockTag]).pipe(
+      getTransactionCount: (address: AddressInput, blockTag: BlockTag = 'latest') =>
+        request<string>('eth_getTransactionCount', [toAddressHex(address), blockTag]).pipe(
           Effect.map((hex) => BigInt(hex))
         ),
 
-      getCode: (address: string, blockTag: BlockTag = 'latest') =>
-        request<string>('eth_getCode', [address, blockTag]),
+      getCode: (address: AddressInput, blockTag: BlockTag = 'latest') =>
+        request<`0x${string}`>('eth_getCode', [toAddressHex(address), blockTag]),
 
-      getStorageAt: (address: string, slot: string, blockTag: BlockTag = 'latest') =>
-        request<string>('eth_getStorageAt', [address, slot, blockTag]),
+      getStorageAt: (address: AddressInput, slot: HashInput, blockTag: BlockTag = 'latest') =>
+        request<`0x${string}`>('eth_getStorageAt', [toAddressHex(address), toHashHex(slot), blockTag]),
 
-      getTransaction: (hash: string) =>
-        request<TransactionType>('eth_getTransactionByHash', [hash]),
+      getTransaction: (hash: HashInput) =>
+        request<TransactionType>('eth_getTransactionByHash', [toHashHex(hash)]),
 
-      getTransactionReceipt: (hash: string) =>
-        request<ReceiptType>('eth_getTransactionReceipt', [hash]),
+      getTransactionReceipt: (hash: HashInput) =>
+        request<ReceiptType>('eth_getTransactionReceipt', [toHashHex(hash)]),
 
-      waitForTransactionReceipt: (hash: string, opts?: { confirmations?: number; timeout?: number }) => {
+      waitForTransactionReceipt: (hash: HashInput, opts?: { confirmations?: number; timeout?: number }) => {
+        const hashHex = toHashHex(hash)
         const confirmations = opts?.confirmations ?? 1
         const timeoutMs = opts?.timeout ?? 60000
 
-        const checkReceipt = Effect.gen(function* () {
-          const receipt = yield* request<ReceiptType | null>('eth_getTransactionReceipt', [hash])
-          if (!receipt) return yield* Effect.fail('pending' as const)
+        const checkReceipt: Effect.Effect<ReceiptType, PublicClientError> = Effect.gen(function* () {
+          const receipt = yield* request<ReceiptType | null>('eth_getTransactionReceipt', [hashHex])
+          if (!receipt) return yield* Effect.fail(new PublicClientError(hashHex, 'Transaction pending'))
 
           const currentBlock = yield* request<string>('eth_blockNumber')
           const receiptBlock = BigInt(receipt.blockNumber)
           if (BigInt(currentBlock) - receiptBlock >= BigInt(confirmations - 1)) {
             return receipt
           }
-          return yield* Effect.fail('pending' as const)
+          return yield* Effect.fail(new PublicClientError(hashHex, 'Waiting for confirmations'))
         })
 
         return checkReceipt.pipe(
@@ -217,7 +248,7 @@ export const PublicClient: Layer.Layer<PublicClientService, never, TransportServ
       },
 
       call: (tx: CallRequest, blockTag: BlockTag = 'latest') =>
-        request<string>('eth_call', [formatCallRequest(tx), blockTag]),
+        request<`0x${string}`>('eth_call', [formatCallRequest(tx), blockTag]),
 
       estimateGas: (tx: CallRequest) =>
         request<string>('eth_estimateGas', [formatCallRequest(tx)]).pipe(
@@ -229,11 +260,21 @@ export const PublicClient: Layer.Layer<PublicClientService, never, TransportServ
 
       getLogs: (filter: LogFilter) => {
         const params: Record<string, unknown> = {}
-        if (filter.address) params.address = filter.address
-        if (filter.topics) params.topics = filter.topics
+        if (filter.address) {
+          params.address = Array.isArray(filter.address) 
+            ? filter.address.map(toAddressHex) 
+            : toAddressHex(filter.address)
+        }
+        if (filter.topics) {
+          params.topics = filter.topics.map(topic => {
+            if (topic === null) return null
+            if (Array.isArray(topic)) return topic.map(toHashHex)
+            return toHashHex(topic)
+          })
+        }
         if (filter.fromBlock) params.fromBlock = filter.fromBlock
         if (filter.toBlock) params.toBlock = filter.toBlock
-        if (filter.blockHash) params.blockHash = filter.blockHash
+        if (filter.blockHash) params.blockHash = toHashHex(filter.blockHash)
         return request<LogType[]>('eth_getLogs', [params])
       },
 

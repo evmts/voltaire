@@ -56,6 +56,8 @@ export {
   type AccessListType,
   type FeeHistoryType,
   type CallRequest,
-  type LogFilter
+  type LogFilter,
+  type AddressInput,
+  type HashInput
 } from './PublicClientService.js'
 export { PublicClient } from './PublicClient.js'

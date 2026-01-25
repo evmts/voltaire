@@ -5,7 +5,7 @@
  */
 
 import { PublicKey, _toHex, type PublicKeyType } from '@tevm/voltaire/PublicKey'
-import type { BrandedHash as HashType } from '@tevm/voltaire/Hash'
+import type { HashType } from '@tevm/voltaire/Hash'
 import type { SignatureType } from '@tevm/voltaire/Signature'
 import * as Effect from 'effect/Effect'
 
@@ -29,4 +29,4 @@ export const verify = (
   hash: HashType,
   signature: SignatureType
 ): Effect.Effect<boolean> =>
-  Effect.sync(() => PublicKey.verify(_toHex.call(publicKey as unknown as Parameters<typeof _toHex>[0]), hash, signature))
+  Effect.sync(() => PublicKey.verify(_toHex.call(publicKey), hash, signature))

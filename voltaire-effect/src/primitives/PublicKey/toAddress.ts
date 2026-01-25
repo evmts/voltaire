@@ -25,4 +25,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const toAddress = (publicKey: PublicKeyType): Effect.Effect<AddressType> =>
-  Effect.sync(() => _toAddress.call(publicKey as unknown as Parameters<typeof _toAddress>[0]))
+  Effect.sync(() => _toAddress.call(publicKey))

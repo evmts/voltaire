@@ -27,6 +27,12 @@
 export { Schema, RlpDecodingError, RlpEncodingError } from './RlpSchema.js'
 export { encode } from './encode.js'
 export { decode, type Decoded } from './decode.js'
+export { encodeList } from './encodeList.js'
+export { encodeArray } from './encodeArray.js'
+export { encodeBytes } from './encodeBytes.js'
+export { decodeArray } from './decodeArray.js'
+export { validate } from './validate.js'
+export { flatten } from './flatten.js'
 
 /**
  * Re-export of BrandedRlp type from voltaire.

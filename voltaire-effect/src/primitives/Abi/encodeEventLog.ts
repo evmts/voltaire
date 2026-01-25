@@ -7,7 +7,7 @@
  */
 
 import * as Effect from 'effect/Effect'
-import { Event as AbiEvent, AbiItemNotFoundError, type AbiEncodingError, type EventType } from '@tevm/voltaire/Abi'
+import { Event as AbiEvent, AbiItemNotFoundError, type AbiEncodingError } from '@tevm/voltaire/Abi'
 import * as Hex from '@tevm/voltaire/Hex'
 import type { HexType } from '@tevm/voltaire/Hex'
 
@@ -63,8 +63,8 @@ export const encodeEventLog = (
           context: { eventName, abi }
         })
       }
-      const topics = AbiEvent.encodeTopics(evt as EventType, indexedArgs as never)
-      return topics.map(t => t ? Hex.fromBytes(t) : ('0x' as HexType))
+      const topics = AbiEvent.encodeTopics(evt as AbiEvent.EventType, indexedArgs as never)
+      return topics.map(t => t ? Hex.fromBytes(t as Uint8Array) : ('0x' as HexType))
     },
     catch: (e) => e as AbiItemNotFoundError | AbiEncodingError
   })

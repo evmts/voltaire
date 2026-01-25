@@ -231,7 +231,7 @@ export const Contract = <TAbi extends Abi>(
         
         const logFilter: PublicLogFilter = {
           address: addressHex,
-          topics: [topic],
+          topics: [topic as `0x${string}`],
           fromBlock: toPublicBlockTag(filter?.fromBlock),
           toBlock: toPublicBlockTag(filter?.toBlock),
         }

@@ -21,4 +21,4 @@ import * as Effect from 'effect/Effect'
  * @since 0.0.1
  */
 export const toHex = (publicKey: PublicKeyType): Effect.Effect<string> =>
-  Effect.sync(() => _toHex.call(publicKey as unknown as Parameters<typeof _toHex>[0]))
+  Effect.sync(() => _toHex.call(publicKey))

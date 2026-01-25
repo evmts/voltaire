@@ -167,7 +167,7 @@ export const WalletClientLive: Layer.Layer<
 				const txForEstimate = {
 					to: tx.to ? Address.toHex(tx.to as AddressType) : undefined,
 					from: addressHex,
-					data: tx.data as string | undefined,
+					data: tx.data as `0x${string}` | undefined,
 					value: tx.value,
 					gas: tx.gasLimit,
 				}

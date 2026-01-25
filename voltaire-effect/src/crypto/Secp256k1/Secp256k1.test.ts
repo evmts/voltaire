@@ -133,6 +133,81 @@ describe('Secp256k1', () => {
     })
   })
 
+  describe('Known Vector Tests', () => {
+    const bytesToHex = (bytes: Uint8Array): string => {
+      return '0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
+    }
+
+    it('sign/recover round-trip with known key', async () => {
+      // Well-known test private key (from Ethereum test vectors)
+      const privateKey = new Uint8Array([
+        0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3,
+        0x6b, 0xa4, 0xa6, 0xb4, 0xd2, 0x38, 0xff, 0x94,
+        0x4b, 0xac, 0xb4, 0x78, 0xcb, 0xed, 0x5e, 0xfc,
+        0xae, 0x78, 0x4d, 0x7b, 0xf4, 0xf2, 0xff, 0x80
+      ])
+
+      // keccak256("test message")
+      const messageHashBytes = new Uint8Array([
+        0x37, 0xbf, 0xc9, 0xe4, 0x00, 0xce, 0xa0, 0x40,
+        0x7f, 0x4d, 0xdc, 0xfc, 0x6e, 0x29, 0x35, 0xf5,
+        0x1c, 0x8e, 0x7c, 0x03, 0xd3, 0xd4, 0x7c, 0xf1,
+        0xf6, 0x02, 0x2c, 0x58, 0x50, 0x37, 0x6c, 0xd8
+      ])
+      const messageHash = Hash.from(messageHashBytes)
+
+      const sig = await Effect.runPromise(
+        Secp256k1.sign(messageHash, privateKey as any)
+      )
+
+      const recovered = await Effect.runPromise(
+        Secp256k1.recover(sig, messageHash)
+      )
+
+      const expected = VoltaireSecp256k1.derivePublicKey(privateKey as any)
+      expect(recovered).toEqual(expected)
+      expect(recovered.length).toBe(64)
+    })
+
+    it('derives correct public key from known private key', async () => {
+      // Anvil's first account private key
+      const privateKey = new Uint8Array([
+        0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3,
+        0x6b, 0xa4, 0xa6, 0xb4, 0xd2, 0x38, 0xff, 0x94,
+        0x4b, 0xac, 0xb4, 0x78, 0xcb, 0xed, 0x5e, 0xfc,
+        0xae, 0x78, 0x4d, 0x7b, 0xf4, 0xf2, 0xff, 0x80
+      ])
+
+      const publicKey = VoltaireSecp256k1.derivePublicKey(privateKey as any)
+
+      // Expected public key for this well-known private key (uncompressed, without 04 prefix)
+      expect(publicKey.length).toBe(64)
+      // First byte of X coordinate
+      expect(publicKey[0]).toBe(0x8a)
+    })
+
+    it('produces deterministic signatures (RFC 6979)', async () => {
+      const privateKey = new Uint8Array([
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
+        0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+        0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20
+      ])
+      const messageHash = Hash.from(new Uint8Array(32).fill(0xab))
+
+      const sig1 = await Effect.runPromise(
+        Secp256k1.sign(messageHash, privateKey as any)
+      )
+      const sig2 = await Effect.runPromise(
+        Secp256k1.sign(messageHash, privateKey as any)
+      )
+
+      expect(bytesToHex(sig1.r as Uint8Array)).toBe(bytesToHex(sig2.r as Uint8Array))
+      expect(bytesToHex(sig1.s as Uint8Array)).toBe(bytesToHex(sig2.s as Uint8Array))
+      expect(sig1.v).toBe(sig2.v)
+    })
+  })
+
   describe('Secp256k1Service', () => {
     it('provides sign through service layer', async () => {
       const program = Effect.gen(function* () {

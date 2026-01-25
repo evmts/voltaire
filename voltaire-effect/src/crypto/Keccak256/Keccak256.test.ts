@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest'
 import * as Effect from 'effect/Effect'
 import { KeccakService, KeccakLive, KeccakTest, hash } from './index.js'
 
+const bytesToHex = (bytes: Uint8Array): string => {
+  return '0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 describe('KeccakService', () => {
   describe('KeccakLive', () => {
     it('hashes data using Voltaire Keccak256', async () => {
@@ -31,6 +35,59 @@ describe('KeccakService', () => {
       // keccak256 of empty input
       expect(result[0]).toBe(0xc5)
       expect(result[1]).toBe(0xd2)
+    })
+  })
+
+  describe('Known Vector Tests', () => {
+    it('matches known vector: empty string', async () => {
+      const program = Effect.gen(function* () {
+        const keccak = yield* KeccakService
+        return yield* keccak.hash(new Uint8Array(0))
+      }).pipe(Effect.provide(KeccakLive))
+
+      const result = await Effect.runPromise(program)
+      expect(bytesToHex(result)).toBe('0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470')
+    })
+
+    it('matches known vector: "hello"', async () => {
+      const program = Effect.gen(function* () {
+        const keccak = yield* KeccakService
+        return yield* keccak.hash(new Uint8Array([0x68, 0x65, 0x6c, 0x6c, 0x6f])) // "hello"
+      }).pipe(Effect.provide(KeccakLive))
+
+      const result = await Effect.runPromise(program)
+      expect(bytesToHex(result)).toBe('0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8')
+    })
+
+    it('matches known vector: "Hello, World!"', async () => {
+      const program = Effect.gen(function* () {
+        const keccak = yield* KeccakService
+        const input = new TextEncoder().encode('Hello, World!')
+        return yield* keccak.hash(input)
+      }).pipe(Effect.provide(KeccakLive))
+
+      const result = await Effect.runPromise(program)
+      expect(bytesToHex(result)).toBe('0xacaf3289d7b601cbd114fb36c4d29c85bbfd5e133f14cb355c3fd8d99367964f')
+    })
+
+    it('matches known vector: single zero byte', async () => {
+      const program = Effect.gen(function* () {
+        const keccak = yield* KeccakService
+        return yield* keccak.hash(new Uint8Array([0x00]))
+      }).pipe(Effect.provide(KeccakLive))
+
+      const result = await Effect.runPromise(program)
+      expect(bytesToHex(result)).toBe('0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a')
+    })
+
+    it('matches known vector: 0xff byte', async () => {
+      const program = Effect.gen(function* () {
+        const keccak = yield* KeccakService
+        return yield* keccak.hash(new Uint8Array([0xff]))
+      }).pipe(Effect.provide(KeccakLive))
+
+      const result = await Effect.runPromise(program)
+      expect(bytesToHex(result)).toBe('0xa8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89')
     })
   })
 

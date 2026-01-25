@@ -7,7 +7,7 @@
  */
 
 import * as Effect from 'effect/Effect'
-import { Item, type EventType } from '@tevm/voltaire/Abi'
+import { Item, type Event } from '@tevm/voltaire/Abi'
 
 /**
  * Type alias for ABI input.
@@ -26,7 +26,7 @@ type AbiInput = Parameters<typeof Item.getItem>[0]
  *
  * @param {AbiInput} abi - The contract ABI.
  * @param {string} name - The event name to find.
- * @returns {Effect.Effect<EventType | undefined, never>}
+ * @returns {Effect.Effect<Event.EventType | undefined, never>}
  *   Effect yielding the event or undefined.
  *
  * @example
@@ -45,5 +45,5 @@ type AbiInput = Parameters<typeof Item.getItem>[0]
 export const findEvent = (
   abi: AbiInput,
   name: string
-): Effect.Effect<EventType | undefined, never> =>
-  Effect.sync(() => Item.getItem(abi, name, 'event') as EventType | undefined)
+): Effect.Effect<Event.EventType | undefined, never> =>
+  Effect.sync(() => Item.getItem(abi, name, 'event') as Event.EventType | undefined)

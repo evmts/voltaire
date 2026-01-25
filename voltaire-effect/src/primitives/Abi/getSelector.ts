@@ -7,7 +7,7 @@
  */
 
 import * as Effect from 'effect/Effect'
-import { Function as AbiFunction, Event as AbiEvent, Error as AbiError, type EventType } from '@tevm/voltaire/Abi'
+import { Function as AbiFunction, Event as AbiEvent, Error as AbiError, type Event, type Function, type Error } from '@tevm/voltaire/Abi'
 import * as Hex from '@tevm/voltaire/Hex'
 import type { HexType } from '@tevm/voltaire/Hex'
 
@@ -41,7 +41,7 @@ export const getSelector = (
 ): Effect.Effect<HexType, never> =>
   Effect.sync(() => {
     if (item.type === 'event') {
-      const selector = AbiEvent.getSelector(item as EventType)
+      const selector = AbiEvent.getSelector(item as AbiEvent.EventType)
       return Hex.fromBytes(selector)
     }
     if (item.type === 'error') {
