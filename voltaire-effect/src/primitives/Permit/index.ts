@@ -1,27 +1,48 @@
 /**
- * Permit module for Effect-based ERC-2612 gasless token approvals.
+ * @module Permit
+ * @description Effect Schemas for ERC-2612 gasless token approvals.
  *
- * Provides Effect-wrapped operations for working with ERC-2612 permits,
- * enabling gasless token approvals via EIP-712 typed signatures.
+ * Provides validation for ERC-2612 permits, enabling gasless token approvals
+ * via EIP-712 typed signatures.
  *
- * @example
+ * ## Schemas
+ *
+ * | Schema | Description |
+ * |--------|-------------|
+ * | `Permit.Struct` | Permit data (owner, spender, value, nonce, deadline) |
+ * | `Permit.DomainStruct` | EIP-712 domain for permit signatures |
+ *
+ * ## Usage
+ *
  * ```typescript
  * import * as Permit from 'voltaire-effect/primitives/Permit'
- * import * as Effect from 'effect/Effect'
+ * import * as S from 'effect/Schema'
  *
- * const permit = Permit.from({
- *   owner: '0x1234...',
- *   spender: '0xabcd...',
+ * // Validate permit data
+ * const permit = S.decodeSync(Permit.Struct)({
+ *   owner: ownerAddress,
+ *   spender: spenderAddress,
  *   value: 1000000000000000000n,
  *   nonce: 0n,
  *   deadline: 1700000000n
  * })
  *
- * Effect.runSync(permit)
+ * // Validate domain
+ * const domain = S.decodeSync(Permit.DomainStruct)({
+ *   name: 'USD Coin',
+ *   version: '2',
+ *   chainId: 1n,
+ *   verifyingContract: usdcAddress
+ * })
  * ```
  *
- * @module
- * @since 0.0.1
+ * @since 0.1.0
  */
-export { Schema, PermitTypeSchema, PermitDomainTypeSchema, type PermitType, type PermitDomainType } from './PermitSchema.js'
-export { from, PermitError, type PermitInput } from './from.js'
+export {
+	DomainStruct,
+	type PermitDomainType,
+	PermitDomainTypeSchema,
+	type PermitType,
+	PermitTypeSchema,
+	Struct,
+} from "./Struct.js";

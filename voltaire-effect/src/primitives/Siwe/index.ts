@@ -1,27 +1,45 @@
 /**
  * @module Siwe
+ * @description Effect Schemas for Sign-In with Ethereum (SIWE) messages (EIP-4361).
  *
- * Effect-based module for Sign-In with Ethereum (SIWE) message handling.
- * Implements EIP-4361 for authenticating users with their Ethereum accounts.
+ * ## Schemas
  *
- * @example
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `Siwe.String` | SIWE message string | SiweMessageType |
+ * | `Siwe.MessageStruct` | SIWE message object | validated object |
+ *
+ * ## Usage
+ *
  * ```typescript
- * import { Siwe } from 'voltaire-effect/primitives'
- * import { Effect } from 'effect'
+ * import * as Siwe from 'voltaire-effect/primitives/Siwe'
+ * import * as S from 'effect/Schema'
  *
- * const program = Effect.gen(function* () {
- *   const message = yield* Siwe.create({
- *     domain: 'example.com',
- *     address: '0x...',
- *     uri: 'https://example.com',
- *     chainId: 1
- *   })
- *   const text = Siwe.format(message)
- *   return text
- * })
+ * // Parse from string
+ * const message = S.decodeSync(Siwe.String)(`example.com wants you to sign in...`)
+ *
+ * // Format to string
+ * const text = S.encodeSync(Siwe.String)(message)
  * ```
  *
- * @since 0.0.1
+ * ## Pure Functions
+ *
+ * ```typescript
+ * Siwe.format(message)  // string
+ * Siwe.validate(message, { now })  // ValidationResult
+ * Siwe.generateNonce(length)  // string
+ * ```
+ *
+ * @since 0.1.0
  */
-export { Schema, SiweMessageSchema, type SiweMessageType, type ValidationResult } from './SiweSchema.js'
-export { create, parse, format, validate, generateNonce, SiweError, type CreateParams } from './from.js'
+export {
+	format,
+	generateNonce,
+	MessageStruct,
+	Schema,
+	SiweMessageSchema,
+	type SiweMessageType,
+	String,
+	validate,
+	type ValidationResult,
+} from "./String.js";
