@@ -1,38 +1,38 @@
 /**
  * @fileoverview HTTP transport implementation for JSON-RPC communication.
- * 
+ *
  * @module HttpTransport
  * @since 0.0.1
- * 
+ *
  * @description
  * Provides an HTTP-based transport layer for communicating with Ethereum JSON-RPC
  * endpoints. This is the most common transport for interacting with Ethereum nodes.
- * 
+ *
  * Features:
  * - Automatic retry with configurable attempts and delay
  * - Request timeout handling
  * - Custom headers support (for API keys, authentication)
  * - Proper JSON-RPC error handling
- * 
+ *
  * @see {@link TransportService} - The service interface this implements
  * @see {@link WebSocketTransport} - Alternative for real-time subscriptions
  * @see {@link BrowserTransport} - Alternative for browser wallet interaction
  */
 
-import * as Effect from 'effect/Effect'
-import * as Layer from 'effect/Layer'
-import { TransportService } from './TransportService.js'
-import { TransportError } from './TransportError.js'
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import { TransportError } from "./TransportError.js";
+import { TransportService } from "./TransportService.js";
 
 /**
  * Configuration options for HTTP transport.
- * 
+ *
  * @description
  * Allows customization of the HTTP transport behavior including timeouts,
  * retry logic, and custom headers.
- * 
+ *
  * @since 0.0.1
- * 
+ *
  * @example
  * ```typescript
  * const config: HttpTransportConfig = {
@@ -47,78 +47,78 @@ import { TransportError } from './TransportError.js'
  * ```
  */
 interface HttpTransportConfig {
-  /** The JSON-RPC endpoint URL (must be HTTPS for production) */
-  url: string
-  /** Optional custom headers to include in requests (e.g., API keys) */
-  headers?: Record<string, string>
-  /** Request timeout in milliseconds (default: 30000) */
-  timeout?: number
-  /** Number of retry attempts on failure (default: 3) */
-  retries?: number
-  /** Delay between retries in milliseconds (default: 1000) */
-  retryDelay?: number
+	/** The JSON-RPC endpoint URL (must be HTTPS for production) */
+	url: string;
+	/** Optional custom headers to include in requests (e.g., API keys) */
+	headers?: Record<string, string>;
+	/** Request timeout in milliseconds (default: 30000) */
+	timeout?: number;
+	/** Number of retry attempts on failure (default: 3) */
+	retries?: number;
+	/** Delay between retries in milliseconds (default: 1000) */
+	retryDelay?: number;
 }
 
 /**
  * JSON-RPC response structure.
- * 
+ *
  * @description
  * Standard JSON-RPC 2.0 response format as returned by Ethereum nodes.
- * 
+ *
  * @since 0.0.1
  */
 interface JsonRpcResponse<T> {
-  /** JSON-RPC version (always "2.0") */
-  jsonrpc: string
-  /** Request ID for correlation */
-  id: number
-  /** Successful result (present if no error) */
-  result?: T
-  /** Error object (present if request failed) */
-  error?: { code: number; message: string; data?: unknown }
+	/** JSON-RPC version (always "2.0") */
+	jsonrpc: string;
+	/** Request ID for correlation */
+	id: number;
+	/** Successful result (present if no error) */
+	result?: T;
+	/** Error object (present if request failed) */
+	error?: { code: number; message: string; data?: unknown };
 }
 
 /**
  * Creates an HTTP transport layer for JSON-RPC communication.
- * 
+ *
  * @description
  * Provides an HTTP-based implementation of the TransportService. Supports
  * automatic retries, timeouts, and custom headers. Uses the Fetch API
  * internally for cross-platform compatibility.
- * 
+ *
  * The transport automatically:
  * - Retries failed requests (configurable)
  * - Times out long-running requests
  * - Parses JSON-RPC responses and extracts errors
  * - Handles network errors gracefully
- * 
+ *
  * @param options - URL string or configuration object
  * @returns Layer providing TransportService
- * 
+ *
  * @throws {TransportError} When the request fails after all retries
  * @throws {TransportError} When the request times out
  * @throws {TransportError} When the JSON-RPC response contains an error
- * 
+ *
  * @since 0.0.1
- * 
+ *
  * @example Simple URL configuration
  * ```typescript
  * import { Effect } from 'effect'
  * import { HttpTransport, TransportService } from 'voltaire-effect/services'
- * 
+ *
  * const transport = HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY')
- * 
+ *
  * const program = Effect.gen(function* () {
  *   const t = yield* TransportService
  *   return yield* t.request<string>('eth_blockNumber')
  * }).pipe(Effect.provide(transport))
  * ```
- * 
+ *
  * @example Full configuration with retries and timeout
  * ```typescript
  * import { Effect } from 'effect'
  * import { HttpTransport, PublicClient, PublicClientService } from 'voltaire-effect/services'
- * 
+ *
  * const transport = HttpTransport({
  *   url: 'https://mainnet.infura.io/v3/YOUR_KEY',
  *   timeout: 60000,     // 60 second timeout
@@ -129,7 +129,7 @@ interface JsonRpcResponse<T> {
  *     'X-Custom-Header': 'value'
  *   }
  * })
- * 
+ *
  * const program = Effect.gen(function* () {
  *   const client = yield* PublicClientService
  *   return yield* client.getBlockNumber()
@@ -137,15 +137,15 @@ interface JsonRpcResponse<T> {
  *   Effect.provide(PublicClient),
  *   Effect.provide(transport)
  * )
- * 
+ *
  * await Effect.runPromise(program)
  * ```
- * 
+ *
  * @example Error handling
  * ```typescript
  * import { Effect } from 'effect'
  * import { HttpTransport, TransportService, TransportError } from 'voltaire-effect/services'
- * 
+ *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService
  *   return yield* transport.request<string>('eth_blockNumber')
@@ -157,102 +157,118 @@ interface JsonRpcResponse<T> {
  *   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
  * )
  * ```
- * 
+ *
  * @see {@link TransportService} - The service interface
  * @see {@link TransportError} - Error type thrown on failure
  * @see {@link WebSocketTransport} - For real-time subscriptions
  */
-export const HttpTransport = (options: HttpTransportConfig | string): Layer.Layer<TransportService> => {
-  const config = typeof options === 'string'
-    ? { url: options, timeout: 30000, retries: 3, retryDelay: 1000 }
-    : {
-        url: options.url,
-        headers: options.headers,
-        timeout: options.timeout ?? 30000,
-        retries: options.retries ?? 3,
-        retryDelay: options.retryDelay ?? 1000,
-      }
+export const HttpTransport = (
+	options: HttpTransportConfig | string,
+): Layer.Layer<TransportService> => {
+	const config =
+		typeof options === "string"
+			? { url: options, timeout: 30000, retries: 3, retryDelay: 1000 }
+			: {
+					url: options.url,
+					headers: options.headers,
+					timeout: options.timeout ?? 30000,
+					retries: options.retries ?? 3,
+					retryDelay: options.retryDelay ?? 1000,
+				};
 
-  let requestId = 0
+	let requestId = 0;
 
-  const executeRequest = async <T>(body: string, headers: Record<string, string>, timeout: number): Promise<T> => {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), timeout)
+	const executeRequest = async <T>(
+		body: string,
+		headers: Record<string, string>,
+		timeout: number,
+	): Promise<T> => {
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    try {
-      const response = await fetch(config.url, {
-        method: 'POST',
-        headers,
-        body,
-        signal: controller.signal,
-      })
+		try {
+			const response = await fetch(config.url, {
+				method: "POST",
+				headers,
+				body,
+				signal: controller.signal,
+			});
 
-      if (!response.ok) {
-        throw new TransportError({
-          code: -32603,
-          message: `HTTP ${response.status}: ${response.statusText}`,
-        })
-      }
+			if (!response.ok) {
+				throw new TransportError({
+					code: -32603,
+					message: `HTTP ${response.status}: ${response.statusText}`,
+				});
+			}
 
-      const json = await response.json() as JsonRpcResponse<T>
-      if (json.error) {
-        throw new TransportError({
-          code: json.error.code,
-          message: json.error.message,
-          data: json.error.data,
-        })
-      }
+			const json = (await response.json()) as JsonRpcResponse<T>;
+			if (json.error) {
+				throw new TransportError({
+					code: json.error.code,
+					message: json.error.message,
+					data: json.error.data,
+				});
+			}
 
-      return json.result as T
-    } finally {
-      clearTimeout(timeoutId)
-    }
-  }
+			return json.result as T;
+		} finally {
+			clearTimeout(timeoutId);
+		}
+	};
 
-  return Layer.succeed(TransportService, {
-    request: <T>(method: string, params: unknown[] = []): Effect.Effect<T, TransportError> =>
-      Effect.gen(function* () {
-        const id = ++requestId
-        const body = JSON.stringify({ jsonrpc: '2.0', id, method, params })
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          ...config.headers,
-        }
+	return Layer.succeed(TransportService, {
+		request: <T>(
+			method: string,
+			params: unknown[] = [],
+		): Effect.Effect<T, TransportError> =>
+			Effect.gen(function* () {
+				const id = ++requestId;
+				const body = JSON.stringify({ jsonrpc: "2.0", id, method, params });
+				const headers: Record<string, string> = {
+					"Content-Type": "application/json",
+					...config.headers,
+				};
 
-        let lastError: TransportError = new TransportError({ code: -32603, message: 'Request failed' })
+				let lastError: TransportError = new TransportError({
+					code: -32603,
+					message: "Request failed",
+				});
 
-        for (let attempt = 0; attempt <= config.retries; attempt++) {
-          const result = yield* Effect.tryPromise({
-            try: () => executeRequest<T>(body, headers, config.timeout),
-            catch: (e): TransportError => {
-              if (e instanceof TransportError) return e
-              if (e instanceof Error && e.name === 'AbortError') {
-                return new TransportError({
-                  code: -32603,
-                  message: `Request timeout after ${config.timeout}ms`,
-                })
-              }
-              return new TransportError({
-                code: -32603,
-                message: e instanceof Error ? e.message : 'Network error',
-              })
-            },
-          }).pipe(
-            Effect.catchAll((err) => {
-              lastError = err
-              if (attempt < config.retries) {
-                return Effect.as(Effect.sleep(config.retryDelay), undefined as T | undefined)
-              }
-              return Effect.fail(err)
-            })
-          )
+				for (let attempt = 0; attempt <= config.retries; attempt++) {
+					const result = yield* Effect.tryPromise({
+						try: () => executeRequest<T>(body, headers, config.timeout),
+						catch: (e): TransportError => {
+							if (e instanceof TransportError) return e;
+							if (e instanceof Error && e.name === "AbortError") {
+								return new TransportError({
+									code: -32603,
+									message: `Request timeout after ${config.timeout}ms`,
+								});
+							}
+							return new TransportError({
+								code: -32603,
+								message: e instanceof Error ? e.message : "Network error",
+							});
+						},
+					}).pipe(
+						Effect.catchAll((err) => {
+							lastError = err;
+							if (attempt < config.retries) {
+								return Effect.as(
+									Effect.sleep(config.retryDelay),
+									undefined as T | undefined,
+								);
+							}
+							return Effect.fail(err);
+						}),
+					);
 
-          if (result !== undefined) {
-            return result
-          }
-        }
+					if (result !== undefined) {
+						return result;
+					}
+				}
 
-        return yield* Effect.fail(lastError)
-      }),
-  })
-}
+				return yield* Effect.fail(lastError);
+			}),
+	});
+};
