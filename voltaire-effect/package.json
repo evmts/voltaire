@@ -47,6 +47,10 @@
 		"./services": {
 			"types": "./dist/services/index.d.ts",
 			"import": "./dist/services/index.js"
+		},
+		"./jsonrpc": {
+			"types": "./dist/jsonrpc/index.d.ts",
+			"import": "./dist/jsonrpc/index.js"
 		}
 	},
 	"typesVersions": {
@@ -59,6 +63,9 @@
 			],
 			"services": [
 				"./dist/services/index.d.ts"
+			],
+			"jsonrpc": [
+				"./dist/jsonrpc/index.d.ts"
 			]
 		}
 	},
