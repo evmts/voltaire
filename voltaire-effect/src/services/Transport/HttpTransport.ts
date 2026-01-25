@@ -19,8 +19,12 @@
  * @see {@link BrowserTransport} - Alternative for browser wallet interaction
  */
 
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Ref from "effect/Ref";
+import * as Schedule from "effect/Schedule";
+import { type BatchOptions, createBatchScheduler } from "./BatchScheduler.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
 
@@ -57,6 +61,8 @@ interface HttpTransportConfig {
 	retries?: number;
 	/** Delay between retries in milliseconds (default: 1000) */
 	retryDelay?: number;
+	/** Enable request batching */
+	batch?: BatchOptions;
 }
 
 /**
@@ -167,108 +173,181 @@ export const HttpTransport = (
 ): Layer.Layer<TransportService> => {
 	const config =
 		typeof options === "string"
-			? { url: options, timeout: 30000, retries: 3, retryDelay: 1000 }
+			? { url: options, timeout: 30000, retries: 3, retryDelay: 1000, batch: undefined as BatchOptions | undefined }
 			: {
 					url: options.url,
 					headers: options.headers,
 					timeout: options.timeout ?? 30000,
 					retries: options.retries ?? 3,
 					retryDelay: options.retryDelay ?? 1000,
+					batch: options.batch,
 				};
 
-	let requestId = 0;
-
-	const executeRequest = async <T>(
-		body: string,
-		headers: Record<string, string>,
-		timeout: number,
-	): Promise<T> => {
-		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-		try {
-			const response = await fetch(config.url, {
-				method: "POST",
-				headers,
-				body,
-				signal: controller.signal,
-			});
-
-			if (!response.ok) {
-				throw new TransportError({
-					code: -32603,
-					message: `HTTP ${response.status}: ${response.statusText}`,
-				});
-			}
-
-			const json = (await response.json()) as JsonRpcResponse<T>;
-			if (json.error) {
-				throw new TransportError({
-					code: json.error.code,
-					message: json.error.message,
-					data: json.error.data,
-				});
-			}
-
-			return json.result as T;
-		} finally {
-			clearTimeout(timeoutId);
-		}
+	const toTransportError = (e: unknown): TransportError => {
+		if (e instanceof TransportError) return e;
+		return new TransportError({
+			code: -32603,
+			message: e instanceof Error ? e.message : "Network error",
+		});
 	};
 
-	return Layer.succeed(TransportService, {
-		request: <T>(
-			method: string,
-			params: unknown[] = [],
-		): Effect.Effect<T, TransportError> =>
-			Effect.gen(function* () {
-				const id = ++requestId;
-				const body = JSON.stringify({ jsonrpc: "2.0", id, method, params });
-				const headers: Record<string, string> = {
-					"Content-Type": "application/json",
-					...config.headers,
-				};
-
-				let lastError: TransportError = new TransportError({
-					code: -32603,
-					message: "Request failed",
-				});
-
-				for (let attempt = 0; attempt <= config.retries; attempt++) {
-					const result = yield* Effect.tryPromise({
-						try: () => executeRequest<T>(body, headers, config.timeout),
-						catch: (e): TransportError => {
-							if (e instanceof TransportError) return e;
-							if (e instanceof Error && e.name === "AbortError") {
-								return new TransportError({
-									code: -32603,
-									message: `Request timeout after ${config.timeout}ms`,
-								});
-							}
-							return new TransportError({
-								code: -32603,
-								message: e instanceof Error ? e.message : "Network error",
-							});
-						},
-					}).pipe(
-						Effect.catchAll((err) => {
-							lastError = err;
-							if (attempt < config.retries) {
-								return Effect.as(
-									Effect.sleep(config.retryDelay),
-									undefined as T | undefined,
-								);
-							}
-							return Effect.fail(err);
+	const doFetch = <T>(
+		body: string,
+		headers: Record<string, string>,
+	): Effect.Effect<T, TransportError> =>
+		Effect.acquireRelease(
+			Effect.sync(() => new AbortController()),
+			(controller) => Effect.sync(() => controller.abort()),
+		).pipe(
+			Effect.flatMap((controller) =>
+				Effect.tryPromise({
+					try: () =>
+						fetch(config.url, {
+							method: "POST",
+							headers,
+							body,
+							signal: controller.signal,
 						}),
-					);
-
-					if (result !== undefined) {
-						return result;
-					}
-				}
-
-				return yield* Effect.fail(lastError);
+					catch: toTransportError,
+				}),
+			),
+			Effect.flatMap((response) =>
+				response.ok
+					? Effect.tryPromise({
+							try: () => response.json() as Promise<JsonRpcResponse<T>>,
+							catch: toTransportError,
+						})
+					: Effect.fail(
+							new TransportError({
+								code: -32603,
+								message: `HTTP ${response.status}: ${response.statusText}`,
+							}),
+						),
+			),
+			Effect.flatMap((json) =>
+				json.error
+					? Effect.fail(
+							new TransportError({
+								code: json.error.code,
+								message: json.error.message,
+								data: json.error.data,
+							}),
+						)
+					: Effect.succeed(json.result as T),
+			),
+			Effect.timeoutFail({
+				duration: Duration.millis(config.timeout),
+				onTimeout: () =>
+					new TransportError({
+						code: -32603,
+						message: `Request timeout after ${config.timeout}ms`,
+					}),
 			}),
-	});
+			Effect.scoped,
+		);
+
+	const retrySchedule = Schedule.recurs(config.retries).pipe(
+		Schedule.intersect(Schedule.spaced(Duration.millis(config.retryDelay))),
+	);
+
+	interface JsonRpcBatchResponse {
+		id: number;
+		result?: unknown;
+		error?: { code: number; message: string; data?: unknown };
+	}
+
+	const sendBatch = (
+		requests: Array<{ id: number; method: string; params?: unknown[] }>,
+	): Effect.Effect<JsonRpcBatchResponse[], Error> => {
+		const body = JSON.stringify(
+			requests.map((r) => ({
+				jsonrpc: "2.0",
+				id: r.id,
+				method: r.method,
+				params: r.params ?? [],
+			})),
+		);
+		const headers: Record<string, string> = {
+			"Content-Type": "application/json",
+			...config.headers,
+		};
+
+		return Effect.acquireRelease(
+			Effect.sync(() => new AbortController()),
+			(controller) => Effect.sync(() => controller.abort()),
+		).pipe(
+			Effect.flatMap((controller) =>
+				Effect.tryPromise({
+					try: () =>
+						fetch(config.url, {
+							method: "POST",
+							headers,
+							body,
+							signal: controller.signal,
+						}),
+					catch: (e) => new Error(e instanceof Error ? e.message : "Network error"),
+				}),
+			),
+			Effect.flatMap((response) =>
+				response.ok
+					? Effect.tryPromise({
+							try: () => response.json() as Promise<JsonRpcBatchResponse[]>,
+							catch: (e) => new Error(e instanceof Error ? e.message : "Parse error"),
+						})
+					: Effect.fail(new Error(`HTTP ${response.status}: ${response.statusText}`)),
+			),
+			Effect.timeoutFail({
+				duration: Duration.millis(config.timeout),
+				onTimeout: () => new Error(`Request timeout after ${config.timeout}ms`),
+			}),
+			Effect.retry(retrySchedule),
+			Effect.scoped,
+		);
+	};
+
+	if (config.batch) {
+		const scheduler = createBatchScheduler(sendBatch, config.batch);
+
+		return Layer.succeed(TransportService, {
+			request: <T>(
+				method: string,
+				params: unknown[] = [],
+			): Effect.Effect<T, TransportError> =>
+				scheduler.schedule<T>(method, params).pipe(
+					Effect.mapError((e) =>
+						new TransportError({
+							code: -32603,
+							message: e.message,
+						}),
+					),
+				),
+		});
+	}
+
+	return Layer.effect(
+		TransportService,
+		Effect.gen(function* () {
+			const requestIdRef = yield* Ref.make(0);
+
+			return TransportService.of({
+				request: <T>(
+					method: string,
+					params: unknown[] = [],
+				): Effect.Effect<T, TransportError> =>
+					Ref.updateAndGet(requestIdRef, (n) => n + 1).pipe(
+						Effect.map((id) =>
+							JSON.stringify({ jsonrpc: "2.0", id, method, params }),
+						),
+						Effect.flatMap((body) => {
+							const headers: Record<string, string> = {
+								"Content-Type": "application/json",
+								...config.headers,
+							};
+							return doFetch<T>(body, headers);
+						}),
+						Effect.retry(retrySchedule),
+					),
+			});
+		}),
+	);
 };

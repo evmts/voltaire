@@ -38,7 +38,12 @@
  * @see {@link TransportError} - Error type for transport failures
  */
 
+export { type BatchOptions } from "./BatchScheduler.js";
 export { BrowserTransport } from "./BrowserTransport.js";
+export {
+	FallbackTransport,
+	type FallbackTransportOptions,
+} from "./FallbackTransport.js";
 export { HttpTransport } from "./HttpTransport.js";
 export { TestTransport } from "./TestTransport.js";
 export {
@@ -46,4 +51,7 @@ export {
 	TransportService,
 	type TransportShape,
 } from "./TransportService.js";
-export { WebSocketTransport } from "./WebSocketTransport.js";
+export {
+	WebSocketTransport,
+	type ReconnectOptions,
+} from "./WebSocketTransport.js";
