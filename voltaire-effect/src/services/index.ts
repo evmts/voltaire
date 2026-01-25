@@ -59,6 +59,14 @@
  * ```
  */
 
+// AbiEncoder exports
+export {
+	AbiDecodeError,
+	AbiEncodeError,
+	AbiEncoderService,
+	type AbiEncoderShape,
+	DefaultAbiEncoder,
+} from "./AbiEncoder/index.js";
 // Account exports
 export {
 	AccountError,
@@ -68,6 +76,13 @@ export {
 	LocalAccount,
 	type UnsignedTransaction,
 } from "./Account/index.js";
+// Formatter exports
+export {
+	DefaultFormatter,
+	FormatError,
+	FormatterService,
+	type FormatterShape,
+} from "./Formatter/index.js";
 // Contract exports
 export {
 	type Abi as ContractAbi,
@@ -99,7 +114,17 @@ export {
 	type TransactionType,
 } from "./Provider/index.js";
 // Preset exports (layer composition helpers)
-export { createProvider, MainnetProvider } from "./presets/index.js";
+export {
+	ArbitrumProvider,
+	BaseProvider,
+	type ComposedServices,
+	createProvider,
+	MainnetFullProvider,
+	MainnetProvider,
+	OptimismProvider,
+	PolygonProvider,
+	SepoliaProvider,
+} from "./presets/index.js";
 // Transport exports
 export {
 	BrowserTransport,
@@ -118,3 +143,112 @@ export {
 	type SignerShape,
 	type TransactionRequest,
 } from "./Signer/index.js";
+// NonceManager exports
+export {
+	DefaultNonceManager,
+	NonceError,
+	NonceManagerService,
+	type NonceManagerShape,
+} from "./NonceManager/index.js";
+// Cache exports
+export {
+	CacheService,
+	type CacheShape,
+	MemoryCache,
+	type MemoryCacheOptions,
+	NoopCache,
+} from "./Cache/index.js";
+// TransactionSerializer exports
+export {
+	DefaultTransactionSerializer,
+	DeserializeError,
+	SerializeError,
+	TransactionSerializerService,
+} from "./TransactionSerializer/index.js";
+// Chain exports
+export {
+	arbitrum,
+	arbitrumConfig,
+	base,
+	baseConfig,
+	type ChainConfig,
+	type ChainContract,
+	ChainService,
+	mainnet,
+	mainnetConfig,
+	optimism,
+	optimismConfig,
+	polygon,
+	polygonConfig,
+	sepolia,
+	sepoliaConfig,
+} from "./Chain/index.js";
+// FeeEstimator exports
+export {
+	DefaultFeeEstimator,
+	FeeEstimationError,
+	FeeEstimatorService,
+	type FeeEstimatorShape,
+	type FeeValues,
+	type FeeValuesEIP1559,
+	type FeeValuesLegacy,
+	makeFeeEstimator,
+} from "./FeeEstimator/index.js";
+// Multicall exports
+export {
+	DefaultMulticall,
+	type MulticallCall,
+	MulticallError,
+	type MulticallResult,
+	MulticallService,
+	type MulticallShape,
+} from "./Multicall/index.js";
+// BlockStream exports
+export {
+	BlockStream,
+	BlockStreamError,
+	BlockStreamService,
+	type BlockStreamShape,
+} from "./BlockStream/index.js";
+// Kzg exports
+export {
+	DefaultKzg,
+	KzgError,
+	KzgService,
+	type KzgShape,
+	NoopKzg,
+} from "./Kzg/index.js";
+// Ccip exports
+export {
+	CcipError,
+	type CcipRequest,
+	CcipService,
+	type CcipShape,
+	DefaultCcip,
+	NoopCcip,
+} from "./Ccip/index.js";
+// Blockchain exports
+export {
+	type Block,
+	BlockchainError,
+	BlockchainService,
+	type BlockchainShape,
+	ForkBlockchain,
+	type ForkBlockchainOptions,
+	type HexInput as BlockchainHexInput,
+	InMemoryBlockchain,
+} from "../blockchain/index.js";
+// RawProvider exports
+export {
+	RawProviderService,
+	type RawProviderShape,
+	RawProviderTransport,
+	type RequestArguments as RawRequestArguments,
+} from "./RawProvider/index.js";
+// TransactionStream exports
+export {
+	TransactionStream,
+	TransactionStreamError,
+	TransactionStreamService,
+	type TransactionStreamShape,
+} from "../transaction/index.js";

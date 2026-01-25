@@ -1,5 +1,8 @@
 // Primitives - explicit namespace exports
 
+// Block utilities module (streaming/fetching)
+export * as BlockUtils from "./block/index.js";
+
 // Re-export voltaire error types for Effect compatibility
 export {
 	// Base errors
@@ -194,3 +197,22 @@ export * as ValidatorIndex from "./primitives/ValidatorIndex/index.js";
 export * as Withdrawal from "./primitives/Withdrawal/index.js";
 export * as WithdrawalIndex from "./primitives/WithdrawalIndex/index.js";
 export * from "./services/index.js";
+export * as ERC20 from "./standards/ERC20.js";
+export * as ERC721 from "./standards/ERC721.js";
+export * as ERC1155 from "./standards/ERC1155.js";
+export * as ERC165 from "./standards/ERC165.js";
+export { StandardsError } from "./standards/errors.js";
+
+// JSON-RPC module
+export * as JsonRpc from "./jsonrpc/index.js";
+
+// Contract event streaming
+export {
+	EventStream,
+	EventStreamError,
+	EventStreamService,
+	type EventStreamShape,
+	type BackfillStreamOptions,
+	type WatchStreamOptions,
+} from "./contract/index.js";
+export * as Stream from "./stream/index.js";
