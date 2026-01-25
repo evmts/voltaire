@@ -38,6 +38,13 @@ type SignatureType = BrandedSignature.SignatureType;
 type TypedDataType = TypedData.TypedDataType;
 
 /**
+ * Address input type that accepts both branded AddressType and plain hex strings.
+ * Provides flexibility for API consumers while maintaining type safety.
+ * Matches ProviderService.AddressInput for consistency.
+ */
+export type AddressInput = AddressType | `0x${string}`;
+
+/**
  * Error thrown when a signer operation fails.
  *
  * @description
@@ -114,7 +121,7 @@ export class SignerError extends AbstractError {
  */
 export type TransactionRequest = {
 	/** Recipient address (null or undefined for contract deployment) */
-	readonly to?: AddressType | null;
+	readonly to?: AddressInput | null;
 	/** Value in wei to send with the transaction */
 	readonly value?: bigint;
 	/** Transaction input data (for contract calls/deployment) */
@@ -133,7 +140,7 @@ export type TransactionRequest = {
 	readonly chainId?: bigint;
 	/** EIP-2930 access list for pre-warming storage slots */
 	readonly accessList?: Array<{
-		address: AddressType | `0x${string}`;
+		address: AddressInput;
 		storageKeys: Array<`0x${string}`>;
 	}>;
 };
