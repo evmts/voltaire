@@ -223,7 +223,7 @@ export const Contract = <TAbi extends Abi>(
 			)[fn.name] = (...args: unknown[]) =>
 				Effect.gen(function* () {
 					const data = encodeArgs(abiItems, fn.name, args);
-					const result = yield* publicClient
+					const result = yield* provider
 						.call({ to: addressHex, data })
 						.pipe(
 							Effect.mapError(
@@ -281,7 +281,7 @@ export const Contract = <TAbi extends Abi>(
 			)[fn.name] = (...args: unknown[]) =>
 				Effect.gen(function* () {
 					const data = encodeArgs(abiItems, fn.name, args);
-					const result = yield* publicClient
+					const result = yield* provider
 						.call({ to: addressHex, data })
 						.pipe(
 							Effect.mapError(
@@ -309,7 +309,7 @@ export const Contract = <TAbi extends Abi>(
 			Effect.gen(function* () {
 				const topic = getEventTopic(abiItems, eventName);
 
-				const toPublicBlockTag = (
+				const toProviderBlockTag = (
 					tag: import("./ContractTypes.js").BlockTag | undefined,
 				) => {
 					if (tag === undefined) return undefined;
@@ -317,14 +317,14 @@ export const Contract = <TAbi extends Abi>(
 					return tag;
 				};
 
-				const logFilter: PublicLogFilter = {
+				const logFilter: ProviderLogFilter = {
 					address: addressHex,
 					topics: [topic as `0x${string}`],
-					fromBlock: toPublicBlockTag(filter?.fromBlock),
-					toBlock: toPublicBlockTag(filter?.toBlock),
+					fromBlock: toProviderBlockTag(filter?.fromBlock),
+					toBlock: toProviderBlockTag(filter?.toBlock),
 				};
 
-				const logs = yield* publicClient
+				const logs = yield* provider
 					.getLogs(logFilter)
 					.pipe(
 						Effect.mapError(

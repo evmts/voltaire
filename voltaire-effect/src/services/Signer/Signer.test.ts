@@ -14,9 +14,9 @@ type SignatureType = BrandedSignature.SignatureType;
 import type { AccountShape } from "../Account/AccountService.js";
 import { AccountService } from "../Account/index.js";
 import {
-	PublicClientService,
-	type PublicClientShape,
-} from "../PublicClient/index.js";
+	ProviderService,
+	type ProviderShape,
+} from "../Provider/index.js";
 import { TransportService, type TransportShape } from "../Transport/index.js";
 import { Signer } from "./Signer.js";
 import { SignerError, SignerService } from "./SignerService.js";

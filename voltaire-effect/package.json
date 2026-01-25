@@ -1,31 +1,31 @@
 {
-  "name": "voltaire-effect",
-  "version": "0.0.1",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": "./dist/index.js",
-    "./primitives": "./dist/primitives/index.js",
-    "./crypto": "./dist/crypto/index.js",
-    "./services": "./dist/services/index.js"
-  },
-  "peerDependencies": {
-    "@tevm/voltaire": "workspace:*",
-    "effect": "^3.12.0"
-  },
-  "devDependencies": {
-    "vitest": "^2.1.8",
-    "typescript": "^5.9.3",
-    "tsup": "^8.4.0",
-    "astro": "^5.0.0"
-  },
-  "scripts": {
-    "build": "tsup",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "docs:dev": "cd docs && astro dev",
-    "docs:build": "cd docs && astro build"
-  }
+	"name": "voltaire-effect",
+	"version": "0.0.1",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": "./dist/index.js",
+		"./primitives": "./dist/primitives/index.js",
+		"./crypto": "./dist/crypto/index.js",
+		"./services": "./dist/services/index.js"
+	},
+	"peerDependencies": {
+		"@tevm/voltaire": "workspace:*",
+		"effect": "^3.12.0"
+	},
+	"devDependencies": {
+		"vitest": "^2.1.8",
+		"typescript": "^5.9.3",
+		"tsup": "^8.4.0",
+		"astro": "^5.0.0"
+	},
+	"scripts": {
+		"build": "tsup",
+		"test": "vitest",
+		"test:run": "vitest run",
+		"typecheck": "tsc --noEmit",
+		"docs:dev": "cd docs && mintlify dev",
+		"docs:build": "cd docs && mintlify build"
+	}
 }

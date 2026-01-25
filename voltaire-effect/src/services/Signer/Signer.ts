@@ -298,7 +298,7 @@ const SignerLive: Layer.Layer<
  */
 export const Signer = {
 	/**
-	 * Live implementation layer requiring AccountService, PublicClientService, and TransportService.
+	 * Live implementation layer requiring AccountService, ProviderService, and TransportService.
 	 */
 	Live: SignerLive,
 
@@ -306,18 +306,18 @@ export const Signer = {
 	 * Creates a Signer layer by composing a provider layer and account layer.
 	 *
 	 * @description
-	 * Combines a PublicClientService layer with an AccountService layer to create
+	 * Combines a ProviderService layer with an AccountService layer to create
 	 * a fully configured SignerService layer. The resulting layer still requires
 	 * TransportService to be provided.
 	 *
-	 * @param providerLayer - Layer providing PublicClientService (requires TransportService)
+	 * @param providerLayer - Layer providing ProviderService (requires TransportService)
 	 * @param accountLayer - Layer providing AccountService
 	 * @returns Layer providing SignerService (requires TransportService)
 	 *
 	 * @since 0.0.1
 	 */
 	fromProvider: <E1, R1, E2, R2>(
-		providerLayer: Layer.Layer<PublicClientService, E1, R1>,
+		providerLayer: Layer.Layer<ProviderService, E1, R1>,
 		accountLayer: Layer.Layer<AccountService, E2, R2>,
 	): Layer.Layer<SignerService, E1 | E2, R1 | R2 | TransportService> =>
 		SignerLive.pipe(
@@ -334,14 +334,14 @@ export const Signer = {
 	 * still requires TransportService and the crypto services (Secp256k1Service, KeccakService).
 	 *
 	 * @param privateKey - The private key as a hex string (with 0x prefix)
-	 * @param providerLayer - Layer providing PublicClientService (requires TransportService)
+	 * @param providerLayer - Layer providing ProviderService (requires TransportService)
 	 * @returns Layer providing SignerService (requires TransportService and crypto services)
 	 *
 	 * @since 0.0.1
 	 */
 	fromPrivateKey: <E, R>(
 		privateKey: HexType,
-		providerLayer: Layer.Layer<PublicClientService, E, R>,
+		providerLayer: Layer.Layer<ProviderService, E, R>,
 	) =>
 		Signer.fromProvider(providerLayer, LocalAccount(privateKey)),
 } as const;
