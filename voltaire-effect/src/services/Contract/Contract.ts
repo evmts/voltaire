@@ -15,11 +15,11 @@
  *
  * All methods are type-safe based on the ABI definition.
  *
- * Requires PublicClientService for read operations.
+ * Requires ProviderService for read operations.
  * Write operations additionally require SignerService.
  *
  * @see {@link ContractInstance} - The returned contract interface
- * @see {@link PublicClientService} - Required for all operations
+ * @see {@link ProviderService} - Required for all operations
  * @see {@link SignerService} - Required for write operations
  */
 

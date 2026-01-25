@@ -36,7 +36,7 @@ const mockAccount: AccountShape = {
 	signTypedData: () => Effect.succeed(mockSignature),
 };
 
-const mockPublicClient: PublicClientShape = {
+const mockProvider: ProviderShape = {
 	getBlockNumber: () => Effect.succeed(12345n),
 	getBlock: () => Effect.succeed({} as never),
 	getBlockTransactionCount: () => Effect.succeed(0n),
@@ -64,15 +64,15 @@ const mockTransport: TransportShape = {
 };
 
 const TestAccountLayer = Layer.succeed(AccountService, mockAccount);
-const TestPublicClientLayer = Layer.succeed(
-	PublicClientService,
-	mockPublicClient,
+const TestProviderLayer = Layer.succeed(
+	ProviderService,
+	mockProvider,
 );
 const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
 
 const TestLayers = Layer.mergeAll(
 	TestAccountLayer,
-	TestPublicClientLayer,
+	TestProviderLayer,
 	TestTransportLayer,
 );
 
@@ -130,7 +130,7 @@ describe("SignerService", () => {
 	describe("Signer.fromProvider", () => {
 		it("composes provider and account layers", async () => {
 			const composedLayer = Signer.fromProvider(
-				TestPublicClientLayer,
+				TestProviderLayer,
 				TestAccountLayer,
 			);
 			const fullLayer = Layer.provide(composedLayer, TestTransportLayer);
@@ -149,7 +149,7 @@ describe("SignerService", () => {
 
 		it("sends transaction with composed layers", async () => {
 			const composedLayer = Signer.fromProvider(
-				TestPublicClientLayer,
+				TestProviderLayer,
 				TestAccountLayer,
 			);
 			const fullLayer = Layer.provide(composedLayer, TestTransportLayer);
@@ -178,7 +178,7 @@ describe("SignerService", () => {
 			const mockLocalAccountLayer = Layer.succeed(AccountService, mockAccount);
 
 			const composedLayer = Signer.fromProvider(
-				TestPublicClientLayer,
+				TestProviderLayer,
 				mockLocalAccountLayer,
 			);
 			const fullLayer = Layer.provide(composedLayer, TestTransportLayer);
@@ -213,7 +213,7 @@ describe("SignerService", () => {
 			const failingAccountLayer = Layer.succeed(AccountService, failingAccount);
 			const failingLayers = Layer.mergeAll(
 				failingAccountLayer,
-				TestPublicClientLayer,
+				TestProviderLayer,
 				TestTransportLayer,
 			);
 			const failingSignerLayer = Layer.provide(Signer.Live, failingLayers);
@@ -245,7 +245,7 @@ describe("SignerService", () => {
 			);
 			const customLayers = Layer.mergeAll(
 				TestAccountLayer,
-				TestPublicClientLayer,
+				TestProviderLayer,
 				customTransportLayer,
 			);
 			const customSignerLayer = Layer.provide(Signer.Live, customLayers);

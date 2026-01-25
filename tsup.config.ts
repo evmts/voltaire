@@ -130,7 +130,9 @@ const nativeConfig = createTsUpOptions({
 
 // Export separate configs to prevent FFI leaking into pure JS bundles
 const pureConfigs = Array.isArray(pureJsConfig) ? pureJsConfig : [pureJsConfig];
-const nativeConfigs = Array.isArray(nativeConfig) ? nativeConfig : [nativeConfig];
+const nativeConfigs = Array.isArray(nativeConfig)
+	? nativeConfig
+	: [nativeConfig];
 
 export default [
 	// Pure JS bundles - no external FFI
