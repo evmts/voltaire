@@ -1,3 +1,13 @@
+/**
+ * @fileoverview PackedUserOperation factory function for ERC-4337 v0.7.
+ * 
+ * This module provides the `from` function for creating validated
+ * PackedUserOperations from flexible input types.
+ * 
+ * @see https://eips.ethereum.org/EIPS/eip-4337
+ * @module PackedUserOperation/from
+ * @since 0.0.1
+ */
 import { Address } from '@tevm/voltaire/Address'
 import { ValidationError } from '@tevm/voltaire/errors'
 import * as Effect from 'effect/Effect'
@@ -7,6 +17,23 @@ import type { PackedUserOperationType } from './PackedUserOperationSchema.js'
  * Parameters for creating a PackedUserOperation.
  *
  * Accepts flexible input types that are normalized during construction.
+ * The accountGasLimits and gasFees fields should be 32-byte arrays containing
+ * the packed gas values.
+ *
+ * @example
+ * ```typescript
+ * const params: PackedUserOperationFromParams = {
+ *   sender: '0x1234567890123456789012345678901234567890',
+ *   nonce: 0n,
+ *   initCode: '0x',
+ *   callData: '0xabcdef',
+ *   accountGasLimits: new Uint8Array(32),
+ *   preVerificationGas: 21000n,
+ *   gasFees: new Uint8Array(32),
+ *   paymasterAndData: '0x',
+ *   signature: '0x'
+ * }
+ * ```
  *
  * @since 0.0.1
  */
@@ -43,15 +70,26 @@ const toBigInt = (value: bigint | number | string): bigint => {
 /**
  * Creates a PackedUserOperation from flexible input parameters.
  *
+ * This function accepts flexible input types and normalizes them into the
+ * canonical PackedUserOperationType format. It validates all inputs and returns
+ * an Effect that either succeeds with the PackedUserOperation or fails with a
+ * ValidationError.
+ *
+ * @description
+ * The function handles type coercion for:
+ * - Addresses: hex strings or Uint8Array → AddressType
+ * - BigInts: bigint, number, or string → bigint
+ * - Bytes: hex strings or Uint8Array → Uint8Array
+ *
  * @param params - PackedUserOperation input with flexible types for addresses, bigints, and byte arrays
  * @returns Effect that succeeds with PackedUserOperationType or fails with ValidationError
  *
  * @example
  * ```typescript
  * import * as Effect from 'effect/Effect'
- * import { from } from 'voltaire-effect/primitives/PackedUserOperation'
+ * import * as PackedUserOperation from 'voltaire-effect/primitives/PackedUserOperation'
  *
- * const packed = from({
+ * const program = PackedUserOperation.from({
  *   sender: '0x1234567890123456789012345678901234567890',
  *   nonce: 0n,
  *   initCode: '0x',
@@ -63,9 +101,12 @@ const toBigInt = (value: bigint | number | string): bigint => {
  *   signature: '0x'
  * })
  *
- * Effect.runSync(packed)
+ * const packed = Effect.runSync(program)
  * ```
  *
+ * @throws ValidationError - When input validation fails (invalid address format, etc.)
+ * @see PackedUserOperationType - The output type
+ * @see unpack - For converting back to UserOperation format
  * @since 0.0.1
  */
 export const from = (params: PackedUserOperationFromParams): Effect.Effect<PackedUserOperationType, ValidationError> =>

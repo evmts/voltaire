@@ -1,6 +1,15 @@
 /**
+ * @fileoverview PackedUserOperation unpacking for ERC-4337 v0.7.
+ * 
+ * This module converts PackedUserOperations back to the standard UserOperation
+ * format by extracting the individual gas values from the packed fields.
+ * 
+ * The unpacking extracts:
+ * - From `accountGasLimits`: verificationGasLimit (first 16 bytes) + callGasLimit (last 16 bytes)
+ * - From `gasFees`: maxPriorityFeePerGas (first 16 bytes) + maxFeePerGas (last 16 bytes)
+ * 
+ * @see https://eips.ethereum.org/EIPS/eip-4337
  * @module PackedUserOperation/unpack
- * Unpacks a PackedUserOperation into a full UserOperation.
  * @since 0.0.1
  */
 import { ValidationError } from '@tevm/voltaire/errors'
@@ -23,22 +32,35 @@ const bytesToUint128 = (bytes: Uint8Array, offset: number): bigint => {
  * their individual components (verificationGasLimit, callGasLimit,
  * maxPriorityFeePerGas, maxFeePerGas).
  *
+ * @description
+ * This is the inverse of `UserOperation.pack()`. It extracts:
+ * - `verificationGasLimit`: First 16 bytes of accountGasLimits
+ * - `callGasLimit`: Last 16 bytes of accountGasLimits
+ * - `maxPriorityFeePerGas`: First 16 bytes of gasFees
+ * - `maxFeePerGas`: Last 16 bytes of gasFees
+ *
+ * All other fields are copied directly.
+ *
  * @param packedUserOp - The packed user operation to unpack
  * @returns Effect that succeeds with UserOperationType or fails with ValidationError
  *
  * @example
  * ```typescript
  * import * as Effect from 'effect/Effect'
- * import { unpack, from } from 'voltaire-effect/primitives/PackedUserOperation'
+ * import * as PackedUserOperation from 'voltaire-effect/primitives/PackedUserOperation'
  *
  * const program = Effect.gen(function* () {
- *   const packed = yield* from({ ... })
- *   const userOp = yield* unpack(packed)
- *   console.log(userOp.callGasLimit) // extracted from accountGasLimits
- *   console.log(userOp.maxFeePerGas) // extracted from gasFees
+ *   const packed = yield* PackedUserOperation.from({ ... })
+ *   const userOp = yield* PackedUserOperation.unpack(packed)
+ *   console.log(userOp.callGasLimit)        // extracted from accountGasLimits
+ *   console.log(userOp.verificationGasLimit) // extracted from accountGasLimits
+ *   console.log(userOp.maxFeePerGas)         // extracted from gasFees
+ *   console.log(userOp.maxPriorityFeePerGas) // extracted from gasFees
  * })
  * ```
  *
+ * @throws ValidationError - When the packed fields have invalid format
+ * @see UserOperation.pack - For the inverse operation
  * @since 0.0.1
  */
 export const unpack = (

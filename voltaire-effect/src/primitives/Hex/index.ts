@@ -15,7 +15,15 @@
  * This module provides:
  * - {@link from} - Create Hex from string or bytes (fallible)
  * - {@link fromBytes} - Create Hex from bytes (infallible)
+ * - {@link fromNumber} - Create Hex from number (fallible)
+ * - {@link fromBigInt} - Create Hex from bigint (fallible)
+ * - {@link fromString} - Create Hex from UTF-8 string (fallible)
+ * - {@link fromBoolean} - Create Hex from boolean (infallible)
  * - {@link toBytes} - Convert Hex to Uint8Array
+ * - {@link toNumber} - Convert Hex to number (fallible)
+ * - {@link toBigInt} - Convert Hex to bigint (fallible)
+ * - {@link toString} - Convert Hex to UTF-8 string (infallible)
+ * - {@link toBoolean} - Convert Hex to boolean (fallible)
  * - {@link size} - Get byte size of Hex string
  * - {@link Schema} - Effect Schema for validation/parsing
  *
@@ -45,8 +53,30 @@
 export { Schema } from './HexSchema.js'
 export { from } from './from.js'
 export { fromBytes } from './fromBytes.js'
+export { fromNumber } from './fromNumber.js'
+export { fromBigInt } from './fromBigInt.js'
+export { fromString } from './fromString.js'
+export { fromBoolean } from './fromBoolean.js'
 export { toBytes } from './toBytes.js'
+export { toNumber } from './toNumber.js'
+export { toBigInt } from './toBigInt.js'
+export { toString } from './toString.js'
+export { toBoolean } from './toBoolean.js'
 export { size } from './size.js'
+export { concat } from './concat.js'
+export { slice } from './slice.js'
+export { pad } from './pad.js'
+export { padRight } from './padRight.js'
+export { trim } from './trim.js'
+export { equals } from './equals.js'
+export { clone } from './clone.js'
+export { xor } from './xor.js'
+export { random } from './random.js'
+export { zero } from './zero.js'
+export { isHex } from './isHex.js'
+export { validate } from './validate.js'
+export { isSized } from './isSized.js'
+export { assertSize } from './assertSize.js'
 
 /**
  * Branded type for validated hex strings.

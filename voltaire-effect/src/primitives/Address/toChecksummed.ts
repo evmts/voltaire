@@ -31,11 +31,11 @@ import { KeccakService } from '../../crypto/Keccak256/KeccakService.js'
  * @returns An Effect that yields the checksummed hex string (e.g., "0x5aAeb6...").
  *   Requires KeccakService in the Effect context. Never fails (error channel is `never`).
  * 
- * @example Basic usage with KeccakServiceLive
+ * @example Basic usage with KeccakLive
  * ```typescript
  * import * as Effect from 'effect/Effect'
  * import * as Address from 'voltaire-effect/primitives/Address'
- * import { KeccakServiceLive } from 'voltaire-effect/crypto/Keccak256'
+ * import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
  * 
  * const program = Effect.gen(function* () {
  *   const addr = yield* Address.from('0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed')
@@ -43,7 +43,7 @@ import { KeccakService } from '../../crypto/Keccak256/KeccakService.js'
  * })
  * 
  * const checksummed = await Effect.runPromise(
- *   program.pipe(Effect.provide(KeccakServiceLive))
+ *   program.pipe(Effect.provide(KeccakLive))
  * )
  * // checksummed is "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
  * ```
@@ -73,7 +73,7 @@ import { KeccakService } from '../../crypto/Keccak256/KeccakService.js'
  * const formatAddress = (input: string) =>
  *   Address.from(input).pipe(
  *     Effect.flatMap(Address.toChecksummed),
- *     Effect.provide(KeccakServiceLive)
+ *     Effect.provide(KeccakLive)
  *   )
  * 
  * const display = await Effect.runPromise(formatAddress('0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'))
@@ -90,7 +90,7 @@ import { KeccakService } from '../../crypto/Keccak256/KeccakService.js'
  *     const addr = yield* Address.from(input)
  *     const checksummed = yield* Address.toChecksummed(addr)
  *     return input === checksummed
- *   }).pipe(Effect.provide(KeccakServiceLive))
+ *   }).pipe(Effect.provide(KeccakLive))
  * ```
  * 
  * @see {@link ChecksummedAddressSchema} for Schema-based checksummed output

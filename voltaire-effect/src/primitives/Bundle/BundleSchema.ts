@@ -1,9 +1,28 @@
+/**
+ * @fileoverview Bundle Schema definitions for ERC-4337 account abstraction.
+ * 
+ * A Bundle is a collection of UserOperations that a Bundler submits to the
+ * EntryPoint contract in a single transaction. The Bundle includes the
+ * beneficiary address that receives the gas refunds.
+ * 
+ * @see https://eips.ethereum.org/EIPS/eip-4337
+ * @module BundleSchema
+ * @since 0.0.1
+ */
 import * as S from 'effect/Schema'
 import * as ParseResult from 'effect/ParseResult'
 import { Address } from '@tevm/voltaire/Address'
 import type { AddressType } from '@tevm/voltaire/Address'
 import type { UserOperationType, UserOperationInput } from '../UserOperation/UserOperationSchema.js'
 
+/**
+ * Type representing a Bundle of UserOperations.
+ * 
+ * A Bundle contains multiple UserOperations to be submitted together,
+ * along with the beneficiary address for gas refunds and the EntryPoint.
+ * 
+ * @since 0.0.1
+ */
 export type BundleType = {
   readonly userOperations: readonly UserOperationType[]
   readonly beneficiary: AddressType
@@ -118,12 +137,39 @@ const UserOperationSchemaLocal = S.transform(
   }
 )
 
+/**
+ * Input type for Bundle with string-encoded values.
+ * 
+ * @since 0.0.1
+ */
 export type BundleInput = {
+  /** Array of UserOperations in JSON-RPC format */
   readonly userOperations: readonly UserOperationInput[]
+  /** Beneficiary address for gas refunds as hex string */
   readonly beneficiary: string
+  /** EntryPoint contract address as hex string */
   readonly entryPoint: string
 }
 
+/**
+ * Effect Schema for validating and transforming Bundles.
+ * 
+ * Transforms JSON-RPC format into native BundleType with proper types.
+ * 
+ * @example
+ * ```typescript
+ * import * as Schema from 'effect/Schema'
+ * import { BundleSchema } from 'voltaire-effect/primitives/Bundle'
+ * 
+ * const bundle = Schema.decodeSync(BundleSchema)({
+ *   userOperations: [...],
+ *   beneficiary: '0x...',
+ *   entryPoint: '0x...'
+ * })
+ * ```
+ * 
+ * @since 0.0.1
+ */
 export const BundleSchema: S.Schema<BundleType, BundleInput> = S.transform(
   S.Struct({
     userOperations: S.Array(UserOperationSchemaLocal),

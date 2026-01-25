@@ -33,6 +33,12 @@ describe('Hash.Schema', () => {
   it('fails for invalid hex characters', () => {
     expect(() => Schema.decodeSync(Hash.Schema)('0x' + 'gg'.repeat(32))).toThrow()
   })
+
+  it('encode returns ParseResult.fail on invalid input instead of throwing', async () => {
+    const invalidHash = new Uint8Array(31) as any // wrong length
+    const exit = await Effect.runPromiseExit(Schema.encode(Hash.Schema)(invalidHash))
+    expect(Exit.isFailure(exit)).toBe(true)
+  })
 })
 
 describe('Hash.fromBytes', () => {

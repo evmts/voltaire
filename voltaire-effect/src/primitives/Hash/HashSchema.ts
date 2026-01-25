@@ -80,6 +80,12 @@ export const HashSchema: S.Schema<HashType, string> = S.transformOrFail(
         return ParseResult.fail(new ParseResult.Type(ast, s, (e as Error).message))
       }
     },
-    encode: (h) => ParseResult.succeed(Hash.toHex(h))
+    encode: (h, _options, ast) => {
+      try {
+        return ParseResult.succeed(Hash.toHex(h))
+      } catch (e) {
+        return ParseResult.fail(new ParseResult.Type(ast, h, (e as Error).message))
+      }
+    }
   }
 ).annotations({ identifier: 'HashSchema' })

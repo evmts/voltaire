@@ -41,13 +41,13 @@ const AddressTypeSchema = Schema.declare<AddressType>(
  * @example Basic usage with Effect context
  * ```typescript
  * import { ChecksummedAddressSchema } from 'voltaire-effect/primitives/Address'
- * import { KeccakService, KeccakServiceLive } from 'voltaire-effect/crypto/Keccak256'
+ * import { KeccakService, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
  * import * as Schema from 'effect/Schema'
  * import * as Effect from 'effect/Effect'
  * 
  * const program = Schema.decode(ChecksummedAddressSchema)(addressBytes)
  * const checksummed = await Effect.runPromise(
- *   program.pipe(Effect.provide(KeccakServiceLive))
+ *   program.pipe(Effect.provide(KeccakLive))
  * )
  * // checksummed is "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
  * ```

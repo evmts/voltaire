@@ -1,6 +1,14 @@
 /**
- * UserOperation Schema definitions for ERC-4337 account abstraction.
+ * @fileoverview UserOperation Schema definitions for ERC-4337 account abstraction.
  * 
+ * ERC-4337 defines a higher-layer pseudo-transaction object called a UserOperation.
+ * Users send UserOperation objects into a separate mempool, which bundlers package
+ * into a transaction making a `handleOps` call to the EntryPoint contract.
+ * 
+ * This module provides Effect Schema definitions for validating and transforming
+ * UserOperation data between JSON-RPC format (hex strings) and native types.
+ * 
+ * @see https://eips.ethereum.org/EIPS/eip-4337
  * @module UserOperationSchema
  * @since 0.0.1
  */
@@ -11,6 +19,11 @@ import type { AddressType } from '@tevm/voltaire/Address'
 
 /**
  * Type representing an ERC-4337 UserOperation.
+ * 
+ * A UserOperation contains all the data needed to execute an operation
+ * on behalf of a smart contract account, including gas limits, fees,
+ * and the actual call data to execute.
+ * 
  * @since 0.0.1
  */
 export interface UserOperationType {
@@ -118,37 +131,88 @@ const UserOperationTypeSchema = S.declare<UserOperationType>(
 
 /**
  * Input type for UserOperation with string-encoded values.
+ * 
+ * This is the JSON-RPC format used when sending UserOperations to bundlers.
+ * All numeric values are decimal strings, and all byte arrays are hex strings.
+ * 
+ * @example
+ * ```typescript
+ * const input: UserOperationInput = {
+ *   sender: '0x1234567890123456789012345678901234567890',
+ *   nonce: '0',
+ *   initCode: '0x',
+ *   callData: '0xabcdef',
+ *   callGasLimit: '100000',
+ *   verificationGasLimit: '100000',
+ *   preVerificationGas: '21000',
+ *   maxFeePerGas: '1000000000',
+ *   maxPriorityFeePerGas: '1000000000',
+ *   paymasterAndData: '0x',
+ *   signature: '0x...'
+ * }
+ * ```
+ * 
  * @since 0.0.1
  */
 export type UserOperationInput = {
+  /** Smart contract account address as hex string */
   sender: string
+  /** Account nonce as decimal string */
   nonce: string
+  /** Factory address + init data for new accounts, or empty for existing accounts */
   initCode: string
+  /** Encoded call data to execute on the account */
   callData: string
+  /** Gas limit for the main execution call */
   callGasLimit: string
+  /** Gas limit for the account validation phase */
   verificationGasLimit: string
+  /** Gas to compensate bundler for pre-verification overhead */
   preVerificationGas: string
+  /** Maximum fee per gas (EIP-1559) */
   maxFeePerGas: string
+  /** Maximum priority fee per gas (EIP-1559) */
   maxPriorityFeePerGas: string
+  /** Paymaster address + data, or empty for self-sponsored */
   paymasterAndData: string
+  /** Signature over the UserOperation hash */
   signature: string
 }
 
 /**
  * Effect Schema for validating and transforming ERC-4337 UserOperations.
  * 
+ * Transforms JSON-RPC format (hex strings and decimal strings) into native
+ * UserOperationType with proper Address, bigint, and Uint8Array types.
+ * 
+ * @description
+ * This schema handles bidirectional transformation between the wire format
+ * used by bundler JSON-RPC APIs and the internal representation used for
+ * computation and hashing.
+ * 
  * @example
  * ```typescript
  * import * as Schema from 'effect/Schema'
- * import { UserOperationSchema } from './UserOperationSchema.js'
+ * import { UserOperationSchema } from 'voltaire-effect/primitives/UserOperation'
  * 
  * const userOp = Schema.decodeSync(UserOperationSchema)({
- *   sender: '0x...',
+ *   sender: '0x1234567890123456789012345678901234567890',
  *   nonce: '0',
- *   // ... other fields
+ *   initCode: '0x',
+ *   callData: '0xabcdef',
+ *   callGasLimit: '100000',
+ *   verificationGasLimit: '100000',
+ *   preVerificationGas: '21000',
+ *   maxFeePerGas: '1000000000',
+ *   maxPriorityFeePerGas: '1000000000',
+ *   paymasterAndData: '0x',
+ *   signature: '0x...'
  * })
  * ```
  * 
+ * @throws ParseError - When input validation fails (invalid address, hex, etc.)
+ * @see UserOperationType - The decoded output type
+ * @see UserOperationInput - The encoded input type
  * @since 0.0.1
  */
 export const UserOperationSchema: S.Schema<UserOperationType, UserOperationInput> = S.transform(

@@ -1,9 +1,25 @@
+/**
+ * @fileoverview Effect Schema for block hash validation.
+ * Provides type-safe parsing and validation of 32-byte block hashes.
+ *
+ * @module BlockHash/BlockHashSchema
+ * @since 0.0.1
+ */
+
 import { BlockHash } from '@tevm/voltaire'
 import * as Schema from 'effect/Schema'
 import * as ParseResult from 'effect/ParseResult'
 
+/**
+ * Type alias for the branded BlockHash type.
+ * @internal
+ */
 type BlockHashType = BlockHash.BlockHashType
 
+/**
+ * Internal schema for validating branded BlockHash type.
+ * @internal
+ */
 const BlockHashTypeSchema = Schema.declare<BlockHashType>(
   (u): u is BlockHashType => {
     if (!(u instanceof Uint8Array)) return false
@@ -19,17 +35,58 @@ const BlockHashTypeSchema = Schema.declare<BlockHashType>(
 
 /**
  * Effect Schema for validating and parsing block hashes.
- * Decodes hex strings to 32-byte BlockHashType.
- * 
+ *
+ * @description
+ * Transforms hex strings into 32-byte `BlockHashType` values and vice versa.
+ * Performs validation to ensure:
+ * - Input is a valid hex string with '0x' prefix
+ * - Decoded value is exactly 32 bytes
+ *
+ * The schema supports bidirectional transformation:
+ * - Decode: hex string → BlockHashType (Uint8Array)
+ * - Encode: BlockHashType → hex string
+ *
+ * @since 0.0.1
+ *
  * @example
  * ```typescript
  * import { BlockHashSchema } from 'voltaire-effect/primitives/BlockHash'
  * import * as Schema from 'effect/Schema'
- * 
- * const hash = Schema.decodeSync(BlockHashSchema)('0x...')
+ *
+ * // Decode from hex string
+ * const hash = Schema.decodeSync(BlockHashSchema)(
+ *   '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3'
+ * )
+ *
+ * // Encode back to hex string
+ * const hex = Schema.encodeSync(BlockHashSchema)(hash)
  * ```
- * 
- * @since 0.0.1
+ *
+ * @example
+ * ```typescript
+ * // Validate unknown input
+ * import * as Effect from 'effect/Effect'
+ *
+ * const result = await Effect.runPromise(
+ *   Schema.decodeUnknown(BlockHashSchema)(userInput).pipe(
+ *     Effect.catchAll((e) => Effect.fail(new Error('Invalid block hash')))
+ *   )
+ * )
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Type guard
+ * const isBlockHash = Schema.is(BlockHashSchema)
+ * if (isBlockHash(data)) {
+ *   console.log('Valid 32-byte hash')
+ * }
+ * ```
+ *
+ * @throws {ParseError} When input is not a valid 32-byte hex string.
+ *
+ * @see {@link from} for Effect-based construction
+ * @see {@link toHex} for hex conversion utility
  */
 export const BlockHashSchema: Schema.Schema<BlockHashType, string> = Schema.transformOrFail(
   Schema.String,
@@ -43,6 +100,12 @@ export const BlockHashSchema: Schema.Schema<BlockHashType, string> = Schema.tran
         return ParseResult.fail(new ParseResult.Type(ast, s, (e as Error).message))
       }
     },
-    encode: (h) => ParseResult.succeed(BlockHash.toHex(h))
+    encode: (h, _options, ast) => {
+      try {
+        return ParseResult.succeed(BlockHash.toHex(h))
+      } catch (e) {
+        return ParseResult.fail(new ParseResult.Type(ast, h, (e as Error).message))
+      }
+    }
   }
 ).annotations({ identifier: 'BlockHashSchema' })

@@ -1,8 +1,11 @@
 /**
- * @module ReceiptSchema
- * Effect Schema definitions for transaction receipts and logs.
+ * @fileoverview Effect Schema definitions for transaction receipts and logs.
+ * Provides type-safe validation for receipt data from RPC responses.
+ *
+ * @module Receipt/ReceiptSchema
  * @since 0.0.1
  */
+
 import * as S from 'effect/Schema'
 import * as ParseResult from 'effect/ParseResult'
 import { Address } from '@tevm/voltaire'
@@ -11,61 +14,188 @@ import type { HashType } from '@tevm/voltaire/Hash'
 
 /**
  * Type representing an event log emitted during transaction execution.
+ *
+ * @description
+ * Event logs are emitted by smart contracts during transaction execution
+ * using the LOG0-LOG4 EVM opcodes. They contain:
+ * - The emitting contract address
+ * - Up to 4 indexed topics (32 bytes each)
+ * - Arbitrary data payload
+ * - Location metadata (block, transaction, log index)
+ *
  * @since 0.0.1
+ *
+ * @example
+ * ```typescript
+ * const log: LogType = {
+ *   address: contractAddress,      // Contract that emitted
+ *   topics: [eventSignature, ...], // Indexed params
+ *   data: new Uint8Array([...]),   // Non-indexed params
+ *   blockNumber: 12345n,
+ *   transactionHash: txHash,
+ *   transactionIndex: 0,
+ *   blockHash: blockHash,
+ *   logIndex: 0,
+ *   removed: false
+ * }
+ * ```
  */
 export interface LogType {
+  /**
+   * Address of the contract that emitted this log.
+   * 20-byte Ethereum address.
+   */
   readonly address: AddressType
+  /**
+   * Array of indexed event parameters.
+   * First topic is typically the event signature hash.
+   * Max 4 topics (LOG4 opcode limit).
+   */
   readonly topics: readonly HashType[]
+  /**
+   * ABI-encoded non-indexed event parameters.
+   */
   readonly data: Uint8Array
+  /**
+   * Block number containing this log.
+   */
   readonly blockNumber: bigint
+  /**
+   * Hash of the transaction that emitted this log.
+   */
   readonly transactionHash: HashType
+  /**
+   * Index of the transaction within the block.
+   */
   readonly transactionIndex: number
+  /**
+   * Hash of the block containing this log.
+   */
   readonly blockHash: HashType
+  /**
+   * Index of this log within the block's logs array.
+   */
   readonly logIndex: number
+  /**
+   * Whether this log was removed due to chain reorganization.
+   * True if the log is no longer valid.
+   */
   readonly removed: boolean
 }
 
 /**
  * Type representing a transaction receipt with execution results.
+ *
+ * @description
+ * A transaction receipt is created when a transaction is included in a block.
+ * It contains the results of transaction execution including:
+ * - Execution status (success or failure)
+ * - Gas consumption
+ * - Event logs emitted
+ * - Contract creation address (if applicable)
+ *
  * @since 0.0.1
+ *
+ * @example
+ * ```typescript
+ * const receipt: ReceiptType = {
+ *   transactionHash: txHash,
+ *   blockNumber: 12345n,
+ *   blockHash: blockHash,
+ *   transactionIndex: 0,
+ *   from: senderAddress,
+ *   to: recipientAddress,
+ *   cumulativeGasUsed: 21000n,
+ *   gasUsed: 21000n,
+ *   contractAddress: null,
+ *   logs: [],
+ *   logsBloom: new Uint8Array(256),
+ *   status: 1
+ * }
+ * ```
  */
 export interface ReceiptType {
-  /** Transaction hash */
+  /**
+   * Hash of the transaction this receipt belongs to.
+   * 32-byte Keccak-256 hash.
+   */
   readonly transactionHash: HashType
-  /** Block number containing the transaction */
+  /**
+   * Block number containing this transaction.
+   */
   readonly blockNumber: bigint
-  /** Block hash containing the transaction */
+  /**
+   * Hash of the block containing this transaction.
+   * 32-byte block hash.
+   */
   readonly blockHash: HashType
-  /** Index of transaction in block */
+  /**
+   * Position of this transaction within the block.
+   * 0-indexed.
+   */
   readonly transactionIndex: number
-  /** Sender address */
+  /**
+   * Address of the transaction sender.
+   * 20-byte Ethereum address.
+   */
   readonly from: AddressType
-  /** Recipient address (null for contract creation) */
+  /**
+   * Address of the transaction recipient.
+   * Null for contract creation transactions.
+   */
   readonly to: AddressType | null
-  /** Total gas used in block up to this transaction */
+  /**
+   * Total gas used in the block up to and including this transaction.
+   * Used for calculating position-based gas refunds.
+   */
   readonly cumulativeGasUsed: bigint
-  /** Gas used by this transaction */
+  /**
+   * Gas consumed by this specific transaction.
+   */
   readonly gasUsed: bigint
-  /** Created contract address (null if not contract creation) */
+  /**
+   * Address of the created contract.
+   * Only set when this is a contract creation transaction (to is null).
+   */
   readonly contractAddress: AddressType | null
-  /** Event logs emitted */
+  /**
+   * Array of event logs emitted during transaction execution.
+   */
   readonly logs: readonly LogType[]
-  /** Bloom filter for logs */
+  /**
+   * 256-byte bloom filter for efficient log querying.
+   * Contains encoded log addresses and topics.
+   */
   readonly logsBloom: Uint8Array
-  /** Execution status (0 = failed, 1 = success) */
+  /**
+   * Transaction execution status.
+   * 0 = failed (reverted), 1 = success.
+   */
   readonly status: 0 | 1
 }
 
+/**
+ * Internal schema for validating AddressType.
+ * @internal
+ */
 const AddressTypeSchema = S.declare<AddressType>(
   (u): u is AddressType => u instanceof Uint8Array && u.length === 20,
   { identifier: 'AddressType' }
 )
 
+/**
+ * Internal schema for validating HashType.
+ * @internal
+ */
 const HashTypeSchema = S.declare<HashType>(
   (u): u is HashType => u instanceof Uint8Array && u.length === 32,
   { identifier: 'HashType' }
 )
 
+/**
+ * Internal schema for transforming address strings to AddressType.
+ * @internal
+ */
 const AddressSchema: S.Schema<AddressType, string> = S.transformOrFail(
   S.String,
   AddressTypeSchema,
@@ -82,8 +212,16 @@ const AddressSchema: S.Schema<AddressType, string> = S.transformOrFail(
   }
 )
 
+/**
+ * Internal schema for nullable addresses.
+ * @internal
+ */
 const NullableAddressSchema = S.NullOr(AddressSchema)
 
+/**
+ * Internal schema for validating LogType.
+ * @internal
+ */
 const LogTypeSchema = S.declare<LogType>(
   (u): u is LogType => {
     if (typeof u !== 'object' || u === null) return false
@@ -102,6 +240,17 @@ const LogTypeSchema = S.declare<LogType>(
   { identifier: 'Log' }
 )
 
+/**
+ * Effect Schema for validating branded ReceiptType.
+ *
+ * @description
+ * Runtime type guard that validates an unknown value conforms to ReceiptType.
+ * Checks for required fields: transactionHash, blockNumber, blockHash, status.
+ *
+ * @since 0.0.1
+ *
+ * @see {@link ReceiptSchema} for the full transforming schema
+ */
 export const ReceiptTypeSchema = S.declare<ReceiptType>(
   (u): u is ReceiptType => {
     if (typeof u !== 'object' || u === null) return false
@@ -120,6 +269,10 @@ export const ReceiptTypeSchema = S.declare<ReceiptType>(
   { identifier: 'Receipt' }
 )
 
+/**
+ * Internal structured schema for log input validation.
+ * @internal
+ */
 const LogSchemaInternal = S.Struct({
   address: AddressSchema,
   topics: S.Array(HashTypeSchema),
@@ -135,13 +288,19 @@ const LogSchemaInternal = S.Struct({
 /**
  * Effect Schema for validating event logs.
  *
+ * @description
+ * Validates and transforms log data from RPC responses into LogType.
+ * Handles address parsing and type conversions.
+ *
+ * @since 0.0.1
+ *
  * @example
  * ```typescript
  * import * as S from 'effect/Schema'
  * import { LogSchema } from 'voltaire-effect/primitives/Receipt'
  *
  * const log = S.decodeSync(LogSchema)({
- *   address: '0x...',
+ *   address: '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
  *   topics: [topic0, topic1],
  *   data: new Uint8Array([]),
  *   blockNumber: 12345n,
@@ -153,7 +312,9 @@ const LogSchemaInternal = S.Struct({
  * })
  * ```
  *
- * @since 0.0.1
+ * @throws {ParseError} When log data is invalid or malformed.
+ *
+ * @see {@link LogType} for the output type
  */
 export const LogSchema: S.Schema<LogType, S.Schema.Encoded<typeof LogSchemaInternal>> = S.transform(
   LogSchemaInternal,
@@ -161,6 +322,10 @@ export const LogSchema: S.Schema<LogType, S.Schema.Encoded<typeof LogSchemaInter
   { strict: true, decode: (d) => d as LogType, encode: (e) => e }
 )
 
+/**
+ * Internal structured schema for receipt input validation.
+ * @internal
+ */
 const ReceiptSchemaInternal = S.Struct({
   transactionHash: HashTypeSchema,
   blockNumber: S.BigIntFromSelf,
@@ -179,6 +344,19 @@ const ReceiptSchemaInternal = S.Struct({
 /**
  * Effect Schema for validating transaction receipts.
  *
+ * @description
+ * Validates and transforms receipt data from RPC responses into ReceiptType.
+ * Handles:
+ * - Address parsing (from, to, contractAddress)
+ * - Hash validation (transactionHash, blockHash)
+ * - Nested log validation
+ * - Status validation (0 or 1)
+ *
+ * Use this schema to validate receipts returned from `eth_getTransactionReceipt`
+ * or similar RPC calls.
+ *
+ * @since 0.0.1
+ *
  * @example
  * ```typescript
  * import * as S from 'effect/Schema'
@@ -189,8 +367,8 @@ const ReceiptSchemaInternal = S.Struct({
  *   blockNumber: 12345n,
  *   blockHash: blockHash,
  *   transactionIndex: 0,
- *   from: '0x...',
- *   to: '0x...',
+ *   from: '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
+ *   to: '0xAnotherAddress...',
  *   cumulativeGasUsed: 21000n,
  *   gasUsed: 21000n,
  *   contractAddress: null,
@@ -200,7 +378,32 @@ const ReceiptSchemaInternal = S.Struct({
  * })
  * ```
  *
- * @since 0.0.1
+ * @example
+ * ```typescript
+ * // Check execution status
+ * if (receipt.status === 1) {
+ *   console.log('Transaction succeeded')
+ * } else {
+ *   console.log('Transaction failed')
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Use with Effect for error handling
+ * import * as Effect from 'effect/Effect'
+ *
+ * const receipt = await Effect.runPromise(
+ *   S.decodeUnknown(ReceiptSchema)(rpcResponse).pipe(
+ *     Effect.catchAll((e) => Effect.fail(new Error('Invalid receipt')))
+ *   )
+ * )
+ * ```
+ *
+ * @throws {ParseError} When receipt data is invalid or malformed.
+ *
+ * @see {@link ReceiptType} for the output type
+ * @see {@link LogSchema} for nested log validation
  */
 export const ReceiptSchema: S.Schema<ReceiptType, S.Schema.Encoded<typeof ReceiptSchemaInternal>> = S.transform(
   ReceiptSchemaInternal,
@@ -210,6 +413,9 @@ export const ReceiptSchema: S.Schema<ReceiptType, S.Schema.Encoded<typeof Receip
 
 /**
  * Default schema export for receipt validation.
+ * Alias for {@link ReceiptSchema}.
+ *
  * @since 0.0.1
+ * @see {@link ReceiptSchema}
  */
 export { ReceiptSchema as Schema }

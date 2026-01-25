@@ -113,6 +113,12 @@ export const Schema: S.Schema<Bytes32Type, string | Uint8Array | bigint | number
         return ParseResult.fail(new ParseResult.Type(ast, s, (e as Error).message))
       }
     },
-    encode: (b) => ParseResult.succeed(b)
+    encode: (b, _options, ast) => {
+      try {
+        return ParseResult.succeed(b)
+      } catch (e) {
+        return ParseResult.fail(new ParseResult.Type(ast, b, (e as Error).message))
+      }
+    }
   }
 ).annotations({ identifier: 'Bytes32Schema' })

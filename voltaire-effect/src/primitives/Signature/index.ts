@@ -43,5 +43,44 @@
  * @see {@link fromBytes} - Create Signature from raw bytes
  * @see {@link SignatureSchema} - Effect Schema for validation
  */
+
+// Schemas
 export { SignatureSchema, SignatureFromBytesSchema } from './SignatureSchema.js'
+
+// Constructors (fallible)
 export { from, fromHex, fromBytes } from './from.js'
+export { fromCompact } from './fromCompact.js'
+export { fromDER } from './fromDER.js'
+export { fromRpc } from './fromRpc.js'
+export { fromTuple } from './fromTuple.js'
+export { fromSecp256k1 } from './fromSecp256k1.js'
+export { fromP256 } from './fromP256.js'
+export { fromEd25519 } from './fromEd25519.js'
+
+// Converters (infallible)
+export { toBytes } from './toBytes.js'
+export { toCompact } from './toCompact.js'
+export { toHex } from './toHex.js'
+
+// Converters (fallible)
+export { toDER } from './toDER.js'
+export { toRpc } from './toRpc.js'
+export { toTuple } from './toTuple.js'
+
+// Accessors (fallible)
+export { getR } from './getR.js'
+export { getS } from './getS.js'
+export { getV } from './getV.js'
+
+// Accessors (infallible)
+export { getAlgorithm } from './getAlgorithm.js'
+
+// Utilities (infallible)
+export { equals } from './equals.js'
+export { is } from './is.js'
+export { isSignature } from './isSignature.js'
+export { isCanonical } from './isCanonical.js'
+export { normalize } from './normalize.js'
+
+// Verification (fallible)
+export { verify } from './verify.js'

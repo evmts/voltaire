@@ -57,7 +57,7 @@
  * ```typescript
  * import * as Address from 'voltaire-effect/primitives/Address'
  * import * as Effect from 'effect/Effect'
- * import { KeccakServiceLive } from 'voltaire-effect/crypto/Keccak256'
+ * import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
  * 
  * const program = Effect.gen(function* () {
  *   const addr = yield* Address.from('0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed')
@@ -65,7 +65,7 @@
  * })
  * 
  * const checksummed = await Effect.runPromise(
- *   program.pipe(Effect.provide(KeccakServiceLive))
+ *   program.pipe(Effect.provide(KeccakLive))
  * )
  * // "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
  * ```
@@ -139,3 +139,123 @@ export { toBytes } from './toBytes.js'
  * @see {@link ./toChecksummed.ts} for full documentation
  */
 export { toChecksummed } from './toChecksummed.js'
+
+/**
+ * Creates an address from a hex string.
+ * @see {@link ./fromHex.ts} for full documentation
+ */
+export { fromHex } from './fromHex.js'
+
+/**
+ * Creates an address from a number or bigint.
+ * @see {@link ./fromNumber.ts} for full documentation
+ */
+export { fromNumber } from './fromNumber.js'
+
+/**
+ * Creates an address from a base64-encoded string.
+ * @see {@link ./fromBase64.ts} for full documentation
+ */
+export { fromBase64 } from './fromBase64.js'
+
+/**
+ * Creates an address from a secp256k1 public key.
+ * @see {@link ./fromPublicKey.ts} for full documentation
+ */
+export { fromPublicKey } from './fromPublicKey.js'
+
+/**
+ * Creates an address from a secp256k1 private key.
+ * @see {@link ./fromPrivateKey.ts} for full documentation
+ */
+export { fromPrivateKey } from './fromPrivateKey.js'
+
+/**
+ * Creates an address from ABI-encoded bytes.
+ * @see {@link ./fromAbiEncoded.ts} for full documentation
+ */
+export { fromAbiEncoded } from './fromAbiEncoded.js'
+
+/**
+ * Converts an address to hex string.
+ * @see {@link ./toHex.ts} for full documentation
+ */
+export { toHex } from './toHex.js'
+
+/**
+ * Converts an address to lowercase hex string.
+ * @see {@link ./toLowercase.ts} for full documentation
+ */
+export { toLowercase } from './toLowercase.js'
+
+/**
+ * Converts an address to uppercase hex string.
+ * @see {@link ./toUppercase.ts} for full documentation
+ */
+export { toUppercase } from './toUppercase.js'
+
+/**
+ * Converts an address to bigint (U256).
+ * @see {@link ./toU256.ts} for full documentation
+ */
+export { toU256 } from './toU256.js'
+
+/**
+ * Converts an address to ABI-encoded bytes.
+ * @see {@link ./toAbiEncoded.ts} for full documentation
+ */
+export { toAbiEncoded } from './toAbiEncoded.js'
+
+/**
+ * Converts an address to shortened hex format.
+ * @see {@link ./toShortHex.ts} for full documentation
+ */
+export { toShortHex } from './toShortHex.js'
+
+/**
+ * Checks if an address is the zero address.
+ * @see {@link ./isZero.ts} for full documentation
+ */
+export { isZero } from './isZero.js'
+
+/**
+ * Checks if two addresses are equal.
+ * @see {@link ./equals.ts} for full documentation
+ */
+export { equals } from './equals.js'
+
+/**
+ * Compares two addresses.
+ * @see {@link ./compare.ts} for full documentation
+ */
+export { compare } from './compare.js'
+
+/**
+ * Checks if first address is less than second.
+ * @see {@link ./lessThan.ts} for full documentation
+ */
+export { lessThan } from './lessThan.js'
+
+/**
+ * Checks if first address is greater than second.
+ * @see {@link ./greaterThan.ts} for full documentation
+ */
+export { greaterThan } from './greaterThan.js'
+
+/**
+ * Creates a copy of an address.
+ * @see {@link ./clone.ts} for full documentation
+ */
+export { clone } from './clone.js'
+
+/**
+ * Checks if a value is a valid address.
+ * @see {@link ./isValid.ts} for full documentation
+ */
+export { isValid } from './isValid.js'
+
+/**
+ * Checks if a string has valid EIP-55 checksum.
+ * @see {@link ./isValidChecksum.ts} for full documentation
+ */
+export { isValidChecksum } from './isValidChecksum.js'

@@ -1,11 +1,26 @@
+/**
+ * @fileoverview Effect Schema definitions for Int64 (signed 64-bit integer) type.
+ * Provides schema-based validation and parsing for values in the range -2^63 to 2^63-1.
+ * @module Int64Schema
+ * @since 0.0.1
+ */
+
 import { BrandedInt64 } from '@tevm/voltaire'
 import * as S from 'effect/Schema'
 import * as ParseResult from 'effect/ParseResult'
 
 /**
  * Branded type representing a signed 64-bit integer.
- * Range: -9223372036854775808 to 9223372036854775807
+ *
+ * @description
+ * A type-safe wrapper around JavaScript BigInt that guarantees the value
+ * is within the Int64 range: -9223372036854775808 to 9223372036854775807 (inclusive).
+ *
+ * Range: -9223372036854775808 (−2^63) to 9223372036854775807 (2^63 - 1)
+ *
  * @since 0.0.1
+ * @see {@link Int32Type} for 32-bit signed integers
+ * @see {@link Int128Type} for 128-bit signed integers
  */
 export type Int64Type = ReturnType<typeof BrandedInt64.from>
 
@@ -23,11 +38,16 @@ const Int64TypeSchema = S.declare<Int64Type>(
 
 /**
  * Effect Schema for validating and parsing signed 64-bit integers.
+ *
+ * @description
  * Accepts numbers, bigints, or numeric strings and validates they fall within
- * the Int64 range.
+ * the Int64 range. Values outside this range will cause a parse failure.
+ *
+ * Range: -9223372036854775808 (−2^63) to 9223372036854775807 (2^63 - 1)
  *
  * @param input - A number, bigint, or string representing the integer
  * @returns The validated Int64Type
+ * @throws {ParseError} When the value is outside the Int64 range or not a valid number
  *
  * @example
  * ```typescript
@@ -45,6 +65,8 @@ const Int64TypeSchema = S.declare<Int64Type>(
  * ```
  *
  * @since 0.0.1
+ * @see {@link Int64Type} for the branded type definition
+ * @see {@link from} for Effect-wrapped creation
  */
 export const Schema: S.Schema<Int64Type, number | bigint | string> = S.transformOrFail(
   S.Union(S.Number, S.BigIntFromSelf, S.String),

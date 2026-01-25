@@ -1,8 +1,21 @@
+/**
+ * @fileoverview Effect Schema definitions for Ethereum chain configuration.
+ * Provides type-safe schemas for parsing and validating chain definitions.
+ * @module Chain/ChainSchema
+ * @since 0.0.1
+ */
+
 import * as S from 'effect/Schema'
 import * as ParseResult from 'effect/ParseResult'
 
 /**
  * Ethereum hardfork identifiers.
+ *
+ * @description
+ * Represents the various Ethereum protocol upgrades (hardforks) that have
+ * occurred over time. Each hardfork introduces new features or changes
+ * to the EVM and network behavior.
+ *
  * @since 0.0.1
  */
 export type Hardfork =
@@ -27,6 +40,11 @@ export type Hardfork =
 
 /**
  * Metadata about an Ethereum chain's configuration.
+ *
+ * @description
+ * Contains technical details about a chain's behavior including block times,
+ * gas limits, hardfork activation blocks, and layer information.
+ *
  * @since 0.0.1
  */
 export interface ChainMetadata {
@@ -42,25 +60,45 @@ export interface ChainMetadata {
 
 /**
  * Native currency configuration for a chain.
+ *
+ * @description
+ * Defines the native currency used on a chain (e.g., ETH on Ethereum,
+ * MATIC on Polygon). All EVM chains have 18 decimals by convention.
+ *
  * @since 0.0.1
  */
 export interface NativeCurrency {
+  /** Display name (e.g., "Ether") */
   name: string
+  /** Symbol (e.g., "ETH") */
   symbol: string
+  /** Decimal places (typically 18) */
   decimals: number
 }
 
 /**
  * Block explorer configuration.
+ *
+ * @description
+ * Configuration for a chain's block explorer, used for generating
+ * transaction and address URLs.
+ *
  * @since 0.0.1
  */
 export interface Explorer {
+  /** Display name (e.g., "Etherscan") */
   name: string
+  /** Base URL (e.g., "https://etherscan.io") */
   url: string
 }
 
 /**
  * Branded type representing an Ethereum chain configuration.
+ *
+ * @description
+ * A complete chain configuration including chain ID, name, native currency,
+ * RPC endpoints, and block explorers. Compatible with viem/wagmi chain format.
+ *
  * @since 0.0.1
  */
 export interface ChainType {
@@ -88,6 +126,12 @@ const ChainTypeSchema = S.declare<ChainType>(
 
 /**
  * Input type for creating a Chain.
+ *
+ * @description
+ * The minimal input required to create a ChainType. At minimum, a chain
+ * needs an ID, name, and native currency. RPC URLs and block explorers
+ * are optional.
+ *
  * @since 0.0.1
  */
 export interface ChainInput {
@@ -121,19 +165,34 @@ const ChainInputSchema = S.Struct({
 
 /**
  * Effect Schema for validating Ethereum chain configurations.
- * Transforms chain input data into branded ChainType values.
+ *
+ * @description
+ * Transforms chain input data into branded ChainType values. Validates
+ * that the chain ID is positive and all required fields are present.
  *
  * @example
  * ```typescript
- * import * as Chain from 'voltaire-effect/Chain'
+ * import * as Chain from 'voltaire-effect/primitives/Chain'
  * import * as Schema from 'effect/Schema'
  *
- * const chain = Schema.decodeSync(Chain.Schema)({
+ * // Create Ethereum mainnet config
+ * const ethereum = Schema.decodeSync(Chain.ChainSchema)({
  *   id: 1,
  *   name: 'Ethereum',
  *   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }
  * })
+ *
+ * // With RPC URLs
+ * const withRpc = Schema.decodeSync(Chain.ChainSchema)({
+ *   id: 1,
+ *   name: 'Ethereum',
+ *   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+ *   rpcUrls: { default: { http: ['https://eth.llamarpc.com'] } }
+ * })
  * ```
+ *
+ * @throws ParseResult.Type - When chain ID is invalid or required fields missing
+ * @see {@link from} for Effect-wrapped chain creation
  * @since 0.0.1
  */
 export const ChainSchema: S.Schema<ChainType, ChainInput> = S.transformOrFail(

@@ -43,6 +43,16 @@
 
 export { Schema } from './BytesSchema.js'
 export { from } from './from.js'
+export { fromHex } from './fromHex.js'
+export { fromString } from './fromString.js'
+export { toHex } from './toHex.js'
+export { toString } from './toString.js'
+export { equals } from './equals.js'
+export { concat } from './concat.js'
+export { slice } from './slice.js'
+export { isBytes } from './isBytes.js'
+export { random } from './random.js'
+export { size } from './size.js'
 
 /**
  * Branded type for validated byte arrays.

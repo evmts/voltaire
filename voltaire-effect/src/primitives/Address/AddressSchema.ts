@@ -97,6 +97,12 @@ export const AddressSchema: S.Schema<AddressType, string> = S.transformOrFail(
         return ParseResult.fail(new ParseResult.Type(ast, s, (e as Error).message))
       }
     },
-    encode: (addr) => ParseResult.succeed(Address.toHex(addr))
+    encode: (addr, _options, ast) => {
+      try {
+        return ParseResult.succeed(Address.toHex(addr))
+      } catch (e) {
+        return ParseResult.fail(new ParseResult.Type(ast, addr, (e as Error).message))
+      }
+    }
   }
 ).annotations({ identifier: 'AddressSchema' })

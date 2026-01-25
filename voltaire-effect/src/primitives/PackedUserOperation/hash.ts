@@ -1,6 +1,15 @@
 /**
+ * @fileoverview PackedUserOperation hash computation for ERC-4337 v0.7.
+ * 
+ * This module computes the hash of a PackedUserOperation as defined in ERC-4337.
+ * The hash is used for signature verification and uniquely identifies the
+ * PackedUserOperation on a specific chain and EntryPoint.
+ * 
+ * The hash is computed as:
+ * `keccak256(keccak256(packedUserOpFields), entryPoint, chainId)`
+ * 
+ * @see https://eips.ethereum.org/EIPS/eip-4337
  * @module PackedUserOperation/hash
- * Computes the ERC-4337 user operation hash for signing.
  * @since 0.0.1
  */
 import { Address } from '@tevm/voltaire/Address'
@@ -28,30 +37,41 @@ const uint256ToBytes = (n: bigint): Uint8Array => {
 /**
  * Computes the ERC-4337 user operation hash for signing.
  *
- * The hash is computed as keccak256(userOpHash, entryPoint, chainId) where
- * userOpHash is the keccak256 of the packed user operation fields.
+ * The hash is computed as `keccak256(userOpHash, entryPoint, chainId)` where
+ * userOpHash is the keccak256 of the packed user operation fields. This is
+ * the value that should be signed by the account owner.
+ *
+ * @description
+ * The hash computation for packed operations uses the pre-packed gas fields
+ * (accountGasLimits and gasFees) directly, rather than the individual gas
+ * values used in the unpacked format.
+ *
+ * This provides replay protection across chains and EntryPoint versions.
  *
  * @param packedUserOp - The packed user operation to hash
- * @param entryPoint - EntryPoint contract address
- * @param chainId - Chain ID for replay protection
+ * @param entryPoint - EntryPoint contract address (accepts string, Uint8Array, or AddressType)
+ * @param chainId - Chain ID for replay protection (accepts bigint or number)
  * @returns Effect that succeeds with 32-byte hash or fails with ValidationError
  *
  * @example
  * ```typescript
  * import * as Effect from 'effect/Effect'
- * import { hash, from } from 'voltaire-effect/primitives/PackedUserOperation'
+ * import * as PackedUserOperation from 'voltaire-effect/primitives/PackedUserOperation'
  *
  * const program = Effect.gen(function* () {
- *   const packed = yield* from({ ... })
- *   const userOpHash = yield* hash(
+ *   const packed = yield* PackedUserOperation.from({ ... })
+ *   const userOpHash = yield* PackedUserOperation.hash(
  *     packed,
- *     '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789',
+ *     '0x0000000071727De22E5E9d8BAf0edAc6f37da032', // v0.7 EntryPoint
  *     1n // mainnet
  *   )
- *   return userOpHash // 32 bytes to sign
+ *   return userOpHash // 32-byte Uint8Array to sign
  * })
  * ```
  *
+ * @throws ValidationError - When entryPoint address is invalid
+ * @see from - For creating PackedUserOperations
+ * @see unpack - For converting to standard UserOperation format
  * @since 0.0.1
  */
 export const hash = (

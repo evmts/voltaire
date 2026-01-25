@@ -1,12 +1,54 @@
+/**
+ * @fileoverview EVM gas cost constants following the Ethereum Yellow Paper.
+ *
+ * @description
+ * Provides gas cost constants for all EVM operations. These values are
+ * essential for gas estimation, transaction simulation, and understanding
+ * the computational costs of smart contract execution.
+ *
+ * Gas tiers (from Yellow Paper):
+ * - Zero: 0 gas (POP, STOP, etc.)
+ * - Base/VeryLow: 3 gas (ADD, SUB, AND, OR, etc.)
+ * - Low: 5 gas (MUL, DIV, etc.)
+ * - Mid: 8 gas (ADDMOD, MULMOD, etc.)
+ * - High: 10 gas (JUMP, etc.)
+ *
+ * @module GasConstants/GasConstantsSchema
+ * @since 0.0.1
+ * @see {@link GasCosts} for opcode-indexed costs
+ * @see https://ethereum.github.io/yellowpaper/paper.pdf Appendix G
+ */
+
 import { GasConstants } from '@tevm/voltaire'
 
 /**
  * Gas cost constants for EVM operations.
- * These values follow the Ethereum Yellow Paper specifications.
+ *
+ * @description
+ * These values follow the Ethereum Yellow Paper specifications and are
+ * updated per hard fork. All values are in gas units (bigint).
+ *
+ * @example
+ * ```typescript
+ * import { GAS_TRANSACTION, GAS_TXDATANONZERO, GAS_TXDATAZERO } from 'voltaire-effect/primitives/GasConstants'
+ *
+ * // Calculate intrinsic gas for a transaction
+ * function intrinsicGas(data: Uint8Array): bigint {
+ *   let gas = GAS_TRANSACTION
+ *   for (const byte of data) {
+ *     gas += byte === 0 ? GAS_TXDATAZERO : GAS_TXDATANONZERO
+ *   }
+ *   return gas
+ * }
+ * ```
+ *
  * @since 0.0.1
  */
 
-/** Zero gas cost @since 0.0.1 */
+/**
+ * Zero gas cost - used for free operations like STOP.
+ * @since 0.0.1
+ */
 export const GAS_ZERO = 0n
 
 /** Base gas for quick operations (3 gas) @since 0.0.1 */

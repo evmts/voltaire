@@ -1,0 +1,70 @@
+/**
+ * @fileoverview Encodes event log topics.
+ * Provides Effect-based wrapper for encoding event topics.
+ *
+ * @module Abi/encodeEventLog
+ * @since 0.0.1
+ */
+
+import * as Effect from 'effect/Effect'
+import { Event as AbiEvent, AbiItemNotFoundError, type AbiEncodingError, type EventType } from '@tevm/voltaire/Abi'
+import * as Hex from '@tevm/voltaire/Hex'
+import type { HexType } from '@tevm/voltaire/Hex'
+
+/**
+ * Represents a single ABI item.
+ * @internal
+ */
+type AbiItem = { type: string; name?: string }
+
+/**
+ * Type alias for ABI input.
+ * @internal
+ */
+type AbiInput = readonly AbiItem[]
+
+/**
+ * Encodes event log topics.
+ *
+ * @description
+ * Encodes indexed event parameters as topics for filtering logs.
+ * Returns the event selector as topic0 followed by encoded indexed parameters.
+ *
+ * @param {AbiInput} abi - The contract ABI.
+ * @param {string} eventName - The event name.
+ * @param {readonly unknown[]} indexedArgs - The indexed parameter values.
+ * @returns {Effect.Effect<readonly HexType[], AbiItemNotFoundError | AbiEncodingError>}
+ *   Effect yielding the encoded topics array.
+ *
+ * @example
+ * ```typescript
+ * import * as Effect from 'effect/Effect'
+ * import { encodeEventLog } from 'voltaire-effect/primitives/Abi'
+ *
+ * const topics = await Effect.runPromise(
+ *   encodeEventLog(abi, 'Transfer', [from, to])
+ * )
+ * ```
+ *
+ * @since 0.0.1
+ */
+export const encodeEventLog = (
+  abi: AbiInput,
+  eventName: string,
+  indexedArgs: readonly unknown[]
+): Effect.Effect<readonly HexType[], AbiItemNotFoundError | AbiEncodingError> =>
+  Effect.try({
+    try: () => {
+      const evt = abi.find(item => item.type === 'event' && item.name === eventName)
+      if (!evt) {
+        throw new AbiItemNotFoundError(`Event "${eventName}" not found in ABI`, {
+          value: eventName,
+          expected: 'valid event name in ABI',
+          context: { eventName, abi }
+        })
+      }
+      const topics = AbiEvent.encodeTopics(evt as EventType, indexedArgs as never)
+      return topics.map(t => t ? Hex.fromBytes(t) : ('0x' as HexType))
+    },
+    catch: (e) => e as AbiItemNotFoundError | AbiEncodingError
+  })

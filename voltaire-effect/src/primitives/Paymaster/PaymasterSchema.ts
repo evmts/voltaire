@@ -1,8 +1,40 @@
+/**
+ * @fileoverview Paymaster Schema definitions for ERC-4337 account abstraction.
+ * 
+ * Paymasters are special contracts in ERC-4337 that can sponsor gas fees for
+ * UserOperations. They validate and pay for operations on behalf of users,
+ * enabling gasless transactions and alternative payment methods.
+ * 
+ * This module provides Effect Schema definitions for validating and transforming
+ * Paymaster data between JSON-RPC format and native types.
+ * 
+ * @see https://eips.ethereum.org/EIPS/eip-4337#extension-paymasters
+ * @module PaymasterSchema
+ * @since 0.0.1
+ */
 import * as S from 'effect/Schema'
 import * as ParseResult from 'effect/ParseResult'
 import { Address } from '@tevm/voltaire'
 import type { AddressType } from '@tevm/voltaire/Address'
 
+/**
+ * Type representing an ERC-4337 Paymaster configuration.
+ * 
+ * A Paymaster can sponsor UserOperations by paying for gas fees.
+ * It includes optional time-based validity constraints.
+ * 
+ * @example
+ * ```typescript
+ * const paymaster: PaymasterType = {
+ *   address: paymasterAddress,
+ *   data: verificationData,
+ *   validUntil: 1700000000n,
+ *   validAfter: 1600000000n
+ * }
+ * ```
+ * 
+ * @since 0.0.1
+ */
 export type PaymasterType = {
   readonly address: AddressType
   readonly data: Uint8Array
@@ -84,13 +116,57 @@ const BigIntFromInput: S.Schema<bigint, bigint | number | string> = S.transformO
   }
 )
 
+/**
+ * Input type for Paymaster with string-encoded values.
+ * 
+ * This is the JSON-RPC format used when configuring Paymasters.
+ * 
+ * @example
+ * ```typescript
+ * const input: PaymasterInput = {
+ *   address: '0x1234567890123456789012345678901234567890',
+ *   data: '0xabcdef',
+ *   validUntil: '1700000000',
+ *   validAfter: '1600000000'
+ * }
+ * ```
+ * 
+ * @since 0.0.1
+ */
 export type PaymasterInput = {
+  /** Paymaster contract address as hex string */
   readonly address: string
+  /** Paymaster-specific verification data as hex string */
   readonly data: string
+  /** Unix timestamp after which the Paymaster approval expires */
   readonly validUntil?: bigint | number | string
+  /** Unix timestamp before which the Paymaster approval is not valid */
   readonly validAfter?: bigint | number | string
 }
 
+/**
+ * Effect Schema for validating and transforming ERC-4337 Paymaster configurations.
+ * 
+ * Transforms JSON-RPC format into native PaymasterType with proper
+ * Address, bigint, and Uint8Array types.
+ * 
+ * @example
+ * ```typescript
+ * import * as Schema from 'effect/Schema'
+ * import { PaymasterSchema } from 'voltaire-effect/primitives/Paymaster'
+ * 
+ * const paymaster = Schema.decodeSync(PaymasterSchema)({
+ *   address: '0x1234567890123456789012345678901234567890',
+ *   data: '0xabcdef',
+ *   validUntil: '1700000000'
+ * })
+ * ```
+ * 
+ * @throws ParseError - When input validation fails
+ * @see PaymasterType - The decoded output type
+ * @see PaymasterInput - The encoded input type
+ * @since 0.0.1
+ */
 export const PaymasterSchema: S.Schema<PaymasterType, PaymasterInput> = S.transformOrFail(
   S.Struct({
     address: AddressSchema,

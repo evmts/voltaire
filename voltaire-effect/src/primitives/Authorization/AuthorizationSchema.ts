@@ -1,3 +1,17 @@
+/**
+ * @fileoverview Authorization Schema definitions for EIP-7702.
+ * 
+ * EIP-7702 introduces authorization tuples that allow EOAs (Externally Owned Accounts)
+ * to delegate execution to smart contracts. This enables EOAs to temporarily act
+ * as smart contract accounts.
+ * 
+ * An authorization tuple contains the chain ID, contract address to delegate to,
+ * account nonce, and ECDSA signature components.
+ * 
+ * @see https://eips.ethereum.org/EIPS/eip-7702
+ * @module AuthorizationSchema
+ * @since 0.0.1
+ */
 import { Authorization, type AuthorizationType } from '@tevm/voltaire/Authorization'
 import * as S from 'effect/Schema'
 import * as ParseResult from 'effect/ParseResult'
@@ -5,6 +19,18 @@ import * as ParseResult from 'effect/ParseResult'
 /**
  * Raw authorization input type (JSON-compatible).
  * EIP-7702 authorization tuple for account abstraction.
+ * 
+ * @example
+ * ```typescript
+ * const input: AuthorizationInput = {
+ *   chainId: '1',
+ *   address: '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
+ *   nonce: '0',
+ *   yParity: 0,
+ *   r: '0x...',
+ *   s: '0x...'
+ * }
+ * ```
  * 
  * @since 0.0.1
  */
@@ -50,7 +76,17 @@ const AuthorizationInputSchema = S.Struct({
 
 /**
  * Effect Schema for validating and parsing EIP-7702 Authorization tuples.
- * Transforms from JSON-compatible input to AuthorizationType.
+ * 
+ * Transforms from JSON-compatible input to AuthorizationType with proper
+ * bigint and Uint8Array field types. Validates that all signature components
+ * are correctly formatted.
+ * 
+ * @description
+ * The schema handles:
+ * - chainId: string/number/bigint → bigint
+ * - address: hex string → 20-byte Uint8Array
+ * - nonce: string/number/bigint → bigint
+ * - r, s: hex strings → 32-byte Uint8Arrays
  * 
  * @example
  * ```typescript
@@ -67,6 +103,8 @@ const AuthorizationInputSchema = S.Struct({
  * })
  * ```
  * 
+ * @throws ParseError - When input validation fails
+ * @see AuthorizationInput - The encoded input type
  * @since 0.0.1
  */
 export const AuthorizationSchema: S.Schema<AuthorizationType, AuthorizationInput> = S.transformOrFail(

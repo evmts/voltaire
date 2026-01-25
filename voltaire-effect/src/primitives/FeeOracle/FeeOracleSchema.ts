@@ -1,6 +1,51 @@
+/**
+ * @fileoverview Effect Schema definitions for FeeOracle primitive type.
+ * Provides validation for gas fee estimation data.
+ * @module FeeOracle/FeeOracleSchema
+ * @since 0.0.1
+ */
+
 import * as S from 'effect/Schema'
 import * as ParseResult from 'effect/ParseResult'
 
+/**
+ * Validated fee oracle data type.
+ *
+ * @description
+ * Contains recommended fee parameters for EIP-1559 transactions.
+ * All fee values are in wei.
+ *
+ * Properties:
+ * - baseFee: Current base fee from the latest block
+ * - priorityFee: Recommended tip for validators
+ * - maxFee: Recommended maximum fee (should be ≥ baseFee + priorityFee)
+ * - gasPrice: Legacy gas price (optional, for legacy transactions)
+ * - estimatedTime: Expected seconds until inclusion (optional)
+ *
+ * @example
+ * ```typescript
+ * import * as FeeOracle from 'voltaire-effect/primitives/FeeOracle'
+ * import { Effect } from 'effect'
+ *
+ * // From fee estimation service
+ * const fees = Effect.runSync(FeeOracle.from({
+ *   baseFee: 20_000_000_000n,     // 20 gwei
+ *   priorityFee: 2_000_000_000n,  // 2 gwei
+ *   maxFee: 50_000_000_000n,      // 50 gwei
+ *   estimatedTime: 12             // ~12 seconds
+ * }))
+ *
+ * // Validate the fee parameters
+ * Effect.runSync(FeeOracle.validate(fees))
+ *
+ * // Get effective price for cost calculation
+ * const effective = Effect.runSync(FeeOracle.effectiveGasPrice(fees))
+ * ```
+ *
+ * @see {@link effectiveGasPrice} to calculate effective price
+ * @see {@link validate} to verify fee parameters
+ * @since 0.0.1
+ */
 export type FeeOracleType = {
   readonly baseFee: bigint
   readonly priorityFee: bigint
@@ -19,6 +64,16 @@ const FeeOracleTypeSchema = S.declare<FeeOracleType>(
   { identifier: 'FeeOracle' }
 )
 
+/**
+ * Input type for creating FeeOracle data.
+ *
+ * @description
+ * Accepts flexible numeric types for fee values. All values are
+ * normalized to bigint during construction.
+ *
+ * @see {@link FeeOracleType} for validated output type
+ * @since 0.0.1
+ */
 export type FeeOracleInput = {
   readonly baseFee: bigint | number | string
   readonly priorityFee: bigint | number | string
@@ -27,6 +82,32 @@ export type FeeOracleInput = {
   readonly estimatedTime?: number
 }
 
+/**
+ * Effect Schema for validating fee oracle data.
+ *
+ * @description
+ * Validates and transforms fee estimation input to normalized bigint values.
+ *
+ * @param input - FeeOracleInput with flexible numeric types
+ * @returns FeeOracleType with normalized bigint values
+ *
+ * @throws {ParseError} When required fields are missing or invalid
+ *
+ * @example
+ * ```typescript
+ * import * as S from 'effect/Schema'
+ * import { FeeOracleSchema } from 'voltaire-effect/primitives/FeeOracle'
+ *
+ * const fees = S.decodeSync(FeeOracleSchema)({
+ *   baseFee: '20000000000',
+ *   priorityFee: 2,
+ *   maxFee: 50000000000n,
+ *   estimatedTime: 12
+ * })
+ * ```
+ *
+ * @since 0.0.1
+ */
 export const FeeOracleSchema: S.Schema<FeeOracleType, FeeOracleInput> = S.transformOrFail(
   S.Struct({
     baseFee: S.Union(S.BigIntFromSelf, S.Number, S.String),

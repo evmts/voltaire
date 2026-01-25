@@ -1,7 +1,40 @@
+/**
+ * @fileoverview Effect Schema definitions for EVM storage slots.
+ * Provides validation schemas for storage slot values.
+ * @module Storage/StorageSchema
+ * @since 0.0.1
+ */
+
 import { Storage } from '@tevm/voltaire'
 import * as S from 'effect/Schema'
 import * as ParseResult from 'effect/ParseResult'
 
+/**
+ * Represents an EVM storage slot identifier.
+ *
+ * @description
+ * A StorageSlot is a 32-byte value that identifies a location in contract storage.
+ * The EVM uses a key-value storage model where each contract has 2^256 possible
+ * storage slots, each holding a 32-byte value.
+ *
+ * Storage slots are used extensively in Solidity:
+ * - Simple variables use slots 0, 1, 2, etc.
+ * - Mappings use keccak256(key . slot)
+ * - Dynamic arrays use keccak256(slot) + index
+ *
+ * @example
+ * ```typescript
+ * import { Storage } from 'voltaire-effect/primitives'
+ *
+ * // Slot 0 (first storage variable)
+ * const slot0 = Storage.from(0n)
+ *
+ * // Slot from hex
+ * const slotHex = Storage.from('0x0000...0005')
+ * ```
+ *
+ * @since 0.0.1
+ */
 type StorageSlotType = Uint8Array & { readonly __tag: 'StorageSlot' }
 
 const StorageSlotTypeSchema = S.declare<StorageSlotType>(
@@ -13,15 +46,31 @@ const StorageSlotTypeSchema = S.declare<StorageSlotType>(
  * Effect Schema for validating and parsing storage slot values.
  * Storage slots are 32-byte values that can be created from various inputs.
  *
+ * @description
+ * This schema transforms various input formats into a normalized 32-byte
+ * storage slot. It accepts bigints, numbers, hex strings, and Uint8Arrays.
+ *
  * @example
  * ```typescript
  * import * as S from 'effect/Schema'
  * import { StorageSlotSchema } from 'voltaire-effect/primitives/Storage'
  *
  * const parse = S.decodeSync(StorageSlotSchema)
- * const slot = parse(0n)
- * const slotFromHex = parse('0x0000...0001')
+ *
+ * // From bigint (most common)
+ * const slot0 = parse(0n)
+ * const slot5 = parse(5n)
+ *
+ * // From hex string
+ * const slotHex = parse('0x0000000000000000000000000000000000000000000000000000000000000001')
+ *
+ * // From number
+ * const slotNum = parse(42)
  * ```
+ *
+ * @throws {ParseError} When the input cannot be converted to a valid 32-byte value
+ *
+ * @see {@link from} for Effect-based creation
  *
  * @since 0.0.1
  */

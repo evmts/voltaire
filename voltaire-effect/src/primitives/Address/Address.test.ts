@@ -27,6 +27,12 @@ describe('Address', () => {
       const result = Schema.encodeSync(Address.AddressSchema)(addr)
       expect(typeof result).toBe('string')
     })
+
+    it('encode returns ParseResult.fail on invalid input instead of throwing', async () => {
+      const invalidAddr = new Uint8Array(19) as any // wrong length
+      const exit = await Effect.runPromiseExit(Schema.encode(Address.AddressSchema)(invalidAddr))
+      expect(Exit.isFailure(exit)).toBe(true)
+    })
   })
 
   describe('AddressFromBytesSchema', () => {

@@ -1,8 +1,19 @@
+/**
+ * @fileoverview Effect-based constructor and utility functions for EffectiveGasPrice primitive.
+ * @module EffectiveGasPrice/from
+ * @since 0.0.1
+ */
+
 import * as Effect from 'effect/Effect'
 import type { EffectiveGasPriceType } from './EffectiveGasPriceSchema.js'
 
 /**
- * Error thrown when gas price operations fail.
+ * Error thrown when effective gas price operations fail.
+ *
+ * @description
+ * Tagged error class for EffectiveGasPrice operations. Includes the `_tag`
+ * property for Effect's error handling and pattern matching.
+ *
  * @since 0.0.1
  */
 export class EffectiveGasPriceError extends Error {
@@ -16,16 +27,26 @@ export class EffectiveGasPriceError extends Error {
 /**
  * Creates an EffectiveGasPrice from numeric input.
  *
- * @param value - Gas price value
- * @returns Effect yielding EffectiveGasPriceType or failing with EffectiveGasPriceError
+ * @description
+ * Constructs a branded EffectiveGasPrice from a wei value. Use when you
+ * have a pre-calculated effective price (e.g., from transaction receipt).
+ *
+ * @param value - Gas price value in wei
+ * @returns Effect yielding EffectiveGasPriceType on success
+ *
+ * @throws {EffectiveGasPriceError} When value cannot be converted
+ *
  * @example
  * ```typescript
- * import * as EffectiveGasPrice from 'voltaire-effect/EffectiveGasPrice'
+ * import * as EffectiveGasPrice from 'voltaire-effect/primitives/EffectiveGasPrice'
  * import { Effect } from 'effect'
  *
- * const program = EffectiveGasPrice.from(30000000000n) // 30 gwei
- * const price = Effect.runSync(program)
+ * // From transaction receipt
+ * const price = EffectiveGasPrice.from(22000000000n) // 22 gwei
+ * const value = Effect.runSync(price)
  * ```
+ *
+ * @see {@link calculate} to compute from EIP-1559 parameters
  * @since 0.0.1
  */
 export const from = (value: bigint | number | string): Effect.Effect<EffectiveGasPriceType, EffectiveGasPriceError> =>

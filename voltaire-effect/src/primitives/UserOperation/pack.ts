@@ -1,3 +1,16 @@
+/**
+ * @fileoverview UserOperation packing for ERC-4337 v0.7 format.
+ * 
+ * ERC-4337 v0.7 introduced a packed format for UserOperations that combines
+ * multiple gas fields into fixed-size byte arrays for more efficient on-chain
+ * storage and processing.
+ * 
+ * This module converts standard UserOperations to the packed format.
+ * 
+ * @see https://eips.ethereum.org/EIPS/eip-4337
+ * @module UserOperation/pack
+ * @since 0.0.1
+ */
 import { ValidationError } from '@tevm/voltaire/errors'
 import * as Effect from 'effect/Effect'
 import type { UserOperationType } from './UserOperationSchema.js'
@@ -22,17 +35,33 @@ const uint128ToBytes = (n: bigint): Uint8Array => {
  * Combines gas limits and fee fields into packed 32-byte values
  * for more efficient on-chain storage and processing.
  * 
+ * @description
+ * The packing combines:
+ * - `accountGasLimits`: verificationGasLimit (16 bytes) + callGasLimit (16 bytes)
+ * - `gasFees`: maxPriorityFeePerGas (16 bytes) + maxFeePerGas (16 bytes)
+ * 
+ * This reduces the number of storage slots and calldata size when submitting
+ * to the EntryPoint contract.
+ * 
  * @param userOp - UserOperation to pack
  * @returns Effect containing the PackedUserOperation or ValidationError
  * 
  * @example
  * ```typescript
  * import * as Effect from 'effect/Effect'
- * import { pack } from './pack.js'
+ * import * as UserOperation from 'voltaire-effect/primitives/UserOperation'
  * 
- * const packedOp = await Effect.runPromise(pack(userOp))
+ * const program = Effect.gen(function* () {
+ *   const userOp = yield* UserOperation.from({ ... })
+ *   const packed = yield* UserOperation.pack(userOp)
+ *   // packed.accountGasLimits contains both gas limits
+ *   // packed.gasFees contains both fee values
+ *   return packed
+ * })
  * ```
  * 
+ * @throws ValidationError - When packing fails
+ * @see PackedUserOperation.unpack - For the inverse operation
  * @since 0.0.1
  */
 export const pack = (

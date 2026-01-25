@@ -1,3 +1,14 @@
+/**
+ * @fileoverview Effect Schema for Ethereum log filter parameters.
+ * @module LogFilter/LogFilterSchema
+ * @since 0.0.1
+ *
+ * @description
+ * Log filters are used with eth_getLogs and eth_newFilter to query event logs.
+ * They specify criteria for matching logs including block range, contract addresses,
+ * and topic filters for indexed event parameters.
+ */
+
 import * as S from 'effect/Schema'
 import * as LogFilter from '@tevm/voltaire/LogFilter'
 import type { LogFilterType, BlockTag } from '@tevm/voltaire/LogFilter'
@@ -28,6 +39,13 @@ const LogFilterTypeSchema = S.declare<LogFilterType>(
 
 /**
  * Schema for block tags used in log filter queries.
+ *
+ * @description
+ * Block tags are string identifiers for special block positions:
+ * - 'earliest': Genesis block (block 0)
+ * - 'latest': Most recent mined block
+ * - 'pending': Pending block (not yet mined)
+ *
  * @since 0.0.1
  */
 const BlockTagSchema = S.Union(
@@ -38,12 +56,25 @@ const BlockTagSchema = S.Union(
 
 /**
  * Schema for block identifiers (block number or tag).
+ *
+ * @description
+ * Block identifiers can be:
+ * - bigint: Specific block number
+ * - string: Block tag ('earliest', 'latest', 'pending')
+ *
  * @since 0.0.1
  */
 const BlockIdentifierSchema = S.Union(S.BigIntFromSelf, BlockTagSchema)
 
 /**
  * Schema for topic filter entries (single topic, array of topics, or null).
+ *
+ * @description
+ * Topic entries can be:
+ * - 32-byte hash: Match this specific topic
+ * - Array of hashes: Match ANY of these topics (OR condition)
+ * - null: Match any value (wildcard)
+ *
  * @since 0.0.1
  */
 const TopicEntrySchema = S.Union(
@@ -54,6 +85,10 @@ const TopicEntrySchema = S.Union(
 
 /**
  * Schema for the topics array in a log filter.
+ *
+ * @description
+ * Topics array with up to 4 entries for filtering indexed event parameters.
+ *
  * @since 0.0.1
  */
 const TopicFilterSchema = S.Array(TopicEntrySchema)
@@ -72,30 +107,52 @@ const LogFilterSchemaInternal = S.Struct({
 
 /**
  * Effect Schema for validating and parsing Ethereum log filter parameters.
- * Log filters are used with eth_getLogs and eth_newFilter to query event logs.
  *
- * @param input - An object containing filter parameters (fromBlock, toBlock, address, topics, blockhash)
- * @returns The validated LogFilterType
+ * @description
+ * Log filters are used with eth_getLogs and eth_newFilter to query event logs.
+ * Filter parameters include:
+ * - fromBlock: Starting block (number or tag)
+ * - toBlock: Ending block (number or tag)
+ * - address: Contract address(es) to filter
+ * - topics: Topic filters for indexed parameters
+ * - blockhash: Filter by specific block hash (mutually exclusive with fromBlock/toBlock)
  *
  * @example
  * ```typescript
  * import * as S from 'effect/Schema'
- * import { LogFilterSchema } from 'voltaire-effect/LogFilter'
+ * import { LogFilterSchema } from 'voltaire-effect/primitives/LogFilter'
+ *
+ * const parse = S.decodeSync(LogFilterSchema)
  *
  * // Create a filter for Transfer events from a specific address
- * const filter = S.decodeSync(LogFilterSchema)({
+ * const filter = parse({
  *   fromBlock: 'latest',
  *   address: '0x1234567890123456789012345678901234567890',
  *   topics: ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef']
  * })
  *
  * // Filter by block range
- * const rangeFilter = S.decodeSync(LogFilterSchema)({
+ * const rangeFilter = parse({
  *   fromBlock: 1000000n,
  *   toBlock: 1000100n
  * })
+ *
+ * // Filter multiple addresses
+ * const multiAddress = parse({
+ *   address: [
+ *     '0x1111111111111111111111111111111111111111',
+ *     '0x2222222222222222222222222222222222222222'
+ *   ]
+ * })
+ *
+ * // Filter by block hash
+ * const blockFilter = parse({
+ *   blockhash: '0x1234...abcd'
+ * })
  * ```
  *
+ * @throws {ParseError} When filter parameters are invalid
+ * @see {@link LogFilterType} for the output type
  * @since 0.0.1
  */
 export const LogFilterSchema = S.transform(
@@ -112,12 +169,27 @@ export { LogFilterSchema as Schema, LogFilterTypeSchema }
 
 /**
  * The LogFilter type representing validated log filter parameters.
+ *
+ * @description
+ * Contains validated filter criteria for querying event logs:
+ * - Block range (fromBlock, toBlock) or specific blockhash
+ * - Contract address(es)
+ * - Topic filters for indexed parameters
+ *
+ * @see {@link LogFilterSchema} for creating instances
  * @since 0.0.1
  */
 export type { LogFilterType }
 
 /**
- * Block tag type for log filter queries ('earliest', 'latest', 'pending').
+ * Block tag type for log filter queries.
+ *
+ * @description
+ * Special block identifiers:
+ * - 'earliest': Genesis block (block 0)
+ * - 'latest': Most recent mined block
+ * - 'pending': Pending block (not yet mined)
+ *
  * @since 0.0.1
  */
 export type { BlockTag }

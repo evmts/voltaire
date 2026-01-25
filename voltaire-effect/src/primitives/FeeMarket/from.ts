@@ -1,9 +1,20 @@
+/**
+ * @fileoverview Effect-based constructor and utility functions for FeeMarket primitive.
+ * @module FeeMarket/from
+ * @since 0.0.1
+ */
+
 import { FeeMarket } from '@tevm/voltaire'
 import * as Effect from 'effect/Effect'
 import type { FeeMarketInput, FeeMarketType } from './FeeMarketSchema.js'
 
 /**
  * Error thrown when FeeMarket operations fail.
+ *
+ * @description
+ * Tagged error class for FeeMarket operations. Includes the `_tag` property
+ * for Effect's error handling and pattern matching.
+ *
  * @since 0.0.1
  */
 export class FeeMarketError extends Error {
@@ -16,21 +27,35 @@ export class FeeMarketError extends Error {
 
 /**
  * Creates a FeeMarket state from input values.
+ *
+ * @description
+ * Constructs a normalized FeeMarketType from flexible input types.
+ * Use to create state objects for fee calculations.
+ *
  * @param input - The fee market input with gas parameters
- * @returns Effect containing FeeMarketType or FeeMarketError
+ * @returns Effect yielding FeeMarketType on success
+ *
+ * @throws {FeeMarketError} When any value cannot be converted to bigint
+ *
  * @example
- * ```ts
+ * ```typescript
  * import * as FeeMarket from 'voltaire-effect/primitives/FeeMarket'
  * import { Effect } from 'effect'
  *
+ * // Create from block data
  * const state = FeeMarket.from({
- *   gasUsed: 15000000n,
- *   gasLimit: 30000000n,
- *   baseFee: 1000000000n,
+ *   gasUsed: 15_000_000n,
+ *   gasLimit: 30_000_000n,
+ *   baseFee: 20_000_000_000n,
  *   excessBlobGas: 0n,
  *   blobGasUsed: 0n
  * })
+ *
+ * const stateValue = Effect.runSync(state)
  * ```
+ *
+ * @see {@link FeeMarketSchema} for schema validation
+ * @see {@link nextState} to calculate next block state
  * @since 0.0.1
  */
 export const from = (input: FeeMarketInput): Effect.Effect<FeeMarketType, FeeMarketError> =>

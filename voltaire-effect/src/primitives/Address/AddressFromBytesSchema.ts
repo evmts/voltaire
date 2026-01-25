@@ -94,6 +94,12 @@ export const AddressFromBytesSchema: Schema.Schema<AddressType, Uint8Array> = Sc
         return ParseResult.fail(new ParseResult.Type(ast, bytes, (e as Error).message))
       }
     },
-    encode: (addr) => ParseResult.succeed(Address.toBytes(addr))
+    encode: (addr, _options, ast) => {
+      try {
+        return ParseResult.succeed(Address.toBytes(addr))
+      } catch (e) {
+        return ParseResult.fail(new ParseResult.Type(ast, addr, (e as Error).message))
+      }
+    }
   }
 )

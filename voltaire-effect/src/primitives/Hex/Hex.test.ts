@@ -17,6 +17,12 @@ describe('Hex Schema', () => {
   it('fails on invalid hex (missing prefix)', () => {
     expect(() => Schema.decodeSync(Hex.Schema)("1234")).toThrow()
   })
+
+  it('encode returns ParseResult.fail on invalid input instead of throwing', async () => {
+    const invalidHex = 12345 as any // not a string
+    const exit = await Effect.runPromiseExit(Schema.encode(Hex.Schema)(invalidHex))
+    expect(exit._tag).toBe("Failure")
+  })
 })
 
 describe('Hex.from', () => {

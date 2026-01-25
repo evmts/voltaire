@@ -44,7 +44,13 @@ export const TransactionHashSchema: S.Schema<TransactionHashType, string> = S.tr
         return ParseResult.fail(new ParseResult.Type(ast, s, (e as Error).message))
       }
     },
-    encode: (hash) => ParseResult.succeed(TransactionHash.toHex(hash as any))
+    encode: (hash, _options, ast) => {
+      try {
+        return ParseResult.succeed(TransactionHash.toHex(hash as any))
+      } catch (e) {
+        return ParseResult.fail(new ParseResult.Type(ast, hash, (e as Error).message))
+      }
+    }
   }
 ).annotations({ identifier: 'TransactionHashSchema' })
 
@@ -73,6 +79,12 @@ export const TransactionHashFromBytesSchema: S.Schema<TransactionHashType, Uint8
         return ParseResult.fail(new ParseResult.Type(ast, bytes, (e as Error).message))
       }
     },
-    encode: (hash) => ParseResult.succeed(hash as Uint8Array)
+    encode: (hash, _options, ast) => {
+      try {
+        return ParseResult.succeed(hash as Uint8Array)
+      } catch (e) {
+        return ParseResult.fail(new ParseResult.Type(ast, hash, (e as Error).message))
+      }
+    }
   }
 ).annotations({ identifier: 'TransactionHashFromBytesSchema' })

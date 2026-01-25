@@ -1,3 +1,14 @@
+/**
+ * @fileoverview UserOperation factory function for ERC-4337 account abstraction.
+ * 
+ * This module provides the `from` function for creating validated UserOperations
+ * from flexible input types. Unlike the Schema which works with string-encoded
+ * JSON-RPC format, this function accepts native JavaScript types directly.
+ * 
+ * @see https://eips.ethereum.org/EIPS/eip-4337
+ * @module UserOperation/from
+ * @since 0.0.1
+ */
 import { Address } from '@tevm/voltaire/Address'
 import type { AddressType } from '@tevm/voltaire/Address'
 import { ValidationError } from '@tevm/voltaire/errors'
@@ -6,6 +17,27 @@ import type { UserOperationType } from './UserOperationSchema.js'
 
 /**
  * Input parameters for creating a UserOperation.
+ * 
+ * Accepts flexible input types for each field, allowing construction from
+ * various sources without manual type conversion.
+ * 
+ * @example
+ * ```typescript
+ * const params: UserOperationFromParams = {
+ *   sender: '0x1234...',           // hex string
+ *   nonce: 0n,                      // bigint
+ *   initCode: '0x',                 // hex string
+ *   callData: new Uint8Array([...]),// bytes
+ *   callGasLimit: 100000,           // number (will be converted to bigint)
+ *   verificationGasLimit: '100000', // string (will be converted to bigint)
+ *   preVerificationGas: 21000n,     // bigint
+ *   maxFeePerGas: 1000000000n,
+ *   maxPriorityFeePerGas: 1000000000n,
+ *   paymasterAndData: '0x',
+ *   signature: '0x...'
+ * }
+ * ```
+ * 
  * @since 0.0.1
  */
 export interface UserOperationFromParams {
@@ -43,19 +75,30 @@ const toBigInt = (value: bigint | number | string): bigint => {
 /**
  * Creates a validated UserOperation from input parameters.
  * 
+ * This function accepts flexible input types and normalizes them into the
+ * canonical UserOperationType format. It validates all inputs and returns
+ * an Effect that either succeeds with the UserOperation or fails with a
+ * ValidationError.
+ * 
+ * @description
+ * The function handles type coercion for:
+ * - Addresses: hex strings or Uint8Array → AddressType
+ * - BigInts: bigint, number, or string → bigint
+ * - Bytes: hex strings or Uint8Array → Uint8Array
+ * 
  * @param params - UserOperation fields with flexible input types
  * @returns Effect containing the validated UserOperation or ValidationError
  * 
  * @example
  * ```typescript
  * import * as Effect from 'effect/Effect'
- * import { from } from './from.js'
+ * import * as UserOperation from 'voltaire-effect/primitives/UserOperation'
  * 
- * const userOp = await Effect.runPromise(from({
- *   sender: '0x...',
+ * const userOp = await Effect.runPromise(UserOperation.from({
+ *   sender: '0x1234567890123456789012345678901234567890',
  *   nonce: 0n,
  *   initCode: '0x',
- *   callData: '0x...',
+ *   callData: '0xabcdef',
  *   callGasLimit: 100000n,
  *   verificationGasLimit: 100000n,
  *   preVerificationGas: 21000n,
@@ -66,6 +109,9 @@ const toBigInt = (value: bigint | number | string): bigint => {
  * }))
  * ```
  * 
+ * @throws ValidationError - When input validation fails (invalid address format, etc.)
+ * @see UserOperationType - The output type
+ * @see UserOperationFromParams - The input parameter type
  * @since 0.0.1
  */
 export const from = (params: UserOperationFromParams): Effect.Effect<UserOperationType, ValidationError> =>

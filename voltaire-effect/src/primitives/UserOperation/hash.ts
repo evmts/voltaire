@@ -1,3 +1,17 @@
+/**
+ * @fileoverview UserOperation hash computation for ERC-4337 account abstraction.
+ * 
+ * This module computes the hash of a UserOperation as defined in ERC-4337.
+ * The hash is used for signature verification and uniquely identifies the
+ * UserOperation on a specific chain and EntryPoint.
+ * 
+ * The hash is computed as:
+ * `keccak256(keccak256(userOpFields), entryPoint, chainId)`
+ * 
+ * @see https://eips.ethereum.org/EIPS/eip-4337#useroperation
+ * @module UserOperation/hash
+ * @since 0.0.1
+ */
 import { Address } from '@tevm/voltaire/Address'
 import type { AddressType } from '@tevm/voltaire/Address'
 import { Keccak256 } from '@tevm/voltaire'
@@ -28,21 +42,40 @@ const uint256ToBytes = (n: bigint): Uint8Array => {
  * Computes the ERC-4337 UserOperation hash.
  * 
  * The hash is used for signature verification and uniquely identifies
- * the UserOperation on a specific chain and EntryPoint.
+ * the UserOperation on a specific chain and EntryPoint. This is the value
+ * that should be signed by the account owner.
+ * 
+ * @description
+ * The hash is computed in two steps:
+ * 1. Hash the UserOperation fields (sender, nonce, initCode hash, callData hash,
+ *    gas limits, and paymasterAndData hash)
+ * 2. Hash the result with the EntryPoint address and chainId
+ * 
+ * This provides replay protection across chains and EntryPoint versions.
  * 
  * @param userOp - UserOperation to hash
- * @param entryPoint - EntryPoint contract address
- * @param chainId - Chain ID for replay protection
+ * @param entryPoint - EntryPoint contract address (accepts string, Uint8Array, or AddressType)
+ * @param chainId - Chain ID for replay protection (accepts bigint or number)
  * @returns Effect containing the 32-byte hash or ValidationError
  * 
  * @example
  * ```typescript
  * import * as Effect from 'effect/Effect'
- * import { hash } from './hash.js'
+ * import * as UserOperation from 'voltaire-effect/primitives/UserOperation'
  * 
- * const userOpHash = await Effect.runPromise(hash(userOp, entryPoint, 1n))
+ * const program = Effect.gen(function* () {
+ *   const userOp = yield* UserOperation.from({ ... })
+ *   const hash = yield* UserOperation.hash(
+ *     userOp,
+ *     '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789', // v0.6 EntryPoint
+ *     1n // mainnet
+ *   )
+ *   return hash // 32-byte Uint8Array to sign
+ * })
  * ```
  * 
+ * @throws ValidationError - When entryPoint address is invalid
+ * @see pack - For converting to PackedUserOperation format
  * @since 0.0.1
  */
 export const hash = (

@@ -1,6 +1,16 @@
 /**
+ * @fileoverview PackedUserOperation Schema definitions for ERC-4337 v0.7.
+ * 
+ * ERC-4337 v0.7 introduced a packed format for UserOperations that reduces
+ * calldata size by combining multiple gas fields into fixed-size byte arrays.
+ * This format is more gas-efficient for on-chain processing.
+ * 
+ * The packed format combines:
+ * - `accountGasLimits`: verificationGasLimit (16 bytes) + callGasLimit (16 bytes)
+ * - `gasFees`: maxPriorityFeePerGas (16 bytes) + maxFeePerGas (16 bytes)
+ * 
+ * @see https://eips.ethereum.org/EIPS/eip-4337
  * @module PackedUserOperationSchema
- * Effect Schema definitions for ERC-4337 PackedUserOperation.
  * @since 0.0.1
  */
 import * as S from 'effect/Schema'
@@ -9,22 +19,47 @@ import { Address } from '@tevm/voltaire/Address'
 import type { AddressType } from '@tevm/voltaire/Address'
 
 /**
- * Type representing a packed ERC-4337 user operation.
+ * Type representing a packed ERC-4337 user operation (v0.7 format).
  *
  * PackedUserOperation is a gas-optimized encoding of UserOperation
  * where multiple gas fields are packed into fixed-size byte arrays.
+ * This reduces calldata size and on-chain storage costs.
+ *
+ * @example
+ * ```typescript
+ * const packed: PackedUserOperationType = {
+ *   sender: addressBytes,
+ *   nonce: 0n,
+ *   initCode: new Uint8Array(0),
+ *   callData: callDataBytes,
+ *   accountGasLimits: new Uint8Array(32), // [verificationGasLimit, callGasLimit]
+ *   preVerificationGas: 21000n,
+ *   gasFees: new Uint8Array(32),          // [maxPriorityFee, maxFee]
+ *   paymasterAndData: new Uint8Array(0),
+ *   signature: signatureBytes
+ * }
+ * ```
  *
  * @since 0.0.1
  */
 export interface PackedUserOperationType {
+  /** Smart contract account address (20 bytes) */
   readonly sender: AddressType
+  /** Account nonce to prevent replay attacks */
   readonly nonce: bigint
+  /** Factory address + init data for account deployment */
   readonly initCode: Uint8Array
+  /** Encoded call data to execute on the account */
   readonly callData: Uint8Array
+  /** Packed verificationGasLimit (16 bytes) + callGasLimit (16 bytes) */
   readonly accountGasLimits: Uint8Array
+  /** Gas to compensate bundler for pre-verification overhead */
   readonly preVerificationGas: bigint
+  /** Packed maxPriorityFeePerGas (16 bytes) + maxFeePerGas (16 bytes) */
   readonly gasFees: Uint8Array
+  /** Paymaster address + verification/post-op data */
   readonly paymasterAndData: Uint8Array
+  /** Signature over the UserOperation hash */
   readonly signature: Uint8Array
 }
 

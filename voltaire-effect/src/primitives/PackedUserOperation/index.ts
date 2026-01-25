@@ -1,8 +1,12 @@
 /**
- * PackedUserOperation module for Effect-based ERC-4337 account abstraction.
+ * @fileoverview PackedUserOperation module for ERC-4337 v0.7 account abstraction.
  *
- * Provides Effect-wrapped operations for packed user operations, which are
- * gas-optimized encodings of ERC-4337 UserOperations.
+ * ERC-4337 v0.7 introduced a packed format for UserOperations that reduces
+ * calldata size by combining multiple gas fields into fixed-size byte arrays.
+ * This format is more gas-efficient for on-chain processing.
+ *
+ * This module provides Effect-based schemas and functions for creating,
+ * validating, hashing, and unpacking PackedUserOperations.
  *
  * @example
  * ```typescript
@@ -12,7 +16,7 @@
  * const program = Effect.gen(function* () {
  *   // Create packed user operation
  *   const packed = yield* PackedUserOperation.from({
- *     sender: '0x1234...',
+ *     sender: '0x1234567890123456789012345678901234567890',
  *     nonce: 0n,
  *     initCode: '0x',
  *     callData: '0xabcd',
@@ -24,17 +28,44 @@
  *   })
  *
  *   // Compute hash for signing
- *   const userOpHash = yield* PackedUserOperation.hash(packed, entryPoint, chainId)
+ *   const userOpHash = yield* PackedUserOperation.hash(
+ *     packed,
+ *     '0x0000000071727De22E5E9d8BAf0edAc6f37da032', // v0.7 EntryPoint
+ *     1n
+ *   )
  *
  *   // Unpack to full UserOperation
  *   const userOp = yield* PackedUserOperation.unpack(packed)
+ * 
+ *   return { packed, userOpHash, userOp }
  * })
  * ```
  *
- * @module
+ * @see https://eips.ethereum.org/EIPS/eip-4337
+ * @see UserOperation - For the standard unpacked format
+ * @module PackedUserOperation
  * @since 0.0.1
  */
+
+/**
+ * The validated PackedUserOperation type with native field types.
+ * @see PackedUserOperationSchema - For parsing from JSON-RPC format
+ */
 export { type PackedUserOperationType, PackedUserOperationSchema, type PackedUserOperationInput } from './PackedUserOperationSchema.js'
+
+/**
+ * Create a PackedUserOperation from flexible input types.
+ * @see PackedUserOperationFromParams - The input parameter type
+ */
 export { from, type PackedUserOperationFromParams } from './from.js'
+
+/**
+ * Compute the ERC-4337 PackedUserOperation hash for signing.
+ */
 export { hash } from './hash.js'
+
+/**
+ * Unpack a PackedUserOperation to standard UserOperation format.
+ * @see UserOperation - For the unpacked format
+ */
 export { unpack } from './unpack.js'

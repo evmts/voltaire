@@ -1,3 +1,14 @@
+/**
+ * @fileoverview Effect Schema for EVM event logs.
+ * @module EventLog/EventLogSchema
+ * @since 0.0.1
+ *
+ * @description
+ * Event logs are the primary mechanism for smart contracts to emit events.
+ * Each log contains the emitting contract's address, indexed topics for filtering,
+ * and arbitrary data bytes.
+ */
+
 import * as S from 'effect/Schema'
 import * as ParseResult from 'effect/ParseResult'
 import * as EventLog from '@tevm/voltaire/EventLog'
@@ -7,6 +18,7 @@ import { HashSchema } from '../Hash/HashSchema.js'
 
 /**
  * Internal schema for validating EventLog structure.
+ * @internal
  */
 const EventLogTypeSchema = S.declare<EventLogType>(
   (u): u is EventLogType => {
@@ -25,6 +37,10 @@ const EventLogTypeSchema = S.declare<EventLogType>(
   { identifier: 'EventLog' }
 )
 
+/**
+ * Internal structured schema for EventLog input.
+ * @internal
+ */
 const EventLogSchemaInternal = S.Struct({
   address: AddressSchema,
   topics: S.Array(HashSchema),
@@ -39,19 +55,48 @@ const EventLogSchemaInternal = S.Struct({
 
 /**
  * Effect Schema for validating EVM event logs.
- * Validates log structure including address, topics, and data.
+ *
+ * @description
+ * Validates and transforms event log data into a typed EventLogType.
+ * Event logs contain:
+ * - address: The contract that emitted the event (20 bytes)
+ * - topics: Array of indexed parameters (up to 4, each 32 bytes)
+ * - data: Non-indexed parameters encoded as bytes
+ * - blockNumber: Block containing this log (optional)
+ * - transactionHash: Transaction that emitted this log (optional)
+ * - transactionIndex: Index of transaction in block (optional)
+ * - blockHash: Hash of block containing this log (optional)
+ * - logIndex: Index of log within transaction (optional)
+ * - removed: True if log was removed due to chain reorg (optional)
  *
  * @example
  * ```typescript
- * import * as EventLog from 'voltaire-effect/EventLog'
+ * import * as EventLog from 'voltaire-effect/primitives/EventLog'
  * import * as Schema from 'effect/Schema'
  *
- * const log = Schema.decodeSync(EventLog.Schema)({
- *   address: contractAddress,
- *   topics: [eventTopic],
- *   data: eventData
+ * const parse = Schema.decodeSync(EventLog.Schema)
+ *
+ * // Parse a Transfer event log
+ * const log = parse({
+ *   address: contractAddress,  // 20-byte address
+ *   topics: [
+ *     transferEventSignature,  // Topic 0: event signature
+ *     fromAddressTopic,        // Topic 1: from address (padded)
+ *     toAddressTopic           // Topic 2: to address (padded)
+ *   ],
+ *   data: encodedAmount,       // Non-indexed amount parameter
+ *   blockNumber: 12345678n,
+ *   logIndex: 0
  * })
+ *
+ * // Access log properties
+ * console.log(log.address)  // Contract address
+ * console.log(log.topics)   // Indexed parameters
+ * console.log(log.data)     // Encoded data
  * ```
+ *
+ * @throws {ParseError} When log structure is invalid
+ * @see {@link EventLogType} for the output type
  * @since 0.0.1
  */
 export const EventLogSchema: S.Schema<EventLogType, S.Schema.Encoded<typeof EventLogSchemaInternal>> = S.transformOrFail(
@@ -92,12 +137,22 @@ export const EventLogSchema: S.Schema<EventLogType, S.Schema.Encoded<typeof Even
 
 /**
  * Alias for EventLogSchema.
+ * @see {@link EventLogSchema}
  * @since 0.0.1
  */
 export { EventLogSchema as Schema, EventLogTypeSchema }
 
 /**
  * Type representing an EVM event log entry.
+ *
+ * @description
+ * Contains all data for an emitted event:
+ * - address: Emitting contract address
+ * - topics: Indexed event parameters (for filtering)
+ * - data: Non-indexed parameters (ABI encoded)
+ * - Metadata: block, transaction, and log indices
+ *
+ * @see {@link EventLogSchema} for creating instances
  * @since 0.0.1
  */
 export type { EventLogType }
