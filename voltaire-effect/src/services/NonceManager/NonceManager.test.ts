@@ -64,7 +64,7 @@ describe("NonceManagerService", () => {
 
 				const program = Effect.gen(function* () {
 					const nonceManager = yield* NonceManagerService;
-					return yield* nonceManager.get("0x1234567890123456789012345678901234567890");
+					return yield* nonceManager.get("0x1234567890123456789012345678901234567890", 1);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(TestProviderLayer),
@@ -87,7 +87,7 @@ describe("NonceManagerService", () => {
 
 				const program = Effect.gen(function* () {
 					const nonceManager = yield* NonceManagerService;
-					return yield* nonceManager.get("0xABCD1234567890123456789012345678901234AB");
+					return yield* nonceManager.get("0xABCD1234567890123456789012345678901234AB", 1);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(TestProviderLayer),
@@ -107,7 +107,7 @@ describe("NonceManagerService", () => {
 
 				const program = Effect.gen(function* () {
 					const nonceManager = yield* NonceManagerService;
-					return yield* nonceManager.get("0x1234567890123456789012345678901234567890");
+					return yield* nonceManager.get("0x1234567890123456789012345678901234567890", 1);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(TestProviderLayer),
@@ -133,9 +133,9 @@ describe("NonceManagerService", () => {
 				const program = Effect.gen(function* () {
 					const nonceManager = yield* NonceManagerService;
 					const addr = "0x1234567890123456789012345678901234567890";
-					const n1 = yield* nonceManager.consume(addr);
-					const n2 = yield* nonceManager.consume(addr);
-					const n3 = yield* nonceManager.consume(addr);
+					const n1 = yield* nonceManager.consume(addr, 1);
+					const n2 = yield* nonceManager.consume(addr, 1);
+					const n3 = yield* nonceManager.consume(addr, 1);
 					return [n1, n2, n3];
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
@@ -158,10 +158,10 @@ describe("NonceManagerService", () => {
 					const addr1 = "0x1111111111111111111111111111111111111111";
 					const addr2 = "0x2222222222222222222222222222222222222222";
 
-					const a1n1 = yield* nonceManager.consume(addr1);
-					const a2n1 = yield* nonceManager.consume(addr2);
-					const a1n2 = yield* nonceManager.consume(addr1);
-					const a2n2 = yield* nonceManager.consume(addr2);
+					const a1n1 = yield* nonceManager.consume(addr1, 1);
+					const a2n1 = yield* nonceManager.consume(addr2, 1);
+					const a1n2 = yield* nonceManager.consume(addr1, 1);
+					const a2n2 = yield* nonceManager.consume(addr2, 1);
 
 					return { a1n1, a1n2, a2n1, a2n2 };
 				}).pipe(
@@ -174,6 +174,35 @@ describe("NonceManagerService", () => {
 				expect(result.a1n2).toBe(11);
 				expect(result.a2n1).toBe(10);
 				expect(result.a2n2).toBe(11);
+			});
+
+			it("tracks delta per chainId", async () => {
+				const mockProvider = createMockProvider({
+					getTransactionCount: () => Effect.succeed(10n),
+				});
+
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+
+				const program = Effect.gen(function* () {
+					const nonceManager = yield* NonceManagerService;
+					const addr = "0x1111111111111111111111111111111111111111";
+
+					const mainnet1 = yield* nonceManager.consume(addr, 1);
+					const optimism1 = yield* nonceManager.consume(addr, 10);
+					const mainnet2 = yield* nonceManager.consume(addr, 1);
+					const optimism2 = yield* nonceManager.consume(addr, 10);
+
+					return { mainnet1, mainnet2, optimism1, optimism2 };
+				}).pipe(
+					Effect.provide(DefaultNonceManager),
+					Effect.provide(TestProviderLayer),
+				);
+
+				const result = await Effect.runPromise(program);
+				expect(result.mainnet1).toBe(10);
+				expect(result.mainnet2).toBe(11);
+				expect(result.optimism1).toBe(10);
+				expect(result.optimism2).toBe(11);
 			});
 		});
 
@@ -193,12 +222,12 @@ describe("NonceManagerService", () => {
 					const nonceManager = yield* NonceManagerService;
 					const addr = "0x1234567890123456789012345678901234567890";
 
-					yield* nonceManager.increment(addr);
-					yield* nonceManager.increment(addr);
-					yield* nonceManager.increment(addr);
+					yield* nonceManager.increment(addr, 1);
+					yield* nonceManager.increment(addr, 1);
+					yield* nonceManager.increment(addr, 1);
 
 					const beforeFetch = fetchCount;
-					const nonce = yield* nonceManager.get(addr);
+					const nonce = yield* nonceManager.get(addr, 1);
 
 					return { nonce, fetchesBefore: beforeFetch, fetchesAfter: fetchCount };
 				}).pipe(
@@ -225,13 +254,13 @@ describe("NonceManagerService", () => {
 					const nonceManager = yield* NonceManagerService;
 					const addr = "0x1234567890123456789012345678901234567890";
 
-					yield* nonceManager.consume(addr);
-					yield* nonceManager.consume(addr);
-					yield* nonceManager.consume(addr);
+					yield* nonceManager.consume(addr, 1);
+					yield* nonceManager.consume(addr, 1);
+					yield* nonceManager.consume(addr, 1);
 
-					yield* nonceManager.reset(addr);
+					yield* nonceManager.reset(addr, 1);
 
-					return yield* nonceManager.get(addr);
+					return yield* nonceManager.get(addr, 1);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(TestProviderLayer),
@@ -253,15 +282,15 @@ describe("NonceManagerService", () => {
 					const addr1 = "0x1111111111111111111111111111111111111111";
 					const addr2 = "0x2222222222222222222222222222222222222222";
 
-					yield* nonceManager.consume(addr1);
-					yield* nonceManager.consume(addr1);
-					yield* nonceManager.consume(addr2);
-					yield* nonceManager.consume(addr2);
+					yield* nonceManager.consume(addr1, 1);
+					yield* nonceManager.consume(addr1, 1);
+					yield* nonceManager.consume(addr2, 1);
+					yield* nonceManager.consume(addr2, 1);
 
-					yield* nonceManager.reset(addr1);
+					yield* nonceManager.reset(addr1, 1);
 
-					const n1 = yield* nonceManager.get(addr1);
-					const n2 = yield* nonceManager.get(addr2);
+					const n1 = yield* nonceManager.get(addr1, 1);
+					const n2 = yield* nonceManager.get(addr2, 1);
 
 					return { n1, n2 };
 				}).pipe(
@@ -288,12 +317,15 @@ describe("NonceManagerService", () => {
 
 					const n1 = yield* nonceManager.consume(
 						"0xabcd1234567890123456789012345678901234ab",
+						1,
 					);
 					const n2 = yield* nonceManager.consume(
 						"0xABCD1234567890123456789012345678901234AB",
+						1,
 					);
 					const n3 = yield* nonceManager.consume(
 						"0xAbCd1234567890123456789012345678901234Ab",
+						1,
 					);
 
 					return [n1, n2, n3];
@@ -321,11 +353,11 @@ describe("NonceManagerService", () => {
 
 					const results = yield* Effect.all(
 						[
-							nonceManager.consume(addr),
-							nonceManager.consume(addr),
-							nonceManager.consume(addr),
-							nonceManager.consume(addr),
-							nonceManager.consume(addr),
+							nonceManager.consume(addr, 1),
+							nonceManager.consume(addr, 1),
+							nonceManager.consume(addr, 1),
+							nonceManager.consume(addr, 1),
+							nonceManager.consume(addr, 1),
 						],
 						{ concurrency: 5 },
 					);
@@ -338,6 +370,33 @@ describe("NonceManagerService", () => {
 
 				const result = await Effect.runPromise(program);
 				expect(result).toEqual([0, 1, 2, 3, 4]);
+			});
+
+			it("handles high concurrency without race conditions", async () => {
+				const mockProvider = createMockProvider({
+					getTransactionCount: () => Effect.succeed(0n),
+				});
+
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+
+				const program = Effect.gen(function* () {
+					const nonceManager = yield* NonceManagerService;
+					const addr = "0x1234567890123456789012345678901234567890";
+
+					const results = yield* Effect.all(
+						Array.from({ length: 100 }, () => nonceManager.consume(addr, 1)),
+						{ concurrency: "unbounded" },
+					);
+
+					return results.sort((a, b) => a - b);
+				}).pipe(
+					Effect.provide(DefaultNonceManager),
+					Effect.provide(TestProviderLayer),
+				);
+
+				const result = await Effect.runPromise(program);
+				const expected = Array.from({ length: 100 }, (_, i) => i);
+				expect(result).toEqual(expected);
 			});
 		});
 	});

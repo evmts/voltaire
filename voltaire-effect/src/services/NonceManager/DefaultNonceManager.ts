@@ -81,10 +81,10 @@ export const DefaultNonceManager: Layer.Layer<NonceManagerService> =
 			const deltaRef = yield* SynchronizedRef.make(new Map<string, number>());
 
 			return {
-				get: (address: string) =>
+				get: (address: string, chainId: number) =>
 					Effect.gen(function* () {
 						const provider = yield* ProviderService;
-						const key = address.toLowerCase();
+						const key = `${chainId}:${address.toLowerCase()}`;
 
 						const baseNonce = yield* provider
 							.getTransactionCount(address as `0x${string}`, "pending")
@@ -104,11 +104,11 @@ export const DefaultNonceManager: Layer.Layer<NonceManagerService> =
 						return Number(baseNonce) + delta;
 					}),
 
-				consume: (address: string) =>
+				consume: (address: string, chainId: number) =>
 					SynchronizedRef.modifyEffect(deltaRef, (deltaMap) =>
 						Effect.gen(function* () {
 							const provider = yield* ProviderService;
-							const key = address.toLowerCase();
+							const key = `${chainId}:${address.toLowerCase()}`;
 
 							const baseNonce = yield* provider
 								.getTransactionCount(address as `0x${string}`, "pending")
@@ -133,18 +133,18 @@ export const DefaultNonceManager: Layer.Layer<NonceManagerService> =
 						}),
 					),
 
-				increment: (address: string) =>
+				increment: (address: string, chainId: number) =>
 					SynchronizedRef.update(deltaRef, (deltaMap) => {
-						const key = address.toLowerCase();
+						const key = `${chainId}:${address.toLowerCase()}`;
 						const delta = deltaMap.get(key) ?? 0;
 						const newMap = new Map(deltaMap);
 						newMap.set(key, delta + 1);
 						return newMap;
 					}),
 
-				reset: (address: string) =>
+				reset: (address: string, chainId: number) =>
 					SynchronizedRef.update(deltaRef, (deltaMap) => {
-						const key = address.toLowerCase();
+						const key = `${chainId}:${address.toLowerCase()}`;
 						const newMap = new Map(deltaMap);
 						newMap.delete(key);
 						return newMap;

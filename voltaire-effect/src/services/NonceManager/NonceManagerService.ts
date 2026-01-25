@@ -61,46 +61,52 @@ export class NonceError extends Data.TaggedError("NonceError")<{
  */
 export type NonceManagerShape = {
 	/**
-	 * Gets the current nonce for an address.
+	 * Gets the current nonce for an address on a specific chain.
 	 *
 	 * @description
 	 * Fetches the pending nonce from the provider and adds the local delta.
 	 * Does not consume the nonce (delta remains unchanged).
 	 *
 	 * @param address - The address to get the nonce for
+	 * @param chainId - The chain ID to scope the nonce to
 	 * @returns The current nonce (on-chain pending + local delta)
 	 */
 	readonly get: (
 		address: string,
+		chainId: number,
 	) => Effect.Effect<number, NonceError, ProviderService>;
 
 	/**
-	 * Gets and consumes the next nonce for an address.
+	 * Gets and consumes the next nonce for an address on a specific chain.
 	 *
 	 * @description
 	 * Fetches the pending nonce, adds the local delta, then increments the delta.
 	 * Use this when preparing to send a transaction.
+	 * This operation is atomic - safe for concurrent calls.
 	 *
 	 * @param address - The address to consume a nonce for
+	 * @param chainId - The chain ID to scope the nonce to
 	 * @returns The nonce to use for the next transaction
 	 */
 	readonly consume: (
 		address: string,
+		chainId: number,
 	) => Effect.Effect<number, NonceError, ProviderService>;
 
 	/**
-	 * Increments the local delta for an address.
+	 * Increments the local delta for an address on a specific chain.
 	 *
 	 * @description
 	 * Adds 1 to the tracked delta without fetching from the provider.
 	 * Useful when you know a transaction was sent externally.
 	 *
 	 * @param address - The address to increment the delta for
+	 * @param chainId - The chain ID to scope the nonce to
 	 */
-	readonly increment: (address: string) => Effect.Effect<void>;
+	readonly increment: (address: string, chainId: number) => Effect.Effect<void>;
 
 	/**
-	 * Resets the local delta for an address.
+	 * Resets the local delta for an address on a specific chain.
 	 *
 	 * @description
 	 * Clears the tracked delta, so the next get() will return the
@@ -108,8 +114,9 @@ export type NonceManagerShape = {
 	 * or if you need to resync with the network.
 	 *
 	 * @param address - The address to reset
+	 * @param chainId - The chain ID to scope the nonce to
 	 */
-	readonly reset: (address: string) => Effect.Effect<void>;
+	readonly reset: (address: string, chainId: number) => Effect.Effect<void>;
 };
 
 /**
