@@ -1,0 +1,63 @@
+---
+title: Getting Started
+description: Install and start using voltaire-effect
+---
+
+## Installation
+
+```bash
+pnpm add voltaire-effect @tevm/voltaire effect
+```
+
+voltaire-effect is a peer dependency wrapper. It requires:
+- `@tevm/voltaire` - The core Voltaire primitives
+- `effect` - Effect.ts runtime
+
+## Basic Usage
+
+### Schema Validation
+
+```typescript
+import { Address, Hex } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+// Decode string to branded Address type
+const addr = Schema.decodeSync(Address.Schema)("0x742d35Cc...")
+
+// addr is AddressType from @tevm/voltaire
+// Works directly with Voltaire functions
+import { Address as VAddr } from '@tevm/voltaire'
+VAddr.toChecksummed(addr)
+```
+
+### Effect Operations
+
+```typescript
+import { Address } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  const addr = yield* Address.fromBytes(bytes)
+  return Address.toChecksummed(addr)
+})
+
+// Run with error handling
+Effect.runPromise(program)
+```
+
+### Error Handling
+
+```typescript
+import { Address } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const program = Address.fromString("invalid").pipe(
+  Effect.catchTag("InvalidAddress", (e) => 
+    Effect.succeed("0x0000000000000000000000000000000000000000")
+  )
+)
+```
+
+## Next Steps
+
+- [Layers](/layers) - Understand Schema, Effect, and Service layers

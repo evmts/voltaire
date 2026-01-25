@@ -1,0 +1,124 @@
+---
+title: Secp256k1 Service
+description: Effect-based ECDSA signing and verification for Ethereum
+---
+
+Effect-wrapped secp256k1 elliptic curve operations for Ethereum transaction signing, message verification, and public key recovery.
+
+## Secp256k1Service
+
+```typescript
+import { Secp256k1Service } from 'voltaire-effect/crypto'
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  const secp = yield* Secp256k1Service
+  
+  // Sign a message hash
+  const signature = yield* secp.sign(messageHash, privateKey)
+  
+  // Recover public key from signature
+  const publicKey = yield* secp.recover(signature, messageHash)
+  
+  // Verify signature
+  const isValid = yield* secp.verify(signature, messageHash, publicKey)
+  
+  return { signature, publicKey, isValid }
+})
+```
+
+### Interface
+
+```typescript
+interface Secp256k1ServiceShape {
+  readonly sign: (
+    messageHash: HashType,
+    privateKey: Uint8Array,
+    options?: SignOptions
+  ) => Effect.Effect<Secp256k1SignatureType, InvalidPrivateKeyError | CryptoError>
+
+  readonly recover: (
+    signature: Secp256k1SignatureType,
+    messageHash: HashType
+  ) => Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError>
+
+  readonly verify: (
+    signature: Secp256k1SignatureType,
+    messageHash: HashType,
+    publicKey: Secp256k1PublicKeyType
+  ) => Effect.Effect<boolean, InvalidSignatureError>
+}
+```
+
+## Providing the Layer
+
+```typescript
+import { Secp256k1Service, Secp256k1Live } from 'voltaire-effect/crypto'
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  const secp = yield* Secp256k1Service
+  return yield* secp.sign(messageHash, privateKey)
+})
+
+const result = await Effect.runPromise(
+  program.pipe(Effect.provide(Secp256k1Live))
+)
+```
+
+## Error Handling
+
+```typescript
+import { Secp256k1Service, Secp256k1Live } from 'voltaire-effect/crypto'
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  const secp = yield* Secp256k1Service
+  return yield* secp.sign(messageHash, privateKey)
+}).pipe(
+  Effect.catchTag('InvalidPrivateKeyError', (e) =>
+    Effect.fail(new Error(`Bad key: ${e.message}`))
+  ),
+  Effect.catchTag('CryptoError', (e) =>
+    Effect.fail(new Error(`Crypto failed: ${e.message}`))
+  )
+)
+```
+
+## Sign Options
+
+Add extra entropy for additional security:
+
+```typescript
+const signature = yield* secp.sign(messageHash, privateKey, {
+  extraEntropy: true  // or provide Uint8Array
+})
+```
+
+## Full Example
+
+```typescript
+import { Secp256k1Service, KeccakService, CryptoLive } from 'voltaire-effect/crypto'
+import * as Effect from 'effect/Effect'
+
+const signMessage = (message: string, privateKey: Uint8Array) =>
+  Effect.gen(function* () {
+    const keccak = yield* KeccakService
+    const secp = yield* Secp256k1Service
+    
+    // Hash the message
+    const messageHash = yield* keccak.hash(new TextEncoder().encode(message))
+    
+    // Sign with private key
+    const signature = yield* secp.sign(messageHash, privateKey)
+    
+    // Recover signer's public key
+    const publicKey = yield* secp.recover(signature, messageHash)
+    
+    return { signature, publicKey }
+  })
+
+const result = await Effect.runPromise(
+  signMessage('hello', privateKey).pipe(Effect.provide(CryptoLive))
+)
+```

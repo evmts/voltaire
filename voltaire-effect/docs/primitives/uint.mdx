@@ -1,0 +1,125 @@
+---
+title: Uint
+description: Effect-based unsigned integer schemas and operations for Ethereum values
+---
+
+Effect-based unsigned integer schemas and operations for Ethereum 256-bit values.
+
+## Overview
+
+The Uint module provides Effect Schema wrappers for Voltaire's `Uint256` type. U256 is an alias for the same functionality, providing a familiar name for 256-bit unsigned integers.
+
+## Installation
+
+```typescript
+import { Uint, U256 } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
+```
+
+## Schemas
+
+### UintSchema / U256Schema
+
+Decodes from bigint, number, or string into a validated Uint256.
+
+```typescript
+import { Uint } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+// From bigint
+const value = Schema.decodeSync(Uint.UintSchema)(1000000000000000000n)
+
+// From number
+const value2 = Schema.decodeSync(Uint.UintSchema)(1000000)
+
+// From string
+const value3 = Schema.decodeSync(Uint.UintSchema)('1000000000000000000')
+```
+
+### UintFromHexSchema
+
+Decode from hex string representation.
+
+```typescript
+const value = Schema.decodeSync(Uint.UintFromHexSchema)('0xde0b6b3a7640000')
+```
+
+### UintFromBytesSchema
+
+Decode from raw bytes (big-endian).
+
+```typescript
+const value = Schema.decodeSync(Uint.UintFromBytesSchema)(
+  new Uint8Array([0x0d, 0xe0, 0xb6, 0xb3, 0xa7, 0x64, 0x00, 0x00])
+)
+```
+
+## Effect Functions
+
+### from
+
+Create Uint256 from various input types.
+
+```typescript
+import { Uint } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const program = Uint.from(1000000000000000000n)
+// Effect.Effect<Uint256Type, UintError>
+
+const value = Effect.runSync(program)
+```
+
+### fromHex
+
+Create from hex string.
+
+```typescript
+const program = Uint.fromHex('0xde0b6b3a7640000')
+const value = Effect.runSync(program)
+```
+
+### fromBytes
+
+Create from byte array.
+
+```typescript
+const program = Uint.fromBytes(new Uint8Array([0x01, 0x00]))
+const value = Effect.runSync(program)
+```
+
+### fromNumber / fromBigInt
+
+Create from specific numeric types.
+
+```typescript
+const program1 = Uint.fromNumber(1000000)
+const program2 = Uint.fromBigInt(1000000000000000000n)
+```
+
+## U256 Alias
+
+U256 re-exports everything from Uint with renamed identifiers:
+
+```typescript
+import { U256 } from 'voltaire-effect'
+
+const value = Schema.decodeSync(U256.U256Schema)(1n)
+const program = U256.from(1000n)
+```
+
+## Error Handling
+
+```typescript
+import { Uint } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+// Overflow check
+const result = await Effect.runPromiseExit(
+  Uint.from(2n ** 256n) // Exceeds max Uint256
+)
+if (result._tag === 'Failure') {
+  console.error(result.cause) // UintError
+}
+```

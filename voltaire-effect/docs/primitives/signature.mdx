@@ -1,0 +1,138 @@
+---
+title: Signature
+description: Effect-based cryptographic signature schemas for secp256k1, P-256, and Ed25519
+---
+
+Effect-based cryptographic signature schemas and key operations for Ethereum.
+
+## Overview
+
+The Signature module provides Effect Schema wrappers for Voltaire's signature types supporting secp256k1 (Ethereum standard), P-256, and Ed25519 algorithms. Includes PrivateKey and PublicKey modules for key management.
+
+## Installation
+
+```typescript
+import { Signature, PrivateKey, PublicKey } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
+```
+
+## Signature Schemas
+
+### SignatureSchema
+
+Decode signature from hex string (65 bytes: r, s, v).
+
+```typescript
+import { Signature } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+const sig = Schema.decodeSync(Signature.SignatureSchema)(
+  '0x...' // 65-byte hex signature
+)
+```
+
+### SignatureFromBytesSchema
+
+Decode signature from raw bytes.
+
+```typescript
+const sig = Schema.decodeSync(Signature.SignatureFromBytesSchema)(
+  new Uint8Array(65) // r (32) + s (32) + v (1)
+)
+```
+
+## Signature Effect Functions
+
+### from / fromHex / fromBytes
+
+```typescript
+import { Signature } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const program = Signature.fromHex('0x...')
+// Effect.Effect<SignatureType, Error>
+
+const sig = Effect.runSync(program)
+```
+
+## PrivateKey
+
+### PrivateKeySchema
+
+Decode private key from hex string.
+
+```typescript
+import { PrivateKey } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+const key = Schema.decodeSync(PrivateKey.PrivateKeySchema)(
+  '0x...' // 32-byte hex private key
+)
+```
+
+### PrivateKey.from / fromBytes
+
+```typescript
+import { PrivateKey } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const program = PrivateKey.from('0x...')
+// Effect.Effect<PrivateKeyType, Error>
+```
+
+## PublicKey
+
+### PublicKeySchema
+
+Decode uncompressed public key (65 bytes: 0x04 prefix + x + y).
+
+```typescript
+import { PublicKey } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+const pubkey = Schema.decodeSync(PublicKey.PublicKeySchema)(
+  '0x04...' // 65-byte uncompressed public key
+)
+```
+
+### CompressedPublicKeySchema
+
+Decode compressed public key (33 bytes: 0x02 or 0x03 prefix + x).
+
+```typescript
+const pubkey = Schema.decodeSync(PublicKey.CompressedPublicKeySchema)(
+  '0x02...' // 33-byte compressed public key
+)
+```
+
+### PublicKey Effect Functions
+
+```typescript
+import { PublicKey } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+// From hex
+const program1 = PublicKey.from('0x04...')
+
+// Derive from private key
+const program2 = PublicKey.fromPrivateKey(privateKey)
+
+// Compress/decompress
+const program3 = PublicKey.compress(uncompressedKey)
+const program4 = PublicKey.decompress(compressedKey)
+```
+
+## Error Handling
+
+```typescript
+import { Signature } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const result = await Effect.runPromiseExit(
+  Signature.fromHex('0xinvalid')
+)
+if (result._tag === 'Failure') {
+  console.error(result.cause) // Invalid signature format
+}
+```

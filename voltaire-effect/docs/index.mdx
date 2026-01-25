@@ -1,0 +1,35 @@
+---
+title: voltaire-effect
+description: Effect.ts integration for Voltaire Ethereum primitives
+---
+
+Effect.ts integration for Voltaire's Ethereum primitives. Wraps Voltaire's data-first branded types with Effect Schema for validation and provides Effect-based services.
+
+## Quick Example
+
+```typescript
+import { Address, Hex } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+import * as Effect from 'effect/Effect'
+
+// Schema decodes to actual Voltaire branded types
+const addr = Schema.decodeSync(Address.Schema)("0x1234...")
+
+// Effect-based operations
+const program = Address.fromBytes(bytes).pipe(
+  Effect.map(Address.toChecksummed)
+)
+```
+
+## Features
+
+- **Schema validation** - Effect Schema wrappers for all Voltaire primitives
+- **Typed errors** - VoltaireError hierarchy with _tag discrimination
+- **Services** - Effect Services for Provider, Wallet, Eip1193
+- **Bidirectional** - Encode/decode with format conversions
+
+## Installation
+
+```bash
+pnpm add voltaire-effect @tevm/voltaire effect
+```

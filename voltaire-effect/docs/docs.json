@@ -1,0 +1,87 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "voltaire-effect",
+  "colors": {
+    "primary": "#7C3AED",
+    "light": "#A78BFA",
+    "dark": "#5B21B6"
+  },
+  "favicon": "/favicon.png",
+  "navigation": {
+    "anchors": [
+      {
+        "anchor": "Documentation",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "icon": "rocket",
+            "pages": [
+              "index",
+              "getting-started",
+              "layers"
+            ]
+          },
+          {
+            "group": "Services",
+            "icon": "server",
+            "pages": [
+              "services/transport",
+              "services/contract"
+            ]
+          },
+          {
+            "group": "Primitives",
+            "icon": "cubes",
+            "pages": [
+              "primitives/block",
+              "primitives/uint",
+              "primitives/signature",
+              "primitives/gas",
+              "primitives/transaction",
+              "primitives/bytes"
+            ]
+          },
+          {
+            "group": "Crypto",
+            "icon": "shield-halved",
+            "pages": [
+              "crypto/keccak256",
+              "crypto/secp256k1",
+              "crypto/hdwallet",
+              "crypto/bls12381",
+              "crypto/sha256",
+              "crypto/kzg",
+              "crypto/blake2"
+            ]
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/evmts/voltaire",
+          "icon": "github"
+        },
+        {
+          "anchor": "Voltaire Docs",
+          "href": "https://voltaire.tevm.sh",
+          "icon": "arrow-up-right-from-square"
+        }
+      ]
+    }
+  },
+  "logo": {
+    "light": "/logo-light.png",
+    "dark": "/logo-dark.png"
+  },
+  "search": {
+    "prompt": "Search voltaire-effect docs..."
+  },
+  "feedback": {
+    "thumbsRating": true
+  }
+}

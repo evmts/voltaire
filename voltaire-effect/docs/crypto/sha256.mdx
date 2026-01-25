@@ -1,0 +1,90 @@
+---
+title: SHA256 Service
+description: Effect-based SHA256 hashing
+---
+
+Effect-wrapped SHA256 hashing, used for Bitcoin-style operations and various cryptographic constructions.
+
+## SHA256Service
+
+```typescript
+import { SHA256Service } from 'voltaire-effect/crypto'
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  const sha256 = yield* SHA256Service
+  const hash = yield* sha256.hash(new Uint8Array([1, 2, 3]))
+  return hash // SHA256Hash (32 bytes)
+})
+```
+
+### Interface
+
+```typescript
+class SHA256Service extends Context.Tag("SHA256Service")<
+  SHA256Service,
+  {
+    readonly hash: (data: Uint8Array) => Effect.Effect<SHA256Hash>
+  }
+>() {}
+```
+
+## Providing the Layer
+
+```typescript
+import { SHA256Service, SHA256Live } from 'voltaire-effect/crypto'
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  const sha256 = yield* SHA256Service
+  return yield* sha256.hash(data)
+})
+
+const result = await Effect.runPromise(
+  program.pipe(Effect.provide(SHA256Live))
+)
+```
+
+## Using CryptoLive
+
+```typescript
+import { SHA256Service, CryptoLive } from 'voltaire-effect/crypto'
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  const sha256 = yield* SHA256Service
+  return yield* sha256.hash(data)
+}).pipe(Effect.provide(CryptoLive))
+```
+
+## Testing
+
+Use `SHA256Test` for unit tests:
+
+```typescript
+import { SHA256Service, SHA256Test } from 'voltaire-effect/crypto'
+
+const testProgram = myProgram.pipe(
+  Effect.provide(SHA256Test)
+)
+// Returns zero-filled 32-byte hash
+```
+
+## Full Example
+
+```typescript
+import { SHA256Service, SHA256Live } from 'voltaire-effect/crypto'
+import * as Hex from '@tevm/voltaire/Hex'
+import * as Effect from 'effect/Effect'
+
+const hashData = (data: Uint8Array) =>
+  Effect.gen(function* () {
+    const sha256 = yield* SHA256Service
+    const hash = yield* sha256.hash(data)
+    return Hex.fromBytes(hash)
+  })
+
+const result = await Effect.runPromise(
+  hashData(new Uint8Array([0x01, 0x02])).pipe(Effect.provide(SHA256Live))
+)
+```

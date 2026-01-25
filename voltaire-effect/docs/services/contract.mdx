@@ -1,0 +1,211 @@
+---
+title: Contract Service
+description: Type-safe contract interaction with Effect.ts
+---
+
+Type-safe smart contract interaction using Effect.ts. The `Contract` factory creates contract instances with `read`, `write`, `simulate`, and `getEvents` methods derived from the ABI.
+
+## Creating a Contract
+
+```typescript
+import { Contract } from 'voltaire-effect/services'
+import { PublicClient } from 'voltaire-effect/services'
+import * as Effect from 'effect/Effect'
+
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: 'balance', type: 'uint256' }]
+  },
+  {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    outputs: [{ name: 'success', type: 'bool' }]
+  },
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false }
+    ]
+  }
+] as const
+
+const program = Effect.gen(function* () {
+  const contract = yield* Contract(
+    '0x6B175474E89094C44Da98b954EescdafaE6E286AB' as AddressType,
+    erc20Abi
+  )
+  return contract
+})
+```
+
+## Reading Contract State
+
+Use `contract.read` for view/pure functions. These call via `eth_call` and don't require a wallet.
+
+```typescript
+const program = Effect.gen(function* () {
+  const contract = yield* Contract(daiAddress, erc20Abi)
+  
+  // Type-safe: balanceOf takes address, returns bigint
+  const balance = yield* contract.read.balanceOf(userAddress)
+  
+  return balance
+})
+
+// Requires PublicClientService
+const result = await Effect.runPromise(
+  program.pipe(Effect.provide(PublicClientLive))
+)
+```
+
+## Writing to Contract
+
+Use `contract.write` for state-changing functions. These require `WalletClientService` in context.
+
+```typescript
+const program = Effect.gen(function* () {
+  const contract = yield* Contract(daiAddress, erc20Abi)
+  
+  // Returns transaction hash
+  const txHash = yield* contract.write.transfer(recipientAddress, 1000n)
+  
+  return txHash
+})
+
+// Requires both PublicClient and WalletClient
+const result = await Effect.runPromise(
+  program.pipe(
+    Effect.provide(PublicClientLive),
+    Effect.provide(WalletClientLive)
+  )
+)
+```
+
+## Simulating Writes
+
+Use `contract.simulate` to test write operations without sending a transaction.
+
+```typescript
+const program = Effect.gen(function* () {
+  const contract = yield* Contract(daiAddress, erc20Abi)
+  
+  // Simulate transfer - returns decoded result, doesn't send tx
+  const result = yield* contract.simulate.transfer(recipientAddress, 1000n)
+  
+  return result // true/false for success
+})
+```
+
+## Getting Events
+
+Use `contract.getEvents` to fetch and decode contract events.
+
+```typescript
+const program = Effect.gen(function* () {
+  const contract = yield* Contract(daiAddress, erc20Abi)
+  
+  const transfers = yield* contract.getEvents('Transfer', {
+    fromBlock: 18000000n,
+    toBlock: 'latest',
+    args: {
+      from: userAddress  // Filter by indexed param
+    }
+  })
+  
+  return transfers
+  // [{ from: '0x...', to: '0x...', value: 1000n, blockNumber: 18000001n, ... }]
+})
+```
+
+## Error Handling
+
+Contract operations can fail with `ContractError`:
+
+```typescript
+import { ContractError, ContractCallError, ContractWriteError } from 'voltaire-effect/services'
+
+const handled = program.pipe(
+  Effect.catchTag('ContractCallError', (e) => 
+    Effect.succeed({ error: `Call failed: ${e.message}` })
+  ),
+  Effect.catchTag('ContractWriteError', (e) => 
+    Effect.succeed({ error: `Write failed: ${e.message}` })
+  )
+)
+```
+
+## Type Safety
+
+The `Contract` factory infers types from the ABI:
+
+```typescript
+const contract = yield* Contract(address, erc20Abi)
+
+// ✅ Type-safe: knows balanceOf takes address
+contract.read.balanceOf(address)
+
+// ❌ Type error: balanceOf doesn't take uint256
+contract.read.balanceOf(123n)
+
+// ✅ Type-safe: knows transfer is a write method
+contract.write.transfer(to, amount)
+
+// ❌ Type error: balanceOf is view, not write
+contract.write.balanceOf(address)
+```
+
+## Full Example
+
+```typescript
+import { Contract, PublicClientLive, WalletClientLive } from 'voltaire-effect/services'
+import { TransportHttp } from 'voltaire-effect/services'
+import { LocalAccount } from 'voltaire-effect/services'
+import * as Effect from 'effect/Effect'
+import * as Layer from 'effect/Layer'
+
+const erc20Abi = [...] as const
+
+const program = Effect.gen(function* () {
+  const dai = yield* Contract(daiAddress, erc20Abi)
+  
+  // Read balance
+  const balance = yield* dai.read.balanceOf(myAddress)
+  console.log('Balance:', balance)
+  
+  // Transfer tokens
+  if (balance > 100n) {
+    const txHash = yield* dai.write.transfer(recipient, 100n)
+    console.log('Sent tx:', txHash)
+  }
+  
+  // Get recent transfers
+  const events = yield* dai.getEvents('Transfer', {
+    fromBlock: 'latest'
+  })
+  
+  return { balance, events }
+})
+
+// Compose layers
+const AppLive = Layer.mergeAll(
+  PublicClientLive,
+  WalletClientLive
+).pipe(
+  Layer.provide(TransportHttp('https://eth.llamarpc.com')),
+  Layer.provide(LocalAccount(privateKey))
+)
+
+Effect.runPromise(program.pipe(Effect.provide(AppLive)))
+```

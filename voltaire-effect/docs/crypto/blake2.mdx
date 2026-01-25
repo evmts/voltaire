@@ -1,0 +1,102 @@
+---
+title: Blake2 Service
+description: Effect-based Blake2b hashing
+---
+
+Effect-wrapped Blake2b hashing with configurable output length. Blake2 is used in various blockchain protocols and the EVM BLAKE2F precompile.
+
+## Blake2Service
+
+```typescript
+import { Blake2Service } from 'voltaire-effect/crypto'
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  const blake2 = yield* Blake2Service
+  
+  // Default 64-byte output
+  const hash64 = yield* blake2.hash(new Uint8Array([1, 2, 3]))
+  
+  // Custom output length (32 bytes)
+  const hash32 = yield* blake2.hash(new Uint8Array([1, 2, 3]), 32)
+  
+  return { hash64, hash32 }
+})
+```
+
+### Interface
+
+```typescript
+class Blake2Service extends Context.Tag("Blake2Service")<
+  Blake2Service,
+  {
+    readonly hash: (data: Uint8Array, outputLength?: number) => Effect.Effect<Blake2Hash>
+  }
+>() {}
+```
+
+## Providing the Layer
+
+```typescript
+import { Blake2Service, Blake2Live } from 'voltaire-effect/crypto'
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  const blake2 = yield* Blake2Service
+  return yield* blake2.hash(data)
+})
+
+const result = await Effect.runPromise(
+  program.pipe(Effect.provide(Blake2Live))
+)
+```
+
+## Using CryptoLive
+
+```typescript
+import { Blake2Service, CryptoLive } from 'voltaire-effect/crypto'
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  const blake2 = yield* Blake2Service
+  return yield* blake2.hash(data, 32)
+}).pipe(Effect.provide(CryptoLive))
+```
+
+## Testing
+
+Use `Blake2Test` for unit tests:
+
+```typescript
+import { Blake2Service, Blake2Test } from 'voltaire-effect/crypto'
+
+const testProgram = myProgram.pipe(
+  Effect.provide(Blake2Test)
+)
+// Returns zero-filled array of requested length
+```
+
+## Full Example
+
+```typescript
+import { Blake2Service, Blake2Live } from 'voltaire-effect/crypto'
+import * as Hex from '@tevm/voltaire/Hex'
+import * as Effect from 'effect/Effect'
+
+const hashWithBlake2 = (data: Uint8Array, outputLen: number = 64) =>
+  Effect.gen(function* () {
+    const blake2 = yield* Blake2Service
+    const hash = yield* blake2.hash(data, outputLen)
+    return Hex.fromBytes(hash)
+  })
+
+// 64-byte hash
+const result64 = await Effect.runPromise(
+  hashWithBlake2(data).pipe(Effect.provide(Blake2Live))
+)
+
+// 32-byte hash
+const result32 = await Effect.runPromise(
+  hashWithBlake2(data, 32).pipe(Effect.provide(Blake2Live))
+)
+```

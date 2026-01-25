@@ -1,0 +1,177 @@
+---
+title: Gas
+description: Effect-based gas schemas and operations for Ethereum gas calculations
+---
+
+Effect-based gas schemas and operations for Ethereum gas management.
+
+## Overview
+
+The Gas module provides Effect Schema wrappers for gas-related types including gas amounts, gas prices, and gas estimates with buffer calculations.
+
+## Installation
+
+```typescript
+import { Gas, GasPrice, GasEstimate } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
+```
+
+## Gas Schema
+
+### GasSchema
+
+Schema for gas amounts (non-negative bigint).
+
+```typescript
+import { Gas } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+// From various inputs
+const gas = Schema.decodeSync(Gas.GasSchema)(21000n)
+const gas2 = Schema.decodeSync(Gas.GasSchema)(21000)
+const gas3 = Schema.decodeSync(Gas.GasSchema)('21000')
+```
+
+### Gas.from
+
+Create gas with Effect error handling.
+
+```typescript
+import { Gas } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const program = Gas.from(21000n)
+// Effect.Effect<GasType, Error>
+
+const gas = Effect.runSync(program)
+```
+
+## GasPrice
+
+### GasPriceSchema
+
+Schema for gas prices in wei.
+
+```typescript
+import { GasPrice } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+const price = Schema.decodeSync(GasPrice.GasPriceSchema)(20000000000n) // 20 gwei
+```
+
+### GasPriceFromGweiSchema
+
+Schema that accepts gwei values and converts to wei.
+
+```typescript
+const price = Schema.decodeSync(GasPrice.GasPriceFromGweiSchema)(20n) // 20 gwei → 20000000000 wei
+```
+
+### GasPrice Effect Functions
+
+```typescript
+import { GasPrice } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+// From wei
+const program1 = GasPrice.from(20000000000n)
+
+// From gwei
+const program2 = GasPrice.fromGwei(20n)
+// Effect.Effect<GasPriceType, GasPriceError>
+```
+
+## GasEstimate
+
+### GasEstimateSchema
+
+Schema for gas estimates, typically from eth_estimateGas.
+
+```typescript
+import { GasEstimate } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+const estimate = Schema.decodeSync(GasEstimate.GasEstimateSchema)(65000n)
+```
+
+### GasEstimate Effect Functions
+
+```typescript
+import { GasEstimate } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+// Create estimate
+const program1 = GasEstimate.from(65000n)
+
+// Add safety buffer (e.g., 20%)
+const program2 = GasEstimate.withBuffer(estimate, 20)
+// 65000 * 1.20 = 78000
+
+// Convert to gas limit for transaction
+const program3 = GasEstimate.toGasLimit(estimate)
+// Effect.Effect<GasLimitType, GasEstimateError>
+```
+
+## Usage Examples
+
+### Gas Estimation with Buffer
+
+```typescript
+import { GasEstimate, GasPrice } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const prepareTransaction = (estimatedGas: bigint, gasPriceGwei: bigint) =>
+  Effect.gen(function* () {
+    const estimate = yield* GasEstimate.from(estimatedGas)
+    const buffered = yield* GasEstimate.withBuffer(estimate, 10) // 10% buffer
+    const gasLimit = yield* GasEstimate.toGasLimit(buffered)
+    const gasPrice = yield* GasPrice.fromGwei(gasPriceGwei)
+
+    return { gasLimit, gasPrice }
+  })
+
+// Usage
+const result = Effect.runSync(prepareTransaction(65000n, 20n))
+// { gasLimit: 71500n, gasPrice: 20000000000n }
+```
+
+### Gas Cost Calculation
+
+```typescript
+import { Gas, GasPrice } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const calculateCost = (gasAmount: bigint, priceGwei: bigint) =>
+  Effect.gen(function* () {
+    const gas = yield* Gas.from(gasAmount)
+    const price = yield* GasPrice.fromGwei(priceGwei)
+
+    const costWei = gas * price
+    return costWei
+  })
+```
+
+## Type Exports
+
+```typescript
+import { Gas, GasPrice, GasEstimate } from 'voltaire-effect'
+
+type GasType = Gas.GasType
+type GasPriceType = GasPrice.GasPriceType
+type GasEstimateType = GasEstimate.GasEstimateType
+```
+
+## Error Handling
+
+```typescript
+import { GasEstimate } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const result = await Effect.runPromiseExit(
+  GasEstimate.from(-1n) // Invalid: negative gas
+)
+if (result._tag === 'Failure') {
+  console.error(result.cause) // GasEstimateError
+}
+```

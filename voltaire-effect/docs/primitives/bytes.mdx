@@ -1,0 +1,104 @@
+---
+title: Bytes
+description: Effect-based byte array schemas and operations for raw binary data
+---
+
+Effect-based byte array schemas and operations for raw binary data.
+
+## Overview
+
+The Bytes module provides Effect Schema wrappers for Voltaire's `Bytes` and `Bytes32` types. These are branded `Uint8Array` types that ensure type safety for binary data operations.
+
+## Installation
+
+```typescript
+import { Bytes, Bytes32 } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
+```
+
+## Schemas
+
+### Bytes.Schema
+
+Decodes from hex strings, raw `Uint8Array`, or number arrays into a branded `BytesType`.
+
+```typescript
+import { Bytes } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+// From hex string
+const bytes = Schema.decodeSync(Bytes.Schema)('0xdeadbeef')
+
+// From Uint8Array
+const bytes2 = Schema.decodeSync(Bytes.Schema)(new Uint8Array([0xde, 0xad]))
+
+// From number array
+const bytes3 = Schema.decodeSync(Bytes.Schema)([222, 173, 190, 239])
+```
+
+### Bytes32.Schema
+
+Fixed 32-byte schema for hashes, storage slots, and other 32-byte values.
+
+```typescript
+import { Bytes32 } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+const hash = Schema.decodeSync(Bytes32.Schema)(
+  '0x0000000000000000000000000000000000000000000000000000000000000001'
+)
+```
+
+## Effect Functions
+
+### Bytes.from
+
+Create bytes from various input types with Effect error handling.
+
+```typescript
+import { Bytes } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const program = Bytes.from('0xdeadbeef')
+// Effect.Effect<BytesType, InvalidRangeError>
+
+const bytes = Effect.runSync(program)
+```
+
+### Bytes32.from
+
+Create a fixed 32-byte value.
+
+```typescript
+import { Bytes32 } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const program = Bytes32.from(
+  '0x0000000000000000000000000000000000000000000000000000000000000001'
+)
+
+const bytes32 = Effect.runSync(program)
+```
+
+## Type Exports
+
+```typescript
+import { Bytes, Bytes32 } from 'voltaire-effect'
+
+type BytesType = Bytes.BytesType
+type Bytes32Type = Bytes32.Bytes32Type
+type Bytes32Like = Bytes32.Bytes32Like  // Bytes32Type | string | Uint8Array | bigint | number
+```
+
+## Error Handling
+
+```typescript
+import { Bytes } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const result = await Effect.runPromiseExit(Bytes.from('invalid'))
+if (result._tag === 'Failure') {
+  console.error(result.cause) // InvalidRangeError
+}
+```

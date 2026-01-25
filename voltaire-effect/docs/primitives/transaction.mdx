@@ -1,0 +1,156 @@
+---
+title: Transaction
+description: Effect-based transaction schemas and operations for Ethereum transactions
+---
+
+Effect-based transaction schemas and operations for Ethereum transactions.
+
+## Overview
+
+The Transaction module provides Effect Schema wrappers for all Ethereum transaction types (Legacy, EIP-2930, EIP-1559, EIP-4844, EIP-7702) and Effect-based functions for serialization, parsing, and signing hash computation.
+
+## Installation
+
+```typescript
+import { Transaction } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
+```
+
+## Schemas
+
+### TransactionSchema
+
+Union schema for all transaction types. Decodes to Voltaire's `Transaction.Any` type.
+
+```typescript
+import { Transaction } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+const tx = Schema.decodeSync(Transaction.Schema)({
+  type: 0,
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gasLimit: 21000n,
+  to: '0x1234567890123456789012345678901234567890',
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+  v: 27n,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+})
+```
+
+### LegacySchema
+
+Schema for Legacy (Type 0) transactions.
+
+```typescript
+const legacyTx = Schema.decodeSync(Transaction.LegacySchema)({
+  type: 0,
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gasLimit: 21000n,
+  to: '0x1234567890123456789012345678901234567890',
+  value: 0n,
+  data: new Uint8Array(),
+  v: 27n,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+})
+```
+
+### EIP1559Schema
+
+Schema for EIP-1559 (Type 2) dynamic fee transactions.
+
+```typescript
+const eip1559Tx = Schema.decodeSync(Transaction.EIP1559Schema)({
+  type: 2,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1000000000n,
+  maxFeePerGas: 100000000000n,
+  gasLimit: 21000n,
+  to: '0x1234567890123456789012345678901234567890',
+  value: 0n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+})
+```
+
+### EIP4844Schema
+
+Schema for EIP-4844 (Type 3) blob transactions.
+
+### EIP7702Schema
+
+Schema for EIP-7702 (Type 4) EOA delegation transactions.
+
+## Effect Functions
+
+### serialize
+
+Serialize a transaction to RLP-encoded bytes.
+
+```typescript
+import { Transaction } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+
+const program = Transaction.serialize(tx)
+// Effect.Effect<Uint8Array, InvalidTransactionTypeError>
+
+const bytes = Effect.runSync(program)
+```
+
+### signingHash
+
+Compute the signing hash for a transaction (hash of unsigned tx data).
+
+```typescript
+const program = Transaction.signingHash(tx)
+// Effect.Effect<HashType, InvalidTransactionTypeError>
+
+const hash = Effect.runSync(program)
+```
+
+### parse
+
+Parse RLP-encoded bytes into a transaction.
+
+```typescript
+const program = Transaction.parse(bytes)
+// Effect.Effect<Transaction.Any, InvalidTransactionError>
+
+const tx = Effect.runSync(program)
+```
+
+## Type Exports
+
+Re-exports Voltaire's transaction types for convenience:
+
+```typescript
+import { Transaction } from 'voltaire-effect'
+
+type Tx = Transaction.Any        // Union of all tx types
+type Legacy = Transaction.Legacy
+type EIP1559 = Transaction.EIP1559
+type EIP4844 = Transaction.EIP4844
+type EIP7702 = Transaction.EIP7702
+```
+
+## Error Handling
+
+All Effect functions use typed errors from `@tevm/voltaire`:
+
+```typescript
+import * as Effect from 'effect/Effect'
+
+const result = await Effect.runPromiseExit(Transaction.serialize(invalidTx))
+if (result._tag === 'Failure') {
+  console.error(result.cause) // InvalidTransactionTypeError
+}
+```
