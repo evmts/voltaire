@@ -30,8 +30,10 @@ import {
 import * as Hash from "@tevm/voltaire/Hash";
 import type { HashType } from "@tevm/voltaire/Hash";
 import * as VoltaireTransaction from "@tevm/voltaire/Transaction";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Schedule from "effect/Schedule";
 
 type AddressType = BrandedAddress.AddressType;
 type HexType = BrandedHex.HexType;
@@ -41,11 +43,34 @@ import { AccountService, LocalAccount } from "../Account/index.js";
 import { ProviderService } from "../Provider/index.js";
 import { TransportService } from "../Transport/index.js";
 import {
-	type TransactionRequest,
+	type CallsStatus,
+	type SendCallsParams,
 	SignerError,
 	SignerService,
 	type SignerShape,
+	type TransactionRequest,
+	type WalletCapabilities,
 } from "./SignerService.js";
+
+const INTERNAL_CODE_BUNDLE_PENDING = -40003;
+
+/**
+ * Detects transaction type from request fields.
+ */
+const getTransactionType = (
+	tx: TransactionRequest,
+	supportsEIP1559: boolean,
+): 0 | 1 | 2 | 3 | 4 => {
+	if (tx.type !== undefined) return tx.type;
+	if (tx.authorizationList && tx.authorizationList.length > 0) return 4;
+	if (tx.blobVersionedHashes && tx.blobVersionedHashes.length > 0) return 3;
+	if (tx.maxFeePerGas !== undefined || tx.maxPriorityFeePerGas !== undefined)
+		return 2;
+	if (tx.accessList && tx.accessList.length > 0 && tx.gasPrice !== undefined)
+		return 1;
+	if (tx.gasPrice !== undefined) return 0;
+	return supportsEIP1559 ? 2 : 0;
+};
 
 /**
  * Serializes a signed transaction for broadcast.
@@ -54,8 +79,16 @@ import {
  * Combines transaction fields with signature to create RLP-encoded
  * signed transaction ready for eth_sendRawTransaction.
  *
+ * Supports all 5 transaction types:
+ * - Legacy (type 0)
+ * - EIP-2930 (type 1)
+ * - EIP-1559 (type 2)
+ * - EIP-4844 (type 3)
+ * - EIP-7702 (type 4)
+ *
  * @param tx - The transaction with required fields populated
  * @param signature - The transaction signature (r, s, v)
+ * @param txType - The detected transaction type
  * @returns Hex-encoded signed transaction
  *
  * @internal
@@ -70,6 +103,7 @@ const serializeTransaction = (
 		gasPrice?: bigint;
 	},
 	signature: SignatureType,
+	txType: 0 | 1 | 2 | 3 | 4,
 ): HexType => {
 	const [yParity, rBytes, sBytes] = Signature.toTuple(signature);
 	const r = rBytes;
@@ -82,10 +116,6 @@ const serializeTransaction = (
 		: null;
 	const data = tx.data ? Hex.toBytes(tx.data) : new Uint8Array(0);
 
-	const isEIP1559 =
-		tx.maxFeePerGas !== undefined || tx.maxPriorityFeePerGas !== undefined;
-
-	// Convert accessList: address to AddressType, storageKeys to HashType
 	const accessList: VoltaireTransaction.AccessList = (tx.accessList ?? []).map(
 		(item): VoltaireTransaction.AccessListItem => ({
 			address:
@@ -98,37 +128,113 @@ const serializeTransaction = (
 
 	let fullTx: VoltaireTransaction.Any;
 
-	if (isEIP1559) {
-		fullTx = {
-			type: VoltaireTransaction.Type.EIP1559,
-			chainId: tx.chainId,
-			nonce: tx.nonce,
-			maxPriorityFeePerGas: tx.maxPriorityFeePerGas ?? 0n,
-			maxFeePerGas: tx.maxFeePerGas ?? 0n,
-			gasLimit: tx.gasLimit,
-			to: toAddress,
-			value: tx.value ?? 0n,
-			data,
-			accessList,
-			yParity,
-			r,
-			s,
-		};
-	} else {
-		const vValue = tx.chainId * 2n + 35n + BigInt(yParity);
-
-		fullTx = {
-			type: VoltaireTransaction.Type.Legacy,
-			nonce: tx.nonce,
-			gasPrice: tx.gasPrice ?? 0n,
-			gasLimit: tx.gasLimit,
-			to: toAddress,
-			value: tx.value ?? 0n,
-			data,
-			v: vValue,
-			r,
-			s,
-		};
+	switch (txType) {
+		case 0: {
+			const vValue = tx.chainId * 2n + 35n + BigInt(yParity);
+			fullTx = {
+				type: VoltaireTransaction.Type.Legacy,
+				nonce: tx.nonce,
+				gasPrice: tx.gasPrice ?? 0n,
+				gasLimit: tx.gasLimit,
+				to: toAddress,
+				value: tx.value ?? 0n,
+				data,
+				v: vValue,
+				r,
+				s,
+			};
+			break;
+		}
+		case 1: {
+			fullTx = {
+				type: VoltaireTransaction.Type.EIP2930,
+				chainId: tx.chainId,
+				nonce: tx.nonce,
+				gasPrice: tx.gasPrice ?? 0n,
+				gasLimit: tx.gasLimit,
+				to: toAddress,
+				value: tx.value ?? 0n,
+				data,
+				accessList,
+				yParity,
+				r,
+				s,
+			};
+			break;
+		}
+		case 2: {
+			fullTx = {
+				type: VoltaireTransaction.Type.EIP1559,
+				chainId: tx.chainId,
+				nonce: tx.nonce,
+				maxPriorityFeePerGas: tx.maxPriorityFeePerGas ?? 0n,
+				maxFeePerGas: tx.maxFeePerGas ?? 0n,
+				gasLimit: tx.gasLimit,
+				to: toAddress,
+				value: tx.value ?? 0n,
+				data,
+				accessList,
+				yParity,
+				r,
+				s,
+			};
+			break;
+		}
+		case 3: {
+			if (!toAddress) {
+				throw new Error("EIP-4844 transactions require a 'to' address");
+			}
+			const blobVersionedHashes = (tx.blobVersionedHashes ?? []).map((hash) =>
+				Hash.fromHex(hash),
+			);
+			fullTx = {
+				type: VoltaireTransaction.Type.EIP4844,
+				chainId: tx.chainId,
+				nonce: tx.nonce,
+				maxPriorityFeePerGas: tx.maxPriorityFeePerGas ?? 0n,
+				maxFeePerGas: tx.maxFeePerGas ?? 0n,
+				gasLimit: tx.gasLimit,
+				to: toAddress,
+				value: tx.value ?? 0n,
+				data,
+				accessList,
+				maxFeePerBlobGas: tx.maxFeePerBlobGas ?? 0n,
+				blobVersionedHashes,
+				yParity,
+				r,
+				s,
+			};
+			break;
+		}
+		case 4: {
+			const authorizationList: VoltaireTransaction.AuthorizationList = (
+				tx.authorizationList ?? []
+			).map((auth) => ({
+				chainId: auth.chainId,
+				address: Address.fromHex(auth.address),
+				nonce: auth.nonce,
+				yParity: auth.yParity,
+				r: Hex.toBytes(auth.r as HexType),
+				s: Hex.toBytes(auth.s as HexType),
+			}));
+			fullTx = {
+				type: VoltaireTransaction.Type.EIP7702,
+				chainId: tx.chainId,
+				nonce: tx.nonce,
+				maxPriorityFeePerGas: tx.maxPriorityFeePerGas ?? 0n,
+				maxFeePerGas: tx.maxFeePerGas ?? 0n,
+				gasLimit: tx.gasLimit,
+				to: toAddress,
+				value: tx.value ?? 0n,
+				data,
+				accessList,
+				authorizationList,
+				yParity,
+				r,
+				s,
+			};
+			break;
+		}
 	}
 
 	const serialized = VoltaireTransaction.serialize(fullTx);
@@ -170,7 +276,6 @@ const SignerLive: Layer.Layer<
 		): Effect.Effect<HexType, SignerError> =>
 			Effect.gen(function* () {
 				const addressHex = Address.toHex(account.address as AddressType);
-				// Use 'pending' to include pending txs in nonce calculation
 				const nonce =
 					tx.nonce ??
 					(yield* provider.getTransactionCount(addressHex, "pending"));
@@ -190,50 +295,67 @@ const SignerLive: Layer.Layer<
 				const gasLimit =
 					tx.gasLimit ?? (yield* provider.estimateGas(txForEstimate));
 
-				// Fetch latest block once for EIP-1559 detection and base fee
 				const latestBlock = yield* provider.getBlock({ blockTag: "latest" });
 				const baseFeePerGas = latestBlock.baseFeePerGas
 					? BigInt(latestBlock.baseFeePerGas)
 					: undefined;
 				const supportsEIP1559 = baseFeePerGas !== undefined;
 
-				const useEIP1559 =
-					tx.maxFeePerGas !== undefined ||
-					tx.maxPriorityFeePerGas !== undefined ||
-					(tx.gasPrice === undefined && supportsEIP1559);
+				const txType = getTransactionType(tx, supportsEIP1559);
 
 				let gasParams: {
 					gasPrice?: bigint;
 					maxFeePerGas?: bigint;
 					maxPriorityFeePerGas?: bigint;
+					maxFeePerBlobGas?: bigint;
 				};
 
-				if (useEIP1559) {
+				if (txType === 0 || txType === 1) {
+					const gasPrice = tx.gasPrice ?? (yield* provider.getGasPrice());
+					gasParams = { gasPrice };
+				} else {
 					const maxPriorityFeePerGas =
 						tx.maxPriorityFeePerGas ??
 						(yield* provider.getMaxPriorityFeePerGas());
-					// Use baseFeePerGas from block, fallback to getGasPrice if somehow missing
 					const baseFee = baseFeePerGas ?? (yield* provider.getGasPrice());
-					// 1.2x multiplier on base fee for fee volatility buffer (matches viem/ethers defaults)
-					// Using (baseFee * 12n) / 10n since bigint doesn't support decimals
 					const maxFeePerGas =
 						tx.maxFeePerGas ?? (baseFee * 12n) / 10n + maxPriorityFeePerGas;
 					gasParams = { maxFeePerGas, maxPriorityFeePerGas };
-				} else {
-					const gasPrice = tx.gasPrice ?? (yield* provider.getGasPrice());
-					gasParams = { gasPrice };
+
+					if (txType === 3 && tx.maxFeePerBlobGas !== undefined) {
+						gasParams.maxFeePerBlobGas = tx.maxFeePerBlobGas;
+					}
 				}
 
-				const fullTx = {
-					...tx,
+				const toAddress = tx.to
+					? typeof tx.to === "string"
+						? Address.fromHex(tx.to)
+						: (tx.to as AddressType)
+					: tx.to === null
+						? null
+						: undefined;
+
+				const txForSigning = {
+					to: toAddress,
+					value: tx.value,
+					data: tx.data,
 					nonce,
 					chainId,
 					gasLimit,
 					...gasParams,
 				};
 
-				const signature = yield* account.signTransaction(fullTx);
-				return serializeTransaction(fullTx, signature);
+				const fullTx = {
+					...tx,
+					type: txType,
+					nonce,
+					chainId,
+					gasLimit,
+					...gasParams,
+				};
+
+				const signature = yield* account.signTransaction(txForSigning);
+				return serializeTransaction(fullTx, signature, txType);
 			}).pipe(
 				Effect.mapError((e) => {
 					const code =
@@ -340,6 +462,121 @@ const SignerLive: Layer.Layer<
 								),
 						),
 					),
+
+			getCapabilities: (accountAddr) =>
+				transport
+					.request<WalletCapabilities>("wallet_getCapabilities", [
+						accountAddr
+							? typeof accountAddr === "string"
+								? accountAddr
+								: Address.toHex(accountAddr as AddressType)
+							: Address.toHex(account.address as AddressType),
+					])
+					.pipe(
+						Effect.mapError(
+							(e) =>
+								new SignerError(
+									{ action: "getCapabilities", account: accountAddr },
+									`Failed to get capabilities: ${e.message}`,
+									{ cause: e, code: e.code },
+								),
+						),
+					),
+
+			sendCalls: (params) =>
+				Effect.gen(function* () {
+					const chainId = yield* provider.getChainId();
+					const formattedCalls = params.calls.map((call) => ({
+						to:
+							typeof call.to === "string"
+								? call.to
+								: Address.toHex(call.to as AddressType),
+						data: call.data,
+						value:
+							call.value !== undefined
+								? `0x${call.value.toString(16)}`
+								: undefined,
+					}));
+
+					return yield* transport.request<string>("wallet_sendCalls", [
+						{
+							version: "1.0",
+							chainId: `0x${chainId.toString(16)}`,
+							from: Address.toHex(account.address as AddressType),
+							calls: formattedCalls,
+							capabilities: params.capabilities,
+						},
+					]);
+				}).pipe(
+					Effect.mapError((e) => {
+						const err = e as Error & { code?: number };
+						return new SignerError(
+							{ action: "sendCalls", params },
+							`Failed to send calls: ${err.message}`,
+							{ cause: err, code: err.code },
+						);
+					}),
+				),
+
+			getCallsStatus: (bundleId) =>
+				transport.request<CallsStatus>("wallet_getCallsStatus", [bundleId]).pipe(
+					Effect.mapError(
+						(e) =>
+							new SignerError(
+								{ action: "getCallsStatus", bundleId },
+								`Failed to get calls status: ${e.message}`,
+								{ cause: e, code: e.code },
+							),
+					),
+				),
+
+			waitForCallsStatus: (bundleId, options) => {
+				const timeout = options?.timeout ?? 60000;
+				const interval = options?.pollingInterval ?? 1000;
+
+				const getStatus = transport
+					.request<CallsStatus>("wallet_getCallsStatus", [bundleId])
+					.pipe(
+						Effect.mapError(
+							(e) =>
+								new SignerError(
+									{ action: "getCallsStatus", bundleId },
+									`Failed to get calls status: ${e.message}`,
+									{ cause: e, code: e.code },
+								),
+						),
+					);
+
+				return getStatus.pipe(
+					Effect.flatMap((status) =>
+						status.status === "PENDING"
+							? Effect.fail(
+									new SignerError({ bundleId }, "Bundle still pending", {
+										code: INTERNAL_CODE_BUNDLE_PENDING,
+									}),
+								)
+							: Effect.succeed(status),
+					),
+					Effect.retry(
+						Schedule.spaced(Duration.millis(interval)).pipe(
+							Schedule.intersect(
+								Schedule.recurUpTo(Duration.millis(timeout)),
+							),
+							Schedule.whileInput(
+								(e: SignerError) => e.code === INTERNAL_CODE_BUNDLE_PENDING,
+							),
+						),
+					),
+					Effect.timeoutFail({
+						duration: Duration.millis(timeout),
+						onTimeout: () =>
+							new SignerError(
+								{ action: "waitForCallsStatus", bundleId },
+								`Timeout waiting for bundle ${bundleId}`,
+							),
+					}),
+				);
+			},
 		};
 
 		return signer;

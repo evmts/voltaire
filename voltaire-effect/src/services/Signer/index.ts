@@ -66,8 +66,20 @@
 
 export { Signer } from "./Signer.js";
 export {
-	type TransactionRequest,
+	type AddressInput,
+	type CallsStatus,
+	type SendCallsParams,
 	SignerError,
 	SignerService,
 	type SignerShape,
+	type TransactionRequest,
+	type WalletCapabilities,
 } from "./SignerService.js";
+
+export {
+	writeContract,
+	type WriteContractParams,
+	deployContract,
+	type DeployContractParams,
+	type DeployContractResult,
+} from "./actions/index.js";

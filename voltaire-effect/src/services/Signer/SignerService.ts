@@ -25,6 +25,7 @@ import type {
 	BrandedAddress,
 	BrandedHex,
 	BrandedSignature,
+	EventLog,
 	TypedData,
 } from "@tevm/voltaire";
 import { AbstractError } from "@tevm/voltaire/errors";
@@ -36,6 +37,7 @@ type AddressType = BrandedAddress.AddressType;
 type HexType = BrandedHex.HexType;
 type SignatureType = BrandedSignature.SignatureType;
 type TypedDataType = TypedData.TypedDataType;
+type EventLogType = EventLog.EventLogType;
 
 /**
  * Address input type that accepts both branded AddressType and plain hex strings.
@@ -78,21 +80,21 @@ export class SignerError extends AbstractError {
 	 * Creates a new SignerError.
 	 *
 	 * @param input - The original input that caused the error
-	 * @param message - Human-readable error message
+	 * @param message - Human-readable error message (optional, defaults to cause message)
 	 * @param options - Optional error options
 	 * @param options.code - JSON-RPC error code
 	 * @param options.cause - Underlying error that caused this failure
 	 */
 	constructor(
 		input: unknown,
-		message: string,
+		message?: string,
 		options?: {
 			code?: number;
 			context?: Record<string, unknown>;
 			cause?: Error;
 		},
 	) {
-		super(message, options);
+		super(message ?? options?.cause?.message ?? "Signer error", options);
 		this.name = "SignerError";
 		this.input = input;
 	}
@@ -102,12 +104,15 @@ export class SignerError extends AbstractError {
  * Transaction request for sending transactions.
  *
  * @description
- * Supports legacy (type 0) and EIP-1559 (type 2) transaction types.
- * Access lists are supported for EIP-1559 transactions.
+ * Supports all Ethereum transaction types:
+ * - Legacy (type 0) - original transactions with gasPrice
+ * - EIP-2930 (type 1) - access list transactions with gasPrice
+ * - EIP-1559 (type 2) - priority fee transactions
+ * - EIP-4844 (type 3) - blob transactions for L2 data availability
+ * - EIP-7702 (type 4) - set code transactions for smart account delegation
  *
- * Note: EIP-2930 (type 1) is NOT currently supported. If you provide
- * `accessList` with `gasPrice` (legacy fee model), the accessList
- * will be ignored and a legacy transaction will be produced.
+ * Transaction type is auto-detected based on provided fields, or can be
+ * explicitly set via the `type` field.
  *
  * Most fields are optional and will be auto-filled if not provided.
  *
@@ -130,20 +135,104 @@ export type TransactionRequest = {
 	readonly nonce?: bigint;
 	/** Gas limit (auto-estimated if not provided) */
 	readonly gasLimit?: bigint;
-	/** Gas price for legacy transactions (type 0) */
+	/** Gas price for legacy/EIP-2930 transactions (type 0/1) */
 	readonly gasPrice?: bigint;
-	/** Max fee per gas for EIP-1559 transactions (type 2) */
+	/** Max fee per gas for EIP-1559+ transactions (type 2/3/4) */
 	readonly maxFeePerGas?: bigint;
-	/** Max priority fee (tip) for EIP-1559 transactions (type 2) */
+	/** Max priority fee (tip) for EIP-1559+ transactions (type 2/3/4) */
 	readonly maxPriorityFeePerGas?: bigint;
 	/** Chain ID for replay protection (auto-detected if not provided) */
 	readonly chainId?: bigint;
-	/** EIP-2930 access list for pre-warming storage slots */
+	/** EIP-2930+ access list for pre-warming storage slots */
 	readonly accessList?: Array<{
 		address: AddressInput;
 		storageKeys: Array<`0x${string}`>;
 	}>;
+
+	/** Transaction type (auto-detected if not provided) */
+	readonly type?: 0 | 1 | 2 | 3 | 4;
+
+	/** EIP-4844: Versioned hashes for blob commitments */
+	readonly blobVersionedHashes?: readonly `0x${string}`[];
+	/** EIP-4844: Max fee per blob gas */
+	readonly maxFeePerBlobGas?: bigint;
+
+	/** EIP-7702: Authorization list for set code transactions */
+	readonly authorizationList?: readonly {
+		chainId: bigint;
+		address: `0x${string}`;
+		nonce: bigint;
+		yParity: number;
+		r: `0x${string}`;
+		s: `0x${string}`;
+	}[];
 };
+
+/**
+ * Parameters for EIP-5792 wallet_sendCalls.
+ *
+ * @description
+ * Defines a batch of calls to be sent atomically via wallet_sendCalls.
+ * Supported by smart contract wallets and some browser wallets.
+ *
+ * @since 0.0.1
+ */
+export interface SendCallsParams {
+	/** Array of calls to execute atomically */
+	readonly calls: readonly {
+		/** Target contract address */
+		readonly to: AddressInput;
+		/** Calldata for the call */
+		readonly data?: HexType;
+		/** Value in wei to send */
+		readonly value?: bigint;
+	}[];
+	/** Optional capabilities like paymaster service */
+	readonly capabilities?: {
+		/** Paymaster service configuration */
+		readonly paymasterService?: { readonly url: string };
+	};
+}
+
+/**
+ * Status of an EIP-5792 call bundle.
+ *
+ * @description
+ * Represents the current state of a batch of calls sent via wallet_sendCalls.
+ *
+ * @since 0.0.1
+ */
+export interface CallsStatus {
+	/** Current status of the bundle */
+	readonly status: "PENDING" | "CONFIRMED" | "FAILED";
+	/** Transaction receipts (only present when CONFIRMED) */
+	readonly receipts?: readonly {
+		readonly transactionHash: HexType;
+		readonly blockNumber: bigint;
+		readonly gasUsed: bigint;
+		readonly status: "success" | "reverted";
+		readonly logs: readonly EventLogType[];
+	}[];
+}
+
+/**
+ * Wallet capabilities per chain (EIP-5792).
+ *
+ * @description
+ * Describes what features a wallet supports for each chain.
+ *
+ * @since 0.0.1
+ */
+export interface WalletCapabilities {
+	[chainId: string]: {
+		/** Whether atomic batch transactions are supported */
+		readonly atomicBatch?: { readonly supported: boolean };
+		/** Whether paymaster service is supported */
+		readonly paymasterService?: { readonly supported: boolean };
+		/** Whether session keys are supported */
+		readonly sessionKeys?: { readonly supported: boolean };
+	};
+}
 
 /**
  * Shape of the signer service.
@@ -211,6 +300,44 @@ export type SignerShape = {
 	 * @param chainId - Target chain ID (e.g., 1 for mainnet)
 	 */
 	readonly switchChain: (chainId: number) => Effect.Effect<void, SignerError>;
+
+	/**
+	 * Gets wallet capabilities per chain (EIP-5792).
+	 * @param account - Optional account address to query capabilities for
+	 * @returns Wallet capabilities indexed by chain ID
+	 */
+	readonly getCapabilities: (
+		account?: AddressInput,
+	) => Effect.Effect<WalletCapabilities, SignerError>;
+
+	/**
+	 * Sends a batch of calls atomically (EIP-5792).
+	 * @param params - Batch call parameters
+	 * @returns Bundle ID for tracking the batch
+	 */
+	readonly sendCalls: (
+		params: SendCallsParams,
+	) => Effect.Effect<string, SignerError>;
+
+	/**
+	 * Gets the status of a call bundle (EIP-5792).
+	 * @param bundleId - The bundle ID returned from sendCalls
+	 * @returns Current status and receipts if confirmed
+	 */
+	readonly getCallsStatus: (
+		bundleId: string,
+	) => Effect.Effect<CallsStatus, SignerError>;
+
+	/**
+	 * Waits for a call bundle to complete (EIP-5792).
+	 * @param bundleId - The bundle ID returned from sendCalls
+	 * @param options - Polling options
+	 * @returns Final status with receipts
+	 */
+	readonly waitForCallsStatus: (
+		bundleId: string,
+		options?: { readonly timeout?: number; readonly pollingInterval?: number },
+	) => Effect.Effect<CallsStatus, SignerError>;
 };
 
 /**
