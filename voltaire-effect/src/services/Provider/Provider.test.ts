@@ -9,10 +9,7 @@ import {
 	TransportService,
 } from "../Transport/TransportService.js";
 import { Provider } from "./Provider.js";
-import {
-	type ProviderError,
-	ProviderService,
-} from "./ProviderService.js";
+import { type ProviderError, ProviderService } from "./ProviderService.js";
 
 const mockTransport = (responses: Record<string, unknown>) =>
 	Layer.succeed(TransportService, {
@@ -191,7 +188,9 @@ describe("ProviderService", () => {
 			const result = await Effect.runPromise(
 				Effect.gen(function* () {
 					const provider = yield* ProviderService;
-					return yield* provider.getBlockTransactionCount({ blockTag: "latest" });
+					return yield* provider.getBlockTransactionCount({
+						blockTag: "latest",
+					});
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -207,7 +206,9 @@ describe("ProviderService", () => {
 			const result = await Effect.runPromise(
 				Effect.gen(function* () {
 					const provider = yield* ProviderService;
-					return yield* provider.getBlockTransactionCount({ blockTag: "latest" });
+					return yield* provider.getBlockTransactionCount({
+						blockTag: "latest",
+					});
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -319,7 +320,9 @@ describe("ProviderService", () => {
 				logsBloom: "0x0",
 				status: "0x1",
 			};
-			const transport = mockTransport({ eth_getTransactionReceipt: mockReceipt });
+			const transport = mockTransport({
+				eth_getTransactionReceipt: mockReceipt,
+			});
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
@@ -404,7 +407,9 @@ describe("ProviderService", () => {
 			);
 
 			expect(result).toHaveLength(1);
-			expect(result[0].address).toBe("0x1234567890123456789012345678901234567890");
+			expect(result[0].address).toBe(
+				"0x1234567890123456789012345678901234567890",
+			);
 		});
 	});
 
@@ -458,7 +463,9 @@ describe("ProviderService", () => {
 
 	describe("getMaxPriorityFeePerGas", () => {
 		it("returns max priority fee as bigint", async () => {
-			const transport = mockTransport({ eth_maxPriorityFeePerGas: "0x3b9aca00" });
+			const transport = mockTransport({
+				eth_maxPriorityFeePerGas: "0x3b9aca00",
+			});
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
@@ -805,7 +812,9 @@ describe("ProviderService", () => {
 				}).pipe(Effect.provide(layer)),
 			);
 
-			expect(capturedParams[0]).toBe("0x1234567890123456789012345678901234567890");
+			expect(capturedParams[0]).toBe(
+				"0x1234567890123456789012345678901234567890",
+			);
 		});
 
 		it("converts HashType to hex for RPC", async () => {
@@ -867,7 +876,9 @@ describe("ProviderService", () => {
 				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
 				expect(error).not.toBeNull();
 				expect((error as ProviderError).code).toBe(-32005);
-				expect((error as ProviderError).message).toContain("Rate limit exceeded");
+				expect((error as ProviderError).message).toContain(
+					"Rate limit exceeded",
+				);
 			}
 		});
 
@@ -886,7 +897,9 @@ describe("ProviderService", () => {
 			const exit = await Effect.runPromiseExit(
 				Effect.gen(function* () {
 					const provider = yield* ProviderService;
-					return yield* provider.getBalance("0x1234567890123456789012345678901234567890");
+					return yield* provider.getBalance(
+						"0x1234567890123456789012345678901234567890",
+					);
 				}).pipe(Effect.provide(layer)),
 			);
 

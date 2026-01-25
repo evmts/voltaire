@@ -169,312 +169,305 @@ const formatCallRequest = (tx: CallRequest): Record<string, string> => {
  * @see {@link HttpTransport} - HTTP transport implementation
  * @see {@link TestTransport} - Mock transport for testing
  */
-export const Provider: Layer.Layer<
-	ProviderService,
-	never,
-	TransportService
-> = Layer.effect(
-	ProviderService,
-	Effect.gen(function* () {
-		const transport = yield* TransportService;
+export const Provider: Layer.Layer<ProviderService, never, TransportService> =
+	Layer.effect(
+		ProviderService,
+		Effect.gen(function* () {
+			const transport = yield* TransportService;
 
-		const request = <T>(method: string, params?: unknown[]) =>
-			transport.request<T>(method, params).pipe(
-				Effect.mapError(
-					(e) =>
-						new ProviderError({ method, params }, e.message, {
-							cause: e,
-							code: e.code,
-							context: { method, params },
-						}),
-				),
-			);
-
-		return {
-			getBlockNumber: () =>
-				request<string>("eth_blockNumber").pipe(
-					Effect.map((hex) => BigInt(hex)),
-				),
-
-			getBlock: (args?: GetBlockArgs) => {
-				const method = args?.blockHash
-					? "eth_getBlockByHash"
-					: "eth_getBlockByNumber";
-				const params = args?.blockHash
-					? [toHashHex(args.blockHash), args?.includeTransactions ?? false]
-					: [args?.blockTag ?? "latest", args?.includeTransactions ?? false];
-				return request<BlockType | null>(method, params).pipe(
-					Effect.flatMap((block) =>
-						block
-							? Effect.succeed(block)
-							: Effect.fail(
-									new ProviderError(args ?? {}, "Block not found"),
-								),
+			const request = <T>(method: string, params?: unknown[]) =>
+				transport.request<T>(method, params).pipe(
+					Effect.mapError(
+						(e) =>
+							new ProviderError({ method, params }, e.message, {
+								cause: e,
+								code: e.code,
+								context: { method, params },
+							}),
 					),
 				);
-			},
 
-			getBlockTransactionCount: (args: {
-				blockTag?: BlockTag;
-				blockHash?: HashInput;
-			}) => {
-				const method = args.blockHash
-					? "eth_getBlockTransactionCountByHash"
-					: "eth_getBlockTransactionCountByNumber";
-				const params = args.blockHash
-					? [toHashHex(args.blockHash)]
-					: [args.blockTag ?? "latest"];
-				return request<string>(method, params).pipe(
-					Effect.map((hex) => BigInt(hex)),
-				);
-			},
-
-			getBalance: (address: AddressInput, blockTag: BlockTag = "latest") =>
-				request<string>("eth_getBalance", [
-					toAddressHex(address),
-					blockTag,
-				]).pipe(Effect.map((hex) => BigInt(hex))),
-
-			getTransactionCount: (
-				address: AddressInput,
-				blockTag: BlockTag = "latest",
-			) =>
-				request<string>("eth_getTransactionCount", [
-					toAddressHex(address),
-					blockTag,
-				]).pipe(Effect.map((hex) => BigInt(hex))),
-
-			getCode: (address: AddressInput, blockTag: BlockTag = "latest") =>
-				request<`0x${string}`>("eth_getCode", [
-					toAddressHex(address),
-					blockTag,
-				]),
-
-			getStorageAt: (
-				address: AddressInput,
-				slot: HashInput,
-				blockTag: BlockTag = "latest",
-			) =>
-				request<`0x${string}`>("eth_getStorageAt", [
-					toAddressHex(address),
-					toHashHex(slot),
-					blockTag,
-				]),
-
-			getTransaction: (hash: HashInput) =>
-				request<TransactionType | null>("eth_getTransactionByHash", [
-					toHashHex(hash),
-				]).pipe(
-					Effect.flatMap((tx) =>
-						tx
-							? Effect.succeed(tx)
-							: Effect.fail(
-									new ProviderError({ hash }, "Transaction not found"),
-								),
+			return {
+				getBlockNumber: () =>
+					request<string>("eth_blockNumber").pipe(
+						Effect.map((hex) => BigInt(hex)),
 					),
-				),
 
-			getTransactionReceipt: (hash: HashInput) =>
-				request<ReceiptType | null>("eth_getTransactionReceipt", [
-					toHashHex(hash),
-				]).pipe(
-					Effect.flatMap((receipt) =>
-						receipt
-							? Effect.succeed(receipt)
-							: Effect.fail(
-									new ProviderError(
-										{ hash },
-										"Transaction receipt not found (pending or unknown)",
+				getBlock: (args?: GetBlockArgs) => {
+					const method = args?.blockHash
+						? "eth_getBlockByHash"
+						: "eth_getBlockByNumber";
+					const params = args?.blockHash
+						? [toHashHex(args.blockHash), args?.includeTransactions ?? false]
+						: [args?.blockTag ?? "latest", args?.includeTransactions ?? false];
+					return request<BlockType | null>(method, params).pipe(
+						Effect.flatMap((block) =>
+							block
+								? Effect.succeed(block)
+								: Effect.fail(new ProviderError(args ?? {}, "Block not found")),
+						),
+					);
+				},
+
+				getBlockTransactionCount: (args) => {
+					const method = args.blockHash
+						? "eth_getBlockTransactionCountByHash"
+						: "eth_getBlockTransactionCountByNumber";
+					const params = args.blockHash
+						? [toHashHex(args.blockHash)]
+						: [args.blockTag ?? "latest"];
+					return request<string>(method, params).pipe(
+						Effect.map((hex) => BigInt(hex)),
+					);
+				},
+
+				getBalance: (address: AddressInput, blockTag: BlockTag = "latest") =>
+					request<string>("eth_getBalance", [
+						toAddressHex(address),
+						blockTag,
+					]).pipe(Effect.map((hex) => BigInt(hex))),
+
+				getTransactionCount: (
+					address: AddressInput,
+					blockTag: BlockTag = "latest",
+				) =>
+					request<string>("eth_getTransactionCount", [
+						toAddressHex(address),
+						blockTag,
+					]).pipe(Effect.map((hex) => BigInt(hex))),
+
+				getCode: (address: AddressInput, blockTag: BlockTag = "latest") =>
+					request<`0x${string}`>("eth_getCode", [
+						toAddressHex(address),
+						blockTag,
+					]),
+
+				getStorageAt: (
+					address: AddressInput,
+					slot: HashInput,
+					blockTag: BlockTag = "latest",
+				) =>
+					request<`0x${string}`>("eth_getStorageAt", [
+						toAddressHex(address),
+						toHashHex(slot),
+						blockTag,
+					]),
+
+				getTransaction: (hash: HashInput) =>
+					request<TransactionType | null>("eth_getTransactionByHash", [
+						toHashHex(hash),
+					]).pipe(
+						Effect.flatMap((tx) =>
+							tx
+								? Effect.succeed(tx)
+								: Effect.fail(
+										new ProviderError({ hash }, "Transaction not found"),
 									),
-								),
+						),
 					),
-				),
 
-			waitForTransactionReceipt: (
-				hash: HashInput,
-				opts?: { confirmations?: number; timeout?: number },
-			) =>
-				Effect.gen(function* () {
-					const confirmations = opts?.confirmations ?? 1;
-					if (confirmations < 1) {
-						return yield* Effect.fail(
-							new ProviderError(
-								{ hash, confirmations },
-								"Confirmations must be at least 1",
-							),
-						);
-					}
-
-					const timeout = opts?.timeout ?? 60000;
-					const deadline = Date.now() + timeout;
-					const hashHex = toHashHex(hash);
-
-					const remainingTime = () => Math.max(0, deadline - Date.now());
-
-					const pollReceipt = request<ReceiptType | null>(
-						"eth_getTransactionReceipt",
-						[hashHex],
-					).pipe(
+				getTransactionReceipt: (hash: HashInput) =>
+					request<ReceiptType | null>("eth_getTransactionReceipt", [
+						toHashHex(hash),
+					]).pipe(
 						Effect.flatMap((receipt) =>
 							receipt
 								? Effect.succeed(receipt)
 								: Effect.fail(
-										new ProviderError({ hash }, "Transaction pending", {
-											code: -32001,
-										}),
+										new ProviderError(
+											{ hash },
+											"Transaction receipt not found (pending or unknown)",
+										),
 									),
 						),
-					);
+					),
 
-					const remaining1 = remainingTime();
-					if (remaining1 <= 0) {
-						return yield* Effect.fail(
-							new ProviderError(
-								{ hash, timeout },
-								"Timeout waiting for transaction receipt",
+				waitForTransactionReceipt: (
+					hash: HashInput,
+					opts?: { confirmations?: number; timeout?: number },
+				) =>
+					Effect.gen(function* () {
+						const confirmations = opts?.confirmations ?? 1;
+						if (confirmations < 1) {
+							return yield* Effect.fail(
+								new ProviderError(
+									{ hash, confirmations },
+									"Confirmations must be at least 1",
+								),
+							);
+						}
+
+						const timeout = opts?.timeout ?? 60000;
+						const deadline = Date.now() + timeout;
+						const hashHex = toHashHex(hash);
+
+						const remainingTime = () => Math.max(0, deadline - Date.now());
+
+						const pollReceipt = request<ReceiptType | null>(
+							"eth_getTransactionReceipt",
+							[hashHex],
+						).pipe(
+							Effect.flatMap((receipt) =>
+								receipt
+									? Effect.succeed(receipt)
+									: Effect.fail(
+											new ProviderError({ hash }, "Transaction pending", {
+												code: -32001,
+											}),
+										),
 							),
 						);
-					}
 
-					const receipt = yield* pollReceipt.pipe(
-						Effect.retry({
-							schedule: Schedule.spaced(1000),
-							while: (e) =>
-								e instanceof ProviderError &&
-								e.code === -32001 &&
-								remainingTime() > 0,
-						}),
-						Effect.timeout(remaining1),
-						Effect.catchTag("TimeoutException", () =>
-							Effect.fail(
+						const remaining1 = remainingTime();
+						if (remaining1 <= 0) {
+							return yield* Effect.fail(
 								new ProviderError(
 									{ hash, timeout },
 									"Timeout waiting for transaction receipt",
 								),
+							);
+						}
+
+						const receipt = yield* pollReceipt.pipe(
+							Effect.retry({
+								schedule: Schedule.spaced(1000),
+								while: (e) =>
+									e instanceof ProviderError &&
+									e.code === -32001 &&
+									remainingTime() > 0,
+							}),
+							Effect.timeout(remaining1),
+							Effect.catchTag("TimeoutException", () =>
+								Effect.fail(
+									new ProviderError(
+										{ hash, timeout },
+										"Timeout waiting for transaction receipt",
+									),
+								),
 							),
-						),
-					);
+						);
 
-					if (confirmations <= 1) {
-						return receipt;
-					}
-
-					const receiptBlockNumber = BigInt(receipt.blockNumber);
-					const targetBlock = receiptBlockNumber + BigInt(confirmations - 1);
-
-					const pollConfirmations = Effect.gen(function* () {
-						const currentBlockHex =
-							yield* request<string>("eth_blockNumber");
-						const currentBlock = BigInt(currentBlockHex);
-						if (currentBlock >= targetBlock) {
+						if (confirmations <= 1) {
 							return receipt;
 						}
-						return yield* Effect.fail(
-							new ProviderError(
-								{ hash, currentBlock, targetBlock },
-								"Waiting for confirmations",
-								{ code: -32002 },
-							),
-						);
-					});
 
-					const remaining2 = remainingTime();
-					if (remaining2 <= 0) {
-						return yield* Effect.fail(
-							new ProviderError(
-								{ hash, timeout },
-								"Timeout waiting for confirmations",
-							),
-						);
-					}
+						const receiptBlockNumber = BigInt(receipt.blockNumber);
+						const targetBlock = receiptBlockNumber + BigInt(confirmations - 1);
 
-					return yield* pollConfirmations.pipe(
-						Effect.retry({
-							schedule: Schedule.spaced(1000),
-							while: (e) =>
-								e instanceof ProviderError &&
-								e.code === -32002 &&
-								remainingTime() > 0,
-						}),
-						Effect.timeout(remaining2),
-						Effect.catchTag("TimeoutException", () =>
-							Effect.fail(
+						const pollConfirmations = Effect.gen(function* () {
+							const currentBlockHex = yield* request<string>("eth_blockNumber");
+							const currentBlock = BigInt(currentBlockHex);
+							if (currentBlock >= targetBlock) {
+								return receipt;
+							}
+							return yield* Effect.fail(
+								new ProviderError(
+									{ hash, currentBlock, targetBlock },
+									"Waiting for confirmations",
+									{ code: -32002 },
+								),
+							);
+						});
+
+						const remaining2 = remainingTime();
+						if (remaining2 <= 0) {
+							return yield* Effect.fail(
 								new ProviderError(
 									{ hash, timeout },
 									"Timeout waiting for confirmations",
 								),
-							),
-						),
-					);
-				}),
-
-			call: (tx: CallRequest, blockTag: BlockTag = "latest") =>
-				request<`0x${string}`>("eth_call", [formatCallRequest(tx), blockTag]),
-
-			estimateGas: (tx: CallRequest) =>
-				request<string>("eth_estimateGas", [formatCallRequest(tx)]).pipe(
-					Effect.map((hex) => BigInt(hex)),
-				),
-
-			createAccessList: (tx: CallRequest) =>
-				request<AccessListType>("eth_createAccessList", [
-					formatCallRequest(tx),
-				]),
-
-			getLogs: (filter: LogFilter) => {
-				const params: Record<string, unknown> = {};
-				if (filter.address) {
-					params.address = Array.isArray(filter.address)
-						? filter.address.map(toAddressHex)
-						: toAddressHex(filter.address);
-				}
-				if (filter.topics) {
-					params.topics = filter.topics.map((topic) => {
-						if (topic === null) return null;
-						if (Array.isArray(topic)) return topic.map(toHashHex);
-						return toHashHex(topic);
-					});
-				}
-				if (filter.fromBlock) params.fromBlock = filter.fromBlock;
-				if (filter.toBlock) params.toBlock = filter.toBlock;
-				if (filter.blockHash) params.blockHash = toHashHex(filter.blockHash);
-				return request<LogType[]>("eth_getLogs", [params]);
-			},
-
-			getChainId: () =>
-				request<string>("eth_chainId").pipe(
-					Effect.flatMap((hex) => {
-						const value = BigInt(hex);
-						if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
-							return Effect.fail(
-								new ProviderError(
-									{ method: "eth_chainId" },
-									`Chain ID ${value} exceeds safe integer range`,
-								),
 							);
 						}
-						return Effect.succeed(Number(value));
+
+						return yield* pollConfirmations.pipe(
+							Effect.retry({
+								schedule: Schedule.spaced(1000),
+								while: (e) =>
+									e instanceof ProviderError &&
+									e.code === -32002 &&
+									remainingTime() > 0,
+							}),
+							Effect.timeout(remaining2),
+							Effect.catchTag("TimeoutException", () =>
+								Effect.fail(
+									new ProviderError(
+										{ hash, timeout },
+										"Timeout waiting for confirmations",
+									),
+								),
+							),
+						);
 					}),
-				),
 
-			getGasPrice: () =>
-				request<string>("eth_gasPrice").pipe(Effect.map((hex) => BigInt(hex))),
+				call: (tx: CallRequest, blockTag: BlockTag = "latest") =>
+					request<`0x${string}`>("eth_call", [formatCallRequest(tx), blockTag]),
 
-			getMaxPriorityFeePerGas: () =>
-				request<string>("eth_maxPriorityFeePerGas").pipe(
-					Effect.map((hex) => BigInt(hex)),
-				),
+				estimateGas: (tx: CallRequest) =>
+					request<string>("eth_estimateGas", [formatCallRequest(tx)]).pipe(
+						Effect.map((hex) => BigInt(hex)),
+					),
 
-			getFeeHistory: (
-				blockCount: number,
-				newestBlock: BlockTag,
-				rewardPercentiles: number[],
-			) =>
-				request<FeeHistoryType>("eth_feeHistory", [
-					`0x${blockCount.toString(16)}`,
-					newestBlock,
-					rewardPercentiles,
-				]),
-		};
-	}),
-);
+				createAccessList: (tx: CallRequest) =>
+					request<AccessListType>("eth_createAccessList", [
+						formatCallRequest(tx),
+					]),
+
+				getLogs: (filter: LogFilter) => {
+					const params: Record<string, unknown> = {};
+					if (filter.address) {
+						params.address = Array.isArray(filter.address)
+							? filter.address.map(toAddressHex)
+							: toAddressHex(filter.address);
+					}
+					if (filter.topics) {
+						params.topics = filter.topics.map((topic) => {
+							if (topic === null) return null;
+							if (Array.isArray(topic)) return topic.map(toHashHex);
+							return toHashHex(topic);
+						});
+					}
+					if (filter.fromBlock) params.fromBlock = filter.fromBlock;
+					if (filter.toBlock) params.toBlock = filter.toBlock;
+					if (filter.blockHash) params.blockHash = toHashHex(filter.blockHash);
+					return request<LogType[]>("eth_getLogs", [params]);
+				},
+
+				getChainId: () =>
+					request<string>("eth_chainId").pipe(
+						Effect.flatMap((hex) => {
+							const value = BigInt(hex);
+							if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+								return Effect.fail(
+									new ProviderError(
+										{ method: "eth_chainId" },
+										`Chain ID ${value} exceeds safe integer range`,
+									),
+								);
+							}
+							return Effect.succeed(Number(value));
+						}),
+					),
+
+				getGasPrice: () =>
+					request<string>("eth_gasPrice").pipe(
+						Effect.map((hex) => BigInt(hex)),
+					),
+
+				getMaxPriorityFeePerGas: () =>
+					request<string>("eth_maxPriorityFeePerGas").pipe(
+						Effect.map((hex) => BigInt(hex)),
+					),
+
+				getFeeHistory: (
+					blockCount: number,
+					newestBlock: BlockTag,
+					rewardPercentiles: number[],
+				) =>
+					request<FeeHistoryType>("eth_feeHistory", [
+						`0x${blockCount.toString(16)}`,
+						newestBlock,
+						rewardPercentiles,
+					]),
+			};
+		}),
+	);

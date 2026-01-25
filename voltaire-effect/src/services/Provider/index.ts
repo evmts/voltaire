@@ -52,6 +52,8 @@ export {
 	type BlockType,
 	type CallRequest,
 	type FeeHistoryType,
+	type GetBlockArgs,
+	type GetBlockTransactionCountArgs,
 	type HashInput,
 	type LogFilter,
 	type LogType,

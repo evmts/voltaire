@@ -91,9 +91,9 @@ export class ProviderError extends AbstractError {
 
 	/**
 	 * JSON-RPC error code (propagated from transport).
-	 * Override to make explicitly visible on type.
+	 * May be undefined if the error originated outside JSON-RPC.
 	 */
-	declare readonly code: number;
+	declare readonly code?: number;
 
 	/**
 	 * Creates a new ProviderError.
@@ -208,6 +208,26 @@ export type GetBlockArgs =
 			blockHash: HashInput;
 			/** Whether to include full transaction objects */
 			includeTransactions?: boolean;
+			blockTag?: never;
+	  };
+
+/**
+ * Arguments for getBlockTransactionCount - discriminated union.
+ *
+ * @description
+ * Either query by blockTag OR by blockHash, never both.
+ *
+ * @since 0.0.1
+ */
+export type GetBlockTransactionCountArgs =
+	| {
+			/** Block tag (latest, earliest, pending, safe, finalized, or hex number) */
+			blockTag?: BlockTag;
+			blockHash?: never;
+	  }
+	| {
+			/** Block hash to query */
+			blockHash: HashInput;
 			blockTag?: never;
 	  };
 
@@ -509,10 +529,9 @@ export type ProviderShape = {
 		args?: GetBlockArgs,
 	) => Effect.Effect<BlockType, ProviderError>;
 	/** Gets the transaction count in a block */
-	readonly getBlockTransactionCount: (args: {
-		blockTag?: BlockTag;
-		blockHash?: HashInput;
-	}) => Effect.Effect<bigint, ProviderError>;
+	readonly getBlockTransactionCount: (
+		args: GetBlockTransactionCountArgs,
+	) => Effect.Effect<bigint, ProviderError>;
 	/** Gets the balance of an address */
 	readonly getBalance: (
 		address: AddressInput,
@@ -553,7 +572,9 @@ export type ProviderShape = {
 		blockTag?: BlockTag,
 	) => Effect.Effect<HexType | `0x${string}`, ProviderError>;
 	/** Estimates gas for a transaction */
-	readonly estimateGas: (tx: CallRequest) => Effect.Effect<bigint, ProviderError>;
+	readonly estimateGas: (
+		tx: CallRequest,
+	) => Effect.Effect<bigint, ProviderError>;
 	/** Creates an access list for a transaction */
 	readonly createAccessList: (
 		tx: CallRequest,

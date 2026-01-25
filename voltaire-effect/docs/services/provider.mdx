@@ -12,7 +12,7 @@ import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/servic
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
   const blockNum = yield* provider.getBlockNumber()
-  const balance = yield* provider.getBalance('0x1234...')
+  const balance = yield* provider.getBalance('0x1234567890123456789012345678901234567890')
   return { blockNum, balance }
 }).pipe(
   Effect.provide(Provider),
@@ -73,12 +73,12 @@ const confirmed = yield* provider.waitForTransactionReceipt('0x...', {
 
 ```typescript
 const result = yield* provider.call({
-  to: '0x1234...',
+  to: '0x1234567890123456789012345678901234567890',
   data: '0x...'
 })
 
 const gas = yield* provider.estimateGas({
-  to: '0x1234...',
+  to: '0x1234567890123456789012345678901234567890',
   data: '0x...',
   value: 1000000000000000000n
 })
@@ -88,8 +88,8 @@ const gas = yield* provider.estimateGas({
 
 ```typescript
 const logs = yield* provider.getLogs({
-  address: '0x1234...',
-  topics: ['0xddf252ad...'],
+  address: '0x1234567890123456789012345678901234567890',
+  topics: ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'],
   fromBlock: '0x100000',
   toBlock: 'latest'
 })
@@ -124,15 +124,8 @@ type HashInput = HashType | `0x${string}`
 
 type ProviderShape = {
   readonly getBlockNumber: () => Effect.Effect<bigint, ProviderError>
-  readonly getBlock: (args?: { 
-    blockTag?: BlockTag
-    blockHash?: HashInput
-    includeTransactions?: boolean 
-  }) => Effect.Effect<BlockType, ProviderError>
-  readonly getBlockTransactionCount: (args: {
-    blockTag?: BlockTag
-    blockHash?: HashInput
-  }) => Effect.Effect<bigint, ProviderError>
+  readonly getBlock: (args?: GetBlockArgs) => Effect.Effect<BlockType, ProviderError>
+  readonly getBlockTransactionCount: (args: GetBlockTransactionCountArgs) => Effect.Effect<bigint, ProviderError>
   readonly getBalance: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<bigint, ProviderError>
   readonly getTransactionCount: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<bigint, ProviderError>
   readonly getCode: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, ProviderError>
@@ -160,33 +153,41 @@ type ProviderShape = {
 // Block identifier - named tag or hex block number
 type BlockTag = 'latest' | 'earliest' | 'pending' | 'safe' | 'finalized' | `0x${string}`
 
-// Log filter - use blockHash OR fromBlock/toBlock (mutually exclusive)
-interface LogFilter {
-  readonly address?: AddressInput | AddressInput[]
-  readonly topics?: (HashInput | HashInput[] | null)[]
-  readonly fromBlock?: BlockTag
-  readonly toBlock?: BlockTag
-  readonly blockHash?: HashInput  // mutually exclusive with fromBlock/toBlock
-}
+// Block args - XOR: use blockTag OR blockHash, never both
+type GetBlockArgs =
+  | { blockTag?: BlockTag; includeTransactions?: boolean; blockHash?: never }
+  | { blockHash: HashInput; includeTransactions?: boolean; blockTag?: never }
+
+// Block tx count args - XOR: use blockTag OR blockHash, never both
+type GetBlockTransactionCountArgs =
+  | { blockTag?: BlockTag; blockHash?: never }
+  | { blockHash: HashInput; blockTag?: never }
+
+// Log filter - XOR: use blockHash OR fromBlock/toBlock, never both
+type LogFilter =
+  | { blockHash: HashInput; fromBlock?: never; toBlock?: never; address?: ...; topics?: ... }
+  | { blockHash?: never; fromBlock?: BlockTag; toBlock?: BlockTag; address?: ...; topics?: ... }
 
 // Block type with nullable fields for pending blocks
 interface BlockType {
-  number: string
-  hash: string
+  number: string | null               // null for pending blocks
+  hash: string | null                 // null for pending blocks
   parentHash: string
-  // ... header fields
-  baseFeePerGas?: string           // EIP-1559 (optional)
-  withdrawals?: WithdrawalType[]   // EIP-4895 (optional)
-  withdrawalsRoot?: string         // EIP-4895 (optional)
+  // ... other header fields
+  baseFeePerGas?: string              // EIP-1559 (optional)
+  withdrawals?: WithdrawalType[]      // EIP-4895 (optional)
+  withdrawalsRoot?: string            // EIP-4895 (optional)
+  blobGasUsed?: string                // EIP-4844 (optional)
+  excessBlobGas?: string              // EIP-4844 (optional)
 }
 
 // Transaction type with nullable fields for pending txs
 interface TransactionType {
   hash: string
-  blockHash: string | null        // null if pending
-  blockNumber: string | null      // null if pending
-  transactionIndex: string | null // null if pending
-  to: string | null               // null for contract creation
+  blockHash: string | null            // null if pending
+  blockNumber: string | null          // null if pending
+  transactionIndex: string | null     // null if pending
+  to: string | null                   // null for contract creation
   // ... other fields
 }
 ```
