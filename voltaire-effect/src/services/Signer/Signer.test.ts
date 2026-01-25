@@ -15,10 +15,7 @@ type SignatureType = BrandedSignature.SignatureType;
 
 import type { AccountShape } from "../Account/AccountService.js";
 import { AccountService } from "../Account/index.js";
-import {
-	ProviderService,
-	type ProviderShape,
-} from "../Provider/index.js";
+import { ProviderService, type ProviderShape } from "../Provider/index.js";
 import { TransportService, type TransportShape } from "../Transport/index.js";
 import { Signer } from "./Signer.js";
 import { SignerError, SignerService } from "./SignerService.js";
@@ -28,7 +25,8 @@ const mockSignature = Object.assign(new Uint8Array(65).fill(0x12), {
 	algorithm: "secp256k1" as const,
 	v: 27,
 }) as SignatureType;
-const mockTxHashHex = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+const mockTxHashHex =
+	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const mockTxHash: HashType = Hash.fromHex(mockTxHashHex);
 
 const mockAccount: AccountShape = {
@@ -67,10 +65,7 @@ const mockTransport: TransportShape = {
 };
 
 const TestAccountLayer = Layer.succeed(AccountService, mockAccount);
-const TestProviderLayer = Layer.succeed(
-	ProviderService,
-	mockProvider,
-);
+const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
 const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
 
 const TestLayers = Layer.mergeAll(
@@ -206,10 +201,7 @@ describe("SignerService", () => {
 				...mockAccount,
 				signMessage: () =>
 					Effect.fail(
-						new SignerError(
-							{ action: "signMessage" },
-							"Sign failed",
-						) as never,
+						new SignerError({ action: "signMessage" }, "Sign failed") as never,
 					),
 			};
 
@@ -236,9 +228,7 @@ describe("SignerService", () => {
 
 	describe("requestAddresses", () => {
 		it("requests addresses from transport and converts to AddressType", async () => {
-			const mockHexAddresses = [
-				"0xabababababababababababababababababababab",
-			];
+			const mockHexAddresses = ["0xabababababababababababababababababababab"];
 			const transportWithAddresses: TransportShape = {
 				request: <T>(_method: string): Effect.Effect<T, never> =>
 					Effect.succeed(mockHexAddresses as T),
@@ -280,6 +270,244 @@ describe("SignerService", () => {
 			await expect(
 				Effect.runPromise(Effect.provide(program, TestSignerLayer)),
 			).resolves.not.toThrow();
+		});
+	});
+
+	describe("nonce handling", () => {
+		it("fetches nonce with 'pending' block tag", async () => {
+			let capturedBlockTag: string | undefined;
+			const providerWithCapture: ProviderShape = {
+				...mockProvider,
+				getTransactionCount: (_address, blockTag) => {
+					capturedBlockTag = blockTag as string;
+					return Effect.succeed(5n);
+				},
+			};
+
+			const customLayers = Layer.mergeAll(
+				TestAccountLayer,
+				Layer.succeed(ProviderService, providerWithCapture),
+				TestTransportLayer,
+			);
+			const customSignerLayer = Layer.provide(Signer.Live, customLayers);
+
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				return yield* signer.signTransaction({
+					to: mockAddress,
+					value: 1n,
+				});
+			});
+
+			await Effect.runPromise(Effect.provide(program, customSignerLayer));
+
+			expect(capturedBlockTag).toBe("pending");
+		});
+
+		it("uses provided nonce without fetching", async () => {
+			let fetchCalled = false;
+			const providerWithCapture: ProviderShape = {
+				...mockProvider,
+				getTransactionCount: () => {
+					fetchCalled = true;
+					return Effect.succeed(5n);
+				},
+			};
+
+			const customLayers = Layer.mergeAll(
+				TestAccountLayer,
+				Layer.succeed(ProviderService, providerWithCapture),
+				TestTransportLayer,
+			);
+			const customSignerLayer = Layer.provide(Signer.Live, customLayers);
+
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				return yield* signer.signTransaction({
+					to: mockAddress,
+					value: 1n,
+					nonce: 10n,
+				});
+			});
+
+			await Effect.runPromise(Effect.provide(program, customSignerLayer));
+
+			expect(fetchCalled).toBe(false);
+		});
+	});
+
+	describe("EIP-1559 auto-detection", () => {
+		it("uses EIP-1559 when network supports it and no gas fields provided", async () => {
+			const providerWithEIP1559: ProviderShape = {
+				...mockProvider,
+				getBlock: () =>
+					Effect.succeed({
+						number: "0x1",
+						hash: "0xabc",
+						parentHash: "0x0",
+						nonce: "0x0",
+						sha3Uncles: "0x0",
+						logsBloom: "0x0",
+						transactionsRoot: "0x0",
+						stateRoot: "0x0",
+						receiptsRoot: "0x0",
+						miner: "0x0",
+						difficulty: "0x0",
+						totalDifficulty: "0x0",
+						extraData: "0x",
+						size: "0x0",
+						gasLimit: "0x0",
+						gasUsed: "0x0",
+						timestamp: "0x0",
+						transactions: [],
+						uncles: [],
+						baseFeePerGas: "0x3b9aca00", // 1 gwei - indicates EIP-1559 support
+					}),
+			};
+
+			const customLayers = Layer.mergeAll(
+				TestAccountLayer,
+				Layer.succeed(ProviderService, providerWithEIP1559),
+				TestTransportLayer,
+			);
+			const customSignerLayer = Layer.provide(Signer.Live, customLayers);
+
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				return yield* signer.signTransaction({
+					to: mockAddress,
+					value: 1n,
+				});
+			});
+
+			const result = await Effect.runPromise(
+				Effect.provide(program, customSignerLayer),
+			);
+
+			// Should produce EIP-1559 tx (starts with 0x02)
+			expect(result.startsWith("0x02")).toBe(true);
+		});
+
+		it("uses legacy when network does not support EIP-1559", async () => {
+			const providerWithoutEIP1559: ProviderShape = {
+				...mockProvider,
+				getBlock: () =>
+					Effect.succeed({
+						number: "0x1",
+						hash: "0xabc",
+						parentHash: "0x0",
+						nonce: "0x0",
+						sha3Uncles: "0x0",
+						logsBloom: "0x0",
+						transactionsRoot: "0x0",
+						stateRoot: "0x0",
+						receiptsRoot: "0x0",
+						miner: "0x0",
+						difficulty: "0x0",
+						totalDifficulty: "0x0",
+						extraData: "0x",
+						size: "0x0",
+						gasLimit: "0x0",
+						gasUsed: "0x0",
+						timestamp: "0x0",
+						transactions: [],
+						uncles: [],
+						// No baseFeePerGas - pre-London
+					}),
+			};
+
+			const customLayers = Layer.mergeAll(
+				TestAccountLayer,
+				Layer.succeed(ProviderService, providerWithoutEIP1559),
+				TestTransportLayer,
+			);
+			const customSignerLayer = Layer.provide(Signer.Live, customLayers);
+
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				return yield* signer.signTransaction({
+					to: mockAddress,
+					value: 1n,
+				});
+			});
+
+			const result = await Effect.runPromise(
+				Effect.provide(program, customSignerLayer),
+			);
+
+			// Should produce legacy tx (does NOT start with 0x02 or 0x01)
+			expect(result.startsWith("0x02")).toBe(false);
+			expect(result.startsWith("0x01")).toBe(false);
+		});
+
+		it("calculates maxFeePerGas with 2x multiplier on baseFee", async () => {
+			const baseFeeGwei = 10n; // 10 gwei
+			const priorityFeeGwei = 1n; // 1 gwei
+			const baseFeeWei = baseFeeGwei * 1000000000n;
+			const priorityFeeWei = priorityFeeGwei * 1000000000n;
+
+			let capturedSignTx: unknown;
+			const accountWithCapture: AccountShape = {
+				...mockAccount,
+				signTransaction: (tx) => {
+					capturedSignTx = tx;
+					return Effect.succeed(mockSignature);
+				},
+			};
+
+			const providerWithEIP1559: ProviderShape = {
+				...mockProvider,
+				getBlock: () =>
+					Effect.succeed({
+						number: "0x1",
+						hash: "0xabc",
+						parentHash: "0x0",
+						nonce: "0x0",
+						sha3Uncles: "0x0",
+						logsBloom: "0x0",
+						transactionsRoot: "0x0",
+						stateRoot: "0x0",
+						receiptsRoot: "0x0",
+						miner: "0x0",
+						difficulty: "0x0",
+						totalDifficulty: "0x0",
+						extraData: "0x",
+						size: "0x0",
+						gasLimit: "0x0",
+						gasUsed: "0x0",
+						timestamp: "0x0",
+						transactions: [],
+						uncles: [],
+						baseFeePerGas: `0x${baseFeeWei.toString(16)}`,
+					}),
+				getMaxPriorityFeePerGas: () => Effect.succeed(priorityFeeWei),
+			};
+
+			const customLayers = Layer.mergeAll(
+				Layer.succeed(AccountService, accountWithCapture),
+				Layer.succeed(ProviderService, providerWithEIP1559),
+				TestTransportLayer,
+			);
+			const customSignerLayer = Layer.provide(Signer.Live, customLayers);
+
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				return yield* signer.signTransaction({
+					to: mockAddress,
+					value: 1n,
+				});
+			});
+
+			await Effect.runPromise(Effect.provide(program, customSignerLayer));
+
+			const tx = capturedSignTx as {
+				maxFeePerGas?: bigint;
+				maxPriorityFeePerGas?: bigint;
+			};
+			expect(tx.maxPriorityFeePerGas).toBe(priorityFeeWei);
+			// maxFeePerGas = baseFee * 2 + priorityFee
+			const expectedMaxFee = baseFeeWei * 2n + priorityFeeWei;
+			expect(tx.maxFeePerGas).toBe(expectedMaxFee);
 		});
 	});
 
@@ -419,7 +647,9 @@ describe("SignerService", () => {
 				});
 			});
 
-			const result = await Effect.runPromise(Effect.provide(program, layerEIP155));
+			const result = await Effect.runPromise(
+				Effect.provide(program, layerEIP155),
+			);
 			expect(result.startsWith("0x02")).toBe(true);
 		});
 	});

@@ -63,9 +63,9 @@ export class SignerError extends AbstractError {
 
 	/**
 	 * JSON-RPC error code (propagated from underlying errors).
-	 * Override to make explicitly visible on type.
+	 * May be undefined if the error originated outside JSON-RPC.
 	 */
-	declare readonly code: number;
+	declare readonly code?: number;
 
 	/**
 	 * Creates a new SignerError.
@@ -95,11 +95,17 @@ export class SignerError extends AbstractError {
  * Transaction request for sending transactions.
  *
  * @description
- * Supports legacy, EIP-1559, and EIP-2930 transaction types.
+ * Supports legacy (type 0) and EIP-1559 (type 2) transaction types.
+ * Access lists are supported for EIP-1559 transactions.
+ *
+ * Note: EIP-2930 (type 1) is NOT currently supported. If you provide
+ * `accessList` with `gasPrice` (legacy fee model), the accessList
+ * will be ignored and a legacy transaction will be produced.
+ *
  * Most fields are optional and will be auto-filled if not provided.
  *
  * Auto-filled fields:
- * - `nonce` - Fetched from network via getTransactionCount
+ * - `nonce` - Fetched from network via getTransactionCount('pending')
  * - `gasLimit` - Estimated via estimateGas
  * - `gasPrice` or `maxFeePerGas` - Fetched from network
  * - `chainId` - Fetched from network via eth_chainId

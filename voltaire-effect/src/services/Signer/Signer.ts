@@ -166,9 +166,10 @@ const SignerLive: Layer.Layer<
 		): Effect.Effect<HexType, SignerError> =>
 			Effect.gen(function* () {
 				const addressHex = Address.toHex(account.address as AddressType);
+				// Use 'pending' to include pending txs in nonce calculation
 				const nonce =
 					tx.nonce ??
-					(yield* provider.getTransactionCount(addressHex));
+					(yield* provider.getTransactionCount(addressHex, "pending"));
 				const chainId = tx.chainId ?? BigInt(yield* provider.getChainId());
 				const txForEstimate = {
 					to: tx.to ? Address.toHex(tx.to as AddressType) : undefined,
@@ -180,23 +181,17 @@ const SignerLive: Layer.Layer<
 				const gasLimit =
 					tx.gasLimit ?? (yield* provider.estimateGas(txForEstimate));
 
-				const getBaseFeePerGas = Effect.gen(function* () {
-					const block = yield* provider.getBlock({ blockTag: "latest" });
-					if (block.baseFeePerGas) {
-						return BigInt(block.baseFeePerGas);
-					}
-					return yield* provider.getGasPrice();
-				});
-
-				const supportsEIP1559 = Effect.gen(function* () {
-					const block = yield* provider.getBlock({ blockTag: "latest" });
-					return block.baseFeePerGas !== undefined;
-				});
+				// Fetch latest block once for EIP-1559 detection and base fee
+				const latestBlock = yield* provider.getBlock({ blockTag: "latest" });
+				const baseFeePerGas = latestBlock.baseFeePerGas
+					? BigInt(latestBlock.baseFeePerGas)
+					: undefined;
+				const supportsEIP1559 = baseFeePerGas !== undefined;
 
 				const useEIP1559 =
 					tx.maxFeePerGas !== undefined ||
 					tx.maxPriorityFeePerGas !== undefined ||
-					(tx.gasPrice === undefined && (yield* supportsEIP1559));
+					(tx.gasPrice === undefined && supportsEIP1559);
 
 				let gasParams: {
 					gasPrice?: bigint;
@@ -208,10 +203,12 @@ const SignerLive: Layer.Layer<
 					const maxPriorityFeePerGas =
 						tx.maxPriorityFeePerGas ??
 						(yield* provider.getMaxPriorityFeePerGas());
-					const baseFeePerGas = yield* getBaseFeePerGas;
+					// Use baseFeePerGas from block, fallback to getGasPrice if somehow missing
+					const baseFee = baseFeePerGas ?? (yield* provider.getGasPrice());
+					// 2x multiplier on base fee for fee volatility buffer (matches viem/ethers defaults)
 					const multiplier = 2n;
 					const maxFeePerGas =
-						tx.maxFeePerGas ?? baseFeePerGas * multiplier + maxPriorityFeePerGas;
+						tx.maxFeePerGas ?? baseFee * multiplier + maxPriorityFeePerGas;
 					gasParams = { maxFeePerGas, maxPriorityFeePerGas };
 				} else {
 					const gasPrice = tx.gasPrice ?? (yield* provider.getGasPrice());
@@ -292,36 +289,32 @@ const SignerLive: Layer.Layer<
 				}),
 
 			sendRawTransaction: (signedTx) =>
-				transport
-					.request<string>("eth_sendRawTransaction", [signedTx])
-					.pipe(
-						Effect.map((hash) => Hash.fromHex(hash)),
-						Effect.mapError(
-							(e) =>
-								new SignerError(
-									{ action: "sendRawTransaction", signedTx },
-									`Failed to send raw transaction: ${e.message}`,
-									{ cause: e, code: e.code },
-								),
-						),
+				transport.request<string>("eth_sendRawTransaction", [signedTx]).pipe(
+					Effect.map((hash) => Hash.fromHex(hash)),
+					Effect.mapError(
+						(e) =>
+							new SignerError(
+								{ action: "sendRawTransaction", signedTx },
+								`Failed to send raw transaction: ${e.message}`,
+								{ cause: e, code: e.code },
+							),
 					),
+				),
 
 			requestAddresses: () =>
-				transport
-					.request<string[]>("eth_requestAccounts")
-					.pipe(
-						Effect.map((addresses) =>
-							addresses.map((addr) => Address(addr) as AddressType),
-						),
-						Effect.mapError(
-							(e) =>
-								new SignerError(
-									{ action: "requestAddresses" },
-									`Failed to request addresses: ${e.message}`,
-									{ cause: e, code: e.code },
-								),
-						),
+				transport.request<string[]>("eth_requestAccounts").pipe(
+					Effect.map((addresses) =>
+						addresses.map((addr) => Address(addr) as AddressType),
 					),
+					Effect.mapError(
+						(e) =>
+							new SignerError(
+								{ action: "requestAddresses" },
+								`Failed to request addresses: ${e.message}`,
+								{ cause: e, code: e.code },
+							),
+					),
+				),
 
 			switchChain: (chainId) =>
 				transport
@@ -427,10 +420,7 @@ export const Signer = {
 		providerLayer: Layer.Layer<ProviderService, E1, R1>,
 		accountLayer: Layer.Layer<AccountService, E2, R2>,
 	): Layer.Layer<SignerService, E1 | E2, R1 | R2 | TransportService> =>
-		SignerLive.pipe(
-			Layer.provide(providerLayer),
-			Layer.provide(accountLayer),
-		),
+		SignerLive.pipe(Layer.provide(providerLayer), Layer.provide(accountLayer)),
 
 	/**
 	 * Creates a Signer layer from a private key and provider layer.
@@ -449,6 +439,5 @@ export const Signer = {
 	fromPrivateKey: <E, R>(
 		privateKey: HexType,
 		providerLayer: Layer.Layer<ProviderService, E, R>,
-	) =>
-		Signer.fromProvider(providerLayer, LocalAccount(privateKey)),
+	) => Signer.fromProvider(providerLayer, LocalAccount(privateKey)),
 } as const;

@@ -167,33 +167,49 @@ type TransactionRequest = {
   readonly to?: AddressType | null     // null = contract deploy
   readonly value?: bigint
   readonly data?: HexType
-  readonly nonce?: bigint              // auto-filled from getTransactionCount
+  readonly nonce?: bigint              // auto-filled from getTransactionCount('pending')
   readonly gasLimit?: bigint           // auto-estimated via estimateGas
   readonly gasPrice?: bigint           // legacy (type 0) - forces legacy tx
   readonly maxFeePerGas?: bigint       // EIP-1559 (type 2)
   readonly maxPriorityFeePerGas?: bigint
   readonly chainId?: bigint            // auto-detected from eth_chainId
+  readonly accessList?: Array<{        // included in EIP-1559 txs
+    address: AddressType | `0x${string}`
+    storageKeys: Array<`0x${string}`>
+  }>
 }
 ```
 
-### EIP-1559 Auto-Detection
+### Transaction Type Detection
 
 The signer automatically detects which transaction type to use:
 
 1. **If `maxFeePerGas` or `maxPriorityFeePerGas` provided** → EIP-1559 (type 2)
 2. **If `gasPrice` provided** → Legacy (type 0)
-3. **If neither provided** → Legacy with auto-fetched gasPrice
+3. **If neither provided AND network supports EIP-1559** → EIP-1559 (type 2)
+4. **If neither provided AND network doesn't support EIP-1559** → Legacy (type 0)
 
-When using EIP-1559, if `maxFeePerGas` is not provided, it's calculated as:
-`baseFee + maxPriorityFeePerGas` (no 2x multiplier currently)
+On EIP-1559 networks (post-London), if you don't specify any gas fields, the signer defaults to EIP-1559 transactions.
 
-### Concurrency Warning
+### Fee Calculation
 
-**⚠️ Signer is NOT safe for concurrent sends without NonceManager.**
+When using EIP-1559 and `maxFeePerGas` is not provided, it's calculated as:
 
-Each `sendTransaction` call fetches the current nonce. If you send multiple transactions concurrently, they may get the same nonce and all but one will fail.
+```
+maxFeePerGas = baseFeePerGas * 2 + maxPriorityFeePerGas
+```
 
-For concurrent sends, either:
+The 2x multiplier on base fee provides a buffer for fee volatility (matches viem/ethers defaults).
+
+### EIP-2930 Note
+
+EIP-2930 (type 1) transactions are NOT currently supported. If you provide `accessList` with `gasPrice`, the accessList will be ignored and a legacy transaction will be produced. Use EIP-1559 fee fields to include access lists.
+
+### Nonce Management
+
+Nonces are fetched using `getTransactionCount('pending')` to correctly account for pending transactions. This makes sequential sends safe.
+
+**⚠️ Concurrent sends still require care.** If you send multiple transactions concurrently without waiting, they may race to fetch the same pending nonce. For concurrent sends:
 - Manage nonces manually via `nonce` field
 - Use a NonceManager layer (coming soon)
 - Send transactions sequentially
@@ -219,14 +235,15 @@ type SignerShape = {
   readonly signMessage: (message: HexType) => Effect.Effect<SignatureType, SignerError>
   readonly signTransaction: (tx: TransactionRequest) => Effect.Effect<HexType, SignerError>
   readonly signTypedData: (typedData: TypedDataType) => Effect.Effect<SignatureType, SignerError>
-  readonly sendTransaction: (tx: TransactionRequest) => Effect.Effect<HexType, SignerError>
-  readonly sendRawTransaction: (signedTx: HexType) => Effect.Effect<HexType, SignerError>
+  readonly sendTransaction: (tx: TransactionRequest) => Effect.Effect<HashType, SignerError>
+  readonly sendRawTransaction: (signedTx: HexType) => Effect.Effect<HashType, SignerError>
   readonly requestAddresses: () => Effect.Effect<AddressType[], SignerError>
   readonly switchChain: (chainId: number) => Effect.Effect<void, SignerError>
 }
 
-// HexType is a branded Uint8Array - the return from sendTransaction is the tx hash
-type HexType = Uint8Array & { readonly __tag: "Hex" }
+// HexType is a branded `0x${string}` for signed transaction bytes
+// HashType is a branded Uint8Array for 32-byte hashes (tx hash)
+// SignatureType is a branded Uint8Array with signature metadata
 ```
 
 ## Dependencies
