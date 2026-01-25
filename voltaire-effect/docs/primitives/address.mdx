@@ -5,60 +5,63 @@ description: Effect-based schemas and functions for Ethereum addresses with EIP-
 
 ```typescript
 import * as Address from 'voltaire-effect/primitives/Address'
-import { Effect } from 'effect'
+import * as S from 'effect/Schema'
 
-const addr = await Effect.runPromise(
-  Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
-)
+// Decode from hex string
+const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+
+// Encode back to hex
+const hex = S.encodeSync(Address.Hex)(addr)
 ```
 
 ## Schemas
 
-**AddressSchema** — Validates hex string, returns branded `Uint8Array`.
+**Address.Hex** — Validates hex string, returns branded `Uint8Array`.
 
 ```typescript
-import { AddressSchema } from 'voltaire-effect/primitives/Address'
-import * as Schema from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
 
-const addr = Schema.decodeSync(AddressSchema)(
+const addr = S.decodeSync(Address.Hex)(
   '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3'
 )
 ```
 
-**AddressFromBytesSchema** — Validates 20-byte array.
-
-**ChecksummedAddressSchema** — Encodes to EIP-55 format.
-
-## Functions
-
-**from(input)** — Creates address from string, bytes, number, or bigint.
+**Address.Bytes** — Validates 20-byte array.
 
 ```typescript
-Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
-Address.from(new Uint8Array(20).fill(0xab))
-Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n)
-// Effect<AddressType, InvalidAddressError>
+const addr = S.decodeSync(Address.Bytes)(new Uint8Array(20))
 ```
 
-**fromBytes(bytes)** — Creates from 20-byte Uint8Array. Returns `InvalidAddressLengthError` if wrong size.
-
-**toBytes(addr)** — Pure sync. Returns `Uint8Array(20)`.
-
-**toChecksummed(addr)** — Requires `KeccakService`.
+**Address.Checksummed** — Encodes to EIP-55 format (requires KeccakService).
 
 ```typescript
+import * as Effect from 'effect/Effect'
 import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
 
 const checksummed = await Effect.runPromise(
-  Address.toChecksummed(addr).pipe(Effect.provide(KeccakLive))
+  S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
 )
 // "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
 ```
 
+## Pure Functions
+
+**equals(a, b)** — Compare two addresses.
+
+```typescript
+Address.equals(addr1, addr2) // boolean
+```
+
+**isZero(addr)** — Check if address is zero.
+
+```typescript
+Address.isZero(addr) // boolean
+```
+
 ## Errors
 
-- `InvalidAddressError` — Invalid format, hex, or value
-- `InvalidAddressLengthError` — Byte array not 20 bytes
+- `ParseError` — Invalid format, hex, or byte length
 
 ## See Also
 

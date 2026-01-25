@@ -4,16 +4,20 @@ description: Effect.ts integration for Voltaire Ethereum primitives
 ---
 
 ```typescript
-import { Address, Hex } from 'voltaire-effect'
-import * as Schema from 'effect/Schema'
-import { Effect } from 'effect'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import * as Effect from 'effect/Effect'
+import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
 
-// Schema decodes to actual Voltaire branded types
-const addr = Schema.decodeSync(Address.Schema)("0x1234...")
+// Decode from hex string
+const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
 
-// Effect-based operations
-const program = Address.fromBytes(bytes).pipe(
-  Effect.map(Address.toChecksummed)
+// Encode back to hex
+const hex = S.encodeSync(Address.Hex)(addr)
+
+// Encode to checksummed (requires KeccakService)
+const checksummed = await Effect.runPromise(
+  S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
 )
 ```
 

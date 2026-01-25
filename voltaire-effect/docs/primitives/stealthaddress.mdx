@@ -4,37 +4,36 @@ description: EIP-5564 stealth addresses for transaction privacy
 ---
 
 ```typescript
-import { StealthAddress } from 'voltaire-effect'
-import { Effect } from 'effect'
-import * as Schema from 'effect/Schema'
+import * as StealthAddress from 'voltaire-effect/primitives/StealthAddress'
+import * as S from 'effect/Schema'
 
 // Schema validation (66-byte meta-address)
-const parse = Schema.decodeSync(StealthAddress.StealthMetaAddressSchema)
-const metaAddress = parse(new Uint8Array(66))
+const metaAddress = S.decodeSync(StealthAddress.MetaAddress)(new Uint8Array(66))
 
-// Generate meta-address from key pair
-const meta = Effect.runSync(
-  StealthAddress.generateMetaAddress(spendingPubKey, viewingPubKey)
-)
-
-// Parse meta-address to extract keys
-const { spendingPubKey, viewingPubKey } = Effect.runSync(
-  StealthAddress.parseMetaAddress(metaAddress)
-)
+// Parse to extract keys
+const { spendingPubKey, viewingPubKey } = S.decodeSync(StealthAddress.ParsedMetaAddress)(metaAddress)
 ```
 
-## Practical Example
+## Schemas
+
+**StealthAddress.MetaAddress** — Validates 66-byte meta-address.
 
 ```typescript
-const createStealthAddress = (recipientMeta: Uint8Array) =>
-  Effect.gen(function* () {
-    const { spendingPubKey, viewingPubKey } = 
-      yield* StealthAddress.parseMetaAddress(recipientMeta)
-    return { spendingPubKey, viewingPubKey }
-  })
+const metaAddress = S.decodeSync(StealthAddress.MetaAddress)(bytes)
+```
 
-const result = await Effect.runPromiseExit(
-  StealthAddress.parseMetaAddress(new Uint8Array(10)) // wrong length
-)
-if (result._tag === 'Failure') console.error(result.cause) // StealthAddressError
+**StealthAddress.ParsedMetaAddress** — Parses meta-address to extract keys.
+
+```typescript
+const parsed = S.decodeSync(StealthAddress.ParsedMetaAddress)(metaAddress)
+// { spendingPubKey: Uint8Array, viewingPubKey: Uint8Array }
+```
+
+## Error Handling
+
+```typescript
+import * as Effect from 'effect/Effect'
+
+const result = S.decodeEither(StealthAddress.MetaAddress)(new Uint8Array(10)) // wrong length
+// Either.left(ParseError)
 ```

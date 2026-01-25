@@ -1,0 +1,175 @@
+---
+title: Provider Service
+description: Read-only blockchain operations with Effect.ts
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  const blockNum = yield* provider.getBlockNumber()
+  const balance = yield* provider.getBalance('0x1234...')
+  return { blockNum, balance }
+}).pipe(
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Layer Composition
+
+`Provider` is a Layer that requires `TransportService`:
+
+```typescript
+import * as Layer from 'effect/Layer'
+
+// Provider depends on Transport
+const Provider: Layer.Layer<ProviderService, never, TransportService>
+
+// Compose layers
+const FullProvider = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+// Use in program
+const program = myEffect.pipe(Effect.provide(FullProvider))
+```
+
+## Block Queries
+
+```typescript
+const provider = yield* ProviderService
+
+const blockNum = yield* provider.getBlockNumber()
+const block = yield* provider.getBlock({ blockTag: 'latest', includeTransactions: true })
+const blockByHash = yield* provider.getBlock({ blockHash: '0x...' })
+```
+
+## Account State
+
+```typescript
+const balance = yield* provider.getBalance('0x1234...', 'latest')
+const nonce = yield* provider.getTransactionCount('0x1234...')
+const code = yield* provider.getCode('0x1234...')
+const slot = yield* provider.getStorageAt('0x1234...', '0x0')
+```
+
+## Transactions
+
+```typescript
+const tx = yield* provider.getTransaction('0x...')
+const receipt = yield* provider.getTransactionReceipt('0x...')
+const confirmed = yield* provider.waitForTransactionReceipt('0x...', {
+  confirmations: 3,
+  timeout: 60000
+})
+```
+
+## Call & Estimate
+
+```typescript
+const result = yield* provider.call({
+  to: '0x1234...',
+  data: '0x...'
+})
+
+const gas = yield* provider.estimateGas({
+  to: '0x1234...',
+  data: '0x...',
+  value: 1000000000000000000n
+})
+```
+
+## Event Logs
+
+```typescript
+const logs = yield* provider.getLogs({
+  address: '0x1234...',
+  topics: ['0xddf252ad...'],
+  fromBlock: '0x100000',
+  toBlock: 'latest'
+})
+```
+
+## Gas Pricing
+
+```typescript
+const gasPrice = yield* provider.getGasPrice()
+const priorityFee = yield* provider.getMaxPriorityFeePerGas()
+const feeHistory = yield* provider.getFeeHistory(10, 'latest', [25, 50, 75])
+```
+
+## Error Handling
+
+```typescript
+import { ProviderError } from 'voltaire-effect/services'
+
+program.pipe(
+  Effect.catchTag('ProviderError', (e) => {
+    console.error('RPC failed:', e.message)
+    return Effect.succeed(0n)
+  })
+)
+```
+
+## Service Interface
+
+```typescript
+type ProviderShape = {
+  readonly getBlockNumber: () => Effect.Effect<bigint, ProviderError>
+  readonly getBlock: (args?: { 
+    blockTag?: BlockTag
+    blockHash?: string
+    includeTransactions?: boolean 
+  }) => Effect.Effect<BlockType, ProviderError>
+  readonly getBalance: (address: string, blockTag?: BlockTag) => Effect.Effect<bigint, ProviderError>
+  readonly getTransactionCount: (address: string, blockTag?: BlockTag) => Effect.Effect<number, ProviderError>
+  readonly getCode: (address: string, blockTag?: BlockTag) => Effect.Effect<string, ProviderError>
+  readonly getStorageAt: (address: string, slot: string, blockTag?: BlockTag) => Effect.Effect<string, ProviderError>
+  readonly getTransaction: (hash: string) => Effect.Effect<TransactionType, ProviderError>
+  readonly getTransactionReceipt: (hash: string) => Effect.Effect<ReceiptType, ProviderError>
+  readonly waitForTransactionReceipt: (hash: string, opts?: { 
+    confirmations?: number
+    timeout?: number 
+  }) => Effect.Effect<ReceiptType, ProviderError>
+  readonly call: (tx: CallRequest, blockTag?: BlockTag) => Effect.Effect<string, ProviderError>
+  readonly estimateGas: (tx: CallRequest) => Effect.Effect<bigint, ProviderError>
+  readonly getLogs: (filter: LogFilter) => Effect.Effect<LogType[], ProviderError>
+  readonly getChainId: () => Effect.Effect<number, ProviderError>
+  readonly getGasPrice: () => Effect.Effect<bigint, ProviderError>
+  readonly getMaxPriorityFeePerGas: () => Effect.Effect<bigint, ProviderError>
+  readonly getFeeHistory: (
+    blockCount: number, 
+    newestBlock: BlockTag, 
+    rewardPercentiles: number[]
+  ) => Effect.Effect<FeeHistoryType, ProviderError>
+}
+```
+
+## Chain-Specific Providers
+
+Use Layer composition for L2-specific features:
+
+```typescript
+import { OpStackActionsService, OpStackActions } from 'voltaire-effect/services'
+
+// Compose OP Stack extension with base Provider
+const OpStackProvider = Layer.merge(Provider, OpStackActions)
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  const opStack = yield* OpStackActionsService
+  
+  const block = yield* provider.getBlockNumber()
+  const l1BaseFee = yield* opStack.getL1BaseFee()
+  
+  return { block, l1BaseFee }
+}).pipe(
+  Effect.provide(OpStackProvider),
+  Effect.provide(HttpTransport('https://mainnet.optimism.io'))
+)
+```

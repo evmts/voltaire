@@ -1,0 +1,217 @@
+---
+title: Signer Service
+description: Transaction signing and sending with Effect.ts
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { 
+  SignerService, Signer, Provider, LocalAccount,
+  HttpTransport, Secp256k1Live, KeccakLive
+} from 'voltaire-effect/services'
+import { Hex } from '@tevm/voltaire'
+
+const privateKey = Hex.fromHex('0xac0974bec...')
+
+const program = Effect.gen(function* () {
+  const signer = yield* SignerService
+  return yield* signer.sendTransaction({
+    to: recipientAddress,
+    value: 1000000000000000000n
+  })
+}).pipe(
+  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Constructors
+
+### Signer.fromPrivateKey
+
+Convenience constructor for local signing:
+
+```typescript
+const signer = Signer.fromPrivateKey(privateKey, Provider)
+
+// Equivalent to:
+const signer = Signer.fromProvider(Provider, LocalAccount(privateKey))
+```
+
+### Signer.fromProvider
+
+Compose a Signer from existing Provider and Account layers:
+
+```typescript
+import { Signer, Provider, LocalAccount, JsonRpcAccount } from 'voltaire-effect/services'
+
+// With local account (private key signing)
+const localSigner = Signer.fromProvider(Provider, LocalAccount(privateKey))
+
+// With JSON-RPC account (browser wallet)
+const browserSigner = Signer.fromProvider(Provider, JsonRpcAccount(userAddress))
+```
+
+### Signer.Live
+
+Base layer requiring all dependencies explicitly:
+
+```typescript
+const signer = Signer.Live.pipe(
+  Layer.provide(Provider),
+  Layer.provide(LocalAccount(privateKey))
+)
+
+// Type: Layer.Layer<SignerService, never, TransportService>
+```
+
+## Layer Pattern
+
+```typescript
+import * as Layer from 'effect/Layer'
+
+// Signer.Live depends on Provider + Account + Transport
+const Signer = {
+  Live: Layer.effect(SignerService, Effect.gen(function* () {
+    const provider = yield* ProviderService
+    const account = yield* AccountService
+    const transport = yield* TransportService
+    // ... implementation
+  })) as Layer.Layer<SignerService, never, ProviderService | AccountService | TransportService>,
+
+  // Compose Provider + Account into ready-to-use Signer
+  fromProvider: (
+    providerLayer: Layer.Layer<ProviderService, any, TransportService>,
+    accountLayer: Layer.Layer<AccountService>
+  ): Layer.Layer<SignerService, any, TransportService> =>
+    Signer.Live.pipe(
+      Layer.provide(providerLayer),
+      Layer.provide(accountLayer)
+    ),
+
+  // Convenience: local private key signer
+  fromPrivateKey: (
+    privateKey: Hex,
+    providerLayer: Layer.Layer<ProviderService, any, TransportService>
+  ): Layer.Layer<SignerService, any, TransportService> =>
+    Signer.fromProvider(providerLayer, LocalAccount(privateKey)),
+}
+```
+
+## Browser Wallet
+
+```typescript
+import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const signer = yield* SignerService
+  const accounts = yield* signer.requestAddresses() // triggers popup
+  const txHash = yield* signer.sendTransaction({ to, value })
+  return txHash
+}).pipe(
+  Effect.provide(Signer.fromProvider(Provider, JsonRpcAccount(userAddress))),
+  Effect.provide(BrowserTransport)
+)
+```
+
+## Methods
+
+**signMessage** — EIP-191 personal_sign
+```typescript
+const signature = yield* signer.signMessage(Hex.fromString('Hello!'))
+```
+
+**signTransaction** — Sign without broadcast (auto-fills nonce, gas, chainId)
+```typescript
+const signedTx = yield* signer.signTransaction({ to, value })
+```
+
+**signTypedData** — EIP-712 structured data
+```typescript
+const sig = yield* signer.signTypedData({
+  domain: { name: 'App', version: '1', chainId: 1n },
+  primaryType: 'Order',
+  types: { Order: [{ name: 'amount', type: 'uint256' }] },
+  message: { amount: 1000n }
+})
+```
+
+**sendTransaction** — Sign and broadcast
+```typescript
+const txHash = yield* signer.sendTransaction({ to, value: 1000000000000000000n })
+```
+
+**sendRawTransaction** — Broadcast pre-signed tx
+```typescript
+const txHash = yield* signer.sendRawTransaction(signedTxHex)
+```
+
+**requestAddresses** — Get connected accounts (browser popup)
+```typescript
+const accounts = yield* signer.requestAddresses()
+```
+
+**switchChain** — Change network
+```typescript
+yield* signer.switchChain(137) // Polygon
+```
+
+## TransactionRequest
+
+```typescript
+type TransactionRequest = {
+  readonly to?: AddressType | null     // null = contract deploy
+  readonly value?: bigint
+  readonly data?: HexType
+  readonly nonce?: bigint              // auto-filled
+  readonly gasLimit?: bigint           // auto-estimated
+  readonly gasPrice?: bigint           // legacy
+  readonly maxFeePerGas?: bigint       // EIP-1559
+  readonly maxPriorityFeePerGas?: bigint
+  readonly chainId?: bigint            // auto-detected
+}
+```
+
+## Error Handling
+
+```typescript
+import { SignerError } from 'voltaire-effect/services'
+
+program.pipe(
+  Effect.catchTag('SignerError', (e) => {
+    if (e.message.includes('insufficient funds')) return Effect.fail(e)
+    if (e.message.includes('rejected')) return Effect.fail(e)
+    return Effect.fail(e)
+  })
+)
+```
+
+## Service Interface
+
+```typescript
+type SignerShape = {
+  readonly signMessage: (message: HexType) => Effect.Effect<SignatureType, SignerError>
+  readonly signTransaction: (tx: TransactionRequest) => Effect.Effect<HexType, SignerError>
+  readonly signTypedData: (typedData: TypedDataType) => Effect.Effect<SignatureType, SignerError>
+  readonly sendTransaction: (tx: TransactionRequest) => Effect.Effect<HexType, SignerError>
+  readonly sendRawTransaction: (signedTx: HexType) => Effect.Effect<HexType, SignerError>
+  readonly requestAddresses: () => Effect.Effect<AddressType[], SignerError>
+  readonly switchChain: (chainId: number) => Effect.Effect<void, SignerError>
+}
+```
+
+## Dependencies
+
+`Signer.Live` requires these services:
+
+| Service | Purpose |
+|---------|---------|
+| `ProviderService` | Fetch nonce, gas estimates, chainId |
+| `AccountService` | Sign messages and transactions |
+| `TransportService` | Send raw transactions via RPC |
+
+The `fromProvider` and `fromPrivateKey` constructors compose these for you.

@@ -14,32 +14,36 @@ description: Schema, Effect, and Service layers
 [Effect Schema](https://effect.website/docs/schema/introduction/) wrappers. Decodes to actual Voltaire branded types.
 
 ```typescript
-import { Address, Hex } from 'voltaire-effect'
-import * as Schema from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as Hex from 'voltaire-effect/primitives/Hex'
+import * as S from 'effect/Schema'
 
-const addr = Schema.decodeSync(Address.Schema)("0x742d35Cc...")
-const fromBytes = Schema.decodeSync(Address.FromBytesSchema)(bytes)
+// Decode from hex string
+const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+
+// Decode from bytes
+const fromBytes = S.decodeSync(Address.Bytes)(new Uint8Array(20))
 
 // Works directly with Voltaire
-Hex.toBytes(Schema.decodeSync(Hex.Schema)("0x1234"))
+const hex = S.decodeSync(Hex.Schema)('0x1234')
 ```
 
 ## Effect
 
-[Effect](https://effect.website/docs/getting-started/the-effect-type/)-wrapped operations. Typed errors with `_tag` for [catchTag](https://effect.website/docs/error-management/expected-errors/#catchtag).
+[Effect](https://effect.website/docs/getting-started/the-effect-type/)-wrapped operations. Use `S.decode` for effectful parsing with typed errors.
 
 ```typescript
-import { Address, Hex } from 'voltaire-effect'
-import { Effect } from 'effect'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import * as Effect from 'effect/Effect'
 
 const program = Effect.gen(function* () {
-  const addr = yield* Address.fromString("0x...")
-  const bytes = yield* Hex.toBytes("0x1234")
-  return { addr, bytes }
+  const addr = yield* S.decode(Address.Hex)('0x...')
+  return addr
 })
 
 // Error handling
-Effect.catchTag("InvalidAddress", (e) => ...)
+Effect.catchTag("ParseError", (e) => ...)
 ```
 
 ## Services
@@ -47,17 +51,45 @@ Effect.catchTag("InvalidAddress", (e) => ...)
 [Effect Services](https://effect.website/docs/requirements-management/services/) for stateful resources.
 
 ```typescript
-import { Provider } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
 import { Effect } from 'effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* Provider.Provider
+  const provider = yield* ProviderService
   return yield* provider.getBlock("latest")
-})
-
-program.pipe(
-  Effect.provide(Provider.live("https://eth.llamarpc.com"))
+}).pipe(
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport("https://eth.llamarpc.com"))
 )
 ```
 
-**Available**: Provider (JSON-RPC), Wallet (signing), Eip1193 (browser wallets)
+**Available**: 
+- `ProviderService` / `Provider` - Read-only chain queries
+- `SignerService` / `Signer` - Signs & sends transactions
+- `AccountService` - Local or JSON-RPC accounts
+- `TransportService` - HTTP, WebSocket, Browser transports
+
+### Signer.fromProvider Pattern
+
+Create a Signer from existing Provider + Account:
+
+```typescript
+import { Signer, Provider, LocalAccount, HttpTransport } from 'voltaire-effect/services'
+
+const privateKey = Hex.fromHex('0xac0974bec...')
+
+// Compose layers
+const signer = Signer.fromPrivateKey(privateKey, Provider)
+
+// Or explicitly:
+const signer = Signer.fromProvider(Provider, LocalAccount(privateKey))
+
+// Use in program
+const program = Effect.gen(function* () {
+  const s = yield* SignerService
+  return yield* s.sendTransaction({ to, value })
+}).pipe(
+  Effect.provide(signer),
+  Effect.provide(HttpTransport("https://eth.llamarpc.com"))
+)
+```

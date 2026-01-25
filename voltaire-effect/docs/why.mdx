@@ -7,23 +7,27 @@ Voltaire gives you branded types and high-performance crypto. voltaire-effect ad
 
 ## Typed Errors
 
-Exceptions are invisible. Effect's error channel makes failures explicit in the type signature.
+Exceptions are invisible. Effect Schema makes decode failures explicit and typed.
 
 ```typescript
-// Throws somewhere, who knows what
-const addr = Address.from(input)
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
 
-// Error is in the type: Effect<Address, AddressError>
-const addr = Address.fromHex(input)
+// Schema decode - errors are typed ParseError
+const result = S.decodeEither(Address.Hex)(input)
+// Either<AddressType, ParseError>
 ```
 
 ## Composability
 
-Chain operations with `pipe`, use `Effect.gen` for async/await-like syntax, run operations in parallel with `Effect.all`.
+Chain operations with `pipe`, use `Effect.gen` for async/await-like syntax.
 
 ```typescript
+import * as Effect from 'effect/Effect'
+import * as S from 'effect/Schema'
+
 const program = Effect.gen(function* () {
-  const addr = yield* Address.fromHex(input)
+  const addr = yield* S.decode(Address.Hex)(input)
   const balance = yield* Provider.getBalance(addr)
   return { addr, balance }
 })
@@ -46,9 +50,13 @@ Effect.runPromise(program.pipe(Effect.provide(ProviderTest)))
 Decode at boundaries, trust internally. Schema decodes directly to Voltaire's branded types.
 
 ```typescript
-const UserInput = Schema.Struct({
-  to: Address.Schema,
-  value: Uint256.Schema,
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as Uint from 'voltaire-effect/primitives/Uint'
+
+const UserInput = S.Struct({
+  to: Address.Hex,
+  value: Uint.Uint256,
 })
 // Decoding validates AND returns branded Voltaire types
 ```
@@ -58,7 +66,7 @@ const UserInput = Schema.Struct({
 ```typescript
 // Without Effect: exceptions, untyped errors, hard to test
 try {
-  const addr = Address.from(input)
+  const addr = parseAddress(input)
   const balance = await provider.getBalance(addr)
   return { addr, balance }
 } catch (e) {
@@ -67,10 +75,10 @@ try {
 
 // With Effect: typed errors, composable, testable
 const program = Effect.gen(function* () {
-  const addr = yield* Address.fromHex(input)
+  const addr = yield* S.decode(Address.Hex)(input)
   const balance = yield* Provider.getBalance(addr)
   return { addr, balance }
 }).pipe(
-  Effect.catchTag("AddressError", () => Effect.succeed(fallback))
+  Effect.catchTag("ParseError", () => Effect.succeed(fallback))
 )
 ```

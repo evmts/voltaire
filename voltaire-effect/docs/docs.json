@@ -30,10 +30,10 @@
             "icon": "server",
             "pages": [
               "services/transport",
-              "services/contract",
+              "services/provider",
+              "services/signer",
               "services/account",
-              "services/public-client",
-              "services/wallet-client"
+              "services/contract"
             ]
           },
           {

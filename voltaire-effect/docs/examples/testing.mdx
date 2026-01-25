@@ -152,13 +152,13 @@ it('sends transaction', async () => {
 
 ```typescript
 import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import * as Effect from 'effect/Effect'
 import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
 
 it('checksums correctly', async () => {
-  const program = Effect.gen(function* () {
-    const addr = yield* Address.from('0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed')
-    return yield* Address.toChecksummed(addr)
-  }).pipe(Effect.provide(KeccakLive))
+  const addr = S.decodeSync(Address.Hex)('0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed')
+  const program = S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
   
   expect(await Effect.runPromise(program)).toMatchInlineSnapshot('"0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"')
 })
@@ -167,19 +167,18 @@ it('checksums correctly', async () => {
 ## Property-Based Testing
 
 ```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
 import * as fc from 'fast-check'
 
-it('round-trips through bytes', async () => {
+it('round-trips through hex', async () => {
   await fc.assert(fc.asyncProperty(
     fc.hexaString({ minLength: 40, maxLength: 40 }),
     async (hex) => {
-      const program = Effect.gen(function* () {
-        const addr = yield* Address.from(`0x${hex}`)
-        const bytes = Address.toBytes(addr)
-        return yield* Address.fromBytes(bytes)
-      })
-      const result = await Effect.runPromise(program)
-      expect(result).toBeDefined()
+      const addr = S.decodeSync(Address.Hex)(`0x${hex}`)
+      const encoded = S.encodeSync(Address.Hex)(addr)
+      const roundTripped = S.decodeSync(Address.Hex)(encoded)
+      expect(Address.equals(addr, roundTripped)).toBe(true)
     }
   ))
 })

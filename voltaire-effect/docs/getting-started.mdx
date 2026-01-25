@@ -10,39 +10,43 @@ pnpm add voltaire-effect @tevm/voltaire effect
 ## Schema Validation
 
 ```typescript
-import { Address, Hex } from 'voltaire-effect'
-import * as Schema from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
 
-const addr = Schema.decodeSync(Address.Schema)("0x742d35Cc...")
+// Decode from hex string
+const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
 
 // Returns actual Voltaire branded type - use directly
-import { Address as VAddr } from '@tevm/voltaire'
-VAddr.toChecksummed(addr)
+Address.equals(addr, addr) // true
+Address.isZero(addr) // false
 ```
 
-## Effect Operations
+## Checksummed Addresses
 
 ```typescript
-import { Address } from 'voltaire-effect'
-import { Effect } from 'effect'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import * as Effect from 'effect/Effect'
+import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
 
-const program = Effect.gen(function* () {
-  const addr = yield* Address.fromBytes(bytes)
-  return Address.toChecksummed(addr)
-})
+const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
 
-Effect.runPromise(program)
+// Encode to checksummed (requires KeccakService)
+const checksummed = await Effect.runPromise(
+  S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
+)
 ```
 
 ## Error Handling
 
 ```typescript
-import { Address } from 'voltaire-effect'
-import { Effect } from 'effect'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import * as Effect from 'effect/Effect'
 
-Address.fromString("invalid").pipe(
-  Effect.catchTag("InvalidAddress", (e) => 
-    Effect.succeed("0x0000000000000000000000000000000000000000")
+S.decode(Address.Hex)('invalid').pipe(
+  Effect.catchTag('ParseError', () => 
+    Effect.succeed(S.decodeSync(Address.Hex)('0x0000000000000000000000000000000000000000'))
   )
 )
 ```
