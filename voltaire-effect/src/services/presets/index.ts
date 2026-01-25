@@ -54,9 +54,7 @@ import { HttpTransport } from "../Transport/index.js";
  * await Effect.runPromise(program)
  * ```
  */
-export const MainnetProvider = (
-	url: string,
-): Layer.Layer<ProviderService> =>
+export const MainnetProvider = (url: string): Layer.Layer<ProviderService> =>
 	Provider.pipe(Layer.provide(HttpTransport(url)));
 
 /**
@@ -86,7 +84,5 @@ export const MainnetProvider = (
  * }).pipe(Effect.provide(arbitrumProvider))
  * ```
  */
-export const createProvider = (
-	url: string,
-): Layer.Layer<ProviderService> =>
+export const createProvider = (url: string): Layer.Layer<ProviderService> =>
 	Provider.pipe(Layer.provide(HttpTransport(url)));

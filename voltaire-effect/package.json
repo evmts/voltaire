@@ -51,9 +51,15 @@
 	},
 	"typesVersions": {
 		"*": {
-			"primitives": ["./dist/primitives/index.d.ts"],
-			"crypto": ["./dist/crypto/index.d.ts"],
-			"services": ["./dist/services/index.d.ts"]
+			"primitives": [
+				"./dist/primitives/index.d.ts"
+			],
+			"crypto": [
+				"./dist/crypto/index.d.ts"
+			],
+			"services": [
+				"./dist/services/index.d.ts"
+			]
 		}
 	},
 	"sideEffects": false,

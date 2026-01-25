@@ -38,9 +38,7 @@ describe("Address.Hex", () => {
 
 		it("fails on missing 0x prefix", () => {
 			expect(() =>
-				S.decodeSync(Address.Hex)(
-					"742d35cc6634c0532925a3b844bc9e7595f251e3",
-				),
+				S.decodeSync(Address.Hex)("742d35cc6634c0532925a3b844bc9e7595f251e3"),
 			).toThrow();
 		});
 	});

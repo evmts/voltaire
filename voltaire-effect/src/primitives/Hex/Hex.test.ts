@@ -45,7 +45,9 @@ describe("Hex.String", () => {
 		});
 
 		it("fails on non-string input", () => {
-			expect(() => S.decodeSync(Hex.String)(123 as unknown as string)).toThrow();
+			expect(() =>
+				S.decodeSync(Hex.String)(123 as unknown as string),
+			).toThrow();
 		});
 	});
 
