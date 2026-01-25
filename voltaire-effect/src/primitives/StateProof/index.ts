@@ -4,6 +4,16 @@
  *
  * @description
  * This module provides Effect-based utilities for working with Ethereum state proofs.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as StateProof from 'voltaire-effect/primitives/StateProof'
+ *
+ * function verifyAccountState(proof: StateProof.StateProofType) {
+ *   // ...
+ * }
+ * ```
  * State proofs are Merkle-Patricia proofs that cryptographically verify an account's
  * state against a state root, as defined in EIP-1186.
  *

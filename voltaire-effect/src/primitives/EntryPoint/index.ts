@@ -8,6 +8,16 @@
  * This module provides Effect-based schemas and functions for working with
  * EntryPoint contract addresses.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as EntryPoint from 'voltaire-effect/primitives/EntryPoint'
+ *
+ * function handleUserOps(entryPoint: EntryPoint.EntryPointType) {
+ *   // ...
+ * }
+ * ```
+ *
  * @example
  * ```typescript
  * import * as EntryPoint from 'voltaire-effect/primitives/EntryPoint'

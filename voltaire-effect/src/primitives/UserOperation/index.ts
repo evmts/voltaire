@@ -9,6 +9,16 @@
  * This module provides Effect-based schemas and functions for creating,
  * validating, hashing, and packing UserOperations.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as UserOperation from 'voltaire-effect/primitives/UserOperation'
+ *
+ * function submitUserOp(userOp: UserOperation.UserOperationType) {
+ *   // ...
+ * }
+ * ```
+ *
  * @example
  * ```typescript
  * import * as UserOperation from 'voltaire-effect/primitives/UserOperation'

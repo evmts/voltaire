@@ -1,7 +1,19 @@
 /**
- * PeerId module for Effect-based peer identifier handling.
+ * @module PeerId
  *
+ * @description
+ * PeerId module for Effect-based peer identifier handling.
  * Provides Effect-wrapped operations for working with P2P network peer IDs.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as PeerId from 'voltaire-effect/primitives/PeerId'
+ *
+ * function connectToPeer(id: PeerId.PeerIdType) {
+ *   // ...
+ * }
+ * ```
  *
  * @example
  * ```typescript

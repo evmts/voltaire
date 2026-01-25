@@ -2,6 +2,16 @@
  * @module DomainSeparator
  * @description Effect Schemas for EIP-712 domain separator hashes.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as DomainSeparator from 'voltaire-effect/primitives/DomainSeparator'
+ *
+ * function compareSeparators(separator: DomainSeparator.DomainSeparatorType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

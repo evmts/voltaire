@@ -4,6 +4,16 @@
  *
  * Bytecode is the compiled machine code executed by the EVM.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Bytecode from 'voltaire-effect/primitives/Bytecode'
+ *
+ * function deployContract(code: Bytecode.BytecodeType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

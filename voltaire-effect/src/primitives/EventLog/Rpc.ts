@@ -14,7 +14,7 @@ import * as EventLog from "@tevm/voltaire/EventLog";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
 import { Hex as AddressSchema } from "../Address/Hex.js";
-import { HashSchema } from "../Hash/index.js";
+import { Hex as HashSchema } from "../Hash/index.js";
 
 /**
  * Internal schema for validating EventLog structure.

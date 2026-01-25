@@ -2,6 +2,16 @@
  * @module Balance
  * @description Effect Schemas for Ethereum account balances in Wei.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Balance from 'voltaire-effect/primitives/Balance'
+ *
+ * function getAccountBalance(address: string): Balance.BalanceType {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

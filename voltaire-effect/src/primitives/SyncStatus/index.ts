@@ -1,8 +1,19 @@
 /**
  * @module SyncStatus
  *
+ * @description
  * Effect-based module for working with Ethereum node sync status.
  * Tracks whether a node is synced or actively syncing.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as SyncStatus from 'voltaire-effect/primitives/SyncStatus'
+ *
+ * function checkSync(status: SyncStatus.SyncStatusType) {
+ *   // ...
+ * }
+ * ```
  *
  * @example
  * ```typescript

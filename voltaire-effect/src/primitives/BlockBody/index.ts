@@ -2,6 +2,16 @@
  * @module BlockBody
  * @description Effect Schemas for Ethereum block bodies.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as BlockBody from 'voltaire-effect/primitives/BlockBody'
+ *
+ * function extractTransactions(body: BlockBody.BlockBodyType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

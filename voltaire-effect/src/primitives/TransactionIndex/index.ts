@@ -2,6 +2,16 @@
  * @module TransactionIndex
  * @description Effect Schemas for transaction indices (zero-based position within a block).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as TransactionIndex from 'voltaire-effect/primitives/TransactionIndex'
+ *
+ * function findTransaction(index: TransactionIndex.TransactionIndexType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -39,7 +49,5 @@ export const equals = TransactionIndex.equals;
 export const toNumber = TransactionIndex.toNumber;
 
 // Type export
-export type { TransactionIndexType } from "./TransactionIndexSchema.js";
-
-// Legacy schema exports for backward compatibility
-export { Schema } from "./TransactionIndexSchema.js";
+import { TransactionIndex as _TransactionIndex } from "@tevm/voltaire";
+export type TransactionIndexType = ReturnType<typeof _TransactionIndex.from>;

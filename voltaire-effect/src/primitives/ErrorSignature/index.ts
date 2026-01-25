@@ -7,6 +7,16 @@
  * - Error(string): 0x08c379a0
  * - Panic(uint256): 0x4e487b71
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as ErrorSignature from 'voltaire-effect/primitives/ErrorSignature'
+ *
+ * function decodeRevert(errSig: ErrorSignature.ErrorSignatureType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

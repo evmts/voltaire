@@ -2,6 +2,16 @@
  * @module Hash
  * @description Effect Schemas for 32-byte Ethereum hash values.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Hash from 'voltaire-effect/primitives/Hash'
+ *
+ * function verifyHash(expected: Hash.HashType, actual: Hash.HashType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -38,12 +48,8 @@
 export type { HashType } from "@tevm/voltaire/Hash";
 
 // Schemas
-export { Hex } from "./Hex.js";
 export { Bytes } from "./Bytes.js";
-
-// For backward compatibility
-export { Hex as Schema } from "./Hex.js";
-export { Hex as HashSchema } from "./Hex.js";
+export { Hex } from "./Hex.js";
 
 // Pure functions
 export { assert } from "./assert.js";

@@ -4,6 +4,16 @@
  *
  * @description
  * This module provides Effect-based utilities for working with EVM storage proofs.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as StorageProof from 'voltaire-effect/primitives/StorageProof'
+ *
+ * function verifyStorageSlot(proof: StorageProof.StorageProofType) {
+ *   // ...
+ * }
+ * ```
  * Storage proofs are Merkle-Patricia proofs that cryptographically verify a storage
  * slot's value against an account's storage root, as defined in EIP-1186.
  *

@@ -7,6 +7,16 @@
  * A state root is a 32-byte Keccak-256 hash that uniquely identifies the complete
  * state of all accounts on the Ethereum blockchain.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as StateRoot from 'voltaire-effect/primitives/StateRoot'
+ *
+ * function verifyState(root: StateRoot.StateRootType) {
+ *   // ...
+ * }
+ * ```
+ *
  * Key features:
  * - Type-safe state root creation with Effect error handling
  * - Schema-based validation using Effect Schema

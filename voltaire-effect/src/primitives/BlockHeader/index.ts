@@ -2,6 +2,16 @@
  * @module BlockHeader
  * @description Effect Schemas for Ethereum block headers.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as BlockHeader from 'voltaire-effect/primitives/BlockHeader'
+ *
+ * function validateHeader(header: BlockHeader.BlockHeaderType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

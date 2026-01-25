@@ -2,6 +2,16 @@
  * @module BaseFeePerGas
  * @description Effect Schemas for EIP-1559 base fee per gas.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as BaseFeePerGas from 'voltaire-effect/primitives/BaseFeePerGas'
+ *
+ * function processBaseFee(fee: BaseFeePerGas.BaseFeePerGasType) {
+ *   // ...
+ * }
+ * ```
+ *
  * The base fee is a protocol-determined minimum fee per gas unit.
  * It adjusts dynamically based on network congestion (±12.5% per block).
  * The base fee is burned, not paid to validators.

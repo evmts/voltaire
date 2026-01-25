@@ -2,6 +2,16 @@
  * @module Uint64
  * @description Effect Schemas for 64-bit unsigned integers (0 to 2^64-1).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Uint64 from 'voltaire-effect/primitives/Uint64'
+ *
+ * function setFileSize(bytes: Uint64.Uint64Type) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -59,6 +69,3 @@ export const ONE = Uint64.ONE;
 
 // Type export
 export type { Uint64Type } from "./Uint64Schema.js";
-
-// Legacy schema export
-export { Schema } from "./Uint64Schema.js";

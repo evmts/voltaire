@@ -2,6 +2,16 @@
  * @module Int128
  * @description Effect Schemas for signed 128-bit integers (-2^127 to 2^127-1).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Int128 from 'voltaire-effect/primitives/Int128'
+ *
+ * function setLiquidity(amount: Int128.Int128Type) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

@@ -2,6 +2,16 @@
  * @module Gas
  * @description Effect Schemas for EVM gas amounts.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Gas from 'voltaire-effect/primitives/Gas'
+ *
+ * function setGasLimit(limit: Gas.GasType): void {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

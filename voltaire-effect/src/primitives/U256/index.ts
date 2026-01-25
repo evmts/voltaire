@@ -70,10 +70,3 @@ export { sum } from "../Uint/sum.js";
 export { times } from "../Uint/times.js";
 export { toAbiEncoded } from "../Uint/toAbiEncoded.js";
 export { toPower } from "../Uint/toPower.js";
-
-// Legacy schema exports with U256 naming
-export {
-	UintFromBytesSchema as U256FromBytesSchema,
-	UintFromHexSchema as U256FromHexSchema,
-	UintSchema as U256Schema,
-} from "../Uint/UintSchema.js";

@@ -8,6 +8,16 @@
  * This module provides Effect-based schemas and functions for creating,
  * validating, hashing, and unpacking PackedUserOperations.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as PackedUserOperation from 'voltaire-effect/primitives/PackedUserOperation'
+ *
+ * function bundlePackedOps(ops: PackedUserOperation.PackedUserOperationType[]) {
+ *   // ...
+ * }
+ * ```
+ *
  * @example
  * ```typescript
  * import * as PackedUserOperation from 'voltaire-effect/primitives/PackedUserOperation'

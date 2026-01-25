@@ -4,6 +4,16 @@
  *
  * This is the native signed integer type used in Solidity smart contracts (int256).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Int256 from 'voltaire-effect/primitives/Int256'
+ *
+ * function setDelta(delta: Int256.Int256Type) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

@@ -5,6 +5,16 @@
  * ERC-1271 defines a standard for contract-based signature verification,
  * enabling smart contract wallets to authorize transactions.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as ContractSignature from 'voltaire-effect/primitives/ContractSignature'
+ *
+ * function verifySignature(input: ContractSignature.ContractSignatureInput) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Description |

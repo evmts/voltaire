@@ -5,6 +5,16 @@
  * EIP-712 defines a standard for typed structured data hashing,
  * enabling human-readable signing prompts in wallets.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as TypedData from 'voltaire-effect/primitives/TypedData'
+ *
+ * function signTypedData(data: TypedData.TypedDataOutput) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

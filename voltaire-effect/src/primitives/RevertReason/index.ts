@@ -2,6 +2,16 @@
  * @module RevertReason
  * @description Effect Schemas for EVM revert reason parsing.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as RevertReason from 'voltaire-effect/primitives/RevertReason'
+ *
+ * function handleRevert(reason: RevertReason.RevertReasonType) {
+ *   // ...
+ * }
+ * ```
+ *
  * Parses revert data into typed reasons: Error(string), Panic(uint256),
  * Custom errors, or Unknown.
  *

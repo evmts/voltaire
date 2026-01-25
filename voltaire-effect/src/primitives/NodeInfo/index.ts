@@ -1,7 +1,20 @@
 /**
+ * @module NodeInfo
+ *
+ * @description
  * NodeInfo module for working with Ethereum node information in Effect.
  * Contains details about a node including enode URL, node ID, IP address,
  * client name, ports, and supported protocols.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as NodeInfo from 'voltaire-effect/primitives/NodeInfo'
+ *
+ * function displayNode(info: NodeInfo.NodeInfoType) {
+ *   // ...
+ * }
+ * ```
  *
  * @example
  * ```typescript

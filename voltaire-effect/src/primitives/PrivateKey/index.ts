@@ -2,6 +2,16 @@
  * @module PrivateKey
  * @description Effect Schemas for secp256k1 private keys with cryptographic operations.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as PrivateKey from 'voltaire-effect/primitives/PrivateKey'
+ *
+ * function signMessage(key: PrivateKey.PrivateKeyType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

@@ -1,8 +1,20 @@
 /**
- * PeerInfo module for Effect-based P2P peer information handling.
+ * @module PeerInfo
  *
+ * @description
+ * PeerInfo module for Effect-based P2P peer information handling.
  * Provides Effect-wrapped operations for working with detailed peer information
  * including ID, client name, capabilities, network, and protocol details.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as PeerInfo from 'voltaire-effect/primitives/PeerInfo'
+ *
+ * function displayPeer(peer: PeerInfo.PeerInfoType) {
+ *   // ...
+ * }
+ * ```
  *
  * @example
  * ```typescript

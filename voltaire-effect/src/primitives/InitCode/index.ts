@@ -5,6 +5,16 @@
  * Init code is the bytecode used during contract deployment, containing
  * constructor logic and the runtime bytecode to be stored on-chain.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as InitCode from 'voltaire-effect/primitives/InitCode'
+ *
+ * function deployWithInitCode(code: InitCode.InitCodeType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

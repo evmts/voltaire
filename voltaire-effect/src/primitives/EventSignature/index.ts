@@ -5,6 +5,16 @@
  * Event signatures are 32-byte keccak256 hashes of event definitions.
  * They appear as topic 0 in event logs.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as EventSignature from 'voltaire-effect/primitives/EventSignature'
+ *
+ * function filterLogs(eventSig: EventSignature.EventSignatureType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

@@ -2,6 +2,16 @@
  * @module EffectiveGasPrice
  * @description Effect Schemas for EIP-1559 effective gas price.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as EffectiveGasPrice from 'voltaire-effect/primitives/EffectiveGasPrice'
+ *
+ * function analyzeGasPrice(price: EffectiveGasPrice.EffectiveGasPriceType) {
+ *   // ...
+ * }
+ * ```
+ *
  * The effective gas price is what's actually paid per gas unit.
  * It's calculated as: min(baseFee + priorityFee, maxFeePerGas)
  * This value appears in transaction receipts.

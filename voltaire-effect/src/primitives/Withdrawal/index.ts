@@ -3,6 +3,16 @@
  *
  * Withdrawals transfer ETH from the beacon chain (staking) back to execution layer addresses.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Withdrawal from 'voltaire-effect/primitives/Withdrawal'
+ *
+ * function processWithdrawal(withdrawal: Withdrawal.WithdrawalType) {
+ *   // ...
+ * }
+ * ```
+ *
  * @module Withdrawal
  * @since 0.0.1
  */

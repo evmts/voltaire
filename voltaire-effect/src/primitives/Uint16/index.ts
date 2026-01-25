@@ -2,6 +2,16 @@
  * @module Uint16
  * @description Effect Schemas for 16-bit unsigned integers (0-65535).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Uint16 from 'voltaire-effect/primitives/Uint16'
+ *
+ * function setPort(port: Uint16.Uint16Type) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -58,6 +68,3 @@ export const ONE = BrandedUint16.ONE;
 
 // Type export
 export type { Uint16Type } from "./Uint16Schema.js";
-
-// Legacy schema export
-export { Schema } from "./Uint16Schema.js";

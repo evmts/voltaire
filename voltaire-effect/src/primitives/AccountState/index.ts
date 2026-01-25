@@ -7,6 +7,16 @@
  * Account state represents the fundamental unit of state in the Ethereum state trie,
  * containing nonce, balance, code hash, and storage root for each account.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as AccountState from 'voltaire-effect/primitives/AccountState'
+ *
+ * function processAccount(state: AccountState.AccountStateType) {
+ *   // ...
+ * }
+ * ```
+ *
  * Key features:
  * - Type-safe account state creation with Effect error handling
  * - Schema-based validation using Effect Schema

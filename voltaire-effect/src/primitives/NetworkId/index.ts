@@ -2,6 +2,16 @@
  * @module NetworkId
  * @description Effect Schemas for Ethereum network IDs (P2P networking layer).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as NetworkId from 'voltaire-effect/primitives/NetworkId'
+ *
+ * function connectToPeer(networkId: NetworkId.NetworkIdType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

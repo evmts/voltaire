@@ -2,6 +2,16 @@
  * @module GasPrice
  * @description Effect Schemas for gas pricing in wei.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as GasPrice from 'voltaire-effect/primitives/GasPrice'
+ *
+ * function calculateFee(gasUsed: bigint, price: GasPrice.GasPriceType): bigint {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

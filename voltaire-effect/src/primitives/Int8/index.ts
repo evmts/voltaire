@@ -2,6 +2,16 @@
  * @module Int8
  * @description Effect Schemas for signed 8-bit integers (-128 to 127).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Int8 from 'voltaire-effect/primitives/Int8'
+ *
+ * function setTemperature(temp: Int8.Int8Type) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

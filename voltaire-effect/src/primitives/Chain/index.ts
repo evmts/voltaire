@@ -4,7 +4,19 @@
  *
  * @description
  * This module provides comprehensive support for defining and validating
- * Ethereum chain configurations. Chain configs include:
+ * Ethereum chain configurations.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Chain from 'voltaire-effect/primitives/Chain'
+ *
+ * function switchChain(chain: Chain.ChainType) {
+ *   // ...
+ * }
+ * ```
+ *
+ * Chain configs include:
  * - Chain ID (unique network identifier)
  * - Network name
  * - Native currency (ETH, MATIC, etc.)

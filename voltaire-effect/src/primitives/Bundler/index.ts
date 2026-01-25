@@ -8,6 +8,16 @@
  * This module provides Effect-based schemas and functions for working with
  * Bundler addresses.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Bundler from 'voltaire-effect/primitives/Bundler'
+ *
+ * function submitBundle(bundler: Bundler.BundlerType) {
+ *   // ...
+ * }
+ * ```
+ *
  * @example
  * ```typescript
  * import * as Bundler from 'voltaire-effect/primitives/Bundler'

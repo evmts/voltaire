@@ -1,6 +1,18 @@
 /**
  * @module BuilderBid
- * @description MEV builder bid for block construction proposals.
+ *
+ * @description
+ * MEV builder bid for block construction proposals.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as BuilderBid from 'voltaire-effect/primitives/BuilderBid'
+ *
+ * function evaluateBid(bid: BuilderBid.BuilderBidType) {
+ *   // ...
+ * }
+ * ```
  *
  * ## Schemas
  *

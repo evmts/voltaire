@@ -2,6 +2,16 @@
  * @module Transaction
  * @description Effect Schemas for Ethereum transactions with support for all EIP-2718 types.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Transaction from 'voltaire-effect/primitives/Transaction'
+ *
+ * function signTransaction(tx: Transaction.Any) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

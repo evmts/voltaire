@@ -1,8 +1,19 @@
 /**
  * @fileoverview Bundle module for ERC-4337 account abstraction.
  *
+ * @description
  * A Bundle is a collection of UserOperations that a Bundler submits to the
  * EntryPoint contract in a single transaction.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Bundle from 'voltaire-effect/primitives/Bundle'
+ *
+ * function submitBundle(bundle: Bundle.BundleType) {
+ *   // ...
+ * }
+ * ```
  *
  * @example
  * ```typescript

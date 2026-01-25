@@ -2,6 +2,16 @@
  * @module Bytes32
  * @description Effect Schemas for 32-byte fixed-size data.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Bytes32 from 'voltaire-effect/primitives/Bytes32'
+ *
+ * function computeHash(data: Bytes32.Bytes32Type) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -41,11 +51,6 @@ import type { Bytes32Type as _Bytes32Type } from "@tevm/voltaire/Bytes";
 // Schemas
 export { Hex } from "./Hex.js";
 export { Bytes } from "./Bytes.js";
-/** @deprecated Use Bytes32.Hex or Bytes32.Bytes instead */
-export { Schema } from "./Bytes32Schema.js";
-
-// Deprecated - use S.decodeSync(Bytes32.Hex) instead
-/** @deprecated Use S.decodeSync(Bytes32.Hex) or S.decodeSync(Bytes32.Bytes) instead */
 
 /**
  * Type for 32-byte data as branded Uint8Array.

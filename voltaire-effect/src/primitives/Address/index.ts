@@ -2,6 +2,16 @@
  * @module Address
  * @description Effect Schemas for Ethereum addresses with EIP-55 checksum support.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Address from 'voltaire-effect/primitives/Address'
+ *
+ * function transfer(to: Address.AddressType, amount: bigint) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |
@@ -55,24 +65,25 @@
  */
 
 // Schemas
-export { Hex } from "./Hex.js";
 export { Bytes } from "./Bytes.js";
+export { Checksummed } from "./Checksummed.js";
+export { Hex } from "./Hex.js";
 
 // Pure functions
+export { clone } from "./clone.js";
 export { compare } from "./compare.js";
-export { isZero } from "./isZero.js";
-export { lessThan } from "./lessThan.js";
+export { equals } from "./equals.js";
 export { greaterThan } from "./greaterThan.js";
 export { isValid } from "./isValid.js";
 export { isValidChecksum } from "./isValidChecksum.js";
-export { clone } from "./clone.js";
-export { toU256 } from "./toU256.js";
-export { toShortHex } from "./toShortHex.js";
-export { toLowercase } from "./toLowercase.js";
-export { toUppercase } from "./toUppercase.js";
+export { isZero } from "./isZero.js";
+export { lessThan } from "./lessThan.js";
 export { toAbiEncoded } from "./toAbiEncoded.js";
-
-// Crypto derivation (kept - requires crypto services)
+export { toBytes } from "./toBytes.js";
+export { toLowercase } from "./toLowercase.js";
+export { toShortHex } from "./toShortHex.js";
+export { toU256 } from "./toU256.js";
+export { toUppercase } from "./toUppercase.js";
 
 // Re-export AddressType from voltaire
 export type { AddressType } from "@tevm/voltaire/Address";

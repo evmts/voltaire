@@ -2,6 +2,16 @@
  * @module BlockHash
  * @description Effect Schemas for 32-byte Ethereum block hashes.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as BlockHash from 'voltaire-effect/primitives/BlockHash'
+ *
+ * function getBlockByHash(hash: BlockHash.BlockHashType): Block {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -43,9 +53,3 @@ export const toHex = BlockHash.toHex;
 // Type export
 import { BlockHash as _BlockHash } from "@tevm/voltaire";
 export type BlockHashType = _BlockHash.BlockHashType;
-
-// Legacy schema exports for backward compatibility
-export {
-	BlockHashSchema,
-	BlockHashSchema as Schema,
-} from "./BlockHashSchema.js";

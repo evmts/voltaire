@@ -2,6 +2,16 @@
  * @module GasUsed
  * @description Effect Schemas for tracking consumed gas.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as GasUsed from 'voltaire-effect/primitives/GasUsed'
+ *
+ * function getTransactionCost(used: GasUsed.GasUsedType, price: bigint): bigint {
+ *   // ...
+ * }
+ * ```
+ *
  * GasUsed represents the actual amount of gas consumed during transaction
  * execution. This value is included in transaction receipts.
  *

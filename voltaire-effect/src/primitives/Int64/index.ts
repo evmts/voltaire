@@ -2,6 +2,16 @@
  * @module Int64
  * @description Effect Schemas for signed 64-bit integers (-2^63 to 2^63-1).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Int64 from 'voltaire-effect/primitives/Int64'
+ *
+ * function setBalance(balance: Int64.Int64Type) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

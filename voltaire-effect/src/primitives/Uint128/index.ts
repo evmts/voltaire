@@ -2,6 +2,16 @@
  * @module Uint128
  * @description Effect Schemas for 128-bit unsigned integers (0 to 2^128-1).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Uint128 from 'voltaire-effect/primitives/Uint128'
+ *
+ * function setTokenId(id: Uint128.Uint128Type) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -59,6 +69,3 @@ export const ONE = BrandedUint128.ONE;
 
 // Type export
 export type { Uint128Type } from "./Uint128Schema.js";
-
-// Legacy schema export
-export { Schema } from "./Uint128Schema.js";

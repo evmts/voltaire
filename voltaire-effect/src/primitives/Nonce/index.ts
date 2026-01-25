@@ -2,6 +2,16 @@
  * @module Nonce
  * @description Effect Schemas for Ethereum account nonces.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Nonce from 'voltaire-effect/primitives/Nonce'
+ *
+ * function getNextNonce(current: Nonce.NonceType): Nonce.NonceType {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

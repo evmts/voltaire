@@ -2,6 +2,16 @@
  * @module Uint32
  * @description Effect Schemas for 32-bit unsigned integers (0-4294967295).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Uint32 from 'voltaire-effect/primitives/Uint32'
+ *
+ * function setTimestamp(timestamp: Uint32.Uint32Type) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -58,6 +68,3 @@ export const ONE = BrandedUint32.ONE;
 
 // Type export
 export type { Uint32Type } from "./Uint32Schema.js";
-
-// Legacy schema export
-export { Schema } from "./Uint32Schema.js";

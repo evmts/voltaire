@@ -2,6 +2,16 @@
  * @module Domain
  * @description Effect Schemas for EIP-712 typed data domains.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Domain from 'voltaire-effect/primitives/Domain'
+ *
+ * function hashDomain(domain: Domain.DomainType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

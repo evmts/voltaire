@@ -2,6 +2,16 @@
  * @module ReturnData
  * @description Effect Schemas for EVM return data.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as ReturnData from 'voltaire-effect/primitives/ReturnData'
+ *
+ * function handleReturnData(data: ReturnData.ReturnDataType) {
+ *   // ...
+ * }
+ * ```
+ *
  * Return data is the output from EVM contract calls and transactions.
  *
  * ## Schemas

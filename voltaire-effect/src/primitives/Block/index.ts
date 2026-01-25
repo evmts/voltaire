@@ -2,6 +2,16 @@
  * @module Block
  * @description Effect Schemas for complete Ethereum blocks.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Block from 'voltaire-effect/primitives/Block'
+ *
+ * function processBlock(block: Block.BlockType) {
+ *   // ...
+ * }
+ * ```
+ *
  * An Ethereum block contains:
  * - Block header with metadata (number, timestamp, parent hash, etc.)
  * - Block body with transactions and uncles

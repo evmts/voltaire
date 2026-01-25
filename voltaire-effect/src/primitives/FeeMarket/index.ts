@@ -6,6 +6,16 @@
  * fee mechanism. Includes EIP-1559 base fee calculations and EIP-4844 blob
  * fee calculations for data availability.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as FeeMarket from 'voltaire-effect/primitives/FeeMarket'
+ *
+ * function processFeeMarket(market: FeeMarket.FeeMarketType) {
+ *   // ...
+ * }
+ * ```
+ *
  * Key concepts:
  * - EIP-1559: Dynamic base fee adjusting to target 50% block utilization
  * - EIP-4844: Blob gas pricing for data availability (proto-danksharding)

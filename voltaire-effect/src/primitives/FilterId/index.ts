@@ -4,7 +4,19 @@
  * @since 0.0.1
  *
  * @description
- * Filter IDs are unique identifiers returned by Ethereum JSON-RPC filter methods:
+ * Filter IDs are unique identifiers returned by Ethereum JSON-RPC filter methods.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as FilterId from 'voltaire-effect/primitives/FilterId'
+ *
+ * function pollFilter(filterId: FilterId.FilterIdType) {
+ *   // ...
+ * }
+ * ```
+ *
+ * Filter IDs are returned by Ethereum JSON-RPC filter methods:
  * - eth_newFilter: Creates a filter for event logs
  * - eth_newBlockFilter: Creates a filter for new blocks
  * - eth_newPendingTransactionFilter: Creates a filter for pending transactions

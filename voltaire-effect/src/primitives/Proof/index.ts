@@ -2,6 +2,16 @@
  * @module Proof
  * @description Ethereum state proof structure for account/storage verification.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Proof from 'voltaire-effect/primitives/Proof'
+ *
+ * function verifyProof(proof: Proof.ProofType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

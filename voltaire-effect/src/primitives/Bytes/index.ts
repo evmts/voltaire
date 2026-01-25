@@ -2,6 +2,16 @@
  * @module Bytes
  * @description Effect Schemas for arbitrary byte arrays.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Bytes from 'voltaire-effect/primitives/Bytes'
+ *
+ * function processBytes(data: Bytes.BytesType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -40,16 +50,7 @@ export type { BytesType } from "@tevm/voltaire/Bytes";
 
 // Schemas
 export { Hex } from "./Hex.js";
-/** @deprecated Use Bytes.Hex instead */
-export { Schema } from "./BytesSchema.js";
 
 // Pure functions
 export { isBytes } from "./isBytes.js";
 export { random } from "./random.js";
-
-// Deprecated - use S.decodeSync(Bytes.Hex) instead
-/** @deprecated Use S.decodeSync(Bytes.Hex) instead */
-/** @deprecated Use S.decodeSync(Bytes.Hex) instead */
-/** @deprecated Use S.decodeSync(Bytes.Hex) instead */
-/** @deprecated Use S.encodeSync(Bytes.Hex) instead */
-/** @deprecated Use pure function from base library */

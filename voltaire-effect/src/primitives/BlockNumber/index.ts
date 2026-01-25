@@ -2,6 +2,16 @@
  * @module BlockNumber
  * @description Effect Schemas for Ethereum block numbers (non-negative integers).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as BlockNumber from 'voltaire-effect/primitives/BlockNumber'
+ *
+ * function getBlockByNumber(num: BlockNumber.BlockNumberType): Block {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -48,9 +58,3 @@ export const toNumber = BlockNumber.toNumber;
 // Type export
 import { BlockNumber as _BlockNumber } from "@tevm/voltaire";
 export type BlockNumberType = _BlockNumber.BlockNumberType;
-
-// Legacy schema exports for backward compatibility
-export {
-	BlockNumberSchema,
-	BlockNumberSchema as Schema,
-} from "./BlockNumberSchema.js";

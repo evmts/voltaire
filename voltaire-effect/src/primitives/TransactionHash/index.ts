@@ -2,6 +2,16 @@
  * @module TransactionHash
  * @description Effect Schemas for 32-byte Ethereum transaction hashes.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as TransactionHash from 'voltaire-effect/primitives/TransactionHash'
+ *
+ * function getTransactionByHash(hash: TransactionHash.TransactionHashType): Transaction {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -46,10 +56,3 @@ export const toHex = (
 export type TransactionHashType = Uint8Array & {
 	readonly __tag: "TransactionHash";
 };
-
-// Legacy schema exports for backward compatibility
-export {
-	TransactionHashSchema,
-	TransactionHashFromBytesSchema,
-	TransactionHashSchema as Schema,
-} from "./TransactionHashSchema.js";

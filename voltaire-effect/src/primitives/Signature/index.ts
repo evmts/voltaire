@@ -2,6 +2,16 @@
  * @module Signature
  * @description Effect Schemas for cryptographic signatures (secp256k1, p256, ed25519).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Signature from 'voltaire-effect/primitives/Signature'
+ *
+ * function verifySignature(sig: Signature.SignatureType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

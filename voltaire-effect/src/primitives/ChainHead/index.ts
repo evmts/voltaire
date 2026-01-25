@@ -10,6 +10,16 @@
  * - Syncing with the network
  * - Validating new blocks
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as ChainHead from 'voltaire-effect/primitives/ChainHead'
+ *
+ * function processHead(head: ChainHead.ChainHeadType) {
+ *   // ...
+ * }
+ * ```
+ *
  * @example
  * ```typescript
  * import * as ChainHead from 'voltaire-effect/primitives/ChainHead'

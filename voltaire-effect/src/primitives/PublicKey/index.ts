@@ -2,6 +2,16 @@
  * @module PublicKey
  * @description Effect Schemas for secp256k1 public keys with compression support.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as PublicKey from 'voltaire-effect/primitives/PublicKey'
+ *
+ * function verifySignature(key: PublicKey.PublicKeyType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

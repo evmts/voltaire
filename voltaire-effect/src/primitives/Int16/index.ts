@@ -2,6 +2,16 @@
  * @module Int16
  * @description Effect Schemas for signed 16-bit integers (-32768 to 32767).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Int16 from 'voltaire-effect/primitives/Int16'
+ *
+ * function setAltitude(meters: Int16.Int16Type) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

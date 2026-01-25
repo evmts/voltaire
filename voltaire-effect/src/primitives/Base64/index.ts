@@ -1,6 +1,16 @@
 /**
- * Base64 module for encoding and decoding base64 data.
- * Provides Effect-based schemas for standard and URL-safe base64.
+ * @module Base64
+ * @description Effect-based schemas for standard and URL-safe base64 encoding.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Base64 from 'voltaire-effect/primitives/Base64'
+ *
+ * function decodeBase64(encoded: Base64.BrandedBase64) {
+ *   // ...
+ * }
+ * ```
  *
  * @example
  * ```typescript

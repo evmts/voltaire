@@ -2,6 +2,16 @@
  * @module RuntimeCode
  * @description Effect Schemas for deployed contract runtime bytecode.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as RuntimeCode from 'voltaire-effect/primitives/RuntimeCode'
+ *
+ * function deployContract(code: RuntimeCode.RuntimeCodeType) {
+ *   // ...
+ * }
+ * ```
+ *
  * Runtime code is the bytecode stored at a contract address after deployment.
  * This is what gets executed when the contract is called.
  *

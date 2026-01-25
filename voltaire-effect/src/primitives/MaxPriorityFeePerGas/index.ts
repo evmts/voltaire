@@ -2,6 +2,16 @@
  * @module MaxPriorityFeePerGas
  * @description Effect Schemas for EIP-1559 priority fee (tip).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as MaxPriorityFeePerGas from 'voltaire-effect/primitives/MaxPriorityFeePerGas'
+ *
+ * function setTip(tip: MaxPriorityFeePerGas.MaxPriorityFeePerGasType) {
+ *   // ...
+ * }
+ * ```
+ *
  * The priority fee is paid to validators to incentivize transaction inclusion.
  * Higher tips during congestion lead to faster inclusion.
  *

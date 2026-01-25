@@ -2,6 +2,16 @@
  * @module Int32
  * @description Effect Schemas for signed 32-bit integers (-2147483648 to 2147483647).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Int32 from 'voltaire-effect/primitives/Int32'
+ *
+ * function setOffset(offset: Int32.Int32Type) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

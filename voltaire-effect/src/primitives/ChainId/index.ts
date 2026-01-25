@@ -2,6 +2,16 @@
  * @module ChainId
  * @description Effect Schemas for Ethereum chain IDs (EIP-155).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as ChainId from 'voltaire-effect/primitives/ChainId'
+ *
+ * function getNetworkName(chainId: ChainId.ChainIdType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output | Description |

@@ -54,6 +54,7 @@ export { bitwiseXor } from "./bitwiseXor.js";
 export { clone } from "./clone.js";
 // Arithmetic (failable - division by zero)
 // Comparison (infallible)
+export { equals } from "./equals.js";
 // Math utilities (infallible)
 export { gcd } from "./gcd.js";
 export { greaterThan } from "./greaterThan.js";
@@ -83,10 +84,3 @@ export { times } from "./times.js";
 export { toAbiEncoded } from "./toAbiEncoded.js";
 // Converters (infallible)
 export { toPower } from "./toPower.js";
-
-// Legacy schema exports for backwards compatibility
-export {
-	UintFromBytesSchema,
-	UintFromHexSchema,
-	UintSchema,
-} from "./UintSchema.js";

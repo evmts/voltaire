@@ -13,7 +13,7 @@ import type { BlockTag, LogFilterType } from "@tevm/voltaire/LogFilter";
 import * as LogFilter from "@tevm/voltaire/LogFilter";
 import * as S from "effect/Schema";
 import { Hex as AddressSchema } from "../Address/Hex.js";
-import { HashSchema } from "../Hash/index.js";
+import { Hex as HashSchema } from "../Hash/index.js";
 
 /**
  * Internal schema declaration for LogFilter type validation.

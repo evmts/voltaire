@@ -5,6 +5,16 @@
  * Function signatures are the canonical representation of Solidity function definitions,
  * like "transfer(address,uint256)" or "balanceOf(address)".
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as FunctionSignature from 'voltaire-effect/primitives/FunctionSignature'
+ *
+ * function encodeCall(sig: FunctionSignature.FunctionSignatureType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

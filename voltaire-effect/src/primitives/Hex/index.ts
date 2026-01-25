@@ -2,6 +2,16 @@
  * @module Hex
  * @description Effect Schemas for Ethereum hex strings.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Hex from 'voltaire-effect/primitives/Hex'
+ *
+ * function processData(data: Hex.HexType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -44,10 +54,8 @@
 export type { Hex as HexBrand, HexType } from "@tevm/voltaire/Hex";
 
 // Schemas
-export { String } from "./String.js";
 export { Bytes } from "./Bytes.js";
-/** @deprecated Use Hex.String instead */
-export { Schema } from "./HexSchema.js";
+export { String } from "./String.js";
 
 // Pure functions
 export { clone } from "./clone.js";

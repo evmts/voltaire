@@ -2,6 +2,16 @@
  * @module MerkleTree
  * @description Merkle tree and proof structures for cryptographic verification.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as MerkleTree from 'voltaire-effect/primitives/MerkleTree'
+ *
+ * function verifyMerkleProof(proof: MerkleTree.MerkleProofType, tree: MerkleTree.MerkleTreeType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

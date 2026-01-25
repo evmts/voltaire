@@ -2,6 +2,16 @@
  * @module GasEstimate
  * @description Effect Schemas for pre-execution gas estimation.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as GasEstimate from 'voltaire-effect/primitives/GasEstimate'
+ *
+ * function estimateTransaction(tx: Transaction): GasEstimate.GasEstimateType {
+ *   // ...
+ * }
+ * ```
+ *
  * Gas estimates predict the gas required for a transaction before execution.
  * The `eth_estimateGas` RPC call returns this value. Estimates should include
  * a safety buffer (typically 10-20%) to account for state changes.

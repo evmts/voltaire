@@ -2,6 +2,16 @@
  * @module MaxFeePerGas
  * @description Effect Schemas for EIP-1559 maximum fee per gas.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as MaxFeePerGas from 'voltaire-effect/primitives/MaxFeePerGas'
+ *
+ * function estimateMaxFee(baseFee: MaxFeePerGas.MaxFeePerGasType) {
+ *   // ...
+ * }
+ * ```
+ *
  * MaxFeePerGas is the maximum total fee per gas a user is willing to pay.
  * The actual fee paid is: min(baseFee + priorityFee, maxFeePerGas)
  * Setting maxFeePerGas protects users from sudden base fee spikes.

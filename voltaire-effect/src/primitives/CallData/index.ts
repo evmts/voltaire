@@ -2,6 +2,16 @@
  * @module CallData
  * @description Effect Schemas for EVM transaction call data.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as CallData from 'voltaire-effect/primitives/CallData'
+ *
+ * function encodeCall(data: CallData.CallDataType) {
+ *   // ...
+ * }
+ * ```
+ *
  * Call data is the input data sent with a transaction to a smart contract,
  * containing function selector and encoded arguments.
  *

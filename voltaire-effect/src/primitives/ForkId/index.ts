@@ -1,6 +1,18 @@
 /**
  * @module ForkId
- * @description EIP-2124 fork identifier for chain compatibility checks.
+ *
+ * @description
+ * EIP-2124 fork identifier for chain compatibility checks.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as ForkId from 'voltaire-effect/primitives/ForkId'
+ *
+ * function validateFork(forkId: ForkId.ForkIdType) {
+ *   // ...
+ * }
+ * ```
  *
  * ## Schemas
  *

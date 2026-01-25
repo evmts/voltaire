@@ -2,6 +2,16 @@
  * @module Receipt
  * @description Effect Schemas for Ethereum transaction receipts and event logs.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Receipt from 'voltaire-effect/primitives/Receipt'
+ *
+ * function checkSuccess(receipt: Receipt.ReceiptType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

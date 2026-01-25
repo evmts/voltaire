@@ -4,6 +4,16 @@
  *
  * Contract code is compiled bytecode ready for deployment or execution.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as ContractCode from 'voltaire-effect/primitives/ContractCode'
+ *
+ * function executeContract(code: ContractCode.ContractCodeType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

@@ -2,6 +2,16 @@
  * @module Siwe
  * @description Effect Schemas for Sign-In with Ethereum (SIWE) messages (EIP-4361).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Siwe from 'voltaire-effect/primitives/Siwe'
+ *
+ * function verifySiwe(message: Siwe.SiweMessageType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

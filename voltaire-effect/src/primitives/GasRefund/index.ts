@@ -2,6 +2,16 @@
  * @module GasRefund
  * @description Effect Schemas for EVM gas refund tracking.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as GasRefund from 'voltaire-effect/primitives/GasRefund'
+ *
+ * function applyRefund(refund: GasRefund.GasRefundType, gasUsed: bigint): bigint {
+ *   // ...
+ * }
+ * ```
+ *
  * Gas refunds are accumulated during EVM execution when storage is cleared.
  * Per EIP-3529, refunds are capped at gasUsed/5 (20%) to prevent abuse.
  *

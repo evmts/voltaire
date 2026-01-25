@@ -1,7 +1,18 @@
 /**
  * @fileoverview BundleHash module for ERC-4337 account abstraction.
  *
+ * @description
  * A BundleHash is a 32-byte identifier for a Bundle of UserOperations.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as BundleHash from 'voltaire-effect/primitives/BundleHash'
+ *
+ * function trackBundle(hash: BundleHash.BundleHashType) {
+ *   // ...
+ * }
+ * ```
  *
  * @example
  * ```typescript

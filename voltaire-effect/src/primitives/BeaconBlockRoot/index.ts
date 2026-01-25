@@ -1,12 +1,23 @@
 /**
  * @fileoverview BeaconBlockRoot module for Ethereum beacon chain block roots.
  *
+ * @description
  * EIP-4788 exposes beacon chain block roots in the EVM, enabling smart contracts
  * to access consensus layer state. The beacon block root is a 32-byte hash that
  * represents the state of the beacon chain at a specific slot.
  *
  * This module provides Effect-based schemas and functions for creating and
  * working with beacon block roots.
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as BeaconBlockRoot from 'voltaire-effect/primitives/BeaconBlockRoot'
+ *
+ * function verifyRoot(root: BeaconBlockRoot.BeaconBlockRootType) {
+ *   // ...
+ * }
+ * ```
  *
  * @example
  * ```typescript

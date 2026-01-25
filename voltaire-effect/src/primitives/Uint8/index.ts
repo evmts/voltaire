@@ -2,6 +2,16 @@
  * @module Uint8
  * @description Effect Schemas for 8-bit unsigned integers (0-255).
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Uint8 from 'voltaire-effect/primitives/Uint8'
+ *
+ * function setAge(age: Uint8.Uint8Type) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |
@@ -58,6 +68,3 @@ export const ONE = BrandedUint8.ONE;
 
 // Type export
 export type { Uint8Type } from "./Uint8Schema.js";
-
-// Legacy schema export
-export { Schema } from "./Uint8Schema.js";

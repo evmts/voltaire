@@ -5,6 +5,16 @@
  * Provides validation for ERC-2612 permits, enabling gasless token approvals
  * via EIP-712 typed signatures.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Permit from 'voltaire-effect/primitives/Permit'
+ *
+ * function executePermit(permit: Permit.PermitType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Description |

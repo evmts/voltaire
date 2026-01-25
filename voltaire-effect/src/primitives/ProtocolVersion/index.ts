@@ -1,8 +1,20 @@
 /**
- * ProtocolVersion module for Effect-based Ethereum protocol version handling.
+ * @module ProtocolVersion
  *
+ * @description
+ * ProtocolVersion module for Effect-based Ethereum protocol version handling.
  * Provides Effect-wrapped operations for working with Ethereum wire protocol
  * version identifiers (e.g., eth/66, eth/67, snap/1).
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as ProtocolVersion from 'voltaire-effect/primitives/ProtocolVersion'
+ *
+ * function checkProtocol(version: ProtocolVersion.ProtocolVersionType) {
+ *   // ...
+ * }
+ * ```
  *
  * @example
  * ```typescript

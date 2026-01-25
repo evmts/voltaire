@@ -5,6 +5,16 @@
  * RLP is the primary serialization format used in Ethereum for encoding
  * transactions, blocks, account state, and other structured data.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Rlp from 'voltaire-effect/primitives/Rlp'
+ *
+ * function decodeRlp(encoded: Rlp.BrandedRlp) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schema
  *
  * | Schema | Input | Output |

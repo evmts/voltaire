@@ -5,6 +5,16 @@
  * Selectors are the first 4 bytes of keccak256(signature), used to identify
  * which function to invoke in EVM call data.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Selector from 'voltaire-effect/primitives/Selector'
+ *
+ * function matchFunction(selector: Selector.SelectorType) {
+ *   // ...
+ * }
+ * ```
+ *
  * ## Schemas
  *
  * | Schema | Input | Output |

@@ -6,6 +6,16 @@
  * This module provides Effect-based utilities for working with EVM storage values.
  * Storage values are 32-byte values that can be stored in contract storage slots.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as StorageValue from 'voltaire-effect/primitives/StorageValue'
+ *
+ * function readSlot(value: StorageValue.StorageValueType) {
+ *   // ...
+ * }
+ * ```
+ *
  * Key features:
  * - Type-safe storage value creation with Effect error handling
  * - Schema-based validation using Effect Schema

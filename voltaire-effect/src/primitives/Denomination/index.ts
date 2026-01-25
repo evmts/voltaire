@@ -11,6 +11,16 @@
  * All values are represented as branded bigints for type safety, preventing
  * accidental mixing of different denominations.
  *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as Denomination from 'voltaire-effect/primitives/Denomination'
+ *
+ * function displayEther(value: Denomination.EtherType) {
+ *   // ...
+ * }
+ * ```
+ *
  * @example
  * ```typescript
  * import * as Denomination from 'voltaire-effect/primitives/Denomination'

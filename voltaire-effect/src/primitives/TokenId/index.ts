@@ -1,6 +1,18 @@
 /**
  * @module TokenId
- * @description NFT token identifier (ERC-721/ERC-1155 token ID).
+ *
+ * @description
+ * NFT token identifier (ERC-721/ERC-1155 token ID).
+ *
+ * ## Type Declarations
+ *
+ * ```typescript
+ * import * as TokenId from 'voltaire-effect/primitives/TokenId'
+ *
+ * function transferToken(tokenId: TokenId.TokenIdType) {
+ *   // ...
+ * }
+ * ```
  *
  * ## Schemas
  *
