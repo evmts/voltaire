@@ -3,7 +3,11 @@
  * @module Signature/getAlgorithm
  * @since 0.0.1
  */
-import { Signature, type SignatureType, type SignatureAlgorithm } from '@tevm/voltaire/Signature'
+import {
+	Signature,
+	type SignatureAlgorithm,
+	type SignatureType,
+} from "@tevm/voltaire/Signature";
 
 /**
  * Gets the algorithm of a Signature.
@@ -22,4 +26,4 @@ import { Signature, type SignatureType, type SignatureAlgorithm } from '@tevm/vo
  * @since 0.0.1
  */
 export const getAlgorithm = (signature: SignatureType): SignatureAlgorithm =>
-  Signature.getAlgorithm(signature)
+	Signature.getAlgorithm(signature);

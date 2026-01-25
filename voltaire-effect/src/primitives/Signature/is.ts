@@ -3,7 +3,7 @@
  * @module Signature/is
  * @since 0.0.1
  */
-import { Signature, type SignatureType } from '@tevm/voltaire/Signature'
+import { Signature, type SignatureType } from "@tevm/voltaire/Signature";
 
 /**
  * Checks if a value is a SignatureType.
@@ -23,4 +23,4 @@ import { Signature, type SignatureType } from '@tevm/voltaire/Signature'
  * @since 0.0.1
  */
 export const is = (value: unknown): value is SignatureType =>
-  Signature.is(value)
+	Signature.is(value);

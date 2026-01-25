@@ -3,7 +3,7 @@
  * @module Signature/toCompact
  * @since 0.0.1
  */
-import { Signature, type SignatureType } from '@tevm/voltaire/Signature'
+import { Signature, type SignatureType } from "@tevm/voltaire/Signature";
 
 /**
  * Converts a Signature to compact format (EIP-2098).
@@ -23,4 +23,4 @@ import { Signature, type SignatureType } from '@tevm/voltaire/Signature'
  * @since 0.0.1
  */
 export const toCompact = (signature: SignatureType): Uint8Array =>
-  Signature.toCompact(signature)
+	Signature.toCompact(signature);

@@ -3,7 +3,7 @@
  * @module Signature/isCanonical
  * @since 0.0.1
  */
-import { Signature, type SignatureType } from '@tevm/voltaire/Signature'
+import { Signature, type SignatureType } from "@tevm/voltaire/Signature";
 
 /**
  * Checks if an ECDSA signature has canonical s-value (s <= n/2).
@@ -25,4 +25,4 @@ import { Signature, type SignatureType } from '@tevm/voltaire/Signature'
  * @since 0.0.1
  */
 export const isCanonical = (signature: SignatureType): boolean =>
-  Signature.isCanonical(signature)
+	Signature.isCanonical(signature);

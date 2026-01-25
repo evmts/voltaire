@@ -3,7 +3,7 @@
  * @module Signature/equals
  * @since 0.0.1
  */
-import { Signature, type SignatureType } from '@tevm/voltaire/Signature'
+import { Signature, type SignatureType } from "@tevm/voltaire/Signature";
 
 /**
  * Checks if two Signatures are equal.
@@ -22,4 +22,4 @@ import { Signature, type SignatureType } from '@tevm/voltaire/Signature'
  * @since 0.0.1
  */
 export const equals = (a: SignatureType, b: SignatureType): boolean =>
-  Signature.equals(a, b)
+	Signature.equals(a, b);

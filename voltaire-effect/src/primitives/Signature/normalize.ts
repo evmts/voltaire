@@ -3,7 +3,7 @@
  * @module Signature/normalize
  * @since 0.0.1
  */
-import { Signature, type SignatureType } from '@tevm/voltaire/Signature'
+import { Signature, type SignatureType } from "@tevm/voltaire/Signature";
 
 /**
  * Normalizes an ECDSA signature to canonical form (s = n - s if s > n/2).
@@ -21,4 +21,4 @@ import { Signature, type SignatureType } from '@tevm/voltaire/Signature'
  * @since 0.0.1
  */
 export const normalize = (signature: SignatureType): SignatureType =>
-  Signature.normalize(signature)
+	Signature.normalize(signature);

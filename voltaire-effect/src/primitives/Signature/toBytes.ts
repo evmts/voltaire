@@ -3,7 +3,7 @@
  * @module Signature/toBytes
  * @since 0.0.1
  */
-import { Signature, type SignatureType } from '@tevm/voltaire/Signature'
+import { Signature, type SignatureType } from "@tevm/voltaire/Signature";
 
 /**
  * Converts a Signature to raw bytes (without metadata).
@@ -21,4 +21,4 @@ import { Signature, type SignatureType } from '@tevm/voltaire/Signature'
  * @since 0.0.1
  */
 export const toBytes = (signature: SignatureType): Uint8Array =>
-  Signature.toBytes(signature)
+	Signature.toBytes(signature);
