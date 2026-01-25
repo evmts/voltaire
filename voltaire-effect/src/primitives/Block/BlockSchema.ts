@@ -6,14 +6,14 @@
  * @since 0.0.1
  */
 
-import { Block } from '@tevm/voltaire'
-import * as Schema from 'effect/Schema'
+import type { Block } from "@tevm/voltaire";
+import * as Schema from "effect/Schema";
 
 /**
  * Type alias for the branded Block type.
  * @internal
  */
-type BlockType = Block.BlockType
+type BlockType = Block.BlockType;
 
 /**
  * Effect Schema for validating complete Ethereum blocks.
@@ -73,16 +73,16 @@ type BlockType = Block.BlockType
  * @see {@link Block} from voltaire for the underlying block type
  */
 export const BlockSchema: Schema.Schema<BlockType> = Schema.declare(
-  (input: unknown): input is BlockType => {
-    if (typeof input !== 'object' || input === null) return false
-    const block = input as Record<string, unknown>
-    return (
-      'header' in block &&
-      'body' in block &&
-      'hash' in block &&
-      block.hash instanceof Uint8Array &&
-      'size' in block &&
-      typeof block.size === 'bigint'
-    )
-  }
-)
+	(input: unknown): input is BlockType => {
+		if (typeof input !== "object" || input === null) return false;
+		const block = input as Record<string, unknown>;
+		return (
+			"header" in block &&
+			"body" in block &&
+			"hash" in block &&
+			block.hash instanceof Uint8Array &&
+			"size" in block &&
+			typeof block.size === "bigint"
+		);
+	},
+);

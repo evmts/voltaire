@@ -1,6 +1,6 @@
 /**
- * @fileoverview Block module for complete Ethereum blocks.
- * Provides Effect-based schema for block validation and type-safe handling.
+ * @module Block
+ * @description Effect Schemas for complete Ethereum blocks.
  *
  * An Ethereum block contains:
  * - Block header with metadata (number, timestamp, parent hash, etc.)
@@ -8,36 +8,38 @@
  * - Block hash (computed from header)
  * - Size in bytes
  *
- * This module provides schema-based validation for blocks received from
- * RPC responses or other sources.
+ * ## Schemas
  *
- * @module Block
- * @since 0.0.1
+ * | Schema | Input | Output | Description |
+ * |--------|-------|--------|-------------|
+ * | `Block.Rpc` | RPC JSON object | BlockType | Decodes JSON-RPC response format |
+ * | `Block.Schema` | BlockType | BlockType | Identity validation schema |
  *
- * @example
+ * ## Usage
+ *
  * ```typescript
  * import * as Block from 'voltaire-effect/primitives/Block'
- * import * as Schema from 'effect/Schema'
+ * import * as S from 'effect/Schema'
  *
- * // Validate a block from RPC response
- * const validated = Schema.decodeSync(Block.Schema)(blockData)
- * console.log(validated.header.number)  // Block number
- * console.log(validated.hash)           // Block hash
+ * // Decode from RPC response (eth_getBlockByNumber/Hash)
+ * const rpcBlock = await provider.send('eth_getBlockByNumber', ['latest', true])
+ * const block = S.decodeSync(Block.Rpc)(rpcBlock)
+ * console.log(block.header.number) // bigint
+ * console.log(block.body.transactions.length)
+ * console.log(block.hash) // Uint8Array (32 bytes)
  * ```
  *
- * @example
- * ```typescript
- * // Use with Effect for error handling
- * import * as Effect from 'effect/Effect'
- *
- * const block = await Effect.runPromise(
- *   Schema.decodeUnknown(Block.BlockSchema)(rpcResponse).pipe(
- *     Effect.catchAll((e) => Effect.fail(new Error('Invalid block')))
- *   )
- * )
- * ```
- *
- * @see {@link BlockSchema} for the validation schema
+ * @since 0.1.0
  */
 
-export { BlockSchema, BlockSchema as Schema } from './BlockSchema.js'
+// Schemas
+export { Rpc } from "./Rpc.js";
+export { BlockSchema, BlockSchema as Schema } from "./BlockSchema.js";
+
+// Re-export types from voltaire
+import type { Block } from "@tevm/voltaire";
+export type BlockType = Block.BlockType;
+export type RpcBlock = Block.RpcBlock;
+export type RpcBlockHeader = Block.RpcBlockHeader;
+export type RpcBlockBody = Block.RpcBlockBody;
+export type RpcWithdrawal = Block.RpcWithdrawal;

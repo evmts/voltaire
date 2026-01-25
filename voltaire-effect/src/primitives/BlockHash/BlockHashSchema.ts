@@ -6,32 +6,32 @@
  * @since 0.0.1
  */
 
-import { BlockHash } from '@tevm/voltaire'
-import * as Schema from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { BlockHash } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as Schema from "effect/Schema";
 
 /**
  * Type alias for the branded BlockHash type.
  * @internal
  */
-type BlockHashType = BlockHash.BlockHashType
+type BlockHashType = BlockHash.BlockHashType;
 
 /**
  * Internal schema for validating branded BlockHash type.
  * @internal
  */
 const BlockHashTypeSchema = Schema.declare<BlockHashType>(
-  (u): u is BlockHashType => {
-    if (!(u instanceof Uint8Array)) return false
-    try {
-      BlockHash.toHex(u as BlockHashType)
-      return true
-    } catch {
-      return false
-    }
-  },
-  { identifier: 'BlockHash' }
-)
+	(u): u is BlockHashType => {
+		if (!(u instanceof Uint8Array)) return false;
+		try {
+			BlockHash.toHex(u as BlockHashType);
+			return true;
+		} catch {
+			return false;
+		}
+	},
+	{ identifier: "BlockHash" },
+);
 
 /**
  * Effect Schema for validating and parsing block hashes.
@@ -88,24 +88,25 @@ const BlockHashTypeSchema = Schema.declare<BlockHashType>(
  * @see {@link from} for Effect-based construction
  * @see {@link toHex} for hex conversion utility
  */
-export const BlockHashSchema: Schema.Schema<BlockHashType, string> = Schema.transformOrFail(
-  Schema.String,
-  BlockHashTypeSchema,
-  {
-    strict: true,
-    decode: (s, _options, ast) => {
-      try {
-        return ParseResult.succeed(BlockHash.from(s))
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, s, (e as Error).message))
-      }
-    },
-    encode: (h, _options, ast) => {
-      try {
-        return ParseResult.succeed(BlockHash.toHex(h))
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, h, (e as Error).message))
-      }
-    }
-  }
-).annotations({ identifier: 'BlockHashSchema' })
+export const BlockHashSchema: Schema.Schema<BlockHashType, string> =
+	Schema.transformOrFail(Schema.String, BlockHashTypeSchema, {
+		strict: true,
+		decode: (s, _options, ast) => {
+			try {
+				return ParseResult.succeed(BlockHash.from(s));
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, s, (e as Error).message),
+				);
+			}
+		},
+		encode: (h, _options, ast) => {
+			try {
+				return ParseResult.succeed(BlockHash.toHex(h));
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, h, (e as Error).message),
+				);
+			}
+		},
+	}).annotations({ identifier: "BlockHashSchema" });

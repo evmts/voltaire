@@ -1,41 +1,56 @@
 /**
- * @fileoverview BlockNumber module for non-negative block numbers.
- * Provides Effect-based schemas and functions for block number handling.
- *
- * Block numbers are non-negative integers that identify blocks sequentially
- * in the Ethereum blockchain. They are used for:
- * - Referencing blocks in RPC calls (eth_getBlockByNumber)
- * - Tracking chain progress and synchronization
- * - Specifying block ranges for log queries
- * - Historical state access
- *
- * This module provides:
- * - Schema validation for block numbers
- * - Effect-based constructors with error handling
- * - Type-safe branded BlockNumberType
- *
  * @module BlockNumber
- * @since 0.0.1
+ * @description Effect Schemas for Ethereum block numbers (non-negative integers).
  *
- * @example
+ * ## Schemas
+ *
+ * | Schema | Input | Output |
+ * |--------|-------|--------|
+ * | `BlockNumber.Number` | number | BlockNumberType |
+ * | `BlockNumber.BigInt` | bigint | BlockNumberType |
+ * | `BlockNumber.Hex` | hex string | BlockNumberType |
+ *
+ * ## Usage
+ *
  * ```typescript
  * import * as BlockNumber from 'voltaire-effect/primitives/BlockNumber'
- * import * as Effect from 'effect/Effect'
+ * import * as S from 'effect/Schema'
  *
- * // Create from number
- * const blockNum = await Effect.runPromise(BlockNumber.from(12345))
+ * // Decode (parse input)
+ * const blockNum = S.decodeSync(BlockNumber.Number)(12345)
  *
- * // Create from bigint
- * const blockNumBig = await Effect.runPromise(BlockNumber.from(12345n))
- *
- * // Schema validation
- * import * as Schema from 'effect/Schema'
- * const validated = Schema.decodeSync(BlockNumber.Schema)(12345)
+ * // Encode (format output)
+ * const num = S.encodeSync(BlockNumber.Number)(blockNum)
+ * const hex = S.encodeSync(BlockNumber.Hex)(blockNum)
  * ```
  *
- * @see {@link BlockNumberSchema} for schema-based validation
- * @see {@link from} for Effect-based construction
+ * ## Pure Functions
+ *
+ * - `equals(a, b)` - Compare two block numbers
+ * - `toBigInt(bn)` - Convert to bigint
+ * - `toNumber(bn)` - Convert to number
+ *
+ * @since 0.1.0
  */
 
-export { BlockNumberSchema, BlockNumberSchema as Schema } from './BlockNumberSchema.js'
-export { from } from './from.js'
+// Schemas
+export { BigInt } from "./BigInt.js";
+export { Hex } from "./Hex.js";
+export { Number } from "./Number.js";
+
+// Re-export pure functions from voltaire
+import { BlockNumber } from "@tevm/voltaire";
+
+export const equals = BlockNumber.equals;
+export const toBigInt = BlockNumber.toBigInt;
+export const toNumber = BlockNumber.toNumber;
+
+// Type export
+import { BlockNumber as _BlockNumber } from "@tevm/voltaire";
+export type BlockNumberType = _BlockNumber.BlockNumberType;
+
+// Legacy schema exports for backward compatibility
+export {
+	BlockNumberSchema,
+	BlockNumberSchema as Schema,
+} from "./BlockNumberSchema.js";

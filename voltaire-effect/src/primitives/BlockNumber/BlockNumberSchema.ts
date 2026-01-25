@@ -6,24 +6,24 @@
  * @since 0.0.1
  */
 
-import { BlockNumber } from '@tevm/voltaire'
-import * as Schema from 'effect/Schema'
-import * as ParseResult from 'effect/ParseResult'
+import { BlockNumber } from "@tevm/voltaire";
+import * as ParseResult from "effect/ParseResult";
+import * as Schema from "effect/Schema";
 
 /**
  * Type alias for the branded BlockNumber type.
  * @internal
  */
-type BlockNumberType = BlockNumber.BlockNumberType
+type BlockNumberType = BlockNumber.BlockNumberType;
 
 /**
  * Internal schema for validating branded BlockNumber type.
  * @internal
  */
 const BlockNumberTypeSchema = Schema.declare<BlockNumberType>(
-  (u): u is BlockNumberType => typeof u === 'bigint' && u >= 0n,
-  { identifier: 'BlockNumber' }
-)
+	(u): u is BlockNumberType => typeof u === "bigint" && u >= 0n,
+	{ identifier: "BlockNumber" },
+);
 
 /**
  * Effect Schema for validating and parsing block numbers.
@@ -80,18 +80,23 @@ const BlockNumberTypeSchema = Schema.declare<BlockNumberType>(
  *
  * @see {@link from} for Effect-based construction
  */
-export const BlockNumberSchema: Schema.Schema<BlockNumberType, number | bigint> = Schema.transformOrFail(
-  Schema.Union(Schema.Number, Schema.BigIntFromSelf),
-  BlockNumberTypeSchema,
-  {
-    strict: true,
-    decode: (n, _options, ast) => {
-      try {
-        return ParseResult.succeed(BlockNumber.from(n))
-      } catch (e) {
-        return ParseResult.fail(new ParseResult.Type(ast, n, (e as Error).message))
-      }
-    },
-    encode: (bn) => ParseResult.succeed(BlockNumber.toBigInt(bn))
-  }
-).annotations({ identifier: 'BlockNumberSchema' })
+export const BlockNumberSchema: Schema.Schema<
+	BlockNumberType,
+	number | bigint
+> = Schema.transformOrFail(
+	Schema.Union(Schema.Number, Schema.BigIntFromSelf),
+	BlockNumberTypeSchema,
+	{
+		strict: true,
+		decode: (n, _options, ast) => {
+			try {
+				return ParseResult.succeed(BlockNumber.from(n));
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, n, (e as Error).message),
+				);
+			}
+		},
+		encode: (bn) => ParseResult.succeed(BlockNumber.toBigInt(bn)),
+	},
+).annotations({ identifier: "BlockNumberSchema" });
