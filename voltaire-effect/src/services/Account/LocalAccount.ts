@@ -170,8 +170,8 @@ function hashStruct(
 ): Effect.Effect<Uint8Array> {
 	return Effect.gen(function* () {
 		const typeFields = types[primaryType] ?? [];
-		const typeHash = yield* hashType(primaryType, typeFields, keccak256);
-		const encodedData = yield* encodeData(typeFields, message, keccak256);
+		const typeHash = yield* hashType(primaryType, types, keccak256);
+		const encodedData = yield* encodeData(typeFields, message, types, keccak256);
 
 		const combined = new Uint8Array(typeHash.length + encodedData.length);
 		combined.set(typeHash);
@@ -181,12 +181,51 @@ function hashStruct(
 	});
 }
 
+function findTypeDependencies(
+	primaryType: string,
+	types: Record<string, readonly { name: string; type: string }[]>,
+	result: Set<string> = new Set(),
+): Set<string> {
+	if (result.has(primaryType)) return result;
+	if (primaryType === "EIP712Domain") return result;
+	
+	const fields = types[primaryType];
+	if (!fields) return result;
+	
+	result.add(primaryType);
+	
+	for (const field of fields) {
+		const baseType = field.type.replace(/\[\d*\]$/, "");
+		if (types[baseType] && !result.has(baseType)) {
+			findTypeDependencies(baseType, types, result);
+		}
+	}
+	
+	return result;
+}
+
+function encodeType(
+	primaryType: string,
+	types: Record<string, readonly { name: string; type: string }[]>,
+): string {
+	const deps = findTypeDependencies(primaryType, types);
+	const sorted = [...deps].filter((t) => t !== primaryType).sort();
+	const allTypes = [primaryType, ...sorted];
+	
+	return allTypes
+		.map((name) => {
+			const fields = types[name] ?? [];
+			return `${name}(${fields.map((f) => `${f.type} ${f.name}`).join(",")})`;
+		})
+		.join("");
+}
+
 function hashType(
-	name: string,
-	fields: readonly { name: string; type: string }[],
+	primaryType: string,
+	types: Record<string, readonly { name: string; type: string }[]>,
 	keccak256: (data: Uint8Array) => Effect.Effect<Uint8Array>,
 ): Effect.Effect<Uint8Array> {
-	const typeString = `${name}(${fields.map((f) => `${f.type} ${f.name}`).join(",")})`;
+	const typeString = encodeType(primaryType, types);
 	const encoder = new TextEncoder();
 	return keccak256(encoder.encode(typeString));
 }
