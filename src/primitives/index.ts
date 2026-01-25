@@ -139,6 +139,8 @@ export * as BrandedInt128 from "./Int128/index.js";
 export { Int256 } from "./Int256/Int256.js";
 export * as BrandedInt256 from "./Int256/index.js";
 export * as License from "./License/index.js";
+// Nonce (account transaction count)
+export * as Nonce from "./Nonce/index.js";
 export * as LogFilter from "./LogFilter/index.js";
 export * as LogIndex from "./LogIndex/index.js";
 export * as MemoryDump from "./MemoryDump/index.js";
@@ -181,10 +183,14 @@ export * as BrandedStorageKey from "./State/index.js";
 export * as State from "./State/index.js";
 export { StorageKey } from "./State/index.js";
 export * as StateDiff from "./StateDiff/index.js";
+// State root (Merkle Patricia Trie root hash)
+export * as StateRoot from "./StateRoot/index.js";
 // Privacy (ERC-5564)
 export * as StealthAddress from "./StealthAddress/index.js";
 export * as Storage from "./Storage/index.js";
 export * as StorageDiff from "./StorageDiff/index.js";
+// Storage value (32-byte storage slot value)
+export * as StorageValue from "./StorageValue/index.js";
 export * as StructLog from "./StructLog/index.js";
 export * as SyncStatus from "./SyncStatus/index.js";
 export * as TopicFilter from "./TopicFilter/index.js";
@@ -218,3 +224,10 @@ export * as Uncle from "./Uncle/index.js";
 export * as ValidatorIndex from "./ValidatorIndex/index.js";
 export * as Withdrawal from "./Withdrawal/index.js";
 export * as WithdrawalIndex from "./WithdrawalIndex/index.js";
+export * as MerkleTree from "./MerkleTree/index.js";
+export * as Proof from "./Proof/index.js";
+export * as StateProof from "./StateProof/index.js";
+export * as StorageProof from "./StorageProof/index.js";
+export * as TokenId from "./TokenId/index.js";
+export * as MultiTokenId from "./MultiTokenId/index.js";
+export * as TokenBalance from "./TokenBalance/index.js";
