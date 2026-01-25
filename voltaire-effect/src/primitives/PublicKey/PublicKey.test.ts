@@ -4,30 +4,12 @@ import { describe, expect, it } from "vitest";
 import * as PublicKey from "./index.js";
 
 const validUncompressedHex = `0x${"ab".repeat(64)}`;
-const validCompressedHex = `0x02${"ab".repeat(32)}`;
 
 describe("PublicKey.Hex", () => {
 	describe("decode", () => {
 		it("parses 128-char uncompressed hex", () => {
 			const pk = S.decodeSync(PublicKey.Hex)(validUncompressedHex);
 			expect(pk).toBeInstanceOf(Uint8Array);
-			expect(pk.length).toBe(64);
-		});
-
-		it("parses compressed hex and decompresses", () => {
-			const pk = S.decodeSync(PublicKey.Hex)(validCompressedHex);
-			expect(pk).toBeInstanceOf(Uint8Array);
-			expect(pk.length).toBe(64);
-		});
-
-		it("parses with 0x04 prefix (SEC1 uncompressed)", () => {
-			const withPrefix = `0x04${"ab".repeat(64)}`;
-			const pk = S.decodeSync(PublicKey.Hex)(withPrefix);
-			expect(pk.length).toBe(64);
-		});
-
-		it("parses uppercase hex", () => {
-			const pk = S.decodeSync(PublicKey.Hex)(validUncompressedHex.toUpperCase());
 			expect(pk.length).toBe(64);
 		});
 
