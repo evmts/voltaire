@@ -24,6 +24,8 @@ export type { Fp2Type as Bls12381Fp2Type } from "./Bls12381/Fp2Type.js";
 export type { G1PointType as Bls12381G1PointType } from "./Bls12381/G1PointType.js";
 export type { G2PointType as Bls12381G2PointType } from "./Bls12381/G2PointType.js";
 export { BN254 } from "./bn254/BN254.js";
+export type { G1PointType as BN254G1PointType } from "./bn254/G1PointType.js";
+export type { G2PointType as BN254G2PointType } from "./bn254/G2PointType.js";
 export { ChaCha20Poly1305 } from "./ChaCha20Poly1305/ChaCha20Poly1305.js";
 export { Ed25519 } from "./Ed25519/index.js";
 export { EIP712 } from "./EIP712/index.js";
@@ -54,3 +56,4 @@ export type {
 	SHA256Hash as SHA256HashType,
 } from "./SHA256/SHA256HashType.js";
 export { X25519 } from "./X25519/X25519.js";
+export * as Signers from "./signers/index.js";
