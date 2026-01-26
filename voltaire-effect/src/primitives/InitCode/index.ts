@@ -41,6 +41,10 @@
  * @since 0.1.0
  */
 
-export type { InitCodeType } from "@tevm/voltaire/InitCode";
 export { Bytes } from "./Bytes.js";
 export { Hex } from "./Hex.js";
+
+/**
+ * Init code type - branded Uint8Array for contract deployment bytecode.
+ */
+export type InitCodeType = Uint8Array & { readonly __brand: "InitCode" };

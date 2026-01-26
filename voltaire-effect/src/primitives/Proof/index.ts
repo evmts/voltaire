@@ -29,7 +29,9 @@
  *
  * @since 0.1.0
  */
-import type { Proof } from "@tevm/voltaire";
-
-export type ProofType = Proof.ProofType;
 export { Schema } from "./Struct.js";
+
+/**
+ * Merkle proof type - array of 32-byte hashes representing a proof path.
+ */
+export type ProofType = readonly Uint8Array[];
