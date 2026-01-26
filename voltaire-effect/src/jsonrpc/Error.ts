@@ -44,6 +44,19 @@ export const UNSUPPORTED_METHOD = 4200;
 export const DISCONNECTED = 4900;
 export const CHAIN_DISCONNECTED = 4901;
 
+// Common node-specific error codes
+export const EXECUTION_REVERTED = 3;
+
+// Helper functions
+export const isUserRejected = (code: number): boolean =>
+	code === USER_REJECTED_REQUEST;
+
+export const isDisconnected = (code: number): boolean =>
+	code === DISCONNECTED || code === CHAIN_DISCONNECTED;
+
+export const isProviderError = (code: number): boolean =>
+	code >= 4000 && code <= 4999;
+
 export const JsonRpcError = {
 	from,
 	toString,
@@ -67,4 +80,10 @@ export const JsonRpcError = {
 	UNSUPPORTED_METHOD,
 	DISCONNECTED,
 	CHAIN_DISCONNECTED,
+	// Common node-specific
+	EXECUTION_REVERTED,
+	// Helpers
+	isUserRejected,
+	isDisconnected,
+	isProviderError,
 };
