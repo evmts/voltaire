@@ -75,6 +75,33 @@ const program = Effect.gen(function* () {
 })
 ```
 
+### TransferFrom and Allowance
+
+```typescript
+const program = Effect.gen(function* () {
+  const owner = Address('0x1111111111111111111111111111111111111111')
+  const spender = Address('0x2222222222222222222222222222222222222222')
+  const recipient = Address('0x3333333333333333333333333333333333333333')
+  const amount = 1000000000000000000n as Uint256.Uint256Type
+  
+  // Encode transferFrom (for approved spenders)
+  const transferFromData = yield* ERC20.encodeTransferFrom(owner, recipient, amount)
+  
+  // Encode allowance check
+  const allowanceData = yield* ERC20.encodeAllowance(owner, spender)
+  
+  // Decode Approval event
+  const log = { topics: [...], data: '0x...' }
+  const approval = yield* ERC20.decodeApprovalEvent(log)
+  // { owner: '0x...', spender: '0x...', value: 1000000000000000000n }
+  
+  // Decode address from return data
+  const addressResult = yield* ERC20.decodeAddress('0x000000000000000000000000...')
+  
+  return { transferFromData, allowanceData, approval }
+})
+```
+
 ### Selectors & Events
 
 ```typescript
@@ -210,6 +237,56 @@ ERC1155.SELECTORS.safeBatchTransferFrom // '0x2eb2c2d6'
 ERC1155.SELECTORS.setApprovalForAll   // '0xa22cb465'
 ERC1155.SELECTORS.isApprovedForAll    // '0xe985e9c5'
 ERC1155.SELECTORS.uri                 // '0x0e89341c'
+```
+
+### Batch Operations
+
+ERC-1155's batch operations for gas-efficient multi-token transfers:
+
+```typescript
+import * as ERC1155 from 'voltaire-effect/standards/ERC1155'
+
+const program = Effect.gen(function* () {
+  const from = Address('0x1111...')
+  const to = Address('0x2222...')
+  
+  // Batch transfer multiple tokens
+  const tokenIds = [1n, 2n, 3n] as Uint256.Uint256Type[]
+  const amounts = [100n, 50n, 25n] as Uint256.Uint256Type[]
+  
+  const batchTransferData = yield* ERC1155.encodeSafeBatchTransferFrom(
+    from, to, tokenIds, amounts, new Uint8Array([])
+  )
+  
+  // Batch query balances
+  const accounts = [userAddress, userAddress, userAddress] as AddressType[]
+  const queryData = yield* ERC1155.encodeBalanceOfBatch(accounts, tokenIds)
+  
+  return { batchTransferData, queryData }
+})
+```
+
+### Decoding Batch Events
+
+```typescript
+const program = Effect.gen(function* () {
+  const log = { topics: [...], data: '0x...' }
+  
+  // Decode batch transfer event
+  const batch = yield* ERC1155.decodeTransferBatchEvent(log)
+  // { operator: '0x...', from: '0x...', to: '0x...', ids: [1n, 2n], values: [100n, 50n] }
+  
+  // Decode URI update event
+  const uriEvent = yield* ERC1155.decodeURIEvent(log)
+  // { value: 'https://.../{id}.json', id: 1n }
+  
+  // Decode batch balance result
+  const rawResult = '0x...'
+  const balances = yield* ERC1155.decodeBalanceOfBatchResult(rawResult)
+  // [100n, 50n, 25n]
+  
+  return { batch, balances }
+})
 ```
 
 ## ERC-165: Interface Detection

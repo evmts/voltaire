@@ -1,39 +1,166 @@
 ---
 title: Secp256k1
-description: ECDSA signing for Ethereum transactions
+description: ECDSA signing for Ethereum transactions and messages
 ---
 
-Sign messages, recover public keys, verify signatures.
+Secp256k1 is the elliptic curve used for all Ethereum signatures. Sign transactions, recover public keys from signatures, and verify signatures.
+
+```typescript
+import { Secp256k1Service, Secp256k1Live, KeccakService, KeccakLive } from 'voltaire-effect/crypto'
+import { Effect, Layer } from 'effect'
+
+const program = Effect.gen(function* () {
+  const secp = yield* Secp256k1Service
+  const keccak = yield* KeccakService
+
+  const messageHash = yield* keccak.hash(new TextEncoder().encode('hello'))
+  const signature = yield* secp.sign(messageHash, privateKey)
+  const publicKey = yield* secp.recover(signature, messageHash)
+  const isValid = yield* secp.verify(signature, messageHash, publicKey)
+
+  return { signature, publicKey, isValid }
+}).pipe(
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive)
+)
+```
+
+## Sign Message Hash
 
 ```typescript
 import { Secp256k1Service, Secp256k1Live } from 'voltaire-effect/crypto'
 import { Effect } from 'effect'
 
-const result = await Effect.runPromise(
+const signHash = (messageHash: Uint8Array, privateKey: Uint8Array) =>
   Effect.gen(function* () {
     const secp = yield* Secp256k1Service
-    const signature = yield* secp.sign(messageHash, privateKey)
-    const publicKey = yield* secp.recover(signature, messageHash)
-    const isValid = yield* secp.verify(signature, messageHash, publicKey)
-    return { signature, publicKey, isValid }
+    return yield* secp.sign(messageHash, privateKey)
   }).pipe(Effect.provide(Secp256k1Live))
-)
+```
+
+The signature includes recovery parameter `v` for public key recovery.
+
+## Sign With Extra Entropy
+
+For additional security against side-channel attacks:
+
+```typescript
+const signature = yield* secp.sign(messageHash, privateKey, {
+  extraEntropy: true  // Uses random data
+})
+
+// Or with specific entropy
+const signature = yield* secp.sign(messageHash, privateKey, {
+  extraEntropy: customEntropyBytes
+})
+```
+
+## Recover Public Key
+
+Recover the signer's public key from a signature:
+
+```typescript
+const recoverSigner = (signature: Secp256k1SignatureType, messageHash: Uint8Array) =>
+  Effect.gen(function* () {
+    const secp = yield* Secp256k1Service
+    return yield* secp.recover(signature, messageHash)
+  }).pipe(Effect.provide(Secp256k1Live))
+```
+
+Returns 65-byte uncompressed public key (0x04 prefix + 64 bytes).
+
+## Verify Signature
+
+```typescript
+const verify = (
+  signature: Secp256k1SignatureType,
+  messageHash: Uint8Array,
+  publicKey: Secp256k1PublicKeyType
+) =>
+  Effect.gen(function* () {
+    const secp = yield* Secp256k1Service
+    return yield* secp.verify(signature, messageHash, publicKey)
+  }).pipe(Effect.provide(Secp256k1Live))
+```
+
+## Get Public Key From Private Key
+
+```typescript
+const getPublicKey = (privateKey: Uint8Array) =>
+  Effect.gen(function* () {
+    const secp = yield* Secp256k1Service
+    return yield* secp.getPublicKey(privateKey)
+  }).pipe(Effect.provide(Secp256k1Live))
+```
+
+## Sign Ethereum Message (EIP-191)
+
+```typescript
+import { Secp256k1Service, Secp256k1Live, KeccakService, KeccakLive } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const signEthereumMessage = (message: string, privateKey: Uint8Array) =>
+  Effect.gen(function* () {
+    const secp = yield* Secp256k1Service
+    const keccak = yield* KeccakService
+
+    // Ethereum message prefix
+    const prefix = `\x19Ethereum Signed Message:\n${message.length}`
+    const prefixed = new TextEncoder().encode(prefix + message)
+    const hash = yield* keccak.hash(prefixed)
+
+    return yield* secp.sign(hash, privateKey)
+  }).pipe(
+    Effect.provide(Secp256k1Live),
+    Effect.provide(KeccakLive)
+  )
+```
+
+## Derive Address From Private Key
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const privateKeyToAddress = (privateKey: Uint8Array) =>
+  Effect.gen(function* () {
+    const secp = yield* Secp256k1Service
+    const keccak = yield* KeccakService
+
+    const publicKey = yield* secp.getPublicKey(privateKey)
+    const hash = yield* keccak.hash(publicKey.slice(1)) // Remove 0x04 prefix
+    return Address.fromBytes(hash.slice(-20))
+  }).pipe(
+    Effect.provide(Secp256k1Live),
+    Effect.provide(KeccakLive)
+  )
 ```
 
 ## Error Handling
 
 ```typescript
+import { InvalidPrivateKeyError, CryptoError, InvalidSignatureError } from 'voltaire-effect/crypto'
+
 program.pipe(
-  Effect.catchTag('InvalidPrivateKeyError', (e) => ...),
-  Effect.catchTag('CryptoError', (e) => ...)
+  Effect.catchTag('InvalidPrivateKeyError', (e) =>
+    Effect.fail(new Error('Bad private key'))
+  ),
+  Effect.catchTag('InvalidSignatureError', (e) =>
+    Effect.fail(new Error('Invalid signature'))
+  ),
+  Effect.catchTag('CryptoError', (e) =>
+    Effect.fail(new Error(`Crypto operation failed: ${e.message}`))
+  )
 )
 ```
 
 ## Testing
 
+Use `Secp256k1Test` for deterministic signatures in unit tests:
+
 ```typescript
 import { Secp256k1Test } from 'voltaire-effect/crypto'
-myProgram.pipe(Effect.provide(Secp256k1Test))
+
+await Effect.runPromise(program.pipe(Effect.provide(Secp256k1Test)))
 ```
 
 ## Interface
@@ -56,5 +183,33 @@ interface Secp256k1ServiceShape {
     messageHash: HashType,
     publicKey: Secp256k1PublicKeyType
   ) => Effect.Effect<boolean, InvalidSignatureError>
+
+  readonly getPublicKey: (
+    privateKey: Uint8Array
+  ) => Effect.Effect<Secp256k1PublicKeyType, InvalidPrivateKeyError>
 }
 ```
+
+## Types
+
+```typescript
+// 65-byte signature: r (32) + s (32) + v (1)
+type Secp256k1SignatureType = Uint8Array & { readonly __brand: 'Secp256k1Signature' }
+
+// 65-byte uncompressed public key: 0x04 + x (32) + y (32)
+type Secp256k1PublicKeyType = Uint8Array & { readonly __brand: 'Secp256k1PublicKey' }
+```
+
+## Security Notes
+
+- **Never reuse nonces.** The library handles nonce generation via RFC 6979.
+- **Protect private keys.** Never log or expose them.
+- **Use extraEntropy** for additional protection in adversarial environments.
+- **Constant-time operations.** The underlying implementation uses constant-time algorithms.
+
+## Related
+
+- [Keccak256](/crypto/keccak256) - Message hashing
+- [EIP-712](/crypto/eip712) - Typed data signing
+- [Signers](/crypto/signers) - High-level signing abstraction
+- [HDWallet](/crypto/hdwallet) - Key derivation

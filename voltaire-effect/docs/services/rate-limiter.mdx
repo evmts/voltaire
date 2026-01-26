@@ -1,0 +1,243 @@
+---
+title: RateLimiter Service
+description: Rate limiting for RPC calls with Effect.ts
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { RateLimiterService, DefaultRateLimiter, TransportService } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const rateLimiter = yield* RateLimiterService
+  const transport = yield* TransportService
+
+  return yield* rateLimiter.withRateLimit(
+    'eth_call',
+    transport.request('eth_call', params)
+  )
+}).pipe(
+  Effect.scoped,
+  Effect.provide(DefaultRateLimiter({ global: { limit: 10, interval: '1 seconds' } })),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Global Rate Limits
+
+Apply a single limit across all RPC methods:
+
+```typescript
+const RateLimited = DefaultRateLimiter({
+  global: {
+    limit: 100,
+    interval: '1 seconds',
+    algorithm: 'token-bucket'  // or 'fixed-window' (optional)
+  }
+})
+```
+
+## Per-Method Limits
+
+Configure different limits for specific methods:
+
+```typescript
+const RateLimited = DefaultRateLimiter({
+  global: { limit: 100, interval: '1 seconds' },
+  methods: {
+    'eth_getLogs': { limit: 5, interval: '1 seconds' },
+    'eth_call': { limit: 50, interval: '1 seconds' },
+    'eth_getBlockByNumber': { limit: 20, interval: '1 seconds' }
+  }
+})
+```
+
+Per-method limits stack with the global limit—a request must satisfy both.
+
+## RateLimitBehavior
+
+Control what happens when limits are exceeded:
+
+```typescript
+// "delay" (default) - Wait for capacity
+const DelayLayer = DefaultRateLimiter({
+  global: { limit: 10, interval: '1 seconds' },
+  behavior: 'delay'
+})
+
+// "fail" - Immediately fail with RateLimitError
+const FailFastLayer = DefaultRateLimiter({
+  global: { limit: 10, interval: '1 seconds' },
+  behavior: 'fail'
+})
+```
+
+## Error Handling
+
+Handle rate limit errors with `catchTag`:
+
+```typescript
+import { RateLimitError } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const rateLimiter = yield* RateLimiterService
+  return yield* rateLimiter.withRateLimit('eth_call', someEffect)
+}).pipe(
+  Effect.catchTag('RateLimitError', (e) => {
+    console.log(`Rate limited on ${e.method}: ${e.message}`)
+    return Effect.succeed(fallbackValue)
+  })
+)
+```
+
+The `RateLimitError` includes:
+- `method` - The RPC method that was rate limited
+- `message` - Human-readable error message
+
+## Manual Consume
+
+For explicit control, consume capacity before making calls:
+
+```typescript
+const program = Effect.gen(function* () {
+  const rateLimiter = yield* RateLimiterService
+  const transport = yield* TransportService
+
+  // Manually consume rate limit
+  yield* rateLimiter.consume('eth_call')
+  
+  // Then make the request
+  return yield* transport.request('eth_call', params)
+})
+```
+
+Optionally specify cost for weighted requests:
+
+```typescript
+yield* rateLimiter.consume('eth_getLogs', 5)  // Costs 5 tokens
+```
+
+## NoopRateLimiter
+
+Disable rate limiting for testing:
+
+```typescript
+import { NoopRateLimiter } from 'voltaire-effect/services'
+
+const testProgram = myEffect.pipe(
+  Effect.provide(NoopRateLimiter)
+)
+```
+
+## Layer Composition
+
+Compose with other services:
+
+```typescript
+import * as Layer from 'effect/Layer'
+import { Provider, DefaultRateLimiter, HttpTransport } from 'voltaire-effect/services'
+
+// Build complete provider stack with rate limiting
+const RateLimitedProvider = Layer.mergeAll(
+  Provider,
+  DefaultRateLimiter({
+    global: { limit: 50, interval: '1 seconds' },
+    methods: { 'eth_getLogs': { limit: 5, interval: '1 seconds' } }
+  })
+).pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const program = myEffect.pipe(
+  Effect.scoped,
+  Effect.provide(RateLimitedProvider)
+)
+```
+
+## Service Interface
+
+```typescript
+type RateLimiterShape = {
+  readonly withRateLimit: <A, E, R>(
+    method: string,
+    effect: Effect.Effect<A, E, R>
+  ) => Effect.Effect<A, E | RateLimitError, R>
+
+  readonly consume: (
+    method: string,
+    cost?: number
+  ) => Effect.Effect<void, RateLimitError>
+
+  readonly getLimiter: (method: string) => RateLimiter | undefined
+  readonly getGlobalLimiter: () => RateLimiter | undefined
+  readonly config: RateLimiterConfig
+}
+
+type RateLimiterConfig = {
+  readonly global?: {
+    readonly limit: number
+    readonly interval: DurationInput  // e.g., "1 seconds", "500 millis"
+    readonly algorithm?: 'token-bucket' | 'fixed-window'
+  }
+  readonly methods?: Record<string, {
+    readonly limit: number
+    readonly interval: DurationInput
+    readonly algorithm?: 'token-bucket' | 'fixed-window'
+  }>
+  readonly behavior?: 'delay' | 'fail'
+}
+```
+
+## Real-World: Avoiding RPC Provider Rate Limits
+
+Most RPC providers enforce rate limits (e.g., Alchemy: 25 CU/sec, Infura: 10 req/sec). Configure limits to stay under their thresholds:
+
+```typescript
+import { Effect } from 'effect'
+import {
+  ProviderService,
+  Provider,
+  DefaultRateLimiter,
+  HttpTransport,
+  RateLimitError
+} from 'voltaire-effect/services'
+import * as Layer from 'effect/Layer'
+
+// Configure for Infura's 10 req/sec limit with headroom
+const InfuraRateLimiter = DefaultRateLimiter({
+  global: { limit: 8, interval: '1 seconds' },
+  methods: {
+    // eth_getLogs is expensive, limit more aggressively
+    'eth_getLogs': { limit: 2, interval: '1 seconds' },
+    // Debug methods often have separate lower limits
+    'debug_traceTransaction': { limit: 1, interval: '5 seconds' }
+  },
+  behavior: 'delay'  // Queue requests instead of failing
+})
+
+const InfuraProvider = Layer.mergeAll(Provider, InfuraRateLimiter).pipe(
+  Layer.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+
+// Batch operations automatically respect limits
+const fetchManyBlocks = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  const rateLimiter = yield* RateLimiterService
+
+  const blockNumbers = Array.from({ length: 100 }, (_, i) => i + 1000000)
+  
+  return yield* Effect.all(
+    blockNumbers.map((n) =>
+      rateLimiter.withRateLimit(
+        'eth_getBlockByNumber',
+        provider.getBlock({ blockTag: `0x${n.toString(16)}` })
+      )
+    ),
+    { concurrency: 'unbounded' }  // Rate limiter handles throttling
+  )
+}).pipe(
+  Effect.scoped,
+  Effect.provide(InfuraProvider)
+)
+```

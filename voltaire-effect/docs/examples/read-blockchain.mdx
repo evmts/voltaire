@@ -7,13 +7,13 @@ description: Query blocks, balances, transactions and logs
 
 ```typescript
 import { Effect } from 'effect'
-import { PublicClientService, PublicClient, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
 
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* client.getBlockNumber()
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 
@@ -24,10 +24,10 @@ const blockNumber = await Effect.runPromise(program)
 
 ```typescript
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* client.getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'latest')
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -36,11 +36,11 @@ const program = Effect.gen(function* () {
 
 ```typescript
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   const block = yield* client.getBlock({ blockTag: 'latest', includeTransactions: true })
   return { number: block.number, hash: block.hash, txCount: block.transactions.length }
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -51,7 +51,7 @@ const program = Effect.gen(function* () {
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   const logs = yield* client.getLogs({
     address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
     topics: [TRANSFER_TOPIC],
@@ -60,7 +60,7 @@ const program = Effect.gen(function* () {
   })
   return logs.map(log => ({ from: log.topics[1], to: log.topics[2], blockNumber: log.blockNumber }))
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -69,10 +69,10 @@ const program = Effect.gen(function* () {
 
 ```typescript
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* client.waitForTransactionReceipt('0x1234...', { confirmations: 3, timeout: 60000 })
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -81,14 +81,14 @@ const program = Effect.gen(function* () {
 
 ```typescript
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* client.estimateGas({
     from: '0xYourAddress...',
     to: '0xRecipient...',
     value: 1000000000000000000n
   })
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -97,14 +97,14 @@ const program = Effect.gen(function* () {
 
 ```typescript
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* Effect.all([
     client.getGasPrice(),
     client.getMaxPriorityFeePerGas(),
     client.getFeeHistory(4, 'latest', [25, 50, 75])
   ])
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -119,13 +119,13 @@ const addresses = [
 ]
 
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* Effect.all(
     addresses.map(addr => client.getBalance(addr, 'latest')),
     { concurrency: 'unbounded' }
   )
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```

@@ -1,0 +1,145 @@
+---
+title: FeeEstimator Service
+description: Gas fee estimation for EIP-1559 and legacy transactions with Effect.ts
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import {
+  FeeEstimatorService,
+  DefaultFeeEstimator,
+  Provider,
+  HttpTransport
+} from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const feeEstimator = yield* FeeEstimatorService
+  const fees = yield* feeEstimator.estimateFeesPerGas('eip1559')
+  return fees
+}).pipe(
+  Effect.provide(DefaultFeeEstimator),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## EIP-1559 Fee Estimation
+
+```typescript
+const feeEstimator = yield* FeeEstimatorService
+
+const fees = yield* feeEstimator.estimateFeesPerGas('eip1559')
+// { maxFeePerGas: bigint, maxPriorityFeePerGas: bigint }
+
+console.log('Max fee:', fees.maxFeePerGas)
+console.log('Priority fee:', fees.maxPriorityFeePerGas)
+```
+
+## Legacy Gas Price
+
+```typescript
+const fees = yield* feeEstimator.estimateFeesPerGas('legacy')
+// { gasPrice: bigint }
+
+console.log('Gas price:', fees.gasPrice)
+```
+
+## Priority Fee Only
+
+```typescript
+const priorityFee = yield* feeEstimator.getMaxPriorityFeePerGas()
+// bigint - the current max priority fee (tip)
+```
+
+## Custom Base Fee Multiplier
+
+The default multiplier is 1.2 (20% buffer). Use `makeFeeEstimator` for volatile networks:
+
+```typescript
+import { makeFeeEstimator } from 'voltaire-effect/services'
+
+// 1.5x multiplier for more volatile networks
+const CustomFeeEstimator = makeFeeEstimator(1.5)
+
+const program = Effect.gen(function* () {
+  const feeEstimator = yield* FeeEstimatorService
+  console.log('Multiplier:', feeEstimator.baseFeeMultiplier) // 1.5
+  return yield* feeEstimator.estimateFeesPerGas('eip1559')
+}).pipe(
+  Effect.provide(CustomFeeEstimator),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://...'))
+)
+```
+
+## Error Handling
+
+```typescript
+import { FeeEstimationError } from 'voltaire-effect/services'
+
+program.pipe(
+  Effect.catchTag('FeeEstimationError', (e) => {
+    console.error('Fee estimation failed:', e.message)
+    // Fallback to zero fees
+    return Effect.succeed({ maxFeePerGas: 0n, maxPriorityFeePerGas: 0n })
+  })
+)
+```
+
+Common error causes:
+- Network/RPC failures
+- Pre-EIP-1559 chains (no `baseFeePerGas` in block)
+
+## Layer Composition
+
+`DefaultFeeEstimator` requires `ProviderService`:
+
+```typescript
+import * as Layer from 'effect/Layer'
+
+// FeeEstimator depends on Provider
+const DefaultFeeEstimator: Layer.Layer<FeeEstimatorService, never, ProviderService>
+
+// Compose full stack
+const FullStack = DefaultFeeEstimator.pipe(
+  Layer.provide(Provider),
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const program = myEffect.pipe(Effect.provide(FullStack))
+```
+
+## Fee Value Types
+
+```typescript
+type FeeValuesLegacy = {
+  readonly gasPrice: bigint
+}
+
+type FeeValuesEIP1559 = {
+  readonly maxFeePerGas: bigint
+  readonly maxPriorityFeePerGas: bigint
+}
+
+type FeeValues = FeeValuesLegacy | FeeValuesEIP1559
+```
+
+## Service Interface
+
+```typescript
+type FeeEstimatorShape = {
+  readonly estimateFeesPerGas: (
+    type: 'legacy' | 'eip1559'
+  ) => Effect.Effect<FeeValues, FeeEstimationError, ProviderService>
+
+  readonly getMaxPriorityFeePerGas: () => Effect.Effect<
+    bigint,
+    FeeEstimationError,
+    ProviderService
+  >
+
+  readonly baseFeeMultiplier: number
+}
+```

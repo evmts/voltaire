@@ -7,7 +7,7 @@ description: Type-safe smart contract reads, writes, and events
 
 ```typescript
 import { Effect } from 'effect'
-import { Contract, PublicClient, HttpTransport } from 'voltaire-effect/services'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
@@ -23,7 +23,7 @@ const program = Effect.gen(function* () {
     token.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
   ])
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -31,7 +31,7 @@ const program = Effect.gen(function* () {
 ## Write Contract
 
 ```typescript
-import { WalletClientLive, LocalAccount } from 'voltaire-effect/services'
+import { Signer, LocalAccount } from 'voltaire-effect/services'
 import { Hex } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
@@ -40,9 +40,9 @@ const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
   return yield* token.write.transfer('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 100_000_000n)
 }).pipe(
-  Effect.provide(WalletClientLive),
+  Effect.provide(Signer.Live),
   Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -54,7 +54,7 @@ const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
   return yield* token.simulate.transfer('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 100_000_000n)
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -74,7 +74,7 @@ const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', eventAbi)
   return yield* token.getEvents('Transfer', { fromBlock: 'latest', toBlock: 'latest' })
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -82,11 +82,11 @@ const program = Effect.gen(function* () {
 ## Complete ERC20 Workflow
 
 ```typescript
-import { PublicClientService } from 'voltaire-effect/services'
+import { ProviderService } from 'voltaire-effect/services'
 
 const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   
   const [symbol, decimals] = yield* Effect.all([token.read.symbol(), token.read.decimals()])
   const balanceBefore = yield* token.read.balanceOf('0x70997970C51812dc3A010C7d01b50e0d17dc79C8')
@@ -96,9 +96,9 @@ const program = Effect.gen(function* () {
   
   return { symbol, decimals, txHash, transferred: balanceAfter - balanceBefore }
 }).pipe(
-  Effect.provide(WalletClientLive),
+  Effect.provide(Signer.Live),
   Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -126,9 +126,9 @@ const program = Effect.gen(function* () {
   
   return yield* router.write.swapExactTokensForTokens(1000_000_000n, amountOutMin, path, myAddress, deadline)
 }).pipe(
-  Effect.provide(WalletClientLive),
+  Effect.provide(Signer.Live),
   Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```

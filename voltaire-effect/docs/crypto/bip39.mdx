@@ -42,10 +42,10 @@ myProgram.pipe(Effect.provide(Bip39Test))
 
 ```typescript
 interface Bip39ServiceShape {
-  readonly generateMnemonic: (strength?: 128 | 160 | 192 | 224 | 256) => Effect.Effect<string>
+  readonly generateMnemonic: (strength?: MnemonicStrength) => Effect.Effect<string>
   readonly validateMnemonic: (mnemonic: string) => Effect.Effect<boolean>
   readonly mnemonicToSeed: (mnemonic: string, passphrase?: string) => Effect.Effect<Uint8Array>
   readonly mnemonicToSeedSync: (mnemonic: string, passphrase?: string) => Effect.Effect<Uint8Array>
-  readonly getWordCount: (entropyBits: 128 | 160 | 192 | 224 | 256) => Effect.Effect<number>
+  readonly getWordCount: (entropyBits: MnemonicStrength) => Effect.Effect<number>
 }
 ```

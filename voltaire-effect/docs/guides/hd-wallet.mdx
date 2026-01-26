@@ -137,10 +137,10 @@ console.log(Bip39.validateMnemonic(mnemonic24)) // true
 ```typescript
 import { Effect } from 'effect'
 import { 
-  WalletClientService, 
-  WalletClientLive, 
+  SignerService, 
+  Signer, 
   MnemonicAccount,
-  PublicClient,
+  Provider,
   HttpTransport 
 } from 'voltaire-effect/services'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
@@ -148,17 +148,17 @@ import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 const mnemonic = process.env.MNEMONIC!
 
 const program = Effect.gen(function* () {
-  const wallet = yield* WalletClientService
-  return yield* wallet.sendTransaction({
+  const signer = yield* SignerService
+  return yield* signer.sendTransaction({
     to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
     value: 1000000000000000000n
   })
 }).pipe(
-  Effect.provide(WalletClientLive),
+  Effect.provide(Signer.Live),
   Effect.provide(MnemonicAccount(mnemonic)),
   Effect.provide(Secp256k1Live),
   Effect.provide(KeccakLive),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```

@@ -7,13 +7,14 @@ Generate mnemonics, derive seeds, and create hierarchical key trees.
 
 ```typescript
 import { HDWalletService, HDWalletLive } from 'voltaire-effect/crypto'
+import { mnemonicToWords } from 'voltaire-effect/crypto/Bip39'
 import { Effect } from 'effect'
 
 const wallet = await Effect.runPromise(
   Effect.gen(function* () {
     const hdwallet = yield* HDWalletService
     const mnemonic = yield* hdwallet.generateMnemonic(256)  // 24 words
-    const seed = yield* hdwallet.mnemonicToSeed(mnemonic)
+    const seed = yield* hdwallet.mnemonicToSeed(mnemonicToWords(mnemonic))
     const root = yield* hdwallet.fromSeed(seed)
     const account = yield* hdwallet.derive(root, "m/44'/60'/0'/0/0")
     const privateKey = yield* hdwallet.getPrivateKey(account)
@@ -38,7 +39,7 @@ myProgram.pipe(Effect.provide(HDWalletTest))
 
 ```typescript
 interface HDWalletServiceShape {
-  readonly generateMnemonic: (strength?: 128 | 256) => Effect.Effect<string[]>
+  readonly generateMnemonic: (strength?: MnemonicStrength) => Effect.Effect<string>
   readonly mnemonicToSeed: (mnemonic: string[]) => Effect.Effect<Uint8Array>
   readonly fromSeed: (seed: Uint8Array) => Effect.Effect<HDNode>
   readonly derive: (node: HDNode, path: string | HDPath) => Effect.Effect<HDNode>

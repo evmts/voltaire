@@ -1,0 +1,455 @@
+---
+title: Event Streaming
+description: Stream contract events with backfill, live watching, and composable processing
+---
+
+## USDC Transfer Streaming
+
+Complete example streaming USDC Transfer events on Ethereum mainnet.
+
+```typescript
+import { Effect, Stream, Schedule, Layer, Chunk, Console } from 'effect'
+import { EventStreamService, EventStream, HttpTransport } from 'voltaire-effect'
+
+// USDC contract
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+
+// ABI event definition (typed)
+const transferEvent = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { name: 'from', type: 'address', indexed: true },
+    { name: 'to', type: 'address', indexed: true },
+    { name: 'value', type: 'uint256', indexed: false }
+  ]
+} as const
+
+const program = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+
+  yield* Stream.runForEach(
+    eventStream.backfill({
+      address: USDC_ADDRESS,
+      event: transferEvent,
+      fromBlock: 18000000n,
+      toBlock: 18001000n
+    }),
+    ({ log, metadata }) => 
+      Effect.log(`Transfer: ${log.args.from} → ${log.args.to} | ${log.args.value} | Block ${log.blockNumber}`)
+  )
+}).pipe(
+  Effect.provide(EventStream),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+await Effect.runPromise(program)
+```
+
+## Backfill with Progress Logging
+
+Track progress when processing large block ranges.
+
+```typescript
+const backfillWithProgress = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+
+  let lastBlock = 0n
+  let eventCount = 0
+
+  const stream = eventStream.backfill({
+    address: USDC_ADDRESS,
+    event: transferEvent,
+    fromBlock: 18000000n,
+    toBlock: 18100000n,   // 100k blocks
+    chunkSize: 1000
+  })
+
+  yield* Stream.runForEach(stream, ({ log, metadata }) =>
+    Effect.gen(function* () {
+      eventCount++
+
+      // Log progress every 1000 blocks
+      if (log.blockNumber - lastBlock >= 1000n) {
+        const progress = Number(log.blockNumber - 18000000n) / 100000 * 100
+        yield* Effect.log(`Progress: ${progress.toFixed(1)}% | Block ${log.blockNumber} | Events: ${eventCount}`)
+        lastBlock = log.blockNumber
+      }
+    })
+  )
+
+  yield* Effect.log(`Complete! Total events: ${eventCount}`)
+})
+```
+
+## Watch Live Events
+
+Poll for new events in real-time.
+
+```typescript
+const watchLive = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+
+  const stream = eventStream.watch({
+    address: USDC_ADDRESS,
+    event: transferEvent,
+    pollingInterval: 2000  // Poll every 2s
+  })
+
+  // Process 100 events then stop
+  yield* Stream.runForEach(
+    Stream.take(stream, 100),
+    ({ log }) => Effect.log(`LIVE: ${log.args.from} → ${log.args.to} | ${log.args.value}`)
+  )
+})
+```
+
+## Filter by Address (Topic Filtering)
+
+Filter events by indexed parameters at the RPC level (efficient).
+
+```typescript
+const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+
+// Transfers FROM a specific address
+const fromVitalik = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+
+  yield* Stream.runForEach(
+    eventStream.backfill({
+      address: USDC_ADDRESS,
+      event: transferEvent,
+      filter: { from: VITALIK },
+      fromBlock: 18000000n,
+      toBlock: 18100000n
+    }),
+    ({ log }) => Effect.log(`Vitalik sent ${log.args.value} USDC to ${log.args.to}`)
+  )
+})
+
+// Transfers TO a specific address
+const toVitalik = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+
+  yield* Stream.runForEach(
+    eventStream.backfill({
+      address: USDC_ADDRESS,
+      event: transferEvent,
+      filter: { to: VITALIK },
+      fromBlock: 18000000n,
+      toBlock: 18100000n
+    }),
+    ({ log }) => Effect.log(`Vitalik received ${log.args.value} USDC from ${log.args.from}`)
+  )
+})
+```
+
+## Stream Processing with map/filter
+
+Use Effect Stream operators for composable transformations.
+
+```typescript
+interface TransferSummary {
+  from: string
+  to: string
+  value: bigint
+  block: bigint
+  txHash: Uint8Array
+}
+
+const processedStream = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+
+  const stream = eventStream.backfill({
+    address: USDC_ADDRESS,
+    event: transferEvent,
+    fromBlock: 18000000n,
+    toBlock: 18001000n
+  }).pipe(
+    // Transform to simpler shape
+    Stream.map(({ log }): TransferSummary => ({
+      from: log.args.from,
+      to: log.args.to,
+      value: log.args.value,
+      block: log.blockNumber,
+      txHash: log.transactionHash
+    })),
+    // Filter large transfers (> 100k USDC, 6 decimals)
+    Stream.filter((t) => t.value > 100_000_000000n),
+    // Take first 50 whale transfers
+    Stream.take(50)
+  )
+
+  yield* Stream.runForEach(stream, (t) =>
+    Effect.log(`Whale transfer: ${Number(t.value) / 1e6} USDC at block ${t.block}`)
+  )
+})
+```
+
+## Combine Backfill + Watch (Historical to Live)
+
+Seamlessly transition from historical events to live streaming.
+
+```typescript
+const historicalToLive = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+
+  // Get current block
+  const startBlock = 18000000n
+
+  // First: backfill historical events
+  yield* Effect.log('Starting historical backfill...')
+
+  const backfillStream = eventStream.backfill({
+    address: USDC_ADDRESS,
+    event: transferEvent,
+    fromBlock: startBlock,
+    toBlock: 'latest'
+  })
+
+  // Then: seamlessly continue with live watching
+  yield* Effect.log('Switching to live mode...')
+
+  const watchStream = eventStream.watch({
+    address: USDC_ADDRESS,
+    event: transferEvent,
+    pollingInterval: 2000
+  })
+
+  // Combine streams: backfill first, then watch
+  const combinedStream = Stream.concat(backfillStream, watchStream)
+
+  yield* Stream.runForEach(combinedStream, ({ log, metadata }) =>
+    Effect.log(`Event at ${log.blockNumber}: ${log.args.from} → ${log.args.to}`)
+  )
+})
+```
+
+## Aggregate Events (Batch Processing)
+
+Collect events into batches for bulk processing.
+
+```typescript
+const batchProcess = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+
+  const stream = eventStream.backfill({
+    address: USDC_ADDRESS,
+    event: transferEvent,
+    fromBlock: 18000000n,
+    toBlock: 18010000n
+  }).pipe(
+    // Group into batches of 100
+    Stream.grouped(100),
+    Stream.mapEffect((batch) =>
+      Effect.gen(function* () {
+        const events = Chunk.toArray(batch)
+        const totalValue = events.reduce((sum, e) => sum + e.log.args.value, 0n)
+        yield* Effect.log(`Batch of ${events.length} events, total: ${Number(totalValue) / 1e6} USDC`)
+        return events
+      })
+    )
+  )
+
+  yield* Stream.runDrain(stream)
+})
+```
+
+## Save to Database (Conceptual)
+
+Pattern for persisting events to a database.
+
+```typescript
+import { FileSystem } from '@effect/platform'
+import { NodeFileSystem } from '@effect/platform-node'
+
+// Conceptual database interface
+interface EventDatabase {
+  readonly insert: (event: TransferSummary) => Effect.Effect<void>
+  readonly getLastBlock: () => Effect.Effect<bigint | null>
+}
+
+const syncToDatabase = (db: EventDatabase) =>
+  Effect.gen(function* () {
+    const eventStream = yield* EventStreamService
+
+    // Resume from last synced block
+    const lastBlock = (yield* db.getLastBlock()) ?? 18000000n
+
+    yield* Effect.log(`Resuming sync from block ${lastBlock}`)
+
+    yield* Stream.runForEach(
+      eventStream.backfill({
+        address: USDC_ADDRESS,
+        event: transferEvent,
+        fromBlock: lastBlock,
+        toBlock: 'latest'
+      }),
+      ({ log }) =>
+        db.insert({
+          from: log.args.from,
+          to: log.args.to,
+          value: log.args.value,
+          block: log.blockNumber,
+          txHash: log.transactionHash
+        })
+    )
+  })
+
+// File-based persistence example
+const saveToFile = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+  const fs = yield* FileSystem.FileSystem
+
+  const events: TransferSummary[] = []
+
+  yield* Stream.runForEach(
+    eventStream.backfill({
+      address: USDC_ADDRESS,
+      event: transferEvent,
+      fromBlock: 18000000n,
+      toBlock: 18000100n
+    }),
+    ({ log }) =>
+      Effect.sync(() => {
+        events.push({
+          from: log.args.from,
+          to: log.args.to,
+          value: log.args.value,
+          block: log.blockNumber,
+          txHash: log.transactionHash
+        })
+      })
+  )
+
+  yield* fs.writeFileString(
+    './events.json',
+    JSON.stringify(events, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2)
+  )
+
+  yield* Effect.log(`Saved ${events.length} events to events.json`)
+}).pipe(Effect.provide(NodeFileSystem.layer))
+```
+
+## Error Recovery Patterns
+
+Handle transient failures with retry and recovery.
+
+```typescript
+import { EventStreamError } from 'voltaire-effect'
+
+// Retry configuration
+const robustBackfill = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+
+  yield* Stream.runForEach(
+    eventStream.backfill({
+      address: USDC_ADDRESS,
+      event: transferEvent,
+      fromBlock: 18000000n,
+      toBlock: 18100000n,
+      retry: {
+        maxRetries: 10,
+        initialDelay: 500,
+        maxDelay: 60000
+      }
+    }),
+    ({ log }) => Effect.log(`Event: ${log.blockNumber}`)
+  )
+}).pipe(
+  // Additional application-level retry
+  Effect.retry(Schedule.exponential('1 second').pipe(Schedule.jittered)),
+  Effect.catchTag('EventStreamError', (e) =>
+    Effect.logError(`Stream failed after retries: ${e.message}`)
+  )
+)
+
+// Graceful degradation with fallback
+const withFallback = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+
+  yield* Stream.runForEach(
+    eventStream.backfill({
+      address: USDC_ADDRESS,
+      event: transferEvent,
+      fromBlock: 18000000n,
+      toBlock: 18001000n
+    }),
+    ({ log }) => Effect.log(`Event: ${log.blockNumber}`)
+  )
+}).pipe(
+  Effect.catchTag('EventStreamError', (e) =>
+    Effect.gen(function* () {
+      yield* Effect.logWarning(`Primary RPC failed, using fallback`)
+      // Could switch to different RPC or cached data
+    })
+  )
+)
+```
+
+## Layer Composition
+
+Compose layers for clean dependency injection.
+
+```typescript
+// Define reusable layers
+const MainnetLayer = EventStream.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const InfuraLayer = EventStream.pipe(
+  Layer.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+
+// Use in programs
+const program = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+  // ... 
+})
+
+// Run with different providers
+await Effect.runPromise(program.pipe(Effect.provide(MainnetLayer)))
+await Effect.runPromise(program.pipe(Effect.provide(InfuraLayer)))
+```
+
+## Multiple Event Types
+
+Stream different event types from the same or multiple contracts.
+
+```typescript
+const approvalEvent = {
+  type: 'event',
+  name: 'Approval',
+  inputs: [
+    { name: 'owner', type: 'address', indexed: true },
+    { name: 'spender', type: 'address', indexed: true },
+    { name: 'value', type: 'uint256', indexed: false }
+  ]
+} as const
+
+const multiEventStream = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+
+  // Run in parallel
+  yield* Effect.all([
+    Stream.runForEach(
+      eventStream.backfill({
+        address: USDC_ADDRESS,
+        event: transferEvent,
+        fromBlock: 18000000n,
+        toBlock: 18000100n
+      }),
+      ({ log }) => Effect.log(`Transfer: ${log.args.value}`)
+    ),
+    Stream.runForEach(
+      eventStream.backfill({
+        address: USDC_ADDRESS,
+        event: approvalEvent,
+        fromBlock: 18000000n,
+        toBlock: 18000100n
+      }),
+      ({ log }) => Effect.log(`Approval: ${log.args.spender} for ${log.args.value}`)
+    )
+  ], { concurrency: 2 })
+})
+```

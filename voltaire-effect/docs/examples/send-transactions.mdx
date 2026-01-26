@@ -7,21 +7,21 @@ description: Sign and broadcast transactions
 
 ```typescript
 import { Effect } from 'effect'
-import { WalletClientService, WalletClientLive, LocalAccount, PublicClient, HttpTransport } from 'voltaire-effect/services'
+import { SignerService, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect/services'
 import { Hex, Address } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
 
 const program = Effect.gen(function* () {
-  const wallet = yield* WalletClientService
-  return yield* wallet.sendTransaction({
+  const signer = yield* SignerService
+  return yield* signer.sendTransaction({
     to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
     value: 1000000000000000000n
   })
 }).pipe(
-  Effect.provide(WalletClientLive),
+  Effect.provide(Signer.Live),
   Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -30,17 +30,17 @@ const program = Effect.gen(function* () {
 
 ```typescript
 const program = Effect.gen(function* () {
-  const wallet = yield* WalletClientService
-  return yield* wallet.sendTransaction({
+  const signer = yield* SignerService
+  return yield* signer.sendTransaction({
     to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
     value: 1000000000000000000n,
     maxFeePerGas: 50000000000n,
     maxPriorityFeePerGas: 2000000000n
   })
 }).pipe(
-  Effect.provide(WalletClientLive),
+  Effect.provide(Signer.Live),
   Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -49,12 +49,12 @@ const program = Effect.gen(function* () {
 
 ```typescript
 const program = Effect.gen(function* () {
-  const wallet = yield* WalletClientService
-  return yield* wallet.signMessage(Hex.fromString('Hello, Ethereum!'))
+  const signer = yield* SignerService
+  return yield* signer.signMessage(Hex.fromString('Hello, Ethereum!'))
 }).pipe(
-  Effect.provide(WalletClientLive),
+  Effect.provide(Signer.Live),
   Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -84,12 +84,12 @@ const typedData = {
 }
 
 const program = Effect.gen(function* () {
-  const wallet = yield* WalletClientService
-  return yield* wallet.signTypedData(typedData)
+  const signer = yield* SignerService
+  return yield* signer.signTypedData(typedData)
 }).pipe(
-  Effect.provide(WalletClientLive),
+  Effect.provide(Signer.Live),
   Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -100,13 +100,13 @@ const program = Effect.gen(function* () {
 import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect/services'
 
 const program = Effect.gen(function* () {
-  const wallet = yield* WalletClientService
-  const accounts = yield* wallet.requestAddresses()
-  return yield* wallet.sendTransaction({ to: '0x...', value: 1000000000000000000n })
+  const signer = yield* SignerService
+  const accounts = yield* signer.requestAddresses()
+  return yield* signer.sendTransaction({ to: '0x...', value: 1000000000000000000n })
 }).pipe(
-  Effect.provide(WalletClientLive),
+  Effect.provide(Signer.Live),
   Effect.provide(JsonRpcAccount(userAddress)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(BrowserTransport)
 )
 ```
@@ -114,20 +114,20 @@ const program = Effect.gen(function* () {
 ## Send and Wait
 
 ```typescript
-import { PublicClientService } from 'voltaire-effect/services'
+import { ProviderService } from 'voltaire-effect/services'
 
 const program = Effect.gen(function* () {
-  const wallet = yield* WalletClientService
-  const client = yield* PublicClientService
+  const signer = yield* SignerService
+  const provider = yield* ProviderService
   
-  const txHash = yield* wallet.sendTransaction({ to: '0x...', value: 1000000000000000000n })
-  const receipt = yield* client.waitForTransactionReceipt(txHash, { confirmations: 3 })
+  const txHash = yield* signer.sendTransaction({ to: '0x...', value: 1000000000000000000n })
+  const receipt = yield* provider.waitForTransactionReceipt(txHash, { confirmations: 3 })
   
   return { hash: txHash, status: receipt.status, blockNumber: receipt.blockNumber }
 }).pipe(
-  Effect.provide(WalletClientLive),
+  Effect.provide(Signer.Live),
   Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -136,12 +136,12 @@ const program = Effect.gen(function* () {
 
 ```typescript
 const program = Effect.gen(function* () {
-  const wallet = yield* WalletClientService
-  yield* wallet.switchChain(10) // Optimism
+  const signer = yield* SignerService
+  yield* signer.switchChain(10) // Optimism
 }).pipe(
-  Effect.provide(WalletClientLive),
+  Effect.provide(Signer.Live),
   Effect.provide(JsonRpcAccount(userAddress)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(BrowserTransport)
 )
 ```

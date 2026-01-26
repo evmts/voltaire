@@ -7,16 +7,16 @@ description: Mock services for unit tests
 
 ```typescript
 import { Effect } from 'effect'
-import { PublicClientService, PublicClient, TestTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, TestTransport } from 'voltaire-effect/services'
 import { describe, it, expect } from 'vitest'
 
-describe('PublicClient', () => {
+describe('Provider', () => {
   it('returns mocked block number', async () => {
     const program = Effect.gen(function* () {
-      const client = yield* PublicClientService
+      const client = yield* ProviderService
       return yield* client.getBlockNumber()
     }).pipe(
-      Effect.provide(PublicClient),
+      Effect.provide(Provider),
       Effect.provide(TestTransport({ eth_blockNumber: () => '0x1234' }))
     )
     
@@ -38,13 +38,13 @@ const mockTransport = TestTransport({
 })
 
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* Effect.all([
     client.getBlockNumber(),
     client.getBalance('0xRich...', 'latest'),
     client.getBlock({ blockTag: 'latest' })
   ])
-}).pipe(Effect.provide(PublicClient), Effect.provide(mockTransport))
+}).pipe(Effect.provide(Provider), Effect.provide(mockTransport))
 ```
 
 ## Test Contract Reads
@@ -61,7 +61,7 @@ it('reads balance', async () => {
     const token = yield* Contract('0xToken...', erc20Abi)
     return yield* token.read.balanceOf('0xUser...')
   }).pipe(
-    Effect.provide(PublicClient),
+    Effect.provide(Provider),
     Effect.provide(TestTransport({
       eth_call: () => '0x0000000000000000000000000000000000000000000000056bc75e2d63100000'
     }))
@@ -78,10 +78,10 @@ import { Exit } from 'effect'
 
 it('handles RPC errors', async () => {
   const program = Effect.gen(function* () {
-    const client = yield* PublicClientService
+    const client = yield* ProviderService
     return yield* client.getBalance('0x...', 'latest')
   }).pipe(
-    Effect.provide(PublicClient),
+    Effect.provide(Provider),
     Effect.provide(TestTransport({ eth_getBalance: () => { throw new Error('Rate limited') } }))
   )
   
@@ -91,11 +91,11 @@ it('handles RPC errors', async () => {
 
 it('recovers from errors', async () => {
   const program = Effect.gen(function* () {
-    const client = yield* PublicClientService
+    const client = yield* ProviderService
     return yield* client.getBalance('0x...', 'latest')
   }).pipe(
-    Effect.catchTag('PublicClientError', () => Effect.succeed(0n)),
-    Effect.provide(PublicClient),
+    Effect.catchTag('ProviderError', () => Effect.succeed(0n)),
+    Effect.provide(Provider),
     Effect.provide(TestTransport({ eth_getBalance: () => { throw new Error('Failed') } }))
   )
   
@@ -104,6 +104,8 @@ it('recovers from errors', async () => {
 ```
 
 ## Test Crypto
+
+Each crypto module exports test layers for deterministic mocking:
 
 ```typescript
 import { hash, KeccakTest } from 'voltaire-effect/crypto/Keccak256'
@@ -117,27 +119,47 @@ it('hashes data', async () => {
 })
 ```
 
+### All Crypto Services
+
+Use `CryptoLive` and `CryptoTest` convenience layers to provide all crypto services at once:
+
+```typescript
+import { CryptoLive, CryptoTest } from 'voltaire-effect'
+import { KeccakService } from 'voltaire-effect/crypto/Keccak256'
+import { Secp256k1Service } from 'voltaire-effect/crypto/Secp256k1'
+
+// Production - all crypto services in one layer
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const secp = yield* Secp256k1Service
+  // All crypto services available
+}).pipe(Effect.provide(CryptoLive))
+
+// Testing - deterministic mocks for all crypto
+const testProgram = program.pipe(Effect.provide(CryptoTest))
+```
+
 ## Integration Test (Anvil)
 
 ```typescript
 import { Layer } from 'effect'
-import { WalletClientService, WalletClientLive, LocalAccount, HttpTransport } from 'voltaire-effect/services'
+import { SignerService, Signer, LocalAccount, HttpTransport } from 'voltaire-effect/services'
 import { Hex } from '@tevm/voltaire'
 
 const TestLayer = Layer.mergeAll(
-  PublicClient,
-  WalletClientLive,
+  Provider,
+  Signer.Live,
   LocalAccount(Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')),
   HttpTransport('http://localhost:8545')
 )
 
 it('sends transaction', async () => {
   const program = Effect.gen(function* () {
-    const wallet = yield* WalletClientService
-    const client = yield* PublicClientService
+    const signer = yield* SignerService
+    const client = yield* ProviderService
     
     const before = yield* client.getBalance('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 'latest')
-    const txHash = yield* wallet.sendTransaction({ to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', value: 1000000000000000000n })
+    const txHash = yield* signer.sendTransaction({ to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', value: 1000000000000000000n })
     yield* client.waitForTransactionReceipt(txHash, { confirmations: 1 })
     const after = yield* client.getBalance('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 'latest')
     

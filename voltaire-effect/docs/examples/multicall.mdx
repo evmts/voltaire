@@ -1,0 +1,229 @@
+---
+title: Multicall - Batch Contract Reads
+description: Reduce RPC calls by batching multiple contract reads into a single request
+---
+
+## The Problem: N Addresses = N RPC Calls
+
+Querying 10 token balances naively requires 10 separate RPC calls:
+
+```typescript
+// ❌ Naive approach: 10 RPC calls
+const balances = await Promise.all(
+  addresses.map(addr => provider.call({ to: token, data: encodeBalanceOf(addr) }))
+)
+```
+
+With Multicall3, you batch them into **1 RPC call**.
+
+## Basic Usage: Check 10 Balances
+
+```typescript
+import { Effect } from 'effect'
+import * as ERC20 from 'voltaire-effect/standards/ERC20'
+import { MulticallService, DefaultMulticall, Provider, HttpTransport } from 'voltaire-effect/services'
+import type { MulticallCall } from 'voltaire-effect/services'
+
+const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const addresses = [
+  '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+  '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8',
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
+  '0x28C6c06298d514Db089934071355E5743bf21d60',
+  '0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503',
+  '0xF977814e90dA44bFA03b6295A0616a897441aceC',
+  '0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a',
+  '0xC61b9BB3A7a0767E3179713f3A5c7a9aeDCE193C',
+  '0xDFd5293D8e347dFe59E90eFd55b2956a1343963d',
+  '0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf'
+]
+
+const program = Effect.gen(function* () {
+  const multicall = yield* MulticallService
+  
+  // Build calls with encoded balanceOf calldata
+  const calls: MulticallCall[] = yield* Effect.all(
+    addresses.map(addr => 
+      Effect.map(
+        ERC20.encodeBalanceOf(addr as `0x${string}`),
+        (callData) => ({
+          target: USDC,
+          callData,
+          allowFailure: true
+        })
+      )
+    )
+  )
+  
+  // Single RPC call for all 10 balances
+  const results = yield* multicall.aggregate3(calls)
+  
+  // Process results
+  const balances = yield* Effect.all(
+    results.map((result, i) => {
+      if (!result.success) {
+        return Effect.succeed({ address: addresses[i], balance: null, error: 'Call failed' })
+      }
+      return Effect.map(
+        ERC20.decodeUint256(result.returnData),
+        (balance) => ({ address: addresses[i], balance, error: null })
+      )
+    })
+  )
+  
+  return balances
+}).pipe(
+  Effect.provide(DefaultMulticall),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const balances = await Effect.runPromise(program)
+// [{ address: '0xd8dA...', balance: 1000000n, error: null }, ...]
+```
+
+## Portfolio Balance Aggregation
+
+Query multiple tokens for a single wallet:
+
+```typescript
+const tokens = [
+  { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as const, decimals: 6 },
+  { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' as const, decimals: 6 },
+  { symbol: 'DAI', address: '0x6B175474E89094C44Da98b954EesDeCD5E0c7D9' as const, decimals: 18 },
+  { symbol: 'WETH', address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as const, decimals: 18 },
+  { symbol: 'LINK', address: '0x514910771AF9Ca656af840dff83E8264EcF986CA' as const, decimals: 18 }
+]
+const wallet = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+
+const program = Effect.gen(function* () {
+  const multicall = yield* MulticallService
+  
+  const calls: MulticallCall[] = yield* Effect.all(
+    tokens.map(token =>
+      Effect.map(
+        ERC20.encodeBalanceOf(wallet),
+        (callData) => ({
+          target: token.address,
+          callData,
+          allowFailure: true // Don't fail entire batch if one token reverts
+        })
+      )
+    )
+  )
+  
+  const results = yield* multicall.aggregate3(calls)
+  
+  // Build portfolio with error handling
+  const portfolio = yield* Effect.all(
+    results.map((result, i) => {
+      const token = tokens[i]
+      
+      if (!result.success) {
+        return Effect.succeed({
+          symbol: token.symbol,
+          balance: 0n,
+          formatted: '0',
+          error: 'Contract call failed'
+        })
+      }
+      
+      return Effect.map(
+        ERC20.decodeUint256(result.returnData),
+        (balance) => ({
+          symbol: token.symbol,
+          balance,
+          formatted: (Number(balance) / 10 ** token.decimals).toFixed(4),
+          error: null
+        })
+      )
+    })
+  )
+  
+  // Calculate total USD value (simplified - real app would fetch prices)
+  const totalUSD = portfolio.reduce((sum, p) => {
+    if (p.error) return sum
+    // Simplified: assume stablecoins = $1, others = $0
+    if (['USDC', 'USDT', 'DAI'].includes(p.symbol)) {
+      return sum + Number(p.balance) / 10 ** 6
+    }
+    return sum
+  }, 0)
+  
+  return { portfolio, totalUSD }
+}).pipe(
+  Effect.provide(DefaultMulticall),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Error Handling
+
+Handle both batch-level and per-call failures:
+
+```typescript
+import { MulticallError } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const multicall = yield* MulticallService
+  
+  const results = yield* multicall.aggregate3([
+    { target: USDC, callData: yield* ERC20.encodeBalanceOf(wallet), allowFailure: true },
+    { target: '0xDEAD...', callData: '0x70a08231...', allowFailure: true }, // Bad contract
+    { target: USDC, callData: yield* ERC20.encodeBalanceOf(wallet2), allowFailure: false }
+  ])
+  
+  // Check individual call results
+  const processed = results.map((result, i) => {
+    if (!result.success) {
+      console.warn(`Call ${i} failed`)
+      return null
+    }
+    return result.returnData
+  })
+  
+  return processed
+}).pipe(
+  Effect.catchTag('MulticallError', (error) => {
+    // Batch-level failure (e.g., Multicall3 contract unavailable)
+    console.error('Multicall failed:', error.message)
+    if (error.failedCalls) {
+      console.error('Failed call indices:', error.failedCalls)
+    }
+    return Effect.succeed([])
+  }),
+  Effect.provide(DefaultMulticall),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Performance Comparison
+
+| Approach | 10 Addresses | 100 Addresses | 1000 Addresses |
+|----------|--------------|---------------|----------------|
+| Sequential | 10 RPC calls (~2s) | 100 RPC calls (~20s) | 1000 RPC calls (~200s) |
+| Parallel | 10 RPC calls (~0.5s) | 100 RPC calls (~5s) | Rate limited |
+| Multicall | **1 RPC call (~0.2s)** | **1 RPC call (~0.3s)** | **~10 RPC calls (~2s)** |
+
+## When to Use Multicall
+
+**Use Multicall when:**
+- Querying the same data across many addresses (balances, allowances)
+- Building dashboards or portfolio views
+- Reducing RPC costs on paid providers
+- Avoiding rate limits
+
+**Don't use Multicall when:**
+- Making state-changing transactions (use regular calls)
+- Querying only 1-2 addresses (overhead not worth it)
+- Target chain doesn't have Multicall3 deployed
+
+## Multicall3 Deployment
+
+Multicall3 is deployed at `0xcA11bde05977b3631167028862bE2a173976CA11` on:
+- Ethereum Mainnet, Goerli, Sepolia
+- Polygon, Arbitrum, Optimism, Base
+- BSC, Avalanche, Fantom
+- [Full list](https://www.multicall3.com/)

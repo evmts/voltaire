@@ -1,0 +1,237 @@
+---
+title: Cheatsheet
+description: Quick reference for common voltaire-effect patterns
+---
+
+## Install
+
+```bash
+pnpm add voltaire-effect @tevm/voltaire effect
+```
+
+## Import Pattern
+
+```typescript
+import { Effect, Layer } from 'effect'
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+```
+
+## Decode → Use → Provide
+
+```typescript
+const program = Effect.gen(function* () {
+  const addr = yield* S.decode(Address.Hex)(input)     // decode
+  const provider = yield* ProviderService              // request service
+  return yield* provider.getBalance(addr, 'latest')    // use
+}).pipe(
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+await Effect.runPromise(program)
+```
+
+## Schema Operations
+
+| Operation | Code |
+|-----------|------|
+| Decode sync | `S.decodeSync(Address.Hex)('0x...')` |
+| Decode effect | `S.decode(Address.Hex)('0x...')` |
+| Decode either | `S.decodeEither(Address.Hex)('0x...')` |
+| Encode sync | `S.encodeSync(Address.Hex)(addr)` |
+| Encode effect | `S.encode(Address.Checksummed)(addr)` |
+
+## Error Handling
+
+```typescript
+program.pipe(
+  Effect.catchTag('ParseError', (e) => Effect.succeed(fallback)),
+  Effect.catchTag('ProviderError', (e) => Effect.succeed(0n)),
+  Effect.catchTags({
+    ParseError: () => ...,
+    ProviderError: () => ...,
+  })
+)
+```
+
+## Service Pattern
+
+```typescript
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  const signer = yield* SignerService
+  // use services
+})
+```
+
+## Layer Composition
+
+```typescript
+const MainLayer = Layer.mergeAll(
+  Provider,
+  HttpTransport('https://eth.llamarpc.com')
+)
+
+const SignerLayer = Layer.mergeAll(
+  Signer.Live,
+  LocalAccount(privateKey),
+  Provider,
+  HttpTransport('https://eth.llamarpc.com'),
+  Secp256k1Live,
+  KeccakLive
+)
+```
+
+## Common Queries
+
+```typescript
+const provider = yield* ProviderService
+
+yield* provider.getBlockNumber()
+yield* provider.getBalance(addr, 'latest')
+yield* provider.getBlock({ blockTag: 'latest' })
+yield* provider.getTransaction(txHash)
+yield* provider.getTransactionReceipt(txHash)
+yield* provider.getLogs({ address, topics, fromBlock, toBlock })
+yield* provider.call({ to, data })
+yield* provider.estimateGas({ to, data, value })
+```
+
+## Send Transaction
+
+```typescript
+const signer = yield* SignerService
+
+yield* signer.sendTransaction({ to, value: 1000000000000000000n })
+yield* signer.signMessage(Hex.fromString('Hello'))
+yield* signer.signTypedData(typedData)
+```
+
+## Contract Interaction
+
+```typescript
+const token = yield* Contract(address, erc20Abi)
+
+yield* token.read.balanceOf(user)
+yield* token.write.transfer(to, amount)
+yield* token.simulate.transfer(to, amount)
+yield* token.getEvents('Transfer', { fromBlock, toBlock })
+```
+
+## Parallel Operations
+
+```typescript
+// All at once
+yield* Effect.all([
+  provider.getBlockNumber(),
+  provider.getBalance(addr),
+  provider.getChainId()
+])
+
+// With concurrency limit
+yield* Effect.all(operations, { concurrency: 5 })
+```
+
+## Retry & Timeout
+
+```typescript
+import { Schedule, Duration } from 'effect'
+
+program.pipe(
+  Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(3))),
+  Effect.timeout(Duration.seconds(10)),
+  Effect.catchTag('TimeoutException', () => Effect.succeed(null))
+)
+```
+
+## Streaming
+
+```typescript
+import { Stream } from 'effect'
+
+const blockStream = yield* BlockStreamService
+yield* Stream.runForEach(
+  blockStream.watch({ include: 'transactions' }),
+  (event) => Effect.log(`Block ${event.blocks[0]?.header.number}`)
+)
+```
+
+## Testing
+
+```typescript
+const MockProvider = Layer.succeed(ProviderService, {
+  getBlockNumber: () => Effect.succeed(12345n),
+  getBalance: () => Effect.succeed(1000000000000000000n),
+  // ...
+})
+
+await Effect.runPromise(program.pipe(Effect.provide(MockProvider)))
+```
+
+## Crypto Services
+
+```typescript
+import { CryptoLive, KeccakService, Secp256k1Service } from 'voltaire-effect/crypto'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const secp = yield* Secp256k1Service
+  
+  const hash = yield* keccak.hash(data)
+  const sig = yield* secp.sign(hash, privateKey)
+}).pipe(Effect.provide(CryptoLive))
+```
+
+## Transport Options
+
+```typescript
+// HTTP
+HttpTransport('https://eth.llamarpc.com')
+
+// HTTP with options
+HttpTransport({ url: '...', timeout: 60000, retries: 5 })
+
+// HTTP with batching
+HttpTransport({ url: '...', batch: { batchSize: 50, wait: 10 } })
+
+// WebSocket
+WebSocketTransport('wss://eth.llamarpc.com')
+
+// Browser (window.ethereum)
+BrowserTransport
+```
+
+## Type Patterns
+
+```typescript
+// Address from hex
+const addr = S.decodeSync(Address.Hex)('0x...')
+
+// Hex from string
+const hex = Hex.fromString('hello')
+
+// Hex from bytes
+const hex = Hex.fromBytes(new Uint8Array([1, 2, 3]))
+
+// Address to hex string
+Address.toHex(addr)
+
+// Check zero address
+Address.isZero(addr)
+```
+
+## Running Effects
+
+```typescript
+// Promise
+await Effect.runPromise(effect)
+
+// Sync (throws if async or error)
+Effect.runSync(effect)
+
+// Exit (captures success or failure)
+const exit = await Effect.runPromiseExit(effect)
+Exit.match(exit, { onSuccess: ..., onFailure: ... })
+```

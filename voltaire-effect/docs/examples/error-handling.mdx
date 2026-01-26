@@ -7,14 +7,14 @@ description: Composable error handling patterns
 
 ```typescript
 import { Effect } from 'effect'
-import { PublicClientService, PublicClient, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
 
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* client.getBalance('0x...', 'latest')
 }).pipe(
-  Effect.catchTag('PublicClientError', () => Effect.succeed(0n)),
-  Effect.provide(PublicClient),
+  Effect.catchTag('ProviderError', () => Effect.succeed(0n)),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -22,7 +22,7 @@ const program = Effect.gen(function* () {
 ## Handle Multiple Error Types
 
 ```typescript
-import { Contract, ContractCallError, ContractWriteError, WalletClientLive, LocalAccount } from 'voltaire-effect/services'
+import { Contract, ContractCallError, ContractWriteError, Signer, LocalAccount } from 'voltaire-effect/services'
 
 const program = Effect.gen(function* () {
   const token = yield* Contract(tokenAddress, erc20Abi)
@@ -34,9 +34,9 @@ const program = Effect.gen(function* () {
     ContractCallError: () => Effect.fail(new Error('Read failed')),
     ContractWriteError: () => Effect.fail(new Error('Write failed'))
   }),
-  Effect.provide(WalletClientLive),
+  Effect.provide(Signer.Live),
   Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://...'))
 )
 ```
@@ -47,11 +47,11 @@ const program = Effect.gen(function* () {
 import { Effect, Schedule } from 'effect'
 
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* client.getBlockNumber()
 }).pipe(
   Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.compose(Schedule.recurs(3)))),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -62,12 +62,12 @@ const program = Effect.gen(function* () {
 import { Effect, Duration } from 'effect'
 
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* client.getBlock({ blockTag: 'latest', includeTransactions: true })
 }).pipe(
   Effect.timeout(Duration.seconds(10)),
   Effect.catchTag('TimeoutException', () => Effect.succeed(null)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -76,18 +76,18 @@ const program = Effect.gen(function* () {
 
 ```typescript
 const primary = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* client.getBlockNumber()
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 
 const backup = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   return yield* client.getBlockNumber()
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 
@@ -100,7 +100,7 @@ const program = primary.pipe(Effect.orElse(() => backup))
 import { Effect, Option } from 'effect'
 
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   
   const balance = yield* client.getBalance(address, 'latest').pipe(
     Effect.map(Option.some),
@@ -109,7 +109,7 @@ const program = Effect.gen(function* () {
   
   return { address, balance: Option.getOrElse(balance, () => 0n) }
 }).pipe(
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
@@ -125,7 +125,7 @@ class InsufficientBalance extends Data.TaggedError('InsufficientBalance')<{
 }> {}
 
 const program = Effect.gen(function* () {
-  const client = yield* PublicClientService
+  const client = yield* ProviderService
   const balance = yield* client.getBalance(address, 'latest')
   
   if (balance < requiredAmount) {
@@ -134,7 +134,7 @@ const program = Effect.gen(function* () {
   return balance
 }).pipe(
   Effect.catchTag('InsufficientBalance', (e) => Effect.succeed(e.available)),
-  Effect.provide(PublicClient),
+  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```

@@ -1,0 +1,347 @@
+---
+title: Migrating from ethers.js
+description: Guide for transitioning from ethers.js to voltaire-effect
+---
+
+This guide helps ethers.js users transition to voltaire-effect's Effect-based patterns.
+
+## Provider Setup
+
+### ethers.js
+
+```typescript
+import { JsonRpcProvider } from 'ethers'
+
+const provider = new JsonRpcProvider('https://eth.llamarpc.com')
+const blockNumber = await provider.getBlockNumber()
+```
+
+### voltaire-effect
+
+```typescript
+import { Effect } from 'effect'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  return yield* provider.getBlockNumber()
+}).pipe(
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const blockNumber = await Effect.runPromise(program)
+```
+
+## Wallet/Signer
+
+### ethers.js
+
+```typescript
+import { Wallet, JsonRpcProvider } from 'ethers'
+
+const provider = new JsonRpcProvider('https://eth.llamarpc.com')
+const wallet = new Wallet(privateKey, provider)
+
+const tx = await wallet.sendTransaction({
+  to: '0x...',
+  value: 1000000000000000000n
+})
+```
+
+### voltaire-effect
+
+```typescript
+import { Effect } from 'effect'
+import { 
+  SignerService, 
+  Signer, 
+  LocalAccount,
+  Provider,
+  HttpTransport 
+} from 'voltaire-effect/services'
+import * as Hex from 'voltaire-effect/primitives/Hex'
+import * as S from 'effect/Schema'
+
+const privateKey = S.decodeSync(Hex.String)('0xac0974bec...')
+
+const program = Effect.gen(function* () {
+  const signer = yield* SignerService
+  return yield* signer.sendTransaction({
+    to: '0x...',
+    value: 1000000000000000000n
+  })
+}).pipe(
+  Effect.provide(Signer.Live),
+  Effect.provide(LocalAccount(privateKey)),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const tx = await Effect.runPromise(program)
+```
+
+## HD Wallet
+
+### ethers.js
+
+```typescript
+import { HDNodeWallet, Mnemonic } from 'ethers'
+
+const mnemonic = 'test test test test test test test test test test test junk'
+const wallet = HDNodeWallet.fromMnemonic(Mnemonic.fromPhrase(mnemonic))
+const secondAddress = wallet.derivePath("m/44'/60'/0'/0/1")
+```
+
+### voltaire-effect
+
+```typescript
+import { Effect } from 'effect'
+import { 
+  AccountService, 
+  MnemonicAccount,
+  SignerService,
+  Signer,
+  Provider,
+  HttpTransport
+} from 'voltaire-effect/services'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+
+const mnemonic = 'test test test test test test test test test test test junk'
+
+// Default address (index 0)
+const program = Effect.gen(function* () {
+  const account = yield* AccountService
+  console.log('Address:', account.address)
+}).pipe(
+  Effect.provide(MnemonicAccount(mnemonic)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive)
+)
+
+// Second address (index 1)
+const secondAddr = Effect.gen(function* () {
+  const account = yield* AccountService
+  console.log('Address:', account.address)
+}).pipe(
+  Effect.provide(MnemonicAccount(mnemonic, { index: 1 })),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive)
+)
+```
+
+## Contract Interaction
+
+### ethers.js
+
+```typescript
+import { Contract, JsonRpcProvider } from 'ethers'
+
+const abi = ['function balanceOf(address) view returns (uint256)']
+const provider = new JsonRpcProvider('https://eth.llamarpc.com')
+const contract = new Contract(tokenAddress, abi, provider)
+
+const balance = await contract.balanceOf(userAddress)
+```
+
+### voltaire-effect
+
+```typescript
+import { Effect } from 'effect'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
+
+const abi = [
+  { 
+    type: 'function', 
+    name: 'balanceOf', 
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: 'balance', type: 'uint256' }] 
+  }
+] as const
+
+const program = Effect.gen(function* () {
+  const token = yield* Contract(tokenAddress, abi)
+  return yield* token.read.balanceOf(userAddress)
+}).pipe(
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const balance = await Effect.runPromise(program)
+```
+
+## Error Handling
+
+### ethers.js
+
+```typescript
+try {
+  const tx = await wallet.sendTransaction({ to, value })
+  const receipt = await tx.wait()
+} catch (error) {
+  if (error.code === 'INSUFFICIENT_FUNDS') {
+    console.log('Not enough ETH')
+  }
+}
+```
+
+### voltaire-effect
+
+```typescript
+import { Effect } from 'effect'
+import { SignerService, SignerError, ProviderError } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const signer = yield* SignerService
+  const txHash = yield* signer.sendTransaction({ to, value })
+  return txHash
+}).pipe(
+  Effect.catchTag('SignerError', (e) => {
+    if (e.message.includes('insufficient funds')) {
+      return Effect.succeed(null)
+    }
+    return Effect.fail(e)
+  }),
+  Effect.catchTag('ProviderError', (e) => {
+    console.log('RPC error:', e.message)
+    return Effect.fail(e)
+  })
+)
+```
+
+## Event Listening
+
+### ethers.js
+
+```typescript
+const contract = new Contract(tokenAddress, abi, provider)
+
+contract.on('Transfer', (from, to, value) => {
+  console.log(`Transfer: ${from} → ${to}: ${value}`)
+})
+
+// Stop after some time
+setTimeout(() => contract.removeAllListeners(), 60000)
+```
+
+### voltaire-effect
+
+```typescript
+import { Effect, Stream, Fiber, Duration } from 'effect'
+import { EventStreamService, EventStream, HttpTransport } from 'voltaire-effect'
+
+const transferEvent = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { name: 'from', type: 'address', indexed: true },
+    { name: 'to', type: 'address', indexed: true },
+    { name: 'value', type: 'uint256', indexed: false }
+  ]
+} as const
+
+const program = Effect.gen(function* () {
+  const eventStream = yield* EventStreamService
+
+  const fiber = yield* Effect.fork(
+    Stream.runForEach(
+      eventStream.watch({ address: tokenAddress, event: transferEvent }),
+      ({ log }) => Effect.log(`Transfer: ${log.args.from} → ${log.args.to}: ${log.args.value}`)
+    )
+  )
+
+  // Stop after 60 seconds
+  yield* Effect.sleep(Duration.seconds(60))
+  yield* Fiber.interrupt(fiber)
+}).pipe(
+  Effect.provide(EventStream),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Utilities
+
+### Address Validation
+
+```typescript
+// ethers.js
+import { isAddress, getAddress } from 'ethers'
+isAddress('0x...')
+getAddress('0x...')  // Checksummed
+
+// voltaire-effect
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+
+Address.isValid('0x...')
+S.decodeSync(Address.Hex)('0x...')  // Validated
+// For checksum encoding:
+S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
+```
+
+### Hex Encoding
+
+```typescript
+// ethers.js
+import { hexlify, toUtf8Bytes } from 'ethers'
+hexlify(toUtf8Bytes('hello'))
+
+// voltaire-effect
+import * as Hex from 'voltaire-effect/primitives/Hex'
+import * as S from 'effect/Schema'
+
+const bytes = new TextEncoder().encode('hello')
+S.encodeSync(Hex.Bytes)(bytes)
+```
+
+### Unit Conversion
+
+```typescript
+// ethers.js
+import { parseEther, formatEther } from 'ethers'
+parseEther('1.0')  // 1000000000000000000n
+formatEther(1000000000000000000n)  // "1.0"
+
+// voltaire-effect (uses voltaire core)
+import { Denomination } from '@tevm/voltaire'
+Denomination.toWei('1.0', 'ether')    // 1000000000000000000n
+Denomination.fromWei(1000000000000000000n, 'ether')  // "1.0"
+```
+
+## Key Differences
+
+| Concept | ethers.js | voltaire-effect |
+|---------|-----------|-----------------|
+| Provider | Class instance | Effect Service + Layer |
+| Errors | try/catch | Typed error channel |
+| Async | Promise | Effect |
+| State | Mutable objects | Immutable + Layer composition |
+| Events | Callbacks | Effect Streams |
+| Types | Runtime validation | Schema validation |
+
+## Gradual Migration
+
+You can use both libraries during migration:
+
+```typescript
+import { JsonRpcProvider } from 'ethers'
+import { Effect } from 'effect'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+
+// Keep ethers for some operations
+const ethersProvider = new JsonRpcProvider('https://eth.llamarpc.com')
+
+// Use voltaire-effect for new code
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  const block = yield* provider.getBlock('latest')
+  
+  // Can still use ethers for specific operations if needed
+  const legacyResult = yield* Effect.promise(() => 
+    ethersProvider.getBalance('0x...')
+  )
+  
+  return { block, legacyResult }
+})
+```

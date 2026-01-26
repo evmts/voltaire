@@ -1,0 +1,232 @@
+---
+title: Layer Presets
+description: Quick provider setup with pre-composed layers
+---
+
+## Simple Provider Setup
+
+Use `MainnetProvider` for the simplest setup:
+
+```typescript
+import { Effect } from 'effect'
+import { ProviderService, MainnetProvider } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  const blockNumber = yield* provider.getBlockNumber()
+  const chainId = yield* provider.getChainId()
+  return { blockNumber, chainId }
+}).pipe(Effect.provide(MainnetProvider('https://eth.llamarpc.com')))
+
+await Effect.runPromise(program)
+```
+
+## Multi-Chain Applications
+
+Switch between chains by swapping presets:
+
+```typescript
+import { Effect } from 'effect'
+import { 
+  ProviderService, 
+  MainnetProvider,
+  OptimismProvider,
+  ArbitrumProvider,
+  BaseProvider
+} from 'voltaire-effect/services'
+
+const getBlockNumber = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  return yield* provider.getBlockNumber()
+})
+
+// Run on different chains
+const [mainnet, optimism, arbitrum, base] = await Promise.all([
+  Effect.runPromise(getBlockNumber.pipe(
+    Effect.provide(MainnetProvider('https://eth.llamarpc.com'))
+  )),
+  Effect.runPromise(getBlockNumber.pipe(
+    Effect.provide(OptimismProvider('https://mainnet.optimism.io'))
+  )),
+  Effect.runPromise(getBlockNumber.pipe(
+    Effect.provide(ArbitrumProvider('https://arb1.arbitrum.io/rpc'))
+  )),
+  Effect.runPromise(getBlockNumber.pipe(
+    Effect.provide(BaseProvider('https://mainnet.base.org'))
+  ))
+])
+
+console.log({ mainnet, optimism, arbitrum, base })
+```
+
+## Full Service Stack
+
+Use `MainnetFullProvider` for applications needing all services:
+
+```typescript
+import { Effect } from 'effect'
+import { 
+  ProviderService,
+  ChainService,
+  FeeEstimatorService,
+  NonceManagerService,
+  CacheService,
+  MainnetFullProvider 
+} from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  const chain = yield* ChainService
+  const feeEstimator = yield* FeeEstimatorService
+  const nonceManager = yield* NonceManagerService
+  const cache = yield* CacheService
+  
+  // All services available
+  const blockNumber = yield* provider.getBlockNumber()
+  const fees = yield* feeEstimator.estimate()
+  const nonce = yield* nonceManager.getNextNonce('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+  
+  return { 
+    chain: chain.name,
+    chainId: chain.id,
+    blockNumber, 
+    fees,
+    nonce
+  }
+}).pipe(Effect.provide(MainnetFullProvider('https://eth.llamarpc.com')))
+```
+
+## L2 Applications
+
+Chain-specific presets include proper chain configuration:
+
+```typescript
+import { Effect } from 'effect'
+import { 
+  ProviderService,
+  ChainService,
+  OptimismProvider
+} from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  const chain = yield* ChainService
+  
+  // Chain config is pre-populated
+  console.log(`Chain: ${chain.name}`)          // "Optimism"
+  console.log(`Chain ID: ${chain.id}`)          // 10
+  console.log(`Block time: ${chain.blockTime}`) // 2000ms
+  console.log(`Multicall3: ${chain.contracts?.multicall3?.address}`)
+  
+  const block = yield* provider.getBlockNumber()
+  return block
+}).pipe(Effect.provide(OptimismProvider('https://mainnet.optimism.io')))
+```
+
+## Testing with Presets
+
+Replace transport for testing:
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { 
+  ProviderService, 
+  Provider,
+  TransportService,
+  mainnet,
+  DefaultFormatter,
+  DefaultTransactionSerializer,
+  DefaultFeeEstimator,
+  DefaultNonceManager,
+  MemoryCache
+} from 'voltaire-effect/services'
+
+// Mock transport
+const MockTransport = Layer.succeed(TransportService, {
+  request: (method: string) => {
+    const responses: Record<string, unknown> = {
+      eth_blockNumber: '0x1234',
+      eth_chainId: '0x1',
+      eth_getBalance: '0xde0b6b3a7640000'
+    }
+    return Effect.succeed(responses[method])
+  }
+})
+
+// Test provider with same structure as MainnetFullProvider
+const TestProvider = Layer.mergeAll(
+  Provider.pipe(Layer.provide(MockTransport)),
+  DefaultFormatter,
+  DefaultTransactionSerializer.Live,
+  DefaultFeeEstimator.pipe(Layer.provide(Provider.pipe(Layer.provide(MockTransport)))),
+  DefaultNonceManager.pipe(Layer.provide(Provider.pipe(Layer.provide(MockTransport)))),
+  MemoryCache(),
+  mainnet
+)
+
+// Test
+const testProgram = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  return yield* provider.getBlockNumber()
+}).pipe(Effect.provide(TestProvider))
+
+await Effect.runPromise(testProgram) // 4660n
+```
+
+## createProvider for Custom Networks
+
+For networks without a preset:
+
+```typescript
+import { Effect } from 'effect'
+import { ProviderService, createProvider } from 'voltaire-effect/services'
+
+// Any EVM-compatible network
+const fantomProvider = createProvider('https://rpc.ftm.tools')
+const avalancheProvider = createProvider('https://api.avax.network/ext/bc/C/rpc')
+const bscProvider = createProvider('https://bsc-dataseed.binance.org')
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  return yield* provider.getChainId()
+})
+
+// Fantom
+await Effect.runPromise(program.pipe(Effect.provide(fantomProvider))) // 250n
+
+// Avalanche
+await Effect.runPromise(program.pipe(Effect.provide(avalancheProvider))) // 43114n
+
+// BSC
+await Effect.runPromise(program.pipe(Effect.provide(bscProvider))) // 56n
+```
+
+## When to Use Manual Composition
+
+Presets are convenient, but manual composition gives more control:
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { 
+  Provider, 
+  HttpTransport,
+  mainnet,
+  DefaultFormatter
+} from 'voltaire-effect/services'
+
+// Custom layer with only what you need
+const MinimalProvider = Layer.mergeAll(
+  Provider.pipe(Layer.provide(HttpTransport('https://eth.llamarpc.com'))),
+  mainnet
+)
+
+// Or with custom implementations
+import { MyCustomFeeEstimator } from './custom-fee-estimator'
+
+const CustomStack = Layer.mergeAll(
+  Provider.pipe(Layer.provide(HttpTransport('https://eth.llamarpc.com'))),
+  DefaultFormatter,
+  mainnet,
+  MyCustomFeeEstimator  // Your implementation
+)
+```

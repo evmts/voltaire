@@ -1,0 +1,262 @@
+---
+title: Wallet Creation
+description: Create and manage Ethereum wallets from mnemonic to ready-to-sign
+---
+
+## Generate New Wallet
+
+Create a new wallet from scratch with a fresh mnemonic:
+
+```typescript
+import { Effect } from 'effect'
+import { Bip39, HDWallet, Hex, Address as A } from '@tevm/voltaire/native'
+import { LocalAccount, AccountService, SignerService, Signer, Provider, HttpTransport } from 'voltaire-effect/services'
+import { Secp256k1Live, KeccakLive, Secp256k1Service, KeccakService } from 'voltaire-effect/crypto'
+
+const generateWallet = Effect.gen(function* () {
+  // Generate 24-word mnemonic (256 bits entropy)
+  const mnemonic = Bip39.generateMnemonic(256)
+  
+  // Derive seed from mnemonic
+  const seed = yield* Effect.promise(() => Bip39.mnemonicToSeed(mnemonic))
+  
+  // Create HD wallet root
+  const root = HDWallet.fromSeed(seed)
+  
+  // Derive first Ethereum account (m/44'/60'/0'/0/0)
+  const account = HDWallet.deriveEthereum(root, 0, 0)
+  const privateKey = HDWallet.getPrivateKey(account)
+  
+  if (!privateKey) {
+    return yield* Effect.fail(new Error('Failed to derive private key'))
+  }
+  
+  // Get address from private key
+  const secp = yield* Secp256k1Service
+  const keccak = yield* KeccakService
+  const publicKey = yield* secp.getPublicKey(privateKey)
+  const addressBytes = yield* keccak.hash(publicKey.slice(1))
+  const address = A.fromBytes(addressBytes.slice(-20))
+  
+  return {
+    mnemonic,
+    privateKey: Hex.fromBytes(privateKey),
+    address: A.toHex(address)
+  }
+}).pipe(
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive)
+)
+
+const wallet = await Effect.runPromise(generateWallet)
+console.log('Mnemonic:', wallet.mnemonic)
+console.log('Address:', wallet.address)
+```
+
+## Restore from Mnemonic
+
+Restore an existing wallet using its mnemonic phrase:
+
+```typescript
+import { Effect } from 'effect'
+import { MnemonicAccount, AccountService } from 'voltaire-effect/services'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+
+const mnemonic = "test test test test test test test test test test test junk"
+
+const program = Effect.gen(function* () {
+  const account = yield* AccountService
+  
+  console.log('Restored address:', account.address)
+  
+  return account.address
+}).pipe(
+  Effect.provide(MnemonicAccount(mnemonic)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive)
+)
+
+await Effect.runPromise(program)
+```
+
+## Derive Multiple Addresses
+
+Generate multiple addresses from a single mnemonic:
+
+```typescript
+import { Effect } from 'effect'
+import { MnemonicAccount, AccountService } from 'voltaire-effect/services'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+
+const mnemonic = "test test test test test test test test test test test junk"
+
+const deriveAddresses = (count: number) =>
+  Effect.gen(function* () {
+    const addresses: string[] = []
+    
+    for (let i = 0; i < count; i++) {
+      const result = yield* Effect.gen(function* () {
+        const account = yield* AccountService
+        return account.address
+      }).pipe(
+        Effect.provide(MnemonicAccount(mnemonic, { index: i })),
+        Effect.provide(Secp256k1Live),
+        Effect.provide(KeccakLive)
+      )
+      addresses.push(result)
+    }
+    
+    return addresses
+  })
+
+// Get first 5 addresses
+const addresses = await Effect.runPromise(deriveAddresses(5))
+addresses.forEach((addr, i) => console.log(`Address ${i}: ${addr}`))
+```
+
+## Complete Wallet Setup
+
+Full workflow: create wallet, check balance, send transaction:
+
+```typescript
+import { Effect } from 'effect'
+import { 
+  MnemonicAccount, 
+  SignerService, 
+  Signer,
+  ProviderService,
+  Provider, 
+  HttpTransport 
+} from 'voltaire-effect/services'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+
+const mnemonic = process.env.MNEMONIC!
+const rpcUrl = 'https://mainnet.infura.io/v3/YOUR_KEY'
+
+const walletWorkflow = Effect.gen(function* () {
+  const signer = yield* SignerService
+  const provider = yield* ProviderService
+  
+  // Get wallet address and balance
+  const address = signer.address
+  const balance = yield* provider.getBalance(address, 'latest')
+  
+  console.log(`Address: ${address}`)
+  console.log(`Balance: ${balance} wei`)
+  
+  // Send transaction if balance is sufficient
+  if (balance > 1000000000000000000n) {
+    const txHash = yield* signer.sendTransaction({
+      to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+      value: 100000000000000000n // 0.1 ETH
+    })
+    
+    const receipt = yield* provider.waitForTransactionReceipt(txHash, { confirmations: 1 })
+    console.log(`Transaction confirmed in block ${receipt.blockNumber}`)
+    
+    return { address, balance, txHash }
+  }
+  
+  return { address, balance, txHash: null }
+}).pipe(
+  Effect.provide(Signer.Live),
+  Effect.provide(MnemonicAccount(mnemonic)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport(rpcUrl))
+)
+
+await Effect.runPromise(walletWorkflow)
+```
+
+## Wallet with Encryption
+
+Encrypt the mnemonic for secure storage:
+
+```typescript
+import { Effect } from 'effect'
+import { AesGcmService, AesGcmLive, KeccakService, KeccakLive } from 'voltaire-effect/crypto'
+
+const encryptMnemonic = (mnemonic: string, password: string) =>
+  Effect.gen(function* () {
+    const aes = yield* AesGcmService
+    const keccak = yield* KeccakService
+    
+    // Derive encryption key from password
+    const passwordBytes = new TextEncoder().encode(password)
+    const key = yield* keccak.hash(passwordBytes)
+    
+    // Encrypt mnemonic
+    const nonce = yield* aes.generateNonce()
+    const plaintext = new TextEncoder().encode(mnemonic)
+    const ciphertext = yield* aes.encrypt(key, plaintext, nonce)
+    
+    // Combine nonce + ciphertext for storage
+    const encrypted = new Uint8Array(nonce.length + ciphertext.length)
+    encrypted.set(nonce, 0)
+    encrypted.set(ciphertext, nonce.length)
+    
+    return encrypted
+  }).pipe(
+    Effect.provide(AesGcmLive),
+    Effect.provide(KeccakLive)
+  )
+
+const decryptMnemonic = (encrypted: Uint8Array, password: string) =>
+  Effect.gen(function* () {
+    const aes = yield* AesGcmService
+    const keccak = yield* KeccakService
+    
+    // Derive encryption key from password
+    const passwordBytes = new TextEncoder().encode(password)
+    const key = yield* keccak.hash(passwordBytes)
+    
+    // Split nonce and ciphertext (AES-GCM nonce is 12 bytes)
+    const nonce = encrypted.slice(0, 12)
+    const ciphertext = encrypted.slice(12)
+    
+    // Decrypt
+    const plaintext = yield* aes.decrypt(key, ciphertext, nonce)
+    return new TextDecoder().decode(plaintext)
+  }).pipe(
+    Effect.provide(AesGcmLive),
+    Effect.provide(KeccakLive)
+  )
+
+// Usage
+const mnemonic = "test test test test test test test test test test test junk"
+const encrypted = await Effect.runPromise(encryptMnemonic(mnemonic, "my-password"))
+const decrypted = await Effect.runPromise(decryptMnemonic(encrypted, "my-password"))
+console.log('Decrypted:', decrypted)
+```
+
+## Security Best Practices
+
+<Warning>
+**Critical Security Considerations:**
+</Warning>
+
+- **Never log mnemonics** or private keys in production
+- **Never hardcode mnemonics** - use environment variables or secure storage
+- **Use strong passwords** for encrypted storage (12+ characters, mixed case, numbers, symbols)
+- **Consider hardware wallets** for production user funds
+- **Clear sensitive data** from memory when done
+- **Use passphrases** (25th word) for additional security layer
+
+## API Reference
+
+| Function | Description |
+|----------|-------------|
+| `Bip39.generateMnemonic(bits)` | Generate mnemonic (128=12 words, 256=24 words) |
+| `Bip39.validateMnemonic(mnemonic)` | Check if mnemonic is valid |
+| `Bip39.mnemonicToSeed(mnemonic, passphrase?)` | Derive 64-byte seed |
+| `HDWallet.fromSeed(seed)` | Create root key from seed |
+| `HDWallet.deriveEthereum(root, account, index)` | Derive Ethereum key (BIP-44) |
+| `MnemonicAccount(mnemonic, options?)` | Create account layer from mnemonic |
+
+## Related
+
+- [HD Wallet Guide](/guides/hd-wallet) - Detailed HD wallet integration
+- [Send Transactions](/examples/send-transactions) - Transaction signing examples
+- [AES-GCM Encryption](/crypto/aesgcm) - Symmetric encryption details

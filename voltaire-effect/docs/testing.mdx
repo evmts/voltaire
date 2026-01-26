@@ -133,6 +133,31 @@ it('uses keccak service', async () => {
 })
 ```
 
+## CryptoLive and CryptoTest
+
+Use `CryptoLive` for production and `CryptoTest` for deterministic unit tests:
+
+```typescript
+import { CryptoLive, CryptoTest } from 'voltaire-effect'
+import { KeccakService, Secp256k1Service } from 'voltaire-effect/crypto'
+
+// CryptoLive bundles: Keccak256, Secp256k1, SHA256, Blake2, Ripemd160, 
+// BLS12-381, Ed25519, P256, KZG, HDWallet, BN254, BIP-39, HMAC, EIP-712,
+// ChaCha20Poly1305, Keystore
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const secp = yield* Secp256k1Service
+  // All crypto services available
+})
+
+// Production
+await Effect.runPromise(program.pipe(Effect.provide(CryptoLive)))
+
+// Testing (deterministic outputs)
+await Effect.runPromise(program.pipe(Effect.provide(CryptoTest)))
+```
+
 ## Composing Test Layers
 
 Combine multiple test layers:

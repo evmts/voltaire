@@ -1,0 +1,159 @@
+---
+title: Formatter Service
+description: Chain-specific data transformation with Effect.ts
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { FormatterService, DefaultFormatter } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const formatter = yield* FormatterService
+  const block = yield* formatter.formatBlock(rpcBlock)
+  const tx = yield* formatter.formatTransaction(rpcTx)
+  return { block, tx }
+}).pipe(Effect.provide(DefaultFormatter))
+```
+
+## Formatting Methods
+
+### formatBlock
+
+Transforms block data from RPC format:
+
+```typescript
+const formatter = yield* FormatterService
+const block = yield* formatter.formatBlock(rpcBlockResponse)
+```
+
+### formatTransaction
+
+Transforms transaction data from RPC format:
+
+```typescript
+const tx = yield* formatter.formatTransaction(rpcTxResponse)
+```
+
+### formatReceipt
+
+Transforms transaction receipt data:
+
+```typescript
+const receipt = yield* formatter.formatReceipt(rpcReceiptResponse)
+```
+
+### formatRequest
+
+Formats a transaction request for RPC submission:
+
+```typescript
+const formattedRequest = yield* formatter.formatRequest({
+  to: '0x1234567890123456789012345678901234567890',
+  value: 1000000000000000000n,
+  data: '0x...'
+})
+```
+
+## Chain-Specific Formatters
+
+The default formatter is a passthrough. Create custom formatters for chain-specific fields:
+
+### Optimism Example
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { FormatterService, FormatError } from 'voltaire-effect/services'
+
+const OptimismFormatter = Layer.succeed(FormatterService, {
+  formatBlock: (rpc) => Effect.succeed(rpc),
+  formatTransaction: (rpc: any) => Effect.succeed({
+    ...rpc,
+    depositNonce: rpc.nonce,
+    depositNonceVersion: rpc.depositReceiptVersion,
+    isSystemTx: rpc.isSystemTx
+  }),
+  formatReceipt: (rpc: any) => Effect.succeed({
+    ...rpc,
+    l1GasUsed: rpc.l1GasUsed,
+    l1GasPrice: rpc.l1GasPrice,
+    l1Fee: rpc.l1Fee
+  }),
+  formatRequest: (tx) => Effect.succeed(tx)
+})
+```
+
+### Arbitrum Example
+
+```typescript
+const ArbitrumFormatter = Layer.succeed(FormatterService, {
+  formatBlock: (rpc) => Effect.succeed(rpc),
+  formatTransaction: (rpc: any) => Effect.succeed({
+    ...rpc,
+    gasUsedForL1: rpc.gasUsedForL1,
+    l1BlockNumber: rpc.l1BlockNumber
+  }),
+  formatReceipt: (rpc: any) => Effect.succeed({
+    ...rpc,
+    gasUsedForL1: rpc.gasUsedForL1
+  }),
+  formatRequest: (tx) => Effect.succeed(tx)
+})
+```
+
+### zkSync Example
+
+```typescript
+const ZkSyncFormatter = Layer.succeed(FormatterService, {
+  formatBlock: (rpc: any) => Effect.succeed({
+    ...rpc,
+    l1BatchNumber: rpc.l1BatchNumber,
+    l1BatchTimestamp: rpc.l1BatchTimestamp
+  }),
+  formatTransaction: (rpc: any) => Effect.succeed({
+    ...rpc,
+    l1BatchNumber: rpc.l1BatchNumber,
+    l1BatchTxIndex: rpc.l1BatchTxIndex
+  }),
+  formatReceipt: (rpc) => Effect.succeed(rpc),
+  formatRequest: (tx) => Effect.succeed(tx)
+})
+```
+
+## Error Handling
+
+```typescript
+import { FormatError } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const formatter = yield* FormatterService
+  return yield* formatter.formatBlock(rpcBlock)
+}).pipe(
+  Effect.catchTag('FormatError', (error) => {
+    console.error(`Format failed for ${error.type}: ${error.message}`)
+    return Effect.succeed(null)
+  })
+)
+```
+
+## Service Interface
+
+```typescript
+type FormatterShape = {
+  readonly formatBlock: (rpc: unknown) => Effect.Effect<unknown, FormatError>
+  readonly formatTransaction: (rpc: unknown) => Effect.Effect<unknown, FormatError>
+  readonly formatReceipt: (rpc: unknown) => Effect.Effect<unknown, FormatError>
+  readonly formatRequest: (tx: unknown) => Effect.Effect<unknown, FormatError>
+}
+```
+
+## Error Type
+
+```typescript
+class FormatError extends Data.TaggedError("FormatError")<{
+  readonly input: unknown
+  readonly type: 'block' | 'transaction' | 'receipt' | 'request'
+  readonly message: string
+}> {}
+```

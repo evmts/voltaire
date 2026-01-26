@@ -1,0 +1,181 @@
+---
+title: KZG Service
+description: KZG polynomial commitments for EIP-4844 blob transactions
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { KzgService, DefaultKzg } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const kzg = yield* KzgService
+  const commitment = yield* kzg.blobToCommitment(blobData)
+  return commitment
+}).pipe(Effect.provide(DefaultKzg))
+```
+
+## Blob to Commitment
+
+Convert a blob to a KZG commitment:
+
+```typescript
+const kzg = yield* KzgService
+
+// Blob must be exactly 131072 bytes (4096 field elements × 32 bytes)
+const blob = new Uint8Array(131072)
+// ... fill blob with data
+
+const commitment = yield* kzg.blobToCommitment(blob)
+// Returns: Uint8Array (48 bytes) - the KZG commitment
+```
+
+## Compute Proof
+
+Compute a KZG proof for a blob:
+
+```typescript
+const kzg = yield* KzgService
+
+const commitment = yield* kzg.blobToCommitment(blob)
+const proof = yield* kzg.computeProof(blob, commitment)
+// Returns: Uint8Array (48 bytes) - the KZG proof
+```
+
+## Verify Proof
+
+Verify a KZG proof:
+
+```typescript
+const kzg = yield* KzgService
+
+const isValid = yield* kzg.verifyProof(
+  commitment,  // 48 bytes
+  z,           // 32 bytes - evaluation point
+  y,           // 32 bytes - claimed evaluation
+  proof        // 48 bytes
+)
+// Returns: boolean
+```
+
+## Layer Implementations
+
+### DefaultKzg
+
+The live implementation using `@tevm/voltaire/Kzg`:
+
+```typescript
+import { DefaultKzg } from 'voltaire-effect/services'
+
+const program = myEffect.pipe(Effect.provide(DefaultKzg))
+```
+
+### NoopKzg
+
+A stub implementation that always fails (for environments without KZG support):
+
+```typescript
+import { NoopKzg } from 'voltaire-effect/services'
+
+const program = myEffect.pipe(Effect.provide(NoopKzg))
+// All operations will fail with KzgError
+```
+
+## EIP-4844 Blob Transaction Usage
+
+Create a blob transaction with KZG commitments:
+
+```typescript
+import { Effect } from 'effect'
+import { 
+  KzgService, 
+  TransactionSerializerService,
+  DefaultKzg,
+  DefaultTransactionSerializer 
+} from 'voltaire-effect/services'
+import { keccak256 } from 'voltaire'
+
+const createBlobTx = Effect.gen(function* () {
+  const kzg = yield* KzgService
+  const serializer = yield* TransactionSerializerService
+  
+  // Create blob (131072 bytes)
+  const blob = new Uint8Array(131072)
+  // ... fill with data
+  
+  // Generate commitment and versioned hash
+  const commitment = yield* kzg.blobToCommitment(blob)
+  const versionedHash = new Uint8Array(32)
+  versionedHash[0] = 0x01  // Version byte
+  versionedHash.set(keccak256(commitment).slice(1), 1)
+  
+  const tx = {
+    type: 3,
+    chainId: 1,
+    nonce: 0n,
+    maxPriorityFeePerGas: 1000000000n,
+    maxFeePerGas: 20000000000n,
+    maxFeePerBlobGas: 1000000000n,
+    gas: 21000n,
+    to: '0x1234567890123456789012345678901234567890',
+    value: 0n,
+    data: '0x',
+    accessList: [],
+    blobVersionedHashes: [`0x${Buffer.from(versionedHash).toString('hex')}`]
+  }
+  
+  return yield* serializer.serialize(tx)
+}).pipe(
+  Effect.provide(DefaultKzg),
+  Effect.provide(DefaultTransactionSerializer.Live)
+)
+```
+
+## Error Handling
+
+```typescript
+import { KzgError } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const kzg = yield* KzgService
+  return yield* kzg.blobToCommitment(blob)
+}).pipe(
+  Effect.catchTag('KzgError', (e) => {
+    console.error(`KZG ${e.operation} failed: ${e.message}`)
+    return Effect.fail(e)
+  })
+)
+```
+
+## Service Interface
+
+```typescript
+type KzgShape = {
+  readonly blobToCommitment: (blob: Uint8Array) => Effect.Effect<Uint8Array, KzgError>
+  readonly computeProof: (blob: Uint8Array, commitment: Uint8Array) => Effect.Effect<Uint8Array, KzgError>
+  readonly verifyProof: (
+    commitment: Uint8Array,
+    z: Uint8Array,
+    y: Uint8Array,
+    proof: Uint8Array
+  ) => Effect.Effect<boolean, KzgError>
+}
+```
+
+## Error Type
+
+```typescript
+class KzgError extends Data.TaggedError("KzgError")<{
+  readonly operation: 'blobToCommitment' | 'computeProof' | 'verifyProof'
+  readonly message: string
+  readonly cause?: unknown
+}> {}
+```
+
+## Requirements
+
+- **Blob size**: Must be exactly 131072 bytes (4096 × 32)
+- **Commitment size**: 48 bytes (BLS12-381 G1 point)
+- **Proof size**: 48 bytes
+- **Trusted setup**: DefaultKzg requires initialized trusted setup

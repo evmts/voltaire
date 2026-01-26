@@ -10,30 +10,38 @@ import * as S from 'effect/Schema'
 // Decode from hex string
 const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
 
-// Encode back to hex
-const hex = S.encodeSync(Address.Hex)(addr)
+// Use pure functions directly
+Address.isZero(addr)        // false
+Address.isValid('0x...')    // true
 ```
 
 ## Schemas
 
-**Address.Hex** — Validates hex string, returns branded `Uint8Array`.
+### Address.Hex
+
+Validates hex string, returns branded `AddressType` (Uint8Array).
 
 ```typescript
-import * as Address from 'voltaire-effect/primitives/Address'
-import * as S from 'effect/Schema'
-
 const addr = S.decodeSync(Address.Hex)(
   '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3'
 )
+
+// Encode back to lowercase hex
+const hex = S.encodeSync(Address.Hex)(addr)
+// "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
 ```
 
-**Address.Bytes** — Validates 20-byte array.
+### Address.Bytes
+
+Validates 20-byte Uint8Array.
 
 ```typescript
 const addr = S.decodeSync(Address.Bytes)(new Uint8Array(20))
 ```
 
-**Address.Checksummed** — Encodes to EIP-55 format (requires KeccakService).
+### Address.Checksummed
+
+Encodes to EIP-55 checksummed format. Requires `KeccakService`.
 
 ```typescript
 import * as Effect from 'effect/Effect'
@@ -42,29 +50,123 @@ import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
 const checksummed = await Effect.runPromise(
   S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
 )
-// "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
 ```
 
 ## Pure Functions
 
-**equals(a, b)** — Compare two addresses.
+All functions work directly on `AddressType` values.
+
+### Comparison
 
 ```typescript
-Address.equals(addr1, addr2) // boolean
+// Check equality
+Address.equals(addr1, addr2)      // boolean
+
+// Compare for ordering (-1, 0, 1)
+Address.compare(addr1, addr2)     // -1 | 0 | 1
+
+// Ordering predicates
+Address.lessThan(addr1, addr2)    // boolean
+Address.greaterThan(addr1, addr2) // boolean
 ```
 
-**isZero(addr)** — Check if address is zero.
+### Validation
 
 ```typescript
-Address.isZero(addr) // boolean
+// Check if a value is a valid address (any format)
+Address.isValid('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')  // true
+Address.isValid('0x123')  // false (wrong length)
+
+// Check if checksummed string has valid checksum
+Address.isValidChecksum('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')  // true
+Address.isValidChecksum('0x742d35cc6634c0532925a3b844bc9e7595f251e3')  // false
+
+// Check if address is zero address
+Address.isZero(addr)  // boolean
+```
+
+### Conversion
+
+```typescript
+// Clone address (new Uint8Array)
+const copy = Address.clone(addr)
+
+// Get raw bytes
+const bytes = Address.toBytes(addr)  // Uint8Array
+
+// Convert to U256 (bigint)
+const num = Address.toU256(addr)  // bigint
+
+// Hex string formats
+Address.toLowercase(addr)  // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+Address.toUppercase(addr)  // "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
+Address.toShortHex(addr)   // "0x742d...51e3" (truncated for display)
+
+// ABI encoding (32 bytes, left-padded with zeros)
+const abiEncoded = Address.toAbiEncoded(addr)  // Uint8Array(32)
+```
+
+## Usage Examples
+
+### Parse and Validate User Input
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import * as Effect from 'effect/Effect'
+
+const parseAddress = (input: string) =>
+  S.decode(Address.Hex)(input).pipe(
+    Effect.catchTag('ParseError', () =>
+      Effect.fail(new Error('Invalid Ethereum address'))
+    )
+  )
+```
+
+### Compare Addresses in Sorting
+
+```typescript
+const addresses = [addr1, addr2, addr3]
+const sorted = addresses.toSorted(Address.compare)
+```
+
+### Check for Zero Address
+
+```typescript
+const transfer = (to: AddressType, amount: bigint) =>
+  Effect.gen(function* () {
+    if (Address.isZero(to)) {
+      return yield* Effect.fail(new Error('Cannot transfer to zero address'))
+    }
+    // ... proceed with transfer
+  })
+```
+
+### Display Truncated Address
+
+```typescript
+// For UI display
+const display = Address.toShortHex(addr)  // "0x742d...51e3"
+```
+
+## Type Declaration
+
+```typescript
+import type { AddressType } from 'voltaire-effect/primitives/Address'
+
+function transfer(to: AddressType, amount: bigint) {
+  // Type-safe address handling
+}
 ```
 
 ## Errors
 
-- `ParseError` — Invalid format, hex, or byte length
+- `ParseError` — Invalid format, hex, or byte length during Schema decode
 
 ## See Also
 
 - [PublicKey](/primitives/publickey) - Derive address from public key
 - [PrivateKey](/primitives/privatekey) - Generate addresses from private keys
 - [ENS](/primitives/ens) - Resolve ENS names to addresses
+- [Brand](/primitives/brand) - Nominal address string type

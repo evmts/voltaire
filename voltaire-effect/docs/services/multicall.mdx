@@ -1,0 +1,188 @@
+---
+title: Multicall Service
+description: Batch multiple contract reads into a single RPC call using Multicall3
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { MulticallService, DefaultMulticall, Provider, HttpTransport } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const multicall = yield* MulticallService
+  
+  const results = yield* multicall.aggregate3([
+    { target: '0x6B175474E89094C44Da98b954EecdEfaE6E286AB', callData: '0x70a08231...' },
+    { target: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', callData: '0x70a08231...' }
+  ])
+  
+  return results
+}).pipe(
+  Effect.provide(DefaultMulticall),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## MulticallCall Type
+
+```typescript
+interface MulticallCall {
+  /** Target contract address to call */
+  readonly target: `0x${string}`
+  /** ABI-encoded function call data */
+  readonly callData: `0x${string}`
+  /** Whether this call is allowed to fail without reverting the batch */
+  readonly allowFailure?: boolean
+}
+```
+
+## MulticallResult
+
+```typescript
+interface MulticallResult {
+  /** Whether the call succeeded */
+  readonly success: boolean
+  /** The return data from the call (empty if failed) */
+  readonly returnData: `0x${string}`
+}
+```
+
+### Success/Failure Handling
+
+```typescript
+const results = yield* multicall.aggregate3([
+  { target: tokenA, callData: balanceOfData, allowFailure: true },
+  { target: tokenB, callData: balanceOfData, allowFailure: true }
+])
+
+for (const result of results) {
+  if (result.success) {
+    const balance = decodeBalance(result.returnData)
+    console.log('Balance:', balance)
+  } else {
+    console.log('Call failed')
+  }
+}
+```
+
+## Error Handling
+
+```typescript
+import { MulticallError } from 'voltaire-effect/services'
+
+program.pipe(
+  Effect.catchTag('MulticallError', (e) => {
+    console.error('Multicall failed:', e.message)
+    if (e.failedCalls) {
+      console.error('Failed call indices:', e.failedCalls)
+    }
+    return Effect.succeed([])
+  })
+)
+```
+
+### MulticallError
+
+```typescript
+class MulticallError extends Data.TaggedError("MulticallError")<{
+  /** Human-readable error message */
+  readonly message: string
+  /** Indices of calls that failed (if applicable) */
+  readonly failedCalls?: readonly number[]
+  /** Underlying error that caused the failure */
+  readonly cause?: unknown
+}>
+```
+
+## ERC-20 Balance Checking
+
+Batch multiple `balanceOf` calls for different tokens:
+
+```typescript
+import { Effect } from 'effect'
+import { encodeParameters } from '@tevm/voltaire/Abi'
+import { MulticallService, DefaultMulticall, Provider, HttpTransport } from 'voltaire-effect/services'
+
+const BALANCE_OF_SELECTOR = '0x70a08231'
+
+const encodeBalanceOf = (account: `0x${string}`): `0x${string}` => {
+  const encoded = encodeParameters([{ type: 'address' }], [account])
+  return `${BALANCE_OF_SELECTOR}${Buffer.from(encoded).toString('hex')}` as `0x${string}`
+}
+
+const checkBalances = Effect.gen(function* () {
+  const multicall = yield* MulticallService
+  const account = '0x1234567890123456789012345678901234567890'
+  
+  const tokens = [
+    '0x6B175474E89094C44Da98b954EecdEfaE6E286AB', // DAI
+    '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
+    '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT
+  ] as const
+  
+  const results = yield* multicall.aggregate3(
+    tokens.map(token => ({
+      target: token,
+      callData: encodeBalanceOf(account),
+      allowFailure: true
+    }))
+  )
+  
+  return results.map((r, i) => ({
+    token: tokens[i],
+    balance: r.success ? BigInt(r.returnData) : 0n
+  }))
+}).pipe(
+  Effect.provide(DefaultMulticall),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Layer Composition
+
+`DefaultMulticall` requires `ProviderService`:
+
+```typescript
+import * as Layer from 'effect/Layer'
+import { DefaultMulticall, Provider, HttpTransport } from 'voltaire-effect/services'
+
+// DefaultMulticall depends on Provider
+const DefaultMulticall: Layer.Layer<MulticallService, never, ProviderService>
+
+// Compose layers
+const FullMulticall = DefaultMulticall.pipe(
+  Layer.provide(Provider),
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+// Use in program
+const program = myEffect.pipe(Effect.provide(FullMulticall))
+```
+
+## Service Interface
+
+```typescript
+type MulticallShape = {
+  /**
+   * Executes multiple calls in a single RPC request using Multicall3 aggregate3.
+   *
+   * @param calls - Array of calls to execute
+   * @returns Array of results in the same order as input calls
+   */
+  readonly aggregate3: (
+    calls: readonly MulticallCall[],
+  ) => Effect.Effect<readonly MulticallResult[], MulticallError>
+}
+
+class MulticallService extends Context.Tag("MulticallService")<
+  MulticallService,
+  MulticallShape
+>() {}
+```
+
+## Multicall3 Contract
+
+The service uses the Multicall3 contract deployed at `0xcA11bde05977b3631167028862bE2a173976CA11` on Ethereum mainnet and most EVM-compatible chains.

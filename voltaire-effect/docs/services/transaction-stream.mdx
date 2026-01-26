@@ -1,6 +1,6 @@
 ---
 title: TransactionStream
-description: Effect-based transaction streaming and tracking
+description: Effect-native transaction streaming and tracking
 ---
 
 ## Quick Start
@@ -22,83 +22,81 @@ const program = Effect.gen(function* () {
 )
 ```
 
-## Watching Pending Transactions
+## Watch Pending Transactions
 
-Stream pending transactions from the mempool:
+Monitor the mempool for pending transactions:
 
 ```typescript
 const program = Effect.gen(function* () {
   const txStream = yield* TransactionStreamService
   
   yield* Stream.runForEach(
-    txStream.watchPending({
-      filter: { to: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' }
-    }),
-    (event) => Effect.log(`Pending tx to USDC: ${event.transaction.value}`)
+    txStream.watchPending({ filter: { to: usdcAddress } }),
+    (event) => Effect.log(`Pending: ${event.transaction.hash}`)
   )
 })
 ```
 
-## Watching Confirmed Transactions
+## Watch Confirmed Transactions
 
-Stream confirmed transactions with configurable confirmations:
+Watch for transactions that reach a confirmation threshold:
 
 ```typescript
 const program = Effect.gen(function* () {
   const txStream = yield* TransactionStreamService
   
   yield* Stream.runForEach(
-    txStream.watchConfirmed({
-      filter: { from: myAddress },
-      confirmations: 6,
-      fromBlock: 18000000n
+    txStream.watchConfirmed({ 
+      filter: { from: myAddress }, 
+      confirmations: 3 
     }),
-    (event) => {
-      const { transaction } = event
-      return Effect.log(`Block ${transaction.blockNumber}: ${transaction.receipt.status}`)
-    }
+    (event) => Effect.log(`Confirmed in block ${event.transaction.blockNumber}`)
   )
 })
 ```
 
-## Tracking a Transaction
+## Track a Specific Transaction
 
-Track a specific transaction through its lifecycle:
+Track a transaction through its full lifecycle (pending → confirmed/dropped):
 
 ```typescript
 const program = Effect.gen(function* () {
   const txStream = yield* TransactionStreamService
   
   yield* Stream.runForEach(
-    txStream.track('0x1234...', { confirmations: 3, timeout: 60000 }),
+    txStream.track(txHash, { confirmations: 3 }),
     (event) => {
-      switch (event.type) {
-        case 'pending':
-          return Effect.log('Transaction in mempool')
-        case 'confirmed':
-          return Effect.log(`Confirmed in block ${event.transaction.blockNumber}`)
-        case 'dropped':
-          return Effect.log(`Dropped: ${event.reason}`)
+      if (event.type === 'confirmed') {
+        return Effect.log(`Confirmed in block ${event.transaction.blockNumber}`)
       }
+      if (event.type === 'dropped') {
+        return Effect.log(`Dropped: ${event.reason}`)
+      }
+      return Effect.log(`Pending...`)
     }
   )
 })
 ```
 
-## Filtering
-
-Filter transactions by sender, recipient, method, or value:
+## Configuration Options
 
 ```typescript
-const filter = {
-  from: '0x1234...',           // Filter by sender
-  to: '0xA0b8...',             // Filter by recipient
-  methodId: '0xa9059cbb',      // ERC20 transfer
-  minValue: 1000000000000000n, // Min 0.001 ETH
-  maxValue: 1000000000000000000n // Max 1 ETH
+interface WatchPendingOptions {
+  filter?: TransactionFilter     // Filter by from/to address
+  pollingInterval?: number       // Poll interval ms
 }
 
-txStream.watchPending({ filter })
+interface WatchConfirmedOptions {
+  filter?: TransactionFilter     // Filter by from/to address
+  confirmations?: number         // Required confirmations (default: 1)
+  pollingInterval?: number       // Poll interval ms
+}
+
+interface TrackOptions {
+  confirmations?: number         // Required confirmations (default: 1)
+  timeout?: number               // Max time to wait ms
+  pollingInterval?: number       // Poll interval ms
+}
 ```
 
 ## Error Handling
@@ -128,37 +126,25 @@ class TransactionStreamService extends Context.Tag("TransactionStreamService")<
     ) => Stream.Stream<ConfirmedTransactionEvent, TransactionStreamError>
     
     readonly track: (
-      txHash: string | Uint8Array,
+      txHash: Uint8Array | string,
       options?: TrackOptions
     ) => Stream.Stream<TransactionStreamEvent, TransactionStreamError>
   }
 >() {}
 ```
 
-## Types
+## Layer Dependencies
+
+```
+TransactionStream ─── requires ──→ TransportService
+```
 
 ```typescript
-interface PendingTransactionEvent {
-  type: 'pending'
-  transaction: PendingTransaction
-  metadata: { chainHead: bigint; timestamp: number }
-}
+// Compose layers
+const AppLayer = TransactionStream.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
-interface ConfirmedTransactionEvent {
-  type: 'confirmed'
-  transaction: ConfirmedTransaction
-  metadata: { chainHead: bigint; timestamp: number }
-}
-
-interface DroppedTransactionEvent {
-  type: 'dropped'
-  hash: Uint8Array
-  reason: 'replaced' | 'timeout' | 'underpriced' | 'unknown'
-  metadata: { chainHead: bigint; timestamp: number }
-}
-
-type TransactionStreamEvent = 
-  | PendingTransactionEvent 
-  | ConfirmedTransactionEvent 
-  | DroppedTransactionEvent
+// Use with program
+Effect.runPromise(program.pipe(Effect.provide(AppLayer)))
 ```

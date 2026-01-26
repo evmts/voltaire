@@ -1,0 +1,201 @@
+---
+title: Transaction Serializer Service
+description: RLP transaction encoding/decoding with Effect.ts
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { TransactionSerializerService, DefaultTransactionSerializer } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const serializer = yield* TransactionSerializerService
+  const bytes = yield* serializer.serialize(tx)
+  const decoded = yield* serializer.deserialize(bytes)
+  return { bytes, decoded }
+}).pipe(Effect.provide(DefaultTransactionSerializer.Live))
+```
+
+## Serialize
+
+Serialize a transaction to RLP-encoded bytes:
+
+```typescript
+const serializer = yield* TransactionSerializerService
+
+const tx = {
+  type: 2,  // EIP-1559
+  chainId: 1,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1000000000n,
+  maxFeePerGas: 20000000000n,
+  gas: 21000n,
+  to: '0x1234567890123456789012345678901234567890',
+  value: 1000000000000000000n,
+  data: '0x'
+}
+
+const bytes = yield* serializer.serialize(tx)
+// Returns: Uint8Array of RLP-encoded transaction
+```
+
+## Deserialize
+
+Deserialize RLP-encoded bytes back to a transaction:
+
+```typescript
+const serializer = yield* TransactionSerializerService
+
+const tx = yield* serializer.deserialize(rlpBytes)
+// Returns the decoded transaction object
+```
+
+## Get Signing Payload
+
+Get the hash that should be signed for a transaction:
+
+```typescript
+const serializer = yield* TransactionSerializerService
+
+const signingHash = yield* serializer.getSigningPayload(tx)
+// Returns: Uint8Array (32 bytes) - Keccak-256 hash of unsigned tx
+```
+
+## Transaction Types
+
+The serializer supports all Ethereum transaction types:
+
+### Legacy (Type 0)
+
+```typescript
+const legacyTx = {
+  type: 0,
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gas: 21000n,
+  to: '0x...',
+  value: 0n,
+  data: '0x'
+}
+```
+
+### EIP-2930 Access List (Type 1)
+
+```typescript
+const eip2930Tx = {
+  type: 1,
+  chainId: 1,
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gas: 21000n,
+  to: '0x...',
+  value: 0n,
+  data: '0x',
+  accessList: [
+    { address: '0x...', storageKeys: ['0x...'] }
+  ]
+}
+```
+
+### EIP-1559 Fee Market (Type 2)
+
+```typescript
+const eip1559Tx = {
+  type: 2,
+  chainId: 1,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1000000000n,
+  maxFeePerGas: 20000000000n,
+  gas: 21000n,
+  to: '0x...',
+  value: 0n,
+  data: '0x',
+  accessList: []
+}
+```
+
+### EIP-4844 Blob (Type 3)
+
+```typescript
+const eip4844Tx = {
+  type: 3,
+  chainId: 1,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1000000000n,
+  maxFeePerGas: 20000000000n,
+  maxFeePerBlobGas: 1000000000n,
+  gas: 21000n,
+  to: '0x...',
+  value: 0n,
+  data: '0x',
+  accessList: [],
+  blobVersionedHashes: ['0x01...']
+}
+```
+
+### EIP-7702 Set Code (Type 4)
+
+```typescript
+const eip7702Tx = {
+  type: 4,
+  chainId: 1,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1000000000n,
+  maxFeePerGas: 20000000000n,
+  gas: 21000n,
+  to: '0x...',
+  value: 0n,
+  data: '0x',
+  accessList: [],
+  authorizationList: [
+    { chainId: 1, address: '0x...', nonce: 0n, r: '0x...', s: '0x...', yParity: 0 }
+  ]
+}
+```
+
+## Error Handling
+
+```typescript
+import { SerializeError, DeserializeError } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const serializer = yield* TransactionSerializerService
+  return yield* serializer.serialize(tx)
+}).pipe(
+  Effect.catchTag('SerializeError', (e) => {
+    console.error(`Serialize failed: ${e.message}`)
+    return Effect.fail(e)
+  }),
+  Effect.catchTag('DeserializeError', (e) => {
+    console.error(`Deserialize failed: ${e.message}`)
+    return Effect.fail(e)
+  })
+)
+```
+
+## Service Interface
+
+```typescript
+type TransactionSerializerShape = {
+  readonly serialize: (tx: unknown) => Effect.Effect<Uint8Array, SerializeError>
+  readonly deserialize: (bytes: Uint8Array) => Effect.Effect<unknown, DeserializeError>
+  readonly getSigningPayload: (tx: unknown) => Effect.Effect<Uint8Array, SerializeError>
+}
+```
+
+## Error Types
+
+```typescript
+class SerializeError extends Data.TaggedError("SerializeError")<{
+  readonly transaction: unknown
+  readonly message: string
+  readonly cause?: unknown
+}> {}
+
+class DeserializeError extends Data.TaggedError("DeserializeError")<{
+  readonly bytes: Uint8Array
+  readonly message: string
+  readonly cause?: unknown
+}> {}
+```

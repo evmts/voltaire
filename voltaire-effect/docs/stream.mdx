@@ -81,28 +81,64 @@ const error = new Stream.UnrecoverableReorgError(100n, 50n);
 
 ## Effect Integration
 
-Stream errors work seamlessly with Effect's error handling:
+Stream errors work seamlessly with Effect's error handling using `Effect.catchTag` for precise error recovery:
 
 ```typescript
 import { Effect, pipe } from 'effect';
 import * as Stream from 'voltaire-effect/stream';
 
-const handleStreamError = (error: Stream.StreamError) =>
-  Effect.gen(function* () {
-    if (error instanceof Stream.BlockRangeTooLargeError) {
+// Using Effect.catchTag for specific error handling
+const program = pipe(
+  someStreamOperation(),
+  Effect.catchTag("BlockRangeTooLargeError", (error) =>
+    Effect.gen(function* () {
       yield* Effect.logWarning(`Range too large: ${error.fromBlock} to ${error.toBlock}`);
-      return yield* Effect.fail(error);
-    }
-    if (error instanceof Stream.UnrecoverableReorgError) {
-      yield* Effect.logError(`Deep reorg detected, resync required`);
-      return yield* Effect.fail(error);
-    }
-    if (error instanceof Stream.StreamAbortedError) {
-      yield* Effect.log("Stream was cancelled");
-      return yield* Effect.succeed(undefined);
-    }
-    return yield* Effect.fail(error);
-  });
+      // Retry with smaller range
+      return yield* retryWithSmallerRange(error.fromBlock, error.toBlock);
+    })
+  ),
+  Effect.catchTag("UnrecoverableReorgError", (error) =>
+    Effect.gen(function* () {
+      yield* Effect.logError(`Deep reorg: depth ${error.reorgDepth} exceeds ${error.trackedDepth}`);
+      return yield* resyncFromScratch();
+    })
+  ),
+  Effect.catchTag("BlockStreamAbortedError", () =>
+    Effect.logInfo("Block stream cancelled gracefully")
+  ),
+  Effect.catchTag("EventStreamAbortedError", () =>
+    Effect.logInfo("Event stream cancelled gracefully")
+  )
+);
+```
+
+### Exhaustive Error Handling
+
+For exhaustive pattern matching over all stream errors:
+
+```typescript
+import { Effect, Match } from 'effect';
+import * as Stream from 'voltaire-effect/stream';
+
+const handleStreamError = (error: Stream.StreamError) =>
+  Match.value(error).pipe(
+    Match.tag("BlockRangeTooLargeError", (e) => 
+      Effect.logWarning(`Range ${e.fromBlock}-${e.toBlock} too large`)
+    ),
+    Match.tag("UnrecoverableReorgError", (e) => 
+      Effect.logError(`Deep reorg detected, depth: ${e.reorgDepth}`)
+    ),
+    Match.tag("BlockStreamAbortedError", () => 
+      Effect.log("Block stream aborted")
+    ),
+    Match.tag("EventStreamAbortedError", () => 
+      Effect.log("Event stream aborted")
+    ),
+    Match.tag("StreamAbortedError", () => 
+      Effect.log("Stream aborted")
+    ),
+    Match.exhaustive
+  );
 ```
 
 ## Type Union
@@ -116,3 +152,8 @@ type StreamError = Stream.StreamError;
 // = StreamAbortedError | EventStreamAbortedError | BlockStreamAbortedError 
 //   | BlockRangeTooLargeError | UnrecoverableReorgError
 ```
+
+## Related
+
+- [BlockStream](/services/block-stream) - Stream of block headers with reorg detection
+- [EventStream](/contract) - Stream of contract events with filtering

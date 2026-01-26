@@ -23,6 +23,8 @@
               "getting-started",
               "concepts/effect-primer",
               "layers",
+              "cheatsheet",
+              "recipes",
               "testing",
               "comparisons",
               "changelog"
@@ -42,7 +44,9 @@
             "group": "Guides",
             "icon": "book",
             "pages": [
-              "guides/hd-wallet"
+              "guides/hd-wallet",
+              "guides/migrating-from-viem",
+              "guides/migrating-from-ethers"
             ]
           },
           {
@@ -55,9 +59,45 @@
               "services/account",
               "services/contract",
               "services/block-stream",
+              "services/transaction-stream",
+              "services/cache",
+              "services/multicall",
+              "services/rpc-batch",
+              "services/rate-limiter",
+              "services/fee-estimator",
+              "services/nonce-manager",
+              "services/ccip",
+              "services/raw-providers",
+              "services/chain",
+              "services/abi-encoder",
+              "services/formatter",
+              "services/transaction-serializer",
+              "services/kzg",
+              "services/presets",
               "stream",
+              "transaction",
               "block",
-              "blockchain"
+              "blockchain",
+              "contract",
+              "jsonrpc"
+            ]
+          },
+          {
+            "group": "Examples",
+            "icon": "code",
+            "pages": [
+              "examples/index",
+              "examples/wallet-creation",
+              "examples/read-blockchain",
+              "examples/send-transactions",
+              "examples/contract-interactions",
+              "examples/event-streaming",
+              "examples/block-streaming",
+              "examples/multicall",
+              "examples/layer-presets",
+              "examples/error-handling",
+              "examples/schema-validation",
+              "examples/testing"
             ]
           },
           {
@@ -292,6 +332,7 @@
               {
                 "group": "Other",
                 "pages": [
+                  "primitives/brand",
                   "primitives/builderbid",
                   "primitives/blob",
                   "primitives/ens",
@@ -308,6 +349,7 @@
             "group": "Crypto",
             "icon": "shield-halved",
             "pages": [
+              "crypto/index",
               {
                 "group": "Hashing",
                 "pages": [
