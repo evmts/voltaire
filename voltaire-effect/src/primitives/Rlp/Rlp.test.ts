@@ -592,22 +592,17 @@ describe("Rlp.validate", () => {
 });
 
 describe("Rlp.Schema", () => {
-	it("validates and brands RLP bytes input", () => {
-		// Schema wraps input as BrandedRlp - the input itself is already valid RLP
-		const input = new Uint8Array([0x83, 1, 2, 3]);
+	// NOTE: The Schema uses Rlp.from() which wraps input as BrandedRlp data structures,
+	// it does NOT decode RLP-encoded bytes. For decoding, use Rlp.decode().
+
+	it("wraps Uint8Array as bytes data", () => {
+		// Schema wraps Uint8Array as {type: 'bytes', value: input}
+		const input = new Uint8Array([1, 2, 3]);
 		const result = S.decodeUnknownSync(Rlp.Schema)(input);
-		// The schema interprets input as data, so 0x83 prefix + 3 bytes = short bytes
 		expect(result.type).toBe("bytes");
-		// The decoded bytes are [1, 2, 3] (without the 0x83 prefix)
 		if (result.type === "bytes") {
 			expect(result.value).toEqual(new Uint8Array([1, 2, 3]));
 		}
-	});
-
-	it("validates and brands RLP list input", () => {
-		const input = new Uint8Array([0xc2, 0x01, 0x02]);
-		const result = S.decodeUnknownSync(Rlp.Schema)(input);
-		expect(result.type).toBe("list");
 	});
 
 	it("handles already-branded RLP data", () => {
@@ -616,10 +611,13 @@ describe("Rlp.Schema", () => {
 		// Schema should accept already-branded data
 		const result = S.decodeUnknownSync(Rlp.Schema)(data);
 		expect(result.type).toBe("bytes");
+		if (result.type === "bytes") {
+			expect(result.value).toEqual(new Uint8Array([1, 2, 3]));
+		}
 	});
 
 	it("encodes back to branded representation", () => {
-		const input = new Uint8Array([0x83, 1, 2, 3]);
+		const input = new Uint8Array([1, 2, 3]);
 		const decoded = S.decodeUnknownSync(Rlp.Schema)(input);
 		const encoded = S.encodeSync(Rlp.Schema)(decoded);
 		// Schema encode returns the branded type as-is
