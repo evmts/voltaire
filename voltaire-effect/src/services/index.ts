@@ -227,6 +227,29 @@ export {
 	DefaultCcip,
 	NoopCcip,
 } from "./Ccip/index.js";
+// RpcBatch exports
+export {
+	EthBlockNumber,
+	EthCall,
+	EthChainId,
+	EthEstimateGas,
+	EthGasPrice,
+	EthGetBalance,
+	EthGetBlockByHash,
+	EthGetBlockByNumber,
+	EthGetCode,
+	EthGetLogs,
+	EthGetStorageAt,
+	EthGetTransactionByHash,
+	EthGetTransactionCount,
+	EthGetTransactionReceipt,
+	GenericRpcRequest,
+	makeRpcResolver,
+	RpcBatch,
+	RpcBatchService,
+	type RpcBatchShape,
+	type RpcRequest,
+} from "./RpcBatch/index.js";
 // Blockchain exports
 export {
 	type Block,
@@ -252,3 +275,14 @@ export {
 	TransactionStreamService,
 	type TransactionStreamShape,
 } from "../transaction/index.js";
+// RateLimiter exports
+export {
+	DefaultRateLimiter,
+	makeRateLimiter,
+	NoopRateLimiter,
+	RateLimitError,
+	type RateLimitBehavior,
+	type RateLimiterConfig,
+	RateLimiterService,
+	type RateLimiterShape,
+} from "./RateLimiter/index.js";
