@@ -8,7 +8,6 @@ const testAddress2Hex = "0x0987654321098765432109876543210987654321";
 const testAddress3Hex = "0x1111111111111111111111111111111111111111";
 const testAddress = Address(testAddressHex);
 const testAddress2 = Address(testAddress2Hex);
-const testAddress3 = Address(testAddress3Hex);
 const testTokenId = 1n;
 const testAmount = 100n;
 
@@ -35,6 +34,9 @@ describe("ERC1155", () => {
 			);
 			expect(ERC1155.EVENTS.ApprovalForAll).toBe(
 				"0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31",
+			);
+			expect(ERC1155.EVENTS.URI).toBe(
+				"0x6bb7ff708619ba0610cba295a58592e0451dee2622938c8755667688daf3529b",
 			);
 		});
 	});
