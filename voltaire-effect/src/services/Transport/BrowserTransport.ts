@@ -166,7 +166,17 @@ export const BrowserTransport: Layer.Layer<TransportService> = Layer.succeed(
 			params: unknown[] = [],
 		): Effect.Effect<T, TransportError> =>
 			Effect.gen(function* () {
-				if (typeof window === "undefined" || !window.ethereum) {
+				if (typeof window === "undefined") {
+					return yield* Effect.fail(
+						new TransportError({
+							code: -32603,
+							message: "Browser environment required",
+						}),
+					);
+				}
+
+				const ethereum = window.ethereum;
+				if (!ethereum) {
 					return yield* Effect.fail(
 						new TransportError({
 							code: -32603,
@@ -175,8 +185,6 @@ export const BrowserTransport: Layer.Layer<TransportService> = Layer.succeed(
 						}),
 					);
 				}
-
-				const ethereum = window.ethereum;
 
 				const result = yield* Effect.tryPromise({
 					try: () => ethereum.request({ method, params }),
