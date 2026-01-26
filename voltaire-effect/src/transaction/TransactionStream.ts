@@ -86,7 +86,10 @@ export const TransactionStream: Layer.Layer<
 			removeListener: () => {},
 		};
 
-		const coreStream = CoreTransactionStream({ provider: provider as any });
+		const coreStream = CoreTransactionStream({
+			// biome-ignore lint/suspicious/noExplicitAny: EIP-1193 provider type mismatch with core implementation
+			provider: provider as any,
+		});
 
 		return {
 			watchPending: (

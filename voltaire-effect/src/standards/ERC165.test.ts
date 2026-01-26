@@ -20,7 +20,10 @@ const mockProvider = {
 	getGasPrice: vi.fn(),
 };
 
-const MockProviderLayer = Layer.succeed(ProviderService, mockProvider as any);
+const MockProviderLayer = Layer.succeed(
+	ProviderService,
+	mockProvider as unknown as ProviderService.Service,
+);
 
 describe("ERC165", () => {
 	beforeEach(() => {
