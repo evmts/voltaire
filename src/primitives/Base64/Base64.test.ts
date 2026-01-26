@@ -167,7 +167,7 @@ describe("Base64", () => {
 					expect(error).toBeInstanceOf(Error);
 					expect(error.name).toBe("DecodingError");
 					expect(error.message).toContain("Invalid base64");
-					expect(error.code).toBe("BASE64_INVALID_FORMAT");
+					expect(error.code).toBe(-32602);
 					expect(error.context).toBeDefined();
 					expect(error.context.value).toBe("!!!");
 				}

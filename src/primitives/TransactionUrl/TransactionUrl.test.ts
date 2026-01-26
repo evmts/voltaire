@@ -443,7 +443,7 @@ describe("ERC-681 Transaction URLs", () => {
 				url: "invalid",
 			});
 			expect(error.name).toBe("InvalidTransactionUrlError");
-			expect(error.code).toBe("INVALID_TRANSACTION_URL");
+			expect(error.code).toBe(-32602);
 			expect(error.details?.url).toBe("invalid");
 		});
 	});

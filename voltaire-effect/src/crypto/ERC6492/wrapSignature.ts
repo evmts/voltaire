@@ -19,7 +19,9 @@ const ERC6492_PARAMS = [
 	{ type: "bytes", name: "signature" },
 ] as const;
 
-const normalizeAddress = (address: AddressType | `0x${string}`): `0x${string}` =>
+const normalizeAddress = (
+	address: AddressType | `0x${string}`,
+): `0x${string}` =>
 	typeof address === "string" ? address : Address.toHex(address);
 
 /**
@@ -39,11 +41,14 @@ export const wrapSignature = (params: {
 	factoryData: HexType | `0x${string}`;
 }): Effect.Effect<HexType, never> =>
 	Effect.sync(() => {
-		const encoded = encodeParameters(ERC6492_PARAMS as any, [
-			normalizeAddress(params.factoryAddress),
-			params.factoryData,
-			params.signature,
-		] as any);
+		const encoded = encodeParameters(
+			ERC6492_PARAMS as any,
+			[
+				normalizeAddress(params.factoryAddress),
+				params.factoryData,
+				params.signature,
+			] as any,
+		);
 
 		const encodedHex = Hex.fromBytes(encoded);
 		return `${encodedHex}${ERC6492_SUFFIX.slice(2)}` as HexType;

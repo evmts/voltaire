@@ -22,7 +22,9 @@ const VALIDATOR_PARAMS = [
 	{ type: "bytes", name: "signature" },
 ] as const;
 
-const normalizeAddress = (address: AddressType | `0x${string}`): `0x${string}` =>
+const normalizeAddress = (
+	address: AddressType | `0x${string}`,
+): `0x${string}` =>
 	typeof address === "string" ? address : Address.toHex(address);
 
 const decodeRevertReason = (data: `0x${string}`): string | null => {
@@ -40,9 +42,8 @@ const decodeRevertReason = (data: `0x${string}`): string | null => {
 	}
 };
 
-const normalizeCallResult = (
-	value: HexType | `0x${string}`,
-): `0x${string}` => (typeof value === "string" ? value : Hex.fromBytes(value));
+const normalizeCallResult = (value: HexType | `0x${string}`): `0x${string}` =>
+	typeof value === "string" ? value : Hex.fromBytes(value);
 
 /**
  * Verify a signature with ERC-6492 support using a deployless universal validator.
@@ -83,11 +84,14 @@ export const verifySignature = (params: {
 
 		const encodedParams = yield* Effect.try({
 			try: () =>
-				encodeParameters(VALIDATOR_PARAMS as any, [
-					normalizeAddress(params.address),
-					messageHex,
-					params.signature,
-				] as any),
+				encodeParameters(
+					VALIDATOR_PARAMS as any,
+					[
+						normalizeAddress(params.address),
+						messageHex,
+						params.signature,
+					] as any,
+				),
 			catch: (e) =>
 				new VerifyError({
 					message: `Failed to encode validation calldata: ${e instanceof Error ? e.message : String(e)}`,
@@ -95,21 +99,22 @@ export const verifySignature = (params: {
 				}),
 		});
 
-		const data = `${UNIVERSAL_VALIDATOR_BYTECODE}${Hex.fromBytes(encodedParams).slice(2)}` as `0x${string}`;
+		const data =
+			`${UNIVERSAL_VALIDATOR_BYTECODE}${Hex.fromBytes(encodedParams).slice(2)}` as `0x${string}`;
 
-		const callResult = yield* params.provider
-			.call({ data })
-			.pipe(
-				Effect.mapError(
-					(e) =>
-						new VerifyError({
-							message: `Signature verification call failed: ${e instanceof Error ? e.message : String(e)}`,
-							cause: e,
-						}),
-				),
-			);
+		const callResult = yield* params.provider.call({ data }).pipe(
+			Effect.mapError(
+				(e) =>
+					new VerifyError({
+						message: `Signature verification call failed: ${e instanceof Error ? e.message : String(e)}`,
+						cause: e,
+					}),
+			),
+		);
 
-		const callHex = normalizeCallResult(callResult).toLowerCase() as `0x${string}`;
+		const callHex = normalizeCallResult(
+			callResult,
+		).toLowerCase() as `0x${string}`;
 		const revertReason = decodeRevertReason(callHex);
 		if (revertReason) {
 			return yield* Effect.fail(

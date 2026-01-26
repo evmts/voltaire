@@ -47,7 +47,8 @@ export const unwrapSignature = (
 			return null;
 		}
 
-		const encoded = `0x${lower.slice(2, lower.length - suffix.length)}` as const;
+		const encoded =
+			`0x${lower.slice(2, lower.length - suffix.length)}` as const;
 
 		try {
 			const decoded = decodeParameters(

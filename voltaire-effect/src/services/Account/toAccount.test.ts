@@ -42,13 +42,14 @@ const typedData: TypedDataType = TypedData.from({
 });
 
 describe("toAccount", () => {
+	const captured: {
+		message?: HexType;
+		tx?: UnsignedTransaction;
+		typedData?: TypedDataType;
+	} = {};
+
 	it.effect("exposes custom signers and normalizes signatures", () =>
 		Effect.gen(function* () {
-			const captured: {
-				message?: HexType;
-				tx?: UnsignedTransaction;
-				typedData?: TypedDataType;
-			} = {};
 
 			const account = yield* AccountService;
 			expect(account.type).toBe("hardware");

@@ -12,7 +12,7 @@ const ERC6492_SUFFIX =
 
 const factoryAddress = "0x000000000000000000000000000000000000dead" as const;
 const factoryData = "0x1234" as const;
-const innerSignature = (`0x${"11".repeat(65)}` as `0x${string}`);
+const innerSignature = `0x${"11".repeat(65)}` as `0x${string}`;
 const messageHash = `0x${"22".repeat(32)}` as `0x${string}`;
 const signer = "0x000000000000000000000000000000000000babe" as const;
 
@@ -76,11 +76,10 @@ describe("ERC6492", () => {
 			expect(calls.length).toBe(1);
 			const callData = calls[0]?.data ?? "";
 			const encodedParams = Hex.fromBytes(
-				encodeParameters(VALIDATOR_PARAMS as any, [
-					signer,
-					messageHash,
-					innerSignature,
-				] as any),
+				encodeParameters(
+					VALIDATOR_PARAMS as any,
+					[signer, messageHash, innerSignature] as any,
+				),
 			);
 			expect(callData.endsWith(encodedParams.slice(2))).toBe(true);
 		}),
@@ -93,9 +92,7 @@ describe("ERC6492", () => {
 			);
 			const provider = {
 				call: () =>
-					Effect.succeed(
-						(`0x08c379a0${revertData.slice(2)}` as `0x${string}`),
-					),
+					Effect.succeed(`0x08c379a0${revertData.slice(2)}` as `0x${string}`),
 			} as any;
 
 			const exit = yield* Effect.exit(
