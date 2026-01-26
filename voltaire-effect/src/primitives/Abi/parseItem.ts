@@ -7,26 +7,18 @@
  */
 
 import type { Item } from "@tevm/voltaire/Abi";
-import { AbstractError } from "@tevm/voltaire/errors";
+import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 
 /**
  * Error thrown when ABI item parsing fails.
  */
-export class AbiItemParseError extends AbstractError {
-	readonly _tag = "AbiItemParseError" as const;
-	constructor(
-		message: string,
-		options?: {
-			code?: number;
-			context?: Record<string, unknown>;
-			cause?: Error;
-		},
-	) {
-		super(message, options);
-		this.name = "AbiItemParseError";
-	}
-}
+export class AbiItemParseError extends Data.TaggedError("AbiItemParseError")<{
+	readonly message: string;
+	readonly code?: number;
+	readonly context?: Record<string, unknown>;
+	readonly cause?: unknown;
+}> {}
 
 /**
  * Parses a JSON string to a single ABI item.
@@ -77,8 +69,8 @@ export const parseItem = (
 			return parsed as Item.ItemType;
 		},
 		catch: (e) =>
-			new AbiItemParseError(
-				`Failed to parse ABI item JSON: ${e instanceof Error ? e.message : String(e)}`,
-				{ cause: e instanceof Error ? e : undefined },
-			),
+			new AbiItemParseError({
+				message: `Failed to parse ABI item JSON: ${e instanceof Error ? e.message : String(e)}`,
+				cause: e,
+			}),
 	});

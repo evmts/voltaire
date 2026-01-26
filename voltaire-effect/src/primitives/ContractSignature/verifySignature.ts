@@ -14,7 +14,7 @@ import {
 	type BrandedAddress,
 	type BrandedHash,
 } from "@tevm/voltaire";
-import { AbstractError } from "@tevm/voltaire/errors";
+import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as Runtime from "effect/Runtime";
 import { ProviderService } from "../../services/Provider/index.js";
@@ -33,39 +33,27 @@ export type SignatureInput =
  * Error thrown when signature verification fails due to an error (not invalid signature).
  * @since 0.1.0
  */
-export class SignatureVerificationError extends AbstractError {
-	readonly _tag = "SignatureVerificationError" as const;
+export class SignatureVerificationError extends Data.TaggedError("SignatureVerificationError")<{
 	readonly input: {
 		address: string;
 		hash: Uint8Array;
 	};
-
-	constructor(
-		input: { address: string; hash: Uint8Array },
-		message: string,
-		options?: { code?: number; context?: Record<string, unknown>; cause?: Error },
-	) {
-		super(message, options);
-		this.name = "SignatureVerificationError";
-		this.input = input;
-	}
-}
+	readonly message: string;
+	readonly code?: number;
+	readonly context?: Record<string, unknown>;
+	readonly cause?: unknown;
+}> {}
 
 /**
  * Error thrown when signature format is invalid.
  * @since 0.1.0
  */
-export class InvalidSignatureFormatError extends AbstractError {
-	readonly _tag = "InvalidSignatureFormatError" as const;
-
-	constructor(
-		message: string,
-		options?: { code?: number; context?: Record<string, unknown>; cause?: Error },
-	) {
-		super(message, options);
-		this.name = "InvalidSignatureFormatError";
-	}
-}
+export class InvalidSignatureFormatError extends Data.TaggedError("InvalidSignatureFormatError")<{
+	readonly message: string;
+	readonly code?: number;
+	readonly context?: Record<string, unknown>;
+	readonly cause?: unknown;
+}> {}
 
 const SIGNATURE_LENGTH = 65;
 const SIGNATURE_COMPONENT_LENGTH = 32;
@@ -75,9 +63,9 @@ const assertSignatureComponentLength = (
 	name: "r" | "s",
 ) => {
 	if (component.length !== SIGNATURE_COMPONENT_LENGTH) {
-		throw new InvalidSignatureFormatError(
-			`Signature ${name} must be ${SIGNATURE_COMPONENT_LENGTH} bytes`,
-		);
+		throw new InvalidSignatureFormatError({
+			message: `Signature ${name} must be ${SIGNATURE_COMPONENT_LENGTH} bytes`,
+		});
 	}
 };
 
@@ -86,9 +74,9 @@ const toSignatureComponents = (
 ): { r: Uint8Array; s: Uint8Array; v: number } => {
 	if (signature instanceof Uint8Array) {
 		if (signature.length !== SIGNATURE_LENGTH) {
-			throw new InvalidSignatureFormatError(
-				`Signature must be ${SIGNATURE_LENGTH} bytes`,
-			);
+			throw new InvalidSignatureFormatError({
+				message: `Signature must be ${SIGNATURE_LENGTH} bytes`,
+			});
 		}
 		return {
 			r: signature.slice(0, 32),
@@ -242,13 +230,13 @@ export const verifySignature = (
 					(e.name === "InvalidSignatureFormatError" ||
 						e.name === "InvalidSignatureError")
 				) {
-					return new InvalidSignatureFormatError(e.message, { cause: e });
+					return new InvalidSignatureFormatError({ message: e.message, cause: e });
 				}
-				return new SignatureVerificationError(
-					{ address: addressStr, hash: hash instanceof Uint8Array ? hash : new Uint8Array(hash) },
-					e instanceof Error ? e.message : "Signature verification failed",
-					{ cause: e instanceof Error ? e : undefined },
-				);
+				return new SignatureVerificationError({
+					input: { address: addressStr, hash: hash instanceof Uint8Array ? hash : new Uint8Array(hash) },
+					message: e instanceof Error ? e.message : "Signature verification failed",
+					cause: e,
+				});
 			},
 		});
 	});
