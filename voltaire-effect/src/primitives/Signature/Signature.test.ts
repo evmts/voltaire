@@ -1,3 +1,5 @@
+import * as BaseSignature from "@tevm/voltaire/Signature";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
 import * as Signature from "./index.js";
@@ -6,6 +8,18 @@ const validR = "ab".repeat(32);
 const validS = "cd".repeat(32);
 const validSig65 = `0x${validR}${validS}1b`;
 const validSig64 = `0x${validR}${validS}`;
+const lowR = "11".repeat(32);
+const lowS = "22".repeat(32);
+
+const bigIntToBytes32 = (value: bigint): Uint8Array => {
+	const bytes = new Uint8Array(32);
+	let temp = value;
+	for (let i = 31; i >= 0; i -= 1) {
+		bytes[i] = Number(temp & 0xffn);
+		temp >>= 8n;
+	}
+	return bytes;
+};
 
 describe("Signature.Hex", () => {
 	describe("decode", () => {
@@ -125,6 +139,16 @@ describe("Signature.Compact", () => {
 			expect(compact).toBeInstanceOf(Uint8Array);
 			expect(compact.length).toBe(64);
 		});
+
+		it("round-trips EIP-2098 compact signatures", () => {
+			const sig = S.decodeSync(Signature.Hex)(`0x${lowR}${lowS}1c`);
+			const compact = S.encodeSync(Signature.Compact)(sig);
+			const decoded = S.decodeSync(Signature.Compact)(compact);
+			const roundTrip = S.encodeSync(Signature.Compact)(decoded);
+			expect(roundTrip).toEqual(compact);
+			const [yParity] = S.encodeSync(Signature.Tuple)(decoded);
+			expect(yParity).toBe(1);
+		});
 	});
 });
 
@@ -232,6 +256,31 @@ describe("Signature.Rpc", () => {
 			expect(typeof rpc.r).toBe("string");
 			expect(typeof rpc.s).toBe("string");
 		});
+
+		it("encodes EIP-2930/1559 yParity values", () => {
+			const sig0 = S.decodeSync(Signature.Hex)(`0x${lowR}${lowS}00`);
+			const sig1 = S.decodeSync(Signature.Hex)(`0x${lowR}${lowS}01`);
+			const rpc0 = S.encodeSync(Signature.Rpc)(sig0);
+			const rpc1 = S.encodeSync(Signature.Rpc)(sig1);
+			expect(rpc0.yParity).toBe("0x0");
+			expect(rpc1.yParity).toBe("0x1");
+			expect(rpc0.v).toBe("0x0");
+			expect(rpc1.v).toBe("0x1");
+		});
+
+		it("encodes large chainId v values (137, 56)", () => {
+			const r = new Uint8Array(32).fill(0x11);
+			const s = new Uint8Array(32).fill(0x22);
+			const sig137 = BaseSignature.fromTuple([0, r, s], 137);
+			const rpc137 = S.encodeSync(Signature.Rpc)(sig137);
+			expect(rpc137.yParity).toBe("0x0");
+			expect(rpc137.v).toBe(`0x${(137 * 2 + 35).toString(16)}`);
+
+			const sig56 = BaseSignature.fromTuple([1, r, s], 56);
+			const rpc56 = S.encodeSync(Signature.Rpc)(sig56);
+			expect(rpc56.yParity).toBe("0x1");
+			expect(rpc56.v).toBe(`0x${(56 * 2 + 36).toString(16)}`);
+		});
 	});
 });
 
@@ -273,6 +322,27 @@ describe("Signature.Tuple", () => {
 			expect(typeof tuple[0]).toBe("number");
 			expect(tuple[1]).toBeInstanceOf(Uint8Array);
 			expect(tuple[2]).toBeInstanceOf(Uint8Array);
+		});
+
+		it("encodes EIP-2930/1559 v=0/1 as yParity", () => {
+			const sig0 = S.decodeSync(Signature.Hex)(`0x${lowR}${lowS}00`);
+			const sig1 = S.decodeSync(Signature.Hex)(`0x${lowR}${lowS}01`);
+			const [yParity0] = S.encodeSync(Signature.Tuple)(sig0);
+			const [yParity1] = S.encodeSync(Signature.Tuple)(sig1);
+			expect(yParity0).toBe(0);
+			expect(yParity1).toBe(1);
+		});
+
+		it("derives yParity from large chainId v values (137, 56)", () => {
+			const r = new Uint8Array(32).fill(0x11);
+			const s = new Uint8Array(32).fill(0x22);
+			const sig137 = BaseSignature.fromTuple([0, r, s], 137);
+			const [yParity137] = S.encodeSync(Signature.Tuple)(sig137);
+			expect(yParity137).toBe(0);
+
+			const sig56 = BaseSignature.fromTuple([1, r, s], 56);
+			const [yParity56] = S.encodeSync(Signature.Tuple)(sig56);
+			expect(yParity56).toBe(1);
 		});
 	});
 });
@@ -366,5 +436,34 @@ describe("edge cases", () => {
 		bytes28[64] = 28;
 		const sig28 = S.decodeSync(Signature.Bytes)(bytes28);
 		expect(sig28.length).toBeGreaterThanOrEqual(64);
+	});
+});
+
+describe("signature component validation", () => {
+	const messageHash = new Uint8Array(32).fill(0x11);
+	const privateKey = new Uint8Array(32).fill(1);
+	const publicKey = Secp256k1.derivePublicKey(privateKey);
+	const one = new Uint8Array(32).fill(1);
+	const zero = new Uint8Array(32);
+	const curveOrderBytes = bigIntToBytes32(Secp256k1.CURVE_ORDER);
+
+	it("rejects r=0", () => {
+		const sig = BaseSignature.fromSecp256k1(zero, one, 27);
+		expect(BaseSignature.verify(sig, messageHash, publicKey)).toBe(false);
+	});
+
+	it("rejects s=0", () => {
+		const sig = BaseSignature.fromSecp256k1(one, zero, 27);
+		expect(BaseSignature.verify(sig, messageHash, publicKey)).toBe(false);
+	});
+
+	it("rejects r >= curve order", () => {
+		const sig = BaseSignature.fromSecp256k1(curveOrderBytes, one, 27);
+		expect(BaseSignature.verify(sig, messageHash, publicKey)).toBe(false);
+	});
+
+	it("rejects s >= curve order", () => {
+		const sig = BaseSignature.fromSecp256k1(one, curveOrderBytes, 27);
+		expect(BaseSignature.verify(sig, messageHash, publicKey)).toBe(false);
 	});
 });
