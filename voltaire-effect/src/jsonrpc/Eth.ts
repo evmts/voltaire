@@ -16,14 +16,47 @@ function makeRequest(
 export const AccountsRequest = () => makeRequest("eth_accounts");
 export const BlobBaseFeeRequest = () => makeRequest("eth_blobBaseFee");
 export const BlockNumberRequest = () => makeRequest("eth_blockNumber");
-export const CallRequest = (tx: unknown, blockTag: string = "latest") =>
-	makeRequest("eth_call", [tx, blockTag]);
+export const CallRequest = (
+	tx: unknown,
+	blockTag: string = "latest",
+	stateOverride?: unknown,
+	blockOverrides?: unknown,
+) => {
+	const params: unknown[] = [tx, blockTag];
+	if (stateOverride !== undefined) {
+		params.push(stateOverride);
+	}
+	if (blockOverrides !== undefined) {
+		// Ensure stateOverride is included (even if undefined) when blockOverrides is present
+		if (stateOverride === undefined) {
+			params.push(undefined);
+		}
+		params.push(blockOverrides);
+	}
+	return makeRequest("eth_call", params);
+};
 export const ChainIdRequest = () => makeRequest("eth_chainId");
 export const CoinbaseRequest = () => makeRequest("eth_coinbase");
 export const CreateAccessListRequest = (tx: unknown) =>
 	makeRequest("eth_createAccessList", [tx]);
-export const EstimateGasRequest = (tx: unknown) =>
-	makeRequest("eth_estimateGas", [tx]);
+export const EstimateGasRequest = (
+	tx: unknown,
+	blockTag?: string,
+	stateOverride?: unknown,
+) => {
+	const params: unknown[] = [tx];
+	if (blockTag !== undefined) {
+		params.push(blockTag);
+	}
+	if (stateOverride !== undefined) {
+		// Ensure blockTag is included when stateOverride is present
+		if (blockTag === undefined) {
+			params.push("latest");
+		}
+		params.push(stateOverride);
+	}
+	return makeRequest("eth_estimateGas", params);
+};
 export const FeeHistoryRequest = (
 	blockCount: number | string,
 	newestBlock: string,

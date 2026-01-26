@@ -44,8 +44,11 @@ export const UNSUPPORTED_METHOD = 4200;
 export const DISCONNECTED = 4900;
 export const CHAIN_DISCONNECTED = 4901;
 
-// Common node-specific error codes
+// Common node-specific error codes (geth/erigon)
 export const EXECUTION_REVERTED = 3;
+export const INSUFFICIENT_FUNDS = -32010;
+export const NONCE_TOO_LOW = -32011;
+export const NONCE_TOO_HIGH = -32012;
 
 // Helper functions
 export const isUserRejected = (code: number): boolean =>
@@ -56,6 +59,15 @@ export const isDisconnected = (code: number): boolean =>
 
 export const isProviderError = (code: number): boolean =>
 	code >= 4000 && code <= 4999;
+
+export const isExecutionReverted = (code: number): boolean =>
+	code === EXECUTION_REVERTED;
+
+export const isNonceError = (code: number): boolean =>
+	code === NONCE_TOO_LOW || code === NONCE_TOO_HIGH;
+
+export const isInsufficientFunds = (code: number): boolean =>
+	code === INSUFFICIENT_FUNDS;
 
 export const JsonRpcError = {
 	from,
@@ -82,8 +94,14 @@ export const JsonRpcError = {
 	CHAIN_DISCONNECTED,
 	// Common node-specific
 	EXECUTION_REVERTED,
+	INSUFFICIENT_FUNDS,
+	NONCE_TOO_LOW,
+	NONCE_TOO_HIGH,
 	// Helpers
 	isUserRejected,
 	isDisconnected,
 	isProviderError,
+	isExecutionReverted,
+	isNonceError,
+	isInsufficientFunds,
 };

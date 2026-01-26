@@ -1,17 +1,38 @@
 import * as Effect from "effect/Effect";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
+	Anvil,
 	BatchRequest,
 	BatchResponse,
 	Eth,
+	Hardhat,
 	JsonRpcError,
 	JsonRpcParseError,
 	Net,
 	Request,
+	resetId,
 	Response,
 	Txpool,
 	Wallet,
 	Web3,
+	ExecutionRevertedError,
+	InsufficientFundsError,
+	NonceTooLowError,
+	NonceTooHighError,
+	parseErrorCode,
+	isUserRejected,
+	isDisconnected,
+	isProviderError,
+	isExecutionReverted,
+	isNonceError,
+	isInsufficientFunds,
+	USER_REJECTED_REQUEST,
+	DISCONNECTED,
+	CHAIN_DISCONNECTED,
+	EXECUTION_REVERTED,
+	INSUFFICIENT_FUNDS,
+	NONCE_TOO_LOW,
+	NONCE_TOO_HIGH,
 } from "./index.js";
 
 describe("JsonRpc", () => {
@@ -532,6 +553,187 @@ describe("JsonRpc", () => {
 			const error = new JsonRpcParseError({ raw: "bad data" }, "Parse failed");
 			expect(error._tag).toBe("JsonRpcParseError");
 			expect(error.message).toBe("Parse failed");
+		});
+	});
+
+	describe("ID Counter", () => {
+		beforeEach(() => {
+			resetId();
+		});
+
+		it("generates unique IDs across namespaces", () => {
+			const ids = new Set<number>();
+
+			// Generate requests from multiple namespaces
+			ids.add(Eth.BlockNumberRequest().id as number);
+			ids.add(Eth.ChainIdRequest().id as number);
+			ids.add(Net.VersionRequest().id as number);
+			ids.add(Web3.ClientVersionRequest().id as number);
+			ids.add(Txpool.StatusRequest().id as number);
+			ids.add(Wallet.GetPermissionsRequest().id as number);
+			ids.add(Anvil.GetAutomineRequest().id as number);
+			ids.add(Hardhat.MineRequest().id as number);
+
+			// All 8 IDs should be unique
+			expect(ids.size).toBe(8);
+		});
+
+		it("increments IDs sequentially", () => {
+			const id1 = Eth.BlockNumberRequest().id as number;
+			const id2 = Net.VersionRequest().id as number;
+			const id3 = Web3.ClientVersionRequest().id as number;
+
+			expect(id2).toBe(id1 + 1);
+			expect(id3).toBe(id2 + 1);
+		});
+
+		it("resetId resets the counter", () => {
+			Eth.BlockNumberRequest();
+			Eth.ChainIdRequest();
+			resetId();
+			const id = Eth.BlockNumberRequest().id as number;
+			expect(id).toBe(1);
+		});
+	});
+
+	describe("EIP-1193 Provider Error Codes", () => {
+		it("exposes EIP-1193 provider error codes", () => {
+			expect(JsonRpcError.USER_REJECTED_REQUEST).toBe(4001);
+			expect(JsonRpcError.UNAUTHORIZED).toBe(4100);
+			expect(JsonRpcError.UNSUPPORTED_METHOD).toBe(4200);
+			expect(JsonRpcError.DISCONNECTED).toBe(4900);
+			expect(JsonRpcError.CHAIN_DISCONNECTED).toBe(4901);
+		});
+
+		it("exposes node-specific error codes", () => {
+			expect(JsonRpcError.EXECUTION_REVERTED).toBe(3);
+			expect(JsonRpcError.INSUFFICIENT_FUNDS).toBe(-32010);
+			expect(JsonRpcError.NONCE_TOO_LOW).toBe(-32011);
+			expect(JsonRpcError.NONCE_TOO_HIGH).toBe(-32012);
+		});
+
+		it("isUserRejected helper", () => {
+			expect(isUserRejected(USER_REJECTED_REQUEST)).toBe(true);
+			expect(isUserRejected(4002)).toBe(false);
+			expect(isUserRejected(-32000)).toBe(false);
+		});
+
+		it("isDisconnected helper", () => {
+			expect(isDisconnected(DISCONNECTED)).toBe(true);
+			expect(isDisconnected(CHAIN_DISCONNECTED)).toBe(true);
+			expect(isDisconnected(4001)).toBe(false);
+		});
+
+		it("isProviderError helper", () => {
+			expect(isProviderError(4001)).toBe(true);
+			expect(isProviderError(4100)).toBe(true);
+			expect(isProviderError(4999)).toBe(true);
+			expect(isProviderError(3999)).toBe(false);
+			expect(isProviderError(5000)).toBe(false);
+			expect(isProviderError(-32000)).toBe(false);
+		});
+
+		it("isExecutionReverted helper", () => {
+			expect(isExecutionReverted(EXECUTION_REVERTED)).toBe(true);
+			expect(isExecutionReverted(3)).toBe(true);
+			expect(isExecutionReverted(-32000)).toBe(false);
+		});
+
+		it("isNonceError helper", () => {
+			expect(isNonceError(NONCE_TOO_LOW)).toBe(true);
+			expect(isNonceError(NONCE_TOO_HIGH)).toBe(true);
+			expect(isNonceError(-32010)).toBe(false);
+			expect(isNonceError(-32000)).toBe(false);
+		});
+
+		it("isInsufficientFunds helper", () => {
+			expect(isInsufficientFunds(INSUFFICIENT_FUNDS)).toBe(true);
+			expect(isInsufficientFunds(-32010)).toBe(true);
+			expect(isInsufficientFunds(-32011)).toBe(false);
+		});
+	});
+
+	describe("Node-specific Error Classes", () => {
+		it("ExecutionRevertedError has correct tag and code", () => {
+			const error = new ExecutionRevertedError("Contract reverted");
+			expect(error._tag).toBe("ExecutionRevertedError");
+			expect(error.rpcCode).toBe(3);
+			expect(error.message).toBe("Contract reverted");
+		});
+
+		it("ExecutionRevertedError default message", () => {
+			const error = new ExecutionRevertedError();
+			expect(error.message).toBe("Execution reverted");
+		});
+
+		it("InsufficientFundsError has correct tag and code", () => {
+			const error = new InsufficientFundsError("Not enough ETH");
+			expect(error._tag).toBe("InsufficientFundsError");
+			expect(error.rpcCode).toBe(-32010);
+			expect(error.message).toBe("Not enough ETH");
+		});
+
+		it("InsufficientFundsError default message", () => {
+			const error = new InsufficientFundsError();
+			expect(error.message).toBe("Insufficient funds for gas * price + value");
+		});
+
+		it("NonceTooLowError has correct tag and code", () => {
+			const error = new NonceTooLowError("Nonce already used");
+			expect(error._tag).toBe("NonceTooLowError");
+			expect(error.rpcCode).toBe(-32011);
+			expect(error.message).toBe("Nonce already used");
+		});
+
+		it("NonceTooLowError default message", () => {
+			const error = new NonceTooLowError();
+			expect(error.message).toBe("Nonce too low");
+		});
+
+		it("NonceTooHighError has correct tag and code", () => {
+			const error = new NonceTooHighError("Nonce gap detected");
+			expect(error._tag).toBe("NonceTooHighError");
+			expect(error.rpcCode).toBe(-32012);
+			expect(error.message).toBe("Nonce gap detected");
+		});
+
+		it("NonceTooHighError default message", () => {
+			const error = new NonceTooHighError();
+			expect(error.message).toBe("Nonce too high");
+		});
+
+		it("error classes accept data option", () => {
+			const error = new ExecutionRevertedError("reverted", {
+				data: "0x08c379a0000000",
+			});
+			expect(error.data).toBe("0x08c379a0000000");
+		});
+	});
+
+	describe("parseErrorCode", () => {
+		it("parses execution reverted code", () => {
+			const error = parseErrorCode({ code: 3, message: "revert" });
+			expect(error._tag).toBe("ExecutionRevertedError");
+		});
+
+		it("parses insufficient funds code", () => {
+			const error = parseErrorCode({ code: -32010 });
+			expect(error._tag).toBe("InsufficientFundsError");
+		});
+
+		it("parses nonce too low code", () => {
+			const error = parseErrorCode({ code: -32011 });
+			expect(error._tag).toBe("NonceTooLowError");
+		});
+
+		it("parses nonce too high code", () => {
+			const error = parseErrorCode({ code: -32012 });
+			expect(error._tag).toBe("NonceTooHighError");
+		});
+
+		it("parses unknown code as JsonRpcErrorResponse", () => {
+			const error = parseErrorCode({ code: -99999, message: "Unknown" });
+			expect(error._tag).toBe("JsonRpcError");
 		});
 	});
 });

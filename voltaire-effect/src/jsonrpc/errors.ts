@@ -16,6 +16,10 @@ import {
 	UNSUPPORTED_METHOD,
 	DISCONNECTED,
 	CHAIN_DISCONNECTED,
+	EXECUTION_REVERTED,
+	INSUFFICIENT_FUNDS,
+	NONCE_TOO_LOW,
+	NONCE_TOO_HIGH,
 } from "./Error.js";
 
 export class JsonRpcParseError extends Data.TaggedError("JsonRpcParseError")<{
@@ -353,6 +357,80 @@ export class ChainDisconnectedError extends Data.TaggedError("ChainDisconnectedE
 	}
 }
 
+// Node-specific error classes (geth/erigon)
+
+export class ExecutionRevertedError extends Data.TaggedError("ExecutionRevertedError")<{
+	readonly message: string;
+	readonly rpcCode: typeof EXECUTION_REVERTED;
+	readonly data?: unknown;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Execution reverted",
+			rpcCode: EXECUTION_REVERTED,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
+
+export class InsufficientFundsError extends Data.TaggedError("InsufficientFundsError")<{
+	readonly message: string;
+	readonly rpcCode: typeof INSUFFICIENT_FUNDS;
+	readonly data?: unknown;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Insufficient funds for gas * price + value",
+			rpcCode: INSUFFICIENT_FUNDS,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
+
+export class NonceTooLowError extends Data.TaggedError("NonceTooLowError")<{
+	readonly message: string;
+	readonly rpcCode: typeof NONCE_TOO_LOW;
+	readonly data?: unknown;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Nonce too low",
+			rpcCode: NONCE_TOO_LOW,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
+
+export class NonceTooHighError extends Data.TaggedError("NonceTooHighError")<{
+	readonly message: string;
+	readonly rpcCode: typeof NONCE_TOO_HIGH;
+	readonly data?: unknown;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Nonce too high",
+			rpcCode: NONCE_TOO_HIGH,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
+
 // All known RPC error codes
 export type RpcErrorCode =
 	| typeof PARSE_ERROR
@@ -370,7 +448,11 @@ export type RpcErrorCode =
 	| typeof UNAUTHORIZED
 	| typeof UNSUPPORTED_METHOD
 	| typeof DISCONNECTED
-	| typeof CHAIN_DISCONNECTED;
+	| typeof CHAIN_DISCONNECTED
+	| typeof EXECUTION_REVERTED
+	| typeof INSUFFICIENT_FUNDS
+	| typeof NONCE_TOO_LOW
+	| typeof NONCE_TOO_HIGH;
 
 // Union type for all RPC errors
 export type RpcError =
@@ -390,6 +472,10 @@ export type RpcError =
 	| UnsupportedMethodError
 	| DisconnectedError
 	| ChainDisconnectedError
+	| ExecutionRevertedError
+	| InsufficientFundsError
+	| NonceTooLowError
+	| NonceTooHighError
 	| JsonRpcErrorResponse;
 
 const errorCodeToClass = {
@@ -409,6 +495,10 @@ const errorCodeToClass = {
 	[UNSUPPORTED_METHOD]: UnsupportedMethodError,
 	[DISCONNECTED]: DisconnectedError,
 	[CHAIN_DISCONNECTED]: ChainDisconnectedError,
+	[EXECUTION_REVERTED]: ExecutionRevertedError,
+	[INSUFFICIENT_FUNDS]: InsufficientFundsError,
+	[NONCE_TOO_LOW]: NonceTooLowError,
+	[NONCE_TOO_HIGH]: NonceTooHighError,
 } as const;
 
 export function parseErrorCode(input: {

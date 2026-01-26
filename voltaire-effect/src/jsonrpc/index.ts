@@ -49,10 +49,16 @@ export {
 	CHAIN_DISCONNECTED,
 	// Common node-specific
 	EXECUTION_REVERTED,
+	INSUFFICIENT_FUNDS,
+	NONCE_TOO_LOW,
+	NONCE_TOO_HIGH,
 	// Helpers
 	isUserRejected,
 	isDisconnected,
 	isProviderError,
+	isExecutionReverted,
+	isNonceError,
+	isInsufficientFunds,
 	type JsonRpcErrorType,
 } from "./Error.js";
 
@@ -74,9 +80,15 @@ export {
 	UnsupportedMethodError,
 	DisconnectedError,
 	ChainDisconnectedError,
+	// Node-specific error classes
+	ExecutionRevertedError,
+	InsufficientFundsError,
+	NonceTooLowError,
+	NonceTooHighError,
 	// Helper
 	parseErrorCode,
 	type RpcErrorCode,
+	type RpcError,
 } from "./errors.js";
 
 export {
