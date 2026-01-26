@@ -114,6 +114,7 @@ export type TransportShape = {
  *
  * @see {@link TransportShape} - The shape/interface of the transport service
  * @see {@link TransportError} - Error type thrown by transport operations
+ * @see {@link RateLimitedTransport} - Optional rate-limited transport wrapper
  */
 export class TransportService extends Context.Tag("TransportService")<
 	TransportService,

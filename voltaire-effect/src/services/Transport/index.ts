@@ -42,6 +42,13 @@
 export { type BatchOptions } from "./BatchScheduler.js";
 export { BrowserTransport } from "./BrowserTransport.js";
 export {
+	IdGenerator,
+	IdGeneratorLive,
+	makeIdGenerator,
+	nextId,
+	type IdGeneratorShape,
+} from "./IdGenerator.js";
+export {
 	FallbackTransport,
 	type FallbackTransportOptions,
 } from "./FallbackTransport.js";
@@ -75,8 +82,24 @@ export {
 	type WebSocketTransportConfigType,
 } from "./WebSocketTransportConfig.js";
 
+// FiberRef-scoped transport config overrides
+export {
+	cacheEnabledRef,
+	retryCountRef,
+	timeoutRef,
+	tracingRef,
+	withRetries,
+	withTimeout,
+	withTracing,
+	withoutCache,
+} from "./config.js";
+
 // New transport implementations
-export { IpcTransport, type IpcTransportConfig } from "./IpcTransport.js";
+export {
+	IpcTransport,
+	type IpcTransportConfig,
+	type IpcReconnectOptions,
+} from "./IpcTransport.js";
 export {
 	CustomTransport,
 	CustomTransportFromFn,

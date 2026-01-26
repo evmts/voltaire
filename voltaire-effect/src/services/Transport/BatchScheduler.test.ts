@@ -23,7 +23,8 @@ describe("BatchScheduler", () => {
 			}).pipe(Effect.scoped);
 
 			const result = await Effect.runPromise(program);
-			expect(result).toBe("result-1");
+			const sentId = send.mock.calls[0][0][0]?.id;
+			expect(result).toBe(`result-${sentId}`);
 			expect(send).toHaveBeenCalledTimes(1);
 		});
 
@@ -144,7 +145,8 @@ describe("BatchScheduler", () => {
 			}).pipe(Effect.scoped);
 
 			const result = await Effect.runPromise(program);
-			expect(result).toBe("result-1");
+			const sentId = send.mock.calls[0][0][0]?.id;
+			expect(result).toBe(`result-${sentId}`);
 		});
 
 		it("delays flush when wait > 0", async () => {
@@ -158,7 +160,8 @@ describe("BatchScheduler", () => {
 			}).pipe(Effect.scoped);
 
 			const { result, elapsed } = await Effect.runPromise(program);
-			expect(result).toBe("result-1");
+			const sentId = send.mock.calls[0][0][0]?.id;
+			expect(result).toBe(`result-${sentId}`);
 			expect(elapsed).toBeGreaterThanOrEqual(40);
 		});
 	});
@@ -183,8 +186,8 @@ describe("BatchScheduler", () => {
 		});
 	});
 
-	describe("ID incrementing", () => {
-		it("assigns incrementing IDs to requests", async () => {
+describe("ID assignment", () => {
+	it("assigns unique IDs to requests", async () => {
 			const send = createMockSend();
 			const program = Effect.gen(function* () {
 				const scheduler = yield* createBatchScheduler(send, { wait: 0 });
@@ -199,7 +202,7 @@ describe("BatchScheduler", () => {
 			await Effect.runPromise(program);
 			const allRequests = send.mock.calls.flatMap((call) => call[0]);
 			const ids = allRequests.map((r) => r.id).sort((a, b) => a - b);
-			expect(ids).toEqual([1, 2, 3]);
+			expect(new Set(ids).size).toBe(ids.length);
 		});
 	});
 });

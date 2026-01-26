@@ -26,6 +26,7 @@ import * as HashMap from "effect/HashMap";
 import * as Option from "effect/Option";
 import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";
+import { cacheEnabledRef } from "./config.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService, type TransportShape } from "./TransportService.js";
 
@@ -457,6 +458,10 @@ export const DeduplicatedTransport = (
 				return TransportService.of({
 					request: <T>(method: string, params: unknown[] = []) =>
 						Effect.gen(function* () {
+							const cacheEnabled = yield* FiberRef.get(cacheEnabledRef);
+							if (!cacheEnabled) {
+								return yield* base.request<T>(method, params);
+							}
 							if (!shouldDedupe(method)) {
 								return yield* base.request<T>(method, params);
 							}

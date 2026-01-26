@@ -61,6 +61,18 @@ const createMockHttpTransport = (
 ): Layer.Layer<TransportService> =>
 	Layer.provide(HttpTransport(options), createMockHttpClientLayer(fetchMock));
 
+const parseJsonBody = (request: HttpClientRequest.HttpClientRequest): unknown => {
+	const body = request.body as { _tag: string; body: Uint8Array };
+	return JSON.parse(new TextDecoder().decode(body.body));
+};
+
+const parseBatchRequests = (
+	request: HttpClientRequest.HttpClientRequest,
+): Array<{ id: number; method: string; params?: unknown[] }> => {
+	const parsed = parseJsonBody(request);
+	return Array.isArray(parsed) ? parsed : [parsed];
+};
+
 describe("TransportService", () => {
 	describe("TestTransport", () => {
 		it("returns mocked responses", async () => {
@@ -557,15 +569,18 @@ describe("TransportService", () => {
 		describe("batching", () => {
 			it.effect("batches requests that arrive within wait window", () =>
 				Effect.gen(function* () {
-					fetchMock.mockImplementation(() =>
-						Promise.resolve({
+					fetchMock.mockImplementation((request: HttpClientRequest.HttpClientRequest) => {
+						const batch = parseBatchRequests(request);
+						const responses = batch.map((item) => ({
+							jsonrpc: "2.0",
+							id: item.id,
+							result: item.method === "eth_blockNumber" ? "0x100" : "0x1",
+						}));
+						return Promise.resolve({
 							ok: true,
-							json: async () => [
-								{ jsonrpc: "2.0", id: 1, result: "0x100" },
-								{ jsonrpc: "2.0", id: 2, result: "0x1" },
-							],
-						}),
-					);
+							json: async () => responses,
+						});
+					});
 
 					const program = Effect.gen(function* () {
 						const transport = yield* TransportService;
@@ -601,19 +616,22 @@ describe("TransportService", () => {
 
 			it.effect("handles individual request errors in batch", () =>
 				Effect.gen(function* () {
-					fetchMock.mockImplementation(() =>
-						Promise.resolve({
+					fetchMock.mockImplementation((request: HttpClientRequest.HttpClientRequest) => {
+						const batch = parseBatchRequests(request);
+						const responses = batch.map((item) =>
+							item.method === "eth_call"
+								? {
+										jsonrpc: "2.0",
+										id: item.id,
+										error: { code: -32000, message: "execution reverted" },
+									}
+								: { jsonrpc: "2.0", id: item.id, result: "0x100" },
+						);
+						return Promise.resolve({
 							ok: true,
-							json: async () => [
-								{ jsonrpc: "2.0", id: 1, result: "0x100" },
-								{
-									jsonrpc: "2.0",
-									id: 2,
-									error: { code: -32000, message: "execution reverted" },
-								},
-							],
-						}),
-					);
+							json: async () => responses,
+						});
+					});
 
 					const program = Effect.gen(function* () {
 						const transport = yield* TransportService;
@@ -650,20 +668,24 @@ describe("TransportService", () => {
 			it.effect("flushes batch on size limit", () =>
 				Effect.gen(function* () {
 					let callCount = 0;
-					fetchMock.mockImplementation(() => {
+					fetchMock.mockImplementation((request: HttpClientRequest.HttpClientRequest) => {
 						callCount++;
-						if (callCount === 1) {
-							return Promise.resolve({
-								ok: true,
-								json: async () => [
-									{ jsonrpc: "2.0", id: 1, result: "0x1" },
-									{ jsonrpc: "2.0", id: 2, result: "0x2" },
-								],
-							});
-						}
+						const batch = parseBatchRequests(request);
+						const responses = batch.map((item) => {
+							switch (item.method) {
+								case "eth_blockNumber":
+									return { jsonrpc: "2.0", id: item.id, result: "0x1" };
+								case "eth_chainId":
+									return { jsonrpc: "2.0", id: item.id, result: "0x2" };
+								case "eth_gasPrice":
+									return { jsonrpc: "2.0", id: item.id, result: "0x3" };
+								default:
+									return { jsonrpc: "2.0", id: item.id, result: "0x0" };
+							}
+						});
 						return Promise.resolve({
 							ok: true,
-							json: async () => [{ jsonrpc: "2.0", id: 3, result: "0x3" }],
+							json: async () => responses,
 						});
 					});
 
@@ -738,14 +760,15 @@ describe("TransportService", () => {
 
 			it.effect("fails missing batch response with useful error", () =>
 				Effect.gen(function* () {
-					fetchMock.mockImplementation(() =>
-						Promise.resolve({
+					fetchMock.mockImplementation((request: HttpClientRequest.HttpClientRequest) => {
+						const batch = parseBatchRequests(request);
+						const first = batch[0];
+						return Promise.resolve({
 							ok: true,
-							json: async () => [
-								{ jsonrpc: "2.0", id: 1, result: "0x100" },
-							],
-						}),
-					);
+							json: async () =>
+								first ? [{ jsonrpc: "2.0", id: first.id, result: "0x100" }] : [],
+						});
+					});
 
 					const program = Effect.gen(function* () {
 						const transport = yield* TransportService;

@@ -26,8 +26,10 @@
  */
 
 import * as Effect from "effect/Effect";
+import * as FiberRef from "effect/FiberRef";
 import * as Layer from "effect/Layer";
 import * as Duration from "effect/Duration";
+import { timeoutRef, tracingRef } from "./config.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
 
@@ -229,11 +231,14 @@ export const CustomTransport = (
 			? { provider: options }
 			: options ?? {};
 
-	const timeout = config.timeout ?? 30000;
+	const baseTimeout = config.timeout ?? 30000;
 
 	return Layer.succeed(TransportService, {
 		request: <T>(method: string, params: unknown[] = []) =>
 			Effect.gen(function* () {
+				const timeoutOverride = yield* FiberRef.get(timeoutRef);
+				const tracingEnabled = yield* FiberRef.get(tracingRef);
+				const timeoutMs = timeoutOverride ?? baseTimeout;
 				// Call request interceptor
 				const provider = config.provider ?? resolveInjectedProvider();
 				if (!provider) {
@@ -253,18 +258,22 @@ export const CustomTransport = (
 					});
 				}
 
+				if (tracingEnabled) {
+					yield* Effect.logDebug(`rpc ${method} -> custom transport`);
+				}
+
 				const resultEffect = Effect.tryPromise({
 					try: () => provider.request({ method, params }),
 					catch: toTransportError,
 				});
 
 				const result = yield* resultEffect.pipe(
-					Effect.timeout(Duration.millis(timeout)),
+					Effect.timeout(Duration.millis(timeoutMs)),
 					Effect.catchTag("TimeoutException", () =>
 						Effect.fail(
 							new TransportError({
 								code: -32603,
-								message: `Request timeout after ${timeout}ms`,
+								message: `Request timeout after ${timeoutMs}ms`,
 							}),
 						),
 					),

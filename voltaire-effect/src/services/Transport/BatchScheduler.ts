@@ -21,6 +21,7 @@ import * as Option from "effect/Option";
 import * as Queue from "effect/Queue";
 import * as Ref from "effect/Ref";
 import type * as Scope from "effect/Scope";
+import { nextId } from "./IdGenerator.js";
 
 /**
  * Configuration options for batch scheduling.
@@ -106,7 +107,6 @@ export const createBatchScheduler = <E extends Error>(
 		const wait = options.wait ?? 0;
 
 		const pendingQueue = yield* Queue.unbounded<PendingRequest>();
-		const idRef = yield* Ref.make(1);
 		const flushingRef = yield* Ref.make(false);
 		const flushFiberRef = yield* Ref.make<Option.Option<Fiber.RuntimeFiber<void, never>>>(Option.none());
 
@@ -249,7 +249,7 @@ export const createBatchScheduler = <E extends Error>(
 		return {
 			schedule: <T>(method: string, params?: unknown[]): Effect.Effect<T, Error> =>
 				Effect.gen(function* () {
-					const id = yield* Ref.getAndUpdate(idRef, (n) => n + 1);
+					const id = yield* nextId;
 					const deferred = yield* Deferred.make<unknown, Error>();
 
 					const offered = yield* Queue.offer(pendingQueue, { id, method, params, deferred }).pipe(
