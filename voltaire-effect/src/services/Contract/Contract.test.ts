@@ -716,6 +716,23 @@ describe("Contract", () => {
 			expect(mockSigner.sendTransaction).not.toHaveBeenCalled();
 			expect(result).toBe(true);
 		});
+
+		it("handles zero-output function (sync)", async () => {
+			mockProvider.call.mockReturnValue(Effect.succeed("0x" as HexType));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				const result = yield* contract.simulate.sync();
+				return result;
+			});
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(mockProvider.call).toHaveBeenCalled();
+			expect(result).toBeUndefined();
+		});
 	});
 
 	describe("getEvents", () => {

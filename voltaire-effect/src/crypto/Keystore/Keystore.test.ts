@@ -39,6 +39,43 @@ describe("Keystore", () => {
 				expect((result.crypto.kdfparams as any).c).toBe(1000);
 			})
 		);
+
+		it.effect("works with empty password", () =>
+			Effect.gen(function* () {
+				const result = yield* Keystore.encrypt(testPrivateKey, "", {
+					scryptN: 1024,
+					scryptR: 8,
+					scryptP: 1,
+				});
+				expect(result.version).toBe(3);
+				const decrypted = yield* Keystore.decrypt(result, "");
+				expect(decrypted).toEqual(testPrivateKey);
+			})
+		);
+
+		it("encrypts private key of any length (no validation)", async () => {
+			const shortKey = new Uint8Array([0x01, 0x02, 0x03]) as any;
+			const exit = await Effect.runPromiseExit(
+				Keystore.encrypt(shortKey, testPassword, {
+					scryptN: 1024,
+					scryptR: 8,
+					scryptP: 1,
+				}),
+			);
+			expect(Exit.isSuccess(exit)).toBe(true);
+		});
+
+		it("encrypts with long private key (no validation)", async () => {
+			const longKey = new Uint8Array(64).fill(0xab) as any;
+			const exit = await Effect.runPromiseExit(
+				Keystore.encrypt(longKey, testPassword, {
+					scryptN: 1024,
+					scryptR: 8,
+					scryptP: 1,
+				}),
+			);
+			expect(Exit.isSuccess(exit)).toBe(true);
+		});
 	});
 
 	describe("decrypt", () => {

@@ -373,6 +373,399 @@ describe("BlockStreamService", () => {
 		});
 	});
 
+	describe("stream consumption", () => {
+		it.effect("backfill stream yields blocks when consumed with runCollect", () =>
+			Effect.gen(function* () {
+				const mockBlocks = [
+					{
+						number: "0x64",
+						hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+						parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+						timestamp: "0x60000000",
+						nonce: "0x0000000000000000",
+						difficulty: "0x0",
+						gasLimit: "0x1c9c380",
+						gasUsed: "0x0",
+						miner: "0x0000000000000000000000000000000000000000",
+						extraData: "0x",
+						logsBloom: "0x" + "0".repeat(512),
+						transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						stateRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						sha3Uncles: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+						size: "0x200",
+						baseFeePerGas: "0x7",
+						transactions: [],
+						uncles: [],
+					},
+					{
+						number: "0x65",
+						hash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+						parentHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+						timestamp: "0x60000001",
+						nonce: "0x0000000000000000",
+						difficulty: "0x0",
+						gasLimit: "0x1c9c380",
+						gasUsed: "0x0",
+						miner: "0x0000000000000000000000000000000000000000",
+						extraData: "0x",
+						logsBloom: "0x" + "0".repeat(512),
+						transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						stateRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						sha3Uncles: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+						size: "0x200",
+						baseFeePerGas: "0x7",
+						transactions: [],
+						uncles: [],
+					},
+				];
+
+				const mockTransport: TransportShape = {
+					request: <T>(method: string, params?: unknown[]): Effect.Effect<T, never> => {
+						if (method === "eth_blockNumber") {
+							return Effect.succeed("0x65" as T);
+						}
+						if (method === "eth_getBlockByNumber") {
+							const blockNum = params?.[0] as string;
+							if (blockNum === "0x64") return Effect.succeed(mockBlocks[0] as T);
+							if (blockNum === "0x65") return Effect.succeed(mockBlocks[1] as T);
+						}
+						return Effect.succeed(null as T);
+					},
+				};
+
+				const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+				const TestBlockStreamLayer = Layer.provide(BlockStream, TestTransportLayer);
+
+				const program = Effect.gen(function* () {
+					const blockStream = yield* BlockStreamService;
+					const stream = blockStream.backfill({
+						fromBlock: 100n,
+						toBlock: 101n,
+					});
+					const chunks = yield* Stream.runCollect(stream);
+					const events = Array.from(chunks);
+					expect(events.length).toBeGreaterThan(0);
+					expect(events[0].type).toBe("blocks");
+				}).pipe(Effect.provide(TestBlockStreamLayer));
+
+				yield* program;
+			})
+		);
+
+		it.effect("error during stream consumption maps to BlockStreamError", () =>
+			Effect.gen(function* () {
+				let callCount = 0;
+				const mockBlock = {
+					number: "0x64",
+					hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+					timestamp: "0x60000000",
+					nonce: "0x0000000000000000",
+					difficulty: "0x0",
+					gasLimit: "0x1c9c380",
+					gasUsed: "0x0",
+					miner: "0x0000000000000000000000000000000000000000",
+					extraData: "0x",
+					logsBloom: "0x" + "0".repeat(512),
+					transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+					stateRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+					receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+					sha3Uncles: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+					size: "0x200",
+					baseFeePerGas: "0x7",
+					transactions: [],
+					uncles: [],
+				};
+
+				const mockTransport: TransportShape = {
+					request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+						if (method === "eth_blockNumber") {
+							return Effect.succeed("0x68" as T);
+						}
+						if (method === "eth_getBlockByNumber") {
+							callCount++;
+							if (callCount > 2) {
+								throw new Error("RPC rate limit exceeded");
+							}
+							return Effect.succeed(mockBlock as T);
+						}
+						return Effect.succeed(null as T);
+					},
+				};
+
+				const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+				const TestBlockStreamLayer = Layer.provide(BlockStream, TestTransportLayer);
+
+				const program = Effect.gen(function* () {
+					const blockStream = yield* BlockStreamService;
+					const stream = blockStream.backfill({
+						fromBlock: 100n,
+						toBlock: 104n,
+					});
+					yield* Stream.runCollect(stream);
+				}).pipe(Effect.provide(TestBlockStreamLayer));
+
+				const result = yield* Effect.exit(program);
+				expect(result._tag).toBe("Failure");
+				if (result._tag === "Failure") {
+					const error = result.cause;
+					expect(error).toBeDefined();
+				}
+			})
+		);
+
+		it.effect("watch with Stream.take(1) yields at least one block event", () =>
+			Effect.gen(function* () {
+				let blockNumber = 0x100;
+				const mockBlock = {
+					number: "0x100",
+					hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+					timestamp: "0x60000000",
+					nonce: "0x0000000000000000",
+					difficulty: "0x0",
+					gasLimit: "0x1c9c380",
+					gasUsed: "0x0",
+					miner: "0x0000000000000000000000000000000000000000",
+					extraData: "0x",
+					logsBloom: "0x" + "0".repeat(512),
+					transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+					stateRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+					receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+					sha3Uncles: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+					size: "0x200",
+					baseFeePerGas: "0x7",
+					transactions: [],
+					uncles: [],
+				};
+
+				const mockTransport: TransportShape = {
+					request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+						if (method === "eth_blockNumber") {
+							const hex = `0x${blockNumber.toString(16)}`;
+							blockNumber++;
+							return Effect.succeed(hex as T);
+						}
+						if (method === "eth_getBlockByNumber") {
+							return Effect.succeed(mockBlock as T);
+						}
+						return Effect.succeed(null as T);
+					},
+				};
+
+				const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+				const TestBlockStreamLayer = Layer.provide(BlockStream, TestTransportLayer);
+
+				const program = Effect.gen(function* () {
+					const blockStream = yield* BlockStreamService;
+					const stream = blockStream.watch();
+					const chunks = yield* Stream.runCollect(Stream.take(stream, 1));
+					const events = Array.from(chunks);
+					expect(events.length).toBe(1);
+					expect(events[0].type).toBe("blocks");
+				}).pipe(Effect.provide(TestBlockStreamLayer));
+
+				yield* program;
+			})
+		);
+
+		it.effect("single block range (fromBlock === toBlock) yields exactly one block event", () =>
+			Effect.gen(function* () {
+				const mockBlock = {
+					number: "0x64",
+					hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+					timestamp: "0x60000000",
+					nonce: "0x0000000000000000",
+					difficulty: "0x0",
+					gasLimit: "0x1c9c380",
+					gasUsed: "0x0",
+					miner: "0x0000000000000000000000000000000000000000",
+					extraData: "0x",
+					logsBloom: "0x" + "0".repeat(512),
+					transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+					stateRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+					receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+					sha3Uncles: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+					size: "0x200",
+					baseFeePerGas: "0x7",
+					transactions: [],
+					uncles: [],
+				};
+
+				const mockTransport: TransportShape = {
+					request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+						if (method === "eth_blockNumber") {
+							return Effect.succeed("0x64" as T);
+						}
+						if (method === "eth_getBlockByNumber") {
+							return Effect.succeed(mockBlock as T);
+						}
+						return Effect.succeed(null as T);
+					},
+				};
+
+				const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+				const TestBlockStreamLayer = Layer.provide(BlockStream, TestTransportLayer);
+
+				const program = Effect.gen(function* () {
+					const blockStream = yield* BlockStreamService;
+					const stream = blockStream.backfill({
+						fromBlock: 100n,
+						toBlock: 100n,
+					});
+					const chunks = yield* Stream.runCollect(stream);
+					const events = Array.from(chunks);
+					expect(events.length).toBe(1);
+					expect(events[0].type).toBe("blocks");
+					expect(events[0].blocks.length).toBe(1);
+					expect(BigInt(events[0].blocks[0].number)).toBe(100n);
+				}).pipe(Effect.provide(TestBlockStreamLayer));
+
+				yield* program;
+			})
+		);
+
+		it.effect("fromBlock > toBlock yields empty stream", () =>
+			Effect.gen(function* () {
+				const mockTransport: TransportShape = {
+					request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+						if (method === "eth_blockNumber") {
+							return Effect.succeed("0x100" as T);
+						}
+						return Effect.succeed(null as T);
+					},
+				};
+
+				const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+				const TestBlockStreamLayer = Layer.provide(BlockStream, TestTransportLayer);
+
+				const program = Effect.gen(function* () {
+					const blockStream = yield* BlockStreamService;
+					const stream = blockStream.backfill({
+						fromBlock: 200n,
+						toBlock: 100n,
+					});
+					const chunks = yield* Stream.runCollect(stream);
+					const events = Array.from(chunks);
+					expect(events.length).toBe(0);
+				}).pipe(Effect.provide(TestBlockStreamLayer));
+
+				yield* program;
+			})
+		);
+
+		it.effect("backfill consumes and verifies block data matches expected", () =>
+			Effect.gen(function* () {
+				const expectedBlocks = [
+					{
+						number: "0x64",
+						hash: "0xaaaa567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+						parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+						timestamp: "0x60000000",
+						nonce: "0x0000000000000000",
+						difficulty: "0x0",
+						gasLimit: "0x1c9c380",
+						gasUsed: "0x5208",
+						miner: "0x1111111111111111111111111111111111111111",
+						extraData: "0x",
+						logsBloom: "0x" + "0".repeat(512),
+						transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						stateRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						sha3Uncles: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+						size: "0x200",
+						baseFeePerGas: "0x7",
+						transactions: [],
+						uncles: [],
+					},
+					{
+						number: "0x65",
+						hash: "0xbbbb567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+						parentHash: "0xaaaa567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+						timestamp: "0x60000001",
+						nonce: "0x0000000000000000",
+						difficulty: "0x0",
+						gasLimit: "0x1c9c380",
+						gasUsed: "0xa410",
+						miner: "0x2222222222222222222222222222222222222222",
+						extraData: "0x",
+						logsBloom: "0x" + "0".repeat(512),
+						transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						stateRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						sha3Uncles: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+						size: "0x200",
+						baseFeePerGas: "0x7",
+						transactions: [],
+						uncles: [],
+					},
+					{
+						number: "0x66",
+						hash: "0xcccc567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+						parentHash: "0xbbbb567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+						timestamp: "0x60000002",
+						nonce: "0x0000000000000000",
+						difficulty: "0x0",
+						gasLimit: "0x1c9c380",
+						gasUsed: "0xf618",
+						miner: "0x3333333333333333333333333333333333333333",
+						extraData: "0x",
+						logsBloom: "0x" + "0".repeat(512),
+						transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						stateRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+						sha3Uncles: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+						size: "0x200",
+						baseFeePerGas: "0x7",
+						transactions: [],
+						uncles: [],
+					},
+				];
+
+				const mockTransport: TransportShape = {
+					request: <T>(method: string, params?: unknown[]): Effect.Effect<T, never> => {
+						if (method === "eth_blockNumber") {
+							return Effect.succeed("0x66" as T);
+						}
+						if (method === "eth_getBlockByNumber") {
+							const blockNum = params?.[0] as string;
+							const block = expectedBlocks.find((b) => b.number === blockNum);
+							return Effect.succeed((block ?? null) as T);
+						}
+						return Effect.succeed(null as T);
+					},
+				};
+
+				const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+				const TestBlockStreamLayer = Layer.provide(BlockStream, TestTransportLayer);
+
+				const program = Effect.gen(function* () {
+					const blockStream = yield* BlockStreamService;
+					const stream = blockStream.backfill({
+						fromBlock: 100n,
+						toBlock: 102n,
+					});
+					const chunks = yield* Stream.runCollect(stream);
+					const events = Array.from(chunks);
+
+					const allBlocks = events.flatMap((e) => e.blocks);
+					expect(allBlocks.length).toBe(3);
+					expect(allBlocks[0].hash).toBe(expectedBlocks[0].hash);
+					expect(allBlocks[1].hash).toBe(expectedBlocks[1].hash);
+					expect(allBlocks[2].hash).toBe(expectedBlocks[2].hash);
+					expect(allBlocks[0].miner).toBe(expectedBlocks[0].miner);
+					expect(allBlocks[1].miner).toBe(expectedBlocks[1].miner);
+					expect(allBlocks[2].miner).toBe(expectedBlocks[2].miner);
+				}).pipe(Effect.provide(TestBlockStreamLayer));
+
+				yield* program;
+			})
+		);
+	});
+
 	describe("edge cases", () => {
 		it.effect("transport error from eth_blockNumber propagates as BlockStreamError", () =>
 			Effect.gen(function* () {
