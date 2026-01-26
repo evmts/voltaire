@@ -16,11 +16,11 @@ describe("Receipt.Schema", () => {
 		contractAddress: null,
 		logs: [],
 		logsBloom: new Uint8Array(256),
-		type: "eip1559" as const,
+		type: "eip1559",
 	};
 
 	it("parses post-Byzantium receipt with status", () => {
-		const receipt = Schema.decodeSync(Receipt.Schema)({
+		const receipt = Schema.decodeUnknownSync(Receipt.Schema)({
 			...baseReceipt,
 			status: 1,
 		});
@@ -29,7 +29,7 @@ describe("Receipt.Schema", () => {
 	});
 
 	it("parses pre-Byzantium receipt with root", () => {
-		const receipt = Schema.decodeSync(Receipt.Schema)({
+		const receipt = Schema.decodeUnknownSync(Receipt.Schema)({
 			...baseReceipt,
 			root: new Uint8Array(32).fill(0xef),
 		});
@@ -39,7 +39,7 @@ describe("Receipt.Schema", () => {
 
 	it("rejects receipt with both status and root", () => {
 		expect(() =>
-			Schema.decodeSync(Receipt.Schema)({
+			Schema.decodeUnknownSync(Receipt.Schema)({
 				...baseReceipt,
 				status: 1,
 				root: new Uint8Array(32).fill(0xef),
@@ -48,10 +48,10 @@ describe("Receipt.Schema", () => {
 	});
 
 	it("parses EIP-4844 blob gas fields", () => {
-		const receipt = Schema.decodeSync(Receipt.Schema)({
+		const receipt = Schema.decodeUnknownSync(Receipt.Schema)({
 			...baseReceipt,
 			status: 1,
-			type: "eip4844" as const,
+			type: "eip4844",
 			blobGasUsed: 131072n,
 			blobGasPrice: 1000000000n,
 		});
@@ -63,7 +63,7 @@ describe("Receipt.Schema", () => {
 	it("requires effectiveGasPrice", () => {
 		const { effectiveGasPrice, ...receiptWithoutGasPrice } = baseReceipt;
 		expect(() =>
-			Schema.decodeSync(Receipt.Schema)({
+			Schema.decodeUnknownSync(Receipt.Schema)({
 				...receiptWithoutGasPrice,
 				status: 1,
 			}),
@@ -73,7 +73,7 @@ describe("Receipt.Schema", () => {
 	it("requires type field", () => {
 		const { type, ...receiptWithoutType } = baseReceipt;
 		expect(() =>
-			Schema.decodeSync(Receipt.Schema)({
+			Schema.decodeUnknownSync(Receipt.Schema)({
 				...receiptWithoutType,
 				status: 1,
 			}),
@@ -81,15 +81,9 @@ describe("Receipt.Schema", () => {
 	});
 
 	it("accepts all transaction types", () => {
-		const types = [
-			"legacy",
-			"eip2930",
-			"eip1559",
-			"eip4844",
-			"eip7702",
-		] as const;
+		const types = ["legacy", "eip2930", "eip1559", "eip4844", "eip7702"];
 		for (const txType of types) {
-			const receipt = Schema.decodeSync(Receipt.Schema)({
+			const receipt = Schema.decodeUnknownSync(Receipt.Schema)({
 				...baseReceipt,
 				status: 1,
 				type: txType,
