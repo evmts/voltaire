@@ -319,7 +319,12 @@ describe("BlockStreamService", () => {
 						_method: string,
 						_params?: unknown[],
 					): Effect.Effect<T, TransportError> =>
-						Effect.fail(new TransportError({ code: -32000, message: "RPC connection failed" })),
+						Effect.fail(
+							new TransportError({
+								code: -32000,
+								message: "RPC connection failed",
+							}),
+						),
 				};
 
 				const TestTransportLayer = Layer.succeed(
@@ -980,7 +985,12 @@ describe("BlockStreamService", () => {
 							_params?: unknown[],
 						): Effect.Effect<T, TransportError> => {
 							if (method === "eth_blockNumber") {
-								return Effect.fail(new TransportError({ code: -32000, message: "eth_blockNumber RPC failed" }));
+								return Effect.fail(
+									new TransportError({
+										code: -32000,
+										message: "eth_blockNumber RPC failed",
+									}),
+								);
 							}
 							return Effect.succeed(null as T);
 						},
@@ -1123,7 +1133,12 @@ describe("BlockStreamService", () => {
 						if (method === "eth_blockNumber") {
 							callCount++;
 							if (callCount === 1) {
-								return Effect.fail(new TransportError({ code: -32000, message: "Transient network error" }));
+								return Effect.fail(
+									new TransportError({
+										code: -32000,
+										message: "Transient network error",
+									}),
+								);
 							}
 							return Effect.succeed("0x100" as T);
 						}

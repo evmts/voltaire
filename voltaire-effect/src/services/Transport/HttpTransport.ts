@@ -243,7 +243,9 @@ export const HttpTransport = (
 		);
 	};
 
-	const makeRetrySchedule = (retries: number): Schedule.Schedule<number, TransportError> =>
+	const makeRetrySchedule = (
+		retries: number,
+	): Schedule.Schedule<number, TransportError> =>
 		Schedule.recurs(retries).pipe(
 			Schedule.addDelay(() => Duration.millis(config.retryDelay)),
 		) as Schedule.Schedule<number, TransportError>;

@@ -284,7 +284,12 @@ describe("TransactionStreamService", () => {
 					_method: string,
 					_params?: unknown[],
 				): Effect.Effect<T, TransportError> =>
-					Effect.fail(new TransportError({ code: -32000, message: "RPC connection failed" })),
+					Effect.fail(
+						new TransportError({
+							code: -32000,
+							message: "RPC connection failed",
+						}),
+					),
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
@@ -638,7 +643,9 @@ describe("TransactionStreamService", () => {
 					callCount++;
 					// Fail first 2 calls, then succeed
 					if (callCount <= 2) {
-						return Effect.fail(new TransportError({ code: -32000, message: "Network timeout" }));
+						return Effect.fail(
+							new TransportError({ code: -32000, message: "Network timeout" }),
+						);
 					}
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x15" as T);

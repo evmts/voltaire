@@ -101,10 +101,18 @@ describe("HttpTransport hooks", () => {
 
 		const result = await Effect.runPromise(program);
 		expect(result).toBe("0x3");
-		expect((configRequest as { method: string; params: readonly unknown[] } | null)?.method).toBe("eth_blockNumber");
-		expect((overrideRequest as { method: string; params: readonly unknown[] } | null)?.method).toBe("eth_chainId");
+		expect(
+			(configRequest as { method: string; params: readonly unknown[] } | null)
+				?.method,
+		).toBe("eth_blockNumber");
+		expect(
+			(overrideRequest as { method: string; params: readonly unknown[] } | null)
+				?.method,
+		).toBe("eth_chainId");
 		expect((configResponse as { result: unknown } | null)?.result).toBe("0x1");
-		expect((overrideResponse as { result: unknown } | null)?.result).toBe("0x2");
+		expect((overrideResponse as { result: unknown } | null)?.result).toBe(
+			"0x2",
+		);
 
 		const request = fetchMock.mock.calls[0][0] as {
 			body: { _tag: string; body: Uint8Array };

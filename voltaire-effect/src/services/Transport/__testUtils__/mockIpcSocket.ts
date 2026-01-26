@@ -8,7 +8,10 @@ type MockIpcSocketOptions = {
 	onEnd?: (socket: MockIpcSocket) => void;
 };
 
-type AnyListener = Listener<Uint8Array | string> | Listener<Error> | Listener<void>;
+type AnyListener =
+	| Listener<Uint8Array | string>
+	| Listener<Error>
+	| Listener<void>;
 
 export class MockIpcSocket implements IpcSocket {
 	readonly index: number;
@@ -23,7 +26,10 @@ export class MockIpcSocket implements IpcSocket {
 	on(event: "data", listener: Listener<Uint8Array | string>): this;
 	on(event: "error", listener: Listener<Error>): this;
 	on(event: "close", listener: Listener<void>): this;
-	on(event: string, listener: Listener<Uint8Array | string> | Listener<Error> | Listener<void>): this {
+	on(
+		event: string,
+		listener: Listener<Uint8Array | string> | Listener<Error> | Listener<void>,
+	): this {
 		const set = this.listeners.get(event) ?? new Set();
 		set.add(listener);
 		this.listeners.set(event, set);
@@ -33,7 +39,10 @@ export class MockIpcSocket implements IpcSocket {
 	off(event: "data", listener: Listener<Uint8Array | string>): this;
 	off(event: "error", listener: Listener<Error>): this;
 	off(event: "close", listener: Listener<void>): this;
-	off(event: string, listener: Listener<Uint8Array | string> | Listener<Error> | Listener<void>): this {
+	off(
+		event: string,
+		listener: Listener<Uint8Array | string> | Listener<Error> | Listener<void>,
+	): this {
 		const set = this.listeners.get(event);
 		if (!set) return this;
 		set.delete(listener);

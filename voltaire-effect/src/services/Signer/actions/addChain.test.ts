@@ -127,7 +127,10 @@ describe("addChain", () => {
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>
 				Effect.fail(
-					new TransportError({ code: 4001, message: "User rejected the request" }),
+					new TransportError({
+						code: 4001,
+						message: "User rejected the request",
+					}),
 				) as never,
 		};
 
@@ -151,7 +154,9 @@ describe("addChain", () => {
 	it("handles non-rejection transport errors", async () => {
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>
-				Effect.fail(new TransportError({ code: -32000, message: "RPC error" })) as never,
+				Effect.fail(
+					new TransportError({ code: -32000, message: "RPC error" }),
+				) as never,
 		};
 
 		const TestLayer = Layer.succeed(TransportService, mockTransport);
@@ -165,7 +170,9 @@ describe("addChain", () => {
 			expect(String(result.cause)).toContain("Failed to add chain");
 			const failures = Cause.failures(result.cause);
 			const firstFailure = Chunk.head(failures);
-			expect(Option.isSome(firstFailure) && firstFailure.value.code).toBe(-32000);
+			expect(Option.isSome(firstFailure) && firstFailure.value.code).toBe(
+				-32000,
+			);
 		}
 	});
 });

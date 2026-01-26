@@ -105,7 +105,10 @@ describe("switchChain", () => {
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>
 				Effect.fail(
-					new TransportError({ code: 4001, message: "User rejected the request" }),
+					new TransportError({
+						code: 4001,
+						message: "User rejected the request",
+					}),
 				) as never,
 		};
 

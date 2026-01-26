@@ -9,6 +9,7 @@ export type {
 	Authorization,
 	UnsignedAuthorization,
 } from "../../Account/index.js";
+export type { PrepareAuthorizationParams } from "../SignerService.js";
 // Wallet management actions (EIP-3085, EIP-747, EIP-2255)
 export { addChain, type ChainConfig, type NativeCurrency } from "./addChain.js";
 export {
@@ -25,7 +26,6 @@ export {
 } from "./getPermissions.js";
 // EIP-7702 Authorization actions
 export { prepareAuthorization } from "./prepareAuthorization.js";
-export { type PrepareAuthorizationParams } from "../SignerService.js";
 export {
 	type PermissionRequest,
 	requestPermissions,

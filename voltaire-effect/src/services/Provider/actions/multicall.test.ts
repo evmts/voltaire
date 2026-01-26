@@ -2,14 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { BrandedAbi, Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { expectTypeOf } from "vitest";
 import { ProviderService } from "../ProviderService.js";
-import { multicall as _multicall, type ContractCall } from "./multicall.js";
+import { multicall as _multicall } from "./multicall.js";
 
 // Type-relaxed wrapper for tests - the production multicall has strict typing
 // that's difficult to satisfy in tests without extensive type annotations
-const multicall = (params: { contracts: any[]; allowFailure?: boolean; blockTag?: any; batchSize?: number }) =>
-	_multicall(params as any);
+const multicall = (params: {
+	contracts: any[];
+	allowFailure?: boolean;
+	blockTag?: any;
+	batchSize?: number;
+}) => _multicall(params as any);
 
 type HexType = `0x${string}`;
 

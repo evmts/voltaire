@@ -107,9 +107,7 @@ describe("RpcResolver", () => {
 				const results = await Effect.runPromise(
 					Effect.all(
 						[
-							request(resolver)(new EthBlockNumber({})).pipe(
-								Effect.either,
-							),
+							request(resolver)(new EthBlockNumber({})).pipe(Effect.either),
 							request(resolver)(
 								new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
 							).pipe(Effect.either),
@@ -148,9 +146,7 @@ describe("RpcResolver", () => {
 				const results = await Effect.runPromise(
 					Effect.all(
 						[
-							request(resolver)(new EthBlockNumber({})).pipe(
-								Effect.either,
-							),
+							request(resolver)(new EthBlockNumber({})).pipe(Effect.either),
 							request(resolver)(
 								new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
 							).pipe(Effect.either),
@@ -181,9 +177,7 @@ describe("RpcResolver", () => {
 				const results = await Effect.runPromise(
 					Effect.all(
 						[
-							request(resolver)(new EthBlockNumber({})).pipe(
-								Effect.either,
-							),
+							request(resolver)(new EthBlockNumber({})).pipe(Effect.either),
 							request(resolver)(
 								new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
 							).pipe(Effect.either),
@@ -203,9 +197,7 @@ describe("RpcResolver", () => {
 				transport.request.mockReturnValue(Effect.succeed("0x1"));
 				const resolver = makeRpcResolver(transport);
 
-				await Effect.runPromise(
-					request(resolver)(new EthBlockNumber({})),
-				);
+				await Effect.runPromise(request(resolver)(new EthBlockNumber({})));
 
 				expect(transport.request).toHaveBeenCalledWith("eth_blockNumber", []);
 			});

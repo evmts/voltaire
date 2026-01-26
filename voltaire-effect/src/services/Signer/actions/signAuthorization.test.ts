@@ -36,7 +36,10 @@ const mockSignedAuth = {
 	s: `0x${"cd".repeat(32)}` as `0x${string}`,
 };
 
-let capturedAuthorization: UnsignedAuthorization | SignAuthorizationParams | undefined;
+let capturedAuthorization:
+	| UnsignedAuthorization
+	| SignAuthorizationParams
+	| undefined;
 
 const mockAccount: AccountShape = {
 	address: mockAddress,
@@ -127,10 +130,14 @@ describe("signAuthorization", () => {
 			chainId: 137n,
 		});
 
-		const result: SignedAuthorization = await Effect.runPromise(Effect.provide(program, TestLayers));
+		const result: SignedAuthorization = await Effect.runPromise(
+			Effect.provide(program, TestLayers),
+		);
 
 		expect(result.chainId).toBe(137n);
-		expect((capturedAuthorization as SignAuthorizationParams | undefined)?.chainId).toBe(137n);
+		expect(
+			(capturedAuthorization as SignAuthorizationParams | undefined)?.chainId,
+		).toBe(137n);
 	});
 
 	it("uses provided nonce", async () => {
@@ -141,10 +148,14 @@ describe("signAuthorization", () => {
 			nonce: 42n,
 		});
 
-		const result: SignedAuthorization = await Effect.runPromise(Effect.provide(program, TestLayers));
+		const result: SignedAuthorization = await Effect.runPromise(
+			Effect.provide(program, TestLayers),
+		);
 
 		expect(result.nonce).toBe(42n);
-		expect((capturedAuthorization as SignAuthorizationParams | undefined)?.nonce).toBe(42n);
+		expect(
+			(capturedAuthorization as SignAuthorizationParams | undefined)?.nonce,
+		).toBe(42n);
 	});
 
 	it("passes correct authorization params to account", async () => {
@@ -173,11 +184,14 @@ describe("signAuthorization", () => {
 
 		await Effect.runPromise(Effect.provide(program, TestLayers));
 
-		const captured = capturedAuthorization as SignAuthorizationParams | undefined;
+		const captured = capturedAuthorization as
+			| SignAuthorizationParams
+			| undefined;
 		expect(
 			(typeof captured?.contractAddress === "string"
 				? captured.contractAddress
-				: "")?.toLowerCase(),
+				: ""
+			)?.toLowerCase(),
 		).toBe("0x1212121212121212121212121212121212121212");
 	});
 
