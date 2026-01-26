@@ -1,5 +1,5 @@
 type Listener = {
-	handler: (event: any) => void;
+	handler: (event: unknown) => void;
 	once: boolean;
 };
 
@@ -56,7 +56,7 @@ export class MockWebSocket {
 
 	addEventListener(
 		type: string,
-		handler: (event: any) => void,
+		handler: (event: unknown) => void,
 		options?: { once?: boolean },
 	) {
 		const entry: Listener = { handler, once: options?.once ?? false };
@@ -65,7 +65,7 @@ export class MockWebSocket {
 		this.listeners.set(type, listeners);
 	}
 
-	removeEventListener(type: string, handler: (event: any) => void) {
+	removeEventListener(type: string, handler: (event: unknown) => void) {
 		const listeners = this.listeners.get(type);
 		if (!listeners) return;
 		for (const listener of listeners) {
@@ -102,7 +102,7 @@ export class MockWebSocket {
 		this.options.onError?.(this, event);
 	}
 
-	private emit(type: string, event: any) {
+	private emit(type: string, event: unknown) {
 		const listeners = this.listeners.get(type);
 		if (!listeners) return;
 		for (const listener of [...listeners]) {
