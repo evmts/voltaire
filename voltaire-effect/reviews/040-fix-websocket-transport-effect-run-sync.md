@@ -387,4 +387,65 @@ ws.onmessage = (event) => {
 - Review 073: WebSocket Effect.runSync analysis
 - Review 076: Transport services comprehensive review
 </references>
+
+<recommended_approach>
+## Preferred Solution: Use @effect/platform Socket
+
+Instead of manually bridging WebSocket callbacks with `Runtime.runFork` and queues, use `@effect/platform/Socket` which provides Effect-native WebSocket support:
+
+```typescript
+import * as Socket from "@effect/platform/Socket"
+import * as SocketClusterClient from "@effect/platform/SocketClusterClient" // if using SocketCluster
+
+// @effect/platform provides:
+// - Socket.Socket service with Effect-native send/receive
+// - Automatic lifecycle management (scoped resources)
+// - Built-in reconnection with Schedule
+// - Cross-platform (Node.js, Bun, browser via @effect/platform-browser)
+
+const WebSocketTransport = (url: string) =>
+  Layer.scoped(
+    TransportService,
+    Effect.gen(function* () {
+      const socket = yield* Socket.makeWebSocket(url)
+      
+      return {
+        request: <T>(method: string, params?: unknown[]) =>
+          Effect.gen(function* () {
+            const id = yield* Ref.getAndUpdate(idRef, n => n + 1)
+            const request = JSON.stringify({ jsonrpc: "2.0", id, method, params })
+            
+            yield* socket.send(request)
+            
+            // socket.messages is an Effect Stream
+            const response = yield* socket.messages.pipe(
+              Stream.filter(msg => JSON.parse(msg).id === id),
+              Stream.take(1),
+              Stream.runHead,
+              Effect.flatten
+            )
+            
+            return JSON.parse(response).result as T
+          })
+      }
+    })
+  )
+```
+
+**Benefits of @effect/platform/Socket**:
+- No manual `Runtime.runFork` or callback bridging
+- Proper fiber lifecycle (interruption works correctly)
+- Built-in reconnection via `Socket.makeWebSocketChannel` with `reconnect` option
+- Cross-platform: use `@effect/platform-node` for Node.js, `@effect/platform-browser` for browser
+- Stream-based message handling with full Effect integration
+- TestClock compatible for testing timeouts/reconnection
+
+**Platform packages**:
+- `@effect/platform` - Core platform abstractions
+- `@effect/platform-node` - Node.js implementation
+- `@effect/platform-bun` - Bun implementation  
+- `@effect/platform-browser` - Browser implementation
+
+See: https://effect.website/docs/platform/socket
+</recommended_approach>
 </issue>

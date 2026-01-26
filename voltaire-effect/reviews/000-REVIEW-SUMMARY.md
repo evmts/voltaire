@@ -105,6 +105,26 @@ Modules with **zero** test files:
 
 ## Effect Pattern Issues
 
+### Recommended: Use @effect/platform
+
+For transport layers, **use `@effect/platform`** instead of manual implementations:
+
+| Component | Use | Package |
+|-----------|-----|---------|
+| HTTP Transport | `@effect/platform/HttpClient` | `@effect/platform-node` / `-browser` |
+| WebSocket Transport | `@effect/platform/Socket` | `@effect/platform-node` / `-browser` |
+| File System | `@effect/platform/FileSystem` | `@effect/platform-node` |
+| Workers | `@effect/platform/Worker` | `@effect/platform-node` / `-browser` |
+
+Benefits:
+- No callback bridging (`Runtime.runFork`, `Effect.runSync`)
+- No manual timers (`setTimeout`, `setInterval`)
+- Built-in retry, timeout, reconnection
+- Cross-platform (Node.js, Bun, browser)
+- TestClock compatible
+
+See reviews 040, 041, 042, 073, 076 for detailed migration patterns.
+
 ### Anti-patterns Found
 
 1. **`Effect.runSync/runPromise` in callbacks**
@@ -112,8 +132,9 @@ Modules with **zero** test files:
    // BAD - loses fiber context, breaks interruption
    ws.onmessage = (msg) => Effect.runSync(handleMessage(msg))
    
-   // GOOD - use Effect.async or Stream
-   Stream.async((emit) => { ws.onmessage = (msg) => emit(msg) })
+   // GOOD - use @effect/platform Socket
+   const socket = yield* Socket.makeWebSocket(url)
+   yield* socket.messages.pipe(Stream.forEach(handleMessage))
    ```
 
 2. **`Effect.sync` for throwing operations**
@@ -146,16 +167,21 @@ Modules with **zero** test files:
 4. Change `Effect.sync` to `Effect.try` in Bn254/KZG/HDWallet
 
 ### Short-term (1-2 weeks)
-1. Replace `runPromise/runSync` callbacks with Effect.async or Stream patterns
-2. Add memory cleanup for key material
-3. Implement constant-time comparison utilities
-4. Fix FeeEstimator precision loss
-5. Consolidate duplicate schema definitions
+1. **Migrate transports to `@effect/platform`** - Use `HttpClient` and `Socket` instead of manual fetch/WebSocket
+2. **Adopt `@effect/vitest`** - Use `it.effect`, `it.scoped` for cleaner tests with auto TestContext
+3. **Use `effect/Cache`** - Replace manual MemoryCache with built-in Cache (auto-lookup, dedup)
+4. Add memory cleanup for key material
+5. Implement constant-time comparison utilities
+6. Fix FeeEstimator precision loss
 
 ### Long-term
 1. Add comprehensive integration tests
-2. Consider returning Either from base voltaire library
-3. Benchmark and optimize hot paths
+2. Consider `@effect/rpc` for type-safe JSON-RPC
+3. Add `@effect/experimental/RateLimiter` for RPC rate limiting
+4. Add `@effect/opentelemetry` for production observability
+5. Benchmark and optimize hot paths
+
+**See**: [issues/003-effect-ecosystem-packages.md](../issues/003-effect-ecosystem-packages.md) for full Effect package analysis.
 
 ---
 
