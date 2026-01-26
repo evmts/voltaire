@@ -19,9 +19,7 @@ export {
 
 export {
 	multicall,
-	type MulticallContract,
+	type ContractCall,
 	type MulticallParams,
-	type MulticallResult,
-	type MulticallResultSuccess,
-	type MulticallResultFailure,
+	type MulticallResults,
 } from "./multicall.js";

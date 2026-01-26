@@ -215,4 +215,160 @@ describe("simulateContract", () => {
 
 		expect(result.result).toBe(1000000000000000000n);
 	});
+
+	describe("error handling", () => {
+		it("fails on execution revert with data", async () => {
+			const revertData =
+				"0x08c379a0" +
+				"0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000015" +
+				"5472616e7366657220616d6f756e74206578636565647300000000000000";
+
+			const mockProvider: ProviderShape = {
+				getBlockNumber: () => Effect.succeed(123n),
+				getBlock: () => Effect.succeed({} as any),
+				getBlockTransactionCount: () => Effect.succeed(0n),
+				getBalance: () => Effect.succeed(0n),
+				getTransactionCount: () => Effect.succeed(0n),
+				getCode: () => Effect.succeed("0x" as const),
+				getStorageAt: () => Effect.succeed("0x" as const),
+				getTransaction: () => Effect.succeed({} as any),
+				getTransactionReceipt: () => Effect.succeed({} as any),
+				waitForTransactionReceipt: () => Effect.succeed({} as any),
+				call: () =>
+					Effect.fail({
+						message: "execution reverted",
+						code: 3,
+						data: revertData,
+					} as any),
+				estimateGas: () => Effect.succeed(21000n),
+				createAccessList: () =>
+					Effect.succeed({ accessList: [], gasUsed: "0x0" }),
+				getLogs: () => Effect.succeed([]),
+				getChainId: () => Effect.succeed(1),
+				getGasPrice: () => Effect.succeed(1000000000n),
+				getMaxPriorityFeePerGas: () => Effect.succeed(1000000000n),
+				getFeeHistory: () =>
+					Effect.succeed({
+						oldestBlock: "0x0",
+						baseFeePerGas: [],
+						gasUsedRatio: [],
+					}),
+				watchBlocks: () => {
+					throw new Error("Not implemented in mock");
+				},
+				backfillBlocks: () => {
+					throw new Error("Not implemented in mock");
+				},
+			};
+			const provider = Layer.succeed(ProviderService, mockProvider);
+
+			const program = simulateContract({
+				address: "0x1234567890123456789012345678901234567890",
+				abi: erc20Abi,
+				functionName: "transfer",
+				args: ["0xabcdef0123456789abcdef0123456789abcdef01", 1000n],
+			}).pipe(Effect.provide(provider));
+
+			await expect(Effect.runPromise(program)).rejects.toThrow();
+		});
+
+		it("propagates transport errors", async () => {
+			const mockProvider: ProviderShape = {
+				getBlockNumber: () => Effect.succeed(123n),
+				getBlock: () => Effect.succeed({} as any),
+				getBlockTransactionCount: () => Effect.succeed(0n),
+				getBalance: () => Effect.succeed(0n),
+				getTransactionCount: () => Effect.succeed(0n),
+				getCode: () => Effect.succeed("0x" as const),
+				getStorageAt: () => Effect.succeed("0x" as const),
+				getTransaction: () => Effect.succeed({} as any),
+				getTransactionReceipt: () => Effect.succeed({} as any),
+				waitForTransactionReceipt: () => Effect.succeed({} as any),
+				call: () =>
+					Effect.fail({
+						message: "network error: connection refused",
+						code: -32603,
+					} as any),
+				estimateGas: () => Effect.succeed(21000n),
+				createAccessList: () =>
+					Effect.succeed({ accessList: [], gasUsed: "0x0" }),
+				getLogs: () => Effect.succeed([]),
+				getChainId: () => Effect.succeed(1),
+				getGasPrice: () => Effect.succeed(1000000000n),
+				getMaxPriorityFeePerGas: () => Effect.succeed(1000000000n),
+				getFeeHistory: () =>
+					Effect.succeed({
+						oldestBlock: "0x0",
+						baseFeePerGas: [],
+						gasUsedRatio: [],
+					}),
+				watchBlocks: () => {
+					throw new Error("Not implemented in mock");
+				},
+				backfillBlocks: () => {
+					throw new Error("Not implemented in mock");
+				},
+			};
+			const provider = Layer.succeed(ProviderService, mockProvider);
+
+			const program = simulateContract({
+				address: "0x1234567890123456789012345678901234567890",
+				abi: erc20Abi,
+				functionName: "transfer",
+				args: ["0xabcdef0123456789abcdef0123456789abcdef01", 1000n],
+			}).pipe(Effect.provide(provider));
+
+			await expect(Effect.runPromise(program)).rejects.toThrow();
+		});
+
+		it("propagates timeout errors", async () => {
+			const mockProvider: ProviderShape = {
+				getBlockNumber: () => Effect.succeed(123n),
+				getBlock: () => Effect.succeed({} as any),
+				getBlockTransactionCount: () => Effect.succeed(0n),
+				getBalance: () => Effect.succeed(0n),
+				getTransactionCount: () => Effect.succeed(0n),
+				getCode: () => Effect.succeed("0x" as const),
+				getStorageAt: () => Effect.succeed("0x" as const),
+				getTransaction: () => Effect.succeed({} as any),
+				getTransactionReceipt: () => Effect.succeed({} as any),
+				waitForTransactionReceipt: () => Effect.succeed({} as any),
+				call: () =>
+					Effect.fail({
+						message: "request timeout",
+						code: -32000,
+					} as any),
+				estimateGas: () => Effect.succeed(21000n),
+				createAccessList: () =>
+					Effect.succeed({ accessList: [], gasUsed: "0x0" }),
+				getLogs: () => Effect.succeed([]),
+				getChainId: () => Effect.succeed(1),
+				getGasPrice: () => Effect.succeed(1000000000n),
+				getMaxPriorityFeePerGas: () => Effect.succeed(1000000000n),
+				getFeeHistory: () =>
+					Effect.succeed({
+						oldestBlock: "0x0",
+						baseFeePerGas: [],
+						gasUsedRatio: [],
+					}),
+				watchBlocks: () => {
+					throw new Error("Not implemented in mock");
+				},
+				backfillBlocks: () => {
+					throw new Error("Not implemented in mock");
+				},
+			};
+			const provider = Layer.succeed(ProviderService, mockProvider);
+
+			const program = simulateContract({
+				address: "0x1234567890123456789012345678901234567890",
+				abi: erc20Abi,
+				functionName: "transfer",
+				args: ["0xabcdef0123456789abcdef0123456789abcdef01", 1000n],
+			}).pipe(Effect.provide(provider));
+
+			await expect(Effect.runPromise(program)).rejects.toThrow();
+		});
+	});
 });

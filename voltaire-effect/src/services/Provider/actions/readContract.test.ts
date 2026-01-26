@@ -69,6 +69,62 @@ const pairAbi = [
 	},
 ] as const;
 
+const extendedAbi = [
+	{
+		type: "function",
+		name: "owner",
+		stateMutability: "view",
+		inputs: [],
+		outputs: [{ name: "", type: "address" }],
+	},
+	{
+		type: "function",
+		name: "paused",
+		stateMutability: "view",
+		inputs: [],
+		outputs: [{ name: "", type: "bool" }],
+	},
+	{
+		type: "function",
+		name: "merkleRoot",
+		stateMutability: "view",
+		inputs: [],
+		outputs: [{ name: "", type: "bytes32" }],
+	},
+	{
+		type: "function",
+		name: "getBalances",
+		stateMutability: "view",
+		inputs: [{ name: "user", type: "address" }],
+		outputs: [{ name: "", type: "uint256[]" }],
+	},
+	{
+		type: "function",
+		name: "getPosition",
+		stateMutability: "view",
+		inputs: [{ name: "tokenId", type: "uint256" }],
+		outputs: [
+			{
+				name: "",
+				type: "tuple",
+				components: [
+					{ name: "owner", type: "address" },
+					{ name: "liquidity", type: "uint128" },
+					{ name: "tickLower", type: "int24" },
+					{ name: "tickUpper", type: "int24" },
+				],
+			},
+		],
+	},
+	{
+		type: "function",
+		name: "execute",
+		stateMutability: "nonpayable",
+		inputs: [{ name: "data", type: "bytes" }],
+		outputs: [],
+	},
+] as const;
+
 const complexAbi = [
 	{
 		type: "function",
@@ -376,6 +432,145 @@ describe("readContract", () => {
 				const cause = exit.cause;
 				expect(cause._tag).toBe("Fail");
 			}
+		});
+
+		it("fails when function not found in ABI", async () => {
+			mockProvider.call.mockReturnValue(
+				Effect.succeed(
+					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType,
+				),
+			);
+
+			const program = readContract({
+				address: "0x6B175474E89094C44Da98b954EecdEfaE6E286AB",
+				abi: erc20Abi,
+				functionName: "nonexistent" as any,
+				args: [],
+			});
+
+			const exit = await Effect.runPromiseExit(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("handles contract revert with reason string", async () => {
+			const revertData =
+				"0x08c379a0" +
+				"0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000012" +
+				"496e73756666696369656e742062616c616e63650000000000000000000000";
+			mockProvider.call.mockReturnValue(
+				Effect.fail({
+					message: "execution reverted",
+					code: 3,
+					data: revertData,
+				}),
+			);
+
+			const program = readContract({
+				address: "0x6B175474E89094C44Da98b954EecdEfaE6E286AB",
+				abi: erc20Abi,
+				functionName: "balanceOf",
+				args: ["0x1234567890123456789012345678901234567890"],
+			});
+
+			const exit = await Effect.runPromiseExit(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("handles contract revert with custom error", async () => {
+			const customErrorSelector = "0xcf479181";
+			mockProvider.call.mockReturnValue(
+				Effect.fail({
+					message: "execution reverted",
+					code: 3,
+					data: customErrorSelector,
+				}),
+			);
+
+			const program = readContract({
+				address: "0x6B175474E89094C44Da98b954EecdEfaE6E286AB",
+				abi: erc20Abi,
+				functionName: "balanceOf",
+				args: ["0x1234567890123456789012345678901234567890"],
+			});
+
+			const exit = await Effect.runPromiseExit(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("propagates transport errors", async () => {
+			mockProvider.call.mockReturnValue(
+				Effect.fail({
+					message: "network error: connection refused",
+					code: -32603,
+				}),
+			);
+
+			const program = readContract({
+				address: "0x6B175474E89094C44Da98b954EecdEfaE6E286AB",
+				abi: erc20Abi,
+				functionName: "balanceOf",
+				args: ["0x1234567890123456789012345678901234567890"],
+			});
+
+			const exit = await Effect.runPromiseExit(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("propagates timeout errors", async () => {
+			mockProvider.call.mockReturnValue(
+				Effect.fail({
+					message: "request timeout",
+					code: -32000,
+				}),
+			);
+
+			const program = readContract({
+				address: "0x6B175474E89094C44Da98b954EecdEfaE6E286AB",
+				abi: erc20Abi,
+				functionName: "balanceOf",
+				args: ["0x1234567890123456789012345678901234567890"],
+			});
+
+			const exit = await Effect.runPromiseExit(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("propagates rate limit errors", async () => {
+			mockProvider.call.mockReturnValue(
+				Effect.fail({
+					message: "rate limit exceeded",
+					code: 429,
+				}),
+			);
+
+			const program = readContract({
+				address: "0x6B175474E89094C44Da98b954EecdEfaE6E286AB",
+				abi: erc20Abi,
+				functionName: "balanceOf",
+				args: ["0x1234567890123456789012345678901234567890"],
+			});
+
+			const exit = await Effect.runPromiseExit(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(exit._tag).toBe("Failure");
 		});
 	});
 });

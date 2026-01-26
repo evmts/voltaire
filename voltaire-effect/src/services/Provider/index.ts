@@ -77,6 +77,10 @@ export {
 	type ReadContractParams,
 } from "./actions/readContract.js";
 export {
+	multicall,
+	type ContractCall,
+	type MulticallParams,
+	type MulticallResults,
 	simulateContract,
 	type SimulateContractParams,
 	type SimulateContractResult,
