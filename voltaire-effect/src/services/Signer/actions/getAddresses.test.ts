@@ -76,7 +76,7 @@ describe("getAddresses", () => {
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>
 				Effect.fail(
-					new TransportError("Not connected", { code: -32000 }),
+					new TransportError({ code: -32000, message: "Not connected" }),
 				) as never,
 		};
 

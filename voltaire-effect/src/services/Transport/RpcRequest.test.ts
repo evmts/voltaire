@@ -23,14 +23,14 @@ import {
 describe("RpcRequest", () => {
 	describe("toJsonRpc", () => {
 		it("converts GetBlockNumber", () => {
-			const request = new GetBlockNumber();
+			const request = new GetBlockNumber({});
 			const { method, params } = toJsonRpc(request);
 			expect(method).toBe("eth_blockNumber");
 			expect(params).toEqual([]);
 		});
 
 		it("converts GetChainId", () => {
-			const request = new GetChainId();
+			const request = new GetChainId({});
 			const { method, params } = toJsonRpc(request);
 			expect(method).toBe("eth_chainId");
 			expect(params).toEqual([]);

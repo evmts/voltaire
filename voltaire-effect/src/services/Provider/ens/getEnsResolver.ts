@@ -78,5 +78,5 @@ export const getEnsResolver = (
 			return null;
 		}
 
-		return `0x${addressHex}`;
+		return `0x${addressHex}` as `0x${string}`;
 	});

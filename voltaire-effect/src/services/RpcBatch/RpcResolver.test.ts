@@ -7,12 +7,19 @@ import {
 	EthGetBalance,
 	EthGetLogs,
 	GenericRpcRequest,
+	type RpcRequest,
 } from "./RpcRequest.js";
 import { makeRpcResolver } from "./RpcResolver.js";
 
 const createMockTransport = () => ({
 	request: vi.fn(),
 });
+
+// Helper to work around Effect 3.x type inference for RequestResolver
+const request =
+	(resolver: ReturnType<typeof makeRpcResolver>) =>
+	<R extends RpcRequest>(req: R): Effect.Effect<unknown, TransportError> =>
+		Effect.request(req, resolver as any) as any;
 
 describe("RpcResolver", () => {
 	describe("makeRpcResolver", () => {
@@ -23,7 +30,7 @@ describe("RpcResolver", () => {
 				const resolver = makeRpcResolver(transport);
 
 				const result = await Effect.runPromise(
-					Effect.request(resolver)(new EthBlockNumber({})),
+					request(resolver)(new EthBlockNumber({})),
 				);
 
 				expect(result).toBe("0x123");
@@ -41,7 +48,7 @@ describe("RpcResolver", () => {
 				const resolver = makeRpcResolver(transport);
 
 				const result = await Effect.runPromise(
-					Effect.request(resolver)(new EthBlockNumber({})).pipe(Effect.either),
+					request(resolver)(new EthBlockNumber({})).pipe(Effect.either),
 				);
 
 				expect(result._tag).toBe("Left");
@@ -66,8 +73,8 @@ describe("RpcResolver", () => {
 				const [blockNumber, balance] = await Effect.runPromise(
 					Effect.all(
 						[
-							Effect.request(resolver)(new EthBlockNumber({})),
-							Effect.request(resolver)(
+							request(resolver)(new EthBlockNumber({})),
+							request(resolver)(
 								new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
 							),
 						],
@@ -100,10 +107,10 @@ describe("RpcResolver", () => {
 				const results = await Effect.runPromise(
 					Effect.all(
 						[
-							Effect.request(resolver)(new EthBlockNumber({})).pipe(
+							request(resolver)(new EthBlockNumber({})).pipe(
 								Effect.either,
 							),
-							Effect.request(resolver)(
+							request(resolver)(
 								new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
 							).pipe(Effect.either),
 						],
@@ -141,10 +148,10 @@ describe("RpcResolver", () => {
 				const results = await Effect.runPromise(
 					Effect.all(
 						[
-							Effect.request(resolver)(new EthBlockNumber({})).pipe(
+							request(resolver)(new EthBlockNumber({})).pipe(
 								Effect.either,
 							),
-							Effect.request(resolver)(
+							request(resolver)(
 								new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
 							).pipe(Effect.either),
 						],
@@ -174,10 +181,10 @@ describe("RpcResolver", () => {
 				const results = await Effect.runPromise(
 					Effect.all(
 						[
-							Effect.request(resolver)(new EthBlockNumber({})).pipe(
+							request(resolver)(new EthBlockNumber({})).pipe(
 								Effect.either,
 							),
-							Effect.request(resolver)(
+							request(resolver)(
 								new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
 							).pipe(Effect.either),
 						],
@@ -197,7 +204,7 @@ describe("RpcResolver", () => {
 				const resolver = makeRpcResolver(transport);
 
 				await Effect.runPromise(
-					Effect.request(resolver)(new EthBlockNumber({})),
+					request(resolver)(new EthBlockNumber({})),
 				);
 
 				expect(transport.request).toHaveBeenCalledWith("eth_blockNumber", []);
@@ -209,7 +216,7 @@ describe("RpcResolver", () => {
 				const resolver = makeRpcResolver(transport);
 
 				await Effect.runPromise(
-					Effect.request(resolver)(
+					request(resolver)(
 						new EthGetBalance({ address: "0xabc", blockTag: "pending" }),
 					),
 				);
@@ -226,7 +233,7 @@ describe("RpcResolver", () => {
 				const resolver = makeRpcResolver(transport);
 
 				await Effect.runPromise(
-					Effect.request(resolver)(
+					request(resolver)(
 						new EthCall({
 							to: "0xcontract",
 							data: "0xabcd",
@@ -258,7 +265,7 @@ describe("RpcResolver", () => {
 				const resolver = makeRpcResolver(transport);
 
 				await Effect.runPromise(
-					Effect.request(resolver)(
+					request(resolver)(
 						new EthCall({ to: "0xcontract", blockTag: "latest" }),
 					),
 				);
@@ -275,7 +282,7 @@ describe("RpcResolver", () => {
 				const resolver = makeRpcResolver(transport);
 
 				await Effect.runPromise(
-					Effect.request(resolver)(
+					request(resolver)(
 						new EthGetLogs({
 							address: "0xcontract",
 							topics: ["0xtopic1", null],
@@ -301,7 +308,7 @@ describe("RpcResolver", () => {
 				const resolver = makeRpcResolver(transport);
 
 				await Effect.runPromise(
-					Effect.request(resolver)(
+					request(resolver)(
 						new GenericRpcRequest({
 							method: "eth_syncing",
 							params: [],

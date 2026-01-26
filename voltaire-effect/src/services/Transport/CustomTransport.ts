@@ -231,15 +231,15 @@ export const CustomTransport = (
 	options?: CustomTransportConfig | EIP1193Provider,
 ): Layer.Layer<TransportService> => {
 	const config: CustomTransportConfig =
-		options && "request" in options && typeof options.request === "function"
-			? { provider: options }
-			: (options ?? {});
+		(options && "request" in options && typeof options.request === "function"
+			? { provider: options as EIP1193Provider }
+			: (options ?? {})) as CustomTransportConfig;
 
 	const baseTimeout = config.timeout ?? 30000;
 
 	return Layer.succeed(TransportService, {
-		request: <T>(method: string, params: unknown[] = []) =>
-			Effect.gen(function* () {
+		request: <T>(method: string, params: unknown[] = []): Effect.Effect<T, TransportError> => {
+			return Effect.gen(function* () {
 				const timeoutOverride = yield* FiberRef.get(timeoutRef);
 				const tracingEnabled = yield* FiberRef.get(tracingRef);
 				const timeoutMs = timeoutOverride ?? baseTimeout;
@@ -301,7 +301,8 @@ export const CustomTransport = (
 				}
 
 				return result as T;
-			}),
+			}) as Effect.Effect<T, TransportError>;
+		},
 	});
 };
 

@@ -24,10 +24,8 @@ export {
 	type Permission,
 } from "./getPermissions.js";
 // EIP-7702 Authorization actions
-export {
-	type PrepareAuthorizationParams,
-	prepareAuthorization,
-} from "./prepareAuthorization.js";
+export { prepareAuthorization } from "./prepareAuthorization.js";
+export { type PrepareAuthorizationParams } from "../SignerService.js";
 export {
 	type PermissionRequest,
 	requestPermissions,

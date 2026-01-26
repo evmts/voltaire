@@ -712,10 +712,10 @@ describe("readContract", () => {
 			);
 
 			expect(Array.isArray(result)).toBe(true);
-			expect((result as bigint[]).length).toBe(3);
-			expect((result as bigint[])[0]).toBe(100n);
-			expect((result as bigint[])[1]).toBe(200n);
-			expect((result as bigint[])[2]).toBe(300n);
+			expect((result as unknown as bigint[]).length).toBe(3);
+			expect((result as unknown as bigint[])[0]).toBe(100n);
+			expect((result as unknown as bigint[])[1]).toBe(200n);
+			expect((result as unknown as bigint[])[2]).toBe(300n);
 		});
 
 		it("handles tuple/struct output", async () => {

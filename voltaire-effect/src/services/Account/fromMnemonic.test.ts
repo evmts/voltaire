@@ -47,7 +47,8 @@ describe("MnemonicAccount", () => {
 			const base = yield* makeAccount();
 			expect(base.deriveChild).toBeDefined();
 
-			const child = yield* base.deriveChild?.(1);
+			if (!base.deriveChild) throw new Error("deriveChild should be defined");
+			const child = yield* base.deriveChild(1);
 			const direct = yield* makeAccount({ addressIndex: 1 });
 
 			expect(Address.toHex(child.address)).toBe(Address.toHex(direct.address));
@@ -57,7 +58,8 @@ describe("MnemonicAccount", () => {
 	it.effect("supports hardened child derivation", () =>
 		Effect.gen(function* () {
 			const base = yield* makeAccount();
-			const hardened = yield* base.deriveChild?.(HDWallet.HARDENED_OFFSET);
+			if (!base.deriveChild) throw new Error("deriveChild should be defined");
+			const hardened = yield* base.deriveChild(HDWallet.HARDENED_OFFSET);
 			expect(hardened.hdKey).toBeDefined();
 			expect(hardened.hdKey?.startsWith("xpub")).toBe(true);
 		}),

@@ -23,7 +23,11 @@ type WriteMethodName<TAbi extends Abi> = keyof ContractInstance<TAbi>["write"];
 type WriteMethodArgs<
 	TAbi extends Abi,
 	TFunctionName extends WriteMethodName<TAbi>,
-> = Parameters<ContractInstance<TAbi>["write"][TFunctionName]>;
+> = ContractInstance<TAbi>["write"][TFunctionName] extends (
+	...args: infer P
+) => unknown
+	? P
+	: never;
 
 const isWriteOptions = (value: unknown): value is WriteOptions =>
 	value !== null &&

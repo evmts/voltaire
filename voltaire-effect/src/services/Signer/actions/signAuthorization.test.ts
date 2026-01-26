@@ -9,6 +9,8 @@ import * as Layer from "effect/Layer";
 import type {
 	AccountShape,
 	SignAuthorizationParams,
+	SignedAuthorization,
+	UnsignedAuthorization,
 } from "../../Account/AccountService.js";
 import { AccountError, AccountService } from "../../Account/index.js";
 import { ProviderService, type ProviderShape } from "../../Provider/index.js";
@@ -34,7 +36,7 @@ const mockSignedAuth = {
 	s: `0x${"cd".repeat(32)}` as `0x${string}`,
 };
 
-let capturedAuthorization: SignAuthorizationParams | undefined;
+let capturedAuthorization: UnsignedAuthorization | SignAuthorizationParams | undefined;
 
 const mockAccount: AccountShape = {
 	address: mockAddress,
@@ -82,6 +84,11 @@ const mockProvider: ProviderShape = {
 	getMaxPriorityFeePerGas: () => Effect.succeed(1000000000n),
 	getFeeHistory: () =>
 		Effect.succeed({ oldestBlock: "0x0", baseFeePerGas: [], gasUsedRatio: [] }),
+	sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
+	getUncle: () => Effect.succeed({} as any),
+	getProof: () => Effect.succeed({} as any),
+	getBlobBaseFee: () => Effect.succeed(0n),
+	getTransactionConfirmations: () => Effect.succeed(0n),
 	watchBlocks: () => {
 		throw new Error("Not implemented in mock");
 	},
@@ -120,10 +127,10 @@ describe("signAuthorization", () => {
 			chainId: 137n,
 		});
 
-		const result = await Effect.runPromise(Effect.provide(program, TestLayers));
+		const result: SignedAuthorization = await Effect.runPromise(Effect.provide(program, TestLayers));
 
 		expect(result.chainId).toBe(137n);
-		expect(capturedAuthorization?.chainId).toBe(137n);
+		expect((capturedAuthorization as SignAuthorizationParams | undefined)?.chainId).toBe(137n);
 	});
 
 	it("uses provided nonce", async () => {
@@ -134,10 +141,10 @@ describe("signAuthorization", () => {
 			nonce: 42n,
 		});
 
-		const result = await Effect.runPromise(Effect.provide(program, TestLayers));
+		const result: SignedAuthorization = await Effect.runPromise(Effect.provide(program, TestLayers));
 
 		expect(result.nonce).toBe(42n);
-		expect(capturedAuthorization?.nonce).toBe(42n);
+		expect((capturedAuthorization as SignAuthorizationParams | undefined)?.nonce).toBe(42n);
 	});
 
 	it("passes correct authorization params to account", async () => {
@@ -166,9 +173,12 @@ describe("signAuthorization", () => {
 
 		await Effect.runPromise(Effect.provide(program, TestLayers));
 
-		expect(capturedAuthorization?.contractAddress.toLowerCase()).toBe(
-			"0x1212121212121212121212121212121212121212",
-		);
+		const captured = capturedAuthorization as SignAuthorizationParams | undefined;
+		expect(
+			(typeof captured?.contractAddress === "string"
+				? captured.contractAddress
+				: "")?.toLowerCase(),
+		).toBe("0x1212121212121212121212121212121212121212");
 	});
 
 	it("handles account signing errors", async () => {

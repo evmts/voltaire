@@ -1533,7 +1533,7 @@ describe("ProviderService", () => {
 				"0x1111111111111111111111111111111111111111",
 				"0x2222222222222222222222222222222222222222",
 				"0x3333333333333333333333333333333333333333",
-			];
+			] as const;
 
 			const results = await Effect.runPromise(
 				Effect.gen(function* () {

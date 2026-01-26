@@ -231,17 +231,22 @@ export const HttpTransport = (
 		if (e instanceof TransportError) return e;
 		const message = e instanceof Error ? e.message : "Network error";
 		const fullMessage = context ? `${context}: ${message}` : message;
-		return new TransportError({
-			code: -32603,
-			message: fullMessage,
-			cause: e instanceof Error ? e : undefined,
-		});
+		return new TransportError(
+			{
+				code: -32603,
+				message: fullMessage,
+			},
+			undefined,
+			{
+				cause: e instanceof Error ? e : undefined,
+			},
+		);
 	};
 
-	const makeRetrySchedule = (retries: number) =>
+	const makeRetrySchedule = (retries: number): Schedule.Schedule<number, TransportError> =>
 		Schedule.recurs(retries).pipe(
-			Schedule.intersect(Schedule.spaced(Duration.millis(config.retryDelay))),
-		);
+			Schedule.addDelay(() => Duration.millis(config.retryDelay)),
+		) as Schedule.Schedule<number, TransportError>;
 
 	const applyRequestHooks = (request: RpcRequest): Effect.Effect<RpcRequest> =>
 		Effect.gen(function* () {
@@ -288,7 +293,7 @@ export const HttpTransport = (
 		httpClient: HttpClient.HttpClient,
 		body: string,
 		timeoutMs: number,
-		retrySchedule: Schedule.Schedule<number, number>,
+		retrySchedule: Schedule.Schedule<number, TransportError>,
 		rpcMethod?: string,
 	): Effect.Effect<T, TransportError> => {
 		const headers: Record<string, string> = {
@@ -480,11 +485,14 @@ export const HttpTransport = (
 						}).pipe(
 							Effect.mapError((e) => {
 								if (e instanceof TransportError) return e;
-								return new TransportError({
-									code: -32603,
-									message: `${method} failed: ${e.message}`,
-									cause: e,
-								});
+								return new TransportError(
+									{
+										code: -32603,
+										message: `${method} failed: ${e.message}`,
+									},
+									undefined,
+									{ cause: e },
+								);
 							}),
 						),
 				};

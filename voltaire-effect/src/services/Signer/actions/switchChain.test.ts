@@ -1,6 +1,9 @@
 import { describe, expect, it } from "@effect/vitest";
+import * as Cause from "effect/Cause";
+import * as Chunk from "effect/Chunk";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import { TransportError } from "../../Transport/TransportError.js";
 import {
 	TransportService,
@@ -82,7 +85,7 @@ describe("switchChain", () => {
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>
 				Effect.fail(
-					new TransportError("Unrecognized chain ID", { code: 4902 }),
+					new TransportError({ code: 4902, message: "Unrecognized chain ID" }),
 				) as never,
 		};
 
@@ -102,7 +105,7 @@ describe("switchChain", () => {
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>
 				Effect.fail(
-					new TransportError("User rejected the request", { code: 4001 }),
+					new TransportError({ code: 4001, message: "User rejected the request" }),
 				) as never,
 		};
 
@@ -115,7 +118,9 @@ describe("switchChain", () => {
 		expect(result._tag).toBe("Failure");
 		if (result._tag === "Failure") {
 			expect(String(result.cause)).toContain("User rejected the request");
-			expect(result.cause.error.code).toBe(4001);
+			const failures = Cause.failures(result.cause);
+			const firstFailure = Chunk.head(failures);
+			expect(Option.isSome(firstFailure) && firstFailure.value.code).toBe(4001);
 		}
 	});
 });

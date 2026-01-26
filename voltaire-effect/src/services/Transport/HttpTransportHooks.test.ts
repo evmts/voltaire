@@ -81,7 +81,7 @@ describe("HttpTransport hooks", () => {
 					onResponse: (res) =>
 						Effect.sync(() => {
 							configResponse = res;
-							return { ...res, result: "0x2" };
+							return { ...res, result: "0x2" } as typeof res;
 						}),
 				}),
 			),
@@ -94,17 +94,17 @@ describe("HttpTransport hooks", () => {
 			withResponseInterceptor((res) =>
 				Effect.sync(() => {
 					overrideResponse = res;
-					return { ...res, result: "0x3" };
+					return { ...res, result: "0x3" } as typeof res;
 				}),
 			),
 		);
 
 		const result = await Effect.runPromise(program);
 		expect(result).toBe("0x3");
-		expect(configRequest?.method).toBe("eth_blockNumber");
-		expect(overrideRequest?.method).toBe("eth_chainId");
-		expect(configResponse?.result).toBe("0x1");
-		expect(overrideResponse?.result).toBe("0x2");
+		expect((configRequest as { method: string; params: readonly unknown[] } | null)?.method).toBe("eth_blockNumber");
+		expect((overrideRequest as { method: string; params: readonly unknown[] } | null)?.method).toBe("eth_chainId");
+		expect((configResponse as { result: unknown } | null)?.result).toBe("0x1");
+		expect((overrideResponse as { result: unknown } | null)?.result).toBe("0x2");
 
 		const request = fetchMock.mock.calls[0][0] as {
 			body: { _tag: string; body: Uint8Array };
@@ -118,7 +118,7 @@ describe("HttpTransport hooks", () => {
 	});
 
 	it("passes fetchOptions and custom fetch", async () => {
-		const customFetch = vi.fn(
+		const customFetchFn = vi.fn(
 			async (_url: string, _init?: RequestInit) =>
 				new Response(
 					JSON.stringify({
@@ -132,6 +132,9 @@ describe("HttpTransport hooks", () => {
 					},
 				),
 		);
+		const customFetch = Object.assign(customFetchFn, {
+			preconnect: vi.fn(),
+		}) as typeof fetch;
 
 		const program = Effect.gen(function* () {
 			const transport = yield* TransportService;
@@ -153,9 +156,9 @@ describe("HttpTransport hooks", () => {
 
 		const result = await Effect.runPromise(program);
 		expect(result).toBe("0x1");
-		expect(customFetch).toHaveBeenCalledTimes(1);
+		expect(customFetchFn).toHaveBeenCalledTimes(1);
 
-		const init = customFetch.mock.calls[0][1] as RequestInit;
+		const init = customFetchFn.mock.calls[0][1] as RequestInit;
 		expect(init.credentials).toBe("include");
 		const headers = new Headers(init.headers as HeadersInit);
 		expect(headers.get("x-options")).toBe("option-header");

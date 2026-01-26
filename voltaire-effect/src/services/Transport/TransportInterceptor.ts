@@ -24,6 +24,7 @@ import * as Effect from "effect/Effect";
 import * as FiberRef from "effect/FiberRef";
 import * as Layer from "effect/Layer";
 import * as Ref from "effect/Ref";
+import * as Schedule from "effect/Schedule";
 import { cacheEnabledRef } from "./config.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService, type TransportShape } from "./TransportService.js";
@@ -297,9 +298,9 @@ export const withInterceptors =
  * )
  * ```
  */
-export const InterceptedTransport = (
-	baseTransport: Layer.Layer<TransportService, unknown, unknown>,
-): Layer.Layer<TransportService, unknown, unknown> =>
+export const InterceptedTransport = <E, R>(
+	baseTransport: Layer.Layer<TransportService, E, R>,
+): Layer.Layer<TransportService, E, R> =>
 	Layer.flatMap(baseTransport, (context) =>
 		Layer.succeed(
 			TransportService,
@@ -416,10 +417,10 @@ const makeCacheKey = (method: string, params: unknown[]): string =>
  * }).pipe(Effect.provide(transport))
  * ```
  */
-export const DeduplicatedTransport = (
-	baseTransport: Layer.Layer<TransportService, unknown, unknown>,
+export const DeduplicatedTransport = <E, R>(
+	baseTransport: Layer.Layer<TransportService, E, R>,
 	config: DeduplicationConfig = {},
-): Layer.Layer<TransportService, unknown, unknown> => {
+): Layer.Layer<TransportService, E, R> => {
 	const ttl = config.ttl ?? 1000;
 	const methodSet = config.methods ? new Set(config.methods) : null;
 	const excludeSet = config.excludeMethods
@@ -458,9 +459,7 @@ export const DeduplicatedTransport = (
 				});
 
 				yield* cleanup.pipe(
-					Effect.repeat({
-						schedule: { delays: Effect.succeed(Duration.millis(ttl)) },
-					}),
+					Effect.repeat({ schedule: Schedule.spaced(Duration.millis(ttl)) }),
 					Effect.fork,
 				);
 

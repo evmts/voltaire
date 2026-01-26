@@ -104,10 +104,10 @@ export const rpcRequest = <T = unknown>(
  */
 export const rpc = {
 	/** Get the current block number */
-	getBlockNumber: () => rpcRequest<string>(new GetBlockNumber()),
+	getBlockNumber: () => rpcRequest<string>(new GetBlockNumber({})),
 
 	/** Get the current chain ID */
-	getChainId: () => rpcRequest<string>(new GetChainId()),
+	getChainId: () => rpcRequest<string>(new GetChainId({})),
 
 	/** Get the current gas price */
 	getGasPrice: () => rpcRequest<string>(new GetGasPrice()),

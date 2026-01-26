@@ -6,7 +6,11 @@ import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";
-import { TransportService, type TransportShape } from "../Transport/index.js";
+import {
+	TransportError,
+	TransportService,
+	type TransportShape,
+} from "../Transport/index.js";
 import { BlockStream } from "./BlockStream.js";
 import { BlockStreamError } from "./BlockStreamError.js";
 import { BlockStreamService } from "./BlockStreamService.js";
@@ -314,8 +318,8 @@ describe("BlockStreamService", () => {
 					request: <T>(
 						_method: string,
 						_params?: unknown[],
-					): Effect.Effect<T, Error> =>
-						Effect.fail(new Error("RPC connection failed")),
+					): Effect.Effect<T, TransportError> =>
+						Effect.fail(new TransportError({ code: -32000, message: "RPC connection failed" })),
 				};
 
 				const TestTransportLayer = Layer.succeed(
@@ -974,9 +978,9 @@ describe("BlockStreamService", () => {
 						request: <T>(
 							method: string,
 							_params?: unknown[],
-						): Effect.Effect<T, Error> => {
+						): Effect.Effect<T, TransportError> => {
 							if (method === "eth_blockNumber") {
-								return Effect.fail(new Error("eth_blockNumber RPC failed"));
+								return Effect.fail(new TransportError({ code: -32000, message: "eth_blockNumber RPC failed" }));
 							}
 							return Effect.succeed(null as T);
 						},
@@ -1115,11 +1119,11 @@ describe("BlockStreamService", () => {
 					request: <T>(
 						method: string,
 						_params?: unknown[],
-					): Effect.Effect<T, Error> => {
+					): Effect.Effect<T, TransportError> => {
 						if (method === "eth_blockNumber") {
 							callCount++;
 							if (callCount === 1) {
-								return Effect.fail(new Error("Transient network error"));
+								return Effect.fail(new TransportError({ code: -32000, message: "Transient network error" }));
 							}
 							return Effect.succeed("0x100" as T);
 						}

@@ -126,10 +126,10 @@ describe("Transport FiberRef overrides", () => {
 	it("scopes cache disable without leaking to other fibers", async () => {
 		let callCount = 0;
 		const baseTransport = Layer.succeed(TransportService, {
-			request: () =>
+			request: <T>() =>
 				Effect.sync(() => {
 					callCount += 1;
-					return "0x1";
+					return "0x1" as T;
 				}),
 		});
 

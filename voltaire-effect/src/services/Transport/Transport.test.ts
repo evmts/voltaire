@@ -77,7 +77,9 @@ const parseJsonBody = (
 const parseBatchRequests = (
 	request: HttpClientRequest.HttpClientRequest,
 ): Array<{ id: number; method: string; params?: unknown[] }> => {
-	const parsed = parseJsonBody(request);
+	const parsed = parseJsonBody(request) as
+		| { id: number; method: string; params?: unknown[] }
+		| Array<{ id: number; method: string; params?: unknown[] }>;
 	return Array.isArray(parsed) ? parsed : [parsed];
 };
 
@@ -1294,7 +1296,7 @@ describe("TransportService", () => {
 					FallbackTransport(
 						[
 							TestTransport(
-								new Map([
+								new Map<string, string | TransportError>([
 									["eth_blockNumber", error],
 									["eth_chainId", "0x1"],
 								]),

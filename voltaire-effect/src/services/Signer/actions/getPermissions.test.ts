@@ -104,7 +104,7 @@ describe("getPermissions", () => {
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>
 				Effect.fail(
-					new TransportError("Method not supported", { code: -32601 }),
+					new TransportError({ code: -32601, message: "Method not supported" }),
 				) as never,
 		};
 

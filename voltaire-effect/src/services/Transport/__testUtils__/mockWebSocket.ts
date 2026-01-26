@@ -25,9 +25,11 @@ export class MockWebSocket {
 	readonly protocols?: string | string[];
 	readyState: number;
 
-	private listeners = new Map<string, Set<Listener>>();
+	/** @internal */
+	_listeners = new Map<string, Set<Listener>>();
 	readonly index: number;
-	private readonly options: MockWebSocketOptions;
+	/** @internal */
+	readonly _options: MockWebSocketOptions;
 
 	constructor(
 		url: string,
@@ -38,7 +40,7 @@ export class MockWebSocket {
 		this.url = url;
 		this.protocols = protocols;
 		this.index = index;
-		this.options = options;
+		this._options = options;
 		const readyState =
 			options.getReadyState?.(index) ??
 			options.readyState ??
@@ -60,13 +62,13 @@ export class MockWebSocket {
 		options?: { once?: boolean },
 	) {
 		const entry: Listener = { handler, once: options?.once ?? false };
-		const listeners = this.listeners.get(type) ?? new Set<Listener>();
+		const listeners = this._listeners.get(type) ?? new Set<Listener>();
 		listeners.add(entry);
-		this.listeners.set(type, listeners);
+		this._listeners.set(type, listeners);
 	}
 
 	removeEventListener(type: string, handler: (event: unknown) => void) {
-		const listeners = this.listeners.get(type);
+		const listeners = this._listeners.get(type);
 		if (!listeners) return;
 		for (const listener of listeners) {
 			if (listener.handler === handler) {
@@ -74,36 +76,37 @@ export class MockWebSocket {
 			}
 		}
 		if (listeners.size === 0) {
-			this.listeners.delete(type);
+			this._listeners.delete(type);
 		}
 	}
 
 	send(data: string | Uint8Array) {
-		this.options.onSend?.(this, data);
+		this._options.onSend?.(this, data);
 	}
 
 	close(code: number = 1000, reason: string = "") {
 		this.readyState = MockWebSocket.CLOSED;
-		this.emit("close", { code, reason });
-		this.options.onClose?.(this, { code, reason });
+		this._emit("close", { code, reason });
+		this._options.onClose?.(this, { code, reason });
 	}
 
 	emitOpen() {
 		this.readyState = MockWebSocket.OPEN;
-		this.emit("open", {});
+		this._emit("open", {});
 	}
 
 	emitMessage(data: string | Uint8Array) {
-		this.emit("message", { data });
+		this._emit("message", { data });
 	}
 
 	emitError(event: unknown) {
-		this.emit("error", event);
-		this.options.onError?.(this, event);
+		this._emit("error", event);
+		this._options.onError?.(this, event);
 	}
 
-	private emit(type: string, event: unknown) {
-		const listeners = this.listeners.get(type);
+	/** @internal */
+	_emit(type: string, event: unknown) {
+		const listeners = this._listeners.get(type);
 		if (!listeners) return;
 		for (const listener of [...listeners]) {
 			listener.handler(event);
@@ -112,7 +115,7 @@ export class MockWebSocket {
 			}
 		}
 		if (listeners.size === 0) {
-			this.listeners.delete(type);
+			this._listeners.delete(type);
 		}
 	}
 }

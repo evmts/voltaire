@@ -427,7 +427,11 @@ const SignerLive: Layer.Layer<
 						),
 					),
 
-			prepareAuthorization: (params) => prepareAuthorizationAction(params),
+			prepareAuthorization: (params) =>
+				prepareAuthorizationAction(params).pipe(
+					Effect.provideService(ProviderService, provider),
+					Effect.provideService(AccountService, account),
+				),
 
 			sendTransaction: (tx) =>
 				Effect.gen(function* () {

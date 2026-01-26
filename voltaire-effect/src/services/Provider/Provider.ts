@@ -81,18 +81,18 @@ const bytesToHex = (bytes: Uint8Array): `0x${string}` => {
  * Converts AddressInput to hex string for RPC calls.
  * Handles both branded AddressType (Uint8Array) and plain hex strings.
  */
-const toAddressHex = (input: AddressInput): string => {
-	if (typeof input === "string") return input;
-	return bytesToHex(input);
+const toAddressHex = (input: AddressInput): `0x${string}` => {
+	if (typeof input === "string") return input as `0x${string}`;
+	return bytesToHex(input) as `0x${string}`;
 };
 
 /**
  * Converts HashInput to hex string for RPC calls.
  * Handles both branded HashType (Uint8Array) and plain hex strings.
  */
-const toHashHex = (input: HashInput): string => {
-	if (typeof input === "string") return input;
-	return bytesToHex(input);
+const toHashHex = (input: HashInput): `0x${string}` => {
+	if (typeof input === "string") return input as `0x${string}`;
+	return bytesToHex(input) as `0x${string}`;
 };
 
 type LogFilterParams = {
@@ -831,7 +831,7 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 
 				getProof: (
 					address: AddressInput,
-					storageKeys: `0x${string}`[],
+					storageKeys: HashInput[],
 					blockTag: BlockTag = "latest",
 				) =>
 					request<ProofType>("eth_getProof", [

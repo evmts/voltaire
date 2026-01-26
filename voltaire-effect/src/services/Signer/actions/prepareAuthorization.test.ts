@@ -1,8 +1,9 @@
 import { describe, expect, it } from "@effect/vitest";
-import type {
-	BrandedAddress,
-	BrandedHex,
-	BrandedSignature,
+import {
+	Address,
+	type BrandedAddress,
+	type BrandedHex,
+	type BrandedSignature,
 } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -68,6 +69,11 @@ const mockProvider: ProviderShape = {
 	getMaxPriorityFeePerGas: () => Effect.succeed(1000000000n),
 	getFeeHistory: () =>
 		Effect.succeed({ oldestBlock: "0x0", baseFeePerGas: [], gasUsedRatio: [] }),
+	sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
+	getUncle: () => Effect.succeed({} as any),
+	getProof: () => Effect.succeed({} as any),
+	getBlobBaseFee: () => Effect.succeed(0n),
+	getTransactionConfirmations: () => Effect.succeed(0n),
 	watchBlocks: () => {
 		throw new Error("Not implemented in mock");
 	},
@@ -167,7 +173,7 @@ describe("prepareAuthorization", () => {
 
 		const result = await Effect.runPromise(Effect.provide(program, TestLayers));
 
-		expect(result.address.toLowerCase()).toBe(
+		expect(Address.toHex(result.address as AddressType).toLowerCase()).toBe(
 			"0x1212121212121212121212121212121212121212",
 		);
 	});

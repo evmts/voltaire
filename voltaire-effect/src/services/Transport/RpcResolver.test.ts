@@ -11,7 +11,7 @@ import {
 describe("RpcResolver", () => {
 	describe("rpcRequest", () => {
 		it("makes a single request", async () => {
-			const program = rpcRequest(new GetBlockNumber()).pipe(
+			const program = rpcRequest(new GetBlockNumber({})).pipe(
 				Effect.provide(TestTransport({ eth_blockNumber: "0x100" })),
 			);
 

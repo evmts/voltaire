@@ -125,11 +125,14 @@ const isWindowsPipePath = (path: string) =>
 const toTransportError = (e: unknown, context: string) =>
 	e instanceof TransportError
 		? e
-		: new TransportError({
-				code: -32603,
-				message: `${context}: ${e instanceof Error ? e.message : String(e)}`,
-				cause: e instanceof Error ? e : undefined,
-			});
+		: new TransportError(
+				{
+					code: -32603,
+					message: `${context}: ${e instanceof Error ? e.message : String(e)}`,
+				},
+				undefined,
+				{ cause: e instanceof Error ? e : undefined },
+			);
 
 const makeReconnectSchedule = (options: Required<IpcReconnectOptions>) =>
 	Schedule.exponential(Duration.millis(options.delay), options.multiplier).pipe(
@@ -492,7 +495,7 @@ export const IpcTransport = (
 							return;
 						}
 
-						yield* Effect.sleep(delay.value);
+						yield* Effect.sleep(delay.value[0]);
 						continue;
 					}
 
@@ -539,7 +542,7 @@ export const IpcTransport = (
 						return;
 					}
 
-					yield* Effect.sleep(delay.value);
+					yield* Effect.sleep(delay.value[0]);
 				}
 			});
 

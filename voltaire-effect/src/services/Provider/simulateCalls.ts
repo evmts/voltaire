@@ -160,7 +160,7 @@ const extractErc20Transfers = (logs: LogType[]): AssetChange[] => {
 		if (!from || !to) continue;
 		const amount = parseHexToBigInt(log.data);
 		changes.push({
-			asset: normalizeAddress(log.address) ?? log.address,
+			asset: normalizeAddress(log.address) ?? (log.address as HexString),
 			from,
 			to,
 			amount,

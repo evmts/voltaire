@@ -111,6 +111,11 @@ describe("MulticallService", () => {
 					getFeeHistory: () => Effect.succeed({} as any),
 					watchBlocks: () => ({}) as any,
 					backfillBlocks: () => ({}) as any,
+					sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
+					getUncle: () => Effect.succeed({} as any),
+					getProof: () => Effect.succeed({} as any),
+					getBlobBaseFee: () => Effect.succeed(0n),
+					getTransactionConfirmations: () => Effect.succeed(0n),
 				};
 
 				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
@@ -160,6 +165,11 @@ describe("MulticallService", () => {
 					getFeeHistory: () => Effect.succeed({} as any),
 					watchBlocks: () => ({}) as any,
 					backfillBlocks: () => ({}) as any,
+					sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
+					getUncle: () => Effect.succeed({} as any),
+					getProof: () => Effect.succeed({} as any),
+					getBlobBaseFee: () => Effect.succeed(0n),
+					getTransactionConfirmations: () => Effect.succeed(0n),
 				};
 
 				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
@@ -220,6 +230,11 @@ describe("MulticallService", () => {
 				getFeeHistory: () => Effect.succeed({} as any),
 				watchBlocks: () => ({}) as any,
 				backfillBlocks: () => ({}) as any,
+				sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
+				getUncle: () => Effect.succeed({} as any),
+				getProof: () => Effect.succeed({} as any),
+				getBlobBaseFee: () => Effect.succeed(0n),
+				getTransactionConfirmations: () => Effect.succeed(0n),
 			};
 
 			const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
@@ -273,6 +288,11 @@ describe("MulticallService", () => {
 			getGasPrice: () => Effect.succeed(0n),
 			getMaxPriorityFeePerGas: () => Effect.succeed(0n),
 			getFeeHistory: () => Effect.succeed({} as any),
+			sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
+			getUncle: () => Effect.succeed({} as any),
+			getProof: () => Effect.succeed({} as any),
+			getBlobBaseFee: () => Effect.succeed(0n),
+			getTransactionConfirmations: () => Effect.succeed(0n),
 			watchBlocks: () => ({}) as any,
 			backfillBlocks: () => ({}) as any,
 		});

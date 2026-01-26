@@ -56,6 +56,15 @@ const baseRequest = {
 	extraData: "0x" as const,
 };
 
+/**
+ * Creates a properly typed fetch mock that includes the preconnect method.
+ */
+const createFetchMock = (impl: ReturnType<typeof vi.fn>) => {
+	const mock = impl as unknown as typeof fetch;
+	(mock as unknown as Record<string, unknown>).preconnect = vi.fn();
+	return mock;
+};
+
 describe("DefaultCcip", () => {
 	let originalFetch: typeof globalThis.fetch;
 
@@ -70,7 +79,7 @@ describe("DefaultCcip", () => {
 	describe("GET vs POST selection", () => {
 		it("uses GET when URL contains {data}", async () => {
 			const fetchMock = vi.fn().mockResolvedValue(createMockResponse({}));
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -90,7 +99,7 @@ describe("DefaultCcip", () => {
 
 		it("uses POST when URL does not contain {data}", async () => {
 			const fetchMock = vi.fn().mockResolvedValue(createMockResponse({}));
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -119,7 +128,7 @@ describe("DefaultCcip", () => {
 	describe("URL templating", () => {
 		it("replaces {sender} with lowercase address", async () => {
 			const fetchMock = vi.fn().mockResolvedValue(createMockResponse({}));
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -140,7 +149,7 @@ describe("DefaultCcip", () => {
 
 		it("replaces {data} with callData", async () => {
 			const fetchMock = vi.fn().mockResolvedValue(createMockResponse({}));
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -182,7 +191,7 @@ describe("DefaultCcip", () => {
 					}),
 				);
 			});
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -208,7 +217,7 @@ describe("DefaultCcip", () => {
 					body: { data: "0xf1257" },
 				}),
 			);
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -259,7 +268,7 @@ describe("DefaultCcip", () => {
 					textBody: "Resource not found",
 				}),
 			);
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -281,7 +290,7 @@ describe("DefaultCcip", () => {
 
 		it("handles fetch rejection", async () => {
 			const fetchMock = vi.fn().mockRejectedValue(new Error("Network error"));
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -309,7 +318,7 @@ describe("DefaultCcip", () => {
 					jsonThrows: true,
 				}),
 			);
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -336,7 +345,7 @@ describe("DefaultCcip", () => {
 					textThrows: true,
 				}),
 			);
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -365,7 +374,7 @@ describe("DefaultCcip", () => {
 					body: { data: "0xaabbccdd" },
 				}),
 			);
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -386,7 +395,7 @@ describe("DefaultCcip", () => {
 					textBody: "0x11223344",
 				}),
 			);
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -408,7 +417,7 @@ describe("DefaultCcip", () => {
 				.mockResolvedValue(
 					createMockResponse({ body: { data: "0xABCDEF123456" } }),
 				);
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -426,7 +435,7 @@ describe("DefaultCcip", () => {
 			const fetchMock = vi
 				.fn()
 				.mockResolvedValue(createMockResponse({ body: { data: "not-hex" } }));
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -450,7 +459,7 @@ describe("DefaultCcip", () => {
 			const fetchMock = vi
 				.fn()
 				.mockResolvedValue(createMockResponse({ body: { data: "abcdef" } }));
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -474,7 +483,7 @@ describe("DefaultCcip", () => {
 			const fetchMock = vi
 				.fn()
 				.mockResolvedValue(createMockResponse({ body: { data: "0xZZZZ" } }));
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;
@@ -498,7 +507,7 @@ describe("DefaultCcip", () => {
 			const fetchMock = vi
 				.fn()
 				.mockResolvedValue(createMockResponse({ body: { data: "0x" } }));
-			globalThis.fetch = fetchMock;
+			globalThis.fetch = createFetchMock(fetchMock);
 
 			const program = Effect.gen(function* () {
 				const ccip = yield* CcipService;

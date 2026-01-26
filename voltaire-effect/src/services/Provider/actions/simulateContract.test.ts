@@ -64,6 +64,11 @@ const createMockProvider = (
 		backfillBlocks: () => {
 			throw new Error("Not implemented in mock");
 		},
+		sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
+		getUncle: () => Effect.succeed({} as any),
+		getProof: () => Effect.succeed({} as any),
+		getBlobBaseFee: () => Effect.succeed(0n),
+		getTransactionConfirmations: () => Effect.succeed(0n),
 	};
 	return Layer.succeed(ProviderService, mockProvider);
 };
@@ -159,6 +164,11 @@ describe("simulateContract", () => {
 					baseFeePerGas: [],
 					gasUsedRatio: [],
 				}),
+			sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
+			getUncle: () => Effect.succeed({} as any),
+			getProof: () => Effect.succeed({} as any),
+			getBlobBaseFee: () => Effect.succeed(0n),
+			getTransactionConfirmations: () => Effect.succeed(0n),
 			watchBlocks: () => {
 				throw new Error("Not implemented in mock");
 			},
@@ -276,6 +286,11 @@ describe("simulateContract", () => {
 						baseFeePerGas: [],
 						gasUsedRatio: [],
 					}),
+				sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
+				getUncle: () => Effect.succeed({} as any),
+				getProof: () => Effect.succeed({} as any),
+				getBlobBaseFee: () => Effect.succeed(0n),
+				getTransactionConfirmations: () => Effect.succeed(0n),
 				watchBlocks: () => {
 					throw new Error("Not implemented in mock");
 				},
@@ -331,6 +346,11 @@ describe("simulateContract", () => {
 						baseFeePerGas: [],
 						gasUsedRatio: [],
 					}),
+				sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
+				getUncle: () => Effect.succeed({} as any),
+				getProof: () => Effect.succeed({} as any),
+				getBlobBaseFee: () => Effect.succeed(0n),
+				getTransactionConfirmations: () => Effect.succeed(0n),
 				watchBlocks: () => {
 					throw new Error("Not implemented in mock");
 				},
@@ -386,6 +406,11 @@ describe("simulateContract", () => {
 						baseFeePerGas: [],
 						gasUsedRatio: [],
 					}),
+				sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
+				getUncle: () => Effect.succeed({} as any),
+				getProof: () => Effect.succeed({} as any),
+				getBlobBaseFee: () => Effect.succeed(0n),
+				getTransactionConfirmations: () => Effect.succeed(0n),
 				watchBlocks: () => {
 					throw new Error("Not implemented in mock");
 				},

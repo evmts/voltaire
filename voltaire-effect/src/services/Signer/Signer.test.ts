@@ -88,6 +88,12 @@ const mockProvider: ProviderShape = {
 	backfillBlocks: () => {
 		throw new Error("Not implemented in mock");
 	},
+	sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
+	getUncle: () => Effect.succeed({} as never),
+	getProof: () =>
+		Effect.succeed({ address: "0x", accountProof: [], balance: "0x0", codeHash: "0x", nonce: "0x0", storageHash: "0x", storageProof: [] } as never),
+	getBlobBaseFee: () => Effect.succeed(1n),
+	getTransactionConfirmations: () => Effect.succeed(0n),
 };
 
 const mockTransport: TransportShape = {

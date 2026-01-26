@@ -3,6 +3,7 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import { DefaultEns, EnsService } from "../../Ens/index.js";
+import { TransportError } from "../../Transport/TransportError.js";
 import { TransportService } from "../../Transport/TransportService.js";
 import { Provider } from "../Provider.js";
 import { EnsError } from "./EnsError.js";
@@ -15,21 +16,23 @@ const mockTransportWithCapture = (responses: MockResponses) =>
 		request: <T>(method: string, params: unknown[] = []) =>
 			Effect.gen(function* () {
 				if (!(method in responses)) {
-					return yield* Effect.fail({
-						_tag: "TransportError" as const,
-						code: -32601,
-						message: `Method not found: ${method}`,
-					});
+					return yield* Effect.fail(
+						new TransportError({
+							code: -32601,
+							message: `Method not found: ${method}`,
+						}),
+					);
 				}
 				const response = responses[method];
 				if (typeof response === "function") {
 					const result = response(params);
 					if (result instanceof Error) {
-						return yield* Effect.fail({
-							_tag: "TransportError" as const,
-							code: -32603,
-							message: result.message,
-						});
+						return yield* Effect.fail(
+							new TransportError({
+								code: -32603,
+								message: result.message,
+							}),
+						);
 					}
 					return result as T;
 				}

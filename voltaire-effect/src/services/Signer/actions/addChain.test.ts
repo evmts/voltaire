@@ -1,6 +1,9 @@
 import { describe, expect, it } from "@effect/vitest";
+import * as Cause from "effect/Cause";
+import * as Chunk from "effect/Chunk";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import { TransportError } from "../../Transport/TransportError.js";
 import {
 	TransportService,
@@ -124,7 +127,7 @@ describe("addChain", () => {
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>
 				Effect.fail(
-					new TransportError("User rejected the request", { code: 4001 }),
+					new TransportError({ code: 4001, message: "User rejected the request" }),
 				) as never,
 		};
 
@@ -139,14 +142,16 @@ describe("addChain", () => {
 		expect(result._tag).toBe("Failure");
 		if (result._tag === "Failure") {
 			expect(String(result.cause)).toContain("User rejected the request");
-			expect(result.cause.error.code).toBe(4001);
+			const failures = Cause.failures(result.cause);
+			const firstFailure = Chunk.head(failures);
+			expect(Option.isSome(firstFailure) && firstFailure.value.code).toBe(4001);
 		}
 	});
 
 	it("handles non-rejection transport errors", async () => {
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>
-				Effect.fail(new TransportError("RPC error", { code: -32000 })) as never,
+				Effect.fail(new TransportError({ code: -32000, message: "RPC error" })) as never,
 		};
 
 		const TestLayer = Layer.succeed(TransportService, mockTransport);
@@ -158,7 +163,9 @@ describe("addChain", () => {
 		expect(result._tag).toBe("Failure");
 		if (result._tag === "Failure") {
 			expect(String(result.cause)).toContain("Failed to add chain");
-			expect(result.cause.error.code).toBe(-32000);
+			const failures = Cause.failures(result.cause);
+			const firstFailure = Chunk.head(failures);
+			expect(Option.isSome(firstFailure) && firstFailure.value.code).toBe(-32000);
 		}
 	});
 });

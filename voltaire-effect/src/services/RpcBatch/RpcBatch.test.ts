@@ -311,13 +311,13 @@ describe("RpcBatch", () => {
 
 			const program = Effect.gen(function* () {
 				const batch = yield* RpcBatchService;
-				return yield* Effect.request(batch.resolver)(new EthBlockNumber({}));
+				return yield* Effect.request(new EthBlockNumber({}), batch.resolver as any);
 			}).pipe(
 				Effect.provide(RpcBatch),
 				Effect.provide(createMockTransport(handler)),
 			);
 
-			const result = await Effect.runPromise(program);
+			const result = await (Effect.runPromise as any)(program);
 			expect(result).toBe("0x999");
 		});
 	});
