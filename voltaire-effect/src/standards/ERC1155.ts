@@ -184,14 +184,14 @@ export const encodeIsApprovedForAll = (
 			}),
 	});
 
-export const encodeURI = (
+export const encodeTokenURI = (
 	id: Uint256Type,
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
 		try: () => ERC1155Impl.encodeURI(id as never),
 		catch: (e) =>
 			new StandardsError({
-				operation: "ERC1155.encodeURI",
+				operation: "ERC1155.encodeTokenURI",
 				message: e instanceof Error ? e.message : String(e),
 				cause: e,
 			}),

@@ -151,9 +151,11 @@ describe("ERC1155", () => {
 		});
 	});
 
-	describe("encodeURI", () => {
+	describe("encodeTokenURI", () => {
 		it("encodes uri calldata", async () => {
-			const result = await Effect.runPromise(ERC1155.encodeURI(testTokenId));
+			const result = await Effect.runPromise(
+				ERC1155.encodeTokenURI(testTokenId),
+			);
 			expect(result).toMatch(/^0x0e89341c/);
 		});
 	});
