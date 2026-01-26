@@ -55,6 +55,7 @@ import {
 	type EventFilter,
 	type WriteOptions,
 } from "./ContractTypes.js";
+import { estimateGas } from "./estimateGas.js";
 
 /**
  * Encodes function arguments for a contract call.
@@ -187,6 +188,13 @@ const decodeEventLogE = (
 			),
 	});
 
+type ContractFactory = <TAbi extends Abi>(
+	address: AddressType | `0x${string}`,
+	abi: TAbi,
+) => Effect.Effect<ContractInstance<TAbi>, never, ProviderService>;
+
+type ContractService = ContractFactory & { estimateGas: typeof estimateGas };
+
 /**
  * Creates a type-safe contract instance for interacting with a deployed contract.
  * Provides read, write, simulate, and event methods based on the ABI.
@@ -217,7 +225,7 @@ const decodeEventLogE = (
  * ```
  * @since 0.0.1
  */
-export const Contract = <TAbi extends Abi>(
+const ContractFactory: ContractFactory = <TAbi extends Abi>(
 	address: AddressType | `0x${string}`,
 	abi: TAbi,
 ): Effect.Effect<ContractInstance<TAbi>, never, ProviderService> =>
@@ -418,3 +426,7 @@ export const Contract = <TAbi extends Abi>(
 			getEvents,
 		} as ContractInstance<TAbi>;
 	});
+
+export const Contract: ContractService = Object.assign(ContractFactory, {
+	estimateGas,
+});

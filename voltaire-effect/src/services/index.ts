@@ -16,7 +16,9 @@
  * - {@link HttpTransport} - HTTP transport layer
  * - {@link WebSocketTransport} - WebSocket transport layer
  * - {@link BrowserTransport} - Browser wallet (window.ethereum) transport
+ * - {@link CustomTransport} - Custom EIP-1193 provider transport
  * - {@link TestTransport} - Mock transport for testing
+ * - {@link RateLimitedTransport} - Rate-limited transport wrapper
  *
  * ### Provider
  * Read-only blockchain operations (blocks, transactions, balances).
@@ -115,6 +117,25 @@ export {
 	type ReceiptType,
 	type TransactionType,
 } from "./Provider/index.js";
+// ENS exports
+export {
+	DefaultEns,
+	EnsError,
+	EnsService,
+	type EnsShape,
+	ENS_REGISTRY_ADDRESS,
+	ENS_UNIVERSAL_RESOLVER_ADDRESS,
+	getEnsAddress,
+	type GetEnsAddressParams,
+	getEnsAvatar,
+	type GetEnsAvatarParams,
+	getEnsName,
+	type GetEnsNameParams,
+	getEnsResolver,
+	type GetEnsResolverParams,
+	getEnsText,
+	type GetEnsTextParams,
+} from "./Ens/index.js";
 // Preset exports (layer composition helpers)
 export {
 	ArbitrumProvider,
@@ -130,10 +151,15 @@ export {
 // Transport exports
 export {
 	BrowserTransport,
+	CustomTransport,
+	CustomTransportFromFn,
 	HttpTransport,
+	RateLimitedTransport,
 	TestTransport,
 	TransportError,
 	TransportService,
+	type CustomTransportConfig,
+	type EIP1193Provider,
 	type TransportShape,
 	WebSocketTransport,
 } from "./Transport/index.js";
