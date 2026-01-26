@@ -14,7 +14,7 @@ const program = Effect.gen(function* () {
   return yield* client.getBlockNumber()
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 
 const blockNumber = await Effect.runPromise(program)
@@ -28,7 +28,7 @@ const program = Effect.gen(function* () {
   return yield* client.getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'latest')
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -41,7 +41,7 @@ const program = Effect.gen(function* () {
   return { number: block.number, hash: block.hash, txCount: block.transactions.length }
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -61,7 +61,7 @@ const program = Effect.gen(function* () {
   return logs.map(log => ({ from: log.topics[1], to: log.topics[2], blockNumber: log.blockNumber }))
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -73,7 +73,7 @@ const program = Effect.gen(function* () {
   return yield* client.waitForTransactionReceipt('0x1234...', { confirmations: 3, timeout: 60000 })
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -89,7 +89,7 @@ const program = Effect.gen(function* () {
   })
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -105,7 +105,7 @@ const program = Effect.gen(function* () {
   ])
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -126,6 +126,6 @@ const program = Effect.gen(function* () {
   )
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
