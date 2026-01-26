@@ -29,12 +29,16 @@
  * @see {@link BrowserTransport} - Alternative for browser wallet interaction
  */
 
+import * as Socket from "@effect/platform/Socket";
 import * as Deferred from "effect/Deferred";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
+import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Queue from "effect/Queue";
 import * as Ref from "effect/Ref";
-import * as Runtime from "effect/Runtime";
+import * as Schedule from "effect/Schedule";
+import * as Scope from "effect/Scope";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
 
@@ -86,9 +90,7 @@ interface WebSocketTransportConfig {
 	/** Request timeout in milliseconds (default: 30000) */
 	timeout?: number;
 	/** Auto-reconnect on disconnect */
-	reconnect?:
-		| boolean
-		| ReconnectOptions;
+	reconnect?: boolean | ReconnectOptions;
 	/** Keep-alive ping interval in ms */
 	keepAlive?: number;
 }
@@ -205,7 +207,7 @@ const DEFAULT_RECONNECT_OPTIONS: Required<ReconnectOptions> = {
  */
 export const WebSocketTransport = (
 	options: WebSocketTransportConfig | string,
-): Layer.Layer<TransportService, TransportError> => {
+): Layer.Layer<TransportService, TransportError, Socket.WebSocketConstructor> => {
 	const config =
 		typeof options === "string"
 			? { url: options, timeout: 30000, reconnect: false, keepAlive: undefined }
@@ -226,34 +228,54 @@ export const WebSocketTransport = (
 	return Layer.scoped(
 		TransportService,
 		Effect.gen(function* () {
-			if (typeof globalThis.WebSocket === "undefined") {
-				return yield* Effect.fail(
-					new TransportError({
-						code: -32603,
-						message: "WebSocket is not available in this environment",
-					}),
-				);
-			}
-
-			const runtime = yield* Effect.runtime<never>();
 			const requestIdRef = yield* Ref.make(0);
 			const pendingRef = yield* Ref.make<
-				Map<number, Deferred.Deferred<JsonRpcResponse<unknown>, never>>
+				Map<number | string, Deferred.Deferred<JsonRpcResponse<unknown>, never>>
 			>(new Map());
-			const wsRef = yield* Ref.make<WebSocket | null>(null);
-			const attemptCountRef = yield* Ref.make(0);
-			const currentDelayRef = yield* Ref.make(reconnectOpts.delay);
+			const writerRef = yield* Ref.make<
+				((chunk: Uint8Array | string | Socket.CloseEvent) => Effect.Effect<void, Socket.SocketError>) | null
+			>(null);
 			const isReconnectingRef = yield* Ref.make(false);
 			const queueRef = yield* Ref.make<QueuedRequest[]>([]);
 			const isClosedRef = yield* Ref.make(false);
-			const keepAliveTimerRef = yield* Ref.make<ReturnType<typeof setInterval> | null>(null);
-			const messageQueue = yield* Queue.unbounded<unknown>();
+			const keepAliveFiberRef = yield* Ref.make<Fiber.Fiber<void, never> | null>(null);
+			const socketFiberRef = yield* Ref.make<Fiber.Fiber<void, Socket.SocketError> | null>(null);
+			const reconnectAttemptsRef = yield* Ref.make(0);
+
+			const processMessage = (data: string | Uint8Array) =>
+				Effect.gen(function* () {
+					const text = typeof data === "string" ? data : new TextDecoder().decode(data);
+					let message: JsonRpcResponse<unknown>;
+					try {
+						message = JSON.parse(text) as JsonRpcResponse<unknown>;
+					} catch {
+						return;
+					}
+
+					if (message.id === "keepalive") return;
+
+					let foundDeferred:
+						| Deferred.Deferred<JsonRpcResponse<unknown>, never>
+						| undefined;
+					yield* Ref.update(pendingRef, (pending) => {
+						foundDeferred = pending.get(message.id);
+						if (foundDeferred) {
+							const newPending = new Map(pending);
+							newPending.delete(message.id);
+							return newPending;
+						}
+						return pending;
+					});
+					if (foundDeferred) {
+						yield* Deferred.succeed(foundDeferred, message);
+					}
+				});
 
 			const stopKeepAlive = Effect.gen(function* () {
-				const timer = yield* Ref.get(keepAliveTimerRef);
-				if (timer !== null) {
-					clearInterval(timer);
-					yield* Ref.set(keepAliveTimerRef, null);
+				const fiber = yield* Ref.get(keepAliveFiberRef);
+				if (fiber !== null) {
+					yield* Fiber.interrupt(fiber);
+					yield* Ref.set(keepAliveFiberRef, null);
 				}
 			});
 
@@ -262,33 +284,33 @@ export const WebSocketTransport = (
 
 				yield* stopKeepAlive;
 
-				const ws = yield* Ref.get(wsRef);
-				if (!ws || ws.readyState !== WebSocket.OPEN) return;
+				const writer = yield* Ref.get(writerRef);
+				if (!writer) return;
 
-				const timer = setInterval(() => {
-					Runtime.runFork(runtime)(
-						Effect.gen(function* () {
-							const socket = yield* Ref.get(wsRef);
-							if (socket && socket.readyState === WebSocket.OPEN) {
-								socket.send(
-									JSON.stringify({
-										jsonrpc: "2.0",
-										id: "keepalive",
-										method: "web3_clientVersion",
-										params: [],
-									}),
-								);
-							}
-						}),
-					);
-				}, config.keepAlive);
+				const keepAliveEffect = Effect.gen(function* () {
+					const w = yield* Ref.get(writerRef);
+					if (w) {
+						yield* w(
+							JSON.stringify({
+								jsonrpc: "2.0",
+								id: "keepalive",
+								method: "web3_clientVersion",
+								params: [],
+							}),
+						).pipe(Effect.ignore);
+					}
+				}).pipe(
+					Effect.repeat(Schedule.spaced(Duration.millis(config.keepAlive))),
+					Effect.ignore,
+				);
 
-				yield* Ref.set(keepAliveTimerRef, timer);
+				const fiber = yield* Effect.fork(keepAliveEffect);
+				yield* Ref.set(keepAliveFiberRef, fiber);
 			});
 
 			const flushQueue = Effect.gen(function* () {
-				const ws = yield* Ref.get(wsRef);
-				if (!ws || ws.readyState !== WebSocket.OPEN) return;
+				const writer = yield* Ref.get(writerRef);
+				if (!writer) return;
 
 				const queue = yield* Ref.getAndSet(queueRef, []);
 				for (const item of queue) {
@@ -305,195 +327,172 @@ export const WebSocketTransport = (
 						return newPending;
 					});
 
-					ws.send(request);
+					yield* writer(request).pipe(Effect.ignore);
 				}
 			});
 
-			const processMessage = (data: unknown) =>
+			const failAllPending = (error: TransportError) =>
 				Effect.gen(function* () {
-					let message: JsonRpcResponse<unknown>;
-					try {
-						message = JSON.parse(data as string) as JsonRpcResponse<unknown>;
-					} catch {
-						return;
+					const pending = yield* Ref.getAndSet(pendingRef, new Map());
+					const queue = yield* Ref.getAndSet(queueRef, []);
+
+					for (const [id, deferred] of pending) {
+						yield* Deferred.succeed(deferred, {
+							jsonrpc: "2.0",
+							id,
+							error: { code: error.input.code, message: error.message },
+						});
 					}
 
-					if (message.id === "keepalive") return;
-
-					let foundDeferred:
-						| Deferred.Deferred<JsonRpcResponse<unknown>, never>
-						| undefined;
-					yield* Ref.update(pendingRef, (pending) => {
-						foundDeferred = pending.get(message.id as number);
-						if (foundDeferred) {
-							const newPending = new Map(pending);
-							newPending.delete(message.id as number);
-							return newPending;
-						}
-						return pending;
-					});
-					if (foundDeferred) {
-						yield* Deferred.succeed(foundDeferred, message);
+					for (const item of queue) {
+						yield* Deferred.succeed(item.deferred, {
+							jsonrpc: "2.0",
+							id: item.id,
+							error: { code: error.input.code, message: error.message },
+						});
 					}
 				});
 
-			yield* Effect.forkScoped(
-				Queue.take(messageQueue).pipe(
-					Effect.flatMap(processMessage),
-					Effect.forever,
-				),
-			);
-
-			const connect: Effect.Effect<WebSocket, TransportError> = Effect.gen(function* () {
-				const isClosed = yield* Ref.get(isClosedRef);
-				if (isClosed) {
-					return yield* Effect.fail(
-						new TransportError({
-							code: -32603,
-							message: "WebSocket transport is closed",
-						}),
-					);
-				}
-
-				const connectDeferred = yield* Deferred.make<WebSocket, TransportError>();
-				const ws = new WebSocket(config.url, config.protocols);
-
-				ws.onopen = () => {
-					Runtime.runFork(runtime)(
-						Effect.gen(function* () {
-							yield* Ref.set(attemptCountRef, 0);
-							yield* Ref.set(currentDelayRef, reconnectOpts.delay);
-							yield* Ref.set(wsRef, ws);
-							yield* Ref.set(isReconnectingRef, false);
-							yield* Deferred.succeed(connectDeferred, ws);
-							yield* startKeepAlive;
-							yield* flushQueue;
-						}),
-					);
-				};
-
-				ws.onerror = () => {
-					Runtime.runFork(runtime)(
-						Deferred.fail(
-							connectDeferred,
+			const connect: Effect.Effect<void, TransportError, Scope.Scope | Socket.WebSocketConstructor> = Effect.gen(
+				function* () {
+					const isClosed = yield* Ref.get(isClosedRef);
+					if (isClosed) {
+						return yield* Effect.fail(
 							new TransportError({
 								code: -32603,
-								message: "WebSocket connection failed",
+								message: "WebSocket transport is closed",
 							}),
+						);
+					}
+
+					const socket = yield* Socket.makeWebSocket(config.url, {
+						protocols: config.protocols
+							? Array.isArray(config.protocols)
+								? config.protocols
+								: [config.protocols]
+							: undefined,
+						openTimeout: Duration.millis(config.timeout),
+					}).pipe(
+						Effect.mapError(
+							(e) =>
+								new TransportError({
+									code: -32603,
+									message: `WebSocket connection failed: ${String(e)}`,
+								}),
 						),
 					);
-				};
 
-				ws.onmessage = (event) => {
-					Runtime.runFork(runtime)(Queue.offer(messageQueue, event.data));
-				};
+					const scope = yield* Effect.scope;
 
-				ws.onclose = () => {
-					Runtime.runFork(runtime)(
-						Effect.gen(function* () {
-							yield* stopKeepAlive;
-							yield* Ref.set(wsRef, null);
-
-							const isClosed = yield* Ref.get(isClosedRef);
-							if (isClosed) {
-								const pending = yield* Ref.getAndSet(pendingRef, new Map());
-								const error = new TransportError({
+					const writer = yield* Scope.extend(socket.writer, scope).pipe(
+						Effect.mapError(
+							() =>
+								new TransportError({
 									code: -32603,
-									message: "WebSocket closed",
-								});
-								for (const [id, deferred] of pending) {
-									yield* Deferred.succeed(deferred, {
-										jsonrpc: "2.0",
-										id,
-										error: { code: error.code, message: error.message },
-									});
-								}
-								return;
-							}
-
-							if (reconnectEnabled) {
-								const attempts = yield* Ref.get(attemptCountRef);
-								if (attempts < reconnectOpts.maxAttempts) {
-									yield* Ref.set(isReconnectingRef, true);
-									const delay = yield* Ref.get(currentDelayRef);
-
-									yield* Ref.update(attemptCountRef, (n) => n + 1);
-									yield* Ref.update(currentDelayRef, (d) =>
-										Math.min(d * reconnectOpts.multiplier, reconnectOpts.maxDelay),
-									);
-
-									setTimeout(() => {
-										Effect.runPromise(
-											connect.pipe(
-												Effect.catchAll(() => Effect.void),
-											),
-										);
-									}, delay);
-								} else {
-									const pending = yield* Ref.getAndSet(pendingRef, new Map());
-									const queue = yield* Ref.getAndSet(queueRef, []);
-									const error = new TransportError({
-										code: -32603,
-										message: `WebSocket reconnection failed after ${reconnectOpts.maxAttempts} attempts`,
-									});
-
-									for (const [id, deferred] of pending) {
-										yield* Deferred.succeed(deferred, {
-											jsonrpc: "2.0",
-											id,
-											error: { code: error.code, message: error.message },
-										});
-									}
-
-									for (const item of queue) {
-										yield* Deferred.succeed(item.deferred, {
-											jsonrpc: "2.0",
-											id: item.id,
-											error: { code: error.code, message: error.message },
-										});
-									}
-								}
-							} else {
-								const pending = yield* Ref.getAndSet(pendingRef, new Map());
-								const error = new TransportError({
-									code: -32603,
-									message: "WebSocket closed",
-								});
-								for (const [id, deferred] of pending) {
-									yield* Deferred.succeed(deferred, {
-										jsonrpc: "2.0",
-										id,
-										error: { code: error.code, message: error.message },
-									});
-								}
-							}
-						}),
+									message: "Failed to get WebSocket writer",
+								}),
+						),
 					);
-				};
 
-				return yield* Deferred.await(connectDeferred);
-			});
+					yield* Ref.set(writerRef, writer);
+					yield* Ref.set(reconnectAttemptsRef, 0);
+					yield* Ref.set(isReconnectingRef, false);
 
-			yield* connect;
+					yield* startKeepAlive;
+					yield* flushQueue;
+
+					const socketFiber = yield* Effect.fork(
+						socket
+							.runRaw((data) => processMessage(data))
+							.pipe(
+								Effect.catchAll((socketError) =>
+									Effect.gen(function* () {
+										yield* stopKeepAlive;
+										yield* Ref.set(writerRef, null);
+
+										const closed = yield* Ref.get(isClosedRef);
+										if (closed) {
+											yield* failAllPending(
+												new TransportError({
+													code: -32603,
+													message: "WebSocket closed",
+												}),
+											);
+											return;
+										}
+
+										if (reconnectEnabled) {
+											const attempts = yield* Ref.get(reconnectAttemptsRef);
+											if (attempts < reconnectOpts.maxAttempts) {
+												yield* Ref.set(isReconnectingRef, true);
+
+												const delay = Math.min(
+													reconnectOpts.delay * Math.pow(reconnectOpts.multiplier, attempts),
+													reconnectOpts.maxDelay,
+												);
+
+												yield* Ref.update(reconnectAttemptsRef, (n) => n + 1);
+
+												yield* Effect.sleep(Duration.millis(delay));
+												yield* Effect.scoped(connect).pipe(Effect.ignore);
+											} else {
+												yield* failAllPending(
+													new TransportError({
+														code: -32603,
+														message: `WebSocket reconnection failed after ${reconnectOpts.maxAttempts} attempts`,
+													}),
+												);
+											}
+										} else {
+											yield* failAllPending(
+												new TransportError({
+													code: -32603,
+													message: `WebSocket closed: ${String(socketError)}`,
+												}),
+											);
+										}
+									}),
+								),
+							),
+					);
+
+					yield* Ref.set(socketFiberRef, socketFiber);
+				},
+			);
+
+			yield* Effect.scoped(connect);
 
 			yield* Effect.addFinalizer(() =>
 				Effect.gen(function* () {
 					yield* Ref.set(isClosedRef, true);
 					yield* stopKeepAlive;
-					const ws = yield* Ref.get(wsRef);
-					if (ws) {
-						ws.close();
+
+					const socketFiber = yield* Ref.get(socketFiberRef);
+					if (socketFiber) {
+						yield* Fiber.interrupt(socketFiber);
 					}
+
+					const writer = yield* Ref.get(writerRef);
+					if (writer) {
+						yield* writer(new Socket.CloseEvent(1000, "Normal closure")).pipe(Effect.ignore);
+					}
+
+					yield* failAllPending(
+						new TransportError({
+							code: -32603,
+							message: "WebSocket transport closed",
+						}),
+					);
 				}),
 			);
 
 			return {
 				request: <T>(method: string, params: unknown[] = []) =>
 					Effect.gen(function* () {
-						const ws = yield* Ref.get(wsRef);
+						const writer = yield* Ref.get(writerRef);
 						const isReconnecting = yield* Ref.get(isReconnectingRef);
 
-						if (!ws || ws.readyState !== WebSocket.OPEN || isReconnecting) {
+						if (!writer || isReconnecting) {
 							if (reconnectEnabled) {
 								const id = yield* Ref.updateAndGet(requestIdRef, (n) => n + 1);
 								const deferred = yield* Deferred.make<JsonRpcResponse<T>, never>();
@@ -509,12 +508,10 @@ export const WebSocketTransport = (
 								]);
 
 								const response = yield* Deferred.await(deferred).pipe(
-									Effect.timeout(config.timeout),
+									Effect.timeout(Duration.millis(config.timeout)),
 									Effect.catchTag("TimeoutException", () =>
 										Effect.gen(function* () {
-											yield* Ref.update(queueRef, (q) =>
-												q.filter((item) => item.id !== id),
-											);
+											yield* Ref.update(queueRef, (q) => q.filter((item) => item.id !== id));
 											return yield* Effect.fail(
 												new TransportError({
 													code: -32603,
@@ -551,10 +548,7 @@ export const WebSocketTransport = (
 
 						yield* Ref.update(pendingRef, (pending) => {
 							const newPending = new Map(pending);
-							newPending.set(
-								id,
-								deferred as Deferred.Deferred<JsonRpcResponse<unknown>, never>,
-							);
+							newPending.set(id, deferred as Deferred.Deferred<JsonRpcResponse<unknown>, never>);
 							return newPending;
 						});
 
@@ -565,10 +559,18 @@ export const WebSocketTransport = (
 							params,
 						});
 
-						ws.send(request);
+						yield* writer(request).pipe(
+							Effect.mapError(
+								() =>
+									new TransportError({
+										code: -32603,
+										message: "Failed to send WebSocket message",
+									}),
+							),
+						);
 
 						const response = yield* Deferred.await(deferred).pipe(
-							Effect.timeout(config.timeout),
+							Effect.timeout(Duration.millis(config.timeout)),
 							Effect.catchTag("TimeoutException", () =>
 								Effect.gen(function* () {
 									yield* Ref.update(pendingRef, (p) => {
@@ -602,3 +604,21 @@ export const WebSocketTransport = (
 		}),
 	);
 };
+
+/**
+ * Layer that provides the global WebSocket constructor.
+ * Use this when running in environments with a global WebSocket (browsers, Node.js 18+, Deno, Bun).
+ *
+ * @since 0.0.1
+ *
+ * @example
+ * ```typescript
+ * import { Effect } from 'effect'
+ * import { WebSocketTransport, WebSocketConstructorGlobal, TransportService } from 'voltaire-effect/services'
+ *
+ * const transport = WebSocketTransport('wss://mainnet.infura.io/ws/v3/YOUR_KEY').pipe(
+ *   Layer.provide(WebSocketConstructorGlobal)
+ * )
+ * ```
+ */
+export const WebSocketConstructorGlobal = Socket.layerWebSocketConstructorGlobal;

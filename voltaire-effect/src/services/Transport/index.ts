@@ -44,7 +44,11 @@ export {
 	FallbackTransport,
 	type FallbackTransportOptions,
 } from "./FallbackTransport.js";
-export { HttpTransport } from "./HttpTransport.js";
+export {
+	HttpTransport,
+	HttpTransportFetch,
+	type HttpTransportConfig,
+} from "./HttpTransport.js";
 export { TestTransport } from "./TestTransport.js";
 export {
 	TransportError,
@@ -53,5 +57,6 @@ export {
 } from "./TransportService.js";
 export {
 	WebSocketTransport,
+	WebSocketConstructorGlobal,
 	type ReconnectOptions,
 } from "./WebSocketTransport.js";
