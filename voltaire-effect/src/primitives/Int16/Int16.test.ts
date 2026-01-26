@@ -47,28 +47,28 @@ describe("Int16", () => {
 	});
 
 	describe("Schema: Int16.String", () => {
-		it("decodes valid positive string", () => {
-			const value = S.decodeSync(Int16.String)("1000");
+		it("decodes valid positive hex string", () => {
+			const value = S.decodeSync(Int16.String)("0x03e8");
 			expect(S.encodeSync(Int16.String)(value)).toBe("1000");
 		});
 
-		it("decodes valid negative string", () => {
-			const value = S.decodeSync(Int16.String)("-1000");
+		it("decodes valid negative hex string", () => {
+			const value = S.decodeSync(Int16.String)("0xfc18");
 			expect(S.encodeSync(Int16.String)(value)).toBe("-1000");
 		});
 
-		it("decodes INT16_MIN string", () => {
-			const value = S.decodeSync(Int16.String)("-32768");
+		it("decodes INT16_MIN hex string", () => {
+			const value = S.decodeSync(Int16.String)("0x8000");
 			expect(S.encodeSync(Int16.String)(value)).toBe("-32768");
 		});
 
-		it("decodes INT16_MAX string", () => {
-			const value = S.decodeSync(Int16.String)("32767");
+		it("decodes INT16_MAX hex string", () => {
+			const value = S.decodeSync(Int16.String)("0x7fff");
 			expect(S.encodeSync(Int16.String)(value)).toBe("32767");
 		});
 
-		it("fails on overflow string", () => {
-			expect(() => S.decodeSync(Int16.String)("32768")).toThrow();
+		it("fails on overflow hex string", () => {
+			expect(() => S.decodeSync(Int16.String)("0x18000")).toThrow();
 		});
 	});
 
