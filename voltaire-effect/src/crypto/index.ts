@@ -206,7 +206,7 @@ export {
 	AddressDerivationError,
 	constantTimeEqual,
 	hashMessage,
-	hashTypedData,
+	hashTypedData as signatureHashTypedData,
 	RecoverError,
 	recoverAddress,
 	recoverMessageAddress,
