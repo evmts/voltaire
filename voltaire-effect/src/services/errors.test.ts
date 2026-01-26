@@ -211,10 +211,11 @@ describe("Error constructor standardization", () => {
 			expect(new ContractEventError({}, "x")).toBeInstanceOf(Error);
 		});
 
-		it("contract sub-errors extend ContractError", () => {
-			expect(new ContractCallError({}, "x")).toBeInstanceOf(ContractError);
-			expect(new ContractWriteError({}, "x")).toBeInstanceOf(ContractError);
-			expect(new ContractEventError({}, "x")).toBeInstanceOf(ContractError);
+		it("contract sub-errors have correct tags for pattern matching", () => {
+			// With Data.TaggedError, we use _tag for discrimination, not inheritance
+			expect(new ContractCallError({}, "x")._tag).toBe("ContractCallError");
+			expect(new ContractWriteError({}, "x")._tag).toBe("ContractWriteError");
+			expect(new ContractEventError({}, "x")._tag).toBe("ContractEventError");
 		});
 	});
 
@@ -410,6 +411,122 @@ describe("Error constructor standardization", () => {
 			expect(error._tag).toBe("KzgError");
 			expect(error.operation).toBe("verifyProof");
 			expect(error.cause).toBeUndefined();
+		});
+	});
+
+	describe("Pattern matching with Effect.catchTag and Match", () => {
+		it("TransportError is catchable with Effect.catchTag", async () => {
+			const error = new TransportError({ code: -32601, message: "Method not found" });
+
+			const program = Effect.fail(error).pipe(
+				Effect.catchTag("TransportError", (e) =>
+					Effect.succeed(`caught: ${e.code}`),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("caught: -32601");
+		});
+
+		it("ProviderError is catchable with Effect.catchTag", async () => {
+			const error = new ProviderError({ method: "eth_call" }, "Provider failed");
+
+			const program = Effect.fail(error).pipe(
+				Effect.catchTag("ProviderError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("caught: Provider failed");
+		});
+
+		it("AccountError is catchable with Effect.catchTag", async () => {
+			const error = new AccountError({ action: "sign" }, "Sign failed");
+
+			const program = Effect.fail(error).pipe(
+				Effect.catchTag("AccountError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("caught: Sign failed");
+		});
+
+		it("SignerError is catchable with Effect.catchTag", async () => {
+			const error = new SignerError({ to: "0x123" }, "Signer failed");
+
+			const program = Effect.fail(error).pipe(
+				Effect.catchTag("SignerError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("caught: Signer failed");
+		});
+
+		it("ContractError is catchable with Effect.catchTag", async () => {
+			const error = new ContractError({ address: "0x123" }, "Contract failed");
+
+			const program = Effect.fail(error).pipe(
+				Effect.catchTag("ContractError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("caught: Contract failed");
+		});
+
+		it("multiple contract error types are distinguishable by tag", async () => {
+			const callError = new ContractCallError({}, "call failed");
+			const writeError = new ContractWriteError({}, "write failed");
+			const eventError = new ContractEventError({}, "event failed");
+
+			const handleError = (error: ContractCallError | ContractWriteError | ContractEventError) =>
+				Effect.fail(error).pipe(
+					Effect.catchTag("ContractCallError", (e) =>
+						Effect.succeed(`call: ${e.message}`),
+					),
+					Effect.catchTag("ContractWriteError", (e) =>
+						Effect.succeed(`write: ${e.message}`),
+					),
+					Effect.catchTag("ContractEventError", (e) =>
+						Effect.succeed(`event: ${e.message}`),
+					),
+				);
+
+			expect(await Effect.runPromise(handleError(callError))).toBe("call: call failed");
+			expect(await Effect.runPromise(handleError(writeError))).toBe("write: write failed");
+			expect(await Effect.runPromise(handleError(eventError))).toBe("event: event failed");
+		});
+
+		it("CcipError is catchable with Effect.catchTag", async () => {
+			const error = new CcipError({ urls: ["https://example.com"], message: "CCIP failed" });
+
+			const program = Effect.fail(error).pipe(
+				Effect.catchTag("CcipError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("caught: CCIP failed");
+		});
+
+		it("KzgError is catchable with Effect.catchTag", async () => {
+			const error = new KzgError({ operation: "verifyProof", message: "KZG failed" });
+
+			const program = Effect.fail(error).pipe(
+				Effect.catchTag("KzgError", (e) =>
+					Effect.succeed(`caught: ${e.operation}`),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("caught: verifyProof");
 		});
 	});
 });

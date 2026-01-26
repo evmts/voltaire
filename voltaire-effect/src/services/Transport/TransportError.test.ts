@@ -28,22 +28,22 @@ describe("TransportError", () => {
 
 		it("stores context object", () => {
 			const context = { method: "eth_call", params: ["0x123"] };
-			const error = new TransportError({
-				code: -32603,
-				message: "Error",
-				context,
-			});
+			const error = new TransportError(
+				{ code: -32603, message: "Error" },
+				undefined,
+				{ context },
+			);
 
 			expect(error.context).toEqual(context);
 		});
 
 		it("stores cause", () => {
 			const originalError = new Error("Original error");
-			const error = new TransportError({
-				code: -32603,
-				message: "Wrapped error",
-				cause: originalError,
-			});
+			const error = new TransportError(
+				{ code: -32603, message: "Wrapped error" },
+				undefined,
+				{ cause: originalError },
+			);
 
 			expect(error.cause).toBe(originalError);
 		});

@@ -66,3 +66,9 @@ export {
 	WebSocketConstructorGlobal,
 	type ReconnectOptions,
 } from "./WebSocketTransport.js";
+export {
+	WebSocketTransportConfigSchema,
+	WebSocketTransportFromConfig,
+	WebSocketTransportFromConfigGlobal,
+	type WebSocketTransportConfigType,
+} from "./WebSocketTransportConfig.js";

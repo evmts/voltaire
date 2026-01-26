@@ -154,7 +154,25 @@ export class ContractError extends Data.TaggedError("ContractError")<{
 	 * Optional context for debugging.
 	 */
 	readonly context?: Record<string, unknown>;
-}> {}
+}> {
+	constructor(
+		input: unknown,
+		message: string,
+		options?: {
+			code?: number;
+			context?: Record<string, unknown>;
+			cause?: unknown;
+		},
+	) {
+		super({
+			input,
+			message,
+			code: options?.code,
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
 
 /**
  * Error thrown when a contract read call fails.
@@ -166,7 +184,25 @@ export class ContractCallError extends Data.TaggedError("ContractCallError")<{
 	readonly code?: number;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
-}> {}
+}> {
+	constructor(
+		input: unknown,
+		message: string,
+		options?: {
+			code?: number;
+			context?: Record<string, unknown>;
+			cause?: unknown;
+		},
+	) {
+		super({
+			input,
+			message,
+			code: options?.code,
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
 
 /**
  * Error thrown when a contract write transaction fails.
@@ -178,7 +214,25 @@ export class ContractWriteError extends Data.TaggedError("ContractWriteError")<{
 	readonly code?: number;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
-}> {}
+}> {
+	constructor(
+		input: unknown,
+		message: string,
+		options?: {
+			code?: number;
+			context?: Record<string, unknown>;
+			cause?: unknown;
+		},
+	) {
+		super({
+			input,
+			message,
+			code: options?.code,
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
 
 /**
  * Error thrown when fetching contract events fails.
@@ -190,7 +244,25 @@ export class ContractEventError extends Data.TaggedError("ContractEventError")<{
 	readonly code?: number;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
-}> {}
+}> {
+	constructor(
+		input: unknown,
+		message: string,
+		options?: {
+			code?: number;
+			context?: Record<string, unknown>;
+			cause?: unknown;
+		},
+	) {
+		super({
+			input,
+			message,
+			code: options?.code,
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
 
 /**
  * Type-safe contract instance with read, write, simulate, and event methods.

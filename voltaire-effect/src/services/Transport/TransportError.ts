@@ -73,6 +73,11 @@ import * as Data from "effect/Data";
  */
 export class TransportError extends Data.TaggedError("TransportError")<{
 	/**
+	 * The original input that caused the error.
+	 */
+	readonly input: { code: number; message: string; data?: unknown };
+
+	/**
 	 * JSON-RPC error code.
 	 */
 	readonly code: number;
@@ -100,4 +105,30 @@ export class TransportError extends Data.TaggedError("TransportError")<{
 	 * Optional context for debugging.
 	 */
 	readonly context?: Record<string, unknown>;
-}> {}
+}> {
+	/**
+	 * Creates a new TransportError.
+	 *
+	 * @param input - JSON-RPC error response containing code, message, and optional data
+	 * @param message - Optional override for the error message
+	 * @param options - Optional error options
+	 * @param options.cause - Underlying error that caused this failure
+	 */
+	constructor(
+		input: { code: number; message: string; data?: unknown },
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+		},
+	) {
+		super({
+			input,
+			code: input.code,
+			message: message ?? input.message,
+			data: input.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}

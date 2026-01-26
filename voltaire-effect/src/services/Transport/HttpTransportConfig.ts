@@ -34,6 +34,7 @@
  * @see {@link TransportService} - The service interface
  */
 
+import * as HttpClient from "@effect/platform/HttpClient";
 import * as Config from "effect/Config";
 import * as ConfigError from "effect/ConfigError";
 import * as Duration from "effect/Duration";
@@ -159,8 +160,9 @@ export type HttpTransportConfigType = Config.Config.Success<typeof HttpTransport
  */
 export const HttpTransportFromConfig: Layer.Layer<
 	TransportService,
-	ConfigError.ConfigError
-> = Layer.unwrap(
+	ConfigError.ConfigError,
+	HttpClient.HttpClient
+> = Layer.unwrapEffect(
 	Effect.gen(function* () {
 		const config = yield* HttpTransportConfigSchema;
 
@@ -214,7 +216,7 @@ export const HttpTransportFromConfig: Layer.Layer<
 export const HttpTransportFromConfigFetch: Layer.Layer<
 	TransportService,
 	ConfigError.ConfigError
-> = Layer.unwrap(
+> = Layer.unwrapEffect(
 	Effect.gen(function* () {
 		const config = yield* HttpTransportConfigSchema;
 
