@@ -34,6 +34,7 @@ type AddressType = BrandedAddress.AddressType;
 type HexType = BrandedHex.HexType;
 type SignatureType = BrandedSignature.SignatureType;
 type TypedDataType = TypedData.TypedDataType;
+type AddressInput = AddressType | `0x${string}`;
 
 /**
  * Error thrown when an account operation fails.
@@ -134,7 +135,7 @@ export class AccountError extends AbstractError {
  */
 export type UnsignedTransaction = {
 	/** Recipient address (null/undefined for contract deployment) */
-	readonly to?: AddressType | null;
+	readonly to?: AddressInput | null;
 	/** Value in wei to send */
 	readonly value?: bigint;
 	/** Transaction input data */
@@ -143,14 +144,41 @@ export type UnsignedTransaction = {
 	readonly nonce: bigint;
 	/** Gas limit (required) */
 	readonly gasLimit: bigint;
-	/** Gas price for legacy transactions (type 0) */
+	/** Gas price for legacy/EIP-2930 transactions (type 0/1) */
 	readonly gasPrice?: bigint;
-	/** Max fee per gas for EIP-1559 transactions (type 2) */
+	/** Max fee per gas for EIP-1559+ transactions (type 2/3/4) */
 	readonly maxFeePerGas?: bigint;
-	/** Max priority fee for EIP-1559 transactions (type 2) */
+	/** Max priority fee for EIP-1559+ transactions (type 2/3/4) */
 	readonly maxPriorityFeePerGas?: bigint;
 	/** Chain ID for replay protection (required) */
 	readonly chainId: bigint;
+	/** EIP-2930+ access list */
+	readonly accessList?: readonly {
+		address: AddressInput;
+		storageKeys: readonly `0x${string}`[];
+	}[];
+	/** Transaction type (auto-detected if not provided) */
+	readonly type?: 0 | 1 | 2 | 3 | 4;
+	/** EIP-4844: Versioned hashes for blob commitments */
+	readonly blobVersionedHashes?: readonly `0x${string}`[];
+	/** EIP-4844: Max fee per blob gas */
+	readonly maxFeePerBlobGas?: bigint;
+	/** EIP-4844: Raw blob data (sidecar) */
+	readonly blobs?: readonly Uint8Array[];
+	/** EIP-4844: KZG commitments for blobs (sidecar) */
+	readonly kzgCommitments?: readonly `0x${string}`[];
+	/** EIP-4844: KZG proofs for blobs (sidecar) */
+	readonly kzgProofs?: readonly `0x${string}`[];
+	/** EIP-7702: Authorization list for set code transactions */
+	readonly authorizationList?: readonly {
+		chainId: bigint;
+		address: `0x${string}`;
+		nonce: bigint;
+		yParity?: number;
+		v?: number;
+		r: `0x${string}`;
+		s: `0x${string}`;
+	}[];
 };
 
 /**

@@ -56,6 +56,18 @@ function bigintToHex(value: bigint): HexType {
 	return Hex.fromBigInt(value);
 }
 
+const toAddressHex = (address: AddressType | `0x${string}`): `0x${string}` =>
+	typeof address === "string" ? address : (Address.toHex(address) as `0x${string}`);
+
+const toParity = (input: { yParity?: number; v?: number }): number => {
+	if (input.yParity !== undefined) return input.yParity;
+	if (input.v !== undefined) {
+		if (input.v === 27 || input.v === 28) return input.v - 27;
+		return input.v % 2;
+	}
+	return 0;
+};
+
 /**
  * Creates a JSON-RPC account layer that delegates signing to a remote provider.
  *
@@ -154,7 +166,7 @@ export const JsonRpcAccount = (address: AddressType) =>
 					Effect.gen(function* () {
 						const txRequest = {
 							from: Address.toHex(address),
-							to: tx.to ? Address.toHex(tx.to) : undefined,
+							to: tx.to ? toAddressHex(tx.to) : undefined,
 							value: tx.value !== undefined ? bigintToHex(tx.value) : undefined,
 							data: tx.data,
 							nonce: tx.nonce !== undefined ? bigintToHex(tx.nonce) : undefined,
@@ -176,6 +188,30 @@ export const JsonRpcAccount = (address: AddressType) =>
 									: undefined,
 							chainId:
 								tx.chainId !== undefined ? bigintToHex(tx.chainId) : undefined,
+							type:
+								tx.type !== undefined
+									? bigintToHex(BigInt(tx.type))
+									: undefined,
+							accessList: tx.accessList?.map((item) => ({
+								address: toAddressHex(item.address),
+								storageKeys: item.storageKeys,
+							})),
+							maxFeePerBlobGas:
+								tx.maxFeePerBlobGas !== undefined
+									? bigintToHex(tx.maxFeePerBlobGas)
+									: undefined,
+							blobVersionedHashes: tx.blobVersionedHashes,
+							blobs: tx.blobs?.map((blob) => Hex.fromBytes(blob)),
+							kzgCommitments: tx.kzgCommitments,
+							kzgProofs: tx.kzgProofs,
+							authorizationList: tx.authorizationList?.map((auth) => ({
+								chainId: bigintToHex(auth.chainId),
+								address: auth.address,
+								nonce: bigintToHex(auth.nonce),
+								yParity: bigintToHex(BigInt(toParity(auth))),
+								r: auth.r,
+								s: auth.s,
+							})),
 						};
 						const sigHex = yield* transport.request<HexType>(
 							"eth_signTransaction",

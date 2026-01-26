@@ -30,10 +30,11 @@ import {
 	type BrandedHex,
 	type BrandedSignature,
 	Hex,
-	Rlp,
 	Secp256k1,
 	type TypedData,
 } from "@tevm/voltaire";
+import * as Hash from "@tevm/voltaire/Hash";
+import * as VoltaireTransaction from "@tevm/voltaire/Transaction";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
@@ -51,12 +52,14 @@ type SignatureType = BrandedSignature.SignatureType;
 type HashType = BrandedHash.HashType;
 type TypedDataType = TypedData.TypedDataType;
 type PrivateKeyType = Uint8Array & { readonly __brand: "PrivateKey" };
+type AddressInput = AddressType | `0x${string}`;
 
 /**
  * EIP-191 prefix for personal_sign messages.
  * @see https://eips.ethereum.org/EIPS/eip-191
  */
 const EIP191_PREFIX = "\x19Ethereum Signed Message:\n";
+const ZERO_SIGNATURE = new Uint8Array(32);
 
 function deriveAddressFromPublicKey(
 	_publicKey: Uint8Array,
@@ -66,35 +69,53 @@ function deriveAddressFromPublicKey(
 	return addressBytes as AddressType;
 }
 
-function bigintToRlpBytes(value: bigint): Uint8Array {
-	if (value === 0n) return new Uint8Array(0);
-	let hex = value.toString(16);
-	if (hex.length % 2 !== 0) hex = `0${hex}`;
-	return Hex.toBytes(`0x${hex}` as HexType);
-}
+const toAddressType = (address: AddressInput): AddressType =>
+	typeof address === "string" ? Address.fromHex(address) : address;
 
-function serializeUnsignedTransaction(tx: UnsignedTransaction): Uint8Array {
-	const items: (Uint8Array | readonly Uint8Array[])[] = [
-		tx.nonce !== undefined ? bigintToRlpBytes(tx.nonce) : new Uint8Array(0),
-		tx.gasPrice !== undefined
-			? bigintToRlpBytes(tx.gasPrice)
-			: new Uint8Array(0),
-		tx.gasLimit !== undefined
-			? bigintToRlpBytes(tx.gasLimit)
-			: new Uint8Array(0),
-		tx.to ? Address.toBytes(tx.to) : new Uint8Array(0),
-		tx.value !== undefined ? bigintToRlpBytes(tx.value) : new Uint8Array(0),
-		tx.data ? Hex.toBytes(tx.data) : new Uint8Array(0),
-	];
-
-	if (tx.chainId !== undefined) {
-		items.push(bigintToRlpBytes(tx.chainId));
-		items.push(new Uint8Array(0));
-		items.push(new Uint8Array(0));
+const toAuthorizationParity = (auth: { yParity?: number; v?: number }): number => {
+	if (auth.yParity !== undefined) return auth.yParity;
+	if (auth.v !== undefined) {
+		if (auth.v === 27 || auth.v === 28) return auth.v - 27;
+		return auth.v % 2;
 	}
+	return 0;
+};
 
-	return Rlp.encode(items);
-}
+const normalizeAccessList = (
+	accessList?: UnsignedTransaction["accessList"],
+): VoltaireTransaction.AccessList =>
+	(accessList ?? []).map((item) => ({
+		address: toAddressType(item.address),
+		storageKeys: item.storageKeys.map((key) => Hash.fromHex(key)),
+	}));
+
+const normalizeAuthorizationList = (
+	authorizationList?: UnsignedTransaction["authorizationList"],
+): VoltaireTransaction.AuthorizationList =>
+	(authorizationList ?? []).map((auth) => ({
+		chainId: auth.chainId,
+		address: Address.fromHex(auth.address),
+		nonce: auth.nonce,
+		yParity: toAuthorizationParity(auth),
+		r: Hex.toBytes(auth.r as HexType),
+		s: Hex.toBytes(auth.s as HexType),
+	}));
+
+const getTransactionType = (tx: UnsignedTransaction): 0 | 1 | 2 | 3 | 4 => {
+	if (tx.type !== undefined) return tx.type;
+	if (tx.authorizationList !== undefined) return 4;
+	const hasBlobFields =
+		tx.blobVersionedHashes !== undefined ||
+		tx.maxFeePerBlobGas !== undefined ||
+		tx.blobs !== undefined ||
+		tx.kzgCommitments !== undefined ||
+		tx.kzgProofs !== undefined;
+	if (hasBlobFields) return 3;
+	if (tx.maxFeePerGas !== undefined || tx.maxPriorityFeePerGas !== undefined)
+		return 2;
+	if (tx.accessList !== undefined && tx.gasPrice !== undefined) return 1;
+	return 0;
+};
 
 function encodeTypedDataHash(
 	typedData: TypedDataType,
@@ -485,8 +506,121 @@ export const LocalAccount = (privateKeyHex: HexType) =>
 
 				signTransaction: (tx: UnsignedTransaction) =>
 					Effect.gen(function* () {
-						const serialized = serializeUnsignedTransaction(tx);
-						const hash = yield* keccak.hash(serialized);
+						const txType = getTransactionType(tx);
+						const toAddress =
+							tx.to === undefined || tx.to === null
+								? null
+								: toAddressType(tx.to);
+						const data = tx.data ? Hex.toBytes(tx.data) : new Uint8Array(0);
+						const accessList = normalizeAccessList(tx.accessList);
+
+						let signingTx: VoltaireTransaction.Any;
+
+						switch (txType) {
+							case 0: {
+								const vValue = tx.chainId * 2n + 35n;
+								signingTx = {
+									type: VoltaireTransaction.Type.Legacy,
+									nonce: tx.nonce,
+									gasPrice: tx.gasPrice ?? 0n,
+									gasLimit: tx.gasLimit,
+									to: toAddress,
+									value: tx.value ?? 0n,
+									data,
+									v: vValue,
+									r: ZERO_SIGNATURE,
+									s: ZERO_SIGNATURE,
+								};
+								break;
+							}
+							case 1: {
+								signingTx = {
+									type: VoltaireTransaction.Type.EIP2930,
+									chainId: tx.chainId,
+									nonce: tx.nonce,
+									gasPrice: tx.gasPrice ?? 0n,
+									gasLimit: tx.gasLimit,
+									to: toAddress,
+									value: tx.value ?? 0n,
+									data,
+									accessList,
+									yParity: 0,
+									r: ZERO_SIGNATURE,
+									s: ZERO_SIGNATURE,
+								};
+								break;
+							}
+							case 2: {
+								signingTx = {
+									type: VoltaireTransaction.Type.EIP1559,
+									chainId: tx.chainId,
+									nonce: tx.nonce,
+									maxPriorityFeePerGas: tx.maxPriorityFeePerGas ?? 0n,
+									maxFeePerGas: tx.maxFeePerGas ?? 0n,
+									gasLimit: tx.gasLimit,
+									to: toAddress,
+									value: tx.value ?? 0n,
+									data,
+									accessList,
+									yParity: 0,
+									r: ZERO_SIGNATURE,
+									s: ZERO_SIGNATURE,
+								};
+								break;
+							}
+							case 3: {
+								if (!toAddress) {
+									throw new Error(
+										"EIP-4844 transactions require a 'to' address",
+									);
+								}
+								const blobVersionedHashes = (
+									tx.blobVersionedHashes ?? []
+								).map((hash) => Hash.fromHex(hash));
+								signingTx = {
+									type: VoltaireTransaction.Type.EIP4844,
+									chainId: tx.chainId,
+									nonce: tx.nonce,
+									maxPriorityFeePerGas: tx.maxPriorityFeePerGas ?? 0n,
+									maxFeePerGas: tx.maxFeePerGas ?? 0n,
+									gasLimit: tx.gasLimit,
+									to: toAddress,
+									value: tx.value ?? 0n,
+									data,
+									accessList,
+									maxFeePerBlobGas: tx.maxFeePerBlobGas ?? 0n,
+									blobVersionedHashes,
+									yParity: 0,
+									r: ZERO_SIGNATURE,
+									s: ZERO_SIGNATURE,
+								};
+								break;
+							}
+							case 4: {
+								const authorizationList = normalizeAuthorizationList(
+									tx.authorizationList,
+								);
+								signingTx = {
+									type: VoltaireTransaction.Type.EIP7702,
+									chainId: tx.chainId,
+									nonce: tx.nonce,
+									maxPriorityFeePerGas: tx.maxPriorityFeePerGas ?? 0n,
+									maxFeePerGas: tx.maxFeePerGas ?? 0n,
+									gasLimit: tx.gasLimit,
+									to: toAddress,
+									value: tx.value ?? 0n,
+									data,
+									accessList,
+									authorizationList,
+									yParity: 0,
+									r: ZERO_SIGNATURE,
+									s: ZERO_SIGNATURE,
+								};
+								break;
+							}
+						}
+
+						const hash = VoltaireTransaction.getSigningHash(signingTx);
 						const sig = yield* secp256k1.sign(
 							hash as unknown as HashType,
 							Redacted.value(redactedPrivateKey),
