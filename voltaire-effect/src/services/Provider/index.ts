@@ -54,7 +54,7 @@ export {
 	type EventFilter,
 	type FeeHistoryType,
 	type FilterChanges,
-	type FilterIdInput,
+	type FilterId,
 	type GetBlockArgs,
 	type GetBlockTransactionCountArgs,
 	type GetUncleArgs,
@@ -83,6 +83,14 @@ export {
 	estimateBlobGas,
 	getBlobBaseFee,
 } from "./getBlobBaseFee.js";
+export {
+	createBlockFilter,
+	createEventFilter,
+	createPendingTransactionFilter,
+	getFilterChanges,
+	getFilterLogs,
+	uninstallFilter,
+} from "./filters.js";
 export {
 	readContract,
 	type Abi,
