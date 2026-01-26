@@ -1,15 +1,21 @@
 ```typescript
-import { Effect, Layer } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { Layer } from 'effect'
+import { Provider, Signer, HttpTransport, LocalAccount } from 'voltaire-effect/services'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
-const MainLayer = Provider.pipe(
+// Read-only layer
+const ReadLayer = Provider.pipe(
   Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 
-const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getBlockNumber()
-})
+// Full signer layer with all dependencies
+const SignerLayer = Layer.mergeAll(
+  Signer.fromPrivateKey(privateKey, Provider),
+  Secp256k1Live,
+  KeccakLive,
+  HttpTransport('https://eth.llamarpc.com')
+)
 
-await Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
+// Use in program
+await Effect.runPromise(program.pipe(Effect.provide(SignerLayer)))
 ```

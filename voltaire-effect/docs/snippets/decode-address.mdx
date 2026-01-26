@@ -2,10 +2,10 @@
 import * as Address from 'voltaire-effect/primitives/Address'
 import * as S from 'effect/Schema'
 
-// Decode from hex string - returns branded AddressType
+// Decode from hex string → returns branded AddressType
 const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
 
-// Use pure functions
+// Use pure functions directly
 Address.isZero(addr)        // false
 Address.toHex(addr)         // "0x742d35cc..."
 Address.equals(addr, addr)  // true

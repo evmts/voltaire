@@ -1,8 +1,9 @@
 ```typescript
 import { Effect, Layer } from 'effect'
 import { ProviderService } from 'voltaire-effect/services'
+import { CryptoTest } from 'voltaire-effect/crypto'
 
-// Create mock provider for testing
+// Mock provider with controlled responses
 const MockProvider = Layer.succeed(ProviderService, {
   getBlockNumber: () => Effect.succeed(12345n),
   getBalance: () => Effect.succeed(1000000000000000000n),
@@ -10,8 +11,12 @@ const MockProvider = Layer.succeed(ProviderService, {
   // ... other methods
 })
 
-// Use in tests
-const result = await Effect.runPromise(
-  program.pipe(Effect.provide(MockProvider))
+// Combine mock layers
+const TestLayer = Layer.mergeAll(
+  MockProvider,
+  CryptoTest
 )
+
+// Run tests with mock layer
+await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
 ```

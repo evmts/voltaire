@@ -1,0 +1,276 @@
+---
+title: Troubleshooting
+description: Common issues and solutions
+---
+
+## Missing Service Error
+
+**Error:** `Service not found: ProviderService`
+
+**Cause:** A required layer wasn't provided.
+
+**Fix:** Provide all required layers:
+
+```typescript
+// ❌ Missing layer
+await Effect.runPromise(program)
+
+// ✅ Provide all layers
+await Effect.runPromise(
+  program.pipe(
+    Effect.provide(Provider),
+    Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  )
+)
+```
+
+Check the type signature—it shows what's needed:
+
+```typescript
+// Effect<bigint, ProviderError, ProviderService>
+//                              ↑ needs this
+```
+
+## Wrong Layer Order
+
+**Symptom:** Type errors or runtime failures when composing layers.
+
+**Cause:** Layers that depend on other layers must be provided in correct order.
+
+**Fix:** Provide dependencies after the layers that need them:
+
+```typescript
+// ✅ Correct order
+Signer.Live.pipe(
+  Layer.provide(LocalAccount(privateKey)),
+  Layer.provide(Provider),
+  Layer.provide(HttpTransport(rpcUrl)),
+  Layer.provide(Secp256k1Live),
+  Layer.provide(KeccakLive)
+)
+```
+
+## Forgot to Yield
+
+**Error:** Program doesn't execute as expected.
+
+**Cause:** Missing `yield*` on Effect operations.
+
+```typescript
+// ❌ Returns Effect, doesn't execute
+Effect.gen(function* () {
+  const provider = yield* ProviderService
+  provider.getBlockNumber()  // Missing yield*!
+})
+
+// ✅ Yield all Effects
+Effect.gen(function* () {
+  const provider = yield* ProviderService
+  return yield* provider.getBlockNumber()
+})
+```
+
+## Mixed Async Styles
+
+**Error:** `yield* cannot be used with Promise`
+
+**Cause:** Using `await` inside `Effect.gen`.
+
+```typescript
+// ❌ Don't use await
+Effect.gen(function* () {
+  const result = await somePromise()  // Wrong!
+})
+
+// ✅ Wrap promises with Effect.promise
+Effect.gen(function* () {
+  const result = yield* Effect.promise(() => somePromise())
+})
+```
+
+## ParseError on Valid Input
+
+**Cause:** Input format doesn't match schema expectations.
+
+```typescript
+// ❌ Missing 0x prefix
+S.decodeSync(Address.Hex)('742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+
+// ✅ Include 0x prefix
+S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+```
+
+**Fix:** Check schema requirements:
+- `Address.Hex` expects `0x` + 40 hex chars
+- `Hash.Hex` expects `0x` + 64 hex chars
+- `Uint.Uint256Hex` expects `0x` + hex (any length up to 64)
+
+## Checksummed Address Requires KeccakService
+
+**Error:** `Service not found: KeccakService` when encoding Address.Checksummed.
+
+**Cause:** EIP-55 checksumming requires Keccak256 hashing.
+
+```typescript
+// ❌ Missing KeccakLive
+const checksummed = await Effect.runPromise(
+  S.encode(Address.Checksummed)(addr)
+)
+
+// ✅ Provide KeccakLive
+const checksummed = await Effect.runPromise(
+  S.encode(Address.Checksummed)(addr).pipe(
+    Effect.provide(KeccakLive)
+  )
+)
+```
+
+## RPC Timeout
+
+**Error:** `TransportError: Request timed out`
+
+**Fix:** Increase timeout or add retry:
+
+```typescript
+// Increase timeout
+HttpTransport({
+  url: 'https://eth.llamarpc.com',
+  timeout: 60000  // 60 seconds
+})
+
+// Add retry
+program.pipe(
+  Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(5))),
+  Effect.timeout(Duration.seconds(30))
+)
+```
+
+## Rate Limited
+
+**Error:** `TransportError: 429 Too Many Requests`
+
+**Fix:** Use rate limiter or reduce concurrency:
+
+```typescript
+// Limit concurrency
+Effect.all(operations, { concurrency: 3 })
+
+// Or use RateLimiter service
+Effect.provide(RateLimiter({ requestsPerSecond: 10 }))
+```
+
+## HD Wallet Not Working
+
+**Error:** `FFI not available` or similar.
+
+**Cause:** HD Wallet requires native FFI, not available in WASM.
+
+**Fix:** Run in Node.js/Bun with FFI support, not browser or WASM environment.
+
+## Transaction Underpriced
+
+**Error:** `SignerError: transaction underpriced`
+
+**Fix:** Increase gas price or use EIP-1559 with higher priority fee:
+
+```typescript
+yield* signer.sendTransaction({
+  to,
+  value,
+  maxPriorityFeePerGas: 2_000_000_000n,  // 2 gwei tip
+  maxFeePerGas: 100_000_000_000n          // 100 gwei max
+})
+```
+
+## Nonce Too Low
+
+**Error:** `SignerError: nonce too low`
+
+**Cause:** Transaction with this nonce already confirmed, or pending transaction uses same nonce.
+
+**Fix:** Let the signer auto-fetch nonce (default), or manage manually:
+
+```typescript
+// Auto nonce (recommended)
+yield* signer.sendTransaction({ to, value })
+
+// Manual nonce
+const nonce = yield* provider.getTransactionCount(address, 'pending')
+yield* signer.sendTransaction({ to, value, nonce })
+```
+
+## Contract Reverted
+
+**Error:** `ContractCallError: execution reverted`
+
+**Fix:** Check revert reason and contract state:
+
+```typescript
+program.pipe(
+  Effect.catchTag('ContractCallError', (e) => {
+    console.error('Revert reason:', e.message)
+    // Check: sufficient balance, approvals, contract state
+    return Effect.fail(e)
+  })
+)
+
+// Simulate first to catch reverts
+const success = yield* contract.simulate.transfer(to, amount)
+if (!success) {
+  // Handle failure before sending
+}
+```
+
+## Type Mismatch: String vs AddressType
+
+**Error:** `Type 'string' is not assignable to type 'AddressType'`
+
+**Cause:** voltaire-effect uses branded `Uint8Array`, not strings.
+
+```typescript
+// ❌ String address
+const balance = yield* provider.getBalance('0x...')
+
+// ✅ Decode first (or use string directly - API accepts both)
+const addr = S.decodeSync(Address.Hex)('0x...')
+const balance = yield* provider.getBalance(addr)
+
+// ✅ Or use hex string directly (ProviderService accepts AddressInput)
+const balance = yield* provider.getBalance('0x...', 'latest')
+```
+
+## Debug Effect Execution
+
+Add logging to trace execution:
+
+```typescript
+const program = Effect.gen(function* () {
+  yield* Effect.log('Starting...')
+  const provider = yield* ProviderService
+  yield* Effect.log('Got provider')
+  
+  const block = yield* provider.getBlockNumber()
+  yield* Effect.log(`Block: ${block}`)
+  
+  return block
+})
+```
+
+## Inspect Full Error
+
+```typescript
+import { Effect, Cause, Exit } from 'effect'
+
+const exit = await Effect.runPromiseExit(program)
+
+if (Exit.isFailure(exit)) {
+  console.log(Cause.pretty(exit.cause))
+}
+```
+
+## See Also
+
+- [Debugging Guide](/guides/debugging) — Full debugging techniques
+- [Error Handling](/concepts/error-handling) — Typed error patterns
+- [Testing](/testing) — Mock services for tests
+- [Effect Debugging](https://effect.website/docs/guides/observability/) — Official Effect debugging

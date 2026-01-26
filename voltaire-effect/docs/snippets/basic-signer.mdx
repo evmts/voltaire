@@ -1,10 +1,10 @@
 ```typescript
 import { Effect } from 'effect'
-import { SignerService, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect/services'
+import { SignerService, Signer, Provider, HttpTransport } from 'voltaire-effect/services'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
-const privateKey = Hex.fromHex('0xac0974bec...')
+const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -18,6 +18,4 @@ const program = Effect.gen(function* () {
   Effect.provide(KeccakLive),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
-
-await Effect.runPromise(program)
 ```

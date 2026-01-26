@@ -1,0 +1,16 @@
+```typescript
+import { Effect } from 'effect'
+import { CryptoLive, KeccakService, Secp256k1Service } from 'voltaire-effect/crypto'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const secp = yield* Secp256k1Service
+  
+  const hash = yield* keccak.hash(new Uint8Array([1, 2, 3]))
+  const { publicKey, privateKey } = yield* secp.generateKeyPair()
+  
+  return { hash, publicKey }
+}).pipe(Effect.provide(CryptoLive))
+
+await Effect.runPromise(program)
+```

@@ -159,7 +159,7 @@ const program = Effect.gen(function* () {
   Effect.provide(Secp256k1Live),
   Effect.provide(KeccakLive),
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -209,3 +209,14 @@ function MnemonicAccount(
 | `deriveBitcoin(root, account, index)` | Derive Bitcoin key (BIP-44) |
 | `getPrivateKey(key)` | Get 32-byte private key |
 | `getPublicKey(key)` | Get 33-byte compressed public key |
+
+## See Also
+
+- [Wallet Creation Example](/examples/wallet-creation) — Generate and restore wallets
+- [Account Service](/services/account) — Low-level signing operations
+- [Signer Service](/services/signer) — Transaction signing with auto-fill
+- [BIP-39](/crypto/bip39) — Mnemonic crypto service
+- [HDWallet](/crypto/hdwallet) — HD wallet crypto service
+- [Voltaire HDWallet](https://voltaire.tevm.sh/crypto/hdwallet) — Core HDWallet documentation
+- [BIP-39 Specification](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) — Mnemonic standard
+- [BIP-44 Specification](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) — Derivation paths

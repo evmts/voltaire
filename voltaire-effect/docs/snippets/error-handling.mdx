@@ -1,21 +1,21 @@
 ```typescript
-import { Effect } from 'effect'
+import * as Effect from 'effect/Effect'
 import * as S from 'effect/Schema'
 import * as Address from 'voltaire-effect/primitives/Address'
 
-const parseAddress = (input: string) =>
-  S.decode(Address.Hex)(input).pipe(
-    Effect.catchTag('ParseError', () => 
-      Effect.succeed(Address.zero())  // Fallback to zero address
-    )
+// Handle typed errors with catchTag
+S.decode(Address.Hex)(input).pipe(
+  Effect.catchTag('ParseError', (e) => 
+    Effect.succeed(Address.zero())  // Fallback to zero address
   )
+)
 
 // Handle multiple error types
 program.pipe(
   Effect.catchTags({
-    ParseError: (e) => Effect.succeed(fallback),
-    ProviderError: (e) => Effect.fail(new Error(`RPC failed: ${e.message}`)),
-    SignerError: (e) => Effect.fail(new Error(`Signing failed: ${e.message}`))
+    ParseError: () => Effect.succeed(fallback),
+    ProviderError: () => Effect.succeed(0n),
+    TransportError: (e) => Effect.log(`Network error: ${e.message}`)
   })
 )
 ```

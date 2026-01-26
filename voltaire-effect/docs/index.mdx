@@ -42,9 +42,60 @@ const checksummed = await Effect.runPromise(
 
 ## Install
 
-```bash
+<CodeGroup>
+```bash pnpm
 pnpm add voltaire-effect @tevm/voltaire effect
 ```
+
+```bash npm
+npm install voltaire-effect @tevm/voltaire effect
+```
+
+```bash bun
+bun add voltaire-effect @tevm/voltaire effect
+```
+</CodeGroup>
+
+<Info>
+Requires **Effect 3.x**, **Voltaire 0.x**, and **TypeScript 5.4+**.
+</Info>
+
+## Key Features
+
+<Accordion title="Typed Errors" icon="shield-check">
+Errors appear in the type signature, not as invisible exceptions. Use `catchTag` for type-safe handling:
+
+```typescript
+S.decode(Address.Hex)(input).pipe(
+  Effect.catchTag('ParseError', (e) => Effect.succeed(fallback))
+)
+// Effect<AddressType, ParseError, never>
+```
+</Accordion>
+
+<Accordion title="Testable Services" icon="flask">
+Swap production layers for test layers without changing business logic:
+
+```typescript
+// Production
+await Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
+
+// Test - same code, different wiring  
+await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
+```
+</Accordion>
+
+<Accordion title="Composable Operations" icon="puzzle-piece">
+Built-in retry, timeout, and fallback. No external libraries needed:
+
+```typescript
+provider.getBlockNumber().pipe(
+  Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(5))),
+  Effect.timeout(Duration.seconds(10)),
+  Effect.orElse(() => fallbackProvider.getBlockNumber())
+)
+```
+</Accordion>
 
 ## Ecosystem
 
@@ -59,3 +110,17 @@ pnpm add voltaire-effect @tevm/voltaire effect
     Source code and issues
   </Card>
 </CardGroup>
+
+## Next Steps
+
+<Steps>
+  <Step title="Install">
+    Add `voltaire-effect`, `@tevm/voltaire`, and `effect` to your project.
+  </Step>
+  <Step title="Learn Effect">
+    Read the [Effect Primer](/concepts/effect-primer) for a 5-minute intro.
+  </Step>
+  <Step title="Build">
+    Follow [Getting Started](/getting-started) to fetch your first block.
+  </Step>
+</Steps>

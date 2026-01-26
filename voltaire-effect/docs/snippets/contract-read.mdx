@@ -4,18 +4,12 @@ import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], 
-    outputs: [{ type: 'uint256' }], stateMutability: 'view' },
-  { type: 'function', name: 'decimals', inputs: [], 
-    outputs: [{ type: 'uint8' }], stateMutability: 'view' }
+    outputs: [{ type: 'uint256' }], stateMutability: 'view' }
 ] as const
 
 const program = Effect.gen(function* () {
-  const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
-  const [balance, decimals] = yield* Effect.all([
-    token.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'),
-    token.read.decimals()
-  ])
-  return { balance, decimals }
+  const usdc = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
+  return yield* usdc.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
 }).pipe(
   Effect.provide(Provider),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))

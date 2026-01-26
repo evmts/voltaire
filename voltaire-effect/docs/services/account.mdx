@@ -166,3 +166,12 @@ type AccountShape = {
   readonly signTypedData: (typedData: TypedDataType) => Effect.Effect<SignatureType, AccountError>
 }
 ```
+
+## See Also
+
+- [Signer Service](/services/signer) — Higher-level signing with auto-fill (nonce, gas, chainId)
+- [HD Wallet Guide](/guides/hd-wallet) — BIP-39 mnemonic wallet integration
+- [Wallet Creation Example](/examples/wallet-creation) — Generate and restore wallets
+- [EIP-712](/crypto/eip712) — Typed data signing details
+- [Secp256k1](/crypto/secp256k1) — ECDSA signature operations
+- [EIP-191](https://eips.ethereum.org/EIPS/eip-191) — Signed data standard
