@@ -79,6 +79,29 @@ describe("ERC721", () => {
 			const expected = `${ERC721.SELECTORS.safeTransferFromWithData}${fromHex}${toHexPadded}${tokenIdHex}${dataOffset}${dataLength}${dataHex}`;
 			expect(result).toBe(expected);
 		});
+
+		it("encodes safeTransferFrom calldata with empty data", async () => {
+			const data = new Uint8Array(0);
+			const result = await Effect.runPromise(
+				ERC721.encodeSafeTransferFromWithData(
+					testAddress,
+					testAddress2,
+					testTokenId,
+					data,
+				),
+			);
+
+			const toHex = (bytes: Uint8Array) =>
+				Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+			const fromHex = toHex(testAddress).padStart(64, "0");
+			const toHexPadded = toHex(testAddress2).padStart(64, "0");
+			const tokenIdHex = testTokenId.toString(16).padStart(64, "0");
+			const dataOffset = (4 * 32).toString(16).padStart(64, "0");
+			const dataLength = data.length.toString(16).padStart(64, "0");
+
+			const expected = `${ERC721.SELECTORS.safeTransferFromWithData}${fromHex}${toHexPadded}${tokenIdHex}${dataOffset}${dataLength}`;
+			expect(result).toBe(expected);
+		});
 	});
 
 	describe("encodeApprove", () => {
@@ -111,6 +134,11 @@ describe("ERC721", () => {
 			const result = await Effect.runPromise(ERC721.encodeBalanceOf(testAddress));
 			expect(result).toMatch(/^0x70a08231/);
 		});
+
+		it("encodes balanceOf calldata length", async () => {
+			const result = await Effect.runPromise(ERC721.encodeBalanceOf(testAddress));
+			expect(result.length).toBe(74);
+		});
 	});
 
 	describe("encodeOwnerOf", () => {
@@ -127,6 +155,11 @@ describe("ERC721", () => {
 			);
 			expect(result).toMatch(/^0x081812fc/);
 		});
+
+		it("encodes tokenId=0", async () => {
+			const result = await Effect.runPromise(ERC721.encodeGetApproved(0n));
+			expect(result).toMatch(/^0x081812fc/);
+		});
 	});
 
 	describe("encodeIsApprovedForAll", () => {
@@ -135,6 +168,13 @@ describe("ERC721", () => {
 				ERC721.encodeIsApprovedForAll(testAddress, testAddress2),
 			);
 			expect(result).toMatch(/^0xe985e9c5/);
+		});
+
+		it("encodes isApprovedForAll calldata length", async () => {
+			const result = await Effect.runPromise(
+				ERC721.encodeIsApprovedForAll(testAddress, testAddress2),
+			);
+			expect(result.length).toBe(138);
 		});
 	});
 
@@ -236,6 +276,13 @@ describe("ERC721", () => {
 			const result = await Effect.runPromise(ERC721.decodeBalanceOfResult(data));
 			expect(result).toBe(42n);
 		});
+
+		it("decodes zero balance", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000000";
+			const result = await Effect.runPromise(ERC721.decodeBalanceOfResult(data));
+			expect(result).toBe(0n);
+		});
 	});
 
 	describe("decodeGetApprovedResult", () => {
@@ -244,6 +291,13 @@ describe("ERC721", () => {
 				"0x0000000000000000000000001234567890123456789012345678901234567890";
 			const result = await Effect.runPromise(ERC721.decodeGetApprovedResult(data));
 			expect(result).toBe("0x1234567890123456789012345678901234567890");
+		});
+
+		it("decodes zero address", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000000";
+			const result = await Effect.runPromise(ERC721.decodeGetApprovedResult(data));
+			expect(result).toBe("0x0000000000000000000000000000000000000000");
 		});
 	});
 

@@ -1,8 +1,7 @@
-import { ERC20 as ERC20Impl } from "@tevm/voltaire";
-import type { BrandedAddress, BrandedUint } from "@tevm/voltaire";
+import { ERC20 as ERC20Impl, type BrandedAddress } from "@tevm/voltaire";
 
 type AddressType = BrandedAddress.AddressType;
-type Uint256Type = BrandedUint.Uint256Type;
+type Uint256Type = bigint;
 import * as Effect from "effect/Effect";
 import { StandardsError } from "./errors.js";
 
@@ -14,7 +13,7 @@ export const encodeTransfer = (
 	amount: Uint256Type,
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
-		try: () => ERC20Impl.encodeTransfer(to, amount),
+		try: () => ERC20Impl.encodeTransfer(to, amount as never),
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC20.encodeTransfer",
@@ -28,7 +27,7 @@ export const encodeApprove = (
 	amount: Uint256Type,
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
-		try: () => ERC20Impl.encodeApprove(spender, amount),
+		try: () => ERC20Impl.encodeApprove(spender, amount as never),
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC20.encodeApprove",
@@ -43,7 +42,7 @@ export const encodeTransferFrom = (
 	amount: Uint256Type,
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
-		try: () => ERC20Impl.encodeTransferFrom(from, to, amount),
+		try: () => ERC20Impl.encodeTransferFrom(from, to, amount as never),
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC20.encodeTransferFrom",

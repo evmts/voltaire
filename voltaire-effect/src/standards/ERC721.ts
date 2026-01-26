@@ -1,10 +1,18 @@
 import { ERC721 as ERC721Impl } from "@tevm/voltaire";
-import type { BrandedAddress, BrandedUint } from "@tevm/voltaire";
+import type { BrandedAddress } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import { StandardsError } from "./errors.js";
 
 type AddressType = BrandedAddress.AddressType;
-type Uint256Type = BrandedUint.Uint256Type;
+type Uint256Type = bigint;
+
+const toHex = (bytes: Uint8Array) =>
+	Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+const encodeAddress = (address: AddressType) => toHex(address).padStart(64, "0");
+const encodeUint256 = (value: Uint256Type) => value.toString(16).padStart(64, "0");
+const encodeBytes = (data: Uint8Array) =>
+	toHex(data).padEnd(Math.ceil(data.length / 32) * 64, "0");
+const normalizeHex = (data: string) => (data.startsWith("0x") ? data : `0x${data}`);
 
 export const SELECTORS = ERC721Impl.SELECTORS;
 export const EVENTS = ERC721Impl.EVENTS;
@@ -15,7 +23,7 @@ export const encodeTransferFrom = (
 	tokenId: Uint256Type,
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
-		try: () => ERC721Impl.encodeTransferFrom(from, to, tokenId),
+		try: () => ERC721Impl.encodeTransferFrom(from, to, tokenId as never),
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC721.encodeTransferFrom",
@@ -30,7 +38,7 @@ export const encodeSafeTransferFrom = (
 	tokenId: Uint256Type,
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
-		try: () => ERC721Impl.encodeSafeTransferFrom(from, to, tokenId),
+		try: () => ERC721Impl.encodeSafeTransferFrom(from, to, tokenId as never),
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC721.encodeSafeTransferFrom",
@@ -47,24 +55,22 @@ export const encodeSafeTransferFromWithData = (
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
 		try: () => {
-			const fromHex = Array.from(from, (b) =>
-				b.toString(16).padStart(2, "0"),
-			)
-				.join("")
-				.padStart(64, "0");
-			const toHex = Array.from(to, (b) => b.toString(16).padStart(2, "0"))
-				.join("")
-				.padStart(64, "0");
-			const tokenIdHex = tokenId.toString(16).padStart(64, "0");
+			const impl = (
+				ERC721Impl as {
+					encodeSafeTransferFromWithData?: (
+						from: AddressType,
+						to: AddressType,
+						tokenId: Uint256Type,
+						data: Uint8Array,
+					) => string;
+				}
+			).encodeSafeTransferFromWithData;
+			if (impl) {
+				return impl(from, to, tokenId, data);
+			}
 			const dataOffset = (4 * 32).toString(16).padStart(64, "0");
 			const dataLength = data.length.toString(16).padStart(64, "0");
-			const dataHex = Array.from(data, (b) =>
-				b.toString(16).padStart(2, "0"),
-			)
-				.join("")
-				.padEnd(Math.ceil(data.length / 32) * 64, "0");
-
-			return `${ERC721Impl.SELECTORS.safeTransferFromWithData}${fromHex}${toHex}${tokenIdHex}${dataOffset}${dataLength}${dataHex}`;
+			return `${ERC721Impl.SELECTORS.safeTransferFromWithData}${encodeAddress(from)}${encodeAddress(to)}${encodeUint256(tokenId)}${dataOffset}${dataLength}${encodeBytes(data)}`;
 		},
 		catch: (e) =>
 			new StandardsError({
@@ -79,7 +85,7 @@ export const encodeApprove = (
 	tokenId: Uint256Type,
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
-		try: () => ERC721Impl.encodeApprove(to, tokenId),
+		try: () => ERC721Impl.encodeApprove(to, tokenId as never),
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC721.encodeApprove",
@@ -107,12 +113,14 @@ export const encodeBalanceOf = (
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
 		try: () => {
-			const ownerHex = Array.from(owner, (b) =>
-				b.toString(16).padStart(2, "0"),
-			)
-				.join("")
-				.padStart(64, "0");
-			return `${ERC721Impl.SELECTORS.balanceOf}${ownerHex}`;
+			const impl = (
+				ERC721Impl as {
+					encodeBalanceOf?: (owner: AddressType) => string;
+				}
+			).encodeBalanceOf;
+			return impl
+				? impl(owner)
+				: `${ERC721Impl.SELECTORS.balanceOf}${encodeAddress(owner)}`;
 		},
 		catch: (e) =>
 			new StandardsError({
@@ -126,7 +134,7 @@ export const encodeOwnerOf = (
 	tokenId: Uint256Type,
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
-		try: () => ERC721Impl.encodeOwnerOf(tokenId),
+		try: () => ERC721Impl.encodeOwnerOf(tokenId as never),
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC721.encodeOwnerOf",
@@ -140,8 +148,14 @@ export const encodeGetApproved = (
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
 		try: () => {
-			const tokenIdHex = tokenId.toString(16).padStart(64, "0");
-			return `${ERC721Impl.SELECTORS.getApproved}${tokenIdHex}`;
+			const impl = (
+				ERC721Impl as {
+					encodeGetApproved?: (tokenId: Uint256Type) => string;
+				}
+			).encodeGetApproved;
+			return impl
+				? impl(tokenId)
+				: `${ERC721Impl.SELECTORS.getApproved}${encodeUint256(tokenId)}`;
 		},
 		catch: (e) =>
 			new StandardsError({
@@ -157,17 +171,17 @@ export const encodeIsApprovedForAll = (
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
 		try: () => {
-			const ownerHex = Array.from(owner, (b) =>
-				b.toString(16).padStart(2, "0"),
-			)
-				.join("")
-				.padStart(64, "0");
-			const operatorHex = Array.from(operator, (b) =>
-				b.toString(16).padStart(2, "0"),
-			)
-				.join("")
-				.padStart(64, "0");
-			return `${ERC721Impl.SELECTORS.isApprovedForAll}${ownerHex}${operatorHex}`;
+			const impl = (
+				ERC721Impl as {
+					encodeIsApprovedForAll?: (
+						owner: AddressType,
+						operator: AddressType,
+					) => string;
+				}
+			).encodeIsApprovedForAll;
+			return impl
+				? impl(owner, operator)
+				: `${ERC721Impl.SELECTORS.isApprovedForAll}${encodeAddress(owner)}${encodeAddress(operator)}`;
 		},
 		catch: (e) =>
 			new StandardsError({
@@ -181,7 +195,7 @@ export const encodeTokenURI = (
 	tokenId: Uint256Type,
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
-		try: () => ERC721Impl.encodeTokenURI(tokenId),
+		try: () => ERC721Impl.encodeTokenURI(tokenId as never),
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC721.encodeTokenURI",
@@ -194,7 +208,12 @@ export const decodeBalanceOfResult = (
 	data: string,
 ): Effect.Effect<Uint256Type, StandardsError> =>
 	Effect.try({
-		try: () => BigInt(data),
+		try: () => {
+			const impl = (
+				ERC721Impl as { decodeBalanceOfResult?: (data: string) => Uint256Type }
+			).decodeBalanceOfResult;
+			return impl ? impl(data) : (BigInt(normalizeHex(data)) as Uint256Type);
+		},
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC721.decodeBalanceOfResult",
@@ -207,7 +226,16 @@ export const decodeGetApprovedResult = (
 	data: string,
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
-		try: () => `0x${data.slice(-40)}`,
+		try: () => {
+			const impl = (
+				ERC721Impl as { decodeGetApprovedResult?: (data: string) => string }
+			).decodeGetApprovedResult;
+			if (impl) {
+				return impl(data);
+			}
+			const hex = data.startsWith("0x") ? data.slice(2) : data;
+			return `0x${hex.slice(-40)}`;
+		},
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC721.decodeGetApprovedResult",
@@ -220,7 +248,12 @@ export const decodeIsApprovedForAllResult = (
 	data: string,
 ): Effect.Effect<boolean, StandardsError> =>
 	Effect.try({
-		try: () => BigInt(data) !== 0n,
+		try: () => {
+			const impl = (
+				ERC721Impl as { decodeIsApprovedForAllResult?: (data: string) => boolean }
+			).decodeIsApprovedForAllResult;
+			return impl ? impl(data) : BigInt(normalizeHex(data)) !== 0n;
+		},
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC721.decodeIsApprovedForAllResult",

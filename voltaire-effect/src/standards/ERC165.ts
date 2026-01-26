@@ -41,7 +41,7 @@ export const supportsInterface = (
 		const data = yield* encodeSupportsInterface(interfaceId);
 
 		const result = yield* provider
-			.call({ to: contract, data })
+			.call({ to: contract as `0x${string}`, data: data as `0x${string}` })
 			.pipe(
 				Effect.map((res) => {
 					if (!res || res === "0x") return false;
