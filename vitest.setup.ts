@@ -1,17 +1,19 @@
 /**
  * Vitest setup file
- * Loads WASM module before running tests
+ * Loads WASM module before running tests (optional - skips if not found)
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { vi } from "vitest";
-import { loadWasm } from "./src/wasm-loader/loader.js";
 
-// Load WASM module before all tests
+// Load WASM module before all tests (skip if not built)
 const wasmPath = resolve(import.meta.dirname, "wasm/primitives.wasm");
-const wasmBuffer = readFileSync(wasmPath);
-await loadWasm(wasmBuffer.buffer);
+if (existsSync(wasmPath)) {
+	const { loadWasm } = await import("./src/wasm-loader/loader.js");
+	const wasmBuffer = readFileSync(wasmPath);
+	await loadWasm(wasmBuffer.buffer);
+}
 
 // Mock process.exit to prevent examples from actually exiting test process
 vi.spyOn(process, "exit").mockImplementation(
