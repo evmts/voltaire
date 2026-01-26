@@ -39,6 +39,41 @@ export const encodeSafeTransferFrom = (
 			}),
 	});
 
+export const encodeSafeTransferFromWithData = (
+	from: AddressType,
+	to: AddressType,
+	tokenId: Uint256Type,
+	data: Uint8Array = new Uint8Array(0),
+): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () => {
+			const fromHex = Array.from(from, (b) =>
+				b.toString(16).padStart(2, "0"),
+			)
+				.join("")
+				.padStart(64, "0");
+			const toHex = Array.from(to, (b) => b.toString(16).padStart(2, "0"))
+				.join("")
+				.padStart(64, "0");
+			const tokenIdHex = tokenId.toString(16).padStart(64, "0");
+			const dataOffset = (4 * 32).toString(16).padStart(64, "0");
+			const dataLength = data.length.toString(16).padStart(64, "0");
+			const dataHex = Array.from(data, (b) =>
+				b.toString(16).padStart(2, "0"),
+			)
+				.join("")
+				.padEnd(Math.ceil(data.length / 32) * 64, "0");
+
+			return `${ERC721Impl.SELECTORS.safeTransferFromWithData}${fromHex}${toHex}${tokenIdHex}${dataOffset}${dataLength}${dataHex}`;
+		},
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC721.encodeSafeTransferFromWithData",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
 export const encodeApprove = (
 	to: AddressType,
 	tokenId: Uint256Type,
@@ -67,6 +102,26 @@ export const encodeSetApprovalForAll = (
 			}),
 	});
 
+export const encodeBalanceOf = (
+	owner: AddressType,
+): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () => {
+			const ownerHex = Array.from(owner, (b) =>
+				b.toString(16).padStart(2, "0"),
+			)
+				.join("")
+				.padStart(64, "0");
+			return `${ERC721Impl.SELECTORS.balanceOf}${ownerHex}`;
+		},
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC721.encodeBalanceOf",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
 export const encodeOwnerOf = (
 	tokenId: Uint256Type,
 ): Effect.Effect<string, StandardsError> =>
@@ -80,6 +135,48 @@ export const encodeOwnerOf = (
 			}),
 	});
 
+export const encodeGetApproved = (
+	tokenId: Uint256Type,
+): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () => {
+			const tokenIdHex = tokenId.toString(16).padStart(64, "0");
+			return `${ERC721Impl.SELECTORS.getApproved}${tokenIdHex}`;
+		},
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC721.encodeGetApproved",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const encodeIsApprovedForAll = (
+	owner: AddressType,
+	operator: AddressType,
+): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () => {
+			const ownerHex = Array.from(owner, (b) =>
+				b.toString(16).padStart(2, "0"),
+			)
+				.join("")
+				.padStart(64, "0");
+			const operatorHex = Array.from(operator, (b) =>
+				b.toString(16).padStart(2, "0"),
+			)
+				.join("")
+				.padStart(64, "0");
+			return `${ERC721Impl.SELECTORS.isApprovedForAll}${ownerHex}${operatorHex}`;
+		},
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC721.encodeIsApprovedForAll",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
 export const encodeTokenURI = (
 	tokenId: Uint256Type,
 ): Effect.Effect<string, StandardsError> =>
@@ -88,6 +185,45 @@ export const encodeTokenURI = (
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC721.encodeTokenURI",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const decodeBalanceOfResult = (
+	data: string,
+): Effect.Effect<Uint256Type, StandardsError> =>
+	Effect.try({
+		try: () => BigInt(data),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC721.decodeBalanceOfResult",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const decodeGetApprovedResult = (
+	data: string,
+): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () => `0x${data.slice(-40)}`,
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC721.decodeGetApprovedResult",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const decodeIsApprovedForAllResult = (
+	data: string,
+): Effect.Effect<boolean, StandardsError> =>
+	Effect.try({
+		try: () => BigInt(data) !== 0n,
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC721.decodeIsApprovedForAllResult",
 				message: e instanceof Error ? e.message : String(e),
 				cause: e,
 			}),

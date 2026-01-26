@@ -10,11 +10,15 @@ const testTokenId = 42n;
 describe("ERC721", () => {
 	describe("SELECTORS", () => {
 		it("exports correct function selectors", () => {
+			expect(ERC721.SELECTORS.balanceOf).toBe("0x70a08231");
 			expect(ERC721.SELECTORS.ownerOf).toBe("0x6352211e");
 			expect(ERC721.SELECTORS.transferFrom).toBe("0x23b872dd");
 			expect(ERC721.SELECTORS.safeTransferFrom).toBe("0x42842e0e");
+			expect(ERC721.SELECTORS.safeTransferFromWithData).toBe("0xb88d4fde");
 			expect(ERC721.SELECTORS.approve).toBe("0x095ea7b3");
 			expect(ERC721.SELECTORS.setApprovalForAll).toBe("0xa22cb465");
+			expect(ERC721.SELECTORS.getApproved).toBe("0x081812fc");
+			expect(ERC721.SELECTORS.isApprovedForAll).toBe("0xe985e9c5");
 			expect(ERC721.SELECTORS.tokenURI).toBe("0xc87b56dd");
 		});
 	});
@@ -51,6 +55,32 @@ describe("ERC721", () => {
 		});
 	});
 
+	describe("encodeSafeTransferFromWithData", () => {
+		it("encodes safeTransferFrom calldata with data", async () => {
+			const data = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
+			const result = await Effect.runPromise(
+				ERC721.encodeSafeTransferFromWithData(
+					testAddress,
+					testAddress2,
+					testTokenId,
+					data,
+				),
+			);
+
+			const toHex = (bytes: Uint8Array) =>
+				Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+			const fromHex = toHex(testAddress).padStart(64, "0");
+			const toHexPadded = toHex(testAddress2).padStart(64, "0");
+			const tokenIdHex = testTokenId.toString(16).padStart(64, "0");
+			const dataOffset = (4 * 32).toString(16).padStart(64, "0");
+			const dataLength = data.length.toString(16).padStart(64, "0");
+			const dataHex = toHex(data).padEnd(64, "0");
+
+			const expected = `${ERC721.SELECTORS.safeTransferFromWithData}${fromHex}${toHexPadded}${tokenIdHex}${dataOffset}${dataLength}${dataHex}`;
+			expect(result).toBe(expected);
+		});
+	});
+
 	describe("encodeApprove", () => {
 		it("encodes approve calldata", async () => {
 			const result = await Effect.runPromise(
@@ -76,10 +106,35 @@ describe("ERC721", () => {
 		});
 	});
 
+	describe("encodeBalanceOf", () => {
+		it("encodes balanceOf calldata", async () => {
+			const result = await Effect.runPromise(ERC721.encodeBalanceOf(testAddress));
+			expect(result).toMatch(/^0x70a08231/);
+		});
+	});
+
 	describe("encodeOwnerOf", () => {
 		it("encodes ownerOf calldata", async () => {
 			const result = await Effect.runPromise(ERC721.encodeOwnerOf(testTokenId));
 			expect(result).toMatch(/^0x6352211e/);
+		});
+	});
+
+	describe("encodeGetApproved", () => {
+		it("encodes getApproved calldata", async () => {
+			const result = await Effect.runPromise(
+				ERC721.encodeGetApproved(testTokenId),
+			);
+			expect(result).toMatch(/^0x081812fc/);
+		});
+	});
+
+	describe("encodeIsApprovedForAll", () => {
+		it("encodes isApprovedForAll calldata", async () => {
+			const result = await Effect.runPromise(
+				ERC721.encodeIsApprovedForAll(testAddress, testAddress2),
+			);
+			expect(result).toMatch(/^0xe985e9c5/);
 		});
 	});
 
@@ -171,6 +226,44 @@ describe("ERC721", () => {
 				ERC721.decodeApprovalForAllEvent(log),
 			);
 			expect(result.approved).toBe(false);
+		});
+	});
+
+	describe("decodeBalanceOfResult", () => {
+		it("decodes balanceOf return value", async () => {
+			const data =
+				"0x000000000000000000000000000000000000000000000000000000000000002a";
+			const result = await Effect.runPromise(ERC721.decodeBalanceOfResult(data));
+			expect(result).toBe(42n);
+		});
+	});
+
+	describe("decodeGetApprovedResult", () => {
+		it("decodes getApproved return value", async () => {
+			const data =
+				"0x0000000000000000000000001234567890123456789012345678901234567890";
+			const result = await Effect.runPromise(ERC721.decodeGetApprovedResult(data));
+			expect(result).toBe("0x1234567890123456789012345678901234567890");
+		});
+	});
+
+	describe("decodeIsApprovedForAllResult", () => {
+		it("decodes approved=true", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000001";
+			const result = await Effect.runPromise(
+				ERC721.decodeIsApprovedForAllResult(data),
+			);
+			expect(result).toBe(true);
+		});
+
+		it("decodes approved=false", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000000";
+			const result = await Effect.runPromise(
+				ERC721.decodeIsApprovedForAllResult(data),
+			);
+			expect(result).toBe(false);
 		});
 	});
 });

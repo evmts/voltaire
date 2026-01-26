@@ -23,6 +23,20 @@ export const encodeBalanceOf = (
 			}),
 	});
 
+export const encodeBalanceOfBatch = (
+	accounts: readonly AddressType[],
+	ids: readonly Uint256Type[],
+): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () => ERC1155Impl.encodeBalanceOfBatch(accounts, ids),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC1155.encodeBalanceOfBatch",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
 export const encodeSetApprovalForAll = (
 	operator: AddressType,
 	approved: boolean,
@@ -49,6 +63,24 @@ export const encodeSafeTransferFrom = (
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC1155.encodeSafeTransferFrom",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const encodeSafeBatchTransferFrom = (
+	from: AddressType,
+	to: AddressType,
+	ids: readonly Uint256Type[],
+	amounts: readonly Uint256Type[],
+	data?: Uint8Array,
+): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () =>
+			ERC1155Impl.encodeSafeBatchTransferFrom(from, to, ids, amounts, data),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC1155.encodeSafeBatchTransferFrom",
 				message: e instanceof Error ? e.message : String(e),
 				cause: e,
 			}),
@@ -81,6 +113,19 @@ export const encodeURI = (
 			}),
 	});
 
+export const decodeBalanceOfBatchResult = (
+	data: string,
+): Effect.Effect<readonly Uint256Type[], StandardsError> =>
+	Effect.try({
+		try: () => ERC1155Impl.decodeBalanceOfBatchResult(data),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC1155.decodeBalanceOfBatchResult",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
 export const decodeTransferSingleEvent = (log: {
 	topics: string[];
 	data: string;
@@ -104,6 +149,29 @@ export const decodeTransferSingleEvent = (log: {
 			}),
 	});
 
+export const decodeTransferBatchEvent = (log: {
+	topics: string[];
+	data: string;
+}): Effect.Effect<
+	{
+		operator: string;
+		from: string;
+		to: string;
+		ids: readonly Uint256Type[];
+		values: readonly Uint256Type[];
+	},
+	StandardsError
+> =>
+	Effect.try({
+		try: () => ERC1155Impl.decodeTransferBatchEvent(log),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC1155.decodeTransferBatchEvent",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
 export const decodeApprovalForAllEvent = (log: {
 	topics: string[];
 	data: string;
@@ -116,6 +184,20 @@ export const decodeApprovalForAllEvent = (log: {
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC1155.decodeApprovalForAllEvent",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const decodeURIEvent = (log: {
+	topics: string[];
+	data: string;
+}): Effect.Effect<{ value: string; id: Uint256Type }, StandardsError> =>
+	Effect.try({
+		try: () => ERC1155Impl.decodeURIEvent(log),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC1155.decodeURIEvent",
 				message: e instanceof Error ? e.message : String(e),
 				cause: e,
 			}),
