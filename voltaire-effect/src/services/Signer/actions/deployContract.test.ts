@@ -7,7 +7,7 @@ import type { HashType } from "@tevm/voltaire/Hash";
 import * as Hash from "@tevm/voltaire/Hash";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import type { AccountShape } from "../../Account/AccountService.js";
 import { AccountService } from "../../Account/index.js";
 import { ProviderService, type ProviderShape } from "../../Provider/index.js";
