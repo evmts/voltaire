@@ -13,25 +13,32 @@ jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Install Zig 0.15.1
+        if: matrix.shard == 1
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.15.1
 
       - name: Build and test Zig
+        if: matrix.shard == 1
         run: |
           zig build -Doptimize=ReleaseFast
           zig build test -Doptimize=ReleaseFast
 
       - name: Install Rust wasm32 target
+        if: matrix.shard == 1
         run: rustup target add wasm32-unknown-unknown
 
       - name: Build WASM
+        if: matrix.shard == 1
         run: zig build build-ts-wasm
 
       - name: Install pnpm
@@ -47,13 +54,15 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
+        if: matrix.shard == 1
         run: pnpm run typecheck
 
       - name: Lint
+        if: matrix.shard == 1
         run: pnpm run lint:check
 
-      - name: Test
-        run: pnpm test:run
+      - name: Test (Shard ${{ matrix.shard }}/8)
+        run: pnpm test:run --shard=${{ matrix.shard }}/8
 
   publish-voltaire:
     name: Publish @tevm/voltaire
