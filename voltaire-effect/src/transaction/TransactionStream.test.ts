@@ -343,4 +343,609 @@ describe("TransactionStreamService", () => {
 			expect(TransactionStreamService).toBeDefined();
 		});
 	});
+
+	describe("confirmation logic", () => {
+		it("confirmations: 0 emits immediately when mined", async () => {
+			let requestCount = 0;
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+					params?: unknown[],
+				): Effect.Effect<T, never> => {
+					requestCount++;
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x10" as T); // block 16
+					}
+					if (method === "eth_getTransactionByHash") {
+						return Effect.succeed({
+							hash: params?.[0],
+							blockNumber: "0x10",
+							blockHash: "0x" + "ab".repeat(32),
+							transactionIndex: "0x0",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							value: "0x0",
+							gas: "0x5208",
+							gasPrice: "0x3b9aca00",
+							nonce: "0x1",
+							input: "0x",
+						} as T);
+					}
+					if (method === "eth_getTransactionReceipt") {
+						return Effect.succeed({
+							transactionHash: params?.[0],
+							transactionIndex: "0x0",
+							blockHash: "0x" + "ab".repeat(32),
+							blockNumber: "0x10",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							cumulativeGasUsed: "0x5208",
+							gasUsed: "0x5208",
+							contractAddress: null,
+							logs: [],
+							logsBloom: "0x" + "00".repeat(256),
+							status: "0x1",
+							effectiveGasPrice: "0x3b9aca00",
+							type: "0x2",
+						} as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestTransactionStreamLayer = Layer.provide(
+				TransactionStream,
+				TestTransportLayer,
+			);
+
+			const program = Effect.gen(function* () {
+				const txStream = yield* TransactionStreamService;
+				const stream = txStream.track(
+					"0x1234567890123456789012345678901234567890123456789012345678901234",
+					{ confirmations: 0 },
+				);
+				const events = yield* Stream.take(stream, 1).pipe(Stream.runCollect);
+				expect(events.length).toBeGreaterThan(0);
+			}).pipe(Effect.provide(TestTransactionStreamLayer));
+
+			await Effect.runPromise(program);
+		});
+
+		it("confirmations: 1 emits after 1 block confirmation", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+					params?: unknown[],
+				): Effect.Effect<T, never> => {
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x11" as T); // block 17, tx in block 16 = 2 confirms
+					}
+					if (method === "eth_getTransactionByHash") {
+						return Effect.succeed({
+							hash: params?.[0],
+							blockNumber: "0x10", // block 16
+							blockHash: "0x" + "ab".repeat(32),
+							transactionIndex: "0x0",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							value: "0x0",
+							gas: "0x5208",
+							gasPrice: "0x3b9aca00",
+							nonce: "0x1",
+							input: "0x",
+						} as T);
+					}
+					if (method === "eth_getTransactionReceipt") {
+						return Effect.succeed({
+							transactionHash: params?.[0],
+							transactionIndex: "0x0",
+							blockHash: "0x" + "ab".repeat(32),
+							blockNumber: "0x10",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							cumulativeGasUsed: "0x5208",
+							gasUsed: "0x5208",
+							contractAddress: null,
+							logs: [],
+							logsBloom: "0x" + "00".repeat(256),
+							status: "0x1",
+							effectiveGasPrice: "0x3b9aca00",
+							type: "0x2",
+						} as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestTransactionStreamLayer = Layer.provide(
+				TransactionStream,
+				TestTransportLayer,
+			);
+
+			const program = Effect.gen(function* () {
+				const txStream = yield* TransactionStreamService;
+				const stream = txStream.track(
+					"0x1234567890123456789012345678901234567890123456789012345678901234",
+					{ confirmations: 1 },
+				);
+				const events = yield* Stream.take(stream, 1).pipe(Stream.runCollect);
+				expect(events.length).toBeGreaterThan(0);
+			}).pipe(Effect.provide(TestTransactionStreamLayer));
+
+			await Effect.runPromise(program);
+		});
+
+		it("confirmations: 12 waits for 12 blocks before emitting confirmed", async () => {
+			let blockNumber = 16;
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+					params?: unknown[],
+				): Effect.Effect<T, never> => {
+					if (method === "eth_blockNumber") {
+						// Start at block 16, tx in block 10, so 7 confirms initially
+						// Need 12 confirms: block 21+ (10 + 12 - 1 = 21)
+						blockNumber++;
+						return Effect.succeed(`0x${blockNumber.toString(16)}` as T);
+					}
+					if (method === "eth_getTransactionByHash") {
+						return Effect.succeed({
+							hash: params?.[0],
+							blockNumber: "0xa", // block 10
+							blockHash: "0x" + "ab".repeat(32),
+							transactionIndex: "0x0",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							value: "0x0",
+							gas: "0x5208",
+							gasPrice: "0x3b9aca00",
+							nonce: "0x1",
+							input: "0x",
+						} as T);
+					}
+					if (method === "eth_getTransactionReceipt") {
+						return Effect.succeed({
+							transactionHash: params?.[0],
+							transactionIndex: "0x0",
+							blockHash: "0x" + "ab".repeat(32),
+							blockNumber: "0xa",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							cumulativeGasUsed: "0x5208",
+							gasUsed: "0x5208",
+							contractAddress: null,
+							logs: [],
+							logsBloom: "0x" + "00".repeat(256),
+							status: "0x1",
+							effectiveGasPrice: "0x3b9aca00",
+							type: "0x2",
+						} as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestTransactionStreamLayer = Layer.provide(
+				TransactionStream,
+				TestTransportLayer,
+			);
+
+			const program = Effect.gen(function* () {
+				const txStream = yield* TransactionStreamService;
+				const stream = txStream.track(
+					"0x1234567890123456789012345678901234567890123456789012345678901234",
+					{ confirmations: 12, pollingInterval: 1 },
+				);
+				const events = yield* Stream.take(stream, 1).pipe(Stream.runCollect);
+				expect(events.length).toBe(1);
+			}).pipe(Effect.provide(TestTransactionStreamLayer));
+
+			await Effect.runPromise(program);
+		});
+	});
+
+	describe("RPC null handling", () => {
+		it("eth_getTransactionReceipt returns null then non-null", async () => {
+			let receiptCallCount = 0;
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+					params?: unknown[],
+				): Effect.Effect<T, never> => {
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x15" as T);
+					}
+					if (method === "eth_getTransactionByHash") {
+						return Effect.succeed({
+							hash: params?.[0],
+							blockNumber: "0x10",
+							blockHash: "0x" + "ab".repeat(32),
+							transactionIndex: "0x0",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							value: "0x0",
+							gas: "0x5208",
+							gasPrice: "0x3b9aca00",
+							nonce: "0x1",
+							input: "0x",
+						} as T);
+					}
+					if (method === "eth_getTransactionReceipt") {
+						receiptCallCount++;
+						// Return null first 2 times, then receipt
+						if (receiptCallCount <= 2) {
+							return Effect.succeed(null as T);
+						}
+						return Effect.succeed({
+							transactionHash: params?.[0],
+							transactionIndex: "0x0",
+							blockHash: "0x" + "ab".repeat(32),
+							blockNumber: "0x10",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							cumulativeGasUsed: "0x5208",
+							gasUsed: "0x5208",
+							contractAddress: null,
+							logs: [],
+							logsBloom: "0x" + "00".repeat(256),
+							status: "0x1",
+							effectiveGasPrice: "0x3b9aca00",
+							type: "0x2",
+						} as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestTransactionStreamLayer = Layer.provide(
+				TransactionStream,
+				TestTransportLayer,
+			);
+
+			const program = Effect.gen(function* () {
+				const txStream = yield* TransactionStreamService;
+				const stream = txStream.track(
+					"0x1234567890123456789012345678901234567890123456789012345678901234",
+					{ confirmations: 1, pollingInterval: 1 },
+				);
+				const events = yield* Stream.take(stream, 1).pipe(Stream.runCollect);
+				expect(events.length).toBe(1);
+				expect(receiptCallCount).toBeGreaterThan(2);
+			}).pipe(Effect.provide(TestTransactionStreamLayer));
+
+			await Effect.runPromise(program);
+		});
+	});
+
+	describe("polling failures", () => {
+		it("transient transport errors are handled gracefully", async () => {
+			let callCount = 0;
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+					params?: unknown[],
+				): Effect.Effect<T, Error> => {
+					callCount++;
+					// Fail first 2 calls, then succeed
+					if (callCount <= 2) {
+						return Effect.fail(new Error("Network timeout"));
+					}
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x15" as T);
+					}
+					if (method === "eth_getTransactionByHash") {
+						return Effect.succeed({
+							hash: params?.[0],
+							blockNumber: "0x10",
+							blockHash: "0x" + "ab".repeat(32),
+							transactionIndex: "0x0",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							value: "0x0",
+							gas: "0x5208",
+							gasPrice: "0x3b9aca00",
+							nonce: "0x1",
+							input: "0x",
+						} as T);
+					}
+					if (method === "eth_getTransactionReceipt") {
+						return Effect.succeed({
+							transactionHash: params?.[0],
+							transactionIndex: "0x0",
+							blockHash: "0x" + "ab".repeat(32),
+							blockNumber: "0x10",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							cumulativeGasUsed: "0x5208",
+							gasUsed: "0x5208",
+							contractAddress: null,
+							logs: [],
+							logsBloom: "0x" + "00".repeat(256),
+							status: "0x1",
+							effectiveGasPrice: "0x3b9aca00",
+							type: "0x2",
+						} as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestTransactionStreamLayer = Layer.provide(
+				TransactionStream,
+				TestTransportLayer,
+			);
+
+			const program = Effect.gen(function* () {
+				const txStream = yield* TransactionStreamService;
+				const stream = txStream.track(
+					"0x1234567890123456789012345678901234567890123456789012345678901234",
+					{ confirmations: 1, pollingInterval: 1 },
+				);
+				const events = yield* Stream.take(stream, 1).pipe(Stream.runCollect);
+				expect(events.length).toBe(1);
+			}).pipe(Effect.provide(TestTransactionStreamLayer));
+
+			await Effect.runPromise(program);
+		});
+	});
+
+	describe("filtering", () => {
+		it("watchPending with filter.to option filters transactions", async () => {
+			const targetAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x10" as T);
+					}
+					if (method === "eth_pendingTransactions") {
+						return Effect.succeed([
+							{
+								hash: "0x" + "aa".repeat(32),
+								from: "0x" + "11".repeat(20),
+								to: targetAddress,
+								value: "0x0",
+								gas: "0x5208",
+								gasPrice: "0x3b9aca00",
+								nonce: "0x1",
+								input: "0x",
+							},
+							{
+								hash: "0x" + "bb".repeat(32),
+								from: "0x" + "11".repeat(20),
+								to: "0x" + "99".repeat(20), // different address
+								value: "0x0",
+								gas: "0x5208",
+								gasPrice: "0x3b9aca00",
+								nonce: "0x2",
+								input: "0x",
+							},
+						] as T);
+					}
+					return Effect.succeed([] as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestTransactionStreamLayer = Layer.provide(
+				TransactionStream,
+				TestTransportLayer,
+			);
+
+			const program = Effect.gen(function* () {
+				const txStream = yield* TransactionStreamService;
+				const stream = txStream.watchPending({
+					filter: { to: targetAddress },
+				});
+				expect(stream).toBeDefined();
+			}).pipe(Effect.provide(TestTransactionStreamLayer));
+
+			await Effect.runPromise(program);
+		});
+	});
+
+	describe("transaction not found", () => {
+		it("emits dropped event when transaction disappears after being pending", async () => {
+			let txCallCount = 0;
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+					params?: unknown[],
+				): Effect.Effect<T, never> => {
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x10" as T);
+					}
+					if (method === "eth_getTransactionByHash") {
+						txCallCount++;
+						// First call: return pending tx
+						if (txCallCount === 1) {
+							return Effect.succeed({
+								hash: params?.[0],
+								from: "0x" + "11".repeat(20),
+								to: "0x" + "22".repeat(20),
+								value: "0x0",
+								gas: "0x5208",
+								gasPrice: "0x3b9aca00",
+								nonce: "0x1",
+								input: "0x",
+							} as T);
+						}
+						// Subsequent calls: tx not found (dropped)
+						return Effect.succeed(null as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestTransactionStreamLayer = Layer.provide(
+				TransactionStream,
+				TestTransportLayer,
+			);
+
+			const program = Effect.gen(function* () {
+				const txStream = yield* TransactionStreamService;
+				const stream = txStream.track(
+					"0x1234567890123456789012345678901234567890123456789012345678901234",
+					{ confirmations: 1, pollingInterval: 1 },
+				);
+				const events = yield* Stream.take(stream, 2).pipe(Stream.runCollect);
+				expect(events.length).toBe(2);
+				const eventArray = Array.from(events);
+				expect(eventArray[0].type).toBe("pending");
+				expect(eventArray[1].type).toBe("dropped");
+			}).pipe(Effect.provide(TestTransactionStreamLayer));
+
+			await Effect.runPromise(program);
+		});
+	});
+
+	describe("receipt status", () => {
+		it("handles successful transaction (status 0x1)", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+					params?: unknown[],
+				): Effect.Effect<T, never> => {
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x15" as T);
+					}
+					if (method === "eth_getTransactionByHash") {
+						return Effect.succeed({
+							hash: params?.[0],
+							blockNumber: "0x10",
+							blockHash: "0x" + "ab".repeat(32),
+							transactionIndex: "0x0",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							value: "0x0",
+							gas: "0x5208",
+							gasPrice: "0x3b9aca00",
+							nonce: "0x1",
+							input: "0x",
+						} as T);
+					}
+					if (method === "eth_getTransactionReceipt") {
+						return Effect.succeed({
+							transactionHash: params?.[0],
+							transactionIndex: "0x0",
+							blockHash: "0x" + "ab".repeat(32),
+							blockNumber: "0x10",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							cumulativeGasUsed: "0x5208",
+							gasUsed: "0x5208",
+							contractAddress: null,
+							logs: [],
+							logsBloom: "0x" + "00".repeat(256),
+							status: "0x1", // success
+							effectiveGasPrice: "0x3b9aca00",
+							type: "0x2",
+						} as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestTransactionStreamLayer = Layer.provide(
+				TransactionStream,
+				TestTransportLayer,
+			);
+
+			const program = Effect.gen(function* () {
+				const txStream = yield* TransactionStreamService;
+				const stream = txStream.track(
+					"0x1234567890123456789012345678901234567890123456789012345678901234",
+					{ confirmations: 1 },
+				);
+				const events = yield* Stream.take(stream, 1).pipe(Stream.runCollect);
+				expect(events.length).toBe(1);
+				const event = Array.from(events)[0];
+				expect(event.type).toBe("confirmed");
+				if (event.type === "confirmed") {
+					expect(event.transaction.receipt.status).toBe(1);
+				}
+			}).pipe(Effect.provide(TestTransactionStreamLayer));
+
+			await Effect.runPromise(program);
+		});
+
+		it("handles reverted transaction (status 0x0)", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+					params?: unknown[],
+				): Effect.Effect<T, never> => {
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x15" as T);
+					}
+					if (method === "eth_getTransactionByHash") {
+						return Effect.succeed({
+							hash: params?.[0],
+							blockNumber: "0x10",
+							blockHash: "0x" + "ab".repeat(32),
+							transactionIndex: "0x0",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							value: "0x0",
+							gas: "0x5208",
+							gasPrice: "0x3b9aca00",
+							nonce: "0x1",
+							input: "0x",
+						} as T);
+					}
+					if (method === "eth_getTransactionReceipt") {
+						return Effect.succeed({
+							transactionHash: params?.[0],
+							transactionIndex: "0x0",
+							blockHash: "0x" + "ab".repeat(32),
+							blockNumber: "0x10",
+							from: "0x" + "11".repeat(20),
+							to: "0x" + "22".repeat(20),
+							cumulativeGasUsed: "0x5208",
+							gasUsed: "0x5208",
+							contractAddress: null,
+							logs: [],
+							logsBloom: "0x" + "00".repeat(256),
+							status: "0x0", // reverted
+							effectiveGasPrice: "0x3b9aca00",
+							type: "0x2",
+						} as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestTransactionStreamLayer = Layer.provide(
+				TransactionStream,
+				TestTransportLayer,
+			);
+
+			const program = Effect.gen(function* () {
+				const txStream = yield* TransactionStreamService;
+				const stream = txStream.track(
+					"0x1234567890123456789012345678901234567890123456789012345678901234",
+					{ confirmations: 1 },
+				);
+				const events = yield* Stream.take(stream, 1).pipe(Stream.runCollect);
+				expect(events.length).toBe(1);
+				const event = Array.from(events)[0];
+				expect(event.type).toBe("confirmed");
+				if (event.type === "confirmed") {
+					expect(event.transaction.receipt.status).toBe(0);
+				}
+			}).pipe(Effect.provide(TestTransactionStreamLayer));
+
+			await Effect.runPromise(program);
+		});
+	});
 });

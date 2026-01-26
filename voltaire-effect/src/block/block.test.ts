@@ -124,6 +124,87 @@ describe("block module", () => {
 				expect(result.left).toBeInstanceOf(BlockNotFoundError);
 			}
 		});
+
+		it("formats block number as hex correctly", async () => {
+			let capturedParams: unknown[] | undefined;
+			const mockTransport: TransportShape = {
+				request: <T>(
+					_method: string,
+					params?: unknown[],
+				): Effect.Effect<T, never> => {
+					capturedParams = params;
+					return Effect.succeed(mockBlock as T);
+				},
+			};
+
+			const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+			await Effect.runPromise(
+				fetchBlock(0n, "header").pipe(Effect.provide(TestLayer)),
+			);
+			expect(capturedParams?.[0]).toBe("0x0");
+
+			await Effect.runPromise(
+				fetchBlock(255n, "header").pipe(Effect.provide(TestLayer)),
+			);
+			expect(capturedParams?.[0]).toBe("0xff");
+
+			await Effect.runPromise(
+				fetchBlock(1000000n, "header").pipe(Effect.provide(TestLayer)),
+			);
+			expect(capturedParams?.[0]).toBe("0xf4240");
+		});
+
+		it("wraps transport errors in BlockError", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(): Effect.Effect<T, TransportError> =>
+					Effect.fail(
+						new TransportError(
+							{ code: -32000, message: "connection failed" },
+							"connection failed",
+						),
+					),
+			};
+
+			const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+			const result = await Effect.runPromise(
+				fetchBlock(18000000n, "header", { maxRetries: 0 }).pipe(
+					Effect.provide(TestLayer),
+					Effect.either,
+				),
+			);
+
+			expect(result._tag).toBe("Left");
+			if (result._tag === "Left") {
+				expect(result.left).toBeInstanceOf(BlockError);
+				expect((result.left as BlockError).cause).toBeInstanceOf(TransportError);
+			}
+		});
+
+		it("fetches block with receipts", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+				): Effect.Effect<T, never> => {
+					if (method === "eth_getBlockByNumber") {
+						return Effect.succeed(mockBlock as T);
+					}
+					if (method === "eth_getBlockReceipts") {
+						return Effect.succeed([mockReceipt] as T);
+					}
+					return Effect.succeed([] as T);
+				},
+			};
+
+			const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+			const result = await Effect.runPromise(
+				fetchBlock(18000000n, "receipts").pipe(Effect.provide(TestLayer)),
+			);
+
+			expect(result).toEqual({ ...mockBlock, receipts: [mockReceipt] });
+		});
 	});
 
 	describe("fetchBlockByHash", () => {
@@ -230,6 +311,252 @@ describe("block module", () => {
 
 			expect(getBlockReceiptsCalled).toBe(true);
 			expect(result).toEqual([mockReceipt]);
+		});
+
+		it("returns empty array when eth_getBlockReceipts returns null", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+				): Effect.Effect<T, never> => {
+					if (method === "eth_getBlockReceipts") {
+						return Effect.succeed(null as T);
+					}
+					return Effect.succeed([] as T);
+				},
+			};
+
+			const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+			const result = await Effect.runPromise(
+				fetchBlockReceipts({ hash: mockBlock.hash }).pipe(
+					Effect.provide(TestLayer),
+				),
+			);
+
+			expect(result).toEqual([]);
+		});
+
+		it("handles malformed data from eth_getBlockReceipts", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+				): Effect.Effect<T, never> => {
+					if (method === "eth_getBlockReceipts") {
+						return Effect.succeed("not an array" as T);
+					}
+					return Effect.succeed([] as T);
+				},
+			};
+
+			const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+			const result = await Effect.runPromise(
+				fetchBlockReceipts({ hash: mockBlock.hash }).pipe(
+					Effect.provide(TestLayer),
+				),
+			);
+
+			expect(result).toBe("not an array");
+		});
+
+		it("returns empty array when transactions is missing", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+				): Effect.Effect<T, TransportError> => {
+					if (method === "eth_getBlockReceipts") {
+						return Effect.fail(
+							new TransportError(
+								{ code: -32601, message: "method not found" },
+								"method not found",
+							),
+						);
+					}
+					return Effect.succeed([] as T);
+				},
+			};
+
+			const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+			const result = await Effect.runPromise(
+				fetchBlockReceipts({ hash: mockBlock.hash }).pipe(
+					Effect.provide(TestLayer),
+				),
+			);
+
+			expect(result).toEqual([]);
+		});
+
+		it("returns empty array when transactions is empty", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+				): Effect.Effect<T, TransportError> => {
+					if (method === "eth_getBlockReceipts") {
+						return Effect.fail(
+							new TransportError(
+								{ code: -32601, message: "method not found" },
+								"method not found",
+							),
+						);
+					}
+					return Effect.succeed([] as T);
+				},
+			};
+
+			const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+			const result = await Effect.runPromise(
+				fetchBlockReceipts({ hash: mockBlock.hash, transactions: [] }).pipe(
+					Effect.provide(TestLayer),
+				),
+			);
+
+			expect(result).toEqual([]);
+		});
+
+		it("fails when eth_getTransactionReceipt errors during fallback", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+				): Effect.Effect<T, TransportError> => {
+					if (method === "eth_getBlockReceipts") {
+						return Effect.fail(
+							new TransportError(
+								{ code: -32601, message: "method not found" },
+								"method not found",
+							),
+						);
+					}
+					if (method === "eth_getTransactionReceipt") {
+						return Effect.fail(
+							new TransportError(
+								{ code: -32000, message: "server error" },
+								"server error",
+							),
+						);
+					}
+					return Effect.succeed([] as T);
+				},
+			};
+
+			const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+			const result = await Effect.runPromise(
+				fetchBlockReceipts(
+					{ hash: mockBlock.hash, transactions: ["0xabc"] },
+					{ maxRetries: 0 },
+				).pipe(
+					Effect.provide(TestLayer),
+					Effect.either,
+				),
+			);
+
+			expect(result._tag).toBe("Left");
+			if (result._tag === "Left") {
+				expect(result.left).toBeInstanceOf(BlockError);
+			}
+		});
+
+		it("filters out null receipts from fallback path", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+					params?: unknown[],
+				): Effect.Effect<T, TransportError> => {
+					if (method === "eth_getBlockReceipts") {
+						return Effect.fail(
+							new TransportError(
+								{ code: -32601, message: "method not found" },
+								"method not found",
+							),
+						);
+					}
+					if (method === "eth_getTransactionReceipt") {
+						const txHash = (params as string[])?.[0];
+						if (txHash === "0xabc") {
+							return Effect.succeed(mockReceipt as T);
+						}
+						return Effect.succeed(null as T);
+					}
+					return Effect.succeed([] as T);
+				},
+			};
+
+			const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+			const result = await Effect.runPromise(
+				fetchBlockReceipts({
+					hash: mockBlock.hash,
+					transactions: ["0xabc", "0xmissing"],
+				}).pipe(Effect.provide(TestLayer)),
+			);
+
+			expect(result).toEqual([mockReceipt]);
+		});
+
+		it("handles transactions as objects with hash property", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+				): Effect.Effect<T, TransportError> => {
+					if (method === "eth_getBlockReceipts") {
+						return Effect.fail(
+							new TransportError(
+								{ code: -32601, message: "method not found" },
+								"method not found",
+							),
+						);
+					}
+					if (method === "eth_getTransactionReceipt") {
+						return Effect.succeed(mockReceipt as T);
+					}
+					return Effect.succeed([] as T);
+				},
+			};
+
+			const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+			const result = await Effect.runPromise(
+				fetchBlockReceipts({
+					hash: mockBlock.hash,
+					transactions: [{ hash: "0xabc" }],
+				}).pipe(Effect.provide(TestLayer)),
+			);
+
+			expect(result).toEqual([mockReceipt]);
+		});
+
+		it("fails with BlockError on non-method-not-found errors", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(
+					method: string,
+				): Effect.Effect<T, TransportError> => {
+					if (method === "eth_getBlockReceipts") {
+						return Effect.fail(
+							new TransportError(
+								{ code: -32000, message: "internal error" },
+								"internal error",
+							),
+						);
+					}
+					return Effect.succeed([] as T);
+				},
+			};
+
+			const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+			const result = await Effect.runPromise(
+				fetchBlockReceipts({ hash: mockBlock.hash }).pipe(
+					Effect.provide(TestLayer),
+					Effect.either,
+				),
+			);
+
+			expect(result._tag).toBe("Left");
+			if (result._tag === "Left") {
+				expect(result.left).toBeInstanceOf(BlockError);
+			}
 		});
 	});
 

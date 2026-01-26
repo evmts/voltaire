@@ -405,7 +405,7 @@ describe("EventStreamService", () => {
 					fromBlock: 10n,
 					toBlock: 20n,
 				});
-				yield* Stream.take(stream, 0).pipe(Stream.runCollect);
+				yield* Stream.runCollect(stream);
 			}).pipe(Effect.provide(TestEventStreamLayer));
 
 			await Effect.runPromise(program);
@@ -464,6 +464,269 @@ describe("EventStreamService", () => {
 			expect(EventStream).toBeDefined();
 			expect(EventStreamError).toBeDefined();
 			expect(EventStreamService).toBeDefined();
+		});
+	});
+
+	describe("reorg handling", () => {
+		it("processes logs with removed: true flag from RPC", async () => {
+			const removedLog = {
+				address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+				blockHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				blockNumber: "0x64",
+				data: "0x0000000000000000000000000000000000000000000000000000000000000064",
+				logIndex: "0x0",
+				removed: true,
+				topics: [
+					"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+					"0x000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+					"0x000000000000000000000000bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+				],
+				transactionHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+				transactionIndex: "0x0",
+			};
+
+			const mockTransport: TransportShape = {
+				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x1234567" as T);
+					}
+					if (method === "eth_getLogs") {
+						return Effect.succeed([removedLog] as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+
+			const program = Effect.gen(function* () {
+				const eventStream = yield* EventStreamService;
+				const stream = eventStream.backfill({
+					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+					event: transferEvent,
+					fromBlock: 100n,
+					toBlock: 100n,
+				});
+				const results = yield* Stream.runCollect(stream);
+				const arr = Array.from(results);
+				expect(arr.length).toBe(1);
+				expect(arr[0]?.log.eventName).toBe("Transfer");
+				expect(arr[0]?.log.blockNumber).toBeDefined();
+			}).pipe(Effect.provide(TestEventStreamLayer));
+
+			await Effect.runPromise(program);
+		});
+	});
+
+	describe("decode failures", () => {
+		it("handles unknown topics gracefully", async () => {
+			const unknownTopicLog = {
+				address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+				blockHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				blockNumber: "0x64",
+				data: "0x0000000000000000000000000000000000000000000000000000000000000064",
+				logIndex: "0x0",
+				removed: false,
+				topics: [
+					"0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+					"0x000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				],
+				transactionHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+				transactionIndex: "0x0",
+			};
+
+			const mockTransport: TransportShape = {
+				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x1234567" as T);
+					}
+					if (method === "eth_getLogs") {
+						return Effect.succeed([unknownTopicLog] as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+
+			const program = Effect.gen(function* () {
+				const eventStream = yield* EventStreamService;
+				const stream = eventStream.backfill({
+					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+					event: transferEvent,
+					fromBlock: 100n,
+					toBlock: 100n,
+				});
+				yield* Stream.runCollect(stream);
+			}).pipe(Effect.provide(TestEventStreamLayer));
+
+			const result = await Effect.runPromiseExit(program);
+			expect(result._tag).toBe("Failure");
+		});
+	});
+
+	describe("range edge cases", () => {
+		it("handles fromBlock > toBlock", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x1234567" as T);
+					}
+					if (method === "eth_getLogs") {
+						return Effect.succeed([] as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+
+			const program = Effect.gen(function* () {
+				const eventStream = yield* EventStreamService;
+				const stream = eventStream.backfill({
+					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+					event: transferEvent,
+					fromBlock: 200n,
+					toBlock: 100n,
+				});
+				const results = yield* Stream.runCollect(stream);
+				expect(Array.from(results)).toEqual([]);
+			}).pipe(Effect.provide(TestEventStreamLayer));
+
+			await Effect.runPromise(program);
+		});
+	});
+
+	describe("transport error propagation", () => {
+		it("propagates eth_blockNumber transport errors as EventStreamError", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, Error> => {
+					if (method === "eth_blockNumber") {
+						return Effect.fail(new Error("eth_blockNumber failed"));
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+
+			const program = Effect.gen(function* () {
+				const eventStream = yield* EventStreamService;
+				const stream = eventStream.backfill({
+					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+					event: transferEvent,
+					fromBlock: 100n,
+					toBlock: 200n,
+				});
+				yield* Stream.runCollect(stream);
+			}).pipe(Effect.provide(TestEventStreamLayer));
+
+			const result = await Effect.runPromiseExit(program);
+			expect(result._tag).toBe("Failure");
+		});
+
+		it("propagates eth_getLogs transport errors correctly", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, Error> => {
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x100" as T);
+					}
+					if (method === "eth_getLogs") {
+						return Effect.fail(new Error("eth_getLogs failed"));
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+
+			const program = Effect.gen(function* () {
+				const eventStream = yield* EventStreamService;
+				const stream = eventStream.backfill({
+					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+					event: transferEvent,
+					fromBlock: 100n,
+					toBlock: 100n,
+				});
+				yield* Stream.runCollect(stream);
+			}).pipe(Effect.provide(TestEventStreamLayer));
+
+			const result = await Effect.runPromiseExit(program);
+			expect(result._tag).toBe("Failure");
+		});
+	});
+
+	describe("empty responses", () => {
+		it("handles empty log array response", async () => {
+			let getLogsCalled = false;
+			const mockTransport: TransportShape = {
+				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x100" as T);
+					}
+					if (method === "eth_getLogs") {
+						getLogsCalled = true;
+						return Effect.succeed([] as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+
+			const program = Effect.gen(function* () {
+				const eventStream = yield* EventStreamService;
+				const stream = eventStream.backfill({
+					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+					event: transferEvent,
+					fromBlock: 10n,
+					toBlock: 20n,
+				});
+				const results = yield* Stream.runCollect(stream);
+				expect(Array.from(results)).toEqual([]);
+			}).pipe(Effect.provide(TestEventStreamLayer));
+
+			await Effect.runPromise(program);
+			expect(getLogsCalled).toBe(true);
+		});
+	});
+
+	describe("invalid filter handling", () => {
+		it("handles invalid filter address format", async () => {
+			const mockTransport: TransportShape = {
+				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+					if (method === "eth_blockNumber") {
+						return Effect.succeed("0x100" as T);
+					}
+					if (method === "eth_getLogs") {
+						return Effect.succeed([] as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
+			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+
+			const program = Effect.gen(function* () {
+				const eventStream = yield* EventStreamService;
+				const stream = eventStream.backfill({
+					address: "invalid-address",
+					event: transferEvent,
+					fromBlock: 10n,
+					toBlock: 20n,
+				});
+				yield* Stream.runCollect(stream);
+			}).pipe(Effect.provide(TestEventStreamLayer));
+
+			const result = await Effect.runPromiseExit(program);
+			expect(result._tag).toBe("Failure");
 		});
 	});
 });
