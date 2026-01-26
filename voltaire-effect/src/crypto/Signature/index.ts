@@ -59,6 +59,7 @@ export {
 
 // Hash exports
 export { hashMessage } from "./hashMessage.js";
+export { hashTypedData } from "../EIP712/index.js";
 
 // Recovery exports
 export { recoverAddress, type SignatureInput } from "./recoverAddress.js";

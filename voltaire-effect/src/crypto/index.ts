@@ -220,6 +220,7 @@ export {
 	AddressDerivationError,
 	constantTimeEqual,
 	hashMessage,
+	hashTypedData,
 	recoverAddress,
 	RecoverError,
 	recoverMessageAddress,
