@@ -33,6 +33,11 @@
  */
 export { AesGcmService, type AesGcmServiceShape } from "./AesGcmService.js";
 export { decrypt, encrypt, generateKey, generateNonce } from "./operations.js";
+export {
+	InvalidKeyError,
+	InvalidNonceError,
+	type AesGcmError,
+} from "./errors.js";
 
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

@@ -10,7 +10,7 @@ import {
 	HDWalletService,
 } from "./HDWalletService.js";
 import type { MnemonicStrength } from "../Bip39/types.js";
-import type { HDWalletError } from "./errors.js";
+import { InvalidKeyError, type HDWalletError } from "./errors.js";
 
 /**
  * Derives a child HD node from a parent node using the given path.
@@ -173,6 +173,7 @@ export const fromMnemonic = (
  *
  * @throws InvalidSeedError if mnemonic conversion fails
  * @see {@link generateMnemonic} to create a mnemonic
+ * @see {@link withSeed} to ensure seed cleanup after use
  * @see {@link fromSeed} to create master node from seed
  * @since 0.0.1
  */
@@ -183,6 +184,38 @@ export const mnemonicToSeed = (
 		const hdwallet = yield* HDWalletService;
 		return yield* hdwallet.mnemonicToSeed(mnemonic);
 	});
+
+/**
+ * Derives a mnemonic seed, uses it, and zeroes it after use.
+ *
+ * @description
+ * Wraps {@link mnemonicToSeed} with `Effect.acquireRelease` to ensure the
+ * seed is wiped from memory after the provided effect completes.
+ *
+ * @param mnemonic - Array of BIP-39 mnemonic words
+ * @param use - Effect that consumes the derived seed
+ * @returns Effect containing the result of `use`
+ *
+ * @example
+ * ```typescript
+ * import { withSeed, fromSeed, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const program = withSeed(words, (seed) =>
+ *   fromSeed(seed)
+ * ).pipe(Effect.provide(HDWalletLive))
+ * ```
+ *
+ * @since 0.0.1
+ */
+export const withSeed = <R, E, A>(
+	mnemonic: string[],
+	use: (seed: Uint8Array) => Effect.Effect<A, E, R>,
+): Effect.Effect<A, E | HDWalletError, R | HDWalletService> =>
+	Effect.acquireRelease(
+		mnemonicToSeed(mnemonic),
+		(seed) => Effect.sync(() => seed.fill(0)),
+	).pipe(Effect.flatMap(use), Effect.scoped);
 
 /**
  * Extracts the private key from an HD node.
@@ -218,6 +251,64 @@ export const getPrivateKey = (
 		const hdwallet = yield* HDWalletService;
 		return yield* hdwallet.getPrivateKey(node);
 	});
+
+/**
+ * Extracts a private key, uses it, and zeroes it after use.
+ *
+ * @description
+ * Wraps {@link getPrivateKey} with `Effect.acquireRelease` to ensure key
+ * material is wiped from memory after the provided effect completes.
+ *
+ * @param node - The HD node containing the private key
+ * @param use - Effect that consumes the private key
+ * @returns Effect containing the result of `use`
+ *
+ * @example
+ * ```typescript
+ * import { withPrivateKey, derive, fromSeed, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const program = Effect.gen(function* () {
+ *   const master = yield* fromSeed(seed)
+ *   const account = yield* derive(master, "m/44'/60'/0'/0/0")
+ *   return yield* withPrivateKey(account, (key) => Effect.sync(() => key))
+ * }).pipe(Effect.provide(HDWalletLive))
+ * ```
+ *
+ * @throws InvalidKeyError if the node does not contain a private key
+ * @since 0.0.1
+ */
+export const withPrivateKey = <R, E, A>(
+	node: HDNode,
+	use: (key: Uint8Array) => Effect.Effect<A, E, R>,
+): Effect.Effect<A, E | HDWalletError, R | HDWalletService> =>
+	Effect.acquireRelease<
+		Uint8Array | null,
+		never,
+		HDWalletService,
+		void,
+		never
+	>(
+		getPrivateKey(node),
+		(key) =>
+			Effect.sync(() => {
+				if (key) {
+					key.fill(0);
+				}
+			}),
+	).pipe(
+		Effect.flatMap(
+			(key): Effect.Effect<A, E | HDWalletError, R> =>
+				key
+					? use(key)
+					: Effect.fail(
+							new InvalidKeyError({
+								message: "HD node does not contain a private key.",
+							}),
+						),
+		),
+		Effect.scoped,
+	);
 
 /**
  * Extracts the public key from an HD node.

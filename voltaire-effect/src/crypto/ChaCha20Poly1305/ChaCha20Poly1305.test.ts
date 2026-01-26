@@ -1,4 +1,5 @@
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
 import { describe, expect, it } from "@effect/vitest";
 import {
 	ChaCha20Poly1305Live,
@@ -8,6 +9,8 @@ import {
 	encrypt,
 	generateKey,
 	generateNonce,
+	InvalidKeyError,
+	InvalidNonceError,
 } from "./index.js";
 
 describe("ChaCha20Poly1305Service", () => {
@@ -108,5 +111,89 @@ describe("operations", () => {
 			expect(key.every((b) => b === 0)).toBe(true);
 			expect(nonce.every((b) => b === 0)).toBe(true);
 		}).pipe(Effect.provide(ChaCha20Poly1305Test))
+	);
+});
+
+describe("input validation", () => {
+	it.effect("rejects invalid key size on encrypt", () =>
+		Effect.gen(function* () {
+			const plaintext = new Uint8Array([1, 2, 3]);
+			const invalidKey = new Uint8Array(16);
+			const nonce = new Uint8Array(12);
+			const exit = yield* Effect.exit(encrypt(plaintext, invalidKey, nonce));
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause;
+				expect(error._tag).toBe("Fail");
+				if (error._tag === "Fail") {
+					expect(error.error).toBeInstanceOf(InvalidKeyError);
+					expect((error.error as InvalidKeyError).keyLength).toBe(16);
+					expect((error.error as InvalidKeyError).expectedLength).toBe(32);
+				}
+			}
+		}).pipe(Effect.provide(ChaCha20Poly1305Live)),
+	);
+
+	it.effect("rejects invalid nonce size on encrypt", () =>
+		Effect.gen(function* () {
+			const plaintext = new Uint8Array([1, 2, 3]);
+			const key = new Uint8Array(32);
+			const invalidNonce = new Uint8Array(8);
+			const exit = yield* Effect.exit(encrypt(plaintext, key, invalidNonce));
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause;
+				expect(error._tag).toBe("Fail");
+				if (error._tag === "Fail") {
+					expect(error.error).toBeInstanceOf(InvalidNonceError);
+					expect((error.error as InvalidNonceError).nonceLength).toBe(8);
+					expect((error.error as InvalidNonceError).expectedLength).toBe(12);
+				}
+			}
+		}).pipe(Effect.provide(ChaCha20Poly1305Live)),
+	);
+
+	it.effect("rejects invalid key size on decrypt", () =>
+		Effect.gen(function* () {
+			const ciphertext = new Uint8Array(32);
+			const invalidKey = new Uint8Array(24);
+			const nonce = new Uint8Array(12);
+			const exit = yield* Effect.exit(decrypt(ciphertext, invalidKey, nonce));
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause;
+				expect(error._tag).toBe("Fail");
+				if (error._tag === "Fail") {
+					expect(error.error).toBeInstanceOf(InvalidKeyError);
+				}
+			}
+		}).pipe(Effect.provide(ChaCha20Poly1305Live)),
+	);
+
+	it.effect("rejects invalid nonce size on decrypt", () =>
+		Effect.gen(function* () {
+			const ciphertext = new Uint8Array(32);
+			const key = new Uint8Array(32);
+			const invalidNonce = new Uint8Array(16);
+			const exit = yield* Effect.exit(decrypt(ciphertext, key, invalidNonce));
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause;
+				expect(error._tag).toBe("Fail");
+				if (error._tag === "Fail") {
+					expect(error.error).toBeInstanceOf(InvalidNonceError);
+				}
+			}
+		}).pipe(Effect.provide(ChaCha20Poly1305Live)),
+	);
+
+	it.effect("accepts valid key and nonce sizes", () =>
+		Effect.gen(function* () {
+			const plaintext = new Uint8Array([1, 2, 3]);
+			const key = yield* generateKey();
+			const nonce = yield* generateNonce();
+			const ciphertext = yield* encrypt(plaintext, key, nonce);
+			expect(ciphertext.length).toBeGreaterThan(plaintext.length);
+		}).pipe(Effect.provide(ChaCha20Poly1305Live)),
 	);
 });

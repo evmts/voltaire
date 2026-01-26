@@ -1,4 +1,5 @@
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
 import { describe, expect, it } from "@effect/vitest";
 import * as AesGcm from "./index.js";
 
@@ -60,6 +61,110 @@ describe("AesGcm", () => {
 				const key = yield* service.generateKey();
 				expect(key.length).toBe(32);
 			}).pipe(Effect.provide(AesGcm.AesGcmLive))
+		);
+	});
+
+	describe("input validation", () => {
+		it.effect("rejects invalid key size on encrypt", () =>
+			Effect.gen(function* () {
+				const nonce = yield* AesGcm.generateNonce();
+				const plaintext = new Uint8Array([1, 2, 3]);
+				const invalidKey = new Uint8Array(10);
+				const exit = yield* Effect.exit(
+					AesGcm.encrypt(invalidKey, plaintext, nonce),
+				);
+				expect(Exit.isFailure(exit)).toBe(true);
+				if (Exit.isFailure(exit)) {
+					const error = exit.cause;
+					expect(error._tag).toBe("Fail");
+					if (error._tag === "Fail") {
+						expect(error.error).toBeInstanceOf(AesGcm.InvalidKeyError);
+						expect((error.error as AesGcm.InvalidKeyError).keyLength).toBe(10);
+					}
+				}
+			}),
+		);
+
+		it.effect("rejects invalid nonce size on encrypt", () =>
+			Effect.gen(function* () {
+				const key = yield* AesGcm.generateKey();
+				const plaintext = new Uint8Array([1, 2, 3]);
+				const invalidNonce = new Uint8Array(8);
+				const exit = yield* Effect.exit(
+					AesGcm.encrypt(key, plaintext, invalidNonce),
+				);
+				expect(Exit.isFailure(exit)).toBe(true);
+				if (Exit.isFailure(exit)) {
+					const error = exit.cause;
+					expect(error._tag).toBe("Fail");
+					if (error._tag === "Fail") {
+						expect(error.error).toBeInstanceOf(AesGcm.InvalidNonceError);
+						expect((error.error as AesGcm.InvalidNonceError).nonceLength).toBe(
+							8,
+						);
+					}
+				}
+			}),
+		);
+
+		it.effect("rejects invalid key size on decrypt", () =>
+			Effect.gen(function* () {
+				const nonce = yield* AesGcm.generateNonce();
+				const ciphertext = new Uint8Array(32);
+				const invalidKey = new Uint8Array(15);
+				const exit = yield* Effect.exit(
+					AesGcm.decrypt(invalidKey, ciphertext, nonce),
+				);
+				expect(Exit.isFailure(exit)).toBe(true);
+				if (Exit.isFailure(exit)) {
+					const error = exit.cause;
+					expect(error._tag).toBe("Fail");
+					if (error._tag === "Fail") {
+						expect(error.error).toBeInstanceOf(AesGcm.InvalidKeyError);
+					}
+				}
+			}),
+		);
+
+		it.effect("rejects invalid nonce size on decrypt", () =>
+			Effect.gen(function* () {
+				const key = yield* AesGcm.generateKey();
+				const ciphertext = new Uint8Array(32);
+				const invalidNonce = new Uint8Array(16);
+				const exit = yield* Effect.exit(
+					AesGcm.decrypt(key, ciphertext, invalidNonce),
+				);
+				expect(Exit.isFailure(exit)).toBe(true);
+				if (Exit.isFailure(exit)) {
+					const error = exit.cause;
+					expect(error._tag).toBe("Fail");
+					if (error._tag === "Fail") {
+						expect(error.error).toBeInstanceOf(AesGcm.InvalidNonceError);
+					}
+				}
+			}),
+		);
+
+		it.effect("accepts valid key sizes (16, 24, 32 bytes)", () =>
+			Effect.gen(function* () {
+				const nonce = yield* AesGcm.generateNonce();
+				const plaintext = new Uint8Array([1, 2, 3]);
+
+				const key16 = new Uint8Array(16).fill(1);
+				const key24 = new Uint8Array(24).fill(1);
+				const key32 = new Uint8Array(32).fill(1);
+
+				const result16 = yield* AesGcm.encrypt(key16, plaintext, nonce);
+				expect(result16.length).toBeGreaterThan(plaintext.length);
+
+				const nonce2 = yield* AesGcm.generateNonce();
+				const result24 = yield* AesGcm.encrypt(key24, plaintext, nonce2);
+				expect(result24.length).toBeGreaterThan(plaintext.length);
+
+				const nonce3 = yield* AesGcm.generateNonce();
+				const result32 = yield* AesGcm.encrypt(key32, plaintext, nonce3);
+				expect(result32.length).toBeGreaterThan(plaintext.length);
+			}),
 		);
 	});
 });

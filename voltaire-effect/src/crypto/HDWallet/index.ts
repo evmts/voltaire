@@ -44,6 +44,8 @@ export {
 	getPrivateKey,
 	getPublicKey,
 	mnemonicToSeed,
+	withPrivateKey,
+	withSeed,
 } from "./derive.js";
 export { HDWalletLive } from "./HDWalletLive.js";
 export {

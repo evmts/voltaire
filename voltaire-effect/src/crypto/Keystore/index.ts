@@ -30,7 +30,7 @@
  * @see {@link https://eips.ethereum.org/EIPS/eip-2335 | EIP-2335}
  */
 
-export { decrypt } from "./decrypt.js";
+export { decrypt, withDecryptedKey } from "./decrypt.js";
 export { encrypt } from "./encrypt.js";
 export { KeystoreLive } from "./KeystoreLive.js";
 export {

@@ -6,6 +6,32 @@
 
 import { AesGcm } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
+import { InvalidKeyError, InvalidNonceError } from "./errors.js";
+
+const VALID_KEY_LENGTHS = [16, 24, 32] as const;
+const NONCE_LENGTH = 12;
+
+const validateKey = (key: Uint8Array) =>
+	VALID_KEY_LENGTHS.includes(key.length as 16 | 24 | 32)
+		? Effect.void
+		: Effect.fail(
+				new InvalidKeyError({
+					message: `Key must be 16, 24, or 32 bytes, got ${key.length}`,
+					keyLength: key.length,
+					expectedLengths: VALID_KEY_LENGTHS,
+				}),
+			);
+
+const validateNonce = (nonce: Uint8Array) =>
+	nonce.length === NONCE_LENGTH
+		? Effect.void
+		: Effect.fail(
+				new InvalidNonceError({
+					message: `Nonce must be ${NONCE_LENGTH} bytes, got ${nonce.length}`,
+					nonceLength: nonce.length,
+					expectedLength: NONCE_LENGTH,
+				}),
+			);
 
 /**
  * Encrypts plaintext using AES-GCM.
@@ -41,13 +67,17 @@ export const encrypt = (
 	plaintext: Uint8Array,
 	nonce: Uint8Array,
 	aad?: Uint8Array,
-): Effect.Effect<Uint8Array, Error> =>
-	Effect.tryPromise({
-		try: async () => {
-			const cryptoKey = await AesGcm.importKey(key);
-			return AesGcm.encrypt(plaintext, cryptoKey, nonce, aad);
-		},
-		catch: (e) => e as Error,
+): Effect.Effect<Uint8Array, Error | InvalidKeyError | InvalidNonceError> =>
+	Effect.gen(function* () {
+		yield* validateKey(key);
+		yield* validateNonce(nonce);
+		return yield* Effect.tryPromise({
+			try: async () => {
+				const cryptoKey = await AesGcm.importKey(key);
+				return AesGcm.encrypt(plaintext, cryptoKey, nonce, aad);
+			},
+			catch: (e) => e as Error,
+		});
 	});
 
 /**
@@ -85,13 +115,17 @@ export const decrypt = (
 	ciphertext: Uint8Array,
 	nonce: Uint8Array,
 	aad?: Uint8Array,
-): Effect.Effect<Uint8Array, Error> =>
-	Effect.tryPromise({
-		try: async () => {
-			const cryptoKey = await AesGcm.importKey(key);
-			return AesGcm.decrypt(ciphertext, cryptoKey, nonce, aad);
-		},
-		catch: (e) => e as Error,
+): Effect.Effect<Uint8Array, Error | InvalidKeyError | InvalidNonceError> =>
+	Effect.gen(function* () {
+		yield* validateKey(key);
+		yield* validateNonce(nonce);
+		return yield* Effect.tryPromise({
+			try: async () => {
+				const cryptoKey = await AesGcm.importKey(key);
+				return AesGcm.decrypt(ciphertext, cryptoKey, nonce, aad);
+			},
+			catch: (e) => e as Error,
+		});
 	});
 
 /**

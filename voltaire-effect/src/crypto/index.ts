@@ -128,6 +128,8 @@ export {
 	InvalidPathError,
 	InvalidSeedError,
 	mnemonicToSeed,
+	withPrivateKey as hdwalletWithPrivateKey,
+	withSeed as hdwalletWithSeed,
 } from "./HDWallet/index.js";
 export {
 	HMACLive,
@@ -147,6 +149,7 @@ export {
 	type DecryptError as KeystoreDecryptError,
 	decrypt as keystoreDecrypt,
 	encrypt as keystoreEncrypt,
+	withDecryptedKey as keystoreWithDecryptedKey,
 	KeystoreLive,
 	KeystoreService,
 	type KeystoreServiceShape,
@@ -191,16 +194,17 @@ export {
 	SHA256Service,
 	SHA256Test,
 } from "./SHA256/index.js";
-export {
-	fromPrivateKey,
-	getAddress as signersGetAddress,
-	recoverTransactionAddress,
-	type Signer,
-	SignersLive,
-	SignersService,
-	type SignersServiceShape,
-	SignersTest,
-} from "./Signers/index.js";
+// Signers module temporarily disabled - requires @tevm/voltaire exports update
+// export {
+// 	fromPrivateKey,
+// 	getAddress as signersGetAddress,
+// 	recoverTransactionAddress,
+// 	type Signer,
+// 	SignersLive,
+// 	SignersService,
+// 	type SignersServiceShape,
+// 	SignersTest,
+// } from "./Signers/index.js";
 export {
 	computeSecret as x25519ComputeSecret,
 	generateKeyPair as x25519GenerateKeyPair,

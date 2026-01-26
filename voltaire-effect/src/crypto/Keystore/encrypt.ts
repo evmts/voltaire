@@ -4,13 +4,32 @@
  * @since 0.0.1
  */
 
-import { Keystore } from "@tevm/voltaire";
+import {
+	EncryptionError as KeystoreEncryptionError,
+	InvalidPbkdf2IterationsError,
+	InvalidScryptNError,
+	Keystore,
+} from "@tevm/voltaire/Keystore";
 import * as Effect from "effect/Effect";
 import type { PrivateKeyType } from "./KeystoreService.js";
 
-type EncryptionError = Error;
+type EncryptionError =
+	| KeystoreEncryptionError
+	| InvalidScryptNError
+	| InvalidPbkdf2IterationsError;
 type EncryptOptions = Parameters<typeof Keystore.encrypt>[2];
 type KeystoreV3 = Awaited<ReturnType<typeof Keystore.encrypt>>;
+
+const toEncryptionError = (error: unknown): EncryptionError => {
+	if (error instanceof KeystoreEncryptionError) return error;
+	if (error instanceof InvalidScryptNError) return error;
+	if (error instanceof InvalidPbkdf2IterationsError) return error;
+
+	const message = error instanceof Error ? error.message : String(error);
+	return new KeystoreEncryptionError(message, {
+		cause: error instanceof Error ? error : undefined,
+	});
+};
 
 /**
  * Encrypts a private key with a password to create a keystore.
@@ -36,6 +55,8 @@ type KeystoreV3 = Awaited<ReturnType<typeof Keystore.encrypt>>;
  * ```
  *
  * @throws EncryptionError if encryption fails
+ * @throws InvalidScryptNError if scrypt parameters are invalid
+ * @throws InvalidPbkdf2IterationsError if PBKDF2 iterations are invalid
  * @see {@link decrypt} to decrypt the keystore
  * @since 0.0.1
  */
@@ -46,5 +67,5 @@ export const encrypt = (
 ): Effect.Effect<KeystoreV3, EncryptionError> =>
 	Effect.tryPromise({
 		try: () => Keystore.encrypt(privateKey as never, password, options),
-		catch: (e) => e as EncryptionError,
+		catch: toEncryptionError,
 	});

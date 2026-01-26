@@ -4,17 +4,25 @@
  * @since 0.0.1
  */
 
-import { Keystore } from "@tevm/voltaire";
+import { Keystore } from "@tevm/voltaire/Keystore";
+import type {
+	DecryptionError as KeystoreDecryptionError,
+	EncryptionError as KeystoreEncryptionError,
+	InvalidMacError as KeystoreInvalidMacError,
+	InvalidPbkdf2IterationsError as KeystoreInvalidPbkdf2IterationsError,
+	InvalidScryptNError as KeystoreInvalidScryptNError,
+	UnsupportedKdfError as KeystoreUnsupportedKdfError,
+	UnsupportedVersionError as KeystoreUnsupportedVersionError,
+} from "@tevm/voltaire/Keystore";
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 
-type DecryptionError = Parameters<typeof Keystore.decrypt>[0] extends infer T ? T extends { error: infer E } ? E : never : never;
-type EncryptionError = Error;
 type EncryptOptions = Parameters<typeof Keystore.encrypt>[2];
-type InvalidMacError = Error & { code: "INVALID_MAC" };
 type KeystoreV3 = Awaited<ReturnType<typeof Keystore.encrypt>>;
-type UnsupportedKdfError = Error & { code: "UNSUPPORTED_KDF" };
-type UnsupportedVersionError = Error & { code: "UNSUPPORTED_VERSION" };
+type EncryptionError =
+	| KeystoreEncryptionError
+	| KeystoreInvalidScryptNError
+	| KeystoreInvalidPbkdf2IterationsError;
 
 /**
  * PrivateKey type - 32 byte Uint8Array for cryptographic operations.
@@ -31,14 +39,18 @@ export type PrivateKeyType = Uint8Array;
  * - InvalidMacError: MAC verification failed (wrong password or corrupted data)
  * - UnsupportedVersionError: Keystore version not supported
  * - UnsupportedKdfError: Key derivation function not supported
+ * - InvalidScryptNError: Invalid scrypt parameter from keystore
+ * - InvalidPbkdf2IterationsError: Invalid PBKDF2 iteration count from keystore
  *
  * @since 0.0.1
  */
 export type DecryptError =
-	| DecryptionError
-	| InvalidMacError
-	| UnsupportedVersionError
-	| UnsupportedKdfError;
+	| KeystoreDecryptionError
+	| KeystoreInvalidMacError
+	| KeystoreUnsupportedVersionError
+	| KeystoreUnsupportedKdfError
+	| KeystoreInvalidScryptNError
+	| KeystoreInvalidPbkdf2IterationsError;
 
 /**
  * Shape interface for keystore encryption service operations.

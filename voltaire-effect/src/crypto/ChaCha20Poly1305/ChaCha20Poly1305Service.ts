@@ -7,6 +7,32 @@ import { ChaCha20Poly1305 } from "@tevm/voltaire";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import { InvalidKeyError, InvalidNonceError } from "./errors.js";
+
+const KEY_LENGTH = 32;
+const NONCE_LENGTH = 12;
+
+const validateKey = (key: Uint8Array) =>
+	key.length === KEY_LENGTH
+		? Effect.void
+		: Effect.fail(
+				new InvalidKeyError({
+					message: `Key must be ${KEY_LENGTH} bytes, got ${key.length}`,
+					keyLength: key.length,
+					expectedLength: KEY_LENGTH,
+				}),
+			);
+
+const validateNonce = (nonce: Uint8Array) =>
+	nonce.length === NONCE_LENGTH
+		? Effect.void
+		: Effect.fail(
+				new InvalidNonceError({
+					message: `Nonce must be ${NONCE_LENGTH} bytes, got ${nonce.length}`,
+					nonceLength: nonce.length,
+					expectedLength: NONCE_LENGTH,
+				}),
+			);
 
 /**
  * Shape interface for ChaCha20-Poly1305 encryption service operations.
@@ -107,13 +133,17 @@ export class ChaCha20Poly1305Service extends Context.Tag(
  */
 export const ChaCha20Poly1305Live = Layer.succeed(ChaCha20Poly1305Service, {
 	encrypt: (plaintext, key, nonce, additionalData) =>
-		Effect.sync(() =>
-			ChaCha20Poly1305.encrypt(plaintext, key, nonce, additionalData),
-		),
+		Effect.gen(function* () {
+			yield* validateKey(key);
+			yield* validateNonce(nonce);
+			return ChaCha20Poly1305.encrypt(plaintext, key, nonce, additionalData);
+		}),
 	decrypt: (ciphertext, key, nonce, additionalData) =>
-		Effect.sync(() =>
-			ChaCha20Poly1305.decrypt(ciphertext, key, nonce, additionalData),
-		),
+		Effect.gen(function* () {
+			yield* validateKey(key);
+			yield* validateNonce(nonce);
+			return ChaCha20Poly1305.decrypt(ciphertext, key, nonce, additionalData);
+		}),
 	generateKey: () => Effect.sync(() => ChaCha20Poly1305.generateKey()),
 	generateNonce: () => Effect.sync(() => ChaCha20Poly1305.generateNonce()),
 });

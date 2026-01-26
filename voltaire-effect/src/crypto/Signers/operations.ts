@@ -4,10 +4,12 @@
  * @since 0.0.1
  */
 
-import type { CryptoError, InvalidPrivateKeyError } from "@tevm/voltaire";
-import * as Signers from "@tevm/voltaire/signers";
+import { Signers } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import type { Signer } from "./SignersService.js";
+
+type CryptoError = Error;
+type InvalidPrivateKeyError = Error & { code: "INVALID_PRIVATE_KEY" };
 
 /**
  * Creates a signer from a private key.
