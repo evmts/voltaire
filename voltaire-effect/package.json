@@ -71,7 +71,7 @@
 	},
 	"sideEffects": false,
 	"peerDependencies": {
-		"@tevm/voltaire": ">=0.2.12",
+		"@tevm/voltaire": "workspace:*",
 		"effect": "^3.12.0"
 	},
 	"dependencies": {

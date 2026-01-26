@@ -12,5 +12,15 @@ export default defineConfig({
 	clean: true,
 	splitting: false,
 	treeshake: true,
-	external: ["@tevm/voltaire", "effect"],
+	external: ["@tevm/voltaire", "effect", "@effect/platform"],
+	noExternal: [],
+	esbuildOptions(options) {
+		options.external = [
+			...(options.external || []),
+			"@tevm/voltaire/Abi",
+			"@tevm/voltaire/Hex",
+			"@tevm/voltaire/ContractCode",
+			"@tevm/voltaire/InitCode",
+		];
+	},
 });
