@@ -121,18 +121,16 @@ describe("Int256", () => {
 			expect(S.encodeSync(Int256.BigInt)(result)).toBe(12345n);
 		});
 
-		it("wraps on overflow", () => {
+		it("throws on overflow", () => {
 			const max = S.decodeSync(Int256.BigInt)(INT256_MAX);
 			const one = S.decodeSync(Int256.BigInt)(1n);
-			const result = BrandedInt256.plus(max, one);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(INT256_MIN);
+			expect(() => BrandedInt256.plus(max, one)).toThrow();
 		});
 
-		it("wraps on underflow", () => {
+		it("throws on underflow", () => {
 			const min = S.decodeSync(Int256.BigInt)(INT256_MIN);
 			const negOne = S.decodeSync(Int256.BigInt)(-1n);
-			const result = BrandedInt256.plus(min, negOne);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(INT256_MAX);
+			expect(() => BrandedInt256.plus(min, negOne)).toThrow();
 		});
 	});
 
@@ -151,18 +149,16 @@ describe("Int256", () => {
 			expect(S.encodeSync(Int256.BigInt)(result)).toBe(15000000000000000000000000000000000000000n);
 		});
 
-		it("wraps on underflow", () => {
+		it("throws on underflow", () => {
 			const min = S.decodeSync(Int256.BigInt)(INT256_MIN);
 			const one = S.decodeSync(Int256.BigInt)(1n);
-			const result = Int256.sub(min, one);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(INT256_MAX);
+			expect(() => Int256.sub(min, one)).toThrow();
 		});
 
-		it("wraps on overflow", () => {
+		it("throws on overflow", () => {
 			const max = S.decodeSync(Int256.BigInt)(INT256_MAX);
 			const negOne = S.decodeSync(Int256.BigInt)(-1n);
-			const result = Int256.sub(max, negOne);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(INT256_MIN);
+			expect(() => Int256.sub(max, negOne)).toThrow();
 		});
 	});
 
@@ -265,10 +261,9 @@ describe("Int256", () => {
 			expect(S.encodeSync(Int256.BigInt)(result)).toBe(-INT256_MAX);
 		});
 
-		it("negate of INT256_MIN wraps", () => {
+		it("negate of INT256_MIN throws", () => {
 			const min = S.decodeSync(Int256.BigInt)(INT256_MIN);
-			const result = Int256.negate(min);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(INT256_MIN);
+			expect(() => Int256.negate(min)).toThrow();
 		});
 	});
 

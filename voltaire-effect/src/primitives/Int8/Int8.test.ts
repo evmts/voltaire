@@ -145,18 +145,16 @@ describe("Int8", () => {
 			expect(S.encodeSync(Int8.Number)(result)).toBe(42);
 		});
 
-		it("wraps on overflow (127 + 1)", () => {
+		it("throws on overflow (127 + 1)", () => {
 			const max = S.decodeSync(Int8.Number)(INT8_MAX);
 			const one = S.decodeSync(Int8.Number)(1);
-			const result = BrandedInt8.plus(max, one);
-			expect(S.encodeSync(Int8.Number)(result)).toBe(INT8_MIN);
+			expect(() => BrandedInt8.plus(max, one)).toThrow();
 		});
 
-		it("wraps on underflow (-128 + -1)", () => {
+		it("throws on underflow (-128 + -1)", () => {
 			const min = S.decodeSync(Int8.Number)(INT8_MIN);
 			const negOne = S.decodeSync(Int8.Number)(-1);
-			const result = BrandedInt8.plus(min, negOne);
-			expect(S.encodeSync(Int8.Number)(result)).toBe(INT8_MAX);
+			expect(() => BrandedInt8.plus(min, negOne)).toThrow();
 		});
 	});
 
@@ -189,18 +187,16 @@ describe("Int8", () => {
 			expect(S.encodeSync(Int8.Number)(result)).toBe(42);
 		});
 
-		it("wraps on underflow (-128 - 1)", () => {
+		it("throws on underflow (-128 - 1)", () => {
 			const min = S.decodeSync(Int8.Number)(INT8_MIN);
 			const one = S.decodeSync(Int8.Number)(1);
-			const result = Int8.sub(min, one);
-			expect(S.encodeSync(Int8.Number)(result)).toBe(INT8_MAX);
+			expect(() => Int8.sub(min, one)).toThrow();
 		});
 
-		it("wraps on overflow (127 - (-1))", () => {
+		it("throws on overflow (127 - (-1))", () => {
 			const max = S.decodeSync(Int8.Number)(INT8_MAX);
 			const negOne = S.decodeSync(Int8.Number)(-1);
-			const result = Int8.sub(max, negOne);
-			expect(S.encodeSync(Int8.Number)(result)).toBe(INT8_MIN);
+			expect(() => Int8.sub(max, negOne)).toThrow();
 		});
 	});
 
@@ -247,11 +243,10 @@ describe("Int8", () => {
 			expect(S.encodeSync(Int8.Number)(result)).toBe(-42);
 		});
 
-		it("wraps on overflow", () => {
+		it("throws on overflow", () => {
 			const a = S.decodeSync(Int8.Number)(64);
 			const b = S.decodeSync(Int8.Number)(2);
-			const result = Int8.mul(a, b);
-			expect(S.encodeSync(Int8.Number)(result)).toBe(INT8_MIN);
+			expect(() => Int8.mul(a, b)).toThrow();
 		});
 	});
 
