@@ -50,17 +50,21 @@ const program = Effect.gen(function* () {
 
 ## Simulate (Dry Run)
 
+Simulate a write before sending to catch reverts:
+
 ```typescript
 const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
   return yield* token.simulate.transfer('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 100_000_000n)
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
 ## Query Events
+
+Query historical [Transfer events](https://eips.ethereum.org/EIPS/eip-20#events) from the blockchain:
 
 ```typescript
 const eventAbi = [
@@ -76,11 +80,13 @@ const program = Effect.gen(function* () {
   return yield* token.getEvents('Transfer', { fromBlock: 'latest', toBlock: 'latest' })
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
 ## Complete ERC20 Workflow
+
+A full workflow: read token info, transfer, wait for confirmation, verify balance change:
 
 ```typescript
 import { ProviderService } from 'voltaire-effect/services'
@@ -97,10 +103,10 @@ const program = Effect.gen(function* () {
   
   return { symbol, decimals, txHash, transferred: balanceAfter - balanceBefore }
 }).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 

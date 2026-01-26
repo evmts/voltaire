@@ -331,7 +331,7 @@ describe("RpcBatch", () => {
 
 			const program = Effect.gen(function* () {
 				const batch = yield* RpcBatchService;
-				const results = yield* Effect.all([], { concurrency: "unbounded" });
+				const results = yield* Effect.all([], { batching: true });
 				return results;
 			}).pipe(
 				Effect.provide(RpcBatch),
@@ -362,7 +362,7 @@ describe("RpcBatch", () => {
 			expect(exit._tag).toBe("Failure");
 		});
 
-		it("handles partial batch failure (transport error for entire batch)", async () => {
+		it("handles transport error for entire batch", async () => {
 			const handler = vi
 				.fn()
 				.mockReturnValue(
@@ -382,7 +382,7 @@ describe("RpcBatch", () => {
 							),
 						),
 					],
-					{ concurrency: "unbounded" },
+					{ batching: true },
 				);
 
 				return results;
@@ -428,7 +428,7 @@ describe("RpcBatch", () => {
 					),
 				);
 
-				return yield* Effect.all(requests, { concurrency: "unbounded" });
+				return yield* Effect.all(requests, { batching: true });
 			}).pipe(
 				Effect.provide(RpcBatch),
 				Effect.provide(createMockTransport(handler)),
@@ -441,11 +441,9 @@ describe("RpcBatch", () => {
 		});
 
 		it("deduplicates identical requests returning same result", async () => {
-			let batchCallCount = 0;
 			let batchSize = 0;
 			const handler = vi.fn().mockImplementation((method, params) => {
 				if (method === "__batch__") {
-					batchCallCount++;
 					const batch = params as Array<{
 						id: number;
 						method: string;
@@ -476,7 +474,7 @@ describe("RpcBatch", () => {
 							new EthGetBalance({ address: "0xdef", blockTag: "latest" }),
 						),
 					],
-					{ concurrency: "unbounded" },
+					{ batching: true },
 				);
 
 				return results;
@@ -514,7 +512,7 @@ describe("RpcBatch", () => {
 						),
 						batch.request(new EthBlockNumber({})),
 					],
-					{ concurrency: "unbounded" },
+					{ batching: true },
 				);
 
 				return results;
@@ -546,6 +544,88 @@ describe("RpcBatch", () => {
 				"__batch__",
 				expect.anything(),
 			);
+		});
+
+		it("handles mixed success and failure in batch", async () => {
+			const handler = vi.fn().mockImplementation((method, params) => {
+				if (method === "__batch__") {
+					return [
+						{ jsonrpc: "2.0", id: 0, result: "0x100" },
+						{
+							jsonrpc: "2.0",
+							id: 1,
+							error: { code: -32000, message: "execution reverted" },
+						},
+						{ jsonrpc: "2.0", id: 2, result: "0x200" },
+					];
+				}
+				return null;
+			});
+
+			const program = Effect.gen(function* () {
+				const batch = yield* RpcBatchService;
+
+				const results = yield* Effect.all(
+					[
+						Effect.either(batch.request(new EthBlockNumber({}))),
+						Effect.either(batch.request(new EthChainId({}))),
+						Effect.either(
+							batch.request(
+								new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
+							),
+						),
+					],
+					{ batching: true },
+				);
+
+				return results;
+			}).pipe(
+				Effect.provide(RpcBatch),
+				Effect.provide(createMockTransport(handler)),
+			);
+
+			const results = await Effect.runPromise(program);
+			expect(results[0]._tag).toBe("Right");
+			expect(results[1]._tag).toBe("Left");
+			expect(results[2]._tag).toBe("Right");
+		});
+
+		it("handles out-of-order batch responses", async () => {
+			const handler = vi.fn().mockImplementation((method, params) => {
+				if (method === "__batch__") {
+					return [
+						{ jsonrpc: "2.0", id: 2, result: "0x300" },
+						{ jsonrpc: "2.0", id: 0, result: "0x100" },
+						{ jsonrpc: "2.0", id: 1, result: "0x200" },
+					];
+				}
+				return null;
+			});
+
+			const program = Effect.gen(function* () {
+				const batch = yield* RpcBatchService;
+
+				const results = yield* Effect.all(
+					[
+						batch.request(new EthBlockNumber({})),
+						batch.request(new EthChainId({})),
+						batch.request(
+							new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
+						),
+					],
+					{ batching: true },
+				);
+
+				return results;
+			}).pipe(
+				Effect.provide(RpcBatch),
+				Effect.provide(createMockTransport(handler)),
+			);
+
+			const [r1, r2, r3] = await Effect.runPromise(program);
+			expect(r1).toBe("0x100");
+			expect(r2).toBe("0x200");
+			expect(r3).toBe("0x300");
 		});
 	});
 });

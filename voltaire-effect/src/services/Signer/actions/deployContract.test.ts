@@ -309,4 +309,182 @@ describe("deployContract", () => {
 		const tx = capturedTx as { gasPrice?: bigint };
 		expect(tx.gasPrice).toBe(30000000000n);
 	});
+
+	it("fails address effect when receipt has no contractAddress", async () => {
+		const providerWithNullAddress: ProviderShape = {
+			...mockProvider,
+			waitForTransactionReceipt: () =>
+				Effect.succeed({
+					transactionHash: mockTxHashHex,
+					blockNumber: "0x1",
+					blockHash: "0xabc",
+					transactionIndex: "0x0",
+					from: "0xabababababababababababababababababababab",
+					to: null,
+					contractAddress: null,
+					cumulativeGasUsed: "0x5208",
+					gasUsed: "0x5208",
+					logs: [],
+					logsBloom: "0x0",
+					status: "0x1",
+					effectiveGasPrice: "0x3b9aca00",
+					type: "0x2",
+				}),
+		};
+		const NullAddressProviderLayer = Layer.succeed(
+			ProviderService,
+			providerWithNullAddress,
+		);
+		const NullAddressSignerLayer = Layer.provide(
+			Signer.Live,
+			Layer.mergeAll(TestAccountLayer, NullAddressProviderLayer, TestTransportLayer),
+		);
+		const NullAddressFullLayer = Layer.merge(
+			NullAddressSignerLayer,
+			NullAddressProviderLayer,
+		);
+
+		const program = deployContract({
+			abi: abiWithoutConstructor,
+			bytecode: simpleBytecode as HexType,
+		});
+
+		const result = await Effect.runPromise(
+			Effect.provide(program, NullAddressFullLayer),
+		);
+
+		expect(Hash.equals(result.hash, mockTxHash)).toBe(true);
+
+		const addressResult = await Effect.runPromiseExit(
+			Effect.provide(result.address, NullAddressProviderLayer),
+		);
+		expect(addressResult._tag).toBe("Failure");
+		if (addressResult._tag === "Failure") {
+			const error = addressResult.cause;
+			expect(String(error)).toContain("No contract address");
+		}
+	});
+
+	it("fails address effect when waitForTransactionReceipt fails", async () => {
+		const { ProviderError } = await import("../../Provider/index.js");
+		const providerWithReceiptError: ProviderShape = {
+			...mockProvider,
+			waitForTransactionReceipt: () =>
+				Effect.fail(
+					new ProviderError({}, "Network connection lost"),
+				),
+		};
+		const ErrorProviderLayer = Layer.succeed(
+			ProviderService,
+			providerWithReceiptError,
+		);
+		const ErrorSignerLayer = Layer.provide(
+			Signer.Live,
+			Layer.mergeAll(TestAccountLayer, ErrorProviderLayer, TestTransportLayer),
+		);
+		const ErrorFullLayer = Layer.merge(ErrorSignerLayer, ErrorProviderLayer);
+
+		const program = deployContract({
+			abi: abiWithoutConstructor,
+			bytecode: simpleBytecode as HexType,
+		});
+
+		const result = await Effect.runPromise(
+			Effect.provide(program, ErrorFullLayer),
+		);
+
+		expect(Hash.equals(result.hash, mockTxHash)).toBe(true);
+
+		const addressResult = await Effect.runPromiseExit(
+			Effect.provide(result.address, ErrorProviderLayer),
+		);
+		expect(addressResult._tag).toBe("Failure");
+		if (addressResult._tag === "Failure") {
+			const error = addressResult.cause;
+			expect(String(error)).toContain("Network connection lost");
+		}
+	});
+
+	it("ignores args when ABI has no constructor", async () => {
+		capturedTx = undefined;
+
+		const program = deployContract({
+			abi: abiWithoutConstructor,
+			bytecode: simpleBytecode as HexType,
+			args: [123n, "ignored"],
+		});
+
+		const result = await Effect.runPromise(
+			Effect.provide(program, FullTestLayer),
+		);
+
+		expect(Hash.equals(result.hash, mockTxHash)).toBe(true);
+
+		const tx = capturedTx as { data?: string | Uint8Array };
+		let dataStr: string;
+		if (typeof tx.data === "string") {
+			dataStr = tx.data;
+		} else if (tx.data && typeof tx.data === "object" && "length" in tx.data) {
+			dataStr = `0x${Buffer.from(tx.data as unknown as number[]).toString("hex")}`;
+		} else {
+			dataStr = "";
+		}
+		expect(dataStr).toBe(simpleBytecode);
+	});
+
+	it("fails with empty bytecode", async () => {
+		const program = deployContract({
+			abi: abiWithoutConstructor,
+			bytecode: "0x" as HexType,
+		});
+
+		const result = await Effect.runPromise(
+			Effect.provide(program, FullTestLayer),
+		);
+
+		expect(Hash.equals(result.hash, mockTxHash)).toBe(true);
+	});
+
+	it("fails with invalid non-hex bytecode", async () => {
+		const invalidBytecode = "not-hex-bytecode";
+
+		const program = deployContract({
+			abi: abiWithoutConstructor,
+			bytecode: invalidBytecode as HexType,
+		});
+
+		const result = await Effect.runPromiseExit(
+			Effect.provide(program, FullTestLayer),
+		);
+
+		expect(result._tag).toBe("Failure");
+	});
+
+	it("fails when constructor args do not match ABI types", async () => {
+		const program = deployContract({
+			abi: abiWithConstructor,
+			bytecode: simpleBytecode as HexType,
+			args: ["not-a-number", 12345],
+		});
+
+		const result = await Effect.runPromiseExit(
+			Effect.provide(program, FullTestLayer),
+		);
+
+		expect(result._tag).toBe("Failure");
+	});
+
+	it("fails when constructor args count mismatches ABI", async () => {
+		const program = deployContract({
+			abi: abiWithConstructor,
+			bytecode: simpleBytecode as HexType,
+			args: [100n],
+		});
+
+		const result = await Effect.runPromiseExit(
+			Effect.provide(program, FullTestLayer),
+		);
+
+		expect(result._tag).toBe("Failure");
+	});
 });

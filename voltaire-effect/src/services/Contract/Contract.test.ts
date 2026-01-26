@@ -60,6 +60,24 @@ const erc20Abi = [
 		outputs: [],
 	},
 	{
+		type: "function",
+		name: "getReserves",
+		stateMutability: "view",
+		inputs: [],
+		outputs: [
+			{ name: "reserve0", type: "uint112" },
+			{ name: "reserve1", type: "uint112" },
+			{ name: "blockTimestampLast", type: "uint32" },
+		],
+	},
+	{
+		type: "function",
+		name: "sync",
+		stateMutability: "nonpayable",
+		inputs: [],
+		outputs: [],
+	},
+	{
 		type: "event",
 		name: "Transfer",
 		inputs: [
@@ -240,6 +258,38 @@ describe("Contract", () => {
 			expect(typeof result).toBe("bigint");
 		});
 
+		it("returns tuple/array for function with multiple outputs", async () => {
+			// getReserves returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)
+			// Encoded: 3 words padded to 32 bytes each
+			const reserve0 = 1000000000000000000n;
+			const reserve1 = 2000000000000000000n;
+			const blockTimestamp = 1234567890n;
+			mockProvider.call.mockReturnValue(
+				Effect.succeed(
+					("0x" +
+						reserve0.toString(16).padStart(64, "0") +
+						reserve1.toString(16).padStart(64, "0") +
+						blockTimestamp.toString(16).padStart(64, "0")) as HexType,
+				),
+			);
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				const result = yield* contract.read.getReserves();
+				return result;
+			});
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(Array.isArray(result)).toBe(true);
+			expect((result as bigint[]).length).toBe(3);
+			expect((result as bigint[])[0]).toBe(reserve0);
+			expect((result as bigint[])[1]).toBe(reserve1);
+			expect((result as bigint[])[2]).toBe(blockTimestamp);
+		});
+
 		it("returns ContractCallError on failure", async () => {
 			mockProvider.call.mockReturnValue(
 				Effect.fail(new Error("execution reverted")),
@@ -257,6 +307,69 @@ describe("Contract", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+		});
+
+		it("returns ContractCallError for malformed return data (empty 0x)", async () => {
+			mockProvider.call.mockReturnValue(Effect.succeed("0x" as HexType));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				return yield* contract.read.balanceOf(
+					Address("0x1234567890123456789012345678901234567890"),
+				);
+			}).pipe(
+				Effect.catchTag("ContractCallError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toContain("caught:");
+		});
+
+		it("returns ContractCallError for return data too short", async () => {
+			mockProvider.call.mockReturnValue(Effect.succeed("0x1234" as HexType));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				return yield* contract.read.balanceOf(
+					Address("0x1234567890123456789012345678901234567890"),
+				);
+			}).pipe(
+				Effect.catchTag("ContractCallError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toContain("caught:");
+		});
+
+		it("returns ContractCallError for odd-length hex", async () => {
+			mockProvider.call.mockReturnValue(Effect.succeed("0x123" as HexType));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				return yield* contract.read.balanceOf(
+					Address("0x1234567890123456789012345678901234567890"),
+				);
+			}).pipe(
+				Effect.catchTag("ContractCallError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toContain("caught:");
 		});
 	});
 
