@@ -156,13 +156,22 @@ export type TransactionRequest = {
 	readonly blobVersionedHashes?: readonly `0x${string}`[];
 	/** EIP-4844: Max fee per blob gas */
 	readonly maxFeePerBlobGas?: bigint;
+	/** EIP-4844: Raw blob data (sidecar) */
+	readonly blobs?: readonly Uint8Array[];
+	/** EIP-4844: KZG commitments for blobs (sidecar) */
+	readonly kzgCommitments?: readonly `0x${string}`[];
+	/** EIP-4844: KZG proofs for blobs (sidecar) */
+	readonly kzgProofs?: readonly `0x${string}`[];
 
 	/** EIP-7702: Authorization list for set code transactions */
 	readonly authorizationList?: readonly {
 		chainId: bigint;
 		address: `0x${string}`;
 		nonce: bigint;
-		yParity: number;
+		/** Signature parity (0/1). Use `v` (27/28) if preferred. */
+		yParity?: number;
+		/** Signature recovery id (27/28 or 0/1). */
+		v?: number;
 		r: `0x${string}`;
 		s: `0x${string}`;
 	}[];

@@ -62,14 +62,32 @@ const getTransactionType = (
 	supportsEIP1559: boolean,
 ): 0 | 1 | 2 | 3 | 4 => {
 	if (tx.type !== undefined) return tx.type;
-	if (tx.authorizationList && tx.authorizationList.length > 0) return 4;
-	if (tx.blobVersionedHashes && tx.blobVersionedHashes.length > 0) return 3;
+	if (tx.authorizationList !== undefined) return 4;
+	const hasBlobFields =
+		tx.blobVersionedHashes !== undefined ||
+		tx.maxFeePerBlobGas !== undefined ||
+		tx.blobs !== undefined ||
+		tx.kzgCommitments !== undefined ||
+		tx.kzgProofs !== undefined;
+	if (hasBlobFields) return 3;
 	if (tx.maxFeePerGas !== undefined || tx.maxPriorityFeePerGas !== undefined)
 		return 2;
-	if (tx.accessList && tx.accessList.length > 0 && tx.gasPrice !== undefined)
+	if (tx.accessList !== undefined && tx.gasPrice !== undefined)
 		return 1;
 	if (tx.gasPrice !== undefined) return 0;
 	return supportsEIP1559 ? 2 : 0;
+};
+
+const toAuthorizationParity = (auth: {
+	yParity?: number;
+	v?: number;
+}): number => {
+	if (auth.yParity !== undefined) return auth.yParity;
+	if (auth.v !== undefined) {
+		if (auth.v === 27 || auth.v === 28) return auth.v - 27;
+		return auth.v % 2;
+	}
+	return 0;
 };
 
 /**
@@ -213,7 +231,7 @@ const serializeTransaction = (
 				chainId: auth.chainId,
 				address: Address.fromHex(auth.address),
 				nonce: auth.nonce,
-				yParity: auth.yParity,
+				yParity: toAuthorizationParity(auth),
 				r: Hex.toBytes(auth.r as HexType),
 				s: Hex.toBytes(auth.s as HexType),
 			}));
@@ -336,12 +354,19 @@ const SignerLive: Layer.Layer<
 						: undefined;
 
 				const txForSigning = {
+					type: txType,
 					to: toAddress,
 					value: tx.value,
 					data: tx.data,
 					nonce,
 					chainId,
 					gasLimit,
+					accessList: tx.accessList,
+					blobVersionedHashes: tx.blobVersionedHashes,
+					blobs: tx.blobs,
+					kzgCommitments: tx.kzgCommitments,
+					kzgProofs: tx.kzgProofs,
+					authorizationList: tx.authorizationList,
 					...gasParams,
 				};
 
