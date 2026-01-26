@@ -45,6 +45,6 @@ export const encrypt = (
 	options?: EncryptOptions,
 ): Effect.Effect<KeystoreV3, EncryptionError> =>
 	Effect.tryPromise({
-		try: () => Keystore.encrypt(privateKey, password, options),
+		try: () => Keystore.encrypt(privateKey as never, password, options),
 		catch: (e) => e as EncryptionError,
 	});
