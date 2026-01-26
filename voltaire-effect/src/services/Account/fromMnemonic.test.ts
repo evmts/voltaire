@@ -1,5 +1,5 @@
 import { Address } from "@tevm/voltaire";
-import { HDWallet } from "@tevm/voltaire/HDWallet";
+import { HDWallet } from "@tevm/voltaire/native";
 import * as Effect from "effect/Effect";
 import { describe, expect, it } from "@effect/vitest";
 import { KeccakLive } from "../../crypto/Keccak256/index.js";

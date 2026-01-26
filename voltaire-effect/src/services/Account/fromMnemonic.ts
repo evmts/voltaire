@@ -35,7 +35,7 @@ import { AccountService } from "./AccountService.js";
 import { createLocalAccount } from "./LocalAccount.js";
 
 type HexType = BrandedHex.HexType;
-type HDWalletApi = typeof import("@tevm/voltaire/HDWallet").HDWallet;
+type HDWalletApi = typeof import("@tevm/voltaire/native").HDWallet;
 
 let hdWalletModulePromise:
 	| Promise<{ HDWallet: HDWalletApi }>
@@ -43,7 +43,7 @@ let hdWalletModulePromise:
 
 const loadHdWallet = (): Promise<{ HDWallet: HDWalletApi }> => {
 	if (!hdWalletModulePromise) {
-		hdWalletModulePromise = import("@tevm/voltaire/HDWallet");
+				hdWalletModulePromise = import("@tevm/voltaire/native");
 	}
 	return hdWalletModulePromise;
 };

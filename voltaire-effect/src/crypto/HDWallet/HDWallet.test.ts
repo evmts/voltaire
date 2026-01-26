@@ -1,4 +1,4 @@
-import { HDWallet } from "@tevm/voltaire/HDWallet";
+import { HDWallet } from "@tevm/voltaire/native";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import { describe, expect, it } from "@effect/vitest";

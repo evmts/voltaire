@@ -83,10 +83,14 @@ describe("BatchScheduler", () => {
 		});
 
 		it("fails individual deferred when batch response has error", async () => {
-			const send = vi.fn(() =>
-				Effect.succeed([
-					{ id: 1, error: { code: -32603, message: "Internal error" } },
-				]),
+			const send = vi.fn(
+				(requests: { id: number }[]) =>
+					Effect.succeed([
+						{
+							id: requests[0]?.id ?? -1,
+							error: { code: -32603, message: "Internal error" },
+						},
+					]),
 			);
 			const program = Effect.gen(function* () {
 				const scheduler = yield* createBatchScheduler(send);

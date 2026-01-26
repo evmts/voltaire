@@ -15,7 +15,7 @@ import {
 	mapToHDWalletError,
 } from "./errors.js";
 
-import type { HDWallet as HDWalletApi } from "@tevm/voltaire/HDWallet";
+import type { HDWallet as HDWalletApi } from "@tevm/voltaire/native";
 
 type HDWalletModule = { HDWallet: HDWalletApi };
 
@@ -23,7 +23,7 @@ let hdWalletModulePromise: Promise<HDWalletModule> | undefined;
 
 const loadHdWallet = (): Promise<HDWalletModule> => {
 	if (!hdWalletModulePromise) {
-		hdWalletModulePromise = import("@tevm/voltaire/HDWallet");
+		hdWalletModulePromise = import("@tevm/voltaire/native");
 	}
 	return hdWalletModulePromise;
 };
