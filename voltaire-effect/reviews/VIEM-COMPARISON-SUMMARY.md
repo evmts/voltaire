@@ -41,7 +41,7 @@ voltaire-effect provides a solid foundation with Effect-based APIs, but has sign
 | Gap | Impact | Files |
 |-----|--------|-------|
 | ~~No fallback transport ranking~~ | ✅ Fixed (latency ranking option) | Transport |
-| No HD derivation options | Can't derive child accounts | Account |
+| ~~No HD derivation options~~ | ✅ Fixed (MnemonicAccount path/deriveChild/hdKey) | Account |
 | No `sign({ hash })` on Account | Raw signing needed for protocols | Account |
 | No filter-based subscriptions | No eth_newFilter support | Provider |
 | ~~No ENS methods~~ | ✅ Fixed (getEnsAddress, getEnsName, getEnsText, getEnsAvatar) | Provider |
@@ -104,7 +104,7 @@ voltaire-effect provides a solid foundation with Effect-based APIs, but has sign
 
 14. **Account.sign({ hash })** - Raw hash signing
 15. **Account.publicKey property** - Signature verification
-16. **HD derivation options** - Child account derivation
+16. ✅ **HD derivation options** - Child account derivation (implemented)
 17. **toAccount factory** - Custom signing implementations
 18. **ERC-6492 signature support** - Smart account counterfactual
 

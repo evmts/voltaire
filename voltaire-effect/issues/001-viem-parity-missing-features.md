@@ -32,13 +32,13 @@ Comprehensive gap analysis comparing viem's client architecture against voltaire
 - Provider simulation (stateOverride, blockOverrides in call, simulateContract, getBlobBaseFee)
 - ENS support (getEnsAddress, getEnsName, getEnsText, getEnsAvatar, getEnsResolver)
 - Signature utilities (verifyMessage, verifyTypedData, verifyHash, recoverAddress, hashMessage, constantTimeEqual)
+- HD derivation options (MnemonicAccount path, deriveChild, hdKey)
 
 **Priority Gaps (remaining):**
 - P1: Chain formatters for L2s (OP Stack, Arbitrum, Celo)
 - P1: watchEvent / watchContractEvent subscriptions
 - P2: filter-based subscriptions (eth_newFilter)
 - P2: Effect.Request batching, Effect.Config
-- P2: HD derivation options, sign({ hash }) on Account
 - P3: SIWE support, getProof, getTransactionConfirmations
 
 **Naming Convention:** We use ethers-style naming:
@@ -317,7 +317,6 @@ readonly watchAsset: (asset: WatchAssetParams) => Effect.Effect<boolean, WalletE
 <gaps>
 - No `Account.sign({ hash })` for raw hash signing
 - No `Account.publicKey` property
-- No HD derivation options (child account derivation)
 - No `toAccount` factory for custom signing
 - No ERC-6492 signature support (smart account counterfactual)
 - LocalAccount has no memory cleanup for private keys
@@ -348,7 +347,7 @@ const LocalAccount = (privateKey: Hex) =>
 <implementation_steps>
 1. Add `sign({ hash })` to AccountService interface
 2. Add `publicKey` property to LocalAccount
-3. Add HD derivation support to fromMnemonic
+3. ✅ Add HD derivation support to fromMnemonic
 4. Create toAccount factory for custom signers
 5. Implement ERC-6492 signature wrapping
 6. Add memory cleanup for private keys (acquireRelease)
