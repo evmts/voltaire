@@ -12,6 +12,116 @@ import { defineConfig, type Plugin } from "vite";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// Map @tevm/voltaire subpath exports to source files
+function voltaireSubpathResolver(): Plugin {
+	const primitives = [
+		"Abi",
+		"AccessList",
+		"Address",
+		"Authorization",
+		"Base64",
+		"BinaryTree",
+		"Blob",
+		"BloomFilter",
+		"Bytecode",
+		"Bytes",
+		"Chain",
+		"ContractCode",
+		"Denomination",
+		"Ens",
+		"EventLog",
+		"errors",
+		"FeeMarket",
+		"GasConstants",
+		"Hardfork",
+		"Hash",
+		"Hex",
+		"InitCode",
+		"LogFilter",
+		"Opcode",
+		"Rlp",
+		"PrivateKey",
+		"PublicKey",
+		"Signature",
+		"Siwe",
+		"State",
+		"Transaction",
+		"Uint",
+	];
+
+	const crypto = [
+		"AesGcm",
+		"Bip39",
+		"Blake2",
+		"Bls12381",
+		"BN254",
+		"ChaCha20Poly1305",
+		"Ed25519",
+		"EIP712",
+		"HDWallet",
+		"HMAC",
+		"Keccak256",
+		"Keystore",
+		"KZG",
+		"PBKDF2",
+		"Ripemd160",
+		"Scrypt",
+		"Secp256k1",
+		"SHA256",
+		"X25519",
+	];
+
+	const topLevel = ["block", "contract", "transaction", "stream"];
+
+	return {
+		name: "voltaire-subpath-resolver",
+		resolveId(source) {
+			// Handle @tevm/voltaire main entry
+			if (source === "@tevm/voltaire") {
+				return resolve(__dirname, "../src/index.ts");
+			}
+			// Handle @tevm/voltaire/wasm
+			if (source === "@tevm/voltaire/wasm") {
+				return resolve(__dirname, "../src/wasm/index.ts");
+			}
+			// Handle @tevm/voltaire subpath imports
+			if (source.startsWith("@tevm/voltaire/")) {
+				const subpath = source.replace("@tevm/voltaire/", "");
+				const basePath = subpath.split("/")[0];
+
+				// Handle /effect subpaths like Hash/effect
+				if (subpath.endsWith("/effect")) {
+					const primName = subpath.replace("/effect", "");
+					if (primitives.includes(primName)) {
+						return resolve(__dirname, `../src/primitives/${primName}/effect.ts`);
+					}
+				}
+
+				if (primitives.includes(basePath)) {
+					return resolve(__dirname, `../src/primitives/${subpath}/index.ts`);
+				}
+				if (crypto.includes(basePath)) {
+					return resolve(__dirname, `../src/crypto/${subpath}/index.ts`);
+				}
+				if (topLevel.includes(basePath)) {
+					return resolve(__dirname, `../src/${subpath}/index.ts`);
+				}
+
+				// Fallback: try primitives then crypto
+				const primPath = resolve(__dirname, `../src/primitives/${subpath}/index.ts`);
+				if (existsSync(primPath)) {
+					return primPath;
+				}
+				const cryptoPath = resolve(__dirname, `../src/crypto/${subpath}/index.ts`);
+				if (existsSync(cryptoPath)) {
+					return cryptoPath;
+				}
+			}
+			return null;
+		},
+	};
+}
+
 // Plugin to copy esbuild.wasm to public/ for runtime access
 function copyEsbuildWasmPlugin(): Plugin {
 	return {
@@ -166,6 +276,7 @@ function modernMonacoPlugin(): Plugin {
 
 export default defineConfig({
 	plugins: [
+		voltaireSubpathResolver(),
 		modernMonacoPlugin(),
 		copyEsbuildWasmPlugin(),
 		copyModernMonacoPlugin(),
@@ -189,9 +300,8 @@ export default defineConfig({
 				__dirname,
 				"node_modules/typescript/lib/typescript.js",
 			),
-			// Main entry points
-			"@tevm/voltaire/wasm": resolve(__dirname, "../src/wasm/index.ts"),
-			"@tevm/voltaire": resolve(__dirname, "../src/index.ts"),
+			// Note: @tevm/voltaire is handled by voltaireSubpathResolver plugin
+			// to properly resolve subpath imports like @tevm/voltaire/Blob
 			"voltaire/wasm": resolve(__dirname, "../src/wasm/index.ts"),
 			voltaire: resolve(__dirname, "../src/index.ts"),
 		},
