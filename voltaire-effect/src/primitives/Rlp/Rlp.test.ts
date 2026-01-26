@@ -685,3 +685,254 @@ describe("Rlp large data", () => {
 		}
 	});
 });
+
+describe("Rlp list boundary cases", () => {
+	it("encodes list with exactly 55 bytes total payload (boundary)", () => {
+		// Each item: 0x83 + 3 bytes = 4 bytes encoded. Need 55 bytes, so 13 items + 3 bytes leftover
+		// Actually simpler: 55 single-byte items (each encoded as itself) = 55 bytes payload
+		const items = Array.from({ length: 55 }, (_, i) => new Uint8Array([i % 128]));
+		const encoded = Effect.runSync(Rlp.encode(items));
+		// List prefix for 55 bytes: 0xc0 + 55 = 0xf7
+		expect(encoded[0]).toBe(0xf7);
+		expect(encoded.length).toBe(56); // 1 prefix + 55 payload
+	});
+
+	it("encodes list with exactly 56 bytes total payload (crosses boundary)", () => {
+		// 56 single-byte items = 56 bytes payload
+		const items = Array.from({ length: 56 }, (_, i) => new Uint8Array([i % 128]));
+		const encoded = Effect.runSync(Rlp.encode(items));
+		// Long list prefix: 0xf8 (1 length byte) + 0x38 (56)
+		expect(encoded[0]).toBe(0xf8);
+		expect(encoded[1]).toBe(56);
+		expect(encoded.length).toBe(58); // 2 prefix bytes + 56 payload
+	});
+
+	it("encodes list containing a list at the 55-byte boundary", () => {
+		// Nested list at boundary: [[53 bytes]] = 0xc1 + inner = 0xc1 + 0xb7 + 53 bytes
+		const innerData = new Uint8Array(53).fill(0x42);
+		const nested: Encodable = [[innerData]];
+		const encoded = Effect.runSync(Rlp.encode(nested));
+		const { data } = Effect.runSync(Rlp.decode(encoded));
+		expect(data.type).toBe("list");
+		const reEncoded = Effect.runSync(Rlp.encode(data));
+		expect(reEncoded).toEqual(encoded);
+	});
+});
+
+describe("Rlp canonical encoding additional tests", () => {
+	it("rejects single byte >= 0x80 encoded without prefix (non-canonical would be impossible to represent)", () => {
+		// This is a conceptual test - RLP spec requires single bytes >= 0x80 to have 0x81 prefix
+		// Encoding 0x80 directly would be interpreted as empty string
+		const decoded = Effect.runSync(Rlp.decode(new Uint8Array([0x80])));
+		expect(decoded.data).toEqual({ type: "bytes", value: new Uint8Array(0) });
+	});
+
+	it("handles maximum single-byte length prefix (55 bytes)", () => {
+		// 0xb7 is the max prefix for short strings (0x80 + 55 = 0xb7)
+		const data = new Uint8Array(55).fill(0xff);
+		const encoded = Effect.runSync(Rlp.encode(data));
+		expect(encoded[0]).toBe(0xb7);
+		const { data: decoded } = Effect.runSync(Rlp.decode(encoded));
+		if (decoded.type === "bytes") {
+			expect(decoded.value.length).toBe(55);
+		}
+	});
+
+	it("rejects 0xb8 0x00 (empty data claiming long format)", async () => {
+		// Non-canonical: using long string format for data that could fit in short format
+		const nonCanonical = new Uint8Array([0xb8, 0x00]);
+		await expect(Effect.runPromise(Rlp.decode(nonCanonical))).rejects.toThrow();
+	});
+
+	it("rejects 0xb8 0x37 (55 bytes claiming long format)", async () => {
+		// Non-canonical: 55 bytes should use 0xb7 prefix, not 0xb8 0x37
+		const nonCanonical = new Uint8Array([0xb8, 0x37, ...new Array(55).fill(0xab)]);
+		await expect(Effect.runPromise(Rlp.decode(nonCanonical))).rejects.toThrow();
+	});
+
+	it("rejects 0xf8 0x00 (empty list claiming long format)", async () => {
+		// Non-canonical: empty list should be 0xc0, not 0xf8 0x00
+		const nonCanonical = new Uint8Array([0xf8, 0x00]);
+		await expect(Effect.runPromise(Rlp.decode(nonCanonical))).rejects.toThrow();
+	});
+});
+
+describe("Rlp transaction-like structures", () => {
+	it("encodes/decodes legacy transaction structure", () => {
+		// Legacy tx: [nonce, gasPrice, gasLimit, to, value, data, v, r, s]
+		const tx: Encodable = [
+			fromInt(0), // nonce
+			fromInt(20000000000), // gasPrice (20 gwei)
+			fromInt(21000), // gasLimit
+			fromHex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"), // to (vitalik.eth)
+			fromInt(1000000000000000000), // value (1 ETH)
+			new Uint8Array(0), // data
+			fromInt(27), // v
+			fromHex("0x" + "ab".repeat(32)), // r
+			fromHex("0x" + "cd".repeat(32)), // s
+		];
+
+		const encoded = Effect.runSync(Rlp.encode(tx));
+		const { data } = Effect.runSync(Rlp.decode(encoded));
+		expect(data.type).toBe("list");
+		if (data.type === "list") {
+			expect(data.value.length).toBe(9);
+		}
+		const reEncoded = Effect.runSync(Rlp.encode(data));
+		expect(reEncoded).toEqual(encoded);
+	});
+
+	it("encodes/decodes EIP-2930 access list structure", () => {
+		// Access list: [[address, [storageKeys...]]]
+		const accessList: Encodable = [
+			[
+				fromHex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"),
+				[
+					fromHex("0x" + "00".repeat(32)),
+					fromHex("0x" + "01".repeat(32)),
+				],
+			],
+		];
+
+		const encoded = Effect.runSync(Rlp.encode(accessList));
+		const { data } = Effect.runSync(Rlp.decode(encoded));
+		const reEncoded = Effect.runSync(Rlp.encode(data));
+		expect(reEncoded).toEqual(encoded);
+	});
+
+	it("encodes/decodes block header structure", () => {
+		// Simplified block header fields
+		const header: Encodable = [
+			fromHex("0x" + "ab".repeat(32)), // parentHash
+			fromHex("0x" + "00".repeat(32)), // ommersHash
+			fromHex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"), // beneficiary
+			fromHex("0x" + "cd".repeat(32)), // stateRoot
+			fromHex("0x" + "ef".repeat(32)), // transactionsRoot
+			fromHex("0x" + "12".repeat(32)), // receiptsRoot
+			new Uint8Array(256).fill(0), // logsBloom
+			fromInt(1), // difficulty
+			fromInt(12345678), // number
+			fromInt(30000000), // gasLimit
+			fromInt(21000), // gasUsed
+			fromInt(1640000000), // timestamp
+			new Uint8Array(0), // extraData
+			fromHex("0x" + "ff".repeat(32)), // mixHash
+			fromHex("0x" + "00".repeat(8)), // nonce
+		];
+
+		const encoded = Effect.runSync(Rlp.encode(header));
+		const { data } = Effect.runSync(Rlp.decode(encoded));
+		expect(data.type).toBe("list");
+		if (data.type === "list") {
+			expect(data.value.length).toBe(15);
+		}
+		const reEncoded = Effect.runSync(Rlp.encode(data));
+		expect(reEncoded).toEqual(encoded);
+	});
+});
+
+describe("Rlp integer encoding edge cases", () => {
+	it("encodes integer 0 as empty bytes (0x80)", () => {
+		const encoded = Effect.runSync(Rlp.encode(fromInt(0)));
+		expect(encoded).toEqual(new Uint8Array([0x80]));
+	});
+
+	it("encodes integers without leading zeros", () => {
+		// 256 = 0x0100 should be [0x01, 0x00], not [0x00, 0x01, 0x00]
+		const encoded = Effect.runSync(Rlp.encode(fromInt(256)));
+		expect(encoded).toEqual(new Uint8Array([0x82, 0x01, 0x00]));
+	});
+
+	it("encodes max uint64 correctly", () => {
+		// 2^64 - 1 = 0xffffffffffffffff
+		const maxUint64 = fromHex("0xffffffffffffffff");
+		const encoded = Effect.runSync(Rlp.encode(maxUint64));
+		expect(encoded[0]).toBe(0x88); // 8 bytes + 0x80
+		expect(encoded.length).toBe(9);
+	});
+
+	it("encodes max uint256 correctly", () => {
+		// 2^256 - 1 = 32 bytes of 0xff
+		const maxUint256 = new Uint8Array(32).fill(0xff);
+		const encoded = Effect.runSync(Rlp.encode(maxUint256));
+		expect(encoded[0]).toBe(0xa0); // 32 bytes + 0x80
+		expect(encoded.length).toBe(33);
+	});
+
+	it("round-trips large integer values", () => {
+		const values = [
+			fromInt(127), // max single byte
+			fromInt(128), // first 2-byte
+			fromInt(255), // max 1-byte value
+			fromInt(256), // first 2-byte big-endian
+			fromInt(65535), // max 2-byte
+			fromInt(65536), // first 3-byte
+			fromInt(16777215), // max 3-byte
+			fromInt(16777216), // first 4-byte
+		];
+
+		for (const value of values) {
+			const encoded = Effect.runSync(Rlp.encode(value));
+			const { data } = Effect.runSync(Rlp.decode(encoded));
+			const reEncoded = Effect.runSync(Rlp.encode(data));
+			expect(reEncoded).toEqual(encoded);
+		}
+	});
+});
+
+describe("Rlp mixed content lists", () => {
+	it("encodes list with empty and non-empty items", () => {
+		const mixed: Encodable = [
+			new Uint8Array(0), // empty
+			new Uint8Array([1]), // single byte
+			new Uint8Array([128]), // single byte >= 0x80
+			[], // empty list
+			[new Uint8Array(0)], // list with empty bytes
+		];
+
+		const encoded = Effect.runSync(Rlp.encode(mixed));
+		const { data } = Effect.runSync(Rlp.decode(encoded));
+		expect(data.type).toBe("list");
+		const reEncoded = Effect.runSync(Rlp.encode(data));
+		expect(reEncoded).toEqual(encoded);
+	});
+
+	it("encodes alternating bytes and lists", () => {
+		const alternating: Encodable = [
+			new Uint8Array([1]),
+			[new Uint8Array([2])],
+			new Uint8Array([3]),
+			[new Uint8Array([4])],
+		];
+
+		const encoded = Effect.runSync(Rlp.encode(alternating));
+		expect(encoded).toEqual(new Uint8Array([
+			0xc8, // list of 8 bytes
+			0x01, // 1
+			0xc1, 0x02, // [2]
+			0x03, // 3
+			0xc1, 0x04, // [4]
+		]));
+	});
+
+	it("handles deeply nested mixed structure", () => {
+		const deep: Encodable = [
+			new Uint8Array([1]),
+			[
+				new Uint8Array([2]),
+				[
+					new Uint8Array([3]),
+					[
+						new Uint8Array([4]),
+						[new Uint8Array([5])],
+					],
+				],
+			],
+		];
+
+		const encoded = Effect.runSync(Rlp.encode(deep));
+		const { data } = Effect.runSync(Rlp.decode(encoded));
+		const reEncoded = Effect.runSync(Rlp.encode(data));
+		expect(reEncoded).toEqual(encoded);
+	});
+});

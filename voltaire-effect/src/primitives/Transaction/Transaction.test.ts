@@ -568,3 +568,948 @@ describe("Transaction.Type", () => {
 		expect(Transaction.Type.EIP7702).toBe(0x04);
 	});
 });
+
+describe("Transaction.Schema (direct struct validation)", () => {
+	// Schemas expect hex string addresses for the encoded (input) side
+	const testAddressHex = "0x" + "42".repeat(20);
+
+	describe("LegacySchema", () => {
+		it("validates valid legacy transaction", () => {
+			const tx = {
+				type: Transaction.Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddressHex,
+				value: 0n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const decoded = S.decodeSync(Transaction.LegacySchema)(tx);
+			expect(decoded.type).toBe(Transaction.Type.Legacy);
+		});
+
+		it("rejects wrong type field", () => {
+			const tx = {
+				type: Transaction.Type.EIP1559,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddressHex,
+				value: 0n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			expect(() => S.decodeSync(Transaction.LegacySchema)(tx)).toThrow();
+		});
+
+		it("rejects missing required fields", () => {
+			const tx = {
+				type: Transaction.Type.Legacy,
+				nonce: 0n,
+				// missing gasPrice
+				gasLimit: 21000n,
+				to: testAddressHex,
+				value: 0n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			expect(() => S.decodeSync(Transaction.LegacySchema)(tx as any)).toThrow();
+		});
+
+		it("validates contract creation with null to", () => {
+			const tx = {
+				type: Transaction.Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 1000000n,
+				to: null,
+				value: 0n,
+				data: new Uint8Array([0x60, 0x80]),
+				v: 27n,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const decoded = S.decodeSync(Transaction.LegacySchema)(tx);
+			expect(decoded.to).toBeNull();
+		});
+	});
+
+	describe("EIP2930Schema", () => {
+		it("validates valid EIP-2930 transaction", () => {
+			const tx = {
+				type: Transaction.Type.EIP2930,
+				chainId: 1n,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddressHex,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const decoded = S.decodeSync(Transaction.EIP2930Schema)(tx);
+			expect(decoded.type).toBe(Transaction.Type.EIP2930);
+			expect(decoded.chainId).toBe(1n);
+		});
+
+		it("validates with access list containing storage keys", () => {
+			const tx = {
+				type: Transaction.Type.EIP2930,
+				chainId: 1n,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddressHex,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [
+					{
+						address: testAddressHex,
+						storageKeys: [createHash(1), createHash(2)],
+					},
+				],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const decoded = S.decodeSync(Transaction.EIP2930Schema)(tx);
+			expect(decoded.accessList.length).toBe(1);
+			expect(decoded.accessList[0]?.storageKeys.length).toBe(2);
+		});
+	});
+
+	describe("EIP1559Schema", () => {
+		it("validates valid EIP-1559 transaction", () => {
+			const tx = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddressHex,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const decoded = S.decodeSync(Transaction.EIP1559Schema)(tx);
+			expect(decoded.type).toBe(Transaction.Type.EIP1559);
+			expect(decoded.maxFeePerGas).toBe(20000000000n);
+		});
+
+		it("rejects wrong type field", () => {
+			const tx = {
+				type: Transaction.Type.Legacy,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddressHex,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			expect(() => S.decodeSync(Transaction.EIP1559Schema)(tx as any)).toThrow();
+		});
+	});
+
+	describe("EIP4844Schema", () => {
+		const blobHash = createHash(0x01);
+
+		it("validates valid EIP-4844 transaction", () => {
+			const tx = {
+				type: Transaction.Type.EIP4844,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddressHex,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				maxFeePerBlobGas: 1000000000n,
+				blobVersionedHashes: [blobHash],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const decoded = S.decodeSync(Transaction.EIP4844Schema)(tx);
+			expect(decoded.type).toBe(Transaction.Type.EIP4844);
+			expect(decoded.maxFeePerBlobGas).toBe(1000000000n);
+		});
+
+		it("validates with empty blob hashes", () => {
+			const tx = {
+				type: Transaction.Type.EIP4844,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddressHex,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				maxFeePerBlobGas: 1000000000n,
+				blobVersionedHashes: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const decoded = S.decodeSync(Transaction.EIP4844Schema)(tx);
+			expect(decoded.blobVersionedHashes.length).toBe(0);
+		});
+	});
+
+	describe("EIP7702Schema", () => {
+		it("validates valid EIP-7702 transaction", () => {
+			const tx = {
+				type: Transaction.Type.EIP7702,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddressHex,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				authorizationList: [
+					{
+						chainId: 1n,
+						address: testAddressHex,
+						nonce: 0n,
+						yParity: 0,
+						r: testSignature.r,
+						s: testSignature.s,
+					},
+				],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const decoded = S.decodeSync(Transaction.EIP7702Schema)(tx);
+			expect(decoded.type).toBe(Transaction.Type.EIP7702);
+			expect(decoded.authorizationList.length).toBe(1);
+		});
+	});
+
+	describe("Schema (union)", () => {
+		it("accepts any valid transaction type", () => {
+			const legacyTx = {
+				type: Transaction.Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddressHex,
+				value: 0n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const decoded = S.decodeSync(Transaction.Schema)(legacyTx);
+			expect(decoded.type).toBe(Transaction.Type.Legacy);
+		});
+
+		it("discriminates based on type field", () => {
+			const eip1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddressHex,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const decoded = S.decodeSync(Transaction.Schema)(eip1559);
+			expect(decoded.type).toBe(Transaction.Type.EIP1559);
+		});
+	});
+});
+
+describe("Transaction.Rpc additional coverage", () => {
+	describe("EIP-2930 RPC", () => {
+		it("parses EIP-2930 RPC format", () => {
+			const rpc = {
+				type: "0x1",
+				chainId: "0x1",
+				nonce: "0x0",
+				gasPrice: "0x4a817c800",
+				gasLimit: "0x5208",
+				to: "0x" + "42".repeat(20),
+				value: "0x0",
+				data: "0x",
+				accessList: [
+					{
+						address: "0x" + "11".repeat(20),
+						storageKeys: ["0x" + "22".repeat(32)],
+					},
+				],
+			};
+			const tx = S.decodeSync(Transaction.Rpc)(rpc);
+			expect(tx.type).toBe(Transaction.Type.EIP2930);
+			expect((tx as Transaction.EIP2930).accessList.length).toBe(1);
+		});
+
+		it("round-trips EIP-2930 through RPC format", () => {
+			const eip2930Tx: Transaction.EIP2930 = {
+				type: Transaction.Type.EIP2930,
+				chainId: 1n,
+				nonce: 5n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 1000000000000000000n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const rpc = S.encodeSync(Transaction.Rpc)(eip2930Tx);
+			expect(rpc.type).toBe("0x1");
+			expect(rpc.chainId).toBe("0x1");
+		});
+	});
+
+	describe("EIP-4844 RPC", () => {
+		it("parses EIP-4844 RPC format", () => {
+			const rpc = {
+				type: "0x3",
+				chainId: "0x1",
+				nonce: "0x0",
+				maxPriorityFeePerGas: "0x3b9aca00",
+				maxFeePerGas: "0x4a817c800",
+				gasLimit: "0x5208",
+				to: "0x" + "42".repeat(20),
+				value: "0x0",
+				data: "0x",
+				accessList: [],
+				maxFeePerBlobGas: "0x3b9aca00",
+				blobVersionedHashes: ["0x01" + "00".repeat(31)],
+			};
+			const tx = S.decodeSync(Transaction.Rpc)(rpc);
+			expect(tx.type).toBe(Transaction.Type.EIP4844);
+			expect((tx as Transaction.EIP4844).maxFeePerBlobGas).toBe(1000000000n);
+		});
+
+		it("round-trips EIP-4844 through RPC format", () => {
+			const blobHash = createHash(0x01);
+			const eip4844Tx: Transaction.EIP4844 = {
+				type: Transaction.Type.EIP4844,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				maxFeePerBlobGas: 1000000000n,
+				blobVersionedHashes: [blobHash],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const rpc = S.encodeSync(Transaction.Rpc)(eip4844Tx);
+			expect(rpc.type).toBe("0x3");
+		});
+	});
+
+	describe("EIP-7702 RPC", () => {
+		it("parses EIP-7702 RPC format", () => {
+			const rpc = {
+				type: "0x4",
+				chainId: "0x1",
+				nonce: "0x0",
+				maxPriorityFeePerGas: "0x3b9aca00",
+				maxFeePerGas: "0x4a817c800",
+				gasLimit: "0x5208",
+				to: "0x" + "42".repeat(20),
+				value: "0x0",
+				data: "0x",
+				accessList: [],
+				authorizationList: [
+					{
+						chainId: "0x1",
+						address: "0x" + "42".repeat(20),
+						nonce: "0x0",
+						yParity: "0x0",
+						r: "0x" + "11".repeat(32),
+						s: "0x" + "22".repeat(32),
+					},
+				],
+			};
+			const tx = S.decodeSync(Transaction.Rpc)(rpc);
+			expect(tx.type).toBe(Transaction.Type.EIP7702);
+			expect((tx as Transaction.EIP7702).authorizationList.length).toBe(1);
+		});
+
+		it("round-trips EIP-7702 through RPC format", () => {
+			const eip7702Tx: Transaction.EIP7702 = {
+				type: Transaction.Type.EIP7702,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				authorizationList: [
+					{
+						chainId: 1n,
+						address: testAddress,
+						nonce: 0n,
+						yParity: 0,
+						r: testSignature.r,
+						s: testSignature.s,
+					},
+				],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const rpc = S.encodeSync(Transaction.Rpc)(eip7702Tx);
+			expect(rpc.type).toBe("0x4");
+		});
+	});
+
+	describe("RPC error handling", () => {
+		it("rejects invalid type prefix", () => {
+			const rpc = {
+				type: "0xff",
+				nonce: "0x0",
+				gasPrice: "0x4a817c800",
+				gasLimit: "0x5208",
+				to: "0x" + "42".repeat(20),
+				value: "0x0",
+				data: "0x",
+			};
+			expect(() => S.decodeSync(Transaction.Rpc)(rpc)).toThrow();
+		});
+
+		it("handles null to field for contract creation", () => {
+			const rpc = {
+				type: "0x2",
+				chainId: "0x1",
+				nonce: "0x0",
+				maxPriorityFeePerGas: "0x3b9aca00",
+				maxFeePerGas: "0x4a817c800",
+				gasLimit: "0xf4240",
+				to: null,
+				value: "0x0",
+				data: "0x608060405234801561001057600080fd5b50",
+				accessList: [],
+			};
+			const tx = S.decodeSync(Transaction.Rpc)(rpc);
+			expect(tx.to).toBeNull();
+		});
+	});
+});
+
+describe("Transaction edge cases", () => {
+	describe("value edge cases", () => {
+		it("handles zero value transaction", () => {
+			const tx: Transaction.EIP1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const bytes = S.encodeSync(Transaction.Serialized)(tx);
+			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			expect(decoded.value).toBe(0n);
+		});
+
+		it("handles max uint256 value", () => {
+			const maxUint256 = 2n ** 256n - 1n;
+			const tx: Transaction.EIP1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: maxUint256,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const bytes = S.encodeSync(Transaction.Serialized)(tx);
+			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			expect(decoded.value).toBe(maxUint256);
+		});
+	});
+
+	describe("nonce edge cases", () => {
+		it("handles zero nonce", () => {
+			const tx: Transaction.Legacy = {
+				type: Transaction.Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const bytes = S.encodeSync(Transaction.Serialized)(tx);
+			const decoded = S.decodeSync(Transaction.Serialized)(bytes);
+			expect(decoded.nonce).toBe(0n);
+		});
+
+		it("handles large nonce", () => {
+			const tx: Transaction.EIP1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 2n ** 64n - 1n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const bytes = S.encodeSync(Transaction.Serialized)(tx);
+			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			expect(decoded.nonce).toBe(2n ** 64n - 1n);
+		});
+	});
+
+	describe("gas limit edge cases", () => {
+		it("handles minimum gas limit (21000)", () => {
+			const tx: Transaction.EIP1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const bytes = S.encodeSync(Transaction.Serialized)(tx);
+			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			expect(decoded.gasLimit).toBe(21000n);
+		});
+
+		it("handles high gas limit", () => {
+			const tx: Transaction.EIP1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 30000000n, // ~30M gas (block limit)
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const bytes = S.encodeSync(Transaction.Serialized)(tx);
+			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			expect(decoded.gasLimit).toBe(30000000n);
+		});
+	});
+
+	describe("access list edge cases", () => {
+		it("handles access list with multiple addresses", () => {
+			const addr1 = createAddress(0x11);
+			const addr2 = createAddress(0x22);
+			const addr3 = createAddress(0x33);
+			const tx: Transaction.EIP1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 100000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [
+					{ address: addr1, storageKeys: [createHash(1)] },
+					{ address: addr2, storageKeys: [createHash(2), createHash(3)] },
+					{ address: addr3, storageKeys: [] },
+				],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const bytes = S.encodeSync(Transaction.Serialized)(tx);
+			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			expect(decoded.accessList.length).toBe(3);
+			expect(decoded.accessList[0]?.storageKeys.length).toBe(1);
+			expect(decoded.accessList[1]?.storageKeys.length).toBe(2);
+			expect(decoded.accessList[2]?.storageKeys.length).toBe(0);
+		});
+	});
+
+	describe("data field edge cases", () => {
+		it("handles large data field", () => {
+			const largeData = new Uint8Array(10000);
+			largeData.fill(0xab);
+			const tx: Transaction.EIP1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 1000000n,
+				to: testAddress,
+				value: 0n,
+				data: largeData,
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const bytes = S.encodeSync(Transaction.Serialized)(tx);
+			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			expect(decoded.data.length).toBe(10000);
+			expect(decoded.data[0]).toBe(0xab);
+		});
+	});
+});
+
+describe("Transaction pure functions additional coverage", () => {
+	const eip1559Tx: Transaction.EIP1559 = {
+		type: Transaction.Type.EIP1559,
+		chainId: 1n,
+		nonce: 42n,
+		maxPriorityFeePerGas: 2000000000n,
+		maxFeePerGas: 30000000000n,
+		gasLimit: 100000n,
+		to: testAddress,
+		value: 1000000000000000000n,
+		data: new Uint8Array([0xab, 0xcd, 0xef]),
+		accessList: [],
+		yParity: 1,
+		r: testSignature.r,
+		s: testSignature.s,
+	};
+
+	describe("getNonce", () => {
+		it("returns nonce from transaction", () => {
+			expect(Transaction.getNonce(eip1559Tx)).toBe(42n);
+		});
+	});
+
+	describe("getGasLimit", () => {
+		it("returns gas limit from transaction", () => {
+			expect(Transaction.getGasLimit(eip1559Tx)).toBe(100000n);
+		});
+	});
+
+	describe("getValue", () => {
+		it("returns value from transaction", () => {
+			expect(Transaction.getValue(eip1559Tx)).toBe(1000000000000000000n);
+		});
+	});
+
+	describe("getData", () => {
+		it("returns data from transaction", () => {
+			const data = Transaction.getData(eip1559Tx);
+			expect(data.length).toBe(3);
+			expect(data[0]).toBe(0xab);
+		});
+	});
+
+	describe("getRecipient", () => {
+		it("returns recipient address", () => {
+			const recipient = Transaction.getRecipient(eip1559Tx);
+			expect(recipient).toEqual(testAddress);
+		});
+
+		it("returns null for contract creation", () => {
+			const contractTx: Transaction.EIP1559 = {
+				...eip1559Tx,
+				to: null,
+			};
+			const recipient = Transaction.getRecipient(contractTx);
+			expect(recipient).toBeNull();
+		});
+	});
+
+	describe("getChainId additional cases", () => {
+		it("returns chain ID for EIP-2930", () => {
+			const eip2930Tx: Transaction.EIP2930 = {
+				type: Transaction.Type.EIP2930,
+				chainId: 137n,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			expect(Transaction.getChainId(eip2930Tx)).toBe(137n);
+		});
+
+		it("returns chain ID for EIP-4844", () => {
+			const blobHash = createHash(0x01);
+			const eip4844Tx: Transaction.EIP4844 = {
+				type: Transaction.Type.EIP4844,
+				chainId: 42161n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				maxFeePerBlobGas: 1000000000n,
+				blobVersionedHashes: [blobHash],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			expect(Transaction.getChainId(eip4844Tx)).toBe(42161n);
+		});
+
+		it("returns null for pre-EIP-155 legacy", () => {
+			const legacyTx: Transaction.Legacy = {
+				type: Transaction.Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			expect(Transaction.getChainId(legacyTx)).toBeNull();
+		});
+	});
+
+	describe("getGasPrice additional cases", () => {
+		it("returns baseFee when base fee exceeds maxFee", () => {
+			const baseFee = 50000000000n; // Higher than maxFeePerGas (30000000000n)
+			const effectivePrice = Transaction.getGasPrice(eip1559Tx, baseFee);
+			// When baseFee > maxFee, effectivePriorityFee clamps to 0, returns baseFee
+			expect(effectivePrice).toBe(baseFee);
+		});
+
+		it("returns gas price for EIP-2930", () => {
+			const eip2930Tx: Transaction.EIP2930 = {
+				type: Transaction.Type.EIP2930,
+				chainId: 1n,
+				nonce: 0n,
+				gasPrice: 25000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			expect(Transaction.getGasPrice(eip2930Tx)).toBe(25000000000n);
+		});
+	});
+
+	describe("detectType additional cases", () => {
+		it("detects EIP-2930 transaction", () => {
+			const eip2930Tx: Transaction.EIP2930 = {
+				type: Transaction.Type.EIP2930,
+				chainId: 1n,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const bytes = S.encodeSync(Transaction.Serialized)(eip2930Tx);
+			expect(Transaction.detectType(bytes)).toBe(Transaction.Type.EIP2930);
+		});
+
+		it("detects EIP-7702 transaction", () => {
+			const eip7702Tx: Transaction.EIP7702 = {
+				type: Transaction.Type.EIP7702,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				authorizationList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const bytes = S.encodeSync(Transaction.Serialized)(eip7702Tx);
+			expect(Transaction.detectType(bytes)).toBe(Transaction.Type.EIP7702);
+		});
+	});
+
+	describe("isSigned additional cases", () => {
+		it("returns true for legacy with valid signature", () => {
+			const legacyTx: Transaction.Legacy = {
+				type: Transaction.Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			expect(Transaction.isSigned(legacyTx)).toBe(true);
+		});
+
+		it("returns false for legacy with zero signature", () => {
+			const legacyTx: Transaction.Legacy = {
+				type: Transaction.Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				v: 0n,
+				r: new Uint8Array(32),
+				s: new Uint8Array(32),
+			};
+			expect(Transaction.isSigned(legacyTx)).toBe(false);
+		});
+	});
+
+	describe("isContractCreation additional cases", () => {
+		it("returns true for EIP-1559 contract creation", () => {
+			const contractTx: Transaction.EIP1559 = {
+				...eip1559Tx,
+				to: null,
+				data: new Uint8Array([0x60, 0x80, 0x60, 0x40, 0x52]),
+			};
+			expect(Transaction.isContractCreation(contractTx)).toBe(true);
+		});
+
+		it("returns true for EIP-2930 contract creation", () => {
+			const contractTx: Transaction.EIP2930 = {
+				type: Transaction.Type.EIP2930,
+				chainId: 1n,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 1000000n,
+				to: null,
+				value: 0n,
+				data: new Uint8Array([0x60, 0x80]),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			expect(Transaction.isContractCreation(contractTx)).toBe(true);
+		});
+	});
+
+	describe("hash consistency", () => {
+		it("produces consistent hashes across transaction types", () => {
+			const legacyTx: Transaction.Legacy = {
+				type: Transaction.Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const h1 = Transaction.hash(legacyTx);
+			const h2 = Transaction.hash(legacyTx);
+			expect(h1).toEqual(h2);
+
+			const eip2930Tx: Transaction.EIP2930 = {
+				type: Transaction.Type.EIP2930,
+				chainId: 1n,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			const h3 = Transaction.hash(eip2930Tx);
+			const h4 = Transaction.hash(eip2930Tx);
+			expect(h3).toEqual(h4);
+		});
+	});
+});
