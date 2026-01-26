@@ -7,13 +7,9 @@
 import { BlockNumber } from "@tevm/voltaire";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
+import { BlockNumberTypeSchema } from "./BlockNumberTypeSchema.js";
 
 type BlockNumberType = BlockNumber.BlockNumberType;
-
-const BlockNumberTypeSchema = S.declare<BlockNumberType>(
-	(u): u is BlockNumberType => typeof u === "bigint" && u >= 0n,
-	{ identifier: "BlockNumber" },
-);
 
 /**
  * Schema for BlockNumber encoded as a JavaScript number.
@@ -38,12 +34,23 @@ const BlockNumberTypeSchema = S.declare<BlockNumberType>(
  *
  * @since 0.1.0
  */
+const isSafeInteger = globalThis.Number.isSafeInteger;
+
 export const Number: S.Schema<BlockNumberType, number> = S.transformOrFail(
 	S.Number,
 	BlockNumberTypeSchema,
 	{
 		strict: true,
 		decode: (n, _options, ast) => {
+			if (!isSafeInteger(n)) {
+				return ParseResult.fail(
+					new ParseResult.Type(
+						ast,
+						n,
+						`Block number exceeds safe integer range: ${n}`,
+					),
+				);
+			}
 			try {
 				return ParseResult.succeed(BlockNumber.from(n));
 			} catch (e) {

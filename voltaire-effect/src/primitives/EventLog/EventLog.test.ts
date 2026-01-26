@@ -16,4 +16,13 @@ describe("EventLog.Rpc", () => {
 		expect(result.topics.length).toBe(2);
 		expect(result.data).toBeInstanceOf(Uint8Array);
 	});
+
+	it("rejects logs with more than 4 topics", () => {
+		const input = {
+			address: "0x1234567890123456789012345678901234567890",
+			topics: Array.from({ length: 5 }, () => `0x${"ab".repeat(32)}`),
+			data: new Uint8Array(0),
+		};
+		expect(() => Schema.decodeSync(EventLog.Rpc)(input)).toThrow();
+	});
 });

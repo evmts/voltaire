@@ -28,12 +28,12 @@
  * @see {@link EIP7702Schema} - Schema for EIP-7702 set code transactions
  */
 
-import { Address } from "@tevm/voltaire";
 import type { AddressType } from "@tevm/voltaire/Address";
 import type { HashType } from "@tevm/voltaire/Hash";
 import * as VoltaireTransaction from "@tevm/voltaire/Transaction";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
+import { Hex as AddressSchema } from "../Address/Hex.js";
 import type {
 	Any,
 	EIP1559,
@@ -47,20 +47,6 @@ const BigIntFromSelf = S.BigIntFromSelf;
 const Uint8ArrayFromSelf = S.Uint8ArrayFromSelf;
 
 /**
- * Internal schema for Address type validation.
- *
- * @description Validates that a value is a 20-byte Uint8Array representing
- * an Ethereum address.
- *
- * @internal
- * @since 0.0.1
- */
-const AddressTypeSchema = S.declare<AddressType>(
-	(u): u is AddressType => u instanceof Uint8Array && u.length === 20,
-	{ identifier: "AddressType" },
-);
-
-/**
  * Internal schema for 32-byte hash validation.
  *
  * @description Validates that a value is a 32-byte Uint8Array representing
@@ -72,30 +58,6 @@ const AddressTypeSchema = S.declare<AddressType>(
 const HashTypeSchema = S.declare<HashType>(
 	(u): u is HashType => u instanceof Uint8Array && u.length === 32,
 	{ identifier: "HashType" },
-);
-
-/**
- * Schema for transforming hex strings to AddressType.
- *
- * @internal
- * @since 0.0.1
- */
-const AddressSchema: S.Schema<AddressType, string> = S.transformOrFail(
-	S.String,
-	AddressTypeSchema,
-	{
-		strict: true,
-		decode: (s, _options, ast) => {
-			try {
-				return ParseResult.succeed(Address(s));
-			} catch (e) {
-				return ParseResult.fail(
-					new ParseResult.Type(ast, s, (e as Error).message),
-				);
-			}
-		},
-		encode: (a) => ParseResult.succeed(Address.toHex(a)),
-	},
 );
 
 /**

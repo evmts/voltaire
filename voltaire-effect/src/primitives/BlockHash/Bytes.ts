@@ -7,13 +7,9 @@
 import { BlockHash } from "@tevm/voltaire";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
+import { BlockHashTypeSchema } from "./BlockHashTypeSchema.js";
 
 type BlockHashType = BlockHash.BlockHashType;
-
-const BlockHashTypeSchema = S.declare<BlockHashType>(
-	(u): u is BlockHashType => u instanceof Uint8Array && u.length === 32,
-	{ identifier: "BlockHash" },
-);
 
 /**
  * Schema for BlockHash encoded as a Uint8Array.

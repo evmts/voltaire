@@ -28,4 +28,14 @@ describe("LogFilter.Rpc", () => {
 		const result = Schema.decodeSync(LogFilter.Rpc)(input);
 		expect(result.address).toBeInstanceOf(Uint8Array);
 	});
+
+	it("rejects blockhash with fromBlock/toBlock", () => {
+		const input = {
+			blockhash: `0x${"ab".repeat(32)}`,
+			fromBlock: 1n,
+		};
+		expect(() => Schema.decodeSync(LogFilter.Rpc)(input)).toThrow(
+			"blockhash is mutually exclusive with fromBlock/toBlock",
+		);
+	});
 });

@@ -27,7 +27,8 @@
  *
  * // Validate a receipt from RPC response
  * const receipt = S.decodeSync(Receipt.Schema)(rawReceipt)
- * console.log(receipt.status) // 1 = success, 0 = failed
+ * console.log(receipt.status) // 1 = success, 0 = failed (post-Byzantium)
+ * console.log(receipt.root)   // pre-Byzantium receipts only
  * console.log(receipt.gasUsed)
  * console.log(receipt.logs.length)
  * ```

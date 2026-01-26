@@ -96,7 +96,7 @@ const TopicEntrySchema = S.Union(HashSchema, S.Array(HashSchema), S.Null);
  *
  * @since 0.0.1
  */
-const TopicFilterSchema = S.Array(TopicEntrySchema);
+const TopicFilterSchema = S.Array(TopicEntrySchema).pipe(S.maxItems(4));
 
 /**
  * Internal schema structure for log filter parameters.
@@ -108,7 +108,18 @@ const LogFilterSchemaInternal = S.Struct({
 	address: S.optional(S.Union(AddressSchema, S.Array(AddressSchema))),
 	topics: S.optional(TopicFilterSchema),
 	blockhash: S.optional(HashSchema),
-});
+}).pipe(
+	S.filter(
+		(filter) =>
+			!(
+				filter.blockhash &&
+				(filter.fromBlock !== undefined || filter.toBlock !== undefined)
+			),
+		{
+			message: () => "blockhash is mutually exclusive with fromBlock/toBlock",
+		},
+	),
+);
 
 /**
  * Effect Schema for validating and parsing Ethereum log filter parameters.

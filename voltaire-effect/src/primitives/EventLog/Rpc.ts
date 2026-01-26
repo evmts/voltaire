@@ -43,7 +43,7 @@ const EventLogTypeSchema = S.declare<EventLogType>(
  */
 const EventLogSchemaInternal = S.Struct({
 	address: AddressSchema,
-	topics: S.Array(HashSchema),
+	topics: S.Array(HashSchema).pipe(S.maxItems(4)),
 	data: S.Uint8ArrayFromSelf,
 	blockNumber: S.optional(S.BigIntFromSelf),
 	transactionHash: S.optional(HashSchema),

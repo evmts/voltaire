@@ -7,13 +7,9 @@
 import { BlockNumber, Hex as HexPrimitive } from "@tevm/voltaire";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
+import { BlockNumberTypeSchema } from "./BlockNumberTypeSchema.js";
 
 type BlockNumberType = BlockNumber.BlockNumberType;
-
-const BlockNumberTypeSchema = S.declare<BlockNumberType>(
-	(u): u is BlockNumberType => typeof u === "bigint" && u >= 0n,
-	{ identifier: "BlockNumber" },
-);
 
 /**
  * Schema for BlockNumber encoded as a hex string.

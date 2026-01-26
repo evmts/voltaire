@@ -9,23 +9,10 @@
 import { BlockHeader } from "@tevm/voltaire";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
+import { BlockHeaderTypeSchema } from "./BlockHeaderSchema.js";
 
 type BlockHeaderType = BlockHeader.BlockHeaderType;
 type RpcBlockHeader = BlockHeader.RpcBlockHeader;
-
-/**
- * Internal schema declaration for BlockHeaderType.
- * Validates that a value has required block header fields.
- *
- * @internal
- */
-const BlockHeaderTypeSchema = S.declare<BlockHeaderType>(
-	(u): u is BlockHeaderType => {
-		if (typeof u !== "object" || u === null) return false;
-		return "parentHash" in u && "stateRoot" in u && "number" in u;
-	},
-	{ identifier: "BlockHeader" },
-);
 
 /**
  * Schema for RPC block header input format.

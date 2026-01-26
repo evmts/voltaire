@@ -6,11 +6,11 @@
  * @since 0.0.1
  */
 
-import { Address } from "@tevm/voltaire";
 import type { AddressType } from "@tevm/voltaire/Address";
 import type { HashType } from "@tevm/voltaire/Hash";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
+import { Hex as AddressSchema } from "../Address/Hex.js";
 
 /**
  * Type representing an event log emitted during transaction execution.
@@ -89,7 +89,7 @@ export interface LogType {
  * @description
  * A transaction receipt is created when a transaction is included in a block.
  * It contains the results of transaction execution including:
- * - Execution status (success or failure)
+ * - Execution status or state root (pre/post-Byzantium)
  * - Gas consumption
  * - Event logs emitted
  * - Contract creation address (if applicable)
@@ -107,9 +107,11 @@ export interface LogType {
  *   to: recipientAddress,
  *   cumulativeGasUsed: 21000n,
  *   gasUsed: 21000n,
+ *   effectiveGasPrice: 1000000000n,
  *   contractAddress: null,
  *   logs: [],
  *   logsBloom: new Uint8Array(256),
+ *   type: 'eip1559',
  *   status: 1
  * }
  * ```
@@ -169,19 +171,30 @@ export interface ReceiptType {
 	readonly logsBloom: Uint8Array;
 	/**
 	 * Transaction execution status.
-	 * 0 = failed (reverted), 1 = success.
+	 * 0 = failed (reverted), 1 = success (post-Byzantium receipts).
 	 */
-	readonly status: 0 | 1;
+	readonly status?: 0 | 1;
+	/**
+	 * State root (pre-Byzantium receipts only).
+	 */
+	readonly root?: HashType;
+	/**
+	 * Effective gas price paid by this transaction.
+	 */
+	readonly effectiveGasPrice: bigint;
+	/**
+	 * Transaction type identifier.
+	 */
+	readonly type: "legacy" | "eip2930" | "eip1559" | "eip4844" | "eip7702";
+	/**
+	 * Blob gas used (EIP-4844).
+	 */
+	readonly blobGasUsed?: bigint;
+	/**
+	 * Blob gas price (EIP-4844).
+	 */
+	readonly blobGasPrice?: bigint;
 }
-
-/**
- * Internal schema for validating AddressType.
- * @internal
- */
-const AddressTypeSchema = S.declare<AddressType>(
-	(u): u is AddressType => u instanceof Uint8Array && u.length === 20,
-	{ identifier: "AddressType" },
-);
 
 /**
  * Internal schema for validating HashType.
@@ -190,28 +203,6 @@ const AddressTypeSchema = S.declare<AddressType>(
 const HashTypeSchema = S.declare<HashType>(
 	(u): u is HashType => u instanceof Uint8Array && u.length === 32,
 	{ identifier: "HashType" },
-);
-
-/**
- * Internal schema for transforming address strings to AddressType.
- * @internal
- */
-const AddressSchema: S.Schema<AddressType, string> = S.transformOrFail(
-	S.String,
-	AddressTypeSchema,
-	{
-		strict: true,
-		decode: (s, _options, ast) => {
-			try {
-				return ParseResult.succeed(Address(s));
-			} catch (e) {
-				return ParseResult.fail(
-					new ParseResult.Type(ast, s, (e as Error).message),
-				);
-			}
-		},
-		encode: (a) => ParseResult.succeed(Address.toHex(a)),
-	},
 );
 
 /**
@@ -343,7 +334,7 @@ const ReceiptSchemaInternal = S.Struct({
 	contractAddress: NullableAddressSchema,
 	logs: S.Array(LogSchema),
 	logsBloom: S.Uint8ArrayFromSelf,
-	status: S.Literal(0, 1),
+	status: S.optional(S.Literal(0, 1)),
 });
 
 /**
