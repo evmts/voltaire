@@ -6,10 +6,11 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";
 import { describe, expect, it, vi } from "@effect/vitest";
-import { TransportService, type TransportShape } from "../services/Transport/index.js";
+import { TransportService, TransportError, type TransportShape } from "../services/Transport/index.js";
 import { EventStreamService } from "./EventStreamService.js";
 import { EventStream } from "./EventStream.js";
 import { EventStreamError } from "./EventStreamError.js";
+import { Address } from "@tevm/voltaire";
 
 const transferEvent = {
 	type: "event",
@@ -285,7 +286,7 @@ describe("EventStreamService", () => {
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
 					filter: {
-						from: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+						from: Address("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
 					},
 					fromBlock: 100n,
 					toBlock: 100n,
@@ -303,12 +304,12 @@ describe("EventStreamService", () => {
 	describe("error handling", () => {
 		it("wraps transport errors as EventStreamError", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, Error> => {
+				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, TransportError> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x100" as T);
 					}
 					if (method === "eth_getLogs") {
-						return Effect.fail(new Error("RPC connection failed"));
+						return Effect.fail(new TransportError({ code: -32000, message: "RPC connection failed" }));
 					}
 					return Effect.succeed(null as T);
 				},
@@ -603,9 +604,9 @@ describe("EventStreamService", () => {
 	describe("transport error propagation", () => {
 		it("propagates eth_blockNumber transport errors as EventStreamError", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, Error> => {
+				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, TransportError> => {
 					if (method === "eth_blockNumber") {
-						return Effect.fail(new Error("eth_blockNumber failed"));
+						return Effect.fail(new TransportError({ code: -32000, message: "eth_blockNumber failed" }));
 					}
 					return Effect.succeed(null as T);
 				},
@@ -631,12 +632,12 @@ describe("EventStreamService", () => {
 
 		it("propagates eth_getLogs transport errors correctly", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, Error> => {
+				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, TransportError> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x100" as T);
 					}
 					if (method === "eth_getLogs") {
-						return Effect.fail(new Error("eth_getLogs failed"));
+						return Effect.fail(new TransportError({ code: -32000, message: "eth_getLogs failed" }));
 					}
 					return Effect.succeed(null as T);
 				},
@@ -717,7 +718,7 @@ describe("EventStreamService", () => {
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
 				const stream = eventStream.backfill({
-					address: "invalid-address",
+					address: "invalid-address" as `0x${string}`,
 					event: transferEvent,
 					fromBlock: 10n,
 					toBlock: 20n,

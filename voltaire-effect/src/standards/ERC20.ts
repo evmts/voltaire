@@ -78,6 +78,63 @@ export const encodeAllowance = (
 			}),
 	});
 
+export const encodeName = (): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () => ERC20Impl.encodeName(),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC20.encodeName",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const encodeSymbol = (): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () => ERC20Impl.encodeSymbol(),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC20.encodeSymbol",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const encodeDecimals = (): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () => ERC20Impl.encodeDecimals(),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC20.encodeDecimals",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const encodeTotalSupply = (): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () => ERC20Impl.encodeTotalSupply(),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC20.encodeTotalSupply",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const decodeDecimals = (
+	data: string,
+): Effect.Effect<number, StandardsError> =>
+	Effect.try({
+		try: () => ERC20Impl.decodeDecimals(data),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC20.decodeDecimals",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
 export const decodeTransferEvent = (log: {
 	topics: string[];
 	data: string;

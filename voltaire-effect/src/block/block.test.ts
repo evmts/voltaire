@@ -159,10 +159,10 @@ describe("block module", () => {
 			const mockTransport: TransportShape = {
 				request: <T>(): Effect.Effect<T, TransportError> =>
 					Effect.fail(
-						new TransportError(
-							{ code: -32000, message: "connection failed" },
-							"connection failed",
-						),
+						new TransportError({
+							code: -32000,
+							message: "connection failed",
+						}),
 					),
 			};
 
@@ -287,10 +287,10 @@ describe("block module", () => {
 					if (method === "eth_getBlockReceipts") {
 						getBlockReceiptsCalled = true;
 						return Effect.fail(
-							new TransportError(
-								{ code: -32601, message: "method not found" },
-								"method not found",
-							),
+							new TransportError({
+								code: -32601,
+								message: "method not found",
+							}),
 						);
 					}
 					if (method === "eth_getTransactionReceipt") {
@@ -366,10 +366,10 @@ describe("block module", () => {
 				): Effect.Effect<T, TransportError> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.fail(
-							new TransportError(
-								{ code: -32601, message: "method not found" },
-								"method not found",
-							),
+							new TransportError({
+								code: -32601,
+								message: "method not found",
+							}),
 						);
 					}
 					return Effect.succeed([] as T);
@@ -394,10 +394,10 @@ describe("block module", () => {
 				): Effect.Effect<T, TransportError> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.fail(
-							new TransportError(
-								{ code: -32601, message: "method not found" },
-								"method not found",
-							),
+							new TransportError({
+								code: -32601,
+								message: "method not found",
+							}),
 						);
 					}
 					return Effect.succeed([] as T);
@@ -422,18 +422,18 @@ describe("block module", () => {
 				): Effect.Effect<T, TransportError> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.fail(
-							new TransportError(
-								{ code: -32601, message: "method not found" },
-								"method not found",
-							),
+							new TransportError({
+								code: -32601,
+								message: "method not found",
+							}),
 						);
 					}
 					if (method === "eth_getTransactionReceipt") {
 						return Effect.fail(
-							new TransportError(
-								{ code: -32000, message: "server error" },
-								"server error",
-							),
+							new TransportError({
+								code: -32000,
+								message: "server error",
+							}),
 						);
 					}
 					return Effect.succeed([] as T);
@@ -466,10 +466,10 @@ describe("block module", () => {
 				): Effect.Effect<T, TransportError> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.fail(
-							new TransportError(
-								{ code: -32601, message: "method not found" },
-								"method not found",
-							),
+							new TransportError({
+								code: -32601,
+								message: "method not found",
+							}),
 						);
 					}
 					if (method === "eth_getTransactionReceipt") {
@@ -502,10 +502,10 @@ describe("block module", () => {
 				): Effect.Effect<T, TransportError> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.fail(
-							new TransportError(
-								{ code: -32601, message: "method not found" },
-								"method not found",
-							),
+							new TransportError({
+								code: -32601,
+								message: "method not found",
+							}),
 						);
 					}
 					if (method === "eth_getTransactionReceipt") {
@@ -534,10 +534,10 @@ describe("block module", () => {
 				): Effect.Effect<T, TransportError> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.fail(
-							new TransportError(
-								{ code: -32000, message: "internal error" },
-								"internal error",
-							),
+							new TransportError({
+								code: -32000,
+								message: "internal error",
+							}),
 						);
 					}
 					return Effect.succeed([] as T);

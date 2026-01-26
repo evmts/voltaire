@@ -72,6 +72,43 @@ describe("ERC20", () => {
 		});
 	});
 
+	describe("encodeName", () => {
+		it("encodes name calldata", async () => {
+			const result = await Effect.runPromise(ERC20.encodeName());
+			expect(result).toBe("0x06fdde03");
+		});
+	});
+
+	describe("encodeSymbol", () => {
+		it("encodes symbol calldata", async () => {
+			const result = await Effect.runPromise(ERC20.encodeSymbol());
+			expect(result).toBe("0x95d89b41");
+		});
+	});
+
+	describe("encodeDecimals", () => {
+		it("encodes decimals calldata", async () => {
+			const result = await Effect.runPromise(ERC20.encodeDecimals());
+			expect(result).toBe("0x313ce567");
+		});
+	});
+
+	describe("encodeTotalSupply", () => {
+		it("encodes totalSupply calldata", async () => {
+			const result = await Effect.runPromise(ERC20.encodeTotalSupply());
+			expect(result).toBe("0x18160ddd");
+		});
+	});
+
+	describe("decodeDecimals", () => {
+		it("decodes decimals return value", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000012";
+			const result = await Effect.runPromise(ERC20.decodeDecimals(data));
+			expect(result).toBe(18);
+		});
+	});
+
 	describe("decodeTransferEvent", () => {
 		it("decodes Transfer event log", async () => {
 			const log = {
