@@ -313,7 +313,7 @@ export const RpcBatch: Layer.Layer<RpcBatchService, never, TransportService> =
 			return {
 				resolver,
 				request: <R extends RpcRequest>(request: R) =>
-					Effect.request(request, resolver) as Effect.Effect<
+					Effect.request(resolver)(request) as Effect.Effect<
 						Request.Request.Success<R>,
 						Request.Request.Error<R>
 					>,

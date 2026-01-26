@@ -313,7 +313,7 @@ describe("RpcBatch", () => {
 
 			const program = Effect.gen(function* () {
 				const batch = yield* RpcBatchService;
-				return yield* Effect.request(new EthBlockNumber({}), batch.resolver);
+				return yield* Effect.request(batch.resolver)(new EthBlockNumber({}));
 			}).pipe(
 				Effect.provide(RpcBatch),
 				Effect.provide(createMockTransport(handler)),
