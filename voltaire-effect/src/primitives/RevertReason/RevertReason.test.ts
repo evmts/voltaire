@@ -1,5 +1,5 @@
 import * as S from "effect/Schema";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import * as RevertReason from "./index.js";
 
 describe("RevertReason.Hex", () => {

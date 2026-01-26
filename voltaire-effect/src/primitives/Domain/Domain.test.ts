@@ -1,6 +1,6 @@
 import { hash as keccak256 } from "@tevm/voltaire/Keccak256";
 import * as Schema from "effect/Schema";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import * as Domain from "./index.js";
 
 describe("Domain.Struct", () => {

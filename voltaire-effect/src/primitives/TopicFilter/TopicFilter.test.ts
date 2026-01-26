@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import * as TopicFilter from "./index.js";
 
 describe("TopicFilter.Rpc", () => {

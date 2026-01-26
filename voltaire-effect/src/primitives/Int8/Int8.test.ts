@@ -1,5 +1,5 @@
 import * as S from "effect/Schema";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import * as Int8 from "./index.js";
 import { BrandedInt8 } from "@tevm/voltaire";
 
