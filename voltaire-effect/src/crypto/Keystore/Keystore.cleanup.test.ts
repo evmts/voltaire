@@ -36,7 +36,7 @@ describe("withDecryptedKey memory cleanup", () => {
 		);
 
 		expect(capturedKey).not.toBeNull();
-		expect(capturedKey?.every((b) => b === 0)).toBe(true);
+		expect(capturedKey!.every((b: number) => b === 0)).toBe(true);
 	});
 
 	it("zeroes decrypted key even when use effect fails", async () => {
@@ -61,7 +61,7 @@ describe("withDecryptedKey memory cleanup", () => {
 
 		expect(Exit.isFailure(exit)).toBe(true);
 		expect(capturedKey).not.toBeNull();
-		expect(capturedKey?.every((b) => b === 0)).toBe(true);
+		expect(capturedKey!.every((b: number) => b === 0)).toBe(true);
 	});
 
 	it("does not call use when password is wrong", async () => {

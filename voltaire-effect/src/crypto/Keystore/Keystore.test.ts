@@ -448,7 +448,7 @@ describe("Keystore", () => {
 				);
 
 				expect(capturedKey).not.toBeNull();
-				expect(capturedKey?.every((b) => b === 0)).toBe(true);
+				expect(capturedKey!.every((b: number) => b === 0)).toBe(true);
 			}),
 		);
 
@@ -477,7 +477,7 @@ describe("Keystore", () => {
 
 				expect(Exit.isFailure(exit)).toBe(true);
 				expect(capturedKey).not.toBeNull();
-				expect(capturedKey?.every((b) => b === 0)).toBe(true);
+				expect(capturedKey!.every((b: number) => b === 0)).toBe(true);
 			}),
 		);
 

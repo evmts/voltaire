@@ -280,7 +280,7 @@ describe("withPrivateKey", () => {
 			);
 
 			expect(capturedKey).not.toBeNull();
-			expect(capturedKey?.every((b) => b === 0)).toBe(true);
+			expect(capturedKey!.every((b: number) => b === 0)).toBe(true);
 		}).pipe(Effect.provide(HDWalletLive)),
 	);
 
@@ -300,7 +300,7 @@ describe("withPrivateKey", () => {
 
 			expect(Exit.isFailure(exit)).toBe(true);
 			expect(capturedKey).not.toBeNull();
-			expect(capturedKey?.every((b) => b === 0)).toBe(true);
+			expect(capturedKey!.every((b: number) => b === 0)).toBe(true);
 		}).pipe(Effect.provide(HDWalletLive)),
 	);
 
@@ -350,7 +350,7 @@ describe("withSeed", () => {
 			);
 
 			expect(capturedSeed).not.toBeNull();
-			expect(capturedSeed?.every((b) => b === 0)).toBe(true);
+			expect(capturedSeed!.every((b: number) => b === 0)).toBe(true);
 		}).pipe(Effect.provide(HDWalletLive)),
 	);
 
@@ -369,7 +369,7 @@ describe("withSeed", () => {
 
 			expect(Exit.isFailure(exit)).toBe(true);
 			expect(capturedSeed).not.toBeNull();
-			expect(capturedSeed?.every((b) => b === 0)).toBe(true);
+			expect(capturedSeed!.every((b: number) => b === 0)).toBe(true);
 		}).pipe(Effect.provide(HDWalletLive)),
 	);
 });
