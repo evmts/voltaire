@@ -33,7 +33,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-swift-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build Rust dependencies
         run: cargo build --release
