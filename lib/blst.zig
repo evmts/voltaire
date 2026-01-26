@@ -38,10 +38,11 @@ pub fn createBlstLibrary(
     // Add blst source files with portable flag
     // For WASM, __BLST_PORTABLE__ ensures pure C implementation without assembly
     // For native, __BLST_PORTABLE__ provides fallback while assembly is optimized path
+    // -fPIC required for shared libraries on Linux (ignored on Windows/macOS)
     const c_flags = if (is_wasm)
         &[_][]const u8{ "-std=c99", "-D__BLST_PORTABLE__", "-D__BLST_NO_ASM__", "-fno-sanitize=undefined" }
     else
-        &[_][]const u8{ "-std=c99", "-D__BLST_PORTABLE__", "-fno-sanitize=undefined" };
+        &[_][]const u8{ "-std=c99", "-fPIC", "-D__BLST_PORTABLE__", "-fno-sanitize=undefined" };
 
     lib.addCSourceFiles(.{
         .files = &.{

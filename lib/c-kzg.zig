@@ -20,11 +20,12 @@ pub fn createCKzgLibrary(
     lib.linkLibC();
     lib.linkLibrary(blst_lib);
 
+    // -fPIC required for shared libraries on Linux (ignored on Windows/macOS)
     lib.addCSourceFiles(.{
         .files = &.{
             "lib/c-kzg-4844/src/ckzg.c",
         },
-        .flags = &.{ "-std=c99", "-fno-sanitize=undefined" },
+        .flags = &.{ "-std=c99", "-fPIC", "-fno-sanitize=undefined" },
     });
 
     lib.addIncludePath(b.path("lib/c-kzg-4844/src"));
