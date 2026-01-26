@@ -4,6 +4,9 @@
 
 Comprehensive review of voltaire-effect ABI module. Consistent Effect wrapping pattern, good error type definitions. Several issues with error type completeness, missing validation, and null handling.
 
+**Updated**: 2026-01-26  
+**Status**: Issues below still present (no fixes found in current code).
+
 ## Files Reviewed
 
 - `src/primitives/Abi/index.ts`

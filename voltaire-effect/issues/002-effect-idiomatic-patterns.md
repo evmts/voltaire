@@ -3,6 +3,7 @@
 **Priority**: High
 **Status**: Reference
 **Created**: 2026-01-25
+**Updated**: 2026-01-26
 
 ## Naming Convention
 
@@ -13,6 +14,15 @@ We use **ethers-style naming**:
 ## Overview
 
 This document provides Effect-idiomatic patterns for implementing the extensibility features identified in the viem parity analysis. Each pattern includes rationale, code examples, and references to Effect documentation.
+
+## Adoption Update (2026-01-26)
+
+- **Transport layer** now uses `@effect/platform` (`HttpTransport`, `WebSocketTransport`) with `Effect.timeout` + `Schedule` retry.
+- **Batching** exists via `BatchScheduler` + `HttpTransport` `batch` option (manual batching, not yet `Effect.Request`).
+- **State management**: Several services now use `Ref`/`SynchronizedRef` (NonceManager, FallbackTransport).
+- **Caching**: `MemoryCache` and `LookupCacheService` exist, but are not yet integrated into Provider/Signer by default.
+
+These are good steps, but Patterns 2 (Effect.Request) and 3 (FiberRef configuration) remain largely unadopted.
 
 ---
 

@@ -6,6 +6,7 @@
   <category>api-consistency</category>
   <complexity>medium</complexity>
   <estimated_effort>2 hours</estimated_effort>
+  <updated>2026-01-26</updated>
   <files>
     - src/primitives/Hex/*.ts
     - src/primitives/Address/*.ts
@@ -67,6 +68,17 @@ export const size = (data: BytesType): number => data.length;
 - Inconsistent patterns across similar modules
 - Extra code at call sites for infallible operations
 </problem>
+
+<status_update>
+**Current status (2026-01-26)**:
+- `voltaire-effect/src/primitives/Hex/*` still wraps infallible ops with `Effect.succeed` (e.g., `clone`, `equals`, `isHex`, `isSized`, `zero`, `random`).
+- `Address`, `Bytes`, and `Hash` modules mostly return direct values for infallible operations.
+- Result: the inconsistency persists; callers still need `Effect.runSync` for purely synchronous, non-failing Hex utilities.
+
+**Next steps**:
+1. Convert infallible Hex operations to direct returns (match `Address`/`Bytes` patterns).
+2. If backward compatibility is required, add `*Effect` aliases and keep direct versions as the default.
+</status_update>
 
 <solution>
 Establish clear convention: **Effect-wrap only fallible operations**.

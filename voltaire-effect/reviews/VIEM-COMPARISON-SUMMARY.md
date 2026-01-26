@@ -1,28 +1,21 @@
 # Viem vs Voltaire-Effect Comparison Summary
 
-**Date**: 2026-01-25
+**Date**: 2026-01-25  
+**Updated**: 2026-01-26
 **Author**: Analysis based on viem WalletClient and Account abstractions
 
-## Related Reviews
+## Related Reviews (actual files in repo)
 
-### Core Services
-- [078-viem-walletclient-analysis.md](./078-viem-walletclient-analysis.md) - WalletClient configuration
-- [079-viem-account-analysis.md](./079-viem-account-analysis.md) - Account types and capabilities
-- [080-provider-signer-gaps.md](./080-provider-signer-gaps.md) - Missing RPC methods and actions
-- [081-transport-configuration-gaps.md](./081-transport-configuration-gaps.md) - Transport options
-- [082-chain-configuration-gaps.md](./082-chain-configuration-gaps.md) - Chain config for L2s
-- [083-nonce-manager-gaps.md](./083-nonce-manager-gaps.md) - Nonce management
-- [084-eip-compliance-gaps.md](./084-eip-compliance-gaps.md) - EIP support
+- [010-add-transport-batching.md](./010-add-transport-batching.md) - JSON-RPC batching
+- [040-fix-websocket-transport-effect-run-sync.md](./040-fix-websocket-transport-effect-run-sync.md) - WebSocket transport migration
+- [081-jsonrpc-review.md](./081-jsonrpc-review.md) - JSON-RPC module issues
+- [082-abi-primitives-review.md](./082-abi-primitives-review.md) - ABI encoding/decoding gaps
+- [083-nonce-manager-gaps.md](./083-nonce-manager-gaps.md) - Nonce manager gaps (partially fixed)
 - [085-effect-patterns-improvements.md](./085-effect-patterns-improvements.md) - Effect idioms
+- [093-receipt-eventlog-review.md](./093-receipt-eventlog-review.md) - Receipt/EventLog schemas
+- [094-block-primitives-review.md](./094-block-primitives-review.md) - Block schemas
 
-### Advanced Features (Round 2)
-- [086-simulation-and-debugging-gaps.md](./086-simulation-and-debugging-gaps.md) - State overrides, simulateCalls, asset changes
-- [087-signature-utilities-gaps.md](./087-signature-utilities-gaps.md) - Recovery, verification, ERC-6492
-- [088-blob-and-kzg-gaps.md](./088-blob-and-kzg-gaps.md) - EIP-4844 blob utilities
-- [089-siwe-and-auth-gaps.md](./089-siwe-and-auth-gaps.md) - Sign-In with Ethereum, permissions
-- [090-unit-conversion-and-formatting-gaps.md](./090-unit-conversion-and-formatting-gaps.md) - parseEther, formatUnits, etc.
-- [091-contract-interaction-gaps.md](./091-contract-interaction-gaps.md) - Contract helpers, estimateGas, deploy
-- [092-event-subscription-gaps.md](./092-event-subscription-gaps.md) - watchEvent, filters, subscriptions
+_Note_: Prior references to `078-092` viem analysis files are not present in this repo snapshot.
 
 ## Executive Summary
 
@@ -35,8 +28,8 @@ voltaire-effect provides a solid foundation with Effect-based APIs, but has sign
 | No EIP-7702 `signAuthorization` | Can't create code delegations | Signer, Account |
 | No `stateOverride` in call | Can't simulate accurately | Provider |
 | No `simulateCalls` with asset changes | Can't show "what will happen" | Provider |
-| No `fetchOptions` in HttpTransport | Can't add auth headers | Transport |
-| No chainId in NonceManager | Multi-chain nonce collision | NonceManager |
+| Limited transport hooks (no onRequest/onResponse) | Hard to inject auth/metrics per request | Transport |
+| ~~No chainId in NonceManager~~ | ✅ Fixed (chainId-scoped keys) | NonceManager |
 | No `addChain` wallet action | Can't add chains to wallet | Signer |
 | No chain formatters | L2 transactions miss fields | Chain |
 | No signature verification | Can't verify who signed | Crypto utilities |
@@ -45,12 +38,12 @@ voltaire-effect provides a solid foundation with Effect-based APIs, but has sign
 
 | Gap | Impact | Files |
 |-----|--------|-------|
-| No fallback transport ranking | Suboptimal RPC selection | Transport |
+| ~~No fallback transport ranking~~ | ✅ Fixed (latency ranking option) | Transport |
 | No HD derivation options | Can't derive child accounts | Account |
 | No `sign({ hash })` on Account | Raw signing needed for protocols | Account |
 | No filter-based subscriptions | No eth_newFilter support | Provider |
 | No ENS methods | No name resolution | Provider |
-| No multicall batching | Inefficient batch reads | Provider |
+| ~~No multicall batching~~ | ✅ Fixed (Multicall3 + Provider action) | Provider |
 | No `watchAsset`, permissions | Missing wallet UX | Signer |
 | No `watchEvent` / `watchContractEvent` | Can't stream events | Provider, Contract |
 | No `deployContract` helper | Manual bytecode handling | Signer |
@@ -83,7 +76,7 @@ voltaire-effect provides a solid foundation with Effect-based APIs, but has sign
    - `ProviderService.estimateGas({ stateOverride })`
    - `blockOverrides` support
 
-3. **HttpTransport fetchOptions** - Required for production
+3. **HttpTransport request hooks / fetchOptions** - Required for production
    - Headers, credentials, custom fetch
 
 4. **Signature Verification** - Essential for auth
@@ -94,7 +87,7 @@ voltaire-effect provides a solid foundation with Effect-based APIs, but has sign
 
 5. **simulateCalls with asset changes** - "What will happen" UX
 6. **Contract.estimateGas** - Per-method gas estimation
-7. **NonceManager with chainId** - Multi-chain safety
+7. ✅ **NonceManager with chainId** - Multi-chain safety (implemented)
 8. **Chain formatters** - L2 field support
 
 ### Phase 3: Wallet Actions (Week 3-4)
@@ -118,12 +111,12 @@ voltaire-effect provides a solid foundation with Effect-based APIs, but has sign
 19. **watchEvent / watchContractEvent** - Event streaming
 20. **Filter methods** - eth_newFilter, getFilterChanges
 21. **watchPendingTransactions** - Mempool watching
-22. **Fallback transport ranking** - Better reliability
+22. ✅ **Fallback transport ranking** - Better reliability (implemented)
 
 ### Phase 6: Provider Completeness (Week 6-7)
 
 23. **ENS methods** - getEnsAddress, etc.
-24. **Multicall batching** - Automatic call aggregation
+24. ✅ **Multicall batching** - Automatic call aggregation (implemented)
 25. **getBlobBaseFee** - EIP-4844
 26. **SIWE support** - Sign-In with Ethereum
 
@@ -164,8 +157,8 @@ voltaire-effect should NOT be a 1:1 port of viem. Instead:
 1. Add `addChain` to SignerService
 2. Add `getAddresses` to SignerService
 3. Add `publicKey` property to LocalAccount
-4. Add `chainId` parameter to NonceManager
-5. Add `fetchOptions` to HttpTransport config
+4. ✅ Add `chainId` parameter to NonceManager (implemented)
+5. Add request/response hooks (or `fetchOptions`) to HttpTransport config
 6. Add `getBlobBaseFee` to ProviderService
 7. Add `getTransactionConfirmations` to ProviderService
 8. Export `hashMessage`, `hashTypedData` utilities

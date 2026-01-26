@@ -3,6 +3,26 @@
 **Priority**: Medium  
 **Module**: All error definitions  
 **Category**: Effect Idiomatic
+**Updated**: 2026-01-26  
+**Status**: Mixed adoption (many services migrated; core service errors still extend AbstractError)
+
+## Current State (2026-01-26)
+
+**Already using `Data.TaggedError`**:
+- `NonceError` (`services/NonceManager`)
+- `SerializeError` / `DeserializeError` (`services/TransactionSerializer`)
+- `StandardsError` (`standards/errors`)
+- `KzgError`, `Bn254Error`, `Secp256k1Error` (crypto/services)
+- `FormatError`, `FeeEstimationError`, `RateLimitError`, `AbiEncodeError`, `AbiDecodeError`
+- HDWallet typed errors (`crypto/HDWallet/errors.ts`)
+
+**Still extending `AbstractError` (or `Error`)**:
+- `TransportError`, `ProviderError`, `SignerError`, `AccountError`
+- `BlockError`, `BlockStreamError`, `EventStreamError`, `TransactionStreamError`
+- ABI parse errors (`AbiParseError`, `AbiItemParseError`)
+- JSON-RPC parse/response errors (`jsonrpc/errors.ts`)
+
+**Implication**: error modeling is inconsistent across modules, so downstream consumers can't rely on consistent `Match.tag` semantics or structural equality across the library.
 
 ## Problem
 

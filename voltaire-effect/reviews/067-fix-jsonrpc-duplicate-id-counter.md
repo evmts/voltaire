@@ -1,16 +1,25 @@
 # Fix JSON-RPC Duplicate idCounter
 
+**Updated**: 2026-01-26  
+**Status**: Open (multiple counters still exist)
+
 ## Problem
 
-Both `Eth.ts` and `Request.ts` have separate `idCounter` variables, which could cause ID collisions.
+Multiple JSON-RPC namespace modules still have separate `idCounter` variables, which can collide once each namespace exceeds its local range.
 
-**Locations**:
-- `src/jsonrpc/Eth.ts#L4`
-- `src/jsonrpc/Request.ts#L10`
+**Locations (current)**:
+- `voltaire-effect/src/jsonrpc/Request.ts` (idCounter = 0)
+- `voltaire-effect/src/jsonrpc/Eth.ts` (idCounter = 1000)
+- `voltaire-effect/src/jsonrpc/Wallet.ts` (idCounter = 2000)
+- `voltaire-effect/src/jsonrpc/Net.ts` (idCounter = 3000)
+- `voltaire-effect/src/jsonrpc/Web3.ts` (idCounter = 4000)
+- `voltaire-effect/src/jsonrpc/Txpool.ts` (idCounter = 5000)
+- `voltaire-effect/src/jsonrpc/Anvil.ts` (idCounter = 6000)
+- `voltaire-effect/src/jsonrpc/Hardhat.ts` (idCounter = 7000)
 
 ```typescript
-// Eth.ts
-let idCounter = 0;
+// Example (Eth.ts)
+let idCounter = 1000;
 
 // Request.ts
 let idCounter = 0;
@@ -51,9 +60,9 @@ import { nextId, createRequest } from "./Request";
 
 ## Acceptance Criteria
 
-- [ ] Remove duplicate `idCounter` from Eth.ts
-- [ ] Export `nextId` from Request.ts
-- [ ] Update all usages to use shared counter
+- [ ] Remove duplicate `idCounter` from each namespace module
+- [ ] Export `nextId` (or `makeId`) from `Request.ts`
+- [ ] Update Eth/Wallet/Net/Web3/Txpool/Anvil/Hardhat to use shared counter
 - [ ] All existing tests pass
 
 ## Priority

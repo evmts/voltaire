@@ -2,13 +2,26 @@
 
 ## Priority: 🔴 CRITICAL
 
+**Updated**: 2026-01-26  
+**Status**: ✅ Implemented in `HttpTransport` with `BatchScheduler`; end-to-end HTTP batching tests are still skipped.
+
 ## Summary
 
 Implement JSON-RPC batch requests to combine multiple requests into a single HTTP call.
 
 ## Current State
 
-Each `transport.request()` call makes a separate HTTP request. No batching support exists.
+Batching is implemented and wired into `HttpTransport` via the `batch` option, using `createBatchScheduler` to queue and flush JSON-RPC batches.
+
+**Evidence (current code)**:
+- `voltaire-effect/src/services/Transport/BatchScheduler.ts` - scheduler implementation
+- `voltaire-effect/src/services/Transport/HttpTransport.ts` - `batch?: BatchOptions` support + `createBatchScheduler`
+- `voltaire-effect/src/services/Transport/BatchScheduler.test.ts` - unit tests
+- `voltaire-effect/src/services/Transport/Transport.test.ts` - batching integration tests are present but `describe.skip(...)`
+
+**Remaining gaps**:
+1. Unskip the HTTP batching integration tests in `voltaire-effect/src/services/Transport/Transport.test.ts` and stabilize timers (likely via TestClock or deterministic scheduling).
+2. Add a regression test for partial/missing batch responses (ensuring deferreds fail with a useful error).
 
 ## Implementation
 

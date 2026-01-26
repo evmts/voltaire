@@ -1,7 +1,7 @@
 # Fix FallbackTransport Schedule Pattern
 
 <issue>
-<metadata>priority: P1, files: [src/services/Transport/FallbackTransport.ts], reviews: [017-fix-http-transport-manual-retry.md, 043-fix-fallback-transport-mutable-array.md]</metadata>
+<metadata>priority: P1, status: mostly-fixed, updated: 2026-01-26, files: [src/services/Transport/FallbackTransport.ts], reviews: [017-fix-http-transport-manual-retry.md, 043-fix-fallback-transport-mutable-array.md]</metadata>
 
 <problem>
 FallbackTransport uses manual retry loop with `Effect.sleep(retryDelay)` instead of Effect's declarative Schedule patterns.
@@ -24,6 +24,18 @@ while (attemptsLeft > 0) {
 3. Mutable `attemptsLeft` counter instead of declarative schedule
 4. Manual timing tracking (`Date.now()`) instead of Effect's clock
 </problem>
+
+<status_update>
+**Current status (2026-01-26)**:
+- ✅ Manual retry loop replaced with `Effect.retry` + `Schedule.spaced` in `voltaire-effect/src/services/Transport/FallbackTransport.ts`.
+- ✅ Mutable instance state replaced with `Ref` per transport (see review 043 resolution).
+- ⚠️ Latency tracking still uses `Date.now()`; consider `Effect.timed` or `Clock` for deterministic testing.
+- ⚠️ Retry strategy is fixed-spacing only; no jitter/backoff option exposed yet.
+
+**Follow-up suggestions**:
+1. Add optional exponential backoff + jitter configuration (align with viem/production resilience).
+2. Add tests that assert retry spacing using `TestClock`, so timing is deterministic.
+</status_update>
 
 <solution>
 Use `Effect.retry` with `Schedule.spaced` or `Schedule.exponential`:

@@ -3,7 +3,7 @@
 **Priority**: P1
 **Status**: In Progress
 **Created**: 2026-01-25
-**Updated**: 2026-01-25
+**Updated**: 2026-01-26
 
 ## Implementation Status
 
@@ -15,7 +15,7 @@
 | `@effect/platform-bun` | ✅ Added | Added as optional dependency |
 | `@effect/vitest` | ✅ Added | Migrated 86 test files to use `it.effect` |
 | `effect/Redacted` | ✅ Used | LocalAccount wraps private keys |
-| Transport rewrite | 🔄 TODO | Need to rewrite transports with @effect/platform |
+| Transport rewrite | ✅ Done | HttpTransport + WebSocketTransport now use @effect/platform |
 
 ## Summary
 
@@ -29,7 +29,9 @@ voltaire-effect currently imports from `effect/*`:
 - SynchronizedRef, Ref, Deferred, Option, Exit
 - Fiber, Clock, TestClock, TestContext
 
-**No @effect/* packages are currently used.**
+**@effect/* packages now used**:
+- `@effect/platform` (HttpTransport/WebSocketTransport)
+- `@effect/vitest` (test helpers)
 
 ---
 
@@ -39,7 +41,7 @@ voltaire-effect currently imports from `effect/*`:
 
 **Purpose**: Platform-agnostic HTTP, WebSocket, FileSystem, Workers
 
-**Why needed**: voltaire-effect manually implements HTTP and WebSocket transports. Most anti-patterns have been fixed (reviews 076-078, 084), but WebSocketTransport still needs @effect/platform migration (review 040).
+**Why needed**: Transport migration is now complete for HTTP and WebSocket; remaining gaps are IPC/custom transports and optional request/response hooks.
 
 **Install**:
 ```bash
@@ -53,8 +55,8 @@ pnpm add @effect/platform-bun  # for Bun
 
 | Component | Current | With @effect/platform |
 |-----------|---------|----------------------|
-| HttpTransport | Manual fetch + retry loop | `HttpClient` with `retryTransient` |
-| WebSocketTransport | ⚠️ Still has Effect.runSync in callbacks | `Socket.makeWebSocket` |
+| HttpTransport | ✅ Uses `@effect/platform/HttpClient` | `HttpClient` with retry/timeout |
+| WebSocketTransport | ✅ Uses `Socket.makeWebSocket` | Effect-native socket |
 | IPC Transport | Not implemented | `FileSystem` for Unix sockets |
 | Request batching | ✅ Fixed: Uses Effect Queue/Ref (review 084) | `HttpClient.batched` |
 

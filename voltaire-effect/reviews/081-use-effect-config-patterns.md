@@ -3,6 +3,8 @@
 **Priority**: Medium  
 **Module**: All transports and services  
 **Category**: Effect Idiomatic
+**Updated**: 2026-01-26  
+**Status**: Not adopted yet (configs remain plain objects)
 
 ## Problem
 
@@ -17,6 +19,17 @@ interface HttpTransportConfig {
   retries?: number;
   retryDelay?: number;
 }
+
+## Current Status (2026-01-26)
+
+- Transports (Http/WebSocket/Fallback) still accept plain config objects.
+- No usage of `effect/Config` or `ConfigProvider` found in `voltaire-effect/src`.
+- Configuration defaults are applied manually inside constructors (e.g., `HttpTransport`).
+
+**Where this is most useful now**:
+1. `HttpTransport` / `WebSocketTransport` / `FallbackTransport` option parsing.
+2. Provider/Signer presets in `voltaire-effect/src/services/presets/index.ts`.
+3. Optional transport `batch` configuration (move to config schema with validation).
 
 export const HttpTransport = (
   options: HttpTransportConfig | string,

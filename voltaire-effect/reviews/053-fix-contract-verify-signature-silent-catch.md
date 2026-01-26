@@ -1,12 +1,17 @@
 # Fix Contract verifySignature Silent Error Catch
 
-**Status: ✅ PARTIALLY FIXED** (2025-01-25)
+**Status: ✅ IMPROVED (Effect wrapper) / ⚠️ PARTIAL (upstream)**  
+**Updated**: 2026-01-26
 
-The Effect wrapper now properly captures runtime context using `Runtime.runPromise(runtime)` 
-instead of `Effect.runPromise`. This fixes the fiber context issue. The error handling was 
-already implemented with proper `SignatureVerificationError` and `InvalidSignatureFormatError` types.
+The Effect wrapper now captures runtime context with `Runtime.runPromise(runtime)` and exposes typed errors (`SignatureVerificationError`, `InvalidSignatureFormatError`). This part is good.
 
-**Remaining**: The upstream voltaire (non-Effect) implementation still has the silent catch issue.
+**Upstream status (non-Effect)**:
+- `src/primitives/ContractSignature/verifySignature.js` now rethrows `InvalidSignatureFormatError` and network/provider failures.
+- It still returns `false` for other caught errors, which can mask unexpected failures as "invalid signature".
+
+**Remaining**:
+1. Decide whether upstream should strictly propagate all non-validation errors (breaking change), or add an optional "strict" mode that throws on unexpected errors.
+2. Add tests that assert error mapping from upstream into Effect wrapper (format error vs network error vs invalid signature).
 
 ## Problem
 

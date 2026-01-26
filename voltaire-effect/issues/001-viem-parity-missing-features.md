@@ -7,7 +7,7 @@ type: planning-document
 scope: full-library
 status: master-planning
 created: 2026-01-25
-updated: 2026-01-25
+updated: 2026-01-26
 </metadata>
 
 <executive_summary>
@@ -20,6 +20,15 @@ Comprehensive gap analysis comparing viem's client architecture against voltaire
 - L2 support: ~30% → target 80%
 - Signature utilities: ~20% → target 90%
 
+**Progress update (2026-01-26)**:
+- ✅ Transaction types (EIP-2930/4844/7702) implemented in Signer + Transaction schemas/serializer.
+- ✅ Multicall implemented (`services/Multicall` + Provider action).
+- ✅ JSON-RPC batching implemented in `HttpTransport` (`BatchScheduler`, `batch` option).
+- ✅ Transport layer migrated to `@effect/platform` (HTTP + WebSocket).
+- ✅ NonceManager now scoped by chainId with concurrency-safe `SynchronizedRef`.
+- ✅ ERC721/1155 missing encoders added (ERC20 view encoders still missing).
+- ⚠️ Stats above not remeasured after these changes.
+
 **Naming Convention:** We use ethers-style naming:
 - `ProviderService` / `Provider` = viem's PublicClient (read-only)
 - `SignerService` / `Signer` = viem's WalletClient (signs & sends)
@@ -30,15 +39,15 @@ Comprehensive gap analysis comparing viem's client architecture against voltaire
 <category name="Transport Layer">
 <priority>P0</priority>
 <gaps>
-- No `fetchOptions` in HttpTransport (can't add auth headers)
-- No fallback transport ranking/latency tracking
+- Partial: HttpTransport supports headers/timeout/retry; still no request/response hooks or general fetchOptions
+- ✅ Fallback transport ranking/latency tracking implemented
 - No `ipc()` transport for local nodes
 - No `custom()` transport for EIP-1193 provider wrapping
 - No `onFetchRequest`/`onFetchResponse` hooks
 - No request deduplication
-- No automatic JSON-RPC batching
-- FallbackTransport has mutable state bug (review 075)
-- ~~WebSocketTransport uses Effect.runSync in callbacks~~ (review 040 - still needs @effect/platform)
+- ✅ JSON-RPC batching implemented (BatchScheduler + HttpTransport batch option)
+- ✅ FallbackTransport mutable state bug fixed (Refs + SynchronizedRef)
+- ✅ WebSocketTransport migrated to @effect/platform Socket (no runSync)
 - ✅ TransactionStream, EventStream, BatchScheduler Effect.runPromise fixed (reviews 076-078, 084)
 </gaps>
 <viem_ref>
@@ -184,7 +193,7 @@ const CeloProvider = Provider.pipe(Layer.provide(CeloChainFormatter))
 
 **Contract:**
 - No `simulateContract` (call + ABI decode)
-- No `multicall` (batch via Multicall3)
+- ✅ `multicall` implemented (Multicall3)
 - No `Contract.estimateGas` per method
 - No `deployContract` helper
 

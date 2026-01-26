@@ -6,6 +6,7 @@ priority: P2
 category: viem-parity
 files: [src/services/, src/primitives/, src/jsonrpc/]
 reviews: [076-use-effect-schema-for-types, 077-use-effect-request-for-provider, 078-use-effect-layer-patterns]
+updated: 2026-01-26
 </metadata>
 
 <gap_analysis>
@@ -14,16 +15,29 @@ Viem uses Promise-based patterns with manual batching, caching, and retry. Volta
 <status_matrix>
 | Pattern | Viem | Voltaire Current | Effect Idiomatic | Priority |
 |---------|------|------------------|------------------|----------|
-| Request batching | Manual multicall | Manual MulticallService | Effect.Request | P1 |
-| Caching | LRU cache | Manual MemoryCache | Effect.Cache | P1 |
-| Retry | Manual backoff | Manual retry loops | Effect.retry + Schedule | P1 |
-| Type validation | Runtime checks | Plain objects | Effect.Schema | P1 |
-| State management | Closures | Mutable objects | Effect.Ref | P1 |
+| Request batching | Manual multicall | BatchScheduler + HttpTransport `batch` option | Effect.Request | P1 |
+| Caching | LRU cache | MemoryCache + LookupCache (effect/Cache) | Effect.Cache | P2 |
+| Retry | Manual backoff | Schedule-based retry in transports | Effect.retry + Schedule | P2 |
+| Type validation | Runtime checks | Mixed (Schema in some primitives) | Effect.Schema | P1 |
+| State management | Closures | Refs/SynchronizedRef in services | Effect.Ref | P2 |
 | Configuration | Hardcoded | Hardcoded | Effect.Config | P2 |
 | Timeouts | setTimeout | Manual tracking | Effect.timeout | P2 |
 | Observability | None | None | Effect.withSpan | P2 |
 </status_matrix>
 </gap_analysis>
+
+<status_update>
+**Current status (2026-01-26)**:
+- ✅ Transport layer now uses `@effect/platform` (`HttpTransport`, `WebSocketTransport`) with `Effect.timeout` + `Schedule` retry.
+- ✅ BatchScheduler exists and is wired into `HttpTransport` via `batch` config (manual batching, not `Effect.Request`).
+- ✅ Caching services exist (`MemoryCache` LRU + `LookupCacheService` built on `effect/Cache`), but they are not yet used widely by Provider/Signer.
+- ✅ Several services now use `Ref`/`SynchronizedRef` for concurrency-safe state (NonceManager, FallbackTransport).
+
+**Still missing**:
+1. `Effect.Request`-based RPC layer (for automatic batching/dedup across provider calls).
+2. `Effect.Config` integration for transport/service configuration.
+3. Consistent schema validation for RPC types (Block, Receipt, Log, etc).
+</status_update>
 
 <viem_reference>
 <feature>Manual Batching via Multicall</feature>

@@ -1,6 +1,7 @@
 # Review 081: JSON-RPC Module
 
-**Date**: 2026-01-25  
+**Date**: 2026-01-25 (review)  
+**Updated**: 2026-01-26  
 **Module**: `voltaire-effect/src/jsonrpc/`  
 **Reviewer**: Claude  
 
@@ -8,29 +9,34 @@
 
 The JSON-RPC module provides typed request/response handling for Ethereum RPC methods. Overall structure is good but has several issues requiring attention.
 
+### Update (2026-01-26)
+
+- ✅ **Unused import fixed** in `Eth.ts` (review 066 resolved).
+- ⚠️ **Duplicate ID counters** remain across namespace files (see issue 067).
+- ⚠️ **EIP-1193 provider error codes** are still missing from `Error.ts`.
+- ⚠️ **Response validation** and **notification semantics** unchanged.
+
 ## Critical Issues
 
 ### 1. Unused Import (Known Issue 066)
 
-**File**: [Eth.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/jsonrpc/Eth.ts#L1)
+**Status**: ✅ Resolved (2026-01-26)  
+**File**: `voltaire-effect/src/jsonrpc/Eth.ts`
 
-```typescript
-import { eth } from "@tevm/voltaire/jsonrpc"; // UNUSED
-```
-
-**Fix**: Remove unused import.
+Unused import removed.
 
 ### 2. Duplicate ID Counters (Known Issue 067) - HIGH SEVERITY
 
 **Problem**: Each namespace file has its own `idCounter` with different starting values:
-- `Request.ts`: starts at 0
-- `Eth.ts`: starts at 1000
-- `Wallet.ts`: starts at 2000
-- `Net.ts`: starts at 3000
-- `Web3.ts`: starts at 4000
-- `Txpool.ts`: starts at 5000
-- `Anvil.ts`: starts at 6000
-- `Hardhat.ts`: starts at 7000
+**Current (2026-01-26)**:
+- `Request.ts`: 0
+- `Eth.ts`: 1000
+- `Wallet.ts`: 2000
+- `Net.ts`: 3000
+- `Web3.ts`: 4000
+- `Txpool.ts`: 5000
+- `Anvil.ts`: 6000
+- `Hardhat.ts`: 7000
 
 **Risk**: While the different starting ranges prevent immediate collisions, this pattern:
 1. Creates maintenance burden
@@ -53,13 +59,13 @@ Or use UUIDs/crypto.randomUUID() for true uniqueness.
 
 **File**: [Error.ts](file:///Users/williamcory/voltaire/voltaire-effect/src/jsonrpc/Error.ts#L24-L35)
 
-**Present Codes**:
+**Present Codes** (2026-01-26):
 - Standard JSON-RPC: -32700 to -32603 ✓
-- Basic Ethereum: -32000 to -32006 ✓
+- Server error codes: -32000 to -32006 ✓ (`INVALID_INPUT`, `RESOURCE_NOT_FOUND`, etc.)
 
-**Missing Codes** per EIP-1474 and common node implementations:
+**Still Missing**:
 ```typescript
-// Geth/Erigon specific
+// Common node-specific
 export const EXECUTION_REVERTED = 3;
 export const INSUFFICIENT_FUNDS = -32010;
 

@@ -1,6 +1,7 @@
 # Voltaire-Effect Comprehensive Review Summary
 
-**Date:** 2025-01-25  
+**Date:** 2025-01-25 (review)  
+**Updated:** 2026-01-26  
 **Reviewer:** Automated Multi-Agent Review  
 **Reviews Generated:** 074-105 (32 new reviews)
 
@@ -12,19 +13,28 @@
 
 | Category | Status | Notes |
 |----------|--------|-------|
-| Effect patterns | ✅ Fixed | `runPromise/runSync` antipatterns resolved (076-078, 084) |
-| Error typing | ❌ Poor | Many `never` error types hide real failures |
+| Effect patterns | ✅ Largely fixed | runPromise/runSync + transport migration done; WebSocket/batch tests still skipped |
+| Error typing | ⚠️ Mixed | Data.TaggedError adopted in many services, core errors still AbstractError |
 | Security | ⚠️ Needs work | Key cleanup missing, timing leaks |
 | Test coverage | ❌ Critical | Many modules have 0 tests |
 | Documentation | ✅ Good | JSDoc coverage excellent |
 
 ---
 
+## Update Highlights (2026-01-26)
+
+- ✅ Transport layer migrated to `@effect/platform` (HTTP + WebSocket).
+- ✅ JSON-RPC batching implemented via `BatchScheduler` + HttpTransport `batch` option (integration tests still skipped).
+- ✅ NonceManager now scoped by `chainId` and uses `SynchronizedRef` for atomic consume/increment.
+- ✅ Transaction type support expanded (EIP-2930/4844/7702) with tests.
+- ✅ Multicall implemented (service + Provider action).
+- ✅ ERC721/1155 missing encoders added (ERC20 view encoders still missing).
+
 ## Priority 0 (Critical - Must Fix)
 
 | Issue | Location | Review |
 |-------|----------|--------|
-| NonceManager race condition | DefaultNonceManager.ts | 080 |
+| ~~NonceManager race condition~~ | ~~DefaultNonceManager.ts~~ | ✅ Fixed (SynchronizedRef + chainId) |
 | ~~runPromise in callbacks~~ | ~~BlockStream, EventStream, TransactionStream, BatchScheduler~~ | ✅ Fixed: 076, 077, 078, 084 |
 | No memory cleanup for keys | LocalAccount, HDWallet, Keystore | 079, 085 |
 | Missing exports | PublicKey (verify/toAddress), Int256 (add/equals), Bytes (concat/equals) | 086, 089, PRIMITIVES |
@@ -41,7 +51,7 @@
 | Non-constant-time comparisons | Secp256k1 verify, PublicKey.equals, Address.equals | 074, 086 |
 | FeeEstimator precision loss | DefaultFeeEstimator.ts Number(baseFee) | 088 |
 | Duplicate ID counters | jsonrpc/*.ts (8 files with separate counters) | 081 |
-| FallbackTransport mutable array | FallbackTransport.ts | 076 |
+| ~~FallbackTransport mutable array~~ | ~~FallbackTransport.ts~~ | ✅ Fixed (Refs + SynchronizedRef) |
 | Input validation missing | AesGcm, ChaCha20Poly1305 key/nonce sizes | 075 |
 
 ---
@@ -52,7 +62,7 @@
 |-------|----------|--------|
 | Dead retry code | fetchBlock, fetchBlockByHash | 078 |
 | Missing EIP-1193 error codes | jsonrpc/errors.ts | 081 |
-| Schema duplications | AddressTypeSchema (3x), SignatureTypeSchema (6x) | PRIMITIVES, 086 |
+| Schema duplications | AddressTypeSchema fixed; SignatureTypeSchema duplicates remain | PRIMITIVES, 086 |
 | Inconsistent Effect wrapping | Hex vs Address, Uint vs Int256 | PRIMITIVES, 089 |
 | Unsafe error casting | `e as SomeError` pattern throughout | 074, 084, 085, 087 |
 | ABI tuple type safety loss | Contract types | 079 |
@@ -95,7 +105,7 @@ Modules with **zero** test files:
 
 ### High
 1. **Timing side-channels** - Non-constant-time comparisons in signature verification
-2. **Race conditions** - NonceManager can return duplicate nonces under concurrency
+2. **Race conditions** - ✅ NonceManager concurrency issue fixed (SynchronizedRef + chainId)
 
 ### Medium
 1. **Missing input validation** - Encryption functions don't validate key/nonce sizes
@@ -106,6 +116,8 @@ Modules with **zero** test files:
 ## Effect Pattern Issues
 
 ### Recommended: Use @effect/platform
+
+**Status (2026-01-26)**: ✅ HttpTransport + WebSocketTransport now use `@effect/platform`. Remaining gaps are IPC/custom transports and request/response hook support.
 
 For transport layers, **use `@effect/platform`** instead of manual implementations:
 
@@ -123,7 +135,7 @@ Benefits:
 - Cross-platform (Node.js, Bun, browser)
 - TestClock compatible
 
-See reviews 040, 041, 042, 073, 076-078, 084 for detailed migration patterns.
+See reviews 040, 041, 042, 073, 076-078, 084 for migration patterns (now applied in transports).
 
 ### Anti-patterns Found (Most Fixed)
 
@@ -142,8 +154,8 @@ See reviews 040, 041, 042, 073, 076-078, 084 for detailed migration patterns.
    yield* socket.messages.pipe(Stream.forEach(handleMessage))
    ```
    
-   **Fixed files**: TransactionStream.ts, EventStream.ts, BatchScheduler.ts, verifySignature.ts
-   **Remaining**: WebSocketTransport.ts (review 040 - needs @effect/platform migration)
+   **Fixed files**: TransactionStream.ts, EventStream.ts, BatchScheduler.ts, verifySignature.ts, WebSocketTransport.ts
+   **Remaining**: WebSocketTransport integration tests are still skipped
 
 2. **`Effect.sync` for throwing operations**
    ```typescript
@@ -169,15 +181,15 @@ See reviews 040, 041, 042, 073, 076-078, 084 for detailed migration patterns.
 ## Recommendations
 
 ### Immediate Actions
-1. Add `Ref.modify` to NonceManager (prevents duplicate nonces)
+1. ✅ NonceManager now uses `SynchronizedRef` (duplicate nonce race fixed)
 2. Add test files for Abi, RLP, Transaction, Signature, PublicKey, PrivateKey
 3. Export missing functions from Bytes, PublicKey, Int256 modules
-4. Change `Effect.sync` to `Effect.try` in Bn254/KZG/HDWallet
+4. Change `Effect.sync` to `Effect.try` in Bn254/KZG (HDWallet already updated)
 
 ### Short-term (1-2 weeks)
-1. **Migrate transports to `@effect/platform`** - Use `HttpClient` and `Socket` instead of manual fetch/WebSocket
-2. **Adopt `@effect/vitest`** - Use `it.effect`, `it.scoped` for cleaner tests with auto TestContext
-3. **Use `effect/Cache`** - Replace manual MemoryCache with built-in Cache (auto-lookup, dedup)
+1. ✅ **Migrate transports to `@effect/platform`** - done for HTTP + WebSocket
+2. ✅ **Adopt `@effect/vitest`** - already in use across tests
+3. **Use `effect/Cache`** - LookupCacheService exists; integrate into Provider/Signer for real wins
 4. Add memory cleanup for key material
 5. Implement constant-time comparison utilities
 6. Fix FeeEstimator precision loss
@@ -193,83 +205,27 @@ See reviews 040, 041, 042, 073, 076-078, 084 for detailed migration patterns.
 
 ---
 
-## Reviews Index
+## Reviews Index (Current Files)
 
-### Round 1: Module Reviews (074-089)
+| File | Focus | Status |
+|------|-------|--------|
+| 010-add-transport-batching.md | JSON-RPC batching | Partial (tests skipped) |
+| 033-fix-fallback-transport-schedule-bug.md | FallbackTransport retry | Mostly fixed |
+| 040-fix-websocket-transport-effect-run-sync.md | WebSocket transport migration | Implemented (tests skipped) |
+| 053-fix-contract-verify-signature-silent-catch.md | verifySignature error handling | Partial (upstream still returns false) |
+| 058-fix-hex-effect-wrapping-inconsistency.md | Hex API consistency | Open |
+| 063-add-missing-erc20-view-encoders.md | ERC20 view helpers | Open |
+| 067-fix-jsonrpc-duplicate-id-counter.md | JSON-RPC id counters | Open |
+| 068-add-jsonrpc-ethereum-error-codes.md | JSON-RPC error codes | Partial |
+| 080-use-effect-error-patterns.md | Error idioms | Open |
+| 081-jsonrpc-review.md | JSON-RPC schemas | Open |
+| 081-use-effect-config-patterns.md | Effect.Config adoption | Open |
+| 082-abi-primitives-review.md | ABI encode/decode | Open |
+| 083-nonce-manager-gaps.md | NonceManager features | Partial (chainId + concurrency fixed) |
+| 085-effect-patterns-improvements.md | Effect idioms | Open |
+| 085-hdwallet-keystore-review.md | HDWallet/Keystore | Partial |
+| 093-receipt-eventlog-review.md | Receipt/EventLog schemas | Open |
+| 094-block-primitives-review.md | Block schemas | Open |
+| VIEM-COMPARISON-SUMMARY.md | Viem parity overview | Summary |
 
-| # | File | Focus | Status |
-|---|------|-------|--------|
-| 074 | crypto-signatures-review.md | Secp256k1, Ed25519, Bls12381 | Open |
-| 075 | crypto-hash-encryption-review.md | Keccak, SHA256, AesGcm, ChaCha20 | Open |
-| 076 | fix-transaction-stream-run-promise.md | TransactionStream runPromise fix | ✅ Fixed |
-| 077 | fix-provider-run-promise.md | Provider runPromise (was correct) | ✅ N/A |
-| 078 | fix-streaming-services-run-promise.md | EventStream, BlockStream | ✅ Fixed |
-| 079 | contract-account-review.md | Contract, LocalAccount | Open |
-| 080 | cache-nonce-review.md | MemoryCache, NonceManager | Open |
-| 081 | jsonrpc-review.md | JSON-RPC schemas | Open |
-| 082 | abi-primitives-review.md | ABI encode/decode | Open |
-| 083 | erc-standards-review.md | ERC20/721/1155/165 | Open |
-| 084 | fix-batch-scheduler-run-sync.md | BatchScheduler rewrite | ✅ Fixed |
-| 085 | hdwallet-keystore-review.md | HDWallet, Keystore, Bip39 | Open |
-| 086 | signature-publickey-review.md | Signature, PublicKey, PrivateKey | Open |
-| 087 | bn254-kzg-review.md | Bn254, KZG, ModExp | Open |
-| 088 | fee-formatter-multicall-review.md | FeeEstimator, Formatter, Multicall | Open |
-| 089 | numeric-primitives-review.md | Uint, Int256 | Open |
-
-### Round 2: Deep-Dive Reviews (090-105)
-
-| # | File | Focus |
-|---|------|-------|
-| 090 | crypto-test-quality-review.md | Crypto test vectors and edge cases |
-| 091 | services-test-quality-review.md | Service test coverage and quality |
-| 092 | hash-primitive-deep-review.md | Hash module deep dive |
-| 093 | receipt-eventlog-review.md | Receipt, EventLog, LogFilter |
-| 094 | block-primitives-review.md | Block, BlockHeader, BlockBody |
-| 095 | api-consistency-review.md | API patterns across modules |
-| 096 | layer-composition-review.md | Effect Layer patterns |
-| 097 | error-types-review.md | Error handling patterns |
-| 098 | x25519-p256-review.md | X25519, P256 crypto |
-| 099 | eip712-typeddata-review.md | EIP-712 typed data signing |
-| 100 | siwe-ens-review.md | SIWE and ENS primitives |
-| 101 | chain-network-review.md | Chain configurations |
-| 102 | gas-fee-primitives-review.md | Gas and fee calculations |
-| 103 | accesslist-authorization-review.md | EIP-2930, EIP-7702 |
-| 104 | blob-kzg-primitives-review.md | EIP-4844 blobs |
-| 105 | exports-structure-review.md | Import/export structure |
-
----
-
-## New Findings from Round 2
-
-### Critical (P0)
-
-| Issue | Location | Review |
-|-------|----------|--------|
-| jsonrpc not in tsup entry points | tsup.config.ts | 105 |
-| Receipt schema missing 5 required fields | Receipt/ReceiptSchema.ts | 093 |
-| Block RPC encode unimplemented | Block/Rpc.ts | 094 |
-| AesGcm no error/failure tests | AesGcm.test.ts | 090 |
-| Hash missing 5 exports from index | Hash/index.ts | 092 |
-| Zero tests for 10+ gas primitives | Gas/*, BaseFeePerGas/*, etc. | 102 |
-
-### High (P1)
-
-| Issue | Location | Review |
-|-------|----------|--------|
-| CryptoTest missing Bls12381Test, P256Test | CryptoTest.ts | 096 |
-| P256Test layer referenced but doesn't exist | P256/ | 098 |
-| No branded types for X25519/P256 keys | X25519/, P256/ | 098 |
-| BlockStream tests only 60 lines | BlockStream.test.ts | 091 |
-| API inconsistency: Effect vs pure returns | Multiple | 095 |
-| Error exports missing | BlockError, AbiParseError | 097 |
-
-### Medium (P2)
-
-| Issue | Location | Review |
-|-------|----------|--------|
-| SHA256 test only checks 2 bytes | SHA256.test.ts | 090 |
-| No concurrency tests anywhere | All test files | 091 |
-| Topics array missing max(4) validation | LogFilter | 093 |
-| Bytes index.ts JSDoc lies about exports | Bytes/index.ts | 095 |
-| hexToBytes silently accepts invalid | AccessList/Rpc.ts | 103 |
-| yParity accepts any number | Authorization/Rpc.ts | 103 |
+_Note_: The prior summary referenced review files `074-105`, which are not present in this repo snapshot.

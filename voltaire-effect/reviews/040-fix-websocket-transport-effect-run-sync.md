@@ -6,6 +6,8 @@ priority: P0
 files: [src/services/Transport/WebSocketTransport.ts]
 reviews: [073-fix-websocket-effect-runsync-in-callbacks.md, 076-transport-services-review.md]
 related: [041, 042]
+updated: 2026-01-26
+status: implemented
 </metadata>
 
 <problem>
@@ -60,6 +62,17 @@ ws.onclose = () => {
 5. **No structured concurrency**: Fibers spawned inside are orphaned
 6. **Resource leaks**: Finalizers may not run properly
 </problem>
+
+<status_update>
+**Current status (2026-01-26)**:
+- ✅ WebSocketTransport has been rewritten to use `@effect/platform/Socket` and Effect fibers (no `Effect.runSync` / `Effect.runPromise` in callbacks).
+- ✅ Reconnect, keepalive, and request queueing are now Effect-native (`Effect.sleep`, `Schedule.spaced`, `Ref`, `Deferred`).
+- ⚠️ WebSocketTransport tests exist but are currently skipped in `voltaire-effect/src/services/Transport/Transport.test.ts` (`describe.skip("WebSocketTransport", ...)`). These should be re-enabled with a deterministic mock socket.
+
+**Follow-up suggestions**:
+1. Unskip WebSocketTransport tests and provide a mock `Socket.WebSocketConstructor` or test layer.
+2. Add reconnection backoff tests (max attempts, delay growth, pending queue flush).
+</status_update>
 
 <solution>
 ## Effect Pattern: Runtime.runFork with Captured Runtime

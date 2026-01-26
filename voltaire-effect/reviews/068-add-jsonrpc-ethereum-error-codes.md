@@ -1,5 +1,8 @@
 # Add JSON-RPC Ethereum-Specific Error Codes
 
+**Updated**: 2026-01-26  
+**Status**: Partially implemented (server error codes exist; EIP-1193 provider codes missing)
+
 ## Problem
 
 `Error.ts` is missing Ethereum-specific RPC error codes for EIP-1193 compliance.
@@ -12,6 +15,16 @@ Missing:
 - `UNSUPPORTED_METHOD` (-32004)
 - `RESOURCE_NOT_FOUND` (-32002)
 - `LIMIT_EXCEEDED` (-32005)
+
+**Current state (2026-01-26)**:
+- `voltaire-effect/src/jsonrpc/Error.ts` now includes server error codes (`INVALID_INPUT`, `RESOURCE_NOT_FOUND`, `RESOURCE_UNAVAILABLE`, `TRANSACTION_REJECTED`, `METHOD_NOT_SUPPORTED`, `LIMIT_EXCEEDED`, `JSON_RPC_VERSION_NOT_SUPPORTED`).
+- EIP-1193 provider error codes are still missing (4001/4100/4200/4900/4901).
+- Common node-specific codes (e.g., `EXECUTION_REVERTED`, `INSUFFICIENT_FUNDS`) are still missing.
+
+**Remaining work**:
+1. Add EIP-1193 provider error constants and export them from `jsonrpc/index.ts`.
+2. Add common node error codes used by geth/erigon for better classification.
+3. Add tests in `voltaire-effect/src/jsonrpc/JsonRpc.test.ts` to assert constant values.
 
 ## Why This Matters
 

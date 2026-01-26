@@ -13,6 +13,8 @@ files: [
   voltaire-effect/src/primitives/LogIndex/Number.ts
 ]
 reviews: [059-fix-receipt-pre-byzantium-status.md]
+updated: 2026-01-26
+status: open
 </metadata>
 
 <module_overview>
@@ -20,6 +22,16 @@ Effect Schema wrappers for transaction receipts, event logs, log filters, and lo
 
 **Severity**: HIGH - Critical schema divergence from base primitives breaks EIP-1559 and EIP-4844 support.
 </module_overview>
+
+<status_update>
+**Current status (2026-01-26)**:
+- Receipt schema still requires `status` and omits `effectiveGasPrice`, `type`, `root`, `blobGasUsed`, `blobGasPrice`.
+- Log topics array still has no max‑4 validation in `EventLog/Rpc.ts`.
+- `LogFilter/Rpc.ts` still allows `blockhash` with `fromBlock`/`toBlock` (no exclusivity check).
+- `LogIndex/Number.ts` still accepts `bigint` inputs.
+
+No fixes detected in the reviewed files since 2026-01-25.
+</status_update>
 
 <viem_reference>
 <feature>Transaction Receipt Types</feature>

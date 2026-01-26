@@ -1,6 +1,7 @@
 # NonceManager Gaps
 
 **Date**: 2026-01-25
+**Updated**: 2026-01-26
 **Priority**: High
 **Category**: Missing Features / Architecture
 
@@ -44,17 +45,12 @@ interface NonceManagerShape {
 
 ### 1. No `chainId` in Key
 
-**viem**: Keys by `${address}.${chainId}`
-**voltaire-effect**: Keys by `address` only
+**Status (2026-01-26)**: ✅ Fixed  
+`NonceManagerService` now includes `chainId` in the API and `DefaultNonceManager` keys by `${chainId}:${address}` using `SynchronizedRef`.
 
-**Impact**: Multi-chain apps will have nonce collisions if same address is used on multiple chains.
-
-**Fix**:
-```typescript
-// Change API to include chainId
-get(address: string, chainId: number): Effect<number, ...>
-consume(address: string, chainId: number): Effect<number, ...>
-```
+**Files**:
+- `voltaire-effect/src/services/NonceManager/NonceManagerService.ts`
+- `voltaire-effect/src/services/NonceManager/DefaultNonceManager.ts`
 
 ### 2. No Custom Sources
 
@@ -129,7 +125,8 @@ return delta + await promise
 
 ### voltaire-effect
 
-Current implementation (from earlier reviews) has race conditions. Review `034-fix-nonce-manager-race-condition.md` addresses this.
+**Status (2026-01-26)**: ✅ Fixed  
+`DefaultNonceManager` now uses `SynchronizedRef.modifyEffect` for atomic consume/increment, addressing the race condition.
 
 ## API Design Suggestions
 

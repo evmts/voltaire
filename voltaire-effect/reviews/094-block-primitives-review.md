@@ -18,6 +18,8 @@ files: [
   "voltaire-effect/src/primitives/BlockNumber/Number.ts"
 ]
 reviews: []
+updated: 2026-01-26
+status: open
 </metadata>
 
 <module_overview>
@@ -32,6 +34,16 @@ Effect Schema wrappers for Block, BlockHeader, BlockBody, BlockHash, and BlockNu
 - Duplicate schema declarations across files
 </current_status>
 </module_overview>
+
+<status_update>
+**Current status (2026-01-26)**:
+- RPC encode paths still return `ParseResult.fail` in `Block/Rpc.ts`, `BlockHeader/Rpc.ts`, `BlockBody/Rpc.ts`.
+- Block/BlockHeader/BlockBody type guards remain shallow (minimal field checks).
+- No dedicated tests exist under `voltaire-effect/src/primitives/Block*`.
+- Duplicate schema declarations (BlockHash, BlockNumber) still present.
+
+No fixes detected since the 2026-01-25 review.
+</status_update>
 
 <findings>
 <critical>

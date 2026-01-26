@@ -6,6 +6,7 @@
   <category>api-completeness</category>
   <complexity>low</complexity>
   <estimated_effort>1 hour</estimated_effort>
+  <updated>2026-01-26</updated>
   <files>
     - voltaire-effect/src/standards/ERC20.ts
     - src/standards/ERC20.ts
@@ -58,6 +59,17 @@ ERC20 module is missing encoders for common view functions: `totalSupply()`, `na
 - Incomplete standard implementation
 - Doesn't match viem's complete API surface
 </problem>
+
+<status_update>
+**Current status (2026-01-26)**:
+- `voltaire-effect/src/standards/ERC20.ts` still lacks `encodeTotalSupply`, `encodeName`, `encodeSymbol`, `encodeDecimals` and matching result decoders.
+- Base implementation in `src/standards/ERC20.ts` also lacks these helpers.
+
+**Remaining work**:
+1. Add the four view encoders (totalSupply/name/symbol/decimals) to both base and Effect wrapper.
+2. Add `decode*Result` helpers so callers can decode the response without manual ABI parsing.
+3. Add quick unit tests for the selectors and decoder outputs.
+</status_update>
 
 <solution>
 Add Effect-wrapped encoders and result decoders for all ERC20 view functions, following the existing pattern in `ERC20.ts`.

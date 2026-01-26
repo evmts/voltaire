@@ -9,6 +9,21 @@ Comprehensive review of Effect-TS wrappers for HD wallet derivation (BIP-32/39/4
 - `src/crypto/Keystore/` (7 files)
 - `src/crypto/Bip39/` (4 files)
 
+**Updated**: 2026-01-26  
+**Status**: Partially resolved (API consistency + error types fixed; security cleanup still outstanding)
+
+### Update Highlights (2026-01-26)
+
+✅ **Resolved**
+- **Return type inconsistency**: `HDWalletService.generateMnemonic()` now returns a space‑separated `string` (matches `Bip39Service`), and `Bip39/utils.ts` provides `mnemonicToWords` / `wordsToMnemonic`.
+- **Typed errors**: `HDWallet` operations now use `HDWalletError` union with `Data.TaggedError` types and `mapToHDWalletError`.
+- **Throwing operations wrapped**: `HDWalletLive` now uses `Effect.try` / `Effect.tryPromise` instead of `Effect.sync` for potentially throwing operations.
+
+⚠️ **Still open**
+- Private key / seed memory cleanup (no zeroing or acquireRelease helpers yet).
+- Keystore password remains `string` (immutable; cannot be zeroed).
+- `HDNode` is still typed as `object` (no branded/struct type).
+
 ---
 
 ## 1. Security Issues
