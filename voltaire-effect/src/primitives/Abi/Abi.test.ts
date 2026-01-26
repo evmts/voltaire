@@ -35,153 +35,141 @@ const erc20Abi = [
 ] as const;
 
 describe("parse", () => {
-	it.effect("parses valid JSON ABI string", () =>
-		Effect.gen(function* () {
-			const jsonString = JSON.stringify(erc20Abi);
-			const abi = yield* parse(jsonString);
-			expect(Array.isArray(abi)).toBe(true);
-			expect(abi.length).toBe(3);
-		}),
-	);
+	it("parses valid JSON ABI string", async () => {
+		const jsonString = JSON.stringify(erc20Abi);
+		const abi = await Effect.runPromise(parse(jsonString));
+		expect(Array.isArray(abi)).toBe(true);
+		expect(abi.length).toBe(3);
+	});
 
-	it.effect("fails with AbiParseError on invalid JSON", () =>
-		Effect.gen(function* () {
-			const exit = yield* Effect.exit(parse("not valid json {{{"));
-			expect(Exit.isFailure(exit)).toBe(true);
-			if (Exit.isFailure(exit)) {
-				const error = exit.cause;
-				expect(error._tag).toBe("Fail");
-			}
-		}),
-	);
+	it("fails with AbiParseError on invalid JSON", async () => {
+		const exit = await Effect.runPromiseExit(parse("not valid json {{{"));
+		expect(Exit.isFailure(exit)).toBe(true);
+		if (Exit.isFailure(exit)) {
+			const error = exit.cause;
+			expect(error._tag).toBe("Fail");
+		}
+	});
 
-	it.effect("parses empty array as valid ABI", () =>
-		Effect.gen(function* () {
-			const abi = yield* parse("[]");
-			expect(Array.isArray(abi)).toBe(true);
-			expect(abi.length).toBe(0);
-		}),
-	);
+	it("parses empty array as valid ABI", async () => {
+		const abi = await Effect.runPromise(parse("[]"));
+		expect(Array.isArray(abi)).toBe(true);
+		expect(abi.length).toBe(0);
+	});
 });
 
 describe("encodeFunctionData", () => {
 	const transferSelector = "0xa9059cbb";
 
-	it.effect("encodes transfer correctly with known selector", () =>
-		Effect.gen(function* () {
-			const calldata = yield* encodeFunctionData(erc20Abi, "transfer", [
+	it("encodes transfer correctly with known selector", async () => {
+		const calldata = await Effect.runPromise(
+			encodeFunctionData(erc20Abi, "transfer", [
 				"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 				1000000000000000000n,
-			]);
-			expect(calldata.startsWith(transferSelector)).toBe(true);
-			expect(calldata.length).toBe(138);
-		}),
-	);
+			]),
+		);
+		expect(calldata.startsWith(transferSelector)).toBe(true);
+		expect(calldata.length).toBe(138);
+	});
 
-	it.effect("fails with AbiItemNotFoundError for unknown function", () =>
-		Effect.gen(function* () {
-			const exit = yield* Effect.exit(
-				encodeFunctionData(erc20Abi, "unknownFunction", []),
-			);
-			expect(Exit.isFailure(exit)).toBe(true);
-		}),
-	);
+	it("fails with AbiItemNotFoundError for unknown function", async () => {
+		const exit = await Effect.runPromiseExit(
+			encodeFunctionData(erc20Abi, "unknownFunction", []),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
 
-	it.effect("fails with AbiEncodingError for wrong argument types", () =>
-		Effect.gen(function* () {
-			const exit = yield* Effect.exit(
-				encodeFunctionData(erc20Abi, "transfer", [
-					"not an address",
-					"not a uint",
-				]),
-			);
-			expect(Exit.isFailure(exit)).toBe(true);
-		}),
-	);
+	it("fails with AbiEncodingError for wrong argument types", async () => {
+		const exit = await Effect.runPromiseExit(
+			encodeFunctionData(erc20Abi, "transfer", [
+				"not an address",
+				"not a uint",
+			]),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
 });
 
 describe("decodeFunctionData", () => {
-	it.effect("decodes known calldata correctly", () =>
-		Effect.gen(function* () {
-			const calldata = yield* encodeFunctionData(erc20Abi, "transfer", [
+	it("decodes known calldata correctly", async () => {
+		const calldata = await Effect.runPromise(
+			encodeFunctionData(erc20Abi, "transfer", [
 				"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 				1000000000000000000n,
-			]);
-			const decoded = yield* decodeFunctionData(erc20Abi, calldata);
-			expect(decoded.name).toBe("transfer");
-			expect(decoded.params.length).toBe(2);
-			expect((decoded.params[0] as string).toLowerCase()).toBe(
-				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
-			);
-			expect(decoded.params[1]).toBe(1000000000000000000n);
-		}),
-	);
+			]),
+		);
+		const decoded = await Effect.runPromise(
+			decodeFunctionData(erc20Abi, calldata),
+		);
+		expect(decoded.name).toBe("transfer");
+		expect(decoded.params.length).toBe(2);
+		expect((decoded.params[0] as string).toLowerCase()).toBe(
+			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+		);
+		expect(decoded.params[1]).toBe(1000000000000000000n);
+	});
 
-	it.effect("fails on invalid selector", () =>
-		Effect.gen(function* () {
-			const exit = yield* Effect.exit(
-				decodeFunctionData(erc20Abi, "0xdeadbeef" as `0x${string}`),
-			);
-			expect(Exit.isFailure(exit)).toBe(true);
-		}),
-	);
+	it("fails on invalid selector", async () => {
+		const exit = await Effect.runPromiseExit(
+			decodeFunctionData(erc20Abi, "0xdeadbeef" as `0x${string}`),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
 
-	it.effect("fails on calldata too short", () =>
-		Effect.gen(function* () {
-			const exit = yield* Effect.exit(
-				decodeFunctionData(erc20Abi, "0x12" as `0x${string}`),
-			);
-			expect(Exit.isFailure(exit)).toBe(true);
-		}),
-	);
+	it("fails on calldata too short", async () => {
+		const exit = await Effect.runPromiseExit(
+			decodeFunctionData(erc20Abi, "0x12" as `0x${string}`),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
 });
 
 describe("encodeEventLog", () => {
-	it.effect("encodes Transfer event topics", () =>
-		Effect.gen(function* () {
-			const topics = yield* encodeEventLog(erc20Abi, "Transfer", [
+	it("encodes Transfer event topics", async () => {
+		const topics = await Effect.runPromise(
+			encodeEventLog(erc20Abi, "Transfer", [
 				"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 				"0x1234567890123456789012345678901234567890",
-			]);
-			expect(topics.length).toBe(3);
-			expect(topics[0].startsWith("0x")).toBe(true);
-		}),
-	);
+			]),
+		);
+		expect(topics.length).toBe(3);
+		expect(topics[0].startsWith("0x")).toBe(true);
+	});
 
-	it.effect("fails for unknown event", () =>
-		Effect.gen(function* () {
-			const exit = yield* Effect.exit(
-				encodeEventLog(erc20Abi, "UnknownEvent", []),
-			);
-			expect(Exit.isFailure(exit)).toBe(true);
-		}),
-	);
+	it("fails for unknown event", async () => {
+		const exit = await Effect.runPromiseExit(
+			encodeEventLog(erc20Abi, "UnknownEvent", []),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
 });
 
 describe("decodeEventLog", () => {
-	it.effect("decodes Transfer event log", () =>
-		Effect.gen(function* () {
-			const topics = yield* encodeEventLog(erc20Abi, "Transfer", [
+	it("decodes Transfer event log", async () => {
+		const topics = await Effect.runPromise(
+			encodeEventLog(erc20Abi, "Transfer", [
 				"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 				"0x1234567890123456789012345678901234567890",
-			]);
-			const value = 1000000000000000000n;
-			const data = `0x${value.toString(16).padStart(64, "0")}` as `0x${string}`;
-			const decoded = yield* decodeEventLog(erc20Abi, { data, topics });
-			expect(decoded.event).toBe("Transfer");
-			expect(decoded.params.value).toBe(value);
-		}),
-	);
+			]),
+		);
+		const value = 1000000000000000000n;
+		const data = `0x${value.toString(16).padStart(64, "0")}` as `0x${string}`;
+		const decoded = await Effect.runPromise(
+			decodeEventLog(erc20Abi, { data, topics }),
+		);
+		expect(decoded.event).toBe("Transfer");
+		expect(decoded.params.value).toBe(value);
+	});
 
-	it.effect("fails for unknown event signature", () =>
-		Effect.gen(function* () {
-			const exit = yield* Effect.exit(
-				decodeEventLog(erc20Abi, {
-					data: "0x" as `0x${string}`,
-					topics: ["0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" as `0x${string}`],
-				}),
-			);
-			expect(Exit.isFailure(exit)).toBe(true);
-		}),
-	);
+	it("fails for unknown event signature", async () => {
+		const exit = await Effect.runPromiseExit(
+			decodeEventLog(erc20Abi, {
+				data: "0x" as `0x${string}`,
+				topics: [
+					"0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" as `0x${string}`,
+				],
+			}),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
 });

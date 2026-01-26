@@ -1,5 +1,5 @@
 import * as Effect from "effect/Effect";
-import { describe, expect, it } from "@effect/vitest";
+import { describe, expect, it } from "vitest";
 import {
 	BatchRequest,
 	BatchResponse,
@@ -50,6 +50,53 @@ describe("JsonRpc", () => {
 			const addParams = Request.withParams<[string, string]>(base);
 			const req = addParams(["0x1234", "latest"]);
 			expect(req.params).toEqual(["0x1234", "latest"]);
+		});
+
+		it("creates request with string id", () => {
+			const req = Request.from({
+				method: "eth_blockNumber",
+				id: "request-abc",
+			});
+			expect(req.id).toBe("request-abc");
+		});
+
+		it("creates request with null id", () => {
+			const req = Request.from({
+				method: "eth_blockNumber",
+				id: null,
+			});
+			expect(req.id).toBeNull();
+			expect(Request.isNotification(req)).toBe(true);
+		});
+
+		it("isNotification returns true for null id", () => {
+			const req = Request.from({
+				method: "eth_subscribe",
+				id: null,
+			});
+			expect(Request.isNotification(req)).toBe(true);
+		});
+
+		it("withParams auto-assigns id when undefined", () => {
+			const base = Request.from({ method: "eth_getBalance" });
+			const addParams = Request.withParams<[string, string]>(base);
+			const req = addParams(["0x1234", "latest"]);
+			expect(req.id).toBeDefined();
+			expect(typeof req.id).toBe("number");
+		});
+
+		it("creates request with empty method", () => {
+			const req = Request.from({ method: "", id: 1 });
+			expect(req.method).toBe("");
+		});
+
+		it("creates request with complex params", () => {
+			const req = Request.from({
+				method: "eth_call",
+				params: [{ to: "0x123", data: "0xabc" }, "latest"],
+				id: 1,
+			});
+			expect(req.params).toEqual([{ to: "0x123", data: "0xabc" }, "latest"]);
 		});
 	});
 
@@ -128,6 +175,69 @@ describe("JsonRpc", () => {
 			const program = Response.parse(raw);
 			const exit = await Effect.runPromiseExit(program);
 			expect(exit._tag).toBe("Failure");
+		});
+
+		it("parse fails on invalid jsonrpc version", async () => {
+			const raw = { jsonrpc: "1.0", id: 1, result: "0x1" };
+
+			const program = Response.parse(raw);
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("parses response with null id", async () => {
+			const raw = { jsonrpc: "2.0", id: null, result: "0x1" };
+
+			const response = await Effect.runPromise(Response.parse(raw));
+			expect(response.id).toBeNull();
+		});
+
+		it("parses response with string id", async () => {
+			const raw = { jsonrpc: "2.0", id: "abc-123", result: "0x1" };
+
+			const response = await Effect.runPromise(Response.parse(raw));
+			expect(response.id).toBe("abc-123");
+		});
+
+		it("parses response with number id", async () => {
+			const raw = { jsonrpc: "2.0", id: 42, result: "0x1" };
+
+			const response = await Effect.runPromise(Response.parse(raw));
+			expect(response.id).toBe(42);
+		});
+
+		it("handles response with both result and error (error takes precedence)", async () => {
+			const raw = {
+				jsonrpc: "2.0",
+				id: 1,
+				result: "0x1",
+				error: { code: -32000, message: "Something failed" },
+			};
+
+			const response = await Effect.runPromise(Response.parse(raw));
+			expect(Response.isError(response)).toBe(true);
+			expect(Response.isSuccess(response)).toBe(true);
+		});
+
+		it("parses error response with data field", async () => {
+			const raw = {
+				jsonrpc: "2.0",
+				id: 1,
+				error: {
+					code: -32000,
+					message: "execution reverted",
+					data: { reason: "insufficient funds", value: "0x1234" },
+				},
+			};
+
+			const response = await Effect.runPromise(Response.parse(raw));
+			expect(Response.isError(response)).toBe(true);
+			if (Response.isError(response)) {
+				expect(response.error.data).toEqual({
+					reason: "insufficient funds",
+					value: "0x1234",
+				});
+			}
 		});
 	});
 
@@ -231,6 +341,67 @@ describe("JsonRpc", () => {
 			const errors = BatchResponse.errors(batch);
 			expect(errors).toHaveLength(1);
 			expect(errors[0].error.code).toBe(-32601);
+		});
+
+		it("parse fails when batch is not an array", async () => {
+			const raw = { jsonrpc: "2.0", id: 1, result: "0x1" };
+
+			const exit = await Effect.runPromiseExit(BatchResponse.parse(raw));
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("parses empty array", async () => {
+			const raw: unknown[] = [];
+
+			const batch = await Effect.runPromise(BatchResponse.parse(raw));
+			expect(BatchResponse.results(batch)).toHaveLength(0);
+		});
+
+		it("parses batch containing invalid entries", async () => {
+			const raw = [
+				{ jsonrpc: "2.0", id: 1, result: "0x1" },
+				{ invalid: "entry" },
+				{ jsonrpc: "2.0", id: 2, result: "0x2" },
+			];
+
+			const batch = await Effect.runPromise(BatchResponse.parse(raw));
+			expect(BatchResponse.results(batch)).toHaveLength(3);
+		});
+
+		it("findById with duplicate ids returns first match", async () => {
+			const raw = [
+				{ jsonrpc: "2.0", id: 1, result: "0x1" },
+				{ jsonrpc: "2.0", id: 1, result: "0x2" },
+			];
+
+			const batch = await Effect.runPromise(BatchResponse.parse(raw));
+			const findById = BatchResponse.findById(batch);
+			const response = findById(1);
+			expect(response?.result).toBe("0x1");
+		});
+
+		it("findById with null id", async () => {
+			const raw = [
+				{ jsonrpc: "2.0", id: null, result: "0x1" },
+				{ jsonrpc: "2.0", id: 2, result: "0x2" },
+			];
+
+			const batch = await Effect.runPromise(BatchResponse.parse(raw));
+			const findById = BatchResponse.findById(batch);
+			const response = findById(null);
+			expect(response?.result).toBe("0x1");
+		});
+
+		it("findById with string id", async () => {
+			const raw = [
+				{ jsonrpc: "2.0", id: "req-1", result: "0x1" },
+				{ jsonrpc: "2.0", id: "req-2", result: "0x2" },
+			];
+
+			const batch = await Effect.runPromise(BatchResponse.parse(raw));
+			const findById = BatchResponse.findById(batch);
+			const response = findById("req-2");
+			expect(response?.result).toBe("0x2");
 		});
 	});
 
