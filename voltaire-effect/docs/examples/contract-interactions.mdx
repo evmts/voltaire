@@ -112,6 +112,8 @@ const program = Effect.gen(function* () {
 
 ## Uniswap V2 Swap
 
+A real-world example using [Uniswap V2 Router](https://docs.uniswap.org/contracts/v2/reference/smart-contracts/router-02):
+
 ```typescript
 const routerAbi = [
   { type: 'function', name: 'swapExactTokensForTokens', inputs: [
@@ -128,14 +130,23 @@ const program = Effect.gen(function* () {
   const path = ['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2']
   
   const amounts = yield* router.read.getAmountsOut(1000_000_000n, path)
-  const amountOutMin = (amounts[1] * 95n) / 100n
-  const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200)
+  const amountOutMin = (amounts[1] * 95n) / 100n  // 5% slippage
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200)  // 20 minutes
   
   return yield* router.write.swapExactTokensForTokens(1000_000_000n, amountOutMin, path, myAddress, deadline)
 }).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
+
+## See Also
+
+- [Contract Service](/services/contract) — Complete Contract API
+- [Provider Service](/services/provider) — Read-only operations and `readContract`
+- [Multicall](/examples/multicall) — Batch multiple contract reads
+- [ERC Standards](/standards) — ERC-20, ERC-721, ERC-1155 utilities
+- [Event Streaming](/examples/event-streaming) — Real-time event watching
+- [Voltaire ABI](https://voltaire.tevm.sh/primitives/abi) — ABI encoding/decoding

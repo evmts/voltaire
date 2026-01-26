@@ -584,6 +584,111 @@ describe("Contract", () => {
 			expect(txArgs.value).toBeUndefined();
 			expect(txArgs.gasLimit).toBeUndefined();
 		});
+
+		it("sends payable function with value (deposit)", async () => {
+			const txHash =
+				"0xabcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab" as HexType;
+			mockSigner.sendTransaction.mockReturnValue(Effect.succeed(txHash));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				const hash = yield* contract.write.deposit({ value: 1000000000000000000n });
+				return hash;
+			});
+
+			await Effect.runPromise(
+				program.pipe(
+					Effect.provide(MockProviderLayer),
+					Effect.provide(MockSignerLayer),
+				),
+			);
+
+			expect(mockSigner.sendTransaction).toHaveBeenCalled();
+			const txArgs = mockSigner.sendTransaction.mock.calls[0][0];
+			expect(txArgs.value).toBe(1000000000000000000n);
+		});
+
+		it("sends payable function with value and args (depositTo)", async () => {
+			const txHash =
+				"0xabcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab" as HexType;
+			mockSigner.sendTransaction.mockReturnValue(Effect.succeed(txHash));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				const hash = yield* contract.write.depositTo(
+					Address("0x1234567890123456789012345678901234567890"),
+					{ value: 500000000000000000n },
+				);
+				return hash;
+			});
+
+			await Effect.runPromise(
+				program.pipe(
+					Effect.provide(MockProviderLayer),
+					Effect.provide(MockSignerLayer),
+				),
+			);
+
+			expect(mockSigner.sendTransaction).toHaveBeenCalled();
+			const txArgs = mockSigner.sendTransaction.mock.calls[0][0];
+			expect(txArgs.value).toBe(500000000000000000n);
+		});
+
+		it("propagates signer sendTransaction error as ContractWriteError", async () => {
+			mockSigner.sendTransaction.mockReturnValue(
+				Effect.fail(new Error("user rejected transaction")),
+			);
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				return yield* contract.write.transfer(
+					Address("0x1234567890123456789012345678901234567890"),
+					1000n,
+				);
+			}).pipe(
+				Effect.catchTag("ContractWriteError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(
+				program.pipe(
+					Effect.provide(MockProviderLayer),
+					Effect.provide(MockSignerLayer),
+				),
+			);
+
+			expect(result).toContain("caught:");
+			expect(result).toContain("user rejected transaction");
+		});
+
+		it("propagates signer network error as ContractWriteError", async () => {
+			mockSigner.sendTransaction.mockReturnValue(
+				Effect.fail(new Error("network error")),
+			);
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				return yield* contract.write.approve(
+					Address("0x1234567890123456789012345678901234567890"),
+					1000n,
+				);
+			}).pipe(
+				Effect.catchTag("ContractWriteError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(
+				program.pipe(
+					Effect.provide(MockProviderLayer),
+					Effect.provide(MockSignerLayer),
+				),
+			);
+
+			expect(result).toContain("caught:");
+			expect(result).toContain("network error");
+		});
 	});
 
 	describe("simulate methods", () => {
