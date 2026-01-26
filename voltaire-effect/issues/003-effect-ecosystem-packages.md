@@ -39,7 +39,7 @@ voltaire-effect currently imports from `effect/*`:
 
 **Purpose**: Platform-agnostic HTTP, WebSocket, FileSystem, Workers
 
-**Why needed**: voltaire-effect manually implements HTTP and WebSocket transports with anti-patterns (Effect.runSync in callbacks, setTimeout/setInterval).
+**Why needed**: voltaire-effect manually implements HTTP and WebSocket transports. Most anti-patterns have been fixed (reviews 076-078, 084), but WebSocketTransport still needs @effect/platform migration (review 040).
 
 **Install**:
 ```bash
@@ -54,9 +54,9 @@ pnpm add @effect/platform-bun  # for Bun
 | Component | Current | With @effect/platform |
 |-----------|---------|----------------------|
 | HttpTransport | Manual fetch + retry loop | `HttpClient` with `retryTransient` |
-| WebSocketTransport | Effect.runSync in callbacks | `Socket.makeWebSocket` |
+| WebSocketTransport | ⚠️ Still has Effect.runSync in callbacks | `Socket.makeWebSocket` |
 | IPC Transport | Not implemented | `FileSystem` for Unix sockets |
-| Request batching | Manual setTimeout | `HttpClient.batched` |
+| Request batching | ✅ Fixed: Uses Effect Queue/Ref (review 084) | `HttpClient.batched` |
 
 **Key modules**:
 - `@effect/platform/HttpClient` - HTTP client with retry, timeout, middleware

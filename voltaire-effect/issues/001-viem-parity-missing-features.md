@@ -38,7 +38,8 @@ Comprehensive gap analysis comparing viem's client architecture against voltaire
 - No request deduplication
 - No automatic JSON-RPC batching
 - FallbackTransport has mutable state bug (review 075)
-- WebSocketTransport uses Effect.runSync in callbacks (review 073)
+- ~~WebSocketTransport uses Effect.runSync in callbacks~~ (review 040 - still needs @effect/platform)
+- ✅ TransactionStream, EventStream, BatchScheduler Effect.runPromise fixed (reviews 076-078, 084)
 </gaps>
 <viem_ref>
 - `src/clients/transports/http.ts` - fetchOptions, onRequest/Response
@@ -515,9 +516,11 @@ export const verifySiweMessage = (params: VerifyParams): Effect.Effect<boolean, 
 <steps>
 1. NonceManager race condition → SynchronizedRef (review 034, 074, 080)
 2. FallbackTransport mutable array → Ref (review 033, 043, 075)
-3. WebSocketTransport Effect.runSync → Runtime.runFork (review 040, 073)
+3. ✅ WebSocketTransport Effect.runSync → Runtime.runFork (review 040 - partial, needs @effect/platform)
 4. HttpTransport manual retry → Effect.retry + Schedule (review 017)
 5. HttpTransport mutable requestId → Ref (review 018)
+6. ✅ TransactionStream/EventStream Effect.runPromise → Runtime.runPromise (reviews 076, 078)
+7. ✅ BatchScheduler Effect.runSync → Effect Queue/Ref (review 084)
 </steps>
 <files>
 - src/services/NonceManager/DefaultNonceManager.ts

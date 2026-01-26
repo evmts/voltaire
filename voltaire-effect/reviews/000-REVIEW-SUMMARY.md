@@ -197,24 +197,24 @@ See reviews 040, 041, 042, 073, 076-078, 084 for detailed migration patterns.
 
 ### Round 1: Module Reviews (074-089)
 
-| # | File | Focus |
-|---|------|-------|
-| 074 | crypto-signatures-review.md | Secp256k1, Ed25519, Bls12381 |
-| 075 | crypto-hash-encryption-review.md | Keccak, SHA256, AesGcm, ChaCha20 |
-| 076 | transport-services-review.md | Http, WebSocket, Fallback, Batch |
-| 077 | provider-signer-review.md | Provider, Signer actions |
-| 078 | streaming-services-review.md | BlockStream, EventStream |
-| 079 | contract-account-review.md | Contract, LocalAccount |
-| 080 | cache-nonce-review.md | MemoryCache, NonceManager |
-| 081 | jsonrpc-review.md | JSON-RPC schemas |
-| 082 | abi-primitives-review.md | ABI encode/decode |
-| 083 | erc-standards-review.md | ERC20/721/1155/165 |
-| 084 | rlp-transaction-review.md | RLP, Transaction, Serializer |
-| 085 | hdwallet-keystore-review.md | HDWallet, Keystore, Bip39 |
-| 086 | signature-publickey-review.md | Signature, PublicKey, PrivateKey |
-| 087 | bn254-kzg-review.md | Bn254, KZG, ModExp |
-| 088 | fee-formatter-multicall-review.md | FeeEstimator, Formatter, Multicall |
-| 089 | numeric-primitives-review.md | Uint, Int256 |
+| # | File | Focus | Status |
+|---|------|-------|--------|
+| 074 | crypto-signatures-review.md | Secp256k1, Ed25519, Bls12381 | Open |
+| 075 | crypto-hash-encryption-review.md | Keccak, SHA256, AesGcm, ChaCha20 | Open |
+| 076 | fix-transaction-stream-run-promise.md | TransactionStream runPromise fix | ✅ Fixed |
+| 077 | fix-provider-run-promise.md | Provider runPromise (was correct) | ✅ N/A |
+| 078 | fix-streaming-services-run-promise.md | EventStream, BlockStream | ✅ Fixed |
+| 079 | contract-account-review.md | Contract, LocalAccount | Open |
+| 080 | cache-nonce-review.md | MemoryCache, NonceManager | Open |
+| 081 | jsonrpc-review.md | JSON-RPC schemas | Open |
+| 082 | abi-primitives-review.md | ABI encode/decode | Open |
+| 083 | erc-standards-review.md | ERC20/721/1155/165 | Open |
+| 084 | fix-batch-scheduler-run-sync.md | BatchScheduler rewrite | ✅ Fixed |
+| 085 | hdwallet-keystore-review.md | HDWallet, Keystore, Bip39 | Open |
+| 086 | signature-publickey-review.md | Signature, PublicKey, PrivateKey | Open |
+| 087 | bn254-kzg-review.md | Bn254, KZG, ModExp | Open |
+| 088 | fee-formatter-multicall-review.md | FeeEstimator, Formatter, Multicall | Open |
+| 089 | numeric-primitives-review.md | Uint, Int256 | Open |
 
 ### Round 2: Deep-Dive Reviews (090-105)
 
