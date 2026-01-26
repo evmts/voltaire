@@ -28,9 +28,9 @@ import type {
 	EventLog,
 	TypedData,
 } from "@tevm/voltaire";
-import { AbstractError } from "@tevm/voltaire/errors";
 import type { HashType } from "@tevm/voltaire/Hash";
 import * as Context from "effect/Context";
+import * as Data from "effect/Data";
 import type * as Effect from "effect/Effect";
 
 type AddressType = BrandedAddress.AddressType;
@@ -62,20 +62,33 @@ export type AddressInput = AddressType | `0x${string}`;
  *
  * @since 0.0.1
  */
-export class SignerError extends AbstractError {
-	readonly _tag = "SignerError" as const;
-
+export class SignerError extends Data.TaggedError("SignerError")<{
 	/**
 	 * The original input that caused the error.
 	 */
 	readonly input: unknown;
 
 	/**
+	 * Human-readable error message.
+	 */
+	readonly message: string;
+
+	/**
 	 * JSON-RPC error code (propagated from underlying errors).
 	 * May be undefined if the error originated outside JSON-RPC.
 	 */
-	declare readonly code?: number;
+	readonly code?: number;
 
+	/**
+	 * Optional underlying cause.
+	 */
+	readonly cause?: unknown;
+
+	/**
+	 * Optional context for debugging.
+	 */
+	readonly context?: Record<string, unknown>;
+}> {
 	/**
 	 * Creates a new SignerError.
 	 *
@@ -94,9 +107,13 @@ export class SignerError extends AbstractError {
 			cause?: Error;
 		},
 	) {
-		super(message ?? options?.cause?.message ?? "Signer error", options);
-		this.name = "SignerError";
-		this.input = input;
+		super({
+			input,
+			message: message ?? options?.cause?.message ?? "Signer error",
+			code: options?.code,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 

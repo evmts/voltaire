@@ -22,7 +22,7 @@ import {
 import * as Hex from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { ProviderService } from "../Provider/ProviderService.js";
+import { ProviderService, type BlockTag } from "../Provider/ProviderService.js";
 import {
 	type MulticallCall,
 	MulticallError,
@@ -162,7 +162,7 @@ export const DefaultMulticall: Layer.Layer<
 		const provider = yield* ProviderService;
 
 		return {
-			aggregate3: (calls: readonly MulticallCall[]) =>
+			aggregate3: (calls: readonly MulticallCall[], blockTag?: BlockTag) =>
 				Effect.gen(function* () {
 					if (calls.length === 0) {
 						return [] as readonly MulticallResult[];
@@ -171,10 +171,13 @@ export const DefaultMulticall: Layer.Layer<
 					const callData = encodeAggregate3(calls);
 
 					const result = yield* provider
-						.call({
-							to: MULTICALL3_ADDRESS,
-							data: callData,
-						})
+						.call(
+							{
+								to: MULTICALL3_ADDRESS,
+								data: callData,
+							},
+							blockTag,
+						)
 						.pipe(
 							Effect.mapError(
 								(e) =>

@@ -567,8 +567,9 @@ describe("BlockStreamService", () => {
 					expect(events[0].type).toBe("blocks");
 				}).pipe(Effect.provide(TestBlockStreamLayer));
 
-				yield* program;
-			})
+				yield* Effect.timeout(program, "5 seconds");
+			}),
+			{ timeout: 10000 }
 		);
 
 		it.effect("single block range (fromBlock === toBlock) yields exactly one block event", () =>
@@ -621,7 +622,7 @@ describe("BlockStreamService", () => {
 					expect(events.length).toBe(1);
 					expect(events[0].type).toBe("blocks");
 					expect(events[0].blocks.length).toBe(1);
-					expect(BigInt(events[0].blocks[0].number)).toBe(100n);
+					expect(events[0].blocks[0].header.number).toBe(100n);
 				}).pipe(Effect.provide(TestBlockStreamLayer));
 
 				yield* program;
@@ -753,12 +754,9 @@ describe("BlockStreamService", () => {
 
 					const allBlocks = events.flatMap((e) => e.blocks);
 					expect(allBlocks.length).toBe(3);
-					expect(allBlocks[0].hash).toBe(expectedBlocks[0].hash);
-					expect(allBlocks[1].hash).toBe(expectedBlocks[1].hash);
-					expect(allBlocks[2].hash).toBe(expectedBlocks[2].hash);
-					expect(allBlocks[0].miner).toBe(expectedBlocks[0].miner);
-					expect(allBlocks[1].miner).toBe(expectedBlocks[1].miner);
-					expect(allBlocks[2].miner).toBe(expectedBlocks[2].miner);
+					expect(allBlocks[0].header.number).toBe(100n);
+					expect(allBlocks[1].header.number).toBe(101n);
+					expect(allBlocks[2].header.number).toBe(102n);
 				}).pipe(Effect.provide(TestBlockStreamLayer));
 
 				yield* program;

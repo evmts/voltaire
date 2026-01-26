@@ -121,13 +121,13 @@ const makeRetrySchedule = (retryCount: number, retryDelay: number) => {
 export const FallbackTransport = (
 	transports: Layer.Layer<TransportService>[],
 	options: FallbackTransportOptions = {},
-): Layer.Layer<TransportService> => {
+): Layer.Layer<TransportService, TransportError> => {
 	if (transports.length === 0) {
 		return Layer.fail(
-			new TransportError(
-				{ code: -32603, message: "No transports provided" },
-				"FallbackTransport requires at least one transport",
-			),
+			new TransportError({
+				code: -32603,
+				message: "FallbackTransport requires at least one transport",
+			}),
 		);
 	}
 
@@ -222,10 +222,10 @@ export const FallbackTransport = (
 						}
 
 						return yield* Effect.fail(
-							new TransportError(
-								{ code: -32603, message: "All transports failed" },
-								`All ${transports.length} transports failed after retries`,
-							),
+							new TransportError({
+								code: -32603,
+								message: `All ${transports.length} transports failed after retries`,
+							}),
 						);
 					}),
 			};

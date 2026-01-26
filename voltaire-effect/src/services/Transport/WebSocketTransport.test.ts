@@ -1,22 +1,17 @@
 /**
  * WebSocketTransport unit tests.
  *
- * Note: Full integration tests with mocked WebSocket are skipped because Effect's
- * Socket implementation uses addEventListener internally which is complex to mock.
- * These tests document the expected behavior and serve as regression tests when
- * run against a real WebSocket server.
- *
- * For full transport testing, use TestTransport which provides a simpler mock.
+ * Uses a lightweight mock WebSocket implementation that supports addEventListener,
+ * matching @effect/platform Socket expectations.
  */
-import * as Socket from "@effect/platform/Socket";
 import * as Effect from "effect/Effect";
-import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
-import { describe, expect, it, vi, afterEach } from "@effect/vitest";
+import { afterEach, describe, expect, it } from "@effect/vitest";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
-import { WebSocketTransport, WebSocketConstructorGlobal } from "./WebSocketTransport.js";
+import { WebSocketConstructorGlobal, WebSocketTransport } from "./WebSocketTransport.js";
+import { makeMockWebSocket } from "./__testUtils__/mockWebSocket.js";
 
 describe("WebSocketTransport", () => {
 	const originalWebSocket = globalThis.WebSocket;
@@ -67,31 +62,18 @@ describe("WebSocketTransport", () => {
 		});
 	});
 
-	describe.skip("WebSocket not connected error (code -32603)", () => {
+	describe("WebSocket not connected error (code -32603)", () => {
 		it("fails with -32603 when disconnected and reconnect disabled", async () => {
-			let closeHandler: (() => void) | null = null;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => {
-				const ws = {
-					readyState: 1,
-					send: vi.fn(),
-					close: vi.fn(),
-					addEventListener: (type: string, handler: () => void) => {
-						if (type === "open") setTimeout(handler, 0);
-						if (type === "close") closeHandler = handler;
-					},
-					removeEventListener: vi.fn(),
-				};
-				return ws;
-			});
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
+			const { MockWebSocket, sockets } = makeMockWebSocket();
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
 
 				yield* Effect.sleep(10);
-				if (closeHandler) closeHandler();
+				if (sockets[0]) {
+					sockets[0].close();
+				}
 				yield* Effect.sleep(10);
 
 				return yield* transport.request<string>("eth_blockNumber");
@@ -115,18 +97,9 @@ describe("WebSocketTransport", () => {
 		});
 	});
 
-	describe.skip("Request timeout error handling", () => {
+	describe("Request timeout error handling", () => {
 		it("fails with timeout when no response received", async () => {
-			const MockWebSocket = vi.fn().mockImplementation(() => ({
-				readyState: 1,
-				send: vi.fn(),
-				close: vi.fn(),
-				addEventListener: (type: string, handler: () => void) => {
-					if (type === "open") setTimeout(handler, 0);
-				},
-				removeEventListener: vi.fn(),
-			}));
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
+			const { MockWebSocket } = makeMockWebSocket();
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
@@ -152,38 +125,26 @@ describe("WebSocketTransport", () => {
 		});
 	});
 
-	describe.skip("Response error propagation from JSON-RPC error", () => {
+	describe("Response error propagation from JSON-RPC error", () => {
 		it("propagates error code, message, and data from JSON-RPC response", async () => {
-			let messageHandler: ((event: { data: string }) => void) | null = null;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => ({
-				readyState: 1,
-				send: vi.fn((data: string) => {
-					const req = JSON.parse(data);
-					setTimeout(() => {
-						if (messageHandler) {
-							messageHandler({
-								data: JSON.stringify({
-									jsonrpc: "2.0",
-									id: req.id,
-									error: {
-										code: -32602,
-										message: "Invalid params",
-										data: { hint: "bad address" },
-									},
-								}),
-							});
-						}
-					}, 0);
-				}),
-				close: vi.fn(),
-				addEventListener: (type: string, handler: (event: unknown) => void) => {
-					if (type === "open") setTimeout(() => handler({}), 0);
-					if (type === "message") messageHandler = handler as (event: { data: string }) => void;
+			const { MockWebSocket } = makeMockWebSocket({
+				onSend: (socket, data) => {
+					const req = JSON.parse(String(data));
+					queueMicrotask(() => {
+						socket.emitMessage(
+							JSON.stringify({
+								jsonrpc: "2.0",
+								id: req.id,
+								error: {
+									code: -32602,
+									message: "Invalid params",
+									data: { hint: "bad address" },
+								},
+							}),
+						);
+					});
 				},
-				removeEventListener: vi.fn(),
-			}));
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
+			});
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
@@ -211,25 +172,15 @@ describe("WebSocketTransport", () => {
 		});
 	});
 
-	describe.skip("Request/response correlation via ID matching", () => {
+	describe("Request/response correlation via ID matching", () => {
 		it("matches responses to requests by ID (out of order)", async () => {
-			let messageHandler: ((event: { data: string }) => void) | null = null;
 			const pendingRequests: Array<{ id: number; method: string }> = [];
-
-			const MockWebSocket = vi.fn().mockImplementation(() => ({
-				readyState: 1,
-				send: vi.fn((data: string) => {
-					const req = JSON.parse(data);
+			const { MockWebSocket, sockets } = makeMockWebSocket({
+				onSend: (_socket, data) => {
+					const req = JSON.parse(String(data));
 					pendingRequests.push({ id: req.id, method: req.method });
-				}),
-				close: vi.fn(),
-				addEventListener: (type: string, handler: (event: unknown) => void) => {
-					if (type === "open") setTimeout(() => handler({}), 0);
-					if (type === "message") messageHandler = handler as (event: { data: string }) => void;
 				},
-				removeEventListener: vi.fn(),
-			}));
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
+			});
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
@@ -240,15 +191,22 @@ describe("WebSocketTransport", () => {
 
 				yield* Effect.sleep(20);
 
-				if (messageHandler && pendingRequests.length >= 2) {
+				if (sockets[0] && pendingRequests.length >= 2) {
 					const req1 = pendingRequests.find((r) => r.method === "eth_blockNumber")!;
 					const req2 = pendingRequests.find((r) => r.method === "eth_chainId")!;
 
-					messageHandler({ data: JSON.stringify({ jsonrpc: "2.0", id: req2.id, result: "0x1" }) });
-					messageHandler({ data: JSON.stringify({ jsonrpc: "2.0", id: req1.id, result: "0xabc" }) });
+					sockets[0].emitMessage(
+						JSON.stringify({ jsonrpc: "2.0", id: req2.id, result: "0x1" }),
+					);
+					sockets[0].emitMessage(
+						JSON.stringify({ jsonrpc: "2.0", id: req1.id, result: "0xabc" }),
+					);
 				}
 
-				const [result1, result2] = yield* Effect.all([Fiber.join(fiber1), Fiber.join(fiber2)]);
+				const [result1, result2] = yield* Effect.all([
+					Fiber.join(fiber1),
+					Fiber.join(fiber2),
+				]);
 				return { result1, result2 };
 			}).pipe(
 				Effect.provide(
@@ -267,22 +225,12 @@ describe("WebSocketTransport", () => {
 		});
 
 		it("ignores responses with unknown IDs", async () => {
-			let messageHandler: ((event: { data: string }) => void) | null = null;
 			let capturedId: number | null = null;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => ({
-				readyState: 1,
-				send: vi.fn((data: string) => {
-					capturedId = JSON.parse(data).id;
-				}),
-				close: vi.fn(),
-				addEventListener: (type: string, handler: (event: unknown) => void) => {
-					if (type === "open") setTimeout(() => handler({}), 0);
-					if (type === "message") messageHandler = handler as (event: { data: string }) => void;
+			const { MockWebSocket, sockets } = makeMockWebSocket({
+				onSend: (_socket, data) => {
+					capturedId = JSON.parse(String(data)).id;
 				},
-				removeEventListener: vi.fn(),
-			}));
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
+			});
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
@@ -292,9 +240,13 @@ describe("WebSocketTransport", () => {
 
 				yield* Effect.sleep(20);
 
-				if (messageHandler && capturedId !== null) {
-					messageHandler({ data: JSON.stringify({ jsonrpc: "2.0", id: 99999, result: "0xwrong" }) });
-					messageHandler({ data: JSON.stringify({ jsonrpc: "2.0", id: capturedId, result: "0xcorrect" }) });
+				if (sockets[0] && capturedId !== null) {
+					sockets[0].emitMessage(
+						JSON.stringify({ jsonrpc: "2.0", id: 99999, result: "0xwrong" }),
+					);
+					sockets[0].emitMessage(
+						JSON.stringify({ jsonrpc: "2.0", id: capturedId, result: "0xcorrect" }),
+					);
 				}
 
 				return yield* Fiber.join(fiber);
@@ -313,40 +265,23 @@ describe("WebSocketTransport", () => {
 		});
 	});
 
-	describe.skip("Reconnect behavior", () => {
+	describe("Reconnect behavior", () => {
 		it("queues requests during reconnection when enabled", async () => {
-			let connectionCount = 0;
-			let messageHandler: ((event: { data: string }) => void) | null = null;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => {
-				connectionCount++;
-				return {
-					readyState: 1,
-					send: vi.fn((data: string) => {
-						const req = JSON.parse(data);
-						if (req.method !== "web3_clientVersion") {
-							setTimeout(() => {
-								if (messageHandler) {
-									messageHandler({
-										data: JSON.stringify({
-											jsonrpc: "2.0",
-											id: req.id,
-											result: `0x${connectionCount}`,
-										}),
-									});
-								}
-							}, 0);
-						}
-					}),
-					close: vi.fn(),
-					addEventListener: (type: string, handler: (event: unknown) => void) => {
-						if (type === "open") setTimeout(() => handler({}), 0);
-						if (type === "message") messageHandler = handler as (event: { data: string }) => void;
-					},
-					removeEventListener: vi.fn(),
-				};
+			const { MockWebSocket } = makeMockWebSocket({
+				onSend: (socket, data) => {
+					const req = JSON.parse(String(data));
+					if (req.method === "web3_clientVersion") return;
+					queueMicrotask(() => {
+						socket.emitMessage(
+							JSON.stringify({
+								jsonrpc: "2.0",
+								id: req.id,
+								result: `0x${socket.index + 1}`,
+							}),
+						);
+					});
+				},
 			});
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
@@ -370,26 +305,16 @@ describe("WebSocketTransport", () => {
 		});
 
 		it("fails immediately when not connected and reconnect disabled", async () => {
-			let closeHandler: (() => void) | null = null;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => ({
-				readyState: 1,
-				send: vi.fn(),
-				close: vi.fn(),
-				addEventListener: (type: string, handler: () => void) => {
-					if (type === "open") setTimeout(handler, 0);
-					if (type === "close") closeHandler = handler;
-				},
-				removeEventListener: vi.fn(),
-			}));
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
+			const { MockWebSocket, sockets } = makeMockWebSocket();
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
 
 				yield* Effect.sleep(10);
-				if (closeHandler) closeHandler();
+				if (sockets[0]) {
+					sockets[0].close();
+				}
 				yield* Effect.sleep(10);
 
 				return yield* transport.request<string>("eth_blockNumber");
@@ -414,28 +339,22 @@ describe("WebSocketTransport", () => {
 		});
 
 		it("fails after max reconnection attempts exceeded", async () => {
-			let connectionCount = 0;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => {
-				connectionCount++;
-				const ws = {
-					readyState: 0,
-					send: vi.fn(),
-					close: vi.fn(),
-					addEventListener: (type: string, handler: (event: unknown) => void) => {
-						if (type === "error") {
-							setTimeout(() => handler(new Error("Connection refused")), 5);
-						}
-					},
-					removeEventListener: vi.fn(),
-				};
-				return ws;
+			const { MockWebSocket, sockets } = makeMockWebSocket({
+				autoOpen: false,
+				readyState: 0,
 			});
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
+
+				yield* Effect.sleep(5);
+				sockets[0]?.emitError(new Error("Connection refused"));
+				yield* Effect.sleep(20);
+				sockets[1]?.emitError(new Error("Connection refused"));
+				yield* Effect.sleep(20);
+				sockets[2]?.emitError(new Error("Connection refused"));
+
 				return yield* transport.request<string>("eth_blockNumber");
 			}).pipe(
 				Effect.provide(
@@ -457,38 +376,26 @@ describe("WebSocketTransport", () => {
 		});
 	});
 
-	describe.skip("JSON-RPC error response handling", () => {
+	describe("JSON-RPC error response handling", () => {
 		it("handles execution reverted with data", async () => {
-			let messageHandler: ((event: { data: string }) => void) | null = null;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => ({
-				readyState: 1,
-				send: vi.fn((data: string) => {
-					const req = JSON.parse(data);
-					setTimeout(() => {
-						if (messageHandler) {
-							messageHandler({
-								data: JSON.stringify({
-									jsonrpc: "2.0",
-									id: req.id,
-									error: {
-										code: -32000,
-										message: "execution reverted",
-										data: "0x08c379a0...",
-									},
-								}),
-							});
-						}
-					}, 0);
-				}),
-				close: vi.fn(),
-				addEventListener: (type: string, handler: (event: unknown) => void) => {
-					if (type === "open") setTimeout(() => handler({}), 0);
-					if (type === "message") messageHandler = handler as (event: { data: string }) => void;
+			const { MockWebSocket } = makeMockWebSocket({
+				onSend: (socket, data) => {
+					const req = JSON.parse(String(data));
+					queueMicrotask(() => {
+						socket.emitMessage(
+							JSON.stringify({
+								jsonrpc: "2.0",
+								id: req.id,
+								error: {
+									code: -32000,
+									message: "execution reverted",
+									data: "0x08c379a0...",
+								},
+							}),
+						);
+					});
 				},
-				removeEventListener: vi.fn(),
-			}));
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
+			});
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
@@ -515,38 +422,25 @@ describe("WebSocketTransport", () => {
 		});
 	});
 
-	describe.skip("Successful request/response flow", () => {
+	describe("Successful request/response flow", () => {
 		it("sends request and receives response", async () => {
-			let messageHandler: ((event: { data: string }) => void) | null = null;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => ({
-				readyState: 1,
-				send: vi.fn((data: string) => {
-					const req = JSON.parse(data);
+			const { MockWebSocket } = makeMockWebSocket({
+				onSend: (socket, data) => {
+					const req = JSON.parse(String(data));
 					expect(req.method).toBe("eth_blockNumber");
 					expect(req.jsonrpc).toBe("2.0");
 					expect(typeof req.id).toBe("number");
-
-					setTimeout(() => {
-						if (messageHandler) {
-							messageHandler({
-								data: JSON.stringify({
-									jsonrpc: "2.0",
-									id: req.id,
-									result: "0x123abc",
-								}),
-							});
-						}
-					}, 0);
-				}),
-				close: vi.fn(),
-				addEventListener: (type: string, handler: (event: unknown) => void) => {
-					if (type === "open") setTimeout(() => handler({}), 0);
-					if (type === "message") messageHandler = handler as (event: { data: string }) => void;
+					queueMicrotask(() => {
+						socket.emitMessage(
+							JSON.stringify({
+								jsonrpc: "2.0",
+								id: req.id,
+								result: "0x123abc",
+							}),
+						);
+					});
 				},
-				removeEventListener: vi.fn(),
-			}));
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
+			});
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
@@ -567,24 +461,18 @@ describe("WebSocketTransport", () => {
 		});
 	});
 
-	describe.skip("Connection failure on initial connect", () => {
+	describe("Connection failure on initial connect", () => {
 		it("fails when connection is refused", async () => {
-			const MockWebSocket = vi.fn().mockImplementation(() => ({
+			const { MockWebSocket, sockets } = makeMockWebSocket({
+				autoOpen: false,
 				readyState: 0,
-				send: vi.fn(),
-				close: vi.fn(),
-				addEventListener: (type: string, handler: (event: unknown) => void) => {
-					if (type === "error") {
-						setTimeout(() => handler(new Error("Connection refused")), 5);
-					}
-				},
-				removeEventListener: vi.fn(),
-			}));
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
+			});
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
+				yield* Effect.sleep(5);
+				sockets[0]?.emitError(new Error("Connection refused"));
 				return yield* transport.request<string>("eth_blockNumber");
 			}).pipe(
 				Effect.provide(

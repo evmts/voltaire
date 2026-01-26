@@ -27,10 +27,10 @@ import type {
 	BlockStreamEvent,
 	WatchOptions,
 } from "@tevm/voltaire/block";
-import { AbstractError } from "@tevm/voltaire/errors";
 import type { HashType } from "@tevm/voltaire/Hash";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Context from "effect/Context";
+import * as Data from "effect/Data";
 import type * as Effect from "effect/Effect";
 import type * as Stream from "effect/Stream";
 
@@ -89,20 +89,33 @@ export type HashInput = HashType | `0x${string}`;
  * )
  * ```
  */
-export class ProviderError extends AbstractError {
-	readonly _tag = "ProviderError" as const;
-
+export class ProviderError extends Data.TaggedError("ProviderError")<{
 	/**
 	 * The original input that caused the error.
 	 */
 	readonly input: unknown;
 
 	/**
+	 * Human-readable error message.
+	 */
+	readonly message: string;
+
+	/**
 	 * JSON-RPC error code (propagated from transport).
 	 * May be undefined if the error originated outside JSON-RPC.
 	 */
-	declare readonly code?: number;
+	readonly code?: number;
 
+	/**
+	 * Optional underlying cause.
+	 */
+	readonly cause?: unknown;
+
+	/**
+	 * Optional context for debugging.
+	 */
+	readonly context?: Record<string, unknown>;
+}> {
 	/**
 	 * Creates a new ProviderError.
 	 *
@@ -121,9 +134,13 @@ export class ProviderError extends AbstractError {
 			cause?: Error;
 		},
 	) {
-		super(message ?? options?.cause?.message ?? `Provider error`, options);
-		this.name = "ProviderError";
-		this.input = input;
+		super({
+			input,
+			message: message ?? options?.cause?.message ?? "Provider error",
+			code: options?.code,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 

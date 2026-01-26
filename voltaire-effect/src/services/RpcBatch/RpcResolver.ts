@@ -222,7 +222,10 @@ export const makeRpcResolver = (
 					transport.request<unknown>(rpcRequest.method, rpcRequest.params as unknown[]),
 				);
 				if (result._tag === "Left") {
-					yield* Request.fail(request, result.left as TransportError);
+					const error = result.left instanceof TransportError
+						? result.left
+						: new TransportError({ code: -32603, message: String(result.left) });
+					yield* Request.fail(request, error);
 				} else {
 					yield* Request.succeed(request as RpcRequest, result.right);
 				}
@@ -236,9 +239,12 @@ export const makeRpcResolver = (
 			);
 
 			if (result._tag === "Left") {
+				const error = result.left instanceof TransportError
+					? result.left
+					: new TransportError({ code: -32603, message: String(result.left) });
 				yield* Effect.forEach(
 					requests,
-					(request) => Request.fail(request, result.left as TransportError),
+					(request) => Request.fail(request, error),
 					{ discard: true },
 				);
 				return;
@@ -313,10 +319,10 @@ export const RpcBatch: Layer.Layer<RpcBatchService, never, TransportService> =
 			return {
 				resolver,
 				request: <R extends RpcRequest>(request: R) =>
-					Effect.request(resolver)(request) as Effect.Effect<
+					(Effect.request(resolver as any)(request) as Effect.Effect<
 						Request.Request.Success<R>,
 						Request.Request.Error<R>
-					>,
+					>),
 			};
 		}),
 	);

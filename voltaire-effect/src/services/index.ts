@@ -198,7 +198,9 @@ export {
 } from "./FeeEstimator/index.js";
 // Multicall exports
 export {
+	BalanceResolver,
 	DefaultMulticall,
+	GetBalance,
 	type MulticallCall,
 	MulticallError,
 	type MulticallResult,

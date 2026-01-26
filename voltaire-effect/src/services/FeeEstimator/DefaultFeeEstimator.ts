@@ -36,6 +36,11 @@ import {
 const DEFAULT_BASE_FEE_MULTIPLIER = 1.2;
 
 /**
+ * Precision for bigint arithmetic (1000 = 3 decimal places).
+ */
+const MULTIPLIER_PRECISION = 1000n;
+
+/**
  * Creates the default fee estimator implementation.
  *
  * @param baseFeeMultiplier - Multiplier for base fee (default: 1.2)
@@ -105,9 +110,9 @@ const makeDefaultFeeEstimator = (
 					}
 
 					const baseFee = BigInt(baseFeeHex);
-					const multipliedBaseFee = BigInt(
-						Math.ceil(Number(baseFee) * baseFeeMultiplier),
-					);
+					const multiplierNumerator = BigInt(Math.round(baseFeeMultiplier * 1000));
+					const product = baseFee * multiplierNumerator;
+					const multipliedBaseFee = (product + MULTIPLIER_PRECISION - 1n) / MULTIPLIER_PRECISION;
 					const maxFeePerGas = multipliedBaseFee + priorityFee;
 
 					return {

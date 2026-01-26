@@ -19,6 +19,7 @@
 import * as Context from "effect/Context";
 import * as Data from "effect/Data";
 import type * as Effect from "effect/Effect";
+import type { BlockTag } from "../Provider/ProviderService.js";
 
 /**
  * Represents a single call to be batched in a multicall.
@@ -96,10 +97,12 @@ export type MulticallShape = {
 	 * Executes multiple calls in a single RPC request using Multicall3 aggregate3.
 	 *
 	 * @param calls - Array of calls to execute
+	 * @param blockTag - Optional block tag to execute the call against
 	 * @returns Array of results in the same order as input calls
 	 */
 	readonly aggregate3: (
 		calls: readonly MulticallCall[],
+		blockTag?: BlockTag,
 	) => Effect.Effect<readonly MulticallResult[], MulticallError>;
 };
 

@@ -447,20 +447,41 @@ function encodeValue(
  * @see {@link Secp256k1Service} - Required cryptographic dependency
  * @see {@link KeccakService} - Required cryptographic dependency
  */
+/**
+ * Securely zeros out private key bytes to prevent memory leakage.
+ * @internal
+ */
+const zeroOutKeyBytes = (keyBytes: Uint8Array): Effect.Effect<void> =>
+	Effect.sync(() => {
+		keyBytes.fill(0);
+	});
+
+/**
+ * Acquires a private key with automatic cleanup when scope closes.
+ * Uses Effect.acquireRelease to ensure key bytes are zeroed on cleanup.
+ * @internal
+ */
+const acquirePrivateKey = (privateKeyHex: HexType) =>
+	Effect.acquireRelease(
+		Effect.sync(() => {
+			const keyBytes = Hex.toBytes(privateKeyHex) as unknown as PrivateKeyType;
+			return {
+				bytes: keyBytes,
+				redacted: Redacted.make(keyBytes),
+			};
+		}),
+		(key) => zeroOutKeyBytes(key.bytes),
+	);
+
 export const LocalAccount = (privateKeyHex: HexType) =>
-	Layer.effect(
+	Layer.scoped(
 		AccountService,
 		Effect.gen(function* () {
 			const secp256k1 = yield* Secp256k1Service;
 			const keccak = yield* KeccakService;
 
-			const privateKeyBytes = Hex.toBytes(
-				privateKeyHex,
-			) as unknown as PrivateKeyType;
-			
-			// Wrap private key in Redacted to prevent accidental logging
-			// Redacted.value() must be called explicitly to access the raw key
-			const redactedPrivateKey = Redacted.make(privateKeyBytes);
+			const privateKey = yield* acquirePrivateKey(privateKeyHex);
+			const redactedPrivateKey = privateKey.redacted;
 			
 			const publicKey = Secp256k1.derivePublicKey(
 				Redacted.value(redactedPrivateKey) as unknown as Parameters<

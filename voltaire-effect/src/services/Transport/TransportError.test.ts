@@ -3,7 +3,7 @@ import { TransportError } from "./TransportError.js";
 
 describe("TransportError", () => {
 	describe("constructor", () => {
-		it("creates error with code and message from input", () => {
+		it("creates error with code and message", () => {
 			const error = new TransportError({
 				code: -32603,
 				message: "Internal error",
@@ -15,33 +15,7 @@ describe("TransportError", () => {
 			expect(error._tag).toBe("TransportError");
 		});
 
-		it("stores input object for access", () => {
-			const input = { code: -32000, message: "Server error" };
-			const error = new TransportError(input);
-
-			expect(error.input).toEqual(input);
-		});
-
-		it("uses custom message when provided instead of input.message", () => {
-			const error = new TransportError(
-				{ code: -32603, message: "Original message" },
-				"Custom override message",
-			);
-
-			expect(error.message).toBe("Custom override message");
-		});
-
-		it("options.code overrides input.code when provided", () => {
-			const error = new TransportError(
-				{ code: -32603, message: "Error" },
-				undefined,
-				{ code: -32000 },
-			);
-
-			expect(error.code).toBe(-32000);
-		});
-
-		it("stores data from input", () => {
+		it("stores data", () => {
 			const errorData = { revertReason: "0x08c379a0...", details: { gas: 21000 } };
 			const error = new TransportError({
 				code: -32000,
@@ -52,24 +26,24 @@ describe("TransportError", () => {
 			expect(error.data).toEqual(errorData);
 		});
 
-		it("stores context object from options", () => {
+		it("stores context object", () => {
 			const context = { method: "eth_call", params: ["0x123"] };
-			const error = new TransportError(
-				{ code: -32603, message: "Error" },
-				undefined,
-				{ context },
-			);
+			const error = new TransportError({
+				code: -32603,
+				message: "Error",
+				context,
+			});
 
-			expect((error as unknown as { context: Record<string, unknown> }).context).toEqual(context);
+			expect(error.context).toEqual(context);
 		});
 
-		it("stores cause from options", () => {
+		it("stores cause", () => {
 			const originalError = new Error("Original error");
-			const error = new TransportError(
-				{ code: -32603, message: "Wrapped error" },
-				undefined,
-				{ cause: originalError },
-			);
+			const error = new TransportError({
+				code: -32603,
+				message: "Wrapped error",
+				cause: originalError,
+			});
 
 			expect(error.cause).toBe(originalError);
 		});

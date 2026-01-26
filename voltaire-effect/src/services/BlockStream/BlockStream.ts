@@ -93,7 +93,7 @@ export const BlockStream: Layer.Layer<
 		const coreStream = CoreBlockStream({ provider: provider as any });
 
 		const cleanup = () => {
-			coreStream.destroy?.();
+			(coreStream as unknown as { destroy?: () => void }).destroy?.();
 		};
 
 		return {

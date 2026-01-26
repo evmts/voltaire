@@ -20,7 +20,7 @@
  * @see {@link TransportService} - The service that uses this error type
  */
 
-import { AbstractError } from "@tevm/voltaire/errors";
+import * as Data from "effect/Data";
 
 /**
  * Error thrown when a transport operation fails.
@@ -71,13 +71,16 @@ import { AbstractError } from "@tevm/voltaire/errors";
  *
  * @see {@link TransportService} - The service that produces this error
  */
-export class TransportError extends AbstractError {
-	readonly _tag = "TransportError" as const;
+export class TransportError extends Data.TaggedError("TransportError")<{
+	/**
+	 * JSON-RPC error code.
+	 */
+	readonly code: number;
 
 	/**
-	 * The original input that caused the error.
+	 * Human-readable error message.
 	 */
-	readonly input: { code: number; message: string; data?: unknown };
+	readonly message: string;
 
 	/**
 	 * Additional error data from the JSON-RPC response.
@@ -89,47 +92,12 @@ export class TransportError extends AbstractError {
 	readonly data?: unknown;
 
 	/**
-	 * Creates a new TransportError.
-	 *
-	 * @param input - Error input object with JSON-RPC error details
-	 * @param input.code - JSON-RPC error code (e.g., -32603 for internal error)
-	 * @param input.message - Human-readable error message from RPC
-	 * @param input.data - Optional additional error data from the provider
-	 * @param message - Human-readable error message (defaults to input.message)
-	 * @param options - Optional error options
-	 * @param options.cause - Underlying error that caused this failure
-	 *
-	 * @example
-	 * ```typescript
-	 * // Network timeout
-	 * new TransportError(
-	 *   { code: -32603, message: 'Internal error' },
-	 *   'Request timeout after 30000ms'
-	 * )
-	 *
-	 * // With cause
-	 * new TransportError(
-	 *   { code: -32000, message: 'execution reverted', data: '0x08c379a0...' },
-	 *   'Contract execution failed',
-	 *   { cause: originalError }
-	 * )
-	 * ```
+	 * Optional underlying cause.
 	 */
-	constructor(
-		input: { code: number; message: string; data?: unknown },
-		message?: string,
-		options?: {
-			code?: number;
-			context?: Record<string, unknown>;
-			cause?: Error;
-		},
-	) {
-		super(message ?? input.message, {
-			...options,
-			code: options?.code ?? input.code,
-		});
-		this.name = "TransportError";
-		this.input = input;
-		this.data = input.data;
-	}
-}
+	readonly cause?: unknown;
+
+	/**
+	 * Optional context for debugging.
+	 */
+	readonly context?: Record<string, unknown>;
+}> {}

@@ -340,7 +340,7 @@ export const WebSocketTransport = (
 						yield* Deferred.succeed(deferred, {
 							jsonrpc: "2.0",
 							id,
-							error: { code: error.input.code, message: error.message },
+							error: { code: error.code, message: error.message },
 						});
 					}
 
@@ -348,7 +348,7 @@ export const WebSocketTransport = (
 						yield* Deferred.succeed(item.deferred, {
 							jsonrpc: "2.0",
 							id: item.id,
-							error: { code: error.input.code, message: error.message },
+							error: { code: error.code, message: error.message },
 						});
 					}
 				});
@@ -395,9 +395,9 @@ export const WebSocketTransport = (
 					);
 
 					yield* Ref.set(writerRef, writer);
+
 					yield* Ref.set(reconnectAttemptsRef, 0);
 					yield* Ref.set(isReconnectingRef, false);
-
 					yield* startKeepAlive;
 					yield* flushQueue;
 

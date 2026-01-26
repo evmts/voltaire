@@ -284,10 +284,11 @@ describe("Contract", () => {
 			);
 
 			expect(Array.isArray(result)).toBe(true);
-			expect((result as bigint[]).length).toBe(3);
-			expect((result as bigint[])[0]).toBe(reserve0);
-			expect((result as bigint[])[1]).toBe(reserve1);
-			expect((result as bigint[])[2]).toBe(blockTimestamp);
+			const arr = result as unknown as bigint[];
+			expect(arr.length).toBe(3);
+			expect(arr[0]).toBe(reserve0);
+			expect(arr[1]).toBe(reserve1);
+			expect(arr[2]).toBe(blockTimestamp);
 		});
 
 		it("returns ContractCallError on failure", async () => {

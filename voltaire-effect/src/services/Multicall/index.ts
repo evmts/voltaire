@@ -13,3 +13,5 @@ export {
 	MulticallService,
 	type MulticallShape,
 } from "./MulticallService.js";
+export { BalanceResolver } from "./BalanceResolver.js";
+export { GetBalance } from "./GetBalance.js";

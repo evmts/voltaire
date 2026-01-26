@@ -204,11 +204,11 @@ export const HttpTransport = (
 		if (e instanceof TransportError) return e;
 		const message = e instanceof Error ? e.message : "Network error";
 		const fullMessage = context ? `${context}: ${message}` : message;
-		return new TransportError(
-			{ code: -32603, message: fullMessage },
-			fullMessage,
-			{ cause: e instanceof Error ? e : undefined },
-		);
+		return new TransportError({
+			code: -32603,
+			message: fullMessage,
+			cause: e instanceof Error ? e : undefined,
+		});
 	};
 
 	const retrySchedule = Schedule.recurs(config.retries).pipe(
@@ -381,11 +381,11 @@ export const HttpTransport = (
 						scheduler.schedule<T>(method, params).pipe(
 							Effect.mapError((e) => {
 								if (e instanceof TransportError) return e;
-								return new TransportError(
-									{ code: -32603, message: `${method} failed: ${e.message}` },
-									`${method} failed: ${e.message}`,
-									{ cause: e },
-								);
+								return new TransportError({
+									code: -32603,
+									message: `${method} failed: ${e.message}`,
+									cause: e,
+								});
 							}),
 						),
 				};

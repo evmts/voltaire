@@ -18,6 +18,7 @@ import {
 	WebSocketTransport,
 	WebSocketConstructorGlobal,
 } from "./index.js";
+import { makeMockWebSocket } from "./__testUtils__/mockWebSocket.js";
 
 const createMockHttpClientLayer = (
 	fetchMock: ReturnType<typeof vi.fn>,
@@ -1201,7 +1202,7 @@ describe("TransportService", () => {
 		});
 	});
 
-	describe.skip("WebSocketTransport", () => {
+	describe("WebSocketTransport", () => {
 		const originalWebSocket = globalThis.WebSocket;
 
 		afterEach(() => {
@@ -1213,59 +1214,35 @@ describe("TransportService", () => {
 				id: number;
 				resolve: (data: string) => void;
 			}> = [];
-			let messageHandler: ((event: { data: string }) => void) | null = null;
-			let openHandler: (() => void) | null = null;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => {
-				const ws = {
-					readyState: 1,
-					OPEN: 1,
-					send: vi.fn((data: string) => {
-						const parsed = JSON.parse(data);
-						pendingMessages.push({
-							id: parsed.id,
-							resolve: (result: string) => {
-								if (messageHandler) {
-									messageHandler({
-										data: JSON.stringify({
-											jsonrpc: "2.0",
-											id: parsed.id,
-											result,
-										}),
-									});
-								}
-							},
-						});
-					}),
-					close: vi.fn(),
-					set onopen(handler: () => void) {
-						openHandler = handler;
-						setTimeout(() => handler(), 0);
-					},
-					set onmessage(handler: (event: { data: string }) => void) {
-						messageHandler = handler;
-					},
-					set onerror(_handler: () => void) {},
-					set onclose(_handler: () => void) {},
-				};
-				Object.defineProperty(ws, "readyState", {
-					get: () => 1,
-				});
-				return ws;
+			const { MockWebSocket } = makeMockWebSocket({
+				onSend: (socket, data) => {
+					const parsed = JSON.parse(String(data));
+					pendingMessages.push({
+						id: parsed.id,
+						resolve: (result: string) => {
+							socket.emitMessage(
+								JSON.stringify({
+									jsonrpc: "2.0",
+									id: parsed.id,
+									result,
+								}),
+							);
+						},
+					});
+				},
 			});
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
 
 				const fibers = yield* Effect.all(
-					Array.from({ length: 100 }, (_, i) =>
+					Array.from({ length: 100 }, () =>
 						Effect.fork(transport.request<string>("eth_blockNumber", [])),
 					),
 				);
 
-				yield* Effect.sleep(10);
+				yield* Effect.sleep(20);
 
 				for (const msg of pendingMessages) {
 					msg.resolve(`0x${msg.id.toString(16)}`);
@@ -1288,51 +1265,21 @@ describe("TransportService", () => {
 		});
 
 		it("reconnects after disconnect", async () => {
-			let connectionCount = 0;
-			let messageHandler: ((event: { data: string }) => void) | null = null;
-			let closeHandler: (() => void) | null = null;
-			let currentWs: { readyState: number; close: () => void } | null = null;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => {
-				connectionCount++;
-				const ws = {
-					readyState: 1,
-					OPEN: 1,
-					send: vi.fn((data: string) => {
-						const parsed = JSON.parse(data);
-						if (parsed.method !== "web3_clientVersion") {
-							setTimeout(() => {
-								if (messageHandler) {
-									messageHandler({
-										data: JSON.stringify({
-											jsonrpc: "2.0",
-											id: parsed.id,
-											result: `0x${connectionCount}`,
-										}),
-									});
-								}
-							}, 0);
-						}
-					}),
-					close: vi.fn(),
-					set onopen(handler: () => void) {
-						setTimeout(() => handler(), 0);
-					},
-					set onmessage(handler: (event: { data: string }) => void) {
-						messageHandler = handler;
-					},
-					set onerror(_handler: () => void) {},
-					set onclose(handler: () => void) {
-						closeHandler = handler;
-					},
-				};
-				Object.defineProperty(ws, "readyState", {
-					get: () => 1,
-				});
-				currentWs = ws;
-				return ws;
+			const { MockWebSocket, sockets } = makeMockWebSocket({
+				onSend: (socket, data) => {
+					const parsed = JSON.parse(String(data));
+					if (parsed.method === "web3_clientVersion") return;
+					queueMicrotask(() => {
+						socket.emitMessage(
+							JSON.stringify({
+								jsonrpc: "2.0",
+								id: parsed.id,
+								result: `0x${socket.index + 1}`,
+							}),
+						);
+					});
+				},
 			});
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
@@ -1341,14 +1288,14 @@ describe("TransportService", () => {
 				const result1 = yield* transport.request<string>("eth_blockNumber", []);
 				expect(result1).toBe("0x1");
 
-				if (closeHandler) closeHandler();
+				sockets[0]?.close();
 
 				yield* Effect.sleep(50);
 
 				const result2 = yield* transport.request<string>("eth_blockNumber", []);
 				expect(result2).toBe("0x2");
 
-				return { result1, result2, connectionCount };
+				return { result1, result2, connectionCount: sockets.length };
 			}).pipe(
 				Effect.provide(
 					Layer.provide(
@@ -1367,51 +1314,30 @@ describe("TransportService", () => {
 		});
 
 		it("uses exponential backoff for reconnection", async () => {
-			let connectionTimes: number[] = [];
-			let messageHandler: ((event: { data: string }) => void) | null = null;
-			let closeHandler: (() => void) | null = null;
-			let connectionCount = 0;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => {
-				connectionTimes.push(Date.now());
-				connectionCount++;
-				const currentConnection = connectionCount;
-				const ws = {
-					readyState: 1,
-					OPEN: 1,
-					send: vi.fn((data: string) => {
-						const parsed = JSON.parse(data);
-						const handler = messageHandler;
-						if (parsed.method !== "web3_clientVersion" && handler) {
-							setTimeout(() => {
-								handler({
-									data: JSON.stringify({
-										jsonrpc: "2.0",
-										id: parsed.id,
-										result: "0x1",
-									}),
-								});
-							}, 0);
-						}
-					}),
-					close: vi.fn(),
-					set onopen(handler: () => void) {
-						setTimeout(() => handler(), 0);
-					},
-					set onmessage(handler: (event: { data: string }) => void) {
-						messageHandler = handler;
-					},
-					set onerror(_handler: () => void) {},
-					set onclose(handler: () => void) {
-						closeHandler = handler;
-					},
-				};
-				Object.defineProperty(ws, "readyState", {
-					get: () => 1,
-				});
-				return ws;
+			const connectionTimes: number[] = [];
+			const { MockWebSocket: BaseMockWebSocket, sockets } = makeMockWebSocket({
+				onSend: (socket, data) => {
+					const parsed = JSON.parse(String(data));
+					if (parsed.method === "web3_clientVersion") return;
+					queueMicrotask(() => {
+						socket.emitMessage(
+							JSON.stringify({
+								jsonrpc: "2.0",
+								id: parsed.id,
+								result: "0x1",
+							}),
+						);
+					});
+				},
 			});
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
+
+			class MockWebSocket extends BaseMockWebSocket {
+				constructor(url: string, protocols?: string | string[]) {
+					super(url, protocols);
+					connectionTimes.push(Date.now());
+				}
+			}
+
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
@@ -1419,11 +1345,11 @@ describe("TransportService", () => {
 
 				yield* transport.request<string>("eth_blockNumber", []);
 
-				if (closeHandler) closeHandler();
+				sockets[0]?.close();
 				yield* Effect.sleep(15);
-				if (closeHandler) closeHandler();
+				sockets[1]?.close();
 				yield* Effect.sleep(30);
-				if (closeHandler) closeHandler();
+				sockets[2]?.close();
 				yield* Effect.sleep(60);
 
 				return connectionTimes;
@@ -1451,43 +1377,23 @@ describe("TransportService", () => {
 		});
 
 		it("fails after max reconnection attempts", async () => {
-			let connectionCount = 0;
-			let closeHandler: (() => void) | null = null;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => {
-				connectionCount++;
-				const ws = {
-					readyState: 3,
-					OPEN: 1,
-					CLOSED: 3,
-					send: vi.fn(),
-					close: vi.fn(),
-					set onopen(handler: () => void) {
-						if (connectionCount === 1) {
-							setTimeout(() => handler(), 0);
-						}
-					},
-					set onmessage(handler: (event: { data: string }) => void) {},
-					set onerror(_handler: () => void) {},
-					set onclose(handler: () => void) {
-						closeHandler = handler;
-						if (connectionCount > 1) {
-							setTimeout(() => handler(), 0);
-						}
-					},
-				};
-				Object.defineProperty(ws, "readyState", {
-					get: () => (connectionCount === 1 ? 1 : 3),
-				});
-				return ws;
+			const { MockWebSocket, sockets } = makeMockWebSocket({
+				autoOpen: (index) => index === 0,
+				getReadyState: (index) => (index === 0 ? 1 : 0),
 			});
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
 
-				if (closeHandler) closeHandler();
+				yield* Effect.sleep(10);
+				sockets[0]?.close();
+				yield* Effect.sleep(20);
+				sockets[1]?.emitError(new Error("Connection refused"));
+				yield* Effect.sleep(20);
+				sockets[2]?.emitError(new Error("Connection refused"));
+				yield* Effect.sleep(20);
+				sockets[3]?.emitError(new Error("Connection refused"));
 
 				yield* Effect.sleep(200);
 
@@ -1511,53 +1417,23 @@ describe("TransportService", () => {
 		});
 
 		it("queues requests during reconnection", async () => {
-			let connectionCount = 0;
-			let messageHandler: ((event: { data: string }) => void) | null = null;
-			let closeHandler: (() => void) | null = null;
-			let isConnected = false;
-
-			const MockWebSocket = vi.fn().mockImplementation(() => {
-				connectionCount++;
-				const ws = {
-					readyState: 1,
-					OPEN: 1,
-					send: vi.fn((data: string) => {
-						const parsed = JSON.parse(data);
-						if (parsed.method !== "web3_clientVersion") {
-							setTimeout(() => {
-								if (messageHandler && isConnected) {
-									messageHandler({
-										data: JSON.stringify({
-											jsonrpc: "2.0",
-											id: parsed.id,
-											result: `0x${parsed.id}`,
-										}),
-									});
-								}
-							}, 0);
-						}
-					}),
-					close: vi.fn(),
-					set onopen(handler: () => void) {
-						setTimeout(() => {
-							isConnected = true;
-							handler();
-						}, connectionCount === 1 ? 0 : 30);
-					},
-					set onmessage(handler: (event: { data: string }) => void) {
-						messageHandler = handler;
-					},
-					set onerror(_handler: () => void) {},
-					set onclose(handler: () => void) {
-						closeHandler = handler;
-					},
-				};
-				Object.defineProperty(ws, "readyState", {
-					get: () => (isConnected ? 1 : 0),
-				});
-				return ws;
+			const { MockWebSocket, sockets } = makeMockWebSocket({
+				autoOpen: (index) => index === 0,
+				getReadyState: (index) => (index === 0 ? 1 : 0),
+				onSend: (socket, data) => {
+					const parsed = JSON.parse(String(data));
+					if (parsed.method === "web3_clientVersion") return;
+					queueMicrotask(() => {
+						socket.emitMessage(
+							JSON.stringify({
+								jsonrpc: "2.0",
+								id: parsed.id,
+								result: `0x${parsed.id}`
+							}),
+						);
+					});
+				},
 			});
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
@@ -1566,15 +1442,17 @@ describe("TransportService", () => {
 				const result1 = yield* transport.request<string>("eth_blockNumber", []);
 				expect(result1).toBe("0x1");
 
-				isConnected = false;
-				if (closeHandler) closeHandler();
+				sockets[0]?.close();
+				yield* Effect.sleep(5);
 
 				const requestFiber = yield* Effect.fork(
 					transport.request<string>("eth_chainId", []),
 				);
 
-				yield* Effect.sleep(100);
+				yield* Effect.sleep(30);
+				sockets[1]?.emitOpen();
 
+				yield* Effect.sleep(100);
 				const result2 = yield* Fiber.join(requestFiber);
 				expect(result2).toBe("0x2");
 
@@ -1597,49 +1475,16 @@ describe("TransportService", () => {
 
 		it("sends keep-alive pings", async () => {
 			const sentMessages: string[] = [];
-			let messageHandler: ((event: { data: string }) => void) | null = null;
 
-			const MockWebSocket = vi.fn().mockImplementation(() => {
-				const ws = {
-					readyState: 1,
-					OPEN: 1,
-					send: vi.fn((data: string) => {
-						sentMessages.push(data);
-						const parsed = JSON.parse(data);
-						if (parsed.method !== "web3_clientVersion") {
-							setTimeout(() => {
-								if (messageHandler) {
-									messageHandler({
-										data: JSON.stringify({
-											jsonrpc: "2.0",
-											id: parsed.id,
-											result: "0x1",
-										}),
-									});
-								}
-							}, 0);
-						}
-					}),
-					close: vi.fn(),
-					set onopen(handler: () => void) {
-						setTimeout(() => handler(), 0);
-					},
-					set onmessage(handler: (event: { data: string }) => void) {
-						messageHandler = handler;
-					},
-					set onerror(_handler: () => void) {},
-					set onclose(_handler: () => void) {},
-				};
-				Object.defineProperty(ws, "readyState", {
-					get: () => 1,
-				});
-				return ws;
+			const { MockWebSocket } = makeMockWebSocket({
+				onSend: (_socket, data) => {
+					sentMessages.push(String(data));
+				},
 			});
-			(MockWebSocket as unknown as { OPEN: number }).OPEN = 1;
 			globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
 			const program = Effect.gen(function* () {
-				const transport = yield* TransportService;
+				yield* TransportService;
 
 				yield* Effect.sleep(150);
 
