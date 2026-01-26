@@ -238,6 +238,46 @@ describe("JsonRpc", () => {
 				});
 			}
 		});
+
+		it("parse fails when missing id field", async () => {
+			const raw = { jsonrpc: "2.0", result: "0x1" };
+			const exit = await Effect.runPromiseExit(Response.parse(raw));
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("parse fails when neither result nor error present", async () => {
+			const raw = { jsonrpc: "2.0", id: 1 };
+			const exit = await Effect.runPromiseExit(Response.parse(raw));
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("parse fails when id is invalid type (boolean)", async () => {
+			const raw = { jsonrpc: "2.0", id: true, result: "0x1" };
+			const exit = await Effect.runPromiseExit(Response.parse(raw));
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("parse fails when id is invalid type (object)", async () => {
+			const raw = { jsonrpc: "2.0", id: { key: "value" }, result: "0x1" };
+			const exit = await Effect.runPromiseExit(Response.parse(raw));
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("parse fails when id is invalid type (array)", async () => {
+			const raw = { jsonrpc: "2.0", id: [1, 2], result: "0x1" };
+			const exit = await Effect.runPromiseExit(Response.parse(raw));
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("parse fails on null input", async () => {
+			const exit = await Effect.runPromiseExit(Response.parse(null));
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("parse fails on array input", async () => {
+			const exit = await Effect.runPromiseExit(Response.parse([1, 2, 3]));
+			expect(exit._tag).toBe("Failure");
+		});
 	});
 
 	describe("Error", () => {
