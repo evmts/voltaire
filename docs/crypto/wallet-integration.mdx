@@ -68,7 +68,7 @@ console.log('Seeds differ:', seed.some((b, i) => b !== seedWithPass[i])); // tru
 ### Step 3: Create Root HD Wallet
 
 ```typescript
-import * as HDWallet from '@tevm/voltaire/HDWallet';
+import { HDWallet } from '/voltaire/native';
 
 // Create master key from seed
 const root = HDWallet.fromSeed(seed);

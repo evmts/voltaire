@@ -35,7 +35,7 @@ Key operations:
 
 ```typescript
 import * as Bip39 from '@tevm/voltaire/Bip39';
-import * as HDWallet from '@tevm/voltaire/HDWallet';
+import { HDWallet } from '/voltaire/native';
 
 // 1. Generate or restore mnemonic
 const mnemonic = Bip39.generateMnemonic(256);
@@ -458,7 +458,7 @@ console.log(addr0.getPrivateKey());   // null
 
 ```typescript
 import * as Bip39 from '@tevm/voltaire/Bip39';
-import * as HDWallet from '@tevm/voltaire/HDWallet';
+import { HDWallet } from '/voltaire/native';
 import { Address } from '@tevm/voltaire/primitives/address';
 import { secp256k1 } from '@tevm/voltaire/Secp256k1';
 

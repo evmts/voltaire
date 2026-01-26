@@ -430,7 +430,7 @@ BIP-39 is typically used with BIP-32 (HD Wallets) for deterministic key generati
 
 ```typescript
 import * as Bip39 from '@tevm/voltaire/Bip39';
-import * as HDWallet from '@tevm/voltaire/HDWallet';
+import { HDWallet } from '/voltaire/native';
 
 // 1. Generate mnemonic
 const mnemonic = Bip39.generateMnemonic(256);
