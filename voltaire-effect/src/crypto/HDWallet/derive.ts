@@ -9,6 +9,8 @@ import {
 	type HDPath,
 	HDWalletService,
 } from "./HDWalletService.js";
+import type { MnemonicStrength } from "../Bip39/types.js";
+import type { HDWalletError } from "./errors.js";
 
 /**
  * Derives a child HD node from a parent node using the given path.
@@ -33,14 +35,16 @@ import {
  * }).pipe(Effect.provide(HDWalletLive))
  * ```
  *
- * @throws Never fails if inputs are valid
+ * @throws InvalidPathError if derivation path is invalid
+ * @throws HardenedDerivationError if hardened derivation is attempted from a public node
+ * @throws InvalidKeyError if child key derivation fails
  * @see {@link fromSeed} to create the master node
  * @since 0.0.1
  */
 export const derive = (
 	node: HDNode,
 	path: string | HDPath,
-): Effect.Effect<HDNode, never, HDWalletService> =>
+): Effect.Effect<HDNode, HDWalletError, HDWalletService> =>
 	Effect.gen(function* () {
 		const hdwallet = yield* HDWalletService;
 		return yield* hdwallet.derive(node, path);
@@ -53,8 +57,8 @@ export const derive = (
  * Creates a cryptographically random mnemonic phrase using secure random number
  * generation. The mnemonic encodes entropy plus a checksum, enabling wallet recovery.
  *
- * @param strength - Entropy bits: 128 = 12 words, 256 = 24 words (default: 128)
- * @returns Effect containing the mnemonic word array, requiring HDWalletService
+ * @param strength - Entropy bits: 128 = 12 words, 160 = 15, 192 = 18, 224 = 21, 256 = 24 (default: 128)
+ * @returns Effect containing the space-separated mnemonic sentence, requiring HDWalletService
  *
  * @example
  * ```typescript
@@ -62,7 +66,7 @@ export const derive = (
  * import * as Effect from 'effect/Effect'
  *
  * const program = generateMnemonic(256).pipe(Effect.provide(HDWalletLive))
- * // Returns 24 words from BIP-39 wordlist
+ * // Returns 24 words from BIP-39 wordlist, space-separated
  * ```
  *
  * @throws Never fails
@@ -70,8 +74,8 @@ export const derive = (
  * @since 0.0.1
  */
 export const generateMnemonic = (
-	strength: 128 | 256 = 128,
-): Effect.Effect<string[], never, HDWalletService> =>
+	strength: MnemonicStrength = 128,
+): Effect.Effect<string, never, HDWalletService> =>
 	Effect.gen(function* () {
 		const hdwallet = yield* HDWalletService;
 		return yield* hdwallet.generateMnemonic(strength);
@@ -81,34 +85,69 @@ export const generateMnemonic = (
  * Creates a master HD node from a seed.
  *
  * @description
- * Creates the root node of the HD tree from a 64-byte seed. The seed is typically
+ * Creates the root node of the HD tree from a 16-64 byte seed. The seed is typically
  * derived from a BIP-39 mnemonic using PBKDF2. The master node is at path "m".
  *
- * @param seed - The 64-byte seed (typically from mnemonicToSeed)
+ * @param seed - The 16-64 byte seed (typically from mnemonicToSeed)
  * @returns Effect containing the master HD node, requiring HDWalletService
  *
  * @example
  * ```typescript
  * import { fromSeed, mnemonicToSeed, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import { mnemonicToWords } from 'voltaire-effect/crypto/Bip39'
  * import * as Effect from 'effect/Effect'
  *
  * const program = Effect.gen(function* () {
- *   const seed = yield* mnemonicToSeed(mnemonic)
+ *   const seed = yield* mnemonicToSeed(mnemonicToWords(mnemonic))
  *   return yield* fromSeed(seed)
  * }).pipe(Effect.provide(HDWalletLive))
  * ```
  *
- * @throws Never fails if seed is valid
+ * @throws InvalidSeedError if seed length is invalid
+ * @throws InvalidKeyError if master key derivation fails
  * @see {@link mnemonicToSeed} to generate seed from mnemonic
  * @see {@link derive} to derive child nodes
  * @since 0.0.1
  */
 export const fromSeed = (
 	seed: Uint8Array,
-): Effect.Effect<HDNode, never, HDWalletService> =>
+): Effect.Effect<HDNode, HDWalletError, HDWalletService> =>
 	Effect.gen(function* () {
 		const hdwallet = yield* HDWalletService;
 		return yield* hdwallet.fromSeed(seed);
+	});
+
+/**
+ * Creates a master HD node from a mnemonic sentence.
+ *
+ * @description
+ * Converts the mnemonic to a seed and derives the master HD node.
+ *
+ * @param mnemonic - Space-separated mnemonic sentence
+ * @param passphrase - Optional passphrase (default: "")
+ * @returns Effect containing the master HD node, requiring HDWalletService
+ *
+ * @example
+ * ```typescript
+ * import { fromMnemonic, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import * as Effect from 'effect/Effect'
+ *
+ * const program = fromMnemonic("abandon abandon ...", "passphrase").pipe(
+ *   Effect.provide(HDWalletLive)
+ * )
+ * ```
+ *
+ * @throws InvalidSeedError if derived seed is invalid
+ * @throws InvalidKeyError if master key derivation fails
+ * @since 0.0.1
+ */
+export const fromMnemonic = (
+	mnemonic: string,
+	passphrase?: string,
+): Effect.Effect<HDNode, HDWalletError, HDWalletService> =>
+	Effect.gen(function* () {
+		const hdwallet = yield* HDWalletService;
+		return yield* hdwallet.fromMnemonic(mnemonic, passphrase);
 	});
 
 /**
@@ -132,14 +171,14 @@ export const fromSeed = (
  * const program = mnemonicToSeed(words).pipe(Effect.provide(HDWalletLive))
  * ```
  *
- * @throws Never fails if mnemonic is valid
+ * @throws InvalidSeedError if mnemonic conversion fails
  * @see {@link generateMnemonic} to create a mnemonic
  * @see {@link fromSeed} to create master node from seed
  * @since 0.0.1
  */
 export const mnemonicToSeed = (
 	mnemonic: string[],
-): Effect.Effect<Uint8Array, never, HDWalletService> =>
+): Effect.Effect<Uint8Array, HDWalletError, HDWalletService> =>
 	Effect.gen(function* () {
 		const hdwallet = yield* HDWalletService;
 		return yield* hdwallet.mnemonicToSeed(mnemonic);

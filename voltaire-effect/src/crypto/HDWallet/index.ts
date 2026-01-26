@@ -19,11 +19,12 @@
  * @example
  * ```typescript
  * import { HDWalletService, HDWalletLive, generateMnemonic, mnemonicToSeed, fromSeed, derive } from 'voltaire-effect/crypto/HDWallet'
+ * import { mnemonicToWords } from 'voltaire-effect/crypto/Bip39'
  * import * as Effect from 'effect/Effect'
  *
  * const program = Effect.gen(function* () {
  *   const mnemonic = yield* generateMnemonic(128)
- *   const seed = yield* mnemonicToSeed(mnemonic)
+ *   const seed = yield* mnemonicToSeed(mnemonicToWords(mnemonic))
  *   const master = yield* fromSeed(seed)
  *   const account = yield* derive(master, "m/44'/60'/0'/0/0")
  *   return account
@@ -37,6 +38,7 @@
 
 export {
 	derive,
+	fromMnemonic,
 	fromSeed,
 	generateMnemonic,
 	getPrivateKey,
@@ -51,3 +53,11 @@ export {
 	type HDWalletServiceShape,
 	HDWalletTest,
 } from "./HDWalletService.js";
+export {
+	HardenedDerivationError,
+	InvalidKeyError,
+	InvalidPathError,
+	InvalidSeedError,
+	mapToHDWalletError,
+	type HDWalletError,
+} from "./errors.js";

@@ -6,6 +6,8 @@
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import type { MnemonicStrength } from "../Bip39/types.js";
+import type { HDWalletError } from "./errors.js";
 
 /**
  * Represents a hierarchical deterministic wallet node.
@@ -50,32 +52,63 @@ export interface HDWalletServiceShape {
 	 * @param node - The parent HD node
 	 * @param path - Derivation path (e.g., "m/44'/60'/0'/0/0" or array of indices)
 	 * @returns Effect containing the derived child node
+	 *
+	 * @throws InvalidPathError - Path format invalid
+	 * @throws HardenedDerivationError - Hardened derivation attempted from public key
+	 * @throws InvalidKeyError - Child key derivation failed
 	 */
 	readonly derive: (
 		node: HDNode,
 		path: string | HDPath,
-	) => Effect.Effect<HDNode>;
+	) => Effect.Effect<HDNode, HDWalletError>;
 
 	/**
-	 * Generates a new random BIP-39 mnemonic phrase.
-	 * @param strength - Entropy bits (128 = 12 words, 256 = 24 words)
-	 * @returns Effect containing the mnemonic word array
+	 * Generates a new random BIP-39 mnemonic sentence.
+	 *
+	 * @param strength - Entropy bits: 128=12 words, 160=15, 192=18, 224=21, 256=24 (default: 128)
+	 * @returns Effect containing the space-separated mnemonic sentence
+	 *
+	 * @see Use `mnemonicToWords()` from `voltaire-effect/crypto/Bip39` if you need an array
+	 * @see {@link https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki | BIP-39 Specification}
 	 */
-	readonly generateMnemonic: (strength?: 128 | 256) => Effect.Effect<string[]>;
+	readonly generateMnemonic: (
+		strength?: MnemonicStrength,
+	) => Effect.Effect<string>;
 
 	/**
 	 * Creates an HD node from a seed.
-	 * @param seed - The 64-byte seed from mnemonic
+	 * @param seed - The 16-64 byte seed from mnemonic
 	 * @returns Effect containing the master HD node
+	 *
+	 * @throws InvalidSeedError - Seed length invalid
+	 * @throws InvalidKeyError - Master key derivation failed
 	 */
-	readonly fromSeed: (seed: Uint8Array) => Effect.Effect<HDNode>;
+	readonly fromSeed: (seed: Uint8Array) => Effect.Effect<HDNode, HDWalletError>;
+
+	/**
+	 * Creates a master HD node from a BIP-39 mnemonic sentence.
+	 * @param mnemonic - Space-separated mnemonic sentence
+	 * @param passphrase - Optional passphrase (default: "")
+	 * @returns Effect containing the master HD node
+	 *
+	 * @throws InvalidSeedError - Derived seed invalid
+	 * @throws InvalidKeyError - Master key derivation failed
+	 */
+	readonly fromMnemonic: (
+		mnemonic: string,
+		passphrase?: string,
+	) => Effect.Effect<HDNode, HDWalletError>;
 
 	/**
 	 * Converts a mnemonic phrase to a seed.
-	 * @param mnemonic - Array of mnemonic words
+	 * @param mnemonic - Array of mnemonic words (use mnemonicToWords() for sentences)
 	 * @returns Effect containing the 64-byte seed
+	 *
+	 * @throws InvalidSeedError - Mnemonic conversion failed
 	 */
-	readonly mnemonicToSeed: (mnemonic: string[]) => Effect.Effect<Uint8Array>;
+	readonly mnemonicToSeed: (
+		mnemonic: string[],
+	) => Effect.Effect<Uint8Array, HDWalletError>;
 
 	/**
 	 * Extracts the private key from an HD node.
@@ -99,12 +132,13 @@ export interface HDWalletServiceShape {
  * @example
  * ```typescript
  * import { HDWalletService, HDWalletLive } from 'voltaire-effect/crypto'
+ * import { mnemonicToWords } from 'voltaire-effect/crypto/Bip39'
  * import * as Effect from 'effect/Effect'
  *
  * const program = Effect.gen(function* () {
  *   const hd = yield* HDWalletService
  *   const mnemonic = yield* hd.generateMnemonic(128)
- *   const seed = yield* hd.mnemonicToSeed(mnemonic)
+ *   const seed = yield* hd.mnemonicToSeed(mnemonicToWords(mnemonic))
  *   const master = yield* hd.fromSeed(seed)
  *   return yield* hd.derive(master, "m/44'/60'/0'/0/0")
  * }).pipe(Effect.provide(HDWalletLive))
@@ -132,29 +166,19 @@ export class HDWalletService extends Context.Tag("HDWalletService")<
  * const testProgram = generateMnemonic(128).pipe(
  *   Effect.provide(HDWalletTest)
  * )
- * // Returns: ['abandon', 'abandon', ..., 'about']
+ * // Returns: 'abandon abandon ... about'
  * ```
  *
  * @since 0.0.1
  */
+const TEST_MNEMONIC =
+	"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
 export const HDWalletTest = Layer.succeed(HDWalletService, {
 	derive: (_node, _path) => Effect.succeed({} as HDNode),
-	generateMnemonic: (_strength) =>
-		Effect.succeed([
-			"abandon",
-			"abandon",
-			"abandon",
-			"abandon",
-			"abandon",
-			"abandon",
-			"abandon",
-			"abandon",
-			"abandon",
-			"abandon",
-			"abandon",
-			"about",
-		]),
+	generateMnemonic: (_strength) => Effect.succeed(TEST_MNEMONIC),
 	fromSeed: (_seed) => Effect.succeed({} as HDNode),
+	fromMnemonic: (_mnemonic, _passphrase) => Effect.succeed({} as HDNode),
 	mnemonicToSeed: (_mnemonic) => Effect.succeed(new Uint8Array(64)),
 	getPrivateKey: (_node) => Effect.succeed(new Uint8Array(32)),
 	getPublicKey: (_node) => Effect.succeed(new Uint8Array(33)),

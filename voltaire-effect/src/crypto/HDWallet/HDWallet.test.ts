@@ -1,13 +1,23 @@
+import { HDWallet } from "@tevm/voltaire/HDWallet";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
 import { describe, expect, it } from "@effect/vitest";
 import {
 	derive,
+	fromMnemonic,
 	fromSeed,
 	generateMnemonic,
 	getPrivateKey,
 	getPublicKey,
 	mnemonicToSeed,
 } from "./derive.js";
+import {
+	HardenedDerivationError,
+	InvalidKeyError,
+	InvalidPathError,
+	InvalidSeedError,
+} from "./errors.js";
+import { HDWalletLive } from "./HDWalletLive.js";
 import { HDWalletService, HDWalletTest } from "./HDWalletService.js";
 
 describe("HDWalletService", () => {
@@ -16,8 +26,8 @@ describe("HDWalletService", () => {
 			Effect.gen(function* () {
 				const hdwallet = yield* HDWalletService;
 				const result = yield* hdwallet.generateMnemonic(128);
-				expect(result).toBeInstanceOf(Array);
-				expect(result.length).toBe(12);
+				expect(typeof result).toBe("string");
+				expect(result.split(" ").length).toBe(12);
 			}).pipe(Effect.provide(HDWalletTest))
 		);
 
@@ -97,8 +107,8 @@ describe("generateMnemonic", () => {
 	it.effect("generates mnemonic with HDWalletService dependency", () =>
 		Effect.gen(function* () {
 			const result = yield* generateMnemonic(128);
-			expect(result).toBeInstanceOf(Array);
-			expect(result.length).toBe(12);
+			expect(typeof result).toBe("string");
+			expect(result.split(" ").length).toBe(12);
 		}).pipe(Effect.provide(HDWalletTest))
 	);
 });
@@ -156,4 +166,98 @@ describe("getPublicKey", () => {
 			expect(result?.length).toBe(33);
 		}).pipe(Effect.provide(HDWalletTest))
 	);
+});
+
+describe("HDWallet error types", () => {
+	const validSeed = new Uint8Array(32).fill(0x42);
+
+	it("has unique error tags", () => {
+		const tags = new Set([
+			new InvalidPathError({ path: "", message: "" })._tag,
+			new InvalidSeedError({ seedLength: 0, message: "" })._tag,
+			new HardenedDerivationError({ path: "", index: 0, message: "" })._tag,
+			new InvalidKeyError({ message: "" })._tag,
+		]);
+		expect(tags.size).toBe(4);
+	});
+
+	it("InvalidPathError is catchable with Effect.catchTag", async () => {
+		const program = Effect.gen(function* () {
+			const hdwallet = yield* HDWalletService;
+			const master = yield* hdwallet.fromSeed(validSeed);
+			return yield* hdwallet.derive(master, "invalid/path");
+		}).pipe(
+			Effect.provide(HDWalletLive),
+			Effect.catchTag("InvalidPathError", (error) =>
+				Effect.succeed(`caught: ${error.path}`),
+			),
+		);
+
+		const result = await Effect.runPromise(program);
+		expect(result).toBe("caught: invalid/path");
+	});
+
+	it("derive fails with InvalidPathError for malformed path", async () => {
+		const program = Effect.gen(function* () {
+			const hdwallet = yield* HDWalletService;
+			const master = yield* hdwallet.fromSeed(validSeed);
+			return yield* hdwallet.derive(master, "invalid/path");
+		}).pipe(Effect.provide(HDWalletLive));
+
+		const exit = await Effect.runPromiseExit(program);
+		expect(Exit.isFailure(exit)).toBe(true);
+		if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+			expect(exit.cause.error._tag).toBe("InvalidPathError");
+		}
+	});
+
+	it("derive fails with HardenedDerivationError from public key", async () => {
+		const program = Effect.gen(function* () {
+			const hdwallet = yield* HDWalletService;
+			const master = yield* hdwallet.fromSeed(validSeed);
+			const publicNode = HDWallet.toPublic(master as any);
+			return yield* hdwallet.derive(publicNode as any, "m/44'");
+		}).pipe(Effect.provide(HDWalletLive));
+
+		const exit = await Effect.runPromiseExit(program);
+		expect(Exit.isFailure(exit)).toBe(true);
+		if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+			expect(exit.cause.error._tag).toBe("HardenedDerivationError");
+		}
+	});
+
+	it("derive succeeds with non-hardened path from public key", async () => {
+		const program = Effect.gen(function* () {
+			const hdwallet = yield* HDWalletService;
+			const master = yield* hdwallet.fromSeed(validSeed);
+			const publicNode = HDWallet.toPublic(master as any);
+			return yield* hdwallet.derive(publicNode as any, "m/0");
+		}).pipe(Effect.provide(HDWalletLive));
+
+		const result = await Effect.runPromise(program);
+		expect(result).toBeDefined();
+	});
+
+	it("fromSeed fails with InvalidSeedError for too short seed", async () => {
+		const program = Effect.gen(function* () {
+			const hdwallet = yield* HDWalletService;
+			return yield* hdwallet.fromSeed(new Uint8Array(15));
+		}).pipe(Effect.provide(HDWalletLive));
+
+		const exit = await Effect.runPromiseExit(program);
+		expect(Exit.isFailure(exit)).toBe(true);
+		if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+			expect(exit.cause.error._tag).toBe("InvalidSeedError");
+			expect((exit.cause.error as InvalidSeedError).seedLength).toBe(15);
+		}
+	});
+
+	it("fromMnemonic succeeds with valid mnemonic", async () => {
+		const mnemonic =
+			"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+		const result = await Effect.runPromise(
+			fromMnemonic(mnemonic).pipe(Effect.provide(HDWalletLive)),
+		);
+		expect(result).toBeDefined();
+	});
 });
