@@ -39,3 +39,24 @@ const hash = S.decodeSync(Hash.Hex)(
 const bytes = Hash.toBytes(hash)
 const hex = Hash.toHex(hash)
 ```
+
+## Comparison
+
+```typescript
+Hash.equals(hash1, hash2)  // boolean
+```
+
+## Common Uses
+
+- Transaction hashes (`eth_getTransactionByHash`)
+- Block hashes (`eth_getBlockByHash`)
+- State roots, receipts roots, transactions roots
+- Storage slots
+
+## See Also
+
+- [TransactionHash](/primitives/transactionhash) — Transaction hash type
+- [BlockHash](/primitives/blockhash) — Block hash type
+- [Keccak256](/crypto/keccak256) — Compute hashes
+- [Voltaire Hash](https://voltaire.tevm.sh/primitives/hash) — Core Hash documentation
+- [Effect Schema](https://effect.website/docs/schema/introduction/) — Effect Schema validation
