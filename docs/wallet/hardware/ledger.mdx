@@ -19,7 +19,7 @@ bun add @tevm/voltaire
 ## Quick Start
 
 ```typescript
-import { createLedger } from '@tevm/voltaire/wallet/hardware';
+import { createLedger } from '@tevm/voltaire/native';
 
 const ledger = createLedger();
 
@@ -43,7 +43,7 @@ await ledger.disconnect();
 Ledger uses WebUSB for browser connections:
 
 ```typescript
-import { LedgerWallet } from '@tevm/voltaire/wallet/hardware';
+import { LedgerWallet } from '@tevm/voltaire/native';
 
 const ledger = new LedgerWallet();
 
@@ -275,7 +275,7 @@ Some operations require blind signing to be enabled in Ledger settings:
 ## Complete Example
 
 ```typescript
-import { createLedger } from '@tevm/voltaire/wallet/hardware';
+import { createLedger } from '@tevm/voltaire/native';
 import * as Transaction from '@tevm/voltaire/Transaction';
 
 async function sendWithLedger() {

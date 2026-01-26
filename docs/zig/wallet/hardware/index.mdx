@@ -17,7 +17,7 @@ Voltaire provides type-safe interfaces for integrating hardware wallets into Eth
 ### Ledger
 
 ```zig
-import { createLedger } from '@tevm/voltaire/wallet/hardware';
+import { createLedger } from '@tevm/voltaire/native';
 
 const ledger = createLedger();
 
@@ -37,7 +37,7 @@ await ledger.disconnect();
 ### Trezor
 
 ```zig
-import { createTrezor } from '@tevm/voltaire/wallet/hardware';
+import { createTrezor } from '@tevm/voltaire/native';
 
 const trezor = createTrezor({
   manifest: {
@@ -118,7 +118,7 @@ const addresses = await wallet.getAddresses("m/44'/60'/0'/0", 10);
 Ledger uses WebUSB for browser-based connections:
 
 ```zig
-import { LedgerWallet } from '@tevm/voltaire/wallet/hardware';
+import { LedgerWallet } from '@tevm/voltaire/native';
 
 const ledger = new LedgerWallet();
 
@@ -141,7 +141,7 @@ try {
 Trezor uses Trezor Connect (requires manifest):
 
 ```zig
-import { TrezorWallet } from '@tevm/voltaire/wallet/hardware';
+import { TrezorWallet } from '@tevm/voltaire/native';
 
 const trezor = new TrezorWallet({
   manifest: {

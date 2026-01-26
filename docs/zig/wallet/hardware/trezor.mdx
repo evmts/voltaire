@@ -19,7 +19,7 @@ bun add @tevm/voltaire
 ## Quick Start
 
 ```zig
-import { createTrezor } from '@tevm/voltaire/wallet/hardware';
+import { createTrezor } from '@tevm/voltaire/native';
 
 const trezor = createTrezor({
   manifest: {
@@ -48,7 +48,7 @@ await trezor.disconnect();
 Trezor requires an app manifest for Connect:
 
 ```zig
-import { TrezorWallet } from '@tevm/voltaire/wallet/hardware';
+import { TrezorWallet } from '@tevm/voltaire/native';
 
 const trezor = new TrezorWallet({
   manifest: {
@@ -315,7 +315,7 @@ const address = await trezor.getAddress("m/44'/60'/0'/0/0");
 ## Complete Example
 
 ```zig
-import { createTrezor } from '@tevm/voltaire/wallet/hardware';
+import { createTrezor } from '@tevm/voltaire/native';
 import * as Transaction from '@tevm/voltaire/Transaction';
 
 async function sendWithTrezor() {
