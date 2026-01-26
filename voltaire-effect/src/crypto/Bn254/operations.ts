@@ -4,9 +4,8 @@
  * @since 0.0.1
  */
 
-import type { BN254G1PointType, BN254G2PointType } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { type Bn254Error, Bn254Service } from "./Bn254Service.js";
+import { type Bn254Error, Bn254Service, type BN254G1PointType, type BN254G2PointType } from "./Bn254Service.js";
 
 /**
  * Adds two G1 points on the BN254 curve.

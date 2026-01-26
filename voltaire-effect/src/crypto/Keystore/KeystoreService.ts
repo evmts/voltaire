@@ -4,18 +4,23 @@
  * @since 0.0.1
  */
 
-import type {
-	DecryptionError,
-	EncryptionError,
-	EncryptOptions,
-	InvalidMacError,
-	KeystoreV3,
-	UnsupportedKdfError,
-	UnsupportedVersionError,
-} from "@tevm/voltaire/Keystore";
-import type { PrivateKeyType } from "@tevm/voltaire/PrivateKey";
+import { Keystore } from "@tevm/voltaire";
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
+
+type DecryptionError = Parameters<typeof Keystore.decrypt>[0] extends infer T ? T extends { error: infer E } ? E : never : never;
+type EncryptionError = Error;
+type EncryptOptions = Parameters<typeof Keystore.encrypt>[2];
+type InvalidMacError = Error & { code: "INVALID_MAC" };
+type KeystoreV3 = Awaited<ReturnType<typeof Keystore.encrypt>>;
+type UnsupportedKdfError = Error & { code: "UNSUPPORTED_KDF" };
+type UnsupportedVersionError = Error & { code: "UNSUPPORTED_VERSION" };
+
+/**
+ * PrivateKey type - 32 byte Uint8Array for cryptographic operations.
+ * @since 0.0.1
+ */
+export type PrivateKeyType = Uint8Array;
 
 /**
  * Union of all possible decryption errors.

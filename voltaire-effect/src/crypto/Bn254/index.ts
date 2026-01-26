@@ -34,7 +34,7 @@
  * @since 0.0.1
  */
 
-export type { BN254G1PointType, BN254G2PointType } from "@tevm/voltaire";
+export type { G1PointType as BN254G1PointType, G2PointType as BN254G2PointType } from "./types.js";
 export {
 	Bn254Error,
 	Bn254Live,

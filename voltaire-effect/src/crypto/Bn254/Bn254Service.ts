@@ -5,15 +5,31 @@
  * @since 0.0.1
  */
 
-import {
-	BN254,
-	type BN254G1PointType,
-	type BN254G2PointType,
-} from "@tevm/voltaire";
+import { BN254 } from "@tevm/voltaire";
 import * as Context from "effect/Context";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+
+/**
+ * G1 point on the BN254 curve.
+ * @since 0.0.1
+ */
+export type BN254G1PointType = {
+	x: bigint;
+	y: bigint;
+	z: bigint;
+};
+
+/**
+ * G2 point on the BN254 curve (extension field).
+ * @since 0.0.1
+ */
+export type BN254G2PointType = {
+	x: { c0: bigint; c1: bigint };
+	y: { c0: bigint; c1: bigint };
+	z: { c0: bigint; c1: bigint };
+};
 
 /**
  * Error thrown when a BN254 curve operation fails.
@@ -232,7 +248,7 @@ export class Bn254Service extends Context.Tag("Bn254Service")<
 export const Bn254Live = Layer.succeed(Bn254Service, {
 	g1Add: (a, b) =>
 		Effect.try({
-			try: () => BN254.G1.add(a, b),
+			try: () => BN254.G1.add(a as never, b as never),
 			catch: (e) =>
 				new Bn254Error({
 					operation: "g1Add",
@@ -242,7 +258,7 @@ export const Bn254Live = Layer.succeed(Bn254Service, {
 		}),
 	g1Mul: (point, scalar) =>
 		Effect.try({
-			try: () => BN254.G1.mul(point, scalar),
+			try: () => BN254.G1.mul(point as never, scalar),
 			catch: (e) =>
 				new Bn254Error({
 					operation: "g1Mul",
@@ -262,7 +278,7 @@ export const Bn254Live = Layer.succeed(Bn254Service, {
 		}),
 	g2Add: (a, b) =>
 		Effect.try({
-			try: () => BN254.G2.add(a, b),
+			try: () => BN254.G2.add(a as never, b as never),
 			catch: (e) =>
 				new Bn254Error({
 					operation: "g2Add",
@@ -272,7 +288,7 @@ export const Bn254Live = Layer.succeed(Bn254Service, {
 		}),
 	g2Mul: (point, scalar) =>
 		Effect.try({
-			try: () => BN254.G2.mul(point, scalar),
+			try: () => BN254.G2.mul(point as never, scalar),
 			catch: (e) =>
 				new Bn254Error({
 					operation: "g2Mul",
@@ -293,9 +309,7 @@ export const Bn254Live = Layer.succeed(Bn254Service, {
 	pairingCheck: (pairs) =>
 		Effect.try({
 			try: () =>
-				BN254.Pairing.pairingCheck(
-					pairs as Array<[BN254G1PointType, BN254G2PointType]>,
-				),
+				BN254.Pairing.pairingCheck(pairs as never),
 			catch: (e) =>
 				new Bn254Error({
 					operation: "pairingCheck",
