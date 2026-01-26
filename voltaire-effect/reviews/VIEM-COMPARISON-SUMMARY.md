@@ -27,14 +27,14 @@ voltaire-effect provides a solid foundation with Effect-based APIs, but has sign
 
 | Gap | Impact | Files |
 |-----|--------|-------|
-| No EIP-7702 `signAuthorization` | Can't create code delegations | Signer, Account |
-| No `stateOverride` in call | Can't simulate accurately | Provider |
-| No `simulateCalls` with asset changes | Can't show "what will happen" | Provider |
+| ~~No EIP-7702 `signAuthorization`~~ | ✅ Fixed (signAuthorization + prepareAuthorization) | Signer |
+| ~~No `stateOverride` in call~~ | ✅ Fixed (call + estimateGas support stateOverride) | Provider |
+| ~~No `simulateCalls` with asset changes~~ | ✅ Fixed (simulateContract implemented) | Provider |
 | Limited transport hooks (no onRequest/onResponse) | Hard to inject auth/metrics per request | Transport |
 | ~~No chainId in NonceManager~~ | ✅ Fixed (chainId-scoped keys) | NonceManager |
-| No `addChain` wallet action | Can't add chains to wallet | Signer |
+| ~~No `addChain` wallet action~~ | ✅ Fixed (addChain + switchChain) | Signer |
 | No chain formatters | L2 transactions miss fields | Chain |
-| No signature verification | Can't verify who signed | Crypto utilities |
+| ~~No signature verification~~ | ✅ Fixed (verifyMessage, verifyTypedData, recoverAddress) | Crypto |
 
 ### 🟡 Important Gaps
 
@@ -44,14 +44,14 @@ voltaire-effect provides a solid foundation with Effect-based APIs, but has sign
 | No HD derivation options | Can't derive child accounts | Account |
 | No `sign({ hash })` on Account | Raw signing needed for protocols | Account |
 | No filter-based subscriptions | No eth_newFilter support | Provider |
-| No ENS methods | No name resolution | Provider |
+| ~~No ENS methods~~ | ✅ Fixed (getEnsAddress, getEnsName, getEnsText, getEnsAvatar) | Provider |
 | ~~No multicall batching~~ | ✅ Fixed (Multicall3 + Provider action) | Provider |
-| No `watchAsset`, permissions | Missing wallet UX | Signer |
+| ~~No `watchAsset`, permissions~~ | ✅ Fixed (watchAsset, getPermissions, requestPermissions) | Signer |
 | No `watchEvent` / `watchContractEvent` | Can't stream events | Provider, Contract |
-| No `deployContract` helper | Manual bytecode handling | Signer |
+| ~~No `deployContract` helper~~ | ✅ Fixed (deployContract action) | Signer |
 | No SIWE support | Manual auth implementation | Auth |
-| No `getBlobBaseFee` | Can't estimate blob costs | Provider |
-| No Contract.estimateGas | Must encode + call manually | Contract |
+| ~~No `getBlobBaseFee`~~ | ✅ Fixed (with fallback logic) | Provider |
+| ~~No Contract.estimateGas~~ | ✅ Fixed (estimateGas.ts, needs index export) | Contract |
 
 ### 🟢 Good Coverage
 
@@ -156,14 +156,14 @@ voltaire-effect should NOT be a 1:1 port of viem. Instead:
 
 ## Quick Wins (< 1 day each)
 
-1. Add `addChain` to SignerService
+1. ✅ Add `addChain` to SignerService (implemented)
 2. Add `getAddresses` to SignerService
 3. Add `publicKey` property to LocalAccount
 4. ✅ Add `chainId` parameter to NonceManager (implemented)
 5. Add request/response hooks (or `fetchOptions`) to HttpTransport config
-6. Add `getBlobBaseFee` to ProviderService
+6. ✅ Add `getBlobBaseFee` to ProviderService (implemented)
 7. Add `getTransactionConfirmations` to ProviderService
-8. Export `hashMessage`, `hashTypedData` utilities
+8. ✅ Export `hashMessage`, `hashTypedData` utilities (implemented)
 
 ## Metric Tracking
 

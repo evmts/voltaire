@@ -15,7 +15,7 @@
 |----------|--------|-------|
 | Effect patterns | ✅ Largely fixed | runPromise/runSync + transport migration done; WebSocket/batch tests still skipped |
 | Error typing | ⚠️ Mixed | Data.TaggedError adopted in many services, core errors still AbstractError |
-| Security | ⚠️ Needs work | Key cleanup missing, timing leaks |
+| Security | ⚠️ Needs work | Timing leaks |
 | Test coverage | ❌ Critical | Many modules have 0 tests |
 | Documentation | ✅ Good | JSDoc coverage excellent |
 
@@ -28,7 +28,10 @@
 - ✅ NonceManager now scoped by `chainId` and uses `SynchronizedRef` for atomic consume/increment.
 - ✅ Transaction type support expanded (EIP-2930/4844/7702) with tests.
 - ✅ Multicall implemented (service + Provider action).
-- ✅ ERC721/1155 missing encoders added (ERC20 view encoders still missing).
+- ✅ ERC721/1155/ERC20 encoders complete (all view encoders added).
+- ✅ Signer wallet actions complete (addChain, switchChain, watchAsset, permissions, EIP-7702 auth).
+- ✅ Provider simulation complete (stateOverride, blockOverrides in call, simulateContract, getBlobBaseFee, ENS).
+- ✅ Signature utilities complete (verifyMessage, verifyTypedData, verifyHash, recoverAddress, hashMessage).
 
 ## Priority 0 (Critical - Must Fix)
 
@@ -36,7 +39,6 @@
 |-------|----------|--------|
 | ~~NonceManager race condition~~ | ~~DefaultNonceManager.ts~~ | ✅ Fixed (SynchronizedRef + chainId) |
 | ~~runPromise in callbacks~~ | ~~BlockStream, EventStream, TransactionStream, BatchScheduler~~ | ✅ Fixed: 076, 077, 078, 084 |
-| No memory cleanup for keys | LocalAccount, HDWallet, Keystore | 079, 085 |
 | Missing exports | PublicKey (verify/toAddress), Int256 (add/equals), Bytes (concat/equals) | 086, 089, PRIMITIVES |
 | Zero test coverage | Abi, RLP, Transaction, Signature, PublicKey, PrivateKey, Int256 | 082, 084, 086, 089 |
 
@@ -99,9 +101,6 @@ Modules with **zero** test files:
 ---
 
 ## Security Findings
-
-### Critical
-1. **Private key memory exposure** - Keys remain in memory after use (LocalAccount, HDWallet, Keystore, Bip39)
 
 ### High
 1. **Timing side-channels** - Non-constant-time comparisons in signature verification
@@ -190,9 +189,8 @@ See reviews 040, 041, 042, 073, 076-078, 084 for migration patterns (now applied
 1. ✅ **Migrate transports to `@effect/platform`** - done for HTTP + WebSocket
 2. ✅ **Adopt `@effect/vitest`** - already in use across tests
 3. **Use `effect/Cache`** - LookupCacheService exists; integrate into Provider/Signer for real wins
-4. Add memory cleanup for key material
-5. Implement constant-time comparison utilities
-6. Fix FeeEstimator precision loss
+4. Implement constant-time comparison utilities
+5. Fix FeeEstimator precision loss
 
 ### Long-term
 1. Add comprehensive integration tests
@@ -211,7 +209,6 @@ See reviews 040, 041, 042, 073, 076-078, 084 for migration patterns (now applied
 |------|-------|----------|--------|
 | 053-fix-contract-verify-signature-silent-catch.md | verifySignature error handling | P3 | ✅ Mostly complete |
 | 058-fix-hex-effect-wrapping-inconsistency.md | Hex API consistency | P3 | Open |
-| 063-add-missing-erc20-view-encoders.md | ERC20 view helpers | P3 | Open |
 | 067-fix-jsonrpc-duplicate-id-counter.md | JSON-RPC id counters | P3 | Open |
 | 068-add-jsonrpc-ethereum-error-codes.md | JSON-RPC error codes | P2 | Partial |
 | 080-use-effect-error-patterns.md | Error idioms | P2 | Open |
@@ -221,7 +218,6 @@ See reviews 040, 041, 042, 073, 076-078, 084 for migration patterns (now applied
 | 083-nonce-manager-gaps.md | NonceManager features | P2 | ✅ Core fixed |
 | 085-effect-patterns-improvements.md | Effect idioms | P2 | Partial |
 | 085-hdwallet-keystore-review.md | HDWallet/Keystore | P1 | Partial (security gaps) |
-| 093-receipt-eventlog-review.md | Receipt/EventLog schemas | P0 | Open (EIP gaps) |
 | 094-block-primitives-review.md | Block schemas | P1 | Open |
 | VIEM-COMPARISON-SUMMARY.md | Viem parity overview | - | Summary |
 
@@ -229,3 +225,5 @@ See reviews 040, 041, 042, 073, 076-078, 084 for migration patterns (now applied
 - ~~010-add-transport-batching.md~~ - ✅ BatchScheduler + HttpTransport batch option implemented
 - ~~033-fix-fallback-transport-schedule-bug.md~~ - ✅ Schedule.spaced + SynchronizedRef implemented
 - ~~040-fix-websocket-transport-effect-run-sync.md~~ - ✅ @effect/platform Socket implemented
+- ~~063-add-missing-erc20-view-encoders.md~~ - ✅ All encoders/decoders implemented
+- ~~093-receipt-eventlog-review.md~~ - ✅ Receipt/EventLog schema parity (EIP gaps)
