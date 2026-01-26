@@ -1,4 +1,10 @@
 export class DiffView {
+	/** @type {any} */
+	#monaco;
+	/** @type {HTMLElement} */
+	#container;
+	/** @type {any} */
+	#editor;
 	/** @type {Map<string, string>} */
 	#originals = new Map();
 	/** @type {boolean} */

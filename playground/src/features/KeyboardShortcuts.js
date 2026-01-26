@@ -11,6 +11,9 @@
  */
 
 export class KeyboardShortcuts {
+	/** @type {ShortcutHandlers} */
+	#handlers;
+
 	/** @param {ShortcutHandlers} handlers */
 	constructor(handlers) {
 		this.#handlers = handlers;

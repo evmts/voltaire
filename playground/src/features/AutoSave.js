@@ -3,6 +3,8 @@
 export class AutoSave {
 	/** @type {any} */
 	#editor;
+	/** @type {AutoSaveOptions} */
+	#options;
 
 	/**
 	 * @param {any} editor
