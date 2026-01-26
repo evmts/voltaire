@@ -1,5 +1,4 @@
 import * as Effect from "effect/Effect";
-import * as Ref from "effect/Ref";
 import * as Fiber from "effect/Fiber";
 import { describe, expect, it, vi } from "@effect/vitest";
 import {
@@ -29,6 +28,7 @@ describe("TransportInterceptor", () => {
 				withRequestInterceptor((req) =>
 					Effect.sync(() => {
 						calls.push(`request:${req.method}`);
+						return req;
 					}),
 				),
 			);
@@ -54,6 +54,7 @@ describe("TransportInterceptor", () => {
 				withRequestInterceptor((req) =>
 					Effect.sync(() => {
 						receivedParams = req.params;
+						return req;
 					}),
 				),
 			);
@@ -77,6 +78,7 @@ describe("TransportInterceptor", () => {
 				withResponseInterceptor((res) =>
 					Effect.sync(() => {
 						calls.push({ method: res.method, result: res.result });
+						return res;
 					}),
 				),
 			);
@@ -101,6 +103,7 @@ describe("TransportInterceptor", () => {
 				withResponseInterceptor((res) =>
 					Effect.sync(() => {
 						duration = res.duration;
+						return res;
 					}),
 				),
 			);
@@ -155,8 +158,16 @@ describe("TransportInterceptor", () => {
 					InterceptedTransport(TestTransport({ eth_blockNumber: "0x1" })),
 				),
 				withInterceptors({
-					onRequest: () => Effect.sync(() => calls.push("request")),
-					onResponse: () => Effect.sync(() => calls.push("response")),
+					onRequest: (req) =>
+						Effect.sync(() => {
+							calls.push("request");
+							return req;
+						}),
+					onResponse: (res) =>
+						Effect.sync(() => {
+							calls.push("response");
+							return res;
+						}),
 				}),
 			);
 

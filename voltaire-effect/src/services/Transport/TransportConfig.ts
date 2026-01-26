@@ -20,7 +20,11 @@ import * as HashMap from "effect/HashMap";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Secret from "effect/Secret";
-import { HttpTransport, type HttpTransportConfig } from "./HttpTransport.js";
+import { HttpTransport } from "./HttpTransport.js";
+import {
+	type RequestInterceptor,
+	type ResponseInterceptor,
+} from "./TransportInterceptor.js";
 import { TransportService } from "./TransportService.js";
 
 /**
@@ -75,6 +79,10 @@ export const TransportConfig = Config.all({
 	apiKey: Config.secret("apiKey").pipe(
 		Config.option,
 	),
+	onRequest: Config.succeed<RequestInterceptor | undefined>(undefined),
+	onResponse: Config.succeed<ResponseInterceptor | undefined>(undefined),
+	fetchOptions: Config.succeed<RequestInit | undefined>(undefined),
+	fetch: Config.succeed<typeof globalThis.fetch | undefined>(undefined),
 }).pipe(Config.nested("rpc"));
 
 /**
@@ -163,6 +171,10 @@ export const TransportFromConfig: Layer.Layer<
 			retries: config.retries,
 			retryDelay: Duration.toMillis(config.retryDelay),
 			headers,
+			onRequest: config.onRequest,
+			onResponse: config.onResponse,
+			fetchOptions: config.fetchOptions,
+			fetch: config.fetch,
 		});
 	}),
 );
@@ -200,6 +212,10 @@ export const TransportFromConfigFetch: Layer.Layer<
 				retries: config.retries,
 				retryDelay: Duration.toMillis(config.retryDelay),
 				headers,
+				onRequest: config.onRequest,
+				onResponse: config.onResponse,
+				fetchOptions: config.fetchOptions,
+				fetch: config.fetch,
 			}),
 			FetchHttpClient.layer,
 		);

@@ -12,6 +12,8 @@
  * - Automatic retry with configurable attempts and delay
  * - Request timeout handling
  * - Custom headers support (for API keys, authentication)
+ * - Request/response hooks with FiberRef overrides
+ * - Fetch options + custom fetch support
  * - Proper JSON-RPC error handling
  *
  * @see {@link TransportService} - The service interface this implements
@@ -24,10 +26,17 @@ import * as HttpClient from "@effect/platform/HttpClient";
 import * as HttpClientRequest from "@effect/platform/HttpClientRequest";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
+import * as FiberRef from "effect/FiberRef";
 import * as Layer from "effect/Layer";
 import * as Ref from "effect/Ref";
 import * as Schedule from "effect/Schedule";
 import { type BatchOptions, createBatchScheduler } from "./BatchScheduler.js";
+import {
+	onRequestRef,
+	onResponseRef,
+	type RpcRequest,
+	type RpcResponse,
+} from "./TransportInterceptor.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
 
@@ -58,6 +67,14 @@ export interface HttpTransportConfig {
 	url: string;
 	/** Optional custom headers to include in requests (e.g., API keys) */
 	headers?: Record<string, string>;
+	/** Optional fetch RequestInit options (credentials, headers, etc.) */
+	fetchOptions?: RequestInit;
+	/** Optional custom fetch implementation */
+	fetch?: typeof globalThis.fetch;
+	/** Optional request hook (can modify method/params) */
+	onRequest?: (request: RpcRequest) => Effect.Effect<RpcRequest>;
+	/** Optional response hook (can modify result) */
+	onResponse?: <T>(response: RpcResponse<T>) => Effect.Effect<RpcResponse<T>>;
 	/** Request timeout in milliseconds (default: 30000) */
 	timeout?: number;
 	/** Number of retry attempts on failure (default: 3) */
@@ -186,6 +203,11 @@ export const HttpTransport = (
 		typeof options === "string"
 			? {
 					url: options,
+					headers: undefined,
+					fetchOptions: undefined,
+					fetch: undefined,
+					onRequest: undefined,
+					onResponse: undefined,
 					timeout: 30000,
 					retries: 3,
 					retryDelay: 1000,
@@ -194,6 +216,10 @@ export const HttpTransport = (
 			: {
 					url: options.url,
 					headers: options.headers,
+					fetchOptions: options.fetchOptions,
+					fetch: options.fetch,
+					onRequest: options.onRequest,
+					onResponse: options.onResponse,
 					timeout: options.timeout ?? 30000,
 					retries: options.retries ?? 3,
 					retryDelay: options.retryDelay ?? 1000,
@@ -215,6 +241,43 @@ export const HttpTransport = (
 		Schedule.intersect(Schedule.spaced(Duration.millis(config.retryDelay))),
 	);
 
+	const applyRequestHooks = (request: RpcRequest): Effect.Effect<RpcRequest> =>
+		Effect.gen(function* () {
+			const scoped = yield* FiberRef.get(onRequestRef);
+			const withConfig = config.onRequest
+				? yield* config.onRequest(request)
+				: request;
+			return yield* scoped(withConfig);
+		});
+
+	const applyResponseHooks = <T>(
+		response: RpcResponse<T>,
+	): Effect.Effect<RpcResponse<T>> =>
+		Effect.gen(function* () {
+			const scoped = yield* FiberRef.get(onResponseRef);
+			const withConfig = config.onResponse
+				? yield* config.onResponse(response)
+				: response;
+			return yield* scoped(withConfig);
+		});
+
+	const applyFetchOptions = <A, E, R>(
+		effect: Effect.Effect<A, E, R>,
+	): Effect.Effect<A, E, R> => {
+		let result = effect;
+		if (config.fetchOptions) {
+			result = Effect.provideService(
+				result,
+				FetchHttpClient.RequestInit,
+				config.fetchOptions,
+			);
+		}
+		if (config.fetch) {
+			result = Effect.provideService(result, FetchHttpClient.Fetch, config.fetch);
+		}
+		return result;
+	};
+
 	const doRequest = <T>(
 		httpClient: HttpClient.HttpClient,
 		body: string,
@@ -231,7 +294,7 @@ export const HttpTransport = (
 		);
 
 		return Effect.scoped(
-			httpClient.execute(request).pipe(
+			applyFetchOptions(httpClient.execute(request)).pipe(
 				Effect.timeout(Duration.millis(config.timeout)),
 				Effect.flatMap((response) => {
 					if (response.status >= 200 && response.status < 300) {
@@ -317,7 +380,7 @@ export const HttpTransport = (
 			);
 
 			return Effect.scoped(
-				httpClient.execute(request).pipe(
+				applyFetchOptions(httpClient.execute(request)).pipe(
 					Effect.timeout(Duration.millis(config.timeout)),
 					Effect.flatMap((response) => {
 						if (response.status >= 200 && response.status < 300) {
@@ -378,7 +441,21 @@ export const HttpTransport = (
 						method: string,
 						params: unknown[] = [],
 					): Effect.Effect<T, TransportError> =>
-						scheduler.schedule<T>(method, params).pipe(
+						Effect.gen(function* () {
+							const request = yield* applyRequestHooks({ method, params });
+							const startTime = Date.now();
+							const result = yield* scheduler.schedule<T>(
+								request.method,
+								[...request.params],
+							);
+							const response = yield* applyResponseHooks({
+								method: request.method,
+								params: request.params,
+								result,
+								duration: Date.now() - startTime,
+							});
+							return response.result as T;
+						}).pipe(
 							Effect.mapError((e) => {
 								if (e instanceof TransportError) return e;
 								return new TransportError({
@@ -404,12 +481,29 @@ export const HttpTransport = (
 					method: string,
 					params: unknown[] = [],
 				): Effect.Effect<T, TransportError> =>
-					Ref.updateAndGet(requestIdRef, (n) => n + 1).pipe(
-						Effect.map((id) =>
-							JSON.stringify({ jsonrpc: "2.0", id, method, params }),
-						),
-						Effect.flatMap((body) => doRequest<T>(httpClient, body, method)),
-					),
+					Effect.gen(function* () {
+						const request = yield* applyRequestHooks({ method, params });
+						const startTime = Date.now();
+						const id = yield* Ref.updateAndGet(requestIdRef, (n) => n + 1);
+						const body = JSON.stringify({
+							jsonrpc: "2.0",
+							id,
+							method: request.method,
+							params: request.params,
+						});
+						const result = yield* doRequest<T>(
+							httpClient,
+							body,
+							request.method,
+						);
+						const response = yield* applyResponseHooks({
+							method: request.method,
+							params: request.params,
+							result,
+							duration: Date.now() - startTime,
+						});
+						return response.result as T;
+					}),
 			});
 		}),
 	);

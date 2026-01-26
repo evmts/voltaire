@@ -75,19 +75,21 @@ export interface RpcError {
 
 /**
  * Request interceptor type.
- * Called before each request. Can be used for logging, metrics, or modification.
+ * Called before each request. Return the (possibly modified) request.
  *
  * @since 0.0.1
  */
-export type RequestInterceptor = (request: RpcRequest) => Effect.Effect<void>;
+export type RequestInterceptor = (request: RpcRequest) => Effect.Effect<RpcRequest>;
 
 /**
  * Response interceptor type.
- * Called after each successful request. Can be used for logging or metrics.
+ * Called after each successful request. Return the (possibly modified) response.
  *
  * @since 0.0.1
  */
-export type ResponseInterceptor = <T>(response: RpcResponse<T>) => Effect.Effect<void>;
+export type ResponseInterceptor = <T>(
+	response: RpcResponse<T>,
+) => Effect.Effect<RpcResponse<T>>;
 
 /**
  * Error interceptor type.
@@ -103,9 +105,8 @@ export type ErrorInterceptor = (error: RpcError) => Effect.Effect<void>;
  *
  * @since 0.0.1
  */
-export const onRequestRef: FiberRef.FiberRef<RequestInterceptor> = FiberRef.unsafeMake<RequestInterceptor>(
-	() => Effect.void,
-);
+export const onRequestRef: FiberRef.FiberRef<RequestInterceptor> =
+	FiberRef.unsafeMake<RequestInterceptor>((request) => Effect.succeed(request));
 
 /**
  * FiberRef for response interceptor.
@@ -113,9 +114,10 @@ export const onRequestRef: FiberRef.FiberRef<RequestInterceptor> = FiberRef.unsa
  *
  * @since 0.0.1
  */
-export const onResponseRef: FiberRef.FiberRef<ResponseInterceptor> = FiberRef.unsafeMake<ResponseInterceptor>(
-	() => Effect.void,
-);
+export const onResponseRef: FiberRef.FiberRef<ResponseInterceptor> =
+	FiberRef.unsafeMake<ResponseInterceptor>(<T>(response: RpcResponse<T>) =>
+		Effect.succeed(response),
+	);
 
 /**
  * FiberRef for error interceptor.
@@ -149,7 +151,10 @@ export const onErrorRef: FiberRef.FiberRef<ErrorInterceptor> = FiberRef.unsafeMa
  *   return yield* transport.request('eth_blockNumber')
  * }).pipe(
  *   withRequestInterceptor((req) =>
- *     Effect.sync(() => console.log(`-> ${req.method}`))
+ *     Effect.sync(() => {
+ *       console.log(`-> ${req.method}`)
+ *       return req
+ *     })
  *   )
  * )
  * ```
@@ -181,7 +186,10 @@ export const withRequestInterceptor =
  *   return yield* transport.request('eth_blockNumber')
  * }).pipe(
  *   withResponseInterceptor((res) =>
- *     Effect.sync(() => console.log(`<- ${res.method}: ${res.duration}ms`))
+ *     Effect.sync(() => {
+ *       console.log(`<- ${res.method}: ${res.duration}ms`)
+ *       return res
+ *     })
  *   )
  * )
  * ```
@@ -281,7 +289,10 @@ export const withInterceptors =
  * }).pipe(
  *   Effect.provide(transport),
  *   withRequestInterceptor((req) =>
- *     Effect.sync(() => console.log('Request:', req.method))
+ *     Effect.sync(() => {
+ *       console.log('Request:', req.method)
+ *       return req
+ *     })
  *   )
  * )
  * ```
@@ -300,28 +311,35 @@ export const InterceptedTransport = (
 						const onResponse = yield* FiberRef.get(onResponseRef);
 						const onError = yield* FiberRef.get(onErrorRef);
 
-						const request: RpcRequest = { method, params };
-						yield* onRequest(request);
+						const request = yield* onRequest({ method, params });
 
 						const startTime = Date.now();
 
-						const result = yield* base.request<T>(method, params).pipe(
-							Effect.tapBoth({
-								onSuccess: (result) => {
-									const duration = Date.now() - startTime;
-									return onResponse({ method, params, result, duration });
-								},
-								onFailure: (error) => {
+						const result = yield* base
+							.request<T>(request.method, [...request.params])
+							.pipe(
+								Effect.tapError((error) => {
 									if (error instanceof TransportError) {
 										const duration = Date.now() - startTime;
-										return onError({ method, params, error, duration });
+										return onError({
+											method: request.method,
+											params: request.params,
+											error,
+											duration,
+										});
 									}
 									return Effect.void;
-								},
-							}),
-						);
+								}),
+							);
 
-						return result;
+						const response = yield* onResponse({
+							method: request.method,
+							params: request.params,
+							result,
+							duration: Date.now() - startTime,
+						});
+
+						return response.result as T;
 					}),
 			}),
 		),
