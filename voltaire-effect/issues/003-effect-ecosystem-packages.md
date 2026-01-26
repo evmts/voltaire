@@ -1,8 +1,21 @@
 # Effect Ecosystem Packages for voltaire-effect
 
 **Priority**: P1
-**Status**: Planning
+**Status**: In Progress
 **Created**: 2026-01-25
+**Updated**: 2026-01-25
+
+## Implementation Status
+
+| Package | Status | Notes |
+|---------|--------|-------|
+| `@effect/platform` | ✅ Added | Added as dependency |
+| `@effect/platform-node` | ✅ Added | Added as optional/dev dependency |
+| `@effect/platform-browser` | ✅ Added | Added as optional dependency |
+| `@effect/platform-bun` | ✅ Added | Added as optional dependency |
+| `@effect/vitest` | ✅ Added | Migrated 86 test files to use `it.effect` |
+| `effect/Redacted` | ✅ Used | LocalAccount wraps private keys |
+| Transport rewrite | 🔄 TODO | Need to rewrite transports with @effect/platform |
 
 ## Summary
 
