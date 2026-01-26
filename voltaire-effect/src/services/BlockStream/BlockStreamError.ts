@@ -16,4 +16,18 @@ export class BlockStreamError extends Data.TaggedError("BlockStreamError")<{
 	readonly message: string;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
-}> {}
+}> {
+	constructor(
+		message: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+		},
+	) {
+		super({
+			message,
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
