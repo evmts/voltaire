@@ -120,7 +120,7 @@ const program = Effect.gen(function* () {
 
 ## Methods
 
-**signMessage** — EIP-191 personal_sign
+**signMessage** — [EIP-191](https://eips.ethereum.org/EIPS/eip-191) personal_sign
 ```typescript
 const signature = yield* signer.signMessage(Hex.fromString('Hello!'))
 ```
@@ -130,7 +130,7 @@ const signature = yield* signer.signMessage(Hex.fromString('Hello!'))
 const signedTx = yield* signer.signTransaction({ to, value })
 ```
 
-**signTypedData** — EIP-712 structured data
+**signTypedData** — [EIP-712](https://eips.ethereum.org/EIPS/eip-712) structured data
 ```typescript
 const sig = yield* signer.signTypedData({
   domain: { name: 'App', version: '1', chainId: 1n },
@@ -205,10 +205,10 @@ type TransactionRequest = {
 | Type | EIP | Description | Key Fields |
 |------|-----|-------------|------------|
 | 0 | Legacy | Original Ethereum tx | `gasPrice` |
-| 1 | EIP-2930 | Access list tx | `gasPrice` + `accessList` |
-| 2 | EIP-1559 | Priority fee tx | `maxFeePerGas` + `maxPriorityFeePerGas` |
-| 3 | EIP-4844 | Blob tx (L2 data) | `blobVersionedHashes` + `maxFeePerBlobGas` |
-| 4 | EIP-7702 | Set code tx | `authorizationList` |
+| 1 | [EIP-2930](https://eips.ethereum.org/EIPS/eip-2930) | Access list tx | `gasPrice` + `accessList` |
+| 2 | [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) | Priority fee tx | `maxFeePerGas` + `maxPriorityFeePerGas` |
+| 3 | [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) | Blob tx (L2 data) | `blobVersionedHashes` + `maxFeePerBlobGas` |
+| 4 | [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) | Set code tx | `authorizationList` |
 
 ### Transaction Type Detection
 
@@ -294,3 +294,13 @@ type SignerShape = {
 | `TransportService` | Send raw transactions via RPC |
 
 The `fromProvider` and `fromPrivateKey` constructors compose these for you.
+
+## See Also
+
+- [Send Transactions Example](/examples/send-transactions) — Complete transaction examples
+- [Provider Service](/services/provider) — Read-only blockchain operations
+- [Transport Service](/services/transport) — HTTP/WebSocket transport layer
+- [HD Wallet Guide](/guides/hd-wallet) — Create signers from mnemonic
+- [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) — Fee market change
+- [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) — Blob transactions
+- [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) — Set code transactions

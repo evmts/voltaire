@@ -3,7 +3,7 @@ title: Keccak256
 description: Ethereum's core hash function
 ---
 
-Keccak256 is Ethereum's primary hash function. Used for addresses, transaction hashes, state roots, event topics, and function selectors.
+[Keccak256](https://keccak.team/keccak.html) is Ethereum's primary hash function (distinct from [SHA-3](https://en.wikipedia.org/wiki/SHA-3)). Used for addresses, transaction hashes, state roots, event topics, and function selectors.
 
 ```typescript
 import { KeccakService, KeccakLive } from 'voltaire-effect/crypto'
@@ -128,6 +128,8 @@ The underlying implementation uses assembly-optimized keccak for native executio
 
 ## Related
 
-- [SHA256](/crypto/sha256) - Standard SHA-256 hashing
-- [Blake2](/crypto/blake2) - Blake2b hashing
-- [Secp256k1](/crypto/secp256k1) - Uses Keccak256 for message hashing
+- [SHA256](/crypto/sha256) — Standard SHA-256 hashing
+- [Blake2](/crypto/blake2) — Blake2b hashing
+- [Secp256k1](/crypto/secp256k1) — Uses Keccak256 for message hashing
+- [Address](/primitives/address) — Derive address from public key using Keccak256
+- [Voltaire Keccak256](https://voltaire.tevm.sh/crypto/keccak256) — Core Keccak256 documentation

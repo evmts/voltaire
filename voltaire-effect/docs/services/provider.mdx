@@ -3,6 +3,8 @@ title: Provider Service
 description: Read-only blockchain operations with Effect.ts
 ---
 
+The Provider service wraps [Ethereum JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) methods with typed errors and Effect composition.
+
 ## Quick Start
 
 ```typescript
@@ -426,3 +428,11 @@ const program = Effect.gen(function* () {
   Effect.provide(HttpTransport('https://mainnet.optimism.io'))
 )
 ```
+
+## See Also
+
+- [Transport Service](/services/transport) — HTTP/WebSocket transport layer
+- [Signer Service](/services/signer) — Transaction signing and sending
+- [Multicall Service](/services/multicall) — Batch multiple calls
+- [Read Blockchain Example](/examples/read-blockchain) — Common read patterns
+- [Ethereum JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) — JSON-RPC specification

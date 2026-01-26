@@ -5,7 +5,7 @@ description: Effect-wrapped ERC token standard utilities
 
 ## Overview
 
-Effect wrappers for common ERC token standards, providing type-safe calldata encoding, event decoding, and interface detection.
+Effect wrappers for common [ERC token standards](https://ethereum.org/en/developers/docs/standards/tokens/), providing type-safe calldata encoding, event decoding, and interface detection.
 
 ```typescript
 import { Effect } from 'effect'
@@ -16,6 +16,8 @@ import * as ERC165 from 'voltaire-effect/standards/ERC165'
 ```
 
 ## ERC-20: Fungible Tokens
+
+The [ERC-20](https://eips.ethereum.org/EIPS/eip-20) standard defines a common interface for fungible tokens.
 
 ### Encoding Calldata
 
@@ -119,6 +121,8 @@ ERC20.EVENTS.Approval  // '0x8c5be1e5...'
 
 ## ERC-721: Non-Fungible Tokens
 
+The [ERC-721](https://eips.ethereum.org/EIPS/eip-721) standard defines non-fungible tokens (NFTs).
+
 ### Encoding Calldata
 
 ```typescript
@@ -182,6 +186,8 @@ ERC721.SELECTORS.tokenURI          // '0xc87b56dd'
 ```
 
 ## ERC-1155: Multi-Token Standard
+
+The [ERC-1155](https://eips.ethereum.org/EIPS/eip-1155) standard supports both fungible and non-fungible tokens in a single contract.
 
 ### Encoding Calldata
 
@@ -291,6 +297,8 @@ const program = Effect.gen(function* () {
 
 ## ERC-165: Interface Detection
 
+The [ERC-165](https://eips.ethereum.org/EIPS/eip-165) standard provides a way to detect which interfaces a contract supports.
+
 ### Check Interface Support
 
 ```typescript
@@ -384,3 +392,13 @@ const program = Effect.gen(function* () {
   return balance
 })
 ```
+
+## See Also
+
+- [Contract Service](/services/contract) — High-level contract interactions
+- [Provider Service](/services/provider) — Read contract with provider
+- [Contract Interactions Example](/examples/contract-interactions) — Working examples
+- [ERC-20 (EIP-20)](https://eips.ethereum.org/EIPS/eip-20) — Fungible token standard
+- [ERC-721 (EIP-721)](https://eips.ethereum.org/EIPS/eip-721) — Non-fungible token standard
+- [ERC-1155 (EIP-1155)](https://eips.ethereum.org/EIPS/eip-1155) — Multi-token standard
+- [ERC-165 (EIP-165)](https://eips.ethereum.org/EIPS/eip-165) — Interface detection

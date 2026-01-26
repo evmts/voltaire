@@ -3,7 +3,7 @@ title: Crypto Overview
 description: Combined crypto layers and individual cryptographic services
 ---
 
-voltaire-effect provides Effect-based wrappers for all cryptographic operations: hashing, signatures, encryption, key derivation, and zero-knowledge proofs.
+voltaire-effect provides [Effect](https://effect.website)-based wrappers for all cryptographic operations: hashing, signatures, encryption, key derivation, and zero-knowledge proofs. These wrap the high-performance crypto from [Voltaire](https://voltaire.tevm.sh/crypto).
 
 ## Combined Layers
 
@@ -164,3 +164,10 @@ describe('MyHash', () => {
   })
 })
 ```
+
+## See Also
+
+- [Voltaire Crypto](https://voltaire.tevm.sh/crypto) — Core crypto documentation
+- [Testing](/testing) — Testing patterns with mock layers
+- [Signer Service](/services/signer) — Transaction signing using crypto
+- [HD Wallet Guide](/guides/hd-wallet) — BIP-39 mnemonic integration

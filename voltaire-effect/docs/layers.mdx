@@ -3,11 +3,13 @@ title: Layers
 description: Schema, Effect, and Service layers
 ---
 
+voltaire-effect organizes functionality into three layers that work together:
+
 | Layer | Purpose | Use When |
 |-------|---------|----------|
-| **Schema** | Validation, type coercion | Parsing user input, API responses |
-| **Effect** | Composable operations | Chaining transformations, error handling |
-| **Services** | Stateful resources | Provider calls, wallet signing |
+| **[Schema](#schema)** | Validation, type coercion | Parsing user input, API responses |
+| **[Effect](#effect)** | Composable operations | Chaining transformations, error handling |
+| **[Services](#services)** | Stateful resources | Provider calls, wallet signing |
 
 ## Schema
 
@@ -94,3 +96,12 @@ const program = Effect.gen(function* () {
   Effect.provide(HttpTransport("https://eth.llamarpc.com"))
 )
 ```
+
+## See Also
+
+- [Effect Primer](/concepts/effect-primer) — 5-minute intro to Effect
+- [Effect Services](https://effect.website/docs/requirements-management/services/) — Official Effect docs on services
+- [Effect Schema](https://effect.website/docs/schema/introduction/) — Official Effect docs on schemas
+- [Dependency Injection](/concepts/dependency-injection) — How voltaire-effect uses services
+- [Provider Service](/services/provider) — Read-only blockchain operations
+- [Signer Service](/services/signer) — Transaction signing and sending

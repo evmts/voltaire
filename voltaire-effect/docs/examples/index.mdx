@@ -3,6 +3,12 @@ title: Examples
 description: Practical examples for common voltaire-effect tasks
 ---
 
+Practical, copy-paste examples for common Ethereum operations. Each example includes all necessary imports and is ready to run.
+
+<Tip>
+For quick patterns without explanation, see [Recipes](/recipes). For quick reference, see [Cheatsheet](/cheatsheet).
+</Tip>
+
 <CardGroup cols={2}>
   <Card title="Wallet Creation" icon="wallet" href="/examples/wallet-creation">
     Generate and restore HD wallets from mnemonic
@@ -53,3 +59,11 @@ const program = Effect.gen(function* () {
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
 ```
+
+## Related
+
+- [Recipes](/recipes) — Quick copy-paste patterns
+- [Cheatsheet](/cheatsheet) — Quick reference
+- [Getting Started](/getting-started) — Installation and setup
+- [Provider Service](/services/provider) — All provider methods
+- [Signer Service](/services/signer) — Transaction signing

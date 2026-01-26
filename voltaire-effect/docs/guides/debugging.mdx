@@ -1,0 +1,334 @@
+---
+title: Debugging
+description: Debug Effect programs and inspect errors
+---
+
+Tools and techniques for debugging [Effect](https://effect.website) programs in voltaire-effect.
+
+<Tip>
+For comprehensive debugging, see the [Effect Debugging Guide](https://effect.website/docs/guides/observability/).
+</Tip>
+
+## Inspect Effect Execution
+
+### Log Steps
+
+```typescript
+import { Effect } from 'effect'
+
+const program = Effect.gen(function* () {
+  yield* Effect.log('Starting...')
+  const provider = yield* ProviderService
+  yield* Effect.log('Got provider')
+  
+  const block = yield* provider.getBlockNumber()
+  yield* Effect.log(`Block: ${block}`)
+  
+  return block
+})
+```
+
+### Log With Context
+
+```typescript
+Effect.gen(function* () {
+  yield* Effect.logInfo('Fetching balance').pipe(
+    Effect.annotateLogs({ address, network: 'mainnet' })
+  )
+  return yield* provider.getBalance(address)
+})
+```
+
+## Examine Errors
+
+### Print Full Error
+
+```typescript
+import { Effect, Cause } from 'effect'
+
+const exit = await Effect.runPromiseExit(program)
+
+if (exit._tag === 'Failure') {
+  console.log(Cause.pretty(exit.cause))
+}
+```
+
+### Catch and Log
+
+```typescript
+program.pipe(
+  Effect.catchAll((e) => {
+    console.error('Error:', e)
+    console.error('Tag:', e._tag)
+    return Effect.fail(e)
+  })
+)
+```
+
+### Tap Errors Without Handling
+
+```typescript
+program.pipe(
+  Effect.tapError((e) => Effect.log(`Error occurred: ${e._tag}`))
+)
+```
+
+## Schema Parse Errors
+
+### Get Detailed Parse Error
+
+```typescript
+import * as S from 'effect/Schema'
+import { Effect } from 'effect'
+
+S.decode(Address.Hex)('invalid').pipe(
+  Effect.catchTag('ParseError', (e) => {
+    console.log('Message:', e.message)
+    console.log('Issue:', JSON.stringify(e.issue, null, 2))
+    return Effect.fail(e)
+  })
+)
+```
+
+### Pretty Print Parse Error
+
+```typescript
+import { TreeFormatter } from 'effect/ParseResult'
+
+S.decode(Address.Hex)('0x123').pipe(
+  Effect.catchTag('ParseError', (e) => {
+    console.log(TreeFormatter.formatIssue(e.issue))
+    return Effect.fail(e)
+  })
+)
+```
+
+## Trace Execution
+
+### Add Spans
+
+```typescript
+import { Effect } from 'effect'
+
+const fetchBalance = (address: string) =>
+  Effect.gen(function* () {
+    const provider = yield* ProviderService
+    return yield* provider.getBalance(address)
+  }).pipe(Effect.withSpan('fetchBalance', { attributes: { address } }))
+
+const program = Effect.gen(function* () {
+  const balances = yield* Effect.all([
+    fetchBalance(addr1),
+    fetchBalance(addr2)
+  ])
+  return balances
+}).pipe(Effect.withSpan('program'))
+```
+
+## Debug RPC Calls
+
+### Log Transport Requests
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { TransportService, HttpTransport } from 'voltaire-effect/services'
+
+const LoggingTransport = (url: string) =>
+  Layer.effect(
+    TransportService,
+    Effect.gen(function* () {
+      const base = yield* TransportService
+      return {
+        request: <T>(method: string, params?: unknown[]) =>
+          Effect.gen(function* () {
+            yield* Effect.log(`RPC: ${method}`, { params })
+            const start = Date.now()
+            const result = yield* base.request<T>(method, params)
+            yield* Effect.log(`RPC: ${method} completed in ${Date.now() - start}ms`)
+            return result
+          })
+      }
+    })
+  ).pipe(Layer.provide(HttpTransport(url)))
+```
+
+### Intercept All Requests
+
+```typescript
+const program = Effect.gen(function* () {
+  const transport = yield* TransportService
+  
+  // Wrap with logging
+  const loggedRequest = <T>(method: string, params?: unknown[]) =>
+    Effect.gen(function* () {
+      console.log(`→ ${method}`, params)
+      const result = yield* transport.request<T>(method, params)
+      console.log(`← ${method}`, result)
+      return result
+    })
+  
+  return yield* loggedRequest('eth_blockNumber')
+})
+```
+
+## Timing
+
+### Measure Effect Duration
+
+```typescript
+import { Effect, Duration } from 'effect'
+
+const timed = program.pipe(
+  Effect.timed,
+  Effect.map(([duration, result]) => {
+    console.log(`Took ${Duration.toMillis(duration)}ms`)
+    return result
+  })
+)
+```
+
+### Add Timeout With Debug
+
+```typescript
+program.pipe(
+  Effect.timeout(Duration.seconds(10)),
+  Effect.catchTag('TimeoutException', () => {
+    console.error('Operation timed out after 10s')
+    return Effect.fail(new Error('Timeout'))
+  })
+)
+```
+
+## Inspect Layer Composition
+
+### Check What's Provided
+
+```typescript
+import { Layer, Context } from 'effect'
+
+// TypeScript shows missing requirements
+const program: Effect.Effect<bigint, ProviderError, ProviderService>
+
+// After providing layers:
+const provided = program.pipe(
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport(url))
+)
+// Effect.Effect<bigint, ProviderError, never>
+//                                        ↑ no more requirements
+```
+
+### Debug Layer Construction
+
+```typescript
+const MyLayer = Layer.effect(
+  MyService,
+  Effect.gen(function* () {
+    yield* Effect.log('Building MyService layer')
+    // ... construct service
+    return service
+  })
+)
+```
+
+## Common Issues
+
+### Missing Layer
+
+**Error**: "Service not found: ProviderService"
+
+**Fix**: Ensure you provide all required layers:
+
+```typescript
+program.pipe(
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport(url))  // Don't forget transport!
+)
+```
+
+### Wrong Layer Order
+
+Layers that depend on other layers must be provided after their dependencies:
+
+```typescript
+// ✓ Correct order
+Signer.Live.pipe(
+  Layer.provide(LocalAccount(key)),
+  Layer.provide(Provider),
+  Layer.provide(HttpTransport(url))
+)
+
+// ✗ Wrong - Signer needs Provider
+Provider.pipe(
+  Layer.provide(Signer.Live),  // Provider doesn't need Signer
+  Layer.provide(HttpTransport(url))
+)
+```
+
+### Forgot to Yield
+
+```typescript
+// ✗ Returns Effect, doesn't execute
+Effect.gen(function* () {
+  const provider = yield* ProviderService
+  provider.getBlockNumber()  // Missing yield*!
+})
+
+// ✓ Correct
+Effect.gen(function* () {
+  const provider = yield* ProviderService
+  return yield* provider.getBlockNumber()
+})
+```
+
+### Mixed Async Styles
+
+```typescript
+// ✗ Don't mix await and yield*
+Effect.gen(function* () {
+  const result = await somePromise()  // Wrong!
+})
+
+// ✓ Wrap promises
+Effect.gen(function* () {
+  const result = yield* Effect.promise(() => somePromise())
+})
+```
+
+## Testing Tips
+
+### Snapshot Error Output
+
+```typescript
+import { describe, it, expect } from 'vitest'
+import { Effect, Exit } from 'effect'
+
+it('produces expected error', async () => {
+  const exit = await Effect.runPromiseExit(failingProgram)
+  
+  if (Exit.isFailure(exit)) {
+    expect(exit.cause._tag).toBe('Fail')
+    expect(exit.cause.error._tag).toBe('ParseError')
+  }
+})
+```
+
+### Mock With Specific Errors
+
+```typescript
+const FailingProvider = Layer.succeed(ProviderService, {
+  getBlockNumber: () => Effect.fail(new ProviderError('RPC timeout')),
+  getBalance: () => Effect.fail(new ProviderError('Rate limited'))
+})
+
+const exit = await Effect.runPromiseExit(
+  program.pipe(Effect.provide(FailingProvider))
+)
+```
+
+## See Also
+
+- [Error Handling](/concepts/error-handling) — Typed error patterns
+- [Testing](/testing) — Mock services for tests
+- [Effect Debugging](https://effect.website/docs/guides/observability/) — Official Effect debugging guide
+- [Effect Logging](https://effect.website/docs/observability/logging/) — Structured logging in Effect

@@ -32,6 +32,7 @@ const program = Effect.gen(function* () {
 
 ```typescript
 import { Signer, LocalAccount } from 'voltaire-effect/services'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
@@ -40,10 +41,10 @@ const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
   return yield* token.write.transfer('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 100_000_000n)
 }).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 

@@ -1,0 +1,178 @@
+# voltaire-effect
+
+> Effect.ts integration for Voltaire Ethereum primitives - typed errors, composable workflows, and testable Ethereum code.
+
+voltaire-effect wraps [Voltaire](https://voltaire.tevm.sh) primitives with [Effect.ts](https://effect.website) for typed errors, dependency injection, and composable pipelines.
+
+## Installation
+
+```bash
+pnpm add voltaire-effect @tevm/voltaire effect
+```
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  return yield* provider.getBlockNumber()
+}).pipe(
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+await Effect.runPromise(program)
+```
+
+## Core Concepts
+
+### Schema Validation
+Effect Schema validation returning Voltaire branded types:
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+
+const addr = S.decodeSync(Address.Hex)('0x742d35Cc...')
+// Returns AddressType (branded Uint8Array)
+```
+
+### Typed Errors
+Errors are values in the type signature:
+```typescript
+S.decode(Address.Hex)(input).pipe(
+  Effect.catchTag('ParseError', (e) => Effect.succeed(fallback))
+)
+```
+
+### Services
+Dependency injection via Effect services:
+```typescript
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  const signer = yield* SignerService
+  // Use services...
+})
+```
+
+## Documentation Structure
+
+### Getting Started
+- `/index` - Overview and quick links
+- `/getting-started` - Installation and first program
+- `/why` - Trade-offs vs viem/ethers
+- `/concepts/effect-primer` - 5-minute Effect.ts intro
+- `/layers` - Schema, Effect, and Service layers
+- `/cheatsheet` - Quick reference patterns
+- `/recipes` - Copy-paste solutions
+
+### Core Concepts
+- `/concepts/branded-types` - Voltaire's branded type system
+- `/concepts/data-first-api` - Data-first API design
+- `/concepts/error-handling` - Typed errors with Effect
+- `/concepts/dependency-injection` - Services and layers
+
+### Services
+- `/services/provider` - Read-only blockchain operations (getBlock, getBalance, getLogs)
+- `/services/signer` - Transaction signing and sending
+- `/services/transport` - HTTP/WebSocket/Browser transports
+- `/services/account` - Local and JSON-RPC accounts
+- `/services/contract` - Type-safe contract interactions
+- `/services/multicall` - Batch RPC calls via Multicall3
+- `/services/block-stream` - Stream blocks with reorg detection
+- `/services/cache` - Response caching layer
+- `/services/rate-limiter` - RPC rate limiting
+- `/services/fee-estimator` - Gas fee estimation
+- `/services/nonce-manager` - Nonce management for concurrent sends
+
+### Primitives
+Effect Schema wrappers for Voltaire primitives:
+- `/primitives/address` - Ethereum addresses with EIP-55 checksums
+- `/primitives/hex` - Hex string encoding/decoding
+- `/primitives/hash` - 32-byte hashes
+- `/primitives/uint` - Unsigned integers (Uint8-Uint256)
+- `/primitives/transaction` - Transaction types and serialization
+- `/primitives/block` - Block headers and bodies
+- Full list: 100+ primitives covering all Ethereum data types
+
+### Cryptography
+Effect-wrapped crypto services:
+- `/crypto/keccak256` - Ethereum's primary hash function
+- `/crypto/secp256k1` - ECDSA signatures
+- `/crypto/bls12381` - BLS signatures (beacon chain)
+- `/crypto/hdwallet` - BIP-32/44 hierarchical keys
+- `/crypto/bip39` - Mnemonic phrase generation
+- `/crypto/eip712` - Typed data signing
+
+### Examples
+Working code examples:
+- `/examples/wallet-creation` - Generate HD wallets from mnemonic
+- `/examples/read-blockchain` - Query blocks, balances, transactions
+- `/examples/send-transactions` - Sign and broadcast transactions
+- `/examples/contract-interactions` - Read/write smart contracts
+- `/examples/event-streaming` - Backfill and watch events
+- `/examples/multicall` - Batch multiple calls
+- `/examples/testing` - Mock services for unit tests
+
+### ERC Standards
+- `/standards` - ERC-20, ERC-721, ERC-1155, ERC-165 utilities
+
+### Guides
+- `/guides/hd-wallet` - HD wallet integration
+- `/guides/debugging` - Debug Effect programs
+- `/guides/migrating-from-viem` - Migration guide from viem/ethers
+
+## Key Patterns
+
+### Layer Composition
+```typescript
+import { Layer } from 'effect'
+
+const MainLayer = Layer.mergeAll(
+  Provider,
+  HttpTransport('https://eth.llamarpc.com')
+)
+
+await Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
+```
+
+### Crypto Services
+```typescript
+import { CryptoLive, KeccakService } from 'voltaire-effect/crypto'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  return yield* keccak.hash(data)
+}).pipe(Effect.provide(CryptoLive))
+```
+
+### Contract Interaction
+```typescript
+const token = yield* Contract(tokenAddress, erc20Abi)
+const balance = yield* token.read.balanceOf(userAddress)
+const txHash = yield* token.write.transfer(recipient, amount)
+```
+
+## Related Projects
+
+- [Voltaire](https://voltaire.tevm.sh) - Core Ethereum primitives and crypto
+- [Effect](https://effect.website) - TypeScript library for typed errors and services
+- [GitHub](https://github.com/evmts/voltaire) - Source code and issues
+
+## Error Types
+
+| Error | Tag | Source |
+|-------|-----|--------|
+| ParseError | ParseError | Schema decode failures |
+| ProviderError | ProviderError | RPC call failures |
+| SignerError | SignerError | Transaction signing failures |
+| TransportError | TransportError | Network/HTTP failures |
+| CryptoError | CryptoError | Cryptographic operation failures |
+
+## Bundle Size
+
+- Effect runtime: ~15KB gzipped
+- Voltaire primitives: Tree-shakeable, ~5-50KB depending on usage
+- Crypto: Individual modules for tree-shaking

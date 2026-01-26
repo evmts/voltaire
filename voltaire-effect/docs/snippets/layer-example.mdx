@@ -1,0 +1,15 @@
+```typescript
+import { Effect, Layer } from 'effect'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+
+const MainLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  return yield* provider.getBlockNumber()
+})
+
+await Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
+```

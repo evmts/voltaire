@@ -8,6 +8,9 @@
     "dark": "#5B21B6"
   },
   "favicon": "/favicon.png",
+  "seo": {
+    "indexHiddenPages": false
+  },
   "navigation": {
     "anchors": [
       {
@@ -45,6 +48,7 @@
             "icon": "book",
             "pages": [
               "guides/hd-wallet",
+              "guides/debugging",
               "guides/migrating-from-viem",
               "guides/migrating-from-ethers"
             ]

@@ -3,6 +3,12 @@ title: Recipes
 description: Copy-paste solutions for common Ethereum tasks
 ---
 
+Ready-to-use patterns for common Ethereum operations. Each recipe is self-contained with all imports. See [Examples](/examples/index) for more detailed tutorials.
+
+<Tip>
+These recipes assume you have installed `voltaire-effect @tevm/voltaire effect`. See [Getting Started](/getting-started) for setup.
+</Tip>
+
 ## Check If Address Is Contract
 
 ```typescript
@@ -305,6 +311,15 @@ const estimateWithBuffer = (tx: { to: string; data: string; value?: bigint }, bu
     Effect.provide(HttpTransport('https://eth.llamarpc.com'))
   )
 ```
+
+## See Also
+
+- [Examples](/examples/index) — Detailed tutorials with explanations
+- [Cheatsheet](/cheatsheet) — Quick reference patterns
+- [Provider Service](/services/provider) — All provider methods
+- [Signer Service](/services/signer) — Transaction signing
+- [Multicall Service](/services/multicall) — Batch RPC calls
+- [ERC Standards](/standards) — Token standard utilities
 
 ## Check NFT Ownership
 

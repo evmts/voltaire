@@ -3,12 +3,17 @@ title: Send Transactions
 description: Sign and broadcast transactions
 ---
 
+<Tip>
+All signing operations require crypto services. See [Crypto Overview](/crypto/index) for details on `CryptoLive` and individual services.
+</Tip>
+
 ## Simple ETH Transfer
 
 ```typescript
 import { Effect } from 'effect'
 import { SignerService, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect/services'
-import { Hex, Address } from '@tevm/voltaire'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+import { Hex } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
 
@@ -19,10 +24,10 @@ const program = Effect.gen(function* () {
     value: 1000000000000000000n
   })
 }).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -38,10 +43,10 @@ const program = Effect.gen(function* () {
     maxPriorityFeePerGas: 2000000000n
   })
 }).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -52,10 +57,10 @@ const program = Effect.gen(function* () {
   const signer = yield* SignerService
   return yield* signer.signMessage(Hex.fromString('Hello, Ethereum!'))
 }).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -87,10 +92,10 @@ const program = Effect.gen(function* () {
   const signer = yield* SignerService
   return yield* signer.signTypedData(typedData)
 }).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -125,10 +130,10 @@ const program = Effect.gen(function* () {
   
   return { hash: txHash, status: receipt.status, blockNumber: receipt.blockNumber }
 }).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -145,3 +150,12 @@ const program = Effect.gen(function* () {
   Effect.provide(BrowserTransport)
 )
 ```
+
+## See Also
+
+- [Signer Service](/services/signer) — Complete SignerService API
+- [Provider Service](/services/provider) — Read-only blockchain operations
+- [Contract Interactions](/examples/contract-interactions) — Write to smart contracts
+- [HD Wallet Guide](/guides/hd-wallet) — Create wallets from mnemonic
+- [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) — Fee market change specification
+- [Effect Error Management](https://effect.website/docs/error-management/two-error-types/) — Typed error handling

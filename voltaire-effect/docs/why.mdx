@@ -3,7 +3,7 @@ title: Why voltaire-effect?
 description: Typed errors, composable workflows, and testable Ethereum code
 ---
 
-Voltaire gives you branded types and high-performance crypto. voltaire-effect adds Effect.ts: typed errors, composable pipelines, and dependency injection.
+[Voltaire](https://voltaire.tevm.sh) gives you branded types and high-performance crypto. voltaire-effect adds [Effect.ts](https://effect.website/docs/getting-started/introduction/): typed errors, composable pipelines, and dependency injection.
 
 ## Typed Errors
 
@@ -18,6 +18,8 @@ const result = S.decodeEither(Address.Hex)(input)
 // Either<AddressType, ParseError>
 ```
 
+The error type is in the signature. No `catch (e: unknown)`. No manual narrowing.
+
 ## Composability
 
 Chain operations with `pipe`, use `Effect.gen` for async/await-like syntax.
@@ -28,10 +30,12 @@ import * as S from 'effect/Schema'
 
 const program = Effect.gen(function* () {
   const addr = yield* S.decode(Address.Hex)(input)
-  const balance = yield* Provider.getBalance(addr)
+  const balance = yield* provider.getBalance(addr)
   return { addr, balance }
 })
 ```
+
+Errors short-circuit. Dependencies flow through. No ceremony.
 
 ## Testability
 
@@ -39,11 +43,13 @@ Services are injected, not imported. Swap `ProviderLive` for `ProviderTest` with
 
 ```typescript
 // Production
-Effect.runPromise(program.pipe(Effect.provide(ProviderLive)))
+Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
 
-// Test
-Effect.runPromise(program.pipe(Effect.provide(ProviderTest)))
+// Test - same code, different wiring
+Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
 ```
+
+No mocking frameworks. No module interception. Just provide different layers.
 
 ## Schema Validation
 
@@ -61,6 +67,22 @@ const UserInput = S.Struct({
 // Decoding validates AND returns branded Voltaire types
 ```
 
+One decode call. Full validation. Real types out.
+
+## Retry, Timeout, Fallback
+
+Built into Effect. No external libraries.
+
+```typescript
+import { Effect, Schedule, Duration } from 'effect'
+
+provider.getBlockNumber().pipe(
+  Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(5))),
+  Effect.timeout(Duration.seconds(10)),
+  Effect.orElse(() => fallbackProvider.getBlockNumber())
+)
+```
+
 ## Before/After
 
 ```typescript
@@ -76,9 +98,30 @@ try {
 // With Effect: typed errors, composable, testable
 const program = Effect.gen(function* () {
   const addr = yield* S.decode(Address.Hex)(input)
-  const balance = yield* Provider.getBalance(addr)
+  const balance = yield* provider.getBalance(addr)
   return { addr, balance }
 }).pipe(
   Effect.catchTag("ParseError", () => Effect.succeed(fallback))
 )
 ```
+
+## Trade-offs
+
+**voltaire-effect adds:**
+- ~15KB for Effect runtime
+- New mental model (services, layers, generators)
+- Slightly more verbose simple cases
+
+**You get:**
+- Typed errors everywhere
+- Zero-cost retries, timeouts, concurrency
+- Swappable dependencies without mocking
+- Composable operations that short-circuit on failure
+
+Use [base Voltaire](https://voltaire.tevm.sh) for scripts and small tools. Use voltaire-effect when you want the type system to track your errors.
+
+## See Also
+
+- [Comparisons](/comparisons) — Detailed comparison with viem, ethers, and base Voltaire
+- [Effect Error Management](https://effect.website/docs/error-management/two-error-types/) — How Effect handles errors
+- [Effect Services](https://effect.website/docs/requirements-management/services/) — Dependency injection in Effect

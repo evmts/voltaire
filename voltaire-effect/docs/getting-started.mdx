@@ -3,11 +3,53 @@ title: Getting Started
 description: Install and start using voltaire-effect
 ---
 
-```bash
+## Install
+
+<CodeGroup>
+```bash pnpm
 pnpm add voltaire-effect @tevm/voltaire effect
 ```
 
+```bash npm
+npm install voltaire-effect @tevm/voltaire effect
+```
+
+```bash yarn
+yarn add voltaire-effect @tevm/voltaire effect
+```
+
+```bash bun
+bun add voltaire-effect @tevm/voltaire effect
+```
+</CodeGroup>
+
+<Info>
+voltaire-effect requires **Effect** 3.x and **Voltaire** 0.x. TypeScript 5.4+ recommended.
+</Info>
+
+## First Program
+
+Fetch the latest block number:
+
+```typescript
+import { Effect } from 'effect'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  return yield* provider.getBlockNumber()
+}).pipe(
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const blockNumber = await Effect.runPromise(program)
+console.log(`Block: ${blockNumber}`)
+```
+
 ## Schema Validation
+
+Validate and parse input:
 
 ```typescript
 import * as Address from 'voltaire-effect/primitives/Address'
@@ -19,9 +61,29 @@ const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251
 // Returns actual Voltaire branded type - use directly
 Address.equals(addr, addr) // true
 Address.isZero(addr) // false
+Address.toHex(addr)  // "0x742d35cc..."
+```
+
+## Effect-Based Validation
+
+Handle parse errors gracefully:
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import * as Effect from 'effect/Effect'
+
+const parseAddress = (input: string) =>
+  S.decode(Address.Hex)(input).pipe(
+    Effect.catchTag('ParseError', () => 
+      Effect.succeed(Address.zero())  // Fallback to zero address
+    )
+  )
 ```
 
 ## Checksummed Addresses
+
+EIP-55 checksumming requires the Keccak hash service:
 
 ```typescript
 import * as Address from 'voltaire-effect/primitives/Address'
@@ -35,23 +97,50 @@ const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251
 const checksummed = await Effect.runPromise(
   S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
 )
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
 ```
 
-## Error Handling
+## Read Contract
 
 ```typescript
-import * as Address from 'voltaire-effect/primitives/Address'
-import * as S from 'effect/Schema'
-import * as Effect from 'effect/Effect'
+import { Effect } from 'effect'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
 
-S.decode(Address.Hex)('invalid').pipe(
-  Effect.catchTag('ParseError', () => 
-    Effect.succeed(S.decodeSync(Address.Hex)('0x0000000000000000000000000000000000000000'))
-  )
+const erc20 = [
+  { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], 
+    outputs: [{ type: 'uint256' }], stateMutability: 'view' }
+] as const
+
+const getBalance = Effect.gen(function* () {
+  const usdc = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20)
+  return yield* usdc.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+}).pipe(
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
+
+const balance = await Effect.runPromise(getBalance)
 ```
 
-## Next
+## Next Steps
 
-- [Layers](/layers) - Schema, Effect, and Service layers
-- [Examples](/examples/index) - Common patterns
+<CardGroup cols={2}>
+  <Card title="Effect Primer" icon="graduation-cap" href="/concepts/effect-primer">
+    5-minute Effect.ts intro for Ethereum devs
+  </Card>
+  <Card title="Layers" icon="layer-group" href="/layers">
+    Schema, Effect, and Service layers explained
+  </Card>
+  <Card title="Cheatsheet" icon="bolt" href="/cheatsheet">
+    Quick reference for all patterns
+  </Card>
+  <Card title="Examples" icon="code" href="/examples/index">
+    Copy-paste solutions for common tasks
+  </Card>
+</CardGroup>
+
+## Related
+
+- [Effect Getting Started](https://effect.website/docs/getting-started/introduction/) — Official Effect documentation
+- [Voltaire Docs](https://voltaire.tevm.sh) — Core primitives and crypto
+- [Why voltaire-effect?](/why) — Trade-offs and comparisons

@@ -1,0 +1,17 @@
+```typescript
+import { Effect, Layer } from 'effect'
+import { ProviderService } from 'voltaire-effect/services'
+
+// Create mock provider for testing
+const MockProvider = Layer.succeed(ProviderService, {
+  getBlockNumber: () => Effect.succeed(12345n),
+  getBalance: () => Effect.succeed(1000000000000000000n),
+  getBlock: () => Effect.succeed({ number: 12345n, hash: '0x...' }),
+  // ... other methods
+})
+
+// Use in tests
+const result = await Effect.runPromise(
+  program.pipe(Effect.provide(MockProvider))
+)
+```

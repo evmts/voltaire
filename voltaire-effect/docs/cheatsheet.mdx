@@ -3,11 +3,19 @@ title: Cheatsheet
 description: Quick reference for common voltaire-effect patterns
 ---
 
+Quick reference for common voltaire-effect patterns. See [Getting Started](/getting-started) for full installation guide and [Effect Documentation](https://effect.website/docs/getting-started/introduction/) for Effect basics.
+
 ## Install
 
-```bash
+<CodeGroup>
+```bash pnpm
 pnpm add voltaire-effect @tevm/voltaire effect
 ```
+
+```bash npm
+npm install voltaire-effect @tevm/voltaire effect
+```
+</CodeGroup>
 
 ## Import Pattern
 
@@ -235,3 +243,12 @@ Effect.runSync(effect)
 const exit = await Effect.runPromiseExit(effect)
 Exit.match(exit, { onSuccess: ..., onFailure: ... })
 ```
+
+## See Also
+
+- [Getting Started](/getting-started) — Full installation and setup
+- [Effect Primer](/concepts/effect-primer) — 5-minute Effect intro
+- [Layers](/layers) — Schema, Effect, and Service layers
+- [Examples](/examples/index) — Complete working examples
+- [Recipes](/recipes) — Copy-paste solutions
+- [Effect Documentation](https://effect.website/docs/getting-started/introduction/) — Official Effect docs

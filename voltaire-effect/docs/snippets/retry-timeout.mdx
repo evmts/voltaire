@@ -1,0 +1,17 @@
+```typescript
+import { Effect, Schedule, Duration } from 'effect'
+
+// Retry with exponential backoff
+const retryConfig = Schedule.exponential('100 millis').pipe(
+  Schedule.compose(Schedule.recurs(5)),
+  Schedule.jittered
+)
+
+const robustProgram = program.pipe(
+  Effect.retry(retryConfig),
+  Effect.timeout(Duration.seconds(30)),
+  Effect.catchTag('TimeoutException', () => 
+    Effect.fail(new Error('Operation timed out'))
+  )
+)
+```

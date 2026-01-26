@@ -3,11 +3,13 @@ title: Effect Primer
 description: A 5-minute introduction to Effect for Ethereum developers
 ---
 
-Read the [official Effect documentation](https://effect.website/docs/getting-started/introduction/) first. This page is a quick reference, not a replacement.
+<Tip>
+Read the [official Effect documentation](https://effect.website/docs/getting-started/introduction/) for the complete guide. This page is a quick reference for Ethereum developers.
+</Tip>
 
 ## Core Concepts
 
-Effect is a TypeScript library for building reliable software. Three things matter:
+[Effect](https://effect.website) is a TypeScript library for building reliable software. Three things matter:
 
 1. **Effect** - A description of a computation that may fail or require dependencies
 2. **Schema** - Runtime validation that produces typed values
@@ -176,8 +178,25 @@ Effect.runSync(effect)
 Effect.runSyncEither(effect)
 ```
 
-## Next
+## Next Steps
 
-- [Effect Documentation](https://effect.website/docs/getting-started/introduction/)
-- [Why voltaire-effect](/why)
-- [Layers](/layers)
+<CardGroup cols={2}>
+  <Card title="Effect Docs" icon="arrow-up-right-from-square" href="https://effect.website/docs/getting-started/introduction/">
+    Complete Effect.ts documentation
+  </Card>
+  <Card title="Layers" icon="layer-group" href="/layers">
+    Schema, Effect, and Service layers
+  </Card>
+  <Card title="Why voltaire-effect?" icon="question" href="/why">
+    Trade-offs and benefits
+  </Card>
+  <Card title="Cheatsheet" icon="bolt" href="/cheatsheet">
+    Quick reference patterns
+  </Card>
+</CardGroup>
+
+## More Effect Resources
+
+- [Effect Schema](https://effect.website/docs/schema/introduction/) — Validation and parsing
+- [Effect Services](https://effect.website/docs/requirements-management/services/) — Dependency injection
+- [Effect Error Management](https://effect.website/docs/error-management/two-error-types/) — Typed errors

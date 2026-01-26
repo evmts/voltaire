@@ -81,7 +81,7 @@ program.pipe(
 
 ## BrowserTransport
 
-Uses `window.ethereum` (EIP-1193).
+Uses `window.ethereum` ([EIP-1193](https://eips.ethereum.org/EIPS/eip-1193)).
 
 ```typescript
 import { BrowserTransport } from 'voltaire-effect/services'
@@ -160,3 +160,10 @@ class TransportError extends Error {
   readonly data?: unknown
 }
 ```
+
+## See Also
+
+- [Provider Service](/services/provider) — Uses TransportService for RPC calls
+- [Signer Service](/services/signer) — Uses TransportService for transaction broadcast
+- [EIP-1193](https://eips.ethereum.org/EIPS/eip-1193) — Ethereum Provider JavaScript API
+- [JSON-RPC Spec](https://www.jsonrpc.org/specification) — JSON-RPC 2.0 specification

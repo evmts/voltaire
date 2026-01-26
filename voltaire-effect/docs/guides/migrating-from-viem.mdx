@@ -3,9 +3,11 @@ title: Migrating from viem/ethers
 description: Step-by-step guide to migrate from viem or ethers to voltaire-effect
 ---
 
+This guide helps you migrate from [viem](https://viem.sh) or [ethers.js](https://ethers.org) to voltaire-effect. The migration can be done incrementally—you can use both libraries side by side.
+
 ## Why Migrate?
 
-voltaire-effect provides key advantages over viem and ethers:
+voltaire-effect provides key advantages over [viem](https://viem.sh) and [ethers.js](https://ethers.org):
 
 | Benefit | viem/ethers | voltaire-effect |
 |---------|-------------|-----------------|
@@ -388,3 +390,11 @@ const MainLayer = Signer.Live.pipe(
 | `privateKeyToAccount` | `LocalAccount(key)` |
 | `getAddress(str)` | `S.decodeSync(Address.Hex)(str)` |
 | `parseEther('1')` | `1000000000000000000n` |
+
+## See Also
+
+- [Comparisons](/comparisons) — Detailed library comparison
+- [Why voltaire-effect?](/why) — Trade-offs and benefits
+- [Effect Primer](/concepts/effect-primer) — Learn Effect.ts basics
+- [viem Documentation](https://viem.sh) — viem reference
+- [ethers.js Documentation](https://ethers.org) — ethers.js reference

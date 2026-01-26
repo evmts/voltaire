@@ -3,7 +3,7 @@ title: Error Handling
 description: Typed errors with Effect Schema and services
 ---
 
-voltaire-effect uses Effect's error model: errors are values in the type signature, not invisible exceptions.
+voltaire-effect uses [Effect's error model](https://effect.website/docs/error-management/two-error-types/): errors are values in the type signature, not invisible exceptions.
 
 ## Schema Errors
 
@@ -136,7 +136,23 @@ S.decode(Address.Hex)('invalid').pipe(
 )
 ```
 
+## Error Types
+
+voltaire-effect defines these error types:
+
+| Error | Tag | Source |
+|-------|-----|--------|
+| `ParseError` | `ParseError` | Schema decode failures |
+| `ProviderError` | `ProviderError` | RPC call failures |
+| `SignerError` | `SignerError` | Transaction signing failures |
+| `TransportError` | `TransportError` | Network/HTTP failures |
+| `BlockStreamError` | `BlockStreamError` | Block streaming failures |
+| `CryptoError` | `CryptoError` | Cryptographic operation failures |
+
 ## See Also
 
-- [Effect Error Handling](https://effect.website/docs/error-management/two-error-types/)
-- [Services](/services/provider)
+- [Effect Error Management](https://effect.website/docs/error-management/two-error-types/) — Official Effect docs
+- [Effect Either](https://effect.website/docs/data-types/either/) — Either type for error handling
+- [Provider Service](/services/provider) — Provider error handling
+- [Signer Service](/services/signer) — Signer error handling
+- [Debugging Guide](/guides/debugging) — Inspect errors and trace execution

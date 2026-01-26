@@ -5,7 +5,7 @@ description: voltaire-effect vs viem, ethers, and base Voltaire
 
 ## voltaire-effect vs Base Voltaire
 
-Both use the same branded types and crypto. The difference is error handling and composition.
+Both use the same branded types and crypto from [Voltaire](https://voltaire.tevm.sh). The difference is error handling and composition.
 
 | Aspect | Base Voltaire | voltaire-effect |
 |--------|---------------|-----------------|
@@ -151,8 +151,14 @@ S.decode(Address.Hex)(input).pipe(
 
 | Use Case | Recommendation |
 |----------|----------------|
-| Small script, simple validation | Base Voltaire or viem |
+| Small script, simple validation | [Base Voltaire](https://voltaire.tevm.sh) or [viem](https://viem.sh) |
 | Complex dApp with typed errors | voltaire-effect |
-| Existing Effect codebase | voltaire-effect |
-| Bundle size critical | Base Voltaire |
+| Existing [Effect](https://effect.website) codebase | voltaire-effect |
+| Bundle size critical | [Base Voltaire](https://voltaire.tevm.sh) |
 | Need testable services | voltaire-effect |
+
+## See Also
+
+- [Why voltaire-effect?](/why) — Trade-offs and benefits
+- [Migrating from viem](/guides/migrating-from-viem) — Step-by-step migration guide
+- [Effect Documentation](https://effect.website/docs/getting-started/introduction/) — Learn Effect.ts

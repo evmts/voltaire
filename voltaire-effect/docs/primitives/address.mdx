@@ -3,6 +3,8 @@ title: Address
 description: Effect-based schemas and functions for Ethereum addresses with EIP-55 checksum support
 ---
 
+Ethereum addresses are 20-byte identifiers for accounts and contracts. This module provides [Effect Schema](https://effect.website/docs/schema/introduction/) validation and pure functions for address manipulation.
+
 ```typescript
 import * as Address from 'voltaire-effect/primitives/Address'
 import * as S from 'effect/Schema'
@@ -41,7 +43,7 @@ const addr = S.decodeSync(Address.Bytes)(new Uint8Array(20))
 
 ### Address.Checksummed
 
-Encodes to EIP-55 checksummed format. Requires `KeccakService`.
+Encodes to [EIP-55](https://eips.ethereum.org/EIPS/eip-55) checksummed format. Requires `KeccakService`.
 
 ```typescript
 import * as Effect from 'effect/Effect'
@@ -166,7 +168,10 @@ function transfer(to: AddressType, amount: bigint) {
 
 ## See Also
 
-- [PublicKey](/primitives/publickey) - Derive address from public key
-- [PrivateKey](/primitives/privatekey) - Generate addresses from private keys
-- [ENS](/primitives/ens) - Resolve ENS names to addresses
-- [Brand](/primitives/brand) - Nominal address string type
+- [PublicKey](/primitives/publickey) — Derive address from public key
+- [PrivateKey](/primitives/privatekey) — Generate addresses from private keys
+- [ENS](/primitives/ens) — Resolve ENS names to addresses
+- [Brand](/primitives/brand) — Nominal address string type
+- [Keccak256](/crypto/keccak256) — Hash function for checksumming
+- [Voltaire Address](https://voltaire.tevm.sh/primitives/address) — Core Address documentation
+- [EIP-55](https://eips.ethereum.org/EIPS/eip-55) — Mixed-case checksum address encoding

@@ -3,26 +3,57 @@ title: voltaire-effect
 description: Effect.ts integration for Voltaire Ethereum primitives
 ---
 
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/getting-started">
+    Install and run your first program in 2 minutes
+  </Card>
+  <Card title="Effect Primer" icon="graduation-cap" href="/concepts/effect-primer">
+    5-minute Effect.ts crash course for Ethereum devs
+  </Card>
+  <Card title="Examples" icon="code" href="/examples/index">
+    Copy-paste patterns for common tasks
+  </Card>
+  <Card title="Cheatsheet" icon="bolt" href="/cheatsheet">
+    Quick reference for schemas, services, and layers
+  </Card>
+</CardGroup>
+
+## Why voltaire-effect?
+
+[Effect Schema](https://effect.website/docs/schema/introduction/) validation for [Voltaire](https://voltaire.tevm.sh) primitives. [Typed errors](https://effect.website/docs/error-management/two-error-types/) with `_tag` discrimination. [Services](https://effect.website/docs/requirements-management/services/) for Provider, Signer, and Transport.
+
 ```typescript
 import * as Address from 'voltaire-effect/primitives/Address'
 import * as S from 'effect/Schema'
 import * as Effect from 'effect/Effect'
 import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
 
-// Decode from hex string
+// Decode from hex string → returns branded AddressType
 const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
-
-// Encode back to hex
-const hex = S.encodeSync(Address.Hex)(addr)
 
 // Encode to checksummed (requires KeccakService)
 const checksummed = await Effect.runPromise(
   S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
 )
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
 ```
 
-[Effect Schema](https://effect.website/docs/schema/introduction/) validation for Voltaire primitives. [Typed errors](https://effect.website/docs/error-management/two-error-types/) with `_tag` discrimination. [Services](https://effect.website/docs/requirements-management/services/) for Provider, Wallet, Eip1193.
+## Install
 
 ```bash
 pnpm add voltaire-effect @tevm/voltaire effect
 ```
+
+## Ecosystem
+
+<CardGroup cols={3}>
+  <Card title="Voltaire" icon="arrow-up-right-from-square" href="https://voltaire.tevm.sh">
+    Core Ethereum primitives and crypto
+  </Card>
+  <Card title="Effect" icon="arrow-up-right-from-square" href="https://effect.website/docs/getting-started/introduction/">
+    Typed errors, services, and composition
+  </Card>
+  <Card title="GitHub" icon="github" href="https://github.com/evmts/voltaire">
+    Source code and issues
+  </Card>
+</CardGroup>
