@@ -97,25 +97,30 @@ function voltaireSubpathResolver(): Plugin {
 					}
 				}
 
+				// Helper to find index file with .ts or .js extension
+				const findIndex = (dir: string) => {
+					const tsPath = resolve(__dirname, `${dir}/index.ts`);
+					if (existsSync(tsPath)) return tsPath;
+					const jsPath = resolve(__dirname, `${dir}/index.js`);
+					if (existsSync(jsPath)) return jsPath;
+					return null;
+				};
+
 				if (primitives.includes(basePath)) {
-					return resolve(__dirname, `../src/primitives/${subpath}/index.ts`);
+					return findIndex(`../src/primitives/${subpath}`);
 				}
 				if (crypto.includes(basePath)) {
-					return resolve(__dirname, `../src/crypto/${subpath}/index.ts`);
+					return findIndex(`../src/crypto/${subpath}`);
 				}
 				if (topLevel.includes(basePath)) {
-					return resolve(__dirname, `../src/${subpath}/index.ts`);
+					return findIndex(`../src/${subpath}`);
 				}
 
 				// Fallback: try primitives then crypto
-				const primPath = resolve(__dirname, `../src/primitives/${subpath}/index.ts`);
-				if (existsSync(primPath)) {
-					return primPath;
-				}
-				const cryptoPath = resolve(__dirname, `../src/crypto/${subpath}/index.ts`);
-				if (existsSync(cryptoPath)) {
-					return cryptoPath;
-				}
+				const primPath = findIndex(`../src/primitives/${subpath}`);
+				if (primPath) return primPath;
+				const cryptoPath = findIndex(`../src/crypto/${subpath}`);
+				if (cryptoPath) return cryptoPath;
 			}
 			return null;
 		},
