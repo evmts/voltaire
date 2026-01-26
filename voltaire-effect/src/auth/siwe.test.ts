@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Address } from "@tevm/voltaire/Address";
+import type { HashType } from "@tevm/voltaire/Hash";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import { CryptoLive } from "../crypto/CryptoLive.js";
@@ -108,7 +109,7 @@ describe("verifySiweMessage", () => {
 			});
 			const hash = yield* hashMessage(message);
 			const signature = yield* Secp256k1.sign(
-				hash,
+				hash as unknown as HashType,
 				privateKey as Parameters<typeof Secp256k1.sign>[1],
 			);
 			return { message, signature, address };

@@ -1,4 +1,5 @@
 export * as Anvil from "./Anvil.js";
+export * as Schemas from "./schemas/index.js";
 export {
 	add as batchAdd,
 	BatchRequest,
