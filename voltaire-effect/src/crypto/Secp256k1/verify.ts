@@ -6,7 +6,6 @@
  * @since 0.0.1
  */
 
-import type { InvalidSignatureError } from "@tevm/voltaire";
 import type { HashType } from "@tevm/voltaire/Hash";
 import type {
 	Secp256k1PublicKeyType,
@@ -14,6 +13,12 @@ import type {
 } from "@tevm/voltaire/Secp256k1";
 import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 import * as Effect from "effect/Effect";
+import type {
+	InvalidPublicKeyError,
+	InvalidSignatureError,
+	Secp256k1Error,
+} from "./errors.js";
+import { mapToSecp256k1Error } from "./errors.js";
 
 /**
  * Verifies a secp256k1 signature against a message hash and public key.
@@ -35,13 +40,17 @@ import * as Effect from "effect/Effect";
  * @param {Secp256k1PublicKeyType} publicKey - The 65-byte uncompressed public key
  *   of the expected signer.
  *
- * @returns {Effect.Effect<boolean, InvalidSignatureError>}
+ * @returns {Effect.Effect<boolean, InvalidSignatureError | InvalidPublicKeyError | Secp256k1Error>}
  *   An Effect that:
  *   - Succeeds with `true` if the signature is valid
  *   - Succeeds with `false` if the signature is invalid but well-formed
  *   - Fails with InvalidSignatureError if the signature is malformed
+ *   - Fails with InvalidPublicKeyError if the public key is invalid
+ *   - Fails with Secp256k1Error for other cryptographic failures
  *
- * @throws {InvalidSignatureError} When the signature or public key format is invalid.
+ * @throws {InvalidSignatureError} When the signature format is invalid.
+ * @throws {InvalidPublicKeyError} When the public key format is invalid.
+ * @throws {Secp256k1Error} When verification fails for cryptographic reasons.
  *
  * @example Basic verification
  * ```typescript
@@ -92,8 +101,11 @@ export const verify = (
 	signature: Secp256k1SignatureType,
 	messageHash: HashType,
 	publicKey: Secp256k1PublicKeyType,
-): Effect.Effect<boolean, InvalidSignatureError> =>
+): Effect.Effect<
+	boolean,
+	InvalidSignatureError | InvalidPublicKeyError | Secp256k1Error
+> =>
 	Effect.try({
 		try: () => Secp256k1.verify(signature, messageHash, publicKey),
-		catch: (e) => e as InvalidSignatureError,
+		catch: (e) => mapToSecp256k1Error(e, "verify"),
 	});

@@ -6,7 +6,6 @@
  * @since 0.0.1
  */
 
-import type { InvalidSignatureError } from "@tevm/voltaire";
 import type { HashType } from "@tevm/voltaire/Hash";
 import type {
 	Secp256k1PublicKeyType,
@@ -14,6 +13,12 @@ import type {
 } from "@tevm/voltaire/Secp256k1";
 import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 import * as Effect from "effect/Effect";
+import type {
+	InvalidRecoveryIdError,
+	InvalidSignatureError,
+	Secp256k1Error,
+} from "./errors.js";
+import { mapToSecp256k1Error } from "./errors.js";
 
 /**
  * Recovers the public key from a secp256k1 signature and message hash.
@@ -37,13 +42,16 @@ import * as Effect from "effect/Effect";
  *   containing r (32 bytes), s (32 bytes), and v (1 byte recovery ID).
  * @param {HashType} messageHash - The 32-byte message hash that was signed.
  *
- * @returns {Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError>}
+ * @returns {Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError | InvalidRecoveryIdError | Secp256k1Error>}
  *   An Effect that:
  *   - Succeeds with a 65-byte uncompressed public key (branded Uint8Array)
  *   - Fails with InvalidSignatureError if recovery fails
+ *   - Fails with InvalidRecoveryIdError if the recovery ID is invalid
+ *   - Fails with Secp256k1Error for other cryptographic failures
  *
- * @throws {InvalidSignatureError} When the signature is malformed or the
- *   recovery ID doesn't correspond to a valid public key.
+ * @throws {InvalidSignatureError} When the signature is malformed.
+ * @throws {InvalidRecoveryIdError} When the recovery ID is invalid.
+ * @throws {Secp256k1Error} When recovery fails for cryptographic reasons.
  *
  * @example Basic recovery
  * ```typescript
@@ -88,8 +96,11 @@ import * as Effect from "effect/Effect";
 export const recover = (
 	signature: Secp256k1SignatureType,
 	messageHash: HashType,
-): Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError> =>
+): Effect.Effect<
+	Secp256k1PublicKeyType,
+	InvalidSignatureError | InvalidRecoveryIdError | Secp256k1Error
+> =>
 	Effect.try({
 		try: () => Secp256k1.recoverPublicKey(signature, messageHash),
-		catch: (e) => e as InvalidSignatureError,
+		catch: (e) => mapToSecp256k1Error(e, "recover"),
 	});

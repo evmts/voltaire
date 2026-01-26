@@ -54,3 +54,12 @@ export {
 export { Secp256k1Test } from "./Secp256k1Test.js";
 export { sign } from "./sign.js";
 export { verify } from "./verify.js";
+export {
+	InvalidPrivateKeyError,
+	InvalidPublicKeyError,
+	InvalidRecoveryIdError,
+	InvalidSignatureError,
+	Secp256k1Error,
+	mapToSecp256k1Error,
+	type Secp256k1Errors,
+} from "./errors.js";

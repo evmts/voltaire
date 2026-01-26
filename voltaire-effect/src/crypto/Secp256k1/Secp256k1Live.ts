@@ -6,11 +6,11 @@
  * @since 0.0.1
  */
 
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
+import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { recover } from "./recover.js";
+import { mapToSecp256k1Error } from "./errors.js";
 import { Secp256k1Service } from "./Secp256k1Service.js";
-import { sign } from "./sign.js";
-import { verify } from "./verify.js";
 
 /**
  * Production layer for Secp256k1Service using native secp256k1 implementation.
@@ -65,7 +65,19 @@ import { verify } from "./verify.js";
  * @since 0.0.1
  */
 export const Secp256k1Live = Layer.succeed(Secp256k1Service, {
-	sign,
-	recover,
-	verify,
+	sign: (messageHash, privateKey, options) =>
+		Effect.try({
+			try: () => Secp256k1.sign(messageHash, privateKey as any, options),
+			catch: (e) => mapToSecp256k1Error(e, "sign"),
+		}),
+	recover: (signature, messageHash) =>
+		Effect.try({
+			try: () => Secp256k1.recoverPublicKey(signature, messageHash),
+			catch: (e) => mapToSecp256k1Error(e, "recover"),
+		}),
+	verify: (signature, messageHash, publicKey) =>
+		Effect.try({
+			try: () => Secp256k1.verify(signature, messageHash, publicKey),
+			catch: (e) => mapToSecp256k1Error(e, "verify"),
+		}),
 });

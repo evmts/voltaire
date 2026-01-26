@@ -6,11 +6,6 @@
  * @since 0.0.1
  */
 
-import type {
-	CryptoError,
-	InvalidPrivateKeyError,
-	InvalidSignatureError,
-} from "@tevm/voltaire";
 import type { HashType } from "@tevm/voltaire/Hash";
 import type {
 	Secp256k1PublicKeyType,
@@ -18,6 +13,13 @@ import type {
 } from "@tevm/voltaire/Secp256k1";
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
+import type {
+	InvalidPrivateKeyError,
+	InvalidPublicKeyError,
+	InvalidRecoveryIdError,
+	InvalidSignatureError,
+	Secp256k1Error,
+} from "./errors.js";
 
 /**
  * Options for secp256k1 signing operations.
@@ -69,7 +71,7 @@ export interface Secp256k1ServiceShape {
 	 * @param {HashType} messageHash - The 32-byte message hash to sign
 	 * @param {Uint8Array} privateKey - The 32-byte private key
 	 * @param {SignOptions} [options] - Optional signing options for extra entropy
-	 * @returns {Effect.Effect<Secp256k1SignatureType, InvalidPrivateKeyError | CryptoError>}
+	 * @returns {Effect.Effect<Secp256k1SignatureType, InvalidPrivateKeyError | Secp256k1Error>}
 	 *   Effect containing the 65-byte recoverable signature
 	 */
 	readonly sign: (
@@ -78,7 +80,7 @@ export interface Secp256k1ServiceShape {
 		options?: SignOptions,
 	) => Effect.Effect<
 		Secp256k1SignatureType,
-		InvalidPrivateKeyError | CryptoError
+		InvalidPrivateKeyError | Secp256k1Error
 	>;
 
 	/**
@@ -86,13 +88,16 @@ export interface Secp256k1ServiceShape {
 	 *
 	 * @param {Secp256k1SignatureType} signature - The 65-byte recoverable signature
 	 * @param {HashType} messageHash - The 32-byte message hash
-	 * @returns {Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError>}
+	 * @returns {Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError | InvalidRecoveryIdError | Secp256k1Error>}
 	 *   Effect containing the 65-byte uncompressed public key
 	 */
 	readonly recover: (
 		signature: Secp256k1SignatureType,
 		messageHash: HashType,
-	) => Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError>;
+	) => Effect.Effect<
+		Secp256k1PublicKeyType,
+		InvalidSignatureError | InvalidRecoveryIdError | Secp256k1Error
+	>;
 
 	/**
 	 * Verifies a secp256k1 signature against a message hash and public key.
@@ -100,14 +105,17 @@ export interface Secp256k1ServiceShape {
 	 * @param {Secp256k1SignatureType} signature - The 65-byte signature
 	 * @param {HashType} messageHash - The 32-byte message hash
 	 * @param {Secp256k1PublicKeyType} publicKey - The 65-byte uncompressed public key
-	 * @returns {Effect.Effect<boolean, InvalidSignatureError>}
+	 * @returns {Effect.Effect<boolean, InvalidSignatureError | InvalidPublicKeyError | Secp256k1Error>}
 	 *   Effect containing true if signature is valid
 	 */
 	readonly verify: (
 		signature: Secp256k1SignatureType,
 		messageHash: HashType,
 		publicKey: Secp256k1PublicKeyType,
-	) => Effect.Effect<boolean, InvalidSignatureError>;
+	) => Effect.Effect<
+		boolean,
+		InvalidSignatureError | InvalidPublicKeyError | Secp256k1Error
+	>;
 }
 
 /**

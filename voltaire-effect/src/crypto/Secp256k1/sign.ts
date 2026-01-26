@@ -6,11 +6,12 @@
  * @since 0.0.1
  */
 
-import type { CryptoError, InvalidPrivateKeyError } from "@tevm/voltaire";
 import type { HashType } from "@tevm/voltaire/Hash";
 import type { Secp256k1SignatureType } from "@tevm/voltaire/Secp256k1";
 import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 import * as Effect from "effect/Effect";
+import type { InvalidPrivateKeyError, Secp256k1Error } from "./errors.js";
+import { mapToSecp256k1Error } from "./errors.js";
 import type { SignOptions } from "./Secp256k1Service.js";
 
 /**
@@ -33,14 +34,14 @@ import type { SignOptions } from "./Secp256k1Service.js";
  * @param {SignOptions} [options] - Optional signing options:
  *   - `extraEntropy`: Additional entropy for RFC 6979 nonce generation
  *
- * @returns {Effect.Effect<Secp256k1SignatureType, InvalidPrivateKeyError | CryptoError>}
+ * @returns {Effect.Effect<Secp256k1SignatureType, InvalidPrivateKeyError | Secp256k1Error>}
  *   An Effect that:
  *   - Succeeds with a 65-byte Secp256k1SignatureType (branded Uint8Array)
  *   - Fails with InvalidPrivateKeyError if the private key is invalid
- *   - Fails with CryptoError for other cryptographic failures
+ *   - Fails with Secp256k1Error for other cryptographic failures
  *
  * @throws {InvalidPrivateKeyError} When the private key is not a valid secp256k1 scalar
- * @throws {CryptoError} When signing fails for cryptographic reasons
+ * @throws {Secp256k1Error} When signing fails for cryptographic reasons
  *
  * @example Basic signing
  * ```typescript
@@ -87,9 +88,9 @@ export const sign = (
 	options?: SignOptions,
 ): Effect.Effect<
 	Secp256k1SignatureType,
-	InvalidPrivateKeyError | CryptoError
+	InvalidPrivateKeyError | Secp256k1Error
 > =>
 	Effect.try({
 		try: () => Secp256k1.sign(messageHash, privateKey as any, options),
-		catch: (e) => e as InvalidPrivateKeyError | CryptoError,
+		catch: (e) => mapToSecp256k1Error(e, "sign"),
 	});
