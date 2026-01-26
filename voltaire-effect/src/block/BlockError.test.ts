@@ -1,0 +1,116 @@
+import { describe, expect, it } from "@effect/vitest";
+import { BlockError, BlockNotFoundError } from "./BlockError.js";
+
+describe("BlockError", () => {
+	describe("constructor", () => {
+		it("creates error with message", () => {
+			const error = new BlockError("Block operation failed");
+			expect(error.message).toBe("Block operation failed");
+			expect(error.name).toBe("BlockError");
+			expect(error._tag).toBe("BlockError");
+		});
+
+		it("creates error with cause", () => {
+			const originalError = new Error("Network timeout");
+			const error = new BlockError("Block fetch failed", {
+				cause: originalError,
+			});
+			expect(error.cause).toBe(originalError);
+		});
+
+		it("creates error with context", () => {
+			const context = { blockNumber: 12345, rpcUrl: "https://example.com" };
+			const error = new BlockError("Block validation failed", { context });
+			expect((error as unknown as { context: Record<string, unknown> }).context).toEqual(context);
+		});
+
+		it("creates error with both cause and context", () => {
+			const originalError = new Error("RPC error");
+			const context = { method: "eth_getBlockByNumber" };
+			const error = new BlockError("Block fetch failed", {
+				cause: originalError,
+				context,
+			});
+			expect(error.cause).toBe(originalError);
+			expect((error as unknown as { context: Record<string, unknown> }).context).toEqual(context);
+		});
+	});
+
+	describe("instanceof checks", () => {
+		it("BlockError is instanceof Error", () => {
+			const error = new BlockError("Error");
+			expect(error instanceof Error).toBe(true);
+		});
+
+		it("BlockError is instanceof BlockError", () => {
+			const error = new BlockError("Error");
+			expect(error instanceof BlockError).toBe(true);
+		});
+	});
+
+	describe("stack trace", () => {
+		it("has stack trace", () => {
+			const error = new BlockError("Error");
+			expect(error.stack).toBeDefined();
+			expect(error.stack).toContain("BlockError");
+		});
+	});
+});
+
+describe("BlockNotFoundError", () => {
+	describe("constructor with string identifier", () => {
+		it("creates error with block hash", () => {
+			const hash = "0xabc123";
+			const error = new BlockNotFoundError(hash);
+			expect(error.message).toBe(`Block ${hash} not found`);
+			expect(error.identifier).toBe(hash);
+			expect(error.name).toBe("BlockNotFoundError");
+			expect(error._tag).toBe("BlockNotFoundError");
+		});
+
+		it("creates error with block tag", () => {
+			const error = new BlockNotFoundError("latest");
+			expect(error.message).toBe("Block latest not found");
+		});
+	});
+
+	describe("constructor with bigint identifier", () => {
+		it("creates error with block number", () => {
+			const blockNumber = 12345678n;
+			const error = new BlockNotFoundError(blockNumber);
+			expect(error.message).toBe("Block 12345678 not found");
+			expect(error.identifier).toBe(blockNumber);
+		});
+
+		it("handles zero block number", () => {
+			const error = new BlockNotFoundError(0n);
+			expect(error.message).toBe("Block 0 not found");
+		});
+
+		it("handles large block numbers", () => {
+			const largeBlock = 999999999999n;
+			const error = new BlockNotFoundError(largeBlock);
+			expect(error.message).toBe("Block 999999999999 not found");
+		});
+	});
+
+	describe("with cause", () => {
+		it("creates BlockNotFoundError with cause", () => {
+			const originalError = new Error("RPC returned null");
+			const error = new BlockNotFoundError("0xabc", { cause: originalError });
+			expect(error.cause).toBe(originalError);
+		});
+	});
+
+	describe("instanceof checks", () => {
+		it("BlockNotFoundError is instanceof Error", () => {
+			const error = new BlockNotFoundError("0xabc");
+			expect(error instanceof Error).toBe(true);
+		});
+
+		it("BlockNotFoundError is instanceof BlockNotFoundError", () => {
+			const error = new BlockNotFoundError("0xabc");
+			expect(error instanceof BlockNotFoundError).toBe(true);
+		});
+	});
+});
