@@ -1,0 +1,578 @@
+---
+title: JSON-RPC Effect Schemas
+description: Type-safe Effect.ts schemas for Ethereum JSON-RPC request and response validation
+---
+
+Type-safe [Effect.ts Schema](https://effect.website/docs/schema/introduction) definitions for validating and parsing Ethereum JSON-RPC requests and responses. Provides compile-time type inference and runtime validation.
+
+## Overview
+
+The JSON-RPC schemas module provides:
+
+- **Request Schemas** - Validate outgoing RPC requests with method-specific parameter types
+- **Response Schemas** - Parse and validate incoming RPC responses with proper result types
+- **Common Schemas** - Reusable primitives for hex values, addresses, block tags, transactions
+- **Batch Support** - Validate batched request/response arrays
+- **Type Inference** - Full TypeScript type inference from schemas
+- **Effect Integration** - Seamless integration with Effect pipelines
+
+## Installation
+
+```typescript
+import * as Schemas from "voltaire-effect/jsonrpc/schemas";
+import * as S from "effect/Schema";
+```
+
+Or import specific schemas:
+
+```typescript
+import {
+  // Common primitives
+  HexSchema,
+  AddressHexSchema,
+  Bytes32HexSchema,
+  BlockTagSchema,
+
+  // Request/response types
+  TransactionRequestSchema,
+  LogFilterSchema,
+  BlockRpcSchema,
+  TransactionRpcSchema,
+
+  // Validation utilities
+  decodeRequest,
+  decodeResponse,
+  isErrorResponse,
+  isSuccessResponse,
+} from "voltaire-effect/jsonrpc/schemas";
+```
+
+## Common Schemas
+
+### Hex Primitives
+
+```typescript
+import {
+  HexSchema,           // Any 0x-prefixed hex string
+  AddressHexSchema,    // 20-byte address (0x + 40 hex chars)
+  Bytes32HexSchema,    // 32-byte hash (0x + 64 hex chars)
+  QuantityHexSchema,   // Hex-encoded quantity
+} from "voltaire-effect/jsonrpc/schemas";
+
+// Validation
+S.decodeUnknownSync(AddressHexSchema)("0x742d35Cc6634C0532925a3b844Bc9e7595f5fE71");
+// => "0x742d35Cc6634C0532925a3b844Bc9e7595f5fE71"
+
+S.decodeUnknownSync(Bytes32HexSchema)("0x1234"); // throws - invalid length
+```
+
+### JSON-RPC ID
+
+```typescript
+import { JsonRpcIdSchema, type JsonRpcId } from "voltaire-effect/jsonrpc/schemas";
+
+// ID can be number, string, or null
+const id1: JsonRpcId = 1;
+const id2: JsonRpcId = "request-1";
+const id3: JsonRpcId = null;
+```
+
+### Block Tag
+
+```typescript
+import { BlockTagSchema, type BlockTag } from "voltaire-effect/jsonrpc/schemas";
+
+// Named tags or hex block numbers
+const tags: BlockTag[] = [
+  "latest",
+  "earliest",
+  "pending",
+  "safe",
+  "finalized",
+  "0x1234",  // hex block number
+];
+```
+
+### Transaction Request
+
+```typescript
+import { TransactionRequestSchema, type TransactionRequest } from "voltaire-effect/jsonrpc/schemas";
+
+const tx: TransactionRequest = {
+  from: "0x742d35Cc6634C0532925a3b844Bc9e7595f5fE71",
+  to: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+  value: "0x0",
+  data: "0xa9059cbb000000000000000000000000...",
+  gas: "0x5208",
+  maxFeePerGas: "0x2540be400",
+  maxPriorityFeePerGas: "0x3b9aca00",
+  // EIP-2930 access list (optional)
+  accessList: [
+    {
+      address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+      storageKeys: ["0x0000000000000000000000000000000000000000000000000000000000000000"],
+    },
+  ],
+};
+```
+
+### Log Filter
+
+```typescript
+import { LogFilterSchema, type LogFilter } from "voltaire-effect/jsonrpc/schemas";
+
+const filter: LogFilter = {
+  address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+  topics: [
+    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer
+    null, // wildcard - any from address
+    "0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f5fe71",
+  ],
+  fromBlock: "0x100000",
+  toBlock: "latest",
+};
+```
+
+### State Override Set
+
+```typescript
+import { StateOverrideSetSchema, type StateOverrideSet } from "voltaire-effect/jsonrpc/schemas";
+
+// Override account state for eth_call
+const overrides: StateOverrideSet = {
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f5fE71": {
+    balance: "0x1000000000000000000",
+    nonce: "0x1",
+    code: "0x608060405234801561001057600080fd5b50...",
+    stateDiff: {
+      "0x0000000000000000000000000000000000000000000000000000000000000000": "0x0000000000000000000000000000000000000000000000000000000000000001",
+    },
+  },
+};
+```
+
+## RPC Result Schemas
+
+### LogRpcSchema
+
+```typescript
+import { LogRpcSchema, type LogRpc } from "voltaire-effect/jsonrpc/schemas";
+
+// Validates log objects from eth_getLogs, etc.
+const log: LogRpc = {
+  address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+  topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"],
+  data: "0x0000000000000000000000000000000000000000000000000000000005f5e100",
+  blockNumber: "0x1234",
+  transactionHash: "0x...",
+  transactionIndex: "0x0",
+  blockHash: "0x...",
+  logIndex: "0x0",
+  removed: false,
+};
+```
+
+### TransactionRpcSchema
+
+```typescript
+import { TransactionRpcSchema, type TransactionRpc } from "voltaire-effect/jsonrpc/schemas";
+
+// Validates transaction objects from eth_getTransactionByHash, etc.
+// Supports legacy, EIP-2930, EIP-1559, and EIP-4844 transactions
+```
+
+### ReceiptRpcSchema
+
+```typescript
+import { ReceiptRpcSchema, type ReceiptRpc } from "voltaire-effect/jsonrpc/schemas";
+
+// Validates receipt objects from eth_getTransactionReceipt
+// Includes logs, status, gasUsed, blobGasUsed (EIP-4844), etc.
+```
+
+### BlockRpcSchema
+
+```typescript
+import { BlockRpcSchema, type BlockRpc } from "voltaire-effect/jsonrpc/schemas";
+
+// Validates block objects from eth_getBlockByNumber/Hash
+// Supports transaction hashes OR full transaction objects
+// Includes withdrawals (post-Shanghai), blob gas (EIP-4844), etc.
+```
+
+## Method Schemas
+
+### eth_* Methods
+
+Import via the `Eth` namespace:
+
+```typescript
+import { Eth } from "voltaire-effect/jsonrpc/schemas";
+
+// Each method exports: Params, Result, Request, Response schemas
+const { BlockNumberRequest, BlockNumberResponse } = Eth;
+```
+
+| Method | Description |
+|--------|-------------|
+| `eth_blockNumber` | Get current block number |
+| `eth_chainId` | Get chain ID |
+| `eth_gasPrice` | Get current gas price |
+| `eth_getBalance` | Get account balance |
+| `eth_getCode` | Get contract bytecode |
+| `eth_getTransactionCount` | Get account nonce |
+| `eth_call` | Execute call without transaction |
+| `eth_estimateGas` | Estimate gas for transaction |
+| `eth_getLogs` | Get logs matching filter |
+| `eth_sendRawTransaction` | Broadcast signed transaction |
+| `eth_getBlockByNumber` | Get block by number |
+| `eth_getBlockByHash` | Get block by hash |
+| `eth_getTransactionByHash` | Get transaction by hash |
+| `eth_getTransactionReceipt` | Get transaction receipt |
+
+#### Example: eth_call Schema
+
+```typescript
+import { Eth } from "voltaire-effect/jsonrpc/schemas";
+
+// Params: [transaction, blockTag, stateOverride?, blockOverrides?]
+const request = {
+  jsonrpc: "2.0" as const,
+  method: "eth_call" as const,
+  params: [
+    { to: "0x...", data: "0x..." },
+    "latest",
+  ],
+  id: 1,
+};
+
+// Validate request
+const validated = S.decodeUnknownSync(Eth.CallRequest)(request);
+
+// Response result is hex string (return data)
+type CallResult = S.Schema.Type<typeof Eth.CallResult>; // string
+```
+
+### wallet_* Methods
+
+Request builders for wallet interactions:
+
+```typescript
+import { Wallet } from "voltaire-effect/jsonrpc";
+
+// Switch chain
+Wallet.SwitchEthereumChainRequest("0x1"); // mainnet
+
+// Add chain
+Wallet.AddEthereumChainRequest({
+  chainId: "0x89",
+  chainName: "Polygon",
+  nativeCurrency: { name: "MATIC", symbol: "MATIC", decimals: 18 },
+  rpcUrls: ["https://polygon-rpc.com"],
+});
+
+// Watch asset
+Wallet.WatchAssetRequest({
+  type: "ERC20",
+  options: {
+    address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    symbol: "USDT",
+    decimals: 6,
+  },
+});
+
+// Permissions
+Wallet.RequestPermissionsRequest([{ eth_accounts: {} }]);
+Wallet.GetPermissionsRequest();
+Wallet.RevokePermissionsRequest([{ eth_accounts: {} }]);
+```
+
+### net_* Methods
+
+```typescript
+import { Net } from "voltaire-effect/jsonrpc";
+
+Net.VersionRequest();    // net_version - network ID
+Net.ListeningRequest();  // net_listening - is node listening
+Net.PeerCountRequest();  // net_peerCount - connected peers
+```
+
+### web3_* Methods
+
+```typescript
+import { Web3 } from "voltaire-effect/jsonrpc";
+
+Web3.ClientVersionRequest();     // web3_clientVersion
+Web3.Sha3Request("0x68656c6c6f"); // web3_sha3 - keccak256
+```
+
+### txpool_* Methods
+
+```typescript
+import { Txpool } from "voltaire-effect/jsonrpc";
+
+Txpool.StatusRequest();   // txpool_status - pending/queued counts
+Txpool.ContentRequest();  // txpool_content - all pending txs
+Txpool.InspectRequest();  // txpool_inspect - text summaries
+```
+
+### anvil_* Methods
+
+Foundry Anvil devnet methods:
+
+```typescript
+import { Anvil } from "voltaire-effect/jsonrpc";
+
+// Mining
+Anvil.MineRequest(10);                        // Mine 10 blocks
+Anvil.SetAutomineRequest(true);               // Enable automine
+Anvil.SetIntervalMiningRequest(12000);        // Mine every 12s
+
+// State manipulation
+Anvil.SetBalanceRequest(address, "0x1000000000000000000");
+Anvil.SetCodeRequest(address, "0x608060...");
+Anvil.SetNonceRequest(address, "0x1");
+Anvil.SetStorageAtRequest(address, slot, value);
+
+// Account impersonation
+Anvil.ImpersonateAccountRequest(address);
+Anvil.StopImpersonatingAccountRequest(address);
+
+// Snapshots
+Anvil.SnapshotRequest();        // evm_snapshot
+Anvil.RevertRequest(id);        // evm_revert
+
+// Time manipulation
+Anvil.IncreaseTimeRequest(3600);              // +1 hour
+Anvil.SetNextBlockTimestampRequest(1700000000);
+
+// Fork management
+Anvil.ResetRequest({ forking: { jsonRpcUrl: "...", blockNumber: 18000000 } });
+Anvil.DumpStateRequest();
+Anvil.LoadStateRequest(stateHex);
+```
+
+### hardhat_* Methods
+
+Hardhat Network methods:
+
+```typescript
+import { Hardhat } from "voltaire-effect/jsonrpc";
+
+Hardhat.MineRequest(10);
+Hardhat.SetBalanceRequest(address, "0x...");
+Hardhat.ImpersonateAccountRequest(address);
+Hardhat.ResetRequest({ forking: { jsonRpcUrl: "...", blockNumber: 18000000 } });
+Hardhat.SetNextBlockBaseFeePerGasRequest("0x2540be400");
+Hardhat.SetPrevRandaoRequest("0x...");
+```
+
+## Generic Fallback
+
+For custom or unknown methods:
+
+```typescript
+import {
+  GenericJsonRpcRequest,
+  GenericJsonRpcResponse,
+} from "voltaire-effect/jsonrpc/schemas";
+
+// Accepts any method name and params
+const customRequest = {
+  jsonrpc: "2.0" as const,
+  method: "custom_method",
+  params: ["arg1", { key: "value" }],
+  id: 1,
+};
+
+S.decodeUnknownSync(GenericJsonRpcRequest)(customRequest);
+
+// Response has unknown result type
+type GenericResult = S.Schema.Type<typeof GenericJsonRpcResponse>;
+```
+
+## Batch Requests
+
+```typescript
+import {
+  JsonRpcBatchRequest,
+  JsonRpcBatchResponse,
+  type JsonRpcBatchRequestType,
+  type JsonRpcBatchResponseType,
+} from "voltaire-effect/jsonrpc/schemas";
+
+// Batch request = array of requests
+const batch: JsonRpcBatchRequestType = [
+  { jsonrpc: "2.0", method: "eth_blockNumber", id: 1 },
+  { jsonrpc: "2.0", method: "eth_chainId", id: 2 },
+  { jsonrpc: "2.0", method: "eth_gasPrice", id: 3 },
+];
+
+// Validate
+S.decodeUnknownSync(JsonRpcBatchRequest)(batch);
+
+// Parse batch response
+S.decodeUnknownSync(JsonRpcBatchResponse)(responseArray);
+```
+
+### Batch Utilities
+
+```typescript
+import {
+  batchRequestFrom,
+  batchAdd,
+  batchSize,
+  batchResponseFrom,
+  batchResponseParse,
+  findById,
+  batchErrors,
+  batchResults,
+} from "voltaire-effect/jsonrpc";
+
+// Build batch
+let batch = batchRequestFrom([]);
+batch = batchAdd(batch)({ jsonrpc: "2.0", method: "eth_blockNumber", id: 1 });
+batch = batchAdd(batch)({ jsonrpc: "2.0", method: "eth_chainId", id: 2 });
+console.log(batchSize(batch)); // 2
+
+// Parse response
+const responses = batchResponseFrom(rawResponses);
+const blockNumber = findById(responses)(1);
+const errors = batchErrors(responses);
+```
+
+## Utility Functions
+
+### Validation Predicates
+
+```typescript
+import {
+  isValidRequest,
+  isValidResponse,
+  isErrorResponse,
+  isSuccessResponse,
+} from "voltaire-effect/jsonrpc/schemas";
+
+// Type guards
+if (isValidRequest(data)) {
+  // data is GenericJsonRpcRequestType
+}
+
+if (isValidResponse(data)) {
+  // data is GenericJsonRpcResponseType
+  if (isErrorResponse(data)) {
+    console.error(data.error.message);
+  } else if (isSuccessResponse(data)) {
+    console.log(data.result);
+  }
+}
+```
+
+### Decode Functions
+
+```typescript
+import { decodeRequest, decodeResponse } from "voltaire-effect/jsonrpc/schemas";
+import * as Effect from "effect/Effect";
+
+// Returns Effect with parse errors
+const requestEffect = decodeRequest(unknownData);
+const responseEffect = decodeResponse(unknownData);
+
+// Run with Effect
+Effect.runSync(requestEffect);
+
+// Or use Schema directly for sync
+import * as S from "effect/Schema";
+S.decodeUnknownSync(GenericJsonRpcRequest)(data);
+```
+
+### Response Handling
+
+```typescript
+import { responseParse, isSuccess, isError, unwrap } from "voltaire-effect/jsonrpc";
+import * as Effect from "effect/Effect";
+
+// Parse raw response
+const parseEffect = responseParse(rawResponse);
+
+// Check response type
+const response = responseFrom(rawResponse);
+if (isSuccess(response)) {
+  console.log(response.result);
+}
+if (isError(response)) {
+  console.error(response.error);
+}
+
+// Unwrap to Effect (fails on error response)
+const resultEffect = unwrap(response);
+// Effect<TResult, JsonRpcErrorResponse>
+```
+
+## Effect Pipeline Integration
+
+```typescript
+import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
+import { Eth, isErrorResponse } from "voltaire-effect/jsonrpc/schemas";
+import { responseParse, unwrap } from "voltaire-effect/jsonrpc";
+
+const getBlockNumber = Effect.gen(function* () {
+  // Make request
+  const response = yield* Effect.tryPromise(() =>
+    fetch("https://eth.llamarpc.com", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "eth_blockNumber",
+        params: [],
+        id: 1,
+      }),
+    }).then((r) => r.json())
+  );
+
+  // Parse response
+  const parsed = yield* responseParse(response);
+
+  // Unwrap result (fails on error)
+  const result = yield* unwrap(parsed);
+
+  // Validate result schema
+  return yield* S.decodeUnknown(Eth.BlockNumberResult)(result);
+});
+
+// Run
+Effect.runPromise(getBlockNumber).then(console.log);
+// => "0x123abc"
+```
+
+## Type Inference
+
+Extract TypeScript types from schemas:
+
+```typescript
+import * as S from "effect/Schema";
+import {
+  TransactionRequestSchema,
+  BlockRpcSchema,
+  Eth,
+} from "voltaire-effect/jsonrpc/schemas";
+
+// Infer types from schemas
+type TransactionRequest = S.Schema.Type<typeof TransactionRequestSchema>;
+type BlockRpc = S.Schema.Type<typeof BlockRpcSchema>;
+type GetBalanceRequest = S.Schema.Type<typeof Eth.GetBalanceRequest>;
+type GetBalanceResponse = S.Schema.Type<typeof Eth.GetBalanceResponse>;
+
+// Use with method result map
+import { MethodResult } from "voltaire-effect/jsonrpc/schemas";
+type BlockNumberResult = MethodResult<"eth_blockNumber">; // string
+type GasPriceResult = MethodResult<"eth_gasPrice">;       // string
+```
+
+## Related
+
+- [JsonRpcError](/jsonrpc/json-rpc-error/index) - Error codes and error handling
+- [JSONRPCProvider](/jsonrpc-provider/index) - High-level provider abstraction
+- [Effect.ts Schema](https://effect.website/docs/schema/introduction) - Schema library documentation
