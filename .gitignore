@@ -5,6 +5,7 @@ dist/
 
 modern-monaco
 tevm-monorepo
+effect-repo/
 
 .crush/
 

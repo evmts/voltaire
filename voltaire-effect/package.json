@@ -78,12 +78,12 @@
 		"@effect/platform": "^0.77.0"
 	},
 	"optionalDependencies": {
-		"@effect/platform-browser": "^0.53.0",
-		"@effect/platform-bun": "^0.56.0",
-		"@effect/platform-node": "^0.72.0"
+		"@effect/platform-browser": "^0.57.0",
+		"@effect/platform-bun": "^0.60.0",
+		"@effect/platform-node": "^0.77.0"
 	},
 	"devDependencies": {
-		"@effect/platform-node": "^0.72.0",
+		"@effect/platform-node": "^0.77.0",
 		"@effect/vitest": "^0.18.1",
 		"astro": "^5.0.0",
 		"tsup": "^8.4.0",
