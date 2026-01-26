@@ -3,7 +3,7 @@
  * @module Block/Block.test
  */
 
-import { Block, BlockBody, BlockHeader, Hex } from "@tevm/voltaire";
+import { Block, BlockBody, BlockHeader, Hex, Withdrawal } from "@tevm/voltaire";
 import * as S from "effect/Schema";
 import { describe, expect, it } from "vitest";
 import { BlockSchema } from "./BlockSchema.js";
@@ -274,12 +274,12 @@ describe("Block.Rpc", () => {
 			transactions: [],
 			ommers: [],
 			withdrawals: [
-				{
+				Withdrawal.from({
 					index: 0n,
 					validatorIndex: 1n,
 					address: `0x${"aa".repeat(20)}`,
 					amount: 1000000000n,
-				},
+				}),
 			],
 		});
 

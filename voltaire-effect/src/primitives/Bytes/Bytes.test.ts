@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import type { BytesType } from "@tevm/voltaire/Bytes";
 import * as S from "effect/Schema";
 import { concat } from "./concat.js";
 import { equals } from "./equals.js";
@@ -78,7 +79,7 @@ describe("Bytes.Hex", () => {
 		});
 
 		it("encodes large bytes", () => {
-			const bytes = new Uint8Array(1000).fill(0xab);
+			const bytes = new Uint8Array(1000).fill(0xab) as BytesType;
 			const hex = S.encodeSync(Bytes.Hex)(bytes);
 			expect(hex).toBe(`0x${"ab".repeat(1000)}`);
 		});
@@ -218,25 +219,25 @@ describe("pure functions", () => {
 		});
 
 		it("returns correct size for large bytes", () => {
-			const bytes = new Uint8Array(1000);
+			const bytes = new Uint8Array(1000) as BytesType;
 			expect(size(bytes)).toBe(1000);
 		});
 	});
 
 	describe("toString", () => {
 		it("converts bytes to UTF-8 string", () => {
-			const bytes = new Uint8Array([104, 101, 108, 108, 111]);
+			const bytes = new Uint8Array([104, 101, 108, 108, 111]) as BytesType;
 			expect(toString(bytes)).toBe("hello");
 		});
 
 		it("handles empty bytes", () => {
-			const bytes = new Uint8Array([]);
+			const bytes = new Uint8Array([]) as BytesType;
 			expect(toString(bytes)).toBe("");
 		});
 
 		it("handles unicode", () => {
 			const encoder = new TextEncoder();
-			const bytes = encoder.encode("こんにちは");
+			const bytes = encoder.encode("こんにちは") as BytesType;
 			expect(toString(bytes)).toBe("こんにちは");
 		});
 	});
@@ -318,8 +319,8 @@ describe("edge cases", () => {
 	});
 
 	it("concat preserves byte values", () => {
-		const a = new Uint8Array([0, 0, 0]);
-		const b = new Uint8Array([255, 255, 255]);
+		const a = new Uint8Array([0, 0, 0]) as BytesType;
+		const b = new Uint8Array([255, 255, 255]) as BytesType;
 		const result = concat(a, b);
 		expect(result[0]).toBe(0);
 		expect(result[3]).toBe(255);
@@ -337,7 +338,7 @@ describe("edge cases", () => {
 	});
 
 	it("toString handles null bytes", () => {
-		const bytes = new Uint8Array([0, 0, 0]);
+		const bytes = new Uint8Array([0, 0, 0]) as BytesType;
 		const str = toString(bytes);
 		expect(str.length).toBe(3);
 	});
@@ -393,7 +394,7 @@ describe("API consistency - infallible ops return directly", () => {
 	});
 
 	it("toString returns string directly, not Effect", () => {
-		const bytes = new Uint8Array([104, 101, 108, 108, 111]);
+		const bytes = new Uint8Array([104, 101, 108, 108, 111]) as BytesType;
 		const result = toString(bytes);
 		expect(typeof result).toBe("string");
 		expect(result).toBe("hello");

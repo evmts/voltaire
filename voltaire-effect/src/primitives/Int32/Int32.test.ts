@@ -257,11 +257,11 @@ describe("Int32", () => {
 
 	describe("Constants", () => {
 		it("INT32_MIN equals -2147483648", () => {
-			expect(BrandedInt32.toNumber(Int32.INT32_MIN)).toBe(-2147483648);
+			expect(Int32.INT32_MIN).toBe(-2147483648);
 		});
 
 		it("INT32_MAX equals 2147483647", () => {
-			expect(BrandedInt32.toNumber(Int32.INT32_MAX)).toBe(2147483647);
+			expect(Int32.INT32_MAX).toBe(2147483647);
 		});
 	});
 });

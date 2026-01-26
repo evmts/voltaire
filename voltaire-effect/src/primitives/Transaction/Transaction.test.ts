@@ -51,7 +51,7 @@ describe("Transaction.Serialized", () => {
 			const decoded = S.decodeSync(Transaction.Serialized)(bytes);
 			expect(decoded.type).toBe(Transaction.Type.Legacy);
 			expect(decoded.nonce).toBe(legacyTx.nonce);
-			expect(decoded.gasPrice).toBe(legacyTx.gasPrice);
+			expect((decoded as Transaction.Legacy).gasPrice).toBe(legacyTx.gasPrice);
 			expect(decoded.gasLimit).toBe(legacyTx.gasLimit);
 			expect(decoded.value).toBe(legacyTx.value);
 		});
@@ -604,7 +604,7 @@ describe("Transaction.Schema (direct struct validation)", () => {
 
 	describe("LegacySchema", () => {
 		it("validates valid legacy transaction", () => {
-			const tx = {
+			const tx: S.Schema.Encoded<typeof Transaction.LegacySchema> = {
 				type: Transaction.Type.Legacy,
 				nonce: 0n,
 				gasPrice: 20000000000n,
@@ -633,7 +633,7 @@ describe("Transaction.Schema (direct struct validation)", () => {
 				r: testSignature.r,
 				s: testSignature.s,
 			};
-			expect(() => S.decodeSync(Transaction.LegacySchema)(tx)).toThrow();
+			expect(() => S.decodeSync(Transaction.LegacySchema)(tx as never)).toThrow();
 		});
 
 		it("rejects missing required fields", () => {
@@ -653,7 +653,7 @@ describe("Transaction.Schema (direct struct validation)", () => {
 		});
 
 		it("validates contract creation with null to", () => {
-			const tx = {
+			const tx: S.Schema.Encoded<typeof Transaction.LegacySchema> = {
 				type: Transaction.Type.Legacy,
 				nonce: 0n,
 				gasPrice: 20000000000n,
@@ -672,7 +672,7 @@ describe("Transaction.Schema (direct struct validation)", () => {
 
 	describe("EIP2930Schema", () => {
 		it("validates valid EIP-2930 transaction", () => {
-			const tx = {
+			const tx: S.Schema.Encoded<typeof Transaction.EIP2930Schema> = {
 				type: Transaction.Type.EIP2930,
 				chainId: 1n,
 				nonce: 0n,
@@ -692,7 +692,7 @@ describe("Transaction.Schema (direct struct validation)", () => {
 		});
 
 		it("validates with access list containing storage keys", () => {
-			const tx = {
+			const tx: S.Schema.Encoded<typeof Transaction.EIP2930Schema> = {
 				type: Transaction.Type.EIP2930,
 				chainId: 1n,
 				nonce: 0n,
@@ -719,7 +719,7 @@ describe("Transaction.Schema (direct struct validation)", () => {
 
 	describe("EIP1559Schema", () => {
 		it("validates valid EIP-1559 transaction", () => {
-			const tx = {
+			const tx: S.Schema.Encoded<typeof Transaction.EIP1559Schema> = {
 				type: Transaction.Type.EIP1559,
 				chainId: 1n,
 				nonce: 0n,
@@ -765,7 +765,7 @@ describe("Transaction.Schema (direct struct validation)", () => {
 		const blobHash = createHash(0x01);
 
 		it("validates valid EIP-4844 transaction", () => {
-			const tx = {
+			const tx: S.Schema.Encoded<typeof Transaction.EIP4844Schema> = {
 				type: Transaction.Type.EIP4844,
 				chainId: 1n,
 				nonce: 0n,
@@ -788,7 +788,7 @@ describe("Transaction.Schema (direct struct validation)", () => {
 		});
 
 		it("validates with empty blob hashes", () => {
-			const tx = {
+			const tx: S.Schema.Encoded<typeof Transaction.EIP4844Schema> = {
 				type: Transaction.Type.EIP4844,
 				chainId: 1n,
 				nonce: 0n,
@@ -812,7 +812,7 @@ describe("Transaction.Schema (direct struct validation)", () => {
 
 	describe("EIP7702Schema", () => {
 		it("validates valid EIP-7702 transaction", () => {
-			const tx = {
+			const tx: S.Schema.Encoded<typeof Transaction.EIP7702Schema> = {
 				type: Transaction.Type.EIP7702,
 				chainId: 1n,
 				nonce: 0n,
@@ -845,7 +845,7 @@ describe("Transaction.Schema (direct struct validation)", () => {
 
 	describe("Schema (union)", () => {
 		it("accepts any valid transaction type", () => {
-			const legacyTx = {
+			const legacyTx: S.Schema.Encoded<typeof Transaction.LegacySchema> = {
 				type: Transaction.Type.Legacy,
 				nonce: 0n,
 				gasPrice: 20000000000n,
@@ -862,7 +862,7 @@ describe("Transaction.Schema (direct struct validation)", () => {
 		});
 
 		it("discriminates based on type field", () => {
-			const eip1559 = {
+			const eip1559: S.Schema.Encoded<typeof Transaction.EIP1559Schema> = {
 				type: Transaction.Type.EIP1559,
 				chainId: 1n,
 				nonce: 0n,

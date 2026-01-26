@@ -1,4 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Hash } from "@tevm/voltaire";
+import type { HashType } from "@tevm/voltaire/Hash";
 import { PrivateKey as CorePrivateKey } from "@tevm/voltaire/PrivateKey";
 import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 import * as Effect from "effect/Effect";
@@ -303,29 +305,38 @@ describe("cryptographic operations", () => {
 	});
 
 	describe("signing messages", () => {
-		const messageHash = new Uint8Array(32).fill(0x42);
+		const messageHash = Hash.from(new Uint8Array(32).fill(0x42));
 
 		it("signs message with private key", () => {
 			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
 			const signature = Secp256k1.sign(messageHash, pk);
-			expect(signature).toBeInstanceOf(Uint8Array);
-			expect(signature.length).toBe(65);
+			// Signature is {r, s, v} not a Uint8Array
+			expect(signature.r).toBeInstanceOf(Uint8Array);
+			expect(signature.s).toBeInstanceOf(Uint8Array);
+			expect(signature.r.length).toBe(32);
+			expect(signature.s.length).toBe(32);
+			expect(signature.v).toBeGreaterThanOrEqual(27);
 		});
 
 		it("produces deterministic signatures (RFC 6979)", () => {
 			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
 			const sig1 = Secp256k1.sign(messageHash, pk);
 			const sig2 = Secp256k1.sign(messageHash, pk);
-			expect([...sig1]).toEqual([...sig2]);
+			expect([...sig1.r]).toEqual([...sig2.r]);
+			expect([...sig1.s]).toEqual([...sig2.s]);
+			expect(sig1.v).toEqual(sig2.v);
 		});
 
 		it("produces different signatures for different messages", () => {
 			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
-			const msg1 = new Uint8Array(32).fill(0x11);
-			const msg2 = new Uint8Array(32).fill(0x22);
+			const msg1 = Hash.from(new Uint8Array(32).fill(0x11));
+			const msg2 = Hash.from(new Uint8Array(32).fill(0x22));
 			const sig1 = Secp256k1.sign(msg1, pk);
 			const sig2 = Secp256k1.sign(msg2, pk);
-			expect([...sig1]).not.toEqual([...sig2]);
+			// At least one component should differ
+			const rSame = [...sig1.r].every((b, i) => b === sig2.r[i]);
+			const sSame = [...sig1.s].every((b, i) => b === sig2.s[i]);
+			expect(rSame && sSame && sig1.v === sig2.v).toBe(false);
 		});
 
 		it("signature can be verified against derived public key", () => {
@@ -352,7 +363,7 @@ describe("cryptographic operations", () => {
 		it("recovers public key from signature", () => {
 			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
 			const publicKey = Secp256k1.derivePublicKey(pk);
-			const messageHash = new Uint8Array(32).fill(0x42);
+			const messageHash = Hash.from(new Uint8Array(32).fill(0x42));
 			const signature = Secp256k1.sign(messageHash, pk);
 			const recoveredPubKey = Secp256k1.recoverPublicKey(
 				signature,

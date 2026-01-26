@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
+import type * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { ProviderService } from "../services/Provider/index.js";
@@ -22,7 +23,7 @@ const mockProvider = {
 
 const MockProviderLayer = Layer.succeed(
 	ProviderService,
-	mockProvider as unknown as ProviderService.Service,
+	mockProvider as unknown as Context.Tag.Service<typeof ProviderService>,
 );
 
 describe("ERC165", () => {

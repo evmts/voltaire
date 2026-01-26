@@ -477,23 +477,23 @@ describe("Int256", () => {
 
 	describe("Constants", () => {
 		it("MIN equals -(2^255)", () => {
-			expect(BrandedInt256.toBigInt(Int256.MIN)).toBe(INT256_MIN);
+			expect(Int256.MIN).toBe(INT256_MIN);
 		});
 
 		it("MAX equals 2^255 - 1", () => {
-			expect(BrandedInt256.toBigInt(Int256.MAX)).toBe(INT256_MAX);
+			expect(Int256.MAX).toBe(INT256_MAX);
 		});
 
 		it("ZERO equals 0n", () => {
-			expect(BrandedInt256.toBigInt(Int256.ZERO)).toBe(0n);
+			expect(Int256.ZERO).toBe(0n);
 		});
 
 		it("ONE equals 1n", () => {
-			expect(BrandedInt256.toBigInt(Int256.ONE)).toBe(1n);
+			expect(Int256.ONE).toBe(1n);
 		});
 
 		it("NEG_ONE equals -1n", () => {
-			expect(BrandedInt256.toBigInt(Int256.NEG_ONE)).toBe(-1n);
+			expect(Int256.NEG_ONE).toBe(-1n);
 		});
 	});
 });

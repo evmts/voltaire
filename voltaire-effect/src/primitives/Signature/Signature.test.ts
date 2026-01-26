@@ -1,4 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Hash } from "@tevm/voltaire";
+import { PrivateKey } from "@tevm/voltaire/PrivateKey";
 import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 import * as BaseSignature from "@tevm/voltaire/Signature";
 import * as S from "effect/Schema";
@@ -239,7 +241,7 @@ describe("Signature.Rpc", () => {
 				S.decodeSync(Signature.Rpc)({
 					s: `0x${validS}`,
 					yParity: 0,
-				} as { r: string; s: string }),
+				} as unknown as { r: string; s: string }),
 			).toThrow();
 		});
 
@@ -248,7 +250,7 @@ describe("Signature.Rpc", () => {
 				S.decodeSync(Signature.Rpc)({
 					r: `0x${validR}`,
 					yParity: 0,
-				} as { r: string; s: string }),
+				} as unknown as { r: string; s: string }),
 			).toThrow();
 		});
 	});
@@ -421,8 +423,8 @@ describe("pure functions", () => {
 
 describe("Signature sign/verify/recover + serialize/deserialize", () => {
 	it("signs, serializes, deserializes, verifies, and recovers", () => {
-		const messageHash = new Uint8Array(32).fill(0x42);
-		const privateKey = new Uint8Array(32).fill(1);
+		const messageHash = Hash.from(new Uint8Array(32).fill(0x42));
+		const privateKey = PrivateKey.fromBytes(new Uint8Array(32).fill(1));
 		const publicKey = Secp256k1.derivePublicKey(privateKey);
 
 		const secpSig = Secp256k1.sign(messageHash, privateKey);
@@ -465,8 +467,8 @@ describe("edge cases", () => {
 });
 
 describe("signature component validation", () => {
-	const messageHash = new Uint8Array(32).fill(0x11);
-	const privateKey = new Uint8Array(32).fill(1);
+	const messageHash = Hash.from(new Uint8Array(32).fill(0x11));
+	const privateKey = PrivateKey.fromBytes(new Uint8Array(32).fill(1));
 	const publicKey = Secp256k1.derivePublicKey(privateKey);
 	const one = new Uint8Array(32).fill(1);
 	const zero = new Uint8Array(32);

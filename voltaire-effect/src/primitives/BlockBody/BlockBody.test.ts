@@ -3,7 +3,7 @@
  * @module BlockBody/BlockBody.test
  */
 
-import { BlockBody } from "@tevm/voltaire";
+import { BlockBody, Withdrawal } from "@tevm/voltaire";
 import * as S from "effect/Schema";
 import { describe, expect, it } from "vitest";
 import { BlockBodySchema } from "./BlockBodySchema.js";
@@ -14,12 +14,12 @@ type BlockBodyType = BlockBody.BlockBodyType;
  * Creates a valid withdrawal for testing.
  */
 function createValidWithdrawal() {
-	return {
+	return Withdrawal.from({
 		index: 0n,
 		validatorIndex: 1n,
 		address: new Uint8Array(20).fill(0xaa),
 		amount: 1000000000n,
-	};
+	});
 }
 
 /**
@@ -202,24 +202,24 @@ describe("BlockBodySchema", () => {
 			transactions: [],
 			ommers: [],
 			withdrawals: [
-				{
+				Withdrawal.from({
 					index: 0n,
 					validatorIndex: 1n,
 					address: new Uint8Array(20).fill(0xaa),
 					amount: 100n,
-				},
-				{
+				}),
+				Withdrawal.from({
 					index: 1n,
 					validatorIndex: 2n,
 					address: new Uint8Array(20).fill(0xbb),
 					amount: 200n,
-				},
-				{
+				}),
+				Withdrawal.from({
 					index: 2n,
 					validatorIndex: 3n,
 					address: new Uint8Array(20).fill(0xcc),
 					amount: 300n,
-				},
+				}),
 			],
 		});
 		const result = S.decodeSync(BlockBodySchema)(body);

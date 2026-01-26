@@ -170,10 +170,11 @@ export const Rpc: S.Schema<
 				}),
 				...(body.withdrawals !== undefined && {
 					withdrawals: body.withdrawals.map((w) => ({
-						index: Hex.fromBigInt(w.index),
-						validatorIndex: Hex.fromBigInt(w.validatorIndex),
+						index: Hex.fromBigInt(w.index as bigint),
+						validatorIndex: Hex.fromBigInt(BigInt(w.validatorIndex as number)),
 						address: Hex.fromBytes(w.address),
-						amount: Hex.fromBigInt(w.amount),
+						// GweiType is a branded string, parse to BigInt for hex encoding
+						amount: Hex.fromBigInt(BigInt(w.amount as string)),
 					})),
 				}),
 			};

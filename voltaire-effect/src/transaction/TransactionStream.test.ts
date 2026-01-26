@@ -7,6 +7,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";
 import {
+	TransportError,
 	TransportService,
 	type TransportShape,
 } from "../services/Transport/index.js";
@@ -282,8 +283,8 @@ describe("TransactionStreamService", () => {
 				request: <T>(
 					_method: string,
 					_params?: unknown[],
-				): Effect.Effect<T, Error> =>
-					Effect.fail(new Error("RPC connection failed")),
+				): Effect.Effect<T, TransportError> =>
+					Effect.fail(new TransportError({ code: -32000, message: "RPC connection failed" })),
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
@@ -633,11 +634,11 @@ describe("TransactionStreamService", () => {
 				request: <T>(
 					method: string,
 					params?: unknown[],
-				): Effect.Effect<T, Error> => {
+				): Effect.Effect<T, TransportError> => {
 					callCount++;
 					// Fail first 2 calls, then succeed
 					if (callCount <= 2) {
-						return Effect.fail(new Error("Network timeout"));
+						return Effect.fail(new TransportError({ code: -32000, message: "Network timeout" }));
 					}
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x15" as T);

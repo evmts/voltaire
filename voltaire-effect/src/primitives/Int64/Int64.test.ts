@@ -296,11 +296,11 @@ describe("Int64", () => {
 
 	describe("Constants", () => {
 		it("INT64_MIN equals -9223372036854775808n", () => {
-			expect(BrandedInt64.toBigInt(Int64.INT64_MIN)).toBe(INT64_MIN);
+			expect(Int64.INT64_MIN).toBe(INT64_MIN);
 		});
 
 		it("INT64_MAX equals 9223372036854775807n", () => {
-			expect(BrandedInt64.toBigInt(Int64.INT64_MAX)).toBe(INT64_MAX);
+			expect(Int64.INT64_MAX).toBe(INT64_MAX);
 		});
 	});
 });
