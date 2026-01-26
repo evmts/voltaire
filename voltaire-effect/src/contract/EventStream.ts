@@ -18,6 +18,7 @@ import {
 import type { BrandedAbi } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Runtime from "effect/Runtime";
 
 type EventType = BrandedAbi.Event.EventType;
 import * as Stream from "effect/Stream";
@@ -79,13 +80,15 @@ export const EventStream: Layer.Layer<
 	EventStreamService,
 	Effect.gen(function* () {
 		const transport = yield* TransportService;
+		const runtime = yield* Effect.runtime();
+		const runPromise = Runtime.runPromise(runtime);
 
 		const provider = {
 			request: async ({
 				method,
 				params,
 			}: { method: string; params?: unknown[] }) =>
-				Effect.runPromise(transport.request(method, params)),
+				runPromise(transport.request(method, params)),
 			on: () => {},
 			removeListener: () => {},
 		};

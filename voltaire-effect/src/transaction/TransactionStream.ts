@@ -20,6 +20,7 @@ import {
 } from "@tevm/voltaire/transaction";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Runtime from "effect/Runtime";
 import * as Stream from "effect/Stream";
 import { TransportService } from "../services/Transport/TransportService.js";
 import { TransactionStreamError } from "./TransactionStreamError.js";
@@ -70,13 +71,15 @@ export const TransactionStream: Layer.Layer<
 	TransactionStreamService,
 	Effect.gen(function* () {
 		const transport = yield* TransportService;
+		const runtime = yield* Effect.runtime();
+		const runPromise = Runtime.runPromise(runtime);
 
 		const provider = {
 			request: async ({
 				method,
 				params,
 			}: { method: string; params?: unknown[] }) =>
-				Effect.runPromise(transport.request(method, params)),
+				runPromise(transport.request(method, params)),
 			on: () => {},
 			removeListener: () => {},
 		};
