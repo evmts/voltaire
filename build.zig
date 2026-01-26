@@ -61,7 +61,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         });
-        break :blk libwally_core_dep.artifact("wally");
+        break :blk libwally_core_dep.artifact("wallycore");
     } else null;
 
     // Primitives module - export for external packages (includes Hardfork)
@@ -963,6 +963,13 @@ fn addTypeScriptNativeBuild(
     rust_crypto_lib_path: std.Build.LazyPath,
     cargo_build_step: *std.Build.Step,
 ) void {
+    // Build libwally-core via dependency system
+    const libwally_core_dep = b.dependency("libwally_core", .{
+        .target = ts_target,
+        .optimize = .ReleaseFast,
+    });
+    const libwally_core_lib = libwally_core_dep.artifact("wallycore");
+
     // Native TypeScript FFI library with ReleaseFast optimization
     const ts_native_lib = b.addLibrary(.{
         .name = "primitives_ts_native",
@@ -980,7 +987,7 @@ fn addTypeScriptNativeBuild(
     ts_native_lib.linkLibrary(c_kzg_lib);
     ts_native_lib.linkLibrary(blst_lib);
     ts_native_lib.addObjectFile(rust_crypto_lib_path);
-    ts_native_lib.addObjectFile(b.path("lib/libwally-core/zig-out/lib/libwallycore.a"));
+    ts_native_lib.linkLibrary(libwally_core_lib);
     ts_native_lib.addIncludePath(b.path("lib"));
     ts_native_lib.addIncludePath(b.path("lib/libwally-core/include"));
     ts_native_lib.step.dependOn(cargo_build_step);
@@ -1374,6 +1381,13 @@ fn addCrossPlatformNativeBuilds(
             .os_tag = platform.os_tag,
         });
 
+        // Build libwally-core for this target
+        const libwally_core_dep = b.dependency("libwally_core", .{
+            .target = target,
+            .optimize = .ReleaseFast,
+        });
+        const libwally_core_lib = libwally_core_dep.artifact("wallycore");
+
         // Build shared library with ReleaseFast
         const native_lib = b.addLibrary(.{
             .name = "voltaire_native",
@@ -1389,7 +1403,7 @@ fn addCrossPlatformNativeBuilds(
         native_lib.linkLibrary(c_kzg_lib);
         native_lib.linkLibrary(blst_lib);
         native_lib.addObjectFile(rust_crypto_lib_path);
-        native_lib.addObjectFile(b.path("lib/libwally-core/zig-out/lib/libwallycore.a"));
+        native_lib.linkLibrary(libwally_core_lib);
         native_lib.addIncludePath(b.path("lib"));
         native_lib.addIncludePath(b.path("lib/libwally-core/include"));
         native_lib.step.dependOn(cargo_build_step);
