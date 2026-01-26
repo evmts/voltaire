@@ -37,6 +37,10 @@ import {
 	UNSUPPORTED_METHOD,
 	DISCONNECTED,
 	CHAIN_DISCONNECTED,
+	EXECUTION_REVERTED,
+	isUserRejected,
+	isDisconnected,
+	isProviderError,
 } from "./Error.js";
 
 describe("JsonRpcParseError", () => {
@@ -211,6 +215,83 @@ describe("EIP-1193 Provider error classes", () => {
 		const error = new ChainDisconnectedError();
 		expect(error._tag).toBe("ChainDisconnectedError");
 		expect(error.rpcCode).toBe(CHAIN_DISCONNECTED);
+	});
+});
+
+describe("Error code constants", () => {
+	it("Standard JSON-RPC error codes have correct values", () => {
+		expect(PARSE_ERROR).toBe(-32700);
+		expect(INVALID_REQUEST).toBe(-32600);
+		expect(METHOD_NOT_FOUND).toBe(-32601);
+		expect(INVALID_PARAMS).toBe(-32602);
+		expect(INTERNAL_ERROR).toBe(-32603);
+	});
+
+	it("EIP-1474 Ethereum error codes have correct values", () => {
+		expect(INVALID_INPUT).toBe(-32000);
+		expect(RESOURCE_NOT_FOUND).toBe(-32001);
+		expect(RESOURCE_UNAVAILABLE).toBe(-32002);
+		expect(TRANSACTION_REJECTED).toBe(-32003);
+		expect(METHOD_NOT_SUPPORTED).toBe(-32004);
+		expect(LIMIT_EXCEEDED).toBe(-32005);
+	});
+
+	it("EIP-1193 Provider error codes have correct values", () => {
+		expect(USER_REJECTED_REQUEST).toBe(4001);
+		expect(UNAUTHORIZED).toBe(4100);
+		expect(UNSUPPORTED_METHOD).toBe(4200);
+		expect(DISCONNECTED).toBe(4900);
+		expect(CHAIN_DISCONNECTED).toBe(4901);
+	});
+
+	it("EXECUTION_REVERTED has correct value", () => {
+		expect(EXECUTION_REVERTED).toBe(3);
+	});
+});
+
+describe("isUserRejected", () => {
+	it("returns true for USER_REJECTED_REQUEST", () => {
+		expect(isUserRejected(USER_REJECTED_REQUEST)).toBe(true);
+		expect(isUserRejected(4001)).toBe(true);
+	});
+
+	it("returns false for other codes", () => {
+		expect(isUserRejected(4100)).toBe(false);
+		expect(isUserRejected(-32600)).toBe(false);
+		expect(isUserRejected(0)).toBe(false);
+	});
+});
+
+describe("isDisconnected", () => {
+	it("returns true for DISCONNECTED", () => {
+		expect(isDisconnected(DISCONNECTED)).toBe(true);
+		expect(isDisconnected(4900)).toBe(true);
+	});
+
+	it("returns true for CHAIN_DISCONNECTED", () => {
+		expect(isDisconnected(CHAIN_DISCONNECTED)).toBe(true);
+		expect(isDisconnected(4901)).toBe(true);
+	});
+
+	it("returns false for other codes", () => {
+		expect(isDisconnected(4001)).toBe(false);
+		expect(isDisconnected(-32600)).toBe(false);
+	});
+});
+
+describe("isProviderError", () => {
+	it("returns true for codes in 4000-4999 range", () => {
+		expect(isProviderError(4000)).toBe(true);
+		expect(isProviderError(4001)).toBe(true);
+		expect(isProviderError(4500)).toBe(true);
+		expect(isProviderError(4999)).toBe(true);
+	});
+
+	it("returns false for codes outside 4000-4999 range", () => {
+		expect(isProviderError(3999)).toBe(false);
+		expect(isProviderError(5000)).toBe(false);
+		expect(isProviderError(-32600)).toBe(false);
+		expect(isProviderError(0)).toBe(false);
 	});
 });
 

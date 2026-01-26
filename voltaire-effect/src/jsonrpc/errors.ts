@@ -1,4 +1,4 @@
-import { AbstractError } from "@tevm/voltaire/errors";
+import * as Data from "effect/Data";
 import {
 	PARSE_ERROR,
 	INVALID_REQUEST,
@@ -18,234 +18,338 @@ import {
 	CHAIN_DISCONNECTED,
 } from "./Error.js";
 
-export class JsonRpcParseError extends AbstractError {
-	readonly _tag = "JsonRpcParseError" as const;
+export class JsonRpcParseError extends Data.TaggedError("JsonRpcParseError")<{
 	readonly input: unknown;
-
+	readonly message: string;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
 	constructor(
 		input: unknown,
 		message?: string,
-		options?: { cause?: Error; context?: Record<string, unknown> },
+		options?: { cause?: unknown; context?: Record<string, unknown> },
 	) {
-		super(message ?? "Failed to parse JSON-RPC message", options);
-		this.name = "JsonRpcParseError";
-		this.input = input;
+		super({
+			input,
+			message: message ?? "Failed to parse JSON-RPC message",
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class JsonRpcErrorResponse extends AbstractError {
-	readonly _tag = "JsonRpcError" as const;
+export class JsonRpcErrorResponse extends Data.TaggedError("JsonRpcError")<{
 	readonly rpcCode: number;
+	readonly message: string;
 	readonly data?: unknown;
-
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
 	constructor(
 		input: { code: number; message: string; data?: unknown },
-		options?: { cause?: Error; context?: Record<string, unknown> },
+		options?: { cause?: unknown; context?: Record<string, unknown> },
 	) {
-		super(input.message, { ...options, code: input.code });
-		this.name = "JsonRpcError";
-		this.rpcCode = input.code;
-		this.data = input.data;
+		super({
+			rpcCode: input.code,
+			message: input.message,
+			data: input.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
-
-type ErrorOptions = { cause?: Error; context?: Record<string, unknown>; data?: unknown };
 
 // Standard JSON-RPC error classes
 
-export class ParseError extends AbstractError {
-	readonly _tag = "ParseError" as const;
-	readonly rpcCode = PARSE_ERROR;
+export class ParseError extends Data.TaggedError("ParseError")<{
+	readonly message: string;
+	readonly rpcCode: typeof PARSE_ERROR;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Parse error", { ...options, code: PARSE_ERROR });
-		this.name = "ParseError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Parse error",
+			rpcCode: PARSE_ERROR,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class InvalidRequestError extends AbstractError {
-	readonly _tag = "InvalidRequestError" as const;
-	readonly rpcCode = INVALID_REQUEST;
+export class InvalidRequestError extends Data.TaggedError("InvalidRequestError")<{
+	readonly message: string;
+	readonly rpcCode: typeof INVALID_REQUEST;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Invalid request", { ...options, code: INVALID_REQUEST });
-		this.name = "InvalidRequestError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Invalid request",
+			rpcCode: INVALID_REQUEST,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class MethodNotFoundError extends AbstractError {
-	readonly _tag = "MethodNotFoundError" as const;
-	readonly rpcCode = METHOD_NOT_FOUND;
+export class MethodNotFoundError extends Data.TaggedError("MethodNotFoundError")<{
+	readonly message: string;
+	readonly rpcCode: typeof METHOD_NOT_FOUND;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Method not found", { ...options, code: METHOD_NOT_FOUND });
-		this.name = "MethodNotFoundError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Method not found",
+			rpcCode: METHOD_NOT_FOUND,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class InvalidParamsError extends AbstractError {
-	readonly _tag = "InvalidParamsError" as const;
-	readonly rpcCode = INVALID_PARAMS;
+export class InvalidParamsError extends Data.TaggedError("InvalidParamsError")<{
+	readonly message: string;
+	readonly rpcCode: typeof INVALID_PARAMS;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Invalid params", { ...options, code: INVALID_PARAMS });
-		this.name = "InvalidParamsError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Invalid params",
+			rpcCode: INVALID_PARAMS,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class InternalError extends AbstractError {
-	readonly _tag = "InternalError" as const;
-	readonly rpcCode = INTERNAL_ERROR;
+export class InternalError extends Data.TaggedError("InternalError")<{
+	readonly message: string;
+	readonly rpcCode: typeof INTERNAL_ERROR;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Internal error", { ...options, code: INTERNAL_ERROR });
-		this.name = "InternalError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Internal error",
+			rpcCode: INTERNAL_ERROR,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
 // EIP-1474 Ethereum error classes
 
-export class InvalidInputError extends AbstractError {
-	readonly _tag = "InvalidInputError" as const;
-	readonly rpcCode = INVALID_INPUT;
+export class InvalidInputError extends Data.TaggedError("InvalidInputError")<{
+	readonly message: string;
+	readonly rpcCode: typeof INVALID_INPUT;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Invalid input", { ...options, code: INVALID_INPUT });
-		this.name = "InvalidInputError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Invalid input",
+			rpcCode: INVALID_INPUT,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class ResourceNotFoundError extends AbstractError {
-	readonly _tag = "ResourceNotFoundError" as const;
-	readonly rpcCode = RESOURCE_NOT_FOUND;
+export class ResourceNotFoundError extends Data.TaggedError("ResourceNotFoundError")<{
+	readonly message: string;
+	readonly rpcCode: typeof RESOURCE_NOT_FOUND;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Resource not found", { ...options, code: RESOURCE_NOT_FOUND });
-		this.name = "ResourceNotFoundError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Resource not found",
+			rpcCode: RESOURCE_NOT_FOUND,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class ResourceUnavailableError extends AbstractError {
-	readonly _tag = "ResourceUnavailableError" as const;
-	readonly rpcCode = RESOURCE_UNAVAILABLE;
+export class ResourceUnavailableError extends Data.TaggedError("ResourceUnavailableError")<{
+	readonly message: string;
+	readonly rpcCode: typeof RESOURCE_UNAVAILABLE;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Resource unavailable", { ...options, code: RESOURCE_UNAVAILABLE });
-		this.name = "ResourceUnavailableError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Resource unavailable",
+			rpcCode: RESOURCE_UNAVAILABLE,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class TransactionRejectedError extends AbstractError {
-	readonly _tag = "TransactionRejectedError" as const;
-	readonly rpcCode = TRANSACTION_REJECTED;
+export class TransactionRejectedError extends Data.TaggedError("TransactionRejectedError")<{
+	readonly message: string;
+	readonly rpcCode: typeof TRANSACTION_REJECTED;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Transaction rejected", { ...options, code: TRANSACTION_REJECTED });
-		this.name = "TransactionRejectedError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Transaction rejected",
+			rpcCode: TRANSACTION_REJECTED,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class MethodNotSupportedError extends AbstractError {
-	readonly _tag = "MethodNotSupportedError" as const;
-	readonly rpcCode = METHOD_NOT_SUPPORTED;
+export class MethodNotSupportedError extends Data.TaggedError("MethodNotSupportedError")<{
+	readonly message: string;
+	readonly rpcCode: typeof METHOD_NOT_SUPPORTED;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Method not supported", { ...options, code: METHOD_NOT_SUPPORTED });
-		this.name = "MethodNotSupportedError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Method not supported",
+			rpcCode: METHOD_NOT_SUPPORTED,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class LimitExceededError extends AbstractError {
-	readonly _tag = "LimitExceededError" as const;
-	readonly rpcCode = LIMIT_EXCEEDED;
+export class LimitExceededError extends Data.TaggedError("LimitExceededError")<{
+	readonly message: string;
+	readonly rpcCode: typeof LIMIT_EXCEEDED;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Limit exceeded", { ...options, code: LIMIT_EXCEEDED });
-		this.name = "LimitExceededError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Limit exceeded",
+			rpcCode: LIMIT_EXCEEDED,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
 // EIP-1193 Provider error classes
 
-export class UserRejectedRequestError extends AbstractError {
-	readonly _tag = "UserRejectedRequestError" as const;
-	readonly rpcCode = USER_REJECTED_REQUEST;
+export class UserRejectedRequestError extends Data.TaggedError("UserRejectedRequestError")<{
+	readonly message: string;
+	readonly rpcCode: typeof USER_REJECTED_REQUEST;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "User rejected request", { ...options, code: USER_REJECTED_REQUEST });
-		this.name = "UserRejectedRequestError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "User rejected request",
+			rpcCode: USER_REJECTED_REQUEST,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class UnauthorizedError extends AbstractError {
-	readonly _tag = "UnauthorizedError" as const;
-	readonly rpcCode = UNAUTHORIZED;
+export class UnauthorizedError extends Data.TaggedError("UnauthorizedError")<{
+	readonly message: string;
+	readonly rpcCode: typeof UNAUTHORIZED;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Unauthorized", { ...options, code: UNAUTHORIZED });
-		this.name = "UnauthorizedError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Unauthorized",
+			rpcCode: UNAUTHORIZED,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class UnsupportedMethodError extends AbstractError {
-	readonly _tag = "UnsupportedMethodError" as const;
-	readonly rpcCode = UNSUPPORTED_METHOD;
+export class UnsupportedMethodError extends Data.TaggedError("UnsupportedMethodError")<{
+	readonly message: string;
+	readonly rpcCode: typeof UNSUPPORTED_METHOD;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Unsupported method", { ...options, code: UNSUPPORTED_METHOD });
-		this.name = "UnsupportedMethodError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Unsupported method",
+			rpcCode: UNSUPPORTED_METHOD,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class DisconnectedError extends AbstractError {
-	readonly _tag = "DisconnectedError" as const;
-	readonly rpcCode = DISCONNECTED;
+export class DisconnectedError extends Data.TaggedError("DisconnectedError")<{
+	readonly message: string;
+	readonly rpcCode: typeof DISCONNECTED;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Disconnected", { ...options, code: DISCONNECTED });
-		this.name = "DisconnectedError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Disconnected",
+			rpcCode: DISCONNECTED,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
-export class ChainDisconnectedError extends AbstractError {
-	readonly _tag = "ChainDisconnectedError" as const;
-	readonly rpcCode = CHAIN_DISCONNECTED;
+export class ChainDisconnectedError extends Data.TaggedError("ChainDisconnectedError")<{
+	readonly message: string;
+	readonly rpcCode: typeof CHAIN_DISCONNECTED;
 	readonly data?: unknown;
-
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message ?? "Chain disconnected", { ...options, code: CHAIN_DISCONNECTED });
-		this.name = "ChainDisconnectedError";
-		this.data = options?.data;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+		super({
+			message: message ?? "Chain disconnected",
+			rpcCode: CHAIN_DISCONNECTED,
+			data: options?.data,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 
@@ -267,6 +371,26 @@ export type RpcErrorCode =
 	| typeof UNSUPPORTED_METHOD
 	| typeof DISCONNECTED
 	| typeof CHAIN_DISCONNECTED;
+
+// Union type for all RPC errors
+export type RpcError =
+	| ParseError
+	| InvalidRequestError
+	| MethodNotFoundError
+	| InvalidParamsError
+	| InternalError
+	| InvalidInputError
+	| ResourceNotFoundError
+	| ResourceUnavailableError
+	| TransactionRejectedError
+	| MethodNotSupportedError
+	| LimitExceededError
+	| UserRejectedRequestError
+	| UnauthorizedError
+	| UnsupportedMethodError
+	| DisconnectedError
+	| ChainDisconnectedError
+	| JsonRpcErrorResponse;
 
 const errorCodeToClass = {
 	[PARSE_ERROR]: ParseError,
@@ -291,13 +415,13 @@ export function parseErrorCode(input: {
 	code: number;
 	message?: string;
 	data?: unknown;
-}): AbstractError {
+}): RpcError {
 	const ErrorClass = errorCodeToClass[input.code as RpcErrorCode];
 	if (ErrorClass) {
 		return new ErrorClass(input.message, { data: input.data });
 	}
 	return new JsonRpcErrorResponse({
-		code: input.code,
+		rpcCode: input.code,
 		message: input.message ?? "Unknown error",
 		data: input.data,
 	});

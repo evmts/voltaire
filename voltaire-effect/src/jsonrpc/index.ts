@@ -1,5 +1,7 @@
 export { JsonRpcParseError, JsonRpcErrorResponse } from "./errors.js";
 
+export { nextId, resetId } from "./IdCounter.js";
+
 export {
 	Request,
 	from as requestFrom,
@@ -45,6 +47,12 @@ export {
 	UNSUPPORTED_METHOD,
 	DISCONNECTED,
 	CHAIN_DISCONNECTED,
+	// Common node-specific
+	EXECUTION_REVERTED,
+	// Helpers
+	isUserRejected,
+	isDisconnected,
+	isProviderError,
 	type JsonRpcErrorType,
 } from "./Error.js";
 
