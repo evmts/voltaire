@@ -25,11 +25,13 @@ export {
 	JsonRpcError,
 	from as errorFrom,
 	toString as errorToString,
+	// Standard JSON-RPC
 	PARSE_ERROR,
 	INVALID_REQUEST,
 	METHOD_NOT_FOUND,
 	INVALID_PARAMS,
 	INTERNAL_ERROR,
+	// EIP-1474 Ethereum
 	INVALID_INPUT,
 	RESOURCE_NOT_FOUND,
 	RESOURCE_UNAVAILABLE,
@@ -37,8 +39,37 @@ export {
 	METHOD_NOT_SUPPORTED,
 	LIMIT_EXCEEDED,
 	JSON_RPC_VERSION_NOT_SUPPORTED,
+	// EIP-1193 Provider
+	USER_REJECTED_REQUEST,
+	UNAUTHORIZED,
+	UNSUPPORTED_METHOD,
+	DISCONNECTED,
+	CHAIN_DISCONNECTED,
 	type JsonRpcErrorType,
 } from "./Error.js";
+
+export {
+	// Typed error classes
+	ParseError,
+	InvalidRequestError,
+	MethodNotFoundError,
+	InvalidParamsError,
+	InternalError,
+	InvalidInputError,
+	ResourceNotFoundError,
+	ResourceUnavailableError,
+	TransactionRejectedError,
+	MethodNotSupportedError,
+	LimitExceededError,
+	UserRejectedRequestError,
+	UnauthorizedError,
+	UnsupportedMethodError,
+	DisconnectedError,
+	ChainDisconnectedError,
+	// Helper
+	parseErrorCode,
+	type RpcErrorCode,
+} from "./errors.js";
 
 export {
 	BatchRequest,

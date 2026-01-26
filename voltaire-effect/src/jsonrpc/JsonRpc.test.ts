@@ -66,15 +66,15 @@ describe("JsonRpc", () => {
 				id: null,
 			});
 			expect(req.id).toBeNull();
-			expect(Request.isNotification(req)).toBe(true);
+			expect(Request.isNotification(req)).toBe(false);
 		});
 
-		it("isNotification returns true for null id", () => {
+		it("isNotification returns false for null id", () => {
 			const req = Request.from({
 				method: "eth_subscribe",
 				id: null,
 			});
-			expect(Request.isNotification(req)).toBe(true);
+			expect(Request.isNotification(req)).toBe(false);
 		});
 
 		it("withParams auto-assigns id when undefined", () => {
@@ -206,7 +206,7 @@ describe("JsonRpc", () => {
 			expect(response.id).toBe(42);
 		});
 
-		it("handles response with both result and error (error takes precedence)", async () => {
+		it("parse fails when result and error are both present", async () => {
 			const raw = {
 				jsonrpc: "2.0",
 				id: 1,
@@ -214,9 +214,8 @@ describe("JsonRpc", () => {
 				error: { code: -32000, message: "Something failed" },
 			};
 
-			const response = await Effect.runPromise(Response.parse(raw));
-			expect(Response.isError(response)).toBe(true);
-			expect(Response.isSuccess(response)).toBe(true);
+			const exit = await Effect.runPromiseExit(Response.parse(raw));
+			expect(exit._tag).toBe("Failure");
 		});
 
 		it("parses error response with data field", async () => {
@@ -327,7 +326,7 @@ describe("JsonRpc", () => {
 			const batch = await Effect.runPromise(program);
 			const findById = BatchResponse.findById(batch);
 			const response = findById(2);
-			expect(response?.result).toBe("0x2");
+			expect(response && "result" in response ? response.result : undefined).toBe("0x2");
 		});
 
 		it("errors returns only error responses", async () => {
@@ -357,15 +356,15 @@ describe("JsonRpc", () => {
 			expect(BatchResponse.results(batch)).toHaveLength(0);
 		});
 
-		it("parses batch containing invalid entries", async () => {
+		it("parse fails when batch contains invalid entries", async () => {
 			const raw = [
 				{ jsonrpc: "2.0", id: 1, result: "0x1" },
 				{ invalid: "entry" },
 				{ jsonrpc: "2.0", id: 2, result: "0x2" },
 			];
 
-			const batch = await Effect.runPromise(BatchResponse.parse(raw));
-			expect(BatchResponse.results(batch)).toHaveLength(3);
+			const exit = await Effect.runPromiseExit(BatchResponse.parse(raw));
+			expect(exit._tag).toBe("Failure");
 		});
 
 		it("findById with duplicate ids returns first match", async () => {
@@ -377,10 +376,10 @@ describe("JsonRpc", () => {
 			const batch = await Effect.runPromise(BatchResponse.parse(raw));
 			const findById = BatchResponse.findById(batch);
 			const response = findById(1);
-			expect(response?.result).toBe("0x1");
-		});
+			expect(response && "result" in response ? response.result : undefined).toBe("0x1");
+			});
 
-		it("findById with null id", async () => {
+			it("findById with null id", async () => {
 			const raw = [
 				{ jsonrpc: "2.0", id: null, result: "0x1" },
 				{ jsonrpc: "2.0", id: 2, result: "0x2" },
@@ -389,10 +388,10 @@ describe("JsonRpc", () => {
 			const batch = await Effect.runPromise(BatchResponse.parse(raw));
 			const findById = BatchResponse.findById(batch);
 			const response = findById(null);
-			expect(response?.result).toBe("0x1");
-		});
+			expect(response && "result" in response ? response.result : undefined).toBe("0x1");
+			});
 
-		it("findById with string id", async () => {
+			it("findById with string id", async () => {
 			const raw = [
 				{ jsonrpc: "2.0", id: "req-1", result: "0x1" },
 				{ jsonrpc: "2.0", id: "req-2", result: "0x2" },
@@ -401,11 +400,11 @@ describe("JsonRpc", () => {
 			const batch = await Effect.runPromise(BatchResponse.parse(raw));
 			const findById = BatchResponse.findById(batch);
 			const response = findById("req-2");
-			expect(response?.result).toBe("0x2");
-		});
-	});
+			expect(response && "result" in response ? response.result : undefined).toBe("0x2");
+			});
+			});
 
-	describe("Eth namespace", () => {
+			describe("Eth namespace", () => {
 		it("creates GetBalanceRequest", () => {
 			const req = Eth.GetBalanceRequest("0x1234", "latest");
 			expect(req.method).toBe("eth_getBalance");

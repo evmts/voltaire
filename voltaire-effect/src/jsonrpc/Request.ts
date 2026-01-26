@@ -1,3 +1,5 @@
+import { nextId } from "./IdCounter.js";
+
 export type JsonRpcIdType = number | string | null;
 
 export type JsonRpcRequestType<TParams = unknown[]> = {
@@ -6,8 +8,6 @@ export type JsonRpcRequestType<TParams = unknown[]> = {
 	readonly params?: TParams;
 	readonly id?: JsonRpcIdType;
 };
-
-let idCounter = 0;
 
 export function from(input: {
 	method: string;
@@ -23,7 +23,7 @@ export function from(input: {
 }
 
 export function isNotification(request: JsonRpcRequestType): boolean {
-	return request.id === undefined || request.id === null;
+	return request.id === undefined;
 }
 
 export function withParams<TParams>(
@@ -33,7 +33,7 @@ export function withParams<TParams>(
 		jsonrpc: "2.0",
 		method: request.method,
 		params,
-		id: request.id ?? ++idCounter,
+		id: request.id ?? nextId(),
 	});
 }
 

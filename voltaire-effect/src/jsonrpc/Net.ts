@@ -1,6 +1,5 @@
+import { nextId } from "./IdCounter.js";
 import type { JsonRpcRequestType } from "./Request.js";
-
-let idCounter = 3000;
 
 function makeRequest(
 	method: string,
@@ -10,7 +9,7 @@ function makeRequest(
 		jsonrpc: "2.0",
 		method,
 		params,
-		id: ++idCounter,
+		id: nextId(),
 	};
 }
 

@@ -29,6 +29,25 @@ export function from<TResult = unknown>(
 	if (obj.jsonrpc !== "2.0") {
 		throw new Error("Invalid JSON-RPC response: missing jsonrpc field");
 	}
+	if (!("id" in obj)) {
+		throw new Error("Invalid JSON-RPC response: missing id field");
+	}
+	const id = obj.id;
+	if (id !== null && typeof id !== "string" && typeof id !== "number") {
+		throw new Error("Invalid JSON-RPC response: invalid id field");
+	}
+	const hasResult = "result" in obj;
+	const hasError = "error" in obj;
+	if (hasResult && hasError) {
+		throw new Error(
+			"Invalid JSON-RPC response: both result and error present",
+		);
+	}
+	if (!hasResult && !hasError) {
+		throw new Error(
+			"Invalid JSON-RPC response: neither result nor error present",
+		);
+	}
 	return raw as JsonRpcResponseType<TResult>;
 }
 
