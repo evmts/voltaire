@@ -7,7 +7,10 @@ import {
 	generateMnemonic,
 	getWordCount,
 	mnemonicToSeed,
+	mnemonicToWords,
 	validateMnemonic,
+	validateWordCount,
+	wordsToMnemonic,
 } from "./index.js";
 
 const TEST_MNEMONIC =
@@ -138,4 +141,43 @@ describe("convenience functions", () => {
 			expect(result).toBe(12);
 		}).pipe(Effect.provide(Bip39Live))
 	);
+});
+
+describe("mnemonic utilities", () => {
+	it("mnemonicToWords splits mnemonic into words", () => {
+		const words = mnemonicToWords(TEST_MNEMONIC);
+		expect(words.length).toBe(12);
+		expect(words[0]).toBe("abandon");
+		expect(words[11]).toBe("about");
+	});
+
+	it("mnemonicToWords trims extra whitespace", () => {
+		const words = mnemonicToWords("  abandon   abandon  about  ");
+		expect(words).toEqual(["abandon", "abandon", "about"]);
+	});
+
+	it("wordsToMnemonic joins words with single spaces", () => {
+		const result = wordsToMnemonic(["abandon", "abandon", "about"]);
+		expect(result).toBe("abandon abandon about");
+	});
+
+	it("validateWordCount accepts valid counts", () => {
+		expect(validateWordCount("a ".repeat(12).trim())).toBe(true);
+		expect(validateWordCount("a ".repeat(15).trim())).toBe(true);
+		expect(validateWordCount("a ".repeat(18).trim())).toBe(true);
+		expect(validateWordCount("a ".repeat(21).trim())).toBe(true);
+		expect(validateWordCount("a ".repeat(24).trim())).toBe(true);
+	});
+
+	it("validateWordCount rejects invalid counts", () => {
+		expect(validateWordCount("a ".repeat(11).trim())).toBe(false);
+		expect(validateWordCount("a ".repeat(13).trim())).toBe(false);
+		expect(validateWordCount("a ".repeat(25).trim())).toBe(false);
+		expect(validateWordCount("")).toBe(false);
+	});
+
+	it("mnemonicToWords and wordsToMnemonic roundtrip", () => {
+		const restored = wordsToMnemonic(mnemonicToWords(TEST_MNEMONIC));
+		expect(restored).toBe(TEST_MNEMONIC);
+	});
 });

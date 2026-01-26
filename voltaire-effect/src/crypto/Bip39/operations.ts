@@ -5,6 +5,7 @@
  */
 import * as Effect from "effect/Effect";
 import { Bip39Service } from "./Bip39Service.js";
+import type { MnemonicStrength } from "./types.js";
 
 /**
  * Generates a random BIP-39 mnemonic phrase.
@@ -14,7 +15,7 @@ import { Bip39Service } from "./Bip39Service.js";
  * The mnemonic includes a checksum for error detection.
  *
  * @param strength - Entropy bits: 128=12 words, 160=15, 192=18, 224=21, 256=24 words
- * @returns Effect containing the mnemonic string, requiring Bip39Service
+ * @returns Effect containing the space-separated mnemonic sentence, requiring Bip39Service
  *
  * @example
  * ```typescript
@@ -30,7 +31,7 @@ import { Bip39Service } from "./Bip39Service.js";
  * @since 0.0.1
  */
 export const generateMnemonic = (
-	strength?: 128 | 160 | 192 | 224 | 256,
+	strength?: MnemonicStrength,
 ): Effect.Effect<string, never, Bip39Service> =>
 	Effect.gen(function* () {
 		const bip39 = yield* Bip39Service;
@@ -159,7 +160,7 @@ export const mnemonicToSeedSync = (
  * @since 0.0.1
  */
 export const getWordCount = (
-	entropyBits: 128 | 160 | 192 | 224 | 256,
+	entropyBits: MnemonicStrength,
 ): Effect.Effect<number, never, Bip39Service> =>
 	Effect.gen(function* () {
 		const bip39 = yield* Bip39Service;

@@ -44,3 +44,9 @@ export {
 	mnemonicToSeedSync,
 	validateMnemonic,
 } from "./operations.js";
+export {
+	mnemonicToWords,
+	validateWordCount,
+	wordsToMnemonic,
+} from "./utils.js";
+export { WORD_COUNTS, type MnemonicStrength } from "./types.js";

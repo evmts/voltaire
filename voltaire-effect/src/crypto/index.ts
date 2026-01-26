@@ -111,16 +111,22 @@ export {
 } from "./EIP712/index.js";
 export {
 	derive as hdwalletDerive,
+	fromMnemonic,
 	fromSeed,
 	generateMnemonic,
 	getPrivateKey as hdwalletGetPrivateKey,
 	getPublicKey as hdwalletGetPublicKey,
+	HardenedDerivationError,
 	type HDNode,
 	type HDPath,
+	type HDWalletError,
 	HDWalletLive,
 	HDWalletService,
 	type HDWalletServiceShape,
 	HDWalletTest,
+	InvalidKeyError,
+	InvalidPathError,
+	InvalidSeedError,
 	mnemonicToSeed,
 } from "./HDWallet/index.js";
 export {

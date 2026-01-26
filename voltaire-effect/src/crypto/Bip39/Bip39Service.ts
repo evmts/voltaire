@@ -7,6 +7,7 @@ import { Bip39 } from "@tevm/voltaire";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import type { MnemonicStrength } from "./types.js";
 
 /**
  * Shape interface for BIP-39 mnemonic operations.
@@ -19,12 +20,15 @@ import * as Layer from "effect/Layer";
  */
 export interface Bip39ServiceShape {
 	/**
-	 * Generates a random BIP-39 mnemonic phrase.
-	 * @param strength - Entropy bits (128=12 words, 256=24 words)
-	 * @returns Effect containing the mnemonic string
+	 * Generates a BIP-39 mnemonic sentence.
+	 *
+	 * @param strength - Entropy bits: 128=12 words, 160=15, 192=18, 224=21, 256=24
+	 * @returns Effect containing the space-separated mnemonic sentence
+	 *
+	 * @see {@link https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki | BIP-39 Specification}
 	 */
 	readonly generateMnemonic: (
-		strength?: 128 | 160 | 192 | 224 | 256,
+		strength?: MnemonicStrength,
 	) => Effect.Effect<string>;
 
 	/**
@@ -62,7 +66,7 @@ export interface Bip39ServiceShape {
 	 * @returns Effect containing the word count
 	 */
 	readonly getWordCount: (
-		entropyBits: 128 | 160 | 192 | 224 | 256,
+		entropyBits: MnemonicStrength,
 	) => Effect.Effect<number>;
 }
 
