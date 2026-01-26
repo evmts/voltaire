@@ -1,5 +1,13 @@
 # Fix Contract verifySignature Silent Error Catch
 
+**Status: ✅ PARTIALLY FIXED** (2025-01-25)
+
+The Effect wrapper now properly captures runtime context using `Runtime.runPromise(runtime)` 
+instead of `Effect.runPromise`. This fixes the fiber context issue. The error handling was 
+already implemented with proper `SignatureVerificationError` and `InvalidSignatureFormatError` types.
+
+**Remaining**: The upstream voltaire (non-Effect) implementation still has the silent catch issue.
+
 ## Problem
 
 `verifySignature.js` catches all errors and returns `false`, making it impossible to distinguish between "invalid signature" and "verification failed due to error".
@@ -80,11 +88,11 @@ export const verifySignature = (
 
 ## Acceptance Criteria
 
-- [ ] Remove silent catch-all
-- [ ] Distinguish between "invalid" and "error"
-- [ ] Network errors should propagate
-- [ ] Add error type for verification failures
-- [ ] Update Effect wrapper if applicable
+- [ ] Remove silent catch-all (upstream voltaire)
+- [x] Distinguish between "invalid" and "error" (done in Effect wrapper)
+- [x] Network errors should propagate (done in Effect wrapper)
+- [x] Add error type for verification failures (SignatureVerificationError, InvalidSignatureFormatError)
+- [x] Update Effect wrapper if applicable (fixed Runtime.runPromise pattern)
 
 ## Priority
 

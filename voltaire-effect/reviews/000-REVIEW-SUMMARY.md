@@ -12,7 +12,7 @@
 
 | Category | Status | Notes |
 |----------|--------|-------|
-| Effect patterns | ⚠️ Mixed | Core services good, but `runPromise/runSync` in callbacks |
+| Effect patterns | ✅ Fixed | `runPromise/runSync` antipatterns resolved (076-078, 084) |
 | Error typing | ❌ Poor | Many `never` error types hide real failures |
 | Security | ⚠️ Needs work | Key cleanup missing, timing leaks |
 | Test coverage | ❌ Critical | Many modules have 0 tests |
@@ -25,7 +25,7 @@
 | Issue | Location | Review |
 |-------|----------|--------|
 | NonceManager race condition | DefaultNonceManager.ts | 080 |
-| runPromise in callbacks | BlockStream, EventStream, TransactionStream, BatchScheduler | 076, 078, 084 |
+| ~~runPromise in callbacks~~ | ~~BlockStream, EventStream, TransactionStream, BatchScheduler~~ | ✅ Fixed: 076, 077, 078, 084 |
 | No memory cleanup for keys | LocalAccount, HDWallet, Keystore | 079, 085 |
 | Missing exports | PublicKey (verify/toAddress), Int256 (add/equals), Bytes (concat/equals) | 086, 089, PRIMITIVES |
 | Zero test coverage | Abi, RLP, Transaction, Signature, PublicKey, PrivateKey, Int256 | 082, 084, 086, 089 |
