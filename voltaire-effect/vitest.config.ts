@@ -13,7 +13,6 @@ export default defineConfig({
 			"src/primitives/PublicKey/PublicKey.test.ts",
 			"src/primitives/ContractCode/ContractCode.test.ts",
 			"src/primitives/InitCode/InitCode.test.ts",
-			"src/primitives/LogFilter/LogFilter.test.ts",
 			"src/services/Account/Account.test.ts",
 			"src/services/Contract/Contract.test.ts",
 			"src/services/Signer/Signer.test.ts",
