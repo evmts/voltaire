@@ -6,6 +6,7 @@ import {
 	EthBlockNumber,
 	EthChainId,
 	EthGetBalance,
+	EthGetTransactionByHash,
 	EthGetTransactionCount,
 	GenericRpcRequest,
 	RpcBatch,
@@ -321,6 +322,230 @@ describe("RpcBatch", () => {
 
 			const result = await Effect.runPromise(program);
 			expect(result).toBe("0x999");
+		});
+	});
+
+	describe("edge cases", () => {
+		it("handles empty batch (no requests)", async () => {
+			const handler = vi.fn();
+
+			const program = Effect.gen(function* () {
+				const batch = yield* RpcBatchService;
+				const results = yield* Effect.all([], { concurrency: "unbounded" });
+				return results;
+			}).pipe(
+				Effect.provide(RpcBatch),
+				Effect.provide(createMockTransport(handler)),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toEqual([]);
+			expect(handler).not.toHaveBeenCalled();
+		});
+
+		it("handles request timeout in batch context", async () => {
+			const handler = vi.fn().mockImplementation(async () => {
+				await new Promise((resolve) => setTimeout(resolve, 100));
+				return "0x100";
+			});
+
+			const program = Effect.gen(function* () {
+				const batch = yield* RpcBatchService;
+				return yield* batch.request(new EthBlockNumber({}));
+			}).pipe(
+				Effect.timeout("10 millis"),
+				Effect.provide(RpcBatch),
+				Effect.provide(createMockTransport(handler)),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("handles partial batch failure (transport error for entire batch)", async () => {
+			const handler = vi
+				.fn()
+				.mockReturnValue(
+					new TransportError({ code: -32603, message: "Internal error" }),
+				);
+
+			const program = Effect.gen(function* () {
+				const batch = yield* RpcBatchService;
+
+				const results = yield* Effect.all(
+					[
+						Effect.either(batch.request(new EthBlockNumber({}))),
+						Effect.either(batch.request(new EthChainId({}))),
+						Effect.either(
+							batch.request(
+								new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
+							),
+						),
+					],
+					{ concurrency: "unbounded" },
+				);
+
+				return results;
+			}).pipe(
+				Effect.provide(RpcBatch),
+				Effect.provide(createMockTransport(handler)),
+			);
+
+			const results = await Effect.runPromise(program);
+			expect(results[0]._tag).toBe("Left");
+			expect(results[1]._tag).toBe("Left");
+			expect(results[2]._tag).toBe("Left");
+		});
+
+		it("handles large batch (100+ unique requests)", async () => {
+			let receivedBatchSize = 0;
+			const handler = vi.fn().mockImplementation((method, params) => {
+				if (method === "__batch__") {
+					const batch = params as Array<{
+						id: number;
+						method: string;
+						params: unknown[];
+					}>;
+					receivedBatchSize = batch.length;
+					return batch.map((req) => ({
+						jsonrpc: "2.0" as const,
+						id: req.id,
+						result: `0x${req.id.toString(16)}`,
+					}));
+				}
+				return `0x0`;
+			});
+
+			const program = Effect.gen(function* () {
+				const batch = yield* RpcBatchService;
+
+				const requests = Array.from({ length: 150 }, (_, i) =>
+					batch.request(
+						new EthGetBalance({
+							address: `0x${i.toString(16).padStart(40, "0")}`,
+							blockTag: "latest",
+						}),
+					),
+				);
+
+				return yield* Effect.all(requests, { concurrency: "unbounded" });
+			}).pipe(
+				Effect.provide(RpcBatch),
+				Effect.provide(createMockTransport(handler)),
+			);
+
+			const results = await Effect.runPromise(program);
+			expect(results).toHaveLength(150);
+			expect(receivedBatchSize).toBe(150);
+			expect(handler).toHaveBeenCalledWith("__batch__", expect.any(Array));
+		});
+
+		it("deduplicates identical requests returning same result", async () => {
+			let batchCallCount = 0;
+			let batchSize = 0;
+			const handler = vi.fn().mockImplementation((method, params) => {
+				if (method === "__batch__") {
+					batchCallCount++;
+					const batch = params as Array<{
+						id: number;
+						method: string;
+						params: unknown[];
+					}>;
+					batchSize = batch.length;
+					return batch.map((req) => ({
+						jsonrpc: "2.0" as const,
+						id: req.id,
+						result: "0x100",
+					}));
+				}
+				return "0x100";
+			});
+
+			const program = Effect.gen(function* () {
+				const batch = yield* RpcBatchService;
+
+				const results = yield* Effect.all(
+					[
+						batch.request(
+							new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
+						),
+						batch.request(
+							new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
+						),
+						batch.request(
+							new EthGetBalance({ address: "0xdef", blockTag: "latest" }),
+						),
+					],
+					{ concurrency: "unbounded" },
+				);
+
+				return results;
+			}).pipe(
+				Effect.provide(RpcBatch),
+				Effect.provide(createMockTransport(handler)),
+			);
+
+			const [r1, r2, r3] = await Effect.runPromise(program);
+			expect(r1).toBe("0x100");
+			expect(r2).toBe("0x100");
+			expect(r3).toBe("0x100");
+		});
+
+		it("handles null result in batch response", async () => {
+			const handler = vi.fn().mockImplementation((method, params) => {
+				if (method === "__batch__") {
+					return [
+						{ jsonrpc: "2.0", id: 0, result: null },
+						{ jsonrpc: "2.0", id: 1, result: "0x200" },
+					];
+				}
+				return null;
+			});
+
+			const program = Effect.gen(function* () {
+				const batch = yield* RpcBatchService;
+
+				const results = yield* Effect.all(
+					[
+						batch.request(
+							new EthGetTransactionByHash({
+								hash: "0x123",
+							}),
+						),
+						batch.request(new EthBlockNumber({})),
+					],
+					{ concurrency: "unbounded" },
+				);
+
+				return results;
+			}).pipe(
+				Effect.provide(RpcBatch),
+				Effect.provide(createMockTransport(handler)),
+			);
+
+			const [txResult, blockNum] = await Effect.runPromise(program);
+			expect(txResult).toBe(null);
+			expect(blockNum).toBe("0x200");
+		});
+
+		it("handles single request optimization (no batch call)", async () => {
+			const handler = vi.fn().mockReturnValue("0x42");
+
+			const program = Effect.gen(function* () {
+				const batch = yield* RpcBatchService;
+				return yield* batch.request(new EthBlockNumber({}));
+			}).pipe(
+				Effect.provide(RpcBatch),
+				Effect.provide(createMockTransport(handler)),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("0x42");
+			expect(handler).toHaveBeenCalledWith("eth_blockNumber", []);
+			expect(handler).not.toHaveBeenCalledWith(
+				"__batch__",
+				expect.anything(),
+			);
 		});
 	});
 });

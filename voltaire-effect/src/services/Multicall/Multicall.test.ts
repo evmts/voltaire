@@ -212,6 +212,272 @@ describe("MulticallService", () => {
 		});
 	});
 
+	describe("edge cases", () => {
+		const createMockProvider = (
+			callFn: ProviderShape["call"],
+		): ProviderShape => ({
+			call: callFn,
+			getBlockNumber: () => Effect.succeed(0n),
+			getBlock: () => Effect.succeed({} as any),
+			getBlockTransactionCount: () => Effect.succeed(0n),
+			getBalance: () => Effect.succeed(0n),
+			getTransactionCount: () => Effect.succeed(0n),
+			getCode: () => Effect.succeed("0x"),
+			getStorageAt: () => Effect.succeed("0x"),
+			getTransaction: () => Effect.succeed({} as any),
+			getTransactionReceipt: () => Effect.succeed({} as any),
+			waitForTransactionReceipt: () => Effect.succeed({} as any),
+			estimateGas: () => Effect.succeed(0n),
+			createAccessList: () => Effect.succeed({} as any),
+			getLogs: () => Effect.succeed([]),
+			getChainId: () => Effect.succeed(1),
+			getGasPrice: () => Effect.succeed(0n),
+			getMaxPriorityFeePerGas: () => Effect.succeed(0n),
+			getFeeHistory: () => Effect.succeed({} as any),
+			watchBlocks: () => ({} as any),
+			backfillBlocks: () => ({} as any),
+		});
+
+		it.effect("handles empty call array without RPC call", () =>
+			Effect.gen(function* () {
+				let callCount = 0;
+				const mockProvider = createMockProvider(() => {
+					callCount++;
+					return Effect.succeed("0x" as const);
+				});
+
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+				const TestMulticallLayer = DefaultMulticall.pipe(
+					Layer.provide(TestProviderLayer),
+				);
+
+				const program = Effect.gen(function* () {
+					const multicall = yield* MulticallService;
+					return yield* multicall.aggregate3([]);
+				}).pipe(Effect.provide(TestMulticallLayer));
+
+				const result = yield* program;
+				expect(result).toEqual([]);
+				expect(callCount).toBe(0);
+			}),
+		);
+
+		it.effect("handles all calls failing with allowFailure=true", () =>
+			Effect.gen(function* () {
+				const mockProvider = createMockProvider(() =>
+					Effect.succeed(
+						"0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000" as const,
+					),
+				);
+
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+				const TestMulticallLayer = DefaultMulticall.pipe(
+					Layer.provide(TestProviderLayer),
+				);
+
+				const program = Effect.gen(function* () {
+					const multicall = yield* MulticallService;
+					return yield* multicall.aggregate3([
+						{
+							target: "0x1234567890123456789012345678901234567890",
+							callData: "0x1234",
+							allowFailure: true,
+						},
+						{
+							target: "0x1234567890123456789012345678901234567890",
+							callData: "0x5678",
+							allowFailure: true,
+						},
+					]);
+				}).pipe(Effect.provide(TestMulticallLayer));
+
+				const result = yield* program;
+				expect(result.length).toBe(2);
+				expect(result[0]?.success).toBe(false);
+				expect(result[1]?.success).toBe(false);
+			}),
+		);
+
+		it.effect("handles partial success (some calls fail, some succeed)", () =>
+			Effect.gen(function* () {
+				const mockProvider = createMockProvider(() =>
+					Effect.succeed(
+						"0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000" as const,
+					),
+				);
+
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+				const TestMulticallLayer = DefaultMulticall.pipe(
+					Layer.provide(TestProviderLayer),
+				);
+
+				const program = Effect.gen(function* () {
+					const multicall = yield* MulticallService;
+					return yield* multicall.aggregate3([
+						{
+							target: "0x1234567890123456789012345678901234567890",
+							callData: "0x1234",
+							allowFailure: true,
+						},
+						{
+							target: "0x1234567890123456789012345678901234567890",
+							callData: "0x5678",
+							allowFailure: true,
+						},
+					]);
+				}).pipe(Effect.provide(TestMulticallLayer));
+
+				const result = yield* program;
+				expect(result.length).toBe(2);
+				expect(result[0]?.success).toBe(true);
+				expect(result[1]?.success).toBe(false);
+			}),
+		);
+
+		it.effect(
+			"handles multicall contract not deployed (revert)",
+			() =>
+				Effect.gen(function* () {
+					const mockProvider = createMockProvider(() =>
+						Effect.fail(
+							new ProviderError(
+								{ method: "eth_call" },
+								"execution reverted: contract not found",
+							),
+						),
+					);
+
+					const TestProviderLayer = Layer.succeed(
+						ProviderService,
+						mockProvider,
+					);
+					const TestMulticallLayer = DefaultMulticall.pipe(
+						Layer.provide(TestProviderLayer),
+					);
+
+					const program = Effect.gen(function* () {
+						const multicall = yield* MulticallService;
+						return yield* multicall.aggregate3([
+							{
+								target: "0x1234567890123456789012345678901234567890",
+								callData: "0x1234",
+							},
+						]);
+					}).pipe(Effect.provide(TestMulticallLayer));
+
+					const exit = yield* Effect.exit(program);
+					expect(Exit.isFailure(exit)).toBe(true);
+					if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+						expect(exit.cause.error._tag).toBe("MulticallError");
+						expect(exit.cause.error.message).toContain("Multicall3 call failed");
+					}
+				}),
+		);
+
+		it.effect("handles gas limit exceeded in aggregate call", () =>
+			Effect.gen(function* () {
+				const mockProvider = createMockProvider(() =>
+					Effect.fail(
+						new ProviderError(
+							{ method: "eth_call" },
+							"gas required exceeds allowance",
+						),
+					),
+				);
+
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+				const TestMulticallLayer = DefaultMulticall.pipe(
+					Layer.provide(TestProviderLayer),
+				);
+
+				const program = Effect.gen(function* () {
+					const multicall = yield* MulticallService;
+					return yield* multicall.aggregate3([
+						{
+							target: "0x1234567890123456789012345678901234567890",
+							callData: "0x1234",
+						},
+					]);
+				}).pipe(Effect.provide(TestMulticallLayer));
+
+				const exit = yield* Effect.exit(program);
+				expect(Exit.isFailure(exit)).toBe(true);
+				if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+					expect(exit.cause.error._tag).toBe("MulticallError");
+					expect(exit.cause.error.message).toContain("gas required exceeds");
+				}
+			}),
+		);
+
+		it.effect("handles very large batch of calls", () =>
+			Effect.gen(function* () {
+				let capturedData: string | undefined;
+				const mockProvider = createMockProvider((tx) => {
+					capturedData = tx.data as string;
+					return Effect.fail(
+						new ProviderError({}, "Expected: testing large batch encoding"),
+					);
+				});
+
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+				const TestMulticallLayer = DefaultMulticall.pipe(
+					Layer.provide(TestProviderLayer),
+				);
+
+				const largeBatch: MulticallCall[] = Array.from(
+					{ length: 100 },
+					(_, i) => ({
+						target: `0x${(i + 1).toString(16).padStart(40, "0")}` as `0x${string}`,
+						callData: `0x${(i + 1).toString(16).padStart(8, "0")}` as `0x${string}`,
+						allowFailure: true,
+					}),
+				);
+
+				const program = Effect.gen(function* () {
+					const multicall = yield* MulticallService;
+					return yield* multicall.aggregate3(largeBatch);
+				}).pipe(Effect.provide(TestMulticallLayer));
+
+				yield* Effect.exit(program);
+				expect(capturedData).toBeDefined();
+				expect(capturedData?.startsWith("0x82ad56cb")).toBe(true);
+				expect(capturedData!.length).toBeGreaterThan(1000);
+			}),
+		);
+
+		it.effect("handles malformed return data", () =>
+			Effect.gen(function* () {
+				const mockProvider = createMockProvider(() =>
+					Effect.succeed("0xdeadbeef" as const),
+				);
+
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+				const TestMulticallLayer = DefaultMulticall.pipe(
+					Layer.provide(TestProviderLayer),
+				);
+
+				const program = Effect.gen(function* () {
+					const multicall = yield* MulticallService;
+					return yield* multicall.aggregate3([
+						{
+							target: "0x1234567890123456789012345678901234567890",
+							callData: "0x1234",
+						},
+					]);
+				}).pipe(Effect.provide(TestMulticallLayer));
+
+				const exit = yield* Effect.exit(program);
+				expect(Exit.isFailure(exit)).toBe(true);
+				if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+					expect(exit.cause.error._tag).toBe("MulticallError");
+					expect(exit.cause.error.message).toContain(
+						"Failed to decode multicall result",
+					);
+				}
+			}),
+		);
+	});
+
 	describe("exports", () => {
 		it("exports from index", async () => {
 			const { MulticallService, MulticallError, DefaultMulticall } = await import(

@@ -1,8 +1,10 @@
 import * as HttpClient from "@effect/platform/HttpClient";
 import type * as HttpClientRequest from "@effect/platform/HttpClientRequest";
 import type * as HttpClientResponse from "@effect/platform/HttpClientResponse";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
+import * as TestClock from "effect/TestClock";
 import { afterEach, beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import * as Layer from "effect/Layer";
 import {
@@ -551,157 +553,235 @@ describe("TransportService", () => {
 			}
 		});
 
-		describe.skip("batching", () => {
-			it("batches requests that arrive within wait window", async () => {
-				let callCount = 0;
-				fetchMock.mockImplementation(() => {
-					callCount++;
-					return Promise.resolve({
-						ok: true,
-						json: async () => {
-							if (callCount === 1) {
-								return [
-									{ jsonrpc: "2.0", id: 1, result: "0x100" },
-								];
-							}
-							return [
-								{ jsonrpc: "2.0", id: 2, result: "0x1" },
-							];
-						},
-					});
-				});
-
-				const program = Effect.gen(function* () {
-					const transport = yield* TransportService;
-					const r1 = yield* transport.request<string>("eth_blockNumber", []);
-					const r2 = yield* transport.request<string>("eth_chainId", []);
-					return [r1, r2];
-				}).pipe(
-					Effect.scoped,
-					Effect.provide(
-						createMockHttpTransport(fetchMock, {
-							url: "https://eth.example.com",
-							batch: { batchSize: 100, wait: 50 },
-							retries: 0,
-						}),
-					),
-				);
-
-				const results = await Effect.runPromise(program);
-				expect(results[0]).toBe("0x100");
-				expect(results[1]).toBe("0x1");
-			});
-
-			it("handles individual request errors in batch", async () => {
-				fetchMock.mockImplementation(() =>
-					Promise.resolve({
-						ok: true,
-						json: async () => [
-							{ jsonrpc: "2.0", id: 1, result: "0x100" },
-							{ jsonrpc: "2.0", id: 2, error: { code: -32000, message: "execution reverted" } },
-						],
-					}),
-				);
-
-				const program = Effect.gen(function* () {
-					const transport = yield* TransportService;
-					const results = yield* Effect.all(
-						[
-							transport.request<string>("eth_blockNumber", []),
-							transport.request<string>("eth_call", []),
-						],
-						{ concurrency: "unbounded", mode: "either" },
-					);
-					return results;
-				}).pipe(
-					Effect.provide(
-					createMockHttpTransport(fetchMock, {
-							url: "https://eth.example.com",
-							batch: { batchSize: 100, wait: 10 },
-							retries: 0,
-						}),
-					),
-				);
-
-				const results = await Effect.runPromise(program);
-				expect(results[0]._tag).toBe("Right");
-				expect(results[1]._tag).toBe("Left");
-			});
-
-			it("flushes batch on size limit", async () => {
-				let callCount = 0;
-				fetchMock.mockImplementation(() => {
-					callCount++;
-					if (callCount === 1) {
-						return Promise.resolve({
+		describe("batching", () => {
+			it.effect("batches requests that arrive within wait window", () =>
+				Effect.gen(function* () {
+					fetchMock.mockImplementation(() =>
+						Promise.resolve({
 							ok: true,
 							json: async () => [
-								{ jsonrpc: "2.0", id: 1, result: "0x1" },
-								{ jsonrpc: "2.0", id: 2, result: "0x2" },
+								{ jsonrpc: "2.0", id: 1, result: "0x100" },
+								{ jsonrpc: "2.0", id: 2, result: "0x1" },
 							],
-						});
-					}
-					return Promise.resolve({
-						ok: true,
-						json: async () => [{ jsonrpc: "2.0", id: 3, result: "0x3" }],
-					});
-				});
-
-				const program = Effect.gen(function* () {
-					const transport = yield* TransportService;
-					return yield* Effect.all([
-						transport.request<string>("eth_blockNumber", []),
-						transport.request<string>("eth_chainId", []),
-						transport.request<string>("eth_gasPrice", []),
-					]);
-				}).pipe(
-					Effect.scoped,
-					Effect.provide(
-						createMockHttpTransport(fetchMock, {
-							url: "https://eth.example.com",
-							batch: { batchSize: 2, wait: 50 },
-							retries: 0,
 						}),
-					),
-				);
-
-				const results = await Effect.runPromise(program);
-				expect(results).toEqual(["0x1", "0x2", "0x3"]);
-				expect(fetchMock).toHaveBeenCalledTimes(2);
-			});
-
-			it("fails all requests on HTTP error", async () => {
-				fetchMock.mockImplementation(() =>
-					Promise.resolve({
-						ok: false,
-						status: 500,
-						statusText: "Internal Server Error",
-					}),
-				);
-
-				const program = Effect.gen(function* () {
-					const transport = yield* TransportService;
-					return yield* Effect.all(
-						[
-							transport.request<string>("eth_blockNumber", []),
-							transport.request<string>("eth_chainId", []),
-						],
-						{ concurrency: "unbounded", mode: "either" },
 					);
-				}).pipe(
-					Effect.provide(
-					createMockHttpTransport(fetchMock, {
-							url: "https://eth.example.com",
-							batch: { batchSize: 100, wait: 10 },
-							retries: 0,
-						}),
-					),
-				);
 
-				const results = await Effect.runPromise(program);
-				expect(results[0]._tag).toBe("Left");
-				expect(results[1]._tag).toBe("Left");
-			});
+					const program = Effect.gen(function* () {
+						const transport = yield* TransportService;
+						const fiber1 = yield* Effect.fork(
+							transport.request<string>("eth_blockNumber", []),
+						);
+						const fiber2 = yield* Effect.fork(
+							transport.request<string>("eth_chainId", []),
+						);
+						yield* Effect.yieldNow();
+						yield* Effect.yieldNow();
+						yield* TestClock.adjust(Duration.millis(50));
+						const r1 = yield* Fiber.join(fiber1);
+						const r2 = yield* Fiber.join(fiber2);
+						return [r1, r2] as const;
+					}).pipe(
+						Effect.scoped,
+						Effect.provide(
+							createMockHttpTransport(fetchMock, {
+								url: "https://eth.example.com",
+								batch: { batchSize: 100, wait: 50 },
+								retries: 0,
+							}),
+						),
+					);
+
+					const results = yield* program;
+					expect(results[0]).toBe("0x100");
+					expect(results[1]).toBe("0x1");
+					expect(fetchMock).toHaveBeenCalledTimes(1);
+				}),
+			);
+
+			it.effect("handles individual request errors in batch", () =>
+				Effect.gen(function* () {
+					fetchMock.mockImplementation(() =>
+						Promise.resolve({
+							ok: true,
+							json: async () => [
+								{ jsonrpc: "2.0", id: 1, result: "0x100" },
+								{
+									jsonrpc: "2.0",
+									id: 2,
+									error: { code: -32000, message: "execution reverted" },
+								},
+							],
+						}),
+					);
+
+					const program = Effect.gen(function* () {
+						const transport = yield* TransportService;
+						const fiber = yield* Effect.fork(
+							Effect.all(
+								[
+									transport.request<string>("eth_blockNumber", []),
+									transport.request<string>("eth_call", []),
+								],
+								{ concurrency: "unbounded", mode: "either" },
+							),
+						);
+						yield* Effect.yieldNow();
+						yield* Effect.yieldNow();
+						yield* TestClock.adjust(Duration.millis(10));
+						return yield* Fiber.join(fiber);
+					}).pipe(
+						Effect.provide(
+							createMockHttpTransport(fetchMock, {
+								url: "https://eth.example.com",
+								batch: { batchSize: 100, wait: 10 },
+								retries: 0,
+							}),
+						),
+						Effect.scoped,
+					);
+
+					const results = yield* program;
+					expect(results[0]._tag).toBe("Right");
+					expect(results[1]._tag).toBe("Left");
+				}),
+			);
+
+			it.effect("flushes batch on size limit", () =>
+				Effect.gen(function* () {
+					let callCount = 0;
+					fetchMock.mockImplementation(() => {
+						callCount++;
+						if (callCount === 1) {
+							return Promise.resolve({
+								ok: true,
+								json: async () => [
+									{ jsonrpc: "2.0", id: 1, result: "0x1" },
+									{ jsonrpc: "2.0", id: 2, result: "0x2" },
+								],
+							});
+						}
+						return Promise.resolve({
+							ok: true,
+							json: async () => [{ jsonrpc: "2.0", id: 3, result: "0x3" }],
+						});
+					});
+
+					const program = Effect.gen(function* () {
+						const transport = yield* TransportService;
+						return yield* Effect.all(
+							[
+								transport.request<string>("eth_blockNumber", []),
+								transport.request<string>("eth_chainId", []),
+								transport.request<string>("eth_gasPrice", []),
+							],
+							{ concurrency: "unbounded" },
+						);
+					}).pipe(
+						Effect.scoped,
+						Effect.provide(
+							createMockHttpTransport(fetchMock, {
+								url: "https://eth.example.com",
+								batch: { batchSize: 2, wait: 50 },
+								retries: 0,
+							}),
+						),
+					);
+
+					const results = yield* program;
+					expect(results).toEqual(["0x1", "0x2", "0x3"]);
+					expect(fetchMock).toHaveBeenCalledTimes(2);
+				}),
+			);
+
+			it.effect("fails all requests on HTTP error", () =>
+				Effect.gen(function* () {
+					fetchMock.mockImplementation(() =>
+						Promise.resolve({
+							ok: false,
+							status: 500,
+							statusText: "Internal Server Error",
+						}),
+					);
+
+					const program = Effect.gen(function* () {
+						const transport = yield* TransportService;
+						const fiber = yield* Effect.fork(
+							Effect.all(
+								[
+									transport.request<string>("eth_blockNumber", []),
+									transport.request<string>("eth_chainId", []),
+								],
+								{ concurrency: "unbounded", mode: "either" },
+							),
+						);
+						yield* Effect.yieldNow();
+						yield* Effect.yieldNow();
+						yield* TestClock.adjust(Duration.millis(10));
+						return yield* Fiber.join(fiber);
+					}).pipe(
+						Effect.provide(
+							createMockHttpTransport(fetchMock, {
+								url: "https://eth.example.com",
+								batch: { batchSize: 100, wait: 10 },
+								retries: 0,
+							}),
+						),
+						Effect.scoped,
+					);
+
+					const results = yield* program;
+					expect(results[0]._tag).toBe("Left");
+					expect(results[1]._tag).toBe("Left");
+				}),
+			);
+
+			it.effect("fails missing batch response with useful error", () =>
+				Effect.gen(function* () {
+					fetchMock.mockImplementation(() =>
+						Promise.resolve({
+							ok: true,
+							json: async () => [
+								{ jsonrpc: "2.0", id: 1, result: "0x100" },
+							],
+						}),
+					);
+
+					const program = Effect.gen(function* () {
+						const transport = yield* TransportService;
+						const fiber = yield* Effect.fork(
+							Effect.all(
+								[
+									transport.request<string>("eth_blockNumber", []),
+									transport.request<string>("eth_chainId", []),
+								],
+								{ concurrency: "unbounded", mode: "either" },
+							),
+						);
+						yield* Effect.yieldNow();
+						yield* Effect.yieldNow();
+						yield* TestClock.adjust(Duration.millis(10));
+						return yield* Fiber.join(fiber);
+					}).pipe(
+						Effect.provide(
+							createMockHttpTransport(fetchMock, {
+								url: "https://eth.example.com",
+								batch: { batchSize: 100, wait: 10 },
+								retries: 0,
+							}),
+						),
+						Effect.scoped,
+					);
+
+					const results = yield* program;
+					expect(results[0]._tag).toBe("Right");
+					expect(results[1]._tag).toBe("Left");
+					if (results[1]._tag === "Left") {
+						expect(results[1].left.message).toContain(
+							"Missing JSON-RPC response",
+						);
+					}
+				}),
+			);
 		});
 	});
 

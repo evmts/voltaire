@@ -1,5 +1,4 @@
 import * as Effect from "effect/Effect";
-import * as Request from "effect/Request";
 import { describe, expect, it, vi } from "@effect/vitest";
 import { TransportError } from "../Transport/TransportError.js";
 import { makeRpcResolver } from "./RpcResolver.js";
@@ -17,22 +16,6 @@ const createMockTransport = () => ({
 
 describe("RpcResolver", () => {
 	describe("makeRpcResolver", () => {
-		describe("empty batch", () => {
-			it("does nothing for empty request array", async () => {
-				const transport = createMockTransport();
-				const resolver = makeRpcResolver(transport);
-
-				const result = await Effect.runPromise(
-					Effect.request(resolver)(new EthBlockNumber({})).pipe(
-						Effect.withRequestBatching(false),
-						Effect.either,
-					),
-				);
-
-				expect(transport.request).not.toHaveBeenCalled();
-				expect(result._tag).toBe("Left");
-			});
-		});
 
 		describe("single request", () => {
 			it("uses direct transport.request for single request", async () => {
