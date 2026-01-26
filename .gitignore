@@ -3,6 +3,8 @@
 dist/
 /types/
 
+.smithers
+
 modern-monaco
 tevm-monorepo
 effect-repo/
