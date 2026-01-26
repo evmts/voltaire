@@ -47,7 +47,10 @@ import {
 	type BlockTag,
 	type BlockType,
 	type CallRequest,
+	type EventFilter,
 	type FeeHistoryType,
+	type FilterChanges,
+	type FilterId,
 	type GetBlockArgs,
 	type GetUncleArgs,
 	type HashInput,
@@ -61,6 +64,7 @@ import {
 	type TransactionType,
 	type UncleBlockType,
 } from "./ProviderService.js";
+import { getBlobBaseFee as getBlobBaseFeeEffect } from "./getBlobBaseFee.js";
 
 /**
  * Converts a Uint8Array to hex string.
@@ -89,6 +93,47 @@ const toAddressHex = (input: AddressInput): string => {
 const toHashHex = (input: HashInput): string => {
 	if (typeof input === "string") return input;
 	return bytesToHex(input);
+};
+
+type LogFilterParams = {
+	address?: AddressInput | AddressInput[];
+	topics?: (HashInput | HashInput[] | null)[];
+	fromBlock?: BlockTag;
+	toBlock?: BlockTag;
+	blockHash?: HashInput;
+};
+
+type RpcLogFilterParams = {
+	address?: `0x${string}` | `0x${string}`[];
+	topics?: (string | string[] | null)[];
+	fromBlock?: BlockTag;
+	toBlock?: BlockTag;
+	blockHash?: `0x${string}`;
+};
+
+/**
+ * Formats log filter parameters for JSON-RPC submission.
+ */
+const formatLogFilterParams = (filter: LogFilterParams): RpcLogFilterParams => {
+	const params: RpcLogFilterParams = {};
+	if (filter.address) {
+		params.address = Array.isArray(filter.address)
+			? filter.address.map(toAddressHex)
+			: toAddressHex(filter.address);
+	}
+	if (filter.topics) {
+		params.topics = filter.topics.map((topic) => {
+			if (topic === null) return null;
+			if (Array.isArray(topic)) return topic.map(toHashHex);
+			return toHashHex(topic);
+		});
+	}
+	if (filter.fromBlock !== undefined) params.fromBlock = filter.fromBlock;
+	if (filter.toBlock !== undefined) params.toBlock = filter.toBlock;
+	if (filter.blockHash !== undefined) {
+		params.blockHash = toHashHex(filter.blockHash) as `0x${string}`;
+	}
+	return params;
 };
 
 /**
@@ -591,24 +636,22 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					]),
 
 				getLogs: (filter: LogFilter) => {
-					const params: Record<string, unknown> = {};
-					if (filter.address) {
-						params.address = Array.isArray(filter.address)
-							? filter.address.map(toAddressHex)
-							: toAddressHex(filter.address);
-					}
-					if (filter.topics) {
-						params.topics = filter.topics.map((topic) => {
-							if (topic === null) return null;
-							if (Array.isArray(topic)) return topic.map(toHashHex);
-							return toHashHex(topic);
-						});
-					}
-					if (filter.fromBlock) params.fromBlock = filter.fromBlock;
-					if (filter.toBlock) params.toBlock = filter.toBlock;
-					if (filter.blockHash) params.blockHash = toHashHex(filter.blockHash);
+					const params = formatLogFilterParams(filter);
 					return request<LogType[]>("eth_getLogs", [params]);
 				},
+				createEventFilter: (filter: EventFilter = {}) => {
+					const params = formatLogFilterParams(filter);
+					return request<FilterId>("eth_newFilter", [params]);
+				},
+				createBlockFilter: () => request<FilterId>("eth_newBlockFilter"),
+				createPendingTransactionFilter: () =>
+					request<FilterId>("eth_newPendingTransactionFilter"),
+				getFilterChanges: (filterId: FilterId) =>
+					request<FilterChanges>("eth_getFilterChanges", [filterId]),
+				getFilterLogs: (filterId: FilterId) =>
+					request<LogType[]>("eth_getFilterLogs", [filterId]),
+				uninstallFilter: (filterId: FilterId) =>
+					request<boolean>("eth_uninstallFilter", [filterId]),
 
 				getChainId: () =>
 					request<string>("eth_chainId").pipe(
@@ -794,18 +837,8 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					]),
 
 				getBlobBaseFee: () =>
-					request<string>("eth_blobBaseFee").pipe(
-						Effect.flatMap((hex) =>
-							Effect.try({
-								try: () => BigInt(hex),
-								catch: (e) =>
-									new ProviderError(
-										{ method: "eth_blobBaseFee", response: hex },
-										`Invalid hex response from RPC: ${hex}`,
-										{ cause: e instanceof Error ? e : undefined },
-									),
-							}),
-						),
+					getBlobBaseFeeEffect().pipe(
+						Effect.provideService(TransportService, transport),
 					),
 
 				getTransactionConfirmations: (hash: HashInput) =>

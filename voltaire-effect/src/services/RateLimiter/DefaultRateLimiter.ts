@@ -22,6 +22,17 @@ import {
 	type RateLimiterShape,
 } from "./RateLimiterService.js";
 
+const resolveInterval = (
+	interval?: RateLimiter.RateLimiter.Options["interval"],
+	window?: RateLimiter.RateLimiter.Options["interval"],
+) => {
+	const resolved = interval ?? window;
+	if (!resolved) {
+		throw new Error("RateLimiter config requires an interval/window value");
+	}
+	return resolved;
+};
+
 /**
  * Creates a RateLimiterShape from configuration.
  * This is the core factory that creates the rate limiting infrastructure.
@@ -33,7 +44,7 @@ const makeRateLimiterShape = (
 	globalLimiter: RateLimiter.RateLimiter | undefined,
 	methodLimiters: Map<string, RateLimiter.RateLimiter>,
 ): RateLimiterShape => {
-	const behavior = config.behavior ?? "delay";
+	const behavior = config.behavior ?? config.onExceeded ?? "delay";
 
 	const getLimiter = (method: string) => methodLimiters.get(method);
 	const getGlobalLimiter = () => globalLimiter;
@@ -127,7 +138,10 @@ export const makeRateLimiter = (config: RateLimiterConfig) =>
 		const globalLimiter = config.global
 			? yield* RateLimiter.make({
 					limit: config.global.limit,
-					interval: config.global.interval,
+					interval: resolveInterval(
+						config.global.interval,
+						config.global.window,
+					),
 					algorithm: config.global.algorithm,
 				})
 			: undefined;
@@ -138,7 +152,7 @@ export const makeRateLimiter = (config: RateLimiterConfig) =>
 			for (const [method, opts] of Object.entries(config.methods)) {
 				const limiter = yield* RateLimiter.make({
 					limit: opts.limit,
-					interval: opts.interval,
+					interval: resolveInterval(opts.interval, opts.window),
 					algorithm: opts.algorithm,
 				});
 				methodLimiters.set(method, limiter);

@@ -1,4 +1,5 @@
 import { Address, Hash } from "@tevm/voltaire";
+import { InvalidBlobCountError } from "@tevm/voltaire/Blob";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
@@ -9,6 +10,7 @@ import {
 	TransportService,
 } from "../Transport/TransportService.js";
 import { Provider } from "./Provider.js";
+import { calculateBlobGasPrice, estimateBlobGas } from "./getBlobBaseFee.js";
 import { type ProviderError, ProviderService } from "./ProviderService.js";
 
 const mockTransport = (responses: Record<string, unknown>) =>
@@ -270,6 +272,113 @@ describe("ProviderService", () => {
 
 			const filter = capturedParams[0] as Record<string, unknown>;
 			expect(filter.topics).toEqual([topic1, [topic2, topic3], null]);
+		});
+	});
+
+	describe("filter subscriptions", () => {
+		it("creates event filter with formatted params", async () => {
+			let capturedParams: unknown[] = [];
+			const transport = mockTransportWithCapture({
+				eth_newFilter: (params: unknown[]) => {
+					capturedParams = params;
+					return "0x1";
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const addressHex = "0x1234567890123456789012345678901234567890";
+			const address = Address(addressHex);
+			const address2 = "0x0000000000000000000000000000000000000001";
+			const topicHex =
+				"0x0000000000000000000000000000000000000000000000000000000000000001";
+			const topic2 =
+				"0x0000000000000000000000000000000000000000000000000000000000000002";
+			const topic = Hash(topicHex);
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.createEventFilter({
+						address: [address, address2],
+						topics: [topic, [topic2], null],
+						fromBlock: "latest",
+						toBlock: "0x10",
+					});
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result).toBe("0x1");
+			const filter = capturedParams[0] as Record<string, unknown>;
+			expect(filter.address).toEqual([addressHex, address2]);
+			expect(filter.topics).toEqual([topicHex, [topic2], null]);
+			expect(filter.fromBlock).toBe("latest");
+			expect(filter.toBlock).toBe("0x10");
+		});
+
+		it("creates block and pending transaction filters", async () => {
+			const captured: Record<string, unknown[]> = {};
+			const transport = mockTransportWithCapture({
+				eth_newBlockFilter: (params: unknown[]) => {
+					captured.block = params;
+					return "0x2";
+				},
+				eth_newPendingTransactionFilter: (params: unknown[]) => {
+					captured.pending = params;
+					return "0x3";
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					const block = yield* provider.createBlockFilter();
+					const pending = yield* provider.createPendingTransactionFilter();
+					return { block, pending };
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result.block).toBe("0x2");
+			expect(result.pending).toBe("0x3");
+			expect(captured.block).toEqual([]);
+			expect(captured.pending).toEqual([]);
+		});
+
+		it("requests filter changes/logs and uninstalls", async () => {
+			const captured: Record<string, unknown[]> = {};
+			const transport = mockTransportWithCapture({
+				eth_getFilterChanges: (params: unknown[]) => {
+					captured.changes = params;
+					return [];
+				},
+				eth_getFilterLogs: (params: unknown[]) => {
+					captured.logs = params;
+					return [];
+				},
+				eth_uninstallFilter: (params: unknown[]) => {
+					captured.uninstall = params;
+					return true;
+				},
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const filterId = "0x1";
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					const changes = yield* provider.getFilterChanges(filterId);
+					const logs = yield* provider.getFilterLogs(filterId);
+					const removed = yield* provider.uninstallFilter(filterId);
+					return { changes, logs, removed };
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result.changes).toEqual([]);
+			expect(result.logs).toEqual([]);
+			expect(result.removed).toBe(true);
+			expect(captured.changes).toEqual([filterId]);
+			expect(captured.logs).toEqual([filterId]);
+			expect(captured.uninstall).toEqual([filterId]);
 		});
 	});
 
@@ -1309,6 +1418,59 @@ describe("ProviderService", () => {
 			);
 
 			expect(result).toBe(1000000000n);
+		});
+
+		it("falls back to block excessBlobGas when RPC method is missing", async () => {
+			const transport = mockTransportWithCapture({
+				eth_getBlockByNumber: () => ({
+					number: "0x1",
+					excessBlobGas: "0x0",
+				}),
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getBlobBaseFee();
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result).toBe(1n);
+		});
+
+		it("fails on pre-Dencun blocks without excessBlobGas", async () => {
+			const transport = mockTransportWithCapture({
+				eth_getBlockByNumber: () => ({
+					number: "0x1",
+				}),
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getBlobBaseFee();
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+	});
+
+	describe("estimateBlobGas", () => {
+		it("estimates blob gas from blob count", () => {
+			expect(estimateBlobGas(3)).toBe(393216n);
+		});
+
+		it("throws for invalid blob count", () => {
+			expect(() => estimateBlobGas(7)).toThrow(InvalidBlobCountError);
+		});
+	});
+
+	describe("calculateBlobGasPrice", () => {
+		it("calculates total blob fee", () => {
+			expect(calculateBlobGasPrice(10n, 2n)).toBe(20n);
 		});
 	});
 

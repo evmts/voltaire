@@ -37,6 +37,23 @@ export class RateLimitError extends Data.TaggedError("RateLimitError")<{
  */
 export type RateLimitBehavior = "delay" | "fail";
 
+type RateLimiterWindow = {
+	/**
+	 * Interval between allowed requests.
+	 * Alias: `window` for consistency with experimental RateLimiter APIs.
+	 */
+	readonly interval?: RateLimiter.RateLimiter.Options["interval"];
+	/**
+	 * Alias for `interval`.
+	 */
+	readonly window?: RateLimiter.RateLimiter.Options["interval"];
+};
+
+type RateLimiterRule = RateLimiterWindow & {
+	readonly limit: number;
+	readonly algorithm?: RateLimiter.RateLimiter.Options["algorithm"];
+};
+
 /**
  * Configuration for rate limiting.
  *
@@ -47,30 +64,25 @@ export type RateLimiterConfig = {
 	 * Global rate limit (requests per interval).
 	 * Applied to all methods.
 	 */
-	readonly global?: {
-		readonly limit: number;
-		readonly interval: RateLimiter.RateLimiter.Options["interval"];
-		readonly algorithm?: RateLimiter.RateLimiter.Options["algorithm"];
-	};
+	readonly global?: RateLimiterRule;
 
 	/**
 	 * Per-method rate limits.
 	 * Keys are RPC method names (e.g., "eth_call", "eth_getLogs").
 	 */
-	readonly methods?: Record<
-		string,
-		{
-			readonly limit: number;
-			readonly interval: RateLimiter.RateLimiter.Options["interval"];
-			readonly algorithm?: RateLimiter.RateLimiter.Options["algorithm"];
-		}
-	>;
+	readonly methods?: Record<string, RateLimiterRule>;
 
 	/**
 	 * Behavior when rate limit is exceeded.
 	 * @default "delay"
 	 */
 	readonly behavior?: RateLimitBehavior;
+
+	/**
+	 * Alias for behavior when rate limit is exceeded.
+	 * @default "delay"
+	 */
+	readonly onExceeded?: RateLimitBehavior;
 };
 
 /**

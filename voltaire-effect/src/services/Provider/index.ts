@@ -51,7 +51,10 @@ export {
 	type BlockTag,
 	type BlockType,
 	type CallRequest,
+	type EventFilter,
 	type FeeHistoryType,
+	type FilterChanges,
+	type FilterIdInput,
 	type GetBlockArgs,
 	type GetBlockTransactionCountArgs,
 	type GetUncleArgs,
@@ -76,10 +79,21 @@ export type {
 	WatchOptions,
 } from "@tevm/voltaire/block";
 export {
+	calculateBlobGasPrice,
+	estimateBlobGas,
+	getBlobBaseFee,
+} from "./getBlobBaseFee.js";
+export {
 	readContract,
 	type Abi,
 	type ReadContractParams,
 } from "./actions/readContract.js";
+export {
+	simulateCalls,
+	type AssetChange,
+	type SimulateCallsParams,
+	type SimulationResult,
+} from "./simulateCalls.js";
 export {
 	multicall,
 	type ContractCall,

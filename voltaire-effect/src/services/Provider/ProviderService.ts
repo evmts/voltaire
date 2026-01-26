@@ -46,6 +46,14 @@ export type AddressInput = AddressType | `0x${string}`;
 export type HashInput = HashType | `0x${string}`;
 
 /**
+ * Filter identifier returned by eth_newFilter methods.
+ *
+ * @since 0.0.1
+ */
+export type FilterId = `0x${string}`;
+
+
+/**
  * Error thrown when a provider operation fails.
  *
  * @description
@@ -398,6 +406,44 @@ export type LogFilter =
 	  };
 
 /**
+ * Filter parameters for eth_newFilter.
+ *
+ * @description
+ * Defines the criteria for creating an event log filter.
+ *
+ * @since 0.0.1
+ */
+export type EventFilter = {
+	/** Contract address(es) to filter (single or array) */
+	readonly address?: AddressInput | AddressInput[];
+	/** Topic filters by position (null for wildcard at that position) */
+	readonly topics?: (HashInput | HashInput[] | null)[];
+	/** Start block for range query (inclusive) */
+	readonly fromBlock?: BlockTag;
+	/** End block for range query (inclusive) */
+	readonly toBlock?: BlockTag;
+};
+
+/**
+ * Filter parameters for eth_newFilter (event filters).
+ *
+ * @description
+ * Matches a subset of LogFilter parameters used for creating an event filter.
+ *
+ * @since 0.0.1
+ */
+export type EventFilter = {
+	/** Contract address(es) to filter (single or array) */
+	address?: AddressInput | AddressInput[];
+	/** Topic filters by position (null for wildcard at that position) */
+	topics?: (HashInput | HashInput[] | null)[];
+	/** Start block for range query (inclusive) */
+	fromBlock?: BlockTag;
+	/** End block for range query (inclusive) */
+	toBlock?: BlockTag;
+};
+
+/**
  * Ethereum block as returned by JSON-RPC.
  *
  * @description
@@ -600,6 +646,23 @@ export interface LogType {
 	/** True if log was removed due to reorg */
 	removed: boolean;
 }
+
+/**
+ * Filter changes returned by eth_getFilterChanges.
+ *
+ * @since 0.0.1
+ */
+export type FilterChanges = LogType[] | `0x${string}`[];
+
+/**
+ * Result type for eth_getFilterChanges.
+ *
+ * @description
+ * Returns logs for event filters or hashes for block/transaction filters.
+ *
+ * @since 0.0.1
+ */
+export type FilterChanges = LogType[] | `0x${string}`[];
 
 /**
  * Access list result from eth_createAccessList.
@@ -817,6 +880,29 @@ export type ProviderShape = {
 	readonly getLogs: (
 		filter: LogFilter,
 	) => Effect.Effect<LogType[], ProviderError>;
+	/** Creates an event filter (eth_newFilter) */
+	readonly createEventFilter: (
+		filter?: EventFilter,
+	) => Effect.Effect<FilterId, ProviderError>;
+	/** Creates a new block filter (eth_newBlockFilter) */
+	readonly createBlockFilter: () => Effect.Effect<FilterId, ProviderError>;
+	/** Creates a pending transaction filter (eth_newPendingTransactionFilter) */
+	readonly createPendingTransactionFilter: () => Effect.Effect<
+		FilterId,
+		ProviderError
+	>;
+	/** Gets changes since last poll for a filter (eth_getFilterChanges) */
+	readonly getFilterChanges: (
+		filterId: FilterId,
+	) => Effect.Effect<FilterChanges, ProviderError>;
+	/** Gets all logs for a filter (eth_getFilterLogs) */
+	readonly getFilterLogs: (
+		filterId: FilterId,
+	) => Effect.Effect<LogType[], ProviderError>;
+	/** Uninstalls a filter (eth_uninstallFilter) */
+	readonly uninstallFilter: (
+		filterId: FilterId,
+	) => Effect.Effect<boolean, ProviderError>;
 	/** Gets the chain ID */
 	readonly getChainId: () => Effect.Effect<number, ProviderError>;
 	/** Gets the current gas price */

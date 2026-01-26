@@ -2,15 +2,10 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import { describe, expect, it } from "@effect/vitest";
+import { DefaultEns, EnsService } from "../../Ens/index.js";
 import { TransportService } from "../../Transport/TransportService.js";
 import { Provider } from "../Provider.js";
-import { ProviderService } from "../ProviderService.js";
 import { EnsError } from "./EnsError.js";
-import { getEnsAddress } from "./getEnsAddress.js";
-import { getEnsAvatar } from "./getEnsAvatar.js";
-import { getEnsName } from "./getEnsName.js";
-import { getEnsResolver } from "./getEnsResolver.js";
-import { getEnsText } from "./getEnsText.js";
 
 type MockHandler = (params: unknown[]) => unknown;
 type MockResponses = Record<string, unknown | MockHandler>;
@@ -42,6 +37,11 @@ const mockTransportWithCapture = (responses: MockResponses) =>
 			}),
 	});
 
+const makeEnsLayer = (responses: MockResponses) =>
+	DefaultEns.pipe(
+		Layer.provide(Provider.pipe(Layer.provide(mockTransportWithCapture(responses)))),
+	);
+
 describe("ENS Resolution", () => {
 	describe("getEnsAddress", () => {
 		it("resolves ENS name to address", async () => {
@@ -58,13 +58,15 @@ describe("ENS Resolution", () => {
 				// Address padded to 32 bytes (vitalik.eth address)
 				"000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045";
 
-			const transport = mockTransportWithCapture({
+			const layer = makeEnsLayer({
 				eth_call: mockResolveResponse,
 			});
-			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				getEnsAddress({ name: "vitalik.eth" }).pipe(Effect.provide(layer)),
+				Effect.gen(function* () {
+					const ens = yield* EnsService;
+					return yield* ens.getEnsAddress({ name: "vitalik.eth" });
+				}).pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe("0xd8da6bf26964af9d7eed9e03e53415d37aa96045");
@@ -78,28 +80,30 @@ describe("ENS Resolution", () => {
 				"0000000000000000000000000000000000000000000000000000000000000000" +
 				"0000000000000000000000000000000000000000000000000000000000000000";
 
-			const transport = mockTransportWithCapture({
+			const layer = makeEnsLayer({
 				eth_call: mockResolveResponse,
 			});
-			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				getEnsAddress({ name: "nonexistent12345.eth" }).pipe(
-					Effect.provide(layer),
-				),
+				Effect.gen(function* () {
+					const ens = yield* EnsService;
+					return yield* ens.getEnsAddress({ name: "nonexistent12345.eth" });
+				}).pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBeNull();
 		});
 
 		it("fails with EnsError on RPC error", async () => {
-			const transport = mockTransportWithCapture({
+			const layer = makeEnsLayer({
 				eth_call: () => new Error("execution reverted"),
 			});
-			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				getEnsAddress({ name: "test.eth" }).pipe(Effect.provide(layer)),
+				Effect.gen(function* () {
+					const ens = yield* EnsService;
+					return yield* ens.getEnsAddress({ name: "test.eth" });
+				}).pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -122,14 +126,16 @@ describe("ENS Resolution", () => {
 				// String data "vitalik.eth" padded
 				"766974616c696b2e657468000000000000000000000000000000000000000000";
 
-			const transport = mockTransportWithCapture({
+			const layer = makeEnsLayer({
 				eth_call: mockReverseResponse,
 			});
-			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				getEnsName({
-					address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+				Effect.gen(function* () {
+					const ens = yield* EnsService;
+					return yield* ens.getEnsName({
+						address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+					});
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -144,14 +150,16 @@ describe("ENS Resolution", () => {
 				"0000000000000000000000000000000000000000000000000000000000000000" +
 				"0000000000000000000000000000000000000000000000000000000000000000";
 
-			const transport = mockTransportWithCapture({
+			const layer = makeEnsLayer({
 				eth_call: mockReverseResponse,
 			});
-			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				getEnsName({
-					address: "0x1234567890123456789012345678901234567890",
+				Effect.gen(function* () {
+					const ens = yield* EnsService;
+					return yield* ens.getEnsName({
+						address: "0x1234567890123456789012345678901234567890",
+					});
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -165,13 +173,15 @@ describe("ENS Resolution", () => {
 			const mockResolverResponse =
 				"0x0000000000000000000000004976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41";
 
-			const transport = mockTransportWithCapture({
+			const layer = makeEnsLayer({
 				eth_call: mockResolverResponse,
 			});
-			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				getEnsResolver({ name: "vitalik.eth" }).pipe(Effect.provide(layer)),
+				Effect.gen(function* () {
+					const ens = yield* EnsService;
+					return yield* ens.getEnsResolver({ name: "vitalik.eth" });
+				}).pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe("0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41");
@@ -181,13 +191,15 @@ describe("ENS Resolution", () => {
 			const mockResolverResponse =
 				"0x0000000000000000000000000000000000000000000000000000000000000000";
 
-			const transport = mockTransportWithCapture({
+			const layer = makeEnsLayer({
 				eth_call: mockResolverResponse,
 			});
-			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				getEnsResolver({ name: "nonexistent.eth" }).pipe(Effect.provide(layer)),
+				Effect.gen(function* () {
+					const ens = yield* EnsService;
+					return yield* ens.getEnsResolver({ name: "nonexistent.eth" });
+				}).pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBeNull();
@@ -214,15 +226,18 @@ describe("ENS Resolution", () => {
 				// String data padded
 				twitterHex.padEnd(64, "0");
 
-			const transport = mockTransportWithCapture({
+			const layer = makeEnsLayer({
 				eth_call: mockTextResponse,
 			});
-			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				getEnsText({ name: "vitalik.eth", key: "com.twitter" }).pipe(
-					Effect.provide(layer),
-				),
+				Effect.gen(function* () {
+					const ens = yield* EnsService;
+					return yield* ens.getEnsText({
+						name: "vitalik.eth",
+						key: "com.twitter",
+					});
+				}).pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe("VitalikButerin");
@@ -235,15 +250,18 @@ describe("ENS Resolution", () => {
 				"0000000000000000000000000000000000000000000000000000000000000000" +
 				"0000000000000000000000000000000000000000000000000000000000000000";
 
-			const transport = mockTransportWithCapture({
+			const layer = makeEnsLayer({
 				eth_call: mockTextResponse,
 			});
-			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				getEnsText({ name: "test.eth", key: "nonexistent" }).pipe(
-					Effect.provide(layer),
-				),
+				Effect.gen(function* () {
+					const ens = yield* EnsService;
+					return yield* ens.getEnsText({
+						name: "test.eth",
+						key: "nonexistent",
+					});
+				}).pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBeNull();
@@ -263,13 +281,15 @@ describe("ENS Resolution", () => {
 				"000000000000000000000000000000000000000000000000000000000000001e" +
 				avatarHex.padEnd(64, "0");
 
-			const transport = mockTransportWithCapture({
+			const layer = makeEnsLayer({
 				eth_call: mockAvatarResponse,
 			});
-			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				getEnsAvatar({ name: "vitalik.eth" }).pipe(Effect.provide(layer)),
+				Effect.gen(function* () {
+					const ens = yield* EnsService;
+					return yield* ens.getEnsAvatar({ name: "vitalik.eth" });
+				}).pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe("https://example.com/avatar.png");
