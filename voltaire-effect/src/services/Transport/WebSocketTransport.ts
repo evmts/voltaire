@@ -34,11 +34,14 @@ import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
+import * as FiberRef from "effect/FiberRef";
 import * as Layer from "effect/Layer";
 import * as Queue from "effect/Queue";
 import * as Ref from "effect/Ref";
 import * as Schedule from "effect/Schedule";
 import * as Scope from "effect/Scope";
+import { timeoutRef, tracingRef } from "./config.js";
+import { nextId } from "./IdGenerator.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
 
@@ -228,7 +231,6 @@ export const WebSocketTransport = (
 	return Layer.scoped(
 		TransportService,
 		Effect.gen(function* () {
-			const requestIdRef = yield* Ref.make(0);
 			const pendingRef = yield* Ref.make<
 				Map<number | string, Deferred.Deferred<JsonRpcResponse<unknown>, never>>
 			>(new Map());
@@ -489,12 +491,19 @@ export const WebSocketTransport = (
 			return {
 				request: <T>(method: string, params: unknown[] = []) =>
 					Effect.gen(function* () {
+						const timeoutOverride = yield* FiberRef.get(timeoutRef);
+						const tracingEnabled = yield* FiberRef.get(tracingRef);
+						const timeoutMs = timeoutOverride ?? config.timeout;
 						const writer = yield* Ref.get(writerRef);
 						const isReconnecting = yield* Ref.get(isReconnectingRef);
 
+						if (tracingEnabled) {
+							yield* Effect.logDebug(`rpc ${method} -> ${config.url}`);
+						}
+
 						if (!writer || isReconnecting) {
 							if (reconnectEnabled) {
-								const id = yield* Ref.updateAndGet(requestIdRef, (n) => n + 1);
+								const id = yield* nextId;
 								const deferred = yield* Deferred.make<JsonRpcResponse<T>, never>();
 
 								yield* Ref.update(queueRef, (q) => [
@@ -508,14 +517,14 @@ export const WebSocketTransport = (
 								]);
 
 								const response = yield* Deferred.await(deferred).pipe(
-									Effect.timeout(Duration.millis(config.timeout)),
+									Effect.timeout(Duration.millis(timeoutMs)),
 									Effect.catchTag("TimeoutException", () =>
 										Effect.gen(function* () {
 											yield* Ref.update(queueRef, (q) => q.filter((item) => item.id !== id));
 											return yield* Effect.fail(
 												new TransportError({
 													code: -32603,
-													message: `Request timeout after ${config.timeout}ms`,
+													message: `Request timeout after ${timeoutMs}ms`,
 												}),
 											);
 										}),
@@ -543,7 +552,7 @@ export const WebSocketTransport = (
 							);
 						}
 
-						const id = yield* Ref.updateAndGet(requestIdRef, (n) => n + 1);
+						const id = yield* nextId;
 						const deferred = yield* Deferred.make<JsonRpcResponse<T>, never>();
 
 						yield* Ref.update(pendingRef, (pending) => {
@@ -570,7 +579,7 @@ export const WebSocketTransport = (
 						);
 
 						const response = yield* Deferred.await(deferred).pipe(
-							Effect.timeout(Duration.millis(config.timeout)),
+							Effect.timeout(Duration.millis(timeoutMs)),
 							Effect.catchTag("TimeoutException", () =>
 								Effect.gen(function* () {
 									yield* Ref.update(pendingRef, (p) => {
@@ -581,7 +590,7 @@ export const WebSocketTransport = (
 									return yield* Effect.fail(
 										new TransportError({
 											code: -32603,
-											message: `Request timeout after ${config.timeout}ms`,
+											message: `Request timeout after ${timeoutMs}ms`,
 										}),
 									);
 								}),

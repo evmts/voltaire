@@ -28,9 +28,10 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as FiberRef from "effect/FiberRef";
 import * as Layer from "effect/Layer";
-import * as Ref from "effect/Ref";
 import * as Schedule from "effect/Schedule";
 import { type BatchOptions, createBatchScheduler } from "./BatchScheduler.js";
+import { timeoutRef, retryCountRef, tracingRef } from "./config.js";
+import { nextId } from "./IdGenerator.js";
 import {
 	onRequestRef,
 	onResponseRef,
@@ -237,9 +238,10 @@ export const HttpTransport = (
 		});
 	};
 
-	const retrySchedule = Schedule.recurs(config.retries).pipe(
-		Schedule.intersect(Schedule.spaced(Duration.millis(config.retryDelay))),
-	);
+	const makeRetrySchedule = (retries: number) =>
+		Schedule.recurs(retries).pipe(
+			Schedule.intersect(Schedule.spaced(Duration.millis(config.retryDelay))),
+		);
 
 	const applyRequestHooks = (request: RpcRequest): Effect.Effect<RpcRequest> =>
 		Effect.gen(function* () {
@@ -281,6 +283,8 @@ export const HttpTransport = (
 	const doRequest = <T>(
 		httpClient: HttpClient.HttpClient,
 		body: string,
+		timeoutMs: number,
+		retrySchedule: Schedule.Schedule<number, number>,
 		rpcMethod?: string,
 	): Effect.Effect<T, TransportError> => {
 		const headers: Record<string, string> = {
@@ -295,7 +299,7 @@ export const HttpTransport = (
 
 		return Effect.scoped(
 			applyFetchOptions(httpClient.execute(request)).pipe(
-				Effect.timeout(Duration.millis(config.timeout)),
+				Effect.timeout(Duration.millis(timeoutMs)),
 				Effect.flatMap((response) => {
 					if (response.status >= 200 && response.status < 300) {
 						return Effect.map(
@@ -361,70 +365,83 @@ export const HttpTransport = (
 		(httpClient: HttpClient.HttpClient) =>
 		(
 			requests: Array<{ id: number; method: string; params?: unknown[] }>,
-		): Effect.Effect<JsonRpcBatchResponse[], TransportError> => {
-			const batchBody = requests.map((r) => ({
-				jsonrpc: "2.0",
-				id: r.id,
-				method: r.method,
-				params: r.params ?? [],
-			}));
-			const headers: Record<string, string> = {
-				"Content-Type": "application/json",
-				...config.headers,
-			};
-			const methods = requests.map((r) => r.method).join(", ");
+		): Effect.Effect<JsonRpcBatchResponse[], TransportError> =>
+			Effect.gen(function* () {
+				const timeoutOverride = yield* FiberRef.get(timeoutRef);
+				const retryOverride = yield* FiberRef.get(retryCountRef);
+				const tracingEnabled = yield* FiberRef.get(tracingRef);
+				const timeoutMs = timeoutOverride ?? config.timeout;
+				const retrySchedule = makeRetrySchedule(retryOverride ?? config.retries);
 
-			const request = HttpClientRequest.post(config.url).pipe(
-				HttpClientRequest.setHeaders(headers),
-				HttpClientRequest.bodyUnsafeJson(batchBody),
-			);
+				if (tracingEnabled) {
+					yield* Effect.logDebug(
+						`rpc batch (${requests.length}) -> ${config.url}`,
+					);
+				}
 
-			return Effect.scoped(
-				applyFetchOptions(httpClient.execute(request)).pipe(
-					Effect.timeout(Duration.millis(config.timeout)),
-					Effect.flatMap((response) => {
-						if (response.status >= 200 && response.status < 300) {
-							return Effect.map(
-								response.json,
-								(json) => json as JsonRpcBatchResponse[],
-							).pipe(
-								Effect.mapError((e) =>
-									toTransportError(
-										e,
-										`Failed to parse batch JSON response from ${config.url}`,
+				const batchBody = requests.map((r) => ({
+					jsonrpc: "2.0",
+					id: r.id,
+					method: r.method,
+					params: r.params ?? [],
+				}));
+				const headers: Record<string, string> = {
+					"Content-Type": "application/json",
+					...config.headers,
+				};
+				const methods = requests.map((r) => r.method).join(", ");
+
+				const request = HttpClientRequest.post(config.url).pipe(
+					HttpClientRequest.setHeaders(headers),
+					HttpClientRequest.bodyUnsafeJson(batchBody),
+				);
+
+				return yield* Effect.scoped(
+					applyFetchOptions(httpClient.execute(request)).pipe(
+						Effect.timeout(Duration.millis(timeoutMs)),
+						Effect.flatMap((response) => {
+							if (response.status >= 200 && response.status < 300) {
+								return Effect.map(
+									response.json,
+									(json) => json as JsonRpcBatchResponse[],
+								).pipe(
+									Effect.mapError((e) =>
+										toTransportError(
+											e,
+											`Failed to parse batch JSON response from ${config.url}`,
+										),
 									),
-								),
+								);
+							}
+							return Effect.fail(
+								new TransportError({
+									code: -32603,
+									message: `HTTP ${response.status} (url: ${config.url}, methods: [${methods}])`,
+								}),
 							);
-						}
-						return Effect.fail(
-							new TransportError({
-								code: -32603,
-								message: `HTTP ${response.status} (url: ${config.url}, methods: [${methods}])`,
-							}),
-						);
-					}),
-				),
-			).pipe(
-				Effect.catchAllDefect((defect) =>
-					Effect.fail(
-						toTransportError(
-							defect,
-							`Batch request to ${config.url} failed [${methods}]`,
+						}),
+					),
+				).pipe(
+					Effect.catchAllDefect((defect) =>
+						Effect.fail(
+							toTransportError(
+								defect,
+								`Batch request to ${config.url} failed [${methods}]`,
+							),
 						),
 					),
-				),
-				Effect.catchAll((e) => {
-					if (e instanceof TransportError) return Effect.fail(e);
-					return Effect.fail(
-						toTransportError(
-							e,
-							`Batch request to ${config.url} failed [${methods}]`,
-						),
-					);
-				}),
-				Effect.retry(retrySchedule),
-			);
-		};
+					Effect.catchAll((e) => {
+						if (e instanceof TransportError) return Effect.fail(e);
+						return Effect.fail(
+							toTransportError(
+								e,
+								`Batch request to ${config.url} failed [${methods}]`,
+							),
+						);
+					}),
+					Effect.retry(retrySchedule),
+				);
+			});
 
 	if (config.batch) {
 		return Layer.scoped(
@@ -474,7 +491,6 @@ export const HttpTransport = (
 		TransportService,
 		Effect.gen(function* () {
 			const httpClient = yield* HttpClient.HttpClient;
-			const requestIdRef = yield* Ref.make(0);
 
 			return TransportService.of({
 				request: <T>(
@@ -482,20 +498,35 @@ export const HttpTransport = (
 					params: unknown[] = [],
 				): Effect.Effect<T, TransportError> =>
 					Effect.gen(function* () {
+						const timeoutOverride = yield* FiberRef.get(timeoutRef);
+						const retryOverride = yield* FiberRef.get(retryCountRef);
+						const tracingEnabled = yield* FiberRef.get(tracingRef);
+						const timeoutMs = timeoutOverride ?? config.timeout;
+						const retrySchedule = makeRetrySchedule(retryOverride ?? config.retries);
 						const request = yield* applyRequestHooks({ method, params });
 						const startTime = Date.now();
-						const id = yield* Ref.updateAndGet(requestIdRef, (n) => n + 1);
+						const id = yield* nextId;
 						const body = JSON.stringify({
 							jsonrpc: "2.0",
 							id,
 							method: request.method,
 							params: request.params,
 						});
+						if (tracingEnabled) {
+							yield* Effect.logDebug(`rpc ${request.method} -> ${config.url}`);
+						}
 						const result = yield* doRequest<T>(
 							httpClient,
 							body,
+							timeoutMs,
+							retrySchedule,
 							request.method,
 						);
+						if (tracingEnabled) {
+							yield* Effect.logDebug(
+								`rpc ${request.method} ok (${Date.now() - startTime}ms)`,
+							);
+						}
 						const response = yield* applyResponseHooks({
 							method: request.method,
 							params: request.params,
