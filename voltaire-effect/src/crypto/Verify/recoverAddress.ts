@@ -147,9 +147,8 @@ export const recoverAddress = (params: {
 			);
 
 		// Derive address from public key
-		// Public key is 65 bytes with 0x04 prefix, or 64 bytes without
-		const pubKeyLen = publicKey.length;
-		const pubKeyBytes = pubKeyLen === 65 ? publicKey.slice(1) : publicKey;
+		// Secp256k1PublicKeyType is always 64 bytes (without 0x04 prefix)
+		const pubKeyBytes = publicKey as Uint8Array;
 
 		const addressHash = yield* keccak.hash(pubKeyBytes).pipe(
 			Effect.mapError(

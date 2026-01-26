@@ -5,6 +5,7 @@
  */
 
 import type { AddressType } from "@tevm/voltaire/Address";
+import type { HashType } from "@tevm/voltaire/Hash";
 import * as Effect from "effect/Effect";
 import type { KeccakService } from "../Keccak256/index.js";
 import type { Secp256k1Service } from "../Secp256k1/index.js";
@@ -61,8 +62,9 @@ export const recoverMessageAddress = (params: {
 		const hash = yield* hashMessage(params.message);
 
 		// Recover address from hash and signature
+		// Cast Keccak256Hash to HashType (both are 32-byte hashes)
 		return yield* recoverAddress({
-			hash,
+			hash: hash as unknown as HashType,
 			signature: params.signature,
 		});
 	});
