@@ -29,10 +29,50 @@ describe("LogFilter.Rpc", () => {
 		expect(result.address).toBeInstanceOf(Uint8Array);
 	});
 
-	it("rejects blockhash with fromBlock/toBlock", () => {
+	it("allows blockhash alone", () => {
+		const input = {
+			blockhash: `0x${"ab".repeat(32)}`,
+		};
+		const result = Schema.decodeSync(LogFilter.Rpc)(input);
+		expect(result.blockhash).toBeInstanceOf(Uint8Array);
+	});
+
+	it("allows fromBlock/toBlock without blockhash", () => {
+		const input = {
+			fromBlock: 100n,
+			toBlock: 200n,
+		};
+		const result = Schema.decodeSync(LogFilter.Rpc)(input);
+		expect(result.fromBlock).toBe(100n);
+		expect(result.toBlock).toBe(200n);
+		expect(result.blockhash).toBeUndefined();
+	});
+
+	it("rejects blockhash with fromBlock", () => {
 		const input = {
 			blockhash: `0x${"ab".repeat(32)}`,
 			fromBlock: 1n,
+		};
+		expect(() => Schema.decodeSync(LogFilter.Rpc)(input)).toThrow(
+			"blockhash is mutually exclusive with fromBlock/toBlock",
+		);
+	});
+
+	it("rejects blockhash with toBlock", () => {
+		const input = {
+			blockhash: `0x${"ab".repeat(32)}`,
+			toBlock: 100n,
+		};
+		expect(() => Schema.decodeSync(LogFilter.Rpc)(input)).toThrow(
+			"blockhash is mutually exclusive with fromBlock/toBlock",
+		);
+	});
+
+	it("rejects blockhash with both fromBlock and toBlock", () => {
+		const input = {
+			blockhash: `0x${"ab".repeat(32)}`,
+			fromBlock: 1n,
+			toBlock: 100n,
 		};
 		expect(() => Schema.decodeSync(LogFilter.Rpc)(input)).toThrow(
 			"blockhash is mutually exclusive with fromBlock/toBlock",

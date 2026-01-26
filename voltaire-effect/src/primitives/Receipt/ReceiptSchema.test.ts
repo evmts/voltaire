@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema";
-import { describe, expect, it } from "@effect/vitest";
+import { describe, expect, it } from "vitest";
 import * as Receipt from "./index.js";
 
 describe("Receipt.Schema", () => {
@@ -45,5 +45,56 @@ describe("Receipt.Schema", () => {
 				root: new Uint8Array(32).fill(0xef),
 			}),
 		).toThrow();
+	});
+
+	it("parses EIP-4844 blob gas fields", () => {
+		const receipt = Schema.decodeSync(Receipt.Schema)({
+			...baseReceipt,
+			status: 1,
+			type: "eip4844" as const,
+			blobGasUsed: 131072n,
+			blobGasPrice: 1000000000n,
+		});
+		expect(receipt.blobGasUsed).toBe(131072n);
+		expect(receipt.blobGasPrice).toBe(1000000000n);
+		expect(receipt.type).toBe("eip4844");
+	});
+
+	it("requires effectiveGasPrice", () => {
+		const { effectiveGasPrice, ...receiptWithoutGasPrice } = baseReceipt;
+		expect(() =>
+			Schema.decodeSync(Receipt.Schema)({
+				...receiptWithoutGasPrice,
+				status: 1,
+			}),
+		).toThrow();
+	});
+
+	it("requires type field", () => {
+		const { type, ...receiptWithoutType } = baseReceipt;
+		expect(() =>
+			Schema.decodeSync(Receipt.Schema)({
+				...receiptWithoutType,
+				status: 1,
+			}),
+		).toThrow();
+	});
+
+	it("accepts all transaction types", () => {
+		const types = [
+			"legacy",
+			"eip2930",
+			"eip1559",
+			"eip4844",
+			"eip7702",
+		] as const;
+		for (const txType of types) {
+			const receipt = Schema.decodeSync(Receipt.Schema)({
+				...baseReceipt,
+				status: 1,
+				type: txType,
+			});
+			expect(receipt.type).toBe(txType);
+		}
 	});
 });

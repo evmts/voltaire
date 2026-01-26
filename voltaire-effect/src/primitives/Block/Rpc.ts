@@ -6,7 +6,7 @@
  * @since 0.1.0
  */
 
-import { Block } from "@tevm/voltaire";
+import { Block, Hex } from "@tevm/voltaire";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
 
@@ -119,13 +119,70 @@ export const Rpc: S.Schema<
 			);
 		}
 	},
-	encode: (_block, _options, ast) => {
-		return ParseResult.fail(
-			new ParseResult.Type(
-				ast,
-				_block,
-				"Encoding Block to RPC format is not yet supported",
-			),
-		);
+	encode: (block, _options, ast) => {
+		try {
+			const header = block.header;
+			const body = block.body;
+
+			// Convert header fields to hex strings
+			const rpc: S.Schema.Encoded<typeof RpcBlockSchema> = {
+				// Block-level fields
+				hash: Hex.fromBytes(block.hash),
+				size: Hex.fromBigInt(block.size),
+				...(block.totalDifficulty !== undefined && {
+					totalDifficulty: Hex.fromBigInt(block.totalDifficulty),
+				}),
+				// Header fields
+				parentHash: Hex.fromBytes(header.parentHash),
+				sha3Uncles: Hex.fromBytes(header.ommersHash),
+				miner: Hex.fromBytes(header.beneficiary),
+				stateRoot: Hex.fromBytes(header.stateRoot),
+				transactionsRoot: Hex.fromBytes(header.transactionsRoot),
+				receiptsRoot: Hex.fromBytes(header.receiptsRoot),
+				logsBloom: Hex.fromBytes(header.logsBloom),
+				difficulty: Hex.fromBigInt(header.difficulty),
+				number: Hex.fromBigInt(header.number),
+				gasLimit: Hex.fromBigInt(header.gasLimit),
+				gasUsed: Hex.fromBigInt(header.gasUsed),
+				timestamp: Hex.fromBigInt(header.timestamp),
+				extraData: Hex.fromBytes(header.extraData),
+				mixHash: Hex.fromBytes(header.mixHash),
+				nonce: Hex.fromBytes(header.nonce),
+				...(header.baseFeePerGas !== undefined && {
+					baseFeePerGas: Hex.fromBigInt(header.baseFeePerGas),
+				}),
+				...(header.withdrawalsRoot !== undefined && {
+					withdrawalsRoot: Hex.fromBytes(header.withdrawalsRoot),
+				}),
+				...(header.blobGasUsed !== undefined && {
+					blobGasUsed: Hex.fromBigInt(header.blobGasUsed),
+				}),
+				...(header.excessBlobGas !== undefined && {
+					excessBlobGas: Hex.fromBigInt(header.excessBlobGas),
+				}),
+				...(header.parentBeaconBlockRoot !== undefined && {
+					parentBeaconBlockRoot: Hex.fromBytes(header.parentBeaconBlockRoot),
+				}),
+				// Body fields - transactions as unknown array (can be hashes or full objects)
+				transactions: body.transactions as unknown[],
+				...(body.ommers.length > 0 && {
+					uncles: body.ommers as unknown[],
+				}),
+				...(body.withdrawals !== undefined && {
+					withdrawals: body.withdrawals.map((w) => ({
+						index: Hex.fromBigInt(w.index),
+						validatorIndex: Hex.fromBigInt(w.validatorIndex),
+						address: Hex.fromBytes(w.address),
+						amount: Hex.fromBigInt(w.amount),
+					})),
+				}),
+			};
+
+			return ParseResult.succeed(rpc);
+		} catch (e) {
+			return ParseResult.fail(
+				new ParseResult.Type(ast, block, (e as Error).message),
+			);
+		}
 	},
 }).annotations({ identifier: "Block.Rpc" });

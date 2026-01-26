@@ -8,7 +8,6 @@
 
 import type { AddressType } from "@tevm/voltaire/Address";
 import type { HashType } from "@tevm/voltaire/Hash";
-import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
 import { Hex as AddressSchema } from "../Address/Hex.js";
 
@@ -238,7 +237,8 @@ const LogTypeSchema = S.declare<LogType>(
  *
  * @description
  * Runtime type guard that validates an unknown value conforms to ReceiptType.
- * Checks for required fields: transactionHash, blockNumber, blockHash, status.
+ * Checks for required fields: transactionHash, blockNumber, blockHash, effectiveGasPrice, type.
+ * Validates that either status (post-Byzantium) OR root (pre-Byzantium) is present, not both.
  *
  * @since 0.0.1
  *
@@ -248,15 +248,40 @@ export const ReceiptTypeSchema = S.declare<ReceiptType>(
 	(u): u is ReceiptType => {
 		if (typeof u !== "object" || u === null) return false;
 		const receipt = u as Record<string, unknown>;
-		return (
+		const hasTransactionHash =
 			"transactionHash" in receipt &&
-			receipt.transactionHash instanceof Uint8Array &&
-			"blockNumber" in receipt &&
-			typeof receipt.blockNumber === "bigint" &&
-			"blockHash" in receipt &&
-			receipt.blockHash instanceof Uint8Array &&
+			receipt.transactionHash instanceof Uint8Array;
+		const hasBlockNumber =
+			"blockNumber" in receipt && typeof receipt.blockNumber === "bigint";
+		const hasBlockHash =
+			"blockHash" in receipt && receipt.blockHash instanceof Uint8Array;
+		const hasEffectiveGasPrice =
+			"effectiveGasPrice" in receipt &&
+			typeof receipt.effectiveGasPrice === "bigint";
+		const hasType =
+			"type" in receipt &&
+			(receipt.type === "legacy" ||
+				receipt.type === "eip2930" ||
+				receipt.type === "eip1559" ||
+				receipt.type === "eip4844" ||
+				receipt.type === "eip7702");
+		const hasStatus =
 			"status" in receipt &&
-			(receipt.status === 0 || receipt.status === 1)
+			(receipt.status === 0 || receipt.status === 1);
+		const hasRoot =
+			"root" in receipt && receipt.root instanceof Uint8Array;
+
+		// Must have either status OR root, not both
+		const hasValidStatusOrRoot =
+			(hasStatus && !hasRoot) || (!hasStatus && hasRoot);
+
+		return (
+			hasTransactionHash &&
+			hasBlockNumber &&
+			hasBlockHash &&
+			hasEffectiveGasPrice &&
+			hasType &&
+			hasValidStatusOrRoot
 		);
 	},
 	{ identifier: "Receipt" },
@@ -319,10 +344,22 @@ export const LogSchema: S.Schema<
 });
 
 /**
- * Internal structured schema for receipt input validation.
+ * Transaction type literal schema.
  * @internal
  */
-const ReceiptSchemaInternal = S.Struct({
+const TransactionTypeSchema = S.Literal(
+	"legacy",
+	"eip2930",
+	"eip1559",
+	"eip4844",
+	"eip7702",
+);
+
+/**
+ * Common receipt fields shared between Pre and Post-Byzantium receipts.
+ * @internal
+ */
+const CommonReceiptFields = S.Struct({
 	transactionHash: HashTypeSchema,
 	blockNumber: S.BigIntFromSelf,
 	blockHash: HashTypeSchema,
@@ -331,11 +368,48 @@ const ReceiptSchemaInternal = S.Struct({
 	to: NullableAddressSchema,
 	cumulativeGasUsed: S.BigIntFromSelf,
 	gasUsed: S.BigIntFromSelf,
+	effectiveGasPrice: S.BigIntFromSelf,
 	contractAddress: NullableAddressSchema,
 	logs: S.Array(LogSchema),
 	logsBloom: S.Uint8ArrayFromSelf,
-	status: S.optional(S.Literal(0, 1)),
+	type: TransactionTypeSchema,
+	blobGasUsed: S.optional(S.BigIntFromSelf),
+	blobGasPrice: S.optional(S.BigIntFromSelf),
 });
+
+/**
+ * Pre-Byzantium receipt schema (uses root instead of status).
+ * @internal
+ */
+const PreByzantiumReceiptSchema = S.extend(
+	CommonReceiptFields,
+	S.Struct({
+		root: HashTypeSchema,
+		status: S.optional(S.Never),
+	}),
+);
+
+/**
+ * Post-Byzantium receipt schema (uses status instead of root).
+ * @internal
+ */
+const PostByzantiumReceiptSchema = S.extend(
+	CommonReceiptFields,
+	S.Struct({
+		status: S.Literal(0, 1),
+		root: S.optional(S.Never),
+	}),
+);
+
+/**
+ * Internal union schema for receipt input validation.
+ * Handles both Pre-Byzantium (root) and Post-Byzantium (status) receipts.
+ * @internal
+ */
+const ReceiptSchemaInternal = S.Union(
+	PreByzantiumReceiptSchema,
+	PostByzantiumReceiptSchema,
+);
 
 /**
  * Effect Schema for validating transaction receipts.
@@ -407,7 +481,7 @@ export const ReceiptSchema: S.Schema<
 > = S.transform(ReceiptSchemaInternal, ReceiptTypeSchema, {
 	strict: true,
 	decode: (d) => d as ReceiptType,
-	encode: (e) => e,
+	encode: (e) => e as S.Schema.Type<typeof ReceiptSchemaInternal>,
 });
 
 /**

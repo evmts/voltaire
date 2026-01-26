@@ -17,6 +17,46 @@ describe("EventLog.Rpc", () => {
 		expect(result.data).toBeInstanceOf(Uint8Array);
 	});
 
+	it("accepts 0 topics (LOG0)", () => {
+		const input = {
+			address: "0x1234567890123456789012345678901234567890",
+			topics: [],
+			data: new Uint8Array(0),
+		};
+		const result = Schema.decodeSync(EventLog.Rpc)(input);
+		expect(result.topics.length).toBe(0);
+	});
+
+	it("accepts 1 topic (LOG1)", () => {
+		const input = {
+			address: "0x1234567890123456789012345678901234567890",
+			topics: [`0x${"ab".repeat(32)}`],
+			data: new Uint8Array(0),
+		};
+		const result = Schema.decodeSync(EventLog.Rpc)(input);
+		expect(result.topics.length).toBe(1);
+	});
+
+	it("accepts 3 topics (LOG3)", () => {
+		const input = {
+			address: "0x1234567890123456789012345678901234567890",
+			topics: [`0x${"ab".repeat(32)}`, `0x${"cd".repeat(32)}`, `0x${"ef".repeat(32)}`],
+			data: new Uint8Array(0),
+		};
+		const result = Schema.decodeSync(EventLog.Rpc)(input);
+		expect(result.topics.length).toBe(3);
+	});
+
+	it("accepts 4 topics (LOG4)", () => {
+		const input = {
+			address: "0x1234567890123456789012345678901234567890",
+			topics: [`0x${"ab".repeat(32)}`, `0x${"cd".repeat(32)}`, `0x${"ef".repeat(32)}`, `0x${"12".repeat(32)}`],
+			data: new Uint8Array(0),
+		};
+		const result = Schema.decodeSync(EventLog.Rpc)(input);
+		expect(result.topics.length).toBe(4);
+	});
+
 	it("rejects logs with more than 4 topics", () => {
 		const input = {
 			address: "0x1234567890123456789012345678901234567890",

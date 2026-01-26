@@ -1,8 +1,30 @@
 import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
 import * as Rlp from "./index.js";
 
 type Encodable = Uint8Array | Encodable[];
+
+/** Convert hex string to Uint8Array */
+const fromHex = (hex: string): Uint8Array => {
+	const h = hex.startsWith("0x") ? hex.slice(2) : hex;
+	const bytes = new Uint8Array(h.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(h.slice(i * 2, i * 2 + 2), 16);
+	}
+	return bytes;
+};
+
+/** Convert string to Uint8Array */
+const fromString = (s: string): Uint8Array => new TextEncoder().encode(s);
+
+/** Convert integer to minimal big-endian Uint8Array (0 = empty array) */
+const fromInt = (n: number): Uint8Array => {
+	if (n === 0) return new Uint8Array(0);
+	const hex = n.toString(16);
+	const padded = hex.length % 2 === 0 ? hex : `0${hex}`;
+	return fromHex(padded);
+};
 
 describe("Rlp encode", () => {
 	describe("single byte encoding", () => {
@@ -312,5 +334,356 @@ describe("Rlp edge cases", () => {
 		const { data } = Effect.runSync(Rlp.decode(encoded));
 		const reEncoded = Effect.runSync(Rlp.encode(data));
 		expect(reEncoded).toEqual(encoded);
+	});
+});
+
+describe("Ethereum official RLP test vectors", () => {
+	// From https://github.com/ethereum/tests/blob/develop/RLPTests/rlptest.json
+
+	it("emptystring: '' → 0x80", () => {
+		const encoded = Effect.runSync(Rlp.encode(new Uint8Array(0)));
+		expect(encoded).toEqual(fromHex("80"));
+	});
+
+	it("bytestring00: '\\x00' → 0x00", () => {
+		const encoded = Effect.runSync(Rlp.encode(new Uint8Array([0x00])));
+		expect(encoded).toEqual(fromHex("00"));
+	});
+
+	it("bytestring01: '\\x01' → 0x01", () => {
+		const encoded = Effect.runSync(Rlp.encode(new Uint8Array([0x01])));
+		expect(encoded).toEqual(fromHex("01"));
+	});
+
+	it("bytestring7F: '\\x7f' → 0x7f", () => {
+		const encoded = Effect.runSync(Rlp.encode(new Uint8Array([0x7f])));
+		expect(encoded).toEqual(fromHex("7f"));
+	});
+
+	it("shortstring: 'dog' → 0x83646f67", () => {
+		const encoded = Effect.runSync(Rlp.encode(fromString("dog")));
+		expect(encoded).toEqual(fromHex("83646f67"));
+	});
+
+	it("shortstring2: 55-char string → prefix 0xb7", () => {
+		const input = fromString("Lorem ipsum dolor sit amet, consectetur adipisicing eli");
+		expect(input.length).toBe(55);
+		const encoded = Effect.runSync(Rlp.encode(input));
+		expect(encoded).toEqual(
+			fromHex("b74c6f72656d20697073756d20646f6c6f722073697420616d65742c20636f6e7365637465747572206164697069736963696e6720656c69"),
+		);
+	});
+
+	it("longstring: 56-char string → prefix 0xb838", () => {
+		const input = fromString("Lorem ipsum dolor sit amet, consectetur adipisicing elit");
+		expect(input.length).toBe(56);
+		const encoded = Effect.runSync(Rlp.encode(input));
+		expect(encoded).toEqual(
+			fromHex("b8384c6f72656d20697073756d20646f6c6f722073697420616d65742c20636f6e7365637465747572206164697069736963696e6720656c6974"),
+		);
+	});
+
+	it("zero: integer 0 → 0x80 (empty bytes)", () => {
+		const encoded = Effect.runSync(Rlp.encode(fromInt(0)));
+		expect(encoded).toEqual(fromHex("80"));
+	});
+
+	it("smallint: 1 → 0x01", () => {
+		const encoded = Effect.runSync(Rlp.encode(fromInt(1)));
+		expect(encoded).toEqual(fromHex("01"));
+	});
+
+	it("smallint2: 16 → 0x10", () => {
+		const encoded = Effect.runSync(Rlp.encode(fromInt(16)));
+		expect(encoded).toEqual(fromHex("10"));
+	});
+
+	it("smallint3: 79 → 0x4f", () => {
+		const encoded = Effect.runSync(Rlp.encode(fromInt(79)));
+		expect(encoded).toEqual(fromHex("4f"));
+	});
+
+	it("smallint4: 127 → 0x7f", () => {
+		const encoded = Effect.runSync(Rlp.encode(fromInt(127)));
+		expect(encoded).toEqual(fromHex("7f"));
+	});
+
+	it("mediumint1: 128 → 0x8180", () => {
+		const encoded = Effect.runSync(Rlp.encode(fromInt(128)));
+		expect(encoded).toEqual(fromHex("8180"));
+	});
+
+	it("mediumint2: 1000 → 0x8203e8", () => {
+		const encoded = Effect.runSync(Rlp.encode(fromInt(1000)));
+		expect(encoded).toEqual(fromHex("8203e8"));
+	});
+
+	it("mediumint3: 100000 → 0x830186a0", () => {
+		const encoded = Effect.runSync(Rlp.encode(fromInt(100000)));
+		expect(encoded).toEqual(fromHex("830186a0"));
+	});
+
+	it("emptylist: [] → 0xc0", () => {
+		const encoded = Effect.runSync(Rlp.encode([]));
+		expect(encoded).toEqual(fromHex("c0"));
+	});
+
+	it("stringlist: ['dog','god','cat'] → 0xcc83646f6783676f6483636174", () => {
+		const encoded = Effect.runSync(
+			Rlp.encode([fromString("dog"), fromString("god"), fromString("cat")]),
+		);
+		expect(encoded).toEqual(fromHex("cc83646f6783676f6483636174"));
+	});
+
+	it("multilist: ['zw', [4], 1] → 0xc6827a77c10401", () => {
+		const encoded = Effect.runSync(
+			Rlp.encode([fromString("zw"), [fromInt(4)], fromInt(1)]),
+		);
+		expect(encoded).toEqual(fromHex("c6827a77c10401"));
+	});
+
+	it("listsoflists: [[[], []], []] → 0xc4c2c0c0c0", () => {
+		const encoded = Effect.runSync(Rlp.encode([[[], []], []]));
+		expect(encoded).toEqual(fromHex("c4c2c0c0c0"));
+	});
+
+	it("listsoflists2: [[], [[]], [[], [[]]]] → 0xc7c0c1c0c3c0c1c0", () => {
+		const encoded = Effect.runSync(Rlp.encode([[], [[]], [[], [[]]]]));
+		expect(encoded).toEqual(fromHex("c7c0c1c0c3c0c1c0"));
+	});
+});
+
+describe("Rlp.encodeBytes", () => {
+	it("encodes empty bytes", () => {
+		const encoded = Effect.runSync(Rlp.encodeBytes(new Uint8Array(0)));
+		expect(encoded).toEqual(new Uint8Array([0x80]));
+	});
+
+	it("encodes single byte < 0x80 as itself", () => {
+		const encoded = Effect.runSync(Rlp.encodeBytes(new Uint8Array([0x42])));
+		expect(encoded).toEqual(new Uint8Array([0x42]));
+	});
+
+	it("encodes single byte >= 0x80 with prefix", () => {
+		const encoded = Effect.runSync(Rlp.encodeBytes(new Uint8Array([0xff])));
+		expect(encoded).toEqual(new Uint8Array([0x81, 0xff]));
+	});
+
+	it("encodes short bytes with prefix", () => {
+		const encoded = Effect.runSync(Rlp.encodeBytes(new Uint8Array([1, 2, 3])));
+		expect(encoded).toEqual(new Uint8Array([0x83, 1, 2, 3]));
+	});
+});
+
+describe("Rlp.encodeList", () => {
+	it("encodes empty list", () => {
+		const encoded = Effect.runSync(Rlp.encodeList([]));
+		expect(encoded).toEqual(new Uint8Array([0xc0]));
+	});
+
+	it("encodes list with items", () => {
+		const encoded = Effect.runSync(
+			Rlp.encodeList([new Uint8Array([1]), new Uint8Array([2])]),
+		);
+		expect(encoded).toEqual(new Uint8Array([0xc2, 0x01, 0x02]));
+	});
+
+	it("encodes nested list", () => {
+		const encoded = Effect.runSync(Rlp.encodeList([[new Uint8Array([0x42])]]));
+		expect(encoded).toEqual(new Uint8Array([0xc2, 0xc1, 0x42]));
+	});
+});
+
+describe("Rlp.encodeArray", () => {
+	it("encodes array of bytes", () => {
+		const encoded = Effect.runSync(
+			Rlp.encodeArray([new Uint8Array([1, 2]), new Uint8Array([3, 4])]),
+		);
+		expect(encoded[0]).toBe(0xc6); // list prefix for 6 bytes
+	});
+
+	it("round-trips with decodeArray", () => {
+		const original = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])];
+		const encoded = Effect.runSync(Rlp.encodeArray(original));
+		const decoded = Effect.runSync(Rlp.decodeArray(encoded));
+		expect(decoded).toHaveLength(2);
+		expect(decoded[0]).toEqual(original[0]);
+		expect(decoded[1]).toEqual(original[1]);
+	});
+});
+
+describe("Rlp.decodeArray", () => {
+	it("decodes list to array", () => {
+		const encoded = new Uint8Array([0xc2, 0x01, 0x02]);
+		const decoded = Effect.runSync(Rlp.decodeArray(encoded));
+		expect(decoded).toEqual([new Uint8Array([0x01]), new Uint8Array([0x02])]);
+	});
+
+	it("decodes nested lists", () => {
+		const encoded = new Uint8Array([0xc3, 0xc2, 0x01, 0x02]);
+		const decoded = Effect.runSync(Rlp.decodeArray(encoded));
+		expect(decoded).toHaveLength(1);
+		expect(Array.isArray(decoded[0])).toBe(true);
+	});
+
+	it("fails on invalid RLP", async () => {
+		const invalid = new Uint8Array([0x83, 0x01]); // claims 3 bytes, only 1
+		await expect(Effect.runPromise(Rlp.decodeArray(invalid))).rejects.toThrow();
+	});
+});
+
+describe("Rlp.flatten", () => {
+	it("flattens bytes to single-element array", () => {
+		const { data } = Effect.runSync(Rlp.decode(new Uint8Array([0x83, 1, 2, 3])));
+		const flat = Effect.runSync(Rlp.flatten(data));
+		expect(flat).toHaveLength(1);
+		expect(flat[0]?.value).toEqual(new Uint8Array([1, 2, 3]));
+	});
+
+	it("flattens nested list depth-first", () => {
+		const encoded = Effect.runSync(
+			Rlp.encode([new Uint8Array([1]), [new Uint8Array([2]), new Uint8Array([3])]]),
+		);
+		const { data } = Effect.runSync(Rlp.decode(encoded));
+		const flat = Effect.runSync(Rlp.flatten(data));
+		expect(flat).toHaveLength(3);
+		expect(flat[0]?.value).toEqual(new Uint8Array([1]));
+		expect(flat[1]?.value).toEqual(new Uint8Array([2]));
+		expect(flat[2]?.value).toEqual(new Uint8Array([3]));
+	});
+
+	it("returns empty array for empty list", () => {
+		const { data } = Effect.runSync(Rlp.decode(new Uint8Array([0xc0])));
+		const flat = Effect.runSync(Rlp.flatten(data));
+		expect(flat).toEqual([]);
+	});
+});
+
+describe("Rlp.validate", () => {
+	it("returns true for valid single byte", () => {
+		const valid = Effect.runSync(Rlp.validate(new Uint8Array([0x42])));
+		expect(valid).toBe(true);
+	});
+
+	it("returns true for valid short bytes", () => {
+		const valid = Effect.runSync(Rlp.validate(new Uint8Array([0x83, 1, 2, 3])));
+		expect(valid).toBe(true);
+	});
+
+	it("returns true for valid empty list", () => {
+		const valid = Effect.runSync(Rlp.validate(new Uint8Array([0xc0])));
+		expect(valid).toBe(true);
+	});
+
+	it("returns false for truncated short bytes", () => {
+		const valid = Effect.runSync(Rlp.validate(new Uint8Array([0x83, 1]))); // claims 3 bytes
+		expect(valid).toBe(false);
+	});
+
+	it("returns false for truncated list", () => {
+		const valid = Effect.runSync(Rlp.validate(new Uint8Array([0xc2, 0x01]))); // claims 2 bytes
+		expect(valid).toBe(false);
+	});
+
+	it("returns false for empty input", () => {
+		const valid = Effect.runSync(Rlp.validate(new Uint8Array(0)));
+		expect(valid).toBe(false);
+	});
+});
+
+describe("Rlp.Schema", () => {
+	it("validates and brands RLP bytes input", () => {
+		// Schema wraps input as BrandedRlp - the input itself is already valid RLP
+		const input = new Uint8Array([0x83, 1, 2, 3]);
+		const result = S.decodeUnknownSync(Rlp.Schema)(input);
+		// The schema interprets input as data, so 0x83 prefix + 3 bytes = short bytes
+		expect(result.type).toBe("bytes");
+		// The decoded bytes are [1, 2, 3] (without the 0x83 prefix)
+		if (result.type === "bytes") {
+			expect(result.value).toEqual(new Uint8Array([1, 2, 3]));
+		}
+	});
+
+	it("validates and brands RLP list input", () => {
+		const input = new Uint8Array([0xc2, 0x01, 0x02]);
+		const result = S.decodeUnknownSync(Rlp.Schema)(input);
+		expect(result.type).toBe("list");
+	});
+
+	it("handles already-branded RLP data", () => {
+		// First decode some RLP to get branded data
+		const { data } = Effect.runSync(Rlp.decode(new Uint8Array([0x83, 1, 2, 3])));
+		// Schema should accept already-branded data
+		const result = S.decodeUnknownSync(Rlp.Schema)(data);
+		expect(result.type).toBe("bytes");
+	});
+
+	it("encodes back to branded representation", () => {
+		const input = new Uint8Array([0x83, 1, 2, 3]);
+		const decoded = S.decodeUnknownSync(Rlp.Schema)(input);
+		const encoded = S.encodeSync(Rlp.Schema)(decoded);
+		// Schema encode returns the branded type as-is
+		expect(encoded).toBe(decoded);
+	});
+});
+
+describe("Rlp decode error cases", () => {
+	it("rejects leading zeros in length (non-canonical)", async () => {
+		// 0xb900XX would be non-canonical for length < 256
+		const nonCanonical = new Uint8Array([0xb9, 0x00, 0x38, ...new Array(56).fill(0xab)]);
+		await expect(Effect.runPromise(Rlp.decode(nonCanonical))).rejects.toThrow();
+	});
+
+	it("rejects incomplete long length prefix", async () => {
+		// 0xb9 claims 2 length bytes, only 1 provided
+		const incomplete = new Uint8Array([0xb9, 0x01]);
+		await expect(Effect.runPromise(Rlp.decode(incomplete))).rejects.toThrow();
+	});
+
+	it("rejects list length exceeding input", async () => {
+		// 0xf8 0x10 claims 16 bytes of list content but none provided
+		const oversized = new Uint8Array([0xf8, 0x10]);
+		await expect(Effect.runPromise(Rlp.decode(oversized))).rejects.toThrow();
+	});
+
+	it("rejects bytes with trailing data when not in stream mode", async () => {
+		const withTrailing = new Uint8Array([0x01, 0x99]);
+		// Default mode (non-stream) throws on trailing data
+		await expect(Effect.runPromise(Rlp.decode(withTrailing))).rejects.toThrow();
+	});
+
+	it("handles stream mode for multiple items", () => {
+		const twoItems = new Uint8Array([0x01, 0x02]);
+		const first = Effect.runSync(Rlp.decode(twoItems, true));
+		expect(first.data).toEqual({ type: "bytes", value: new Uint8Array([0x01]) });
+		expect(first.remainder).toEqual(new Uint8Array([0x02]));
+		const second = Effect.runSync(Rlp.decode(first.remainder, true));
+		expect(second.data).toEqual({ type: "bytes", value: new Uint8Array([0x02]) });
+		expect(second.remainder.length).toBe(0);
+	});
+});
+
+describe("Rlp large data", () => {
+	it("encodes very long bytes (> 65535 bytes)", () => {
+		const data = new Uint8Array(70000).fill(0xab);
+		const encoded = Effect.runSync(Rlp.encode(data));
+		// 0xba + 3-byte length (70000 = 0x011170)
+		expect(encoded[0]).toBe(0xba);
+		expect(encoded.length).toBe(70000 + 4);
+		const { data: decoded } = Effect.runSync(Rlp.decode(encoded));
+		if (decoded.type === "bytes") {
+			expect(decoded.value.length).toBe(70000);
+		}
+	});
+
+	it("encodes very long list (> 55 bytes payload)", () => {
+		const items = Array.from({ length: 256 }, (_, i) => new Uint8Array([i % 256]));
+		const encoded = Effect.runSync(Rlp.encode(items));
+		expect(encoded[0]).toBe(0xf9); // 0xf8 + 1 (2-byte length)
+		const { data } = Effect.runSync(Rlp.decode(encoded));
+		expect(data.type).toBe("list");
+		if (data.type === "list") {
+			expect(data.value.length).toBe(256);
+		}
 	});
 });

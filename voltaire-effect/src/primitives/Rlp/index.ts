@@ -71,3 +71,4 @@ export { encodeBytes } from "./encodeBytes.js";
 export { encodeList } from "./encodeList.js";
 export { flatten } from "./flatten.js";
 export { RlpDecodingError, RlpEncodingError, Schema } from "./RlpSchema.js";
+export { validate } from "./validate.js";
