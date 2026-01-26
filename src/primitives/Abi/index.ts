@@ -3,6 +3,7 @@
 // Export type definitions
 export type * from "./Abi.js";
 export * from "./Abi.js";
+export type { Item as ItemType, AbiType } from "./AbiType.js";
 export * as Constructor from "./constructor/index.js";
 export { decode } from "./decode.js";
 export { decodeData } from "./decodeData.js";

@@ -128,6 +128,41 @@ export function encodeAllowance(
 }
 
 /**
+ * Encode name() calldata
+ */
+export function encodeName(): string {
+	return SELECTORS.name;
+}
+
+/**
+ * Encode symbol() calldata
+ */
+export function encodeSymbol(): string {
+	return SELECTORS.symbol;
+}
+
+/**
+ * Encode decimals() calldata
+ */
+export function encodeDecimals(): string {
+	return SELECTORS.decimals;
+}
+
+/**
+ * Encode totalSupply() calldata
+ */
+export function encodeTotalSupply(): string {
+	return SELECTORS.totalSupply;
+}
+
+/**
+ * Decode decimals return value (uint8)
+ */
+export function decodeDecimals(data: string): number {
+	return Number(BigInt(data));
+}
+
+/**
  * Decode Transfer event log
  */
 export function decodeTransferEvent(log: { topics: string[]; data: string }): {
