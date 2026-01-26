@@ -1,7 +1,9 @@
 /**
  * Dynamic module registry using Vite's import.meta.glob
- * Registers "voltaire" and "voltaire/wasm" as main entry points
+ * Registers Voltaire and related modules for the in-browser executor.
  */
+
+import * as effectModule from "effect";
 
 // Root voltaire entry (primitives + crypto)
 const rootEntry = import.meta.glob("../../../src/index.{ts,js}", {
@@ -12,6 +14,14 @@ const rootEntry = import.meta.glob("../../../src/index.{ts,js}", {
 const wasmEntry = import.meta.glob("../../../src/wasm/index.{ts,js}", {
 	eager: true,
 });
+
+// Voltaire-effect primitives entry
+const voltaireEffectPrimitivesEntry = import.meta.glob(
+	"../../../voltaire-effect/src/primitives/index.{ts,js}",
+	{
+		eager: true,
+	},
+);
 
 export interface ModuleEntry {
 	specifier: string;
@@ -38,6 +48,22 @@ function buildRegistry(): Map<string, ModuleEntry> {
 	for (const [, mod] of Object.entries(wasmEntry)) {
 		registry.set("voltaire/wasm", {
 			specifier: "voltaire/wasm",
+			module: mod,
+			exports: Object.keys(mod as object),
+		});
+	}
+
+	// Register "effect" entry
+	registry.set("effect", {
+		specifier: "effect",
+		module: effectModule,
+		exports: Object.keys(effectModule),
+	});
+
+	// Register "voltaire-effect/primitives" entry
+	for (const [, mod] of Object.entries(voltaireEffectPrimitivesEntry)) {
+		registry.set("voltaire-effect/primitives", {
+			specifier: "voltaire-effect/primitives",
 			module: mod,
 			exports: Object.keys(mod as object),
 		});

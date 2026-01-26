@@ -1,5 +1,5 @@
 /**
- * esbuild plugin for resolving voltaire/* imports
+ * esbuild plugin for resolving playground runtime modules
  * Maps imports to the pre-loaded module registry
  */
 import type { Plugin } from "esbuild-wasm";
@@ -10,6 +10,8 @@ import {
 } from "./ModuleRegistry.js";
 
 const VOLTAIRE_NAMESPACE = "voltaire-virtual";
+const MODULE_FILTER =
+	/^(?:@tevm\/)?voltaire(\/|$)|^voltaire-effect(\/|$)|^effect(\/|$)/;
 
 /**
  * Create the voltaire resolver plugin for esbuild
@@ -18,8 +20,8 @@ export function voltairePlugin(): Plugin {
 	return {
 		name: "voltaire-resolver",
 		setup(build) {
-			// Resolve voltaire, voltaire/*, @tevm/voltaire, and @tevm/voltaire/* imports to virtual namespace
-			build.onResolve({ filter: /^(@tevm\/)?voltaire(\/|$)/ }, (args) => {
+			// Resolve runtime modules (voltaire, voltaire-effect, effect) to virtual namespace
+			build.onResolve({ filter: MODULE_FILTER }, (args) => {
 				// Normalize @tevm/voltaire to voltaire for registry lookup
 				const specifier = args.path.replace(/^@tevm\//, "");
 
