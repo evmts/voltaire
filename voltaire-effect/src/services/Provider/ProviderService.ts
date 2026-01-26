@@ -960,6 +960,7 @@ export type ProviderShape = {
  * - Transaction queries (getTransaction, getTransactionReceipt, waitForTransactionReceipt)
  * - Call simulation (call, estimateGas, createAccessList)
  * - Event queries (getLogs)
+ * - Filter subscriptions (createEventFilter, createBlockFilter, createPendingTransactionFilter, getFilterChanges, getFilterLogs, uninstallFilter)
  * - Network info (getChainId, getGasPrice, getMaxPriorityFeePerGas, getFeeHistory)
  *
  * Requires TransportService to be provided for actual RPC communication.

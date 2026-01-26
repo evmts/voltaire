@@ -99,9 +99,9 @@ const toTransportError = (error: unknown): TransportError => {
  * )
  * ```
  */
-export const RateLimitedTransport = (
-	baseTransport: Layer.Layer<TransportService, unknown, unknown>,
-): Layer.Layer<TransportService, TransportError, unknown> =>
+export const RateLimitedTransport = <R, E>(
+	baseTransport: Layer.Layer<TransportService, E, R>,
+): Layer.Layer<TransportService, E, R> =>
 	Layer.flatMap(baseTransport, (context) =>
 		Layer.succeed(
 			TransportService,
