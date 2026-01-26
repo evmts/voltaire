@@ -145,25 +145,40 @@ describe("AesGcm", () => {
 			}),
 		);
 
-		it.effect("accepts valid key sizes (16, 24, 32 bytes)", () =>
+		it.effect("accepts valid key sizes (16, 32 bytes)", () =>
 			Effect.gen(function* () {
 				const nonce = yield* AesGcm.generateNonce();
 				const plaintext = new Uint8Array([1, 2, 3]);
 
+				// AES-128 (16 bytes)
 				const key16 = new Uint8Array(16).fill(1);
-				const key24 = new Uint8Array(24).fill(1);
-				const key32 = new Uint8Array(32).fill(1);
-
 				const result16 = yield* AesGcm.encrypt(key16, plaintext, nonce);
 				expect(result16.length).toBeGreaterThan(plaintext.length);
 
+				// AES-256 (32 bytes)
 				const nonce2 = yield* AesGcm.generateNonce();
-				const result24 = yield* AesGcm.encrypt(key24, plaintext, nonce2);
-				expect(result24.length).toBeGreaterThan(plaintext.length);
-
-				const nonce3 = yield* AesGcm.generateNonce();
-				const result32 = yield* AesGcm.encrypt(key32, plaintext, nonce3);
+				const key32 = new Uint8Array(32).fill(1);
+				const result32 = yield* AesGcm.encrypt(key32, plaintext, nonce2);
 				expect(result32.length).toBeGreaterThan(plaintext.length);
+			}),
+		);
+
+		it.effect("rejects AES-192 (24-byte key)", () =>
+			Effect.gen(function* () {
+				const nonce = yield* AesGcm.generateNonce();
+				const plaintext = new Uint8Array([1, 2, 3]);
+				const key24 = new Uint8Array(24).fill(1);
+				const exit = yield* Effect.exit(
+					AesGcm.encrypt(key24, plaintext, nonce),
+				);
+				expect(Exit.isFailure(exit)).toBe(true);
+				if (Exit.isFailure(exit)) {
+					const error = exit.cause;
+					expect(error._tag).toBe("Fail");
+					if (error._tag === "Fail") {
+						expect(error.error).toBeInstanceOf(AesGcm.InvalidKeyError);
+					}
+				}
 			}),
 		);
 	});

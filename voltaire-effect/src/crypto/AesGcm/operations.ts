@@ -8,15 +8,17 @@ import { AesGcm } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import { InvalidKeyError, InvalidNonceError } from "./errors.js";
 
-const VALID_KEY_LENGTHS = [16, 24, 32] as const;
+// Only AES-128 (16 bytes) and AES-256 (32 bytes) are supported
+// AES-192 (24 bytes) is not supported by the underlying implementation
+const VALID_KEY_LENGTHS = [16, 32] as const;
 const NONCE_LENGTH = 12;
 
 const validateKey = (key: Uint8Array) =>
-	VALID_KEY_LENGTHS.includes(key.length as 16 | 24 | 32)
+	VALID_KEY_LENGTHS.includes(key.length as 16 | 32)
 		? Effect.void
 		: Effect.fail(
 				new InvalidKeyError({
-					message: `Key must be 16, 24, or 32 bytes, got ${key.length}`,
+					message: `Key must be 16 or 32 bytes, got ${key.length}`,
 					keyLength: key.length,
 					expectedLengths: VALID_KEY_LENGTHS,
 				}),
