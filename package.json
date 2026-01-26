@@ -748,9 +748,7 @@
 		}
 	},
 	"optionalDependencies": {
-		"effect": "^3.19.13",
-		"ffi-napi": "^4.0.3",
-		"ref-napi": "^3.0.3"
+		"effect": "^3.19.13"
 	},
 	"dependencies": {
 		"@adraffy/ens-normalize": "^1.11.1",

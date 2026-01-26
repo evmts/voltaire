@@ -431,10 +431,11 @@ export * as stream from "../stream/index.js";
 // ============================================================================
 
 export * as wallet from "../wallet/index.js";
-export {
-	LedgerWallet,
-	TrezorWallet,
-	createLedger,
-	createTrezor,
-} from "../wallet/hardware/index.js";
+// NOTE: Ledger and Trezor support temporarily disabled due to dependency issues
+// export {
+// 	LedgerWallet,
+// 	TrezorWallet,
+// 	createLedger,
+// 	createTrezor,
+// } from "../wallet/hardware/index.js";
 export type { HardwareWallet } from "../wallet/hardware/HardwareWallet.js";
