@@ -9,17 +9,7 @@
 import { Address, type AddressType } from "@tevm/voltaire/Address";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
-
-/**
- * Internal schema declaration for AddressType.
- * Validates that a value is a 20-byte Uint8Array with the Address brand.
- *
- * @internal
- */
-const AddressTypeSchema = S.declare<AddressType>(
-	(u): u is AddressType => u instanceof Uint8Array && u.length === 20,
-	{ identifier: "Address" },
-);
+import { AddressTypeSchema } from "./AddressSchema.js";
 
 /**
  * Schema for Address encoded as bytes.

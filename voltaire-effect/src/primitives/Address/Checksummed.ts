@@ -11,15 +11,7 @@ import * as Effect from "effect/Effect";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
 import { KeccakService } from "../../crypto/Keccak256/index.js";
-
-/**
- * Internal schema declaration for AddressType.
- * @internal
- */
-const AddressTypeSchema = S.declare<AddressType>(
-	(u): u is AddressType => u instanceof Uint8Array && u.length === 20,
-	{ identifier: "Address" },
-);
+import { AddressTypeSchema } from "./AddressSchema.js";
 
 /**
  * Schema for Address encoded as an EIP-55 checksummed hex string.

@@ -68,6 +68,7 @@
 export { Bytes } from "./Bytes.js";
 export { Checksummed } from "./Checksummed.js";
 export { Hex } from "./Hex.js";
+export { AddressTypeSchema } from "./AddressSchema.js";
 
 // Pure functions
 export { clone } from "./clone.js";
