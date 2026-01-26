@@ -1350,6 +1350,7 @@ fn addTypeScriptSteps(b: *std.Build) void {
 
 /// Add cross-platform native builds for distribution (Bun FFI + Node-API)
 /// Builds shared libraries for all supported platforms with ReleaseFast optimization
+/// Note: Each platform builds ALL dependencies from scratch to ensure correct architecture
 fn addCrossPlatformNativeBuilds(
     b: *std.Build,
     primitives_mod: *std.Build.Module,
@@ -1361,6 +1362,17 @@ fn addCrossPlatformNativeBuilds(
     rust_crypto_lib_path: std.Build.LazyPath,
     cargo_build_step: *std.Build.Step,
 ) void {
+    // These params are kept for API compatibility but not used for cross-compilation
+    // Cross-compilation requires rebuilding all libraries for each target
+    _ = primitives_mod;
+    _ = crypto_mod;
+    _ = state_manager_mod;
+    _ = blockchain_mod;
+    _ = c_kzg_lib;
+    _ = blst_lib;
+    _ = rust_crypto_lib_path;
+    _ = cargo_build_step;
+
     // Define target platforms for cross-compilation
     const platforms = [_]struct {
         cpu_arch: std.Target.Cpu.Arch,
@@ -1383,6 +1395,68 @@ fn addCrossPlatformNativeBuilds(
             .os_tag = platform.os_tag,
         });
 
+        // Build ALL crypto libraries for this specific target
+        const target_blst_lib = lib_build.BlstLib.createBlstLibrary(b, target, .ReleaseFast);
+        const target_c_kzg_lib = lib_build.CKzgLib.createCKzgLibrary(b, target, .ReleaseFast, target_blst_lib);
+        const target_rust_crypto_lib_path = lib_build.Bn254Lib.getRustLibraryPath(b, target);
+        const target_cargo_build_step = lib_build.createCargoBuildStep(b, .ReleaseFast, target);
+
+        // Create target-specific c_kzg module
+        const target_c_kzg_mod = b.addModule(b.fmt("c_kzg_{s}", .{platform.name}), .{
+            .root_source_file = b.path("lib/c-kzg-4844/bindings/zig/root.zig"),
+            .target = target,
+            .optimize = .ReleaseFast,
+        });
+        target_c_kzg_mod.linkLibrary(target_c_kzg_lib);
+        target_c_kzg_mod.linkLibrary(target_blst_lib);
+        target_c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/src"));
+        target_c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/blst/bindings"));
+
+        // Create target-specific crypto module
+        const target_crypto_mod = b.addModule(b.fmt("crypto_{s}", .{platform.name}), .{
+            .root_source_file = b.path("src/crypto/root.zig"),
+            .target = target,
+            .optimize = .ReleaseFast,
+        });
+        target_crypto_mod.addImport("c_kzg", target_c_kzg_mod);
+        target_crypto_mod.addIncludePath(b.path("lib"));
+
+        // z-ens-normalize module for this target
+        const z_ens_normalize_dep = b.dependency("z_ens_normalize", .{
+            .target = target,
+            .optimize = .ReleaseFast,
+        });
+        const target_z_ens_normalize_mod = z_ens_normalize_dep.module("z_ens_normalize");
+
+        // Create target-specific primitives module
+        const target_primitives_mod = b.addModule(b.fmt("primitives_{s}", .{platform.name}), .{
+            .root_source_file = b.path("src/primitives/root.zig"),
+            .target = target,
+            .optimize = .ReleaseFast,
+        });
+        target_primitives_mod.addImport("crypto", target_crypto_mod);
+        target_primitives_mod.addImport("z_ens_normalize", target_z_ens_normalize_mod);
+
+        // Circular dep: crypto needs primitives
+        target_crypto_mod.addImport("primitives", target_primitives_mod);
+
+        // Create target-specific state-manager module
+        const target_state_manager_mod = b.addModule(b.fmt("state-manager_{s}", .{platform.name}), .{
+            .root_source_file = b.path("src/state-manager/root.zig"),
+            .target = target,
+            .optimize = .ReleaseFast,
+        });
+        target_state_manager_mod.addImport("primitives", target_primitives_mod);
+        target_state_manager_mod.addImport("crypto", target_crypto_mod);
+
+        // Create target-specific blockchain module
+        const target_blockchain_mod = b.addModule(b.fmt("blockchain_{s}", .{platform.name}), .{
+            .root_source_file = b.path("src/blockchain/root.zig"),
+            .target = target,
+            .optimize = .ReleaseFast,
+        });
+        target_blockchain_mod.addImport("primitives", target_primitives_mod);
+
         // Build libwally-core for this target
         const libwally_core_dep = b.dependency("libwally_core", .{
             .target = target,
@@ -1397,20 +1471,20 @@ fn addCrossPlatformNativeBuilds(
             .root_module = b.createModule(.{
                 .root_source_file = b.path("src/c_api.zig"),
                 .target = target,
-                .optimize = .ReleaseFast, // Native always fast
+                .optimize = .ReleaseFast,
             }),
         });
-        native_lib.root_module.addImport("primitives", primitives_mod);
-        native_lib.root_module.addImport("crypto", crypto_mod);
-        native_lib.root_module.addImport("state-manager", state_manager_mod);
-        native_lib.root_module.addImport("blockchain", blockchain_mod);
-        native_lib.linkLibrary(c_kzg_lib);
-        native_lib.linkLibrary(blst_lib);
-        native_lib.addObjectFile(rust_crypto_lib_path);
+        native_lib.root_module.addImport("primitives", target_primitives_mod);
+        native_lib.root_module.addImport("crypto", target_crypto_mod);
+        native_lib.root_module.addImport("state-manager", target_state_manager_mod);
+        native_lib.root_module.addImport("blockchain", target_blockchain_mod);
+        native_lib.linkLibrary(target_c_kzg_lib);
+        native_lib.linkLibrary(target_blst_lib);
+        native_lib.addObjectFile(target_rust_crypto_lib_path);
         native_lib.linkLibrary(libwally_core_lib);
         native_lib.addIncludePath(b.path("lib"));
         native_lib.addIncludePath(b.path("lib/libwally-core/include"));
-        native_lib.step.dependOn(cargo_build_step);
+        native_lib.step.dependOn(target_cargo_build_step);
         native_lib.linkLibC();
 
         // Install to native/{platform}/ directory
