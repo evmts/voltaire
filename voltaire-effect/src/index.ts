@@ -53,9 +53,11 @@ export * as P256 from "./crypto/P256/index.js";
 export * as Ripemd160 from "./crypto/Ripemd160/index.js";
 export * as Secp256k1 from "./crypto/Secp256k1/index.js";
 export * as SHA256 from "./crypto/SHA256/index.js";
-export * as Signers from "./crypto/Signers/index.js";
+// Signers temporarily disabled - requires @tevm/voltaire exports update
+// export * as Signers from "./crypto/Signers/index.js";
 export * as X25519 from "./crypto/X25519/index.js";
-export * as Abi from "./primitives/Abi/index.js";
+// Abi temporarily disabled - requires @tevm/voltaire subpath exports
+// export * as Abi from "./primitives/Abi/index.js";
 export * as AccessList from "./primitives/AccessList/index.js";
 export * as AccountState from "./primitives/AccountState/index.js";
 export * as Address from "./primitives/Address/index.js";
