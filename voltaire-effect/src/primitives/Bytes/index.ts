@@ -52,5 +52,9 @@ export type { BytesType } from "@tevm/voltaire/Bytes";
 export { Hex } from "./Hex.js";
 
 // Pure functions
+export { concat } from "./concat.js";
+export { equals } from "./equals.js";
 export { isBytes } from "./isBytes.js";
 export { random } from "./random.js";
+export { size } from "./size.js";
+export { toString } from "./toString.js";

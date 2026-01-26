@@ -1,6 +1,7 @@
 import {
 	type BrandedRlp,
 	type RlpDecodingError,
+	RlpDecodingError as RlpDecodingErrorClass,
 	Rlp as VoltaireRlp,
 } from "@tevm/voltaire/Rlp";
 import * as Effect from "effect/Effect";
@@ -15,6 +16,10 @@ export interface Decoded {
 	/** Remaining bytes after decoding */
 	remainder: Uint8Array;
 }
+
+const isRlpDecodingError = (e: unknown): e is RlpDecodingError =>
+	e instanceof RlpDecodingErrorClass ||
+	(e !== null && typeof e === "object" && "name" in e && e.name === "RlpDecodingError");
 
 /**
  * RLP-decodes bytes using Effect for error handling.
@@ -40,5 +45,8 @@ export const decode = (
 ): Effect.Effect<Decoded, RlpDecodingError> =>
 	Effect.try({
 		try: () => VoltaireRlp.decode(bytes, stream),
-		catch: (e) => e as RlpDecodingError,
+		catch: (e) =>
+			isRlpDecodingError(e)
+				? e
+				: new RlpDecodingErrorClass("RLP decoding failed", { cause: e instanceof Error ? e : undefined }),
 	});

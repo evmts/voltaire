@@ -1,7 +1,7 @@
 import type { AddressType } from "@tevm/voltaire/Address";
-import { Address } from "@tevm/voltaire/Address";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
+import { Hex as AddressSchema } from "../Address/Hex.js";
 
 export type RelayDataType = {
 	readonly maxFeePerGas: bigint;
@@ -21,29 +21,6 @@ const RelayDataTypeSchema = S.declare<RelayDataType>(
 		"relayWorker" in u &&
 		"paymaster" in u,
 	{ identifier: "RelayData" },
-);
-
-const AddressTypeSchema = S.declare<AddressType>(
-	(u): u is AddressType => u instanceof Uint8Array && u.length === 20,
-	{ identifier: "AddressType" },
-);
-
-const AddressSchema: S.Schema<AddressType, string> = S.transformOrFail(
-	S.String,
-	AddressTypeSchema,
-	{
-		strict: true,
-		decode: (s, _options, ast) => {
-			try {
-				return ParseResult.succeed(Address(s));
-			} catch (e) {
-				return ParseResult.fail(
-					new ParseResult.Type(ast, s, (e as Error).message),
-				);
-			}
-		},
-		encode: (a) => ParseResult.succeed(Address.toHex(a)),
-	},
 );
 
 const HexStringToBytes: S.Schema<Uint8Array, string> = S.transformOrFail(

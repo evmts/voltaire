@@ -1,5 +1,13 @@
-import { type RlpDecodingError, Rlp as VoltaireRlp } from "@tevm/voltaire/Rlp";
+import {
+	type RlpDecodingError,
+	RlpDecodingError as RlpDecodingErrorClass,
+	Rlp as VoltaireRlp,
+} from "@tevm/voltaire/Rlp";
 import * as Effect from "effect/Effect";
+
+const isRlpDecodingError = (e: unknown): e is RlpDecodingError =>
+	e instanceof RlpDecodingErrorClass ||
+	(e !== null && typeof e === "object" && "name" in e && e.name === "RlpDecodingError");
 
 /**
  * RLP-decodes bytes to an array.
@@ -28,5 +36,8 @@ export const decodeArray = (
 ): Effect.Effect<unknown[], RlpDecodingError> =>
 	Effect.try({
 		try: () => VoltaireRlp.decodeArray(data),
-		catch: (e) => e as RlpDecodingError,
+		catch: (e) =>
+			isRlpDecodingError(e)
+				? e
+				: new RlpDecodingErrorClass("RLP array decoding failed", { cause: e instanceof Error ? e : undefined }),
 	});

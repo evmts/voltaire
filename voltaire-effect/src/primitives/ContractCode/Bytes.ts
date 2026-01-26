@@ -4,10 +4,10 @@
  * @since 0.1.0
  */
 
-import {
-	type ContractCodeType,
-	from as voltaireFrom,
-} from "@tevm/voltaire/ContractCode";
+import { ContractCode } from "@tevm/voltaire";
+
+type ContractCodeType = ReturnType<typeof ContractCode.from>;
+const voltaireFrom = ContractCode.from;
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
 

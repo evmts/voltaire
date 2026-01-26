@@ -72,12 +72,14 @@ export { Number } from "./Number.js";
 export { BigInt } from "./BigInt.js";
 
 // Pure functions
+export { add } from "./add.js";
 export { sub } from "./sub.js";
 export { mul } from "./mul.js";
 export { div } from "./div.js";
 export { negate } from "./negate.js";
 export { abs } from "./abs.js";
 export { compare } from "./compare.js";
+export { equals } from "./equals.js";
 export { isZero } from "./isZero.js";
 export { isNegative } from "./isNegative.js";
 

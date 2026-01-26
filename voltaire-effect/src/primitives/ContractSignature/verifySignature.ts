@@ -10,7 +10,6 @@
 import {
 	ContractSignature,
 	Address,
-	Keccak256,
 	Secp256k1,
 	type BrandedAddress,
 	type BrandedHash,
@@ -68,6 +67,68 @@ export class InvalidSignatureFormatError extends AbstractError {
 	}
 }
 
+const SIGNATURE_LENGTH = 65;
+const SIGNATURE_COMPONENT_LENGTH = 32;
+
+const assertSignatureComponentLength = (
+	component: Uint8Array,
+	name: "r" | "s",
+) => {
+	if (component.length !== SIGNATURE_COMPONENT_LENGTH) {
+		throw new InvalidSignatureFormatError(
+			`Signature ${name} must be ${SIGNATURE_COMPONENT_LENGTH} bytes`,
+		);
+	}
+};
+
+const toSignatureComponents = (
+	signature: SignatureInput,
+): { r: Uint8Array; s: Uint8Array; v: number } => {
+	if (signature instanceof Uint8Array) {
+		if (signature.length !== SIGNATURE_LENGTH) {
+			throw new InvalidSignatureFormatError(
+				`Signature must be ${SIGNATURE_LENGTH} bytes`,
+			);
+		}
+		return {
+			r: signature.slice(0, 32),
+			s: signature.slice(32, 64),
+			v: signature[64] ?? 0,
+		};
+	}
+	assertSignatureComponentLength(signature.r, "r");
+	assertSignatureComponentLength(signature.s, "s");
+	return signature;
+};
+
+const concatSignature = (signature: {
+	r: Uint8Array;
+	s: Uint8Array;
+	v: number;
+}): Uint8Array => {
+	assertSignatureComponentLength(signature.r, "r");
+	assertSignatureComponentLength(signature.s, "s");
+	const result = new Uint8Array(SIGNATURE_LENGTH);
+	result.set(signature.r, 0);
+	result.set(signature.s, 32);
+	result[64] = signature.v;
+	return result;
+};
+
+const toSignatureBytes = (signature: SignatureInput): Uint8Array =>
+	signature instanceof Uint8Array ? signature : concatSignature(signature);
+
+const bytesToBigInt = (bytes: Uint8Array): bigint => {
+	let result = 0n;
+	for (const byte of bytes) {
+		result = (result << 8n) | BigInt(byte);
+	}
+	return result;
+};
+
+const isEmptyCode = (code: unknown): code is string =>
+	typeof code === "string" && (code === "0x" || code === "0x0" || code === "0x00");
+
 /**
  * Verify a signature for both EOA and contract accounts (EIP-1271).
  *
@@ -122,12 +183,6 @@ export const verifySignature = (
 
 		return yield* Effect.tryPromise({
 			try: async () => {
-				const verifyFn = ContractSignature.VerifySignature({
-					keccak256: Keccak256.hash,
-					recoverPublicKey: Secp256k1.recoverPublicKey as any,
-					addressFromPublicKey: Address.fromPublicKey,
-				});
-
 				const providerAdapter = {
 					request: async (method: string, params: unknown[]) => {
 						if (method === "eth_getCode") {
@@ -149,12 +204,43 @@ export const verifySignature = (
 					},
 				};
 
-				return await verifyFn(providerAdapter, address as any, hash as any, signature);
+				const addressHex =
+					typeof address === "string" ? address : Address.toHex(address);
+				const code = await providerAdapter.request("eth_getCode", [
+					addressHex,
+					"latest",
+				]);
+
+				if (isEmptyCode(code)) {
+					const sigComponents = toSignatureComponents(signature);
+					const publicKey = Secp256k1.recoverPublicKey(
+						sigComponents,
+						hash as any,
+					);
+					const x = bytesToBigInt(publicKey.slice(0, 32));
+					const y = bytesToBigInt(publicKey.slice(32, 64));
+					const recoveredAddress = Address.fromPublicKey(x, y);
+					const expectedAddress =
+						typeof address === "string" ? Address(address) : address;
+					return Address.equals(recoveredAddress, expectedAddress);
+				}
+
+				const signatureBytes = toSignatureBytes(signature);
+				return await ContractSignature.isValidSignature(
+					providerAdapter,
+					address as any,
+					hash as any,
+					signatureBytes,
+				);
 			},
 			catch: (e) => {
+				if (e instanceof InvalidSignatureFormatError) {
+					return e;
+				}
 				if (
 					e instanceof Error &&
-					e.name === "InvalidSignatureFormatError"
+					(e.name === "InvalidSignatureFormatError" ||
+						e.name === "InvalidSignatureError")
 				) {
 					return new InvalidSignatureFormatError(e.message, { cause: e });
 				}

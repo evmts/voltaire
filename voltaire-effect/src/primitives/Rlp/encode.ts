@@ -1,6 +1,7 @@
 import {
 	type BrandedRlp,
 	type RlpEncodingError,
+	RlpEncodingError as RlpEncodingErrorClass,
 	Rlp as VoltaireRlp,
 } from "@tevm/voltaire/Rlp";
 import * as Effect from "effect/Effect";
@@ -10,6 +11,10 @@ import * as Effect from "effect/Effect";
  * @since 0.0.1
  */
 type Encodable = Uint8Array | BrandedRlp | Encodable[];
+
+const isRlpEncodingError = (e: unknown): e is RlpEncodingError =>
+	e instanceof RlpEncodingErrorClass ||
+	(e !== null && typeof e === "object" && "name" in e && e.name === "RlpEncodingError");
 
 /**
  * RLP-encodes data using Effect for error handling.
@@ -41,5 +46,8 @@ export const encode = (
 ): Effect.Effect<Uint8Array, RlpEncodingError> =>
 	Effect.try({
 		try: () => VoltaireRlp.encode(data),
-		catch: (e) => e as RlpEncodingError,
+		catch: (e) =>
+			isRlpEncodingError(e)
+				? e
+				: new RlpEncodingErrorClass("RLP encoding failed", { cause: e instanceof Error ? e : undefined }),
 	});
