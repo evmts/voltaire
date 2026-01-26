@@ -24,6 +24,10 @@ import { SignerError } from "./Signer/SignerService.js";
 import { TransportService } from "./Transport/TransportService.js";
 import { Provider } from "./Provider/Provider.js";
 import { ProviderService } from "./Provider/ProviderService.js";
+import { CcipError } from "./Ccip/CcipService.js";
+import { AbiEncodeError, AbiDecodeError } from "./AbiEncoder/AbiEncoderService.js";
+import { SerializeError, DeserializeError } from "./TransactionSerializer/TransactionSerializerService.js";
+import { KzgError } from "./Kzg/KzgService.js";
 
 describe("Error constructor standardization", () => {
 	describe("All errors have consistent shape", () => {
@@ -299,6 +303,113 @@ describe("Error constructor standardization", () => {
 			expect(
 				((signerError.cause as ProviderError).cause as TransportError).code,
 			).toBe(-32601);
+		});
+	});
+
+	describe("Additional service errors", () => {
+		it("CcipError has _tag, urls, message, cause", () => {
+			const urls = ["https://example.com/gateway"];
+			const cause = new Error("fetch failed");
+			const error = new CcipError({ urls, message: "CCIP lookup failed", cause });
+
+			expect(error._tag).toBe("CcipError");
+			expect(error.urls).toEqual(urls);
+			expect(error.message).toBe("CCIP lookup failed");
+			expect(error.cause).toBe(cause);
+		});
+
+		it("CcipError works without cause", () => {
+			const error = new CcipError({ urls: [], message: "No URLs" });
+
+			expect(error._tag).toBe("CcipError");
+			expect(error.urls).toEqual([]);
+			expect(error.message).toBe("No URLs");
+			expect(error.cause).toBeUndefined();
+		});
+
+		it("AbiEncodeError has _tag, functionName, args, message, cause", () => {
+			const cause = new Error("encode failed");
+			const error = new AbiEncodeError({
+				functionName: "transfer",
+				args: ["0x123", 100n],
+				message: "Failed to encode function",
+				cause,
+			});
+
+			expect(error._tag).toBe("AbiEncodeError");
+			expect(error.functionName).toBe("transfer");
+			expect(error.args).toEqual(["0x123", 100n]);
+			expect(error.message).toBe("Failed to encode function");
+			expect(error.cause).toBe(cause);
+		});
+
+		it("AbiDecodeError has _tag, data, message, cause", () => {
+			const cause = new Error("decode failed");
+			const error = new AbiDecodeError({
+				data: "0x1234",
+				message: "Failed to decode",
+				cause,
+			});
+
+			expect(error._tag).toBe("AbiDecodeError");
+			expect(error.data).toBe("0x1234");
+			expect(error.message).toBe("Failed to decode");
+			expect(error.cause).toBe(cause);
+		});
+
+		it("SerializeError has _tag, transaction, message, cause", () => {
+			const tx = { type: 2, chainId: 1n };
+			const cause = new Error("serialize failed");
+			const error = new SerializeError({
+				transaction: tx,
+				message: "Failed to serialize",
+				cause,
+			});
+
+			expect(error._tag).toBe("SerializeError");
+			expect(error.transaction).toEqual(tx);
+			expect(error.message).toBe("Failed to serialize");
+			expect(error.cause).toBe(cause);
+		});
+
+		it("DeserializeError has _tag, bytes, message, cause", () => {
+			const bytes = new Uint8Array([1, 2, 3]);
+			const cause = new Error("deserialize failed");
+			const error = new DeserializeError({
+				bytes,
+				message: "Failed to deserialize",
+				cause,
+			});
+
+			expect(error._tag).toBe("DeserializeError");
+			expect(error.bytes).toEqual(bytes);
+			expect(error.message).toBe("Failed to deserialize");
+			expect(error.cause).toBe(cause);
+		});
+
+		it("KzgError has _tag, operation, message, cause", () => {
+			const cause = new Error("kzg failed");
+			const error = new KzgError({
+				operation: "blobToCommitment",
+				message: "Failed to compute commitment",
+				cause,
+			});
+
+			expect(error._tag).toBe("KzgError");
+			expect(error.operation).toBe("blobToCommitment");
+			expect(error.message).toBe("Failed to compute commitment");
+			expect(error.cause).toBe(cause);
+		});
+
+		it("KzgError works without cause", () => {
+			const error = new KzgError({
+				operation: "verifyProof",
+				message: "KZG not available",
+			});
+
+			expect(error._tag).toBe("KzgError");
+			expect(error.operation).toBe("verifyProof");
+			expect(error.cause).toBeUndefined();
 		});
 	});
 });
