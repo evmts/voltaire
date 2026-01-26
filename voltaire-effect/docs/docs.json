@@ -92,7 +92,8 @@
               "block",
               "blockchain",
               "contract",
-              "jsonrpc"
+              "jsonrpc",
+              "jsonrpc-schemas"
             ]
           },
           {
