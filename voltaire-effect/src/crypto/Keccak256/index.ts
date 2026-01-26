@@ -41,4 +41,9 @@
  */
 
 export { hash } from "./hash.js";
-export { KeccakLive, KeccakService, KeccakTest } from "./KeccakService.js";
+export {
+	KeccakLive,
+	KeccakService,
+	type KeccakServiceShape,
+	KeccakTest,
+} from "./KeccakService.js";

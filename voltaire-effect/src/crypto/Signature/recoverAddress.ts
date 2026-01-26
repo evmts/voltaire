@@ -5,7 +5,9 @@
  */
 
 import type { AddressType } from "@tevm/voltaire/Address";
+import { Hash } from "@tevm/voltaire";
 import type { HashType } from "@tevm/voltaire/Hash";
+import type { Secp256k1SignatureType } from "@tevm/voltaire/Secp256k1";
 import type { SignatureType } from "@tevm/voltaire/Signature";
 import * as Effect from "effect/Effect";
 import { KeccakService } from "../Keccak256/index.js";
@@ -124,18 +126,16 @@ export const recoverAddress = (params: {
 				}),
 		});
 
-		// Create 65-byte signature for secp256k1 service
-		const sig65 = new Uint8Array(65);
-		sig65.set(normalizedSig.r, 0);
-		sig65.set(normalizedSig.s, 32);
-		sig65[64] = normalizedSig.v < 27 ? normalizedSig.v : normalizedSig.v - 27;
+		// Create signature object for secp256k1 service
+		const secp256k1Sig: Secp256k1SignatureType = {
+			r: Hash(normalizedSig.r),
+			s: Hash(normalizedSig.s),
+			v: normalizedSig.v,
+		};
 
 		// Recover public key
 		const publicKey = yield* secp256k1
-			.recover(
-				sig65 as Parameters<typeof secp256k1.recover>[0],
-				params.hash as Parameters<typeof secp256k1.recover>[1],
-			)
+			.recover(secp256k1Sig, params.hash)
 			.pipe(
 				Effect.mapError(
 					(e) =>
@@ -148,8 +148,8 @@ export const recoverAddress = (params: {
 
 		// Derive address from public key
 		// Public key is 65 bytes with 0x04 prefix, or 64 bytes without
-		const pubKeyBytes =
-			publicKey.length === 65 ? publicKey.slice(1) : publicKey;
+		const pubKeyLen = publicKey.length;
+		const pubKeyBytes = pubKeyLen === 65 ? publicKey.slice(1) : publicKey;
 
 		const addressHash = yield* keccak.hash(pubKeyBytes).pipe(
 			Effect.mapError(

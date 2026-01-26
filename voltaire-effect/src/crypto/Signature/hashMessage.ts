@@ -4,7 +4,7 @@
  * @since 0.0.1
  */
 
-import type { HashType } from "@tevm/voltaire/Hash";
+import type { Keccak256Hash } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import { KeccakService } from "../Keccak256/index.js";
 
@@ -41,7 +41,7 @@ const EIP191_PREFIX = "\x19Ethereum Signed Message:\n";
  */
 export const hashMessage = (
 	message: string | Uint8Array,
-): Effect.Effect<HashType, never, KeccakService> =>
+): Effect.Effect<Keccak256Hash, never, KeccakService> =>
 	Effect.gen(function* () {
 		const keccak = yield* KeccakService;
 
