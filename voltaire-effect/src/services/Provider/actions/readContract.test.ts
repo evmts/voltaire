@@ -572,5 +572,195 @@ describe("readContract", () => {
 
 			expect(exit._tag).toBe("Failure");
 		});
+
+		it("handles empty return data (0x) for function expecting outputs", async () => {
+			mockProvider.call.mockReturnValue(Effect.succeed("0x" as HexType));
+
+			const program = readContract({
+				address: "0x6B175474E89094C44Da98b954EecdEfaE6E286AB",
+				abi: erc20Abi,
+				functionName: "balanceOf",
+				args: ["0x1234567890123456789012345678901234567890"],
+			});
+
+			const exit = await Effect.runPromiseExit(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(exit._tag).toBe("Failure");
+		});
+
+		it("handles malformed hex (odd length)", async () => {
+			mockProvider.call.mockReturnValue(Effect.succeed("0x123" as HexType));
+
+			const program = readContract({
+				address: "0x6B175474E89094C44Da98b954EecdEfaE6E286AB",
+				abi: erc20Abi,
+				functionName: "balanceOf",
+				args: ["0x1234567890123456789012345678901234567890"],
+			});
+
+			const exit = await Effect.runPromiseExit(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(exit._tag).toBe("Failure");
+		});
+	});
+
+	describe("output type handling", () => {
+		it("handles address output type", async () => {
+			mockProvider.call.mockReturnValue(
+				Effect.succeed(
+					"0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045" as HexType,
+				),
+			);
+
+			const program = readContract({
+				address: "0x1234567890123456789012345678901234567890",
+				abi: extendedAbi,
+				functionName: "owner",
+			});
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toBeDefined();
+			expect(typeof result).toBe("object");
+		});
+
+		it("handles bool output type - true", async () => {
+			mockProvider.call.mockReturnValue(
+				Effect.succeed(
+					"0x0000000000000000000000000000000000000000000000000000000000000001" as HexType,
+				),
+			);
+
+			const program = readContract({
+				address: "0x1234567890123456789012345678901234567890",
+				abi: extendedAbi,
+				functionName: "paused",
+			});
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toBe(true);
+		});
+
+		it("handles bool output type - false", async () => {
+			mockProvider.call.mockReturnValue(
+				Effect.succeed(
+					"0x0000000000000000000000000000000000000000000000000000000000000000" as HexType,
+				),
+			);
+
+			const program = readContract({
+				address: "0x1234567890123456789012345678901234567890",
+				abi: extendedAbi,
+				functionName: "paused",
+			});
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toBe(false);
+		});
+
+		it("handles bytes32 output type", async () => {
+			const merkleRoot =
+				"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
+			mockProvider.call.mockReturnValue(
+				Effect.succeed(merkleRoot as HexType),
+			);
+
+			const program = readContract({
+				address: "0x1234567890123456789012345678901234567890",
+				abi: extendedAbi,
+				functionName: "merkleRoot",
+			});
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toBeDefined();
+		});
+
+		it("handles dynamic array (uint256[]) output", async () => {
+			mockProvider.call.mockReturnValue(
+				Effect.succeed(
+					"0x" +
+						"0000000000000000000000000000000000000000000000000000000000000020" +
+						"0000000000000000000000000000000000000000000000000000000000000003" +
+						"0000000000000000000000000000000000000000000000000000000000000064" +
+						"00000000000000000000000000000000000000000000000000000000000000c8" +
+						"000000000000000000000000000000000000000000000000000000000000012c" as HexType,
+				),
+			);
+
+			const program = readContract({
+				address: "0x1234567890123456789012345678901234567890",
+				abi: extendedAbi,
+				functionName: "getBalances",
+				args: ["0x1234567890123456789012345678901234567890"],
+			});
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(Array.isArray(result)).toBe(true);
+			expect((result as bigint[]).length).toBe(3);
+			expect((result as bigint[])[0]).toBe(100n);
+			expect((result as bigint[])[1]).toBe(200n);
+			expect((result as bigint[])[2]).toBe(300n);
+		});
+
+		it("handles tuple/struct output", async () => {
+			mockProvider.call.mockReturnValue(
+				Effect.succeed(
+					"0x" +
+						"000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045" +
+						"0000000000000000000000000000000000000000000000000de0b6b3a7640000" +
+						"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0bb8" +
+						"0000000000000000000000000000000000000000000000000000000000000bb8" as HexType,
+				),
+			);
+
+			const program = readContract({
+				address: "0x1234567890123456789012345678901234567890",
+				abi: extendedAbi,
+				functionName: "getPosition",
+				args: [1n],
+			});
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toBeDefined();
+			expect(typeof result).toBe("object");
+		});
+
+		it("handles zero output function", async () => {
+			mockProvider.call.mockReturnValue(Effect.succeed("0x" as HexType));
+
+			const program = readContract({
+				address: "0x1234567890123456789012345678901234567890",
+				abi: extendedAbi,
+				functionName: "execute",
+				args: ["0x1234"],
+			});
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toBeUndefined();
+		});
 	});
 });

@@ -86,6 +86,199 @@ describe("Keystore", () => {
 			);
 			expect(Exit.isFailure(exit)).toBe(true);
 		});
+
+		it("fails with unsupported KDF (argon2)", async () => {
+			const badKeystore = {
+				version: 3,
+				id: "test",
+				crypto: {
+					cipher: "aes-128-ctr" as const,
+					ciphertext: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+					cipherparams: { iv: "00112233445566778899aabbccddeeff" },
+					kdf: "argon2" as any,
+					kdfparams: { dklen: 32, salt: "00112233445566778899aabbccddeeff" },
+					mac: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+				},
+			};
+			const exit = await Effect.runPromiseExit(
+				Keystore.decrypt(badKeystore as any, testPassword),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit)) {
+				const error = exit.cause;
+				expect(error).toBeDefined();
+			}
+		});
+
+		it("fails with unsupported KDF (junk)", async () => {
+			const badKeystore = {
+				version: 3,
+				id: "test",
+				crypto: {
+					cipher: "aes-128-ctr" as const,
+					ciphertext: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+					cipherparams: { iv: "00112233445566778899aabbccddeeff" },
+					kdf: "totally-not-a-kdf" as any,
+					kdfparams: { dklen: 32, salt: "00112233445566778899aabbccddeeff" },
+					mac: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+				},
+			};
+			const exit = await Effect.runPromiseExit(
+				Keystore.decrypt(badKeystore as any, testPassword),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with corrupted MAC", async () => {
+			const encrypted = await Effect.runPromise(
+				Keystore.encrypt(testPrivateKey, testPassword, {
+					scryptN: 1024,
+					scryptR: 8,
+					scryptP: 1,
+				}),
+			);
+			const corruptedKeystore = {
+				...encrypted,
+				crypto: {
+					...encrypted.crypto,
+					mac: encrypted.crypto.mac.replace(/^./, encrypted.crypto.mac[0] === "0" ? "1" : "0"),
+				},
+			};
+			const exit = await Effect.runPromiseExit(
+				Keystore.decrypt(corruptedKeystore, testPassword),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with corrupted ciphertext", async () => {
+			const encrypted = await Effect.runPromise(
+				Keystore.encrypt(testPrivateKey, testPassword, {
+					scryptN: 1024,
+					scryptR: 8,
+					scryptP: 1,
+				}),
+			);
+			const corruptedKeystore = {
+				...encrypted,
+				crypto: {
+					...encrypted.crypto,
+					ciphertext: encrypted.crypto.ciphertext.replace(
+						/^./,
+						encrypted.crypto.ciphertext[0] === "0" ? "1" : "0",
+					),
+				},
+			};
+			const exit = await Effect.runPromiseExit(
+				Keystore.decrypt(corruptedKeystore, testPassword),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with missing crypto section", async () => {
+			const badKeystore = {
+				version: 3,
+				id: "test",
+			};
+			const exit = await Effect.runPromiseExit(
+				Keystore.decrypt(badKeystore as any, testPassword),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with missing cipherparams.iv", async () => {
+			const badKeystore = {
+				version: 3,
+				id: "test",
+				crypto: {
+					cipher: "aes-128-ctr" as const,
+					ciphertext: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+					cipherparams: {},
+					kdf: "scrypt" as const,
+					kdfparams: { dklen: 32, n: 1024, r: 8, p: 1, salt: "00112233445566778899aabbccddeeff" },
+					mac: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+				},
+			};
+			const exit = await Effect.runPromiseExit(
+				Keystore.decrypt(badKeystore as any, testPassword),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with invalid hex in ciphertext", async () => {
+			const badKeystore = {
+				version: 3,
+				id: "test",
+				crypto: {
+					cipher: "aes-128-ctr" as const,
+					ciphertext: "not-valid-hex-gggg",
+					cipherparams: { iv: "00112233445566778899aabbccddeeff" },
+					kdf: "scrypt" as const,
+					kdfparams: { dklen: 32, n: 1024, r: 8, p: 1, salt: "00112233445566778899aabbccddeeff" },
+					mac: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+				},
+			};
+			const exit = await Effect.runPromiseExit(
+				Keystore.decrypt(badKeystore as any, testPassword),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with invalid hex in iv", async () => {
+			const badKeystore = {
+				version: 3,
+				id: "test",
+				crypto: {
+					cipher: "aes-128-ctr" as const,
+					ciphertext: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+					cipherparams: { iv: "zzzz-not-hex" },
+					kdf: "scrypt" as const,
+					kdfparams: { dklen: 32, n: 1024, r: 8, p: 1, salt: "00112233445566778899aabbccddeeff" },
+					mac: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+				},
+			};
+			const exit = await Effect.runPromiseExit(
+				Keystore.decrypt(badKeystore as any, testPassword),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with invalid hex in salt", async () => {
+			const badKeystore = {
+				version: 3,
+				id: "test",
+				crypto: {
+					cipher: "aes-128-ctr" as const,
+					ciphertext: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+					cipherparams: { iv: "00112233445566778899aabbccddeeff" },
+					kdf: "scrypt" as const,
+					kdfparams: { dklen: 32, n: 1024, r: 8, p: 1, salt: "not-hex!!!" },
+					mac: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+				},
+			};
+			const exit = await Effect.runPromiseExit(
+				Keystore.decrypt(badKeystore as any, testPassword),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with invalid hex in mac", async () => {
+			const badKeystore = {
+				version: 3,
+				id: "test",
+				crypto: {
+					cipher: "aes-128-ctr" as const,
+					ciphertext: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+					cipherparams: { iv: "00112233445566778899aabbccddeeff" },
+					kdf: "scrypt" as const,
+					kdfparams: { dklen: 32, n: 1024, r: 8, p: 1, salt: "00112233445566778899aabbccddeeff" },
+					mac: "invalid-mac-not-hex",
+				},
+			};
+			const exit = await Effect.runPromiseExit(
+				Keystore.decrypt(badKeystore as any, testPassword),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
 	});
 
 	describe("KeystoreService", () => {
