@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { ProviderService } from "../services/Provider/index.js";
 import * as ERC165 from "./ERC165.js";
 

@@ -5,7 +5,7 @@
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "@effect/vitest";
 import { TransportService, type TransportShape } from "../services/Transport/index.js";
 import { EventStreamService } from "./EventStreamService.js";
 import { EventStream } from "./EventStream.js";

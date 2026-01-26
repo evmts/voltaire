@@ -1,6 +1,6 @@
 import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import * as ERC1155 from "./ERC1155.js";
 
 const testAddress = Address("0x1234567890123456789012345678901234567890");
