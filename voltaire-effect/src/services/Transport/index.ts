@@ -49,6 +49,12 @@ export {
 	HttpTransportFetch,
 	type HttpTransportConfig,
 } from "./HttpTransport.js";
+export {
+	HttpTransportConfigSchema,
+	HttpTransportFromConfig,
+	HttpTransportFromConfigFetch,
+	type HttpTransportConfigType,
+} from "./HttpTransportConfig.js";
 export { TestTransport } from "./TestTransport.js";
 export {
 	TransportError,
