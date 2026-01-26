@@ -89,11 +89,6 @@ export {
 export { CryptoLive } from "./CryptoLive.js";
 export { CryptoTest } from "./CryptoTest.js";
 export {
-	verifySignature as erc6492VerifySignature,
-	wrapSignature as erc6492WrapSignature,
-	unwrapSignature as erc6492UnwrapSignature,
-} from "./ERC6492/index.js";
-export {
 	Ed25519Live,
 	Ed25519Service,
 	type Ed25519ServiceShape,
@@ -114,6 +109,11 @@ export {
 	signTypedData,
 	verifyTypedData,
 } from "./EIP712/index.js";
+export {
+	unwrapSignature as erc6492UnwrapSignature,
+	verifySignature as erc6492VerifySignature,
+	wrapSignature as erc6492WrapSignature,
+} from "./ERC6492/index.js";
 // Hash utilities (re-exports for convenience)
 export { hashMessage as hashPersonalMessage } from "./Hash/index.js";
 export {
