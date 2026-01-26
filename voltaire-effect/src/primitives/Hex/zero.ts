@@ -6,7 +6,6 @@
  */
 
 import { type HexType, Hex as VoltaireHex } from "@tevm/voltaire/Hex";
-import * as Effect from "effect/Effect";
 
 /**
  * Create a zero-filled hex string of specified byte size.
@@ -16,18 +15,16 @@ import * as Effect from "effect/Effect";
  * For example, size 4 produces '0x00000000'. This operation is infallible.
  *
  * @param {number} size - Size in bytes
- * @returns {Effect.Effect<HexType, never>} Effect that always succeeds with zero-filled hex
+ * @returns {HexType} Zero-filled hex string
  *
  * @example
  * ```ts
  * import * as Hex from 'voltaire-effect/primitives/Hex'
- * import * as Effect from 'effect/Effect'
  *
- * const zeros = await Effect.runPromise(Hex.zero(4)) // '0x00000000'
- * const empty = await Effect.runPromise(Hex.zero(0)) // '0x'
+ * const zeros = Hex.zero(4) // '0x00000000'
+ * const empty = Hex.zero(0) // '0x'
  * ```
  *
  * @since 0.0.1
  */
-export const zero = (size: number): Effect.Effect<HexType, never> =>
-	Effect.succeed(VoltaireHex.zero(size));
+export const zero = (size: number): HexType => VoltaireHex.zero(size);

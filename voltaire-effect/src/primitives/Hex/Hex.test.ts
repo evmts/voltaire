@@ -1,6 +1,5 @@
-import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
-import { describe, expect, it } from "@effect/vitest";
+import { describe, expect, it } from "vitest";
 import * as Hex from "./index.js";
 
 describe("Hex.String", () => {
@@ -162,129 +161,129 @@ describe("Hex.Bytes", () => {
 
 describe("pure functions", () => {
 	describe("isHex", () => {
-		it("returns true for valid hex with prefix", async () => {
-			const result = await Effect.runPromise(Hex.isHex("0x1234"));
+		it("returns true for valid hex with prefix", () => {
+			const result = Hex.isHex("0x1234");
 			expect(result).toBe(true);
 		});
 
-		it("returns false for empty hex 0x", async () => {
-			const result = await Effect.runPromise(Hex.isHex("0x"));
+		it("returns false for empty hex 0x", () => {
+			const result = Hex.isHex("0x");
 			expect(result).toBe(false);
 		});
 
-		it("returns false for hex without prefix", async () => {
-			const result = await Effect.runPromise(Hex.isHex("1234"));
+		it("returns false for hex without prefix", () => {
+			const result = Hex.isHex("1234");
 			expect(result).toBe(false);
 		});
 
-		it("returns false for invalid hex characters", async () => {
-			const result = await Effect.runPromise(Hex.isHex("0xZZZZ"));
+		it("returns false for invalid hex characters", () => {
+			const result = Hex.isHex("0xZZZZ");
 			expect(result).toBe(false);
 		});
 
-		it("returns true for odd-length hex", async () => {
-			const result = await Effect.runPromise(Hex.isHex("0xabc"));
+		it("returns true for odd-length hex", () => {
+			const result = Hex.isHex("0xabc");
 			expect(result).toBe(true);
 		});
 
-		it("returns false for non-hex string", async () => {
-			const result = await Effect.runPromise(Hex.isHex("hello"));
+		it("returns false for non-hex string", () => {
+			const result = Hex.isHex("hello");
 			expect(result).toBe(false);
 		});
 	});
 
 	describe("isSized", () => {
-		it("returns true for correct size", async () => {
+		it("returns true for correct size", () => {
 			const hex = S.decodeSync(Hex.String)("0x1234");
-			const result = await Effect.runPromise(Hex.isSized(hex, 2));
+			const result = Hex.isSized(hex, 2);
 			expect(result).toBe(true);
 		});
 
-		it("returns false for incorrect size", async () => {
+		it("returns false for incorrect size", () => {
 			const hex = S.decodeSync(Hex.String)("0x1234");
-			const result = await Effect.runPromise(Hex.isSized(hex, 4));
+			const result = Hex.isSized(hex, 4);
 			expect(result).toBe(false);
 		});
 
-		it("returns true for empty hex with size 0", async () => {
+		it("returns true for empty hex with size 0", () => {
 			const hex = S.decodeSync(Hex.String)("0x");
-			const result = await Effect.runPromise(Hex.isSized(hex, 0));
+			const result = Hex.isSized(hex, 0);
 			expect(result).toBe(true);
 		});
 
-		it("checks 32-byte hex correctly", async () => {
+		it("checks 32-byte hex correctly", () => {
 			const hex = S.decodeSync(Hex.String)("0x" + "ab".repeat(32));
-			const result = await Effect.runPromise(Hex.isSized(hex, 32));
+			const result = Hex.isSized(hex, 32);
 			expect(result).toBe(true);
 		});
 	});
 
 	describe("clone", () => {
-		it("creates a copy of hex", async () => {
+		it("creates a copy of hex", () => {
 			const original = S.decodeSync(Hex.String)("0xdeadbeef");
-			const cloned = await Effect.runPromise(Hex.clone(original));
+			const cloned = Hex.clone(original);
 			expect(cloned).toBe(original);
 		});
 
-		it("clones empty hex", async () => {
+		it("clones empty hex", () => {
 			const original = S.decodeSync(Hex.String)("0x");
-			const cloned = await Effect.runPromise(Hex.clone(original));
+			const cloned = Hex.clone(original);
 			expect(cloned).toBe("0x");
 		});
 	});
 
 	describe("zero", () => {
-		it("creates zero-filled hex of size 4", async () => {
-			const result = await Effect.runPromise(Hex.zero(4));
+		it("creates zero-filled hex of size 4", () => {
+			const result = Hex.zero(4);
 			expect(result).toBe("0x00000000");
 		});
 
-		it("creates empty hex for size 0", async () => {
-			const result = await Effect.runPromise(Hex.zero(0));
+		it("creates empty hex for size 0", () => {
+			const result = Hex.zero(0);
 			expect(result).toBe("0x");
 		});
 
-		it("creates 32-byte zero hex", async () => {
-			const result = await Effect.runPromise(Hex.zero(32));
+		it("creates 32-byte zero hex", () => {
+			const result = Hex.zero(32);
 			expect(result).toBe("0x" + "00".repeat(32));
 			expect(result.length).toBe(66);
 		});
 
-		it("creates 1-byte zero hex", async () => {
-			const result = await Effect.runPromise(Hex.zero(1));
+		it("creates 1-byte zero hex", () => {
+			const result = Hex.zero(1);
 			expect(result).toBe("0x00");
 		});
 	});
 
 	describe("random", () => {
-		it("generates random hex of correct size", async () => {
-			const result = await Effect.runPromise(Hex.random(32));
+		it("generates random hex of correct size", () => {
+			const result = Hex.random(32);
 			expect(result.length).toBe(66);
 			expect(result.startsWith("0x")).toBe(true);
 		});
 
-		it("generates empty hex for size 0", async () => {
-			const result = await Effect.runPromise(Hex.random(0));
+		it("generates empty hex for size 0", () => {
+			const result = Hex.random(0);
 			expect(result).toBe("0x");
 		});
 
-		it("generates different values each time", async () => {
-			const a = await Effect.runPromise(Hex.random(16));
-			const b = await Effect.runPromise(Hex.random(16));
+		it("generates different values each time", () => {
+			const a = Hex.random(16);
+			const b = Hex.random(16);
 			expect(a).not.toBe(b);
 		});
 
-		it("generates valid hex format", async () => {
-			const result = await Effect.runPromise(Hex.random(8));
+		it("generates valid hex format", () => {
+			const result = Hex.random(8);
 			expect(result).toMatch(/^0x[0-9a-f]{16}$/);
 		});
 	});
 });
 
 describe("edge cases", () => {
-	it("handles maximum safe integer bytes", async () => {
+	it("handles maximum safe integer bytes", () => {
 		const hex = S.decodeSync(Hex.String)("0xffffffffffffff");
-		const sized = await Effect.runPromise(Hex.isSized(hex, 7));
+		const sized = Hex.isSized(hex, 7);
 		expect(sized).toBe(true);
 	});
 
@@ -364,60 +363,60 @@ describe("error cases", () => {
 
 describe("additional edge cases", () => {
 	describe("isHex edge cases", () => {
-		it("returns true for single char hex", async () => {
-			const result = await Effect.runPromise(Hex.isHex("0xa"));
+		it("returns true for single char hex", () => {
+			const result = Hex.isHex("0xa");
 			expect(result).toBe(true);
 		});
 
-		it("returns false for just 0x prefix", async () => {
-			const result = await Effect.runPromise(Hex.isHex("0x"));
+		it("returns false for just 0x prefix", () => {
+			const result = Hex.isHex("0x");
 			expect(result).toBe(false);
 		});
 
-		it("returns false for string without prefix", async () => {
-			const result = await Effect.runPromise(Hex.isHex("abcd"));
+		it("returns false for string without prefix", () => {
+			const result = Hex.isHex("abcd");
 			expect(result).toBe(false);
 		});
 	});
 
 	describe("isSized edge cases", () => {
-		it("returns false for odd-length hex size calculation", async () => {
+		it("returns false for odd-length hex size calculation", () => {
 			const hex = S.decodeSync(Hex.String)("0xabc");
-			const result = await Effect.runPromise(Hex.isSized(hex, 1));
+			const result = Hex.isSized(hex, 1);
 			expect(result).toBe(false);
 		});
 
-		it("handles large sizes", async () => {
+		it("handles large sizes", () => {
 			const hex = S.decodeSync(Hex.String)("0x" + "ab".repeat(1000));
-			const result = await Effect.runPromise(Hex.isSized(hex, 1000));
+			const result = Hex.isSized(hex, 1000);
 			expect(result).toBe(true);
 		});
 	});
 
 	describe("zero edge cases", () => {
-		it("creates large zero hex", async () => {
-			const result = await Effect.runPromise(Hex.zero(100));
+		it("creates large zero hex", () => {
+			const result = Hex.zero(100);
 			expect(result).toBe("0x" + "00".repeat(100));
 		});
 	});
 
 	describe("random edge cases", () => {
-		it("random of size 1 produces valid hex", async () => {
-			const result = await Effect.runPromise(Hex.random(1));
+		it("random of size 1 produces valid hex", () => {
+			const result = Hex.random(1);
 			expect(result.length).toBe(4);
 			expect(result.startsWith("0x")).toBe(true);
 		});
 
-		it("random produces lowercase hex", async () => {
-			const result = await Effect.runPromise(Hex.random(32));
+		it("random produces lowercase hex", () => {
+			const result = Hex.random(32);
 			expect(result).toMatch(/^0x[0-9a-f]+$/);
 		});
 	});
 
 	describe("clone edge cases", () => {
-		it("clones very long hex", async () => {
+		it("clones very long hex", () => {
 			const original = S.decodeSync(Hex.String)("0x" + "ab".repeat(1000));
-			const cloned = await Effect.runPromise(Hex.clone(original));
+			const cloned = Hex.clone(original);
 			expect(cloned).toBe(original);
 		});
 	});
@@ -436,5 +435,38 @@ describe("additional edge cases", () => {
 				expect(bytes[i]).toBe(i);
 			}
 		});
+	});
+});
+
+describe("API consistency - infallible ops return directly", () => {
+	it("clone returns HexType directly, not Effect", () => {
+		const hex = S.decodeSync(Hex.String)("0xdeadbeef");
+		const result = Hex.clone(hex);
+		// Direct value, not Effect
+		expect(typeof result).toBe("string");
+		expect(result.startsWith("0x")).toBe(true);
+	});
+
+	it("isHex returns boolean directly, not Effect", () => {
+		const result = Hex.isHex("0x1234");
+		expect(typeof result).toBe("boolean");
+	});
+
+	it("isSized returns boolean directly, not Effect", () => {
+		const hex = S.decodeSync(Hex.String)("0x1234");
+		const result = Hex.isSized(hex, 2);
+		expect(typeof result).toBe("boolean");
+	});
+
+	it("zero returns HexType directly, not Effect", () => {
+		const result = Hex.zero(4);
+		expect(typeof result).toBe("string");
+		expect(result).toBe("0x00000000");
+	});
+
+	it("random returns HexType directly, not Effect", () => {
+		const result = Hex.random(8);
+		expect(typeof result).toBe("string");
+		expect(result.startsWith("0x")).toBe(true);
 	});
 });

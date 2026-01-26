@@ -36,16 +36,32 @@
  * const bytes = S.encodeSync(Hex.Bytes)(hex)
  * ```
  *
- * ## Pure Functions
+ * ## API Design
  *
+ * This module follows Effect best practices for function signatures:
+ *
+ * ### Direct Return (Infallible Operations)
+ * Operations that cannot fail return their value directly:
+ * - `clone(hex)` - HexType
+ * - `isHex(str)` - boolean
+ * - `isSized(hex, size)` - boolean
+ * - `zero(size)` - HexType
+ * - `random(size)` - HexType
+ *
+ * ### Effect Return (Fallible Operations)
+ * Operations that can fail return Effect with typed error:
+ * - Schema decode/encode operations via `S.decodeSync(Hex.String)(...)` etc.
+ *
+ * @example
  * ```typescript
- * Hex.equals(a, b)  // Effect<boolean>
- * Hex.isHex(str)    // Effect<boolean>
- * Hex.size(hex)     // Effect<number>
- * Hex.concat(...)   // Effect<HexType>
- * Hex.slice(...)    // Effect<HexType>
- * Hex.pad(...)      // Effect<HexType>
- * Hex.clone(hex)    // Effect<HexType>
+ * // Infallible - use directly
+ * const cloned = Hex.clone(hex);
+ * const isValid = Hex.isHex('0x1234');
+ * const zeros = Hex.zero(32);
+ * const rand = Hex.random(16);
+ *
+ * // Fallible - use Schema
+ * const parsed = S.decodeSync(Hex.String)('0x...');
  * ```
  *
  * @since 0.1.0

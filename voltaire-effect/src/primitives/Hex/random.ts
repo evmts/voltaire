@@ -6,7 +6,6 @@
  */
 
 import { type HexType, Hex as VoltaireHex } from "@tevm/voltaire/Hex";
-import * as Effect from "effect/Effect";
 
 /**
  * Generate a random hex string of specified byte size.
@@ -16,19 +15,17 @@ import * as Effect from "effect/Effect";
  * Uses the Web Crypto API for randomness. This operation is infallible.
  *
  * @param {number} size - Size in bytes
- * @returns {Effect.Effect<HexType, never>} Effect that always succeeds with random hex
+ * @returns {HexType} Random hex string
  *
  * @example
  * ```ts
  * import * as Hex from 'voltaire-effect/primitives/Hex'
- * import * as Effect from 'effect/Effect'
  *
  * // Generate 32 random bytes
- * const random = await Effect.runPromise(Hex.random(32))
+ * const random = Hex.random(32)
  * // e.g., '0x7f3a9b2c...' (64 hex chars)
  * ```
  *
  * @since 0.0.1
  */
-export const random = (size: number): Effect.Effect<HexType, never> =>
-	Effect.succeed(VoltaireHex.random(size));
+export const random = (size: number): HexType => VoltaireHex.random(size);
