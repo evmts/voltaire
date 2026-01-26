@@ -2,6 +2,8 @@
 
 // Block utilities module (streaming/fetching)
 export * as BlockUtils from "./block/index.js";
+// Auth utilities (SIWE)
+export * as Auth from "./auth/index.js";
 
 // Re-export voltaire error types for Effect compatibility
 export {
