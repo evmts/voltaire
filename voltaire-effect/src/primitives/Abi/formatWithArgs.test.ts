@@ -18,7 +18,7 @@ describe("formatWithArgs", () => {
 					],
 					outputs: [{ type: "bool" }],
 				});
-				const formatted = yield* formatWithArgs(fn, [
+				const formatted = yield* formatWithArgs(fn as any, [
 					"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 					1000n,
 				]);
@@ -39,7 +39,7 @@ describe("formatWithArgs", () => {
 					inputs: [],
 					outputs: [{ type: "uint256" }],
 				});
-				const formatted = yield* formatWithArgs(fn, []);
+				const formatted = yield* formatWithArgs(fn as any, []);
 				expect(formatted).toContain("totalSupply");
 			}),
 		);
@@ -56,7 +56,7 @@ describe("formatWithArgs", () => {
 					],
 					outputs: [{ type: "bool" }],
 				});
-				const formatted = yield* formatWithArgs(fn, [
+				const formatted = yield* formatWithArgs(fn as any, [
 					"0x1234567890123456789012345678901234567890",
 					1000000000000000000n,
 				]);
@@ -77,7 +77,7 @@ describe("formatWithArgs", () => {
 						{ name: "value", type: "uint256", indexed: false },
 					],
 				});
-				const formatted = yield* formatWithArgs(evt, [
+				const formatted = yield* formatWithArgs(evt as any, [
 					"0x1111111111111111111111111111111111111111",
 					"0x2222222222222222222222222222222222222222",
 					500n,
@@ -97,7 +97,7 @@ describe("formatWithArgs", () => {
 					inputs: [],
 					outputs: [],
 				});
-				const formatted = yield* formatWithArgs(fn, []);
+				const formatted = yield* formatWithArgs(fn as any, []);
 				expect(formatted).toContain("test");
 			}),
 		);

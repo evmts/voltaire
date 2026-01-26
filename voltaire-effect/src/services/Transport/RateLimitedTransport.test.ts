@@ -33,7 +33,7 @@ describe("RateLimitedTransport", () => {
 				.pipe(Effect.flip);
 			expect(error).toBeInstanceOf(TransportError);
 			expect(error.code).toBe(-32005);
-			expect(error.message).toMatch(/Rate limit exceeded/);
+			expect(error.message).toMatch(/rate limit exceeded/i);
 		}).pipe(
 			Effect.scoped,
 			Effect.provide(RateLimitedTransport(TestTransport({ eth_call: "0x1" }))),

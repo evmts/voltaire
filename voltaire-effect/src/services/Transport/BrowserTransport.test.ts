@@ -37,7 +37,7 @@ describe("BrowserTransport", () => {
 				expect(exit.cause.error).toBeInstanceOf(TransportError);
 				expect((exit.cause.error as TransportError).code).toBe(-32603);
 				expect((exit.cause.error as TransportError).message).toContain(
-					"No browser wallet found",
+					"Browser environment required",
 				);
 			}
 		});

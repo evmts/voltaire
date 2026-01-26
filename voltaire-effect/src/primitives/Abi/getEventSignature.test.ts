@@ -17,7 +17,7 @@ describe("getEventSignature", () => {
 						{ name: "value", type: "uint256", indexed: false },
 					],
 				});
-				const sig = yield* getEventSignature(evt);
+				const sig = yield* getEventSignature(evt as any);
 				expect(sig).toBe("Transfer(address,address,uint256)");
 			}),
 		);
@@ -33,7 +33,7 @@ describe("getEventSignature", () => {
 						{ name: "value", type: "uint256", indexed: false },
 					],
 				});
-				const sig = yield* getEventSignature(evt);
+				const sig = yield* getEventSignature(evt as any);
 				expect(sig).toBe("Approval(address,address,uint256)");
 			}),
 		);
@@ -45,7 +45,7 @@ describe("getEventSignature", () => {
 					name: "Paused",
 					inputs: [],
 				});
-				const sig = yield* getEventSignature(evt);
+				const sig = yield* getEventSignature(evt as any);
 				expect(sig).toBe("Paused()");
 			}),
 		);
@@ -57,7 +57,7 @@ describe("getEventSignature", () => {
 					name: "OwnershipTransferred",
 					inputs: [{ name: "newOwner", type: "address", indexed: true }],
 				});
-				const sig = yield* getEventSignature(evt);
+				const sig = yield* getEventSignature(evt as any);
 				expect(sig).toBe("OwnershipTransferred(address)");
 			}),
 		);
@@ -71,7 +71,7 @@ describe("getEventSignature", () => {
 					name: "Test",
 					inputs: [],
 				});
-				const sig = yield* getEventSignature(evt);
+				const sig = yield* getEventSignature(evt as any);
 				expect(sig).toBe("Test()");
 			}),
 		);

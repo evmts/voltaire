@@ -18,6 +18,8 @@ import { EventStream } from "./EventStream.js";
 import { EventStreamError } from "./EventStreamError.js";
 import { EventStreamService } from "./EventStreamService.js";
 
+// Cast to any to satisfy EventType constraint - schema returns EventItem which has
+// ParameterInternal[] but EventType expects Parameter[] with AbiType
 const transferEvent = S.decodeUnknownSync(EventSchema)({
 	type: "event",
 	name: "Transfer",
@@ -26,7 +28,7 @@ const transferEvent = S.decodeUnknownSync(EventSchema)({
 		{ name: "to", type: "address", indexed: true },
 		{ name: "value", type: "uint256", indexed: false },
 	],
-});
+}) as any;
 
 const approvalEvent = S.decodeUnknownSync(EventSchema)({
 	type: "event",
@@ -36,7 +38,7 @@ const approvalEvent = S.decodeUnknownSync(EventSchema)({
 		{ name: "spender", type: "address", indexed: true },
 		{ name: "value", type: "uint256", indexed: false },
 	],
-});
+}) as any;
 
 describe("EventStreamService", () => {
 	describe("EventStreamError", () => {

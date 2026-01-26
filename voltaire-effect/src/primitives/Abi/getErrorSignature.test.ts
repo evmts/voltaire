@@ -16,7 +16,7 @@ describe("getErrorSignature", () => {
 						{ name: "required", type: "uint256" },
 					],
 				});
-				const sig = yield* getErrorSignature(err);
+				const sig = yield* getErrorSignature(err as any);
 				expect(sig).toBe("InsufficientBalance(uint256,uint256)");
 			}),
 		);
@@ -28,7 +28,7 @@ describe("getErrorSignature", () => {
 					name: "Unauthorized",
 					inputs: [{ name: "caller", type: "address" }],
 				});
-				const sig = yield* getErrorSignature(err);
+				const sig = yield* getErrorSignature(err as any);
 				expect(sig).toBe("Unauthorized(address)");
 			}),
 		);
@@ -40,7 +40,7 @@ describe("getErrorSignature", () => {
 					name: "InvalidAmount",
 					inputs: [],
 				});
-				const sig = yield* getErrorSignature(err);
+				const sig = yield* getErrorSignature(err as any);
 				expect(sig).toBe("InvalidAmount()");
 			}),
 		);
@@ -56,7 +56,7 @@ describe("getErrorSignature", () => {
 						{ name: "amount", type: "uint256" },
 					],
 				});
-				const sig = yield* getErrorSignature(err);
+				const sig = yield* getErrorSignature(err as any);
 				expect(sig).toBe("TransferFailed(address,address,uint256)");
 			}),
 		);
@@ -70,7 +70,7 @@ describe("getErrorSignature", () => {
 					name: "Test",
 					inputs: [],
 				});
-				const sig = yield* getErrorSignature(err);
+				const sig = yield* getErrorSignature(err as any);
 				expect(sig).toBe("Test()");
 			}),
 		);

@@ -18,7 +18,7 @@ describe("format", () => {
 					],
 					outputs: [{ type: "bool" }],
 				});
-				const formatted = yield* format(fn);
+				const formatted = yield* format(fn as any);
 				expect(formatted).toContain("transfer");
 				expect(formatted).toContain("address");
 				expect(formatted).toContain("uint256");
@@ -34,7 +34,7 @@ describe("format", () => {
 					inputs: [],
 					outputs: [{ type: "uint256" }],
 				});
-				const formatted = yield* format(fn);
+				const formatted = yield* format(fn as any);
 				expect(formatted).toContain("totalSupply");
 			}),
 		);
@@ -52,7 +52,7 @@ describe("format", () => {
 						{ name: "blockTimestampLast", type: "uint32" },
 					],
 				});
-				const formatted = yield* format(fn);
+				const formatted = yield* format(fn as any);
 				expect(formatted).toContain("getReserves");
 			}),
 		);
@@ -70,7 +70,7 @@ describe("format", () => {
 						{ name: "value", type: "uint256", indexed: false },
 					],
 				});
-				const formatted = yield* format(evt);
+				const formatted = yield* format(evt as any);
 				expect(formatted).toContain("Transfer");
 				expect(formatted).toContain("address");
 			}),
@@ -88,7 +88,7 @@ describe("format", () => {
 						{ name: "required", type: "uint256" },
 					],
 				});
-				const formatted = yield* format(err);
+				const formatted = yield* format(err as any);
 				expect(formatted).toContain("InsufficientBalance");
 			}),
 		);
@@ -104,7 +104,7 @@ describe("format", () => {
 					inputs: [],
 					outputs: [],
 				});
-				const formatted = yield* format(fn);
+				const formatted = yield* format(fn as any);
 				expect(formatted).toContain("test");
 			}),
 		);

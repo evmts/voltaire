@@ -18,7 +18,7 @@ describe("getFunctionSignature", () => {
 					],
 					outputs: [{ type: "bool" }],
 				});
-				const sig = yield* getFunctionSignature(fn);
+				const sig = yield* getFunctionSignature(fn as any);
 				expect(sig).toBe("transfer(address,uint256)");
 			}),
 		);
@@ -32,7 +32,7 @@ describe("getFunctionSignature", () => {
 					inputs: [{ name: "account", type: "address" }],
 					outputs: [{ type: "uint256" }],
 				});
-				const sig = yield* getFunctionSignature(fn);
+				const sig = yield* getFunctionSignature(fn as any);
 				expect(sig).toBe("balanceOf(address)");
 			}),
 		);
@@ -46,7 +46,7 @@ describe("getFunctionSignature", () => {
 					inputs: [],
 					outputs: [{ type: "uint256" }],
 				});
-				const sig = yield* getFunctionSignature(fn);
+				const sig = yield* getFunctionSignature(fn as any);
 				expect(sig).toBe("totalSupply()");
 			}),
 		);
@@ -64,7 +64,7 @@ describe("getFunctionSignature", () => {
 					],
 					outputs: [{ type: "bool" }],
 				});
-				const sig = yield* getFunctionSignature(fn);
+				const sig = yield* getFunctionSignature(fn as any);
 				expect(sig).toBe("transferFrom(address,address,uint256)");
 			}),
 		);
@@ -80,7 +80,7 @@ describe("getFunctionSignature", () => {
 					inputs: [],
 					outputs: [],
 				});
-				const sig = yield* getFunctionSignature(fn);
+				const sig = yield* getFunctionSignature(fn as any);
 				expect(sig).toBe("test()");
 			}),
 		);
