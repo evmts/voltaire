@@ -4,8 +4,8 @@
  * @since 0.0.1
  */
 
-import type { AddressType } from "@tevm/voltaire/Address";
 import { Hash } from "@tevm/voltaire";
+import type { AddressType } from "@tevm/voltaire/Address";
 import type { HashType } from "@tevm/voltaire/Hash";
 import type { Secp256k1SignatureType } from "@tevm/voltaire/Secp256k1";
 import type { SignatureType } from "@tevm/voltaire/Signature";
@@ -134,17 +134,15 @@ export const recoverAddress = (params: {
 		};
 
 		// Recover public key
-		const publicKey = yield* secp256k1
-			.recover(secp256k1Sig, params.hash)
-			.pipe(
-				Effect.mapError(
-					(e) =>
-						new RecoverError({
-							message: `Public key recovery failed: ${e}`,
-							cause: e,
-						}),
-				),
-			);
+		const publicKey = yield* secp256k1.recover(secp256k1Sig, params.hash).pipe(
+			Effect.mapError(
+				(e) =>
+					new RecoverError({
+						message: `Public key recovery failed: ${e}`,
+						cause: e,
+					}),
+			),
+		);
 
 		// Derive address from public key
 		// Secp256k1PublicKeyType is always 64 bytes (without 0x04 prefix)
