@@ -5,13 +5,6 @@
  * @since 0.0.1
  */
 
-import {
-	DerivationError as VoltaireDerivationError,
-	HDWalletError as VoltaireHDWalletError,
-	InvalidMnemonicError as VoltaireInvalidMnemonicError,
-	InvalidPathError as VoltaireInvalidPathError,
-	InvalidSeedError as VoltaireInvalidSeedError,
-} from "@tevm/voltaire/HDWallet";
 import * as Data from "effect/Data";
 
 /**
@@ -89,39 +82,6 @@ export const mapToHDWalletError = (
 	if (error instanceof InvalidSeedError) return error;
 	if (error instanceof HardenedDerivationError) return error;
 	if (error instanceof InvalidKeyError) return error;
-
-	if (error instanceof VoltaireInvalidPathError) {
-		return new InvalidPathError({
-			path: context.path ?? "unknown",
-			message: error.message,
-			cause: error,
-		});
-	}
-
-	if (
-		error instanceof VoltaireInvalidSeedError ||
-		error instanceof VoltaireInvalidMnemonicError
-	) {
-		return new InvalidSeedError({
-			seedLength: context.seedLength ?? -1,
-			message: error.message,
-			cause: error,
-		});
-	}
-
-	if (error instanceof VoltaireDerivationError) {
-		return new InvalidKeyError({
-			message: error.message,
-			cause: error,
-		});
-	}
-
-	if (error instanceof VoltaireHDWalletError) {
-		return new InvalidKeyError({
-			message: error.message,
-			cause: error,
-		});
-	}
 
 	const message = getMessage(error);
 	const normalized = message.toLowerCase();

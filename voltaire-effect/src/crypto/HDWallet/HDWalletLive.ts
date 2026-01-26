@@ -134,7 +134,7 @@ export const HDWalletLive = Layer.succeed(HDWalletService, {
 			},
 		}),
 	generateMnemonic: (strength = 128) =>
-		Effect.promise(() => HDWallet.generateMnemonic(strength)).pipe(
+		Effect.promise(() => HDWallet.generateMnemonic(strength as never)).pipe(
 			Effect.map((words) => wordsToMnemonic(words)),
 		),
 	fromSeed: (seed) =>
