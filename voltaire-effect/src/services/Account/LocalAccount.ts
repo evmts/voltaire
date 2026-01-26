@@ -36,6 +36,7 @@ import {
 } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Redacted from "effect/Redacted";
 import { KeccakService } from "../../crypto/Keccak256/index.js";
 import { Secp256k1Service } from "../../crypto/Secp256k1/index.js";
 import {
@@ -435,8 +436,13 @@ export const LocalAccount = (privateKeyHex: HexType) =>
 			const privateKeyBytes = Hex.toBytes(
 				privateKeyHex,
 			) as unknown as PrivateKeyType;
+			
+			// Wrap private key in Redacted to prevent accidental logging
+			// Redacted.value() must be called explicitly to access the raw key
+			const redactedPrivateKey = Redacted.make(privateKeyBytes);
+			
 			const publicKey = Secp256k1.derivePublicKey(
-				privateKeyBytes as unknown as Parameters<
+				Redacted.value(redactedPrivateKey) as unknown as Parameters<
 					typeof Secp256k1.derivePublicKey
 				>[0],
 			);
@@ -463,7 +469,7 @@ export const LocalAccount = (privateKeyHex: HexType) =>
 						const hash = yield* keccak.hash(prefixedMessage);
 						const sig = yield* secp256k1.sign(
 							hash as unknown as HashType,
-							privateKeyBytes,
+							Redacted.value(redactedPrivateKey),
 						);
 						return sig as unknown as SignatureType;
 					}).pipe(
@@ -483,7 +489,7 @@ export const LocalAccount = (privateKeyHex: HexType) =>
 						const hash = yield* keccak.hash(serialized);
 						const sig = yield* secp256k1.sign(
 							hash as unknown as HashType,
-							privateKeyBytes,
+							Redacted.value(redactedPrivateKey),
 						);
 						return sig as unknown as SignatureType;
 					}).pipe(
@@ -502,7 +508,7 @@ export const LocalAccount = (privateKeyHex: HexType) =>
 						const hash = yield* encodeTypedDataHash(typedData, keccakHash);
 						const sig = yield* secp256k1.sign(
 							hash as unknown as HashType,
-							privateKeyBytes,
+							Redacted.value(redactedPrivateKey),
 						);
 						return sig as unknown as SignatureType;
 					}).pipe(

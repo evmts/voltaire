@@ -17,6 +17,7 @@ import {
 } from "@tevm/voltaire";
 import { AbstractError } from "@tevm/voltaire/errors";
 import * as Effect from "effect/Effect";
+import * as Runtime from "effect/Runtime";
 import { ProviderService } from "../../services/Provider/index.js";
 
 type AddressType = BrandedAddress.AddressType;
@@ -113,6 +114,8 @@ export const verifySignature = (
 > =>
 	Effect.gen(function* () {
 		const provider = yield* ProviderService;
+		const runtime = yield* Effect.runtime();
+		const runPromise = Runtime.runPromise(runtime);
 
 		const addressStr =
 			typeof address === "string" ? address : Address.toHex(address);
@@ -129,13 +132,13 @@ export const verifySignature = (
 					request: async (method: string, params: unknown[]) => {
 						if (method === "eth_getCode") {
 							const [addr, block] = params as [string, string];
-							return Effect.runPromise(
+							return runPromise(
 								provider.getCode(addr as `0x${string}`, block as any),
 							);
 						}
 						if (method === "eth_call") {
 							const [callObj] = params as [{ to: string; data: string }];
-							return Effect.runPromise(
+							return runPromise(
 								provider.call({
 									to: callObj.to as `0x${string}`,
 									data: callObj.data as `0x${string}`,
