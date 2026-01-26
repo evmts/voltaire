@@ -71,26 +71,6 @@ pub fn constantTimeIsZeroU256(a: u256) u8 {
 /// Returns 1 if a <= b, 0 if a > b.
 /// Executes in constant time regardless of input values.
 pub fn constantTimeLteU256(a: u256, b: u256) u8 {
-    // For constant-time comparison, we check: a <= b iff (b - a) doesn't underflow
-    // When a > b, (b - a) wraps around (underflows), setting high bit in intermediate
-    //
-    // We use the fact that for unsigned integers:
-    // a <= b <=> NOT(a > b) <=> NOT((a - b - 1) has no borrow)
-    //
-    // Alternative approach: use widening subtraction
-    // If a > b, then a - b > 0, and b - a wraps to a large positive number
-
-    // The "borrow" occurs when a > b. In 2's complement:
-    // If a > b, then diff = b - a wraps to (2^256 + b - a), which is >= 2^255 when a - b >= 1
-    // Actually, we need to detect if a > b more carefully.
-
-    // Use the following approach:
-    // a <= b iff (a XOR ((a XOR b) OR (a - b) XOR a)) has high bit set when a > b
-    // This is based on the "constant-time compare" trick from BearSSL
-
-    // Simpler approach: Check if (a ^ b) high bit differs and who's larger, or if equal prefix, check subtraction
-    // For safety, use multi-word approach
-
     // Split into high and low 128-bit parts
     const a_hi: u128 = @truncate(a >> 128);
     const a_lo: u128 = @truncate(a);
@@ -169,21 +149,37 @@ fn constantTimeEqU64(a: u64, b: u64) u8 {
     return @intFromBool(r8 == 0);
 }
 
-/// Constant-time less-than for u64.
-/// Uses the standard constant-time comparison technique.
+/// Constant-time less-than for u64 (unsigned).
+/// Uses the standard constant-time comparison technique from BearSSL.
 fn constantTimeLtU64(a: u64, b: u64) u8 {
-    // The key insight: for 64-bit unsigned integers, a < b iff
-    // the high bit of (a - b) XOR ((a XOR b) AND ((a - b) XOR a)) is set when a < b
-    // This is from Hacker's Delight / BearSSL constant-time comparisons
+    // For unsigned comparison: a < b
+    // We use the borrow-detection formula from BearSSL:
+    // borrow = ((NOT(a) AND b) OR ((NOT(a XOR b)) AND (a - b))) >> 63
+    //
+    // Simplified equivalent using fewer operations:
+    // a < b iff the "borrow" from (a - b) would be 1
+    // We detect borrow by: ((~a & b) | ((~(a ^ b)) & (a - b))) >> 63
+    //
+    // But the cleanest constant-time formula is:
+    // borrow = (((a ^ b) ^ (a - b)) & (a ^ b)) >> 63
+    // This works because when a < b, the subtraction wraps and the XOR pattern differs.
+    //
+    // Actually, simplest correct approach for unsigned:
+    // a < b iff (a - b) has a borrow, which we detect via:
+    // ~a AND b (b has bits set where a doesn't) OR
+    // ~(a XOR b) AND (a - b) (same high bits but subtraction wrapped)
 
-    const x = a -% b;
-    // When a < b, subtraction wraps, and we detect via high bit analysis
-    const y = a ^ b;
-    const z = x ^ a;
-    const q = y & z;
-    const r = x ^ q;
-    // High bit of r is set when a < b
-    return @truncate(r >> 63);
+    const diff = a -% b;
+    const not_a = ~a;
+
+    // Borrow detection: if a < b, the borrow propagates
+    // borrow = (~a & b) | (~(a ^ b) & diff)
+    // This gives 1 in high bit when a < b
+    const term1 = not_a & b;
+    const term2 = ~(a ^ b) & diff;
+    const borrow = term1 | term2;
+
+    return @truncate(borrow >> 63);
 }
 
 /// Constant-time less-than-or-equal for u64.
