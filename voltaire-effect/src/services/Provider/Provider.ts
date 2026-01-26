@@ -41,7 +41,9 @@ const INTERNAL_CODE_PENDING = -40001;
 const INTERNAL_CODE_WAITING_CONFIRMATIONS = -40002;
 import {
 	type AccessListType,
+	type AccountStateOverride,
 	type AddressInput,
+	type BlockOverrides,
 	type BlockTag,
 	type BlockType,
 	type CallRequest,
@@ -53,6 +55,7 @@ import {
 	ProviderError,
 	ProviderService,
 	type ReceiptType,
+	type StateOverride,
 	type TransactionType,
 } from "./ProviderService.js";
 
@@ -121,6 +124,105 @@ const formatCallRequest = (tx: CallRequest): RpcCallObject => {
 	if (tx.value !== undefined) formatted.value = `0x${tx.value.toString(16)}`;
 	if (tx.gas !== undefined) formatted.gas = `0x${tx.gas.toString(16)}`;
 	return formatted;
+};
+
+/**
+ * RPC state override object for eth_call.
+ */
+type RpcAccountStateOverride = {
+	balance?: `0x${string}`;
+	nonce?: `0x${string}`;
+	code?: `0x${string}`;
+	state?: Record<`0x${string}`, `0x${string}`>;
+	stateDiff?: Record<`0x${string}`, `0x${string}`>;
+};
+
+type RpcStateOverride = Record<`0x${string}`, RpcAccountStateOverride>;
+
+/**
+ * Formats a StateOverride for JSON-RPC submission.
+ *
+ * @description
+ * Converts bigint values to hex strings for balance and nonce.
+ *
+ * @param stateOverride - The state override to format
+ * @returns Formatted object with hex-encoded values
+ *
+ * @internal
+ */
+const formatStateOverride = (
+	stateOverride: StateOverride,
+): RpcStateOverride => {
+	const result: RpcStateOverride = {};
+	for (const [address, override] of Object.entries(stateOverride)) {
+		const formattedOverride: RpcAccountStateOverride = {};
+		if (override.balance !== undefined) {
+			formattedOverride.balance = `0x${override.balance.toString(16)}`;
+		}
+		if (override.nonce !== undefined) {
+			formattedOverride.nonce = `0x${override.nonce.toString(16)}`;
+		}
+		if (override.code !== undefined) {
+			formattedOverride.code = override.code;
+		}
+		if (override.state !== undefined) {
+			formattedOverride.state = override.state;
+		}
+		if (override.stateDiff !== undefined) {
+			formattedOverride.stateDiff = override.stateDiff;
+		}
+		result[address as `0x${string}`] = formattedOverride;
+	}
+	return result;
+};
+
+/**
+ * RPC block overrides object for eth_call.
+ */
+type RpcBlockOverrides = {
+	number?: `0x${string}`;
+	difficulty?: `0x${string}`;
+	time?: `0x${string}`;
+	gasLimit?: `0x${string}`;
+	coinbase?: `0x${string}`;
+	random?: `0x${string}`;
+	baseFee?: `0x${string}`;
+};
+
+/**
+ * Formats BlockOverrides for JSON-RPC submission.
+ *
+ * @param blockOverrides - The block overrides to format
+ * @returns Formatted object with hex-encoded values
+ *
+ * @internal
+ */
+const formatBlockOverrides = (
+	blockOverrides: BlockOverrides,
+): RpcBlockOverrides => {
+	const result: RpcBlockOverrides = {};
+	if (blockOverrides.number !== undefined) {
+		result.number = `0x${blockOverrides.number.toString(16)}`;
+	}
+	if (blockOverrides.difficulty !== undefined) {
+		result.difficulty = `0x${blockOverrides.difficulty.toString(16)}`;
+	}
+	if (blockOverrides.time !== undefined) {
+		result.time = `0x${blockOverrides.time.toString(16)}`;
+	}
+	if (blockOverrides.gasLimit !== undefined) {
+		result.gasLimit = `0x${blockOverrides.gasLimit.toString(16)}`;
+	}
+	if (blockOverrides.coinbase !== undefined) {
+		result.coinbase = toAddressHex(blockOverrides.coinbase) as `0x${string}`;
+	}
+	if (blockOverrides.random !== undefined) {
+		result.random = toHashHex(blockOverrides.random) as `0x${string}`;
+	}
+	if (blockOverrides.baseFee !== undefined) {
+		result.baseFee = `0x${blockOverrides.baseFee.toString(16)}`;
+	}
+	return result;
 };
 
 /**
@@ -430,11 +532,36 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 						);
 					}),
 
-				call: (tx: CallRequest, blockTag: BlockTag = "latest") =>
-					request<`0x${string}`>("eth_call", [formatCallRequest(tx), blockTag]),
+				call: (
+					tx: CallRequest,
+					blockTag: BlockTag = "latest",
+					stateOverride?: StateOverride,
+					blockOverrides?: BlockOverrides,
+				) => {
+					const params: unknown[] = [formatCallRequest(tx), blockTag];
+					if (stateOverride !== undefined) {
+						params.push(formatStateOverride(stateOverride));
+					}
+					if (blockOverrides !== undefined) {
+						// Ensure stateOverride slot is filled when blockOverrides present
+						if (stateOverride === undefined) {
+							params.push({});
+						}
+						params.push(formatBlockOverrides(blockOverrides));
+					}
+					return request<`0x${string}`>("eth_call", params);
+				},
 
-				estimateGas: (tx: CallRequest) =>
-					request<string>("eth_estimateGas", [formatCallRequest(tx)]).pipe(
+				estimateGas: (
+					tx: CallRequest,
+					blockTag: BlockTag = "latest",
+					stateOverride?: StateOverride,
+				) => {
+					const params: unknown[] = [formatCallRequest(tx), blockTag];
+					if (stateOverride !== undefined) {
+						params.push(formatStateOverride(stateOverride));
+					}
+					return request<string>("eth_estimateGas", params).pipe(
 						Effect.flatMap((hex) =>
 							Effect.try({
 								try: () => BigInt(hex),

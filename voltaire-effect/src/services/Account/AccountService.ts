@@ -37,6 +37,51 @@ type TypedDataType = TypedData.TypedDataType;
 type AddressInput = AddressType | `0x${string}`;
 
 /**
+ * Unsigned EIP-7702 authorization tuple ready for signing.
+ *
+ * @description
+ * An authorization allows an EOA to delegate code execution to a contract.
+ * This represents the data that will be signed per the EIP-7702 specification.
+ *
+ * The signed authorization can be included in a type 4 (EIP-7702) transaction's
+ * authorizationList to enable smart account functionality for the signer's EOA.
+ *
+ * @since 0.0.1
+ */
+export type UnsignedAuthorization = {
+	/** Chain ID where the authorization is valid */
+	readonly chainId: bigint;
+	/** Address of the contract to delegate to */
+	readonly address: AddressInput;
+	/** Nonce of the authorizing account */
+	readonly nonce: bigint;
+};
+
+/**
+ * Signed EIP-7702 authorization tuple.
+ *
+ * @description
+ * Contains the original authorization data plus the ECDSA signature components.
+ * This can be included in a type 4 transaction's authorizationList.
+ *
+ * @since 0.0.1
+ */
+export type SignedAuthorization = {
+	/** Chain ID where the authorization is valid */
+	readonly chainId: bigint;
+	/** Address of the contract to delegate to (hex string) */
+	readonly address: `0x${string}`;
+	/** Nonce of the authorizing account */
+	readonly nonce: bigint;
+	/** Signature Y parity (0 or 1) */
+	readonly yParity: number;
+	/** Signature r component (hex string) */
+	readonly r: `0x${string}`;
+	/** Signature s component (hex string) */
+	readonly s: `0x${string}`;
+};
+
+/**
  * Error thrown when an account operation fails.
  *
  * @description
@@ -247,6 +292,23 @@ export type AccountShape = {
 	readonly signTypedData: (
 		typedData: TypedDataType,
 	) => Effect.Effect<SignatureType, AccountError>;
+
+	/**
+	 * Signs an EIP-7702 authorization tuple.
+	 *
+	 * @description
+	 * Signs an authorization that allows the account's EOA to delegate code execution
+	 * to a contract. The signed authorization can be included in a type 4 transaction.
+	 *
+	 * Per EIP-7702, the signing hash is: keccak256(MAGIC || rlp([chain_id, address, nonce]))
+	 * where MAGIC = 0x05.
+	 *
+	 * @param authorization - The authorization to sign
+	 * @returns Signed authorization with r, s, yParity
+	 */
+	readonly signAuthorization: (
+		authorization: UnsignedAuthorization,
+	) => Effect.Effect<SignedAuthorization, AccountError>;
 };
 
 /**

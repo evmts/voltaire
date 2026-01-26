@@ -179,6 +179,88 @@ export type BlockTag =
 	| `0x${string}`;
 
 /**
+ * State override for a single account.
+ *
+ * @description
+ * Allows modifying account state before executing eth_call or eth_estimateGas.
+ * Useful for simulating transactions with modified balances, code, or storage.
+ *
+ * @since 0.0.1
+ *
+ * @example
+ * ```typescript
+ * const override: AccountStateOverride = {
+ *   balance: 1000000000000000000n,  // Override balance to 1 ETH
+ *   nonce: 5n,                       // Override nonce
+ *   code: '0x6080604052...',         // Replace contract code
+ *   state: {                         // Replace entire storage
+ *     '0x0000...0000': '0x0000...0001'
+ *   },
+ *   stateDiff: {                     // Merge with existing storage
+ *     '0x0000...0001': '0x0000...0064'
+ *   }
+ * }
+ * ```
+ */
+export interface AccountStateOverride {
+	/** Override balance in wei */
+	readonly balance?: bigint;
+	/** Override nonce */
+	readonly nonce?: bigint;
+	/** Override contract bytecode */
+	readonly code?: HexType | `0x${string}`;
+	/** Replace entire storage with this mapping (slot -> value) */
+	readonly state?: Record<`0x${string}`, `0x${string}`>;
+	/** Merge these slots with existing storage (slot -> value) */
+	readonly stateDiff?: Record<`0x${string}`, `0x${string}`>;
+}
+
+/**
+ * State override set mapping addresses to account overrides.
+ *
+ * @description
+ * Maps account addresses to their state overrides. Each address can have
+ * its balance, nonce, code, and storage modified for the duration of the call.
+ *
+ * @since 0.0.1
+ *
+ * @example
+ * ```typescript
+ * const stateOverride: StateOverride = {
+ *   '0x1234...': { balance: 1000000000000000000n },
+ *   '0x5678...': { code: '0x6080604052...' }
+ * }
+ * ```
+ */
+export type StateOverride = Record<`0x${string}`, AccountStateOverride>;
+
+/**
+ * Block overrides for call simulation.
+ *
+ * @description
+ * Allows overriding block context during eth_call execution.
+ * Useful for simulating calls at different block conditions.
+ *
+ * @since 0.0.1
+ */
+export interface BlockOverrides {
+	/** Override block number */
+	readonly number?: bigint;
+	/** Override block difficulty */
+	readonly difficulty?: bigint;
+	/** Override block time (unix timestamp) */
+	readonly time?: bigint;
+	/** Override gas limit */
+	readonly gasLimit?: bigint;
+	/** Override coinbase/miner address */
+	readonly coinbase?: AddressInput;
+	/** Override random/prevrandao */
+	readonly random?: HashInput;
+	/** Override base fee */
+	readonly baseFee?: bigint;
+}
+
+/**
  * Request parameters for eth_call and eth_estimateGas.
  *
  * @description
@@ -607,10 +689,14 @@ export type ProviderShape = {
 	readonly call: (
 		tx: CallRequest,
 		blockTag?: BlockTag,
+		stateOverride?: StateOverride,
+		blockOverrides?: BlockOverrides,
 	) => Effect.Effect<HexType | `0x${string}`, ProviderError>;
 	/** Estimates gas for a transaction */
 	readonly estimateGas: (
 		tx: CallRequest,
+		blockTag?: BlockTag,
+		stateOverride?: StateOverride,
 	) => Effect.Effect<bigint, ProviderError>;
 	/** Creates an access list for a transaction */
 	readonly createAccessList: (

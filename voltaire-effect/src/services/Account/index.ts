@@ -53,6 +53,8 @@ export {
 	AccountError,
 	AccountService,
 	type AccountShape,
+	type SignedAuthorization,
+	type UnsignedAuthorization,
 	type UnsignedTransaction,
 } from "./AccountService.js";
 export { JsonRpcAccount } from "./JsonRpcAccount.js";
