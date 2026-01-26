@@ -425,25 +425,6 @@ export type EventFilter = {
 };
 
 /**
- * Filter parameters for eth_newFilter (event filters).
- *
- * @description
- * Matches a subset of LogFilter parameters used for creating an event filter.
- *
- * @since 0.0.1
- */
-export type EventFilter = {
-	/** Contract address(es) to filter (single or array) */
-	address?: AddressInput | AddressInput[];
-	/** Topic filters by position (null for wildcard at that position) */
-	topics?: (HashInput | HashInput[] | null)[];
-	/** Start block for range query (inclusive) */
-	fromBlock?: BlockTag;
-	/** End block for range query (inclusive) */
-	toBlock?: BlockTag;
-};
-
-/**
  * Ethereum block as returned by JSON-RPC.
  *
  * @description
@@ -646,13 +627,6 @@ export interface LogType {
 	/** True if log was removed due to reorg */
 	removed: boolean;
 }
-
-/**
- * Filter changes returned by eth_getFilterChanges.
- *
- * @since 0.0.1
- */
-export type FilterChanges = LogType[] | `0x${string}`[];
 
 /**
  * Result type for eth_getFilterChanges.

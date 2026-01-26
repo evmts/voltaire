@@ -25,6 +25,11 @@
  * - {@link ProviderService} - Service interface
  * - {@link Provider} - Live implementation layer
  *
+ * ### ENS
+ * Ethereum Name Service resolution (names, reverse lookups, records).
+ * - {@link EnsService} - Service interface
+ * - {@link DefaultEns} - Live implementation layer
+ *
  * ### Signer
  * Signing and transaction operations.
  * - {@link SignerService} - Service interface
@@ -157,14 +162,27 @@ export {
 	CustomTransport,
 	CustomTransportFromFn,
 	HttpTransport,
+	IdGenerator,
+	IdGeneratorLive,
+	makeIdGenerator,
+	nextId,
 	RateLimitedTransport,
 	TestTransport,
 	TransportError,
 	TransportService,
 	type CustomTransportConfig,
 	type EIP1193Provider,
+	type IdGeneratorShape,
 	type TransportShape,
 	WebSocketTransport,
+	cacheEnabledRef,
+	retryCountRef,
+	timeoutRef,
+	tracingRef,
+	withRetries,
+	withTimeout,
+	withTracing,
+	withoutCache,
 } from "./Transport/index.js";
 // Signer exports
 export {

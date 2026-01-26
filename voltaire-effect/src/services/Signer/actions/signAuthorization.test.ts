@@ -142,7 +142,7 @@ describe("signAuthorization", () => {
 		expect(capturedAuthorization?.nonce).toBe(42n);
 	});
 
-	it("passes correct unsigned authorization to account", async () => {
+	it("passes correct authorization params to account", async () => {
 		capturedAuthorization = undefined;
 
 		const program = signAuthorization({

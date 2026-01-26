@@ -20,7 +20,7 @@ import {
 	Hex,
 } from "@tevm/voltaire";
 import * as Bip39 from "@tevm/voltaire/Bip39";
-import { HDWallet, type ExtendedKeyType } from "@tevm/voltaire/HDWallet";
+import type { ExtendedKeyType } from "@tevm/voltaire/HDWallet";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import {
@@ -35,6 +35,18 @@ import { AccountService } from "./AccountService.js";
 import { createLocalAccount } from "./LocalAccount.js";
 
 type HexType = BrandedHex.HexType;
+type HDWalletApi = typeof import("@tevm/voltaire/HDWallet").HDWallet;
+
+let hdWalletModulePromise:
+	| Promise<{ HDWallet: HDWalletApi }>
+	| undefined;
+
+const loadHdWallet = (): Promise<{ HDWallet: HDWalletApi }> => {
+	if (!hdWalletModulePromise) {
+		hdWalletModulePromise = import("@tevm/voltaire/HDWallet");
+	}
+	return hdWalletModulePromise;
+};
 
 export interface MnemonicAccountOptions {
 	readonly account?: number;
@@ -119,6 +131,7 @@ const createHdAccount = (
 		readonly secp256k1: Secp256k1ServiceShape;
 		readonly keccak: KeccakServiceShape;
 	},
+	HDWallet: HDWalletApi,
 ) =>
 	Effect.gen(function* () {
 		const privateKey = yield* Effect.try({
@@ -162,7 +175,7 @@ const createHdAccount = (
 								{ cause: e },
 							),
 					});
-					return yield* createHdAccount(childKey, deps);
+					return yield* createHdAccount(childKey, deps, HDWallet);
 				}),
 		};
 	});
@@ -180,6 +193,14 @@ export const MnemonicAccount = (
 		Effect.gen(function* () {
 			const secp256k1 = yield* Secp256k1Service;
 			const keccak = yield* KeccakService;
+			const { HDWallet } = yield* Effect.tryPromise({
+				try: () => loadHdWallet(),
+				catch: (error) =>
+					new HDWalletDerivationError(
+						"HDWallet native bindings are required for mnemonic accounts",
+						{ cause: error },
+					),
+			});
 
 			const accountIndex = options?.account ?? 0;
 			const addressIndex = options?.addressIndex ?? options?.index ?? 0;
@@ -213,7 +234,7 @@ export const MnemonicAccount = (
 			});
 
 			const account = yield* Effect.acquireRelease(
-				createHdAccount(derived, { secp256k1, keccak }),
+				createHdAccount(derived, { secp256k1, keccak }, HDWallet),
 				(derivedAccount) => derivedAccount.clearKey(),
 			);
 
