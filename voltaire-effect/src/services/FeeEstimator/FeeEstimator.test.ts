@@ -68,6 +68,15 @@ const createMockProvider = (overrides: Partial<ProviderShape> = {}): ProviderSha
 	...overrides,
 });
 
+const MULTIPLIER_PRECISION = 100n;
+const MULTIPLIER_PRECISION_NUMBER = 100;
+const MAX_REASONABLE_GAS_PRICE_WEI = 1_000_000_000_000_000_000n;
+
+const applyBaseFeeMultiplier = (baseFee: bigint, multiplier: number): bigint => {
+	const numerator = BigInt(Math.round(multiplier * MULTIPLIER_PRECISION_NUMBER));
+	return (baseFee * numerator + MULTIPLIER_PRECISION - 1n) / MULTIPLIER_PRECISION;
+};
+
 describe("FeeEstimatorService", () => {
 	describe("FeeEstimationError", () => {
 		it("creates error with message", () => {
@@ -109,6 +118,35 @@ describe("FeeEstimatorService", () => {
 
 				const result = (await Effect.runPromise(program)) as FeeValuesLegacy;
 				expect(result.gasPrice).toBe(25000000000n);
+			});
+
+			it("fails when gas price exceeds reasonable bounds", async () => {
+				const excessiveGasPrice = MAX_REASONABLE_GAS_PRICE_WEI + 1n;
+				const mockProvider = createMockProvider({
+					getGasPrice: () => Effect.succeed(excessiveGasPrice),
+				});
+
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+				const TestFeeEstimatorLayer = DefaultFeeEstimator.pipe(
+					Layer.provide(TestProviderLayer),
+				);
+
+				const program = Effect.gen(function* () {
+					const feeEstimator = yield* FeeEstimatorService;
+					return yield* feeEstimator.estimateFeesPerGas("legacy");
+				}).pipe(
+					Effect.provide(TestFeeEstimatorLayer),
+					Effect.provide(TestProviderLayer),
+				);
+
+				const exit = await Effect.runPromiseExit(program);
+				expect(Exit.isFailure(exit)).toBe(true);
+				if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+					expect(exit.cause.error._tag).toBe("FeeEstimationError");
+					expect(exit.cause.error.message).toContain(
+						"Gas price exceeds maximum reasonable gas price",
+					);
+				}
 			});
 
 			it("propagates provider errors", async () => {
@@ -239,6 +277,8 @@ describe("FeeEstimatorService", () => {
 				);
 
 				const result = (await Effect.runPromise(program)) as FeeValuesEIP1559;
+				expect(typeof result.maxFeePerGas).toBe("bigint");
+				expect(typeof result.maxPriorityFeePerGas).toBe("bigint");
 				expect(result.maxPriorityFeePerGas).toBe(1500000000n);
 				expect(result.maxFeePerGas).toBeGreaterThan(result.maxPriorityFeePerGas);
 			});
@@ -386,9 +426,112 @@ describe("FeeEstimatorService", () => {
 				);
 
 				const result = (await Effect.runPromise(program)) as FeeValuesEIP1559;
-				const expectedMaxFee =
-					BigInt(Math.ceil(Number(baseFee) * 1.2)) + priorityFee;
+				const expectedMaxFee = applyBaseFeeMultiplier(baseFee, 1.2) + priorityFee;
 				expect(result.maxFeePerGas).toBe(expectedMaxFee);
+			});
+
+			it("handles large base fee values without precision loss", async () => {
+				const baseFee = BigInt(Number.MAX_SAFE_INTEGER) + 2n;
+				const priorityFee = 2500000000n;
+
+				const mockProvider = createMockProvider({
+					getBlock: () =>
+						Effect.succeed({
+							baseFeePerGas: `0x${baseFee.toString(16)}`,
+							number: "0x112a880",
+							hash: "0x1234",
+							parentHash: "0x5678",
+							nonce: "0x0",
+							sha3Uncles: "0x",
+							logsBloom: "0x",
+							transactionsRoot: "0x",
+							stateRoot: "0x",
+							receiptsRoot: "0x",
+							miner: "0x",
+							difficulty: "0x0",
+							totalDifficulty: "0x0",
+							extraData: "0x",
+							size: "0x0",
+							gasLimit: "0x1c9c380",
+							gasUsed: "0x0",
+							timestamp: "0x0",
+							transactions: [],
+							uncles: [],
+						}),
+					getMaxPriorityFeePerGas: () => Effect.succeed(priorityFee),
+				});
+
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+				const TestFeeEstimatorLayer = DefaultFeeEstimator.pipe(
+					Layer.provide(TestProviderLayer),
+				);
+
+				const program = Effect.gen(function* () {
+					const feeEstimator = yield* FeeEstimatorService;
+					return yield* feeEstimator.estimateFeesPerGas("eip1559");
+				}).pipe(
+					Effect.provide(TestFeeEstimatorLayer),
+					Effect.provide(TestProviderLayer),
+				);
+
+				const result = (await Effect.runPromise(program)) as FeeValuesEIP1559;
+				const expectedMaxFee =
+					applyBaseFeeMultiplier(baseFee, 1.2) + priorityFee;
+				expect(result.maxFeePerGas).toBe(expectedMaxFee);
+			});
+
+			it("fails when base fee exceeds reasonable bounds", async () => {
+				const baseFee = MAX_REASONABLE_GAS_PRICE_WEI + 1n;
+				const priorityFee = 1000000000n;
+
+				const mockProvider = createMockProvider({
+					getBlock: () =>
+						Effect.succeed({
+							baseFeePerGas: `0x${baseFee.toString(16)}`,
+							number: "0x112a880",
+							hash: "0x1234",
+							parentHash: "0x5678",
+							nonce: "0x0",
+							sha3Uncles: "0x",
+							logsBloom: "0x",
+							transactionsRoot: "0x",
+							stateRoot: "0x",
+							receiptsRoot: "0x",
+							miner: "0x",
+							difficulty: "0x0",
+							totalDifficulty: "0x0",
+							extraData: "0x",
+							size: "0x0",
+							gasLimit: "0x1c9c380",
+							gasUsed: "0x0",
+							timestamp: "0x0",
+							transactions: [],
+							uncles: [],
+						}),
+					getMaxPriorityFeePerGas: () => Effect.succeed(priorityFee),
+				});
+
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+				const TestFeeEstimatorLayer = DefaultFeeEstimator.pipe(
+					Layer.provide(TestProviderLayer),
+				);
+
+				const program = Effect.gen(function* () {
+					const feeEstimator = yield* FeeEstimatorService;
+					return yield* feeEstimator.estimateFeesPerGas("eip1559");
+				}).pipe(
+					Effect.provide(TestFeeEstimatorLayer),
+					Effect.provide(TestProviderLayer),
+				);
+
+				const exit = await Effect.runPromiseExit(program);
+				expect(Exit.isFailure(exit)).toBe(true);
+				if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+					expect(exit.cause.error._tag).toBe("FeeEstimationError");
+					expect(exit.cause.error.message).toContain(
+						"Base fee per gas exceeds maximum reasonable gas price",
+					);
+				}
 			});
 
 			it("fails for pre-EIP-1559 chain", async () => {
@@ -602,7 +745,7 @@ describe("FeeEstimatorService", () => {
 
 			const result = (await Effect.runPromise(program)) as FeeValuesEIP1559;
 			const expectedMaxFee =
-				BigInt(Math.ceil(Number(baseFee) * customMultiplier)) + priorityFee;
+				applyBaseFeeMultiplier(baseFee, customMultiplier) + priorityFee;
 			expect(result.maxFeePerGas).toBe(expectedMaxFee);
 		});
 	});

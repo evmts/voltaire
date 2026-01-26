@@ -36,9 +36,44 @@ import {
 const DEFAULT_BASE_FEE_MULTIPLIER = 1.2;
 
 /**
- * Precision for bigint arithmetic (1000 = 3 decimal places).
+ * Precision for bigint arithmetic (100 = 2 decimal places).
  */
-const MULTIPLIER_PRECISION = 1000n;
+const MULTIPLIER_PRECISION = 100n;
+const MULTIPLIER_PRECISION_NUMBER = 100;
+
+/**
+ * Sanity limit for gas price values (1 ETH per gas).
+ */
+const MAX_REASONABLE_GAS_PRICE_WEI = 1_000_000_000_000_000_000n;
+
+const ensureReasonableGasPrice = (
+	value: bigint,
+	label: string,
+): Effect.Effect<bigint, FeeEstimationError> => {
+	if (value < 0n) {
+		return Effect.fail(
+			new FeeEstimationError({
+				message: `${label} cannot be negative (${value} wei)`,
+			}),
+		);
+	}
+	if (value > MAX_REASONABLE_GAS_PRICE_WEI) {
+		return Effect.fail(
+			new FeeEstimationError({
+				message: `${label} exceeds maximum reasonable gas price (${value} wei)`,
+			}),
+		);
+	}
+	return Effect.succeed(value);
+};
+
+const multiplyBaseFee = (
+	baseFee: bigint,
+	multiplierNumerator: bigint,
+): bigint => {
+	const product = baseFee * multiplierNumerator;
+	return (product + MULTIPLIER_PRECISION - 1n) / MULTIPLIER_PRECISION;
+};
 
 /**
  * Creates the default fee estimator implementation.
@@ -55,22 +90,31 @@ const makeDefaultFeeEstimator = (
 		FeeEstimatorService,
 		Effect.gen(function* () {
 			const provider = yield* ProviderService;
+			const multiplierNumerator = BigInt(
+				Math.round(baseFeeMultiplier * MULTIPLIER_PRECISION_NUMBER),
+			);
 
 			const estimateLegacy = (): Effect.Effect<
 				FeeValuesLegacy,
 				FeeEstimationError,
 				ProviderService
 			> =>
-				provider.getGasPrice().pipe(
-					Effect.map((gasPrice) => ({ gasPrice })),
-					Effect.mapError(
-						(e) =>
-							new FeeEstimationError({
-								message: `Failed to get gas price: ${e.message}`,
-								cause: e,
-							}),
-					),
-				);
+				Effect.gen(function* () {
+					const gasPrice = yield* provider.getGasPrice().pipe(
+						Effect.mapError(
+							(e) =>
+								new FeeEstimationError({
+									message: `Failed to get gas price: ${e.message}`,
+									cause: e,
+								}),
+						),
+					);
+					const validatedGasPrice = yield* ensureReasonableGasPrice(
+						gasPrice,
+						"Gas price",
+					);
+					return { gasPrice: validatedGasPrice };
+				});
 
 			const estimateEIP1559 = (): Effect.Effect<
 				FeeValuesEIP1559,
@@ -110,14 +154,27 @@ const makeDefaultFeeEstimator = (
 					}
 
 					const baseFee = BigInt(baseFeeHex);
-					const multiplierNumerator = BigInt(Math.round(baseFeeMultiplier * 1000));
-					const product = baseFee * multiplierNumerator;
-					const multipliedBaseFee = (product + MULTIPLIER_PRECISION - 1n) / MULTIPLIER_PRECISION;
-					const maxFeePerGas = multipliedBaseFee + priorityFee;
+					const validatedBaseFee = yield* ensureReasonableGasPrice(
+						baseFee,
+						"Base fee per gas",
+					);
+					const validatedPriorityFee = yield* ensureReasonableGasPrice(
+						priorityFee,
+						"Max priority fee per gas",
+					);
+					const multipliedBaseFee = multiplyBaseFee(
+						validatedBaseFee,
+						multiplierNumerator,
+					);
+					const maxFeePerGas = multipliedBaseFee + validatedPriorityFee;
+					const validatedMaxFee = yield* ensureReasonableGasPrice(
+						maxFeePerGas,
+						"Max fee per gas",
+					);
 
 					return {
-						maxFeePerGas,
-						maxPriorityFeePerGas: priorityFee,
+						maxFeePerGas: validatedMaxFee,
+						maxPriorityFeePerGas: validatedPriorityFee,
 					};
 				});
 
@@ -135,6 +192,12 @@ const makeDefaultFeeEstimator = (
 									message: `Failed to get max priority fee: ${e.message}`,
 									cause: e,
 								}),
+						),
+						Effect.flatMap((priorityFee) =>
+							ensureReasonableGasPrice(
+								priorityFee,
+								"Max priority fee per gas",
+							),
 						),
 					),
 
