@@ -4,14 +4,13 @@
  * @since 0.0.1
  */
 
-import type {
-	EncryptionError,
-	EncryptOptions,
-	KeystoreV3,
-} from "@tevm/voltaire/Keystore";
-import * as Keystore from "@tevm/voltaire/Keystore";
-import type { PrivateKeyType } from "@tevm/voltaire/PrivateKey";
+import { Keystore } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
+import type { PrivateKeyType } from "./KeystoreService.js";
+
+type EncryptionError = Error;
+type EncryptOptions = Parameters<typeof Keystore.encrypt>[2];
+type KeystoreV3 = Awaited<ReturnType<typeof Keystore.encrypt>>;
 
 /**
  * Encrypts a private key with a password to create a keystore.

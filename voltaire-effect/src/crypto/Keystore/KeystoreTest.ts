@@ -4,14 +4,16 @@
  * @since 0.0.1
  */
 
-import type { KeystoreV3 } from "@tevm/voltaire/Keystore";
-import type { PrivateKeyType } from "@tevm/voltaire/PrivateKey";
+import { Keystore } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import {
 	KeystoreService,
 	type KeystoreServiceShape,
+	type PrivateKeyType,
 } from "./KeystoreService.js";
+
+type KeystoreV3 = Awaited<ReturnType<typeof Keystore.encrypt>>;
 
 const mockPrivateKey = new Uint8Array(32).fill(
 	0x42,
