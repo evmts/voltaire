@@ -1,24 +1,22 @@
 /**
- * @fileoverview Effect-based Bytes size retrieval.
+ * @fileoverview Bytes size retrieval.
  * @module size
  * @since 0.0.1
  */
 
 import { type BytesType, Bytes as VoltaireBytes } from "@tevm/voltaire/Bytes";
-import * as Effect from "effect/Effect";
 
 /**
  * Gets the size of Bytes.
  *
  * @param bytes - Bytes to measure
- * @returns Effect yielding size in bytes
+ * @returns size in bytes
  *
  * @example
  * ```typescript
- * const len = Effect.runSync(Bytes.size(bytes))
+ * const len = Bytes.size(bytes) // 32
  * ```
  *
  * @since 0.0.1
  */
-export const size = (bytes: BytesType): Effect.Effect<number> =>
-	Effect.sync(() => VoltaireBytes.size(bytes));
+export const size = (bytes: BytesType): number => VoltaireBytes.size(bytes);

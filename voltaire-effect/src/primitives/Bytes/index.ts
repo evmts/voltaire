@@ -33,14 +33,35 @@
  * // "0xdeadbeef"
  * ```
  *
- * ## Pure Functions
+ * ## API Design
  *
+ * This module follows Effect best practices for function signatures:
+ *
+ * ### Direct Return (Infallible Operations)
+ * Operations that cannot fail return their value directly:
+ * - `equals(a, b)` - boolean
+ * - `concat(...)` - BytesType
+ * - `size(bytes)` - number
+ * - `isBytes(value)` - boolean
+ * - `random(size)` - BytesType
+ * - `toString(bytes)` - string
+ *
+ * ### Effect Return (Fallible Operations)
+ * Operations that can fail return Effect with typed error:
+ * - Schema decode/encode operations via `S.decodeSync(Bytes.Hex)(...)` etc.
+ *
+ * @example
  * ```typescript
- * Bytes.equals(a, b)     // Effect<boolean>
- * Bytes.concat(...)      // Effect<BytesType>
- * Bytes.slice(bytes, start, end) // Effect<BytesType>
- * Bytes.size(bytes)      // Effect<number>
- * Bytes.isBytes(value)   // Effect<boolean>
+ * // Infallible - use directly
+ * const areEqual = Bytes.equals(a, b);
+ * const combined = Bytes.concat(a, b, c);
+ * const len = Bytes.size(bytes);
+ * const valid = Bytes.isBytes(value);
+ * const rand = Bytes.random(32);
+ * const str = Bytes.toString(bytes);
+ *
+ * // Fallible - use Schema
+ * const parsed = S.decodeSync(Bytes.Hex)('0x...');
  * ```
  *
  * @since 0.1.0

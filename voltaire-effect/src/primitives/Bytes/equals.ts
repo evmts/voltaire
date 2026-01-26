@@ -1,11 +1,10 @@
 /**
- * @fileoverview Effect-based Bytes equality check.
+ * @fileoverview Bytes equality check.
  * @module equals
  * @since 0.0.1
  */
 
 import { type BytesType, Bytes as VoltaireBytes } from "@tevm/voltaire/Bytes";
-import * as Effect from "effect/Effect";
 
 /**
  * Checks if two Bytes are equal.
@@ -14,14 +13,14 @@ import * as Effect from "effect/Effect";
  *
  * @param a - First bytes
  * @param b - Second bytes
- * @returns Effect yielding boolean
+ * @returns true if bytes are equal
  *
  * @example
  * ```typescript
- * const areEqual = Effect.runSync(Bytes.equals(bytes1, bytes2))
+ * const areEqual = Bytes.equals(bytes1, bytes2) // true or false
  * ```
  *
  * @since 0.0.1
  */
-export const equals = (a: BytesType, b: BytesType): Effect.Effect<boolean> =>
-	Effect.sync(() => VoltaireBytes.equals(a, b));
+export const equals = (a: BytesType, b: BytesType): boolean =>
+	VoltaireBytes.equals(a, b);

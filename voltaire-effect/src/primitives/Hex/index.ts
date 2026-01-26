@@ -43,6 +43,7 @@
  * ### Direct Return (Infallible Operations)
  * Operations that cannot fail return their value directly:
  * - `clone(hex)` - HexType
+ * - `equals(a, b)` - boolean
  * - `isHex(str)` - boolean
  * - `isSized(hex, size)` - boolean
  * - `zero(size)` - HexType
@@ -75,6 +76,7 @@ export { String } from "./String.js";
 
 // Pure functions
 export { clone } from "./clone.js";
+export { equals } from "./equals.js";
 export { isHex } from "./isHex.js";
 export { isSized } from "./isSized.js";
 export { random } from "./random.js";

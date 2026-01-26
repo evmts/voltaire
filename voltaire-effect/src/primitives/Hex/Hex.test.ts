@@ -469,4 +469,12 @@ describe("API consistency - infallible ops return directly", () => {
 		expect(typeof result).toBe("string");
 		expect(result.startsWith("0x")).toBe(true);
 	});
+
+	it("equals returns boolean directly, not Effect", () => {
+		const a = S.decodeSync(Hex.String)("0xdeadbeef");
+		const b = S.decodeSync(Hex.String)("0xdeadbeef");
+		const result = Hex.equals(a, b);
+		expect(typeof result).toBe("boolean");
+		expect(result).toBe(true);
+	});
 });
