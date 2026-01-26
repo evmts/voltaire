@@ -12,6 +12,11 @@
  * @see {@link DefaultFormatter} - Default passthrough implementation
  */
 
+export {
+	ArbitrumFormatter,
+	OptimismFormatter,
+	ZkSyncFormatter,
+} from "./chains/index.js";
 export { DefaultFormatter } from "./DefaultFormatter.js";
-export { FormatError, FormatterService } from "./FormatterService.js";
 export type { FormatterShape } from "./FormatterService.js";
+export { FormatError, FormatterService } from "./FormatterService.js";

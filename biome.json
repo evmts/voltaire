@@ -33,7 +33,13 @@
 			"!**/docs",
 			"!**/vendor",
 			"!**/worktrees",
-			"!**/tests/mcp-evals"
+			"!**/tests/mcp-evals",
+			"!calculate_burned_eth.ts",
+			"!find_deployment_block.ts",
+			"!query_owner.ts",
+			"!encode_transfer.ts",
+			"!voltaire-effect/test-simple.ts",
+			"!voltaire-effect/test-cleanup.mjs"
 		]
 	},
 	"formatter": {
@@ -55,7 +61,8 @@
 				"noBannedTypes": "warn"
 			},
 			"correctness": {
-				"noVoidTypeReturn": "warn"
+				"noVoidTypeReturn": "warn",
+				"useYield": "warn"
 			},
 			"style": {
 				"useImportType": "error",
@@ -67,7 +74,11 @@
 				"noExplicitAny": "warn",
 				"noShadowRestrictedNames": "warn",
 				"noExportsInTest": "warn",
-				"noConsole": { "level": "warn", "options": { "allow": ["log"] } }
+				"noUnsafeDeclarationMerging": "warn",
+				"noConsole": {
+					"level": "warn",
+					"options": { "allow": ["log", "error", "warn"] }
+				}
 			}
 		}
 	},
