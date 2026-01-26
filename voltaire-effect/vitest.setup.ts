@@ -1,6 +1,7 @@
 /**
  * Vitest setup file for voltaire-effect
  * Loads WASM module before running tests (optional - skips if not found)
+ * Note: WASM loading is skipped in CI since voltaire-effect tests don't require it
  */
 
 import { existsSync, readFileSync } from "node:fs";
