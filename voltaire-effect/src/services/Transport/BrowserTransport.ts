@@ -161,7 +161,10 @@ declare global {
 export const BrowserTransport: Layer.Layer<TransportService> = Layer.succeed(
 	TransportService,
 	{
-		request: <T>(method: string, params: unknown[] = []): Effect.Effect<T, TransportError> =>
+		request: <T>(
+			method: string,
+			params: unknown[] = [],
+		): Effect.Effect<T, TransportError> =>
 			Effect.gen(function* () {
 				if (typeof window === "undefined" || !window.ethereum) {
 					return yield* Effect.fail(
@@ -174,7 +177,7 @@ export const BrowserTransport: Layer.Layer<TransportService> = Layer.succeed(
 				}
 
 				const result = yield* Effect.tryPromise({
-					try: () => window.ethereum!.request({ method, params }),
+					try: () => window.ethereum.request({ method, params }),
 					catch: (e) => {
 						if (e && typeof e === "object" && "code" in e && "message" in e) {
 							return new TransportError({

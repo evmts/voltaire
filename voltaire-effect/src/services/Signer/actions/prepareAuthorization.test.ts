@@ -1,9 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
-import {
-	Address,
-	type BrandedAddress,
-	type BrandedHex,
-	type BrandedSignature,
+import type {
+	BrandedAddress,
+	BrandedHex,
+	BrandedSignature,
 } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -173,7 +172,8 @@ describe("prepareAuthorization", () => {
 
 		const result = await Effect.runPromise(Effect.provide(program, TestLayers));
 
-		expect(Address.toHex(result.address as AddressType).toLowerCase()).toBe(
+		// result.address is already a hex string after prepareAuthorization
+		expect((result.address as string).toLowerCase()).toBe(
 			"0x1212121212121212121212121212121212121212",
 		);
 	});

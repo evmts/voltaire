@@ -36,7 +36,8 @@ macos
 
 **/debuglogs.txt
 
-cache
+cache/
+!**/src/**/Cache/
 forge-artifacts
 broadcast
 **/output
