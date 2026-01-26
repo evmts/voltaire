@@ -1,8 +1,10 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
+import { fromArray } from "./AbiSchema.js";
 import { findError } from "./findError.js";
 
-const customAbi = [
+const customAbi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "transfer",
@@ -31,7 +33,7 @@ const customAbi = [
 		name: "InvalidAmount",
 		inputs: [],
 	},
-] as const;
+]);
 
 describe("findError", () => {
 	describe("success cases", () => {

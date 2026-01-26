@@ -1,13 +1,14 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { Event } from "@tevm/voltaire/Abi";
 import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
+import { EventSchema } from "./AbiSchema.js";
 import { getEventSignature } from "./getEventSignature.js";
 
 describe("getEventSignature", () => {
 	describe("success cases", () => {
 		it.effect("gets Transfer event signature", () =>
 			Effect.gen(function* () {
-				const evt = {
+				const evt = S.decodeUnknownSync(EventSchema)({
 					type: "event",
 					name: "Transfer",
 					inputs: [
@@ -15,7 +16,7 @@ describe("getEventSignature", () => {
 						{ name: "to", type: "address", indexed: true },
 						{ name: "value", type: "uint256", indexed: false },
 					],
-				} as Event.EventType;
+				});
 				const sig = yield* getEventSignature(evt);
 				expect(sig).toBe("Transfer(address,address,uint256)");
 			}),
@@ -23,7 +24,7 @@ describe("getEventSignature", () => {
 
 		it.effect("gets Approval event signature", () =>
 			Effect.gen(function* () {
-				const evt = {
+				const evt = S.decodeUnknownSync(EventSchema)({
 					type: "event",
 					name: "Approval",
 					inputs: [
@@ -31,7 +32,7 @@ describe("getEventSignature", () => {
 						{ name: "spender", type: "address", indexed: true },
 						{ name: "value", type: "uint256", indexed: false },
 					],
-				} as Event.EventType;
+				});
 				const sig = yield* getEventSignature(evt);
 				expect(sig).toBe("Approval(address,address,uint256)");
 			}),
@@ -39,11 +40,11 @@ describe("getEventSignature", () => {
 
 		it.effect("gets event with no inputs", () =>
 			Effect.gen(function* () {
-				const evt = {
+				const evt = S.decodeUnknownSync(EventSchema)({
 					type: "event",
 					name: "Paused",
 					inputs: [],
-				} as Event.EventType;
+				});
 				const sig = yield* getEventSignature(evt);
 				expect(sig).toBe("Paused()");
 			}),
@@ -51,11 +52,11 @@ describe("getEventSignature", () => {
 
 		it.effect("gets event with single input", () =>
 			Effect.gen(function* () {
-				const evt = {
+				const evt = S.decodeUnknownSync(EventSchema)({
 					type: "event",
 					name: "OwnershipTransferred",
 					inputs: [{ name: "newOwner", type: "address", indexed: true }],
-				} as Event.EventType;
+				});
 				const sig = yield* getEventSignature(evt);
 				expect(sig).toBe("OwnershipTransferred(address)");
 			}),
@@ -65,11 +66,11 @@ describe("getEventSignature", () => {
 	describe("is infallible", () => {
 		it.effect("never fails", () =>
 			Effect.gen(function* () {
-				const evt = {
+				const evt = S.decodeUnknownSync(EventSchema)({
 					type: "event",
 					name: "Test",
 					inputs: [],
-				} as Event.EventType;
+				});
 				const sig = yield* getEventSignature(evt);
 				expect(sig).toBe("Test()");
 			}),

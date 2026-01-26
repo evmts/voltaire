@@ -40,7 +40,9 @@ describe("withPrivateKey memory cleanup", () => {
 		await Effect.runPromise(program);
 
 		expect(capturedKey).not.toBeNull();
-		expect(capturedKey!.every((b: number) => b === 0)).toBe(true);
+		expect(
+			(capturedKey as unknown as Uint8Array).every((b: number) => b === 0),
+		).toBe(true);
 	});
 
 	it("zeroes private key even when use effect fails", async () => {
@@ -60,7 +62,9 @@ describe("withPrivateKey memory cleanup", () => {
 
 		expect(Exit.isFailure(exit)).toBe(true);
 		expect(capturedKey).not.toBeNull();
-		expect(capturedKey!.every((b: number) => b === 0)).toBe(true);
+		expect(
+			(capturedKey as unknown as Uint8Array).every((b: number) => b === 0),
+		).toBe(true);
 	});
 });
 
@@ -96,7 +100,9 @@ describe("withSeed memory cleanup", () => {
 		await Effect.runPromise(program);
 
 		expect(capturedSeed).not.toBeNull();
-		expect(capturedSeed!.every((b: number) => b === 0)).toBe(true);
+		expect(
+			(capturedSeed as unknown as Uint8Array).every((b: number) => b === 0),
+		).toBe(true);
 	});
 
 	it("zeroes seed even when use effect fails", async () => {
@@ -115,6 +121,8 @@ describe("withSeed memory cleanup", () => {
 
 		expect(Exit.isFailure(exit)).toBe(true);
 		expect(capturedSeed).not.toBeNull();
-		expect(capturedSeed!.every((b: number) => b === 0)).toBe(true);
+		expect(
+			(capturedSeed as unknown as Uint8Array).every((b: number) => b === 0),
+		).toBe(true);
 	});
 });

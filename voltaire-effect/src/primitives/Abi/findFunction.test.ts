@@ -1,8 +1,10 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
+import { fromArray } from "./AbiSchema.js";
 import { findFunction } from "./findFunction.js";
 
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "transfer",
@@ -29,7 +31,7 @@ const erc20Abi = [
 			{ name: "value", type: "uint256", indexed: false },
 		],
 	},
-] as const;
+]);
 
 describe("findFunction", () => {
 	describe("success cases", () => {

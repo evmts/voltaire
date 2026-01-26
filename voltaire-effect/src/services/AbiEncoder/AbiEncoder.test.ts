@@ -4,6 +4,8 @@
 
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
+import { fromArray } from "../../primitives/Abi/AbiSchema.js";
 import {
 	AbiDecodeError,
 	AbiEncodeError,
@@ -11,10 +13,11 @@ import {
 } from "./AbiEncoderService.js";
 import { DefaultAbiEncoder } from "./DefaultAbiEncoder.js";
 
-const ERC20_ABI = [
+const ERC20_ABI = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "transfer",
+		stateMutability: "nonpayable",
 		inputs: [
 			{ name: "to", type: "address" },
 			{ name: "amount", type: "uint256" },
@@ -24,6 +27,7 @@ const ERC20_ABI = [
 	{
 		type: "function",
 		name: "balanceOf",
+		stateMutability: "view",
 		inputs: [{ name: "account", type: "address" }],
 		outputs: [{ name: "", type: "uint256" }],
 	},
@@ -36,7 +40,7 @@ const ERC20_ABI = [
 			{ name: "value", type: "uint256", indexed: false },
 		],
 	},
-] as const;
+]);
 
 describe("AbiEncoderService", () => {
 	describe("encodeFunction", () => {

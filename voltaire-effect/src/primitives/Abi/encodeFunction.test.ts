@@ -1,9 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
+import * as S from "effect/Schema";
+import { fromArray } from "./AbiSchema.js";
 import { encodeFunction } from "./encodeFunction.js";
 
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "transfer",
@@ -21,7 +23,7 @@ const erc20Abi = [
 		inputs: [{ name: "account", type: "address" }],
 		outputs: [{ type: "uint256" }],
 	},
-] as const;
+]);
 
 describe("encodeFunction", () => {
 	describe("success cases", () => {

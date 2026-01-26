@@ -1,12 +1,13 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Hex } from "@tevm/voltaire";
-import { Abi } from "@tevm/voltaire/Abi";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
+import * as S from "effect/Schema";
+import { fromArray } from "./AbiSchema.js";
 import { decodeFunction } from "./decodeFunction.js";
 import { encodeFunction } from "./encodeFunction.js";
 
-const erc20Abi = Abi([
+const erc20Abi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "transfer",
@@ -78,7 +79,7 @@ describe("decodeFunction", () => {
 		it("fails with empty ABI", async () => {
 			const exit = await Effect.runPromiseExit(
 				decodeFunction(
-					Abi([]),
+					S.decodeUnknownSync(fromArray)([]),
 					Hex(
 						"0xa9059cbb0000000000000000000000000000000000000000000000000000000000000000",
 					),

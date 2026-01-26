@@ -2,10 +2,12 @@ import { describe, expect, it } from "@effect/vitest";
 import { Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
+import * as S from "effect/Schema";
+import { fromArray } from "./AbiSchema.js";
 import { decodeFunctionResult } from "./decodeFunctionResult.js";
 import { encodeFunctionResult } from "./encodeFunctionResult.js";
 
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "balanceOf",
@@ -37,7 +39,7 @@ const erc20Abi = [
 		inputs: [],
 		outputs: [{ type: "string" }],
 	},
-] as const;
+]);
 
 describe("decodeFunctionResult", () => {
 	describe("encode/decode round-trips", () => {
