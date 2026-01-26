@@ -4,11 +4,11 @@
  * @since 0.0.1
  */
 
-import type { KeystoreV3 } from "@tevm/voltaire/Keystore";
-import * as Keystore from "@tevm/voltaire/Keystore";
-import type { PrivateKeyType } from "@tevm/voltaire/PrivateKey";
+import { Keystore } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import type { DecryptError } from "./KeystoreService.js";
+import type { DecryptError, PrivateKeyType } from "./KeystoreService.js";
+
+type KeystoreV3 = Parameters<typeof Keystore.decrypt>[0];
 
 /**
  * Decrypts a keystore with a password to recover the private key.
