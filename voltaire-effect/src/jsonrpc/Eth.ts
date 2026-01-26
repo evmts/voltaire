@@ -1,4 +1,3 @@
-import { eth } from "@tevm/voltaire/jsonrpc";
 import type { JsonRpcRequestType } from "./Request.js";
 
 let idCounter = 1000;
