@@ -18,9 +18,11 @@
  * @see {@link HttpTransport} - Common transport to combine
  */
 
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Schedule from "effect/Schedule";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
 
@@ -120,6 +122,11 @@ export const FallbackTransport = (
 	const retryCount = options.retryCount ?? 3;
 	const retryDelay = options.retryDelay ?? 150;
 	const shouldRank = options.rank ?? false;
+	const retryLimit = Math.max(retryCount - 1, 0);
+
+	const retrySchedule = Schedule.spaced(Duration.millis(retryDelay)).pipe(
+		Schedule.intersect(Schedule.recurs(retryLimit)),
+	);
 
 	const instances: TransportInstance[] = transports.map((t) => ({
 		transport: t,
@@ -151,35 +158,27 @@ export const FallbackTransport = (
 				}
 
 				for (const instance of ordered) {
-					let attemptsLeft = retryCount;
-
-					while (attemptsLeft > 0) {
+					const result = yield* Effect.gen(function* () {
 						const start = Date.now();
-
-						const result = yield* Effect.gen(function* () {
-							const transport = yield* TransportService;
-							return yield* transport.request<T>(method, params);
-						}).pipe(
-							Effect.provide(instance.transport),
-							Effect.tap(() => {
-								instance.latency = Date.now() - start;
-								instance.failures = 0;
-							}),
-							Effect.map((value) => Option.some(value)),
-							Effect.catchAll(() => {
-								attemptsLeft--;
+						const transport = yield* TransportService;
+						const value = yield* transport.request<T>(method, params);
+						instance.latency = Date.now() - start;
+						instance.failures = 0;
+						return value;
+					}).pipe(
+						Effect.provide(instance.transport),
+						Effect.tapError(() =>
+							Effect.sync(() => {
 								instance.failures++;
-								return Effect.succeed(Option.none<T>());
 							}),
-						);
+						),
+						Effect.retry(retrySchedule),
+						Effect.map((value) => Option.some(value)),
+						Effect.catchAll(() => Effect.succeed(Option.none<T>())),
+					);
 
-						if (Option.isSome(result)) {
-							return result.value;
-						}
-
-						if (attemptsLeft > 0) {
-							yield* Effect.sleep(retryDelay);
-						}
+					if (Option.isSome(result)) {
+						return result.value;
 					}
 				}
 

@@ -32,6 +32,7 @@
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Queue from "effect/Queue";
 import * as Ref from "effect/Ref";
 import * as Runtime from "effect/Runtime";
 import { TransportError } from "./TransportError.js";
@@ -246,6 +247,7 @@ export const WebSocketTransport = (
 			const queueRef = yield* Ref.make<QueuedRequest[]>([]);
 			const isClosedRef = yield* Ref.make(false);
 			const keepAliveTimerRef = yield* Ref.make<ReturnType<typeof setInterval> | null>(null);
+			const messageQueue = yield* Queue.unbounded<unknown>();
 
 			const stopKeepAlive = Effect.gen(function* () {
 				const timer = yield* Ref.get(keepAliveTimerRef);
@@ -307,6 +309,41 @@ export const WebSocketTransport = (
 				}
 			});
 
+			const processMessage = (data: unknown) =>
+				Effect.gen(function* () {
+					let message: JsonRpcResponse<unknown>;
+					try {
+						message = JSON.parse(data as string) as JsonRpcResponse<unknown>;
+					} catch {
+						return;
+					}
+
+					if (message.id === "keepalive") return;
+
+					let foundDeferred:
+						| Deferred.Deferred<JsonRpcResponse<unknown>, never>
+						| undefined;
+					yield* Ref.update(pendingRef, (pending) => {
+						foundDeferred = pending.get(message.id as number);
+						if (foundDeferred) {
+							const newPending = new Map(pending);
+							newPending.delete(message.id as number);
+							return newPending;
+						}
+						return pending;
+					});
+					if (foundDeferred) {
+						yield* Deferred.succeed(foundDeferred, message);
+					}
+				});
+
+			yield* Effect.forkScoped(
+				Queue.take(messageQueue).pipe(
+					Effect.flatMap(processMessage),
+					Effect.forever,
+				),
+			);
+
 			const connect: Effect.Effect<WebSocket, TransportError> = Effect.gen(function* () {
 				const isClosed = yield* Ref.get(isClosedRef);
 				if (isClosed) {
@@ -348,32 +385,7 @@ export const WebSocketTransport = (
 				};
 
 				ws.onmessage = (event) => {
-					try {
-						const message = JSON.parse(event.data) as JsonRpcResponse<unknown>;
-						if (message.id === "keepalive") return;
-
-						Runtime.runFork(runtime)(
-							Effect.gen(function* () {
-								let foundDeferred:
-									| Deferred.Deferred<JsonRpcResponse<unknown>, never>
-									| undefined;
-								yield* Ref.update(pendingRef, (pending) => {
-									foundDeferred = pending.get(message.id as number);
-									if (foundDeferred) {
-										const newPending = new Map(pending);
-										newPending.delete(message.id as number);
-										return newPending;
-									}
-									return pending;
-								});
-								if (foundDeferred) {
-									yield* Deferred.succeed(foundDeferred, message);
-								}
-							}),
-						);
-					} catch {
-						// Ignore parse errors
-					}
+					Runtime.runFork(runtime)(Queue.offer(messageQueue, event.data));
 				};
 
 				ws.onclose = () => {
