@@ -809,6 +809,112 @@ describe("Contract", () => {
 			expect(result).toContain("caught:");
 			expect(result).toContain("NonExistentEvent not found");
 		});
+
+		it("handles fromBlock: 0n (genesis block)", async () => {
+			mockProvider.getLogs.mockReturnValue(Effect.succeed([]));
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				yield* contract.getEvents("Transfer", {
+					fromBlock: 0n,
+					toBlock: 100n,
+				});
+			});
+
+			await Effect.runPromise(program.pipe(Effect.provide(MockProviderLayer)));
+
+			expect(mockProvider.getLogs).toHaveBeenCalled();
+			const callArgs = mockProvider.getLogs.mock.calls[0][0];
+			expect(callArgs.fromBlock).toBe("0x0");
+		});
+
+		it("handles large block numbers", async () => {
+			mockProvider.getLogs.mockReturnValue(Effect.succeed([]));
+
+			const largeBlockNumber = 999999999999999n;
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				yield* contract.getEvents("Transfer", {
+					fromBlock: largeBlockNumber,
+				});
+			});
+
+			await Effect.runPromise(program.pipe(Effect.provide(MockProviderLayer)));
+
+			expect(mockProvider.getLogs).toHaveBeenCalled();
+			const callArgs = mockProvider.getLogs.mock.calls[0][0];
+			expect(callArgs.fromBlock).toBe(`0x${largeBlockNumber.toString(16)}`);
+		});
+
+		it("returns ContractEventError for wrong topics length", async () => {
+			mockProvider.getLogs.mockReturnValue(
+				Effect.succeed([
+					{
+						address: testAddress,
+						topics: [
+							"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+						],
+						data: "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+						blockNumber: 18000000n,
+						transactionHash: "0xabcd" as HexType,
+						logIndex: 0,
+					},
+				]),
+			);
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				return yield* contract.getEvents("Transfer", {
+					fromBlock: 17000000n,
+				});
+			}).pipe(
+				Effect.catchTag("ContractEventError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toContain("caught:");
+		});
+
+		it("returns ContractEventError for malformed topic hex", async () => {
+			mockProvider.getLogs.mockReturnValue(
+				Effect.succeed([
+					{
+						address: testAddress,
+						topics: [
+							"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+							"invalid-hex",
+							"0x0000000000000000000000000987654321098765432109876543210987654321",
+						],
+						data: "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+						blockNumber: 18000000n,
+						transactionHash: "0xabcd" as HexType,
+						logIndex: 0,
+					},
+				]),
+			);
+
+			const program = Effect.gen(function* () {
+				const contract = yield* Contract(testAddress, erc20Abi);
+				return yield* contract.getEvents("Transfer", {
+					fromBlock: 17000000n,
+				});
+			}).pipe(
+				Effect.catchTag("ContractEventError", (e) =>
+					Effect.succeed(`caught: ${e.message}`),
+				),
+			);
+
+			const result = await Effect.runPromise(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(result).toContain("caught:");
+		});
 	});
 
 	describe("error handling", () => {
