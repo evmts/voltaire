@@ -7,8 +7,6 @@
 
 import * as S from "effect/Schema";
 import {
-	AddressHexSchema,
-	HexSchema,
 	JsonRpcIdSchema,
 	JsonRpcVersionSchema,
 	QuantityHexSchema,

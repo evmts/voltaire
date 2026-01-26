@@ -6,10 +6,10 @@
 
 import * as S from "effect/Schema";
 import {
-	JsonRpcIdSchema,
-	JsonRpcVersionSchema,
 	Bytes32HexSchema,
 	HexSchema,
+	JsonRpcIdSchema,
+	JsonRpcVersionSchema,
 } from "../common.js";
 
 /**
@@ -17,7 +17,7 @@ import {
  * [nonce, powHash, mixDigest]
  */
 export const SubmitWorkParams = S.Tuple(
-	HexSchema,        // nonce (8 bytes)
+	HexSchema, // nonce (8 bytes)
 	Bytes32HexSchema, // powHash
 	Bytes32HexSchema, // mixDigest
 );

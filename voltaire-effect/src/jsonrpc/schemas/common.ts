@@ -188,7 +188,9 @@ export const AccountStateOverrideSchema = S.Struct({
 	balance: S.optional(QuantityHexSchema),
 	nonce: S.optional(QuantityHexSchema),
 	code: S.optional(HexSchema),
-	state: S.optional(S.Record({ key: Bytes32HexSchema, value: Bytes32HexSchema })),
+	state: S.optional(
+		S.Record({ key: Bytes32HexSchema, value: Bytes32HexSchema }),
+	),
 	stateDiff: S.optional(
 		S.Record({ key: Bytes32HexSchema, value: Bytes32HexSchema }),
 	),
@@ -359,7 +361,10 @@ export const BlockRpcSchema = S.Struct({
 	gasUsed: QuantityHexSchema,
 	timestamp: QuantityHexSchema,
 	// Transactions can be hashes or full objects
-	transactions: S.Union(S.Array(Bytes32HexSchema), S.Array(TransactionRpcSchema)),
+	transactions: S.Union(
+		S.Array(Bytes32HexSchema),
+		S.Array(TransactionRpcSchema),
+	),
 	uncles: S.Array(Bytes32HexSchema),
 	// EIP-1559
 	baseFeePerGas: S.optional(QuantityHexSchema),
@@ -418,7 +423,9 @@ export const AccessListResultRpcSchema = S.Struct({
 });
 
 /** Type for AccessListResultRpcSchema */
-export type AccessListResultRpc = S.Schema.Type<typeof AccessListResultRpcSchema>;
+export type AccessListResultRpc = S.Schema.Type<
+	typeof AccessListResultRpcSchema
+>;
 
 /**
  * Proof RPC response schema (eth_getProof).

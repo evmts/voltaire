@@ -44,7 +44,11 @@ export const GetFilterLogsResponse = S.Struct({
 });
 
 /** Type for GetFilterLogsRequest */
-export type GetFilterLogsRequestType = S.Schema.Type<typeof GetFilterLogsRequest>;
+export type GetFilterLogsRequestType = S.Schema.Type<
+	typeof GetFilterLogsRequest
+>;
 
 /** Type for GetFilterLogsResponse */
-export type GetFilterLogsResponseType = S.Schema.Type<typeof GetFilterLogsResponse>;
+export type GetFilterLogsResponseType = S.Schema.Type<
+	typeof GetFilterLogsResponse
+>;

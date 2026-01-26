@@ -5,10 +5,7 @@
  */
 
 import * as S from "effect/Schema";
-import {
-	JsonRpcIdSchema,
-	JsonRpcVersionSchema,
-} from "../common.js";
+import { JsonRpcIdSchema, JsonRpcVersionSchema } from "../common.js";
 
 /**
  * eth_mining request params schema.

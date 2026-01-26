@@ -6,11 +6,11 @@
 
 import * as S from "effect/Schema";
 import {
+	BlockTagSchema,
+	FeeHistoryRpcSchema,
 	JsonRpcIdSchema,
 	JsonRpcVersionSchema,
-	BlockTagSchema,
 	QuantityHexSchema,
-	FeeHistoryRpcSchema,
 } from "../common.js";
 
 /**

@@ -43,7 +43,11 @@ export const UninstallFilterResponse = S.Struct({
 });
 
 /** Type for UninstallFilterRequest */
-export type UninstallFilterRequestType = S.Schema.Type<typeof UninstallFilterRequest>;
+export type UninstallFilterRequestType = S.Schema.Type<
+	typeof UninstallFilterRequest
+>;
 
 /** Type for UninstallFilterResponse */
-export type UninstallFilterResponseType = S.Schema.Type<typeof UninstallFilterResponse>;
+export type UninstallFilterResponseType = S.Schema.Type<
+	typeof UninstallFilterResponse
+>;

@@ -43,7 +43,11 @@ export const NewPendingTransactionFilterResponse = S.Struct({
 });
 
 /** Type for NewPendingTransactionFilterRequest */
-export type NewPendingTransactionFilterRequestType = S.Schema.Type<typeof NewPendingTransactionFilterRequest>;
+export type NewPendingTransactionFilterRequestType = S.Schema.Type<
+	typeof NewPendingTransactionFilterRequest
+>;
 
 /** Type for NewPendingTransactionFilterResponse */
-export type NewPendingTransactionFilterResponseType = S.Schema.Type<typeof NewPendingTransactionFilterResponse>;
+export type NewPendingTransactionFilterResponseType = S.Schema.Type<
+	typeof NewPendingTransactionFilterResponse
+>;

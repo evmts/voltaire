@@ -43,7 +43,11 @@ export const NewBlockFilterResponse = S.Struct({
 });
 
 /** Type for NewBlockFilterRequest */
-export type NewBlockFilterRequestType = S.Schema.Type<typeof NewBlockFilterRequest>;
+export type NewBlockFilterRequestType = S.Schema.Type<
+	typeof NewBlockFilterRequest
+>;
 
 /** Type for NewBlockFilterResponse */
-export type NewBlockFilterResponseType = S.Schema.Type<typeof NewBlockFilterResponse>;
+export type NewBlockFilterResponseType = S.Schema.Type<
+	typeof NewBlockFilterResponse
+>;

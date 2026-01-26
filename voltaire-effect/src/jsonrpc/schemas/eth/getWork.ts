@@ -6,10 +6,9 @@
 
 import * as S from "effect/Schema";
 import {
+	Bytes32HexSchema,
 	JsonRpcIdSchema,
 	JsonRpcVersionSchema,
-	Bytes32HexSchema,
-	HexSchema,
 } from "../common.js";
 
 /**

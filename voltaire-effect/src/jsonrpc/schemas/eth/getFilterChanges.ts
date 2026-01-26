@@ -48,7 +48,11 @@ export const GetFilterChangesResponse = S.Struct({
 });
 
 /** Type for GetFilterChangesRequest */
-export type GetFilterChangesRequestType = S.Schema.Type<typeof GetFilterChangesRequest>;
+export type GetFilterChangesRequestType = S.Schema.Type<
+	typeof GetFilterChangesRequest
+>;
 
 /** Type for GetFilterChangesResponse */
-export type GetFilterChangesResponseType = S.Schema.Type<typeof GetFilterChangesResponse>;
+export type GetFilterChangesResponseType = S.Schema.Type<
+	typeof GetFilterChangesResponse
+>;

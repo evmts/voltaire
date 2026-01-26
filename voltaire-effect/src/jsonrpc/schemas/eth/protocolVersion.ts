@@ -5,10 +5,7 @@
  */
 
 import * as S from "effect/Schema";
-import {
-	JsonRpcIdSchema,
-	JsonRpcVersionSchema,
-} from "../common.js";
+import { JsonRpcIdSchema, JsonRpcVersionSchema } from "../common.js";
 
 /**
  * eth_protocolVersion request params schema.
@@ -42,7 +39,11 @@ export const ProtocolVersionResponse = S.Struct({
 });
 
 /** Type for ProtocolVersionRequest */
-export type ProtocolVersionRequestType = S.Schema.Type<typeof ProtocolVersionRequest>;
+export type ProtocolVersionRequestType = S.Schema.Type<
+	typeof ProtocolVersionRequest
+>;
 
 /** Type for ProtocolVersionResponse */
-export type ProtocolVersionResponseType = S.Schema.Type<typeof ProtocolVersionResponse>;
+export type ProtocolVersionResponseType = S.Schema.Type<
+	typeof ProtocolVersionResponse
+>;

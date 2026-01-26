@@ -6,9 +6,9 @@
 
 import * as S from "effect/Schema";
 import {
+	Bytes32HexSchema,
 	JsonRpcIdSchema,
 	JsonRpcVersionSchema,
-	Bytes32HexSchema,
 	QuantityHexSchema,
 } from "../common.js";
 
@@ -18,7 +18,7 @@ import {
  */
 export const SubmitHashrateParams = S.Tuple(
 	QuantityHexSchema, // hashrate
-	Bytes32HexSchema,  // id (arbitrary identifier)
+	Bytes32HexSchema, // id (arbitrary identifier)
 );
 
 /**
@@ -47,7 +47,11 @@ export const SubmitHashrateResponse = S.Struct({
 });
 
 /** Type for SubmitHashrateRequest */
-export type SubmitHashrateRequestType = S.Schema.Type<typeof SubmitHashrateRequest>;
+export type SubmitHashrateRequestType = S.Schema.Type<
+	typeof SubmitHashrateRequest
+>;
 
 /** Type for SubmitHashrateResponse */
-export type SubmitHashrateResponseType = S.Schema.Type<typeof SubmitHashrateResponse>;
+export type SubmitHashrateResponseType = S.Schema.Type<
+	typeof SubmitHashrateResponse
+>;

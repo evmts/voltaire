@@ -6,11 +6,11 @@
 
 import * as S from "effect/Schema";
 import {
+	AccessListResultRpcSchema,
+	BlockTagSchema,
 	JsonRpcIdSchema,
 	JsonRpcVersionSchema,
-	BlockTagSchema,
 	TransactionRequestSchema,
-	AccessListResultRpcSchema,
 } from "../common.js";
 
 /**
@@ -47,7 +47,11 @@ export const CreateAccessListResponse = S.Struct({
 });
 
 /** Type for CreateAccessListRequest */
-export type CreateAccessListRequestType = S.Schema.Type<typeof CreateAccessListRequest>;
+export type CreateAccessListRequestType = S.Schema.Type<
+	typeof CreateAccessListRequest
+>;
 
 /** Type for CreateAccessListResponse */
-export type CreateAccessListResponseType = S.Schema.Type<typeof CreateAccessListResponse>;
+export type CreateAccessListResponseType = S.Schema.Type<
+	typeof CreateAccessListResponse
+>;

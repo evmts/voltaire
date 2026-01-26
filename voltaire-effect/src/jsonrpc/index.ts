@@ -1,5 +1,4 @@
 export * as Anvil from "./Anvil.js";
-export * as Schemas from "./schemas/index.js";
 export {
 	add as batchAdd,
 	BatchRequest,
@@ -107,6 +106,7 @@ export {
 	Response,
 	unwrap,
 } from "./Response.js";
+export * as Schemas from "./schemas/index.js";
 export * as Txpool from "./Txpool.js";
 export * as Wallet from "./Wallet.js";
 export * as Web3 from "./Web3.js";

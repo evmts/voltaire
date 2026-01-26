@@ -43,7 +43,11 @@ export const MaxPriorityFeePerGasResponse = S.Struct({
 });
 
 /** Type for MaxPriorityFeePerGasRequest */
-export type MaxPriorityFeePerGasRequestType = S.Schema.Type<typeof MaxPriorityFeePerGasRequest>;
+export type MaxPriorityFeePerGasRequestType = S.Schema.Type<
+	typeof MaxPriorityFeePerGasRequest
+>;
 
 /** Type for MaxPriorityFeePerGasResponse */
-export type MaxPriorityFeePerGasResponseType = S.Schema.Type<typeof MaxPriorityFeePerGasResponse>;
+export type MaxPriorityFeePerGasResponseType = S.Schema.Type<
+	typeof MaxPriorityFeePerGasResponse
+>;

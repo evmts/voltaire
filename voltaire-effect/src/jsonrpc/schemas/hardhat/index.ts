@@ -10,29 +10,29 @@ import * as S from "effect/Schema";
 // Re-export individual method schemas
 // =============================================================================
 
+export * from "./dropTransaction.js";
 export * from "./impersonateAccount.js";
-export * from "./stopImpersonatingAccount.js";
 export * from "./mine.js";
+export * from "./reset.js";
 export * from "./setBalance.js";
 export * from "./setCode.js";
 export * from "./setNonce.js";
 export * from "./setStorageAt.js";
-export * from "./reset.js";
-export * from "./dropTransaction.js";
+export * from "./stopImpersonatingAccount.js";
 
 // =============================================================================
 // Import for union building
 // =============================================================================
 
+import { DropTransactionRequest } from "./dropTransaction.js";
 import { ImpersonateAccountRequest } from "./impersonateAccount.js";
-import { StopImpersonatingAccountRequest } from "./stopImpersonatingAccount.js";
 import { MineRequest } from "./mine.js";
+import { ResetRequest } from "./reset.js";
 import { SetBalanceRequest } from "./setBalance.js";
 import { SetCodeRequest } from "./setCode.js";
 import { SetNonceRequest } from "./setNonce.js";
 import { SetStorageAtRequest } from "./setStorageAt.js";
-import { ResetRequest } from "./reset.js";
-import { DropTransactionRequest } from "./dropTransaction.js";
+import { StopImpersonatingAccountRequest } from "./stopImpersonatingAccount.js";
 
 // =============================================================================
 // Union Schema for all hardhat_* requests

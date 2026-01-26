@@ -18,30 +18,26 @@ export * from "./common.js";
 // Re-export method schemas by namespace
 // =============================================================================
 
+export * as Anvil from "./anvil/index.js";
 export * as Eth from "./eth/index.js";
+export * as Hardhat from "./hardhat/index.js";
 export * as Net from "./net/index.js";
 export * as Txpool from "./txpool/index.js";
 export * as Wallet from "./wallet/index.js";
 export * as Web3 from "./web3/index.js";
-export * as Anvil from "./anvil/index.js";
-export * as Hardhat from "./hardhat/index.js";
 
 // =============================================================================
 // Import for union building
 // =============================================================================
 
-import {
-	type JsonRpcId,
-	JsonRpcIdSchema,
-	JsonRpcVersionSchema,
-} from "./common.js";
+import { AnvilMethodRequest } from "./anvil/index.js";
+import { JsonRpcIdSchema, JsonRpcVersionSchema } from "./common.js";
 import { EthMethodRequest } from "./eth/index.js";
+import { HardhatMethodRequest } from "./hardhat/index.js";
 import { NetMethodRequest } from "./net/index.js";
 import { TxpoolMethodRequest } from "./txpool/index.js";
 import { WalletMethodRequest } from "./wallet/index.js";
 import { Web3MethodRequest } from "./web3/index.js";
-import { AnvilMethodRequest } from "./anvil/index.js";
-import { HardhatMethodRequest } from "./hardhat/index.js";
 
 // =============================================================================
 // Generic Fallback Request Schema

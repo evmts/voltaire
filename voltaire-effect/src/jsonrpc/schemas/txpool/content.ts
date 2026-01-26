@@ -6,7 +6,6 @@
 
 import * as S from "effect/Schema";
 import {
-	AddressHexSchema,
 	JsonRpcIdSchema,
 	JsonRpcVersionSchema,
 	TransactionRpcSchema,

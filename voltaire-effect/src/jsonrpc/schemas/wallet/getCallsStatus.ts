@@ -8,7 +8,6 @@
 import * as S from "effect/Schema";
 import {
 	Bytes32HexSchema,
-	HexSchema,
 	JsonRpcIdSchema,
 	JsonRpcVersionSchema,
 	LogRpcSchema,

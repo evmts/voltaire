@@ -26,9 +26,8 @@ export const GetTransactionByBlockHashAndIndexParams = S.Tuple(
  * eth_getTransactionByBlockHashAndIndex result schema.
  * Returns the transaction or null if not found.
  */
-export const GetTransactionByBlockHashAndIndexResult = S.NullOr(
-	TransactionRpcSchema,
-);
+export const GetTransactionByBlockHashAndIndexResult =
+	S.NullOr(TransactionRpcSchema);
 
 /**
  * eth_getTransactionByBlockHashAndIndex request schema.

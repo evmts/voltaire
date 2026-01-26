@@ -6,31 +6,6 @@
 import * as S from "effect/Schema";
 import { describe, expect, it } from "vitest";
 import {
-	AddressHexSchema,
-	BlockRpcSchema,
-	BlockTagSchema,
-	Bytes32HexSchema,
-	GenericJsonRpcRequest,
-	GenericJsonRpcResponse,
-	HexSchema,
-	JsonRpcBatchRequest,
-	JsonRpcErrorResponseSchema,
-	JsonRpcIdSchema,
-	LogFilterSchema,
-	LogRpcSchema,
-	QuantityHexSchema,
-	ReceiptRpcSchema,
-	StateOverrideSetSchema,
-	TransactionRequestSchema,
-	TransactionRpcSchema,
-	decodeRequest,
-	decodeResponse,
-	isErrorResponse,
-	isSuccessResponse,
-	isValidRequest,
-	isValidResponse,
-} from "./index.js";
-import {
 	BlockNumberRequest,
 	CallRequest,
 	ChainIdRequest,
@@ -47,6 +22,24 @@ import {
 	GetTransactionReceiptRequest,
 	SendRawTransactionRequest,
 } from "./eth/index.js";
+import {
+	AddressHexSchema,
+	BlockTagSchema,
+	Bytes32HexSchema,
+	GenericJsonRpcRequest,
+	GenericJsonRpcResponse,
+	HexSchema,
+	isErrorResponse,
+	isSuccessResponse,
+	isValidRequest,
+	isValidResponse,
+	JsonRpcBatchRequest,
+	JsonRpcIdSchema,
+	LogFilterSchema,
+	LogRpcSchema,
+	TransactionRequestSchema,
+	TransactionRpcSchema,
+} from "./index.js";
 
 describe("JSON-RPC Schemas", () => {
 	describe("Common Schemas", () => {
@@ -109,7 +102,9 @@ describe("JSON-RPC Schemas", () => {
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 
 			it("accepts valid hash", () => {
-				expect(S.decodeUnknownSync(Bytes32HexSchema)(validHash)).toBe(validHash);
+				expect(S.decodeUnknownSync(Bytes32HexSchema)(validHash)).toBe(
+					validHash,
+				);
 			});
 
 			it("rejects short hash", () => {
@@ -122,7 +117,9 @@ describe("JSON-RPC Schemas", () => {
 		describe("BlockTagSchema", () => {
 			it("accepts named tags", () => {
 				expect(S.decodeUnknownSync(BlockTagSchema)("latest")).toBe("latest");
-				expect(S.decodeUnknownSync(BlockTagSchema)("earliest")).toBe("earliest");
+				expect(S.decodeUnknownSync(BlockTagSchema)("earliest")).toBe(
+					"earliest",
+				);
 				expect(S.decodeUnknownSync(BlockTagSchema)("pending")).toBe("pending");
 				expect(S.decodeUnknownSync(BlockTagSchema)("safe")).toBe("safe");
 				expect(S.decodeUnknownSync(BlockTagSchema)("finalized")).toBe(
