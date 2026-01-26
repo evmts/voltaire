@@ -26,8 +26,8 @@ import type {
 	BrandedSignature,
 	TypedData,
 } from "@tevm/voltaire";
-import { AbstractError } from "@tevm/voltaire/errors";
 import * as Context from "effect/Context";
+import * as Data from "effect/Data";
 import type * as Effect from "effect/Effect";
 
 type AddressType = BrandedAddress.AddressType;
@@ -53,11 +53,11 @@ type AddressInput = AddressType | `0x${string}`;
  *
  * @example Creating an AccountError
  * ```typescript
- * const error = new AccountError(
- *   { action: 'signMessage', message: '0x1234' },
- *   'Failed to sign message',
- *   { cause: originalError }
- * )
+ * const error = new AccountError({
+ *   input: { action: 'signMessage', message: '0x1234' },
+ *   message: 'Failed to sign message',
+ *   cause: originalError
+ * })
  *
  * console.log(error.input)   // { action: 'signMessage', message: '0x1234' }
  * console.log(error.message) // 'Failed to sign message'
@@ -80,34 +80,57 @@ type AddressInput = AddressType | `0x${string}`;
  * )
  * ```
  */
-export class AccountError extends AbstractError {
-	readonly _tag = "AccountError" as const;
-
+export class AccountError extends Data.TaggedError("AccountError")<{
 	/**
 	 * The original input that caused the error.
 	 */
 	readonly input: unknown;
 
 	/**
+	 * Human-readable error message.
+	 */
+	readonly message: string;
+
+	/**
+	 * JSON-RPC error code (if applicable).
+	 */
+	readonly code?: number;
+
+	/**
+	 * Optional underlying cause.
+	 */
+	readonly cause?: unknown;
+
+	/**
+	 * Optional context for debugging.
+	 */
+	readonly context?: Record<string, unknown>;
+}> {
+	/**
 	 * Creates a new AccountError.
 	 *
 	 * @param input - The original input that caused the error
-	 * @param message - Human-readable error message
+	 * @param message - Human-readable error message (optional, defaults to cause message)
 	 * @param options - Optional error options
+	 * @param options.code - JSON-RPC error code
 	 * @param options.cause - Underlying error that caused this failure
 	 */
 	constructor(
 		input: unknown,
-		message: string,
+		message?: string,
 		options?: {
 			code?: number;
 			context?: Record<string, unknown>;
 			cause?: Error;
 		},
 	) {
-		super(message, options);
-		this.name = "AccountError";
-		this.input = input;
+		super({
+			input,
+			message: message ?? options?.cause?.message ?? "Account error",
+			code: options?.code,
+			cause: options?.cause,
+			context: options?.context,
+		});
 	}
 }
 

@@ -25,7 +25,7 @@
  */
 
 import type { BrandedAddress, BrandedHash, BrandedHex } from "@tevm/voltaire";
-import { AbstractError } from "@tevm/voltaire/errors";
+import * as Data from "effect/Data";
 
 type AddressType = BrandedAddress.AddressType;
 type HashType = BrandedHash.HashType;
@@ -129,119 +129,68 @@ export interface DecodedEvent {
  * Base error class for contract operations.
  * @since 0.0.1
  */
-export class ContractError extends AbstractError {
-	readonly _tag: string = "ContractError";
-
+export class ContractError extends Data.TaggedError("ContractError")<{
 	/**
 	 * The original input that caused the error.
 	 */
 	readonly input: unknown;
 
 	/**
-	 * Creates a new ContractError.
-	 * @param input - The original input that caused the error
-	 * @param message - Human-readable error message
-	 * @param options - Optional error options
-	 * @param options.cause - Underlying error that caused this failure
+	 * Human-readable error message.
 	 */
-	constructor(
-		input: unknown,
-		message: string,
-		options?: {
-			code?: number;
-			context?: Record<string, unknown>;
-			cause?: Error;
-		},
-	) {
-		super(message, options);
-		this.name = "ContractError";
-		this.input = input;
-	}
-}
+	readonly message: string;
+
+	/**
+	 * JSON-RPC error code (if applicable).
+	 */
+	readonly code?: number;
+
+	/**
+	 * Optional underlying cause.
+	 */
+	readonly cause?: unknown;
+
+	/**
+	 * Optional context for debugging.
+	 */
+	readonly context?: Record<string, unknown>;
+}> {}
 
 /**
  * Error thrown when a contract read call fails.
  * @since 0.0.1
  */
-export class ContractCallError extends ContractError {
-	override readonly _tag = "ContractCallError" as const;
-
-	/**
-	 * Creates a new ContractCallError.
-	 * @param input - The original input that caused the error
-	 * @param message - Human-readable error message
-	 * @param options - Optional error options
-	 * @param options.cause - Underlying error that caused this failure
-	 */
-	constructor(
-		input: unknown,
-		message: string,
-		options?: {
-			code?: number;
-			context?: Record<string, unknown>;
-			cause?: Error;
-		},
-	) {
-		super(input, message, options);
-		this.name = "ContractCallError";
-	}
-}
+export class ContractCallError extends Data.TaggedError("ContractCallError")<{
+	readonly input: unknown;
+	readonly message: string;
+	readonly code?: number;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {}
 
 /**
  * Error thrown when a contract write transaction fails.
  * @since 0.0.1
  */
-export class ContractWriteError extends ContractError {
-	override readonly _tag = "ContractWriteError" as const;
-
-	/**
-	 * Creates a new ContractWriteError.
-	 * @param input - The original input that caused the error
-	 * @param message - Human-readable error message
-	 * @param options - Optional error options
-	 * @param options.cause - Underlying error that caused this failure
-	 */
-	constructor(
-		input: unknown,
-		message: string,
-		options?: {
-			code?: number;
-			context?: Record<string, unknown>;
-			cause?: Error;
-		},
-	) {
-		super(input, message, options);
-		this.name = "ContractWriteError";
-	}
-}
+export class ContractWriteError extends Data.TaggedError("ContractWriteError")<{
+	readonly input: unknown;
+	readonly message: string;
+	readonly code?: number;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {}
 
 /**
  * Error thrown when fetching contract events fails.
  * @since 0.0.1
  */
-export class ContractEventError extends ContractError {
-	override readonly _tag = "ContractEventError" as const;
-
-	/**
-	 * Creates a new ContractEventError.
-	 * @param input - The original input that caused the error
-	 * @param message - Human-readable error message
-	 * @param options - Optional error options
-	 * @param options.cause - Underlying error that caused this failure
-	 */
-	constructor(
-		input: unknown,
-		message: string,
-		options?: {
-			code?: number;
-			context?: Record<string, unknown>;
-			cause?: Error;
-		},
-	) {
-		super(input, message, options);
-		this.name = "ContractEventError";
-	}
-}
+export class ContractEventError extends Data.TaggedError("ContractEventError")<{
+	readonly input: unknown;
+	readonly message: string;
+	readonly code?: number;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {}
 
 /**
  * Type-safe contract instance with read, write, simulate, and event methods.

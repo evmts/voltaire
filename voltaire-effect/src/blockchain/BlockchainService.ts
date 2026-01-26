@@ -15,9 +15,9 @@
  * @see {@link ForkBlockchain} - Fork mode implementation with RPC fetching
  */
 
-import { AbstractError } from "@tevm/voltaire/errors";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Context from "effect/Context";
+import * as Data from "effect/Data";
 import type * as Effect from "effect/Effect";
 
 /**
@@ -78,12 +78,13 @@ export interface Block {
  *
  * @since 0.0.1
  */
-export class BlockchainError extends AbstractError {
-	readonly _tag = "BlockchainError" as const;
-
+export class BlockchainError extends Data.TaggedError("BlockchainError")<{
 	readonly input: unknown;
+	readonly message: string;
 	readonly errorCode?: string;
-
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
 	constructor(
 		input: unknown,
 		message?: string,
@@ -93,13 +94,13 @@ export class BlockchainError extends AbstractError {
 			cause?: Error;
 		},
 	) {
-		super(message ?? options?.cause?.message ?? "Blockchain error", {
-			context: options?.context,
+		super({
+			input,
+			message: message ?? (options?.cause instanceof Error ? options.cause.message : undefined) ?? "Blockchain error",
+			errorCode: options?.code,
 			cause: options?.cause,
+			context: options?.context,
 		});
-		this.name = "BlockchainError";
-		this.input = input;
-		this.errorCode = options?.code;
 	}
 }
 
