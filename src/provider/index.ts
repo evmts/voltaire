@@ -87,6 +87,8 @@ export type {
 	DerivedRpcSchema,
 	RpcSchemaOverride,
 	VoltaireRpcSchema,
+	BlockOverrides,
+	StateOverride,
 } from "./schemas/index.js";
 // Strongly-typed provider types
 export type { EIP1193Provider, TypedProvider } from "./TypedProvider.js";
