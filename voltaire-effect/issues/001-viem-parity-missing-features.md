@@ -47,19 +47,64 @@ Comprehensive gap analysis comparing viem's client architecture against voltaire
 - `src/clients/transports/custom.ts` - EIP-1193 wrapper
 </viem_ref>
 <effect_solution>
+**Recommended: Use @effect/platform for transport layer**
+
+Instead of manually implementing HTTP/WebSocket transports, use `@effect/platform`:
+
 ```typescript
-// HttpTransport with fetchOptions
-const HttpTransport = (url: string, config?: {
-  fetchOptions?: RequestInit
-  onRequest?: (req: RpcRequest) => Effect.Effect<void>
-  onResponse?: (res: RpcResponse) => Effect.Effect<void>
-}): Layer.Layer<TransportService> => ...
+import * as HttpClient from "@effect/platform/HttpClient"
+import * as Socket from "@effect/platform/Socket"
+import { NodeHttpClient, NodeSocket } from "@effect/platform-node"
 
-// Use FiberRef for request/response interceptors
+// HTTP Transport with @effect/platform
+const HttpTransport = (url: string, config?: HttpTransportConfig) =>
+  Layer.scoped(
+    TransportService,
+    Effect.gen(function* () {
+      const client = (yield* HttpClient.HttpClient).pipe(
+        HttpClient.retryTransient({ times: config?.retries ?? 3 }),
+        HttpClient.timeout(Duration.millis(config?.timeout ?? 30000)),
+        HttpClient.mapRequest(HttpClientRequest.setHeaders(config?.headers ?? {}))
+      )
+      
+      return {
+        request: <T>(method: string, params?: unknown[]) =>
+          HttpClientRequest.post(url).pipe(
+            HttpClientRequest.jsonBody({ jsonrpc: "2.0", id: 1, method, params }),
+            client.execute,
+            Effect.flatMap(HttpClientResponse.json),
+            Effect.map(res => res.result as T)
+          )
+      }
+    })
+  ).pipe(Layer.provide(NodeHttpClient.layer))
+
+// WebSocket Transport with @effect/platform
+const WebSocketTransport = (url: string, config?: WebSocketTransportConfig) =>
+  Layer.scoped(
+    TransportService,
+    Effect.gen(function* () {
+      const socket = yield* Socket.makeWebSocket(url, {
+        reconnect: Schedule.exponential("1 second").pipe(
+          Schedule.jittered,
+          Schedule.recurs(config?.reconnect?.maxAttempts ?? 10)
+        )
+      })
+      // ... Stream-based message handling
+    })
+  ).pipe(Layer.provide(NodeSocket.layer))
+```
+
+**Benefits of @effect/platform**:
+- No callback bridging (Runtime.runFork, Effect.runSync)
+- No manual timers (setTimeout, setInterval)  
+- Built-in retry, timeout, reconnection
+- Cross-platform (Node.js, Bun, browser)
+- TestClock compatible for testing
+
+**Fallback pattern with FiberRef for interceptors**:
+```typescript
 const onRequestRef = FiberRef.unsafeMake<(req: RpcRequest) => Effect.Effect<void>>(() => Effect.void)
-
-// Fallback with Ref for mutable state
-const instancesRef = yield* Ref.make(transports.map(...))
 
 // Use Effect.request for automatic batching
 const GetBalanceRequest = Data.TaggedClass("GetBalance")<{...}>
@@ -67,14 +112,15 @@ const resolver = RequestResolver.makeBatched((requests) => ...)
 ```
 </effect_solution>
 <implementation_steps>
-1. Add `fetchOptions` to HttpTransport config
-2. Add FiberRef-based interceptors for request/response hooks
-3. Fix FallbackTransport mutable array → use Ref
-4. Fix WebSocketTransport → use Runtime.runFork in callbacks
-5. Add request deduplication via Effect.cached
-6. Add JSON-RPC batching via Effect.request + RequestResolver
-7. Add IpcTransport for local nodes
-8. Add CustomTransport for EIP-1193 providers
+1. **Install @effect/platform packages** (`@effect/platform`, `@effect/platform-node`, `@effect/platform-browser`)
+2. Rewrite HttpTransport using `@effect/platform/HttpClient`
+3. Rewrite WebSocketTransport using `@effect/platform/Socket`
+4. Add FiberRef-based interceptors for request/response hooks
+5. Fix FallbackTransport mutable array → use Ref
+6. Add request deduplication via Effect.cached
+7. Add JSON-RPC batching via Effect.request + RequestResolver
+8. Add IpcTransport using platform FileSystem (Unix sockets)
+9. Add CustomTransport for EIP-1193 providers
 </implementation_steps>
 </category>
 
@@ -483,19 +529,28 @@ export const verifySiweMessage = (params: VerifyParams): Effect.Effect<boolean, 
 
 <phase number="2" priority="P0" name="Transport Enhancements">
 <timeline>Week 1-2</timeline>
-<goals>Production-ready transport layer</goals>
+<goals>Production-ready transport layer using @effect/platform</goals>
 <steps>
-1. Add fetchOptions to HttpTransport
-2. Add request/response interceptor FiberRefs
-3. Implement request deduplication
-4. Implement JSON-RPC batching via Effect.request
-5. Add IpcTransport for local nodes
+1. **Install @effect/platform** (`@effect/platform`, `@effect/platform-node`, `@effect/platform-browser`)
+2. Rewrite HttpTransport using `@effect/platform/HttpClient` (built-in retry, timeout)
+3. Rewrite WebSocketTransport using `@effect/platform/Socket` (built-in reconnection, Stream messages)
+4. Add request/response interceptor FiberRefs
+5. Implement request deduplication via Effect.cached
+6. Implement JSON-RPC batching via Effect.request + RequestResolver
+7. Add IpcTransport for local nodes (via platform FileSystem for Unix sockets)
 </steps>
 <files>
-- src/services/Transport/HttpTransport.ts
-- src/services/Transport/BatchScheduler.ts (NEW)
+- src/services/Transport/HttpTransport.ts (rewrite with @effect/platform/HttpClient)
+- src/services/Transport/WebSocketTransport.ts (rewrite with @effect/platform/Socket)
+- src/services/Transport/BatchScheduler.ts (NEW - use Effect.request)
 - src/services/Transport/IpcTransport.ts (NEW)
 </files>
+<dependencies>
+- @effect/platform
+- @effect/platform-node (Node.js)
+- @effect/platform-browser (browser)
+- @effect/platform-bun (Bun)
+</dependencies>
 </phase>
 
 <phase number="3" priority="P0" name="Provider Simulation">

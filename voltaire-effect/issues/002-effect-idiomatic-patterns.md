@@ -786,3 +786,115 @@ All patterns leverage Effect's core principles:
 - **Explicit dependencies via Layer**
 - **Type-safe error handling**
 - **Scoped resource management**
+
+---
+
+## Pattern 9: Use @effect/platform for Platform Abstractions
+
+**Use Case**: HTTP transport, WebSocket transport, file system access, worker threads
+
+**Effect Concept**: Effect provides platform-specific libraries that abstract away environment differences and provide Effect-native APIs.
+
+### @effect/platform Libraries
+
+| Package | Use Case |
+|---------|----------|
+| `@effect/platform` | Core platform abstractions (HttpClient, Socket, FileSystem, Worker) |
+| `@effect/platform-node` | Node.js implementations |
+| `@effect/platform-bun` | Bun implementations |
+| `@effect/platform-browser` | Browser implementations |
+
+### HTTP Transport with @effect/platform
+
+```typescript
+import * as HttpClient from "@effect/platform/HttpClient"
+import * as HttpClientRequest from "@effect/platform/HttpClientRequest"
+import * as HttpClientResponse from "@effect/platform/HttpClientResponse"
+import { NodeHttpClient } from "@effect/platform-node"
+
+const HttpTransport = (url: string) =>
+  Layer.scoped(
+    TransportService,
+    Effect.gen(function* () {
+      const client = (yield* HttpClient.HttpClient).pipe(
+        HttpClient.retryTransient({ times: 3 }),
+        HttpClient.timeout(Duration.seconds(30))
+      )
+      
+      return {
+        request: <T>(method: string, params?: unknown[]) =>
+          HttpClientRequest.post(url).pipe(
+            HttpClientRequest.jsonBody({ jsonrpc: "2.0", id: 1, method, params }),
+            client.execute,
+            Effect.flatMap(HttpClientResponse.json),
+            Effect.map(res => res.result as T)
+          )
+      }
+    })
+  ).pipe(Layer.provide(NodeHttpClient.layer))
+```
+
+### WebSocket Transport with @effect/platform
+
+```typescript
+import * as Socket from "@effect/platform/Socket"
+import { NodeSocket } from "@effect/platform-node"
+
+const WebSocketTransport = (url: string) =>
+  Layer.scoped(
+    TransportService,
+    Effect.gen(function* () {
+      const socket = yield* Socket.makeWebSocket(url, {
+        reconnect: Schedule.exponential("1 second").pipe(
+          Schedule.jittered,
+          Schedule.recurs(10)
+        )
+      })
+      
+      return {
+        request: <T>(method: string, params?: unknown[]) =>
+          Effect.gen(function* () {
+            const id = yield* Ref.getAndUpdate(idRef, n => n + 1)
+            yield* socket.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }))
+            
+            return yield* socket.messages.pipe(
+              Stream.filter(msg => JSON.parse(msg).id === id),
+              Stream.take(1),
+              Stream.runHead,
+              Effect.map(msg => JSON.parse(msg!).result as T)
+            )
+          })
+      }
+    })
+  ).pipe(Layer.provide(NodeSocket.layer))
+```
+
+### Why @effect/platform
+
+| Feature | Manual Implementation | @effect/platform |
+|---------|----------------------|------------------|
+| Callback bridging | `Runtime.runFork` in callbacks | Not needed - Effect-native |
+| Timers | `setTimeout`/`setInterval` | Effect.schedule |
+| Retry | Manual loop or Effect.retry | Built-in `retryTransient` |
+| Timeout | AbortController | Built-in `timeout` |
+| Lifecycle | Manual finalizers | Scoped resources |
+| Testing | Mock WebSocket/fetch | TestClock compatible |
+| Cross-platform | Conditional imports | Layer-based injection |
+
+**Installation**:
+```bash
+# Node.js
+pnpm add @effect/platform @effect/platform-node
+
+# Browser
+pnpm add @effect/platform @effect/platform-browser
+
+# Bun
+pnpm add @effect/platform @effect/platform-bun
+```
+
+**References**:
+- [Effect Platform Documentation](https://effect.website/docs/platform/introduction)
+- [HttpClient](https://effect.website/docs/platform/http-client)
+- [Socket](https://effect.website/docs/platform/socket)
+- [FileSystem](https://effect.website/docs/platform/file-system)
