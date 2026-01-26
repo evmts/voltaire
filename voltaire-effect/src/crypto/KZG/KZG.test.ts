@@ -4,7 +4,7 @@ import type {
 	KzgProofType,
 } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import {
 	blobToKzgCommitment,
 	computeBlobKzgProof,
@@ -15,103 +15,80 @@ import {
 
 describe("KZGService", () => {
 	describe("KZGTest", () => {
-		it("blobToKzgCommitment returns 48-byte commitment", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("blobToKzgCommitment returns 48-byte commitment", () =>
+			Effect.gen(function* () {
 				const kzg = yield* KZGService;
-				return yield* kzg.blobToKzgCommitment(
+				const result = yield* kzg.blobToKzgCommitment(
 					new Uint8Array(131072) as KzgBlobType,
 				);
-			});
+				expect(result).toBeInstanceOf(Uint8Array);
+				expect(result.length).toBe(48);
+			}).pipe(Effect.provide(KZGTest))
+		);
 
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(KZGTest)),
-			);
-
-			expect(result).toBeInstanceOf(Uint8Array);
-			expect(result.length).toBe(48);
-		});
-
-		it("computeBlobKzgProof returns 48-byte proof", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("computeBlobKzgProof returns 48-byte proof", () =>
+			Effect.gen(function* () {
 				const kzg = yield* KZGService;
 				const blob = new Uint8Array(131072) as KzgBlobType;
 				const commitment = new Uint8Array(48) as KzgCommitmentType;
-				return yield* kzg.computeBlobKzgProof(blob, commitment);
-			});
+				const result = yield* kzg.computeBlobKzgProof(blob, commitment);
+				expect(result).toBeInstanceOf(Uint8Array);
+				expect(result.length).toBe(48);
+			}).pipe(Effect.provide(KZGTest))
+		);
 
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(KZGTest)),
-			);
-
-			expect(result).toBeInstanceOf(Uint8Array);
-			expect(result.length).toBe(48);
-		});
-
-		it("verifyBlobKzgProof returns boolean", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("verifyBlobKzgProof returns boolean", () =>
+			Effect.gen(function* () {
 				const kzg = yield* KZGService;
 				const blob = new Uint8Array(131072) as KzgBlobType;
 				const commitment = new Uint8Array(48) as KzgCommitmentType;
 				const proof = new Uint8Array(48) as KzgProofType;
-				return yield* kzg.verifyBlobKzgProof(blob, commitment, proof);
-			});
+				const result = yield* kzg.verifyBlobKzgProof(blob, commitment, proof);
+				expect(result).toBe(true);
+			}).pipe(Effect.provide(KZGTest))
+		);
 
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(KZGTest)),
-			);
-
-			expect(result).toBe(true);
-		});
-
-		it("isInitialized returns true", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("isInitialized returns true", () =>
+			Effect.gen(function* () {
 				const kzg = yield* KZGService;
-				return yield* kzg.isInitialized();
-			});
-
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(KZGTest)),
-			);
-
-			expect(result).toBe(true);
-		});
+				const result = yield* kzg.isInitialized();
+				expect(result).toBe(true);
+			}).pipe(Effect.provide(KZGTest))
+		);
 	});
 });
 
 describe("blobToKzgCommitment", () => {
-	it("commits blob with KZGService dependency", async () => {
-		const blob = new Uint8Array(131072) as KzgBlobType;
-		const result = await Effect.runPromise(
-			blobToKzgCommitment(blob).pipe(Effect.provide(KZGTest)),
-		);
-
-		expect(result).toBeInstanceOf(Uint8Array);
-		expect(result.length).toBe(48);
-	});
+	it.effect("commits blob with KZGService dependency", () =>
+		Effect.gen(function* () {
+			const blob = new Uint8Array(131072) as KzgBlobType;
+			const result = yield* blobToKzgCommitment(blob);
+			expect(result).toBeInstanceOf(Uint8Array);
+			expect(result.length).toBe(48);
+		}).pipe(Effect.provide(KZGTest))
+	);
 });
 
 describe("computeBlobKzgProof", () => {
-	it("computes proof with KZGService dependency", async () => {
-		const blob = new Uint8Array(131072) as KzgBlobType;
-		const commitment = new Uint8Array(48) as KzgCommitmentType;
-		const result = await Effect.runPromise(
-			computeBlobKzgProof(blob, commitment).pipe(Effect.provide(KZGTest)),
-		);
-
-		expect(result).toBeInstanceOf(Uint8Array);
-		expect(result.length).toBe(48);
-	});
+	it.effect("computes proof with KZGService dependency", () =>
+		Effect.gen(function* () {
+			const blob = new Uint8Array(131072) as KzgBlobType;
+			const commitment = new Uint8Array(48) as KzgCommitmentType;
+			const result = yield* computeBlobKzgProof(blob, commitment);
+			expect(result).toBeInstanceOf(Uint8Array);
+			expect(result.length).toBe(48);
+		}).pipe(Effect.provide(KZGTest))
+	);
 });
 
 describe("verifyBlobKzgProof", () => {
-	it("verifies proof with KZGService dependency", async () => {
-		const blob = new Uint8Array(131072) as KzgBlobType;
-		const commitment = new Uint8Array(48) as KzgCommitmentType;
-		const proof = new Uint8Array(48) as KzgProofType;
-		const result = await Effect.runPromise(
-			verifyBlobKzgProof(blob, commitment, proof).pipe(Effect.provide(KZGTest)),
-		);
-
-		expect(result).toBe(true);
-	});
+	it.effect("verifies proof with KZGService dependency", () =>
+		Effect.gen(function* () {
+			const blob = new Uint8Array(131072) as KzgBlobType;
+			const commitment = new Uint8Array(48) as KzgCommitmentType;
+			const proof = new Uint8Array(48) as KzgProofType;
+			const result = yield* verifyBlobKzgProof(blob, commitment, proof);
+			expect(result).toBe(true);
+		}).pipe(Effect.provide(KZGTest))
+	);
 });

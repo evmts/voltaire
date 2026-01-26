@@ -1,7 +1,7 @@
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import {
 	type MulticallCall,
 	MulticallError,
@@ -77,87 +77,91 @@ describe("MulticallService", () => {
 	});
 
 	describe("DefaultMulticall layer", () => {
-		it("returns empty array for empty calls", async () => {
-			const mockProvider: ProviderShape = {
-				call: () => Effect.succeed("0x" as const),
-				getBlockNumber: () => Effect.succeed(0n),
-				getBlock: () => Effect.succeed({} as any),
-				getBlockTransactionCount: () => Effect.succeed(0n),
-				getBalance: () => Effect.succeed(0n),
-				getTransactionCount: () => Effect.succeed(0n),
-				getCode: () => Effect.succeed("0x"),
-				getStorageAt: () => Effect.succeed("0x"),
-				getTransaction: () => Effect.succeed({} as any),
-				getTransactionReceipt: () => Effect.succeed({} as any),
-				waitForTransactionReceipt: () => Effect.succeed({} as any),
-				estimateGas: () => Effect.succeed(0n),
-				createAccessList: () => Effect.succeed({} as any),
-				getLogs: () => Effect.succeed([]),
-				getChainId: () => Effect.succeed(1),
-				getGasPrice: () => Effect.succeed(0n),
-				getMaxPriorityFeePerGas: () => Effect.succeed(0n),
-				getFeeHistory: () => Effect.succeed({} as any),
-				watchBlocks: () => ({} as any),
-				backfillBlocks: () => ({} as any),
-			};
+		it.effect("returns empty array for empty calls", () =>
+			Effect.gen(function* () {
+				const mockProvider: ProviderShape = {
+					call: () => Effect.succeed("0x" as const),
+					getBlockNumber: () => Effect.succeed(0n),
+					getBlock: () => Effect.succeed({} as any),
+					getBlockTransactionCount: () => Effect.succeed(0n),
+					getBalance: () => Effect.succeed(0n),
+					getTransactionCount: () => Effect.succeed(0n),
+					getCode: () => Effect.succeed("0x"),
+					getStorageAt: () => Effect.succeed("0x"),
+					getTransaction: () => Effect.succeed({} as any),
+					getTransactionReceipt: () => Effect.succeed({} as any),
+					waitForTransactionReceipt: () => Effect.succeed({} as any),
+					estimateGas: () => Effect.succeed(0n),
+					createAccessList: () => Effect.succeed({} as any),
+					getLogs: () => Effect.succeed([]),
+					getChainId: () => Effect.succeed(1),
+					getGasPrice: () => Effect.succeed(0n),
+					getMaxPriorityFeePerGas: () => Effect.succeed(0n),
+					getFeeHistory: () => Effect.succeed({} as any),
+					watchBlocks: () => ({} as any),
+					backfillBlocks: () => ({} as any),
+				};
 
-			const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
-			const TestMulticallLayer = DefaultMulticall.pipe(Layer.provide(TestProviderLayer));
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+				const TestMulticallLayer = DefaultMulticall.pipe(Layer.provide(TestProviderLayer));
 
-			const program = Effect.gen(function* () {
-				const multicall = yield* MulticallService;
-				return yield* multicall.aggregate3([]);
-			}).pipe(Effect.provide(TestMulticallLayer));
+				const program = Effect.gen(function* () {
+					const multicall = yield* MulticallService;
+					return yield* multicall.aggregate3([]);
+				}).pipe(Effect.provide(TestMulticallLayer));
 
-			const result = await Effect.runPromise(program);
-			expect(result).toEqual([]);
-		});
+				const result = yield* program;
+				expect(result).toEqual([]);
+			})
+		);
 
-		it("propagates provider errors as MulticallError", async () => {
-			const mockProvider: ProviderShape = {
-				call: () =>
-					Effect.fail(new ProviderError({ method: "eth_call" }, "RPC failed")),
-				getBlockNumber: () => Effect.succeed(0n),
-				getBlock: () => Effect.succeed({} as any),
-				getBlockTransactionCount: () => Effect.succeed(0n),
-				getBalance: () => Effect.succeed(0n),
-				getTransactionCount: () => Effect.succeed(0n),
-				getCode: () => Effect.succeed("0x"),
-				getStorageAt: () => Effect.succeed("0x"),
-				getTransaction: () => Effect.succeed({} as any),
-				getTransactionReceipt: () => Effect.succeed({} as any),
-				waitForTransactionReceipt: () => Effect.succeed({} as any),
-				estimateGas: () => Effect.succeed(0n),
-				createAccessList: () => Effect.succeed({} as any),
-				getLogs: () => Effect.succeed([]),
-				getChainId: () => Effect.succeed(1),
-				getGasPrice: () => Effect.succeed(0n),
-				getMaxPriorityFeePerGas: () => Effect.succeed(0n),
-				getFeeHistory: () => Effect.succeed({} as any),
-				watchBlocks: () => ({} as any),
-				backfillBlocks: () => ({} as any),
-			};
+		it.effect("propagates provider errors as MulticallError", () =>
+			Effect.gen(function* () {
+				const mockProvider: ProviderShape = {
+					call: () =>
+						Effect.fail(new ProviderError({ method: "eth_call" }, "RPC failed")),
+					getBlockNumber: () => Effect.succeed(0n),
+					getBlock: () => Effect.succeed({} as any),
+					getBlockTransactionCount: () => Effect.succeed(0n),
+					getBalance: () => Effect.succeed(0n),
+					getTransactionCount: () => Effect.succeed(0n),
+					getCode: () => Effect.succeed("0x"),
+					getStorageAt: () => Effect.succeed("0x"),
+					getTransaction: () => Effect.succeed({} as any),
+					getTransactionReceipt: () => Effect.succeed({} as any),
+					waitForTransactionReceipt: () => Effect.succeed({} as any),
+					estimateGas: () => Effect.succeed(0n),
+					createAccessList: () => Effect.succeed({} as any),
+					getLogs: () => Effect.succeed([]),
+					getChainId: () => Effect.succeed(1),
+					getGasPrice: () => Effect.succeed(0n),
+					getMaxPriorityFeePerGas: () => Effect.succeed(0n),
+					getFeeHistory: () => Effect.succeed({} as any),
+					watchBlocks: () => ({} as any),
+					backfillBlocks: () => ({} as any),
+				};
 
-			const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
-			const TestMulticallLayer = DefaultMulticall.pipe(Layer.provide(TestProviderLayer));
+				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+				const TestMulticallLayer = DefaultMulticall.pipe(Layer.provide(TestProviderLayer));
 
-			const program = Effect.gen(function* () {
-				const multicall = yield* MulticallService;
-				return yield* multicall.aggregate3([
-					{
-						target: "0x1234567890123456789012345678901234567890",
-						callData: "0x1234",
-					},
-				]);
-			}).pipe(Effect.provide(TestMulticallLayer));
+				const program = Effect.gen(function* () {
+					const multicall = yield* MulticallService;
+					return yield* multicall.aggregate3([
+						{
+							target: "0x1234567890123456789012345678901234567890",
+							callData: "0x1234",
+						},
+					]);
+				}).pipe(Effect.provide(TestMulticallLayer));
 
-			const exit = await Effect.runPromiseExit(program);
-			expect(Exit.isFailure(exit)).toBe(true);
-			if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
-				expect(exit.cause.error._tag).toBe("MulticallError");
-				expect(exit.cause.error.message).toContain("Multicall3 call failed");
-			}
-		});
+				const exit = yield* Effect.exit(program);
+				expect(Exit.isFailure(exit)).toBe(true);
+				if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+					expect(exit.cause.error._tag).toBe("MulticallError");
+					expect(exit.cause.error.message).toContain("Multicall3 call failed");
+				}
+			})
+		);
 
 		it("encodes calls correctly and sends to multicall3 address", async () => {
 			let capturedCall: { to?: string; data?: string } | undefined;

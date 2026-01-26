@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import { KeccakLive } from "../../crypto/Keccak256/index.js";
 import * as Address from "./index.js";
 

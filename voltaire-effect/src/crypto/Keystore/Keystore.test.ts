@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import * as Keystore from "./index.js";
 
 describe("Keystore", () => {
@@ -13,52 +13,46 @@ describe("Keystore", () => {
 	const testPassword = "test-password-123";
 
 	describe("encrypt", () => {
-		it("encrypts a private key to keystore v3 format", async () => {
-			const result = await Effect.runPromise(
-				Keystore.encrypt(testPrivateKey, testPassword, {
+		it.effect("encrypts a private key to keystore v3 format", () =>
+			Effect.gen(function* () {
+				const result = yield* Keystore.encrypt(testPrivateKey, testPassword, {
 					scryptN: 1024,
 					scryptR: 8,
 					scryptP: 1,
-				}),
-			);
+				});
+				expect(result.version).toBe(3);
+				expect(result.id).toBeDefined();
+				expect(result.crypto.cipher).toBe("aes-128-ctr");
+				expect(result.crypto.kdf).toBe("scrypt");
+				expect(result.crypto.ciphertext).toBeDefined();
+				expect(result.crypto.mac).toBeDefined();
+			})
+		);
 
-			expect(result.version).toBe(3);
-			expect(result.id).toBeDefined();
-			expect(result.crypto.cipher).toBe("aes-128-ctr");
-			expect(result.crypto.kdf).toBe("scrypt");
-			expect(result.crypto.ciphertext).toBeDefined();
-			expect(result.crypto.mac).toBeDefined();
-		});
-
-		it("supports pbkdf2 kdf", async () => {
-			const result = await Effect.runPromise(
-				Keystore.encrypt(testPrivateKey, testPassword, {
+		it.effect("supports pbkdf2 kdf", () =>
+			Effect.gen(function* () {
+				const result = yield* Keystore.encrypt(testPrivateKey, testPassword, {
 					kdf: "pbkdf2",
 					pbkdf2C: 1000,
-				}),
-			);
-
-			expect(result.crypto.kdf).toBe("pbkdf2");
-			expect((result.crypto.kdfparams as any).c).toBe(1000);
-		});
+				});
+				expect(result.crypto.kdf).toBe("pbkdf2");
+				expect((result.crypto.kdfparams as any).c).toBe(1000);
+			})
+		);
 	});
 
 	describe("decrypt", () => {
-		it("decrypts keystore back to original private key", async () => {
-			const encrypted = await Effect.runPromise(
-				Keystore.encrypt(testPrivateKey, testPassword, {
+		it.effect("decrypts keystore back to original private key", () =>
+			Effect.gen(function* () {
+				const encrypted = yield* Keystore.encrypt(testPrivateKey, testPassword, {
 					scryptN: 1024,
 					scryptR: 8,
 					scryptP: 1,
-				}),
-			);
-
-			const decrypted = await Effect.runPromise(
-				Keystore.decrypt(encrypted, testPassword),
-			);
-
-			expect(decrypted).toEqual(testPrivateKey);
-		});
+				});
+				const decrypted = yield* Keystore.decrypt(encrypted, testPassword);
+				expect(decrypted).toEqual(testPrivateKey);
+			})
+		);
 
 		it("fails with wrong password", async () => {
 			const encrypted = await Effect.runPromise(
@@ -68,11 +62,9 @@ describe("Keystore", () => {
 					scryptP: 1,
 				}),
 			);
-
 			const exit = await Effect.runPromiseExit(
 				Keystore.decrypt(encrypted, "wrong-password"),
 			);
-
 			expect(Exit.isFailure(exit)).toBe(true);
 		});
 
@@ -89,96 +81,68 @@ describe("Keystore", () => {
 					mac: "00",
 				},
 			};
-
 			const exit = await Effect.runPromiseExit(
 				Keystore.decrypt(badKeystore as any, testPassword),
 			);
-
 			expect(Exit.isFailure(exit)).toBe(true);
 		});
 	});
 
 	describe("KeystoreService", () => {
-		it("provides encrypt through service layer", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("provides encrypt through service layer", () =>
+			Effect.gen(function* () {
 				const keystore = yield* Keystore.KeystoreService;
-				return yield* keystore.encrypt(testPrivateKey, testPassword, {
+				const result = yield* keystore.encrypt(testPrivateKey, testPassword, {
 					scryptN: 1024,
 				});
-			});
+				expect(result.version).toBe(3);
+				expect(result.crypto.cipher).toBe("aes-128-ctr");
+			}).pipe(Effect.provide(Keystore.KeystoreLive))
+		);
 
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Keystore.KeystoreLive)),
-			);
-
-			expect(result.version).toBe(3);
-			expect(result.crypto.cipher).toBe("aes-128-ctr");
-		});
-
-		it("provides decrypt through service layer", async () => {
-			const encrypted = await Effect.runPromise(
-				Keystore.encrypt(testPrivateKey, testPassword, {
+		it.effect("provides decrypt through service layer", () =>
+			Effect.gen(function* () {
+				const encrypted = yield* Keystore.encrypt(testPrivateKey, testPassword, {
 					scryptN: 1024,
-				}),
-			);
-
-			const program = Effect.gen(function* () {
+				});
 				const keystore = yield* Keystore.KeystoreService;
-				return yield* keystore.decrypt(encrypted, testPassword);
-			});
+				const result = yield* keystore.decrypt(encrypted, testPassword);
+				expect(result).toEqual(testPrivateKey);
+			}).pipe(Effect.provide(Keystore.KeystoreLive))
+		);
 
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Keystore.KeystoreLive)),
-			);
-
-			expect(result).toEqual(testPrivateKey);
-		});
-
-		it("test layer returns mock data", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("test layer returns mock data", () =>
+			Effect.gen(function* () {
 				const keystore = yield* Keystore.KeystoreService;
-				return yield* keystore.encrypt(testPrivateKey, testPassword);
-			});
-
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Keystore.KeystoreTest)),
-			);
-
-			expect(result.version).toBe(3);
-			expect(result.id).toBe("test-uuid");
-		});
+				const result = yield* keystore.encrypt(testPrivateKey, testPassword);
+				expect(result.version).toBe(3);
+				expect(result.id).toBe("test-uuid");
+			}).pipe(Effect.provide(Keystore.KeystoreTest))
+		);
 	});
 
 	describe("roundtrip", () => {
-		it("encrypts and decrypts with scrypt", async () => {
-			const encrypted = await Effect.runPromise(
-				Keystore.encrypt(testPrivateKey, testPassword, {
+		it.effect("encrypts and decrypts with scrypt", () =>
+			Effect.gen(function* () {
+				const encrypted = yield* Keystore.encrypt(testPrivateKey, testPassword, {
 					scryptN: 1024,
 					scryptR: 8,
 					scryptP: 1,
-				}),
-			);
+				});
+				const decrypted = yield* Keystore.decrypt(encrypted, testPassword);
+				expect(decrypted).toEqual(testPrivateKey);
+			})
+		);
 
-			const decrypted = await Effect.runPromise(
-				Keystore.decrypt(encrypted, testPassword),
-			);
-
-			expect(decrypted).toEqual(testPrivateKey);
-		});
-
-		it("encrypts and decrypts with pbkdf2", async () => {
-			const encrypted = await Effect.runPromise(
-				Keystore.encrypt(testPrivateKey, testPassword, {
+		it.effect("encrypts and decrypts with pbkdf2", () =>
+			Effect.gen(function* () {
+				const encrypted = yield* Keystore.encrypt(testPrivateKey, testPassword, {
 					kdf: "pbkdf2",
 					pbkdf2C: 1000,
-				}),
-			);
-
-			const decrypted = await Effect.runPromise(
-				Keystore.decrypt(encrypted, testPassword),
-			);
-
-			expect(decrypted).toEqual(testPrivateKey);
-		});
+				});
+				const decrypted = yield* Keystore.decrypt(encrypted, testPassword);
+				expect(decrypted).toEqual(testPrivateKey);
+			})
+		);
 	});
 });

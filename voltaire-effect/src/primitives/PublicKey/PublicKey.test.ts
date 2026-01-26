@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import * as PublicKey from "./index.js";
 
 const validUncompressedHex = `0x${"ab".repeat(64)}`;

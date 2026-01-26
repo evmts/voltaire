@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import { ChainService, type ChainConfig } from "./ChainService.js";
 import {
 	mainnet,
@@ -19,57 +19,42 @@ import {
 
 describe("ChainService", () => {
 	describe("mainnet", () => {
-		it("provides correct chain ID", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("provides correct chain ID", () =>
+			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				return chain.id;
-			}).pipe(Effect.provide(mainnet));
+				expect(chain.id).toBe(1);
+			}).pipe(Effect.provide(mainnet))
+		);
 
-			const result = await Effect.runPromise(program);
-			expect(result).toBe(1);
-		});
-
-		it("provides correct chain name", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("provides correct chain name", () =>
+			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				return chain.name;
-			}).pipe(Effect.provide(mainnet));
+				expect(chain.name).toBe("Ethereum");
+			}).pipe(Effect.provide(mainnet))
+		);
 
-			const result = await Effect.runPromise(program);
-			expect(result).toBe("Ethereum");
-		});
-
-		it("provides correct native currency", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("provides correct native currency", () =>
+			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				return chain.nativeCurrency;
-			}).pipe(Effect.provide(mainnet));
+				expect(chain.nativeCurrency).toEqual({ name: "Ether", symbol: "ETH", decimals: 18 });
+			}).pipe(Effect.provide(mainnet))
+		);
 
-			const result = await Effect.runPromise(program);
-			expect(result).toEqual({ name: "Ether", symbol: "ETH", decimals: 18 });
-		});
-
-		it("provides multicall3 contract address", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("provides multicall3 contract address", () =>
+			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				return chain.contracts?.multicall3;
-			}).pipe(Effect.provide(mainnet));
+				expect(chain.contracts?.multicall3?.address).toBe("0xca11bde05977b3631167028862be2a173976ca11");
+				expect(chain.contracts?.multicall3?.blockCreated).toBe(14_353_601);
+			}).pipe(Effect.provide(mainnet))
+		);
 
-			const result = await Effect.runPromise(program);
-			expect(result?.address).toBe("0xca11bde05977b3631167028862be2a173976ca11");
-			expect(result?.blockCreated).toBe(14_353_601);
-		});
-
-		it("provides block explorer", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("provides block explorer", () =>
+			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				return chain.blockExplorers?.default;
-			}).pipe(Effect.provide(mainnet));
-
-			const result = await Effect.runPromise(program);
-			expect(result?.name).toBe("Etherscan");
-			expect(result?.url).toBe("https://etherscan.io");
-		});
+				expect(chain.blockExplorers?.default?.name).toBe("Etherscan");
+				expect(chain.blockExplorers?.default?.url).toBe("https://etherscan.io");
+			}).pipe(Effect.provide(mainnet))
+		);
 
 		it("has correct block time", () => {
 			expect(mainnetConfig.blockTime).toBe(12_000);
@@ -81,25 +66,19 @@ describe("ChainService", () => {
 	});
 
 	describe("sepolia", () => {
-		it("provides correct chain ID", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("provides correct chain ID", () =>
+			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				return chain.id;
-			}).pipe(Effect.provide(sepolia));
+				expect(chain.id).toBe(11_155_111);
+			}).pipe(Effect.provide(sepolia))
+		);
 
-			const result = await Effect.runPromise(program);
-			expect(result).toBe(11_155_111);
-		});
-
-		it("is marked as testnet", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("is marked as testnet", () =>
+			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				return chain.testnet;
-			}).pipe(Effect.provide(sepolia));
-
-			const result = await Effect.runPromise(program);
-			expect(result).toBe(true);
-		});
+				expect(chain.testnet).toBe(true);
+			}).pipe(Effect.provide(sepolia))
+		);
 
 		it("has correct native currency", () => {
 			expect(sepoliaConfig.nativeCurrency).toEqual({
@@ -111,15 +90,12 @@ describe("ChainService", () => {
 	});
 
 	describe("arbitrum", () => {
-		it("provides correct chain ID", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("provides correct chain ID", () =>
+			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				return chain.id;
-			}).pipe(Effect.provide(arbitrum));
-
-			const result = await Effect.runPromise(program);
-			expect(result).toBe(42_161);
-		});
+				expect(chain.id).toBe(42_161);
+			}).pipe(Effect.provide(arbitrum))
+		);
 
 		it("has fast block time", () => {
 			expect(arbitrumConfig.blockTime).toBe(250);
@@ -132,15 +108,12 @@ describe("ChainService", () => {
 	});
 
 	describe("base", () => {
-		it("provides correct chain ID", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("provides correct chain ID", () =>
+			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				return chain.id;
-			}).pipe(Effect.provide(base));
-
-			const result = await Effect.runPromise(program);
-			expect(result).toBe(8453);
-		});
+				expect(chain.id).toBe(8453);
+			}).pipe(Effect.provide(base))
+		);
 
 		it("has 2 second block time", () => {
 			expect(baseConfig.blockTime).toBe(2_000);
@@ -154,15 +127,12 @@ describe("ChainService", () => {
 	});
 
 	describe("optimism", () => {
-		it("provides correct chain ID", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("provides correct chain ID", () =>
+			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				return chain.id;
-			}).pipe(Effect.provide(optimism));
-
-			const result = await Effect.runPromise(program);
-			expect(result).toBe(10);
-		});
+				expect(chain.id).toBe(10);
+			}).pipe(Effect.provide(optimism))
+		);
 
 		it("has correct chain name", () => {
 			expect(optimismConfig.name).toBe("OP Mainnet");
@@ -174,15 +144,12 @@ describe("ChainService", () => {
 	});
 
 	describe("polygon", () => {
-		it("provides correct chain ID", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("provides correct chain ID", () =>
+			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				return chain.id;
-			}).pipe(Effect.provide(polygon));
-
-			const result = await Effect.runPromise(program);
-			expect(result).toBe(137);
-		});
+				expect(chain.id).toBe(137);
+			}).pipe(Effect.provide(polygon))
+		);
 
 		it("has POL as native currency", () => {
 			expect(polygonConfig.nativeCurrency).toEqual({
@@ -198,25 +165,27 @@ describe("ChainService", () => {
 	});
 
 	describe("custom chain", () => {
-		it("allows creating custom chain layer", async () => {
-			const customConfig: ChainConfig = {
-				id: 99999,
-				name: "Custom Chain",
-				nativeCurrency: { name: "Custom", symbol: "CUST", decimals: 18 },
-				blockTime: 1_000,
-				rpcUrls: { default: { http: ["https://rpc.custom.io"] } },
-			};
+		it.effect("allows creating custom chain layer", () =>
+			Effect.gen(function* () {
+				const customConfig: ChainConfig = {
+					id: 99999,
+					name: "Custom Chain",
+					nativeCurrency: { name: "Custom", symbol: "CUST", decimals: 18 },
+					blockTime: 1_000,
+					rpcUrls: { default: { http: ["https://rpc.custom.io"] } },
+				};
 
-			const customChain = Layer.succeed(ChainService, customConfig);
+				const customChain = Layer.succeed(ChainService, customConfig);
 
-			const program = Effect.gen(function* () {
-				const chain = yield* ChainService;
-				return { id: chain.id, name: chain.name };
-			}).pipe(Effect.provide(customChain));
+				const program = Effect.gen(function* () {
+					const chain = yield* ChainService;
+					return { id: chain.id, name: chain.name };
+				}).pipe(Effect.provide(customChain));
 
-			const result = await Effect.runPromise(program);
-			expect(result).toEqual({ id: 99999, name: "Custom Chain" });
-		});
+				const result = yield* program;
+				expect(result).toEqual({ id: 99999, name: "Custom Chain" });
+			})
+		);
 	});
 
 	describe("config exports", () => {

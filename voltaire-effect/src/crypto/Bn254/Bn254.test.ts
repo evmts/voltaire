@@ -1,5 +1,5 @@
 import * as Effect from "effect/Effect";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import {
 	Bn254Live,
 	Bn254Service,
@@ -13,166 +13,119 @@ import {
 
 describe("Bn254Service", () => {
 	describe("Bn254Live", () => {
-		it("generates G1 generator point", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("generates G1 generator point", () =>
+			Effect.gen(function* () {
 				const bn254 = yield* Bn254Service;
-				return yield* bn254.g1Generator();
-			});
+				const result = yield* bn254.g1Generator();
+				expect(result).toHaveProperty("x");
+				expect(result).toHaveProperty("y");
+				expect(result).toHaveProperty("z");
+				expect(typeof result.x).toBe("bigint");
+			}).pipe(Effect.provide(Bn254Live))
+		);
 
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Bn254Live)),
-			);
-
-			expect(result).toHaveProperty("x");
-			expect(result).toHaveProperty("y");
-			expect(result).toHaveProperty("z");
-			expect(typeof result.x).toBe("bigint");
-		});
-
-		it("generates G2 generator point", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("generates G2 generator point", () =>
+			Effect.gen(function* () {
 				const bn254 = yield* Bn254Service;
-				return yield* bn254.g2Generator();
-			});
+				const result = yield* bn254.g2Generator();
+				expect(result).toHaveProperty("x");
+				expect(result).toHaveProperty("y");
+				expect(result).toHaveProperty("z");
+			}).pipe(Effect.provide(Bn254Live))
+		);
 
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Bn254Live)),
-			);
-
-			expect(result).toHaveProperty("x");
-			expect(result).toHaveProperty("y");
-			expect(result).toHaveProperty("z");
-		});
-
-		it("adds G1 points", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("adds G1 points", () =>
+			Effect.gen(function* () {
 				const bn254 = yield* Bn254Service;
 				const g1 = yield* bn254.g1Generator();
-				return yield* bn254.g1Add(g1, g1);
-			});
+				const result = yield* bn254.g1Add(g1, g1);
+				expect(result).toHaveProperty("x");
+			}).pipe(Effect.provide(Bn254Live))
+		);
 
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Bn254Live)),
-			);
-
-			expect(result).toHaveProperty("x");
-		});
-
-		it("multiplies G1 point by scalar", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("multiplies G1 point by scalar", () =>
+			Effect.gen(function* () {
 				const bn254 = yield* Bn254Service;
 				const g1 = yield* bn254.g1Generator();
-				return yield* bn254.g1Mul(g1, 5n);
-			});
+				const result = yield* bn254.g1Mul(g1, 5n);
+				expect(result).toHaveProperty("x");
+			}).pipe(Effect.provide(Bn254Live))
+		);
 
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Bn254Live)),
-			);
-
-			expect(result).toHaveProperty("x");
-		});
-
-		it("performs pairing check", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("performs pairing check", () =>
+			Effect.gen(function* () {
 				const bn254 = yield* Bn254Service;
 				const g1 = yield* bn254.g1Generator();
 				const g2 = yield* bn254.g2Generator();
 				const negG1 = yield* bn254.g1Mul(g1, -1n);
-				return yield* bn254.pairingCheck([
+				const result = yield* bn254.pairingCheck([
 					[g1, g2],
 					[negG1, g2],
 				]);
-			});
-
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Bn254Live)),
-			);
-
-			expect(typeof result).toBe("boolean");
-		});
+				expect(typeof result).toBe("boolean");
+			}).pipe(Effect.provide(Bn254Live))
+		);
 	});
 
 	describe("Bn254Test", () => {
-		it("returns mock G1 point", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("returns mock G1 point", () =>
+			Effect.gen(function* () {
 				const bn254 = yield* Bn254Service;
-				return yield* bn254.g1Generator();
-			});
+				const result = yield* bn254.g1Generator();
+				expect(result).toHaveProperty("x");
+				expect(result).toHaveProperty("y");
+			}).pipe(Effect.provide(Bn254Test))
+		);
 
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Bn254Test)),
-			);
-
-			expect(result).toHaveProperty("x");
-			expect(result).toHaveProperty("y");
-		});
-
-		it("returns true for pairing check", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("returns true for pairing check", () =>
+			Effect.gen(function* () {
 				const bn254 = yield* Bn254Service;
 				const g1 = yield* bn254.g1Generator();
 				const g2 = yield* bn254.g2Generator();
-				return yield* bn254.pairingCheck([[g1, g2]]);
-			});
-
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Bn254Test)),
-			);
-
-			expect(result).toBe(true);
-		});
+				const result = yield* bn254.pairingCheck([[g1, g2]]);
+				expect(result).toBe(true);
+			}).pipe(Effect.provide(Bn254Test))
+		);
 	});
 });
 
 describe("convenience functions", () => {
-	it("g1Generator works with service dependency", async () => {
-		const result = await Effect.runPromise(
-			g1Generator().pipe(Effect.provide(Bn254Live)),
-		);
-		expect(result).toHaveProperty("x");
-	});
+	it.effect("g1Generator works with service dependency", () =>
+		Effect.gen(function* () {
+			const result = yield* g1Generator();
+			expect(result).toHaveProperty("x");
+		}).pipe(Effect.provide(Bn254Live))
+	);
 
-	it("g2Generator works with service dependency", async () => {
-		const result = await Effect.runPromise(
-			g2Generator().pipe(Effect.provide(Bn254Live)),
-		);
-		expect(result).toHaveProperty("x");
-	});
+	it.effect("g2Generator works with service dependency", () =>
+		Effect.gen(function* () {
+			const result = yield* g2Generator();
+			expect(result).toHaveProperty("x");
+		}).pipe(Effect.provide(Bn254Live))
+	);
 
-	it("g1Add works with service dependency", async () => {
-		const program = Effect.gen(function* () {
+	it.effect("g1Add works with service dependency", () =>
+		Effect.gen(function* () {
 			const g1 = yield* g1Generator();
-			return yield* g1Add(g1, g1);
-		});
+			const result = yield* g1Add(g1, g1);
+			expect(result).toHaveProperty("x");
+		}).pipe(Effect.provide(Bn254Live))
+	);
 
-		const result = await Effect.runPromise(
-			program.pipe(Effect.provide(Bn254Live)),
-		);
-		expect(result).toHaveProperty("x");
-	});
-
-	it("g1Mul works with service dependency", async () => {
-		const program = Effect.gen(function* () {
+	it.effect("g1Mul works with service dependency", () =>
+		Effect.gen(function* () {
 			const g1 = yield* g1Generator();
-			return yield* g1Mul(g1, 3n);
-		});
+			const result = yield* g1Mul(g1, 3n);
+			expect(result).toHaveProperty("x");
+		}).pipe(Effect.provide(Bn254Live))
+	);
 
-		const result = await Effect.runPromise(
-			program.pipe(Effect.provide(Bn254Live)),
-		);
-		expect(result).toHaveProperty("x");
-	});
-
-	it("pairingCheck works with service dependency", async () => {
-		const program = Effect.gen(function* () {
+	it.effect("pairingCheck works with service dependency", () =>
+		Effect.gen(function* () {
 			const g1 = yield* g1Generator();
 			const g2 = yield* g2Generator();
-			return yield* pairingCheck([[g1, g2]]);
-		});
-
-		const result = await Effect.runPromise(
-			program.pipe(Effect.provide(Bn254Live)),
-		);
-		expect(typeof result).toBe("boolean");
-	});
+			const result = yield* pairingCheck([[g1, g2]]);
+			expect(typeof result).toBe("boolean");
+		}).pipe(Effect.provide(Bn254Live))
+	);
 });

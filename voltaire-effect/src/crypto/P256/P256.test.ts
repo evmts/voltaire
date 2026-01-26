@@ -2,7 +2,7 @@ import { Hash } from "@tevm/voltaire";
 import * as VoltaireP256 from "@tevm/voltaire/P256";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import * as P256Effect from "./index.js";
 
 describe("P256", () => {
@@ -12,35 +12,30 @@ describe("P256", () => {
 	const testMessageHash = Hash.from(testMessageHashBytes);
 
 	describe("sign", () => {
-		it("signs a message hash with a private key", async () => {
-			const result = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, testPrivateKey),
-			);
+		it.effect("signs a message hash with a private key", () =>
+			Effect.gen(function* () {
+				const result = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				expect(result).toHaveProperty("r");
+				expect(result).toHaveProperty("s");
+				expect(result.r.length).toBe(32);
+				expect(result.s.length).toBe(32);
+			})
+		);
 
-			expect(result).toHaveProperty("r");
-			expect(result).toHaveProperty("s");
-			expect(result.r.length).toBe(32);
-			expect(result.s.length).toBe(32);
-		});
-
-		it("produces deterministic signatures (RFC 6979)", async () => {
-			const sig1 = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, testPrivateKey),
-			);
-			const sig2 = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, testPrivateKey),
-			);
-
-			expect(sig1.r).toEqual(sig2.r);
-			expect(sig1.s).toEqual(sig2.s);
-		});
+		it.effect("produces deterministic signatures (RFC 6979)", () =>
+			Effect.gen(function* () {
+				const sig1 = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const sig2 = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				expect(sig1.r).toEqual(sig2.r);
+				expect(sig1.s).toEqual(sig2.s);
+			})
+		);
 
 		it("fails with wrong key length (16 bytes)", async () => {
 			const wrongKey = new Uint8Array(16);
 			const exit = await Effect.runPromiseExit(
 				P256Effect.sign(testMessageHash, wrongKey),
 			);
-
 			expect(Exit.isFailure(exit)).toBe(true);
 		});
 
@@ -49,7 +44,6 @@ describe("P256", () => {
 			const exit = await Effect.runPromiseExit(
 				P256Effect.sign(testMessageHash, longKey),
 			);
-
 			expect(Exit.isFailure(exit)).toBe(true);
 		});
 
@@ -58,7 +52,6 @@ describe("P256", () => {
 			const exit = await Effect.runPromiseExit(
 				P256Effect.sign(testMessageHash, emptyKey),
 			);
-
 			expect(Exit.isFailure(exit)).toBe(true);
 		});
 
@@ -67,395 +60,284 @@ describe("P256", () => {
 			const exit = await Effect.runPromiseExit(
 				P256Effect.sign(testMessageHash, zeroKey),
 			);
-
 			expect(Exit.isFailure(exit)).toBe(true);
 		});
 
-		it("produces different signatures for different messages", async () => {
-			const hash1 = Hash.from(new Uint8Array(32).fill(0x11));
-			const hash2 = Hash.from(new Uint8Array(32).fill(0x22));
+		it.effect("produces different signatures for different messages", () =>
+			Effect.gen(function* () {
+				const hash1 = Hash.from(new Uint8Array(32).fill(0x11));
+				const hash2 = Hash.from(new Uint8Array(32).fill(0x22));
+				const sig1 = yield* P256Effect.sign(hash1, testPrivateKey);
+				const sig2 = yield* P256Effect.sign(hash2, testPrivateKey);
+				expect(sig1.r).not.toEqual(sig2.r);
+			})
+		);
 
-			const sig1 = await Effect.runPromise(
-				P256Effect.sign(hash1, testPrivateKey),
-			);
-			const sig2 = await Effect.runPromise(
-				P256Effect.sign(hash2, testPrivateKey),
-			);
+		it.effect("produces different signatures for different keys", () =>
+			Effect.gen(function* () {
+				const key1 = VoltaireP256.randomPrivateKey();
+				const key2 = VoltaireP256.randomPrivateKey();
+				const sig1 = yield* P256Effect.sign(testMessageHash, key1);
+				const sig2 = yield* P256Effect.sign(testMessageHash, key2);
+				expect(sig1.r).not.toEqual(sig2.r);
+			})
+		);
 
-			expect(sig1.r).not.toEqual(sig2.r);
-		});
+		it.effect("handles all-ones private key (clamped)", () =>
+			Effect.gen(function* () {
+				const onesKey = new Uint8Array(32).fill(0xff);
+				onesKey[0] = 0x7f;
+				const result = yield* P256Effect.sign(testMessageHash, onesKey);
+				expect(result).toHaveProperty("r");
+				expect(result).toHaveProperty("s");
+			})
+		);
 
-		it("produces different signatures for different keys", async () => {
-			const key1 = VoltaireP256.randomPrivateKey();
-			const key2 = VoltaireP256.randomPrivateKey();
+		it.effect("handles minimum valid private key", () =>
+			Effect.gen(function* () {
+				const minKey = new Uint8Array(32);
+				minKey[31] = 1;
+				const result = yield* P256Effect.sign(testMessageHash, minKey);
+				expect(result).toHaveProperty("r");
+				expect(result).toHaveProperty("s");
+			})
+		);
 
-			const sig1 = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, key1),
-			);
-			const sig2 = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, key2),
-			);
+		it.effect("handles zero message hash", () =>
+			Effect.gen(function* () {
+				const zeroHash = Hash.from(new Uint8Array(32));
+				const result = yield* P256Effect.sign(zeroHash, testPrivateKey);
+				expect(result).toHaveProperty("r");
+				expect(result).toHaveProperty("s");
+			})
+		);
 
-			expect(sig1.r).not.toEqual(sig2.r);
-		});
-
-		it("handles all-ones private key (clamped)", async () => {
-			const onesKey = new Uint8Array(32).fill(0xff);
-			onesKey[0] = 0x7f;
-
-			const result = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, onesKey),
-			);
-
-			expect(result).toHaveProperty("r");
-			expect(result).toHaveProperty("s");
-		});
-
-		it("handles minimum valid private key", async () => {
-			const minKey = new Uint8Array(32);
-			minKey[31] = 1;
-
-			const result = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, minKey),
-			);
-
-			expect(result).toHaveProperty("r");
-			expect(result).toHaveProperty("s");
-		});
-
-		it("handles zero message hash", async () => {
-			const zeroHash = Hash.from(new Uint8Array(32));
-
-			const result = await Effect.runPromise(
-				P256Effect.sign(zeroHash, testPrivateKey),
-			);
-
-			expect(result).toHaveProperty("r");
-			expect(result).toHaveProperty("s");
-		});
-
-		it("handles max message hash (all 0xff)", async () => {
-			const maxHash = Hash.from(new Uint8Array(32).fill(0xff));
-
-			const result = await Effect.runPromise(
-				P256Effect.sign(maxHash, testPrivateKey),
-			);
-
-			expect(result).toHaveProperty("r");
-			expect(result).toHaveProperty("s");
-		});
+		it.effect("handles max message hash (all 0xff)", () =>
+			Effect.gen(function* () {
+				const maxHash = Hash.from(new Uint8Array(32).fill(0xff));
+				const result = yield* P256Effect.sign(maxHash, testPrivateKey);
+				expect(result).toHaveProperty("r");
+				expect(result).toHaveProperty("s");
+			})
+		);
 	});
 
 	describe("verify", () => {
-		it("verifies a valid signature", async () => {
-			const signature = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, testPrivateKey),
-			);
-
-			const isValid = await Effect.runPromise(
-				P256Effect.verify(signature, testMessageHash, testPublicKey),
-			);
-
-			expect(isValid).toBe(true);
-		});
-
-		it("returns false for wrong message hash", async () => {
-			const signature = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, testPrivateKey),
-			);
-			const wrongHash = Hash.from(new Uint8Array(32).fill(0xff));
-
-			const isValid = await Effect.runPromise(
-				P256Effect.verify(signature, wrongHash, testPublicKey),
-			);
-
-			expect(isValid).toBe(false);
-		});
-
-		it("returns false for wrong public key", async () => {
-			const signature = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, testPrivateKey),
-			);
-			const otherKey = VoltaireP256.randomPrivateKey();
-			const wrongPublicKey = VoltaireP256.derivePublicKey(otherKey);
-
-			const isValid = await Effect.runPromise(
-				P256Effect.verify(signature, testMessageHash, wrongPublicKey),
-			);
-
-			expect(isValid).toBe(false);
-		});
-
-		it("returns false for tampered r value", async () => {
-			const signature = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, testPrivateKey),
-			);
-
-			const tamperedR = new Uint8Array(signature.r);
-			tamperedR[0] ^= 0xff;
-			const tamperedSig = {
-				...signature,
-				r: tamperedR,
-			};
-
-			const isValid = await Effect.runPromise(
-				P256Effect.verify(tamperedSig as any, testMessageHash, testPublicKey),
-			);
-
-			expect(isValid).toBe(false);
-		});
-
-		it("returns false for tampered s value", async () => {
-			const signature = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, testPrivateKey),
-			);
-
-			const tamperedS = new Uint8Array(signature.s);
-			tamperedS[0] ^= 0xff;
-			const tamperedSig = {
-				...signature,
-				s: tamperedS,
-			};
-
-			const isValid = await Effect.runPromise(
-				P256Effect.verify(tamperedSig as any, testMessageHash, testPublicKey),
-			);
-
-			expect(isValid).toBe(false);
-		});
-
-		it("returns false for zero r value", async () => {
-			const signature = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, testPrivateKey),
-			);
-
-			const zeroSig = {
-				...signature,
-				r: new Uint8Array(32),
-			};
-
-			const isValid = await Effect.runPromise(
-				P256Effect.verify(zeroSig as any, testMessageHash, testPublicKey),
-			);
-
-			expect(isValid).toBe(false);
-		});
-
-		it("returns false for zero s value", async () => {
-			const signature = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, testPrivateKey),
-			);
-
-			const zeroSig = {
-				...signature,
-				s: new Uint8Array(32),
-			};
-
-			const isValid = await Effect.runPromise(
-				P256Effect.verify(zeroSig as any, testMessageHash, testPublicKey),
-			);
-
-			expect(isValid).toBe(false);
-		});
-
-		it("verifies signatures from multiple different keys", async () => {
-			for (let i = 0; i < 5; i++) {
-				const privateKey = VoltaireP256.randomPrivateKey();
-				const publicKey = VoltaireP256.derivePublicKey(privateKey);
-				const hash = Hash.from(new Uint8Array(32).fill(i));
-
-				const sig = await Effect.runPromise(P256Effect.sign(hash, privateKey));
-
-				const isValid = await Effect.runPromise(
-					P256Effect.verify(sig, hash, publicKey),
-				);
-
+		it.effect("verifies a valid signature", () =>
+			Effect.gen(function* () {
+				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const isValid = yield* P256Effect.verify(signature, testMessageHash, testPublicKey);
 				expect(isValid).toBe(true);
-			}
-		});
+			})
+		);
+
+		it.effect("returns false for wrong message hash", () =>
+			Effect.gen(function* () {
+				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const wrongHash = Hash.from(new Uint8Array(32).fill(0xff));
+				const isValid = yield* P256Effect.verify(signature, wrongHash, testPublicKey);
+				expect(isValid).toBe(false);
+			})
+		);
+
+		it.effect("returns false for wrong public key", () =>
+			Effect.gen(function* () {
+				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const otherKey = VoltaireP256.randomPrivateKey();
+				const wrongPublicKey = VoltaireP256.derivePublicKey(otherKey);
+				const isValid = yield* P256Effect.verify(signature, testMessageHash, wrongPublicKey);
+				expect(isValid).toBe(false);
+			})
+		);
+
+		it.effect("returns false for tampered r value", () =>
+			Effect.gen(function* () {
+				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const tamperedR = new Uint8Array(signature.r);
+				tamperedR[0] ^= 0xff;
+				const tamperedSig = { ...signature, r: tamperedR };
+				const isValid = yield* P256Effect.verify(tamperedSig as any, testMessageHash, testPublicKey);
+				expect(isValid).toBe(false);
+			})
+		);
+
+		it.effect("returns false for tampered s value", () =>
+			Effect.gen(function* () {
+				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const tamperedS = new Uint8Array(signature.s);
+				tamperedS[0] ^= 0xff;
+				const tamperedSig = { ...signature, s: tamperedS };
+				const isValid = yield* P256Effect.verify(tamperedSig as any, testMessageHash, testPublicKey);
+				expect(isValid).toBe(false);
+			})
+		);
+
+		it.effect("returns false for zero r value", () =>
+			Effect.gen(function* () {
+				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const zeroSig = { ...signature, r: new Uint8Array(32) };
+				const isValid = yield* P256Effect.verify(zeroSig as any, testMessageHash, testPublicKey);
+				expect(isValid).toBe(false);
+			})
+		);
+
+		it.effect("returns false for zero s value", () =>
+			Effect.gen(function* () {
+				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const zeroSig = { ...signature, s: new Uint8Array(32) };
+				const isValid = yield* P256Effect.verify(zeroSig as any, testMessageHash, testPublicKey);
+				expect(isValid).toBe(false);
+			})
+		);
+
+		it.effect("verifies signatures from multiple different keys", () =>
+			Effect.gen(function* () {
+				for (let i = 0; i < 5; i++) {
+					const privateKey = VoltaireP256.randomPrivateKey();
+					const publicKey = VoltaireP256.derivePublicKey(privateKey);
+					const hash = Hash.from(new Uint8Array(32).fill(i));
+					const sig = yield* P256Effect.sign(hash, privateKey);
+					const isValid = yield* P256Effect.verify(sig, hash, publicKey);
+					expect(isValid).toBe(true);
+				}
+			})
+		);
 	});
 
 	describe("Full Round Trip", () => {
-		it("sign-verify round trip with random key", async () => {
-			const privateKey = VoltaireP256.randomPrivateKey();
-			const publicKey = VoltaireP256.derivePublicKey(privateKey);
-			const messageHash = Hash.from(new Uint8Array(32).fill(0xcd));
+		it.effect("sign-verify round trip with random key", () =>
+			Effect.gen(function* () {
+				const privateKey = VoltaireP256.randomPrivateKey();
+				const publicKey = VoltaireP256.derivePublicKey(privateKey);
+				const messageHash = Hash.from(new Uint8Array(32).fill(0xcd));
+				const signature = yield* P256Effect.sign(messageHash, privateKey);
+				const isValid = yield* P256Effect.verify(signature, messageHash, publicKey);
+				expect(isValid).toBe(true);
+			})
+		);
 
-			const signature = await Effect.runPromise(
-				P256Effect.sign(messageHash, privateKey),
-			);
+		it.effect("sign-verify with zero hash", () =>
+			Effect.gen(function* () {
+				const privateKey = VoltaireP256.randomPrivateKey();
+				const publicKey = VoltaireP256.derivePublicKey(privateKey);
+				const zeroHash = Hash.from(new Uint8Array(32));
+				const signature = yield* P256Effect.sign(zeroHash, privateKey);
+				const isValid = yield* P256Effect.verify(signature, zeroHash, publicKey);
+				expect(isValid).toBe(true);
+			})
+		);
 
-			const isValid = await Effect.runPromise(
-				P256Effect.verify(signature, messageHash, publicKey),
-			);
-
-			expect(isValid).toBe(true);
-		});
-
-		it("sign-verify with zero hash", async () => {
-			const privateKey = VoltaireP256.randomPrivateKey();
-			const publicKey = VoltaireP256.derivePublicKey(privateKey);
-			const zeroHash = Hash.from(new Uint8Array(32));
-
-			const signature = await Effect.runPromise(
-				P256Effect.sign(zeroHash, privateKey),
-			);
-
-			const isValid = await Effect.runPromise(
-				P256Effect.verify(signature, zeroHash, publicKey),
-			);
-
-			expect(isValid).toBe(true);
-		});
-
-		it("sign-verify with max hash", async () => {
-			const privateKey = VoltaireP256.randomPrivateKey();
-			const publicKey = VoltaireP256.derivePublicKey(privateKey);
-			const maxHash = Hash.from(new Uint8Array(32).fill(0xff));
-
-			const signature = await Effect.runPromise(
-				P256Effect.sign(maxHash, privateKey),
-			);
-
-			const isValid = await Effect.runPromise(
-				P256Effect.verify(signature, maxHash, publicKey),
-			);
-
-			expect(isValid).toBe(true);
-		});
+		it.effect("sign-verify with max hash", () =>
+			Effect.gen(function* () {
+				const privateKey = VoltaireP256.randomPrivateKey();
+				const publicKey = VoltaireP256.derivePublicKey(privateKey);
+				const maxHash = Hash.from(new Uint8Array(32).fill(0xff));
+				const signature = yield* P256Effect.sign(maxHash, privateKey);
+				const isValid = yield* P256Effect.verify(signature, maxHash, publicKey);
+				expect(isValid).toBe(true);
+			})
+		);
 	});
 
 	describe("P256Service", () => {
-		it("provides sign through service layer", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("provides sign through service layer", () =>
+			Effect.gen(function* () {
 				const p256 = yield* P256Effect.P256Service;
-				return yield* p256.sign(testMessageHash, testPrivateKey);
-			});
+				const result = yield* p256.sign(testMessageHash, testPrivateKey);
+				expect(result).toHaveProperty("r");
+				expect(result).toHaveProperty("s");
+			}).pipe(Effect.provide(P256Effect.P256Live))
+		);
 
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(P256Effect.P256Live)),
-			);
-
-			expect(result).toHaveProperty("r");
-			expect(result).toHaveProperty("s");
-		});
-
-		it("provides verify through service layer", async () => {
-			const signature = await Effect.runPromise(
-				P256Effect.sign(testMessageHash, testPrivateKey),
-			);
-
-			const program = Effect.gen(function* () {
+		it.effect("provides verify through service layer", () =>
+			Effect.gen(function* () {
+				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
 				const p256 = yield* P256Effect.P256Service;
-				return yield* p256.verify(signature, testMessageHash, testPublicKey);
-			});
+				const result = yield* p256.verify(signature, testMessageHash, testPublicKey);
+				expect(result).toBe(true);
+			}).pipe(Effect.provide(P256Effect.P256Live))
+		);
 
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(P256Effect.P256Live)),
-			);
-
-			expect(result).toBe(true);
-		});
-
-		it("sign-verify through service layer", async () => {
-			const program = Effect.gen(function* () {
+		it.effect("sign-verify through service layer", () =>
+			Effect.gen(function* () {
 				const p256 = yield* P256Effect.P256Service;
 				const sig = yield* p256.sign(testMessageHash, testPrivateKey);
-				return yield* p256.verify(sig, testMessageHash, testPublicKey);
-			});
-
-			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(P256Effect.P256Live)),
-			);
-
-			expect(result).toBe(true);
-		});
+				const result = yield* p256.verify(sig, testMessageHash, testPublicKey);
+				expect(result).toBe(true);
+			}).pipe(Effect.provide(P256Effect.P256Live))
+		);
 
 		it("handles error in service layer", async () => {
 			const zeroKey = new Uint8Array(32);
-
 			const program = Effect.gen(function* () {
 				const p256 = yield* P256Effect.P256Service;
 				return yield* p256.sign(testMessageHash, zeroKey);
 			});
-
 			const exit = await Effect.runPromiseExit(
 				program.pipe(Effect.provide(P256Effect.P256Live)),
 			);
-
 			expect(Exit.isFailure(exit)).toBe(true);
 		});
 	});
 
 	describe("Edge Cases", () => {
-		it("signature r and s are exactly 32 bytes", async () => {
-			for (let i = 0; i < 10; i++) {
-				const privateKey = VoltaireP256.randomPrivateKey();
-				const hash = Hash.from(new Uint8Array(32).fill(i));
+		it.effect("signature r and s are exactly 32 bytes", () =>
+			Effect.gen(function* () {
+				for (let i = 0; i < 10; i++) {
+					const privateKey = VoltaireP256.randomPrivateKey();
+					const hash = Hash.from(new Uint8Array(32).fill(i));
+					const sig = yield* P256Effect.sign(hash, privateKey);
+					expect(sig.r.length).toBe(32);
+					expect(sig.s.length).toBe(32);
+				}
+			})
+		);
 
-				const sig = await Effect.runPromise(P256Effect.sign(hash, privateKey));
-
-				expect(sig.r.length).toBe(32);
-				expect(sig.s.length).toBe(32);
-			}
-		});
-
-		it("public key derivation is deterministic", async () => {
+		it("public key derivation is deterministic", () => {
 			const privateKey = VoltaireP256.randomPrivateKey();
-
 			const pubKey1 = VoltaireP256.derivePublicKey(privateKey);
 			const pubKey2 = VoltaireP256.derivePublicKey(privateKey);
-
 			expect(pubKey1).toEqual(pubKey2);
 		});
 
-		it("different private keys produce different public keys", async () => {
+		it("different private keys produce different public keys", () => {
 			const key1 = VoltaireP256.randomPrivateKey();
 			const key2 = VoltaireP256.randomPrivateKey();
-
 			const pubKey1 = VoltaireP256.derivePublicKey(key1);
 			const pubKey2 = VoltaireP256.derivePublicKey(key2);
-
 			expect(pubKey1).not.toEqual(pubKey2);
 		});
 
-		it("accepts Uint8Array message hash (not just Hash type)", async () => {
-			const rawHash = new Uint8Array(32).fill(0xef);
-
-			const result = await Effect.runPromise(
-				P256Effect.sign(rawHash, testPrivateKey),
-			);
-
-			expect(result).toHaveProperty("r");
-			expect(result).toHaveProperty("s");
-
-			const isValid = await Effect.runPromise(
-				P256Effect.verify(result, rawHash, testPublicKey),
-			);
-
-			expect(isValid).toBe(true);
-		});
+		it.effect("accepts Uint8Array message hash (not just Hash type)", () =>
+			Effect.gen(function* () {
+				const rawHash = new Uint8Array(32).fill(0xef);
+				const result = yield* P256Effect.sign(rawHash, testPrivateKey);
+				expect(result).toHaveProperty("r");
+				expect(result).toHaveProperty("s");
+				const isValid = yield* P256Effect.verify(result, rawHash, testPublicKey);
+				expect(isValid).toBe(true);
+			})
+		);
 	});
 
 	describe("Known Vectors", () => {
-		it("produces consistent signatures for same inputs", async () => {
-			const privateKey = VoltaireP256.randomPrivateKey();
-			const hash = Hash.from(new Uint8Array(32).fill(0x42));
+		it.effect("produces consistent signatures for same inputs", () =>
+			Effect.gen(function* () {
+				const privateKey = VoltaireP256.randomPrivateKey();
+				const hash = Hash.from(new Uint8Array(32).fill(0x42));
+				const sig1 = yield* P256Effect.sign(hash, privateKey);
+				const sig2 = yield* P256Effect.sign(hash, privateKey);
+				const sig3 = yield* P256Effect.sign(hash, privateKey);
+				expect(sig1.r).toEqual(sig2.r);
+				expect(sig1.s).toEqual(sig2.s);
+				expect(sig2.r).toEqual(sig3.r);
+				expect(sig2.s).toEqual(sig3.s);
+			})
+		);
 
-			const sig1 = await Effect.runPromise(P256Effect.sign(hash, privateKey));
-			const sig2 = await Effect.runPromise(P256Effect.sign(hash, privateKey));
-			const sig3 = await Effect.runPromise(P256Effect.sign(hash, privateKey));
-
-			expect(sig1.r).toEqual(sig2.r);
-			expect(sig1.s).toEqual(sig2.s);
-			expect(sig2.r).toEqual(sig3.r);
-			expect(sig2.s).toEqual(sig3.s);
-		});
-
-		it("validates random key generation produces valid keys", async () => {
+		it("validates random key generation produces valid keys", () => {
 			for (let i = 0; i < 5; i++) {
 				const privateKey = VoltaireP256.randomPrivateKey();
-
 				expect(privateKey.length).toBe(32);
 				expect(VoltaireP256.validatePrivateKey(privateKey)).toBe(true);
 			}

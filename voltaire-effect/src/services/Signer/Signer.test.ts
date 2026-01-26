@@ -7,7 +7,7 @@ import * as Hash from "@tevm/voltaire/Hash";
 import type { HashType } from "@tevm/voltaire/Hash";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 
 type AddressType = BrandedAddress.AddressType;
 type HexType = BrandedHex.HexType;

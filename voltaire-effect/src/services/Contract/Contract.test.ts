@@ -1,7 +1,7 @@
 import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { ProviderService } from "../Provider/index.js";
 import { SignerService } from "../Signer/index.js";
 import { Contract } from "./Contract.js";
