@@ -1,5 +1,5 @@
 {
-	"installCommand": "curl -fsSL https://ziglang.org/download/0.15.1/zig-x86_64-linux-0.15.1.tar.xz -o zig.tar.xz && tar -xJf zig.tar.xz && rm zig.tar.xz && export PATH=$PWD/zig-x86_64-linux-0.15.1:$PATH && pnpm install",
-	"buildCommand": "export PATH=$PWD/zig-x86_64-linux-0.15.1:$PATH && pnpm run build",
+	"installCommand": "curl -fsSL https://ziglang.org/download/0.15.1/zig-x86_64-linux-0.15.1.tar.xz -o zig.tar.xz && tar -xJf zig.tar.xz && rm zig.tar.xz && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && pnpm install",
+	"buildCommand": "export PATH=$PWD/zig-x86_64-linux-0.15.1:$HOME/.cargo/bin:$PATH && pnpm run build",
 	"outputDirectory": "dist"
 }
