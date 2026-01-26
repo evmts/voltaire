@@ -399,8 +399,9 @@ import {
   SignerService, Signer, 
   Contract,
   HttpTransport, WebSocketTransport, BrowserTransport,
-  LocalAccount, MnemonicAccount, JsonRpcAccount
+  LocalAccount, JsonRpcAccount
 } from 'voltaire-effect/services'
+import { MnemonicAccount } from 'voltaire-effect/native'
 
 // Crypto
 import { 

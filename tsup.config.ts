@@ -95,8 +95,6 @@ const pureJsEntries = [
 	"src/contract/index.ts",
 	"src/transaction/index.ts",
 	"src/stream/index.ts",
-	// Wallet
-	"src/wallet/index.ts",
 	// Additional crypto modules (pure JS)
 	"src/crypto/AesGcm/index.ts",
 	"src/crypto/Bls12381/index.ts",

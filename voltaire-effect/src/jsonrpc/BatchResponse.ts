@@ -2,10 +2,10 @@ import * as Effect from "effect/Effect";
 import { JsonRpcParseError } from "./errors.js";
 import type { JsonRpcIdType } from "./Request.js";
 import {
-	from as responseFrom,
 	isError,
 	type JsonRpcErrorResponseType,
 	type JsonRpcResponseType,
+	from as responseFrom,
 } from "./Response.js";
 
 export type BatchResponseType = readonly JsonRpcResponseType[];

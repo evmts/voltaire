@@ -41,7 +41,11 @@ export const encrypt = (
 	key: Uint8Array,
 	nonce: Uint8Array,
 	additionalData?: Uint8Array,
-): Effect.Effect<Uint8Array, InvalidKeyError | InvalidNonceError, ChaCha20Poly1305Service> =>
+): Effect.Effect<
+	Uint8Array,
+	InvalidKeyError | InvalidNonceError,
+	ChaCha20Poly1305Service
+> =>
 	Effect.gen(function* () {
 		const service = yield* ChaCha20Poly1305Service;
 		return yield* service.encrypt(plaintext, key, nonce, additionalData);
@@ -82,7 +86,11 @@ export const decrypt = (
 	key: Uint8Array,
 	nonce: Uint8Array,
 	additionalData?: Uint8Array,
-): Effect.Effect<Uint8Array, InvalidKeyError | InvalidNonceError, ChaCha20Poly1305Service> =>
+): Effect.Effect<
+	Uint8Array,
+	InvalidKeyError | InvalidNonceError,
+	ChaCha20Poly1305Service
+> =>
 	Effect.gen(function* () {
 		const service = yield* ChaCha20Poly1305Service;
 		return yield* service.decrypt(ciphertext, key, nonce, additionalData);

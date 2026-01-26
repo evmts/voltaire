@@ -1,16 +1,16 @@
 import * as HttpClient from "@effect/platform/HttpClient";
 import type * as HttpClientRequest from "@effect/platform/HttpClientRequest";
 import type * as HttpClientResponse from "@effect/platform/HttpClientResponse";
+import { describe, expect, it, vi } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it, vi } from "@effect/vitest";
 import {
 	DeduplicatedTransport,
 	HttpTransport,
 	TransportService,
+	withoutCache,
 	withRetries,
 	withTimeout,
-	withoutCache,
 } from "./index.js";
 
 const createMockHttpClientLayer = (
@@ -64,12 +64,15 @@ describe("Transport FiberRef overrides", () => {
 
 		const program = Effect.gen(function* () {
 			const transport = yield* TransportService;
-			const [defaultResult, overrideResult] = yield* Effect.all([
-				transport.request<string>("eth_chainId", []).pipe(Effect.either),
-				transport
-					.request<string>("eth_chainId", [])
-					.pipe(withTimeout(50), Effect.either),
-			], { concurrency: "unbounded" });
+			const [defaultResult, overrideResult] = yield* Effect.all(
+				[
+					transport.request<string>("eth_chainId", []).pipe(Effect.either),
+					transport
+						.request<string>("eth_chainId", [])
+						.pipe(withTimeout(50), Effect.either),
+				],
+				{ concurrency: "unbounded" },
+			);
 			return { defaultResult, overrideResult };
 		}).pipe(
 			Effect.provide(
@@ -134,11 +137,14 @@ describe("Transport FiberRef overrides", () => {
 
 		const program = Effect.gen(function* () {
 			const svc = yield* TransportService;
-			yield* Effect.all([
-				svc.request<string>("eth_chainId").pipe(withoutCache),
-				svc.request<string>("eth_chainId"),
-				svc.request<string>("eth_chainId"),
-			], { concurrency: "unbounded" });
+			yield* Effect.all(
+				[
+					svc.request<string>("eth_chainId").pipe(withoutCache),
+					svc.request<string>("eth_chainId"),
+					svc.request<string>("eth_chainId"),
+				],
+				{ concurrency: "unbounded" },
+			);
 			return callCount;
 		}).pipe(Effect.provide(transport), Effect.scoped);
 
@@ -146,4 +152,3 @@ describe("Transport FiberRef overrides", () => {
 		expect(count).toBe(2);
 	});
 });
-

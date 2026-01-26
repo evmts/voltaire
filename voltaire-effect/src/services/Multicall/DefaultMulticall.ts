@@ -15,14 +15,11 @@
  * @see {@link ProviderService} - Required for making the eth_call
  */
 
-import {
-	decodeParameters,
-	encodeParameters,
-} from "@tevm/voltaire/Abi";
+import { decodeParameters, encodeParameters } from "@tevm/voltaire/Abi";
 import * as Hex from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { ProviderService, type BlockTag } from "../Provider/ProviderService.js";
+import { type BlockTag, ProviderService } from "../Provider/ProviderService.js";
 import {
 	type MulticallCall,
 	MulticallError,
@@ -83,7 +80,10 @@ const encodeAggregate3 = (calls: readonly MulticallCall[]): `0x${string}` => {
 	}));
 
 	// biome-ignore lint/suspicious/noExplicitAny: ABI encoding requires dynamic type casting
-	const encoded = encodeParameters(AGGREGATE3_INPUT_PARAMS as any, [tuples] as any);
+	const encoded = encodeParameters(
+		AGGREGATE3_INPUT_PARAMS as any,
+		[tuples] as any,
+	);
 
 	const encodedHex = Hex.fromBytes(encoded);
 	return `${AGGREGATE3_SELECTOR}${encodedHex.slice(2)}` as `0x${string}`;
@@ -97,7 +97,10 @@ const decodeAggregate3 = (data: `0x${string}`): readonly MulticallResult[] => {
 	// biome-ignore lint/suspicious/noExplicitAny: ABI decoding requires dynamic type casting
 	const decoded = decodeParameters(AGGREGATE3_OUTPUT_PARAMS as any, bytes);
 
-	const results = decoded[0] as readonly { success: boolean; returnData: Uint8Array | `0x${string}` }[];
+	const results = decoded[0] as readonly {
+		success: boolean;
+		returnData: Uint8Array | `0x${string}`;
+	}[];
 
 	return results.map((result) => ({
 		success: result.success,

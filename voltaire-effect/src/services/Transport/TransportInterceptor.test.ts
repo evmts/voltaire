@@ -1,16 +1,16 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
-import { describe, expect, it, vi } from "@effect/vitest";
 import {
+	DeduplicatedTransport,
+	InterceptedTransport,
 	TestTransport,
+	TransportError,
 	TransportService,
-	withRequestInterceptor,
-	withResponseInterceptor,
 	withErrorInterceptor,
 	withInterceptors,
-	InterceptedTransport,
-	DeduplicatedTransport,
-	TransportError,
+	withRequestInterceptor,
+	withResponseInterceptor,
 } from "./index.js";
 
 describe("TransportInterceptor", () => {
@@ -179,13 +179,13 @@ describe("TransportInterceptor", () => {
 
 describe("DeduplicatedTransport", () => {
 	it("deduplicates identical concurrent requests", async () => {
-		let requestCount = 0;
-		const mockTransport = TestTransport(
+		let _requestCount = 0;
+		const _mockTransport = TestTransport(
 			new Map([
 				[
 					"eth_blockNumber",
 					Effect.sync(() => {
-						requestCount++;
+						_requestCount++;
 						return "0x100";
 					}),
 				],
@@ -209,7 +209,9 @@ describe("DeduplicatedTransport", () => {
 
 			return [r1, r2];
 		}).pipe(
-			Effect.provide(DeduplicatedTransport(TestTransport({ eth_blockNumber: "0x100" }))),
+			Effect.provide(
+				DeduplicatedTransport(TestTransport({ eth_blockNumber: "0x100" })),
+			),
 		);
 
 		const [r1, r2] = await Effect.runPromise(program);
@@ -308,8 +310,12 @@ describe("DeduplicatedTransport", () => {
 		const program = Effect.gen(function* () {
 			const transport = yield* TransportService;
 
-			const fiber1 = yield* Effect.fork(transport.request<string>("eth_call", []));
-			const fiber2 = yield* Effect.fork(transport.request<string>("eth_call", []));
+			const fiber1 = yield* Effect.fork(
+				transport.request<string>("eth_call", []),
+			);
+			const fiber2 = yield* Effect.fork(
+				transport.request<string>("eth_call", []),
+			);
 
 			const exit1 = yield* Fiber.await(fiber1);
 			const exit2 = yield* Fiber.await(fiber2);

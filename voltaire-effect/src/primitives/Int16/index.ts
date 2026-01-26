@@ -61,23 +61,20 @@
  * @since 0.1.0
  */
 
-// Schemas
-export { String } from "./String.js";
-export { Number } from "./Number.js";
-export { BigInt } from "./BigInt.js";
-
-// Pure functions
-export { sub } from "./sub.js";
-export { mul } from "./mul.js";
-export { div } from "./div.js";
-export { negate } from "./negate.js";
 export { abs } from "./abs.js";
+export { BigInt } from "./BigInt.js";
 export { compare } from "./compare.js";
-export { isZero } from "./isZero.js";
-export { isNegative } from "./isNegative.js";
-
 // Constants
-export { INT16_MIN, INT16_MAX } from "./constants.js";
-
+export { INT16_MAX, INT16_MIN } from "./constants.js";
+export { div } from "./div.js";
 // Type
 export type { Int16Type } from "./Int16Schema.js";
+export { isNegative } from "./isNegative.js";
+export { isZero } from "./isZero.js";
+export { mul } from "./mul.js";
+export { Number } from "./Number.js";
+export { negate } from "./negate.js";
+// Schemas
+export { String } from "./String.js";
+// Pure functions
+export { sub } from "./sub.js";

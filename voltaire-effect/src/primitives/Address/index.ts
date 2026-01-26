@@ -64,17 +64,19 @@
  * @since 0.1.0
  */
 
+// Re-export AddressType from voltaire
+export type { AddressType } from "@tevm/voltaire/Address";
+export { AddressTypeSchema } from "./AddressSchema.js";
 // Schemas
 export { Bytes } from "./Bytes.js";
 export { Checksummed } from "./Checksummed.js";
-export { Hex } from "./Hex.js";
-export { AddressTypeSchema } from "./AddressSchema.js";
 
 // Pure functions
 export { clone } from "./clone.js";
 export { compare } from "./compare.js";
 export { equals } from "./equals.js";
 export { greaterThan } from "./greaterThan.js";
+export { Hex } from "./Hex.js";
 export { isValid } from "./isValid.js";
 export { isValidChecksum } from "./isValidChecksum.js";
 export { isZero } from "./isZero.js";
@@ -85,6 +87,3 @@ export { toLowercase } from "./toLowercase.js";
 export { toShortHex } from "./toShortHex.js";
 export { toU256 } from "./toU256.js";
 export { toUppercase } from "./toUppercase.js";
-
-// Re-export AddressType from voltaire
-export type { AddressType } from "@tevm/voltaire/Address";

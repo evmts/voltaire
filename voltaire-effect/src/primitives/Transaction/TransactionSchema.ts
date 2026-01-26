@@ -28,10 +28,8 @@
  * @see {@link EIP7702Schema} - Schema for EIP-7702 set code transactions
  */
 
-import type { AddressType } from "@tevm/voltaire/Address";
 import type { HashType } from "@tevm/voltaire/Hash";
 import * as VoltaireTransaction from "@tevm/voltaire/Transaction";
-import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
 import { Hex as AddressSchema } from "../Address/Hex.js";
 import type {

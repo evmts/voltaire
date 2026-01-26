@@ -30,15 +30,15 @@ import * as FiberRef from "effect/FiberRef";
 import * as Layer from "effect/Layer";
 import * as Schedule from "effect/Schedule";
 import { type BatchOptions, createBatchScheduler } from "./BatchScheduler.js";
-import { timeoutRef, retryCountRef, tracingRef } from "./config.js";
+import { retryCountRef, timeoutRef, tracingRef } from "./config.js";
 import { nextId } from "./IdGenerator.js";
+import { TransportError } from "./TransportError.js";
 import {
 	onRequestRef,
 	onResponseRef,
 	type RpcRequest,
 	type RpcResponse,
 } from "./TransportInterceptor.js";
-import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
 
 /**
@@ -275,7 +275,11 @@ export const HttpTransport = (
 			);
 		}
 		if (config.fetch) {
-			result = Effect.provideService(result, FetchHttpClient.Fetch, config.fetch);
+			result = Effect.provideService(
+				result,
+				FetchHttpClient.Fetch,
+				config.fetch,
+			);
 		}
 		return result;
 	};
@@ -371,7 +375,9 @@ export const HttpTransport = (
 				const retryOverride = yield* FiberRef.get(retryCountRef);
 				const tracingEnabled = yield* FiberRef.get(tracingRef);
 				const timeoutMs = timeoutOverride ?? config.timeout;
-				const retrySchedule = makeRetrySchedule(retryOverride ?? config.retries);
+				const retrySchedule = makeRetrySchedule(
+					retryOverride ?? config.retries,
+				);
 
 				if (tracingEnabled) {
 					yield* Effect.logDebug(
@@ -461,10 +467,9 @@ export const HttpTransport = (
 						Effect.gen(function* () {
 							const request = yield* applyRequestHooks({ method, params });
 							const startTime = Date.now();
-							const result = yield* scheduler.schedule<T>(
-								request.method,
-								[...request.params],
-							);
+							const result = yield* scheduler.schedule<T>(request.method, [
+								...request.params,
+							]);
 							const response = yield* applyResponseHooks({
 								method: request.method,
 								params: request.params,
@@ -502,7 +507,9 @@ export const HttpTransport = (
 						const retryOverride = yield* FiberRef.get(retryCountRef);
 						const tracingEnabled = yield* FiberRef.get(tracingRef);
 						const timeoutMs = timeoutOverride ?? config.timeout;
-						const retrySchedule = makeRetrySchedule(retryOverride ?? config.retries);
+						const retrySchedule = makeRetrySchedule(
+							retryOverride ?? config.retries,
+						);
 						const request = yield* applyRequestHooks({ method, params });
 						const startTime = Date.now();
 						const id = yield* nextId;

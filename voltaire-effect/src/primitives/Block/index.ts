@@ -42,9 +42,9 @@
  * @since 0.1.0
  */
 
+export { BlockSchema, BlockSchema as Schema } from "./BlockSchema.js";
 // Schemas
 export { Rpc } from "./Rpc.js";
-export { BlockSchema, BlockSchema as Schema } from "./BlockSchema.js";
 
 // Re-export types from voltaire
 import type { Block } from "@tevm/voltaire";

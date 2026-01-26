@@ -1,9 +1,13 @@
-import type { BrandedAddress, BrandedHex, BrandedSignature } from "@tevm/voltaire";
+import { describe, expect, it } from "@effect/vitest";
+import type {
+	BrandedAddress,
+	BrandedHex,
+	BrandedSignature,
+} from "@tevm/voltaire";
 import type { HashType } from "@tevm/voltaire/Hash";
 import * as Hash from "@tevm/voltaire/Hash";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
 import type { AccountShape } from "../../Account/AccountService.js";
 import { AccountService } from "../../Account/index.js";
 import { ProviderService, type ProviderShape } from "../../Provider/index.js";
@@ -23,7 +27,7 @@ const mockSignature = Object.assign(new Uint8Array(65).fill(0x12), {
 	algorithm: "secp256k1" as const,
 	v: 27,
 }) as SignatureType;
-const mockPublicKey = ("0x04" + "00".repeat(64)) as HexType;
+const mockPublicKey = `0x04${"00".repeat(64)}` as HexType;
 const mockTxHashHex =
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const mockTxHash: HashType = Hash.fromHex(mockTxHashHex);
@@ -70,8 +74,8 @@ const mockAccount: AccountShape = {
 			address: "0x0000000000000000000000000000000000000001" as `0x${string}`,
 			nonce: 0n,
 			yParity: 0,
-			r: ("0x" + "00".repeat(32)) as `0x${string}`,
-			s: ("0x" + "00".repeat(32)) as `0x${string}`,
+			r: `0x${"00".repeat(32)}` as `0x${string}`,
+			s: `0x${"00".repeat(32)}` as `0x${string}`,
 		}),
 	clearKey: () => Effect.void,
 };

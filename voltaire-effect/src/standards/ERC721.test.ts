@@ -1,6 +1,6 @@
+import { describe, expect, it } from "@effect/vitest";
 import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { describe, expect, it } from "@effect/vitest";
 import * as ERC721 from "./ERC721.js";
 
 const testAddress = Address("0x1234567890123456789012345678901234567890");
@@ -131,12 +131,16 @@ describe("ERC721", () => {
 
 	describe("encodeBalanceOf", () => {
 		it("encodes balanceOf calldata", async () => {
-			const result = await Effect.runPromise(ERC721.encodeBalanceOf(testAddress));
+			const result = await Effect.runPromise(
+				ERC721.encodeBalanceOf(testAddress),
+			);
 			expect(result).toMatch(/^0x70a08231/);
 		});
 
 		it("encodes balanceOf calldata length", async () => {
-			const result = await Effect.runPromise(ERC721.encodeBalanceOf(testAddress));
+			const result = await Effect.runPromise(
+				ERC721.encodeBalanceOf(testAddress),
+			);
 			expect(result.length).toBe(74);
 		});
 	});
@@ -180,7 +184,9 @@ describe("ERC721", () => {
 
 	describe("encodeTokenURI", () => {
 		it("encodes tokenURI calldata", async () => {
-			const result = await Effect.runPromise(ERC721.encodeTokenURI(testTokenId));
+			const result = await Effect.runPromise(
+				ERC721.encodeTokenURI(testTokenId),
+			);
 			expect(result).toMatch(/^0xc87b56dd/);
 		});
 	});
@@ -209,7 +215,9 @@ describe("ERC721", () => {
 				data: "0x",
 			};
 
-			const result = await Effect.runPromiseExit(ERC721.decodeTransferEvent(log));
+			const result = await Effect.runPromiseExit(
+				ERC721.decodeTransferEvent(log),
+			);
 			expect(result._tag).toBe("Failure");
 		});
 	});
@@ -228,7 +236,9 @@ describe("ERC721", () => {
 
 			const result = await Effect.runPromise(ERC721.decodeApprovalEvent(log));
 			expect(result.owner).toBe("0x1234567890123456789012345678901234567890");
-			expect(result.approved).toBe("0x0987654321098765432109876543210987654321");
+			expect(result.approved).toBe(
+				"0x0987654321098765432109876543210987654321",
+			);
 			expect(result.tokenId).toBe(42n);
 		});
 	});
@@ -248,7 +258,9 @@ describe("ERC721", () => {
 				ERC721.decodeApprovalForAllEvent(log),
 			);
 			expect(result.owner).toBe("0x1234567890123456789012345678901234567890");
-			expect(result.operator).toBe("0x0987654321098765432109876543210987654321");
+			expect(result.operator).toBe(
+				"0x0987654321098765432109876543210987654321",
+			);
 			expect(result.approved).toBe(true);
 		});
 
@@ -273,14 +285,18 @@ describe("ERC721", () => {
 		it("decodes balanceOf return value", async () => {
 			const data =
 				"0x000000000000000000000000000000000000000000000000000000000000002a";
-			const result = await Effect.runPromise(ERC721.decodeBalanceOfResult(data));
+			const result = await Effect.runPromise(
+				ERC721.decodeBalanceOfResult(data),
+			);
 			expect(result).toBe(42n);
 		});
 
 		it("decodes zero balance", async () => {
 			const data =
 				"0x0000000000000000000000000000000000000000000000000000000000000000";
-			const result = await Effect.runPromise(ERC721.decodeBalanceOfResult(data));
+			const result = await Effect.runPromise(
+				ERC721.decodeBalanceOfResult(data),
+			);
 			expect(result).toBe(0n);
 		});
 	});
@@ -289,14 +305,18 @@ describe("ERC721", () => {
 		it("decodes getApproved return value", async () => {
 			const data =
 				"0x0000000000000000000000001234567890123456789012345678901234567890";
-			const result = await Effect.runPromise(ERC721.decodeGetApprovedResult(data));
+			const result = await Effect.runPromise(
+				ERC721.decodeGetApprovedResult(data),
+			);
 			expect(result).toBe("0x1234567890123456789012345678901234567890");
 		});
 
 		it("decodes zero address", async () => {
 			const data =
 				"0x0000000000000000000000000000000000000000000000000000000000000000";
-			const result = await Effect.runPromise(ERC721.decodeGetApprovedResult(data));
+			const result = await Effect.runPromise(
+				ERC721.decodeGetApprovedResult(data),
+			);
 			expect(result).toBe("0x0000000000000000000000000000000000000000");
 		});
 	});

@@ -43,7 +43,10 @@
  * @see {@link ProviderService} - Required dependency
  */
 
-export { DefaultFeeEstimator, makeFeeEstimator } from "./DefaultFeeEstimator.js";
+export {
+	DefaultFeeEstimator,
+	makeFeeEstimator,
+} from "./DefaultFeeEstimator.js";
 export {
 	FeeEstimationError,
 	FeeEstimatorService,

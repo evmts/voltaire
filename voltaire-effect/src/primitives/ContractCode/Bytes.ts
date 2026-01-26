@@ -8,6 +8,7 @@ import { ContractCode } from "@tevm/voltaire";
 
 type ContractCodeType = ReturnType<typeof ContractCode.from>;
 const voltaireFrom = ContractCode.from;
+
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
 

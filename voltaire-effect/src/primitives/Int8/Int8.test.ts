@@ -1,7 +1,7 @@
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
-import * as Int8 from "./index.js";
 import { BrandedInt8 } from "@tevm/voltaire";
+import * as S from "effect/Schema";
+import * as Int8 from "./index.js";
 
 const INT8_MIN = -128;
 const INT8_MAX = 127;

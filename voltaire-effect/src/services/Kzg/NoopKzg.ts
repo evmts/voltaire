@@ -48,8 +48,7 @@ export const NoopKzg = Layer.succeed(KzgService, {
 		Effect.fail(
 			new KzgError({
 				operation: "blobToCommitment",
-				message:
-					"KZG not available. Use DefaultKzg layer for KZG operations.",
+				message: "KZG not available. Use DefaultKzg layer for KZG operations.",
 			}),
 		),
 
@@ -57,8 +56,7 @@ export const NoopKzg = Layer.succeed(KzgService, {
 		Effect.fail(
 			new KzgError({
 				operation: "computeProof",
-				message:
-					"KZG not available. Use DefaultKzg layer for KZG operations.",
+				message: "KZG not available. Use DefaultKzg layer for KZG operations.",
 			}),
 		),
 
@@ -71,8 +69,7 @@ export const NoopKzg = Layer.succeed(KzgService, {
 		Effect.fail(
 			new KzgError({
 				operation: "verifyProof",
-				message:
-					"KZG not available. Use DefaultKzg layer for KZG operations.",
+				message: "KZG not available. Use DefaultKzg layer for KZG operations.",
 			}),
 		),
 });

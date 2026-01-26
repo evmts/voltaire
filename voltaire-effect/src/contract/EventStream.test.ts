@@ -2,15 +2,19 @@
  * @fileoverview Tests for EventStreamService.
  */
 
+import { describe, expect, it } from "@effect/vitest";
+import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";
-import { describe, expect, it, vi } from "@effect/vitest";
-import { TransportService, TransportError, type TransportShape } from "../services/Transport/index.js";
-import { EventStreamService } from "./EventStreamService.js";
+import {
+	TransportError,
+	TransportService,
+	type TransportShape,
+} from "../services/Transport/index.js";
 import { EventStream } from "./EventStream.js";
 import { EventStreamError } from "./EventStreamError.js";
-import { Address } from "@tevm/voltaire";
+import { EventStreamService } from "./EventStreamService.js";
 
 const transferEvent = {
 	type: "event",
@@ -68,7 +72,9 @@ describe("EventStreamService", () => {
 		it("preserves cause chain", () => {
 			const rootCause = new Error("root");
 			const intermediateCause = new Error("intermediate", { cause: rootCause });
-			const error = new EventStreamError("top level", { cause: intermediateCause });
+			const error = new EventStreamError("top level", {
+				cause: intermediateCause,
+			});
 			expect(error.cause).toBe(intermediateCause);
 			expect((error.cause as Error).cause).toBe(rootCause);
 		});
@@ -83,12 +89,17 @@ describe("EventStreamService", () => {
 	describe("EventStream layer", () => {
 		it("provides EventStreamService from TransportService", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(_method: string, _params?: unknown[]): Effect.Effect<T, never> =>
-					Effect.succeed("0x1" as T),
+				request: <T>(
+					_method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => Effect.succeed("0x1" as T),
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -104,7 +115,10 @@ describe("EventStreamService", () => {
 		it("backfill returns a Stream", async () => {
 			let blockNumberCalls = 0;
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
 					if (method === "eth_blockNumber") {
 						blockNumberCalls++;
 						return Effect.succeed("0x1234567" as T);
@@ -117,7 +131,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -139,7 +156,8 @@ describe("EventStreamService", () => {
 		it("backfill yields decoded events", async () => {
 			const mockLog = {
 				address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-				blockHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				blockHash:
+					"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				blockNumber: "0x64",
 				data: "0x0000000000000000000000000000000000000000000000000000000000000064",
 				logIndex: "0x0",
@@ -149,12 +167,16 @@ describe("EventStreamService", () => {
 					"0x000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 					"0x000000000000000000000000bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 				],
-				transactionHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+				transactionHash:
+					"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 				transactionIndex: "0x0",
 			};
 
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x1234567" as T);
 					}
@@ -166,7 +188,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -189,7 +214,10 @@ describe("EventStreamService", () => {
 
 		it("watch returns a Stream", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x1234567" as T);
 					}
@@ -201,7 +229,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -217,7 +248,10 @@ describe("EventStreamService", () => {
 
 		it("backfill handles empty log results", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x100" as T);
 					}
@@ -229,7 +263,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -249,7 +286,8 @@ describe("EventStreamService", () => {
 		it("backfill with filter object", async () => {
 			const mockLog = {
 				address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-				blockHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				blockHash:
+					"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				blockNumber: "0x64",
 				data: "0x0000000000000000000000000000000000000000000000000000000000000064",
 				logIndex: "0x0",
@@ -259,13 +297,17 @@ describe("EventStreamService", () => {
 					"0x000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 					"0x000000000000000000000000bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 				],
-				transactionHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+				transactionHash:
+					"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 				transactionIndex: "0x0",
 			};
 
 			let getLogsParams: unknown[] | undefined;
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					params?: unknown[],
+				): Effect.Effect<T, never> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x1234567" as T);
 					}
@@ -278,7 +320,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -304,19 +349,30 @@ describe("EventStreamService", () => {
 	describe("error handling", () => {
 		it("wraps transport errors as EventStreamError", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, TransportError> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, TransportError> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x100" as T);
 					}
 					if (method === "eth_getLogs") {
-						return Effect.fail(new TransportError({ code: -32000, message: "RPC connection failed" }));
+						return Effect.fail(
+							new TransportError({
+								code: -32000,
+								message: "RPC connection failed",
+							}),
+						);
 					}
 					return Effect.succeed(null as T);
 				},
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -336,7 +392,8 @@ describe("EventStreamService", () => {
 		it("handles malformed log data gracefully", async () => {
 			const malformedLog = {
 				address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-				blockHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				blockHash:
+					"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				blockNumber: "0x64",
 				data: "0x00",
 				logIndex: "0x0",
@@ -344,12 +401,16 @@ describe("EventStreamService", () => {
 				topics: [
 					"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
 				],
-				transactionHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+				transactionHash:
+					"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 				transactionIndex: "0x0",
 			};
 
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x1234567" as T);
 					}
@@ -361,7 +422,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -383,7 +447,10 @@ describe("EventStreamService", () => {
 		it("stream can be consumed incrementally", async () => {
 			let requestCount = 0;
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
 					requestCount++;
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x100" as T);
@@ -396,7 +463,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -415,7 +485,10 @@ describe("EventStreamService", () => {
 
 		it("multiple streams can run concurrently", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x100" as T);
 					}
@@ -427,7 +500,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -461,7 +537,8 @@ describe("EventStreamService", () => {
 
 	describe("exports", () => {
 		it("exports from index", async () => {
-			const { EventStream, EventStreamError, EventStreamService } = await import("./index.js");
+			const { EventStream, EventStreamError, EventStreamService } =
+				await import("./index.js");
 			expect(EventStream).toBeDefined();
 			expect(EventStreamError).toBeDefined();
 			expect(EventStreamService).toBeDefined();
@@ -472,7 +549,8 @@ describe("EventStreamService", () => {
 		it("processes logs with removed: true flag from RPC", async () => {
 			const removedLog = {
 				address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-				blockHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				blockHash:
+					"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				blockNumber: "0x64",
 				data: "0x0000000000000000000000000000000000000000000000000000000000000064",
 				logIndex: "0x0",
@@ -482,12 +560,16 @@ describe("EventStreamService", () => {
 					"0x000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 					"0x000000000000000000000000bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 				],
-				transactionHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+				transactionHash:
+					"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 				transactionIndex: "0x0",
 			};
 
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x1234567" as T);
 					}
@@ -499,7 +581,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -524,7 +609,8 @@ describe("EventStreamService", () => {
 		it("handles unknown topics gracefully", async () => {
 			const unknownTopicLog = {
 				address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-				blockHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				blockHash:
+					"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				blockNumber: "0x64",
 				data: "0x0000000000000000000000000000000000000000000000000000000000000064",
 				logIndex: "0x0",
@@ -533,12 +619,16 @@ describe("EventStreamService", () => {
 					"0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
 					"0x000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 				],
-				transactionHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+				transactionHash:
+					"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
 				transactionIndex: "0x0",
 			};
 
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x1234567" as T);
 					}
@@ -550,7 +640,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -571,7 +664,10 @@ describe("EventStreamService", () => {
 	describe("range edge cases", () => {
 		it("handles fromBlock > toBlock", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x1234567" as T);
 					}
@@ -583,7 +679,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -604,16 +703,27 @@ describe("EventStreamService", () => {
 	describe("transport error propagation", () => {
 		it("propagates eth_blockNumber transport errors as EventStreamError", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, TransportError> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, TransportError> => {
 					if (method === "eth_blockNumber") {
-						return Effect.fail(new TransportError({ code: -32000, message: "eth_blockNumber failed" }));
+						return Effect.fail(
+							new TransportError({
+								code: -32000,
+								message: "eth_blockNumber failed",
+							}),
+						);
 					}
 					return Effect.succeed(null as T);
 				},
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -632,19 +742,30 @@ describe("EventStreamService", () => {
 
 		it("propagates eth_getLogs transport errors correctly", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, TransportError> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, TransportError> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x100" as T);
 					}
 					if (method === "eth_getLogs") {
-						return Effect.fail(new TransportError({ code: -32000, message: "eth_getLogs failed" }));
+						return Effect.fail(
+							new TransportError({
+								code: -32000,
+								message: "eth_getLogs failed",
+							}),
+						);
 					}
 					return Effect.succeed(null as T);
 				},
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -666,7 +787,10 @@ describe("EventStreamService", () => {
 		it("handles empty log array response", async () => {
 			let getLogsCalled = false;
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x100" as T);
 					}
@@ -679,7 +803,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;
@@ -701,7 +828,10 @@ describe("EventStreamService", () => {
 	describe("invalid filter handling", () => {
 		it("handles invalid filter address format", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					_params?: unknown[],
+				): Effect.Effect<T, never> => {
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x100" as T);
 					}
@@ -713,7 +843,10 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer);
+			const TestEventStreamLayer = Layer.provide(
+				EventStream,
+				TestTransportLayer,
+			);
 
 			const program = Effect.gen(function* () {
 				const eventStream = yield* EventStreamService;

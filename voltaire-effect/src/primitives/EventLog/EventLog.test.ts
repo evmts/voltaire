@@ -1,5 +1,5 @@
-import * as Schema from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
+import * as Schema from "effect/Schema";
 import * as EventLog from "./index.js";
 
 describe("EventLog.Rpc", () => {
@@ -40,7 +40,11 @@ describe("EventLog.Rpc", () => {
 	it("accepts 3 topics (LOG3)", () => {
 		const input = {
 			address: "0x1234567890123456789012345678901234567890",
-			topics: [`0x${"ab".repeat(32)}`, `0x${"cd".repeat(32)}`, `0x${"ef".repeat(32)}`],
+			topics: [
+				`0x${"ab".repeat(32)}`,
+				`0x${"cd".repeat(32)}`,
+				`0x${"ef".repeat(32)}`,
+			],
 			data: new Uint8Array(0),
 		};
 		const result = Schema.decodeSync(EventLog.Rpc)(input);
@@ -50,7 +54,12 @@ describe("EventLog.Rpc", () => {
 	it("accepts 4 topics (LOG4)", () => {
 		const input = {
 			address: "0x1234567890123456789012345678901234567890",
-			topics: [`0x${"ab".repeat(32)}`, `0x${"cd".repeat(32)}`, `0x${"ef".repeat(32)}`, `0x${"12".repeat(32)}`],
+			topics: [
+				`0x${"ab".repeat(32)}`,
+				`0x${"cd".repeat(32)}`,
+				`0x${"ef".repeat(32)}`,
+				`0x${"12".repeat(32)}`,
+			],
 			data: new Uint8Array(0),
 		};
 		const result = Schema.decodeSync(EventLog.Rpc)(input);

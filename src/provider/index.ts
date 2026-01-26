@@ -84,11 +84,11 @@ export type {
 export { StateManagerHost } from "./StateManagerHost.js";
 // Schemas
 export type {
+	BlockOverrides,
 	DerivedRpcSchema,
 	RpcSchemaOverride,
-	VoltaireRpcSchema,
-	BlockOverrides,
 	StateOverride,
+	VoltaireRpcSchema,
 } from "./schemas/index.js";
 // Strongly-typed provider types
 export type { EIP1193Provider, TypedProvider } from "./TypedProvider.js";

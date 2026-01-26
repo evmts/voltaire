@@ -18,6 +18,6 @@ export {
 	EventLogSchema,
 	type EventLogType,
 	EventLogTypeSchema,
-	Schema,
 	Rpc,
+	Schema,
 } from "./Rpc.js";

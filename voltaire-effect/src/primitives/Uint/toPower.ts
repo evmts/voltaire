@@ -23,5 +23,7 @@ import { Uint256, type Type as Uint256Type } from "@tevm/voltaire/Uint";
  *
  * @since 0.0.1
  */
-export const toPower = (base: Uint256Type, exponent: Uint256Type): Uint256Type =>
-	Uint256.toPower(base, exponent);
+export const toPower = (
+	base: Uint256Type,
+	exponent: Uint256Type,
+): Uint256Type => Uint256.toPower(base, exponent);

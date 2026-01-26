@@ -4,10 +4,9 @@
  * @since 0.0.1
  */
 
-import * as Effect from "effect/Effect";
-import { ProviderService } from "../ProviderService.js";
-import { EnsError } from "./EnsError.js";
-import { ENS_UNIVERSAL_RESOLVER_ADDRESS } from "./constants.js";
+import type * as Effect from "effect/Effect";
+import type { ProviderService } from "../ProviderService.js";
+import type { EnsError } from "./EnsError.js";
 import { getEnsText } from "./getEnsText.js";
 
 /**

@@ -1,11 +1,11 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
+import { TransportError } from "../../Transport/TransportError.js";
 import {
 	TransportService,
 	type TransportShape,
 } from "../../Transport/TransportService.js";
-import { TransportError } from "../../Transport/TransportError.js";
 import { getPermissions, type Permission } from "./getPermissions.js";
 
 const mockPermissions: Permission[] = [
@@ -57,16 +57,16 @@ describe("getPermissions", () => {
 	});
 
 	it("returns multiple permissions", async () => {
-	const multiplePermissions: Permission[] = [
-		{
-			invoker: "https://example.com",
-			parentCapability: "eth_accounts",
-		},
-		{
-			invoker: "https://example.com",
-			parentCapability: "eth_chainId",
-		},
-	];
+		const multiplePermissions: Permission[] = [
+			{
+				invoker: "https://example.com",
+				parentCapability: "eth_accounts",
+			},
+			{
+				invoker: "https://example.com",
+				parentCapability: "eth_chainId",
+			},
+		];
 
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>

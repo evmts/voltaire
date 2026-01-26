@@ -1,10 +1,11 @@
+import { describe, expect, it } from "@effect/vitest";
 import { Address } from "@tevm/voltaire";
 import { HDWallet } from "@tevm/voltaire/native";
 import * as Effect from "effect/Effect";
-import { describe, expect, it } from "@effect/vitest";
 import { KeccakLive } from "../../crypto/Keccak256/index.js";
 import { Secp256k1Live } from "../../crypto/Secp256k1/index.js";
-import { AccountService, MnemonicAccount } from "./index.js";
+import { MnemonicAccount } from "./fromMnemonic.js";
+import { AccountService } from "./index.js";
 
 const TEST_MNEMONIC =
 	"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -46,7 +47,7 @@ describe("MnemonicAccount", () => {
 			const base = yield* makeAccount();
 			expect(base.deriveChild).toBeDefined();
 
-			const child = yield* base.deriveChild!(1);
+			const child = yield* base.deriveChild?.(1);
 			const direct = yield* makeAccount({ addressIndex: 1 });
 
 			expect(Address.toHex(child.address)).toBe(Address.toHex(direct.address));
@@ -56,7 +57,7 @@ describe("MnemonicAccount", () => {
 	it.effect("supports hardened child derivation", () =>
 		Effect.gen(function* () {
 			const base = yield* makeAccount();
-			const hardened = yield* base.deriveChild!(HDWallet.HARDENED_OFFSET);
+			const hardened = yield* base.deriveChild?.(HDWallet.HARDENED_OFFSET);
 			expect(hardened.hdKey).toBeDefined();
 			expect(hardened.hdKey?.startsWith("xpub")).toBe(true);
 		}),

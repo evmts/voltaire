@@ -4,35 +4,35 @@ import {
 	Anvil,
 	BatchRequest,
 	BatchResponse,
+	CHAIN_DISCONNECTED,
+	DISCONNECTED,
 	Eth,
+	EXECUTION_REVERTED,
+	ExecutionRevertedError,
 	Hardhat,
+	INSUFFICIENT_FUNDS,
+	InsufficientFundsError,
+	isDisconnected,
+	isExecutionReverted,
+	isInsufficientFunds,
+	isNonceError,
+	isProviderError,
+	isUserRejected,
 	JsonRpcError,
 	JsonRpcParseError,
 	Net,
+	NONCE_TOO_HIGH,
+	NONCE_TOO_LOW,
+	NonceTooHighError,
+	NonceTooLowError,
+	parseErrorCode,
 	Request,
-	resetId,
 	Response,
+	resetId,
 	Txpool,
+	USER_REJECTED_REQUEST,
 	Wallet,
 	Web3,
-	ExecutionRevertedError,
-	InsufficientFundsError,
-	NonceTooLowError,
-	NonceTooHighError,
-	parseErrorCode,
-	isUserRejected,
-	isDisconnected,
-	isProviderError,
-	isExecutionReverted,
-	isNonceError,
-	isInsufficientFunds,
-	USER_REJECTED_REQUEST,
-	DISCONNECTED,
-	CHAIN_DISCONNECTED,
-	EXECUTION_REVERTED,
-	INSUFFICIENT_FUNDS,
-	NONCE_TOO_LOW,
-	NONCE_TOO_HIGH,
 } from "./index.js";
 
 describe("JsonRpc", () => {
@@ -387,13 +387,19 @@ describe("JsonRpc", () => {
 			const batch = await Effect.runPromise(program);
 			const findById = BatchResponse.findById(batch);
 			const response = findById(2);
-			expect(response && "result" in response ? response.result : undefined).toBe("0x2");
+			expect(
+				response && "result" in response ? response.result : undefined,
+			).toBe("0x2");
 		});
 
 		it("errors returns only error responses", async () => {
 			const raw = [
 				{ jsonrpc: "2.0", id: 1, result: "0x1" },
-				{ jsonrpc: "2.0", id: 2, error: { code: -32601, message: "Not found" } },
+				{
+					jsonrpc: "2.0",
+					id: 2,
+					error: { code: -32601, message: "Not found" },
+				},
 			];
 
 			const program = BatchResponse.parse(raw);
@@ -437,10 +443,12 @@ describe("JsonRpc", () => {
 			const batch = await Effect.runPromise(BatchResponse.parse(raw));
 			const findById = BatchResponse.findById(batch);
 			const response = findById(1);
-			expect(response && "result" in response ? response.result : undefined).toBe("0x1");
-			});
+			expect(
+				response && "result" in response ? response.result : undefined,
+			).toBe("0x1");
+		});
 
-			it("findById with null id", async () => {
+		it("findById with null id", async () => {
 			const raw = [
 				{ jsonrpc: "2.0", id: null, result: "0x1" },
 				{ jsonrpc: "2.0", id: 2, result: "0x2" },
@@ -449,10 +457,12 @@ describe("JsonRpc", () => {
 			const batch = await Effect.runPromise(BatchResponse.parse(raw));
 			const findById = BatchResponse.findById(batch);
 			const response = findById(null);
-			expect(response && "result" in response ? response.result : undefined).toBe("0x1");
-			});
+			expect(
+				response && "result" in response ? response.result : undefined,
+			).toBe("0x1");
+		});
 
-			it("findById with string id", async () => {
+		it("findById with string id", async () => {
 			const raw = [
 				{ jsonrpc: "2.0", id: "req-1", result: "0x1" },
 				{ jsonrpc: "2.0", id: "req-2", result: "0x2" },
@@ -461,11 +471,13 @@ describe("JsonRpc", () => {
 			const batch = await Effect.runPromise(BatchResponse.parse(raw));
 			const findById = BatchResponse.findById(batch);
 			const response = findById("req-2");
-			expect(response && "result" in response ? response.result : undefined).toBe("0x2");
-			});
-			});
+			expect(
+				response && "result" in response ? response.result : undefined,
+			).toBe("0x2");
+		});
+	});
 
-			describe("Eth namespace", () => {
+	describe("Eth namespace", () => {
 		it("creates GetBalanceRequest", () => {
 			const req = Eth.GetBalanceRequest("0x1234", "latest");
 			expect(req.method).toBe("eth_getBalance");

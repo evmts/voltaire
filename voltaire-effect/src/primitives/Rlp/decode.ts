@@ -19,7 +19,10 @@ export interface Decoded {
 
 const isRlpDecodingError = (e: unknown): e is RlpDecodingError =>
 	e instanceof RlpDecodingErrorClass ||
-	(e !== null && typeof e === "object" && "name" in e && e.name === "RlpDecodingError");
+	(e !== null &&
+		typeof e === "object" &&
+		"name" in e &&
+		e.name === "RlpDecodingError");
 
 /**
  * RLP-decodes bytes using Effect for error handling.
@@ -48,5 +51,7 @@ export const decode = (
 		catch: (e) =>
 			isRlpDecodingError(e)
 				? e
-				: new RlpDecodingErrorClass("RLP decoding failed", { cause: e instanceof Error ? e : undefined }),
+				: new RlpDecodingErrorClass("RLP decoding failed", {
+						cause: e instanceof Error ? e : undefined,
+					}),
 	});

@@ -44,10 +44,10 @@
  * @since 0.1.0
  */
 export {
-	equals,
 	type EventSignatureLike,
 	EventSignatureSchema,
 	type EventSignatureType,
+	equals,
 	String,
 	toHex,
 } from "./String.js";

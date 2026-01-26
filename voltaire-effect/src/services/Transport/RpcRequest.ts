@@ -19,7 +19,13 @@ import * as Data from "effect/Data";
  *
  * @since 0.0.1
  */
-export type BlockTag = "latest" | "earliest" | "pending" | "safe" | "finalized" | string;
+export type BlockTag =
+	| "latest"
+	| "earliest"
+	| "pending"
+	| "safe"
+	| "finalized"
+	| string;
 
 /**
  * Call params interface.
@@ -81,7 +87,9 @@ export class GetBalance extends Data.TaggedClass("GetBalance")<{
  * Get transaction count (nonce) request.
  * @since 0.0.1
  */
-export class GetTransactionCount extends Data.TaggedClass("GetTransactionCount")<{
+export class GetTransactionCount extends Data.TaggedClass(
+	"GetTransactionCount",
+)<{
 	readonly address: string;
 	readonly blockTag: BlockTag;
 }> {}
@@ -145,7 +153,9 @@ export class GetBlockByHash extends Data.TaggedClass("GetBlockByHash")<{
  * Get transaction by hash request.
  * @since 0.0.1
  */
-export class GetTransactionByHash extends Data.TaggedClass("GetTransactionByHash")<{
+export class GetTransactionByHash extends Data.TaggedClass(
+	"GetTransactionByHash",
+)<{
 	readonly hash: string;
 }> {}
 
@@ -153,7 +163,9 @@ export class GetTransactionByHash extends Data.TaggedClass("GetTransactionByHash
  * Get transaction receipt request.
  * @since 0.0.1
  */
-export class GetTransactionReceipt extends Data.TaggedClass("GetTransactionReceipt")<{
+export class GetTransactionReceipt extends Data.TaggedClass(
+	"GetTransactionReceipt",
+)<{
 	readonly hash: string;
 }> {}
 
@@ -221,7 +233,9 @@ export type RpcRequest =
  *
  * @since 0.0.1
  */
-export const toJsonRpc = (request: RpcRequest): { method: string; params: unknown[] } => {
+export const toJsonRpc = (
+	request: RpcRequest,
+): { method: string; params: unknown[] } => {
 	switch (request._tag) {
 		case "GetBlockNumber":
 			return { method: "eth_blockNumber", params: [] };
@@ -230,23 +244,44 @@ export const toJsonRpc = (request: RpcRequest): { method: string; params: unknow
 		case "GetGasPrice":
 			return { method: "eth_gasPrice", params: [] };
 		case "GetBalance":
-			return { method: "eth_getBalance", params: [request.address, request.blockTag] };
+			return {
+				method: "eth_getBalance",
+				params: [request.address, request.blockTag],
+			};
 		case "GetTransactionCount":
-			return { method: "eth_getTransactionCount", params: [request.address, request.blockTag] };
+			return {
+				method: "eth_getTransactionCount",
+				params: [request.address, request.blockTag],
+			};
 		case "GetCode":
-			return { method: "eth_getCode", params: [request.address, request.blockTag] };
+			return {
+				method: "eth_getCode",
+				params: [request.address, request.blockTag],
+			};
 		case "GetStorageAt":
-			return { method: "eth_getStorageAt", params: [request.address, request.slot, request.blockTag] };
+			return {
+				method: "eth_getStorageAt",
+				params: [request.address, request.slot, request.blockTag],
+			};
 		case "Call":
 			return { method: "eth_call", params: [request.params, request.blockTag] };
 		case "EstimateGas":
 			return request.blockTag
-				? { method: "eth_estimateGas", params: [request.params, request.blockTag] }
+				? {
+						method: "eth_estimateGas",
+						params: [request.params, request.blockTag],
+					}
 				: { method: "eth_estimateGas", params: [request.params] };
 		case "GetBlockByNumber":
-			return { method: "eth_getBlockByNumber", params: [request.blockTag, request.includeTransactions] };
+			return {
+				method: "eth_getBlockByNumber",
+				params: [request.blockTag, request.includeTransactions],
+			};
 		case "GetBlockByHash":
-			return { method: "eth_getBlockByHash", params: [request.blockHash, request.includeTransactions] };
+			return {
+				method: "eth_getBlockByHash",
+				params: [request.blockHash, request.includeTransactions],
+			};
 		case "GetTransactionByHash":
 			return { method: "eth_getTransactionByHash", params: [request.hash] };
 		case "GetTransactionReceipt":
@@ -254,11 +289,18 @@ export const toJsonRpc = (request: RpcRequest): { method: string; params: unknow
 		case "GetLogs":
 			return { method: "eth_getLogs", params: [request.filter] };
 		case "SendRawTransaction":
-			return { method: "eth_sendRawTransaction", params: [request.signedTransaction] };
+			return {
+				method: "eth_sendRawTransaction",
+				params: [request.signedTransaction],
+			};
 		case "GetFeeHistory":
 			return {
 				method: "eth_feeHistory",
-				params: [`0x${request.blockCount.toString(16)}`, request.newestBlock, request.rewardPercentiles],
+				params: [
+					`0x${request.blockCount.toString(16)}`,
+					request.newestBlock,
+					request.rewardPercentiles,
+				],
 			};
 		case "GenericRpcRequest":
 			return { method: request.method, params: [...request.params] };

@@ -31,19 +31,19 @@
  * ```
  */
 
-export { EnsError } from "./EnsError.js";
 export {
 	ENS_REGISTRY_ADDRESS,
 	ENS_UNIVERSAL_RESOLVER_ADDRESS,
 } from "./constants.js";
+export { EnsError } from "./EnsError.js";
 export {
-	getEnsAddress,
 	type GetEnsAddressParams,
+	getEnsAddress,
 } from "./getEnsAddress.js";
-export { getEnsAvatar, type GetEnsAvatarParams } from "./getEnsAvatar.js";
-export { getEnsName, type GetEnsNameParams } from "./getEnsName.js";
+export { type GetEnsAvatarParams, getEnsAvatar } from "./getEnsAvatar.js";
+export { type GetEnsNameParams, getEnsName } from "./getEnsName.js";
 export {
-	getEnsResolver,
 	type GetEnsResolverParams,
+	getEnsResolver,
 } from "./getEnsResolver.js";
-export { getEnsText, type GetEnsTextParams } from "./getEnsText.js";
+export { type GetEnsTextParams, getEnsText } from "./getEnsText.js";

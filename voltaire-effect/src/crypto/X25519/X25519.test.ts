@@ -1,7 +1,7 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as VoltaireX25519 from "@tevm/voltaire/X25519";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
 import * as X25519Effect from "./index.js";
 
 describe("X25519", () => {
@@ -16,7 +16,7 @@ describe("X25519", () => {
 				expect(result.publicKey).toBeInstanceOf(Uint8Array);
 				expect(result.secretKey.length).toBe(32);
 				expect(result.publicKey.length).toBe(32);
-			})
+			}),
 		);
 
 		it.effect("generates different keypairs each time", () =>
@@ -25,7 +25,7 @@ describe("X25519", () => {
 				const kp2 = yield* X25519Effect.generateKeyPair();
 				expect(kp1.secretKey).not.toEqual(kp2.secretKey);
 				expect(kp1.publicKey).not.toEqual(kp2.publicKey);
-			})
+			}),
 		);
 	});
 
@@ -36,7 +36,7 @@ describe("X25519", () => {
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(32);
 				expect(result).toEqual(testKeypair.publicKey);
-			})
+			}),
 		);
 
 		it("fails with wrong key length", async () => {
@@ -66,7 +66,7 @@ describe("X25519", () => {
 				expect(sharedAlice).toBeInstanceOf(Uint8Array);
 				expect(sharedAlice.length).toBe(32);
 				expect(sharedAlice).toEqual(sharedBob);
-			})
+			}),
 		);
 
 		it("fails with invalid secret key length", async () => {
@@ -95,7 +95,7 @@ describe("X25519", () => {
 				expect(result.publicKey).toBeInstanceOf(Uint8Array);
 				expect(result.secretKey.length).toBe(32);
 				expect(result.publicKey.length).toBe(32);
-			}).pipe(Effect.provide(X25519Effect.X25519Live))
+			}).pipe(Effect.provide(X25519Effect.X25519Live)),
 		);
 
 		it.effect("provides getPublicKey through service layer", () =>
@@ -105,7 +105,7 @@ describe("X25519", () => {
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(32);
 				expect(result).toEqual(testKeypair.publicKey);
-			}).pipe(Effect.provide(X25519Effect.X25519Live))
+			}).pipe(Effect.provide(X25519Effect.X25519Live)),
 		);
 
 		it.effect("provides computeSecret through service layer", () =>
@@ -124,7 +124,7 @@ describe("X25519", () => {
 					alice.publicKey,
 				);
 				expect(sharedAlice).toEqual(sharedBob);
-			}).pipe(Effect.provide(X25519Effect.X25519Live))
+			}).pipe(Effect.provide(X25519Effect.X25519Live)),
 		);
 	});
 
@@ -139,7 +139,7 @@ describe("X25519", () => {
 				expect(result.publicKey.length).toBe(32);
 				expect(result.secretKey.every((b) => b === 0)).toBe(true);
 				expect(result.publicKey.every((b) => b === 0)).toBe(true);
-			}).pipe(Effect.provide(X25519Effect.X25519Test))
+			}).pipe(Effect.provide(X25519Effect.X25519Test)),
 		);
 
 		it.effect("returns mock public key", () =>
@@ -149,7 +149,7 @@ describe("X25519", () => {
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(32);
 				expect(result.every((b) => b === 0)).toBe(true);
-			}).pipe(Effect.provide(X25519Effect.X25519Test))
+			}).pipe(Effect.provide(X25519Effect.X25519Test)),
 		);
 
 		it.effect("returns mock shared secret", () =>
@@ -162,7 +162,7 @@ describe("X25519", () => {
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(32);
 				expect(result.every((b) => b === 0)).toBe(true);
-			}).pipe(Effect.provide(X25519Effect.X25519Test))
+			}).pipe(Effect.provide(X25519Effect.X25519Test)),
 		);
 	});
 });

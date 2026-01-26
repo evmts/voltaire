@@ -15,12 +15,12 @@
 
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { ProviderService } from "../Provider/ProviderService.js";
 import { getEnsAddress } from "../Provider/ens/getEnsAddress.js";
 import { getEnsAvatar } from "../Provider/ens/getEnsAvatar.js";
 import { getEnsName } from "../Provider/ens/getEnsName.js";
 import { getEnsResolver } from "../Provider/ens/getEnsResolver.js";
 import { getEnsText } from "../Provider/ens/getEnsText.js";
+import { ProviderService } from "../Provider/ProviderService.js";
 import { EnsService } from "./EnsService.js";
 
 /**

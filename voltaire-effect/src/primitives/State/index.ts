@@ -16,7 +16,7 @@
  */
 export {
 	Schema,
+	type StorageKeyLike,
 	StorageKeySchema,
 	type StorageKeyType,
-	type StorageKeyLike,
 } from "./StateSchema.js";

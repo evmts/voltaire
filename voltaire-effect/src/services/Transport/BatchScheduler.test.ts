@@ -1,7 +1,7 @@
+import { describe, expect, it, vi } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
-import { describe, expect, it, vi } from "@effect/vitest";
-import { createBatchScheduler, type BatchOptions } from "./BatchScheduler.js";
+import { type BatchOptions, createBatchScheduler } from "./BatchScheduler.js";
 
 describe("BatchScheduler", () => {
 	const createMockSend = () =>
@@ -83,14 +83,13 @@ describe("BatchScheduler", () => {
 		});
 
 		it("fails individual deferred when batch response has error", async () => {
-			const send = vi.fn(
-				(requests: { id: number }[]) =>
-					Effect.succeed([
-						{
-							id: requests[0]?.id ?? -1,
-							error: { code: -32603, message: "Internal error" },
-						},
-					]),
+			const send = vi.fn((requests: { id: number }[]) =>
+				Effect.succeed([
+					{
+						id: requests[0]?.id ?? -1,
+						error: { code: -32603, message: "Internal error" },
+					},
+				]),
 			);
 			const program = Effect.gen(function* () {
 				const scheduler = yield* createBatchScheduler(send);
@@ -105,9 +104,7 @@ describe("BatchScheduler", () => {
 		});
 
 		it("fails batch when send fails", async () => {
-			const send = vi.fn(() =>
-				Effect.fail(new Error("Network error")),
-			);
+			const send = vi.fn(() => Effect.fail(new Error("Network error")));
 			const program = Effect.gen(function* () {
 				const scheduler = yield* createBatchScheduler(send);
 				return yield* scheduler.schedule<string>("eth_blockNumber");
@@ -190,8 +187,8 @@ describe("BatchScheduler", () => {
 		});
 	});
 
-describe("ID assignment", () => {
-	it("assigns unique IDs to requests", async () => {
+	describe("ID assignment", () => {
+		it("assigns unique IDs to requests", async () => {
 			const send = createMockSend();
 			const program = Effect.gen(function* () {
 				const scheduler = yield* createBatchScheduler(send, { wait: 0 });

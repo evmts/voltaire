@@ -32,21 +32,30 @@
  * @see {@link ProviderService} - Required dependency for RPC communication
  */
 
-export { DefaultEns } from "./DefaultEns.js";
-export { EnsService, type EnsShape } from "./EnsService.js";
-export { EnsError } from "../Provider/ens/EnsError.js";
 export {
 	ENS_REGISTRY_ADDRESS,
 	ENS_UNIVERSAL_RESOLVER_ADDRESS,
 } from "../Provider/ens/constants.js";
+export { EnsError } from "../Provider/ens/EnsError.js";
 export {
-	getEnsAddress,
 	type GetEnsAddressParams,
+	getEnsAddress,
 } from "../Provider/ens/getEnsAddress.js";
-export { getEnsAvatar, type GetEnsAvatarParams } from "../Provider/ens/getEnsAvatar.js";
-export { getEnsName, type GetEnsNameParams } from "../Provider/ens/getEnsName.js";
 export {
-	getEnsResolver,
+	type GetEnsAvatarParams,
+	getEnsAvatar,
+} from "../Provider/ens/getEnsAvatar.js";
+export {
+	type GetEnsNameParams,
+	getEnsName,
+} from "../Provider/ens/getEnsName.js";
+export {
 	type GetEnsResolverParams,
+	getEnsResolver,
 } from "../Provider/ens/getEnsResolver.js";
-export { getEnsText, type GetEnsTextParams } from "../Provider/ens/getEnsText.js";
+export {
+	type GetEnsTextParams,
+	getEnsText,
+} from "../Provider/ens/getEnsText.js";
+export { DefaultEns } from "./DefaultEns.js";
+export { EnsService, type EnsShape } from "./EnsService.js";

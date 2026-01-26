@@ -40,11 +40,11 @@ type SignatureInput = SignatureType | HexType | Uint8Array;
 
 type SignerEffect<TInput, TOutput> = (
 	input: TInput,
-) => Effect.Effect<TOutput, AccountError>;
+) => Effect.Effect<TOutput, unknown>;
 
-type SignerEffectOptional<TInput, TOutput> = (
+type OptionalSignerEffect<TInput, TOutput> = (
 	input: TInput,
-) => Effect.Effect<TOutput, AccountError> | undefined;
+) => Effect.Effect<TOutput, unknown>;
 
 export type ToAccountOptions = {
 	/** The account address. */
@@ -62,9 +62,9 @@ export type ToAccountOptions = {
 	/** Sign typed structured data (EIP-712). */
 	readonly signTypedData: SignerEffect<TypedDataType, SignatureInput>;
 	/** Optional raw hash signer (no prefix). */
-	readonly sign?: SignerEffectOptional<{ hash: HexType }, SignatureInput>;
+	readonly sign?: OptionalSignerEffect<{ hash: HexType }, SignatureInput>;
 	/** Optional EIP-7702 authorization signer. */
-	readonly signAuthorization?: SignerEffectOptional<
+	readonly signAuthorization?: OptionalSignerEffect<
 		UnsignedAuthorization | SignAuthorizationParams,
 		Authorization
 	>;

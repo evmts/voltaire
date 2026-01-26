@@ -1,6 +1,6 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
 import {
 	ChaCha20Poly1305Live,
 	ChaCha20Poly1305Service,
@@ -21,7 +21,7 @@ describe("ChaCha20Poly1305Service", () => {
 				const result = yield* service.generateKey();
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(32);
-			}).pipe(Effect.provide(ChaCha20Poly1305Live))
+			}).pipe(Effect.provide(ChaCha20Poly1305Live)),
 		);
 
 		it.effect("generates a 12-byte nonce", () =>
@@ -30,7 +30,7 @@ describe("ChaCha20Poly1305Service", () => {
 				const result = yield* service.generateNonce();
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(12);
-			}).pipe(Effect.provide(ChaCha20Poly1305Live))
+			}).pipe(Effect.provide(ChaCha20Poly1305Live)),
 		);
 
 		it.effect("encrypts and decrypts data correctly", () =>
@@ -44,7 +44,7 @@ describe("ChaCha20Poly1305Service", () => {
 				expect(ciphertext).toBeInstanceOf(Uint8Array);
 				expect(ciphertext.length).toBeGreaterThan(plaintext.length);
 				expect(decrypted).toEqual(plaintext);
-			}).pipe(Effect.provide(ChaCha20Poly1305Live))
+			}).pipe(Effect.provide(ChaCha20Poly1305Live)),
 		);
 
 		it.effect("encrypts with additional authenticated data", () =>
@@ -57,7 +57,7 @@ describe("ChaCha20Poly1305Service", () => {
 				const ciphertext = yield* service.encrypt(plaintext, key, nonce, aad);
 				const decrypted = yield* service.decrypt(ciphertext, key, nonce, aad);
 				expect(decrypted).toEqual(plaintext);
-			}).pipe(Effect.provide(ChaCha20Poly1305Live))
+			}).pipe(Effect.provide(ChaCha20Poly1305Live)),
 		);
 	});
 
@@ -71,7 +71,7 @@ describe("ChaCha20Poly1305Service", () => {
 				expect(nonce.length).toBe(12);
 				expect(key.every((b) => b === 0)).toBe(true);
 				expect(nonce.every((b) => b === 0)).toBe(true);
-			}).pipe(Effect.provide(ChaCha20Poly1305Test))
+			}).pipe(Effect.provide(ChaCha20Poly1305Test)),
 		);
 	});
 });
@@ -82,7 +82,7 @@ describe("operations", () => {
 			const result = yield* generateKey();
 			expect(result).toBeInstanceOf(Uint8Array);
 			expect(result.length).toBe(32);
-		}).pipe(Effect.provide(ChaCha20Poly1305Live))
+		}).pipe(Effect.provide(ChaCha20Poly1305Live)),
 	);
 
 	it.effect("generateNonce works with service dependency", () =>
@@ -90,7 +90,7 @@ describe("operations", () => {
 			const result = yield* generateNonce();
 			expect(result).toBeInstanceOf(Uint8Array);
 			expect(result.length).toBe(12);
-		}).pipe(Effect.provide(ChaCha20Poly1305Live))
+		}).pipe(Effect.provide(ChaCha20Poly1305Live)),
 	);
 
 	it.effect("encrypt/decrypt roundtrip works", () =>
@@ -101,7 +101,7 @@ describe("operations", () => {
 			const ciphertext = yield* encrypt(plaintext, key, nonce);
 			const decrypted = yield* decrypt(ciphertext, key, nonce);
 			expect(decrypted).toEqual(plaintext);
-		}).pipe(Effect.provide(ChaCha20Poly1305Live))
+		}).pipe(Effect.provide(ChaCha20Poly1305Live)),
 	);
 
 	it.effect("works with test layer", () =>
@@ -110,7 +110,7 @@ describe("operations", () => {
 			const nonce = yield* generateNonce();
 			expect(key.every((b) => b === 0)).toBe(true);
 			expect(nonce.every((b) => b === 0)).toBe(true);
-		}).pipe(Effect.provide(ChaCha20Poly1305Test))
+		}).pipe(Effect.provide(ChaCha20Poly1305Test)),
 	);
 });
 

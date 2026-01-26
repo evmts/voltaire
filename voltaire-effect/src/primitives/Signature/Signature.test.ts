@@ -1,7 +1,7 @@
-import * as BaseSignature from "@tevm/voltaire/Signature";
-import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
+import * as BaseSignature from "@tevm/voltaire/Signature";
+import * as S from "effect/Schema";
 import * as Signature from "./index.js";
 
 const validR = "ab".repeat(32);
@@ -154,7 +154,13 @@ describe("Signature.Compact", () => {
 
 describe("Signature.DER", () => {
 	const validDER = new Uint8Array([
-		0x30, 0x44, 0x02, 0x20, ...new Uint8Array(32).fill(0x01), 0x02, 0x20,
+		0x30,
+		0x44,
+		0x02,
+		0x20,
+		...new Uint8Array(32).fill(0x01),
+		0x02,
+		0x20,
 		...new Uint8Array(32).fill(0x02),
 	]);
 
@@ -349,8 +355,8 @@ describe("Signature.Tuple", () => {
 
 describe("pure functions", () => {
 	const sig = S.decodeSync(Signature.Hex)(validSig65);
-	const sig2 = S.decodeSync(Signature.Hex)(validSig65);
-	const differentSig = S.decodeSync(Signature.Hex)(
+	const _sig2 = S.decodeSync(Signature.Hex)(validSig65);
+	const _differentSig = S.decodeSync(Signature.Hex)(
 		`0x${"11".repeat(32)}${"22".repeat(32)}1c`,
 	);
 

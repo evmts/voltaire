@@ -1,6 +1,6 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
-import { describe, expect, it } from "@effect/vitest";
 import * as Uint from "./index.js";
 
 const MAX_UINT256 =
@@ -598,9 +598,7 @@ describe("error cases", () => {
 		});
 
 		it("fails on null", () => {
-			expect(() =>
-				S.decodeSync(Uint.Hex)(null as unknown as string),
-			).toThrow();
+			expect(() => S.decodeSync(Uint.Hex)(null as unknown as string)).toThrow();
 		});
 	});
 
@@ -610,7 +608,9 @@ describe("error cases", () => {
 		});
 
 		it("fails on Infinity", () => {
-			expect(() => S.decodeSync(Uint.Number)(Number.POSITIVE_INFINITY)).toThrow();
+			expect(() =>
+				S.decodeSync(Uint.Number)(Number.POSITIVE_INFINITY),
+			).toThrow();
 		});
 
 		it("fails on negative Infinity", () => {

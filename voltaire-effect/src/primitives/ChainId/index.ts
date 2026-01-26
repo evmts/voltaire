@@ -50,7 +50,7 @@
  * @since 0.1.0
  */
 
-// Schemas
-export { Number, type ChainIdType } from "./Number.js";
 export { BigInt } from "./BigInt.js";
 export { Hex } from "./Hex.js";
+// Schemas
+export { type ChainIdType, Number } from "./Number.js";

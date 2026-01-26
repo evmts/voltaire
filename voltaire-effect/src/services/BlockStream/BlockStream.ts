@@ -10,11 +10,11 @@
  */
 
 import {
-	BlockStream as CoreBlockStream,
 	type BackfillOptions,
 	type BlockInclude,
-	type BlocksEvent,
 	type BlockStreamEvent,
+	type BlocksEvent,
+	BlockStream as CoreBlockStream,
 	type WatchOptions,
 } from "@tevm/voltaire/block";
 import * as Effect from "effect/Effect";
@@ -84,8 +84,10 @@ export const BlockStream: Layer.Layer<
 			request: async ({
 				method,
 				params,
-			}: { method: string; params?: unknown[] }) =>
-				Runtime.runPromise(runtime)(transport.request(method, params)),
+			}: {
+				method: string;
+				params?: unknown[];
+			}) => Runtime.runPromise(runtime)(transport.request(method, params)),
 			on: () => {},
 			removeListener: () => {},
 		};
@@ -100,7 +102,10 @@ export const BlockStream: Layer.Layer<
 			backfill: <TInclude extends BlockInclude = "header">(
 				options: BackfillOptions<TInclude>,
 			): Stream.Stream<BlocksEvent<TInclude>, BlockStreamError> =>
-				fromAsyncGeneratorWithCleanup(() => coreStream.backfill(options), cleanup),
+				fromAsyncGeneratorWithCleanup(
+					() => coreStream.backfill(options),
+					cleanup,
+				),
 
 			watch: <TInclude extends BlockInclude = "header">(
 				options?: WatchOptions<TInclude>,

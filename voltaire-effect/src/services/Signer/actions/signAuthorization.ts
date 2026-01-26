@@ -7,13 +7,13 @@
 
 import { Address, type BrandedAddress } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { SignerError } from "../SignerService.js";
-import { ProviderService } from "../../Provider/index.js";
 import {
 	AccountService,
-	type UnsignedAuthorization,
 	type SignedAuthorization,
+	type UnsignedAuthorization,
 } from "../../Account/index.js";
+import { ProviderService } from "../../Provider/index.js";
+import { SignerError } from "../SignerService.js";
 
 type AddressType = BrandedAddress.AddressType;
 
@@ -80,8 +80,7 @@ export const signAuthorization = (
 		const provider = yield* ProviderService;
 		const account = yield* AccountService;
 
-		const chainId =
-			params.chainId ?? BigInt(yield* provider.getChainId());
+		const chainId = params.chainId ?? BigInt(yield* provider.getChainId());
 
 		const nonce =
 			params.nonce ??

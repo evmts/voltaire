@@ -9,7 +9,8 @@ import { Address } from "../primitives/Address/index.js";
  *
  * @example
  * ```typescript
- * import { randomAddress } from '@tevm/voltaire/wallet';
+ * import { wallet } from '@tevm/voltaire/native';
+ * const address = wallet.randomAddress();
  *
  * const randomAddr = randomAddress();
  * console.log(Address.toHex(randomAddr));

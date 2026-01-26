@@ -136,6 +136,8 @@ export type EIP7702 = Extract<
  */
 export const Type = VoltaireTransaction.Type;
 
+export { Rpc, type RpcTransaction } from "./Rpc.js";
+export { Serialized } from "./Serialized.js";
 // Schemas
 export {
 	EIP1559Schema,
@@ -145,8 +147,6 @@ export {
 	LegacySchema,
 	Schema,
 } from "./TransactionSchema.js";
-export { Rpc, type RpcTransaction } from "./Rpc.js";
-export { Serialized } from "./Serialized.js";
 
 // Pure functions
 

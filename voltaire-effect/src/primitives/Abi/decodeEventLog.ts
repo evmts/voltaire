@@ -11,8 +11,8 @@ import {
 	type AbiDecodingError,
 	AbiDecodingError as AbiDecodingErrorClass,
 	type AbiItemNotFoundError,
-	type ItemType,
 	decodeLog,
+	type ItemType,
 } from "@tevm/voltaire/Abi";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";
@@ -151,5 +151,7 @@ export const decodeEventLog = (
 		catch: (e) =>
 			isAbiError(e)
 				? e
-				: new AbiDecodingErrorClass("Failed to decode event log", { cause: e instanceof Error ? e : undefined }),
+				: new AbiDecodingErrorClass("Failed to decode event log", {
+						cause: e instanceof Error ? e : undefined,
+					}),
 	});

@@ -59,7 +59,8 @@ Restore an existing wallet using its mnemonic phrase:
 
 ```typescript
 import { Effect } from 'effect'
-import { MnemonicAccount, AccountService } from 'voltaire-effect/services'
+import { AccountService } from 'voltaire-effect/services'
+import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const mnemonic = "test test test test test test test test test test test junk"
@@ -85,7 +86,8 @@ Generate multiple addresses from a single mnemonic:
 
 ```typescript
 import { Effect } from 'effect'
-import { MnemonicAccount, AccountService } from 'voltaire-effect/services'
+import { AccountService } from 'voltaire-effect/services'
+import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const mnemonic = "test test test test test test test test test test test junk"
@@ -121,13 +123,13 @@ Full workflow: create wallet, check balance, send transaction:
 ```typescript
 import { Effect } from 'effect'
 import { 
-  MnemonicAccount, 
   SignerService, 
   Signer,
   ProviderService,
   Provider, 
   HttpTransport 
 } from 'voltaire-effect/services'
+import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const mnemonic = process.env.MNEMONIC!

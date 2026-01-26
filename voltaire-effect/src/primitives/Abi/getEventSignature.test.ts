@@ -1,7 +1,7 @@
-import * as Effect from "effect/Effect";
 import { describe, expect, it } from "@effect/vitest";
-import { getEventSignature } from "./getEventSignature.js";
 import type { Event } from "@tevm/voltaire/Abi";
+import * as Effect from "effect/Effect";
+import { getEventSignature } from "./getEventSignature.js";
 
 describe("getEventSignature", () => {
 	describe("success cases", () => {

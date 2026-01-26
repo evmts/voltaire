@@ -185,12 +185,12 @@ describe("ERC20", () => {
 		});
 
 		it("decodes zero supply", () => {
-			const data = "0x" + "00".repeat(32);
+			const data = `0x${"00".repeat(32)}`;
 			expect(ERC20.decodeTotalSupplyResult(data)).toBe(0n);
 		});
 
 		it("decodes max uint256", () => {
-			const data = "0x" + "ff".repeat(32);
+			const data = `0x${"ff".repeat(32)}`;
 			expect(ERC20.decodeTotalSupplyResult(data)).toBe(2n ** 256n - 1n);
 		});
 	});
@@ -258,7 +258,7 @@ describe("ERC20", () => {
 		});
 
 		it("decodes 0 decimals", () => {
-			const data = "0x" + "00".repeat(32);
+			const data = `0x${"00".repeat(32)}`;
 			expect(ERC20.decodeDecimalsResult(data)).toBe(0);
 		});
 	});

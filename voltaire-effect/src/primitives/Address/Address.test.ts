@@ -1,6 +1,6 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
-import { describe, expect, it } from "@effect/vitest";
 import { KeccakLive } from "../../crypto/Keccak256/index.js";
 import * as Address from "./index.js";
 
@@ -267,7 +267,9 @@ describe("pure functions", () => {
 
 describe("error cases", () => {
 	it("fails on null", () => {
-		expect(() => S.decodeSync(Address.Hex)(null as unknown as string)).toThrow();
+		expect(() =>
+			S.decodeSync(Address.Hex)(null as unknown as string),
+		).toThrow();
 	});
 
 	it("fails on undefined", () => {
@@ -277,9 +279,7 @@ describe("error cases", () => {
 	});
 
 	it("fails on object", () => {
-		expect(() =>
-			S.decodeSync(Address.Hex)({} as unknown as string),
-		).toThrow();
+		expect(() => S.decodeSync(Address.Hex)({} as unknown as string)).toThrow();
 	});
 
 	it("fails on number", () => {
@@ -291,9 +291,7 @@ describe("error cases", () => {
 	});
 
 	it("fails on too long address", () => {
-		expect(() =>
-			S.decodeSync(Address.Hex)("0x" + "ab".repeat(21)),
-		).toThrow();
+		expect(() => S.decodeSync(Address.Hex)(`0x${"ab".repeat(21)}`)).toThrow();
 	});
 
 	describe("Bytes schema errors", () => {

@@ -18,14 +18,12 @@
  * @see {@link HttpTransport} - Common transport to intercept
  */
 
+import * as Deferred from "effect/Deferred";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as FiberRef from "effect/FiberRef";
 import * as Layer from "effect/Layer";
 import * as Ref from "effect/Ref";
-import * as HashMap from "effect/HashMap";
-import * as Option from "effect/Option";
-import * as Deferred from "effect/Deferred";
-import * as Duration from "effect/Duration";
 import { cacheEnabledRef } from "./config.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService, type TransportShape } from "./TransportService.js";
@@ -80,7 +78,9 @@ export interface RpcError {
  *
  * @since 0.0.1
  */
-export type RequestInterceptor = (request: RpcRequest) => Effect.Effect<RpcRequest>;
+export type RequestInterceptor = (
+	request: RpcRequest,
+) => Effect.Effect<RpcRequest>;
 
 /**
  * Response interceptor type.
@@ -126,9 +126,8 @@ export const onResponseRef: FiberRef.FiberRef<ResponseInterceptor> =
  *
  * @since 0.0.1
  */
-export const onErrorRef: FiberRef.FiberRef<ErrorInterceptor> = FiberRef.unsafeMake<ErrorInterceptor>(
-	() => Effect.void,
-);
+export const onErrorRef: FiberRef.FiberRef<ErrorInterceptor> =
+	FiberRef.unsafeMake<ErrorInterceptor>(() => Effect.void);
 
 /**
  * Run an effect with a request interceptor.
@@ -307,7 +306,9 @@ export const InterceptedTransport = (
 			TransportService.of({
 				request: <T>(method: string, params: unknown[] = []) =>
 					Effect.gen(function* () {
-						const base = context.unsafeMap.get(TransportService.key) as TransportShape;
+						const base = context.unsafeMap.get(
+							TransportService.key,
+						) as TransportShape;
 						const onRequest = yield* FiberRef.get(onRequestRef);
 						const onResponse = yield* FiberRef.get(onResponseRef);
 						const onError = yield* FiberRef.get(onErrorRef);
@@ -421,7 +422,9 @@ export const DeduplicatedTransport = (
 ): Layer.Layer<TransportService, unknown, unknown> => {
 	const ttl = config.ttl ?? 1000;
 	const methodSet = config.methods ? new Set(config.methods) : null;
-	const excludeSet = config.excludeMethods ? new Set(config.excludeMethods) : null;
+	const excludeSet = config.excludeMethods
+		? new Set(config.excludeMethods)
+		: null;
 
 	const shouldDedupe = (method: string): boolean => {
 		if (excludeSet?.has(method)) return false;
@@ -433,8 +436,12 @@ export const DeduplicatedTransport = (
 		Layer.scoped(
 			TransportService,
 			Effect.gen(function* () {
-				const base = context.unsafeMap.get(TransportService.key) as TransportShape;
-				const cacheRef = yield* Ref.make<Map<string, CacheEntry<unknown>>>(new Map());
+				const base = context.unsafeMap.get(
+					TransportService.key,
+				) as TransportShape;
+				const cacheRef = yield* Ref.make<Map<string, CacheEntry<unknown>>>(
+					new Map(),
+				);
 
 				// Cleanup expired entries periodically
 				const cleanup = Effect.gen(function* () {
@@ -451,7 +458,9 @@ export const DeduplicatedTransport = (
 				});
 
 				yield* cleanup.pipe(
-					Effect.repeat({ schedule: { delays: Effect.succeed(Duration.millis(ttl)) } }),
+					Effect.repeat({
+						schedule: { delays: Effect.succeed(Duration.millis(ttl)) },
+					}),
 					Effect.fork,
 				);
 

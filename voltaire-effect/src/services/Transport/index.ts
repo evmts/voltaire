@@ -39,127 +39,123 @@
  * @see {@link TransportError} - Error type for transport failures
  */
 
-export { type BatchOptions } from "./BatchScheduler.js";
+export type { BatchOptions } from "./BatchScheduler.js";
 export { BrowserTransport } from "./BrowserTransport.js";
 export {
-	IdGenerator,
-	IdGeneratorLive,
-	makeIdGenerator,
-	nextId,
-	type IdGeneratorShape,
-} from "./IdGenerator.js";
-export {
-	FallbackTransport,
-	type FallbackTransportOptions,
-} from "./FallbackTransport.js";
-export { RateLimitedTransport } from "./RateLimitedTransport.js";
-export {
-	HttpTransport,
-	HttpTransportFetch,
-	type HttpTransportConfig,
-} from "./HttpTransport.js";
-export {
-	HttpTransportConfigSchema,
-	HttpTransportFromConfig,
-	HttpTransportFromConfigFetch,
-	type HttpTransportConfigType,
-} from "./HttpTransportConfig.js";
-export { TestTransport } from "./TestTransport.js";
-export {
-	TransportError,
-	TransportService,
-	type TransportShape,
-} from "./TransportService.js";
-export {
-	WebSocketTransport,
-	WebSocketConstructorGlobal,
-	type ReconnectOptions,
-} from "./WebSocketTransport.js";
-export {
-	WebSocketTransportConfigSchema,
-	WebSocketTransportFromConfig,
-	WebSocketTransportFromConfigGlobal,
-	type WebSocketTransportConfigType,
-} from "./WebSocketTransportConfig.js";
-
+	CustomTransport,
+	type CustomTransportConfig,
+	CustomTransportFromFn,
+	type EIP1193Provider,
+} from "./CustomTransport.js";
 // FiberRef-scoped transport config overrides
 export {
 	cacheEnabledRef,
 	retryCountRef,
 	timeoutRef,
 	tracingRef,
+	withoutCache,
 	withRetries,
 	withTimeout,
 	withTracing,
-	withoutCache,
 } from "./config.js";
-
+export {
+	FallbackTransport,
+	type FallbackTransportOptions,
+} from "./FallbackTransport.js";
+export {
+	HttpTransport,
+	type HttpTransportConfig,
+	HttpTransportFetch,
+} from "./HttpTransport.js";
+export {
+	HttpTransportConfigSchema,
+	type HttpTransportConfigType,
+	HttpTransportFromConfig,
+	HttpTransportFromConfigFetch,
+} from "./HttpTransportConfig.js";
+export {
+	IdGenerator,
+	IdGeneratorLive,
+	type IdGeneratorShape,
+	makeIdGenerator,
+	nextId,
+} from "./IdGenerator.js";
 // New transport implementations
 export {
+	type IpcReconnectOptions,
 	IpcTransport,
 	type IpcTransportConfig,
-	type IpcReconnectOptions,
 } from "./IpcTransport.js";
+export { RateLimitedTransport } from "./RateLimitedTransport.js";
+// RPC request types and helpers
 export {
-	CustomTransport,
-	CustomTransportFromFn,
-	type CustomTransportConfig,
-	type EIP1193Provider,
-} from "./CustomTransport.js";
+	type BlockTag,
+	Call,
+	type CallParams,
+	EstimateGas,
+	GenericRpcRequest,
+	GetBalance,
+	GetBlockByHash,
+	GetBlockByNumber,
+	GetBlockNumber,
+	GetChainId,
+	GetCode,
+	GetFeeHistory,
+	GetGasPrice,
+	GetLogs,
+	GetStorageAt,
+	GetTransactionByHash,
+	GetTransactionCount,
+	GetTransactionReceipt,
+	type LogFilter,
+	type RpcRequest,
+	SendRawTransaction,
+	toJsonRpc,
+} from "./RpcRequest.js";
+export { rpc, rpcRequest } from "./RpcResolver.js";
+export { TestTransport } from "./TestTransport.js";
+// Unified config
+export {
+	ConfigProvider,
+	QuickConfig,
+	TransportConfig,
+	type TransportConfigType,
+	TransportFromConfig,
+	TransportFromConfigFetch,
+} from "./TransportConfig.js";
 
 // Interceptors and deduplication
 export {
+	DeduplicatedTransport,
+	type DeduplicationConfig,
+	type ErrorInterceptor,
+	InterceptedTransport,
+	onErrorRef,
 	onRequestRef,
 	onResponseRef,
-	onErrorRef,
-	withRequestInterceptor,
-	withResponseInterceptor,
-	withErrorInterceptor,
-	withInterceptors,
-	InterceptedTransport,
-	DeduplicatedTransport,
-	type RpcRequest as InterceptorRpcRequest,
-	type RpcResponse,
-	type RpcError,
 	type RequestInterceptor,
 	type ResponseInterceptor,
-	type ErrorInterceptor,
-	type DeduplicationConfig,
+	type RpcError,
+	type RpcRequest as InterceptorRpcRequest,
+	type RpcResponse,
+	withErrorInterceptor,
+	withInterceptors,
+	withRequestInterceptor,
+	withResponseInterceptor,
 } from "./TransportInterceptor.js";
-
-// RPC request types and helpers
 export {
-	GetBlockNumber,
-	GetChainId,
-	GetGasPrice,
-	GetBalance,
-	GetTransactionCount,
-	GetCode,
-	GetStorageAt,
-	Call,
-	EstimateGas,
-	GetBlockByNumber,
-	GetBlockByHash,
-	GetTransactionByHash,
-	GetTransactionReceipt,
-	GetLogs,
-	SendRawTransaction,
-	GetFeeHistory,
-	GenericRpcRequest,
-	toJsonRpc,
-	type RpcRequest,
-	type BlockTag,
-	type CallParams,
-	type LogFilter,
-} from "./RpcRequest.js";
-export { rpcRequest, rpc } from "./RpcResolver.js";
-
-// Unified config
+	TransportError,
+	TransportService,
+	type TransportShape,
+} from "./TransportService.js";
 export {
-	TransportConfig,
-	TransportFromConfig,
-	TransportFromConfigFetch,
-	QuickConfig,
-	ConfigProvider,
-	type TransportConfigType,
-} from "./TransportConfig.js";
+	type ReconnectOptions,
+	WebSocketConstructorGlobal,
+	WebSocketTransport,
+} from "./WebSocketTransport.js";
+export {
+	WebSocketTransportConfigSchema,
+	type WebSocketTransportConfigType,
+	WebSocketTransportFromConfig,
+	WebSocketTransportFromConfigGlobal,
+} from "./WebSocketTransportConfig.js";

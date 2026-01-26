@@ -4,7 +4,7 @@
  * @since 0.0.1
  */
 
-import { Ens, Hash } from "@tevm/voltaire";
+import { Ens } from "@tevm/voltaire";
 
 /**
  * Converts bytes to hex string.
@@ -116,7 +116,8 @@ export const encodeTextCall = (
 	const keyBytes = new TextEncoder().encode(key);
 	const keyLengthHex = keyBytes.length.toString(16).padStart(64, "0");
 	const keyDataHex = bytesToHex(keyBytes).slice(2).padEnd(64, "0");
-	const offset = "0000000000000000000000000000000000000000000000000000000000000040";
+	const offset =
+		"0000000000000000000000000000000000000000000000000000000000000040";
 	return `0x${selector}${nodeHex}${offset}${keyLengthHex}${keyDataHex}`;
 };
 

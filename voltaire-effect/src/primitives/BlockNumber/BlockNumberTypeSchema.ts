@@ -4,7 +4,7 @@
  * @since 0.1.0
  */
 
-import { BlockNumber } from "@tevm/voltaire";
+import type { BlockNumber } from "@tevm/voltaire";
 import * as S from "effect/Schema";
 
 type BlockNumberType = BlockNumber.BlockNumberType;

@@ -1,7 +1,7 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
 import { DefaultEns, EnsService } from "../../Ens/index.js";
 import { TransportService } from "../../Transport/TransportService.js";
 import { Provider } from "../Provider.js";
@@ -39,7 +39,9 @@ const mockTransportWithCapture = (responses: MockResponses) =>
 
 const makeEnsLayer = (responses: MockResponses) =>
 	DefaultEns.pipe(
-		Layer.provide(Provider.pipe(Layer.provide(mockTransportWithCapture(responses)))),
+		Layer.provide(
+			Provider.pipe(Layer.provide(mockTransportWithCapture(responses))),
+		),
 	);
 
 describe("ENS Resolution", () => {

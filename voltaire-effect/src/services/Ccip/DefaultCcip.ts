@@ -21,7 +21,7 @@
 
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { CcipError, CcipService, type CcipRequest } from "./CcipService.js";
+import { CcipError, type CcipRequest, CcipService } from "./CcipService.js";
 
 /**
  * Checks if a string is valid hex data.
@@ -46,7 +46,10 @@ const makeRequest = (
 			.replace("{sender}", sender.toLowerCase())
 			.replace("{data}", callData);
 
-		const body = method === "POST" ? JSON.stringify({ sender, data: callData }) : undefined;
+		const body =
+			method === "POST"
+				? JSON.stringify({ sender, data: callData })
+				: undefined;
 		const headers: HeadersInit =
 			method === "POST" ? { "Content-Type": "application/json" } : {};
 
@@ -68,10 +71,11 @@ const makeRequest = (
 		if (!response.ok) {
 			const text = yield* Effect.tryPromise({
 				try: () => response.text(),
-				catch: () => new CcipError({
-					urls: [url],
-					message: `HTTP ${response.status}: ${response.statusText}`,
-				}),
+				catch: () =>
+					new CcipError({
+						urls: [url],
+						message: `HTTP ${response.status}: ${response.statusText}`,
+					}),
 			});
 			return yield* Effect.fail(
 				new CcipError({

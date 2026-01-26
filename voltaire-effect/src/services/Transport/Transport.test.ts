@@ -1,24 +1,30 @@
 import * as HttpClient from "@effect/platform/HttpClient";
 import type * as HttpClientRequest from "@effect/platform/HttpClientRequest";
 import type * as HttpClientResponse from "@effect/platform/HttpClientResponse";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "@effect/vitest";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
-import * as TestClock from "effect/TestClock";
-import { afterEach, beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import * as Layer from "effect/Layer";
+import * as TestClock from "effect/TestClock";
+import { makeMockWebSocket } from "./__testUtils__/mockWebSocket.js";
 import {
 	BrowserTransport,
 	FallbackTransport,
 	HttpTransport,
-	HttpTransportFetch,
 	TestTransport,
 	TransportError,
 	TransportService,
-	WebSocketTransport,
 	WebSocketConstructorGlobal,
+	WebSocketTransport,
 } from "./index.js";
-import { makeMockWebSocket } from "./__testUtils__/mockWebSocket.js";
 
 const createMockHttpClientLayer = (
 	fetchMock: ReturnType<typeof vi.fn>,
@@ -61,7 +67,9 @@ const createMockHttpTransport = (
 ): Layer.Layer<TransportService> =>
 	Layer.provide(HttpTransport(options), createMockHttpClientLayer(fetchMock));
 
-const parseJsonBody = (request: HttpClientRequest.HttpClientRequest): unknown => {
+const parseJsonBody = (
+	request: HttpClientRequest.HttpClientRequest,
+): unknown => {
 	const body = request.body as { _tag: string; body: Uint8Array };
 	return JSON.parse(new TextDecoder().decode(body.body));
 };
@@ -130,8 +138,13 @@ describe("TransportService", () => {
 			};
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
-				return yield* transport.request<typeof mockBlock>("eth_getBlockByNumber", []);
-			}).pipe(Effect.provide(TestTransport({ eth_getBlockByNumber: mockBlock })));
+				return yield* transport.request<typeof mockBlock>(
+					"eth_getBlockByNumber",
+					[],
+				);
+			}).pipe(
+				Effect.provide(TestTransport({ eth_getBlockByNumber: mockBlock })),
+			);
 
 			const result = await Effect.runPromise(program);
 			expect(result.number).toBe("0x10");
@@ -142,7 +155,9 @@ describe("TransportService", () => {
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
 				return yield* transport.request<null>("eth_getTransactionReceipt", []);
-			}).pipe(Effect.provide(TestTransport({ eth_getTransactionReceipt: null })));
+			}).pipe(
+				Effect.provide(TestTransport({ eth_getTransactionReceipt: null })),
+			);
 
 			const result = await Effect.runPromise(program);
 			expect(result).toBeNull();
@@ -164,9 +179,16 @@ describe("TransportService", () => {
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
 				return yield* transport.request<string>("eth_call", []);
-			}).pipe(Effect.provide(TestTransport({
-				eth_call: new TransportError({ code: errorCode, message: "Invalid params" }),
-			})));
+			}).pipe(
+				Effect.provide(
+					TestTransport({
+						eth_call: new TransportError({
+							code: errorCode,
+							message: "Invalid params",
+						}),
+					}),
+				),
+			);
 
 			const exit = await Effect.runPromiseExit(program);
 			expect(exit._tag).toBe("Failure");
@@ -180,9 +202,17 @@ describe("TransportService", () => {
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
 				return yield* transport.request<string>("eth_call", []);
-			}).pipe(Effect.provide(TestTransport({
-				eth_call: new TransportError({ code: -32000, message: "reverted", data: errorData }),
-			})));
+			}).pipe(
+				Effect.provide(
+					TestTransport({
+						eth_call: new TransportError({
+							code: -32000,
+							message: "reverted",
+							data: errorData,
+						}),
+					}),
+				),
+			);
 
 			const exit = await Effect.runPromiseExit(program);
 			expect(exit._tag).toBe("Failure");
@@ -210,7 +240,9 @@ describe("TransportService", () => {
 				return yield* transport.request<string>("eth_blockNumber", []);
 			}).pipe(
 				Effect.provide(
-					createMockHttpTransport(fetchMock, { url: "https://eth.example.com" }),
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+					}),
 				),
 			);
 
@@ -276,7 +308,11 @@ describe("TransportService", () => {
 				const transport = yield* TransportService;
 				return yield* transport.request<string>("eth_call", []);
 			}).pipe(
-				Effect.provide(createMockHttpTransport(fetchMock, { url: "https://eth.example.com" })),
+				Effect.provide(
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+					}),
+				),
 			);
 
 			const exit = await Effect.runPromiseExit(program);
@@ -299,7 +335,10 @@ describe("TransportService", () => {
 				return yield* transport.request<string>("eth_blockNumber", []);
 			}).pipe(
 				Effect.provide(
-					createMockHttpTransport(fetchMock, { url: "https://eth.example.com", retries: 0 }),
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+						retries: 0,
+					}),
 				),
 			);
 
@@ -319,7 +358,10 @@ describe("TransportService", () => {
 				return yield* transport.request<string>("eth_blockNumber", []);
 			}).pipe(
 				Effect.provide(
-					createMockHttpTransport(fetchMock, { url: "https://eth.example.com", retries: 0 }),
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+						retries: 0,
+					}),
 				),
 			);
 
@@ -342,7 +384,10 @@ describe("TransportService", () => {
 				return yield* transport.request<string>("eth_blockNumber", []);
 			}).pipe(
 				Effect.provide(
-					createMockHttpTransport(fetchMock, { url: "https://eth.example.com", retries: 0 }),
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+						retries: 0,
+					}),
 				),
 			);
 
@@ -358,7 +403,10 @@ describe("TransportService", () => {
 				return yield* transport.request<string>("eth_blockNumber", []);
 			}).pipe(
 				Effect.provide(
-					createMockHttpTransport(fetchMock, { url: "https://eth.example.com", retries: 0 }),
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+						retries: 0,
+					}),
 				),
 			);
 
@@ -374,7 +422,10 @@ describe("TransportService", () => {
 				return yield* transport.request<string>("eth_blockNumber", []);
 			}).pipe(
 				Effect.provide(
-					createMockHttpTransport(fetchMock, { url: "https://nonexistent.invalid", retries: 0 }),
+					createMockHttpTransport(fetchMock, {
+						url: "https://nonexistent.invalid",
+						retries: 0,
+					}),
 				),
 			);
 
@@ -390,7 +441,10 @@ describe("TransportService", () => {
 				return yield* transport.request<string>("eth_blockNumber", []);
 			}).pipe(
 				Effect.provide(
-					createMockHttpTransport(fetchMock, { url: "https://eth.example.com", retries: 0 }),
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+						retries: 0,
+					}),
 				),
 			);
 
@@ -401,7 +455,9 @@ describe("TransportService", () => {
 		it("handles invalid JSON response", async () => {
 			fetchMock.mockResolvedValueOnce({
 				ok: true,
-				json: async () => { throw new SyntaxError("Unexpected token"); },
+				json: async () => {
+					throw new SyntaxError("Unexpected token");
+				},
 			});
 
 			const program = Effect.gen(function* () {
@@ -409,7 +465,10 @@ describe("TransportService", () => {
 				return yield* transport.request<string>("eth_blockNumber", []);
 			}).pipe(
 				Effect.provide(
-					createMockHttpTransport(fetchMock, { url: "https://eth.example.com", retries: 0 }),
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+						retries: 0,
+					}),
 				),
 			);
 
@@ -425,14 +484,20 @@ describe("TransportService", () => {
 				return yield* transport.request<string>("eth_blockNumber", []);
 			}).pipe(
 				Effect.provide(
-					createMockHttpTransport(fetchMock, { url: "https://eth.example.com", timeout: 100, retries: 0 }),
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+						timeout: 100,
+						retries: 0,
+					}),
 				),
 			);
 
 			const exit = await Effect.runPromiseExit(program);
 			expect(exit._tag).toBe("Failure");
 			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
-				expect((exit.cause.error as TransportError).message.toLowerCase()).toContain("timed out");
+				expect(
+					(exit.cause.error as TransportError).message.toLowerCase(),
+				).toContain("timed out");
 			}
 		});
 
@@ -458,7 +523,11 @@ describe("TransportService", () => {
 				return yield* transport.request<string>("eth_blockNumber", []);
 			}).pipe(
 				Effect.provide(
-					createMockHttpTransport(fetchMock, { url: "https://eth.example.com", retries: 3, retryDelay: 10 }),
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+						retries: 3,
+						retryDelay: 10,
+					}),
 				),
 			);
 
@@ -481,7 +550,12 @@ describe("TransportService", () => {
 				const transport = yield* TransportService;
 				return yield* transport.request<string>("eth_unknownMethod", []);
 			}).pipe(
-				Effect.provide(createMockHttpTransport(fetchMock, { url: "https://eth.example.com", retries: 0 })),
+				Effect.provide(
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+						retries: 0,
+					}),
+				),
 			);
 
 			const exit = await Effect.runPromiseExit(program);
@@ -505,7 +579,12 @@ describe("TransportService", () => {
 				const transport = yield* TransportService;
 				return yield* transport.request<string>("eth_getBalance", ["invalid"]);
 			}).pipe(
-				Effect.provide(createMockHttpTransport(fetchMock, { url: "https://eth.example.com", retries: 0 })),
+				Effect.provide(
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+						retries: 0,
+					}),
+				),
 			);
 
 			const exit = await Effect.runPromiseExit(program);
@@ -529,7 +608,12 @@ describe("TransportService", () => {
 				const transport = yield* TransportService;
 				return yield* transport.request<string>("eth_blockNumber", []);
 			}).pipe(
-				Effect.provide(createMockHttpTransport(fetchMock, { url: "https://eth.example.com", retries: 0 })),
+				Effect.provide(
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+						retries: 0,
+					}),
+				),
 			);
 
 			const exit = await Effect.runPromiseExit(program);
@@ -540,7 +624,10 @@ describe("TransportService", () => {
 		});
 
 		it("handles JSON-RPC internal error with data", async () => {
-			const errorData = { details: "execution reverted", reason: "Ownable: caller is not the owner" };
+			const errorData = {
+				details: "execution reverted",
+				reason: "Ownable: caller is not the owner",
+			};
 			fetchMock.mockResolvedValueOnce({
 				ok: true,
 				json: async () => ({
@@ -554,7 +641,12 @@ describe("TransportService", () => {
 				const transport = yield* TransportService;
 				return yield* transport.request<string>("eth_call", []);
 			}).pipe(
-				Effect.provide(createMockHttpTransport(fetchMock, { url: "https://eth.example.com", retries: 0 })),
+				Effect.provide(
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+						retries: 0,
+					}),
+				),
 			);
 
 			const exit = await Effect.runPromiseExit(program);
@@ -569,18 +661,20 @@ describe("TransportService", () => {
 		describe("batching", () => {
 			it.effect("batches requests that arrive within wait window", () =>
 				Effect.gen(function* () {
-					fetchMock.mockImplementation((request: HttpClientRequest.HttpClientRequest) => {
-						const batch = parseBatchRequests(request);
-						const responses = batch.map((item) => ({
-							jsonrpc: "2.0",
-							id: item.id,
-							result: item.method === "eth_blockNumber" ? "0x100" : "0x1",
-						}));
-						return Promise.resolve({
-							ok: true,
-							json: async () => responses,
-						});
-					});
+					fetchMock.mockImplementation(
+						(request: HttpClientRequest.HttpClientRequest) => {
+							const batch = parseBatchRequests(request);
+							const responses = batch.map((item) => ({
+								jsonrpc: "2.0",
+								id: item.id,
+								result: item.method === "eth_blockNumber" ? "0x100" : "0x1",
+							}));
+							return Promise.resolve({
+								ok: true,
+								json: async () => responses,
+							});
+						},
+					);
 
 					const program = Effect.gen(function* () {
 						const transport = yield* TransportService;
@@ -616,22 +710,24 @@ describe("TransportService", () => {
 
 			it.effect("handles individual request errors in batch", () =>
 				Effect.gen(function* () {
-					fetchMock.mockImplementation((request: HttpClientRequest.HttpClientRequest) => {
-						const batch = parseBatchRequests(request);
-						const responses = batch.map((item) =>
-							item.method === "eth_call"
-								? {
-										jsonrpc: "2.0",
-										id: item.id,
-										error: { code: -32000, message: "execution reverted" },
-									}
-								: { jsonrpc: "2.0", id: item.id, result: "0x100" },
-						);
-						return Promise.resolve({
-							ok: true,
-							json: async () => responses,
-						});
-					});
+					fetchMock.mockImplementation(
+						(request: HttpClientRequest.HttpClientRequest) => {
+							const batch = parseBatchRequests(request);
+							const responses = batch.map((item) =>
+								item.method === "eth_call"
+									? {
+											jsonrpc: "2.0",
+											id: item.id,
+											error: { code: -32000, message: "execution reverted" },
+										}
+									: { jsonrpc: "2.0", id: item.id, result: "0x100" },
+							);
+							return Promise.resolve({
+								ok: true,
+								json: async () => responses,
+							});
+						},
+					);
 
 					const program = Effect.gen(function* () {
 						const transport = yield* TransportService;
@@ -667,27 +763,29 @@ describe("TransportService", () => {
 
 			it.effect("flushes batch on size limit", () =>
 				Effect.gen(function* () {
-					let callCount = 0;
-					fetchMock.mockImplementation((request: HttpClientRequest.HttpClientRequest) => {
-						callCount++;
-						const batch = parseBatchRequests(request);
-						const responses = batch.map((item) => {
-							switch (item.method) {
-								case "eth_blockNumber":
-									return { jsonrpc: "2.0", id: item.id, result: "0x1" };
-								case "eth_chainId":
-									return { jsonrpc: "2.0", id: item.id, result: "0x2" };
-								case "eth_gasPrice":
-									return { jsonrpc: "2.0", id: item.id, result: "0x3" };
-								default:
-									return { jsonrpc: "2.0", id: item.id, result: "0x0" };
-							}
-						});
-						return Promise.resolve({
-							ok: true,
-							json: async () => responses,
-						});
-					});
+					let _callCount = 0;
+					fetchMock.mockImplementation(
+						(request: HttpClientRequest.HttpClientRequest) => {
+							_callCount++;
+							const batch = parseBatchRequests(request);
+							const responses = batch.map((item) => {
+								switch (item.method) {
+									case "eth_blockNumber":
+										return { jsonrpc: "2.0", id: item.id, result: "0x1" };
+									case "eth_chainId":
+										return { jsonrpc: "2.0", id: item.id, result: "0x2" };
+									case "eth_gasPrice":
+										return { jsonrpc: "2.0", id: item.id, result: "0x3" };
+									default:
+										return { jsonrpc: "2.0", id: item.id, result: "0x0" };
+								}
+							});
+							return Promise.resolve({
+								ok: true,
+								json: async () => responses,
+							});
+						},
+					);
 
 					const program = Effect.gen(function* () {
 						const transport = yield* TransportService;
@@ -760,15 +858,19 @@ describe("TransportService", () => {
 
 			it.effect("fails missing batch response with useful error", () =>
 				Effect.gen(function* () {
-					fetchMock.mockImplementation((request: HttpClientRequest.HttpClientRequest) => {
-						const batch = parseBatchRequests(request);
-						const first = batch[0];
-						return Promise.resolve({
-							ok: true,
-							json: async () =>
-								first ? [{ jsonrpc: "2.0", id: first.id, result: "0x100" }] : [],
-						});
-					});
+					fetchMock.mockImplementation(
+						(request: HttpClientRequest.HttpClientRequest) => {
+							const batch = parseBatchRequests(request);
+							const first = batch[0];
+							return Promise.resolve({
+								ok: true,
+								json: async () =>
+									first
+										? [{ jsonrpc: "2.0", id: first.id, result: "0x100" }]
+										: [],
+							});
+						},
+					);
 
 					const program = Effect.gen(function* () {
 						const transport = yield* TransportService;
@@ -972,7 +1074,9 @@ describe("TransportService", () => {
 			const exit = await Effect.runPromiseExit(program);
 			expect(exit._tag).toBe("Failure");
 			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
-				expect((exit.cause.error as TransportError).message).toContain("Unknown error");
+				expect((exit.cause.error as TransportError).message).toContain(
+					"Unknown error",
+				);
 			}
 		});
 
@@ -1105,10 +1209,9 @@ describe("TransportService", () => {
 			);
 			const backupTransport = TestTransport({ eth_blockNumber: "0xBackup" });
 
-			const fallback = FallbackTransport(
-				[failingTransport, backupTransport],
-				{ retryCount: 1 },
-			);
+			const fallback = FallbackTransport([failingTransport, backupTransport], {
+				retryCount: 1,
+			});
 
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
@@ -1143,16 +1246,14 @@ describe("TransportService", () => {
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
 				return yield* transport.request<string>("eth_blockNumber", []);
-			}).pipe(
-				Effect.provide(FallbackTransport([])),
-			);
+			}).pipe(Effect.provide(FallbackTransport([])));
 
 			const exit = await Effect.runPromiseExit(program);
 			expect(exit._tag).toBe("Failure");
 		});
 
 		it("respects retryCount option", async () => {
-			let callCount = 0;
+			const _callCount = 0;
 			const failingTransport = TestTransport(
 				new Map([
 					[
@@ -1182,18 +1283,26 @@ describe("TransportService", () => {
 			const error = new TransportError({ code: -32603, message: "Failed" });
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
-				const blockNum = yield* transport.request<string>("eth_blockNumber", []);
+				const blockNum = yield* transport.request<string>(
+					"eth_blockNumber",
+					[],
+				);
 				const chainId = yield* transport.request<string>("eth_chainId", []);
 				return { blockNum, chainId };
 			}).pipe(
 				Effect.provide(
-					FallbackTransport([
-						TestTransport(new Map([
-							["eth_blockNumber", error],
-							["eth_chainId", "0x1"],
-						])),
-						TestTransport({ eth_blockNumber: "0x100", eth_chainId: "0x5" }),
-					], { retryCount: 1 }),
+					FallbackTransport(
+						[
+							TestTransport(
+								new Map([
+									["eth_blockNumber", error],
+									["eth_chainId", "0x1"],
+								]),
+							),
+							TestTransport({ eth_blockNumber: "0x100", eth_chainId: "0x5" }),
+						],
+						{ retryCount: 1 },
+					),
 				),
 			);
 
@@ -1203,15 +1312,14 @@ describe("TransportService", () => {
 		});
 
 		it("resets failures when all transports fail and retries", async () => {
-			const error = new TransportError({ code: -32603, message: "Temporary failure" });
-			let failCount = 0;
-			
+			const error = new TransportError({
+				code: -32603,
+				message: "Temporary failure",
+			});
+			const _failCount = 0;
+
 			const fallback = FallbackTransport(
-				[
-					TestTransport(new Map([
-						["eth_blockNumber", error],
-					])),
-				],
+				[TestTransport(new Map([["eth_blockNumber", error]]))],
 				{ retryCount: 1, retryDelay: 10 },
 			);
 
@@ -1275,7 +1383,10 @@ describe("TransportService", () => {
 				return results;
 			}).pipe(
 				Effect.provide(
-					Layer.provide(WebSocketTransport("ws://localhost:8545"), WebSocketConstructorGlobal),
+					Layer.provide(
+						WebSocketTransport("ws://localhost:8545"),
+						WebSocketConstructorGlobal,
+					),
 				),
 				Effect.scoped,
 			);
@@ -1451,7 +1562,7 @@ describe("TransportService", () => {
 							JSON.stringify({
 								jsonrpc: "2.0",
 								id: parsed.id,
-								result: `0x${parsed.id}`
+								result: `0x${parsed.id}`,
 							}),
 						);
 					});
@@ -1513,7 +1624,9 @@ describe("TransportService", () => {
 
 				const keepAliveMessages = sentMessages.filter((msg) => {
 					const parsed = JSON.parse(msg);
-					return parsed.method === "web3_clientVersion" && parsed.id === "keepalive";
+					return (
+						parsed.method === "web3_clientVersion" && parsed.id === "keepalive"
+					);
 				});
 
 				return keepAliveMessages.length;

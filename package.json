@@ -408,11 +408,6 @@
 			"import": "./dist/stream/index.js",
 			"require": "./dist/stream/index.cjs"
 		},
-		"./wallet": {
-			"types": "./types/wallet/index.d.ts",
-			"import": "./dist/wallet/index.js",
-			"require": "./dist/wallet/index.cjs"
-		},
 		"./AesGcm": {
 			"types": "./types/crypto/AesGcm/index.d.ts",
 			"import": "./dist/crypto/AesGcm/index.js",
@@ -745,22 +740,10 @@
 		"vitest": "4.0.16"
 	},
 	"peerDependencies": {
-		"abitype": "^1.1.1",
-		"@ledgerhq/hw-app-eth": "^6.38.4",
-		"@ledgerhq/hw-transport-webusb": "^6.29.4",
-		"@trezor/connect-web": "^9.7.1"
+		"abitype": "^1.1.1"
 	},
 	"peerDependenciesMeta": {
 		"abitype": {
-			"optional": true
-		},
-		"@ledgerhq/hw-app-eth": {
-			"optional": true
-		},
-		"@ledgerhq/hw-transport-webusb": {
-			"optional": true
-		},
-		"@trezor/connect-web": {
 			"optional": true
 		}
 	},

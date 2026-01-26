@@ -14,7 +14,10 @@ type Encodable = Uint8Array | BrandedRlp | Encodable[];
 
 const isRlpEncodingError = (e: unknown): e is RlpEncodingError =>
 	e instanceof RlpEncodingErrorClass ||
-	(e !== null && typeof e === "object" && "name" in e && e.name === "RlpEncodingError");
+	(e !== null &&
+		typeof e === "object" &&
+		"name" in e &&
+		e.name === "RlpEncodingError");
 
 /**
  * RLP-encodes data using Effect for error handling.
@@ -49,5 +52,7 @@ export const encode = (
 		catch: (e) =>
 			isRlpEncodingError(e)
 				? e
-				: new RlpEncodingErrorClass("RLP encoding failed", { cause: e instanceof Error ? e : undefined }),
+				: new RlpEncodingErrorClass("RLP encoding failed", {
+						cause: e instanceof Error ? e : undefined,
+					}),
 	});

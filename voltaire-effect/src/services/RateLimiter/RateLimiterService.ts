@@ -122,9 +122,7 @@ export type RateLimiterShape = {
 	 *
 	 * @param method - The RPC method name
 	 */
-	readonly getLimiter: (
-		method: string,
-	) => RateLimiter.RateLimiter | undefined;
+	readonly getLimiter: (method: string) => RateLimiter.RateLimiter | undefined;
 
 	/**
 	 * Gets the global rate limiter.

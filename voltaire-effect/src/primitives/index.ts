@@ -3,7 +3,6 @@
 export * as AccessList from "./AccessList/index.js";
 export * as AccountState from "./AccountState/index.js";
 export * as Address from "./Address/index.js";
-export * as Brand from "./Brand/index.js";
 export * as Authorization from "./Authorization/index.js";
 export * as Balance from "./Balance/index.js";
 export * as Base64 from "./Base64/index.js";
@@ -18,6 +17,7 @@ export * as BlockHash from "./BlockHash/index.js";
 export * as BlockHeader from "./BlockHeader/index.js";
 export * as BlockNumber from "./BlockNumber/index.js";
 export * as BloomFilter from "./BloomFilter/index.js";
+export * as Brand from "./Brand/index.js";
 export * as BuilderBid from "./BuilderBid/index.js";
 export * as Bundle from "./Bundle/index.js";
 export * as BundleHash from "./BundleHash/index.js";

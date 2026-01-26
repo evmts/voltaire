@@ -1,6 +1,6 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
 import {
 	TransportError,
 	TransportService,
@@ -22,8 +22,7 @@ describe("simulateCalls", () => {
 		const token = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 		const contract = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 		const recipient = "0x2222222222222222222222222222222222222222";
-		const internalRecipient =
-			"0x3333333333333333333333333333333333333333";
+		const internalRecipient = "0x3333333333333333333333333333333333333333";
 
 		const simulateResponse = [
 			{

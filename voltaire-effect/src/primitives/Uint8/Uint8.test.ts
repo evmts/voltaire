@@ -1,8 +1,8 @@
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
+import * as S from "effect/Schema";
 import * as Uint8 from "./index.js";
 
-const UINT8_MIN = 0;
+const _UINT8_MIN = 0;
 const UINT8_MAX = 255;
 
 describe("Uint8", () => {
@@ -315,7 +315,7 @@ describe("Uint8", () => {
 		it("alternating operations", () => {
 			const a = S.decodeSync(Uint8.Number)(100);
 			const b = S.decodeSync(Uint8.Number)(50);
-			const c = S.decodeSync(Uint8.Number)(2);
+			const _c = S.decodeSync(Uint8.Number)(2);
 			const r1 = Uint8.plus(a, b);
 			const r2 = Uint8.minus(r1, b);
 			expect(Uint8.toNumber(r2)).toBe(100);

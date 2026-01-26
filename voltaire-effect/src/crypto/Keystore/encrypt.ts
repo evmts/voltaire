@@ -5,10 +5,10 @@
  */
 
 import {
-	EncryptionError as KeystoreEncryptionError,
 	InvalidPbkdf2IterationsError,
 	InvalidScryptNError,
 	Keystore,
+	EncryptionError as KeystoreEncryptionError,
 } from "@tevm/voltaire/Keystore";
 import * as Effect from "effect/Effect";
 import type { PrivateKeyType } from "./KeystoreService.js";

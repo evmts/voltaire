@@ -2,10 +2,10 @@
  * @fileoverview Tests for signature verification utilities.
  */
 
-import type { TypedData } from "@tevm/voltaire/EIP712";
-import { Address } from "@tevm/voltaire/Address";
-import { Hash } from "@tevm/voltaire/Hash";
 import { describe, expect, it } from "@effect/vitest";
+import { Address } from "@tevm/voltaire/Address";
+import type { TypedData } from "@tevm/voltaire/EIP712";
+import { Hash } from "@tevm/voltaire/Hash";
 import * as Effect from "effect/Effect";
 import { CryptoLive } from "../CryptoLive.js";
 import { KeccakLive, KeccakService } from "../Keccak256/index.js";
@@ -188,7 +188,7 @@ describe("hashMessage", () => {
 			// Hash manually to verify prefix
 			const message = "hello";
 			const prefix = "\x19Ethereum Signed Message:\n";
-			const prefixedMessage = prefix + "5" + message;
+			const prefixedMessage = `${prefix}5${message}`;
 			const manualBytes = new TextEncoder().encode(prefixedMessage);
 			const manualHash = yield* keccak.hash(manualBytes);
 

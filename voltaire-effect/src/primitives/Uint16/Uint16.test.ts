@@ -1,8 +1,8 @@
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
+import * as S from "effect/Schema";
 import * as Uint16 from "./index.js";
 
-const UINT16_MIN = 0;
+const _UINT16_MIN = 0;
 const UINT16_MAX = 65535;
 
 describe("Uint16", () => {

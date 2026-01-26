@@ -6,7 +6,8 @@ description: BIP-32/39 hierarchical deterministic wallets
 Generate mnemonics, derive seeds, and create hierarchical key trees.
 
 ```typescript
-import { HDWalletService, HDWalletLive } from 'voltaire-effect/crypto'
+import { HDWalletService } from 'voltaire-effect/crypto'
+import { HDWalletLive } from 'voltaire-effect/native'
 import { mnemonicToWords } from 'voltaire-effect/crypto/Bip39'
 import { Effect } from 'effect'
 

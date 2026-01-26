@@ -111,7 +111,10 @@ export interface SimulateContractResult<
  *
  * @since 0.0.1
  */
-export const simulateContract = <TAbi extends Abi, TFunctionName extends string>(
+export const simulateContract = <
+	TAbi extends Abi,
+	TFunctionName extends string,
+>(
 	params: SimulateContractParams<TAbi, TFunctionName>,
 ): Effect.Effect<
 	SimulateContractResult<TAbi, TFunctionName>,

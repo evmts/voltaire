@@ -7,27 +7,33 @@
  * - message: human-readable error message
  * - cause: optional underlying error
  */
+
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
+import {
+	AbiDecodeError,
+	AbiEncodeError,
+} from "./AbiEncoder/AbiEncoderService.js";
 import { AccountError } from "./Account/AccountService.js";
+import { CcipError } from "./Ccip/CcipService.js";
 import {
 	ContractCallError,
 	ContractError,
 	ContractEventError,
 	ContractWriteError,
 } from "./Contract/ContractTypes.js";
-import { ProviderError } from "./Provider/ProviderService.js";
-import { TransportError } from "./Transport/TransportError.js";
-import { SignerError } from "./Signer/SignerService.js";
-import { TransportService } from "./Transport/TransportService.js";
-import { Provider } from "./Provider/Provider.js";
-import { ProviderService } from "./Provider/ProviderService.js";
-import { CcipError } from "./Ccip/CcipService.js";
-import { AbiEncodeError, AbiDecodeError } from "./AbiEncoder/AbiEncoderService.js";
-import { SerializeError, DeserializeError } from "./TransactionSerializer/TransactionSerializerService.js";
 import { KzgError } from "./Kzg/KzgService.js";
+import { Provider } from "./Provider/Provider.js";
+import { ProviderError, ProviderService } from "./Provider/ProviderService.js";
+import { SignerError } from "./Signer/SignerService.js";
+import {
+	DeserializeError,
+	SerializeError,
+} from "./TransactionSerializer/TransactionSerializerService.js";
+import { TransportError } from "./Transport/TransportError.js";
+import { TransportService } from "./Transport/TransportService.js";
 
 describe("Error constructor standardization", () => {
 	describe("All errors have consistent shape", () => {
@@ -311,7 +317,11 @@ describe("Error constructor standardization", () => {
 		it("CcipError has _tag, urls, message, cause", () => {
 			const urls = ["https://example.com/gateway"];
 			const cause = new Error("fetch failed");
-			const error = new CcipError({ urls, message: "CCIP lookup failed", cause });
+			const error = new CcipError({
+				urls,
+				message: "CCIP lookup failed",
+				cause,
+			});
 
 			expect(error._tag).toBe("CcipError");
 			expect(error.urls).toEqual(urls);
@@ -416,7 +426,10 @@ describe("Error constructor standardization", () => {
 
 	describe("Pattern matching with Effect.catchTag and Match", () => {
 		it("TransportError is catchable with Effect.catchTag", async () => {
-			const error = new TransportError({ code: -32601, message: "Method not found" });
+			const error = new TransportError({
+				code: -32601,
+				message: "Method not found",
+			});
 
 			const program = Effect.fail(error).pipe(
 				Effect.catchTag("TransportError", (e) =>
@@ -429,7 +442,10 @@ describe("Error constructor standardization", () => {
 		});
 
 		it("ProviderError is catchable with Effect.catchTag", async () => {
-			const error = new ProviderError({ method: "eth_call" }, "Provider failed");
+			const error = new ProviderError(
+				{ method: "eth_call" },
+				"Provider failed",
+			);
 
 			const program = Effect.fail(error).pipe(
 				Effect.catchTag("ProviderError", (e) =>
@@ -485,7 +501,9 @@ describe("Error constructor standardization", () => {
 			const writeError = new ContractWriteError({}, "write failed");
 			const eventError = new ContractEventError({}, "event failed");
 
-			const handleError = (error: ContractCallError | ContractWriteError | ContractEventError) =>
+			const handleError = (
+				error: ContractCallError | ContractWriteError | ContractEventError,
+			) =>
 				Effect.fail(error).pipe(
 					Effect.catchTag("ContractCallError", (e) =>
 						Effect.succeed(`call: ${e.message}`),
@@ -498,13 +516,22 @@ describe("Error constructor standardization", () => {
 					),
 				);
 
-			expect(await Effect.runPromise(handleError(callError))).toBe("call: call failed");
-			expect(await Effect.runPromise(handleError(writeError))).toBe("write: write failed");
-			expect(await Effect.runPromise(handleError(eventError))).toBe("event: event failed");
+			expect(await Effect.runPromise(handleError(callError))).toBe(
+				"call: call failed",
+			);
+			expect(await Effect.runPromise(handleError(writeError))).toBe(
+				"write: write failed",
+			);
+			expect(await Effect.runPromise(handleError(eventError))).toBe(
+				"event: event failed",
+			);
 		});
 
 		it("CcipError is catchable with Effect.catchTag", async () => {
-			const error = new CcipError({ urls: ["https://example.com"], message: "CCIP failed" });
+			const error = new CcipError({
+				urls: ["https://example.com"],
+				message: "CCIP failed",
+			});
 
 			const program = Effect.fail(error).pipe(
 				Effect.catchTag("CcipError", (e) =>
@@ -517,7 +544,10 @@ describe("Error constructor standardization", () => {
 		});
 
 		it("KzgError is catchable with Effect.catchTag", async () => {
-			const error = new KzgError({ operation: "verifyProof", message: "KZG failed" });
+			const error = new KzgError({
+				operation: "verifyProof",
+				message: "KZG failed",
+			});
 
 			const program = Effect.fail(error).pipe(
 				Effect.catchTag("KzgError", (e) =>

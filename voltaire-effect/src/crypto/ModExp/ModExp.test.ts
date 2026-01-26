@@ -1,5 +1,5 @@
-import * as Effect from "effect/Effect";
 import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
 import {
 	calculateGas,
 	ModExpLive,
@@ -16,7 +16,7 @@ describe("ModExpService", () => {
 				const service = yield* ModExpService;
 				const result = yield* service.modexp(2n, 10n, 1000n);
 				expect(result).toBe(24n);
-			}).pipe(Effect.provide(ModExpLive))
+			}).pipe(Effect.provide(ModExpLive)),
 		);
 
 		it.effect("computes 3^13 mod 17 = 12", () =>
@@ -24,7 +24,7 @@ describe("ModExpService", () => {
 				const service = yield* ModExpService;
 				const result = yield* service.modexp(3n, 13n, 17n);
 				expect(result).toBe(12n);
-			}).pipe(Effect.provide(ModExpLive))
+			}).pipe(Effect.provide(ModExpLive)),
 		);
 
 		it.effect("handles zero exponent", () =>
@@ -32,7 +32,7 @@ describe("ModExpService", () => {
 				const service = yield* ModExpService;
 				const result = yield* service.modexp(5n, 0n, 7n);
 				expect(result).toBe(1n);
-			}).pipe(Effect.provide(ModExpLive))
+			}).pipe(Effect.provide(ModExpLive)),
 		);
 
 		it.effect("handles zero base", () =>
@@ -40,7 +40,7 @@ describe("ModExpService", () => {
 				const service = yield* ModExpService;
 				const result = yield* service.modexp(0n, 5n, 7n);
 				expect(result).toBe(0n);
-			}).pipe(Effect.provide(ModExpLive))
+			}).pipe(Effect.provide(ModExpLive)),
 		);
 
 		it.effect("handles modulus of 1", () =>
@@ -48,7 +48,7 @@ describe("ModExpService", () => {
 				const service = yield* ModExpService;
 				const result = yield* service.modexp(5n, 3n, 1n);
 				expect(result).toBe(0n);
-			}).pipe(Effect.provide(ModExpLive))
+			}).pipe(Effect.provide(ModExpLive)),
 		);
 	});
 
@@ -64,7 +64,7 @@ describe("ModExpService", () => {
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(1);
 				expect(result[0]).toBe(0x03);
-			}).pipe(Effect.provide(ModExpLive))
+			}).pipe(Effect.provide(ModExpLive)),
 		);
 
 		it.effect("pads output to modulus length", () =>
@@ -76,7 +76,7 @@ describe("ModExpService", () => {
 					new Uint8Array([0x03, 0xe8]),
 				);
 				expect(result.length).toBe(2);
-			}).pipe(Effect.provide(ModExpLive))
+			}).pipe(Effect.provide(ModExpLive)),
 		);
 	});
 
@@ -86,7 +86,7 @@ describe("ModExpService", () => {
 				const service = yield* ModExpService;
 				const result = yield* service.calculateGas(1n, 1n, 1n, 3n);
 				expect(result).toBe(200n);
-			}).pipe(Effect.provide(ModExpLive))
+			}).pipe(Effect.provide(ModExpLive)),
 		);
 
 		it.effect("calculates gas for larger inputs", () =>
@@ -99,7 +99,7 @@ describe("ModExpService", () => {
 					0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn,
 				);
 				expect(result).toBeGreaterThan(200n);
-			}).pipe(Effect.provide(ModExpLive))
+			}).pipe(Effect.provide(ModExpLive)),
 		);
 	});
 
@@ -109,7 +109,7 @@ describe("ModExpService", () => {
 				const service = yield* ModExpService;
 				const result = yield* service.modexp(2n, 10n, 1000n);
 				expect(result).toBe(0n);
-			}).pipe(Effect.provide(ModExpTest))
+			}).pipe(Effect.provide(ModExpTest)),
 		);
 
 		it.effect("returns zero-filled bytes for modexpBytes", () =>
@@ -123,7 +123,7 @@ describe("ModExpService", () => {
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(1);
 				expect(result[0]).toBe(0);
-			}).pipe(Effect.provide(ModExpTest))
+			}).pipe(Effect.provide(ModExpTest)),
 		);
 
 		it.effect("returns minimum gas for calculateGas", () =>
@@ -131,7 +131,7 @@ describe("ModExpService", () => {
 				const service = yield* ModExpService;
 				const result = yield* service.calculateGas(64n, 64n, 64n, 255n);
 				expect(result).toBe(200n);
-			}).pipe(Effect.provide(ModExpTest))
+			}).pipe(Effect.provide(ModExpTest)),
 		);
 	});
 });
@@ -142,14 +142,14 @@ describe("operations", () => {
 			Effect.gen(function* () {
 				const result = yield* modexp(2n, 10n, 1000n);
 				expect(result).toBe(24n);
-			}).pipe(Effect.provide(ModExpLive))
+			}).pipe(Effect.provide(ModExpLive)),
 		);
 
 		it.effect("works with test layer", () =>
 			Effect.gen(function* () {
 				const result = yield* modexp(2n, 10n, 1000n);
 				expect(result).toBe(0n);
-			}).pipe(Effect.provide(ModExpTest))
+			}).pipe(Effect.provide(ModExpTest)),
 		);
 	});
 
@@ -162,7 +162,7 @@ describe("operations", () => {
 					new Uint8Array([0x05]),
 				);
 				expect(result[0]).toBe(0x03);
-			}).pipe(Effect.provide(ModExpLive))
+			}).pipe(Effect.provide(ModExpLive)),
 		);
 	});
 
@@ -171,7 +171,7 @@ describe("operations", () => {
 			Effect.gen(function* () {
 				const result = yield* calculateGas(1n, 1n, 1n, 3n);
 				expect(result).toBe(200n);
-			}).pipe(Effect.provide(ModExpLive))
+			}).pipe(Effect.provide(ModExpLive)),
 		);
 	});
 });

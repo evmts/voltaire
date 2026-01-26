@@ -22,10 +22,7 @@
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
-import {
-	RateLimitError,
-	RateLimiterService,
-} from "../RateLimiter/index.js";
+import { RateLimitError, RateLimiterService } from "../RateLimiter/index.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService, type TransportShape } from "./TransportService.js";
 

@@ -30,13 +30,14 @@ export const toLightBlock = (block: unknown): LightBlock => {
 	return {
 		number:
 			typeof (header?.number ?? b.number) === "bigint"
-				? (header?.number ?? b.number) as bigint
+				? ((header?.number ?? b.number) as bigint)
 				: BigInt((header?.number ?? b.number) as string | number),
 		hash: b.hash as LightBlock["hash"],
-		parentHash: (header?.parentHash ?? b.parentHash) as LightBlock["parentHash"],
+		parentHash: (header?.parentHash ??
+			b.parentHash) as LightBlock["parentHash"],
 		timestamp:
 			typeof (header?.timestamp ?? b.timestamp) === "bigint"
-				? (header?.timestamp ?? b.timestamp) as bigint
+				? ((header?.timestamp ?? b.timestamp) as bigint)
 				: BigInt((header?.timestamp ?? b.timestamp) as string | number),
 	};
 };

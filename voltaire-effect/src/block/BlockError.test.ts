@@ -21,7 +21,9 @@ describe("BlockError", () => {
 		it("creates error with context", () => {
 			const context = { blockNumber: 12345, rpcUrl: "https://example.com" };
 			const error = new BlockError("Block validation failed", { context });
-			expect((error as unknown as { context: Record<string, unknown> }).context).toEqual(context);
+			expect(
+				(error as unknown as { context: Record<string, unknown> }).context,
+			).toEqual(context);
 		});
 
 		it("creates error with both cause and context", () => {
@@ -32,7 +34,9 @@ describe("BlockError", () => {
 				context,
 			});
 			expect(error.cause).toBe(originalError);
-			expect((error as unknown as { context: Record<string, unknown> }).context).toEqual(context);
+			expect(
+				(error as unknown as { context: Record<string, unknown> }).context,
+			).toEqual(context);
 		});
 	});
 

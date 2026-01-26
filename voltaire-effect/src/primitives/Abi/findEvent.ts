@@ -6,7 +6,7 @@
  * @since 0.0.1
  */
 
-import { type Event, type ItemType, Item } from "@tevm/voltaire/Abi";
+import { type Event, Item, type ItemType } from "@tevm/voltaire/Abi";
 import * as Effect from "effect/Effect";
 
 /**

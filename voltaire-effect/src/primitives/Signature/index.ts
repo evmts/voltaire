@@ -68,27 +68,26 @@
  * @since 0.1.0
  */
 
-// Schemas
-export { SignatureTypeSchema } from "./SignatureSchema.js";
-export { Hex } from "./Hex.js";
 export { Bytes } from "./Bytes.js";
 export { Compact } from "./Compact.js";
 export { DER } from "./DER.js";
-export { Rpc } from "./Rpc.js";
-export { Tuple } from "./Tuple.js";
-
+export { getAlgorithm } from "./getAlgorithm.js";
+export { Hex } from "./Hex.js";
 // Pure functions (infallible)
 export { is } from "./is.js";
-export { isSignature } from "./isSignature.js";
 export { isCanonical } from "./isCanonical.js";
-export { getAlgorithm } from "./getAlgorithm.js";
+export { isSignature } from "./isSignature.js";
 export { normalize } from "./normalize.js";
+export { Rpc } from "./Rpc.js";
+// Schemas
+export { SignatureTypeSchema } from "./SignatureSchema.js";
+export { Tuple } from "./Tuple.js";
 export { toCompact } from "./toCompact.js";
 
 // Effect-wrapped functions (fallible operations on valid signatures)
 
 // Re-export types from voltaire
 export type {
-	SignatureType,
 	SignatureAlgorithm,
+	SignatureType,
 } from "@tevm/voltaire/Signature";

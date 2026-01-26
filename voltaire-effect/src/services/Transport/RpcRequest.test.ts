@@ -1,22 +1,22 @@
 import { describe, expect, it } from "@effect/vitest";
 import {
-	GetBlockNumber,
-	GetChainId,
-	GetGasPrice,
-	GetBalance,
-	GetTransactionCount,
-	GetCode,
-	GetStorageAt,
 	Call,
 	EstimateGas,
-	GetBlockByNumber,
-	GetBlockByHash,
-	GetTransactionByHash,
-	GetTransactionReceipt,
-	GetLogs,
-	SendRawTransaction,
-	GetFeeHistory,
 	GenericRpcRequest,
+	GetBalance,
+	GetBlockByHash,
+	GetBlockByNumber,
+	GetBlockNumber,
+	GetChainId,
+	GetCode,
+	GetFeeHistory,
+	GetGasPrice,
+	GetLogs,
+	GetStorageAt,
+	GetTransactionByHash,
+	GetTransactionCount,
+	GetTransactionReceipt,
+	SendRawTransaction,
 	toJsonRpc,
 } from "./RpcRequest.js";
 
@@ -108,7 +108,10 @@ describe("RpcRequest", () => {
 			const { method, params } = toJsonRpc(request);
 			expect(method).toBe("eth_call");
 			expect(params).toEqual([
-				{ to: "0x1234567890123456789012345678901234567890", data: "0x12345678" },
+				{
+					to: "0x1234567890123456789012345678901234567890",
+					data: "0x12345678",
+				},
 				"latest",
 			]);
 		});

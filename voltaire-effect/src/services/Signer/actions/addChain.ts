@@ -6,12 +6,12 @@
  */
 
 import * as Effect from "effect/Effect";
+import { TransportService } from "../../Transport/index.js";
 import {
-	SignerError,
 	type ChainConfig,
 	type NativeCurrency,
+	SignerError,
 } from "../SignerService.js";
-import { TransportService } from "../../Transport/index.js";
 
 export type { ChainConfig, NativeCurrency };
 
@@ -65,22 +65,16 @@ export const addChain = (
 				},
 			])
 			.pipe(
-				Effect.mapError(
-					(e) => {
-						const isUserRejected = e.code === 4001;
-						const message = isUserRejected
-							? "User rejected the request"
-							: `Failed to add chain: ${e.message}`;
-						return new SignerError(
-							{ action: "addChain", chain },
-							message,
-							{
-								cause: e,
-								code: e.code,
-								context: isUserRejected ? { userRejected: true } : undefined,
-							},
-						);
-					},
-				),
+				Effect.mapError((e) => {
+					const isUserRejected = e.code === 4001;
+					const message = isUserRejected
+						? "User rejected the request"
+						: `Failed to add chain: ${e.message}`;
+					return new SignerError({ action: "addChain", chain }, message, {
+						cause: e,
+						code: e.code,
+						context: isUserRejected ? { userRejected: true } : undefined,
+					});
+				}),
 			);
 	});

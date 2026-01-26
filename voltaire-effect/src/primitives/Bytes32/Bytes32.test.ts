@@ -3,7 +3,7 @@ import { Bytes32 } from "@tevm/voltaire/Bytes";
 
 describe("Bytes32.fromHex", () => {
 	it("parses valid hex input", () => {
-		const bytes = Bytes32.fromHex("0x" + "ab".repeat(32));
+		const bytes = Bytes32.fromHex(`0x${"ab".repeat(32)}`);
 		expect(bytes).toBeInstanceOf(Uint8Array);
 		expect(bytes.length).toBe(32);
 		expect(bytes[0]).toBe(0xab);
@@ -16,11 +16,11 @@ describe("Bytes32.fromHex", () => {
 	});
 
 	it("throws on short hex input", () => {
-		expect(() => Bytes32.fromHex("0x" + "ab".repeat(31))).toThrow();
+		expect(() => Bytes32.fromHex(`0x${"ab".repeat(31)}`)).toThrow();
 	});
 
 	it("throws on invalid hex input", () => {
-		expect(() => Bytes32.fromHex("0x" + "gg".repeat(32))).toThrow();
+		expect(() => Bytes32.fromHex(`0x${"gg".repeat(32)}`)).toThrow();
 	});
 });
 
@@ -41,22 +41,22 @@ describe("Bytes32.fromBytes", () => {
 
 describe("Bytes32.toHex", () => {
 	it("converts bytes to lowercase hex", () => {
-		const bytes = Bytes32.fromHex("0x" + "AB".repeat(32));
+		const bytes = Bytes32.fromHex(`0x${"AB".repeat(32)}`);
 		const hex = Bytes32.toHex(bytes);
-		expect(hex).toBe("0x" + "ab".repeat(32));
+		expect(hex).toBe(`0x${"ab".repeat(32)}`);
 	});
 });
 
 describe("Bytes32.equals", () => {
 	it("returns true for equal values", () => {
-		const a = Bytes32.fromHex("0x" + "ab".repeat(32));
-		const b = Bytes32.fromHex("0x" + "ab".repeat(32));
+		const a = Bytes32.fromHex(`0x${"ab".repeat(32)}`);
+		const b = Bytes32.fromHex(`0x${"ab".repeat(32)}`);
 		expect(Bytes32.equals(a, b)).toBe(true);
 	});
 
 	it("returns false for different values", () => {
-		const a = Bytes32.fromHex("0x" + "ab".repeat(32));
-		const b = Bytes32.fromHex("0x" + "cd".repeat(32));
+		const a = Bytes32.fromHex(`0x${"ab".repeat(32)}`);
+		const b = Bytes32.fromHex(`0x${"cd".repeat(32)}`);
 		expect(Bytes32.equals(a, b)).toBe(false);
 	});
 });

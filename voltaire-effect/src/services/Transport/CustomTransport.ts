@@ -25,10 +25,10 @@
  * @see {@link HttpTransport} - For HTTP-based JSON-RPC
  */
 
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as FiberRef from "effect/FiberRef";
 import * as Layer from "effect/Layer";
-import * as Duration from "effect/Duration";
 import { timeoutRef, tracingRef } from "./config.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
@@ -125,7 +125,11 @@ const toTransportError = (error: unknown): TransportError => {
 	if (error instanceof TransportError) return error;
 
 	if (error && typeof error === "object") {
-		const record = error as { code?: unknown; message?: unknown; data?: unknown };
+		const record = error as {
+			code?: unknown;
+			message?: unknown;
+			data?: unknown;
+		};
 		const rawCode = record.code;
 		const code =
 			typeof rawCode === "string"
@@ -135,7 +139,7 @@ const toTransportError = (error: unknown): TransportError => {
 			const message =
 				typeof record.message === "string" && record.message.length > 0
 					? record.message
-					: EIP1193_ERROR_MESSAGES[code] ?? "Provider error";
+					: (EIP1193_ERROR_MESSAGES[code] ?? "Provider error");
 			return new TransportError({
 				code,
 				message,
@@ -229,7 +233,7 @@ export const CustomTransport = (
 	const config: CustomTransportConfig =
 		options && "request" in options && typeof options.request === "function"
 			? { provider: options }
-			: options ?? {};
+			: (options ?? {});
 
 	const baseTimeout = config.timeout ?? 30000;
 
@@ -253,7 +257,7 @@ export const CustomTransport = (
 
 				if (config.onRequest) {
 					yield* Effect.tryPromise({
-						try: () => Promise.resolve(config.onRequest!(method, params)),
+						try: () => Promise.resolve(config.onRequest?.(method, params)),
 						catch: () => void 0,
 					});
 				}
@@ -280,7 +284,7 @@ export const CustomTransport = (
 					Effect.tapError((error) => {
 						if (config.onError && error instanceof TransportError) {
 							return Effect.tryPromise({
-								try: () => Promise.resolve(config.onError!(method, error)),
+								try: () => Promise.resolve(config.onError?.(method, error)),
 								catch: () => void 0,
 							});
 						}
@@ -291,7 +295,7 @@ export const CustomTransport = (
 				// Call response interceptor
 				if (config.onResponse) {
 					yield* Effect.tryPromise({
-						try: () => Promise.resolve(config.onResponse!(method, result)),
+						try: () => Promise.resolve(config.onResponse?.(method, result)),
 						catch: () => void 0,
 					});
 				}

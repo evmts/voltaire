@@ -2,10 +2,10 @@
  * @fileoverview Tests for TransactionStreamService.
  */
 
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";
-import { describe, expect, it } from "@effect/vitest";
 import {
 	TransportService,
 	type TransportShape,
@@ -50,7 +50,9 @@ describe("TransactionStreamService", () => {
 		it("preserves cause chain", () => {
 			const rootCause = new Error("root");
 			const intermediateCause = new Error("intermediate", { cause: rootCause });
-			const error = new TransactionStreamError("top level", { cause: intermediateCause });
+			const error = new TransactionStreamError("top level", {
+				cause: intermediateCause,
+			});
 			expect(error.cause).toBe(intermediateCause);
 			expect((error.cause as Error).cause).toBe(rootCause);
 		});
@@ -280,7 +282,8 @@ describe("TransactionStreamService", () => {
 				request: <T>(
 					_method: string,
 					_params?: unknown[],
-				): Effect.Effect<T, Error> => Effect.fail(new Error("RPC connection failed")),
+				): Effect.Effect<T, Error> =>
+					Effect.fail(new Error("RPC connection failed")),
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
@@ -321,7 +324,9 @@ describe("TransactionStreamService", () => {
 				const txStream = yield* TransactionStreamService;
 				const stream1 = txStream.watchPending();
 				const stream2 = txStream.watchConfirmed();
-				const stream3 = txStream.track("0x1234567890123456789012345678901234567890123456789012345678901234");
+				const stream3 = txStream.track(
+					"0x1234567890123456789012345678901234567890123456789012345678901234",
+				);
 				expect(stream1).toBeDefined();
 				expect(stream2).toBeDefined();
 				expect(stream3).toBeDefined();
@@ -346,13 +351,13 @@ describe("TransactionStreamService", () => {
 
 	describe("confirmation logic", () => {
 		it("confirmations: 0 emits immediately when mined", async () => {
-			let requestCount = 0;
+			let _requestCount = 0;
 			const mockTransport: TransportShape = {
 				request: <T>(
 					method: string,
 					params?: unknown[],
 				): Effect.Effect<T, never> => {
-					requestCount++;
+					_requestCount++;
 					if (method === "eth_blockNumber") {
 						return Effect.succeed("0x10" as T); // block 16
 					}
@@ -360,10 +365,10 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							hash: params?.[0],
 							blockNumber: "0x10",
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							transactionIndex: "0x0",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							value: "0x0",
 							gas: "0x5208",
 							gasPrice: "0x3b9aca00",
@@ -375,15 +380,15 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							transactionHash: params?.[0],
 							transactionIndex: "0x0",
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							blockNumber: "0x10",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							cumulativeGasUsed: "0x5208",
 							gasUsed: "0x5208",
 							contractAddress: null,
 							logs: [],
-							logsBloom: "0x" + "00".repeat(256),
+							logsBloom: `0x${"00".repeat(256)}`,
 							status: "0x1",
 							effectiveGasPrice: "0x3b9aca00",
 							type: "0x2",
@@ -425,10 +430,10 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							hash: params?.[0],
 							blockNumber: "0x10", // block 16
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							transactionIndex: "0x0",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							value: "0x0",
 							gas: "0x5208",
 							gasPrice: "0x3b9aca00",
@@ -440,15 +445,15 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							transactionHash: params?.[0],
 							transactionIndex: "0x0",
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							blockNumber: "0x10",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							cumulativeGasUsed: "0x5208",
 							gasUsed: "0x5208",
 							contractAddress: null,
 							logs: [],
-							logsBloom: "0x" + "00".repeat(256),
+							logsBloom: `0x${"00".repeat(256)}`,
 							status: "0x1",
 							effectiveGasPrice: "0x3b9aca00",
 							type: "0x2",
@@ -494,10 +499,10 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							hash: params?.[0],
 							blockNumber: "0xa", // block 10
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							transactionIndex: "0x0",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							value: "0x0",
 							gas: "0x5208",
 							gasPrice: "0x3b9aca00",
@@ -509,15 +514,15 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							transactionHash: params?.[0],
 							transactionIndex: "0x0",
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							blockNumber: "0xa",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							cumulativeGasUsed: "0x5208",
 							gasUsed: "0x5208",
 							contractAddress: null,
 							logs: [],
-							logsBloom: "0x" + "00".repeat(256),
+							logsBloom: `0x${"00".repeat(256)}`,
 							status: "0x1",
 							effectiveGasPrice: "0x3b9aca00",
 							type: "0x2",
@@ -562,10 +567,10 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							hash: params?.[0],
 							blockNumber: "0x10",
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							transactionIndex: "0x0",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							value: "0x0",
 							gas: "0x5208",
 							gasPrice: "0x3b9aca00",
@@ -582,15 +587,15 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							transactionHash: params?.[0],
 							transactionIndex: "0x0",
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							blockNumber: "0x10",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							cumulativeGasUsed: "0x5208",
 							gasUsed: "0x5208",
 							contractAddress: null,
 							logs: [],
-							logsBloom: "0x" + "00".repeat(256),
+							logsBloom: `0x${"00".repeat(256)}`,
 							status: "0x1",
 							effectiveGasPrice: "0x3b9aca00",
 							type: "0x2",
@@ -641,10 +646,10 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							hash: params?.[0],
 							blockNumber: "0x10",
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							transactionIndex: "0x0",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							value: "0x0",
 							gas: "0x5208",
 							gasPrice: "0x3b9aca00",
@@ -656,15 +661,15 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							transactionHash: params?.[0],
 							transactionIndex: "0x0",
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							blockNumber: "0x10",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							cumulativeGasUsed: "0x5208",
 							gasUsed: "0x5208",
 							contractAddress: null,
 							logs: [],
-							logsBloom: "0x" + "00".repeat(256),
+							logsBloom: `0x${"00".repeat(256)}`,
 							status: "0x1",
 							effectiveGasPrice: "0x3b9aca00",
 							type: "0x2",
@@ -708,8 +713,8 @@ describe("TransactionStreamService", () => {
 					if (method === "eth_pendingTransactions") {
 						return Effect.succeed([
 							{
-								hash: "0x" + "aa".repeat(32),
-								from: "0x" + "11".repeat(20),
+								hash: `0x${"aa".repeat(32)}`,
+								from: `0x${"11".repeat(20)}`,
 								to: targetAddress,
 								value: "0x0",
 								gas: "0x5208",
@@ -718,9 +723,9 @@ describe("TransactionStreamService", () => {
 								input: "0x",
 							},
 							{
-								hash: "0x" + "bb".repeat(32),
-								from: "0x" + "11".repeat(20),
-								to: "0x" + "99".repeat(20), // different address
+								hash: `0x${"bb".repeat(32)}`,
+								from: `0x${"11".repeat(20)}`,
+								to: `0x${"99".repeat(20)}`, // different address
 								value: "0x0",
 								gas: "0x5208",
 								gasPrice: "0x3b9aca00",
@@ -768,8 +773,8 @@ describe("TransactionStreamService", () => {
 						if (txCallCount === 1) {
 							return Effect.succeed({
 								hash: params?.[0],
-								from: "0x" + "11".repeat(20),
-								to: "0x" + "22".repeat(20),
+								from: `0x${"11".repeat(20)}`,
+								to: `0x${"22".repeat(20)}`,
 								value: "0x0",
 								gas: "0x5208",
 								gasPrice: "0x3b9aca00",
@@ -821,10 +826,10 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							hash: params?.[0],
 							blockNumber: "0x10",
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							transactionIndex: "0x0",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							value: "0x0",
 							gas: "0x5208",
 							gasPrice: "0x3b9aca00",
@@ -836,15 +841,15 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							transactionHash: params?.[0],
 							transactionIndex: "0x0",
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							blockNumber: "0x10",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							cumulativeGasUsed: "0x5208",
 							gasUsed: "0x5208",
 							contractAddress: null,
 							logs: [],
-							logsBloom: "0x" + "00".repeat(256),
+							logsBloom: `0x${"00".repeat(256)}`,
 							status: "0x1", // success
 							effectiveGasPrice: "0x3b9aca00",
 							type: "0x2",
@@ -891,10 +896,10 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							hash: params?.[0],
 							blockNumber: "0x10",
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							transactionIndex: "0x0",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							value: "0x0",
 							gas: "0x5208",
 							gasPrice: "0x3b9aca00",
@@ -906,15 +911,15 @@ describe("TransactionStreamService", () => {
 						return Effect.succeed({
 							transactionHash: params?.[0],
 							transactionIndex: "0x0",
-							blockHash: "0x" + "ab".repeat(32),
+							blockHash: `0x${"ab".repeat(32)}`,
 							blockNumber: "0x10",
-							from: "0x" + "11".repeat(20),
-							to: "0x" + "22".repeat(20),
+							from: `0x${"11".repeat(20)}`,
+							to: `0x${"22".repeat(20)}`,
 							cumulativeGasUsed: "0x5208",
 							gasUsed: "0x5208",
 							contractAddress: null,
 							logs: [],
-							logsBloom: "0x" + "00".repeat(256),
+							logsBloom: `0x${"00".repeat(256)}`,
 							status: "0x0", // reverted
 							effectiveGasPrice: "0x3b9aca00",
 							type: "0x2",

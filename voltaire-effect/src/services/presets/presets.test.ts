@@ -1,6 +1,6 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
 import { Provider, ProviderService } from "../Provider/index.js";
 import { TestTransport } from "../Transport/index.js";
 import { createProvider, MainnetProvider } from "./index.js";
@@ -20,7 +20,7 @@ describe("presets", () => {
 
 				const result = yield* program;
 				expect(result).toBe(1);
-			})
+			}),
 		);
 
 		it.effect("provides composed layer with getBlockNumber", () =>
@@ -36,7 +36,7 @@ describe("presets", () => {
 
 				const result = yield* program;
 				expect(result).toBe(0x1234n);
-			})
+			}),
 		);
 
 		it("MainnetProvider returns a fully composed layer", () => {
@@ -59,7 +59,7 @@ describe("presets", () => {
 
 				const result = yield* program;
 				expect(result).toBe(42161);
-			})
+			}),
 		);
 
 		it.effect("provides composed layer with getBalance", () =>
@@ -77,7 +77,7 @@ describe("presets", () => {
 
 				const result = yield* program;
 				expect(result).toBe(1000000000000000000n);
-			})
+			}),
 		);
 
 		it("createProvider returns a fully composed layer", () => {

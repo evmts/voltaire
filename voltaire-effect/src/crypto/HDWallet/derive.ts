@@ -4,13 +4,13 @@
  * @since 0.0.1
  */
 import * as Effect from "effect/Effect";
+import type { MnemonicStrength } from "../Bip39/types.js";
+import { type HDWalletError, InvalidKeyError } from "./errors.js";
 import {
 	type HDNode,
 	type HDPath,
 	HDWalletService,
 } from "./HDWalletService.js";
-import type { MnemonicStrength } from "../Bip39/types.js";
-import { InvalidKeyError, type HDWalletError } from "./errors.js";
 
 /**
  * Derives a child HD node from a parent node using the given path.
@@ -26,7 +26,8 @@ import { InvalidKeyError, type HDWalletError } from "./errors.js";
  *
  * @example
  * ```typescript
- * import { derive, fromSeed, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import { derive, fromSeed } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletLive } from 'voltaire-effect/native'
  * import * as Effect from 'effect/Effect'
  *
  * const program = Effect.gen(function* () {
@@ -62,7 +63,8 @@ export const derive = (
  *
  * @example
  * ```typescript
- * import { generateMnemonic, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import { generateMnemonic } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletLive } from 'voltaire-effect/native'
  * import * as Effect from 'effect/Effect'
  *
  * const program = generateMnemonic(256).pipe(Effect.provide(HDWalletLive))
@@ -93,7 +95,8 @@ export const generateMnemonic = (
  *
  * @example
  * ```typescript
- * import { fromSeed, mnemonicToSeed, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import { fromSeed, mnemonicToSeed } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletLive } from 'voltaire-effect/native'
  * import { mnemonicToWords } from 'voltaire-effect/crypto/Bip39'
  * import * as Effect from 'effect/Effect'
  *
@@ -129,7 +132,8 @@ export const fromSeed = (
  *
  * @example
  * ```typescript
- * import { fromMnemonic, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import { fromMnemonic } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletLive } from 'voltaire-effect/native'
  * import * as Effect from 'effect/Effect'
  *
  * const program = fromMnemonic("abandon abandon ...", "passphrase").pipe(
@@ -163,7 +167,8 @@ export const fromMnemonic = (
  *
  * @example
  * ```typescript
- * import { mnemonicToSeed, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import { mnemonicToSeed } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletLive } from 'voltaire-effect/native'
  * import * as Effect from 'effect/Effect'
  *
  * const words = ['abandon', 'abandon', 'abandon', 'abandon', 'abandon',
@@ -198,7 +203,8 @@ export const mnemonicToSeed = (
  *
  * @example
  * ```typescript
- * import { withSeed, fromSeed, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import { withSeed, fromSeed } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletLive } from 'voltaire-effect/native'
  * import * as Effect from 'effect/Effect'
  *
  * const program = withSeed(words, (seed) =>
@@ -212,9 +218,8 @@ export const withSeed = <R, E, A>(
 	mnemonic: string[],
 	use: (seed: Uint8Array) => Effect.Effect<A, E, R>,
 ): Effect.Effect<A, E | HDWalletError, R | HDWalletService> =>
-	Effect.acquireRelease(
-		mnemonicToSeed(mnemonic),
-		(seed) => Effect.sync(() => seed.fill(0)),
+	Effect.acquireRelease(mnemonicToSeed(mnemonic), (seed) =>
+		Effect.sync(() => seed.fill(0)),
 	).pipe(Effect.flatMap(use), Effect.scoped);
 
 /**
@@ -230,7 +235,8 @@ export const withSeed = <R, E, A>(
  *
  * @example
  * ```typescript
- * import { getPrivateKey, derive, fromSeed, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import { getPrivateKey, derive, fromSeed } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletLive } from 'voltaire-effect/native'
  * import * as Effect from 'effect/Effect'
  *
  * const program = Effect.gen(function* () {
@@ -265,7 +271,8 @@ export const getPrivateKey = (
  *
  * @example
  * ```typescript
- * import { withPrivateKey, derive, fromSeed, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import { withPrivateKey, derive, fromSeed } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletLive } from 'voltaire-effect/native'
  * import * as Effect from 'effect/Effect'
  *
  * const program = Effect.gen(function* () {
@@ -282,13 +289,7 @@ export const withPrivateKey = <R, E, A>(
 	node: HDNode,
 	use: (key: Uint8Array) => Effect.Effect<A, E, R>,
 ): Effect.Effect<A, E | HDWalletError, R | HDWalletService> =>
-	Effect.acquireRelease<
-		Uint8Array | null,
-		never,
-		HDWalletService,
-		void,
-		never
-	>(
+	Effect.acquireRelease<Uint8Array | null, never, HDWalletService, void, never>(
 		getPrivateKey(node),
 		(key) =>
 			Effect.sync(() => {
@@ -323,7 +324,8 @@ export const withPrivateKey = <R, E, A>(
  *
  * @example
  * ```typescript
- * import { getPublicKey, derive, fromSeed, HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+ * import { getPublicKey, derive, fromSeed } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletLive } from 'voltaire-effect/native'
  * import * as Effect from 'effect/Effect'
  *
  * const program = Effect.gen(function* () {

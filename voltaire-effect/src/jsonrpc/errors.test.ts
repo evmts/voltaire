@@ -1,47 +1,47 @@
 import { describe, expect, it } from "vitest";
 import {
-	JsonRpcParseError,
-	JsonRpcErrorResponse,
-	ParseError,
-	InvalidRequestError,
-	MethodNotFoundError,
-	InvalidParamsError,
-	InternalError,
-	InvalidInputError,
-	ResourceNotFoundError,
-	ResourceUnavailableError,
-	TransactionRejectedError,
-	MethodNotSupportedError,
-	LimitExceededError,
-	UserRejectedRequestError,
-	UnauthorizedError,
-	UnsupportedMethodError,
-	DisconnectedError,
-	ChainDisconnectedError,
-	parseErrorCode,
-} from "./errors.js";
-import {
-	PARSE_ERROR,
-	INVALID_REQUEST,
-	METHOD_NOT_FOUND,
-	INVALID_PARAMS,
+	CHAIN_DISCONNECTED,
+	DISCONNECTED,
+	EXECUTION_REVERTED,
 	INTERNAL_ERROR,
 	INVALID_INPUT,
+	INVALID_PARAMS,
+	INVALID_REQUEST,
+	isDisconnected,
+	isProviderError,
+	isUserRejected,
+	LIMIT_EXCEEDED,
+	METHOD_NOT_FOUND,
+	METHOD_NOT_SUPPORTED,
+	PARSE_ERROR,
 	RESOURCE_NOT_FOUND,
 	RESOURCE_UNAVAILABLE,
 	TRANSACTION_REJECTED,
-	METHOD_NOT_SUPPORTED,
-	LIMIT_EXCEEDED,
-	USER_REJECTED_REQUEST,
 	UNAUTHORIZED,
 	UNSUPPORTED_METHOD,
-	DISCONNECTED,
-	CHAIN_DISCONNECTED,
-	EXECUTION_REVERTED,
-	isUserRejected,
-	isDisconnected,
-	isProviderError,
+	USER_REJECTED_REQUEST,
 } from "./Error.js";
+import {
+	ChainDisconnectedError,
+	DisconnectedError,
+	InternalError,
+	InvalidInputError,
+	InvalidParamsError,
+	InvalidRequestError,
+	JsonRpcErrorResponse,
+	JsonRpcParseError,
+	LimitExceededError,
+	MethodNotFoundError,
+	MethodNotSupportedError,
+	ParseError,
+	parseErrorCode,
+	ResourceNotFoundError,
+	ResourceUnavailableError,
+	TransactionRejectedError,
+	UnauthorizedError,
+	UnsupportedMethodError,
+	UserRejectedRequestError,
+} from "./errors.js";
 
 describe("JsonRpcParseError", () => {
 	it("_tag is JsonRpcParseError", () => {
@@ -74,28 +74,44 @@ describe("JsonRpcParseError", () => {
 
 describe("JsonRpcErrorResponse", () => {
 	it("_tag is JsonRpcError", () => {
-		const error = new JsonRpcErrorResponse({ code: -32600, message: "Invalid Request" });
+		const error = new JsonRpcErrorResponse({
+			code: -32600,
+			message: "Invalid Request",
+		});
 		expect(error._tag).toBe("JsonRpcError");
 	});
 
 	it("rpcCode matches input.code", () => {
-		const error = new JsonRpcErrorResponse({ code: -32601, message: "Method not found" });
+		const error = new JsonRpcErrorResponse({
+			code: -32601,
+			message: "Method not found",
+		});
 		expect(error.rpcCode).toBe(-32601);
 	});
 
 	it("message from input.message", () => {
-		const error = new JsonRpcErrorResponse({ code: -32602, message: "Invalid params" });
+		const error = new JsonRpcErrorResponse({
+			code: -32602,
+			message: "Invalid params",
+		});
 		expect(error.message).toBe("Invalid params");
 	});
 
 	it("data preserved when provided", () => {
 		const data = { details: "extra info" };
-		const error = new JsonRpcErrorResponse({ code: -32603, message: "Internal error", data });
+		const error = new JsonRpcErrorResponse({
+			code: -32603,
+			message: "Internal error",
+			data,
+		});
 		expect(error.data).toBe(data);
 	});
 
 	it("data undefined when not provided", () => {
-		const error = new JsonRpcErrorResponse({ code: -32700, message: "Parse error" });
+		const error = new JsonRpcErrorResponse({
+			code: -32700,
+			message: "Parse error",
+		});
 		expect(error.data).toBeUndefined();
 	});
 });

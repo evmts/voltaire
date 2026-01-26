@@ -1,6 +1,6 @@
+import { describe, expect, it } from "@effect/vitest";
 import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { describe, expect, it } from "@effect/vitest";
 import * as ERC1155 from "./ERC1155.js";
 
 const testAddressHex = "0x1234567890123456789012345678901234567890";
@@ -202,7 +202,9 @@ describe("ERC1155", () => {
 			const result = await Effect.runPromise(
 				ERC1155.decodeTransferSingleEvent(log),
 			);
-			expect(result.operator).toBe("0x1111111111111111111111111111111111111111");
+			expect(result.operator).toBe(
+				"0x1111111111111111111111111111111111111111",
+			);
 			expect(result.from).toBe("0x1234567890123456789012345678901234567890");
 			expect(result.to).toBe("0x0987654321098765432109876543210987654321");
 			expect(result.id).toBe(1n);
@@ -274,7 +276,9 @@ describe("ERC1155", () => {
 				ERC1155.decodeApprovalForAllEvent(log),
 			);
 			expect(result.account).toBe("0x1234567890123456789012345678901234567890");
-			expect(result.operator).toBe("0x0987654321098765432109876543210987654321");
+			expect(result.operator).toBe(
+				"0x0987654321098765432109876543210987654321",
+			);
 			expect(result.approved).toBe(true);
 		});
 

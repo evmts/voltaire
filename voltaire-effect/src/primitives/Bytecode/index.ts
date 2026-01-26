@@ -40,6 +40,6 @@
  * @since 0.1.0
  */
 
+export type { BytecodeType } from "./BytecodeSchema.js";
 export { Bytes } from "./Bytes.js";
-export { type BytecodeType } from "./BytecodeSchema.js";
 export { Hex } from "./Hex.js";

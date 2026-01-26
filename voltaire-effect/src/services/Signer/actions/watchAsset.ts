@@ -6,8 +6,8 @@
  */
 
 import * as Effect from "effect/Effect";
-import { SignerError } from "../SignerService.js";
 import { TransportService } from "../../Transport/index.js";
+import { SignerError } from "../SignerService.js";
 
 /**
  * Asset options for wallet_watchAsset.

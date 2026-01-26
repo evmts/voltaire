@@ -131,7 +131,8 @@ export interface HDWalletServiceShape {
  *
  * @example
  * ```typescript
- * import { HDWalletService, HDWalletLive } from 'voltaire-effect/crypto'
+ * import { HDWalletService } from 'voltaire-effect/crypto'
+ * import { HDWalletLive } from 'voltaire-effect/native'
  * import { mnemonicToWords } from 'voltaire-effect/crypto/Bip39'
  * import * as Effect from 'effect/Effect'
  *

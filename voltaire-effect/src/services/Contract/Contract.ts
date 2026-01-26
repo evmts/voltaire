@@ -35,8 +35,8 @@ import {
 import * as Effect from "effect/Effect";
 import {
 	type LogType,
-	ProviderService,
 	type LogFilter as ProviderLogFilter,
+	ProviderService,
 } from "../Provider/index.js";
 import { SignerService } from "../Signer/index.js";
 

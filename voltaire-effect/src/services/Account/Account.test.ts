@@ -1,3 +1,4 @@
+import { describe, expect, it } from "@effect/vitest";
 import {
 	Address,
 	type BrandedAddress,
@@ -7,7 +8,6 @@ import {
 } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
 import { CryptoTest } from "../../crypto/CryptoTest.js";
 import { KeccakLive } from "../../crypto/Keccak256/index.js";
 import { Secp256k1Live } from "../../crypto/Secp256k1/index.js";
@@ -28,8 +28,7 @@ const TEST_PRIVATE_KEY =
 	"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" as HexType;
 const TEST_PUBLIC_KEY =
 	"0x048318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5" as HexType;
-const TEST_ADDRESS_HEX =
-	"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266" as const;
+const TEST_ADDRESS_HEX = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266" as const;
 const TEST_HASH =
 	"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8" as HexType;
 const TEST_HASH_SIGNATURE =
@@ -46,7 +45,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoLiveLayer),
-			)
+			),
 		);
 
 		it.effect('has type "local"', () =>
@@ -56,7 +55,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 
 		it.effect("exposes publicKey property (65 bytes uncompressed)", () =>
@@ -65,12 +64,12 @@ describe("AccountService", () => {
 				const publicKey = account.publicKey;
 				expect(publicKey).toBeDefined();
 				expect(publicKey).toBe(TEST_PUBLIC_KEY);
-				expect(publicKey!.length).toBe(TEST_PUBLIC_KEY.length);
-				expect(publicKey!.startsWith("0x04")).toBe(true);
+				expect(publicKey?.length).toBe(TEST_PUBLIC_KEY.length);
+				expect(publicKey?.startsWith("0x04")).toBe(true);
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoLiveLayer),
-			)
+			),
 		);
 
 		it.effect("signs raw hash with sign({ hash })", () =>
@@ -82,7 +81,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoLiveLayer),
-			)
+			),
 		);
 
 		it.effect("sign({ hash }) fails for non-32-byte hash", () =>
@@ -98,7 +97,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 
 		it.effect("clearKey() zeros out private key bytes", () =>
@@ -117,7 +116,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 
 		it.effect("signs message with EIP-191 prefix", () =>
@@ -129,7 +128,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 
 		it.effect("signs transaction", () =>
@@ -149,7 +148,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 
 		it.effect("signs typed data (EIP-712)", () =>
@@ -174,7 +173,9 @@ describe("AccountService", () => {
 					},
 					message: {
 						name: "Alice",
-						wallet: Address.fromHex("0x0000000000000000000000000000000000000001"),
+						wallet: Address.fromHex(
+							"0x0000000000000000000000000000000000000001",
+						),
 					},
 				});
 
@@ -184,7 +185,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 
 		it.effect("signs EIP-7702 authorization", () =>
@@ -209,7 +210,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 
 		it.effect("signAuthorization fails when nonce is missing", () =>
@@ -217,8 +218,7 @@ describe("AccountService", () => {
 				const account = yield* AccountService;
 				const result = yield* Effect.either(
 					account.signAuthorization({
-						contractAddress:
-							"0x000000000000000000000000000000000000dead",
+						contractAddress: "0x000000000000000000000000000000000000dead",
 						chainId: 1n,
 					}),
 				);
@@ -226,59 +226,61 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 
-		it.effect("signs typed data with nested struct types (Mail containing Person)", () =>
-			Effect.gen(function* () {
-				const typedData = TypedData.from({
-					types: {
-						EIP712Domain: [
-							{ name: "name", type: "string" },
-							{ name: "version", type: "string" },
-							{ name: "chainId", type: "uint256" },
-						],
-						Person: [
-							{ name: "name", type: "string" },
-							{ name: "wallet", type: "address" },
-						],
-						Mail: [
-							{ name: "from", type: "Person" },
-							{ name: "to", type: "Person" },
-							{ name: "contents", type: "string" },
-						],
-					},
-					primaryType: "Mail",
-					domain: {
-						name: "Ether Mail",
-						version: "1",
-						chainId: 1,
-					},
-					message: {
-						from: {
-							name: "Alice",
-							wallet: Address.fromHex(
-								"0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
-							),
+		it.effect(
+			"signs typed data with nested struct types (Mail containing Person)",
+			() =>
+				Effect.gen(function* () {
+					const typedData = TypedData.from({
+						types: {
+							EIP712Domain: [
+								{ name: "name", type: "string" },
+								{ name: "version", type: "string" },
+								{ name: "chainId", type: "uint256" },
+							],
+							Person: [
+								{ name: "name", type: "string" },
+								{ name: "wallet", type: "address" },
+							],
+							Mail: [
+								{ name: "from", type: "Person" },
+								{ name: "to", type: "Person" },
+								{ name: "contents", type: "string" },
+							],
 						},
-						to: {
-							name: "Bob",
-							wallet: Address.fromHex(
-								"0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
-							),
+						primaryType: "Mail",
+						domain: {
+							name: "Ether Mail",
+							version: "1",
+							chainId: 1,
 						},
-						contents: "Hello, Bob!",
-					},
-				});
+						message: {
+							from: {
+								name: "Alice",
+								wallet: Address.fromHex(
+									"0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
+								),
+							},
+							to: {
+								name: "Bob",
+								wallet: Address.fromHex(
+									"0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
+								),
+							},
+							contents: "Hello, Bob!",
+						},
+					});
 
-				const account = yield* AccountService;
-				const signature = yield* account.signTypedData(typedData);
-				expect(signature).toBeDefined();
-				expect(Signature.toHex(signature)).toMatch(/^0x[0-9a-f]{130}$/);
-			}).pipe(
-				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
-				Effect.provide(CryptoTest),
-			)
+					const account = yield* AccountService;
+					const signature = yield* account.signTypedData(typedData);
+					expect(signature).toBeDefined();
+					expect(Signature.toHex(signature)).toMatch(/^0x[0-9a-f]{130}$/);
+				}).pipe(
+					Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+					Effect.provide(CryptoTest),
+				),
 		);
 
 		it.effect("signs typed data with array of primitives (uint256[])", () =>
@@ -318,7 +320,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 
 		it.effect("signs typed data with fixed-size array (uint256[3])", () =>
@@ -354,7 +356,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 
 		it.effect("signs typed data with array of structs (Person[])", () =>
@@ -407,7 +409,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 
 		it.effect("signs typed data with deeply nested types", () =>
@@ -459,7 +461,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 
 		it.effect("signs EIP-2612 Permit typed data", () =>
@@ -490,7 +492,9 @@ describe("AccountService", () => {
 						),
 					},
 					message: {
-						owner: Address.fromHex("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"),
+						owner: Address.fromHex(
+							"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+						),
 						spender: Address.fromHex(
 							"0x0000000000000000000000000000000000000001",
 						),
@@ -507,7 +511,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
-			)
+			),
 		);
 	});
 
@@ -540,8 +544,8 @@ describe("AccountService", () => {
 						address: "0x0000000000000000000000000000000000000001",
 						nonce: "0x0",
 						yParity: "0x0",
-						r: "0x" + "00".repeat(32),
-						s: "0x" + "00".repeat(32),
+						r: `0x${"00".repeat(32)}`,
+						s: `0x${"00".repeat(32)}`,
 					} as unknown as T);
 				}
 				return Effect.fail(
@@ -562,7 +566,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(JsonRpcAccount(mockAddress)),
 				Effect.provide(transportLayer),
-			)
+			),
 		);
 
 		it.effect('has type "json-rpc"', () =>
@@ -572,7 +576,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(JsonRpcAccount(mockAddress)),
 				Effect.provide(transportLayer),
-			)
+			),
 		);
 
 		it.effect("publicKey is undefined for JSON-RPC accounts", () =>
@@ -582,7 +586,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(JsonRpcAccount(mockAddress)),
 				Effect.provide(transportLayer),
-			)
+			),
 		);
 
 		it.effect("delegates sign({ hash }) to eth_sign", () =>
@@ -593,7 +597,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(JsonRpcAccount(mockAddress)),
 				Effect.provide(transportLayer),
-			)
+			),
 		);
 
 		it.effect("clearKey() is a no-op for JSON-RPC accounts", () =>
@@ -604,7 +608,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(JsonRpcAccount(mockAddress)),
 				Effect.provide(transportLayer),
-			)
+			),
 		);
 
 		it.effect("delegates signMessage to transport", () =>
@@ -616,7 +620,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(JsonRpcAccount(mockAddress)),
 				Effect.provide(transportLayer),
-			)
+			),
 		);
 
 		it.effect("delegates signTransaction to transport", () =>
@@ -635,7 +639,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(JsonRpcAccount(mockAddress)),
 				Effect.provide(transportLayer),
-			)
+			),
 		);
 
 		it.effect("delegates signTypedData to transport", () =>
@@ -660,7 +664,9 @@ describe("AccountService", () => {
 					},
 					message: {
 						name: "Alice",
-						wallet: Address.fromHex("0x0000000000000000000000000000000000000001"),
+						wallet: Address.fromHex(
+							"0x0000000000000000000000000000000000000001",
+						),
 					},
 				});
 
@@ -670,7 +676,7 @@ describe("AccountService", () => {
 			}).pipe(
 				Effect.provide(JsonRpcAccount(mockAddress)),
 				Effect.provide(transportLayer),
-			)
+			),
 		);
 	});
 

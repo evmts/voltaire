@@ -2,16 +2,16 @@ import { FetchHttpClient } from "@effect/platform";
 import * as HttpClient from "@effect/platform/HttpClient";
 import type * as HttpClientRequest from "@effect/platform/HttpClientRequest";
 import type * as HttpClientResponse from "@effect/platform/HttpClientResponse";
+import { describe, expect, it, vi } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it, vi } from "@effect/vitest";
+import type { HttpTransportConfig } from "./HttpTransport.js";
 import {
 	HttpTransport,
 	TransportService,
 	withRequestInterceptor,
 	withResponseInterceptor,
 } from "./index.js";
-import type { HttpTransportConfig } from "./HttpTransport.js";
 
 const createMockHttpClientLayer = (
 	fetchMock: ReturnType<typeof vi.fn>,
@@ -109,16 +109,17 @@ describe("HttpTransport hooks", () => {
 		const request = fetchMock.mock.calls[0][0] as {
 			body: { _tag: string; body: Uint8Array };
 		};
-		const parsed = JSON.parse(
-			new TextDecoder().decode(request.body.body),
-		) as { method: string; params: unknown[] };
+		const parsed = JSON.parse(new TextDecoder().decode(request.body.body)) as {
+			method: string;
+			params: unknown[];
+		};
 		expect(parsed.method).toBe("eth_gasPrice");
 		expect(parsed.params).toEqual([]);
 	});
 
 	it("passes fetchOptions and custom fetch", async () => {
 		const customFetch = vi.fn(
-			async (_url: string, init?: RequestInit) =>
+			async (_url: string, _init?: RequestInit) =>
 				new Response(
 					JSON.stringify({
 						jsonrpc: "2.0",

@@ -13,8 +13,9 @@ function makeRequest(
 	};
 }
 
-export const ResetRequest = (options?: { forking?: { jsonRpcUrl: string; blockNumber?: number } }) =>
-	makeRequest("hardhat_reset", options ? [options] : []);
+export const ResetRequest = (options?: {
+	forking?: { jsonRpcUrl: string; blockNumber?: number };
+}) => makeRequest("hardhat_reset", options ? [options] : []);
 export const SetBalanceRequest = (address: string, balance: string) =>
 	makeRequest("hardhat_setBalance", [address, balance]);
 export const SetCodeRequest = (address: string, code: string) =>
@@ -31,7 +32,15 @@ export const ImpersonateAccountRequest = (address: string) =>
 export const StopImpersonatingAccountRequest = (address: string) =>
 	makeRequest("hardhat_stopImpersonatingAccount", [address]);
 export const MineRequest = (blocks?: number, interval?: number) =>
-	makeRequest("hardhat_mine", blocks ? [`0x${blocks.toString(16)}`, interval ? `0x${interval.toString(16)}` : undefined] : []);
+	makeRequest(
+		"hardhat_mine",
+		blocks
+			? [
+					`0x${blocks.toString(16)}`,
+					interval ? `0x${interval.toString(16)}` : undefined,
+				]
+			: [],
+	);
 export const DropTransactionRequest = (hash: string) =>
 	makeRequest("hardhat_dropTransaction", [hash]);
 export const SetCoinbaseRequest = (address: string) =>

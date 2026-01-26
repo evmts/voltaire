@@ -1,6 +1,6 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
 import * as Keystore from "./index.js";
 
 describe("Keystore", () => {
@@ -26,7 +26,7 @@ describe("Keystore", () => {
 				expect(result.crypto.kdf).toBe("scrypt");
 				expect(result.crypto.ciphertext).toBeDefined();
 				expect(result.crypto.mac).toBeDefined();
-			})
+			}),
 		);
 
 		it.effect("supports pbkdf2 kdf", () =>
@@ -37,7 +37,7 @@ describe("Keystore", () => {
 				});
 				expect(result.crypto.kdf).toBe("pbkdf2");
 				expect((result.crypto.kdfparams as any).c).toBe(1000);
-			})
+			}),
 		);
 
 		it.effect("works with empty password", () =>
@@ -50,7 +50,7 @@ describe("Keystore", () => {
 				expect(result.version).toBe(3);
 				const decrypted = yield* Keystore.decrypt(result, "");
 				expect(decrypted).toEqual(testPrivateKey);
-			})
+			}),
 		);
 
 		it("encrypts private key of any length (no validation)", async () => {
@@ -81,14 +81,18 @@ describe("Keystore", () => {
 	describe("decrypt", () => {
 		it.effect("decrypts keystore back to original private key", () =>
 			Effect.gen(function* () {
-				const encrypted = yield* Keystore.encrypt(testPrivateKey, testPassword, {
-					scryptN: 1024,
-					scryptR: 8,
-					scryptP: 1,
-				});
+				const encrypted = yield* Keystore.encrypt(
+					testPrivateKey,
+					testPassword,
+					{
+						scryptN: 1024,
+						scryptR: 8,
+						scryptP: 1,
+					},
+				);
 				const decrypted = yield* Keystore.decrypt(encrypted, testPassword);
 				expect(decrypted).toEqual(testPrivateKey);
-			})
+			}),
 		);
 
 		it("fails with wrong password", async () => {
@@ -130,7 +134,8 @@ describe("Keystore", () => {
 				id: "test",
 				crypto: {
 					cipher: "aes-128-ctr" as const,
-					ciphertext: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+					ciphertext:
+						"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
 					cipherparams: { iv: "00112233445566778899aabbccddeeff" },
 					kdf: "argon2" as any,
 					kdfparams: { dklen: 32, salt: "00112233445566778899aabbccddeeff" },
@@ -153,7 +158,8 @@ describe("Keystore", () => {
 				id: "test",
 				crypto: {
 					cipher: "aes-128-ctr" as const,
-					ciphertext: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+					ciphertext:
+						"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
 					cipherparams: { iv: "00112233445566778899aabbccddeeff" },
 					kdf: "totally-not-a-kdf" as any,
 					kdfparams: { dklen: 32, salt: "00112233445566778899aabbccddeeff" },
@@ -178,7 +184,10 @@ describe("Keystore", () => {
 				...encrypted,
 				crypto: {
 					...encrypted.crypto,
-					mac: encrypted.crypto.mac.replace(/^./, encrypted.crypto.mac[0] === "0" ? "1" : "0"),
+					mac: encrypted.crypto.mac.replace(
+						/^./,
+						encrypted.crypto.mac[0] === "0" ? "1" : "0",
+					),
 				},
 			};
 			const exit = await Effect.runPromiseExit(
@@ -228,10 +237,17 @@ describe("Keystore", () => {
 				id: "test",
 				crypto: {
 					cipher: "aes-128-ctr" as const,
-					ciphertext: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+					ciphertext:
+						"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
 					cipherparams: {},
 					kdf: "scrypt" as const,
-					kdfparams: { dklen: 32, n: 1024, r: 8, p: 1, salt: "00112233445566778899aabbccddeeff" },
+					kdfparams: {
+						dklen: 32,
+						n: 1024,
+						r: 8,
+						p: 1,
+						salt: "00112233445566778899aabbccddeeff",
+					},
 					mac: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
 				},
 			};
@@ -250,7 +266,13 @@ describe("Keystore", () => {
 					ciphertext: "not-valid-hex-gggg",
 					cipherparams: { iv: "00112233445566778899aabbccddeeff" },
 					kdf: "scrypt" as const,
-					kdfparams: { dklen: 32, n: 1024, r: 8, p: 1, salt: "00112233445566778899aabbccddeeff" },
+					kdfparams: {
+						dklen: 32,
+						n: 1024,
+						r: 8,
+						p: 1,
+						salt: "00112233445566778899aabbccddeeff",
+					},
 					mac: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
 				},
 			};
@@ -266,10 +288,17 @@ describe("Keystore", () => {
 				id: "test",
 				crypto: {
 					cipher: "aes-128-ctr" as const,
-					ciphertext: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+					ciphertext:
+						"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
 					cipherparams: { iv: "zzzz-not-hex" },
 					kdf: "scrypt" as const,
-					kdfparams: { dklen: 32, n: 1024, r: 8, p: 1, salt: "00112233445566778899aabbccddeeff" },
+					kdfparams: {
+						dklen: 32,
+						n: 1024,
+						r: 8,
+						p: 1,
+						salt: "00112233445566778899aabbccddeeff",
+					},
 					mac: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
 				},
 			};
@@ -285,7 +314,8 @@ describe("Keystore", () => {
 				id: "test",
 				crypto: {
 					cipher: "aes-128-ctr" as const,
-					ciphertext: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+					ciphertext:
+						"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
 					cipherparams: { iv: "00112233445566778899aabbccddeeff" },
 					kdf: "scrypt" as const,
 					kdfparams: { dklen: 32, n: 1024, r: 8, p: 1, salt: "not-hex!!!" },
@@ -304,10 +334,17 @@ describe("Keystore", () => {
 				id: "test",
 				crypto: {
 					cipher: "aes-128-ctr" as const,
-					ciphertext: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+					ciphertext:
+						"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
 					cipherparams: { iv: "00112233445566778899aabbccddeeff" },
 					kdf: "scrypt" as const,
-					kdfparams: { dklen: 32, n: 1024, r: 8, p: 1, salt: "00112233445566778899aabbccddeeff" },
+					kdfparams: {
+						dklen: 32,
+						n: 1024,
+						r: 8,
+						p: 1,
+						salt: "00112233445566778899aabbccddeeff",
+					},
 					mac: "invalid-mac-not-hex",
 				},
 			};
@@ -327,18 +364,22 @@ describe("Keystore", () => {
 				});
 				expect(result.version).toBe(3);
 				expect(result.crypto.cipher).toBe("aes-128-ctr");
-			}).pipe(Effect.provide(Keystore.KeystoreLive))
+			}).pipe(Effect.provide(Keystore.KeystoreLive)),
 		);
 
 		it.effect("provides decrypt through service layer", () =>
 			Effect.gen(function* () {
-				const encrypted = yield* Keystore.encrypt(testPrivateKey, testPassword, {
-					scryptN: 1024,
-				});
+				const encrypted = yield* Keystore.encrypt(
+					testPrivateKey,
+					testPassword,
+					{
+						scryptN: 1024,
+					},
+				);
 				const keystore = yield* Keystore.KeystoreService;
 				const result = yield* keystore.decrypt(encrypted, testPassword);
 				expect(result).toEqual(testPrivateKey);
-			}).pipe(Effect.provide(Keystore.KeystoreLive))
+			}).pipe(Effect.provide(Keystore.KeystoreLive)),
 		);
 
 		it.effect("test layer returns mock data", () =>
@@ -347,43 +388,55 @@ describe("Keystore", () => {
 				const result = yield* keystore.encrypt(testPrivateKey, testPassword);
 				expect(result.version).toBe(3);
 				expect(result.id).toBe("test-uuid");
-			}).pipe(Effect.provide(Keystore.KeystoreTest))
+			}).pipe(Effect.provide(Keystore.KeystoreTest)),
 		);
 	});
 
 	describe("roundtrip", () => {
 		it.effect("encrypts and decrypts with scrypt", () =>
 			Effect.gen(function* () {
-				const encrypted = yield* Keystore.encrypt(testPrivateKey, testPassword, {
-					scryptN: 1024,
-					scryptR: 8,
-					scryptP: 1,
-				});
+				const encrypted = yield* Keystore.encrypt(
+					testPrivateKey,
+					testPassword,
+					{
+						scryptN: 1024,
+						scryptR: 8,
+						scryptP: 1,
+					},
+				);
 				const decrypted = yield* Keystore.decrypt(encrypted, testPassword);
 				expect(decrypted).toEqual(testPrivateKey);
-			})
+			}),
 		);
 
 		it.effect("encrypts and decrypts with pbkdf2", () =>
 			Effect.gen(function* () {
-				const encrypted = yield* Keystore.encrypt(testPrivateKey, testPassword, {
-					kdf: "pbkdf2",
-					pbkdf2C: 1000,
-				});
+				const encrypted = yield* Keystore.encrypt(
+					testPrivateKey,
+					testPassword,
+					{
+						kdf: "pbkdf2",
+						pbkdf2C: 1000,
+					},
+				);
 				const decrypted = yield* Keystore.decrypt(encrypted, testPassword);
 				expect(decrypted).toEqual(testPrivateKey);
-			})
+			}),
 		);
 	});
 
 	describe("withDecryptedKey", () => {
 		it.effect("zeroes private key after use", () =>
 			Effect.gen(function* () {
-				const encrypted = yield* Keystore.encrypt(testPrivateKey, testPassword, {
-					scryptN: 1024,
-					scryptR: 8,
-					scryptP: 1,
-				});
+				const encrypted = yield* Keystore.encrypt(
+					testPrivateKey,
+					testPassword,
+					{
+						scryptN: 1024,
+						scryptR: 8,
+						scryptP: 1,
+					},
+				);
 
 				let capturedKey: Uint8Array | null = null;
 
@@ -395,17 +448,21 @@ describe("Keystore", () => {
 				);
 
 				expect(capturedKey).not.toBeNull();
-				expect(capturedKey!.every((b) => b === 0)).toBe(true);
-			})
+				expect(capturedKey?.every((b) => b === 0)).toBe(true);
+			}),
 		);
 
 		it.effect("zeroes private key even on error", () =>
 			Effect.gen(function* () {
-				const encrypted = yield* Keystore.encrypt(testPrivateKey, testPassword, {
-					scryptN: 1024,
-					scryptR: 8,
-					scryptP: 1,
-				});
+				const encrypted = yield* Keystore.encrypt(
+					testPrivateKey,
+					testPassword,
+					{
+						scryptN: 1024,
+						scryptR: 8,
+						scryptP: 1,
+					},
+				);
 
 				let capturedKey: Uint8Array | null = null;
 
@@ -420,8 +477,8 @@ describe("Keystore", () => {
 
 				expect(Exit.isFailure(exit)).toBe(true);
 				expect(capturedKey).not.toBeNull();
-				expect(capturedKey!.every((b) => b === 0)).toBe(true);
-			})
+				expect(capturedKey?.every((b) => b === 0)).toBe(true);
+			}),
 		);
 
 		it("fails with wrong password and does not leak key", async () => {

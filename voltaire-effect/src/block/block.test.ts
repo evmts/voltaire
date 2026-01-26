@@ -2,9 +2,9 @@
  * @fileoverview Tests for block module Effect wrappers.
  */
 
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
 import {
 	TransportError,
 	TransportService,
@@ -87,7 +87,7 @@ describe("block module", () => {
 		it("fetches block with transactions", async () => {
 			const mockTransport: TransportShape = {
 				request: <T>(
-					method: string,
+					_method: string,
 					params?: unknown[],
 				): Effect.Effect<T, never> => {
 					expect(params).toEqual(["0x112a880", true]);
@@ -106,8 +106,7 @@ describe("block module", () => {
 
 		it("fails when block not found", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(): Effect.Effect<T, never> =>
-					Effect.succeed(null as T),
+				request: <T>(): Effect.Effect<T, never> => Effect.succeed(null as T),
 			};
 
 			const TestLayer = Layer.succeed(TransportService, mockTransport);
@@ -178,15 +177,15 @@ describe("block module", () => {
 			expect(result._tag).toBe("Left");
 			if (result._tag === "Left") {
 				expect(result.left).toBeInstanceOf(BlockError);
-				expect((result.left as BlockError).cause).toBeInstanceOf(TransportError);
+				expect((result.left as BlockError).cause).toBeInstanceOf(
+					TransportError,
+				);
 			}
 		});
 
 		it("fetches block with receipts", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(
-					method: string,
-				): Effect.Effect<T, never> => {
+				request: <T>(method: string): Effect.Effect<T, never> => {
 					if (method === "eth_getBlockByNumber") {
 						return Effect.succeed(mockBlock as T);
 					}
@@ -233,8 +232,7 @@ describe("block module", () => {
 
 		it("fails when block not found", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(): Effect.Effect<T, never> =>
-					Effect.succeed(null as T),
+				request: <T>(): Effect.Effect<T, never> => Effect.succeed(null as T),
 			};
 
 			const TestLayer = Layer.succeed(TransportService, mockTransport);
@@ -256,9 +254,7 @@ describe("block module", () => {
 	describe("fetchBlockReceipts", () => {
 		it("fetches receipts via eth_getBlockReceipts", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(
-					method: string,
-				): Effect.Effect<T, never> => {
+				request: <T>(method: string): Effect.Effect<T, never> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.succeed([mockReceipt] as T);
 					}
@@ -281,9 +277,7 @@ describe("block module", () => {
 			let getBlockReceiptsCalled = false;
 
 			const mockTransport: TransportShape = {
-				request: <T>(
-					method: string,
-				): Effect.Effect<T, TransportError> => {
+				request: <T>(method: string): Effect.Effect<T, TransportError> => {
 					if (method === "eth_getBlockReceipts") {
 						getBlockReceiptsCalled = true;
 						return Effect.fail(
@@ -315,9 +309,7 @@ describe("block module", () => {
 
 		it("returns empty array when eth_getBlockReceipts returns null", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(
-					method: string,
-				): Effect.Effect<T, never> => {
+				request: <T>(method: string): Effect.Effect<T, never> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.succeed(null as T);
 					}
@@ -338,9 +330,7 @@ describe("block module", () => {
 
 		it("handles malformed data from eth_getBlockReceipts", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(
-					method: string,
-				): Effect.Effect<T, never> => {
+				request: <T>(method: string): Effect.Effect<T, never> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.succeed("not an array" as T);
 					}
@@ -361,9 +351,7 @@ describe("block module", () => {
 
 		it("returns empty array when transactions is missing", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(
-					method: string,
-				): Effect.Effect<T, TransportError> => {
+				request: <T>(method: string): Effect.Effect<T, TransportError> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.fail(
 							new TransportError({
@@ -389,9 +377,7 @@ describe("block module", () => {
 
 		it("returns empty array when transactions is empty", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(
-					method: string,
-				): Effect.Effect<T, TransportError> => {
+				request: <T>(method: string): Effect.Effect<T, TransportError> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.fail(
 							new TransportError({
@@ -417,9 +403,7 @@ describe("block module", () => {
 
 		it("fails when eth_getTransactionReceipt errors during fallback", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(
-					method: string,
-				): Effect.Effect<T, TransportError> => {
+				request: <T>(method: string): Effect.Effect<T, TransportError> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.fail(
 							new TransportError({
@@ -446,10 +430,7 @@ describe("block module", () => {
 				fetchBlockReceipts(
 					{ hash: mockBlock.hash, transactions: ["0xabc"] },
 					{ maxRetries: 0 },
-				).pipe(
-					Effect.provide(TestLayer),
-					Effect.either,
-				),
+				).pipe(Effect.provide(TestLayer), Effect.either),
 			);
 
 			expect(result._tag).toBe("Left");
@@ -497,9 +478,7 @@ describe("block module", () => {
 
 		it("handles transactions as objects with hash property", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(
-					method: string,
-				): Effect.Effect<T, TransportError> => {
+				request: <T>(method: string): Effect.Effect<T, TransportError> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.fail(
 							new TransportError({
@@ -529,9 +508,7 @@ describe("block module", () => {
 
 		it("fails with BlockError on non-method-not-found errors", async () => {
 			const mockTransport: TransportShape = {
-				request: <T>(
-					method: string,
-				): Effect.Effect<T, TransportError> => {
+				request: <T>(method: string): Effect.Effect<T, TransportError> => {
 					if (method === "eth_getBlockReceipts") {
 						return Effect.fail(
 							new TransportError({

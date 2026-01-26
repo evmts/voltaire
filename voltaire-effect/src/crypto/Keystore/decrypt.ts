@@ -5,11 +5,11 @@
  */
 
 import {
-	DecryptionError as KeystoreDecryptionError,
 	InvalidMacError,
 	InvalidPbkdf2IterationsError,
 	InvalidScryptNError,
 	Keystore,
+	DecryptionError as KeystoreDecryptionError,
 	UnsupportedKdfError,
 	UnsupportedVersionError,
 } from "@tevm/voltaire/Keystore";
@@ -100,7 +100,6 @@ export const withDecryptedKey = <R, E, A>(
 	password: string,
 	use: (privateKey: PrivateKeyType) => Effect.Effect<A, E, R>,
 ): Effect.Effect<A, E | DecryptError, R> =>
-	Effect.acquireRelease(
-		decrypt(keystore, password),
-		(privateKey) => Effect.sync(() => privateKey.fill(0)),
+	Effect.acquireRelease(decrypt(keystore, password), (privateKey) =>
+		Effect.sync(() => privateKey.fill(0)),
 	).pipe(Effect.flatMap(use), Effect.scoped);

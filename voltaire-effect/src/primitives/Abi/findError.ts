@@ -6,7 +6,11 @@
  * @since 0.0.1
  */
 
-import { type Error as AbiError, type ItemType, Item } from "@tevm/voltaire/Abi";
+import {
+	type Error as AbiError,
+	Item,
+	type ItemType,
+} from "@tevm/voltaire/Abi";
 import * as Effect from "effect/Effect";
 
 /**

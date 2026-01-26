@@ -40,10 +40,6 @@
 // Schemas
 export { BigInt } from "./BigInt.js";
 export { Bytes } from "./Bytes.js";
-export { Hex } from "./Hex.js";
-export { Number } from "./Number.js";
-export { String } from "./String.js";
-
 // Bit utilities (infallible)
 export { bitLength } from "./bitLength.js";
 // Bitwise (infallible)
@@ -59,6 +55,7 @@ export { equals } from "./equals.js";
 export { gcd } from "./gcd.js";
 export { greaterThan } from "./greaterThan.js";
 export { greaterThanOrEqual } from "./greaterThanOrEqual.js";
+export { Hex } from "./Hex.js";
 export { isPowerOf2 } from "./isPowerOf2.js";
 export { isZero } from "./isZero.js";
 export { lcm } from "./lcm.js";
@@ -71,11 +68,13 @@ export { min } from "./min.js";
 // Min/Max (infallible)
 export { minimum } from "./minimum.js";
 export { minus } from "./minus.js";
+export { Number } from "./Number.js";
 export { notEquals } from "./notEquals.js";
 // Arithmetic (wrapping, infallible)
 export { plus } from "./plus.js";
 export { popCount } from "./popCount.js";
 export { product } from "./product.js";
+export { String } from "./String.js";
 export { shiftLeft } from "./shiftLeft.js";
 export { shiftRight } from "./shiftRight.js";
 // Aggregate (infallible)

@@ -46,8 +46,8 @@ export {
 	NoopRateLimiter,
 } from "./DefaultRateLimiter.js";
 export {
-	RateLimitError,
 	type RateLimitBehavior,
+	RateLimitError,
 	type RateLimiterConfig,
 	RateLimiterService,
 	type RateLimiterShape,

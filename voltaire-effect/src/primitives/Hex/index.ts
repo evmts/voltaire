@@ -72,12 +72,11 @@ export type { Hex as HexBrand, HexType } from "@tevm/voltaire/Hex";
 
 // Schemas
 export { Bytes } from "./Bytes.js";
-export { String } from "./String.js";
-
 // Pure functions
 export { clone } from "./clone.js";
 export { equals } from "./equals.js";
 export { isHex } from "./isHex.js";
 export { isSized } from "./isSized.js";
 export { random } from "./random.js";
+export { String } from "./String.js";
 export { zero } from "./zero.js";

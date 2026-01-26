@@ -6,9 +6,9 @@
 
 import type { AddressType } from "@tevm/voltaire/Address";
 import * as Effect from "effect/Effect";
-import { KeccakService } from "../Keccak256/index.js";
-import { Secp256k1Service } from "../Secp256k1/index.js";
-import { AddressDerivationError, RecoverError } from "./errors.js";
+import type { KeccakService } from "../Keccak256/index.js";
+import type { Secp256k1Service } from "../Secp256k1/index.js";
+import type { AddressDerivationError, RecoverError } from "./errors.js";
 import { hashMessage } from "./hashMessage.js";
 import { recoverAddress, type SignatureInput } from "./recoverAddress.js";
 

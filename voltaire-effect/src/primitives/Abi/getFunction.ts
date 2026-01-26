@@ -9,8 +9,8 @@
 import {
 	type Function as AbiFunction,
 	AbiItemNotFoundError,
-	type ItemType,
 	Item,
+	type ItemType,
 } from "@tevm/voltaire/Abi";
 import * as Effect from "effect/Effect";
 

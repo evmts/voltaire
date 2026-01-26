@@ -1,9 +1,9 @@
+import { describe, expect, it } from "@effect/vitest";
+import { Abi } from "@tevm/voltaire/Abi";
+import type { HexType } from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
 import { decodeEventLog } from "./decodeEventLog.js";
-import type { HexType } from "@tevm/voltaire/Hex";
-import { Abi } from "@tevm/voltaire/Abi";
 
 const erc20Abi = Abi([
 	{

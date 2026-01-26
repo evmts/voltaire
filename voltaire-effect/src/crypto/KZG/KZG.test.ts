@@ -1,10 +1,10 @@
+import { describe, expect, it } from "@effect/vitest";
 import type {
 	KzgBlobType,
 	KzgCommitmentType,
 	KzgProofType,
 } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { describe, expect, it } from "@effect/vitest";
 import {
 	blobToKzgCommitment,
 	computeBlobKzgProof,
@@ -23,7 +23,7 @@ describe("KZGService", () => {
 				);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(48);
-			}).pipe(Effect.provide(KZGTest))
+			}).pipe(Effect.provide(KZGTest)),
 		);
 
 		it.effect("computeBlobKzgProof returns 48-byte proof", () =>
@@ -34,7 +34,7 @@ describe("KZGService", () => {
 				const result = yield* kzg.computeBlobKzgProof(blob, commitment);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(48);
-			}).pipe(Effect.provide(KZGTest))
+			}).pipe(Effect.provide(KZGTest)),
 		);
 
 		it.effect("verifyBlobKzgProof returns boolean", () =>
@@ -45,7 +45,7 @@ describe("KZGService", () => {
 				const proof = new Uint8Array(48) as KzgProofType;
 				const result = yield* kzg.verifyBlobKzgProof(blob, commitment, proof);
 				expect(result).toBe(true);
-			}).pipe(Effect.provide(KZGTest))
+			}).pipe(Effect.provide(KZGTest)),
 		);
 
 		it.effect("isInitialized returns true", () =>
@@ -53,7 +53,7 @@ describe("KZGService", () => {
 				const kzg = yield* KZGService;
 				const result = yield* kzg.isInitialized();
 				expect(result).toBe(true);
-			}).pipe(Effect.provide(KZGTest))
+			}).pipe(Effect.provide(KZGTest)),
 		);
 	});
 });
@@ -65,7 +65,7 @@ describe("blobToKzgCommitment", () => {
 			const result = yield* blobToKzgCommitment(blob);
 			expect(result).toBeInstanceOf(Uint8Array);
 			expect(result.length).toBe(48);
-		}).pipe(Effect.provide(KZGTest))
+		}).pipe(Effect.provide(KZGTest)),
 	);
 });
 
@@ -77,7 +77,7 @@ describe("computeBlobKzgProof", () => {
 			const result = yield* computeBlobKzgProof(blob, commitment);
 			expect(result).toBeInstanceOf(Uint8Array);
 			expect(result.length).toBe(48);
-		}).pipe(Effect.provide(KZGTest))
+		}).pipe(Effect.provide(KZGTest)),
 	);
 });
 
@@ -89,6 +89,6 @@ describe("verifyBlobKzgProof", () => {
 			const proof = new Uint8Array(48) as KzgProofType;
 			const result = yield* verifyBlobKzgProof(blob, commitment, proof);
 			expect(result).toBe(true);
-		}).pipe(Effect.provide(KZGTest))
+		}).pipe(Effect.provide(KZGTest)),
 	);
 });

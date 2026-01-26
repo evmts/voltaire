@@ -4,7 +4,7 @@
  * @since 0.0.1
  */
 
-import { Keystore } from "@tevm/voltaire";
+import type { Keystore } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import {

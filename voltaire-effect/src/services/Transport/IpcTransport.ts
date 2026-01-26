@@ -96,7 +96,10 @@ export interface IpcSocket {
 	off(event: "data", listener: (data: Uint8Array | string) => void): this;
 	off(event: "error", listener: (err: Error) => void): this;
 	off(event: "close", listener: () => void): this;
-	write(chunk: string | Uint8Array, callback?: (err?: Error | null) => void): boolean;
+	write(
+		chunk: string | Uint8Array,
+		callback?: (err?: Error | null) => void,
+	): boolean;
 	end(callback?: () => void): void;
 }
 
@@ -234,16 +237,15 @@ export const IpcTransport = (
 			const isReconnectingRef = yield* Ref.make(false);
 			const queueRef = yield* Ref.make<QueuedRequest[]>([]);
 			const isClosedRef = yield* Ref.make(false);
-			const connectionFiberRef = yield* Ref.make<Fiber.Fiber<void, never> | null>(
-				null,
-			);
+			const connectionFiberRef = yield* Ref.make<Fiber.Fiber<
+				void,
+				never
+			> | null>(null);
 
 			const processMessage = (data: string | Uint8Array) =>
 				Effect.gen(function* () {
 					const text =
-						typeof data === "string"
-							? data
-							: new TextDecoder().decode(data);
+						typeof data === "string" ? data : new TextDecoder().decode(data);
 
 					const currentBuffer = yield* Ref.get(bufferRef);
 					const fullBuffer = currentBuffer + text;
@@ -316,7 +318,9 @@ export const IpcTransport = (
 							}
 						});
 					} catch (e) {
-						resume(Effect.fail(toTransportError(e, "Failed to send IPC message")));
+						resume(
+							Effect.fail(toTransportError(e, "Failed to send IPC message")),
+						);
 					}
 				});
 
@@ -348,11 +352,13 @@ export const IpcTransport = (
 				if (isWindowsPipePath(config.path)) return;
 
 				const fs = yield* FileSystem.FileSystem;
-				const info = yield* fs.stat(config.path).pipe(
-					Effect.mapError((e) =>
-						toTransportError(e, `IPC socket not found at ${config.path}`),
-					),
-				);
+				const info = yield* fs
+					.stat(config.path)
+					.pipe(
+						Effect.mapError((e) =>
+							toTransportError(e, `IPC socket not found at ${config.path}`),
+						),
+					);
 
 				if (info.type !== "Socket") {
 					return yield* Effect.fail(
@@ -364,7 +370,9 @@ export const IpcTransport = (
 				}
 			});
 
-			const connectSocket = (path: string): Effect.Effect<IpcSocket, TransportError> =>
+			const connectSocket = (
+				path: string,
+			): Effect.Effect<IpcSocket, TransportError> =>
 				Effect.tryPromise({
 					try: async () => {
 						const net = await import("node:net");
@@ -383,10 +391,7 @@ export const IpcTransport = (
 						});
 					},
 					catch: (e) =>
-						toTransportError(
-							e,
-							`Failed to connect to IPC socket at ${path}`,
-						),
+						toTransportError(e, `Failed to connect to IPC socket at ${path}`),
 				});
 
 			const socketFactory =
@@ -436,11 +441,7 @@ export const IpcTransport = (
 					const onError = (err: Error) => {
 						if (done) return;
 						done = true;
-						resume(
-							Effect.fail(
-								toTransportError(err, "IPC socket error"),
-							),
-						);
+						resume(Effect.fail(toTransportError(err, "IPC socket error")));
 					};
 
 					socket.on("data", onData);
@@ -599,7 +600,7 @@ export const IpcTransport = (
 					Effect.gen(function* () {
 						const timeoutOverride = yield* FiberRef.get(timeoutRef);
 						const tracingEnabled = yield* FiberRef.get(tracingRef);
-						const timeoutMs = timeoutOverride ?? (config.timeout ?? 30000);
+						const timeoutMs = timeoutOverride ?? config.timeout ?? 30000;
 						const closed = yield* Ref.get(isClosedRef);
 						if (closed) {
 							return yield* Effect.fail(
@@ -644,14 +645,19 @@ export const IpcTransport = (
 
 							const response = yield* awaitResponse(
 								deferred,
-								Effect.all([
-									Ref.update(queueRef, (q) => q.filter((item) => item.id !== id)),
-									Ref.update(pendingRef, (pending) => {
-										const next = new Map(pending);
-										next.delete(id);
-										return next;
-									}),
-								], { discard: true }),
+								Effect.all(
+									[
+										Ref.update(queueRef, (q) =>
+											q.filter((item) => item.id !== id),
+										),
+										Ref.update(pendingRef, (pending) => {
+											const next = new Map(pending);
+											next.delete(id);
+											return next;
+										}),
+									],
+									{ discard: true },
+								),
 								timeoutMs,
 							);
 

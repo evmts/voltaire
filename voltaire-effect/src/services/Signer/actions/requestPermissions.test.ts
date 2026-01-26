@@ -1,15 +1,15 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
+import { TransportError } from "../../Transport/TransportError.js";
 import {
 	TransportService,
 	type TransportShape,
 } from "../../Transport/TransportService.js";
-import { TransportError } from "../../Transport/TransportError.js";
 import {
-	requestPermissions,
 	type Permission,
 	type PermissionRequest,
+	requestPermissions,
 } from "./requestPermissions.js";
 
 const mockGrantedPermissions: Permission[] = [
@@ -31,7 +31,10 @@ describe("requestPermissions", () => {
 		let capturedParams: unknown[] | undefined;
 
 		const mockTransport: TransportShape = {
-			request: <T>(method: string, params?: unknown[]): Effect.Effect<T, never> => {
+			request: <T>(
+				method: string,
+				params?: unknown[],
+			): Effect.Effect<T, never> => {
 				capturedMethod = method;
 				capturedParams = params;
 				return Effect.succeed(mockGrantedPermissions as T);
@@ -57,7 +60,10 @@ describe("requestPermissions", () => {
 		let capturedParams: unknown[] | undefined;
 
 		const mockTransport: TransportShape = {
-			request: <T>(_method: string, params?: unknown[]): Effect.Effect<T, never> => {
+			request: <T>(
+				_method: string,
+				params?: unknown[],
+			): Effect.Effect<T, never> => {
 				capturedParams = params;
 				return Effect.succeed([] as T);
 			},
@@ -86,7 +92,10 @@ describe("requestPermissions", () => {
 		let capturedParams: unknown[] | undefined;
 
 		const mockTransport: TransportShape = {
-			request: <T>(_method: string, params?: unknown[]): Effect.Effect<T, never> => {
+			request: <T>(
+				_method: string,
+				params?: unknown[],
+			): Effect.Effect<T, never> => {
 				capturedParams = params;
 				return Effect.succeed([] as T);
 			},

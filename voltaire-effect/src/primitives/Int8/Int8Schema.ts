@@ -4,7 +4,7 @@
  * @since 0.1.0
  */
 
-import { BrandedInt8 } from "@tevm/voltaire";
+import type { BrandedInt8 } from "@tevm/voltaire";
 
 /**
  * Branded type representing a signed 8-bit integer.

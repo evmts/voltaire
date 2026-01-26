@@ -49,7 +49,7 @@ const normalizeSignature = (
 		const s = signature.slice(32, 64);
 		const vByte = signature[64];
 		// Normalize v: 0/1 -> 27/28
-		const v = vByte !== undefined && vByte < 27 ? vByte + 27 : vByte ?? 27;
+		const v = vByte !== undefined && vByte < 27 ? vByte + 27 : (vByte ?? 27);
 		return { r, s, v };
 	}
 

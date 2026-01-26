@@ -38,12 +38,12 @@
  * @since 0.1.0
  */
 
-// Schemas
-export { Rpc } from "./Rpc.js";
 export {
 	BlockBodySchema,
 	BlockBodySchema as Schema,
 } from "./BlockBodySchema.js";
+// Schemas
+export { Rpc } from "./Rpc.js";
 
 // Re-export types from voltaire
 import type { BlockBody } from "@tevm/voltaire";

@@ -22,7 +22,9 @@ describe("BlockNumber.Number", () => {
 	});
 
 	it("decodes MAX_SAFE_INTEGER", () => {
-		const result = S.decodeSync(NumberSchema)(globalThis.Number.MAX_SAFE_INTEGER);
+		const result = S.decodeSync(NumberSchema)(
+			globalThis.Number.MAX_SAFE_INTEGER,
+		);
 		expect(BlockNumber.toBigInt(result)).toBe(
 			BigInt(globalThis.Number.MAX_SAFE_INTEGER),
 		);

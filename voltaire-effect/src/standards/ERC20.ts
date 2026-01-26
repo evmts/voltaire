@@ -1,7 +1,8 @@
-import { ERC20 as ERC20Impl, type BrandedAddress } from "@tevm/voltaire";
+import { type BrandedAddress, ERC20 as ERC20Impl } from "@tevm/voltaire";
 
 type AddressType = BrandedAddress.AddressType;
 type Uint256Type = bigint;
+
 import * as Effect from "effect/Effect";
 import { StandardsError } from "./errors.js";
 

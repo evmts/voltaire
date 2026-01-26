@@ -107,13 +107,16 @@ describe("TransactionStreamError", () => {
 		});
 
 		it("represents confirmation timeout error", () => {
-			const error = new TransactionStreamError("Transaction confirmation timeout", {
-				context: {
-					txHash: "0xabc",
-					waitedBlocks: 100,
-					targetConfirmations: 12,
+			const error = new TransactionStreamError(
+				"Transaction confirmation timeout",
+				{
+					context: {
+						txHash: "0xabc",
+						waitedBlocks: 100,
+						targetConfirmations: 12,
+					},
 				},
-			});
+			);
 			expect(error.message).toContain("timeout");
 		});
 

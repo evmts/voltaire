@@ -1,6 +1,5 @@
-import * as Effect from "effect/Effect";
-import * as Ref from "effect/Ref";
 import { afterEach, describe, expect, it, vi } from "@effect/vitest";
+import * as Effect from "effect/Effect";
 import {
 	CustomTransport,
 	CustomTransportFromFn,

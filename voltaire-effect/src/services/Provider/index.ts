@@ -44,6 +44,42 @@
  * @see {@link TransportService} - Required dependency for RPC communication
  */
 
+// Re-export block streaming types for convenience
+export type {
+	BackfillOptions,
+	BlockInclude,
+	BlockStreamEvent,
+	BlocksEvent,
+	WatchOptions,
+} from "@tevm/voltaire/block";
+export {
+	type ContractCall,
+	type MulticallParams,
+	type MulticallResults,
+	multicall,
+	type SimulateContractParams,
+	type SimulateContractResult,
+	type StateOverride,
+	simulateContract,
+} from "./actions/index.js";
+export {
+	type Abi,
+	type ReadContractParams,
+	readContract,
+} from "./actions/readContract.js";
+export {
+	createBlockFilter,
+	createEventFilter,
+	createPendingTransactionFilter,
+	getFilterChanges,
+	getFilterLogs,
+	uninstallFilter,
+} from "./filters.js";
+export {
+	calculateBlobGasPrice,
+	estimateBlobGas,
+	getBlobBaseFee,
+} from "./getBlobBaseFee.js";
 export { Provider } from "./Provider.js";
 export {
 	type AccessListType,
@@ -70,45 +106,9 @@ export {
 	type TransactionType,
 	type UncleBlockType,
 } from "./ProviderService.js";
-// Re-export block streaming types for convenience
-export type {
-	BackfillOptions,
-	BlockInclude,
-	BlocksEvent,
-	BlockStreamEvent,
-	WatchOptions,
-} from "@tevm/voltaire/block";
 export {
-	calculateBlobGasPrice,
-	estimateBlobGas,
-	getBlobBaseFee,
-} from "./getBlobBaseFee.js";
-export {
-	createBlockFilter,
-	createEventFilter,
-	createPendingTransactionFilter,
-	getFilterChanges,
-	getFilterLogs,
-	uninstallFilter,
-} from "./filters.js";
-export {
-	readContract,
-	type Abi,
-	type ReadContractParams,
-} from "./actions/readContract.js";
-export {
-	simulateCalls,
 	type AssetChange,
 	type SimulateCallsParams,
 	type SimulationResult,
+	simulateCalls,
 } from "./simulateCalls.js";
-export {
-	multicall,
-	type ContractCall,
-	type MulticallParams,
-	type MulticallResults,
-	simulateContract,
-	type SimulateContractParams,
-	type SimulateContractResult,
-	type StateOverride,
-} from "./actions/index.js";

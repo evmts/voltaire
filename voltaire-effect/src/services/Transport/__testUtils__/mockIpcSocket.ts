@@ -41,7 +41,10 @@ export class MockIpcSocket implements IpcSocket {
 		return this;
 	}
 
-	write(chunk: string | Uint8Array, callback?: (err?: Error | null) => void): boolean {
+	write(
+		chunk: string | Uint8Array,
+		callback?: (err?: Error | null) => void,
+	): boolean {
 		this.options.onWrite?.(this, chunk);
 		callback?.(null);
 		return true;

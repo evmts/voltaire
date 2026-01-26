@@ -46,9 +46,7 @@ export const hashMessage = (
 
 		// Convert string to bytes if needed
 		const messageBytes =
-			typeof message === "string"
-				? new TextEncoder().encode(message)
-				: message;
+			typeof message === "string" ? new TextEncoder().encode(message) : message;
 
 		// Create length string
 		const lenStr = String(messageBytes.length);

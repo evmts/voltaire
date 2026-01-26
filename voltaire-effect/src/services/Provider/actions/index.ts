@@ -5,21 +5,19 @@
  */
 
 export {
-	readContract,
-	type ReadContractParams,
-	type Abi,
-} from "./readContract.js";
-
-export {
-	simulateContract,
-	type SimulateContractParams,
-	type SimulateContractResult,
-	type StateOverride,
-} from "./simulateContract.js";
-
-export {
-	multicall,
 	type ContractCall,
 	type MulticallParams,
 	type MulticallResults,
+	multicall,
 } from "./multicall.js";
+export {
+	type Abi,
+	type ReadContractParams,
+	readContract,
+} from "./readContract.js";
+export {
+	type SimulateContractParams,
+	type SimulateContractResult,
+	type StateOverride,
+	simulateContract,
+} from "./simulateContract.js";

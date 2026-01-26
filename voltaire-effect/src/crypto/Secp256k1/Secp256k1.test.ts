@@ -1,8 +1,8 @@
+import { describe, expect, it } from "@effect/vitest";
 import { Hash } from "@tevm/voltaire";
 import * as VoltaireSecp256k1 from "@tevm/voltaire/Secp256k1";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
 import * as Secp256k1 from "./index.js";
 
 const bytesToHex = (bytes: Uint8Array): string => {
@@ -31,24 +31,33 @@ describe("Secp256k1", () => {
 	describe("sign", () => {
 		it.effect("signs a message hash with a private key", () =>
 			Effect.gen(function* () {
-				const result = yield* Secp256k1.sign(testMessageHash, testPrivateKeyBytes as any);
+				const result = yield* Secp256k1.sign(
+					testMessageHash,
+					testPrivateKeyBytes as any,
+				);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
 				expect(result).toHaveProperty("v");
 				expect(result.r.length).toBe(32);
 				expect(result.s.length).toBe(32);
 				expect([27, 28]).toContain(result.v);
-			})
+			}),
 		);
 
 		it.effect("produces deterministic signatures (RFC 6979)", () =>
 			Effect.gen(function* () {
-				const sig1 = yield* Secp256k1.sign(testMessageHash, testPrivateKeyBytes as any);
-				const sig2 = yield* Secp256k1.sign(testMessageHash, testPrivateKeyBytes as any);
+				const sig1 = yield* Secp256k1.sign(
+					testMessageHash,
+					testPrivateKeyBytes as any,
+				);
+				const sig2 = yield* Secp256k1.sign(
+					testMessageHash,
+					testPrivateKeyBytes as any,
+				);
 				expect(sig1.r).toEqual(sig2.r);
 				expect(sig1.s).toEqual(sig2.s);
 				expect(sig1.v).toEqual(sig2.v);
-			})
+			}),
 		);
 
 		it("fails with zero private key", async () => {
@@ -94,7 +103,7 @@ describe("Secp256k1", () => {
 				const sig1 = yield* Secp256k1.sign(hash1, testPrivateKeyBytes as any);
 				const sig2 = yield* Secp256k1.sign(hash2, testPrivateKeyBytes as any);
 				expect(sig1.r).not.toEqual(sig2.r);
-			})
+			}),
 		);
 
 		it.effect("produces different signatures for different keys", () =>
@@ -104,19 +113,24 @@ describe("Secp256k1", () => {
 				const sig1 = yield* Secp256k1.sign(testMessageHash, key1 as any);
 				const sig2 = yield* Secp256k1.sign(testMessageHash, key2 as any);
 				expect(sig1.r).not.toEqual(sig2.r);
-			})
+			}),
 		);
 	});
 
 	describe("recover", () => {
 		it.effect("recovers public key from signature", () =>
 			Effect.gen(function* () {
-				const signature = yield* Secp256k1.sign(testMessageHash, testPrivateKeyBytes as any);
+				const signature = yield* Secp256k1.sign(
+					testMessageHash,
+					testPrivateKeyBytes as any,
+				);
 				const recovered = yield* Secp256k1.recover(signature, testMessageHash);
 				expect(recovered.length).toBe(64);
-				const expected = VoltaireSecp256k1.derivePublicKey(testPrivateKeyBytes as any);
+				const expected = VoltaireSecp256k1.derivePublicKey(
+					testPrivateKeyBytes as any,
+				);
 				expect(recovered).toEqual(expected);
-			})
+			}),
 		);
 
 		it("fails with invalid v value", async () => {
@@ -164,38 +178,65 @@ describe("Secp256k1", () => {
 				const recovered1 = yield* Secp256k1.recover(sig1, testMessageHash);
 				const recovered2 = yield* Secp256k1.recover(sig2, testMessageHash);
 				expect(recovered1).not.toEqual(recovered2);
-			})
+			}),
 		);
 	});
 
 	describe("verify", () => {
 		it.effect("verifies a valid signature", () =>
 			Effect.gen(function* () {
-				const signature = yield* Secp256k1.sign(testMessageHash, testPrivateKeyBytes as any);
-				const publicKey = VoltaireSecp256k1.derivePublicKey(testPrivateKeyBytes as any);
-				const isValid = yield* Secp256k1.verify(signature, testMessageHash, publicKey);
+				const signature = yield* Secp256k1.sign(
+					testMessageHash,
+					testPrivateKeyBytes as any,
+				);
+				const publicKey = VoltaireSecp256k1.derivePublicKey(
+					testPrivateKeyBytes as any,
+				);
+				const isValid = yield* Secp256k1.verify(
+					signature,
+					testMessageHash,
+					publicKey,
+				);
 				expect(isValid).toBe(true);
-			})
+			}),
 		);
 
 		it.effect("returns false for wrong message hash", () =>
 			Effect.gen(function* () {
-				const signature = yield* Secp256k1.sign(testMessageHash, testPrivateKeyBytes as any);
-				const publicKey = VoltaireSecp256k1.derivePublicKey(testPrivateKeyBytes as any);
+				const signature = yield* Secp256k1.sign(
+					testMessageHash,
+					testPrivateKeyBytes as any,
+				);
+				const publicKey = VoltaireSecp256k1.derivePublicKey(
+					testPrivateKeyBytes as any,
+				);
 				const wrongHash = Hash.from(new Uint8Array(32).fill(0xff));
-				const isValid = yield* Secp256k1.verify(signature, wrongHash, publicKey);
+				const isValid = yield* Secp256k1.verify(
+					signature,
+					wrongHash,
+					publicKey,
+				);
 				expect(isValid).toBe(false);
-			})
+			}),
 		);
 
 		it.effect("returns false for wrong public key", () =>
 			Effect.gen(function* () {
-				const signature = yield* Secp256k1.sign(testMessageHash, testPrivateKeyBytes as any);
+				const signature = yield* Secp256k1.sign(
+					testMessageHash,
+					testPrivateKeyBytes as any,
+				);
 				const otherKey = new Uint8Array(32).fill(0x42);
-				const wrongPublicKey = VoltaireSecp256k1.derivePublicKey(otherKey as any);
-				const isValid = yield* Secp256k1.verify(signature, testMessageHash, wrongPublicKey);
+				const wrongPublicKey = VoltaireSecp256k1.derivePublicKey(
+					otherKey as any,
+				);
+				const isValid = yield* Secp256k1.verify(
+					signature,
+					testMessageHash,
+					wrongPublicKey,
+				);
 				expect(isValid).toBe(false);
-			})
+			}),
 		);
 	});
 
@@ -203,14 +244,14 @@ describe("Secp256k1", () => {
 		it.effect("sign-recover matches expected public key", () =>
 			Effect.gen(function* () {
 				const privateKey = new Uint8Array([
-					0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3, 0x6b, 0xa4, 0xa6, 0xb4,
-					0xd2, 0x38, 0xff, 0x94, 0x4b, 0xac, 0xb4, 0x78, 0xcb, 0xed, 0x5e, 0xfc,
-					0xae, 0x78, 0x4d, 0x7b, 0xf4, 0xf2, 0xff, 0x80,
+					0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3, 0x6b, 0xa4, 0xa6,
+					0xb4, 0xd2, 0x38, 0xff, 0x94, 0x4b, 0xac, 0xb4, 0x78, 0xcb, 0xed,
+					0x5e, 0xfc, 0xae, 0x78, 0x4d, 0x7b, 0xf4, 0xf2, 0xff, 0x80,
 				]);
 				const messageHashBytes = new Uint8Array([
-					0x1c, 0x8a, 0xff, 0x95, 0x06, 0x85, 0xc2, 0xed, 0x4b, 0xc3, 0x17, 0x4f,
-					0x34, 0x72, 0x28, 0x7b, 0x56, 0xd9, 0x51, 0x7b, 0x9c, 0x94, 0x81, 0x27,
-					0x31, 0x9a, 0x09, 0xa7, 0xa3, 0x6d, 0xea, 0xc8,
+					0x1c, 0x8a, 0xff, 0x95, 0x06, 0x85, 0xc2, 0xed, 0x4b, 0xc3, 0x17,
+					0x4f, 0x34, 0x72, 0x28, 0x7b, 0x56, 0xd9, 0x51, 0x7b, 0x9c, 0x94,
+					0x81, 0x27, 0x31, 0x9a, 0x09, 0xa7, 0xa3, 0x6d, 0xea, 0xc8,
 				]);
 				const messageHash = Hash.from(messageHashBytes);
 				const sig = yield* Secp256k1.sign(messageHash, privateKey as any);
@@ -218,7 +259,7 @@ describe("Secp256k1", () => {
 				const expected = VoltaireSecp256k1.derivePublicKey(privateKey as any);
 				expect(recovered).toEqual(expected);
 				expect(recovered.length).toBe(64);
-			})
+			}),
 		);
 
 		it("derives correct public key from known private key", () => {
@@ -235,38 +276,48 @@ describe("Secp256k1", () => {
 		it.effect("produces deterministic signatures (RFC 6979)", () =>
 			Effect.gen(function* () {
 				const privateKey = new Uint8Array([
-					0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
-					0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
-					0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20,
+					0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+					0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
+					0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20,
 				]);
 				const messageHash = Hash.from(new Uint8Array(32).fill(0xab));
 				const sig1 = yield* Secp256k1.sign(messageHash, privateKey as any);
 				const sig2 = yield* Secp256k1.sign(messageHash, privateKey as any);
-				expect(bytesToHex(sig1.r as Uint8Array)).toBe(bytesToHex(sig2.r as Uint8Array));
-				expect(bytesToHex(sig1.s as Uint8Array)).toBe(bytesToHex(sig2.s as Uint8Array));
+				expect(bytesToHex(sig1.r as Uint8Array)).toBe(
+					bytesToHex(sig2.r as Uint8Array),
+				);
+				expect(bytesToHex(sig1.s as Uint8Array)).toBe(
+					bytesToHex(sig2.s as Uint8Array),
+				);
 				expect(sig1.v).toBe(sig2.v);
-			})
+			}),
 		);
 
 		it.effect("handles all-ones private key", () =>
 			Effect.gen(function* () {
 				const privateKey = new Uint8Array(32).fill(0xff);
 				privateKey[0] = 0x7f;
-				const result = yield* Secp256k1.sign(testMessageHash, privateKey as any);
+				const result = yield* Secp256k1.sign(
+					testMessageHash,
+					privateKey as any,
+				);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
 				expect(result).toHaveProperty("v");
-			})
+			}),
 		);
 
 		it.effect("handles minimum valid private key (1)", () =>
 			Effect.gen(function* () {
 				const privateKey = new Uint8Array(32);
 				privateKey[31] = 1;
-				const result = yield* Secp256k1.sign(testMessageHash, privateKey as any);
+				const result = yield* Secp256k1.sign(
+					testMessageHash,
+					privateKey as any,
+				);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
-			})
+			}),
 		);
 	});
 
@@ -274,19 +325,25 @@ describe("Secp256k1", () => {
 		it.effect("handles zero message hash", () =>
 			Effect.gen(function* () {
 				const zeroHash = Hash.from(new Uint8Array(32));
-				const result = yield* Secp256k1.sign(zeroHash, testPrivateKeyBytes as any);
+				const result = yield* Secp256k1.sign(
+					zeroHash,
+					testPrivateKeyBytes as any,
+				);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
-			})
+			}),
 		);
 
 		it.effect("handles max message hash (all 0xff)", () =>
 			Effect.gen(function* () {
 				const maxHash = Hash.from(new Uint8Array(32).fill(0xff));
-				const result = yield* Secp256k1.sign(maxHash, testPrivateKeyBytes as any);
+				const result = yield* Secp256k1.sign(
+					maxHash,
+					testPrivateKeyBytes as any,
+				);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
-			})
+			}),
 		);
 
 		it.effect("sign-recover-verify full round trip", () =>
@@ -295,9 +352,13 @@ describe("Secp256k1", () => {
 				const messageHash = Hash.from(new Uint8Array(32).fill(0xab));
 				const signature = yield* Secp256k1.sign(messageHash, privateKey as any);
 				const recovered = yield* Secp256k1.recover(signature, messageHash);
-				const isValid = yield* Secp256k1.verify(signature, messageHash, recovered);
+				const isValid = yield* Secp256k1.verify(
+					signature,
+					messageHash,
+					recovered,
+				);
 				expect(isValid).toBe(true);
-			})
+			}),
 		);
 	});
 
@@ -305,40 +366,58 @@ describe("Secp256k1", () => {
 		it.effect("provides sign through service layer", () =>
 			Effect.gen(function* () {
 				const secp = yield* Secp256k1.Secp256k1Service;
-				const result = yield* secp.sign(testMessageHash, testPrivateKeyBytes as any);
+				const result = yield* secp.sign(
+					testMessageHash,
+					testPrivateKeyBytes as any,
+				);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
 				expect(result).toHaveProperty("v");
-			}).pipe(Effect.provide(Secp256k1.Secp256k1Live))
+			}).pipe(Effect.provide(Secp256k1.Secp256k1Live)),
 		);
 
 		it.effect("provides recover through service layer", () =>
 			Effect.gen(function* () {
-				const signature = yield* Secp256k1.sign(testMessageHash, testPrivateKeyBytes as any);
+				const signature = yield* Secp256k1.sign(
+					testMessageHash,
+					testPrivateKeyBytes as any,
+				);
 				const secp = yield* Secp256k1.Secp256k1Service;
 				const result = yield* secp.recover(signature, testMessageHash);
 				expect(result.length).toBe(64);
-			}).pipe(Effect.provide(Secp256k1.Secp256k1Live))
+			}).pipe(Effect.provide(Secp256k1.Secp256k1Live)),
 		);
 
 		it.effect("provides verify through service layer", () =>
 			Effect.gen(function* () {
-				const signature = yield* Secp256k1.sign(testMessageHash, testPrivateKeyBytes as any);
-				const publicKey = VoltaireSecp256k1.derivePublicKey(testPrivateKeyBytes as any);
+				const signature = yield* Secp256k1.sign(
+					testMessageHash,
+					testPrivateKeyBytes as any,
+				);
+				const publicKey = VoltaireSecp256k1.derivePublicKey(
+					testPrivateKeyBytes as any,
+				);
 				const secp = yield* Secp256k1.Secp256k1Service;
-				const result = yield* secp.verify(signature, testMessageHash, publicKey);
+				const result = yield* secp.verify(
+					signature,
+					testMessageHash,
+					publicKey,
+				);
 				expect(result).toBe(true);
-			}).pipe(Effect.provide(Secp256k1.Secp256k1Live))
+			}).pipe(Effect.provide(Secp256k1.Secp256k1Live)),
 		);
 
 		it.effect("sign-recover-verify through service layer", () =>
 			Effect.gen(function* () {
 				const secp = yield* Secp256k1.Secp256k1Service;
-				const sig = yield* secp.sign(testMessageHash, testPrivateKeyBytes as any);
+				const sig = yield* secp.sign(
+					testMessageHash,
+					testPrivateKeyBytes as any,
+				);
 				const pubKey = yield* secp.recover(sig, testMessageHash);
 				const result = yield* secp.verify(sig, testMessageHash, pubKey);
 				expect(result).toBe(true);
-			}).pipe(Effect.provide(Secp256k1.Secp256k1Live))
+			}).pipe(Effect.provide(Secp256k1.Secp256k1Live)),
 		);
 	});
 
@@ -346,11 +425,14 @@ describe("Secp256k1", () => {
 		it.effect("returns mock signature from test layer", () =>
 			Effect.gen(function* () {
 				const secp = yield* Secp256k1.Secp256k1Service;
-				const result = yield* secp.sign(testMessageHash, testPrivateKeyBytes as any);
+				const result = yield* secp.sign(
+					testMessageHash,
+					testPrivateKeyBytes as any,
+				);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
 				expect(result).toHaveProperty("v");
-			}).pipe(Effect.provide(Secp256k1.Secp256k1Test))
+			}).pipe(Effect.provide(Secp256k1.Secp256k1Test)),
 		);
 
 		it.effect("returns mock public key from recover in test layer", () =>
@@ -363,7 +445,7 @@ describe("Secp256k1", () => {
 				const secp = yield* Secp256k1.Secp256k1Service;
 				const result = yield* secp.recover(mockSig, testMessageHash);
 				expect(result.length).toBe(64);
-			}).pipe(Effect.provide(Secp256k1.Secp256k1Test))
+			}).pipe(Effect.provide(Secp256k1.Secp256k1Test)),
 		);
 
 		it.effect("returns true from verify in test layer", () =>
@@ -375,9 +457,13 @@ describe("Secp256k1", () => {
 				};
 				const mockPubKey = new Uint8Array(64);
 				const secp = yield* Secp256k1.Secp256k1Service;
-				const result = yield* secp.verify(mockSig, testMessageHash, mockPubKey as any);
+				const result = yield* secp.verify(
+					mockSig,
+					testMessageHash,
+					mockPubKey as any,
+				);
 				expect(result).toBe(true);
-			}).pipe(Effect.provide(Secp256k1.Secp256k1Test))
+			}).pipe(Effect.provide(Secp256k1.Secp256k1Test)),
 		);
 	});
 });

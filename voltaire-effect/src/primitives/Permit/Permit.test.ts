@@ -1,5 +1,5 @@
-import * as Schema from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
+import * as Schema from "effect/Schema";
 import * as Permit from "./index.js";
 
 describe("Permit.Struct", () => {

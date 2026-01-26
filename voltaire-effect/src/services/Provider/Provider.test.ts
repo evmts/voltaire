@@ -1,16 +1,16 @@
+import { describe, expect, it } from "@effect/vitest";
 import { Address, Hash } from "@tevm/voltaire";
 import { InvalidBlobCountError } from "@tevm/voltaire/Blob";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
 import { TestTransport } from "../Transport/TestTransport.js";
 import {
 	TransportError,
 	TransportService,
 } from "../Transport/TransportService.js";
-import { Provider } from "./Provider.js";
 import { calculateBlobGasPrice, estimateBlobGas } from "./getBlobBaseFee.js";
+import { Provider } from "./Provider.js";
 import { type ProviderError, ProviderService } from "./ProviderService.js";
 
 const mockTransport = (responses: Record<string, unknown>) =>
@@ -1296,7 +1296,8 @@ describe("ProviderService", () => {
 
 	describe("sendRawTransaction", () => {
 		it("sends raw transaction and returns hash", async () => {
-			const txHash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+			const txHash =
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 			const transport = mockTransport({ eth_sendRawTransaction: txHash });
 			const layer = Provider.pipe(Layer.provide(transport));
 
@@ -1362,7 +1363,9 @@ describe("ProviderService", () => {
 				hash: "0xuncle",
 				parentHash: "0xparent",
 			};
-			const transport = mockTransport({ eth_getUncleByBlockNumberAndIndex: mockUncle });
+			const transport = mockTransport({
+				eth_getUncleByBlockNumberAndIndex: mockUncle,
+			});
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
@@ -1519,7 +1522,7 @@ describe("ProviderService", () => {
 		it("handles multiple concurrent getBalance calls", async () => {
 			let callCount = 0;
 			const transport = mockTransportWithCapture({
-				eth_getBalance: (params: unknown[]) => {
+				eth_getBalance: (_params: unknown[]) => {
 					callCount++;
 					return "0xde0b6b3a7640000";
 				},

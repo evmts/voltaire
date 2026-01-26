@@ -6,12 +6,12 @@
 
 import type { AddressType } from "@tevm/voltaire/Address";
 import * as Effect from "effect/Effect";
-import { KeccakService } from "../Keccak256/index.js";
-import { Secp256k1Service } from "../Secp256k1/index.js";
+import type { KeccakService } from "../Keccak256/index.js";
+import type { Secp256k1Service } from "../Secp256k1/index.js";
 import { constantTimeEqual } from "./constantTimeEqual.js";
 import { VerifyError } from "./errors.js";
-import { recoverMessageAddress } from "./recoverMessageAddress.js";
 import type { SignatureInput } from "./recoverAddress.js";
+import { recoverMessageAddress } from "./recoverMessageAddress.js";
 
 /**
  * Verifies an EIP-191 personal_sign signature.

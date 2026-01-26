@@ -20,7 +20,9 @@ import type { TransportError } from "../Transport/TransportError.js";
  *
  * @since 0.0.1
  */
-export class EthBlockNumber extends Data.TaggedClass("EthBlockNumber")<object> {}
+export class EthBlockNumber extends Data.TaggedClass(
+	"EthBlockNumber",
+)<object> {}
 export interface EthBlockNumber
 	extends Request.Request<string, TransportError> {}
 

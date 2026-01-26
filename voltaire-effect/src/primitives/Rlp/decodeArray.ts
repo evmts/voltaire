@@ -7,7 +7,10 @@ import * as Effect from "effect/Effect";
 
 const isRlpDecodingError = (e: unknown): e is RlpDecodingError =>
 	e instanceof RlpDecodingErrorClass ||
-	(e !== null && typeof e === "object" && "name" in e && e.name === "RlpDecodingError");
+	(e !== null &&
+		typeof e === "object" &&
+		"name" in e &&
+		e.name === "RlpDecodingError");
 
 /**
  * RLP-decodes bytes to an array.
@@ -39,5 +42,7 @@ export const decodeArray = (
 		catch: (e) =>
 			isRlpDecodingError(e)
 				? e
-				: new RlpDecodingErrorClass("RLP array decoding failed", { cause: e instanceof Error ? e : undefined }),
+				: new RlpDecodingErrorClass("RLP array decoding failed", {
+						cause: e instanceof Error ? e : undefined,
+					}),
 	});

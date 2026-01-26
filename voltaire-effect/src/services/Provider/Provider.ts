@@ -18,11 +18,11 @@
  */
 
 import {
-	BlockStream as CoreBlockStream,
 	type BackfillOptions,
 	type BlockInclude,
-	type BlocksEvent,
 	type BlockStreamEvent,
+	type BlocksEvent,
+	BlockStream as CoreBlockStream,
 	type WatchOptions,
 } from "@tevm/voltaire/block";
 import * as Duration from "effect/Duration";
@@ -39,9 +39,10 @@ import { TransportService } from "../Transport/TransportService.js";
  */
 const INTERNAL_CODE_PENDING = -40001;
 const INTERNAL_CODE_WAITING_CONFIRMATIONS = -40002;
+
+import { getBlobBaseFee as getBlobBaseFeeEffect } from "./getBlobBaseFee.js";
 import {
 	type AccessListType,
-	type AccountStateOverride,
 	type AddressInput,
 	type BlockOverrides,
 	type BlockTag,
@@ -64,7 +65,6 @@ import {
 	type TransactionType,
 	type UncleBlockType,
 } from "./ProviderService.js";
-import { getBlobBaseFee as getBlobBaseFeeEffect } from "./getBlobBaseFee.js";
 
 /**
  * Converts a Uint8Array to hex string.
@@ -754,7 +754,9 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 									method: string;
 									params?: unknown[];
 								}) =>
-									Runtime.runPromise(runtime)(transport.request(method, params)),
+									Runtime.runPromise(runtime)(
+										transport.request(method, params),
+									),
 								on: () => {},
 								removeListener: () => {},
 							};
@@ -764,7 +766,9 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 								(error) =>
 									new ProviderError(
 										{ method: "watchBlocks", options },
-										error instanceof Error ? error.message : "BlockStream error",
+										error instanceof Error
+											? error.message
+											: "BlockStream error",
 										{ cause: error instanceof Error ? error : undefined },
 									),
 							);
@@ -785,7 +789,9 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 									method: string;
 									params?: unknown[];
 								}) =>
-									Runtime.runPromise(runtime)(transport.request(method, params)),
+									Runtime.runPromise(runtime)(
+										transport.request(method, params),
+									),
 								on: () => {},
 								removeListener: () => {},
 							};
@@ -795,7 +801,9 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 								(error) =>
 									new ProviderError(
 										{ method: "backfillBlocks", options },
-										error instanceof Error ? error.message : "BlockStream error",
+										error instanceof Error
+											? error.message
+											: "BlockStream error",
 										{ cause: error instanceof Error ? error : undefined },
 									),
 							);
@@ -816,16 +824,14 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 						Effect.flatMap((uncle) =>
 							uncle
 								? Effect.succeed(uncle)
-								: Effect.fail(
-										new ProviderError(args, "Uncle block not found"),
-									),
+								: Effect.fail(new ProviderError(args, "Uncle block not found")),
 						),
 					);
 				},
 
 				getProof: (
 					address: AddressInput,
-					storageKeys: (`0x${string}`)[],
+					storageKeys: `0x${string}`[],
 					blockTag: BlockTag = "latest",
 				) =>
 					request<ProofType>("eth_getProof", [

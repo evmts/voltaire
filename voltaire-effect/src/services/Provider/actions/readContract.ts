@@ -14,9 +14,9 @@
  */
 
 import {
-	type Abi as BrandedAbiType,
 	Address,
 	BrandedAbi,
+	type Abi as BrandedAbiType,
 	type BrandedAddress,
 	type BrandedHex,
 	Hex,
@@ -46,17 +46,22 @@ export type Abi = readonly AbiItem[];
 /**
  * Extracts function names from an ABI that are view or pure.
  */
-type ExtractViewFunctionNames<TAbi extends Abi> = TAbi extends readonly (infer Item)[]
-	? Item extends { type: "function"; name: infer Name; stateMutability: "view" | "pure" }
-		? Name extends string
-			? Name
-			: never
-		: Item extends { type: "function"; name: infer Name }
+type ExtractViewFunctionNames<TAbi extends Abi> =
+	TAbi extends readonly (infer Item)[]
+		? Item extends {
+				type: "function";
+				name: infer Name;
+				stateMutability: "view" | "pure";
+			}
 			? Name extends string
 				? Name
 				: never
-			: never
-	: never;
+			: Item extends { type: "function"; name: infer Name }
+				? Name extends string
+					? Name
+					: never
+				: never
+		: never;
 
 /**
  * Gets the inputs for a specific function from an ABI.
@@ -105,13 +110,21 @@ type GetFunctionOutput<
 	TAbi extends Abi,
 	TFunctionName extends string,
 > = TAbi extends readonly (infer Item)[]
-	? Item extends { type: "function"; name: TFunctionName; outputs: infer Outputs }
+	? Item extends {
+			type: "function";
+			name: TFunctionName;
+			outputs: infer Outputs;
+		}
 		? Outputs extends readonly { type: string }[]
 			? Outputs["length"] extends 0
-				? void
+				? undefined
 				: Outputs["length"] extends 1
 					? AbiTypeToTS<Outputs[0]["type"]>
-					: { [K in keyof Outputs]: AbiTypeToTS<Outputs[K] extends { type: string } ? Outputs[K]["type"] : never> }
+					: {
+							[K in keyof Outputs]: AbiTypeToTS<
+								Outputs[K] extends { type: string } ? Outputs[K]["type"] : never
+							>;
+						}
 			: unknown
 		: never
 	: unknown;

@@ -109,6 +109,8 @@ export {
 	signTypedData,
 	verifyTypedData,
 } from "./EIP712/index.js";
+// Hash utilities (re-exports for convenience)
+export { hashMessage as hashPersonalMessage } from "./Hash/index.js";
 export {
 	derive as hdwalletDerive,
 	fromMnemonic,
@@ -120,7 +122,6 @@ export {
 	type HDNode,
 	type HDPath,
 	type HDWalletError,
-	HDWalletLive,
 	HDWalletService,
 	type HDWalletServiceShape,
 	HDWalletTest,
@@ -149,11 +150,11 @@ export {
 	type DecryptError as KeystoreDecryptError,
 	decrypt as keystoreDecrypt,
 	encrypt as keystoreEncrypt,
-	withDecryptedKey as keystoreWithDecryptedKey,
 	KeystoreLive,
 	KeystoreService,
 	type KeystoreServiceShape,
 	KeystoreTest,
+	withDecryptedKey as keystoreWithDecryptedKey,
 } from "./Keystore/index.js";
 export {
 	blobToKzgCommitment,
@@ -194,6 +195,23 @@ export {
 	SHA256Service,
 	SHA256Test,
 } from "./SHA256/index.js";
+
+// Signature verification utilities
+export {
+	AddressDerivationError,
+	constantTimeEqual,
+	hashMessage,
+	hashTypedData,
+	RecoverError,
+	recoverAddress,
+	recoverMessageAddress,
+	type SignatureError,
+	type SignatureInput,
+	VerifyError,
+	verifyHash,
+	verifyMessage,
+	verifyTypedData as verifyTypedDataSignature,
+} from "./Signature/index.js";
 // Signers module temporarily disabled - requires @tevm/voltaire exports update
 // export {
 // 	fromPrivateKey,
@@ -214,23 +232,3 @@ export {
 	type X25519ServiceShape,
 	X25519Test,
 } from "./X25519/index.js";
-
-// Signature verification utilities
-export {
-	AddressDerivationError,
-	constantTimeEqual,
-	hashMessage,
-	hashTypedData,
-	recoverAddress,
-	RecoverError,
-	recoverMessageAddress,
-	type SignatureError,
-	type SignatureInput,
-	verifyHash,
-	VerifyError,
-	verifyMessage,
-	verifyTypedData as verifyTypedDataSignature,
-} from "./Signature/index.js";
-
-// Hash utilities (re-exports for convenience)
-export { hashMessage as hashPersonalMessage } from "./Hash/index.js";

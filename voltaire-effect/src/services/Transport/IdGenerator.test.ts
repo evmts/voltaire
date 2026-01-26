@@ -1,9 +1,9 @@
 import * as HttpClient from "@effect/platform/HttpClient";
 import type * as HttpClientRequest from "@effect/platform/HttpClientRequest";
 import type * as HttpClientResponse from "@effect/platform/HttpClientResponse";
+import { describe, expect, it, vi } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it, vi } from "@effect/vitest";
 import { createBatchScheduler } from "./BatchScheduler.js";
 import { HttpTransport } from "./HttpTransport.js";
 import { TransportService } from "./TransportService.js";
@@ -47,9 +47,13 @@ const createMockHttpTransport = (
 ): Layer.Layer<TransportService> =>
 	Layer.provide(HttpTransport(options), createMockHttpClientLayer(fetchMock));
 
-const parseRequestId = (request: HttpClientRequest.HttpClientRequest): number => {
+const parseRequestId = (
+	request: HttpClientRequest.HttpClientRequest,
+): number => {
 	const body = request.body as { _tag: string; body: Uint8Array };
-	const parsed = JSON.parse(new TextDecoder().decode(body.body)) as { id: number };
+	const parsed = JSON.parse(new TextDecoder().decode(body.body)) as {
+		id: number;
+	};
 	return parsed.id;
 };
 
@@ -107,4 +111,3 @@ describe("IdGenerator", () => {
 		expect(new Set(combined).size).toBe(combined.length);
 	});
 });
-

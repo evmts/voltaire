@@ -1,7 +1,7 @@
 import { ERC165 as ERC165Impl } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { StandardsError } from "./errors.js";
 import { ProviderService } from "../services/Provider/index.js";
+import { StandardsError } from "./errors.js";
 
 export const SELECTOR = ERC165Impl.SELECTOR;
 export const INTERFACE_IDS = ERC165Impl.INTERFACE_IDS;

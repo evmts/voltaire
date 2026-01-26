@@ -1,6 +1,6 @@
+import { describe, expect, it, vi } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it, vi } from "@effect/vitest";
 import { TransportError, TransportService } from "../Transport/index.js";
 import {
 	EthBlockNumber,
@@ -14,10 +14,7 @@ import {
 } from "./index.js";
 
 const createMockTransport = (
-	handler: (
-		method: string,
-		params?: unknown[],
-	) => unknown | Promise<unknown>,
+	handler: (method: string, params?: unknown[]) => unknown | Promise<unknown>,
 ): Layer.Layer<TransportService> =>
 	Layer.succeed(TransportService, {
 		request: <T>(method: string, params?: unknown[]) =>
@@ -125,10 +122,10 @@ describe("RpcBatch", () => {
 		});
 
 		it("deduplicates identical requests", async () => {
-			let batchCallCount = 0;
+			let _batchCallCount = 0;
 			const handler = vi.fn().mockImplementation((method, params) => {
 				if (method === "__batch__") {
-					batchCallCount++;
+					_batchCallCount++;
 					const batch = params as Array<{
 						id: number;
 						method: string;
@@ -195,7 +192,7 @@ describe("RpcBatch", () => {
 		});
 
 		it("handles per-request errors in batch", async () => {
-			const handler = vi.fn().mockImplementation((method, params) => {
+			const handler = vi.fn().mockImplementation((method, _params) => {
 				if (method === "__batch__") {
 					return [
 						{ jsonrpc: "2.0", id: 0, result: "0x100" },
@@ -237,7 +234,7 @@ describe("RpcBatch", () => {
 		});
 
 		it("handles missing response for request", async () => {
-			const handler = vi.fn().mockImplementation((method, params) => {
+			const handler = vi.fn().mockImplementation((method, _params) => {
 				if (method === "__batch__") {
 					return [{ jsonrpc: "2.0", id: 0, result: "0x100" }];
 				}
@@ -330,7 +327,7 @@ describe("RpcBatch", () => {
 			const handler = vi.fn();
 
 			const program = Effect.gen(function* () {
-				const batch = yield* RpcBatchService;
+				const _batch = yield* RpcBatchService;
 				const results = yield* Effect.all([], { batching: true });
 				return results;
 			}).pipe(
@@ -441,7 +438,7 @@ describe("RpcBatch", () => {
 		});
 
 		it("deduplicates identical requests returning same result", async () => {
-			let batchSize = 0;
+			let _batchSize = 0;
 			const handler = vi.fn().mockImplementation((method, params) => {
 				if (method === "__batch__") {
 					const batch = params as Array<{
@@ -449,7 +446,7 @@ describe("RpcBatch", () => {
 						method: string;
 						params: unknown[];
 					}>;
-					batchSize = batch.length;
+					_batchSize = batch.length;
 					return batch.map((req) => ({
 						jsonrpc: "2.0" as const,
 						id: req.id,
@@ -490,7 +487,7 @@ describe("RpcBatch", () => {
 		});
 
 		it("handles null result in batch response", async () => {
-			const handler = vi.fn().mockImplementation((method, params) => {
+			const handler = vi.fn().mockImplementation((method, _params) => {
 				if (method === "__batch__") {
 					return [
 						{ jsonrpc: "2.0", id: 0, result: null },
@@ -540,14 +537,11 @@ describe("RpcBatch", () => {
 			const result = await Effect.runPromise(program);
 			expect(result).toBe("0x42");
 			expect(handler).toHaveBeenCalledWith("eth_blockNumber", []);
-			expect(handler).not.toHaveBeenCalledWith(
-				"__batch__",
-				expect.anything(),
-			);
+			expect(handler).not.toHaveBeenCalledWith("__batch__", expect.anything());
 		});
 
 		it("handles mixed success and failure in batch", async () => {
-			const handler = vi.fn().mockImplementation((method, params) => {
+			const handler = vi.fn().mockImplementation((method, _params) => {
 				if (method === "__batch__") {
 					return [
 						{ jsonrpc: "2.0", id: 0, result: "0x100" },
@@ -591,7 +585,7 @@ describe("RpcBatch", () => {
 		});
 
 		it("handles out-of-order batch responses", async () => {
-			const handler = vi.fn().mockImplementation((method, params) => {
+			const handler = vi.fn().mockImplementation((method, _params) => {
 				if (method === "__batch__") {
 					return [
 						{ jsonrpc: "2.0", id: 2, result: "0x300" },

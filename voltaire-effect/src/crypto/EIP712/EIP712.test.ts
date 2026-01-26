@@ -1,7 +1,7 @@
+import { describe, expect, it } from "@effect/vitest";
 import type { Domain, TypedData } from "@tevm/voltaire/EIP712";
 import { from as privateKeyFrom } from "@tevm/voltaire/PrivateKey";
 import * as Effect from "effect/Effect";
-import { describe, expect, it } from "@effect/vitest";
 import {
 	EIP712Live,
 	EIP712Service,
@@ -41,20 +41,23 @@ describe("EIP712Service", () => {
 				const result = yield* eip712.hashTypedData(testTypedData);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(32);
-			}).pipe(Effect.provide(EIP712Live))
+			}).pipe(Effect.provide(EIP712Live)),
 		);
 
 		it.effect("signs typed data", () =>
 			Effect.gen(function* () {
 				const eip712 = yield* EIP712Service;
-				const result = yield* eip712.signTypedData(testTypedData, testPrivateKey);
+				const result = yield* eip712.signTypedData(
+					testTypedData,
+					testPrivateKey,
+				);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
 				expect(result).toHaveProperty("v");
 				expect(result.r).toBeInstanceOf(Uint8Array);
 				expect(result.r.length).toBe(32);
 				expect(result.s.length).toBe(32);
-			}).pipe(Effect.provide(EIP712Live))
+			}).pipe(Effect.provide(EIP712Live)),
 		);
 
 		it.effect("recovers address from signature", () =>
@@ -67,7 +70,7 @@ describe("EIP712Service", () => {
 				const result = yield* eip712.recoverAddress(signature, testTypedData);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(20);
-			}).pipe(Effect.provide(EIP712Live))
+			}).pipe(Effect.provide(EIP712Live)),
 		);
 
 		it.effect("verifies typed data signature", () =>
@@ -87,7 +90,7 @@ describe("EIP712Service", () => {
 					recoveredAddress,
 				);
 				expect(result).toBe(true);
-			}).pipe(Effect.provide(EIP712Live))
+			}).pipe(Effect.provide(EIP712Live)),
 		);
 
 		it.effect("hashes domain", () =>
@@ -96,7 +99,7 @@ describe("EIP712Service", () => {
 				const result = yield* eip712.hashDomain(testDomain);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(32);
-			}).pipe(Effect.provide(EIP712Live))
+			}).pipe(Effect.provide(EIP712Live)),
 		);
 
 		it.effect("hashes struct", () =>
@@ -109,7 +112,7 @@ describe("EIP712Service", () => {
 				);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(32);
-			}).pipe(Effect.provide(EIP712Live))
+			}).pipe(Effect.provide(EIP712Live)),
 		);
 	});
 
@@ -121,17 +124,20 @@ describe("EIP712Service", () => {
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(32);
 				expect(result.every((b) => b === 0)).toBe(true);
-			}).pipe(Effect.provide(EIP712Test))
+			}).pipe(Effect.provide(EIP712Test)),
 		);
 
 		it.effect("returns mock signature", () =>
 			Effect.gen(function* () {
 				const eip712 = yield* EIP712Service;
-				const result = yield* eip712.signTypedData(testTypedData, testPrivateKey);
+				const result = yield* eip712.signTypedData(
+					testTypedData,
+					testPrivateKey,
+				);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
 				expect(result).toHaveProperty("v");
-			}).pipe(Effect.provide(EIP712Test))
+			}).pipe(Effect.provide(EIP712Test)),
 		);
 
 		it.effect("always verifies as true", () =>
@@ -150,7 +156,7 @@ describe("EIP712Service", () => {
 					mockAddress,
 				);
 				expect(result).toBe(true);
-			}).pipe(Effect.provide(EIP712Test))
+			}).pipe(Effect.provide(EIP712Test)),
 		);
 	});
 });
@@ -161,14 +167,14 @@ describe("convenience functions", () => {
 			const result = yield* hashTypedData(testTypedData);
 			expect(result).toBeInstanceOf(Uint8Array);
 			expect(result.length).toBe(32);
-		}).pipe(Effect.provide(EIP712Live))
+		}).pipe(Effect.provide(EIP712Live)),
 	);
 
 	it.effect("signTypedData works with service dependency", () =>
 		Effect.gen(function* () {
 			const result = yield* signTypedData(testTypedData, testPrivateKey);
 			expect(result).toHaveProperty("r");
-		}).pipe(Effect.provide(EIP712Live))
+		}).pipe(Effect.provide(EIP712Live)),
 	);
 
 	it.effect("recoverAddress works with service dependency", () =>
@@ -177,7 +183,7 @@ describe("convenience functions", () => {
 			const result = yield* recoverAddress(signature, testTypedData);
 			expect(result).toBeInstanceOf(Uint8Array);
 			expect(result.length).toBe(20);
-		}).pipe(Effect.provide(EIP712Live))
+		}).pipe(Effect.provide(EIP712Live)),
 	);
 
 	it.effect("verifyTypedData works with service dependency", () =>
@@ -186,6 +192,6 @@ describe("convenience functions", () => {
 			const address = yield* recoverAddress(signature, testTypedData);
 			const result = yield* verifyTypedData(signature, testTypedData, address);
 			expect(result).toBe(true);
-		}).pipe(Effect.provide(EIP712Live))
+		}).pipe(Effect.provide(EIP712Live)),
 	);
 });

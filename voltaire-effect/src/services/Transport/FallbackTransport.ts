@@ -156,11 +156,17 @@ export const FallbackTransport = (
 					instances.map((instance) =>
 						Effect.gen(function* () {
 							const state = yield* SynchronizedRef.get(instance.stateRef);
-							return { instance, failures: state.failures, latency: state.latency };
+							return {
+								instance,
+								failures: state.failures,
+								latency: state.latency,
+							};
 						}),
 					),
 				);
-				const available = withState.filter((state) => state.failures < retryCount);
+				const available = withState.filter(
+					(state) => state.failures < retryCount,
+				);
 				if (shouldRank) {
 					return [...available].sort((a, b) => a.latency - b.latency);
 				}

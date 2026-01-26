@@ -1,6 +1,6 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
 import { encodeError } from "./encodeError.js";
 
 const customAbi = [
@@ -28,11 +28,10 @@ describe("encodeError", () => {
 	describe("success cases", () => {
 		it.effect("encodes InsufficientBalance error", () =>
 			Effect.gen(function* () {
-				const encoded = yield* encodeError(
-					customAbi,
-					"InsufficientBalance",
-					[100n, 200n],
-				);
+				const encoded = yield* encodeError(customAbi, "InsufficientBalance", [
+					100n,
+					200n,
+				]);
 				expect(encoded.startsWith("0x")).toBe(true);
 				expect(encoded.length).toBeGreaterThan(10);
 			}),
@@ -57,11 +56,10 @@ describe("encodeError", () => {
 
 		it.effect("encodes with zero values", () =>
 			Effect.gen(function* () {
-				const encoded = yield* encodeError(
-					customAbi,
-					"InsufficientBalance",
-					[0n, 0n],
-				);
+				const encoded = yield* encodeError(customAbi, "InsufficientBalance", [
+					0n,
+					0n,
+				]);
 				expect(encoded.startsWith("0x")).toBe(true);
 			}),
 		);

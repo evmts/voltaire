@@ -1,13 +1,13 @@
+import { describe, expect, it } from "@effect/vitest";
 import type {
 	BrandedAddress,
 	BrandedHex,
 	BrandedSignature,
 } from "@tevm/voltaire";
-import * as Hash from "@tevm/voltaire/Hash";
 import type { HashType } from "@tevm/voltaire/Hash";
+import * as Hash from "@tevm/voltaire/Hash";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
 
 type AddressType = BrandedAddress.AddressType;
 type HexType = BrandedHex.HexType;
@@ -20,10 +20,10 @@ import { TransportService, type TransportShape } from "../Transport/index.js";
 import { Signer } from "./Signer.js";
 import {
 	type ChainConfig,
-	SignerError,
-	SignerService,
 	type Permission,
 	type PermissionRequest,
+	SignerError,
+	SignerService,
 } from "./SignerService.js";
 
 const mockAddress = new Uint8Array(20).fill(0xab) as AddressType;
@@ -31,7 +31,7 @@ const mockSignature = Object.assign(new Uint8Array(65).fill(0x12), {
 	algorithm: "secp256k1" as const,
 	v: 27,
 }) as SignatureType;
-const mockPublicKey = ("0x04" + "00".repeat(64)) as HexType;
+const mockPublicKey = `0x04${"00".repeat(64)}` as HexType;
 const mockTxHashHex =
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const mockTxHash: HashType = Hash.fromHex(mockTxHashHex);
@@ -50,8 +50,8 @@ const mockAccount: AccountShape = {
 			address: "0x0000000000000000000000000000000000000001" as `0x${string}`,
 			nonce: 0n,
 			yParity: 0,
-			r: ("0x" + "00".repeat(32)) as `0x${string}`,
-			s: ("0x" + "00".repeat(32)) as `0x${string}`,
+			r: `0x${"00".repeat(32)}` as `0x${string}`,
+			s: `0x${"00".repeat(32)}` as `0x${string}`,
 		}),
 	clearKey: () => Effect.void,
 };
@@ -254,7 +254,10 @@ describe("SignerService", () => {
 				},
 			};
 
-			const captureAccountLayer = Layer.succeed(AccountService, accountWithCapture);
+			const captureAccountLayer = Layer.succeed(
+				AccountService,
+				accountWithCapture,
+			);
 			const captureLayers = Layer.mergeAll(
 				captureAccountLayer,
 				TestProviderLayer,
@@ -271,7 +274,9 @@ describe("SignerService", () => {
 					accessList: [
 						{
 							address: "0x1234567890123456789012345678901234567890",
-							storageKeys: ["0x0000000000000000000000000000000000000000000000000000000000000001"],
+							storageKeys: [
+								"0x0000000000000000000000000000000000000000000000000000000000000001",
+							],
 						},
 					],
 				});
@@ -294,7 +299,10 @@ describe("SignerService", () => {
 				},
 			};
 
-			const captureAccountLayer = Layer.succeed(AccountService, accountWithCapture);
+			const captureAccountLayer = Layer.succeed(
+				AccountService,
+				accountWithCapture,
+			);
 			const captureLayers = Layer.mergeAll(
 				captureAccountLayer,
 				TestProviderLayer,
@@ -313,7 +321,10 @@ describe("SignerService", () => {
 			});
 
 			await Effect.runPromise(Effect.provide(program, captureSignerLayer));
-			const tx = capturedTx as { maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint };
+			const tx = capturedTx as {
+				maxFeePerGas?: bigint;
+				maxPriorityFeePerGas?: bigint;
+			};
 			expect(tx.maxFeePerGas).toBe(30000000000n);
 			expect(tx.maxPriorityFeePerGas).toBe(2000000000n);
 		});
@@ -328,7 +339,10 @@ describe("SignerService", () => {
 				},
 			};
 
-			const captureAccountLayer = Layer.succeed(AccountService, accountWithCapture);
+			const captureAccountLayer = Layer.succeed(
+				AccountService,
+				accountWithCapture,
+			);
 			const captureLayers = Layer.mergeAll(
 				captureAccountLayer,
 				TestProviderLayer,
@@ -362,7 +376,10 @@ describe("SignerService", () => {
 				},
 			};
 
-			const captureAccountLayer = Layer.succeed(AccountService, accountWithCapture);
+			const captureAccountLayer = Layer.succeed(
+				AccountService,
+				accountWithCapture,
+			);
 			const captureLayers = Layer.mergeAll(
 				captureAccountLayer,
 				TestProviderLayer,
@@ -375,14 +392,19 @@ describe("SignerService", () => {
 				return yield* signer.signTransaction({
 					to: mockAddress,
 					value: 0n,
-					blobVersionedHashes: ["0x0100000000000000000000000000000000000000000000000000000000000001"],
+					blobVersionedHashes: [
+						"0x0100000000000000000000000000000000000000000000000000000000000001",
+					],
 					maxFeePerBlobGas: 1000000000n,
 					maxFeePerGas: 30000000000n,
 				});
 			});
 
 			await Effect.runPromise(Effect.provide(program, captureSignerLayer));
-			const tx = capturedTx as { blobVersionedHashes?: string[]; maxFeePerBlobGas?: bigint };
+			const tx = capturedTx as {
+				blobVersionedHashes?: string[];
+				maxFeePerBlobGas?: bigint;
+			};
 			expect(tx.blobVersionedHashes).toBeDefined();
 			expect(tx.maxFeePerBlobGas).toBe(1000000000n);
 		});
@@ -397,7 +419,10 @@ describe("SignerService", () => {
 				},
 			};
 
-			const captureAccountLayer = Layer.succeed(AccountService, accountWithCapture);
+			const captureAccountLayer = Layer.succeed(
+				AccountService,
+				accountWithCapture,
+			);
 			const captureLayers = Layer.mergeAll(
 				captureAccountLayer,
 				TestProviderLayer,
@@ -588,7 +613,10 @@ describe("SignerService", () => {
 				},
 			];
 			const transportWithPermissions: TransportShape = {
-				request: <T>(method: string, params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					params?: unknown[],
+				): Effect.Effect<T, never> => {
 					capturedMethod = method;
 					capturedParams = params;
 					return Effect.succeed(mockPermissions as T);
@@ -629,7 +657,10 @@ describe("SignerService", () => {
 			let capturedParams: unknown[] | undefined;
 
 			const transportWithCapture: TransportShape = {
-				request: <T>(method: string, params?: unknown[]): Effect.Effect<T, never> => {
+				request: <T>(
+					method: string,
+					params?: unknown[],
+				): Effect.Effect<T, never> => {
 					capturedMethod = method;
 					capturedParams = params;
 					return Effect.succeed(null as T);
@@ -663,7 +694,7 @@ describe("SignerService", () => {
 			expect(capturedMethod).toBe("wallet_addEthereumChain");
 			expect(capturedParams).toBeDefined();
 
-			const params = capturedParams![0] as {
+			const params = capturedParams?.[0] as {
 				chainId: string;
 				chainName: string;
 				nativeCurrency: { name: string; symbol: string; decimals: number };

@@ -385,9 +385,7 @@ export type AccountShape = {
 	 * Derive a child account by index from the current HD account.
 	 * Only available for mnemonic-derived accounts.
 	 */
-	readonly deriveChild?: (
-		index: number,
-	) => Effect.Effect<AccountShape, Error>;
+	readonly deriveChild?: (index: number) => Effect.Effect<AccountShape, Error>;
 };
 
 /**

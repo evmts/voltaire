@@ -13,19 +13,18 @@
  */
 
 import * as Config from "effect/Config";
-import * as ConfigError from "effect/ConfigError";
+import type * as ConfigError from "effect/ConfigError";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
-import * as HashMap from "effect/HashMap";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Secret from "effect/Secret";
 import { HttpTransport } from "./HttpTransport.js";
-import {
-	type RequestInterceptor,
-	type ResponseInterceptor,
+import type {
+	RequestInterceptor,
+	ResponseInterceptor,
 } from "./TransportInterceptor.js";
-import { TransportService } from "./TransportService.js";
+import type { TransportService } from "./TransportService.js";
 
 /**
  * Transport configuration schema.
@@ -70,15 +69,11 @@ export const TransportConfig = Config.all({
 	timeout: Config.duration("timeout").pipe(
 		Config.withDefault(Duration.seconds(30)),
 	),
-	retries: Config.integer("retries").pipe(
-		Config.withDefault(3),
-	),
+	retries: Config.integer("retries").pipe(Config.withDefault(3)),
 	retryDelay: Config.duration("retryDelay").pipe(
 		Config.withDefault(Duration.seconds(1)),
 	),
-	apiKey: Config.secret("apiKey").pipe(
-		Config.option,
-	),
+	apiKey: Config.secret("apiKey").pipe(Config.option),
 	onRequest: Config.succeed<RequestInterceptor | undefined>(undefined),
 	onResponse: Config.succeed<ResponseInterceptor | undefined>(undefined),
 	fetchOptions: Config.succeed<RequestInit | undefined>(undefined),
@@ -150,12 +145,15 @@ export const TransportFromConfig: Layer.Layer<
 		const config = yield* TransportConfig;
 
 		// Build headers from optional API key
-		const headers: Record<string, string> | undefined = Option.match(config.apiKey, {
-			onNone: () => undefined,
-			onSome: (secret) => ({
-				Authorization: `Bearer ${Secret.value(secret)}`,
-			}),
-		});
+		const headers: Record<string, string> | undefined = Option.match(
+			config.apiKey,
+			{
+				onNone: () => undefined,
+				onSome: (secret) => ({
+					Authorization: `Bearer ${Secret.value(secret)}`,
+				}),
+			},
+		);
 
 		// Currently only HTTP is supported from config
 		// WebSocket would require a scoped layer
@@ -194,15 +192,18 @@ export const TransportFromConfigFetch: Layer.Layer<
 	Effect.gen(function* () {
 		const config = yield* TransportConfig;
 
-		const headers: Record<string, string> | undefined = Option.match(config.apiKey, {
-			onNone: () => undefined,
-			onSome: (secret) => ({
-				Authorization: `Bearer ${Secret.value(secret)}`,
-			}),
-		});
+		const headers: Record<string, string> | undefined = Option.match(
+			config.apiKey,
+			{
+				onNone: () => undefined,
+				onSome: (secret) => ({
+					Authorization: `Bearer ${Secret.value(secret)}`,
+				}),
+			},
+		);
 
-		const { FetchHttpClient } = yield* Effect.promise(() =>
-			import("@effect/platform"),
+		const { FetchHttpClient } = yield* Effect.promise(
+			() => import("@effect/platform"),
 		);
 
 		return Layer.provide(
@@ -233,9 +234,7 @@ export const QuickConfig = {
 	 */
 	infuraMainnet: (apiKey: string) =>
 		ConfigProvider.fromMap(
-			new Map([
-				["rpc.url", `https://mainnet.infura.io/v3/${apiKey}`],
-			]),
+			new Map([["rpc.url", `https://mainnet.infura.io/v3/${apiKey}`]]),
 		),
 
 	/**
@@ -243,20 +242,14 @@ export const QuickConfig = {
 	 */
 	alchemyMainnet: (apiKey: string) =>
 		ConfigProvider.fromMap(
-			new Map([
-				["rpc.url", `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`],
-			]),
+			new Map([["rpc.url", `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`]]),
 		),
 
 	/**
 	 * Create config for local node.
 	 */
 	localhost: (port = 8545) =>
-		ConfigProvider.fromMap(
-			new Map([
-				["rpc.url", `http://localhost:${port}`],
-			]),
-		),
+		ConfigProvider.fromMap(new Map([["rpc.url", `http://localhost:${port}`]])),
 
 	/**
 	 * Create config for Anvil.

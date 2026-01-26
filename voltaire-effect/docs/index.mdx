@@ -3,7 +3,27 @@ title: voltaire-effect
 description: Effect.ts integration for Voltaire Ethereum primitives
 ---
 
-Build Ethereum applications with typed errors, composable workflows, and testable code.
+[Effect.ts](https://effect.website) integration for [Voltaire](https://voltaire.tevm.sh) Ethereum primitives. Build applications with typed errors, composable workflows, and testable code.
+
+```typescript
+import { Effect, Schedule } from 'effect'
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import { Provider, MainnetLayer } from 'voltaire-effect/services/Provider'
+
+const getBalance = (input: string) =>
+  Effect.gen(function* () {
+    const addr = yield* S.decode(Address.Hex)(input)
+    const provider = yield* Provider
+    return yield* provider.getBalance(addr)
+  }).pipe(
+    Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(3))),
+    Effect.timeout('10 seconds')
+  )
+// Effect<bigint, ParseError | RpcError | TimeoutException, Provider>
+
+await Effect.runPromise(getBalance('0x...').pipe(Effect.provide(MainnetLayer)))
+```
 
 <CardGroup cols={2}>
   <Card title="Getting Started" icon="rocket" href="/getting-started">
@@ -19,26 +39,6 @@ Build Ethereum applications with typed errors, composable workflows, and testabl
     Quick reference for schemas, services, and layers
   </Card>
 </CardGroup>
-
-## Why voltaire-effect?
-
-[Effect Schema](https://effect.website/docs/schema/introduction/) validation for [Voltaire](https://voltaire.tevm.sh) primitives. [Typed errors](https://effect.website/docs/error-management/two-error-types/) with `_tag` discrimination. [Services](https://effect.website/docs/requirements-management/services/) for Provider, Signer, and Transport.
-
-```typescript
-import * as Address from 'voltaire-effect/primitives/Address'
-import * as S from 'effect/Schema'
-import * as Effect from 'effect/Effect'
-import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
-
-// Decode from hex string → returns branded AddressType
-const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
-
-// Encode to checksummed (requires KeccakService)
-const checksummed = await Effect.runPromise(
-  S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
-)
-// "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
-```
 
 ## Install
 

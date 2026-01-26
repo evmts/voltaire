@@ -1,5 +1,5 @@
-import * as Effect from "effect/Effect";
 import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
 import { formatWithArgs } from "./formatWithArgs.js";
 
 describe("formatWithArgs", () => {
@@ -20,7 +20,9 @@ describe("formatWithArgs", () => {
 					1000n,
 				]);
 				expect(formatted).toContain("transfer");
-				expect(formatted).toContain("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+				expect(formatted).toContain(
+					"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+				);
 				expect(formatted).toContain("1000");
 			}),
 		);

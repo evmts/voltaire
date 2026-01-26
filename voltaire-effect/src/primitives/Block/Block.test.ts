@@ -16,12 +16,12 @@ type BlockType = Block.BlockType;
  */
 function createValidHeader(): ReturnType<typeof BlockHeader.from> {
 	return BlockHeader.from({
-		parentHash: "0x" + "ab".repeat(32),
-		ommersHash: "0x" + "cd".repeat(32),
-		beneficiary: "0x" + "ef".repeat(20),
-		stateRoot: "0x" + "11".repeat(32),
-		transactionsRoot: "0x" + "22".repeat(32),
-		receiptsRoot: "0x" + "33".repeat(32),
+		parentHash: `0x${"ab".repeat(32)}`,
+		ommersHash: `0x${"cd".repeat(32)}`,
+		beneficiary: `0x${"ef".repeat(20)}`,
+		stateRoot: `0x${"11".repeat(32)}`,
+		transactionsRoot: `0x${"22".repeat(32)}`,
+		receiptsRoot: `0x${"33".repeat(32)}`,
 		logsBloom: new Uint8Array(256).fill(0),
 		difficulty: 0n,
 		number: 12345n,
@@ -29,7 +29,7 @@ function createValidHeader(): ReturnType<typeof BlockHeader.from> {
 		gasUsed: 21000n,
 		timestamp: 1700000000n,
 		extraData: new Uint8Array(0),
-		mixHash: "0x" + "44".repeat(32),
+		mixHash: `0x${"44".repeat(32)}`,
 		nonce: new Uint8Array(8).fill(0),
 		baseFeePerGas: 1000000000n,
 	});
@@ -52,7 +52,7 @@ function createValidBlock(): ReturnType<typeof Block.from> {
 	return Block.from({
 		header: createValidHeader(),
 		body: createValidBody(),
-		hash: "0x" + "55".repeat(32),
+		hash: `0x${"55".repeat(32)}`,
 		size: 1000n,
 	});
 }
@@ -85,7 +85,10 @@ describe("BlockSchema", () => {
 
 	it("rejects block with wrong hash length", () => {
 		const block = createValidBlock();
-		const invalid = { ...block, hash: new Uint8Array(16) } as unknown as BlockType;
+		const invalid = {
+			...block,
+			hash: new Uint8Array(16),
+		} as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
@@ -95,7 +98,10 @@ describe("BlockSchema", () => {
 			parentHash: Uint8Array;
 			[key: string]: unknown;
 		};
-		const invalid = { ...block, header: headerWithoutParentHash } as unknown as BlockType;
+		const invalid = {
+			...block,
+			header: headerWithoutParentHash,
+		} as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
@@ -149,30 +155,36 @@ describe("BlockSchema", () => {
 	});
 
 	it("rejects non-object input", () => {
-		expect(() => S.decodeSync(BlockSchema)("not-an-object" as unknown as BlockType)).toThrow();
-		expect(() => S.decodeSync(BlockSchema)(null as unknown as BlockType)).toThrow();
-		expect(() => S.decodeSync(BlockSchema)(undefined as unknown as BlockType)).toThrow();
+		expect(() =>
+			S.decodeSync(BlockSchema)("not-an-object" as unknown as BlockType),
+		).toThrow();
+		expect(() =>
+			S.decodeSync(BlockSchema)(null as unknown as BlockType),
+		).toThrow();
+		expect(() =>
+			S.decodeSync(BlockSchema)(undefined as unknown as BlockType),
+		).toThrow();
 	});
 });
 
 describe("Block.Rpc", () => {
 	const createRpcBlock = () => ({
-		hash: "0x" + "ab".repeat(32),
+		hash: `0x${"ab".repeat(32)}`,
 		size: "0x3e8",
-		parentHash: "0x" + "cd".repeat(32),
-		sha3Uncles: "0x" + "de".repeat(32),
-		miner: "0x" + "ef".repeat(20),
-		stateRoot: "0x" + "11".repeat(32),
-		transactionsRoot: "0x" + "22".repeat(32),
-		receiptsRoot: "0x" + "33".repeat(32),
-		logsBloom: "0x" + "00".repeat(256),
+		parentHash: `0x${"cd".repeat(32)}`,
+		sha3Uncles: `0x${"de".repeat(32)}`,
+		miner: `0x${"ef".repeat(20)}`,
+		stateRoot: `0x${"11".repeat(32)}`,
+		transactionsRoot: `0x${"22".repeat(32)}`,
+		receiptsRoot: `0x${"33".repeat(32)}`,
+		logsBloom: `0x${"00".repeat(256)}`,
 		difficulty: "0x0",
 		number: "0x3039",
 		gasLimit: "0x1c9c380",
 		gasUsed: "0x5208",
 		timestamp: "0x65510d80",
 		extraData: "0x",
-		mixHash: "0x" + "44".repeat(32),
+		mixHash: `0x${"44".repeat(32)}`,
 		nonce: "0x0000000000000000",
 		baseFeePerGas: "0x3b9aca00",
 		transactions: [],
@@ -188,12 +200,12 @@ describe("Block.Rpc", () => {
 	it("decodes post-Shanghai block with withdrawals", () => {
 		const rpcBlock = {
 			...createRpcBlock(),
-			withdrawalsRoot: "0x" + "55".repeat(32),
+			withdrawalsRoot: `0x${"55".repeat(32)}`,
 			withdrawals: [
 				{
 					index: "0x0",
 					validatorIndex: "0x1",
-					address: "0x" + "aa".repeat(20),
+					address: `0x${"aa".repeat(20)}`,
 					amount: "0x1000",
 				},
 			],
@@ -205,11 +217,11 @@ describe("Block.Rpc", () => {
 	it("decodes post-Cancun block with blob fields", () => {
 		const rpcBlock = {
 			...createRpcBlock(),
-			withdrawalsRoot: "0x" + "55".repeat(32),
+			withdrawalsRoot: `0x${"55".repeat(32)}`,
 			withdrawals: [],
 			blobGasUsed: "0x20000",
 			excessBlobGas: "0x0",
-			parentBeaconBlockRoot: "0x" + "66".repeat(32),
+			parentBeaconBlockRoot: `0x${"66".repeat(32)}`,
 		};
 		const block = S.decodeSync(Rpc)(rpcBlock);
 		expect(block.header.blobGasUsed).toBe(131072n);
@@ -239,12 +251,12 @@ describe("Block.Rpc", () => {
 
 	it("encodes block with withdrawals", () => {
 		const header = BlockHeader.from({
-			parentHash: "0x" + "ab".repeat(32),
-			ommersHash: "0x" + "cd".repeat(32),
-			beneficiary: "0x" + "ef".repeat(20),
-			stateRoot: "0x" + "11".repeat(32),
-			transactionsRoot: "0x" + "22".repeat(32),
-			receiptsRoot: "0x" + "33".repeat(32),
+			parentHash: `0x${"ab".repeat(32)}`,
+			ommersHash: `0x${"cd".repeat(32)}`,
+			beneficiary: `0x${"ef".repeat(20)}`,
+			stateRoot: `0x${"11".repeat(32)}`,
+			transactionsRoot: `0x${"22".repeat(32)}`,
+			receiptsRoot: `0x${"33".repeat(32)}`,
 			logsBloom: new Uint8Array(256).fill(0),
 			difficulty: 0n,
 			number: 17000000n,
@@ -252,10 +264,10 @@ describe("Block.Rpc", () => {
 			gasUsed: 21000n,
 			timestamp: 1700000000n,
 			extraData: new Uint8Array(0),
-			mixHash: "0x" + "44".repeat(32),
+			mixHash: `0x${"44".repeat(32)}`,
 			nonce: new Uint8Array(8).fill(0),
 			baseFeePerGas: 1000000000n,
-			withdrawalsRoot: "0x" + "55".repeat(32),
+			withdrawalsRoot: `0x${"55".repeat(32)}`,
 		});
 
 		const body = BlockBody.from({
@@ -265,7 +277,7 @@ describe("Block.Rpc", () => {
 				{
 					index: 0n,
 					validatorIndex: 1n,
-					address: "0x" + "aa".repeat(20),
+					address: `0x${"aa".repeat(20)}`,
 					amount: 1000000000n,
 				},
 			],
@@ -274,7 +286,7 @@ describe("Block.Rpc", () => {
 		const block = Block.from({
 			header,
 			body,
-			hash: "0x" + "66".repeat(32),
+			hash: `0x${"66".repeat(32)}`,
 			size: 2000n,
 		});
 
@@ -289,29 +301,29 @@ describe("Block.Rpc", () => {
 		const invalid = {
 			hash: "not-valid-hex",
 			size: "0x100",
-			parentHash: "0x" + "cd".repeat(32),
+			parentHash: `0x${"cd".repeat(32)}`,
 		};
 		expect(() => S.decodeSync(Rpc)(invalid as never)).toThrow();
 	});
 
 	it("decodes pre-London block (no baseFeePerGas)", () => {
 		const preLondonRpc = {
-			hash: "0x" + "ab".repeat(32),
+			hash: `0x${"ab".repeat(32)}`,
 			size: "0x3e8",
-			parentHash: "0x" + "cd".repeat(32),
-			sha3Uncles: "0x" + "de".repeat(32),
-			miner: "0x" + "ef".repeat(20),
-			stateRoot: "0x" + "11".repeat(32),
-			transactionsRoot: "0x" + "22".repeat(32),
-			receiptsRoot: "0x" + "33".repeat(32),
-			logsBloom: "0x" + "00".repeat(256),
+			parentHash: `0x${"cd".repeat(32)}`,
+			sha3Uncles: `0x${"de".repeat(32)}`,
+			miner: `0x${"ef".repeat(20)}`,
+			stateRoot: `0x${"11".repeat(32)}`,
+			transactionsRoot: `0x${"22".repeat(32)}`,
+			receiptsRoot: `0x${"33".repeat(32)}`,
+			logsBloom: `0x${"00".repeat(256)}`,
 			difficulty: "0x2d79883d2000",
 			number: "0xc5d488",
 			gasLimit: "0x1c9c380",
 			gasUsed: "0xbebc20",
 			timestamp: "0x60c7a2bb",
 			extraData: "0x6e616e6f706f6f6c2e6f7267",
-			mixHash: "0x" + "44".repeat(32),
+			mixHash: `0x${"44".repeat(32)}`,
 			nonce: "0x0db95e41b7970000",
 			transactions: [],
 		};
@@ -322,12 +334,12 @@ describe("Block.Rpc", () => {
 
 	it("encodes block with optional EIP-4844 fields", () => {
 		const header = BlockHeader.from({
-			parentHash: "0x" + "ab".repeat(32),
-			ommersHash: "0x" + "cd".repeat(32),
-			beneficiary: "0x" + "ef".repeat(20),
-			stateRoot: "0x" + "11".repeat(32),
-			transactionsRoot: "0x" + "22".repeat(32),
-			receiptsRoot: "0x" + "33".repeat(32),
+			parentHash: `0x${"ab".repeat(32)}`,
+			ommersHash: `0x${"cd".repeat(32)}`,
+			beneficiary: `0x${"ef".repeat(20)}`,
+			stateRoot: `0x${"11".repeat(32)}`,
+			transactionsRoot: `0x${"22".repeat(32)}`,
+			receiptsRoot: `0x${"33".repeat(32)}`,
 			logsBloom: new Uint8Array(256).fill(0),
 			difficulty: 0n,
 			number: 19000000n,
@@ -335,13 +347,13 @@ describe("Block.Rpc", () => {
 			gasUsed: 21000n,
 			timestamp: 1710000000n,
 			extraData: new Uint8Array(0),
-			mixHash: "0x" + "44".repeat(32),
+			mixHash: `0x${"44".repeat(32)}`,
 			nonce: new Uint8Array(8).fill(0),
 			baseFeePerGas: 1000000000n,
-			withdrawalsRoot: "0x" + "55".repeat(32),
+			withdrawalsRoot: `0x${"55".repeat(32)}`,
 			blobGasUsed: 131072n,
 			excessBlobGas: 0n,
-			parentBeaconBlockRoot: "0x" + "77".repeat(32),
+			parentBeaconBlockRoot: `0x${"77".repeat(32)}`,
 		});
 
 		const body = BlockBody.from({
@@ -353,13 +365,13 @@ describe("Block.Rpc", () => {
 		const block = Block.from({
 			header,
 			body,
-			hash: "0x" + "88".repeat(32),
+			hash: `0x${"88".repeat(32)}`,
 			size: 500n,
 		});
 
 		const rpc = S.encodeSync(Rpc)(block);
 		expect(rpc.blobGasUsed).toBe("0x20000");
 		expect(rpc.excessBlobGas).toBe("0x0");
-		expect(rpc.parentBeaconBlockRoot).toBe("0x" + "77".repeat(32));
+		expect(rpc.parentBeaconBlockRoot).toBe(`0x${"77".repeat(32)}`);
 	});
 });

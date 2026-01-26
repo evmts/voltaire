@@ -1,7 +1,7 @@
+import { describe, expect, it } from "@effect/vitest";
 import { HDWallet } from "@tevm/voltaire/native";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
 import {
 	derive,
 	fromMnemonic,
@@ -30,7 +30,7 @@ describe("HDWalletService", () => {
 				const result = yield* hdwallet.generateMnemonic(128);
 				expect(typeof result).toBe("string");
 				expect(result.split(" ").length).toBe(12);
-			}).pipe(Effect.provide(HDWalletTest))
+			}).pipe(Effect.provide(HDWalletTest)),
 		);
 
 		it.effect("fromSeed returns HDNode", () =>
@@ -38,7 +38,7 @@ describe("HDWalletService", () => {
 				const hdwallet = yield* HDWalletService;
 				const result = yield* hdwallet.fromSeed(new Uint8Array(64));
 				expect(result).toBeDefined();
-			}).pipe(Effect.provide(HDWalletTest))
+			}).pipe(Effect.provide(HDWalletTest)),
 		);
 
 		it.effect("derive returns HDNode", () =>
@@ -47,7 +47,7 @@ describe("HDWalletService", () => {
 				const node = yield* hdwallet.fromSeed(new Uint8Array(64));
 				const result = yield* hdwallet.derive(node, "m/44'/60'/0'/0/0");
 				expect(result).toBeDefined();
-			}).pipe(Effect.provide(HDWalletTest))
+			}).pipe(Effect.provide(HDWalletTest)),
 		);
 
 		it.effect("mnemonicToSeed returns 64-byte seed", () =>
@@ -69,7 +69,7 @@ describe("HDWalletService", () => {
 				]);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(64);
-			}).pipe(Effect.provide(HDWalletTest))
+			}).pipe(Effect.provide(HDWalletTest)),
 		);
 
 		it.effect("getPrivateKey returns 32-byte key", () =>
@@ -79,7 +79,7 @@ describe("HDWalletService", () => {
 				const result = yield* hdwallet.getPrivateKey(node);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result?.length).toBe(32);
-			}).pipe(Effect.provide(HDWalletTest))
+			}).pipe(Effect.provide(HDWalletTest)),
 		);
 
 		it.effect("getPublicKey returns 33-byte key", () =>
@@ -89,7 +89,7 @@ describe("HDWalletService", () => {
 				const result = yield* hdwallet.getPublicKey(node);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result?.length).toBe(33);
-			}).pipe(Effect.provide(HDWalletTest))
+			}).pipe(Effect.provide(HDWalletTest)),
 		);
 	});
 });
@@ -101,7 +101,7 @@ describe("derive", () => {
 			const node = yield* hdwallet.fromSeed(new Uint8Array(64));
 			const result = yield* derive(node, "m/44'/60'/0'/0/0");
 			expect(result).toBeDefined();
-		}).pipe(Effect.provide(HDWalletTest))
+		}).pipe(Effect.provide(HDWalletTest)),
 	);
 });
 
@@ -111,7 +111,7 @@ describe("generateMnemonic", () => {
 			const result = yield* generateMnemonic(128);
 			expect(typeof result).toBe("string");
 			expect(result.split(" ").length).toBe(12);
-		}).pipe(Effect.provide(HDWalletTest))
+		}).pipe(Effect.provide(HDWalletTest)),
 	);
 });
 
@@ -120,7 +120,7 @@ describe("fromSeed", () => {
 		Effect.gen(function* () {
 			const result = yield* fromSeed(new Uint8Array(64));
 			expect(result).toBeDefined();
-		}).pipe(Effect.provide(HDWalletTest))
+		}).pipe(Effect.provide(HDWalletTest)),
 	);
 });
 
@@ -144,7 +144,7 @@ describe("mnemonicToSeed", () => {
 			const result = yield* mnemonicToSeed(mnemonic);
 			expect(result).toBeInstanceOf(Uint8Array);
 			expect(result.length).toBe(64);
-		}).pipe(Effect.provide(HDWalletTest))
+		}).pipe(Effect.provide(HDWalletTest)),
 	);
 });
 
@@ -155,7 +155,7 @@ describe("getPrivateKey", () => {
 			const result = yield* getPrivateKey(node);
 			expect(result).toBeInstanceOf(Uint8Array);
 			expect(result?.length).toBe(32);
-		}).pipe(Effect.provide(HDWalletTest))
+		}).pipe(Effect.provide(HDWalletTest)),
 	);
 });
 
@@ -166,7 +166,7 @@ describe("getPublicKey", () => {
 			const result = yield* getPublicKey(node);
 			expect(result).toBeInstanceOf(Uint8Array);
 			expect(result?.length).toBe(33);
-		}).pipe(Effect.provide(HDWalletTest))
+		}).pipe(Effect.provide(HDWalletTest)),
 	);
 });
 
@@ -280,8 +280,8 @@ describe("withPrivateKey", () => {
 			);
 
 			expect(capturedKey).not.toBeNull();
-			expect(capturedKey!.every((b) => b === 0)).toBe(true);
-		}).pipe(Effect.provide(HDWalletLive))
+			expect(capturedKey?.every((b) => b === 0)).toBe(true);
+		}).pipe(Effect.provide(HDWalletLive)),
 	);
 
 	it.effect("zeroes private key even on error", () =>
@@ -300,8 +300,8 @@ describe("withPrivateKey", () => {
 
 			expect(Exit.isFailure(exit)).toBe(true);
 			expect(capturedKey).not.toBeNull();
-			expect(capturedKey!.every((b) => b === 0)).toBe(true);
-		}).pipe(Effect.provide(HDWalletLive))
+			expect(capturedKey?.every((b) => b === 0)).toBe(true);
+		}).pipe(Effect.provide(HDWalletLive)),
 	);
 
 	it.effect("fails with InvalidKeyError for public-only node", () =>
@@ -317,7 +317,7 @@ describe("withPrivateKey", () => {
 			if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
 				expect(exit.cause.error._tag).toBe("InvalidKeyError");
 			}
-		}).pipe(Effect.provide(HDWalletLive))
+		}).pipe(Effect.provide(HDWalletLive)),
 	);
 });
 
@@ -350,8 +350,8 @@ describe("withSeed", () => {
 			);
 
 			expect(capturedSeed).not.toBeNull();
-			expect(capturedSeed!.every((b) => b === 0)).toBe(true);
-		}).pipe(Effect.provide(HDWalletLive))
+			expect(capturedSeed?.every((b) => b === 0)).toBe(true);
+		}).pipe(Effect.provide(HDWalletLive)),
 	);
 
 	it.effect("zeroes seed even on error", () =>
@@ -369,7 +369,7 @@ describe("withSeed", () => {
 
 			expect(Exit.isFailure(exit)).toBe(true);
 			expect(capturedSeed).not.toBeNull();
-			expect(capturedSeed!.every((b) => b === 0)).toBe(true);
-		}).pipe(Effect.provide(HDWalletLive))
+			expect(capturedSeed?.every((b) => b === 0)).toBe(true);
+		}).pipe(Effect.provide(HDWalletLive)),
 	);
 });

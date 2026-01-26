@@ -1,12 +1,12 @@
+import { describe, expect, it } from "@effect/vitest";
 import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
+import { TransportError } from "../../Transport/TransportError.js";
 import {
 	TransportService,
 	type TransportShape,
 } from "../../Transport/TransportService.js";
-import { TransportError } from "../../Transport/TransportError.js";
 import { getAddresses } from "./getAddresses.js";
 
 describe("getAddresses", () => {

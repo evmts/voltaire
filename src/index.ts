@@ -19,6 +19,5 @@ export * from "./standards/index.js";
 export * as stream from "./stream/index.js";
 export * as transaction from "./transaction/index.js";
 // Wallet utilities
-export * as wallet from "./wallet/index.js";
 // WASM primitives (high-performance WebAssembly bindings)
 export * as wasm from "./wasm/index.js";

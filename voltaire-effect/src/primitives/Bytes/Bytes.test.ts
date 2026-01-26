@@ -1,8 +1,8 @@
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
-import * as Bytes from "./index.js";
+import * as S from "effect/Schema";
 import { concat } from "./concat.js";
 import { equals } from "./equals.js";
+import * as Bytes from "./index.js";
 import { size } from "./size.js";
 import { toString } from "./toString.js";
 
@@ -40,7 +40,7 @@ describe("Bytes.Hex", () => {
 		});
 
 		it("parses large hex string", () => {
-			const largeHex = "0x" + "ab".repeat(1000);
+			const largeHex = `0x${"ab".repeat(1000)}`;
 			const bytes = S.decodeSync(Bytes.Hex)(largeHex);
 			expect(bytes.length).toBe(1000);
 			expect(bytes[0]).toBe(0xab);
@@ -80,7 +80,7 @@ describe("Bytes.Hex", () => {
 		it("encodes large bytes", () => {
 			const bytes = new Uint8Array(1000).fill(0xab);
 			const hex = S.encodeSync(Bytes.Hex)(bytes);
-			expect(hex).toBe("0x" + "ab".repeat(1000));
+			expect(hex).toBe(`0x${"ab".repeat(1000)}`);
 		});
 	});
 
@@ -281,15 +281,11 @@ describe("error cases", () => {
 		});
 
 		it("fails on object input", () => {
-			expect(() =>
-				S.decodeSync(Bytes.Hex)({} as unknown as string),
-			).toThrow();
+			expect(() => S.decodeSync(Bytes.Hex)({} as unknown as string)).toThrow();
 		});
 
 		it("fails on array input", () => {
-			expect(() =>
-				S.decodeSync(Bytes.Hex)([] as unknown as string),
-			).toThrow();
+			expect(() => S.decodeSync(Bytes.Hex)([] as unknown as string)).toThrow();
 		});
 
 		it("fails on boolean input", () => {

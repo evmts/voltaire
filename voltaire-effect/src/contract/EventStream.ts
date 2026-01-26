@@ -9,24 +9,25 @@
  * Creates an EIP-1193 provider from TransportService and wraps core EventStream.
  */
 
+import type { BrandedAbi } from "@tevm/voltaire";
 import {
-	EventStream as CoreEventStream,
 	type BackfillOptions,
+	EventStream as CoreEventStream,
 	type EventStreamResult,
 	type WatchOptions,
 } from "@tevm/voltaire/contract";
-import type { BrandedAbi } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Runtime from "effect/Runtime";
 
 type EventType = BrandedAbi.Event.EventType;
+
 import * as Stream from "effect/Stream";
 import { TransportService } from "../services/Transport/TransportService.js";
 import { EventStreamError } from "./EventStreamError.js";
 import {
-	EventStreamService,
 	type BackfillStreamOptions,
+	EventStreamService,
 	type WatchStreamOptions,
 } from "./EventStreamService.js";
 
@@ -87,8 +88,10 @@ export const EventStream: Layer.Layer<
 			request: async ({
 				method,
 				params,
-			}: { method: string; params?: unknown[] }) =>
-				runPromise(transport.request(method, params)),
+			}: {
+				method: string;
+				params?: unknown[];
+			}) => runPromise(transport.request(method, params)),
 			on: () => {},
 			removeListener: () => {},
 		};

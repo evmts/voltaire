@@ -1,5 +1,5 @@
-import * as Effect from "effect/Effect";
 import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
 import {
 	formatEther,
 	formatGwei,
@@ -7,7 +7,6 @@ import {
 	parseEther,
 	parseGwei,
 	parseUnits,
-	UnitError,
 } from "./index.js";
 
 describe("Unit", () => {
@@ -214,16 +213,12 @@ describe("Unit", () => {
 
 	describe("formatEther", () => {
 		it("formats 1 ETH", async () => {
-			const result = await Effect.runPromise(
-				formatEther(1000000000000000000n),
-			);
+			const result = await Effect.runPromise(formatEther(1000000000000000000n));
 			expect(result).toBe("1");
 		});
 
 		it("formats 1.5 ETH", async () => {
-			const result = await Effect.runPromise(
-				formatEther(1500000000000000000n),
-			);
+			const result = await Effect.runPromise(formatEther(1500000000000000000n));
 			expect(result).toBe("1.5");
 		});
 
@@ -321,14 +316,13 @@ describe("Unit", () => {
 
 	describe("edge cases", () => {
 		it("handles max safe integer equivalent", async () => {
-			const result = await Effect.runPromise(
-				parseEther("9007199254740991"),
-			);
+			const result = await Effect.runPromise(parseEther("9007199254740991"));
 			expect(result).toBe(9007199254740991000000000000000000n);
 		});
 
 		it("handles very large values", async () => {
-			const large = "115792089237316195423570985008687907853269984665640564039457";
+			const large =
+				"115792089237316195423570985008687907853269984665640564039457";
 			const result = await Effect.runPromise(parseUnits(large, 0));
 			expect(result).toBe(BigInt(large));
 		});

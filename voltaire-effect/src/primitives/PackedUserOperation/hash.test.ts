@@ -1,7 +1,7 @@
+import { describe, expect, it } from "@effect/vitest";
 import { Address } from "@tevm/voltaire/Address";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
 import { hash } from "./hash.js";
 import type { PackedUserOperationType } from "./PackedUserOperationSchema.js";
 
@@ -21,34 +21,50 @@ const entryPointAddress = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
 
 describe("PackedUserOperation.hash", () => {
 	it("produces deterministic 32-byte hash", async () => {
-		const result = await Effect.runPromise(hash(mockPackedUserOp, entryPointAddress, 1n));
+		const result = await Effect.runPromise(
+			hash(mockPackedUserOp, entryPointAddress, 1n),
+		);
 		expect(result).toBeInstanceOf(Uint8Array);
 		expect(result.length).toBe(32);
 
-		const result2 = await Effect.runPromise(hash(mockPackedUserOp, entryPointAddress, 1n));
+		const result2 = await Effect.runPromise(
+			hash(mockPackedUserOp, entryPointAddress, 1n),
+		);
 		expect(result).toEqual(result2);
 	});
 
 	it("chainId as number vs bigint yields same result", async () => {
-		const resultBigInt = await Effect.runPromise(hash(mockPackedUserOp, entryPointAddress, 1n));
-		const resultNumber = await Effect.runPromise(hash(mockPackedUserOp, entryPointAddress, 1));
+		const resultBigInt = await Effect.runPromise(
+			hash(mockPackedUserOp, entryPointAddress, 1n),
+		);
+		const resultNumber = await Effect.runPromise(
+			hash(mockPackedUserOp, entryPointAddress, 1),
+		);
 		expect(resultBigInt).toEqual(resultNumber);
 	});
 
 	it("entryPoint as string address works", async () => {
-		const result = await Effect.runPromise(hash(mockPackedUserOp, entryPointAddress, 1n));
+		const result = await Effect.runPromise(
+			hash(mockPackedUserOp, entryPointAddress, 1n),
+		);
 		expect(result.length).toBe(32);
 	});
 
 	it("entryPoint as Uint8Array works", async () => {
 		const entryPointBytes = Address(entryPointAddress);
-		const resultString = await Effect.runPromise(hash(mockPackedUserOp, entryPointAddress, 1n));
-		const resultBytes = await Effect.runPromise(hash(mockPackedUserOp, entryPointBytes, 1n));
+		const resultString = await Effect.runPromise(
+			hash(mockPackedUserOp, entryPointAddress, 1n),
+		);
+		const resultBytes = await Effect.runPromise(
+			hash(mockPackedUserOp, entryPointBytes, 1n),
+		);
 		expect(resultString).toEqual(resultBytes);
 	});
 
 	it("invalid entryPoint triggers ValidationError", async () => {
-		const exit = await Effect.runPromiseExit(hash(mockPackedUserOp, "invalid-address", 1n));
+		const exit = await Effect.runPromiseExit(
+			hash(mockPackedUserOp, "invalid-address", 1n),
+		);
 		expect(Exit.isFailure(exit)).toBe(true);
 	});
 
@@ -58,7 +74,9 @@ describe("PackedUserOperation.hash", () => {
 			initCode: new Uint8Array(0),
 			callData: new Uint8Array(0),
 		};
-		const result = await Effect.runPromise(hash(opWithEmptyData, entryPointAddress, 1n));
+		const result = await Effect.runPromise(
+			hash(opWithEmptyData, entryPointAddress, 1n),
+		);
 		expect(result.length).toBe(32);
 	});
 
@@ -67,13 +85,19 @@ describe("PackedUserOperation.hash", () => {
 			...mockPackedUserOp,
 			nonce: 2n ** 192n - 1n,
 		};
-		const result = await Effect.runPromise(hash(opWithLargeNonce, entryPointAddress, 1n));
+		const result = await Effect.runPromise(
+			hash(opWithLargeNonce, entryPointAddress, 1n),
+		);
 		expect(result.length).toBe(32);
 	});
 
 	it("different chainIds produce different hashes", async () => {
-		const hash1 = await Effect.runPromise(hash(mockPackedUserOp, entryPointAddress, 1n));
-		const hash137 = await Effect.runPromise(hash(mockPackedUserOp, entryPointAddress, 137n));
+		const hash1 = await Effect.runPromise(
+			hash(mockPackedUserOp, entryPointAddress, 1n),
+		);
+		const hash137 = await Effect.runPromise(
+			hash(mockPackedUserOp, entryPointAddress, 137n),
+		);
 		expect(hash1).not.toEqual(hash137);
 	});
 });

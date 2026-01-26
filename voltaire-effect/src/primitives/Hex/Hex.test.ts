@@ -25,7 +25,7 @@ describe("Hex.String", () => {
 		});
 
 		it("parses very long hex", () => {
-			const longHex = "0x" + "ab".repeat(1000);
+			const longHex = `0x${"ab".repeat(1000)}`;
 			const hex = S.decodeSync(Hex.String)(longHex);
 			expect(hex.length).toBe(2002);
 		});
@@ -80,7 +80,7 @@ describe("Hex.String", () => {
 		});
 
 		it("round-trips very long hex", () => {
-			const longHex = "0x" + "ab".repeat(500);
+			const longHex = `0x${"ab".repeat(500)}`;
 			const original = S.decodeSync(Hex.String)(longHex);
 			const encoded = S.encodeSync(Hex.String)(original);
 			const decoded = S.decodeSync(Hex.String)(encoded);
@@ -212,7 +212,7 @@ describe("pure functions", () => {
 		});
 
 		it("checks 32-byte hex correctly", () => {
-			const hex = S.decodeSync(Hex.String)("0x" + "ab".repeat(32));
+			const hex = S.decodeSync(Hex.String)(`0x${"ab".repeat(32)}`);
 			const result = Hex.isSized(hex, 32);
 			expect(result).toBe(true);
 		});
@@ -245,7 +245,7 @@ describe("pure functions", () => {
 
 		it("creates 32-byte zero hex", () => {
 			const result = Hex.zero(32);
-			expect(result).toBe("0x" + "00".repeat(32));
+			expect(result).toBe(`0x${"00".repeat(32)}`);
 			expect(result.length).toBe(66);
 		});
 
@@ -318,15 +318,11 @@ describe("error cases", () => {
 		});
 
 		it("fails on object", () => {
-			expect(() =>
-				S.decodeSync(Hex.String)({} as unknown as string),
-			).toThrow();
+			expect(() => S.decodeSync(Hex.String)({} as unknown as string)).toThrow();
 		});
 
 		it("fails on array", () => {
-			expect(() =>
-				S.decodeSync(Hex.String)([] as unknown as string),
-			).toThrow();
+			expect(() => S.decodeSync(Hex.String)([] as unknown as string)).toThrow();
 		});
 
 		it("fails on empty string", () => {
@@ -387,7 +383,7 @@ describe("additional edge cases", () => {
 		});
 
 		it("handles large sizes", () => {
-			const hex = S.decodeSync(Hex.String)("0x" + "ab".repeat(1000));
+			const hex = S.decodeSync(Hex.String)(`0x${"ab".repeat(1000)}`);
 			const result = Hex.isSized(hex, 1000);
 			expect(result).toBe(true);
 		});
@@ -396,7 +392,7 @@ describe("additional edge cases", () => {
 	describe("zero edge cases", () => {
 		it("creates large zero hex", () => {
 			const result = Hex.zero(100);
-			expect(result).toBe("0x" + "00".repeat(100));
+			expect(result).toBe(`0x${"00".repeat(100)}`);
 		});
 	});
 
@@ -415,7 +411,7 @@ describe("additional edge cases", () => {
 
 	describe("clone edge cases", () => {
 		it("clones very long hex", () => {
-			const original = S.decodeSync(Hex.String)("0x" + "ab".repeat(1000));
+			const original = S.decodeSync(Hex.String)(`0x${"ab".repeat(1000)}`);
 			const cloned = Hex.clone(original);
 			expect(cloned).toBe(original);
 		});
@@ -429,7 +425,9 @@ describe("additional edge cases", () => {
 		});
 
 		it("encodes to bytes preserves values", () => {
-			const hex = S.decodeSync(Hex.String)("0x000102030405060708090a0b0c0d0e0f");
+			const hex = S.decodeSync(Hex.String)(
+				"0x000102030405060708090a0b0c0d0e0f",
+			);
 			const bytes = S.encodeSync(Hex.Bytes)(hex);
 			for (let i = 0; i < 16; i++) {
 				expect(bytes[i]).toBe(i);

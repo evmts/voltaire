@@ -34,9 +34,9 @@
  * @see {@link TransportService} - The service interface
  */
 
-import * as HttpClient from "@effect/platform/HttpClient";
+import type * as HttpClient from "@effect/platform/HttpClient";
 import * as Config from "effect/Config";
-import * as ConfigError from "effect/ConfigError";
+import type * as ConfigError from "effect/ConfigError";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as HashMap from "effect/HashMap";
@@ -44,7 +44,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Secret from "effect/Secret";
 import { HttpTransport } from "./HttpTransport.js";
-import { TransportService } from "./TransportService.js";
+import type { TransportService } from "./TransportService.js";
 
 /**
  * Effect.Config schema for HTTP transport configuration.
@@ -87,18 +87,14 @@ export const HttpTransportConfigSchema = Config.all({
 	timeout: Config.duration("timeout").pipe(
 		Config.withDefault(Duration.seconds(30)),
 	),
-	retries: Config.integer("retries").pipe(
-		Config.withDefault(3),
-	),
+	retries: Config.integer("retries").pipe(Config.withDefault(3)),
 	retryDelay: Config.duration("retryDelay").pipe(
 		Config.withDefault(Duration.seconds(1)),
 	),
 	headers: Config.hashMap(Config.string(), "headers").pipe(
 		Config.withDefault(HashMap.empty()),
 	),
-	apiKey: Config.secret("apiKey").pipe(
-		Config.option,
-	),
+	apiKey: Config.secret("apiKey").pipe(Config.option),
 }).pipe(Config.nested("http"));
 
 /**
@@ -106,7 +102,9 @@ export const HttpTransportConfigSchema = Config.all({
  *
  * @since 0.0.1
  */
-export type HttpTransportConfigType = Config.Config.Success<typeof HttpTransportConfigSchema>;
+export type HttpTransportConfigType = Config.Config.Success<
+	typeof HttpTransportConfigSchema
+>;
 
 /**
  * Layer that creates an HTTP transport from Effect.Config.
@@ -233,8 +231,8 @@ export const HttpTransportFromConfigFetch: Layer.Layer<
 		});
 
 		// Import FetchHttpClient dynamically to avoid circular deps
-		const { FetchHttpClient } = yield* Effect.promise(() =>
-			import("@effect/platform"),
+		const { FetchHttpClient } = yield* Effect.promise(
+			() => import("@effect/platform"),
 		);
 
 		return Layer.provide(

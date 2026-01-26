@@ -90,5 +90,7 @@ export const encodeFunctionResult = (
 		catch: (e) =>
 			isAbiError(e)
 				? e
-				: new AbiEncodingErrorClass("Failed to encode function result", { cause: e instanceof Error ? e : undefined }),
+				: new AbiEncodingErrorClass("Failed to encode function result", {
+						cause: e instanceof Error ? e : undefined,
+					}),
 	});

@@ -5,9 +5,9 @@
  */
 
 import * as Effect from "effect/Effect";
-import { ProviderError, ProviderService } from "../ProviderService.js";
-import { EnsError } from "./EnsError.js";
+import { ProviderService } from "../ProviderService.js";
 import { ENS_UNIVERSAL_RESOLVER_ADDRESS } from "./constants.js";
+import { EnsError } from "./EnsError.js";
 import {
 	bytesToHex,
 	decodeAddress,
@@ -66,15 +66,20 @@ export const getEnsAddress = (
 		const addrCallHex = addrCallData.slice(2);
 
 		// Encode dynamic data: offset1, offset2, length1, data1, length2, data2
-		const offset1 = "0000000000000000000000000000000000000000000000000000000000000040";
+		const offset1 =
+			"0000000000000000000000000000000000000000000000000000000000000040";
 		const offset2Num = 64 + Math.ceil(dnsName.length / 32) * 32 + 32;
 		const offset2 = offset2Num.toString(16).padStart(64, "0");
 		const len1 = dnsName.length.toString(16).padStart(64, "0");
 		const data1 = dnsNameHex.padEnd(Math.ceil(dnsName.length / 32) * 64, "0");
 		const len2 = (addrCallHex.length / 2).toString(16).padStart(64, "0");
-		const data2 = addrCallHex.padEnd(Math.ceil(addrCallHex.length / 64) * 64, "0");
+		const data2 = addrCallHex.padEnd(
+			Math.ceil(addrCallHex.length / 64) * 64,
+			"0",
+		);
 
-		const callData = `0x${selector}${offset1}${offset2}${len1}${data1}${len2}${data2}` as `0x${string}`;
+		const callData =
+			`0x${selector}${offset1}${offset2}${len1}${data1}${len2}${data2}` as `0x${string}`;
 
 		const result = yield* provider
 			.call({
@@ -84,11 +89,7 @@ export const getEnsAddress = (
 			.pipe(
 				Effect.mapError(
 					(e) =>
-						new EnsError(
-							name,
-							`Failed to resolve ENS name: ${e.message}`,
-							e,
-						),
+						new EnsError(name, `Failed to resolve ENS name: ${e.message}`, e),
 				),
 			);
 
@@ -118,7 +119,8 @@ export const getEnsAddress = (
 		}
 
 		// Get the actual return data (the addr() result)
-		const addrData = `0x${hex.slice(dataLengthStart + 64, dataLengthStart + 64 + dataLength * 2)}` as `0x${string}`;
+		const addrData =
+			`0x${hex.slice(dataLengthStart + 64, dataLengthStart + 64 + dataLength * 2)}` as `0x${string}`;
 
 		return decodeAddress(addrData);
 	});

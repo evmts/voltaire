@@ -37,12 +37,15 @@
  * @since 0.0.1
  */
 
-// Re-export hashMessage from Signature module
-export { hashMessage } from "../Signature/hashMessage.js";
-
 // Re-export hashTypedData from EIP712 module
-export { hashTypedData } from "../EIP712/index.js";
+export {
+	EIP712Live,
+	EIP712Service,
+	EIP712Test,
+	hashTypedData,
+} from "../EIP712/index.js";
 
 // Re-export service dependencies for convenience
 export { KeccakLive, KeccakService, KeccakTest } from "../Keccak256/index.js";
-export { EIP712Live, EIP712Service, EIP712Test } from "../EIP712/index.js";
+// Re-export hashMessage from Signature module
+export { hashMessage } from "../Signature/hashMessage.js";

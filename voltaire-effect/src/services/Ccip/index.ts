@@ -12,8 +12,8 @@
 
 export {
 	CcipError,
-	CcipService,
 	type CcipRequest,
+	CcipService,
 	type CcipShape,
 } from "./CcipService.js";
 export { DefaultCcip } from "./DefaultCcip.js";

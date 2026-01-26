@@ -1,7 +1,7 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as VoltaireBls12381 from "@tevm/voltaire/Bls12381";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
 import * as Bls12381Effect from "./index.js";
 
 describe("Bls12381", () => {
@@ -15,7 +15,7 @@ describe("Bls12381", () => {
 				const result = yield* Bls12381Effect.sign(testMessage, testPrivateKey);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(48);
-			})
+			}),
 		);
 
 		it.effect("produces deterministic signatures", () =>
@@ -23,7 +23,7 @@ describe("Bls12381", () => {
 				const sig1 = yield* Bls12381Effect.sign(testMessage, testPrivateKey);
 				const sig2 = yield* Bls12381Effect.sign(testMessage, testPrivateKey);
 				expect(sig1).toEqual(sig2);
-			})
+			}),
 		);
 
 		it("fails with zero private key", async () => {
@@ -64,7 +64,7 @@ describe("Bls12381", () => {
 				const result = yield* Bls12381Effect.sign(emptyMessage, testPrivateKey);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(48);
-			})
+			}),
 		);
 
 		it.effect("signs large message", () =>
@@ -73,7 +73,7 @@ describe("Bls12381", () => {
 				const result = yield* Bls12381Effect.sign(largeMessage, testPrivateKey);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(48);
-			})
+			}),
 		);
 
 		it.effect("produces different signatures for different messages", () =>
@@ -83,7 +83,7 @@ describe("Bls12381", () => {
 				const sig1 = yield* Bls12381Effect.sign(msg1, testPrivateKey);
 				const sig2 = yield* Bls12381Effect.sign(msg2, testPrivateKey);
 				expect(sig1).not.toEqual(sig2);
-			})
+			}),
 		);
 
 		it.effect("produces different signatures for different keys", () =>
@@ -93,7 +93,7 @@ describe("Bls12381", () => {
 				const sig1 = yield* Bls12381Effect.sign(testMessage, key1);
 				const sig2 = yield* Bls12381Effect.sign(testMessage, key2);
 				expect(sig1).not.toEqual(sig2);
-			})
+			}),
 		);
 
 		it.effect("handles minimum valid private key", () =>
@@ -103,46 +103,75 @@ describe("Bls12381", () => {
 				const result = yield* Bls12381Effect.sign(testMessage, minKey);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(48);
-			})
+			}),
 		);
 	});
 
 	describe("verify", () => {
 		it.effect("verifies a valid signature", () =>
 			Effect.gen(function* () {
-				const signature = yield* Bls12381Effect.sign(testMessage, testPrivateKey);
-				const isValid = yield* Bls12381Effect.verify(signature, testMessage, testPublicKey);
+				const signature = yield* Bls12381Effect.sign(
+					testMessage,
+					testPrivateKey,
+				);
+				const isValid = yield* Bls12381Effect.verify(
+					signature,
+					testMessage,
+					testPublicKey,
+				);
 				expect(isValid).toBe(true);
-			})
+			}),
 		);
 
 		it.effect("returns false for wrong message", () =>
 			Effect.gen(function* () {
-				const signature = yield* Bls12381Effect.sign(testMessage, testPrivateKey);
+				const signature = yield* Bls12381Effect.sign(
+					testMessage,
+					testPrivateKey,
+				);
 				const wrongMessage = new TextEncoder().encode("Wrong message");
-				const isValid = yield* Bls12381Effect.verify(signature, wrongMessage, testPublicKey);
+				const isValid = yield* Bls12381Effect.verify(
+					signature,
+					wrongMessage,
+					testPublicKey,
+				);
 				expect(isValid).toBe(false);
-			})
+			}),
 		);
 
 		it.effect("returns false for wrong public key", () =>
 			Effect.gen(function* () {
-				const signature = yield* Bls12381Effect.sign(testMessage, testPrivateKey);
+				const signature = yield* Bls12381Effect.sign(
+					testMessage,
+					testPrivateKey,
+				);
 				const otherPrivateKey = VoltaireBls12381.randomPrivateKey();
-				const wrongPublicKey = VoltaireBls12381.derivePublicKey(otherPrivateKey);
-				const isValid = yield* Bls12381Effect.verify(signature, testMessage, wrongPublicKey);
+				const wrongPublicKey =
+					VoltaireBls12381.derivePublicKey(otherPrivateKey);
+				const isValid = yield* Bls12381Effect.verify(
+					signature,
+					testMessage,
+					wrongPublicKey,
+				);
 				expect(isValid).toBe(false);
-			})
+			}),
 		);
 
 		it.effect("returns false for tampered signature", () =>
 			Effect.gen(function* () {
-				const signature = yield* Bls12381Effect.sign(testMessage, testPrivateKey);
+				const signature = yield* Bls12381Effect.sign(
+					testMessage,
+					testPrivateKey,
+				);
 				const tamperedSig = new Uint8Array(signature);
 				tamperedSig[0] ^= 0xff;
-				const isValid = yield* Bls12381Effect.verify(tamperedSig, testMessage, testPublicKey);
+				const isValid = yield* Bls12381Effect.verify(
+					tamperedSig,
+					testMessage,
+					testPublicKey,
+				);
 				expect(isValid).toBe(false);
-			})
+			}),
 		);
 
 		it("returns false for zero signature", async () => {
@@ -158,19 +187,33 @@ describe("Bls12381", () => {
 		it.effect("verifies empty message signature", () =>
 			Effect.gen(function* () {
 				const emptyMessage = new Uint8Array(0);
-				const signature = yield* Bls12381Effect.sign(emptyMessage, testPrivateKey);
-				const isValid = yield* Bls12381Effect.verify(signature, emptyMessage, testPublicKey);
+				const signature = yield* Bls12381Effect.sign(
+					emptyMessage,
+					testPrivateKey,
+				);
+				const isValid = yield* Bls12381Effect.verify(
+					signature,
+					emptyMessage,
+					testPublicKey,
+				);
 				expect(isValid).toBe(true);
-			})
+			}),
 		);
 
 		it.effect("verifies large message signature", () =>
 			Effect.gen(function* () {
 				const largeMessage = new Uint8Array(10000).fill(0xab);
-				const signature = yield* Bls12381Effect.sign(largeMessage, testPrivateKey);
-				const isValid = yield* Bls12381Effect.verify(signature, largeMessage, testPublicKey);
+				const signature = yield* Bls12381Effect.sign(
+					largeMessage,
+					testPrivateKey,
+				);
+				const isValid = yield* Bls12381Effect.verify(
+					signature,
+					largeMessage,
+					testPublicKey,
+				);
 				expect(isValid).toBe(true);
-			})
+			}),
 		);
 
 		it.effect("verifies signatures from multiple different keys", () =>
@@ -183,7 +226,7 @@ describe("Bls12381", () => {
 					const isValid = yield* Bls12381Effect.verify(sig, message, publicKey);
 					expect(isValid).toBe(true);
 				}
-			})
+			}),
 		);
 	});
 
@@ -197,16 +240,21 @@ describe("Bls12381", () => {
 				const aggSig = yield* Bls12381Effect.aggregate([sig1, sig2]);
 				expect(aggSig).toBeInstanceOf(Uint8Array);
 				expect(aggSig.length).toBe(48);
-			})
+			}),
 		);
 
-		it.effect("single signature aggregation returns same signature format", () =>
-			Effect.gen(function* () {
-				const signature = yield* Bls12381Effect.sign(testMessage, testPrivateKey);
-				const aggSig = yield* Bls12381Effect.aggregate([signature]);
-				expect(aggSig).toBeInstanceOf(Uint8Array);
-				expect(aggSig.length).toBe(48);
-			})
+		it.effect(
+			"single signature aggregation returns same signature format",
+			() =>
+				Effect.gen(function* () {
+					const signature = yield* Bls12381Effect.sign(
+						testMessage,
+						testPrivateKey,
+					);
+					const aggSig = yield* Bls12381Effect.aggregate([signature]);
+					expect(aggSig).toBeInstanceOf(Uint8Array);
+					expect(aggSig.length).toBe(48);
+				}),
 		);
 
 		it("fails with empty array", async () => {
@@ -225,7 +273,7 @@ describe("Bls12381", () => {
 				const aggSig = yield* Bls12381Effect.aggregate([sig1, sig2, sig3]);
 				expect(aggSig).toBeInstanceOf(Uint8Array);
 				expect(aggSig.length).toBe(48);
-			})
+			}),
 		);
 	});
 
@@ -236,9 +284,13 @@ describe("Bls12381", () => {
 				const publicKey = VoltaireBls12381.derivePublicKey(privateKey);
 				const message = new TextEncoder().encode("Round trip test");
 				const signature = yield* Bls12381Effect.sign(message, privateKey);
-				const isValid = yield* Bls12381Effect.verify(signature, message, publicKey);
+				const isValid = yield* Bls12381Effect.verify(
+					signature,
+					message,
+					publicKey,
+				);
 				expect(isValid).toBe(true);
-			})
+			}),
 		);
 
 		it.effect("sign-aggregate-verify pattern", () =>
@@ -247,9 +299,13 @@ describe("Bls12381", () => {
 				const pubKey1 = VoltaireBls12381.derivePublicKey(pk1);
 				const sig1 = yield* Bls12381Effect.sign(testMessage, pk1);
 				const aggSig = yield* Bls12381Effect.aggregate([sig1]);
-				const isValid = yield* Bls12381Effect.verify(aggSig, testMessage, pubKey1);
+				const isValid = yield* Bls12381Effect.verify(
+					aggSig,
+					testMessage,
+					pubKey1,
+				);
 				expect(isValid).toBe(true);
-			})
+			}),
 		);
 	});
 
@@ -260,16 +316,19 @@ describe("Bls12381", () => {
 				const result = yield* bls.sign(testMessage, testPrivateKey);
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(48);
-			}).pipe(Effect.provide(Bls12381Effect.Bls12381Live))
+			}).pipe(Effect.provide(Bls12381Effect.Bls12381Live)),
 		);
 
 		it.effect("provides verify through service layer", () =>
 			Effect.gen(function* () {
-				const signature = yield* Bls12381Effect.sign(testMessage, testPrivateKey);
+				const signature = yield* Bls12381Effect.sign(
+					testMessage,
+					testPrivateKey,
+				);
 				const bls = yield* Bls12381Effect.Bls12381Service;
 				const result = yield* bls.verify(signature, testMessage, testPublicKey);
 				expect(result).toBe(true);
-			}).pipe(Effect.provide(Bls12381Effect.Bls12381Live))
+			}).pipe(Effect.provide(Bls12381Effect.Bls12381Live)),
 		);
 
 		it.effect("provides aggregate through service layer", () =>
@@ -280,7 +339,7 @@ describe("Bls12381", () => {
 				const bls = yield* Bls12381Effect.Bls12381Service;
 				const result = yield* bls.aggregate([sig1, sig2]);
 				expect(result).toBeInstanceOf(Uint8Array);
-			}).pipe(Effect.provide(Bls12381Effect.Bls12381Live))
+			}).pipe(Effect.provide(Bls12381Effect.Bls12381Live)),
 		);
 
 		it.effect("sign-verify through service layer", () =>
@@ -289,7 +348,7 @@ describe("Bls12381", () => {
 				const sig = yield* bls.sign(testMessage, testPrivateKey);
 				const result = yield* bls.verify(sig, testMessage, testPublicKey);
 				expect(result).toBe(true);
-			}).pipe(Effect.provide(Bls12381Effect.Bls12381Live))
+			}).pipe(Effect.provide(Bls12381Effect.Bls12381Live)),
 		);
 
 		it("handles error in service layer", async () => {
@@ -325,7 +384,7 @@ describe("Bls12381", () => {
 					const sig = yield* Bls12381Effect.sign(message, privateKey);
 					expect(sig.length).toBe(48);
 				}
-			})
+			}),
 		);
 
 		it("public key derivation is deterministic", () => {
@@ -365,7 +424,7 @@ describe("Bls12381", () => {
 				const sig3 = yield* Bls12381Effect.sign(message, privateKey);
 				expect(sig1).toEqual(sig2);
 				expect(sig2).toEqual(sig3);
-			})
+			}),
 		);
 
 		it.effect("aggregation order does not matter (commutative)", () =>
@@ -377,7 +436,7 @@ describe("Bls12381", () => {
 				const aggSig1 = yield* Bls12381Effect.aggregate([sig1, sig2]);
 				const aggSig2 = yield* Bls12381Effect.aggregate([sig2, sig1]);
 				expect(aggSig1).toEqual(aggSig2);
-			})
+			}),
 		);
 	});
 
@@ -389,7 +448,7 @@ describe("Bls12381", () => {
 				const sig1 = yield* Bls12381Effect.sign(msg1, testPrivateKey);
 				const sig2 = yield* Bls12381Effect.sign(msg2, testPrivateKey);
 				expect(sig1).not.toEqual(sig2);
-			})
+			}),
 		);
 
 		it.effect("cannot verify with wrong domain separation", () =>
@@ -399,7 +458,7 @@ describe("Bls12381", () => {
 				const sig = yield* Bls12381Effect.sign(msg1, testPrivateKey);
 				const isValid = yield* Bls12381Effect.verify(sig, msg2, testPublicKey);
 				expect(isValid).toBe(false);
-			})
+			}),
 		);
 	});
 });

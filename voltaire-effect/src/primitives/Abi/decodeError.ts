@@ -9,8 +9,8 @@
 import {
 	type AbiDecodingError,
 	AbiDecodingError as AbiDecodingErrorClass,
-	AbiItemNotFoundError,
 	Error as AbiError,
+	AbiItemNotFoundError,
 } from "@tevm/voltaire/Abi";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Hex from "@tevm/voltaire/Hex";
@@ -18,13 +18,18 @@ import * as Effect from "effect/Effect";
 
 type AbiInvalidSelectorError = Error & { code: string };
 
-type AbiErrorType = AbiItemNotFoundError | AbiDecodingError | AbiInvalidSelectorError;
+type AbiErrorType =
+	| AbiItemNotFoundError
+	| AbiDecodingError
+	| AbiInvalidSelectorError;
 
 const isAbiError = (e: unknown): e is AbiErrorType =>
 	e !== null &&
 	typeof e === "object" &&
 	"name" in e &&
-	(e.name === "AbiItemNotFoundError" || e.name === "AbiDecodingError" || e.name === "AbiInvalidSelectorError");
+	(e.name === "AbiItemNotFoundError" ||
+		e.name === "AbiDecodingError" ||
+		e.name === "AbiInvalidSelectorError");
 
 /**
  * Represents a single ABI item.
@@ -92,5 +97,7 @@ export const decodeError = (
 		catch: (e) =>
 			isAbiError(e)
 				? e
-				: new AbiDecodingErrorClass("Failed to decode error", { cause: e instanceof Error ? e : undefined }),
+				: new AbiDecodingErrorClass("Failed to decode error", {
+						cause: e instanceof Error ? e : undefined,
+					}),
 	});

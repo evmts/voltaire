@@ -1,4 +1,4 @@
-import { encode } from './src/primitives/Abi/encode.js';
+import { encode } from "./src/primitives/Abi/encode.js";
 
 const testAbi = [
 	{
@@ -19,6 +19,10 @@ const amount = 1000000000000000000n;
 const encoded = encode.call(testAbi, "transfer", [to, amount]);
 
 // Convert to hex string
-const hex = '0x' + Array.from(encoded).map(b => b.toString(16).padStart(2, '0')).join('');
+const hex =
+	"0x" +
+	Array.from(encoded)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("");
 
 console.log(hex);

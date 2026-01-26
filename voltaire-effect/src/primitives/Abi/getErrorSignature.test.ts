@@ -1,7 +1,7 @@
-import * as Effect from "effect/Effect";
 import { describe, expect, it } from "@effect/vitest";
-import { getErrorSignature } from "./getErrorSignature.js";
 import type { Error as AbiError } from "@tevm/voltaire/Abi";
+import * as Effect from "effect/Effect";
+import { getErrorSignature } from "./getErrorSignature.js";
 
 describe("getErrorSignature", () => {
 	describe("success cases", () => {

@@ -1,5 +1,5 @@
-import { ERC1155 as ERC1155Impl } from "@tevm/voltaire";
 import type { BrandedAddress } from "@tevm/voltaire";
+import { ERC1155 as ERC1155Impl } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import { StandardsError } from "./errors.js";
 
@@ -9,8 +9,10 @@ type Uint256Type = bigint;
 const padTo32 = (hex: string) => hex.padStart(64, "0");
 const toHex = (bytes: Uint8Array) =>
 	Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-const encodeAddress = (address: AddressType) => toHex(address).padStart(64, "0");
-const encodeUint256 = (value: Uint256Type) => value.toString(16).padStart(64, "0");
+const encodeAddress = (address: AddressType) =>
+	toHex(address).padStart(64, "0");
+const encodeUint256 = (value: Uint256Type) =>
+	value.toString(16).padStart(64, "0");
 const encodeUint256Array = (values: readonly Uint256Type[]) => {
 	const lengthHex = padTo32(values.length.toString(16));
 	const valuesHex = values.map(encodeUint256).join("");
@@ -115,7 +117,14 @@ export const encodeSafeTransferFrom = (
 	data?: Uint8Array,
 ): Effect.Effect<string, StandardsError> =>
 	Effect.try({
-		try: () => ERC1155Impl.encodeSafeTransferFrom(from, to, id as never, amount as never, data),
+		try: () =>
+			ERC1155Impl.encodeSafeTransferFrom(
+				from,
+				to,
+				id as never,
+				amount as never,
+				data,
+			),
 		catch: (e) =>
 			new StandardsError({
 				operation: "ERC1155.encodeSafeTransferFrom",

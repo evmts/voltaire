@@ -1,17 +1,17 @@
+import { describe, expect, it } from "@effect/vitest";
+import { Abi } from "@tevm/voltaire/Abi";
+import type { HexType } from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
-import { parse, AbiParseError } from "./parse.js";
-import { parseItem, AbiItemParseError } from "./parseItem.js";
-import { encodeFunctionData } from "./encodeFunctionData.js";
+import { decodeError } from "./decodeError.js";
+import { decodeEventLog } from "./decodeEventLog.js";
 import { decodeFunctionData } from "./decodeFunctionData.js";
 import { decodeFunctionResult } from "./decodeFunctionResult.js";
-import { decodeEventLog } from "./decodeEventLog.js";
-import { encodeEventLog } from "./encodeEventLog.js";
 import { encodeError } from "./encodeError.js";
-import { decodeError } from "./decodeError.js";
-import type { HexType } from "@tevm/voltaire/Hex";
-import { Abi } from "@tevm/voltaire/Abi";
+import { encodeEventLog } from "./encodeEventLog.js";
+import { encodeFunctionData } from "./encodeFunctionData.js";
+import { AbiParseError, parse } from "./parse.js";
+import { AbiItemParseError, parseItem } from "./parseItem.js";
 
 const erc20Abi = Abi([
 	{
@@ -928,7 +928,7 @@ describe("edge cases", () => {
 		});
 
 		it("handles large bytes", async () => {
-			const largeBytes = "0x" + "ab".repeat(500);
+			const largeBytes = `0x${"ab".repeat(500)}`;
 			const calldata = await Effect.runPromise(
 				encodeFunctionData(complexAbi, "processData", [largeBytes, "test"]),
 			);

@@ -80,12 +80,15 @@ export const createFetchBlockReceipts = (
 			return tryBlockReceipts.receipts as unknown[];
 		}
 
-		const transactions = (block.body as { transactions?: unknown[] })
-			?.transactions ?? (block.transactions as unknown[]) ?? [];
+		const transactions =
+			(block.body as { transactions?: unknown[] })?.transactions ??
+			(block.transactions as unknown[]) ??
+			[];
 
 		const receipts = yield* Effect.all(
 			transactions.map((tx) => {
-				const txHash = typeof tx === "string" ? tx : (tx as { hash: string }).hash;
+				const txHash =
+					typeof tx === "string" ? tx : (tx as { hash: string }).hash;
 				return fetchSingleReceipt(txHash, maxRetries, initialDelay, maxDelay);
 			}),
 			{ concurrency: 10 },
@@ -100,24 +103,26 @@ const fetchSingleReceipt = (
 	initialDelay: number,
 	maxDelay: number,
 ): Effect.Effect<unknown, BlockError, TransportService> => {
-	const retrySchedule = Schedule.exponential(Duration.millis(initialDelay)).pipe(
+	const retrySchedule = Schedule.exponential(
+		Duration.millis(initialDelay),
+	).pipe(
 		Schedule.jittered,
 		Schedule.compose(Schedule.recurs(maxRetries)),
-		Schedule.whileOutput((duration) => Duration.lessThanOrEqualTo(duration, Duration.millis(maxDelay))),
+		Schedule.whileOutput((duration) =>
+			Duration.lessThanOrEqualTo(duration, Duration.millis(maxDelay)),
+		),
 	);
 
 	const fetchEffect = Effect.gen(function* () {
 		const transport = yield* TransportService;
-		return yield* transport
-			.request("eth_getTransactionReceipt", [txHash])
-			.pipe(
-				Effect.mapError(
-					(error) =>
-						new BlockError(`Failed to fetch receipt ${txHash}`, {
-							cause: error instanceof Error ? error : undefined,
-						}),
-				),
-			);
+		return yield* transport.request("eth_getTransactionReceipt", [txHash]).pipe(
+			Effect.mapError(
+				(error) =>
+					new BlockError(`Failed to fetch receipt ${txHash}`, {
+						cause: error instanceof Error ? error : undefined,
+					}),
+			),
+		);
 	});
 
 	return fetchEffect.pipe(Effect.retry(retrySchedule));

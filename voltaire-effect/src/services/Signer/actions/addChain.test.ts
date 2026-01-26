@@ -1,11 +1,11 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
+import { TransportError } from "../../Transport/TransportError.js";
 import {
 	TransportService,
 	type TransportShape,
 } from "../../Transport/TransportService.js";
-import { TransportError } from "../../Transport/TransportError.js";
 import { addChain, type ChainConfig } from "./addChain.js";
 
 const polygonChain: ChainConfig = {
@@ -31,7 +31,10 @@ describe("addChain", () => {
 		let capturedParams: unknown[] | undefined;
 
 		const mockTransport: TransportShape = {
-			request: <T>(method: string, params?: unknown[]): Effect.Effect<T, never> => {
+			request: <T>(
+				method: string,
+				params?: unknown[],
+			): Effect.Effect<T, never> => {
 				capturedMethod = method;
 				capturedParams = params;
 				return Effect.succeed(null as T);
@@ -47,7 +50,7 @@ describe("addChain", () => {
 		expect(capturedMethod).toBe("wallet_addEthereumChain");
 		expect(capturedParams).toBeDefined();
 
-		const params = capturedParams![0] as {
+		const params = capturedParams?.[0] as {
 			chainId: string;
 			chainName: string;
 			nativeCurrency: { name: string; symbol: string; decimals: number };
@@ -70,7 +73,10 @@ describe("addChain", () => {
 		let capturedParams: unknown[] | undefined;
 
 		const mockTransport: TransportShape = {
-			request: <T>(_method: string, params?: unknown[]): Effect.Effect<T, never> => {
+			request: <T>(
+				_method: string,
+				params?: unknown[],
+			): Effect.Effect<T, never> => {
 				capturedParams = params;
 				return Effect.succeed(null as T);
 			},
@@ -82,7 +88,7 @@ describe("addChain", () => {
 
 		await Effect.runPromise(Effect.provide(program, TestLayer));
 
-		const params = capturedParams![0] as { blockExplorerUrls?: string[] };
+		const params = capturedParams?.[0] as { blockExplorerUrls?: string[] };
 		expect(params.blockExplorerUrls).toBeUndefined();
 	});
 
@@ -90,7 +96,10 @@ describe("addChain", () => {
 		let capturedParams: unknown[] | undefined;
 
 		const mockTransport: TransportShape = {
-			request: <T>(_method: string, params?: unknown[]): Effect.Effect<T, never> => {
+			request: <T>(
+				_method: string,
+				params?: unknown[],
+			): Effect.Effect<T, never> => {
 				capturedParams = params;
 				return Effect.succeed(null as T);
 			},
@@ -107,7 +116,7 @@ describe("addChain", () => {
 
 		await Effect.runPromise(Effect.provide(addChain(mainnetChain), TestLayer));
 
-		const params = capturedParams![0] as { chainId: string };
+		const params = capturedParams?.[0] as { chainId: string };
 		expect(params.chainId).toBe("0x1");
 	});
 

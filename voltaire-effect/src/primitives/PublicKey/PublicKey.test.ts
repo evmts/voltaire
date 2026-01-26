@@ -1,10 +1,10 @@
-import * as Effect from "effect/Effect";
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
-import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
-import * as Signature from "@tevm/voltaire/Signature";
 import { PrivateKey as CorePrivateKey } from "@tevm/voltaire/PrivateKey";
 import { PublicKey as CorePublicKey } from "@tevm/voltaire/PublicKey";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
+import * as Signature from "@tevm/voltaire/Signature";
+import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
 import * as PublicKey from "./index.js";
 
 const validUncompressedHex = `0x${"ab".repeat(64)}`;
@@ -23,7 +23,9 @@ describe("PublicKey.Hex", () => {
 		});
 
 		it("fails on wrong length (odd chars)", () => {
-			expect(() => S.decodeSync(PublicKey.Hex)(`0x${"ab".repeat(31)}a`)).toThrow();
+			expect(() =>
+				S.decodeSync(PublicKey.Hex)(`0x${"ab".repeat(31)}a`),
+			).toThrow();
 		});
 
 		it("fails on invalid hex characters", () => {
@@ -135,9 +137,9 @@ describe("PublicKey.Compressed", () => {
 		it("encodes to compressed hex (66 chars)", () => {
 			const pk = S.decodeSync(PublicKey.Hex)(validUncompressedHex);
 			const compressed = S.encodeSync(PublicKey.Compressed)(pk);
-			expect(compressed.startsWith("0x02") || compressed.startsWith("0x03")).toBe(
-				true,
-			);
+			expect(
+				compressed.startsWith("0x02") || compressed.startsWith("0x03"),
+			).toBe(true);
 			expect(compressed.length).toBe(68);
 		});
 	});
@@ -321,14 +323,18 @@ describe("PublicKey.verify", () => {
 		Effect.gen(function* () {
 			const signature = Secp256k1.sign(messageHash, privateKey);
 			const differentHash = new Uint8Array(32).fill(0x22) as any;
-			const isValid = yield* PublicKey.verify(publicKey, differentHash, signature);
+			const isValid = yield* PublicKey.verify(
+				publicKey,
+				differentHash,
+				signature,
+			);
 			expect(isValid).toBe(false);
 		}),
 	);
 
 	it.effect("rejects tampered signature", () =>
 		Effect.gen(function* () {
-			const signature = Secp256k1.sign(messageHash, privateKey);
+			const _signature = Secp256k1.sign(messageHash, privateKey);
 			const tamperedSig = Signature.fromSecp256k1(
 				new Uint8Array(32).fill(0x99),
 				new Uint8Array(32).fill(0x88),

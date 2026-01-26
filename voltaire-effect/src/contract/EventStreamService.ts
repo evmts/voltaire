@@ -12,17 +12,18 @@
  * @see {@link TransportService} - Required dependency
  */
 
+import type { BrandedAbi } from "@tevm/voltaire";
 import type {
 	BackfillOptions,
+	EventStreamConstructorOptions,
 	EventStreamResult,
 	WatchOptions,
-	EventStreamConstructorOptions,
 } from "@tevm/voltaire/contract";
-import type { BrandedAbi } from "@tevm/voltaire";
 import * as Context from "effect/Context";
 import type * as Stream from "effect/Stream";
 
 type EventType = BrandedAbi.Event.EventType;
+
 import type { EventStreamError } from "./EventStreamError.js";
 
 /**

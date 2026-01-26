@@ -36,16 +36,19 @@
  * @see {@link TransportService} - The service interface
  */
 
-import * as Socket from "@effect/platform/Socket";
+import type * as Socket from "@effect/platform/Socket";
 import * as Config from "effect/Config";
-import * as ConfigError from "effect/ConfigError";
+import type * as ConfigError from "effect/ConfigError";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
-import { TransportError } from "./TransportError.js";
-import { TransportService } from "./TransportService.js";
-import { WebSocketConstructorGlobal, WebSocketTransport } from "./WebSocketTransport.js";
+import type { TransportError } from "./TransportError.js";
+import type { TransportService } from "./TransportService.js";
+import {
+	WebSocketConstructorGlobal,
+	WebSocketTransport,
+} from "./WebSocketTransport.js";
 
 /**
  * Effect.Config schema for WebSocket reconnection options.

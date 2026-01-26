@@ -28,9 +28,9 @@ describe("RateLimitedTransport", () => {
 			const first = yield* transport.request<string>("eth_call", []);
 			expect(first).toBe("0x1");
 
-			const error = yield* transport.request<string>("eth_call", []).pipe(
-				Effect.flip,
-			);
+			const error = yield* transport
+				.request<string>("eth_call", [])
+				.pipe(Effect.flip);
 			expect(error).toBeInstanceOf(TransportError);
 			expect(error.code).toBe(-32005);
 			expect(error.message).toMatch(/Rate limit exceeded/);
@@ -88,9 +88,9 @@ describe("RateLimitedTransport", () => {
 			expect(ok).toBe("0x1");
 
 			yield* transport.request<string>("eth_call", []);
-			const error = yield* transport.request<string>("eth_call", []).pipe(
-				Effect.flip,
-			);
+			const error = yield* transport
+				.request<string>("eth_call", [])
+				.pipe(Effect.flip);
 
 			expect(error).toBeInstanceOf(TransportError);
 			expect(error.code).toBe(-32005);

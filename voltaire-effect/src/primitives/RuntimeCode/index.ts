@@ -43,4 +43,4 @@
 
 export { Bytes } from "./Bytes.js";
 export { Hex } from "./Hex.js";
-export { type RuntimeCodeType } from "./RuntimeCodeSchema.js";
+export type { RuntimeCodeType } from "./RuntimeCodeSchema.js";

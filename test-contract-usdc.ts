@@ -97,5 +97,7 @@ console.log(
 	typeof usdc.estimateGas.transfer === "function",
 );
 
-console.log("\n✓ All checks passed - Contract created correctly with expected methods");
+console.log(
+	"\n✓ All checks passed - Contract created correctly with expected methods",
+);
 console.log("\nANSWER: success");

@@ -27,4 +27,7 @@
 
 export { BlockStream } from "./BlockStream.js";
 export { BlockStreamError } from "./BlockStreamError.js";
-export { BlockStreamService, type BlockStreamShape } from "./BlockStreamService.js";
+export {
+	BlockStreamService,
+	type BlockStreamShape,
+} from "./BlockStreamService.js";

@@ -59,7 +59,9 @@ function bigintToHex(value: bigint): HexType {
 }
 
 const toAddressHex = (address: AddressType | `0x${string}`): `0x${string}` =>
-	typeof address === "string" ? address : (Address.toHex(address) as `0x${string}`);
+	typeof address === "string"
+		? address
+		: (Address.toHex(address) as `0x${string}`);
 
 const toParity = (input: { yParity?: number; v?: number }): number => {
 	if (input.yParity !== undefined) return input.yParity;

@@ -1,10 +1,5 @@
 // Primitives - explicit namespace exports
 
-// Block utilities module (streaming/fetching)
-export * as BlockUtils from "./block/index.js";
-// Auth utilities (SIWE)
-export * as Auth from "./auth/index.js";
-
 // Re-export voltaire error types for Effect compatibility
 export {
 	// Base errors
@@ -34,6 +29,19 @@ export {
 	// Validation errors
 	ValidationError,
 } from "@tevm/voltaire/errors";
+// Auth utilities (SIWE)
+export * as Auth from "./auth/index.js";
+// Block utilities module (streaming/fetching)
+export * as BlockUtils from "./block/index.js";
+// Contract event streaming
+export {
+	type BackfillStreamOptions,
+	EventStream,
+	EventStreamError,
+	EventStreamService,
+	type EventStreamShape,
+	type WatchStreamOptions,
+} from "./contract/index.js";
 // Crypto - namespace exports
 export * as AesGcm from "./crypto/AesGcm/index.js";
 export * as Bip39 from "./crypto/Bip39/index.js";
@@ -58,6 +66,8 @@ export * as SHA256 from "./crypto/SHA256/index.js";
 // Signers temporarily disabled - requires @tevm/voltaire exports update
 // export * as Signers from "./crypto/Signers/index.js";
 export * as X25519 from "./crypto/X25519/index.js";
+// JSON-RPC module
+export * as JsonRpc from "./jsonrpc/index.js";
 // Abi temporarily disabled - requires @tevm/voltaire subpath exports
 // export * as Abi from "./primitives/Abi/index.js";
 export * as AccessList from "./primitives/AccessList/index.js";
@@ -202,23 +212,10 @@ export * as Withdrawal from "./primitives/Withdrawal/index.js";
 export * as WithdrawalIndex from "./primitives/WithdrawalIndex/index.js";
 export * from "./services/index.js";
 export * as ERC20 from "./standards/ERC20.js";
+export * as ERC165 from "./standards/ERC165.js";
 export * as ERC721 from "./standards/ERC721.js";
 export * as ERC1155 from "./standards/ERC1155.js";
-export * as ERC165 from "./standards/ERC165.js";
 export { StandardsError } from "./standards/errors.js";
-
-// JSON-RPC module
-export * as JsonRpc from "./jsonrpc/index.js";
-
-// Contract event streaming
-export {
-	EventStream,
-	EventStreamError,
-	EventStreamService,
-	type EventStreamShape,
-	type BackfillStreamOptions,
-	type WatchStreamOptions,
-} from "./contract/index.js";
 export * as Stream from "./stream/index.js";
 
 // Utils - unit parsing/formatting

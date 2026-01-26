@@ -7,8 +7,8 @@
 
 import { Address, type BrandedAddress } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { SignerError } from "../SignerService.js";
 import { TransportService } from "../../Transport/index.js";
+import { SignerError } from "../SignerService.js";
 
 type AddressType = BrandedAddress.AddressType;
 

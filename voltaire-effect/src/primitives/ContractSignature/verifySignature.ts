@@ -8,11 +8,11 @@
  */
 
 import {
-	ContractSignature,
 	Address,
-	Secp256k1,
 	type BrandedAddress,
 	type BrandedHash,
+	ContractSignature,
+	Secp256k1,
 } from "@tevm/voltaire";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
@@ -33,7 +33,9 @@ export type SignatureInput =
  * Error thrown when signature verification fails due to an error (not invalid signature).
  * @since 0.1.0
  */
-export class SignatureVerificationError extends Data.TaggedError("SignatureVerificationError")<{
+export class SignatureVerificationError extends Data.TaggedError(
+	"SignatureVerificationError",
+)<{
 	readonly input: {
 		address: string;
 		hash: Uint8Array;
@@ -48,7 +50,9 @@ export class SignatureVerificationError extends Data.TaggedError("SignatureVerif
  * Error thrown when signature format is invalid.
  * @since 0.1.0
  */
-export class InvalidSignatureFormatError extends Data.TaggedError("InvalidSignatureFormatError")<{
+export class InvalidSignatureFormatError extends Data.TaggedError(
+	"InvalidSignatureFormatError",
+)<{
 	readonly message: string;
 	readonly code?: number;
 	readonly context?: Record<string, unknown>;
@@ -115,7 +119,8 @@ const bytesToBigInt = (bytes: Uint8Array): bigint => {
 };
 
 const isEmptyCode = (code: unknown): code is string =>
-	typeof code === "string" && (code === "0x" || code === "0x0" || code === "0x00");
+	typeof code === "string" &&
+	(code === "0x" || code === "0x0" || code === "0x00");
 
 /**
  * Verify a signature for both EOA and contract accounts (EIP-1271).
@@ -230,11 +235,18 @@ export const verifySignature = (
 					(e.name === "InvalidSignatureFormatError" ||
 						e.name === "InvalidSignatureError")
 				) {
-					return new InvalidSignatureFormatError({ message: e.message, cause: e });
+					return new InvalidSignatureFormatError({
+						message: e.message,
+						cause: e,
+					});
 				}
 				return new SignatureVerificationError({
-					input: { address: addressStr, hash: hash instanceof Uint8Array ? hash : new Uint8Array(hash) },
-					message: e instanceof Error ? e.message : "Signature verification failed",
+					input: {
+						address: addressStr,
+						hash: hash instanceof Uint8Array ? hash : new Uint8Array(hash),
+					},
+					message:
+						e instanceof Error ? e.message : "Signature verification failed",
 					cause: e,
 				});
 			},

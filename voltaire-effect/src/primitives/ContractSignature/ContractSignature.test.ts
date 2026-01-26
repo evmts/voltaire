@@ -59,7 +59,10 @@ describe("verifySignature", () => {
 		getGasPrice: vi.fn(),
 	};
 
-	const MockProviderLayer = Layer.succeed(ProviderService, mockProvider as any);
+	const _MockProviderLayer = Layer.succeed(
+		ProviderService,
+		mockProvider as any,
+	);
 
 	it("exports verifySignature function", () => {
 		expect(typeof ContractSignature.verifySignature).toBe("function");

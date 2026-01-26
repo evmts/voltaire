@@ -68,13 +68,11 @@
  */
 
 export type { BytesType } from "@tevm/voltaire/Bytes";
-
-// Schemas
-export { Hex } from "./Hex.js";
-
 // Pure functions
 export { concat } from "./concat.js";
 export { equals } from "./equals.js";
+// Schemas
+export { Hex } from "./Hex.js";
 export { isBytes } from "./isBytes.js";
 export { random } from "./random.js";
 export { size } from "./size.js";

@@ -15,8 +15,8 @@
 import type {
 	BackfillOptions,
 	BlockInclude,
-	BlocksEvent,
 	BlockStreamEvent,
+	BlocksEvent,
 	WatchOptions,
 } from "@tevm/voltaire/block";
 import * as Context from "effect/Context";

@@ -34,7 +34,6 @@
  * @since 0.0.1
  */
 
-export type { G1PointType as BN254G1PointType, G2PointType as BN254G2PointType } from "./types.js";
 export {
 	Bn254Error,
 	Bn254Live,
@@ -51,3 +50,7 @@ export {
 	g2Mul,
 	pairingCheck,
 } from "./operations.js";
+export type {
+	G1PointType as BN254G1PointType,
+	G2PointType as BN254G2PointType,
+} from "./types.js";

@@ -74,8 +74,7 @@ export type PositiveInt = number & Brand.Brand<"PositiveInt">;
  * Throws if the value is not a positive integer.
  */
 export const PositiveInt = Brand.refined<PositiveInt>(
-	(n): n is Brand.Brand.Unbranded<PositiveInt> =>
-		Number.isInteger(n) && n > 0,
+	(n): n is Brand.Brand.Unbranded<PositiveInt> => Number.isInteger(n) && n > 0,
 	(n) => Brand.error(`Expected ${n} to be a positive integer`),
 );
 

@@ -4,28 +4,28 @@
  * @since 0.1.0
  */
 
-import { Address } from "@tevm/voltaire/Address";
 import type { AddressType } from "@tevm/voltaire/Address";
+import { Address } from "@tevm/voltaire/Address";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import type { ParseError } from "effect/ParseResult";
 import * as Schema from "effect/Schema";
-import { KeccakService } from "../crypto/Keccak256/index.js";
+import type { KeccakService } from "../crypto/Keccak256/index.js";
+import type { Secp256k1Service } from "../crypto/Secp256k1/index.js";
 import {
 	constantTimeEqual,
-	verifyMessage,
 	type SignatureInput,
+	verifyMessage,
 } from "../crypto/Signature/index.js";
-import { Secp256k1Service } from "../crypto/Secp256k1/index.js";
+import * as Signature from "../primitives/Signature/index.js";
 import {
 	format,
 	generateNonce,
 	MessageStruct,
-	Schema as SiweStringSchema,
 	type SiweMessageType,
+	Schema as SiweStringSchema,
 	validate,
 } from "../primitives/Siwe/index.js";
-import * as Signature from "../primitives/Signature/index.js";
 
 /**
  * SIWE message fields (EIP-4361).
@@ -203,9 +203,7 @@ export const createSiweMessage = (params: CreateSiweMessageParams): string => {
 		...(params.expirationTime
 			? { expirationTime: normalizeDate(params.expirationTime) }
 			: {}),
-		...(params.notBefore
-			? { notBefore: normalizeDate(params.notBefore) }
-			: {}),
+		...(params.notBefore ? { notBefore: normalizeDate(params.notBefore) } : {}),
 		...(params.requestId ? { requestId: params.requestId } : {}),
 		...(params.resources ? { resources: [...params.resources] } : {}),
 	};
@@ -243,11 +241,7 @@ export const parseSiweMessage = (
  */
 export const verifySiweMessage = (
 	params: VerifySiweMessageParams,
-): Effect.Effect<
-	SiweFields,
-	VerifyError,
-	KeccakService | Secp256k1Service
-> =>
+): Effect.Effect<SiweFields, VerifyError, KeccakService | Secp256k1Service> =>
 	Effect.gen(function* () {
 		const parsed = yield* parseSiweMessage(params.message).pipe(
 			Effect.mapError((error) =>
@@ -281,9 +275,7 @@ export const verifySiweMessage = (
 		}
 
 		if (params.nonce && parsed.nonce !== params.nonce) {
-			return yield* Effect.fail(
-				VerifyError.of("Nonce does not match message"),
-			);
+			return yield* Effect.fail(VerifyError.of("Nonce does not match message"));
 		}
 
 		if (params.address) {

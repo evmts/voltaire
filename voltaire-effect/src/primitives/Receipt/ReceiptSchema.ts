@@ -266,10 +266,8 @@ export const ReceiptTypeSchema = S.declare<ReceiptType>(
 				receipt.type === "eip4844" ||
 				receipt.type === "eip7702");
 		const hasStatus =
-			"status" in receipt &&
-			(receipt.status === 0 || receipt.status === 1);
-		const hasRoot =
-			"root" in receipt && receipt.root instanceof Uint8Array;
+			"status" in receipt && (receipt.status === 0 || receipt.status === 1);
+		const hasRoot = "root" in receipt && receipt.root instanceof Uint8Array;
 
 		// Must have either status OR root, not both
 		const hasValidStatusOrRoot =

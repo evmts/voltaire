@@ -7,19 +7,19 @@
 
 import {
 	Address,
-	type Abi as BrandedAbiType,
 	BrandedAbi,
+	type Abi as BrandedAbiType,
 	Hex,
 } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Request from "effect/Request";
 import * as RequestResolver from "effect/RequestResolver";
 import type { AddressInput, BlockTag } from "../Provider/ProviderService.js";
-import { GetBalance } from "./GetBalance.js";
+import type { GetBalance } from "./GetBalance.js";
 import {
+	type MulticallCall,
 	MulticallError,
 	MulticallService,
-	type MulticallCall,
 } from "./MulticallService.js";
 
 const BALANCE_OF_ABI = [
@@ -36,9 +36,7 @@ const BALANCE_OF_FN =
 	BALANCE_OF_ABI[0] as unknown as BrandedAbi.Function.FunctionType;
 
 const normalizeAddress = (input: AddressInput): `0x${string}` =>
-	typeof input === "string"
-		? input
-		: (Address.toHex(input) as `0x${string}`);
+	typeof input === "string" ? input : (Address.toHex(input) as `0x${string}`);
 
 const normalizeBlockTag = (blockTag?: BlockTag): BlockTag =>
 	blockTag ?? "latest";

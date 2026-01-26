@@ -23,13 +23,18 @@ import * as Effect from "effect/Effect";
  */
 type AbiInput = readonly ItemType[];
 
-type AbiErrorType = AbiItemNotFoundError | AbiInvalidSelectorError | AbiDecodingError;
+type AbiErrorType =
+	| AbiItemNotFoundError
+	| AbiInvalidSelectorError
+	| AbiDecodingError;
 
 const isAbiError = (e: unknown): e is AbiErrorType =>
 	e !== null &&
 	typeof e === "object" &&
 	"name" in e &&
-	(e.name === "AbiItemNotFoundError" || e.name === "AbiInvalidSelectorError" || e.name === "AbiDecodingError");
+	(e.name === "AbiItemNotFoundError" ||
+		e.name === "AbiInvalidSelectorError" ||
+		e.name === "AbiDecodingError");
 
 /**
  * Decodes function call data using ABI.
@@ -69,5 +74,7 @@ export const decodeFunction = (
 		catch: (e) =>
 			isAbiError(e)
 				? e
-				: new AbiDecodingErrorClass("Failed to decode function", { cause: e instanceof Error ? e : undefined }),
+				: new AbiDecodingErrorClass("Failed to decode function", {
+						cause: e instanceof Error ? e : undefined,
+					}),
 	});

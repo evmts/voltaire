@@ -1,20 +1,20 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
-import { ChainService, type ChainConfig } from "./ChainService.js";
+import { type ChainConfig, ChainService } from "./ChainService.js";
 import {
-	mainnet,
-	mainnetConfig,
-	sepolia,
-	sepoliaConfig,
 	arbitrum,
 	arbitrumConfig,
 	base,
 	baseConfig,
+	mainnet,
+	mainnetConfig,
 	optimism,
 	optimismConfig,
 	polygon,
 	polygonConfig,
+	sepolia,
+	sepoliaConfig,
 } from "./chains/index.js";
 
 describe("ChainService", () => {
@@ -23,29 +23,35 @@ describe("ChainService", () => {
 			Effect.gen(function* () {
 				const chain = yield* ChainService;
 				expect(chain.id).toBe(1);
-			}).pipe(Effect.provide(mainnet))
+			}).pipe(Effect.provide(mainnet)),
 		);
 
 		it.effect("provides correct chain name", () =>
 			Effect.gen(function* () {
 				const chain = yield* ChainService;
 				expect(chain.name).toBe("Ethereum");
-			}).pipe(Effect.provide(mainnet))
+			}).pipe(Effect.provide(mainnet)),
 		);
 
 		it.effect("provides correct native currency", () =>
 			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				expect(chain.nativeCurrency).toEqual({ name: "Ether", symbol: "ETH", decimals: 18 });
-			}).pipe(Effect.provide(mainnet))
+				expect(chain.nativeCurrency).toEqual({
+					name: "Ether",
+					symbol: "ETH",
+					decimals: 18,
+				});
+			}).pipe(Effect.provide(mainnet)),
 		);
 
 		it.effect("provides multicall3 contract address", () =>
 			Effect.gen(function* () {
 				const chain = yield* ChainService;
-				expect(chain.contracts?.multicall3?.address).toBe("0xca11bde05977b3631167028862be2a173976ca11");
+				expect(chain.contracts?.multicall3?.address).toBe(
+					"0xca11bde05977b3631167028862be2a173976ca11",
+				);
 				expect(chain.contracts?.multicall3?.blockCreated).toBe(14_353_601);
-			}).pipe(Effect.provide(mainnet))
+			}).pipe(Effect.provide(mainnet)),
 		);
 
 		it.effect("provides block explorer", () =>
@@ -53,7 +59,7 @@ describe("ChainService", () => {
 				const chain = yield* ChainService;
 				expect(chain.blockExplorers?.default?.name).toBe("Etherscan");
 				expect(chain.blockExplorers?.default?.url).toBe("https://etherscan.io");
-			}).pipe(Effect.provide(mainnet))
+			}).pipe(Effect.provide(mainnet)),
 		);
 
 		it("has correct block time", () => {
@@ -70,14 +76,14 @@ describe("ChainService", () => {
 			Effect.gen(function* () {
 				const chain = yield* ChainService;
 				expect(chain.id).toBe(11_155_111);
-			}).pipe(Effect.provide(sepolia))
+			}).pipe(Effect.provide(sepolia)),
 		);
 
 		it.effect("is marked as testnet", () =>
 			Effect.gen(function* () {
 				const chain = yield* ChainService;
 				expect(chain.testnet).toBe(true);
-			}).pipe(Effect.provide(sepolia))
+			}).pipe(Effect.provide(sepolia)),
 		);
 
 		it("has correct native currency", () => {
@@ -94,7 +100,7 @@ describe("ChainService", () => {
 			Effect.gen(function* () {
 				const chain = yield* ChainService;
 				expect(chain.id).toBe(42_161);
-			}).pipe(Effect.provide(arbitrum))
+			}).pipe(Effect.provide(arbitrum)),
 		);
 
 		it("has fast block time", () => {
@@ -103,7 +109,9 @@ describe("ChainService", () => {
 
 		it("provides Arbiscan explorer", () => {
 			expect(arbitrumConfig.blockExplorers?.default.name).toBe("Arbiscan");
-			expect(arbitrumConfig.blockExplorers?.default.url).toBe("https://arbiscan.io");
+			expect(arbitrumConfig.blockExplorers?.default.url).toBe(
+				"https://arbiscan.io",
+			);
 		});
 	});
 
@@ -112,7 +120,7 @@ describe("ChainService", () => {
 			Effect.gen(function* () {
 				const chain = yield* ChainService;
 				expect(chain.id).toBe(8453);
-			}).pipe(Effect.provide(base))
+			}).pipe(Effect.provide(base)),
 		);
 
 		it("has 2 second block time", () => {
@@ -131,7 +139,7 @@ describe("ChainService", () => {
 			Effect.gen(function* () {
 				const chain = yield* ChainService;
 				expect(chain.id).toBe(10);
-			}).pipe(Effect.provide(optimism))
+			}).pipe(Effect.provide(optimism)),
 		);
 
 		it("has correct chain name", () => {
@@ -139,7 +147,9 @@ describe("ChainService", () => {
 		});
 
 		it("has multicall3 contract", () => {
-			expect(optimismConfig.contracts?.multicall3?.blockCreated).toBe(4_286_263);
+			expect(optimismConfig.contracts?.multicall3?.blockCreated).toBe(
+				4_286_263,
+			);
 		});
 	});
 
@@ -148,7 +158,7 @@ describe("ChainService", () => {
 			Effect.gen(function* () {
 				const chain = yield* ChainService;
 				expect(chain.id).toBe(137);
-			}).pipe(Effect.provide(polygon))
+			}).pipe(Effect.provide(polygon)),
 		);
 
 		it("has POL as native currency", () => {
@@ -184,7 +194,7 @@ describe("ChainService", () => {
 
 				const result = yield* program;
 				expect(result).toEqual({ id: 99999, name: "Custom Chain" });
-			})
+			}),
 		);
 	});
 

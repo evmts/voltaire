@@ -42,4 +42,4 @@
 
 export { Bytes } from "./Bytes.js";
 export { Hex } from "./Hex.js";
-export { type ReturnDataType } from "./ReturnDataSchema.js";
+export type { ReturnDataType } from "./ReturnDataSchema.js";

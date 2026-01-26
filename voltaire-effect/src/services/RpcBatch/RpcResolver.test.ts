@@ -1,14 +1,14 @@
-import * as Effect from "effect/Effect";
 import { describe, expect, it, vi } from "@effect/vitest";
+import * as Effect from "effect/Effect";
 import { TransportError } from "../Transport/TransportError.js";
-import { makeRpcResolver } from "./RpcResolver.js";
 import {
 	EthBlockNumber,
-	EthGetBalance,
 	EthCall,
+	EthGetBalance,
 	EthGetLogs,
 	GenericRpcRequest,
 } from "./RpcRequest.js";
+import { makeRpcResolver } from "./RpcResolver.js";
 
 const createMockTransport = () => ({
 	request: vi.fn(),
@@ -16,7 +16,6 @@ const createMockTransport = () => ({
 
 describe("RpcResolver", () => {
 	describe("makeRpcResolver", () => {
-
 		describe("single request", () => {
 			it("uses direct transport.request for single request", async () => {
 				const transport = createMockTransport();
@@ -34,7 +33,10 @@ describe("RpcResolver", () => {
 
 			it("propagates error for single request failure", async () => {
 				const transport = createMockTransport();
-				const error = new TransportError({ code: -32000, message: "rate limited" });
+				const error = new TransportError({
+					code: -32000,
+					message: "rate limited",
+				});
 				transport.request.mockReturnValue(Effect.fail(error));
 				const resolver = makeRpcResolver(transport);
 
@@ -77,7 +79,12 @@ describe("RpcResolver", () => {
 				expect(balance).toBe("0x200");
 				expect(transport.request).toHaveBeenCalledWith("__batch__", [
 					{ jsonrpc: "2.0", id: 0, method: "eth_blockNumber", params: [] },
-					{ jsonrpc: "2.0", id: 1, method: "eth_getBalance", params: ["0xabc", "latest"] },
+					{
+						jsonrpc: "2.0",
+						id: 1,
+						method: "eth_getBalance",
+						params: ["0xabc", "latest"],
+					},
 				]);
 			});
 		});
@@ -86,16 +93,16 @@ describe("RpcResolver", () => {
 			it("returns TransportError -32603 for missing response id", async () => {
 				const transport = createMockTransport();
 				transport.request.mockReturnValue(
-					Effect.succeed([
-						{ jsonrpc: "2.0", id: 0, result: "0x100" },
-					]),
+					Effect.succeed([{ jsonrpc: "2.0", id: 0, result: "0x100" }]),
 				);
 				const resolver = makeRpcResolver(transport);
 
 				const results = await Effect.runPromise(
 					Effect.all(
 						[
-							Effect.request(resolver)(new EthBlockNumber({})).pipe(Effect.either),
+							Effect.request(resolver)(new EthBlockNumber({})).pipe(
+								Effect.either,
+							),
 							Effect.request(resolver)(
 								new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
 							).pipe(Effect.either),
@@ -121,7 +128,11 @@ describe("RpcResolver", () => {
 						{
 							jsonrpc: "2.0",
 							id: 1,
-							error: { code: -32602, message: "invalid params", data: { foo: "bar" } },
+							error: {
+								code: -32602,
+								message: "invalid params",
+								data: { foo: "bar" },
+							},
 						},
 					]),
 				);
@@ -130,7 +141,9 @@ describe("RpcResolver", () => {
 				const results = await Effect.runPromise(
 					Effect.all(
 						[
-							Effect.request(resolver)(new EthBlockNumber({})).pipe(Effect.either),
+							Effect.request(resolver)(new EthBlockNumber({})).pipe(
+								Effect.either,
+							),
 							Effect.request(resolver)(
 								new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
 							).pipe(Effect.either),
@@ -151,14 +164,19 @@ describe("RpcResolver", () => {
 
 			it("fails all requests when batch transport fails", async () => {
 				const transport = createMockTransport();
-				const error = new TransportError({ code: -32603, message: "network error" });
+				const error = new TransportError({
+					code: -32603,
+					message: "network error",
+				});
 				transport.request.mockReturnValue(Effect.fail(error));
 				const resolver = makeRpcResolver(transport);
 
 				const results = await Effect.runPromise(
 					Effect.all(
 						[
-							Effect.request(resolver)(new EthBlockNumber({})).pipe(Effect.either),
+							Effect.request(resolver)(new EthBlockNumber({})).pipe(
+								Effect.either,
+							),
 							Effect.request(resolver)(
 								new EthGetBalance({ address: "0xabc", blockTag: "latest" }),
 							).pipe(Effect.either),
@@ -178,7 +196,9 @@ describe("RpcResolver", () => {
 				transport.request.mockReturnValue(Effect.succeed("0x1"));
 				const resolver = makeRpcResolver(transport);
 
-				await Effect.runPromise(Effect.request(resolver)(new EthBlockNumber({})));
+				await Effect.runPromise(
+					Effect.request(resolver)(new EthBlockNumber({})),
+				);
 
 				expect(transport.request).toHaveBeenCalledWith("eth_blockNumber", []);
 			});

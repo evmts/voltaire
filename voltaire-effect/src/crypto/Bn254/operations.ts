@@ -5,7 +5,12 @@
  */
 
 import * as Effect from "effect/Effect";
-import { type Bn254Error, Bn254Service, type BN254G1PointType, type BN254G2PointType } from "./Bn254Service.js";
+import {
+	type BN254G1PointType,
+	type BN254G2PointType,
+	type Bn254Error,
+	Bn254Service,
+} from "./Bn254Service.js";
 
 /**
  * Adds two G1 points on the BN254 curve.

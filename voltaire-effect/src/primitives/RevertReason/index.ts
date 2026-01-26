@@ -57,11 +57,11 @@
 
 export { Bytes } from "./Bytes.js";
 export { Hex } from "./Hex.js";
-export {
-	type CustomRevertReason,
-	type ErrorRevertReason,
-	type PanicRevertReason,
-	type RevertReasonType,
-	type UnknownRevertReason,
+export type {
+	CustomRevertReason,
+	ErrorRevertReason,
+	PanicRevertReason,
+	RevertReasonType,
+	UnknownRevertReason,
 } from "./RevertReasonSchema.js";
 export { toString } from "./toString.js";

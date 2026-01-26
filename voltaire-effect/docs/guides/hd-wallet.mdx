@@ -21,7 +21,8 @@ The `MnemonicAccount` function creates an account layer from a BIP-39 mnemonic:
 
 ```typescript
 import { Effect } from 'effect'
-import { AccountService, MnemonicAccount } from 'voltaire-effect/services'
+import { AccountService } from 'voltaire-effect/services'
+import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const mnemonic = "test test test test test test test test test test test junk";
@@ -139,10 +140,10 @@ import { Effect } from 'effect'
 import { 
   SignerService, 
   Signer, 
-  MnemonicAccount,
   Provider,
   HttpTransport 
 } from 'voltaire-effect/services'
+import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const mnemonic = process.env.MNEMONIC!

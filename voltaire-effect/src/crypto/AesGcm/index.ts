@@ -32,12 +32,12 @@
  * @see {@link https://csrc.nist.gov/pubs/sp/800/38/d/final | NIST SP 800-38D}
  */
 export { AesGcmService, type AesGcmServiceShape } from "./AesGcmService.js";
-export { decrypt, encrypt, generateKey, generateNonce } from "./operations.js";
 export {
+	type AesGcmError,
 	InvalidKeyError,
 	InvalidNonceError,
-	type AesGcmError,
 } from "./errors.js";
+export { decrypt, encrypt, generateKey, generateNonce } from "./operations.js";
 
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

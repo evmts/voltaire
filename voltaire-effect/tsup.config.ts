@@ -6,13 +6,19 @@ export default defineConfig({
 		"src/primitives/index.ts",
 		"src/crypto/index.ts",
 		"src/services/index.ts",
+		"src/native/index.ts",
 	],
 	format: ["esm"],
 	dts: true,
 	clean: true,
 	splitting: false,
 	treeshake: true,
-	external: ["@tevm/voltaire", "effect", "@effect/platform"],
+	external: [
+		"@tevm/voltaire",
+		"@tevm/voltaire/native",
+		"effect",
+		"@effect/platform",
+	],
 	noExternal: [],
 	esbuildOptions(options) {
 		options.external = [

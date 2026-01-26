@@ -71,17 +71,27 @@ describe("BlockBodySchema", () => {
 	});
 
 	it("rejects body with non-array transactions", () => {
-		const invalid = { transactions: "not-array", ommers: [] } as unknown as BlockBodyType;
+		const invalid = {
+			transactions: "not-array",
+			ommers: [],
+		} as unknown as BlockBodyType;
 		expect(() => S.decodeSync(BlockBodySchema)(invalid)).toThrow();
 	});
 
 	it("rejects body with non-array ommers", () => {
-		const invalid = { transactions: [], ommers: {} } as unknown as BlockBodyType;
+		const invalid = {
+			transactions: [],
+			ommers: {},
+		} as unknown as BlockBodyType;
 		expect(() => S.decodeSync(BlockBodySchema)(invalid)).toThrow();
 	});
 
 	it("rejects body with non-array withdrawals", () => {
-		const invalid = { transactions: [], ommers: [], withdrawals: "not-array" } as unknown as BlockBodyType;
+		const invalid = {
+			transactions: [],
+			ommers: [],
+			withdrawals: "not-array",
+		} as unknown as BlockBodyType;
 		expect(() => S.decodeSync(BlockBodySchema)(invalid)).toThrow();
 	});
 
@@ -133,7 +143,7 @@ describe("BlockBodySchema", () => {
 		const invalidWithdrawal = {
 			index: 0n,
 			validatorIndex: 1n,
-			address: "0x" + "aa".repeat(20), // string instead of Uint8Array
+			address: `0x${"aa".repeat(20)}`, // string instead of Uint8Array
 			amount: 1000000000n,
 		};
 		const invalid = {
@@ -174,9 +184,17 @@ describe("BlockBodySchema", () => {
 	});
 
 	it("rejects non-object input", () => {
-		expect(() => S.decodeSync(BlockBodySchema)("not-an-object" as unknown as BlockBodyType)).toThrow();
-		expect(() => S.decodeSync(BlockBodySchema)(null as unknown as BlockBodyType)).toThrow();
-		expect(() => S.decodeSync(BlockBodySchema)(undefined as unknown as BlockBodyType)).toThrow();
+		expect(() =>
+			S.decodeSync(BlockBodySchema)(
+				"not-an-object" as unknown as BlockBodyType,
+			),
+		).toThrow();
+		expect(() =>
+			S.decodeSync(BlockBodySchema)(null as unknown as BlockBodyType),
+		).toThrow();
+		expect(() =>
+			S.decodeSync(BlockBodySchema)(undefined as unknown as BlockBodyType),
+		).toThrow();
 	});
 
 	it("validates multiple withdrawals", () => {
@@ -184,9 +202,24 @@ describe("BlockBodySchema", () => {
 			transactions: [],
 			ommers: [],
 			withdrawals: [
-				{ index: 0n, validatorIndex: 1n, address: new Uint8Array(20).fill(0xaa), amount: 100n },
-				{ index: 1n, validatorIndex: 2n, address: new Uint8Array(20).fill(0xbb), amount: 200n },
-				{ index: 2n, validatorIndex: 3n, address: new Uint8Array(20).fill(0xcc), amount: 300n },
+				{
+					index: 0n,
+					validatorIndex: 1n,
+					address: new Uint8Array(20).fill(0xaa),
+					amount: 100n,
+				},
+				{
+					index: 1n,
+					validatorIndex: 2n,
+					address: new Uint8Array(20).fill(0xbb),
+					amount: 200n,
+				},
+				{
+					index: 2n,
+					validatorIndex: 3n,
+					address: new Uint8Array(20).fill(0xcc),
+					amount: 300n,
+				},
 			],
 		});
 		const result = S.decodeSync(BlockBodySchema)(body);

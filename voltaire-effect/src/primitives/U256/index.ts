@@ -35,10 +35,6 @@
 // Re-export schemas from Uint
 export { BigInt } from "../Uint/BigInt.js";
 export { Bytes } from "../Uint/Bytes.js";
-export { Hex } from "../Uint/Hex.js";
-export { Number } from "../Uint/Number.js";
-export { String } from "../Uint/String.js";
-
 // Re-export pure functions from Uint
 export { bitLength } from "../Uint/bitLength.js";
 export { bitwiseAnd } from "../Uint/bitwiseAnd.js";
@@ -49,6 +45,7 @@ export { clone } from "../Uint/clone.js";
 export { gcd } from "../Uint/gcd.js";
 export { greaterThan } from "../Uint/greaterThan.js";
 export { greaterThanOrEqual } from "../Uint/greaterThanOrEqual.js";
+export { Hex } from "../Uint/Hex.js";
 export { isPowerOf2 } from "../Uint/isPowerOf2.js";
 export { isZero } from "../Uint/isZero.js";
 export { lcm } from "../Uint/lcm.js";
@@ -60,10 +57,12 @@ export { maximum } from "../Uint/maximum.js";
 export { min } from "../Uint/min.js";
 export { minimum } from "../Uint/minimum.js";
 export { minus } from "../Uint/minus.js";
+export { Number } from "../Uint/Number.js";
 export { notEquals } from "../Uint/notEquals.js";
 export { plus } from "../Uint/plus.js";
 export { popCount } from "../Uint/popCount.js";
 export { product } from "../Uint/product.js";
+export { String } from "../Uint/String.js";
 export { shiftLeft } from "../Uint/shiftLeft.js";
 export { shiftRight } from "../Uint/shiftRight.js";
 export { sum } from "../Uint/sum.js";

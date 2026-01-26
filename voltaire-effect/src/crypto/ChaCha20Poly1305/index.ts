@@ -38,9 +38,9 @@ export {
 	type ChaCha20Poly1305ServiceShape,
 	ChaCha20Poly1305Test,
 } from "./ChaCha20Poly1305Service.js";
-export { decrypt, encrypt, generateKey, generateNonce } from "./operations.js";
 export {
+	type ChaCha20Poly1305Error,
 	InvalidKeyError,
 	InvalidNonceError,
-	type ChaCha20Poly1305Error,
 } from "./errors.js";
+export { decrypt, encrypt, generateKey, generateNonce } from "./operations.js";

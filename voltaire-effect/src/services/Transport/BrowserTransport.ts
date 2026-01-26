@@ -174,7 +174,7 @@ export const BrowserTransport: Layer.Layer<TransportService> = Layer.succeed(
 				}
 
 				const result = yield* Effect.tryPromise({
-					try: () => window.ethereum!.request({ method, params }),
+					try: () => window.ethereum?.request({ method, params }),
 					catch: (e) => {
 						if (e && typeof e === "object" && "code" in e && "message" in e) {
 							return new TransportError({

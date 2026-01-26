@@ -1,7 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
-import * as TestClock from "effect/TestClock";
 import {
 	DefaultRateLimiter,
 	NoopRateLimiter,
@@ -84,9 +82,7 @@ describe("RateLimiterService", () => {
 
 				yield* rateLimiter.consume("eth_call");
 
-				const result = yield* rateLimiter.consume("eth_call").pipe(
-					Effect.flip,
-				);
+				const result = yield* rateLimiter.consume("eth_call").pipe(Effect.flip);
 
 				expect(result).toBeInstanceOf(RateLimitError);
 				expect(result.method).toBe("eth_call");
@@ -124,9 +120,9 @@ describe("RateLimiterService", () => {
 
 				yield* rateLimiter.consume("eth_call", 5);
 
-				const result = yield* rateLimiter.consume("eth_call", 6).pipe(
-					Effect.flip,
-				);
+				const result = yield* rateLimiter
+					.consume("eth_call", 6)
+					.pipe(Effect.flip);
 
 				expect(result).toBeInstanceOf(RateLimitError);
 			}).pipe(

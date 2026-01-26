@@ -4,14 +4,18 @@
  * Uses a lightweight mock WebSocket implementation that supports addEventListener,
  * matching @effect/platform Socket expectations.
  */
+
+import { afterEach, describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
-import { afterEach, describe, expect, it } from "@effect/vitest";
+import { makeMockWebSocket } from "./__testUtils__/mockWebSocket.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
-import { WebSocketConstructorGlobal, WebSocketTransport } from "./WebSocketTransport.js";
-import { makeMockWebSocket } from "./__testUtils__/mockWebSocket.js";
+import {
+	WebSocketConstructorGlobal,
+	WebSocketTransport,
+} from "./WebSocketTransport.js";
 
 describe("WebSocketTransport", () => {
 	const originalWebSocket = globalThis.WebSocket;
@@ -108,7 +112,11 @@ describe("WebSocketTransport", () => {
 			}).pipe(
 				Effect.provide(
 					Layer.provide(
-						WebSocketTransport({ url: "ws://test", timeout: 50, reconnect: false }),
+						WebSocketTransport({
+							url: "ws://test",
+							timeout: 50,
+							reconnect: false,
+						}),
 						WebSocketConstructorGlobal,
 					),
 				),
@@ -186,13 +194,19 @@ describe("WebSocketTransport", () => {
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
 
-				const fiber1 = yield* Effect.fork(transport.request<string>("eth_blockNumber"));
-				const fiber2 = yield* Effect.fork(transport.request<string>("eth_chainId"));
+				const fiber1 = yield* Effect.fork(
+					transport.request<string>("eth_blockNumber"),
+				);
+				const fiber2 = yield* Effect.fork(
+					transport.request<string>("eth_chainId"),
+				);
 
 				yield* Effect.sleep(20);
 
 				if (sockets[0] && pendingRequests.length >= 2) {
-					const req1 = pendingRequests.find((r) => r.method === "eth_blockNumber")!;
+					const req1 = pendingRequests.find(
+						(r) => r.method === "eth_blockNumber",
+					)!;
 					const req2 = pendingRequests.find((r) => r.method === "eth_chainId")!;
 
 					sockets[0].emitMessage(
@@ -236,7 +250,9 @@ describe("WebSocketTransport", () => {
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
 
-				const fiber = yield* Effect.fork(transport.request<string>("eth_blockNumber"));
+				const fiber = yield* Effect.fork(
+					transport.request<string>("eth_blockNumber"),
+				);
 
 				yield* Effect.sleep(20);
 
@@ -245,7 +261,11 @@ describe("WebSocketTransport", () => {
 						JSON.stringify({ jsonrpc: "2.0", id: 99999, result: "0xwrong" }),
 					);
 					sockets[0].emitMessage(
-						JSON.stringify({ jsonrpc: "2.0", id: capturedId, result: "0xcorrect" }),
+						JSON.stringify({
+							jsonrpc: "2.0",
+							id: capturedId,
+							result: "0xcorrect",
+						}),
 					);
 				}
 
@@ -477,7 +497,11 @@ describe("WebSocketTransport", () => {
 			}).pipe(
 				Effect.provide(
 					Layer.provide(
-						WebSocketTransport({ url: "ws://test", timeout: 50, reconnect: false }),
+						WebSocketTransport({
+							url: "ws://test",
+							timeout: 50,
+							reconnect: false,
+						}),
 						WebSocketConstructorGlobal,
 					),
 				),

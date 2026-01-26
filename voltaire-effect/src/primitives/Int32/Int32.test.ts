@@ -1,7 +1,7 @@
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
-import * as Int32 from "./index.js";
 import { BrandedInt32 } from "@tevm/voltaire";
+import * as S from "effect/Schema";
+import * as Int32 from "./index.js";
 
 const INT32_MIN = -2147483648;
 const INT32_MAX = 2147483647;
@@ -81,7 +81,9 @@ describe("Int32", () => {
 		});
 
 		it("fails on overflow bigint", () => {
-			expect(() => S.decodeSync(Int32.BigInt)(BigInt(INT32_MAX) + 1n)).toThrow();
+			expect(() =>
+				S.decodeSync(Int32.BigInt)(BigInt(INT32_MAX) + 1n),
+			).toThrow();
 		});
 	});
 

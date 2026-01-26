@@ -1,6 +1,6 @@
+import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { ProviderService } from "../services/Provider/index.js";
 import * as ERC165 from "./ERC165.js";
 
@@ -74,14 +74,18 @@ describe("ERC165", () => {
 		it("decodes true response", async () => {
 			const data =
 				"0x0000000000000000000000000000000000000000000000000000000000000001";
-			const result = await Effect.runPromise(ERC165.decodeSupportsInterface(data));
+			const result = await Effect.runPromise(
+				ERC165.decodeSupportsInterface(data),
+			);
 			expect(result).toBe(true);
 		});
 
 		it("decodes false response", async () => {
 			const data =
 				"0x0000000000000000000000000000000000000000000000000000000000000000";
-			const result = await Effect.runPromise(ERC165.decodeSupportsInterface(data));
+			const result = await Effect.runPromise(
+				ERC165.decodeSupportsInterface(data),
+			);
 			expect(result).toBe(false);
 		});
 	});

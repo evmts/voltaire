@@ -1,7 +1,7 @@
+import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { BrandedAbi, Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { expectTypeOf } from "vitest";
 import { ProviderService } from "../ProviderService.js";
 import { multicall } from "./multicall.js";
@@ -61,10 +61,9 @@ function encodeMulticallResult(
 			],
 		},
 	] as const;
-	const encoded = BrandedAbi.encodeParameters(
-		tupleArrayOutputs,
-		[results.map((r) => [r.success, Hex.toBytes(r.returnData)])],
-	);
+	const encoded = BrandedAbi.encodeParameters(tupleArrayOutputs, [
+		results.map((r) => [r.success, Hex.toBytes(r.returnData)]),
+	]);
 	return Hex.fromBytes(encoded) as HexType;
 }
 
@@ -287,9 +286,7 @@ describe("multicall", () => {
 				)
 				.mockReturnValueOnce(
 					Effect.succeed(
-						encodeMulticallResult([
-							{ success: true, returnData: balance3 },
-						]),
+						encodeMulticallResult([{ success: true, returnData: balance3 }]),
 					),
 				);
 
@@ -321,7 +318,11 @@ describe("multicall", () => {
 			);
 
 			expect(mockProvider.call).toHaveBeenCalledTimes(2);
-			expect(result).toEqual([1000000000000000000n, 10000000000000000000000n, 5n]);
+			expect(result).toEqual([
+				1000000000000000000n,
+				10000000000000000000000n,
+				5n,
+			]);
 		});
 	});
 
@@ -478,7 +479,11 @@ describe("multicall", () => {
 				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(result).toEqual([1000000000000000000n, null, 1000000000000000000n]);
+			expect(result).toEqual([
+				1000000000000000000n,
+				null,
+				1000000000000000000n,
+			]);
 		});
 
 		it("handles all calls failing with allowFailure true", async () => {

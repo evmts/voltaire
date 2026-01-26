@@ -46,10 +46,10 @@
  * @since 0.1.0
  */
 export {
-	equals,
 	type ErrorSignatureLike,
 	ErrorSignatureSchema,
 	type ErrorSignatureType,
+	equals,
 	String,
 	toHex,
 } from "./String.js";

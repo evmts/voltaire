@@ -7,6 +7,6 @@ export * from "./errors.js";
 // Function exports
 export { isValidSignature } from "./isValidSignature.js";
 export {
-	VerifySignature,
 	InvalidSignatureFormatError,
+	VerifySignature,
 } from "./verifySignature.js";

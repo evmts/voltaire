@@ -17,7 +17,7 @@
  * @since 0.0.1
  */
 export {
-	Schema,
 	FromHexSchema,
+	Schema,
 	type TokenBalanceType,
 } from "./Struct.js";

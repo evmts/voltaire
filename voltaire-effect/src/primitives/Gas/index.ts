@@ -45,7 +45,7 @@
  * @since 0.1.0
  */
 
-// Schemas
-export { Number, type GasType } from "./Number.js";
 export { BigInt } from "./BigInt.js";
 export { Hex } from "./Hex.js";
+// Schemas
+export { type GasType, Number } from "./Number.js";

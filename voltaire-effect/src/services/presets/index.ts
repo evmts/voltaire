@@ -24,11 +24,11 @@
 
 import { FetchHttpClient } from "@effect/platform";
 import * as Layer from "effect/Layer";
-import { CacheService, MemoryCache } from "../Cache/index.js";
+import { type CacheService, MemoryCache } from "../Cache/index.js";
 import {
 	arbitrum,
 	base,
-	ChainService,
+	type ChainService,
 	mainnet,
 	optimism,
 	polygon,
@@ -36,17 +36,17 @@ import {
 } from "../Chain/index.js";
 import {
 	DefaultFeeEstimator,
-	FeeEstimatorService,
+	type FeeEstimatorService,
 } from "../FeeEstimator/index.js";
-import { DefaultFormatter, FormatterService } from "../Formatter/index.js";
+import { DefaultFormatter, type FormatterService } from "../Formatter/index.js";
 import {
 	DefaultNonceManager,
-	NonceManagerService,
+	type NonceManagerService,
 } from "../NonceManager/index.js";
-import { Provider, ProviderService } from "../Provider/index.js";
+import { Provider, type ProviderService } from "../Provider/index.js";
 import {
 	DefaultTransactionSerializer,
-	TransactionSerializerService,
+	type TransactionSerializerService,
 } from "../TransactionSerializer/index.js";
 import { HttpTransport } from "../Transport/index.js";
 
@@ -139,7 +139,9 @@ export type ComposedServices =
 export const OptimismProvider = (
 	url: string,
 ): Layer.Layer<ComposedServices> => {
-	const transport = HttpTransport(url).pipe(Layer.provide(FetchHttpClient.layer));
+	const transport = HttpTransport(url).pipe(
+		Layer.provide(FetchHttpClient.layer),
+	);
 	const providerLayer = Provider.pipe(Layer.provide(transport));
 	return Layer.mergeAll(
 		providerLayer,
@@ -163,7 +165,9 @@ export const OptimismProvider = (
 export const ArbitrumProvider = (
 	url: string,
 ): Layer.Layer<ComposedServices> => {
-	const transport = HttpTransport(url).pipe(Layer.provide(FetchHttpClient.layer));
+	const transport = HttpTransport(url).pipe(
+		Layer.provide(FetchHttpClient.layer),
+	);
 	const providerLayer = Provider.pipe(Layer.provide(transport));
 	return Layer.mergeAll(
 		providerLayer,
@@ -185,7 +189,9 @@ export const ArbitrumProvider = (
  * @since 0.0.1
  */
 export const BaseProvider = (url: string): Layer.Layer<ComposedServices> => {
-	const transport = HttpTransport(url).pipe(Layer.provide(FetchHttpClient.layer));
+	const transport = HttpTransport(url).pipe(
+		Layer.provide(FetchHttpClient.layer),
+	);
 	const providerLayer = Provider.pipe(Layer.provide(transport));
 	return Layer.mergeAll(
 		providerLayer,
@@ -206,10 +212,10 @@ export const BaseProvider = (url: string): Layer.Layer<ComposedServices> => {
  *
  * @since 0.0.1
  */
-export const SepoliaProvider = (
-	url: string,
-): Layer.Layer<ComposedServices> => {
-	const transport = HttpTransport(url).pipe(Layer.provide(FetchHttpClient.layer));
+export const SepoliaProvider = (url: string): Layer.Layer<ComposedServices> => {
+	const transport = HttpTransport(url).pipe(
+		Layer.provide(FetchHttpClient.layer),
+	);
 	const providerLayer = Provider.pipe(Layer.provide(transport));
 	return Layer.mergeAll(
 		providerLayer,
@@ -230,10 +236,10 @@ export const SepoliaProvider = (
  *
  * @since 0.0.1
  */
-export const PolygonProvider = (
-	url: string,
-): Layer.Layer<ComposedServices> => {
-	const transport = HttpTransport(url).pipe(Layer.provide(FetchHttpClient.layer));
+export const PolygonProvider = (url: string): Layer.Layer<ComposedServices> => {
+	const transport = HttpTransport(url).pipe(
+		Layer.provide(FetchHttpClient.layer),
+	);
 	const providerLayer = Provider.pipe(Layer.provide(transport));
 	return Layer.mergeAll(
 		providerLayer,
@@ -257,7 +263,9 @@ export const PolygonProvider = (
 export const MainnetFullProvider = (
 	url: string,
 ): Layer.Layer<ComposedServices> => {
-	const transport = HttpTransport(url).pipe(Layer.provide(FetchHttpClient.layer));
+	const transport = HttpTransport(url).pipe(
+		Layer.provide(FetchHttpClient.layer),
+	);
 	const providerLayer = Provider.pipe(Layer.provide(transport));
 	return Layer.mergeAll(
 		providerLayer,

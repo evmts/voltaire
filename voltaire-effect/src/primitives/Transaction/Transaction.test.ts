@@ -1,9 +1,7 @@
-import { Address } from "@tevm/voltaire";
+import { describe, expect, it } from "@effect/vitest";
 import type { AddressType } from "@tevm/voltaire/Address";
 import type { HashType } from "@tevm/voltaire/Hash";
-import * as VoltaireTransaction from "@tevm/voltaire/Transaction";
 import * as S from "effect/Schema";
-import { describe, expect, it } from "@effect/vitest";
 import * as Transaction from "./index.js";
 
 function createAddress(byte: number): AddressType {
@@ -111,7 +109,9 @@ describe("Transaction.Serialized", () => {
 		it("handles empty access list", () => {
 			const tx: Transaction.EIP2930 = { ...eip2930Tx, accessList: [] };
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP2930;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP2930;
 			expect(decoded.accessList.length).toBe(0);
 		});
 
@@ -126,7 +126,9 @@ describe("Transaction.Serialized", () => {
 				],
 			};
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP2930;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP2930;
 			expect(decoded.accessList[0]?.storageKeys.length).toBe(3);
 		});
 	});
@@ -155,7 +157,9 @@ describe("Transaction.Serialized", () => {
 			const decoded = S.decodeSync(Transaction.Serialized)(bytes);
 			expect(decoded.type).toBe(Transaction.Type.EIP1559);
 			expect((decoded as Transaction.EIP1559).maxFeePerGas).toBe(30000000000n);
-			expect((decoded as Transaction.EIP1559).maxPriorityFeePerGas).toBe(2000000000n);
+			expect((decoded as Transaction.EIP1559).maxPriorityFeePerGas).toBe(
+				2000000000n,
+			);
 		});
 
 		it("round-trips high gas values", () => {
@@ -165,7 +169,9 @@ describe("Transaction.Serialized", () => {
 				maxPriorityFeePerGas: 100000000000000000n,
 			};
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP1559;
 			expect(decoded.maxFeePerGas).toBe(tx.maxFeePerGas);
 			expect(decoded.maxPriorityFeePerGas).toBe(tx.maxPriorityFeePerGas);
 		});
@@ -174,7 +180,9 @@ describe("Transaction.Serialized", () => {
 			for (const chainId of [1n, 137n, 42161n, 10n, 56n]) {
 				const tx: Transaction.EIP1559 = { ...eip1559Tx, chainId };
 				const bytes = S.encodeSync(Transaction.Serialized)(tx);
-				const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+				const decoded = S.decodeSync(Transaction.Serialized)(
+					bytes,
+				) as Transaction.EIP1559;
 				expect(decoded.chainId).toBe(chainId);
 			}
 		});
@@ -183,7 +191,7 @@ describe("Transaction.Serialized", () => {
 	describe("EIP-4844 transactions", () => {
 		const blobHash = new Uint8Array(32);
 		blobHash[0] = 0x01;
-		
+
 		const eip4844Tx: Transaction.EIP4844 = {
 			type: Transaction.Type.EIP4844,
 			chainId: 1n,
@@ -208,7 +216,9 @@ describe("Transaction.Serialized", () => {
 
 			const decoded = S.decodeSync(Transaction.Serialized)(bytes);
 			expect(decoded.type).toBe(Transaction.Type.EIP4844);
-			expect((decoded as Transaction.EIP4844).maxFeePerBlobGas).toBe(1000000000n);
+			expect((decoded as Transaction.EIP4844).maxFeePerBlobGas).toBe(
+				1000000000n,
+			);
 		});
 
 		it("handles multiple blob versioned hashes", () => {
@@ -220,10 +230,17 @@ describe("Transaction.Serialized", () => {
 			};
 			const tx: Transaction.EIP4844 = {
 				...eip4844Tx,
-				blobVersionedHashes: [createBlobHash(1), createBlobHash(2), createBlobHash(3), createBlobHash(4)],
+				blobVersionedHashes: [
+					createBlobHash(1),
+					createBlobHash(2),
+					createBlobHash(3),
+					createBlobHash(4),
+				],
 			};
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP4844;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP4844;
 			expect(decoded.blobVersionedHashes.length).toBe(4);
 		});
 	});
@@ -267,7 +284,9 @@ describe("Transaction.Serialized", () => {
 		it("handles empty authorization list", () => {
 			const tx: Transaction.EIP7702 = { ...eip7702Tx, authorizationList: [] };
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP7702;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP7702;
 			expect(decoded.authorizationList.length).toBe(0);
 		});
 
@@ -282,21 +301,31 @@ describe("Transaction.Serialized", () => {
 			};
 			const tx: Transaction.EIP7702 = {
 				...eip7702Tx,
-				authorizationList: [auth, { ...auth, nonce: 1n }, { ...auth, nonce: 2n }],
+				authorizationList: [
+					auth,
+					{ ...auth, nonce: 1n },
+					{ ...auth, nonce: 2n },
+				],
 			};
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP7702;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP7702;
 			expect(decoded.authorizationList.length).toBe(3);
 		});
 	});
 
 	describe("error handling", () => {
 		it("rejects invalid bytes", () => {
-			expect(() => S.decodeSync(Transaction.Serialized)(new Uint8Array([0xff]))).toThrow();
+			expect(() =>
+				S.decodeSync(Transaction.Serialized)(new Uint8Array([0xff])),
+			).toThrow();
 		});
 
 		it("rejects empty bytes", () => {
-			expect(() => S.decodeSync(Transaction.Serialized)(new Uint8Array())).toThrow();
+			expect(() =>
+				S.decodeSync(Transaction.Serialized)(new Uint8Array()),
+			).toThrow();
 		});
 
 		it("rejects truncated transaction", () => {
@@ -328,7 +357,7 @@ describe("Transaction.Rpc", () => {
 			maxPriorityFeePerGas: "0x3b9aca00",
 			maxFeePerGas: "0x6fc23ac00",
 			gasLimit: "0x5208",
-			to: "0x" + "42".repeat(20),
+			to: `0x${"42".repeat(20)}`,
 			value: "0xde0b6b3a7640000",
 			data: "0x",
 			accessList: [],
@@ -345,7 +374,7 @@ describe("Transaction.Rpc", () => {
 			nonce: "0x5",
 			gasPrice: "0x5d21dba00",
 			gas: "0xc350",
-			to: "0x" + "42".repeat(20),
+			to: `0x${"42".repeat(20)}`,
 			value: "0x64",
 			data: "0x010203",
 		};
@@ -571,7 +600,7 @@ describe("Transaction.Type", () => {
 
 describe("Transaction.Schema (direct struct validation)", () => {
 	// Schemas expect hex string addresses for the encoded (input) side
-	const testAddressHex = "0x" + "42".repeat(20);
+	const testAddressHex = `0x${"42".repeat(20)}`;
 
 	describe("LegacySchema", () => {
 		it("validates valid legacy transaction", () => {
@@ -726,7 +755,9 @@ describe("Transaction.Schema (direct struct validation)", () => {
 				r: testSignature.r,
 				s: testSignature.s,
 			};
-			expect(() => S.decodeSync(Transaction.EIP1559Schema)(tx as any)).toThrow();
+			expect(() =>
+				S.decodeSync(Transaction.EIP1559Schema)(tx as any),
+			).toThrow();
 		});
 	});
 
@@ -861,13 +892,13 @@ describe("Transaction.Rpc additional coverage", () => {
 				nonce: "0x0",
 				gasPrice: "0x4a817c800",
 				gasLimit: "0x5208",
-				to: "0x" + "42".repeat(20),
+				to: `0x${"42".repeat(20)}`,
 				value: "0x0",
 				data: "0x",
 				accessList: [
 					{
-						address: "0x" + "11".repeat(20),
-						storageKeys: ["0x" + "22".repeat(32)],
+						address: `0x${"11".repeat(20)}`,
+						storageKeys: [`0x${"22".repeat(32)}`],
 					},
 				],
 			};
@@ -906,12 +937,12 @@ describe("Transaction.Rpc additional coverage", () => {
 				maxPriorityFeePerGas: "0x3b9aca00",
 				maxFeePerGas: "0x4a817c800",
 				gasLimit: "0x5208",
-				to: "0x" + "42".repeat(20),
+				to: `0x${"42".repeat(20)}`,
 				value: "0x0",
 				data: "0x",
 				accessList: [],
 				maxFeePerBlobGas: "0x3b9aca00",
-				blobVersionedHashes: ["0x01" + "00".repeat(31)],
+				blobVersionedHashes: [`0x01${"00".repeat(31)}`],
 			};
 			const tx = S.decodeSync(Transaction.Rpc)(rpc);
 			expect(tx.type).toBe(Transaction.Type.EIP4844);
@@ -951,18 +982,18 @@ describe("Transaction.Rpc additional coverage", () => {
 				maxPriorityFeePerGas: "0x3b9aca00",
 				maxFeePerGas: "0x4a817c800",
 				gasLimit: "0x5208",
-				to: "0x" + "42".repeat(20),
+				to: `0x${"42".repeat(20)}`,
 				value: "0x0",
 				data: "0x",
 				accessList: [],
 				authorizationList: [
 					{
 						chainId: "0x1",
-						address: "0x" + "42".repeat(20),
+						address: `0x${"42".repeat(20)}`,
 						nonce: "0x0",
 						yParity: "0x0",
-						r: "0x" + "11".repeat(32),
-						s: "0x" + "22".repeat(32),
+						r: `0x${"11".repeat(32)}`,
+						s: `0x${"22".repeat(32)}`,
 					},
 				],
 			};
@@ -1009,7 +1040,7 @@ describe("Transaction.Rpc additional coverage", () => {
 				nonce: "0x0",
 				gasPrice: "0x4a817c800",
 				gasLimit: "0x5208",
-				to: "0x" + "42".repeat(20),
+				to: `0x${"42".repeat(20)}`,
 				value: "0x0",
 				data: "0x",
 			};
@@ -1054,7 +1085,9 @@ describe("Transaction edge cases", () => {
 				s: testSignature.s,
 			};
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP1559;
 			expect(decoded.value).toBe(0n);
 		});
 
@@ -1076,7 +1109,9 @@ describe("Transaction edge cases", () => {
 				s: testSignature.s,
 			};
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP1559;
 			expect(decoded.value).toBe(maxUint256);
 		});
 	});
@@ -1117,7 +1152,9 @@ describe("Transaction edge cases", () => {
 				s: testSignature.s,
 			};
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP1559;
 			expect(decoded.nonce).toBe(2n ** 64n - 1n);
 		});
 	});
@@ -1140,7 +1177,9 @@ describe("Transaction edge cases", () => {
 				s: testSignature.s,
 			};
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP1559;
 			expect(decoded.gasLimit).toBe(21000n);
 		});
 
@@ -1161,7 +1200,9 @@ describe("Transaction edge cases", () => {
 				s: testSignature.s,
 			};
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP1559;
 			expect(decoded.gasLimit).toBe(30000000n);
 		});
 	});
@@ -1191,7 +1232,9 @@ describe("Transaction edge cases", () => {
 				s: testSignature.s,
 			};
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP1559;
 			expect(decoded.accessList.length).toBe(3);
 			expect(decoded.accessList[0]?.storageKeys.length).toBe(1);
 			expect(decoded.accessList[1]?.storageKeys.length).toBe(2);
@@ -1219,7 +1262,9 @@ describe("Transaction edge cases", () => {
 				s: testSignature.s,
 			};
 			const bytes = S.encodeSync(Transaction.Serialized)(tx);
-			const decoded = S.decodeSync(Transaction.Serialized)(bytes) as Transaction.EIP1559;
+			const decoded = S.decodeSync(Transaction.Serialized)(
+				bytes,
+			) as Transaction.EIP1559;
 			expect(decoded.data.length).toBe(10000);
 			expect(decoded.data[0]).toBe(0xab);
 		});

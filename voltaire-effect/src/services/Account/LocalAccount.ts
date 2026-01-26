@@ -34,8 +34,8 @@ import {
 	Signature,
 	type TypedData,
 } from "@tevm/voltaire";
-import type { Secp256k1SignatureType } from "@tevm/voltaire/Secp256k1";
 import * as Hash from "@tevm/voltaire/Hash";
+import type { Secp256k1SignatureType } from "@tevm/voltaire/Secp256k1";
 import * as VoltaireTransaction from "@tevm/voltaire/Transaction";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -85,7 +85,9 @@ const toUncompressedPublicKeyBytes = (publicKey: Uint8Array): Uint8Array => {
 };
 
 const stripPublicKeyPrefix = (publicKey: Uint8Array): Uint8Array =>
-	publicKey.length === 65 && publicKey[0] === 0x04 ? publicKey.slice(1) : publicKey;
+	publicKey.length === 65 && publicKey[0] === 0x04
+		? publicKey.slice(1)
+		: publicKey;
 
 function deriveAddressFromPublicKey(
 	_publicKey: Uint8Array,
@@ -124,7 +126,10 @@ const toSignatureType = (
 const toAddressType = (address: AddressInput): AddressType =>
 	typeof address === "string" ? Address.fromHex(address) : address;
 
-const toAuthorizationParity = (auth: { yParity?: number; v?: number }): number => {
+const toAuthorizationParity = (auth: {
+	yParity?: number;
+	v?: number;
+}): number => {
 	if (auth.yParity !== undefined) return auth.yParity;
 	if (auth.v !== undefined) {
 		if (auth.v === 27 || auth.v === 28) return auth.v - 27;
@@ -563,7 +568,10 @@ const buildLocalAccount = (
 		) as HexType;
 		const publicKeyForAddress = stripPublicKeyPrefix(publicKeyBytes);
 		const addressHash = yield* keccak.hash(publicKeyForAddress);
-		const address = deriveAddressFromPublicKey(publicKeyForAddress, addressHash);
+		const address = deriveAddressFromPublicKey(
+			publicKeyForAddress,
+			addressHash,
+		);
 
 		const keccakHash = (data: Uint8Array) => keccak.hash(data);
 
@@ -591,15 +599,14 @@ const buildLocalAccount = (
 					);
 					return toSignatureType(sig);
 				}).pipe(
-					Effect.mapError(
-						(e) =>
-							e instanceof AccountError
-								? e
-								: new AccountError(
-										{ action: "sign", hash: params.hash },
-										"Failed to sign hash",
-										{ cause: e instanceof Error ? e : undefined },
-									),
+					Effect.mapError((e) =>
+						e instanceof AccountError
+							? e
+							: new AccountError(
+									{ action: "sign", hash: params.hash },
+									"Failed to sign hash",
+									{ cause: e instanceof Error ? e : undefined },
+								),
 					),
 				),
 
@@ -635,9 +642,7 @@ const buildLocalAccount = (
 				Effect.gen(function* () {
 					const txType = getTransactionType(tx);
 					const toAddress =
-						tx.to === undefined || tx.to === null
-							? null
-							: toAddressType(tx.to);
+						tx.to === undefined || tx.to === null ? null : toAddressType(tx.to);
 					const data = tx.data ? Hex.toBytes(tx.data) : new Uint8Array(0);
 					const accessList = normalizeAccessList(tx.accessList);
 
@@ -697,13 +702,11 @@ const buildLocalAccount = (
 						}
 						case 3: {
 							if (!toAddress) {
-								throw new Error(
-									"EIP-4844 transactions require a 'to' address",
-								);
+								throw new Error("EIP-4844 transactions require a 'to' address");
 							}
-							const blobVersionedHashes = (
-								tx.blobVersionedHashes ?? []
-							).map((hash) => Hash.fromHex(hash));
+							const blobVersionedHashes = (tx.blobVersionedHashes ?? []).map(
+								(hash) => Hash.fromHex(hash),
+							);
 							signingTx = {
 								type: VoltaireTransaction.Type.EIP4844,
 								chainId: tx.chainId,
@@ -878,7 +881,7 @@ export const LocalAccount = (privateKeyHex: HexType) =>
 function bigintToBytes(value: bigint): Uint8Array {
 	if (value === 0n) return new Uint8Array(0);
 	let hex = value.toString(16);
-	if (hex.length % 2) hex = "0" + hex;
+	if (hex.length % 2) hex = `0${hex}`;
 	const bytes = new Uint8Array(hex.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
 		bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);

@@ -47,14 +47,14 @@
  * @since 0.1.0
  */
 
-// Schemas
-export {
-	Number,
-	type NetworkIdType,
-	MAINNET,
-	GOERLI,
-	SEPOLIA,
-	HOLESKY,
-} from "./Number.js";
 export { BigInt } from "./BigInt.js";
 export { Hex } from "./Hex.js";
+// Schemas
+export {
+	GOERLI,
+	HOLESKY,
+	MAINNET,
+	type NetworkIdType,
+	Number,
+	SEPOLIA,
+} from "./Number.js";

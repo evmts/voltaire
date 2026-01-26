@@ -1,7 +1,14 @@
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it, vi, beforeEach, afterEach } from "@effect/vitest";
-import { CcipService, CcipError } from "./CcipService.js";
+import { CcipError, CcipService } from "./CcipService.js";
 import { DefaultCcip } from "./DefaultCcip.js";
 import { NoopCcip } from "./NoopCcip.js";
 
@@ -160,10 +167,20 @@ describe("DefaultCcip", () => {
 				callCount++;
 				if (callCount === 1) {
 					return Promise.resolve(
-						createMockResponse({ ok: false, status: 500, statusText: "Internal Server Error", textBody: "Server Error" }),
+						createMockResponse({
+							ok: false,
+							status: 500,
+							statusText: "Internal Server Error",
+							textBody: "Server Error",
+						}),
 					);
 				}
-				return Promise.resolve(createMockResponse({ contentType: "application/json", body: { data: "0x5ccce55" } }));
+				return Promise.resolve(
+					createMockResponse({
+						contentType: "application/json",
+						body: { data: "0x5ccce55" },
+					}),
+				);
 			});
 			globalThis.fetch = fetchMock;
 
@@ -186,7 +203,10 @@ describe("DefaultCcip", () => {
 
 		it("returns first successful result", async () => {
 			const fetchMock = vi.fn().mockResolvedValue(
-				createMockResponse({ contentType: "application/json", body: { data: "0xf1257" } }),
+				createMockResponse({
+					contentType: "application/json",
+					body: { data: "0xf1257" },
+				}),
 			);
 			globalThis.fetch = fetchMock;
 
@@ -224,7 +244,9 @@ describe("DefaultCcip", () => {
 			if (Exit.isFailure(exit)) {
 				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
 				expect(error).toBeInstanceOf(CcipError);
-				expect((error as CcipError).message).toBe("No URLs provided for CCIP lookup");
+				expect((error as CcipError).message).toBe(
+					"No URLs provided for CCIP lookup",
+				);
 			}
 		});
 
@@ -381,9 +403,11 @@ describe("DefaultCcip", () => {
 
 	describe("hex validation", () => {
 		it("succeeds with valid hex response", async () => {
-			const fetchMock = vi.fn().mockResolvedValue(
-				createMockResponse({ body: { data: "0xABCDEF123456" } }),
-			);
+			const fetchMock = vi
+				.fn()
+				.mockResolvedValue(
+					createMockResponse({ body: { data: "0xABCDEF123456" } }),
+				);
 			globalThis.fetch = fetchMock;
 
 			const program = Effect.gen(function* () {
@@ -399,9 +423,9 @@ describe("DefaultCcip", () => {
 		});
 
 		it("fails when response is not valid hex", async () => {
-			const fetchMock = vi.fn().mockResolvedValue(
-				createMockResponse({ body: { data: "not-hex" } }),
-			);
+			const fetchMock = vi
+				.fn()
+				.mockResolvedValue(createMockResponse({ body: { data: "not-hex" } }));
 			globalThis.fetch = fetchMock;
 
 			const program = Effect.gen(function* () {
@@ -423,9 +447,9 @@ describe("DefaultCcip", () => {
 		});
 
 		it("fails when response is missing 0x prefix", async () => {
-			const fetchMock = vi.fn().mockResolvedValue(
-				createMockResponse({ body: { data: "abcdef" } }),
-			);
+			const fetchMock = vi
+				.fn()
+				.mockResolvedValue(createMockResponse({ body: { data: "abcdef" } }));
 			globalThis.fetch = fetchMock;
 
 			const program = Effect.gen(function* () {
@@ -447,9 +471,9 @@ describe("DefaultCcip", () => {
 		});
 
 		it("fails when response contains non-hex characters", async () => {
-			const fetchMock = vi.fn().mockResolvedValue(
-				createMockResponse({ body: { data: "0xZZZZ" } }),
-			);
+			const fetchMock = vi
+				.fn()
+				.mockResolvedValue(createMockResponse({ body: { data: "0xZZZZ" } }));
 			globalThis.fetch = fetchMock;
 
 			const program = Effect.gen(function* () {
@@ -471,9 +495,9 @@ describe("DefaultCcip", () => {
 		});
 
 		it("accepts empty hex 0x", async () => {
-			const fetchMock = vi.fn().mockResolvedValue(
-				createMockResponse({ body: { data: "0x" } }),
-			);
+			const fetchMock = vi
+				.fn()
+				.mockResolvedValue(createMockResponse({ body: { data: "0x" } }));
 			globalThis.fetch = fetchMock;
 
 			const program = Effect.gen(function* () {

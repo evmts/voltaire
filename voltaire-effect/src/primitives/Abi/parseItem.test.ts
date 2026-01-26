@@ -1,7 +1,7 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
-import { parseItem, AbiItemParseError } from "./parseItem.js";
+import { AbiItemParseError, parseItem } from "./parseItem.js";
 
 describe("parseItem", () => {
 	describe("success cases", () => {

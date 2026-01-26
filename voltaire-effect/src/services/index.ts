@@ -66,6 +66,24 @@
  * ```
  */
 
+// Blockchain exports
+export {
+	type Block,
+	BlockchainError,
+	BlockchainService,
+	type BlockchainShape,
+	ForkBlockchain,
+	type ForkBlockchainOptions,
+	type HexInput as BlockchainHexInput,
+	InMemoryBlockchain,
+} from "../blockchain/index.js";
+// TransactionStream exports
+export {
+	TransactionStream,
+	TransactionStreamError,
+	TransactionStreamService,
+	type TransactionStreamShape,
+} from "../transaction/index.js";
 // AbiEncoder exports
 export {
 	AbiDecodeError,
@@ -81,17 +99,50 @@ export {
 	type AccountShape,
 	JsonRpcAccount,
 	LocalAccount,
-	MnemonicAccount,
-	type MnemonicAccountOptions,
 	type UnsignedTransaction,
 } from "./Account/index.js";
-// Formatter exports
+// BlockStream exports
 export {
-	DefaultFormatter,
-	FormatError,
-	FormatterService,
-	type FormatterShape,
-} from "./Formatter/index.js";
+	BlockStream,
+	BlockStreamError,
+	BlockStreamService,
+	type BlockStreamShape,
+} from "./BlockStream/index.js";
+// Cache exports
+export {
+	CacheService,
+	type CacheShape,
+	MemoryCache,
+	type MemoryCacheOptions,
+	NoopCache,
+} from "./Cache/index.js";
+// Ccip exports
+export {
+	CcipError,
+	type CcipRequest,
+	CcipService,
+	type CcipShape,
+	DefaultCcip,
+	NoopCcip,
+} from "./Ccip/index.js";
+// Chain exports
+export {
+	arbitrum,
+	arbitrumConfig,
+	base,
+	baseConfig,
+	type ChainConfig,
+	type ChainContract,
+	ChainService,
+	mainnet,
+	mainnetConfig,
+	optimism,
+	optimismConfig,
+	polygon,
+	polygonConfig,
+	sepolia,
+	sepoliaConfig,
+} from "./Chain/index.js";
 // Contract exports
 export {
 	type Abi as ContractAbi,
@@ -106,6 +157,72 @@ export {
 	type DecodedEvent,
 	type EventFilter,
 } from "./Contract/index.js";
+// ENS exports
+export {
+	DefaultEns,
+	ENS_REGISTRY_ADDRESS,
+	ENS_UNIVERSAL_RESOLVER_ADDRESS,
+	EnsError,
+	EnsService,
+	type EnsShape,
+	type GetEnsAddressParams,
+	type GetEnsAvatarParams,
+	type GetEnsNameParams,
+	type GetEnsResolverParams,
+	type GetEnsTextParams,
+	getEnsAddress,
+	getEnsAvatar,
+	getEnsName,
+	getEnsResolver,
+	getEnsText,
+} from "./Ens/index.js";
+// FeeEstimator exports
+export {
+	DefaultFeeEstimator,
+	FeeEstimationError,
+	FeeEstimatorService,
+	type FeeEstimatorShape,
+	type FeeValues,
+	type FeeValuesEIP1559,
+	type FeeValuesLegacy,
+	makeFeeEstimator,
+} from "./FeeEstimator/index.js";
+// Formatter exports
+export {
+	ArbitrumFormatter,
+	DefaultFormatter,
+	FormatError,
+	FormatterService,
+	type FormatterShape,
+	OptimismFormatter,
+	ZkSyncFormatter,
+} from "./Formatter/index.js";
+// Kzg exports
+export {
+	DefaultKzg,
+	KzgError,
+	KzgService,
+	type KzgShape,
+	NoopKzg,
+} from "./Kzg/index.js";
+// Multicall exports
+export {
+	BalanceResolver,
+	DefaultMulticall,
+	GetBalance,
+	type MulticallCall,
+	MulticallError,
+	type MulticallResult,
+	MulticallService,
+	type MulticallShape,
+} from "./Multicall/index.js";
+// NonceManager exports
+export {
+	DefaultNonceManager,
+	NonceError,
+	NonceManagerService,
+	type NonceManagerShape,
+} from "./NonceManager/index.js";
 // Provider exports
 export {
 	type AccessListType,
@@ -125,25 +242,6 @@ export {
 	type ReceiptType,
 	type TransactionType,
 } from "./Provider/index.js";
-// ENS exports
-export {
-	DefaultEns,
-	EnsError,
-	EnsService,
-	type EnsShape,
-	ENS_REGISTRY_ADDRESS,
-	ENS_UNIVERSAL_RESOLVER_ADDRESS,
-	getEnsAddress,
-	type GetEnsAddressParams,
-	getEnsAvatar,
-	type GetEnsAvatarParams,
-	getEnsName,
-	type GetEnsNameParams,
-	getEnsResolver,
-	type GetEnsResolverParams,
-	getEnsText,
-	type GetEnsTextParams,
-} from "./Ens/index.js";
 // Preset exports (layer composition helpers)
 export {
 	ArbitrumProvider,
@@ -156,128 +254,24 @@ export {
 	PolygonProvider,
 	SepoliaProvider,
 } from "./presets/index.js";
-// Transport exports
+// RateLimiter exports
 export {
-	BrowserTransport,
-	CustomTransport,
-	CustomTransportFromFn,
-	HttpTransport,
-	IdGenerator,
-	IdGeneratorLive,
-	makeIdGenerator,
-	nextId,
-	RateLimitedTransport,
-	TestTransport,
-	TransportError,
-	TransportService,
-	type CustomTransportConfig,
-	type EIP1193Provider,
-	type IdGeneratorShape,
-	type TransportShape,
-	WebSocketTransport,
-	cacheEnabledRef,
-	retryCountRef,
-	timeoutRef,
-	tracingRef,
-	withRetries,
-	withTimeout,
-	withTracing,
-	withoutCache,
-} from "./Transport/index.js";
-// Signer exports
+	DefaultRateLimiter,
+	makeRateLimiter,
+	NoopRateLimiter,
+	type RateLimitBehavior,
+	RateLimitError,
+	type RateLimiterConfig,
+	RateLimiterService,
+	type RateLimiterShape,
+} from "./RateLimiter/index.js";
+// RawProvider exports
 export {
-	Signer,
-	SignerError,
-	SignerService,
-	type SignerShape,
-	type TransactionRequest,
-} from "./Signer/index.js";
-// NonceManager exports
-export {
-	DefaultNonceManager,
-	NonceError,
-	NonceManagerService,
-	type NonceManagerShape,
-} from "./NonceManager/index.js";
-// Cache exports
-export {
-	CacheService,
-	type CacheShape,
-	MemoryCache,
-	type MemoryCacheOptions,
-	NoopCache,
-} from "./Cache/index.js";
-// TransactionSerializer exports
-export {
-	DefaultTransactionSerializer,
-	DeserializeError,
-	SerializeError,
-	TransactionSerializerService,
-} from "./TransactionSerializer/index.js";
-// Chain exports
-export {
-	arbitrum,
-	arbitrumConfig,
-	base,
-	baseConfig,
-	type ChainConfig,
-	type ChainContract,
-	ChainService,
-	mainnet,
-	mainnetConfig,
-	optimism,
-	optimismConfig,
-	polygon,
-	polygonConfig,
-	sepolia,
-	sepoliaConfig,
-} from "./Chain/index.js";
-// FeeEstimator exports
-export {
-	DefaultFeeEstimator,
-	FeeEstimationError,
-	FeeEstimatorService,
-	type FeeEstimatorShape,
-	type FeeValues,
-	type FeeValuesEIP1559,
-	type FeeValuesLegacy,
-	makeFeeEstimator,
-} from "./FeeEstimator/index.js";
-// Multicall exports
-export {
-	BalanceResolver,
-	DefaultMulticall,
-	GetBalance,
-	type MulticallCall,
-	MulticallError,
-	type MulticallResult,
-	MulticallService,
-	type MulticallShape,
-} from "./Multicall/index.js";
-// BlockStream exports
-export {
-	BlockStream,
-	BlockStreamError,
-	BlockStreamService,
-	type BlockStreamShape,
-} from "./BlockStream/index.js";
-// Kzg exports
-export {
-	DefaultKzg,
-	KzgError,
-	KzgService,
-	type KzgShape,
-	NoopKzg,
-} from "./Kzg/index.js";
-// Ccip exports
-export {
-	CcipError,
-	type CcipRequest,
-	CcipService,
-	type CcipShape,
-	DefaultCcip,
-	NoopCcip,
-} from "./Ccip/index.js";
+	RawProviderService,
+	type RawProviderShape,
+	RawProviderTransport,
+	type RequestArguments as RawRequestArguments,
+} from "./RawProvider/index.js";
 // RpcBatch exports
 export {
 	EthBlockNumber,
@@ -301,39 +295,46 @@ export {
 	type RpcBatchShape,
 	type RpcRequest,
 } from "./RpcBatch/index.js";
-// Blockchain exports
+// Signer exports
 export {
-	type Block,
-	BlockchainError,
-	BlockchainService,
-	type BlockchainShape,
-	ForkBlockchain,
-	type ForkBlockchainOptions,
-	type HexInput as BlockchainHexInput,
-	InMemoryBlockchain,
-} from "../blockchain/index.js";
-// RawProvider exports
+	Signer,
+	SignerError,
+	SignerService,
+	type SignerShape,
+	type TransactionRequest,
+} from "./Signer/index.js";
+// TransactionSerializer exports
 export {
-	RawProviderService,
-	type RawProviderShape,
-	RawProviderTransport,
-	type RequestArguments as RawRequestArguments,
-} from "./RawProvider/index.js";
-// TransactionStream exports
+	DefaultTransactionSerializer,
+	DeserializeError,
+	SerializeError,
+	TransactionSerializerService,
+} from "./TransactionSerializer/index.js";
+// Transport exports
 export {
-	TransactionStream,
-	TransactionStreamError,
-	TransactionStreamService,
-	type TransactionStreamShape,
-} from "../transaction/index.js";
-// RateLimiter exports
-export {
-	DefaultRateLimiter,
-	makeRateLimiter,
-	NoopRateLimiter,
-	RateLimitError,
-	type RateLimitBehavior,
-	type RateLimiterConfig,
-	RateLimiterService,
-	type RateLimiterShape,
-} from "./RateLimiter/index.js";
+	BrowserTransport,
+	CustomTransport,
+	type CustomTransportConfig,
+	CustomTransportFromFn,
+	cacheEnabledRef,
+	type EIP1193Provider,
+	HttpTransport,
+	IdGenerator,
+	IdGeneratorLive,
+	type IdGeneratorShape,
+	makeIdGenerator,
+	nextId,
+	RateLimitedTransport,
+	retryCountRef,
+	TestTransport,
+	TransportError,
+	TransportService,
+	type TransportShape,
+	timeoutRef,
+	tracingRef,
+	WebSocketTransport,
+	withoutCache,
+	withRetries,
+	withTimeout,
+	withTracing,
+} from "./Transport/index.js";

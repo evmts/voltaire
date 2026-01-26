@@ -1,25 +1,25 @@
 import * as Data from "effect/Data";
 import {
-	PARSE_ERROR,
-	INVALID_REQUEST,
-	METHOD_NOT_FOUND,
-	INVALID_PARAMS,
+	CHAIN_DISCONNECTED,
+	DISCONNECTED,
+	EXECUTION_REVERTED,
+	INSUFFICIENT_FUNDS,
 	INTERNAL_ERROR,
 	INVALID_INPUT,
+	INVALID_PARAMS,
+	INVALID_REQUEST,
+	LIMIT_EXCEEDED,
+	METHOD_NOT_FOUND,
+	METHOD_NOT_SUPPORTED,
+	NONCE_TOO_HIGH,
+	NONCE_TOO_LOW,
+	PARSE_ERROR,
 	RESOURCE_NOT_FOUND,
 	RESOURCE_UNAVAILABLE,
 	TRANSACTION_REJECTED,
-	METHOD_NOT_SUPPORTED,
-	LIMIT_EXCEEDED,
-	USER_REJECTED_REQUEST,
 	UNAUTHORIZED,
 	UNSUPPORTED_METHOD,
-	DISCONNECTED,
-	CHAIN_DISCONNECTED,
-	EXECUTION_REVERTED,
-	INSUFFICIENT_FUNDS,
-	NONCE_TOO_LOW,
-	NONCE_TOO_HIGH,
+	USER_REJECTED_REQUEST,
 } from "./Error.js";
 
 export class JsonRpcParseError extends Data.TaggedError("JsonRpcParseError")<{
@@ -72,7 +72,14 @@ export class ParseError extends Data.TaggedError("ParseError")<{
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Parse error",
 			rpcCode: PARSE_ERROR,
@@ -83,14 +90,23 @@ export class ParseError extends Data.TaggedError("ParseError")<{
 	}
 }
 
-export class InvalidRequestError extends Data.TaggedError("InvalidRequestError")<{
+export class InvalidRequestError extends Data.TaggedError(
+	"InvalidRequestError",
+)<{
 	readonly message: string;
 	readonly rpcCode: typeof INVALID_REQUEST;
 	readonly data?: unknown;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Invalid request",
 			rpcCode: INVALID_REQUEST,
@@ -101,14 +117,23 @@ export class InvalidRequestError extends Data.TaggedError("InvalidRequestError")
 	}
 }
 
-export class MethodNotFoundError extends Data.TaggedError("MethodNotFoundError")<{
+export class MethodNotFoundError extends Data.TaggedError(
+	"MethodNotFoundError",
+)<{
 	readonly message: string;
 	readonly rpcCode: typeof METHOD_NOT_FOUND;
 	readonly data?: unknown;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Method not found",
 			rpcCode: METHOD_NOT_FOUND,
@@ -126,7 +151,14 @@ export class InvalidParamsError extends Data.TaggedError("InvalidParamsError")<{
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Invalid params",
 			rpcCode: INVALID_PARAMS,
@@ -144,7 +176,14 @@ export class InternalError extends Data.TaggedError("InternalError")<{
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Internal error",
 			rpcCode: INTERNAL_ERROR,
@@ -164,7 +203,14 @@ export class InvalidInputError extends Data.TaggedError("InvalidInputError")<{
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Invalid input",
 			rpcCode: INVALID_INPUT,
@@ -175,14 +221,23 @@ export class InvalidInputError extends Data.TaggedError("InvalidInputError")<{
 	}
 }
 
-export class ResourceNotFoundError extends Data.TaggedError("ResourceNotFoundError")<{
+export class ResourceNotFoundError extends Data.TaggedError(
+	"ResourceNotFoundError",
+)<{
 	readonly message: string;
 	readonly rpcCode: typeof RESOURCE_NOT_FOUND;
 	readonly data?: unknown;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Resource not found",
 			rpcCode: RESOURCE_NOT_FOUND,
@@ -193,14 +248,23 @@ export class ResourceNotFoundError extends Data.TaggedError("ResourceNotFoundErr
 	}
 }
 
-export class ResourceUnavailableError extends Data.TaggedError("ResourceUnavailableError")<{
+export class ResourceUnavailableError extends Data.TaggedError(
+	"ResourceUnavailableError",
+)<{
 	readonly message: string;
 	readonly rpcCode: typeof RESOURCE_UNAVAILABLE;
 	readonly data?: unknown;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Resource unavailable",
 			rpcCode: RESOURCE_UNAVAILABLE,
@@ -211,14 +275,23 @@ export class ResourceUnavailableError extends Data.TaggedError("ResourceUnavaila
 	}
 }
 
-export class TransactionRejectedError extends Data.TaggedError("TransactionRejectedError")<{
+export class TransactionRejectedError extends Data.TaggedError(
+	"TransactionRejectedError",
+)<{
 	readonly message: string;
 	readonly rpcCode: typeof TRANSACTION_REJECTED;
 	readonly data?: unknown;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Transaction rejected",
 			rpcCode: TRANSACTION_REJECTED,
@@ -229,14 +302,23 @@ export class TransactionRejectedError extends Data.TaggedError("TransactionRejec
 	}
 }
 
-export class MethodNotSupportedError extends Data.TaggedError("MethodNotSupportedError")<{
+export class MethodNotSupportedError extends Data.TaggedError(
+	"MethodNotSupportedError",
+)<{
 	readonly message: string;
 	readonly rpcCode: typeof METHOD_NOT_SUPPORTED;
 	readonly data?: unknown;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Method not supported",
 			rpcCode: METHOD_NOT_SUPPORTED,
@@ -254,7 +336,14 @@ export class LimitExceededError extends Data.TaggedError("LimitExceededError")<{
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Limit exceeded",
 			rpcCode: LIMIT_EXCEEDED,
@@ -267,14 +356,23 @@ export class LimitExceededError extends Data.TaggedError("LimitExceededError")<{
 
 // EIP-1193 Provider error classes
 
-export class UserRejectedRequestError extends Data.TaggedError("UserRejectedRequestError")<{
+export class UserRejectedRequestError extends Data.TaggedError(
+	"UserRejectedRequestError",
+)<{
 	readonly message: string;
 	readonly rpcCode: typeof USER_REJECTED_REQUEST;
 	readonly data?: unknown;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "User rejected request",
 			rpcCode: USER_REJECTED_REQUEST,
@@ -292,7 +390,14 @@ export class UnauthorizedError extends Data.TaggedError("UnauthorizedError")<{
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Unauthorized",
 			rpcCode: UNAUTHORIZED,
@@ -303,14 +408,23 @@ export class UnauthorizedError extends Data.TaggedError("UnauthorizedError")<{
 	}
 }
 
-export class UnsupportedMethodError extends Data.TaggedError("UnsupportedMethodError")<{
+export class UnsupportedMethodError extends Data.TaggedError(
+	"UnsupportedMethodError",
+)<{
 	readonly message: string;
 	readonly rpcCode: typeof UNSUPPORTED_METHOD;
 	readonly data?: unknown;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Unsupported method",
 			rpcCode: UNSUPPORTED_METHOD,
@@ -328,7 +442,14 @@ export class DisconnectedError extends Data.TaggedError("DisconnectedError")<{
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Disconnected",
 			rpcCode: DISCONNECTED,
@@ -339,14 +460,23 @@ export class DisconnectedError extends Data.TaggedError("DisconnectedError")<{
 	}
 }
 
-export class ChainDisconnectedError extends Data.TaggedError("ChainDisconnectedError")<{
+export class ChainDisconnectedError extends Data.TaggedError(
+	"ChainDisconnectedError",
+)<{
 	readonly message: string;
 	readonly rpcCode: typeof CHAIN_DISCONNECTED;
 	readonly data?: unknown;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Chain disconnected",
 			rpcCode: CHAIN_DISCONNECTED,
@@ -359,14 +489,23 @@ export class ChainDisconnectedError extends Data.TaggedError("ChainDisconnectedE
 
 // Node-specific error classes (geth/erigon)
 
-export class ExecutionRevertedError extends Data.TaggedError("ExecutionRevertedError")<{
+export class ExecutionRevertedError extends Data.TaggedError(
+	"ExecutionRevertedError",
+)<{
 	readonly message: string;
 	readonly rpcCode: typeof EXECUTION_REVERTED;
 	readonly data?: unknown;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Execution reverted",
 			rpcCode: EXECUTION_REVERTED,
@@ -377,14 +516,23 @@ export class ExecutionRevertedError extends Data.TaggedError("ExecutionRevertedE
 	}
 }
 
-export class InsufficientFundsError extends Data.TaggedError("InsufficientFundsError")<{
+export class InsufficientFundsError extends Data.TaggedError(
+	"InsufficientFundsError",
+)<{
 	readonly message: string;
 	readonly rpcCode: typeof INSUFFICIENT_FUNDS;
 	readonly data?: unknown;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Insufficient funds for gas * price + value",
 			rpcCode: INSUFFICIENT_FUNDS,
@@ -402,7 +550,14 @@ export class NonceTooLowError extends Data.TaggedError("NonceTooLowError")<{
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Nonce too low",
 			rpcCode: NONCE_TOO_LOW,
@@ -420,7 +575,14 @@ export class NonceTooHighError extends Data.TaggedError("NonceTooHighError")<{
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;
 }> {
-	constructor(message?: string, options?: { cause?: unknown; context?: Record<string, unknown>; data?: unknown }) {
+	constructor(
+		message?: string,
+		options?: {
+			cause?: unknown;
+			context?: Record<string, unknown>;
+			data?: unknown;
+		},
+	) {
 		super({
 			message: message ?? "Nonce too high",
 			rpcCode: NONCE_TOO_HIGH,

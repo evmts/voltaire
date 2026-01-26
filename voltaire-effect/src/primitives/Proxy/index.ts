@@ -4,8 +4,8 @@
  * @since 0.0.1
  */
 export {
-	Erc1167ResultSchema,
 	type Erc1167Result,
+	Erc1167ResultSchema,
 	type ProxySlotType,
 	Schema,
 } from "./Struct.js";

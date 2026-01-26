@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Address, Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { Address, Hex } from "@tevm/voltaire";
 import { DefaultTransactionSerializer } from "./DefaultTransactionSerializer.js";
 import {
 	DeserializeError,

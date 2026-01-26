@@ -1,5 +1,5 @@
-import { ERC721 as ERC721Impl } from "@tevm/voltaire";
 import type { BrandedAddress } from "@tevm/voltaire";
+import { ERC721 as ERC721Impl } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import { StandardsError } from "./errors.js";
 
@@ -8,11 +8,14 @@ type Uint256Type = bigint;
 
 const toHex = (bytes: Uint8Array) =>
 	Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-const encodeAddress = (address: AddressType) => toHex(address).padStart(64, "0");
-const encodeUint256 = (value: Uint256Type) => value.toString(16).padStart(64, "0");
+const encodeAddress = (address: AddressType) =>
+	toHex(address).padStart(64, "0");
+const encodeUint256 = (value: Uint256Type) =>
+	value.toString(16).padStart(64, "0");
 const encodeBytes = (data: Uint8Array) =>
 	toHex(data).padEnd(Math.ceil(data.length / 32) * 64, "0");
-const normalizeHex = (data: string) => (data.startsWith("0x") ? data : `0x${data}`);
+const normalizeHex = (data: string) =>
+	data.startsWith("0x") ? data : `0x${data}`;
 
 export const SELECTORS = ERC721Impl.SELECTORS;
 export const EVENTS = ERC721Impl.EVENTS;
@@ -250,7 +253,9 @@ export const decodeIsApprovedForAllResult = (
 	Effect.try({
 		try: () => {
 			const impl = (
-				ERC721Impl as { decodeIsApprovedForAllResult?: (data: string) => boolean }
+				ERC721Impl as {
+					decodeIsApprovedForAllResult?: (data: string) => boolean;
+				}
 			).decodeIsApprovedForAllResult;
 			return impl ? impl(data) : BigInt(normalizeHex(data)) !== 0n;
 		},

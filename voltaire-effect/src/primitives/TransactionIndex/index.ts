@@ -49,5 +49,5 @@ export const equals = TransactionIndex.equals;
 export const toNumber = TransactionIndex.toNumber;
 
 // Type export
-import { TransactionIndex as _TransactionIndex } from "@tevm/voltaire";
+import type { TransactionIndex as _TransactionIndex } from "@tevm/voltaire";
 export type TransactionIndexType = ReturnType<typeof _TransactionIndex.from>;

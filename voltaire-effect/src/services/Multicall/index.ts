@@ -5,7 +5,9 @@
  * @since 0.0.1
  */
 
+export { BalanceResolver } from "./BalanceResolver.js";
 export { DefaultMulticall } from "./DefaultMulticall.js";
+export { GetBalance } from "./GetBalance.js";
 export {
 	type MulticallCall,
 	MulticallError,
@@ -13,5 +15,3 @@ export {
 	MulticallService,
 	type MulticallShape,
 } from "./MulticallService.js";
-export { BalanceResolver } from "./BalanceResolver.js";
-export { GetBalance } from "./GetBalance.js";

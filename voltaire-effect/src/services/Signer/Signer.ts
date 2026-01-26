@@ -28,7 +28,6 @@ import {
 	Signature,
 } from "@tevm/voltaire";
 import * as Hash from "@tevm/voltaire/Hash";
-import type { HashType } from "@tevm/voltaire/Hash";
 import * as VoltaireTransaction from "@tevm/voltaire/Transaction";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -42,19 +41,18 @@ type SignatureType = BrandedSignature.SignatureType;
 import { AccountService, LocalAccount } from "../Account/index.js";
 import { ProviderService } from "../Provider/index.js";
 import { TransportService } from "../Transport/index.js";
+import { prepareAuthorization as prepareAuthorizationAction } from "./actions/prepareAuthorization.js";
 import {
 	type CallsStatus,
 	type ChainConfig,
 	type Permission,
 	type PermissionRequest,
-	type SendCallsParams,
 	SignerError,
 	SignerService,
 	type SignerShape,
 	type TransactionRequest,
 	type WalletCapabilities,
 } from "./SignerService.js";
-import { prepareAuthorization as prepareAuthorizationAction } from "./actions/prepareAuthorization.js";
 
 const INTERNAL_CODE_BUNDLE_PENDING = -40003;
 
@@ -76,8 +74,7 @@ const getTransactionType = (
 	if (hasBlobFields) return 3;
 	if (tx.maxFeePerGas !== undefined || tx.maxPriorityFeePerGas !== undefined)
 		return 2;
-	if (tx.accessList !== undefined && tx.gasPrice !== undefined)
-		return 1;
+	if (tx.accessList !== undefined && tx.gasPrice !== undefined) return 1;
 	if (tx.gasPrice !== undefined) return 0;
 	return supportsEIP1559 ? 2 : 0;
 };
@@ -494,16 +491,18 @@ const SignerLive: Layer.Layer<
 				),
 
 			getPermissions: () =>
-				transport.request<Permission[]>("wallet_getPermissions").pipe(
-					Effect.mapError(
-						(e) =>
-							new SignerError(
-								{ action: "getPermissions" },
-								`Failed to get permissions: ${e.message}`,
-								{ cause: e, code: e.code },
-							),
+				transport
+					.request<Permission[]>("wallet_getPermissions")
+					.pipe(
+						Effect.mapError(
+							(e) =>
+								new SignerError(
+									{ action: "getPermissions" },
+									`Failed to get permissions: ${e.message}`,
+									{ cause: e, code: e.code },
+								),
+						),
 					),
-				),
 
 			requestPermissions: (permissions: PermissionRequest) =>
 				transport
@@ -546,15 +545,11 @@ const SignerLive: Layer.Layer<
 							const message = isUserRejected
 								? "User rejected the request"
 								: `Failed to add chain: ${e.message}`;
-							return new SignerError(
-								{ action: "addChain", chain },
-								message,
-								{
-									cause: e,
-									code: e.code,
-									context: isUserRejected ? { userRejected: true } : undefined,
-								},
-							);
+							return new SignerError({ action: "addChain", chain }, message, {
+								cause: e,
+								code: e.code,
+								context: isUserRejected ? { userRejected: true } : undefined,
+							});
 						}),
 					);
 			},
@@ -565,25 +560,21 @@ const SignerLive: Layer.Layer<
 						{ chainId: `0x${chainId.toString(16)}` },
 					])
 					.pipe(
-						Effect.mapError(
-							(e) => {
-								const isUserRejected = e.code === 4001;
-								const message = isUserRejected
-									? "User rejected the request"
-									: `Failed to switch chain: ${e.message}`;
-								return new SignerError(
-									{ action: "switchChain", chainId },
-									message,
-									{
-										cause: e,
-										code: e.code,
-										context: isUserRejected
-											? { userRejected: true }
-											: undefined,
-									},
-								);
-							},
-						),
+						Effect.mapError((e) => {
+							const isUserRejected = e.code === 4001;
+							const message = isUserRejected
+								? "User rejected the request"
+								: `Failed to switch chain: ${e.message}`;
+							return new SignerError(
+								{ action: "switchChain", chainId },
+								message,
+								{
+									cause: e,
+									code: e.code,
+									context: isUserRejected ? { userRejected: true } : undefined,
+								},
+							);
+						}),
 					),
 
 			getCapabilities: (accountAddr) =>
@@ -642,16 +633,18 @@ const SignerLive: Layer.Layer<
 				),
 
 			getCallsStatus: (bundleId) =>
-				transport.request<CallsStatus>("wallet_getCallsStatus", [bundleId]).pipe(
-					Effect.mapError(
-						(e) =>
-							new SignerError(
-								{ action: "getCallsStatus", bundleId },
-								`Failed to get calls status: ${e.message}`,
-								{ cause: e, code: e.code },
-							),
+				transport
+					.request<CallsStatus>("wallet_getCallsStatus", [bundleId])
+					.pipe(
+						Effect.mapError(
+							(e) =>
+								new SignerError(
+									{ action: "getCallsStatus", bundleId },
+									`Failed to get calls status: ${e.message}`,
+									{ cause: e, code: e.code },
+								),
+						),
 					),
-				),
 
 			waitForCallsStatus: (bundleId, options) => {
 				const timeout = options?.timeout ?? 60000;
@@ -682,9 +675,7 @@ const SignerLive: Layer.Layer<
 					),
 					Effect.retry(
 						Schedule.spaced(Duration.millis(interval)).pipe(
-							Schedule.intersect(
-								Schedule.recurUpTo(Duration.millis(timeout)),
-							),
+							Schedule.intersect(Schedule.recurUpTo(Duration.millis(timeout))),
 							Schedule.whileInput(
 								(e: SignerError) => e.code === INTERNAL_CODE_BUNDLE_PENDING,
 							),

@@ -1,5 +1,5 @@
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
+import * as S from "effect/Schema";
 import * as RuntimeCode from "./index.js";
 
 describe("RuntimeCode.Hex", () => {

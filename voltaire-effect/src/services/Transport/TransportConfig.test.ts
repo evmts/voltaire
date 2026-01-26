@@ -1,17 +1,10 @@
-import * as Config from "effect/Config";
+import { describe, expect, it } from "@effect/vitest";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Secret from "effect/Secret";
-import { describe, expect, it, vi } from "@effect/vitest";
-import {
-	TransportConfig,
-	TransportFromConfig,
-	TransportFromConfigFetch,
-	QuickConfig,
-	TransportService,
-} from "./index.js";
+import { QuickConfig, TransportConfig } from "./index.js";
 
 describe("TransportConfig", () => {
 	it("parses config from provider", async () => {

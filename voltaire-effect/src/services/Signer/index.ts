@@ -64,6 +64,37 @@
  * @see {@link TransportService} - Required for transaction broadcast
  */
 
+export {
+	type Authorization,
+	// Wallet management actions
+	addChain,
+	type Caveat,
+	type ChainConfig,
+	type DeployContractParams,
+	type DeployContractResult,
+	deployContract,
+	getAddresses,
+	getPermissions,
+	type NativeCurrency,
+	type Permission,
+	type PermissionRequest,
+	type PrepareAuthorizationParams,
+	// EIP-7702 Authorization actions
+	prepareAuthorization,
+	requestPermissions,
+	type SignAuthorizationParams,
+	type SignedAuthorization,
+	signAuthorization,
+	switchChain,
+	type UnsignedAuthorization,
+	type WatchAssetOptions,
+	type WatchAssetParams,
+	type WatchAssetType,
+	type WriteContractParams,
+	watchAsset,
+	// Contract actions
+	writeContract,
+} from "./actions/index.js";
 export { Signer } from "./Signer.js";
 export {
 	type AddressInput,
@@ -75,35 +106,3 @@ export {
 	type TransactionRequest,
 	type WalletCapabilities,
 } from "./SignerService.js";
-
-export {
-	// Contract actions
-	writeContract,
-	type WriteContractParams,
-	deployContract,
-	type DeployContractParams,
-	type DeployContractResult,
-	// Wallet management actions
-	addChain,
-	type ChainConfig,
-	type NativeCurrency,
-	switchChain,
-	watchAsset,
-	type WatchAssetParams,
-	type WatchAssetOptions,
-	type WatchAssetType,
-	getPermissions,
-	type Permission,
-	type Caveat,
-	requestPermissions,
-	type PermissionRequest,
-	getAddresses,
-	// EIP-7702 Authorization actions
-	prepareAuthorization,
-	type PrepareAuthorizationParams,
-	type Authorization,
-	type UnsignedAuthorization,
-	signAuthorization,
-	type SignAuthorizationParams,
-	type SignedAuthorization,
-} from "./actions/index.js";

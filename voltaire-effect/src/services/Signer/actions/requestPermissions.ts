@@ -6,12 +6,12 @@
  */
 
 import * as Effect from "effect/Effect";
+import { TransportService } from "../../Transport/index.js";
 import {
-	SignerError,
 	type Permission,
 	type PermissionRequest,
+	SignerError,
 } from "../SignerService.js";
-import { TransportService } from "../../Transport/index.js";
 
 /**
  * Requests specific permissions from the wallet (EIP-2255).
@@ -59,4 +59,8 @@ export const requestPermissions = (
 			);
 	});
 
-export type { Permission, Caveat, PermissionRequest } from "../SignerService.js";
+export type {
+	Caveat,
+	Permission,
+	PermissionRequest,
+} from "../SignerService.js";

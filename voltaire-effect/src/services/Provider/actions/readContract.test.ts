@@ -1,7 +1,7 @@
+import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { ProviderService } from "../ProviderService.js";
 import { readContract } from "./readContract.js";
 
@@ -273,10 +273,10 @@ describe("readContract", () => {
 		it("reads getReserves with multiple return values", async () => {
 			mockProvider.call.mockReturnValue(
 				Effect.succeed(
-					"0x" +
+					("0x" +
 						"00000000000000000000000000000000000000000000021e19e0c9bab2400000" +
 						"000000000000000000000000000000000000000000000000016345785d8a0000" +
-						"0000000000000000000000000000000000000000000000000000000065b8f000" as HexType,
+						"0000000000000000000000000000000000000000000000000000000065b8f000") as HexType,
 				),
 			);
 
@@ -324,9 +324,9 @@ describe("readContract", () => {
 		it("handles mixed argument types (address + bool)", async () => {
 			mockProvider.call.mockReturnValue(
 				Effect.succeed(
-					"0x" +
+					("0x" +
 						"0000000000000000000000000000000000000000000000000de0b6b3a7640000" +
-						"0000000000000000000000000000000000000000000000000000000000000005" as HexType,
+						"0000000000000000000000000000000000000000000000000000000000000005") as HexType,
 				),
 			);
 
@@ -673,9 +673,7 @@ describe("readContract", () => {
 		it("handles bytes32 output type", async () => {
 			const merkleRoot =
 				"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
-			mockProvider.call.mockReturnValue(
-				Effect.succeed(merkleRoot as HexType),
-			);
+			mockProvider.call.mockReturnValue(Effect.succeed(merkleRoot as HexType));
 
 			const program = readContract({
 				address: "0x1234567890123456789012345678901234567890",
@@ -693,12 +691,12 @@ describe("readContract", () => {
 		it("handles dynamic array (uint256[]) output", async () => {
 			mockProvider.call.mockReturnValue(
 				Effect.succeed(
-					"0x" +
+					("0x" +
 						"0000000000000000000000000000000000000000000000000000000000000020" +
 						"0000000000000000000000000000000000000000000000000000000000000003" +
 						"0000000000000000000000000000000000000000000000000000000000000064" +
 						"00000000000000000000000000000000000000000000000000000000000000c8" +
-						"000000000000000000000000000000000000000000000000000000000000012c" as HexType,
+						"000000000000000000000000000000000000000000000000000000000000012c") as HexType,
 				),
 			);
 
@@ -723,11 +721,11 @@ describe("readContract", () => {
 		it("handles tuple/struct output", async () => {
 			mockProvider.call.mockReturnValue(
 				Effect.succeed(
-					"0x" +
+					("0x" +
 						"000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045" +
 						"0000000000000000000000000000000000000000000000000de0b6b3a7640000" +
 						"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0bb8" +
-						"0000000000000000000000000000000000000000000000000000000000000bb8" as HexType,
+						"0000000000000000000000000000000000000000000000000000000000000bb8") as HexType,
 				),
 			);
 

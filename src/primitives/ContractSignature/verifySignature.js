@@ -1,6 +1,6 @@
 import { Address } from "../Address/index.js";
-import { isValidSignature } from "./isValidSignature.js";
 import { ContractSignatureError } from "./errors.js";
+import { isValidSignature } from "./isValidSignature.js";
 
 /**
  * Error thrown when signature format is invalid (not a verification failure)
@@ -88,11 +88,11 @@ export function VerifySignature({
 				let sigComponents;
 				if (signature instanceof Uint8Array) {
 					// Assume 65-byte signature: r (32) + s (32) + v (1)
-						if (signature.length !== 65) {
-							throw new InvalidSignatureFormatError(
-								`Invalid signature length: expected 65 bytes, got ${signature.length}`,
-							);
-						}
+					if (signature.length !== 65) {
+						throw new InvalidSignatureFormatError(
+							`Invalid signature length: expected 65 bytes, got ${signature.length}`,
+						);
+					}
 					sigComponents = {
 						r: signature.slice(0, 32),
 						s: signature.slice(32, 64),

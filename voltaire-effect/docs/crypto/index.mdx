@@ -129,7 +129,7 @@ Compose individual layers as needed:
 import { Layer } from 'effect'
 import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
 import { Secp256k1Live } from 'voltaire-effect/crypto/Secp256k1'
-import { HDWalletLive } from 'voltaire-effect/crypto/HDWallet'
+import { HDWalletLive } from 'voltaire-effect/native'
 
 // Custom subset of crypto services
 const MyCrypto = Layer.mergeAll(

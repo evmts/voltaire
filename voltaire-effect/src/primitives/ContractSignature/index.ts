@@ -53,16 +53,16 @@
  * @since 0.1.0
  */
 export {
-	checkReturnData,
 	type ContractSignatureInput,
 	ContractSignatureInputSchema,
+	checkReturnData,
 	ERC1271_MAGIC_VALUE,
 	Struct,
 } from "./Struct.js";
 
 export {
-	verifySignature,
-	SignatureVerificationError,
 	InvalidSignatureFormatError,
 	type SignatureInput,
+	SignatureVerificationError,
+	verifySignature,
 } from "./verifySignature.js";

@@ -51,5 +51,5 @@ export const equals = BlockHash.equals;
 export const toHex = BlockHash.toHex;
 
 // Type export
-import { BlockHash as _BlockHash } from "@tevm/voltaire";
+import type { BlockHash as _BlockHash } from "@tevm/voltaire";
 export type BlockHashType = _BlockHash.BlockHashType;

@@ -5,11 +5,7 @@
  * @since 0.0.1
  */
 
-import {
-	Address,
-	BrandedAbi,
-	type BrandedAddress,
-} from "@tevm/voltaire";
+import { Address, BrandedAbi, type BrandedAddress } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import { ProviderService } from "../Provider/index.js";
 import {
@@ -56,9 +52,7 @@ const findFunctionInputs = (
 	);
 	if (matches.length === 0) return undefined;
 
-	const exact = matches.find(
-		(fn) => (fn.inputs?.length ?? 0) === argLength,
-	);
+	const exact = matches.find((fn) => (fn.inputs?.length ?? 0) === argLength);
 	if (exact) return exact.inputs ?? [];
 
 	const withOptions = matches.find(
@@ -99,7 +93,11 @@ export const estimateGas = <
 		const functionLabel = String(methodName);
 		const inputArgs = (args ?? []) as readonly unknown[];
 
-		const inputs = findFunctionInputs(abiItems, functionLabel, inputArgs.length);
+		const inputs = findFunctionInputs(
+			abiItems,
+			functionLabel,
+			inputArgs.length,
+		);
 		if (!inputs) {
 			return yield* Effect.fail(
 				new ContractCallError(
@@ -111,8 +109,7 @@ export const estimateGas = <
 
 		const inputCount = inputs.length;
 		const lastArg = inputArgs[inputArgs.length - 1];
-		const hasOptions =
-			isWriteOptions(lastArg) && inputArgs.length > inputCount;
+		const hasOptions = isWriteOptions(lastArg) && inputArgs.length > inputCount;
 
 		const callArgs = hasOptions ? inputArgs.slice(0, -1) : inputArgs;
 		const options = hasOptions ? (lastArg as WriteOptions) : undefined;

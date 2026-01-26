@@ -26,14 +26,18 @@ export const AddEthereumChainRequest = (chainParams: {
 
 export const WatchAssetRequest = (asset: {
 	type: string;
-	options: { address: string; symbol: string; decimals: number; image?: string };
+	options: {
+		address: string;
+		symbol: string;
+		decimals: number;
+		image?: string;
+	};
 }) => makeRequest("wallet_watchAsset", [asset]);
 
 export const RequestPermissionsRequest = (permissions: unknown[]) =>
 	makeRequest("wallet_requestPermissions", permissions);
 
-export const GetPermissionsRequest = () =>
-	makeRequest("wallet_getPermissions");
+export const GetPermissionsRequest = () => makeRequest("wallet_getPermissions");
 
 export const RevokePermissionsRequest = (permissions: unknown[]) =>
 	makeRequest("wallet_revokePermissions", permissions);

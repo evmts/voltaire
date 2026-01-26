@@ -61,10 +61,10 @@
 
 export { Bytes } from "./Bytes.js";
 export { Compressed } from "./Compressed.js";
+export { equals } from "./equals.js";
 export { Hex } from "./Hex.js";
 export { isCompressed } from "./isCompressed.js";
 export { isValid } from "./isValid.js";
-export { equals } from "./equals.js";
 export { toAddress } from "./toAddress.js";
 export { toBytes } from "./toBytes.js";
 export { verify } from "./verify.js";

@@ -4,7 +4,7 @@
  * @since 0.1.0
  */
 
-import { BrandedInt64 } from "@tevm/voltaire";
+import type { BrandedInt64 } from "@tevm/voltaire";
 
 /**
  * Branded type representing a signed 64-bit integer.

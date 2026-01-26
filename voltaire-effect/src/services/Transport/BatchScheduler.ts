@@ -99,7 +99,9 @@ export interface BatchScheduler {
  * ```
  */
 export const createBatchScheduler = <E extends Error>(
-	send: (requests: JsonRpcRequest[]) => Effect.Effect<JsonRpcBatchResponse[], E>,
+	send: (
+		requests: JsonRpcRequest[],
+	) => Effect.Effect<JsonRpcBatchResponse[], E>,
 	options: BatchOptions = {},
 ): Effect.Effect<BatchScheduler, never, Scope.Scope> =>
 	Effect.gen(function* () {
@@ -108,10 +110,17 @@ export const createBatchScheduler = <E extends Error>(
 
 		const pendingQueue = yield* Queue.unbounded<PendingRequest>();
 		const flushingRef = yield* Ref.make(false);
-		const flushFiberRef = yield* Ref.make<Option.Option<Fiber.RuntimeFiber<void, never>>>(Option.none());
+		const flushFiberRef = yield* Ref.make<
+			Option.Option<Fiber.RuntimeFiber<void, never>>
+		>(Option.none());
 
-		const failBatch = (batch: readonly PendingRequest[], error: Error): Effect.Effect<void> =>
-			Effect.forEach(batch, (req) => Deferred.fail(req.deferred, error), { discard: true });
+		const failBatch = (
+			batch: readonly PendingRequest[],
+			error: Error,
+		): Effect.Effect<void> =>
+			Effect.forEach(batch, (req) => Deferred.fail(req.deferred, error), {
+				discard: true,
+			});
 
 		const completeBatch = (
 			batch: readonly PendingRequest[],
@@ -142,7 +151,9 @@ export const createBatchScheduler = <E extends Error>(
 				}
 			});
 
-		const processBatch = (batch: readonly PendingRequest[]): Effect.Effect<void> =>
+		const processBatch = (
+			batch: readonly PendingRequest[],
+		): Effect.Effect<void> =>
 			Effect.uninterruptibleMask((restore) =>
 				Effect.gen(function* () {
 					const requests = batch.map((p) => ({
@@ -151,9 +162,7 @@ export const createBatchScheduler = <E extends Error>(
 						params: p.params,
 					}));
 
-					const result = yield* restore(send(requests)).pipe(
-						Effect.either,
-					);
+					const result = yield* restore(send(requests)).pipe(Effect.either);
 
 					if (result._tag === "Left") {
 						const error =
@@ -165,13 +174,15 @@ export const createBatchScheduler = <E extends Error>(
 						yield* completeBatch(batch, result.right);
 					}
 				}).pipe(
-					Effect.onInterrupt(() => failBatch(batch, new Error("Batch send interrupted"))),
+					Effect.onInterrupt(() =>
+						failBatch(batch, new Error("Batch send interrupted")),
+					),
 				),
 			);
 
 		const flush: Effect.Effect<void> = Effect.gen(function* () {
 			const acquired = yield* Ref.modify(flushingRef, (b) =>
-				b ? [false, true] as const : [true, true] as const,
+				b ? ([false, true] as const) : ([true, true] as const),
 			);
 			if (!acquired) return;
 
@@ -236,7 +247,10 @@ export const createBatchScheduler = <E extends Error>(
 				yield* Queue.shutdown(pendingQueue);
 
 				for (const req of Chunk.toReadonlyArray(remaining)) {
-					yield* Deferred.fail(req.deferred, new Error("BatchScheduler shutdown"));
+					yield* Deferred.fail(
+						req.deferred,
+						new Error("BatchScheduler shutdown"),
+					);
 				}
 
 				const fiber = yield* Ref.get(flushFiberRef);
@@ -247,14 +261,20 @@ export const createBatchScheduler = <E extends Error>(
 		);
 
 		return {
-			schedule: <T>(method: string, params?: unknown[]): Effect.Effect<T, Error> =>
+			schedule: <T>(
+				method: string,
+				params?: unknown[],
+			): Effect.Effect<T, Error> =>
 				Effect.gen(function* () {
 					const id = yield* nextId;
 					const deferred = yield* Deferred.make<unknown, Error>();
 
-					const offered = yield* Queue.offer(pendingQueue, { id, method, params, deferred }).pipe(
-						Effect.either,
-					);
+					const offered = yield* Queue.offer(pendingQueue, {
+						id,
+						method,
+						params,
+						deferred,
+					}).pipe(Effect.either);
 
 					if (offered._tag === "Left") {
 						return yield* Effect.fail(new Error("BatchScheduler is shutdown"));

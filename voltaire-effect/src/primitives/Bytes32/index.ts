@@ -48,9 +48,9 @@
 
 import type { Bytes32Type as _Bytes32Type } from "@tevm/voltaire/Bytes";
 
+export { Bytes } from "./Bytes.js";
 // Schemas
 export { Hex } from "./Hex.js";
-export { Bytes } from "./Bytes.js";
 
 /**
  * Type for 32-byte data as branded Uint8Array.

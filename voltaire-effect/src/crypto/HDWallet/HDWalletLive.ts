@@ -4,29 +4,23 @@
  * @since 0.0.1
  */
 
+import { HDWallet } from "@tevm/voltaire/native";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { wordsToMnemonic } from "../Bip39/utils.js";
-import { type HDNode, type HDPath, HDWalletService } from "./HDWalletService.js";
 import {
 	HardenedDerivationError,
 	InvalidPathError,
 	InvalidSeedError,
 	mapToHDWalletError,
 } from "./errors.js";
+import {
+	type HDNode,
+	type HDPath,
+	HDWalletService,
+} from "./HDWalletService.js";
 
-import type { HDWallet as HDWalletApi } from "@tevm/voltaire/native";
-
-type HDWalletModule = { HDWallet: HDWalletApi };
-
-let hdWalletModulePromise: Promise<HDWalletModule> | undefined;
-
-const loadHdWallet = (): Promise<HDWalletModule> => {
-	if (!hdWalletModulePromise) {
-		hdWalletModulePromise = import("@tevm/voltaire/native");
-	}
-	return hdWalletModulePromise;
-};
+type HDWalletApi = typeof HDWallet;
 
 const HARDENED_OFFSET = 0x80000000;
 const MAX_NORMAL_INDEX = 0x7fffffff;
@@ -55,7 +49,9 @@ const normalizePath = (
 			});
 		}
 		const components = path.split("/").slice(1);
-		const indices = components.map((component) => HDWallet.parseIndex(component));
+		const indices = components.map((component) =>
+			HDWallet.parseIndex(component),
+		);
 		return { pathString: path, indices };
 	}
 
@@ -96,7 +92,8 @@ const normalizePath = (
  *
  * @example
  * ```typescript
- * import { HDWalletService, HDWalletLive, generateMnemonic } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletService, generateMnemonic } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletLive } from 'voltaire-effect/native'
  * import * as Effect from 'effect/Effect'
  *
  * const program = Effect.gen(function* () {
@@ -111,11 +108,6 @@ const normalizePath = (
 export const HDWalletLive = Layer.effect(
 	HDWalletService,
 	Effect.gen(function* () {
-		const { HDWallet } = yield* Effect.tryPromise({
-			try: () => loadHdWallet(),
-			catch: (error) => mapToHDWalletError(error, {}),
-		});
-
 		return {
 			derive: (node, path) =>
 				Effect.try({

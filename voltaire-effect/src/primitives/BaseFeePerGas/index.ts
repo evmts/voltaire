@@ -42,6 +42,6 @@
  * @since 0.1.0
  */
 
-export { BigInt, type BaseFeePerGasType } from "./BigInt.js";
+export { type BaseFeePerGasType, BigInt } from "./BigInt.js";
 export { Gwei } from "./Gwei.js";
 export { toGwei } from "./toGwei.js";

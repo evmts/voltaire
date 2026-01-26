@@ -1,7 +1,7 @@
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
-import * as Int128 from "./index.js";
 import { BrandedInt128 } from "@tevm/voltaire";
+import * as S from "effect/Schema";
+import * as Int128 from "./index.js";
 
 const INT128_MIN = -(2n ** 127n);
 const INT128_MAX = 2n ** 127n - 1n;
@@ -30,13 +30,21 @@ describe("Int128", () => {
 
 	describe("Schema: Int128.String", () => {
 		it("decodes valid positive string", () => {
-			const value = S.decodeSync(Int128.String)("170141183460469231731687303715884105727");
-			expect(S.encodeSync(Int128.String)(value)).toBe("170141183460469231731687303715884105727");
+			const value = S.decodeSync(Int128.String)(
+				"170141183460469231731687303715884105727",
+			);
+			expect(S.encodeSync(Int128.String)(value)).toBe(
+				"170141183460469231731687303715884105727",
+			);
 		});
 
 		it("decodes valid negative string", () => {
-			const value = S.decodeSync(Int128.String)("-170141183460469231731687303715884105728");
-			expect(S.encodeSync(Int128.String)(value)).toBe("-170141183460469231731687303715884105728");
+			const value = S.decodeSync(Int128.String)(
+				"-170141183460469231731687303715884105728",
+			);
+			expect(S.encodeSync(Int128.String)(value)).toBe(
+				"-170141183460469231731687303715884105728",
+			);
 		});
 
 		it("decodes zero string", () => {
@@ -47,13 +55,21 @@ describe("Int128", () => {
 
 	describe("Schema: Int128.BigInt", () => {
 		it("decodes valid positive bigint", () => {
-			const value = S.decodeSync(Int128.BigInt)(1000000000000000000000000000000n);
-			expect(S.encodeSync(Int128.BigInt)(value)).toBe(1000000000000000000000000000000n);
+			const value = S.decodeSync(Int128.BigInt)(
+				1000000000000000000000000000000n,
+			);
+			expect(S.encodeSync(Int128.BigInt)(value)).toBe(
+				1000000000000000000000000000000n,
+			);
 		});
 
 		it("decodes valid negative bigint", () => {
-			const value = S.decodeSync(Int128.BigInt)(-1000000000000000000000000000000n);
-			expect(S.encodeSync(Int128.BigInt)(value)).toBe(-1000000000000000000000000000000n);
+			const value = S.decodeSync(Int128.BigInt)(
+				-1000000000000000000000000000000n,
+			);
+			expect(S.encodeSync(Int128.BigInt)(value)).toBe(
+				-1000000000000000000000000000000n,
+			);
 		});
 
 		it("decodes zero bigint", () => {
@@ -85,21 +101,27 @@ describe("Int128", () => {
 			const a = S.decodeSync(Int128.BigInt)(1000000000000000000000000000000n);
 			const b = S.decodeSync(Int128.BigInt)(500000000000000000000000000000n);
 			const result = BrandedInt128.plus(a, b);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(1500000000000000000000000000000n);
+			expect(S.encodeSync(Int128.BigInt)(result)).toBe(
+				1500000000000000000000000000000n,
+			);
 		});
 
 		it("adds positive and negative", () => {
 			const a = S.decodeSync(Int128.BigInt)(1000000000000000000000000000000n);
 			const b = S.decodeSync(Int128.BigInt)(-500000000000000000000000000000n);
 			const result = BrandedInt128.plus(a, b);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(500000000000000000000000000000n);
+			expect(S.encodeSync(Int128.BigInt)(result)).toBe(
+				500000000000000000000000000000n,
+			);
 		});
 
 		it("adds two negative values", () => {
 			const a = S.decodeSync(Int128.BigInt)(-1000000000000000000000000000000n);
 			const b = S.decodeSync(Int128.BigInt)(-500000000000000000000000000000n);
 			const result = BrandedInt128.plus(a, b);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(-1500000000000000000000000000000n);
+			expect(S.encodeSync(Int128.BigInt)(result)).toBe(
+				-1500000000000000000000000000000n,
+			);
 		});
 
 		it("wraps on overflow", () => {
@@ -122,14 +144,18 @@ describe("Int128", () => {
 			const a = S.decodeSync(Int128.BigInt)(1000000000000000000000000000000n);
 			const b = S.decodeSync(Int128.BigInt)(500000000000000000000000000000n);
 			const result = Int128.sub(a, b);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(500000000000000000000000000000n);
+			expect(S.encodeSync(Int128.BigInt)(result)).toBe(
+				500000000000000000000000000000n,
+			);
 		});
 
 		it("subtracts negative (adds)", () => {
 			const a = S.decodeSync(Int128.BigInt)(1000000000000000000000000000000n);
 			const b = S.decodeSync(Int128.BigInt)(-500000000000000000000000000000n);
 			const result = Int128.sub(a, b);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(1500000000000000000000000000000n);
+			expect(S.encodeSync(Int128.BigInt)(result)).toBe(
+				1500000000000000000000000000000n,
+			);
 		});
 
 		it("wraps on underflow", () => {
@@ -145,14 +171,18 @@ describe("Int128", () => {
 			const a = S.decodeSync(Int128.BigInt)(1000000000000000n);
 			const b = S.decodeSync(Int128.BigInt)(1000000000000000n);
 			const result = Int128.mul(a, b);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(1000000000000000000000000000000n);
+			expect(S.encodeSync(Int128.BigInt)(result)).toBe(
+				1000000000000000000000000000000n,
+			);
 		});
 
 		it("multiplies positive and negative", () => {
 			const a = S.decodeSync(Int128.BigInt)(1000000000000000n);
 			const b = S.decodeSync(Int128.BigInt)(-1000000000000000n);
 			const result = Int128.mul(a, b);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(-1000000000000000000000000000000n);
+			expect(S.encodeSync(Int128.BigInt)(result)).toBe(
+				-1000000000000000000000000000000n,
+			);
 		});
 
 		it("multiplies by zero", () => {
@@ -166,7 +196,9 @@ describe("Int128", () => {
 			const a = S.decodeSync(Int128.BigInt)(1000000000000000000000000000000n);
 			const one = S.decodeSync(Int128.BigInt)(1n);
 			const result = Int128.mul(a, one);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(1000000000000000000000000000000n);
+			expect(S.encodeSync(Int128.BigInt)(result)).toBe(
+				1000000000000000000000000000000n,
+			);
 		});
 	});
 
@@ -204,13 +236,17 @@ describe("Int128", () => {
 		it("negates positive value", () => {
 			const a = S.decodeSync(Int128.BigInt)(1000000000000000000000000000000n);
 			const result = Int128.negate(a);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(-1000000000000000000000000000000n);
+			expect(S.encodeSync(Int128.BigInt)(result)).toBe(
+				-1000000000000000000000000000000n,
+			);
 		});
 
 		it("negates negative value", () => {
 			const a = S.decodeSync(Int128.BigInt)(-1000000000000000000000000000000n);
 			const result = Int128.negate(a);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(1000000000000000000000000000000n);
+			expect(S.encodeSync(Int128.BigInt)(result)).toBe(
+				1000000000000000000000000000000n,
+			);
 		});
 
 		it("negates zero", () => {
@@ -230,13 +266,17 @@ describe("Int128", () => {
 		it("abs of positive value", () => {
 			const a = S.decodeSync(Int128.BigInt)(1000000000000000000000000000000n);
 			const result = Int128.abs(a);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(1000000000000000000000000000000n);
+			expect(S.encodeSync(Int128.BigInt)(result)).toBe(
+				1000000000000000000000000000000n,
+			);
 		});
 
 		it("abs of negative value", () => {
 			const a = S.decodeSync(Int128.BigInt)(-1000000000000000000000000000000n);
 			const result = Int128.abs(a);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(1000000000000000000000000000000n);
+			expect(S.encodeSync(Int128.BigInt)(result)).toBe(
+				1000000000000000000000000000000n,
+			);
 		});
 
 		it("abs of zero", () => {

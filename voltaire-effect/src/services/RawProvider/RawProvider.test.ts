@@ -1,8 +1,11 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
-import { TransportError, TransportService } from "../Transport/TransportService.js";
+import {
+	TransportError,
+	TransportService,
+} from "../Transport/TransportService.js";
 import { RawProviderService } from "./RawProviderService.js";
 import { RawProviderTransport } from "./RawProviderTransport.js";
 
@@ -30,7 +33,7 @@ describe("RawProvider", () => {
 				);
 
 				expect(result).toBe("0x2a");
-			})
+			}),
 		);
 
 		it.effect("propagates RPC errors", () =>
@@ -62,7 +65,7 @@ describe("RawProvider", () => {
 					expect(error).toBeInstanceOf(TransportError);
 					expect((error as TransportError).code).toBe(4200);
 				}
-			})
+			}),
 		);
 
 		it.effect("passes params correctly", () =>
@@ -90,14 +93,14 @@ describe("RawProvider", () => {
 
 				expect(capturedMethod).toBe("eth_getBalance");
 				expect(capturedParams).toEqual(["0x1234", "latest"]);
-			})
+			}),
 		);
 
 		it.effect("handles empty params array", () =>
 			Effect.gen(function* () {
 				let capturedParams: unknown[] | undefined;
 				const mockTransport = Layer.succeed(TransportService, {
-					request: <T>(method: string, params?: unknown[]) => {
+					request: <T>(_method: string, params?: unknown[]) => {
 						capturedParams = params;
 						return Effect.succeed("0x1" as T);
 					},
@@ -112,14 +115,14 @@ describe("RawProvider", () => {
 				);
 
 				expect(capturedParams).toEqual([]);
-			})
+			}),
 		);
 
 		it.effect("handles undefined params", () =>
 			Effect.gen(function* () {
 				let capturedParams: unknown[] | undefined;
 				const mockTransport = Layer.succeed(TransportService, {
-					request: <T>(method: string, params?: unknown[]) => {
+					request: <T>(_method: string, params?: unknown[]) => {
 						capturedParams = params;
 						return Effect.succeed("0x1" as T);
 					},
@@ -134,7 +137,7 @@ describe("RawProvider", () => {
 				);
 
 				expect(capturedParams).toBeUndefined();
-			})
+			}),
 		);
 
 		it.effect("handles complex response objects", () =>
@@ -153,14 +156,17 @@ describe("RawProvider", () => {
 
 				const result = yield* Effect.gen(function* () {
 					const raw = yield* RawProviderService;
-					return yield* raw.request({ method: "eth_getBlockByNumber", params: ["0x10", true] });
+					return yield* raw.request({
+						method: "eth_getBlockByNumber",
+						params: ["0x10", true],
+					});
 				}).pipe(
 					Effect.provide(RawProviderTransport),
 					Effect.provide(mockTransport),
 				);
 
 				expect(result).toEqual(mockBlock);
-			})
+			}),
 		);
 
 		it.effect("handles null responses", () =>
@@ -173,14 +179,17 @@ describe("RawProvider", () => {
 
 				const result = yield* Effect.gen(function* () {
 					const raw = yield* RawProviderService;
-					return yield* raw.request({ method: "eth_getTransactionReceipt", params: ["0xabc"] });
+					return yield* raw.request({
+						method: "eth_getTransactionReceipt",
+						params: ["0xabc"],
+					});
 				}).pipe(
 					Effect.provide(RawProviderTransport),
 					Effect.provide(mockTransport),
 				);
 
 				expect(result).toBeNull();
-			})
+			}),
 		);
 
 		it.effect("handles array responses", () =>
@@ -201,7 +210,7 @@ describe("RawProvider", () => {
 				);
 
 				expect(result).toEqual(accounts);
-			})
+			}),
 		);
 
 		it.effect("propagates error code from transport", () =>
@@ -229,7 +238,7 @@ describe("RawProvider", () => {
 					const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
 					expect((error as TransportError).code).toBe(-32603);
 				}
-			})
+			}),
 		);
 
 		it("propagates error data from transport", async () => {
@@ -237,7 +246,11 @@ describe("RawProvider", () => {
 			const mockTransport = Layer.succeed(TransportService, {
 				request: <T>(_method: string, _params?: unknown[]) => {
 					return Effect.fail(
-						new TransportError({ code: -32000, message: "reverted", data: errorData }),
+						new TransportError({
+							code: -32000,
+							message: "reverted",
+							data: errorData,
+						}),
 					) as Effect.Effect<T, TransportError>;
 				},
 			});
@@ -288,7 +301,7 @@ describe("RawProvider", () => {
 				expect(callCount).toBe(2);
 				expect(result.blockNum).toBe("0x100");
 				expect(result.chainId).toBe("0x1");
-			})
+			}),
 		);
 	});
 
@@ -310,7 +323,7 @@ describe("RawProvider", () => {
 				);
 
 				expect(result).toEqual({ foo: "bar" });
-			})
+			}),
 		);
 	});
 
@@ -340,7 +353,7 @@ describe("RawProvider", () => {
 					const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
 					expect((error as TransportError).code).toBe(-32601);
 				}
-			})
+			}),
 		);
 
 		it.effect("handles invalid params error", () =>
@@ -356,7 +369,10 @@ describe("RawProvider", () => {
 				const exit = yield* Effect.exit(
 					Effect.gen(function* () {
 						const raw = yield* RawProviderService;
-						return yield* raw.request({ method: "eth_getBalance", params: ["invalid"] });
+						return yield* raw.request({
+							method: "eth_getBalance",
+							params: ["invalid"],
+						});
 					}).pipe(
 						Effect.provide(RawProviderTransport),
 						Effect.provide(mockTransport),
@@ -368,15 +384,20 @@ describe("RawProvider", () => {
 					const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
 					expect((error as TransportError).code).toBe(-32602);
 				}
-			})
+			}),
 		);
 
 		it("handles execution reverted error", async () => {
-			const revertData = "0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000094e6f7420656e6f756768000000000000000000000000000000000000000000";
+			const revertData =
+				"0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000094e6f7420656e6f756768000000000000000000000000000000000000000000";
 			const mockTransport = Layer.succeed(TransportService, {
 				request: <T>(_method: string, _params?: unknown[]) => {
 					return Effect.fail(
-						new TransportError({ code: -32000, message: "execution reverted", data: revertData }),
+						new TransportError({
+							code: -32000,
+							message: "execution reverted",
+							data: revertData,
+						}),
 					) as Effect.Effect<T, TransportError>;
 				},
 			});
@@ -404,7 +425,10 @@ describe("RawProvider", () => {
 				const mockTransport = Layer.succeed(TransportService, {
 					request: <T>(_method: string, _params?: unknown[]) => {
 						return Effect.fail(
-							new TransportError({ code: -32005, message: "Rate limit exceeded" }),
+							new TransportError({
+								code: -32005,
+								message: "Rate limit exceeded",
+							}),
 						) as Effect.Effect<T, TransportError>;
 					},
 				});
@@ -424,7 +448,7 @@ describe("RawProvider", () => {
 					const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
 					expect((error as TransportError).code).toBe(-32005);
 				}
-			})
+			}),
 		);
 	});
 });

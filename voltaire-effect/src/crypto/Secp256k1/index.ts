@@ -44,6 +44,15 @@
  * @since 0.0.1
  */
 
+export {
+	InvalidPrivateKeyError,
+	InvalidPublicKeyError,
+	InvalidRecoveryIdError,
+	InvalidSignatureError,
+	mapToSecp256k1Error,
+	Secp256k1Error,
+	type Secp256k1Errors,
+} from "./errors.js";
 export { recover } from "./recover.js";
 export { Secp256k1Live } from "./Secp256k1Live.js";
 export {
@@ -54,12 +63,3 @@ export {
 export { Secp256k1Test } from "./Secp256k1Test.js";
 export { sign } from "./sign.js";
 export { verify } from "./verify.js";
-export {
-	InvalidPrivateKeyError,
-	InvalidPublicKeyError,
-	InvalidRecoveryIdError,
-	InvalidSignatureError,
-	Secp256k1Error,
-	mapToSecp256k1Error,
-	type Secp256k1Errors,
-} from "./errors.js";

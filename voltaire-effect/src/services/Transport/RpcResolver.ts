@@ -13,32 +13,32 @@
  */
 
 import * as Effect from "effect/Effect";
-import { TransportError } from "./TransportError.js";
-import { TransportService } from "./TransportService.js";
 import {
-	type RpcRequest,
-	toJsonRpc,
+	type BlockTag,
+	Call,
+	type CallParams,
+	EstimateGas,
+	GenericRpcRequest,
+	GetBalance,
+	GetBlockByHash,
+	GetBlockByNumber,
 	GetBlockNumber,
 	GetChainId,
-	GetGasPrice,
-	GetBalance,
-	GetTransactionCount,
 	GetCode,
-	GetStorageAt,
-	Call,
-	EstimateGas,
-	GetBlockByNumber,
-	GetBlockByHash,
-	GetTransactionByHash,
-	GetTransactionReceipt,
-	GetLogs,
-	SendRawTransaction,
 	GetFeeHistory,
-	GenericRpcRequest,
-	type CallParams,
+	GetGasPrice,
+	GetLogs,
+	GetStorageAt,
+	GetTransactionByHash,
+	GetTransactionCount,
+	GetTransactionReceipt,
 	type LogFilter,
-	type BlockTag,
+	type RpcRequest,
+	SendRawTransaction,
+	toJsonRpc,
 } from "./RpcRequest.js";
+import type { TransportError } from "./TransportError.js";
+import { TransportService } from "./TransportService.js";
 
 /**
  * Make an RPC request using the transport service.
@@ -125,8 +125,11 @@ export const rpc = {
 		rpcRequest<string>(new GetCode({ address, blockTag })),
 
 	/** Get storage at a slot */
-	getStorageAt: (address: string, slot: string, blockTag: BlockTag = "latest") =>
-		rpcRequest<string>(new GetStorageAt({ address, slot, blockTag })),
+	getStorageAt: (
+		address: string,
+		slot: string,
+		blockTag: BlockTag = "latest",
+	) => rpcRequest<string>(new GetStorageAt({ address, slot, blockTag })),
 
 	/** Call a contract */
 	call: (params: CallParams, blockTag: BlockTag = "latest") =>
@@ -137,8 +140,13 @@ export const rpc = {
 		rpcRequest<string>(new EstimateGas({ params, blockTag })),
 
 	/** Get block by number */
-	getBlockByNumber: (blockTag: BlockTag = "latest", includeTransactions = false) =>
-		rpcRequest<unknown>(new GetBlockByNumber({ blockTag, includeTransactions })),
+	getBlockByNumber: (
+		blockTag: BlockTag = "latest",
+		includeTransactions = false,
+	) =>
+		rpcRequest<unknown>(
+			new GetBlockByNumber({ blockTag, includeTransactions }),
+		),
 
 	/** Get block by hash */
 	getBlockByHash: (blockHash: string, includeTransactions = false) =>
@@ -166,7 +174,9 @@ export const rpc = {
 		newestBlock: BlockTag = "latest",
 		rewardPercentiles: number[] = [],
 	) =>
-		rpcRequest<unknown>(new GetFeeHistory({ blockCount, newestBlock, rewardPercentiles })),
+		rpcRequest<unknown>(
+			new GetFeeHistory({ blockCount, newestBlock, rewardPercentiles }),
+		),
 
 	/** Generic RPC request */
 	generic: <T = unknown>(method: string, params: readonly unknown[] = []) =>

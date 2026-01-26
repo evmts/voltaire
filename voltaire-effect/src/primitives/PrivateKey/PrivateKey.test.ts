@@ -1,8 +1,8 @@
+import { describe, expect, it } from "@effect/vitest";
+import { PrivateKey as CorePrivateKey } from "@tevm/voltaire/PrivateKey";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
-import { describe, expect, it } from "@effect/vitest";
-import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
-import { PrivateKey as CorePrivateKey } from "@tevm/voltaire/PrivateKey";
 import * as PrivateKey from "./index.js";
 
 const validHex = `0x${"ab".repeat(32)}`;
@@ -338,7 +338,9 @@ describe("cryptographic operations", () => {
 
 		it("signature fails verification with wrong public key", () => {
 			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
-			const otherPk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(2));
+			const otherPk = S.decodeSync(PrivateKey.Bytes)(
+				new Uint8Array(32).fill(2),
+			);
 			const otherPublicKey = Secp256k1.derivePublicKey(otherPk);
 			const signature = Secp256k1.sign(messageHash, pk);
 			const isValid = Secp256k1.verify(signature, messageHash, otherPublicKey);
@@ -352,7 +354,10 @@ describe("cryptographic operations", () => {
 			const publicKey = Secp256k1.derivePublicKey(pk);
 			const messageHash = new Uint8Array(32).fill(0x42);
 			const signature = Secp256k1.sign(messageHash, pk);
-			const recoveredPubKey = Secp256k1.recoverPublicKey(signature, messageHash);
+			const recoveredPubKey = Secp256k1.recoverPublicKey(
+				signature,
+				messageHash,
+			);
 			expect([...recoveredPubKey]).toEqual([...publicKey]);
 		});
 	});

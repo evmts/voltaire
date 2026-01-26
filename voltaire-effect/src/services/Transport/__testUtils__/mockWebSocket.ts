@@ -8,7 +8,10 @@ export type MockWebSocketOptions = {
 	autoOpen?: boolean | ((index: number) => boolean);
 	getReadyState?: (index: number) => number;
 	onSend?: (socket: MockWebSocket, data: string | Uint8Array) => void;
-	onClose?: (socket: MockWebSocket, event: { code: number; reason: string }) => void;
+	onClose?: (
+		socket: MockWebSocket,
+		event: { code: number; reason: string },
+	) => void;
 	onError?: (socket: MockWebSocket, event: unknown) => void;
 };
 
@@ -45,13 +48,17 @@ export class MockWebSocket {
 		const autoOpen =
 			typeof options.autoOpen === "function"
 				? options.autoOpen(index)
-				: options.autoOpen ?? true;
+				: (options.autoOpen ?? true);
 		if (autoOpen) {
 			queueMicrotask(() => this.emitOpen());
 		}
 	}
 
-	addEventListener(type: string, handler: (event: any) => void, options?: { once?: boolean }) {
+	addEventListener(
+		type: string,
+		handler: (event: any) => void,
+		options?: { once?: boolean },
+	) {
 		const entry: Listener = { handler, once: options?.once ?? false };
 		const listeners = this.listeners.get(type) ?? new Set<Listener>();
 		listeners.add(entry);

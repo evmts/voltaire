@@ -78,15 +78,12 @@ export const BlockSchema: Schema.Schema<BlockType> = Schema.declare(
 		const block = input as Record<string, unknown>;
 
 		const isObject = (value: unknown): value is Record<string, unknown> =>
-			typeof value === "object" &&
-			value !== null &&
-			!Array.isArray(value);
+			typeof value === "object" && value !== null && !Array.isArray(value);
 
 		// Check top-level structure
 		if (!("header" in block) || !isObject(block.header)) return false;
 		if (!("body" in block) || !isObject(block.body)) return false;
-		if (!("hash" in block) || !(block.hash instanceof Uint8Array))
-			return false;
+		if (!("hash" in block) || !(block.hash instanceof Uint8Array)) return false;
 		if (block.hash.length !== 32) return false;
 		if (!("size" in block) || typeof block.size !== "bigint") return false;
 

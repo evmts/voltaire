@@ -1,17 +1,26 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
+import {
+	ProviderError,
+	ProviderService,
+	type ProviderShape,
+} from "../Provider/ProviderService.js";
+import {
+	DefaultFeeEstimator,
+	makeFeeEstimator,
+} from "./DefaultFeeEstimator.js";
 import {
 	FeeEstimationError,
 	FeeEstimatorService,
 	type FeeValuesEIP1559,
 	type FeeValuesLegacy,
 } from "./FeeEstimatorService.js";
-import { DefaultFeeEstimator, makeFeeEstimator } from "./DefaultFeeEstimator.js";
-import { ProviderService, ProviderError, type ProviderShape } from "../Provider/ProviderService.js";
 
-const createMockProvider = (overrides: Partial<ProviderShape> = {}): ProviderShape => ({
+const createMockProvider = (
+	overrides: Partial<ProviderShape> = {},
+): ProviderShape => ({
 	getBlockNumber: () => Effect.succeed(18000000n),
 	getBlock: () =>
 		Effect.succeed({
@@ -63,8 +72,8 @@ const createMockProvider = (overrides: Partial<ProviderShape> = {}): ProviderSha
 			baseFeePerGas: ["0x3b9aca00"],
 			gasUsedRatio: [0.5],
 		}),
-	watchBlocks: () => ({} as any),
-	backfillBlocks: () => ({} as any),
+	watchBlocks: () => ({}) as any,
+	backfillBlocks: () => ({}) as any,
 	...overrides,
 });
 
@@ -72,9 +81,16 @@ const MULTIPLIER_PRECISION = 100n;
 const MULTIPLIER_PRECISION_NUMBER = 100;
 const MAX_REASONABLE_GAS_PRICE_WEI = 1_000_000_000_000_000_000n;
 
-const applyBaseFeeMultiplier = (baseFee: bigint, multiplier: number): bigint => {
-	const numerator = BigInt(Math.round(multiplier * MULTIPLIER_PRECISION_NUMBER));
-	return (baseFee * numerator + MULTIPLIER_PRECISION - 1n) / MULTIPLIER_PRECISION;
+const applyBaseFeeMultiplier = (
+	baseFee: bigint,
+	multiplier: number,
+): bigint => {
+	const numerator = BigInt(
+		Math.round(multiplier * MULTIPLIER_PRECISION_NUMBER),
+	);
+	return (
+		(baseFee * numerator + MULTIPLIER_PRECISION - 1n) / MULTIPLIER_PRECISION
+	);
 };
 
 describe("FeeEstimatorService", () => {
@@ -109,7 +125,7 @@ describe("FeeEstimatorService", () => {
 
 				const program = Effect.gen(function* () {
 					const feeEstimator = yield* FeeEstimatorService;
-					const provider = yield* ProviderService;
+					const _provider = yield* ProviderService;
 					return yield* feeEstimator.estimateFeesPerGas("legacy");
 				}).pipe(
 					Effect.provide(TestFeeEstimatorLayer),
@@ -162,7 +178,7 @@ describe("FeeEstimatorService", () => {
 
 				const program = Effect.gen(function* () {
 					const feeEstimator = yield* FeeEstimatorService;
-					const provider = yield* ProviderService;
+					const _provider = yield* ProviderService;
 					return yield* feeEstimator.estimateFeesPerGas("legacy");
 				}).pipe(
 					Effect.provide(TestFeeEstimatorLayer),
@@ -203,7 +219,9 @@ describe("FeeEstimatorService", () => {
 				expect(Exit.isFailure(exit)).toBe(true);
 				if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
 					expect(exit.cause.error._tag).toBe("FeeEstimationError");
-					expect(exit.cause.error.message).toContain("Failed to get latest block");
+					expect(exit.cause.error.message).toContain(
+						"Failed to get latest block",
+					);
 				}
 			});
 
@@ -230,7 +248,9 @@ describe("FeeEstimatorService", () => {
 				expect(Exit.isFailure(exit)).toBe(true);
 				if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
 					expect(exit.cause.error._tag).toBe("FeeEstimationError");
-					expect(exit.cause.error.message).toContain("Failed to get max priority fee");
+					expect(exit.cause.error.message).toContain(
+						"Failed to get max priority fee",
+					);
 				}
 			});
 
@@ -269,7 +289,7 @@ describe("FeeEstimatorService", () => {
 
 				const program = Effect.gen(function* () {
 					const feeEstimator = yield* FeeEstimatorService;
-					const provider = yield* ProviderService;
+					const _provider = yield* ProviderService;
 					return yield* feeEstimator.estimateFeesPerGas("eip1559");
 				}).pipe(
 					Effect.provide(TestFeeEstimatorLayer),
@@ -280,7 +300,9 @@ describe("FeeEstimatorService", () => {
 				expect(typeof result.maxFeePerGas).toBe("bigint");
 				expect(typeof result.maxPriorityFeePerGas).toBe("bigint");
 				expect(result.maxPriorityFeePerGas).toBe(1500000000n);
-				expect(result.maxFeePerGas).toBeGreaterThan(result.maxPriorityFeePerGas);
+				expect(result.maxFeePerGas).toBeGreaterThan(
+					result.maxPriorityFeePerGas,
+				);
 			});
 
 			it("applies ceiling rounding to fractional multiplier results", async () => {
@@ -418,7 +440,7 @@ describe("FeeEstimatorService", () => {
 
 				const program = Effect.gen(function* () {
 					const feeEstimator = yield* FeeEstimatorService;
-					const provider = yield* ProviderService;
+					const _provider = yield* ProviderService;
 					return yield* feeEstimator.estimateFeesPerGas("eip1559");
 				}).pipe(
 					Effect.provide(TestFeeEstimatorLayer),
@@ -426,7 +448,8 @@ describe("FeeEstimatorService", () => {
 				);
 
 				const result = (await Effect.runPromise(program)) as FeeValuesEIP1559;
-				const expectedMaxFee = applyBaseFeeMultiplier(baseFee, 1.2) + priorityFee;
+				const expectedMaxFee =
+					applyBaseFeeMultiplier(baseFee, 1.2) + priorityFee;
 				expect(result.maxFeePerGas).toBe(expectedMaxFee);
 			});
 
@@ -568,7 +591,7 @@ describe("FeeEstimatorService", () => {
 
 				const program = Effect.gen(function* () {
 					const feeEstimator = yield* FeeEstimatorService;
-					const provider = yield* ProviderService;
+					const _provider = yield* ProviderService;
 					return yield* feeEstimator.estimateFeesPerGas("eip1559");
 				}).pipe(
 					Effect.provide(TestFeeEstimatorLayer),
@@ -596,7 +619,7 @@ describe("FeeEstimatorService", () => {
 
 				const program = Effect.gen(function* () {
 					const feeEstimator = yield* FeeEstimatorService;
-					const provider = yield* ProviderService;
+					const _provider = yield* ProviderService;
 					return yield* feeEstimator.getMaxPriorityFeePerGas();
 				}).pipe(
 					Effect.provide(TestFeeEstimatorLayer),
@@ -736,7 +759,7 @@ describe("FeeEstimatorService", () => {
 
 			const program = Effect.gen(function* () {
 				const feeEstimator = yield* FeeEstimatorService;
-				const provider = yield* ProviderService;
+				const _provider = yield* ProviderService;
 				return yield* feeEstimator.estimateFeesPerGas("eip1559");
 			}).pipe(
 				Effect.provide(TestFeeEstimatorLayer),

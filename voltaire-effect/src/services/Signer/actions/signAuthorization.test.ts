@@ -1,12 +1,16 @@
-import type { BrandedAddress, BrandedHex, BrandedSignature } from "@tevm/voltaire";
+import { describe, expect, it } from "@effect/vitest";
+import type {
+	BrandedAddress,
+	BrandedHex,
+	BrandedSignature,
+} from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
 import type {
 	AccountShape,
 	SignAuthorizationParams,
 } from "../../Account/AccountService.js";
-import { AccountService, AccountError } from "../../Account/index.js";
+import { AccountError, AccountService } from "../../Account/index.js";
 import { ProviderService, type ProviderShape } from "../../Provider/index.js";
 import { signAuthorization } from "./signAuthorization.js";
 
@@ -19,15 +23,15 @@ const mockSignature = Object.assign(new Uint8Array(65).fill(0x12), {
 	algorithm: "secp256k1" as const,
 	v: 27,
 }) as SignatureType;
-const mockPublicKey = ("0x04" + "00".repeat(64)) as HexType;
+const mockPublicKey = `0x04${"00".repeat(64)}` as HexType;
 
 const mockSignedAuth = {
 	chainId: 1n,
 	address: "0x1234567890123456789012345678901234567890" as `0x${string}`,
 	nonce: 5n,
 	yParity: 0,
-	r: ("0x" + "ab".repeat(32)) as `0x${string}`,
-	s: ("0x" + "cd".repeat(32)) as `0x${string}`,
+	r: `0x${"ab".repeat(32)}` as `0x${string}`,
+	s: `0x${"cd".repeat(32)}` as `0x${string}`,
 };
 
 let capturedAuthorization: SignAuthorizationParams | undefined;
@@ -98,9 +102,7 @@ describe("signAuthorization", () => {
 			contractAddress: "0x1234567890123456789012345678901234567890",
 		});
 
-		const result = await Effect.runPromise(
-			Effect.provide(program, TestLayers),
-		);
+		const result = await Effect.runPromise(Effect.provide(program, TestLayers));
 
 		expect(result.chainId).toBe(1n);
 		expect(result.nonce).toBe(5n);
@@ -118,9 +120,7 @@ describe("signAuthorization", () => {
 			chainId: 137n,
 		});
 
-		const result = await Effect.runPromise(
-			Effect.provide(program, TestLayers),
-		);
+		const result = await Effect.runPromise(Effect.provide(program, TestLayers));
 
 		expect(result.chainId).toBe(137n);
 		expect(capturedAuthorization?.chainId).toBe(137n);
@@ -134,9 +134,7 @@ describe("signAuthorization", () => {
 			nonce: 42n,
 		});
 
-		const result = await Effect.runPromise(
-			Effect.provide(program, TestLayers),
-		);
+		const result = await Effect.runPromise(Effect.provide(program, TestLayers));
 
 		expect(result.nonce).toBe(42n);
 		expect(capturedAuthorization?.nonce).toBe(42n);
@@ -209,8 +207,7 @@ describe("signAuthorization", () => {
 
 		const providerWithError: ProviderShape = {
 			...mockProvider,
-			getChainId: () =>
-				Effect.fail(new ProviderError({}, "Network error")),
+			getChainId: () => Effect.fail(new ProviderError({}, "Network error")),
 		};
 
 		const customLayers = Layer.mergeAll(

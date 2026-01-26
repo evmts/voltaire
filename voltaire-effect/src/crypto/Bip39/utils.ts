@@ -1,4 +1,4 @@
-import { WORD_COUNTS, type MnemonicStrength } from "./types.js";
+import { type MnemonicStrength, WORD_COUNTS } from "./types.js";
 
 /**
  * Splits a BIP-39 mnemonic sentence into words.

@@ -1,11 +1,11 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
+import { TransportError } from "../../Transport/TransportError.js";
 import {
 	TransportService,
 	type TransportShape,
 } from "../../Transport/TransportService.js";
-import { TransportError } from "../../Transport/TransportError.js";
 import { switchChain } from "./switchChain.js";
 
 describe("switchChain", () => {
@@ -14,7 +14,10 @@ describe("switchChain", () => {
 		let capturedParams: unknown[] | undefined;
 
 		const mockTransport: TransportShape = {
-			request: <T>(method: string, params?: unknown[]): Effect.Effect<T, never> => {
+			request: <T>(
+				method: string,
+				params?: unknown[],
+			): Effect.Effect<T, never> => {
 				capturedMethod = method;
 				capturedParams = params;
 				return Effect.succeed(null as T);
@@ -23,14 +26,12 @@ describe("switchChain", () => {
 
 		const TestLayer = Layer.succeed(TransportService, mockTransport);
 
-		await Effect.runPromise(
-			Effect.provide(switchChain(137), TestLayer),
-		);
+		await Effect.runPromise(Effect.provide(switchChain(137), TestLayer));
 
 		expect(capturedMethod).toBe("wallet_switchEthereumChain");
 		expect(capturedParams).toBeDefined();
 
-		const params = capturedParams![0] as { chainId: string };
+		const params = capturedParams?.[0] as { chainId: string };
 		expect(params.chainId).toBe("0x89"); // 137 in hex
 	});
 
@@ -38,7 +39,10 @@ describe("switchChain", () => {
 		let capturedParams: unknown[] | undefined;
 
 		const mockTransport: TransportShape = {
-			request: <T>(_method: string, params?: unknown[]): Effect.Effect<T, never> => {
+			request: <T>(
+				_method: string,
+				params?: unknown[],
+			): Effect.Effect<T, never> => {
 				capturedParams = params;
 				return Effect.succeed(null as T);
 			},
@@ -46,11 +50,9 @@ describe("switchChain", () => {
 
 		const TestLayer = Layer.succeed(TransportService, mockTransport);
 
-		await Effect.runPromise(
-			Effect.provide(switchChain(1), TestLayer),
-		);
+		await Effect.runPromise(Effect.provide(switchChain(1), TestLayer));
 
-		const params = capturedParams![0] as { chainId: string };
+		const params = capturedParams?.[0] as { chainId: string };
 		expect(params.chainId).toBe("0x1");
 	});
 
@@ -58,7 +60,10 @@ describe("switchChain", () => {
 		let capturedParams: unknown[] | undefined;
 
 		const mockTransport: TransportShape = {
-			request: <T>(_method: string, params?: unknown[]): Effect.Effect<T, never> => {
+			request: <T>(
+				_method: string,
+				params?: unknown[],
+			): Effect.Effect<T, never> => {
 				capturedParams = params;
 				return Effect.succeed(null as T);
 			},
@@ -67,11 +72,9 @@ describe("switchChain", () => {
 		const TestLayer = Layer.succeed(TransportService, mockTransport);
 
 		// Sepolia chain ID: 11155111
-		await Effect.runPromise(
-			Effect.provide(switchChain(11155111), TestLayer),
-		);
+		await Effect.runPromise(Effect.provide(switchChain(11155111), TestLayer));
 
-		const params = capturedParams![0] as { chainId: string };
+		const params = capturedParams?.[0] as { chainId: string };
 		expect(params.chainId).toBe("0xaa36a7"); // 11155111 in hex
 	});
 

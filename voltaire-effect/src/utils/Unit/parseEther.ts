@@ -4,8 +4,8 @@
  * @since 0.0.1
  */
 
-import * as Effect from "effect/Effect";
-import { type UnitError } from "./errors.js";
+import type * as Effect from "effect/Effect";
+import type { UnitError } from "./errors.js";
 import { parseUnits } from "./parseUnits.js";
 
 /**

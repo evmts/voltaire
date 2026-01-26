@@ -46,15 +46,14 @@
  * @since 0.1.0
  */
 
-// Schemas
-export { Rpc } from "./Rpc.js";
 export {
 	BlockHeaderSchema,
 	BlockHeaderSchema as Schema,
 } from "./BlockHeaderSchema.js";
-
 // Pure functions
 export { calculateHash } from "./calculateHash.js";
+// Schemas
+export { Rpc } from "./Rpc.js";
 
 // Re-export types from voltaire
 import type { BlockHeader } from "@tevm/voltaire";

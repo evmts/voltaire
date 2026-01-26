@@ -34,8 +34,7 @@ const TransactionSerializerLive: Layer.Layer<TransactionSerializerService> =
 	Layer.succeed(TransactionSerializerService, {
 		serialize: (tx) =>
 			Effect.try({
-				try: () =>
-					VoltaireTransaction.serialize(tx as VoltaireTransaction.Any),
+				try: () => VoltaireTransaction.serialize(tx as VoltaireTransaction.Any),
 				catch: (error) =>
 					new SerializeError({
 						transaction: tx,

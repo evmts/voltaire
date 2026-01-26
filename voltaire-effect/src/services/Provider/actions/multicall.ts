@@ -6,9 +6,9 @@
  */
 
 import {
-	type Abi as BrandedAbiType,
 	Address,
 	BrandedAbi,
+	type Abi as BrandedAbiType,
 	type BrandedAddress,
 	type BrandedHex,
 	Hex,
@@ -28,13 +28,14 @@ type HexType = BrandedHex.HexType;
 /**
  * Extracts function names from an ABI.
  */
-type ExtractFunctionNames<TAbi extends Abi> = TAbi extends readonly (infer Item)[]
-	? Item extends { type: "function"; name: infer Name }
-		? Name extends string
-			? Name
+type ExtractFunctionNames<TAbi extends Abi> =
+	TAbi extends readonly (infer Item)[]
+		? Item extends { type: "function"; name: infer Name }
+			? Name extends string
+				? Name
+				: never
 			: never
-		: never
-	: never;
+		: never;
 
 /**
  * Gets the inputs for a specific function from an ABI.
@@ -83,13 +84,21 @@ type GetFunctionOutput<
 	TAbi extends Abi,
 	TFunctionName extends string,
 > = TAbi extends readonly (infer Item)[]
-	? Item extends { type: "function"; name: TFunctionName; outputs: infer Outputs }
+	? Item extends {
+			type: "function";
+			name: TFunctionName;
+			outputs: infer Outputs;
+		}
 		? Outputs extends readonly { type: string }[]
 			? Outputs["length"] extends 0
-				? void
+				? undefined
 				: Outputs["length"] extends 1
 					? AbiTypeToTS<Outputs[0]["type"]>
-					: { [K in keyof Outputs]: AbiTypeToTS<Outputs[K] extends { type: string } ? Outputs[K]["type"] : never> }
+					: {
+							[K in keyof Outputs]: AbiTypeToTS<
+								Outputs[K] extends { type: string } ? Outputs[K]["type"] : never
+							>;
+						}
 			: unknown
 		: unknown
 	: unknown;
@@ -99,7 +108,8 @@ type GetFunctionOutput<
  */
 export interface ContractCall<
 	TAbi extends Abi = Abi,
-	TFunctionName extends ExtractFunctionNames<TAbi> & string = ExtractFunctionNames<TAbi> & string,
+	TFunctionName extends ExtractFunctionNames<TAbi> &
+		string = ExtractFunctionNames<TAbi> & string,
 > {
 	readonly address: AddressInput;
 	readonly abi: TAbi;
@@ -253,12 +263,12 @@ export const multicall = <TContracts extends readonly ContractCall[]>(
 				}
 
 				const contract = batch[index];
-				const fn = (contract.abi as readonly { type: string; name?: string }[])
-					.find(
-						(item) =>
-							item.type === "function" &&
-							item.name === contract.functionName,
-					) as BrandedAbi.Function.FunctionType | undefined;
+				const fn = (
+					contract.abi as readonly { type: string; name?: string }[]
+				).find(
+					(item) =>
+						item.type === "function" && item.name === contract.functionName,
+				) as BrandedAbi.Function.FunctionType | undefined;
 
 				if (!fn) {
 					throw new Error(
@@ -271,7 +281,8 @@ export const multicall = <TContracts extends readonly ContractCall[]>(
 						? Hex.toBytes(entry.returnData)
 						: entry.returnData;
 				const decodedResult = BrandedAbi.Function.decodeResult(fn, bytes);
-				const value = fn.outputs.length === 1 ? decodedResult[0] : decodedResult;
+				const value =
+					fn.outputs.length === 1 ? decodedResult[0] : decodedResult;
 
 				results.push(value);
 			});

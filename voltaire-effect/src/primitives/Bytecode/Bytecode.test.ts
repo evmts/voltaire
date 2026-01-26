@@ -1,5 +1,5 @@
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
+import * as S from "effect/Schema";
 import * as Bytecode from "./index.js";
 
 describe("Bytecode.Hex", () => {

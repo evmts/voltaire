@@ -47,10 +47,14 @@ export const fetchBlockByHash = <TInclude extends BlockInclude = "header">(
 	const initialDelay = retryOptions?.initialDelay ?? 1000;
 	const maxDelay = retryOptions?.maxDelay ?? 30000;
 
-	const retrySchedule = Schedule.exponential(Duration.millis(initialDelay)).pipe(
+	const retrySchedule = Schedule.exponential(
+		Duration.millis(initialDelay),
+	).pipe(
 		Schedule.jittered,
 		Schedule.compose(Schedule.recurs(maxRetries)),
-		Schedule.whileOutput((duration) => Duration.lessThanOrEqualTo(duration, Duration.millis(maxDelay))),
+		Schedule.whileOutput((duration) =>
+			Duration.lessThanOrEqualTo(duration, Duration.millis(maxDelay)),
+		),
 	);
 
 	const includeTransactions = include !== "header";

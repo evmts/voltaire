@@ -1,14 +1,14 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as TestClock from "effect/TestClock";
-import { describe, expect, it } from "@effect/vitest";
 import { FallbackTransport } from "./FallbackTransport.js";
+import { TestTransport } from "./TestTransport.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
-import { TestTransport } from "./TestTransport.js";
 
 describe("FallbackTransport", () => {
 	describe("empty transports array", () => {
@@ -214,7 +214,10 @@ describe("FallbackTransport", () => {
 					attemptCount++;
 					if (attemptCount === 1) {
 						return Effect.fail(
-							new TransportError({ code: -32603, message: "Temporary failure" }),
+							new TransportError({
+								code: -32603,
+								message: "Temporary failure",
+							}),
 						);
 					}
 					return Effect.succeed("0x1234" as T);

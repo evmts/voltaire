@@ -2,8 +2,8 @@
  * @fileoverview Tests for AbiEncoder service.
  */
 
-import * as Effect from "effect/Effect";
 import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
 import {
 	AbiDecodeError,
 	AbiEncodeError,
@@ -98,10 +98,7 @@ describe("AbiEncoderService", () => {
 		it.effect("returns event selector as first topic", () =>
 			Effect.gen(function* () {
 				const encoder = yield* AbiEncoderService;
-				const result = yield* encoder.encodeEventTopics(
-					ERC20_ABI,
-					"Transfer",
-				);
+				const result = yield* encoder.encodeEventTopics(ERC20_ABI, "Transfer");
 
 				expect(result.length).toBeGreaterThanOrEqual(1);
 				expect(result[0]).toMatch(/^0x[a-fA-F0-9]{64}$/);
@@ -116,11 +113,10 @@ describe("AbiEncoderService", () => {
 				const encoder = yield* AbiEncoderService;
 				const fromAddress = "0x1111111111111111111111111111111111111111";
 				const toAddress = "0x2222222222222222222222222222222222222222";
-				const result = yield* encoder.encodeEventTopics(
-					ERC20_ABI,
-					"Transfer",
-					[fromAddress, toAddress],
-				);
+				const result = yield* encoder.encodeEventTopics(ERC20_ABI, "Transfer", [
+					fromAddress,
+					toAddress,
+				]);
 
 				expect(result.length).toBe(3);
 				expect(result[0]).toBe(

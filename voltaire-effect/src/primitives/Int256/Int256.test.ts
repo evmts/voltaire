@@ -1,7 +1,7 @@
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
-import * as Int256 from "./index.js";
 import { BrandedInt256 } from "@tevm/voltaire";
+import * as S from "effect/Schema";
+import * as Int256 from "./index.js";
 
 const INT256_MIN = -(2n ** 255n);
 const INT256_MAX = 2n ** 255n - 1n;
@@ -30,13 +30,21 @@ describe("Int256", () => {
 
 	describe("Schema: Int256.String", () => {
 		it("decodes valid positive string", () => {
-			const value = S.decodeSync(Int256.String)("12345678901234567890123456789012345678901234567890");
-			expect(S.encodeSync(Int256.String)(value)).toBe("12345678901234567890123456789012345678901234567890");
+			const value = S.decodeSync(Int256.String)(
+				"12345678901234567890123456789012345678901234567890",
+			);
+			expect(S.encodeSync(Int256.String)(value)).toBe(
+				"12345678901234567890123456789012345678901234567890",
+			);
 		});
 
 		it("decodes valid negative string", () => {
-			const value = S.decodeSync(Int256.String)("-12345678901234567890123456789012345678901234567890");
-			expect(S.encodeSync(Int256.String)(value)).toBe("-12345678901234567890123456789012345678901234567890");
+			const value = S.decodeSync(Int256.String)(
+				"-12345678901234567890123456789012345678901234567890",
+			);
+			expect(S.encodeSync(Int256.String)(value)).toBe(
+				"-12345678901234567890123456789012345678901234567890",
+			);
 		});
 
 		it("decodes zero string", () => {
@@ -102,10 +110,16 @@ describe("Int256", () => {
 
 	describe("Arithmetic: add (via BrandedInt256.plus)", () => {
 		it("adds two positive values", () => {
-			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
-			const b = S.decodeSync(Int256.BigInt)(5000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
+			const b = S.decodeSync(Int256.BigInt)(
+				5000000000000000000000000000000000000000n,
+			);
 			const result = BrandedInt256.plus(a, b);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(15000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				15000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("adds using Int256.add", () => {
@@ -116,17 +130,29 @@ describe("Int256", () => {
 		});
 
 		it("adds positive and negative", () => {
-			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
-			const b = S.decodeSync(Int256.BigInt)(-5000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
+			const b = S.decodeSync(Int256.BigInt)(
+				-5000000000000000000000000000000000000000n,
+			);
 			const result = BrandedInt256.plus(a, b);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(5000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				5000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("adds two negative values", () => {
-			const a = S.decodeSync(Int256.BigInt)(-10000000000000000000000000000000000000000n);
-			const b = S.decodeSync(Int256.BigInt)(-5000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				-10000000000000000000000000000000000000000n,
+			);
+			const b = S.decodeSync(Int256.BigInt)(
+				-5000000000000000000000000000000000000000n,
+			);
 			const result = BrandedInt256.plus(a, b);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(-15000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				-15000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("handles zero", () => {
@@ -153,17 +179,29 @@ describe("Int256", () => {
 
 	describe("Arithmetic: sub", () => {
 		it("subtracts two values", () => {
-			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
-			const b = S.decodeSync(Int256.BigInt)(5000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
+			const b = S.decodeSync(Int256.BigInt)(
+				5000000000000000000000000000000000000000n,
+			);
 			const result = Int256.sub(a, b);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(5000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				5000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("subtracts negative (adds)", () => {
-			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
-			const b = S.decodeSync(Int256.BigInt)(-5000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
+			const b = S.decodeSync(Int256.BigInt)(
+				-5000000000000000000000000000000000000000n,
+			);
 			const result = Int256.sub(a, b);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(15000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				15000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("wraps on underflow", () => {
@@ -186,48 +224,66 @@ describe("Int256", () => {
 			const a = S.decodeSync(Int256.BigInt)(100000000000000000000n);
 			const b = S.decodeSync(Int256.BigInt)(100000000000000000000n);
 			const result = Int256.mul(a, b);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(10000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				10000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("multiplies positive and negative", () => {
 			const a = S.decodeSync(Int256.BigInt)(100000000000000000000n);
 			const b = S.decodeSync(Int256.BigInt)(-100000000000000000000n);
 			const result = Int256.mul(a, b);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(-10000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				-10000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("multiplies two negative values", () => {
 			const a = S.decodeSync(Int256.BigInt)(-100000000000000000000n);
 			const b = S.decodeSync(Int256.BigInt)(-100000000000000000000n);
 			const result = Int256.mul(a, b);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(10000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				10000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("multiplies by zero", () => {
-			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
 			const zero = S.decodeSync(Int256.BigInt)(0n);
 			const result = Int256.mul(a, zero);
 			expect(S.encodeSync(Int256.BigInt)(result)).toBe(0n);
 		});
 
 		it("multiplies by one", () => {
-			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
 			const one = S.decodeSync(Int256.BigInt)(1n);
 			const result = Int256.mul(a, one);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(10000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				10000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("multiplies by negative one", () => {
-			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
 			const negOne = S.decodeSync(Int256.BigInt)(-1n);
 			const result = Int256.mul(a, negOne);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(-10000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				-10000000000000000000000000000000000000000n,
+			);
 		});
 	});
 
 	describe("Arithmetic: div", () => {
 		it("divides two values", () => {
-			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
 			const b = S.decodeSync(Int256.BigInt)(100000000000000000000n);
 			const result = Int256.div(a, b);
 			expect(S.encodeSync(Int256.BigInt)(result)).toBe(100000000000000000000n);
@@ -257,15 +313,23 @@ describe("Int256", () => {
 
 	describe("Sign handling: negate", () => {
 		it("negates positive value", () => {
-			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
 			const result = Int256.negate(a);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(-10000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				-10000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("negates negative value", () => {
-			const a = S.decodeSync(Int256.BigInt)(-10000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				-10000000000000000000000000000000000000000n,
+			);
 			const result = Int256.negate(a);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(10000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				10000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("negates zero", () => {
@@ -289,15 +353,23 @@ describe("Int256", () => {
 
 	describe("Sign handling: abs", () => {
 		it("abs of positive value", () => {
-			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
 			const result = Int256.abs(a);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(10000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				10000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("abs of negative value", () => {
-			const a = S.decodeSync(Int256.BigInt)(-10000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				-10000000000000000000000000000000000000000n,
+			);
 			const result = Int256.abs(a);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(10000000000000000000000000000000000000000n);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+				10000000000000000000000000000000000000000n,
+			);
 		});
 
 		it("abs of zero", () => {
@@ -314,12 +386,16 @@ describe("Int256", () => {
 
 	describe("Sign handling: isNegative", () => {
 		it("returns false for positive", () => {
-			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
 			expect(Int256.isNegative(a)).toBe(false);
 		});
 
 		it("returns true for negative", () => {
-			const a = S.decodeSync(Int256.BigInt)(-10000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				-10000000000000000000000000000000000000000n,
+			);
 			expect(Int256.isNegative(a)).toBe(true);
 		});
 
@@ -341,8 +417,12 @@ describe("Int256", () => {
 
 	describe("Comparison: compare", () => {
 		it("returns 0 for equal values", () => {
-			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
-			const b = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
+			const a = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
+			const b = S.decodeSync(Int256.BigInt)(
+				10000000000000000000000000000000000000000n,
+			);
 			expect(Int256.compare(a, b)).toBe(0);
 		});
 

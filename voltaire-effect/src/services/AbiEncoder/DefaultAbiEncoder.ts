@@ -90,7 +90,9 @@ export const DefaultAbiEncoder = Layer.succeed(AbiEncoderService, {
 					functionName,
 					args,
 					message:
-						error instanceof Error ? error.message : "Failed to encode function",
+						error instanceof Error
+							? error.message
+							: "Failed to encode function",
 					cause: error,
 				}),
 		}),
@@ -130,7 +132,10 @@ export const DefaultAbiEncoder = Layer.succeed(AbiEncoderService, {
 							argsRecord[input.name] = args[i];
 						}
 					}
-					const encodedTopics = BrandedAbi.Event.encodeTopics(event, argsRecord);
+					const encodedTopics = BrandedAbi.Event.encodeTopics(
+						event,
+						argsRecord,
+					);
 					for (let i = 1; i < encodedTopics.length; i++) {
 						const topic = encodedTopics[i];
 						if (topic !== null) {
@@ -161,14 +166,20 @@ export const DefaultAbiEncoder = Layer.succeed(AbiEncoderService, {
 				const topicBytes = topics.map((t) =>
 					Hex.toBytes(t),
 				) as unknown as readonly HashType[];
-				const decoded = BrandedAbi.Event.decodeLog(event, dataBytes, topicBytes);
+				const decoded = BrandedAbi.Event.decodeLog(
+					event,
+					dataBytes,
+					topicBytes,
+				);
 				return decoded as Record<string, unknown>;
 			},
 			catch: (error) =>
 				new AbiDecodeError({
 					data,
 					message:
-						error instanceof Error ? error.message : "Failed to decode event log",
+						error instanceof Error
+							? error.message
+							: "Failed to decode event log",
 					cause: error,
 				}),
 		}),

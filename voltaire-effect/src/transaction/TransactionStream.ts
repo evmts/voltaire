@@ -10,8 +10,8 @@
  */
 
 import {
-	TransactionStream as CoreTransactionStream,
 	type ConfirmedTransactionEvent,
+	TransactionStream as CoreTransactionStream,
 	type PendingTransactionEvent,
 	type TrackOptions,
 	type TransactionStreamEvent,
@@ -78,8 +78,10 @@ export const TransactionStream: Layer.Layer<
 			request: async ({
 				method,
 				params,
-			}: { method: string; params?: unknown[] }) =>
-				runPromise(transport.request(method, params)),
+			}: {
+				method: string;
+				params?: unknown[];
+			}) => runPromise(transport.request(method, params)),
 			on: () => {},
 			removeListener: () => {},
 		};

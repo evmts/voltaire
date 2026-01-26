@@ -1,12 +1,12 @@
+import { NodeFileSystem } from "@effect/platform-node";
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
-import { NodeFileSystem } from "@effect/platform-node";
+import { makeMockIpcSocket } from "./__testUtils__/mockIpcSocket.js";
 import { IpcTransport } from "./IpcTransport.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
-import { makeMockIpcSocket } from "./__testUtils__/mockIpcSocket.js";
 
 describe("IpcTransport", () => {
 	describe("configuration", () => {
@@ -53,8 +53,16 @@ describe("IpcTransport", () => {
 					const req1 = pending.find((r) => r.method === "eth_blockNumber")!;
 					const req2 = pending.find((r) => r.method === "eth_chainId")!;
 
-					sockets[0].emitMessage({ jsonrpc: "2.0", id: req2.id, result: "0x1" });
-					sockets[0].emitMessage({ jsonrpc: "2.0", id: req1.id, result: "0xabc" });
+					sockets[0].emitMessage({
+						jsonrpc: "2.0",
+						id: req2.id,
+						result: "0x1",
+					});
+					sockets[0].emitMessage({
+						jsonrpc: "2.0",
+						id: req1.id,
+						result: "0xabc",
+					});
 				}
 
 				const [result1, result2] = yield* Effect.all([

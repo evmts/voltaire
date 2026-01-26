@@ -82,7 +82,9 @@ export class TransactionSerializerService extends Context.Tag(
 		 * @param tx - The transaction to serialize
 		 * @returns RLP-encoded transaction bytes
 		 */
-		readonly serialize: (tx: unknown) => Effect.Effect<Uint8Array, SerializeError>;
+		readonly serialize: (
+			tx: unknown,
+		) => Effect.Effect<Uint8Array, SerializeError>;
 
 		/**
 		 * Deserialize RLP-encoded bytes to a transaction.

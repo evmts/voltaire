@@ -1,12 +1,12 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
+import { TransportError } from "../../Transport/TransportError.js";
 import {
 	TransportService,
 	type TransportShape,
 } from "../../Transport/TransportService.js";
-import { TransportError } from "../../Transport/TransportError.js";
-import { watchAsset, type WatchAssetParams } from "./watchAsset.js";
+import { type WatchAssetParams, watchAsset } from "./watchAsset.js";
 
 const usdcAsset: WatchAssetParams = {
 	type: "ERC20",
@@ -31,7 +31,10 @@ describe("watchAsset", () => {
 		let capturedParams: unknown[] | undefined;
 
 		const mockTransport: TransportShape = {
-			request: <T>(method: string, params?: unknown[]): Effect.Effect<T, never> => {
+			request: <T>(
+				method: string,
+				params?: unknown[],
+			): Effect.Effect<T, never> => {
 				capturedMethod = method;
 				capturedParams = params;
 				return Effect.succeed(true as T);
@@ -48,7 +51,7 @@ describe("watchAsset", () => {
 		expect(capturedMethod).toBe("wallet_watchAsset");
 		expect(capturedParams).toBeDefined();
 
-		const params = capturedParams![0] as {
+		const params = capturedParams?.[0] as {
 			type: string;
 			options: {
 				address: string;
@@ -73,7 +76,10 @@ describe("watchAsset", () => {
 		let capturedParams: unknown[] | undefined;
 
 		const mockTransport: TransportShape = {
-			request: <T>(_method: string, params?: unknown[]): Effect.Effect<T, never> => {
+			request: <T>(
+				_method: string,
+				params?: unknown[],
+			): Effect.Effect<T, never> => {
 				capturedParams = params;
 				return Effect.succeed(true as T);
 			},
@@ -85,7 +91,7 @@ describe("watchAsset", () => {
 			Effect.provide(watchAsset(minimalAsset), TestLayer),
 		);
 
-		const params = capturedParams![0] as {
+		const params = capturedParams?.[0] as {
 			options: { symbol?: string; decimals?: number; image?: string };
 		};
 		expect(params.options.symbol).toBeUndefined();

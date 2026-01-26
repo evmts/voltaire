@@ -3,8 +3,8 @@ import { Address } from "@tevm/voltaire/Address";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import { CryptoLive } from "../crypto/CryptoLive.js";
-import { hashMessage } from "../crypto/Signature/hashMessage.js";
 import * as Secp256k1 from "../crypto/Secp256k1/index.js";
+import { hashMessage } from "../crypto/Signature/hashMessage.js";
 import {
 	createSiweMessage,
 	parseSiweMessage,

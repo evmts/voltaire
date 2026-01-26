@@ -308,8 +308,7 @@ export const Bn254Live = Layer.succeed(Bn254Service, {
 		}),
 	pairingCheck: (pairs) =>
 		Effect.try({
-			try: () =>
-				BN254.Pairing.pairingCheck(pairs as never),
+			try: () => BN254.Pairing.pairingCheck(pairs as never),
 			catch: (e) =>
 				new Bn254Error({
 					operation: "pairingCheck",

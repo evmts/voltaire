@@ -46,9 +46,9 @@
  * @since 0.0.1
  */
 
+export { hashTypedData } from "../EIP712/index.js";
 // Utility exports
 export { constantTimeEqual } from "./constantTimeEqual.js";
-
 // Error exports
 export {
 	AddressDerivationError,
@@ -56,10 +56,8 @@ export {
 	type SignatureError,
 	VerifyError,
 } from "./errors.js";
-
 // Hash exports
 export { hashMessage } from "./hashMessage.js";
-export { hashTypedData } from "../EIP712/index.js";
 
 // Recovery exports
 export { recoverAddress, type SignatureInput } from "./recoverAddress.js";

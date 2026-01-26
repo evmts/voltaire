@@ -1,5 +1,12 @@
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "@effect/vitest";
 import * as Effect from "effect/Effect";
-import { describe, expect, it, vi, beforeEach, afterEach } from "@effect/vitest";
 import { BrowserTransport } from "./BrowserTransport.js";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
@@ -214,9 +221,10 @@ describe("BrowserTransport", () => {
 
 	describe("EIP-1193 error codes", () => {
 		it("handles user rejection error code 4001", async () => {
-			const mockRequest = vi
-				.fn()
-				.mockRejectedValue({ code: 4001, message: "User rejected the request" });
+			const mockRequest = vi.fn().mockRejectedValue({
+				code: 4001,
+				message: "User rejected the request",
+			});
 			(
 				globalThis as unknown as {
 					window: { ethereum: { request: typeof mockRequest } };

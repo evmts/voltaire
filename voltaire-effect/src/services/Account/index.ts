@@ -62,8 +62,4 @@ export {
 } from "./AccountService.js";
 export { JsonRpcAccount } from "./JsonRpcAccount.js";
 export { LocalAccount } from "./LocalAccount.js";
-export {
-	HDWalletDerivationError,
-	MnemonicAccount,
-	type MnemonicAccountOptions,
-} from "./fromMnemonic.js";
+export { type ToAccountOptions, toAccount } from "./toAccount.js";

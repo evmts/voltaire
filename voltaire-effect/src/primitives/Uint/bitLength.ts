@@ -19,5 +19,4 @@ import { Uint256, type Type as Uint256Type } from "@tevm/voltaire/Uint";
  *
  * @since 0.0.1
  */
-export const bitLength = (uint: Uint256Type): number =>
-	Uint256.bitLength(uint);
+export const bitLength = (uint: Uint256Type): number => Uint256.bitLength(uint);

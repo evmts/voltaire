@@ -48,6 +48,10 @@
 			"types": "./dist/services/index.d.ts",
 			"import": "./dist/services/index.js"
 		},
+		"./native": {
+			"types": "./dist/native/index.d.ts",
+			"import": "./dist/native/index.js"
+		},
 		"./jsonrpc": {
 			"types": "./dist/jsonrpc/index.d.ts",
 			"import": "./dist/jsonrpc/index.js"
@@ -63,6 +67,9 @@
 			],
 			"services": [
 				"./dist/services/index.d.ts"
+			],
+			"native": [
+				"./dist/native/index.d.ts"
 			],
 			"jsonrpc": [
 				"./dist/jsonrpc/index.d.ts"

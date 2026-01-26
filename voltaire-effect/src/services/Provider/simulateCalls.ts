@@ -9,11 +9,11 @@ import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import { TransportService } from "../Transport/TransportService.js";
 import {
-	ProviderError,
 	type AddressInput,
 	type BlockTag,
 	type CallRequest,
 	type LogType,
+	ProviderError,
 } from "./ProviderService.js";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
@@ -75,7 +75,7 @@ const normalizeAddress = (
 };
 
 const toHexQuantity = (value: bigint): HexString =>
-	(`0x${value.toString(16)}` as HexString);
+	`0x${value.toString(16)}` as HexString;
 
 const parseHexToBigInt = (value?: string | bigint | number | null): bigint => {
 	if (typeof value === "bigint") return value;

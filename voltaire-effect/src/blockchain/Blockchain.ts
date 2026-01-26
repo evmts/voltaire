@@ -137,54 +137,58 @@ function createInMemoryStore() {
  * ```
  */
 export const InMemoryBlockchain: Layer.Layer<BlockchainService, never, never> =
-	Layer.succeed(BlockchainService, (() => {
-		const store = createInMemoryStore();
+	Layer.succeed(
+		BlockchainService,
+		(() => {
+			const store = createInMemoryStore();
 
-		return {
-			getBlockByHash: (hash: HexInput) =>
-				Effect.succeed(store.getBlockByHash(hash)),
+			return {
+				getBlockByHash: (hash: HexInput) =>
+					Effect.succeed(store.getBlockByHash(hash)),
 
-			getBlockByNumber: (number: bigint) =>
-				Effect.succeed(store.getBlockByNumber(number)),
+				getBlockByNumber: (number: bigint) =>
+					Effect.succeed(store.getBlockByNumber(number)),
 
-			getCanonicalHash: (number: bigint) =>
-				Effect.succeed(store.getCanonicalHash(number)),
+				getCanonicalHash: (number: bigint) =>
+					Effect.succeed(store.getCanonicalHash(number)),
 
-			getHeadBlockNumber: () => Effect.succeed(store.getHeadBlockNumber()),
+				getHeadBlockNumber: () => Effect.succeed(store.getHeadBlockNumber()),
 
-			putBlock: (block: Block) =>
-				Effect.sync(() => {
-					store.putBlock(block);
-				}),
+				putBlock: (block: Block) =>
+					Effect.sync(() => {
+						store.putBlock(block);
+					}),
 
-			setCanonicalHead: (hash: HexInput) =>
-				Effect.gen(function* () {
-					const success = store.setCanonicalHead(hash);
-					if (!success) {
-						return yield* Effect.fail(
-							new BlockchainError({ hash }, "Block not found", {
-								code: "BLOCK_NOT_FOUND",
-							}),
-						);
-					}
-				}),
+				setCanonicalHead: (hash: HexInput) =>
+					Effect.gen(function* () {
+						const success = store.setCanonicalHead(hash);
+						if (!success) {
+							return yield* Effect.fail(
+								new BlockchainError({ hash }, "Block not found", {
+									code: "BLOCK_NOT_FOUND",
+								}),
+							);
+						}
+					}),
 
-			hasBlock: (hash: HexInput) => Effect.succeed(store.hasBlock(hash)),
+				hasBlock: (hash: HexInput) => Effect.succeed(store.hasBlock(hash)),
 
-			localBlockCount: () => Effect.succeed(store.localBlockCount()),
+				localBlockCount: () => Effect.succeed(store.localBlockCount()),
 
-			orphanCount: () => Effect.succeed(store.orphanCount()),
+				orphanCount: () => Effect.succeed(store.orphanCount()),
 
-			canonicalChainLength: () => Effect.succeed(store.canonicalChainLength()),
+				canonicalChainLength: () =>
+					Effect.succeed(store.canonicalChainLength()),
 
-			isForkBlock: () => Effect.succeed(false),
+				isForkBlock: () => Effect.succeed(false),
 
-			destroy: () =>
-				Effect.sync(() => {
-					store.clear();
-				}),
-		};
-	})());
+				destroy: () =>
+					Effect.sync(() => {
+						store.clear();
+					}),
+			};
+		})(),
+	);
 
 /**
  * Fork blockchain layer factory.
@@ -220,162 +224,177 @@ export const InMemoryBlockchain: Layer.Layer<BlockchainService, never, never> =
 export const ForkBlockchain = (
 	options: ForkBlockchainOptions,
 ): Layer.Layer<BlockchainService, never, never> =>
-	Layer.succeed(BlockchainService, (() => {
-		const store = createInMemoryStore();
-		const forkCache = new Map<string, Block>();
+	Layer.succeed(
+		BlockchainService,
+		(() => {
+			const store = createInMemoryStore();
+			const forkCache = new Map<string, Block>();
 
-		const fetchBlockByNumber = async (number: bigint): Promise<Block | null> => {
-			const response = await fetch(options.rpcUrl, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					jsonrpc: "2.0",
-					id: 1,
-					method: "eth_getBlockByNumber",
-					params: [`0x${number.toString(16)}`, true],
-				}),
-			});
-			const json = (await response.json()) as {
-				error?: { message: string };
-				result?: Record<string, unknown>;
+			const fetchBlockByNumber = async (
+				number: bigint,
+			): Promise<Block | null> => {
+				const response = await fetch(options.rpcUrl, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						jsonrpc: "2.0",
+						id: 1,
+						method: "eth_getBlockByNumber",
+						params: [`0x${number.toString(16)}`, true],
+					}),
+				});
+				const json = (await response.json()) as {
+					error?: { message: string };
+					result?: Record<string, unknown>;
+				};
+				if (json.error) throw new Error(json.error.message);
+				return json.result ? mapRpcBlockToBlock(json.result) : null;
 			};
-			if (json.error) throw new Error(json.error.message);
-			return json.result ? mapRpcBlockToBlock(json.result) : null;
-		};
 
-		const fetchBlockByHash = async (hash: HexInput): Promise<Block | null> => {
-			const response = await fetch(options.rpcUrl, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					jsonrpc: "2.0",
-					id: 1,
-					method: "eth_getBlockByHash",
-					params: [hash, true],
-				}),
-			});
-			const json = (await response.json()) as {
-				error?: { message: string };
-				result?: Record<string, unknown>;
+			const fetchBlockByHash = async (
+				hash: HexInput,
+			): Promise<Block | null> => {
+				const response = await fetch(options.rpcUrl, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						jsonrpc: "2.0",
+						id: 1,
+						method: "eth_getBlockByHash",
+						params: [hash, true],
+					}),
+				});
+				const json = (await response.json()) as {
+					error?: { message: string };
+					result?: Record<string, unknown>;
+				};
+				if (json.error) throw new Error(json.error.message);
+				return json.result ? mapRpcBlockToBlock(json.result) : null;
 			};
-			if (json.error) throw new Error(json.error.message);
-			return json.result ? mapRpcBlockToBlock(json.result) : null;
-		};
 
-		return {
-			getBlockByHash: (hash: HexInput) =>
-				Effect.gen(function* () {
-					const local = store.getBlockByHash(hash);
-					if (local) return local;
+			return {
+				getBlockByHash: (hash: HexInput) =>
+					Effect.gen(function* () {
+						const local = store.getBlockByHash(hash);
+						if (local) return local;
 
-					const cached = forkCache.get(hash as string);
-					if (cached) return cached;
+						const cached = forkCache.get(hash as string);
+						if (cached) return cached;
 
-					const block = yield* Effect.tryPromise({
-						try: () => fetchBlockByHash(hash),
-						catch: (e) =>
-							new BlockchainError(
-								{ hash },
-								e instanceof Error ? e.message : "RPC fetch failed",
-								{ code: "RPC_ERROR", cause: e instanceof Error ? e : undefined },
-							),
-					});
+						const block = yield* Effect.tryPromise({
+							try: () => fetchBlockByHash(hash),
+							catch: (e) =>
+								new BlockchainError(
+									{ hash },
+									e instanceof Error ? e.message : "RPC fetch failed",
+									{
+										code: "RPC_ERROR",
+										cause: e instanceof Error ? e : undefined,
+									},
+								),
+						});
 
-					if (block && block.number <= options.forkBlockNumber) {
-						forkCache.set(hash as string, block);
-					}
+						if (block && block.number <= options.forkBlockNumber) {
+							forkCache.set(hash as string, block);
+						}
 
-					return block;
-				}),
+						return block;
+					}),
 
-			getBlockByNumber: (number: bigint) =>
-				Effect.gen(function* () {
-					const local = store.getBlockByNumber(number);
-					if (local) return local;
+				getBlockByNumber: (number: bigint) =>
+					Effect.gen(function* () {
+						const local = store.getBlockByNumber(number);
+						if (local) return local;
 
-					if (number > options.forkBlockNumber) {
-						return null;
-					}
+						if (number > options.forkBlockNumber) {
+							return null;
+						}
 
-					const block = yield* Effect.tryPromise({
-						try: () => fetchBlockByNumber(number),
-						catch: (e) =>
-							new BlockchainError(
-								{ number },
-								e instanceof Error ? e.message : "RPC fetch failed",
-								{ code: "RPC_ERROR", cause: e instanceof Error ? e : undefined },
-							),
-					});
+						const block = yield* Effect.tryPromise({
+							try: () => fetchBlockByNumber(number),
+							catch: (e) =>
+								new BlockchainError(
+									{ number },
+									e instanceof Error ? e.message : "RPC fetch failed",
+									{
+										code: "RPC_ERROR",
+										cause: e instanceof Error ? e : undefined,
+									},
+								),
+						});
 
-					if (block) {
-						forkCache.set(block.hash as string, block);
-					}
+						if (block) {
+							forkCache.set(block.hash as string, block);
+						}
 
-					return block;
-				}),
+						return block;
+					}),
 
-			getCanonicalHash: (number: bigint) =>
-				Effect.gen(function* () {
-					const local = store.getCanonicalHash(number);
-					if (local) return local;
+				getCanonicalHash: (number: bigint) =>
+					Effect.gen(function* () {
+						const local = store.getCanonicalHash(number);
+						if (local) return local;
 
-					if (number > options.forkBlockNumber) {
-						return null;
-					}
+						if (number > options.forkBlockNumber) {
+							return null;
+						}
 
-					const block = yield* Effect.tryPromise({
-						try: () => fetchBlockByNumber(number),
-						catch: (e) =>
-							new BlockchainError(
-								{ number },
-								e instanceof Error ? e.message : "RPC fetch failed",
-								{ code: "RPC_ERROR", cause: e instanceof Error ? e : undefined },
-							),
-					});
+						const block = yield* Effect.tryPromise({
+							try: () => fetchBlockByNumber(number),
+							catch: (e) =>
+								new BlockchainError(
+									{ number },
+									e instanceof Error ? e.message : "RPC fetch failed",
+									{
+										code: "RPC_ERROR",
+										cause: e instanceof Error ? e : undefined,
+									},
+								),
+						});
 
-					return block?.hash ?? null;
-				}),
+						return block?.hash ?? null;
+					}),
 
-			getHeadBlockNumber: () => Effect.succeed(store.getHeadBlockNumber()),
+				getHeadBlockNumber: () => Effect.succeed(store.getHeadBlockNumber()),
 
-			putBlock: (block: Block) =>
-				Effect.sync(() => {
-					store.putBlock(block);
-				}),
+				putBlock: (block: Block) =>
+					Effect.sync(() => {
+						store.putBlock(block);
+					}),
 
-			setCanonicalHead: (hash: HexInput) =>
-				Effect.gen(function* () {
-					if (!store.hasBlock(hash) && !forkCache.has(hash as string)) {
-						return yield* Effect.fail(
-							new BlockchainError({ hash }, "Block not found", {
-								code: "BLOCK_NOT_FOUND",
-							}),
-						);
-					}
-					store.setCanonicalHead(hash);
-				}),
+				setCanonicalHead: (hash: HexInput) =>
+					Effect.gen(function* () {
+						if (!store.hasBlock(hash) && !forkCache.has(hash as string)) {
+							return yield* Effect.fail(
+								new BlockchainError({ hash }, "Block not found", {
+									code: "BLOCK_NOT_FOUND",
+								}),
+							);
+						}
+						store.setCanonicalHead(hash);
+					}),
 
-			hasBlock: (hash: HexInput) =>
-				Effect.succeed(
-					store.hasBlock(hash) || forkCache.has(hash as string),
-				),
+				hasBlock: (hash: HexInput) =>
+					Effect.succeed(store.hasBlock(hash) || forkCache.has(hash as string)),
 
-			localBlockCount: () => Effect.succeed(store.localBlockCount()),
+				localBlockCount: () => Effect.succeed(store.localBlockCount()),
 
-			orphanCount: () => Effect.succeed(store.orphanCount()),
+				orphanCount: () => Effect.succeed(store.orphanCount()),
 
-			canonicalChainLength: () => Effect.succeed(store.canonicalChainLength()),
+				canonicalChainLength: () =>
+					Effect.succeed(store.canonicalChainLength()),
 
-			isForkBlock: (number: bigint) =>
-				Effect.succeed(number <= options.forkBlockNumber),
+				isForkBlock: (number: bigint) =>
+					Effect.succeed(number <= options.forkBlockNumber),
 
-			destroy: () =>
-				Effect.sync(() => {
-					store.clear();
-					forkCache.clear();
-				}),
-		};
-	})());
+				destroy: () =>
+					Effect.sync(() => {
+						store.clear();
+						forkCache.clear();
+					}),
+			};
+		})(),
+	);
 
 /**
  * Maps an RPC block response to the Block type.
@@ -408,7 +427,9 @@ function mapRpcBlockToBlock(rpcBlock: Record<string, unknown>): Block {
 		excessBlobGas: rpcBlock.excessBlobGas
 			? BigInt(rpcBlock.excessBlobGas as string)
 			: undefined,
-		parentBeaconBlockRoot: rpcBlock.parentBeaconBlockRoot as HexInput | undefined,
+		parentBeaconBlockRoot: rpcBlock.parentBeaconBlockRoot as
+			| HexInput
+			| undefined,
 		transactions: "0x" as HexInput,
 		ommers: "0x" as HexInput,
 		withdrawals: "0x" as HexInput,

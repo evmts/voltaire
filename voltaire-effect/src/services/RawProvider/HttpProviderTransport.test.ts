@@ -1,8 +1,11 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
-import { describe, expect, it, vi } from "@effect/vitest";
-import { TransportError, TransportService } from "../Transport/TransportService.js";
+import {
+	TransportError,
+	TransportService,
+} from "../Transport/TransportService.js";
 
 /**
  * Since HttpProviderTransport wraps HttpProvider (network dependency),
@@ -33,15 +36,17 @@ describe("HttpProviderTransport", () => {
 			});
 		};
 
-		it.effect("preserves code and message from errors with code/message properties", () =>
-			Effect.gen(function* () {
-				const rpcError = { code: -32601, message: "Method not found" };
-				const transportError = mapError(rpcError);
+		it.effect(
+			"preserves code and message from errors with code/message properties",
+			() =>
+				Effect.gen(function* () {
+					const rpcError = { code: -32601, message: "Method not found" };
+					const transportError = mapError(rpcError);
 
-				expect(transportError).toBeInstanceOf(TransportError);
-				expect(transportError.code).toBe(-32601);
-				expect(transportError.message).toBe("Method not found");
-			})
+					expect(transportError).toBeInstanceOf(TransportError);
+					expect(transportError.code).toBe(-32601);
+					expect(transportError.message).toBe("Method not found");
+				}),
 		);
 
 		it.effect("maps unknown error object to code -32603", () =>
@@ -52,7 +57,7 @@ describe("HttpProviderTransport", () => {
 				expect(transportError).toBeInstanceOf(TransportError);
 				expect(transportError.code).toBe(-32603);
 				expect(transportError.message).toBe("Unknown error");
-			})
+			}),
 		);
 
 		it.effect("maps string error to 'Unknown error' with code -32603", () =>
@@ -63,7 +68,7 @@ describe("HttpProviderTransport", () => {
 				expect(transportError).toBeInstanceOf(TransportError);
 				expect(transportError.code).toBe(-32603);
 				expect(transportError.message).toBe("Unknown error");
-			})
+			}),
 		);
 
 		it.effect("maps Error instance to its message with code -32603", () =>
@@ -74,7 +79,7 @@ describe("HttpProviderTransport", () => {
 				expect(transportError).toBeInstanceOf(TransportError);
 				expect(transportError.code).toBe(-32603);
 				expect(transportError.message).toBe("Network timeout");
-			})
+			}),
 		);
 
 		it.effect("maps null error to 'Unknown error' with code -32603", () =>
@@ -84,7 +89,7 @@ describe("HttpProviderTransport", () => {
 				expect(transportError).toBeInstanceOf(TransportError);
 				expect(transportError.code).toBe(-32603);
 				expect(transportError.message).toBe("Unknown error");
-			})
+			}),
 		);
 
 		it.effect("maps undefined error to 'Unknown error' with code -32603", () =>
@@ -94,7 +99,7 @@ describe("HttpProviderTransport", () => {
 				expect(transportError).toBeInstanceOf(TransportError);
 				expect(transportError.code).toBe(-32603);
 				expect(transportError.message).toBe("Unknown error");
-			})
+			}),
 		);
 
 		it.effect("handles error with only code (missing message)", () =>
@@ -104,7 +109,7 @@ describe("HttpProviderTransport", () => {
 
 				expect(transportError.code).toBe(-32603);
 				expect(transportError.message).toBe("Unknown error");
-			})
+			}),
 		);
 
 		it.effect("handles error with only message (missing code)", () =>
@@ -114,7 +119,7 @@ describe("HttpProviderTransport", () => {
 
 				expect(transportError.code).toBe(-32603);
 				expect(transportError.message).toBe("Unknown error");
-			})
+			}),
 		);
 	});
 
@@ -128,12 +133,14 @@ describe("HttpProviderTransport", () => {
 				});
 
 				const result = yield* TransportService.pipe(
-					Effect.flatMap((transport) => transport.request<string>("eth_chainId")),
+					Effect.flatMap((transport) =>
+						transport.request<string>("eth_chainId"),
+					),
 					Effect.provide(mockTransport),
 				);
 
 				expect(result).toBe("0x123");
-			})
+			}),
 		);
 
 		it.effect("default params is empty array when not provided", () =>
@@ -148,21 +155,26 @@ describe("HttpProviderTransport", () => {
 							capturedParams = params;
 							return Effect.tryPromise({
 								try: () => promiseFn() as Promise<T>,
-								catch: () => new TransportError({ code: -32603, message: "error" }),
+								catch: () =>
+									new TransportError({ code: -32603, message: "error" }),
 							});
 						},
 					});
 				};
 
-				const mockTransport = createTransportWithPromise(() => Promise.resolve("0x1"));
+				const mockTransport = createTransportWithPromise(() =>
+					Promise.resolve("0x1"),
+				);
 
 				yield* TransportService.pipe(
-					Effect.flatMap((transport) => transport.request<string>("eth_blockNumber")),
+					Effect.flatMap((transport) =>
+						transport.request<string>("eth_blockNumber"),
+					),
 					Effect.provide(mockTransport),
 				);
 
 				expect(capturedParams).toEqual([]);
-			})
+			}),
 		);
 
 		it.effect("passes params correctly to underlying transport", () =>
@@ -187,7 +199,7 @@ describe("HttpProviderTransport", () => {
 
 				expect(capturedMethod).toBe("eth_getBalance");
 				expect(capturedParams).toEqual(["0xabc", "latest"]);
-			})
+			}),
 		);
 
 		it.effect("failed promise maps to TransportError with code/message", () =>
@@ -202,7 +214,9 @@ describe("HttpProviderTransport", () => {
 
 				const exit = yield* Effect.exit(
 					TransportService.pipe(
-						Effect.flatMap((transport) => transport.request<string>("unknown_method")),
+						Effect.flatMap((transport) =>
+							transport.request<string>("unknown_method"),
+						),
 						Effect.provide(mockTransport),
 					),
 				);
@@ -214,7 +228,7 @@ describe("HttpProviderTransport", () => {
 					expect((error as TransportError).code).toBe(-32601);
 					expect((error as TransportError).message).toBe("Method not found");
 				}
-			})
+			}),
 		);
 
 		it.effect("handles internal error code -32603", () =>
@@ -229,7 +243,9 @@ describe("HttpProviderTransport", () => {
 
 				const exit = yield* Effect.exit(
 					TransportService.pipe(
-						Effect.flatMap((transport) => transport.request<string>("eth_call")),
+						Effect.flatMap((transport) =>
+							transport.request<string>("eth_call"),
+						),
 						Effect.provide(mockTransport),
 					),
 				);
@@ -239,7 +255,7 @@ describe("HttpProviderTransport", () => {
 					const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
 					expect((error as TransportError).code).toBe(-32603);
 				}
-			})
+			}),
 		);
 
 		it.effect("handles complex JSON response", () =>
@@ -258,13 +274,16 @@ describe("HttpProviderTransport", () => {
 
 				const result = yield* TransportService.pipe(
 					Effect.flatMap((transport) =>
-						transport.request<typeof mockBlock>("eth_getBlockByNumber", ["latest", true]),
+						transport.request<typeof mockBlock>("eth_getBlockByNumber", [
+							"latest",
+							true,
+						]),
 					),
 					Effect.provide(mockTransport),
 				);
 
 				expect(result).toEqual(mockBlock);
-			})
+			}),
 		);
 
 		it.effect("handles null response for missing data", () =>
@@ -277,13 +296,15 @@ describe("HttpProviderTransport", () => {
 
 				const result = yield* TransportService.pipe(
 					Effect.flatMap((transport) =>
-						transport.request<null>("eth_getTransactionReceipt", ["0xnonexistent"]),
+						transport.request<null>("eth_getTransactionReceipt", [
+							"0xnonexistent",
+						]),
 					),
 					Effect.provide(mockTransport),
 				);
 
 				expect(result).toBeNull();
-			})
+			}),
 		);
 	});
 });

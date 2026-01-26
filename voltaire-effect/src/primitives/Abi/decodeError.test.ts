@@ -1,6 +1,6 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
 import { decodeError } from "./decodeError.js";
 import { encodeError } from "./encodeError.js";
 
@@ -31,11 +31,10 @@ describe("decodeError", () => {
 			Effect.gen(function* () {
 				const available = 100n;
 				const required = 200n;
-				const encoded = yield* encodeError(
-					customAbi,
-					"InsufficientBalance",
-					[available, required],
-				);
+				const encoded = yield* encodeError(customAbi, "InsufficientBalance", [
+					available,
+					required,
+				]);
 				const decoded = yield* decodeError(
 					customAbi,
 					"InsufficientBalance",
@@ -65,11 +64,10 @@ describe("decodeError", () => {
 
 		it.effect("round-trips with zero values", () =>
 			Effect.gen(function* () {
-				const encoded = yield* encodeError(
-					customAbi,
-					"InsufficientBalance",
-					[0n, 0n],
-				);
+				const encoded = yield* encodeError(customAbi, "InsufficientBalance", [
+					0n,
+					0n,
+				]);
 				const decoded = yield* decodeError(
 					customAbi,
 					"InsufficientBalance",
@@ -101,22 +99,14 @@ describe("decodeError", () => {
 	describe("error cases", () => {
 		it("fails for unknown error", async () => {
 			const exit = await Effect.runPromiseExit(
-				decodeError(
-					customAbi,
-					"UnknownError",
-					"0x00000000" as `0x${string}`,
-				),
+				decodeError(customAbi, "UnknownError", "0x00000000" as `0x${string}`),
 			);
 			expect(Exit.isFailure(exit)).toBe(true);
 		});
 
 		it("fails with empty ABI", async () => {
 			const exit = await Effect.runPromiseExit(
-				decodeError(
-					[],
-					"InsufficientBalance",
-					"0x00000000" as `0x${string}`,
-				),
+				decodeError([], "InsufficientBalance", "0x00000000" as `0x${string}`),
 			);
 			expect(Exit.isFailure(exit)).toBe(true);
 		});

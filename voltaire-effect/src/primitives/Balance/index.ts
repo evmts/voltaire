@@ -39,6 +39,6 @@
  * @since 0.1.0
  */
 
-export { BigInt, type BalanceType } from "./BigInt.js";
+export { type BalanceType, BigInt } from "./BigInt.js";
 export { Number } from "./Number.js";
 export { String } from "./String.js";

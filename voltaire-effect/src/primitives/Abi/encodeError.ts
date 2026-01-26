@@ -90,5 +90,7 @@ export const encodeError = (
 		catch: (e) =>
 			isAbiError(e)
 				? e
-				: new AbiEncodingErrorClass("Failed to encode error", { cause: e instanceof Error ? e : undefined }),
+				: new AbiEncodingErrorClass("Failed to encode error", {
+						cause: e instanceof Error ? e : undefined,
+					}),
 	});

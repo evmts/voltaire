@@ -7,12 +7,12 @@
 
 import * as Effect from "effect/Effect";
 import {
-	ProviderService,
 	type EventFilter,
 	type FilterChanges,
 	type FilterId,
 	type LogType,
 	type ProviderError,
+	ProviderService,
 } from "./ProviderService.js";
 
 /**

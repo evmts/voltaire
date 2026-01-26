@@ -110,4 +110,3 @@ export const withTracing =
 	(enabled = true) =>
 	<A, E, R>(effect: Effect.Effect<A, E, R>): Effect.Effect<A, E, R> =>
 		Effect.locally(effect, tracingRef, enabled);
-

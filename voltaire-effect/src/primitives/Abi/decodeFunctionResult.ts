@@ -154,5 +154,7 @@ export const decodeFunctionResult = (
 		catch: (e) =>
 			isAbiError(e)
 				? e
-				: new AbiDecodingErrorClass("Failed to decode function result", { cause: e instanceof Error ? e : undefined }),
+				: new AbiDecodingErrorClass("Failed to decode function result", {
+						cause: e instanceof Error ? e : undefined,
+					}),
 	});

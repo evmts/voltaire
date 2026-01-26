@@ -23,8 +23,8 @@ import type { AddressType } from "@tevm/voltaire/Address";
 import type {
 	BackfillOptions,
 	BlockInclude,
-	BlocksEvent,
 	BlockStreamEvent,
+	BlocksEvent,
 	WatchOptions,
 } from "@tevm/voltaire/block";
 import type { HashType } from "@tevm/voltaire/Hash";
@@ -51,7 +51,6 @@ export type HashInput = HashType | `0x${string}`;
  * @since 0.0.1
  */
 export type FilterId = `0x${string}`;
-
 
 /**
  * Error thrown when a provider operation fails.

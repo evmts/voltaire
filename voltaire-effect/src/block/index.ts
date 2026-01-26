@@ -30,24 +30,23 @@
  * ```
  */
 
-export { BlockError, BlockNotFoundError } from "./BlockError.js";
-export { fetchBlock } from "./fetchBlock.js";
-export { fetchBlockByHash } from "./fetchBlockByHash.js";
-export { fetchBlockReceipts } from "./fetchBlockReceipts.js";
-export { toLightBlock } from "./toLightBlock.js";
-
 export type {
 	BackfillOptions,
 	BlockInclude,
-	BlocksEvent,
 	BlockStream,
 	BlockStreamConstructorOptions,
 	BlockStreamEvent,
 	BlockStreamMetadata,
 	BlockStreamOptions,
+	BlocksEvent,
 	LightBlock,
 	ReorgEvent,
 	RetryOptions,
 	StreamBlock,
 	WatchOptions,
 } from "@tevm/voltaire/block";
+export { BlockError, BlockNotFoundError } from "./BlockError.js";
+export { fetchBlock } from "./fetchBlock.js";
+export { fetchBlockByHash } from "./fetchBlockByHash.js";
+export { fetchBlockReceipts } from "./fetchBlockReceipts.js";
+export { toLightBlock } from "./toLightBlock.js";

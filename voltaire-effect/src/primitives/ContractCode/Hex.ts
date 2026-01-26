@@ -9,6 +9,7 @@ import { ContractCode } from "@tevm/voltaire";
 type ContractCodeType = ReturnType<typeof ContractCode.from>;
 const voltaireFrom = ContractCode.from;
 const voltaireToHex = ContractCode.toHex;
+
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
 

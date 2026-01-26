@@ -208,9 +208,12 @@ export class RpcBatchService extends Context.Tag("RpcBatchService")<
  *
  * @since 0.0.1
  */
-export const makeRpcResolver = (
-	transport: { request: <T>(method: string, params?: unknown[]) => Effect.Effect<T, TransportError> },
-): RequestResolver.RequestResolver<RpcRequest, never> =>
+export const makeRpcResolver = (transport: {
+	request: <T>(
+		method: string,
+		params?: unknown[],
+	) => Effect.Effect<T, TransportError>;
+}): RequestResolver.RequestResolver<RpcRequest, never> =>
 	RequestResolver.makeBatched((requests: readonly RpcRequest[]) =>
 		Effect.gen(function* () {
 			if (requests.length === 0) return;
@@ -219,12 +222,19 @@ export const makeRpcResolver = (
 				const request = requests[0];
 				const rpcRequest = requestToRpc(request, 1);
 				const result = yield* Effect.either(
-					transport.request<unknown>(rpcRequest.method, rpcRequest.params as unknown[]),
+					transport.request<unknown>(
+						rpcRequest.method,
+						rpcRequest.params as unknown[],
+					),
 				);
 				if (result._tag === "Left") {
-					const error = result.left instanceof TransportError
-						? result.left
-						: new TransportError({ code: -32603, message: String(result.left) });
+					const error =
+						result.left instanceof TransportError
+							? result.left
+							: new TransportError({
+									code: -32603,
+									message: String(result.left),
+								});
 					yield* Request.fail(request, error);
 				} else {
 					yield* Request.succeed(request as RpcRequest, result.right);
@@ -239,9 +249,13 @@ export const makeRpcResolver = (
 			);
 
 			if (result._tag === "Left") {
-				const error = result.left instanceof TransportError
-					? result.left
-					: new TransportError({ code: -32603, message: String(result.left) });
+				const error =
+					result.left instanceof TransportError
+						? result.left
+						: new TransportError({
+								code: -32603,
+								message: String(result.left),
+							});
 				yield* Effect.forEach(
 					requests,
 					(request) => Request.fail(request, error),
@@ -319,10 +333,10 @@ export const RpcBatch: Layer.Layer<RpcBatchService, never, TransportService> =
 			return {
 				resolver,
 				request: <R extends RpcRequest>(request: R) =>
-					(Effect.request(resolver as any)(request) as Effect.Effect<
+					Effect.request(resolver as any)(request) as Effect.Effect<
 						Request.Request.Success<R>,
 						Request.Request.Error<R>
-					>),
+					>,
 			};
 		}),
 	);

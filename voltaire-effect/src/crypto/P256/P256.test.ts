@@ -1,8 +1,8 @@
+import { describe, expect, it } from "@effect/vitest";
 import { Hash } from "@tevm/voltaire";
 import * as VoltaireP256 from "@tevm/voltaire/P256";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
 import * as P256Effect from "./index.js";
 
 describe("P256", () => {
@@ -19,7 +19,7 @@ describe("P256", () => {
 				expect(result).toHaveProperty("s");
 				expect(result.r.length).toBe(32);
 				expect(result.s.length).toBe(32);
-			})
+			}),
 		);
 
 		it.effect("produces deterministic signatures (RFC 6979)", () =>
@@ -28,7 +28,7 @@ describe("P256", () => {
 				const sig2 = yield* P256Effect.sign(testMessageHash, testPrivateKey);
 				expect(sig1.r).toEqual(sig2.r);
 				expect(sig1.s).toEqual(sig2.s);
-			})
+			}),
 		);
 
 		it("fails with wrong key length (16 bytes)", async () => {
@@ -70,7 +70,7 @@ describe("P256", () => {
 				const sig1 = yield* P256Effect.sign(hash1, testPrivateKey);
 				const sig2 = yield* P256Effect.sign(hash2, testPrivateKey);
 				expect(sig1.r).not.toEqual(sig2.r);
-			})
+			}),
 		);
 
 		it.effect("produces different signatures for different keys", () =>
@@ -80,7 +80,7 @@ describe("P256", () => {
 				const sig1 = yield* P256Effect.sign(testMessageHash, key1);
 				const sig2 = yield* P256Effect.sign(testMessageHash, key2);
 				expect(sig1.r).not.toEqual(sig2.r);
-			})
+			}),
 		);
 
 		it.effect("handles all-ones private key (clamped)", () =>
@@ -90,7 +90,7 @@ describe("P256", () => {
 				const result = yield* P256Effect.sign(testMessageHash, onesKey);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
-			})
+			}),
 		);
 
 		it.effect("handles minimum valid private key", () =>
@@ -100,7 +100,7 @@ describe("P256", () => {
 				const result = yield* P256Effect.sign(testMessageHash, minKey);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
-			})
+			}),
 		);
 
 		it.effect("handles zero message hash", () =>
@@ -109,7 +109,7 @@ describe("P256", () => {
 				const result = yield* P256Effect.sign(zeroHash, testPrivateKey);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
-			})
+			}),
 		);
 
 		it.effect("handles max message hash (all 0xff)", () =>
@@ -118,76 +118,125 @@ describe("P256", () => {
 				const result = yield* P256Effect.sign(maxHash, testPrivateKey);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
-			})
+			}),
 		);
 	});
 
 	describe("verify", () => {
 		it.effect("verifies a valid signature", () =>
 			Effect.gen(function* () {
-				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
-				const isValid = yield* P256Effect.verify(signature, testMessageHash, testPublicKey);
+				const signature = yield* P256Effect.sign(
+					testMessageHash,
+					testPrivateKey,
+				);
+				const isValid = yield* P256Effect.verify(
+					signature,
+					testMessageHash,
+					testPublicKey,
+				);
 				expect(isValid).toBe(true);
-			})
+			}),
 		);
 
 		it.effect("returns false for wrong message hash", () =>
 			Effect.gen(function* () {
-				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const signature = yield* P256Effect.sign(
+					testMessageHash,
+					testPrivateKey,
+				);
 				const wrongHash = Hash.from(new Uint8Array(32).fill(0xff));
-				const isValid = yield* P256Effect.verify(signature, wrongHash, testPublicKey);
+				const isValid = yield* P256Effect.verify(
+					signature,
+					wrongHash,
+					testPublicKey,
+				);
 				expect(isValid).toBe(false);
-			})
+			}),
 		);
 
 		it.effect("returns false for wrong public key", () =>
 			Effect.gen(function* () {
-				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const signature = yield* P256Effect.sign(
+					testMessageHash,
+					testPrivateKey,
+				);
 				const otherKey = VoltaireP256.randomPrivateKey();
 				const wrongPublicKey = VoltaireP256.derivePublicKey(otherKey);
-				const isValid = yield* P256Effect.verify(signature, testMessageHash, wrongPublicKey);
+				const isValid = yield* P256Effect.verify(
+					signature,
+					testMessageHash,
+					wrongPublicKey,
+				);
 				expect(isValid).toBe(false);
-			})
+			}),
 		);
 
 		it.effect("returns false for tampered r value", () =>
 			Effect.gen(function* () {
-				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const signature = yield* P256Effect.sign(
+					testMessageHash,
+					testPrivateKey,
+				);
 				const tamperedR = new Uint8Array(signature.r);
 				tamperedR[0] ^= 0xff;
 				const tamperedSig = { ...signature, r: tamperedR };
-				const isValid = yield* P256Effect.verify(tamperedSig as any, testMessageHash, testPublicKey);
+				const isValid = yield* P256Effect.verify(
+					tamperedSig as any,
+					testMessageHash,
+					testPublicKey,
+				);
 				expect(isValid).toBe(false);
-			})
+			}),
 		);
 
 		it.effect("returns false for tampered s value", () =>
 			Effect.gen(function* () {
-				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const signature = yield* P256Effect.sign(
+					testMessageHash,
+					testPrivateKey,
+				);
 				const tamperedS = new Uint8Array(signature.s);
 				tamperedS[0] ^= 0xff;
 				const tamperedSig = { ...signature, s: tamperedS };
-				const isValid = yield* P256Effect.verify(tamperedSig as any, testMessageHash, testPublicKey);
+				const isValid = yield* P256Effect.verify(
+					tamperedSig as any,
+					testMessageHash,
+					testPublicKey,
+				);
 				expect(isValid).toBe(false);
-			})
+			}),
 		);
 
 		it.effect("returns false for zero r value", () =>
 			Effect.gen(function* () {
-				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const signature = yield* P256Effect.sign(
+					testMessageHash,
+					testPrivateKey,
+				);
 				const zeroSig = { ...signature, r: new Uint8Array(32) };
-				const isValid = yield* P256Effect.verify(zeroSig as any, testMessageHash, testPublicKey);
+				const isValid = yield* P256Effect.verify(
+					zeroSig as any,
+					testMessageHash,
+					testPublicKey,
+				);
 				expect(isValid).toBe(false);
-			})
+			}),
 		);
 
 		it.effect("returns false for zero s value", () =>
 			Effect.gen(function* () {
-				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const signature = yield* P256Effect.sign(
+					testMessageHash,
+					testPrivateKey,
+				);
 				const zeroSig = { ...signature, s: new Uint8Array(32) };
-				const isValid = yield* P256Effect.verify(zeroSig as any, testMessageHash, testPublicKey);
+				const isValid = yield* P256Effect.verify(
+					zeroSig as any,
+					testMessageHash,
+					testPublicKey,
+				);
 				expect(isValid).toBe(false);
-			})
+			}),
 		);
 
 		it.effect("verifies signatures from multiple different keys", () =>
@@ -200,7 +249,7 @@ describe("P256", () => {
 					const isValid = yield* P256Effect.verify(sig, hash, publicKey);
 					expect(isValid).toBe(true);
 				}
-			})
+			}),
 		);
 	});
 
@@ -211,9 +260,13 @@ describe("P256", () => {
 				const publicKey = VoltaireP256.derivePublicKey(privateKey);
 				const messageHash = Hash.from(new Uint8Array(32).fill(0xcd));
 				const signature = yield* P256Effect.sign(messageHash, privateKey);
-				const isValid = yield* P256Effect.verify(signature, messageHash, publicKey);
+				const isValid = yield* P256Effect.verify(
+					signature,
+					messageHash,
+					publicKey,
+				);
 				expect(isValid).toBe(true);
-			})
+			}),
 		);
 
 		it.effect("sign-verify with zero hash", () =>
@@ -222,9 +275,13 @@ describe("P256", () => {
 				const publicKey = VoltaireP256.derivePublicKey(privateKey);
 				const zeroHash = Hash.from(new Uint8Array(32));
 				const signature = yield* P256Effect.sign(zeroHash, privateKey);
-				const isValid = yield* P256Effect.verify(signature, zeroHash, publicKey);
+				const isValid = yield* P256Effect.verify(
+					signature,
+					zeroHash,
+					publicKey,
+				);
 				expect(isValid).toBe(true);
-			})
+			}),
 		);
 
 		it.effect("sign-verify with max hash", () =>
@@ -235,7 +292,7 @@ describe("P256", () => {
 				const signature = yield* P256Effect.sign(maxHash, privateKey);
 				const isValid = yield* P256Effect.verify(signature, maxHash, publicKey);
 				expect(isValid).toBe(true);
-			})
+			}),
 		);
 	});
 
@@ -246,16 +303,23 @@ describe("P256", () => {
 				const result = yield* p256.sign(testMessageHash, testPrivateKey);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
-			}).pipe(Effect.provide(P256Effect.P256Live))
+			}).pipe(Effect.provide(P256Effect.P256Live)),
 		);
 
 		it.effect("provides verify through service layer", () =>
 			Effect.gen(function* () {
-				const signature = yield* P256Effect.sign(testMessageHash, testPrivateKey);
+				const signature = yield* P256Effect.sign(
+					testMessageHash,
+					testPrivateKey,
+				);
 				const p256 = yield* P256Effect.P256Service;
-				const result = yield* p256.verify(signature, testMessageHash, testPublicKey);
+				const result = yield* p256.verify(
+					signature,
+					testMessageHash,
+					testPublicKey,
+				);
 				expect(result).toBe(true);
-			}).pipe(Effect.provide(P256Effect.P256Live))
+			}).pipe(Effect.provide(P256Effect.P256Live)),
 		);
 
 		it.effect("sign-verify through service layer", () =>
@@ -264,7 +328,7 @@ describe("P256", () => {
 				const sig = yield* p256.sign(testMessageHash, testPrivateKey);
 				const result = yield* p256.verify(sig, testMessageHash, testPublicKey);
 				expect(result).toBe(true);
-			}).pipe(Effect.provide(P256Effect.P256Live))
+			}).pipe(Effect.provide(P256Effect.P256Live)),
 		);
 
 		it("handles error in service layer", async () => {
@@ -290,7 +354,7 @@ describe("P256", () => {
 					expect(sig.r.length).toBe(32);
 					expect(sig.s.length).toBe(32);
 				}
-			})
+			}),
 		);
 
 		it("public key derivation is deterministic", () => {
@@ -314,9 +378,13 @@ describe("P256", () => {
 				const result = yield* P256Effect.sign(rawHash, testPrivateKey);
 				expect(result).toHaveProperty("r");
 				expect(result).toHaveProperty("s");
-				const isValid = yield* P256Effect.verify(result, rawHash, testPublicKey);
+				const isValid = yield* P256Effect.verify(
+					result,
+					rawHash,
+					testPublicKey,
+				);
 				expect(isValid).toBe(true);
-			})
+			}),
 		);
 	});
 
@@ -332,7 +400,7 @@ describe("P256", () => {
 				expect(sig1.s).toEqual(sig2.s);
 				expect(sig2.r).toEqual(sig3.r);
 				expect(sig2.s).toEqual(sig3.s);
-			})
+			}),
 		);
 
 		it("validates random key generation produces valid keys", () => {

@@ -46,4 +46,6 @@ export { Hex } from "./Hex.js";
 /**
  * Contract code type - branded Uint8Array for deployed bytecode.
  */
-export type ContractCodeType = Uint8Array & { readonly __brand: "ContractCode" };
+export type ContractCodeType = Uint8Array & {
+	readonly __brand: "ContractCode";
+};

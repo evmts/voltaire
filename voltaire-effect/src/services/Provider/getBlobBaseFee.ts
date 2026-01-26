@@ -13,7 +13,7 @@ import {
 import { BlobBaseFee } from "@tevm/voltaire/FeeMarket";
 import * as Effect from "effect/Effect";
 import { TransportService } from "../Transport/TransportService.js";
-import { ProviderError, type BlockType } from "./ProviderService.js";
+import { type BlockType, ProviderError } from "./ProviderService.js";
 
 const METHOD_NOT_FOUND = -32601;
 

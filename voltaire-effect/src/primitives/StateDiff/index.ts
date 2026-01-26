@@ -15,14 +15,14 @@
  * @since 0.0.1
  */
 export {
-	Schema,
-	AccountDiffSchema,
 	type AccountDiff,
-	BalanceChangeSchema,
+	AccountDiffSchema,
 	type BalanceChange,
-	NonceChangeSchema,
-	type NonceChange,
-	CodeChangeSchema,
+	BalanceChangeSchema,
 	type CodeChange,
+	CodeChangeSchema,
+	type NonceChange,
+	NonceChangeSchema,
+	Schema,
 	type StateDiffType,
 } from "./StateDiffSchema.js";

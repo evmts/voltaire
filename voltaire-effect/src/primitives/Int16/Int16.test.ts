@@ -1,7 +1,7 @@
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
-import * as Int16 from "./index.js";
 import { BrandedInt16 } from "@tevm/voltaire";
+import * as S from "effect/Schema";
+import * as Int16 from "./index.js";
 
 const INT16_MIN = -32768;
 const INT16_MAX = 32767;

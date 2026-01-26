@@ -64,8 +64,10 @@ export const FeeHistoryRequest = (
 ) =>
 	makeRequest("eth_feeHistory", [blockCount, newestBlock, rewardPercentiles]);
 export const GasPriceRequest = () => makeRequest("eth_gasPrice");
-export const GetBalanceRequest = (address: string, blockTag: string = "latest") =>
-	makeRequest("eth_getBalance", [address, blockTag]);
+export const GetBalanceRequest = (
+	address: string,
+	blockTag: string = "latest",
+) => makeRequest("eth_getBalance", [address, blockTag]);
 export const GetBlockByHashRequest = (hash: string, fullTx: boolean = false) =>
 	makeRequest("eth_getBlockByHash", [hash, fullTx]);
 export const GetBlockByNumberRequest = (
@@ -140,8 +142,10 @@ export const SignRequest = (address: string, message: string) =>
 	makeRequest("eth_sign", [address, message]);
 export const SignTransactionRequest = (tx: unknown) =>
 	makeRequest("eth_signTransaction", [tx]);
-export const SimulateV1Request = (calls: unknown[], blockTag: string = "latest") =>
-	makeRequest("eth_simulateV1", [calls, blockTag]);
+export const SimulateV1Request = (
+	calls: unknown[],
+	blockTag: string = "latest",
+) => makeRequest("eth_simulateV1", [calls, blockTag]);
 export const SyncingRequest = () => makeRequest("eth_syncing");
 export const UninstallFilterRequest = (filterId: string) =>
 	makeRequest("eth_uninstallFilter", [filterId]);

@@ -9,7 +9,8 @@ const isUint8Array = (value: unknown): value is Uint8Array =>
 
 const isOptionalUint8Array = (
 	value: unknown,
-): value is Uint8Array | undefined => value === undefined || isUint8Array(value);
+): value is Uint8Array | undefined =>
+	value === undefined || isUint8Array(value);
 
 const isOptionalBigint = (value: unknown): value is bigint | undefined =>
 	value === undefined || typeof value === "bigint";

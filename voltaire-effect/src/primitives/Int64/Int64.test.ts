@@ -1,7 +1,7 @@
-import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
-import * as Int64 from "./index.js";
 import { BrandedInt64 } from "@tevm/voltaire";
+import * as S from "effect/Schema";
+import * as Int64 from "./index.js";
 
 const INT64_MIN = -9223372036854775808n;
 const INT64_MAX = 9223372036854775807n;

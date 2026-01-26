@@ -6,7 +6,6 @@ import { Bn254Live } from "./Bn254/index.js";
 import { ChaCha20Poly1305Live } from "./ChaCha20Poly1305/index.js";
 import { Ed25519Live } from "./Ed25519/Ed25519Live.js";
 import { EIP712Live } from "./EIP712/index.js";
-import { HDWalletLive } from "./HDWallet/index.js";
 import { HMACLive } from "./HMAC/index.js";
 import { KeccakLive } from "./Keccak256/index.js";
 import { KeystoreLive } from "./Keystore/index.js";
@@ -19,7 +18,7 @@ import { SHA256Live } from "./SHA256/index.js";
 /**
  * Combined production layer providing all cryptographic services.
  * Includes: Keccak256, Secp256k1, SHA256, Blake2, Ripemd160, BLS12-381,
- * Ed25519, P256, KZG, HDWallet, BN254, BIP-39, HMAC, EIP-712, ChaCha20Poly1305, and Keystore.
+ * Ed25519, P256, KZG, BN254, BIP-39, HMAC, EIP-712, ChaCha20Poly1305, and Keystore.
  *
  * @example
  * ```typescript
@@ -44,7 +43,6 @@ export const CryptoLive = Layer.mergeAll(
 	Ed25519Live,
 	P256Live,
 	KZGLive,
-	HDWalletLive,
 	Bn254Live,
 	Bip39Live,
 	HMACLive,

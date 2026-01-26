@@ -6,8 +6,8 @@
 
 import * as Effect from "effect/Effect";
 import { ProviderService } from "../ProviderService.js";
-import { EnsError } from "./EnsError.js";
 import { ENS_UNIVERSAL_RESOLVER_ADDRESS } from "./constants.js";
+import { EnsError } from "./EnsError.js";
 import {
 	bytesToHex,
 	dnsEncode,
@@ -55,8 +55,11 @@ export const getEnsText = (
 	params: GetEnsTextParams,
 ): Effect.Effect<string | null, EnsError, ProviderService> =>
 	Effect.gen(function* () {
-		const { name, key, universalResolverAddress = ENS_UNIVERSAL_RESOLVER_ADDRESS } =
-			params;
+		const {
+			name,
+			key,
+			universalResolverAddress = ENS_UNIVERSAL_RESOLVER_ADDRESS,
+		} = params;
 
 		const provider = yield* ProviderService;
 
@@ -69,15 +72,20 @@ export const getEnsText = (
 		const dnsNameHex = bytesToHex(dnsName).slice(2);
 		const textCallHex = textCallData.slice(2);
 
-		const offset1 = "0000000000000000000000000000000000000000000000000000000000000040";
+		const offset1 =
+			"0000000000000000000000000000000000000000000000000000000000000040";
 		const offset2Num = 64 + Math.ceil(dnsName.length / 32) * 32 + 32;
 		const offset2 = offset2Num.toString(16).padStart(64, "0");
 		const len1 = dnsName.length.toString(16).padStart(64, "0");
 		const data1 = dnsNameHex.padEnd(Math.ceil(dnsName.length / 32) * 64, "0");
 		const len2 = (textCallHex.length / 2).toString(16).padStart(64, "0");
-		const data2 = textCallHex.padEnd(Math.ceil(textCallHex.length / 64) * 64, "0");
+		const data2 = textCallHex.padEnd(
+			Math.ceil(textCallHex.length / 64) * 64,
+			"0",
+		);
 
-		const callData = `0x${selector}${offset1}${offset2}${len1}${data1}${len2}${data2}` as `0x${string}`;
+		const callData =
+			`0x${selector}${offset1}${offset2}${len1}${data1}${len2}${data2}` as `0x${string}`;
 
 		const result = yield* provider
 			.call({
@@ -118,7 +126,10 @@ export const getEnsText = (
 		}
 
 		// Get the actual text() return data
-		const textData = hex.slice(dataLengthStart + 64, dataLengthStart + 64 + dataLength * 2);
+		const textData = hex.slice(
+			dataLengthStart + 64,
+			dataLengthStart + 64 + dataLength * 2,
+		);
 
 		// text() returns a string, need to decode ABI string
 		if (textData.length < 128) {
@@ -138,7 +149,10 @@ export const getEnsText = (
 		}
 
 		const stringDataStart = stringLengthStart + 64;
-		const stringHex = textData.slice(stringDataStart, stringDataStart + stringLength * 2);
+		const stringHex = textData.slice(
+			stringDataStart,
+			stringDataStart + stringLength * 2,
+		);
 		const bytes = hexToBytes(stringHex);
 		return new TextDecoder().decode(bytes);
 	});

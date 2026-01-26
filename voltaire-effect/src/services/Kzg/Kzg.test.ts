@@ -1,8 +1,8 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
-import { describe, expect, it } from "@effect/vitest";
 import { DefaultKzg } from "./DefaultKzg.js";
 import { KzgError, KzgService } from "./KzgService.js";
 import { NoopKzg } from "./NoopKzg.js";
@@ -110,17 +110,19 @@ describe("NoopKzg", () => {
 
 describe("DefaultKzg", () => {
 	describe("blobToCommitment", () => {
-		it.effect.skip("fails with KzgError when blob size is wrong (requires WASM)", () =>
-			Effect.gen(function* () {
-				const kzg = yield* KzgService;
-				const exit = yield* Effect.exit(
-					kzg.blobToCommitment(new Uint8Array(100)),
-				);
-				expect(Exit.isFailure(exit)).toBe(true);
-				const error = getFailure(exit);
-				expect(error).toBeInstanceOf(KzgError);
-				expect((error as KzgError).operation).toBe("blobToCommitment");
-			}).pipe(Effect.provide(DefaultKzg)),
+		it.effect.skip(
+			"fails with KzgError when blob size is wrong (requires WASM)",
+			() =>
+				Effect.gen(function* () {
+					const kzg = yield* KzgService;
+					const exit = yield* Effect.exit(
+						kzg.blobToCommitment(new Uint8Array(100)),
+					);
+					expect(Exit.isFailure(exit)).toBe(true);
+					const error = getFailure(exit);
+					expect(error).toBeInstanceOf(KzgError);
+					expect((error as KzgError).operation).toBe("blobToCommitment");
+				}).pipe(Effect.provide(DefaultKzg)),
 		);
 
 		it.effect.skip("fails with KzgError for empty blob (requires WASM)", () =>
@@ -148,30 +150,34 @@ describe("DefaultKzg", () => {
 	});
 
 	describe("computeProof", () => {
-		it.effect.skip("fails with KzgError when blob size is wrong (requires WASM)", () =>
-			Effect.gen(function* () {
-				const kzg = yield* KzgService;
-				const exit = yield* Effect.exit(
-					kzg.computeProof(new Uint8Array(100), new Uint8Array(48)),
-				);
-				expect(Exit.isFailure(exit)).toBe(true);
-				const error = getFailure(exit);
-				expect(error).toBeInstanceOf(KzgError);
-				expect((error as KzgError).operation).toBe("computeProof");
-			}).pipe(Effect.provide(DefaultKzg)),
+		it.effect.skip(
+			"fails with KzgError when blob size is wrong (requires WASM)",
+			() =>
+				Effect.gen(function* () {
+					const kzg = yield* KzgService;
+					const exit = yield* Effect.exit(
+						kzg.computeProof(new Uint8Array(100), new Uint8Array(48)),
+					);
+					expect(Exit.isFailure(exit)).toBe(true);
+					const error = getFailure(exit);
+					expect(error).toBeInstanceOf(KzgError);
+					expect((error as KzgError).operation).toBe("computeProof");
+				}).pipe(Effect.provide(DefaultKzg)),
 		);
 
-		it.effect.skip("fails with KzgError when commitment size is wrong (requires WASM)", () =>
-			Effect.gen(function* () {
-				const kzg = yield* KzgService;
-				const exit = yield* Effect.exit(
-					kzg.computeProof(new Uint8Array(131072), new Uint8Array(10)),
-				);
-				expect(Exit.isFailure(exit)).toBe(true);
-				const error = getFailure(exit);
-				expect(error).toBeInstanceOf(KzgError);
-				expect((error as KzgError).operation).toBe("computeProof");
-			}).pipe(Effect.provide(DefaultKzg)),
+		it.effect.skip(
+			"fails with KzgError when commitment size is wrong (requires WASM)",
+			() =>
+				Effect.gen(function* () {
+					const kzg = yield* KzgService;
+					const exit = yield* Effect.exit(
+						kzg.computeProof(new Uint8Array(131072), new Uint8Array(10)),
+					);
+					expect(Exit.isFailure(exit)).toBe(true);
+					const error = getFailure(exit);
+					expect(error).toBeInstanceOf(KzgError);
+					expect((error as KzgError).operation).toBe("computeProof");
+				}).pipe(Effect.provide(DefaultKzg)),
 		);
 
 		it.effect.skip("succeeds with correct sizes", () =>
@@ -187,76 +193,84 @@ describe("DefaultKzg", () => {
 	});
 
 	describe("verifyProof", () => {
-		it.effect.skip("fails with KzgError when commitment size is wrong (requires WASM)", () =>
-			Effect.gen(function* () {
-				const kzg = yield* KzgService;
-				const exit = yield* Effect.exit(
-					kzg.verifyProof(
-						new Uint8Array(10),
-						new Uint8Array(32),
-						new Uint8Array(32),
-						new Uint8Array(48),
-					),
-				);
-				expect(Exit.isFailure(exit)).toBe(true);
-				const error = getFailure(exit);
-				expect(error).toBeInstanceOf(KzgError);
-				expect((error as KzgError).operation).toBe("verifyProof");
-			}).pipe(Effect.provide(DefaultKzg)),
+		it.effect.skip(
+			"fails with KzgError when commitment size is wrong (requires WASM)",
+			() =>
+				Effect.gen(function* () {
+					const kzg = yield* KzgService;
+					const exit = yield* Effect.exit(
+						kzg.verifyProof(
+							new Uint8Array(10),
+							new Uint8Array(32),
+							new Uint8Array(32),
+							new Uint8Array(48),
+						),
+					);
+					expect(Exit.isFailure(exit)).toBe(true);
+					const error = getFailure(exit);
+					expect(error).toBeInstanceOf(KzgError);
+					expect((error as KzgError).operation).toBe("verifyProof");
+				}).pipe(Effect.provide(DefaultKzg)),
 		);
 
-		it.effect.skip("fails with KzgError when z size is wrong (requires WASM)", () =>
-			Effect.gen(function* () {
-				const kzg = yield* KzgService;
-				const exit = yield* Effect.exit(
-					kzg.verifyProof(
-						new Uint8Array(48),
-						new Uint8Array(10),
-						new Uint8Array(32),
-						new Uint8Array(48),
-					),
-				);
-				expect(Exit.isFailure(exit)).toBe(true);
-				const error = getFailure(exit);
-				expect(error).toBeInstanceOf(KzgError);
-				expect((error as KzgError).operation).toBe("verifyProof");
-			}).pipe(Effect.provide(DefaultKzg)),
+		it.effect.skip(
+			"fails with KzgError when z size is wrong (requires WASM)",
+			() =>
+				Effect.gen(function* () {
+					const kzg = yield* KzgService;
+					const exit = yield* Effect.exit(
+						kzg.verifyProof(
+							new Uint8Array(48),
+							new Uint8Array(10),
+							new Uint8Array(32),
+							new Uint8Array(48),
+						),
+					);
+					expect(Exit.isFailure(exit)).toBe(true);
+					const error = getFailure(exit);
+					expect(error).toBeInstanceOf(KzgError);
+					expect((error as KzgError).operation).toBe("verifyProof");
+				}).pipe(Effect.provide(DefaultKzg)),
 		);
 
-		it.effect.skip("fails with KzgError when y size is wrong (requires WASM)", () =>
-			Effect.gen(function* () {
-				const kzg = yield* KzgService;
-				const exit = yield* Effect.exit(
-					kzg.verifyProof(
-						new Uint8Array(48),
-						new Uint8Array(32),
-						new Uint8Array(10),
-						new Uint8Array(48),
-					),
-				);
-				expect(Exit.isFailure(exit)).toBe(true);
-				const error = getFailure(exit);
-				expect(error).toBeInstanceOf(KzgError);
-				expect((error as KzgError).operation).toBe("verifyProof");
-			}).pipe(Effect.provide(DefaultKzg)),
+		it.effect.skip(
+			"fails with KzgError when y size is wrong (requires WASM)",
+			() =>
+				Effect.gen(function* () {
+					const kzg = yield* KzgService;
+					const exit = yield* Effect.exit(
+						kzg.verifyProof(
+							new Uint8Array(48),
+							new Uint8Array(32),
+							new Uint8Array(10),
+							new Uint8Array(48),
+						),
+					);
+					expect(Exit.isFailure(exit)).toBe(true);
+					const error = getFailure(exit);
+					expect(error).toBeInstanceOf(KzgError);
+					expect((error as KzgError).operation).toBe("verifyProof");
+				}).pipe(Effect.provide(DefaultKzg)),
 		);
 
-		it.effect.skip("fails with KzgError when proof size is wrong (requires WASM)", () =>
-			Effect.gen(function* () {
-				const kzg = yield* KzgService;
-				const exit = yield* Effect.exit(
-					kzg.verifyProof(
-						new Uint8Array(48),
-						new Uint8Array(32),
-						new Uint8Array(32),
-						new Uint8Array(10),
-					),
-				);
-				expect(Exit.isFailure(exit)).toBe(true);
-				const error = getFailure(exit);
-				expect(error).toBeInstanceOf(KzgError);
-				expect((error as KzgError).operation).toBe("verifyProof");
-			}).pipe(Effect.provide(DefaultKzg)),
+		it.effect.skip(
+			"fails with KzgError when proof size is wrong (requires WASM)",
+			() =>
+				Effect.gen(function* () {
+					const kzg = yield* KzgService;
+					const exit = yield* Effect.exit(
+						kzg.verifyProof(
+							new Uint8Array(48),
+							new Uint8Array(32),
+							new Uint8Array(32),
+							new Uint8Array(10),
+						),
+					);
+					expect(Exit.isFailure(exit)).toBe(true);
+					const error = getFailure(exit);
+					expect(error).toBeInstanceOf(KzgError);
+					expect((error as KzgError).operation).toBe("verifyProof");
+				}).pipe(Effect.provide(DefaultKzg)),
 		);
 	});
 });

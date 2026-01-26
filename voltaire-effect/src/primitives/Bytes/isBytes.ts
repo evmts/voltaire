@@ -19,4 +19,5 @@ import { Bytes as VoltaireBytes } from "@tevm/voltaire/Bytes";
  *
  * @since 0.0.1
  */
-export const isBytes = (value: unknown): boolean => VoltaireBytes.isBytes(value);
+export const isBytes = (value: unknown): boolean =>
+	VoltaireBytes.isBytes(value);

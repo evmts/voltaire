@@ -12,7 +12,9 @@ import * as Data from "effect/Data";
  *
  * @since 0.2.13
  */
-export class TransactionStreamError extends Data.TaggedError("TransactionStreamError")<{
+export class TransactionStreamError extends Data.TaggedError(
+	"TransactionStreamError",
+)<{
 	readonly message: string;
 	readonly cause?: unknown;
 	readonly context?: Record<string, unknown>;

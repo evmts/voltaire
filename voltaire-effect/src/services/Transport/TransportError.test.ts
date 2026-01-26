@@ -16,7 +16,10 @@ describe("TransportError", () => {
 		});
 
 		it("stores data", () => {
-			const errorData = { revertReason: "0x08c379a0...", details: { gas: 21000 } };
+			const errorData = {
+				revertReason: "0x08c379a0...",
+				details: { gas: 21000 },
+			};
 			const error = new TransportError({
 				code: -32000,
 				message: "reverted",

@@ -9,8 +9,8 @@
 import {
 	type AbiEncodingError,
 	type AbiItemNotFoundError,
-	type ItemType,
 	encodeFunction,
+	type ItemType,
 } from "@tevm/voltaire/Abi";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";

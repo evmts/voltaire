@@ -51,5 +51,5 @@
 export { Bytes } from "./Bytes.js";
 export { equals } from "./equals.js";
 export { Hex } from "./Hex.js";
-export { type SelectorType } from "./SelectorSchema.js";
+export type { SelectorType } from "./SelectorSchema.js";
 export { Signature } from "./Signature.js";

@@ -5,8 +5,8 @@
  */
 export {
 	Schema,
-	SourceMapEntrySchema,
 	type SourceMapEntry,
-	SourceMapTypeSchema,
+	SourceMapEntrySchema,
 	type SourceMapType,
+	SourceMapTypeSchema,
 } from "./Struct.js";

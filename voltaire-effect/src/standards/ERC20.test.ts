@@ -1,6 +1,6 @@
+import { describe, expect, it } from "@effect/vitest";
 import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { describe, expect, it } from "@effect/vitest";
 import * as ERC20 from "./ERC20.js";
 
 const testAddress = Address("0x1234567890123456789012345678901234567890");
@@ -58,7 +58,9 @@ describe("ERC20", () => {
 
 	describe("encodeBalanceOf", () => {
 		it("encodes balanceOf calldata", async () => {
-			const result = await Effect.runPromise(ERC20.encodeBalanceOf(testAddress));
+			const result = await Effect.runPromise(
+				ERC20.encodeBalanceOf(testAddress),
+			);
 			expect(result).toMatch(/^0x70a08231/);
 		});
 	});
@@ -132,7 +134,9 @@ describe("ERC20", () => {
 				data: "0x0000",
 			};
 
-			const result = await Effect.runPromiseExit(ERC20.decodeTransferEvent(log));
+			const result = await Effect.runPromiseExit(
+				ERC20.decodeTransferEvent(log),
+			);
 			expect(result._tag).toBe("Failure");
 		});
 	});
@@ -204,19 +208,25 @@ describe("ERC20", () => {
 		it("decodes uint256 total supply", async () => {
 			const data =
 				"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000";
-			const result = await Effect.runPromise(ERC20.decodeTotalSupplyResult(data));
+			const result = await Effect.runPromise(
+				ERC20.decodeTotalSupplyResult(data),
+			);
 			expect(result).toBe(1000000000000000000n);
 		});
 
 		it("decodes zero supply", async () => {
-			const data = "0x" + "00".repeat(32);
-			const result = await Effect.runPromise(ERC20.decodeTotalSupplyResult(data));
+			const data = `0x${"00".repeat(32)}`;
+			const result = await Effect.runPromise(
+				ERC20.decodeTotalSupplyResult(data),
+			);
 			expect(result).toBe(0n);
 		});
 
 		it("decodes max uint256", async () => {
-			const data = "0x" + "ff".repeat(32);
-			const result = await Effect.runPromise(ERC20.decodeTotalSupplyResult(data));
+			const data = `0x${"ff".repeat(32)}`;
+			const result = await Effect.runPromise(
+				ERC20.decodeTotalSupplyResult(data),
+			);
 			expect(result).toBe(2n ** 256n - 1n);
 		});
 	});
@@ -292,7 +302,7 @@ describe("ERC20", () => {
 		});
 
 		it("decodes 0 decimals", async () => {
-			const data = "0x" + "00".repeat(32);
+			const data = `0x${"00".repeat(32)}`;
 			const result = await Effect.runPromise(ERC20.decodeDecimalsResult(data));
 			expect(result).toBe(0);
 		});

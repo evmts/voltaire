@@ -50,8 +50,8 @@
  * @see {@link Gas} for gas units
  */
 
-// Schemas
-export { Number, type GasPriceType } from "./Number.js";
 export { BigInt } from "./BigInt.js";
-export { Hex } from "./Hex.js";
 export { Gwei } from "./Gwei.js";
+export { Hex } from "./Hex.js";
+// Schemas
+export { type GasPriceType, Number } from "./Number.js";

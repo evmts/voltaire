@@ -1,5 +1,5 @@
-import * as Effect from "effect/Effect";
 import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
 import {
 	hash,
 	Ripemd160Live,
@@ -15,7 +15,7 @@ describe("Ripemd160Service", () => {
 				const result = yield* ripemd160.hash(new Uint8Array([1, 2, 3]));
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(20);
-			}).pipe(Effect.provide(Ripemd160Live))
+			}).pipe(Effect.provide(Ripemd160Live)),
 		);
 
 		it.effect("produces correct hash for known input", () =>
@@ -24,7 +24,7 @@ describe("Ripemd160Service", () => {
 				const result = yield* ripemd160.hash(new Uint8Array([]));
 				expect(result[0]).toBe(0x9c);
 				expect(result[1]).toBe(0x11);
-			}).pipe(Effect.provide(Ripemd160Live))
+			}).pipe(Effect.provide(Ripemd160Live)),
 		);
 	});
 
@@ -36,7 +36,7 @@ describe("Ripemd160Service", () => {
 				expect(result).toBeInstanceOf(Uint8Array);
 				expect(result.length).toBe(20);
 				expect(result.every((b) => b === 0)).toBe(true);
-			}).pipe(Effect.provide(Ripemd160Test))
+			}).pipe(Effect.provide(Ripemd160Test)),
 		);
 	});
 });
@@ -48,7 +48,7 @@ describe("hash", () => {
 			const result = yield* hash(data);
 			expect(result).toBeInstanceOf(Uint8Array);
 			expect(result.length).toBe(20);
-		}).pipe(Effect.provide(Ripemd160Live))
+		}).pipe(Effect.provide(Ripemd160Live)),
 	);
 
 	it.effect("works with test layer", () =>
@@ -56,6 +56,6 @@ describe("hash", () => {
 			const data = new Uint8Array([1, 2, 3]);
 			const result = yield* hash(data);
 			expect(result.every((b) => b === 0)).toBe(true);
-		}).pipe(Effect.provide(Ripemd160Test))
+		}).pipe(Effect.provide(Ripemd160Test)),
 	);
 });

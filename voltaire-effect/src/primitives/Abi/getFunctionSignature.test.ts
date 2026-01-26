@@ -1,7 +1,7 @@
-import * as Effect from "effect/Effect";
 import { describe, expect, it } from "@effect/vitest";
-import { getFunctionSignature } from "./getFunctionSignature.js";
 import type { Function as AbiFunction } from "@tevm/voltaire/Abi";
+import * as Effect from "effect/Effect";
+import { getFunctionSignature } from "./getFunctionSignature.js";
 
 describe("getFunctionSignature", () => {
 	describe("success cases", () => {

@@ -7,9 +7,15 @@
 
 import { Address, type BrandedAddress } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { SignerError, type PrepareAuthorizationParams } from "../SignerService.js";
+import {
+	AccountService,
+	type UnsignedAuthorization,
+} from "../../Account/index.js";
 import { ProviderService } from "../../Provider/index.js";
-import { AccountService, type UnsignedAuthorization } from "../../Account/index.js";
+import {
+	type PrepareAuthorizationParams,
+	SignerError,
+} from "../SignerService.js";
 
 type AddressType = BrandedAddress.AddressType;
 
@@ -56,8 +62,7 @@ export const prepareAuthorization = (
 		const provider = yield* ProviderService;
 		const account = yield* AccountService;
 
-		const chainId =
-			params.chainId ?? BigInt(yield* provider.getChainId());
+		const chainId = params.chainId ?? BigInt(yield* provider.getChainId());
 
 		const addressHex = Address.toHex(account.address as AddressType);
 		const nonce =

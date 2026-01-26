@@ -4,7 +4,7 @@
  * @since 0.1.0
  */
 
-import { BlockHash } from "@tevm/voltaire";
+import type { BlockHash } from "@tevm/voltaire";
 import * as S from "effect/Schema";
 
 type BlockHashType = BlockHash.BlockHashType;

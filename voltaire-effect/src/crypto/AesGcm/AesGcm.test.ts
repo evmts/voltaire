@@ -1,6 +1,6 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { describe, expect, it } from "@effect/vitest";
 import * as AesGcm from "./index.js";
 
 describe("AesGcm", () => {
@@ -9,14 +9,14 @@ describe("AesGcm", () => {
 			Effect.gen(function* () {
 				const result = yield* AesGcm.generateKey();
 				expect(result.length).toBe(32);
-			})
+			}),
 		);
 
 		it.effect("generates 128-bit key", () =>
 			Effect.gen(function* () {
 				const result = yield* AesGcm.generateKey(128);
 				expect(result.length).toBe(16);
-			})
+			}),
 		);
 	});
 
@@ -25,7 +25,7 @@ describe("AesGcm", () => {
 			Effect.gen(function* () {
 				const result = yield* AesGcm.generateNonce();
 				expect(result.length).toBe(12);
-			})
+			}),
 		);
 	});
 
@@ -38,7 +38,7 @@ describe("AesGcm", () => {
 				const ciphertext = yield* AesGcm.encrypt(key, plaintext, nonce);
 				const decrypted = yield* AesGcm.decrypt(key, ciphertext, nonce);
 				expect(Array.from(decrypted)).toEqual(Array.from(plaintext));
-			})
+			}),
 		);
 
 		it.effect("encrypts with AAD", () =>
@@ -50,7 +50,7 @@ describe("AesGcm", () => {
 				const ciphertext = yield* AesGcm.encrypt(key, plaintext, nonce, aad);
 				const decrypted = yield* AesGcm.decrypt(key, ciphertext, nonce, aad);
 				expect(Array.from(decrypted)).toEqual(Array.from(plaintext));
-			})
+			}),
 		);
 	});
 
@@ -60,7 +60,7 @@ describe("AesGcm", () => {
 				const service = yield* AesGcm.AesGcmService;
 				const key = yield* service.generateKey();
 				expect(key.length).toBe(32);
-			}).pipe(Effect.provide(AesGcm.AesGcmLive))
+			}).pipe(Effect.provide(AesGcm.AesGcmLive)),
 		);
 	});
 

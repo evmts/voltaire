@@ -4,7 +4,7 @@
  * @since 0.1.0
  */
 
-import { BrandedInt128 } from "@tevm/voltaire";
+import type { BrandedInt128 } from "@tevm/voltaire";
 
 /**
  * Branded type representing a signed 128-bit integer.

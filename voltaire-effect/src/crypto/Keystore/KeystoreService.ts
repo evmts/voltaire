@@ -4,8 +4,8 @@
  * @since 0.0.1
  */
 
-import { Keystore } from "@tevm/voltaire/Keystore";
 import type {
+	Keystore,
 	DecryptionError as KeystoreDecryptionError,
 	EncryptionError as KeystoreEncryptionError,
 	InvalidMacError as KeystoreInvalidMacError,

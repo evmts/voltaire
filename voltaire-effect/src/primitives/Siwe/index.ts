@@ -50,6 +50,6 @@ export {
 	SiweMessageSchema,
 	type SiweMessageType,
 	String,
-	validate,
 	type ValidationResult,
+	validate,
 } from "./String.js";

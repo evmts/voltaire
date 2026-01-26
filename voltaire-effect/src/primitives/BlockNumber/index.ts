@@ -56,5 +56,5 @@ export const toBigInt = BlockNumber.toBigInt;
 export const toNumber = BlockNumber.toNumber;
 
 // Type export
-import { BlockNumber as _BlockNumber } from "@tevm/voltaire";
+import type { BlockNumber as _BlockNumber } from "@tevm/voltaire";
 export type BlockNumberType = _BlockNumber.BlockNumberType;

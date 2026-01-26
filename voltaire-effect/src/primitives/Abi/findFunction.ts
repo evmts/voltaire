@@ -6,7 +6,11 @@
  * @since 0.0.1
  */
 
-import { type Function as AbiFunction, type ItemType, Item } from "@tevm/voltaire/Abi";
+import {
+	type Function as AbiFunction,
+	Item,
+	type ItemType,
+} from "@tevm/voltaire/Abi";
 import * as Effect from "effect/Effect";
 
 /**

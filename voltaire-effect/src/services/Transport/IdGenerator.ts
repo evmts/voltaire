@@ -58,9 +58,7 @@ export const IdGeneratorLive: Layer.Layer<IdGenerator> = Layer.succeed(
  *
  * @since 0.0.1
  */
-export const makeIdGenerator = (
-	start = 0,
-): Effect.Effect<IdGeneratorShape> =>
+export const makeIdGenerator = (start = 0): Effect.Effect<IdGeneratorShape> =>
 	Effect.gen(function* () {
 		const ref = yield* Ref.make(start);
 		return {
@@ -82,4 +80,3 @@ export const nextId: Effect.Effect<number> = Effect.flatMap(
 			onSome: (generator) => generator.next(),
 		}),
 );
-

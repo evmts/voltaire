@@ -6,9 +6,9 @@
 
 import * as Effect from "effect/Effect";
 import { ProviderService } from "../ProviderService.js";
-import { EnsError } from "./EnsError.js";
 import { ENS_UNIVERSAL_RESOLVER_ADDRESS } from "./constants.js";
-import { bytesToHex, decodeString, dnsEncode, toReverseName } from "./utils.js";
+import { EnsError } from "./EnsError.js";
+import { bytesToHex, dnsEncode, toReverseName } from "./utils.js";
 
 /**
  * Parameters for getEnsName.
@@ -46,8 +46,10 @@ export const getEnsName = (
 	params: GetEnsNameParams,
 ): Effect.Effect<string | null, EnsError, ProviderService> =>
 	Effect.gen(function* () {
-		const { address, universalResolverAddress = ENS_UNIVERSAL_RESOLVER_ADDRESS } =
-			params;
+		const {
+			address,
+			universalResolverAddress = ENS_UNIVERSAL_RESOLVER_ADDRESS,
+		} = params;
 
 		const provider = yield* ProviderService;
 
@@ -60,7 +62,8 @@ export const getEnsName = (
 		const dnsNameHex = bytesToHex(dnsName).slice(2);
 
 		// Encode: offset, length, data
-		const offset = "0000000000000000000000000000000000000000000000000000000000000020";
+		const offset =
+			"0000000000000000000000000000000000000000000000000000000000000020";
 		const len = dnsName.length.toString(16).padStart(64, "0");
 		const data = dnsNameHex.padEnd(Math.ceil(dnsName.length / 32) * 64, "0");
 
@@ -107,7 +110,10 @@ export const getEnsName = (
 
 		// Get the string bytes
 		const stringDataStart = stringLengthStart + 64;
-		const stringHex = hex.slice(stringDataStart, stringDataStart + stringLength * 2);
+		const stringHex = hex.slice(
+			stringDataStart,
+			stringDataStart + stringLength * 2,
+		);
 		const bytes = new Uint8Array(stringLength);
 		for (let i = 0; i < stringLength; i++) {
 			bytes[i] = Number.parseInt(stringHex.slice(i * 2, i * 2 + 2), 16);

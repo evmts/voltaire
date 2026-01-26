@@ -6,8 +6,8 @@
  */
 
 import * as Effect from "effect/Effect";
-import { SignerError } from "../SignerService.js";
 import { TransportService } from "../../Transport/index.js";
+import { SignerError } from "../SignerService.js";
 
 /**
  * Requests the wallet to switch to a different chain.
@@ -41,22 +41,16 @@ export const switchChain = (
 				{ chainId: `0x${chainId.toString(16)}` },
 			])
 			.pipe(
-				Effect.mapError(
-					(e) => {
-						const isUserRejected = e.code === 4001;
-						const message = isUserRejected
-							? "User rejected the request"
-							: `Failed to switch chain: ${e.message}`;
-						return new SignerError(
-							{ action: "switchChain", chainId },
-							message,
-							{
-								cause: e,
-								code: e.code,
-								context: isUserRejected ? { userRejected: true } : undefined,
-							},
-						);
-					},
-				),
+				Effect.mapError((e) => {
+					const isUserRejected = e.code === 4001;
+					const message = isUserRejected
+						? "User rejected the request"
+						: `Failed to switch chain: ${e.message}`;
+					return new SignerError({ action: "switchChain", chainId }, message, {
+						cause: e,
+						code: e.code,
+						context: isUserRejected ? { userRejected: true } : undefined,
+					});
+				}),
 			);
 	});

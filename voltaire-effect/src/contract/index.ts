@@ -33,8 +33,8 @@
 export { EventStream } from "./EventStream.js";
 export { EventStreamError } from "./EventStreamError.js";
 export {
+	type BackfillStreamOptions,
 	EventStreamService,
 	type EventStreamShape,
-	type BackfillStreamOptions,
 	type WatchStreamOptions,
 } from "./EventStreamService.js";

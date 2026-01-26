@@ -6,8 +6,9 @@
  */
 
 import * as Effect from "effect/Effect";
-import { SignerError, type Permission } from "../SignerService.js";
 import { TransportService } from "../../Transport/index.js";
+import { type Permission, SignerError } from "../SignerService.js";
+
 export type { Caveat, Permission } from "../SignerService.js";
 
 /**
@@ -38,14 +39,16 @@ export const getPermissions = (): Effect.Effect<
 	Effect.gen(function* () {
 		const transport = yield* TransportService;
 
-		return yield* transport.request<Permission[]>("wallet_getPermissions").pipe(
-			Effect.mapError(
-				(e) =>
-					new SignerError(
-						{ action: "getPermissions" },
-						`Failed to get permissions: ${e.message}`,
-						{ cause: e, code: e.code },
-					),
-			),
-		);
+		return yield* transport
+			.request<Permission[]>("wallet_getPermissions")
+			.pipe(
+				Effect.mapError(
+					(e) =>
+						new SignerError(
+							{ action: "getPermissions" },
+							`Failed to get permissions: ${e.message}`,
+							{ cause: e, code: e.code },
+						),
+				),
+			);
 	});

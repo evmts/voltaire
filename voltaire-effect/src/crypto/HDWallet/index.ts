@@ -18,7 +18,8 @@
  *
  * @example
  * ```typescript
- * import { HDWalletService, HDWalletLive, generateMnemonic, mnemonicToSeed, fromSeed, derive } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletService, generateMnemonic, mnemonicToSeed, fromSeed, derive } from 'voltaire-effect/crypto/HDWallet'
+ * import { HDWalletLive } from 'voltaire-effect/native'
  * import { mnemonicToWords } from 'voltaire-effect/crypto/Bip39'
  * import * as Effect from 'effect/Effect'
  *
@@ -47,7 +48,14 @@ export {
 	withPrivateKey,
 	withSeed,
 } from "./derive.js";
-export { HDWalletLive } from "./HDWalletLive.js";
+export {
+	HardenedDerivationError,
+	type HDWalletError,
+	InvalidKeyError,
+	InvalidPathError,
+	InvalidSeedError,
+	mapToHDWalletError,
+} from "./errors.js";
 export {
 	type HDNode,
 	type HDPath,
@@ -55,11 +63,3 @@ export {
 	type HDWalletServiceShape,
 	HDWalletTest,
 } from "./HDWalletService.js";
-export {
-	HardenedDerivationError,
-	InvalidKeyError,
-	InvalidPathError,
-	InvalidSeedError,
-	mapToHDWalletError,
-	type HDWalletError,
-} from "./errors.js";

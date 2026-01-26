@@ -87,4 +87,7 @@ export class AddressDerivationError extends Data.TaggedError(
  *
  * @since 0.0.1
  */
-export type SignatureError = VerifyError | RecoverError | AddressDerivationError;
+export type SignatureError =
+	| VerifyError
+	| RecoverError
+	| AddressDerivationError;

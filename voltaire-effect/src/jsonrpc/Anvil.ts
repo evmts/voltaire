@@ -30,8 +30,9 @@ export const ImpersonateAccountRequest = (address: string) =>
 	makeRequest("anvil_impersonateAccount", [address]);
 export const StopImpersonatingAccountRequest = (address: string) =>
 	makeRequest("anvil_stopImpersonatingAccount", [address]);
-export const ResetRequest = (options?: { forking?: { jsonRpcUrl: string; blockNumber?: number } }) =>
-	makeRequest("anvil_reset", options ? [options] : []);
+export const ResetRequest = (options?: {
+	forking?: { jsonRpcUrl: string; blockNumber?: number };
+}) => makeRequest("anvil_reset", options ? [options] : []);
 export const SetRpcUrlRequest = (url: string) =>
 	makeRequest("anvil_setRpcUrl", [url]);
 export const SetCoinbaseRequest = (address: string) =>

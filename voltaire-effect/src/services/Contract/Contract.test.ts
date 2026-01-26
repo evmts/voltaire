@@ -1,7 +1,7 @@
+import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { ProviderService } from "../Provider/index.js";
 import { SignerService } from "../Signer/index.js";
 import { Contract } from "./Contract.js";
@@ -430,7 +430,9 @@ describe("Contract", () => {
 
 			const program = Effect.gen(function* () {
 				const contract = yield* Contract(testAddress, erc20Abi);
-				const hash = yield* contract.write.deposit({ value: 1000000000000000000n });
+				const hash = yield* contract.write.deposit({
+					value: 1000000000000000000n,
+				});
 				return hash;
 			});
 
@@ -593,7 +595,9 @@ describe("Contract", () => {
 
 			const program = Effect.gen(function* () {
 				const contract = yield* Contract(testAddress, erc20Abi);
-				const hash = yield* contract.write.deposit({ value: 1000000000000000000n });
+				const hash = yield* contract.write.deposit({
+					value: 1000000000000000000n,
+				});
 				return hash;
 			});
 

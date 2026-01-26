@@ -15,12 +15,9 @@
  * @see {@link AccountService} - The service interface
  */
 
-import {
-	type BrandedHex,
-	Hex,
-} from "@tevm/voltaire";
+import { type BrandedHex, Hex } from "@tevm/voltaire";
 import * as Bip39 from "@tevm/voltaire/Bip39";
-import type { ExtendedKeyType } from "@tevm/voltaire/HDWallet";
+import { HDWallet } from "@tevm/voltaire/native";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import {
@@ -35,18 +32,8 @@ import { AccountService } from "./AccountService.js";
 import { createLocalAccount } from "./LocalAccount.js";
 
 type HexType = BrandedHex.HexType;
-type HDWalletApi = typeof import("@tevm/voltaire/native").HDWallet;
-
-let hdWalletModulePromise:
-	| Promise<{ HDWallet: HDWalletApi }>
-	| undefined;
-
-const loadHdWallet = (): Promise<{ HDWallet: HDWalletApi }> => {
-	if (!hdWalletModulePromise) {
-				hdWalletModulePromise = import("@tevm/voltaire/native");
-	}
-	return hdWalletModulePromise;
-};
+type HDWalletApi = typeof HDWallet;
+type ExtendedKeyType = ReturnType<HDWalletApi["fromSeed"]>;
 
 export interface MnemonicAccountOptions {
 	readonly account?: number;
@@ -81,7 +68,8 @@ export interface MnemonicAccountOptions {
  * @example Basic usage
  * ```typescript
  * import { Effect, Layer } from 'effect'
- * import { AccountService, MnemonicAccount } from 'voltaire-effect/services'
+ * import { AccountService } from 'voltaire-effect/services'
+ * import { MnemonicAccount } from 'voltaire-effect/native'
  * import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
  *
  * const mnemonic = "test test test test test test test test test test test junk";
@@ -156,10 +144,9 @@ const createHdAccount = (
 		const extendedPublicKey = yield* Effect.try({
 			try: () => HDWallet.toExtendedPublicKey(hdKey),
 			catch: (e) =>
-				new HDWalletDerivationError(
-					"Failed to export extended public key",
-					{ cause: e },
-				),
+				new HDWalletDerivationError("Failed to export extended public key", {
+					cause: e,
+				}),
 		});
 
 		return {
@@ -193,14 +180,6 @@ export const MnemonicAccount = (
 		Effect.gen(function* () {
 			const secp256k1 = yield* Secp256k1Service;
 			const keccak = yield* KeccakService;
-			const { HDWallet } = yield* Effect.tryPromise({
-				try: () => loadHdWallet(),
-				catch: (error) =>
-					new HDWalletDerivationError(
-						"HDWallet native bindings are required for mnemonic accounts",
-						{ cause: error },
-					),
-			});
 
 			const accountIndex = options?.account ?? 0;
 			const addressIndex = options?.addressIndex ?? options?.index ?? 0;
@@ -227,10 +206,9 @@ export const MnemonicAccount = (
 			const derived = yield* Effect.try({
 				try: () => HDWallet.derivePath(root, path),
 				catch: (e) =>
-					new HDWalletDerivationError(
-						`Failed to derive path ${path}`,
-						{ cause: e },
-					),
+					new HDWalletDerivationError(`Failed to derive path ${path}`, {
+						cause: e,
+					}),
 			});
 
 			const account = yield* Effect.acquireRelease(

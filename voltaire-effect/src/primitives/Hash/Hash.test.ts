@@ -1,24 +1,24 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as BaseHash from "@tevm/voltaire/Hash";
 import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
-import { describe, expect, it } from "@effect/vitest";
 import * as Hash from "./index.js";
 
 describe("Hash.Hex", () => {
 	describe("decode", () => {
 		it("parses valid lowercase hex", () => {
-			const hash = S.decodeSync(Hash.Hex)("0x" + "ab".repeat(32));
+			const hash = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
 		});
 
 		it("parses valid uppercase hex", () => {
-			const hash = S.decodeSync(Hash.Hex)("0x" + "AB".repeat(32));
+			const hash = S.decodeSync(Hash.Hex)(`0x${"AB".repeat(32)}`);
 			expect(hash.length).toBe(32);
 		});
 
 		it("parses valid mixed case hex", () => {
-			const hash = S.decodeSync(Hash.Hex)("0x" + "aB".repeat(32));
+			const hash = S.decodeSync(Hash.Hex)(`0x${"aB".repeat(32)}`);
 			expect(hash.length).toBe(32);
 		});
 
@@ -27,27 +27,27 @@ describe("Hash.Hex", () => {
 		});
 
 		it("fails on wrong length (too short)", () => {
-			expect(() => S.decodeSync(Hash.Hex)("0x" + "ab".repeat(16))).toThrow();
+			expect(() => S.decodeSync(Hash.Hex)(`0x${"ab".repeat(16)}`)).toThrow();
 		});
 
 		it("fails on wrong length (too long)", () => {
-			expect(() => S.decodeSync(Hash.Hex)("0x" + "ab".repeat(64))).toThrow();
+			expect(() => S.decodeSync(Hash.Hex)(`0x${"ab".repeat(64)}`)).toThrow();
 		});
 
 		it("fails on invalid hex characters", () => {
-			expect(() => S.decodeSync(Hash.Hex)("0x" + "gg".repeat(32))).toThrow();
+			expect(() => S.decodeSync(Hash.Hex)(`0x${"gg".repeat(32)}`)).toThrow();
 		});
 	});
 
 	describe("encode", () => {
 		it("encodes to lowercase hex", () => {
-			const hash = S.decodeSync(Hash.Hex)("0x" + "AB".repeat(32));
+			const hash = S.decodeSync(Hash.Hex)(`0x${"AB".repeat(32)}`);
 			const hex = S.encodeSync(Hash.Hex)(hash);
-			expect(hex).toBe("0x" + "ab".repeat(32));
+			expect(hex).toBe(`0x${"ab".repeat(32)}`);
 		});
 
 		it("produces 0x-prefixed string", () => {
-			const hash = S.decodeSync(Hash.Hex)("0x" + "00".repeat(32));
+			const hash = S.decodeSync(Hash.Hex)(`0x${"00".repeat(32)}`);
 			const hex = S.encodeSync(Hash.Hex)(hash);
 			expect(hex.startsWith("0x")).toBe(true);
 			expect(hex.length).toBe(66);
@@ -56,7 +56,7 @@ describe("Hash.Hex", () => {
 
 	describe("round-trip", () => {
 		it("decode(encode(hash)) === hash", () => {
-			const original = S.decodeSync(Hash.Hex)("0x" + "ab".repeat(32));
+			const original = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
 			const encoded = S.encodeSync(Hash.Hex)(original);
 			const decoded = S.decodeSync(Hash.Hex)(encoded);
 			expect(BaseHash.equals(original, decoded)).toBe(true);
@@ -85,7 +85,7 @@ describe("Hash.Bytes", () => {
 
 	describe("encode", () => {
 		it("encodes to Uint8Array", () => {
-			const hash = S.decodeSync(Hash.Hex)("0x" + "ab".repeat(32));
+			const hash = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
 			const bytes = S.encodeSync(Hash.Bytes)(hash);
 			expect(bytes).toBeInstanceOf(Uint8Array);
 			expect(bytes.length).toBe(32);
@@ -104,10 +104,10 @@ describe("Hash.Bytes", () => {
 });
 
 describe("pure functions", () => {
-	const hashA = S.decodeSync(Hash.Hex)("0x" + "ab".repeat(32));
-	const hashB = S.decodeSync(Hash.Hex)("0x" + "ab".repeat(32));
-	const hashC = S.decodeSync(Hash.Hex)("0x" + "cd".repeat(32));
-	const zeroHash = S.decodeSync(Hash.Hex)("0x" + "00".repeat(32));
+	const hashA = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
+	const _hashB = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
+	const _hashC = S.decodeSync(Hash.Hex)(`0x${"cd".repeat(32)}`);
+	const zeroHash = S.decodeSync(Hash.Hex)(`0x${"00".repeat(32)}`);
 
 	describe("isZero", () => {
 		it("returns true for zero hash", () => {
@@ -139,25 +139,25 @@ describe("pure functions", () => {
 
 	describe("isValidHex", () => {
 		it("returns true for valid 32-byte hex", () => {
-			expect(Effect.runSync(Hash.isValidHex("0x" + "ab".repeat(32)))).toBe(
+			expect(Effect.runSync(Hash.isValidHex(`0x${"ab".repeat(32)}`))).toBe(
 				true,
 			);
 		});
 
 		it("returns true for zero hash", () => {
-			expect(Effect.runSync(Hash.isValidHex("0x" + "00".repeat(32)))).toBe(
+			expect(Effect.runSync(Hash.isValidHex(`0x${"00".repeat(32)}`))).toBe(
 				true,
 			);
 		});
 
 		it("returns false for wrong length", () => {
-			expect(Effect.runSync(Hash.isValidHex("0x" + "ab".repeat(16)))).toBe(
+			expect(Effect.runSync(Hash.isValidHex(`0x${"ab".repeat(16)}`))).toBe(
 				false,
 			);
 		});
 
 		it("returns false for invalid characters", () => {
-			expect(Effect.runSync(Hash.isValidHex("0x" + "gg".repeat(32)))).toBe(
+			expect(Effect.runSync(Hash.isValidHex(`0x${"gg".repeat(32)}`))).toBe(
 				false,
 			);
 		});
@@ -254,24 +254,24 @@ describe("keccak256 functions", () => {
 
 describe("merkleRoot", () => {
 	it("computes root for single leaf", () => {
-		const leaf = S.decodeSync(Hash.Hex)("0x" + "ab".repeat(32));
+		const leaf = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
 		const root = Effect.runSync(Hash.merkleRoot([leaf]));
 		expect(root.length).toBe(32);
 	});
 
 	it("computes root for two leaves", () => {
-		const leaf1 = S.decodeSync(Hash.Hex)("0x" + "aa".repeat(32));
-		const leaf2 = S.decodeSync(Hash.Hex)("0x" + "bb".repeat(32));
+		const leaf1 = S.decodeSync(Hash.Hex)(`0x${"aa".repeat(32)}`);
+		const leaf2 = S.decodeSync(Hash.Hex)(`0x${"bb".repeat(32)}`);
 		const root = Effect.runSync(Hash.merkleRoot([leaf1, leaf2]));
 		expect(root.length).toBe(32);
 	});
 
 	it("computes root for power-of-two leaves", () => {
 		const leaves = [
-			S.decodeSync(Hash.Hex)("0x" + "11".repeat(32)),
-			S.decodeSync(Hash.Hex)("0x" + "22".repeat(32)),
-			S.decodeSync(Hash.Hex)("0x" + "33".repeat(32)),
-			S.decodeSync(Hash.Hex)("0x" + "44".repeat(32)),
+			S.decodeSync(Hash.Hex)(`0x${"11".repeat(32)}`),
+			S.decodeSync(Hash.Hex)(`0x${"22".repeat(32)}`),
+			S.decodeSync(Hash.Hex)(`0x${"33".repeat(32)}`),
+			S.decodeSync(Hash.Hex)(`0x${"44".repeat(32)}`),
 		];
 		const root = Effect.runSync(Hash.merkleRoot(leaves));
 		expect(root.length).toBe(32);
@@ -279,9 +279,9 @@ describe("merkleRoot", () => {
 
 	it("computes root for non-power-of-two leaves", () => {
 		const leaves = [
-			S.decodeSync(Hash.Hex)("0x" + "11".repeat(32)),
-			S.decodeSync(Hash.Hex)("0x" + "22".repeat(32)),
-			S.decodeSync(Hash.Hex)("0x" + "33".repeat(32)),
+			S.decodeSync(Hash.Hex)(`0x${"11".repeat(32)}`),
+			S.decodeSync(Hash.Hex)(`0x${"22".repeat(32)}`),
+			S.decodeSync(Hash.Hex)(`0x${"33".repeat(32)}`),
 		];
 		const root = Effect.runSync(Hash.merkleRoot(leaves));
 		expect(root.length).toBe(32);
@@ -289,8 +289,8 @@ describe("merkleRoot", () => {
 
 	it("produces deterministic output", () => {
 		const leaves = [
-			S.decodeSync(Hash.Hex)("0x" + "aa".repeat(32)),
-			S.decodeSync(Hash.Hex)("0x" + "bb".repeat(32)),
+			S.decodeSync(Hash.Hex)(`0x${"aa".repeat(32)}`),
+			S.decodeSync(Hash.Hex)(`0x${"bb".repeat(32)}`),
 		];
 		const root1 = Effect.runSync(Hash.merkleRoot(leaves));
 		const root2 = Effect.runSync(Hash.merkleRoot(leaves));
@@ -298,8 +298,8 @@ describe("merkleRoot", () => {
 	});
 
 	it("different leaf order produces different root", () => {
-		const leaf1 = S.decodeSync(Hash.Hex)("0x" + "aa".repeat(32));
-		const leaf2 = S.decodeSync(Hash.Hex)("0x" + "bb".repeat(32));
+		const leaf1 = S.decodeSync(Hash.Hex)(`0x${"aa".repeat(32)}`);
+		const leaf2 = S.decodeSync(Hash.Hex)(`0x${"bb".repeat(32)}`);
 		const root1 = Effect.runSync(Hash.merkleRoot([leaf1, leaf2]));
 		const root2 = Effect.runSync(Hash.merkleRoot([leaf2, leaf1]));
 		expect(BaseHash.equals(root1, root2)).toBe(false);
@@ -328,7 +328,7 @@ describe("random", () => {
 
 describe("edge cases", () => {
 	describe("zero hash", () => {
-		const zeroHash = S.decodeSync(Hash.Hex)("0x" + "00".repeat(32));
+		const zeroHash = S.decodeSync(Hash.Hex)(`0x${"00".repeat(32)}`);
 
 		it("can be created from hex", () => {
 			expect(zeroHash.length).toBe(32);
@@ -342,17 +342,17 @@ describe("edge cases", () => {
 
 		it("encodes correctly", () => {
 			const hex = S.encodeSync(Hash.Hex)(zeroHash);
-			expect(hex).toBe("0x" + "00".repeat(32));
+			expect(hex).toBe(`0x${"00".repeat(32)}`);
 		});
 
 		it("equals itself", () => {
-			const another = S.decodeSync(Hash.Hex)("0x" + "00".repeat(32));
+			const another = S.decodeSync(Hash.Hex)(`0x${"00".repeat(32)}`);
 			expect(BaseHash.equals(zeroHash, another)).toBe(true);
 		});
 	});
 
 	describe("max value hash", () => {
-		const maxHash = S.decodeSync(Hash.Hex)("0x" + "ff".repeat(32));
+		const maxHash = S.decodeSync(Hash.Hex)(`0x${"ff".repeat(32)}`);
 
 		it("can be created", () => {
 			expect(maxHash.length).toBe(32);
@@ -376,20 +376,20 @@ describe("edge cases", () => {
 
 	describe("assert", () => {
 		it("does not throw for valid hash", () => {
-			const hash = S.decodeSync(Hash.Hex)("0x" + "ab".repeat(32));
+			const hash = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
 			expect(() => Effect.runSync(Hash.assert(hash))).not.toThrow();
 		});
 	});
 });
 
 describe("additional pure functions", () => {
-	const hashA = S.decodeSync(Hash.Hex)("0x" + "ab".repeat(32));
-	const hashB = S.decodeSync(Hash.Hex)("0x" + "cd".repeat(32));
-	const zeroHash = S.decodeSync(Hash.Hex)("0x" + "00".repeat(32));
+	const hashA = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
+	const hashB = S.decodeSync(Hash.Hex)(`0x${"cd".repeat(32)}`);
+	const zeroHash = S.decodeSync(Hash.Hex)(`0x${"00".repeat(32)}`);
 
 	describe("equals", () => {
 		it("returns true for identical hashes", () => {
-			const hashACopy = S.decodeSync(Hash.Hex)("0x" + "ab".repeat(32));
+			const hashACopy = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
 			expect(Effect.runSync(Hash.equals(hashA, hashACopy))).toBe(true);
 		});
 
@@ -476,18 +476,18 @@ describe("additional pure functions", () => {
 	describe("toString", () => {
 		it("returns hex string representation", () => {
 			const result = Effect.runSync(Hash.toString(hashA));
-			expect(result).toBe("0x" + "ab".repeat(32));
+			expect(result).toBe(`0x${"ab".repeat(32)}`);
 		});
 
 		it("returns lowercase hex", () => {
-			const hash = S.decodeSync(Hash.Hex)("0x" + "AB".repeat(32));
+			const hash = S.decodeSync(Hash.Hex)(`0x${"AB".repeat(32)}`);
 			const result = Effect.runSync(Hash.toString(hash));
-			expect(result).toBe("0x" + "ab".repeat(32));
+			expect(result).toBe(`0x${"ab".repeat(32)}`);
 		});
 
 		it("works with zero hash", () => {
 			const result = Effect.runSync(Hash.toString(zeroHash));
-			expect(result).toBe("0x" + "00".repeat(32));
+			expect(result).toBe(`0x${"00".repeat(32)}`);
 		});
 	});
 });
@@ -495,9 +495,7 @@ describe("additional pure functions", () => {
 describe("error cases", () => {
 	describe("Hex schema errors", () => {
 		it("fails on null", () => {
-			expect(() =>
-				S.decodeSync(Hash.Hex)(null as unknown as string),
-			).toThrow();
+			expect(() => S.decodeSync(Hash.Hex)(null as unknown as string)).toThrow();
 		});
 
 		it("fails on undefined", () => {
@@ -507,15 +505,11 @@ describe("error cases", () => {
 		});
 
 		it("fails on number", () => {
-			expect(() =>
-				S.decodeSync(Hash.Hex)(123 as unknown as string),
-			).toThrow();
+			expect(() => S.decodeSync(Hash.Hex)(123 as unknown as string)).toThrow();
 		});
 
 		it("fails on object", () => {
-			expect(() =>
-				S.decodeSync(Hash.Hex)({} as unknown as string),
-			).toThrow();
+			expect(() => S.decodeSync(Hash.Hex)({} as unknown as string)).toThrow();
 		});
 
 		it("fails on empty string", () => {
@@ -527,17 +521,15 @@ describe("error cases", () => {
 		});
 
 		it("fails on odd-length hex", () => {
-			expect(() =>
-				S.decodeSync(Hash.Hex)("0x" + "abc".repeat(21)),
-			).toThrow();
+			expect(() => S.decodeSync(Hash.Hex)(`0x${"abc".repeat(21)}`)).toThrow();
 		});
 
 		it("fails on 31-byte hex", () => {
-			expect(() => S.decodeSync(Hash.Hex)("0x" + "ab".repeat(31))).toThrow();
+			expect(() => S.decodeSync(Hash.Hex)(`0x${"ab".repeat(31)}`)).toThrow();
 		});
 
 		it("fails on 33-byte hex", () => {
-			expect(() => S.decodeSync(Hash.Hex)("0x" + "ab".repeat(33))).toThrow();
+			expect(() => S.decodeSync(Hash.Hex)(`0x${"ab".repeat(33)}`)).toThrow();
 		});
 	});
 
@@ -556,7 +548,9 @@ describe("error cases", () => {
 
 		it("fails on string", () => {
 			expect(() =>
-				S.decodeSync(Hash.Bytes)("0x" + "ab".repeat(32) as unknown as Uint8Array),
+				S.decodeSync(Hash.Bytes)(
+					`0x${"ab".repeat(32)}` as unknown as Uint8Array,
+				),
 			).toThrow();
 		});
 
@@ -577,19 +571,19 @@ describe("additional edge cases", () => {
 	});
 
 	it("isValidHex with mixed case", () => {
-		expect(Effect.runSync(Hash.isValidHex("0x" + "aB".repeat(32)))).toBe(true);
+		expect(Effect.runSync(Hash.isValidHex(`0x${"aB".repeat(32)}`))).toBe(true);
 	});
 
 	it("merkleRoot with single leaf returns that leaf's hash", () => {
-		const leaf = S.decodeSync(Hash.Hex)("0x" + "ab".repeat(32));
+		const leaf = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
 		const root = Effect.runSync(Hash.merkleRoot([leaf]));
 		expect(root.length).toBe(32);
 	});
 
 	it("merkleRoot is deterministic for same input order", () => {
 		const leaves = [
-			S.decodeSync(Hash.Hex)("0x" + "11".repeat(32)),
-			S.decodeSync(Hash.Hex)("0x" + "22".repeat(32)),
+			S.decodeSync(Hash.Hex)(`0x${"11".repeat(32)}`),
+			S.decodeSync(Hash.Hex)(`0x${"22".repeat(32)}`),
 		];
 		const root1 = Effect.runSync(Hash.merkleRoot(leaves));
 		const root2 = Effect.runSync(Hash.merkleRoot(leaves));
@@ -597,7 +591,7 @@ describe("additional edge cases", () => {
 	});
 
 	it("clone creates independent copy", () => {
-		const original = S.decodeSync(Hash.Hex)("0x" + "ab".repeat(32));
+		const original = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
 		const cloned = Effect.runSync(Hash.clone(original));
 		cloned[0] = 0x00;
 		expect(original[0]).toBe(0xab);
@@ -616,13 +610,13 @@ describe("additional edge cases", () => {
 	});
 
 	it("keccak256Hex of long hex", () => {
-		const longHex = "0x" + "ab".repeat(5000);
+		const longHex = `0x${"ab".repeat(5000)}`;
 		const hash = Effect.runSync(Hash.keccak256Hex(longHex));
 		expect(hash.length).toBe(32);
 	});
 
 	it("format returns string with 0x prefix", async () => {
-		const hash = S.decodeSync(Hash.Hex)("0x" + "ab".repeat(32));
+		const hash = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
 		const formatted = await Effect.runPromise(Hash.format(hash));
 		expect(formatted.startsWith("0x")).toBe(true);
 	});

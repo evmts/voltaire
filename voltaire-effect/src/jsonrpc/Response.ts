@@ -39,9 +39,7 @@ export function from<TResult = unknown>(
 	const hasResult = "result" in obj;
 	const hasError = "error" in obj;
 	if (hasResult && hasError) {
-		throw new Error(
-			"Invalid JSON-RPC response: both result and error present",
-		);
+		throw new Error("Invalid JSON-RPC response: both result and error present");
 	}
 	if (!hasResult && !hasError) {
 		throw new Error(

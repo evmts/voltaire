@@ -194,10 +194,7 @@ const makeDefaultFeeEstimator = (
 								}),
 						),
 						Effect.flatMap((priorityFee) =>
-							ensureReasonableGasPrice(
-								priorityFee,
-								"Max priority fee per gas",
-							),
+							ensureReasonableGasPrice(priorityFee, "Max priority fee per gas"),
 						),
 					),
 

@@ -96,7 +96,10 @@ export class BlockchainError extends Data.TaggedError("BlockchainError")<{
 	) {
 		super({
 			input,
-			message: message ?? (options?.cause instanceof Error ? options.cause.message : undefined) ?? "Blockchain error",
+			message:
+				message ??
+				(options?.cause instanceof Error ? options.cause.message : undefined) ??
+				"Blockchain error",
 			errorCode: options?.code,
 			cause: options?.cause,
 			context: options?.context,
@@ -131,7 +134,9 @@ export type BlockchainShape = {
 	readonly setCanonicalHead: (
 		hash: HexInput,
 	) => Effect.Effect<void, BlockchainError>;
-	readonly hasBlock: (hash: HexInput) => Effect.Effect<boolean, BlockchainError>;
+	readonly hasBlock: (
+		hash: HexInput,
+	) => Effect.Effect<boolean, BlockchainError>;
 	readonly localBlockCount: () => Effect.Effect<number, BlockchainError>;
 	readonly orphanCount: () => Effect.Effect<number, BlockchainError>;
 	readonly canonicalChainLength: () => Effect.Effect<number, BlockchainError>;

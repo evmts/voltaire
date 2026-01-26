@@ -14,6 +14,7 @@ export default defineConfig({
 			"src/primitives/ContractCode/ContractCode.test.ts",
 			"src/primitives/InitCode/InitCode.test.ts",
 			"src/services/Account/Account.test.ts",
+			"src/services/Account/fromMnemonic.test.ts",
 			"src/services/Contract/Contract.test.ts",
 			"src/services/Signer/Signer.test.ts",
 			"src/services/Signer/actions/deployContract.test.ts",

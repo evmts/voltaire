@@ -99,12 +99,12 @@ const secondAddress = wallet.derivePath("m/44'/60'/0'/0/1")
 import { Effect } from 'effect'
 import { 
   AccountService, 
-  MnemonicAccount,
   SignerService,
   Signer,
   Provider,
   HttpTransport
 } from 'voltaire-effect/services'
+import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const mnemonic = 'test test test test test test test test test test test junk'

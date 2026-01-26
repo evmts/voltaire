@@ -1,12 +1,18 @@
+import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
-import { NonceError, NonceManagerService } from "./NonceManagerService.js";
+import {
+	ProviderError,
+	ProviderService,
+	type ProviderShape,
+} from "../Provider/ProviderService.js";
 import { DefaultNonceManager } from "./DefaultNonceManager.js";
-import { ProviderService, ProviderError, type ProviderShape } from "../Provider/ProviderService.js";
+import { NonceError, NonceManagerService } from "./NonceManagerService.js";
 
-const createMockProvider = (overrides: Partial<ProviderShape> = {}): ProviderShape => ({
+const createMockProvider = (
+	overrides: Partial<ProviderShape> = {},
+): ProviderShape => ({
 	getBlockNumber: () => Effect.succeed(18000000n),
 	getBlock: () => Effect.succeed({} as any),
 	getBlockTransactionCount: () => Effect.succeed(0n),
@@ -31,8 +37,8 @@ const createMockProvider = (overrides: Partial<ProviderShape> = {}): ProviderSha
 	getGasPrice: () => Effect.succeed(20000000000n),
 	getMaxPriorityFeePerGas: () => Effect.succeed(1500000000n),
 	getFeeHistory: () => Effect.succeed({} as any),
-	watchBlocks: () => ({} as any),
-	backfillBlocks: () => ({} as any),
+	watchBlocks: () => ({}) as any,
+	backfillBlocks: () => ({}) as any,
 	...overrides,
 });
 
@@ -64,14 +70,22 @@ describe("NonceManagerService", () => {
 			it.effect("returns on-chain nonce when delta is 0", () =>
 				Effect.gen(function* () {
 					const nonceManager = yield* NonceManagerService;
-					const result = yield* nonceManager.get("0x1234567890123456789012345678901234567890", 1);
+					const result = yield* nonceManager.get(
+						"0x1234567890123456789012345678901234567890",
+						1,
+					);
 					expect(result).toBe(10);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
-					Effect.provide(Layer.succeed(ProviderService, createMockProvider({
-						getTransactionCount: () => Effect.succeed(10n),
-					}))),
-				)
+					Effect.provide(
+						Layer.succeed(
+							ProviderService,
+							createMockProvider({
+								getTransactionCount: () => Effect.succeed(10n),
+							}),
+						),
+					),
+				),
 			);
 
 			it("normalizes address to lowercase", async () => {
@@ -87,14 +101,19 @@ describe("NonceManagerService", () => {
 
 				const program = Effect.gen(function* () {
 					const nonceManager = yield* NonceManagerService;
-					return yield* nonceManager.get("0xABCD1234567890123456789012345678901234AB", 1);
+					return yield* nonceManager.get(
+						"0xABCD1234567890123456789012345678901234AB",
+						1,
+					);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(TestProviderLayer),
 				);
 
 				await Effect.runPromise(program);
-				expect(capturedAddress).toBe("0xABCD1234567890123456789012345678901234AB");
+				expect(capturedAddress).toBe(
+					"0xABCD1234567890123456789012345678901234AB",
+				);
 			});
 
 			it.effect("propagates provider errors", () =>
@@ -104,11 +123,17 @@ describe("NonceManagerService", () => {
 							Effect.fail(new ProviderError({}, "RPC failed")),
 					});
 
-					const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+					const TestProviderLayer = Layer.succeed(
+						ProviderService,
+						mockProvider,
+					);
 
 					const program = Effect.gen(function* () {
 						const nonceManager = yield* NonceManagerService;
-						return yield* nonceManager.get("0x1234567890123456789012345678901234567890", 1);
+						return yield* nonceManager.get(
+							"0x1234567890123456789012345678901234567890",
+							1,
+						);
 					}).pipe(
 						Effect.provide(DefaultNonceManager),
 						Effect.provide(TestProviderLayer),
@@ -118,9 +143,11 @@ describe("NonceManagerService", () => {
 					expect(Exit.isFailure(exit)).toBe(true);
 					if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
 						expect(exit.cause.error._tag).toBe("NonceError");
-						expect(exit.cause.error.message).toContain("Failed to get transaction count");
+						expect(exit.cause.error.message).toContain(
+							"Failed to get transaction count",
+						);
 					}
-				})
+				}),
 			);
 		});
 
@@ -135,10 +162,15 @@ describe("NonceManagerService", () => {
 					expect([n1, n2, n3]).toEqual([5, 6, 7]);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
-					Effect.provide(Layer.succeed(ProviderService, createMockProvider({
-						getTransactionCount: () => Effect.succeed(5n),
-					}))),
-				)
+					Effect.provide(
+						Layer.succeed(
+							ProviderService,
+							createMockProvider({
+								getTransactionCount: () => Effect.succeed(5n),
+							}),
+						),
+					),
+				),
 			);
 
 			it.effect("tracks delta per address", () =>
@@ -158,10 +190,15 @@ describe("NonceManagerService", () => {
 					expect(a2n2).toBe(11);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
-					Effect.provide(Layer.succeed(ProviderService, createMockProvider({
-						getTransactionCount: () => Effect.succeed(10n),
-					}))),
-				)
+					Effect.provide(
+						Layer.succeed(
+							ProviderService,
+							createMockProvider({
+								getTransactionCount: () => Effect.succeed(10n),
+							}),
+						),
+					),
+				),
 			);
 
 			it.effect("tracks delta per chainId", () =>
@@ -180,10 +217,15 @@ describe("NonceManagerService", () => {
 					expect(optimism2).toBe(11);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
-					Effect.provide(Layer.succeed(ProviderService, createMockProvider({
-						getTransactionCount: () => Effect.succeed(10n),
-					}))),
-				)
+					Effect.provide(
+						Layer.succeed(
+							ProviderService,
+							createMockProvider({
+								getTransactionCount: () => Effect.succeed(10n),
+							}),
+						),
+					),
+				),
 			);
 		});
 
@@ -198,7 +240,10 @@ describe("NonceManagerService", () => {
 						},
 					});
 
-					const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
+					const TestProviderLayer = Layer.succeed(
+						ProviderService,
+						mockProvider,
+					);
 
 					const program = Effect.gen(function* () {
 						const nonceManager = yield* NonceManagerService;
@@ -211,7 +256,11 @@ describe("NonceManagerService", () => {
 						const beforeFetch = fetchCount;
 						const nonce = yield* nonceManager.get(addr, 1);
 
-						return { nonce, fetchesBefore: beforeFetch, fetchesAfter: fetchCount };
+						return {
+							nonce,
+							fetchesBefore: beforeFetch,
+							fetchesAfter: fetchCount,
+						};
 					}).pipe(
 						Effect.provide(DefaultNonceManager),
 						Effect.provide(TestProviderLayer),
@@ -221,7 +270,7 @@ describe("NonceManagerService", () => {
 					expect(result.fetchesBefore).toBe(0);
 					expect(result.fetchesAfter).toBe(1);
 					expect(result.nonce).toBe(8);
-				})
+				}),
 			);
 		});
 
@@ -241,10 +290,15 @@ describe("NonceManagerService", () => {
 					expect(result).toBe(5);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
-					Effect.provide(Layer.succeed(ProviderService, createMockProvider({
-						getTransactionCount: () => Effect.succeed(5n),
-					}))),
-				)
+					Effect.provide(
+						Layer.succeed(
+							ProviderService,
+							createMockProvider({
+								getTransactionCount: () => Effect.succeed(5n),
+							}),
+						),
+					),
+				),
 			);
 
 			it.effect("only resets specified address", () =>
@@ -267,10 +321,15 @@ describe("NonceManagerService", () => {
 					expect(n2).toBe(7);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
-					Effect.provide(Layer.succeed(ProviderService, createMockProvider({
-						getTransactionCount: () => Effect.succeed(5n),
-					}))),
-				)
+					Effect.provide(
+						Layer.succeed(
+							ProviderService,
+							createMockProvider({
+								getTransactionCount: () => Effect.succeed(5n),
+							}),
+						),
+					),
+				),
 			);
 		});
 
@@ -295,10 +354,15 @@ describe("NonceManagerService", () => {
 					expect([n1, n2, n3]).toEqual([5, 6, 7]);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
-					Effect.provide(Layer.succeed(ProviderService, createMockProvider({
-						getTransactionCount: () => Effect.succeed(5n),
-					}))),
-				)
+					Effect.provide(
+						Layer.succeed(
+							ProviderService,
+							createMockProvider({
+								getTransactionCount: () => Effect.succeed(5n),
+							}),
+						),
+					),
+				),
 			);
 		});
 
@@ -322,10 +386,15 @@ describe("NonceManagerService", () => {
 					expect(results.sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
-					Effect.provide(Layer.succeed(ProviderService, createMockProvider({
-						getTransactionCount: () => Effect.succeed(0n),
-					}))),
-				)
+					Effect.provide(
+						Layer.succeed(
+							ProviderService,
+							createMockProvider({
+								getTransactionCount: () => Effect.succeed(0n),
+							}),
+						),
+					),
+				),
 			);
 
 			it.effect("handles high concurrency without race conditions", () =>
@@ -342,19 +411,23 @@ describe("NonceManagerService", () => {
 					expect(results.sort((a, b) => a - b)).toEqual(expected);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
-					Effect.provide(Layer.succeed(ProviderService, createMockProvider({
-						getTransactionCount: () => Effect.succeed(0n),
-					}))),
-				)
+					Effect.provide(
+						Layer.succeed(
+							ProviderService,
+							createMockProvider({
+								getTransactionCount: () => Effect.succeed(0n),
+							}),
+						),
+					),
+				),
 			);
 		});
 	});
 
 	describe("exports", () => {
 		it("exports from index", async () => {
-			const { NonceManagerService, NonceError, DefaultNonceManager } = await import(
-				"./index.js"
-			);
+			const { NonceManagerService, NonceError, DefaultNonceManager } =
+				await import("./index.js");
 			expect(NonceManagerService).toBeDefined();
 			expect(NonceError).toBeDefined();
 			expect(DefaultNonceManager).toBeDefined();

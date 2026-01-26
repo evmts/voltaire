@@ -6,8 +6,8 @@
 
 import * as Effect from "effect/Effect";
 import { ProviderService } from "../ProviderService.js";
-import { EnsError } from "./EnsError.js";
 import { ENS_REGISTRY_ADDRESS } from "./constants.js";
+import { EnsError } from "./EnsError.js";
 import { namehash } from "./utils.js";
 
 /**
@@ -64,11 +64,7 @@ export const getEnsResolver = (
 			.pipe(
 				Effect.mapError(
 					(e) =>
-						new EnsError(
-							name,
-							`Failed to get ENS resolver: ${e.message}`,
-							e,
-						),
+						new EnsError(name, `Failed to get ENS resolver: ${e.message}`, e),
 				),
 			);
 

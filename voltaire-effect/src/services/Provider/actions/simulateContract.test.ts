@@ -1,7 +1,7 @@
+import { describe, expect, it } from "@effect/vitest";
 import { Address, Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "@effect/vitest";
 import { ProviderService, type ProviderShape } from "../ProviderService.js";
 import { simulateContract } from "./simulateContract.js";
 
@@ -53,7 +53,11 @@ const createMockProvider = (
 		getGasPrice: () => Effect.succeed(1000000000n),
 		getMaxPriorityFeePerGas: () => Effect.succeed(1000000000n),
 		getFeeHistory: () =>
-			Effect.succeed({ oldestBlock: "0x0", baseFeePerGas: [], gasUsedRatio: [] }),
+			Effect.succeed({
+				oldestBlock: "0x0",
+				baseFeePerGas: [],
+				gasUsedRatio: [],
+			}),
 		watchBlocks: () => {
 			throw new Error("Not implemented in mock");
 		},

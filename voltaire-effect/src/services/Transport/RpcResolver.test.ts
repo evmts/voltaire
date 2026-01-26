@@ -1,11 +1,11 @@
-import * as Effect from "effect/Effect";
 import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
 import {
-	TestTransport,
-	GetBlockNumber,
 	GetBalance,
+	GetBlockNumber,
 	rpc,
 	rpcRequest,
+	TestTransport,
 } from "./index.js";
 
 describe("RpcResolver", () => {
@@ -34,27 +34,27 @@ describe("RpcResolver", () => {
 
 	describe("rpc helpers", () => {
 		it("getBlockNumber", async () => {
-			const program = rpc.getBlockNumber().pipe(
-				Effect.provide(TestTransport({ eth_blockNumber: "0x200" })),
-			);
+			const program = rpc
+				.getBlockNumber()
+				.pipe(Effect.provide(TestTransport({ eth_blockNumber: "0x200" })));
 
 			const result = await Effect.runPromise(program);
 			expect(result).toBe("0x200");
 		});
 
 		it("getChainId", async () => {
-			const program = rpc.getChainId().pipe(
-				Effect.provide(TestTransport({ eth_chainId: "0x1" })),
-			);
+			const program = rpc
+				.getChainId()
+				.pipe(Effect.provide(TestTransport({ eth_chainId: "0x1" })));
 
 			const result = await Effect.runPromise(program);
 			expect(result).toBe("0x1");
 		});
 
 		it("getGasPrice", async () => {
-			const program = rpc.getGasPrice().pipe(
-				Effect.provide(TestTransport({ eth_gasPrice: "0x12a05f200" })),
-			);
+			const program = rpc
+				.getGasPrice()
+				.pipe(Effect.provide(TestTransport({ eth_gasPrice: "0x12a05f200" })));
 
 			const result = await Effect.runPromise(program);
 			expect(result).toBe("0x12a05f200");
@@ -63,7 +63,11 @@ describe("RpcResolver", () => {
 		it("getBalance", async () => {
 			const program = rpc
 				.getBalance("0x1234567890123456789012345678901234567890")
-				.pipe(Effect.provide(TestTransport({ eth_getBalance: "0xde0b6b3a7640000" })));
+				.pipe(
+					Effect.provide(
+						TestTransport({ eth_getBalance: "0xde0b6b3a7640000" }),
+					),
+				);
 
 			const result = await Effect.runPromise(program);
 			expect(result).toBe("0xde0b6b3a7640000");
@@ -72,7 +76,9 @@ describe("RpcResolver", () => {
 		it("getTransactionCount", async () => {
 			const program = rpc
 				.getTransactionCount("0x1234567890123456789012345678901234567890")
-				.pipe(Effect.provide(TestTransport({ eth_getTransactionCount: "0x10" })));
+				.pipe(
+					Effect.provide(TestTransport({ eth_getTransactionCount: "0x10" })),
+				);
 
 			const result = await Effect.runPromise(program);
 			expect(result).toBe("0x10");
@@ -82,7 +88,9 @@ describe("RpcResolver", () => {
 			const program = rpc
 				.getCode("0x1234567890123456789012345678901234567890")
 				.pipe(
-					Effect.provide(TestTransport({ eth_getCode: "0x608060405234801561001057..." })),
+					Effect.provide(
+						TestTransport({ eth_getCode: "0x608060405234801561001057..." }),
+					),
 				);
 
 			const result = await Effect.runPromise(program);
@@ -109,7 +117,10 @@ describe("RpcResolver", () => {
 
 		it("call", async () => {
 			const program = rpc
-				.call({ to: "0x1234567890123456789012345678901234567890", data: "0x12345678" })
+				.call({
+					to: "0x1234567890123456789012345678901234567890",
+					data: "0x12345678",
+				})
 				.pipe(Effect.provide(TestTransport({ eth_call: "0xabcdef" })));
 
 			const result = await Effect.runPromise(program);
@@ -118,7 +129,10 @@ describe("RpcResolver", () => {
 
 		it("estimateGas", async () => {
 			const program = rpc
-				.estimateGas({ to: "0x1234567890123456789012345678901234567890", value: "0x1000" })
+				.estimateGas({
+					to: "0x1234567890123456789012345678901234567890",
+					value: "0x1000",
+				})
 				.pipe(Effect.provide(TestTransport({ eth_estimateGas: "0x5208" })));
 
 			const result = await Effect.runPromise(program);
@@ -133,7 +147,9 @@ describe("RpcResolver", () => {
 			};
 			const program = rpc
 				.getBlockByNumber("latest")
-				.pipe(Effect.provide(TestTransport({ eth_getBlockByNumber: mockBlock })));
+				.pipe(
+					Effect.provide(TestTransport({ eth_getBlockByNumber: mockBlock })),
+				);
 
 			const result = await Effect.runPromise(program);
 			expect(result).toEqual(mockBlock);
@@ -161,7 +177,9 @@ describe("RpcResolver", () => {
 			};
 			const program = rpc
 				.getTransactionByHash("0xdef")
-				.pipe(Effect.provide(TestTransport({ eth_getTransactionByHash: mockTx })));
+				.pipe(
+					Effect.provide(TestTransport({ eth_getTransactionByHash: mockTx })),
+				);
 
 			const result = await Effect.runPromise(program);
 			expect(result).toEqual(mockTx);
@@ -175,7 +193,11 @@ describe("RpcResolver", () => {
 			};
 			const program = rpc
 				.getTransactionReceipt("0xdef")
-				.pipe(Effect.provide(TestTransport({ eth_getTransactionReceipt: mockReceipt })));
+				.pipe(
+					Effect.provide(
+						TestTransport({ eth_getTransactionReceipt: mockReceipt }),
+					),
+				);
 
 			const result = await Effect.runPromise(program);
 			expect(result).toEqual(mockReceipt);
@@ -197,7 +219,11 @@ describe("RpcResolver", () => {
 		it("sendRawTransaction", async () => {
 			const program = rpc
 				.sendRawTransaction("0xf86c...")
-				.pipe(Effect.provide(TestTransport({ eth_sendRawTransaction: "0xhash123" })));
+				.pipe(
+					Effect.provide(
+						TestTransport({ eth_sendRawTransaction: "0xhash123" }),
+					),
+				);
 
 			const result = await Effect.runPromise(program);
 			expect(result).toBe("0xhash123");
@@ -220,7 +246,9 @@ describe("RpcResolver", () => {
 		it("generic", async () => {
 			const program = rpc
 				.generic("custom_method", ["arg1", "arg2"])
-				.pipe(Effect.provide(TestTransport({ custom_method: "custom_result" })));
+				.pipe(
+					Effect.provide(TestTransport({ custom_method: "custom_result" })),
+				);
 
 			const result = await Effect.runPromise(program);
 			expect(result).toBe("custom_result");
