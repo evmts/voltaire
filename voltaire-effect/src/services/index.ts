@@ -74,6 +74,8 @@ export {
 	type AccountShape,
 	JsonRpcAccount,
 	LocalAccount,
+	MnemonicAccount,
+	type MnemonicAccountOptions,
 	type UnsignedTransaction,
 } from "./Account/index.js";
 // Formatter exports
