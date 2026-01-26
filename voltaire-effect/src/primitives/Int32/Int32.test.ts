@@ -93,18 +93,16 @@ describe("Int32", () => {
 			expect(S.encodeSync(Int32.Number)(result)).toBe(1500000);
 		});
 
-		it("wraps on overflow", () => {
+		it("throws on overflow", () => {
 			const max = S.decodeSync(Int32.Number)(INT32_MAX);
 			const one = S.decodeSync(Int32.Number)(1);
-			const result = BrandedInt32.plus(max, one);
-			expect(S.encodeSync(Int32.Number)(result)).toBe(INT32_MIN);
+			expect(() => BrandedInt32.plus(max, one)).toThrow();
 		});
 
-		it("wraps on underflow", () => {
+		it("throws on underflow", () => {
 			const min = S.decodeSync(Int32.Number)(INT32_MIN);
 			const negOne = S.decodeSync(Int32.Number)(-1);
-			const result = BrandedInt32.plus(min, negOne);
-			expect(S.encodeSync(Int32.Number)(result)).toBe(INT32_MAX);
+			expect(() => BrandedInt32.plus(min, negOne)).toThrow();
 		});
 	});
 
@@ -116,11 +114,10 @@ describe("Int32", () => {
 			expect(S.encodeSync(Int32.Number)(result)).toBe(500000);
 		});
 
-		it("wraps on underflow", () => {
+		it("throws on underflow", () => {
 			const min = S.decodeSync(Int32.Number)(INT32_MIN);
 			const one = S.decodeSync(Int32.Number)(1);
-			const result = Int32.sub(min, one);
-			expect(S.encodeSync(Int32.Number)(result)).toBe(INT32_MAX);
+			expect(() => Int32.sub(min, one)).toThrow();
 		});
 	});
 
@@ -182,10 +179,9 @@ describe("Int32", () => {
 			expect(S.encodeSync(Int32.Number)(result)).toBe(0);
 		});
 
-		it("negates INT32_MIN wraps", () => {
+		it("negate of INT32_MIN throws overflow", () => {
 			const min = S.decodeSync(Int32.Number)(INT32_MIN);
-			const result = Int32.negate(min);
-			expect(S.encodeSync(Int32.Number)(result)).toBe(INT32_MIN);
+			expect(() => Int32.negate(min)).toThrow();
 		});
 	});
 
@@ -202,10 +198,9 @@ describe("Int32", () => {
 			expect(S.encodeSync(Int32.Number)(result)).toBe(1000000);
 		});
 
-		it("abs of INT32_MIN wraps", () => {
+		it("abs of INT32_MIN throws overflow", () => {
 			const min = S.decodeSync(Int32.Number)(INT32_MIN);
-			const result = Int32.abs(min);
-			expect(S.encodeSync(Int32.Number)(result)).toBe(INT32_MIN);
+			expect(() => Int32.abs(min)).toThrow();
 		});
 	});
 

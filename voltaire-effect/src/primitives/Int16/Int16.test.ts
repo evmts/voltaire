@@ -113,18 +113,16 @@ describe("Int16", () => {
 			expect(S.encodeSync(Int16.Number)(result)).toBe(2000);
 		});
 
-		it("wraps on overflow (32767 + 1)", () => {
+		it("throws on overflow (32767 + 1)", () => {
 			const max = S.decodeSync(Int16.Number)(INT16_MAX);
 			const one = S.decodeSync(Int16.Number)(1);
-			const result = BrandedInt16.plus(max, one);
-			expect(S.encodeSync(Int16.Number)(result)).toBe(INT16_MIN);
+			expect(() => BrandedInt16.plus(max, one)).toThrow();
 		});
 
-		it("wraps on underflow (-32768 + -1)", () => {
+		it("throws on underflow (-32768 + -1)", () => {
 			const min = S.decodeSync(Int16.Number)(INT16_MIN);
 			const negOne = S.decodeSync(Int16.Number)(-1);
-			const result = BrandedInt16.plus(min, negOne);
-			expect(S.encodeSync(Int16.Number)(result)).toBe(INT16_MAX);
+			expect(() => BrandedInt16.plus(min, negOne)).toThrow();
 		});
 	});
 
@@ -136,11 +134,10 @@ describe("Int16", () => {
 			expect(S.encodeSync(Int16.Number)(result)).toBe(2000);
 		});
 
-		it("wraps on underflow (-32768 - 1)", () => {
+		it("throws on underflow (-32768 - 1)", () => {
 			const min = S.decodeSync(Int16.Number)(INT16_MIN);
 			const one = S.decodeSync(Int16.Number)(1);
-			const result = Int16.sub(min, one);
-			expect(S.encodeSync(Int16.Number)(result)).toBe(INT16_MAX);
+			expect(() => Int16.sub(min, one)).toThrow();
 		});
 	});
 
@@ -159,11 +156,10 @@ describe("Int16", () => {
 			expect(S.encodeSync(Int16.Number)(result)).toBe(-3000);
 		});
 
-		it("wraps on overflow", () => {
+		it("throws on overflow", () => {
 			const a = S.decodeSync(Int16.Number)(16384);
 			const b = S.decodeSync(Int16.Number)(2);
-			const result = Int16.mul(a, b);
-			expect(S.encodeSync(Int16.Number)(result)).toBe(INT16_MIN);
+			expect(() => Int16.mul(a, b)).toThrow();
 		});
 	});
 
@@ -203,10 +199,9 @@ describe("Int16", () => {
 			expect(S.encodeSync(Int16.Number)(result)).toBe(1000);
 		});
 
-		it("negates INT16_MIN wraps to INT16_MIN", () => {
+		it("negate of INT16_MIN throws overflow", () => {
 			const min = S.decodeSync(Int16.Number)(INT16_MIN);
-			const result = Int16.negate(min);
-			expect(S.encodeSync(Int16.Number)(result)).toBe(INT16_MIN);
+			expect(() => Int16.negate(min)).toThrow();
 		});
 	});
 
@@ -223,10 +218,9 @@ describe("Int16", () => {
 			expect(S.encodeSync(Int16.Number)(result)).toBe(1000);
 		});
 
-		it("abs of INT16_MIN wraps", () => {
+		it("abs of INT16_MIN throws overflow", () => {
 			const min = S.decodeSync(Int16.Number)(INT16_MIN);
-			const result = Int16.abs(min);
-			expect(S.encodeSync(Int16.Number)(result)).toBe(INT16_MIN);
+			expect(() => Int16.abs(min)).toThrow();
 		});
 	});
 

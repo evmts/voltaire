@@ -265,7 +265,7 @@ describe("Int256", () => {
 			expect(S.encodeSync(Int256.BigInt)(result)).toBe(-INT256_MAX);
 		});
 
-		it("negates INT256_MIN wraps", () => {
+		it("negate of INT256_MIN wraps", () => {
 			const min = S.decodeSync(Int256.BigInt)(INT256_MIN);
 			const result = Int256.negate(min);
 			expect(S.encodeSync(Int256.BigInt)(result)).toBe(INT256_MIN);
@@ -291,10 +291,9 @@ describe("Int256", () => {
 			expect(S.encodeSync(Int256.BigInt)(result)).toBe(0n);
 		});
 
-		it("abs of INT256_MIN wraps", () => {
+		it("abs of INT256_MIN throws overflow", () => {
 			const min = S.decodeSync(Int256.BigInt)(INT256_MIN);
-			const result = Int256.abs(min);
-			expect(S.encodeSync(Int256.BigInt)(result)).toBe(INT256_MIN);
+			expect(() => Int256.abs(min)).toThrow();
 		});
 	});
 

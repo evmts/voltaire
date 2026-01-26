@@ -107,18 +107,16 @@ describe("Int64", () => {
 			expect(S.encodeSync(Int64.BigInt)(result)).toBe(1000000000000n);
 		});
 
-		it("wraps on overflow", () => {
+		it("throws on overflow", () => {
 			const max = S.decodeSync(Int64.BigInt)(INT64_MAX);
 			const one = S.decodeSync(Int64.BigInt)(1n);
-			const result = BrandedInt64.plus(max, one);
-			expect(S.encodeSync(Int64.BigInt)(result)).toBe(INT64_MIN);
+			expect(() => BrandedInt64.plus(max, one)).toThrow();
 		});
 
-		it("wraps on underflow", () => {
+		it("throws on underflow", () => {
 			const min = S.decodeSync(Int64.BigInt)(INT64_MIN);
 			const negOne = S.decodeSync(Int64.BigInt)(-1n);
-			const result = BrandedInt64.plus(min, negOne);
-			expect(S.encodeSync(Int64.BigInt)(result)).toBe(INT64_MAX);
+			expect(() => BrandedInt64.plus(min, negOne)).toThrow();
 		});
 	});
 
@@ -137,11 +135,10 @@ describe("Int64", () => {
 			expect(S.encodeSync(Int64.BigInt)(result)).toBe(1500000000000n);
 		});
 
-		it("wraps on underflow", () => {
+		it("throws on underflow", () => {
 			const min = S.decodeSync(Int64.BigInt)(INT64_MIN);
 			const one = S.decodeSync(Int64.BigInt)(1n);
-			const result = Int64.sub(min, one);
-			expect(S.encodeSync(Int64.BigInt)(result)).toBe(INT64_MAX);
+			expect(() => Int64.sub(min, one)).toThrow();
 		});
 	});
 
@@ -210,10 +207,9 @@ describe("Int64", () => {
 			expect(S.encodeSync(Int64.BigInt)(result)).toBe(0n);
 		});
 
-		it("negates INT64_MIN wraps", () => {
+		it("negate of INT64_MIN throws overflow", () => {
 			const min = S.decodeSync(Int64.BigInt)(INT64_MIN);
-			const result = Int64.negate(min);
-			expect(S.encodeSync(Int64.BigInt)(result)).toBe(INT64_MIN);
+			expect(() => Int64.negate(min)).toThrow();
 		});
 	});
 
@@ -236,10 +232,9 @@ describe("Int64", () => {
 			expect(S.encodeSync(Int64.BigInt)(result)).toBe(0n);
 		});
 
-		it("abs of INT64_MIN wraps", () => {
+		it("abs of INT64_MIN throws overflow", () => {
 			const min = S.decodeSync(Int64.BigInt)(INT64_MIN);
-			const result = Int64.abs(min);
-			expect(S.encodeSync(Int64.BigInt)(result)).toBe(INT64_MIN);
+			expect(() => Int64.abs(min)).toThrow();
 		});
 	});
 

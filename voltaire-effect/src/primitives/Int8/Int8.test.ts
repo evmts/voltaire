@@ -331,10 +331,9 @@ describe("Int8", () => {
 			expect(S.encodeSync(Int8.Number)(result)).toBe(-127);
 		});
 
-		it("negates INT8_MIN wraps to INT8_MIN", () => {
+		it("negate of INT8_MIN throws overflow", () => {
 			const min = S.decodeSync(Int8.Number)(INT8_MIN);
-			const result = Int8.negate(min);
-			expect(S.encodeSync(Int8.Number)(result)).toBe(INT8_MIN);
+			expect(() => Int8.negate(min)).toThrow();
 		});
 	});
 
@@ -363,10 +362,9 @@ describe("Int8", () => {
 			expect(S.encodeSync(Int8.Number)(result)).toBe(INT8_MAX);
 		});
 
-		it("abs of INT8_MIN wraps", () => {
+		it("abs of INT8_MIN throws overflow", () => {
 			const min = S.decodeSync(Int8.Number)(INT8_MIN);
-			const result = Int8.abs(min);
-			expect(S.encodeSync(Int8.Number)(result)).toBe(INT8_MIN);
+			expect(() => Int8.abs(min)).toThrow();
 		});
 	});
 

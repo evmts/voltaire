@@ -245,10 +245,9 @@ describe("Int128", () => {
 			expect(S.encodeSync(Int128.BigInt)(result)).toBe(0n);
 		});
 
-		it("abs of INT128_MIN wraps", () => {
+		it("abs of INT128_MIN throws overflow", () => {
 			const min = S.decodeSync(Int128.BigInt)(INT128_MIN);
-			const result = Int128.abs(min);
-			expect(S.encodeSync(Int128.BigInt)(result)).toBe(INT128_MIN);
+			expect(() => Int128.abs(min)).toThrow();
 		});
 	});
 
@@ -324,12 +323,12 @@ describe("Int128", () => {
 	});
 
 	describe("Constants", () => {
-		it("INT128_MIN equals -(2^127)", () => {
-			expect(BrandedInt128.toBigInt(Int128.INT128_MIN)).toBe(INT128_MIN);
+		it("MIN equals -(2^127)", () => {
+			expect(Int128.MIN).toBe(INT128_MIN);
 		});
 
-		it("INT128_MAX equals 2^127 - 1", () => {
-			expect(BrandedInt128.toBigInt(Int128.INT128_MAX)).toBe(INT128_MAX);
+		it("MAX equals 2^127 - 1", () => {
+			expect(Int128.MAX).toBe(INT128_MAX);
 		});
 	});
 });
