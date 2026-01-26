@@ -47,7 +47,10 @@ export interface EIP1193Provider {
 	 * @param args - Request arguments with method and optional params
 	 * @returns Promise resolving to the RPC result
 	 */
-	request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+	request: (args: {
+		method: string;
+		params?: readonly unknown[] | object;
+	}) => Promise<unknown>;
 }
 
 /**
@@ -56,8 +59,12 @@ export interface EIP1193Provider {
  * @since 0.0.1
  */
 export interface CustomTransportConfig {
-	/** The EIP-1193 provider to wrap */
-	provider: EIP1193Provider;
+	/**
+	 * The EIP-1193 provider to wrap.
+	 * If omitted, CustomTransport will attempt to use an injected provider
+	 * (window.ethereum or globalThis.ethereum).
+	 */
+	provider?: EIP1193Provider;
 	/** Request timeout in milliseconds (default: 30000) */
 	timeout?: number;
 	/** Optional request interceptor */
@@ -68,12 +75,87 @@ export interface CustomTransportConfig {
 	onError?: (method: string, error: TransportError) => void | Promise<void>;
 }
 
+type InjectedEthereumProvider = EIP1193Provider & {
+	providers?: readonly EIP1193Provider[];
+};
+
+const isEip1193Provider = (value: unknown): value is EIP1193Provider =>
+	!!value &&
+	typeof value === "object" &&
+	"request" in value &&
+	typeof (value as { request: unknown }).request === "function";
+
+const EIP1193_ERROR_MESSAGES: Record<number, string> = {
+	4001: "User rejected the request",
+	4100: "Unauthorized",
+	4200: "Unsupported method",
+	4900: "Disconnected",
+	4901: "Chain disconnected",
+};
+
+const resolveInjectedProvider = (): EIP1193Provider | undefined => {
+	if (typeof window !== "undefined" && window.ethereum) {
+		const ethereum = window.ethereum as InjectedEthereumProvider;
+		if (Array.isArray(ethereum.providers) && ethereum.providers.length > 0) {
+			const provider = ethereum.providers.find(isEip1193Provider);
+			if (provider) return provider;
+		}
+		if (isEip1193Provider(ethereum)) return ethereum;
+	}
+
+	const globalEthereum = (globalThis as { ethereum?: InjectedEthereumProvider })
+		.ethereum;
+	if (globalEthereum) {
+		if (
+			Array.isArray(globalEthereum.providers) &&
+			globalEthereum.providers.length > 0
+		) {
+			const provider = globalEthereum.providers.find(isEip1193Provider);
+			if (provider) return provider;
+		}
+		if (isEip1193Provider(globalEthereum)) return globalEthereum;
+	}
+
+	return undefined;
+};
+
+const toTransportError = (error: unknown): TransportError => {
+	if (error instanceof TransportError) return error;
+
+	if (error && typeof error === "object") {
+		const record = error as { code?: unknown; message?: unknown; data?: unknown };
+		const rawCode = record.code;
+		const code =
+			typeof rawCode === "string"
+				? Number(rawCode)
+				: (rawCode as number | undefined);
+		if (typeof code === "number" && Number.isFinite(code)) {
+			const message =
+				typeof record.message === "string" && record.message.length > 0
+					? record.message
+					: EIP1193_ERROR_MESSAGES[code] ?? "Provider error";
+			return new TransportError({
+				code,
+				message,
+				data: record.data,
+			});
+		}
+	}
+
+	return new TransportError({
+		code: -32603,
+		message: error instanceof Error ? error.message : "Unknown provider error",
+	});
+};
+
 /**
  * Creates a custom transport layer from an EIP-1193 provider.
  *
  * @description
  * Wraps any EIP-1193 compatible provider to work with the TransportService.
  * Supports optional interceptors for request/response logging or modification.
+ * If no provider is supplied, it attempts to use an injected provider
+ * (window.ethereum or globalThis.ethereum).
  *
  * The transport:
  * - Delegates all requests to the wrapped provider
@@ -81,7 +163,7 @@ export interface CustomTransportConfig {
  * - Optionally times out requests
  * - Calls interceptors at appropriate lifecycle points
  *
- * @param options - Provider or configuration object
+ * @param options - Provider or configuration object (optional)
  * @returns Layer providing TransportService
  *
  * @throws {TransportError} When the provider rejects the request
@@ -140,12 +222,12 @@ export interface CustomTransportConfig {
  * ```
  */
 export const CustomTransport = (
-	options: CustomTransportConfig | EIP1193Provider,
+	options?: CustomTransportConfig | EIP1193Provider,
 ): Layer.Layer<TransportService> => {
 	const config: CustomTransportConfig =
-		"request" in options && typeof options.request === "function"
+		options && "request" in options && typeof options.request === "function"
 			? { provider: options }
-			: options;
+			: options ?? {};
 
 	const timeout = config.timeout ?? 30000;
 
@@ -153,6 +235,17 @@ export const CustomTransport = (
 		request: <T>(method: string, params: unknown[] = []) =>
 			Effect.gen(function* () {
 				// Call request interceptor
+				const provider = config.provider ?? resolveInjectedProvider();
+				if (!provider) {
+					return yield* Effect.fail(
+						new TransportError({
+							code: -32603,
+							message:
+								"No EIP-1193 provider found. Provide a provider or install an injected wallet (window.ethereum).",
+						}),
+					);
+				}
+
 				if (config.onRequest) {
 					yield* Effect.tryPromise({
 						try: () => Promise.resolve(config.onRequest!(method, params)),
@@ -161,20 +254,8 @@ export const CustomTransport = (
 				}
 
 				const resultEffect = Effect.tryPromise({
-					try: () => config.provider.request({ method, params }),
-					catch: (e) => {
-						if (e && typeof e === "object" && "code" in e && "message" in e) {
-							return new TransportError({
-								code: (e as { code: number }).code,
-								message: (e as { message: string }).message,
-								data: "data" in e ? (e as { data: unknown }).data : undefined,
-							});
-						}
-						return new TransportError({
-							code: -32603,
-							message: e instanceof Error ? e.message : "Unknown provider error",
-						});
-					},
+					try: () => provider.request({ method, params }),
+					catch: toTransportError,
 				});
 
 				const result = yield* resultEffect.pipe(
@@ -243,7 +324,10 @@ export const CustomTransport = (
  * ```
  */
 export const CustomTransportFromFn = (
-	request: (args: { method: string; params?: unknown[] }) => Promise<unknown>,
+	request: (args: {
+		method: string;
+		params?: readonly unknown[] | object;
+	}) => Promise<unknown>,
 	options?: Omit<CustomTransportConfig, "provider">,
 ): Layer.Layer<TransportService> =>
 	CustomTransport({

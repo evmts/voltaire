@@ -14,6 +14,7 @@
  * - {@link WebSocketTransport} - WebSocket transport for subscriptions
  * - {@link BrowserTransport} - Browser wallet (window.ethereum) transport
  * - {@link TestTransport} - Mock transport for testing
+ * - {@link RateLimitedTransport} - Rate-limited transport wrapper
  *
  * @example Typical usage pattern
  * ```typescript
@@ -44,6 +45,7 @@ export {
 	FallbackTransport,
 	type FallbackTransportOptions,
 } from "./FallbackTransport.js";
+export { RateLimitedTransport } from "./RateLimitedTransport.js";
 export {
 	HttpTransport,
 	HttpTransportFetch,

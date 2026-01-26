@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Ref from "effect/Ref";
-import { describe, expect, it, vi } from "@effect/vitest";
+import { afterEach, describe, expect, it, vi } from "@effect/vitest";
 import {
 	CustomTransport,
 	CustomTransportFromFn,
@@ -9,6 +9,16 @@ import {
 } from "./index.js";
 
 describe("CustomTransport", () => {
+	const originalWindow = globalThis.window;
+
+	afterEach(() => {
+		(
+			globalThis as unknown as {
+				window?: typeof window;
+			}
+		).window = originalWindow;
+	});
+
 	it("wraps an EIP-1193 provider", async () => {
 		const mockProvider = {
 			request: vi.fn().mockResolvedValue("0x123"),
@@ -41,6 +51,70 @@ describe("CustomTransport", () => {
 		expect(result).toBe("0x456");
 	});
 
+	it("uses injected window.ethereum when provider omitted", async () => {
+		const mockProvider = {
+			request: vi.fn().mockResolvedValue("0x789"),
+		};
+		(
+			globalThis as unknown as {
+				window: { ethereum: { request: typeof mockProvider.request } };
+			}
+		).window = {
+			ethereum: mockProvider,
+		};
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_chainId", []);
+		}).pipe(Effect.provide(CustomTransport()));
+
+		const result = await Effect.runPromise(program);
+		expect(result).toBe("0x789");
+		expect(mockProvider.request).toHaveBeenCalledWith({
+			method: "eth_chainId",
+			params: [],
+		});
+	});
+
+	it("prefers injected providers array when available", async () => {
+		const primaryProvider = {
+			request: vi.fn().mockResolvedValue("0x1"),
+		};
+		const secondaryProvider = {
+			request: vi.fn().mockResolvedValue("0x2"),
+		};
+		const aggregateRequest = vi.fn();
+		(
+			globalThis as unknown as {
+				window: {
+					ethereum: {
+						request: typeof aggregateRequest;
+						providers: Array<typeof primaryProvider>;
+					};
+				};
+			}
+		).window = {
+			ethereum: {
+				request: aggregateRequest,
+				providers: [primaryProvider, secondaryProvider],
+			},
+		};
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_chainId", []);
+		}).pipe(Effect.provide(CustomTransport()));
+
+		const result = await Effect.runPromise(program);
+		expect(result).toBe("0x1");
+		expect(primaryProvider.request).toHaveBeenCalledWith({
+			method: "eth_chainId",
+			params: [],
+		});
+		expect(aggregateRequest).not.toHaveBeenCalled();
+		expect(secondaryProvider.request).not.toHaveBeenCalled();
+	});
+
 	it("handles provider errors with code and message", async () => {
 		const mockProvider = {
 			request: vi.fn().mockRejectedValue({
@@ -60,6 +134,27 @@ describe("CustomTransport", () => {
 			const error = exit.cause.error as TransportError;
 			expect(error.code).toBe(4001);
 			expect(error.message).toBe("User rejected");
+		}
+	});
+
+	it("fills default message for EIP-1193 errors without message", async () => {
+		const mockProvider = {
+			request: vi.fn().mockRejectedValue({
+				code: 4100,
+			}),
+		};
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_requestAccounts", []);
+		}).pipe(Effect.provide(CustomTransport({ provider: mockProvider })));
+
+		const exit = await Effect.runPromiseExit(program);
+		expect(exit._tag).toBe("Failure");
+		if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+			const error = exit.cause.error as TransportError;
+			expect(error.code).toBe(4100);
+			expect(error.message).toBe("Unauthorized");
 		}
 	});
 
