@@ -673,7 +673,7 @@ export function parseErrorCode(input: {
 		return new ErrorClass(input.message, { data: input.data });
 	}
 	return new JsonRpcErrorResponse({
-		rpcCode: input.code,
+		code: input.code,
 		message: input.message ?? "Unknown error",
 		data: input.data,
 	});
