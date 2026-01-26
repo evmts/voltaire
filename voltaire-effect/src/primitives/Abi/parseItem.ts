@@ -54,7 +54,28 @@ export const parseItem = (
 	jsonString: string,
 ): Effect.Effect<Item.ItemType, AbiItemParseError> =>
 	Effect.try({
-		try: () => JSON.parse(jsonString) as Item.ItemType,
+		try: () => {
+			const parsed = JSON.parse(jsonString);
+			if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+				throw new Error("ABI item must be an object");
+			}
+			const parsedRecord = parsed as Record<string, unknown>;
+			if (typeof parsedRecord.type !== "string") {
+				throw new Error('ABI item must have a "type" property');
+			}
+			const validTypes = new Set([
+				"function",
+				"event",
+				"error",
+				"constructor",
+				"fallback",
+				"receive",
+			]);
+			if (!validTypes.has(parsedRecord.type)) {
+				throw new Error(`Invalid ABI item type: ${parsedRecord.type}`);
+			}
+			return parsed as Item.ItemType;
+		},
 		catch: (e) =>
 			new AbiItemParseError(
 				`Failed to parse ABI item JSON: ${e instanceof Error ? e.message : String(e)}`,

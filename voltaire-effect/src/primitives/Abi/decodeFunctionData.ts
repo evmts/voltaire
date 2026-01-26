@@ -10,6 +10,7 @@ import {
 	type AbiDecodingError,
 	type AbiInvalidSelectorError,
 	type AbiItemNotFoundError,
+	type ItemType,
 	decodeFunction,
 } from "@tevm/voltaire/Abi";
 import type { HexType } from "@tevm/voltaire/Hex";
@@ -19,7 +20,7 @@ import * as Effect from "effect/Effect";
  * Type alias for ABI input accepted by the decoder.
  * @internal
  */
-type AbiInput = Parameters<typeof decodeFunction>[0];
+type AbiInput = readonly ItemType[];
 
 /**
  * Decodes function call data using the provided ABI.

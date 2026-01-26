@@ -8,8 +8,10 @@
 
 import {
 	decodeFunction as _decodeFunction,
+	type AbiDecodingError,
 	type AbiInvalidSelectorError,
 	type AbiItemNotFoundError,
+	type ItemType,
 } from "@tevm/voltaire/Abi";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";
@@ -18,7 +20,7 @@ import * as Effect from "effect/Effect";
  * Type alias for ABI input.
  * @internal
  */
-type AbiInput = Parameters<typeof _decodeFunction>[0];
+type AbiInput = readonly ItemType[];
 
 /**
  * Decodes function call data using ABI.
@@ -29,7 +31,7 @@ type AbiInput = Parameters<typeof _decodeFunction>[0];
  *
  * @param {AbiInput} abi - The contract ABI.
  * @param {HexType | Uint8Array} data - The encoded function call data.
- * @returns {Effect.Effect<{ name: string; params: readonly unknown[] }, AbiItemNotFoundError | AbiInvalidSelectorError>}
+ * @returns {Effect.Effect<{ name: string; params: readonly unknown[] }, AbiItemNotFoundError | AbiInvalidSelectorError | AbiDecodingError>}
  *   Effect yielding the function name and decoded parameters.
  *
  * @example
@@ -51,9 +53,10 @@ export const decodeFunction = (
 	data: HexType | Uint8Array,
 ): Effect.Effect<
 	{ name: string; params: readonly unknown[] },
-	AbiItemNotFoundError | AbiInvalidSelectorError
+	AbiItemNotFoundError | AbiInvalidSelectorError | AbiDecodingError
 > =>
 	Effect.try({
 		try: () => _decodeFunction(abi, data),
-		catch: (e) => e as AbiItemNotFoundError | AbiInvalidSelectorError,
+		catch: (e) =>
+			e as AbiItemNotFoundError | AbiInvalidSelectorError | AbiDecodingError,
 	});

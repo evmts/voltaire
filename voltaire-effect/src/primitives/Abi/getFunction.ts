@@ -9,6 +9,7 @@
 import {
 	type Function as AbiFunction,
 	AbiItemNotFoundError,
+	type ItemType,
 	Item,
 } from "@tevm/voltaire/Abi";
 import * as Effect from "effect/Effect";
@@ -17,7 +18,7 @@ import * as Effect from "effect/Effect";
  * Type alias for ABI input accepted by the lookup function.
  * @internal
  */
-type AbiInput = Parameters<typeof Item.getItem>[0];
+type AbiInput = readonly ItemType[];
 
 /**
  * Retrieves a function definition from an ABI by name.

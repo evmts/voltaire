@@ -33,11 +33,12 @@ type AbiInput = readonly AbiItem[];
  * @description
  * Encodes indexed event parameters as topics for filtering logs.
  * Returns the event selector as topic0 followed by encoded indexed parameters.
+ * Null topics indicate a wildcard match in log filters.
  *
  * @param {AbiInput} abi - The contract ABI.
  * @param {string} eventName - The event name.
  * @param {readonly unknown[]} indexedArgs - The indexed parameter values.
- * @returns {Effect.Effect<readonly HexType[], AbiItemNotFoundError | AbiEncodingError>}
+ * @returns {Effect.Effect<readonly (HexType | null)[], AbiItemNotFoundError | AbiEncodingError>}
  *   Effect yielding the encoded topics array.
  *
  * @example
@@ -56,7 +57,10 @@ export const encodeEventLog = (
 	abi: AbiInput,
 	eventName: string,
 	indexedArgs: readonly unknown[],
-): Effect.Effect<readonly HexType[], AbiItemNotFoundError | AbiEncodingError> =>
+): Effect.Effect<
+	readonly (HexType | null)[],
+	AbiItemNotFoundError | AbiEncodingError
+> =>
 	Effect.try({
 		try: () => {
 			const evt = abi.find(
@@ -76,9 +80,7 @@ export const encodeEventLog = (
 				evt as AbiEvent.EventType,
 				indexedArgs as never,
 			);
-			return topics.map((t) =>
-				t ? Hex.fromBytes(t as Uint8Array) : ("0x" as HexType),
-			);
+			return topics.map((t) => (t ? Hex.fromBytes(t as Uint8Array) : null));
 		},
 		catch: (e) => e as AbiItemNotFoundError | AbiEncodingError,
 	});

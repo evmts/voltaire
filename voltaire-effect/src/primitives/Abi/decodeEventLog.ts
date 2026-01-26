@@ -7,15 +7,29 @@
  * @since 0.0.1
  */
 
-import { type AbiItemNotFoundError, decodeLog } from "@tevm/voltaire/Abi";
+import {
+	type AbiDecodingError,
+	AbiDecodingError as AbiDecodingErrorClass,
+	type AbiItemNotFoundError,
+	type ItemType,
+	decodeLog,
+} from "@tevm/voltaire/Abi";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";
+
+type AbiErrorType = AbiItemNotFoundError | AbiDecodingError;
+
+const isAbiError = (e: unknown): e is AbiErrorType =>
+	e !== null &&
+	typeof e === "object" &&
+	"name" in e &&
+	(e.name === "AbiItemNotFoundError" || e.name === "AbiDecodingError");
 
 /**
  * Type alias for ABI input accepted by the decoder.
  * @internal
  */
-type AbiInput = Parameters<typeof decodeLog>[0];
+type AbiInput = readonly ItemType[];
 
 /**
  * Input structure for decoding event logs.
@@ -64,14 +78,15 @@ export interface LogInput {
  *
  * This function never throws exceptions. Instead, it returns an Effect
  * that may fail with an `AbiItemNotFoundError` if no matching event
- * is found in the provided ABI.
+ * is found in the provided ABI, or an `AbiDecodingError` if the log
+ * data cannot be decoded.
  *
  * @param {AbiInput} abi - The contract ABI containing event definitions.
  *   Can be a JSON ABI array or parsed ABI object.
  * @param {LogInput} log - The log data with topics to decode.
  *   Must include at least one topic (the event signature).
  *
- * @returns {Effect.Effect<{ event: string; params: Record<string, unknown> }, AbiItemNotFoundError>}
+ * @returns {Effect.Effect<{ event: string; params: Record<string, unknown> }, AbiItemNotFoundError | AbiDecodingError>}
  *   Effect yielding an object with:
  *   - `event`: The name of the matched event
  *   - `params`: Record of parameter names to decoded values
@@ -129,9 +144,12 @@ export const decodeEventLog = (
 	log: LogInput,
 ): Effect.Effect<
 	{ event: string; params: Record<string, unknown> },
-	AbiItemNotFoundError
+	AbiItemNotFoundError | AbiDecodingError
 > =>
 	Effect.try({
 		try: () => decodeLog(abi, log),
-		catch: (e) => e as AbiItemNotFoundError,
+		catch: (e) =>
+			isAbiError(e)
+				? e
+				: new AbiDecodingErrorClass("Failed to decode event log", { cause: e instanceof Error ? e : undefined }),
 	});

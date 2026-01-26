@@ -6,14 +6,14 @@
  * @since 0.0.1
  */
 
-import { type Error as AbiError, Item } from "@tevm/voltaire/Abi";
+import { type Error as AbiError, type ItemType, Item } from "@tevm/voltaire/Abi";
 import * as Effect from "effect/Effect";
 
 /**
  * Type alias for ABI input.
  * @internal
  */
-type AbiInput = Parameters<typeof Item.getItem>[0];
+type AbiInput = readonly ItemType[];
 
 /**
  * Finds an error in an ABI by name.

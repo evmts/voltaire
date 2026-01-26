@@ -8,12 +8,21 @@
 
 import {
 	type AbiDecodingError,
+	AbiDecodingError as AbiDecodingErrorClass,
 	Function as AbiFunction,
 	AbiItemNotFoundError,
 } from "@tevm/voltaire/Abi";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Hex from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";
+
+type AbiError = AbiItemNotFoundError | AbiDecodingError;
+
+const isAbiError = (e: unknown): e is AbiError =>
+	e !== null &&
+	typeof e === "object" &&
+	"name" in e &&
+	(e.name === "AbiItemNotFoundError" || e.name === "AbiDecodingError");
 
 /**
  * Represents a single ABI item with type and optional name.
@@ -142,5 +151,8 @@ export const decodeFunctionResult = (
 			}
 			return AbiFunction.decodeResult(fn as AbiFunction.FunctionType, bytes);
 		},
-		catch: (e) => e as AbiItemNotFoundError | AbiDecodingError,
+		catch: (e) =>
+			isAbiError(e)
+				? e
+				: new AbiDecodingErrorClass("Failed to decode function result", { cause: e instanceof Error ? e : undefined }),
 	});

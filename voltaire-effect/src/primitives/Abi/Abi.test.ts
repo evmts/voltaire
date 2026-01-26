@@ -6,8 +6,10 @@ import { encodeFunctionData } from "./encodeFunctionData.js";
 import { decodeFunctionData } from "./decodeFunctionData.js";
 import { decodeEventLog } from "./decodeEventLog.js";
 import { encodeEventLog } from "./encodeEventLog.js";
+import type { HexType } from "@tevm/voltaire/Hex";
+import { Abi } from "@tevm/voltaire/Abi";
 
-const erc20Abi = [
+const erc20Abi = Abi([
 	{
 		type: "function",
 		name: "transfer",
@@ -32,7 +34,7 @@ const erc20Abi = [
 			{ name: "value", type: "uint256", indexed: false },
 		],
 	},
-] as const;
+]);
 
 describe("parse", () => {
 	it("parses valid JSON ABI string", async () => {
@@ -133,7 +135,12 @@ describe("encodeEventLog", () => {
 			]),
 		);
 		expect(topics.length).toBe(3);
-		expect(topics[0].startsWith("0x")).toBe(true);
+		const topic0 = topics[0];
+		expect(topic0).not.toBeNull();
+		if (topic0 === null) {
+			throw new Error("Expected topic0 to be non-null");
+		}
+		expect(topic0.startsWith("0x")).toBe(true);
 	});
 
 	it("fails for unknown event", async () => {
@@ -152,10 +159,14 @@ describe("decodeEventLog", () => {
 				"0x1234567890123456789012345678901234567890",
 			]),
 		);
+		const nonNullTopics = topics.filter(
+			(topic): topic is HexType => topic !== null,
+		);
+		expect(nonNullTopics.length).toBe(topics.length);
 		const value = 1000000000000000000n;
 		const data = `0x${value.toString(16).padStart(64, "0")}` as `0x${string}`;
 		const decoded = await Effect.runPromise(
-			decodeEventLog(erc20Abi, { data, topics }),
+			decodeEventLog(erc20Abi, { data, topics: nonNullTopics }),
 		);
 		expect(decoded.event).toBe("Transfer");
 		expect(decoded.params.value).toBe(value);

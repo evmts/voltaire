@@ -8,12 +8,21 @@
 
 import {
 	type AbiEncodingError,
+	AbiEncodingError as AbiEncodingErrorClass,
 	Error as AbiError,
 	AbiItemNotFoundError,
 } from "@tevm/voltaire/Abi";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Hex from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";
+
+type AbiErrorType = AbiItemNotFoundError | AbiEncodingError;
+
+const isAbiError = (e: unknown): e is AbiErrorType =>
+	e !== null &&
+	typeof e === "object" &&
+	"name" in e &&
+	(e.name === "AbiItemNotFoundError" || e.name === "AbiEncodingError");
 
 /**
  * Represents a single ABI item.
@@ -78,5 +87,8 @@ export const encodeError = (
 			);
 			return Hex.fromBytes(encoded);
 		},
-		catch: (e) => e as AbiItemNotFoundError | AbiEncodingError,
+		catch: (e) =>
+			isAbiError(e)
+				? e
+				: new AbiEncodingErrorClass("Failed to encode error", { cause: e instanceof Error ? e : undefined }),
 	});

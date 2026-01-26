@@ -9,15 +9,22 @@
 import {
 	type Event as AbiEvent,
 	AbiItemNotFoundError,
+	type ItemType,
 	Item,
 } from "@tevm/voltaire/Abi";
 import * as Effect from "effect/Effect";
+
+const isAbiItemNotFoundError = (e: unknown): e is AbiItemNotFoundError =>
+	e !== null &&
+	typeof e === "object" &&
+	"name" in e &&
+	e.name === "AbiItemNotFoundError";
 
 /**
  * Type alias for ABI input accepted by the lookup function.
  * @internal
  */
-type AbiInput = Parameters<typeof Item.getItem>[0];
+type AbiInput = readonly ItemType[];
 
 /**
  * Retrieves an event definition from an ABI by name.
@@ -113,5 +120,12 @@ export const getEvent = (
 			}
 			return item as AbiEvent.EventType;
 		},
-		catch: (e) => e as AbiItemNotFoundError,
+		catch: (e) =>
+			isAbiItemNotFoundError(e)
+				? e
+				: new AbiItemNotFoundError(`Event "${name}" not found in ABI`, {
+						value: name,
+						expected: "valid event name in ABI",
+						context: { name, abi, cause: e },
+					}),
 	});
