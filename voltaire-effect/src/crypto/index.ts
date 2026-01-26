@@ -89,6 +89,11 @@ export {
 export { CryptoLive } from "./CryptoLive.js";
 export { CryptoTest } from "./CryptoTest.js";
 export {
+	verifySignature as erc6492VerifySignature,
+	wrapSignature as erc6492WrapSignature,
+	unwrapSignature as erc6492UnwrapSignature,
+} from "./ERC6492/index.js";
+export {
 	Ed25519Live,
 	Ed25519Service,
 	type Ed25519ServiceShape,

@@ -53,6 +53,7 @@ export { CryptoLive } from "./crypto/CryptoLive.js";
 export { CryptoTest } from "./crypto/CryptoTest.js";
 export * as Ed25519 from "./crypto/Ed25519/index.js";
 export * as EIP712 from "./crypto/EIP712/index.js";
+export * as ERC6492 from "./crypto/ERC6492/index.js";
 export * as HDWallet from "./crypto/HDWallet/index.js";
 export * as HMAC from "./crypto/HMAC/index.js";
 export * as Keccak256 from "./crypto/Keccak256/index.js";
