@@ -10,6 +10,8 @@ import {
 	getPrivateKey,
 	getPublicKey,
 	mnemonicToSeed,
+	withPrivateKey,
+	withSeed,
 } from "./derive.js";
 import {
 	HardenedDerivationError,
@@ -260,4 +262,114 @@ describe("HDWallet error types", () => {
 		);
 		expect(result).toBeDefined();
 	});
+});
+
+describe("withPrivateKey", () => {
+	const validSeed = new Uint8Array(32).fill(0x42);
+
+	it.effect("zeroes private key after use", () =>
+		Effect.gen(function* () {
+			const master = yield* fromSeed(validSeed);
+			let capturedKey: Uint8Array | null = null;
+
+			yield* withPrivateKey(master, (key) =>
+				Effect.sync(() => {
+					capturedKey = key;
+					expect(key.some((b) => b !== 0)).toBe(true);
+				}),
+			);
+
+			expect(capturedKey).not.toBeNull();
+			expect(capturedKey!.every((b) => b === 0)).toBe(true);
+		}).pipe(Effect.provide(HDWalletLive))
+	);
+
+	it.effect("zeroes private key even on error", () =>
+		Effect.gen(function* () {
+			const master = yield* fromSeed(validSeed);
+			let capturedKey: Uint8Array | null = null;
+
+			const exit = yield* Effect.exit(
+				withPrivateKey(master, (key) =>
+					Effect.sync(() => {
+						capturedKey = key;
+						throw new Error("test error");
+					}),
+				),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			expect(capturedKey).not.toBeNull();
+			expect(capturedKey!.every((b) => b === 0)).toBe(true);
+		}).pipe(Effect.provide(HDWalletLive))
+	);
+
+	it.effect("fails with InvalidKeyError for public-only node", () =>
+		Effect.gen(function* () {
+			const master = yield* fromSeed(validSeed);
+			const publicNode = HDWallet.toPublic(master as any);
+
+			const exit = yield* Effect.exit(
+				withPrivateKey(publicNode as any, (key) => Effect.succeed(key)),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+				expect(exit.cause.error._tag).toBe("InvalidKeyError");
+			}
+		}).pipe(Effect.provide(HDWalletLive))
+	);
+});
+
+describe("withSeed", () => {
+	const mnemonic = [
+		"abandon",
+		"abandon",
+		"abandon",
+		"abandon",
+		"abandon",
+		"abandon",
+		"abandon",
+		"abandon",
+		"abandon",
+		"abandon",
+		"abandon",
+		"about",
+	];
+
+	it.effect("zeroes seed after use", () =>
+		Effect.gen(function* () {
+			let capturedSeed: Uint8Array | null = null;
+
+			yield* withSeed(mnemonic, (seed) =>
+				Effect.sync(() => {
+					capturedSeed = seed;
+					expect(seed.length).toBe(64);
+					expect(seed.some((b) => b !== 0)).toBe(true);
+				}),
+			);
+
+			expect(capturedSeed).not.toBeNull();
+			expect(capturedSeed!.every((b) => b === 0)).toBe(true);
+		}).pipe(Effect.provide(HDWalletLive))
+	);
+
+	it.effect("zeroes seed even on error", () =>
+		Effect.gen(function* () {
+			let capturedSeed: Uint8Array | null = null;
+
+			const exit = yield* Effect.exit(
+				withSeed(mnemonic, (seed) =>
+					Effect.sync(() => {
+						capturedSeed = seed;
+						throw new Error("test error");
+					}),
+				),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			expect(capturedSeed).not.toBeNull();
+			expect(capturedSeed!.every((b) => b === 0)).toBe(true);
+		}).pipe(Effect.provide(HDWalletLive))
+	);
 });

@@ -375,4 +375,76 @@ describe("Keystore", () => {
 			})
 		);
 	});
+
+	describe("withDecryptedKey", () => {
+		it.effect("zeroes private key after use", () =>
+			Effect.gen(function* () {
+				const encrypted = yield* Keystore.encrypt(testPrivateKey, testPassword, {
+					scryptN: 1024,
+					scryptR: 8,
+					scryptP: 1,
+				});
+
+				let capturedKey: Uint8Array | null = null;
+
+				yield* Keystore.withDecryptedKey(encrypted, testPassword, (key) =>
+					Effect.sync(() => {
+						capturedKey = key;
+						expect(key).toEqual(testPrivateKey);
+					}),
+				);
+
+				expect(capturedKey).not.toBeNull();
+				expect(capturedKey!.every((b) => b === 0)).toBe(true);
+			})
+		);
+
+		it.effect("zeroes private key even on error", () =>
+			Effect.gen(function* () {
+				const encrypted = yield* Keystore.encrypt(testPrivateKey, testPassword, {
+					scryptN: 1024,
+					scryptR: 8,
+					scryptP: 1,
+				});
+
+				let capturedKey: Uint8Array | null = null;
+
+				const exit = yield* Effect.exit(
+					Keystore.withDecryptedKey(encrypted, testPassword, (key) =>
+						Effect.sync(() => {
+							capturedKey = key;
+							throw new Error("test error");
+						}),
+					),
+				);
+
+				expect(Exit.isFailure(exit)).toBe(true);
+				expect(capturedKey).not.toBeNull();
+				expect(capturedKey!.every((b) => b === 0)).toBe(true);
+			})
+		);
+
+		it("fails with wrong password and does not leak key", async () => {
+			const encrypted = await Effect.runPromise(
+				Keystore.encrypt(testPrivateKey, testPassword, {
+					scryptN: 1024,
+					scryptR: 8,
+					scryptP: 1,
+				}),
+			);
+
+			let useCalled = false;
+
+			const exit = await Effect.runPromiseExit(
+				Keystore.withDecryptedKey(encrypted, "wrong-password", (_key) =>
+					Effect.sync(() => {
+						useCalled = true;
+					}),
+				),
+			);
+
+			expect(Exit.isFailure(exit)).toBe(true);
+			expect(useCalled).toBe(false);
+		});
+	});
 });
