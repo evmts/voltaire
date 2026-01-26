@@ -1,24 +1,22 @@
 /**
- * @fileoverview Effect-based Uint256 zero check.
+ * @fileoverview Uint256 zero check.
  * @module isZero
  * @since 0.0.1
  */
 
 import { Uint256, type Type as Uint256Type } from "@tevm/voltaire/Uint";
-import * as Effect from "effect/Effect";
 
 /**
  * Checks if a Uint256 value is zero.
  *
  * @param uint - Value to check
- * @returns Effect yielding boolean
+ * @returns true if value is zero
  *
  * @example
  * ```typescript
- * const isZero = Effect.runSync(Uint.isZero(uint))
+ * Uint.isZero(uint) // true or false
  * ```
  *
  * @since 0.0.1
  */
-export const isZero = (uint: Uint256Type): Effect.Effect<boolean> =>
-	Effect.sync(() => Uint256.isZero(uint));
+export const isZero = (uint: Uint256Type): boolean => Uint256.isZero(uint);
