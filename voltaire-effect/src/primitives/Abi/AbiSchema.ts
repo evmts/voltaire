@@ -7,7 +7,6 @@
  */
 
 import { Abi } from "@tevm/voltaire/Abi";
-import type { Item } from "@tevm/voltaire/Abi";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
 
@@ -108,10 +107,7 @@ type FunctionItem = {
  */
 const FunctionTypeSchema = S.declare<FunctionItem>(
 	(u): u is FunctionItem =>
-		typeof u === "object" &&
-		u !== null &&
-		"type" in u &&
-		u.type === "function",
+		typeof u === "object" && u !== null && "type" in u && u.type === "function",
 	{ identifier: "AbiFunction" },
 );
 
@@ -306,10 +302,7 @@ type FallbackItem = {
  */
 const FallbackTypeSchema = S.declare<FallbackItem>(
 	(u): u is FallbackItem =>
-		typeof u === "object" &&
-		u !== null &&
-		"type" in u &&
-		u.type === "fallback",
+		typeof u === "object" && u !== null && "type" in u && u.type === "fallback",
 	{ identifier: "AbiFallback" },
 );
 
@@ -355,10 +348,7 @@ type ReceiveItem = {
  */
 const ReceiveTypeSchema = S.declare<ReceiveItem>(
 	(u): u is ReceiveItem =>
-		typeof u === "object" &&
-		u !== null &&
-		"type" in u &&
-		u.type === "receive",
+		typeof u === "object" && u !== null && "type" in u && u.type === "receive",
 	{ identifier: "AbiReceive" },
 );
 
@@ -474,22 +464,26 @@ export const AbiSchema = AbiInstanceGuardSchema;
  *
  * @since 0.1.0
  */
-export const fromArray = S.transformOrFail(AbiSchemaInternal, AbiInstanceGuardSchema, {
-	strict: true,
-	decode: (items, _options, ast) => {
-		try {
-			return ParseResult.succeed(Abi(items as Parameters<typeof Abi>[0]));
-		} catch (e) {
-			return ParseResult.fail(
-				new ParseResult.Type(ast, items, (e as Error).message),
+export const fromArray = S.transformOrFail(
+	AbiSchemaInternal,
+	AbiInstanceGuardSchema,
+	{
+		strict: true,
+		decode: (items, _options, ast) => {
+			try {
+				return ParseResult.succeed(Abi(items as Parameters<typeof Abi>[0]));
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, items, (e as Error).message),
+				);
+			}
+		},
+		encode: (abi, _options, _ast) => {
+			return ParseResult.succeed(
+				Array.from(abi as unknown as ArrayLike<unknown>) as S.Schema.Encoded<
+					typeof AbiSchemaInternal
+				>,
 			);
-		}
+		},
 	},
-	encode: (abi, _options, _ast) => {
-		return ParseResult.succeed(
-			Array.from(abi as unknown as ArrayLike<unknown>) as S.Schema.Encoded<
-				typeof AbiSchemaInternal
-			>,
-		);
-	},
-}).annotations({ identifier: "Abi.fromArray" });
+).annotations({ identifier: "Abi.fromArray" });

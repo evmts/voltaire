@@ -7,6 +7,20 @@
  * @since 0.0.1
  */
 
+export {
+	AbiSchema,
+	AbiTypeSchema,
+	ConstructorSchema,
+	ErrorSchema,
+	EventSchema,
+	FallbackSchema,
+	FunctionSchema,
+	fromArray,
+	ItemSchema,
+	ParameterSchema,
+	ReceiveSchema,
+	StateMutabilitySchema,
+} from "./AbiSchema.js";
 export { decodeError } from "./decodeError.js";
 export { decodeEventLog } from "./decodeEventLog.js";
 export { decodeFunction } from "./decodeFunction.js";
@@ -37,17 +51,3 @@ export { getSelector } from "./getSelector.js";
 // Parsing
 export { AbiParseError, parse } from "./parse.js";
 export { AbiItemParseError, parseItem } from "./parseItem.js";
-export {
-	AbiSchema,
-	AbiTypeSchema,
-	ConstructorSchema,
-	ErrorSchema,
-	EventSchema,
-	FallbackSchema,
-	fromArray,
-	FunctionSchema,
-	ItemSchema,
-	ParameterSchema,
-	ReceiveSchema,
-	StateMutabilitySchema,
-} from "./AbiSchema.js";

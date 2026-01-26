@@ -12,14 +12,14 @@ const isValidWithdrawal = (w: unknown): boolean => {
 	if (typeof w !== "object" || w === null) return false;
 	const withdrawal = w as Record<string, unknown>;
 
-	// Check index is bigint
+	// Check index is bigint (WithdrawalIndexType)
 	if (!("index" in withdrawal) || typeof withdrawal.index !== "bigint")
 		return false;
 
-	// Check validatorIndex is bigint
+	// Check validatorIndex is number (ValidatorIndexType is branded number)
 	if (
 		!("validatorIndex" in withdrawal) ||
-		typeof withdrawal.validatorIndex !== "bigint"
+		typeof withdrawal.validatorIndex !== "number"
 	)
 		return false;
 
@@ -31,8 +31,8 @@ const isValidWithdrawal = (w: unknown): boolean => {
 	)
 		return false;
 
-	// Check amount is bigint
-	if (!("amount" in withdrawal) || typeof withdrawal.amount !== "bigint")
+	// Check amount is string (GweiType is branded string)
+	if (!("amount" in withdrawal) || typeof withdrawal.amount !== "string")
 		return false;
 
 	return true;

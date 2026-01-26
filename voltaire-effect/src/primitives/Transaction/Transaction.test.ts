@@ -633,7 +633,9 @@ describe("Transaction.Schema (direct struct validation)", () => {
 				r: testSignature.r,
 				s: testSignature.s,
 			};
-			expect(() => S.decodeSync(Transaction.LegacySchema)(tx as never)).toThrow();
+			expect(() =>
+				S.decodeSync(Transaction.LegacySchema)(tx as never),
+			).toThrow();
 		});
 
 		it("rejects missing required fields", () => {

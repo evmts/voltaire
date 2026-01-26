@@ -7,8 +7,8 @@
  */
 
 import {
-	type Abi,
 	decodeFunction as _decodeFunction,
+	type Abi,
 	type AbiDecodingError,
 	AbiDecodingError as AbiDecodingErrorClass,
 	type AbiInvalidSelectorError,

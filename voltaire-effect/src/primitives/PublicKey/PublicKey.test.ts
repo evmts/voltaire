@@ -1,7 +1,10 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Hash } from "@tevm/voltaire";
 import { PrivateKey as CorePrivateKey } from "@tevm/voltaire/PrivateKey";
-import { PublicKey as CorePublicKey, type PublicKeyType } from "@tevm/voltaire/PublicKey";
+import {
+	PublicKey as CorePublicKey,
+	type PublicKeyType,
+} from "@tevm/voltaire/PublicKey";
 import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 import * as Signature from "@tevm/voltaire/Signature";
 import * as Effect from "effect/Effect";
@@ -244,7 +247,9 @@ describe("edge cases", () => {
 
 describe("PublicKey.toAddress", () => {
 	const privateKey = CorePrivateKey.fromBytes(new Uint8Array(32).fill(1));
-	const publicKey = Secp256k1.derivePublicKey(privateKey) as unknown as PublicKeyType;
+	const publicKey = Secp256k1.derivePublicKey(
+		privateKey,
+	) as unknown as PublicKeyType;
 
 	it.effect("derives address from public key", () =>
 		Effect.gen(function* () {
@@ -264,8 +269,12 @@ describe("PublicKey.toAddress", () => {
 
 	it.effect("produces different addresses for different keys", () =>
 		Effect.gen(function* () {
-			const otherPrivateKey = CorePrivateKey.fromBytes(new Uint8Array(32).fill(2));
-			const otherKey = Secp256k1.derivePublicKey(otherPrivateKey) as unknown as PublicKeyType;
+			const otherPrivateKey = CorePrivateKey.fromBytes(
+				new Uint8Array(32).fill(2),
+			);
+			const otherKey = Secp256k1.derivePublicKey(
+				otherPrivateKey,
+			) as unknown as PublicKeyType;
 			const addr1 = yield* PublicKey.toAddress(publicKey);
 			const addr2 = yield* PublicKey.toAddress(otherKey);
 			expect([...addr1]).not.toEqual([...addr2]);
@@ -293,14 +302,20 @@ describe("PublicKey core primitives", () => {
 
 describe("PublicKey.verify", () => {
 	const privateKey = CorePrivateKey.fromBytes(new Uint8Array(32).fill(1));
-	const publicKey = Secp256k1.derivePublicKey(privateKey) as unknown as PublicKeyType;
+	const publicKey = Secp256k1.derivePublicKey(
+		privateKey,
+	) as unknown as PublicKeyType;
 	const messageHash = Hash.from(new Uint8Array(32).fill(0x11));
 
 	it.effect("verifies valid signature", () =>
 		Effect.gen(function* () {
 			const secp256k1Sig = Secp256k1.sign(messageHash, privateKey);
 			// Convert Secp256k1SignatureType to SignatureType
-			const signature = Signature.fromSecp256k1(secp256k1Sig.r, secp256k1Sig.s, secp256k1Sig.v);
+			const signature = Signature.fromSecp256k1(
+				secp256k1Sig.r,
+				secp256k1Sig.s,
+				secp256k1Sig.v,
+			);
 			const isValid = yield* PublicKey.verify(
 				publicKey,
 				messageHash,
@@ -312,9 +327,15 @@ describe("PublicKey.verify", () => {
 
 	it.effect("rejects signature from different key", () =>
 		Effect.gen(function* () {
-			const otherPrivateKey = CorePrivateKey.fromBytes(new Uint8Array(32).fill(2));
+			const otherPrivateKey = CorePrivateKey.fromBytes(
+				new Uint8Array(32).fill(2),
+			);
 			const secp256k1Sig = Secp256k1.sign(messageHash, otherPrivateKey);
-			const signature = Signature.fromSecp256k1(secp256k1Sig.r, secp256k1Sig.s, secp256k1Sig.v);
+			const signature = Signature.fromSecp256k1(
+				secp256k1Sig.r,
+				secp256k1Sig.s,
+				secp256k1Sig.v,
+			);
 			const isValid = yield* PublicKey.verify(
 				publicKey,
 				messageHash,
@@ -327,7 +348,11 @@ describe("PublicKey.verify", () => {
 	it.effect("rejects signature for different message", () =>
 		Effect.gen(function* () {
 			const secp256k1Sig = Secp256k1.sign(messageHash, privateKey);
-			const signature = Signature.fromSecp256k1(secp256k1Sig.r, secp256k1Sig.s, secp256k1Sig.v);
+			const signature = Signature.fromSecp256k1(
+				secp256k1Sig.r,
+				secp256k1Sig.s,
+				secp256k1Sig.v,
+			);
 			const differentHash = Hash.from(new Uint8Array(32).fill(0x22));
 			const isValid = yield* PublicKey.verify(
 				publicKey,

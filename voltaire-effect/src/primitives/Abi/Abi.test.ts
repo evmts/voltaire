@@ -1,7 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Abi } from "@tevm/voltaire/Abi";
 import { Hex } from "@tevm/voltaire";
-import type { HexType } from "@tevm/voltaire/Hex";
+import { Abi } from "@tevm/voltaire/Abi";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import { decodeError } from "./decodeError.js";
@@ -577,8 +576,9 @@ describe("decodeFunctionData", () => {
 
 describe("decodeFunctionResult", () => {
 	it("decodes uint256 result", async () => {
-		const data =
-			Hex("0x0000000000000000000000000000000000000000000000000de0b6b3a7640000");
+		const data = Hex(
+			"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+		);
 		const decoded = await Effect.runPromise(
 			decodeFunctionResult(erc20Abi, "balanceOf", data),
 		);
@@ -586,8 +586,9 @@ describe("decodeFunctionResult", () => {
 	});
 
 	it("decodes bool true result", async () => {
-		const data =
-			Hex("0x0000000000000000000000000000000000000000000000000000000000000001");
+		const data = Hex(
+			"0x0000000000000000000000000000000000000000000000000000000000000001",
+		);
 		const decoded = await Effect.runPromise(
 			decodeFunctionResult(erc20Abi, "transfer", data),
 		);
@@ -595,8 +596,9 @@ describe("decodeFunctionResult", () => {
 	});
 
 	it("decodes bool false result", async () => {
-		const data =
-			Hex("0x0000000000000000000000000000000000000000000000000000000000000000");
+		const data = Hex(
+			"0x0000000000000000000000000000000000000000000000000000000000000000",
+		);
 		const decoded = await Effect.runPromise(
 			decodeFunctionResult(erc20Abi, "transfer", data),
 		);
@@ -608,7 +610,9 @@ describe("decodeFunctionResult", () => {
 			decodeFunctionResult(
 				erc20Abi,
 				"unknownFunction",
-				Hex("0x0000000000000000000000000000000000000000000000000000000000000000"),
+				Hex(
+					"0x0000000000000000000000000000000000000000000000000000000000000000",
+				),
 			),
 		);
 		expect(Exit.isFailure(exit)).toBe(true);
@@ -707,7 +711,9 @@ describe("decodeEventLog", () => {
 			decodeEventLog(erc20Abi, {
 				data: Hex("0x"),
 				topics: [
-					Hex("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+					Hex(
+						"0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+					),
 				],
 			}),
 		);
@@ -733,8 +739,12 @@ describe("decodeEventLog", () => {
 				data: Hex("0x123"), // Invalid - not 32-byte aligned
 				topics: [
 					transferTopicHash,
-					Hex("0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3"),
-					Hex("0x0000000000000000000000001234567890123456789012345678901234567890"),
+					Hex(
+						"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3",
+					),
+					Hex(
+						"0x0000000000000000000000001234567890123456789012345678901234567890",
+					),
 				],
 			}),
 		);

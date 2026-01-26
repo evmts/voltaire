@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Abi } from "@tevm/voltaire/Abi";
 import { Hex } from "@tevm/voltaire";
+import { Abi } from "@tevm/voltaire/Abi";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import { decodeFunction } from "./decodeFunction.js";

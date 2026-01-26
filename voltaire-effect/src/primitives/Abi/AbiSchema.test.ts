@@ -8,8 +8,8 @@ import {
 	ErrorSchema,
 	EventSchema,
 	FallbackSchema,
-	fromArray,
 	FunctionSchema,
+	fromArray,
 	ItemSchema,
 	ParameterSchema,
 	ReceiveSchema,
@@ -251,7 +251,13 @@ describe("ItemSchema", () => {
 
 	it("discriminates by type field", () => {
 		const items = [
-			{ type: "function", name: "a", stateMutability: "view", inputs: [], outputs: [] },
+			{
+				type: "function",
+				name: "a",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [],
+			},
 			{ type: "event", name: "b", inputs: [] },
 			{ type: "error", name: "c", inputs: [] },
 		];
@@ -346,9 +352,7 @@ describe("fromArray", () => {
 
 	it("rejects invalid ABI items", () => {
 		expect(() =>
-			S.decodeUnknownSync(fromArray)([
-				{ type: "invalid", name: "foo" },
-			]),
+			S.decodeUnknownSync(fromArray)([{ type: "invalid", name: "foo" }]),
 		).toThrow();
 	});
 

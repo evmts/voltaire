@@ -7,8 +7,8 @@
  */
 
 import {
-	type Abi,
 	encodeFunction as _encodeFunction,
+	type Abi,
 	type AbiEncodingError,
 	type AbiItemNotFoundError,
 	type ItemType,

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Hash } from "@tevm/voltaire";
-import type { HashType } from "@tevm/voltaire/Hash";
 import { PrivateKey as CorePrivateKey } from "@tevm/voltaire/PrivateKey";
 import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 import * as Effect from "effect/Effect";
