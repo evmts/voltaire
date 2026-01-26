@@ -123,19 +123,27 @@ Benefits:
 - Cross-platform (Node.js, Bun, browser)
 - TestClock compatible
 
-See reviews 040, 041, 042, 073, 076 for detailed migration patterns.
+See reviews 040, 041, 042, 073, 076-078, 084 for detailed migration patterns.
 
-### Anti-patterns Found
+### Anti-patterns Found (Most Fixed)
 
-1. **`Effect.runSync/runPromise` in callbacks**
+1. **`Effect.runSync/runPromise` in callbacks** - ✅ FIXED in 076-078, 084
    ```typescript
    // BAD - loses fiber context, breaks interruption
    ws.onmessage = (msg) => Effect.runSync(handleMessage(msg))
    
-   // GOOD - use @effect/platform Socket
+   // GOOD - capture runtime, use Runtime.runPromise
+   const runtime = yield* Effect.runtime()
+   const runPromise = Runtime.runPromise(runtime)
+   provider.request = async (method, params) => runPromise(transport.request(method, params))
+   
+   // BEST - use @effect/platform Socket (for WebSocket)
    const socket = yield* Socket.makeWebSocket(url)
    yield* socket.messages.pipe(Stream.forEach(handleMessage))
    ```
+   
+   **Fixed files**: TransactionStream.ts, EventStream.ts, BatchScheduler.ts, verifySignature.ts
+   **Remaining**: WebSocketTransport.ts (review 040 - needs @effect/platform migration)
 
 2. **`Effect.sync` for throwing operations**
    ```typescript
